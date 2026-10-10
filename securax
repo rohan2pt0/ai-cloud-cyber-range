@@ -79,6 +79,10 @@ URLS
     agent="${2:?usage: ./securax ask <agent> \"question\"}"; shift 2; q="$*"
     GATEWAY_URL="${GATEWAY_URL:-http://localhost:8080}" python3 "$ROOT/agents/personas.py" ask "$agent" "$q"
     ;;
+  plan)
+    C "Future Financial Planner (worked example — replace finance/examples/sample-plan.json with your own, kept local):"
+    python3 "$ROOT/finance/planner.py" plan --inputs "$ROOT/finance/examples/sample-plan.json"
+    ;;
   enhance)
     # The credit-saver: improve SecuRAX itself via your OWN local/free model, not Claude.
     shift; q="$*"
@@ -87,5 +91,5 @@ URLS
     ;;
   mcp)   exec python3 "$ROOT/mcp/securax_mcp.py" ;;
   down)  ( cd "$ROOT/local/compose" && docker compose --profile ai down ) ; C "stopped." ;;
-  *) echo 'usage: ./securax [up|status|demo|learn|intel|advisors|ask <agent> "q"|enhance "q"|open|doctor|mcp|full up|full down|down]'; exit 1 ;;
+  *) echo 'usage: ./securax [up|status|demo|learn|intel|plan|advisors|ask <agent> "q"|enhance "q"|open|doctor|mcp|full up|full down|down]'; exit 1 ;;
 esac

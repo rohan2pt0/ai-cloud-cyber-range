@@ -51,6 +51,7 @@ for name, path in {
     "assistant": "assistant/enhance.py",
     "intel": "intel/global_intel.py",
     "agents": "agents/personas.py",
+    "planner": "finance/planner.py",
 }.items():
     try:
         _mods[name] = _load(name, path)
@@ -176,6 +177,15 @@ def t_assistant_feedback(question: str, answer: str, rating: str) -> str:
     return json.dumps(_mods["assistant"].record_feedback(question, answer, rating), indent=2)
 
 
+def t_financial_plan(inputs_json: str) -> str:
+    """Future Financial Planner: from your numbers, the corpus needed at retirement, what your
+    assets will grow to, the shortfall/surplus, and the extra monthly SIP that closes it.
+    inputs_json shape: see finance/examples/sample-plan.json. Sovereign/offline; verify with a SEBI adviser."""
+    pl = _mods["planner"]
+    inp = json.loads(inputs_json)
+    return json.dumps({"summary": pl.plan(inp), "projection_sample": pl.project(inp)[:3]}, indent=2)
+
+
 def t_list_advisors() -> str:
     """List the stealth advisor agents you can summon for a first-draft opinion."""
     return json.dumps(_mods["agents"].list_agents(), indent=2)
@@ -256,6 +266,9 @@ TOOLS: dict[str, tuple] = {
     "assistant_feedback": (t_assistant_feedback,
         "Record thumbs up/down on an answer so the system improves from real use (down = a lesson for review).",
         _schema({"question": _STR, "answer": _STR, "rating": _STR}, ["question", "rating"])),
+    "financial_plan": (t_financial_plan,
+        "Future Financial Planner: corpus needed at retirement, projected corpus, shortfall/surplus and the extra monthly SIP to close it (from finance/examples/sample-plan.json shape). Sovereign/offline.",
+        _schema({"inputs_json": _STR}, ["inputs_json"])),
     "list_advisors": (t_list_advisors,
         "List the stealth advisor agents (legal, finance, CFO, CTO, CISO, tax, dietician, coach, chef, event, intel, career, engineer).",
         _schema({}, [])),

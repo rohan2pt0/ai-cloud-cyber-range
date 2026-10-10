@@ -2549,7 +2549,20 @@
     { k: "chef", n: "Chef", role: "chef", prof: "your own taste-test" },
     { k: "event", n: "Events", role: "event planner", prof: "your vendors in writing" },
     { k: "intel", n: "Intel", role: "open-source intelligence analyst (ethical/defensive only)", prof: "legal counsel if sensitive" },
-    { k: "career", n: "Career", role: "career coach", prof: "a mentor in your field" }
+    { k: "career", n: "Career", role: "career coach", prof: "a mentor in your field" },
+    { k: "doctor", n: "Health", role: "general physician (health literacy only, never a diagnosis)", prof: "a licensed doctor — urgently if symptoms are serious" },
+    { k: "mind", n: "Mind", role: "mental-health first-aid guide (support, not therapy)", prof: "a licensed therapist; a crisis line if you are in danger" },
+    { k: "relationship", n: "Relations", role: "relationship counsellor", prof: "a couples/family therapist" },
+    { k: "parenting", n: "Parenting", role: "parenting coach", prof: "a paediatrician for health" },
+    { k: "insurance", n: "Insurance", role: "insurance advisor", prof: "a licensed IRDAI agent/broker" },
+    { k: "realestate", n: "Property", role: "real-estate advisor", prof: "a RERA agent + a property lawyer" },
+    { k: "estate", n: "Estate", role: "estate-planning advisor", prof: "a lawyer for the will/deeds" },
+    { k: "negotiation", n: "Negotiate", role: "negotiation coach", prof: "your own pre-set red lines" },
+    { k: "productivity", n: "Productivity", role: "productivity coach", prof: "your own review" },
+    { k: "eldercare", n: "Elder-care", role: "elder-care advisor", prof: "a geriatric doctor + a lawyer" },
+    { k: "learning", n: "Learning", role: "learning coach", prof: "your own practice" },
+    { k: "travel", n: "Travel", role: "travel planner", prof: "official visa/embassy sources" },
+    { k: "home", n: "Home", role: "home-maintenance advisor", prof: "a licensed electrician/plumber for hazards" }
   ];
   var askAgent = "general", lastAskQ = "", lastAskA = "";
   function askSystem(key) {
