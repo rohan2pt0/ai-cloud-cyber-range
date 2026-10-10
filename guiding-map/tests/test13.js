@@ -39,6 +39,13 @@ setTimeout(()=>{
  w.P.example=true; w.store("sovP",w.P);
  ok("example flag clearable + persists", (function(){ w.P.example=false; w.store("sovP",w.P); return JSON.parse(w.localStorage.getItem("sovP")).example===false; })());
 
+ // guides tab: the self-contained how-to layer (friction killer)
+ const gh=go('guide');
+ ok("Guides tab renders", gh.length>2000);
+ ok("box-breathing animation embedded (no external video needed)", gh.includes('animateMotion'));
+ ok("band-without-handle substitution present", gh.toLowerCase().includes('no handle'));
+ ok("password-manager + recovery-email guides present", gh.includes('Bitwarden')&&gh.includes('recovery email'));
+
  console.log("PASS "+P+"   FAIL "+F); e.forEach(x=>console.log("  ✗ "+x));
  if(F>0) process.exit(1);
 },1500);

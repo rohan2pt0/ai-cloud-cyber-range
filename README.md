@@ -33,7 +33,7 @@ Your **Guiding Map** (http://localhost:8088) is the home screen for everything �
 > [Overview](docs/securax/00-OVERVIEW.md) · [Principles](docs/securax/01-PRINCIPLES.md) ·
 > [Architecture](docs/securax/02-ARCHITECTURE.md) ·
 > [Capability Catalog](docs/securax/03-CAPABILITY-CATALOG.md) ·
-> [Compliance Map](docs/securax/04-COMPLIANCE-MAP.md) · [Roadmap](docs/securax/05-ROADMAP.md) · [Extending](docs/securax/06-EXTENDING.md) · [Integrations](docs/securax/07-INTEGRATIONS.md) · [Operating model](docs/securax/08-OPERATING-MODEL.md) · [Tiers](docs/securax/09-OPEN-CORE-TIERS.md) · [Full-scale](docs/securax/10-FULL-STACK.md) · [Kaizen & antifragility](docs/securax/11-KAIZEN.md) · [Intelligent UX](docs/securax/12-INTELLIGENT-UX.md) · [Global Intelligence](docs/securax/13-GLOBAL-INTELLIGENCE.md) · [Guiding Map cockpit](docs/securax/14-GUIDING-MAP.md).
+> [Compliance Map](docs/securax/04-COMPLIANCE-MAP.md) · [Roadmap](docs/securax/05-ROADMAP.md) · [Extending](docs/securax/06-EXTENDING.md) · [Integrations](docs/securax/07-INTEGRATIONS.md) · [Operating model](docs/securax/08-OPERATING-MODEL.md) · [Tiers](docs/securax/09-OPEN-CORE-TIERS.md) · [Full-scale](docs/securax/10-FULL-STACK.md) · [Kaizen & antifragility](docs/securax/11-KAIZEN.md) · [Intelligent UX](docs/securax/12-INTELLIGENT-UX.md) · [Global Intelligence](docs/securax/13-GLOBAL-INTELLIGENCE.md) · [Guiding Map cockpit](docs/securax/14-GUIDING-MAP.md) · [Cost & models (never hit a limit)](docs/securax/15-COST-AND-MODELS.md).
 >
 > **Start using it:** [`GETTING-STARTED.md`](GETTING-STARTED.md) · **See it visually:** [`portal/explainer.html`](portal/explainer.html) (one-page illustrated walkthrough).
 

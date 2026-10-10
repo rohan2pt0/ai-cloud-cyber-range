@@ -26,6 +26,20 @@ model_list:
     litellm_params:
       model: openai/gpt-4o-mini
       api_key: os.environ/OPENAI_API_KEY
+  - model_name: bank-assistant-deepseek      # very cheap frontier-class reasoning
+    litellm_params:
+      model: deepseek/deepseek-chat
+      api_key: os.environ/DEEPSEEK_API_KEY
+  - model_name: bank-assistant-mistral       # EU option; free tier on la Plateforme
+    litellm_params:
+      model: mistral/mistral-small-latest
+      api_key: os.environ/MISTRAL_API_KEY
+  - model_name: bank-assistant-free          # OpenRouter: many models incl. :free tiers
+    litellm_params:
+      model: openrouter/meta-llama/llama-3.3-70b-instruct:free
+      api_key: os.environ/OPENROUTER_API_KEY
+  # Sarvam (Indic-strong), Perplexity (web-grounded), ElevenLabs (TTS) are added the same
+  # way with their own keys when a task needs them — the app keeps calling "bank-assistant".
 
 litellm_settings:
   num_retries: 2
