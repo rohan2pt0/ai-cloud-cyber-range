@@ -45,7 +45,17 @@ the same honesty contract as the rest of SecuRAX ([Intelligent UX](12-INTELLIGEN
 
 ## How to use it
 
-### Option A — through your AI assistant (easiest, zero setup)
+### Option A — the Guiding-Map "Intel" tab (easiest, fully offline)
+Open the Guiding Map (`http://localhost:8088`, or installed as an app) → **Intel**. Pick the
+regime (*Copy what works* / *Get ahead*), type your goal, paste the top items you collected
+(one per line, best first), and optionally the names you saw repeating. It shows the consensus
+with confidence, a worst-case pre-mortem + barbell, and — in edge mode — the adoption-curve
+timing. The **"Does it fit me?"** card scores any option against your stored profile, and every
+decision you **save** lands in a local **Decision Log** (your compounding memory). All on-device;
+nothing is sent. This tab is a faithful offline twin of `intel/global_intel.py` (the Python is
+the source of truth; keep the two in sync when you change the method).
+
+### Option B — through your AI assistant (zero setup)
 With the SecuRAX MCP server connected (see `mcp/README.md`), just collect the top items and ask:
 
 > *"Use global_intel: I want to pass CCSP. Here are the top r/CCSP all-time posts I copied: …"*
@@ -53,7 +63,7 @@ With the SecuRAX MCP server connected (see `mcp/README.md`), just collect the to
 The assistant calls the `global_intel` tool and returns the consensus, your fit, timing and a
 worst-case plan. Paste raw post titles/text — or, better, tell it the names you saw recurring.
 
-### Option B — command line / the worked example
+### Option C — command line / the worked example
 ```bash
 ./securax intel          # runs the CCSP worked example end-to-end
 ```

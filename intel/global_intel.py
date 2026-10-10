@@ -170,18 +170,29 @@ def capability_fit(opportunity: dict, profile: dict) -> dict:
     gaps = [s for s in need if s.lower() not in have]
     skill_fit = len(matched) / len(need) if need else 1.0
 
+    # Unfair advantage = how many of the needed skills are among your RARE/credentialed edges.
+    # More overlap = a deeper moat; scales (not a flat bonus) so a stronger moat ranks higher.
     edge = {e.lower() for e in profile.get("edge", [])}
     unfair = [s for s in need if s.lower() in edge]
-    edge_bonus = 0.15 if unfair else 0.0
+    edge_component = 0.25 * min(len(unfair) / 3.0, 1.0)
 
+    # Constraint comfort = how much headroom you have within your limits. Rewards the lighter,
+    # cheaper, safer option among otherwise-equal choices (do the easiest winnable thing first).
     con = profile.get("constraints", {})
-    time_ok = opportunity.get("requires_time_hrs_week", 0) <= con.get("time_hrs_week", 1e9)
-    cap_ok = opportunity.get("requires_capital_inr", 0) <= con.get("capital_inr", 1e18)
+    need_time = opportunity.get("requires_time_hrs_week", 0)
+    need_cap = opportunity.get("requires_capital_inr", 0)
+    cap_time = con.get("time_hrs_week", 1e9)
+    cap_cap = con.get("capital_inr", 1e18)
+    time_ok, cap_ok = need_time <= cap_time, need_cap <= cap_cap
     risk_order = {"low": 0, "med": 1, "medium": 1, "high": 2}
     risk_ok = risk_order.get(opportunity.get("risk", "low"), 0) <= risk_order.get(con.get("risk", "high"), 2)
+    time_slack = max(0.0, (cap_time - need_time) / cap_time) if cap_time else 1.0
+    cap_slack = max(0.0, (cap_cap - need_cap) / cap_cap) if cap_cap else 1.0
+    comfort = 0.25 * ((time_slack + cap_slack + (1.0 if risk_ok else 0.0)) / 3.0)
 
-    penalty = (0 if time_ok else 0.2) + (0 if cap_ok else 0.2) + (0 if risk_ok else 0.15)
-    fit = max(0.0, min(1.0, skill_fit + edge_bonus - penalty))
+    # A violated hard constraint dominates — it should sink the score, not just dent it.
+    penalty = (0 if time_ok else 0.3) + (0 if cap_ok else 0.3) + (0 if risk_ok else 0.3)
+    fit = max(0.0, min(1.0, 0.5 * skill_fit + edge_component + comfort - penalty))
 
     blockers = []
     if not time_ok: blockers.append("needs more weekly time than you have")
