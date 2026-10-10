@@ -21,16 +21,30 @@ case "$cmd" in
     [ "$cmd" = "up-status" ] && "$0" status || true
     ;;
   status)
-    C "SecuRAX — live services"
+    C "SecuRAX — open this first:"
+    echo "  ⭐ Guiding Map (your home screen)    : http://localhost:8088"
+    echo ""
+    C "Everything else:"
     cat <<URLS
-  Unified chat (local+cloud, guarded) : http://localhost:3000
+  Unified chat (local+cloud, guarded)  : http://localhost:3000
   Private document chat (Red-tier)     : http://localhost:3001
   Automation (n8n + data-tier router)  : http://localhost:5678
   Guardrail gateway API                : http://localhost:8080/healthz
-  Visual tour                          : open portal/explainer.html
+  Visual tour                          : http://localhost:8088/portal/explainer.html
   MCP (let an AI operate it)           : see mcp/README.md
 URLS
-    curl -fsS http://localhost:8080/healthz >/dev/null 2>&1 && C "gateway: healthy" || echo "  gateway: not up yet (give it a few seconds)"
+    curl -fsS http://localhost:8080/healthz >/dev/null 2>&1 && C "gateway: healthy" || echo "  gateway: starting (give it a few seconds)"
+    ;;
+  open)
+    URL="http://localhost:8088"
+    ( command -v xdg-open >/dev/null && xdg-open "$URL" ) || ( command -v open >/dev/null && open "$URL" ) ||       ( command -v cmd.exe >/dev/null && cmd.exe /c start "$URL" ) || C "Open $URL in your browser."
+    ;;
+  doctor)
+    C "SecuRAX doctor — resource & health check (global thresholds)"
+    DISK=$(df -P . | awk 'NR==2{print $5}' | tr -d '%'); echo "  disk used: ${DISK}%  $([ "${DISK:-0}" -ge 85 ] && echo '⚠ >85% — free space' || echo 'ok')"
+    if command -v free >/dev/null; then MEM=$(free | awk '/Mem:/{printf "%d",$3/$2*100}'); echo "  RAM used:  ${MEM}%  $([ "${MEM:-0}" -ge 90 ] && echo '⚠ >90% — close apps / use local-fast model' || echo 'ok')"; fi
+    curl -fsS http://localhost:8080/healthz >/dev/null 2>&1 && echo "  gateway:   healthy" || echo "  gateway:   down (run ./securax up)"
+    curl -fsS http://localhost:8088 >/dev/null 2>&1 && echo "  guiding map: up" || echo "  guiding map: down"
     ;;
   demo)
     C "Adversarial-ML scorecard:"; python3 "$ROOT/redteam/run_attacks.py" --out "$ROOT/redteam/results.json" | tail -8

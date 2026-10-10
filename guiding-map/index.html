@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Guiding Map</title>
+<meta name="theme-color" content="#2563eb">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg">
+<style>
+  /* Local-first life OS. Everything lives in this one page + your browser storage.
+     Nothing leaves your device unless you pick a cloud action. Palette: slate + signal blue;
+     red/amber/green are semantic (priority + data tiers). */
+  :root{
+    --bg:#f4f6fa; --panel:#fff; --soft:#eef1f6; --ink:#15202b; --muted:#5a6b7b; --line:#dde3ec;
+    --accent:#2563eb; --accent-soft:#e7eefc;
+    --q1:#d83a3f; --q2:#2563eb; --q3:#c67c0b; --q4:#5a6b7b; --ok:#1f8a54;
+    --r:14px; --f:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+    --bg:#0c1118; --panel:#151c25; --soft:#1e2630; --ink:#e7edf5; --muted:#9aacbd; --line:#283340;
+    --accent:#5b8cff; --accent-soft:#17243d; --q1:#ff6b70; --q2:#5b8cff; --q3:#f0b44a; --q4:#9aacbd; --ok:#54c98a;
+    color-scheme:dark;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#0c1118; --panel:#151c25; --soft:#1e2630; --ink:#e7edf5; --muted:#9aacbd; --line:#283340;
+    --accent:#5b8cff; --accent-soft:#17243d; --q1:#ff6b70; --q2:#5b8cff; --q3:#f0b44a; --q4:#9aacbd; --ok:#54c98a;
+    color-scheme:dark;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{background:var(--bg);color:var(--ink);font-family:var(--f);line-height:1.5;
+       padding-bottom:84px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:720px;margin:0 auto;padding-inline:16px}
+  button{font:inherit;cursor:pointer}
+  input,textarea,select{font:inherit;color:var(--ink);background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;width:100%}
+  textarea{resize:vertical;min-height:70px}
+  h1{font-size:1.1rem;margin:0} h2{font-size:1.05rem;margin:0 0 10px}
+  .muted{color:var(--muted)} .mono{font-family:var(--mono)}
+
+  header{position:sticky;top:env(safe-area-inset-top,0);z-index:5;background:color-mix(in srgb,var(--bg) 88%,transparent);
+         backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  .bar{display:flex;align-items:center;gap:10px;padding:12px 16px;max-width:720px;margin:0 auto}
+  .brand{display:flex;align-items:center;gap:8px;font-weight:800}
+  .brand .d{width:10px;height:10px;border-radius:50%;background:var(--accent)}
+  .spacer{margin-left:auto}
+  .online{font-size:.72rem;font-family:var(--mono);padding:3px 8px;border-radius:999px;background:var(--soft);color:var(--muted)}
+  .online.up{color:var(--ok)}
+  .iconbtn{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:7px 10px;color:var(--ink)}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--r);padding:16px;margin-top:14px}
+  .row{display:flex;gap:10px;align-items:center}
+  .btn{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:10px 14px;font-weight:600}
+  .btn.sec{background:var(--soft);color:var(--ink)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .launch{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+  .launch a{display:block;text-decoration:none;color:var(--ink);background:var(--soft);border:1px solid var(--line);
+            border-radius:12px;padding:14px;font-weight:600}
+  .launch a small{display:block;color:var(--muted);font-weight:400;font-size:.8rem;margin-top:3px}
+
+  .task{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-bottom:1px solid var(--line)}
+  .task:last-child{border-bottom:0}
+  .q{width:8px;align-self:stretch;border-radius:4px;flex:0 0 auto}
+  .q1{background:var(--q1)}.q2{background:var(--q2)}.q3{background:var(--q3)}.q4{background:var(--q4)}
+  .task.done span.t{text-decoration:line-through;color:var(--muted)}
+  .chk{width:22px;height:22px;flex:0 0 auto;border-radius:6px;border:1.5px solid var(--line);background:var(--panel)}
+  .chk.on{background:var(--ok);border-color:var(--ok)}
+  .tier{font-size:.74rem;font-family:var(--mono);padding:2px 8px;border-radius:999px}
+  .tier.red{background:color-mix(in srgb,var(--q1) 18%,transparent);color:var(--q1)}
+  .tier.green{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}
+  .big{font-family:var(--mono);font-weight:700;font-size:1.6rem}
+  .pill{font-size:.76rem;color:var(--muted)}
+
+  nav.tabs{position:fixed;bottom:0;left:0;right:0;z-index:6;background:var(--panel);border-top:1px solid var(--line);
+           display:flex;padding:6px 6px calc(6px + env(safe-area-inset-bottom,0))}
+  nav.tabs button{flex:1;background:none;border:none;color:var(--muted);padding:8px 2px;font-size:.72rem;border-radius:10px}
+  nav.tabs button .ic{display:block;font-size:1.2rem;line-height:1.2}
+  nav.tabs button.on{color:var(--accent);background:var(--accent-soft)}
+  .hide{display:none}
+  dialog{border:1px solid var(--line);border-radius:14px;background:var(--panel);color:var(--ink);max-width:420px;width:92%}
+  dialog::backdrop{background:rgba(0,0,0,.4)}
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="brand"><span class="d"></span><h1>Guiding Map</h1></div>
+    <span class="spacer"></span>
+    <span class="online" id="net">offline</span>
+    <button class="iconbtn" id="installBtn" hidden>Install</button>
+    <button class="iconbtn" id="gear" aria-label="Settings">⚙</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- TODAY -->
+  <section id="tab-today">
+    <div class="card">
+      <h2>Today — the vital few</h2>
+      <p class="muted" style="margin-top:-6px">Add what matters. Tag it by urgency × importance (Eisenhower). Do Q1 first; delete Q4.</p>
+      <div class="row" style="margin-top:10px">
+        <input id="taskText" placeholder="Add a task…" />
+        <select id="taskQ" style="width:auto">
+          <option value="q1">Q1 Do</option><option value="q2">Q2 Plan</option>
+          <option value="q3">Q3 Delegate</option><option value="q4">Q4 Drop</option>
+        </select>
+        <button class="btn" id="addTask">Add</button>
+      </div>
+      <div id="taskList" style="margin-top:12px"></div>
+    </div>
+    <div class="card">
+      <h2>Shutdown ritual (10 min)</h2>
+      <div id="shutdown"></div>
+    </div>
+  </section>
+
+  <!-- ASK -->
+  <section id="tab-ask" class="hide">
+    <div class="card">
+      <h2>Ask your local AI</h2>
+      <p class="muted" style="margin-top:-6px">Answered by your <b>local</b> model through the guardrail gateway. <span class="tier red">Red</span> data stays on your machine.</p>
+      <textarea id="askText" placeholder="e.g. Summarise today's top BFSI cyber risks in 3 bullets"></textarea>
+      <div class="row" style="margin-top:10px">
+        <button class="btn" id="askBtn">Ask</button>
+        <span class="pill" id="askHint"></span>
+      </div>
+      <div id="askOut" class="card" style="background:var(--soft);display:none;white-space:pre-wrap"></div>
+    </div>
+  </section>
+
+  <!-- LAUNCH -->
+  <section id="tab-launch" class="hide">
+    <div class="card">
+      <h2>Launch</h2>
+      <p class="muted" style="margin-top:-6px">Your estate, one tap away. These open when <code>./securax up</code> is running.</p>
+      <div class="launch" id="launchGrid"></div>
+    </div>
+  </section>
+
+  <!-- MONEY -->
+  <section id="tab-money" class="hide">
+    <div class="card">
+      <h2>Financial freedom (FIRE)</h2>
+      <p class="muted" style="margin-top:-6px">Private, on-device maths. Indian context: 3.5% safe-withdrawal, 6% inflation.</p>
+      <div class="grid2" style="margin-top:10px">
+        <label>Monthly expense ₹<input id="fExp" type="number" value="150000"></label>
+        <label>Invested corpus ₹<input id="fCorpus" type="number" value="2500000"></label>
+        <label>Monthly invest ₹<input id="fInv" type="number" value="200000"></label>
+        <label>Return %<input id="fRet" type="number" value="10"></label>
+      </div>
+      <button class="btn" id="fCalc" style="margin-top:10px">Calculate</button>
+      <div id="fOut" style="margin-top:12px"></div>
+    </div>
+  </section>
+
+  <!-- GUARD -->
+  <section id="tab-guard" class="hide">
+    <div class="card">
+      <h2>Footprint check (self-OPSEC)</h2>
+      <p class="muted" style="margin-top:-6px">Paste a bio/profile about <b>yourself</b> — on-device scan for over-shared identifiers. Nothing is sent.</p>
+      <textarea id="guardText" placeholder="Paste text about yourself…"></textarea>
+      <button class="btn" id="guardBtn" style="margin-top:10px">Scan locally</button>
+      <div id="guardOut" style="margin-top:12px"></div>
+    </div>
+    <div class="card">
+      <h2>OPSEC checklist</h2>
+      <div id="opsec"></div>
+    </div>
+  </section>
+
+  <!-- VAULT -->
+  <section id="tab-vault" class="hide">
+    <div class="card">
+      <h2>Continuity vault</h2>
+      <p class="muted" style="margin-top:-6px">Private notes that matter if something happens to you — where things are, who to contact. Stored only on this device.</p>
+      <textarea id="vaultText" placeholder="If you are reading this, start here…" style="min-height:160px"></textarea>
+      <div class="row" style="margin-top:10px">
+        <button class="btn sec" id="exportBtn">Export all (backup)</button>
+        <button class="btn sec" id="importBtn">Import</button>
+        <input id="importFile" type="file" accept="application/json" hidden>
+      </div>
+      <p class="muted" style="margin-top:10px;font-size:.84rem">3-2-1 rule: keep this backup in 2 places, 1 offline. Your data is sovereign — it is yours, on your device.</p>
+    </div>
+  </section>
+</main>
+
+<nav class="tabs" id="tabs">
+  <button data-tab="today" class="on"><span class="ic">◎</span>Today</button>
+  <button data-tab="ask"><span class="ic">✸</span>Ask</button>
+  <button data-tab="launch"><span class="ic">⤢</span>Launch</button>
+  <button data-tab="money"><span class="ic">₹</span>Money</button>
+  <button data-tab="guard"><span class="ic">🛡</span>Guard</button>
+  <button data-tab="vault"><span class="ic">🔒</span>Vault</button>
+</nav>
+
+<dialog id="settings">
+  <div style="padding:18px">
+    <h2>Settings</h2>
+    <label>Guardrail gateway URL
+      <input id="gwUrl" placeholder="http://localhost:8080">
+    </label>
+    <p class="muted" style="font-size:.84rem;margin-top:8px">Leave default unless you moved the estate to another machine. Your tasks, money and vault data never use this — only the "Ask" tab does.</p>
+    <div class="row" style="margin-top:12px;justify-content:flex-end">
+      <button class="btn sec" id="themeToggle">Toggle theme</button>
+      <button class="btn" id="saveSettings">Save</button>
+    </div>
+  </div>
+</dialog>
+
+<script>
+/* ---------- tiny store (localStorage, guarded) ---------- */
+const KEY='guiding-map';
+const DEFAULTS={ tasks:[], shutdown:[false,false,false,false,false], opsec:[false,false,false,false,false,false],
+  vault:'', gw:'http://localhost:8080', theme:'' };
+function load(){ try{ return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem(KEY)||'{}')); }catch(e){ return {...DEFAULTS}; } }
+function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
+let S=load();
+if(S.theme) document.documentElement.setAttribute('data-theme', S.theme);
+
+const $=s=>document.querySelector(s), $$=s=>document.querySelectorAll(s);
+function esc(t){return String(t==null?'':t).replace(/[&<>]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));}
+
+/* ---------- tabs ---------- */
+$$('#tabs button').forEach(b=>b.onclick=()=>{
+  $$('#tabs button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
+  ['today','ask','launch','money','guard','vault'].forEach(t=>$('#tab-'+t).classList.toggle('hide', t!==b.dataset.tab));
+});
+
+/* ---------- Today: tasks ---------- */
+const QLABEL={q1:'Q1 Do',q2:'Q2 Plan',q3:'Q3 Delegate',q4:'Q4 Drop'};
+function renderTasks(){
+  const order=['q1','q2','q3','q4'];
+  S.tasks.sort((a,b)=>order.indexOf(a.q)-order.indexOf(b.q)||a.done-b.done);
+  $('#taskList').innerHTML = S.tasks.length? '' : '<p class="muted">No tasks yet. Add your top 3 for today.</p>';
+  S.tasks.forEach((t,i)=>{
+    const d=document.createElement('div'); d.className='task'+(t.done?' done':'');
+    d.innerHTML=`<span class="q ${t.q}"></span>
+      <button class="chk ${t.done?'on':''}" aria-label="done"></button>
+      <span class="t" style="flex:1">${esc(t.text)} <span class="pill">· ${QLABEL[t.q]}</span></span>
+      <button class="iconbtn" aria-label="delete">✕</button>`;
+    d.querySelector('.chk').onclick=()=>{t.done=!t.done;save();renderTasks();};
+    d.querySelector('[aria-label=delete]').onclick=()=>{S.tasks.splice(i,1);save();renderTasks();};
+    $('#taskList').appendChild(d);
+  });
+}
+$('#addTask').onclick=()=>{ const v=$('#taskText').value.trim(); if(!v)return;
+  S.tasks.push({text:v,q:$('#taskQ').value,done:false}); $('#taskText').value=''; save(); renderTasks(); };
+$('#taskText').addEventListener('keydown',e=>{if(e.key==='Enter')$('#addTask').click();});
+
+const SHUT=['Inbox & tasks captured','Did today move a weekly rock?','Health/family check-in','One money action','One OPSEC gap closed'];
+function renderShutdown(){ $('#shutdown').innerHTML=''; SHUT.forEach((t,i)=>{
+  const d=document.createElement('div'); d.className='task';
+  d.innerHTML=`<button class="chk ${S.shutdown[i]?'on':''}"></button><span class="t" style="flex:1">${t}</span>`;
+  d.querySelector('.chk').onclick=()=>{S.shutdown[i]=!S.shutdown[i];save();renderShutdown();};
+  $('#shutdown').appendChild(d);
+}); }
+
+/* ---------- Ask (gateway) ---------- */
+const RED=/aadhaar|\b[2-9]\d{3}\s?\d{4}\s?\d{4}\b|\b[A-Z]{5}\d{4}[A-Z]\b|customer|account\s*no|internal ip/i;
+$('#askText').addEventListener('input',()=>{ const red=RED.test($('#askText').value);
+  $('#askHint').innerHTML = red? '<span class="tier red">Red</span> stays local' : '<span class="tier green">Green</span> ok'; });
+$('#askBtn').onclick=async()=>{
+  const q=$('#askText').value.trim(); if(!q)return;
+  const out=$('#askOut'); out.style.display='block'; out.textContent='Thinking…';
+  try{
+    const r=await fetch(S.gw.replace(/\/$/,'')+'/v1/chat/completions',{method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({model:'bank-assistant',messages:[{role:'user',content:q}]})});
+    if(!r.ok){ out.textContent='Blocked or unavailable (HTTP '+r.status+'). If this was an attack pattern, that is the guardrail working.'; return; }
+    const j=await r.json(); out.textContent=(j.choices&&j.choices[0].message.content)||JSON.stringify(j);
+  }catch(e){ out.textContent='Gateway not reachable. Run  ./securax up  first, then try again. (Nothing was sent.)'; }
+};
+
+/* ---------- Launch ---------- */
+const LAUNCH=[
+  ['Unified chat','http://localhost:3000','local + cloud, guarded'],
+  ['Private docs','http://localhost:3001','RAG, stays on device'],
+  ['Automations','http://localhost:5678','n8n workflows'],
+  ['Visual tour','http://localhost:8088/portal/explainer.html','what this all is'],
+  ['Gateway health','http://localhost:8080/healthz','is it up?'],
+];
+$('#launchGrid').innerHTML=LAUNCH.map(([t,u,s])=>`<a href="${u}" target="_blank" rel="noopener">${t}<small>${s}</small></a>`).join('');
+
+/* ---------- Money (FIRE) ---------- */
+$('#fCalc').onclick=()=>{
+  const exp=+$('#fExp').value, corpus=+$('#fCorpus').value, inv=+$('#fInv').value, ret=(+$('#fRet').value)/100;
+  const infl=0.06, swr=0.035, annual=exp*12, target=annual/swr;
+  const real=(1+ret)/(1+infl)-1, r=Math.pow(1+real,1/12)-1;
+  let c=corpus, m=0; while(c<target && m<1200){ c=c*(1+r)+inv; m++; }
+  const sr=inv/(inv+exp)*100;
+  $('#fOut').innerHTML=`<div class="big">${m<1200?(m/12).toFixed(1)+' yrs':'>100 yrs'}</div>
+    <span class="pill">to financial independence</span>
+    <div style="margin-top:10px" class="grid2">
+      <div class="card" style="margin:0"><div class="pill">Target corpus</div><b>₹${Math.round(target).toLocaleString('en-IN')}</b></div>
+      <div class="card" style="margin:0"><div class="pill">Savings rate</div><b>${sr.toFixed(0)}%</b></div>
+      <div class="card" style="margin:0"><div class="pill">Emergency fund</div><b>₹${Math.round(exp*6).toLocaleString('en-IN')}</b></div>
+      <div class="card" style="margin:0"><div class="pill">Multiple</div><b>${(target/annual).toFixed(1)}× annual</b></div>
+    </div>`;
+};
+
+/* ---------- Guard ---------- */
+const PII=[['PAN',/\b[A-Z]{5}\d{4}[A-Z]\b/g],['Aadhaar-like',/\b[2-9]\d{3}\s?\d{4}\s?\d{4}\b/g],
+  ['Mobile',/(?:\+91[ -]?)?[6-9]\d{9}/g],['Email',/\b[\w.+-]+@[\w-]+\.[\w.-]+\b/g],['Card',/\b(?:\d[ -]?){13,19}\b/g]];
+$('#guardBtn').onclick=()=>{
+  const t=$('#guardText').value, hits=[];
+  PII.forEach(([n,rx])=>{const m=t.match(rx);if(m)hits.push(n+' ×'+m.length);});
+  const inj=/ignore (all |previous )?instructions|system prompt|you are now/i.test(t);
+  $('#guardOut').innerHTML = (hits.length||inj)
+    ? `<div class="card" style="margin:0;border-color:var(--q1)"><b>⚠ Exposed:</b> ${hits.join(', ')||'—'}${inj?'<br>⚠ Hidden instruction detected in the text.':''}<br><span class="muted">Remove these before posting anywhere public.</span></div>`
+    : `<div class="card" style="margin:0;border-color:var(--ok)"><b>✓ Clean.</b> No high-risk identifiers found in this sample.</div>`;
+};
+const OPSEC=['Unique passwords (manager)','MFA/passkeys on email, bank, cloud','SIM PIN + port-out lock','Full-disk encryption on','Breach monitoring on all emails','3-2-1 backups, 1 offline'];
+function renderOpsec(){ $('#opsec').innerHTML=''; OPSEC.forEach((t,i)=>{
+  const d=document.createElement('div'); d.className='task';
+  d.innerHTML=`<button class="chk ${S.opsec[i]?'on':''}"></button><span class="t" style="flex:1">${t}</span>`;
+  d.querySelector('.chk').onclick=()=>{S.opsec[i]=!S.opsec[i];save();renderOpsec();};
+  $('#opsec').appendChild(d);
+}); }
+
+/* ---------- Vault + export/import ---------- */
+$('#vaultText').value=S.vault;
+$('#vaultText').addEventListener('input',()=>{S.vault=$('#vaultText').value;save();});
+$('#exportBtn').onclick=()=>{ const blob=new Blob([JSON.stringify(S,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='guiding-map-backup-'+new Date().toISOString().slice(0,10)+'.json'; a.click(); };
+$('#importBtn').onclick=()=>$('#importFile').click();
+$('#importFile').onchange=e=>{ const f=e.target.files[0]; if(!f)return; const rd=new FileReader();
+  rd.onload=()=>{ try{ S=Object.assign({},DEFAULTS,JSON.parse(rd.result)); save(); location.reload(); }catch(err){ alert('Could not read that backup file.'); } };
+  rd.readAsText(f); };
+
+/* ---------- Settings / theme ---------- */
+$('#gear').onclick=()=>{ $('#gwUrl').value=S.gw; $('#settings').showModal(); };
+$('#saveSettings').onclick=()=>{ S.gw=$('#gwUrl').value.trim()||DEFAULTS.gw; save(); $('#settings').close(); };
+$('#themeToggle').onclick=()=>{ const cur=document.documentElement.getAttribute('data-theme');
+  const next = cur==='dark'?'light':'dark'; document.documentElement.setAttribute('data-theme',next); S.theme=next; save(); };
+
+/* ---------- online indicator ---------- */
+function net(){ const up=navigator.onLine; $('#net').textContent=up?'online':'offline'; $('#net').classList.toggle('up',up); }
+addEventListener('online',net); addEventListener('offline',net); net();
+
+/* ---------- PWA install ---------- */
+let deferred;
+addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); deferred=e; $('#installBtn').hidden=false; });
+$('#installBtn').onclick=async()=>{ if(!deferred)return; deferred.prompt(); await deferred.userChoice; deferred=null; $('#installBtn').hidden=true; };
+if('serviceWorker' in navigator){ addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
+
+renderTasks(); renderShutdown(); renderOpsec();
+</script>
+</body>
+</html>
