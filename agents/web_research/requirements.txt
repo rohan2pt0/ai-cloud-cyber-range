@@ -1,0 +1,3 @@
+# Only needed to actually fetch/search/synthesize at runtime (lazy-imported).
+# The agent core + all tests run on the stdlib alone.
+httpx==0.28.1
