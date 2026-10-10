@@ -19,7 +19,7 @@ def test_handshake_list_and_call():
     by_id = {r.get("id"): r for r in resps}
     assert by_id[1]["result"]["serverInfo"]["name"] == "securax"
     names = {t["name"] for t in by_id[2]["result"]["tools"]}
-    assert "classify_data_tier" in names and "soc_triage" in names and "learn_from_failure" in names and "assist" in names and "global_intel" in names and "ask_advisor" in names and len(names) == 16
+    assert "classify_data_tier" in names and "soc_triage" in names and "learn_from_failure" in names and "assist" in names and "global_intel" in names and "ask_advisor" in names and "financial_plan" in names and len(names) == 17
     assert "Red" in by_id[3]["result"]["content"][0]["text"]
 
 def test_unknown_tool_errors():

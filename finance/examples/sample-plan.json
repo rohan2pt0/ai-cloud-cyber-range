@@ -1,0 +1,30 @@
+{
+  "_note": "NEUTRAL EXAMPLE — a fictional household. Replace with YOUR numbers and keep that file LOCAL (out of git). Amounts in today's ₹.",
+  "age": 35,
+  "retire_age": 55,
+  "plan_until": 90,
+  "start_year": 2026,
+  "return_pre": 0.11,
+  "return_post": 0.07,
+  "inflation": 0.06,
+  "expenses": [
+    {"item": "Household living", "monthly": 60000, "infl": 0.06, "post_ret_pct": 1.0},
+    {"item": "Home loan EMI", "monthly": 35000, "infl": 0.0, "ends_age": 50, "post_ret_pct": 1.0},
+    {"item": "Insurance premiums (annualised/12)", "monthly": 8000, "infl": 0.05, "post_ret_pct": 0.3},
+    {"item": "Discretionary / lifestyle", "monthly": 25000, "infl": 0.06, "post_ret_pct": 0.7}
+  ],
+  "purchases": [
+    {"item": "Car replacement", "category": "Vehicle", "cost_today": 1200000, "at_age": 45, "infl": 0.06, "funded_pct": 1.0},
+    {"item": "Child higher education", "category": "Education", "cost_today": 3000000, "at_age": 52, "infl": 0.08, "funded_pct": 1.0}
+  ],
+  "assets": [
+    {"name": "EPF / PF / NPS", "category": "Retirement", "value": 1500000, "monthly": 15000, "return": 0.08, "counts": true},
+    {"name": "PPF", "category": "Retirement", "value": 800000, "monthly": 12500, "return": 0.071, "counts": true},
+    {"name": "Equity mutual funds", "category": "Equity", "value": 2000000, "monthly": 30000, "return": 0.11, "counts": true},
+    {"name": "Primary home (self-occupied)", "category": "RealEstate", "value": 9000000, "monthly": 0, "return": 0.05, "counts": false}
+  ],
+  "income_post": [
+    {"source": "Rental income (second property)", "type": "Passive", "monthly": 20000, "growth": 0.05, "starts_age": 55},
+    {"source": "NPS annuity / pension", "type": "Passive", "monthly": 15000, "growth": 0.0, "starts_age": 60}
+  ]
+}

@@ -11,6 +11,15 @@ def test_roster_has_the_core_specialists():
         assert must in keys, must
 
 
+def test_roster_covers_the_vital_life_domains():
+    # 80/20 completeness beyond the first ask: health, mind, relationships, money-adjacent, continuity
+    keys = {a["key"] for a in P.list_agents()}
+    for must in ["doctor", "mind", "relationship", "parenting", "insurance", "realestate",
+                 "estate", "negotiation", "eldercare", "learning", "travel", "home"]:
+        assert must in keys, must
+    assert len(keys) >= 24
+
+
 def test_every_agent_carries_the_anti_hallucination_contract():
     for k in P.PERSONAS:
         msgs = P.build_messages(k, "test question")
