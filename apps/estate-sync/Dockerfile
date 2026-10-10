@@ -11,7 +11,7 @@ ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
 COPY --from=build /install /usr/local
 WORKDIR /app
 COPY syncsvc ./syncsvc
-RUN useradd --uid 10002 --no-create-home --shell /usr/sbin/nologin sync \
+RUN useradd --uid 10002 --no-create-home --shell /usr/sbin/nologin estatesync \
     && mkdir -p /data && chown 10002 /data
 USER 10002
 EXPOSE 8089
