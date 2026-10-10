@@ -36,6 +36,16 @@ logging.basicConfig(stream=sys.stdout, level=logging.INFO, format="%(message)s")
 audit = logging.getLogger("audit")
 app = FastAPI(title="AI Guardrail Gateway", version="1.0.0")
 
+# Allow the local Guiding Map PWA (and other localhost pages) to call the gateway from the
+# browser. Scoped to localhost/127.0.0.1 on any port only — never a public origin.
+if os.getenv("ALLOW_LOCAL_CORS", "1") == "1":
+    from fastapi.middleware.cors import CORSMiddleware
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
+        allow_methods=["*"], allow_headers=["*"],
+    )
+
 _metrics: dict[str, int] = defaultdict(int)
 _buckets: dict[str, deque[float]] = defaultdict(deque)
 

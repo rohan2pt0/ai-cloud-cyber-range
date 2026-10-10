@@ -7,6 +7,21 @@
 ![Cost to start](https://img.shields.io/badge/cost%20to%20start-%E2%82%B90-success)
 ![Frameworks](https://img.shields.io/badge/mapped%20to-NIST%20%7C%20ISO%20%7C%20RBI%20FREE--AI%20%7C%20DPDP-informational)
 
+
+## ▶ Start here (one step)
+
+**On Windows:** double-click **`START-HERE-Windows.bat`** → your home screen opens at **http://localhost:8088**. That's it.
+
+**On Mac/Linux:**
+```bash
+./securax up && ./securax open      # starts everything, opens your Guiding Map
+```
+Your **Guiding Map** (http://localhost:8088) is the home screen for everything — tasks, your local AI, money, OPSEC, and one-tap launch of the rest. Install it (Add to Home Screen) to use it like an app, even offline. Your data stays on your device.
+
+> Health check any time: `./securax doctor` · Stop & free RAM: `./securax down`
+
+---
+
 > **SecuRAX** is the umbrella: one lifelong, **zero-investment-to-start**, vendor-agnostic,
 > antifragile foundation that unifies AI security, AI-for-security (SecOps), a hybrid-AI brain,
 > a life-OS, and governance/compliance — starting on one laptop and scaling to an MSSP, never
