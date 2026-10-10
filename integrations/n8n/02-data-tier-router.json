@@ -1,0 +1,103 @@
+{
+  "name": "SecuRAX · Data-Tier Router (Red/Yellow/Green)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "classify",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "webhook-in",
+      "name": "Inbound query",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Classify the payload BEFORE it is allowed to reach any model.\n// Red = must stay local; Yellow = local preferred / cloud only after masking;\n// Green = cloud acceptable. The gateway still redacts PII on top of this.\nconst text = ($json.body && $json.body.text) || $json.text || '';\nconst red = /(aadhaar|\\b[2-9]\\d{3}\\s?\\d{4}\\s?\\d{4}\\b|\\b[A-Z]{5}\\d{4}[A-Z]\\b|customer|account\\s*no|internal ip|incident)/i;\nconst yellow = /(employee|salary|vendor|contract|roadmap|strategy|non-public)/i;\nlet tier = 'Green';\nif (red.test(text)) tier = 'Red';\nelse if (yellow.test(text)) tier = 'Yellow';\n// Red -> local model only; Yellow/Green -> cloud (gateway masks Yellow).\nconst model = tier === 'Red' ? 'bank-assistant' : 'bank-assistant';\nreturn [{ json: { text, tier, model } }];"
+      },
+      "id": "classify",
+      "name": "Classify tier",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [460, 300]
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            { "conditions": { "options": { "caseSensitive": true }, "conditions": [ { "leftValue": "={{ $json.tier }}", "rightValue": "Red", "operator": { "type": "string", "operation": "equals" } } ] }, "outputKey": "Red" },
+            { "conditions": { "options": { "caseSensitive": true }, "conditions": [ { "leftValue": "={{ $json.tier }}", "rightValue": "Yellow", "operator": { "type": "string", "operation": "equals" } } ] }, "outputKey": "Yellow" },
+            { "conditions": { "options": { "caseSensitive": true }, "conditions": [ { "leftValue": "={{ $json.tier }}", "rightValue": "Green", "operator": { "type": "string", "operation": "equals" } } ] }, "outputKey": "Green" }
+          ]
+        },
+        "options": {}
+      },
+      "id": "switch-tier",
+      "name": "Route by tier",
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://gateway:8080/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [ { "name": "Authorization", "value": "Bearer sk-range-dev" }, { "name": "Content-Type", "value": "application/json" } ] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'bank-assistant', messages: [{ role: 'user', content: $json.text }] }) }}",
+        "options": {}
+      },
+      "id": "local-call",
+      "name": "Local model (Red)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [940, 180]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://gateway:8080/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [ { "name": "Authorization", "value": "Bearer sk-range-dev" }, { "name": "Content-Type", "value": "application/json" } ] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'bank-assistant', messages: [{ role: 'user', content: $json.text }] }) }}",
+        "options": {}
+      },
+      "id": "cloud-call",
+      "name": "Cloud model (Yellow/Green)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [940, 380]
+    },
+    {
+      "parameters": { "options": {} },
+      "id": "respond",
+      "name": "Respond",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1,
+      "position": [1180, 300]
+    }
+  ],
+  "connections": {
+    "Inbound query": { "main": [ [ { "node": "Classify tier", "type": "main", "index": 0 } ] ] },
+    "Classify tier": { "main": [ [ { "node": "Route by tier", "type": "main", "index": 0 } ] ] },
+    "Route by tier": {
+      "main": [
+        [ { "node": "Local model (Red)", "type": "main", "index": 0 } ],
+        [ { "node": "Cloud model (Yellow/Green)", "type": "main", "index": 0 } ],
+        [ { "node": "Cloud model (Yellow/Green)", "type": "main", "index": 0 } ]
+      ]
+    },
+    "Local model (Red)": { "main": [ [ { "node": "Respond", "type": "main", "index": 0 } ] ] },
+    "Cloud model (Yellow/Green)": { "main": [ [ { "node": "Respond", "type": "main", "index": 0 } ] ] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}

@@ -18,7 +18,7 @@
 > [Overview](docs/securax/00-OVERVIEW.md) · [Principles](docs/securax/01-PRINCIPLES.md) ·
 > [Architecture](docs/securax/02-ARCHITECTURE.md) ·
 > [Capability Catalog](docs/securax/03-CAPABILITY-CATALOG.md) ·
-> [Compliance Map](docs/securax/04-COMPLIANCE-MAP.md) · [Roadmap](docs/securax/05-ROADMAP.md) · [Extending](docs/securax/06-EXTENDING.md).
+> [Compliance Map](docs/securax/04-COMPLIANCE-MAP.md) · [Roadmap](docs/securax/05-ROADMAP.md) · [Extending](docs/securax/06-EXTENDING.md) · [Integrations](docs/securax/07-INTEGRATIONS.md).
 >
 > **Start using it:** [`GETTING-STARTED.md`](GETTING-STARTED.md) · **See it visually:** [`portal/explainer.html`](portal/explainer.html) (one-page illustrated walkthrough).
 

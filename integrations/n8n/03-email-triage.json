@@ -1,0 +1,64 @@
+{
+  "name": "SecuRAX · Email Triage (local classify, safe)",
+  "nodes": [
+    {
+      "parameters": {
+        "pollTimes": { "item": [ { "mode": "everyMinute" } ] },
+        "simple": true,
+        "filters": {}
+      },
+      "id": "gmail-trigger",
+      "name": "New email (Gmail)",
+      "type": "n8n-nodes-base.gmailTrigger",
+      "typeVersion": 1,
+      "position": [240, 300],
+      "notes": "Set a Gmail OAuth2 credential (see docs/securax/07-INTEGRATIONS.md §3). Swap for the Microsoft Outlook trigger if you use M365."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://gateway:8080/v1/chat/completions",
+        "sendHeaders": true,
+        "headerParameters": { "parameters": [ { "name": "Authorization", "value": "Bearer sk-range-dev" }, { "name": "Content-Type", "value": "application/json" } ] },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ model: 'bank-assistant', messages: [{ role: 'user', content: 'Classify this email into exactly one label: Urgent-Security, Urgent-Admin, Normal, or FYI. Reply with only the label.\\n\\nSubject: ' + ($json.subject || '') + '\\n\\n' + ($json.snippet || $json.text || '') }] }) }}",
+        "options": {}
+      },
+      "id": "classify-local",
+      "name": "Classify locally (via gateway)",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [480, 300],
+      "notes": "Email bodies are Yellow/Red. Routing through the gateway keeps classification on the LOCAL model and redacts PII — nothing leaves the laptop."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Extract the label the local model returned, default to Normal.\nconst out = $json.choices ? $json.choices[0].message.content.trim() : 'Normal';\nconst label = ['Urgent-Security','Urgent-Admin','Normal','FYI'].find(l => out.includes(l)) || 'Normal';\nreturn [{ json: { label } }];"
+      },
+      "id": "extract-label",
+      "name": "Extract label",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [720, 300]
+    },
+    {
+      "parameters": {
+        "jsCode": "// Act on the label. Wire the real actions here:\n//  - Gmail 'Add Label' node for Urgent-Security / FYI, or\n//  - Todoist 'Create Task' (Q1 tag) for Urgent items, or\n//  - Microsoft Outlook 'Move/Categorise' node.\nreturn [{ json: { label: $json.label, action: 'wire your Gmail/Todoist/Outlook node here' } }];"
+      },
+      "id": "act",
+      "name": "Act on label (wire node)",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 300]
+    }
+  ],
+  "connections": {
+    "New email (Gmail)": { "main": [ [ { "node": "Classify locally (via gateway)", "type": "main", "index": 0 } ] ] },
+    "Classify locally (via gateway)": { "main": [ [ { "node": "Extract label", "type": "main", "index": 0 } ] ] },
+    "Extract label": { "main": [ [ { "node": "Act on label (wire node)", "type": "main", "index": 0 } ] ] }
+  },
+  "active": false,
+  "settings": { "executionOrder": "v1" },
+  "pinData": {}
+}
