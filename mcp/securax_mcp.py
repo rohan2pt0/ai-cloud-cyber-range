@@ -50,6 +50,7 @@ for name, path in {
     "antifragile": "learning/antifragile.py",
     "assistant": "assistant/enhance.py",
     "intel": "intel/global_intel.py",
+    "agents": "agents/personas.py",
 }.items():
     try:
         _mods[name] = _load(name, path)
@@ -175,6 +176,18 @@ def t_assistant_feedback(question: str, answer: str, rating: str) -> str:
     return json.dumps(_mods["assistant"].record_feedback(question, answer, rating), indent=2)
 
 
+def t_list_advisors() -> str:
+    """List the stealth advisor agents you can summon for a first-draft opinion."""
+    return json.dumps(_mods["agents"].list_agents(), indent=2)
+
+
+def t_ask_advisor(agent: str, question: str, context: str = "") -> str:
+    """Summon one specialist advisor (legal/finance/cfo/cto/ciso/tax/dietician/coach/chef/
+    event/intel/career/engineer). First-draft, grounded, anti-hallucination advice to prepare
+    you before a real professional. Runs on the estate's local/free model (no Claude credits)."""
+    return json.dumps(_mods["agents"].ask_agent(agent, question, context), indent=2)
+
+
 def t_global_intel(goal: str, items_json: str, mode: str = "replicate", vocabulary: str = "",
                    profile_json: str = "", opportunities_json: str = "", volume: str = "") -> str:
     """Community-signal decision engine. Paste the high-ranked items YOU collected (Reddit
@@ -243,6 +256,12 @@ TOOLS: dict[str, tuple] = {
     "assistant_feedback": (t_assistant_feedback,
         "Record thumbs up/down on an answer so the system improves from real use (down = a lesson for review).",
         _schema({"question": _STR, "answer": _STR, "rating": _STR}, ["question", "rating"])),
+    "list_advisors": (t_list_advisors,
+        "List the stealth advisor agents (legal, finance, CFO, CTO, CISO, tax, dietician, coach, chef, event, intel, career, engineer).",
+        _schema({}, [])),
+    "ask_advisor": (t_ask_advisor,
+        "Summon one specialist advisor for a first-draft, anti-hallucination opinion before you see a real professional. Runs on the estate's local/free model (no Claude credits).",
+        _schema({"agent": _STR, "question": _STR, "context": _STR}, ["agent", "question"])),
     "global_intel": (t_global_intel,
         "Decide the community-proven way: paste ranked items you collected (Reddit Top/All-time, "
         "Amazon best-seller/BIFL, top videos) -> consensus + your capability-fit + adoption-curve "
