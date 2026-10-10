@@ -4587,219 +4587,132 @@ function renderPlaybook(){
     } catch (e) {}
   })();
 
-  /* ── 9. The Ops tab ─────────────────────────────────────────────── */
-  function opsHTML() {
-    var due = dueRituals().length, broken = brokenHabits().length;
+  /* ── 48d. ASK — your estate AI + the advisor army, inside the cockpit ─────────
+     Brings SecuRAX's superpowers into the one app you use: ask your LOCAL model
+     (guarded, anti-hallucination), summon any of the 13 stealth advisors for a
+     first-draft opinion, check your footprint before sharing (Guard, on-device),
+     decide the community-proven way (Intel), and launch the estate. Everything
+     routes to YOUR gateway (default localhost:8080) — nothing leaves your machine
+     unless you point it elsewhere. Keep the contract/roster in sync with
+     assistant/enhance.py and agents/personas.py (those are the source of truth). */
+  var ASK_CONTRACT =
+    "You are a precise, trustworthy advisor for a user in India (BFSI context by default). "
+    + "Answer the question first in one line, then the key reasons. Use ONLY facts you are "
+    + "confident about or that the user provided; if unsure, say 'I'm not certain' and state what "
+    + "you'd need — never guess. Never invent numbers, names, dates, citations, prices or links; "
+    + "if a live figure is needed, say it must be verified from a primary source. Be concise and "
+    + "plain. If the question is ambiguous, ask ONE clarifying question. Flag when a decision needs "
+    + "a professional (medical/legal/financial/tax).";
+  var ADVISORS = [
+    { k: "legal", n: "Legal", role: "legal advisor (India)", prof: "a licensed advocate" },
+    { k: "finance", n: "Finance", role: "personal-finance advisor", prof: "a SEBI-registered adviser" },
+    { k: "cfo", n: "CFO", role: "chief financial officer", prof: "a qualified CA" },
+    { k: "cto", n: "CTO", role: "chief technology officer", prof: "a senior architect" },
+    { k: "ciso", n: "CISO", role: "chief information security officer", prof: "a security lead/auditor" },
+    { k: "tax", n: "Tax", role: "tax advisor (India)", prof: "a practising CA" },
+    { k: "dietician", n: "Dietician", role: "dietician", prof: "a registered dietician/doctor" },
+    { k: "coach", n: "Coach", role: "fitness coach", prof: "a certified trainer/physio" },
+    { k: "chef", n: "Chef", role: "chef", prof: "your own taste-test" },
+    { k: "event", n: "Events", role: "event planner", prof: "your vendors in writing" },
+    { k: "intel", n: "Intel", role: "open-source intelligence analyst (ethical/defensive only)", prof: "legal counsel if sensitive" },
+    { k: "career", n: "Career", role: "career coach", prof: "a mentor in your field" }
+  ];
+  var askAgent = "general", lastAskQ = "", lastAskA = "";
+  function askSystem(key) {
+    if (key === "general") return ASK_CONTRACT;
+    var a = null; ADVISORS.forEach(function (x) { if (x.k === key) a = x; });
+    if (!a) return ASK_CONTRACT;
+    return ASK_CONTRACT + " For THIS request you are acting as a " + a.role
+      + ". Give a practical FIRST-draft opinion (not final) and tell me to confirm anything binding with " + a.prof + ".";
+  }
+  function askGw() { return G("gm_ask_gw", "http://localhost:8080"); }
+  var ASK_RED = /aadhaar|\b[2-9]\d{3}\s?\d{4}\s?\d{4}\b|\b[A-Z]{5}\d{4}[A-Z]\b|customer|account\s*no|internal ip/i;
+
+  function askHTML() {
     var h = '<div class="section active">';
-    h += '<div class="cat-t">\u2699 Ops \u2014 the machine that runs the map</div>';
-    h += '<div class="info">' + (due ? due + " ritual(s) due. " : "No rituals due today. ")
-      + (broken ? broken + " habit(s) need a recovery rep." : "No habits in recovery.") + '</div>';
-
-    h += '<div class="cat-t" style="margin-top:14px">\u{1F4C5} Full cadence</div>';
-    RITUALS.forEach(function (r) {
-      var log = cadenceLog(), done = log[r.id] === r.key(new Date());
-      h += '<details class="road-col" style="margin-bottom:8px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">'
-        + esc(r.name) + ' <span style="font-weight:500;color:var(--muted)">\u00b7 ' + esc(r.tag) + ' \u00b7 ' + r.mins + ' min'
-        + (done ? ' \u00b7 \u2713 done this cycle' : '') + '</span></summary><div style="font-size:12px;line-height:1.8;margin-top:8px">';
-      r.steps.forEach(function (s) { h += "\u25a1 " + esc(s) + "<br>"; });
-      h += '</div></details>';
-    });
-
-    h += undoBar();
-    h += '<div style="margin-top:16px">' + healthHTML() + '</div>';
-    h += '<div style="margin-top:16px">' + rulesHTML() + '</div>';
-    h += '<div style="margin-top:16px">' + woopHTML() + '</div>';
-    h += '<div style="margin-top:16px">' + anchorHTML() + '</div>';
-    h += '<div style="margin-top:16px">' + csfHTML() + '</div>';
-    h += '<div style="margin-top:16px">' + aarHTML() + '</div>';
-    h += '<div style="margin-top:16px">' + derivedHTML() + '</div>';
-    h += '<div style="margin-top:16px">' + msHTML() + '</div>';
-    h += '<div style="margin-top:16px">' + pushHTML() + '</div>';
-    h += '<div style="margin-top:16px">' + rapidHTML() + '</div>';
-    h += '<div style="margin-top:16px">' + toolkitHTML() + '</div>';
-    h += '<div style="margin-top:16px">' + glossHTML() + '</div>';
-    h += '<div style="margin-top:16px">' + kitHTML() + '</div>';
-    h += '<div style="margin-top:16px">' + frictionHTML() + '</div>';
-    h += '<div style="margin-top:16px">' + commitHTML() + '</div>';
-    h += '<div style="margin-top:16px">' + doneHTML() + '</div>';
-    h += '<div style="margin-top:16px">' + syncHTML() + '</div>';
-
-    h += '<div class="cat-t" style="margin-top:16px">\u{1F4F1} This device</div>'
-      + '<div class="info">Installed as an app, this opens offline in one tap and keeps its own copy of your data. '
-      + 'The phone is the system of record for daily check-ins; the laptop is for the monthly and quarterly work.</div>'
-      + '<button class="btn btn-p" onclick="gmInstall()">Add to home screen</button>';
+    h += '<div class="cat-t">🤖 Ask — your local AI + advisor army</div>';
+    h += '<div class="info">Ask plainly — answered by <b>your own model</b> through the guardrail gateway, kept honest (no made-up numbers). Pick an advisor for a first-draft expert opinion, then confirm anything big with a real professional.</div>';
+    h += '<div class="chips" style="margin:8px 0"><button class="chip' + (askAgent === "general" ? " on" : "") + '" onclick="gmAskSet(\'general\')">General</button>';
+    ADVISORS.forEach(function (a) { h += '<button class="chip' + (askAgent === a.k ? " on" : "") + '" onclick="gmAskSet(\'' + a.k + '\')">' + esc(a.n) + '</button>'; });
     h += '</div>';
-    return h;
-  }
+    h += '<textarea id="askQ" placeholder="e.g. Right-size my emergency fund and term cover" style="width:100%;min-height:70px;padding:9px 11px;border:1px solid var(--line,#999);border-radius:10px;background:transparent;color:inherit"></textarea>';
+    h += '<div class="row" style="margin-top:8px;display:flex;gap:8px;align-items:center"><button class="btn btn-p" onclick="gmAsk()">Ask</button><span class="info" style="margin:0;padding:4px 8px">🔒 stays on your machine</span></div>';
+    h += '<div id="askOut" class="info" style="display:none;white-space:pre-wrap;margin-top:10px"></div>';
+    h += '<div id="askFb" class="row" style="display:none;gap:8px;align-items:center;margin-top:8px"><span class="info" style="margin:0;padding:0">Useful?</span><button class="chip" onclick="gmAskFb(\'up\')">👍</button><button class="chip" onclick="gmAskFb(\'down\')">👎</button><span class="info" style="margin:0;padding:0" id="askFbMsg"></span></div>';
 
-  /* ── 10. Wire into the existing render loop ─────────────────────── */
-  if (typeof TABS !== "undefined") {
-    var keep = TABS.filter(function (t) { return ["today", "map"].indexOf(t[0]) < 0; });
-    var today = TABS.filter(function (t) { return t[0] === "today"; });
-    var map = TABS.filter(function (t) { return t[0] === "map"; });
-    TABS.length = 0;
-    today.concat([["guide", "\ud83d\udcd8 Guides"], ["stack", "\u{1F3DB} Stack"], ["life", "\u{1F9ED} Life Map"],
-      ["prop", "\u{1F3E0} Property"], ["ops", "\u2699 Ops"]]).concat(map).concat(keep)
-      .forEach(function (t) { TABS.push(t); });
+    h += '<details class="road-col" style="margin-top:14px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">🛡 Check before you share (on-device footprint scan)</summary><div style="margin-top:8px">'
+      + '<div class="info">Paste a bio/profile/message about yourself — scanned on this device for over-shared identifiers. Nothing is sent.</div>'
+      + '<textarea id="guardQ" placeholder="Paste text about yourself…" style="width:100%;min-height:60px;padding:9px 11px;border:1px solid var(--line,#999);border-radius:10px;background:transparent;color:inherit"></textarea>'
+      + '<button class="btn btn-s" onclick="gmGuardScan()" style="margin-top:8px">Scan locally</button><div id="guardOut" style="margin-top:8px"></div></div></details>';
+
+    h += '<details class="road-col" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">◈ Decide the community-proven way (Intel)</summary><div style="margin-top:8px">'
+      + '<div class="info">Paste the top items you collected (Reddit Top/All-time, best-sellers, top videos) — one per line, best first. Get what the crowd agrees on. On-device.</div>'
+      + '<textarea id="intelItems" placeholder="e.g.\nPassed CCSP! Pete Zerger videos + LEARNZAPP\nCCSP: Pete Zerger + LEARNZAPP, Sybex for depth" style="width:100%;min-height:60px;padding:9px 11px;border:1px solid var(--line,#999);border-radius:10px;background:transparent;color:inherit"></textarea>'
+      + '<input id="intelVocab" placeholder="Names you saw repeating (comma-separated) — optional" style="width:100%;margin-top:6px;padding:9px 11px;border:1px solid var(--line,#999);border-radius:10px;background:transparent;color:inherit">'
+      + '<button class="btn btn-s" onclick="gmIntelGo()" style="margin-top:8px">Find the consensus</button><div id="intelOut" style="margin-top:8px"></div></div></details>';
+
+    h += '<details class="road-col" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">⤢ Launch the estate</summary><div style="margin-top:8px" class="info">'
+      + 'With <code>./securax up</code> running: '
+      + '<a href="http://localhost:3000" target="_blank" rel="noopener">Unified chat</a> · '
+      + '<a href="http://localhost:3001" target="_blank" rel="noopener">Private docs (RAG)</a> · '
+      + '<a href="http://localhost:5678" target="_blank" rel="noopener">Automations</a> · '
+      + '<a href="http://localhost:8080/healthz" target="_blank" rel="noopener">Gateway health</a></div></details>';
+
+    h += '<div class="info" style="margin-top:12px">Gateway URL (change only if your estate is on another machine/Tailscale): '
+      + '<input id="askGwIn" value="' + esc(askGw()) + '" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid var(--line,#999);border-radius:8px;background:transparent;color:inherit">'
+      + '<button class="btn btn-s" onclick="gmAskGwSave()" style="margin-top:6px">Save</button></div>';
+    return h + '</div>';
   }
-  var _renderAll = window.renderAll;
-  var _pendingRender = false;
-  window.renderAll = function () {
-    // Never rebuild the DOM out from under someone who is mid-entry.
-    if (isTyping() && !_pendingRender) {
-      _pendingRender = true;
-      document.activeElement.addEventListener("blur", function () {
-        _pendingRender = false; renderAll();
-      }, { once: true });
-      return;
-    }
-    _pendingRender = false;
-    try { _renderAll.apply(this, arguments); } catch (e) { console.log(e); }
-    var box = document.getElementById("sections");
-    if (!box) return;
-    var old = document.getElementById("gmVitals");
-    if (old) old.parentNode.removeChild(old);
-    document.body.insertAdjacentHTML("beforeend", vitalsHTML());
-    if (curTab === "guide") { box.innerHTML = guidesHTML(); }
-    else if (curTab === "ops") { box.innerHTML = opsHTML(); }
-    else if (curTab === "stack") { box.innerHTML = stackHTML(); }
-    else if (curTab === "life") { box.innerHTML = lifeMapHTML(); }
-    else if (curTab === "prop") { box.innerHTML = propHTML(); }
-    else if (curTab === "today") {
-      box.insertAdjacentHTML("afterbegin", exampleWarn() + undoBar() + daily3HTML() + msTodayHTML()
-        + (inRecovery() ? "" : driftHTML() + resHTML()) + oneActionHTML() + (inRecovery() ? "" : pinnedHTML()));
-    }
-    // Inline help: self-explain every specialised term on whatever screen just rendered.
-    try { gmAnnotate(box); } catch (e) { }
+  window.gmAskSet = function (k) { askAgent = k; renderAll(); };
+  window.gmAskGwSave = function () { var v = (document.getElementById("askGwIn").value || "").trim(); if (v) S_("gm_ask_gw", v); renderAll(); };
+  window.gmAsk = function () {
+    var q = (document.getElementById("askQ").value || "").trim(); if (!q) return;
+    var out = document.getElementById("askOut"); out.style.display = "block"; out.textContent = "Thinking… (your local model)";
+    document.getElementById("askFb").style.display = "none";
+    var msgs = [{ role: "system", content: askSystem(askAgent) }, { role: "user", content: q }];
+    fetch(askGw().replace(/\/$/, "") + "/v1/chat/completions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model: "bank-assistant", messages: msgs }) })
+      .then(function (r) { if (!r.ok) { out.textContent = "Blocked or unavailable (HTTP " + r.status + "). If this looked like an attack pattern, that is the guardrail working."; return null; } return r.json(); })
+      .then(function (j) { if (!j) return; lastAskQ = q; lastAskA = (j.choices && j.choices[0].message.content) || JSON.stringify(j); out.textContent = lastAskA; document.getElementById("askFb").style.display = "flex"; })
+      .catch(function () { out.textContent = "Gateway not reachable. Run  ./securax up  first, then try again. (Nothing was sent.) If your estate is on another machine, set the gateway URL below."; });
   };
-
-  /* ── 11. Boot ───────────────────────────────────────────────────── */
-  // An installed PWA is resumed far more often than it is loaded. Pulling only
-  // on "load" is why one device sat on stale state for days.
-  document.addEventListener("visibilitychange", function () {
-    if (document.visibilityState === "visible") gmSyncInit();
-  });
-  window.addEventListener("online", function () { gmSyncInit(); });
-
-  // A service worker cannot complete an interactive Access OTP login.
-  if (navigator.serviceWorker) {
-    navigator.serviceWorker.addEventListener("message", function (e) {
-      if (e.data && e.data.type === "AUTH_EXPIRED") location.reload();
+  window.gmAskFb = function (r) {
+    var fb = G("gm_ask_fb", []); fb.push({ ts: ymd(), rating: r, q: lastAskQ.slice(0, 200), agent: askAgent }); S_("gm_ask_fb", fb);
+    var up = 0; fb.forEach(function (x) { if (x.rating === "up") up++; });
+    document.getElementById("askFbMsg").textContent = (r === "up" ? "Thanks — noted. " : "Logged to improve. ") + "(" + up + "/" + fb.length + " helpful)";
+  };
+  var GPII = [["PAN", /\b[A-Z]{5}\d{4}[A-Z]\b/g], ["Aadhaar-like", /\b[2-9]\d{3}\s?\d{4}\s?\d{4}\b/g], ["Mobile", /(?:\+91[ -]?)?[6-9]\d{9}/g], ["Email", /\b[\w.+-]+@[\w-]+\.[\w.-]+\b/g], ["Card", /\b(?:\d[ -]?){13,19}\b/g]];
+  window.gmGuardScan = function () {
+    var t = document.getElementById("guardQ").value || "", hits = [];
+    GPII.forEach(function (p) { var m = t.match(p[1]); if (m) hits.push(p[0] + " ×" + m.length); });
+    var inj = /ignore (all |previous )?instructions|system prompt|you are now/i.test(t);
+    document.getElementById("guardOut").innerHTML = (hits.length || inj)
+      ? '<div class="info" style="border:1px solid"><b>⚠ Exposed:</b> ' + (esc(hits.join(", ")) || "—") + (inj ? "<br>⚠ Hidden instruction detected in the text." : "") + "<br>Remove these before posting anywhere public.</div>"
+      : '<div class="info"><b>✓ Clean.</b> No high-risk identifiers found in this sample.</div>';
+  };
+  function sigW(score, rank, age, mode) { var pop = Math.log10(Math.max(score, 0) + 10), rw = 1 / (1 + 0.15 * Math.max(rank - 1, 0)); if (mode === "edge") { var f = Math.exp(-Math.max(age, 0) / 180); return pop * rw * (0.3 + 0.7 * f); } return pop * rw * (1 + Math.min(Math.max(age, 0) / 365, 5) * 0.1); }
+  window.gmIntelGo = function () {
+    var lines = (document.getElementById("intelItems").value || "").split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
+    var vocab = (document.getElementById("intelVocab").value || "").split(",").map(function (s) { return s.trim(); }).filter(Boolean);
+    var out = document.getElementById("intelOut");
+    if (!lines.length) { out.innerHTML = '<div class="info">Paste at least a few top items first.</div>'; return; }
+    var tally = {};
+    lines.forEach(function (text, i) {
+      var w = sigW(Math.max(1, lines.length - i), i + 1, 0, "replicate");
+      var names = vocab.length ? vocab : (text.match(/\b[A-Z][a-zA-Z0-9+.&]+(?:\s+[A-Z][a-zA-Z0-9+.&]+){0,2}\b/g) || []);
+      names.forEach(function (name) {
+        if (vocab.length) { var pat = new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, function (c) { return "\\" + c; }).replace(/\s+/g, "\\s+"), "i"); if (!pat.test(text)) return; }
+        var r = tally[name] || (tally[name] = { name: name, w: 0, m: 0 }); r.w += w; r.m++;
+      });
     });
-  }
-
-  window.addEventListener("load", function () {
-    try { curTab = "today"; } catch (e) {}
-    var qc = new URLSearchParams(location.search).get("code");
-    if (qc && msCfg()) { msExchange(qc).then(gmMsPull).catch(function (e) { console.log("[ms]", e.message); }); }
-    else if (msTok()) {
-      var mc = G("gm_ms_cache", null);
-      if (!mc || nowSrv() - mc.at > 1800000) gmMsPull();
-    }
-    // Auto-fill Life Map on first visit (no age + no income = never filled)
-    var l = life();
-    if (!l.age && !l.inc) {
-      gmTplLife();
-    }
-    // Auto-fill example properties on first visit so the Property tab is explorable
-    try { var pr = G("gm_props", null); if ((!pr || !pr.length) && window.P && window.P.example) { if (window.gmTplProp) gmTplProp(); } } catch (e) {}
-    gmSyncInit();
-    if (window.renderAll) renderAll();
-    // Monthly backup nudge, once per month, non-blocking
-    var last = G("gm_backup_seen", "");
-    var mk = new Date().getFullYear() + "-" + (new Date().getMonth() + 1);
-    if (new Date().getDate() <= 7 && last !== mk && !inRecovery()) {
-      S_("gm_backup_seen", mk);
-      setTimeout(function () {
-        if (confirm("Monthly ritual: export a dated JSON backup now?")) {
-          if (window.gmExportBackup) gmExportBackup();
-        }
-      }, 1500);
-    }
-  });
-})();
-
-</script>
-<script>
-/* Failsafe: if the ops layer ever fails to boot, say so loudly instead of silently degrading. */
-window.addEventListener("load",function(){ if(typeof window.gmSyncInit!=="function"){ var b=document.createElement("div"); b.style.cssText="background:#991b1b;color:#fff;padding:10px 14px;font-size:12px;font-weight:700;"; b.textContent="\u26a0 Ops layer failed to load \u2014 tabs, sync and nudges are unavailable. Redeploy the full build (see DEPLOY.md)."; document.body.insertBefore(b,document.body.firstChild); } });
-</script>"); }
-  function ensureGloss() {
-    if (GLOSSARY._terms) return;
-    var all = [];
-    GLOSSARY.forEach(function (e, i) { e.k.forEach(function (t) { all.push({ t: t.replace(/⁠/g, ""), i: i }); }); });
-    all.sort(function (a, b) { return b.t.length - a.t.length; });   // longest first = greedy, correct
-    GLOSSARY._terms = all;
-  }
-  function gmSkip(n) {
-    var p = n.parentNode, SKIP = " A BUTTON INPUT TEXTAREA SELECT OPTION SUMMARY SCRIPT STYLE LABEL ";
-    while (p && p !== document.body) {
-      var tag = (p.tagName || "").toUpperCase();
-      if (SKIP.indexOf(" " + tag + " ") >= 0) return true;
-      var cn = "" + (p.className || "");
-      if (cn.indexOf("gm-term") >= 0 || cn.indexOf("gm-pop") >= 0 || cn.indexOf("gm-q") >= 0) return true;
-      p = p.parentNode;
-    }
-    return false;
-  }
-  function gmAnnotate(root) {
-    if (!root || typeof document.createTreeWalker !== "function") return;
-    ensureGloss();
-    var used = {};
-    GLOSSARY._terms.forEach(function (term) {
-      if (used[term.i]) return;
-      var rx = new RegExp("\\b(" + escRx(term.t) + ")\\b", "i");
-      var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false), node;
-      while ((node = w.nextNode())) {
-        if (used[term.i]) break;
-        if (!node.nodeValue || node.nodeValue.length < term.t.length) continue;
-        if (gmSkip(node)) continue;
-        var m = rx.exec(node.nodeValue);
-        if (!m) continue;
-        var mid = node.splitText(m.index);          // mid starts at the term
-        mid.splitText(m[0].length);                 // mid is now exactly the term
-        var span = document.createElement("span");
-        span.className = "gm-term"; span.setAttribute("tabindex", "0"); span.setAttribute("role", "button");
-        span.setAttribute("title", "What is this? Tap for a plain explanation");
-        span.setAttribute("onclick", "event.stopPropagation();gmHelp(" + term.i + ",this)");
-        span.textContent = mid.nodeValue;
-        var q = document.createElement("sup"); q.className = "gm-q"; q.textContent = "?";
-        span.appendChild(q);
-        mid.parentNode.replaceChild(span, mid);
-        used[term.i] = 1;
-        break;                                       // one chip per term per screen
-      }
-    });
-  }
-  window.gmHelp = function (i, el) {
-    var openPop = document.querySelector(".gm-pop");
-    var toggling = el.nextSibling && el.nextSibling.className === "gm-pop";
-    if (openPop) openPop.parentNode.removeChild(openPop);
-    if (toggling) return;
-    var e = GLOSSARY[i]; if (!e) return;
-    var pop = document.createElement("div"); pop.className = "gm-pop";
-    var h = "<b>" + esc(e.t) + "</b><br>" + esc(e.d);
-    if (e.g) h += '<br><button class="btn btn-s" style="margin-top:6px" onclick="gmFullGuide(\'' + e.g + "',this)\">Show full how-to →</button>";
-    pop.innerHTML = h;
-    el.parentNode.insertBefore(pop, el.nextSibling);
+    var ranked = []; for (var k in tally) if (tally.hasOwnProperty(k)) ranked.push(tally[k]);
+    ranked.sort(function (a, b) { return b.w - a.w; });
+    var tot = ranked.reduce(function (a, r) { return a + r.w; }, 0) || 1;
+    var html = '<div class="info"><b>What the crowd agrees on</b>' + (lines.length < 6 ? ' <span>(thin — add more top items)</span>' : '');
+    ranked.slice(0, 6).forEach(function (r) { html += '<br>• ' + esc(r.name) + ' <span style="opacity:.7">×' + r.m + ' · ' + Math.round(r.w / tot * 100) + '%</span>'; });
+    if (!ranked.length) html += '<br>No clear names — add the names you saw repeating above.';
+    html += '<br><span style="opacity:.7">Based only on what you pasted — not invented.</span></div>';
+    out.innerHTML = html;
   };
-  window.gmFullGuide = function (gid, btn) {
-    var g = null; GUIDES.forEach(function (x) { if (x.id === gid) g = x; });
-    if (!g) return;
-    var box = document.createElement("div"); box.innerHTML = guideCard(g);
-    var det = box.querySelector("details"); if (det) det.open = true;
-    btn.parentNode.appendChild(box); btn.style.display = "none";
-  };
-  // theme-safe styling (uses currentColor so it works in light + dark)
-  (function () {
-    try {
-      var s = document.createElement("style");
-      s.textContent = ".gm-term{border-bottom:1px dotted;cursor:help}"
-        + ".gm-q{font-size:.7em;vertical-align:super;font-weight:700;opacity:.75;margin-left:1px}"
-        + ".gm-pop{border:1px solid;border-radius:10px;padding:10px 12px;margin:8px 0;font-size:12.5px;line-height:1.6;opacity:.96}";
-      (document.head || document.documentElement).appendChild(s);
-    } catch (e) {}
-  })();
 
   /* ── 9. The Ops tab ─────────────────────────────────────────────── */
   function opsHTML() {
@@ -4852,7 +4765,7 @@ window.addEventListener("load",function(){ if(typeof window.gmSyncInit!=="functi
     var today = TABS.filter(function (t) { return t[0] === "today"; });
     var map = TABS.filter(function (t) { return t[0] === "map"; });
     TABS.length = 0;
-    today.concat([["guide", "\ud83d\udcd8 Guides"], ["stack", "\u{1F3DB} Stack"], ["life", "\u{1F9ED} Life Map"],
+    today.concat([["ask", "\ud83e\udd16 Ask"], ["guide", "\ud83d\udcd8 Guides"], ["stack", "\u{1F3DB} Stack"], ["life", "\u{1F9ED} Life Map"],
       ["prop", "\u{1F3E0} Property"], ["ops", "\u2699 Ops"]]).concat(map).concat(keep)
       .forEach(function (t) { TABS.push(t); });
   }
@@ -4874,7 +4787,8 @@ window.addEventListener("load",function(){ if(typeof window.gmSyncInit!=="functi
     var old = document.getElementById("gmVitals");
     if (old) old.parentNode.removeChild(old);
     document.body.insertAdjacentHTML("beforeend", vitalsHTML());
-    if (curTab === "guide") { box.innerHTML = guidesHTML(); }
+    if (curTab === "ask") { box.innerHTML = askHTML(); }
+    else if (curTab === "guide") { box.innerHTML = guidesHTML(); }
     else if (curTab === "ops") { box.innerHTML = opsHTML(); }
     else if (curTab === "stack") { box.innerHTML = stackHTML(); }
     else if (curTab === "life") { box.innerHTML = lifeMapHTML(); }

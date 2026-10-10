@@ -33,6 +33,11 @@ from a licensed human.** 80/20: the agent gets you ~80% of the way at zero cost.
   for anything binding, confirm with the named professional.
 
 ## How to summon one
+**From the Guiding Map (easiest):** open the cockpit → **🤖 Ask** → tap an advisor chip
+(General / Legal / Finance / CFO / CTO / CISO / Tax / Dietician / Coach / Chef / Events / Intel /
+Career) → ask. Answered by your local model; the Ask tab also bundles an on-device footprint
+check (Guard), the community-consensus tool (Intel) and estate launch links.
+
 **From your AI assistant (MCP):** `list_advisors`, then
 `ask_advisor(agent="ciso", question="How do I phase zero-trust at home?")`.
 
