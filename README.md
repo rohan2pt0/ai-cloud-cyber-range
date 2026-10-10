@@ -22,10 +22,9 @@
 A multi-cloud, defence-in-depth **AI security cyber range** for hands-on mastery of secure-AI
 engineering, **AI-for-security (Agentic SOC)**, adversarial ML / red teaming, AI-SPM
 (CNAPP/CSPM/DSPM), guardrail/runtime security, and AI governance — built to demonstrate the
-skills in eight senior AI-security JDs (PwC, EXL, CRISIL, UAE bank, Deloitte, C-DOT, RBI)
-during interviews.
+skills in eight senior AI-security JDs 
 
-Runs **free on an HP Spectre x360** by default (Ollama + Docker + kind), and bursts into
+Runs on a Powerful laptop by default (Ollama + Docker + kind), and bursts into
 **AWS + GCP + Azure** free tiers under a hard **₹2,500/month** ceiling with automated
 kill-switches. Everything is code, tested, and mapped to **NIST AI RMF, ISO/IEC 42001, CSA
 AICM/MAESTRO, Google SAIF, OWASP LLM & Agentic Top 10, and MITRE ATLAS**.
