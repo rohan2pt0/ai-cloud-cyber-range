@@ -1,0 +1,56 @@
+# Kyverno admission policies - the Kubernetes Policy Enforcement Point for the range.
+# Install: helm repo add kyverno https://kyverno.github.io/kyverno && helm install kyverno kyverno/kyverno -n kyverno --create-namespace
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata:
+  name: require-signed-and-hardened
+  annotations:
+    policies.kyverno.io/title: Harden AI workloads
+    policies.kyverno.io/category: Pod Security, Supply Chain
+spec:
+  validationFailureAction: Enforce
+  background: true
+  rules:
+    - name: disallow-latest-tag
+      match: { any: [{ resources: { kinds: [Pod] } }] }
+      validate:
+        message: "Images must be pinned to a digest or explicit tag, not :latest (supply chain / ML-SBOM)."
+        pattern:
+          spec:
+            containers:
+              - image: "!*:latest"
+    - name: require-nonroot-readonly
+      match: { any: [{ resources: { kinds: [Pod] } }] }
+      validate:
+        message: "Containers must run as non-root with a read-only root filesystem and no privilege escalation."
+        pattern:
+          spec:
+            containers:
+              - securityContext:
+                  runAsNonRoot: true
+                  readOnlyRootFilesystem: true
+                  allowPrivilegeEscalation: false
+    - name: require-resource-limits
+      match: { any: [{ resources: { kinds: [Pod] } }] }
+      validate:
+        message: "CPU/memory limits are mandatory (LLM10 unbounded-consumption containment)."
+        pattern:
+          spec:
+            containers:
+              - resources:
+                  limits: { memory: "?*", cpu: "?*" }
+---
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata: { name: restrict-image-registries }
+spec:
+  validationFailureAction: Enforce
+  rules:
+    - name: allowed-registries-only
+      match: { any: [{ resources: { kinds: [Pod] } }] }
+      validate:
+        message: "Only images from approved registries (ghcr.io, registry.k8s.io, docker.io/vulnbank, *.dkr.ecr.*) are permitted."
+        foreach:
+          - list: "request.object.spec.containers"
+            pattern:
+              image: "ghcr.io/* | registry.k8s.io/* | docker.io/vulnbank/* | *.dkr.ecr.*.amazonaws.com/* | *.pkg.dev/*"

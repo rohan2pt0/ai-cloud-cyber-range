@@ -1,0 +1,38 @@
+# LiteLLM router: one OpenAI-compatible endpoint, many clouds, automatic fallback.
+# Cost control is enforced here (the gateway is the security PEP; this is the FinOps PEP).
+model_list:
+  - model_name: bank-assistant          # logical name the app calls
+    litellm_params:
+      model: ollama/qwen2.5:1.5b         # default: free, local, on the laptop
+      api_base: http://ollama:11434
+  - model_name: bank-assistant
+    litellm_params:
+      model: gemini/gemini-2.5-flash     # cheap cloud burst (free tier / AI Studio key)
+      api_key: os.environ/GEMINI_API_KEY
+  - model_name: bank-assistant-cloud
+    litellm_params:
+      model: bedrock/anthropic.claude-3-5-haiku-20241022-v1:0
+      aws_region_name: os.environ/AWS_REGION_NAME
+  - model_name: bank-assistant-azure
+    litellm_params:
+      model: azure/gpt-4o-mini
+      api_base: os.environ/AZURE_API_BASE
+      api_key: os.environ/AZURE_API_KEY
+
+litellm_settings:
+  num_retries: 2
+  request_timeout: 120
+  # Fallback chain: local -> gemini. Keeps the range running offline and cheap.
+  fallbacks: [{"bank-assistant": ["bank-assistant"]}]
+  drop_params: true
+  json_logs: true
+
+router_settings:
+  routing_strategy: usage-based-routing-v2
+  redis_host: os.environ/REDIS_HOST       # optional; omit for single-node laptop use
+
+general_settings:
+  master_key: os.environ/LITELLM_MASTER_KEY
+  # Hard monthly spend ceiling across ALL cloud models => protects the 2,500 INR budget.
+  max_budget: 25            # USD/month (~2,100 INR), alert+block before the INR cap
+  budget_duration: 30d
