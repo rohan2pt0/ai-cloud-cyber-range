@@ -56,7 +56,12 @@ URLS
       if [ "$sub" = "down" ]; then docker compose -f docker-compose.yml -f full-stack.yml --profile full down; C "full-scale services stopped.";
       else docker compose -f docker-compose.yml -f full-stack.yml --profile full up -d; C "Mattermost (ChatOps): http://localhost:8065  —  heavy SOC: see docs/securax/10-FULL-STACK.md"; fi )
     ;;
+  learn)
+    C "Self-improvement loop: red-team -> capture gaps -> AI proposes fixes (human ships them)"
+    python3 "$ROOT/learning/self_improve.py" ${2:+--ai}
+    C "Antifragility (past failures now defended):"; python3 "$ROOT/learning/antifragile.py" verify
+    ;;
   mcp)   exec python3 "$ROOT/mcp/securax_mcp.py" ;;
   down)  ( cd "$ROOT/local/compose" && docker compose --profile ai down ) ; C "stopped." ;;
-  *) echo "usage: ./securax [up|status|demo|open|doctor|mcp|full up|full down|down]"; exit 1 ;;
+  *) echo "usage: ./securax [up|status|demo|learn|open|doctor|mcp|full up|full down|down]"; exit 1 ;;
 esac
