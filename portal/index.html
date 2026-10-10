@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en" data-theme="auto">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SecuRAX Command Center</title>
+<meta name="description" content="SecuRAX — a lifelong, zero-investment, vendor-agnostic foundation unifying AI security, SecOps, a hybrid-AI brain, a life-OS, and GRC.">
+<!--
+  SecuRAX portal — self-documenting command center.
+  Zero dependencies, zero build, zero network: open this file directly (file://) and it works.
+  All CONTENT lives in securax.data.js; this file is only PRESENTATION (separation of concerns).
+  Theming: tokens on :root, dark mode via prefers-color-scheme AND a manual toggle (persisted).
+-->
+<style>
+  /* ---- Design tokens (one place to retheme the whole portal) ---- */
+  :root{
+    --bg:#f7f8fa; --surface:#ffffff; --surface-2:#eef1f5; --border:#dfe3e8;
+    --text:#1b1f24; --muted:#5b6672; --accent:#2f6feb; --accent-weak:#e8f0fe;
+    --red:#e5484d; --amber:#f5a623; --green:#30a46c;
+    --radius:14px; --shadow:0 1px 3px rgba(20,30,50,.08),0 8px 24px rgba(20,30,50,.06);
+    --maxw:1100px; --gutter:16px;
+    --font:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Inter,Helvetica,Arial,sans-serif;
+    --mono:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+  }
+  @media (prefers-color-scheme:dark){ :root:not([data-theme="light"]){
+    --bg:#0f1216; --surface:#171b21; --surface-2:#1f242c; --border:#2a313b;
+    --text:#e6e9ee; --muted:#9aa5b1; --accent:#5b8bff; --accent-weak:#1a2740;
+  }}
+  :root[data-theme="dark"]{
+    --bg:#0f1216; --surface:#171b21; --surface-2:#1f242c; --border:#2a313b;
+    --text:#e6e9ee; --muted:#9aa5b1; --accent:#5b8bff; --accent-weak:#1a2740;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{margin:0;background:var(--bg);color:var(--text);font-family:var(--font);
+       line-height:1.55;-webkit-font-smoothing:antialiased}
+  a{color:var(--accent);text-decoration:none} a:hover{text-decoration:underline}
+  code{font-family:var(--mono);font-size:.86em;background:var(--surface-2);
+       padding:.1em .4em;border-radius:6px}
+  .wrap{max-width:var(--maxw);margin:0 auto;padding:0 var(--gutter)}
+
+  /* ---- Header / nav ---- */
+  header{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 88%,transparent);
+         backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+  .bar{display:flex;align-items:center;gap:14px;padding:12px var(--gutter);max-width:var(--maxw);margin:0 auto;flex-wrap:wrap}
+  .brand{font-weight:800;letter-spacing:.3px;font-size:1.15rem;display:flex;align-items:center;gap:8px}
+  .brand .dot{width:10px;height:10px;border-radius:50%;background:var(--accent);box-shadow:0 0 0 4px var(--accent-weak)}
+  nav.links{display:flex;gap:4px;flex-wrap:wrap;margin-left:auto}
+  nav.links a{color:var(--muted);padding:6px 10px;border-radius:8px;font-size:.9rem;font-weight:600}
+  nav.links a:hover{color:var(--text);background:var(--surface-2);text-decoration:none}
+  .toggle{cursor:pointer;border:1px solid var(--border);background:var(--surface);color:var(--text);
+          border-radius:8px;padding:6px 10px;font-size:.85rem;font-weight:600}
+
+  /* ---- Hero ---- */
+  .hero{padding:48px 0 28px}
+  .hero h1{font-size:clamp(1.9rem,4.5vw,3rem);margin:.1em 0;line-height:1.1}
+  .hero .exp{color:var(--muted);font-weight:600;letter-spacing:.4px}
+  .hero .tag{font-size:1.1rem;margin:.6em 0 1em;max-width:62ch}
+  .north{background:var(--surface);border:1px solid var(--border);border-left:4px solid var(--accent);
+         border-radius:var(--radius);padding:16px 18px;max-width:80ch;box-shadow:var(--shadow)}
+  .north b{color:var(--accent)}
+
+  /* ---- Sections ---- */
+  section{padding:34px 0;border-top:1px solid var(--border)}
+  h2{font-size:1.5rem;margin:0 0 4px} .lead{color:var(--muted);margin:0 0 20px;max-width:70ch}
+  .grid{display:grid;gap:14px}
+  .g-cards{grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);
+        padding:16px;box-shadow:var(--shadow)}
+  .card h3{margin:0 0 6px;font-size:1.05rem;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .card p{margin:.3em 0;color:var(--muted);font-size:.92rem}
+  .pill{display:inline-block;font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:999px;
+        background:var(--accent-weak);color:var(--accent);text-transform:uppercase;letter-spacing:.4px}
+  .pill.built{background:#e6f6ee;color:#1a7f45} .pill.seed{background:#fff2d9;color:#9a6700}
+  :root[data-theme="dark"] .pill.built,:root:not([data-theme="light"]) .pill.built{background:#143324;color:#58d08b}
+  :root[data-theme="dark"] .pill.seed,:root:not([data-theme="light"]) .pill.seed{background:#36290f;color:#f3c164}
+  .seed{font-family:var(--mono);font-size:.78rem;color:var(--muted)}
+
+  /* data tiers */
+  .tiers{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+  .tier{border-radius:var(--radius);padding:16px;border:1px solid var(--border);background:var(--surface)}
+  .tier .dot{width:12px;height:12px;border-radius:50%;display:inline-block;margin-right:8px;vertical-align:middle}
+
+  /* principles */
+  .prin{display:grid;gap:10px;grid-template-columns:repeat(auto-fill,minmax(300px,1fr))}
+  .prin .card h3{font-size:.98rem} .prin code{font-weight:700}
+
+  /* catalog */
+  .toolbar{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:16px}
+  .toolbar input,.toolbar select{font:inherit;padding:8px 10px;border-radius:9px;border:1px solid var(--border);
+        background:var(--surface);color:var(--text);min-width:150px}
+  table{width:100%;border-collapse:collapse;font-size:.9rem}
+  thead th{text-align:left;color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.5px;
+        padding:8px 10px;border-bottom:1px solid var(--border);position:sticky}
+  tbody td{padding:9px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  tbody tr:hover{background:var(--surface-2)}
+  .grp{font-weight:800;color:var(--accent);padding-top:16px}
+  .ph{font-family:var(--mono);font-weight:700;font-size:.78rem;padding:1px 7px;border-radius:6px;background:var(--surface-2)}
+  .ph0{color:var(--green)} .ph1{color:var(--amber)} .ph2{color:var(--accent)}
+  .alt{color:var(--muted);font-size:.84rem}
+
+  /* roadmap */
+  .road{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(200px,1fr))}
+  .road .card{border-top:3px solid var(--accent)}
+  .stage{font-family:var(--mono);font-size:.72rem;font-weight:700;color:var(--accent);letter-spacing:1px}
+  .road ul{margin:.5em 0 0;padding-left:18px} .road li{font-size:.86rem;color:var(--muted);margin:.2em 0}
+  .trigger{margin-top:10px;font-size:.8rem;color:var(--text)} .trigger b{color:var(--amber)}
+  .cost{float:right;font-size:.74rem;font-weight:700;color:var(--green)}
+
+  /* compliance */
+  .comp{display:grid;gap:8px;grid-template-columns:repeat(auto-fill,minmax(320px,1fr))}
+  .comp .card{padding:12px 14px} .comp h3{font-size:.92rem;margin-bottom:2px}
+
+  footer{padding:30px 0 50px;color:var(--muted);font-size:.85rem;border-top:1px solid var(--border)}
+  .docs a{display:inline-block;margin:4px 10px 4px 0;font-weight:600}
+  @media (max-width:560px){ nav.links{display:none} .cost{float:none;display:block} }
+</style>
+</head>
+<body>
+<header>
+  <div class="bar">
+    <div class="brand"><span class="dot"></span> SecuRAX</div>
+    <nav class="links" aria-label="Sections">
+      <a href="#pillars">Pillars</a>
+      <a href="#tiers">Data tiers</a>
+      <a href="#principles">Principles</a>
+      <a href="#catalog">Catalog</a>
+      <a href="#roadmap">Roadmap</a>
+      <a href="#compliance">Compliance</a>
+    </nav>
+    <button class="toggle" id="themeBtn" aria-label="Toggle colour theme">◐ Theme</button>
+  </div>
+</header>
+
+<main class="wrap">
+  <!-- HERO -->
+  <div class="hero">
+    <div class="exp" id="exp"></div>
+    <h1 id="name">SecuRAX Command Center</h1>
+    <p class="tag" id="tag"></p>
+    <div class="north"><b>North-star:</b> <span id="north"></span></div>
+  </div>
+
+  <!-- PILLARS -->
+  <section id="pillars">
+    <h2>The five pillars</h2>
+    <p class="lead">One estate, five faces, one shared spine. Each pillar is independently useful; <span class="pill built">built</span> already exists in the repo, <span class="pill seed">seed</span> has a working start plus a roadmap.</p>
+    <div class="grid g-cards" id="pillarGrid"></div>
+  </section>
+
+  <!-- DATA TIERS -->
+  <section id="tiers">
+    <h2>Data classification — the router's law</h2>
+    <p class="lead">Nothing moves until it is classified. This single control is enforced <em>before</em> any processing — the most important rule for protecting banking-grade data.</p>
+    <div class="tiers" id="tierGrid"></div>
+  </section>
+
+  <!-- PRINCIPLES -->
+  <section id="principles">
+    <h2>Principles (the constitution)</h2>
+    <p class="lead">Every decision obeys these, in order — lower number wins a conflict. When unsure, check against them top-to-bottom; the first “no” tells you what to change.</p>
+    <div class="prin" id="prinGrid"></div>
+  </section>
+
+  <!-- CATALOG -->
+  <section id="catalog">
+    <h2>Capability catalog — never re-research</h2>
+    <p class="lead">Find the capability, use the <b>Primary</b> tool. Alternatives exist only so you’re never locked in. <span class="ph ph0">phase 0</span> = free, laptop, now.</p>
+    <div class="toolbar">
+      <input id="search" type="search" placeholder="Filter capability / tool / standard…" aria-label="Filter catalog">
+      <select id="phaseSel" aria-label="Filter by phase">
+        <option value="">All phases</option>
+        <option value="0">Phase 0 (free/now)</option>
+        <option value="1">Phase 1</option>
+        <option value="2">Phase 2+</option>
+      </select>
+      <span class="alt" id="count"></span>
+    </div>
+    <table>
+      <thead><tr><th>Capability</th><th>Primary</th><th>Alternatives</th><th>Phase</th><th>Satisfies</th></tr></thead>
+      <tbody id="catBody"></tbody>
+    </table>
+  </section>
+
+  <!-- ROADMAP -->
+  <section id="roadmap">
+    <h2>Roadmap — crawl → walk → run → fly</h2>
+    <p class="lead">Gradual, end-in-mind. Do not jump ahead of the <b>trigger</b>. Start cost is ₹0; you grow the same estate and never rebuild it.</p>
+    <div class="road" id="roadGrid"></div>
+  </section>
+
+  <!-- COMPLIANCE -->
+  <section id="compliance">
+    <h2>Compliance &amp; standards coverage</h2>
+    <p class="lead">Mapped <em>before</em> building (compliance-by-design). Verify primary sources before client/production use.</p>
+    <div class="comp" id="compGrid"></div>
+  </section>
+</main>
+
+<footer class="wrap">
+  <div class="docs">
+    <strong>Deep dives:</strong>
+    <a href="../docs/securax/00-OVERVIEW.md">Overview</a>
+    <a href="../docs/securax/01-PRINCIPLES.md">Principles</a>
+    <a href="../docs/securax/02-ARCHITECTURE.md">Architecture</a>
+    <a href="../docs/securax/03-CAPABILITY-CATALOG.md">Catalog</a>
+    <a href="../docs/securax/04-COMPLIANCE-MAP.md">Compliance</a>
+    <a href="../docs/securax/05-ROADMAP.md">Roadmap</a>
+  </div>
+  <p>SecuRAX · open-source, vendor-agnostic, antifragile · start at ₹0, scale to MSSP · content in <code>portal/securax.data.js</code>.</p>
+</footer>
+
+<script src="securax.data.js"></script>
+<script>
+  // ---- Theme toggle (localStorage-persisted; guarded so it never breaks the page) ----
+  (function(){
+    var root=document.documentElement, KEY="securax-theme";
+    try{ var saved=localStorage.getItem(KEY); if(saved) root.setAttribute("data-theme",saved); }catch(e){}
+    document.getElementById("themeBtn").addEventListener("click",function(){
+      var cur=root.getAttribute("data-theme");
+      var next=cur==="dark"?"light":(cur==="light"?"auto":"dark"); // cycle dark→light→auto
+      root.setAttribute("data-theme",next);
+      try{ next==="auto"?localStorage.removeItem(KEY):localStorage.setItem(KEY,next); }catch(e){}
+    });
+  })();
+
+  // ---- Render helpers (tiny, no framework) ----
+  var S = window.SECURAX || {}, $=function(id){return document.getElementById(id)};
+  function el(tag,cls,html){var n=document.createElement(tag); if(cls)n.className=cls; if(html!=null)n.innerHTML=html; return n;}
+  function esc(s){return String(s==null?"":s).replace(/[&<>]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c];});}
+
+  // Hero
+  if(S.meta){ $("exp").textContent=S.meta.expansion; $("name").textContent=S.meta.name+" Command Center";
+    $("tag").textContent=S.meta.tagline; $("north").textContent=S.meta.northStar; }
+
+  // Pillars
+  (S.pillars||[]).forEach(function(p){
+    var c=el("div","card");
+    c.appendChild(el("h3",null, esc(p.id)+" · "+esc(p.name)+' <span class="pill '+p.status+'">'+esc(p.status)+'</span>'));
+    c.appendChild(el("p",null,"<b>"+esc(p.theme)+"</b>"));
+    c.appendChild(el("p",null,esc(p.desc)));
+    c.appendChild(el("p","seed","Seed: "+esc(p.seed)));
+    $("pillarGrid").appendChild(c);
+  });
+
+  // Data tiers
+  (S.dataTiers||[]).forEach(function(t){
+    var c=el("div","tier");
+    c.appendChild(el("h3",null,'<span class="dot" style="background:'+t.color+'"></span>'+esc(t.tier)+" — "+esc(t.label)));
+    c.appendChild(el("p",null,"<b>"+esc(t.rule)+"</b>"));
+    c.appendChild(el("p","alt",esc(t.examples)));
+    $("tierGrid").appendChild(c);
+  });
+
+  // Principles
+  (S.principles||[]).forEach(function(p){
+    var c=el("div","card");
+    c.appendChild(el("h3",null,"<code>"+esc(p.id)+"</code> "+esc(p.title)));
+    c.appendChild(el("p",null,esc(p.gist)));
+    $("prinGrid").appendChild(c);
+  });
+
+  // Catalog (with live filter)
+  var flat=[]; (S.catalog||[]).forEach(function(g){ g.items.forEach(function(it){ flat.push(Object.assign({group:g.group},it)); }); });
+  function renderCat(){
+    var q=($("search").value||"").toLowerCase(), ph=$("phaseSel").value, body=$("catBody"), lastGrp=null, shown=0;
+    body.innerHTML="";
+    flat.forEach(function(it){
+      var hay=(it.cap+" "+it.primary+" "+it.alt+" "+it.std+" "+it.group).toLowerCase();
+      if(q && hay.indexOf(q)<0) return;
+      // phase filter: ""=all, "0"=phase 0, "1"=phase 1, "2"=phase 2 or higher
+      if(ph==="0" && it.phase!==0) return;
+      if(ph==="1" && it.phase!==1) return;
+      if(ph==="2" && it.phase<2) return;
+      if(it.group!==lastGrp){ lastGrp=it.group;
+        var gr=el("tr"); var gd=el("td","grp",esc(it.group)); gd.colSpan=5; gr.appendChild(gd); body.appendChild(gr); }
+      var tr=el("tr");
+      tr.appendChild(el("td",null,"<strong>"+esc(it.cap)+"</strong>"));
+      tr.appendChild(el("td",null,esc(it.primary)));
+      tr.appendChild(el("td","alt",esc(it.alt)));
+      tr.appendChild(el("td",null,'<span class="ph ph'+(it.phase>=2?2:it.phase)+'">P'+esc(it.phase)+'</span>'));
+      tr.appendChild(el("td","alt",esc(it.std)));
+      body.appendChild(tr); shown++;
+    });
+    $("count").textContent=shown+" capabilities";
+  }
+  $("search").addEventListener("input",renderCat); $("phaseSel").addEventListener("change",renderCat); renderCat();
+
+  // Roadmap
+  (S.roadmap||[]).forEach(function(r){
+    var c=el("div","card");
+    c.appendChild(el("div",null,'<span class="stage">'+esc(r.stage)+'</span><span class="cost">'+esc(r.cost)+'</span>'));
+    c.appendChild(el("h3",null,esc(r.phase)+" · "+esc(r.title)));
+    var ul=el("ul"); r.items.forEach(function(i){ ul.appendChild(el("li",null,esc(i))); }); c.appendChild(ul);
+    if(r.trigger && r.trigger!=="—") c.appendChild(el("div","trigger","<b>Trigger to advance:</b> "+esc(r.trigger)));
+    $("roadGrid").appendChild(c);
+  });
+
+  // Compliance
+  (S.compliance||[]).forEach(function(f){
+    var c=el("div","card");
+    c.appendChild(el("h3",null,esc(f.fw)));
+    c.appendChild(el("p",null,esc(f.how)));
+    $("compGrid").appendChild(c);
+  });
+</script>
+</body>
+</html>

@@ -1,4 +1,21 @@
-# AI Cloud Cyber Range
+# SecuRAX — Robust · Adaptive · eXcellence-driven
+
+> **SecuRAX** is the umbrella: one lifelong, **zero-investment-to-start**, vendor-agnostic,
+> antifragile foundation that unifies AI security, AI-for-security (SecOps), a hybrid-AI brain,
+> a life-OS, and governance/compliance — starting on one laptop and scaling to an MSSP, never
+> rebuilt from scratch. This repository is **Pillar 1 (the AI Security Range)** and the home of
+> the shared foundation.
+>
+> **Start here:** open [`portal/index.html`](portal/index.html) (the self-documenting command
+> center — no install, just open it) and read the foundation in [`docs/securax/`](docs/securax/):
+> [Overview](docs/securax/00-OVERVIEW.md) · [Principles](docs/securax/01-PRINCIPLES.md) ·
+> [Architecture](docs/securax/02-ARCHITECTURE.md) ·
+> [Capability Catalog](docs/securax/03-CAPABILITY-CATALOG.md) ·
+> [Compliance Map](docs/securax/04-COMPLIANCE-MAP.md) · [Roadmap](docs/securax/05-ROADMAP.md).
+
+---
+
+# AI Cloud Cyber Range (SecuRAX · Pillar 1)
 
 A multi-cloud, defence-in-depth **AI security cyber range** for hands-on mastery of secure-AI
 engineering, **AI-for-security (Agentic SOC)**, adversarial ML / red teaming, AI-SPM
