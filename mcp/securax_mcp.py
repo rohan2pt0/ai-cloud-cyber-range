@@ -21,6 +21,7 @@ from __future__ import annotations
 import importlib.util
 import io
 import json
+import os
 import pathlib
 import sys
 import traceback
@@ -48,6 +49,7 @@ for name, path in {
     "opsec": "personal-rnd/self_opsec.py",
     "antifragile": "learning/antifragile.py",
     "assistant": "assistant/enhance.py",
+    "intel": "intel/global_intel.py",
 }.items():
     try:
         _mods[name] = _load(name, path)
@@ -173,6 +175,23 @@ def t_assistant_feedback(question: str, answer: str, rating: str) -> str:
     return json.dumps(_mods["assistant"].record_feedback(question, answer, rating), indent=2)
 
 
+def t_global_intel(goal: str, items_json: str, mode: str = "replicate", vocabulary: str = "",
+                   profile_json: str = "", opportunities_json: str = "", volume: str = "") -> str:
+    """Community-signal decision engine. Paste the high-ranked items YOU collected (Reddit
+    Top/All-time, Amazon best-seller/BIFL, top YouTube videos) as a JSON list; get the
+    consensus, your capability-fit, the adoption-curve timing (edge mode) and a worst-case plan.
+    Grounded only in the data you pass — it never invents rankings."""
+    gi = _mods["intel"]
+    items = json.loads(items_json) if items_json.strip() else []
+    if isinstance(items, dict):
+        items = items.get("items", [items])
+    vocab = [v.strip() for v in vocabulary.split(",") if v.strip()] or None
+    profile = json.loads(profile_json) if profile_json.strip() else None
+    opps = json.loads(opportunities_json) if opportunities_json.strip() else None
+    vol = [float(x) for x in volume.split(",") if x.strip()] or None
+    return json.dumps(gi.decide(goal, items, mode, vocab, profile, opps, vol), indent=2)
+
+
 # --------------------------------------------------------------------------- #
 # Tool registry (name -> (fn, description, inputSchema))
 # --------------------------------------------------------------------------- #
@@ -224,6 +243,14 @@ TOOLS: dict[str, tuple] = {
     "assistant_feedback": (t_assistant_feedback,
         "Record thumbs up/down on an answer so the system improves from real use (down = a lesson for review).",
         _schema({"question": _STR, "answer": _STR, "rating": _STR}, ["question", "rating"])),
+    "global_intel": (t_global_intel,
+        "Decide the community-proven way: paste ranked items you collected (Reddit Top/All-time, "
+        "Amazon best-seller/BIFL, top videos) -> consensus + your capability-fit + adoption-curve "
+        "timing + worst-case plan. mode='replicate' to copy a proven playbook, 'edge' to get in "
+        "before it commoditises. Grounded only in your data; never invents rankings.",
+        _schema({"goal": _STR, "items_json": _STR, "mode": _STR, "vocabulary": _STR,
+                 "profile_json": _STR, "opportunities_json": _STR, "volume": _STR},
+                ["goal", "items_json"])),
 }
 
 

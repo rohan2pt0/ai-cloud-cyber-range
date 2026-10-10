@@ -55,6 +55,7 @@ makes it an *ecosystem* and not five disconnected projects.
 | Go full-scale (opt-in, turn-off-able) | [`10-FULL-STACK.md`](10-FULL-STACK.md) |
 | How failures become strengths (Kaizen/SI) | [`11-KAIZEN.md`](11-KAIZEN.md) |
 | Expert answers without prompt-engineering (the "Ask" design) | [`12-INTELLIGENT-UX.md`](12-INTELLIGENT-UX.md) |
+| Decide the community-proven way (Reddit/Amazon-style intelligence) | [`13-GLOBAL-INTELLIGENCE.md`](13-GLOBAL-INTELLIGENCE.md) |
 | Start using it today | [`../../GETTING-STARTED.md`](../../GETTING-STARTED.md) |
 
 ## The three promises this foundation keeps
