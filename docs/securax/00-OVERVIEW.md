@@ -58,6 +58,7 @@ makes it an *ecosystem* and not five disconnected projects.
 | Decide the community-proven way (Reddit/Amazon-style intelligence) | [`13-GLOBAL-INTELLIGENCE.md`](13-GLOBAL-INTELLIGENCE.md) |
 | The daily cockpit (life-OS PWA, sovereign sync) | [`14-GUIDING-MAP.md`](14-GUIDING-MAP.md) |
 | Never hit a usage limit (cost, models, free compute) | [`15-COST-AND-MODELS.md`](15-COST-AND-MODELS.md) |
+| Summon a specialist advisor (first-draft opinion) | [`16-AGENTS.md`](16-AGENTS.md) |
 | Start using it today | [`../../GETTING-STARTED.md`](../../GETTING-STARTED.md) |
 
 ## The three promises this foundation keeps
