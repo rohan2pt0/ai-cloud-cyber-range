@@ -42,21 +42,39 @@ sovereign equivalents. No secrets or PII live in any shipped file; CI enforces i
 The problem a PWA has: each device keeps its own `localStorage`, so something always-reachable
 must be the shared rendezvous. The estate solution, in order of preference:
 
-1. **Estate sync endpoint + Tailscale (recommended).** A small `/sync` service on the gateway,
-   backed by the **Postgres you already run**, stores one per-user document. The app's existing
-   **per-key timestamp merge** (with an integrity guard that refuses a merge which would halve
-   your data, and a server-anchored clock) talks to it over plain HTTPS. Reach it over
-   **Tailscale** (WireGuard mesh, free personal tier): every device gets a private IP, the
-   endpoint is **never exposed to the internet**, access is identity-based. Configure it in
-   **Ops → Cross-device sync** (estate URL + device token + row id).
-   Contract the endpoint implements:
+1. **Estate sync endpoint + Tailscale (shipped).** The `estate-sync` service
+   (`apps/estate-sync`, in every compose profile) stores one per-user document in a **SQLite
+   file on the `estatesync` volume** — your box only, no third party, zero external DB to go
+   wrong. It is deliberately *not* on the gateway: the gateway is a read-only LLM policy
+   enforcement point, and a writable state store has no business sharing that trust boundary.
+   The app's **per-key timestamp merge** (integrity guard that refuses a merge which would halve
+   your data; server-anchored clock) talks to it over plain fetch, and the **server merges
+   per-key too** — so even if two devices race or a stale device pushes a whole blob, a field
+   is overwritten only by a *newer* copy and existing keys are never silently dropped.
+   Reach it over **Tailscale** (WireGuard mesh, free personal tier): every device gets a private
+   IP, the endpoint is **never exposed to the internet**, access is identity-based.
+
+   **Set it up (5 minutes):**
+   ```bash
+   # 1. generate one random device token per device, put them in local/compose/.env:
+   #    SYNC_TOKENS=$(openssl rand -hex 24),$(openssl rand -hex 24)
+   # 2. let other devices reach it — set SYNC_BIND to THIS host's Tailscale IP:
+   #    SYNC_BIND=100.x.y.z        (localhost-only by default; never 0.0.0.0 unless you mean LAN)
+   # 3. bring it up:  docker compose --profile ai up -d estate-sync
+   # 4. install Tailscale on the host + each device, same tailnet
    ```
-   GET  {base}/state?user=<id>   -> { payload:{k:v}, meta:{k:ts} }   (404 if none yet)
-   PUT  {base}/state?user=<id>   body { payload, meta }              (stores)
-   Auth: Authorization: Bearer <device token>
+   Then in the PWA, **Ops → Cross-device sync**: URL `http://<tailscale-ip>:8089/sync`,
+   paste the device token, pick a row id (anything, same on every device).
+   Contract the endpoint implements (`apps/estate-sync/syncsvc/main.py`):
+   ```
+   HEAD {base}/                  -> 200  (its Date header anchors the client clock)
+   GET  {base}/state?user=<id>   -> { payload:{k:v}, meta:{k:ts}, updated_at }  (404 if none)
+   PUT  {base}/state?user=<id>   body { payload, meta, updated_at }  -> server-side merged
+   Auth: Authorization: Bearer <device token>   (fail-closed: no SYNC_TOKENS -> 503, refuses all)
    ```
 2. **CouchDB + PouchDB** — if you later want bulletproof multi-master conflict handling (MVCC).
-   A *new* component, added only if the per-key merge proves insufficient.
+   A *new* component, added only if the per-key merge proves insufficient. For a single human
+   on a handful of devices, the shipped SQLite + dual-side merge is already ample.
 3. **Syncthing** — for the dated JSON backups (P2P, no server), not for live state.
 
 **The one real-world choice:** any option needs an always-on reachable host, since a laptop
@@ -66,8 +84,8 @@ is up," which matches the FREEZE rule below (phone = daily, laptop = monthly/qua
 sync code is host-agnostic; you choose where it runs. **Export/Import JSON is always the
 backstop** — the dated backups are your real version history.
 
-> Sync is Phase 3 of the merge — the transport is wired in the app; the estate endpoint lands
-> next, so the UI shows sync as configurable-but-dormant until then.
+> Sync is **live** (Phase 3 done): the `estate-sync` service implements the contract above, with
+> server-side per-key merge and fail-closed Bearer auth, covered by `apps/estate-sync/tests`.
 
 ## The merge roadmap
 - **Phase 1 (done):** the cockpit lives in the estate, Supabase stripped, PII/secret gate +
@@ -76,7 +94,8 @@ backstop** — the dated backups are your real version history.
   guardrail gateway), **Intel** (Global Intelligence, doc 13), **Guard** (guardrail PII
   redaction), **Launch** (estate). *(These were in the earlier lightweight Guiding Map and
   rejoin here as first-class tabs.)*
-- **Phase 3:** the sovereign sync endpoint + Tailscale, host-agnostic.
+- **Phase 3 (done):** the sovereign `estate-sync` endpoint (SQLite, server-side merge,
+  fail-closed Bearer auth) + Tailscale, host-agnostic.
 
 ## Build & test discipline
 `ops.js` is the source; `index.html` is the built artifact. CI runs a **drift guard**

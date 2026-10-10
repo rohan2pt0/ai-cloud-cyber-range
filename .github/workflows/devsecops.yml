@@ -108,6 +108,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build gateway image
         run: docker build -t vulnbank/llm-gateway:ci apps/llm-gateway
+      - name: Build estate-sync image (sovereign cross-device state store)
+        run: docker build -t securax/estate-sync:ci apps/estate-sync
       - name: Trivy image scan (vuln + secret + misconfig)
         uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0 (SHA-pinned; CVE-2026-33634 tag hijack)
         with:

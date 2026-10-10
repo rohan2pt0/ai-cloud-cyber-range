@@ -6,6 +6,8 @@ fails the build if any service mounts one host path at a target that lives insid
 own mount targets, and checks a few other "won't start" footguns.
 """
 import pathlib
+import re
+
 import yaml
 
 COMPOSE = pathlib.Path(__file__).resolve().parents[1] / "docker-compose.yml"
@@ -52,3 +54,42 @@ def test_build_fields_are_strings_or_mappings():
     for name, svc in (data.get("services") or {}).items():
         if "build" in svc:
             assert isinstance(svc["build"], (str, dict)), f"{name}.build must be a string or mapping"
+
+
+def test_optional_feature_envs_never_block_startup():
+    """An OPTIONAL service must not use a mandatory `${VAR:?...}` env: one missing value in a
+    user's old .env would make `compose up` fail for the WHOLE stack. Optional features must
+    degrade (fail-closed in the service), not refuse to start. Core secrets may stay mandatory."""
+    raw = COMPOSE.read_text()
+    core_required = {"POSTGRES_PASSWORD", "GRAFANA_PASSWORD", "MM_DB_PASSWORD"}
+    offenders = re.findall(r"\$\{([A-Z0-9_]+):\?", raw)
+    bad = [v for v in offenders if v not in core_required]
+    assert not bad, f"optional-feature envs must use ':-' not ':?' (would block the stack): {bad}"
+
+
+# Debian/Ubuntu base images (python:*-slim etc.) ship these system accounts already;
+# `useradd <name>` on one fails with "user already exists" (exit 9) and breaks the image
+# build. The real one that bit us: a service user literally named `sync`.
+_RESERVED_SYSTEM_USERS = {
+    "root", "daemon", "bin", "sys", "sync", "games", "man", "lp", "mail", "news",
+    "uucp", "proxy", "www-data", "backup", "list", "irc", "gnats", "nobody",
+    "messagebus", "sshd", "operator", "ftp", "systemd-network",
+}
+
+
+def test_dockerfiles_dont_reuse_reserved_system_users():
+    repo = pathlib.Path(__file__).resolve().parents[3]
+    offenders = []
+    for df in repo.rglob("Dockerfile"):
+        if "node_modules" in df.parts:
+            continue
+        for ln in df.read_text().splitlines():
+            if "useradd" not in ln:
+                continue
+            # The username is the last bare (non-flag, non-value) token on the line.
+            head = ln.split("&&")[0].replace("\\", "")
+            toks = [t for t in re.split(r"\s+", head.strip()) if t and not t.startswith("-")]
+            name = toks[-1] if toks else ""
+            if name in _RESERVED_SYSTEM_USERS:
+                offenders.append(f"{df.relative_to(repo)}: useradd '{name}' collides with a base-image system account")
+    assert not offenders, "rename the service user (build fails with 'already exists'):\n  " + "\n  ".join(offenders)
