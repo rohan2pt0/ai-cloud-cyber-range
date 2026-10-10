@@ -1,0 +1,64 @@
+# AI model & asset registry — the "model inventory, risk classification, approval gates,
+# traceability" artefact (Deloitte/EXL/UAE JDs). Treated as code; changes go through PR +
+# the approval_gate below. An AI-SPM tool / CI reads this to enforce that only approved,
+# risk-classified models are used. This is the governance spine of ISO/IEC 42001 + NIST AI RMF MAP.
+version: 1
+owner: rohan
+updated: 2026-10-10
+
+# Risk tiers follow EU AI Act / NIST AI RMF framing.
+risk_tiers: [minimal, limited, high, unacceptable]
+
+approval_gate:
+  required_for: [high]          # high-risk use-cases need documented sign-off before prod
+  approvers: [ciso, model-risk-committee]
+  evidence: [threat_model, red_team_scorecard, dpia]   # DPIA for DPDP/GDPR
+
+models:
+  - id: bank-assistant-local
+    provider: ollama
+    model: qwen2.5:1.5b
+    hosting: on-prem-laptop
+    data_residency: local
+    use_case: customer banking Q&A
+    risk_tier: high                 # handles personal + financial data
+    guardrails: [input-rails, output-rails, pii-redaction, llama-guard]
+    approved: true
+    approved_by: model-risk-committee
+    dpia: docs/compliance-matrix.md
+    owner: rohan
+
+  - id: bank-assistant-gemini
+    provider: gemini
+    model: gemini-2.5-flash
+    hosting: gcp-asia-south1
+    data_residency: india
+    use_case: burst capacity for banking Q&A
+    risk_tier: high
+    guardrails: [input-rails, output-rails, pii-redaction, model-armor]
+    approved: true
+    approved_by: model-risk-committee
+
+  - id: soc-triage-assistant
+    provider: ollama
+    model: qwen2.5:1.5b
+    hosting: on-prem-laptop
+    data_residency: local
+    use_case: SOC incident summarisation (AI-for-security)
+    risk_tier: limited              # internal, no customer data; inputs sanitised
+    guardrails: [input-rails, output-rails]
+    approved: true
+
+# Datasets / knowledge sources governed the same way (data poisoning / supply chain).
+datasets:
+  - id: bank-kb
+    source: internal-CMS
+    classification: internal
+    pii: false
+    integrity_control: rag-chunk-sanitisation + provenance-taint
+    approved: true
+
+# Explicitly disallowed (shadow AI) — CI should fail if these appear in config.
+disallowed_models:
+  - "*:latest"                      # unpinned
+  - "huggingface:*-uncensored*"     # ungoverned / unsafe

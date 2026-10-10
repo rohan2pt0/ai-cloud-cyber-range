@@ -218,3 +218,17 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# terraform
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+terraform.tfvars
+crash.log
+tf.plan
+plan.json
+
+# python caches
+__pycache__/
+*.pyc
+.pytest_cache/

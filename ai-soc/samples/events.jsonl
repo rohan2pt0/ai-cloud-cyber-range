@@ -1,0 +1,7 @@
+{"ts": 1760000000, "principal": "a1b2c3", "decision": "block", "findings": [{"rule": "PI-001-override", "severity": "high", "category": "LLM01/AML.T0051"}]}
+{"ts": 1760000030, "principal": "a1b2c3", "decision": "block", "findings": [{"rule": "PI-003-roleplay-jailbreak", "severity": "high", "category": "LLM01/AML.T0054"}]}
+{"ts": 1760000060, "principal": "a1b2c3", "decision": "block", "findings": [{"rule": "PI-005-fake-delimiter", "severity": "high", "category": "LLM01/AML.T0051"}]}
+{"ts": 1760000090, "principal": "a1b2c3", "decision": "sanitise", "findings": [{"rule": "SECRET-aws-akid", "severity": "critical", "category": "LLM02/AML.T0057"}]}
+{"ts": 1760000120, "source": "falco", "priority": "CRITICAL", "rule": "Shell in AI gateway container", "output": "Shell in AI workload cmd=/bin/sh", "output_fields": {"k8s.pod.name": "llm-gateway-xyz"}}
+{"ts": 1760000200, "principal": "d4e5f6", "decision": "allow", "findings": []}
+{"ts": 1760000300, "source": "cloud", "severity": "medium", "type": "PublicS3Bucket", "resource": "arn:aws:s3:::range-logs", "description": "Bucket allows public read"}

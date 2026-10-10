@@ -1,0 +1,27 @@
+# Zero-trust egress: the AI namespace denies all traffic by default, then allows only
+# what the architecture needs. Demonstrates LLM02/LLM05 data-exfil containment and the
+# "models have no direct internet" control from the reference architecture.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: default-deny-all, namespace: ai }
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata: { name: gateway-allow, namespace: ai }
+spec:
+  podSelector: { matchLabels: { app: llm-gateway } }
+  policyTypes: [Ingress, Egress]
+  ingress:
+    - from:
+        - namespaceSelector: {}        # ingress controller / clients in-cluster
+      ports: [{ port: 8080, protocol: TCP }]
+  egress:
+    - to:                              # DNS only
+        - namespaceSelector: {}
+      ports: [{ port: 53, protocol: UDP }, { port: 53, protocol: TCP }]
+    - to:                              # the model router, nothing else
+        - podSelector: { matchLabels: { app: litellm } }
+      ports: [{ port: 4000, protocol: TCP }]

@@ -1,0 +1,142 @@
+{
+  "inventory": {
+    "models": [
+      "azure/defender-for-cloud/tutorial-enable-cspm-plan",
+      "azure/gpt-4o-mini",
+      "bedrock/anthropic.claude-3-5-haiku-20241022-v1:0",
+      "gemini/gemini-2.5-flash",
+      "ollama/ollama:0.5.7",
+      "ollama/qwen2.5:1.5b"
+    ],
+    "guardrail_detectors": [
+      "bedrock-guardrail",
+      "llama-guard",
+      "model-armor",
+      "prompt-shields"
+    ],
+    "cloud_providers": [
+      "aws",
+      "google",
+      "azurerm"
+    ],
+    "governed_models": 3,
+    "unapproved_models": 0
+  },
+  "posture_score": 1.0,
+  "controls_passed": 16,
+  "controls_total": 16,
+  "controls": [
+    {
+      "control": "AISPM-01",
+      "frameworks": "SAIF/LLM01",
+      "description": "Input guardrails (prompt-injection) present",
+      "status": "PASS",
+      "evidence": "detect_prompt_injection"
+    },
+    {
+      "control": "AISPM-02",
+      "frameworks": "ISO42001/LLM02",
+      "description": "PII redaction for India BFSI identifiers",
+      "status": "PASS",
+      "evidence": "redact_pii"
+    },
+    {
+      "control": "AISPM-03",
+      "frameworks": "NIST-AI-RMF-MANAGE/LLM05",
+      "description": "Output guardrails (exfil/secret) present",
+      "status": "PASS",
+      "evidence": "check_output"
+    },
+    {
+      "control": "AISPM-04",
+      "frameworks": "SAIF/LLM07",
+      "description": "System-prompt canary leak detection",
+      "status": "PASS",
+      "evidence": "canary"
+    },
+    {
+      "control": "AISPM-05",
+      "frameworks": "CSA-AICM/LLM10",
+      "description": "Resource limits / rate limiting",
+      "status": "PASS",
+      "evidence": "enforce_limits"
+    },
+    {
+      "control": "AISPM-06",
+      "frameworks": "SAIF",
+      "description": "Models have no direct internet (egress NetworkPolicy)",
+      "status": "PASS",
+      "evidence": "default-deny-all"
+    },
+    {
+      "control": "AISPM-07",
+      "frameworks": "ISO42001",
+      "description": "Admission control hardening (Kyverno)",
+      "status": "PASS",
+      "evidence": "kind:\\s*ClusterPolicy"
+    },
+    {
+      "control": "AISPM-08",
+      "frameworks": "NIST-AI-RMF",
+      "description": "Cost budget / kill-switch per cloud",
+      "status": "PASS",
+      "evidence": "budgets_budget"
+    },
+    {
+      "control": "AISPM-09",
+      "frameworks": "CSA-AICM",
+      "description": "Audit logging of all AI decisions",
+      "status": "PASS",
+      "evidence": "logging\\.getLogger\\(\"audit\"\\)"
+    },
+    {
+      "control": "AISPM-10",
+      "frameworks": "SAIF",
+      "description": "Red-team suite in CI (adversarial ML)",
+      "status": "PASS",
+      "evidence": "run_attacks"
+    },
+    {
+      "control": "AISPM-11",
+      "frameworks": "NIST-CSF/CSPM",
+      "description": "IaC misconfig scanning (CSPM/CNAPP) in CI",
+      "status": "PASS",
+      "evidence": "scan-type:\\s*config"
+    },
+    {
+      "control": "AISPM-12",
+      "frameworks": "ISO27001/DSPM",
+      "description": "Sensitive-data detection at the AI boundary (DSPM)",
+      "status": "PASS",
+      "evidence": "redact_pii"
+    },
+    {
+      "control": "AISPM-13",
+      "frameworks": "ISO42001/NIST-AI-RMF-MAP",
+      "description": "Model registry: inventory, risk tiers, approval gates",
+      "status": "PASS",
+      "evidence": "approval_gate"
+    },
+    {
+      "control": "AISPM-14",
+      "frameworks": "CSA-AICM/LLM08",
+      "description": "RAG / vector-store input sanitisation",
+      "status": "PASS",
+      "evidence": "sanitise_chunk"
+    },
+    {
+      "control": "AISPM-15",
+      "frameworks": "NIST-CSF-PR.AC",
+      "description": "Least-privilege identity, no long-lived keys (IAM)",
+      "status": "PASS",
+      "evidence": "OpenIDConnect|openid_connect|AssumeRoleWithWebIdentity"
+    },
+    {
+      "control": "AISPM-16",
+      "frameworks": "NIST-CSF-DE/RS",
+      "description": "AI-SOC detection & incident response (AI-for-security)",
+      "status": "PASS",
+      "evidence": "ai-soc"
+    }
+  ]
+}

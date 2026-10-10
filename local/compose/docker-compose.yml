@@ -1,0 +1,117 @@
+# VulnBank AI Range - local plane (runs on the HP Spectre x360, ~6-8 GB RAM).
+# Brings up: guardrail gateway -> LiteLLM router -> Ollama (local SLM) with a full
+# DevSecOps + observability side-car so the range looks like a real enterprise estate.
+#
+#   docker compose --profile core up -d          # gateway + model router + db
+#   docker compose --profile security up -d       # + Wazuh-style SIEM-lite + Trivy
+#   docker compose --profile ai up -d             # + Ollama + Llama Guard
+#
+# Secrets come from .env (never committed). See local/compose/.env.example.
+name: vulnbank-range
+
+x-logging: &default-logging
+  driver: json-file
+  options: { max-size: "10m", max-file: "3" }
+
+networks:
+  edge:       # client-facing
+  modelplane: # gateway <-> router <-> models (no direct internet for models)
+    internal: true
+  data:
+    internal: true
+
+volumes:
+  pgdata:
+  ollama:
+  loki:
+  grafana:
+
+services:
+  gateway:
+    build: ../../apps/llm-gateway
+    image: vulnbank/llm-gateway:dev
+    profiles: ["core", "security", "ai"]
+    restart: unless-stopped
+    read_only: true
+    tmpfs: ["/tmp"]
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      GUARDRAIL_MODE: ${GUARDRAIL_MODE:-enforce}
+      UPSTREAM_URL: ${UPSTREAM_URL:-http://litellm:4000/v1}
+      UPSTREAM_API_KEY: ${LITELLM_MASTER_KEY:-sk-range-dev}
+      LLAMA_GUARD_URL: ${LLAMA_GUARD_URL:-}
+      FAIL_MODE: ${FAIL_MODE:-closed}
+      RATE_LIMIT_PER_MIN: "30"
+      SYSTEM_PROMPT_CANARIES: ${SYSTEM_PROMPT_CANARY:-CANARY-7f3a9c}
+    ports: ["8080:8080"]
+    networks: [edge, modelplane]
+    logging: *default-logging
+    depends_on: [litellm]
+
+  litellm:
+    image: ghcr.io/berriai/litellm:main-stable
+    profiles: ["core", "security", "ai"]
+    restart: unless-stopped
+    command: ["--config", "/etc/litellm/config.yaml", "--port", "4000"]
+    environment:
+      LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-range-dev}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      AZURE_API_KEY: ${AZURE_API_KEY:-}
+      AZURE_API_BASE: ${AZURE_API_BASE:-}
+      AWS_REGION_NAME: ${AWS_REGION:-ap-south-1}
+    volumes: ["./litellm-config.yaml:/etc/litellm/config.yaml:ro"]
+    networks: [modelplane]
+    security_opt: ["no-new-privileges:true"]
+    logging: *default-logging
+
+  ollama:
+    image: ollama/ollama:0.5.7
+    profiles: ["ai"]
+    restart: unless-stopped
+    volumes: ["ollama:/root/.ollama"]
+    networks: [modelplane]
+    # To load models after up:  docker exec -it <ollama> ollama pull qwen2.5:1.5b && ollama pull llama-guard3:1b
+    logging: *default-logging
+
+  postgres:
+    image: postgres:16-alpine
+    profiles: ["core", "security", "ai"]
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: range
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: range
+    volumes: ["pgdata:/var/lib/postgresql/data"]
+    networks: [data]
+    security_opt: ["no-new-privileges:true"]
+    logging: *default-logging
+
+  # ---- observability / SIEM-lite (maps to Wazuh+Sentinel+Chronicle in the cloud) ----
+  loki:
+    image: grafana/loki:3.3.2
+    profiles: ["security"]
+    command: ["-config.file=/etc/loki/local-config.yaml"]
+    volumes: ["loki:/loki"]
+    networks: [edge]
+    logging: *default-logging
+
+  grafana:
+    image: grafana/grafana:11.4.0
+    profiles: ["security"]
+    environment:
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:?set GRAFANA_PASSWORD in .env}
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    ports: ["3000:3000"]
+    volumes: ["grafana:/var/lib/grafana"]
+    networks: [edge]
+    logging: *default-logging
+
+  # ---- on-demand DevSecOps scanners (run once, then exit) ----
+  trivy:
+    image: aquasec/trivy:0.58.1
+    profiles: ["security"]
+    entrypoint: ["sh", "-c", "trivy image --scanners vuln,secret,misconfig --exit-code 0 vulnbank/llm-gateway:dev || true; sleep infinity"]
+    volumes: ["/var/run/docker.sock:/var/run/docker.sock:ro"]
+    networks: [edge]
+    logging: *default-logging

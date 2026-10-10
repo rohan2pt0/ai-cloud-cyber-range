@@ -1,0 +1,11 @@
+# Copy to terraform.tfvars and fill in. Start with ONE cloud enabled.
+alert_email  = "rohanc.beit@gmail.com"
+enable_paid  = false      # keep false to stay on free tiers / credits
+
+enable_gcp         = true
+gcp_project_id     = "my-ai-range-123456"
+gcp_billing_account = "XXXXXX-XXXXXX-XXXXXX"
+
+enable_aws = false
+enable_azure = false
+azure_subscription_id = ""

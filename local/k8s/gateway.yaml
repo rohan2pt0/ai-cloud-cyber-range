@@ -1,0 +1,88 @@
+# Hardened deployment of the guardrail gateway - the reference "secure AI workload"
+# used to demonstrate CKS / Pod Security / zero-trust on the range.
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: ai
+  labels:
+    pod-security.kubernetes.io/enforce: restricted
+    pod-security.kubernetes.io/enforce-version: latest
+    istio-injection: disabled
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: llm-gateway
+  namespace: ai
+automountServiceAccountToken: false   # workload does not call the API server
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llm-gateway
+  namespace: ai
+  labels: { app: llm-gateway, tier: ai-security }
+spec:
+  replicas: 2                          # fault tolerance / HA
+  selector: { matchLabels: { app: llm-gateway } }
+  template:
+    metadata:
+      labels: { app: llm-gateway, tier: ai-security }
+    spec:
+      serviceAccountName: llm-gateway
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile: { type: RuntimeDefault }
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector: { matchLabels: { app: llm-gateway } }
+      containers:
+        - name: gateway
+          image: vulnbank/llm-gateway:dev
+          imagePullPolicy: IfNotPresent
+          ports: [{ containerPort: 8080 }]
+          env:
+            - { name: GUARDRAIL_MODE, value: "enforce" }
+            - { name: FAIL_MODE, value: "closed" }
+            - { name: UPSTREAM_URL, value: "mock" }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          resources:
+            requests: { cpu: 50m, memory: 96Mi }
+            limits:   { cpu: 500m, memory: 256Mi }   # LLM10 blast-radius cap
+          livenessProbe:  { httpGet: { path: /healthz, port: 8080 }, initialDelaySeconds: 5 }
+          readinessProbe: { httpGet: { path: /healthz, port: 8080 }, periodSeconds: 10 }
+          volumeMounts: [{ name: tmp, mountPath: /tmp }]
+      volumes: [{ name: tmp, emptyDir: {} }]
+---
+apiVersion: v1
+kind: Service
+metadata: { name: llm-gateway, namespace: ai }
+spec:
+  selector: { app: llm-gateway }
+  ports: [{ port: 80, targetPort: 8080, nodePort: 30080 }]
+  type: NodePort
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata: { name: llm-gateway, namespace: ai }
+spec:
+  minAvailable: 1
+  selector: { matchLabels: { app: llm-gateway } }
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: llm-gateway, namespace: ai }
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: llm-gateway }
+  minReplicas: 2
+  maxReplicas: 6
+  metrics:
+    - type: Resource
+      resource: { name: cpu, target: { type: Utilization, averageUtilization: 70 } }

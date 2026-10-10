@@ -1,0 +1,28 @@
+# Custom Falco rules for the AI namespace - runtime detection mapped to MITRE ATLAS.
+# Install: helm install falco falcosecurity/falco -n falco --create-namespace \
+#   --set-file customRules."ai-range\.yaml"=falco-rules.yaml
+customRules:
+  ai-range.yaml: |-
+    - macro: ai_namespace
+      condition: (k8s.ns.name = "ai")
+
+    - rule: Shell in AI gateway container
+      desc: A shell was spawned inside the guardrail gateway (should never happen; distroless, no shell).
+      condition: spawned_process and ai_namespace and container and shell_procs
+      output: "Shell in AI workload (user=%user.name container=%container.name cmd=%proc.cmdline) [ATLAS AML.T0053]"
+      priority: CRITICAL
+      tags: [ai, mitre_atlas, container]
+
+    - rule: Outbound connection from model plane
+      desc: A model/router pod opened an outbound connection - possible data exfiltration (LLM02/LLM05).
+      condition: outbound and ai_namespace and k8s.pod.label.tier = "ai-security" and not fd.sip in (cluster_cidr)
+      output: "Egress from AI plane to %fd.sip:%fd.sport [possible exfil, ATLAS AML.T0024]"
+      priority: WARNING
+      tags: [ai, exfiltration]
+
+    - rule: Read of mounted service-account token in AI ns
+      desc: Workload read its SA token though automount is disabled - credential access.
+      condition: open_read and ai_namespace and fd.name startswith /var/run/secrets/kubernetes.io
+      output: "SA token read in AI ns (container=%container.name file=%fd.name) [ATLAS AML.T0055]"
+      priority: WARNING
+      tags: [ai, credentials]

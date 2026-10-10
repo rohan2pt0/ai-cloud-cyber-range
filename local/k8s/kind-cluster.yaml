@@ -1,0 +1,31 @@
+# kind cluster that mirrors the CKS exam surface: audit logging, a control-plane +
+# two workers, and the ingress port maps so the gateway is reachable from the laptop.
+#   kind create cluster --config kind-cluster.yaml --name range
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: range
+nodes:
+  - role: control-plane
+    kubeadmConfigPatches:
+      - |
+        kind: ClusterConfiguration
+        apiServer:
+          extraArgs:
+            audit-log-path: /var/log/kubernetes/audit.log
+            audit-log-maxage: "30"
+            audit-policy-file: /etc/kubernetes/audit-policy.yaml
+          extraVolumes:
+            - name: audit-policy
+              hostPath: /etc/kubernetes/audit-policy.yaml
+              mountPath: /etc/kubernetes/audit-policy.yaml
+              readOnly: true
+            - name: audit-log
+              hostPath: /var/log/kubernetes
+              mountPath: /var/log/kubernetes
+    extraMounts:
+      - hostPath: ./audit-policy.yaml
+        containerPath: /etc/kubernetes/audit-policy.yaml
+    extraPortMappings:
+      - { containerPort: 30080, hostPort: 8080, protocol: TCP }
+  - role: worker
+  - role: worker
