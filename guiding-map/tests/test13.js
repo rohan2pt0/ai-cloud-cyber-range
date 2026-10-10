@@ -46,6 +46,13 @@ setTimeout(()=>{
  ok("band-without-handle substitution present", gh.toLowerCase().includes('no handle'));
  ok("password-manager + recovery-email guides present", gh.includes('Bitwarden')&&gh.includes('recovery email'));
 
+ // inline help: specialised terms self-explain in place on every screen (not a separate tab)
+ go('today');
+ const chips=d.querySelectorAll('#sections .gm-term');
+ ok("inline '?' help chips appear on Today", chips.length>=3, String(chips.length));
+ if(chips.length){ const idx=+chips[0].getAttribute('onclick').match(/gmHelp\((\d+)/)[1]; w.gmHelp(idx,chips[0]);
+   ok("tapping a term opens its plain explanation inline", !!d.querySelector('.gm-pop')); }
+
  console.log("PASS "+P+"   FAIL "+F); e.forEach(x=>console.log("  ✗ "+x));
  if(F>0) process.exit(1);
 },1500);

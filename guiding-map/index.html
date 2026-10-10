@@ -4456,6 +4456,137 @@ function renderPlaybook(){
     }
   };
 
+  /* ── 48c. INLINE HELP ENGINE — explain every specialised term where it appears ───
+     The friction killer, done right: instead of a separate tab you must go to, every
+     ambiguous term on EVERY screen becomes a tap-for-plain-explanation chip (first use
+     only, so no clutter). Define the vocabulary once here; it self-explains everywhere.
+     The six big ones link to full step-by-step how-tos. Add a term = help it app-wide. */
+  var GLOSSARY = [
+    // fitness / health
+    { id: "zone2", k: ["zone 2", "zone-2"], t: "Zone 2 cardio", d: "A steady aerobic effort you can sustain — you can talk in full sentences but couldn’t sing. Builds your long-term heart/metabolic base.", g: "zone2" },
+    { id: "box", k: ["box breathing"], t: "Box breathing", d: "Breathe in 4s, hold 4s, out 4s, hold 4s — like tracing a square. Calms the nervous system fast.", g: "breathing" },
+    { id: "yoganidra", k: ["yoga nidra", "body scan"], t: "Body scan / Yoga Nidra", d: "Lie down and move your attention slowly from toes to head, noticing each part without judging. Deep relaxation.", g: "breathing" },
+    { id: "plank", k: ["plank", "band rows", "band press", "push-ups"], t: "The strength moves", d: "Bodyweight + resistance-band exercises. You have a loop band — no handle attachment needed.", g: "strength" },
+    // finance
+    { id: "fire", k: ["fire number", "⁠fire⁠", "financial independence"], t: "FIRE / Financial Independence", d: "Having enough invested to live off it — about 25× your annual expenses — so work becomes optional." },
+    { id: "swr", k: ["safe withdrawal", "swr", "3.5% swr"], t: "Safe Withdrawal Rate (SWR)", d: "The share of your corpus you can spend each year without running out — commonly ~3.5–4%." },
+    { id: "ef", k: ["emergency fund"], t: "Emergency fund", d: "6 months of essential expenses kept in easy-access cash, so a shock doesn’t force you to sell investments." },
+    { id: "term", k: ["term cover", "term insurance", "term ≥"], t: "Term insurance", d: "Pure life cover (no investment) — aim for 10–15× income. Pays your dependents if you die; cheap when young." },
+    { id: "avalanche", k: ["avalanche"], t: "Avalanche method", d: "Pay off debts highest-interest-first (while paying minimums on the rest). Mathematically the cheapest way out of debt." },
+    { id: "sip", k: ["sip", "sips"], t: "SIP", d: "Systematic Investment Plan — auto-invest a fixed amount every month, so investing happens without willpower." },
+    { id: "corpus", k: ["corpus"], t: "Corpus", d: "Your total invested pot — the money working for you across funds, stocks, etc." },
+    { id: "savrate", k: ["savings rate"], t: "Savings rate", d: "The % of your income you invest each month. The single biggest lever on how fast you reach independence." },
+    { id: "selfocc", k: ["self-occupied", "let-out", "let out"], t: "Self-occupied vs let-out", d: "Self-occupied = the home you live in (its equity isn’t spendable). Let-out = rented out (produces income)." },
+    { id: "supertop", k: ["super top-up", "top-up"], t: "Super top-up (health)", d: "Cheap extra health cover that kicks in above a base amount — a low-cost way to raise your hospital cover a lot." },
+    // strategy / productivity
+    { id: "okr", k: ["okr", "okrs"], t: "OKR", d: "Objective + Key Results: one clear goal plus 2–4 measurable outcomes that prove you hit it. Keep to ≤3 objectives." },
+    { id: "kr", k: ["key result", "key results"], t: "Key Result", d: "A specific, measurable outcome under an objective (a number you can check), not a task." },
+    { id: "metrics", k: ["kgi", "kpi", "kai", "kri", "balanced scorecard", "⁠bsc⁠"], t: "KGI / KPI / KAI / KRI / BSC", d: "A metric ladder: KGI = goal outcome, KPI = performance, KAI = the leading activity you control, KRI = risk signal, BSC = keeping four perspectives in balance." },
+    { id: "woop", k: ["woop"], t: "WOOP", d: "Wish → Outcome → Obstacle → Plan. A goal method with real evidence behind it: picture the win AND the obstacle, then an if-then plan." },
+    { id: "aar", k: ["after-action review", "after action review"], t: "After-Action Review (AAR)", d: "Four questions after something ends — what was meant to happen, what did, why the gap, what to change — so you actually learn from it." },
+    { id: "eisen", k: ["eisenhower"], t: "Eisenhower matrix", d: "Sort tasks by urgent × important: do the important, schedule the non-urgent, delegate the merely-urgent, drop the rest." },
+    { id: "deepwork", k: ["deep work"], t: "Deep Work", d: "A long, distraction-free block on one cognitively demanding task — where your most valuable output comes from." },
+    { id: "pareto", k: ["80/20", "pareto", "vital few"], t: "80/20 (Pareto)", d: "About 80% of results come from 20% of the effort. Find and do that vital 20% first." },
+    { id: "horizons", k: ["three horizons"], t: "Three Horizons", d: "Balance effort across today’s core (H1), the 2-year bets (H2) and the 5-year options (H3), so the future isn’t starved by the present." },
+    { id: "rapid", k: ["rapid"], t: "RAPID (decision rights)", d: "Names who Recommends, Agrees, Performs, gives Input, and — the key one — Decides. One D per decision, so choices don’t stall." },
+    { id: "scqa", k: ["scqa"], t: "SCQA", d: "Situation → Complication → Question → Answer: a way to open any update with the point, not a long wind-up." },
+    { id: "mece", k: ["mece"], t: "MECE", d: "Mutually Exclusive, Collectively Exhaustive — break a problem into buckets that don’t overlap and leave nothing out." },
+    { id: "pyramid", k: ["pyramid principle"], t: "Pyramid Principle", d: "State the answer first, then the few reasons that support it. Easy to follow, hard to waffle." },
+    // security / OPSEC
+    { id: "pwmgr", k: ["password manager"], t: "Password manager", d: "An app that generates and stores a strong, unique password for every account, so you remember just one. Tap for which to pick.", g: "pwmgr" },
+    { id: "recmail", k: ["recovery email", "dedicated email"], t: "Dedicated recovery email", d: "A brand-new email used ONLY to recover important accounts — never shared or used to sign up for anything. Tap for setup.", g: "recoveryemail" },
+    { id: "twofa", k: ["2fa", "mfa", "two-factor"], t: "2FA / MFA", d: "A second proof of identity beyond your password (a code or passkey), so a stolen password alone can’t get in." },
+    { id: "passkey", k: ["passkey", "passkeys"], t: "Passkey", d: "A passwordless login tied to your device/biometrics. Phishing-resistant and easier than a password — prefer it where offered." },
+    { id: "phish", k: ["phishing", "phish", "port-out", "sim pin"], t: "Phishing & SIM attacks", d: "Phishing = fake messages that trick you into giving up logins. A SIM port-out lock stops someone hijacking your phone number to beat SMS 2FA." },
+    { id: "fde", k: ["full-disk encryption", "disk encryption"], t: "Full-disk encryption", d: "Scrambles everything on your device so a thief who steals it can’t read your data. On by default on most modern phones; turn it on for laptops (BitLocker/FileVault)." },
+    { id: "breachmon", k: ["breach monitoring"], t: "Breach monitoring", d: "A service that alerts you if your email or passwords show up in a known data leak, so you can change them fast." },
+    { id: "nist", k: ["nist csf", "csf 2.0"], t: "NIST CSF 2.0", d: "A global security scorecard with six functions — Govern, Identify, Protect, Detect, Respond, Recover — you rate 0–5 to see your gaps." },
+    { id: "zerotrust", k: ["zero trust", "zero-trust"], t: "Zero trust", d: "Trust nothing by default; verify every access every time, even inside your own network. Limits the damage of any one breach." },
+    { id: "blast", k: ["blast radius"], t: "Blast radius", d: "How much can break if one thing is compromised. Good design keeps it small, so a single failure can’t sink everything." },
+    // habits
+    { id: "floor", k: ["2-minute floor", "two-minute floor"], t: "2-minute floor", d: "The smallest version of a habit that still counts as a win (e.g. 2 minutes of movement), so you never break the chain on a bad day." },
+    { id: "nmt", k: ["never miss twice", "missed twice"], t: "Never Miss Twice", d: "Missing once is human; the rule is never skip two days running. One miss is a blip, two is the start of a new (bad) habit." },
+    { id: "anchor", k: ["implementation intention", "if-then", "anchor"], t: "Implementation intention", d: "A plan shaped “IF situation X, THEN I do Y” (e.g. after morning chai, I meditate). Pre-deciding the trigger makes the habit automatic." },
+  ];
+
+  function escRx(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, function (c) { return "\\" + c; }); }
+  function ensureGloss() {
+    if (GLOSSARY._terms) return;
+    var all = [];
+    GLOSSARY.forEach(function (e, i) { e.k.forEach(function (t) { all.push({ t: t.replace(/⁠/g, ""), i: i }); }); });
+    all.sort(function (a, b) { return b.t.length - a.t.length; });   // longest first = greedy, correct
+    GLOSSARY._terms = all;
+  }
+  function gmSkip(n) {
+    var p = n.parentNode, SKIP = " A BUTTON INPUT TEXTAREA SELECT OPTION SUMMARY SCRIPT STYLE LABEL ";
+    while (p && p !== document.body) {
+      var tag = (p.tagName || "").toUpperCase();
+      if (SKIP.indexOf(" " + tag + " ") >= 0) return true;
+      var cn = "" + (p.className || "");
+      if (cn.indexOf("gm-term") >= 0 || cn.indexOf("gm-pop") >= 0 || cn.indexOf("gm-q") >= 0) return true;
+      p = p.parentNode;
+    }
+    return false;
+  }
+  function gmAnnotate(root) {
+    if (!root || typeof document.createTreeWalker !== "function") return;
+    ensureGloss();
+    var used = {};
+    GLOSSARY._terms.forEach(function (term) {
+      if (used[term.i]) return;
+      var rx = new RegExp("\\b(" + escRx(term.t) + ")\\b", "i");
+      var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false), node;
+      while ((node = w.nextNode())) {
+        if (used[term.i]) break;
+        if (!node.nodeValue || node.nodeValue.length < term.t.length) continue;
+        if (gmSkip(node)) continue;
+        var m = rx.exec(node.nodeValue);
+        if (!m) continue;
+        var mid = node.splitText(m.index);          // mid starts at the term
+        mid.splitText(m[0].length);                 // mid is now exactly the term
+        var span = document.createElement("span");
+        span.className = "gm-term"; span.setAttribute("tabindex", "0"); span.setAttribute("role", "button");
+        span.setAttribute("title", "What is this? Tap for a plain explanation");
+        span.setAttribute("onclick", "event.stopPropagation();gmHelp(" + term.i + ",this)");
+        span.textContent = mid.nodeValue;
+        var q = document.createElement("sup"); q.className = "gm-q"; q.textContent = "?";
+        span.appendChild(q);
+        mid.parentNode.replaceChild(span, mid);
+        used[term.i] = 1;
+        break;                                       // one chip per term per screen
+      }
+    });
+  }
+  window.gmHelp = function (i, el) {
+    var openPop = document.querySelector(".gm-pop");
+    var toggling = el.nextSibling && el.nextSibling.className === "gm-pop";
+    if (openPop) openPop.parentNode.removeChild(openPop);
+    if (toggling) return;
+    var e = GLOSSARY[i]; if (!e) return;
+    var pop = document.createElement("div"); pop.className = "gm-pop";
+    var h = "<b>" + esc(e.t) + "</b><br>" + esc(e.d);
+    if (e.g) h += '<br><button class="btn btn-s" style="margin-top:6px" onclick="gmFullGuide(\'' + e.g + "',this)\">Show full how-to →</button>";
+    pop.innerHTML = h;
+    el.parentNode.insertBefore(pop, el.nextSibling);
+  };
+  window.gmFullGuide = function (gid, btn) {
+    var g = null; GUIDES.forEach(function (x) { if (x.id === gid) g = x; });
+    if (!g) return;
+    var box = document.createElement("div"); box.innerHTML = guideCard(g);
+    var det = box.querySelector("details"); if (det) det.open = true;
+    btn.parentNode.appendChild(box); btn.style.display = "none";
+  };
+  // theme-safe styling (uses currentColor so it works in light + dark)
+  (function () {
+    try {
+      var s = document.createElement("style");
+      s.textContent = ".gm-term{border-bottom:1px dotted;cursor:help}"
+        + ".gm-q{font-size:.7em;vertical-align:super;font-weight:700;opacity:.75;margin-left:1px}"
+        + ".gm-pop{border:1px solid;border-radius:10px;padding:10px 12px;margin:8px 0;font-size:12.5px;line-height:1.6;opacity:.96}";
+      (document.head || document.documentElement).appendChild(s);
+    } catch (e) {}
+  })();
+
   /* ── 9. The Ops tab ─────────────────────────────────────────────── */
   function opsHTML() {
     var due = dueRituals().length, broken = brokenHabits().length;
@@ -4529,15 +4660,231 @@ function renderPlaybook(){
     var old = document.getElementById("gmVitals");
     if (old) old.parentNode.removeChild(old);
     document.body.insertAdjacentHTML("beforeend", vitalsHTML());
-    if (curTab === "guide") { box.innerHTML = guidesHTML(); return; }
-    if (curTab === "ops") { box.innerHTML = opsHTML(); return; }
-    if (curTab === "stack") { box.innerHTML = stackHTML(); return; }
-    if (curTab === "life") { box.innerHTML = lifeMapHTML(); return; }
-    if (curTab === "prop") { box.innerHTML = propHTML(); return; }
-    if (curTab === "today") {
+    if (curTab === "guide") { box.innerHTML = guidesHTML(); }
+    else if (curTab === "ops") { box.innerHTML = opsHTML(); }
+    else if (curTab === "stack") { box.innerHTML = stackHTML(); }
+    else if (curTab === "life") { box.innerHTML = lifeMapHTML(); }
+    else if (curTab === "prop") { box.innerHTML = propHTML(); }
+    else if (curTab === "today") {
       box.insertAdjacentHTML("afterbegin", exampleWarn() + undoBar() + daily3HTML() + msTodayHTML()
         + (inRecovery() ? "" : driftHTML() + resHTML()) + oneActionHTML() + (inRecovery() ? "" : pinnedHTML()));
     }
+    // Inline help: self-explain every specialised term on whatever screen just rendered.
+    try { gmAnnotate(box); } catch (e) { }
+  };
+
+  /* ── 11. Boot ───────────────────────────────────────────────────── */
+  // An installed PWA is resumed far more often than it is loaded. Pulling only
+  // on "load" is why one device sat on stale state for days.
+  document.addEventListener("visibilitychange", function () {
+    if (document.visibilityState === "visible") gmSyncInit();
+  });
+  window.addEventListener("online", function () { gmSyncInit(); });
+
+  // A service worker cannot complete an interactive Access OTP login.
+  if (navigator.serviceWorker) {
+    navigator.serviceWorker.addEventListener("message", function (e) {
+      if (e.data && e.data.type === "AUTH_EXPIRED") location.reload();
+    });
+  }
+
+  window.addEventListener("load", function () {
+    try { curTab = "today"; } catch (e) {}
+    var qc = new URLSearchParams(location.search).get("code");
+    if (qc && msCfg()) { msExchange(qc).then(gmMsPull).catch(function (e) { console.log("[ms]", e.message); }); }
+    else if (msTok()) {
+      var mc = G("gm_ms_cache", null);
+      if (!mc || nowSrv() - mc.at > 1800000) gmMsPull();
+    }
+    // Auto-fill Life Map on first visit (no age + no income = never filled)
+    var l = life();
+    if (!l.age && !l.inc) {
+      gmTplLife();
+    }
+    // Auto-fill example properties on first visit so the Property tab is explorable
+    try { var pr = G("gm_props", null); if ((!pr || !pr.length) && window.P && window.P.example) { if (window.gmTplProp) gmTplProp(); } } catch (e) {}
+    gmSyncInit();
+    if (window.renderAll) renderAll();
+    // Monthly backup nudge, once per month, non-blocking
+    var last = G("gm_backup_seen", "");
+    var mk = new Date().getFullYear() + "-" + (new Date().getMonth() + 1);
+    if (new Date().getDate() <= 7 && last !== mk && !inRecovery()) {
+      S_("gm_backup_seen", mk);
+      setTimeout(function () {
+        if (confirm("Monthly ritual: export a dated JSON backup now?")) {
+          if (window.gmExportBackup) gmExportBackup();
+        }
+      }, 1500);
+    }
+  });
+})();
+
+</script>
+<script>
+/* Failsafe: if the ops layer ever fails to boot, say so loudly instead of silently degrading. */
+window.addEventListener("load",function(){ if(typeof window.gmSyncInit!=="function"){ var b=document.createElement("div"); b.style.cssText="background:#991b1b;color:#fff;padding:10px 14px;font-size:12px;font-weight:700;"; b.textContent="\u26a0 Ops layer failed to load \u2014 tabs, sync and nudges are unavailable. Redeploy the full build (see DEPLOY.md)."; document.body.insertBefore(b,document.body.firstChild); } });
+</script>"); }
+  function ensureGloss() {
+    if (GLOSSARY._terms) return;
+    var all = [];
+    GLOSSARY.forEach(function (e, i) { e.k.forEach(function (t) { all.push({ t: t.replace(/⁠/g, ""), i: i }); }); });
+    all.sort(function (a, b) { return b.t.length - a.t.length; });   // longest first = greedy, correct
+    GLOSSARY._terms = all;
+  }
+  function gmSkip(n) {
+    var p = n.parentNode, SKIP = " A BUTTON INPUT TEXTAREA SELECT OPTION SUMMARY SCRIPT STYLE LABEL ";
+    while (p && p !== document.body) {
+      var tag = (p.tagName || "").toUpperCase();
+      if (SKIP.indexOf(" " + tag + " ") >= 0) return true;
+      var cn = "" + (p.className || "");
+      if (cn.indexOf("gm-term") >= 0 || cn.indexOf("gm-pop") >= 0 || cn.indexOf("gm-q") >= 0) return true;
+      p = p.parentNode;
+    }
+    return false;
+  }
+  function gmAnnotate(root) {
+    if (!root || typeof document.createTreeWalker !== "function") return;
+    ensureGloss();
+    var used = {};
+    GLOSSARY._terms.forEach(function (term) {
+      if (used[term.i]) return;
+      var rx = new RegExp("\\b(" + escRx(term.t) + ")\\b", "i");
+      var w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false), node;
+      while ((node = w.nextNode())) {
+        if (used[term.i]) break;
+        if (!node.nodeValue || node.nodeValue.length < term.t.length) continue;
+        if (gmSkip(node)) continue;
+        var m = rx.exec(node.nodeValue);
+        if (!m) continue;
+        var mid = node.splitText(m.index);          // mid starts at the term
+        mid.splitText(m[0].length);                 // mid is now exactly the term
+        var span = document.createElement("span");
+        span.className = "gm-term"; span.setAttribute("tabindex", "0"); span.setAttribute("role", "button");
+        span.setAttribute("title", "What is this? Tap for a plain explanation");
+        span.setAttribute("onclick", "event.stopPropagation();gmHelp(" + term.i + ",this)");
+        span.textContent = mid.nodeValue;
+        var q = document.createElement("sup"); q.className = "gm-q"; q.textContent = "?";
+        span.appendChild(q);
+        mid.parentNode.replaceChild(span, mid);
+        used[term.i] = 1;
+        break;                                       // one chip per term per screen
+      }
+    });
+  }
+  window.gmHelp = function (i, el) {
+    var openPop = document.querySelector(".gm-pop");
+    var toggling = el.nextSibling && el.nextSibling.className === "gm-pop";
+    if (openPop) openPop.parentNode.removeChild(openPop);
+    if (toggling) return;
+    var e = GLOSSARY[i]; if (!e) return;
+    var pop = document.createElement("div"); pop.className = "gm-pop";
+    var h = "<b>" + esc(e.t) + "</b><br>" + esc(e.d);
+    if (e.g) h += '<br><button class="btn btn-s" style="margin-top:6px" onclick="gmFullGuide(\'' + e.g + "',this)\">Show full how-to →</button>";
+    pop.innerHTML = h;
+    el.parentNode.insertBefore(pop, el.nextSibling);
+  };
+  window.gmFullGuide = function (gid, btn) {
+    var g = null; GUIDES.forEach(function (x) { if (x.id === gid) g = x; });
+    if (!g) return;
+    var box = document.createElement("div"); box.innerHTML = guideCard(g);
+    var det = box.querySelector("details"); if (det) det.open = true;
+    btn.parentNode.appendChild(box); btn.style.display = "none";
+  };
+  // theme-safe styling (uses currentColor so it works in light + dark)
+  (function () {
+    try {
+      var s = document.createElement("style");
+      s.textContent = ".gm-term{border-bottom:1px dotted;cursor:help}"
+        + ".gm-q{font-size:.7em;vertical-align:super;font-weight:700;opacity:.75;margin-left:1px}"
+        + ".gm-pop{border:1px solid;border-radius:10px;padding:10px 12px;margin:8px 0;font-size:12.5px;line-height:1.6;opacity:.96}";
+      (document.head || document.documentElement).appendChild(s);
+    } catch (e) {}
+  })();
+
+  /* ── 9. The Ops tab ─────────────────────────────────────────────── */
+  function opsHTML() {
+    var due = dueRituals().length, broken = brokenHabits().length;
+    var h = '<div class="section active">';
+    h += '<div class="cat-t">\u2699 Ops \u2014 the machine that runs the map</div>';
+    h += '<div class="info">' + (due ? due + " ritual(s) due. " : "No rituals due today. ")
+      + (broken ? broken + " habit(s) need a recovery rep." : "No habits in recovery.") + '</div>';
+
+    h += '<div class="cat-t" style="margin-top:14px">\u{1F4C5} Full cadence</div>';
+    RITUALS.forEach(function (r) {
+      var log = cadenceLog(), done = log[r.id] === r.key(new Date());
+      h += '<details class="road-col" style="margin-bottom:8px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">'
+        + esc(r.name) + ' <span style="font-weight:500;color:var(--muted)">\u00b7 ' + esc(r.tag) + ' \u00b7 ' + r.mins + ' min'
+        + (done ? ' \u00b7 \u2713 done this cycle' : '') + '</span></summary><div style="font-size:12px;line-height:1.8;margin-top:8px">';
+      r.steps.forEach(function (s) { h += "\u25a1 " + esc(s) + "<br>"; });
+      h += '</div></details>';
+    });
+
+    h += undoBar();
+    h += '<div style="margin-top:16px">' + healthHTML() + '</div>';
+    h += '<div style="margin-top:16px">' + rulesHTML() + '</div>';
+    h += '<div style="margin-top:16px">' + woopHTML() + '</div>';
+    h += '<div style="margin-top:16px">' + anchorHTML() + '</div>';
+    h += '<div style="margin-top:16px">' + csfHTML() + '</div>';
+    h += '<div style="margin-top:16px">' + aarHTML() + '</div>';
+    h += '<div style="margin-top:16px">' + derivedHTML() + '</div>';
+    h += '<div style="margin-top:16px">' + msHTML() + '</div>';
+    h += '<div style="margin-top:16px">' + pushHTML() + '</div>';
+    h += '<div style="margin-top:16px">' + rapidHTML() + '</div>';
+    h += '<div style="margin-top:16px">' + toolkitHTML() + '</div>';
+    h += '<div style="margin-top:16px">' + glossHTML() + '</div>';
+    h += '<div style="margin-top:16px">' + kitHTML() + '</div>';
+    h += '<div style="margin-top:16px">' + frictionHTML() + '</div>';
+    h += '<div style="margin-top:16px">' + commitHTML() + '</div>';
+    h += '<div style="margin-top:16px">' + doneHTML() + '</div>';
+    h += '<div style="margin-top:16px">' + syncHTML() + '</div>';
+
+    h += '<div class="cat-t" style="margin-top:16px">\u{1F4F1} This device</div>'
+      + '<div class="info">Installed as an app, this opens offline in one tap and keeps its own copy of your data. '
+      + 'The phone is the system of record for daily check-ins; the laptop is for the monthly and quarterly work.</div>'
+      + '<button class="btn btn-p" onclick="gmInstall()">Add to home screen</button>';
+    h += '</div>';
+    return h;
+  }
+
+  /* ── 10. Wire into the existing render loop ─────────────────────── */
+  if (typeof TABS !== "undefined") {
+    var keep = TABS.filter(function (t) { return ["today", "map"].indexOf(t[0]) < 0; });
+    var today = TABS.filter(function (t) { return t[0] === "today"; });
+    var map = TABS.filter(function (t) { return t[0] === "map"; });
+    TABS.length = 0;
+    today.concat([["guide", "\ud83d\udcd8 Guides"], ["stack", "\u{1F3DB} Stack"], ["life", "\u{1F9ED} Life Map"],
+      ["prop", "\u{1F3E0} Property"], ["ops", "\u2699 Ops"]]).concat(map).concat(keep)
+      .forEach(function (t) { TABS.push(t); });
+  }
+  var _renderAll = window.renderAll;
+  var _pendingRender = false;
+  window.renderAll = function () {
+    // Never rebuild the DOM out from under someone who is mid-entry.
+    if (isTyping() && !_pendingRender) {
+      _pendingRender = true;
+      document.activeElement.addEventListener("blur", function () {
+        _pendingRender = false; renderAll();
+      }, { once: true });
+      return;
+    }
+    _pendingRender = false;
+    try { _renderAll.apply(this, arguments); } catch (e) { console.log(e); }
+    var box = document.getElementById("sections");
+    if (!box) return;
+    var old = document.getElementById("gmVitals");
+    if (old) old.parentNode.removeChild(old);
+    document.body.insertAdjacentHTML("beforeend", vitalsHTML());
+    if (curTab === "guide") { box.innerHTML = guidesHTML(); }
+    else if (curTab === "ops") { box.innerHTML = opsHTML(); }
+    else if (curTab === "stack") { box.innerHTML = stackHTML(); }
+    else if (curTab === "life") { box.innerHTML = lifeMapHTML(); }
+    else if (curTab === "prop") { box.innerHTML = propHTML(); }
+    else if (curTab === "today") {
+      box.insertAdjacentHTML("afterbegin", exampleWarn() + undoBar() + daily3HTML() + msTodayHTML()
+        + (inRecovery() ? "" : driftHTML() + resHTML()) + oneActionHTML() + (inRecovery() ? "" : pinnedHTML()));
+    }
+    // Inline help: self-explain every specialised term on whatever screen just rendered.
+    try { gmAnnotate(box); } catch (e) { }
   };
 
   /* ── 11. Boot ───────────────────────────────────────────────────── */
