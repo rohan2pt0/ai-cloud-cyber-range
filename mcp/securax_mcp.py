@@ -66,11 +66,9 @@ ALLOWED_DOMAINS = {"vulnbank.example", "rbi.org.in", "cybercrime.gov.in"}
 # Tool implementations — each returns a plain string (rendered to the assistant)
 # --------------------------------------------------------------------------- #
 def t_classify_tier(text: str) -> str:
-    """Red/Yellow/Green data classification — decides what may leave the machine."""
-    import re
-    red = re.compile(r"(aadhaar|\b[2-9]\d{3}\s?\d{4}\s?\d{4}\b|\b[A-Z]{5}\d{4}[A-Z]\b|customer|account\s*no|internal ip|incident)", re.I)
-    yellow = re.compile(r"(employee|salary|vendor|contract|roadmap|strategy|non-public)", re.I)
-    tier = "Red" if red.search(text) else ("Yellow" if yellow.search(text) else "Green")
+    """Red/Yellow/Green data classification — decides what may leave the machine.
+    Reuses the assistant module's classifier so the tier logic lives in ONE place."""
+    tier = _mods["assistant"].classify_tier(text)
     route = {"Red": "local model only (never leaves the machine)",
              "Yellow": "local preferred; cloud only after masking",
              "Green": "cloud acceptable"}[tier]

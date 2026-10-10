@@ -191,8 +191,12 @@ services:
     mem_limit: 48m
     cpus: 0.25
     volumes:
+      # NOTE: do NOT nest the portal mount inside the html mount — Docker Desktop/WSL2 cannot
+      # create a mountpoint on a read-only bind mount. Mount portal at a sibling path and alias
+      # it in nginx (see guiding-map.conf). This is portable across Windows/macOS/Linux.
       - ../../guiding-map:/usr/share/nginx/html:ro
-      - ../../portal:/usr/share/nginx/html/portal:ro
+      - ../../portal:/srv/portal:ro
+      - ./guiding-map.conf:/etc/nginx/conf.d/default.conf:ro
     ports: ["127.0.0.1:8088:80"]
     networks: [edge]
     logging: *default-logging

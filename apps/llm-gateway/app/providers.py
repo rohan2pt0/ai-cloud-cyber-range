@@ -11,6 +11,7 @@ FAIL_MODE=open    -> a detector outage is logged and the request proceeds
 """
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 
@@ -137,16 +138,22 @@ DETECTORS: list[Detector] = [LlamaGuardOllama(), GoogleModelArmor(), AzurePrompt
 
 async def run_detectors(text: str, direction: str) -> list[Finding]:
     fail_closed = os.getenv("FAIL_MODE", "closed") == "closed"
-    findings: list[Finding] = []
-    for d in DETECTORS:
-        if not d.enabled():
-            continue
+    enabled = [d for d in DETECTORS if d.enabled()]
+
+    async def _one(d: "Detector") -> list[Finding]:
         try:
-            findings += await d.scan(text, direction)
+            return await d.scan(text, direction)
         except Exception as exc:  # noqa: BLE001 - detector outage handling is the point
             log.warning("detector %s failed: %s", d.name, exc)
             sev = "high" if fail_closed else "low"
-            findings.append(Finding(f"DET-unavailable-{d.name}", "availability", sev, str(exc)[:120]))
+            return [Finding(f"DET-unavailable-{d.name}", "availability", sev, str(exc)[:120])]
+
+    # Run enabled detectors concurrently: per-request latency is the MAX of their round-trips,
+    # not the sum (chat() calls this per message and per choice, so the saving compounds).
+    results = await asyncio.gather(*[_one(d) for d in enabled])
+    findings: list[Finding] = []
+    for r in results:
+        findings += r
     return findings
 
 

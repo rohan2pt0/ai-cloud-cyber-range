@@ -79,6 +79,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Compose config validation (catches deploy-blocking errors before anyone runs it)
+        working-directory: local/compose
+        run: |
+          cp -n .env.example .env 2>/dev/null || true
+          docker compose --profile ai config -q && echo "compose config valid"
       - name: Trivy IaC/misconfig scan (Terraform + K8s + Dockerfile)
         uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0 (SHA-pinned; CVE-2026-33634 tag hijack)
         with:
