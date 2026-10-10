@@ -227,3 +227,8 @@ terraform.tfvars
 crash.log
 tf.plan
 plan.json
+
+# python caches
+__pycache__/
+*.pyc
+.pytest_cache/
