@@ -46,6 +46,9 @@ the same honesty contract as the rest of SecuRAX ([Intelligent UX](12-INTELLIGEN
 ## How to use it
 
 ### Option A — the Guiding-Map "Intel" tab (easiest, fully offline)
+> Note: the Intel tab rejoins the unified Guiding Map cockpit in Phase 2 of the merge
+> ([doc 14](14-GUIDING-MAP.md)). The MCP tool (Option B) and CLI (Option C) work today.
+
 Open the Guiding Map (`http://localhost:8088`, or installed as an app) → **Intel**. Pick the
 regime (*Copy what works* / *Get ahead*), type your goal, paste the top items you collected
 (one per line, best first), and optionally the names you saw repeating. It shows the consensus
