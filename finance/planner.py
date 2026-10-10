@@ -98,6 +98,17 @@ def plan(inp: dict) -> dict:
         corpus_proj += float(asset.get("value", 0)) * (1 + r) ** W
         corpus_proj += _fv_annuity(float(asset.get("monthly", 0)) * 12, W, r)
 
+    # ...minus the corpus eaten by BEFORE-retirement one-off purchases funded from savings
+    # (a ₹30L education at 52 is money that never compounds to retirement — it must reduce the pot).
+    infl = float(inp.get("inflation", 0.06))
+    for p in inp.get("purchases", []):
+        pa = p.get("at_age")
+        if pa is not None and int(pa) < R:
+            i = float(p.get("infl", infl))
+            nominal = float(p.get("cost_today", 0)) * (1 + i) ** (int(pa) - age0) * float(p.get("funded_pct", 1.0))
+            corpus_proj -= nominal * (1 + r_pre) ** (R - int(pa))
+    corpus_proj = max(0.0, corpus_proj)
+
     gap = corpus_needed - corpus_proj          # >0 = shortfall
     # 3) extra monthly SIP (at r_pre over W years) that closes the gap
     denom = _fv_annuity(12, W, r_pre)          # FV of ₹1/month annuitised

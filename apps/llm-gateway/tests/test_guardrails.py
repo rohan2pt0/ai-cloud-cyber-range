@@ -80,3 +80,33 @@ def test_api_blocks_and_allows():
     assert r.status_code == 200
     assert "ABCPE1234F" not in r.json()["choices"][0]["message"]["content"]
     assert c.get("/metrics").status_code == 200
+
+
+def test_output_detector_verdict_is_enforced(monkeypatch):
+    """Security regression: a model-detector (Llama Guard / Model Armor / Bedrock) verdict on the
+    OUTPUT must withhold the response. Previously these findings were appended after inspect_output
+    had already set allowed=True, so an unsafe model reply could slip through."""
+    import app.main as m
+
+    async def fake_detectors(text, direction):
+        return [g.Finding("LG-unsafe", "llama-guard", "high", "unsafe")] if direction == "output" else []
+
+    monkeypatch.setattr(m, "run_detectors", fake_detectors)
+    c = TestClient(m.app)
+    r = c.post("/v1/chat/completions", json={"model": "m", "messages": [{"role": "user", "content": "hi"}]})
+    assert r.status_code == 200
+    assert r.json()["choices"][0]["message"]["content"] == "Response withheld by AI security policy."
+
+
+def test_malformed_body_is_clean_400_not_500(monkeypatch):
+    """Robustness regression: malformed bodies must NEVER be an unhandled 500. Missing/empty
+    `messages` is a clean 400; a message with no content degrades gracefully (not a crash)."""
+    import app.main as m
+    c = TestClient(m.app)
+    # missing or empty messages -> clean client error
+    for bad in [{}, {"messages": []}]:
+        r = c.post("/v1/chat/completions", json=bad)
+        assert r.status_code in (400, 422), (bad, r.status_code)
+    # content-less message must not 500 (previously raised KeyError -> 500)
+    r = c.post("/v1/chat/completions", json={"messages": [{"role": "user"}]})
+    assert r.status_code != 500, r.status_code

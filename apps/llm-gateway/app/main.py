@@ -98,7 +98,8 @@ async def inspect(body: dict) -> dict:
 
 async def _call_upstream(payload: dict) -> dict:
     if UPSTREAM == "mock":
-        last = payload["messages"][-1]["content"]
+        msgs = payload.get("messages") or []
+        last = (msgs[-1].get("content") if msgs and isinstance(msgs[-1], dict) else "") or ""
         return {"id": "mock", "object": "chat.completion", "model": payload.get("model", "mock"),
                 "choices": [{"index": 0, "finish_reason": "stop",
                              "message": {"role": "assistant", "content": f"[mock-llm] You said: {last}"}}]}
@@ -122,6 +123,8 @@ async def chat(request: Request, authorization: str | None = Header(default=None
         raise HTTPException(429, "rate limit exceeded")
 
     messages = payload.get("messages", [])
+    if not isinstance(messages, list) or not messages:
+        raise HTTPException(400, "`messages` must be a non-empty list")
     in_findings: list[guardrails.Finding] = []
     for m in messages:
         if m.get("role") in ("user", "tool") and isinstance(m.get("content"), str):
@@ -155,7 +158,12 @@ async def chat(request: Request, authorization: str | None = Header(default=None
         v = guardrails.inspect_output(content, ALLOWED_DOMAINS, CANARIES)
         v.findings += await run_detectors(content, "output")
         out_findings += v.findings
-        if not v.allowed and MODE == "enforce":
+        # Fail-closed: withhold if the deterministic output rails flagged it OR a model detector
+        # (Llama Guard / Model Armor / Bedrock) or a detector-outage raised a BLOCKING finding.
+        # (inspect_output set v.allowed before the detector verdicts were appended — recompute.)
+        withhold = (not v.allowed) or any(
+            f.severity in guardrails.BLOCKING and not f.rule.startswith("PII-") for f in v.findings)
+        if withhold and MODE == "enforce":
             choice["message"]["content"] = "Response withheld by AI security policy."
             choice["finish_reason"] = "content_filter"
         elif MODE == "enforce":

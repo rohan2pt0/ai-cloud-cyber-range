@@ -104,8 +104,8 @@ def extract_consensus(items: list[dict], vocabulary: list[str] | None = None,
     tally: dict[str, dict] = {}
     for it in items:
         text = f"{it.get('title', '')} {it.get('text', '')}"
-        w = signal_weight(it.get("score", 0), int(it.get("rank", 1) or 1),
-                          it.get("age_days", 0), mode)
+        w = signal_weight(it.get("score") or 0, int(it.get("rank") or 1),
+                          it.get("age_days") or 0, mode)   # `or 0/1` tolerates JSON nulls
         src = it.get("source", "?")
         names = (set(vocabulary) if vocabulary else _candidates_from_text(text))
         for name in names:
