@@ -1,0 +1,47 @@
+# SecuRAX — FULL-SCALE overlay (opt-in, resource-hungry, turn-off-able).
+# Brings up the "go big" services that don't belong in the everyday laptop stack.
+# Nothing here starts unless you explicitly ask for the `full` profile:
+#   docker compose -f docker-compose.yml -f full-stack.yml --profile full up -d     (or ./securax full up)
+#   docker compose -f docker-compose.yml -f full-stack.yml --profile full down      (or ./securax full down)
+#
+# This file ships only the LIGHT full-scale piece (Mattermost ChatOps, the "coordination"
+# body from the operating model). The HEAVY security stack (Wazuh SIEM, MISP, TheHive) is
+# run from its OWN OFFICIAL upstream repos so we never re-implement them — see
+# docs/securax/10-FULL-STACK.md for the exact clone-and-up commands, wired to this network.
+name: vulnbank-range
+
+volumes:
+  mmdata:
+  mmdb:
+
+services:
+  # ---- Mattermost: ChatOps / coordination hub (open source, Team Edition) -------------
+  # The "G20 table" of the estate: alerts, approvals, and agent hand-offs land here.
+  mattermost-db:
+    image: postgres:16-alpine
+    profiles: ["full"]
+    restart: unless-stopped
+    mem_limit: 384m
+    cpus: 0.5
+    environment:
+      POSTGRES_USER: mattermost
+      POSTGRES_PASSWORD: ${MM_DB_PASSWORD:?set MM_DB_PASSWORD in .env}
+      POSTGRES_DB: mattermost
+    volumes: ["mmdb:/var/lib/postgresql/data"]
+    networks: [data]
+    security_opt: ["no-new-privileges:true"]
+
+  mattermost:
+    image: mattermost/mattermost-team-edition:9.11
+    profiles: ["full"]
+    restart: unless-stopped
+    mem_limit: 1g
+    cpus: 1.0
+    environment:
+      MM_SQLSETTINGS_DRIVERNAME: postgres
+      MM_SQLSETTINGS_DATASOURCE: "postgres://mattermost:${MM_DB_PASSWORD:?set MM_DB_PASSWORD in .env}@mattermost-db:5432/mattermost?sslmode=disable"
+      MM_SERVICESETTINGS_SITEURL: http://localhost:8065
+    ports: ["127.0.0.1:8065:8065"]
+    networks: [edge, data]
+    depends_on: [mattermost-db]
+    security_opt: ["no-new-privileges:true"]

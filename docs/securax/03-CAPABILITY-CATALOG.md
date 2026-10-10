@@ -76,6 +76,9 @@ are never locked in (Principle P-2). The **Phase** column tells you when you act
 | GitOps delivery | **Argo CD** | Flux | 2 | declarative deploys |
 | Observability | **Prometheus + Grafana + Loki** | OpenTelemetry Collector | 1 | monitoring, SLOs |
 | Workflow automation | **n8n** | Node-RED, Temporal | 0 | the "glue" |
+| Agent orchestration (multi-step) | **n8n** → **CrewAI / LangGraph** | AutoGen | 1 | agentic SecOps, signal-from-noise |
+| Team collaboration / ChatOps | **Mattermost** | Rocket.Chat, Matrix | 1 | coordination (G20 pattern) |
+| Private cloud / virtualisation | **Proxmox VE** → **OpenStack** | oVirt, Harvester | 2 | sovereign compute at scale |
 | Backup / BCDR | **restic / BorgBackup** (3-2-1) | Velero (K8s) | 0 | ISO 22301 |
 
 ## F. The human layer (Pillar 4)
