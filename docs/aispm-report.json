@@ -18,11 +18,13 @@
       "aws",
       "google",
       "azurerm"
-    ]
+    ],
+    "governed_models": 3,
+    "unapproved_models": 0
   },
   "posture_score": 1.0,
-  "controls_passed": 10,
-  "controls_total": 10,
+  "controls_passed": 16,
+  "controls_total": 16,
   "controls": [
     {
       "control": "AISPM-01",
@@ -93,6 +95,48 @@
       "description": "Red-team suite in CI (adversarial ML)",
       "status": "PASS",
       "evidence": "run_attacks"
+    },
+    {
+      "control": "AISPM-11",
+      "frameworks": "NIST-CSF/CSPM",
+      "description": "IaC misconfig scanning (CSPM/CNAPP) in CI",
+      "status": "PASS",
+      "evidence": "scan-type:\\s*config"
+    },
+    {
+      "control": "AISPM-12",
+      "frameworks": "ISO27001/DSPM",
+      "description": "Sensitive-data detection at the AI boundary (DSPM)",
+      "status": "PASS",
+      "evidence": "redact_pii"
+    },
+    {
+      "control": "AISPM-13",
+      "frameworks": "ISO42001/NIST-AI-RMF-MAP",
+      "description": "Model registry: inventory, risk tiers, approval gates",
+      "status": "PASS",
+      "evidence": "approval_gate"
+    },
+    {
+      "control": "AISPM-14",
+      "frameworks": "CSA-AICM/LLM08",
+      "description": "RAG / vector-store input sanitisation",
+      "status": "PASS",
+      "evidence": "sanitise_chunk"
+    },
+    {
+      "control": "AISPM-15",
+      "frameworks": "NIST-CSF-PR.AC",
+      "description": "Least-privilege identity, no long-lived keys (IAM)",
+      "status": "PASS",
+      "evidence": "OpenIDConnect|openid_connect|AssumeRoleWithWebIdentity"
+    },
+    {
+      "control": "AISPM-16",
+      "frameworks": "NIST-CSF-DE/RS",
+      "description": "AI-SOC detection & incident response (AI-for-security)",
+      "status": "PASS",
+      "evidence": "ai-soc"
     }
   ]
 }

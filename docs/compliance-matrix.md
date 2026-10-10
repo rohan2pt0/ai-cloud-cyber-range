@@ -20,9 +20,20 @@ NIST AI RMF, ISO/IEC 42001, CSA MAESTRO/AICM and Google SAIF" artefact.
 | Lifecycle controls | lifecycle coverage §4 (ingestion→inference→agentic) |
 | Monitoring & improvement | CI re-runs scorecard every push; drift roadmap |
 
-## CSA AI Controls Matrix / MAESTRO
+## CSA AI Controls Matrix / MAESTRO / CCM
 Layered threat modelling (Mission→Agent→Env→Security→Tooling→Risk→Ops) is reflected in the
-agent control set (C6) and the defence-in-depth chain. AICM control domains map to C1–C13.
+agent control set (C6) and the defence-in-depth chain. AICM control domains map to C1–C13; the
+Cloud Controls Matrix (CCM) domains map to the Terraform modules + cloud-governance guardrails.
+
+## NIST CSF 2.0 (GOVERN / IDENTIFY / PROTECT / DETECT / RESPOND / RECOVER)
+| Function | Implemented by |
+|---|---|
+| GOVERN | model registry + approval gates, policy-as-code, risk register |
+| IDENTIFY | AI-SPM inventory (models/detectors/clouds/governed models), threat model |
+| PROTECT | gateway rails, IAM/OIDC least-privilege, Kyverno, NetworkPolicy, cloud-governance SCP/Policy/Org-Policy |
+| DETECT | Falco runtime rules, CSPM/DSPM findings, **AI-SOC correlation** |
+| RESPOND | AI-SOC incident cards + recommended actions, IR playbook handoff, kill-switches |
+| RECOVER | everything-as-code (kind/IaC re-create in minutes), 3-2-1 backups (personal-rnd OPSEC) |
 
 ## Google SAIF
 | SAIF element | Control |

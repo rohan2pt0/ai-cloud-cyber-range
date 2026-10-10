@@ -74,6 +74,9 @@ failure** — a bypass of one layer is caught by the next (see §5).
 | C11 | Cost kill-switch per cloud | Terraform | LLM10 (econ DoS) | FinOps / NIST AI RMF |
 | C12 | Supply chain: SBOM, image scan, secret scan, SAST, IaC scan | CI/CD | — / supply chain | SLSA, NIST SSDF |
 | C13 | Adversarial-ML assurance suite in CI | CI/CD | all LLM / ATLAS | NIST AI 100-2 |
+| C14 | Model registry: inventory, risk tiers, approval gates | Governance | — | ISO 42001, NIST AI RMF MAP, EU AI Act |
+| C15 | **AI-SOC**: correlate telemetry → incidents (AI-for-security) | Detection | all / ATLAS+ATT&CK | NIST CSF DE/RS, SAIF |
+| C16 | Cloud governance guardrails (SCP / Azure Policy / Org Policy) | Org | — | NIST CSF PR, CSA CCM |
 
 ## 4. End-to-end AI lifecycle coverage (EXL/CRISIL "secure the whole lifecycle")
 
@@ -83,6 +86,10 @@ failure** — a bypass of one layer is caught by the next (see §5).
 - **Inference / APIs** — the gateway PEP in front of every model, every cloud (C0–C5).
 - **Agentic** — tool-identity, HITL, action budget, taint-aware authorisation (C6).
 - **Infra** — zero-trust K8s, admission control, runtime detection (C7–C9).
+- **Governance** — model registry with risk tiers + approval gates governs which models/datasets reach prod (C14).
+- **Detect & respond** — the **AI-SOC** (C15) consumes gateway audit + Falco + cloud findings, correlates
+  per identity, maps to ATLAS/ATT&CK, and emits incident cards; it sanitises its own inputs through the
+  guardrail engine (second-order injection defence) — this is the "AI-for-security / Agentic SOC" plane.
 
 ## 5. No single point of failure (resilience design)
 

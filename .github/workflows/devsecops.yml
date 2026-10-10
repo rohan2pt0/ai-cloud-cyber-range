@@ -19,9 +19,9 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - name: Install gateway + test deps
-        run: pip install -r apps/llm-gateway/requirements-dev.txt
-      - name: Unit tests (guardrails)
-        run: cd apps/llm-gateway && python -m pytest -q
+        run: pip install -r apps/llm-gateway/requirements-dev.txt pyyaml
+      - name: Unit tests (gateway + AI-SOC + personal-rnd)
+        run: python -m pytest -q
       - name: AI red-team scorecard (gate at 90% defence, 0 false positives)
         run: python redteam/run_attacks.py --out redteam/results.json --fail-under 0.9
       - name: AI-SPM posture scan

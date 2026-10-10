@@ -6,7 +6,7 @@
 |---|---|---|
 | Adversarial-ML defence rate | 100% | 11/11 OWASP-LLM/ATLAS attacks defended |
 | False-positive (business impact) | 0/5 | legitimate banking queries wrongly blocked |
-| AI-SPM control coverage | 100% | 10/10 baseline controls implemented |
+| AI-SPM control coverage | 100% | 16/16 baseline controls implemented |
 
 ## What this estate is
 A multi-cloud AI cyber range (AWS + GCP + Azure + on-prem/laptop) with a single

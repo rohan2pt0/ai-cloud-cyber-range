@@ -28,6 +28,13 @@ CONTROLS = [
     ("AISPM-08", "NIST-AI-RMF", "Cost budget / kill-switch per cloud"),
     ("AISPM-09", "CSA-AICM", "Audit logging of all AI decisions"),
     ("AISPM-10", "SAIF", "Red-team suite in CI (adversarial ML)"),
+    # Extended: CNAPP / CSPM / DSPM / IAM / governance / detection (Deloitte, C-DOT, UAE JDs)
+    ("AISPM-11", "NIST-CSF/CSPM", "IaC misconfig scanning (CSPM/CNAPP) in CI"),
+    ("AISPM-12", "ISO27001/DSPM", "Sensitive-data detection at the AI boundary (DSPM)"),
+    ("AISPM-13", "ISO42001/NIST-AI-RMF-MAP", "Model registry: inventory, risk tiers, approval gates"),
+    ("AISPM-14", "CSA-AICM/LLM08", "RAG / vector-store input sanitisation"),
+    ("AISPM-15", "NIST-CSF-PR.AC", "Least-privilege identity, no long-lived keys (IAM)"),
+    ("AISPM-16", "NIST-CSF-DE/RS", "AI-SOC detection & incident response (AI-for-security)"),
 ]
 
 
@@ -47,7 +54,15 @@ def inventory(root: pathlib.Path) -> dict:
     models = sorted(set(re.findall(r"(?:ollama/|gemini/|bedrock/|azure/)[\w.\-:/]+", corpus)))
     detectors = sorted(set(re.findall(r"(llama-guard|model-armor|prompt-shields|bedrock-guardrail)", corpus)))
     clouds = [c for c in ("aws", "google", "azurerm") if re.search(rf'provider "{c}"', corpus)]
-    return {"models": models, "guardrail_detectors": detectors, "cloud_providers": clouds}
+    registry = root / "governance" / "model-registry.yaml"
+    governed = unapproved = 0
+    if registry.exists():
+        import yaml
+        reg = yaml.safe_load(registry.read_text())
+        governed = len(reg.get("models", []))
+        unapproved = sum(1 for m in reg.get("models", []) if not m.get("approved"))
+    return {"models": models, "guardrail_detectors": detectors, "cloud_providers": clouds,
+            "governed_models": governed, "unapproved_models": unapproved}
 
 
 def posture(root: pathlib.Path) -> list[dict]:
@@ -70,6 +85,12 @@ def posture(root: pathlib.Path) -> list[dict]:
         "AISPM-08": has(r"budgets_budget", r"billing_budget", r"consumption_budget"),
         "AISPM-09": has(r'logging\.getLogger\("audit"\)', r"audit-log-path"),
         "AISPM-10": has(r"run_attacks", r"promptfoo"),
+        "AISPM-11": has(r"scan-type:\s*config", r"conftest", r"trivy"),
+        "AISPM-12": has(r"redact_pii", r"DSPM"),
+        "AISPM-13": has(r"approval_gate", r"risk_tier"),
+        "AISPM-14": has(r"sanitise_chunk", r"RAG chunk", r"guardrails/inspect"),
+        "AISPM-15": has(r"OpenIDConnect|openid_connect|AssumeRoleWithWebIdentity", r"automountServiceAccountToken:\s*false"),
+        "AISPM-16": has(r"ai-soc", r"def correlate\(", r"kill-chain"),
     }
     out = []
     for cid, fw, desc in CONTROLS:

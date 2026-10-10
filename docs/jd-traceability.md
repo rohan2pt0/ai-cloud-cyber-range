@@ -1,10 +1,11 @@
 # JD → Capability Traceability Matrix
 
-How this range lets you *demonstrate* each requirement across the five roles. Use this as
+How this range lets you *demonstrate* each requirement across all eight roles. Use this as
 your interview crib: for any line an interviewer reads from their JD, point at the component.
 
 Roles: **PwC** SM Cloud/AI Security · **EXL** SAVP Secure-AI Engineering · **CRISIL** AI
-Security Engineer · **UAE** SM AI-Security Product Owner.
+Security Engineer · **UAE** SM AI-Security Product Owner · **Deloitte** Mgr Cloud AI Security ·
+**C-DOT** AI-Expert (Govt R&D, Agentic SOC) · **RBI** AI/ML Specialist & IT Security Expert.
 
 | JD requirement | Roles | Where in the range | Artefact to show |
 |---|---|---|---|
@@ -28,7 +29,20 @@ Security Engineer · **UAE** SM AI-Security Product Owner.
 | Product ownership / roadmap | UAE | this repo's roadmap + `docs/roadmap.md` | backlog |
 | Azure AI Foundry / Azure OpenAI | CRISIL | Azure module + LiteLLM azure route + Prompt Shields | `azure-ai-security` module |
 | Hugging Face / Copilot governance | CRISIL | Kyverno registry allow-list + model inventory | AI-SPM inventory |
-| Agent identity / non-human identity | PwC | C6 SPIFFE-style tool identity, OBO | `tools.py` authorisation |
+| Agent identity / non-human identity | PwC | C6 SPIFFE-style tool identity, OBO | agent authorisation controls |
+| **Agentic SecOps / AI-for-security / AI-SOC** | PwC, C-DOT, UAE | `ai-soc/` triage engine | incident cards, ATLAS+ATT&CK map |
+| **Autonomous detection / alert correlation / threat summarisation** | C-DOT, UAE | `ai-soc/soc/triage.py` correlate+summarise | `samples/events.jsonl` → incidents |
+| **CNAPP / CSPM / CWPP / DSPM posture** | Deloitte | AI-SPM AISPM-11/12 + Trivy config + conftest | `docs/aispm-report.json` |
+| **Model inventory, risk classification, approval gates, traceability** | Deloitte, EXL, UAE | `governance/model-registry.yaml` | risk tiers + approval gate |
+| **Vector store / RAG pipeline / orchestration security** | Deloitte | C1 RAG rails + gateway `/v1/guardrails/inspect` | AISPM-14 |
+| **IAM: AWS IAM / Entra / Azure RBAC / GCP IAM, no long-lived keys** | Deloitte | OIDC federation + `automountServiceAccountToken:false` | AISPM-15 |
+| **Cloud governance guardrails (Orgs/Control Tower/Azure Policy/Org Policy)** | Deloitte | `docs/cloud-governance.md` + Terraform budgets/OPA | policy-as-code |
+| **IaC incl. CloudFormation/Ansible/Bash/PowerShell** | Deloitte | Terraform modules + bootstrap scripts | `terraform validate` |
+| **Bedrock / SageMaker / Azure AI Foundry / Vertex AI familiarity** | Deloitte, CRISIL | LiteLLM routes + detector adapters + registry | `providers.py`, `litellm-config.yaml` |
+| **ML frameworks (TensorFlow/PyTorch/Keras), model deployment** | RBI AI/ML | model registry + MLSecOps notebook path | `governance/model-registry.yaml` |
+| **IS Audit / SOC operations / VAPT / PCI DSS** | RBI, UAE | audit log + AI-SOC + red-team + compliance matrix | `docs/compliance-matrix.md` |
+| **Frontier-model risk assessment / adversarial AI research** | C-DOT | red-team corpus + NIST AI 100-2 notebook | `notebooks/01_*` |
+| **Malware/RE, threat hunting, EDR/SOAR context** | C-DOT | AI-SOC correlation → ATT&CK + SOAR handoff | `ai-soc/README.md` |
 
 ## Certification runway (JDs "hold or earn")
 Priority order given your current CISSP/CISM/CEH/Azure-Sec base and this lab as the hands-on vehicle:
