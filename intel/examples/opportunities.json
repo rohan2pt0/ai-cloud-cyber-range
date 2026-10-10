@@ -1,0 +1,14 @@
+[
+  {"name": "YouTube: cybersecurity certifications for Indian BFSI pros",
+   "requires_skills": ["cybersecurity", "compliance", "writing", "mentoring"],
+   "requires_time_hrs_week": 6, "requires_capital_inr": 20000, "risk": "low"},
+  {"name": "Paid course: CCSP/CISSP prep for working professionals (India)",
+   "requires_skills": ["cybersecurity", "cloud security", "mentoring", "CISSP"],
+   "requires_time_hrs_week": 8, "requires_capital_inr": 30000, "risk": "low"},
+  {"name": "General personal-finance influencer (Warikoo-style)",
+   "requires_skills": ["personal finance", "video editing", "large audience"],
+   "requires_time_hrs_week": 20, "requires_capital_inr": 200000, "risk": "high"},
+  {"name": "Newsletter: RBI / BFSI cyber-compliance digest",
+   "requires_skills": ["compliance", "cybersecurity", "BFSI", "writing"],
+   "requires_time_hrs_week": 4, "requires_capital_inr": 5000, "risk": "low"}
+]

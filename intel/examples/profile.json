@@ -1,0 +1,7 @@
+{
+  "_note": "YOUR real capabilities. Edit this once; the engine scores every opportunity against it so advice stays realistically implementable. No PII — skills and assets only.",
+  "skills": ["cybersecurity", "cloud security", "risk management", "compliance", "security operations", "writing", "mentoring"],
+  "assets": ["CISSP", "CISM", "CEH", "Azure Security", "CCSP (in progress)", "BFSI experience"],
+  "edge": ["cybersecurity", "cloud security", "compliance", "BFSI", "CISSP", "CISM", "Indian regulatory (RBI) context"],
+  "constraints": {"time_hrs_week": 8, "capital_inr": 50000, "risk": "low"}
+}

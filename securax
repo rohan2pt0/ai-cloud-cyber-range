@@ -3,6 +3,7 @@
 #   ./securax up       start the live estate (gateway + models + chat + automation)
 #   ./securax status   health + what's running + URLs
 #   ./securax demo     run the red-team scorecard + posture scan (no cloud needed)
+#   ./securax intel    Global Intelligence — the community-proven decision (worked example)
 #   ./securax mcp       run the MCP server (usually launched by your AI client instead)
 #   ./securax down     stop everything (free RAM)
 # Default (no arg) = up + status.
@@ -61,7 +62,15 @@ URLS
     python3 "$ROOT/learning/self_improve.py" ${2:+--ai}
     C "Antifragility (past failures now defended):"; python3 "$ROOT/learning/antifragile.py" verify
     ;;
+  intel)
+    C "Global Intelligence — the community-proven decision (worked example: CCSP)"
+    python3 "$ROOT/intel/global_intel.py" decide "Pass CCSP" \
+      --items "$ROOT/intel/examples/ccsp-reddit-top.json" --mode replicate \
+      --vocab "Pete Zerger,LEARNZAPP,Sybex,Mike Chapple,CBK" \
+      --profile "$ROOT/intel/examples/profile.json"
+    C "Replace intel/examples/*.json with your own Top/All-time pulls — see docs/securax/13-GLOBAL-INTELLIGENCE.md"
+    ;;
   mcp)   exec python3 "$ROOT/mcp/securax_mcp.py" ;;
   down)  ( cd "$ROOT/local/compose" && docker compose --profile ai down ) ; C "stopped." ;;
-  *) echo "usage: ./securax [up|status|demo|learn|open|doctor|mcp|full up|full down|down]"; exit 1 ;;
+  *) echo "usage: ./securax [up|status|demo|learn|intel|open|doctor|mcp|full up|full down|down]"; exit 1 ;;
 esac

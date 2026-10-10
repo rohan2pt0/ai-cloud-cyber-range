@@ -89,6 +89,7 @@ are never locked in (Principle P-2). The **Phase** column tells you when you act
 | Personal OPSEC / self-OSINT | **this repo's `personal-rnd/`** | — | 0 | privacy-by-design |
 | Personal finance / FIRE | **this repo's `fin_freedom.py`** + INDMoney | Firefly III | 0 | financial resilience |
 | Tasks / automation triggers | **Todoist + n8n** | Vikunja (self-host) | 0 | GTD productivity |
+| Community-signal decisions | **this repo's `intel/global_intel.py`** | manual Reddit/Amazon filters | 0 | wisdom-of-crowds + Lindy |
 
 ---
 ### Decision shortcuts
