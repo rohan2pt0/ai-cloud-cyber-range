@@ -28,6 +28,7 @@ volumes:
   openwebui:    # Open WebUI chat history & settings (per-viewer, local)
   anythingllm:  # AnythingLLM workspaces & vector index (private RAG)
   n8n:          # n8n automation workflows & credentials
+  estatesync:   # sovereign cross-device life-OS state (SQLite, your box only)
 
 services:
   gateway:
@@ -181,6 +182,34 @@ services:
     ports: ["127.0.0.1:5678:5678"]
     volumes: ["n8n:/home/node/.n8n"]
     networks: [edge, modelplane]
+    logging: *default-logging
+
+  # ---- Sovereign cross-device sync (replaces the old cloud SaaS) ---------------
+  # The Guiding Map PWA pushes/pulls its state here over Tailscale. Data lives in a
+  # SQLite file on the `estatesync` volume — your box only, no third party.
+  # SECURE DEFAULT: bound to localhost. To let your phone/other laptop reach it,
+  # set SYNC_BIND to this host's Tailscale IP (100.x.y.z) — NOT 0.0.0.0 unless you
+  # mean to expose it on your LAN (it is Bearer-token gated either way).
+  estate-sync:
+    build: ../../apps/estate-sync
+    image: securax/estate-sync:dev
+    mem_limit: 128m
+    cpus: 0.25
+    profiles: ["core", "security", "ai"]
+    restart: unless-stopped
+    read_only: true
+    tmpfs: ["/tmp"]
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    environment:
+      # Optional feature: empty by default so the estate ALWAYS starts. With no token the
+      # service is fail-closed (every sync request gets 503 until you set SYNC_TOKENS in .env),
+      # so it is never an open store and never blocks the rest of the stack from coming up.
+      SYNC_TOKENS: ${SYNC_TOKENS:-}
+      SYNC_DB_PATH: /data/estate-sync.db
+    volumes: ["estatesync:/data"]
+    ports: ["${SYNC_BIND:-127.0.0.1}:8089:8089"]
+    networks: [edge]
     logging: *default-logging
 
   # ---- Guiding Map PWA (your local-first life OS) — tiny, always-on, private ----

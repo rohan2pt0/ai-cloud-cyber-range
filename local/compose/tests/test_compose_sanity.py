@@ -6,6 +6,8 @@ fails the build if any service mounts one host path at a target that lives insid
 own mount targets, and checks a few other "won't start" footguns.
 """
 import pathlib
+import re
+
 import yaml
 
 COMPOSE = pathlib.Path(__file__).resolve().parents[1] / "docker-compose.yml"
@@ -52,3 +54,14 @@ def test_build_fields_are_strings_or_mappings():
     for name, svc in (data.get("services") or {}).items():
         if "build" in svc:
             assert isinstance(svc["build"], (str, dict)), f"{name}.build must be a string or mapping"
+
+
+def test_optional_feature_envs_never_block_startup():
+    """An OPTIONAL service must not use a mandatory `${VAR:?...}` env: one missing value in a
+    user's old .env would make `compose up` fail for the WHOLE stack. Optional features must
+    degrade (fail-closed in the service), not refuse to start. Core secrets may stay mandatory."""
+    raw = COMPOSE.read_text()
+    core_required = {"POSTGRES_PASSWORD", "GRAFANA_PASSWORD", "MM_DB_PASSWORD"}
+    offenders = re.findall(r"\$\{([A-Z0-9_]+):\?", raw)
+    bad = [v for v in offenders if v not in core_required]
+    assert not bad, f"optional-feature envs must use ':-' not ':?' (would block the stack): {bad}"

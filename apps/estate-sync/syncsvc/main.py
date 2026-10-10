@@ -1,0 +1,157 @@
+"""SecuRAX estate-sync — the sovereign replacement for the old cloud SaaS sync.
+
+Your life-OS state (the Guiding Map PWA's localStorage) lives on YOUR box, in a
+SQLite file on a Docker volume, reached privately over Tailscale. No third-party
+SaaS, no SDK, no CDN. The PWA talks to it with plain fetch (see guiding-map/ops.js):
+
+    HEAD /sync/            -> 200 (its Date header anchors the client clock)
+    GET  /sync/state?user=<id>   -> { payload:{k:v}, meta:{k:ts}, updated_at }  (404 if none)
+    PUT  /sync/state?user=<id>   body { payload, meta, updated_at }             -> merged
+
+Auth: Authorization: Bearer <device token>. Tokens come from SYNC_TOKENS (comma-
+separated) in the estate .env — NEVER committed. Fail-closed: if no tokens are
+configured the service refuses every request, so an un-configured deploy can
+never become an open, world-writable data store.
+
+Server-side per-key merge (defense-in-depth): even if two devices race or a stale
+device pushes a whole blob, a field is only overwritten when the incoming copy is
+NEWER by its own timestamp. Keys already stored are never silently dropped by a
+device that hasn't seen them. This is strictly safer than a last-writer-wins blob
+store and is fully compatible with the PWA's own client-side merge.
+"""
+import hmac
+import os
+import sqlite3
+import time
+from contextlib import asynccontextmanager, closing
+
+from fastapi import FastAPI, Header, HTTPException, Query, Request, Response
+from fastapi.responses import JSONResponse
+
+DB_PATH = os.environ.get("SYNC_DB_PATH", "/data/estate-sync.db")
+# Reject a single blob larger than this (bytes). A healthy life-OS state is a few
+# hundred KB; anything in the tens of MB is a bug or an attempt to fill the disk.
+MAX_BODY = int(os.environ.get("SYNC_MAX_BODY_BYTES", str(8 * 1024 * 1024)))
+
+
+def _tokens() -> set[str]:
+    """Allowed device tokens, parsed fresh so a token rotation needs only a restart."""
+    raw = os.environ.get("SYNC_TOKENS", "")
+    return {t.strip() for t in raw.split(",") if t.strip()}
+
+
+def _db() -> sqlite3.Connection:
+    conn = sqlite3.connect(DB_PATH, timeout=10)
+    conn.execute("PRAGMA journal_mode=WAL")       # concurrent reads during a write
+    conn.execute("PRAGMA busy_timeout=10000")
+    return conn
+
+
+def _init_db() -> None:
+    os.makedirs(os.path.dirname(DB_PATH) or ".", exist_ok=True)
+    with closing(_db()) as conn:
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS state ("
+            " user_id TEXT PRIMARY KEY,"
+            " payload TEXT NOT NULL,"
+            " meta TEXT NOT NULL,"
+            " updated_at TEXT)"
+        )
+        conn.commit()
+
+
+@asynccontextmanager
+async def lifespan(_app: FastAPI):
+    _init_db()
+    yield
+
+
+app = FastAPI(title="SecuRAX estate-sync", docs_url=None, redoc_url=None,
+              openapi_url=None, lifespan=lifespan)
+
+
+def _auth(authorization: str | None) -> None:
+    """Fail-closed Bearer check with constant-time compare (no token leak via timing)."""
+    allowed = _tokens()
+    if not allowed:
+        # Unconfigured estate: refuse everything rather than serve an open store.
+        raise HTTPException(503, "sync is not configured (set SYNC_TOKENS in the estate .env)")
+    token = ""
+    if authorization and authorization.lower().startswith("bearer "):
+        token = authorization[7:].strip()
+    if not token or not any(hmac.compare_digest(token, a) for a in allowed):
+        raise HTTPException(401, "invalid or missing device token")
+
+
+@app.get("/healthz")
+def healthz() -> dict:
+    return {"ok": True, "configured": bool(_tokens())}
+
+
+# The PWA's clock anchor: a HEAD to the sync base. Its Date response header (added
+# by the ASGI server) is what the client uses to correct cross-device clock skew.
+@app.api_route("/sync", methods=["GET", "HEAD"])
+@app.api_route("/sync/", methods=["GET", "HEAD"])
+def sync_root() -> Response:
+    return Response(status_code=200)
+
+
+def _merge(stored: dict, s_meta: dict, inc: dict, i_meta: dict) -> tuple[dict, dict]:
+    """Per-key timestamp merge. A field changes only when the incoming copy is newer."""
+    out, out_meta = dict(stored), dict(s_meta)
+    for k, v in inc.items():
+        ts = i_meta.get(k, 0) or 0
+        prev = out_meta.get(k, 0) or 0
+        if k not in out or ts >= prev:
+            out[k] = v
+            out_meta[k] = ts or int(time.time() * 1000)
+    return out, out_meta
+
+
+@app.get("/sync/state")
+def get_state(user: str = Query(..., min_length=1, max_length=256),
+              authorization: str | None = Header(default=None)) -> JSONResponse:
+    _auth(authorization)
+    import json
+    with closing(_db()) as conn:
+        row = conn.execute(
+            "SELECT payload, meta, updated_at FROM state WHERE user_id=?", (user,)
+        ).fetchone()
+    if not row:
+        raise HTTPException(404, "no state for this user yet")
+    return JSONResponse({"payload": json.loads(row[0]), "meta": json.loads(row[1]), "updated_at": row[2]})
+
+
+@app.put("/sync/state")
+async def put_state(request: Request,
+                    user: str = Query(..., min_length=1, max_length=256),
+                    authorization: str | None = Header(default=None)) -> JSONResponse:
+    _auth(authorization)
+    import json
+    raw = await request.body()
+    if len(raw) > MAX_BODY:
+        raise HTTPException(413, f"state too large (> {MAX_BODY} bytes)")
+    try:
+        body = json.loads(raw or b"{}")
+    except ValueError:
+        raise HTTPException(400, "body must be JSON")
+    if not isinstance(body, dict):
+        raise HTTPException(400, "body must be a JSON object")
+    inc = body.get("payload") or {}
+    i_meta = body.get("meta") or {}
+    if not isinstance(inc, dict) or not isinstance(i_meta, dict):
+        raise HTTPException(400, "payload and meta must be objects")
+
+    with closing(_db()) as conn:
+        row = conn.execute("SELECT payload, meta FROM state WHERE user_id=?", (user,)).fetchone()
+        stored = json.loads(row[0]) if row else {}
+        s_meta = json.loads(row[1]) if row else {}
+        merged, merged_meta = _merge(stored, s_meta, inc, i_meta)
+        updated_at = body.get("updated_at") or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        conn.execute(
+            "INSERT INTO state(user_id, payload, meta, updated_at) VALUES(?,?,?,?) "
+            "ON CONFLICT(user_id) DO UPDATE SET payload=excluded.payload, meta=excluded.meta, updated_at=excluded.updated_at",
+            (user, json.dumps(merged), json.dumps(merged_meta), updated_at),
+        )
+        conn.commit()
+    return JSONResponse({"ok": True, "keys": len(merged), "updated_at": updated_at})

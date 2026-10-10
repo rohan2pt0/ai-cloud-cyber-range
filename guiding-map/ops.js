@@ -365,7 +365,7 @@
       h += '<div class="info">Optional. Without it, each device keeps its own copy and you move data with Export/Import. '
         + 'With it, all devices stay live \u2014 synced through <b>your own SecuRAX estate</b> (not a cloud SaaS), reached privately over Tailscale. '
         + 'Setup is in docs/securax/14-GUIDING-MAP.md.</div>'
-        + '<label class="f-label">Estate sync URL</label><input id="syUrl" placeholder="http://securax.your-tailnet.ts.net:8080/sync">'
+        + '<label class="f-label">Estate sync URL</label><input id="syUrl" placeholder="http://securax.your-tailnet.ts.net:8089/sync">'
         + '<label class="f-label">Device token</label><input id="syKey" placeholder="your estate sync token">'
         + '<label class="f-label">Your row id (anything, same on every device)</label><input id="syUser" placeholder="me">'
         + '<button class="btn btn-p" onclick="gmSyncSave()">Turn sync on</button>';
