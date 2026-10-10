@@ -147,6 +147,56 @@
     </div>
   </section>
 
+  <!-- INTEL (Global Intelligence) -->
+  <section id="tab-intel" class="hide">
+    <div class="card">
+      <h2>Decide the proven way</h2>
+      <p class="muted" style="margin-top:-6px">The Reddit <b>Top / All-time</b> trick, as a system. Collect the top posts/reviews, and this finds what the crowd agrees on, scores it against <b>your</b> skills, and gives you a worst-case plan. All on-device.</p>
+      <div class="chips" id="intelMode" style="margin-top:8px">
+        <button class="chip on" data-mode="replicate">Copy what works</button>
+        <button class="chip" data-mode="edge">Get ahead (early)</button>
+      </div>
+      <p class="pill" id="intelModeNote" style="margin:6px 0 0"></p>
+      <input id="intelGoal" placeholder="Your goal — e.g. Pass CCSP" style="margin-top:10px">
+      <textarea id="intelItems" style="margin-top:10px" placeholder="Paste the top items you collected — one per line, best first.
+e.g.
+Passed CCSP! Pete Zerger videos + LEARNZAPP
+CCSP resources: Pete Zerger + LEARNZAPP, Sybex for depth"></textarea>
+      <input id="intelVocab" placeholder="Names you saw repeating (comma-separated) — optional but best" style="margin-top:10px">
+      <input id="intelVolume" placeholder="Edge only: trend over time, comma numbers e.g. 1,2,3,6,10,18" style="margin-top:10px" class="hide">
+      <button class="btn" id="intelBtn" style="margin-top:10px">Analyse</button>
+      <div id="intelOut" style="margin-top:12px"></div>
+    </div>
+
+    <div class="card">
+      <h2>Does it fit me?</h2>
+      <p class="muted" style="margin-top:-6px">Score an option against your real capabilities, so you only chase what you can realistically win. <button class="chip" id="editProfile" style="padding:3px 10px">edit my profile</button></p>
+      <div id="profileBox" class="hide" style="margin-top:8px">
+        <label style="font-size:.84rem">My skills & edges (comma-separated)
+          <textarea id="pfSkills" style="min-height:54px"></textarea></label>
+        <div class="grid2" style="margin-top:8px">
+          <label style="font-size:.84rem">Time/week (hrs)<input id="pfTime" type="number"></label>
+          <label style="font-size:.84rem">Capital cap ₹<input id="pfCap" type="number"></label>
+        </div>
+        <button class="btn sec" id="pfSave" style="margin-top:8px">Save profile</button>
+      </div>
+      <input id="oppName" placeholder="Option — e.g. a BFSI cyber YouTube channel" style="margin-top:10px">
+      <input id="oppSkills" placeholder="Skills it needs (comma-separated)" style="margin-top:8px">
+      <div class="grid2" style="margin-top:8px">
+        <label style="font-size:.84rem">Needs time/wk<input id="oppTime" type="number" value="6"></label>
+        <label style="font-size:.84rem">Needs capital ₹<input id="oppCap" type="number" value="20000"></label>
+      </div>
+      <button class="btn" id="fitBtn" style="margin-top:10px">Check fit</button>
+      <div id="fitOut" style="margin-top:12px"></div>
+    </div>
+
+    <div class="card">
+      <h2>Decision log — your compounding memory</h2>
+      <p class="muted" style="margin-top:-6px">Every decision you save becomes a lesson you can revisit. This is how good operators stop re-learning the same things.</p>
+      <div id="decisions"></div>
+    </div>
+  </section>
+
   <!-- LAUNCH -->
   <section id="tab-launch" class="hide">
     <div class="card">
@@ -206,6 +256,7 @@
 <nav class="tabs" id="tabs">
   <button data-tab="today" class="on"><span class="ic">◎</span>Today</button>
   <button data-tab="ask"><span class="ic">✸</span>Ask</button>
+  <button data-tab="intel"><span class="ic">◈</span>Intel</button>
   <button data-tab="launch"><span class="ic">⤢</span>Launch</button>
   <button data-tab="money"><span class="ic">₹</span>Money</button>
   <button data-tab="guard"><span class="ic">🛡</span>Guard</button>
@@ -230,7 +281,8 @@
 /* ---------- tiny store (localStorage, guarded) ---------- */
 const KEY='guiding-map';
 const DEFAULTS={ tasks:[], shutdown:[false,false,false,false,false], opsec:[false,false,false,false,false,false],
-  vault:'', gw:'http://localhost:8080', theme:'',
+  vault:'', gw:'http://localhost:8080', theme:'', decisions:[],
+  intelProfile:{skills:'cybersecurity, cloud security, compliance, risk, BFSI, CISSP, CISM, CCSP, writing, mentoring', time:8, cap:50000},
   habits:[{n:'Deep Work (90 min)',s:0,last:''},{n:'Move / exercise',s:0,last:''},{n:'Read / learn',s:0,last:''},{n:'Plan tomorrow',s:0,last:''}] };
 function load(){ try{ return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem(KEY)||'{}')); }catch(e){ return {...DEFAULTS}; } }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
@@ -243,7 +295,7 @@ function esc(t){return String(t==null?'':t).replace(/[&<>]/g,c=>({'&':'&amp;','<
 /* ---------- tabs ---------- */
 $$('#tabs button').forEach(b=>b.onclick=()=>{
   $$('#tabs button').forEach(x=>x.classList.remove('on')); b.classList.add('on');
-  ['today','ask','launch','money','guard','vault'].forEach(t=>$('#tab-'+t).classList.toggle('hide', t!==b.dataset.tab));
+  ['today','ask','intel','launch','money','guard','vault'].forEach(t=>$('#tab-'+t).classList.toggle('hide', t!==b.dataset.tab));
 });
 
 /* ---------- Today: tasks ---------- */
@@ -365,6 +417,109 @@ function recordFb(rating){
 }
 $('#fbUp').onclick=()=>recordFb('up'); $('#fbDown').onclick=()=>recordFb('down');
 
+/* ---------- Intel: Global Intelligence, offline -----------------------------------------
+   Mirrors the deterministic core of intel/global_intel.py so the PWA gives the SAME answer
+   with no backend (local-first, sovereign, no single point of failure). Keep in sync with the
+   Python engine — it is the source of truth; this is the on-device twin. */
+const STOP=new Set(('the and for you your with this that have from are was all any can will just like get got use used using best good great really very much more most some they them what when how why who but not than then also about would could should did does exam test study studying passed pass cleared it is to of in on a an i my me we course courses').split(' '));
+function signalWeight(score,rank,age,mode){
+  const pop=Math.log10(Math.max(score,0)+10), rankw=1/(1+0.15*Math.max(rank-1,0));
+  if(mode==='edge'){ const fresh=Math.exp(-Math.max(age,0)/180); return pop*rankw*(0.3+0.7*fresh); }
+  return pop*rankw*(1+Math.min(Math.max(age,0)/365,5)*0.10);
+}
+function autoCandidates(text){ const out=new Set();
+  (text.match(/\b[A-Z][a-zA-Z0-9+.&]+(?:\s+[A-Z][a-zA-Z0-9+.&]+){0,2}\b/g)||[]).forEach(p=>{ if(!STOP.has(p.toLowerCase())&&p.length>2) out.add(p.trim()); });
+  (text.match(/\b[A-Z]{3,}[A-Z0-9]*\b/g)||[]).forEach(p=>out.add(p));
+  return out;
+}
+function extractConsensus(items,vocab,mode){
+  const tally={};
+  items.forEach(it=>{
+    const text=`${it.title||''} ${it.text||''}`;
+    const w=signalWeight(it.score||0,it.rank||1,it.age_days||0,mode), src=it.source||'?';
+    const names=vocab&&vocab.length?vocab:[...autoCandidates(text)];
+    names.forEach(name=>{
+      if(vocab&&vocab.length){ const pat=new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g,'\\$&').replace(/\s+/g,'\\s+'),'i'); if(!pat.test(text))return; }
+      const r=tally[name]||(tally[name]={name,weight:0,mentions:0,sources:new Set()});
+      r.weight+=w; r.mentions++; r.sources.add(src);
+    });
+  });
+  const total=Object.values(tally).reduce((a,r)=>a+r.weight,0)||1;
+  return Object.values(tally).sort((a,b)=>b.weight-a.weight).map(r=>({name:r.name,mentions:r.mentions,
+    distinct_sources:r.sources.size, consensus:r.weight/total,
+    confidence:(r.sources.size>=2&&r.mentions>=3)?'high':(r.sources.size>=2?'medium':'low')}));
+}
+function commoditization(series){ const s=series.filter(v=>!isNaN(v)).map(Number); if(s.length<3)return null;
+  const peak=Math.max(...s)||1, recent=(s.slice(-3).reduce((a,b)=>a+b,0))/3, earlier=(s.slice(0,3).reduce((a,b)=>a+b,0))/3;
+  const growth=(recent-earlier)/(earlier+1e-9), sat=recent/peak;
+  if(sat<0.25&&growth>0.3)return{stage:'innovators',advice:'Very early — only with a real edge.'};
+  if(growth>0.5)return{stage:'early adopters',advice:'SWEET SPOT — rising, not crowded. Enter now.'};
+  if(growth>0.1)return{stage:'early majority',advice:'Good entry if you differentiate; window closing.'};
+  if(sat>0.8&&Math.abs(growth)<=0.1)return{stage:'late majority',advice:'Commoditised — need a sharp niche.'};
+  return{stage:'laggard / declining',advice:'Likely too late; find the next wave.'};
+}
+function capabilityFit(opp,profile){
+  const have=new Set(profile.skills.split(',').map(s=>s.trim().toLowerCase()).filter(Boolean));
+  const need=opp.skills.map(s=>s.trim()).filter(Boolean);
+  const matched=need.filter(s=>have.has(s.toLowerCase())), gaps=need.filter(s=>!have.has(s.toLowerCase()));
+  const skillFit=need.length?matched.length/need.length:1;
+  const unfair=matched;   // in the PWA the stored skills double as your edge list
+  const edgeC=0.25*Math.min(unfair.length/3,1);
+  const timeOk=opp.time<=profile.time, capOk=opp.cap<=profile.cap;
+  const timeSlack=profile.time?Math.max(0,(profile.time-opp.time)/profile.time):1;
+  const capSlack=profile.cap?Math.max(0,(profile.cap-opp.cap)/profile.cap):1;
+  const comfort=0.25*((timeSlack+capSlack+1)/3);
+  const penalty=(timeOk?0:0.3)+(capOk?0:0.3);
+  const fit=Math.max(0,Math.min(1,0.5*skillFit+edgeC+comfort-penalty));
+  const blockers=[]; if(!timeOk)blockers.push('more time than you have'); if(!capOk)blockers.push('more capital than your cap');
+  return {fit,verdict:fit>=0.7?'strong fit':fit>=0.45?'possible (close gaps)':'weak fit',gaps,blockers};
+}
+const PREMORTEM=['The consensus was popular but wrong for my context.','I underestimated the effort and quit before it compounded.','A hidden prerequisite I lack blocked me.','It commoditised before I shipped (I was late).','A single dependency failed with no fallback.'];
+
+const intelModeNote={replicate:'Copy the time-tested consensus. Older + still-top = more proven (Lindy).',edge:'Favour RISING signals + your unfair advantage. Top/All-time here means you are already late.'};
+let intelMode='replicate';
+function setIntelMode(m){ intelMode=m; $$('#intelMode .chip').forEach(c=>c.classList.toggle('on',c.dataset.mode===m));
+  $('#intelModeNote').textContent=intelModeNote[m]; $('#intelVolume').classList.toggle('hide',m!=='edge'); }
+$$('#intelMode .chip').forEach(c=>c.onclick=()=>setIntelMode(c.dataset.mode)); setIntelMode('replicate');
+
+function bar(p){ const pct=Math.round(p*100); return `<div style="height:6px;background:var(--line);border-radius:4px;overflow:hidden"><div style="height:100%;width:${pct}%;background:var(--accent)"></div></div>`; }
+$('#intelBtn').onclick=()=>{
+  const goal=$('#intelGoal').value.trim();
+  const lines=$('#intelItems').value.split('\n').map(s=>s.trim()).filter(Boolean);
+  const items=lines.map((t,i)=>({source:'you',rank:i+1,score:Math.max(1,lines.length-i),age_days:0,text:t}));
+  const vocab=$('#intelVocab').value.split(',').map(s=>s.trim()).filter(Boolean);
+  if(!items.length){ $('#intelOut').innerHTML='<p class="muted">Paste at least a few top items first.</p>'; return; }
+  const ranked=extractConsensus(items,vocab,intelMode).slice(0,8);
+  const strong=ranked.length&&items.length>=8&&ranked[0].distinct_sources>=2;
+  let html=`<div class="card" style="margin:0">`;
+  html+=`<b>What the crowd agrees on</b>`;
+  html+=ranked.length?ranked.map(r=>`<div style="margin-top:8px"><div class="row" style="justify-content:space-between"><span>${esc(r.name)} <span class="pill">×${r.mentions}</span></span><span class="pill">${Math.round(r.consensus*100)}% · ${r.confidence}</span></div>${bar(r.consensus)}</div>`).join(''):'<p class="muted">No clear names found — add the names you saw repeating above.</p>';
+  html+=`<p class="pill" style="margin-top:10px">Based only on the ${items.length} item(s) you pasted — not invented. ${items.length<8?'Add more top items for higher confidence.':''}</p>`;
+  if(intelMode==='edge'){ const vol=$('#intelVolume').value.split(',').map(s=>s.trim()).filter(Boolean); const st=commoditization(vol);
+    if(st) html+=`<p style="margin-top:10px"><b>Timing:</b> ${st.stage} — <span class="muted">${st.advice} <i>(estimate)</i></span></p>`; }
+  html+=`</div>`;
+  html+=`<div class="card" style="margin-top:10px;border-color:var(--q3)"><b>⚠ Before you commit — worst case</b><ul style="margin:8px 0 0;padding-left:18px">${PREMORTEM.map(p=>`<li class="muted" style="font-size:.86rem">${p}</li>`).join('')}</ul><p class="muted" style="font-size:.86rem;margin-top:8px"><b>Barbell:</b> keep ~90% of time/money in your safe core; risk only ~10% on this. <b>Kill-criteria:</b> pre-decide the date/metric at which you stop.</p></div>`;
+  html+=`<button class="btn sec" id="saveDecision" style="margin-top:10px">Save this decision</button>`;
+  $('#intelOut').innerHTML=html;
+  $('#saveDecision').onclick=()=>{ S.decisions.unshift({ts:new Date().toISOString().slice(0,10),mode:intelMode,goal:goal||'(no goal)',leader:ranked[0]?ranked[0].name:'—',verdict:strong?'strong':'gather more'}); save(); renderDecisions(); };
+};
+
+/* capability-fit sub-card */
+function loadProfile(){ const p=S.intelProfile; $('#pfSkills').value=p.skills; $('#pfTime').value=p.time; $('#pfCap').value=p.cap; }
+$('#editProfile').onclick=()=>{ $('#profileBox').classList.toggle('hide'); loadProfile(); };
+$('#pfSave').onclick=()=>{ S.intelProfile={skills:$('#pfSkills').value,time:+$('#pfTime').value||8,cap:+$('#pfCap').value||50000}; save(); $('#profileBox').classList.add('hide'); };
+$('#fitBtn').onclick=()=>{
+  const opp={name:$('#oppName').value.trim(),skills:$('#oppSkills').value.split(','),time:+$('#oppTime').value||0,cap:+$('#oppCap').value||0};
+  const f=capabilityFit(opp,S.intelProfile);
+  const colour=f.fit>=0.7?'var(--ok)':f.fit>=0.45?'var(--q3)':'var(--q1)';
+  $('#fitOut').innerHTML=`<div class="card" style="margin:0;border-color:${colour}"><div class="row" style="justify-content:space-between"><b>${esc(opp.name||'This option')}</b><span class="big" style="font-size:1.2rem">${Math.round(f.fit*100)}%</span></div><p style="margin:4px 0 0">${f.verdict}</p>${f.gaps.length?`<p class="muted" style="font-size:.86rem;margin-top:6px">Gaps to close: ${esc(f.gaps.join(', '))}</p>`:''}${f.blockers.length?`<p style="color:var(--q1);font-size:.86rem;margin-top:6px">Blockers: ${esc(f.blockers.join(', '))}</p>`:''}</div>`;
+};
+function renderDecisions(){ $('#decisions').innerHTML = S.decisions.length? '' : '<p class="muted">No saved decisions yet. Analyse one above and press “Save”.</p>';
+  S.decisions.slice(0,12).forEach((d,i)=>{ const el=document.createElement('div'); el.className='task';
+    el.innerHTML=`<span class="t" style="flex:1"><b>${esc(d.goal)}</b> <span class="pill">· ${d.mode} · ${d.ts}</span><br><span class="muted" style="font-size:.86rem">→ ${esc(d.leader)} (${d.verdict})</span></span><button class="iconbtn" aria-label="delete">✕</button>`;
+    el.querySelector('[aria-label=delete]').onclick=()=>{ S.decisions.splice(i,1); save(); renderDecisions(); };
+    $('#decisions').appendChild(el); }); }
+
 /* ---------- Launch ---------- */
 const LAUNCH=[
   ['Unified chat','http://localhost:3000','local + cloud, guarded'],
@@ -451,7 +606,7 @@ function renderHabits(){ $('#habits').innerHTML=''; S.habits.forEach(h=>{
   };
   $('#habits').appendChild(d);
 }); }
-renderTasks(); renderShutdown(); renderOpsec(); renderHabits();
+renderTasks(); renderShutdown(); renderOpsec(); renderHabits(); renderDecisions();
 </script>
 </body>
 </html>
