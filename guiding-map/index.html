@@ -71,6 +71,10 @@
   .tier.green{background:color-mix(in srgb,var(--ok) 18%,transparent);color:var(--ok)}
   .big{font-family:var(--mono);font-weight:700;font-size:1.6rem}
   .pill{font-size:.76rem;color:var(--muted)}
+  .chips{display:flex;flex-wrap:wrap;gap:8px}
+  .chip{background:var(--soft);border:1px solid var(--line);color:var(--ink);border-radius:999px;
+        padding:7px 12px;font-size:.84rem;font-weight:500}
+  .chip.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent)}
 
   nav.tabs{position:fixed;bottom:0;left:0;right:0;z-index:6;background:var(--panel);border-top:1px solid var(--line);
            display:flex;padding:6px 6px calc(6px + env(safe-area-inset-bottom,0))}
@@ -124,13 +128,22 @@
   <section id="tab-ask" class="hide">
     <div class="card">
       <h2>Ask your local AI</h2>
-      <p class="muted" style="margin-top:-6px">Answered by your <b>local</b> model through the guardrail gateway. <span class="tier red">Red</span> data stays on your machine.</p>
+      <p class="muted" style="margin-top:-6px">Just ask plainly — we turn it into an expert-grade prompt for you (no prompt-engineering needed) and keep it honest. Answered by your <b>local</b> model through the guardrail gateway. <span class="tier red">Red</span> data stays on your machine.</p>
+      <p class="muted" style="margin:6px 0 2px;font-size:.82rem">Pick a recipe, or just type:</p>
+      <div class="chips" id="recipes"></div>
       <textarea id="askText" placeholder="e.g. Summarise today's top BFSI cyber risks in 3 bullets"></textarea>
       <div class="row" style="margin-top:10px">
         <button class="btn" id="askBtn">Ask</button>
         <span class="pill" id="askHint"></span>
       </div>
       <div id="askOut" class="card" style="background:var(--soft);display:none;white-space:pre-wrap"></div>
+      <div id="askFeedback" class="row" style="margin-top:10px;display:none">
+        <span class="pill">Was this useful?</span>
+        <button class="iconbtn" id="fbUp" aria-label="helpful">👍</button>
+        <button class="iconbtn" id="fbDown" aria-label="not helpful">👎</button>
+        <span class="pill" id="fbMsg"></span>
+      </div>
+      <div class="chips" id="followups" style="margin-top:10px"></div>
     </div>
   </section>
 
@@ -262,21 +275,95 @@ function renderShutdown(){ $('#shutdown').innerHTML=''; SHUT.forEach((t,i)=>{
   $('#shutdown').appendChild(d);
 }); }
 
-/* ---------- Ask (gateway) ---------- */
+/* ---------- Ask: prompt-engineering + anti-hallucination done for the user ----------
+   This mirrors assistant/enhance.py in the browser so the PWA sends the SAME expert-grade,
+   grounded prompt the MCP/CLI path uses. A casual question becomes: a hard anti-fabrication
+   contract + the right expert output format for the detected intent. The user never has to
+   know any of it. Keep in sync with assistant/enhance.py (single source of the method). */
+const CONTRACT =
+  "You are a precise, trustworthy advisor for a user in India (BFSI context by default). "+
+  "Rules you must follow without exception:\n"+
+  "1. Answer the question first in one line (Pyramid Principle), then the key reasons.\n"+
+  "2. Use ONLY facts you are confident about or that the user provided. If you are not "+
+  "sure, say 'I'm not certain' and state what you would need to be sure. Never guess.\n"+
+  "3. Never invent numbers, names, dates, citations, prices or links. If a current/live "+
+  "figure (price, rate, law as of today) is needed, say it must be verified from a primary "+
+  "source and do not fabricate one.\n"+
+  "4. Be concise and plain. No jargon unless asked. Structure with short bullets when it helps.\n"+
+  "5. If the question is ambiguous, ask ONE clarifying question instead of assuming.\n"+
+  "6. Flag clearly when a decision needs a professional (medical/legal/financial/tax).";
+const INTENTS=[
+  ['summarise', /summari[sz]|tl;?dr|key points|\bgist\b|\bbrief\b/i,
+    "Give: a one-line takeaway, then 3-5 bullets of the only points that matter, then one 'so what / next action'.",
+    ["Make it even shorter","What are the risks?","Draft an email about this"]],
+  ['explain', /\bexplain|what is|what are|how does|how do|help me understand|teach me|eli5|simpl[ey]/i,
+    "Explain simply (as to a smart non-expert): a plain definition, a real-world analogy, why it matters, and one example. Avoid jargon.",
+    ["Give me an example","How is it used in banking?","What are common mistakes?"]],
+  ['draft', /\bdraft|\bwrite|compose|e-?mail|message|\breply|letter|\bpost\b/i,
+    "Write it ready-to-send: appropriate tone, clear subject/opening, the ask, and a close. Keep it tight. Offer nothing the user did not ask for.",
+    ["Make it more formal","Make it shorter","Add a polite follow-up line"]],
+  ['decide', /should i|decide|compare|\bvs\b|versus|pros and cons|which is (better|best)|\boptions\b/i,
+    "Use a decision frame: state the decision, list options, give a MECE pros/cons table, then a clear recommendation with the one reason that tips it, and the main risk.",
+    ["What would change your recommendation?","What's the cheapest option?","What's the safest option?"]],
+  ['extract', /\bextract|find all|\blist\b|pull out|identify|action items|tasks from/i,
+    "Extract exactly what was asked as a clean list. If a field is not present, write '(not stated)' — do not infer or invent it.",
+    ["Turn these into tasks","Prioritise these (Eisenhower)","Summarise the list"]],
+];
+const DEFAULT_FMT="Answer directly and usefully: the answer first, then the few reasons that matter, then one next step.";
+const DEFAULT_FOLLOWUPS=["Summarise that","Give me the risks","What should I do next?"];
 const RED=/aadhaar|\b[2-9]\d{3}\s?\d{4}\s?\d{4}\b|\b[A-Z]{5}\d{4}[A-Z]\b|customer|account\s*no|internal ip/i;
+const RECIPES=[
+  ['📝 Summarise','Summarise this:\n'],['💡 Explain simply','Explain simply: '],
+  ['✉️ Draft email','Draft an email to '],['⚖️ Decide','Help me decide: should I '],
+  ['✅ Extract tasks','Extract the action items from:\n'],
+];
+
+function enhance(q){
+  let fmt=DEFAULT_FMT, ups=DEFAULT_FOLLOWUPS;
+  for(const [,rx,f,fl] of INTENTS){ if(rx.test(q)){ fmt=f; ups=fl; break; } }
+  let sys=CONTRACT+"\n\nFor THIS request: "+fmt;
+  if(RED.test(q)) sys+="\n\nNOTE: this contains sensitive/personal data. Stay strictly factual, do not suggest sending it anywhere, and assume it must never leave the user's control.";
+  return {messages:[{role:'system',content:sys},{role:'user',content:'QUESTION:\n'+q}], followups:ups};
+}
+
+$('#recipes').innerHTML=RECIPES.map(([lbl,stub],i)=>`<button class="chip" data-stub="${esc(stub)}" data-i="${i}">${lbl}</button>`).join('');
+$('#recipes').onclick=e=>{ const b=e.target.closest('.chip'); if(!b)return;
+  const ta=$('#askText'); ta.value=b.dataset.stub; ta.focus();
+  ta.setSelectionRange(ta.value.length,ta.value.length); ta.dispatchEvent(new Event('input')); };
+
 $('#askText').addEventListener('input',()=>{ const red=RED.test($('#askText').value);
   $('#askHint').innerHTML = red? '<span class="tier red">Red</span> stays local' : '<span class="tier green">Green</span> ok'; });
+
+let lastQ='', lastA='';
+function renderFollowups(ups){ $('#followups').innerHTML=ups.map(u=>`<button class="chip">${esc(u)}</button>`).join('');
+  $('#followups').querySelectorAll('.chip').forEach(c=>c.onclick=()=>{ $('#askText').value=c.textContent; $('#askText').dispatchEvent(new Event('input')); $('#askBtn').click(); }); }
+
 $('#askBtn').onclick=async()=>{
   const q=$('#askText').value.trim(); if(!q)return;
   const out=$('#askOut'); out.style.display='block'; out.textContent='Thinking…';
+  $('#askFeedback').style.display='none'; $('#followups').innerHTML=''; $('#fbMsg').textContent='';
+  const {messages,followups}=enhance(q);
   try{
     const r=await fetch(S.gw.replace(/\/$/,'')+'/v1/chat/completions',{method:'POST',
       headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({model:'bank-assistant',messages:[{role:'user',content:q}]})});
+      body:JSON.stringify({model:'bank-assistant',messages})});
     if(!r.ok){ out.textContent='Blocked or unavailable (HTTP '+r.status+'). If this was an attack pattern, that is the guardrail working.'; return; }
-    const j=await r.json(); out.textContent=(j.choices&&j.choices[0].message.content)||JSON.stringify(j);
+    const j=await r.json(); lastA=(j.choices&&j.choices[0].message.content)||JSON.stringify(j); lastQ=q;
+    out.textContent=lastA;
+    $('#askFeedback').style.display='flex';
+    renderFollowups(followups);
   }catch(e){ out.textContent='Gateway not reachable. Run  ./securax up  first, then try again. (Nothing was sent.)'; }
 };
+
+/* Improve-after-every-use: feedback stays on-device (localStorage). A 👎 is kept so you can
+   review weak answers later — the same antifragile "failures become strengths" loop, locally. */
+function recordFb(rating){
+  try{ S.feedback=S.feedback||[]; S.feedback.push({ts:new Date().toISOString(),rating,q:lastQ.slice(0,300)}); save(); }catch(e){}
+  const up=(S.feedback||[]).filter(f=>f.rating==='up').length, tot=(S.feedback||[]).length;
+  $('#fbMsg').textContent = (rating==='up'?'Thanks — noted. ':'Logged to improve. ')+`(${up}/${tot} helpful)`;
+  $('#fbUp').disabled=$('#fbDown').disabled=true;
+}
+$('#fbUp').onclick=()=>recordFb('up'); $('#fbDown').onclick=()=>recordFb('down');
 
 /* ---------- Launch ---------- */
 const LAUNCH=[

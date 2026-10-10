@@ -54,6 +54,7 @@ makes it an *ecosystem* and not five disconnected projects.
 | Open-core model & subscription tiers | [`09-OPEN-CORE-TIERS.md`](09-OPEN-CORE-TIERS.md) |
 | Go full-scale (opt-in, turn-off-able) | [`10-FULL-STACK.md`](10-FULL-STACK.md) |
 | How failures become strengths (Kaizen/SI) | [`11-KAIZEN.md`](11-KAIZEN.md) |
+| Expert answers without prompt-engineering (the "Ask" design) | [`12-INTELLIGENT-UX.md`](12-INTELLIGENT-UX.md) |
 | Start using it today | [`../../GETTING-STARTED.md`](../../GETTING-STARTED.md) |
 
 ## The three promises this foundation keeps
