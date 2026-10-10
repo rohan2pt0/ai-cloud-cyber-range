@@ -48,6 +48,8 @@ makes it an *ecosystem* and not five disconnected projects.
 | "Which standard/regulation does this satisfy?" | [`04-COMPLIANCE-MAP.md`](04-COMPLIANCE-MAP.md) |
 | "What do I do first, next, later?" (zero → scale) | [`05-ROADMAP.md`](05-ROADMAP.md) |
 | A visual, browsable command center | open [`../../portal/index.html`](../../portal/index.html) |
+| Add a *future* project to this same base | [`06-EXTENDING.md`](06-EXTENDING.md) |
+| Start using it today | [`../../GETTING-STARTED.md`](../../GETTING-STARTED.md) |
 
 ## The three promises this foundation keeps
 1. **Start at ₹0.** Everything in Phase 0 runs on the HP Spectre x360 with free/open-source

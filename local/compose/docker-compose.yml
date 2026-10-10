@@ -25,6 +25,9 @@ volumes:
   ollama:
   loki:
   grafana:
+  openwebui:    # Open WebUI chat history & settings (per-viewer, local)
+  anythingllm:  # AnythingLLM workspaces & vector index (private RAG)
+  n8n:          # n8n automation workflows & credentials
 
 services:
   gateway:
@@ -114,4 +117,58 @@ services:
     entrypoint: ["sh", "-c", "trivy image --scanners vuln,secret,misconfig --exit-code 0 vulnbank/llm-gateway:dev || true; sleep infinity"]
     volumes: ["/var/run/docker.sock:/var/run/docker.sock:ro"]
     networks: [edge]
+    logging: *default-logging
+
+  # ---- Pillar 3: SENTINEL hybrid-AI daily driver (profile: ai) --------------------
+  # Unified chat UI. All traffic is pointed at the GUARDRAIL GATEWAY (not LiteLLM
+  # directly), so every prompt/response passes the Red/Yellow/Green rails first.
+  open-webui:
+    image: ghcr.io/open-webui/open-webui:0.5.20
+    profiles: ["ai"]
+    restart: unless-stopped
+    environment:
+      # Gateway speaks the OpenAI API; it forwards to LiteLLM -> Ollama/cloud.
+      OPENAI_API_BASE_URL: http://gateway:8080/v1
+      OPENAI_API_KEY: ${LITELLM_MASTER_KEY:-sk-range-dev}
+      WEBUI_AUTH: "true"            # local account; stays on your machine
+      ENABLE_OLLAMA_API: "false"    # force traffic through the gateway, not raw Ollama
+    ports: ["127.0.0.1:3000:8080"]  # bound to localhost only (invisible to the network)
+    volumes: ["openwebui:/app/backend/data"]
+    networks: [edge, modelplane]
+    depends_on: [gateway]
+    logging: *default-logging
+
+  # Private document chat (Retrieval-Augmented Generation) for RED-TIER data.
+  # Talks straight to local Ollama; nothing leaves the laptop.
+  anythingllm:
+    image: mintplexlabs/anythingllm:latest
+    profiles: ["ai"]
+    restart: unless-stopped
+    environment:
+      LLM_PROVIDER: ollama
+      OLLAMA_BASE_PATH: http://ollama:11434
+      OLLAMA_MODEL_PREF: ${LOCAL_MODEL:-qwen2.5:1.5b}
+      EMBEDDING_ENGINE: native      # local embeddings; no cloud call
+      VECTOR_DB: lancedb            # bundled local vector DB
+      STORAGE_DIR: /app/server/storage
+    ports: ["127.0.0.1:3001:3001"]
+    volumes: ["anythingllm:/app/server/storage"]
+    networks: [edge, modelplane]
+    depends_on: [ollama]
+    logging: *default-logging
+
+  # Automation engine (the "glue"): morning brief, email triage, data-tier router, etc.
+  # Call the gateway at http://gateway:8080/v1/chat/completions from any workflow.
+  n8n:
+    image: n8nio/n8n:1.74.1
+    profiles: ["ai"]
+    restart: unless-stopped
+    environment:
+      N8N_HOST: localhost
+      N8N_PORT: "5678"
+      N8N_SECURE_COOKIE: "false"    # ok for localhost-only binding
+      GENERIC_TIMEZONE: Asia/Kolkata
+    ports: ["127.0.0.1:5678:5678"]
+    volumes: ["n8n:/home/node/.n8n"]
+    networks: [edge, modelplane]
     logging: *default-logging
