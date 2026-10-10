@@ -16,9 +16,18 @@ case "$cmd" in
   up|up-status)
     C "Starting the live estate (compose profile: ai)…"
     ( cd "$ROOT/local/compose" && { [ -f .env ] || cp .env.example .env; } && docker compose --profile ai up -d --build )
-    C "Pulling the local model (one-time)…"
-    CID="$(cd "$ROOT/local/compose" && docker compose ps -q ollama 2>/dev/null || true)"
-    [ -n "${CID:-}" ] && docker exec "$CID" ollama pull "${LOCAL_MODEL:-qwen2.5:1.5b}" || true
+    # Pull the model in the BACKGROUND so the home screen opens immediately — the
+    # Guiding Map's Ask tab shows a live "AI is ready / warming up" status, so the
+    # one-time ~1 GB download never blocks you. (First run only.)
+    C "Downloading the local AI model in the background (first run only, ~2–5 min)…"
+    (
+      CID="$(cd "$ROOT/local/compose" && docker compose ps -q ollama 2>/dev/null || true)"
+      for _ in 1 2 3 4 5 6 7 8 9 10; do docker exec "$CID" ollama list >/dev/null 2>&1 && break; sleep 3; done
+      [ -n "${CID:-}" ] && docker exec "$CID" ollama pull "${LOCAL_MODEL:-qwen2.5:1.5b}" >/dev/null 2>&1 || true
+      [ -n "${CID:-}" ] && docker exec "$CID" ollama pull "llama-guard3:1b" >/dev/null 2>&1 || true
+    ) &
+    C "Opening your home screen: http://localhost:8088"
+    "$0" open >/dev/null 2>&1 || true
     [ "$cmd" = "up-status" ] && "$0" status || true
     ;;
   status)

@@ -6,6 +6,24 @@
 
 # Getting Started with SecuRAX
 
+## ⭐ Just start it — one step
+
+**Windows:** double-click **`START-HERE-Windows.bat`**.
+**Mac / Linux:** run **`./securax up`**.
+
+That is the whole thing. It brings the estate up, **opens your home screen immediately**
+(`http://localhost:8088`), and downloads the local AI model in the background (first run only,
+~2–5 min). You do **not** wait for it and you do **not** need to read anything else: the home
+screen's **Ask** tab shows a live *"AI is ready / still warming up / off"* status in plain
+words, and the planner, playbook and life-OS work the instant the page opens. To stop and free
+memory later: `STOP-Windows.bat` (or `./securax down`).
+
+*Prerequisite: Docker Desktop running (the green whale in the system tray; WSL2 backend on Windows).*
+
+---
+
+Everything below is **optional depth** for when you want to go further — you do **not** need it to start.
+
 Three ways in, shortest first. You do **not** need to do them in order — pick what you need today.
 
 ## 0. See the whole thing in 30 seconds (no install)
