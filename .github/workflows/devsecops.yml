@@ -58,7 +58,7 @@ jobs:
       - name: Behaviour suite (jsdom)
         working-directory: guiding-map
         run: |
-          for t in test test2 test11 test12 test13; do
+          for t in test test2 test11 test12 test13 test14; do
             echo "== $t =="
             node tests/$t.js
           done

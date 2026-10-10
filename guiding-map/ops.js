@@ -160,7 +160,7 @@
           + '<div style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)">' + esc(r.tag) + ' \u00b7 ' + r.mins + ' min</div></div>';
         if (r.id === "sunday") h += scqaHTML();
         h += '<div style="font-size:12px;line-height:1.75;margin-top:8px;color:var(--text)">';
-        r.steps.forEach(function (s) { h += "\u25a1 " + esc(s) + "<br>"; });
+        r.steps.forEach(function (s) { h += '<span style="color:var(--green)">\u25b8</span> ' + esc(s) + "<br>"; });
         h += '</div><button class="btn-sm" style="background:var(--amber);color:#fff;margin-top:9px" onclick="gmRitualDone(\'' + r.id + '\')">Mark done</button></div>';
       });
     }
@@ -1557,7 +1557,7 @@
     if (c.tasks.length) {
       h += '<div style="font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:800;margin-top:' + (c.events.length ? "11px" : "0") + '">Open tasks</div>';
       c.tasks.forEach(function (t) {
-        h += '<div style="font-size:12.5px;color:var(--text);margin-top:4px">\u25a1 ' + esc(t) + '</div>';
+        h += '<div style="font-size:12.5px;color:var(--text);margin-top:4px"><span style="color:var(--green)">\u25b8</span> ' + esc(t) + '</div>';
       });
     }
     return h + '</div>';
@@ -1688,7 +1688,7 @@
 
   /* ── 32. System health ─────────────────────────────────────────────
      One panel that answers: is my data safe, and is anything quietly
-     broken? Every failure mode in this app is silent by design \\u2014 sync
+     broken? Every failure mode in this app is silent by design \u2014 sync
      retries, pushes debounce, clocks drift. Silent failure is fine
      until you need the data and it is not there. */
   function storageBytes() {
@@ -1737,7 +1737,7 @@
     function row(ok, label, detail, action) {
       rows.push('<div style="display:flex;gap:9px;padding:8px 0;border-bottom:1px solid var(--border)">'
         + '<span style="color:' + (ok === true ? "var(--green)" : ok === false ? "var(--red)" : "var(--amber)")
-        + ';font-weight:800;font-size:14px;line-height:1.3">' + (ok === true ? "\\u25cf" : ok === false ? "\\u25cf" : "\\u25cf") + '</span>'
+        + ';font-weight:800;font-size:15px;line-height:1.3" title="' + (ok === true ? "healthy" : ok === false ? "needs attention" : "heads-up") + '">\u25cf</span>'
         + '<div style="flex:1"><div style="font-size:12.5px;font-weight:700;color:var(--text)">' + label + '</div>'
         + '<div style="font-size:11px;color:var(--muted);line-height:1.55">' + detail + '</div>'
         + (action || "") + '</div></div>');
@@ -1761,11 +1761,11 @@
       else row(true, "Sync is pushing", "Last successful push: " + esc(last) + ". Data stays on your own SecuRAX gateway \u2014 no third party, nothing to keep alive.");
     }
 
-    // Clock \\u2014 the silent data-loss one
+    // Clock \u2014 the silent data-loss one
     if (c) {
       var sk = Math.abs(skew);
       if (sk > 120000) row(false, "This device's clock is " + Math.round(sk / 60000) + " minutes off",
-        "Timestamps are corrected against the server, so your data is safe \\u2014 but fix the device clock, because everything else on it (certificates, 2FA codes) depends on it too.");
+        "Timestamps are corrected against the server, so your data is safe \u2014 but fix the device clock, because everything else on it (certificates, 2FA codes) depends on it too.");
       else row(true, "Clock is aligned with the server", "Drift " + Math.round(sk / 1000) + "s. Per-key merges use server-anchored time, so no device silently loses writes.");
     }
 
@@ -1774,7 +1774,7 @@
       "Browsers cap this around 5 MB. Export a backup, then trim the oldest After-Action Reviews.");
     else row(true, "Storage " + kb + " KB used", "Comfortable. Browsers allow roughly 5,000 KB.");
 
-    // Backups \\u2014 the one that matters when everything else fails
+    // Backups \u2014 the one that matters when everything else fails
     if (!exp) row(false, "No local backup has ever been taken",
       "Sync is convenience; a dated file is your actual insurance. It survives a deleted sync backend, a cleared browser, and a lost device.",
       '<button class="btn-sm" style="background:var(--gold);color:#0d1f35;margin-top:6px" onclick="gmExportNow()">Export one now</button>');
@@ -1795,7 +1795,7 @@
     // Notifications
     var perm = (typeof Notification !== "undefined") ? Notification.permission : "unsupported";
     if (G("gm_push_on", false)) row(perm === "granted", "Nudges registered on this device",
-      perm === "granted" ? "Two a day, 7am and 7pm IST." : "Permission was revoked in browser settings \\u2014 re-enable it there, then turn nudges on again.");
+      perm === "granted" ? "Two a day, 7am and 7pm IST." : "Permission was revoked in browser settings \u2014 re-enable it there, then turn nudges on again.");
 
     var an = G("gm_sync_anomaly", null);
     if (an) row(false, "A suspicious sync merge was refused",
@@ -1805,8 +1805,8 @@
       "\u201c" + esc(u.label) + "\u201d. Undo is a single slot \u2014 it holds only the most recent action, and taking another replaces it.",
       '<button class="btn-sm" style="background:var(--amber);color:#fff;margin-top:6px" onclick="gmUndo()">Undo that</button>');
 
-    return '<div class="cat-t">\\u{1FA7A} System health</div>'
-      + '<div class="info">Everything in this app fails quietly by design \\u2014 sync retries, pushes debounce, clocks drift. That is fine until the day you need the data. This panel is where quiet failure becomes visible.</div>'
+    return '<div class="cat-t">\u{1FA7A} System health</div>'
+      + '<div class="info">Everything in this app fails quietly by design \u2014 sync retries, pushes debounce, clocks drift. That is fine until the day you need the data. This panel is where quiet failure becomes visible.</div>'
       + '<div class="road-col">' + rows.join("") + '</div>'
       + '<div style="display:flex;gap:8px;margin-top:9px;flex-wrap:wrap">'
       + '<button class="btn-sm" style="background:var(--gold);color:#0d1f35" onclick="gmExportNow()">Export backup</button>'
@@ -1822,7 +1822,7 @@
      goal card with the example. Tapping one to see what it did was a
      one-way door.
 
-     A stack of confirm() dialogs would have been the lazy fix \\u2014 people
+     A stack of confirm() dialogs would have been the lazy fix \u2014 people
      learn to dismiss those without reading, so they protect nothing.
      One snapshot slot plus a visible Undo is honest: the action still
      happens instantly, and it is always reversible for as long as you
@@ -1852,7 +1852,7 @@
     }
     kill.forEach(function (k) { localStorage.removeItem(k); });
     Object.keys(u.data).forEach(function (k) { _set0(k, u.data[k]); });
-    _set0("gm_undo", JSON.stringify({ at: Date.now(), label: "redo \\u2014 " + u.label, data: redo }));
+    _set0("gm_undo", JSON.stringify({ at: Date.now(), label: "redo \u2014 " + u.label, data: redo }));
     bustDerived();
     renderAll();
   };
@@ -1861,7 +1861,7 @@
     var mins = Math.round((Date.now() - u.at) / 60000);
     return '<div style="background:var(--amberBg);border:1px solid var(--amber);border-radius:10px;padding:10px 12px;margin-bottom:10px;display:flex;gap:10px;align-items:center">'
       + '<div style="flex:1;font-size:11.5px;color:var(--text);line-height:1.5">Last change: <b>' + esc(u.label) + '</b>'
-      + (mins < 1 ? " \\u00b7 just now" : " \\u00b7 " + mins + " min ago") + '</div>'
+      + (mins < 1 ? " \u00b7 just now" : " \u00b7 " + mins + " min ago") + '</div>'
       + '<button class="btn-sm" style="background:var(--amber);color:#fff;white-space:nowrap" onclick="gmUndo()">Undo</button></div>';
   }
 
@@ -1879,7 +1879,7 @@
   }
 
   /* ── 35. Sanity checks on the numbers ──────────────────────────────
-     Every money field is labelled in \\u20b9 lakh or \\u20b9 per month, and both
+     Every money field is labelled in \u20b9 lakh or \u20b9 per month, and both
      get typed in the other unit constantly. Nothing caught it, so an
      absurd figure just propagated silently into every derived number. */
   var SANE = {
@@ -1887,23 +1887,23 @@
     sage:  [16, 100,  "years"],
     page:  [30, 110,  "years"],
     k1:    [0,  30,   "years"],
-    inc:   [0.5, 500, "\\u20b9 lakh a year"],
-    nw:    [-500, 5000, "\\u20b9 lakh"],
-    ef:    [0,  500,  "\\u20b9 lakh"],
-    edu:   [1,  500,  "\\u20b9 lakh"],
-    minc:  [1000, 5000000, "\\u20b9 per month"],
-    fFixed:[0,  5000000, "\\u20b9 per month"],
-    fLoan: [0,  5000000, "\\u20b9 per month"],
-    fEF:   [0,  5000000, "\\u20b9 per month"],
-    fSip:  [0,  5000000, "\\u20b9 per month"]
+    inc:   [0.5, 500, "\u20b9 lakh a year"],
+    nw:    [-500, 5000, "\u20b9 lakh"],
+    ef:    [0,  500,  "\u20b9 lakh"],
+    edu:   [1,  500,  "\u20b9 lakh"],
+    minc:  [1000, 5000000, "\u20b9 per month"],
+    fFixed:[0,  5000000, "\u20b9 per month"],
+    fLoan: [0,  5000000, "\u20b9 per month"],
+    fEF:   [0,  5000000, "\u20b9 per month"],
+    fSip:  [0,  5000000, "\u20b9 per month"]
   };
   function saneWarn(field, val) {
     var r = SANE[field]; if (!r) return "";
     var v = num(val); if (!v) return "";
     if (v < r[0] || v > r[1]) {
       var guess = "";
-      if (r[2].indexOf("lakh") >= 0 && v > 10000) guess = " Did you type rupees? \\u20b9" + v.toLocaleString("en-IN") + " is \\u20b9" + (v / 100000).toFixed(2) + " lakh.";
-      if (r[2].indexOf("per month") >= 0 && v < 1000 && v > 0) guess = " Did you type lakh? \\u20b9" + v + " lakh is \\u20b9" + (v * 100000).toLocaleString("en-IN") + " per month.";
+      if (r[2].indexOf("lakh") >= 0 && v > 10000) guess = " Did you type rupees? \u20b9" + v.toLocaleString("en-IN") + " is \u20b9" + (v / 100000).toFixed(2) + " lakh.";
+      if (r[2].indexOf("per month") >= 0 && v < 1000 && v > 0) guess = " Did you type lakh? \u20b9" + v + " lakh is \u20b9" + (v * 100000).toLocaleString("en-IN") + " per month.";
       return '<div style="font-size:11px;color:var(--amber);line-height:1.5;margin:-6px 0 8px">'
         + "That reads as " + v.toLocaleString("en-IN") + " " + r[2] + ", which is outside the usual range." + guess + '</div>';
     }
@@ -2579,6 +2579,7 @@
     var h = '<div class="section active">';
     h += '<div class="cat-t">🤖 Ask — your local AI + advisor army</div>';
     h += '<div class="info">Ask plainly — answered by <b>your own model</b> through the guardrail gateway, kept honest (no made-up numbers). Pick an advisor for a first-draft expert opinion, then confirm anything big with a real professional.</div>';
+    h += '<div id="askStatus" class="info" style="margin-top:8px;display:flex;align-items:center;gap:7px"><span style="color:var(--muted)">●</span> Checking if your local AI is ready…</div>';
     h += '<div class="chips" style="margin:8px 0"><button class="chip' + (askAgent === "general" ? " on" : "") + '" onclick="gmAskSet(\'general\')">General</button>';
     ADVISORS.forEach(function (a) { h += '<button class="chip' + (askAgent === a.k ? " on" : "") + '" onclick="gmAskSet(\'' + a.k + '\')">' + esc(a.n) + '</button>'; });
     h += '</div>';
@@ -2612,15 +2613,47 @@
   }
   window.gmAskSet = function (k) { askAgent = k; renderAll(); };
   window.gmAskGwSave = function () { var v = (document.getElementById("askGwIn").value || "").trim(); if (v) S_("gm_ask_gw", v); renderAll(); };
+  // Plain-language readiness: the user double-clicks START-HERE and the page tells them,
+  // in their own words, whether the AI is on, still warming up, or not running — so an
+  // early-opened page is never a silent, confusing dead end. Colours match the status dots.
+  function askStatusHTML(colour, msg) {
+    return '<span style="color:var(--' + colour + ');font-size:15px">●</span> ' + msg;
+  }
+  window.gmAskPing = function () {
+    var el = document.getElementById("askStatus"); if (!el) return;
+    var ctl = null, done = false;
+    try { ctl = new AbortController(); setTimeout(function () { if (!done && ctl) ctl.abort(); }, 4000); } catch (e) {}
+    fetch(askGw().replace(/\/$/, "") + "/healthz", ctl ? { signal: ctl.signal } : {})
+      .then(function (r) {
+        done = true;
+        el.innerHTML = r && r.ok
+          ? askStatusHTML("green", "Local AI is <b>ready</b> — ask anything below. Nothing leaves your machine.")
+          : askStatusHTML("amber", "Gateway is up, but the model may still be loading (first run downloads ~1 GB, about 2–5 min). Try your question in a minute.");
+      })
+      .catch(function () {
+        done = true;
+        el.innerHTML = askStatusHTML("muted", "AI is off right now — double-click <b>START-HERE</b> (or run <code>./securax up</code>) to turn it on. Everything else on this page works offline.");
+      });
+  };
   window.gmAsk = function () {
     var q = (document.getElementById("askQ").value || "").trim(); if (!q) return;
     var out = document.getElementById("askOut"); out.style.display = "block"; out.textContent = "Thinking… (your local model)";
     document.getElementById("askFb").style.display = "none";
     var msgs = [{ role: "system", content: askSystem(askAgent) }, { role: "user", content: q }];
     fetch(askGw().replace(/\/$/, "") + "/v1/chat/completions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model: "bank-assistant", messages: msgs }) })
-      .then(function (r) { if (!r.ok) { out.textContent = "Blocked or unavailable (HTTP " + r.status + "). If this looked like an attack pattern, that is the guardrail working."; return null; } return r.json(); })
+      .then(function (r) {
+        if (!r.ok) {
+          out.textContent = (r.status === 400)
+            ? "Blocked by the guardrail (that is it working — your message looked like an attack or exposed sensitive data). Rephrase and try again."
+            : (r.status === 502 || r.status === 503)
+              ? "The AI is still warming up (first run downloads a ~1 GB model, about 2–5 min). Wait a minute and ask again — nothing was sent."
+              : "Unavailable (HTTP " + r.status + "). Nothing was sent.";
+          return null;
+        }
+        return r.json();
+      })
       .then(function (j) { if (!j) return; lastAskQ = q; lastAskA = (j.choices && j.choices[0].message.content) || JSON.stringify(j); out.textContent = lastAskA; document.getElementById("askFb").style.display = "flex"; })
-      .catch(function () { out.textContent = "Gateway not reachable. Run  ./securax up  first, then try again. (Nothing was sent.) If your estate is on another machine, set the gateway URL below."; });
+      .catch(function () { out.textContent = "AI is off right now — double-click START-HERE (or run  ./securax up ) to turn it on, then try again. (Nothing was sent.) If your estate is on another machine, set the gateway URL below."; });
   };
   window.gmAskFb = function (r) {
     var fb = G("gm_ask_fb", []); fb.push({ ts: ymd(), rating: r, q: lastAskQ.slice(0, 200), agent: askAgent }); S_("gm_ask_fb", fb);
@@ -2675,7 +2708,7 @@
       h += '<details class="road-col" style="margin-bottom:8px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">'
         + esc(r.name) + ' <span style="font-weight:500;color:var(--muted)">\u00b7 ' + esc(r.tag) + ' \u00b7 ' + r.mins + ' min'
         + (done ? ' \u00b7 \u2713 done this cycle' : '') + '</span></summary><div style="font-size:12px;line-height:1.8;margin-top:8px">';
-      r.steps.forEach(function (s) { h += "\u25a1 " + esc(s) + "<br>"; });
+      r.steps.forEach(function (s) { h += '<span style="color:var(--green)">\u25b8</span> ' + esc(s) + "<br>"; });
       h += '</div></details>';
     });
 
@@ -2734,7 +2767,7 @@
     var old = document.getElementById("gmVitals");
     if (old) old.parentNode.removeChild(old);
     document.body.insertAdjacentHTML("beforeend", vitalsHTML());
-    if (curTab === "ask") { box.innerHTML = askHTML(); }
+    if (curTab === "ask") { box.innerHTML = askHTML(); try { gmAskPing(); } catch (e) {} }
     else if (curTab === "guide") { box.innerHTML = guidesHTML(); }
     else if (curTab === "ops") { box.innerHTML = opsHTML(); }
     else if (curTab === "stack") { box.innerHTML = stackHTML(); }
