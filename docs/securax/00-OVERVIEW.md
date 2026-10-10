@@ -50,6 +50,9 @@ makes it an *ecosystem* and not five disconnected projects.
 | A visual, browsable command center | open [`../../portal/index.html`](../../portal/index.html) |
 | Add a *future* project to this same base | [`06-EXTENDING.md`](06-EXTENDING.md) |
 | Connect it to Claude/Google/Microsoft APIs | [`07-INTEGRATIONS.md`](07-INTEGRATIONS.md) |
+| How the system runs itself (governance) | [`08-OPERATING-MODEL.md`](08-OPERATING-MODEL.md) |
+| Open-core model & subscription tiers | [`09-OPEN-CORE-TIERS.md`](09-OPEN-CORE-TIERS.md) |
+| Go full-scale (opt-in, turn-off-able) | [`10-FULL-STACK.md`](10-FULL-STACK.md) |
 | Start using it today | [`../../GETTING-STARTED.md`](../../GETTING-STARTED.md) |
 
 ## The three promises this foundation keeps

@@ -113,6 +113,11 @@
       <h2>Shutdown ritual (10 min)</h2>
       <div id="shutdown"></div>
     </div>
+    <div class="card">
+      <h2>Habits — 1% better daily</h2>
+      <p class="muted" style="margin-top:-6px">Atomic Habits: show up every day; the streak is the reward. Miss a day, the streak resets — never miss twice.</p>
+      <div id="habits"></div>
+    </div>
   </section>
 
   <!-- ASK -->
@@ -212,7 +217,8 @@
 /* ---------- tiny store (localStorage, guarded) ---------- */
 const KEY='guiding-map';
 const DEFAULTS={ tasks:[], shutdown:[false,false,false,false,false], opsec:[false,false,false,false,false,false],
-  vault:'', gw:'http://localhost:8080', theme:'' };
+  vault:'', gw:'http://localhost:8080', theme:'',
+  habits:[{n:'Deep Work (90 min)',s:0,last:''},{n:'Move / exercise',s:0,last:''},{n:'Read / learn',s:0,last:''},{n:'Plan tomorrow',s:0,last:''}] };
 function load(){ try{ return Object.assign({}, DEFAULTS, JSON.parse(localStorage.getItem(KEY)||'{}')); }catch(e){ return {...DEFAULTS}; } }
 function save(){ try{ localStorage.setItem(KEY, JSON.stringify(S)); }catch(e){} }
 let S=load();
@@ -345,7 +351,20 @@ addEventListener('beforeinstallprompt',e=>{ e.preventDefault(); deferred=e; $('#
 $('#installBtn').onclick=async()=>{ if(!deferred)return; deferred.prompt(); await deferred.userChoice; deferred=null; $('#installBtn').hidden=true; };
 if('serviceWorker' in navigator){ addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{})); }
 
-renderTasks(); renderShutdown(); renderOpsec();
+function todayStr(){return new Date().toISOString().slice(0,10);}
+function yday(){const d=new Date();d.setDate(d.getDate()-1);return d.toISOString().slice(0,10);}
+function renderHabits(){ $('#habits').innerHTML=''; S.habits.forEach(h=>{
+  const doneToday=h.last===todayStr();
+  const d=document.createElement('div'); d.className='task';
+  d.innerHTML=`<button class="chk ${doneToday?'on':''}"></button><span class="t" style="flex:1">${h.n}</span><span class="pill mono">${h.s}🔥</span>`;
+  d.querySelector('.chk').onclick=()=>{
+    if(h.last===todayStr()){ h.s=Math.max(0,h.s-1); h.last=''; }       // undo today
+    else { h.s = (h.last===yday()||h.last==='') ? h.s+1 : 1; h.last=todayStr(); }  // continue or restart
+    save(); renderHabits();
+  };
+  $('#habits').appendChild(d);
+}); }
+renderTasks(); renderShutdown(); renderOpsec(); renderHabits();
 </script>
 </body>
 </html>
