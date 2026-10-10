@@ -49,6 +49,7 @@ makes it an *ecosystem* and not five disconnected projects.
 | "What do I do first, next, later?" (zero → scale) | [`05-ROADMAP.md`](05-ROADMAP.md) |
 | A visual, browsable command center | open [`../../portal/index.html`](../../portal/index.html) |
 | Add a *future* project to this same base | [`06-EXTENDING.md`](06-EXTENDING.md) |
+| Connect it to Claude/Google/Microsoft APIs | [`07-INTEGRATIONS.md`](07-INTEGRATIONS.md) |
 | Start using it today | [`../../GETTING-STARTED.md`](../../GETTING-STARTED.md) |
 
 ## The three promises this foundation keeps
