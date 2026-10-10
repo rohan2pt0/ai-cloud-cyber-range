@@ -46,6 +46,7 @@ for name, path in {
     "attacks": "redteam/run_attacks.py",
     "fire": "personal-rnd/fin_freedom.py",
     "opsec": "personal-rnd/self_opsec.py",
+    "antifragile": "learning/antifragile.py",
 }.items():
     try:
         _mods[name] = _load(name, path)
@@ -134,6 +135,19 @@ def t_opsec_footprint(text: str) -> str:
     return json.dumps(_mods["opsec"].footprint_review(text), indent=2)
 
 
+
+def t_learn_from_failure(kind: str, summary: str, payload: str = "", direction: str = "input") -> str:
+    af = _mods["antifragile"]
+    entry = af.record_failure(kind, summary, payload, direction, source="mcp")
+    rule = af.propose_rule(payload or summary)
+    return json.dumps({"recorded": entry, "proposed_rule": rule,
+                       "next": "A human reviews the rule, ships it, then verify() makes this failure a permanent strength."}, indent=2)
+
+
+def t_antifragility_report() -> str:
+    return json.dumps(_mods["antifragile"].report(), indent=2)
+
+
 # --------------------------------------------------------------------------- #
 # Tool registry (name -> (fn, description, inputSchema))
 # --------------------------------------------------------------------------- #
@@ -173,6 +187,12 @@ TOOLS: dict[str, tuple] = {
     "opsec_footprint": (t_opsec_footprint,
         "Review text about YOURSELF for over-shared identifiers and embedded prompt-injection (self-OPSEC).",
         _schema({"text": _STR}, ["text"])),
+    "learn_from_failure": (t_learn_from_failure,
+        "Record a failure (bypass/incident/false-positive) so it becomes a permanent strength; returns a proposed detection rule (human ships it).",
+        _schema({"kind": _STR, "summary": _STR, "payload": _STR, "direction": _STR}, ["kind", "summary"])),
+    "antifragility_report": (t_antifragility_report,
+        "Report the antifragility score: how many past failures the current defences now withstand.",
+        _schema({}, [])),
 }
 
 
