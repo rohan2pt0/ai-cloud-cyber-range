@@ -1,0 +1,42 @@
+#!/usr/bin/env bash
+# SecuRAX — one command to run and operate the whole estate.
+#   ./securax up       start the live estate (gateway + models + chat + automation)
+#   ./securax status   health + what's running + URLs
+#   ./securax demo     run the red-team scorecard + posture scan (no cloud needed)
+#   ./securax mcp       run the MCP server (usually launched by your AI client instead)
+#   ./securax down     stop everything (free RAM)
+# Default (no arg) = up + status.
+set -euo pipefail
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+C(){ printf '\033[1;36m%s\033[0m\n' "$*"; }
+
+cmd="${1:-up-status}"
+case "$cmd" in
+  up|up-status)
+    C "Starting the live estate (compose profile: ai)…"
+    ( cd "$ROOT/local/compose" && { [ -f .env ] || cp .env.example .env; } && docker compose --profile ai up -d --build )
+    C "Pulling the local model (one-time)…"
+    CID="$(cd "$ROOT/local/compose" && docker compose ps -q ollama 2>/dev/null || true)"
+    [ -n "${CID:-}" ] && docker exec "$CID" ollama pull "${LOCAL_MODEL:-qwen2.5:1.5b}" || true
+    [ "$cmd" = "up-status" ] && "$0" status || true
+    ;;
+  status)
+    C "SecuRAX — live services"
+    cat <<URLS
+  Unified chat (local+cloud, guarded) : http://localhost:3000
+  Private document chat (Red-tier)     : http://localhost:3001
+  Automation (n8n + data-tier router)  : http://localhost:5678
+  Guardrail gateway API                : http://localhost:8080/healthz
+  Visual tour                          : open portal/explainer.html
+  MCP (let an AI operate it)           : see mcp/README.md
+URLS
+    curl -fsS http://localhost:8080/healthz >/dev/null 2>&1 && C "gateway: healthy" || echo "  gateway: not up yet (give it a few seconds)"
+    ;;
+  demo)
+    C "Adversarial-ML scorecard:"; python3 "$ROOT/redteam/run_attacks.py" --out "$ROOT/redteam/results.json" | tail -8
+    C "AI-security posture:"; python3 "$ROOT/redteam/aispm_scan.py" --root "$ROOT" | python3 -c "import json,sys;d=json.load(sys.stdin);print(' posture',d['posture_score'],d['controls_passed'],'/',d['controls_total'])"
+    ;;
+  mcp)   exec python3 "$ROOT/mcp/securax_mcp.py" ;;
+  down)  ( cd "$ROOT/local/compose" && docker compose --profile ai down ) ; C "stopped." ;;
+  *) echo "usage: ./securax [up|status|demo|mcp|down]"; exit 1 ;;
+esac

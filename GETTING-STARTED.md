@@ -13,7 +13,7 @@ Open **`portal/index.html`** by double-clicking it. That is your command center:
 pillars, the data-classification rules, the principles, the capability catalog (searchable),
 the roadmap, and the compliance coverage. Read it once; it is how you navigate everything.
 
-## 1. Run the AI Security Range (Pillar 1) — what interviewers will see
+## 1. Run the AI Security Range (Pillar 1) — the defensive core
 Prerequisite: **Docker Desktop** running (WSL2 backend on Windows).
 ```bash
 # from the repo root

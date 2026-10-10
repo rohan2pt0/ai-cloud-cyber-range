@@ -65,7 +65,7 @@ Cloud Controls Matrix (CCM) domains map to the Terraform modules + cloud-governa
 | **DPDP Act 2023 / DPDP Rules 2025** (phased to May 2027) | PII redaction at gateway before any model call; audit trail for breach reporting; data residency India |
 | **RBI FREE-AI (Aug 2025)** 7 Sutras / 6 pillars | fail-closed guardrails, HITL, full auditability, India-region data, assurance via red-team |
 | **CERT-In Directions 2022** | ≥180-day log retention (audit JSON) |
-| **EU AI Act** (EXL/UAE) | risk-tiering + transparency + logging; high-risk controls via C0–C13 |
+| **EU AI Act** | risk-tiering + transparency + logging; high-risk controls via C0–C13 |
 | **GDPR / UAE PDPL** | privacy-by-design (C2), DPO contact, lawful-basis documentation |
 | **ISO 27001 / SOC2 / NIST CSF** | zero-trust, audit, change-as-code, supply-chain (C12) |
 

@@ -38,6 +38,9 @@ AICM/MAESTRO, Google SAIF, OWASP LLM & Agentic Top 10, and MITRE ATLAS**.
 
 ## Quick start (laptop, zero cost)
 ```bash
+./securax up        # one command: start the whole live estate + print URLs
+./securax demo      # red-team scorecard + posture scan (no cloud needed)
+# or step-by-step:
 ./local/scripts/bootstrap-laptop.sh          # gateway + router + db + smoke test
 WITH_AI=1 ./local/scripts/bootstrap-laptop.sh # also pull local models + Llama Guard
 ./local/scripts/kind-up.sh                    # Kubernetes plane (Kyverno + NetPol + Falco)
@@ -46,7 +49,7 @@ python3 redteam/run_attacks.py --fail-under 0.9   # adversarial-ML scorecard
 ```
 
 ## What's inside
-| Path | What it is | Interview value |
+| Path | What it is | Why it matters |
 |---|---|---|
 | `apps/llm-gateway/` | OpenAI-compatible **guardrail gateway** (PEP): India-BFSI PII rails, injection/exfil/secret/canary detection, pluggable Llama Guard / Model Armor / Bedrock / Prompt Shields | secure-AI engineering, guardrails, privacy-by-design |
 | `local/` | docker compose AI stack, kind cluster (audit on), **Kyverno + zero-trust NetPol + Falco/ATLAS**, bootstrap scripts | CKS, Kubernetes security, runtime detection |
@@ -57,6 +60,8 @@ python3 redteam/run_attacks.py --fail-under 0.9   # adversarial-ML scorecard
 | `governance/` | **model registry**: inventory, risk tiers, approval gates, disallowed (shadow) models | model governance, ISO 42001, EU AI Act |
 | `notebooks/` | Colab notebook: ASR with rails on/off, evasion, DPDP redaction | NIST AI 100-2, demos |
 | `personal-rnd/` | **defensive** OPSEC / self-OSINT / LifeOS / FIRE tools (self-scoped) | privacy engineering, indirect-injection defence |
+| `mcp/` | **MCP server** — let an AI assistant operate the estate (9 safe tools) | intelligent, hands-free control |
+| `integrations/` | n8n workflows + Claude/Google/Microsoft connectivity | automation, API wiring |
 | `docs/` | architecture, **JD traceability**, compliance crosswalk, cost controls, demo runbook | governance, the story you tell |
 | `.github/workflows/` | DevSecOps: tests + red-team gate + SAST + secrets + SBOM + container/IaC scan | secure MLOps/LLMOps, CI/CD |
 
@@ -66,10 +71,9 @@ Secure-by-design · privacy-by-design · zero-trust · **fail-closed** · everyt
 
 ## Documentation
 - `docs/architecture.md` — reference architecture, control catalogue, resilience, threat model
-- `docs/jd-traceability.md` — every JD line → the component that proves it + cert runway
 - `docs/compliance-matrix.md` — NIST AI RMF / ISO 42001 / SAIF / CSA / OWASP / DPDP / RBI crosswalk
 - `docs/cost-controls.md` — how it stays under ₹2,500/month
-- `docs/demo-runbook.md` — the 15-minute interview walkthrough
+- `docs/demo-runbook.md` — a 15-minute guided walkthrough
 
 > Status: 23 unit tests pass (`pytest` from repo root); all Terraform modules `validate`
 > clean; red-team defence rate 100% with 0 false positives; AI-SPM posture 16/16. Figures/

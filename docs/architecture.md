@@ -1,8 +1,7 @@
 # AI Cloud Cyber Range — Reference Architecture
 
-A multi-cloud, defence-in-depth AI security range built to demonstrate the capabilities
-asked for across five senior AI-security JDs (PwC SM Cloud/AI Security, EXL SAVP Secure-AI
-Engineering, CRISIL AI Security Engineer, Abu Dhabi Bank SM AI-Security Product Owner).
+A multi-cloud, defence-in-depth AI security estate for hands-on secure-AI engineering,
+red-teaming, AI-SPM and governance.
 Runs on an HP Spectre x360 by default (free), bursts into AWS/GCP/Azure free tiers under
 a hard ₹2,500/month ceiling.
 
@@ -78,7 +77,7 @@ failure** — a bypass of one layer is caught by the next (see §5).
 | C15 | **AI-SOC**: correlate telemetry → incidents (AI-for-security) | Detection | all / ATLAS+ATT&CK | NIST CSF DE/RS, SAIF |
 | C16 | Cloud governance guardrails (SCP / Azure Policy / Org Policy) | Org | — | NIST CSF PR, CSA CCM |
 
-## 4. End-to-end AI lifecycle coverage (EXL/CRISIL "secure the whole lifecycle")
+## 4. End-to-end AI lifecycle coverage (secure the whole lifecycle)
 
 - **Data ingestion / RAG** — chunk scanning, provenance tainting, poisoned-doc quarantine (C1).
 - **Training / fine-tuning** — dataset governance + Hugging Face model allow-listing (policy-as-code; registry pinned by digest, C8/C12).
@@ -115,5 +114,5 @@ failure** — a bypass of one layer is caught by the next (see §5).
 | Credential Access | AML.T0055 SA-token read | Falco token-read rule | C8, C9 |
 | Resource Hijacking | economic DoS | rate limit + budget | C5, C11 |
 
-See `docs/compliance-matrix.md` for the full framework crosswalk, `docs/jd-traceability.md`
-for how each JD requirement maps to a component, and `docs/cost-controls.md` for the budget design.
+See `docs/compliance-matrix.md` for the full framework crosswalk, `docs/securax/06-EXTENDING.md`
+for how to plug new projects in, and `docs/cost-controls.md` for the budget design.

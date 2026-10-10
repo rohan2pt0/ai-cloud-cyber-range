@@ -1,4 +1,4 @@
-# Interview Demo Runbook (15 minutes)
+# SecuRAX Demo Runbook (15-minute walkthrough)
 
 A tight, rehearsed walkthrough that shows breadth (multi-cloud, governance) and depth
 (adversarial ML, K8s, code). Have the laptop plane already up (`bootstrap-laptop.sh`).
@@ -63,4 +63,4 @@ traceability matrix."
 - [ ] `kind-up.sh` green (admission-deny demo works)
 - [ ] `redteam/run_attacks.py` 100% / 0 FP
 - [ ] `docs/board-brief.md` regenerated today
-- [ ] repo pushed, README + jd-traceability open in tabs
+- [ ] repo pushed, README + portal/explainer.html open in tabs

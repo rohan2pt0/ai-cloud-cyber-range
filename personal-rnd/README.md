@@ -4,7 +4,7 @@ A **defensive, self-scoped** sandbox that rides on the same AI-security plumbing
 cyber range. The theme: treat *yourself* as the asset — your identity, your data, your
 money, your time — and apply the same rigour (threat-model, measure, reduce) you apply to
 client AI systems. Everything here runs on the laptop for free and reuses the guardrail
-engine, so it's also legitimate interview-grade practice (privacy engineering, indirect
+engine, so it doubles as real privacy-engineering practice (indirect
 prompt-injection defence, secure automation).
 
 > Ethics & scope: these tools operate on **your own** identifiers and accounts only. They
