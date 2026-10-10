@@ -47,6 +47,7 @@ for name, path in {
     "fire": "personal-rnd/fin_freedom.py",
     "opsec": "personal-rnd/self_opsec.py",
     "antifragile": "learning/antifragile.py",
+    "assistant": "assistant/enhance.py",
 }.items():
     try:
         _mods[name] = _load(name, path)
@@ -148,6 +149,30 @@ def t_antifragility_report() -> str:
     return json.dumps(_mods["antifragile"].report(), indent=2)
 
 
+
+def t_assist(question: str, context: str = "") -> str:
+    """Prompt-engineer the user's plain question into an expert, low-hallucination request."""
+    en = _mods["assistant"]
+    plan = en.enhance(question, context)
+    out = {"intent": plan["intent"], "data_tier": plan["data_tier"],
+           "enhanced_prompt": plan["messages"], "suggested_followups": plan["followups"]}
+    gw = os.getenv("GATEWAY_URL")
+    if gw:
+        try:
+            import httpx
+            r = httpx.post(gw.rstrip("/") + "/v1/chat/completions", timeout=60,
+                           json={"model": "bank-assistant", "messages": plan["messages"]})
+            if r.status_code == 200:
+                out["answer"] = r.json()["choices"][0]["message"]["content"]
+        except Exception as exc:  # noqa: BLE001
+            out["answer_error"] = str(exc)[:120]
+    return json.dumps(out, indent=2)
+
+
+def t_assistant_feedback(question: str, answer: str, rating: str) -> str:
+    return json.dumps(_mods["assistant"].record_feedback(question, answer, rating), indent=2)
+
+
 # --------------------------------------------------------------------------- #
 # Tool registry (name -> (fn, description, inputSchema))
 # --------------------------------------------------------------------------- #
@@ -193,6 +218,12 @@ TOOLS: dict[str, tuple] = {
     "antifragility_report": (t_antifragility_report,
         "Report the antifragility score: how many past failures the current defences now withstand.",
         _schema({}, [])),
+    "assist": (t_assist,
+        "Answer a plain question the expert way: auto prompt-engineering + anti-hallucination contract; returns the answer when the gateway is up.",
+        _schema({"question": _STR, "context": _STR}, ["question"])),
+    "assistant_feedback": (t_assistant_feedback,
+        "Record thumbs up/down on an answer so the system improves from real use (down = a lesson for review).",
+        _schema({"question": _STR, "answer": _STR, "rating": _STR}, ["question", "rating"])),
 }
 
 

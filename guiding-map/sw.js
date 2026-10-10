@@ -1,6 +1,6 @@
 /* SecuRAX Guiding Map — offline app shell. Cache-first for the shell, network passthrough
    for everything else (API calls to the gateway are never cached). Bump CACHE on each change. */
-const CACHE = 'guiding-map-v2';
+const CACHE = 'guiding-map-v3';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icon.svg'];
 self.addEventListener('install', (e) => {
   e.waitUntil(caches.open(CACHE).then((c) => c.addAll(SHELL)).then(() => self.skipWaiting()));
