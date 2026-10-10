@@ -2281,6 +2281,115 @@
     return h + '</div>';
   }
 
+  /* ── 48b. GUIDES — self-contained "how do I actually DO this?" layer ───────
+     The friction killer: every instruction in the map carries its own how-to,
+     with a simple visual where it helps, so you never leave the app to search,
+     watch a video, or draw it yourself. Plain steps, equipment substitutes for
+     what you actually own, and a self-check. (Systems you can act on, not look up.) */
+  var BOX_SVG =
+    '<svg viewBox="0 0 220 180" width="100%" style="max-width:300px;display:block;margin:6px auto">'
+    + '<rect x="60" y="20" width="100" height="100" rx="8" fill="none" stroke="var(--accent)" stroke-width="3"/>'
+    + '<text x="110" y="14" text-anchor="middle" font-size="11" fill="var(--muted)">Inhale 4s →</text>'
+    + '<text x="168" y="74" font-size="11" fill="var(--muted)">↓ Hold 4s</text>'
+    + '<text x="110" y="138" text-anchor="middle" font-size="11" fill="var(--muted)">← Exhale 4s</text>'
+    + '<text x="12" y="74" font-size="11" fill="var(--muted)">Hold 4s ↑</text>'
+    + '<circle r="7" fill="var(--accent)"><animateMotion dur="16s" repeatCount="indefinite" '
+    + 'path="M60,20 L160,20 L160,120 L60,120 Z" keyPoints="0;0.25;0.5;0.75;1" keyTimes="0;0.25;0.5;0.75;1" calcMode="linear"/></circle>'
+    + '</svg><div class="info" style="text-align:center">One lap = one full breath (16s). Follow the dot: in, hold, out, hold. Do 5–10 minutes.</div>';
+  var Z2_SVG =
+    '<svg viewBox="0 0 320 60" width="100%" style="max-width:320px;display:block;margin:6px auto">'
+    + '<rect x="10" y="24" width="300" height="12" rx="6" fill="var(--line)"/>'
+    + '<rect x="10" y="24" width="120" height="12" rx="6" fill="var(--ok)" opacity=".35"/>'
+    + '<rect x="130" y="24" width="90" height="12" rx="6" fill="var(--accent)"/>'
+    + '<rect x="220" y="24" width="90" height="12" rx="6" fill="var(--q1)" opacity=".5"/>'
+    + '<text x="70" y="18" text-anchor="middle" font-size="10" fill="var(--muted)">too easy (can sing)</text>'
+    + '<text x="175" y="18" text-anchor="middle" font-size="10" fill="var(--accent)">Zone 2 (can talk, can’t sing)</text>'
+    + '<text x="265" y="18" text-anchor="middle" font-size="10" fill="var(--muted)">too hard (gasping)</text>'
+    + '<text x="175" y="52" text-anchor="middle" font-size="10" fill="var(--muted)">↑ aim for the middle band</text></svg>';
+
+  var GUIDES = [
+    { id: "daily3", icon: "☀", title: "The Daily Three: Move, Mind, Family", tag: "daily · 2-min floor",
+      what: "The three non-negotiables. Each has a 2-minute floor — the smallest version that still counts as a win, so you never miss twice.",
+      steps: ["MOVE — get your body working: a brisk 10-min walk, the strength workout, stairs, or stretching. Floor: 2 minutes of any movement.",
+        "MIND — train attention/calm: box breathing, 10 slow breaths, or 5 min journaling. Floor: 1 minute of slow breathing.",
+        "FAMILY — one real connection: a proper conversation, a call to parents, phone away at a meal. Floor: one undistracted 2-min talk."],
+      check: "Did I do the floor on each? Yes = streak holds. Perfection is not required; showing up is." },
+    { id: "strength", icon: "💪", title: "Mon/Wed/Fri — 30-min strength (band, no handles needed)", tag: "strength · 3×/week",
+      what: "Five exercises, ~5 min each, 45–60s rest between sets. You have a Decathlon loop band — no handle attachment is needed; the substitutions below use the loop directly.",
+      steps: ["1) PUSH-UPS — 3 sets × max reps. Hands shoulder-width, body straight, lower chest toward floor, push up. On knees is fine to start.",
+        "2) BAND ROWS — 3×12. No handles? Loop the band around a sturdy pole or the hinge side of a closed door at waist height (or stand on the middle of the band and hold the two loop ends). Hinge at hips, pull toward your waist, squeeze shoulder blades.",
+        "3) SQUATS — 3×15. Feet shoulder-width, chest up, push hips back, knees track over toes, go as low as comfortable.",
+        "4) BAND PRESS — 3×12. Stand on the band (or anchor it behind you at chest height), hold the loop at chest, press forward until arms straight, control back. Core tight, don’t arch.",
+        "5) PLANK — 3×45s. Forearms on floor, body in a straight line, squeeze core/glutes, breathe normally."],
+      subs: ["Loop band digs into hands: wrap the ends around a rolled towel or your wrists.",
+        "No anchor point: standing on the band works for rows and presses.",
+        "Too hard: fewer reps with good form beats more reps with bad form."],
+      check: "Flow: Push-ups → Rows → Squats → Press → Plank. ~30 min total. Recovery day between sessions." },
+    { id: "breathing", icon: "🧘", title: "Box breathing + the 3-month calm ladder", tag: "mind · build up",
+      what: "Start with box breathing (weeks 1–2), then climb the ladder. The animation below is all you need — no video.",
+      viz: BOX_SVG,
+      steps: ["WEEKS 1–2 — Box breathing: inhale 4s, hold 4s, exhale 4s, hold 4s. Follow the dot above. 5–10 min.",
+        "WEEKS 3–4 — Breath counting: inhale, mentally say “1”; exhale, “2”; up to 10, then restart. Mind wanders? Gently return to 1. 10 min.",
+        "MONTH 2 — Body scan / Yoga Nidra: lie down, move attention slowly from toes to head, notice sensations without judgement. 10–20 min.",
+        "MONTH 3 — Open awareness: sit, let sounds/thoughts/sensations come and go without controlling them. Just observe. 10–15 min."],
+      check: "One rung at a time. If a level feels hard, stay on the one below another week." },
+    { id: "zone2", icon: "🚶", title: "Tue/Sat — Zone 2 cardio (the talk test)", tag: "cardio · 2×/week",
+      what: "Steady aerobic effort you can sustain — the simple base Peter Attia emphasises for long-term metabolic and heart health. No heart-rate monitor needed; use the talk test.",
+      viz: Z2_SVG,
+      steps: ["THE RULE: you can speak a full sentence, but wouldn’t want to give a speech. Can sing = too easy. Gasping = too hard.",
+        "WEEK 1 (don’t start at 45 min): 30 min each on Tue + Sat. 0–5 min easy walk → 5–25 min build to talk-test pace → 25–30 min cool down.",
+        "EASIEST VERSION — fast walking: flat route, walk 5 min, then gradually raise pace to the talk-test intensity. No running required.",
+        "IF YOU CYCLE: pick resistance/speed that produces the right breathing; keep it steady (no sprints/hard hills/stop-start).",
+        "BUILD: once 30 min feels comfortable after a couple of sessions, move toward 35–45 min."],
+      check: "Weekly shape: Mon strength · Tue Zone 2 · Wed strength · Thu mindfulness · Fri strength · Sat Zone 2 · Sun recovery. (AHA suggests building toward ~150 min/week of moderate activity over time — start with your 2×30 and grow.)" },
+    { id: "pwmgr", icon: "🔐", title: "OPSEC: pick a password manager (unblocks “all passwords”)", tag: "security · do once",
+      what: "The community-proven picks (verify current audit status before trusting any tool). Choose one, then import/add passwords over a week — don’t try to do all at once.",
+      steps: ["BITWARDEN — best all-round: open-source, independently audited, genuinely unlimited free tier, syncs across all devices. Default choice for most.",
+        "KEEPASSXC — most sovereign: the vault is a local file on your device, nothing in anyone’s cloud. You handle sync (put the file on your own estate / Tailscale). Fits SecuRAX’s sovereignty best if you’re comfortable managing a file.",
+        "VAULTWARDEN — self-hosted Bitwarden-compatible server you can run inside your own SecuRAX estate: Bitwarden’s apps, your data on your hardware. The best of both once Phase 3 sync/Tailscale is up.",
+        "PROTON PASS — if email aliases matter most (hide-my-email): privacy-focused, free tier includes aliases."],
+      subs: ["Whichever you pick: set a long, unique master password you can remember (a passphrase of 4–5 random words), turn on 2FA/passkey, and write ONLY where the master password hint lives in your Continuity Vault — never the password itself."],
+      check: "Decision rule (your Global-Intelligence method): most-recommended + open-source + audited wins → Bitwarden, or KeePassXC/Vaultwarden if you want it fully on your own hardware." },
+    { id: "recoveryemail", icon: "📧", title: "OPSEC: a dedicated recovery email (the step before the vault)", tag: "security · do once",
+      what: "A brand-new email used ONLY to recover your important accounts — never shared, never used to sign up for anything, never posted. It isolates your most valuable accounts from your everyday inbox (which leaks everywhere).",
+      steps: ["Create a fresh account at a reputable provider (e.g. a new Gmail, or ProtonMail for extra privacy). Pick a name that isn’t obviously ‘you’.",
+        "Give it a long unique password (store it in your new password manager) and turn on 2FA — ideally a passkey or an authenticator app, not SMS.",
+        "Use this address as the recovery/backup email on your bank, primary email, password manager, and cloud accounts. Nothing else.",
+        "Never use it to sign up for newsletters, shopping, or apps. Its only job is account recovery.",
+        "Record that it exists (not its password) in your Continuity Vault so family can act in an emergency."],
+      check: "If someone compromises your everyday email, your recovery paths still stand because they point at an address the attacker has never seen." },
+  ];
+
+  function guideCard(g) {
+    var h = '<details class="guide-card road-col" style="margin-bottom:10px"><summary style="cursor:pointer;font-weight:800;font-size:13px">'
+      + g.icon + ' ' + esc(g.title) + ' <span style="font-weight:500;color:var(--muted)">· ' + esc(g.tag) + '</span></summary>'
+      + '<div style="font-size:12.5px;line-height:1.75;margin-top:8px">'
+      + '<div class="info" style="margin-bottom:8px">' + esc(g.what) + '</div>'
+      + (g.viz || "");
+    g.steps.forEach(function (s) { h += '• ' + esc(s) + '<br>'; });
+    if (g.subs) { h += '<div style="margin-top:8px;font-weight:700">If your gear/setup differs</div>'; g.subs.forEach(function (s) { h += '↳ ' + esc(s) + '<br>'; }); }
+    if (g.check) { h += '<div style="margin-top:8px;color:var(--ok)">✓ ' + esc(g.check) + '</div>'; }
+    return h + '</div></details>';
+  }
+
+  function guidesHTML() {
+    var h = '<div class="section active">';
+    h += '<div class="cat-t">📘 Guides — how to actually do it</div>';
+    h += '<div class="info">Every instruction in the map, explained in plain steps with a visual where it helps — so you act now instead of researching. No internet needed.</div>';
+    h += '<input placeholder="Search guides… (e.g. breathing, band, password)" oninput="gmGuideFilter(this.value)" '
+      + 'style="width:100%;margin:10px 0;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink)">';
+    GUIDES.forEach(function (g) { h += guideCard(g); });
+    h += '<div class="info" style="margin-top:10px">Missing a how-to you keep searching for? That’s a gap worth filling — note it in the Sunday Pulse and it becomes the next guide.</div>';
+    return h + '</div>';
+  }
+  window.gmGuideFilter = function (v) {
+    v = (v || "").toLowerCase();
+    var cards = document.querySelectorAll("#sections .guide-card");
+    for (var i = 0; i < cards.length; i++) {
+      cards[i].style.display = cards[i].textContent.toLowerCase().indexOf(v) >= 0 ? "" : "none";
+    }
+  };
+
   /* ── 9. The Ops tab ─────────────────────────────────────────────── */
   function opsHTML() {
     var due = dueRituals().length, broken = brokenHabits().length;
@@ -2332,7 +2441,7 @@
     var today = TABS.filter(function (t) { return t[0] === "today"; });
     var map = TABS.filter(function (t) { return t[0] === "map"; });
     TABS.length = 0;
-    today.concat([["stack", "\u{1F3DB} Stack"], ["life", "\u{1F9ED} Life Map"],
+    today.concat([["guide", "\ud83d\udcd8 Guides"], ["stack", "\u{1F3DB} Stack"], ["life", "\u{1F9ED} Life Map"],
       ["prop", "\u{1F3E0} Property"], ["ops", "\u2699 Ops"]]).concat(map).concat(keep)
       .forEach(function (t) { TABS.push(t); });
   }
@@ -2354,6 +2463,7 @@
     var old = document.getElementById("gmVitals");
     if (old) old.parentNode.removeChild(old);
     document.body.insertAdjacentHTML("beforeend", vitalsHTML());
+    if (curTab === "guide") { box.innerHTML = guidesHTML(); return; }
     if (curTab === "ops") { box.innerHTML = opsHTML(); return; }
     if (curTab === "stack") { box.innerHTML = stackHTML(); return; }
     if (curTab === "life") { box.innerHTML = lifeMapHTML(); return; }
