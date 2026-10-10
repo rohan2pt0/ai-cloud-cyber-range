@@ -85,7 +85,7 @@ rewritten unattended (NIST AI RMF, RBI FREE-AI human-in-the-loop).
 ## 5. Where it lives (one method, three front doors)
 | Front door | For | Entry point |
 |---|---|---|
-| **Guiding-Map PWA → "Ask"** | the everyday user, zero setup | `guiding-map/index.html` |
+| **Guiding-Map PWA → "Ask"** (rejoins the cockpit in Phase 2, see [doc 14](14-GUIDING-MAP.md)) | the everyday user, zero setup | `guiding-map/index.html` |
 | **MCP `assist` tool** | an AI client (Claude, etc.) orchestrating the estate | `mcp/securax_mcp.py` |
 | **CLI** | scripts and power users | `python3 assistant/enhance.py enhance "…"` |
 

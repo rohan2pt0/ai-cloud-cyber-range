@@ -36,6 +36,33 @@ jobs:
             docs/aispm-report.json
             docs/board-brief.md
 
+  guiding-map:
+    # The life-OS cockpit: verify the single-file build is in sync with its source,
+    # then run the jsdom behaviour suite (boot, every tab renders, XSS-escaping,
+    # no NaN/Infinity, undo, habit EMA, drift alarms, dynamic playbook).
+    # (PII/secret gating of these files runs in the python `app-tests` job.)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - name: Install jsdom
+        working-directory: guiding-map
+        run: npm ci || npm install
+      - name: Build drift guard (index.html must equal `node build.js`)
+        working-directory: guiding-map
+        run: |
+          node build.js
+          git diff --exit-code index.html \
+            || { echo "::error::index.html is out of sync with ops.js — run 'node build.js' and commit"; exit 1; }
+      - name: Behaviour suite (jsdom)
+        working-directory: guiding-map
+        run: |
+          for t in test test2 test11 test12 test13; do
+            echo "== $t =="
+            node tests/$t.js
+          done
+
   sast-and-secrets:
     runs-on: ubuntu-latest
     steps:
