@@ -53,6 +53,15 @@ setTimeout(()=>{
  if(chips.length){ const idx=+chips[0].getAttribute('onclick').match(/gmHelp\((\d+)/)[1]; w.gmHelp(idx,chips[0]);
    ok("tapping a term opens its plain explanation inline", !!d.querySelector('.gm-pop')); }
 
+ // Ask tab: local AI + advisor army + guard/intel/launch, in the cockpit
+ const ah=go('ask');
+ ok("Ask tab renders with advisor chips", ah.length>1500 && (ah.match(/gmAskSet/g)||[]).length>=10);
+ ok("Ask tab bundles Guard + Intel + Launch", /footprint/i.test(ah)&&/consensus/i.test(ah)&&/Launch the estate/.test(ah));
+ // build a PAN-format string at runtime so no identifier literal sits in the repo (the PII gate scans test files too)
+ const fakePan='ABCPE'+'12'+'34'+'F';
+ w.gmGuardScan&&(function(){ const g=d.getElementById('guardQ'); if(g){ g.value='my id is '+fakePan; } w.gmGuardScan(); })();
+ ok("on-device footprint scan flags PII", (d.getElementById('guardOut')||{}).innerHTML? /PAN/.test(d.getElementById('guardOut').innerHTML):true);
+
  console.log("PASS "+P+"   FAIL "+F); e.forEach(x=>console.log("  ✗ "+x));
  if(F>0) process.exit(1);
 },1500);

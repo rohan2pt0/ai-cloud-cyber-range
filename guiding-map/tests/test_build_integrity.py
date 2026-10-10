@@ -1,0 +1,31 @@
+"""Build-integrity gate — catch the build.js $-replacement bug that duplicated the inlined
+ops layer and leaked raw code as page text (jsdom tolerated it; Chromium did not).
+
+Cheap static checks that run in the python CI job alongside the PII gate.
+"""
+import pathlib
+
+GM = pathlib.Path(__file__).resolve().parents[1]
+
+
+def test_ops_inlined_exactly_once():
+    idx = (GM / "index.html").read_text(encoding="utf-8")
+    # Distinctive symbols from the ops layer must appear exactly once. Duplication is the
+    # signature of the old build.js bug (ops inserted twice, the second copy as raw text).
+    for marker in ("function ensureGloss", "function guidesHTML", "window.gmAsk ="):
+        assert idx.count(marker) == 1, f"'{marker}' appears {idx.count(marker)}x — build.js corruption?"
+
+
+def test_no_premature_script_close():
+    idx = (GM / "index.html").read_text(encoding="utf-8")
+    # Base app (4) + inlined ops (1) + failsafe (1) = 6 closing script tags. A premature
+    # close (raw code leaking into the page) shows up as extra </script> tokens.
+    assert idx.count("</script>") <= 7, f"{idx.count('</script>')} </script> tags — premature close / duplication?"
+
+
+def test_ops_source_matches_inlined():
+    # The committed index.html must contain the current ops.js (the drift guard proves equality
+    # via `node build.js`; here we sanity-check the inline actually happened).
+    ops = (GM / "ops.js").read_text(encoding="utf-8")
+    idx = (GM / "index.html").read_text(encoding="utf-8")
+    assert "window.gmGuideFilter" in ops and "window.gmGuideFilter" in idx

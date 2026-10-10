@@ -2521,6 +2521,133 @@
     } catch (e) {}
   })();
 
+  /* ── 48d. ASK — your estate AI + the advisor army, inside the cockpit ─────────
+     Brings SecuRAX's superpowers into the one app you use: ask your LOCAL model
+     (guarded, anti-hallucination), summon any of the 13 stealth advisors for a
+     first-draft opinion, check your footprint before sharing (Guard, on-device),
+     decide the community-proven way (Intel), and launch the estate. Everything
+     routes to YOUR gateway (default localhost:8080) — nothing leaves your machine
+     unless you point it elsewhere. Keep the contract/roster in sync with
+     assistant/enhance.py and agents/personas.py (those are the source of truth). */
+  var ASK_CONTRACT =
+    "You are a precise, trustworthy advisor for a user in India (BFSI context by default). "
+    + "Answer the question first in one line, then the key reasons. Use ONLY facts you are "
+    + "confident about or that the user provided; if unsure, say 'I'm not certain' and state what "
+    + "you'd need — never guess. Never invent numbers, names, dates, citations, prices or links; "
+    + "if a live figure is needed, say it must be verified from a primary source. Be concise and "
+    + "plain. If the question is ambiguous, ask ONE clarifying question. Flag when a decision needs "
+    + "a professional (medical/legal/financial/tax).";
+  var ADVISORS = [
+    { k: "legal", n: "Legal", role: "legal advisor (India)", prof: "a licensed advocate" },
+    { k: "finance", n: "Finance", role: "personal-finance advisor", prof: "a SEBI-registered adviser" },
+    { k: "cfo", n: "CFO", role: "chief financial officer", prof: "a qualified CA" },
+    { k: "cto", n: "CTO", role: "chief technology officer", prof: "a senior architect" },
+    { k: "ciso", n: "CISO", role: "chief information security officer", prof: "a security lead/auditor" },
+    { k: "tax", n: "Tax", role: "tax advisor (India)", prof: "a practising CA" },
+    { k: "dietician", n: "Dietician", role: "dietician", prof: "a registered dietician/doctor" },
+    { k: "coach", n: "Coach", role: "fitness coach", prof: "a certified trainer/physio" },
+    { k: "chef", n: "Chef", role: "chef", prof: "your own taste-test" },
+    { k: "event", n: "Events", role: "event planner", prof: "your vendors in writing" },
+    { k: "intel", n: "Intel", role: "open-source intelligence analyst (ethical/defensive only)", prof: "legal counsel if sensitive" },
+    { k: "career", n: "Career", role: "career coach", prof: "a mentor in your field" }
+  ];
+  var askAgent = "general", lastAskQ = "", lastAskA = "";
+  function askSystem(key) {
+    if (key === "general") return ASK_CONTRACT;
+    var a = null; ADVISORS.forEach(function (x) { if (x.k === key) a = x; });
+    if (!a) return ASK_CONTRACT;
+    return ASK_CONTRACT + " For THIS request you are acting as a " + a.role
+      + ". Give a practical FIRST-draft opinion (not final) and tell me to confirm anything binding with " + a.prof + ".";
+  }
+  function askGw() { return G("gm_ask_gw", "http://localhost:8080"); }
+  var ASK_RED = /aadhaar|\b[2-9]\d{3}\s?\d{4}\s?\d{4}\b|\b[A-Z]{5}\d{4}[A-Z]\b|customer|account\s*no|internal ip/i;
+
+  function askHTML() {
+    var h = '<div class="section active">';
+    h += '<div class="cat-t">🤖 Ask — your local AI + advisor army</div>';
+    h += '<div class="info">Ask plainly — answered by <b>your own model</b> through the guardrail gateway, kept honest (no made-up numbers). Pick an advisor for a first-draft expert opinion, then confirm anything big with a real professional.</div>';
+    h += '<div class="chips" style="margin:8px 0"><button class="chip' + (askAgent === "general" ? " on" : "") + '" onclick="gmAskSet(\'general\')">General</button>';
+    ADVISORS.forEach(function (a) { h += '<button class="chip' + (askAgent === a.k ? " on" : "") + '" onclick="gmAskSet(\'' + a.k + '\')">' + esc(a.n) + '</button>'; });
+    h += '</div>';
+    h += '<textarea id="askQ" placeholder="e.g. Right-size my emergency fund and term cover" style="width:100%;min-height:70px;padding:9px 11px;border:1px solid var(--line,#999);border-radius:10px;background:transparent;color:inherit"></textarea>';
+    h += '<div class="row" style="margin-top:8px;display:flex;gap:8px;align-items:center"><button class="btn btn-p" onclick="gmAsk()">Ask</button><span class="info" style="margin:0;padding:4px 8px">🔒 stays on your machine</span></div>';
+    h += '<div id="askOut" class="info" style="display:none;white-space:pre-wrap;margin-top:10px"></div>';
+    h += '<div id="askFb" class="row" style="display:none;gap:8px;align-items:center;margin-top:8px"><span class="info" style="margin:0;padding:0">Useful?</span><button class="chip" onclick="gmAskFb(\'up\')">👍</button><button class="chip" onclick="gmAskFb(\'down\')">👎</button><span class="info" style="margin:0;padding:0" id="askFbMsg"></span></div>';
+
+    h += '<details class="road-col" style="margin-top:14px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">🛡 Check before you share (on-device footprint scan)</summary><div style="margin-top:8px">'
+      + '<div class="info">Paste a bio/profile/message about yourself — scanned on this device for over-shared identifiers. Nothing is sent.</div>'
+      + '<textarea id="guardQ" placeholder="Paste text about yourself…" style="width:100%;min-height:60px;padding:9px 11px;border:1px solid var(--line,#999);border-radius:10px;background:transparent;color:inherit"></textarea>'
+      + '<button class="btn btn-s" onclick="gmGuardScan()" style="margin-top:8px">Scan locally</button><div id="guardOut" style="margin-top:8px"></div></div></details>';
+
+    h += '<details class="road-col" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">◈ Decide the community-proven way (Intel)</summary><div style="margin-top:8px">'
+      + '<div class="info">Paste the top items you collected (Reddit Top/All-time, best-sellers, top videos) — one per line, best first. Get what the crowd agrees on. On-device.</div>'
+      + '<textarea id="intelItems" placeholder="e.g.\nPassed CCSP! Pete Zerger videos + LEARNZAPP\nCCSP: Pete Zerger + LEARNZAPP, Sybex for depth" style="width:100%;min-height:60px;padding:9px 11px;border:1px solid var(--line,#999);border-radius:10px;background:transparent;color:inherit"></textarea>'
+      + '<input id="intelVocab" placeholder="Names you saw repeating (comma-separated) — optional" style="width:100%;margin-top:6px;padding:9px 11px;border:1px solid var(--line,#999);border-radius:10px;background:transparent;color:inherit">'
+      + '<button class="btn btn-s" onclick="gmIntelGo()" style="margin-top:8px">Find the consensus</button><div id="intelOut" style="margin-top:8px"></div></div></details>';
+
+    h += '<details class="road-col" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">⤢ Launch the estate</summary><div style="margin-top:8px" class="info">'
+      + 'With <code>./securax up</code> running: '
+      + '<a href="http://localhost:3000" target="_blank" rel="noopener">Unified chat</a> · '
+      + '<a href="http://localhost:3001" target="_blank" rel="noopener">Private docs (RAG)</a> · '
+      + '<a href="http://localhost:5678" target="_blank" rel="noopener">Automations</a> · '
+      + '<a href="http://localhost:8080/healthz" target="_blank" rel="noopener">Gateway health</a></div></details>';
+
+    h += '<div class="info" style="margin-top:12px">Gateway URL (change only if your estate is on another machine/Tailscale): '
+      + '<input id="askGwIn" value="' + esc(askGw()) + '" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid var(--line,#999);border-radius:8px;background:transparent;color:inherit">'
+      + '<button class="btn btn-s" onclick="gmAskGwSave()" style="margin-top:6px">Save</button></div>';
+    return h + '</div>';
+  }
+  window.gmAskSet = function (k) { askAgent = k; renderAll(); };
+  window.gmAskGwSave = function () { var v = (document.getElementById("askGwIn").value || "").trim(); if (v) S_("gm_ask_gw", v); renderAll(); };
+  window.gmAsk = function () {
+    var q = (document.getElementById("askQ").value || "").trim(); if (!q) return;
+    var out = document.getElementById("askOut"); out.style.display = "block"; out.textContent = "Thinking… (your local model)";
+    document.getElementById("askFb").style.display = "none";
+    var msgs = [{ role: "system", content: askSystem(askAgent) }, { role: "user", content: q }];
+    fetch(askGw().replace(/\/$/, "") + "/v1/chat/completions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model: "bank-assistant", messages: msgs }) })
+      .then(function (r) { if (!r.ok) { out.textContent = "Blocked or unavailable (HTTP " + r.status + "). If this looked like an attack pattern, that is the guardrail working."; return null; } return r.json(); })
+      .then(function (j) { if (!j) return; lastAskQ = q; lastAskA = (j.choices && j.choices[0].message.content) || JSON.stringify(j); out.textContent = lastAskA; document.getElementById("askFb").style.display = "flex"; })
+      .catch(function () { out.textContent = "Gateway not reachable. Run  ./securax up  first, then try again. (Nothing was sent.) If your estate is on another machine, set the gateway URL below."; });
+  };
+  window.gmAskFb = function (r) {
+    var fb = G("gm_ask_fb", []); fb.push({ ts: ymd(), rating: r, q: lastAskQ.slice(0, 200), agent: askAgent }); S_("gm_ask_fb", fb);
+    var up = 0; fb.forEach(function (x) { if (x.rating === "up") up++; });
+    document.getElementById("askFbMsg").textContent = (r === "up" ? "Thanks — noted. " : "Logged to improve. ") + "(" + up + "/" + fb.length + " helpful)";
+  };
+  var GPII = [["PAN", /\b[A-Z]{5}\d{4}[A-Z]\b/g], ["Aadhaar-like", /\b[2-9]\d{3}\s?\d{4}\s?\d{4}\b/g], ["Mobile", /(?:\+91[ -]?)?[6-9]\d{9}/g], ["Email", /\b[\w.+-]+@[\w-]+\.[\w.-]+\b/g], ["Card", /\b(?:\d[ -]?){13,19}\b/g]];
+  window.gmGuardScan = function () {
+    var t = document.getElementById("guardQ").value || "", hits = [];
+    GPII.forEach(function (p) { var m = t.match(p[1]); if (m) hits.push(p[0] + " ×" + m.length); });
+    var inj = /ignore (all |previous )?instructions|system prompt|you are now/i.test(t);
+    document.getElementById("guardOut").innerHTML = (hits.length || inj)
+      ? '<div class="info" style="border:1px solid"><b>⚠ Exposed:</b> ' + (esc(hits.join(", ")) || "—") + (inj ? "<br>⚠ Hidden instruction detected in the text." : "") + "<br>Remove these before posting anywhere public.</div>"
+      : '<div class="info"><b>✓ Clean.</b> No high-risk identifiers found in this sample.</div>';
+  };
+  function sigW(score, rank, age, mode) { var pop = Math.log10(Math.max(score, 0) + 10), rw = 1 / (1 + 0.15 * Math.max(rank - 1, 0)); if (mode === "edge") { var f = Math.exp(-Math.max(age, 0) / 180); return pop * rw * (0.3 + 0.7 * f); } return pop * rw * (1 + Math.min(Math.max(age, 0) / 365, 5) * 0.1); }
+  window.gmIntelGo = function () {
+    var lines = (document.getElementById("intelItems").value || "").split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
+    var vocab = (document.getElementById("intelVocab").value || "").split(",").map(function (s) { return s.trim(); }).filter(Boolean);
+    var out = document.getElementById("intelOut");
+    if (!lines.length) { out.innerHTML = '<div class="info">Paste at least a few top items first.</div>'; return; }
+    var tally = {};
+    lines.forEach(function (text, i) {
+      var w = sigW(Math.max(1, lines.length - i), i + 1, 0, "replicate");
+      var names = vocab.length ? vocab : (text.match(/\b[A-Z][a-zA-Z0-9+.&]+(?:\s+[A-Z][a-zA-Z0-9+.&]+){0,2}\b/g) || []);
+      names.forEach(function (name) {
+        if (vocab.length) { var pat = new RegExp(name.replace(/[.*+?^${}()|[\]\\]/g, function (c) { return "\\" + c; }).replace(/\s+/g, "\\s+"), "i"); if (!pat.test(text)) return; }
+        var r = tally[name] || (tally[name] = { name: name, w: 0, m: 0 }); r.w += w; r.m++;
+      });
+    });
+    var ranked = []; for (var k in tally) if (tally.hasOwnProperty(k)) ranked.push(tally[k]);
+    ranked.sort(function (a, b) { return b.w - a.w; });
+    var tot = ranked.reduce(function (a, r) { return a + r.w; }, 0) || 1;
+    var html = '<div class="info"><b>What the crowd agrees on</b>' + (lines.length < 6 ? ' <span>(thin — add more top items)</span>' : '');
+    ranked.slice(0, 6).forEach(function (r) { html += '<br>• ' + esc(r.name) + ' <span style="opacity:.7">×' + r.m + ' · ' + Math.round(r.w / tot * 100) + '%</span>'; });
+    if (!ranked.length) html += '<br>No clear names — add the names you saw repeating above.';
+    html += '<br><span style="opacity:.7">Based only on what you pasted — not invented.</span></div>';
+    out.innerHTML = html;
+  };
+
   /* ── 9. The Ops tab ─────────────────────────────────────────────── */
   function opsHTML() {
     var due = dueRituals().length, broken = brokenHabits().length;
@@ -2572,7 +2699,7 @@
     var today = TABS.filter(function (t) { return t[0] === "today"; });
     var map = TABS.filter(function (t) { return t[0] === "map"; });
     TABS.length = 0;
-    today.concat([["guide", "\ud83d\udcd8 Guides"], ["stack", "\u{1F3DB} Stack"], ["life", "\u{1F9ED} Life Map"],
+    today.concat([["ask", "\ud83e\udd16 Ask"], ["guide", "\ud83d\udcd8 Guides"], ["stack", "\u{1F3DB} Stack"], ["life", "\u{1F9ED} Life Map"],
       ["prop", "\u{1F3E0} Property"], ["ops", "\u2699 Ops"]]).concat(map).concat(keep)
       .forEach(function (t) { TABS.push(t); });
   }
@@ -2594,7 +2721,8 @@
     var old = document.getElementById("gmVitals");
     if (old) old.parentNode.removeChild(old);
     document.body.insertAdjacentHTML("beforeend", vitalsHTML());
-    if (curTab === "guide") { box.innerHTML = guidesHTML(); }
+    if (curTab === "ask") { box.innerHTML = askHTML(); }
+    else if (curTab === "guide") { box.innerHTML = guidesHTML(); }
     else if (curTab === "ops") { box.innerHTML = opsHTML(); }
     else if (curTab === "stack") { box.innerHTML = stackHTML(); }
     else if (curTab === "life") { box.innerHTML = lifeMapHTML(); }
