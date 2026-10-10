@@ -98,7 +98,13 @@ URLS
     C "SecuRAX-engineer (local/free model) drafting — no Claude credits spent:"
     GATEWAY_URL="${GATEWAY_URL:-http://localhost:8080}" python3 "$ROOT/agents/personas.py" ask engineer "$q"
     ;;
+  research)
+    # Autonomous, READ-ONLY web research (the sovereign Manus/Clawbot). Allowlist is required
+    # unless you pass --open. All synthesis runs on your local/free model via the gateway.
+    shift
+    GATEWAY_URL="${GATEWAY_URL:-http://localhost:8080}" python3 -m agents.web_research "$@"
+    ;;
   mcp)   exec python3 "$ROOT/mcp/securax_mcp.py" ;;
   down)  ( cd "$ROOT/local/compose" && docker compose --profile ai down ) ; C "stopped." ;;
-  *) echo 'usage: ./securax [up|status|demo|learn|intel|plan|advisors|ask <agent> "q"|enhance "q"|open|doctor|mcp|full up|full down|down]'; exit 1 ;;
+  *) echo 'usage: ./securax [up|status|demo|learn|intel|plan|advisors|ask <agent> "q"|enhance "q"|research "task" --allow d.com|open|doctor|mcp|full up|full down|down]'; exit 1 ;;
 esac

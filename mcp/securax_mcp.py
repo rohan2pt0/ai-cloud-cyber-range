@@ -40,6 +40,20 @@ def _load(mod_name: str, rel_path: str):
 
 # --- load the estate's real capability modules (fail soft; a missing one disables its tools) ---
 _mods: dict[str, object] = {}
+
+# The autonomous web-research agent is a PACKAGE (relative imports), so it is imported
+# normally rather than by file path — and BEFORE the file-path loader below registers a
+# flat module under the name "agents" (which would otherwise shadow the real package).
+# It is the one tool that reaches the public internet: read-only, allowlist + SSRF-gated,
+# robots-respecting, with any state-changing step deferred to human approval.
+try:
+    if str(ROOT) not in sys.path:
+        sys.path.insert(0, str(ROOT))
+    import agents.web_research as _web_research  # noqa: E402
+    _mods["web_research"] = _web_research
+except Exception as exc:  # noqa: BLE001
+    sys.stderr.write(f"[securax-mcp] could not load web_research: {exc}\n")
+
 for name, path in {
     "gw_guardrails": "apps/llm-gateway/app/guardrails.py",
     "soc_triage": "ai-soc/soc/triage.py",
@@ -213,6 +227,33 @@ def t_global_intel(goal: str, items_json: str, mode: str = "replicate", vocabula
     return json.dumps(gi.decide(goal, items, mode, vocab, profile, opps, vol), indent=2)
 
 
+def t_web_research(task: str, allow: str = "", deny: str = "", open_browsing: bool = False,
+                   max_pages: int = 6, use_model: bool = True) -> str:
+    """Autonomous, READ-ONLY web research under the safety rails. `allow` is a comma-separated
+    allowlist of domains (required unless open_browsing=true). Returns a cited report, the
+    sources read, any state-changing steps deferred for your approval, and what was skipped."""
+    wr = _mods.get("web_research")
+    if wr is None:
+        return json.dumps({"error": "web_research module unavailable"})
+    allow_list = ["*"] if open_browsing else [a.strip() for a in allow.split(",") if a.strip()]
+    if not allow_list:
+        return json.dumps({"error": "no allowlist: pass allow='a.com,b.com' or open_browsing=true"})
+    res = wr.research(
+        task,
+        allow=allow_list,
+        deny=[d.strip() for d in deny.split(",") if d.strip()],
+        search=wr.ddg_search, fetch=wr.http_fetch, robots_fetch=wr.http_fetch,
+        llm=wr.gateway_llm if use_model else None,
+        max_pages=int(max_pages),
+    )
+    return json.dumps({
+        "task": res.task, "report": res.report,
+        "sources": [vars(s) for s in res.sources],
+        "pending_actions": [vars(a) for a in res.pending_actions],
+        "skipped": res.skipped, "steps_used": res.steps_used,
+    }, indent=2, ensure_ascii=False)
+
+
 # --------------------------------------------------------------------------- #
 # Tool registry (name -> (fn, description, inputSchema))
 # --------------------------------------------------------------------------- #
@@ -281,6 +322,17 @@ TOOLS: dict[str, tuple] = {
         _schema({"goal": _STR, "items_json": _STR, "mode": _STR, "vocabulary": _STR,
                  "profile_json": _STR, "opportunities_json": _STR, "volume": _STR},
                 ["goal", "items_json"])),
+    "web_research": (t_web_research,
+        "Autonomous, READ-ONLY web research (the sovereign Manus/Clawbot): plans sub-queries, "
+        "reads pages within your allowlist, and returns a CITED report synthesised by your LOCAL "
+        "model — never fabricating. The only tool that reaches the public internet; it is "
+        "SSRF-gated (never your own services/metadata), robots-respecting, budget-capped, and "
+        "treats page text as untrusted (injection-safe). Any state-changing step (login/buy/submit) "
+        "is deferred for your approval, never executed. Pass allow='a.com,b.com' (required) or "
+        "open_browsing=true for deny-list-only browsing.",
+        _schema({"task": _STR, "allow": _STR, "deny": _STR,
+                 "open_browsing": {"type": "boolean"}, "max_pages": _NUM,
+                 "use_model": {"type": "boolean"}}, ["task"])),
 }
 
 
