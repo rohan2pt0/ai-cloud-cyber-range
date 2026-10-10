@@ -30,7 +30,7 @@ range already built    SOC + identity        GitOps              (revenue-funded
 4. **Second brain:** Obsidian vault (PARA + Zettelkasten); Git auto-commit backup.
 5. **Human layer:** Guiding-Map PWA for continuity/OPSEC; `personal-rnd/` tools; FIRE tracker.
 - **Stop-here value:** a private AI, an automated day, a documented life-OS, an AI-security
-  portfolio for interviews. Exit when you need always-on / family / remote access.
+  private AI, an automated day, a documented life-OS. Exit when you need always-on / family / remote access.
 
 ## Phase 1 — Always-on core (WALK · one-time hardware ~₹1.2–1.5L, optional)
 **Trigger:** you want 24×7 availability, family access, bigger local models, or a real SOC.

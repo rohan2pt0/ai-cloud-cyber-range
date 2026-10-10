@@ -155,7 +155,7 @@
     <a href="#compliance">Compliance</a>
     <a href="#pipeline">CI/CD</a>
     <a href="#stack">Stack</a>
-    <a href="#roles">Roles</a>
+    <a href="#mcp">MCP</a>
     <a href="#repo">Repo</a>
     <a href="#roadmap">Roadmap</a>
   </nav>
@@ -312,8 +312,8 @@
     <div class="cards c5">
       <div class="card"><span class="badge b-built">built</span><h3>P1 · Range</h3><p>Guardrail gateway, red-team suite, AI-SPM, model registry.</p></div>
       <div class="card"><span class="badge b-built">built</span><h3>P2 · AI-SOC</h3><p>Triage engine correlating events → incidents.</p></div>
-      <div class="card"><span class="badge b-seed">seed</span><h3>P3 · SENTINEL</h3><p>Daily driver: Ollama + Open WebUI + n8n.</p></div>
-      <div class="card"><span class="badge b-seed">seed</span><h3>P4 · Guiding Map</h3><p>OPSEC, FIRE, life-OS tools.</p></div>
+      <div class="card"><span class="badge b-built">live</span><h3>P3 · SENTINEL</h3><p>Daily driver: Ollama + Open WebUI + n8n.</p></div>
+      <div class="card"><span class="badge b-built">live</span><h3>P4 · Guiding Map</h3><p>OPSEC, FIRE, life-OS tools.</p></div>
       <div class="card"><span class="badge b-built">built</span><h3>P5 · Governance</h3><p>Compliance map + auto evidence.</p></div>
     </div>
   </section>
@@ -527,7 +527,7 @@
     <h2>Built entirely on open-source, proven parts</h2>
     <p class="sub">The differentiated 20% (the guardrail engine, the data-tier router, the AI-SOC) is bespoke; everything else is configuration of globally tried-and-tested tools — and each is swappable, so there is no lock-in.</p>
     <div class="stack">
-      <div class="stackcat"><h3>AI brain</h3><ul><li>Ollama (local LLMs)</li><li>LiteLLM router</li><li>Qwen / DeepSeek / Llama</li><li>Open WebUI · AnythingLLM</li></ul></div>
+      <div class="stackcat"><h3>AI brain</h3><ul><li>Ollama (local LLMs)</li><li>LiteLLM router</li><li>Qwen / DeepSeek / Llama</li><li>Open WebUI · AnythingLLM</li><li><b>SecuRAX MCP</b> (AI control)</li></ul></div>
       <div class="stackcat"><h3>Guardrails</h3><ul><li>Custom gateway (FastAPI)</li><li>Llama Guard</li><li>Model Armor · Prompt Shields</li><li>Bedrock Guardrails</li></ul></div>
       <div class="stackcat"><h3>Red team</h3><ul><li>promptfoo</li><li>garak</li><li>PyRIT</li><li>self-contained scorecard</li></ul></div>
       <div class="stackcat"><h3>SOC (next phase)</h3><ul><li>Wazuh (SIEM)</li><li>Suricata (IDS)</li><li>MISP (threat intel)</li><li>TheHive (IR)</li></ul></div>
@@ -539,22 +539,20 @@
     </div>
   </section>
 
-  <!-- ================= ROLES / JD MAPPING ================= -->
-  <section id="roles">
-    <p class="eyebrow">Why it was built</p>
-    <h2>One estate, eight senior roles</h2>
-    <p class="sub">This wasn't an academic exercise — it was built to demonstrate, hands-on, the exact capabilities asked for across eight live senior AI-security job descriptions in BFSI and government. Each role maps to parts of the estate you can show on screen.</p>
+  <!-- ================= MCP CONTROL ================= -->
+  <section id="mcp">
+    <p class="eyebrow">The intelligent layer</p>
+    <h2>Talk to it — the MCP control plane</h2>
+    <p class="sub">The estate speaks <strong>MCP (Model Context Protocol)</strong>, so an AI assistant (Claude Desktop, Claude Code, or a local agent) can <em>operate</em> it by calling tools — no scripts to run. You ask in plain language; it does the work, safely and auditably.</p>
     <div class="cards c5">
-      <div class="card"><span class="tag mono">PwC</span><h3>SM — Cloud / AI Security</h3><p>OWASP LLM &amp; Agentic, MITRE ATLAS, NIST AI 100-2, AI-SPM → the guardrail, red-team &amp; posture panels.</p></div>
-      <div class="card"><span class="tag mono">EXL</span><h3>SAVP — Secure-AI Engineering</h3><p>MLSecOps, secure-by-design for LLM/RAG/agentic, CI/CD controls → the pipeline &amp; lifecycle.</p></div>
-      <div class="card"><span class="tag mono">CRISIL</span><h3>AI Security Engineer</h3><p>LLM firewall, PII masking, RAG &amp; Azure AI security → the gateway &amp; data-tier router.</p></div>
-      <div class="card"><span class="tag mono">Abu Dhabi Bank</span><h3>SM — AI-Security Product Owner</h3><p>Security/privacy-by-design, risk register, MLOps controls, IR → governance &amp; AI-SOC.</p></div>
-      <div class="card"><span class="tag mono">Deloitte</span><h3>Manager — Cloud AI Security</h3><p>CNAPP/CSPM/DSPM, Bedrock/SageMaker/Vertex, IaC, model governance → the cloud &amp; posture layers.</p></div>
-      <div class="card"><span class="tag mono">C-DOT (Govt)</span><h3>AI-Expert — Agentic SOC</h3><p>AI-SOC, autonomous triage, adversarial-AI research → the AI-SOC &amp; red-team engines.</p></div>
-      <div class="card"><span class="tag mono">RBI</span><h3>AI/ML Specialist</h3><p>ML frameworks, model deployment, India data residency → model registry &amp; local-first routing.</p></div>
-      <div class="card"><span class="tag mono">RBI</span><h3>IT Security Expert</h3><p>IS audit, SOC, PCI DSS, RBI CSF → the SOC stack, audit trail &amp; compliance map.</p></div>
+      <div class="card"><span class="tag mono">classify_data_tier</span><h3>"Is this Red?"</h3><p>Decide what may leave the machine.</p></div>
+      <div class="card"><span class="tag mono">soc_triage</span><h3>"Triage these alerts"</h3><p>Telemetry → MITRE-mapped incidents.</p></div>
+      <div class="card"><span class="tag mono">redteam_scorecard</span><h3>"Attack my AI"</h3><p>Run the adversarial-ML suite.</p></div>
+      <div class="card"><span class="tag mono">aispm_posture</span><h3>"What's my posture?"</h3><p>Score + gaps + inventory.</p></div>
+      <div class="card"><span class="tag mono">redact_pii</span><h3>"Scrub this"</h3><p>Aadhaar/PAN/card/UPI, verified.</p></div>
+      <div class="card"><span class="tag mono">fire_plan</span><h3>"Plan my FI"</h3><p>Years-to-independence, Indian context.</p></div>
     </div>
-    <p class="sub" style="margin-top:14px">Common thread across all eight: NIST AI RMF, ISO 27001/42001, RBI FREE-AI, OWASP, MITRE ATLAS, multi-cloud and Kubernetes security, Python, and board-level governance — all demonstrable from this one repository.</p>
+    <p class="sub" style="margin-top:14px">Zero dependencies, nine safe tools, reusing the same engines as the rest of the estate. Add it to your AI client in one line — see <code>mcp/README.md</code>.</p>
   </section>
 
   <!-- ================= REPO MAP ================= -->

@@ -4,8 +4,8 @@ The mirror image of the guardrail gateway. The gateway is **security for AI**; t
 **AI for security**: it consumes the estate's telemetry and uses correlation + (optional)
 LLM assistance to turn raw events into analyst-ready incidents.
 
-Covers the "Agentic SecOps / AI-for-security", "AI-SOC / autonomous detection", and
-"monitoring, anomaly detection & incident response" asks in the PwC, C-DOT and Abu Dhabi JDs.
+Covers agentic SecOps / AI-for-security, AI-SOC / autonomous detection, and monitoring,
+anomaly detection & incident response.
 
 ## What it does
 - **Ingests** heterogenous telemetry into one schema: the gateway's audit JSON, Falco
@@ -23,7 +23,7 @@ Alert text is attacker-influenced. An attacker can plant an instruction in a pro
 later lands in a log an LLM summarises — a **second-order prompt injection against the SOC
 itself** (OWASP LLM01 / Agentic ASI01). So every event is sanitised through the *same*
 guardrail engine (normalise + PII-redact) before any model sees it. This is the kind of
-threat-model depth these senior roles are screening for.
+threat-model depth that matters in production.
 
 ## Run
 ```bash

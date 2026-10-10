@@ -1,8 +1,8 @@
 # Cloud Governance Guardrails (preventive, org-wide)
 
 The Terraform modules deploy *resource-level* controls. This note covers the *org-level*
-preventive guardrails a Cloud AI Security lead owns (Deloitte JD: "AWS Organizations, Control
-Tower, Azure Policy, Security Command Center"). They are documented as policy-as-code patterns;
+preventive guardrails a Cloud AI Security lead owns ("AWS Organizations, Control Tower,
+Azure Policy, Security Command Center"). They are documented as policy-as-code patterns;
 enable them once you have an Organization / Management Group (free to define, so they stay
 inside the ₹2,500 budget).
 
