@@ -1,9 +1,10 @@
 /* The Guiding Map — offline shell.
    Bump CACHE whenever you redeploy; old caches are dropped on activate. */
-const CACHE = "guiding-map-securax-v14.1.0";   // bump on any PWA change so clients drop the old cache
+const CACHE = "guiding-map-securax-v14.2.0";   // bump on any PWA change so clients drop the old cache
 const SHELL = [
   "./",
   "./index.html",
+  "./hub.html",
   "./manifest.json",
   "./icon-192.png",
   "./icon-512.png"

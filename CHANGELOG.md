@@ -21,8 +21,11 @@ for the versioning and release policy.
 - The optional kind/k8s plane used host port 8080, clashing with the gateway; moved to 8081.
 
 ### Added
-- **Command Center** (`portal/hub.html`) — one front door with a clickable card + live status for
-  every app, so you never type `:3000/:3001/:5678` again. `./securax up` opens it.
+- **Command Center** (`hub.html`, reachable at `/hub.html`, `/hub`, or the Guiding Map's **◆ All
+  Apps** header button) — one front door with a clickable card + live status for every app, so you
+  never type `:3000/:3001/:5678` again. `./securax up` opens it. It is served from the same mount as
+  the PWA (no second mount/alias), so a restart can't 404 it; the old `/portal/hub.html` path
+  redirects for existing bookmarks.
 - **`./securax setup`** — a 30-second wizard that writes `.env` (Gemini key, multi-device access,
   a generated sync token, strong service passwords) so you never hand-edit `.env`.
 - Gateway **`GET /v1/models`** so Open WebUI / AnythingLLM can list and select a model.

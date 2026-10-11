@@ -27,8 +27,9 @@ Everything after this point is optional depth.
 > (slower on a laptop, fully offline). Sensitive data always stays local either way.
 >
 > **One front door:** you no longer juggle `:3000`, `:3001`, `:5678`. The **Command Center**
-> (`http://localhost:8088/portal/hub.html`, opened for you) has a clickable card for every app with
-> a live up/down dot.
+> (`http://localhost:8088/hub.html` — also reachable as `/hub`, opened for you) has a clickable
+> card for every app with a live up/down dot, and the Guiding Map's **◆ All Apps** header button
+> links straight to it.
 
 ---
 
