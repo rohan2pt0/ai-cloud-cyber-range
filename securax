@@ -22,35 +22,64 @@ case "$cmd" in
     # Pull the model in the BACKGROUND so the home screen opens immediately — the
     # Guiding Map's Ask tab shows a live "AI is ready / warming up" status, so the
     # one-time ~1 GB download never blocks you. (First run only.)
-    C "Downloading the local AI model in the background (first run only, ~2–5 min)…"
+    # Pull the private local model in the BACKGROUND (sovereign fallback / RED-tier). With a free
+    # Gemini key set, answers are already fast via the cloud, so this never blocks you.
+    C "Downloading the private local model in the background (first run only; not needed to start)…"
     (
       CID="$(cd "$ROOT/local/compose" && docker compose ps -q ollama 2>/dev/null || true)"
       for _ in 1 2 3 4 5 6 7 8 9 10; do docker exec "$CID" ollama list >/dev/null 2>&1 && break; sleep 3; done
       [ -n "${CID:-}" ] && docker exec "$CID" ollama pull "${LOCAL_MODEL:-qwen2.5:1.5b}" >/dev/null 2>&1 || true
-      [ -n "${CID:-}" ] && docker exec "$CID" ollama pull "llama-guard3:1b" >/dev/null 2>&1 || true
     ) &
-    C "Opening your home screen: http://localhost:8088"
+    if ! grep -q "^GEMINI_API_KEY=..*" "$ROOT/local/compose/.env" 2>/dev/null; then
+      C "TIP: for INSTANT answers, run  ./securax setup  and paste a free Gemini key (else the slower local model is used)."
+    fi
+    C "Opening your Command Center: http://localhost:8088/portal/hub.html"
     "$0" open >/dev/null 2>&1 || true
     [ "$cmd" = "up-status" ] && "$0" status || true
     ;;
   status)
-    C "SecuRAX — open this first:"
-    echo "  ⭐ Guiding Map (your home screen)    : http://localhost:8088"
+    C "SecuRAX — open ONE page (it links everything, no URLs to remember):"
+    echo "  ⭐ Command Center : http://localhost:8088/portal/hub.html"
     echo ""
-    C "Everything else:"
+    C "Direct links (also on the Command Center):"
     cat <<URLS
+  Guiding Map (home / life-OS)         : http://localhost:8088
   Unified chat (local+cloud, guarded)  : http://localhost:3000
   Private document chat (Red-tier)     : http://localhost:3001
   Automation (n8n + data-tier router)  : http://localhost:5678
   Guardrail gateway API                : http://localhost:8080/healthz
-  Visual tour                          : http://localhost:8088/portal/explainer.html
   MCP (let an AI operate it)           : see mcp/README.md
 URLS
     curl -fsS http://localhost:8080/healthz >/dev/null 2>&1 && C "gateway: healthy" || echo "  gateway: starting (give it a few seconds)"
     ;;
   open)
-    URL="http://localhost:8088"
+    # The single front door: the Command Center hub (links every app, no URLs to remember).
+    URL="http://localhost:8088/portal/hub.html"
     ( command -v xdg-open >/dev/null && xdg-open "$URL" ) || ( command -v open >/dev/null && open "$URL" ) ||       ( command -v cmd.exe >/dev/null && cmd.exe /c start "$URL" ) || C "Open $URL in your browser."
+    ;;
+  setup)
+    # Friendly first-run wizard — writes local/compose/.env so you never hand-edit it.
+    ENVF="$ROOT/local/compose/.env"
+    [ -f "$ENVF" ] || cp "$ROOT/local/compose/.env.example" "$ENVF"
+    setkv(){ k="$1"; v="$2"; if grep -q "^$k=" "$ENVF"; then
+      tmp="$(mktemp)"; awk -v k="$k" -v v="$v" 'BEGIN{FS="="} $1==k{print k"="v; next} {print}' "$ENVF" > "$tmp" && mv "$tmp" "$ENVF";
+      else printf '%s=%s\n' "$k" "$v" >> "$ENVF"; fi; }
+    C "SecuRAX setup — a few questions, then you're done."
+    printf "1) Paste a FREE Google AI Studio key for fast answers (https://aistudio.google.com/apikey)\n   [Enter to skip and use the private local model]: "
+    read -r GK < /dev/tty || GK=""
+    [ -n "$GK" ] && setkv GEMINI_API_KEY "$GK" && C "  ✔ Gemini key saved — answers will be fast."
+    printf "2) Use SecuRAX on your phone/iPad too? [y/N]: "
+    read -r MD < /dev/tty || MD="n"
+    case "$MD" in [Yy]*) setkv BIND_HOST "0.0.0.0"; C "  ✔ Other devices on your Wi-Fi can now reach it (browse to http://<this-laptop-IP>:8088). For secure access anywhere, install Tailscale and set BIND_HOST to its 100.x IP.";; esac
+    if ! grep -q "^SYNC_TOKENS=..*" "$ENVF" 2>/dev/null || grep -q "^SYNC_TOKENS=$" "$ENVF"; then
+      TOK="$( (command -v openssl >/dev/null && openssl rand -hex 24) || date +%s%N | sha256sum | cut -c1-48 )"
+      setkv SYNC_TOKENS "$TOK"; C "  ✔ Generated a cross-device sync token (paste it in the app: Ops → Cross-device sync)."
+    fi
+    # strong random passwords for the bundled services (only if still placeholders)
+    for P in POSTGRES_PASSWORD GRAFANA_PASSWORD MM_DB_PASSWORD; do
+      if grep -q "^$P=change-me" "$ENVF"; then setkv "$P" "$( (command -v openssl >/dev/null && openssl rand -hex 16) || date +%s%N | sha256sum | cut -c1-32 )"; fi
+    done
+    C "Setup complete. Start everything with:  ./securax up"
     ;;
   doctor)
     C "SecuRAX doctor — resource & health check (global thresholds)"
@@ -132,5 +161,5 @@ URLS
     ;;
   mcp)   exec python3 "$ROOT/mcp/securax_mcp.py" ;;
   down)  ( cd "$ROOT/local/compose" && docker compose --profile ai down ) ; C "stopped." ;;
-  *) echo 'usage: ./securax [up|status|version|demo|learn|intel|plan|advisors|ask <agent> "q"|enhance "q"|research "task" --allow d.com [--render]|act action.json --allow d.com --approve|design "prompt"|routines [list|due|run]|open|doctor|mcp|full up|full down|down]'; exit 1 ;;
+  *) echo 'usage: ./securax [setup|up|status|version|open|doctor|demo|learn|intel|plan|advisors|ask <agent> "q"|enhance "q"|research "task" --allow d.com [--render]|act action.json --allow d.com --approve|design "prompt"|routines [list|due|run]|mcp|full up|full down|down]'; exit 1 ;;
 esac

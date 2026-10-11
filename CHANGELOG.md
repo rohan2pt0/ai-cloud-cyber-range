@@ -8,6 +8,28 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
+### Fixed
+- **Models now work out of the box.** The `modelplane` network was `internal: true`, so Ollama
+  couldn't pull models and LiteLLM couldn't reach cloud models — breaking every answer. Given egress
+  (models still publish no host ports). LiteLLM now defaults to **fast cloud Gemini with a local
+  fallback**, so answers are instant with a free key and private-local otherwise.
+- **No more false "Blocked by the guardrail".** Llama Guard was enabled by default but its model
+  wasn't pulled, so the fail-closed detector blocked *every* request. It's now opt-in; the fast
+  deterministic rails (100% red-team defence) run by default. The PWA also stops mislabeling a
+  model-unavailable error as a guardrail block.
+- `fin_freedom.py` argparse crash from a literal `%` in help text (Python 3.14).
+- The optional kind/k8s plane used host port 8080, clashing with the gateway; moved to 8081.
+
+### Added
+- **Command Center** (`portal/hub.html`) — one front door with a clickable card + live status for
+  every app, so you never type `:3000/:3001/:5678` again. `./securax up` opens it.
+- **`./securax setup`** — a 30-second wizard that writes `.env` (Gemini key, multi-device access,
+  a generated sync token, strong service passwords) so you never hand-edit `.env`.
+- Gateway **`GET /v1/models`** so Open WebUI / AnythingLLM can list and select a model.
+- **`BIND_HOST`** to expose the UIs to your phone/iPad over Wi-Fi or Tailscale; `DEPLOY.md` gains a
+  multi-device + sync section.
+
+
 
 ## [0.1.0] - 2026-10-11
 First versioned public release. SecuRAX is a sovereign, local-first AI-security + life-OS estate.

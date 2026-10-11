@@ -136,6 +136,16 @@ async def _call_upstream(payload: dict) -> dict:
         return r.json()
 
 
+@app.get("/v1/models")
+async def models() -> dict:
+    """OpenAI-compatible model list so chat UIs (Open WebUI, AnythingLLM) can discover and select a
+    model through the gateway. The names map to the LiteLLM router (see litellm-config.yaml):
+    `bank-assistant` = fast default (cloud Gemini, local fallback); `-local` = fully sovereign."""
+    ids = [m.strip() for m in os.getenv("SERVED_MODELS", "bank-assistant,bank-assistant-local").split(",") if m.strip()]
+    return {"object": "list",
+            "data": [{"id": i, "object": "model", "created": 0, "owned_by": "securax"} for i in ids]}
+
+
 @app.post("/v1/chat/completions")
 async def chat(request: Request, authorization: str | None = Header(default=None)) -> JSONResponse:
     payload = await request.json()

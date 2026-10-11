@@ -81,6 +81,16 @@ def test_api_blocks_and_allows():
     assert c.get("/metrics").status_code == 200
 
 
+def test_models_endpoint_lists_a_selectable_model():
+    # Chat UIs (Open WebUI / AnythingLLM) call /v1/models to populate the model picker.
+    c = TestClient(app)
+    r = c.get("/v1/models")
+    assert r.status_code == 200
+    body = r.json()
+    ids = [m["id"] for m in body["data"]]
+    assert body["object"] == "list" and "bank-assistant" in ids
+
+
 def test_version_endpoint_reports_semver():
     import re as _re
     c = TestClient(app)

@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SecuRAX — Command Center</title>
+<style>
+  :root{--bg:#0b1220;--card:#121c2e;--ink:#e8eefb;--mut:#9fb0cc;--line:#223049;--accent:#5b8cff;--green:#30d158;--red:#ff453a;--amber:#ffd60a;--gold:#e8b23a}
+  @media (prefers-color-scheme:light){:root{--bg:#f4f7fb;--card:#fff;--ink:#0e1726;--mut:#5a6b86;--line:#e3e9f2;--accent:#2563eb}}
+  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,Segoe UI,Roboto,sans-serif}
+  .wrap{max-width:900px;margin:0 auto;padding:24px 16px 60px}
+  header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px}
+  .logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--gold));display:grid;place-items:center;color:#fff;font-weight:800}
+  h1{font-size:20px;margin:0} .ver{font-size:12px;color:var(--mut);border:1px solid var(--line);border-radius:999px;padding:1px 8px}
+  .sub{color:var(--mut);margin:2px 0 18px}
+  h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin:26px 0 10px}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
+  a.card{display:block;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 15px;text-decoration:none;color:inherit;transition:.15s}
+  a.card:hover{border-color:var(--accent);transform:translateY(-1px)}
+  .card .t{font-weight:700;display:flex;align-items:center;gap:8px}
+  .card .d{color:var(--mut);font-size:13.5px;margin-top:4px}
+  .dot{width:9px;height:9px;border-radius:50%;background:var(--mut);display:inline-block;flex:0 0 auto}
+  .dot.up{background:var(--green)} .dot.down{background:var(--red)}
+  .emoji{font-size:18px}
+  .note{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;color:var(--mut);font-size:14px}
+  .note b{color:var(--ink)} code{background:rgba(127,127,127,.15);padding:1px 6px;border-radius:6px;font-size:13px}
+  .pill{display:inline-block;font-size:11px;color:var(--green);border:1px solid var(--green);border-radius:999px;padding:0 7px;margin-left:6px}
+  ol{margin:6px 0 0;padding-left:20px} ol li{margin:4px 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">◆</div>
+    <h1>SecuRAX — Command Center</h1>
+    <span class="ver" id="ver">v…</span>
+  </header>
+  <div class="sub">Everything in one place. Click a card — you never need to type a URL.</div>
+
+  <h2>Your apps</h2>
+  <div class="grid" id="apps"></div>
+
+  <h2>Use it on your phone &amp; iPad</h2>
+  <div class="note">
+    <b>1. Let other devices reach it.</b> In <code>local/compose/.env</code> set <code>BIND_HOST=0.0.0.0</code>
+    (same Wi-Fi) — or your Tailscale IP for secure access anywhere — then restart: <code>./securax up</code>.<br>
+    <b>2. On the phone/iPad</b> (same network), open <code id="lanurl">http://&lt;this-laptop-IP&gt;:8088</code>.
+    Find the laptop IP with <code>hostname -I</code> (Linux/WSL) or <code>ipconfig</code> (Windows).<br>
+    <b>3. Install it as an app:</b> in the browser menu choose <b>“Add to Home screen”</b> (iPhone/iPad: Share → Add to Home Screen).<br>
+    <b>4. Keep all devices in sync:</b> open the Guiding Map → <b>Ops → Cross-device sync</b>, paste the same sync token on every device
+    (<code>./securax setup</code> can generate it). <span class="pill">sovereign</span> Your data stays on your box.
+    <div style="margin-top:8px;color:var(--mut);font-size:13px">Tip: full offline “install” needs a secure URL — plain Wi-Fi works as a web page; <b>Tailscale</b> gives the full installable experience anywhere.</div>
+  </div>
+
+  <h2>Make answers fast (optional, free)</h2>
+  <div class="note">
+    Run <code>./securax setup</code> and paste a free <b>Google AI Studio</b> key
+    (<a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>).
+    Answers then come from fast cloud Gemini; without it, the private local model is used (slower on a laptop).
+    Sensitive data always stays local either way.
+  </div>
+
+  <h2>Handy commands</h2>
+  <div class="note" style="font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;color:var(--ink)">
+    ./securax up &nbsp;·&nbsp; ./securax status &nbsp;·&nbsp; ./securax doctor &nbsp;·&nbsp; ./securax setup &nbsp;·&nbsp; ./securax down
+  </div>
+</div>
+
+<script>
+(function(){
+  var APPS = [
+    {t:"Guiding Map", e:"🧭", d:"Your daily cockpit / life-OS", url:"http://"+location.hostname+":8088/"},
+    {t:"Chat", e:"💬", d:"Private ChatGPT-style assistant", url:"http://"+location.hostname+":3000/"},
+    {t:"Private Docs", e:"📄", d:"Chat with your PDFs/Word (RAG)", url:"http://"+location.hostname+":3001/"},
+    {t:"Automation", e:"⚙️", d:"n8n workflows & the morning brief", url:"http://"+location.hostname+":5678/"},
+    {t:"Gateway health", e:"🛡️", d:"The AI security policy enforcer", url:"http://"+location.hostname+":8080/healthz"}
+  ];
+  var box = document.getElementById("apps");
+  APPS.forEach(function(a){
+    var el = document.createElement("a");
+    el.className="card"; el.href=a.url; el.target="_blank"; el.rel="noopener";
+    el.innerHTML = '<div class="t"><span class="dot" data-url="'+a.url+'"></span><span class="emoji">'+a.e+'</span> '+a.t+'</div><div class="d">'+a.d+'</div>';
+    box.appendChild(el);
+    // live up/down (no-cors: we only learn reachability, not content)
+    fetch(a.url,{mode:"no-cors"}).then(function(){mark(a.url,true);}).catch(function(){mark(a.url,false);});
+  });
+  function mark(url,up){var d=document.querySelector('.dot[data-url="'+url+'"]'); if(d) d.className="dot "+(up?"up":"down");}
+  // version badge
+  fetch("http://"+location.hostname+":8080/version").then(function(r){return r.json();})
+    .then(function(j){document.getElementById("ver").textContent="v"+(j.version||"?");}).catch(function(){document.getElementById("ver").textContent="offline";});
+  // show the detected host in the LAN hint
+  if(location.hostname && location.hostname!=="localhost" && location.hostname!=="127.0.0.1")
+    document.getElementById("lanurl").textContent="http://"+location.hostname+":8088";
+})();
+</script>
+</body>
+</html>
