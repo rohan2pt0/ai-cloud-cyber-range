@@ -18,6 +18,28 @@ skv(){ f="$1"; k="$2"; v="$3"; if grep -q "^$k=" "$f" 2>/dev/null; then
 # ev KEY [DEFAULT] — read KEY from local/compose/.env (process env wins), else DEFAULT.
 ev(){ v="${!1:-}"; [ -z "$v" ] && v="$(sed -n "s/^$1=//p" "$ROOT/local/compose/.env" 2>/dev/null | head -1)"; printf '%s' "${v:-${2:-}}"; }
 
+# guard_broken — true when Llama Guard is switched ON in .env but its model was never installed.
+# In that state the gateway (fail-closed) blocks EVERY request: an outage, not protection.
+guard_broken(){
+  [ -n "$(ev LLAMA_GUARD_URL)" ] || return 1
+  CIDG="$(cd "$ROOT/local/compose" && docker compose ps -q ollama 2>/dev/null || true)"
+  [ -n "$CIDG" ] || return 1
+  _ready=0; for _ in 1 2 3 4 5 6 7 8 9 10; do docker exec "$CIDG" ollama list >/dev/null 2>&1 && { _ready=1; break; }; sleep 2; done
+  [ "$_ready" = 1 ] || return 1                       # ollama not answering yet: don't guess
+  docker exec "$CIDG" ollama list 2>/dev/null | grep -q "llama-guard" && return 1
+  return 0
+}
+# guard_heal — switch the broken detector OFF (announced, reversible). The built-in deterministic
+# rails (injection / PII / secrets / exfil) keep enforcing either way.
+guard_heal(){
+  if guard_broken; then
+    skv "$ROOT/local/compose/.env" LLAMA_GUARD_URL ""
+    C "Llama Guard was switched ON but never installed — that blocks EVERY request. Switched it OFF."
+    echo "  The built-in rails (prompt-injection, PII, secrets, exfil) still enforce. To use Llama Guard properly: ./securax guard on"
+    ( cd "$ROOT/local/compose" && docker compose --profile ai up -d gateway >/dev/null 2>&1 || true )
+  fi
+}
+
 cmd="${1:-up-status}"
 case "$cmd" in
   up|up-status)
@@ -47,6 +69,7 @@ case "$cmd" in
     SVCS=""; [ "$LITE" = 1 ] && SVCS="gateway litellm ollama open-webui guiding-map estate-sync" \
       && C "LITE mode: starting the core path only (Private Docs / n8n skipped to save RAM)."
     ( cd "$ROOT/local/compose" && docker compose --profile ai up -d --build $SVCS )
+    guard_heal
     # Pull the model in the BACKGROUND so the home screen opens immediately — the
     # Guiding Map's Ask tab shows a live "AI is ready / warming up" status, so the
     # one-time ~1 GB download never blocks you. (First run only.)
@@ -111,10 +134,21 @@ URLS
     ;;
   doctor)
     C "SecuRAX doctor — resource & health + a REAL end-to-end chat test"
+    # Are you running CURRENT code? (a stale checkout caused several "it still doesn't work" loops)
+    if git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1; then
+      timeout 6 git -C "$ROOT" fetch -q origin main 2>/dev/null || true
+      BEHIND="$(git -C "$ROOT" rev-list --count HEAD..origin/main 2>/dev/null || echo 0)"
+      if [ "${BEHIND:-0}" -gt 0 ]; then echo "  code: ⚠ $BEHIND commit(s) behind main — run  ./securax update"
+      else echo "  code: up to date (v$(cat "$ROOT/VERSION" 2>/dev/null))"; fi
+    fi
     DISK=$(df -P . | awk 'NR==2{print $5}' | tr -d '%'); echo "  disk used: ${DISK}%  $([ "${DISK:-0}" -ge 85 ] && echo '⚠ >85% — free space' || echo 'ok')"
     if command -v free >/dev/null; then MEM=$(free | awk '/Mem:/{printf "%d",$3/$2*100}'); echo "  RAM used:  ${MEM}%  $([ "${MEM:-0}" -ge 90 ] && echo '⚠ >90% — close apps / use local-fast model' || echo 'ok')"; fi
     curl -fsS http://localhost:8080/healthz >/dev/null 2>&1 && echo "  gateway:   healthy" || echo "  gateway:   down (run ./securax up)"
     curl -fsS http://localhost:8088 >/dev/null 2>&1 && echo "  guiding map: up" || echo "  guiding map: down"
+    if guard_broken; then
+      echo "  llama-guard: ✗ ON but NOT INSTALLED → every request is blocked (fail-closed). Fix:  ./securax guard off   (or ./securax guard on to install it)"
+    elif [ -n "$(ev LLAMA_GUARD_URL)" ]; then echo "  llama-guard: on (extra model scan of every request — slower, stricter)"
+    else echo "  llama-guard: off (built-in rails enforce)"; fi
     # Is the sovereign local model actually pulled? (the #1 reason the LAST rung of the ladder fails)
     LM="$(ev LOCAL_MODEL qwen2.5:1.5b)"
     CID="$(cd "$ROOT/local/compose" && docker compose ps -q ollama 2>/dev/null || true)"
@@ -292,6 +326,39 @@ URLS
     fi
     C "Apply with:  ./securax down && ./securax up    then    ./securax pull   (fetches the local model)"
     ;;
+  guard)
+    # Control the OPTIONAL Llama Guard model detector. The built-in deterministic rails (prompt-injection,
+    # PII, secrets, exfil) enforce regardless; Llama Guard is an extra, slower second opinion.
+    ENVF="$ROOT/local/compose/.env"; [ -f "$ENVF" ] || cp "$ROOT/local/compose/.env.example" "$ENVF"
+    case "${2:-status}" in
+      status)
+        if guard_broken; then C "Llama Guard: ON but NOT INSTALLED — blocks every request. Run  ./securax guard off  (or  ./securax guard on )."
+        elif [ -n "$(ev LLAMA_GUARD_URL)" ]; then C "Llama Guard: ON (extra model scan of every request)."
+        else C "Llama Guard: OFF — the built-in rails still enforce."; fi ;;
+      off)
+        skv "$ENVF" LLAMA_GUARD_URL ""
+        ( cd "$ROOT/local/compose" && docker compose --profile ai up -d gateway >/dev/null 2>&1 || true )
+        C "Llama Guard OFF. The built-in rails (injection, PII, secrets, exfil) still enforce." ;;
+      on)
+        CID="$(cd "$ROOT/local/compose" && docker compose ps -q ollama 2>/dev/null || true)"
+        [ -z "$CID" ] && { C "Start the estate first:  ./securax up"; exit 1; }
+        C "Installing Llama Guard (llama-guard3:1b) — it then scans every request AND reply with a second model (slower on CPU)…"
+        if docker exec "$CID" ollama pull llama-guard3:1b; then
+          skv "$ENVF" LLAMA_GUARD_URL "http://ollama:11434"
+          ( cd "$ROOT/local/compose" && docker compose --profile ai up -d gateway >/dev/null 2>&1 || true )
+          C "Llama Guard ON and installed ✔  (turn off any time:  ./securax guard off)"
+        else C "Could not install the model — Llama Guard stays OFF (so nothing is blocked). Check your internet and retry."; fi ;;
+      *) echo "usage: ./securax guard [status|on|off]"; exit 1 ;;
+    esac
+    ;;
+  update)
+    # ONE command to get current: pull the latest code, then recreate the containers so it actually runs.
+    # (A plain `git pull` only changes files on disk — running containers keep the OLD code.)
+    git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1 || { C "This isn't a git checkout — download the latest ZIP instead."; exit 1; }
+    C "Updating SecuRAX (git pull, then recreate the containers)…"
+    git -C "$ROOT" pull --ff-only || { C "git pull failed — you may have local changes. See:  git -C \"$ROOT\" status"; exit 1; }
+    "$0" down && exec "$0" up
+    ;;
   pull)
     # Pull the sovereign local model in the FOREGROUND (so you can be sure it's ready, unlike the
     # background pull `up` kicks off). This is the free/offline model Chat uses as 'bank-assistant-local'.
@@ -321,17 +388,32 @@ URLS
         python3 "$GEN" --status --env-file "$ENVF"
         printf '\nProvider id to enable (openai, anthropic, deepseek, mistral, grok, perplexity, azure, bedrock, openrouter, elevenlabs): '
         read -r PID < /dev/tty || PID=""
+        PID="$(printf '%s' "$PID" | tr 'A-Z' 'a-z' | tr -d '[:space:]')"
         [ -z "$PID" ] && { C "nothing to do."; exit 0; }
+        case "$PID" in */*|.*|*securax*) C "That looks like a command, not a provider id. Type just the id (e.g. groq), or Ctrl+C and run it in a new line."; exit 1;; esac
         INFO="$(python3 -c 'import json,sys
 cat=json.load(open(sys.argv[1])); p=next((x for x in cat["providers"] if x["id"]==sys.argv[2]),None)
 if not p: sys.exit(3)
-print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note",""))' "$ROOT/plugins/catalog.json" "$PID")" || { C "unknown provider id: $PID"; exit 1; }
+print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note",""))' "$ROOT/plugins/catalog.json" "$PID")" || { C "unknown provider id: $PID — valid ids:"; python3 "$GEN" --status --env-file "$ENVF" | sed 's/^  \[...\] /    /' | awk '{print "   ",$1}' | grep -v chain | tr '\n' ' '; echo; exit 1; }
         KEYS="$(printf '%s\n' "$INFO" | sed -n 1p)"; GETURL="$(printf '%s\n' "$INFO" | sed -n 2p)"; NOTE="$(printf '%s\n' "$INFO" | sed -n 3p)"
         [ -n "$GETURL" ] && C "  Get a key: $GETURL"
         [ -n "$NOTE" ]   && echo "  note: $NOTE"
+        FIRST=1
         for K in $KEYS; do
-          printf '  %s = ' "$K"; read -r V < /dev/tty || V=""
-          [ -n "$V" ] && skv "$ENVF" "$K" "$V" && echo "    ✔ saved $K"
+          # Typed silently (not echoed): a visible key ends up in screenshots and chat pastes.
+          printf '  %s (input hidden — paste, then press Enter) = ' "$K"; read -rs V < /dev/tty || V=""; echo
+          [ -z "$V" ] && { echo "    (skipped $K)"; FIRST=0; continue; }
+          if [ "$FIRST" = 1 ]; then
+            CK="$(printf '%s' "$V" | python3 "$GEN" --check-key "$PID" 2>/dev/null || echo ok)"
+            case "$CK" in
+              other:*) OTH="${CK#other:}"; C "  ⚠ That looks like an '${OTH%%:*}' key, not a '$PID' key."
+                       printf '    Save it as %s anyway? [y/N]: ' "$K"; read -r YN < /dev/tty || YN="n"
+                       case "$YN" in [Yy]*) ;; *) echo "    not saved — run ./securax providers add again and choose '${OTH%%:*}'."; FIRST=0; continue;; esac ;;
+              prefix:*) echo "    note: $PID keys usually start with '${CK#prefix:}' — double-check this is the right key." ;;
+            esac
+          fi
+          FIRST=0
+          skv "$ENVF" "$K" "$V" && echo "    ✔ saved $K (${#V} chars, starts '${V:0:5}…')"
         done
         python3 "$GEN" --write --env-file "$ENVF" >/dev/null && C "  ✔ router config regenerated from the plugin catalog."
         C "Applying (reloading the router + gateway so the new model is picked up)…"
@@ -365,5 +447,5 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
     ;;
   mcp)   exec python3 "$ROOT/mcp/securax_mcp.py" ;;
   down)  ( cd "$ROOT/local/compose" && docker compose --profile ai down ) ; C "stopped." ;;
-  *) echo 'usage: ./securax [setup|up|status|version|open|doctor|profile|pull|build "task"|escalate "task"|providers [list|add]|say "text"|demo|learn|intel|plan|advisors|ask <agent> "q"|enhance "q"|research "task" --allow d.com [--render]|act action.json --allow d.com --approve|design "prompt"|routines [list|due|run]|mcp|full up|full down|down]'; exit 1 ;;
+  *) echo 'usage: ./securax [setup|up|status|version|open|doctor|update|guard [status|on|off]|profile|pull|build "task"|escalate "task"|providers [list|add]|say "text"|demo|learn|intel|plan|advisors|ask <agent> "q"|enhance "q"|research "task" --allow d.com [--render]|act action.json --allow d.com --approve|design "prompt"|routines [list|due|run]|mcp|full up|full down|down]'; exit 1 ;;
 esac

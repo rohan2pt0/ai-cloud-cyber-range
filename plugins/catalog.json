@@ -3,7 +3,7 @@
   "_comment": "SecuRAX plugin catalog — the single source of truth for provider plugins. Add a key with `./securax providers`, or by hand in local/compose/.env. The generator (gen_litellm_config.py) turns the ENABLED llm providers into the LiteLLM router config, so each one appears in Chat automatically, still routed through the security gateway. Model IDs change often — override any default with `<ID>_MODEL=...` in .env (e.g. OPENAI_MODEL=openai/gpt-4o). See docs/securax/22-PLUGINS-AND-PROVIDERS.md.",
   "providers": [
     {
-      "id": "gemini", "label": "Google Gemini", "kind": "llm", "default": true, "free": true,
+      "id": "gemini", "key_prefix": "AIza", "label": "Google Gemini", "kind": "llm", "default": true, "free": true,
       "alias": "bank-assistant-gemini", "model": "gemini/gemini-2.5-flash",
       "env": ["GEMINI_API_KEY"], "get_key": "https://aistudio.google.com/apikey",
       "note": "Fast, generous free tier. The recommended default for instant answers."
@@ -14,17 +14,17 @@
       "env": [], "note": "Runs on your box, never leaves it. The sovereign fallback / RED-tier choice."
     },
     {
-      "id": "openai", "label": "OpenAI (GPT)", "kind": "llm",
+      "id": "openai", "key_prefix": "sk-", "label": "OpenAI (GPT)", "kind": "llm",
       "alias": "openai", "model": "openai/gpt-4o-mini",
       "env": ["OPENAI_API_KEY"], "get_key": "https://platform.openai.com/api-keys"
     },
     {
-      "id": "anthropic", "label": "Anthropic (Claude)", "kind": "llm",
+      "id": "anthropic", "key_prefix": "sk-ant-", "label": "Anthropic (Claude)", "kind": "llm",
       "alias": "claude", "model": "anthropic/claude-3-5-haiku-20241022",
       "env": ["ANTHROPIC_API_KEY"], "get_key": "https://console.anthropic.com/settings/keys"
     },
     {
-      "id": "deepseek", "label": "DeepSeek", "kind": "llm",
+      "id": "deepseek", "key_prefix": "sk-", "label": "DeepSeek", "kind": "llm",
       "alias": "deepseek", "model": "deepseek/deepseek-chat",
       "env": ["DEEPSEEK_API_KEY"], "get_key": "https://platform.deepseek.com/api_keys"
     },
@@ -34,12 +34,12 @@
       "env": ["MISTRAL_API_KEY"], "get_key": "https://console.mistral.ai/api-keys"
     },
     {
-      "id": "grok", "label": "xAI (Grok)", "kind": "llm",
+      "id": "grok", "key_prefix": "xai-", "label": "xAI (Grok)", "kind": "llm",
       "alias": "grok", "model": "xai/grok-2-latest",
       "env": ["XAI_API_KEY"], "get_key": "https://console.x.ai"
     },
     {
-      "id": "perplexity", "label": "Perplexity (Sonar)", "kind": "llm",
+      "id": "perplexity", "key_prefix": "pplx-", "label": "Perplexity (Sonar)", "kind": "llm",
       "alias": "perplexity", "model": "perplexity/sonar",
       "env": ["PERPLEXITYAI_API_KEY"], "get_key": "https://www.perplexity.ai/settings/api"
     },
@@ -58,12 +58,12 @@
       "note": "Enable model access in the Bedrock console first. Set AWS_REGION (e.g. us-east-1) and BEDROCK_MODEL=bedrock/<model-id> to pick a model."
     },
     {
-      "id": "openrouter", "label": "OpenRouter (incl. free models)", "kind": "llm", "free": true,
+      "id": "openrouter", "key_prefix": "sk-or-", "label": "OpenRouter (incl. free models)", "kind": "llm", "free": true,
       "alias": "openrouter", "model": "openrouter/meta-llama/llama-3.3-70b-instruct:free",
       "env": ["OPENROUTER_API_KEY"], "get_key": "https://openrouter.ai/keys"
     },
     {
-      "id": "groq", "label": "Groq (fast, free tier)", "kind": "llm", "free": true,
+      "id": "groq", "key_prefix": "gsk_", "label": "Groq (fast, free tier)", "kind": "llm", "free": true,
       "alias": "groq", "model": "groq/llama-3.3-70b-versatile",
       "env": ["GROQ_API_KEY"], "get_key": "https://console.groq.com/keys",
       "note": "Very fast inference with a free tier (daily token caps apply). Free-tier model lineups change — if this model 404s, set GROQ_MODEL=groq/<id> from console.groq.com/docs/models."
@@ -75,7 +75,7 @@
       "note": "Opt-in sovereign coding model used by `./securax build`. Set ENABLE_LOCAL_CODER=1, then `./securax pull qwen2.5-coder:7b` (or :14b/:30b by RAM). Override with CODER_MODEL. See docs/securax/23-BUILD-WITHOUT-CLAUDE.md."
     },
     {
-      "id": "elevenlabs", "label": "ElevenLabs (voice / text-to-speech)", "kind": "tts",
+      "id": "elevenlabs", "key_prefix": "sk_", "label": "ElevenLabs (voice / text-to-speech)", "kind": "tts",
       "env": ["ELEVENLABS_API_KEY"], "get_key": "https://elevenlabs.io/app/settings/api-keys",
       "voice_env": "ELEVENLABS_VOICE_ID",
       "note": "Read answers aloud / generate audio with `./securax say \"text\"`. Not a chat model."

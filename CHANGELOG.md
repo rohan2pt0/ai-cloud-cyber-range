@@ -9,6 +9,14 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **`./securax update`** — `git pull --ff-only` then recreate the containers, so fixes actually run (a
+  plain pull leaves the old containers running). `./securax doctor` now warns when you're behind `main`.
+- **`./securax guard [status|on|off]`** for the optional Llama Guard detector; **`./securax up` auto-heals**
+  the broken state (Llama Guard on but never installed → every request blocked) by switching it off, loudly
+  and reversibly. The built-in rails enforce either way.
+- The provider wizard now takes keys **silently** (a visible key ends up in screenshots/chat pastes), warns
+  when a key looks like a *different* provider's (e.g. an OpenRouter `sk-or-` key under ElevenLabs) and
+  refuses to store it unless you confirm, and rejects a typed command in the provider-id prompt.
 - **Degradation ladders** — `bank-assistant` (Gemini → Groq → OpenRouter → local) and `builder`
   (DeepSeek → free tiers → local coder → local). Missing keys skip rungs; every chain ends in the
   always-on local model, so there is an answer even with zero keys and zero internet. Cloud rungs
@@ -59,6 +67,13 @@ for the versioning and release policy.
   The gateway is shown as a friendly security status ("every AI call is guarded"), not raw JSON.
 
 ### Fixed
+- **"400: Request blocked by AI security policy" on harmless prompts.** `.env.example` once shipped
+  `LLAMA_GUARD_URL` enabled; existing `.env` files keep it (git pull never rewrites `.env`), and with the
+  model not installed the fail-closed gateway blocked everything. The gateway now says a *detector is
+  offline* (machine-readable `reason: detector_unavailable`) instead of implying the prompt was malicious,
+  and the Guiding Map no longer calls it "an attack pattern".
+- Open WebUI: the random "Arena Model" is off and the stack's config is authoritative
+  (`ENABLE_PERSISTENT_CONFIG=false`), so `DEFAULT_MODELS=bank-assistant` now applies to existing installs.
 - **The Guiding Map showed "v13.0.2".** That badge was a hardcoded legacy string (not stale cache —
   a fresh load showed it too) while the product is `VERSION` 0.1.0. `guiding-map/build.js` now stamps
   it from `VERSION`, and a CI test fails if it ever drifts or a hardcoded version returns.

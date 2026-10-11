@@ -141,6 +141,9 @@ opens, and the **Ask** tab shows a live *"AI is ready / warming up / off"* statu
 | "port is already allocated" | Another app uses 8088/8080/3000/5678 — stop it, or change the port in `local/compose/docker-compose.yml`. |
 | **"model not found" / chat shows no model** | Add a free Gemini key (`./securax setup`) for instant cloud answers, OR let the local model finish downloading. The gateway now exposes `/v1/models` so Open WebUI/AnythingLLM list a model to pick. |
 | **Chat says "Oops! There was an error"** | Run **`./securax doctor`** — it tests the real ladder and prints who answered or the *actual* error. (Earlier builds never passed provider keys into the router container, so paid providers always failed; fixed and now enforced by a test — `git pull`, then `./securax down && ./securax up`.) Meanwhile pick **`bank-assistant`** (free ladder, ends at local). |
+| **"400: Request blocked by AI security policy" on harmless prompts** | Llama Guard (an *optional* extra detector) is switched on in your `.env` but its model was never installed, so the gateway — fail-closed — blocks everything. Old installs got this from an old `.env.example`; `git pull` never rewrites `.env`. **`./securax update`** fixes it automatically (it switches the broken detector off and says so); or run **`./securax guard off`**. The built-in rails still enforce. Use **`./securax guard on`** only if you want to install Llama Guard properly. |
+| **A fix I just pulled "doesn't work"** | A `git pull` changes files on disk but running containers keep the old code. Use **`./securax update`** (pull + recreate in one step). `./securax doctor` tells you if you're behind `main`. |
+| **Chat shows "Arena Model"** | Open WebUI's random-model picker; now disabled and Chat defaults to `bank-assistant`. |
 | **Local chat fails / `bank-assistant-local` errors** | The local model isn't pulled yet. Run **`./securax pull`** (foreground, waits for it), then retry. |
 | **Every question says "Blocked by the guardrail"** | That was a bug when no model was available — fixed. If you still see it, it's a *real* block (your text matched an attack/PII pattern); rephrase. The deterministic rails give 100% red-team defence without any model. |
 | Answers are **slow** | That's the local CPU model. Paste a free Gemini key (`./securax setup`) — answers become instant; sensitive data still stays local. |
@@ -170,6 +173,8 @@ Full troubleshooting + security posture notes: [`GETTING-STARTED.md`](GETTING-ST
 ```
 ./securax up        start everything (+ opens the home screen)
 ./securax status    health + URLs
+./securax update                 git pull + recreate containers (the safe way to get fixes)
+./securax guard [status|on|off]  the OPTIONAL Llama Guard detector (built-in rails always enforce)
 ./securax profile                right-size to your RAM/CPU (+ WSL2 .wslconfig advice); ./securax up --lite = core path only
 ./securax providers [list|add]   add an AI provider (OpenAI, Claude, DeepSeek, Grok, Azure, Bedrock…)
 ./securax say "text"             speak text aloud via ElevenLabs (voice plugin)

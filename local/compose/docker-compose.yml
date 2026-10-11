@@ -168,6 +168,11 @@ services:
       # Default new chats to the FREE/sovereign path (Gemini free-tier -> local fallback), never a
       # paid provider. Pick another model from the dropdown any time; this is just the safe default.
       DEFAULT_MODELS: ${DEFAULT_MODELS:-bank-assistant}
+      # Open WebUI stores its FIRST-RUN settings in its database and then ignores env changes, so a
+      # later default (like the line above) never reached existing installs. Make this file authoritative.
+      ENABLE_PERSISTENT_CONFIG: "false"
+      # The built-in "Arena Model" picks a RANDOM model per message (could be a paid/unexpected one) — off.
+      ENABLE_EVALUATION_ARENA_MODELS: "false"
     ports: ["${BIND_HOST:-127.0.0.1}:3000:8080"]   # BIND_HOST=0.0.0.0 or your Tailscale IP to reach from phone/iPad
     volumes: ["openwebui:/app/backend/data"]
     networks: [edge, modelplane]
