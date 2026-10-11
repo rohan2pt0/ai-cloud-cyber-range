@@ -196,9 +196,17 @@ async def chat(request: Request, authorization: str | None = Header(default=None
         _metrics["blocked_input"] += 1
         _emit({"req_id": req_id, "principal": principal, "decision": "block", "stage": "input",
                "findings": _findings(in_findings)})
+        # Distinguish "your prompt matched a rule" from "a model detector is OFFLINE and we are
+        # fail-closed". The second is an availability problem, not a verdict on the user's text, and
+        # chat UIs that only show `message` must not make it look like the prompt was malicious.
+        offline = all(f.rule.startswith("DET-unavailable-") for f in blocking)
+        message = ("Request blocked: a security detector is offline and the gateway is fail-closed. "
+                   "Run ./securax doctor, or ./securax guard off to rely on the built-in rails only."
+                   if offline else "Request blocked by AI security policy.")
         return JSONResponse(status_code=400, content={
             "error": {"type": "guardrail_violation", "req_id": req_id,
-                      "message": "Request blocked by AI security policy.",
+                      "reason": "detector_unavailable" if offline else "policy",
+                      "message": message,
                       "rules": sorted({f.rule for f in blocking})}})
 
     start = time.perf_counter()

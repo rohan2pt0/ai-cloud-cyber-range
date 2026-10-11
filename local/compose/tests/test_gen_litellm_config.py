@@ -230,3 +230,49 @@ def test_litellm_container_receives_every_env_var_the_config_references():
     refs = set(re.findall(r"os\.environ/([A-Z0-9_]+)", gen.generate(cat, _all_enabled_env(cat))))
     missing = refs - passed
     assert not missing, f"litellm container is not given: {sorted(missing)}"
+
+
+# ───────────────────────── key-paste sanity check (soft warnings) ─────────────────────────
+def test_check_key_flags_a_key_pasted_under_the_wrong_provider():
+    # Real incident: an OpenRouter key (sk-or-v1-…) was pasted into the ElevenLabs slot.
+    cat = _catalog()
+    assert gen.check_key(cat, "elevenlabs", "sk-or-v1-abcdef").startswith("other:openrouter:")
+    assert gen.check_key(cat, "openrouter", "sk-or-v1-abcdef") == "ok"
+    assert gen.check_key(cat, "anthropic", "sk-ant-api03-xyz") == "ok"
+    assert gen.check_key(cat, "openai", "sk-ant-api03-xyz").startswith("other:anthropic:")
+
+
+def test_check_key_never_calls_ambiguous_prefixes_wrong():
+    cat = _catalog()
+    # `sk-` is shared by OpenAI and DeepSeek: a plain sk- key must not be reported as the other one.
+    assert gen.check_key(cat, "deepseek", "sk-abc123") == "ok"
+    assert gen.check_key(cat, "openai", "sk-abc123") == "ok"
+    assert gen.check_key(cat, "openai", "sk-proj-abc123") == "ok"
+
+
+def test_check_key_warns_on_unexpected_prefix_but_stays_quiet_without_a_known_one():
+    cat = _catalog()
+    # a UUID-looking value is not an xAI key (those start with xai-)
+    assert gen.check_key(cat, "grok", "00000000-0000-4000-8000-000000000000") == "prefix:xai-"
+    # providers with no well-known prefix are never second-guessed
+    assert gen.check_key(cat, "mistral", "whatever-format") == "ok"
+    assert gen.check_key(cat, "azure", "0123456789abcdef") == "ok"
+    assert gen.check_key(cat, "nope", "x") == "ok"
+
+
+def test_env_example_ships_llama_guard_OFF():
+    # Real incident: .env.example once shipped LLAMA_GUARD_URL=http://ollama:11434 with no model pulled,
+    # so (fail-closed) EVERY request was blocked. The optional detector must stay opt-in.
+    ex = (HERE.parent / ".env.example").read_text()
+    m = re.search(r"(?m)^LLAMA_GUARD_URL=(.*)$", ex)
+    assert m, "LLAMA_GUARD_URL line missing from .env.example"
+    assert m.group(1).strip() == "", "LLAMA_GUARD_URL must default to empty (detector opt-in)"
+
+
+def test_open_webui_defaults_to_the_free_ladder_and_has_no_random_arena_model():
+    # Screenshots showed "Arena Model" (a random-model picker) selected, and DEFAULT_MODELS was ignored on
+    # existing installs because Open WebUI persists first-run config. Keep the stack's config authoritative.
+    env = yaml.safe_load(COMPOSE.read_text())["services"]["open-webui"]["environment"]
+    assert env["DEFAULT_MODELS"].endswith("bank-assistant}")            # ${DEFAULT_MODELS:-bank-assistant}
+    assert str(env["ENABLE_PERSISTENT_CONFIG"]).lower() == "false"
+    assert str(env["ENABLE_EVALUATION_ARENA_MODELS"]).lower() == "false"

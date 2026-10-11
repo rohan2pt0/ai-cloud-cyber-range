@@ -2657,8 +2657,10 @@
       .then(function (r) {
         if (r.ok) return r.json();
         return r.text().then(function (t) {
-          var typ = ""; try { typ = (JSON.parse(t).error || {}).type || ""; } catch (e) {}
-          if (typ === "guardrail_violation")
+          var typ = "", why = ""; try { var er = JSON.parse(t).error || {}; typ = er.type || ""; why = er.reason || ""; } catch (e) {}
+          if (typ === "guardrail_violation" && why === "detector_unavailable")
+            out.textContent = "A security detector is offline, so the estate is blocking requests (fail-closed). Your message was NOT judged unsafe. Run  ./securax doctor  \u2014 or  ./securax guard off  to use the built-in rails only. Nothing was sent.";
+          else if (typ === "guardrail_violation")
             out.textContent = "Blocked by the guardrail \u2014 your message matched an attack pattern or exposed sensitive data. Rephrase and try again.";
           else if (r.status === 502 || r.status === 503)
             out.textContent = "No AI model is ready yet. Add a free Gemini key (run  ./securax setup ) for instant answers, or wait for the local model to finish downloading. Nothing was sent.";

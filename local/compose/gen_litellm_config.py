@@ -113,6 +113,31 @@ def provider_params(p: dict, env: dict, baseline: bool = False) -> dict:
     return params
 
 
+def check_key(catalog: dict, provider_id: str, key: str) -> str:
+    """Soft sanity check for a pasted API key (never blocks; the wizard just warns).
+
+    Returns "ok", "other:<id>:<label>" when the key's prefix clearly belongs to a DIFFERENT provider
+    (e.g. an OpenRouter `sk-or-` key pasted under ElevenLabs), or "prefix:<expected>" when the provider
+    has a well-known prefix this key does not start with. Ambiguous prefixes (`sk-` is shared by
+    OpenAI and DeepSeek) are never reported as "other".
+    """
+    key = key.strip()
+    by_id = {p["id"]: p for p in catalog.get("providers", [])}
+    want = by_id.get(provider_id, {}).get("key_prefix", "")
+    matches = [(len(p["key_prefix"]), p["id"]) for p in by_id.values()
+               if p.get("key_prefix") and key.startswith(p["key_prefix"])]
+    if matches:
+        best = max(n for n, _ in matches)
+        winners = [pid for n, pid in matches if n == best]
+        if provider_id in winners:
+            return "ok"
+        if len(winners) == 1 and winners[0] != provider_id:
+            return f"other:{winners[0]}:{by_id[winners[0]]['label']}"
+    if want and not key.startswith(want):
+        return f"prefix:{want}"
+    return "ok"
+
+
 def enabled_llm_ids(catalog: dict, env: dict, baseline: bool = False) -> list[str]:
     return [p["id"] for p in catalog.get("providers", [])
             if p.get("kind") == "llm" and is_enabled(p, env, baseline)]
@@ -195,11 +220,17 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--out", default=OUT)
     ap.add_argument("--write", action="store_true", help="write the config file")
     ap.add_argument("--status", action="store_true", help="print provider enable/disable status + chains")
+    ap.add_argument("--check-key", metavar="PROVIDER_ID",
+                    help="read an API key on STDIN and report whether it looks like PROVIDER_ID's key")
     ap.add_argument("--baseline", action="store_true",
                     help="generate the shipped baseline (default provider on, ignore local keys)")
     args = ap.parse_args(argv)
 
     catalog = load_catalog(args.catalog)
+    if args.check_key:
+        import sys
+        print(check_key(catalog, args.check_key, sys.stdin.read()))   # key via stdin: never in argv/ps
+        return 0
     # Process env wins over the .env file (same precedence Docker Compose uses for interpolation).
     env: dict[str, str] = {} if args.baseline else {**parse_env_file(args.env_file), **os.environ}
 
