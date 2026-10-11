@@ -9,6 +9,21 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Fixed
+- **The PWA self-updates now.** After a redeploy/`git pull`, the Guiding Map auto-reloads once when
+  the new service worker takes control, so you never get stuck on a stale old version in the cache.
+- **Clear WSL vs Windows guidance.** `START-HERE-Windows.bat` typed inside WSL gives "command not
+  found"; docs + the Command Center now say to use `./securax up` in a terminal and only double-click
+  the `.bat` in File Explorer. Added troubleshooting for "models won't list / old version after pull"
+  (the containers need `./securax down && ./securax up` to recreate — a pull alone doesn't).
+
+### Changed
+- **`./securax up` is now true one-step setup:** if no Gemini key is set and you're in a terminal, it
+  asks for a free key inline (Enter to skip) — no more hunting for `.env`.
+- **Command Center is honest about scope:** Chat + Guiding Map are shown as "works out of the box";
+  Private Docs (RAG) and Automation (n8n) are grouped as optional add-ons that need their own setup.
+  The gateway is shown as a friendly security status ("every AI call is guarded"), not raw JSON.
+
+### Previously fixed
 - **Models now work out of the box.** The `modelplane` network was `internal: true`, so Ollama
   couldn't pull models and LiteLLM couldn't reach cloud models — breaking every answer. Given egress
   (models still publish no host ports). LiteLLM now defaults to **fast cloud Gemini with a local

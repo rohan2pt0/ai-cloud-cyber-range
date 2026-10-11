@@ -17,7 +17,20 @@
 
   /* ── 1. PWA: service worker + install ───────────────────────────── */
   if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
-    navigator.serviceWorker.register("sw.js").catch(function () {});
+    // Self-healing updates: when a new service worker takes control after a
+    // redeploy/pull, reload the page ONCE so the fresh app shows immediately —
+    // no more stale old version lingering from the cache. We only reload when a
+    // controller already existed (a genuine update), never on first install.
+    var _swHadController = !!navigator.serviceWorker.controller;
+    var _swReloaded = false;
+    navigator.serviceWorker.addEventListener("controllerchange", function () {
+      if (_swReloaded || !_swHadController) return;
+      _swReloaded = true;
+      window.location.reload();
+    });
+    navigator.serviceWorker.register("sw.js").then(function (reg) {
+      if (reg) { try { reg.update(); } catch (e) {} }   // check for a newer SW now
+    }).catch(function () {});
   }
   var deferredPrompt = null;
   window.addEventListener("beforeinstallprompt", function (e) { e.preventDefault(); deferredPrompt = e; });
