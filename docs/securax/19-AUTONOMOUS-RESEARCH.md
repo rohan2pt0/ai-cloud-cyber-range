@@ -49,11 +49,33 @@ rails skipped and why.
   (`agents/web_research/tests/` — SSRF, allowlist, robots, budgets, injection framing, HITL
   deferral, redirect-to-internal, no-fabrication). `httpx` is only needed to actually run it live.
 
-## Deliberately NOT in v1 (and why)
-- **Executing actions** (filling/submitting forms, logging in, buying). Those stay as *pending
-  actions* for your approval; wiring an executor is a separate, explicitly-opted-in step with its
-  own audit trail.
-- **A browser engine** (Playwright is available in the estate) for JS-heavy pages — the `fetch`
-  seam is ready for it; httpx covers most research targets today without the weight.
+## Going further (opt-in, now shipped)
+These expand the agent's reach/authority, so each is **off by default** and gated.
+
+- **Render engine (JS-heavy pages).** `--render` (CLI) / `make_render_fetch(...)` renders with
+  headless Chromium instead of httpx (one browser reused across the run). Needs
+  `pip install -r agents/web_research/requirements-render.txt` + the bundled Chromium.
+  ```bash
+  ./securax research "…" --allow site.com --render
+  ```
+  Every request the page makes is intercepted: the **document** must pass the full SSRF + allowlist
+  check, while **sub-resources** (scripts/styles/fonts from CDNs) are allowed from any *public*
+  host (so the page can actually render) but internal/metadata targets are still blocked
+  syntactically. **Honest caveat:** Chromium does its own DNS, so the app-layer DNS-rebind check is
+  best-effort for rendered pages — the binding control is to run the agent **network-isolated** (no
+  route to your internal/metadata endpoints; the estate's model/data planes are already
+  `internal:true`). This is why rendering is opt-in and weaker than the default httpx path.
+- **Approved-action executor (HITL writes).** The read-only agent still only *queues* state-changing
+  steps; this executes ONE of them, and **only with your explicit per-action approval**:
+  ```bash
+  ./securax act action.json --allow shop.example --approve   # omit --approve for a dry run
+  ```
+  It re-validates every gate (SSRF/DNS/allowlist) at execution time, writes an **append-only audit
+  trail** (`agents/web_research/.audit.jsonl`) that never records the body/headers (credentials),
+  stores no secrets, and does not auto-follow redirects. There is deliberately **no MCP tool** for
+  it — approval must come from a person, never a model that could self-approve.
+
+## Still deliberately NOT built
 - **A PWA button.** The capability is CLI + MCP today; a guarded estate endpoint the Guiding Map
   can call is the natural next step.
+- **"Approve all" / standing write consent.** Every write is approved one at a time, on purpose.

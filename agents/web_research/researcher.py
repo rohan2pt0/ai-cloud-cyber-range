@@ -286,3 +286,80 @@ def ddg_search(query: str, k: int = 5) -> list[str]:
             if m.group(1) not in urls:
                 urls.append(m.group(1))
     return urls[:k]
+
+
+class RenderFetcher:
+    """OPT-IN `fetch` that renders JS-heavy pages with headless Chromium (Playwright) instead of
+    plain httpx. Needs `pip install -r requirements-render.txt` + the bundled Chromium.
+
+    It is CALLABLE (`fetch = RenderFetcher(...); fetch(url)`) and reuses ONE browser across all the
+    fetches in a run — call `.close()` when done (the CLI does this in a finally).
+
+    Request policy (enforced on every request the page makes, via route interception):
+      * the DOCUMENT/navigation → full `browser_request_allowed` (SSRF + DNS + content allowlist);
+      * SUB-resources (scripts/styles/fonts/images/XHR) → `subresource_allowed` (SSRF-safe + not
+        denylisted, but any public CDN is permitted so the page can actually render).
+
+    SECURITY NOTE (read this): the app-layer DNS check is best-effort — Chromium does its OWN DNS
+    resolution for the real connection, so an active DNS-rebind (a host that resolves safe here but
+    to an internal IP for the browser) is NOT fully closed at this layer. The syntactic SSRF gate
+    (IP literals, loopback/private/link-local, metadata, bare internal names) and the allowlist DO
+    hold. For full containment, run the agent **network-isolated** (a container with no route to
+    your internal/metadata endpoints) — the estate's model/data planes are already `internal:true`.
+    This is weaker than the httpx path's guarantee, which is why rendering is opt-in."""
+
+    def __init__(self, allow: Optional[list] = None, deny: Optional[list] = None, *,
+                 timeout: float = 25.0, max_bytes: int = 2_000_000,
+                 executable_path: Optional[str] = None):
+        self.allow, self.deny = allow, deny
+        self.timeout, self.max_bytes = timeout, max_bytes
+        self.executable_path = executable_path
+        self._pw = self._browser = self._ctx = None
+
+    def _ensure(self):
+        if self._browser is not None:
+            return
+        from playwright.sync_api import sync_playwright  # lazy: opt-in dependency
+        self._pw = sync_playwright().start()
+        exe = self.executable_path or os.environ.get("CHROMIUM_PATH")
+        self._browser = self._pw.chromium.launch(headless=True,
+                                                 **({"executable_path": exe} if exe else {}))
+        self._ctx = self._browser.new_context(
+            user_agent=USER_AGENT + "/1.0 (+sovereign estate; read-only; rendered)")
+        self._ctx.set_default_timeout(self.timeout * 1000)
+
+        def _route(route):
+            req = route.request
+            is_doc = req.resource_type == "document" or req.is_navigation_request()
+            if is_doc:
+                ok, _why = safety.browser_request_allowed(req.url, self.allow, self.deny)
+            else:
+                ok, _why = safety.subresource_allowed(req.url, self.deny)
+            (route.continue_ if ok else route.abort)()
+
+        self._ctx.route("**/*", _route)
+
+    def __call__(self, url: str) -> tuple:
+        ok, why = safety.browser_request_allowed(url, self.allow, self.deny)   # pre-nav guard
+        if not ok:
+            raise ValueError(f"blocked target ({why})")
+        self._ensure()
+        page = self._ctx.new_page()
+        try:
+            resp = page.goto(url, wait_until="domcontentloaded", timeout=self.timeout * 1000)
+            return (resp.status if resp else 0), page.content()[:self.max_bytes], page.url
+        finally:
+            page.close()
+
+    def close(self):
+        for obj, meth in ((self._ctx, "close"), (self._browser, "close"), (self._pw, "stop")):
+            try:
+                if obj is not None:
+                    getattr(obj, meth)()
+            except Exception:  # noqa: BLE001
+                pass
+
+
+def make_render_fetch(allow: Optional[list] = None, deny: Optional[list] = None, **kw) -> "RenderFetcher":
+    """Build a reusable render fetcher. Remember to call `.close()` when done (the CLI does)."""
+    return RenderFetcher(allow, deny, **kw)

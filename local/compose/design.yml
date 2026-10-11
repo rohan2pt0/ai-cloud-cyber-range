@@ -1,0 +1,38 @@
+# OPT-IN image-generation plane (the 'Design' parity). This is a SEPARATE overlay — it is NEVER
+# loaded by the normal launchers, so it cannot affect default startup. Enable it deliberately:
+#
+#   docker compose -f docker-compose.yml -f design.yml --profile design up -d
+#
+# Then generate from your box (nothing leaves it):
+#   ./securax design "a clean architecture diagram, isometric, blue accent"  --url http://localhost:7860
+#
+# REALITY CHECK: a usable SDXL-class model wants a GPU. On a CPU-only laptop this works but is slow
+# (minutes per image). Pick the image/model you trust; the default below is a popular community
+# Automatic1111 build with the HTTP API enabled. Swap IMAGE_GEN_IMAGE for your preferred one.
+services:
+  imagegen:
+    image: ${IMAGE_GEN_IMAGE:-universonic/stable-diffusion-webui:latest}
+    profiles: ["design"]
+    restart: unless-stopped
+    command: ["--api", "--listen", "--port", "7860", "--skip-torch-cuda-test"]
+    environment:
+      COMMANDLINE_ARGS: "--api --listen"
+    ports: ["127.0.0.1:7860:7860"]   # localhost only; reach it over Tailscale like the rest
+    volumes:
+      - imagegen-models:/app/stable-diffusion-webui/models
+      - imagegen-out:/app/stable-diffusion-webui/outputs
+    networks: [edge]
+    # Uncomment to use an NVIDIA GPU (needs the NVIDIA Container Toolkit on the host):
+    # deploy:
+    #   resources:
+    #     reservations:
+    #       devices:
+    #         - { driver: nvidia, count: 1, capabilities: ["gpu"] }
+    logging: { driver: json-file, options: { max-size: "10m", max-file: "3" } }
+
+volumes:
+  imagegen-models:
+  imagegen-out:
+
+networks:
+  edge:

@@ -123,6 +123,53 @@ def follow_guarded(start_url: str, request_one, resolver=socket.getaddrinfo, max
     raise ValueError("too many redirects")
 
 
+def browser_request_allowed(url: str, allow: list | None, deny: list | None,
+                            resolver=socket.getaddrinfo) -> tuple[bool, str]:
+    """The decision a headless browser's request-interceptor applies to EVERY request the page
+    makes (the document, redirects, and every sub-resource: scripts, images, XHR/fetch). A real
+    browser follows redirects and loads sub-resources itself, so `follow_guarded`'s per-hop model
+    does not apply — instead we gate each request at the network layer. A request is allowed only
+    if it is SSRF-safe (syntactic + DNS) AND on the allowlist. data:/about:/blank are allowed as
+    inert. Everything else is aborted — this is what stops a rendered page from pulling the estate's
+    own services or a metadata endpoint via an <img> or a `fetch()`.
+    Pure and injected-resolver, so it is unit-tested offline."""
+    scheme = (urlparse(url).scheme or "").lower()
+    if scheme in ("data", "about", "blob"):
+        return True, "inert scheme"
+    ok, why = is_safe_target(url)
+    if not ok:
+        return False, why
+    ok, why = domain_allowed(url, allow, deny)      # policy before DNS: skip lookups we'd refuse
+    if not ok:
+        return False, why
+    ok, why = resolved_ips_safe(urlparse(url).hostname or "", resolver)
+    if not ok:
+        return False, why
+    return True, "ok"
+
+
+def subresource_allowed(url: str, deny: list | None) -> tuple[bool, str]:
+    """Policy for a rendered page's SUB-resources (scripts, styles, fonts, images, XHR) — NOT the
+    document itself. A JS-heavy page legitimately pulls its code from third-party CDNs (cdnjs,
+    jsdelivr, *.cloudfront.net, googleapis…), so enforcing the content-allowlist here would stop the
+    very pages `--render` exists for from working. We therefore allow any PUBLIC, non-denylisted host
+    while still blocking the SSRF vectors syntactically (IP literals, loopback/private/link-local,
+    metadata, bare internal names). DNS is NOT resolved per sub-resource (that would serialise
+    rendering on the resolver); the residual DNS-rebind risk is contained by running the agent
+    network-isolated — see is_safe_target's caller notes and doc 19."""
+    scheme = (urlparse(url).scheme or "").lower()
+    if scheme in ("data", "about", "blob"):
+        return True, "inert scheme"
+    ok, why = is_safe_target(url)
+    if not ok:
+        return False, why
+    host = _registrable(urlparse(url).hostname or "")
+    for d in [x.lower().lstrip(".") for x in (deny or [])]:
+        if host == d or host.endswith("." + d):
+            return False, f"'{host}' is on the denylist"
+    return True, "ok"
+
+
 def _registrable(host: str) -> str:
     host = (host or "").lower().strip(".")
     return host[4:] if host.startswith("www.") else host

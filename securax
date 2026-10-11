@@ -104,6 +104,18 @@ URLS
     shift
     GATEWAY_URL="${GATEWAY_URL:-http://localhost:8080}" python3 -m agents.web_research "$@"
     ;;
+  act)
+    # Execute ONE approved web action (human-in-the-loop writes). Requires --approve.
+    #   ./securax act action.json --allow shop.example --approve
+    shift
+    ( cd "$ROOT" && python3 -m agents.web_research.executor "$@" )
+    ;;
+  design)
+    # Sovereign local text-to-image (opt-in). Needs the image server:
+    #   docker compose -f local/compose/docker-compose.yml -f local/compose/design.yml --profile design up -d
+    shift
+    ( cd "$ROOT" && python3 -m design.imagegen "$@" )
+    ;;
   routines)
     # Sovereign scheduled estate tasks (the local 'Claude Routines'). Drive 'run' from a
     # 1-minute cron:  * * * * * cd "$ROOT" && ./securax routines run >> routines/.log 2>&1
@@ -112,5 +124,5 @@ URLS
     ;;
   mcp)   exec python3 "$ROOT/mcp/securax_mcp.py" ;;
   down)  ( cd "$ROOT/local/compose" && docker compose --profile ai down ) ; C "stopped." ;;
-  *) echo 'usage: ./securax [up|status|demo|learn|intel|plan|advisors|ask <agent> "q"|enhance "q"|research "task" --allow d.com|routines [list|due|run]|open|doctor|mcp|full up|full down|down]'; exit 1 ;;
+  *) echo 'usage: ./securax [up|status|demo|learn|intel|plan|advisors|ask <agent> "q"|enhance "q"|research "task" --allow d.com [--render]|act action.json --allow d.com --approve|design "prompt"|routines [list|due|run]|open|doctor|mcp|full up|full down|down]'; exit 1 ;;
 esac

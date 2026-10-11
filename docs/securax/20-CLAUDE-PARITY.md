@@ -16,7 +16,7 @@ what's already running, how to use it, and where a gap is honestly a gap.
 | **Code** | write/run code with a model | the **`engineer` advisor** + the **MCP tool catalog** + any IDE wired to the gateway | `./securax enhance "…"`; IDE setup in [doc 15 §3](15-COST-AND-MODELS.md); run locally |
 | **Routines** | run a prompt/task on a schedule | **SecuRAX Routines** — sovereign scheduled estate tasks (code-first) **and** n8n (visual/webhook automation) | `./securax routines list|due|run` (see below); n8n at `http://localhost:5678` |
 | **Customize** | personalize style, defaults, memory | the **anti-hallucination contract + India/BFSI defaults** baked into every agent, the Guiding Map settings, and the **antifragility/feedback memory** that learns from 👍/👎 | `agents/personas.py`, `assistant/`, `learning/`; Guiding Map → Ops |
-| **Design** | visual/image generation | **Mermaid/SVG diagrams** from the model today; **image generation is an honest gap** — optional local **ComfyUI/SDXL** container if you want it | diagrams now; image model = opt-in add (noted below) |
+| **Design** | visual/image generation | **Mermaid/SVG diagrams** from the model, **plus sovereign local text-to-image** against your own Stable-Diffusion server (opt-in) | `./securax design "…"` / MCP `image_generate`; server via `design.yml` profile `design` |
 | **Manus / Clawbot** | autonomous web browsing from instructions | the **autonomous web-research agent** — read-only, allowlisted, injection-safe, HITL | `./securax research "…" --allow …` / MCP `web_research` ([doc 19](19-AUTONOMOUS-RESEARCH.md)) |
 | **Connectors** | reach Gmail/Drive/Slack/etc. | **n8n connectors** + the **MCP** control plane | [doc 07 — Integrations](07-INTEGRATIONS.md) |
 
@@ -39,17 +39,21 @@ regulator-scan** via the research agent (disabled by default — enable when you
 de-dupes within a minute, survives a job crash, and records state in `routines/.state.json`
 (git-ignored, per-box). Tested offline in `routines/tests/`.
 
-## Honest gaps (and the opt-in path)
-- **Image/visual generation ("Design").** No local image model ships by default (it needs a GPU and
-  a multi-GB model). The sovereign path when you want it: add a **ComfyUI or AUTOMATIC1111 + SDXL**
-  container to the `ai` profile and route it like any other model. Until then: Mermaid/SVG diagrams
-  from the local model cover most "design" needs for docs and architecture.
+## Opt-in extensions (shipped, off by default)
+- **Image/visual generation ("Design").** A sovereign text-to-image client (`design/`) speaks your
+  own **AUTOMATIC1111/ComfyUI** server; `./securax design "…"` or MCP `image_generate` saves PNGs
+  to `design/out`. The server itself is a separate compose overlay (`local/compose/design.yml`,
+  profile `design`) so it **never affects default startup** — enable it only if you want it (a GPU
+  makes it usable; CPU works but is slow).
+- **Render engine + approved-action executor (Manus writes).** The research agent can now render
+  JS-heavy pages (`--render`, headless Chromium, every request allowlist/SSRF-gated) and **execute
+  one approved web action at a time** (`./securax act … --approve`, every gate re-validated, full
+  audit trail, no stored creds, no MCP tool). See [doc 19](19-AUTONOMOUS-RESEARCH.md).
+
+## Remaining honest gap
 - **Interactive artifact runtime.** The estate serves *static* generated HTML (fully viewable,
   shareable). It does not sandbox-execute arbitrary generated apps the way claude.ai does; for that,
   run the generated code locally in the estate where you control the sandbox.
-- **Executing web actions (Manus writes).** The research agent is read-only by design; a
-  state-changing step is queued for your approval, never auto-run (doc 19). Wiring an approved-action
-  executor + a Playwright engine for JS-heavy sites is the explicit, opt-in next step.
 
 ## Why this is the better trade for you
 Running BFSI security, the sovereign versions win where it matters: **RED-tier data never leaves the

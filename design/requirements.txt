@@ -1,0 +1,2 @@
+# Only needed to actually call the local image server at runtime (lazy-imported).
+httpx==0.28.1

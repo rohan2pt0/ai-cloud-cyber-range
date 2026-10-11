@@ -17,7 +17,7 @@ import argparse
 import json
 import sys
 
-from .researcher import ddg_search, gateway_llm, http_fetch, research
+from .researcher import ddg_search, gateway_llm, http_fetch, make_render_fetch, research
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -29,6 +29,8 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--open", action="store_true", help="open browsing (deny-list only) — use with care")
     ap.add_argument("--max-pages", type=int, default=8)
     ap.add_argument("--max-queries", type=int, default=6)
+    ap.add_argument("--render", action="store_true",
+                    help="render JS-heavy pages with headless Chromium (needs: pip install playwright)")
     ap.add_argument("--no-llm", action="store_true", help="collect+cite sources without model synthesis")
     ap.add_argument("--json", action="store_true", help="emit the full result as JSON")
     args = ap.parse_args(argv)
@@ -39,13 +41,18 @@ def main(argv: list[str] | None = None) -> int:
               "or --open for deny-list-only browsing.", file=sys.stderr)
         return 2
 
-    res = research(
-        args.task,
-        allow=allow, deny=args.deny,
-        search=ddg_search, fetch=http_fetch, robots_fetch=http_fetch,
-        llm=None if args.no_llm else gateway_llm,
-        max_pages=args.max_pages, max_queries=args.max_queries,
-    )
+    fetch = make_render_fetch(allow, args.deny) if args.render else http_fetch
+    try:
+        res = research(
+            args.task,
+            allow=allow, deny=args.deny,
+            search=ddg_search, fetch=fetch, robots_fetch=http_fetch,
+            llm=None if args.no_llm else gateway_llm,
+            max_pages=args.max_pages, max_queries=args.max_queries,
+        )
+    finally:
+        if hasattr(fetch, "close"):
+            fetch.close()          # tear down the shared Chromium (render mode only)
 
     if args.json:
         print(json.dumps({
