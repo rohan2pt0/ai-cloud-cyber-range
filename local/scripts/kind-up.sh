@@ -29,4 +29,4 @@ if kubectl -n ai run bad --image=nginx:latest --restart=Never --dry-run=server 2
 else
   log "  PASS - admission denied:"; sed 's/^/    /' /tmp/kyverno.err | head -4
 fi
-log "K8s plane ready. Gateway NodePort -> http://localhost:8080"
+log "K8s plane ready. Gateway NodePort -> http://localhost:8081  (8081 avoids the compose gateway on 8080)"

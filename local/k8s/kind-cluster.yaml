@@ -26,6 +26,6 @@ nodes:
       - hostPath: ./audit-policy.yaml
         containerPath: /etc/kubernetes/audit-policy.yaml
     extraPortMappings:
-      - { containerPort: 30080, hostPort: 8080, protocol: TCP }
+      - { containerPort: 30080, hostPort: 8081, protocol: TCP }   # 8081 (not 8080) so it never clashes with the compose gateway
   - role: worker
   - role: worker

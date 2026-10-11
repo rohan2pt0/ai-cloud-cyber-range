@@ -14,11 +14,21 @@ done.** No account, no cloud bill, nothing leaves your machine.
 1. Install Docker Desktop and start it (wait for the green whale).
 2. Get the code:   git clone https://github.com/rohan2pt0/ai-cloud-cyber-range.git
                    cd ai-cloud-cyber-range
-3. Start it:       Windows → double-click START-HERE-Windows.bat
+3. (Mac/Linux/WSL) ./securax setup     # 30-sec wizard: paste a free Gemini key, say yes to phone access
+   (Windows)       put GEMINI_API_KEY=... in local\compose\.env  (optional, for instant answers)
+4. Start it:       Windows → double-click START-HERE-Windows.bat
                    Mac/Linux → ./securax up
-4. It opens http://localhost:8088 automatically. That's it.
+5. Your Command Center opens automatically — ONE page that links every app.
 ```
 Everything after this point is optional depth.
+
+> **Fast answers:** paste a **free** Google AI Studio key (https://aistudio.google.com/apikey) in
+> step 3 — answers then come from cloud Gemini instantly. Without it, a private local model is used
+> (slower on a laptop, fully offline). Sensitive data always stays local either way.
+>
+> **One front door:** you no longer juggle `:3000`, `:3001`, `:5678`. The **Command Center**
+> (`http://localhost:8088/portal/hub.html`, opened for you) has a clickable card for every app with
+> a live up/down dot.
 
 ---
 
@@ -76,6 +86,22 @@ opens, and the **Ask** tab shows a live *"AI is ready / warming up / off"* statu
 
 ---
 
+## 4a. Use it on your phone & iPad (and keep them in sync)
+1. **Let other devices reach it** — run `./securax setup` and answer **yes** to phone access (sets
+   `BIND_HOST=0.0.0.0`), or edit `local/compose/.env` → `BIND_HOST=0.0.0.0`, then `./securax up`.
+2. **On the phone/iPad (same Wi-Fi)** open `http://<your-laptop-IP>:8088`
+   (find the IP: `hostname -I` on Linux/WSL, `ipconfig` on Windows).
+3. **Install it like an app:** browser menu → **Add to Home screen** (iPhone/iPad: Share → Add to Home Screen).
+4. **Sync all devices:** in the Guiding Map → **Ops → Cross-device sync**, paste the **same sync token**
+   on every device (the one `./securax setup` generated, from `local/compose/.env` → `SYNC_TOKENS`).
+   Your data stays on your own box — nothing goes to a third party.
+
+> For secure access from **anywhere** (not just home Wi-Fi) and the full installable/offline PWA,
+> install **Tailscale** on the laptop and each device, then set `BIND_HOST` to the laptop's `100.x`
+> Tailscale IP. (Plain-HTTP Wi-Fi works as a web page; a secure URL unlocks full "install as app".)
+
+---
+
 ## 5. Stop, update, back up
 - **Stop (free RAM):** Windows → `STOP-Windows.bat`; Mac/Linux → `./securax down`
 - **Update to the latest:** `git pull` then start again (Docker reuses what hasn't changed).
@@ -91,8 +117,10 @@ opens, and the **Ask** tab shows a live *"AI is ready / warming up / off"* statu
 |---|---|
 | `docker` / "cannot connect" errors | Docker Desktop isn't running — start it, wait for the green whale, retry. |
 | "port is already allocated" | Another app uses 8088/8080/3000/5678 — stop it, or change the port in `local/compose/docker-compose.yml`. |
-| Page opens but **AI says "warming up"** | First-run model download (~1 GB) — wait a few minutes; the Ask tab flips to "ready" on its own. |
-| Laptop slow while a model answers | Use the lighter model / cap WSL2 RAM (see the uploaded SOP) — `./securax doctor` flags high usage. |
+| **"model not found" / chat shows no model** | Add a free Gemini key (`./securax setup`) for instant cloud answers, OR let the local model finish downloading. The gateway now exposes `/v1/models` so Open WebUI/AnythingLLM list a model to pick. |
+| **Every question says "Blocked by the guardrail"** | That was a bug when no model was available — fixed. If you still see it, it's a *real* block (your text matched an attack/PII pattern); rephrase. The deterministic rails give 100% red-team defence without any model. |
+| Answers are **slow** | That's the local CPU model. Paste a free Gemini key (`./securax setup`) — answers become instant; sensitive data still stays local. |
+| "port is already allocated" | Another app uses 8088/8080/3000/5678 — stop it, or change the port in `local/compose/docker-compose.yml`. (The optional k8s plane now uses 8081, not 8080.) |
 | "no space left on device" | Free disk, then retry — `docker system prune` removes unused layers. |
 
 Full troubleshooting + security posture notes: [`GETTING-STARTED.md`](GETTING-STARTED.md)

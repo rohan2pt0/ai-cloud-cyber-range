@@ -2642,15 +2642,17 @@
     var msgs = [{ role: "system", content: askSystem(askAgent) }, { role: "user", content: q }];
     fetch(askGw().replace(/\/$/, "") + "/v1/chat/completions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model: "bank-assistant", messages: msgs }) })
       .then(function (r) {
-        if (!r.ok) {
-          out.textContent = (r.status === 400)
-            ? "Blocked by the guardrail (that is it working — your message looked like an attack or exposed sensitive data). Rephrase and try again."
-            : (r.status === 502 || r.status === 503)
-              ? "The AI is still warming up (first run downloads a ~1 GB model, about 2–5 min). Wait a minute and ask again — nothing was sent."
-              : "Unavailable (HTTP " + r.status + "). Nothing was sent.";
+        if (r.ok) return r.json();
+        return r.text().then(function (t) {
+          var typ = ""; try { typ = (JSON.parse(t).error || {}).type || ""; } catch (e) {}
+          if (typ === "guardrail_violation")
+            out.textContent = "Blocked by the guardrail \u2014 your message matched an attack pattern or exposed sensitive data. Rephrase and try again.";
+          else if (r.status === 502 || r.status === 503)
+            out.textContent = "No AI model is ready yet. Add a free Gemini key (run  ./securax setup ) for instant answers, or wait for the local model to finish downloading. Nothing was sent.";
+          else
+            out.textContent = "The AI could not answer (HTTP " + r.status + "). Run  ./securax doctor  to check the estate. Nothing was sent.";
           return null;
-        }
-        return r.json();
+        });
       })
       .then(function (j) { if (!j) return; lastAskQ = q; lastAskA = (j.choices && j.choices[0].message.content) || JSON.stringify(j); out.textContent = lastAskA; document.getElementById("askFb").style.display = "flex"; })
       .catch(function () { out.textContent = "AI is off right now — double-click START-HERE (or run  ./securax up ) to turn it on, then try again. (Nothing was sent.) If your estate is on another machine, set the gateway URL below."; });
