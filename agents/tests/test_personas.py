@@ -1,4 +1,6 @@
-import importlib.util, pathlib, sys
+import importlib.util
+import pathlib
+import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 spec = importlib.util.spec_from_file_location("pers", ROOT / "agents" / "personas.py")

@@ -1,10 +1,9 @@
 import base64
 
 import pytest
-from fastapi.testclient import TestClient
-
 from app import guardrails as g
 from app.main import app
+from fastapi.testclient import TestClient
 
 
 def _with_verhoeff(base11: str) -> str:
@@ -80,6 +79,17 @@ def test_api_blocks_and_allows():
     assert r.status_code == 200
     assert "ABCPE1234F" not in r.json()["choices"][0]["message"]["content"]
     assert c.get("/metrics").status_code == 200
+
+
+def test_version_endpoint_reports_semver():
+    import re as _re
+    c = TestClient(app)
+    r = c.get("/version")
+    assert r.status_code == 200
+    body = r.json()
+    assert body["product"] == "SecuRAX" and body["component"] == "llm-gateway"
+    # version is SemVer (from the VERSION file or SECURAX_VERSION), never empty
+    assert _re.match(r"^\d+\.\d+\.\d+", body["version"]), body["version"]
 
 
 def test_output_detector_verdict_is_enforced(monkeypatch):

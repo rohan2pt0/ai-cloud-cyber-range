@@ -34,6 +34,24 @@ CANARIES = {c for c in os.getenv("SYSTEM_PROMPT_CANARIES", "").split(",") if c}
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO, format="%(message)s")
 audit = logging.getLogger("audit")
+
+
+def _product_version() -> str:
+    """The SecuRAX product version: the SECURAX_VERSION env (set at build/deploy), else the
+    VERSION file baked into the image, else a dev sentinel. Single source of truth = /VERSION."""
+    v = os.getenv("SECURAX_VERSION")
+    if v:
+        return v.strip()
+    for p in ("/app/VERSION", os.path.join(os.path.dirname(__file__), "..", "..", "..", "VERSION")):
+        try:
+            with open(p, encoding="utf-8") as f:
+                return f.read().strip()
+        except OSError:
+            continue
+    return "0.0.0-dev"
+
+
+SECURAX_VERSION = _product_version()
 app = FastAPI(title="AI Guardrail Gateway", version="1.0.0")
 
 # Allow the local Guiding Map PWA (and other localhost pages) to call the gateway from the
@@ -73,6 +91,14 @@ def _findings(fs: list[guardrails.Finding]) -> list[dict]:
 async def healthz() -> dict:
     return {"status": "ok", "mode": MODE, "upstream": "mock" if UPSTREAM == "mock" else "configured",
             "detectors": active_detectors()}
+
+
+@app.get("/version")
+async def version() -> dict:
+    """Runtime version surface (SemVer). `commit` is populated when built in CI (GIT_COMMIT)."""
+    return {"product": "SecuRAX", "component": "llm-gateway",
+            "version": SECURAX_VERSION, "api_version": app.version,
+            "commit": os.getenv("GIT_COMMIT", "unknown")}
 
 
 @app.get("/metrics", response_class=PlainTextResponse)

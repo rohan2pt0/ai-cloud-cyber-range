@@ -1,4 +1,7 @@
-import importlib.util, pathlib, sys
+import importlib.util
+import pathlib
+import sys
+
 ROOT=pathlib.Path(__file__).resolve().parents[2]
 spec=importlib.util.spec_from_file_location("en", ROOT/"assistant"/"enhance.py")
 en=importlib.util.module_from_spec(spec); sys.modules["en"]=en; spec.loader.exec_module(en)

@@ -8,6 +8,10 @@ FROM python:3.12-slim
 LABEL org.opencontainers.image.source="https://github.com/rohan2pt0/ai-cloud-cyber-range" \
       org.opencontainers.image.description="AI Guardrail Gateway (PEP for LLM traffic)"
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1
+# Product version + build commit, injected at build time (see .github/workflows/release.yml).
+ARG SECURAX_VERSION=0.0.0-dev
+ARG GIT_COMMIT=unknown
+ENV SECURAX_VERSION=${SECURAX_VERSION} GIT_COMMIT=${GIT_COMMIT}
 COPY --from=build /install /usr/local
 WORKDIR /app
 COPY app ./app

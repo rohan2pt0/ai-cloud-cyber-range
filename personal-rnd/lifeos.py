@@ -4,7 +4,9 @@ Pure, offline scaffolding you can push into Notion/Todoist/Calendar via the Clau
 connectors. It only renders structure; it stores nothing and sends nothing itself.
 """
 from __future__ import annotations
-import argparse, json
+
+import argparse
+import json
 
 HORIZONS = ["Life vision (3-5y)", "Yearly goals", "Quarterly rocks", "Weekly focus", "Daily next-actions"]
 AREAS = ["Career/AI-security", "Health", "Family", "Finances/FIRE", "Learning/Certs", "Security/OPSEC"]

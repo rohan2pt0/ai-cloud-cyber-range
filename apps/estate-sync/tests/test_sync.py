@@ -3,7 +3,6 @@
 No external DB needed — the service uses stdlib sqlite3 against a temp file, so CI runs
 it with zero infra. These lock in the contract the Guiding Map PWA depends on."""
 import importlib
-import os
 
 import pytest
 from fastapi.testclient import TestClient

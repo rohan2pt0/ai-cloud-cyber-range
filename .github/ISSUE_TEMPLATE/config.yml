@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/rohan2pt0/ai-cloud-cyber-range/security/advisories/new
+    about: Report security issues privately — never in a public issue (see SECURITY.md).
+  - name: Question / discussion
+    url: https://github.com/rohan2pt0/ai-cloud-cyber-range/discussions
+    about: Ask questions and share ideas here.

@@ -63,6 +63,7 @@ makes it an *ecosystem* and not five disconnected projects.
 | Plan your financial future (sovereign, offline) | [`18-FINANCIAL-PLANNER.md`](18-FINANCIAL-PLANNER.md) |
 | Autonomous web research (sovereign Manus/Clawbot) | [`19-AUTONOMOUS-RESEARCH.md`](19-AUTONOMOUS-RESEARCH.md) |
 | Claude-subscription parity (Projects/Artifacts/Routines/…) | [`20-CLAUDE-PARITY.md`](20-CLAUDE-PARITY.md) |
+| How we version & release (SemVer, changelog, process) | [`21-VERSIONING-AND-RELEASES.md`](21-VERSIONING-AND-RELEASES.md) |
 | Start using it today | [`../../GETTING-STARTED.md`](../../GETTING-STARTED.md) |
 
 ## The three promises this foundation keeps

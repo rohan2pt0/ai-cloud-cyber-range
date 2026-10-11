@@ -1,5 +1,9 @@
 """Smoke test: the MCP server answers initialize, tools/list and a tools/call."""
-import json, subprocess, sys, pathlib
+import json
+import pathlib
+import subprocess
+import sys
+
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 SERVER = ROOT / "mcp" / "securax_mcp.py"
 

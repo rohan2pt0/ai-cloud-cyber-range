@@ -1,0 +1,61 @@
+# Release pipeline: on a vX.Y.Z tag, verify, build versioned images, SBOM, and publish a
+# GitHub Release whose notes come from CHANGELOG.md. See docs/securax/21-VERSIONING-AND-RELEASES.md.
+name: release
+on:
+  push:
+    tags: ["v*.*.*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write   # create the GitHub Release
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: pip install -r apps/llm-gateway/requirements-dev.txt pyyaml ruff
+      - name: Tag matches VERSION
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          file="$(cat VERSION)"
+          [ "$tag" = "$file" ] || { echo "::error::tag v$tag != VERSION $file"; exit 1; }
+      - name: Lint
+        run: ruff check .
+      - name: Tests
+        run: python -m pytest -q
+
+  release:
+    needs: verify
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build versioned gateway image
+        run: |
+          docker build -t securax/llm-gateway:"${GITHUB_REF_NAME}" \
+            --build-arg SECURAX_VERSION="${GITHUB_REF_NAME#v}" \
+            --build-arg GIT_COMMIT="${GITHUB_SHA::7}" apps/llm-gateway
+      - name: SBOM (CycloneDX)
+        uses: anchore/sbom-action@v0
+        with:
+          image: securax/llm-gateway:${{ github.ref_name }}
+          format: cyclonedx-json
+          output-file: sbom-${{ github.ref_name }}.cdx.json
+      - name: Extract this version's changelog section
+        run: |
+          awk -v ver="${GITHUB_REF_NAME#v}" '
+            $0 ~ "^## \\["ver"\\]" {p=1; next}
+            p && /^## \[/ {exit}
+            p {print}
+          ' CHANGELOG.md > release-notes.md
+          [ -s release-notes.md ] || echo "See CHANGELOG.md for details." > release-notes.md
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: SecuRAX ${{ github.ref_name }}
+          body_path: release-notes.md
+          files: sbom-${{ github.ref_name }}.cdx.json
+          draft: false
+          prerelease: ${{ startsWith(github.ref_name, 'v0.') }}

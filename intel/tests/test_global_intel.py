@@ -1,4 +1,6 @@
-import importlib.util, pathlib, sys
+import importlib.util
+import pathlib
+import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 spec = importlib.util.spec_from_file_location("gi", ROOT / "intel" / "global_intel.py")
@@ -36,7 +38,6 @@ def test_consensus_strength_flags_thin_data():
 
 
 def test_capability_fit_prefers_my_edge():
-    profile = gi.load_items  # noqa: just to ensure import; real load below
     import json
     profile = json.loads(PROFILE.read_text())
     opps = json.loads(OPPS.read_text())

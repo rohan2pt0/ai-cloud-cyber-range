@@ -269,8 +269,9 @@ def http_fetch(url: str, *, max_bytes: int = 1_500_000, timeout: float = 20.0,
 def ddg_search(query: str, k: int = 5) -> list[str]:
     """Default search: DuckDuckGo HTML endpoint (no API key). Best-effort; returns result URLs."""
     import html as _html
-    import httpx
     from urllib.parse import parse_qs, unquote
+
+    import httpx
     with httpx.Client(follow_redirects=True, timeout=20.0,
                       headers={"User-Agent": "SecuRAX-Research/1.0"}) as c:
         resp = c.post("https://html.duckduckgo.com/html/", data={"q": query})
