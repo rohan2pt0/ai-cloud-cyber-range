@@ -235,6 +235,32 @@ def test_real_action_endpoints_are_deferred():
     assert safety.is_state_changing("POST", "https://site.com/articles/x")   # non-GET always
 
 
+# ---- render-engine request guard (opt-in Playwright) -----------------------------------------
+def test_browser_request_allowed_gates_every_request():
+    allow = ["ok.example"]
+    good = _resolver({"ok.example": "93.184.216.34"})
+    # allowlisted + public -> allowed
+    assert safety.browser_request_allowed("https://ok.example/a", allow, None, good)[0]
+    # off-allowlist sub-resource (e.g. a tracker) -> blocked
+    assert not safety.browser_request_allowed("https://tracker.evil/x.js", allow, None, good)[0]
+    # internal IP literal (SSRF) -> blocked
+    assert not safety.browser_request_allowed("http://169.254.169.254/latest/", allow, None, good)[0]
+    # allowlisted host that resolves to a private IP (DNS rebind) -> blocked
+    bad = _resolver({"ok.example": "10.0.0.9"})
+    assert not safety.browser_request_allowed("https://ok.example/a", allow, None, bad)[0]
+    # inert data: URI (inline image/font) -> allowed
+    assert safety.browser_request_allowed("data:image/png;base64,AAAA", allow, None, good)[0]
+
+
+def test_subresource_policy_allows_public_cdns_blocks_internal():
+    # A rendered page's sub-resources: public CDNs must load (so JS-heavy pages work), internal must not.
+    assert safety.subresource_allowed("https://cdnjs.cloudflare.com/x.js", None)[0]        # off-allowlist CDN OK
+    assert safety.subresource_allowed("https://cdn.jsdelivr.net/lib.js", ["evil.com"])[0]
+    assert not safety.subresource_allowed("http://169.254.169.254/x", None)[0]             # metadata blocked
+    assert not safety.subresource_allowed("http://10.0.0.5/x", None)[0]                     # private blocked
+    assert not safety.subresource_allowed("https://tracker.com/x.js", ["tracker.com"])[0]  # denylist honored
+
+
 # ---- robots.txt fixes ------------------------------------------------------------------------
 def test_robots_allow_wins_equal_length_tie():
     assert safety.robots_allows("User-agent: *\nDisallow: /x\nAllow: /x", "/x")

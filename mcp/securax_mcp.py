@@ -66,6 +66,7 @@ for name, path in {
     "intel": "intel/global_intel.py",
     "agents": "agents/personas.py",
     "planner": "finance/planner.py",
+    "imagegen": "design/imagegen.py",
 }.items():
     try:
         _mods[name] = _load(name, path)
@@ -254,6 +255,22 @@ def t_web_research(task: str, allow: str = "", deny: str = "", open_browsing: bo
     }, indent=2, ensure_ascii=False)
 
 
+def t_image_generate(prompt: str, negative: str = "", width: int = 768, height: int = 768,
+                     steps: int = 25) -> str:
+    """Generate an image LOCALLY (sovereign 'Design') from a text prompt via your own
+    Stable-Diffusion server. Saves PNG(s) under design/out and returns their paths. Opt-in: needs
+    the image server running (compose profile `design`). Nothing leaves your machine."""
+    ig = _mods.get("imagegen")
+    if ig is None:
+        return json.dumps({"ok": False, "error": "imagegen module unavailable"})
+    try:
+        return json.dumps(ig.generate(prompt, negative=negative, width=int(width),
+                                      height=int(height), steps=int(steps)), indent=2)
+    except Exception as exc:  # noqa: BLE001
+        return json.dumps({"ok": False, "error": str(exc)[:200],
+                           "hint": "start the image server: compose -f design.yml --profile design up -d"})
+
+
 # --------------------------------------------------------------------------- #
 # Tool registry (name -> (fn, description, inputSchema))
 # --------------------------------------------------------------------------- #
@@ -333,6 +350,12 @@ TOOLS: dict[str, tuple] = {
         _schema({"task": _STR, "allow": _STR, "deny": _STR,
                  "open_browsing": {"type": "boolean"}, "max_pages": _NUM,
                  "use_model": {"type": "boolean"}}, ["task"])),
+    "image_generate": (t_image_generate,
+        "Generate an image LOCALLY from a text prompt (sovereign 'Design') via your own "
+        "Stable-Diffusion server; saves PNG(s) under design/out. Opt-in: needs the image server "
+        "(compose profile `design`). Nothing leaves your machine.",
+        _schema({"prompt": _STR, "negative": _STR, "width": _NUM, "height": _NUM, "steps": _NUM},
+                ["prompt"])),
 }
 
 
