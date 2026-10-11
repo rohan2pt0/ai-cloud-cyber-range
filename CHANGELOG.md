@@ -36,6 +36,13 @@ for the versioning and release policy.
 - The optional kind/k8s plane used host port 8080, clashing with the gateway; moved to 8081.
 
 ### Added
+- **AI provider plugins** (Mattermost-style). A catalog (`plugins/catalog.json`) drives a generator
+  that builds the LiteLLM router config from whichever providers you enable, so adding
+  **OpenAI, Anthropic, DeepSeek, Mistral, Grok (xAI), Perplexity, Azure AI Foundry, AWS Bedrock,
+  OpenRouter** is one command — `./securax providers add` — and the model appears in Chat, still
+  routed through the security gateway. The gateway `/v1/models` now mirrors the live router models.
+  Model IDs are overridable per provider (`<ID>_MODEL`). Voice via ElevenLabs (`./securax say`),
+  plus a heavy-compute (Colab / cloud GPU) recipe. See `docs/securax/22-PLUGINS-AND-PROVIDERS.md`.
 - **Command Center** (`hub.html`, reachable at `/hub.html`, `/hub`, or the Guiding Map's **◆ All
   Apps** header button) — one front door with a clickable card + live status for every app, so you
   never type `:3000/:3001/:5678` again. `./securax up` opens it. It is served from the same mount as

@@ -1,0 +1,77 @@
+{
+  "version": 1,
+  "_comment": "SecuRAX plugin catalog — the single source of truth for provider plugins. Add a key with `./securax providers`, or by hand in local/compose/.env. The generator (gen_litellm_config.py) turns the ENABLED llm providers into the LiteLLM router config, so each one appears in Chat automatically, still routed through the security gateway. Model IDs change often — override any default with `<ID>_MODEL=...` in .env (e.g. OPENAI_MODEL=openai/gpt-4o). See docs/securax/22-PLUGINS-AND-PROVIDERS.md.",
+  "providers": [
+    {
+      "id": "gemini", "label": "Google Gemini", "kind": "llm", "default": true, "free": true,
+      "alias": "bank-assistant-gemini", "model": "gemini/gemini-2.5-flash",
+      "env": ["GEMINI_API_KEY"], "get_key": "https://aistudio.google.com/apikey",
+      "note": "Fast, generous free tier. The recommended default for instant answers."
+    },
+    {
+      "id": "local", "label": "Local model (Ollama, sovereign)", "kind": "llm", "always": true, "free": true,
+      "alias": "bank-assistant-local", "model": "ollama/qwen2.5:1.5b", "api_base": "http://ollama:11434",
+      "env": [], "note": "Runs on your box, never leaves it. The sovereign fallback / RED-tier choice."
+    },
+    {
+      "id": "openai", "label": "OpenAI (GPT)", "kind": "llm",
+      "alias": "openai", "model": "openai/gpt-4o-mini",
+      "env": ["OPENAI_API_KEY"], "get_key": "https://platform.openai.com/api-keys"
+    },
+    {
+      "id": "anthropic", "label": "Anthropic (Claude)", "kind": "llm",
+      "alias": "claude", "model": "anthropic/claude-3-5-haiku-20241022",
+      "env": ["ANTHROPIC_API_KEY"], "get_key": "https://console.anthropic.com/settings/keys"
+    },
+    {
+      "id": "deepseek", "label": "DeepSeek", "kind": "llm",
+      "alias": "deepseek", "model": "deepseek/deepseek-chat",
+      "env": ["DEEPSEEK_API_KEY"], "get_key": "https://platform.deepseek.com/api_keys"
+    },
+    {
+      "id": "mistral", "label": "Mistral", "kind": "llm",
+      "alias": "mistral", "model": "mistral/mistral-small-latest",
+      "env": ["MISTRAL_API_KEY"], "get_key": "https://console.mistral.ai/api-keys"
+    },
+    {
+      "id": "grok", "label": "xAI (Grok)", "kind": "llm",
+      "alias": "grok", "model": "xai/grok-2-latest",
+      "env": ["XAI_API_KEY"], "get_key": "https://console.x.ai"
+    },
+    {
+      "id": "perplexity", "label": "Perplexity (Sonar)", "kind": "llm",
+      "alias": "perplexity", "model": "perplexity/sonar",
+      "env": ["PERPLEXITYAI_API_KEY"], "get_key": "https://www.perplexity.ai/settings/api"
+    },
+    {
+      "id": "azure", "label": "Azure AI Foundry / Azure OpenAI", "kind": "llm",
+      "alias": "azure", "model": "azure/gpt-4o-mini",
+      "env": ["AZURE_API_KEY", "AZURE_API_BASE"], "needs_base": true,
+      "get_key": "https://ai.azure.com",
+      "note": "Set AZURE_API_BASE to your endpoint (https://<resource>.openai.azure.com) and AZURE_MODEL=azure/<your-deployment-name> (the deployment you created in the Azure portal, NOT the base model name)."
+    },
+    {
+      "id": "bedrock", "label": "AWS Bedrock", "kind": "llm",
+      "alias": "bedrock", "model": "bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0",
+      "env": ["AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY"], "region_env": "AWS_REGION",
+      "get_key": "https://console.aws.amazon.com/iam/",
+      "note": "Enable model access in the Bedrock console first. Set AWS_REGION (e.g. us-east-1) and BEDROCK_MODEL=bedrock/<model-id> to pick a model."
+    },
+    {
+      "id": "openrouter", "label": "OpenRouter (incl. free models)", "kind": "llm", "free": true,
+      "alias": "openrouter", "model": "openrouter/meta-llama/llama-3.3-70b-instruct:free",
+      "env": ["OPENROUTER_API_KEY"], "get_key": "https://openrouter.ai/keys"
+    },
+    {
+      "id": "elevenlabs", "label": "ElevenLabs (voice / text-to-speech)", "kind": "tts",
+      "env": ["ELEVENLABS_API_KEY"], "get_key": "https://elevenlabs.io/app/settings/api-keys",
+      "voice_env": "ELEVENLABS_VOICE_ID",
+      "note": "Read answers aloud / generate audio with `./securax say \"text\"`. Not a chat model."
+    },
+    {
+      "id": "compute", "label": "Heavy compute (Colab / cloud GPU) — recipe", "kind": "compute",
+      "env": ["REMOTE_OLLAMA_BASE"],
+      "note": "Not a key: run Ollama on a GPU box or a Colab tunnel and set REMOTE_OLLAMA_BASE to its URL to offload the local model. See docs/securax/22-PLUGINS-AND-PROVIDERS.md § Heavy compute."
+    }
+  ]
+}

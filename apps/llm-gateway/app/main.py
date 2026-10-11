@@ -136,12 +136,34 @@ async def _call_upstream(payload: dict) -> dict:
         return r.json()
 
 
+async def _upstream_model_ids() -> list[str]:
+    """Ask the LiteLLM router which models are actually live, so enabling a provider plugin makes
+    it appear in Chat with no gateway change. Returns [] if the upstream can't be reached."""
+    if UPSTREAM == "mock":
+        return []
+    headers = {"Authorization": f"Bearer {UPSTREAM_KEY}"} if UPSTREAM_KEY else {}
+    try:
+        async with httpx.AsyncClient(timeout=5) as c:
+            r = await c.get(f"{UPSTREAM.rstrip('/')}/models", headers=headers)
+            r.raise_for_status()
+            data = r.json().get("data", [])
+            return [m["id"] for m in data if isinstance(m, dict) and m.get("id")]
+    except Exception:
+        return []
+
+
 @app.get("/v1/models")
 async def models() -> dict:
     """OpenAI-compatible model list so chat UIs (Open WebUI, AnythingLLM) can discover and select a
-    model through the gateway. The names map to the LiteLLM router (see litellm-config.yaml):
-    `bank-assistant` = fast default (cloud Gemini, local fallback); `-local` = fully sovereign."""
-    ids = [m.strip() for m in os.getenv("SERVED_MODELS", "bank-assistant,bank-assistant-local").split(",") if m.strip()]
+    model through the gateway. It mirrors the LiteLLM router's LIVE models (so a newly enabled
+    provider plugin shows up automatically), and falls back to SERVED_MODELS when the router can't
+    be reached. `bank-assistant` = fast default (cloud Gemini, local fallback); `-local` = sovereign."""
+    ids = await _upstream_model_ids()
+    if not ids:
+        ids = [m.strip() for m in os.getenv("SERVED_MODELS", "bank-assistant,bank-assistant-local").split(",") if m.strip()]
+    # stable de-dup preserving order
+    seen: set[str] = set()
+    ids = [i for i in ids if not (i in seen or seen.add(i))]
     return {"object": "list",
             "data": [{"id": i, "object": "model", "created": 0, "owned_by": "securax"} for i in ids]}
 

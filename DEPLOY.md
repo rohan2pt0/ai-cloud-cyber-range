@@ -146,6 +146,8 @@ Full troubleshooting + security posture notes: [`GETTING-STARTED.md`](GETTING-ST
 | Want… | How | Doc |
 |---|---|---|
 | Cross-device sync (phone ↔ laptop) | set up `estate-sync` + Tailscale | [doc 14](docs/securax/14-GUIDING-MAP.md) |
+| More AI providers (OpenAI, Claude, DeepSeek, Mistral, Grok, Perplexity, Azure, Bedrock…) | `./securax providers add` | [doc 22](docs/securax/22-PLUGINS-AND-PROVIDERS.md) |
+| Voice (text-to-speech) | `./securax providers add` → elevenlabs, then `./securax say "…"` | [doc 22](docs/securax/22-PLUGINS-AND-PROVIDERS.md) |
 | Free cloud models as a fallback | paste free API keys into `local/compose/.env` | [doc 15](docs/securax/15-COST-AND-MODELS.md) |
 | Autonomous web research | `./securax research "…" --allow site.com` | [doc 19](docs/securax/19-AUTONOMOUS-RESEARCH.md) |
 | Scheduled tasks ("Routines") | `./securax routines list` | [doc 20](docs/securax/20-CLAUDE-PARITY.md) |
@@ -158,6 +160,8 @@ Full troubleshooting + security posture notes: [`GETTING-STARTED.md`](GETTING-ST
 ```
 ./securax up        start everything (+ opens the home screen)
 ./securax status    health + URLs
+./securax providers [list|add]   add an AI provider (OpenAI, Claude, DeepSeek, Grok, Azure, Bedrock…)
+./securax say "text"             speak text aloud via ElevenLabs (voice plugin)
 ./securax version   print the version
 ./securax doctor    resource & health check
 ./securax down      stop everything (free RAM)

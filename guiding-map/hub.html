@@ -64,6 +64,19 @@
     Sensitive data always stays local either way.
   </div>
 
+  <h2>AI provider plugins</h2>
+  <div class="note">
+    Add any provider — <b>OpenAI, Anthropic, DeepSeek, Mistral, Grok, Perplexity, Azure AI Foundry,
+    AWS Bedrock, OpenRouter</b> — with one command; its model then appears in Chat, still routed
+    through the security gateway:
+    <div style="margin:8px 0;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;color:var(--ink)">
+      ./securax providers add
+    </div>
+    <div style="margin-top:4px">Models live right now (through the gateway): <span id="models" style="color:var(--mut)">checking…</span></div>
+    <div style="margin-top:8px;color:var(--mut);font-size:13px">Voice: <code>./securax say "hello"</code> (ElevenLabs).
+      Heavy compute (Colab / cloud GPU) and the full list: see <code>docs/securax/22-PLUGINS-AND-PROVIDERS.md</code>.</div>
+  </div>
+
   <h2>Handy commands</h2>
   <div class="note">
     <b>Where to run these:</b> in a <b>terminal</b> — on Windows open <b>Ubuntu/WSL</b> (or PowerShell), on
@@ -113,6 +126,13 @@
     }).catch(function(){
       var s=document.getElementById("secstatus"); if(s) s.innerHTML='<span class="pill" style="color:var(--mut);border-color:var(--line)">🛡️ Security: starting…</span>';
     });
+  // live model list (reflects enabled provider plugins through the gateway)
+  fetch("http://"+H+":8080/v1/models").then(function(r){return r.json();})
+    .then(function(j){
+      var ids=(j&&j.data||[]).map(function(m){return m.id;});
+      var el=document.getElementById("models");
+      el.textContent = ids.length ? ids.join(", ") : "none yet — start the estate or add a provider";
+    }).catch(function(){var el=document.getElementById("models"); if(el) el.textContent="gateway starting…";});
   // version badge
   fetch("http://"+H+":8080/version").then(function(r){return r.json();})
     .then(function(j){document.getElementById("ver").textContent="v"+(j.version||"?");}).catch(function(){document.getElementById("ver").textContent="offline";});
