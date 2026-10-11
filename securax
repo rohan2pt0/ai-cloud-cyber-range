@@ -33,13 +33,13 @@ case "$cmd" in
     if ! grep -q "^GEMINI_API_KEY=..*" "$ROOT/local/compose/.env" 2>/dev/null; then
       C "TIP: for INSTANT answers, run  ./securax setup  and paste a free Gemini key (else the slower local model is used)."
     fi
-    C "Opening your Command Center: http://localhost:8088/portal/hub.html"
+    C "Opening your Command Center: http://localhost:8088/hub.html"
     "$0" open >/dev/null 2>&1 || true
     [ "$cmd" = "up-status" ] && "$0" status || true
     ;;
   status)
     C "SecuRAX — open ONE page (it links everything, no URLs to remember):"
-    echo "  ⭐ Command Center : http://localhost:8088/portal/hub.html"
+    echo "  ⭐ Command Center : http://localhost:8088/hub.html"
     echo ""
     C "Direct links (also on the Command Center):"
     cat <<URLS
@@ -54,7 +54,7 @@ URLS
     ;;
   open)
     # The single front door: the Command Center hub (links every app, no URLs to remember).
-    URL="http://localhost:8088/portal/hub.html"
+    URL="http://localhost:8088/hub.html"
     ( command -v xdg-open >/dev/null && xdg-open "$URL" ) || ( command -v open >/dev/null && open "$URL" ) ||       ( command -v cmd.exe >/dev/null && cmd.exe /c start "$URL" ) || C "Open $URL in your browser."
     ;;
   setup)
