@@ -47,6 +47,13 @@ for the versioning and release policy.
 - The optional kind/k8s plane used host port 8080, clashing with the gateway; moved to 8081.
 
 ### Added
+- **Build SecuRAX with its own models** (reduce the Claude dependency). `./securax build "task"`
+  drives [Aider](https://aider.chat) against the SecuRAX gateway with a cheap/local model (default
+  `deepseek`, or the new sovereign `coder` = local Qwen2.5-Coder), loads the new **BUILD-CONTRACT.md**
+  as always-on context, and runs `ruff + pytest` after every edit until green — rigor from the test
+  loop, not just the model. `./securax escalate "task"` writes a tight brief (task + diff + rules) for
+  the hard 10% that still needs a frontier model. New `coder` plugin + `ENABLE_LOCAL_CODER`/`BUILD_MODEL`/
+  `CODER_MODEL` knobs. Full strategy: `docs/securax/23-BUILD-WITHOUT-CLAUDE.md`.
 - **AI provider plugins** (Mattermost-style). A catalog (`plugins/catalog.json`) drives a generator
   that builds the LiteLLM router config from whichever providers you enable, so adding
   **OpenAI, Anthropic, DeepSeek, Mistral, Grok (xAI), Perplexity, Azure AI Foundry, AWS Bedrock,

@@ -96,6 +96,23 @@ def test_local_always_on_even_with_empty_env():
     assert "bank-assistant-local" in [m["model_name"] for m in doc["model_list"]]
 
 
+def test_local_coder_uses_api_base_not_key():
+    cat = _catalog()
+    # disabled without the flag
+    out0 = gen.generate(cat, {})
+    assert "coder" not in [m["model_name"] for m in yaml.safe_load(out0)["model_list"]]
+    # enabled with the flag -> literal api_base, NO api_key (it's an Ollama model)
+    out = gen.generate(cat, {"ENABLE_LOCAL_CODER": "1"})
+    coder = [m for m in yaml.safe_load(out)["model_list"] if m["model_name"] == "coder"][0]
+    assert coder["litellm_params"]["api_base"] == "http://ollama:11434"
+    assert "api_key" not in coder["litellm_params"]
+    assert coder["litellm_params"]["model"].startswith("ollama/")
+    # CODER_MODEL override works
+    out2 = gen.generate(cat, {"ENABLE_LOCAL_CODER": "1", "CODER_MODEL": "ollama/qwen2.5-coder:14b"})
+    coder2 = [m for m in yaml.safe_load(out2)["model_list"] if m["model_name"] == "coder"][0]
+    assert coder2["litellm_params"]["model"] == "ollama/qwen2.5-coder:14b"
+
+
 def test_tts_and_compute_never_in_model_list():
     cat = _catalog()
     env = {"ELEVENLABS_API_KEY": "e", "REMOTE_OLLAMA_BASE": "http://x:11434"}
