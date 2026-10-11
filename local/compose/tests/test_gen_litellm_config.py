@@ -5,6 +5,7 @@ enables exactly the right providers, routes the default correctly, and always st
 """
 import importlib.util
 import pathlib
+import re
 
 import yaml
 
@@ -46,7 +47,7 @@ def test_baseline_is_deterministic_and_gemini_default(monkeypatch):
     assert "openai" not in names            # baseline ignores env keys
     # default routes to Gemini first, with a local fallback entry
     assert any("gemini" in str(m["litellm_params"].get("model", "")) for m in doc["model_list"])
-    assert doc["litellm_settings"]["fallbacks"] == [{"bank-assistant": ["bank-assistant-local"]}]
+    assert {"bank-assistant": ["bank-assistant-local"]} in doc["litellm_settings"]["fallbacks"]
 
 
 def test_enabled_providers_appear_disabled_dont():
@@ -87,6 +88,9 @@ def test_bedrock_carries_region_param():
     doc = yaml.safe_load(out)
     bedrock = [m for m in doc["model_list"] if m["model_name"] == "bedrock"][0]
     assert bedrock["litellm_params"]["aws_region_name"] == "os.environ/AWS_REGION"
+    # Bedrock authenticates with the AWS key pair, never a bogus api_key
+    assert "api_key" not in bedrock["litellm_params"]
+    assert bedrock["litellm_params"]["aws_access_key_id"] == "os.environ/AWS_ACCESS_KEY_ID"
 
 
 def test_local_always_on_even_with_empty_env():
@@ -120,3 +124,109 @@ def test_tts_and_compute_never_in_model_list():
     doc = yaml.safe_load(out)
     names = [m["model_name"] for m in doc["model_list"]]
     assert "elevenlabs" not in names and "compute" not in names   # not chat models
+
+
+# ───────────────────── resilience invariants (the degradation ladder) ─────────────────────
+COMPOSE = HERE.parent / "docker-compose.yml"
+
+
+def _all_enabled_env(cat):
+    return {k: "x" for p in cat["providers"] for k in p.get("env", [])}
+
+
+def _scenarios(cat):
+    return [({}, True), ({}, False), (_all_enabled_env(cat), False),
+            ({"GEMINI_API_KEY": "g", "GROQ_API_KEY": "q"}, False)]
+
+
+def _fallback_map(doc):
+    return {k: v for d in doc["litellm_settings"]["fallbacks"] for k, v in d.items()}
+
+
+def test_every_alias_is_a_single_deployment():
+    # Two deployments under one name are RANDOMLY load-balanced (simple-shuffle): a slow local model
+    # would answer half the traffic even while a fast cloud model is healthy. Local is a fallback.
+    cat = _catalog()
+    for env, baseline in _scenarios(cat):
+        names = [m["model_name"] for m in yaml.safe_load(gen.generate(cat, env, baseline))["model_list"]]
+        assert len(names) == len(set(names)), f"duplicate model_name in {env or 'empty'}/{baseline}"
+
+
+def test_chains_end_in_local_and_use_real_providers():
+    cat = _catalog()
+    ids = {p["id"] for p in cat["providers"]}
+    chains = {k: v for k, v in cat["chains"].items() if not k.startswith("_")}
+    assert "bank-assistant" in chains and "builder" in chains
+    for name, rungs in chains.items():
+        assert rungs[-1] == "local", f"chain {name} must end in the always-on local model"
+        assert all(r in ids for r in rungs), f"chain {name} references an unknown provider"
+
+
+def test_every_fallback_alias_exists_in_model_list():
+    # A fallback pointing at a missing alias makes LiteLLM error at the worst possible moment.
+    cat = _catalog()
+    for env, baseline in _scenarios(cat):
+        doc = yaml.safe_load(gen.generate(cat, env, baseline))
+        names = {m["model_name"] for m in doc["model_list"]}
+        for head, tails in _fallback_map(doc).items():
+            assert head in names
+            assert all(t in names for t in tails), f"{head} falls back to a missing alias"
+
+
+def test_zero_keys_still_yields_an_answerable_ladder():
+    # Worst case: no keys, no internet. Chat must still have a model that can answer (local).
+    cat = _catalog()
+    doc = yaml.safe_load(gen.generate(cat, {}))
+    by_name = {m["model_name"]: m["litellm_params"] for m in doc["model_list"]}
+    for chain in ("bank-assistant", "builder"):
+        assert by_name[chain]["model"].startswith("ollama/"), f"{chain} must fall to local with no keys"
+    assert "bank-assistant-local" in by_name
+
+
+def test_ladder_is_free_first_and_ordered():
+    cat = _catalog()
+    env = {"GEMINI_API_KEY": "g", "GROQ_API_KEY": "q", "OPENROUTER_API_KEY": "o", "OPENAI_API_KEY": "x"}
+    fb = _fallback_map(yaml.safe_load(gen.generate(cat, env)))
+    assert fb["bank-assistant"] == ["groq", "openrouter", "bank-assistant-local"]
+    assert "openai" not in fb["bank-assistant"], "a paid provider must never be in the default chat chain"
+    assert fb["builder"] == ["groq", "openrouter", "bank-assistant-local"]   # no deepseek key -> gemini heads it
+
+
+def test_builder_prefers_cheap_deepseek_then_free_then_local():
+    cat = _catalog()
+    env = {"DEEPSEEK_API_KEY": "d", "GEMINI_API_KEY": "g", "ENABLE_LOCAL_CODER": "1"}
+    doc = yaml.safe_load(gen.generate(cat, env))
+    head = [m for m in doc["model_list"] if m["model_name"] == "builder"][0]["litellm_params"]
+    assert head["model"].startswith("deepseek/")
+    assert _fallback_map(doc)["builder"] == ["bank-assistant-gemini", "coder", "bank-assistant-local"]
+
+
+def test_local_model_override_gets_ollama_prefix_and_baseline_ignores_it():
+    cat = _catalog()
+    doc = yaml.safe_load(gen.generate(cat, {"LOCAL_MODEL": "qwen2.5:3b"}))
+    local = [m for m in doc["model_list"] if m["model_name"] == "bank-assistant-local"][0]
+    assert local["litellm_params"]["model"] == "ollama/qwen2.5:3b"
+    base = yaml.safe_load(gen.generate(cat, {"LOCAL_MODEL": "qwen2.5:3b"}, baseline=True))
+    local_b = [m for m in base["model_list"] if m["model_name"] == "bank-assistant-local"][0]
+    assert local_b["litellm_params"]["model"] == "ollama/qwen2.5:1.5b"   # baseline is deterministic
+
+
+def test_cloud_fails_over_fast_local_waits_long():
+    cat = _catalog()
+    doc = yaml.safe_load(gen.generate(cat, {"GROQ_API_KEY": "q"}))
+    by_name = {m["model_name"]: m["litellm_params"] for m in doc["model_list"]}
+    assert by_name["groq"]["timeout"] == gen.CLOUD_TIMEOUT
+    assert by_name["bank-assistant-local"]["timeout"] == gen.LOCAL_TIMEOUT
+    assert gen.CLOUD_TIMEOUT < gen.LOCAL_TIMEOUT
+
+
+def test_litellm_container_receives_every_env_var_the_config_references():
+    # THE bug class that made every paid provider fail with an auth error: the generated config
+    # referenced os.environ/OPENAI_API_KEY but docker-compose never passed it into the litellm
+    # container. Fully-enabled config => every referenced var must be wired through compose.
+    cat = _catalog()
+    compose = yaml.safe_load(COMPOSE.read_text())
+    passed = set(compose["services"]["litellm"]["environment"])
+    refs = set(re.findall(r"os\.environ/([A-Z0-9_]+)", gen.generate(cat, _all_enabled_env(cat))))
+    missing = refs - passed
+    assert not missing, f"litellm container is not given: {sorted(missing)}"

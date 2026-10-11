@@ -26,6 +26,11 @@ So the strategy is three tiers + one discipline:
 
 ## Tier 1 — the build models (pick by cost/sovereignty)
 
+> **Default is `BUILD_MODEL=builder`** — a resilient *ladder* (cheap DeepSeek → free Gemini/Groq/OpenRouter →
+> local coder → local). A dead key, a rate limit or an outage slides to the next rung instead of stopping
+> your build. On a CPU-only 16 GB laptop treat the local coder as the offline fallback, not the plan.
+> See [24 · Resilience & low-resource](24-RESILIENCE-AND-LOW-RESOURCE.md).
+
 Model IDs change constantly; set `BUILD_MODEL` and the per-provider `<ID>_MODEL` overrides rather than
 trusting any name here. Verify current pricing on each provider's page (it moves monthly).
 

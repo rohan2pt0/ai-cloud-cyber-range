@@ -8,45 +8,21 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
-### Changed
-- **Free/sovereign by default.** Chat (Open WebUI) now defaults new conversations to `bank-assistant`
-  (free Gemini tier → local fallback), so you never accidentally land on a paid provider that errors
-  with "Oops" when its key has no credits. Pick any other model from the dropdown any time.
-
 ### Added
+- **Degradation ladders** — `bank-assistant` (Gemini → Groq → OpenRouter → local) and `builder`
+  (DeepSeek → free tiers → local coder → local). Missing keys skip rungs; every chain ends in the
+  always-on local model, so there is an answer even with zero keys and zero internet. Cloud rungs
+  fail over in 40 s and cool down after repeated failures. New Groq plugin. `./securax build` now
+  defaults to the `builder` ladder.
+- **`./securax profile`** — detects RAM/CPU and right-sizes the local model, Ollama caps and lite mode
+  (with WSL2 `.wslconfig` guidance); **`./securax up --lite`** runs only the core path.
+  `./securax doctor` now probes the real ladder and reports which rung answered.
+- Ollama tuned for CPU-only machines (warm model, single request/model at a time).
+- `docs/securax/24-RESILIENCE-AND-LOW-RESOURCE.md`.
 - **`./securax pull`** — pull the local model in the foreground so you can be sure it's ready (the
   free/offline `bank-assistant-local`), instead of relying on the background pull.
 - **`./securax doctor` now runs a REAL end-to-end chat test** through the gateway and prints the
   *actual* upstream error (not a chat UI's generic "Oops"), plus whether the local model is pulled.
-
-### Fixed
-- **The PWA self-updates now.** After a redeploy/`git pull`, the Guiding Map auto-reloads once when
-  the new service worker takes control, so you never get stuck on a stale old version in the cache.
-- **Clear WSL vs Windows guidance.** `START-HERE-Windows.bat` typed inside WSL gives "command not
-  found"; docs + the Command Center now say to use `./securax up` in a terminal and only double-click
-  the `.bat` in File Explorer. Added troubleshooting for "models won't list / old version after pull"
-  (the containers need `./securax down && ./securax up` to recreate — a pull alone doesn't).
-
-### Changed
-- **`./securax up` is now true one-step setup:** if no Gemini key is set and you're in a terminal, it
-  asks for a free key inline (Enter to skip) — no more hunting for `.env`.
-- **Command Center is honest about scope:** Chat + Guiding Map are shown as "works out of the box";
-  Private Docs (RAG) and Automation (n8n) are grouped as optional add-ons that need their own setup.
-  The gateway is shown as a friendly security status ("every AI call is guarded"), not raw JSON.
-
-### Previously fixed
-- **Models now work out of the box.** The `modelplane` network was `internal: true`, so Ollama
-  couldn't pull models and LiteLLM couldn't reach cloud models — breaking every answer. Given egress
-  (models still publish no host ports). LiteLLM now defaults to **fast cloud Gemini with a local
-  fallback**, so answers are instant with a free key and private-local otherwise.
-- **No more false "Blocked by the guardrail".** Llama Guard was enabled by default but its model
-  wasn't pulled, so the fail-closed detector blocked *every* request. It's now opt-in; the fast
-  deterministic rails (100% red-team defence) run by default. The PWA also stops mislabeling a
-  model-unavailable error as a guardrail block.
-- `fin_freedom.py` argparse crash from a literal `%` in help text (Python 3.14).
-- The optional kind/k8s plane used host port 8080, clashing with the gateway; moved to 8081.
-
-### Added
 - **Build SecuRAX with its own models** (reduce the Claude dependency). `./securax build "task"`
   drives [Aider](https://aider.chat) against the SecuRAX gateway with a cheap/local model (default
   `deepseek`, or the new sovereign `coder` = local Qwen2.5-Coder), loads the new **BUILD-CONTRACT.md**
@@ -72,6 +48,42 @@ for the versioning and release policy.
 - **`BIND_HOST`** to expose the UIs to your phone/iPad over Wi-Fi or Tailscale; `DEPLOY.md` gains a
   multi-device + sync section.
 
+### Changed
+- **Free/sovereign by default.** Chat (Open WebUI) now defaults new conversations to `bank-assistant`
+  (free Gemini tier → local fallback), so you never accidentally land on a paid provider that errors
+  with "Oops" when its key has no credits. Pick any other model from the dropdown any time.
+- **`./securax up` is now true one-step setup:** if no Gemini key is set and you're in a terminal, it
+  asks for a free key inline (Enter to skip) — no more hunting for `.env`.
+- **Command Center is honest about scope:** Chat + Guiding Map are shown as "works out of the box";
+  Private Docs (RAG) and Automation (n8n) are grouped as optional add-ons that need their own setup.
+  The gateway is shown as a friendly security status ("every AI call is guarded"), not raw JSON.
+
+### Fixed
+- **Provider keys never reached the router.** The LiteLLM container was only given the Gemini/Azure
+  keys, so OpenAI/Anthropic/DeepSeek/xAI/Mistral/Perplexity/OpenRouter always failed with an auth error
+  (it looked like "no credits"). All provider keys are now passed through, and a CI test fails if the
+  generated config ever references an env var compose doesn't wire in.
+- **`bank-assistant` was randomly load-balanced** between Gemini and the slow local model (two
+  deployments under one name + `simple-shuffle`). Every alias is now a single deployment; local is a
+  fallback, never a coin-flip.
+- AWS Bedrock now authenticates with the AWS key pair + region (it was sent the access-key id as an
+  `api_key`); `LOCAL_MODEL` is now honoured by the router (bare tags get the `ollama/` prefix).
+- **The PWA self-updates now.** After a redeploy/`git pull`, the Guiding Map auto-reloads once when
+  the new service worker takes control, so you never get stuck on a stale old version in the cache.
+- **Clear WSL vs Windows guidance.** `START-HERE-Windows.bat` typed inside WSL gives "command not
+  found"; docs + the Command Center now say to use `./securax up` in a terminal and only double-click
+  the `.bat` in File Explorer. Added troubleshooting for "models won't list / old version after pull"
+  (the containers need `./securax down && ./securax up` to recreate — a pull alone doesn't).
+- **Models now work out of the box.** The `modelplane` network was `internal: true`, so Ollama
+  couldn't pull models and LiteLLM couldn't reach cloud models — breaking every answer. Given egress
+  (models still publish no host ports). LiteLLM now defaults to **fast cloud Gemini with a local
+  fallback**, so answers are instant with a free key and private-local otherwise.
+- **No more false "Blocked by the guardrail".** Llama Guard was enabled by default but its model
+  wasn't pulled, so the fail-closed detector blocked *every* request. It's now opt-in; the fast
+  deterministic rails (100% red-team defence) run by default. The PWA also stops mislabeling a
+  model-unavailable error as a guardrail block.
+- `fin_freedom.py` argparse crash from a literal `%` in help text (Python 3.14).
+- The optional kind/k8s plane used host port 8080, clashing with the gateway; moved to 8081.
 
 
 ## [0.1.0] - 2026-10-11
