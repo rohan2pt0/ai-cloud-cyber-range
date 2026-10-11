@@ -10,6 +10,10 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 C(){ printf '\033[1;36m%s\033[0m\n' "$*"; }
+# skv FILE KEY VALUE — set or replace KEY=VALUE in an .env file (shared by setup/providers/up).
+skv(){ f="$1"; k="$2"; v="$3"; if grep -q "^$k=" "$f" 2>/dev/null; then
+  t="$(mktemp)"; awk -v k="$k" -v v="$v" 'BEGIN{FS="="} $1==k{print k"="v; next} {print}' "$f" > "$t" && mv "$t" "$f";
+  else printf '%s=%s\n' "$k" "$v" >> "$f"; fi; }
 
 cmd="${1:-up-status}"
 case "$cmd" in
@@ -169,6 +173,59 @@ URLS
     shift
     ( cd "$ROOT" && python3 -m routines "${1:-list}" )
     ;;
+  providers)
+    # Plugin-style AI provider management. `list` shows status; `add` pastes a key, regenerates the
+    # router config from plugins/catalog.json, and restarts the router so the model appears in Chat.
+    sub="${2:-list}"
+    GEN="$ROOT/local/compose/gen_litellm_config.py"
+    ENVF="$ROOT/local/compose/.env"
+    [ -f "$ENVF" ] || cp "$ROOT/local/compose/.env.example" "$ENVF"
+    case "$sub" in
+      list|status)
+        C "AI provider plugins  (ON = key set).  Add one with:  ./securax providers add"
+        python3 "$GEN" --status --env-file "$ENVF" ;;
+      add)
+        C "Add an AI provider plugin. Current status:"
+        python3 "$GEN" --status --env-file "$ENVF"
+        printf '\nProvider id to enable (openai, anthropic, deepseek, mistral, grok, perplexity, azure, bedrock, openrouter, elevenlabs): '
+        read -r PID < /dev/tty || PID=""
+        [ -z "$PID" ] && { C "nothing to do."; exit 0; }
+        INFO="$(python3 -c 'import json,sys
+cat=json.load(open(sys.argv[1])); p=next((x for x in cat["providers"] if x["id"]==sys.argv[2]),None)
+if not p: sys.exit(3)
+print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note",""))' "$ROOT/plugins/catalog.json" "$PID")" || { C "unknown provider id: $PID"; exit 1; }
+        KEYS="$(printf '%s\n' "$INFO" | sed -n 1p)"; GETURL="$(printf '%s\n' "$INFO" | sed -n 2p)"; NOTE="$(printf '%s\n' "$INFO" | sed -n 3p)"
+        [ -n "$GETURL" ] && C "  Get a key: $GETURL"
+        [ -n "$NOTE" ]   && echo "  note: $NOTE"
+        for K in $KEYS; do
+          printf '  %s = ' "$K"; read -r V < /dev/tty || V=""
+          [ -n "$V" ] && skv "$ENVF" "$K" "$V" && echo "    ✔ saved $K"
+        done
+        python3 "$GEN" --write --env-file "$ENVF" >/dev/null && C "  ✔ router config regenerated from the plugin catalog."
+        C "Applying (reloading the router + gateway so the new model is picked up)…"
+        # `up -d` starts them if down; `restart` forces a reload of the bind-mounted config if they
+        # were already running (a bind-mount change alone does NOT trigger a recreate).
+        ( cd "$ROOT/local/compose" && docker compose --profile ai up -d litellm gateway >/dev/null 2>&1 || true
+          docker compose --profile ai restart litellm gateway >/dev/null 2>&1 || true )
+        C "Done. Open Chat (http://localhost:3000) and pick the new model from the dropdown." ;;
+      *) echo 'usage: ./securax providers [list|add]'; exit 1 ;;
+    esac
+    ;;
+  say)
+    # ElevenLabs text-to-speech (voice plugin). NOTE: text is sent to ElevenLabs' API (not sovereign).
+    shift; TXT="$*"
+    [ -z "$TXT" ] && { echo 'usage: ./securax say "text to speak"'; exit 1; }
+    ENVF="$ROOT/local/compose/.env"
+    KEY="$(sed -n 's/^ELEVENLABS_API_KEY=//p' "$ENVF" 2>/dev/null | head -1)"
+    [ -z "$KEY" ] && { C "No ElevenLabs key set. Add one with:  ./securax providers add   (provider: elevenlabs)"; exit 1; }
+    VOICE="$(sed -n 's/^ELEVENLABS_VOICE_ID=//p' "$ENVF" 2>/dev/null | head -1)"; VOICE="${VOICE:-21m00Tcm4TlvDq8ikWAM}"
+    OUT="${SECURAX_SAY_OUT:-$ROOT/securax-speech.mp3}"
+    BODY="$(python3 -c 'import json,sys;print(json.dumps({"text":sys.argv[1],"model_id":"eleven_multilingual_v2"}))' "$TXT")"
+    if curl -fsS -X POST "https://api.elevenlabs.io/v1/text-to-speech/$VOICE" \
+         -H "xi-api-key: $KEY" -H "Content-Type: application/json" -d "$BODY" -o "$OUT"; then
+      C "Saved speech to $OUT  (play it with any audio player)."
+    else C "ElevenLabs request failed — check the key, the voice id, or your network."; fi
+    ;;
   version|--version|-v)
     v="$(cat "$ROOT/VERSION" 2>/dev/null || echo 0.0.0-dev)"
     g="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)"
@@ -176,5 +233,5 @@ URLS
     ;;
   mcp)   exec python3 "$ROOT/mcp/securax_mcp.py" ;;
   down)  ( cd "$ROOT/local/compose" && docker compose --profile ai down ) ; C "stopped." ;;
-  *) echo 'usage: ./securax [setup|up|status|version|open|doctor|demo|learn|intel|plan|advisors|ask <agent> "q"|enhance "q"|research "task" --allow d.com [--render]|act action.json --allow d.com --approve|design "prompt"|routines [list|due|run]|mcp|full up|full down|down]'; exit 1 ;;
+  *) echo 'usage: ./securax [setup|up|status|version|open|doctor|providers [list|add]|say "text"|demo|learn|intel|plan|advisors|ask <agent> "q"|enhance "q"|research "task" --allow d.com [--render]|act action.json --allow d.com --approve|design "prompt"|routines [list|due|run]|mcp|full up|full down|down]'; exit 1 ;;
 esac

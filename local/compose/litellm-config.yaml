@@ -1,18 +1,12 @@
-# LiteLLM router: one OpenAI-compatible endpoint, many models, automatic fallback.
+# AUTO-GENERATED from plugins/catalog.json by gen_litellm_config.py — do NOT hand-edit.
+# Re-run `./securax providers` (or this script with --write) after adding/removing a key.
 # The gateway is the SECURITY PEP; this is the FinOps PEP (cost control + fallback).
-#
-# DEFAULT = fast + free + reliable:
-#   "bank-assistant" -> Gemini Flash (cloud, free tier, FAST) when GEMINI_API_KEY is set,
-#   and falls back to the LOCAL Ollama model if the key is missing or the cloud is down.
-# For RED-tier / fully-sovereign use, call "bank-assistant-local" explicitly (never leaves the box).
 model_list:
-  # ---- the default the app calls: fast cloud first ----
+  # ---- default the app calls: fast cloud Gemini when its key is set, else sovereign local ----
   - model_name: bank-assistant
     litellm_params:
       model: gemini/gemini-2.5-flash
       api_key: os.environ/GEMINI_API_KEY
-
-  # ---- sovereign local fallback (and the explicit choice for RED data) ----
   - model_name: bank-assistant
     litellm_params:
       model: ollama/qwen2.5:1.5b
@@ -22,36 +16,17 @@ model_list:
       model: ollama/qwen2.5:1.5b
       api_base: http://ollama:11434
 
-  # ---- other clouds, used only if you add their key and select them by name ----
-  - model_name: bank-assistant-openai
-    litellm_params: { model: openai/gpt-4o-mini, api_key: os.environ/OPENAI_API_KEY }
-  - model_name: bank-assistant-claude
-    litellm_params: { model: anthropic/claude-3-5-haiku-20241022, api_key: os.environ/ANTHROPIC_API_KEY }
-  - model_name: bank-assistant-deepseek
-    litellm_params: { model: deepseek/deepseek-chat, api_key: os.environ/DEEPSEEK_API_KEY }
-  - model_name: bank-assistant-mistral
-    litellm_params: { model: mistral/mistral-small-latest, api_key: os.environ/MISTRAL_API_KEY }
-  - model_name: bank-assistant-free
-    litellm_params: { model: openrouter/meta-llama/llama-3.3-70b-instruct:free, api_key: os.environ/OPENROUTER_API_KEY }
-  - model_name: bank-assistant-azure
-    litellm_params:
-      model: azure/gpt-4o-mini
-      api_base: os.environ/AZURE_API_BASE
-      api_key: os.environ/AZURE_API_KEY
-
 litellm_settings:
   num_retries: 1
   request_timeout: 120
-  # If the primary "bank-assistant" (Gemini) errors, fall back to the local model.
   fallbacks: [{"bank-assistant": ["bank-assistant-local"]}]
   drop_params: true
   json_logs: true
 
 router_settings:
-  routing_strategy: simple-shuffle   # no Redis needed for single-node laptop use
+  routing_strategy: simple-shuffle
 
 general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY
-  # Hard monthly cloud spend ceiling (protects the budget). Gemini's free tier keeps this ~$0.
   max_budget: 25
   budget_duration: 30d
