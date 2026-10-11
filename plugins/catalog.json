@@ -9,7 +9,7 @@
       "note": "Fast, generous free tier. The recommended default for instant answers."
     },
     {
-      "id": "local", "label": "Local model (Ollama, sovereign)", "kind": "llm", "always": true, "free": true,
+      "id": "local", "label": "Local model (Ollama, sovereign)", "kind": "llm", "always": true, "local": true, "free": true,
       "alias": "bank-assistant-local", "model": "ollama/qwen2.5:1.5b", "api_base": "http://ollama:11434",
       "env": [], "note": "Runs on your box, never leaves it. The sovereign fallback / RED-tier choice."
     },
@@ -63,6 +63,12 @@
       "env": ["OPENROUTER_API_KEY"], "get_key": "https://openrouter.ai/keys"
     },
     {
+      "id": "groq", "label": "Groq (fast, free tier)", "kind": "llm", "free": true,
+      "alias": "groq", "model": "groq/llama-3.3-70b-versatile",
+      "env": ["GROQ_API_KEY"], "get_key": "https://console.groq.com/keys",
+      "note": "Very fast inference with a free tier (daily token caps apply). Free-tier model lineups change — if this model 404s, set GROQ_MODEL=groq/<id> from console.groq.com/docs/models."
+    },
+    {
       "id": "coder", "label": "Local coder (Qwen2.5-Coder, sovereign)", "kind": "llm", "local": true, "free": true,
       "alias": "coder", "model": "ollama/qwen2.5-coder:7b", "api_base": "http://ollama:11434",
       "env": ["ENABLE_LOCAL_CODER"],
@@ -79,5 +85,10 @@
       "env": ["REMOTE_OLLAMA_BASE"],
       "note": "Not a key: run Ollama on a GPU box or a Colab tunnel and set REMOTE_OLLAMA_BASE to its URL to offload the local model. See docs/securax/22-PLUGINS-AND-PROVIDERS.md § Heavy compute."
     }
-  ]
+  ],
+  "chains": {
+    "_comment": "Degradation ladders. Each chain is tried in order; only ENABLED providers participate, so a missing key just skips that rung. Every chain MUST end in 'local' (always on) so an answer is possible even with zero keys and zero internet. Paid providers are deliberately absent from bank-assistant (cost guard); the build chain may use cheap DeepSeek first. Enforced by tests.",
+    "bank-assistant": ["gemini", "groq", "openrouter", "local"],
+    "builder": ["deepseek", "gemini", "groq", "openrouter", "coder", "local"]
+  }
 }

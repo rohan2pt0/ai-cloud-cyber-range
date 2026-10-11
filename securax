@@ -15,6 +15,9 @@ skv(){ f="$1"; k="$2"; v="$3"; if grep -q "^$k=" "$f" 2>/dev/null; then
   t="$(mktemp)"; awk -v k="$k" -v v="$v" 'BEGIN{FS="="} $1==k{print k"="v; next} {print}' "$f" > "$t" && mv "$t" "$f";
   else printf '%s=%s\n' "$k" "$v" >> "$f"; fi; }
 
+# ev KEY [DEFAULT] — read KEY from local/compose/.env (process env wins), else DEFAULT.
+ev(){ v="${!1:-}"; [ -z "$v" ] && v="$(sed -n "s/^$1=//p" "$ROOT/local/compose/.env" 2>/dev/null | head -1)"; printf '%s' "${v:-${2:-}}"; }
+
 cmd="${1:-up-status}"
 case "$cmd" in
   up|up-status)
@@ -37,7 +40,13 @@ case "$cmd" in
         C "  ✔ Gemini key saved — answers will be fast."
       fi
     fi
-    ( cd "$ROOT/local/compose" && docker compose --profile ai up -d --build )
+    # LITE mode (./securax up --lite, or SECURAX_LITE=1 in .env — `./securax profile` sets it for 16 GB
+    # machines): only the core path (gateway, router, local model, Chat, home screen, sync). Skips
+    # Private Docs + n8n + Postgres, which together want ~3 GB you may not have to spare.
+    LITE=0; { [ "${2:-}" = "--lite" ] || [ "$(ev SECURAX_LITE)" = "1" ]; } && LITE=1
+    SVCS=""; [ "$LITE" = 1 ] && SVCS="gateway litellm ollama open-webui guiding-map estate-sync" \
+      && C "LITE mode: starting the core path only (Private Docs / n8n skipped to save RAM)."
+    ( cd "$ROOT/local/compose" && docker compose --profile ai up -d --build $SVCS )
     # Pull the model in the BACKGROUND so the home screen opens immediately — the
     # Guiding Map's Ask tab shows a live "AI is ready / warming up" status, so the
     # one-time ~1 GB download never blocks you. (First run only.)
@@ -47,7 +56,7 @@ case "$cmd" in
     (
       CID="$(cd "$ROOT/local/compose" && docker compose ps -q ollama 2>/dev/null || true)"
       for _ in 1 2 3 4 5 6 7 8 9 10; do docker exec "$CID" ollama list >/dev/null 2>&1 && break; sleep 3; done
-      [ -n "${CID:-}" ] && docker exec "$CID" ollama pull "${LOCAL_MODEL:-qwen2.5:1.5b}" >/dev/null 2>&1 || true
+      [ -n "${CID:-}" ] && docker exec "$CID" ollama pull "$(ev LOCAL_MODEL qwen2.5:1.5b)" >/dev/null 2>&1 || true
     ) &
     if ! grep -q "^GEMINI_API_KEY=..*" "$ROOT/local/compose/.env" 2>/dev/null; then
       C "TIP: for INSTANT answers, run  ./securax setup  and paste a free Gemini key (else the slower local model is used)."
@@ -106,27 +115,35 @@ URLS
     if command -v free >/dev/null; then MEM=$(free | awk '/Mem:/{printf "%d",$3/$2*100}'); echo "  RAM used:  ${MEM}%  $([ "${MEM:-0}" -ge 90 ] && echo '⚠ >90% — close apps / use local-fast model' || echo 'ok')"; fi
     curl -fsS http://localhost:8080/healthz >/dev/null 2>&1 && echo "  gateway:   healthy" || echo "  gateway:   down (run ./securax up)"
     curl -fsS http://localhost:8088 >/dev/null 2>&1 && echo "  guiding map: up" || echo "  guiding map: down"
-    # Is the sovereign local model actually pulled? (the #1 reason local chat fails)
-    LM="${LOCAL_MODEL:-qwen2.5:1.5b}"
+    # Is the sovereign local model actually pulled? (the #1 reason the LAST rung of the ladder fails)
+    LM="$(ev LOCAL_MODEL qwen2.5:1.5b)"
     CID="$(cd "$ROOT/local/compose" && docker compose ps -q ollama 2>/dev/null || true)"
     if [ -n "$CID" ] && docker exec "$CID" ollama list 2>/dev/null | grep -q "$LM"; then
       echo "  local model: $LM pulled ✔"
     else
       echo "  local model: $LM NOT pulled ✗  → run  ./securax pull"
     fi
-    # The real test: send an actual message through the gateway and show the TRUE result/error
-    # (instead of a chat UI's generic 'Oops'). Uses the free sovereign local model.
-    KEY="$(sed -n 's/^LITELLM_MASTER_KEY=//p' "$ROOT/local/compose/.env" 2>/dev/null | head -1)"; KEY="${KEY:-sk-range-dev}"
-    C "Testing a real chat completion via the gateway (model: bank-assistant-local, may take ~30s on CPU)…"
-    RESP="$(curl -sS -m 90 http://localhost:8080/v1/chat/completions \
-      -H "Authorization: Bearer $KEY" -H 'Content-Type: application/json' \
-      -d '{"model":"bank-assistant-local","messages":[{"role":"user","content":"Reply with the single word OK."}]}' 2>&1)"
-    if printf '%s' "$RESP" | grep -q '"content"'; then
-      echo "  chat (local): WORKS ✔  — in Chat pick 'bank-assistant-local' (free, sovereign) or 'bank-assistant' (free Gemini → local)."
+    # The real test: send an actual message through the gateway and show who answered + the TRUE error
+    # (instead of a chat UI's generic 'Oops'). Probes the same ladder Chat uses.
+    KEY="$(ev LITELLM_MASTER_KEY sk-range-dev)"
+    probe(){ curl -sS -m "$2" http://localhost:8080/v1/chat/completions -H "Authorization: Bearer $KEY" \
+      -H 'Content-Type: application/json' \
+      -d "{\"model\":\"$1\",\"max_tokens\":8,\"messages\":[{\"role\":\"user\",\"content\":\"Reply with the single word OK.\"}]}" 2>&1; }
+    served(){ printf '%s' "$1" | sed -n 's/.*"model": *"\([^"]*\)".*/\1/p' | head -1; }
+    C "Testing 'bank-assistant' — the ladder Chat uses (see the rungs with: ./securax providers list)…"
+    R1="$(probe bank-assistant 60)"
+    if printf '%s' "$R1" | grep -q '"content"'; then
+      echo "  chat: WORKS ✔  (answered by: $(served "$R1"))"
     else
-      echo "  chat (local): FAILED ✗  — the REAL error from the gateway/router:"
-      printf '    %s\n' "$RESP" | head -6
-      echo "    Most common fix: run  ./securax pull  (local model not ready), then retry."
+      echo "  chat: the default ladder FAILED ✗ — the REAL error:"; printf '    %s\n' "$R1" | head -5
+      C "Testing the last rung — the sovereign local model (CPU: can take a minute)…"
+      R2="$(probe bank-assistant-local 180)"
+      if printf '%s' "$R2" | grep -q '"content"'; then
+        echo "  local rung: WORKS ✔ — pick 'bank-assistant-local' in Chat. Fix the cloud keys later: ./securax providers add"
+      else
+        echo "  local rung: FAILED ✗ — real error:"; printf '    %s\n' "$R2" | head -5
+        echo "    Run ./securax pull (model not ready) or ./securax profile (right-size for your RAM), then retry."
+      fi
     fi
     ;;
   demo)
@@ -199,7 +216,7 @@ URLS
     # Build/evolve SecuRAX using ITS OWN models (via the gateway), with Claude-like rigor supplied by
     # the BUILD-CONTRACT + the repo's test gates. Uses Aider as the edit->test->fix agent.
     #   ./securax build "add a /metrics endpoint to the gateway with a test"
-    # Model: $BUILD_MODEL (default deepseek — cheap+strong). Use 'coder' for the local sovereign coder,
+    # Model: $BUILD_MODEL (default 'builder' = resilient ladder: cheap DeepSeek -> free tiers -> local). 'coder' = local only,
     # or any alias from ./securax providers list. All traffic still passes through the guardrail.
     shift; TASK="$*"
     [ -z "$TASK" ] && { echo 'usage: ./securax build "what to change"   (set BUILD_MODEL=coder for local)'; exit 1; }
@@ -211,7 +228,9 @@ URLS
     fi
     curl -fsS http://localhost:8080/healthz >/dev/null 2>&1 || { C "Gateway is down — run ./securax up first."; exit 1; }
     KEY="$(sed -n 's/^LITELLM_MASTER_KEY=//p' "$ROOT/local/compose/.env" 2>/dev/null | head -1)"; KEY="${KEY:-sk-range-dev}"
-    MODEL="${BUILD_MODEL:-deepseek}"
+    # 'builder' = the resilient BUILD ladder (cheap DeepSeek -> free tiers -> local coder -> local), so a
+    # dead key, a rate limit or an outage just slides to the next rung instead of stopping the build.
+    MODEL="${BUILD_MODEL:-$(ev BUILD_MODEL builder)}"
     C "Building with model '$MODEL' through the SecuRAX gateway (rigor: BUILD-CONTRACT + auto-tests)…"
     # Point Aider at the gateway (OpenAI-compatible); it runs the repo's tests after each edit and
     # iterates until they pass. --read loads the build contract as always-on context.
@@ -238,10 +257,45 @@ URLS
     } > "$OUT"
     C "Wrote $OUT — paste it into Claude/Sonnet (or ./securax enhance uses your local model). Keep frontier use to this 10%."
     ;;
+  profile)
+    # Right-size SecuRAX to THIS machine so it works under resource constraints instead of swapping and
+    # crawling. Writes the knobs to local/compose/.env (and regenerates the router config). Re-run any time.
+    ENVF="$ROOT/local/compose/.env"; [ -f "$ENVF" ] || cp "$ROOT/local/compose/.env.example" "$ENVF"
+    MEM_MB="$(awk '/^MemTotal:/{printf "%d",$2/1024}' /proc/meminfo 2>/dev/null || true)"
+    if [ -z "${MEM_MB:-}" ] || [ "${MEM_MB:-0}" -le 0 ]; then
+      MEM_MB="$(( $(sysctl -n hw.memsize 2>/dev/null || echo 0) / 1048576 ))"      # macOS
+    fi
+    CPUS="$(nproc 2>/dev/null || sysctl -n hw.ncpu 2>/dev/null || echo 4)"
+    IS_WSL=0; grep -qi microsoft /proc/version 2>/dev/null && IS_WSL=1
+    # NOTE: inside WSL2 the RAM you SEE is the WSL cap (default = half the laptop) — that is the real
+    # limit Docker lives under, so it is the right number to size against.
+    if   [ "$MEM_MB" -lt 7000 ];  then TIER=tiny;   LITE=1; LM="qwen2.5:1.5b"; CM="";                  OMEM="2500m"
+    elif [ "$MEM_MB" -lt 11500 ]; then TIER=small;  LITE=1; LM="qwen2.5:3b";   CM="";                  OMEM="4g"
+    elif [ "$MEM_MB" -lt 20000 ]; then TIER=medium; LITE=1; LM="qwen2.5:3b";   CM="qwen2.5-coder:7b";  OMEM="6g"
+    else                               TIER=large;  LITE=0; LM="qwen2.5:7b";   CM="qwen2.5-coder:14b"; OMEM="11g"
+    fi
+    OCPU=$(( CPUS > 2 ? CPUS - 1 : 2 ))
+    skv "$ENVF" LOCAL_MODEL "$LM"; skv "$ENVF" OLLAMA_MEM "$OMEM"; skv "$ENVF" OLLAMA_CPUS "$OCPU"
+    skv "$ENVF" SECURAX_LITE "$LITE"
+    if [ -n "$CM" ]; then skv "$ENVF" ENABLE_LOCAL_CODER 1; skv "$ENVF" CODER_MODEL "$CM"; else skv "$ENVF" ENABLE_LOCAL_CODER ""; fi
+    python3 "$ROOT/local/compose/gen_litellm_config.py" --write --env-file "$ENVF" >/dev/null
+    C "Profile: ${MEM_MB} MB RAM visible, ${CPUS} CPUs  →  tier '$TIER'"
+    echo "  local chat model : $LM   (ollama capped at $OMEM, $OCPU cpus)"
+    echo "  local coder      : ${CM:-off — not enough RAM; the BUILD ladder uses free/cheap cloud instead}"
+    echo "  lite mode        : $([ "$LITE" = 1 ] && echo 'ON  (skips Private Docs + n8n to save RAM)' || echo 'off (everything runs)')"
+    if [ "$IS_WSL" = 1 ] && [ "$MEM_MB" -lt 10000 ]; then
+      C "WSL2 is capping Docker at ${MEM_MB} MB. On a 16 GB laptop, raise the cap:"
+      echo "    1) In Windows, create the file  %UserProfile%\\.wslconfig  containing:"
+      echo "         [wsl2]"; echo "         memory=11GB"; echo "         swap=8GB"; echo "         processors=$CPUS"
+      echo "    2) In PowerShell run  wsl --shutdown , reopen Ubuntu, then run  ./securax profile  again."
+      echo "       (12GB unlocks the local coder tier, but leaves Windows only 4GB — close heavy apps first.)"
+    fi
+    C "Apply with:  ./securax down && ./securax up    then    ./securax pull   (fetches the local model)"
+    ;;
   pull)
     # Pull the sovereign local model in the FOREGROUND (so you can be sure it's ready, unlike the
     # background pull `up` kicks off). This is the free/offline model Chat uses as 'bank-assistant-local'.
-    LM="${2:-${LOCAL_MODEL:-qwen2.5:1.5b}}"
+    LM="${2:-$(ev LOCAL_MODEL qwen2.5:1.5b)}"
     CID="$(cd "$ROOT/local/compose" && docker compose ps -q ollama 2>/dev/null || true)"
     [ -z "$CID" ] && { C "ollama isn't running — start the estate first with  ./securax up"; exit 1; }
     C "Pulling local model '$LM' (first time can take a few minutes)…"
@@ -311,5 +365,5 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
     ;;
   mcp)   exec python3 "$ROOT/mcp/securax_mcp.py" ;;
   down)  ( cd "$ROOT/local/compose" && docker compose --profile ai down ) ; C "stopped." ;;
-  *) echo 'usage: ./securax [setup|up|status|version|open|doctor|pull|build "task"|escalate "task"|providers [list|add]|say "text"|demo|learn|intel|plan|advisors|ask <agent> "q"|enhance "q"|research "task" --allow d.com [--render]|act action.json --allow d.com --approve|design "prompt"|routines [list|due|run]|mcp|full up|full down|down]'; exit 1 ;;
+  *) echo 'usage: ./securax [setup|up|status|version|open|doctor|profile|pull|build "task"|escalate "task"|providers [list|add]|say "text"|demo|learn|intel|plan|advisors|ask <agent> "q"|enhance "q"|research "task" --allow d.com [--render]|act action.json --allow d.com --approve|design "prompt"|routines [list|due|run]|mcp|full up|full down|down]'; exit 1 ;;
 esac

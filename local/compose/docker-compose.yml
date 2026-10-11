@@ -66,9 +66,24 @@ services:
     command: ["--config", "/etc/litellm/config.yaml", "--port", "4000"]
     environment:
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-range-dev}
+      # EVERY provider key the generated litellm-config.yaml may reference as os.environ/<NAME> must be
+      # listed here (least privilege: we do NOT pass the whole .env into this container). A key missing
+      # from this list silently resolves to nothing and that provider fails with an auth error.
+      # Enforced by local/compose/tests/test_gen_litellm_config.py.
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      GROQ_API_KEY: ${GROQ_API_KEY:-}
+      OPENROUTER_API_KEY: ${OPENROUTER_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+      MISTRAL_API_KEY: ${MISTRAL_API_KEY:-}
+      XAI_API_KEY: ${XAI_API_KEY:-}
+      PERPLEXITYAI_API_KEY: ${PERPLEXITYAI_API_KEY:-}
       AZURE_API_KEY: ${AZURE_API_KEY:-}
       AZURE_API_BASE: ${AZURE_API_BASE:-}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:-}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY:-}
+      AWS_REGION: ${AWS_REGION:-ap-south-1}
       AWS_REGION_NAME: ${AWS_REGION:-ap-south-1}
     volumes: ["./litellm-config.yaml:/etc/litellm/config.yaml:ro"]
     networks: [modelplane]
@@ -77,10 +92,17 @@ services:
 
   ollama:
     image: ollama/ollama:0.5.7
-    mem_limit: 5g
-    cpus: 3.0
+    # Sized to YOUR machine by `./securax profile` (writes OLLAMA_MEM / OLLAMA_CPUS to .env).
+    mem_limit: ${OLLAMA_MEM:-5g}
+    cpus: ${OLLAMA_CPUS:-3.0}
     profiles: ["ai"]
     restart: unless-stopped
+    environment:
+      # CPU-only laptop tuning: keep the model warm (reloading it is the slowest part), and never run
+      # two models / two requests at once (that is how a 16 GB box starts swapping and crawls).
+      OLLAMA_KEEP_ALIVE: ${OLLAMA_KEEP_ALIVE:-30m}
+      OLLAMA_NUM_PARALLEL: "1"
+      OLLAMA_MAX_LOADED_MODELS: "1"
     volumes: ["ollama:/root/.ollama"]
     networks: [modelplane]
     # To load models after up:  docker exec -it <ollama> ollama pull qwen2.5:1.5b && ollama pull llama-guard3:1b

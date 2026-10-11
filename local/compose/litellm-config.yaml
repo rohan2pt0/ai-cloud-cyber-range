@@ -1,30 +1,43 @@
 # AUTO-GENERATED from plugins/catalog.json by gen_litellm_config.py — do NOT hand-edit.
 # Re-run `./securax providers` (or this script with --write) after adding/removing a key.
-# The gateway is the SECURITY PEP; this is the FinOps PEP (cost control + fallback).
+# The gateway is the SECURITY PEP; this is the FinOps/RESILIENCE PEP (fallback ladders).
+# One deployment per alias (no random shuffle); chains + fallbacks give the degradation ladder.
 model_list:
-  # ---- default the app calls: fast cloud Gemini when its key is set, else sovereign local ----
-  - model_name: bank-assistant
+  # ---- each enabled provider, selectable by its own alias ----
+  - model_name: bank-assistant-gemini
     litellm_params:
       model: gemini/gemini-2.5-flash
+      timeout: 40
       api_key: os.environ/GEMINI_API_KEY
-  - model_name: bank-assistant
-    litellm_params:
-      model: ollama/qwen2.5:1.5b
-      api_base: http://ollama:11434
   - model_name: bank-assistant-local
     litellm_params:
       model: ollama/qwen2.5:1.5b
       api_base: http://ollama:11434
+      timeout: 300
+  # ---- degradation ladders: the first enabled rung answers; the rest are fallbacks ----
+  - model_name: bank-assistant
+    litellm_params:
+      model: gemini/gemini-2.5-flash
+      timeout: 40
+      api_key: os.environ/GEMINI_API_KEY
+  - model_name: builder
+    litellm_params:
+      model: gemini/gemini-2.5-flash
+      timeout: 40
+      api_key: os.environ/GEMINI_API_KEY
 
 litellm_settings:
   num_retries: 1
   request_timeout: 120
-  fallbacks: [{"bank-assistant": ["bank-assistant-local"]}]
+  fallbacks: [{"bank-assistant": ["bank-assistant-local"]}, {"builder": ["bank-assistant-local"]}]
   drop_params: true
   json_logs: true
 
 router_settings:
   routing_strategy: simple-shuffle
+  # a deployment that fails twice is cooled down briefly so requests go straight to the next rung
+  allowed_fails: 2
+  cooldown_time: 30
 
 general_settings:
   master_key: os.environ/LITELLM_MASTER_KEY

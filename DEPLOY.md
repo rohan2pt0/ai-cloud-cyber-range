@@ -140,7 +140,7 @@ opens, and the **Ask** tab shows a live *"AI is ready / warming up / off"* statu
 | `docker` / "cannot connect" errors | Docker Desktop isn't running — start it, wait for the green whale, retry. |
 | "port is already allocated" | Another app uses 8088/8080/3000/5678 — stop it, or change the port in `local/compose/docker-compose.yml`. |
 | **"model not found" / chat shows no model** | Add a free Gemini key (`./securax setup`) for instant cloud answers, OR let the local model finish downloading. The gateway now exposes `/v1/models` so Open WebUI/AnythingLLM list a model to pick. |
-| **Chat says "Oops! There was an error"** | You picked a **paid** provider (e.g. `openai`) whose key has no billing/credits. Switch the model dropdown to **`bank-assistant-local`** (free, sovereign) or **`bank-assistant`** (free Gemini → local). Run `./securax doctor` — it does a real test and prints the *actual* error. |
+| **Chat says "Oops! There was an error"** | Run **`./securax doctor`** — it tests the real ladder and prints who answered or the *actual* error. (Earlier builds never passed provider keys into the router container, so paid providers always failed; fixed and now enforced by a test — `git pull`, then `./securax down && ./securax up`.) Meanwhile pick **`bank-assistant`** (free ladder, ends at local). |
 | **Local chat fails / `bank-assistant-local` errors** | The local model isn't pulled yet. Run **`./securax pull`** (foreground, waits for it), then retry. |
 | **Every question says "Blocked by the guardrail"** | That was a bug when no model was available — fixed. If you still see it, it's a *real* block (your text matched an attack/PII pattern); rephrase. The deterministic rails give 100% red-team defence without any model. |
 | Answers are **slow** | That's the local CPU model. Paste a free Gemini key (`./securax setup`) — answers become instant; sensitive data still stays local. |
@@ -170,6 +170,7 @@ Full troubleshooting + security posture notes: [`GETTING-STARTED.md`](GETTING-ST
 ```
 ./securax up        start everything (+ opens the home screen)
 ./securax status    health + URLs
+./securax profile                right-size to your RAM/CPU (+ WSL2 .wslconfig advice); ./securax up --lite = core path only
 ./securax providers [list|add]   add an AI provider (OpenAI, Claude, DeepSeek, Grok, Azure, Bedrock…)
 ./securax say "text"             speak text aloud via ElevenLabs (voice plugin)
 ./securax version   print the version
