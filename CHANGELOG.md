@@ -31,6 +31,10 @@ First versioned public release. SecuRAX is a sovereign, local-first AI-security 
   OPA/Conftest, compose sanity + build-drift poka-yoke gates, AI red-team scorecard + AI-SPM posture.
 - **Documentation set** — `docs/securax/` (vision, principles, architecture, capability catalog,
   compliance map, roadmap, cost/models, end-state enterprise architecture, Claude-parity, more).
+- **One-step deployment guide** (`DEPLOY.md`) — install Docker, run one command, done.
+- **Product scaffolding** — SemVer `VERSION`, `CHANGELOG`, `SECURITY`, `CODE_OF_CONDUCT`,
+  `GOVERNANCE`, `MAINTAINERS`, `SUPPORT`, `CODEOWNERS`, issue/PR templates, Dependabot, ruff lint
+  gate + pre-commit, and a tag-driven release workflow.
 
 ### Security
 - Fail-closed everywhere; no secrets in the repo (pattern-based PII/secret CI gate); SSRF + DNS-rebind
