@@ -101,11 +101,33 @@ URLS
     C "Setup complete. Start everything with:  ./securax up"
     ;;
   doctor)
-    C "SecuRAX doctor — resource & health check (global thresholds)"
+    C "SecuRAX doctor — resource & health + a REAL end-to-end chat test"
     DISK=$(df -P . | awk 'NR==2{print $5}' | tr -d '%'); echo "  disk used: ${DISK}%  $([ "${DISK:-0}" -ge 85 ] && echo '⚠ >85% — free space' || echo 'ok')"
     if command -v free >/dev/null; then MEM=$(free | awk '/Mem:/{printf "%d",$3/$2*100}'); echo "  RAM used:  ${MEM}%  $([ "${MEM:-0}" -ge 90 ] && echo '⚠ >90% — close apps / use local-fast model' || echo 'ok')"; fi
     curl -fsS http://localhost:8080/healthz >/dev/null 2>&1 && echo "  gateway:   healthy" || echo "  gateway:   down (run ./securax up)"
     curl -fsS http://localhost:8088 >/dev/null 2>&1 && echo "  guiding map: up" || echo "  guiding map: down"
+    # Is the sovereign local model actually pulled? (the #1 reason local chat fails)
+    LM="${LOCAL_MODEL:-qwen2.5:1.5b}"
+    CID="$(cd "$ROOT/local/compose" && docker compose ps -q ollama 2>/dev/null || true)"
+    if [ -n "$CID" ] && docker exec "$CID" ollama list 2>/dev/null | grep -q "$LM"; then
+      echo "  local model: $LM pulled ✔"
+    else
+      echo "  local model: $LM NOT pulled ✗  → run  ./securax pull"
+    fi
+    # The real test: send an actual message through the gateway and show the TRUE result/error
+    # (instead of a chat UI's generic 'Oops'). Uses the free sovereign local model.
+    KEY="$(sed -n 's/^LITELLM_MASTER_KEY=//p' "$ROOT/local/compose/.env" 2>/dev/null | head -1)"; KEY="${KEY:-sk-range-dev}"
+    C "Testing a real chat completion via the gateway (model: bank-assistant-local, may take ~30s on CPU)…"
+    RESP="$(curl -sS -m 90 http://localhost:8080/v1/chat/completions \
+      -H "Authorization: Bearer $KEY" -H 'Content-Type: application/json' \
+      -d '{"model":"bank-assistant-local","messages":[{"role":"user","content":"Reply with the single word OK."}]}' 2>&1)"
+    if printf '%s' "$RESP" | grep -q '"content"'; then
+      echo "  chat (local): WORKS ✔  — in Chat pick 'bank-assistant-local' (free, sovereign) or 'bank-assistant' (free Gemini → local)."
+    else
+      echo "  chat (local): FAILED ✗  — the REAL error from the gateway/router:"
+      printf '    %s\n' "$RESP" | head -6
+      echo "    Most common fix: run  ./securax pull  (local model not ready), then retry."
+    fi
     ;;
   demo)
     C "Adversarial-ML scorecard:"; python3 "$ROOT/redteam/run_attacks.py" --out "$ROOT/redteam/results.json" | tail -8
@@ -173,6 +195,19 @@ URLS
     shift
     ( cd "$ROOT" && python3 -m routines "${1:-list}" )
     ;;
+  pull)
+    # Pull the sovereign local model in the FOREGROUND (so you can be sure it's ready, unlike the
+    # background pull `up` kicks off). This is the free/offline model Chat uses as 'bank-assistant-local'.
+    LM="${2:-${LOCAL_MODEL:-qwen2.5:1.5b}}"
+    CID="$(cd "$ROOT/local/compose" && docker compose ps -q ollama 2>/dev/null || true)"
+    [ -z "$CID" ] && { C "ollama isn't running — start the estate first with  ./securax up"; exit 1; }
+    C "Pulling local model '$LM' (first time can take a few minutes)…"
+    if docker exec "$CID" ollama pull "$LM"; then
+      C "Done ✔  In Chat (http://localhost:3000) pick 'bank-assistant-local' — free, sovereign, no key."
+    else
+      C "Pull failed — check your internet, or run  ./securax doctor  to see the real error."
+    fi
+    ;;
   providers)
     # Plugin-style AI provider management. `list` shows status; `add` pastes a key, regenerates the
     # router config from plugins/catalog.json, and restarts the router so the model appears in Chat.
@@ -233,5 +268,5 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
     ;;
   mcp)   exec python3 "$ROOT/mcp/securax_mcp.py" ;;
   down)  ( cd "$ROOT/local/compose" && docker compose --profile ai down ) ; C "stopped." ;;
-  *) echo 'usage: ./securax [setup|up|status|version|open|doctor|providers [list|add]|say "text"|demo|learn|intel|plan|advisors|ask <agent> "q"|enhance "q"|research "task" --allow d.com [--render]|act action.json --allow d.com --approve|design "prompt"|routines [list|due|run]|mcp|full up|full down|down]'; exit 1 ;;
+  *) echo 'usage: ./securax [setup|up|status|version|open|doctor|pull|providers [list|add]|say "text"|demo|learn|intel|plan|advisors|ask <agent> "q"|enhance "q"|research "task" --allow d.com [--render]|act action.json --allow d.com --approve|design "prompt"|routines [list|due|run]|mcp|full up|full down|down]'; exit 1 ;;
 esac

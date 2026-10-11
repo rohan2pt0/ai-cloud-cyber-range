@@ -22,6 +22,14 @@ done.** No account, no cloud bill, nothing leaves your machine.
 ```
 Everything after this point is optional depth.
 
+> **Want it 100% free / sovereign?** You need **no paid keys at all**. Run `./securax pull` once to
+> fetch the local model, then in Chat pick **`bank-assistant-local`** (runs on your box, never leaves
+> it). For fast free cloud answers, add a **free** Gemini key (`./securax setup`) and use
+> **`bank-assistant`** (Gemini free-tier → local fallback). Chat now defaults to `bank-assistant`,
+> so you never land on a paid model by accident. Other free options: **OpenRouter** free models
+> (`./securax providers add` → openrouter). Paid providers (OpenAI, Anthropic, Grok…) are optional —
+> if one shows "Oops", its key just has no credits; you don't need it.
+
 > **Fast answers:** paste a **free** Google AI Studio key (https://aistudio.google.com/apikey) in
 > step 3 — answers then come from cloud Gemini instantly. Without it, a private local model is used
 > (slower on a laptop, fully offline). Sensitive data always stays local either way.
@@ -132,6 +140,8 @@ opens, and the **Ask** tab shows a live *"AI is ready / warming up / off"* statu
 | `docker` / "cannot connect" errors | Docker Desktop isn't running — start it, wait for the green whale, retry. |
 | "port is already allocated" | Another app uses 8088/8080/3000/5678 — stop it, or change the port in `local/compose/docker-compose.yml`. |
 | **"model not found" / chat shows no model** | Add a free Gemini key (`./securax setup`) for instant cloud answers, OR let the local model finish downloading. The gateway now exposes `/v1/models` so Open WebUI/AnythingLLM list a model to pick. |
+| **Chat says "Oops! There was an error"** | You picked a **paid** provider (e.g. `openai`) whose key has no billing/credits. Switch the model dropdown to **`bank-assistant-local`** (free, sovereign) or **`bank-assistant`** (free Gemini → local). Run `./securax doctor` — it does a real test and prints the *actual* error. |
+| **Local chat fails / `bank-assistant-local` errors** | The local model isn't pulled yet. Run **`./securax pull`** (foreground, waits for it), then retry. |
 | **Every question says "Blocked by the guardrail"** | That was a bug when no model was available — fixed. If you still see it, it's a *real* block (your text matched an attack/PII pattern); rephrase. The deterministic rails give 100% red-team defence without any model. |
 | Answers are **slow** | That's the local CPU model. Paste a free Gemini key (`./securax setup`) — answers become instant; sensitive data still stays local. |
 | "port is already allocated" | Another app uses 8088/8080/3000/5678 — stop it, or change the port in `local/compose/docker-compose.yml`. (The optional k8s plane now uses 8081, not 8080.) |

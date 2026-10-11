@@ -8,6 +8,17 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
+### Changed
+- **Free/sovereign by default.** Chat (Open WebUI) now defaults new conversations to `bank-assistant`
+  (free Gemini tier → local fallback), so you never accidentally land on a paid provider that errors
+  with "Oops" when its key has no credits. Pick any other model from the dropdown any time.
+
+### Added
+- **`./securax pull`** — pull the local model in the foreground so you can be sure it's ready (the
+  free/offline `bank-assistant-local`), instead of relying on the background pull.
+- **`./securax doctor` now runs a REAL end-to-end chat test** through the gateway and prints the
+  *actual* upstream error (not a chat UI's generic "Oops"), plus whether the local model is pulled.
+
 ### Fixed
 - **The PWA self-updates now.** After a redeploy/`git pull`, the Guiding Map auto-reloads once when
   the new service worker takes control, so you never get stuck on a stale old version in the cache.

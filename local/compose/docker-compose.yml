@@ -143,6 +143,9 @@ services:
       OPENAI_API_KEY: ${LITELLM_MASTER_KEY:-sk-range-dev}
       WEBUI_AUTH: "true"            # local account; stays on your machine
       ENABLE_OLLAMA_API: "false"    # force traffic through the gateway, not raw Ollama
+      # Default new chats to the FREE/sovereign path (Gemini free-tier -> local fallback), never a
+      # paid provider. Pick another model from the dropdown any time; this is just the safe default.
+      DEFAULT_MODELS: ${DEFAULT_MODELS:-bank-assistant}
     ports: ["${BIND_HOST:-127.0.0.1}:3000:8080"]   # BIND_HOST=0.0.0.0 or your Tailscale IP to reach from phone/iPad
     volumes: ["openwebui:/app/backend/data"]
     networks: [edge, modelplane]
