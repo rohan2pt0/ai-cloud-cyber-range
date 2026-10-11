@@ -35,7 +35,7 @@ Your **Guiding Map** (http://localhost:8088) is the home screen for everything �
 > [Capability Catalog](docs/securax/03-CAPABILITY-CATALOG.md) ·
 > [Compliance Map](docs/securax/04-COMPLIANCE-MAP.md) · [Roadmap](docs/securax/05-ROADMAP.md) · [Extending](docs/securax/06-EXTENDING.md) · [Integrations](docs/securax/07-INTEGRATIONS.md) · [Operating model](docs/securax/08-OPERATING-MODEL.md) · [Tiers](docs/securax/09-OPEN-CORE-TIERS.md) · [Full-scale](docs/securax/10-FULL-STACK.md) · [Kaizen & antifragility](docs/securax/11-KAIZEN.md) · [Intelligent UX](docs/securax/12-INTELLIGENT-UX.md) · [Global Intelligence](docs/securax/13-GLOBAL-INTELLIGENCE.md) · [Guiding Map cockpit](docs/securax/14-GUIDING-MAP.md) · [Cost & models (never hit a limit)](docs/securax/15-COST-AND-MODELS.md) · [Agents army](docs/securax/16-AGENTS.md) · [Enterprise Architecture](docs/securax/17-ENTERPRISE-ARCHITECTURE.md) · [Financial Planner](docs/securax/18-FINANCIAL-PLANNER.md).
 >
-> **Start using it:** [`GETTING-STARTED.md`](GETTING-STARTED.md) · **See it visually:** [`portal/explainer.html`](portal/explainer.html) (one-page illustrated walkthrough).
+> **Deploy it in 3 steps:** [`DEPLOY.md`](DEPLOY.md) (install Docker → `git clone` → one command) · **Start using it:** [`GETTING-STARTED.md`](GETTING-STARTED.md) · **See it visually:** [`portal/explainer.html`](portal/explainer.html) (one-page illustrated walkthrough).
 
 ---
 
