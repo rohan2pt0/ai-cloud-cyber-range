@@ -60,8 +60,18 @@ SecuRAX runs in containers, so the only thing you install is Docker.
 ## 3. Start it — one step
 | Your OS | Do this |
 |---|---|
-| **Windows** | Double-click **`START-HERE-Windows.bat`** |
+| **Windows (simplest)** | In **File Explorer**, double-click **`START-HERE-Windows.bat`** |
+| **Windows (WSL/Ubuntu terminal)** | Run **`./securax up`** — the `.bat` files only work when double-clicked, **not** when typed in WSL |
 | **macOS / Linux** | Run **`./securax up`** |
+
+> **Running inside WSL / a Linux terminal?** Use `./securax up` and `./securax down`. Typing
+> `START-HERE-Windows.bat` there gives `command not found` — those are for double-clicking in
+> Windows File Explorer. `./securax up` now also **asks for a free Gemini key right in the terminal**
+> (press Enter to skip), so first-run setup is one step with no `.env` editing.
+>
+> **After a `git pull`, always recreate the containers** so the new code actually runs —
+> `./securax down && ./securax up` (WSL/Mac/Linux) or double-click `STOP-Windows.bat` then
+> `START-HERE-Windows.bat` (Windows). A browser tab left open updates itself automatically.
 
 It brings the whole estate up, **opens your home screen immediately** at
 **http://localhost:8088**, and downloads the local AI model in the background (first run only,
@@ -116,6 +126,9 @@ opens, and the **Ask** tab shows a live *"AI is ready / warming up / off"* statu
 ## 6. If something breaks (the handful that actually bite)
 | Symptom | Fix |
 |---|---|
+| **`START-HERE-Windows.bat: command not found`** | You're in WSL/a Linux terminal. Use `./securax up` there (the `.bat` is only for double-clicking in Windows File Explorer). |
+| **Chat shows "Model not selected" / no models; or an app shows an OLD version after a `git pull`** | The containers weren't recreated — a pull only updates files, not running containers. Run `./securax down && ./securax up` (WSL/Mac/Linux). The Guiding Map tab then self-updates; if an app page is still stale, press **Ctrl+Shift+R** once. |
+| **"model qwen2.5:1.5b not found" (Private Docs / local chat)** | The local model is still downloading (first run, ~1 GB). Wait for it, or add a free Gemini key (`./securax up` asks for one) so Chat works instantly while it finishes. |
 | `docker` / "cannot connect" errors | Docker Desktop isn't running — start it, wait for the green whale, retry. |
 | "port is already allocated" | Another app uses 8088/8080/3000/5678 — stop it, or change the port in `local/compose/docker-compose.yml`. |
 | **"model not found" / chat shows no model** | Add a free Gemini key (`./securax setup`) for instant cloud answers, OR let the local model finish downloading. The gateway now exposes `/v1/models` so Open WebUI/AnythingLLM list a model to pick. |
