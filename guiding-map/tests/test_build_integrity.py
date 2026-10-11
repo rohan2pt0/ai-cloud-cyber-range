@@ -29,3 +29,15 @@ def test_ops_source_matches_inlined():
     ops = (GM / "ops.js").read_text(encoding="utf-8")
     idx = (GM / "index.html").read_text(encoding="utf-8")
     assert "window.gmGuideFilter" in ops and "window.gmGuideFilter" in idx
+
+
+def test_version_badge_matches_VERSION_file():
+    # The header badge once said "v13.0.2" (a hardcoded legacy string) while the product was 0.1.0.
+    # build.js now stamps it from the repo's VERSION file; this fails if it ever drifts or is hardcoded.
+    import re
+    version = (GM.parent / "VERSION").read_text(encoding="utf-8").strip()
+    idx = (GM / "index.html").read_text(encoding="utf-8")
+    m = re.search(r'id="app_ver"[^>]*>(v[^<]*)</span>', idx)
+    assert m, 'version badge (id="app_ver") missing from index.html'
+    assert m.group(1) == f"v{version}", f"badge shows {m.group(1)} but VERSION is {version} — run `node build.js`"
+    assert "v13.0" not in idx, "legacy hardcoded app version string is back"

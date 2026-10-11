@@ -21,6 +21,12 @@ components may also carry their own component version (e.g. the gateway's OpenAP
 Guiding Map PWA's service-worker cache tag) — those are deliberate and independent of the product
 version.
 
+**Every *visible* version label must derive from `VERSION`** — never be typed by hand. The Command
+Center and the gateway read it at runtime; the Guiding Map's header badge is stamped from it by
+`guiding-map/build.js` (so after bumping `VERSION`, run `cd guiding-map && node build.js`). A CI test
+(`test_version_badge_matches_VERSION_file`) fails if the badge drifts or a hardcoded version returns.
+(The badge once read "v13.0.2" — a legacy string from before the app joined the estate.)
+
 ## Conventional Commits
 Commit messages use [Conventional Commits](https://www.conventionalcommits.org):
 `type(scope): summary` — `feat`, `fix`, `docs`, `refactor`, `test`, `ci`, `deps`, `chore`.

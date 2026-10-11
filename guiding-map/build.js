@@ -25,7 +25,16 @@ if (failsafeAt < 0 || failsafeAt < openAt) { console.error("Failsafe block not f
 
 const before = html.slice(0, openAt + OPEN.length);   // …marker + "<script>\n"
 const tail = html.slice(failsafeAt);                  // "<script>\n/* Failsafe … </script>" + rest
-const out = before + ops + "\n</script>\n" + tail;
+const built = before + ops + "\n</script>\n" + tail;
+
+// Stamp the visible version badge from the repo's single source of truth (../VERSION) so the app can
+// never show a version the product doesn't have. (It once said "v13.0.2" — a hardcoded legacy string.)
+const VERSION_FILE = require("path").join(__dirname, "..", "VERSION");
+if (!fs.existsSync(VERSION_FILE)) { console.error("VERSION file not found at " + VERSION_FILE + " — aborting."); process.exit(1); }
+const VERSION = fs.readFileSync(VERSION_FILE, "utf8").trim();
+const BADGE = /(id="app_ver"[^>]*>)v[^<]*(<\/span>)/;
+if (!BADGE.test(built)) { console.error('Version badge (id="app_ver") not found in index.html — aborting.'); process.exit(1); }
+const out = built.replace(BADGE, (_m, open, close) => open + "v" + VERSION + close);   // fn replacer: $-safe
 
 fs.writeFileSync("index.html", out);
 console.log("index.html rebuilt with current ops.js (" + ops.length + " chars).");

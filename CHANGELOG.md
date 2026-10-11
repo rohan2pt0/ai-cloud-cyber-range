@@ -59,6 +59,9 @@ for the versioning and release policy.
   The gateway is shown as a friendly security status ("every AI call is guarded"), not raw JSON.
 
 ### Fixed
+- **The Guiding Map showed "v13.0.2".** That badge was a hardcoded legacy string (not stale cache —
+  a fresh load showed it too) while the product is `VERSION` 0.1.0. `guiding-map/build.js` now stamps
+  it from `VERSION`, and a CI test fails if it ever drifts or a hardcoded version returns.
 - **Provider keys never reached the router.** The LiteLLM container was only given the Gemini/Azure
   keys, so OpenAI/Anthropic/DeepSeek/xAI/Mistral/Perplexity/OpenRouter always failed with an auth error
   (it looked like "no credits"). All provider keys are now passed through, and a CI test fails if the
