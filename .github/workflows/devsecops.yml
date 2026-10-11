@@ -12,6 +12,15 @@ permissions:
   id-token: write          # OIDC to cloud (keyless), used only on main
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/ruff-action@v3
+        with: { version: "0.16.8" }
+      - name: Ruff lint (config in pyproject.toml)
+        run: ruff check .
+
   app-tests:
     runs-on: ubuntu-latest
     steps:

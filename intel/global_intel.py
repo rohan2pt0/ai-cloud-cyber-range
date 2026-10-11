@@ -35,7 +35,6 @@ import json
 import math
 import pathlib
 import re
-import sys
 
 # A small, extensible stop-list so auto-extracted "candidates" are real names, not filler.
 _STOP = {

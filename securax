@@ -15,6 +15,9 @@ cmd="${1:-up-status}"
 case "$cmd" in
   up|up-status)
     C "Starting the live estate (compose profile: ai)…"
+    # Surface the real product version at runtime (gateway /version) without hardcoding it.
+    export SECURAX_VERSION="$(cat "$ROOT/VERSION" 2>/dev/null || echo 0.0.0-dev)"
+    export GIT_COMMIT="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)"
     ( cd "$ROOT/local/compose" && { [ -f .env ] || cp .env.example .env; } && docker compose --profile ai up -d --build )
     # Pull the model in the BACKGROUND so the home screen opens immediately — the
     # Guiding Map's Ask tab shows a live "AI is ready / warming up" status, so the
@@ -122,7 +125,12 @@ URLS
     shift
     ( cd "$ROOT" && python3 -m routines "${1:-list}" )
     ;;
+  version|--version|-v)
+    v="$(cat "$ROOT/VERSION" 2>/dev/null || echo 0.0.0-dev)"
+    g="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)"
+    echo "SecuRAX v${v} (${g})"
+    ;;
   mcp)   exec python3 "$ROOT/mcp/securax_mcp.py" ;;
   down)  ( cd "$ROOT/local/compose" && docker compose --profile ai down ) ; C "stopped." ;;
-  *) echo 'usage: ./securax [up|status|demo|learn|intel|plan|advisors|ask <agent> "q"|enhance "q"|research "task" --allow d.com [--render]|act action.json --allow d.com --approve|design "prompt"|routines [list|due|run]|open|doctor|mcp|full up|full down|down]'; exit 1 ;;
+  *) echo 'usage: ./securax [up|status|version|demo|learn|intel|plan|advisors|ask <agent> "q"|enhance "q"|research "task" --allow d.com [--render]|act action.json --allow d.com --approve|design "prompt"|routines [list|due|run]|open|doctor|mcp|full up|full down|down]'; exit 1 ;;
 esac

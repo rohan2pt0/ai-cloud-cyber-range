@@ -42,7 +42,13 @@ python3 redteam/run_attacks.py       # adversarial-ML scorecard
 - [ ] New code has a test; new tool is in the capability catalog with an alternative.
 - [ ] Docs updated (and the portal data in `portal/securax.data.js` if you added a capability).
 - [ ] No secrets, no real customer/PII data.
-- [ ] Commit messages are clear; one logical change per PR.
+- [ ] `ruff check .` passes and `CHANGELOG.md` has an entry under **[Unreleased]** for user-visible changes.
+- [ ] Commit messages follow [Conventional Commits](https://www.conventionalcommits.org)
+      (`feat:`, `fix:`, `docs:`, …); one logical change per PR.
+
+See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AND-RELEASES.md) for
+versioning/release policy, [`GOVERNANCE.md`](GOVERNANCE.md) for how decisions are made, and
+[`CODE_OF_CONDUCT.md`](CODE_OF_CONDUCT.md) for community expectations.
 
 ## Reporting a security issue
 For a vulnerability in *this project's* code, please open a **private** security advisory on

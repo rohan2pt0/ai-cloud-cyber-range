@@ -1,0 +1,25 @@
+# Keep dependencies patched automatically. https://docs.github.com/code-security/dependabot
+version: 2
+updates:
+  - package-ecosystem: "pip"
+    directories: ["/apps/llm-gateway", "/apps/estate-sync", "/agents/web_research", "/design"]
+    schedule: { interval: "weekly" }
+    open-pull-requests-limit: 5
+    labels: ["dependencies", "python"]
+    commit-message: { prefix: "deps" }
+  - package-ecosystem: "npm"
+    directory: "/guiding-map"
+    schedule: { interval: "weekly" }
+    open-pull-requests-limit: 5
+    labels: ["dependencies", "javascript"]
+    commit-message: { prefix: "deps" }
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule: { interval: "weekly" }
+    labels: ["dependencies", "ci"]
+    commit-message: { prefix: "ci" }
+  - package-ecosystem: "docker"
+    directories: ["/apps/llm-gateway", "/apps/estate-sync"]
+    schedule: { interval: "weekly" }
+    labels: ["dependencies", "docker"]
+    commit-message: { prefix: "deps" }

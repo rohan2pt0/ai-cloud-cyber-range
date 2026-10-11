@@ -1,0 +1,9 @@
+# Code owners are auto-requested for review on matching paths.
+# See https://docs.github.com/articles/about-code-owners
+* @rohan2pt0
+
+# Security-sensitive surfaces — always reviewed by a maintainer.
+/apps/llm-gateway/      @rohan2pt0
+/agents/web_research/   @rohan2pt0
+/.github/               @rohan2pt0
+/SECURITY.md            @rohan2pt0

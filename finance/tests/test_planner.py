@@ -1,4 +1,7 @@
-import importlib.util, json, pathlib, sys
+import importlib.util
+import json
+import pathlib
+import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 spec = importlib.util.spec_from_file_location("planner", ROOT / "finance" / "planner.py")

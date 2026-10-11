@@ -2,7 +2,7 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![CI](https://github.com/rohan2pt0/ai-cloud-cyber-range/actions/workflows/devsecops.yml/badge.svg)](https://github.com/rohan2pt0/ai-cloud-cyber-range/actions/workflows/devsecops.yml)
-![Tests](https://img.shields.io/badge/tests-23%20passing-brightgreen)
+[![Version](https://img.shields.io/badge/version-0.1.0-blue)](CHANGELOG.md)
 ![AI red-team defence](https://img.shields.io/badge/red--team%20defence-100%25%2F0%20FP-blue)
 ![Cost to start](https://img.shields.io/badge/cost%20to%20start-%E2%82%B90-success)
 ![Frameworks](https://img.shields.io/badge/mapped%20to-NIST%20%7C%20ISO%20%7C%20RBI%20FREE--AI%20%7C%20DPDP-informational)

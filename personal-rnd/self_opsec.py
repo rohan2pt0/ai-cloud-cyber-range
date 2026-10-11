@@ -18,12 +18,12 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
-import os
 import pathlib
 import sys
 
 sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent.parent / "apps" / "llm-gateway"))
 from app import guardrails  # noqa: E402
+
 
 # --------------------------------------------------------------------------- #
 # 1. Password exposure (k-anonymity: full secret never leaves the machine)

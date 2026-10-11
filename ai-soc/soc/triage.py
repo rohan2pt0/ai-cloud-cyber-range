@@ -17,10 +17,10 @@ with no gateway configured, a deterministic summariser runs so triage works full
 """
 from __future__ import annotations
 
+import importlib.util
 import json
 import os
 import pathlib
-import importlib.util
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
@@ -30,6 +30,7 @@ from datetime import datetime, timedelta
 _GUARDRAILS_PATH = (pathlib.Path(__file__).resolve().parent.parent.parent
                     / "apps" / "llm-gateway" / "app" / "guardrails.py")
 import sys as _sys  # noqa: E402
+
 _spec = importlib.util.spec_from_file_location("gw_guardrails", _GUARDRAILS_PATH)
 guardrails = importlib.util.module_from_spec(_spec)
 _sys.modules["gw_guardrails"] = guardrails  # required so @dataclass can resolve the module

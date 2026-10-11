@@ -1,0 +1,18 @@
+# Repo-wide tooling configuration. This project is a monorepo of several small Python
+# components (not a single installable package), so this file configures the shared dev
+# tooling (ruff) rather than packaging. The product version lives in the top-level VERSION file.
+
+[tool.ruff]
+line-length = 120
+target-version = "py312"
+extend-exclude = ["guiding-map/node_modules", "notebooks", "infra", "*.ipynb"]
+
+[tool.ruff.lint]
+# Gate on the rules that catch real defects and keep imports clean, not cosmetic style —
+# the codebase intentionally uses some compact one-liners. (E9 = syntax errors, F = pyflakes
+# bugs like unused/undefined names, I = import ordering, W605 = invalid regex escapes.)
+select = ["E9", "F", "I", "W605"]
+
+[tool.ruff.lint.per-file-ignores]
+"**/tests/**" = ["E402"]   # tests sometimes import after a guard/skip
+"**/test_*.py" = ["E402"]
