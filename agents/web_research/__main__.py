@@ -28,7 +28,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--deny", action="append", default=[], help="denied domain (repeatable)")
     ap.add_argument("--open", action="store_true", help="open browsing (deny-list only) — use with care")
     ap.add_argument("--max-pages", type=int, default=8)
-    ap.add_argument("--max-steps", type=int, default=6)
+    ap.add_argument("--max-queries", type=int, default=6)
     ap.add_argument("--no-llm", action="store_true", help="collect+cite sources without model synthesis")
     ap.add_argument("--json", action="store_true", help="emit the full result as JSON")
     args = ap.parse_args(argv)
@@ -44,7 +44,7 @@ def main(argv: list[str] | None = None) -> int:
         allow=allow, deny=args.deny,
         search=ddg_search, fetch=http_fetch, robots_fetch=http_fetch,
         llm=None if args.no_llm else gateway_llm,
-        max_pages=args.max_pages, max_steps=args.max_steps,
+        max_pages=args.max_pages, max_queries=args.max_queries,
     )
 
     if args.json:

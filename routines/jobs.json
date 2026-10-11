@@ -1,0 +1,30 @@
+[
+  {
+    "id": "morning-brief",
+    "cron": "45 7 * * 1-5",
+    "command": ["./securax", "doctor"],
+    "description": "Weekday 7:45am: estate health + resource check to start the day.",
+    "enabled": true
+  },
+  {
+    "id": "weekly-posture",
+    "cron": "0 9 * * 1",
+    "command": ["./securax", "demo"],
+    "description": "Monday 9am: adversarial-ML scorecard + AI-security posture scan.",
+    "enabled": true
+  },
+  {
+    "id": "weekly-research",
+    "cron": "30 8 * * 6",
+    "command": ["python3", "-m", "agents.web_research", "RBI and SEBI cyber/IT regulatory updates this week", "--allow", "rbi.org.in", "--allow", "sebi.gov.in", "--json"],
+    "description": "Saturday 8:30am: autonomous read-only scan of regulator updates (sovereign).",
+    "enabled": false
+  },
+  {
+    "id": "backup-nudge",
+    "cron": "0 20 * * 0",
+    "command": ["./securax", "doctor"],
+    "description": "Sunday 8pm: weekly reminder to export a Guiding Map backup.",
+    "enabled": false
+  }
+]

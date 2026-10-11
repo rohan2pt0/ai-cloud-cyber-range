@@ -12,7 +12,7 @@ Design for trust and testability:
   * Fetched page text is UNTRUSTED. It is wrapped and labelled as data, and the system prompt
     forbids obeying instructions found inside it — the core defence against prompt injection
     from a hostile page (OWASP LLM01).
-  * Hard budgets: max_steps (LLM turns), max_pages (fetches), per-fetch size/time. An
+  * Hard budgets: max_queries (sub-queries), max_pages (fetches), per-fetch size/time. An
     autonomous loop without budgets is how you get a runaway bill or a crawl that never ends.
 """
 from __future__ import annotations
@@ -140,13 +140,18 @@ def research(
     fetch: Optional[Fetch] = None,
     llm: Optional[LLM] = None,
     robots_fetch: Optional[Fetch] = None,
-    max_steps: int = 6,
+    max_queries: int = 6,
     max_pages: int = 8,
     per_query: int = 4,
 ) -> ResearchResult:
-    """Run one autonomous research task under the safety rails. All I/O is injected."""
+    """Run one autonomous research task under the safety rails. All I/O is injected.
+
+    Budgets: `max_queries` caps how many sub-queries the planner may produce; `max_pages` caps
+    how many pages are actually fetched/synthesised (the real cost ceiling); `per_query` caps
+    search results considered per query. LLM turns are inherently bounded: one planning call plus
+    one synthesis call (`steps_used`)."""
     res = ResearchResult(task=task, report="")
-    queries = _plan_queries(task, llm, max_steps)
+    queries = _plan_queries(task, llm, max_queries)
     res.steps_used += 1 if llm is not None else 0
 
     seen: set[str] = set()
@@ -180,7 +185,7 @@ def research(
                 try:
                     base = f"{urlparse(url).scheme}://{urlparse(url).netloc}/robots.txt"
                     st, body, _ = robots_fetch(base)
-                    if st == 200 and not safety.robots_allows(body, urlparse(url).path or "/"):
+                    if st == 200 and not safety.robots_allows(body, urlparse(url).path or "/", USER_AGENT):
                         res.skipped.append(f"{url} :: disallowed by robots.txt")
                         continue
                 except Exception:  # noqa: BLE001
@@ -242,13 +247,23 @@ def gateway_llm(messages: list[dict]) -> str:
     return r.json()["choices"][0]["message"]["content"]
 
 
-def http_fetch(url: str, *, max_bytes: int = 1_500_000, timeout: float = 20.0) -> tuple[int, str, str]:
-    """Default fetch: read-only httpx GET with a size cap and a research user-agent."""
+USER_AGENT = "SecuRAX-Research"  # also the token robots.txt rules are matched against
+
+
+def http_fetch(url: str, *, max_bytes: int = 1_500_000, timeout: float = 20.0,
+               max_redirects: int = 5) -> tuple[int, str, str]:
+    """Default fetch: read-only httpx GET, size-capped, that follows redirects MANUALLY so the SSRF
+    gates (syntactic + DNS) run on every hop BEFORE the request is issued. `follow_redirects=False`
+    is essential: it stops httpx from transparently fetching an internal/metadata URL a 302 points
+    at. Each hop is re-resolved and re-checked by safety.follow_guarded."""
     import httpx
-    with httpx.Client(follow_redirects=True, timeout=timeout,
-                      headers={"User-Agent": "SecuRAX-Research/1.0 (+sovereign estate; read-only)"}) as c:
-        resp = c.get(url)
-        return resp.status_code, resp.text[:max_bytes], str(resp.url)
+    with httpx.Client(follow_redirects=False, timeout=timeout,
+                      headers={"User-Agent": USER_AGENT + "/1.0 (+sovereign estate; read-only)"}) as c:
+        def request_one(u: str):
+            resp = c.get(u)
+            location = resp.headers.get("location") if resp.is_redirect else None
+            return resp.status_code, location, resp.text[:max_bytes], str(resp.url)
+        return safety.follow_guarded(url, request_one, max_redirects=max_redirects)
 
 
 def ddg_search(query: str, k: int = 5) -> list[str]:

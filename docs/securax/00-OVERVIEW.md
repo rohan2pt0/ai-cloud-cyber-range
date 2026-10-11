@@ -61,6 +61,8 @@ makes it an *ecosystem* and not five disconnected projects.
 | Summon a specialist advisor (first-draft opinion) | [`16-AGENTS.md`](16-AGENTS.md) |
 | The end-state blueprint every build maps to | [`17-ENTERPRISE-ARCHITECTURE.md`](17-ENTERPRISE-ARCHITECTURE.md) |
 | Plan your financial future (sovereign, offline) | [`18-FINANCIAL-PLANNER.md`](18-FINANCIAL-PLANNER.md) |
+| Autonomous web research (sovereign Manus/Clawbot) | [`19-AUTONOMOUS-RESEARCH.md`](19-AUTONOMOUS-RESEARCH.md) |
+| Claude-subscription parity (Projects/Artifacts/Routines/…) | [`20-CLAUDE-PARITY.md`](20-CLAUDE-PARITY.md) |
 | Start using it today | [`../../GETTING-STARTED.md`](../../GETTING-STARTED.md) |
 
 ## The three promises this foundation keeps
