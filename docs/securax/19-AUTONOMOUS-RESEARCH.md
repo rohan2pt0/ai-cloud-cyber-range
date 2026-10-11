@@ -15,10 +15,10 @@ pages, runaway crawls, silent purchases). Every one of those is closed here:
 
 | Risk | Control |
 |---|---|
-| **SSRF** — agent steered into your own services or cloud metadata | Every fetch (and every redirect target) must pass `is_safe_target`: http(s) only, never loopback/private/link-local/reserved IPs, never `169.254.169.254` or bare internal names. |
+| **SSRF** — agent steered into your own services or cloud metadata | Two gates on **every hop, before the request is sent**: `is_safe_target` (http(s) only; never loopback/private/link-local/reserved IPs, `169.254.169.254`, or bare internal names) **and** a DNS-resolution check that rejects a *public* hostname whose A/AAAA record points at an internal IP (DNS-rebind). Redirects are followed manually so a `302 → 169.254.169.254` is blocked before it is ever requested. |
 | **Scope creep** — reads anything, anywhere | **Allowlist, fail-closed.** No allowlist → it refuses to browse. `--open` switches to deny-list-only, deliberately. Subdomains match; look-alikes don't. |
 | **Prompt injection (OWASP LLM01)** — a page says "ignore your rules" | Page text is wrapped and labelled as **untrusted data**; the system contract forbids obeying instructions found in sources and tells the model to flag injection attempts. |
-| **Runaway loop / cost** | Hard budgets: `max_pages`, `max_steps`, per-fetch size + timeout. |
+| **Runaway loop / cost** | Hard budgets: `max_pages`, `max_queries`, per-fetch size + timeout. |
 | **Unwanted actions** — login, buy, submit, post | **Human-in-the-loop.** Anything non-GET or whose URL/intent looks state-changing is **queued as a pending action, never executed.** |
 | **robots.txt** | Respected (conservative longest-match Allow/Disallow). |
 | **Hallucination** | No sources read → it says so and fabricates nothing. Every claim carries an `[n]` citation; the report ends with "Confidence & gaps". |

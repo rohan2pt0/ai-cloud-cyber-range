@@ -44,6 +44,69 @@ and stay swappable. The one rule that keeps everything compatible:
 
 **Observability & Operations (end-to-end)** — *today:* gateway `/metrics` + `/healthz`, `./securax doctor`, board report. *end-state:* **Prometheus + Grafana + Loki + OTel**, synthetic monitoring, **SLO/SLI/error budgets**, **AIOps event correlation** (the AI-SOC triage is the seed), capacity/cost & **business-value observability**. *interface:* OpenTelemetry.
 
+## End-state deep-dive: resilience, trust, supply-chain & data platform (image-8)
+The layer map above is the skeleton; these are the cross-cutting concerns a *holistic* end-state
+must name explicitly so no future build silently omits them. Each row: **what it means → SecuRAX
+today → end-state → the standard interface/tool.** The rule stays the same — honour the interface
+and you plug into the end-state with no rework.
+
+### 7a. Disaster recovery & business continuity
+| Concern | Today (local-first) | End-state | Target / interface |
+|---|---|---|---|
+| **RPO / RTO** (how much data / time you can lose) | daily restic + dated JSON exports; estate-sync per-key merge | tiered: RPO ≤ 15 min (async replica), RTO ≤ 1 h (warm standby) | documented per data class; tested in DR drill |
+| **Secondary region / standby** | single box; Export/Import is the manual DR | warm standby in a 2nd region/cloud; Postgres streaming replica; MinIO/S3 cross-region replication | S3 replication + Postgres WAL |
+| **Backups** | restic snapshots, Git ledger (immutable history) | **immutable/object-lock** backups (ransomware-proof), tested restores, offline copy | S3 Object-Lock / WORM |
+| **Failback** | re-import on the recovered box | documented, rehearsed failover **and** failback; no split-brain | runbook + the annual DR drill (roadmap) |
+
+### 7b. Resilience patterns (fault isolation under load/failure)
+| Pattern | Today | End-state |
+|---|---|---|
+| **Fail-closed / timeouts** | gateway + estate-sync fail-closed; per-fetch timeouts in the research agent | every dependency call bounded by a timeout + deadline budget |
+| **Bulkheads** | per-service `mem_limit`/`cpus` in compose | pool/quota isolation so one tenant/workload can't starve others |
+| **Backpressure & rate limiting** | gateway `RATE_LIMIT_PER_MIN`; research agent step/page budgets | queue depth limits + load-shedding at the API gateway |
+| **Circuit breakers & retry budgets** | fail-closed on upstream error | breakers + jittered retries with a **retry budget** (no retry storms) |
+| **Graceful degradation** | Guiding Map works offline; "AI warming up" status; local-first fallback | cached/last-known-good responses; read-only mode under partial outage |
+| **Idempotency & quorum/fencing** | estate-sync per-key timestamp merge (safe re-push) | idempotency keys on writes; quorum + fencing tokens for leader actions |
+
+### 7c. Trust, crypto & workload identity (PKI)
+| Concern | Today | End-state | Interface |
+|---|---|---|---|
+| **Secrets** | `.env` (git-ignored), fail-closed if unset; no keys in code | **Vault/OpenBao** with dynamic secrets + rotation | Vault API |
+| **Key management** | TLS via the proxy; at-rest encryption assumed | **KMS/HSM**-backed keys, envelope encryption, rotation policy | KMS / PKCS#11 |
+| **Certificates / mTLS** | Tailscale (WireGuard) private edge | internal **PKI + mTLS** service-to-service, short-lived certs, auto-renew | ACME / step-ca |
+| **Device & workload identity** | device tokens (estate-sync), Tailscale node identity | **SPIFFE/SPIRE** workload IDs; passkeys for humans | SPIFFE SVID / OIDC |
+
+### 7d. Software-supply-chain SecOps
+| Concern | Today | End-state | Interface/tool |
+|---|---|---|---|
+| **SBOM** | CycloneDX SBOM generated in CI (`container-scan`) | SBOM per artifact, stored + diffed; VEX for exploitability | CycloneDX / SPDX |
+| **Build provenance & signing** | SHA-pinned actions; gitleaks/Semgrep/Trivy gates | **Sigstore cosign** signatures + **SLSA** provenance; verify-on-deploy | cosign / in-toto |
+| **Dependency & image risk** | Trivy (vuln+secret+misconfig), Semgrep SAST | continuous advisories + auto-PRs; admission blocks unsigned/vulnerable images | Trivy / Kyverno |
+| **Runtime detection (EDR/NDR)** | fail-closed guardrails; AI-SOC triage seed | **Falco** (runtime), NDR/flow logs → the AI-SOC triage → SIEM | Falco / OTel / STIX |
+| **IR & forensics** | immutable Git ledger; antifragility ledger | IR runbooks, evidence capture, immutable audit, tabletop drills | the IR runbook set |
+
+### 5a. Messaging & data-in-motion (decoupling at scale)
+| Concern | Today | End-state | Interface |
+|---|---|---|---|
+| **Broker / ESB** | n8n glue + MCP tool catalog (synchronous) | durable **message broker** (NATS/Kafka/RabbitMQ) for async, replay | CloudEvents over the broker |
+| **Schema registry** | JSON contracts in code + the compose/PII CI gates | a **schema registry** with compatibility checks (producer/consumer safety) | Avro/Protobuf/JSON-Schema registry |
+| **Delivery guarantees** | estate-sync idempotent merge | **idempotency keys + outbox pattern + DLQ** (no lost/dup events) | DLQ + consumer offsets |
+
+### 6a. Data platform (state at scale)
+| Concern | Today | End-state | Interface |
+|---|---|---|---|
+| **Cache** | in-process; localStorage on the PWA | **Redis/Valkey** for session/result/rate-limit state | Redis protocol |
+| **Search / index** | pattern matching; AnythingLLM vectors | **OpenSearch/Meilisearch** + the vector DB (hybrid search) | OpenSearch API |
+| **Warehouse / lakehouse** | Postgres + JSON exports | **DuckDB → ClickHouse/lakehouse**, CDC from Postgres, data-mesh products | SQL + Iceberg/Parquet |
+
+### Ops excellence (run it like a service)
+| Concern | Today | End-state |
+|---|---|---|
+| **CMDB / asset inventory** | capability catalog (doc 03) + AI-SPM inventory | a live **CMDB** fed by discovery; every asset owned + classified |
+| **Runbooks** | `./securax doctor`, DEPLOY/FREEZE notes | a runbook per failure mode (DR, broker lag, cert expiry, key compromise) |
+| **Synthetic monitoring** | `/healthz`, the PWA readiness ping | external **synthetic probes** (user journeys) + SLO/SLI **error budgets** |
+| **Alerting & on-call** | board report; red CI (Andon) | alert routing, on-call, incident timeline, blameless post-mortems (Hansei) |
+
 ## Conformance rules — what every future build must satisfy
 A build is "end-state-compatible" only if it ticks these (keep this as the PR checklist):
 1. **Speaks a standard interface** from the table above — never a bespoke protocol.
@@ -53,7 +116,15 @@ A build is "end-state-compatible" only if it ticks these (keep this as the PR ch
 5. **Governed** — policy-as-code where it enforces a rule; an ADR when it makes an architectural choice.
 6. **No single point of failure** — a swappable alternative exists (capability catalog, Principle P-2).
 7. **Least blast radius / zero-trust** — least privilege, private by default (Tailscale), assume breach.
-8. **Tested from every angle** — see below.
+8. **Resilient under failure** — every dependency call is bounded (timeout + retry budget), fails
+   closed or degrades gracefully; writes are idempotent; no new single point of failure (rule 6).
+9. **Recoverable** — its state is covered by a backup with a known RPO/RTO and a *tested* restore;
+   nothing lives only in a container's writable layer.
+10. **Supply-chain clean** — pinned deps, passes the SBOM + gitleaks + Semgrep + Trivy gates; a
+    runtime artifact is signed/verifiable at the end-state (cosign/SLSA).
+11. **Operable** — ships a health/synthetic check and, for a failure mode it introduces, a runbook
+    line; emits enough telemetry to alert on (OTel).
+12. **Tested from every angle** — see below.
 
 ## Continuous improvement + multi-perspective testing (the Kaizen discipline)
 Borrowing the best time-tested methods — Toyota **Kaizen / Jidoka / Poka-yoke / Andon**, German

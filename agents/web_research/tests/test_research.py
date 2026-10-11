@@ -1,4 +1,6 @@
 """Autonomous web-research agent — the rails must hold. All offline (injected I/O)."""
+import pytest
+
 from agents.web_research import research, safety
 from agents.web_research.researcher import extract_text
 
@@ -160,6 +162,88 @@ def test_redirect_to_internal_is_blocked():
     )
     assert not res.sources
     assert any("redirect blocked" in s for s in res.skipped)
+
+
+# ---- SSRF hardening regressions (the two serious review findings) ----------------------------
+def _resolver(mapping):
+    """Fake getaddrinfo: host -> ip. Returns the (family,type,proto,canon,sockaddr) shape."""
+    def r(host, port, *a, **k):
+        ip = mapping.get(host)
+        if ip is None:
+            raise OSError("no such host")
+        return [(2, 1, 6, "", (ip, 0))]
+    return r
+
+
+def test_resolved_ips_safe_blocks_public_host_pointing_at_private():
+    # A *public* FQDN whose DNS points at an internal IP must be rejected (DNS-rebind / SSRF).
+    assert not safety.resolved_ips_safe("evil.example", _resolver({"evil.example": "10.0.0.5"}))[0]
+    assert not safety.resolved_ips_safe("meta.example", _resolver({"meta.example": "169.254.169.254"}))[0]
+    assert safety.resolved_ips_safe("ok.example", _resolver({"ok.example": "93.184.216.34"}))[0]
+    assert not safety.resolved_ips_safe("dead.example", _resolver({}))[0]   # NXDOMAIN -> fail-closed
+
+
+def test_follow_guarded_never_issues_the_internal_redirect_request():
+    """The core fix: a 302 from an allowlisted page to an internal/metadata URL must be blocked
+    BEFORE the internal request is made (not merely un-cited after the fact)."""
+    requested = []
+
+    def request_one(u):
+        requested.append(u)
+        if "start.example" in u:
+            return 302, "http://169.254.169.254/latest/meta-data/", "", u
+        return 200, None, "SHOULD NOT REACH", u
+
+    resolver = _resolver({"start.example": "93.184.216.34"})
+    with pytest.raises(ValueError):
+        safety.follow_guarded("http://start.example/go", request_one, resolver=resolver)
+    assert requested == ["http://start.example/go"]   # the internal hop was NEVER requested
+
+
+def test_follow_guarded_returns_terminal_response():
+    reqs = []
+
+    def request_one(u):
+        reqs.append(u)
+        if u.endswith("/a"):
+            return 301, "/b", "", u
+        return 200, None, "final", "http://ok.example/b"
+
+    out = safety.follow_guarded("http://ok.example/a", request_one,
+                                resolver=_resolver({"ok.example": "93.184.216.34"}))
+    assert out == (200, "final", "http://ok.example/b")
+    assert reqs == ["http://ok.example/a", "http://ok.example/b"]
+
+
+# ---- state-changing recall fix ---------------------------------------------------------------
+def test_informational_slugs_are_read_not_deferred():
+    for ok_url in [
+        "https://blog.site.com/post/term-insurance-2026",
+        "https://site.com/how-to-apply-for-cover",
+        "https://site.com/order-tracking-guide",
+        "https://site.com/articles/register-your-vehicle",
+        "https://site.com/submit-your-story-rules",
+    ]:
+        assert not safety.is_state_changing("GET", ok_url), ok_url
+
+
+def test_real_action_endpoints_are_deferred():
+    for act in ["https://site.com/login", "https://site.com/checkout", "https://site.com/cart",
+                "https://shop.com/payment", "https://site.com/my-account/settings",
+                "https://site.com/page?action=delete", "https://site.com/register"]:
+        assert safety.is_state_changing("GET", act), act
+    assert safety.is_state_changing("POST", "https://site.com/articles/x")   # non-GET always
+
+
+# ---- robots.txt fixes ------------------------------------------------------------------------
+def test_robots_allow_wins_equal_length_tie():
+    assert safety.robots_allows("User-agent: *\nDisallow: /x\nAllow: /x", "/x")
+
+
+def test_robots_respects_bot_specific_rules():
+    robots = "User-agent: SecuRAX-Research\nDisallow: /\nUser-agent: *\nAllow: /"
+    assert not safety.robots_allows(robots, "/anything", "SecuRAX-Research")
+    assert safety.robots_allows(robots, "/anything", "SomeOtherBot")
 
 
 def test_no_sources_never_fabricates():

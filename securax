@@ -104,7 +104,13 @@ URLS
     shift
     GATEWAY_URL="${GATEWAY_URL:-http://localhost:8080}" python3 -m agents.web_research "$@"
     ;;
+  routines)
+    # Sovereign scheduled estate tasks (the local 'Claude Routines'). Drive 'run' from a
+    # 1-minute cron:  * * * * * cd "$ROOT" && ./securax routines run >> routines/.log 2>&1
+    shift
+    ( cd "$ROOT" && python3 -m routines "${1:-list}" )
+    ;;
   mcp)   exec python3 "$ROOT/mcp/securax_mcp.py" ;;
   down)  ( cd "$ROOT/local/compose" && docker compose --profile ai down ) ; C "stopped." ;;
-  *) echo 'usage: ./securax [up|status|demo|learn|intel|plan|advisors|ask <agent> "q"|enhance "q"|research "task" --allow d.com|open|doctor|mcp|full up|full down|down]'; exit 1 ;;
+  *) echo 'usage: ./securax [up|status|demo|learn|intel|plan|advisors|ask <agent> "q"|enhance "q"|research "task" --allow d.com|routines [list|due|run]|open|doctor|mcp|full up|full down|down]'; exit 1 ;;
 esac

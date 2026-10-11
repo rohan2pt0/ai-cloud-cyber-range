@@ -232,3 +232,7 @@ plan.json
 __pycache__/
 *.pyc
 .pytest_cache/
+
+# SecuRAX Routines runtime state (per-box, not shared)
+routines/.state.json
+routines/.log
