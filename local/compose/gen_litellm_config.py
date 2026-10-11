@@ -113,14 +113,19 @@ def generate(catalog: dict, env_file: dict, baseline: bool = False) -> str:
         if not is_enabled(p, env_file, baseline):
             continue
         params: dict[str, str] = {"model": model_for(p, env_file)}
-        # first API key env -> api_key; azure/bedrock carry extras
-        keys = [k for k in p.get("env", []) if not k.endswith("_API_BASE")]
-        if keys:
-            params["api_key"] = f"os.environ/{keys[0]}"
-        if p.get("needs_base"):
-            params["api_base"] = "os.environ/AZURE_API_BASE"
-        if p.get("region_env"):
-            params["aws_region_name"] = f"os.environ/{p['region_env']}"
+        if p.get("local"):
+            # Ollama-style local model: literal api_base, no API key. Its env entries are just
+            # on/off gate flags (e.g. ENABLE_LOCAL_CODER), never an api_key.
+            params["api_base"] = p["api_base"]
+        else:
+            # first API key env -> api_key; azure/bedrock carry extras
+            keys = [k for k in p.get("env", []) if not k.endswith("_API_BASE")]
+            if keys:
+                params["api_key"] = f"os.environ/{keys[0]}"
+            if p.get("needs_base"):
+                params["api_base"] = "os.environ/AZURE_API_BASE"
+            if p.get("region_env"):
+                params["aws_region_name"] = f"os.environ/{p['region_env']}"
         lines += [f"  - model_name: {p['alias']}", "    litellm_params:"]
         _emit_params(lines, params)
 

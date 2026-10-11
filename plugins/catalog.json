@@ -63,6 +63,12 @@
       "env": ["OPENROUTER_API_KEY"], "get_key": "https://openrouter.ai/keys"
     },
     {
+      "id": "coder", "label": "Local coder (Qwen2.5-Coder, sovereign)", "kind": "llm", "local": true, "free": true,
+      "alias": "coder", "model": "ollama/qwen2.5-coder:7b", "api_base": "http://ollama:11434",
+      "env": ["ENABLE_LOCAL_CODER"],
+      "note": "Opt-in sovereign coding model used by `./securax build`. Set ENABLE_LOCAL_CODER=1, then `./securax pull qwen2.5-coder:7b` (or :14b/:30b by RAM). Override with CODER_MODEL. See docs/securax/23-BUILD-WITHOUT-CLAUDE.md."
+    },
+    {
       "id": "elevenlabs", "label": "ElevenLabs (voice / text-to-speech)", "kind": "tts",
       "env": ["ELEVENLABS_API_KEY"], "get_key": "https://elevenlabs.io/app/settings/api-keys",
       "voice_env": "ELEVENLABS_VOICE_ID",

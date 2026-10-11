@@ -195,6 +195,49 @@ URLS
     shift
     ( cd "$ROOT" && python3 -m routines "${1:-list}" )
     ;;
+  build)
+    # Build/evolve SecuRAX using ITS OWN models (via the gateway), with Claude-like rigor supplied by
+    # the BUILD-CONTRACT + the repo's test gates. Uses Aider as the edit->test->fix agent.
+    #   ./securax build "add a /metrics endpoint to the gateway with a test"
+    # Model: $BUILD_MODEL (default deepseek — cheap+strong). Use 'coder' for the local sovereign coder,
+    # or any alias from ./securax providers list. All traffic still passes through the guardrail.
+    shift; TASK="$*"
+    [ -z "$TASK" ] && { echo 'usage: ./securax build "what to change"   (set BUILD_MODEL=coder for local)'; exit 1; }
+    if ! command -v aider >/dev/null 2>&1; then
+      C "The local coding agent 'aider' isn't installed. Install it once (sovereign, runs on your box):"
+      echo "   python3 -m pip install --user aider-chat     # or: pipx install aider-chat"
+      echo "Then re-run. Docs: docs/securax/23-BUILD-WITHOUT-CLAUDE.md"
+      exit 1
+    fi
+    curl -fsS http://localhost:8080/healthz >/dev/null 2>&1 || { C "Gateway is down — run ./securax up first."; exit 1; }
+    KEY="$(sed -n 's/^LITELLM_MASTER_KEY=//p' "$ROOT/local/compose/.env" 2>/dev/null | head -1)"; KEY="${KEY:-sk-range-dev}"
+    MODEL="${BUILD_MODEL:-deepseek}"
+    C "Building with model '$MODEL' through the SecuRAX gateway (rigor: BUILD-CONTRACT + auto-tests)…"
+    # Point Aider at the gateway (OpenAI-compatible); it runs the repo's tests after each edit and
+    # iterates until they pass. --read loads the build contract as always-on context.
+    OPENAI_API_BASE="http://localhost:8080/v1" OPENAI_API_KEY="$KEY" \
+      aider --model "openai/$MODEL" \
+            --read "$ROOT/BUILD-CONTRACT.md" \
+            --test-cmd "ruff check . && python -m pytest -q" --auto-test \
+            --no-gitignore --message "$TASK"
+    ;;
+  escalate)
+    # Prepare a tight, copy-pasteable brief for a STRONGER model (Claude/Sonnet) for the hard 10%
+    # (security design, nasty cross-cutting bug). Keeps your frontier-model usage minimal + targeted.
+    shift; TASK="$*"
+    [ -z "$TASK" ] && { echo 'usage: ./securax escalate "the hard problem"'; exit 1; }
+    OUT="$ROOT/escalation-brief.md"
+    {
+      echo "# Escalation brief — SecuRAX"
+      echo; echo "## Task"; echo "$TASK"
+      echo; echo "## Why escalated"; echo "(cheap/local tier could not satisfy the BUILD-CONTRACT for this; needs stronger reasoning)"
+      echo; echo "## Repo context"; echo "- HEAD: $(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null)"
+      echo "- Recent changes:"; git -C "$ROOT" log --oneline -5 2>/dev/null | sed 's/^/  /'
+      echo; echo "## Current diff (uncommitted)"; echo '```diff'; git -C "$ROOT" diff 2>/dev/null | head -400; echo '```'
+      echo; echo "## The rules it must follow"; echo "See BUILD-CONTRACT.md (hard rules, the gate loop)."
+    } > "$OUT"
+    C "Wrote $OUT — paste it into Claude/Sonnet (or ./securax enhance uses your local model). Keep frontier use to this 10%."
+    ;;
   pull)
     # Pull the sovereign local model in the FOREGROUND (so you can be sure it's ready, unlike the
     # background pull `up` kicks off). This is the free/offline model Chat uses as 'bank-assistant-local'.
@@ -268,5 +311,5 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
     ;;
   mcp)   exec python3 "$ROOT/mcp/securax_mcp.py" ;;
   down)  ( cd "$ROOT/local/compose" && docker compose --profile ai down ) ; C "stopped." ;;
-  *) echo 'usage: ./securax [setup|up|status|version|open|doctor|pull|providers [list|add]|say "text"|demo|learn|intel|plan|advisors|ask <agent> "q"|enhance "q"|research "task" --allow d.com [--render]|act action.json --allow d.com --approve|design "prompt"|routines [list|due|run]|mcp|full up|full down|down]'; exit 1 ;;
+  *) echo 'usage: ./securax [setup|up|status|version|open|doctor|pull|build "task"|escalate "task"|providers [list|add]|say "text"|demo|learn|intel|plan|advisors|ask <agent> "q"|enhance "q"|research "task" --allow d.com [--render]|act action.json --allow d.com --approve|design "prompt"|routines [list|due|run]|mcp|full up|full down|down]'; exit 1 ;;
 esac
