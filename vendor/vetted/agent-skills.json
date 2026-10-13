@@ -1,0 +1,39 @@
+{
+  "name": "agent-skills",
+  "source": "https://github.com/addyosmani/agent-skills.git",
+  "commit": "aeac41d4d005999432bb7312f7ff06383a91d59d",
+  "upstream_tree_sha256": "54e7ec632272ae833df8263b2518577476915b131b5e5acac2982f56fb80cb4a",
+  "vendored_tree_sha256": "c2e22fe8cc902eadb55d4a51c66340d79df7a34ca67137c05974ccc7d173a16e",
+  "licence": "MIT",
+  "verdict": "REVIEW",
+  "counts": {
+    "critical": 0,
+    "high": 12,
+    "medium": 7,
+    "low": 4
+  },
+  "vetted_at": "2026-10-13T23:41:57Z",
+  "vendored_path": "vendor/agent-skills",
+  "review_note": "Read the flagged lines: hooks/ is NOT vendored; the PI hits are in two skills that are NOT vendored and quote attack strings defensively. Vendored only security-and-hardening and code-review-and-quality, byte-identical to upstream.",
+  "reviewed_findings": [
+    "agent-hook@hooks/SDD-CACHE.md:0",
+    "agent-hook@hooks/SIMPLIFY-IGNORE.md:0",
+    "agent-hook@hooks/sdd-cache-post.sh:0",
+    "agent-hook@hooks/sdd-cache-pre.sh:0",
+    "agent-hook@hooks/sdd-cache-test.sh:0",
+    "agent-hook@hooks/session-start-test.sh:0",
+    "agent-hook@hooks/session-start.sh:0",
+    "agent-hook@hooks/simplify-ignore-test.sh:0",
+    "agent-hook@hooks/simplify-ignore.sh:0",
+    "PI-001-override@skills/browser-testing-with-devtools/SKILL.md:1",
+    "PI-001-override@skills/source-driven-development/SKILL.md:1",
+    "PI-002-sysprompt-exfil@skills/source-driven-development/SKILL.md:1",
+    "shell-out@scripts/floor-guard-reference-test.js:15",
+    "shell-out@scripts/run-evals-test.js:9",
+    "shell-out@scripts/run-evals.js:35",
+    "shell-out@scripts/validate-artifact-paths-test.js:9",
+    "shell-out@scripts/validate-commands-test.js:9",
+    "shell-out@scripts/validate-reference-links-test.js:9",
+    "shell-out@scripts/lib/skill-lint.js:335"
+  ]
+}
