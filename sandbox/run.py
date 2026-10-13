@@ -467,6 +467,8 @@ def j_ui(sb: H.Sandbox, c: Checks):
 
 @journey("open_webui_chat", "The chat UI from your screenshots: Open WebUI → gateway → router → provider.", slow=True)
 def j_webui(sb: H.Sandbox, c: Checks):
+    sb.down()
+    H.sh(["docker", "volume", "rm", "-f", "vulnbank-range_openwebui"])          # journeys must not inherit each other's accounts
     if not _start(sb, c, GEMINI_API_KEY=KEYS["GEMINI_API_KEY"]):
         return
     c.ok(sb.wait_http(f"{H.WEBUI}/health", 420), "Open WebUI finished starting", sb.logs("open-webui", 15))
