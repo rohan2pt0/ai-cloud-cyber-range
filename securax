@@ -665,7 +665,7 @@ $(tail -60 "$FB")"
       python3 "$ROOT/local/compose/model_discovery.py" --env-file "$ENVF"
     fi
     ;;
-  stages|soil|grow|hibernate|prune|scale|rhythm|tenant|organ|organ-check|burrow|spore)
+  stages|soil|grow|hibernate|prune|scale|rhythm|tenant|organ|organ-check|burrow|spore|range)
     # The lifecycle engine: grow the estate from the dormant seed up to a multi-tenant forest, and put it back to sleep.
     #   ./securax stages            what is awake / hibernating / dormant     ./securax soil <stage>   preflight
     #   ./securax grow sprout [--with wazuh,misp,thehive]    ./securax hibernate sprout    (data is kept)

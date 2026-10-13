@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **Range** (`./securax range soil|plan|fetch|install|wake|hibernate|snapshot|reset|status|prune`): a dormant Active Directory practice lab for OSCP-style training, wrapped around GOAD pinned to a verified commit. Says which lab fits this machine (real RAM numbers, re-derived from upstream in CI), refuses cloud providers without explicit cost consent, same lifecycle verbs as the rest. Sandbox journey `lifecycle_range` (28 checks). Never run against a hypervisor here.
 - **Burrow (stage 2a, own hardware)**: `./securax grow|hibernate|prune burrow`, `burrow power`, `spore server|agent`. A Docker twin of real k3s (1 server + 2 agents) rehearses your future machines from the same `lifecycle/burrow.json`; spore writes the bash/cloud-init installer (optional GPU label, NUT power reflex, Argo CD hand-over). Sandbox journey `lifecycle_burrow` (27 checks).
 - **Lifecycle: the whole ladder as dormant, wake-on-demand code** (doc 29). `./securax stages|soil|grow|hibernate|prune|scale|rhythm|tenant|organ`.
   - **Phase 1 sprout** (`local/compose/stage-sprout.yml`, profile `sprout`, never started by `up`): Keycloak, OpenBao (auto-unsealed on wake), SeaweedFS S3, Prometheus + Alertmanager; optional upstream organs Wazuh / MISP / TheHive fetched at pinned commits (`lifecycle/organs.json`) with ports pinned to localhost. Backups now include the sprout secrets.

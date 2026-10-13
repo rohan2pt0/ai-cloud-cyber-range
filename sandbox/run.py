@@ -817,6 +817,46 @@ def j_webui(sb: H.Sandbox, c: Checks):
 
 
 # ═══════════════════════════════════════════ runner ═══════════════════════════════════════════
+@journey("lifecycle_range", "The 'range' (dormant AD practice lab around GOAD): the pin is real, our RAM numbers match upstream, every verb maps to a real GOAD task, safety rails hold.")
+def j_range(sb: H.Sandbox, c: Checks):
+    home = sb.clone.parent / "sxhome"
+    shutil.rmtree(home / "range", ignore_errors=True)
+    cfg = json.loads((sb.clone / "lifecycle" / "range.json").read_text())
+
+    for gb, want in ((8, "no lab fits"), (16, "recommended here: MINILAB"), (32, "recommended here: GOAD")):
+        rc, out = _lc(sb, "range", "soil", extra_env={"SECURAX_SIM_MEM_MB": str(gb * 1024)})
+        c.ok(rc == 0 and want in out, f"`range soil` on a {gb} GB machine says: {want}", tail(out, 300))
+    rc, out = _lc(sb, "range", "wake")
+    c.ok(rc == 1 and "dormant" in out, "dormant by default: `range wake` before install refuses and says how to start", tail(out, 200))
+
+    rc, out = _lc(sb, "range", "fetch", timeout=600)
+    c.ok(rc == 0 and cfg["ref"][:12] in out, "`range fetch` pulls GOAD at the PINNED commit and verifies it", tail(out, 300))
+    goad = home / "range" / "GOAD"
+    c.ok(H.sh(["git", "rev-parse", "HEAD"], cwd=goad)[1].strip() == cfg["ref"], "…the checkout really is that commit")
+
+    # our numbers must equal upstream's, not our memory of them
+    import re as _re
+    for lab, spec in cfg["labs"].items():
+        vf = goad / "ad" / lab / "providers" / "virtualbox" / "Vagrantfile"
+        vms = _re.findall(r':name => "[^"]+".*?:cpus => (\d+), :mem => (\d+)', vf.read_text()) if vf.exists() else []
+        c.ok(len(vms) == spec["vms"] and sum(int(m) for _, m in vms) == spec["ram_mb"] and sum(int(x) for x, _ in vms) == spec["vcpu"],
+             f"{lab}: {spec['vms']} VMs / {spec['ram_mb']} MB / {spec['vcpu']} vCPU match upstream's Vagrantfile", str(vms))
+    for prov in cfg["providers"]:
+        c.ok((goad / "ad" / "GOAD" / "providers" / prov).is_dir(), f"upstream really has a '{prov}' provider for GOAD")
+    utils = (goad / "goad" / "utils.py").read_text()
+    for verb, task in cfg["tasks"].items():
+        c.ok(f"= '{task}'" in utils, f"verb '{verb}' → GOAD task '{task}' exists upstream")
+
+    rc, out = _lc(sb, "range", "plan", "--lab", "MINILAB", "--provider", "proxmox")
+    c.ok(rc == 0 and "-t stop -l MINILAB -p proxmox" in out and "deliberately vulnerable" in out, "`range plan` shows the exact commands and the isolation warning", tail(out, 300))
+    rc, out = _lc(sb, "range", "wake", "--provider", "aws")
+    c.ok(rc == 2 and "CLOUD" in out, "a cloud provider is refused without --i-accept-cloud-cost (a vulnerable lab that bills)", tail(out, 300))
+    rc, out = _lc(sb, "range", "install", "--lab", "GOAD", "--yes", extra_env={"SECURAX_SIM_MEM_MB": "16384"})
+    c.ok(rc == 2 and "more RAM" in out, "installing a lab that does not fit this machine is refused (with what does fit)", tail(out, 300))
+    rc, out = _lc(sb, "range", "prune", "--lab", "MINILAB")
+    c.ok(rc == 1 and "cancelled" in out and goad.is_dir(), "`range prune` without the typed phrase changes nothing", tail(out, 200))
+
+
 BURROW_NODES = ["securax-burrow-server", "securax-burrow-agent1", "securax-burrow-agent2"]
 
 

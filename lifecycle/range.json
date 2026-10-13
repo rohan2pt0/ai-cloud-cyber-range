@@ -1,0 +1,28 @@
+{
+  "about": "The RANGE: a dormant Active Directory practice lab for OSCP-style training. SecuRAX does not reinvent it: it wraps GOAD (Orange Cyberdefense, upstream, pinned to a commit) with the same lifecycle verbs as everything else — wake, hibernate (VMs stop, disks kept), snapshot, prune. Nothing exists until you install it, and it never runs by accident.",
+  "repo": "https://github.com/Orange-Cyberdefense/GOAD.git",
+  "ref": "992307adf944b934a3b76a2f56a637104c54b805",
+  "ref_date": "2026-03-12",
+  "reserve_ram_mb": 6144,
+  "labs": {
+    "MINILAB":    {"vms": 2, "ram_mb": 8000,  "vcpu": 4,  "what": "1 forest, 1 domain: a DC (Server 2019) + a Windows 10 workstation. The first lab to learn on."},
+    "GOAD-Light": {"vms": 3, "ram_mb": 12000, "vcpu": 6,  "what": "1 forest, 2 domains. Smaller GOAD for a smaller PC."},
+    "SCCM":       {"vms": 4, "ram_mb": 16000, "vcpu": 8,  "what": "1 domain with Microsoft Configuration Manager installed."},
+    "GOAD":       {"vms": 5, "ram_mb": 20000, "vcpu": 10, "what": "The full lab: 2 forests, 3 domains, 5 VMs. The closest thing to an OSCP AD set."}
+  },
+  "source_of_numbers": "Sum of cpus/mem in each lab's providers/virtualbox/Vagrantfile at the pinned commit. Other providers can differ; disk use is large (tens of GB per lab): check GOAD's docs before you install.",
+  "providers": {
+    "virtualbox": {"kind": "local",  "note": "Free. Needs VirtualBox + Vagrant on the host. Not available inside WSL2/Docker."},
+    "vmware":     {"kind": "local",  "note": "Needs VMware Workstation/Fusion."},
+    "proxmox":    {"kind": "own-hardware", "note": "The right home for it: a dedicated machine (your future burrow). Needs Proxmox + Terraform + Ansible."},
+    "ludus":      {"kind": "own-hardware", "note": "Purpose-built cyber-range manager on Proxmox; GOAD has a Ludus environment guide."},
+    "aws":        {"kind": "cloud", "note": "Ephemeral lab in your AWS account. Costs real money while it exists; a vulnerable AD must be isolated."},
+    "azure":      {"kind": "cloud", "note": "As AWS."}
+  },
+  "tasks": {"install": "install", "wake": "start", "hibernate": "stop", "restart": "restart", "snapshot": "snapshot", "reset": "reset", "status": "status", "prune": "destroy"},
+  "warnings": [
+    "GOAD is deliberately vulnerable: run it ONLY on an isolated host-only/lab network, never on a network with real data or a route to the internet-facing estate.",
+    "It uses free Windows evaluation images (180 days). After that, rebuild the lab (an install takes hours and downloads many GB).",
+    "OSCP exam rules: use SecuRAX for study; OffSec restricts AI assistance during the exam. Verify the current rules yourself."
+  ]
+}
