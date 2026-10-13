@@ -465,7 +465,12 @@ else
   printf 'def test_probe():\n    assert True\n' > $f
 fi
 """ % seen)
-    env = {**os.environ, "AUTOBUILD_AGENT": f"sh {agent}"}
+    gate = sb.clone.parent / "gate.sh"             # the CI runner has no pytest/ruff, so the loop mechanics get a tiny stand-in gate
+    gate.write_text("""#!/bin/sh
+if grep -q "assert False" local/compose/tests/test_autobuild_probe.py 2>/dev/null; then echo "FAILED autobuild-probe-red"; exit 1; fi
+echo ok
+""")
+    env = {**os.environ, "AUTOBUILD_AGENT": f"sh {agent}", "AUTOBUILD_VERIFY": f"sh {gate}"}
     rc, out = H.sh(["bash", "./securax", "autobuild", "add a probe test", "--tries", "3"], cwd=sb.clone, env=env, timeout=600)
     c.ok(rc == 0 and "GREEN on attempt 2" in out, "attempt 1 is rejected by the gate, attempt 2 passes", tail(out, 500))
     c.ok("autobuild-probe-red" in (seen.read_text() if seen.exists() else ""), "…and the agent was HANDED the failure output of attempt 1")

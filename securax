@@ -393,6 +393,7 @@ URLS
     #   ./securax autobuild "add a /metrics endpoint to the gateway with a test" [--tries 3]
     # Agent: default is `./securax build` (Aider through the gateway). Override with AUTOBUILD_AGENT="<shell command>"
     # (it sees AUTOBUILD_TASK, AUTOBUILD_FEEDBACK = file with the last failure, AUTOBUILD_ATTEMPT).
+    # Gate: default `./securax verify`; override with AUTOBUILD_VERIFY="<shell command>" (exit 0 = green).
     shift; TASK=""; TRIES=3
     while [ $# -gt 0 ]; do case "$1" in --tries) TRIES="${2:-3}"; shift 2;; *) TASK="$TASK${TASK:+ }$1"; shift;; esac; done
     [ -n "$TASK" ] || { echo 'usage: ./securax autobuild "what to build" [--tries N]'; exit 1; }
@@ -412,7 +413,7 @@ The previous attempt FAILED verification. Fix exactly this:
 $(tail -60 "$FB")"
         ( cd "$ROOT" && "$0" build "$PROMPT" ) || true
       fi
-      if ( cd "$ROOT" && "$0" verify ) > "$FB.new" 2>&1; then
+      if ( cd "$ROOT" && bash -c "${AUTOBUILD_VERIFY:-\"$0\" verify}" ) > "$FB.new" 2>&1; then
         git -C "$ROOT" add -A && git -C "$ROOT" commit -q -m "autobuild: $TASK" || { C "Agent made no changes — nothing to commit."; }
         C "✔ GREEN on attempt $i. Review it:  git diff $ORIG..$BR     Ship it:  git push -u origin $BR   (then open a PR)"
         [ "${AUTOBUILD_PUSH:-0}" = 1 ] && git -C "$ROOT" push -u origin "$BR"
