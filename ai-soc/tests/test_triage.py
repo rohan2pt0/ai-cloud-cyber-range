@@ -16,9 +16,32 @@ def test_repeated_injection_raises_incident():
     assert any(i["rule"] == "repeated-prompt-injection" for i in r["incidents"])
 
 
-def test_single_block_no_incident():
+def test_single_block_is_only_a_low_probe_never_a_page():
+    """One blocked injection is visible (a LOW probe) but must not page anyone: that is what the burst rule is for."""
     r = triage.triage(_blocks("user", 1), summarize=False)
-    assert r["incident_count"] == 0
+    assert [i["rule"] for i in r["incidents"]] == ["injection-probe"] and r["highest_severity"] == "low"
+
+
+def test_a_burst_replaces_the_probe_instead_of_duplicating_it():
+    r = triage.triage(_blocks("user", 4), summarize=False)
+    assert [i["rule"] for i in r["incidents"]] == ["repeated-prompt-injection"]
+
+
+def _one(rule, decision="block", sev="high", ts=1, principal="p"):
+    return {"ts": ts, "principal": principal, "decision": decision, "findings": [{"rule": rule, "severity": sev, "category": "x"}]}
+
+
+def test_single_event_detections_found_silent_by_the_purple_loop():
+    r = triage.triage([_one("PI-006-tool-coercion", principal="a"), _one("OUT-md-image-exfil", "sanitise", principal="b")], summarize=False)
+    rules = {i["principal"]: {j["rule"] for j in r["incidents"] if j["principal"] == i["principal"]} for i in r["incidents"]}
+    assert "agentic-tool-coercion" in rules["a"] and "output-exfil-channel" in rules["b"]
+
+
+def test_pii_harvesting_needs_a_burst_not_a_single_redaction():
+    one = triage.triage([_one("PII-AADHAAR", "sanitise", "medium")], summarize=False)
+    assert one["incident_count"] == 0
+    many = triage.triage([_one("PII-AADHAAR", "sanitise", "medium", ts=i) for i in range(1, 4)], summarize=False)
+    assert any(i["rule"] == "pii-harvesting" for i in many["incidents"])
 
 
 def test_exfil_is_critical():

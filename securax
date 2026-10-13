@@ -519,6 +519,19 @@ $(tail -60 "$FB")"
       *) echo "usage: ./securax guard [status|on|off]"; exit 1 ;;
     esac
     ;;
+  purple)
+    # PURPLE-TEAM LOOP: fire the attack set through the REAL gateway, capture its audit log, run the AI-SOC over it, report
+    # what was prevented / logged / ALERTED (the gap between the last two is your detection backlog). Offline, no model needed.
+    #   ./securax purple [OUTDIR]     default OUTDIR = ./evidence
+    OUTD="${2:-$ROOT/evidence}"; mkdir -p "$OUTD"
+    if [ "${SECURAX_PURPLE_DOCKER:-0}" != "1" ] && python3 -c "import fastapi, httpx" >/dev/null 2>&1; then
+      python3 "$ROOT/redteam/purple.py" --out "$OUTD"
+    else
+      IMG="vulnbank/llm-gateway:dev"
+      docker image inspect "$IMG" >/dev/null 2>&1 || { C "Needs fastapi+httpx on this machine, or the gateway image (run ./securax up once to build it)."; exit 1; }
+      docker run --rm --user "$(id -u):$(id -g)" -e PYTHONDONTWRITEBYTECODE=1 -v "$ROOT":/repo:ro -v "$OUTD":/out -w /repo --entrypoint python "$IMG" redteam/purple.py --out /out
+    fi
+    ;;
   evidence)
     # One file for an auditor: what ran, which providers were enabled, guardrail decisions (counts only), posture.
     # No prompts, no answers, no API keys. Works whether or not the estate is running.

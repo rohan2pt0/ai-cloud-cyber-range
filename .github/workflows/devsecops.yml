@@ -33,6 +33,8 @@ jobs:
         run: python -m pytest -q
       - name: AI red-team scorecard (gate at 90% defence, 0 false positives)
         run: python redteam/run_attacks.py --out redteam/results.json --fail-under 0.9
+      - name: Purple-team loop (attack → log → alert; fails if a must-alert event stays silent)
+        run: python redteam/purple.py --out docs/purple --fail-on-gap
       - name: AI-SPM posture scan
         run: python redteam/aispm_scan.py --root . --out docs/aispm-report.json
       - name: Board risk brief
@@ -42,6 +44,7 @@ jobs:
           name: ai-assurance-reports
           path: |
             redteam/results.json
+            docs/purple/
             docs/aispm-report.json
             docs/board-brief.md
 

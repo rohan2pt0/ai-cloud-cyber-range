@@ -81,6 +81,30 @@ def test_api_blocks_and_allows():
     assert c.get("/metrics").status_code == 200
 
 
+def test_pii_redaction_is_audited_as_sanitise_not_allow():
+    """The audit trail (and the SOC reading it) must be able to tell that data was removed before the model saw it."""
+    import logging
+    seen: list[str] = []
+
+    class H(logging.Handler):
+        def emit(self, record):
+            seen.append(record.getMessage())
+    h = H()
+    logging.getLogger("audit").addHandler(h)
+    logging.getLogger("audit").setLevel(logging.INFO)
+    try:
+        c = TestClient(app)
+        c.post("/v1/chat/completions", headers={"Authorization": "Bearer pii-audit"}, json={"model": "m", "messages": [
+            {"role": "user", "content": "My PAN is ABCPE1234F, what is KYC?"}]})
+        c.post("/v1/chat/completions", headers={"Authorization": "Bearer clean-audit"}, json={"model": "m", "messages": [
+            {"role": "user", "content": "What are your NEFT charges?"}]})
+    finally:
+        logging.getLogger("audit").removeHandler(h)
+    import json as _json
+    decisions = [_json.loads(x)["decision"] for x in seen if x.startswith("{")]
+    assert decisions == ["sanitise", "allow"]
+
+
 def test_models_endpoint_lists_a_selectable_model():
     # Chat UIs (Open WebUI / AnythingLLM) call /v1/models to populate the model picker.
     c = TestClient(app)

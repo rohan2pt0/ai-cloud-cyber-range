@@ -18,6 +18,9 @@ anomaly detection & incident response.
 - **Summarises** each incident for the on-call analyst — the LLM call is routed through the
   guardrail gateway, with a deterministic fallback so it runs fully offline.
 
+## Detections (each is measured by the purple-team loop, doc 30)
+`repeated-prompt-injection` (burst) · `injection-probe` (LOW, single block; replaced by the burst rule on repeat) · `agentic-tool-coercion` · `output-exfil-channel` · `data-exfil-attempt` (secret/canary leak) · `pii-harvesting` (burst) · `runtime-compromise` (Falco) · `kill-chain-injection-to-runtime`.
+
 ## The key idea: the SOC doesn't trust its own inputs
 Alert text is attacker-influenced. An attacker can plant an instruction in a prompt that
 later lands in a log an LLM summarises — a **second-order prompt injection against the SOC
