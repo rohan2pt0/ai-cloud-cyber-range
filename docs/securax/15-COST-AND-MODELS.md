@@ -7,7 +7,7 @@ is reserved for the hard 20%.** You swap any provider without touching a line of
 
 ## 1. One endpoint, many brains (already built)
 Every part of the estate calls a single logical model, **`bank-assistant`**, through the
-**LiteLLM router** (`local/compose/litellm-config.yaml`). LiteLLM is the OpenAI-compatible
+**LiteLLM router** (`local/compose/litellm-config.generated.yaml`). LiteLLM is the OpenAI-compatible
 switchboard: it decides which real model answers, load-balances, falls back, and enforces a
 **hard monthly spend cap** (`max_budget`, ~₹2,100/mo) so cloud spend can never run away.
 

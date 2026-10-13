@@ -16,7 +16,7 @@ Chat / Guiding Map / n8n
 - **`plugins/catalog.json`** is the single source of truth: one entry per provider (its label, the
   env var(s) it needs, its default model, where to get a key).
 - **`local/compose/gen_litellm_config.py`** reads the catalog + your `.env` and writes
-  `litellm-config.yaml` with **only the providers you've enabled** (a key is present).
+  `litellm-config.generated.yaml` with **only the providers you've enabled** (a key is present).
 - The **gateway `/v1/models`** mirrors LiteLLM's live models, so an enabled provider appears in the
   Chat model dropdown automatically — still passing through the guardrail.
 

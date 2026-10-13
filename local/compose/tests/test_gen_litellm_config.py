@@ -311,7 +311,7 @@ def test_generated_router_config_is_never_a_tracked_file():
 def test_shell_entrypoints_stay_lf_and_windows_has_a_launcher():
     # Found on Windows: `./securax` can't run in PowerShell, and a CRLF checkout breaks the script.
     attrs = (REPO / ".gitattributes").read_text()
-    assert "securax text eol=lf" in attrs
+    assert "* text=auto eol=lf" in attrs and "*.bat text eol=crlf" in attrs
     assert "wsl" in (REPO / "securax.cmd").read_text()
     for bat in ("START-HERE-Windows.bat", "STOP-Windows.bat"):
         assert "securax.cmd" in (REPO / bat).read_text(), f"{bat} must go through the WSL launcher"

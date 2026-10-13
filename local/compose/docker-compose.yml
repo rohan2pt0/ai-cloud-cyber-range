@@ -6,6 +6,9 @@
 #   docker compose --profile security up -d       # + Wazuh-style SIEM-lite + Trivy
 #   docker compose --profile ai up -d             # + Ollama + Llama Guard
 #
+# START IT WITH  ./securax up  (or .\securax.cmd up on Windows): it first generates litellm-config.generated.yaml
+# from your .env. Running `docker compose` directly needs:  python3 gen_litellm_config.py --write   once.
+#
 # Secrets come from .env (never committed). See local/compose/.env.example.
 name: vulnbank-range
 
@@ -82,7 +85,7 @@ services:
       start_period: 10s
     environment:
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-range-dev}
-      # EVERY provider key the generated litellm-config.yaml may reference as os.environ/<NAME> must be
+      # EVERY provider key the generated litellm-config.generated.yaml may reference as os.environ/<NAME> must be
       # listed here (least privilege: we do NOT pass the whole .env into this container). A key missing
       # from this list silently resolves to nothing and that provider fails with an auth error.
       # Enforced by local/compose/tests/test_gen_litellm_config.py.

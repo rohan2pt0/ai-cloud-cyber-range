@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate litellm-config.yaml from the SecuRAX plugin catalog + your .env.
+"""Generate litellm-config.generated.yaml from the SecuRAX plugin catalog + your .env.
 
 The catalog (plugins/catalog.json) is the single source of truth for provider plugins.
 A provider is ENABLED when every API key it needs is present (non-empty) in the env.
@@ -215,7 +215,7 @@ def status(catalog: dict, env: dict, baseline: bool = False) -> list[tuple[str, 
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description="Generate litellm-config.yaml from the plugin catalog.")
+    ap = argparse.ArgumentParser(description="Generate the LiteLLM router config from the plugin catalog.")
     ap.add_argument("--env-file", default=os.path.join(HERE, ".env"))
     ap.add_argument("--catalog", default=CATALOG)
     ap.add_argument("--out", default=None, help="default: litellm-config.generated.yaml (or litellm-config.yaml with --baseline)")

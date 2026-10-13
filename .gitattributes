@@ -1,9 +1,10 @@
-# Keep shell scripts and generated config LF on every OS (a CRLF `securax` dies with "\r: command not found" under WSL/Git Bash).
-securax text eol=lf
-*.sh text eol=lf
-*.py text eol=lf
-*.yml text eol=lf
-*.yaml text eol=lf
-*.json text eol=lf
+# Keep everything LF on every OS (a CRLF checkout breaks bash scripts, .env copies and nginx configs under WSL),
+# except Windows batch files, which need CRLF.
+* text=auto eol=lf
 *.bat text eol=crlf
 *.cmd text eol=crlf
+*.png binary
+*.jpg binary
+*.ico binary
+*.pdf binary
+*.woff2 binary
