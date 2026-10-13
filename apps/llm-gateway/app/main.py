@@ -136,6 +136,26 @@ async def _call_upstream(payload: dict) -> dict:
         return r.json()
 
 
+@app.get("/readyz")
+async def readyz() -> JSONResponse:
+    """READINESS (vs /healthz = liveness): can this gateway actually serve a chat right now? True only when
+    the model router behind it is up. Compose gates dependants on this, so nothing starts against a router
+    that is still booting — the "reports healthy but every request fails / lists half the models" window
+    that a fresh `./securax up` used to have (found by the sandbox, not by a unit test)."""
+    if UPSTREAM == "mock":
+        return JSONResponse({"ready": True, "upstream": "mock"})
+    base = UPSTREAM.rstrip("/")
+    base = base[:-3] if base.endswith("/v1") else base
+    try:
+        async with httpx.AsyncClient(timeout=3) as c:
+            r = await c.get(f"{base}/health/readiness")
+        if r.status_code == 200:
+            return JSONResponse({"ready": True})
+        return JSONResponse({"ready": False, "reason": f"router returned {r.status_code}"}, status_code=503)
+    except Exception as exc:  # noqa: BLE001
+        return JSONResponse({"ready": False, "reason": f"router unreachable: {type(exc).__name__}"}, status_code=503)
+
+
 async def _upstream_model_ids() -> list[str]:
     """Ask the LiteLLM router which models are actually live, so enabling a provider plugin makes
     it appear in Chat with no gateway change. Returns [] if the upstream can't be reached."""
@@ -160,7 +180,7 @@ async def models() -> dict:
     be reached. `bank-assistant` = fast default (cloud Gemini, local fallback); `-local` = sovereign."""
     ids = await _upstream_model_ids()
     if not ids:
-        ids = [m.strip() for m in os.getenv("SERVED_MODELS", "bank-assistant,bank-assistant-local").split(",") if m.strip()]
+        ids = [m.strip() for m in os.getenv("SERVED_MODELS", "bank-assistant,bank-assistant-local,builder").split(",") if m.strip()]
     # stable de-dup preserving order
     seen: set[str] = set()
     ids = [i for i in ids if not (i in seen or seen.add(i))]

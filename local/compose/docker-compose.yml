@@ -57,13 +57,29 @@ services:
     ports: ["8080:8080"]
     networks: [edge, modelplane]
     logging: *default-logging
-    depends_on: [litellm]
+    # Start only once the model router is READY, and report healthy only while it is. (`depends_on: [x]`
+    # alone waits for the container to START, which left a window where the gateway was "up" but every
+    # chat failed and the model list was partial.)
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:8080/readyz', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 5s
+    depends_on:
+      litellm: { condition: service_healthy }
 
   litellm:
     image: ghcr.io/berriai/litellm:main-stable
     profiles: ["core", "security", "ai"]
     restart: unless-stopped
     command: ["--config", "/etc/litellm/config.yaml", "--port", "4000"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request;urllib.request.urlopen('http://127.0.0.1:4000/health/readiness', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 40
+      start_period: 10s
     environment:
       LITELLM_MASTER_KEY: ${LITELLM_MASTER_KEY:-sk-range-dev}
       # EVERY provider key the generated litellm-config.yaml may reference as os.environ/<NAME> must be
@@ -176,7 +192,8 @@ services:
     ports: ["${BIND_HOST:-127.0.0.1}:3000:8080"]   # BIND_HOST=0.0.0.0 or your Tailscale IP to reach from phone/iPad
     volumes: ["openwebui:/app/backend/data"]
     networks: [edge, modelplane]
-    depends_on: [gateway]
+    depends_on:
+      gateway: { condition: service_healthy }
     logging: *default-logging
 
   # Private document chat (Retrieval-Augmented Generation) for RED-TIER data.

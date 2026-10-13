@@ -41,3 +41,16 @@ def test_version_badge_matches_VERSION_file():
     assert m, 'version badge (id="app_ver") missing from index.html'
     assert m.group(1) == f"v{version}", f"badge shows {m.group(1)} but VERSION is {version} — run `node build.js`"
     assert "v13.0" not in idx, "legacy hardcoded app version string is back"
+
+
+def test_fresh_profile_never_renders_a_dangling_possessive():
+    # A fresh install has no name yet: the title read "'s Life OS" (and, earlier, "My's Life OS").
+    idx = (GM / "index.html").read_text(encoding="utf-8")
+    assert 'var poss=fn?fn+"\'s":"My";' in idx
+    assert 'fn+"\'s Life OS"' not in idx and 'fn+"\'s Life Operating System"' not in idx
+
+
+def test_command_center_rechecks_status_instead_of_one_snapshot():
+    hub = (GM / "hub.html").read_text(encoding="utf-8")
+    assert "setInterval(tick, 5000)" in hub, "status must be re-polled, or a slow-booting app stays red"
+    assert ".dot.starting" in hub and ".dot.off" in hub

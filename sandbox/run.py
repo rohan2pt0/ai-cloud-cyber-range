@@ -14,6 +14,7 @@ from __future__ import annotations
 import argparse
 import json
 import pathlib
+import re
 import sys
 import time
 import traceback
@@ -72,13 +73,16 @@ def j_fresh_install(sb: H.Sandbox, c: Checks):
              f"{path} redirects to /hub.html", f"{r.status} {r.headers.get('Location')}")
     ver = sb.http("GET", f"{H.GATEWAY}/version").json() or {}
     c.eq(ver.get("version"), sb.version, "gateway /version == VERSION file")
+    c.eq(sb.http("GET", f"{H.GATEWAY}/readyz").status, 200, "READY the moment `up` returns (no half-started window)")
     ms = sb.models()
-    c.ok({"bank-assistant", "bank-assistant-local", "builder"} <= set(ms), "Chat can list the default models", ms)
+    c.ok({"bank-assistant", "bank-assistant-local", "builder"} <= set(ms), "Chat lists the full default model set immediately", ms)
 
 
 @journey("local_model_answers", "Worst case — no keys, no cloud: the sovereign local model really answers.", slow=True)
 def j_local_model(sb: H.Sandbox, c: Checks):
-    model = sb.get_env("LOCAL_MODEL") or "qwen2.5:1.5b"
+    if not _start(sb, c):
+        return
+    model = sb.local_model()
     c.ok(sb.wait_until(lambda: sb.ollama_has(model), 900, 5), f"local model {model} finished downloading",
          "ollama list does not show it")
     t0 = time.time()
@@ -101,7 +105,7 @@ KEYS = {"GEMINI_API_KEY": "AIza-sbx-gemini", "GROQ_API_KEY": "gsk_sbx_groq", "OP
 def _start(sb: H.Sandbox, c: Checks, **env: str) -> bool:
     """Bring the estate up the way a user does (real CLI, lite mode) with the given .env settings."""
     sb.down()
-    sb.reset_env(LOCAL_MODEL="qwen2.5:0.5b", SECURAX_LITE="1", **env)
+    sb.reset_env(SECURAX_LITE="1", **env)
     rc, out = sb.securax("up", "--lite", timeout=1200)
     ok = c.ok(rc == 0, "`./securax up --lite` exits 0", tail(out))
     ok &= c.ok(sb.wait_http(f"{H.GATEWAY}/healthz", 240), "gateway healthy", sb.logs("gateway"))
@@ -112,7 +116,7 @@ def _start(sb: H.Sandbox, c: Checks, **env: str) -> bool:
 @journey("incident_stale_llama_guard", "THE REAL INCIDENT: an old .env has Llama Guard ON but never installed — harmless prompts blocked.")
 def j_incident(sb: H.Sandbox, c: Checks):
     sb.down()
-    sb.reset_env(LOCAL_MODEL="qwen2.5:0.5b", SECURAX_LITE="1", LLAMA_GUARD_URL="http://ollama:11434")
+    sb.reset_env(SECURAX_LITE="1", LLAMA_GUARD_URL="http://ollama:11434")
     # start WITHOUT the CLI's self-heal — i.e. the stack exactly as an old-version user had it
     rc, out = sb.compose("--profile", "ai", "up", "-d", "--build", *H.LITE_SERVICES.split(), timeout=1200)
     c.ok(rc == 0, "estate starts with the stale setting", tail(out))
@@ -125,7 +129,8 @@ def j_incident(sb: H.Sandbox, c: Checks):
          "REPRODUCED: a harmless prompt is blocked with a 400", f"{r.status} {tail(r.text)}")
     c.ok(err.get("reason") == "detector_unavailable" and "detector is offline" in err.get("message", ""),
          "…and the error now says WHY (a detector is offline), not that the prompt was bad", err)
-    c.ok(sb.wait_until(lambda: sb.ollama_has("qwen2.5:0.5b"), 900, 5), "local model present (so doctor/heal can run)")
+    rc, out = sb.securax("pull", timeout=1200)
+    c.ok(rc == 0 and sb.ollama_has(sb.local_model()), "`./securax pull` installs the local model (so doctor/heal can run)", tail(out))
     rc, out = sb.securax("doctor", timeout=400)
     c.ok("ON but NOT INSTALLED" in out, "`./securax doctor` names the exact problem", tail(out, 700))
     rc, out = sb.securax("up", "--lite", timeout=900)
@@ -174,7 +179,7 @@ def j_failover(sb: H.Sandbox, c: Checks):
     r = sb.chat("bank-assistant", "ping")
     c.ok("answered-by:openrouter" in sb.answer(r), "LADDER: Groq rate-limited too → OpenRouter answers", f"{r.status} {tail(r.text)}")
     sb.fake("openrouter", "500")
-    c.ok(sb.wait_until(lambda: sb.ollama_has("qwen2.5:0.5b"), 900, 5), "local model present")
+    c.ok(sb.wait_until(lambda: sb.ollama_has(sb.local_model()), 900, 5), "local model present")
     t0 = time.time()
     r = sb.chat("bank-assistant", "Reply with the single word OK.")
     a = sb.answer(r)
@@ -246,12 +251,17 @@ def j_ui(sb: H.Sandbox, c: Checks):
         c.eq((page.locator("#ver").text_content() or "").strip(), f"v{sb.version}", "Command Center shows the live gateway version")
         page.wait_for_function("document.getElementById('models').textContent.includes('bank-assistant')", timeout=20000)
         c.ok(True, "Command Center lists the live models: " + (page.locator("#models").text_content() or "")[:80])
-        page.wait_for_timeout(1500)
-        c.ok(page.locator("#apps .dot.up").count() >= 1, "status dots turn green for running apps", page.locator("#apps").inner_text())
+        c.ok(sb.wait_until(lambda: page.locator("#apps .dot.up").count() == 2, 240, 3),
+             "BOTH core dots (Guiding Map + Chat) turn green on their own as Chat finishes booting (live re-check, no refresh)",
+             page.locator("#apps").inner_html()[:300])
+        c.ok(page.locator("#extras .dot.down").count() == 0, "optional add-ons that aren't running are grey, not alarming red")
         H.shot(page, "command_center")
         page.goto(f"{H.GUIDING_MAP}/")
         page.wait_for_load_state("networkidle")
-        page.evaluate("document.getElementById('askQ').value = 'hello'; window.gmAsk();")
+        page.get_by_text(re.compile(r"^\W*ASK\W*$", re.I)).first.click()      # the real Ask tab, as a user clicks it
+        page.wait_for_selector("#askQ")
+        page.fill("#askQ", "hello")
+        page.get_by_role("button", name="Ask", exact=True).click()
         page.wait_for_function("!document.getElementById('askOut').textContent.startsWith('Thinking')", timeout=60000)
         out = page.locator("#askOut").text_content() or ""
         c.ok("answered-by:gemini" in out, "the Ask box gets an answer through the gateway", out[:200])
@@ -273,9 +283,6 @@ def j_webui(sb: H.Sandbox, c: Checks):
     ids = [m.get("id") for m in models.get("data", [])]
     c.ok("bank-assistant" in ids and "bank-assistant-local" in ids, "the model picker lists the SecuRAX models", ids)
     c.ok(not any("arena" in str(m).lower() for m in models.get("data", [])), "no random 'Arena Model' in the picker", ids)
-    cfg = sb.http("GET", f"{H.WEBUI}/api/config").json() or {}
-    dm = str((cfg.get("default_models") or (cfg.get("features") or {}).get("default_models") or ""))
-    c.ok("bank-assistant" in dm, "new chats default to bank-assistant (the free ladder)", f"default_models={dm!r}")
     body = {"model": "bank-assistant", "messages": [{"role": "user", "content": "ping"}], "stream": False}
     r = sb.http("POST", f"{H.WEBUI}/api/chat/completions", body, headers=auth, timeout=120)
     c.ok(r.status == 200 and "answered-by:gemini" in r.text, "a chat message works through Open WebUI (non-streaming)", f"{r.status} {tail(r.text)}")
@@ -291,6 +298,10 @@ def j_webui(sb: H.Sandbox, c: Checks):
             page.click("button[type=submit]")
         page.wait_for_selector("#chat-input", timeout=45000)
         page.wait_for_timeout(2500)
+        ok_btn = page.get_by_role("button", name=re.compile("Okay", re.I))     # the first-login "What's New" modal
+        if ok_btn.count():
+            ok_btn.first.click()
+            page.wait_for_timeout(600)
         H.shot(page, "open_webui_home")
         c.ok("bank-assistant" in (page.inner_text("body") or ""), "the UI shows bank-assistant selected by default (not 'Arena Model')")
         page.click("#chat-input")
@@ -327,7 +338,7 @@ def main() -> int:
     print(f"SecuRAX sandbox — product v{sb.version}, tested from a clean copy of the working tree")
     if not args.no_clone:
         print("  preparing a fresh 'user machine' …"); sb.fresh_clone()
-    sb.reset_env(LOCAL_MODEL="qwen2.5:0.5b")
+    sb.reset_env()
 
     results, t_all = [], time.time()
     for name in wanted:

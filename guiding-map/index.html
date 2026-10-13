@@ -1621,10 +1621,11 @@ function renderCommit(){
 function renderAll(){
   var E=engine();
   snapshot(E);
-  var fn=P.name.split(" ")[0];
-  document.getElementById("d_init").textContent=fn.charAt(0).toUpperCase();
-  document.getElementById("d_name").textContent=fn+"'s Life OS";
-  document.getElementById("d_head").textContent=fn+"'s Life Operating System";
+  var fn=(P.name||"").trim().split(" ")[0];
+  var poss=fn?fn+"'s":"My";   // a fresh profile has no name yet: "My Life OS", never "'s Life OS"
+  document.getElementById("d_init").textContent=(fn||"M").charAt(0).toUpperCase();
+  document.getElementById("d_name").textContent=poss+" Life OS";
+  document.getElementById("d_head").textContent=poss+" Life Operating System";
   document.getElementById("d_goal").textContent=P.goal;
   var lvl=Math.floor(S.pts/200)+1;
   document.getElementById("g_lvl").textContent="Lv "+lvl+" "+lvlName(lvl);

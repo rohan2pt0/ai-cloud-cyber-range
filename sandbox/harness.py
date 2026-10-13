@@ -252,6 +252,9 @@ class Sandbox:
             time.sleep(every)
         return False
 
+    def local_model(self) -> str:
+        return self.get_env("LOCAL_MODEL") or "qwen2.5:1.5b"      # the SHIPPED default — test what users get
+
     def master_key(self) -> str:
         return self.get_env("LITELLM_MASTER_KEY") or "sk-range-dev"
 
