@@ -53,6 +53,14 @@ def test_known_attack_patterns_are_caught(tmp_path, name, files, rule, verdict):
     assert r["verdict"] == verdict, (name, r["verdict"])
 
 
+def test_a_file_that_crashes_the_scanner_is_a_finding_not_a_crash(tmp_path):
+    r = vet.vet_dir(repo(tmp_path, {"skills/a/SKILL.md": "# S\nsee http://[abc for details\n"}))
+    assert r["verdict"] in ("PASS", "REVIEW") and r["files"] >= 2          # it finished
+    assert vet.scan_text("x.md", "plain")  is not None
+    boom = vet.scan_text("x.md", None)                                      # forced exception path
+    assert boom and boom[0]["rule"] == "scan-error" and boom[0]["severity"] == "high"
+
+
 def test_no_licence_or_a_copyleft_licence_is_flagged(tmp_path):
     assert "licence" in rules(vet.vet_dir(repo(tmp_path, {"a.md": "hi"}, licence=None)))
     gpl = repo(tmp_path / "g", {"a.md": "hi"}, licence="GNU GENERAL PUBLIC LICENSE Version 3")

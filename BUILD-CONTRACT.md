@@ -19,6 +19,19 @@ and never weaken security to get green.
 7. **Re-read your own diff adversarially**: what input makes this crash or bypass a rail? Fix it.
 8. **Summarize** what changed and why, in 2–3 lines, and stop. One validated change beats three.
 
+## Behavioural rules — how the agent behaves before it touches code
+Four habits that separate a trustworthy change from a plausible-looking one. They are the principles popularised by Andrej Karpathy's
+observations on LLM coding failures and the community CLAUDE.md built on them (forrestchang/andrej-karpathy-skills, which carries no
+licence, so this is our own wording; see doc 31). `./securax diffcheck` enforces the mechanical parts.
+1. **Think before coding.** State your assumptions. If the request has two readings, list both and ask: never pick one silently. If a
+   simpler route exists, say so. Confused? Stop and name what is unclear.
+2. **Simplicity first.** The least code that solves the stated problem. No abstraction for a single use, no configurability nobody
+   asked for, no handling of cases that cannot happen. If 200 lines could be 50, write 50.
+3. **Surgical changes.** Every changed line must trace to the task. Do not reformat, rename or "improve" neighbouring code; mention
+   unrelated dead code instead of deleting it. Remove only the orphans YOUR change created.
+4. **Goal-driven.** Turn the task into checks that can fail ("add validation" → "tests for bad input, then make them pass"). For
+   multi-step work write the plan as `step → how I will verify it`, then loop until each check is green.
+
 ## The gates — the quality floor (run these, they are your safety net)
 ```bash
 ruff check .                                   # lint/format
@@ -32,7 +45,7 @@ The sandbox (`sandbox/README.md`) is the only gate that sees what the user sees.
 CI additionally runs gitleaks (no secrets in the diff), Semgrep/Trivy (SAST), and a build-drift
 check. **A change is not done until `./securax verify` is green locally** (it runs the gates above; add `--full` to include the sandbox).
 
-## Hard rules — never violate (these are the "security must be an enabler" guarantees)
+## Hard rules — never violate (`./securax diffcheck` blocks the mechanical ones before autobuild may commit) (these are the "security must be an enabler" guarantees)
 - **Never** skip, disable, delete, or `xfail` a test to get green. Fix the code instead.
 - **Never** weaken the guardrail rails, loosen `FAIL_MODE`, or widen network egress to pass a task.
 - **Never** commit a secret or a real key. Keys live only in git-ignored `.env`. No inline comments

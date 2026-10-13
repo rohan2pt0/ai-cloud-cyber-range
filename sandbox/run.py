@@ -817,6 +817,39 @@ def j_webui(sb: H.Sandbox, c: Checks):
 
 
 # ═══════════════════════════════════════════ runner ═══════════════════════════════════════════
+@journey("diffcheck_gate", "`./securax diffcheck` inside autobuild: an agent that 'goes green' by skipping a test is rejected, told why, and must do it honestly.")
+def j_diffcheck(sb: H.Sandbox, c: Checks):
+    sb.reset_env()
+    git = lambda *a: H.sh(["git", "-c", "user.name=sbx", "-c", "user.email=sbx@example.com", *a], cwd=sb.clone)  # noqa: E731
+    H.sh(["python3", "local/compose/gen_litellm_config.py", "--baseline", "--write"], cwd=sb.clone)
+    git("checkout", "-q", "-B", "main")
+    git("add", "-A")
+    git("commit", "-q", "--allow-empty", "-m", "baseline")
+    agent = sb.clone.parent / "cheat-agent.sh"
+    seen = sb.clone.parent / "dc-feedback-seen.txt"
+    agent.write_text("""#!/bin/sh
+f=local/compose/tests/test_cheat_probe.py
+if [ "$AUTOBUILD_ATTEMPT" = "1" ]; then
+  printf 'import pytest\n\n\n@pytest.mark.skip(reason="flaky")\ndef test_probe():\n    assert False\n' > $f
+else
+  cp "$AUTOBUILD_FEEDBACK" "%s"
+  printf 'def test_probe():\n    assert 1 + 1 == 2\n' > $f
+fi
+""" % seen)
+    gate = sb.clone.parent / "always-ok-gate.sh"       # the repo's own checks are satisfied (the skipped test never runs): only diffcheck can notice the cheat
+    gate.write_text("#!/bin/sh\necho ok\n")
+    env = {**os.environ, "AUTOBUILD_AGENT": f"sh {agent}", "AUTOBUILD_VERIFY": f"sh {gate}", "GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_SYSTEM": "/dev/null"}
+    rc, out = H.sh(["bash", "./securax", "autobuild", "add a probe test", "--tries", "3"], cwd=sb.clone, env=env, timeout=600)
+    c.ok(rc == 0 and "GREEN on attempt 2" in out, "attempt 1 passes the repo's checks but is REJECTED by diffcheck; attempt 2 is honest and passes", tail(out, 600))
+    fb = seen.read_text() if seen.exists() else ""
+    c.ok("test-skipped" in fb and "never skip" in fb, "…and the agent was handed the rule it broke and how to fix it", tail(fb, 300))
+    committed = git("show", "HEAD:local/compose/tests/test_cheat_probe.py")[1]
+    c.ok("skip" not in committed and "1 + 1 == 2" in committed, "…the committed test is the honest one (no skip ever reached a commit)")
+    git("checkout", "-q", "main")
+    rc, out = H.sh(["bash", "./securax", "diffcheck", "--base", "HEAD"], cwd=sb.clone, timeout=120)
+    c.ok(rc == 0 and "ok" in out, "`./securax diffcheck` is also usable on its own (clean tree: ok)", tail(out, 200))
+
+
 @journey("vet_gate", "`./securax vet`: the supply-chain gate. Malicious fixtures BLOCK, the real pinned third-party repo is REVIEWED and pinned, tampering is caught and withholds the content from escalation.")
 def j_vet(sb: H.Sandbox, c: Checks):
     work = sb.clone.parent / "vet-fixtures"

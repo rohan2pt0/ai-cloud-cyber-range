@@ -117,6 +117,14 @@ def detect_license(root: pathlib.Path) -> tuple[str, bool, str]:
 
 
 def scan_text(rel: str, text: str) -> list[Finding]:
+    """Never raises: a file that crashes the scanner is itself a finding (an attacker could otherwise hide behind a parser bug)."""
+    try:
+        return _scan_text(rel, text)
+    except Exception as e:  # noqa: BLE001
+        return [Finding.mk("high", "scan-error", rel, f"the scanner could not analyse this file ({type(e).__name__}): read it by hand")]
+
+
+def _scan_text(rel: str, text: str) -> list[Finding]:
     out: list[Finding] = []
     for i in range(0, len(text), 7500):                         # the gateway's own limit is 8000 chars
         chunk = text[i:i + 7500]

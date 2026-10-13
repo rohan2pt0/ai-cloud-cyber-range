@@ -183,6 +183,15 @@ _SECRET_PATTERNS = [
     ("SECRET-github-token", re.compile(r"\bgh[pousr]_[A-Za-z0-9]{36,}\b")),
     ("SECRET-jwt", re.compile(r"\beyJ[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\.[A-Za-z0-9_-]{10,}\b")),
 ]
+def _host(url: str) -> str:
+    """Hostname of a URL found in model output. A URL the parser refuses (e.g. 'http://[abc') must not crash the output rails:
+    it is attacker-influenced text, so a malformed URL is treated as an UNTRUSTED host (and removed), never as 'no host'."""
+    try:
+        return (urlparse(url).hostname or "").lower()
+    except ValueError:
+        return "invalid-url"
+
+
 _MD_IMAGE = re.compile(r"!\[[^\]]*\]\((\S+?)\)")
 _URL = re.compile(r"https?://[^\s)\"'>]+")
 _ACTIVE = re.compile(r"<\s*(script|iframe|object|embed|img[^>]+onerror)|javascript:", re.I)
@@ -205,7 +214,7 @@ def check_output(text: str, allowed_domains: set[str], canaries: set[str] | None
 
     # Markdown image rendering = zero-click exfiltration channel (EchoLeak class).
     def _img(m: re.Match[str]) -> str:
-        host = (urlparse(m.group(1)).hostname or "").lower()
+        host = _host(m.group(1))
         if host and not any(host == d or host.endswith("." + d) for d in allowed_domains):
             findings.append(Finding("OUT-md-image-exfil", "LLM05/ASI01", "high", f"image to {host}"))
             return "[external image removed]"
@@ -213,7 +222,7 @@ def check_output(text: str, allowed_domains: set[str], canaries: set[str] | None
     out = _MD_IMAGE.sub(_img, out)
 
     for url in _URL.findall(out):
-        host = (urlparse(url).hostname or "").lower()
+        host = _host(url)
         if host and not any(host == d or host.endswith("." + d) for d in allowed_domains):
             findings.append(Finding("OUT-untrusted-link", "LLM05", "medium", host))
             out = out.replace(url, "[link removed]")

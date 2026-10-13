@@ -418,7 +418,8 @@ The previous attempt FAILED verification. Fix exactly this:
 $(tail -60 "$FB")"
         ( cd "$ROOT" && "$0" build "$PROMPT" ) || true
       fi
-      if ( cd "$ROOT" && bash -c "${AUTOBUILD_VERIFY:-\"$0\" verify}" ) > "$FB.new" 2>&1; then
+      # The gate = the repo's own checks AND `diffcheck` (the contract's hard rules enforced on the diff: no skipped tests, no weakened rails, no fake green)
+      if ( cd "$ROOT" && bash -c "${AUTOBUILD_VERIFY:-\"$0\" verify}" && python3 lifecycle/diffcheck.py --base "$ORIG" ) > "$FB.new" 2>&1; then
         git -C "$ROOT" add -A
         if git -C "$ROOT" diff --cached --quiet; then C "Agent made no changes — nothing to commit."; else
           # works on a machine with no git identity configured (fresh WSL, CI): fall back to a neutral author
@@ -535,6 +536,12 @@ $(tail -60 "$FB")"
       docker image inspect "$IMG" >/dev/null 2>&1 || { C "Needs fastapi+httpx on this machine, or the gateway image (run ./securax up once to build it)."; exit 1; }
       docker run --rm --user "$(id -u):$(id -g)" -e PYTHONDONTWRITEBYTECODE=1 -v "$ROOT":/repo:ro -v "$OUTD":/out -w /repo --entrypoint python "$IMG" redteam/purple.py --out /out
     fi
+    ;;
+  diffcheck)
+    # The BUILD-CONTRACT's hard rules, enforced on the diff: no skipped/removed tests, no weakened rails, no fake green, no secrets;
+    # warns on scope creep / formatting churn. autobuild runs it before it may commit.
+    #   ./securax diffcheck [--base REF] [--strict] [--json]      default: uncommitted changes vs HEAD
+    shift; exec python3 "$ROOT/lifecycle/diffcheck.py" "$@"
     ;;
   vet)
     # SUPPLY-CHAIN GATE for third-party agent skills / plugins / MCP servers. Static only: nothing from the repo is executed.
