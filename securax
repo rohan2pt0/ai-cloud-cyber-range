@@ -83,7 +83,17 @@ case "$cmd" in
       && C "LITE mode: starting the core path only (Private Docs / n8n skipped to save RAM)."
     # Regenerate the router config from .env on EVERY start, so a key added by hand (as DEPLOY.md says) or
     # via `./securax setup` just works. Deterministic + idempotent; skipped silently without python3.
-    command -v python3 >/dev/null 2>&1 && { python3 "$ROOT/local/compose/gen_litellm_config.py" --write --env-file "$ENVF" >/dev/null 2>&1 || true; }
+    # The router mounts the generated file: it must exist as a FILE (a bind-mount of a missing path makes
+    # Docker create a directory there, which crash-loops the router forever). Never fail silently.
+    GENCFG="$ROOT/local/compose/litellm-config.generated.yaml"
+    [ -d "$GENCFG" ] && rm -rf "$GENCFG"
+    if command -v python3 >/dev/null 2>&1; then
+      GENERR="$(python3 "$ROOT/local/compose/gen_litellm_config.py" --write --env-file "$ENVF" 2>&1 >/dev/null)" || {
+        C "Could not generate the router config from your .env / plugin catalog:"; echo "  $GENERR"; }
+    else
+      C "python3 not found — using the shipped default router config (Gemini + local model). Install python3 to enable your own provider keys."
+    fi
+    [ -s "$GENCFG" ] || cp "$ROOT/local/compose/litellm-config.yaml" "$GENCFG"
     if ! ( cd "$ROOT/local/compose" && docker compose --profile ai up -d --build $SVCS ); then
       C "Startup failed. Most often the model router rejected its config — its log:"
       ( cd "$ROOT/local/compose" && docker compose --profile ai logs --no-color --tail 25 litellm 2>/dev/null ) || true
@@ -268,6 +278,19 @@ URLS
     shift
     ( cd "$ROOT" && python3 -m routines "${1:-list}" )
     ;;
+  verify)
+    # The "definition of done" for ANY change, human- or model-made — the same floor CI enforces.
+    #   ./securax verify          fast gates (seconds): lint + unit tests + router-config + compose checks
+    #   ./securax verify --full   + the user-perspective sandbox (real containers + browser; ~10 min)
+    cd "$ROOT"; rc=0
+    step(){ C "▶ $1"; shift; "$@" || { C "✘ FAILED: $*"; rc=1; }; }
+    command -v ruff >/dev/null 2>&1 && step "lint (ruff)" ruff check . || echo "  (ruff not installed — pip install ruff; CI will still check)"
+    step "unit tests (pytest)" python3 -m pytest -q
+    step "router config baseline is current" bash -c 'python3 local/compose/gen_litellm_config.py --baseline --write --out "$0" >/dev/null && diff -q "$0" local/compose/litellm-config.yaml' "$(mktemp)"
+    command -v docker >/dev/null 2>&1 && step "compose file valid" docker compose --env-file local/compose/.env.example -f local/compose/docker-compose.yml --profile ai config -q
+    if [ "${2:-}" = "--full" ]; then step "user-perspective sandbox" python3 sandbox/run.py; fi
+    [ "$rc" = 0 ] && C "✔ verify passed" || { C "✘ verify FAILED — fix the above before calling it done"; exit 1; }
+    ;;
   build)
     # Build/evolve SecuRAX using ITS OWN models (via the gateway), with Claude-like rigor supplied by
     # the BUILD-CONTRACT + the repo's test gates. Uses Aider as the edit->test->fix agent.
@@ -293,7 +316,7 @@ URLS
     OPENAI_API_BASE="http://localhost:8080/v1" OPENAI_API_KEY="$KEY" \
       aider --model "openai/$MODEL" \
             --read "$ROOT/BUILD-CONTRACT.md" \
-            --test-cmd "ruff check . && python -m pytest -q" --auto-test \
+            --test-cmd "bash \"$ROOT/securax\" verify" --auto-test \
             --no-gitignore --message "$TASK"
     ;;
   escalate)
@@ -379,8 +402,8 @@ URLS
     # (A plain `git pull` only changes files on disk — running containers keep the OLD code.)
     git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1 || { C "This isn't a git checkout — download the latest ZIP instead."; exit 1; }
     C "Updating SecuRAX (git pull, then recreate the containers)…"
-    # The router config is GENERATED from .env on every `up` — discard local edits so the pull can't conflict.
-    git -C "$ROOT" checkout -- local/compose/litellm-config.yaml 2>/dev/null || true
+    # Legacy: older versions rewrote the tracked baseline on every `up`; restore it so the pull can't conflict.
+    git -C "$ROOT" diff --quiet -- local/compose/litellm-config.yaml 2>/dev/null || git -C "$ROOT" checkout -- local/compose/litellm-config.yaml
     git -C "$ROOT" pull --ff-only || { C "git pull failed — you may have local changes. See:  git -C \"$ROOT\" status"; exit 1; }
     "$0" down && exec "$0" up
     ;;

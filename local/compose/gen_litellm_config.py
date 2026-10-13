@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate litellm-config.yaml from the SecuRAX plugin catalog + your .env.
+"""Generate litellm-config.generated.yaml from the SecuRAX plugin catalog + your .env.
 
 The catalog (plugins/catalog.json) is the single source of truth for provider plugins.
 A provider is ENABLED when every API key it needs is present (non-empty) in the env.
@@ -22,7 +22,7 @@ deterministic and tests are hermetic. `main()` builds that mapping from the proc
 
 Usage:
   python3 gen_litellm_config.py --status                 # show enabled/disabled providers + chains
-  python3 gen_litellm_config.py --write                  # (re)write litellm-config.yaml
+  python3 gen_litellm_config.py --write                  # (re)write litellm-config.generated.yaml
   python3 gen_litellm_config.py --write --env-file .env  # read keys from a specific .env
 Model override: set <ID>_MODEL in the env (e.g. OPENAI_MODEL=openai/gpt-4o, LOCAL_MODEL=qwen2.5:3b)
 to change a provider's model without editing the catalog.
@@ -36,7 +36,8 @@ import os
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
 CATALOG = os.path.join(REPO, "plugins", "catalog.json")
-OUT = os.path.join(HERE, "litellm-config.yaml")
+BASELINE_OUT = os.path.join(HERE, "litellm-config.yaml")            # tracked reference; never touched by `up`
+OUT = os.path.join(HERE, "litellm-config.generated.yaml")           # what the router mounts; git-ignored, per machine
 
 CLOUD_TIMEOUT = 40     # seconds: a hung cloud provider should fail over fast
 LOCAL_TIMEOUT = 300    # seconds: CPU inference is slow but sure
@@ -214,10 +215,10 @@ def status(catalog: dict, env: dict, baseline: bool = False) -> list[tuple[str, 
 
 
 def main(argv: list[str] | None = None) -> int:
-    ap = argparse.ArgumentParser(description="Generate litellm-config.yaml from the plugin catalog.")
+    ap = argparse.ArgumentParser(description="Generate the LiteLLM router config from the plugin catalog.")
     ap.add_argument("--env-file", default=os.path.join(HERE, ".env"))
     ap.add_argument("--catalog", default=CATALOG)
-    ap.add_argument("--out", default=OUT)
+    ap.add_argument("--out", default=None, help="default: litellm-config.generated.yaml (or litellm-config.yaml with --baseline)")
     ap.add_argument("--write", action="store_true", help="write the config file")
     ap.add_argument("--status", action="store_true", help="print provider enable/disable status + chains")
     ap.add_argument("--check-key", metavar="PROVIDER_ID",
@@ -247,9 +248,10 @@ def main(argv: list[str] | None = None) -> int:
         if not args.write:
             return 0
 
-    with open(args.out, "w", encoding="utf-8") as f:
+    out = args.out or (BASELINE_OUT if args.baseline else OUT)
+    with open(out, "w", encoding="utf-8", newline="\n") as f:
         f.write(generate(catalog, env, baseline=args.baseline))
-    print(f"wrote {args.out}")
+    print(f"wrote {out}")
     return 0
 
 

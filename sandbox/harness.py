@@ -103,6 +103,16 @@ class Sandbox:
         self._make_certs()
         self._host_quirks()
         self._write_override()
+        self._snapshot()
+
+    def _snapshot(self) -> None:
+        """Make the clone a git repo at the shipped state, so a journey can prove `up` didn't dirty it
+        (a dirty checkout is what made `git pull` fail on a real laptop). Harness files are excluded."""
+        g = lambda *a: sh(["git", "-c", "user.name=sbx", "-c", "user.email=sbx@example.com", *a], cwd=self.clone)  # noqa: E731
+        g("init", "-q")
+        (self.clone / ".git" / "info" / "exclude").write_text("sandbox/out/\ndocker-compose.override.yml\nlocal/compose/docker-compose.override.yml\n")
+        g("add", "-A")
+        g("commit", "-q", "-m", "shipped state")
 
     def _make_certs(self) -> None:
         d = self.clone / "sandbox" / "out" / "certs"

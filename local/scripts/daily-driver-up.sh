@@ -10,6 +10,8 @@ log(){ printf '\033[1;36m[daily-driver]\033[0m %s\n' "$*"; }
 
 [ -f .env ] || { cp .env.example .env; log "created .env from example — add cloud keys later if you want"; }
 
+# the router mounts a generated config file; create it first (a missing bind-mount becomes a directory)
+python3 gen_litellm_config.py --write >/dev/null 2>&1 || cp -n litellm-config.yaml litellm-config.generated.yaml
 log "1/3 Building the guardrail gateway and starting the AI profile"
 docker compose --profile ai up -d --build
 

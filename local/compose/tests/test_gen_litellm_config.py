@@ -293,3 +293,25 @@ def test_router_never_phones_huggingface():
     # offline-first estate must not make that outbound call (and offline it cost seconds of retries).
     env = yaml.safe_load(COMPOSE.read_text())["services"]["litellm"]["environment"]
     assert str(env["HF_HUB_OFFLINE"]) == "1" and str(env["TRANSFORMERS_OFFLINE"]) == "1"
+
+
+REPO = HERE.parent.parent.parent
+
+
+def test_generated_router_config_is_never_a_tracked_file():
+    # Found on a real Windows laptop: `up` rewrote the TRACKED litellm-config.yaml, so the next `git pull`
+    # failed ("local changes would be overwritten"). The per-machine file must be git-ignored and be what
+    # the router mounts; the tracked baseline must stay untouched by `up`.
+    assert gen.OUT.endswith("litellm-config.generated.yaml") and gen.OUT != gen.BASELINE_OUT
+    mounts = yaml.safe_load(COMPOSE.read_text())["services"]["litellm"]["volumes"]
+    assert any(m.startswith("./litellm-config.generated.yaml:") for m in mounts)
+    assert "local/compose/litellm-config.generated.yaml" in (REPO / ".gitignore").read_text()
+
+
+def test_shell_entrypoints_stay_lf_and_windows_has_a_launcher():
+    # Found on Windows: `./securax` can't run in PowerShell, and a CRLF checkout breaks the script.
+    attrs = (REPO / ".gitattributes").read_text()
+    assert "* text=auto eol=lf" in attrs and "*.bat text eol=crlf" in attrs
+    assert "wsl" in (REPO / "securax.cmd").read_text()
+    for bat in ("START-HERE-Windows.bat", "STOP-Windows.bat"):
+        assert "securax.cmd" in (REPO / bat).read_text(), f"{bat} must go through the WSL launcher"

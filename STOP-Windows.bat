@@ -1,6 +1,10 @@
 @echo off
 title SecuRAX - stop
-cd /d "%~dp0local\compose"
-docker compose --profile ai down
-echo Stopped. RAM freed.
+call "%~dp0securax.cmd" down
+if errorlevel 1 (
+  echo.
+  echo   Could not stop - read the message above.
+) else (
+  echo Stopped. RAM freed.
+)
 pause

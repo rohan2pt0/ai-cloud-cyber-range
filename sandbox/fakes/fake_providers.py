@@ -7,7 +7,7 @@ WHY THIS EXISTS
   impersonates the provider endpoints at the NETWORK level: the sandbox compose override gives this
   container the provider hostnames as network aliases (api.groq.com, openrouter.ai,
   generativelanguage.googleapis.com, …) and LiteLLM trusts the sandbox CA. So the unmodified
-  litellm-config.yaml — real provider prefixes, real keys wiring — is what gets exercised.
+  the generated litellm config — real provider prefixes, real keys wiring — is what gets exercised.
 
 WHAT IT DOES
   * Answers OpenAI-compatible `…/chat/completions` (Groq, OpenRouter, OpenAI, DeepSeek, Mistral, xAI,

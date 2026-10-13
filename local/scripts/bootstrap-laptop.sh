@@ -19,6 +19,8 @@ if ! need helm;    then curl -fsSL https://raw.githubusercontent.com/helm/helm/m
 log "2/6 Building and starting the local AI plane (gateway + router + db)"
 cd "$ROOT/local/compose"
 [ -f .env ] || { cp .env.example .env; log "  created .env from example - edit it to add cloud keys (optional)"; }
+# the router mounts a generated config file; create it first (a missing bind-mount becomes a directory)
+python3 gen_litellm_config.py --write >/dev/null 2>&1 || cp -n litellm-config.yaml litellm-config.generated.yaml
 docker compose --profile core up -d --build
 
 log "3/6 (optional) Starting the local model + Llama Guard - needs ~4 GB free RAM"

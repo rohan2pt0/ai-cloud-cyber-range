@@ -243,3 +243,6 @@ design/out/*.png
 
 # sandbox artifacts (screenshots, certs, results)
 sandbox/out/
+
+# generated per machine from plugins/catalog.json + .env (see gen_litellm_config.py)
+local/compose/litellm-config.generated.yaml
