@@ -103,6 +103,13 @@ window.SECURAX = {
       { cap: "Workflow automation", primary: "n8n", alt: "Node-RED, Temporal", phase: 0, std: "The glue" },
       { cap: "Backup / BCDR", primary: "restic / BorgBackup (3-2-1)", alt: "Velero", phase: 0, std: "ISO 22301" },
     ]},
+    { group: "Resilience & build assurance", items: [
+      { cap: "AI provider plugins + fail-over ladder", primary: "plugins/catalog.json → LiteLLM", alt: "Portkey, OpenRouter", phase: 0, std: "No single provider is a SPOF" },
+      { cap: "Elastic resource sizing", primary: "securax autosize (Docker-aware)", alt: "manual .env", phase: 0, std: "Works from 8 GB to workstation" },
+      { cap: "User-perspective E2E sandbox", primary: "sandbox/ (Docker + Playwright)", alt: "Cypress, k6", phase: 0, std: "Tested as the user, not the developer" },
+      { cap: "Definition of done", primary: "./securax verify [--full]", alt: "make / tox", phase: 0, std: "Same gate for human & model-made changes" },
+      { cap: "Self-hosted build agent", primary: "Aider + builder ladder + BUILD-CONTRACT", alt: "Cline, Continue", phase: 0, std: "No paid-IDE single point of failure" },
+    ]},
     { group: "Human layer", items: [
       { cap: "Second brain", primary: "Obsidian (PARA + Zettelkasten)", alt: "Logseq", phase: 0, std: "Knowledge continuity" },
       { cap: "Life-OS / continuity", primary: "Guiding-Map PWA", alt: "—", phase: 0, std: "Family BCP, OPSEC" },

@@ -64,6 +64,12 @@ makes it an *ecosystem* and not five disconnected projects.
 | Autonomous web research (sovereign Manus/Clawbot) | [`19-AUTONOMOUS-RESEARCH.md`](19-AUTONOMOUS-RESEARCH.md) |
 | Claude-subscription parity (Projects/Artifacts/Routines/…) | [`20-CLAUDE-PARITY.md`](20-CLAUDE-PARITY.md) |
 | How we version & release (SemVer, changelog, process) | [`21-VERSIONING-AND-RELEASES.md`](21-VERSIONING-AND-RELEASES.md) |
+| Add AI providers (OpenAI, Groq, Bedrock…) like plugins | [`22-PLUGINS-AND-PROVIDERS.md`](22-PLUGINS-AND-PROVIDERS.md) |
+| Build SecuRAX with its own models (no paid-Claude dependency) | [`23-BUILD-WITHOUT-CLAUDE.md`](23-BUILD-WITHOUT-CLAUDE.md) |
+| Run on a modest laptop; the degradation ladders | [`24-RESILIENCE-AND-LOW-RESOURCE.md`](24-RESILIENCE-AND-LOW-RESOURCE.md) |
+| What happens when each component fails + elastic sizing | [`25-FALLBACKS-AND-ELASTICITY.md`](25-FALLBACKS-AND-ELASTICITY.md) |
+| Install on Windows (copy-paste steps) | [`../../WINDOWS-QUICKSTART.md`](../../WINDOWS-QUICKSTART.md) |
+| Test the product as a user would (sandbox) | [`../../sandbox/README.md`](../../sandbox/README.md) |
 | Start using it today | [`../../GETTING-STARTED.md`](../../GETTING-STARTED.md) |
 
 ## The three promises this foundation keeps
