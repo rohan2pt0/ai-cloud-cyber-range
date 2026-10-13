@@ -1,0 +1,22 @@
+groups:
+  - name: securax
+    rules:
+      - alert: GatewayDown
+        expr: up{job="securax-gateway"} == 0
+        for: 2m
+        labels: { severity: critical }
+        annotations:
+          summary: "The SecuRAX guardrail gateway is not answering"
+          runbook: "./securax doctor, then ./securax up (docs/securax/27-INCIDENT-RUNBOOK.md)"
+      - alert: HighBlockRate
+        expr: sum(rate(guardrail_events_total{event="blocked_input"}[10m])) > 0.2
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "Unusually many requests are being blocked (possible attack or a rail misfiring)"
+      - alert: UpstreamErrors
+        expr: sum(rate(guardrail_events_total{event="upstream_error"}[10m])) > 0.1
+        for: 10m
+        labels: { severity: warning }
+        annotations:
+          summary: "The model router keeps failing (check provider keys/models: ./securax models)"

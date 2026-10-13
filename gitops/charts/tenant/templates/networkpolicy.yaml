@@ -1,0 +1,32 @@
+# Zero trust: deny everything, then open only what a tenant gateway needs.
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: {{ include "tenant.ns" . }}
+spec:
+  podSelector: {}
+  policyTypes: [Ingress, Egress]
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: gateway
+  namespace: {{ include "tenant.ns" . }}
+spec:
+  podSelector:
+    matchLabels: { app: llm-gateway }
+  policyTypes: [Ingress, Egress]
+  ingress:
+    # from the ingress controller / platform namespaces only (never from other tenants)
+    - from:
+        - namespaceSelector: { matchLabels: { securax.io/ingress: "true" } }
+        - namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: monitoring } }
+      ports: [{ port: 8080, protocol: TCP }]
+  egress:
+    - to:                      # DNS
+        - namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: kube-system } }
+      ports: [{ port: 53, protocol: UDP }, { port: 53, protocol: TCP }]
+    - to:                      # the shared model router, nothing else
+        - namespaceSelector: { matchLabels: { kubernetes.io/metadata.name: securax-core } }
+      ports: [{ port: 4000, protocol: TCP }]

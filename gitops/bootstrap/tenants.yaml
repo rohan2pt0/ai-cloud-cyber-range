@@ -1,0 +1,38 @@
+# One Application per file in gitops/tenants/*.yaml — each is a differentiated tenant cell stamped from charts/tenant.
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: tenants
+  namespace: argocd
+  annotations: { argocd.argoproj.io/sync-wave: "2" }
+spec:
+  goTemplate: true
+  goTemplateOptions: ["missingkey=error"]
+  generators:
+    - git:
+        repoURL: https://github.com/rohan2pt0/ai-cloud-cyber-range.git
+        revision: main
+        files:
+          - path: "gitops/tenants/*.yaml"
+  template:
+    metadata:
+      name: "tenant-{{ .id }}"
+    spec:
+      project: default
+      source:
+        repoURL: https://github.com/rohan2pt0/ai-cloud-cyber-range.git
+        targetRevision: main
+        path: gitops/charts/tenant
+        helm:
+          valuesObject:
+            tenant:
+              id: "{{ .id }}"
+              name: "{{ .name }}"
+            tier: "{{ .tier }}"
+            oidcGroup: "{{ .oidcGroup }}"
+      destination:
+        server: https://kubernetes.default.svc
+        namespace: "t-{{ .id }}"
+      syncPolicy:
+        automated: { prune: true, selfHeal: true }
+        syncOptions: [CreateNamespace=false]

@@ -1,0 +1,135 @@
+# STAGE 1 — SPROUT ("walk"). The always-on core of a real security estate, on ONE machine.
+# DORMANT BY DEFAULT: every service below is in the `sprout` profile, so `./securax up` never starts any of it.
+# Wake it with  ./securax grow sprout   ·   put it back to sleep with  ./securax hibernate sprout  (data is kept).
+#
+#   identity ........ Keycloak (SSO / MFA / RBAC) + its own Postgres
+#   secrets ......... OpenBao (open-source Vault fork), file storage, unsealed by `./securax grow sprout`
+#   object store .... SeaweedFS (S3 API) for backups and evidence
+#   metrics/alerts .. Prometheus + Alertmanager (scrapes the guardrail gateway)
+#
+# The heavy SOC "organs" (Wazuh, MISP, TheHive) are fetched from their official upstream repos at pinned versions on
+# demand — see lifecycle/organs.json. Run it through the lifecycle engine, not by hand: it creates the generated
+# secrets/config files this file mounts (a missing bind-mount source would otherwise become an empty directory).
+services:
+  keycloak-db:
+    image: postgres:16-alpine
+    profiles: ["sprout"]
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?run ./securax grow sprout}
+    volumes: ["keycloak_db:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [data]
+    mem_limit: 256m
+    security_opt: ["no-new-privileges:true"]
+
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0.7
+    profiles: ["sprout"]
+    restart: unless-stopped
+    command: ["start", "--http-enabled=true", "--hostname-strict=false", "--health-enabled=true"]
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak-db:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD:?run ./securax grow sprout}
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?run ./securax grow sprout}
+    ports: ["${BIND_HOST:-127.0.0.1}:8180:8080"]
+    depends_on:
+      keycloak-db: { condition: service_healthy }
+    healthcheck:
+      # The Keycloak image has no curl: speak HTTP over bash's /dev/tcp to the management port.
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.0\\r\\n\\r\\n' >&3 && grep -q '\"status\": \"UP\"' <&3"]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 40s
+    networks: [edge, data]
+    mem_limit: 1g
+    security_opt: ["no-new-privileges:true"]
+
+  openbao:
+    image: ghcr.io/openbao/openbao:2.1.0
+    profiles: ["sprout"]
+    restart: unless-stopped
+    # NOTE: no -config flag. The image entrypoint already loads /openbao/config; passing it again defines the listener
+    # twice and the second bind fails ("address already in use").
+    command: ["server"]
+    environment:
+      BAO_ADDR: http://127.0.0.1:8200
+    volumes:
+      - ./sprout/openbao.hcl:/openbao/config/openbao.hcl:ro
+      - openbao_data:/openbao/file
+    ports: ["${BIND_HOST:-127.0.0.1}:8200:8200"]
+    healthcheck:
+      # 200 whether sealed, unsealed or uninitialised: this checks "the process answers", not "it is unsealed".
+      test: ["CMD-SHELL", "wget -q -O /dev/null 'http://127.0.0.1:8200/v1/sys/health?standbyok=true&sealedcode=200&uninitcode=200'"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [edge]
+    mem_limit: 256m
+    security_opt: ["no-new-privileges:true"]
+
+  seaweedfs:
+    image: chrislusf/seaweedfs:3.80
+    profiles: ["sprout"]
+    restart: unless-stopped
+    command: ["server", "-dir=/data", "-s3", "-s3.config=/etc/seaweedfs/s3.json", "-ip.bind=0.0.0.0"]
+    volumes:
+      - seaweed_data:/data
+      - ${SECURAX_SPROUT_DIR:?run ./securax grow sprout}/s3.json:/etc/seaweedfs/s3.json:ro
+    ports: ["${BIND_HOST:-127.0.0.1}:8333:8333"]
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:9333/cluster/status"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks: [edge, data]
+    mem_limit: 512m
+    security_opt: ["no-new-privileges:true"]
+
+  prometheus:
+    image: prom/prometheus:v2.55.1
+    profiles: ["sprout"]
+    restart: unless-stopped
+    command:
+      - --config.file=/etc/prometheus/prometheus.yml
+      - --storage.tsdb.path=/prometheus
+      - --storage.tsdb.retention.time=30d
+      - --web.enable-lifecycle
+    volumes:
+      - ./sprout/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./sprout/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus_data:/prometheus
+    ports: ["${BIND_HOST:-127.0.0.1}:9090:9090"]
+    networks: [edge]
+    mem_limit: 512m
+    security_opt: ["no-new-privileges:true"]
+
+  alertmanager:
+    image: prom/alertmanager:v0.27.0
+    profiles: ["sprout"]
+    restart: unless-stopped
+    command: ["--config.file=/etc/alertmanager/alertmanager.yml", "--storage.path=/alertmanager"]
+    volumes:
+      - ${SECURAX_SPROUT_DIR:?run ./securax grow sprout}/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    ports: ["${BIND_HOST:-127.0.0.1}:9093:9093"]
+    networks: [edge]
+    mem_limit: 128m
+    security_opt: ["no-new-privileges:true"]
+
+volumes:
+  keycloak_db:
+  openbao_data:
+  seaweed_data:
+  prometheus_data:
+  alertmanager_data:

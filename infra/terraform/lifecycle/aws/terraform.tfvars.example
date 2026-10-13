@@ -1,0 +1,9 @@
+# Copy to terraform.tfvars. ./securax grow / hibernate pass `stage`, `awake` and `size` for you.
+name        = "securax"
+region      = "ap-south-1"
+alert_email = "you@example.com"
+# Metabolic limit (USD / month). Set it BEFORE waking anything.
+monthly_budget_usd = 30
+# admin_cidrs = ["203.0.113.7/32"]   # optional: reach the managed Kubernetes API from your IP; empty = private only
+# tailscale_auth_key = "tskey-auth-..."  # optional: private mesh, no inbound ports
+# tenants = { acme = {}, globex = { retention_days = 730 } }   # forest stage

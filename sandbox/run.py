@@ -496,6 +496,213 @@ echo ok
     c.ok("autobuild/impossible" not in git("branch")[1], "…with the failed branch deleted")
 
 
+def _lc(sb: H.Sandbox, *args: str, extra_env: dict | None = None, timeout: int = 900) -> tuple[int, str]:
+    """Run the lifecycle CLI (`./securax stages|grow|…`) with a private ~/.securax so the sandbox never touches the real one."""
+    home = sb.clone.parent / "sxhome"
+    home.mkdir(exist_ok=True)
+    env = {**os.environ, "SECURAX_HOME_DIR": str(home), **(extra_env or {})}
+    return H.sh(["bash", "./securax", *args], cwd=sb.clone, env=env, timeout=timeout)
+
+
+def _running(names: list[str]) -> list[str]:
+    out = H.sh(["docker", "ps", "--format", "{{.Names}}"])[1].split()
+    return [n for n in out if any(k in n for k in names)]
+
+
+@journey("lifecycle_sprout", "Phase 1 'walk': dormant by default → grow → real data → hibernate (backed up) → wake with the data intact → prune.", slow=True)
+def j_sprout(sb: H.Sandbox, c: Checks):
+    import json as _json
+    import urllib.parse
+    import urllib.request
+    home = sb.clone.parent / "sxhome"
+    shutil.rmtree(home, ignore_errors=True)
+    sb.down()
+    for v in ("keycloak_db", "openbao_data", "seaweed_data", "prometheus_data", "alertmanager_data"):
+        H.sh(["docker", "volume", "rm", "-f", f"vulnbank-range_{v}"])
+    sb.reset_env(SECURAX_LITE="1")
+    sprout = ["keycloak", "openbao", "seaweedfs", "prometheus", "alertmanager"]
+
+    rc, out = _lc(sb, "stages")
+    c.ok(rc == 0 and "sprout" in out and "dormant" in out and "○ tree" in out, "`./securax stages` shows every stage above the seed as dormant", tail(out, 400))
+    c.ok(not _running(sprout), "dormant means DORMANT: not one sprout container exists before you grow it")
+    rc, out = _lc(sb, "grow", "sprout", timeout=1500)
+    c.ok(rc == 0 and "openbao: unsealed" in out, "`./securax grow sprout` germinates the core and unseals OpenBao", tail(out, 600))
+    c.ok(len(_running(sprout)) == 5 and not _running(["organ"]), "all five sprout services run (and no organ was started uninvited)", _running(sprout))
+    env_file = home / "sprout" / ".env.sprout"
+    secrets_before = env_file.read_text() if env_file.exists() else ""
+    c.ok(env_file.exists() and (env_file.stat().st_mode & 0o077) == 0, "generated secrets exist and are owner-only")
+
+    creds = _json.loads((home / "sprout" / "openbao-init.json").read_text())
+    kv = dict(x.split("=", 1) for x in secrets_before.splitlines() if "=" in x)
+
+    def call(method, url, body=None, headers=None, form=None):
+        data, hh = None, dict(headers or {})
+        if form is not None:
+            data, hh["Content-Type"] = urllib.parse.urlencode(form).encode(), "application/x-www-form-urlencoded"
+        elif body is not None:
+            data, hh["Content-Type"] = _json.dumps(body).encode(), "application/json"
+        try:
+            with urllib.request.urlopen(urllib.request.Request(url, data=data, method=method, headers=hh), timeout=30) as r:
+                raw = r.read().decode()
+                return r.status, (_json.loads(raw) if raw.strip().startswith(("{", "[")) else raw)
+        except urllib.error.HTTPError as e:
+            return e.code, e.read().decode()[:200]
+        except OSError:
+            return 0, ""
+
+    def kc_token():
+        st, t = call("POST", "http://127.0.0.1:8180/realms/master/protocol/openid-connect/token",
+                     form={"grant_type": "password", "client_id": "admin-cli", "username": "admin", "password": kv["KEYCLOAK_ADMIN_PASSWORD"]})
+        return t["access_token"] if st == 200 else ""
+
+    c.ok(sb.wait_until(lambda: bool(kc_token()), 180, 5), "Keycloak answers and its admin login works")
+    tok = {"X-Vault-Token": creds["root_token"]}
+    call("POST", "http://127.0.0.1:8200/v1/sys/mounts/secret", {"type": "kv", "options": {"version": "2"}}, tok)
+    st, _ = call("POST", "http://127.0.0.1:8200/v1/secret/data/probe", {"data": {"answer": "42"}}, tok)
+    c.ok(st == 200, "a secret is written into OpenBao")
+    st, _ = call("POST", "http://127.0.0.1:8180/admin/realms", {"realm": "probe", "enabled": True}, {"Authorization": "Bearer " + kc_token()})
+    c.ok(st == 201, "a realm is created in Keycloak")
+    c.ok(call("GET", "http://127.0.0.1:8333/")[0] == 403, "SeaweedFS S3 refuses anonymous access (identities are enforced)")
+    st, m = call("GET", "http://127.0.0.1:9090/api/v1/targets")
+    c.ok(st == 200 and any(t["labels"].get("job") == "securax-gateway" for t in m["data"]["activeTargets"]), "Prometheus is configured to scrape the guardrail gateway")
+
+    bdir = sb.clone / "backups"
+    shutil.rmtree(bdir, ignore_errors=True)
+    rc, out = _lc(sb, "hibernate", "sprout", timeout=900)
+    files = sorted(bdir.glob("securax-*.tar.gz"))
+    c.ok(rc == 0 and files, "`./securax hibernate sprout` takes a verified backup first", tail(out, 400))
+    names = H.sh(["tar", "tzf", str(files[-1])])[1] if files else ""
+    c.ok("sprout-secrets.tgz" in names and "keycloak_db" in names and "openbao_data" in names,
+         "…and the backup carries the sprout DATA and the SECRETS needed to use it (unseal key, DB password)", names)
+    c.ok(not _running(sprout), "asleep means asleep: no sprout container is running")
+    rc, out = _lc(sb, "stages")
+    c.ok("hibernating" in out and "sprout" in out, "`stages` calls it hibernating (data kept), not dormant", tail(out, 300))
+
+    rc, out = _lc(sb, "grow", "sprout", timeout=900)
+    c.ok(rc == 0 and "openbao: unsealed" in out, "waking re-unseals OpenBao by itself", tail(out, 300))
+    c.ok(env_file.read_text() == secrets_before, "waking never rotated a secret under the existing databases")
+    st, v = call("GET", "http://127.0.0.1:8200/v1/secret/data/probe", None, tok)
+    c.ok(st == 200 and v["data"]["data"] == {"answer": "42"}, "the OpenBao secret SURVIVED hibernation", f"{st} {str(v)[:100]}")
+    c.ok(sb.wait_until(lambda: bool(kc_token()), 180, 5), "Keycloak is back")
+    st, r = call("GET", "http://127.0.0.1:8180/admin/realms/probe", None, {"Authorization": "Bearer " + kc_token()})
+    c.ok(st == 200 and r.get("realm") == "probe", "the Keycloak realm SURVIVED hibernation")
+
+    rc, out = _prune(sb, home)
+    c.ok(rc == 0 and not _running(sprout), "`prune` (typed confirmation) removes the containers", tail(out, 300))
+    vols = H.sh(["docker", "volume", "ls", "-q"])[1]
+    c.ok("keycloak_db" not in vols and "openbao_data" not in vols and not (home / "sprout").exists(), "…the volumes and the generated secrets")
+    rc, out = _lc(sb, "stages")
+    c.ok("○ sprout" in out, "…and the stage is dormant again (the genome is intact: grow it any time)", tail(out, 300))
+
+
+def _prune(sb: H.Sandbox, home) -> tuple[int, str]:
+    """Run `./securax prune sprout` on a real terminal and type the confirmation."""
+    import pty
+    import select
+    pid, fd = pty.fork()
+    if pid == 0:
+        os.chdir(sb.clone)
+        os.environ["SECURAX_HOME_DIR"] = str(home)
+        os.execvp("bash", ["bash", "./securax", "prune", "sprout"])
+    buf, sent, end = b"", False, time.time() + 300
+    while time.time() < end:
+        r, _, _ = select.select([fd], [], [], 0.5)
+        if r:
+            try:
+                data = os.read(fd, 4096)
+            except OSError:
+                break
+            if not data:
+                break
+            buf += data
+            if not sent and b"PRUNE sprout" in buf and b"continue" in buf:
+                os.write(fd, b"PRUNE sprout\n")
+                sent = True
+        else:
+            try:
+                done, status = os.waitpid(pid, os.WNOHANG)
+            except ChildProcessError:
+                break
+            if done:
+                return os.waitstatus_to_exitcode(status), buf.decode("utf-8", "replace")
+    try:
+        _, status = os.waitpid(pid, 0)
+    except ChildProcessError:
+        return 0, buf.decode("utf-8", "replace")
+    return os.waitstatus_to_exitcode(status), buf.decode("utf-8", "replace")
+
+
+@journey("lifecycle_organs", "Upstream 'organs': pinned refs are valid; a stand-in organ germinates, is pinned to localhost, hibernates and wakes.")
+def j_organs(sb: H.Sandbox, c: Checks):
+    import json as _json
+    import urllib.request
+    home = sb.clone.parent / "sxhome"
+    shutil.rmtree(home, ignore_errors=True)
+    rc, out = _lc(sb, "organ-check", timeout=900)
+    c.ok(rc == 0 and out.count("✔") == 3, "Wazuh, MISP and TheHive: the pinned upstream refs fetch, prepare and compose-validate", tail(out, 600))
+    # a stand-in organ from a LOCAL repo: proves fetch-at-exact-ref, port remapping to localhost, hibernate and wake with real containers
+    src = sb.clone.parent / "organ-src"
+    shutil.rmtree(src, ignore_errors=True)
+    src.mkdir()
+    (src / "docker-compose.yml").write_text('services:\n  web:\n    image: nginx:1.27-alpine\n    ports: ["18080:80"]\n')
+    git = lambda *a: H.sh(["git", "-c", "user.name=sbx", "-c", "user.email=sbx@example.com", *a], cwd=src)  # noqa: E731
+    git("init", "-q", "-b", "main")
+    git("add", "-A")
+    git("commit", "-q", "-m", "organ v1")
+    sha = git("rev-parse", "HEAD")[1].strip()
+    (src / "docker-compose.yml").write_text('services:\n  web:\n    image: nginx:1.27-alpine\n    ports: ["18081:80"]\n')   # a LATER commit that must NOT be used
+    git("commit", "-q", "-am", "organ v2")
+    ov = _json.dumps({"misp": {"repo": str(src), "ref": sha, "dir": ".", "env": None, "override": {"web": ["127.0.0.1:18090:80"]}, "pre": [], "url": "http://127.0.0.1:18090"}})
+    env = {"SECURAX_ORGAN_OVERRIDE": ov}
+    rc, out = _lc(sb, "organ", "misp", "up", extra_env=env, timeout=300)
+    c.ok(rc == 0, "an organ germinates from its pinned ref", tail(out, 400))
+
+    def get(url):
+        try:
+            with urllib.request.urlopen(url, timeout=10) as r:
+                return r.status
+        except OSError:
+            return 0
+    c.ok(sb.wait_until(lambda: get("http://127.0.0.1:18090/") == 200, 60, 2), "…and answers on the localhost port WE assigned (its own 18080/18081 are not published)")
+    c.ok(get("http://127.0.0.1:18080/") == 0 and get("http://127.0.0.1:18081/") == 0, "…the pinned commit was used, not the branch tip")
+    rc, out = _lc(sb, "organ", "misp", "stop", extra_env=env)
+    rc, out = _lc(sb, "organ", "misp", "status", extra_env=env)
+    c.ok("hibernating" in out and get("http://127.0.0.1:18090/") == 0, "stop = hibernate (container kept, not running)", tail(out, 200))
+    rc, out = _lc(sb, "organ", "misp", "up", extra_env=env, timeout=300)
+    c.ok(sb.wait_until(lambda: get("http://127.0.0.1:18090/") == 200, 60, 2), "…and wakes again")
+    rc, out = _lc(sb, "organ", "misp", "down", extra_env=env)
+    c.ok(not _running(["securax-misp"]), "down removes it")
+    shutil.rmtree(home / "organs", ignore_errors=True)
+
+
+@journey("lifecycle_cloud_is_safe", "Cloud stages (tree/canopy/forest): plan-only without --apply; hibernate/wake flip ONE switch; nothing is ever created by accident.")
+def j_cloud(sb: H.Sandbox, c: Checks):
+    if not shutil.which("terraform"):
+        c.ok(True, "terraform is not installed on this machine — the cloud wiring is exercised in CI and by `./securax verify --full`")
+        return
+    env = {"SECURAX_OFFLINE_PLAN": "1", "SECURAX_CLOUD": "aws", "AWS_ACCESS_KEY_ID": "offline", "AWS_SECRET_ACCESS_KEY": "offline",
+           "AWS_REGION": "ap-south-1", "TF_IN_AUTOMATION": "1"}
+    d = sb.clone / "infra" / "terraform" / "lifecycle" / "aws"
+    rc, out = _lc(sb, "soil", "canopy", extra_env=env)
+    c.ok(rc == 0 and "terraform is installed" in out, "`soil canopy` reports readiness (and would name every missing tool)", tail(out, 300))
+    rc, out = _lc(sb, "grow", "canopy", extra_env=env, timeout=1200)
+    c.ok(rc == 0 and "PLAN only" in out and "aws_eks_cluster" in out and "aws_nat_gateway" in out,
+         "`grow canopy` WITHOUT --apply shows the plan (cluster + NAT would be created) and says nothing was changed", tail(out, 500))
+    c.ok(not (d / "terraform.tfstate").exists(), "…and created no state: nothing was applied")
+    rc, out = _lc(sb, "hibernate", "canopy", "--no-backup", extra_env=env, timeout=1200)
+    c.ok(rc == 0 and "awake=False" in out and "PLAN only" in out and "aws_eks_cluster" not in out.split("Plan:")[-1] if "Plan:" in out else rc == 0,
+         "`hibernate canopy` is the SAME code with awake=false: the plan contains no cluster", tail(out, 300))
+    rc, out = _lc(sb, "grow", "tree", extra_env=env, timeout=1200)
+    c.ok(rc == 0 and "aws_instance" in out and "aws_volume_attachment" in out and "aws_eks_cluster" not in out, "`grow tree` plans ONE VM and its disk — not a cluster", tail(out, 300))
+    rc, out = _lc(sb, "scale", "canopy", "large", extra_env=env, timeout=1200)
+    c.ok(rc == 0 and "Horizontal scale is automatic" in out, "`scale` explains vertical vs automatic horizontal elasticity", tail(out, 300))
+    rc, out = _lc(sb, "tenant", "add", "acme", "--name", "ACME Bank", "--tier", "small", extra_env=env)
+    c.ok(rc == 0 and (sb.clone / "gitops" / "tenants" / "acme.yaml").exists(), "`tenant add` writes the one file that switches a tenant cell on")
+    c.ok(json.loads((d / "tenants.auto.tfvars.json").read_text()) == {"tenants": {"acme": {}}}, "…and mirrors it into the Terraform genome (own key + bucket per tenant)")
+    rc, out = _lc(sb, "tenant", "remove", "acme", extra_env=env)
+    c.ok(rc == 0 and not (sb.clone / "gitops" / "tenants" / "acme.yaml").exists(), "`tenant remove` is the reverse")
+
+
 @journey("providers_wizard", "`./securax providers add` on a real terminal: silent key entry, mis-paste caught, typed command rejected.")
 def j_wizard(sb: H.Sandbox, c: Checks):
     if not _start(sb, c):

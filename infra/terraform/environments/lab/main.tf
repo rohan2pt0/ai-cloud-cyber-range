@@ -3,6 +3,11 @@
 # Default: everything free-tier, enable_paid = false, hard budget = 2,500 INR / ~$30.
 terraform {
   required_version = ">= 1.6"
+  required_providers {
+    aws     = { source = "hashicorp/aws", version = "~> 5.70" }
+    google  = { source = "hashicorp/google", version = "~> 6.0" }
+    azurerm = { source = "hashicorp/azurerm", version = "~> 4.14" }
+  }
   # Remote state is recommended; for a solo laptop lab local state is fine. To use a
   # free backend, uncomment and point at a GCS/S3 bucket created by the relevant module.
   # backend "gcs" { bucket = "range-tfstate", prefix = "lab" }
@@ -47,6 +52,10 @@ variable "azure_subscription_id" {
 }
 
 provider "aws" { region = var.aws_region }
+provider "azurerm" {
+  features {}
+  subscription_id = var.azure_subscription_id != "" ? var.azure_subscription_id : null
+}
 provider "google" {
   project = var.gcp_project_id != "" ? var.gcp_project_id : null
   region  = "asia-south1"

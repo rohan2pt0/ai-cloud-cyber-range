@@ -104,10 +104,17 @@ async def version() -> dict:
             "commit": os.getenv("GIT_COMMIT", "unknown")}
 
 
+_usage: dict[str, float] = defaultdict(float)     # metering for usage reports / SLA dashboards / billing
+
+
 @app.get("/metrics", response_class=PlainTextResponse)
 async def metrics() -> str:
     lines = ["# TYPE guardrail_events_total counter"]
     lines += [f'guardrail_events_total{{event="{k}"}} {v}' for k, v in sorted(_metrics.items())]
+    lines += ["# TYPE guardrail_tokens_total counter"]
+    lines += [f'guardrail_tokens_total{{kind="{k}"}} {int(_usage[f"tokens_{k}"])}' for k in ("prompt", "completion")]
+    lines += ["# TYPE guardrail_request_latency_ms_sum counter", f"guardrail_request_latency_ms_sum {_usage['latency_ms_sum']:.0f}",
+              "# TYPE guardrail_request_latency_ms_count counter", f"guardrail_request_latency_ms_count {int(_usage['latency_ms_count'])}"]
     return "\n".join(lines) + "\n"
 
 
@@ -293,6 +300,11 @@ async def chat(request: Request, authorization: str | None = Header(default=None
 
     decision = "allow" if not (blocking or out_findings) else ("flag" if MODE == "monitor" else "sanitise")
     _metrics[f"decision_{decision}"] += 1
+    u = resp.get("usage") if isinstance(resp.get("usage"), dict) else {}
+    _usage["tokens_prompt"] += int(u.get("prompt_tokens") or 0)
+    _usage["tokens_completion"] += int(u.get("completion_tokens") or 0)
+    _usage["latency_ms_sum"] += latency_ms
+    _usage["latency_ms_count"] += 1
     _emit({"req_id": req_id, "principal": principal, "decision": decision, "model": payload.get("model"),
            "latency_ms": latency_ms, "usage": resp.get("usage"),
            "findings": _findings(in_findings + out_findings)})

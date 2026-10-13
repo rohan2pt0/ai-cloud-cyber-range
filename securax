@@ -354,8 +354,12 @@ URLS
     command -v ruff >/dev/null 2>&1 && step "lint (ruff)" ruff check . || echo "  (ruff not installed — pip install ruff; CI will still check)"
     step "unit tests (pytest)" python3 -m pytest -q
     step "router config baseline is current" bash -c 'python3 local/compose/gen_litellm_config.py --baseline --write --out "$0" >/dev/null && diff -q "$0" local/compose/litellm-config.yaml' "$(mktemp)"
+    command -v terraform >/dev/null 2>&1 && step "terraform formatting (lifecycle genome)" terraform fmt -check -recursive infra/terraform
     command -v docker >/dev/null 2>&1 && step "compose file valid" docker compose --env-file local/compose/.env.example -f local/compose/docker-compose.yml --profile ai config -q
-    if [ "${2:-}" = "--full" ]; then step "user-perspective sandbox" python3 sandbox/run.py; fi
+    if [ "${2:-}" = "--full" ]; then
+      command -v terraform >/dev/null 2>&1 && step "lifecycle dormancy + security proofs (offline terraform plans)" python3 infra/terraform/lifecycle/prove.py
+      step "user-perspective sandbox" python3 sandbox/run.py
+    fi
     [ "$rc" = 0 ] && C "✔ verify passed" || { C "✘ verify FAILED — fix the above before calling it done"; exit 1; }
     ;;
   build)
@@ -558,6 +562,10 @@ $(tail -60 "$FB")"
         && echo "volume $V" >> "$STG/MANIFEST" || { C "Could not read volume $V — aborting (no partial backup written)."; exit 1; }
     done
     cp "$ROOT/local/compose/.env" "$STG/env" 2>/dev/null && echo "env" >> "$STG/MANIFEST" || true
+    # Sprout (phase 1) secrets live outside the volumes (DB password, S3 keys, OpenBao unseal key): without them a restored
+    # volume is unusable, so they travel with the backup (the file is owner-only, like the rest of it).
+    SPD="${SECURAX_HOME_DIR:-$HOME/.securax}/sprout"
+    [ -d "$SPD" ] && tar czf "$STG/sprout-secrets.tgz" -C "$(dirname "$SPD")" sprout && echo "sprout-secrets" >> "$STG/MANIFEST" || true
     ( cd "$STG" && sha256sum ./* > SHA256SUMS 2>/dev/null || true )
     tar czf "$OUTF" -C "$STG" . && tar tzf "$OUTF" >/dev/null || { C "Backup failed verification."; rm -f "$OUTF"; exit 1; }
     chmod 600 "$OUTF" 2>/dev/null || true
@@ -584,6 +592,9 @@ $(tail -60 "$FB")"
         || { C "Restore of $V failed — run ./securax restore again (data volumes may be partly restored)."; exit 1; }
       echo "  ✔ restored $V"
     done
+    if [ -f "$STG/sprout-secrets.tgz" ]; then
+      SPH="${SECURAX_HOME_DIR:-$HOME/.securax}"; mkdir -p "$SPH" && chmod 700 "$SPH" && tar xzf "$STG/sprout-secrets.tgz" -C "$SPH" && echo "  ✔ restored sprout secrets"
+    fi
     if [ -f "$STG/env" ]; then
       [ -f "$ROOT/local/compose/.env" ] && cp "$ROOT/local/compose/.env" "$ROOT/local/compose/.env.pre-restore"
       cp "$STG/env" "$ROOT/local/compose/.env"; chmod 600 "$ROOT/local/compose/.env" 2>/dev/null || true; echo "  ✔ restored .env"
@@ -653,6 +664,14 @@ $(tail -60 "$FB")"
     else
       python3 "$ROOT/local/compose/model_discovery.py" --env-file "$ENVF"
     fi
+    ;;
+  stages|soil|grow|hibernate|prune|scale|rhythm|tenant|organ|organ-check)
+    # The lifecycle engine: grow the estate from the dormant seed up to a multi-tenant forest, and put it back to sleep.
+    #   ./securax stages            what is awake / hibernating / dormant     ./securax soil <stage>   preflight
+    #   ./securax grow sprout [--with wazuh,misp,thehive]    ./securax hibernate sprout    (data is kept)
+    #   ./securax grow tree|canopy|forest [--apply]           cloud: plans only unless --apply
+    command -v python3 >/dev/null 2>&1 || { C "python3 is needed for the lifecycle commands."; exit 1; }
+    exec python3 "$ROOT/lifecycle/lifecycle.py" "$@"
     ;;
   keys)
     # Guided key setup: the three FREE providers, in the order that gives the fastest answers, then a LIVE TEST

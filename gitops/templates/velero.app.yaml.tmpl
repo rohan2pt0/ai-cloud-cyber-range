@@ -1,0 +1,44 @@
+# Rendered by `./securax grow canopy|forest --apply` with the facts that live in the cloud, not in git.
+# Placeholders: @VAULT_BUCKET@  @REGION@  @VELERO_ROLE_ARN@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: velero
+  namespace: argocd
+  annotations: { argocd.argoproj.io/sync-wave: "1" }
+spec:
+  project: default
+  source:
+    repoURL: https://vmware-tanzu.github.io/helm-charts
+    chart: velero
+    targetRevision: "*"
+    helm:
+      valuesObject:
+        initContainers:
+          - name: velero-plugin-for-aws
+            image: velero/velero-plugin-for-aws:v1.11.0
+            volumeMounts: [{ mountPath: /target, name: plugins }]
+        configuration:
+          backupStorageLocation:
+            - name: default
+              provider: aws
+              bucket: "@VAULT_BUCKET@"
+              prefix: velero
+              config: { region: "@REGION@" }
+          volumeSnapshotLocation:
+            - name: default
+              provider: aws
+              config: { region: "@REGION@" }
+        credentials: { useSecret: false }
+        serviceAccount:
+          server: { name: velero }
+        schedules:
+          daily:
+            schedule: "0 21 * * *"
+            template: { ttl: "720h", includedNamespaces: ["*"] }
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: velero
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [CreateNamespace=true]

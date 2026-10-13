@@ -21,6 +21,8 @@ jobs:
         with: { fetch-depth: 0 }          # the stale-update journey needs history
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
+      - uses: hashicorp/setup-terraform@v3          # the lifecycle_cloud_is_safe journey exercises the engine -> terraform wiring (plans only)
+        with: { terraform_version: "1.9.8", terraform_wrapper: false }
       - name: Install sandbox deps (PyYAML + Playwright/Chromium)
         run: |
           pip install pyyaml playwright
