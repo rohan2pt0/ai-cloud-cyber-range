@@ -20,7 +20,8 @@
   .card .t{font-weight:700;display:flex;align-items:center;gap:8px}
   .card .d{color:var(--mut);font-size:13.5px;margin-top:4px}
   .dot{width:9px;height:9px;border-radius:50%;background:var(--mut);display:inline-block;flex:0 0 auto}
-  .dot.up{background:var(--green)} .dot.down{background:var(--red)}
+  .dot.up{background:var(--green)} .dot.down{background:var(--red)} .dot.off{background:var(--mut);opacity:.55}
+  .dot.starting{background:var(--amber);animation:pulse 1.2s ease-in-out infinite} @keyframes pulse{50%{opacity:.35}}
   .emoji{font-size:18px}
   .note{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;color:var(--mut);font-size:14px}
   .note b{color:var(--ink)} code{background:rgba(127,127,127,.15);padding:1px 6px;border-radius:6px;font-size:13px}
@@ -92,50 +93,62 @@
 
 <script>
 (function(){
-  var H = location.hostname;
-  // Core = works the moment the estate is up (with a Gemini key, Chat is instant).
+  var H = location.hostname, started = Date.now();
+  // Core = the apps you came here to use. They get a "starting…" phase (Chat takes ~a minute to boot).
   var CORE = [
-    {t:"Guiding Map", e:"🧭", d:"Your daily cockpit / life-OS — works offline, no AI needed", url:"http://"+H+":8088/"},
-    {t:"Chat", e:"💬", d:"Private ChatGPT-style assistant (guarded, local + cloud)", url:"http://"+H+":3000/"}
+    {t:"Guiding Map", e:"🧭", d:"Your daily cockpit / life-OS — works offline, no AI needed", url:"http://"+H+":8088/", core:true},
+    {t:"Chat", e:"💬", d:"Private ChatGPT-style assistant (guarded, local + cloud)", url:"http://"+H+":3000/", core:true}
   ];
-  // Optional = powerful, but each needs its own one-time setup to be useful.
+  // Optional = powerful, but each needs its own one-time setup — and may simply not be running (lite mode).
   var EXTRAS = [
     {t:"Private Docs", e:"📄", d:"Chat with your PDFs/Word (RAG). Needs the local model pulled + docs uploaded.", url:"http://"+H+":3001/"},
     {t:"Automation", e:"⚙️", d:"n8n workflows & the morning brief. Empty until you import/build a workflow.", url:"http://"+H+":5678/"}
   ];
+  var ALL = CORE.concat(EXTRAS);
   render(CORE, "apps"); render(EXTRAS, "extras");
   function render(list, id){
     var box = document.getElementById(id);
     list.forEach(function(a){
       var el = document.createElement("a");
       el.className="card"; el.href=a.url; el.target="_blank"; el.rel="noopener";
-      el.innerHTML = '<div class="t"><span class="dot" data-url="'+a.url+'"></span><span class="emoji">'+a.e+'</span> '+a.t+'</div><div class="d">'+a.d+'</div>';
+      el.innerHTML = '<div class="t"><span class="dot starting" data-url="'+a.url+'"></span><span class="emoji">'+a.e+'</span> '+a.t+'</div><div class="d">'+a.d+'</div>';
       box.appendChild(el);
-      // live up/down (no-cors: we only learn reachability, not content)
-      fetch(a.url,{mode:"no-cors"}).then(function(){mark(a.url,true);}).catch(function(){mark(a.url,false);});
     });
   }
-  function mark(url,up){var d=document.querySelector('.dot[data-url="'+url+'"]'); if(d) d.className="dot "+(up?"up":"down");}
-  // Security status — a friendly pill, not raw JSON. The gateway guards every AI call.
-  fetch("http://"+H+":8080/healthz").then(function(r){return r.json();})
-    .then(function(j){
-      var on = j && j.status==="ok";
-      var s = document.getElementById("secstatus");
+  // green = running · amber = a core app still starting (first 3 min) · red = a core app not responding ·
+  // grey = an optional add-on that isn't running (normal — e.g. lite mode). Re-checked every 5 s, so the page
+  // never shows a stale "red" for something that finished booting a moment after you opened it.
+  var TITLE = {up:"running", starting:"starting…", down:"not responding", off:"not running (optional)"};
+  function paint(a, up){
+    var d = document.querySelector('.dot[data-url="'+a.url+'"]'); if(!d) return;
+    var st = up ? "up" : (a.core ? ((Date.now()-started) < 180000 ? "starting" : "down") : "off");
+    d.className = "dot " + st; d.title = TITLE[st];
+  }
+  function checkApps(){
+    ALL.forEach(function(a){
+      fetch(a.url,{mode:"no-cors"}).then(function(){paint(a,true);}).catch(function(){paint(a,false);});
+    });
+  }
+  function checkInfo(){
+    // Security status — a friendly pill, not raw JSON. The gateway guards every AI call.
+    fetch("http://"+H+":8080/healthz").then(function(r){return r.json();}).then(function(j){
+      var on = j && j.status==="ok", s = document.getElementById("secstatus");
       s.innerHTML = '<span class="pill" style="color:'+(on?'var(--green)':'var(--mut)')+';border-color:'+(on?'var(--green)':'var(--line)')+'">'
         + (on ? '🛡️ Security: '+(j.mode||'enforcing')+' — every AI call is guarded' : '🛡️ Security: starting…') + '</span>';
     }).catch(function(){
       var s=document.getElementById("secstatus"); if(s) s.innerHTML='<span class="pill" style="color:var(--mut);border-color:var(--line)">🛡️ Security: starting…</span>';
     });
-  // live model list (reflects enabled provider plugins through the gateway)
-  fetch("http://"+H+":8080/v1/models").then(function(r){return r.json();})
-    .then(function(j){
-      var ids=(j&&j.data||[]).map(function(m){return m.id;});
-      var el=document.getElementById("models");
+    // live model list (reflects enabled provider plugins through the gateway)
+    fetch("http://"+H+":8080/v1/models").then(function(r){return r.json();}).then(function(j){
+      var ids=(j&&j.data||[]).map(function(m){return m.id;}), el=document.getElementById("models");
       el.textContent = ids.length ? ids.join(", ") : "none yet — start the estate or add a provider";
     }).catch(function(){var el=document.getElementById("models"); if(el) el.textContent="gateway starting…";});
-  // version badge
-  fetch("http://"+H+":8080/version").then(function(r){return r.json();})
-    .then(function(j){document.getElementById("ver").textContent="v"+(j.version||"?");}).catch(function(){document.getElementById("ver").textContent="offline";});
+    fetch("http://"+H+":8080/version").then(function(r){return r.json();})
+      .then(function(j){document.getElementById("ver").textContent="v"+(j.version||"?");})
+      .catch(function(){document.getElementById("ver").textContent="offline";});
+  }
+  function tick(){ checkApps(); checkInfo(); }
+  tick(); setInterval(tick, 5000);
   // show the detected host in the LAN hint
   if(location.hostname && location.hostname!=="localhost" && location.hostname!=="127.0.0.1")
     document.getElementById("lanurl").textContent="http://"+location.hostname+":8088";

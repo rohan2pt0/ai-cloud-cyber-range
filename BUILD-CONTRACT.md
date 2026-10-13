@@ -26,7 +26,9 @@ python -m pytest -q                            # all unit tests (161+)
 cd guiding-map && node build.js && cd ..       # rebuild the PWA shell (if you touched ops.js)
 cd local/compose && python3 gen_litellm_config.py --baseline --write && cd ../..  # if catalog changed
 docker compose -f local/compose/docker-compose.yml --profile ai config -q   # compose still valid
+python3 sandbox/run.py                         # REQUIRED if you touched compose/securax/gateway/router/UI: runs the real product as a fresh user
 ```
+The sandbox (`sandbox/README.md`) is the only gate that sees what the user sees. Unit tests green + sandbox red = not done.
 CI additionally runs gitleaks (no secrets in the diff), Semgrep/Trivy (SAST), and a build-drift
 check. **A change is not done until `ruff` + `pytest` are green locally.**
 

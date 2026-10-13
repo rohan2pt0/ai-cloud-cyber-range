@@ -240,3 +240,6 @@ routines/.log
 # web-research executor audit trail + opt-in playwright/image artifacts (per-box)
 agents/web_research/.audit.jsonl
 design/out/*.png
+
+# sandbox artifacts (screenshots, certs, results)
+sandbox/out/

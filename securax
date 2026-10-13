@@ -18,6 +18,19 @@ skv(){ f="$1"; k="$2"; v="$3"; if grep -q "^$k=" "$f" 2>/dev/null; then
 # ev KEY [DEFAULT] — read KEY from local/compose/.env (process env wins), else DEFAULT.
 ev(){ v="${!1:-}"; [ -z "$v" ] && v="$(sed -n "s/^$1=//p" "$ROOT/local/compose/.env" 2>/dev/null | head -1)"; printf '%s' "${v:-${2:-}}"; }
 
+# ready_wait SECS — wait until the gateway reports READY (the model router is up). One line, no spinner.
+# A user must never be told "done" while the first chat would still fail.
+ready_wait(){
+  _t="${1:-120}"; _i=0
+  curl -fsS -m 3 http://localhost:8080/readyz >/dev/null 2>&1 && return 0
+  C "Waiting for the AI router to finish starting (up to ${_t}s)…"
+  while [ "$_i" -lt "$_t" ]; do
+    curl -fsS -m 3 http://localhost:8080/readyz >/dev/null 2>&1 && { C "  ✔ ready"; return 0; }
+    sleep 2; _i=$((_i+2))
+  done
+  return 1
+}
+
 # guard_broken — true when Llama Guard is switched ON in .env but its model was never installed.
 # In that state the gateway (fail-closed) blocks EVERY request: an outage, not protection.
 guard_broken(){
@@ -68,8 +81,17 @@ case "$cmd" in
     LITE=0; { [ "${2:-}" = "--lite" ] || [ "$(ev SECURAX_LITE)" = "1" ]; } && LITE=1
     SVCS=""; [ "$LITE" = 1 ] && SVCS="gateway litellm ollama open-webui guiding-map estate-sync" \
       && C "LITE mode: starting the core path only (Private Docs / n8n skipped to save RAM)."
-    ( cd "$ROOT/local/compose" && docker compose --profile ai up -d --build $SVCS )
+    # Regenerate the router config from .env on EVERY start, so a key added by hand (as DEPLOY.md says) or
+    # via `./securax setup` just works. Deterministic + idempotent; skipped silently without python3.
+    command -v python3 >/dev/null 2>&1 && { python3 "$ROOT/local/compose/gen_litellm_config.py" --write --env-file "$ENVF" >/dev/null 2>&1 || true; }
+    if ! ( cd "$ROOT/local/compose" && docker compose --profile ai up -d --build $SVCS ); then
+      C "Startup failed. Most often the model router rejected its config — its log:"
+      ( cd "$ROOT/local/compose" && docker compose --profile ai logs --no-color --tail 25 litellm 2>/dev/null ) || true
+      echo "  Run  ./securax doctor  for a diagnosis, or paste the output above to get help."
+      exit 1
+    fi
     guard_heal
+    ready_wait 150 || C "The router is still starting — the Command Center turns green when it is ready (./securax doctor checks it)."
     # Pull the model in the BACKGROUND so the home screen opens immediately — the
     # Guiding Map's Ask tab shows a live "AI is ready / warming up" status, so the
     # one-time ~1 GB download never blocks you. (First run only.)
@@ -338,6 +360,7 @@ URLS
       off)
         skv "$ENVF" LLAMA_GUARD_URL ""
         ( cd "$ROOT/local/compose" && docker compose --profile ai up -d gateway >/dev/null 2>&1 || true )
+        ready_wait 60 || true
         C "Llama Guard OFF. The built-in rails (injection, PII, secrets, exfil) still enforce." ;;
       on)
         CID="$(cd "$ROOT/local/compose" && docker compose ps -q ollama 2>/dev/null || true)"
@@ -356,6 +379,8 @@ URLS
     # (A plain `git pull` only changes files on disk — running containers keep the OLD code.)
     git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1 || { C "This isn't a git checkout — download the latest ZIP instead."; exit 1; }
     C "Updating SecuRAX (git pull, then recreate the containers)…"
+    # The router config is GENERATED from .env on every `up` — discard local edits so the pull can't conflict.
+    git -C "$ROOT" checkout -- local/compose/litellm-config.yaml 2>/dev/null || true
     git -C "$ROOT" pull --ff-only || { C "git pull failed — you may have local changes. See:  git -C \"$ROOT\" status"; exit 1; }
     "$0" down && exec "$0" up
     ;;
@@ -421,6 +446,7 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
         # were already running (a bind-mount change alone does NOT trigger a recreate).
         ( cd "$ROOT/local/compose" && docker compose --profile ai up -d litellm gateway >/dev/null 2>&1 || true
           docker compose --profile ai restart litellm gateway >/dev/null 2>&1 || true )
+        ready_wait 150 || C "  (the router is still starting — give it a minute)"
         C "Done. Open Chat (http://localhost:3000) and pick the new model from the dropdown." ;;
       *) echo 'usage: ./securax providers [list|add]'; exit 1 ;;
     esac

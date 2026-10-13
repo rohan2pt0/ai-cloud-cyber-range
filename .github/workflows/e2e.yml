@@ -1,0 +1,42 @@
+# End-to-end sandbox: run the REAL product (real compose stack, real images, real ./securax CLI, a real
+# browser) and test it the way a user experiences it. This is the gate that answers "does the thing we
+# are about to ship actually WORK?" — unit tests cannot (they never saw the env-wiring bug, the
+# fail-closed detector outage, or the startup race). Cloud providers are faked at the network level so
+# no keys or spend are needed. See sandbox/README.md.
+name: e2e-sandbox
+on:
+  pull_request:
+  push: { branches: [main] }
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  sandbox:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }          # the stale-update journey needs history
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Install sandbox deps (PyYAML + Playwright/Chromium)
+        run: |
+          pip install pyyaml playwright
+          playwright install --with-deps chromium
+      - name: Run every user journey against the real stack
+        run: python3 sandbox/run.py
+      - name: Upload screenshots + results (so a failure can be SEEN)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: sandbox-report
+          path: |
+            sandbox/out/results.json
+            sandbox/out/shots/
+          if-no-files-found: ignore
+      - name: Dump container logs on failure
+        if: failure()
+        run: |
+          cd /tmp/securax-sandbox/clone/local/compose 2>/dev/null && docker compose --profile ai logs --no-color --tail 80 || true

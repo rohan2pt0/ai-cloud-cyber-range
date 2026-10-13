@@ -276,3 +276,20 @@ def test_open_webui_defaults_to_the_free_ladder_and_has_no_random_arena_model():
     assert env["DEFAULT_MODELS"].endswith("bank-assistant}")            # ${DEFAULT_MODELS:-bank-assistant}
     assert str(env["ENABLE_PERSISTENT_CONFIG"]).lower() == "false"
     assert str(env["ENABLE_EVALUATION_ARENA_MODELS"]).lower() == "false"
+
+
+def test_nothing_starts_against_a_router_that_is_still_booting():
+    # Found by the sandbox: `./securax up` returned while LiteLLM was still booting, so the gateway was
+    # "healthy" yet every chat 502'd and Chat listed half the models. Pin the readiness-gated start order.
+    svc = yaml.safe_load(COMPOSE.read_text())["services"]
+    assert "readiness" in " ".join(svc["litellm"]["healthcheck"]["test"])
+    assert "/readyz" in " ".join(svc["gateway"]["healthcheck"]["test"])
+    assert svc["gateway"]["depends_on"]["litellm"]["condition"] == "service_healthy"
+    assert svc["open-webui"]["depends_on"]["gateway"]["condition"] == "service_healthy"
+
+
+def test_router_never_phones_huggingface():
+    # Found by the sandbox: LiteLLM fetched a tokenizer from huggingface.co on every request. A sovereign,
+    # offline-first estate must not make that outbound call (and offline it cost seconds of retries).
+    env = yaml.safe_load(COMPOSE.read_text())["services"]["litellm"]["environment"]
+    assert str(env["HF_HUB_OFFLINE"]) == "1" and str(env["TRANSFORMERS_OFFLINE"]) == "1"
