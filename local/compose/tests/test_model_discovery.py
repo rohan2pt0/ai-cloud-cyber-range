@@ -5,11 +5,19 @@ import json
 import pathlib
 import urllib.error
 
+import pytest
+
 HERE = pathlib.Path(__file__).resolve().parent
 spec = importlib.util.spec_from_file_location("md", HERE.parent / "model_discovery.py")
 md = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(md)
 CAT = json.loads((HERE.parent.parent.parent / "plugins" / "catalog.json").read_text())
+
+
+@pytest.fixture(autouse=True)
+def _no_test_hook(monkeypatch):
+    # The sandbox exports SECURAX_DISCOVERY_REWRITE for the whole process tree; unit tests must not inherit it.
+    monkeypatch.delenv("SECURAX_DISCOVERY_REWRITE", raising=False)
 
 
 class Resp(io.BytesIO):
