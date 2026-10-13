@@ -78,7 +78,11 @@ class Sandbox:
         self.clone = work / "clone"
         self.env_path = self.clone / "local" / "compose" / ".env"
         self.version = (REPO / "VERSION").read_text().strip()
-        self.behind_tls_proxy = PROXY_CA.exists() and bool(os.environ.get("HTTPS_PROXY"))
+        try:
+            has_ca = PROXY_CA.exists()
+        except OSError:                      # e.g. a CI runner user can't stat /root
+            has_ca = False
+        self.behind_tls_proxy = has_ca and bool(os.environ.get("HTTPS_PROXY"))
 
     # ───────────────────────────── building the "user machine" ─────────────────────────────
     def fresh_clone(self) -> None:
