@@ -597,15 +597,15 @@ def j_sprout(sb: H.Sandbox, c: Checks):
     c.ok("○ sprout" in out, "…and the stage is dormant again (the genome is intact: grow it any time)", tail(out, 300))
 
 
-def _prune(sb: H.Sandbox, home) -> tuple[int, str]:
-    """Run `./securax prune sprout` on a real terminal and type the confirmation."""
+def _prune(sb: H.Sandbox, home, stage: str = "sprout") -> tuple[int, str]:
+    """Run `./securax prune <stage>` on a real terminal and type the confirmation."""
     import pty
     import select
     pid, fd = pty.fork()
     if pid == 0:
         os.chdir(sb.clone)
         os.environ["SECURAX_HOME_DIR"] = str(home)
-        os.execvp("bash", ["bash", "./securax", "prune", "sprout"])
+        os.execvp("bash", ["bash", "./securax", "prune", stage])
     buf, sent, end = b"", False, time.time() + 300
     while time.time() < end:
         r, _, _ = select.select([fd], [], [], 0.5)
@@ -617,8 +617,8 @@ def _prune(sb: H.Sandbox, home) -> tuple[int, str]:
             if not data:
                 break
             buf += data
-            if not sent and b"PRUNE sprout" in buf and b"continue" in buf:
-                os.write(fd, b"PRUNE sprout\n")
+            if not sent and f"PRUNE {stage}".encode() in buf and b"continue" in buf:
+                os.write(fd, f"PRUNE {stage}\n".encode())
                 sent = True
         else:
             try:
@@ -817,6 +817,137 @@ def j_webui(sb: H.Sandbox, c: Checks):
 
 
 # ═══════════════════════════════════════════ runner ═══════════════════════════════════════════
+BURROW_NODES = ["securax-burrow-server", "securax-burrow-agent1", "securax-burrow-agent2"]
+
+
+def _bk(*args: str, inp: str | None = None) -> tuple[int, str]:
+    """kubectl inside the burrow twin's server container."""
+    return H.sh(["docker", "exec", *(["-i"] if inp is not None else []), "securax-burrow-server", "kubectl", *args], stdin=inp, timeout=120)
+
+
+def _bwait(c_pred, seconds: int = 120) -> bool:
+    end = time.time() + seconds
+    while time.time() < end:
+        if c_pred():
+            return True
+        time.sleep(4)
+    return False
+
+
+@journey("lifecycle_burrow", "Stage 2a 'burrow' (own hardware): a Docker twin of real k3s — join, GPU-pinned scheduling, power-cut reflex, hibernate/wake keeps memory, spore installers, prune.", slow=True)
+def j_burrow(sb: H.Sandbox, c: Checks):
+    home = sb.clone.parent / "sxhome"
+    shutil.rmtree(home, ignore_errors=True)
+    H.sh(["docker", "rm", "-f", *BURROW_NODES])
+    H.sh(["docker", "volume", "rm", "-f", *BURROW_NODES])
+    H.sh(["docker", "network", "rm", "securax-burrow-net"])
+
+    rc, out = _lc(sb, "stages")
+    c.ok(rc == 0 and "burrow" in out and "○ burrow" in out, "`stages` lists the burrow, dormant", tail(out, 300))
+    c.ok(not _running(["securax-burrow"]), "dormant means DORMANT: no twin container exists before you grow it")
+    rc, out = _lc(sb, "grow", "burrow", timeout=900)
+    c.ok(rc == 0 and "3 nodes Ready" in out, "`grow burrow` digs a 3-node cluster (real k3s) and waits until every node is Ready", tail(out, 500))
+    rc, out = _bk("get", "nodes", "-l", "securax.io/gpu=nvidia", "-o", "name")
+    c.ok(out.strip() == "node/agent2", "only the GPU node carries the GPU label", out)
+    tok = home / "burrow" / "token"
+    kc = home / "burrow" / "kubeconfig"
+    c.ok(tok.exists() and (tok.stat().st_mode & 0o077) == 0 and kc.exists() and (kc.stat().st_mode & 0o077) == 0, "the join token and kubeconfig are owner-only")
+    rc, out = H.sh(["curl", "-sk", "-o", "/dev/null", "-w", "%{http_code}", "-m", "10", "https://127.0.0.1:16443/version"])
+    c.ok(out.strip() in ("200", "401", "403"), "the API is reachable from the host on 127.0.0.1 only (kubeconfig works)", out)
+
+    manifest = """apiVersion: v1
+kind: ConfigMap
+metadata: {name: memory}
+data: {note: remembered}
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: gpu-probe}
+spec:
+  replicas: 1
+  selector: {matchLabels: {app: gpu-probe}}
+  template:
+    metadata: {labels: {app: gpu-probe}}
+    spec:
+      nodeSelector: {securax.io/gpu: nvidia}
+      containers: [{name: p, image: rancher/mirrored-pause:3.6}]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: {name: spread}
+spec:
+  replicas: 3
+  selector: {matchLabels: {app: spread}}
+  template:
+    metadata: {labels: {app: spread}}
+    spec:
+      topologySpreadConstraints: [{maxSkew: 1, topologyKey: kubernetes.io/hostname, whenUnsatisfiable: DoNotSchedule, labelSelector: {matchLabels: {app: spread}}}]
+      containers: [{name: p, image: rancher/mirrored-pause:3.6}]
+"""
+
+    def pods_on(label: str) -> list[str]:
+        """Nodes the SCHEDULER placed this workload's live pods on. (Placement is the scheduler's decision, so it can be proven even on
+        a kernel that cannot start containers inside k3s-in-Docker; GitHub runners and Docker Desktop can, and show them Running.)"""
+        rc, out = _bk("get", "pods", "-l", label, "-o", "json")
+        try:
+            items = json.loads(out)["items"]
+        except (ValueError, KeyError):
+            return []
+        return sorted(i["spec"]["nodeName"] for i in items if i["spec"].get("nodeName") and not i["metadata"].get("deletionTimestamp"))
+
+    rc, out = _bk("apply", "-f", "-", inp=manifest)
+    c.ok(rc == 0, "workloads apply", out)
+    c.ok(_bwait(lambda: pods_on("app=gpu-probe") == ["agent2"], 60), "a GPU-selecting workload is scheduled ONLY onto the GPU node", str(pods_on("app=gpu-probe")))
+    c.ok(_bwait(lambda: len(set(pods_on("app=spread"))) == 3), "a spread workload is scheduled across all three nodes (the cluster really is one cluster)", str(pods_on("app=spread")))
+
+    rc, out = _lc(sb, "burrow", "power", timeout=400)
+    c.ok(rc == 0 and "mains lost" in out and "saved" in out, "a rehearsed power cut runs the reflex: drain, then snapshot the cluster's memory", tail(out, 500))
+    snaps = H.sh(["docker", "exec", "securax-burrow-server", "ls", "/var/lib/rancher/k3s/server/db/snapshots"])[1].split()
+    c.ok(any(x.startswith("pre-sleep") for x in snaps), "…and an etcd snapshot exists", str(snaps))
+    c.ok(not pods_on("app=gpu-probe") and not pods_on("app=spread"), "…and the workloads were drained off the nodes first (nothing is left scheduled)")
+
+    rc, out = _lc(sb, "hibernate", "burrow", timeout=400)
+    c.ok(rc == 0 and not _running(["securax-burrow"]), "`hibernate burrow` stops every node: nothing runs asleep", tail(out, 300))
+    vols = H.sh(["docker", "volume", "ls", "-q"])[1].split()
+    c.ok(all(n in vols for n in BURROW_NODES), "…but the cluster's memory (volumes) is kept")
+    rc, out = _lc(sb, "stages")
+    c.ok("◌ burrow" in out, "`stages` calls it hibernating (data kept), not dormant", tail(out, 300))
+
+    rc, out = _lc(sb, "grow", "burrow", timeout=900)
+    c.ok(rc == 0 and "3 nodes Ready" in out and "Waking" in out, "waking is the same command: it wakes the SAME cluster (does not dig a new one)", tail(out, 300))
+    c.ok(_bk("get", "configmap", "memory", "-o", "jsonpath={.data.note}")[1].strip() == "remembered", "the cluster remembered its data across hibernation")
+    c.ok(_bwait(lambda: pods_on("app=gpu-probe") == ["agent2"] and len(set(pods_on("app=spread"))) == 3, 180),
+         "…the nodes were uncordoned and every workload was placed where it belongs again", f"{pods_on('app=gpu-probe')} {pods_on('app=spread')}")
+
+    # the spore: installers for real machines
+    rc, out = _lc(sb, "spore", "server", "--name", "burrow1", "--gpu", "--ups", "--gitops")
+    sp = home / "burrow" / "spore" / "burrow1.install.sh"
+    ci = home / "burrow" / "spore" / "burrow1.user-data"
+    c.ok(rc == 0 and sp.exists() and ci.exists() and (sp.stat().st_mode & 0o077) == 0 and (ci.stat().st_mode & 0o077) == 0,
+         "`spore server` writes owner-only installers (they contain the join token)", tail(out, 300))
+    c.ok(H.sh(["bash", "-n", str(sp)])[0] == 0, "…the installer is valid bash")
+    body = sp.read_text()
+    c.ok("--cluster-init" in body and "--secrets-encryption" in body and "securax.io/gpu=nvidia" in body and "securax-power-hibernate" in body and "argocd" in body.lower(),
+         "…and carries the SAME k3s flags as the twin, the GPU label, the power reflex and the GitOps hand-over")
+    try:
+        import yaml as _yaml
+        doc = _yaml.safe_load(ci.read_text())
+        c.ok(doc["write_files"][0]["content"].startswith("#!/usr/bin/env bash") and doc["runcmd"], "…and the cloud-init file is valid YAML with the script embedded")
+    except ImportError:
+        c.ok(ci.read_text().startswith("#cloud-config"), "…and the cloud-init file is a #cloud-config")
+    rc, out = _lc(sb, "spore", "agent", "--name", "burrow2")
+    c.ok(rc == 2 and "--join" in out, "an agent without --join is refused with the fix", tail(out, 200))
+    rc, out = _lc(sb, "spore", "agent", "--name", "burrow2", "--join", "https://10.0.0.5:6443")
+    c.ok(rc == 0 and "K3S_URL=https://10.0.0.5:6443" in (home / "burrow" / "spore" / "burrow2.install.sh").read_text(), "an agent with --join points at the server")
+
+    rc, out = _prune(sb, home, "burrow")
+    c.ok(rc == 0 and not H.sh(["docker", "ps", "-aq", "--filter", "name=securax-burrow"])[1].strip(), "`prune burrow` (typed confirmation) removes the twin's containers", tail(out, 300))
+    vols = H.sh(["docker", "volume", "ls", "-q"])[1].split()
+    c.ok(not any(n in vols for n in BURROW_NODES) and not tok.exists(), "…its volumes and the join token")
+    rc, out = _lc(sb, "stages")
+    c.ok("○ burrow" in out, "…and the stage is dormant again (the genome is intact: dig it any time)", tail(out, 200))
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("-j", "--journey", default="", help="comma-separated journey names (default: all)")

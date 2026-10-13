@@ -26,12 +26,13 @@ ask.
 |---|---|---|---|---|
 | `seed` | 0 crawl | Seed | Today's laptop estate | `./securax up` / `down` |
 | `sprout` | 1 walk | Sprout | Always-on core on **one machine**: Keycloak (SSO/MFA), OpenBao (secrets), SeaweedFS (S3), Prometheus + Alertmanager; optional organs **Wazuh · MISP · TheHive** fetched from their official upstream repos at pinned commits | `./securax grow sprout [--with wazuh,misp,thehive]` / `hibernate sprout` |
+| `burrow` | 2a run- | Burrow | **Your own hardware** as a real Kubernetes cluster: k3s on 1–3 machines (embedded etcd, so 1 server grows to 3 with no rebuild), Argo CD pulling the same `gitops/`, an optional GPU node, a power-loss reflex (drain → etcd snapshot → stop). **Rehearsed on a Docker twin** (1 server + 2 agents, real k3s) before any machine exists | `./securax grow burrow` / `hibernate burrow`; real machines: `./securax spore server|agent --name …` |
 | `tree` | 2 run | Tree | **One cloud VM** running k3s + Argo CD; state on a persistent encrypted disk; no inbound ports (SSM / tailscale) | `grow tree --apply` / `hibernate tree --apply` |
 | `canopy` | 3 run+ | Canopy | **Managed Kubernetes** (EKS Auto Mode · GKE Autopilot · AKS) + Argo CD, Kyverno, Falco, cert-manager, KEDA, Velero, Prometheus | `grow canopy --apply` / `hibernate canopy --apply` |
 | `forest` | 4 fly | Forest | Canopy + **multi-tenant**: each tenant = namespace + quota + zero-trust network policy + its own gateway + RBAC + metering + (AWS) its own KMS key and bucket | `./securax tenant add …`, `grow forest --apply` |
 
 `./securax stages` shows each as ● awake · ◐ partly · ◌ hibernating (data kept) · ○ dormant (never grown).
-Aliases: `crawl walk run run+ fly`. Choose the cloud with `SECURAX_CLOUD=aws|gcp|azure` (default aws; the single-node `tree` is AWS-only).
+Aliases: `crawl walk run- run run+ fly` (`run-` = burrow). Choose the cloud with `SECURAX_CLOUD=aws|gcp|azure` (default aws; the single-node `tree` is AWS-only).
 
 ## What "dormant" guarantees — and how that is *proved*
 * **Sprout:** every service is in the `sprout` compose profile; `./securax up` never starts one (unit test, with the stage file loaded too).
@@ -65,11 +66,24 @@ Aliases: `crawl walk run run+ fly`. Choose the cloud with `SECURAX_CLOUD=aws|gcp
 ./securax grow sprout --with wazuh,misp  # + the SIEM and threat-intel organs (≥14 GB Docker memory for both)
 ./securax hibernate sprout               # backup, then sleep; wake with grow again — data intact
 ./securax rhythm on                      # sleep 23:30 / wake 06:30 every day (opt-in, your crontab)
+./securax grow burrow                    # dig the Docker twin: 3 real k3s nodes (add --gitops for Argo CD)
+./securax burrow power                   # rehearse a mains failure: drain, etcd snapshot, stop
+./securax spore server --name burrow1 --gpu --ups   # installer for a REAL machine (script + cloud-init)
+./securax spore agent --name burrow2 --join https://<server-ip>:6443
 ./securax grow canopy                    # PLAN only: shows what would be created
 ./securax grow canopy --apply            # creates it; installs Argo CD; the platform grows itself from gitops/
 ./securax tenant add acme --name "ACME Bank" --tier medium     # then commit + push; ./securax grow forest --apply
 ./securax hibernate canopy --apply       # Velero backup, then the cluster is removed; the vault keeps everything
 ```
+
+## The burrow (stage 2a): own hardware, proven before it exists
+* **One definition, two bodies.** `lifecycle/burrow.json` (k3s version and flags, GPU label, power policy) is read by both the Docker twin and the hardware installer, so the rehearsal cannot drift from the real thing (unit test: same flags in both).
+* **Proven on the twin** (sandbox journey `lifecycle_burrow`, 27 checks): 3 nodes join and report Ready; a GPU-selecting workload is scheduled only onto the GPU-labelled node; a spread workload lands on all three; the power reflex drains and takes an etcd snapshot; hibernation stops every node but keeps the volumes; waking restores the **same** cluster (a ConfigMap written before sleep is still there) and uncordons it; `prune` needs the typed confirmation and removes the lot.
+* **Spore:** `./securax spore` writes a bash installer and a cloud-init file (owner-only: they carry the join token). Ubuntu Server LTS + `sudo bash script`, or cloud-init on a USB labelled CIDATA. A 2nd/3rd server joins the first (HA) with `--join`.
+* **GPU is an optional organ:** `--gpu` only labels the node `securax.io/gpu=nvidia`; nothing depends on it. The NVIDIA driver and container toolkit are your choice (they depend on the card) and are **not** installed or tested here. Buy a GPU from measured token demand, not guesswork.
+* **Mumbai power cuts:** `--ups` installs NUT and a `SHUTDOWNCMD` snippet that calls the reflex. **Untested on real hardware or a real UPS** — the reflex script itself is proven on the twin.
+* **Behind a TLS-inspecting proxy** (common in banks) containerd cannot pull images unless it trusts the proxy CA. The twin mounts the host's CA bundle (`SECURAX_BURROW_CA`, else `SSL_CERT_FILE`, else the system bundle); real nodes need the same CA installed in the OS trust store.
+* **Limit of the twin:** it proves cluster mechanics and *scheduling*. A kernel that cannot nest containers (e.g. cgroup v1 micro-VMs) will show pods scheduled but not Running; Docker Desktop and GitHub runners can run them. It says nothing about real disks, NICs or GPUs.
 
 ## Honest limits (read before relying on it)
 * **No cloud account was available when this was built.** Terraform is validated and its *plans* are proved offline; an actual `apply` of EKS Auto Mode / GKE Autopilot / AKS / the k3s node, the

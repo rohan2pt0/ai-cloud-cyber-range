@@ -36,6 +36,9 @@ ORGANS_DIR = os.path.join(HOME_DIR, "organs")
 SPROUT_SERVICES = ["keycloak-db", "keycloak", "openbao", "seaweedfs", "prometheus", "alertmanager"]
 SPROUT_VOLUMES = ["keycloak_db", "openbao_data", "seaweed_data", "prometheus_data", "alertmanager_data"]
 PROJECT = "vulnbank-range"
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import burrow as bw  # noqa: E402  (stage 2a: own hardware, rehearsed on a Docker twin)
+
 MIN_COMPOSE = (2, 24)  # `ports: !override` (used for organ port remapping) needs Compose 2.24+
 
 
@@ -674,6 +677,8 @@ def cmd_stages(_: argparse.Namespace) -> int:
             state = "awake" if rc == 0 else "dormant"
         elif sid == "sprout":
             state = sprout_status()
+        elif sid == "burrow":
+            state = bw.twin_status()
         else:
             state = cloud_status(sid)
         icon = {"awake": "●", "partial": "◐", "hibernating": "◌", "dormant": "○"}.get(state.split()[0], "?")
@@ -723,6 +728,12 @@ def cmd_grow(a: argparse.Namespace) -> int:
             if rc != 0:
                 return rc
         return 0
+    if stage == "burrow":
+        head("Digging the burrow (Docker twin of your future hardware) …")
+        rc = bw.twin_up(gitops=getattr(a, "gitops", False))
+        if rc == 0:
+            say("\n  Real machines: ./securax spore server --name burrow1   (then agents: ./securax spore agent --name burrow2 --join https://<ip>:6443)")
+        return rc
     # cloud stages
     return grow_cloud(stage, a)
 
@@ -772,6 +783,9 @@ def cmd_hibernate(a: argparse.Namespace) -> int:
         rc, _ = run(sprout_compose("stop", *SPROUT_SERVICES), cwd=COMPOSE_DIR, env=sprout_env())
         say("sprout is hibernating. Wake it with  ./securax grow sprout")
         return rc
+    if stage == "burrow":
+        head("Putting the burrow twin to sleep (the cluster's memory is kept) …")
+        return bw.twin_stop()
     tf_dir()          # fail early (clear message) if there is no genome for the chosen cloud
     if stage in ("canopy", "forest") and not a.no_backup and a.apply and have("kubectl"):
         head("Asking Velero for a last backup before the cluster sleeps …")
@@ -809,6 +823,9 @@ def cmd_prune(a: argparse.Namespace) -> int:
         shutil.rmtree(SPROUT_DIR, ignore_errors=True)
         say("sprout pruned (containers, volumes, generated secrets).")
         return 0
+    if stage == "burrow":
+        say("Real machines are yours to wipe; this removes only the Docker twin.")
+        return bw.twin_down()
     d = tf_dir()
     say("Cloud prune runs `terraform destroy`. Protected data (vault bucket, tenant buckets, the roots disk) has deletion guards on purpose:")
     say("empty/remove them deliberately first (that is the point of the guard). Preview with a plan:")
@@ -821,6 +838,9 @@ def cmd_prune(a: argparse.Namespace) -> int:
 def cmd_scale(a: argparse.Namespace) -> int:
     stage = resolve_stage(a.stage)
     a.size = a.newsize
+    if stage == "burrow":
+        say("Vertical: buy/upgrade the machine. Horizontal: add a node with ./securax spore agent (or a 2nd/3rd server for HA: etcd is already embedded).")
+        return 0
     if stage in ("seed", "sprout"):
         say("Seed/sprout size themselves to what Docker can use on every `./securax up` (see docs/securax/25). To give them more: raise Docker/WSL memory.")
         return 0
@@ -879,6 +899,33 @@ def cmd_organ(a: argparse.Namespace) -> int:
     return run(argv, cwd=wd)[0]
 
 
+def cmd_burrow(a: argparse.Namespace) -> int:
+    """./securax burrow status|power|test — direct control of the twin's reflexes."""
+    if a.action == "status":
+        return bw.twin_report()
+    if a.action == "power":
+        if bw.twin_status() != "awake":
+            say("The twin must be awake to rehearse a power cut: ./securax grow burrow")
+            return 1
+        return bw.power_event()
+    return 1
+
+
+def cmd_spore(a: argparse.Namespace) -> int:
+    """Write the installer for one real machine (server or agent). Nothing is run or contacted."""
+    try:
+        sp, ci = bw.write_spore(a.role, a.name, join_url=a.join or "", gpu=a.gpu, ups=a.ups, gitops=a.gitops, repo=a.repo)
+    except ValueError as e:
+        say(f"! {e}")
+        return 2
+    head(f"Spore for '{a.name}' ({a.role}) written")
+    say(f"  script      : {sp}\n  cloud-init  : {ci}   (both owner-only: they contain the cluster join token)")
+    say("\nUse ONE of:\n  a) fresh Ubuntu Server 24.04 LTS, then:   sudo bash <script>\n  b) put the cloud-init file on a USB labelled CIDATA (as 'user-data' plus an empty 'meta-data') and boot the installer")
+    if a.gpu:
+        say("  GPU: the node is labelled securax.io/gpu=nvidia; install the NVIDIA driver + container toolkit for your card first.")
+    return 0
+
+
 def cmd_organ_check(a: argparse.Namespace) -> int:
     names = a.names or list(load_json("organs.json")["organs"])
     bad = 0
@@ -905,7 +952,9 @@ def main(argv: list[str] | None = None) -> int:
         return p
 
     add_common(sub.add_parser("soil", help="preflight: is the soil ready for this stage?"), with_organs=True).set_defaults(fn=cmd_soil)
-    add_common(sub.add_parser("grow", help="wake a stage from the genome"), with_organs=True, cloud=True).set_defaults(fn=cmd_grow)
+    g = add_common(sub.add_parser("grow", help="wake a stage from the genome"), with_organs=True, cloud=True)
+    g.add_argument("--gitops", action="store_true", help="burrow: also install Argo CD and the root app")
+    g.set_defaults(fn=cmd_grow)
     h = add_common(sub.add_parser("hibernate", help="put a stage to sleep; data is kept"), cloud=True)
     h.add_argument("--no-backup", action="store_true")
     h.set_defaults(fn=cmd_hibernate)
@@ -929,6 +978,18 @@ def main(argv: list[str] | None = None) -> int:
     og.add_argument("name")
     og.add_argument("action", choices=["up", "stop", "status", "down"])
     og.set_defaults(fn=cmd_organ)
+    b = sub.add_parser("burrow", help="the burrow twin: status | power (rehearse a mains failure)")
+    b.add_argument("action", choices=["status", "power"])
+    b.set_defaults(fn=cmd_burrow)
+    sp = sub.add_parser("spore", help="write the installer for one real machine of the burrow")
+    sp.add_argument("role", choices=["server", "agent"])
+    sp.add_argument("--name", required=True)
+    sp.add_argument("--join", default="", help="https://<server>:6443 (required for agents; a 2nd/3rd server joins the first)")
+    sp.add_argument("--gpu", action="store_true")
+    sp.add_argument("--ups", action="store_true", help="install NUT and the power-loss reflex hook")
+    sp.add_argument("--gitops", action="store_true", help="first server only: install Argo CD + root app")
+    sp.add_argument("--repo", default=bw.DEFAULT_REPO)
+    sp.set_defaults(fn=cmd_spore)
     oc = sub.add_parser("organ-check", help="fetch + prepare + compose-config the pinned upstream organs (no images pulled)")
     oc.add_argument("names", nargs="*")
     oc.set_defaults(fn=cmd_organ_check)

@@ -1,0 +1,39 @@
+{
+  "about": "The BURROW: your own hardware running k3s. One definition, two bodies \u2014 the real machines (./securax spore) and a Docker twin that rehearses them on a laptop. Both read THIS file, so the twin cannot drift from the hardware.",
+  "image": "rancher/k3s:v1.31.4-k3s1",
+  "k3s_version": "v1.31.4+k3s1",
+  "server_args": [
+    "--cluster-init",
+    "--secrets-encryption",
+    "--write-kubeconfig-mode",
+    "600"
+  ],
+  "agent_args": [],
+  "gpu_label": "securax.io/gpu=nvidia",
+  "api_port": 6443,
+  "twin": {
+    "api_host_port": 16443,
+    "nodes": [
+      {
+        "name": "server",
+        "role": "server"
+      },
+      {
+        "name": "agent1",
+        "role": "agent"
+      },
+      {
+        "name": "agent2",
+        "role": "agent",
+        "gpu": true
+      }
+    ],
+    "extra_args": [
+      "--kubelet-arg=eviction-hard=nodefs.available<1%,imagefs.available<1%,nodefs.inodesFree<1%"
+    ]
+  },
+  "power": {
+    "drain_timeout": "120s",
+    "snapshot_name": "pre-sleep"
+  }
+}

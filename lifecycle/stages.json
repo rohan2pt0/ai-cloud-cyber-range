@@ -1,56 +1,162 @@
 {
   "version": 1,
   "about": "The genome's ladder. Every stage is defined as code and is DORMANT until you grow it; growing is reversible (hibernate) and your data survives sleep. Nature names are the metaphor, crawl/walk/run/fly the gait.",
-  "aliases": {"crawl": "seed", "walk": "sprout", "run": "tree", "run+": "canopy", "fly": "forest"},
+  "aliases": {
+    "crawl": "seed",
+    "walk": "sprout",
+    "run": "tree",
+    "run+": "canopy",
+    "fly": "forest",
+    "run-": "burrow"
+  },
   "stages": [
     {
-      "id": "seed", "phase": 0, "gait": "crawl", "nature": "Seed",
+      "id": "seed",
+      "phase": 0,
+      "gait": "crawl",
+      "nature": "Seed",
       "what": "The laptop foundation: guardrail gateway, model router, local+cloud models, chat, Guiding Map, sync, automation.",
       "where": "your laptop (Docker)",
-      "needs": {"ram_gb": 6, "disk_gb": 10, "tools": ["docker"]},
-      "wake": "./securax up", "sleep": "./securax down",
-      "dormant_cost": "none", "awake_cost": "none (free/local; optional cloud API keys)",
+      "needs": {
+        "ram_gb": 6,
+        "disk_gb": 10,
+        "tools": [
+          "docker"
+        ]
+      },
+      "wake": "./securax up",
+      "sleep": "./securax down",
+      "dormant_cost": "none",
+      "awake_cost": "none (free/local; optional cloud API keys)",
       "grows_into": "sprout"
     },
     {
-      "id": "sprout", "phase": 1, "gait": "walk", "nature": "Sprout",
+      "id": "sprout",
+      "phase": 1,
+      "gait": "walk",
+      "nature": "Sprout",
       "what": "An always-on security core on one machine: Keycloak (SSO/MFA), OpenBao (secrets), SeaweedFS (S3), Prometheus+Alertmanager. Optional organs: Wazuh (SIEM/XDR), MISP (threat intel), TheHive (incident response).",
       "where": "one always-on machine: a mini-PC/server, or the same laptop when you want it",
-      "needs": {"ram_gb": 8, "disk_gb": 30, "tools": ["docker"]},
-      "wake": "./securax grow sprout [--with wazuh,misp,thehive]", "sleep": "./securax hibernate sprout",
-      "dormant_cost": "none (volumes keep your data; containers stopped)", "awake_cost": "electricity on hardware you own",
-      "organs": ["wazuh", "misp", "thehive"],
+      "needs": {
+        "ram_gb": 8,
+        "disk_gb": 30,
+        "tools": [
+          "docker"
+        ]
+      },
+      "wake": "./securax grow sprout [--with wazuh,misp,thehive]",
+      "sleep": "./securax hibernate sprout",
+      "dormant_cost": "none (volumes keep your data; containers stopped)",
+      "awake_cost": "electricity on hardware you own",
+      "organs": [
+        "wazuh",
+        "misp",
+        "thehive"
+      ],
+      "grows_into": "burrow"
+    },
+    {
+      "id": "burrow",
+      "phase": 2,
+      "gait": "run-",
+      "nature": "Burrow",
+      "what": "Your own hardware as a real Kubernetes cluster: k3s on 1–3 machines (embedded etcd, so one server grows to three without a rebuild), Argo CD pulling the same gitops/ tree as the cloud stages, an optional GPU node, and a power-loss reflex (drain, snapshot, stop). Rehearsed first on a Docker twin (1 server + 2 agents, the real k3s) so it is proven before any machine is bought.",
+      "where": "the Docker twin on your laptop today; your own machines later (./securax spore writes the installer for each)",
+      "needs": {
+        "ram_gb": 4,
+        "disk_gb": 6,
+        "tools": [
+          "docker"
+        ]
+      },
+      "wake": "./securax grow burrow [--gitops]",
+      "sleep": "./securax hibernate burrow",
+      "dormant_cost": "none (the twin's volumes keep the cluster's memory; hardware you own just sits idle or off)",
+      "awake_cost": "electricity on hardware you own (the twin: about 1.5 GB RAM)",
       "grows_into": "tree"
     },
     {
-      "id": "tree", "phase": 2, "gait": "run", "nature": "Tree",
+      "id": "tree",
+      "phase": 2,
+      "gait": "run",
+      "nature": "Tree",
       "what": "One cloud VM running k3s (a real, tiny Kubernetes) with Argo CD pulling the platform from git. State lives on a persistent encrypted disk, so sleep/wake keeps everything.",
       "where": "AWS (one EC2 instance, no inbound ports; SSM or tailscale access)",
       "cloud": true,
-      "needs": {"tools": ["terraform"], "cloud_tools": {"aws": ["aws"]}},
-      "wake": "./securax grow tree --apply", "sleep": "./securax hibernate tree --apply",
+      "needs": {
+        "tools": [
+          "terraform"
+        ],
+        "cloud_tools": {
+          "aws": [
+            "aws"
+          ]
+        }
+      },
+      "wake": "./securax grow tree --apply",
+      "sleep": "./securax hibernate tree --apply",
       "dormant_cost": "the vault (encrypted bucket + KMS key) and the persistent data disk: cents to a few dollars a month",
       "awake_cost": "one VM + its disk (size small/medium/large); check the provider calculator for your region",
       "grows_into": "canopy"
     },
     {
-      "id": "canopy", "phase": 3, "gait": "run+", "nature": "Canopy",
+      "id": "canopy",
+      "phase": 3,
+      "gait": "run+",
+      "nature": "Canopy",
       "what": "Managed Kubernetes (EKS Auto Mode / GKE Autopilot / AKS) that adds and removes nodes by itself, with Argo CD, policy-as-code (Kyverno), runtime detection (Falco), backups (Velero) and scale-to-zero (KEDA).",
       "where": "AWS, GCP or Azure",
       "cloud": true,
-      "needs": {"tools": ["terraform", "kubectl"], "cloud_tools": {"aws": ["aws"], "gcp": ["gcloud"], "azure": ["az"]}},
-      "wake": "./securax grow canopy --apply", "sleep": "./securax hibernate canopy --apply",
+      "needs": {
+        "tools": [
+          "terraform",
+          "kubectl"
+        ],
+        "cloud_tools": {
+          "aws": [
+            "aws"
+          ],
+          "gcp": [
+            "gcloud"
+          ],
+          "azure": [
+            "az"
+          ]
+        }
+      },
+      "wake": "./securax grow canopy --apply",
+      "sleep": "./securax hibernate canopy --apply",
       "dormant_cost": "the vault only: the cluster and NAT are destroyed on sleep (a managed control plane bills by the hour even with zero nodes, which is why sleep removes it)",
       "awake_cost": "control plane (about 0.10 USD per cluster-hour on EKS/GKE, per third-party reports: verify) + nodes while pods run + NAT",
       "grows_into": "forest"
     },
     {
-      "id": "forest", "phase": 4, "gait": "fly", "nature": "Forest",
+      "id": "forest",
+      "phase": 4,
+      "gait": "fly",
+      "nature": "Forest",
       "what": "A multi-tenant managed service: every tenant is a differentiated cell (own namespace, quota, zero-trust network policy, gateway, OIDC-group RBAC, metering, and (AWS) its own encryption key and object store) stamped from one template, with per-tenant usage and SLA dashboards.",
       "where": "canopy + tenants (per-tenant cloud isolation implemented on AWS)",
       "cloud": true,
-      "needs": {"tools": ["terraform", "kubectl"], "cloud_tools": {"aws": ["aws"], "gcp": ["gcloud"], "azure": ["az"]}},
-      "wake": "./securax grow forest --apply", "sleep": "./securax hibernate forest --apply",
+      "needs": {
+        "tools": [
+          "terraform",
+          "kubectl"
+        ],
+        "cloud_tools": {
+          "aws": [
+            "aws"
+          ],
+          "gcp": [
+            "gcloud"
+          ],
+          "azure": [
+            "az"
+          ]
+        }
+      },
+      "wake": "./securax grow forest --apply",
+      "sleep": "./securax hibernate forest --apply",
       "dormant_cost": "vault + each tenant's key and bucket (data persists through sleep)",
       "awake_cost": "canopy + tenant workloads",
       "grows_into": null
