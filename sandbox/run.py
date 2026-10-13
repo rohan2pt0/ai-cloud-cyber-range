@@ -287,7 +287,7 @@ def j_chaos(sb: H.Sandbox, c: Checks):
     c.ok("answered-by:gemini" in sb.answer(sb.chat("bank-assistant", "ping")), "baseline: chat works")
     for victim in ("litellm", "gateway"):
         sb.compose("kill", victim)
-        c.ok(sb.chat("bank-assistant", "ping", timeout=40).status != 200 or True, f"{victim} killed")
+        c.ok(sb.chat("bank-assistant", "ping", timeout=40).status != 200, f"killing {victim} really breaks chat (the failure is real, not simulated)")
         rc, out = sb.securax("up", "--lite", timeout=600)
         c.ok(rc == 0 and sb.wait_until(lambda: sb.http("GET", f"{H.GATEWAY}/readyz").status == 200, 150, 3),
              f"after `./securax up`, the estate is READY again ({victim} was killed)", tail(out, 300))
