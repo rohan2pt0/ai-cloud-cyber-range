@@ -12,11 +12,15 @@ for /f "usebackq delims=" %%d in (`wsl -l -q 2^>nul`) do (
 )
 if defined DISTRO set "DISTRO=%DISTRO: =%"
 if not defined DISTRO goto nowsl
+REM Prefer the FAST copy inside WSL (~/securax, made by wsl-setup.sh) over this slower Windows-drive folder.
+set "WORK=%~dp0."
+wsl -d "%DISTRO%" -e bash -c "test -f $HOME/securax/securax" >nul 2>&1
+if not errorlevel 1 set "WORK=~/securax"
 REM Strip any Windows line-endings that would break the bash script.
-wsl -d "%DISTRO%" --cd "%~dp0." -e perl -pi -e "s/\r$//" securax
-wsl -d "%DISTRO%" --cd "%~dp0." -e docker info >nul 2>&1
+wsl -d "%DISTRO%" --cd "%WORK%" -e perl -pi -e "s/\r$//" securax
+wsl -d "%DISTRO%" --cd "%WORK%" -e docker info >nul 2>&1
 if errorlevel 1 goto nodocker
-wsl -d "%DISTRO%" --cd "%~dp0." -e bash ./securax %*
+wsl -d "%DISTRO%" --cd "%WORK%" -e bash ./securax %*
 exit /b %errorlevel%
 
 :nowsl

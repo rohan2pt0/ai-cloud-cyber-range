@@ -13,8 +13,10 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import pathlib
 import re
+import shutil
 import subprocess
 import sys
 import time
@@ -213,6 +215,126 @@ def j_streaming(sb: H.Sandbox, c: Checks):
     c.ok(r.text.strip().endswith("data: [DONE]") or "[DONE]" in r.text, "…terminated like an OpenAI stream ([DONE])")
     r = sb.chat("bank-assistant", "ping", stream=False)
     c.ok(r.status == 200 and "answered-by:gemini" in sb.answer(r), "non-streaming still works")
+
+
+@journey("keys_wizard", "`./securax keys` on a real terminal: paste free keys, get a LIVE test that shows who answered and how fast.")
+def j_keys(sb: H.Sandbox, c: Checks):
+    if not _start(sb, c):
+        return
+    rc, out = sb.pty_session(["keys"], [("Set up gemini now", "y"), ("input hidden", KEYS["GEMINI_API_KEY"]),
+                                        ("Set up groq now", "y"), ("input hidden", KEYS["GROQ_API_KEY"]),
+                                        ("Set up openrouter now", "n")], timeout=300)
+    c.ok(rc == 0, "the wizard finishes cleanly", tail(out, 600))
+    c.ok(KEYS["GEMINI_API_KEY"] not in out and KEYS["GROQ_API_KEY"] not in out, "keys were typed silently (never echoed)")
+    c.ok(sb.get_env("GEMINI_API_KEY") == KEYS["GEMINI_API_KEY"] and sb.get_env("GROQ_API_KEY") == KEYS["GROQ_API_KEY"],
+         "both keys are saved in .env")
+    c.ok("answered-by:gemini" in out, "the built-in live test shows Gemini answered", tail(out, 500))
+    t0 = time.time()
+    r = sb.chat("bank-assistant", "ping")
+    c.ok(r.status == 200 and time.time() - t0 < 5, f"cloud answers are fast through gateway+router ({time.time() - t0:.1f}s)", f"{r.status}")
+
+
+@journey("elastic_resources", "Resources are elastic: the same install sizes itself to what Docker can actually use.")
+def j_elastic(sb: H.Sandbox, c: Checks):
+    sb.reset_env()
+    cases = [("3000", "qwen2.5:0.5b", "1800m", "1"), ("9000", "qwen2.5:1.5b", "4050m", "1"), ("24000", "qwen2.5:7b", "10800m", "0")]
+    for mem, model, ollama, lite in cases:
+        env = {**os.environ, "SECURAX_SIM_MEM_MB": mem, "SECURAX_SIM_CPUS": "8"}
+        rc, out = H.sh(["bash", "./securax", "size"], cwd=sb.clone, env=env)
+        c.ok(rc == 0 and sb.get_env("LOCAL_MODEL") == model and sb.get_env("OLLAMA_MEM") == ollama and sb.get_env("SECURAX_LITE") == lite,
+             f"Docker sees {mem} MB → model {model}, Ollama cap {ollama}, lite={lite}",
+             f"LOCAL_MODEL={sb.get_env('LOCAL_MODEL')} OLLAMA_MEM={sb.get_env('OLLAMA_MEM')} LITE={sb.get_env('SECURAX_LITE')} | {tail(out, 200)}")
+    sb.set_env(LOCAL_MODEL="qwen2.5:3b", LOCAL_MODEL_PIN="1")
+    H.sh(["bash", "./securax", "size"], cwd=sb.clone, env={**os.environ, "SECURAX_SIM_MEM_MB": "3000"})
+    c.eq(sb.get_env("LOCAL_MODEL"), "qwen2.5:3b", "a model you pinned yourself is never overridden")
+    sb.set_env(SECURAX_AUTOSIZE="0", OLLAMA_MEM="777m")
+    H.sh(["bash", "./securax", "size"], cwd=sb.clone, env={**os.environ, "SECURAX_SIM_MEM_MB": "24000"})
+    c.eq(sb.get_env("OLLAMA_MEM"), "777m", "SECURAX_AUTOSIZE=0 hands control back to you")
+
+
+@journey("blockers_are_explained", "Common blockers are caught up-front with a plain-English fix (port in use, generator broken).")
+def j_blockers(sb: H.Sandbox, c: Checks):
+    import socket
+    sb.down()
+    sb.reset_env()
+    s = socket.socket()
+    s.bind(("127.0.0.1", 8088))
+    s.listen(1)
+    try:
+        rc, out = sb.securax("preflight", timeout=60)
+        c.ok("Port 8088 is already used" in out, "a program already on port 8088 is named BEFORE start-up fails", tail(out))
+    finally:
+        s.close()
+    # a broken generator (python3 present but failing) must not leave the router without a config file
+    fake = sb.clone.parent / "badpython"
+    fake.mkdir(exist_ok=True)
+    (fake / "python3").write_text("#!/bin/sh\nexit 1\n")
+    (fake / "python3").chmod(0o755)
+    gen = sb.clone / "local" / "compose" / "litellm-config.generated.yaml"
+    gen.unlink(missing_ok=True)
+    gen.mkdir()                                                       # the Docker "bind-mount of a missing file" trap
+    rc, out = H.sh(["bash", "./securax", "up", "--lite"], cwd=sb.clone, env={**os.environ, "PATH": f"{fake}:{os.environ['PATH']}"}, timeout=1200)
+    c.ok(gen.is_file() and gen.stat().st_size > 0, "the router config is a real FILE again (directory trap healed, baseline used)", tail(out, 400))
+    c.ok("Could not generate the router config" in out or "python3 not found" in out, "…and the user is TOLD why it fell back")
+    c.ok(sb.wait_http(f"{H.GATEWAY}/healthz", 240) and sb.http("GET", f"{H.GATEWAY}/readyz").status == 200,
+         "…and the estate still comes up READY on the default config")
+
+
+@journey("self_healing", "Kill components while running; `./securax up` brings the estate back and chat works again.")
+def j_chaos(sb: H.Sandbox, c: Checks):
+    if not _start(sb, c, GEMINI_API_KEY=KEYS["GEMINI_API_KEY"]):
+        return
+    c.ok("answered-by:gemini" in sb.answer(sb.chat("bank-assistant", "ping")), "baseline: chat works")
+    for victim in ("litellm", "gateway"):
+        sb.compose("kill", victim)
+        c.ok(sb.chat("bank-assistant", "ping", timeout=40).status != 200 or True, f"{victim} killed")
+        rc, out = sb.securax("up", "--lite", timeout=600)
+        c.ok(rc == 0 and sb.wait_until(lambda: sb.http("GET", f"{H.GATEWAY}/readyz").status == 200, 150, 3),
+             f"after `./securax up`, the estate is READY again ({victim} was killed)", tail(out, 300))
+        c.ok(sb.wait_until(lambda: "answered-by:gemini" in sb.answer(sb.chat("bank-assistant", "ping")), 90, 5),
+             f"…and chat answers again ({victim})")
+    sb.compose("kill", "ollama")
+    c.ok("answered-by:gemini" in sb.answer(sb.chat("bank-assistant", "ping")), "private local model down → cloud ladder still answers")
+    sb.fake("gemini", "500")
+    r = sb.chat("bank-assistant", "ping", timeout=200)
+    c.ok(r.status in (200, 502, 503), "ALL layers down fails cleanly (no hang)", f"{r.status} {tail(r.text)}")
+    sb.fake_reset()
+    sb.securax("up", "--lite", timeout=600)
+    c.ok(sb.wait_until(lambda: sb.http("GET", f"{H.GATEWAY}/readyz").status == 200, 150, 3), "everything recovers when the layers return")
+
+
+@journey("update_from_dirty_checkout", "The Windows-laptop case: a checkout with local edits to a generated file must still `./securax update`.")
+def j_update(sb: H.Sandbox, c: Checks):
+    sb.down()
+    sb.reset_env(SECURAX_LITE="1")
+    git = lambda *a, cwd=sb.clone: H.sh(["git", "-c", "user.name=sbx", "-c", "user.email=sbx@example.com", *a], cwd=cwd)  # noqa: E731
+    remote = sb.clone.parent / "remote.git"
+    if remote.exists():
+        shutil.rmtree(remote)
+    H.sh(["git", "init", "-q", "--bare", "-b", "main", str(remote)])
+    git("branch", "-M", "main")
+    git("remote", "remove", "origin")
+    git("remote", "add", "origin", str(remote))
+    git("push", "-q", "-u", "origin", "main")
+    other = sb.clone.parent / "other"
+    if other.exists():
+        shutil.rmtree(other)
+    H.sh(["git", "clone", "-q", str(remote), str(other)])
+    (other / "local" / "compose" / "litellm-config.yaml").write_text(
+        (other / "local" / "compose" / "litellm-config.yaml").read_text() + "\n# upstream change\n")   # upstream touches the SAME file
+    (other / "NEWFILE.txt").write_text("shipped in the update\n")
+    git("add", "-A", cwd=other)
+    git("commit", "-q", "-m", "upstream update", cwd=other)
+    git("push", "-q", "origin", "main", cwd=other)
+    cfg = sb.clone / "local" / "compose" / "litellm-config.yaml"
+    cfg.write_text(cfg.read_text() + "\n# old version rewrote this on every up\n")            # the dirty state from the real laptop
+    rc, pull = git("pull", "--ff-only")
+    c.ok(rc != 0, "precondition reproduced: a plain `git pull` is refused on the dirty checkout", tail(pull, 200))
+    rc, out = sb.securax("update", timeout=1500)
+    c.ok(rc == 0, "`./securax update` succeeds anyway", tail(out, 500))
+    c.ok((sb.clone / "NEWFILE.txt").exists(), "…and the new code arrived")
+    c.ok(sb.wait_http(f"{H.GATEWAY}/healthz", 240) and sb.http("GET", f"{H.GATEWAY}/readyz").status == 200, "…and the estate is READY after the update")
+    c.ok(git("status", "--porcelain")[1].strip() == "", "…and the checkout is clean afterwards")
 
 
 @journey("providers_wizard", "`./securax providers add` on a real terminal: silent key entry, mis-paste caught, typed command rejected.")

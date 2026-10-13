@@ -53,6 +53,53 @@ guard_heal(){
   fi
 }
 
+# docker_res — "MEM_MB CPUS" as DOCKER sees them (inside WSL2 / Docker Desktop that VM cap is the real limit,
+# not the laptop's RAM). Falls back to this machine's numbers.
+docker_res(){
+  [ -n "${SECURAX_SIM_MEM_MB:-}" ] && { echo "$SECURAX_SIM_MEM_MB ${SECURAX_SIM_CPUS:-4}"; return 0; }     # test hook: pretend to be a smaller/larger machine
+  _m="$(docker info --format '{{.MemTotal}}' 2>/dev/null || true)"; _c="$(docker info --format '{{.NCPU}}' 2>/dev/null || true)"
+  [ -n "$_m" ] && [ "$_m" -gt 0 ] 2>/dev/null && _m=$(( _m / 1048576 )) || _m="$(awk '/^MemTotal:/{printf "%d",$2/1024}' /proc/meminfo 2>/dev/null || echo 0)"
+  [ -n "$_c" ] && [ "$_c" -gt 0 ] 2>/dev/null || _c="$(nproc 2>/dev/null || echo 4)"
+  echo "$_m $_c"
+}
+# autosize — ELASTIC resources: size Ollama + lite mode to what Docker can actually use RIGHT NOW, on every start.
+# Re-evaluated each `up`, so raising the WSL/Docker memory cap (or closing other apps) is picked up automatically.
+# Opt out with SECURAX_AUTOSIZE=0; pin the chat model with LOCAL_MODEL_PIN=1.
+autosize(){
+  [ "$(ev SECURAX_AUTOSIZE 1)" = 0 ] && return 0
+  read -r _mem _cpu <<EOF
+$(docker_res)
+EOF
+  [ "${_mem:-0}" -gt 0 ] || return 0
+  _o=$(( _mem * 45 / 100 )); [ "$_o" -lt 1800 ] && _o=1800; [ "$_o" -gt 12288 ] && _o=12288
+  _oc=$(( _cpu > 2 ? _cpu - 1 : 2 ))
+  _lite=0; [ "$_mem" -lt 12000 ] && _lite=1
+  if [ "$(ev LOCAL_MODEL_PIN 0)" != 1 ]; then
+    if   [ "$_mem" -ge 20000 ]; then _lm="qwen2.5:7b"
+    elif [ "$_mem" -ge 7000 ];  then _lm="qwen2.5:1.5b"
+    else                             _lm="qwen2.5:0.5b"; fi
+    skv "$ROOT/local/compose/.env" LOCAL_MODEL "$_lm"
+  fi
+  skv "$ROOT/local/compose/.env" OLLAMA_MEM "${_o}m"; skv "$ROOT/local/compose/.env" OLLAMA_CPUS "$_oc"
+  [ "$(ev SECURAX_LITE_PIN 0)" = 1 ] || skv "$ROOT/local/compose/.env" SECURAX_LITE "$_lite"
+  C "Sized to this machine: Docker sees ${_mem} MB / ${_cpu} CPUs → model $(ev LOCAL_MODEL), Ollama cap ${_o} MB$([ "$_lite" = 1 ] && echo ', lite mode')."
+  [ "$_mem" -lt 6000 ] && echo "  (Low memory. Windows: raise it in %UserProfile%\\.wslconfig  memory=10GB  then  wsl --shutdown  — see WINDOWS-QUICKSTART.md)"
+  return 0
+}
+# preflight — find the common blockers BEFORE they turn into cryptic errors.
+preflight(){
+  docker info >/dev/null 2>&1 || { C "Docker isn't running/reachable. Start Docker Desktop (wait for 'Engine running'); on Windows also enable WSL integration for Ubuntu."; return 1; }
+  _free="$(df -Pk "$ROOT" 2>/dev/null | awk 'NR==2{printf "%d",$4/1048576}')"
+  [ -n "$_free" ] && [ "$_free" -lt 8 ] && C "⚠ Only ~${_free} GB free disk here. Models + images need ~8 GB. Free some space (docker system prune -f can help)."
+  curl -fsS -m 2 http://localhost:8080/healthz >/dev/null 2>&1 && return 0        # our stack is already up: ports are ours
+  for _p in 8080 8088 3000; do
+    if (exec 3<>"/dev/tcp/127.0.0.1/$_p") 2>/dev/null; then
+      C "⚠ Port $_p is already used by another program (not SecuRAX). Close it, then re-run. To see what: ss -ltnp | grep :$_p"
+    fi
+  done
+  return 0
+}
+
 cmd="${1:-up-status}"
 case "$cmd" in
   up|up-status)
@@ -78,6 +125,8 @@ case "$cmd" in
     # LITE mode (./securax up --lite, or SECURAX_LITE=1 in .env — `./securax profile` sets it for 16 GB
     # machines): only the core path (gateway, router, local model, Chat, home screen, sync). Skips
     # Private Docs + n8n + Postgres, which together want ~3 GB you may not have to spare.
+    preflight || exit 1
+    autosize
     LITE=0; { [ "${2:-}" = "--lite" ] || [ "$(ev SECURAX_LITE)" = "1" ]; } && LITE=1
     SVCS=""; [ "$LITE" = 1 ] && SVCS="gateway litellm ollama open-webui guiding-map estate-sync" \
       && C "LITE mode: starting the core path only (Private Docs / n8n skipped to save RAM)."
@@ -94,11 +143,19 @@ case "$cmd" in
       C "python3 not found — using the shipped default router config (Gemini + local model). Install python3 to enable your own provider keys."
     fi
     [ -s "$GENCFG" ] || cp "$ROOT/local/compose/litellm-config.yaml" "$GENCFG"
+    # Layered start: each step is a fallback for the one before (offline? image-build failed? low memory?).
+    CORE="gateway litellm ollama open-webui guiding-map estate-sync"
     if ! ( cd "$ROOT/local/compose" && docker compose --profile ai up -d --build $SVCS ); then
-      C "Startup failed. Most often the model router rejected its config — its log:"
-      ( cd "$ROOT/local/compose" && docker compose --profile ai logs --no-color --tail 25 litellm 2>/dev/null ) || true
-      echo "  Run  ./securax doctor  for a diagnosis, or paste the output above to get help."
-      exit 1
+      C "Full start failed — fallback 1: start without rebuilding images (works offline if you've run it before)…"
+      if ! ( cd "$ROOT/local/compose" && docker compose --profile ai up -d $SVCS ); then
+        C "Fallback 2: core path only (private chat + security gateway + home screen), skipping optional services…"
+        if ! ( cd "$ROOT/local/compose" && docker compose --profile ai up -d $CORE ); then
+          C "Startup failed. Most often the model router rejected its config — its log:"
+          ( cd "$ROOT/local/compose" && docker compose --profile ai logs --no-color --tail 25 litellm 2>/dev/null ) || true
+          echo "  Run  ./securax doctor  for a diagnosis, or paste the output above to get help."
+          exit 1
+        fi
+      fi
     fi
     guard_heal
     ready_wait 150 || C "The router is still starting — the Command Center turns green when it is ready (./securax doctor checks it)."
@@ -349,8 +406,8 @@ URLS
     # NOTE: inside WSL2 the RAM you SEE is the WSL cap (default = half the laptop) — that is the real
     # limit Docker lives under, so it is the right number to size against.
     if   [ "$MEM_MB" -lt 7000 ];  then TIER=tiny;   LITE=1; LM="qwen2.5:1.5b"; CM="";                  OMEM="2500m"
-    elif [ "$MEM_MB" -lt 11500 ]; then TIER=small;  LITE=1; LM="qwen2.5:3b";   CM="";                  OMEM="4g"
-    elif [ "$MEM_MB" -lt 20000 ]; then TIER=medium; LITE=1; LM="qwen2.5:3b";   CM="qwen2.5-coder:7b";  OMEM="6g"
+    elif [ "$MEM_MB" -lt 11500 ]; then TIER=small;  LITE=1; LM="qwen2.5:1.5b"; CM="";                  OMEM="4g"
+    elif [ "$MEM_MB" -lt 20000 ]; then TIER=medium; LITE=1; LM="qwen2.5:1.5b"; CM="qwen2.5-coder:7b";  OMEM="6g"
     else                               TIER=large;  LITE=0; LM="qwen2.5:7b";   CM="qwen2.5-coder:14b"; OMEM="11g"
     fi
     OCPU=$(( CPUS > 2 ? CPUS - 1 : 2 ))
@@ -360,6 +417,7 @@ URLS
     python3 "$ROOT/local/compose/gen_litellm_config.py" --write --env-file "$ENVF" >/dev/null
     C "Profile: ${MEM_MB} MB RAM visible, ${CPUS} CPUs  →  tier '$TIER'"
     echo "  local chat model : $LM   (ollama capped at $OMEM, $OCPU cpus)"
+    [ "$TIER" != large ] && echo "  speed tip        : CPU-only answers take 10-60s. For instant answers add free cloud keys:  ./securax keys"
     echo "  local coder      : ${CM:-off — not enough RAM; the BUILD ladder uses free/cheap cloud instead}"
     echo "  lite mode        : $([ "$LITE" = 1 ] && echo 'ON  (skips Private Docs + n8n to save RAM)' || echo 'off (everything runs)')"
     if [ "$IS_WSL" = 1 ] && [ "$MEM_MB" -lt 10000 ]; then
@@ -420,6 +478,36 @@ URLS
       C "Pull failed — check your internet, or run  ./securax doctor  to see the real error."
     fi
     ;;
+  size)      ENVF="$ROOT/local/compose/.env"; [ -f "$ENVF" ] || cp "$ROOT/local/compose/.env.example" "$ENVF"; autosize ;;
+  preflight) preflight && C "preflight: no blockers found." ;;
+  keys)
+    # Guided key setup: the three FREE providers, in the order that gives the fastest answers, then a LIVE TEST
+    # that shows which provider actually answered and how long it took. Enter skips any step.
+    ENVF="$ROOT/local/compose/.env"; [ -f "$ENVF" ] || cp "$ROOT/local/compose/.env.example" "$ENVF"
+    C "Free API keys — each takes ~1 minute. Press Enter at any key prompt to skip that one."
+    echo "  Order matters: the router tries them top-down, then falls back to your private local model."
+    for P in gemini groq openrouter; do
+      printf '\n▶ Set up %s now? [Y/n]: ' "$P"; read -r YN < /dev/tty || YN="n"
+      case "$YN" in [Nn]*) continue;; esac
+      SECURAX_NOAPPLY=1 "$0" providers add "$P" || true
+    done
+    python3 "$ROOT/local/compose/gen_litellm_config.py" --write --env-file "$ENVF" >/dev/null
+    if curl -fsS -m 3 http://localhost:8080/healthz >/dev/null 2>&1; then
+      C "Applying (reloading the router + gateway)…"
+      ( cd "$ROOT/local/compose" && docker compose --profile ai up -d litellm gateway >/dev/null 2>&1 || true
+        docker compose --profile ai restart litellm gateway >/dev/null 2>&1 || true )
+      ready_wait 150 || C "  (router still starting — try  ./securax doctor  in a minute)"
+      C "Live test — asking the router through the security gateway…"
+      T0=$(date +%s)
+      R="$(curl -sS -m 120 http://localhost:8080/v1/chat/completions -H 'Content-Type: application/json' \
+           -d '{"model":"bank-assistant","messages":[{"role":"user","content":"Reply with the single word OK."}]}' 2>&1 || true)"
+      echo "  reply (${T0:+$(( $(date +%s) - T0 ))s}): $(printf '%s' "$R" | python3 -c 'import sys,json
+try: print(json.load(sys.stdin)["choices"][0]["message"]["content"][:80])
+except Exception: print("NO ANSWER -> run ./securax doctor")' 2>/dev/null)"
+    else
+      C "Keys saved. Start the estate with  ./securax up  — it will use them automatically."
+    fi
+    ;;
   providers)
     # Plugin-style AI provider management. `list` shows status; `add` pastes a key, regenerates the
     # router config from plugins/catalog.json, and restarts the router so the model appears in Chat.
@@ -434,8 +522,11 @@ URLS
       add)
         C "Add an AI provider plugin. Current status:"
         python3 "$GEN" --status --env-file "$ENVF"
-        printf '\nProvider id to enable (openai, anthropic, deepseek, mistral, grok, perplexity, azure, bedrock, openrouter, elevenlabs): '
-        read -r PID < /dev/tty || PID=""
+        PID="${3:-}"
+        if [ -z "$PID" ]; then
+          printf '\nProvider id to enable (openai, anthropic, deepseek, mistral, grok, perplexity, azure, bedrock, openrouter, elevenlabs): '
+          read -r PID < /dev/tty || PID=""
+        fi
         PID="$(printf '%s' "$PID" | tr 'A-Z' 'a-z' | tr -d '[:space:]')"
         [ -z "$PID" ] && { C "nothing to do."; exit 0; }
         case "$PID" in */*|.*|*securax*) C "That looks like a command, not a provider id. Type just the id (e.g. groq), or Ctrl+C and run it in a new line."; exit 1;; esac
@@ -464,6 +555,7 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
           skv "$ENVF" "$K" "$V" && echo "    ✔ saved $K (${#V} chars, starts '${V:0:5}…')"
         done
         python3 "$GEN" --write --env-file "$ENVF" >/dev/null && C "  ✔ router config regenerated from the plugin catalog."
+        [ "${SECURAX_NOAPPLY:-0}" = 1 ] && exit 0      # caller (./securax keys) applies once at the end
         C "Applying (reloading the router + gateway so the new model is picked up)…"
         # `up -d` starts them if down; `restart` forces a reload of the bind-mounted config if they
         # were already running (a bind-mount change alone does NOT trigger a recreate).
