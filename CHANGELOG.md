@@ -9,6 +9,10 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **User-perspective sandbox (`sandbox/`, `python3 sandbox/run.py`, CI `e2e-sandbox`)** — runs the real product from a fresh
+  clone (no `.env`) with a real browser, real Ollama model and faked cloud providers; 8 journeys / 88 checks. It found and
+  drove fixes for: readiness race, no config regeneration on `up`, one-shot Command Center status, gateway `stream:true`
+  500s, and the router phoning huggingface.co.
 - **`./securax update`** — `git pull --ff-only` then recreate the containers, so fixes actually run (a
   plain pull leaves the old containers running). `./securax doctor` now warns when you're behind `main`.
 - **`./securax guard [status|on|off]`** for the optional Llama Guard detector; **`./securax up` auto-heals**
