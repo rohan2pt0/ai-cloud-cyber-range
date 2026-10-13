@@ -15,6 +15,7 @@ import argparse
 import json
 import pathlib
 import re
+import subprocess
 import sys
 import time
 import traceback
@@ -71,6 +72,8 @@ def j_fresh_install(sb: H.Sandbox, c: Checks):
         r = sb.http("GET", f"{H.GUIDING_MAP}{path}", follow=False)
         c.ok(r.status in (301, 302) and r.headers.get("Location", "").endswith("/hub.html"),
              f"{path} redirects to /hub.html", f"{r.status} {r.headers.get('Location')}")
+    dirty = subprocess.run(["git", "status", "--porcelain"], cwd=sb.clone, capture_output=True, text=True).stdout.strip()
+    c.ok(dirty == "", "`up` leaves the git checkout CLEAN (so `git pull` never conflicts)", dirty)
     ver = sb.http("GET", f"{H.GATEWAY}/version").json() or {}
     c.eq(ver.get("version"), sb.version, "gateway /version == VERSION file")
     c.eq(sb.http("GET", f"{H.GATEWAY}/readyz").status, 200, "READY the moment `up` returns (no half-started window)")

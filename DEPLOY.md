@@ -69,6 +69,7 @@ SecuRAX runs in containers, so the only thing you install is Docker.
 | Your OS | Do this |
 |---|---|
 | **Windows (simplest)** | In **File Explorer**, double-click **`START-HERE-Windows.bat`** |
+| **Windows (PowerShell)** | `.\securax.cmd up` — every `./securax <command>` below works as `.\securax.cmd <command>` (it runs inside WSL). **Don't** type `./securax` in PowerShell: Windows can't run a bash script and asks "Select an app to open" |
 | **Windows (WSL/Ubuntu terminal)** | Run **`./securax up`** — the `.bat` files only work when double-clicked, **not** when typed in WSL |
 | **macOS / Linux** | Run **`./securax up`** |
 
@@ -76,6 +77,16 @@ SecuRAX runs in containers, so the only thing you install is Docker.
 > `START-HERE-Windows.bat` there gives `command not found` — those are for double-clicking in
 > Windows File Explorer. `./securax up` now also **asks for a free Gemini key right in the terminal**
 > (press Enter to skip), so first-run setup is one step with no `.env` editing.
+>
+> **Windows prerequisites (one-time):** Docker Desktop running, WSL2 + Ubuntu (`wsl --install`), and Docker
+> Desktop ▸ Settings ▸ Resources ▸ **WSL integration ▸ Ubuntu = ON**. `securax.cmd` checks each and tells you
+> exactly which one is missing. For speed, keep the folder inside WSL (`~/ai-cloud-cyber-range`) rather than
+> on a Windows drive (`/mnt/d/...` works but file access is several times slower).
+>
+> **Update:** `.\securax.cmd update` (Windows) / `./securax update` — pulls, recreates the containers. Your
+> checkout stays clean (the router config is generated into a git-ignored file), so `git pull` never conflicts.
+> If an older checkout still refuses to pull over `litellm-config.yaml`, run once:
+> `git checkout -- local/compose/litellm-config.yaml`.
 >
 > **After a `git pull`, always recreate the containers** so the new code actually runs —
 > `./securax down && ./securax up` (WSL/Mac/Linux) or double-click `STOP-Windows.bat` then

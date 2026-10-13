@@ -69,9 +69,14 @@ BUILD_MODEL=coder ./securax build "refactor fin_freedom arg parsing"   # fully l
 ```
 
 `./securax build` points [Aider](https://aider.chat) at the SecuRAX **gateway** (OpenAI-compatible),
-loads the BUILD-CONTRACT as always-on context, and runs `ruff check . && pytest -q` **after every
-edit**, iterating until green (`--auto-test`). That edit→test→fix loop is the rigor — the same loop a
+loads the BUILD-CONTRACT as always-on context, and runs **`./securax verify`** (lint + unit tests +
+router-config + compose checks) **after every edit**, iterating until green (`--auto-test`). That edit→test→fix loop is the rigor — the same loop a
 frontier agent runs, now driven by a cheap/local model behind your guardrail.
+
+**Definition of done = `./securax verify` green** (seconds), and for anything touching compose, `securax`,
+the gateway, the router or the UI, **`./securax verify --full`** (adds the user-perspective sandbox: a fresh
+install, real browser, real local model — about 10 min, no tokens). A model that can't make `verify`
+pass hasn't finished, however confident it sounds; this is what replaces trusting the model's own claims.
 
 Prefer a GUI? Point **Cline** or **Continue** (VS Code) at `http://localhost:8080/v1` with your
 `LITELLM_MASTER_KEY` and model `openai/deepseek` (or `openai/coder`). Same endpoint, same rails.

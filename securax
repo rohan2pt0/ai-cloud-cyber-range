@@ -83,7 +83,13 @@ case "$cmd" in
       && C "LITE mode: starting the core path only (Private Docs / n8n skipped to save RAM)."
     # Regenerate the router config from .env on EVERY start, so a key added by hand (as DEPLOY.md says) or
     # via `./securax setup` just works. Deterministic + idempotent; skipped silently without python3.
-    command -v python3 >/dev/null 2>&1 && { python3 "$ROOT/local/compose/gen_litellm_config.py" --write --env-file "$ENVF" >/dev/null 2>&1 || true; }
+    # The router mounts the generated file: if it can't be produced, say so instead of failing obscurely later.
+    GENCFG="$ROOT/local/compose/litellm-config.generated.yaml"
+    if command -v python3 >/dev/null 2>&1 && python3 "$ROOT/local/compose/gen_litellm_config.py" --write --env-file "$ENVF" >/dev/null 2>&1; then :
+    elif [ ! -s "$GENCFG" ]; then
+      cp "$ROOT/local/compose/litellm-config.yaml" "$GENCFG"
+      C "python3 not available — using the shipped default router config (Gemini + local model). Install python3 to enable your own provider keys."
+    fi
     if ! ( cd "$ROOT/local/compose" && docker compose --profile ai up -d --build $SVCS ); then
       C "Startup failed. Most often the model router rejected its config — its log:"
       ( cd "$ROOT/local/compose" && docker compose --profile ai logs --no-color --tail 25 litellm 2>/dev/null ) || true
@@ -268,6 +274,19 @@ URLS
     shift
     ( cd "$ROOT" && python3 -m routines "${1:-list}" )
     ;;
+  verify)
+    # The "definition of done" for ANY change, human- or model-made — the same floor CI enforces.
+    #   ./securax verify          fast gates (seconds): lint + unit tests + router-config + compose checks
+    #   ./securax verify --full   + the user-perspective sandbox (real containers + browser; ~10 min)
+    cd "$ROOT"; rc=0
+    step(){ C "▶ $1"; shift; "$@" || { C "✘ FAILED: $*"; rc=1; }; }
+    command -v ruff >/dev/null 2>&1 && step "lint (ruff)" ruff check . || echo "  (ruff not installed — pip install ruff; CI will still check)"
+    step "unit tests (pytest)" python3 -m pytest -q
+    step "router config baseline is current" bash -c 'cd local/compose && python3 gen_litellm_config.py --baseline --write >/dev/null && git diff --exit-code -- litellm-config.yaml'
+    command -v docker >/dev/null 2>&1 && step "compose file valid" docker compose --env-file local/compose/.env.example -f local/compose/docker-compose.yml --profile ai config -q
+    if [ "${2:-}" = "--full" ]; then step "user-perspective sandbox" python3 sandbox/run.py; fi
+    [ "$rc" = 0 ] && C "✔ verify passed" || { C "✘ verify FAILED — fix the above before calling it done"; exit 1; }
+    ;;
   build)
     # Build/evolve SecuRAX using ITS OWN models (via the gateway), with Claude-like rigor supplied by
     # the BUILD-CONTRACT + the repo's test gates. Uses Aider as the edit->test->fix agent.
@@ -293,7 +312,7 @@ URLS
     OPENAI_API_BASE="http://localhost:8080/v1" OPENAI_API_KEY="$KEY" \
       aider --model "openai/$MODEL" \
             --read "$ROOT/BUILD-CONTRACT.md" \
-            --test-cmd "ruff check . && python -m pytest -q" --auto-test \
+            --test-cmd "$ROOT/securax verify" --auto-test \
             --no-gitignore --message "$TASK"
     ;;
   escalate)

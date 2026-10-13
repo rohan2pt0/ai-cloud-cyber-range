@@ -9,6 +9,12 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **`securax.cmd` — Windows launcher.** `.\securax.cmd up|update|doctor|providers add|…` from PowerShell runs the
+  bash CLI in WSL, checking WSL/Docker/Docker-WSL-integration first and printing the exact fix. START/STOP
+  `.bat` files now use it (they previously skipped router-config generation and the readiness wait).
+- **`./securax verify [--full]`** — one definition of done (lint, unit tests, router-config baseline, compose
+  validity; `--full` adds the sandbox). `./securax build` now uses it as its auto-test command.
+- `.gitattributes` keeps `securax`/scripts LF so a Windows checkout can't break them.
 - **User-perspective sandbox (`sandbox/`, `python3 sandbox/run.py`, CI `e2e-sandbox`)** — runs the real product from a fresh
   clone (no `.env`) with a real browser, real Ollama model and faked cloud providers; 8 journeys / 88 checks. It found and
   drove fixes for: readiness race, no config regeneration on `up`, one-shot Command Center status, gateway `stream:true`
@@ -71,6 +77,10 @@ for the versioning and release policy.
   The gateway is shown as a friendly security status ("every AI call is guarded"), not raw JSON.
 
 ### Fixed
+- **`git pull` conflicted after every `up`** (found on a real Windows laptop): `up` rewrote the tracked
+  `litellm-config.yaml`. The router now mounts a git-ignored `litellm-config.generated.yaml`; the tracked file is a
+  baseline `up` never touches. Config generation failing is now reported, not swallowed. Sandbox asserts `up` leaves
+  the checkout clean.
 - **"400: Request blocked by AI security policy" on harmless prompts.** `.env.example` once shipped
   `LLAMA_GUARD_URL` enabled; existing `.env` files keep it (git pull never rewrites `.env`), and with the
   model not installed the fail-closed gateway blocked everything. The gateway now says a *detector is

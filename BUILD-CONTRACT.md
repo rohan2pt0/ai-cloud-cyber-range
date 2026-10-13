@@ -30,7 +30,7 @@ python3 sandbox/run.py                         # REQUIRED if you touched compose
 ```
 The sandbox (`sandbox/README.md`) is the only gate that sees what the user sees. Unit tests green + sandbox red = not done.
 CI additionally runs gitleaks (no secrets in the diff), Semgrep/Trivy (SAST), and a build-drift
-check. **A change is not done until `ruff` + `pytest` are green locally.**
+check. **A change is not done until `./securax verify` is green locally** (it runs the gates above; add `--full` to include the sandbox).
 
 ## Hard rules — never violate (these are the "security must be an enabler" guarantees)
 - **Never** skip, disable, delete, or `xfail` a test to get green. Fix the code instead.
