@@ -81,6 +81,19 @@ pass hasn't finished, however confident it sounds; this is what replaces trustin
 Prefer a GUI? Point **Cline** or **Continue** (VS Code) at `http://localhost:8080/v1` with your
 `LITELLM_MASTER_KEY` and model `openai/deepseek` (or `openai/coder`). Same endpoint, same rails.
 
+## Tier 2b — unattended: `./securax autobuild`
+
+```bash
+./securax autobuild "add a /metrics endpoint to the gateway with a test" --tries 3
+```
+Creates its own branch, runs the agent, runs **`./securax verify`**, and — if red — feeds the failure output back for
+the next attempt. **Commits only when green** (you then review `git diff main..autobuild/…` and push). After N red
+attempts it discards the work, returns your checkout to a clean state and writes `autobuild-failed-*.md` — an
+escalation brief for the rare frontier-model hand-off. It refuses to start on a dirty tree (so rollback is always
+safe), never touches your branch, and pushes only with `AUTOBUILD_PUSH=1`. Proven by the sandbox journey `autobuild_loop`
+(with a stub agent) — **the quality of a real local/cheap model inside this loop is not yet measured**: try it on ~10 small
+real tasks and record pass-rate before depending on it.
+
 ## Tier 3 — escalate the hard 10% (and only the 10%)
 
 When the cheap/local tier can't satisfy the contract (new security design, a cross-cutting refactor, a

@@ -64,8 +64,13 @@ Where AWS matters here and how SecuRAX meets it: **Bedrock** (provider plugin �
 3. `.env` and backups owner-only (key management).
 4. Incident runbook (doc 27).
 
-## 8. Ranked next (80/20)
-1. `./securax scan` — Trivy over the running images + SBOM, and pin the two floating image tags (vulnerability & supply-chain, domains 4 and 9).
-2. `./securax evidence` — one-file audit pack (versions, config hashes, sandbox result, audit-log extract) for RBI/CERT-In requests.
-3. Provider data-handling register (domain 11) — only with vendor-verified facts, shown when you add a key.
-4. Build-agent hardening so SecuRAX can build itself without paid Claude: a *task-card → patch → `verify --full`* loop that runs unattended on the local/cheap ladder and opens a PR only when green (see doc 23).
+## 7b. Built in the follow-up pass
+5. `./securax evidence` — auditor pack (no prompts/keys; unit-tested for secret-freedom).
+6. `./securax scan` — Trivy over the images in use (needs internet for the vulnerability DB; not exercised by the sandbox).
+7. `./securax models` / daily self-correction of retired provider model names.
+8. `./securax autobuild` — gated, rollback-safe build loop (the path to building SecuRAX without paid Claude).
+
+## 8. Ranked next (80/20) — what is still open
+1. **Pin the two floating image tags** (`litellm:main-stable`, `anythingllm:latest`) after verifying current stable tags, plus an SBOM (CycloneDX) in `scan`.
+2. Provider data-handling register (domain 11) — only with vendor-verified facts, shown when you add a key.
+3. Measure the build agent: run `autobuild` on ~10 real small tasks with the cheap/local ladder and record pass-rate and escalations (doc 23) — only then decide how much to lean on it.

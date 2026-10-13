@@ -43,6 +43,18 @@ HOSTS = {
     "api.perplexity.ai": "perplexity",
     "api.anthropic.com": "anthropic",
 }
+# What each provider's "list models" endpoint returns (a test can change it via /ctl/models).
+LIVE_MODELS: dict[str, list[str]] = {
+    "gemini": ["gemini-9.1-flash", "gemini-9.2-flash-preview", "gemini-9.0-flash"],
+    "groq": ["openai/gpt-oss-120b", "llama-3.1-8b-instant", "whisper-large-v3"],
+    "openai": ["gpt-9-mini", "gpt-9"],
+    "anthropic": ["claude-haiku-9-1", "claude-sonnet-9-1"],
+    "deepseek": ["deepseek-chat"],
+    "mistral": ["mistral-small-latest"],
+    "grok": ["grok-9.1", "grok-9.1-image"],
+    "openrouter": ["meta-llama/llama-3.3-70b-instruct:free"],
+}
+DEFAULT_LIVE_MODELS = {k: list(v) for k, v in LIVE_MODELS.items()}
 MODES: dict[str, str] = {}
 LOG: list[dict] = []
 
@@ -129,7 +141,10 @@ async def provider_endpoint(path: str, request: Request):
             yield "data: " + json.dumps(_gemini_body(provider)) + "\r\n\r\n"
         return StreamingResponse(gen(), media_type="text/event-stream")
     if path.endswith("/models") or path.endswith("models"):
-        return JSONResponse({"object": "list", "data": [{"id": "fake-model", "object": "model"}]})
+        ids = LIVE_MODELS.get(provider, ["fake-model"])
+        if provider == "gemini":
+            return JSONResponse({"models": [{"name": "models/" + i, "supportedGenerationMethods": ["generateContent"]} for i in ids]})
+        return JSONResponse({"object": "list", "data": [{"id": i, "object": "model"} for i in ids]})
     return JSONResponse({"error": f"fake-providers: unhandled {request.method} /{path}"}, status_code=404)
 
 
@@ -146,10 +161,19 @@ async def set_mode(request: Request):
     return {"modes": MODES}
 
 
+@ctl.post("/ctl/models")
+async def set_models(request: Request):
+    data = await request.json()      # {"provider": "gemini", "models": ["gemini-9.1-flash"]}
+    LIVE_MODELS[data["provider"]] = data["models"]
+    return {"ok": True}
+
+
 @ctl.post("/ctl/reset")
 async def reset():
     MODES.clear()
     LOG.clear()
+    LIVE_MODELS.clear()
+    LIVE_MODELS.update({k: list(v) for k, v in DEFAULT_LIVE_MODELS.items()})
     return {"ok": True}
 
 
@@ -164,7 +188,10 @@ async def main() -> None:
     tls = uvicorn.Server(uvicorn.Config(app, host="0.0.0.0", port=443, ssl_certfile=crt, ssl_keyfile=key,
                                         log_level="warning"))
     plain = uvicorn.Server(uvicorn.Config(ctl, host="0.0.0.0", port=9000, log_level="warning"))
-    await asyncio.gather(tls.serve(), plain.serve())
+    # Same provider app over plain HTTP for HOST-side tools (e.g. `./securax models`) that cannot resolve the
+    # provider hostnames; they send the real Host header so the fake still knows which provider they mean.
+    plain_providers = uvicorn.Server(uvicorn.Config(app, host="0.0.0.0", port=9001, log_level="warning"))
+    await asyncio.gather(tls.serve(), plain.serve(), plain_providers.serve())
 
 
 if __name__ == "__main__":

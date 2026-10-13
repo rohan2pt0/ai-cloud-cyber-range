@@ -137,6 +137,13 @@ case "$cmd" in
     # Docker create a directory there, which crash-loops the router forever). Never fail silently.
     GENCFG="$ROOT/local/compose/litellm-config.generated.yaml"
     [ -d "$GENCFG" ] && rm -rf "$GENCFG"
+    # Self-correct retired model names (at most once a day; offline or no keys = silent no-op).
+    MSTAMP="$ROOT/local/compose/.models-checked"
+    if command -v python3 >/dev/null 2>&1 && [ -z "$(find "$MSTAMP" -mmin -1440 2>/dev/null)" ]; then
+      MOUT="$(python3 "$ROOT/local/compose/model_discovery.py" --env-file "$ENVF" --write 2>/dev/null || true)"
+      printf '%s' "$MOUT" | grep -qE "no provider keys|unreachable" || touch "$MSTAMP" 2>/dev/null || true
+      printf '%s\n' "$MOUT" | grep -E "gone|REJECTED" || true
+    fi
     if command -v python3 >/dev/null 2>&1; then
       GENERR="$(python3 "$ROOT/local/compose/gen_litellm_config.py" --write --env-file "$ENVF" 2>&1 >/dev/null)" || {
         C "Could not generate the router config from your .env / plugin catalog:"; echo "  $GENERR"; }
@@ -379,6 +386,49 @@ URLS
             --test-cmd "bash \"$ROOT/securax\" verify" --auto-test \
             --no-gitignore --message "$TASK"
     ;;
+  autobuild)
+    # Unattended build loop — the 90% tier of "build SecuRAX with SecuRAX": agent -> `verify` gate -> retry with the
+    # failure fed back -> commit ONLY when green. After N red attempts it discards the work and writes an escalation
+    # brief for the (rare) frontier-model hand-off. Never touches your current branch; never pushes unless AUTOBUILD_PUSH=1.
+    #   ./securax autobuild "add a /metrics endpoint to the gateway with a test" [--tries 3]
+    # Agent: default is `./securax build` (Aider through the gateway). Override with AUTOBUILD_AGENT="<shell command>"
+    # (it sees AUTOBUILD_TASK, AUTOBUILD_FEEDBACK = file with the last failure, AUTOBUILD_ATTEMPT).
+    shift; TASK=""; TRIES=3
+    while [ $# -gt 0 ]; do case "$1" in --tries) TRIES="${2:-3}"; shift 2;; *) TASK="$TASK${TASK:+ }$1"; shift;; esac; done
+    [ -n "$TASK" ] || { echo 'usage: ./securax autobuild "what to build" [--tries N]'; exit 1; }
+    git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1 || { C "autobuild needs a git checkout."; exit 1; }
+    [ -z "$(git -C "$ROOT" status --porcelain)" ] || { C "Your checkout has uncommitted changes — commit or stash them first (autobuild only works on a clean tree, so it can always roll back)."; exit 1; }
+    ORIG="$(git -C "$ROOT" rev-parse --abbrev-ref HEAD)"; SLUG="$(printf '%s' "$TASK" | tr 'A-Z' 'a-z' | tr -cs 'a-z0-9' '-' | cut -c1-40)"
+    BR="autobuild/${SLUG%-}-$(date +%H%M%S)"; FB="$(mktemp)"; : > "$FB"
+    git -C "$ROOT" checkout -q -b "$BR"; i=1
+    while [ "$i" -le "$TRIES" ]; do
+      C "autobuild: attempt $i/$TRIES on branch $BR"
+      if [ -n "${AUTOBUILD_AGENT:-}" ]; then
+        ( cd "$ROOT" && AUTOBUILD_TASK="$TASK" AUTOBUILD_FEEDBACK="$FB" AUTOBUILD_ATTEMPT="$i" bash -c "$AUTOBUILD_AGENT" ) || true
+      else
+        PROMPT="$TASK"; [ -s "$FB" ] && PROMPT="$TASK
+
+The previous attempt FAILED verification. Fix exactly this:
+$(tail -60 "$FB")"
+        ( cd "$ROOT" && "$0" build "$PROMPT" ) || true
+      fi
+      if ( cd "$ROOT" && "$0" verify ) > "$FB.new" 2>&1; then
+        git -C "$ROOT" add -A && git -C "$ROOT" commit -q -m "autobuild: $TASK" || { C "Agent made no changes — nothing to commit."; }
+        C "✔ GREEN on attempt $i. Review it:  git diff $ORIG..$BR     Ship it:  git push -u origin $BR   (then open a PR)"
+        [ "${AUTOBUILD_PUSH:-0}" = 1 ] && git -C "$ROOT" push -u origin "$BR"
+        rm -f "$FB" "$FB.new"; exit 0
+      fi
+      mv "$FB.new" "$FB"; C "  verify FAILED — feeding the failure back"; i=$((i+1))
+    done
+    BRIEF="$ROOT/autobuild-failed-$(date +%Y%m%d-%H%M%S).md"
+    { echo "# autobuild could not satisfy the gates after $TRIES attempts"; echo; echo "## Task"; echo "$TASK"
+      echo; echo "## Last verify output"; echo '```'; tail -80 "$FB"; echo '```'
+      echo; echo "## Last attempt (discarded)"; echo '```diff'; git -C "$ROOT" add -N . 2>/dev/null; git -C "$ROOT" diff 2>/dev/null | head -300; echo '```'
+      echo; echo "## Rules"; echo "See BUILD-CONTRACT.md. Hand this brief to a stronger model (./securax escalate), then re-run verify."; } > "$BRIEF.tmp"
+    git -C "$ROOT" reset -q --hard && git -C "$ROOT" clean -qfd && git -C "$ROOT" checkout -q "$ORIG" && git -C "$ROOT" branch -q -D "$BR"
+    mv "$BRIEF.tmp" "$BRIEF"; rm -f "$FB"
+    C "✘ Gave up after $TRIES attempts. Your branch ($ORIG) is untouched. Escalation brief: $BRIEF"; exit 2
+    ;;
   escalate)
     # Prepare a tight, copy-pasteable brief for a STRONGER model (Claude/Sonnet) for the hard 10%
     # (security design, nasty cross-cutting bug). Keeps your frontier-model usage minimal + targeted.
@@ -457,6 +507,34 @@ URLS
         else C "Could not install the model — Llama Guard stays OFF (so nothing is blocked). Check your internet and retry."; fi ;;
       *) echo "usage: ./securax guard [status|on|off]"; exit 1 ;;
     esac
+    ;;
+  evidence)
+    # One file for an auditor: what ran, which providers were enabled, guardrail decisions (counts only), posture.
+    # No prompts, no answers, no API keys. Works whether or not the estate is running.
+    OUTD="${2:-$ROOT/evidence}"; mkdir -p "$OUTD"; TS="$(date +%Y%m%d-%H%M%S)"; RAW="$(mktemp -d)"; trap 'rm -rf "$RAW"' EXIT
+    git -C "$ROOT" rev-parse --short HEAD > "$RAW/git_commit" 2>/dev/null || true
+    docker --version > "$RAW/docker_version" 2>/dev/null || true
+    curl -fsS -m 3 http://localhost:8080/readyz > "$RAW/readyz" 2>/dev/null && echo " READY" >> "$RAW/readyz" || echo "NOT READY" > "$RAW/readyz"
+    curl -fsS -m 3 http://localhost:8080/version > "$RAW/gateway_version" 2>/dev/null || true
+    ( cd "$ROOT/local/compose" && docker compose --profile ai ps --format '{{.Service}} {{.Image}} {{.Status}}' > "$RAW/compose_ps" 2>/dev/null; \
+      docker compose --profile ai logs --no-color --tail 5000 gateway > "$RAW/gateway_log" 2>/dev/null ) || true
+    python3 "$ROOT/local/compose/evidence.py" --dir "$RAW" --env-file "$ROOT/local/compose/.env" --out "$OUTD/securax-evidence-$TS.tar.gz" \
+      && C "✔ Evidence pack written (no prompts, no keys): $OUTD/securax-evidence-$TS.tar.gz"
+    ;;
+  scan)
+    # Vulnerability scan of the images this estate runs (Trivy, official image). Needs internet the first time (DB download).
+    #   ./securax scan            report HIGH/CRITICAL findings        ./securax scan --strict   exit 1 if any
+    command -v docker >/dev/null 2>&1 || { C "Docker is needed."; exit 1; }
+    IMGS="$(cd "$ROOT/local/compose" && docker compose --profile ai config --images 2>/dev/null | sort -u || true)"
+    [ -n "$IMGS" ] || { C "No images found — run ./securax up first."; exit 1; }
+    BAD=0
+    for I in $IMGS; do
+      docker image inspect "$I" >/dev/null 2>&1 || { echo "  · $I (not pulled — skipped)"; continue; }
+      C "Scanning $I"
+      docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v securax-trivy-cache:/root/.cache aquasec/trivy:0.58.1 \
+        image --quiet --severity HIGH,CRITICAL --exit-code 1 "$I" || BAD=1
+    done
+    [ "$BAD" = 0 ] && C "✔ No HIGH/CRITICAL findings in the scanned images." || { C "⚠ HIGH/CRITICAL findings above. Update (./securax update) or pin a newer image tag."; [ "${2:-}" = "--strict" ] && exit 1; }
     ;;
   backup)
     # DR / 3-2-1: one verified file holding your data (chats, accounts, workflows, sync data) + your .env keys.
@@ -551,6 +629,24 @@ URLS
     ;;
   size)      ENVF="$ROOT/local/compose/.env"; [ -f "$ENVF" ] || cp "$ROOT/local/compose/.env.example" "$ENVF"; autosize ;;
   preflight) preflight && C "preflight: no blockers found." ;;
+  models)
+    # Ask each provider which models your key can use TODAY and fix any retired name in .env (self-correcting).
+    #   ./securax models          report        ./securax models --fix   report + repair + reload the router
+    ENVF="$ROOT/local/compose/.env"; [ -f "$ENVF" ] || cp "$ROOT/local/compose/.env.example" "$ENVF"
+    command -v python3 >/dev/null 2>&1 || { C "python3 is needed for this check."; exit 1; }
+    C "Checking your providers' live model lists…"
+    if [ "${2:-}" = "--fix" ]; then
+      OUTM="$(python3 "$ROOT/local/compose/model_discovery.py" --env-file "$ENVF" --write)"; echo "$OUTM"
+      if printf '%s' "$OUTM" | grep -q "updated"; then
+        python3 "$ROOT/local/compose/gen_litellm_config.py" --write --env-file "$ENVF" >/dev/null
+        if curl -fsS -m 3 http://localhost:8080/healthz >/dev/null 2>&1; then
+          ( cd "$ROOT/local/compose" && docker compose --profile ai restart litellm gateway >/dev/null 2>&1 || true ); ready_wait 150 || true
+        fi
+      fi
+    else
+      python3 "$ROOT/local/compose/model_discovery.py" --env-file "$ENVF"
+    fi
+    ;;
   keys)
     # Guided key setup: the three FREE providers, in the order that gives the fastest answers, then a LIVE TEST
     # that shows which provider actually answered and how long it took. Enter skips any step.
@@ -562,6 +658,8 @@ URLS
       case "$YN" in [Nn]*) continue;; esac
       SECURAX_NOAPPLY=1 "$0" providers add "$P" || true
     done
+    C "Verifying each key and model against the provider (retired model names are fixed automatically)…"
+    python3 "$ROOT/local/compose/model_discovery.py" --env-file "$ENVF" --write || true
     python3 "$ROOT/local/compose/gen_litellm_config.py" --write --env-file "$ENVF" >/dev/null
     if curl -fsS -m 3 http://localhost:8080/healthz >/dev/null 2>&1; then
       C "Applying (reloading the router + gateway)…"

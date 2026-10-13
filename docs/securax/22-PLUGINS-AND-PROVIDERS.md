@@ -36,19 +36,26 @@ the router config, and restarts the router. Open **http://localhost:3000** and p
 
 | id | Provider | Env var(s) | Default model (override with `<ID>_MODEL`) | Get a key |
 |---|---|---|---|---|
-| `gemini` | Google Gemini *(default)* | `GEMINI_API_KEY` | `gemini/gemini-2.5-flash` | aistudio.google.com/apikey |
+| `gemini` | Google Gemini *(default)* | `GEMINI_API_KEY` | `gemini/gemini-3.5-flash-lite` *(auto-corrected to the live model)* | aistudio.google.com/apikey |
 | `local` | Ollama (sovereign) | — *(always on)* | `ollama/qwen2.5:1.5b` | — |
 | `openai` | OpenAI (GPT) | `OPENAI_API_KEY` | `openai/gpt-4o-mini` | platform.openai.com/api-keys |
-| `anthropic` | Anthropic (Claude) | `ANTHROPIC_API_KEY` | `anthropic/claude-3-5-haiku-20241022` | console.anthropic.com |
+| `anthropic` | Anthropic (Claude) | `ANTHROPIC_API_KEY` | `anthropic/claude-haiku-5-5` | console.anthropic.com |
 | `deepseek` | DeepSeek | `DEEPSEEK_API_KEY` | `deepseek/deepseek-chat` | platform.deepseek.com |
 | `mistral` | Mistral | `MISTRAL_API_KEY` | `mistral/mistral-small-latest` | console.mistral.ai |
-| `grok` | xAI (Grok) | `XAI_API_KEY` | `xai/grok-2-latest` | console.x.ai |
+| `grok` | xAI (Grok) | `XAI_API_KEY` | `xai/grok-4.3` | console.x.ai |
 | `perplexity` | Perplexity (Sonar) | `PERPLEXITYAI_API_KEY` | `perplexity/sonar` | perplexity.ai/settings/api |
 | `azure` | Azure AI Foundry / OpenAI | `AZURE_API_KEY` + `AZURE_API_BASE` | `azure/<deployment>` | ai.azure.com |
 | `bedrock` | AWS Bedrock | `AWS_ACCESS_KEY_ID` + `AWS_SECRET_ACCESS_KEY` | `bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0` | console.aws.amazon.com |
 | `openrouter` | OpenRouter (incl. free) | `OPENROUTER_API_KEY` | `openrouter/meta-llama/llama-3.3-70b-instruct:free` | openrouter.ai/keys |
 
-> **Model IDs change often.** Each default is overridable with `<ID>_MODEL` in `.env`, e.g.
+> **Model IDs change often — SecuRAX corrects them itself.** Providers retire models every few months (as of Oct 2026
+> reports include Groq's `llama-3.3-70b-versatile` and older Gemini 2.5 / Grok 2 names). `./securax keys` and (once a day)
+> `./securax up` ask each provider which models your key can use *today* and, if the configured one is gone, switch
+> `<ID>_MODEL` in `.env` to the best live match (`plugins/catalog.json` → `discover.prefer`). Run it any time:
+> `./securax models` (report) · `./securax models --fix` (repair + reload). It also tells you when a key is rejected.
+> The table below is the shipped default — treat it as a starting point, not a promise.
+>
+> Each default is overridable with `<ID>_MODEL` in `.env`, e.g.
 > `OPENAI_MODEL=openai/gpt-4o` or `GROK_MODEL=xai/grok-3`. If a model name 404s, check the
 > provider's own model list and set the override — you never need to touch code.
 

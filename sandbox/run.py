@@ -104,7 +104,8 @@ def j_local_model(sb: H.Sandbox, c: Checks):
 
 PROMPT_OK = "What are 5 creative things I could do with my kids' art? I don't want to throw them away."
 KEYS = {"GEMINI_API_KEY": "AIza-sbx-gemini", "GROQ_API_KEY": "gsk_sbx_groq", "OPENROUTER_API_KEY": "sk-or-sbx-openrouter",
-        "OPENAI_API_KEY": "sk-sbx-openai", "DEEPSEEK_API_KEY": "sk-sbx-deepseek"}
+        "OPENAI_API_KEY": "sk-sbx-openai", "DEEPSEEK_API_KEY": "sk-sbx-deepseek",
+        "MISTRAL_API_KEY": "sbx-mistral-key", "XAI_API_KEY": "xai-sbx-grok", "PERPLEXITYAI_API_KEY": "pplx-sbx-perplexity"}
 
 
 def _start(sb: H.Sandbox, c: Checks, **env: str) -> bool:
@@ -157,10 +158,11 @@ def j_failover(sb: H.Sandbox, c: Checks):
     if not _start(sb, c, **KEYS):
         return
     ms = sb.models()
-    c.ok({"groq", "openrouter", "openai", "deepseek", "bank-assistant-gemini"} <= set(ms),
+    c.ok({"groq", "openrouter", "openai", "deepseek", "mistral", "grok", "perplexity", "bank-assistant-gemini"} <= set(ms),
          "every provider you added is selectable in Chat (config regenerated from .env)", ms)
     expect = {"openai": "Bearer sk-sbx-openai", "groq": "Bearer gsk_sbx_groq",
-              "openrouter": "Bearer sk-or-sbx-openrouter", "deepseek": "Bearer sk-sbx-deepseek"}
+              "openrouter": "Bearer sk-or-sbx-openrouter", "deepseek": "Bearer sk-sbx-deepseek",
+              "mistral": "Bearer sbx-mistral-key", "grok": "Bearer xai-sbx-grok", "perplexity": "Bearer pplx-sbx-perplexity"}
     for alias, cred in expect.items():
         sb.fake_reset()
         r = sb.chat(alias, "ping")
@@ -404,6 +406,80 @@ def j_watch(sb: H.Sandbox, c: Checks):
         c.ok(not any("AIza" in g or "ping" in g for g in got), "…and the alerts carried no keys or prompts")
     finally:
         srv.shutdown()
+
+
+@journey("model_self_correction", "Provider retires a model: `./securax models --fix` finds the live one, chat works on the NEW name; bad keys are called out.")
+def j_models(sb: H.Sandbox, c: Checks):
+    sb.down()
+    (sb.clone / "local" / "compose" / ".models-checked").unlink(missing_ok=True)     # force the daily check to run at start-up
+    sb.fake_reset()
+    if not _start(sb, c, GEMINI_API_KEY=KEYS["GEMINI_API_KEY"], GROQ_API_KEY=KEYS["GROQ_API_KEY"], OPENROUTER_API_KEY=KEYS["OPENROUTER_API_KEY"]):
+        return
+    c.eq(sb.get_env("GEMINI_MODEL"), "gemini/gemini-9.1-flash", "START-UP self-corrects the shipped default (retired in this provider's live list)")
+    sb.http("POST", f"{H.FAKE_CTL}/ctl/models", {"provider": "gemini", "models": ["gemini-9.3-flash", "gemini-9.4-flash-preview"]})
+    before = sb.env_path.read_text()
+    rc, out = sb.securax("models", timeout=120)
+    c.ok("gemini" in out and "is gone" in out, "report-only mode names the model that was retired since", tail(out, 400))
+    c.ok(sb.env_path.read_text() == before, "…and changes nothing")
+    rc, out = sb.securax("models", "--fix", timeout=400)
+    c.eq(sb.get_env("GEMINI_MODEL"), "gemini/gemini-9.3-flash", "--fix picks the newest STABLE live model (not the preview)")
+    c.ok(sb.wait_until(lambda: sb.http("GET", f"{H.GATEWAY}/readyz").status == 200, 150, 3), "router reloaded and READY", tail(out, 300))
+    sb.fake_reset()
+    sb.http("POST", f"{H.FAKE_CTL}/ctl/models", {"provider": "gemini", "models": ["gemini-9.3-flash"]})
+    r = sb.chat("bank-assistant", "ping")
+    gem = [e for e in sb.fake_log("gemini") if ":generateContent" in e["path"]]
+    c.ok("answered-by:gemini" in sb.answer(r) and gem and "gemini-9.3-flash" in gem[-1]["path"],
+         "chat now calls Gemini with the NEW model name", f"{r.status} {[e['path'] for e in gem][-1:]}")
+    sb.fake_reset()
+    sb.fake("openrouter", "401")
+    rc, out = sb.securax("models", timeout=120)
+    c.ok("openrouter" in out and "REJECTED" in out, "a rejected/revoked key is called out by name", tail(out, 300))
+    sb.fake_reset()
+    sb.fake("*", "500")
+    before = sb.env_path.read_text()
+    rc, out = sb.securax("models", "--fix", timeout=120)
+    c.ok(sb.env_path.read_text() == before, "provider outage: .env is NEVER changed (offline = keep what you have)", tail(out, 300))
+    sb.fake_reset()
+
+
+@journey("autobuild_loop", "`./securax autobuild`: agent -> verify gate -> retry with feedback -> commit only when green; rolls back and briefs when it can't.")
+def j_autobuild(sb: H.Sandbox, c: Checks):
+    sb.reset_env()
+    git = lambda *a: H.sh(["git", "-c", "user.name=sbx", "-c", "user.email=sbx@example.com", *a], cwd=sb.clone)  # noqa: E731
+    git("checkout", "-q", "-B", "main")
+    git("add", "-A")
+    git("commit", "-q", "--allow-empty", "-m", "baseline")
+    head0 = git("rev-parse", "HEAD")[1].strip()
+    agent = sb.clone.parent / "agent.sh"
+    seen = sb.clone.parent / "feedback-seen.txt"
+    agent.write_text("""#!/bin/sh
+f=local/compose/tests/test_autobuild_probe.py
+if [ "$AUTOBUILD_ATTEMPT" = "1" ] || [ "$ALWAYS_FAIL" = "1" ]; then
+  printf 'def test_probe():\n    assert False, "autobuild-probe-red"\n' > $f
+else
+  cp "$AUTOBUILD_FEEDBACK" "%s"
+  printf 'def test_probe():\n    assert True\n' > $f
+fi
+""" % seen)
+    env = {**os.environ, "AUTOBUILD_AGENT": f"sh {agent}"}
+    rc, out = H.sh(["bash", "./securax", "autobuild", "add a probe test", "--tries", "3"], cwd=sb.clone, env=env, timeout=600)
+    c.ok(rc == 0 and "GREEN on attempt 2" in out, "attempt 1 is rejected by the gate, attempt 2 passes", tail(out, 500))
+    c.ok("autobuild-probe-red" in (seen.read_text() if seen.exists() else ""), "…and the agent was HANDED the failure output of attempt 1")
+    branch = git("rev-parse", "--abbrev-ref", "HEAD")[1].strip()
+    c.ok(branch.startswith("autobuild/") and git("rev-parse", "main")[1].strip() == head0, "work lives on its own branch; main is untouched", branch)
+    c.ok("test_autobuild_probe.py" in git("show", "--stat", "--format=", "HEAD")[1], "…and the green result is committed")
+    git("checkout", "-q", "main")
+    (sb.clone / "dirty.txt").write_text("x")
+    rc, out = H.sh(["bash", "./securax", "autobuild", "x"], cwd=sb.clone, env=env, timeout=60)
+    c.ok(rc != 0 and "uncommitted" in out, "a dirty checkout is refused (so rollback is always safe)", tail(out, 200))
+    (sb.clone / "dirty.txt").unlink()
+    rc, out = H.sh(["bash", "./securax", "autobuild", "impossible task", "--tries", "2"], cwd=sb.clone, env={**env, "ALWAYS_FAIL": "1"}, timeout=600)
+    briefs = sorted(sb.clone.glob("autobuild-failed-*.md"))
+    c.ok(rc == 2 and briefs, "never-green: gives up after N tries with an escalation brief", tail(out, 300))
+    c.ok(briefs and "autobuild-probe-red" in briefs[-1].read_text() and "impossible task" in briefs[-1].read_text(), "…the brief carries the task and the failure")
+    c.ok(git("rev-parse", "--abbrev-ref", "HEAD")[1].strip() == "main" and git("status", "--porcelain")[1].replace(briefs[-1].name if briefs else "", "").strip() == "",
+         "…and the checkout is rolled back to a clean main")
+    c.ok("autobuild/impossible" not in git("branch")[1], "…with the failed branch deleted")
 
 
 @journey("providers_wizard", "`./securax providers add` on a real terminal: silent key entry, mis-paste caught, typed command rejected.")
