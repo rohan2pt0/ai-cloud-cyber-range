@@ -527,7 +527,9 @@ def j_sprout(sb: H.Sandbox, c: Checks):
     c.ok(not _running(sprout), "dormant means DORMANT: not one sprout container exists before you grow it")
     rc, out = _lc(sb, "grow", "sprout", timeout=1500)
     c.ok(rc == 0 and "openbao: unsealed" in out, "`./securax grow sprout` germinates the core and unseals OpenBao", tail(out, 600))
-    c.ok(len(_running(sprout)) == 5 and not _running(["organ"]), "all five sprout services run (and no organ was started uninvited)", _running(sprout))
+    up = _running(sprout)
+    c.ok(all(any(s in n for n in up) for s in sprout) and not _running(["organ"]),
+         "all five sprout services run (and no organ was started uninvited)", up)
     env_file = home / "sprout" / ".env.sprout"
     secrets_before = env_file.read_text() if env_file.exists() else ""
     c.ok(env_file.exists() and (env_file.stat().st_mode & 0o077) == 0, "generated secrets exist and are owner-only")
