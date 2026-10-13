@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **Burrow (stage 2a, own hardware)**: `./securax grow|hibernate|prune burrow`, `burrow power`, `spore server|agent`. A Docker twin of real k3s (1 server + 2 agents) rehearses your future machines from the same `lifecycle/burrow.json`; spore writes the bash/cloud-init installer (optional GPU label, NUT power reflex, Argo CD hand-over). Sandbox journey `lifecycle_burrow` (27 checks).
 - **Lifecycle: the whole ladder as dormant, wake-on-demand code** (doc 29). `./securax stages|soil|grow|hibernate|prune|scale|rhythm|tenant|organ`.
   - **Phase 1 sprout** (`local/compose/stage-sprout.yml`, profile `sprout`, never started by `up`): Keycloak, OpenBao (auto-unsealed on wake), SeaweedFS S3, Prometheus + Alertmanager; optional upstream organs Wazuh / MISP / TheHive fetched at pinned commits (`lifecycle/organs.json`) with ports pinned to localhost. Backups now include the sprout secrets.
   - **Phases 2-4 Terraform** (`infra/terraform/lifecycle/{aws,gcp,azure}`): `awake=false` plans only the seed bank (vault with object lock, KMS key, data disk, budget); `awake=true` germinates one k3s VM (tree), a managed cluster (EKS Auto Mode / GKE Autopilot / AKS) or a multi-tenant forest with per-tenant key + bucket. `prove.py` proves the dormancy logic and security invariants with offline plans (mutation-checked).

@@ -25,14 +25,14 @@ COMPOSE = REPO / "local" / "compose"
 # ───────────────────────────── the ladder ─────────────────────────────
 def test_ladder_is_complete_and_ordered():
     ids = [s["id"] for s in STAGES["stages"]]
-    assert ids == ["seed", "sprout", "tree", "canopy", "forest"]
-    assert [s["phase"] for s in STAGES["stages"]] == [0, 1, 2, 3, 4]
-    assert STAGES["aliases"] == {"crawl": "seed", "walk": "sprout", "run": "tree", "run+": "canopy", "fly": "forest"}
+    assert ids == ["seed", "sprout", "burrow", "tree", "canopy", "forest"]
+    assert [s["phase"] for s in STAGES["stages"]] == [0, 1, 2, 2, 3, 4]       # the burrow is stage 2a: own hardware, before the cloud tree
+    assert STAGES["aliases"] == {"crawl": "seed", "walk": "sprout", "run-": "burrow", "run": "tree", "run+": "canopy", "fly": "forest"}
     for s in STAGES["stages"]:
         assert s["wake"].startswith("./securax") and s["sleep"].startswith("./securax"), s["id"]
         assert s["dormant_cost"] and s["awake_cost"] and s["what"] and s["where"]
     nxt = {s["id"]: s["grows_into"] for s in STAGES["stages"]}
-    assert nxt == {"seed": "sprout", "sprout": "tree", "tree": "canopy", "canopy": "forest", "forest": None}
+    assert nxt == {"seed": "sprout", "sprout": "burrow", "burrow": "tree", "tree": "canopy", "canopy": "forest", "forest": None}
 
 
 def test_aliases_resolve_and_unknown_stage_is_refused():
@@ -266,3 +266,60 @@ def test_tenant_chart_renders_every_tier_and_refuses_unknown_tiers():
         assert any(d["metadata"]["name"] == "default-deny-all" and d["spec"]["policyTypes"] == ["Ingress", "Egress"] for d in np_)
     bad = subprocess.run(["helm", "template", "t", chart, "--set", "tier=huge"], capture_output=True, text=True)
     assert bad.returncode != 0 and "tier must be" in bad.stderr
+
+
+# ───────────────────────────── the burrow (own hardware) ─────────────────────────────
+bspec = importlib.util.spec_from_file_location("bw", REPO / "lifecycle" / "burrow.py")
+bw = importlib.util.module_from_spec(bspec)
+bspec.loader.exec_module(bw)
+BURROW = json.loads((REPO / "lifecycle" / "burrow.json").read_text())
+
+
+def test_burrow_twin_is_one_server_and_exactly_one_gpu_node():
+    nodes = BURROW["twin"]["nodes"]
+    assert [n["role"] for n in nodes].count("server") == 1 and len(nodes) == 3
+    assert [n["name"] for n in nodes if n.get("gpu")] == ["agent2"]
+    assert "--cluster-init" in BURROW["server_args"], "embedded etcd from day one: one server grows to three without a rebuild"
+
+
+def test_twin_and_hardware_use_the_same_k3s_flags():
+    for role in ("server", "agent"):
+        for flag in bw.k3s_flags(role, gpu=False):
+            assert flag in bw.install_script(role, "n1", join_url="https://10.0.0.1:6443" if role == "agent" else "", tok="t")
+    assert bw.k3s_flags("server", gpu=True)[-2:] == ["--node-label", BURROW["gpu_label"]]
+    joined = bw.k3s_flags("server", gpu=False, join_url="https://10.0.0.1:6443")
+    assert "--cluster-init" not in joined and joined[-2:] == ["--server", "https://10.0.0.1:6443"], "a 2nd/3rd server joins; it does not start a new cluster"
+
+
+def test_spore_is_valid_bash_and_cloud_init_yaml(tmp_path):
+    script = bw.install_script("server", "burrow1", gpu=True, ups=True, gitops=True, tok="TOKEN123")
+    f = tmp_path / "s.sh"
+    f.write_text(script)
+    assert subprocess.run(["bash", "-n", str(f)], capture_output=True).returncode == 0
+    assert "securax-power-hibernate" in script and "INSTALL_K3S_VERSION=" in script and "argocd" in script.lower()
+    doc = yaml.safe_load(bw.cloud_init(script, "burrow1"))
+    assert doc["hostname"] == "burrow1" and doc["write_files"][0]["content"].startswith("#!/usr/bin/env bash")
+
+
+def test_agent_needs_a_server_to_join_and_unknown_roles_are_refused():
+    with pytest.raises(ValueError):
+        bw.install_script("agent", "a1")
+    with pytest.raises(ValueError):
+        bw.install_script("queen", "q")
+    assert "K3S_URL=https://10.0.0.5:6443" in bw.install_script("agent", "a1", join_url="https://10.0.0.5:6443", tok="t")
+
+
+def test_power_reflex_is_valid_posix_sh_and_never_drains_itself_twice(tmp_path):
+    hook = bw.power_hook()
+    f = tmp_path / "h.sh"
+    f.write_text(hook)
+    assert subprocess.run(["sh", "-n", str(f)], capture_output=True).returncode == 0
+    assert "etcd-snapshot save" in hook and "drain" in hook and 'grep -vx "$ME"' in hook, "other nodes first, then itself, then snapshot"
+    assert "SECURAX_POWER_FINAL" in hook, "the final stop is overridable so the twin can rehearse it without killing itself"
+
+
+def test_join_token_is_random_stable_and_owner_only(tmp_path, monkeypatch):
+    monkeypatch.setattr(bw, "BURROW_DIR", str(tmp_path / "burrow"))
+    t1, t2 = bw.token(), bw.token()
+    assert t1 == t2 and len(t1) >= 32
+    assert (os.stat(tmp_path / "burrow" / "token").st_mode & 0o077) == 0
