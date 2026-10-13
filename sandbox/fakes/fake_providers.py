@@ -71,14 +71,15 @@ def _text(provider: str) -> str:
 
 def _openai_body(provider: str, model: str) -> dict:
     return {"id": "chatcmpl-" + uuid.uuid4().hex[:12], "object": "chat.completion", "created": int(time.time()),
-            "model": model, "choices": [{"index": 0, "finish_reason": "stop",
+            "model": model, "service_tier": None, "system_fingerprint": "fp_sandbox", "choices": [{"index": 0, "finish_reason": "stop",
                                          "message": {"role": "assistant", "content": _text(provider)}}],
             "usage": {"prompt_tokens": 5, "completion_tokens": 3, "total_tokens": 8}}
 
 
 def _openai_stream(provider: str, model: str):
     cid = "chatcmpl-" + uuid.uuid4().hex[:12]
-    base = {"id": cid, "object": "chat.completion.chunk", "created": int(time.time()), "model": model}
+    base = {"id": cid, "object": "chat.completion.chunk", "created": int(time.time()), "model": model,
+            "service_tier": None, "system_fingerprint": "fp_sandbox"}
     yield "data: " + json.dumps({**base, "choices": [{"index": 0, "delta": {"role": "assistant", "content": ""}, "finish_reason": None}]}) + "\n\n"
     yield "data: " + json.dumps({**base, "choices": [{"index": 0, "delta": {"content": _text(provider)}, "finish_reason": None}]}) + "\n\n"
     yield "data: " + json.dumps({**base, "choices": [{"index": 0, "delta": {}, "finish_reason": "stop"}]}) + "\n\n"

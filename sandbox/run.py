@@ -186,7 +186,9 @@ def j_failover(sb: H.Sandbox, c: Checks):
     c.ok(r.status == 200 and a.strip() != "" and not a.startswith("answered-by:"),
          f"LADDER: ALL cloud down → the sovereign local model answers ({time.time() - t0:.0f}s)", f"{r.status} {tail(r.text)}")
     sb.fake_reset()
-    c.ok("answered-by:gemini" in sb.answer(sb.chat("bank-assistant", "ping")), "LADDER: cloud recovers → back on Gemini")
+    # router cooldown is 30s: a deployment that failed is retried only after it expires
+    c.ok(sb.wait_until(lambda: "answered-by:gemini" in sb.answer(sb.chat("bank-assistant", "ping")), 60, 5),
+         "LADDER: cloud recovers → back on Gemini (after the 30s router cooldown)")
 
     sb.fake_reset()
     r = sb.chat("bank-assistant", "My PAN is ABCPE1234F, what is KYC?")
@@ -276,8 +278,11 @@ def j_webui(sb: H.Sandbox, c: Checks):
     c.ok(sb.wait_http(f"{H.WEBUI}/health", 420), "Open WebUI finished starting", sb.logs("open-webui", 15))
     r = sb.http("POST", f"{H.WEBUI}/api/v1/auths/signup",
                 {"name": "Sandbox User", "email": "sbx@example.com", "password": "sbx-pass-123", "profile_image_url": ""})
-    tok = (r.json() or {}).get("token", "")
-    c.ok(bool(tok), "first user can create the admin account", f"{r.status} {tail(r.text)}")
+    tok = (r.json() or {}).get("token", "") if r.status == 200 else ""
+    if not tok:      # account already exists on a persisted volume → sign in instead
+        r = sb.http("POST", f"{H.WEBUI}/api/v1/auths/signin", {"email": "sbx@example.com", "password": "sbx-pass-123"})
+        tok = (r.json() or {}).get("token", "") if r.status == 200 else ""
+    c.ok(bool(tok), "the admin account can be created / signed in", f"{r.status} {tail(r.text)}")
     auth = {"Authorization": f"Bearer {tok}"}
     models = sb.http("GET", f"{H.WEBUI}/api/models", headers=auth).json() or {}
     ids = [m.get("id") for m in models.get("data", [])]
