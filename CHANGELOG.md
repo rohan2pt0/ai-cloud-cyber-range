@@ -9,6 +9,23 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **Self-correcting provider model names** (`local/compose/model_discovery.py`, `./securax models [--fix]`): providers retire
+  models every few months (Oct 2026: Groq `llama-3.3-70b-versatile`, older Gemini/Grok names) which silently killed ladder
+  rungs. `keys` and a daily `up` now ask each provider which models your key can use and switch `<ID>_MODEL` to a live one;
+  rejected keys are named; offline changes nothing. Shipped defaults refreshed (Groq → `openai/gpt-oss-120b`,
+  Anthropic → `claude-haiku-5-5`, Grok → `grok-4.3`, Gemini → `gemini-3.5-flash-lite`) — treat as starting points.
+- **`./securax autobuild`** — unattended build loop gated by `verify` (retry with feedback, commit only when green, rollback + escalation brief).
+- **`./securax evidence`** (auditor pack, no prompts/keys) and **`./securax scan`** (Trivy over running images).
+- `./securax backup|restore|watch`; `docs/securax/26` (coverage vs reference maps), `27` (incident runbook), `28` (status & traceability).
+- Sandbox: journeys for model self-correction, autobuild, backup/restore, watchdog; more providers (Mistral, Grok, Perplexity).
+- **`WINDOWS-QUICKSTART.md` + `local/scripts/wsl-setup.sh`** — blind-followable Windows install: WSL memory config, Docker WSL
+  integration, one paste to install into WSL's fast disk (keeps your `.env` keys and model volumes). `securax.cmd` prefers it.
+- **`./securax keys`** — guided free-key setup (Gemini → Groq → OpenRouter) ending in a live test (who answered, how fast).
+- **Elastic resources**: every `up` sizes the local model, Ollama RAM cap and lite mode to what Docker can really use
+  (`./securax size` to preview). **Preflight** names port conflicts / low disk / Docker-not-reachable; **layered start**
+  retries without rebuild, then core-only. See `docs/securax/25-FALLBACKS-AND-ELASTICITY.md`.
+- Sandbox: 5 new journeys (keys wizard, elastic sizing, explained blockers, self-healing after killing components, update
+  from a dirty checkout).
 - **`securax.cmd` — Windows launcher.** `.\securax.cmd up|update|doctor|providers add|…` from PowerShell runs the
   bash CLI in WSL, checking WSL/Docker/Docker-WSL-integration first and printing the exact fix. START/STOP
   `.bat` files now use it (they previously skipped router-config generation and the readiness wait).
@@ -67,6 +84,7 @@ for the versioning and release policy.
   multi-device + sync section.
 
 ### Changed
+- CPU-only default chat model is now qwen2.5:1.5b on 16 GB laptops (was 3b — about twice as slow for little gain).
 - **Free/sovereign by default.** Chat (Open WebUI) now defaults new conversations to `bank-assistant`
   (free Gemini tier → local fallback), so you never accidentally land on a paid provider that errors
   with "Oops" when its key has no credits. Pick any other model from the dropdown any time.

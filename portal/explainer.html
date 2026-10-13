@@ -154,6 +154,7 @@
     <a href="#threats">Threats</a>
     <a href="#compliance">Compliance</a>
     <a href="#pipeline">CI/CD</a>
+    <a href="#resilience">Resilience</a>
     <a href="#stack">Stack</a>
     <a href="#mcp">MCP</a>
     <a href="#repo">Repo</a>
@@ -522,12 +523,27 @@
   </section>
 
   <!-- ================= TECH STACK ================= -->
+  <!-- ================= RESILIENCE ================= -->
+  <section id="resilience">
+    <p class="eyebrow">Never a dead end</p>
+    <h2>When a piece breaks, SecuRAX steps down — it doesn't stop</h2>
+    <p class="sub">Every layer has a fallback, and <code>./securax up</code> repairs what broke. The product is tested the way <em>you</em> use it: a sandbox installs it fresh, drives a real browser, kills components mid-flight and checks that chat still answers.</p>
+    <div class="cards c5">
+      <div class="card"><span class="tag mono">model ladder</span><h3>Cloud → cloud → local</h3><p>Gemini, Groq, OpenRouter (your free keys) in order; your private local model is the always-works floor.</p></div>
+      <div class="card"><span class="tag mono">elastic</span><h3>Sizes itself</h3><p>Each start reads what Docker can really use and picks the model, memory cap and lite mode.</p></div>
+      <div class="card"><span class="tag mono">self-healing</span><h3>One command repairs</h3><p>Router or gateway killed? Broken Llama Guard? Config missing? <code>up</code> restores and waits for READY.</p></div>
+      <div class="card"><span class="tag mono">preflight</span><h3>Blockers explained</h3><p>Port taken, disk low, Docker unreachable — named up-front with the fix, not a stack trace.</p></div>
+      <div class="card"><span class="tag mono">sandbox</span><h3>Tested as a user</h3><p><code>./securax verify --full</code>: 13 journeys, 120+ checks, real containers and browser — the gate for every change.</p></div>
+    </div>
+    <p class="sub" style="margin-top:14px">Full matrix of fallbacks (and which are proven by the sandbox): <code>docs/securax/25-FALLBACKS-AND-ELASTICITY.md</code>. Windows: <code>WINDOWS-QUICKSTART.md</code>.</p>
+  </section>
+
   <section id="stack">
     <p class="eyebrow">Don't reinvent the wheel</p>
     <h2>Built entirely on open-source, proven parts</h2>
     <p class="sub">The differentiated 20% (the guardrail engine, the data-tier router, the AI-SOC) is bespoke; everything else is configuration of globally tried-and-tested tools — and each is swappable, so there is no lock-in.</p>
     <div class="stack">
-      <div class="stackcat"><h3>AI brain</h3><ul><li>Ollama (local LLMs)</li><li>LiteLLM router</li><li>Qwen / DeepSeek / Llama</li><li>Open WebUI · AnythingLLM</li><li><b>SecuRAX MCP</b> (AI control)</li></ul></div>
+      <div class="stackcat"><h3>AI brain</h3><ul><li>Ollama (local LLMs)</li><li>LiteLLM router</li><li>Qwen / DeepSeek / Llama</li><li>Provider plugins: Gemini · Groq · OpenRouter · OpenAI · Mistral · Bedrock…</li><li>Open WebUI · AnythingLLM</li><li><b>SecuRAX MCP</b> (AI control)</li></ul></div>
       <div class="stackcat"><h3>Guardrails</h3><ul><li>Custom gateway (FastAPI)</li><li>Llama Guard</li><li>Model Armor · Prompt Shields</li><li>Bedrock Guardrails</li></ul></div>
       <div class="stackcat"><h3>Red team</h3><ul><li>promptfoo</li><li>garak</li><li>PyRIT</li><li>self-contained scorecard</li></ul></div>
       <div class="stackcat"><h3>SOC (next phase)</h3><ul><li>Wazuh (SIEM)</li><li>Suricata (IDS)</li><li>MISP (threat intel)</li><li>TheHive (IR)</li></ul></div>
@@ -535,6 +551,7 @@
       <div class="stackcat"><h3>Cloud / IaC</h3><ul><li>Terraform / OpenTofu</li><li>AWS · GCP · Azure</li><li>GitHub Actions</li><li>OIDC (keyless)</li></ul></div>
       <div class="stackcat"><h3>DevSecOps</h3><ul><li>Trivy</li><li>Semgrep</li><li>gitleaks</li><li>CycloneDX SBOM</li></ul></div>
       <div class="stackcat"><h3>Observability</h3><ul><li>Prometheus</li><li>Grafana</li><li>Loki</li><li>OpenTelemetry</li></ul></div>
+      <div class="stackcat"><h3>Build assurance</h3><ul><li><code>securax verify</code> gate</li><li>User-journey sandbox (Playwright)</li><li>Aider + the BUILD-CONTRACT</li><li>Self-hosted build ladder</li></ul></div>
       <div class="stackcat"><h3>Human layer</h3><ul><li>Obsidian (second brain)</li><li>n8n (automation)</li><li>Guiding-Map PWA</li><li>Python toolkit</li></ul></div>
     </div>
   </section>

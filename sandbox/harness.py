@@ -41,6 +41,12 @@ FAKE_CTL = "http://127.0.0.1:19000"
 PROVIDER_HOSTS = ["generativelanguage.googleapis.com", "api.groq.com", "openrouter.ai", "api.openai.com",
                   "api.deepseek.com", "api.mistral.ai", "api.x.ai", "api.perplexity.ai", "api.anthropic.com"]
 LITE_SERVICES = "gateway litellm ollama open-webui guiding-map estate-sync"
+# Pretend to be a 16 GB laptop whose Docker VM got ~9 GB (the shipped target) regardless of this host's size,
+# so the sandbox exercises the sizing a real user gets (small model, lite mode) and stays fast.
+os.environ.setdefault("SECURAX_SIM_MEM_MB", "9000")
+os.environ.setdefault("SECURAX_SIM_CPUS", "4")
+# Host-side provider model lookups must hit the FAKE providers, never the real internet (fake keys would be sent out).
+os.environ.setdefault("SECURAX_DISCOVERY_REWRITE", "http://127.0.0.1:19001")
 PROXY_CA = pathlib.Path("/root/.ccr/ca-bundle.crt")    # present only inside the Claude Code cloud sandbox
 
 
@@ -161,7 +167,7 @@ class Sandbox:
                 "command": ["python", "/sandbox/fakes/fake_providers.py"], "healthcheck": {"disable": True},
                 "environment": {"FAKE_CERT": f"{sb}/certs/server.crt", "FAKE_KEY": f"{sb}/certs/server.key"},
                 "volumes": ["../../sandbox:/sandbox:ro"],
-                "ports": ["127.0.0.1:19000:9000"],
+                "ports": ["127.0.0.1:19000:9000", "127.0.0.1:19001:9001"],
                 "networks": {"modelplane": {"aliases": PROVIDER_HOSTS}},
             },
             "litellm": {

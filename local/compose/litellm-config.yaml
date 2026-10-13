@@ -6,7 +6,7 @@ model_list:
   # ---- each enabled provider, selectable by its own alias ----
   - model_name: bank-assistant-gemini
     litellm_params:
-      model: gemini/gemini-2.5-flash
+      model: gemini/gemini-3.5-flash-lite
       timeout: 40
       api_key: os.environ/GEMINI_API_KEY
   - model_name: bank-assistant-local
@@ -17,12 +17,12 @@ model_list:
   # ---- degradation ladders: the first enabled rung answers; the rest are fallbacks ----
   - model_name: bank-assistant
     litellm_params:
-      model: gemini/gemini-2.5-flash
+      model: gemini/gemini-3.5-flash-lite
       timeout: 40
       api_key: os.environ/GEMINI_API_KEY
   - model_name: builder
     litellm_params:
-      model: gemini/gemini-2.5-flash
+      model: gemini/gemini-3.5-flash-lite
       timeout: 40
       api_key: os.environ/GEMINI_API_KEY
 

@@ -315,3 +315,21 @@ def test_shell_entrypoints_stay_lf_and_windows_has_a_launcher():
     assert "wsl" in (REPO / "securax.cmd").read_text()
     for bat in ("START-HERE-Windows.bat", "STOP-Windows.bat"):
         assert "securax.cmd" in (REPO / bat).read_text(), f"{bat} must go through the WSL launcher"
+
+
+def test_windows_install_path_is_scripted_and_documented():
+    # The one-paste installer + quickstart are what a non-technical Windows user follows blindly.
+    import subprocess
+    sh = REPO / "local" / "scripts" / "wsl-setup.sh"
+    assert subprocess.run(["bash", "-n", str(sh)]).returncode == 0
+    txt = sh.read_text()
+    assert "docker info" in txt and "WSL integration" in txt and ".env" in txt
+    qs = (REPO / "WINDOWS-QUICKSTART.md").read_text()
+    assert "wsl-setup.sh" in qs and "./securax keys" in qs and ".wslconfig" in qs
+    assert "~/securax" in (REPO / "securax.cmd").read_text()
+
+
+def test_cli_has_keys_size_preflight_and_elastic_helpers():
+    cli = (REPO / "securax").read_text()
+    for needle in ("\n  keys)", "\n  size)", "\n  preflight)", "autosize()", "docker_res()", "LOCAL_MODEL_PIN"):
+        assert needle in cli, needle

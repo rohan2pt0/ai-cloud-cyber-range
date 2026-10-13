@@ -66,6 +66,8 @@ SecuRAX runs in containers, so the only thing you install is Docker.
 ---
 
 ## 3. Start it — one step
+> **Windows? Use [WINDOWS-QUICKSTART.md](WINDOWS-QUICKSTART.md)** — copy-paste steps, fastest setup (runs inside WSL's own disk).
+
 | Your OS | Do this |
 |---|---|
 | **Windows (simplest)** | In **File Explorer**, double-click **`START-HERE-Windows.bat`** |

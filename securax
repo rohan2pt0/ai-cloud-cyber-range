@@ -53,6 +53,53 @@ guard_heal(){
   fi
 }
 
+# docker_res — "MEM_MB CPUS" as DOCKER sees them (inside WSL2 / Docker Desktop that VM cap is the real limit,
+# not the laptop's RAM). Falls back to this machine's numbers.
+docker_res(){
+  [ -n "${SECURAX_SIM_MEM_MB:-}" ] && { echo "$SECURAX_SIM_MEM_MB ${SECURAX_SIM_CPUS:-4}"; return 0; }     # test hook: pretend to be a smaller/larger machine
+  _m="$(docker info --format '{{.MemTotal}}' 2>/dev/null || true)"; _c="$(docker info --format '{{.NCPU}}' 2>/dev/null || true)"
+  [ -n "$_m" ] && [ "$_m" -gt 0 ] 2>/dev/null && _m=$(( _m / 1048576 )) || _m="$(awk '/^MemTotal:/{printf "%d",$2/1024}' /proc/meminfo 2>/dev/null || echo 0)"
+  [ -n "$_c" ] && [ "$_c" -gt 0 ] 2>/dev/null || _c="$(nproc 2>/dev/null || echo 4)"
+  echo "$_m $_c"
+}
+# autosize — ELASTIC resources: size Ollama + lite mode to what Docker can actually use RIGHT NOW, on every start.
+# Re-evaluated each `up`, so raising the WSL/Docker memory cap (or closing other apps) is picked up automatically.
+# Opt out with SECURAX_AUTOSIZE=0; pin the chat model with LOCAL_MODEL_PIN=1.
+autosize(){
+  [ "$(ev SECURAX_AUTOSIZE 1)" = 0 ] && return 0
+  read -r _mem _cpu <<EOF
+$(docker_res)
+EOF
+  [ "${_mem:-0}" -gt 0 ] || return 0
+  _o=$(( _mem * 45 / 100 )); [ "$_o" -lt 1800 ] && _o=1800; [ "$_o" -gt 12288 ] && _o=12288
+  _oc=$(( _cpu > 2 ? _cpu - 1 : 2 ))
+  _lite=0; [ "$_mem" -lt 12000 ] && _lite=1
+  if [ "$(ev LOCAL_MODEL_PIN 0)" != 1 ]; then
+    if   [ "$_mem" -ge 20000 ]; then _lm="qwen2.5:7b"
+    elif [ "$_mem" -ge 7000 ];  then _lm="qwen2.5:1.5b"
+    else                             _lm="qwen2.5:0.5b"; fi
+    skv "$ROOT/local/compose/.env" LOCAL_MODEL "$_lm"
+  fi
+  skv "$ROOT/local/compose/.env" OLLAMA_MEM "${_o}m"; skv "$ROOT/local/compose/.env" OLLAMA_CPUS "$_oc"
+  [ "$(ev SECURAX_LITE_PIN 0)" = 1 ] || skv "$ROOT/local/compose/.env" SECURAX_LITE "$_lite"
+  C "Sized to this machine: Docker sees ${_mem} MB / ${_cpu} CPUs → model $(ev LOCAL_MODEL), Ollama cap ${_o} MB$([ "$_lite" = 1 ] && echo ', lite mode')."
+  [ "$_mem" -lt 6000 ] && echo "  (Low memory. Windows: raise it in %UserProfile%\\.wslconfig  memory=10GB  then  wsl --shutdown  — see WINDOWS-QUICKSTART.md)"
+  return 0
+}
+# preflight — find the common blockers BEFORE they turn into cryptic errors.
+preflight(){
+  docker info >/dev/null 2>&1 || { C "Docker isn't running/reachable. Start Docker Desktop (wait for 'Engine running'); on Windows also enable WSL integration for Ubuntu."; return 1; }
+  _free="$(df -Pk "$ROOT" 2>/dev/null | awk 'NR==2{printf "%d",$4/1048576}')"
+  [ -n "$_free" ] && [ "$_free" -lt 8 ] && C "⚠ Only ~${_free} GB free disk here. Models + images need ~8 GB. Free some space (docker system prune -f can help)."
+  curl -fsS -m 2 http://localhost:8080/healthz >/dev/null 2>&1 && return 0        # our stack is already up: ports are ours
+  for _p in 8080 8088 3000; do
+    if (exec 3<>"/dev/tcp/127.0.0.1/$_p") 2>/dev/null; then
+      C "⚠ Port $_p is already used by another program (not SecuRAX). Close it, then re-run. To see what: ss -ltnp | grep :$_p"
+    fi
+  done
+  return 0
+}
+
 cmd="${1:-up-status}"
 case "$cmd" in
   up|up-status)
@@ -62,6 +109,7 @@ case "$cmd" in
     export GIT_COMMIT="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)"
     ENVF="$ROOT/local/compose/.env"
     [ -f "$ENVF" ] || cp "$ROOT/local/compose/.env.example" "$ENVF"
+    chmod 600 "$ENVF" 2>/dev/null || true          # your API keys: readable by you only (no-op on Windows drives)
     # One-step setup: if there's no Gemini key yet and we're in a real terminal, offer to
     # paste one right here for INSTANT answers (Enter to skip = private local model). No
     # hunting for .env. Sensitive data stays local either way.
@@ -78,6 +126,8 @@ case "$cmd" in
     # LITE mode (./securax up --lite, or SECURAX_LITE=1 in .env — `./securax profile` sets it for 16 GB
     # machines): only the core path (gateway, router, local model, Chat, home screen, sync). Skips
     # Private Docs + n8n + Postgres, which together want ~3 GB you may not have to spare.
+    preflight || exit 1
+    autosize
     LITE=0; { [ "${2:-}" = "--lite" ] || [ "$(ev SECURAX_LITE)" = "1" ]; } && LITE=1
     SVCS=""; [ "$LITE" = 1 ] && SVCS="gateway litellm ollama open-webui guiding-map estate-sync" \
       && C "LITE mode: starting the core path only (Private Docs / n8n skipped to save RAM)."
@@ -87,6 +137,13 @@ case "$cmd" in
     # Docker create a directory there, which crash-loops the router forever). Never fail silently.
     GENCFG="$ROOT/local/compose/litellm-config.generated.yaml"
     [ -d "$GENCFG" ] && rm -rf "$GENCFG"
+    # Self-correct retired model names (at most once a day; offline or no keys = silent no-op).
+    MSTAMP="$ROOT/local/compose/.models-checked"
+    if command -v python3 >/dev/null 2>&1 && [ -z "$(find "$MSTAMP" -mmin -1440 2>/dev/null)" ]; then
+      MOUT="$(python3 "$ROOT/local/compose/model_discovery.py" --env-file "$ENVF" --write 2>/dev/null || true)"
+      printf '%s' "$MOUT" | grep -qE "no provider keys|unreachable" || touch "$MSTAMP" 2>/dev/null || true
+      printf '%s\n' "$MOUT" | grep -E "gone|REJECTED" || true
+    fi
     if command -v python3 >/dev/null 2>&1; then
       GENERR="$(python3 "$ROOT/local/compose/gen_litellm_config.py" --write --env-file "$ENVF" 2>&1 >/dev/null)" || {
         C "Could not generate the router config from your .env / plugin catalog:"; echo "  $GENERR"; }
@@ -94,11 +151,19 @@ case "$cmd" in
       C "python3 not found — using the shipped default router config (Gemini + local model). Install python3 to enable your own provider keys."
     fi
     [ -s "$GENCFG" ] || cp "$ROOT/local/compose/litellm-config.yaml" "$GENCFG"
+    # Layered start: each step is a fallback for the one before (offline? image-build failed? low memory?).
+    CORE="gateway litellm ollama open-webui guiding-map estate-sync"
     if ! ( cd "$ROOT/local/compose" && docker compose --profile ai up -d --build $SVCS ); then
-      C "Startup failed. Most often the model router rejected its config — its log:"
-      ( cd "$ROOT/local/compose" && docker compose --profile ai logs --no-color --tail 25 litellm 2>/dev/null ) || true
-      echo "  Run  ./securax doctor  for a diagnosis, or paste the output above to get help."
-      exit 1
+      C "Full start failed — fallback 1: start without rebuilding images (works offline if you've run it before)…"
+      if ! ( cd "$ROOT/local/compose" && docker compose --profile ai up -d $SVCS ); then
+        C "Fallback 2: core path only (private chat + security gateway + home screen), skipping optional services…"
+        if ! ( cd "$ROOT/local/compose" && docker compose --profile ai up -d $CORE ); then
+          C "Startup failed. Most often the model router rejected its config — its log:"
+          ( cd "$ROOT/local/compose" && docker compose --profile ai logs --no-color --tail 25 litellm 2>/dev/null ) || true
+          echo "  Run  ./securax doctor  for a diagnosis, or paste the output above to get help."
+          exit 1
+        fi
+      fi
     fi
     guard_heal
     ready_wait 150 || C "The router is still starting — the Command Center turns green when it is ready (./securax doctor checks it)."
@@ -116,8 +181,10 @@ case "$cmd" in
     if ! grep -q "^GEMINI_API_KEY=..*" "$ROOT/local/compose/.env" 2>/dev/null; then
       C "TIP: for INSTANT answers, run  ./securax setup  and paste a free Gemini key (else the slower local model is used)."
     fi
-    C "Opening your Command Center: http://localhost:8088/hub.html"
-    "$0" open >/dev/null 2>&1 || true
+    if [ "${SECURAX_NO_OPEN:-0}" != 1 ]; then
+      C "Opening your Command Center: http://localhost:8088/hub.html"
+      "$0" open >/dev/null 2>&1 || true
+    fi
     [ "$cmd" = "up-status" ] && "$0" status || true
     ;;
   status)
@@ -319,6 +386,56 @@ URLS
             --test-cmd "bash \"$ROOT/securax\" verify" --auto-test \
             --no-gitignore --message "$TASK"
     ;;
+  autobuild)
+    # Unattended build loop — the 90% tier of "build SecuRAX with SecuRAX": agent -> `verify` gate -> retry with the
+    # failure fed back -> commit ONLY when green. After N red attempts it discards the work and writes an escalation
+    # brief for the (rare) frontier-model hand-off. Never touches your current branch; never pushes unless AUTOBUILD_PUSH=1.
+    #   ./securax autobuild "add a /metrics endpoint to the gateway with a test" [--tries 3]
+    # Agent: default is `./securax build` (Aider through the gateway). Override with AUTOBUILD_AGENT="<shell command>"
+    # (it sees AUTOBUILD_TASK, AUTOBUILD_FEEDBACK = file with the last failure, AUTOBUILD_ATTEMPT).
+    # Gate: default `./securax verify`; override with AUTOBUILD_VERIFY="<shell command>" (exit 0 = green).
+    shift; TASK=""; TRIES=3
+    while [ $# -gt 0 ]; do case "$1" in --tries) TRIES="${2:-3}"; shift 2;; *) TASK="$TASK${TASK:+ }$1"; shift;; esac; done
+    [ -n "$TASK" ] || { echo 'usage: ./securax autobuild "what to build" [--tries N]'; exit 1; }
+    git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1 || { C "autobuild needs a git checkout."; exit 1; }
+    [ -z "$(git -C "$ROOT" status --porcelain)" ] || { C "Your checkout has uncommitted changes — commit or stash them first (autobuild only works on a clean tree, so it can always roll back)."; exit 1; }
+    ORIG="$(git -C "$ROOT" rev-parse --abbrev-ref HEAD)"; SLUG="$(printf '%s' "$TASK" | tr 'A-Z' 'a-z' | tr -cs 'a-z0-9' '-' | cut -c1-40)"
+    BR="autobuild/${SLUG%-}-$(date +%H%M%S)"; FB="$(mktemp)"; : > "$FB"
+    git -C "$ROOT" checkout -q -b "$BR"; i=1
+    while [ "$i" -le "$TRIES" ]; do
+      C "autobuild: attempt $i/$TRIES on branch $BR"
+      if [ -n "${AUTOBUILD_AGENT:-}" ]; then
+        ( cd "$ROOT" && AUTOBUILD_TASK="$TASK" AUTOBUILD_FEEDBACK="$FB" AUTOBUILD_ATTEMPT="$i" bash -c "$AUTOBUILD_AGENT" ) || true
+      else
+        PROMPT="$TASK"; [ -s "$FB" ] && PROMPT="$TASK
+
+The previous attempt FAILED verification. Fix exactly this:
+$(tail -60 "$FB")"
+        ( cd "$ROOT" && "$0" build "$PROMPT" ) || true
+      fi
+      if ( cd "$ROOT" && bash -c "${AUTOBUILD_VERIFY:-\"$0\" verify}" ) > "$FB.new" 2>&1; then
+        git -C "$ROOT" add -A
+        if git -C "$ROOT" diff --cached --quiet; then C "Agent made no changes — nothing to commit."; else
+          # works on a machine with no git identity configured (fresh WSL, CI): fall back to a neutral author
+          git -C "$ROOT" -c user.name="$(git -C "$ROOT" config user.name || echo 'SecuRAX autobuild')" \
+              -c user.email="$(git -C "$ROOT" config user.email || echo 'autobuild@securax.local')" \
+              commit -q -m "autobuild: $TASK" || { C "git commit failed — your work is on branch $BR (uncommitted). Fix the git error above and commit it yourself."; exit 3; }
+        fi
+        C "✔ GREEN on attempt $i. Review it:  git diff $ORIG..$BR     Ship it:  git push -u origin $BR   (then open a PR)"
+        [ "${AUTOBUILD_PUSH:-0}" = 1 ] && git -C "$ROOT" push -u origin "$BR"
+        rm -f "$FB" "$FB.new"; exit 0
+      fi
+      mv "$FB.new" "$FB"; C "  verify FAILED — feeding the failure back"; i=$((i+1))
+    done
+    BRIEF="$ROOT/autobuild-failed-$(date +%Y%m%d-%H%M%S).md"; BTMP="$(mktemp)"       # temp OUTSIDE the repo: the rollback below runs git clean
+    { echo "# autobuild could not satisfy the gates after $TRIES attempts"; echo; echo "## Task"; echo "$TASK"
+      echo; echo "## Last verify output"; echo '```'; tail -80 "$FB"; echo '```'
+      echo; echo "## Last attempt (discarded)"; echo '```diff'; git -C "$ROOT" add -N . 2>/dev/null; git -C "$ROOT" diff 2>/dev/null | head -300; echo '```'
+      echo; echo "## Rules"; echo "See BUILD-CONTRACT.md. Hand this brief to a stronger model (./securax escalate), then re-run verify."; } > "$BTMP"
+    git -C "$ROOT" reset -q --hard && git -C "$ROOT" clean -qfd && git -C "$ROOT" checkout -q "$ORIG" && git -C "$ROOT" branch -q -D "$BR"
+    mv "$BTMP" "$BRIEF"; rm -f "$FB"
+    C "✘ Gave up after $TRIES attempts. Your branch ($ORIG) is untouched. Escalation brief: $BRIEF"; exit 2
+    ;;
   escalate)
     # Prepare a tight, copy-pasteable brief for a STRONGER model (Claude/Sonnet) for the hard 10%
     # (security design, nasty cross-cutting bug). Keeps your frontier-model usage minimal + targeted.
@@ -349,8 +466,8 @@ URLS
     # NOTE: inside WSL2 the RAM you SEE is the WSL cap (default = half the laptop) — that is the real
     # limit Docker lives under, so it is the right number to size against.
     if   [ "$MEM_MB" -lt 7000 ];  then TIER=tiny;   LITE=1; LM="qwen2.5:1.5b"; CM="";                  OMEM="2500m"
-    elif [ "$MEM_MB" -lt 11500 ]; then TIER=small;  LITE=1; LM="qwen2.5:3b";   CM="";                  OMEM="4g"
-    elif [ "$MEM_MB" -lt 20000 ]; then TIER=medium; LITE=1; LM="qwen2.5:3b";   CM="qwen2.5-coder:7b";  OMEM="6g"
+    elif [ "$MEM_MB" -lt 11500 ]; then TIER=small;  LITE=1; LM="qwen2.5:1.5b"; CM="";                  OMEM="4g"
+    elif [ "$MEM_MB" -lt 20000 ]; then TIER=medium; LITE=1; LM="qwen2.5:1.5b"; CM="qwen2.5-coder:7b";  OMEM="6g"
     else                               TIER=large;  LITE=0; LM="qwen2.5:7b";   CM="qwen2.5-coder:14b"; OMEM="11g"
     fi
     OCPU=$(( CPUS > 2 ? CPUS - 1 : 2 ))
@@ -360,6 +477,7 @@ URLS
     python3 "$ROOT/local/compose/gen_litellm_config.py" --write --env-file "$ENVF" >/dev/null
     C "Profile: ${MEM_MB} MB RAM visible, ${CPUS} CPUs  →  tier '$TIER'"
     echo "  local chat model : $LM   (ollama capped at $OMEM, $OCPU cpus)"
+    [ "$TIER" != large ] && echo "  speed tip        : CPU-only answers take 10-60s. For instant answers add free cloud keys:  ./securax keys"
     echo "  local coder      : ${CM:-off — not enough RAM; the BUILD ladder uses free/cheap cloud instead}"
     echo "  lite mode        : $([ "$LITE" = 1 ] && echo 'ON  (skips Private Docs + n8n to save RAM)' || echo 'off (everything runs)')"
     if [ "$IS_WSL" = 1 ] && [ "$MEM_MB" -lt 10000 ]; then
@@ -397,6 +515,102 @@ URLS
       *) echo "usage: ./securax guard [status|on|off]"; exit 1 ;;
     esac
     ;;
+  evidence)
+    # One file for an auditor: what ran, which providers were enabled, guardrail decisions (counts only), posture.
+    # No prompts, no answers, no API keys. Works whether or not the estate is running.
+    OUTD="${2:-$ROOT/evidence}"; mkdir -p "$OUTD"; TS="$(date +%Y%m%d-%H%M%S)"; RAW="$(mktemp -d)"; trap 'rm -rf "$RAW"' EXIT
+    git -C "$ROOT" rev-parse --short HEAD > "$RAW/git_commit" 2>/dev/null || true
+    docker --version > "$RAW/docker_version" 2>/dev/null || true
+    curl -fsS -m 3 http://localhost:8080/readyz > "$RAW/readyz" 2>/dev/null && echo " READY" >> "$RAW/readyz" || echo "NOT READY" > "$RAW/readyz"
+    curl -fsS -m 3 http://localhost:8080/version > "$RAW/gateway_version" 2>/dev/null || true
+    ( cd "$ROOT/local/compose" && docker compose --profile ai ps --format '{{.Service}} {{.Image}} {{.Status}}' > "$RAW/compose_ps" 2>/dev/null; \
+      docker compose --profile ai logs --no-color --tail 5000 gateway > "$RAW/gateway_log" 2>/dev/null ) || true
+    python3 "$ROOT/local/compose/evidence.py" --dir "$RAW" --env-file "$ROOT/local/compose/.env" --out "$OUTD/securax-evidence-$TS.tar.gz" \
+      && C "✔ Evidence pack written (no prompts, no keys): $OUTD/securax-evidence-$TS.tar.gz"
+    ;;
+  scan)
+    # Vulnerability scan of the images this estate runs (Trivy, official image). Needs internet the first time (DB download).
+    #   ./securax scan            report HIGH/CRITICAL findings        ./securax scan --strict   exit 1 if any
+    command -v docker >/dev/null 2>&1 || { C "Docker is needed."; exit 1; }
+    IMGS="$(cd "$ROOT/local/compose" && docker compose --profile ai config --images 2>/dev/null | sort -u || true)"
+    [ -n "$IMGS" ] || { C "No images found — run ./securax up first."; exit 1; }
+    BAD=0
+    for I in $IMGS; do
+      docker image inspect "$I" >/dev/null 2>&1 || { echo "  · $I (not pulled — skipped)"; continue; }
+      C "Scanning $I"
+      docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v securax-trivy-cache:/root/.cache aquasec/trivy:0.58.1 \
+        image --quiet --severity HIGH,CRITICAL --exit-code 1 "$I" || BAD=1
+    done
+    [ "$BAD" = 0 ] && C "✔ No HIGH/CRITICAL findings in the scanned images." || { C "⚠ HIGH/CRITICAL findings above. Update (./securax update) or pin a newer image tag."; [ "${2:-}" = "--strict" ] && exit 1; }
+    ;;
+  backup)
+    # DR / 3-2-1: one verified file holding your data (chats, accounts, workflows, sync data) + your .env keys.
+    # Models are NOT included (large, re-downloadable). Copy the file to a 2nd disk + a cloud drive for 3-2-1.
+    #   ./securax backup [DIR]        default DIR = ./backups   (keeps the newest $BACKUP_KEEP, default 7)
+    DEST="${2:-$ROOT/backups}"; mkdir -p "$DEST"; TS="$(date +%Y%m%d-%H%M%S)"; OUTF="$DEST/securax-$TS.tar.gz"
+    STG="$(mktemp -d)"; trap 'rm -rf "$STG"' EXIT
+    IMG="vulnbank/llm-gateway:dev"; docker image inspect "$IMG" >/dev/null 2>&1 || IMG="alpine"
+    VOLS="$(docker volume ls -q --filter label=com.docker.compose.project=vulnbank-range 2>/dev/null | grep -v '_ollama$' || true)"
+    [ -n "$VOLS" ] || C "(no data volumes yet — backing up settings only)"
+    : > "$STG/MANIFEST"; echo "securax $(cat "$ROOT/VERSION" 2>/dev/null) $(date -u +%FT%TZ)" >> "$STG/MANIFEST"
+    for V in $VOLS; do
+      docker run --rm --user 0 --entrypoint tar -v "$V":/v:ro -v "$STG":/out "$IMG" czf "/out/vol-$V.tgz" -C /v . 2>/dev/null \
+        && echo "volume $V" >> "$STG/MANIFEST" || { C "Could not read volume $V — aborting (no partial backup written)."; exit 1; }
+    done
+    cp "$ROOT/local/compose/.env" "$STG/env" 2>/dev/null && echo "env" >> "$STG/MANIFEST" || true
+    ( cd "$STG" && sha256sum ./* > SHA256SUMS 2>/dev/null || true )
+    tar czf "$OUTF" -C "$STG" . && tar tzf "$OUTF" >/dev/null || { C "Backup failed verification."; rm -f "$OUTF"; exit 1; }
+    chmod 600 "$OUTF" 2>/dev/null || true
+    ls -1t "$DEST"/securax-*.tar.gz 2>/dev/null | tail -n +$(( $(ev BACKUP_KEEP 7) + 1 )) | xargs -r rm -f
+    C "✔ Backup saved & verified: $OUTF ($(du -h "$OUTF" | cut -f1)) — contains your API keys; keep it private. Restore: ./securax restore <file>"
+    ;;
+  restore)
+    # ./securax restore FILE [--yes] — replaces current data with the backup (current .env is kept as .env.pre-restore).
+    F="${2:-}"; [ -f "$F" ] || { echo "usage: ./securax restore <backup.tar.gz> [--yes]   (see ./backups)"; exit 1; }
+    tar tzf "$F" >/dev/null 2>&1 || { C "That file isn't a valid SecuRAX backup (unreadable archive)."; exit 1; }
+    if [ "${3:-}" != "--yes" ]; then
+      printf 'This REPLACES current chats/accounts/workflows with the backup. Continue? [y/N]: '; read -r YN < /dev/tty || YN="n"
+      case "$YN" in [Yy]*) ;; *) C "cancelled."; exit 0;; esac
+    fi
+    STG="$(mktemp -d)"; trap 'rm -rf "$STG"' EXIT
+    tar xzf "$F" -C "$STG" || { C "Could not unpack the backup."; exit 1; }
+    ( cd "$STG" && sha256sum -c SHA256SUMS >/dev/null 2>&1 ) || { C "Backup checksum mismatch — file is damaged. Nothing was changed."; exit 1; }
+    IMG="vulnbank/llm-gateway:dev"; docker image inspect "$IMG" >/dev/null 2>&1 || IMG="alpine"
+    "$0" down >/dev/null 2>&1 || true
+    for T in "$STG"/vol-*.tgz; do
+      [ -f "$T" ] || continue; V="$(basename "$T" .tgz)"; V="${V#vol-}"
+      docker volume create "$V" >/dev/null
+      docker run --rm --user 0 --entrypoint sh -v "$V":/v -v "$STG":/in "$IMG" -c "find /v -mindepth 1 -delete; tar xzf /in/vol-$V.tgz -C /v" \
+        || { C "Restore of $V failed — run ./securax restore again (data volumes may be partly restored)."; exit 1; }
+      echo "  ✔ restored $V"
+    done
+    if [ -f "$STG/env" ]; then
+      [ -f "$ROOT/local/compose/.env" ] && cp "$ROOT/local/compose/.env" "$ROOT/local/compose/.env.pre-restore"
+      cp "$STG/env" "$ROOT/local/compose/.env"; chmod 600 "$ROOT/local/compose/.env" 2>/dev/null || true; echo "  ✔ restored .env"
+    fi
+    C "Restarting…"; exec "$0" up
+    ;;
+  watch)
+    # Watchdog: checks READY every WATCH_INTERVAL s (default 60); if down, heals with `up` (at most once per 5 min)
+    # and tells you (log + optional ALERT_WEBHOOK in .env — e.g. an ntfy.sh topic URL; only a short status line is sent).
+    #   ./securax watch          run forever (Ctrl+C to stop)       ./securax watch --once   check once, heal if needed
+    LOG="$ROOT/watch.log"; ST=ok; LASTHEAL=0; WH="$(ev ALERT_WEBHOOK)"
+    note(){ printf '%s %s\n' "$(date '+%F %T')" "$*" | tee -a "$LOG"; [ -n "$WH" ] && curl -fsS -m 10 -X POST -d "SecuRAX: $*" "$WH" >/dev/null 2>&1 || true; }
+    while :; do
+      if curl -fsS -m 5 http://localhost:8080/readyz >/dev/null 2>&1; then
+        [ "$ST" = ok ] || note "recovered — estate is READY again"; ST=ok
+      else
+        if [ "$ST" = ok ]; then note "NOT READY — healing with ./securax up"; ST=down; fi
+        NOW="$(date +%s)"
+        if [ $(( NOW - LASTHEAL )) -ge 300 ]; then
+          LASTHEAL="$NOW"; SECURAX_NO_OPEN=1 "$0" up >>"$LOG" 2>&1 || note "heal attempt failed — run ./securax doctor"
+          if curl -fsS -m 5 http://localhost:8080/readyz >/dev/null 2>&1; then note "recovered — estate is READY again"; ST=ok; fi
+        fi
+      fi
+      [ "${2:-}" = "--once" ] && break
+      sleep "$(ev WATCH_INTERVAL 60)"
+    done
+    ;;
   update)
     # ONE command to get current: pull the latest code, then recreate the containers so it actually runs.
     # (A plain `git pull` only changes files on disk — running containers keep the OLD code.)
@@ -420,6 +634,56 @@ URLS
       C "Pull failed — check your internet, or run  ./securax doctor  to see the real error."
     fi
     ;;
+  size)      ENVF="$ROOT/local/compose/.env"; [ -f "$ENVF" ] || cp "$ROOT/local/compose/.env.example" "$ENVF"; autosize ;;
+  preflight) preflight && C "preflight: no blockers found." ;;
+  models)
+    # Ask each provider which models your key can use TODAY and fix any retired name in .env (self-correcting).
+    #   ./securax models          report        ./securax models --fix   report + repair + reload the router
+    ENVF="$ROOT/local/compose/.env"; [ -f "$ENVF" ] || cp "$ROOT/local/compose/.env.example" "$ENVF"
+    command -v python3 >/dev/null 2>&1 || { C "python3 is needed for this check."; exit 1; }
+    C "Checking your providers' live model lists…"
+    if [ "${2:-}" = "--fix" ]; then
+      OUTM="$(python3 "$ROOT/local/compose/model_discovery.py" --env-file "$ENVF" --write)"; echo "$OUTM"
+      if printf '%s' "$OUTM" | grep -q "updated"; then
+        python3 "$ROOT/local/compose/gen_litellm_config.py" --write --env-file "$ENVF" >/dev/null
+        if curl -fsS -m 3 http://localhost:8080/healthz >/dev/null 2>&1; then
+          ( cd "$ROOT/local/compose" && docker compose --profile ai restart litellm gateway >/dev/null 2>&1 || true ); ready_wait 150 || true
+        fi
+      fi
+    else
+      python3 "$ROOT/local/compose/model_discovery.py" --env-file "$ENVF"
+    fi
+    ;;
+  keys)
+    # Guided key setup: the three FREE providers, in the order that gives the fastest answers, then a LIVE TEST
+    # that shows which provider actually answered and how long it took. Enter skips any step.
+    ENVF="$ROOT/local/compose/.env"; [ -f "$ENVF" ] || cp "$ROOT/local/compose/.env.example" "$ENVF"
+    C "Free API keys — each takes ~1 minute. Press Enter at any key prompt to skip that one."
+    echo "  Order matters: the router tries them top-down, then falls back to your private local model."
+    for P in gemini groq openrouter; do
+      printf '\n▶ Set up %s now? [Y/n]: ' "$P"; read -r YN < /dev/tty || YN="n"
+      case "$YN" in [Nn]*) continue;; esac
+      SECURAX_NOAPPLY=1 "$0" providers add "$P" || true
+    done
+    C "Verifying each key and model against the provider (retired model names are fixed automatically)…"
+    python3 "$ROOT/local/compose/model_discovery.py" --env-file "$ENVF" --write || true
+    python3 "$ROOT/local/compose/gen_litellm_config.py" --write --env-file "$ENVF" >/dev/null
+    if curl -fsS -m 3 http://localhost:8080/healthz >/dev/null 2>&1; then
+      C "Applying (reloading the router + gateway)…"
+      ( cd "$ROOT/local/compose" && docker compose --profile ai up -d litellm gateway >/dev/null 2>&1 || true
+        docker compose --profile ai restart litellm gateway >/dev/null 2>&1 || true )
+      ready_wait 150 || C "  (router still starting — try  ./securax doctor  in a minute)"
+      C "Live test — asking the router through the security gateway…"
+      T0=$(date +%s)
+      R="$(curl -sS -m 120 http://localhost:8080/v1/chat/completions -H 'Content-Type: application/json' \
+           -d '{"model":"bank-assistant","messages":[{"role":"user","content":"Reply with the single word OK."}]}' 2>&1 || true)"
+      echo "  reply (${T0:+$(( $(date +%s) - T0 ))s}): $(printf '%s' "$R" | python3 -c 'import sys,json
+try: print(json.load(sys.stdin)["choices"][0]["message"]["content"][:80])
+except Exception: print("NO ANSWER -> run ./securax doctor")' 2>/dev/null)"
+    else
+      C "Keys saved. Start the estate with  ./securax up  — it will use them automatically."
+    fi
+    ;;
   providers)
     # Plugin-style AI provider management. `list` shows status; `add` pastes a key, regenerates the
     # router config from plugins/catalog.json, and restarts the router so the model appears in Chat.
@@ -434,8 +698,11 @@ URLS
       add)
         C "Add an AI provider plugin. Current status:"
         python3 "$GEN" --status --env-file "$ENVF"
-        printf '\nProvider id to enable (openai, anthropic, deepseek, mistral, grok, perplexity, azure, bedrock, openrouter, elevenlabs): '
-        read -r PID < /dev/tty || PID=""
+        PID="${3:-}"
+        if [ -z "$PID" ]; then
+          printf '\nProvider id to enable (openai, anthropic, deepseek, mistral, grok, perplexity, azure, bedrock, openrouter, elevenlabs): '
+          read -r PID < /dev/tty || PID=""
+        fi
         PID="$(printf '%s' "$PID" | tr 'A-Z' 'a-z' | tr -d '[:space:]')"
         [ -z "$PID" ] && { C "nothing to do."; exit 0; }
         case "$PID" in */*|.*|*securax*) C "That looks like a command, not a provider id. Type just the id (e.g. groq), or Ctrl+C and run it in a new line."; exit 1;; esac
@@ -464,6 +731,7 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
           skv "$ENVF" "$K" "$V" && echo "    ✔ saved $K (${#V} chars, starts '${V:0:5}…')"
         done
         python3 "$GEN" --write --env-file "$ENVF" >/dev/null && C "  ✔ router config regenerated from the plugin catalog."
+        [ "${SECURAX_NOAPPLY:-0}" = 1 ] && exit 0      # caller (./securax keys) applies once at the end
         C "Applying (reloading the router + gateway so the new model is picked up)…"
         # `up -d` starts them if down; `restart` forces a reload of the bind-mounted config if they
         # were already running (a bind-mount change alone does NOT trigger a recreate).
