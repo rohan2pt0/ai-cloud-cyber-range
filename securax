@@ -469,7 +469,7 @@ URLS
     [ -n "$VOLS" ] || C "(no data volumes yet — backing up settings only)"
     : > "$STG/MANIFEST"; echo "securax $(cat "$ROOT/VERSION" 2>/dev/null) $(date -u +%FT%TZ)" >> "$STG/MANIFEST"
     for V in $VOLS; do
-      docker run --rm --entrypoint tar -v "$V":/v:ro -v "$STG":/out "$IMG" czf "/out/vol-$V.tgz" -C /v . 2>/dev/null \
+      docker run --rm --user 0 --entrypoint tar -v "$V":/v:ro -v "$STG":/out "$IMG" czf "/out/vol-$V.tgz" -C /v . 2>/dev/null \
         && echo "volume $V" >> "$STG/MANIFEST" || { C "Could not read volume $V — aborting (no partial backup written)."; exit 1; }
     done
     cp "$ROOT/local/compose/.env" "$STG/env" 2>/dev/null && echo "env" >> "$STG/MANIFEST" || true
@@ -495,7 +495,7 @@ URLS
     for T in "$STG"/vol-*.tgz; do
       [ -f "$T" ] || continue; V="$(basename "$T" .tgz)"; V="${V#vol-}"
       docker volume create "$V" >/dev/null
-      docker run --rm --entrypoint sh -v "$V":/v -v "$STG":/in "$IMG" -c "find /v -mindepth 1 -delete; tar xzf /in/vol-$V.tgz -C /v" \
+      docker run --rm --user 0 --entrypoint sh -v "$V":/v -v "$STG":/in "$IMG" -c "find /v -mindepth 1 -delete; tar xzf /in/vol-$V.tgz -C /v" \
         || { C "Restore of $V failed — run ./securax restore again (data volumes may be partly restored)."; exit 1; }
       echo "  ✔ restored $V"
     done

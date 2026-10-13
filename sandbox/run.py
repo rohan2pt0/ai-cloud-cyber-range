@@ -339,6 +339,8 @@ def j_update(sb: H.Sandbox, c: Checks):
 
 @journey("backup_restore", "Disaster recovery: back up, LOSE the data volume, restore — the account and keys are back.")
 def j_backup(sb: H.Sandbox, c: Checks):
+    sb.down()
+    H.sh(["docker", "volume", "rm", "-f", "vulnbank-range_openwebui"])          # start from a pristine data volume
     if not _start(sb, c, GEMINI_API_KEY=KEYS["GEMINI_API_KEY"]):
         return
     c.ok(sb.wait_http(f"{H.WEBUI}/health", 420), "Open WebUI finished starting", sb.logs("open-webui", 10))
