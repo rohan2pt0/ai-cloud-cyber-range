@@ -470,7 +470,12 @@ fi
 if grep -q "assert False" local/compose/tests/test_autobuild_probe.py 2>/dev/null; then echo "FAILED autobuild-probe-red"; exit 1; fi
 echo ok
 """)
-    env = {**os.environ, "AUTOBUILD_AGENT": f"sh {agent}", "AUTOBUILD_VERIFY": f"sh {gate}"}
+    # no git identity at all (a fresh WSL / CI runner): autobuild must still be able to commit
+    env = {**os.environ, "AUTOBUILD_AGENT": f"sh {agent}", "AUTOBUILD_VERIFY": f"sh {gate}", "HOME": str(sb.clone.parent / "nohome"),
+           "GIT_CONFIG_GLOBAL": "/dev/null", "GIT_CONFIG_SYSTEM": "/dev/null"}
+    (sb.clone.parent / "nohome").mkdir(exist_ok=True)
+    for k in ("GIT_AUTHOR_NAME", "GIT_AUTHOR_EMAIL", "GIT_COMMITTER_NAME", "GIT_COMMITTER_EMAIL"):
+        env.pop(k, None)
     rc, out = H.sh(["bash", "./securax", "autobuild", "add a probe test", "--tries", "3"], cwd=sb.clone, env=env, timeout=600)
     c.ok(rc == 0 and "GREEN on attempt 2" in out, "attempt 1 is rejected by the gate, attempt 2 passes", tail(out, 500))
     c.ok("autobuild-probe-red" in (seen.read_text() if seen.exists() else ""), "…and the agent was HANDED the failure output of attempt 1")

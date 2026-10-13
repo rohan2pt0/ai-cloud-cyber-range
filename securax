@@ -414,7 +414,13 @@ $(tail -60 "$FB")"
         ( cd "$ROOT" && "$0" build "$PROMPT" ) || true
       fi
       if ( cd "$ROOT" && bash -c "${AUTOBUILD_VERIFY:-\"$0\" verify}" ) > "$FB.new" 2>&1; then
-        git -C "$ROOT" add -A && git -C "$ROOT" commit -q -m "autobuild: $TASK" || { C "Agent made no changes — nothing to commit."; }
+        git -C "$ROOT" add -A
+        if git -C "$ROOT" diff --cached --quiet; then C "Agent made no changes — nothing to commit."; else
+          # works on a machine with no git identity configured (fresh WSL, CI): fall back to a neutral author
+          git -C "$ROOT" -c user.name="$(git -C "$ROOT" config user.name || echo 'SecuRAX autobuild')" \
+              -c user.email="$(git -C "$ROOT" config user.email || echo 'autobuild@securax.local')" \
+              commit -q -m "autobuild: $TASK" || { C "git commit failed — your work is on branch $BR (uncommitted). Fix the git error above and commit it yourself."; exit 3; }
+        fi
         C "✔ GREEN on attempt $i. Review it:  git diff $ORIG..$BR     Ship it:  git push -u origin $BR   (then open a PR)"
         [ "${AUTOBUILD_PUSH:-0}" = 1 ] && git -C "$ROOT" push -u origin "$BR"
         rm -f "$FB" "$FB.new"; exit 0
