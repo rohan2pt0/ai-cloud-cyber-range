@@ -337,6 +337,73 @@ def j_update(sb: H.Sandbox, c: Checks):
     c.ok(git("status", "--porcelain")[1].strip() == "", "…and the checkout is clean afterwards")
 
 
+@journey("backup_restore", "Disaster recovery: back up, LOSE the data volume, restore — the account and keys are back.")
+def j_backup(sb: H.Sandbox, c: Checks):
+    if not _start(sb, c, GEMINI_API_KEY=KEYS["GEMINI_API_KEY"]):
+        return
+    c.ok(sb.wait_http(f"{H.WEBUI}/health", 420), "Open WebUI finished starting", sb.logs("open-webui", 10))
+    cred = {"name": "DR User", "email": "dr@example.com", "password": "dr-pass-123", "profile_image_url": ""}
+    r = sb.http("POST", f"{H.WEBUI}/api/v1/auths/signup", cred)
+    if r.status != 200:
+        r = sb.http("POST", f"{H.WEBUI}/api/v1/auths/signin", {"email": cred["email"], "password": cred["password"]})
+    c.ok(r.status == 200, "an account exists in Open WebUI (the data we will protect)", f"{r.status} {tail(r.text)}")
+    bdir = sb.clone.parent / "backups"
+    shutil.rmtree(bdir, ignore_errors=True)
+    rc, out = sb.securax("backup", str(bdir), timeout=300)
+    files = sorted(bdir.glob("securax-*.tar.gz"))
+    c.ok(rc == 0 and len(files) == 1, "`./securax backup` writes one verified file", tail(out, 300))
+    c.ok(files and files[0].stat().st_mode & 0o077 == 0, "…readable by its owner only (it contains API keys)")
+    env_before = sb.env_path.read_text()
+    sb.down()
+    rc, _ = H.sh(["docker", "volume", "rm", "-f", "vulnbank-range_openwebui"])
+    gone = H.sh(["docker", "volume", "inspect", "vulnbank-range_openwebui"])[0] != 0
+    c.ok(gone, "DISASTER: the Open WebUI data volume is destroyed (negative control)")
+    sb.env_path.write_text("# lost\n")
+    rc, out = sb.securax("restore", str(files[0]), "--yes", timeout=1500)
+    c.ok(rc == 0, "`./securax restore` completes", tail(out, 400))
+    c.ok(sb.env_path.read_text() == env_before, "…your .env (keys) is back exactly as it was")
+    c.ok(sb.wait_http(f"{H.WEBUI}/health", 420), "…and Open WebUI starts again")
+    r = sb.http("POST", f"{H.WEBUI}/api/v1/auths/signin", {"email": cred["email"], "password": cred["password"]})
+    c.ok(r.status == 200 and (r.json() or {}).get("token"), "…and the SAME account signs in (data really restored)", f"{r.status} {tail(r.text)}")
+    bad = bdir / "corrupt.tar.gz"
+    bad.write_bytes(b"not a backup")
+    rc, out = sb.securax("restore", str(bad), "--yes", timeout=60)
+    c.ok(rc != 0 and "valid" in out, "a corrupt file is refused before anything is touched", tail(out, 200))
+
+
+@journey("watchdog_heals_and_alerts", "`./securax watch`: notices an outage, heals it, and sends you an alert.")
+def j_watch(sb: H.Sandbox, c: Checks):
+    import http.server
+    import threading
+    got: list[str] = []
+
+    class Hook(http.server.BaseHTTPRequestHandler):
+        def do_POST(self):  # noqa: N802
+            got.append(self.rfile.read(int(self.headers.get("Content-Length", 0))).decode())
+            self.send_response(200)
+            self.end_headers()
+
+        def log_message(self, *a):
+            pass
+
+    srv = http.server.HTTPServer(("127.0.0.1", 0), Hook)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    try:
+        if not _start(sb, c, GEMINI_API_KEY=KEYS["GEMINI_API_KEY"], ALERT_WEBHOOK=f"http://127.0.0.1:{srv.server_port}/alert"):
+            return
+        rc, out = sb.securax("watch", "--once", timeout=120)
+        c.ok(rc == 0 and not got, "healthy estate: the watchdog stays quiet", tail(out, 200))
+        sb.compose("kill", "litellm")
+        c.ok(sb.chat("bank-assistant", "ping", timeout=40).status != 200, "the router is really down")
+        rc, out = sb.securax("watch", "--once", timeout=900)
+        c.ok(sb.wait_until(lambda: sb.http("GET", f"{H.GATEWAY}/readyz").status == 200, 120, 3), "the watchdog healed the estate", tail(out, 400))
+        c.ok("answered-by:gemini" in sb.answer(sb.chat("bank-assistant", "ping")), "…and chat answers again")
+        c.ok(any("NOT READY" in g for g in got) and any("recovered" in g for g in got), "you were alerted twice: DOWN, then RECOVERED", got)
+        c.ok(not any("AIza" in g or "ping" in g for g in got), "…and the alerts carried no keys or prompts")
+    finally:
+        srv.shutdown()
+
+
 @journey("providers_wizard", "`./securax providers add` on a real terminal: silent key entry, mis-paste caught, typed command rejected.")
 def j_wizard(sb: H.Sandbox, c: Checks):
     if not _start(sb, c):

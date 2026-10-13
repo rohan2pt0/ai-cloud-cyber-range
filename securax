@@ -109,6 +109,7 @@ case "$cmd" in
     export GIT_COMMIT="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)"
     ENVF="$ROOT/local/compose/.env"
     [ -f "$ENVF" ] || cp "$ROOT/local/compose/.env.example" "$ENVF"
+    chmod 600 "$ENVF" 2>/dev/null || true          # your API keys: readable by you only (no-op on Windows drives)
     # One-step setup: if there's no Gemini key yet and we're in a real terminal, offer to
     # paste one right here for INSTANT answers (Enter to skip = private local model). No
     # hunting for .env. Sensitive data stays local either way.
@@ -173,8 +174,10 @@ case "$cmd" in
     if ! grep -q "^GEMINI_API_KEY=..*" "$ROOT/local/compose/.env" 2>/dev/null; then
       C "TIP: for INSTANT answers, run  ./securax setup  and paste a free Gemini key (else the slower local model is used)."
     fi
-    C "Opening your Command Center: http://localhost:8088/hub.html"
-    "$0" open >/dev/null 2>&1 || true
+    if [ "${SECURAX_NO_OPEN:-0}" != 1 ]; then
+      C "Opening your Command Center: http://localhost:8088/hub.html"
+      "$0" open >/dev/null 2>&1 || true
+    fi
     [ "$cmd" = "up-status" ] && "$0" status || true
     ;;
   status)
@@ -454,6 +457,74 @@ URLS
         else C "Could not install the model — Llama Guard stays OFF (so nothing is blocked). Check your internet and retry."; fi ;;
       *) echo "usage: ./securax guard [status|on|off]"; exit 1 ;;
     esac
+    ;;
+  backup)
+    # DR / 3-2-1: one verified file holding your data (chats, accounts, workflows, sync data) + your .env keys.
+    # Models are NOT included (large, re-downloadable). Copy the file to a 2nd disk + a cloud drive for 3-2-1.
+    #   ./securax backup [DIR]        default DIR = ./backups   (keeps the newest $BACKUP_KEEP, default 7)
+    DEST="${2:-$ROOT/backups}"; mkdir -p "$DEST"; TS="$(date +%Y%m%d-%H%M%S)"; OUTF="$DEST/securax-$TS.tar.gz"
+    STG="$(mktemp -d)"; trap 'rm -rf "$STG"' EXIT
+    IMG="vulnbank/llm-gateway:dev"; docker image inspect "$IMG" >/dev/null 2>&1 || IMG="alpine"
+    VOLS="$(docker volume ls -q --filter label=com.docker.compose.project=vulnbank-range 2>/dev/null | grep -v '_ollama$' || true)"
+    [ -n "$VOLS" ] || C "(no data volumes yet — backing up settings only)"
+    : > "$STG/MANIFEST"; echo "securax $(cat "$ROOT/VERSION" 2>/dev/null) $(date -u +%FT%TZ)" >> "$STG/MANIFEST"
+    for V in $VOLS; do
+      docker run --rm --entrypoint tar -v "$V":/v:ro -v "$STG":/out "$IMG" czf "/out/vol-$V.tgz" -C /v . 2>/dev/null \
+        && echo "volume $V" >> "$STG/MANIFEST" || { C "Could not read volume $V — aborting (no partial backup written)."; exit 1; }
+    done
+    cp "$ROOT/local/compose/.env" "$STG/env" 2>/dev/null && echo "env" >> "$STG/MANIFEST" || true
+    ( cd "$STG" && sha256sum ./* > SHA256SUMS 2>/dev/null || true )
+    tar czf "$OUTF" -C "$STG" . && tar tzf "$OUTF" >/dev/null || { C "Backup failed verification."; rm -f "$OUTF"; exit 1; }
+    chmod 600 "$OUTF" 2>/dev/null || true
+    ls -1t "$DEST"/securax-*.tar.gz 2>/dev/null | tail -n +$(( $(ev BACKUP_KEEP 7) + 1 )) | xargs -r rm -f
+    C "✔ Backup saved & verified: $OUTF ($(du -h "$OUTF" | cut -f1)) — contains your API keys; keep it private. Restore: ./securax restore <file>"
+    ;;
+  restore)
+    # ./securax restore FILE [--yes] — replaces current data with the backup (current .env is kept as .env.pre-restore).
+    F="${2:-}"; [ -f "$F" ] || { echo "usage: ./securax restore <backup.tar.gz> [--yes]   (see ./backups)"; exit 1; }
+    tar tzf "$F" >/dev/null 2>&1 || { C "That file isn't a valid SecuRAX backup (unreadable archive)."; exit 1; }
+    if [ "${3:-}" != "--yes" ]; then
+      printf 'This REPLACES current chats/accounts/workflows with the backup. Continue? [y/N]: '; read -r YN < /dev/tty || YN="n"
+      case "$YN" in [Yy]*) ;; *) C "cancelled."; exit 0;; esac
+    fi
+    STG="$(mktemp -d)"; trap 'rm -rf "$STG"' EXIT
+    tar xzf "$F" -C "$STG" || { C "Could not unpack the backup."; exit 1; }
+    ( cd "$STG" && sha256sum -c SHA256SUMS >/dev/null 2>&1 ) || { C "Backup checksum mismatch — file is damaged. Nothing was changed."; exit 1; }
+    IMG="vulnbank/llm-gateway:dev"; docker image inspect "$IMG" >/dev/null 2>&1 || IMG="alpine"
+    "$0" down >/dev/null 2>&1 || true
+    for T in "$STG"/vol-*.tgz; do
+      [ -f "$T" ] || continue; V="$(basename "$T" .tgz)"; V="${V#vol-}"
+      docker volume create "$V" >/dev/null
+      docker run --rm --entrypoint sh -v "$V":/v -v "$STG":/in "$IMG" -c "find /v -mindepth 1 -delete; tar xzf /in/vol-$V.tgz -C /v" \
+        || { C "Restore of $V failed — run ./securax restore again (data volumes may be partly restored)."; exit 1; }
+      echo "  ✔ restored $V"
+    done
+    if [ -f "$STG/env" ]; then
+      [ -f "$ROOT/local/compose/.env" ] && cp "$ROOT/local/compose/.env" "$ROOT/local/compose/.env.pre-restore"
+      cp "$STG/env" "$ROOT/local/compose/.env"; chmod 600 "$ROOT/local/compose/.env" 2>/dev/null || true; echo "  ✔ restored .env"
+    fi
+    C "Restarting…"; exec "$0" up
+    ;;
+  watch)
+    # Watchdog: checks READY every WATCH_INTERVAL s (default 60); if down, heals with `up` (at most once per 5 min)
+    # and tells you (log + optional ALERT_WEBHOOK in .env — e.g. an ntfy.sh topic URL; only a short status line is sent).
+    #   ./securax watch          run forever (Ctrl+C to stop)       ./securax watch --once   check once, heal if needed
+    LOG="$ROOT/watch.log"; ST=ok; LASTHEAL=0; WH="$(ev ALERT_WEBHOOK)"
+    note(){ printf '%s %s\n' "$(date '+%F %T')" "$*" | tee -a "$LOG"; [ -n "$WH" ] && curl -fsS -m 10 -X POST -d "SecuRAX: $*" "$WH" >/dev/null 2>&1 || true; }
+    while :; do
+      if curl -fsS -m 5 http://localhost:8080/readyz >/dev/null 2>&1; then
+        [ "$ST" = ok ] || note "recovered — estate is READY again"; ST=ok
+      else
+        if [ "$ST" = ok ]; then note "NOT READY — healing with ./securax up"; ST=down; fi
+        NOW="$(date +%s)"
+        if [ $(( NOW - LASTHEAL )) -ge 300 ]; then
+          LASTHEAL="$NOW"; SECURAX_NO_OPEN=1 "$0" up >>"$LOG" 2>&1 || note "heal attempt failed — run ./securax doctor"
+          if curl -fsS -m 5 http://localhost:8080/readyz >/dev/null 2>&1; then note "recovered — estate is READY again"; ST=ok; fi
+        fi
+      fi
+      [ "${2:-}" = "--once" ] && break
+      sleep "$(ev WATCH_INTERVAL 60)"
+    done
     ;;
   update)
     # ONE command to get current: pull the latest code, then recreate the containers so it actually runs.
