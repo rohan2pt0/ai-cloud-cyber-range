@@ -420,13 +420,13 @@ $(tail -60 "$FB")"
       fi
       mv "$FB.new" "$FB"; C "  verify FAILED — feeding the failure back"; i=$((i+1))
     done
-    BRIEF="$ROOT/autobuild-failed-$(date +%Y%m%d-%H%M%S).md"
+    BRIEF="$ROOT/autobuild-failed-$(date +%Y%m%d-%H%M%S).md"; BTMP="$(mktemp)"       # temp OUTSIDE the repo: the rollback below runs git clean
     { echo "# autobuild could not satisfy the gates after $TRIES attempts"; echo; echo "## Task"; echo "$TASK"
       echo; echo "## Last verify output"; echo '```'; tail -80 "$FB"; echo '```'
       echo; echo "## Last attempt (discarded)"; echo '```diff'; git -C "$ROOT" add -N . 2>/dev/null; git -C "$ROOT" diff 2>/dev/null | head -300; echo '```'
-      echo; echo "## Rules"; echo "See BUILD-CONTRACT.md. Hand this brief to a stronger model (./securax escalate), then re-run verify."; } > "$BRIEF.tmp"
+      echo; echo "## Rules"; echo "See BUILD-CONTRACT.md. Hand this brief to a stronger model (./securax escalate), then re-run verify."; } > "$BTMP"
     git -C "$ROOT" reset -q --hard && git -C "$ROOT" clean -qfd && git -C "$ROOT" checkout -q "$ORIG" && git -C "$ROOT" branch -q -D "$BR"
-    mv "$BRIEF.tmp" "$BRIEF"; rm -f "$FB"
+    mv "$BTMP" "$BRIEF"; rm -f "$FB"
     C "✘ Gave up after $TRIES attempts. Your branch ($ORIG) is untouched. Escalation brief: $BRIEF"; exit 2
     ;;
   escalate)

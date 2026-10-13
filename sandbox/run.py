@@ -415,6 +415,9 @@ def j_models(sb: H.Sandbox, c: Checks):
     sb.fake_reset()
     if not _start(sb, c, GEMINI_API_KEY=KEYS["GEMINI_API_KEY"], GROQ_API_KEY=KEYS["GROQ_API_KEY"], OPENROUTER_API_KEY=KEYS["OPENROUTER_API_KEY"]):
         return
+    # At the very first start the fake providers are not up yet (they are part of the stack); a re-start sees them.
+    (sb.clone / "local" / "compose" / ".models-checked").unlink(missing_ok=True)
+    rc, out = sb.securax("up", "--lite", timeout=900)
     c.eq(sb.get_env("GEMINI_MODEL"), "gemini/gemini-9.1-flash", "START-UP self-corrects the shipped default (retired in this provider's live list)")
     sb.http("POST", f"{H.FAKE_CTL}/ctl/models", {"provider": "gemini", "models": ["gemini-9.3-flash", "gemini-9.4-flash-preview"]})
     before = sb.env_path.read_text()
@@ -446,6 +449,7 @@ def j_models(sb: H.Sandbox, c: Checks):
 def j_autobuild(sb: H.Sandbox, c: Checks):
     sb.reset_env()
     git = lambda *a: H.sh(["git", "-c", "user.name=sbx", "-c", "user.email=sbx@example.com", *a], cwd=sb.clone)  # noqa: E731
+    H.sh(["python3", "local/compose/gen_litellm_config.py", "--baseline", "--write"], cwd=sb.clone)   # earlier journeys edited the baseline
     git("checkout", "-q", "-B", "main")
     git("add", "-A")
     git("commit", "-q", "--allow-empty", "-m", "baseline")
