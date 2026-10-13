@@ -298,7 +298,10 @@ async def chat(request: Request, authorization: str | None = Header(default=None
         elif MODE == "enforce":
             choice["message"]["content"] = v.text
 
-    decision = "allow" if not (blocking or out_findings) else ("flag" if MODE == "monitor" else "sanitise")
+    # A request whose PII was redacted before it reached the model is NOT a plain "allow": the audit trail (and the SOC
+    # reading it) must be able to tell that data was removed. (Found by the purple-team loop.)
+    redacted = any(f.rule.startswith("PII-") for f in in_findings)
+    decision = "allow" if not (blocking or out_findings or redacted) else ("flag" if MODE == "monitor" else "sanitise")
     _metrics[f"decision_{decision}"] += 1
     u = resp.get("usage") if isinstance(resp.get("usage"), dict) else {}
     _usage["tokens_prompt"] += int(u.get("prompt_tokens") or 0)

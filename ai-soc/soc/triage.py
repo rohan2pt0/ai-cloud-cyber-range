@@ -144,6 +144,25 @@ def correlate(events: list[Event], window_s: float = 300.0, burst: int = 3) -> l
             incidents.append(_mk("runtime-compromise", principal, "critical",
                                  "AML.T0053 (user execution) / AML.T0055 (credential access)", "T1059 / T1552",
                                  runtime, "Isolate the pod/node; snapshot for forensics; rotate workload identity."))
+        # 3b) Single-event detections the purple-team loop showed were silent (prevented + logged, but nobody paged):
+        #     tuned to be LOW-noise — one incident per principal per rule, not one per request.
+        if not any(i.principal == principal and i.rule == "repeated-prompt-injection" for i in incidents):
+            probes = [e for e in evs if e.source == "gateway" and e.kind == "block" and "PI-" in e.detail]
+            if probes:
+                incidents.append(_mk("injection-probe", principal, "low", "AML.T0051 (prompt injection)", "T1190 (exploit public app)",
+                                     probes, "Log-and-watch: a blocked injection from this identity. Escalates automatically if it repeats."))
+        coercion = [e for e in evs if e.source == "gateway" and ("PI-006" in e.detail or "PI-008" in e.detail)]
+        if coercion:
+            incidents.append(_mk("agentic-tool-coercion", principal, "medium", "AML.T0053 (LLM plugin compromise)", "T1059 (command execution)",
+                                 coercion, "Review which tools/agents this identity can reach; tool abuse is rarely benign."))
+        chan = [e for e in evs if e.source == "gateway" and "OUT-md-image-exfil" in e.detail]
+        if chan:
+            incidents.append(_mk("output-exfil-channel", principal, "high", "AML.T0057 (LLM data leakage)", "T1567 (exfiltration over web service)",
+                                 chan, "A reply tried to smuggle data out through a link/image: find the poisoned source document or prompt."))
+        pii = [e for e in evs if e.source == "gateway" and "PII-" in e.detail]
+        if len(pii) >= burst and _within(pii, window_s):
+            incidents.append(_mk("pii-harvesting", principal, "medium", "AML.T0057 (LLM data leakage)", "T1213 (data from repositories)",
+                                 pii, "Repeated PII in prompts from one identity: confirm it is a real user, not data mining or a pasted dataset."))
         # 4) Cross-source correlation: injection + runtime event on same principal = kill-chain.
         if blocks and runtime:
             incidents.append(_mk("kill-chain-injection-to-runtime", principal, "critical",

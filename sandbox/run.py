@@ -817,6 +817,28 @@ def j_webui(sb: H.Sandbox, c: Checks):
 
 
 # ═══════════════════════════════════════════ runner ═══════════════════════════════════════════
+@journey("purple_loop", "`./securax purple`: attacks → real gateway → audit log → real SOC → report. Prevented, logged, ALERTED; gaps named; nothing benign flagged.")
+def j_purple(sb: H.Sandbox, c: Checks):
+    out = sb.clone.parent / "purple-out"
+    shutil.rmtree(out, ignore_errors=True)
+    runs = [("host python", {})]
+    if H.sh(["docker", "image", "inspect", "vulnbank/llm-gateway:dev"])[0] == 0:
+        runs.append(("the gateway image (no Python deps needed on the host)", {"SECURAX_PURPLE_DOCKER": "1"}))
+    else:
+        c.ok(True, "gateway image not built on this machine — the docker fallback is exercised wherever the estate has been started")
+    for label, extra in runs:
+        shutil.rmtree(out, ignore_errors=True)
+        rc, o = H.sh(["bash", "./securax", "purple", str(out)], cwd=sb.clone, env={**os.environ, **extra}, timeout=600)
+        c.ok(rc == 0 and "prevented 12/12" in o and "false positives 0/2" in o, f"via {label}: every attack prevented, no benign request flagged", tail(o, 400))
+        c.ok("alerted 11/12" in o or "alerted 12/12" in o, f"via {label}: the SOC alerted on all but (at most) the log-only PII row", tail(o, 300))
+        mds = sorted(out.glob("purple-*.md"))
+        jsons = sorted(out.glob("purple-*.json"))
+        c.ok(bool(mds) and bool(jsons), f"via {label}: a Markdown report and a JSON record were written", str(list(out.iterdir()) if out.exists() else "no out dir"))
+        if mds:
+            md = mds[-1].read_text()
+            c.ok("Detection backlog" in md and "Does **not** prove" in md and "campaign-4x-injection" in md, f"via {label}: the report names the backlog and what it does NOT prove")
+
+
 @journey("lifecycle_range", "The 'range' (dormant AD practice lab around GOAD): the pin is real, our RAM numbers match upstream, every verb maps to a real GOAD task, safety rails hold.")
 def j_range(sb: H.Sandbox, c: Checks):
     home = sb.clone.parent / "sxhome"
