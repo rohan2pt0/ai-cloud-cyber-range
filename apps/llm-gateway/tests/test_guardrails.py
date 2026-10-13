@@ -253,3 +253,9 @@ def test_a_non_json_upstream_reply_is_a_clean_502_not_a_500(monkeypatch):
     r = TestClient(m.app, raise_server_exceptions=False).post("/v1/chat/completions", json={
         "model": "m", "messages": [{"role": "user", "content": "hi"}]})
     assert r.status_code == 502
+
+
+def test_gateway_waits_longer_than_the_routers_slowest_rung():
+    # A slow CPU-only local answer (router allows 300s) must not be cut off by the gateway (was 120s -> 502).
+    import app.main as m
+    assert m.UPSTREAM_TIMEOUT > 300 + 3 * 40

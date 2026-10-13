@@ -26,6 +26,9 @@ from .providers import active_detectors, run_detectors
 
 MODE = os.getenv("GUARDRAIL_MODE", "enforce")  # enforce | monitor
 UPSTREAM = os.getenv("UPSTREAM_URL", "mock")  # e.g. http://litellm:4000/v1
+# Must outlast the router's worst case (3 cloud rungs x 40s, then a 300s CPU-bound local model); a shorter
+# gateway timeout turned a slow-but-working laptop answer into a 502.
+UPSTREAM_TIMEOUT = float(os.environ.get("UPSTREAM_TIMEOUT", "480"))
 UPSTREAM_KEY = os.getenv("UPSTREAM_API_KEY", "")
 MAX_CHARS = int(os.getenv("MAX_PROMPT_CHARS", "8000"))
 RATE_PER_MIN = int(os.getenv("RATE_LIMIT_PER_MIN", "30"))
@@ -130,7 +133,7 @@ async def _call_upstream(payload: dict) -> dict:
                 "choices": [{"index": 0, "finish_reason": "stop",
                              "message": {"role": "assistant", "content": f"[mock-llm] You said: {last}"}}]}
     headers = {"Authorization": f"Bearer {UPSTREAM_KEY}"} if UPSTREAM_KEY else {}
-    async with httpx.AsyncClient(timeout=120) as c:
+    async with httpx.AsyncClient(timeout=UPSTREAM_TIMEOUT) as c:
         r = await c.post(f"{UPSTREAM.rstrip('/')}/chat/completions", json=payload, headers=headers)
         r.raise_for_status()
         return r.json()

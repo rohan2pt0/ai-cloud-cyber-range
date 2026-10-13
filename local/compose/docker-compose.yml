@@ -195,6 +195,7 @@ services:
       # Open WebUI stores its FIRST-RUN settings in its database and then ignores env changes, so a
       # later default (like the line above) never reached existing installs. Make this file authoritative.
       ENABLE_PERSISTENT_CONFIG: "false"
+      AIOHTTP_CLIENT_TIMEOUT: "600"          # CPU-only answers can take minutes; the default 300s cut them off
       # The built-in "Arena Model" picks a RANDOM model per message (could be a paid/unexpected one) — off.
       ENABLE_EVALUATION_ARENA_MODELS: "false"
     ports: ["${BIND_HOST:-127.0.0.1}:3000:8080"]   # BIND_HOST=0.0.0.0 or your Tailscale IP to reach from phone/iPad
