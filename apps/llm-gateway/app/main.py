@@ -19,7 +19,7 @@ from collections import defaultdict, deque
 
 import httpx
 from fastapi import FastAPI, Header, HTTPException, Request
-from fastapi.responses import JSONResponse, PlainTextResponse
+from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
 
 from . import guardrails
 from .providers import active_detectors, run_detectors
@@ -188,6 +188,35 @@ async def models() -> dict:
             "data": [{"id": i, "object": "model", "created": 0, "owned_by": "securax"} for i in ids]}
 
 
+def _sse_from_completion(resp: dict, chunk_chars: int = 60):
+    """Re-emit a FINISHED, already-inspected completion as an OpenAI-style server-sent-event stream.
+
+    Why not pass tokens straight through? The output rails (canary leak, secret/exfil patterns, withhold-on-
+    block, detector verdicts) need the COMPLETE reply, and this gateway is fail-closed — it must never relay
+    text it has not inspected. So the gateway always takes the upstream reply whole, inspects it, and only
+    then streams it to the client. Chat UIs (Open WebUI streams by default) get a valid stream; the security
+    guarantee is unchanged. Cost: the reply appears when complete rather than token-by-token."""
+    choice = (resp.get("choices") or [{}])[0]
+    msg = choice.get("message") or {}
+    base = {"id": resp.get("id") or "chatcmpl-" + uuid.uuid4().hex[:12], "object": "chat.completion.chunk",
+            "created": resp.get("created") or int(time.time()), "model": resp.get("model") or ""}
+
+    def frame(delta: dict, finish: str | None = None, extra: dict | None = None) -> str:
+        body = {**base, "choices": [{"index": 0, "delta": delta, "finish_reason": finish}]}
+        if extra:
+            body.update(extra)
+        return "data: " + json.dumps(body) + "\n\n"
+
+    yield frame({"role": "assistant", "content": ""})
+    content = msg.get("content") or ""
+    for i in range(0, len(content), chunk_chars):
+        yield frame({"content": content[i:i + chunk_chars]})
+    if msg.get("tool_calls"):
+        yield frame({"tool_calls": [{**tc, "index": i} for i, tc in enumerate(msg["tool_calls"])]})
+    yield frame({}, choice.get("finish_reason") or "stop", {"usage": resp["usage"]} if resp.get("usage") else None)
+    yield "data: [DONE]\n\n"
+
+
 @app.post("/v1/chat/completions")
 async def chat(request: Request, authorization: str | None = Header(default=None)) -> JSONResponse:
     payload = await request.json()
@@ -229,10 +258,14 @@ async def chat(request: Request, authorization: str | None = Header(default=None
                       "message": message,
                       "rules": sorted({f.rule for f in blocking})}})
 
+    want_stream = bool(payload.get("stream"))
+    payload["stream"] = False            # always take the reply WHOLE so the output rails can inspect it
+    payload.pop("stream_options", None)  # only valid on streaming calls; upstreams reject it otherwise
+
     start = time.perf_counter()
     try:
         resp = await _call_upstream(payload)
-    except httpx.HTTPError as exc:
+    except (httpx.HTTPError, ValueError) as exc:    # ValueError: upstream sent something that is not JSON
         _metrics["upstream_error"] += 1
         _emit({"req_id": req_id, "decision": "upstream_error", "error": str(exc)[:200]})
         raise HTTPException(502, "upstream model unavailable") from exc
@@ -262,4 +295,7 @@ async def chat(request: Request, authorization: str | None = Header(default=None
            "findings": _findings(in_findings + out_findings)})
     resp["guardrails"] = {"req_id": req_id, "decision": decision,
                           "rules": sorted({f.rule for f in in_findings + out_findings})}
+    if want_stream:
+        return StreamingResponse(_sse_from_completion(resp), media_type="text/event-stream",
+                                 headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
     return JSONResponse(resp)

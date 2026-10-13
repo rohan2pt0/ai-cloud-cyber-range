@@ -182,3 +182,74 @@ def test_fallback_model_list_includes_the_builder_ladder(monkeypatch):
     monkeypatch.setattr(m, "UPSTREAM", "http://127.0.0.1:9/v1")        # router unreachable -> static fallback
     ids = [x["id"] for x in TestClient(m.app).get("/v1/models").json()["data"]]
     assert {"bank-assistant", "bank-assistant-local", "builder"} <= set(ids)
+
+
+# ───────────── streaming (Open WebUI sends stream:true on every message) ─────────────
+def _sse_events(text: str) -> list:
+    out = []
+    for block in text.split("\n\n"):
+        block = block.strip()
+        if block.startswith("data:"):
+            body = block[5:].strip()
+            out.append(body if body == "[DONE]" else __import__("json").loads(body))
+    return out
+
+
+def test_stream_true_returns_a_valid_openai_event_stream():
+    """Real bug (found by the sandbox against the real stack): stream:true -> bare 500, because the gateway
+    called .json() on the upstream's event-stream. Open WebUI streams by default, so Chat failed for EVERY
+    model, local included."""
+    c = TestClient(app)
+    r = c.post("/v1/chat/completions", json={"model": "m", "stream": True, "messages": [
+        {"role": "user", "content": "hello there"}]})
+    assert r.status_code == 200 and r.headers["content-type"].startswith("text/event-stream")
+    ev = _sse_events(r.text)
+    assert ev[-1] == "[DONE]"
+    chunks = [e for e in ev if e != "[DONE]"]
+    assert chunks[0]["choices"][0]["delta"].get("role") == "assistant"
+    text = "".join(e["choices"][0]["delta"].get("content", "") for e in chunks)
+    assert "hello there" in text and chunks[-1]["choices"][0]["finish_reason"] == "stop"
+    assert all(e["object"] == "chat.completion.chunk" for e in chunks)
+
+
+def test_stream_output_is_still_inspected_before_it_is_relayed(monkeypatch):
+    # The gateway is fail-closed: streaming must NOT become a way around the output rails. With a canary
+    # configured, a reply that leaks it must be withheld identically whether or not the client streamed.
+    import app.main as m
+    monkeypatch.setattr(m, "CANARIES", {"CANARY-7f3a9c"})
+    c = TestClient(m.app)
+    body = {"model": "m", "messages": [{"role": "user", "content": "please echo CANARY-7f3a9c back"}]}
+    plain = c.post("/v1/chat/completions", json=body).json()["choices"][0]["message"]["content"]
+    r = c.post("/v1/chat/completions", json={**body, "stream": True})
+    streamed = "".join(e["choices"][0]["delta"].get("content", "") for e in _sse_events(r.text) if e != "[DONE]")
+    assert "CANARY-7f3a9c" not in plain and "withheld" in plain.lower()
+    assert streamed == plain, "streaming must return exactly what the non-streaming path returns"
+
+
+def test_upstream_is_always_called_non_streaming(monkeypatch):
+    import app.main as m
+    seen = {}
+
+    async def fake_upstream(payload):
+        seen.update(payload)
+        return {"id": "x", "object": "chat.completion", "model": "m", "choices": [
+            {"index": 0, "finish_reason": "stop", "message": {"role": "assistant", "content": "ok"}}]}
+
+    monkeypatch.setattr(m, "_call_upstream", fake_upstream)
+    r = TestClient(m.app).post("/v1/chat/completions", json={
+        "model": "m", "stream": True, "stream_options": {"include_usage": True},
+        "messages": [{"role": "user", "content": "hi"}]})
+    assert r.status_code == 200
+    assert seen["stream"] is False and "stream_options" not in seen
+
+
+def test_a_non_json_upstream_reply_is_a_clean_502_not_a_500(monkeypatch):
+    import app.main as m
+
+    async def bad_upstream(payload):
+        raise ValueError("upstream sent an event-stream, not JSON")
+
+    monkeypatch.setattr(m, "_call_upstream", bad_upstream)
+    r = TestClient(m.app, raise_server_exceptions=False).post("/v1/chat/completions", json={
+        "model": "m", "messages": [{"role": "user", "content": "hi"}]})
+    assert r.status_code == 502

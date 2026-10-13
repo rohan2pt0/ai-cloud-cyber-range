@@ -106,10 +106,16 @@ class Sandbox:
         run = lambda *a: sh(list(a), cwd=d)  # noqa: E731
         run("openssl", "genrsa", "-out", "ca.key", "2048")
         run("openssl", "req", "-x509", "-new", "-nodes", "-key", "ca.key", "-sha256", "-days", "30",
-            "-subj", "/CN=SecuRAX Sandbox CA", "-out", "ca.crt")
+            "-subj", "/CN=SecuRAX Sandbox CA", "-out", "ca.crt",
+            "-addext", "basicConstraints=critical,CA:TRUE", "-addext", "keyUsage=critical,keyCertSign,cRLSign",
+            "-addext", "subjectKeyIdentifier=hash")
         run("openssl", "genrsa", "-out", "server.key", "2048")
         run("openssl", "req", "-new", "-key", "server.key", "-subj", "/CN=fake-providers", "-out", "server.csr")
-        (d / "ext.cnf").write_text("subjectAltName=" + ",".join(f"DNS:{h}" for h in PROVIDER_HOSTS) + "\n")
+        # Strict TLS verification (Python 3.13 / OpenSSL 3) rejects certs without these extensions.
+        (d / "ext.cnf").write_text(
+            "subjectAltName=" + ",".join(f"DNS:{h}" for h in PROVIDER_HOSTS) + "\n"
+            "basicConstraints=critical,CA:FALSE\nkeyUsage=critical,digitalSignature,keyEncipherment\n"
+            "extendedKeyUsage=serverAuth\nauthorityKeyIdentifier=keyid,issuer\nsubjectKeyIdentifier=hash\n")
         rc, out = run("openssl", "x509", "-req", "-in", "server.csr", "-CA", "ca.crt", "-CAkey", "ca.key",
                       "-CAcreateserial", "-out", "server.crt", "-days", "30", "-sha256", "-extfile", "ext.cnf")
         assert (d / "server.crt").exists(), f"cert generation failed: {out[-300:]}"
@@ -138,7 +144,7 @@ class Sandbox:
         override: dict = {"services": {
             "fakeproviders": {
                 "image": "vulnbank/llm-gateway:dev", "pull_policy": "never", "user": "0", "profiles": ["ai"],
-                "command": ["python", "/sandbox/fakes/fake_providers.py"],
+                "command": ["python", "/sandbox/fakes/fake_providers.py"], "healthcheck": {"disable": True},
                 "environment": {"FAKE_CERT": f"{sb}/certs/server.crt", "FAKE_KEY": f"{sb}/certs/server.key"},
                 "volumes": ["../../sandbox:/sandbox:ro"],
                 "ports": ["127.0.0.1:19000:9000"],

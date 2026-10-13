@@ -286,3 +286,10 @@ def test_nothing_starts_against_a_router_that_is_still_booting():
     assert "/readyz" in " ".join(svc["gateway"]["healthcheck"]["test"])
     assert svc["gateway"]["depends_on"]["litellm"]["condition"] == "service_healthy"
     assert svc["open-webui"]["depends_on"]["gateway"]["condition"] == "service_healthy"
+
+
+def test_router_never_phones_huggingface():
+    # Found by the sandbox: LiteLLM fetched a tokenizer from huggingface.co on every request. A sovereign,
+    # offline-first estate must not make that outbound call (and offline it cost seconds of retries).
+    env = yaml.safe_load(COMPOSE.read_text())["services"]["litellm"]["environment"]
+    assert str(env["HF_HUB_OFFLINE"]) == "1" and str(env["TRANSFORMERS_OFFLINE"]) == "1"
