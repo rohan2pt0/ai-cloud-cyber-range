@@ -1,0 +1,77 @@
+# The lifecycle genome (phases 1-4) is DORMANT code: it is not run by `./securax up`, so it needs its own gate. This proves —
+# without any cloud account — that (1) every Terraform root validates, (2) a dormant estate plans ONLY the seed bank while an
+# awake one plans exactly its stage's compute, with the security invariants intact, (3) the GitOps charts render and pass
+# Kubernetes schema validation, and (4) the pinned upstream "organs" (Wazuh, MISP, TheHive) still fetch and compose-validate.
+name: lifecycle-genome
+on:
+  pull_request:
+    paths:
+      - "infra/**"
+      - "gitops/**"
+      - "lifecycle/**"
+      - "local/compose/stage-sprout.yml"
+      - "local/compose/sprout/**"
+      - ".github/workflows/lifecycle.yml"
+  push: { branches: [main] }
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with: { terraform_version: "1.9.8", terraform_wrapper: false }
+      - name: Format
+        run: terraform fmt -check -recursive infra/terraform
+      - name: Legacy lab environment still validates (it once did not)
+        working-directory: infra/terraform/environments/lab
+        run: |
+          terraform init -backend=false -input=false
+          terraform validate
+      - name: Dormancy and security proofs (offline plans for aws + gcp; validate for azure)
+        run: python3 infra/terraform/lifecycle/prove.py
+
+  gitops:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install helm and kubeconform (pinned, checksum-verified)
+        run: |
+          curl -fsSL -o helm.tgz https://get.helm.sh/helm-v3.16.3-linux-amd64.tar.gz
+          echo "f5355c79190951eed23c5432a3b920e071f4c00a64f75e077de0dd4cb7b294ea  helm.tgz" | sha256sum -c -
+          tar xzf helm.tgz && sudo mv linux-amd64/helm /usr/local/bin/helm
+          curl -fsSL -o kc.tgz https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz
+          echo "95f14e87aa28c09d5941f11bd024c1d02fdc0303ccaa23f61cef67bc92619d73  kc.tgz" | sha256sum -c -
+          tar xzf kc.tgz && sudo mv kubeconform /usr/local/bin/kubeconform
+      - name: Tenant chart lints, renders for every tier and passes Kubernetes schema validation
+        run: |
+          helm lint gitops/charts/tenant
+          for tier in small medium large; do
+            helm template t gitops/charts/tenant --set tenant.id=acme --set tier=$tier --set oidcGroup=acme-staff \
+              | kubeconform -strict -summary -ignore-missing-schemas
+          done
+      - name: Shared router + Argo applications are schema-valid; router manifest matches the shipped baseline
+        run: |
+          kubeconform -strict -summary -ignore-missing-schemas gitops/core gitops/platform gitops/bootstrap gitops/metering gitops/root-app.yaml
+          python3 lifecycle/render_core.py --check
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Lifecycle unit tests (manifests, secrets, organs, tenants, dormancy of the sprout profile)
+        run: |
+          pip install pytest pyyaml
+          python3 -m pytest -q lifecycle
+
+  organs:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Pinned upstream organs still fetch, prepare and compose-validate (no images are pulled)
+        env: { SECURAX_HOME_DIR: /tmp/securax-home }
+        run: python3 lifecycle/lifecycle.py organ-check

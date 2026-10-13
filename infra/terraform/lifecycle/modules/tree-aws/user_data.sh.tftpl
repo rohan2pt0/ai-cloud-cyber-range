@@ -1,0 +1,51 @@
+#!/bin/bash
+# Wake-up script for the TREE node. Idempotent: safe on first boot and on every later wake.
+set -euo pipefail
+exec > >(tee -a /var/log/securax-wake.log) 2>&1
+
+DEV="/dev/disk/by-id/nvme-Amazon_Elastic_Block_Store_${volume_id_nodash}"
+for i in $(seq 1 60); do [ -e "$DEV" ] && break; sleep 5; done
+[ -e "$DEV" ] || { echo "roots disk never appeared"; exit 1; }
+
+# First wake only: format. Later wakes: the disk already holds the cluster's memory — never reformat.
+blkid "$DEV" >/dev/null 2>&1 || mkfs.ext4 -L securax-roots "$DEV"
+mkdir -p /var/lib/rancher
+grep -q securax-roots /etc/fstab || echo "LABEL=securax-roots /var/lib/rancher ext4 defaults,nofail 0 2" >> /etc/fstab
+mount -a
+
+hostnamectl set-hostname "${hostname}" || true
+
+if [ -n "${tailscale_auth_key}" ]; then
+  curl -fsSL https://tailscale.com/install.sh | sh
+  tailscale up --auth-key="${tailscale_auth_key}" --hostname="${hostname}" --ssh
+fi
+
+if ! command -v k3s >/dev/null 2>&1; then
+  curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="${k3s_version}" sh -s - server --write-kubeconfig-mode 600 --secrets-encryption
+fi
+systemctl enable --now k3s
+
+# Germinate the rest from the genome: Argo CD pulls everything else from git (gitops/bootstrap), keeps it in sync,
+# and undoes drift. On a later wake this is a no-op because the cluster state is on the roots disk.
+export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+for i in $(seq 1 60); do k3s kubectl get nodes >/dev/null 2>&1 && break; sleep 5; done
+k3s kubectl create namespace argocd --dry-run=client -o yaml | k3s kubectl apply -f -
+k3s kubectl apply --server-side -n argocd -f "https://raw.githubusercontent.com/argoproj/argo-cd/${argocd_version}/manifests/install.yaml"
+cat <<'EOF' | k3s kubectl apply -f -
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: securax-root
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: ${gitops_repo}
+    targetRevision: ${gitops_ref}
+    path: gitops/bootstrap
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: argocd
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+EOF

@@ -155,6 +155,7 @@
     <a href="#compliance">Compliance</a>
     <a href="#pipeline">CI/CD</a>
     <a href="#resilience">Resilience</a>
+    <a href="#lifecycle">Lifecycle</a>
     <a href="#stack">Stack</a>
     <a href="#mcp">MCP</a>
     <a href="#repo">Repo</a>
@@ -536,6 +537,21 @@
       <div class="card"><span class="tag mono">sandbox</span><h3>Tested as a user</h3><p><code>./securax verify --full</code>: 13 journeys, 120+ checks, real containers and browser — the gate for every change.</p></div>
     </div>
     <p class="sub" style="margin-top:14px">Full matrix of fallbacks (and which are proven by the sandbox): <code>docs/securax/25-FALLBACKS-AND-ELASTICITY.md</code>. Windows: <code>WINDOWS-QUICKSTART.md</code>.</p>
+  </section>
+
+  <!-- ================= LIFECYCLE ================= -->
+  <section id="lifecycle">
+    <p class="eyebrow">Built like a seed</p>
+    <h2>From a dormant seed to a multi-tenant forest — and back to sleep</h2>
+    <p class="sub">Every stage is already defined as code in this repository (the <em>genome</em>). Nothing above the seed runs or bills until you grow it; hibernation keeps its data; waking restores it. Growth is reversible, and the only destructive verb is a deliberate one.</p>
+    <div class="cards c5">
+      <div class="card"><span class="tag mono">seed · crawl</span><h3>Your laptop</h3><p>Guardrail gateway, model router, chat, Guiding Map. <code>./securax up</code></p></div>
+      <div class="card"><span class="tag mono">sprout · walk</span><h3>Always-on core</h3><p>Keycloak, OpenBao, S3, Prometheus + optional Wazuh / MISP / TheHive. <code>./securax grow sprout</code></p></div>
+      <div class="card"><span class="tag mono">tree · run</span><h3>One cloud VM</h3><p>k3s + Argo CD, state on a persistent encrypted disk, no open ports.</p></div>
+      <div class="card"><span class="tag mono">canopy · run+</span><h3>Managed Kubernetes</h3><p>EKS Auto Mode / GKE Autopilot / AKS: nodes follow pods, down to zero. Policy, runtime detection, backups.</p></div>
+      <div class="card"><span class="tag mono">forest · fly</span><h3>Multi-tenant</h3><p>One 5-line file stamps a tenant cell: namespace, quota, zero-trust, gateway, metering, own key + bucket.</p></div>
+    </div>
+    <p class="sub" style="margin-top:14px"><code>./securax stages</code> shows what is awake, hibernating or dormant. Dormancy is <b>proved</b>, not promised: offline Terraform plans show a sleeping estate contains only its seed bank (vault, key, data disk, budget alarm), and a real-container test sleeps and wakes the core with its data intact. Cloud stages plan only unless you pass <code>--apply</code>. Honest limits (nothing has been applied to a real cloud yet): <code>docs/securax/29-LIFECYCLE-SEED-TO-FOREST.md</code>.</p>
   </section>
 
   <section id="stack">

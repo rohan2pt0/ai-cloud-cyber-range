@@ -1,0 +1,15 @@
+tenant:
+  id: example
+  name: Example Tenant
+tier: small            # small | medium | large
+oidcGroup: ""          # Keycloak group allowed into the namespace (RBAC); empty = no human access
+image:
+  repository: ghcr.io/rohan2pt0/securax-llm-gateway
+  tag: "0.1.0"   # pinned release; bump with VERSION
+gateway:
+  mode: enforce
+  failMode: closed
+  upstream: http://litellm.securax-core.svc:4000/v1
+  rateLimitPerMin: 60
+monitoring:
+  enabled: true        # needs the Prometheus Operator CRDs (kube-prometheus-stack, deployed by the platform)

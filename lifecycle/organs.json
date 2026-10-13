@@ -1,0 +1,104 @@
+{
+  "version": 1,
+  "about": "Heavy open-source security 'organs' we do NOT re-implement: each is the official upstream deployment, fetched on demand at a pinned git ref (tag or commit) into ~/.securax/organs, prepared, and run as its own compose project. Refs are verified by the sandbox (journey organs_are_valid).",
+  "organs": {
+    "wazuh": {
+      "label": "Wazuh (SIEM / XDR)",
+      "repo": "https://github.com/wazuh/wazuh-docker",
+      "ref": "v4.14.8",
+      "dir": "single-node",
+      "ram_gb": 6,
+      "disk_gb": 20,
+      "sysctl": {
+        "vm.max_map_count": 262144
+      },
+      "pre": [
+        {
+          "argv": [
+            "docker",
+            "compose",
+            "-f",
+            "generate-indexer-certs.yml",
+            "run",
+            "--rm",
+            "generator"
+          ],
+          "heavy": true
+        }
+      ],
+      "override": {
+        "wazuh.dashboard": [
+          "127.0.0.1:8443:5601"
+        ],
+        "wazuh.indexer": [
+          "127.0.0.1:9200:9200"
+        ],
+        "wazuh.manager": [
+          "1514:1514",
+          "1515:1515",
+          "127.0.0.1:55000:55000"
+        ]
+      },
+      "url": "https://localhost:8443",
+      "warning": "Upstream ships DEFAULT passwords (admin / SecretPassword). It is bound to 127.0.0.1 here, but change them before exposing it: https://documentation.wazuh.com/current/deployment-options/docker/wazuh-container.html"
+    },
+    "misp": {
+      "label": "MISP (threat intelligence)",
+      "repo": "https://github.com/MISP/misp-docker",
+      "ref": "ca251d6990a77fe9095c6cfbefac699d3dbcf467",
+      "dir": ".",
+      "ram_gb": 4,
+      "disk_gb": 15,
+      "env": {
+        "file": ".env",
+        "copy_from": "template.env",
+        "set": {
+          "BASE_URL": "https://localhost:8445",
+          "ADMIN_EMAIL": "admin@securax.local",
+          "ADMIN_PASSWORD": "@secret",
+          "MYSQL_PASSWORD": "@secret",
+          "MYSQL_ROOT_PASSWORD": "@secret",
+          "REDIS_PASSWORD": "@secret",
+          "ENCRYPTION_KEY": "@secret"
+        }
+      },
+      "override": {
+        "misp-nginx": [
+          "127.0.0.1:8445:8443"
+        ]
+      },
+      "url": "https://localhost:8445",
+      "warning": "The admin password is generated and stored in the organ's .env (mode 600) under ~/.securax/organs/misp."
+    },
+    "thehive": {
+      "label": "TheHive (incident response)",
+      "repo": "https://github.com/StrangeBeeCorp/docker",
+      "ref": "4897756640fb48867961ab9ca9095992194887e9",
+      "dir": "prod1-thehive",
+      "ram_gb": 8,
+      "disk_gb": 20,
+      "pre": [
+        {
+          "argv": [
+            "bash",
+            "scripts/init.sh",
+            "--yes"
+          ],
+          "env": {
+            "SERVICE_HOSTNAME": "localhost"
+          }
+        }
+      ],
+      "override": {
+        "nginx": [
+          "127.0.0.1:8444:443"
+        ],
+        "thehive": [
+          "127.0.0.1:9000:9000"
+        ]
+      },
+      "url": "https://localhost:8444",
+      "warning": "First login uses TheHive's default admin account; change it immediately (see StrangeBee docs). Generated secrets live in the organ directory."
+    }
+  }
+}

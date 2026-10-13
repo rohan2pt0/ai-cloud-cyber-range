@@ -1,0 +1,22 @@
+# Policy-as-code: Kyverno admission rules from this repo (the same ones the kind range uses).
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: policies
+  namespace: argocd
+  annotations: { argocd.argoproj.io/sync-wave: "2" }
+spec:
+  project: default
+  source:
+    repoURL: https://github.com/rohan2pt0/ai-cloud-cyber-range.git
+    targetRevision: main
+    path: local/k8s/policies
+    directory:
+      include: "kyverno-policies.yaml"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: kyverno
+  syncPolicy:
+    automated: { prune: true, selfHeal: true }
+    syncOptions: [SkipDryRunOnMissingResource=true]
+    retry: { limit: 10, backoff: { duration: 30s, factor: 2, maxDuration: 10m } }

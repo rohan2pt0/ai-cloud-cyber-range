@@ -251,3 +251,7 @@ evidence/
 autobuild-failed-*.md
 watch.log
 backups/
+
+# lifecycle: per-machine generated
+infra/terraform/lifecycle/*/securax.auto.tfvars
+infra/terraform/lifecycle/*/tenants.auto.tfvars.json

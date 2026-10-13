@@ -1,0 +1,40 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: securax-tenant-metering
+  namespace: monitoring
+  labels: { release: kube-prometheus-stack }
+spec:
+  groups:
+    - name: securax.tenant.recording
+      interval: 30s
+      rules:
+        - record: tenant:requests:rate5m
+          expr: sum by (tenant) (rate(guardrail_events_total{event=~"decision_.*"}[5m]))
+        - record: tenant:tokens:increase1h
+          expr: sum by (tenant, kind) (increase(guardrail_tokens_total[1h]))
+        - record: tenant:blocked:ratio10m
+          expr: |
+            sum by (tenant) (rate(guardrail_events_total{event="blocked_input"}[10m]))
+            / clamp_min(sum by (tenant) (rate(guardrail_events_total{event=~"decision_.*|blocked_input"}[10m])), 1e-9)
+        - record: tenant:upstream_error:ratio30m
+          expr: |
+            sum by (tenant) (rate(guardrail_events_total{event="upstream_error"}[30m]))
+            / clamp_min(sum by (tenant) (rate(guardrail_events_total{event=~"decision_.*|upstream_error"}[30m])), 1e-9)
+        - record: tenant:latency_ms:avg5m
+          expr: |
+            sum by (tenant) (rate(guardrail_request_latency_ms_sum[5m]))
+            / clamp_min(sum by (tenant) (rate(guardrail_request_latency_ms_count[5m])), 1e-9)
+    - name: securax.tenant.sla
+      rules:
+        - alert: TenantGatewayDown
+          expr: up{tenant!=""} == 0
+          for: 5m
+          labels: { severity: critical }
+          annotations: { summary: "Tenant {{ $labels.tenant }}: gateway not answering" }
+        - alert: TenantSLOBurn
+          # 99.5% availability objective: upstream errors above 0.5% for 15 minutes
+          expr: tenant:upstream_error:ratio30m > 0.005
+          for: 15m
+          labels: { severity: warning }
+          annotations: { summary: "Tenant {{ $labels.tenant }}: error budget burning (check providers / ./securax models)" }

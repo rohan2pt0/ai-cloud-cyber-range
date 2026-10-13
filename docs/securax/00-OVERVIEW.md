@@ -68,6 +68,8 @@ makes it an *ecosystem* and not five disconnected projects.
 | Build SecuRAX with its own models (no paid-Claude dependency) | [`23-BUILD-WITHOUT-CLAUDE.md`](23-BUILD-WITHOUT-CLAUDE.md) |
 | Run on a modest laptop; the degradation ladders | [`24-RESILIENCE-AND-LOW-RESOURCE.md`](24-RESILIENCE-AND-LOW-RESOURCE.md) |
 | What happens when each component fails + elastic sizing | [`25-FALLBACKS-AND-ELASTICITY.md`](25-FALLBACKS-AND-ELASTICITY.md) |
+| Grow the estate: dormant seed → sprout → tree → canopy → forest, and back to sleep | [`29-LIFECYCLE-SEED-TO-FOREST.md`](29-LIFECYCLE-SEED-TO-FOREST.md) |
+| Every ask, its status and proof (what is NOT done) | [`28-STATUS-AND-TRACEABILITY.md`](28-STATUS-AND-TRACEABILITY.md) |
 | Install on Windows (copy-paste steps) | [`../../WINDOWS-QUICKSTART.md`](../../WINDOWS-QUICKSTART.md) |
 | Test the product as a user would (sandbox) | [`../../sandbox/README.md`](../../sandbox/README.md) |
 | Start using it today | [`../../GETTING-STARTED.md`](../../GETTING-STARTED.md) |

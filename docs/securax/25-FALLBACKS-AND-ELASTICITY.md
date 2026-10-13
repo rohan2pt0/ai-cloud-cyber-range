@@ -22,6 +22,9 @@ Rows marked ✅ are exercised end-to-end by the sandbox (`python3 sandbox/run.py
 | Windows-drive slowness | Installer puts the repo on WSL's own disk; launcher prefers it | ⚠ |
 | Open WebUI / Command Center / Guiding Map down | Gateway API + `./securax say/ask` CLI still work; dots on the hub show state | ✅ `ui_guiding_map_and_hub` |
 
+| Stage above the seed is asleep / never grown | Nothing runs and nothing is billed; waking restores data (laptop: volumes + secrets in the backup; cloud: vault, data disk, tenant keys) | ✅ `lifecycle_sprout`, `prove.py` |
+| Cloud apply interrupted / bad plan | Cloud commands plan only without `--apply`; hibernate/wake is one boolean on the same code; seed bank is never destroyed by sleep | ✅ `lifecycle_cloud_is_safe` |
+
 ## Elastic resources
 On **every** `./securax up`, `autosize` reads what **Docker** can actually use (inside WSL2 that VM cap is the real limit, not your laptop's RAM) and sets:
 

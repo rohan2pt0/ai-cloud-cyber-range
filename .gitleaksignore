@@ -1,0 +1,2 @@
+# False positive: JDBC URL host:port (no credential) in the sprout compose file.
+294518cb2a53bacc4e22cfd9a0ad9b81fc9a9b60:local/compose/stage-sprout.yml:generic-api-key:39

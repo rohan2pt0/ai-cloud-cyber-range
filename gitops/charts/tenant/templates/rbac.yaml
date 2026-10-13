@@ -1,0 +1,25 @@
+{{- if .Values.oidcGroup }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: tenant-operator
+  namespace: {{ include "tenant.ns" . }}
+rules:
+  - apiGroups: ["", "apps", "autoscaling", "batch"]
+    resources: ["pods", "pods/log", "services", "configmaps", "deployments", "replicasets", "horizontalpodautoscalers", "jobs", "cronjobs"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: tenant-operator
+  namespace: {{ include "tenant.ns" . }}
+subjects:
+  - kind: Group
+    name: {{ printf "oidc:%s" .Values.oidcGroup | quote }}
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: Role
+  name: tenant-operator
+  apiGroup: rbac.authorization.k8s.io
+{{- end }}

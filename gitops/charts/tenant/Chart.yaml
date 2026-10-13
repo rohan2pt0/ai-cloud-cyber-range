@@ -1,0 +1,6 @@
+apiVersion: v2
+name: tenant
+description: One differentiated tenant cell of the SecuRAX forest — namespace, quota, zero-trust network policy, hardened guardrail gateway, RBAC, metrics.
+type: application
+version: 0.1.0
+appVersion: "0.1.0"

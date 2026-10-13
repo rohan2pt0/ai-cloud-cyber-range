@@ -32,6 +32,8 @@ range already built    SOC + identity        GitOps              (revenue-funded
 - **Stop-here value:** a private AI, an automated day, a documented life-OS, an AI-security
   private AI, an automated day, a documented life-OS. Exit when you need always-on / family / remote access.
 
+> **Build status (Oct 2026):** all five phases now exist as dormant code that wakes on demand — see [29 · Lifecycle](29-LIFECYCLE-SEED-TO-FOREST.md) and the honest per-phase ledger in [28](28-STATUS-AND-TRACEABILITY.md). Phase 1 core is proven with real containers; phases 2–4 are validated and plan-proved but not yet applied to a real cloud.
+
 ## Phase 1 — Always-on core (WALK · one-time hardware ~₹1.2–1.5L, optional)
 **Trigger:** you want 24×7 availability, family access, bigger local models, or a real SOC.
 1. **Hardware:** mini-PC / workstation (32–64 GB RAM, RTX 4060 Ti 16 GB class) running Ubuntu;

@@ -108,6 +108,8 @@ window.SECURAX = {
       { cap: "Elastic resource sizing", primary: "securax autosize (Docker-aware)", alt: "manual .env", phase: 0, std: "Works from 8 GB to workstation" },
       { cap: "User-perspective E2E sandbox", primary: "sandbox/ (Docker + Playwright)", alt: "Cypress, k6", phase: 0, std: "Tested as the user, not the developer" },
       { cap: "Definition of done", primary: "./securax verify [--full]", alt: "make / tox", phase: 0, std: "Same gate for human & model-made changes" },
+      { cap: "Lifecycle: dormant seed → sprout → tree → canopy → forest", primary: "lifecycle/ + infra/terraform/lifecycle + gitops/", alt: "manual Terraform/Helm", phase: 0, std: "Dormant by default; hibernate keeps data; proved with offline plans" },
+      { cap: "GitOps + multi-tenant cells", primary: "Argo CD + charts/tenant", alt: "Flux", phase: 3, std: "Zero-trust namespaces, per-tenant metering" },
       { cap: "Self-hosted build agent", primary: "Aider + builder ladder + BUILD-CONTRACT", alt: "Cline, Continue", phase: 0, std: "No paid-IDE single point of failure" },
     ]},
     { group: "Human layer", items: [

@@ -1,0 +1,96 @@
+{{- $t := include "tenant.tier" . | fromYaml }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: llm-gateway
+  namespace: {{ include "tenant.ns" . }}
+automountServiceAccountToken: false
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llm-gateway
+  namespace: {{ include "tenant.ns" . }}
+  labels: {{- include "tenant.labels" . | nindent 4 }}
+spec:
+  replicas: {{ $t.min }}
+  selector:
+    matchLabels: { app: llm-gateway }
+  template:
+    metadata:
+      labels:
+        app: llm-gateway
+        {{- include "tenant.labels" . | nindent 8 }}
+    spec:
+      serviceAccountName: llm-gateway
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        seccompProfile: { type: RuntimeDefault }
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: ScheduleAnyway
+          labelSelector: { matchLabels: { app: llm-gateway } }
+      containers:
+        - name: gateway
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: IfNotPresent
+          ports: [{ containerPort: 8080 }]
+          env:
+            - { name: GUARDRAIL_MODE, value: {{ .Values.gateway.mode | quote }} }
+            - { name: FAIL_MODE, value: {{ .Values.gateway.failMode | quote }} }
+            - { name: UPSTREAM_URL, value: {{ .Values.gateway.upstream | quote }} }
+            - { name: RATE_LIMIT_PER_MIN, value: {{ .Values.gateway.rateLimitPerMin | quote }} }
+            - { name: SERVED_MODELS, value: "bank-assistant,builder" }
+            - { name: TENANT_ID, value: {{ .Values.tenant.id | quote }} }
+            # the router key is cloned into every tenant namespace by the Kyverno policy in gitops/core
+            - name: UPSTREAM_API_KEY
+              valueFrom:
+                secretKeyRef: { name: router-key, key: LITELLM_MASTER_KEY, optional: true }
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: { drop: ["ALL"] }
+          resources:
+            requests: { cpu: 50m, memory: 96Mi }
+            limits: { cpu: {{ $t.limCpu | quote }}, memory: {{ $t.limMem | quote }} }
+          livenessProbe: { httpGet: { path: /healthz, port: 8080 }, initialDelaySeconds: 5 }
+          readinessProbe: { httpGet: { path: /readyz, port: 8080 }, periodSeconds: 10 }
+          volumeMounts: [{ name: tmp, mountPath: /tmp }]
+      volumes: [{ name: tmp, emptyDir: {} }]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: llm-gateway
+  namespace: {{ include "tenant.ns" . }}
+  labels:
+    app: llm-gateway
+spec:
+  selector: { app: llm-gateway }
+  ports: [{ name: http, port: 80, targetPort: 8080 }]
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: llm-gateway
+  namespace: {{ include "tenant.ns" . }}
+spec:
+  minAvailable: 1
+  selector: { matchLabels: { app: llm-gateway } }
+---
+# Horizontal elasticity inside the tenant's quota; KEDA/cluster autoscaling add nodes underneath when needed.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: llm-gateway
+  namespace: {{ include "tenant.ns" . }}
+spec:
+  scaleTargetRef: { apiVersion: apps/v1, kind: Deployment, name: llm-gateway }
+  minReplicas: {{ $t.min }}
+  maxReplicas: {{ $t.max }}
+  metrics:
+    - type: Resource
+      resource: { name: cpu, target: { type: Utilization, averageUtilization: 70 } }

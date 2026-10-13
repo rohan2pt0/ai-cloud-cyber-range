@@ -7,9 +7,8 @@ terraform {
     azurerm = { source = "hashicorp/azurerm", version = "~> 4.14" }
   }
 }
-provider "azurerm" {
-  features {}
-}
+# NOTE: no `provider "azurerm"` block here on purpose. A module that carries its own provider block cannot be
+# used with count/for_each (Terraform refuses); the calling environment configures the provider instead.
 
 variable "location" {
   type    = string

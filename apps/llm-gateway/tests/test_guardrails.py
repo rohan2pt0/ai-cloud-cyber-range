@@ -259,3 +259,18 @@ def test_gateway_waits_longer_than_the_routers_slowest_rung():
     # A slow CPU-only local answer (router allows 300s) must not be cut off by the gateway (was 120s -> 502).
     import app.main as m
     assert m.UPSTREAM_TIMEOUT > 300 + 3 * 40
+
+
+def test_metering_metrics_for_usage_and_sla():
+    # The MSSP stage bills and reports SLAs from these series (one gateway per tenant, scraped with a tenant label).
+    c = TestClient(app)
+    before = c.get("/metrics").text
+    assert "guardrail_tokens_total" in before and "guardrail_request_latency_ms_count" in before
+    r = c.post("/v1/chat/completions", json={"model": "bank-assistant", "messages": [{"role": "user", "content": "hello"}]})
+    assert r.status_code == 200
+    after = c.get("/metrics").text
+
+    def val(text, key):
+        return next(float(ln.split()[-1]) for ln in text.splitlines() if ln.startswith(key))
+
+    assert val(after, "guardrail_request_latency_ms_count") == val(before, "guardrail_request_latency_ms_count") + 1

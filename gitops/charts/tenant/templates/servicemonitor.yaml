@@ -1,0 +1,18 @@
+{{- if .Values.monitoring.enabled }}
+# Per-tenant metering: the Prometheus Operator scrapes this tenant's gateway; every series carries the tenant id, which
+# is the basis for usage reports, SLA dashboards and billing.
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: llm-gateway
+  namespace: {{ include "tenant.ns" . }}
+  labels: {{- include "tenant.labels" . | nindent 4 }}
+spec:
+  selector: { matchLabels: { app: llm-gateway } }
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 30s
+      relabelings:
+        - { targetLabel: tenant, replacement: {{ .Values.tenant.id | quote }} }
+{{- end }}
