@@ -37,6 +37,7 @@ SPROUT_SERVICES = ["keycloak-db", "keycloak", "openbao", "seaweedfs", "prometheu
 SPROUT_VOLUMES = ["keycloak_db", "openbao_data", "seaweed_data", "prometheus_data", "alertmanager_data"]
 PROJECT = "vulnbank-range"
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+import adrange as rng  # noqa: E402  (the dormant Active Directory practice lab, wrapped around GOAD)
 import burrow as bw  # noqa: E402  (stage 2a: own hardware, rehearsed on a Docker twin)
 
 MIN_COMPOSE = (2, 24)  # `ports: !override` (used for organ port remapping) needs Compose 2.24+
@@ -686,6 +687,7 @@ def cmd_stages(_: argparse.Namespace) -> int:
         if sid == "sprout":
             for o in st.get("organs", []):
                 say(f"        · organ {o:<8} {organ_status(o)}")
+    say(f"\n  ◇ range    Active Directory practice lab (OSCP-style, wraps GOAD): {'recipe fetched' if rng.status() == 'fetched' else 'dormant'}   → ./securax range soil")
     say("\n  ● awake   ◐ partly awake   ◌ hibernating (data kept)   ○ dormant (never grown)")
     say("  Wake: ./securax grow <stage>   Sleep: ./securax hibernate <stage>   Check readiness: ./securax soil <stage>")
     return 0
@@ -926,6 +928,42 @@ def cmd_spore(a: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_range(a: argparse.Namespace) -> int:
+    """./securax range soil|plan|install|wake|hibernate|snapshot|reset|status|prune — the dormant AD practice lab (GOAD)."""
+    h = rng.host()
+    lines, rec = rng.soil_report(h)
+    lab = a.lab or rec or "MINILAB"
+    provider = a.provider or "virtualbox"
+    if a.action == "soil":
+        head("Range soil test — which Active Directory lab fits here?")
+        for ln in lines:
+            say(ln)
+        say("provider: " + rng.provider_advice(h))
+        return 0
+    if a.action == "plan":
+        head(f"Range plan — {lab} on {provider}")
+        for ln in rng.plan(lab, provider):
+            say(ln)
+        return 0
+    if a.action == "fetch":
+        say(f"GOAD pinned at {rng.cfg()['ref'][:12]} → {rng.fetch()}")
+        return 0
+    if a.action == "prune":
+        head(f"PRUNE the range '{lab}' — destroys its VMs and disks")
+        typed = f"PRUNE range {lab}" if confirm("This destroys the lab's VMs and their disks (the recipe stays).", False, typed=f"PRUNE range {lab}") else ""
+        return rng.prune(lab, provider, typed, a.i_accept_cloud_cost)
+    if a.action == "install":
+        if lab not in rng.fitting_labs(h) and not a.force:
+            say(f"! {lab} needs more RAM than this machine can spare. Fits here: {', '.join(rng.fitting_labs(h)) or 'nothing'}.  (Override with --force; the VMs may swap or fail.)")
+            return 2
+        for w in rng.cfg()["warnings"]:
+            say("  ! " + w)
+        if not confirm(f"\nInstall {lab} on {provider}? It downloads many GB of Windows images and takes hours.", a.yes):
+            say("cancelled — nothing was changed.")
+            return 1
+    return rng.run_task(a.action, lab, provider, a.i_accept_cloud_cost)
+
+
 def cmd_organ_check(a: argparse.Namespace) -> int:
     names = a.names or list(load_json("organs.json")["organs"])
     bad = 0
@@ -990,6 +1028,14 @@ def main(argv: list[str] | None = None) -> int:
     sp.add_argument("--gitops", action="store_true", help="first server only: install Argo CD + root app")
     sp.add_argument("--repo", default=bw.DEFAULT_REPO)
     sp.set_defaults(fn=cmd_spore)
+    rg = sub.add_parser("range", help="dormant Active Directory practice lab (GOAD): soil | plan | install | wake | hibernate | snapshot | reset | status | prune")
+    rg.add_argument("action", choices=["soil", "plan", "fetch", "install", "wake", "hibernate", "restart", "snapshot", "reset", "status", "prune"])
+    rg.add_argument("--lab", default="", help="MINILAB | GOAD-Light | SCCM | GOAD (default: the biggest that fits this machine)")
+    rg.add_argument("--provider", default="", help="virtualbox | vmware | proxmox | ludus | aws | azure (default virtualbox)")
+    rg.add_argument("--i-accept-cloud-cost", action="store_true", dest="i_accept_cloud_cost")
+    rg.add_argument("--yes", action="store_true")
+    rg.add_argument("--force", action="store_true", help="install a lab that does not fit in RAM")
+    rg.set_defaults(fn=cmd_range)
     oc = sub.add_parser("organ-check", help="fetch + prepare + compose-config the pinned upstream organs (no images pulled)")
     oc.add_argument("names", nargs="*")
     oc.set_defaults(fn=cmd_organ_check)

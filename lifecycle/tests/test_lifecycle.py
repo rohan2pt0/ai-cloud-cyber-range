@@ -323,3 +323,66 @@ def test_join_token_is_random_stable_and_owner_only(tmp_path, monkeypatch):
     t1, t2 = bw.token(), bw.token()
     assert t1 == t2 and len(t1) >= 32
     assert (os.stat(tmp_path / "burrow" / "token").st_mode & 0o077) == 0
+
+
+# ───────────────────────────── the range (dormant AD practice lab, wraps GOAD) ─────────────────────────────
+rspec = importlib.util.spec_from_file_location("rng", REPO / "lifecycle" / "adrange.py")
+rng = importlib.util.module_from_spec(rspec)
+rspec.loader.exec_module(rng)
+RANGE = json.loads((REPO / "lifecycle" / "range.json").read_text())
+
+
+def host(ram_gb):
+    return {"ram_mb": ram_gb * 1024, "cpus": 4, "free_gb": 100, "wsl": False, "kvm": False, "tools": {}}
+
+
+def test_which_lab_fits_follows_real_ram_plus_the_seed_reserve():
+    assert rng.fitting_labs(host(8)) == []                                   # 8 GB: nothing — the honest answer
+    assert rng.fitting_labs(host(16)) == ["MINILAB"]                         # a 16 GB laptop: the first lab only
+    assert rng.fitting_labs(host(18))[0] == "GOAD-Light"
+    assert rng.fitting_labs(host(32))[0] == "GOAD"                           # a 32 GB box runs the full lab
+    assert 12000 < RANGE["labs"]["GOAD-Light"]["ram_mb"] + 1 and RANGE["reserve_ram_mb"] >= 4096
+
+
+def test_every_task_maps_to_a_goad_task_and_unknown_inputs_are_refused():
+    assert rng.goad_argv("hibernate", "MINILAB", "proxmox") == ["bash", "goad.sh", "-t", "stop", "-l", "MINILAB", "-p", "proxmox"]
+    assert rng.goad_argv("prune", "GOAD", "virtualbox")[3] == "destroy"
+    with pytest.raises(SystemExit):
+        rng.goad_argv("wake", "NOPE", "virtualbox")
+    with pytest.raises(SystemExit):
+        rng.goad_argv("wake", "GOAD", "kubevirt")
+
+
+def test_plan_carries_the_safety_warnings_and_cloud_is_flagged():
+    text = "\n".join(rng.plan("GOAD", "aws"))
+    assert "deliberately vulnerable" in text and "billing alarm" in text
+    assert "evaluation" in text and "-t destroy" in text
+
+
+def test_cloud_providers_need_explicit_cost_consent_and_never_touch_goad_without_it(monkeypatch):
+    calls = []
+    monkeypatch.setattr(rng, "sh", lambda *a, **k: calls.append(a) or (0, ""))
+    assert rng.run_task("wake", "MINILAB", "aws") == 2 and calls == []
+
+
+def test_dormant_range_refuses_to_wake_and_prune_needs_the_exact_phrase(monkeypatch, tmp_path):
+    monkeypatch.setattr(rng, "GOAD_DIR", str(tmp_path / "nothing"))
+    monkeypatch.setattr(rng, "RANGE_DIR", str(tmp_path))
+    assert rng.run_task("wake", "MINILAB", "virtualbox") == 1
+    (tmp_path / "keep").write_text("x")
+    assert rng.prune("MINILAB", "virtualbox", "yes please") == 1 and (tmp_path / "keep").exists()
+
+
+def test_task_verbs_are_run_inside_the_pinned_checkout(monkeypatch, tmp_path):
+    (tmp_path / ".git").mkdir()
+    monkeypatch.setattr(rng, "GOAD_DIR", str(tmp_path))
+    monkeypatch.setattr(rng, "fetch", lambda: str(tmp_path))
+    seen = []
+    monkeypatch.setattr(rng, "sh", lambda argv, cwd=None, **k: seen.append((argv, cwd)) or (0, ""))
+    assert rng.run_task("hibernate", "GOAD-Light", "virtualbox") == 0
+    assert seen == [(["bash", "goad.sh", "-t", "stop", "-l", "GOAD-Light", "-p", "virtualbox"], str(tmp_path))]
+
+
+def test_range_json_is_pinned_to_a_full_commit_and_lists_isolation_warnings():
+    assert re.fullmatch(r"[0-9a-f]{40}", RANGE["ref"])
+    assert any("isolated" in w for w in RANGE["warnings"])

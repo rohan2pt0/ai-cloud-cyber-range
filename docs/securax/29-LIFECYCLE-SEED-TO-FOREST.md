@@ -85,6 +85,14 @@ Aliases: `crawl walk run- run run+ fly` (`run-` = burrow). Choose the cloud with
 * **Behind a TLS-inspecting proxy** (common in banks) containerd cannot pull images unless it trusts the proxy CA. The twin mounts the host's CA bundle (`SECURAX_BURROW_CA`, else `SSL_CERT_FILE`, else the system bundle); real nodes need the same CA installed in the OS trust store.
 * **Limit of the twin:** it proves cluster mechanics and *scheduling*. A kernel that cannot nest containers (e.g. cgroup v1 micro-VMs) will show pods scheduled but not Running; Docker Desktop and GitHub runners can run them. It says nothing about real disks, NICs or GPUs.
 
+## The range: a sleeping Active Directory lab for OSCP practice
+OffSec's [OSCP+ exam](https://www.stationx.net/?p=2050639) is reported to have a mandatory Active Directory set (40 of 100 points, per one source: verify on OffSec's site), so an AD lab is the highest-value practice asset. **We do not rebuild one.** GOAD (Orange Cyberdefense) already is one, with providers for VirtualBox, VMware, Proxmox, AWS, Azure and Ludus, and native `start/stop/snapshot/reset/destroy` tasks. SecuRAX adds the lifecycle around it:
+* **Pinned and verified:** `lifecycle/range.json` pins GOAD to a full commit; `range fetch` refuses anything else.
+* **Honest sizing:** `./securax range soil` says which lab *fits this machine* using real numbers (sum of each lab's Vagrantfile; the sandbox re-derives them from upstream so they cannot drift): MINILAB 2 VMs/8 GB · GOAD-Light 3/12 GB · SCCM 4/16 GB · GOAD 5/20 GB, **plus ~6 GB for your OS and the seed**. On a 16 GB laptop that means MINILAB only; the full lab wants a ~32 GB box (your future burrow).
+* **Same verbs:** `range plan|install|wake|hibernate|snapshot|reset|status|prune`. Hibernate stops the VMs and keeps their disks; `snapshot`/`reset` give you the known-good state back after you wreck a domain on purpose; `prune` needs a typed phrase.
+* **Safety rails:** cloud providers are refused without `--i-accept-cloud-cost` (a deliberately vulnerable lab that bills); installing a lab that does not fit is refused; the isolation warning is printed before every install.
+* **Not done / unverified:** the VMs were **never run here** (no hypervisor, and an install takes hours and many GB). GOAD uses 180-day Windows evaluation images (rebuild after). KubeVirt was considered and dropped: nothing I found shows GOAD supports it, and porting it would be the opposite of 80/20.
+
 ## Honest limits (read before relying on it)
 * **No cloud account was available when this was built.** Terraform is validated and its *plans* are proved offline; an actual `apply` of EKS Auto Mode / GKE Autopilot / AKS / the k3s node, the
   Argo CD bootstrap and Velero restores have **not** been executed. Expect small first-run fixes; the dormancy and plan logic will not be the surprise.
