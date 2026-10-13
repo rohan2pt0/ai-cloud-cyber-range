@@ -10,13 +10,20 @@ resource "azurerm_resource_group" "seed" {
 }
 
 resource "azurerm_storage_account" "vault" {
-  name                            = substr(replace("${var.name}vault${random_id.suffix.hex}", "-", ""), 0, 24)
-  resource_group_name             = azurerm_resource_group.seed.name
-  location                        = azurerm_resource_group.seed.location
-  account_tier                    = "Standard"
-  account_replication_type        = "GRS"
-  min_tls_version                 = "TLS1_2"
-  allow_nested_items_to_be_public = false
+  name                              = substr(replace("${var.name}vault${random_id.suffix.hex}", "-", ""), 0, 24)
+  resource_group_name               = azurerm_resource_group.seed.name
+  location                          = azurerm_resource_group.seed.location
+  account_tier                      = "Standard"
+  account_replication_type          = "GRS"
+  min_tls_version                   = "TLS1_2"
+  allow_nested_items_to_be_public   = false
+  infrastructure_encryption_enabled = true
+
+  # Deny by default; trusted Azure services (backup, monitor) may still pass. Add your own IPs via the portal/CLI.
+  network_rules {
+    default_action = "Deny"
+    bypass         = ["AzureServices", "Logging", "Metrics"]
+  }
 
   blob_properties {
     versioning_enabled = true

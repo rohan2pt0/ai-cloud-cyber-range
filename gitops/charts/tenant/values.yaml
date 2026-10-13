@@ -5,7 +5,7 @@ tier: small            # small | medium | large
 oidcGroup: ""          # Keycloak group allowed into the namespace (RBAC); empty = no human access
 image:
   repository: ghcr.io/rohan2pt0/securax-llm-gateway
-  tag: latest
+  tag: "0.1.0"   # pinned release; bump with VERSION
 gateway:
   mode: enforce
   failMode: closed

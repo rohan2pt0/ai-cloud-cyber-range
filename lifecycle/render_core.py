@@ -45,6 +45,11 @@ spec:
       labels: {{ app: litellm }}
     spec:
       automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 10001
+        runAsGroup: 10001
+        seccompProfile: {{ type: RuntimeDefault }}
       containers:
         - name: litellm
           image: ghcr.io/berriai/litellm:main-stable
@@ -56,15 +61,24 @@ spec:
           env:
             - {{ name: HF_HUB_OFFLINE, value: "1" }}
             - {{ name: TRANSFORMERS_OFFLINE, value: "1" }}
+            - {{ name: HOME, value: /tmp }}
           readinessProbe: {{ httpGet: {{ path: /health/readiness, port: 4000 }}, periodSeconds: 10 }}
           livenessProbe: {{ httpGet: {{ path: /health/liveness, port: 4000 }}, initialDelaySeconds: 30 }}
           resources:
             requests: {{ cpu: 100m, memory: 512Mi }}
             limits: {{ cpu: "1", memory: 1Gi }}
-          volumeMounts: [{{ name: config, mountPath: /etc/litellm }}]
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities: {{ drop: ["ALL"] }}
+          volumeMounts:
+            - {{ name: config, mountPath: /etc/litellm }}
+            - {{ name: tmp, mountPath: /tmp }}
       volumes:
         - name: config
           configMap: {{ name: litellm-config }}
+        - name: tmp
+          emptyDir: {{}}
 ---
 apiVersion: v1
 kind: Service
