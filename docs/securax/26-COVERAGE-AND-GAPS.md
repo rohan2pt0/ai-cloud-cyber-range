@@ -68,7 +68,7 @@ Where AWS matters here and how SecuRAX meets it: **Bedrock** (provider plugin �
 5. `./securax evidence` — auditor pack (no prompts/keys; unit-tested for secret-freedom).
 6. `./securax scan` — Trivy over the images in use (needs internet for the vulnerability DB; not exercised by the sandbox).
 7. `./securax models` / daily self-correction of retired provider model names.
-8. `./securax autobuild` — gated, rollback-safe build loop (the path to building SecuRAX without paid Claude).
+8. `./securax autobuild` — gated, rollback-safe build loop (the path to building SecuRAX without paid Claude); its gate now includes `forge` (fail-to-pass, mutation, complexity; doc 44).
 
 ## 8. Ranked next (80/20) — what is still open
 1. **Pin the two floating image tags** (`litellm:main-stable`, `anythingllm:latest`) after verifying current stable tags, plus an SBOM (CycloneDX) in `scan`.

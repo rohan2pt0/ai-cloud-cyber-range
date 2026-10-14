@@ -22,7 +22,7 @@ and never weaken security to get green.
 ## Behavioural rules — how the agent behaves before it touches code
 Four habits that separate a trustworthy change from a plausible-looking one. They are the principles popularised by Andrej Karpathy's
 observations on LLM coding failures and the community CLAUDE.md built on them (forrestchang/andrej-karpathy-skills, which carries no
-licence, so this is our own wording; see doc 31). `./securax diffcheck` enforces the mechanical parts.
+licence, so this is our own wording; see doc 31). `./securax diffcheck` enforces the mechanical parts, and `./securax forge gate` checks that the tests really test the change (doc 44).
 1. **Think before coding.** State your assumptions. If the request has two readings, list both and ask: never pick one silently. If a
    simpler route exists, say so. Confused? Stop and name what is unclear.
 2. **Simplicity first.** The least code that solves the stated problem. No abstraction for a single use, no configurability nobody

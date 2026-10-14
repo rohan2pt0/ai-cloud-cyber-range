@@ -7,6 +7,7 @@ half the models. **The sandbox runs the real product and checks what a user woul
 ```bash
 python3 sandbox/run.py                      # every journey (≈10–20 min the first time, then faster)
 python3 sandbox/run.py -j fresh_install     # one journey
+python3 sandbox/run.py --no-retry           # never re-run a journey (default: a journey whose failures are ALL infrastructure — Docker daemon, network — is re-run once and flagged, doc 44)
 python3 sandbox/run.py --list
 python3 sandbox/run.py --keep               # leave the stack running to poke at it
 ```

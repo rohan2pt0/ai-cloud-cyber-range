@@ -2,6 +2,8 @@
 
 *Written 14 Oct 2026 from the vendors' own pages (linked at the end). Prices and limits change: check them before you pay.*
 
+> The cheap-model path is held to a stricter gate since doc 44 (`./securax forge gate`).
+
 ## What they are
 - **OpenCode** is an open-source (MIT) coding agent that runs in a terminal. You type a task; it reads and edits files and runs commands.
 - **OpenCode Go** is a subscription from the same team: **$10 a month** (a "Go Plus" tier is $40), billed in US dollars. It gives you hosted **open models** (DeepSeek V4.1 Flash, GLM, Kimi, MiMo, Qwen and others) behind one key. It is sold for **coding-agent traffic** and, unlike Cursor or Claude's own plans, it is not Claude or GPT: your veteran's point is that the open models are good enough for most coding work. I could not verify that claim; the build ladder below means you find out on your own tasks at no risk.

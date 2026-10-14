@@ -61,3 +61,10 @@ Or from PowerShell, in the old Windows folder, the same commands work as `.\secu
 
 ## If something fails
 Copy **everything** the window printed and paste it to me. Don't try to fix it yourself.
+
+## Something not working? Two double-clicks (no commands, no folders)
+In the SecuRAX folder (where you unzipped or cloned it) double-click:
+- **`WHATS-WRONG-Windows.bat`** (runs `./securax why`): shows what is running, what stopped and why, in plain words. If it is still unclear, copy the window's text into the chat.
+- **`UPDATE-Windows.bat`** (runs `./securax update`): gets the latest version safely (backs up first, goes back if the new version does not start).
+
+In Ubuntu you can also type `securax why`, `securax update`, `securax status` from **any folder** (`./securax shortcut` sets this up once; the installer already did it. Undo: `./securax shortcut off`). "No such file or directory" means you were in the wrong folder: this removes that problem.
