@@ -469,6 +469,12 @@ def j_tls_edge(sb: H.Sandbox, c: Checks):
     c.ok(rc != 0, "TLS 1.1 is refused", f"curl rc={rc}")
     rc, out = H.sh(["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}", "--tlsv1.3", "--cacert", ca, "--resolve", f"hub.{dom}:443:127.0.0.1", f"https://hub.{dom}/hub.html"], timeout=30)
     c.ok(out.strip() == "200", "TLS 1.3 works", out)
+    # post-quantum: a client that offers ML-KEM must get the HYBRID group; a classical-only client must still connect
+    ossl = "alpine/openssl@sha256:e8a2319d15637db5296c0ff540bb028cfabc480b22fcdd4a020582393d32673f"
+    for grp, want in (("X25519MLKEM768", "X25519MLKEM768"), ("X25519", "X25519")):
+        rc, out = H.sh(["docker", "run", "--rm", "--network", "host", "--entrypoint", "sh", "-v", f"{ca}:/ca.crt:ro", ossl, "-c",
+                        f"echo | openssl s_client -connect 127.0.0.1:443 -servername hub.{dom} -groups {grp} -CAfile /ca.crt 2>&1 | grep -E 'Negotiated TLS1.3 group|Verification:'"], timeout=240)
+        c.ok("Verification: OK" in out and (grp != "X25519MLKEM768" or want in out), f"a client offering {grp} connects" + (" and gets the post-quantum HYBRID key exchange" if grp == "X25519MLKEM768" else " (classical clients still work)"), tail(out, 200))
     rc, out = H.sh(["curl", "-s", "-o", "/dev/null", "-w", "%{http_code} %{redirect_url}", "--resolve", f"hub.{dom}:80:127.0.0.1", f"http://hub.{dom}/hub.html"], timeout=30)
     c.ok(out.startswith("301 https://hub."), "port 80 only redirects to HTTPS", out)
 
@@ -606,6 +612,67 @@ def j_backup(sb: H.Sandbox, c: Checks):
     bad.write_bytes(b"not a backup")
     rc, out = sb.securax("restore", str(bad), "--yes", timeout=60)
     c.ok(rc != 0 and "valid" in out, "a corrupt file is refused before anything is touched", tail(out, 200))
+
+
+@journey("backup_encrypted", "Quantum-safe backups on the REAL estate: `./securax crypto` reports the unprotected-backup exposure, `crypto keygen` + SECURAX_BACKUP_KEYFILE makes every backup AES-256 encrypted (not a readable archive), a wrong key and a tampered file are refused before anything is touched, and restore with the right key brings the account back.", slow=True)
+def j_backup_encrypted(sb: H.Sandbox, c: Checks):
+    sb.down()
+    H.sh(["docker", "volume", "rm", "-f", "vulnbank-range_openwebui"])
+    if not _start(sb, c, GEMINI_API_KEY=KEYS["GEMINI_API_KEY"]):
+        return
+    tdir = sb.clone.parent / "tls-home"
+    shutil.rmtree(tdir, ignore_errors=True)
+    tdir.mkdir(parents=True)
+    envp = {**os.environ, "SECURAX_TLS_DIR": str(tdir)}
+    c.ok(sb.wait_http(f"{H.WEBUI}/health", 420), "Open WebUI finished starting", sb.logs("open-webui", 10))
+    cred = {"name": "PQ User", "email": "pq@example.com", "password": "pq-pass-123", "profile_image_url": ""}
+    r = sb.http("POST", f"{H.WEBUI}/api/v1/auths/signup", cred)
+    if r.status != 200:
+        r = sb.http("POST", f"{H.WEBUI}/api/v1/auths/signin", {"email": cred["email"], "password": cred["password"]})
+    c.ok(r.status == 200, "an account exists (the data we will protect)", f"{r.status} {tail(r.text)}")
+    bdir = sb.clone.parent / "backups-enc"
+    shutil.rmtree(bdir, ignore_errors=True)
+    sb.set_env(SECURAX_BACKUP_DIR=str(bdir))
+    rc, out = H.sh(["bash", "./securax", "crypto", "--strict"], cwd=sb.clone, env=envp, timeout=240)
+    c.ok(rc == 1 and "Backups at rest" in out and "harvest-now-decrypt-later exposure" in out, "`crypto --strict` flags the unprotected backups (exit 1) before any key exists", tail(out, 300))
+    key = tdir / "backup.key"
+    rc, out = H.sh(["bash", "./securax", "crypto", "keygen", str(key)], cwd=sb.clone, env=envp, timeout=60)
+    c.ok(rc == 0 and key.exists() and key.stat().st_mode & 0o077 == 0 and len(key.read_text().strip()) == 64, "`crypto keygen` writes a 256-bit key file readable by its owner only", tail(out, 200))
+    rc, out = H.sh(["bash", "./securax", "crypto", "keygen", str(key)], cwd=sb.clone, env=envp, timeout=60)
+    c.ok(rc != 0 and "refusing to overwrite" in out, "…and refuses to overwrite an existing key (it may protect backups)")
+    sb.set_env(SECURAX_BACKUP_KEYFILE=str(key))
+    rc, out = H.sh(["bash", "./securax", "backup", str(bdir)], cwd=sb.clone, env=envp, timeout=400)
+    enc = sorted(bdir.glob("securax-*.tar.gz.gpg"))
+    c.ok(rc == 0 and len(enc) == 1 and not list(bdir.glob("securax-*.tar.gz")), "`backup` writes ONE encrypted file and no plaintext copy", tail(out, 300))
+    f = enc[0] if enc else bdir / "missing"
+    rc, _ = H.sh(["tar", "tzf", str(f)], timeout=30)
+    c.ok(rc != 0 and f.read_bytes()[:2] != b"\x1f\x8b", "the file is NOT a readable archive (no gzip header)")
+    rc, out = H.sh(["bash", "-c", f"GNUPGHOME=$(mktemp -d) gpg --batch --list-packets '{f}' 2>&1 | grep -E 'symkey|cipher'"], timeout=30)
+    c.ok("cipher 9" in out, "it is OpenPGP symmetric AES-256 (cipher 9), no public-key step", out.strip()[:200])
+    c.ok(f.stat().st_mode & 0o077 == 0, "…readable by its owner only")
+    rc, out = H.sh(["bash", "./securax", "crypto", "--strict"], cwd=sb.clone, env=envp, timeout=240)
+    c.ok(rc == 0, "`crypto --strict` is clean now: nothing under our control is exposed", tail(out, 300))
+    env_before = sb.env_path.read_text()
+    bad = bdir / "tampered.tar.gz.gpg"
+    raw = bytearray(f.read_bytes())
+    raw[-20] ^= 1
+    bad.write_bytes(bytes(raw))
+    rc, out = H.sh(["bash", "./securax", "restore", str(bad), "--yes"], cwd=sb.clone, env=envp, timeout=120)
+    c.ok(rc != 0 and "Could not decrypt" in out and sb.env_path.read_text() == env_before, "a TAMPERED file is refused before anything is touched", tail(out, 200))
+    wrong = tdir / "wrong.key"
+    wrong.write_text("0" * 64 + "\n")
+    rc, out = H.sh(["bash", "./securax", "restore", str(f), "--yes", "--keyfile", str(wrong)], cwd=sb.clone, env=envp, timeout=120)
+    c.ok(rc != 0 and "Could not decrypt" in out and sb.env_path.read_text() == env_before, "the WRONG key is refused before anything is touched", tail(out, 200))
+    sb.down()
+    H.sh(["docker", "volume", "rm", "-f", "vulnbank-range_openwebui"])
+    sb.env_path.write_text("# lost\n")
+    rc, out = H.sh(["bash", "./securax", "restore", str(f), "--yes", "--keyfile", str(key)], cwd=sb.clone, env=envp, timeout=1500)
+    c.ok(rc == 0 and sb.env_path.read_text() == env_before, "restore with the right key completes and your .env (keys) is back exactly", tail(out, 300))
+    c.ok(sb.wait_http(f"{H.WEBUI}/health", 420), "…Open WebUI starts again")
+    r = sb.http("POST", f"{H.WEBUI}/api/v1/auths/signin", {"email": cred["email"], "password": cred["password"]})
+    c.ok(r.status == 200 and (r.json() or {}).get("token"), "…and the SAME account signs in (data really restored from the encrypted file)", f"{r.status} {tail(r.text)}")
+    leftovers = [p for p in pathlib.Path("/tmp").glob("tmp*") if p.is_dir() and (p / "plain.tar.gz").exists()]
+    c.ok(not leftovers, "no decrypted copy of the backup is left in /tmp", str(leftovers))
 
 
 @journey("watchdog_heals_and_alerts", "`./securax watch`: notices an outage, heals it, and sends you an alert.")
@@ -1077,7 +1144,7 @@ def j_comply(sb: H.Sandbox, c: Checks):
     import hashlib
     import tarfile
     rc, out = H.sh(["bash", "./securax", "comply", "--verify"], cwd=sb.clone)
-    c.ok(rc == 0 and out.count(": consistent") == 4, "`comply --verify` passes on all four maps (RBI, SEBI, MIT AI-risk, NIST AI 600-1)", tail(out, 300))
+    c.ok(rc == 0 and out.count(": consistent") == 5, "`comply --verify` passes on all five maps (RBI, SEBI, MIT AI-risk, NIST AI 600-1, post-quantum)", tail(out, 300))
     rc, out = H.sh(["bash", "./securax", "comply", "cscrf", "--category", "qre"], cwd=sb.clone)
     c.ok(rc == 0 and "Qualified RE" in out and "entity obligations" in out, "`comply cscrf --category qre` narrows to that SEBI category", tail(out, 300))
     rc, out = H.sh(["bash", "./securax", "comply"], cwd=sb.clone)

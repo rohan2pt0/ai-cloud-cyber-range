@@ -114,6 +114,24 @@ preflight(){
   return 0
 }
 
+# ---- encrypted backups (docs/securax/41): OpenPGP symmetric AES-256, key = a key file kept OFF this machine, or a passphrase you type ----
+# No public-key step anywhere, so the file stays safe against a future quantum computer; its strength is the strength of the key file / passphrase.
+GPGSYM="--batch --yes --no-tty --pinentry-mode loopback --compress-algo none --cipher-algo AES256 --s2k-mode 3 --s2k-digest-algo SHA512 --s2k-count 65011712"
+gpg_run(){ GNUPGHOME="$GPGH" gpg "$@"; }
+gpg_prepare(){ command -v gpg >/dev/null 2>&1 || { C "Encrypted backups need gpg (Ubuntu/WSL:  sudo apt install gnupg)."; return 1; }
+  GPGH="$(mktemp -d)"; chmod 700 "$GPGH"; }
+gpg_cleanup(){ if [ -n "${GPGH:-}" ]; then GNUPGHOME="$GPGH" gpgconf --kill gpg-agent >/dev/null 2>&1 || true; rm -rf "$GPGH"; fi; return 0; }   # always 0: it runs in an EXIT trap, whose status would become the script's
+# backup_key DIR new|open [KEYFILE]  -> sets BKEY to a file holding the key. Order: explicit key file, SECURAX_BACKUP_KEYFILE, then a typed passphrase.
+backup_key(){ _kf="${3:-}"; [ -z "$_kf" ] && [ "${FORCE_PROMPT:-0}" != 1 ] && _kf="$(ev SECURAX_BACKUP_KEYFILE)"
+  if [ -n "$_kf" ]; then _kf="${_kf/#\~/$HOME}"
+    [ -s "$_kf" ] || { C "Backup key file not found (or empty): $_kf — plug in the USB stick / fix SECURAX_BACKUP_KEYFILE in .env."; return 1; }
+    BKEY="$_kf"; return 0; fi
+  [ -r /dev/tty ] || { C "No key file configured and no terminal to ask for a passphrase. Make a key file:  ./securax crypto keygen ~/securax-backup.key"; return 1; }
+  printf 'Backup passphrase (at least 12 characters): ' >&2; read -rs _p1 < /dev/tty; echo >&2
+  [ "${#_p1}" -ge 12 ] || { C "Too short: the backup holds your API keys. Use 12+ characters."; return 1; }
+  if [ "$2" = new ]; then printf 'Again: ' >&2; read -rs _p2 < /dev/tty; echo >&2; [ "$_p1" = "$_p2" ] || { C "The two passphrases differ — nothing written."; return 1; }; fi
+  ( umask 077; printf '%s' "$_p1" > "$1/.pw" ); BKEY="$1/.pw"; return 0; }
+
 cmd="${1:-up-status}"
 case "$cmd" in
   up|up-status)
@@ -619,7 +637,7 @@ $(tail -60 "$FB")"
     ;;
   comply)
     # Regulatory gap assessment: RBI NBFC Cybersecurity/Technology Directions 2026 and SEBI CSCRF, requirement by requirement, every claim
-    # verifiable. Entity-owned obligations are listed separately, never counted as covered.   ./securax comply [rbi|cscrf] [--category qre] [--md|--json|--verify]
+    # verifiable. Entity-owned obligations are listed separately, never counted as covered.   ./securax comply [rbi|cscrf|pqc] [--category qre] [--md|--json|--verify]
     shift; exec python3 "$ROOT/governance/regmap.py" "$@"
     ;;
   fitness)
@@ -710,8 +728,12 @@ $(tail -60 "$FB")"
     # DR / 3-2-1: one verified file holding your data (chats, accounts, workflows, sync data) + your .env keys.
     # Models are NOT included (large, re-downloadable). Copy the file to a 2nd disk + a cloud drive for 3-2-1.
     #   ./securax backup [DIR]        default DIR = ./backups or $SECURAX_BACKUP_DIR   (keeps the newest $BACKUP_KEEP, default 7)
-    DEST="${2:-$(ev SECURAX_BACKUP_DIR "$ROOT/backups")}"; mkdir -p "$DEST"; TS="$(date +%Y%m%d-%H%M%S)"; OUTF="$DEST/securax-$TS.tar.gz"
-    STG="$(mktemp -d)"; trap 'rm -rf "$STG"' EXIT
+    #   ./securax backup --passphrase  encrypt with a passphrase you type; or set SECURAX_BACKUP_KEYFILE (./securax crypto keygen) to encrypt every backup, unattended
+    DESTARG=""; FORCE_PROMPT=0; for _a in "${@:2}"; do case "$_a" in --passphrase) FORCE_PROMPT=1 ;; *) DESTARG="$_a" ;; esac; done
+    DEST="${DESTARG:-$(ev SECURAX_BACKUP_DIR "$ROOT/backups")}"; mkdir -p "$DEST"; TS="$(date +%Y%m%d-%H%M%S)"; OUTF="$DEST/securax-$TS.tar.gz"
+    STG="$(mktemp -d)"; PTMP="$(mktemp -d)"; trap 'rm -rf "$STG" "$PTMP"; gpg_cleanup' EXIT
+    ENCRYPT=0; { [ "$FORCE_PROMPT" = 1 ] || [ -n "$(ev SECURAX_BACKUP_KEYFILE)" ]; } && ENCRYPT=1
+    if [ "$ENCRYPT" = 1 ]; then gpg_prepare && backup_key "$PTMP" new || { C "Not writing an UNENCRYPTED backup when encryption was asked for."; exit 1; }; PLAIN="$PTMP/plain.tar.gz"; else PLAIN="$OUTF"; fi
     IMG="vulnbank/llm-gateway:dev"; docker image inspect "$IMG" >/dev/null 2>&1 || IMG="alpine"
     VOLS="$(docker volume ls -q --filter label=com.docker.compose.project=vulnbank-range 2>/dev/null | grep -v '_ollama$' || true)"
     [ -n "$VOLS" ] || C "(no data volumes yet — backing up settings only)"
@@ -726,20 +748,34 @@ $(tail -60 "$FB")"
     SPD="${SECURAX_HOME_DIR:-$HOME/.securax}/sprout"
     [ -d "$SPD" ] && tar czf "$STG/sprout-secrets.tgz" -C "$(dirname "$SPD")" sprout && echo "sprout-secrets" >> "$STG/MANIFEST" || true
     ( cd "$STG" && sha256sum ./* > SHA256SUMS 2>/dev/null || true )
-    tar czf "$OUTF" -C "$STG" . && tar tzf "$OUTF" >/dev/null || { C "Backup failed verification."; rm -f "$OUTF"; exit 1; }
+    tar czf "$PLAIN" -C "$STG" . && tar tzf "$PLAIN" >/dev/null || { C "Backup failed verification."; rm -f "$OUTF"; exit 1; }
+    if [ "$ENCRYPT" = 1 ]; then
+      OUTF="$OUTF.gpg"
+      ( umask 077; gpg_run $GPGSYM --passphrase-file "$BKEY" --symmetric -o "$OUTF" "$PLAIN" ) >/dev/null 2>&1 \
+        && gpg_run $GPGSYM --passphrase-file "$BKEY" -d "$OUTF" 2>/dev/null | tar tzf - >/dev/null \
+        || { C "Encrypting the backup failed verification — nothing was kept."; rm -f "$OUTF"; exit 1; }
+    fi
     chmod 600 "$OUTF" 2>/dev/null || true
-    ls -1t "$DEST"/securax-*.tar.gz 2>/dev/null | tail -n +$(( $(ev BACKUP_KEEP 7) + 1 )) | xargs -r rm -f
-    C "✔ Backup saved & verified: $OUTF ($(du -h "$OUTF" | cut -f1)) — contains your API keys; keep it private. Restore: ./securax restore <file>"
+    { ls -1t "$DEST"/securax-*.tar.gz "$DEST"/securax-*.tar.gz.gpg 2>/dev/null || true; } | tail -n +$(( $(ev BACKUP_KEEP 7) + 1 )) | xargs -r rm -f   # (|| true: a glob with no match makes ls fail, and pipefail would end the script before the success line)
+    if [ "$ENCRYPT" = 1 ]; then C "✔ Backup saved, ENCRYPTED (AES-256) & verified: $OUTF ($(du -h "$OUTF" | cut -f1)). Restore needs the same key file / passphrase: ./securax restore <file>"
+    else C "✔ Backup saved & verified: $OUTF ($(du -h "$OUTF" | cut -f1)) — contains your API keys, NOT encrypted; keep it private. To encrypt:  ./securax crypto keygen ~/securax-backup.key"; fi
     ;;
   restore)
     # ./securax restore FILE [--yes] — replaces current data with the backup (current .env is kept as .env.pre-restore).
-    F="${2:-}"; [ -f "$F" ] || { echo "usage: ./securax restore <backup.tar.gz> [--yes]   (see ./backups)"; exit 1; }
+    F="${2:-}"; [ -f "$F" ] || { echo "usage: ./securax restore <backup.tar.gz[.gpg]> [--yes] [--keyfile PATH]   (see ./backups)"; exit 1; }
+    YES=0; RKEY=""; _prev=""; for _a in "${@:3}"; do { [ "$_a" = "--yes" ] && YES=1; }; [ "$_prev" = "--keyfile" ] && RKEY="$_a"; _prev="$_a"; done
+    PTMP="$(mktemp -d)"; trap 'rm -rf "$PTMP" "${STG:-}"; gpg_cleanup' EXIT
+    case "$F" in *.gpg)
+      gpg_prepare && backup_key "$PTMP" open "$RKEY" || exit 1
+      gpg_run $GPGSYM --passphrase-file "$BKEY" -d -o "$PTMP/plain.tar.gz" "$F" >/dev/null 2>&1 \
+        || { C "Could not decrypt: wrong key file / passphrase, or the file was altered. Nothing was changed."; exit 1; }
+      F="$PTMP/plain.tar.gz" ;; esac
     tar tzf "$F" >/dev/null 2>&1 || { C "That file isn't a valid SecuRAX backup (unreadable archive)."; exit 1; }
-    if [ "${3:-}" != "--yes" ]; then
+    if [ "$YES" != 1 ]; then
       printf 'This REPLACES current chats/accounts/workflows with the backup. Continue? [y/N]: '; read -r YN < /dev/tty || YN="n"
       case "$YN" in [Yy]*) ;; *) C "cancelled."; exit 0;; esac
     fi
-    STG="$(mktemp -d)"; trap 'rm -rf "$STG"' EXIT
+    STG="$(mktemp -d)"
     tar xzf "$F" -C "$STG" || { C "Could not unpack the backup."; exit 1; }
     ( cd "$STG" && sha256sum -c SHA256SUMS >/dev/null 2>&1 ) || { C "Backup checksum mismatch — file is damaged. Nothing was changed."; exit 1; }
     IMG="vulnbank/llm-gateway:dev"; docker image inspect "$IMG" >/dev/null 2>&1 || IMG="alpine"
@@ -758,6 +794,7 @@ $(tail -60 "$FB")"
       [ -f "$ROOT/local/compose/.env" ] && cp "$ROOT/local/compose/.env" "$ROOT/local/compose/.env.pre-restore"
       cp "$STG/env" "$ROOT/local/compose/.env"; chmod 600 "$ROOT/local/compose/.env" 2>/dev/null || true; echo "  ✔ restored .env"
     fi
+    rm -rf "$STG" "$PTMP"; gpg_cleanup; trap - EXIT      # exec below skips the EXIT trap: do not leave the unpacked backup (it holds your keys) in /tmp
     C "Restarting…"; exec "$0" up
     ;;
   watch)
@@ -969,6 +1006,9 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
     echo "SecuRAX v${v} (${g})"
     ;;
   mcp)   exec python3 "$ROOT/mcp/securax_mcp.py" ;;
+  crypto)
+    exec python3 "$ROOT/governance/crypto.py" "${@:2}"
+    ;;
   start)
     # Start an optional add-on that lite mode skipped (Private Docs, Automation). It needs the Chat estate to be up already.
     preflight || exit 1
@@ -995,6 +1035,7 @@ START HERE (the 20% you use 80% of the time)
   notify         send the daily digest to Mattermost/Slack           capacity       what to switch on as more people join (1 to 100,000)
   tls            encrypt every web connection (HTTPS everywhere)        sync-link      one-tap sync setup for a phone / second computer
   start docs|flows|all   start Private Docs / Automation (skipped in lite mode)
+  crypto         cryptography inventory (CBOM) + quantum readiness; `crypto keygen PATH` makes the backup key file
 
 AI & CHAT
   keys / providers add|list   add free or paid AI keys             models         check which models your keys can use today
@@ -1009,7 +1050,7 @@ KEEP IT SAFE
   purple         attack your own AI rails and report what held     vet            check third-party skills/plugins before use
 
 REGULATORY & EVIDENCE (any regulator: RBI, SEBI, CERT-In, IRDAI, DPDP, others as data files)
-  comply [rbi|cscrf|mit-ai-risk|nist-ai-600-1]    requirement-by-requirement gap view     ccsp   CCSP practice map
+  comply [rbi|cscrf|mit-ai-risk|nist-ai-600-1|pqc]  requirement-by-requirement gap view     ccsp   CCSP practice map
   evidence       audit pack (checksummed)             incident ...   reporting clock: open, due, draft, file, seal, rollup
   regulated on   ONE switch: sign-in + data residency + strict cockpit (then fine-tune with the two below)
   gateway-auth   who may call the AI gateway          residency ...  which data may be processed where

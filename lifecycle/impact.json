@@ -78,7 +78,8 @@
     "backup_restore",
     "cockpit_page",
     "tls_edge",
-    "tls_internal"
+    "tls_internal",
+    "backup_encrypted"
    ],
    "affects": [
     "gateway",
@@ -162,7 +163,8 @@
     "incident_clock",
     "gateway_identity",
     "gateway_residency",
-    "cockpit_page"
+    "cockpit_page",
+    "backup_encrypted"
    ],
    "affects": []
   },

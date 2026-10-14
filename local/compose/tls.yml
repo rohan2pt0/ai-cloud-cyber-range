@@ -2,7 +2,7 @@
 # `./securax tls off` removes it. Nothing here changes the services themselves, only how the host reaches them.
 services:
   tls-edge:
-    image: nginx:1.27-alpine
+    image: nginx:1.30-alpine
     profiles: ["core", "security", "ai"]
     restart: unless-stopped
     mem_limit: 64m

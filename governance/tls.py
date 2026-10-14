@@ -303,6 +303,9 @@ ssl_certificate_key /etc/tls/server.key;
 ssl_protocols TLSv1.2 TLSv1.3;
 ssl_ciphers ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-RSA-AES128-GCM-SHA256;
 ssl_prefer_server_ciphers off;
+# Post-quantum: hybrid X25519+ML-KEM-768 key exchange first (needs OpenSSL >= 3.5, i.e. nginx >= 1.30 images; Chrome/Edge/Firefox offer it by default),
+# classical curves after it for clients that do not. An older OpenSSL would REFUSE to start with this line, so the image tag is pinned with it.
+ssl_ecdh_curve X25519MLKEM768:X25519:prime256v1:secp384r1;
 ssl_session_tickets off;            # keeps forward secrecy: no long-lived ticket key
 ssl_session_cache shared:SSL:2m;
 ssl_session_timeout 10m;
@@ -430,6 +433,7 @@ server {{
     ssl_certificate_key /etc/tls/{svc}.key;
     ssl_protocols TLSv1.2 TLSv1.3;
     ssl_ciphers ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-ECDSA-CHACHA20-POLY1305;
+    ssl_ecdh_curve X25519MLKEM768:X25519:prime256v1:secp384r1;
     ssl_session_tickets off;
     server_tokens off;
     client_max_body_size 100m;
