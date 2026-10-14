@@ -267,3 +267,31 @@ def test_internal_overlay_publishes_nothing_per_service_and_sidecars_share_the_s
         sc = svcs[f"{svc}-tls"]
         assert sc["network_mode"] == f"service:{svc}"
     assert [p["published"] for p in svcs["tls-edge"]["ports"]] and all(p["published"] in ("443", "80") for p in svcs["tls-edge"]["ports"])
+
+
+# ───────────────────────────── stopped services, probes, links (the reported incident) ─────────────────────────────
+@pytest.mark.parametrize("internal", [False, True])
+def test_the_command_center_gets_a_same_origin_status_probe_for_every_other_service(internal):
+    conf = tls.render_edge_conf("securax.localhost", internal=internal)
+    hub = conf[conf.index("server_name hub."):conf.index("# Chat")]
+    for _label, name, _svc, _port, _plain in tls.ENDPOINTS:
+        if name != "hub":
+            assert f"location = /_up/{name} " in hub
+    assert "/_up/hub" not in hub
+
+
+def test_a_stopped_optional_service_gets_a_plain_english_page_with_the_exact_command():
+    conf = tls.render_edge_conf("securax.localhost")
+    docs = conf[conf.index("server_name docs."):conf.index("# Automation")]
+    assert "error_page 502 503 504 /_down;" in docs and "./securax start docs" in docs and "is not running" in docs
+    flows = conf[conf.index("server_name flows."):conf.index("# Sync service")]
+    assert "./securax start flows" in flows
+    assert "_down" not in conf[conf.index("server_name hub."):conf.index("# Chat")].replace("/_up/", "")   # the probe must see the raw 502
+
+
+def test_every_hub_card_that_is_an_endpoint_uses_the_name_table():
+    hub = (ROOT / "guiding-map" / "hub.html").read_text("utf-8")
+    assert 'url:"http://"+H+":8088' not in hub                      # a hard-coded port is exactly what broke the Command Center behind the edge
+    for _label, name, _svc, _port, plain in tls.ENDPOINTS:
+        if name in ("hub", "chat", "docs", "flows"):
+            assert f'web("{name}",{plain})' in hub

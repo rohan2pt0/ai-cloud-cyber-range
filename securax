@@ -969,6 +969,19 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
     echo "SecuRAX v${v} (${g})"
     ;;
   mcp)   exec python3 "$ROOT/mcp/securax_mcp.py" ;;
+  start)
+    # Start an optional add-on that lite mode skipped (Private Docs, Automation). It needs the Chat estate to be up already.
+    preflight || exit 1
+    case "${2:-}" in docs) _svc="anythingllm"; _need="about 2 GB" ;; flows|n8n) _svc="n8n"; _need="about 1 GB" ;;
+      all) _svc="anythingllm n8n"; _need="about 3 GB" ;; *) C "usage: ./securax start docs | flows | all   (Private Docs = AnythingLLM; flows = n8n automation)"; exit 2 ;; esac
+    _list="$_svc"; if tls_on; then python3 "$ROOT/governance/tls.py" render >/dev/null 2>&1 || true; internal_on && for _s in $_svc; do _list="$_list ${_s}-tls"; done; fi
+    C "Starting: $_svc  (needs $_need of memory; the first start of Private Docs takes a minute or two)"
+    ( cd "$ROOT/local/compose" && docker compose --profile ai up -d $_list ) || { C "Could not start it. Run  ./securax doctor  and paste the output."; exit 1; }
+    for _s in $_svc; do case "$_s" in anythingllm) _n=docs; _pt=3001 ;; *) _n=flows; _pt=5678 ;; esac
+      _i=0; while [ "$_i" -lt 40 ] && ! web_up "$_n" "$_pt"; do sleep 4; _i=$((_i+1)); done
+      if web_up "$_n" "$_pt"; then C "$_n is running: $(web_url "$_n" "$_pt" /)"; else C "$_n is still starting (large first start). Reload the Command Center in a minute; if it stays grey run  ./securax doctor"; fi
+    done
+    ;;
   down)  ( cd "$ROOT/local/compose" && docker compose --profile ai down ) ; C "stopped." ;;
   help|-h|--help)
     cat <<'HELP'
@@ -981,6 +994,7 @@ START HERE (the 20% you use 80% of the time)
   cockpit        one-page health view: risks, to-dos, trends         storage        how much space you use and when it runs out
   notify         send the daily digest to Mattermost/Slack           capacity       what to switch on as more people join (1 to 100,000)
   tls            encrypt every web connection (HTTPS everywhere)        sync-link      one-tap sync setup for a phone / second computer
+  start docs|flows|all   start Private Docs / Automation (skipped in lite mode)
 
 AI & CHAT
   keys / providers add|list   add free or paid AI keys             models         check which models your keys can use today

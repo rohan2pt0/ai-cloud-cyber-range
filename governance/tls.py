@@ -337,12 +337,45 @@ server {
 """
 
 
+# services that are OPTIONAL (skipped in lite mode) -> what to type to start them. Used for the friendly "not running" page.
+OPTIONAL = {"docs": ("Private Docs", "docs"), "flows": ("Automation (n8n)", "flows")}
+
+
+def _upstream(svc: str, port: int, internal: bool) -> tuple[str, str]:
+    if internal and svc in {n for n, _p, _l in INTERNAL}:
+        return f"https://{svc}.securax.internal:{SIDECAR_PORT}", f"    proxy_ssl_name {svc}.securax.internal;\n"
+    return f"http://{svc}:{port}", ""
+
+
+def _probes(internal: bool) -> str:
+    """Same-origin status probes for the Command Center: /_up/<name> proxies to that service and returns ITS status (502 = not running).
+    A browser's cross-origin no-cors fetch cannot read a status, so a stopped service used to be shown as running."""
+    out = []
+    for _label, name, svc, port, _plain in ENDPOINTS:
+        if name == "hub":
+            continue
+        up, extra = _upstream(svc, port, internal)
+        out.append(f"    location = /_up/{name} {{\n        set $pu {up};\n{extra}        rewrite ^ / break;\n        proxy_pass $pu;\n    }}\n")
+    return "".join(out)
+
+
+def _down_page(label: str, name: str) -> str:
+    """What a person sees when a service is not running: a sentence and the exact command, not a bare nginx 502."""
+    cmd = f"./securax start {OPTIONAL[name][1]}" if name in OPTIONAL else "./securax up"
+    why = ("It is optional and is skipped on smaller machines (lite mode)." if name in OPTIONAL else "It is not responding (it may still be starting).")
+    body = (f"<!doctype html><meta charset=utf-8><title>{label} is not running</title>"
+            f"<body style=\"font:16px system-ui;max-width:40em;margin:4em auto;padding:0 1em\"><h1>{label} is not running</h1>"
+            f"<p>{why}</p><p>Start it, then reload this page:</p><pre>{cmd}</pre>"
+            f"<p><a href=\"https://hub.{{dom}}/hub.html\">Back to the Command Center</a></p>")
+    return body
+
+
 def render_edge_conf(dom: str | None = None, internal: bool = False) -> str:
     dom = dom or domain()
     out = [EDGE_HEAD]
     if internal:
         out.append("""
-# Internal TLS is ON: the edge talks to every service over HTTPS and VERIFIES it against the estate's own CA.
+# Internal TLS is ON: the edge talks to every service over HTTPS too and VERIFIES it against the estate's own CA.
 proxy_ssl_verify on;
 proxy_ssl_trusted_certificate /etc/tls/ca.crt;
 proxy_ssl_server_name on;
@@ -358,7 +391,7 @@ server {{
     server_name {name}.{dom};
     root /usr/share/nginx/html;
     index index.html;
-    location / {{ try_files $uri $uri/ /index.html; }}
+{_probes(internal)}    location / {{ try_files $uri $uri/ /index.html; }}
     location = /hub           {{ return 302 /hub.html; }}
     location = /apps          {{ return 302 /hub.html; }}
     location = /portal/hub.html {{ return 302 /hub.html; }}
@@ -366,12 +399,13 @@ server {{
 }}
 """)
             continue
-        if internal and svc in {n for n, _p, _l in INTERNAL}:
-            up = f"https://{svc}.securax.internal:{SIDECAR_PORT}"
-            extra = f"    proxy_ssl_name {svc}.securax.internal;\n"
-        else:
-            up, extra = f"http://{svc}:{port}", ""
+        up, extra = _upstream(svc, port, internal)
         names = f"{name}.{dom}" + (" localhost 127.0.0.1" if (internal and svc == "gateway") else "")
+        probes = _probes(internal) if name == "hub" else ""
+        down = ""
+        if name != "hub" and name != "api":
+            page = _down_page(label, name).replace("{dom}", dom)
+            down = f"    error_page 502 503 504 /_down;\n    location = /_down {{ internal; default_type text/html; return 502 '{page}'; }}\n"
         out.append(f"""
 # {label}
 server {{
@@ -379,7 +413,7 @@ server {{
     http2 on;
     server_name {names};
     set $up {up};
-{extra}    location / {{ proxy_pass $up; }}
+{extra}{probes}{down}    location / {{ proxy_pass $up; }}
 }}
 """)
     return "".join(out)

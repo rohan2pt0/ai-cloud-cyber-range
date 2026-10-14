@@ -54,5 +54,14 @@ Proven by real-stack journey `tls_internal` (19 checks): the estate restarts wit
 
 `./securax tls status` lists what applies to your current setup every time.
 
+## When a page says "not running"
+Private Docs (AnythingLLM) and Automation (n8n) are **optional**: on machines that `./securax profile` sizes as tiny/small/medium (lite mode) they are not started, so their names have nothing behind them. The edge now says so in plain English with the exact command instead of a bare `502 Bad Gateway`, and the Command Center shows them grey (not green).
+
+    ./securax start docs      # Private Docs  (about 2 GB of memory)
+    ./securax start flows     # Automation / n8n (about 1 GB)
+    ./securax start all
+
+The Command Center's dots over HTTPS come from `https://hub.<domain>/_up/<name>`, which the edge answers with the service's real status (a browser cannot read the status of a cross-origin request, which is why a stopped service used to look "running"). Every link on the Command Center follows the page's scheme: by name over HTTPS, `localhost:<port>` over plain HTTP. A bookmark such as `https://hub.<domain>:8088` is a leftover from plain-HTTP days; use `https://hub.<domain>/hub.html`.
+
 ## Regulators
 RBI NBFC 118 (strong cryptography) and 21(9) (PKI) and SEBI CSCRF PR.DS.S1–S3 now cite this work with the shortfalls above stated; none was raised to "supported". The cockpit shows an **Encryption in transit** indicator (amber on plain HTTP, red when the regulated profile is on).
