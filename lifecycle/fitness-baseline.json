@@ -1,13 +1,10 @@
 {
   "supply_chain": {
-    "infra/terraform/lifecycle/modules/tree-aws/user_data.sh.tftpl::pipe-to-shell": "REAL, follow-up: Tailscale installer piped into sh on the tree node. Pin it by checksum or use the distro package repo.",
     "lifecycle/fitness.py::pipe-to-shell": "self-referential: documentation of the rule",
     "lifecycle/tests/test_vet.py::eval-b64": "self-referential: attack fixtures for the scanner's tests",
     "lifecycle/tests/test_vet.py::pipe-to-shell": "self-referential: attack fixtures for the scanner's tests",
     "lifecycle/vet.py::eval-b64": "self-referential: the scanner's own detection patterns",
     "lifecycle/vet.py::pipe-to-shell": "self-referential: the scanner's own detection patterns",
-    "local/scripts/bootstrap-laptop.sh::pipe-to-shell": "REAL, follow-up: installer piped into sh in the laptop bootstrap. Pin by checksum.",
-    "local/scripts/wsl-setup.sh::pipe-to-shell": "REAL, follow-up: installer piped into sh in the WSL setup. Pin by checksum.",
     "sandbox/run.py::pipe-to-shell": "self-referential: the vet_gate journey's malicious fixture"
   },
   "undocumented_commands": {}

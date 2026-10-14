@@ -20,9 +20,10 @@ wsl --shutdown
 
 ## Step 3 — install SecuRAX (inside Ubuntu)
 1. Start menu → type **Ubuntu** → open it (a black window; first time it asks you to create a username/password — pick anything simple, and remember it).
-2. Paste this one line and press Enter (Ubuntu may ask for your password once; typing is invisible, that's normal):
+2. Paste these two lines and press Enter (Ubuntu may ask for your password once; typing is invisible, that's normal). The script is saved to a file first instead of being piped straight into a shell, so you can read it (`less wsl-setup.sh`) before it runs:
 ```bash
-curl -fsSL https://raw.githubusercontent.com/rohan2pt0/ai-cloud-cyber-range/main/local/scripts/wsl-setup.sh | bash
+curl -fsSLo wsl-setup.sh https://raw.githubusercontent.com/rohan2pt0/ai-cloud-cyber-range/main/local/scripts/wsl-setup.sh
+bash wsl-setup.sh
 ```
 It downloads SecuRAX into Ubuntu's fast disk, keeps your old keys, starts everything and tells you when it's ready. The first start downloads a few GB — be patient.
 

@@ -9,7 +9,7 @@ The architecture makes promises: a guardrail in every request that never becomes
 | rails-memory (RSS after importing the guardrails) | 13 MB | 40 MB | low-resource promise |
 | gateway-cold-start / gateway-memory | ~0.4 s / 46 MB | 5 s / 120 MB | wake-up and footprint |
 | runtime-deps (gateway) | 3 | 6 | every dependency is attack surface and RAM |
-| **supply-chain** *(ratchet)* | 9 known critical `vet` findings in our own tree | may only shrink | new `curl \| sh` or decode-and-exec fails the build. 3 are **real** (our installers, follow-up: pin by checksum); 6 are the scanner's own pattern strings and fixtures. Each carries its reason in `fitness-baseline.json` |
+| **supply-chain** *(ratchet)* | 6 known critical `vet` findings in our own tree (was 9: the three real `curl \| sh` installers are fixed) | may only shrink | new `curl \| sh` or decode-and-exec fails the build. the remaining 6 are the scanner's own patterns and test fixtures|
 | **commands-documented** *(ratchet)* | 0 undocumented | 0 | a command nobody can find does not exist. It caught `organ`/`organ-check` (now documented in doc 29) and, on its own first day, its own sibling commands |
 | burrow wake-time budgets | enforced in the `lifecycle_burrow` journey | first dig ≤ 120 s, wake ≤ 90 s | "wakes when you want it" is a number |
 

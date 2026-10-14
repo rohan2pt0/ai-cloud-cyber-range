@@ -10,6 +10,15 @@ variable "roots_volume_id" { type = string }
 variable "kms_key_arn" { type = string }
 variable "vault_bucket_arn" { type = string }
 variable "k3s_version" { type = string }
+# The k3s install script is pinned by hash (see user_data.sh.tftpl). Bump these together with k3s_version; keep in step with lifecycle/burrow.json.
+variable "k3s_installer_url" {
+  type    = string
+  default = "https://raw.githubusercontent.com/k3s-io/k3s/v1.31.4+k3s1/install.sh"
+}
+variable "k3s_installer_sha256" {
+  type    = string
+  default = "f60c3d8940dfc896f7d83aaf57726c91cf21afc4bca40036472df108d9700b4b"
+}
 variable "gitops_repo" { type = string }
 variable "gitops_ref" { type = string }
 variable "argocd_version" { type = string }
@@ -76,13 +85,15 @@ resource "aws_security_group" "tree" {
 
 locals {
   user_data = templatefile("${path.module}/user_data.sh.tftpl", {
-    k3s_version        = var.k3s_version
-    volume_id_nodash   = replace(var.roots_volume_id, "-", "")
-    tailscale_auth_key = var.tailscale_auth_key
-    hostname           = var.name
-    gitops_repo        = var.gitops_repo
-    gitops_ref         = var.gitops_ref
-    argocd_version     = var.argocd_version
+    k3s_version          = var.k3s_version
+    k3s_installer_url    = var.k3s_installer_url
+    k3s_installer_sha256 = var.k3s_installer_sha256
+    volume_id_nodash     = replace(var.roots_volume_id, "-", "")
+    tailscale_auth_key   = var.tailscale_auth_key
+    hostname             = var.name
+    gitops_repo          = var.gitops_repo
+    gitops_ref           = var.gitops_ref
+    argocd_version       = var.argocd_version
   })
 }
 

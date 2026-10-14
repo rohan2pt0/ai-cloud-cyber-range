@@ -53,7 +53,7 @@ LICENSES = [  # (spdx, regex over the LICENSE text, ok to vendor & redistribute?
 
 # (rule, severity, regex, description) — applied to CODE and shell-ish files
 SURFACE_RULES = [
-    ("pipe-to-shell", "critical", re.compile(r"(curl|wget)[^\n|]*\|\s*(sudo\s+)?(ba|z)?sh\b", re.I), "downloads and executes code (curl | sh)"),
+    ("pipe-to-shell", "critical", re.compile(r"(curl|wget)[^\n|]*\|\s*(sudo\s+)?(\w+=\S+\s+)*(ba|z)?sh\b", re.I), "downloads and executes code (curl | sh)"),
     ("eval-b64", "critical", re.compile(r"(base64\s+(-d|--decode)|b64decode|atob)\s*\(?[^\n]{0,80}\b(eval|exec|sh|bash)\b", re.I), "decodes a blob and runs it"),
     ("reads-credentials", "high", re.compile(r"(~|\$HOME|os\.path\.expanduser\([^)]*\))/?\.(ssh|aws|gnupg|kube|docker)\b|\.npmrc|\.netrc|id_rsa|credentials\.json", re.I), "reads credential locations"),
     ("env-exfil", "high", re.compile(r"(process\.env|os\.environ|\$\{?[A-Z_]*(KEY|TOKEN|SECRET)[A-Z_]*\}?)[^\n]{0,120}(curl|wget|fetch\(|requests\.(post|get)|http\.request|axios|nc\s)", re.I), "environment/secrets near a network call"),
