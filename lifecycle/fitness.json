@@ -1,0 +1,21 @@
+{
+  "about": "FITNESS FUNCTIONS: architectural promises written as numbers, checked on every change. Budgets are deliberately generous (CI machines are noisy): they catch a REGRESSION (a regex that goes quadratic, a dependency that triples memory), not a 10 % wobble. Ratchets only ever tighten.",
+  "budgets": {
+    "rails_worst_case_ms": 100,
+    "rails_import_rss_mb": 40,
+    "gateway_cold_start_s": 5,
+    "gateway_rss_mb": 120,
+    "gateway_runtime_deps": 6,
+    "intel_snapshot_total_kb": 1000
+  },
+  "wake_budgets_s": {
+    "burrow_twin_first_dig": 120,
+    "burrow_twin_wake": 90
+  },
+  "gameday_slo_s": {
+    "node_detect": 90,
+    "node_recover": 90,
+    "control_plane_back": 90,
+    "restore_total": 120
+  }
+}

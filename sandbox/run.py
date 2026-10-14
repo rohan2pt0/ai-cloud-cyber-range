@@ -817,6 +817,27 @@ def j_webui(sb: H.Sandbox, c: Checks):
 
 
 # ═══════════════════════════════════════════ runner ═══════════════════════════════════════════
+@journey("gameday", "`./securax gameday`: real failures injected into the burrow twin (node loss, control-plane restart, an etcd snapshot-RESTORE disaster drill); each must be detected, contained, recovered within its SLO; the twin is left as found.", slow=True)
+def j_gameday(sb: H.Sandbox, c: Checks):
+    home = sb.clone.parent / "sxhome-gameday"
+    shutil.rmtree(home, ignore_errors=True)
+    H.sh(["docker", "rm", "-f", *BURROW_NODES])
+    H.sh(["docker", "volume", "rm", "-f", *BURROW_NODES])
+    H.sh(["docker", "network", "rm", "securax-burrow-net"])
+    out_dir = sb.clone.parent / "gameday-out"
+    shutil.rmtree(out_dir, ignore_errors=True)
+    env = {**os.environ, "SECURAX_HOME_DIR": str(home)}
+    rc, out = H.sh(["bash", "./securax", "gameday", "list"], cwd=sb.clone, env=env)
+    c.ok(rc == 0 and all(n in out for n in ("node-loss", "control-plane-restart", "snapshot-restore")), "`gameday list` names every scenario", tail(out, 300))
+    rc, out = H.sh(["bash", "./securax", "gameday", "all", "--out", str(out_dir)], cwd=sb.clone, env=env, timeout=1500)
+    c.ok(rc == 0 and out.count("→ PASS") == 3 and "FAIL" not in out, "all three scenarios PASS (detected, contained, recovered within SLO)", tail(out, 900))
+    c.ok("data restored: the 'before' marker is back" in out and "rewound: the rogue post-snapshot marker is gone" in out,
+         "the DR drill really restored the snapshot: the pre-disaster data is back and the post-snapshot change is gone")
+    c.ok(not _running(["securax-burrow"]) and not H.sh(["docker", "ps", "-aq", "--filter", "name=securax-burrow"])[1].strip(), "the twin was LEFT AS FOUND (it was dormant; nothing remains)")
+    mds = sorted(out_dir.glob("gameday-*.md"))
+    c.ok(bool(mds) and "Does **not** prove" in mds[-1].read_text() and "snapshot-restore" in mds[-1].read_text(), "a game-day report was written, including what it does not prove")
+
+
 @journey("offline_power", "Offline intel + low-resource model choice: snapshots (CISA KEV, MITRE ATT&CK) work with NO network, a failed refresh never destroys one, `bench` picks the model that fits.")
 def j_offline(sb: H.Sandbox, c: Checks):
     home = sb.clone.parent / "sxhome-offline"
@@ -1051,8 +1072,12 @@ def j_burrow(sb: H.Sandbox, c: Checks):
     rc, out = _lc(sb, "stages")
     c.ok(rc == 0 and "burrow" in out and "○ burrow" in out, "`stages` lists the burrow, dormant", tail(out, 300))
     c.ok(not _running(["securax-burrow"]), "dormant means DORMANT: no twin container exists before you grow it")
+    fit = json.loads((sb.clone / "lifecycle" / "fitness.json").read_text())["wake_budgets_s"]
+    t_dig = time.time()
     rc, out = _lc(sb, "grow", "burrow", timeout=900)
+    dig_s = time.time() - t_dig
     c.ok(rc == 0 and "3 nodes Ready" in out, "`grow burrow` digs a 3-node cluster (real k3s) and waits until every node is Ready", tail(out, 500))
+    c.ok(dig_s <= fit["burrow_twin_first_dig"], f"FITNESS: the first dig took {dig_s:.0f}s (budget {fit['burrow_twin_first_dig']}s)")
     rc, out = _bk("get", "nodes", "-l", "securax.io/gpu=nvidia", "-o", "name")
     c.ok(out.strip() == "node/agent2", "only the GPU node carries the GPU label", out)
     tok = home / "burrow" / "token"
@@ -1119,8 +1144,11 @@ spec:
     rc, out = _lc(sb, "stages")
     c.ok("◌ burrow" in out, "`stages` calls it hibernating (data kept), not dormant", tail(out, 300))
 
+    t_wake = time.time()
     rc, out = _lc(sb, "grow", "burrow", timeout=900)
+    wake_s = time.time() - t_wake
     c.ok(rc == 0 and "3 nodes Ready" in out and "Waking" in out, "waking is the same command: it wakes the SAME cluster (does not dig a new one)", tail(out, 300))
+    c.ok(wake_s <= fit["burrow_twin_wake"], f"FITNESS: the wake took {wake_s:.0f}s (budget {fit['burrow_twin_wake']}s)")
     c.ok(_bk("get", "configmap", "memory", "-o", "jsonpath={.data.note}")[1].strip() == "remembered", "the cluster remembered its data across hibernation")
     c.ok(_bwait(lambda: pods_on("app=gpu-probe") == ["agent2"] and len(set(pods_on("app=spread"))) == 3, 180),
          "…the nodes were uncordoned and every workload was placed where it belongs again", f"{pods_on('app=gpu-probe')} {pods_on('app=spread')}")

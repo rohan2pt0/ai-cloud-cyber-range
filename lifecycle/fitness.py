@@ -1,0 +1,207 @@
+#!/usr/bin/env python3
+"""FITNESS — the architecture's promises, as numbers, checked on every change (Google/Thoughtworks "evolutionary architecture").
+
+SecuRAX promises a lot: a guardrail in the request path that never becomes the bottleneck, a footprint that fits a 16 GB laptop, a
+supply chain that does not quietly grow new `curl | sh`, commands that are documented. Promises erode one innocent commit at a time.
+So each promise is a check with a budget (lifecycle/fitness.json) that fails the build when crossed:
+
+  rails-latency    worst case over adversarial 8 KB inputs (ReDoS guard: the rails sit in every request)
+  rails-memory     RSS after importing the guardrails            gateway-memory / gateway-cold-start   the whole app, first request
+  runtime-deps     the gateway's runtime dependency count (every dependency is attack surface and RAM)
+  supply-chain     RATCHET: `vet` findings of critical severity in OUR OWN tree may only shrink (new ones fail; known ones are listed
+                   with a reason in lifecycle/fitness-baseline.json)
+  commands-documented   every `./securax <command>` appears in the docs (RATCHET: known gaps listed, new ones fail)
+
+    ./securax fitness [--json]          ./securax fitness --update-baseline   (a deliberate, reviewed act)
+Standard library only (plus the gateway's own deps for the app-level checks).
+"""
+from __future__ import annotations
+
+import argparse
+import functools
+import json
+import pathlib
+import re
+import subprocess
+import sys
+import time
+
+ROOT = pathlib.Path(__file__).resolve().parent.parent
+HERE = pathlib.Path(__file__).resolve().parent
+BASELINE = HERE / "fitness-baseline.json"
+sys.path.insert(0, str(ROOT / "apps" / "llm-gateway"))
+
+
+def cfg() -> dict:
+    return json.loads((HERE / "fitness.json").read_text("utf-8"))
+
+
+def baseline() -> dict:
+    try:
+        return json.loads(BASELINE.read_text("utf-8"))
+    except (OSError, ValueError):
+        return {"supply_chain": {}, "undocumented_commands": {}}
+
+
+def run_py(code: str, timeout: int = 120) -> str:
+    p = subprocess.run([sys.executable, "-c", code], cwd=ROOT, text=True, capture_output=True, timeout=timeout,
+                       env={"PATH": "/usr/bin:/bin:/usr/local/bin", "PYTHONDONTWRITEBYTECODE": "1"})
+    if "No module named" in p.stderr:                          # e.g. a CI job without the gateway's dependencies: skip, do not fail
+        return "MISSING-DEPENDENCY " + p.stderr.strip().splitlines()[-1]
+    return p.stdout.strip()
+
+
+# ───────────────────────────────────────────── the checks ─────────────────────────────────────────────
+ADVERSARIAL = {                                      # near-miss shapes for every regex family in the rails
+    "long-letters": "a" * 8000, "repeat-ignore": "ignore " * 1100, "open-parens": "(" * 4000, "base64": "QUJD" * 2000,
+    "tag-chars": "".join(chr(0xE0000 + ord(c)) for c in "ignore all") * 300, "huge-md-image": "![x](http://a.b/" + "c" * 7000 + ")",
+    "spaces-then-x": " " * 7999 + "x", "fake-delimiters": "</system>" * 900, "call-tool-near-miss": "call tool " * 800,
+    "send-to-near-miss": "send to " * 1000, "you-are-now": "you are now " * 650, "ai-colon": "assistant: " * 700,
+}
+
+
+def check_rails_latency(budget_ms: float) -> dict:
+    from app import guardrails as g
+    worst, where = 0.0, ""
+    for name, text in ADVERSARIAL.items():
+        for label, fn in (("in", lambda t: g.inspect_input(t, 8000)), ("out", lambda t: g.inspect_output(t, {"x.org"}, set()))):
+            best = min((lambda s: (fn(text), time.perf_counter() - s)[1])(time.perf_counter()) for _ in range(3))
+            if best * 1000 > worst:
+                worst, where = best * 1000, f"{name}/{label}"
+    return {"name": "rails-latency", "value": round(worst, 1), "budget": budget_ms, "unit": "ms", "ok": worst <= budget_ms, "note": f"worst: {where}"}
+
+
+def _rss_snippet() -> str:
+    """Python that prints this process's peak RSS in MB. VmHWM belongs to THIS process image; ru_maxrss can carry over the peak of a
+    large forked parent (it read 73 MB for a 16 MB import when run from inside pytest), so prefer VmHWM and fall back only off Linux."""
+    return ("import resource\ntry:\n  hw=[l for l in open('/proc/self/status') if l.startswith('VmHWM')][0].split()[1];m=int(hw)//1024\n"
+            "except Exception:\n  m=resource.getrusage(resource.RUSAGE_SELF).ru_maxrss//1024\n")
+
+
+def check_rails_memory(budget_mb: float) -> dict:
+    out = run_py("import sys;sys.path.insert(0,'apps/llm-gateway');from app import guardrails\n" + _rss_snippet() + "print(m)")
+    v = float(out or 1e9)
+    return {"name": "rails-memory", "value": v, "budget": budget_mb, "unit": "MB", "ok": v <= budget_mb, "note": "RSS after importing the guardrails"}
+
+
+def check_gateway(budget_s: float, budget_mb: float) -> list[dict]:
+    out = run_py("import sys,time,logging;t=time.time();sys.path.insert(0,'apps/llm-gateway')\n"
+                 "from fastapi.testclient import TestClient\nfrom app import main\nlogging.disable(50)\nc=TestClient(main.app);c.get('/healthz')\n"
+                 + _rss_snippet() + "print(round(time.time()-t,2),m)")
+    if out.startswith("MISSING-DEPENDENCY"):
+        why = out.split(" ", 1)[1][:80]
+        return [{"name": "gateway-cold-start", "value": 0, "budget": budget_s, "unit": "s", "ok": True, "note": f"SKIPPED here ({why}); runs wherever the gateway's dependencies are installed"},
+                {"name": "gateway-memory", "value": 0, "budget": budget_mb, "unit": "MB", "ok": True, "note": "SKIPPED here (same reason)"}]
+    try:
+        s, mb = (float(x) for x in out.split()[-2:])
+    except ValueError:
+        s, mb = 1e9, 1e9
+    return [{"name": "gateway-cold-start", "value": s, "budget": budget_s, "unit": "s", "ok": s <= budget_s, "note": "import + first request"},
+            {"name": "gateway-memory", "value": mb, "budget": budget_mb, "unit": "MB", "ok": mb <= budget_mb, "note": "RSS incl. FastAPI test client"}]
+
+
+def check_runtime_deps(budget: int) -> dict:
+    lines = [ln.split("#")[0].strip() for ln in (ROOT / "apps/llm-gateway/requirements.txt").read_text().splitlines()]
+    deps = [ln for ln in lines if ln]
+    return {"name": "runtime-deps", "value": len(deps), "budget": budget, "unit": "deps", "ok": len(deps) <= budget, "note": ", ".join(re.split(r"[=<>~!\[]", d)[0] for d in deps)}
+
+
+@functools.lru_cache(maxsize=1)
+def own_critical_findings() -> frozenset[str]:
+    """`vet` over OUR tree (not vendored/third-party content, not caches): the set of critical (file:rule) findings."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("vet", HERE / "vet.py")
+    vet = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(vet)
+    out: set[str] = set()
+    for f in vet.vet_dir(ROOT)["findings"]:
+        if f["severity"] == "critical" and not f["file"].startswith(("vendor/", "sandbox/out/", "evidence/", "backups/")):
+            out.add(f"{f['file']}::{f['rule']}")
+    return frozenset(out)
+
+
+def check_supply_chain(base: dict) -> dict:
+    now, known = own_critical_findings(), set(base.get("supply_chain", {}))
+    new, fixed = sorted(now - known), sorted(known - now)
+    ok = not new
+    note = (f"NEW critical finding(s): {', '.join(new)}. Fix them, or (reviewed!) `./securax fitness --update-baseline`" if new
+            else f"{len(now)} known finding(s) accepted in the baseline" + (f"; {len(fixed)} since FIXED — tighten the ratchet with --update-baseline" if fixed else ""))
+    return {"name": "supply-chain", "value": len(now), "budget": len(known), "unit": "critical", "ok": ok, "note": note}
+
+
+INTERNAL = {"up-status"}        # the default action when you type just `./securax` (an alias of `up` that also prints status)
+
+
+def commands() -> list[str]:
+    src = (ROOT / "securax").read_text("utf-8")
+    cmds: set[str] = set()
+    for m in re.finditer(r"^  ([a-z][a-z0-9|\-]*)\)\s*$", src, re.M):
+        cmds.update(c for c in m.group(1).split("|") if c and c != "*" and not c.startswith("-") and c not in INTERNAL)     # flags (-v, --version) are not commands
+    return sorted(cmds)
+
+
+def doc_text() -> str:
+    paths = list((ROOT / "docs").rglob("*.md")) + [ROOT / n for n in ("README.md", "DEPLOY.md", "GETTING-STARTED.md", "WINDOWS-QUICKSTART.md", "CHANGELOG.md")] + list((ROOT / "portal").glob("*.html"))
+    out = []
+    for p in paths:
+        try:
+            out.append(p.read_text("utf-8", "ignore"))
+        except OSError:
+            pass
+    return "\n".join(out)
+
+
+def missing_commands() -> set[str]:
+    docs = doc_text()
+    return {c for c in commands() if not re.search(rf"securax\s+{re.escape(c)}\b", docs)}
+
+
+def check_commands_documented(base: dict) -> dict:
+    missing, known = missing_commands(), set(base.get("undocumented_commands", {}))
+    new, fixed = sorted(missing - known), sorted(known - missing)
+    note = (f"NEW undocumented command(s): {', '.join(new)} — document them (docs/securax) before shipping" if new
+            else f"{len(missing)} legacy gap(s) accepted in the baseline" + (f"; {len(fixed)} since documented — tighten with --update-baseline" if fixed else ""))
+    return {"name": "commands-documented", "value": len(missing), "budget": len(known), "unit": "undocumented", "ok": not new, "note": note}
+
+
+def run_all(only_fast: bool = False) -> list[dict]:
+    c, base = cfg()["budgets"], baseline()
+    res = [check_rails_latency(c["rails_worst_case_ms"]), check_rails_memory(c["rails_import_rss_mb"]), check_runtime_deps(c["gateway_runtime_deps"])]
+    if not only_fast:
+        res += check_gateway(c["gateway_cold_start_s"], c["gateway_rss_mb"])
+    res += [check_supply_chain(base), check_commands_documented(base)]
+    return res
+
+
+def update_baseline() -> None:
+    old = baseline()
+    sc = {k: old.get("supply_chain", {}).get(k, "accepted: replace this with the real reason") for k in sorted(own_critical_findings())}
+    docs = {k: old.get("undocumented_commands", {}).get(k, "legacy: document it") for k in sorted(missing_commands())}
+    BASELINE.write_text(json.dumps({"supply_chain": sc, "undocumented_commands": docs}, indent=2) + "\n")
+    print(f"baseline written: {len(sc)} supply-chain finding(s), {len(docs)} undocumented command(s)")
+
+
+def main() -> int:
+    ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
+    ap.add_argument("--json", action="store_true")
+    ap.add_argument("--update-baseline", action="store_true")
+    ap.add_argument("--fast", action="store_true", help="skip the app-level checks")
+    a = ap.parse_args()
+    if a.update_baseline:
+        update_baseline()
+        return 0
+    res = run_all(a.fast)
+    if a.json:
+        print(json.dumps(res, indent=2))
+    else:
+        print("fitness functions (the architecture's promises, as numbers):")
+        for r in res:
+            print(f"  {'✔' if r['ok'] else '✘'} {r['name']:<20} {r['value']:>8} {r['unit']:<12} budget {r['budget']:<6} {r['note']}")
+    bad = [r["name"] for r in res if not r["ok"]]
+    if bad:
+        print(f"FAILED: {', '.join(bad)}", file=sys.stderr)
+    return 1 if bad else 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())
