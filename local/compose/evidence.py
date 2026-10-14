@@ -118,8 +118,27 @@ def build(raw_dir: str, env_file: str, root: str = ROOT) -> tuple[dict, str]:
     return data, md.getvalue()
 
 
-def write_pack(out: str, data: dict, report: str) -> None:
-    files = {"evidence.json": json.dumps(data, indent=2).encode(), "evidence.md": report.encode()}
+def ccsp_artifacts(root: str = ROOT):
+    """CCSP-aligned coverage (governance/ccsp.py): (json bytes, markdown, weighted %) or None if the map is not present."""
+    import importlib.util
+    path = os.path.join(root, "governance", "ccsp.py")
+    if not os.path.exists(path):
+        return None
+    try:
+        spec = importlib.util.spec_from_file_location("securax_ccsp", path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        got = mod.evidence_artifacts(__import__("pathlib").Path(root))
+        if not got:
+            return None
+        blob, md = got
+        return blob, md, json.loads(blob)["coverage"]["overall_weighted_pct"]
+    except Exception:  # noqa: BLE001 - the audit pack must still be produced without it
+        return None
+
+
+def write_pack(out: str, data: dict, report: str, extra: dict | None = None) -> None:
+    files = {"evidence.json": json.dumps(data, indent=2).encode(), "evidence.md": report.encode(), **(extra or {})}
     files["SHA256SUMS"] = "".join(f"{hashlib.sha256(v).hexdigest()}  {k}\n" for k, v in files.items()).encode()
     with tarfile.open(out, "w:gz") as t:
         for name, blob in files.items():
@@ -135,7 +154,13 @@ def main(argv=None) -> int:
     ap.add_argument("--out", required=True)
     a = ap.parse_args(argv)
     data, report = build(a.dir, a.env_file)
-    write_pack(a.out, data, report)
+    extra = {}
+    cc = ccsp_artifacts()
+    if cc:
+        extra = {"ccsp-coverage.json": cc[0], "ccsp-coverage.md": cc[1].encode()}
+        report += f"\n## CCSP-aligned practice coverage\nWeighted coverage of ISC2's CCSP domains by what this estate demonstrates: **{cc[2]}%** (full map with evidence and gaps: `ccsp-coverage.md`). A practice map, not exam content.\n"
+        data["ccsp_weighted_coverage_pct"] = cc[2]
+    write_pack(a.out, data, report, extra)
     print(a.out)
     return 0
 

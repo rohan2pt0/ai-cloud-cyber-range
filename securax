@@ -356,6 +356,7 @@ URLS
     step "router config baseline is current" bash -c 'python3 local/compose/gen_litellm_config.py --baseline --write --out "$0" >/dev/null && diff -q "$0" local/compose/litellm-config.yaml' "$(mktemp)"
     step "third-party content still matches its vet pin" python3 lifecycle/vet.py verify
     step "fitness functions (budgets + ratchets)" python3 lifecycle/fitness.py --fast
+    step "CCSP map is consistent (every claim verifiable)" python3 governance/ccsp.py --verify
     command -v terraform >/dev/null 2>&1 && step "terraform formatting (lifecycle genome)" terraform fmt -check -recursive infra/terraform
     command -v docker >/dev/null 2>&1 && step "compose file valid" docker compose --env-file local/compose/.env.example -f local/compose/docker-compose.yml --profile ai config -q
     if [ "${2:-}" = "--full" ]; then
@@ -537,6 +538,11 @@ $(tail -60 "$FB")"
       docker image inspect "$IMG" >/dev/null 2>&1 || { C "Needs fastapi+httpx on this machine, or the gateway image (run ./securax up once to build it)."; exit 1; }
       docker run --rm --user "$(id -u):$(id -g)" -e PYTHONDONTWRITEBYTECODE=1 -v "$ROOT":/repo:ro -v "$OUTD":/out -w /repo --entrypoint python "$IMG" redteam/purple.py --out /out
     fi
+    ;;
+  ccsp)
+    # CCSP-aligned practice coverage of THIS estate (ISC2's six domains, weighted), every claim verifiable; also part of ./securax evidence.
+    #   ./securax ccsp [--domain N] [--json] [--verify]
+    shift; exec python3 "$ROOT/governance/ccsp.py" "$@"
     ;;
   fitness)
     # The architecture's promises as numbers (rails latency / memory / cold start / dependency count) plus RATCHETS (no new critical

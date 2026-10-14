@@ -1,0 +1,451 @@
+{
+  "about": "CCSP-aligned coverage of this estate. Sub-topic titles and domain weights are from ISC2's published CCSP exam outline; the status and evidence are OUR assessment of what the estate demonstrates in practice. It is not ISC2 content, not study material, and not a prediction of an exam result.",
+  "source": {
+    "outline": "ISC2 CCSP Exam Outline (six domains)",
+    "url": "https://www.isc2.org/certifications/ccsp/ccsp-certification-exam-outline",
+    "page_header_date": "2026-08-01",
+    "read_on": "2026-10-14",
+    "caveat": "The page shows AUGUST 1, 2026 above the outline title but does not state what that date means; third-party sources say the new outline took effect on that date. Verify on ISC2's site."
+  },
+  "status_values": {
+    "covered": "implemented AND proven by a journey or test (never docs alone)",
+    "partial": "designed or partly proven (reason in the note)",
+    "gap": "not covered"
+  },
+  "domains": [
+    {
+      "id": 1,
+      "name": "Cloud Concepts, Architecture and Design",
+      "weight": 17,
+      "topics": [
+        {
+          "id": "1.1",
+          "title": "Understand cloud computing concepts",
+          "status": "partial",
+          "note": "Three-cloud IaC (AWS/GCP/Azure), managed Kubernetes stages, shared-responsibility reasoning in docs. Never applied to a real cloud account.",
+          "evidence": [
+            "file:docs/securax/29-LIFECYCLE-SEED-TO-FOREST.md",
+            "file:infra/terraform/lifecycle/aws/main.tf"
+          ]
+        },
+        {
+          "id": "1.2",
+          "title": "Describe cloud reference architecture",
+          "status": "partial",
+          "note": "Layered ladder (seed → sprout → burrow → tree → canopy → forest) and a reference architecture for the AI estate; documented, validated offline.",
+          "evidence": [
+            "file:docs/securax/02-ARCHITECTURE.md",
+            "file:docs/securax/29-LIFECYCLE-SEED-TO-FOREST.md"
+          ]
+        },
+        {
+          "id": "1.3",
+          "title": "Understand security concepts relevant to cloud computing",
+          "status": "partial",
+          "note": "Zero-trust network policy, per-tenant keys, least privilege, security invariants proven on offline Terraform plans (no public buckets, encryption on, no open ingress). Not applied to a live account.",
+          "evidence": [
+            "file:infra/terraform/lifecycle/prove.py",
+            "journey:lifecycle_cloud_is_safe",
+            "file:gitops/charts/tenant/templates"
+          ]
+        },
+        {
+          "id": "1.4",
+          "title": "Understand design principles of secure cloud computing",
+          "status": "partial",
+          "note": "Dormancy by default, least privilege, defence in depth, fail-closed rails, deny-by-default storage; principles documented and enforced by plan proofs and fitness ratchets.",
+          "evidence": [
+            "file:docs/securax/01-PRINCIPLES.md",
+            "file:infra/terraform/lifecycle/prove.py",
+            "cmd:fitness"
+          ]
+        },
+        {
+          "id": "1.5",
+          "title": "Evaluate Cloud Service Providers (CSP)",
+          "status": "partial",
+          "note": "Side-by-side genomes for AWS/GCP/Azure with cost and capability caveats. No formal CSP due-diligence (SOC 2 / ISO reports, SLAs, residency attestations).",
+          "evidence": [
+            "file:docs/securax/29-LIFECYCLE-SEED-TO-FOREST.md",
+            "file:docs/cloud-governance.md"
+          ]
+        },
+        {
+          "id": "1.6",
+          "title": "Comprehend Artificial Intelligence (AI)/Machine Learning (ML)",
+          "status": "covered",
+          "note": "The estate IS an AI-security platform: guardrail gateway mapped to OWASP LLM Top 10, ATLAS red team, purple-team loop, AI-SPM, model self-correction, local-model benchmarking.",
+          "evidence": [
+            "journey:purple_loop",
+            "test:redteam/tests/test_purple.py",
+            "file:redteam/run_attacks.py",
+            "cmd:bench"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 2,
+      "name": "Cloud Data Security",
+      "weight": 20,
+      "topics": [
+        {
+          "id": "2.1",
+          "title": "Describe cloud data concepts",
+          "status": "partial",
+          "note": "Data lifecycle handled in the estate (prompts redacted in path, audit logs, backups, vault). Documented, not a full lifecycle model.",
+          "evidence": [
+            "file:docs/securax/25-FALLBACKS-AND-ELASTICITY.md",
+            "file:docs/compliance-matrix.md"
+          ]
+        },
+        {
+          "id": "2.2",
+          "title": "Design and implement cloud data storage architectures",
+          "status": "partial",
+          "note": "Seed bank: versioned, object-locked, KMS-encrypted bucket; deletion-guarded data disks; deny-by-default storage. Proven on plans only.",
+          "evidence": [
+            "file:infra/terraform/lifecycle/modules/seedbank-aws/main.tf",
+            "file:infra/terraform/lifecycle/prove.py"
+          ]
+        },
+        {
+          "id": "2.3",
+          "title": "Design and apply data security technologies and strategies",
+          "status": "partial",
+          "note": "DLP in the request path (India PII: Aadhaar, PAN, cards; secrets), secrets management (OpenBao proven), encryption designed in IaC. Cloud KMS paths untested on a real account.",
+          "evidence": [
+            "test:apps/llm-gateway/tests/test_guardrails.py",
+            "journey:lifecycle_sprout",
+            "file:apps/llm-gateway/app/guardrails.py"
+          ]
+        },
+        {
+          "id": "2.4",
+          "title": "Implement data discovery",
+          "status": "partial",
+          "note": "DSPM-style scan of the repo/estate for AI data exposure. Not a data-store discovery tool.",
+          "evidence": [
+            "file:redteam/aispm_scan.py"
+          ]
+        },
+        {
+          "id": "2.5",
+          "title": "Plan and implement data classification",
+          "status": "partial",
+          "note": "Sensitivity classes recognised in transit (PII types, secrets, canaries). No at-rest labelling scheme.",
+          "evidence": [
+            "file:apps/llm-gateway/app/guardrails.py",
+            "file:docs/compliance-matrix.md"
+          ]
+        },
+        {
+          "id": "2.6",
+          "title": "Design and implement Information Rights Management (IRM)",
+          "status": "gap",
+          "note": "Not covered. (Adjacent: owner-only secrets files; object-lock for immutability.)",
+          "evidence": []
+        },
+        {
+          "id": "2.7",
+          "title": "Plan and implement data retention, deletion, and archiving policies",
+          "status": "partial",
+          "note": "Backup retention, object-lock/versioning, audit-log retention target documented (CERT-In 180 days), typed-confirmation prune. No policy engine.",
+          "evidence": [
+            "cmd:backup",
+            "journey:backup_restore",
+            "file:docs/compliance-matrix.md"
+          ]
+        },
+        {
+          "id": "2.8",
+          "title": "Design and implement auditability, traceability, and accountability of data events",
+          "status": "covered",
+          "note": "Every gateway decision is an audit event; the SOC correlates them; the purple loop verifies prevented/logged/alerted end to end and found+fixed an audit-accuracy bug; evidence pack with checksums.",
+          "evidence": [
+            "journey:purple_loop",
+            "test:redteam/tests/test_purple.py",
+            "cmd:evidence",
+            "test:local/compose/tests/test_evidence.py"
+          ]
+        },
+        {
+          "id": "2.9",
+          "title": "Comprehend data protection of Artificial Intelligence (AI) and Machine Learning (ML) data",
+          "status": "covered",
+          "note": "Prompt/response PII redaction, local-first model option, no prompts or keys in evidence packs, supply-chain vetting of third-party AI content, model registry governance.",
+          "evidence": [
+            "test:apps/llm-gateway/tests/test_guardrails.py",
+            "test:local/compose/tests/test_evidence.py",
+            "journey:vet_gate",
+            "file:governance/model-registry.yaml"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 3,
+      "name": "Cloud Platform and Infrastructure Security",
+      "weight": 17,
+      "topics": [
+        {
+          "id": "3.1",
+          "title": "Comprehend cloud infrastructure and platform components",
+          "status": "partial",
+          "note": "Real k3s multi-node cluster (twin), IaC for managed Kubernetes, GitOps. Managed-cloud components not run for real.",
+          "evidence": [
+            "journey:lifecycle_burrow",
+            "file:infra/terraform/lifecycle"
+          ]
+        },
+        {
+          "id": "3.2",
+          "title": "Design a secure data center",
+          "status": "gap",
+          "note": "Not covered (physical/environmental security). Adjacent: home-lab power-loss reflex and UPS hook (untested on a real UPS).",
+          "evidence": []
+        },
+        {
+          "id": "3.3",
+          "title": "Analyze risks associated with cloud infrastructure and platforms",
+          "status": "partial",
+          "note": "Vulnerability scanning (Trivy) prioritised offline with CISA KEV, supply-chain gate, honest limits ledger, fitness ratchets. No formal risk register for cloud-specific risks.",
+          "evidence": [
+            "cmd:scan",
+            "cmd:kev",
+            "cmd:vet",
+            "file:docs/securax/28-STATUS-AND-TRACEABILITY.md"
+          ]
+        },
+        {
+          "id": "3.4",
+          "title": "Plan and implementation of security controls",
+          "status": "partial",
+          "note": "Compose-level controls tested (loopback binds, owner-only secrets); Kubernetes controls (Kyverno, Falco, NetworkPolicy) rendered and schema-validated, not run on a live cluster.",
+          "evidence": [
+            "journey:lifecycle_sprout",
+            "file:gitops/platform/kyverno.yaml",
+            "file:gitops/platform/falco.yaml"
+          ]
+        },
+        {
+          "id": "3.5",
+          "title": "Plan business continuity (BC) and disaster recovery (DR)",
+          "status": "covered",
+          "note": "Verified backup/restore, hibernate/wake with data intact, fallback ladders, a real etcd snapshot-restore drill with SLOs, power-loss reflex.",
+          "evidence": [
+            "journey:backup_restore",
+            "journey:gameday",
+            "journey:lifecycle_sprout",
+            "file:docs/securax/25-FALLBACKS-AND-ELASTICITY.md"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 4,
+      "name": "Cloud Application Security",
+      "weight": 16,
+      "topics": [
+        {
+          "id": "4.1",
+          "title": "Advocate training and awareness for application security",
+          "status": "partial",
+          "note": "Incident runbook, build contract and learning ledger. No formal awareness programme.",
+          "evidence": [
+            "file:docs/securax/27-INCIDENT-RUNBOOK.md",
+            "file:BUILD-CONTRACT.md"
+          ]
+        },
+        {
+          "id": "4.2",
+          "title": "Describe the Secure Software Development Life Cycle (SDLC) process",
+          "status": "covered",
+          "note": "Documented build contract and gate loop (tests first, surgical changes, hard rules) plus the CI pipeline; the contract's hard rules are mechanically enforced (diffcheck_gate).",
+          "evidence": [
+            "file:BUILD-CONTRACT.md",
+            "file:.github/workflows/devsecops.yml",
+            "journey:diffcheck_gate"
+          ]
+        },
+        {
+          "id": "4.3",
+          "title": "Apply the Secure Software Development Life Cycle (SDLC)",
+          "status": "covered",
+          "note": "Applied every change: lint, unit tests, SAST/secrets/container/IaC scans in CI, diffcheck guard on automated changes, ratchets.",
+          "evidence": [
+            "journey:diffcheck_gate",
+            "test:lifecycle/tests/test_diffcheck.py",
+            "file:.github/workflows/devsecops.yml"
+          ]
+        },
+        {
+          "id": "4.4",
+          "title": "Apply cloud software assurance and validation",
+          "status": "covered",
+          "note": "User-perspective sandbox (real containers + browser), purple-team loop, red-team scorecard, fitness functions with mutation tests.",
+          "evidence": [
+            "journey:fresh_install",
+            "journey:purple_loop",
+            "test:lifecycle/tests/test_fitness.py"
+          ]
+        },
+        {
+          "id": "4.5",
+          "title": "Use verified secure software",
+          "status": "covered",
+          "note": "Third-party content only via `vet`: pinned commit, licence, executable-surface and injection scan, byte-identical vendoring, tamper detection; upstream organs pinned.",
+          "evidence": [
+            "journey:vet_gate",
+            "test:lifecycle/tests/test_vet.py",
+            "journey:lifecycle_organs"
+          ]
+        },
+        {
+          "id": "4.6",
+          "title": "Comprehend and apply the specifics of cloud application architecture",
+          "status": "partial",
+          "note": "Policy-enforcement-point gateway in front of a model router, multi-tenant cell design. Documented and tested locally; cloud application patterns untested live.",
+          "evidence": [
+            "file:docs/securax/02-ARCHITECTURE.md",
+            "test:apps/llm-gateway/tests/test_guardrails.py"
+          ]
+        },
+        {
+          "id": "4.7",
+          "title": "Design appropriate Identity and Access Management (IAM) solutions",
+          "status": "partial",
+          "note": "Keycloak SSO/MFA proven in the sprout (login, realm survives hibernation); tenant OIDC-group RBAC rendered; per-tenant SSO realm not built.",
+          "evidence": [
+            "journey:lifecycle_sprout",
+            "file:gitops/charts/tenant/templates"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "name": "Cloud Security Operations",
+      "weight": 17,
+      "topics": [
+        {
+          "id": "5.1",
+          "title": "Build and implement physical and logical infrastructure for cloud environment",
+          "status": "partial",
+          "note": "Logical infrastructure as code with proofs; burrow twin builds a real cluster; physical build is yours (spore installers untested on real hardware).",
+          "evidence": [
+            "journey:lifecycle_burrow",
+            "file:infra/terraform/lifecycle/prove.py"
+          ]
+        },
+        {
+          "id": "5.2",
+          "title": "Operate and maintain physical and logical infrastructure for cloud environment",
+          "status": "covered",
+          "note": "Self-healing, watchdog with alerting, auto-update, model self-correction, game days for node loss and control-plane restart.",
+          "evidence": [
+            "journey:self_healing",
+            "journey:watchdog_heals_and_alerts",
+            "journey:gameday",
+            "cmd:doctor"
+          ]
+        },
+        {
+          "id": "5.3",
+          "title": "Implement operational controls and standards",
+          "status": "partial",
+          "note": "Runbook, GitOps drift correction, CI gates, fitness budgets. No formal change/configuration-management record.",
+          "evidence": [
+            "file:docs/securax/27-INCIDENT-RUNBOOK.md",
+            "cmd:fitness"
+          ]
+        },
+        {
+          "id": "5.4",
+          "title": "Support digital forensics",
+          "status": "partial",
+          "note": "Preservation: etcd snapshots, tamper-evident evidence packs (SHA-256), audit trail without content. No chain-of-custody procedure or forensic tooling.",
+          "evidence": [
+            "cmd:evidence",
+            "journey:gameday"
+          ]
+        },
+        {
+          "id": "5.5",
+          "title": "Manage communication with relevant parties",
+          "status": "partial",
+          "note": "Alert webhooks, incident runbook templates, escalation briefs. No stakeholder communication plan.",
+          "evidence": [
+            "journey:watchdog_heals_and_alerts",
+            "file:docs/securax/27-INCIDENT-RUNBOOK.md"
+          ]
+        },
+        {
+          "id": "5.6",
+          "title": "Manage security operations",
+          "status": "covered",
+          "note": "AI-SOC correlation with ATT&CK technique names and offline KEV enrichment, purple-loop detection backlog, SIEM organs defined.",
+          "evidence": [
+            "journey:purple_loop",
+            "journey:offline_power",
+            "test:ai-soc/tests/test_triage.py"
+          ]
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "name": "Legal, Risk and Compliance",
+      "weight": 13,
+      "topics": [
+        {
+          "id": "6.1",
+          "title": "Articulate legal requirements and unique risks within the cloud environment",
+          "status": "partial",
+          "note": "India-first control mapping (RBI, CERT-In, DPDP, SEBI) documented; not legal advice.",
+          "evidence": [
+            "file:docs/compliance-matrix.md",
+            "file:docs/securax/04-COMPLIANCE-MAP.md"
+          ]
+        },
+        {
+          "id": "6.2",
+          "title": "Understand privacy issues",
+          "status": "partial",
+          "note": "DPDP-aware PII redaction and local-first sovereignty. No DPIA or consent tooling.",
+          "evidence": [
+            "test:apps/llm-gateway/tests/test_guardrails.py",
+            "file:docs/compliance-matrix.md"
+          ]
+        },
+        {
+          "id": "6.3",
+          "title": "Understand audit process, methodologies, and required adaptations for a cloud environment",
+          "status": "partial",
+          "note": "Auditor-oriented evidence pack and a status/traceability ledger. Not an audited ISMS.",
+          "evidence": [
+            "cmd:evidence",
+            "file:docs/securax/28-STATUS-AND-TRACEABILITY.md"
+          ]
+        },
+        {
+          "id": "6.4",
+          "title": "Understand implications of cloud to enterprise risk management",
+          "status": "partial",
+          "note": "Board brief generator, AI-SPM posture score, honest limits ledger. No enterprise risk register.",
+          "evidence": [
+            "file:redteam/board_report.py",
+            "file:redteam/aispm_scan.py"
+          ]
+        },
+        {
+          "id": "6.5",
+          "title": "Understand outsourcing and cloud contract design",
+          "status": "gap",
+          "note": "Not covered. (Adjacent: portable genomes and vault-first design support exit planning; licence checks for third-party content.)",
+          "evidence": []
+        }
+      ]
+    }
+  ]
+}
