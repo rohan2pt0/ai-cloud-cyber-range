@@ -164,12 +164,23 @@ def check_commands_documented(base: dict) -> dict:
     return {"name": "commands-documented", "value": len(missing), "budget": len(known), "unit": "undocumented", "ok": not new, "note": note}
 
 
+def check_ccsp_map() -> dict:
+    """The CCSP coverage claims must not rot: every evidence reference resolves, every 'covered' is proven by a journey or test."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("ccsp", ROOT / "governance" / "ccsp.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    probs = mod.problems(mod.load())
+    return {"name": "ccsp-map", "value": len(probs), "budget": 0, "unit": "problems", "ok": not probs,
+            "note": "every evidence reference resolves and every 'covered' is proven" if not probs else "; ".join(probs[:3])}
+
+
 def run_all(only_fast: bool = False) -> list[dict]:
     c, base = cfg()["budgets"], baseline()
     res = [check_rails_latency(c["rails_worst_case_ms"]), check_rails_memory(c["rails_import_rss_mb"]), check_runtime_deps(c["gateway_runtime_deps"])]
     if not only_fast:
         res += check_gateway(c["gateway_cold_start_s"], c["gateway_rss_mb"])
-    res += [check_supply_chain(base), check_commands_documented(base)]
+    res += [check_supply_chain(base), check_commands_documented(base), check_ccsp_map()]
     return res
 
 

@@ -816,6 +816,29 @@ def j_webui(sb: H.Sandbox, c: Checks):
         c.ok(got, "typing in the browser and pressing Enter shows the answer", (page.inner_text("body") or "")[-300:])
 
 
+@journey("ccsp_evidence", "`./securax ccsp` and the audit pack: the CCSP-aligned map verifies (no stale reference, no unproven 'covered') and `./securax evidence` ships it, checksummed.")
+def j_ccsp(sb: H.Sandbox, c: Checks):
+    import hashlib
+    import tarfile
+    rc, out = H.sh(["bash", "./securax", "ccsp", "--verify"], cwd=sb.clone)
+    c.ok(rc == 0 and "consistent" in out, "`ccsp --verify` passes on the shipped map", tail(out, 300))
+    rc, out = H.sh(["bash", "./securax", "ccsp"], cwd=sb.clone)
+    c.ok(rc == 0 and "Domain 6" in out and "Biggest gaps" in out, "`ccsp` prints weighted coverage and the backlog", tail(out, 300))
+    pack = sb.clone.parent / "ccsp-pack.tgz"
+    rc, out = H.sh(["python3", "local/compose/evidence.py", "--dir", str(sb.clone.parent), "--env-file", "/nonexistent", "--out", str(pack)], cwd=sb.clone)
+    c.ok(rc == 0 and pack.exists(), "the evidence pack is produced", tail(out, 300))
+    if pack.exists():
+        with tarfile.open(pack) as t:
+            files = {m.name: t.extractfile(m).read() for m in t.getmembers()}
+        c.ok({"ccsp-coverage.md", "ccsp-coverage.json"} <= set(files), "the pack contains the CCSP coverage map", sorted(files))
+        sums = dict(reversed(ln.split("  ")) for ln in files.get("SHA256SUMS", b"").decode().splitlines())
+        c.ok(all(hashlib.sha256(files[k]).hexdigest() == v for k, v in sums.items() if k in files) and "ccsp-coverage.md" in sums, "…and it is covered by SHA256SUMS")
+    mp = sb.clone / "governance" / "ccsp-map.json"          # a stale claim must fail the gate
+    mp.write_text(mp.read_text().replace('"file:docs/securax/02-ARCHITECTURE.md"', '"file:no/such/file"', 1))
+    rc, out = H.sh(["bash", "./securax", "ccsp", "--verify"], cwd=sb.clone)
+    c.ok(rc != 0 and "does not exist" in out, "a stale evidence reference makes `ccsp --verify` fail", tail(out, 300))
+
+
 # ═══════════════════════════════════════════ runner ═══════════════════════════════════════════
 @journey("gameday", "`./securax gameday`: real failures injected into the burrow twin (node loss, control-plane restart, an etcd snapshot-RESTORE disaster drill); each must be detected, contained, recovered within its SLO; the twin is left as found.", slow=True)
 def j_gameday(sb: H.Sandbox, c: Checks):
