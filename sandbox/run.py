@@ -1852,6 +1852,10 @@ def run_journey(fn, sb, name: str):
     return c, t0
 
 
+def retry_note(retried: bool, text: str) -> str:
+    return text if retried else ""
+
+
 def run_journey_healing(fn, sb, name: str, allow_retry: bool):
     """SELF-HEAL: when every failed check is explained by the machine (Docker daemon died, registry/network blip) and none by the product,
     check Docker and run the journey once more. A failure with ANY code-shaped evidence is never retried or hidden."""
@@ -1896,7 +1900,7 @@ def main() -> int:
         print(f"\n▶ {name} — {doc}")
         c, t0, retried = run_journey_healing(fn, sb, name, not args.no_retry)
         results.append((name, c, time.time() - t0, retried))
-        print(f"  → {'PASS' if c.passed else 'FAIL'} ({time.time() - t0:.0f}s){'  [passed only after an infrastructure retry]' if retried and c.passed else ''}")
+        print(f"  → {'PASS' if c.passed else 'FAIL'} ({time.time() - t0:.0f}s){retry_note(retried and c.passed, '  [passed only after an infrastructure retry]')}")
     if not args.keep:
         sb.down()
 
@@ -1904,7 +1908,7 @@ def main() -> int:
     bad = 0
     for name, c, dt, retried in results:
         n_ok = sum(i["ok"] for i in c.items)
-        print(f"  {'PASS' if c.passed else 'FAIL'}  {name:<28} {n_ok}/{len(c.items)} checks" + ("   (after infra retry)" if retried else ""))
+        print(f"  {'PASS' if c.passed else 'FAIL'}  {name:<28} {n_ok}/{len(c.items)} checks" + retry_note(retried, "   (after infra retry)"))
         bad += 0 if c.passed else 1
     H.OUT.mkdir(parents=True, exist_ok=True)
     (H.OUT / "results.json").write_text(json.dumps(
