@@ -14,10 +14,10 @@ if errorlevel 1 (
   exit /b 1
 )
 echo.
-echo   Opening your Command Center: http://localhost:8088/hub.html
-start "" http://localhost:8088/hub.html
+echo   Your Command Center opens in your browser. If it did not, double-click START again or run:  .\securax.cmd open
 echo.
 echo   Tip: for instant answers add a free key:  .\securax.cmd providers add
+echo   To protect (encrypt) your backups: double-click PROTECT-BACKUPS-Windows.bat
 echo   To stop later and free memory: double-click STOP-Windows.bat
 echo.
 pause

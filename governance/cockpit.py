@@ -231,6 +231,22 @@ class Collector:
                  "Every browser, phone and cross-machine connection is encrypted with a certificate from your own name-restricted authority. Container-to-container hops on the private Docker network are phase 2.",
                  "Renew the certificate" if st in ("red", "amber") else "", "./securax tls renew", urgent=st == "red", importance=2)
 
+    def c_crypto(self):
+        """Two plain-English protection rows from the cryptography inventory: backups locked? connections quantum-resistant?"""
+        cr = _load("securax_crypto", "governance/crypto.py")
+        by = {i["id"]: i for i in cr.inventory(probe_docker=False)}
+        regulated = self.profile == "regulated"
+        b = by["backups"]
+        locked = b["quantum"] == cr.SAFE
+        self.add("backup_enc", "Backups locked (encrypted)", "KRI", "Protect", "yes, AES-256" if locked else "no: plain files", "green" if locked else ("red" if regulated else "amber"),
+                 "Anyone who gets a copy of a plain backup (USB stick, cloud drive) can read your API keys; a locked one is useless without your key file.",
+                 "" if locked else "Protect your backups (2 minutes)", "./securax protect", urgent=regulated and not locked, importance=3 if regulated else 2)
+        k = by["edge-kex"]
+        pq = k["quantum"] == cr.HYBRID
+        self.add("pq_kex", "Quantum-resistant connections", "KRI", "Protect", "yes (hybrid ML-KEM)" if pq else "not yet", "green" if pq else "amber",
+                 "Traffic recorded today could be read by a future quantum computer unless the connection uses a quantum-resistant key exchange. Current Chrome, Edge and Firefox use it automatically.",
+                 "" if pq else "Move the HTTPS edge to nginx 1.30 or later", "./securax update", importance=2)
+
     # -- recover
     def c_storage(self):
         st = _load("securax_storage", "governance/storage.py")
@@ -392,7 +408,7 @@ class Collector:
             self.add("covmaps", "Compliance maps consistent", "KRI", "Govern", f"{broken} problem(s)", "red", "A claim in a map points at something that no longer exists.", "Fix the maps", "./securax comply --verify", urgent=True, importance=3)
 
     def run(self) -> None:
-        for fn in (self.c_services, self.c_gateway, self.c_auth_residency, self.c_tls, self.c_keys, self.c_storage, self.c_images, self.c_threat_data, self.c_incidents, self.c_soc,
+        for fn in (self.c_services, self.c_gateway, self.c_auth_residency, self.c_tls, self.c_crypto, self.c_keys, self.c_storage, self.c_images, self.c_threat_data, self.c_incidents, self.c_soc,
                    self.c_fitness, self.c_coverage):
             self.safe(fn)
 

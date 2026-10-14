@@ -15,16 +15,21 @@ A large quantum computer breaks the public-key maths behind today's TLS key exch
 
 Proven by the sandbox against the real stack: the `tls_edge` journey negotiates `X25519MLKEM768` with an OpenSSL 3.5 client and shows a classical-only client still connects; `backup_encrypted` takes an encrypted backup, shows it is not a readable archive, refuses a wrong key and a tampered copy, restores the account with the right key, and checks no decrypted copy is left in `/tmp`.
 
-## Turn on encrypted backups (2 minutes)
+## Check where you stand (30 seconds, no jargon)
 ```
-cd ~/securax
-./securax crypto keygen ~/securax-backup.key     # 256 random bits, owner-only
-# COPY that file OFF this machine now: USB stick or a password manager. Lose it and the backups cannot be opened - by anyone.
-echo "SECURAX_BACKUP_KEYFILE=$HOME/securax-backup.key" >> local/compose/.env
-./securax backup                                  # now ends in .tar.gz.gpg
-./securax restore backups/<that file> --yes      # practise ONCE, with the key file
+./securax crypto
 ```
-Every backup, including the one `./securax update` takes first, is then encrypted. Prefer to type a passphrase? `./securax backup --passphrase` (12+ characters). To restore on a new machine: `./securax restore FILE --keyfile /path/to/key`. The key file can live on a USB stick that is only plugged in for backup and restore.
+It answers four questions in plain words: what needs you **now**, what is **already protected**, what **can wait**, and what is **outside SecuRAX** (your side). The full technical table (the CBOM an auditor asks for) is `./securax crypto --full`; `--cbom` writes it as a CycloneDX file. The Cockpit shows the same two things as traffic lights ("Backups locked", "Quantum-resistant connections").
+
+## Protect your backups (2 minutes, one command)
+```
+./securax protect          # Windows: double-click PROTECT-BACKUPS-Windows.bat
+```
+It makes the key, asks you ONE question (where to keep a second copy: type a USB drive letter, or press Enter and it shows you the key to save in your password manager), switches encryption on, takes your first encrypted backup and proves it opens with your key. After that every backup, including the one `./securax update` takes first, is encrypted without you doing anything. Lose the key and the backups cannot be opened by anyone, so the safe copy matters more than anything else here.
+
+Why there is no "Protect" button in the browser: a page that could run commands on your computer would be a door for any malicious website to push through. The Windows double-click and the Cockpit's status lights give you the ease without that door.
+
+Restore on a new machine: `./securax restore FILE --keyfile /path/to/key` (or type the passphrase if you used `./securax backup --passphrase`).
 
 **Why a symmetric key and not a public/private key pair:** a key pair would reintroduce RSA/ECC, the very thing a quantum computer breaks. Strength here is the strength of your key file or passphrase (OpenPGP symmetric, AES-256, iterated and salted key derivation, modification detection). `gpg` is required (`sudo apt install gnupg`; it is normally already there).
 

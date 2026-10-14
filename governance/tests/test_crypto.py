@@ -140,3 +140,32 @@ def test_the_backup_construction_encrypts_detects_tampering_and_refuses_a_wrong_
     (tmp_path / "t.gpg").write_bytes(bytes(bad))
     assert run("--passphrase-file", str(key), "-d", "-o", str(tmp_path / "o3"), str(tmp_path / "t.gpg")).returncode != 0
     subprocess.run(["gpgconf", "--kill", "gpg-agent"], env=env, capture_output=True)
+
+
+# ───────────────────────────── the plain-English view ─────────────────────────────
+def test_the_plain_view_says_what_needs_you_and_the_one_command_to_run(env):
+    out = cr.render_simple(cr.inventory(probe_docker=False))
+    assert "NEEDS YOU NOW" in out and "./securax protect" in out and "PROTECT-BACKUPS-Windows.bat" in out
+    assert "ALREADY PROTECTED" in out and "CAN WAIT" in out and "OUTSIDE SECURAX" in out
+    assert "CBOM" not in out and "harvest-now" not in out                       # no jargon in the default view
+
+
+def test_nothing_is_reported_as_needing_you_once_backups_are_locked(env, tmp_path):
+    env["SECURAX_BACKUP_KEYFILE"] = str(tmp_path / "k")
+    out = cr.render_simple(cr.inventory(probe_docker=False))
+    assert "NOTHING NEEDS YOU RIGHT NOW" in out and "Your backups are encrypted." in out
+
+
+def test_every_inventory_row_lands_in_exactly_one_plain_bucket(env):
+    items = cr.inventory(probe_docker=False)
+    assert {cr.bucket(i) for i in items} <= {"done", "now", "later", "outside"}
+    assert cr.render_simple(items)
+    for i in items:
+        if cr.bucket(i) == "now":
+            assert cr.NOW.get(i["id"]), f"{i['id']} needs a plain-English line in NOW"
+
+
+def test_full_view_still_has_the_technical_table_and_strict_still_exits_1(env, capsys):
+    assert cr.main(["--full"]) == 0 and "Cryptography inventory (CBOM)" in capsys.readouterr().out
+    assert cr.main(["--strict"]) == 1
+    capsys.readouterr()

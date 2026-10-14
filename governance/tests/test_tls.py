@@ -295,3 +295,16 @@ def test_every_hub_card_that_is_an_endpoint_uses_the_name_table():
     for _label, name, _svc, _port, plain in tls.ENDPOINTS:
         if name in ("hub", "chat", "docs", "flows"):
             assert f'web("{name}",{plain})' in hub
+
+
+# ───────────────────────────── a fixed page must not look unchanged after an update ─────────────────────────────
+def test_the_command_center_is_always_revalidated_not_kept_by_heuristic_caching():
+    assert 'add_header Cache-Control "no-cache" always;' in (ROOT / "local" / "compose" / "guiding-map.conf").read_text("utf-8")
+    assert 'add_header Cache-Control "no-cache" always;' in tls.render_edge_conf("securax.localhost", internal=True)    # the edge's own static hub
+    assert 'cache: "no-cache"' in (ROOT / "guiding-map" / "sw.js").read_text("utf-8")
+
+
+def test_no_launcher_or_setup_script_still_opens_the_plain_http_port_that_https_unpublishes():
+    for f in ("START-HERE-Windows.bat", "local/scripts/wsl-setup.sh", "WINDOWS-QUICKSTART.md"):
+        txt = (ROOT / f).read_text("utf-8")
+        assert not re.search(r"(start \"\" |Opening your Command Center: |DONE\. Command Center: )http://localhost:8088", txt), f

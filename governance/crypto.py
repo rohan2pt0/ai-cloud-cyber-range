@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Cryptography inventory (CBOM) and quantum-readiness view of THIS estate.
 
-    ./securax crypto                      the inventory, ranked: what to fix first and why
+    ./securax crypto                      plain-English check: what is protected, what needs you now, what can wait
+    ./securax crypto --full               the full inventory (CBOM table), ranked: what to fix first and why
     ./securax crypto --json               the same, machine-readable
     ./securax crypto --cbom > cbom.json   a CycloneDX 1.6 Cryptography Bill of Materials (what an RBI / SEBI / auditor asks for)
     ./securax crypto --strict             exit 1 when an item under OUR control is still exposed to "harvest now, decrypt later" (cron / CI)
@@ -241,6 +242,56 @@ def exposed_ours(items: list[dict]) -> list[dict]:
     return [i for i in items if i["control"] == "ours" and i["harvest_now"] and i["quantum"] in (VULNERABLE, NONE)]
 
 
+# ───────────────────────────────────────────── the plain-English view ─────────────────────────────────────────────
+DONE = {"edge-kex": "Your browser connections use quantum-resistant key exchange (current Chrome, Edge and Firefox).",
+        "edge-symmetric": "What travels over those connections is encrypted with strong, quantum-safe ciphers.",
+        "api-key-hash": "Your stored API-key fingerprints are strong.",
+        "internal-kex": "The services talk to each other with the same protection.",
+        "egress-cloud": "Calls to cloud AI providers offer quantum-resistant key exchange (the provider decides whether to use it).",
+        "backups": "Your backups are encrypted."}
+NOW = {"backups": ("Your backups are NOT encrypted: anyone who gets a copy (USB stick, cloud drive) can read your API keys.",
+                   "./securax protect        (about 2 minutes; asks you one question)   -  Windows: double-click PROTECT-BACKUPS-Windows.bat")}
+LATER = {"edge-cert": "Certificates still use today's algorithm. Switch when browsers accept post-quantum ones; nothing to do now.",
+         "estate-ca": "Your private certificate authority will outlive 2035, the year NIST's DRAFT plan retires today's algorithm. Plan to renew it around 2030.",
+         "jwt-sign": "Developer item: sign-in tokens use RSA or a shared secret; add a newer algorithm before relying on sign-in for sensitive systems.",
+         "internal-certs": "Same as certificates above."}
+OUTSIDE = {"vpn": "If you reach the estate through Tailscale / WireGuard, its handshake is not quantum-resistant yet: keep sensitive work on your home network.",
+           "host-disk": "Turn on BitLocker (Windows) or LUKS (Linux) so the whole disk is encrypted.",
+           "release-sign": "Release signatures are handled by GitHub / Sigstore; nothing for you to do."}
+
+
+def bucket(i: dict) -> str:
+    if i["quantum"] in (SAFE, HYBRID):
+        return "done"
+    if i["control"] == "ours" and i["harvest_now"]:
+        return "now"
+    return "outside" if i["control"] != "ours" else "later"
+
+
+def render_simple(items: list[dict]) -> str:
+    groups: dict[str, list[dict]] = {"done": [], "now": [], "later": [], "outside": []}
+    for i in items:
+        groups[bucket(i)].append(i)
+    out = ["SecuRAX protection check          (the full technical table: ./securax crypto --full)", ""]
+    if groups["now"]:
+        out.append(f"!  NEEDS YOU NOW ({len(groups['now'])})")
+        for n, i in enumerate(groups["now"], 1):
+            text, cmd = NOW.get(i["id"], (i["note"], i["action"]))
+            out += [f"   {n}. {text}", f"      -> {cmd}"]
+        out.append("")
+    else:
+        out += ["OK NOTHING NEEDS YOU RIGHT NOW", ""]
+    out.append(f"OK ALREADY PROTECTED ({len(groups['done'])})")
+    out += [f"   - {DONE.get(i['id'], i['name'])}" for i in groups["done"]]
+    if groups["later"]:
+        out += ["", f"..  CAN WAIT ({len(groups['later'])})"] + [f"   - {LATER.get(i['id'], i['note'])}" for i in groups["later"] if i["id"] != "internal-certs"]
+    if groups["outside"]:
+        out += ["", "i  OUTSIDE SECURAX (your side)"] + [f"   - {OUTSIDE.get(i['id'], i['note'])}" for i in groups["outside"]]
+    out += ["", "Why this matters: a future quantum computer could read traffic and files that are recorded today. Encrypted traffic and backups are the urgent part;",
+            "certificates and signatures can follow. NIST's dates are a draft; India's RBI has set up a committee (May 2026) but has not issued rules yet."]
+    return "\n".join(out)
+
+
 # ───────────────────────────────────────────── outputs ─────────────────────────────────────────────
 LABEL = {VULNERABLE: "VULNERABLE", HYBRID: "hybrid (PQ)", SAFE: "safe", WEAKENED: "weakened", NONE: "unprotected"}
 
@@ -292,7 +343,7 @@ def cyclonedx(items: list[dict]) -> dict:
             "components": comps}
 
 
-def keygen(path: pathlib.Path) -> int:
+def keygen(path: pathlib.Path, quiet: bool = False) -> int:
     if path.exists():
         print(f"{path} already exists - refusing to overwrite a key that may protect backups.", file=sys.stderr)
         return 1
@@ -300,6 +351,8 @@ def keygen(path: pathlib.Path) -> int:
     fd = os.open(str(path), os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
     with os.fdopen(fd, "w") as fh:
         fh.write(secrets.token_hex(32) + "\n")           # 256 random bits
+    if quiet:
+        return 0
     print(f"Key file written: {path}  (256 random bits, owner-only)\n"
           "  1. COPY it OFF this machine now (USB stick, password manager). Without it an encrypted backup can NOT be opened - by anyone, including you.\n"
           "  2. Then:  put  SECURAX_BACKUP_KEYFILE=" + str(path) + "  in local/compose/.env  (every backup, including the one `update` takes, is then encrypted).\n"
@@ -314,18 +367,22 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--cbom", action="store_true", help="CycloneDX 1.6 Cryptography Bill of Materials")
     ap.add_argument("--strict", action="store_true", help="exit 1 if an item under our control is exposed to harvest-now-decrypt-later")
+    ap.add_argument("--full", action="store_true", help="the full technical inventory instead of the plain-English check")
+    ap.add_argument("--quiet", action="store_true", help="keygen: print nothing")
     a = ap.parse_args(argv)
     if a.action == "keygen":
         if not a.path:
             ap.error("keygen needs a path, e.g.  ./securax crypto keygen ~/securax-backup.key")
-        return keygen(pathlib.Path(a.path).expanduser())
+        return keygen(pathlib.Path(a.path).expanduser(), a.quiet)
     items = inventory()
     if a.cbom:
         print(json.dumps(cyclonedx(items), indent=2))
     elif a.json:
         print(json.dumps({"items": rank(items), "exposed_ours": [i["id"] for i in exposed_ours(items)]}, indent=2))
-    else:
+    elif a.full:
         print(render_text(items))
+    else:
+        print(render_simple(items))
     return 1 if (a.strict and exposed_ours(items)) else 0
 
 

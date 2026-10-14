@@ -187,6 +187,12 @@ case "$cmd" in
     CORE="gateway litellm ollama open-webui guiding-map estate-sync"
     if tls_on; then python3 "$ROOT/governance/tls.py" render >/dev/null 2>&1 || C "Could not write the HTTPS edge configuration: run  ./securax tls render"; CORE="$CORE tls-edge"; [ -n "$SVCS" ] && SVCS="$SVCS tls-edge"
       if internal_on; then SIDE="gateway-tls litellm-tls ollama-tls open-webui-tls estate-sync-tls"; CORE="$CORE $SIDE"; [ -n "$SVCS" ] && SVCS="$SVCS $SIDE"; C "Internal TLS is ON: the services talk to each other over HTTPS too."; fi; C "TLS edge is ON: the estate is reached over HTTPS only (./securax tls status)."; fi
+    # Private Docs / Automation you started with `./securax start` come back after every `up` and `update` (they used to silently stay off).
+    OPT=" $(ev SECURAX_OPTIONAL) "
+    if [ "$LITE" = 1 ] && [ "$OPT" != "  " ]; then
+      case "$OPT" in *" docs "*) SVCS="$SVCS anythingllm"; internal_on && SVCS="$SVCS anythingllm-tls" ;; esac
+      case "$OPT" in *" flows "*) SVCS="$SVCS n8n"; internal_on && SVCS="$SVCS n8n-tls" ;; esac
+    fi
     if ! ( cd "$ROOT/local/compose" && docker compose --profile ai up -d --build $SVCS ); then
       C "Full start failed — fallback 1: start without rebuilding images (works offline if you've run it before)…"
       if ! ( cd "$ROOT/local/compose" && docker compose --profile ai up -d $SVCS ); then
@@ -1006,6 +1012,46 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
     echo "SecuRAX v${v} (${g})"
     ;;
   mcp)   exec python3 "$ROOT/mcp/securax_mcp.py" ;;
+  protect)
+    # ONE guided step that protects your backups: makes a key, helps you save a second copy, switches encryption on, takes the first
+    # encrypted backup and proves it opens. Flags for scripts: --yes (no questions) --copy-to DIR --key PATH.
+    ENVF="$ROOT/local/compose/.env"; [ -f "$ENVF" ] || cp "$ROOT/local/compose/.env.example" "$ENVF"
+    YES=0; COPYTO=""; PKEY=""; _prev=""
+    for _a in "${@:2}"; do [ "$_a" = "--yes" ] && YES=1; [ "$_prev" = "--copy-to" ] && COPYTO="$_a"; [ "$_prev" = "--key" ] && PKEY="$_a"; _prev="$_a"; done
+    KEY="${PKEY:-$(ev SECURAX_BACKUP_KEYFILE)}"; KEY="${KEY:-$HOME/securax-backup.key}"; KEY="${KEY/#\~/$HOME}"
+    gpg_prepare || exit 1; trap 'gpg_cleanup' EXIT
+    C "Protecting your backups. I make a secret key file, you keep a copy somewhere safe, and every backup is locked with it."
+    echo "  If the key is lost, nobody can open the backups - so the safe copy matters more than anything else here."
+    if [ -s "$KEY" ]; then echo "  Using your existing key: $KEY"; else python3 "$ROOT/governance/crypto.py" keygen "$KEY" --quiet || exit 1; echo "  ✔ Made your key: $KEY"; fi
+    if [ -z "$COPYTO" ] && [ "$YES" != 1 ] && [ -r /dev/tty ]; then
+      echo; echo "  Where should I save a SECOND copy of the key?"
+      echo "    - a USB stick: plug it in, then type its drive letter (drives found here: $(ls -d /mnt/[d-z] 2>/dev/null | sed 's#/mnt/##' | tr '\n' ' ')  )"
+      echo "    - or just press Enter: I will show you the key to save in your password manager instead."
+      printf '  Drive letter (for example D) or Enter: '; read -r DL < /dev/tty || DL=""
+      [ -n "$DL" ] && COPYTO="/mnt/$(printf '%s' "$DL" | tr 'A-Z' 'a-z' | tr -d ':\\/ ')"
+    fi
+    SAVED=0
+    if [ -n "$COPYTO" ]; then
+      if [ -d "$COPYTO" ] && cp "$KEY" "$COPYTO/securax-backup.key" 2>/dev/null && cmp -s "$KEY" "$COPYTO/securax-backup.key"; then
+        echo "  ✔ Saved a second copy: $COPYTO/securax-backup.key  (take the stick out and keep it somewhere safe)"; SAVED=1
+      else C "  ✗ I could not write to $COPYTO (is it plugged in?). Nothing is switched on yet; run  ./securax protect  again."; exit 1; fi
+    elif [ "$YES" != 1 ] && [ -r /dev/tty ]; then
+      echo; echo "  Save this in your password manager as a secure note called  SecuRAX backup key :"; echo; echo "      $(head -1 "$KEY")"; echo
+      printf '  Type YES once it is saved: '; read -r OKS < /dev/tty || OKS=""
+      [ "$OKS" = "YES" ] || { C "  Not switching encryption on yet (only the key file exists). Run  ./securax protect  again when you are ready."; exit 1; }; SAVED=1
+    fi
+    [ "$SAVED" = 1 ] || echo "  (no second copy was made - the only copy is $KEY: copy it somewhere safe yourself)"
+    skv "$ENVF" SECURAX_BACKUP_KEYFILE "$KEY"
+    echo "  Taking your first encrypted backup..."
+    "$0" backup || { C "The backup did not finish. Encryption is switched on: run  ./securax backup  again once it is fixed (./securax doctor helps)."; exit 1; }
+    DEST="$(ev SECURAX_BACKUP_DIR "$ROOT/backups")"; NEWEST="$({ ls -1t "$DEST"/securax-*.tar.gz.gpg 2>/dev/null || true; } | head -1)"
+    [ -n "$NEWEST" ] || { C "No encrypted backup was found. Run  ./securax doctor"; exit 1; }
+    if gpg_run $GPGSYM --passphrase-file "$KEY" -d "$NEWEST" 2>/dev/null | tar tzf - >/dev/null; then
+      C "✔ Done. Backups are encrypted from now on (also the automatic one before every update)."
+      echo "  Proof: your newest backup opens with your key: $NEWEST"
+    else C "The new backup did NOT open with your key - do not rely on it. Run  ./securax doctor  and tell me what it says."; exit 1; fi
+    echo "  Old plain backups in $DEST can still be read by anyone who has them: delete them when you no longer need them."
+    ;;
   crypto)
     exec python3 "$ROOT/governance/crypto.py" "${@:2}"
     ;;
@@ -1014,13 +1060,24 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
     preflight || exit 1
     case "${2:-}" in docs) _svc="anythingllm"; _need="about 2 GB" ;; flows|n8n) _svc="n8n"; _need="about 1 GB" ;;
       all) _svc="anythingllm n8n"; _need="about 3 GB" ;; *) C "usage: ./securax start docs | flows | all   (Private Docs = AnythingLLM; flows = n8n automation)"; exit 2 ;; esac
+    case "${2:-}" in docs) _tok="docs" ;; flows|n8n) _tok="flows" ;; *) _tok="docs flows" ;; esac
     _list="$_svc"; if tls_on; then python3 "$ROOT/governance/tls.py" render >/dev/null 2>&1 || true; internal_on && for _s in $_svc; do _list="$_list ${_s}-tls"; done; fi
     C "Starting: $_svc  (needs $_need of memory; the first start of Private Docs takes a minute or two)"
     ( cd "$ROOT/local/compose" && docker compose --profile ai up -d $_list ) || { C "Could not start it. Run  ./securax doctor  and paste the output."; exit 1; }
+    ENVF="$ROOT/local/compose/.env"; _cur=" $(ev SECURAX_OPTIONAL) "; for _t in $_tok; do case "$_cur" in *" $_t "*) ;; *) _cur="$_cur$_t " ;; esac; done
+    skv "$ENVF" SECURAX_OPTIONAL "$(echo $_cur)"                     # remembered: `up` and `update` bring these back
     for _s in $_svc; do case "$_s" in anythingllm) _n=docs; _pt=3001 ;; *) _n=flows; _pt=5678 ;; esac
       _i=0; while [ "$_i" -lt 40 ] && ! web_up "$_n" "$_pt"; do sleep 4; _i=$((_i+1)); done
       if web_up "$_n" "$_pt"; then C "$_n is running: $(web_url "$_n" "$_pt" /)"; else C "$_n is still starting (large first start). Reload the Command Center in a minute; if it stays grey run  ./securax doctor"; fi
     done
+    ;;
+  stop)
+    # ./securax stop docs|flows|all — stop Private Docs / Automation and forget them (they stay off after the next `up`).
+    case "${2:-}" in docs) _svc="anythingllm"; _tok="docs" ;; flows|n8n) _svc="n8n"; _tok="flows" ;; all) _svc="anythingllm n8n"; _tok="docs flows" ;;
+      *) C "usage: ./securax stop docs | flows | all   (to stop everything: ./securax down)"; exit 2 ;; esac
+    ( cd "$ROOT/local/compose" && docker compose --profile ai stop $_svc $(for _s in $_svc; do echo "${_s}-tls"; done) 2>/dev/null ) || true
+    ENVF="$ROOT/local/compose/.env"; _cur=" $(ev SECURAX_OPTIONAL) "; for _t in $_tok; do _cur="${_cur// $_t / }"; done
+    skv "$ENVF" SECURAX_OPTIONAL "$(echo $_cur)"; C "stopped: $_tok"
     ;;
   down)  ( cd "$ROOT/local/compose" && docker compose --profile ai down ) ; C "stopped." ;;
   help|-h|--help)
@@ -1034,8 +1091,9 @@ START HERE (the 20% you use 80% of the time)
   cockpit        one-page health view: risks, to-dos, trends         storage        how much space you use and when it runs out
   notify         send the daily digest to Mattermost/Slack           capacity       what to switch on as more people join (1 to 100,000)
   tls            encrypt every web connection (HTTPS everywhere)        sync-link      one-tap sync setup for a phone / second computer
-  start docs|flows|all   start Private Docs / Automation (skipped in lite mode)
-  crypto         cryptography inventory (CBOM) + quantum readiness; `crypto keygen PATH` makes the backup key file
+  start / stop docs|flows|all   Private Docs / Automation (skipped in lite mode; remembered across updates)
+  protect        encrypt your backups (one guided step; Windows: double-click PROTECT-BACKUPS-Windows.bat)
+  crypto         plain-English protection check (--full: the technical inventory / CBOM)
 
 AI & CHAT
   keys / providers add|list   add free or paid AI keys             models         check which models your keys can use today
