@@ -43,10 +43,11 @@ def test_supported_on_documentation_alone_is_an_overclaim():
 
 def test_gap_with_evidence_and_partial_without_next_step_are_caught():
     m = copy.deepcopy(rm.load("rbi"))
-    item(m, "28, 141")["evidence"] = ["file:securax"]
+    gap = next(i for i in m["items"] if i["status"] == "gap")
+    gap["evidence"] = ["file:securax"]
     item(m, "18")["next"] = ""
     probs = rm.problems(m)
-    assert any("28, 141" in p for p in probs) and any(p.startswith("18:") for p in probs)
+    assert any(p.startswith(gap["id"] + ":") for p in probs) and any(p.startswith("18:") for p in probs)
 
 
 def test_entity_obligations_are_never_counted_as_covered():

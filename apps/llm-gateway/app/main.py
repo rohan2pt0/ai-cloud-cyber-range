@@ -21,7 +21,7 @@ import httpx
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
 
-from . import guardrails
+from . import guardrails, identity, residency
 from .providers import active_detectors, run_detectors
 
 MODE = os.getenv("GUARDRAIL_MODE", "enforce")  # enforce | monitor
@@ -34,6 +34,10 @@ MAX_CHARS = int(os.getenv("MAX_PROMPT_CHARS", "8000"))
 RATE_PER_MIN = int(os.getenv("RATE_LIMIT_PER_MIN", "30"))
 ALLOWED_DOMAINS = {d.strip() for d in os.getenv("ALLOWED_LINK_DOMAINS", "rbi.org.in,sebi.gov.in,cert-in.org.in").split(",") if d.strip()}
 CANARIES = {c for c in os.getenv("SYSTEM_PROMPT_CANARIES", "").split(",") if c}
+
+# Identity (see identity.py). A misconfigured AUTH_* setting stops the gateway at start-up rather than silently running open.
+AUTH = identity.Authenticator(identity.Config.from_env())
+RES = residency.Policy.from_env()          # data residency (see residency.py); off unless RESIDENCY_MODE is set
 
 logging.basicConfig(stream=sys.stdout, level=logging.INFO, format="%(message)s")
 audit = logging.getLogger("audit")
@@ -86,13 +90,34 @@ def _emit(event: dict) -> None:
     audit.info(json.dumps(event, default=str))
 
 
+async def _fetch_json(url: str) -> dict:
+    async with httpx.AsyncClient(timeout=5) as c:
+        r = await c.get(url)
+        r.raise_for_status()
+        return r.json()
+
+
+async def _authn(request: Request, endpoint: str) -> identity.Identity:
+    """Authenticate + authorise the caller for `endpoint`; a refusal is audited (who, from where, why) and returned as 401/403/429."""
+    ip = request.client.host if request.client else "unknown"
+    try:
+        ident = await AUTH.authenticate(request.headers, ip, _fetch_json)
+        AUTH.authorize(ident, endpoint)
+        return ident
+    except identity.AuthError as e:
+        _metrics["auth_denied"] += 1
+        _emit({"decision": "auth_denied", "endpoint": endpoint, "reason": e.code, "client_ip": ip, "category": "LLM06"})
+        raise HTTPException(e.status, detail={"error": {"type": "authentication_error" if e.status == 401 else "authorization_error",
+                                                        "code": e.code, "message": e.message}}) from e
+
+
 def _findings(fs: list[guardrails.Finding]) -> list[dict]:
     return [f.__dict__ for f in fs]
 
 
 @app.get("/healthz")
 async def healthz() -> dict:
-    return {"status": "ok", "mode": MODE, "upstream": "mock" if UPSTREAM == "mock" else "configured",
+    return {"status": "ok", "mode": MODE, "auth": AUTH.cfg.mode, "upstream": "mock" if UPSTREAM == "mock" else "configured",
             "detectors": active_detectors()}
 
 
@@ -108,7 +133,8 @@ _usage: dict[str, float] = defaultdict(float)     # metering for usage reports /
 
 
 @app.get("/metrics", response_class=PlainTextResponse)
-async def metrics() -> str:
+async def metrics(request: Request) -> str:
+    await _authn(request, "metrics")
     lines = ["# TYPE guardrail_events_total counter"]
     lines += [f'guardrail_events_total{{event="{k}"}} {v}' for k, v in sorted(_metrics.items())]
     lines += ["# TYPE guardrail_tokens_total counter"]
@@ -119,8 +145,9 @@ async def metrics() -> str:
 
 
 @app.post("/v1/guardrails/inspect")
-async def inspect(body: dict) -> dict:
+async def inspect(body: dict, request: Request) -> dict:
     """Stand-alone scan endpoint used by the agent for RAG chunks and by CI tests."""
+    await _authn(request, "inspect")
     text, direction = body.get("text", ""), body.get("direction", "input")
     if direction == "input":
         v = guardrails.inspect_input(text, MAX_CHARS)
@@ -183,11 +210,12 @@ async def _upstream_model_ids() -> list[str]:
 
 
 @app.get("/v1/models")
-async def models() -> dict:
+async def models(request: Request) -> dict:
     """OpenAI-compatible model list so chat UIs (Open WebUI, AnythingLLM) can discover and select a
     model through the gateway. It mirrors the LiteLLM router's LIVE models (so a newly enabled
     provider plugin shows up automatically), and falls back to SERVED_MODELS when the router can't
     be reached. `bank-assistant` = fast default (cloud Gemini, local fallback); `-local` = sovereign."""
+    await _authn(request, "models")
     ids = await _upstream_model_ids()
     if not ids:
         ids = [m.strip() for m in os.getenv("SERVED_MODELS", "bank-assistant,bank-assistant-local,builder").split(",") if m.strip()]
@@ -229,31 +257,53 @@ def _sse_from_completion(resp: dict, chunk_chars: int = 60):
 
 @app.post("/v1/chat/completions")
 async def chat(request: Request, authorization: str | None = Header(default=None)) -> JSONResponse:
+    ident = await _authn(request, "chat")
     payload = await request.json()
     req_id = str(uuid.uuid4())
-    caller = authorization or (request.client.host if request.client else "anon")
+    # Authenticated callers are rate-limited and audited by their verified subject; anonymous ones (AUTH_MODE off/optional) as before.
+    caller = ident.subject if ident.method != "none" else (authorization or (request.client.host if request.client else "anon"))
     principal = hashlib.sha256(caller.encode()).hexdigest()[:12]
+    who = {"principal": principal, **(ident.audit() if ident.method != "none" else {}),
+           "client_ip": request.client.host if request.client else "unknown"}
 
     if _rate_limited(principal):
         _metrics["rate_limited"] += 1
-        _emit({"req_id": req_id, "principal": principal, "decision": "rate_limited", "category": "LLM10"})
+        _emit({"req_id": req_id, **who, "decision": "rate_limited", "category": "LLM10"})
         raise HTTPException(429, "rate limit exceeded")
 
     messages = payload.get("messages", [])
     if not isinstance(messages, list) or not messages:
         raise HTTPException(400, "`messages` must be a non-empty list")
     in_findings: list[guardrails.Finding] = []
-    for m in messages:
+    inspected: list[tuple[dict, guardrails.Verdict]] = []
+    for m in messages:                                   # 1) deterministic rails first: local, no text leaves the gateway
         if m.get("role") in ("user", "tool") and isinstance(m.get("content"), str):
             v = guardrails.inspect_input(m["content"], MAX_CHARS)
-            v.findings += await run_detectors(m["content"], "input")
             in_findings += v.findings
-            m["content"] = v.text  # redacted / normalised text goes upstream
+            inspected.append((m, v))
+    # 2) data residency: classify by what was found + who is asking, and decide where this may be processed BEFORE anything is sent on
+    res = RES.decide(payload.get("model") or "", in_findings, ident.data_class, request.headers.get("x-data-class", ""))
+    if RES.mode != "off":
+        who["residency"] = res.audit()
+    if res.action == "blocked":
+        _metrics["residency_blocked"] += 1
+        _emit({"req_id": req_id, **who, "decision": "residency_blocked", "category": "DPDP/data-localisation"})
+        return JSONResponse(status_code=403, content={"error": {"type": "data_residency", "req_id": req_id,
+                            "message": "Request refused: this data may not be processed where the requested model runs. " + res.reason}})
+    if res.action == "rerouted":
+        _metrics["residency_rerouted"] += 1
+        payload["model"] = res.model
+    # 3) model-based detectors, on the REDACTED text, and never a cloud detector for a class that may not leave
+    for m, v in inspected:
+        det = await run_detectors(v.text, "input", allow=lambda n: RES.detector_allowed(res.cls, n))
+        v.findings += det
+        in_findings += det
+        m["content"] = v.text  # redacted / normalised text goes upstream
 
     blocking = [f for f in in_findings if f.severity in guardrails.BLOCKING and not f.rule.startswith("PII-")]
     if blocking and MODE == "enforce":
         _metrics["blocked_input"] += 1
-        _emit({"req_id": req_id, "principal": principal, "decision": "block", "stage": "input",
+        _emit({"req_id": req_id, **who, "decision": "block", "stage": "input",
                "findings": _findings(in_findings)})
         # Distinguish "your prompt matched a rule" from "a model detector is OFFLINE and we are
         # fail-closed". The second is an availability problem, not a verdict on the user's text, and
@@ -277,7 +327,7 @@ async def chat(request: Request, authorization: str | None = Header(default=None
         resp = await _call_upstream(payload)
     except (httpx.HTTPError, ValueError) as exc:    # ValueError: upstream sent something that is not JSON
         _metrics["upstream_error"] += 1
-        _emit({"req_id": req_id, "decision": "upstream_error", "error": str(exc)[:200]})
+        _emit({"req_id": req_id, **who, "decision": "upstream_error", "error": str(exc)[:200]})
         raise HTTPException(502, "upstream model unavailable") from exc
     latency_ms = round((time.perf_counter() - start) * 1000)
 
@@ -285,7 +335,7 @@ async def chat(request: Request, authorization: str | None = Header(default=None
     for choice in resp.get("choices", []):
         content = choice.get("message", {}).get("content") or ""
         v = guardrails.inspect_output(content, ALLOWED_DOMAINS, CANARIES)
-        v.findings += await run_detectors(content, "output")
+        v.findings += await run_detectors(content, "output", allow=lambda n: RES.detector_allowed(res.cls, n))
         out_findings += v.findings
         # Fail-closed: withhold if the deterministic output rails flagged it OR a model detector
         # (Llama Guard / Model Armor / Bedrock) or a detector-outage raised a BLOCKING finding.
@@ -308,7 +358,7 @@ async def chat(request: Request, authorization: str | None = Header(default=None
     _usage["tokens_completion"] += int(u.get("completion_tokens") or 0)
     _usage["latency_ms_sum"] += latency_ms
     _usage["latency_ms_count"] += 1
-    _emit({"req_id": req_id, "principal": principal, "decision": decision, "model": payload.get("model"),
+    _emit({"req_id": req_id, **who, "decision": decision, "model": payload.get("model"),
            "latency_ms": latency_ms, "usage": resp.get("usage"),
            "findings": _findings(in_findings + out_findings)})
     resp["guardrails"] = {"req_id": req_id, "decision": decision,

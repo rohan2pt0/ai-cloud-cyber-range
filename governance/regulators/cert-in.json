@@ -1,0 +1,72 @@
+{
+ "id": "cert-in",
+ "name": "CERT-In — Cyber Security Directions (28 April 2022)",
+ "jurisdiction": "IN",
+ "applies_to": "Service providers, intermediaries, data centres, body corporates and government organisations (sector regulators cite these directions).",
+ "verified": true,
+ "verified_on": "2026-10-14",
+ "source": {
+  "title": "As applied by RBI NBFC Directions 2026 para 141 and SEBI CSCRF RS.CO.S1 ('within 6 hours of noticing/detecting')",
+  "url": "https://www.cert-in.org.in",
+  "paragraphs": "Directions of 28 Apr 2022; FAQs Q30"
+ },
+ "obligations": [
+  {
+   "id": "cert-in-6h",
+   "label": "Report the cyber incident to CERT-In",
+   "from": "detection",
+   "within_hours": 6,
+   "channel": "incident@cert-in.org.in (confirm current channel on cert-in.org.in)",
+   "fields": [
+    {
+     "key": "entity_name",
+     "label": "Name of the regulated entity"
+    },
+    {
+     "key": "incident_id",
+     "label": "Internal incident reference",
+     "from": "id"
+    },
+    {
+     "key": "detected_at",
+     "label": "Date and time of detection",
+     "from": "detected_at"
+    },
+    {
+     "key": "title",
+     "label": "Incident summary",
+     "from": "title"
+    },
+    {
+     "key": "incident_type",
+     "label": "Type of incident (e.g. ransomware, data breach, DDoS, unauthorised access)"
+    },
+    {
+     "key": "systems_affected",
+     "label": "Systems / services affected"
+    },
+    {
+     "key": "impact",
+     "label": "Business and customer impact"
+    },
+    {
+     "key": "data_affected",
+     "label": "Data affected (categories, approximate volume)"
+    },
+    {
+     "key": "actions_taken",
+     "label": "Containment and recovery actions so far"
+    },
+    {
+     "key": "contact",
+     "label": "Contact person (name, phone, e-mail)"
+    }
+   ],
+   "notes": "The 6-hour figure is confirmed by two regulator texts we hold; the reporting address and form come from CERT-In's site and must be confirmed there."
+  }
+ ],
+ "periodic": [],
+ "notes": [
+  "CERT-In also expects ICT logs to be kept for 180 days within India and system clocks synchronised to NTP (NIC/NPL) - see the compliance maps."
+ ]
+}

@@ -258,7 +258,7 @@ URLS
     fi
     # The real test: send an actual message through the gateway and show who answered + the TRUE error
     # (instead of a chat UI's generic 'Oops'). Probes the same ladder Chat uses.
-    KEY="$(ev LITELLM_MASTER_KEY sk-range-dev)"
+    KEY="$(ev GATEWAY_API_KEY "$(ev LITELLM_MASTER_KEY sk-range-dev)")"      # a gateway service key when authentication is on
     probe(){ curl -sS -m "$2" http://localhost:8080/v1/chat/completions -H "Authorization: Bearer $KEY" \
       -H 'Content-Type: application/json' \
       -d "{\"model\":\"$1\",\"max_tokens\":8,\"messages\":[{\"role\":\"user\",\"content\":\"Reply with the single word OK.\"}]}" 2>&1; }
@@ -544,6 +544,22 @@ $(tail -60 "$FB")"
     # CCSP-aligned practice coverage of THIS estate (ISC2's six domains, weighted), every claim verifiable; also part of ./securax evidence.
     #   ./securax ccsp [--domain N] [--json] [--verify]
     shift; exec python3 "$ROOT/governance/ccsp.py" "$@"
+    ;;
+  residency)
+    # Data residency: which data may be processed where (gateway routing by data class + the lifecycle's cloud-region guard). Rules are data
+    # (governance/residency/<JURISDICTION>.json), so any regulator's jurisdiction works.
+    #   ./securax residency status|enable --jurisdiction IN|disable|check|region CLOUD REGION|attest CLOUD --ref REF
+    shift; exec python3 "$ROOT/governance/residency.py" "$@"
+    ;;
+  incident)
+    # The regulatory incident clock: deadlines for every regulator that applies (RBI/SEBI/CERT-In/... as data), drafts, filings, sealed evidence.
+    #   ./securax incident regulators|open|status|due|set|draft|file|note|close|verify|seal|rollup   (see the header of governance/incident.py)
+    shift; exec python3 "$ROOT/governance/incident.py" "$@"
+    ;;
+  gateway-auth)
+    # Who may call the gateway: AUTH_MODE, hashed service keys, token checker for your identity provider (any OIDC provider).
+    #   ./securax gateway-auth status|enable|disable|key add NAME --roles service|key list|revoke NAME|rotate NAME|check-token JWT
+    shift; exec python3 "$ROOT/governance/gateway_auth.py" "$@"
     ;;
   comply)
     # Regulatory gap assessment: RBI NBFC Cybersecurity/Technology Directions 2026 and SEBI CSCRF, requirement by requirement, every claim

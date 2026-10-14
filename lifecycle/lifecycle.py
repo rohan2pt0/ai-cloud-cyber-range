@@ -17,6 +17,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import pathlib
 import re
 import secrets
 import shutil
@@ -518,10 +519,26 @@ def cloud_status(stage: str) -> str:
     return "dormant"
 
 
+def residency_guard(cloud: str, d: str) -> str:
+    """Empty string if this cloud/region may be woken under the active data-residency policy, else the reason it may not."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("securax_residency", os.path.join(ROOT, "governance", "residency.py"))
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = mod
+    spec.loader.exec_module(mod)
+    ok, msg = mod.cloud_guard(cloud, mod.default_region(cloud, pathlib.Path(d)))
+    return "" if ok else msg
+
+
 def tf_run(stage: str, awake: bool, apply: bool, yes: bool, size: str | None) -> int:
     d = tf_dir()
     extra: list[str] = []
     cloud = cloud_name()
+    if awake:                                    # waking is what places data in a region; sleeping a stage is always allowed
+        refusal = residency_guard(cloud, d)
+        if refusal:
+            say("\nRefused by the data-residency policy:\n  " + refusal)
+            return 1
     if cloud == "aws" and stage == "tree" and awake:
         ami = os.environ.get("SECURAX_AMI_ID") or ("ami-0123456789abcdef0" if offline_plan() else aws_ubuntu_ami())
         if ami:

@@ -216,11 +216,16 @@
     "IV",
     "V"
    ],
-   "status": "gap",
-   "note": "The gateway does NOT authenticate callers: the 'principal' is a hash of whatever Authorization string (or client IP) arrives, so there are no users, roles, privileged-user logging or revocation at the AI access point. Tenant cells have Kubernetes RBAC and Keycloak exists as an optional organ; neither is wired to the gateway.",
-   "evidence": [],
-   "next": "Put OIDC/JWT validation (Keycloak or the entity's IdP) in front of /v1/*, map claims to roles (user, analyst, admin), log the authenticated subject in every audit line, add a journey that proves anonymous calls are refused.",
-   "priority": "high"
+   "status": "partial",
+   "note": "The gateway now authenticates every caller (OIDC/JWT from any provider, or hashed service keys), maps them to roles (user, analyst, auditor, admin, service), enforces roles per endpoint, locks a source out after repeated failures, and names the verified subject in every audit line — proven end to end in the real container. Off by default on a laptop. Not covered: the other consoles (Open WebUI, n8n, Grafana...) have their own logins; no periodic access-review or privileged-session recording; the identity provider itself is the entity's.",
+   "evidence": [
+    "file:apps/llm-gateway/app/identity.py",
+    "test:apps/llm-gateway/tests/test_identity.py",
+    "journey:gateway_identity",
+    "cmd:gateway-auth"
+   ],
+   "next": "Turn it on for the deployment (`gateway-auth enable` + OIDC settings); add a periodic access/token review report and privileged-session logging.",
+   "priority": "medium"
   },
   {
    "id": "21(6), 8(3)",
@@ -245,11 +250,12 @@
     "V"
    ],
    "status": "partial",
-   "note": "AI-SOC classifies gateway events, the purple loop measures prevented/logged/alerted, and a runbook exists. Classification is not mapped to the regulator's categories and procedures are not approved by the entity.",
+   "note": "AI-SOC classifies gateway events, the purple loop measures prevented/logged/alerted, `incident` runs the reporting clock and a tamper-evident case log. Severity is not mapped to the regulator's incident categories and procedures are not approved by the entity.",
    "evidence": [
     "file:ai-soc/soc/triage.py",
     "journey:purple_loop",
-    "file:docs/securax/27-INCIDENT-RUNBOOK.md"
+    "file:docs/securax/27-INCIDENT-RUNBOOK.md",
+    "journey:incident_clock"
    ],
    "next": "Map SOC severities to the RBI/CERT-In incident categories and emit them on each case.",
    "priority": "medium"
@@ -262,12 +268,13 @@
     "V"
    ],
    "status": "partial",
-   "note": "Every gateway decision is one JSON audit line (verified end-to-end by the purple loop). Not tamper-evident (no hash chain / signing), records no authenticated identity (see 113), and retention is whatever the log shipper keeps.",
+   "note": "Every gateway decision is one JSON audit line (verified end to end by the purple loop). With authentication on it names the verified subject, roles, auth method and source address, and refusals are audited with reason (the SOC raises `auth-bruteforce` on repeats). Still not tamper-evident (no hash chain / signing) and retention is whatever the log shipper keeps.",
    "evidence": [
     "file:apps/llm-gateway/app/main.py",
-    "journey:purple_loop"
+    "journey:purple_loop",
+    "journey:gateway_identity"
    ],
-   "next": "Hash-chain the audit lines and anchor the head in the evidence pack; add the authenticated subject; enforce and prove retention ≥180 days (CERT-In) and the longer period the entity's policy sets.",
+   "next": "Hash-chain the audit lines and anchor the head in the evidence pack; enforce and prove retention ≥180 days (CERT-In) and the longer period the entity's policy sets.",
    "priority": "high"
   },
   {
@@ -340,11 +347,16 @@
     "IV",
     "V"
    ],
-   "status": "gap",
-   "note": "Nothing tracks the six-hour clock, prepares the report fields, or reminds anyone. This is the most time-critical obligation in the Directions.",
-   "evidence": [],
-   "next": "`./securax incident open` starts a six-hour clock from detection, collects the DAKSH/CERT-In fields (classification, impact, systems, actions) from the SOC case, and exports a ready-to-file record; test it with a journey.",
-   "priority": "high"
+   "status": "partial",
+   "note": "`./securax incident` starts the 6-hour clock at detection for every applicable regulator at once (RBI/DAKSH, CERT-In, SEBI... regulators are data), flags overdue (exit code for cron/n8n), drafts each notification with the case facts and the gaps, records filings as on-time/late, keeps a hash-chained case log and seals evidence. It does not file anything (DAKSH has no integration here) and nothing pages a human by itself.",
+   "evidence": [
+    "file:governance/incident.py",
+    "test:lifecycle/tests/test_incident.py",
+    "journey:incident_clock",
+    "cmd:incident"
+   ],
+   "next": "Wire `incident due` to a pager/e-mail/n8n alert; optional DAKSH field export once the portal's schema is known.",
+   "priority": "medium"
   },
   {
    "id": "29-30, 35-36",
@@ -723,11 +735,15 @@
    "applies": [
     "V"
    ],
-   "status": "gap",
-   "note": "No MFA enforcement in the estate. Tailscale (with SSO MFA, if the entity configures it) can front the cloud node; the gateway, Open WebUI and admin consoles have no MFA.",
-   "evidence": [],
-   "next": "Front all human-facing consoles with the IdP (OIDC, MFA required for admin roles); require tailnet ACLs; prove it with a journey that an unauthenticated browser is refused.",
-   "priority": "high"
+   "status": "partial",
+   "note": "At the gateway, admin and auditor roles require an MFA-proven token (amr/acr from the identity provider); machine keys can never hold those roles. MFA itself is performed by the entity's identity provider. Not covered: other consoles and remote access (VPN/Tailscale SSO), identifying all remote-access devices, teleworking data controls.",
+   "evidence": [
+    "file:apps/llm-gateway/app/identity.py",
+    "test:apps/llm-gateway/tests/test_identity.py",
+    "journey:gateway_identity"
+   ],
+   "next": "Front the remaining consoles with the same IdP and require MFA; device inventory for remote access.",
+   "priority": "medium"
   },
   {
    "id": "118",

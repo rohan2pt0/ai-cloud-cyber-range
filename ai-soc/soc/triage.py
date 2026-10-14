@@ -99,6 +99,10 @@ def normalise_events(records: list[dict]) -> list[Event]:
             sev = _worst_sev([f.get("severity", "info") for f in findings]) if findings else "info"
             kind = r.get("decision", "allow")
             detail = ",".join(sorted({f.get("rule", "") for f in findings}))
+            if kind == "auth_denied":              # no verified identity: correlate the refused callers by where they came from
+                principal = r.get("client_ip", principal)
+                sev = "low"
+                detail = f"{r.get('endpoint', '')}:{r.get('reason', '')}"
         elif src == "falco":
             principal = r.get("output_fields", {}).get("k8s.pod.name", r.get("hostname", "node"))
             sev = {"CRITICAL": "critical", "WARNING": "medium", "NOTICE": "low"}.get(r.get("priority", ""), "low")
@@ -132,6 +136,11 @@ def correlate(events: list[Event], window_s: float = 300.0, burst: int = 3) -> l
         by_principal[e.principal].append(e)
 
     for principal, evs in by_principal.items():
+        # 0) Repeated refused logins/credentials from one place = guessing or stuffing (ATT&CK T1110), whether or not any succeeded.
+        denied = [e for e in evs if e.source == "gateway" and e.kind == "auth_denied"]
+        if len(denied) >= burst and _within(denied, window_s):
+            incidents.append(_mk("auth-bruteforce", principal, "high", "AML.T0012 (valid accounts)", "T1110 (brute force)",
+                                 denied, "Confirm the lock-out engaged; block the source; check whether any later request from it succeeded."))
         # 1) Repeated blocked injections from one principal within the window = active attacker.
         blocks = [e for e in evs if e.source == "gateway" and e.kind == "block"]
         if len(blocks) >= burst and _within(blocks, window_s):
@@ -201,7 +210,9 @@ def summarise(inc: Incident) -> str:
     if gw:
         try:
             import httpx
-            r = httpx.post(f"{gw.rstrip('/')}/v1/chat/completions", timeout=30, json={
+            key = os.getenv("GATEWAY_API_KEY")          # a gateway service key when authentication is on
+            r = httpx.post(f"{gw.rstrip('/')}/v1/chat/completions", timeout=30,
+                           headers={"Authorization": f"Bearer {key}"} if key else None, json={
                 "model": "bank-assistant", "messages": [{"role": "user", "content": prompt}]})
             if r.status_code == 200:
                 return r.json()["choices"][0]["message"]["content"]

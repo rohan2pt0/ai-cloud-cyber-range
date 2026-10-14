@@ -132,7 +132,7 @@ def test_output_detector_verdict_is_enforced(monkeypatch):
     had already set allowed=True, so an unsafe model reply could slip through."""
     import app.main as m
 
-    async def fake_detectors(text, direction):
+    async def fake_detectors(text, direction, allow=None):
         return [g.Finding("LG-unsafe", "llama-guard", "high", "unsafe")] if direction == "output" else []
 
     monkeypatch.setattr(m, "run_detectors", fake_detectors)

@@ -1,0 +1,79 @@
+{
+ "jurisdiction": "IN",
+ "description": "India: SEBI CSCRF 'Regulatory Data' must stay within India (readable, accessible to SEBI/CERT-In); RBI and DPDP expectations alike. Confirm against your own legal advice.",
+ "sources": [
+  "SEBI CSCRF PR.DS guidelines (data localisation) and Annexure-J (cloud)",
+  "RBI NBFC Directions 2026 (para 101-103 DC/DR, 117 vendors)"
+ ],
+ "verified_on": "2026-10-14",
+ "order": [
+  "public",
+  "confidential",
+  "regulatory"
+ ],
+ "classes": {
+  "public": {
+   "zones": [
+    "*"
+   ]
+  },
+  "confidential": {
+   "zones": [
+    "local",
+    "in"
+   ]
+  },
+  "regulatory": {
+   "zones": [
+    "local",
+    "in"
+   ]
+  }
+ },
+ "default_class": "public",
+ "class_by_finding": {
+  "AADHAAR": "regulatory",
+  "CARD_PAN": "regulatory",
+  "INCOME_TAX_PAN": "regulatory",
+  "UPI_ID": "confidential",
+  "IN_MOBILE": "confidential",
+  "EMAIL": "confidential",
+  "IFSC": "public"
+ },
+ "model_zones": {
+  "*-local": "local",
+  "coder": "local"
+ },
+ "detector_zones": {
+  "llama-guard": "local"
+ },
+ "reroute_to": [
+  "bank-assistant-local"
+ ],
+ "zones_help": {
+  "local": "this machine or your own LAN/on-prem (the burrow, an Ollama on your network)",
+  "in": "an in-country cloud region you have attested (MeitY-empanelled offering, STQC-audited)",
+  "global": "anywhere else - every public AI API unless you know where it runs"
+ },
+ "cloud": {
+  "regions": {
+   "aws": [
+    "ap-south-1",
+    "ap-south-2"
+   ],
+   "gcp": [
+    "asia-south1",
+    "asia-south2"
+   ],
+   "azure": [
+    "centralindia",
+    "southindia",
+    "westindia",
+    "jioindiawest",
+    "jioindiacentral"
+   ]
+  },
+  "requires_attestation": true,
+  "attestation_note": "SEBI CSCRF Annexure-J: hosted services must be at least the standard of MeitY-empanelled CSP offerings, audited by an STQC-empanelled auditor; keep a copy of data in India if hosted abroad. SecuRAX cannot verify this: it records YOUR evidence reference."
+ }
+}

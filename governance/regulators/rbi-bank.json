@@ -1,0 +1,124 @@
+{
+ "id": "rbi-bank",
+ "name": "RBI — banks and other regulated entities (Master Direction on IT Governance, Risk, Controls and Assurance Practices, 2023, and its 2026 successors)",
+ "jurisdiction": "IN",
+ "applies_to": "Banks and other RBI-regulated entities that are not NBFCs. CONFIRM which instrument applies to you.",
+ "verified": false,
+ "verified_on": "",
+ "source": {
+  "title": "Secondary sources only (law-firm and consultancy summaries; KPMG note on the 31 July 2026 consolidation)",
+  "url": "https://kpmg.com/in/en/insights/2026/09/rbis-technology-focused-master-directions-issued-on-31-july-2026.html",
+  "paragraphs": "confirm in the primary text"
+ },
+ "obligations": [
+  {
+   "id": "daksh",
+   "label": "Report the cyber incident to RBI on the DAKSH platform",
+   "from": "detection",
+   "within_hours": 6,
+   "channel": "DAKSH",
+   "fields": [
+    {
+     "key": "entity_name",
+     "label": "Name of the regulated entity"
+    },
+    {
+     "key": "incident_id",
+     "label": "Internal incident reference",
+     "from": "id"
+    },
+    {
+     "key": "detected_at",
+     "label": "Date and time of detection",
+     "from": "detected_at"
+    },
+    {
+     "key": "title",
+     "label": "Incident summary",
+     "from": "title"
+    },
+    {
+     "key": "incident_type",
+     "label": "Type of incident (e.g. ransomware, data breach, DDoS, unauthorised access)"
+    },
+    {
+     "key": "systems_affected",
+     "label": "Systems / services affected"
+    },
+    {
+     "key": "impact",
+     "label": "Business and customer impact"
+    },
+    {
+     "key": "data_affected",
+     "label": "Data affected (categories, approximate volume)"
+    },
+    {
+     "key": "actions_taken",
+     "label": "Containment and recovery actions so far"
+    },
+    {
+     "key": "contact",
+     "label": "Contact person (name, phone, e-mail)"
+    }
+   ],
+   "notes": "UNVERIFIED against the primary text - confirm the period, the channel and the clock start before relying on this."
+  },
+  {
+   "id": "cert-in",
+   "label": "Notify CERT-In",
+   "from": "detection",
+   "within_hours": 6,
+   "channel": "CERT-In",
+   "fields": [
+    {
+     "key": "entity_name",
+     "label": "Name of the regulated entity"
+    },
+    {
+     "key": "incident_id",
+     "label": "Internal incident reference",
+     "from": "id"
+    },
+    {
+     "key": "detected_at",
+     "label": "Date and time of detection",
+     "from": "detected_at"
+    },
+    {
+     "key": "title",
+     "label": "Incident summary",
+     "from": "title"
+    },
+    {
+     "key": "incident_type",
+     "label": "Type of incident (e.g. ransomware, data breach, DDoS, unauthorised access)"
+    },
+    {
+     "key": "systems_affected",
+     "label": "Systems / services affected"
+    },
+    {
+     "key": "impact",
+     "label": "Business and customer impact"
+    },
+    {
+     "key": "data_affected",
+     "label": "Data affected (categories, approximate volume)"
+    },
+    {
+     "key": "actions_taken",
+     "label": "Containment and recovery actions so far"
+    },
+    {
+     "key": "contact",
+     "label": "Contact person (name, phone, e-mail)"
+    }
+   ]
+  }
+ ],
+ "periodic": [],
+ "notes": [
+  "Older guidance (RBI CSF 2016) used shorter windows; do not use it."
+ ]
+}

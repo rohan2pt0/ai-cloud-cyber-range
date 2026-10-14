@@ -23,12 +23,14 @@ Not assessed: SEBI's separate cloud framework, the Annexure-K CCI scoring itself
 ## Result (software-scope coverage; entity items excluded)
 | | Supported | Partial | Gap | Entity | N/A | Coverage |
 |---|---|---|---|---|---|---|
-| RBI NBFC | 1 | 27 | 6 | 21 | 3 | **42.6 %** |
-| SEBI CSCRF (all categories) | 1 | 45 | 9 | 16 | 4 | **42.7 %** |
+| RBI NBFC | 1 | 30 | 3 | 21 | 3 | **47.1 %** |
+| SEBI CSCRF (all categories) | 1 | 50 | 4 | 16 | 4 | **47.3 %** |
 
 Scoring: supported 1, partial 0.5, gap 0. "Supported" needs a journey or test as proof, so it is rare by design. These percentages describe a **lab estate against the regulator's text**; they are not an audit opinion and not a statement about your institution.
 
 ## The gaps that matter (found by reading the code against the text)
+> **Update:** items 1–3 were built afterwards (identity-aware gateway, incident clock, data-residency guard — [doc 36](36-IDENTITY-INCIDENT-RESIDENCY.md)); they moved from *gap* to *partial* (the entity's identity provider, alerting, filing and attestations remain theirs). The original findings are kept below as written.
+
 1. **The gateway does not authenticate callers.** The "principal" is a hash of whatever `Authorization` string (or client IP) arrives. There are no users, roles, lock-out, MFA, privileged-user logging or auditor role at the AI access point (RBI 113-116, 21(3); CSCRF PR.AA.S1-S3, S7, S9 and PIM). This is the biggest single gap and it also blocks non-repudiation in the audit trail.
 2. **No incident-reporting clock.** RBI para 28/141: DAKSH within **6 hours** of detection plus CERT-In; CSCRF RS.CO: SEBI and CERT-In within **6 hours**, SEBI portal details within 24 hours, quarterly report within 15 days. Nothing tracks, templates or reminds.
 3. **Data localisation.** CSCRF requires Regulatory Data to stay within India; the router can send prompts to Gemini/Groq/OpenRouter. PII redaction reduces exposure but nothing enforces "classified data never leaves India". Cloud stages are not constrained to India regions or MeitY-empanelled offerings (Annexure-J).

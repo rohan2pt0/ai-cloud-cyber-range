@@ -77,3 +77,15 @@ def test_injection_in_alert_text_is_sanitised():
     # that could drive an LLM; normalise() + redact run on it. At minimum it is length-capped and
     # passed through the guardrail normaliser (no exception, deterministic).
     assert evs and isinstance(evs[0].detail, str)
+
+
+def test_repeated_refused_credentials_from_one_source_raise_an_incident():
+    recs = [{"decision": "auth_denied", "endpoint": "chat", "reason": "bad_credentials", "client_ip": "203.0.113.9", "ts": f"2026-10-14T10:00:0{i}"} for i in range(4)]
+    rep = triage.triage(recs, summarize=False)
+    hits = [i for i in rep["incidents"] if i["rule"] == "auth-bruteforce"]
+    assert hits and hits[0]["principal"] == "203.0.113.9" and hits[0]["severity"] == "high" and "T1110" in hits[0]["attack"]
+
+
+def test_a_single_refused_credential_is_not_an_incident():
+    rep = triage.triage([{"decision": "auth_denied", "endpoint": "chat", "reason": "expired", "client_ip": "198.51.100.7", "ts": "2026-10-14T10:00:00"}], summarize=False)
+    assert not [i for i in rep["incidents"] if i["rule"] == "auth-bruteforce"]

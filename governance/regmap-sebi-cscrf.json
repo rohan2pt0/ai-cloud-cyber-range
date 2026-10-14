@@ -305,11 +305,16 @@
    "id": "PR.AA.S1-S3,S7,S9 (access)",
    "title": "Least-privilege, purpose- and time-bound access; periodic review of access, delegated access and unused tokens; unique logged access to critical systems retained ≥2 years (6 months online); lock-out after failed attempts; dormant-account review; leaver de-provisioning; MFA for internet-facing critical systems and all remote/VPN/webmail access",
    "applies": "all",
-   "status": "gap",
-   "note": "No authentication, accounts, lock-out, dormant-account review or MFA at the gateway or its consoles (the principal is a hash of the caller string or IP). Log retention beyond what the shipper keeps is not enforced.",
-   "evidence": [],
-   "next": "Identity-aware gateway: OIDC/JWT validation, roles, per-subject rate limits, lock-out, session logging, MFA via IdP; retention policy enforced and tested (2 years, 6 months hot).",
-   "priority": "high"
+   "status": "partial",
+   "note": "Gateway: identity-based, role-limited, least-privilege access; MFA for admin/auditor via the identity provider; lock-out after repeated failures; unique subject logged; service keys expire and are revocable. Not covered: log retention of 2 years (6 months online) is not enforced, dormant-account and leaver reviews are the identity provider's, other consoles are separate, and the gateway is off by default on a laptop.",
+   "evidence": [
+    "file:apps/llm-gateway/app/identity.py",
+    "test:apps/llm-gateway/tests/test_identity.py",
+    "journey:gateway_identity",
+    "cmd:gateway-auth"
+   ],
+   "next": "Enforce and test 2-year log retention; periodic access/token review report; extend to the other consoles.",
+   "priority": "medium"
   },
   {
    "id": "PR.AA.S1-S3 (network & endpoint basics)",
@@ -333,11 +338,15 @@
     "qre",
     "mid"
    ],
-   "status": "gap",
-   "note": "No privileged-access management; no separation between who runs the gateway and who can read its audit log.",
-   "evidence": [],
-   "next": "Admin role separate from auditor role; audit-log store append-only for the admin role.",
-   "priority": "high"
+   "status": "partial",
+   "note": "Admin and auditor are distinct roles and both need MFA; machine keys cannot be privileged. No PIM/just-in-time elevation, no recording of privileged sessions, and an admin can still read the audit stream.",
+   "evidence": [
+    "file:apps/llm-gateway/app/identity.py",
+    "test:apps/llm-gateway/tests/test_identity.py",
+    "journey:gateway_identity"
+   ],
+   "next": "Append-only audit store the admin role cannot edit; privileged-session recording; JIT elevation via the IdP.",
+   "priority": "medium"
   },
   {
    "id": "PR.AA (segmentation & filters)",
@@ -375,9 +384,12 @@
     "qre"
    ],
    "status": "partial",
-   "note": "Default-deny network policy per tenant; user/token review and identity-based zero trust are not implemented.",
+   "note": "Gateway is deny-by-default when authentication is required (no credential = 401, wrong role = 403, every refusal audited); tenant cells ship default-deny network policies. Token review is manual (keys list shows age and expiry); identity-based zero trust beyond the gateway is the entity's.",
    "evidence": [
-    "file:gitops/charts/tenant/templates/networkpolicy.yaml"
+    "file:gitops/charts/tenant/templates/networkpolicy.yaml",
+    "file:apps/llm-gateway/app/identity.py",
+    "test:apps/llm-gateway/tests/test_identity.py",
+    "journey:gateway_identity"
    ],
    "next": "Short-lived tokens issued by the IdP and a quarterly token-review report.",
    "priority": "medium"
@@ -453,13 +465,14 @@
     "mid"
    ],
    "status": "partial",
-   "note": "Gateway: rate limiting, request-size limits, prompt-injection and PII rails, output link allow-list, tool-call inspection; mapped to OWASP LLM Top 10 and ATLAS and exercised by the purple loop. No API authentication (see PR.AA.S1-S3); no mobile apps.",
+   "note": "Gateway: authentication and authorisation (when enabled), rate limiting, request-size limits, prompt-injection and PII rails, output link allow-list, tool-call inspection; mapped to OWASP LLM Top 10 and ATLAS. No mobile apps. The GenAI-security SOP is not written as a document.",
    "evidence": [
     "file:apps/llm-gateway/app/guardrails.py",
     "test:apps/llm-gateway/tests/test_guardrails.py",
-    "journey:purple_loop"
+    "journey:purple_loop",
+    "journey:gateway_identity"
    ],
-   "next": "Add authentication (above), then a written GenAI-security SOP generated from the rails and the purple-loop results.",
+   "next": "Generate the GenAI-security SOP from the rails and the purple-loop results.",
    "priority": "high"
   },
   {
@@ -553,11 +566,17 @@
    "id": "PR.DS (data localisation)",
    "title": "Regulatory Data kept within India in readable form; global SOC / SaaS exemption for IT & Cybersecurity Data only with annual IT-Committee and Board approval and 48-hour availability to SEBI/CERT-In",
    "applies": "all",
-   "status": "gap",
-   "note": "Prompts go to Gemini/Groq/OpenRouter and other cloud rungs of the router when keys are present; PII redaction reduces but does not remove regulatory data. There is no rule that 'regulatory data never leaves India'. The local-only profile keeps everything local, but nothing enforces its use for classified data.",
-   "evidence": [],
-   "next": "Classification-aware routing: tag requests (by tenant/endpoint/detected data class); regulatory data may only use local or India-region providers, enforced and logged in the gateway; journey proves a classified prompt never reaches a foreign provider.",
-   "priority": "high"
+   "status": "partial",
+   "note": "With residency enforced (India policy), data the gateway classifies as regulatory (Aadhaar, PAN, card numbers; a caller's default class; the X-Data-Class header) is never sent to a model outside the allowed zones: it is rerouted to the local model or refused, model-based cloud detectors are not sent it, detectors now see only redacted text, and the audit says why. A test proves no local model alias ever falls back to a cloud one. Limits: it classifies by patterns, caller class and header — it cannot know free text is confidential; a model with no zone is treated as global; remote compute (a GPU box) must be configured honestly as local or not; backups and other stores are not covered; off by default on a laptop.",
+   "evidence": [
+    "file:apps/llm-gateway/app/residency.py",
+    "test:apps/llm-gateway/tests/test_residency.py",
+    "journey:gateway_residency",
+    "cmd:residency",
+    "test:lifecycle/tests/test_residency_cli.py"
+   ],
+   "next": "Classification by content (names, account numbers) via a local classifier; residency for backups and the SOC feed; per-tenant default classes.",
+   "priority": "medium"
   },
   {
    "id": "PR.DS (data classification)",
@@ -878,11 +897,16 @@
    "id": "RS.CO.S1-S3",
    "title": "Report incidents to SEBI and CERT-In within 6 hours (mkt_incidents@sebi.gov.in), details on the SEBI portal within 24 hours, brokers/DPs also to exchange/depository; quarterly reports within 15 days of quarter end; share threat intelligence; RCA and forensic reports on request",
    "applies": "all",
-   "status": "gap",
-   "note": "Nothing tracks the 6-hour and 24-hour clocks, prepares the notification or the quarterly report, or maintains the contact list.",
-   "evidence": [],
-   "next": "`./securax incident` (shared with RBI para 28/141): clock, templates for e-mail/portal fields, quarterly roll-up, TLP labelling.",
-   "priority": "high"
+   "status": "partial",
+   "note": "`./securax incident` computes the 6-hour (SEBI e-mail, exchange for brokers/DPs) and 24-hour (SEBI portal) clocks from detection, drafts the notifications, records filings, and `incident rollup --regulator sebi-cscrf --period 2026Q3` gives the quarterly report's inputs and its due date (15 days after quarter end). It files nothing and does not maintain the stakeholder contact list or TLP sharing.",
+   "evidence": [
+    "file:governance/incident.py",
+    "test:lifecycle/tests/test_incident.py",
+    "journey:incident_clock",
+    "cmd:incident"
+   ],
+   "next": "Alerting on `incident due`; TLP-labelled threat-intelligence export; stakeholder contact register.",
+   "priority": "medium"
   },
   {
    "id": "RS.CO.S2 (comms)",
@@ -1023,11 +1047,16 @@
    "id": "Annexure-J (cloud)",
    "title": "Cloud adoption: hosted services on Tier-4-equivalent data centres, MeitY-empanelled CSP offerings audited by STQC-empanelled auditor, VAPT summaries available, copy of data in India if hosted abroad, data-in-use protection",
    "applies": "all",
-   "status": "gap",
-   "note": "The cloud stages (tree, canopy) can run on AWS, GCP or Azure; nothing checks that the chosen offering is MeitY-empanelled/STQC-audited, that the region is in India, or that a copy of data stays in India.",
-   "evidence": [],
-   "next": "Provider/region guardrail in the lifecycle genome: refuse to wake a cloud stage outside an allow-list of India regions and CSPs the entity has verified; record the empanelment evidence.",
-   "priority": "high"
+   "status": "partial",
+   "note": "With residency enforced, the lifecycle refuses to wake a cloud stage outside the allowed Indian regions or for a cloud whose offering the entity has not attested (`residency attest`, recording its MeitY-empanelment/STQC-audit reference). SecuRAX cannot verify the empanelment, the Tier-4 data-centre standard, VAPT summaries or data-in-use protection: those stay the entity's evidence.",
+   "evidence": [
+    "file:governance/residency.py",
+    "test:lifecycle/tests/test_residency_cli.py",
+    "journey:gateway_residency",
+    "file:governance/residency/IN.json"
+   ],
+   "next": "Attach the attestation evidence (file hash) to the evidence pack; add 'copy of data in India' check for non-Indian regions.",
+   "priority": "medium"
   }
  ]
 }

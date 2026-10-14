@@ -1,0 +1,79 @@
+{
+ "id": "custom-example",
+ "name": "EXAMPLE - copy this file, rename it (e.g. my-regulator.json) and fill it in. Files named *.example.json are ignored.",
+ "jurisdiction": "XX",
+ "applies_to": "Describe who this applies to",
+ "verified": false,
+ "verified_on": "",
+ "source": {
+  "title": "Where the obligation comes from",
+  "url": "https://example.org",
+  "paragraphs": ""
+ },
+ "obligations": [
+  {
+   "id": "initial",
+   "label": "What must be reported",
+   "from": "detection",
+   "within_hours": 24,
+   "channel": "How/where",
+   "fields": [
+    {
+     "key": "entity_name",
+     "label": "Name of the regulated entity"
+    },
+    {
+     "key": "incident_id",
+     "label": "Internal incident reference",
+     "from": "id"
+    },
+    {
+     "key": "detected_at",
+     "label": "Date and time of detection",
+     "from": "detected_at"
+    },
+    {
+     "key": "title",
+     "label": "Incident summary",
+     "from": "title"
+    },
+    {
+     "key": "incident_type",
+     "label": "Type of incident (e.g. ransomware, data breach, DDoS, unauthorised access)"
+    },
+    {
+     "key": "systems_affected",
+     "label": "Systems / services affected"
+    },
+    {
+     "key": "impact",
+     "label": "Business and customer impact"
+    },
+    {
+     "key": "data_affected",
+     "label": "Data affected (categories, approximate volume)"
+    },
+    {
+     "key": "actions_taken",
+     "label": "Containment and recovery actions so far"
+    },
+    {
+     "key": "contact",
+     "label": "Contact person (name, phone, e-mail)"
+    }
+   ],
+   "notes": "Use from: detection, or from: after:<obligation id> to chain a follow-up on the filing of an earlier one."
+  }
+ ],
+ "periodic": [
+  {
+   "id": "quarterly",
+   "label": "Optional periodic report",
+   "frequency": "quarterly",
+   "due_days_after_period_end": 15,
+   "channel": "",
+   "notes": ""
+  }
+ ],
+ "notes": []
+}

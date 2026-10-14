@@ -54,6 +54,21 @@ services:
       LLAMA_GUARD_URL: ${LLAMA_GUARD_URL:-}
       FAIL_MODE: ${FAIL_MODE:-closed}
       RATE_LIMIT_PER_MIN: "30"
+      # Identity (apps/llm-gateway/app/identity.py). Off by default on a laptop; `./securax gateway-auth enable` turns it on.
+      AUTH_MODE: ${AUTH_MODE:-off}
+      GATEWAY_API_KEYS_B64: ${GATEWAY_API_KEYS_B64:-}
+      OIDC_ISSUER: ${OIDC_ISSUER:-}
+      OIDC_AUDIENCE: ${OIDC_AUDIENCE:-}
+      OIDC_JWKS_URL: ${OIDC_JWKS_URL:-}
+      OIDC_JWKS_JSON: ${OIDC_JWKS_JSON:-}
+      AUTH_ROLES_CLAIM: ${AUTH_ROLES_CLAIM:-roles}
+      AUTH_ROLE_MAP: ${AUTH_ROLE_MAP:-}
+      AUTH_MFA_ROLES: ${AUTH_MFA_ROLES:-admin,auditor}
+      AUTH_MFA_ACR: ${AUTH_MFA_ACR:-}
+      # Data residency (apps/llm-gateway/app/residency.py). Off by default; `./securax residency enable --jurisdiction IN` turns it on.
+      RESIDENCY_MODE: ${RESIDENCY_MODE:-off}
+      RESIDENCY_ACTION: ${RESIDENCY_ACTION:-reroute}
+      RESIDENCY_POLICY_B64: ${RESIDENCY_POLICY_B64:-}
       SYSTEM_PROMPT_CANARIES: ${SYSTEM_PROMPT_CANARY:-CANARY-7f3a9c}
       SECURAX_VERSION: ${SECURAX_VERSION:-}   # ./securax up exports this from the VERSION file
       GIT_COMMIT: ${GIT_COMMIT:-}
@@ -186,7 +201,7 @@ services:
     environment:
       # Gateway speaks the OpenAI API; it forwards to LiteLLM -> Ollama/cloud.
       OPENAI_API_BASE_URL: http://gateway:8080/v1
-      OPENAI_API_KEY: ${LITELLM_MASTER_KEY:-sk-range-dev}
+      OPENAI_API_KEY: ${WEBUI_GATEWAY_KEY:-${LITELLM_MASTER_KEY:-sk-range-dev}}   # a gateway service key once `gateway-auth enable` is on
       WEBUI_AUTH: "true"            # local account; stays on your machine
       ENABLE_OLLAMA_API: "false"    # force traffic through the gateway, not raw Ollama
       # Default new chats to the FREE/sovereign path (Gemini free-tier -> local fallback), never a

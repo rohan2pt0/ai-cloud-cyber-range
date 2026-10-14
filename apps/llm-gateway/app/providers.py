@@ -136,9 +136,10 @@ class BedrockGuardrail(Detector):
 DETECTORS: list[Detector] = [LlamaGuardOllama(), GoogleModelArmor(), AzurePromptShields(), BedrockGuardrail()]
 
 
-async def run_detectors(text: str, direction: str) -> list[Finding]:
+async def run_detectors(text: str, direction: str, allow=None) -> list[Finding]:
+    """`allow(name) -> bool` lets the caller withhold the text from detectors it may not be sent to (data residency)."""
     fail_closed = os.getenv("FAIL_MODE", "closed") == "closed"
-    enabled = [d for d in DETECTORS if d.enabled()]
+    enabled = [d for d in DETECTORS if d.enabled() and (allow is None or allow(d.name))]
 
     async def _one(d: "Detector") -> list[Finding]:
         try:

@@ -1,0 +1,126 @@
+{
+ "id": "rbi-nbfc",
+ "name": "RBI — NBFC (Cybersecurity, Technology: Risk, Resilience and Assurance Framework) Directions, 2026",
+ "jurisdiction": "IN",
+ "applies_to": "NBFCs registered with RBI (all layers). Housing finance companies report cyber incidents to NHB, not RBI.",
+ "verified": true,
+ "verified_on": "2026-10-14",
+ "source": {
+  "title": "RBI/DoS/2026-27/461, 31 July 2026",
+  "url": "https://rbi.org.in",
+  "paragraphs": "28 (Ch IV C.6), 141 (Ch V C.15.1)"
+ },
+ "obligations": [
+  {
+   "id": "daksh",
+   "label": "Report the cyber incident to RBI on the DAKSH platform",
+   "from": "detection",
+   "within_hours": 6,
+   "channel": "DAKSH — https://daksh.rbi.org.in (HFCs: NHB)",
+   "fields": [
+    {
+     "key": "entity_name",
+     "label": "Name of the regulated entity"
+    },
+    {
+     "key": "incident_id",
+     "label": "Internal incident reference",
+     "from": "id"
+    },
+    {
+     "key": "detected_at",
+     "label": "Date and time of detection",
+     "from": "detected_at"
+    },
+    {
+     "key": "title",
+     "label": "Incident summary",
+     "from": "title"
+    },
+    {
+     "key": "incident_type",
+     "label": "Type of incident (e.g. ransomware, data breach, DDoS, unauthorised access)"
+    },
+    {
+     "key": "systems_affected",
+     "label": "Systems / services affected"
+    },
+    {
+     "key": "impact",
+     "label": "Business and customer impact"
+    },
+    {
+     "key": "data_affected",
+     "label": "Data affected (categories, approximate volume)"
+    },
+    {
+     "key": "actions_taken",
+     "label": "Containment and recovery actions so far"
+    },
+    {
+     "key": "contact",
+     "label": "Contact person (name, phone, e-mail)"
+    }
+   ],
+   "notes": "'Cyber incident' includes IT incidents (definition adapted from FSB Cyber Lexicon). The clock starts at DETECTION."
+  },
+  {
+   "id": "cert-in",
+   "label": "Proactively notify CERT-In",
+   "from": "detection",
+   "within_hours": 6,
+   "channel": "CERT-In (see the cert-in regulator)",
+   "fields": [
+    {
+     "key": "entity_name",
+     "label": "Name of the regulated entity"
+    },
+    {
+     "key": "incident_id",
+     "label": "Internal incident reference",
+     "from": "id"
+    },
+    {
+     "key": "detected_at",
+     "label": "Date and time of detection",
+     "from": "detected_at"
+    },
+    {
+     "key": "title",
+     "label": "Incident summary",
+     "from": "title"
+    },
+    {
+     "key": "incident_type",
+     "label": "Type of incident (e.g. ransomware, data breach, DDoS, unauthorised access)"
+    },
+    {
+     "key": "systems_affected",
+     "label": "Systems / services affected"
+    },
+    {
+     "key": "impact",
+     "label": "Business and customer impact"
+    },
+    {
+     "key": "data_affected",
+     "label": "Data affected (categories, approximate volume)"
+    },
+    {
+     "key": "actions_taken",
+     "label": "Containment and recovery actions so far"
+    },
+    {
+     "key": "contact",
+     "label": "Contact person (name, phone, e-mail)"
+    }
+   ],
+   "notes": "Para 141 says 'proactively notify'; CERT-In's own directions set the 6-hour limit."
+  }
+ ],
+ "periodic": [],
+ "notes": [
+  "MIS must include incident reporting, impact and steps taken to prevent recurrence (para 44(9)).",
+  "Board and senior management escalation plan: para 143."
+ ]
+}
