@@ -12,6 +12,7 @@ Needs: Docker (with compose), Python 3.11+, PyYAML, openssl; Playwright + Chromi
 from __future__ import annotations
 
 import argparse
+import base64
 import json
 import os
 import pathlib
@@ -402,6 +403,95 @@ def j_cockpit(sb: H.Sandbox, c: Checks):
     c.ok(rc == 0 and all(w in out for w in ("cockpit", "storage", "comply", "incident", "regulated", "gateway-auth", "residency")), "`./securax help` lists the commands a user needs", tail(out, 200))
     rc, out = H.sh(["bash", "./securax", "regulated", "status"], cwd=sb.clone, env=envp)
     c.ok(rc == 0 and "profile=" in out, "`./securax regulated status` answers", tail(out, 200))
+
+
+@journey("tls_edge", "Encryption in transit on the REAL estate: `./securax tls on` makes a private CA and certificate, the estate restarts behind ONE HTTPS edge that routes by NAME on port 443 (hub.<domain>, chat.<domain>, api.<domain> ...; no port numbers), every endpoint answers over verified TLS (a live WebSocket upgrade included), an unknown name, an untrusted client and TLS 1.1 are refused, and none of the plain-HTTP web ports is published any more.", slow=True)
+def j_tls_edge(sb: H.Sandbox, c: Checks):
+    import socket
+    import ssl
+    if not _start(sb, c, GEMINI_API_KEY=KEYS["GEMINI_API_KEY"], SYNC_TOKENS="tls-sbx-token"):
+        return
+    tdir = sb.clone.parent / "tls-home"
+    shutil.rmtree(tdir, ignore_errors=True)
+    envp = {**os.environ, "SECURAX_TLS_DIR": str(tdir)}
+    dom = "securax.localhost"
+    rc, out = H.sh(["bash", "./securax", "tls", "on"], cwd=sb.clone, env=envp, timeout=120)
+    env_txt = sb.env_path.read_text()
+    c.ok(rc == 0 and "tls.yml" in env_txt and (tdir / "ca.crt").exists() and (tdir / "server.crt").exists(), "`tls on` creates the CA and certificate and switches the edge on", tail(out, 300))
+    c.ok((tdir / "ca.key").stat().st_mode & 0o077 == 0 and (tdir / "server.key").stat().st_mode & 0o077 == 0, "the private keys are readable by their owner only")
+    sb.down()
+    rc, out = sb.securax("up", "--lite", timeout=1200)
+    c.ok(rc == 0 and "TLS edge is ON" in out, "the estate restarts with the HTTPS edge", tail(out, 300))
+    ca = str(tdir / "ca.crt")
+    ctx = ssl.create_default_context(cafile=ca)
+
+    def get(name, path="/", context=ctx, headers=""):
+        """One HTTPS request to the edge on 127.0.0.1:443 presenting `name` (SNI + Host), certificate verified against our CA."""
+        try:
+            with socket.create_connection(("127.0.0.1", 443), timeout=10) as raw, context.wrap_socket(raw, server_hostname=name) as t:
+                t.sendall(f"GET {path} HTTP/1.1\r\nHost: {name}\r\nConnection: close\r\n{headers}\r\n".encode())
+                buf = b""
+                while len(buf) < 64:
+                    chunk = t.recv(64)
+                    if not chunk:
+                        break
+                    buf += chunk
+                return int(buf.split(b" ")[1]) if buf.startswith(b"HTTP") else 0
+        except (OSError, ssl.SSLError, ValueError, IndexError):
+            return 0
+    c.ok(sb.wait_until(lambda: get(f"api.{dom}", "/readyz") == 200, 300), "the gateway answers over HTTPS BY NAME on port 443 and is READY (certificate verified against our CA)")
+    c.ok(get(f"hub.{dom}", "/hub.html") == 200, "the Command Center is served at https://hub.<domain> (no port number)")
+    c.ok(sb.wait_until(lambda: get(f"chat.{dom}", "/") == 200, 300), "Chat is served at https://chat.<domain>")
+    c.ok(get(f"sync.{dom}", "/healthz") == 200, "the sync service is served at https://sync.<domain>")
+    c.ok(get(f"api.{dom}", "/readyz", ssl.create_default_context()) == 0, "a client that does NOT trust our CA is refused (no silent downgrade)")
+    c.ok(get(f"unknown.{dom}", "/") == 421, "an unknown name gets no service (421), not the Command Center")
+    rc, out = H.sh(["curl", "-s", "-o", "/dev/null", "--tls-max", "1.1", "--cacert", ca, "--resolve", f"hub.{dom}:443:127.0.0.1", f"https://hub.{dom}/"], timeout=30)
+    c.ok(rc != 0, "TLS 1.1 is refused", f"curl rc={rc}")
+    rc, out = H.sh(["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}", "--tlsv1.3", "--cacert", ca, "--resolve", f"hub.{dom}:443:127.0.0.1", f"https://hub.{dom}/hub.html"], timeout=30)
+    c.ok(out.strip() == "200", "TLS 1.3 works", out)
+    rc, out = H.sh(["curl", "-s", "-o", "/dev/null", "-w", "%{http_code} %{redirect_url}", "--resolve", f"hub.{dom}:80:127.0.0.1", f"http://hub.{dom}/hub.html"], timeout=30)
+    c.ok(out.startswith("301 https://hub."), "port 80 only redirects to HTTPS", out)
+
+    def plain(port):
+        try:
+            with socket.create_connection(("127.0.0.1", port), timeout=2) as sk:
+                sk.sendall(b"GET / HTTP/1.0\r\n\r\n")
+                return sk.recv(5).startswith(b"HTTP")
+        except OSError:
+            return False
+    c.ok(not any(plain(p) for p in (8088, 3000, 3001, 5678, 8089, 8443, 3443)), "NONE of the plain web ports (8088, 3000, 3001, 5678, 8089) and no per-service HTTPS port is published: only 443 (and the redirect on 80)")
+    c.ok(plain(8080), "the one plain port left is the gateway's, loopback-only (the CLI's own health checks use it)")
+    # CORS: the Command Center (hub.<domain>) must be allowed to call the gateway (api.<domain>) from the browser
+    try:
+        with socket.create_connection(("127.0.0.1", 443), timeout=10) as raw, ctx.wrap_socket(raw, server_hostname=f"api.{dom}") as t:
+            t.sendall((f"OPTIONS /healthz HTTP/1.1\r\nHost: api.{dom}\r\nOrigin: https://hub.{dom}\r\nAccess-Control-Request-Method: GET\r\nConnection: close\r\n\r\n").encode())
+            resp = b""
+            while True:
+                chunk = t.recv(4096)
+                if not chunk:
+                    break
+                resp += chunk
+        cors_ok = f"access-control-allow-origin: https://hub.{dom}".encode() in resp.lower()
+    except (OSError, ssl.SSLError):
+        cors_ok = False
+    c.ok(cors_ok, "the gateway allows the Command Center's own HTTPS name to call it from the browser (CORS), and nothing wider")
+    # a real WebSocket upgrade through the TLS edge (live sync for the Life OS PWA rides on this)
+    ok_ws = False
+    ws_nonce = base64.b64encode(os.urandom(16)).decode()          # a fresh random handshake nonce (never a literal: secret scanners rightly distrust those)
+    try:
+        with socket.create_connection(("127.0.0.1", 443), timeout=5) as raw, ctx.wrap_socket(raw, server_hostname=f"sync.{dom}") as t:
+            t.sendall((f"GET /sync/ws HTTP/1.1\r\nHost: sync.{dom}\r\nUpgrade: websocket\r\nConnection: Upgrade\r\n"
+                       f"Sec-WebSocket-Key: {ws_nonce}\r\nSec-WebSocket-Version: 13\r\n\r\n").encode())
+            ok_ws = b" 101 " in t.recv(200)
+    except (OSError, ssl.SSLError):
+        pass
+    c.ok(ok_ws, "a WebSocket upgrade (wss) passes through the edge to the sync service")
+    rc, out = H.sh(["bash", "./securax", "tls", "status"], cwd=sb.clone, env=envp, timeout=60)
+    c.ok(rc == 0 and "still answers" not in out and "✘" not in out, "`tls status` is clean", tail(out, 900))
+    rc, out = H.sh(["bash", "./securax", "status"], cwd=sb.clone, env=envp, timeout=60)
+    c.ok(f"https://hub.{dom}/hub.html" in out, "`./securax status` gives the HTTPS addresses (by name)", tail(out, 300))
+    rc, out = H.sh(["bash", "./securax", "tls", "off"], cwd=sb.clone, env=envp, timeout=30)
+    c.ok(rc == 0 and "tls.yml" not in sb.env_path.read_text(), "`tls off` returns to plain HTTP")
 
 
 @journey("backup_restore", "Disaster recovery: back up, LOSE the data volume, restore — the account and keys are back.")

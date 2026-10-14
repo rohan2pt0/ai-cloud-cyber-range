@@ -72,7 +72,8 @@ services:
       SYSTEM_PROMPT_CANARIES: ${SYSTEM_PROMPT_CANARY:-CANARY-7f3a9c}
       SECURAX_VERSION: ${SECURAX_VERSION:-}   # ./securax up exports this from the VERSION file
       GIT_COMMIT: ${GIT_COMMIT:-}
-    ports: ["8080:8080"]
+      SECURAX_DOMAIN: ${SECURAX_DOMAIN:-securax.localhost}   # the estate's own HTTPS names may call this API from a browser (CORS)
+    ports: ["${BIND_HOST:-127.0.0.1}:8080:8080"]   # loopback unless you opened the estate to your devices (BIND_HOST)
     networks: [edge, modelplane]
     logging: *default-logging
     # Start only once the model router is READY, and report healthy only while it is. (`depends_on: [x]`
@@ -175,7 +176,7 @@ services:
     environment:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:?set GRAFANA_PASSWORD in .env}
       GF_AUTH_ANONYMOUS_ENABLED: "false"
-    ports: ["3000:3000"]
+    ports: ["${BIND_HOST:-127.0.0.1}:3000:3000"]
     volumes: ["grafana:/var/lib/grafana"]
     networks: [edge]
     logging: *default-logging

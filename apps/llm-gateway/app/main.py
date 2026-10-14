@@ -67,10 +67,15 @@ app = FastAPI(title="AI Guardrail Gateway", version="1.0.0")
 # Allow the local Guiding Map PWA (and other localhost pages) to call the gateway from the
 # browser. Scoped to localhost/127.0.0.1 on any port only — never a public origin.
 if os.getenv("ALLOW_LOCAL_CORS", "1") == "1":
+    import re as _re
+
     from fastapi.middleware.cors import CORSMiddleware
+    # ...plus the estate's own HTTPS names (hub.<domain>, chat.<domain>...) when the TLS edge is on: ONE configured domain, nothing wider.
+    _dom = os.getenv("SECURAX_DOMAIN", "securax.localhost").strip().lower()
+    _own = rf"|https://([a-z0-9-]+\.)?{_re.escape(_dom)}" if _re.fullmatch(r"[a-z0-9.-]{4,200}", _dom) else ""
     app.add_middleware(
         CORSMiddleware,
-        allow_origin_regex=r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$",
+        allow_origin_regex=rf"^(https?://(localhost|127\.0\.0\.1)(:\d+)?{_own})$",
         allow_methods=["*"], allow_headers=["*"],
     )
 

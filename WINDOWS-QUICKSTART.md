@@ -37,6 +37,16 @@ For each of Gemini, Groq and OpenRouter it opens nothing for you — it prints t
 ## Step 4 — use it
 Open **http://localhost:8088/hub.html** in your Windows browser. Everything is linked from there.
 
+## Step 5 — encrypt every connection (recommended, 3 minutes)
+**First** (once): in the Guiding Map app open **Ops → System health → Export backup** — the app keeps its data per web address, and the secure address starts empty (you import the backup there, or use sync).
+Your browser says "not secure" for `http://localhost…` because it is plain HTTP. Still in Ubuntu:
+```bash
+cd ~/securax && ./securax tls on
+./securax tls trust --apply        # Windows asks you to confirm adding the SecuRAX authority: choose Yes, then close and reopen the browser
+./securax down && ./securax up
+```
+Then use **https://hub.securax.localhost/hub.html** (a name, no port; the old http addresses stop working on purpose). Details and limits: `docs/securax/40-ENCRYPTION-IN-TRANSIT.md`.
+
 ## Every day after that
 Open **Ubuntu**, then:
 | I want to… | Type |
