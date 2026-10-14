@@ -2,6 +2,11 @@
   "about": "The BURROW: your own hardware running k3s. One definition, two bodies \u2014 the real machines (./securax spore) and a Docker twin that rehearses them on a laptop. Both read THIS file, so the twin cannot drift from the hardware.",
   "image": "rancher/k3s:v1.31.4-k3s1",
   "k3s_version": "v1.31.4+k3s1",
+  "k3s_installer": {
+    "url": "https://raw.githubusercontent.com/k3s-io/k3s/v1.31.4+k3s1/install.sh",
+    "sha256": "f60c3d8940dfc896f7d83aaf57726c91cf21afc4bca40036472df108d9700b4b",
+    "note": "Pinned by hash: the script is downloaded to a file and checked BEFORE it runs (never piped into a shell). The script then verifies the k3s binary against the release checksums itself. Re-pin on every k3s bump: curl -fsSL <url> | sha256sum."
+  },
   "server_args": [
     "--cluster-init",
     "--secrets-encryption",

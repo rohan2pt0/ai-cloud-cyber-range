@@ -31,8 +31,18 @@ Rule of thumb (80/20): take the **principle**, write it as our own small tested 
 | **freellmapi** (MIT) | not run | its provider list informs which free providers our plugins should add | deploying it: free tiers may train on your prompts; our router ladder already fails over |
 | **context-mode** (licence unconfirmed) | not run | nothing in the estate | optional developer-side token saver; read its LICENSE and pin it before use |
 
-## It found something in our own repo
-Scanning this repository: `curl … | sh` in `local/scripts/bootstrap-laptop.sh`, `local/scripts/wsl-setup.sh` and the tree node's `user_data` (Tailscale installer). They are real. Follow-up, **not yet done**: pin those installers by checksum or package repo instead of piping a download into a shell.
+## It found something in our own repo — and we fixed it
+Scanning this repository, `vet` flagged `curl … | sh` in `local/scripts/bootstrap-laptop.sh`, `local/scripts/wsl-setup.sh` and the tree node's `user_data` (Tailscale). All three are fixed, plus two of the same kind the scanner's pattern could not see (`curl … | VAR=x sh`: k3s in the tree `user_data` and in the burrow spore; the pattern now catches it):
+
+| Was | Now |
+|---|---|
+| helm `get-helm-3 \| bash` | pinned `helm v3.16.3` tarball, SHA-256 checked before unpacking (amd64 + arm64) |
+| kind / kubectl downloaded straight into `/usr/local/bin` | downloaded to a temp file, SHA-256 checked, then installed |
+| Tailscale `install.sh \| sh` | pinned `1.78.1` static tarball, SHA-256 checked (amd64 + arm64) |
+| k3s `get.k3s.io \| sh` (tree node + spore) | the k3s `install.sh` at the pinned tag is saved to a file and hash-checked before it runs (`burrow.json: k3s_installer`; the module default is kept in step) |
+| WSL one-paste `curl … \| bash` | two lines: save the script, then run it, so you can read it first |
+
+What a pinned hash does and does not give you: the hash was taken from the vendor's own download on 2026-10-14, so it stops a *later* swap or a tampered mirror, not a vendor that was already compromised on that day. Re-pin on every version bump (the commands are in the files). A test serves a tampered k3s installer to the real spore and proves it is refused before it runs.
 
 ## Honest limits
 Static analysis finds the lazy and the obvious. It cannot prove a repo benign, and a patient attacker can avoid every pattern here. Treat PASS as "nothing obvious", keep pins, re-vet on every bump, and run third-party code in a sandbox regardless. Hardening note: `vet` itself crashed on a malformed URL (`http://[abc`) while scanning ECC. The same unhandled error existed in the gateway's output rails (a model reply containing such a URL could 500 the request). Both are fixed: the gateway treats a malformed URL as an untrusted host and removes it; `vet` reports a file it cannot scan as a **finding** instead of dying (an attacker must not be able to hide behind a parser bug). Not covered: transitive npm/pip dependencies (flagged, not scanned), runtime behaviour, and typosquatting of the *source URL*.

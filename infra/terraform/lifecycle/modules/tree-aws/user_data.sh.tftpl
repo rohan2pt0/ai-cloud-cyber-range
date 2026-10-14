@@ -16,12 +16,36 @@ mount -a
 hostnamectl set-hostname "${hostname}" || true
 
 if [ -n "${tailscale_auth_key}" ]; then
-  curl -fsSL https://tailscale.com/install.sh | sh
+  # Pinned static release, verified by SHA-256 BEFORE anything is installed (never a script piped into a shell).
+  # To bump: change the version and both hashes together (curl -fsSL https://pkgs.tailscale.com/stable/tailscale_<ver>_<arch>.tgz.sha256).
+  TS_VER="1.78.1"
+  case "$(uname -m)" in
+    x86_64)  TS_ARCH=amd64; TS_SHA=3db491bd6800012173cb6b739fa6705272f71da3e622f23639a3a385f2474a89 ;;
+    aarch64) TS_ARCH=arm64; TS_SHA=8eb0ae11ac2f80beac379722b37651e6ef328d098fec0425ca2786c1c8f087e3 ;;
+    *) echo "unsupported CPU for the pinned tailscale build: $(uname -m)"; exit 1 ;;
+  esac
+  TS_TMP="$(mktemp -d)"
+  curl -fsSL "https://pkgs.tailscale.com/stable/tailscale_$${TS_VER}_$${TS_ARCH}.tgz" -o "$TS_TMP/ts.tgz"
+  echo "$TS_SHA  $TS_TMP/ts.tgz" | sha256sum -c - >/dev/null || { echo "tailscale tarball does not match its pinned hash: refusing to install"; exit 1; }
+  tar -xzf "$TS_TMP/ts.tgz" -C "$TS_TMP" --strip-components=1
+  install -m 0755 "$TS_TMP/tailscale" /usr/bin/tailscale
+  install -m 0755 "$TS_TMP/tailscaled" /usr/sbin/tailscaled
+  install -m 0644 "$TS_TMP/systemd/tailscaled.service" /etc/systemd/system/tailscaled.service
+  install -D -m 0644 "$TS_TMP/systemd/tailscaled.defaults" /etc/default/tailscaled
+  rm -rf "$TS_TMP"
+  systemctl daemon-reload
+  systemctl enable --now tailscaled
   tailscale up --auth-key="${tailscale_auth_key}" --hostname="${hostname}" --ssh
 fi
 
 if ! command -v k3s >/dev/null 2>&1; then
-  curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION="${k3s_version}" sh -s - server --write-kubeconfig-mode 600 --secrets-encryption
+  # Installer pinned by hash and run from a file: checked BEFORE it runs, never piped into a shell.
+  # (The script then verifies the k3s binary against the release checksums.) Re-pin with k3s_version bumps.
+  K3S_INSTALLER="$(mktemp)"
+  curl -fsSL "${k3s_installer_url}" -o "$K3S_INSTALLER"
+  echo "${k3s_installer_sha256}  $K3S_INSTALLER" | sha256sum -c - >/dev/null || { echo "k3s installer does not match its pinned hash: refusing to run it"; exit 1; }
+  INSTALL_K3S_VERSION="${k3s_version}" sh "$K3S_INSTALLER" server --write-kubeconfig-mode 600 --secrets-encryption
+  rm -f "$K3S_INSTALLER"
 fi
 systemctl enable --now k3s
 

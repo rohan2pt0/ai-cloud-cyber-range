@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # SecuRAX one-paste installer for Windows (run INSIDE Ubuntu/WSL):
-#   curl -fsSL https://raw.githubusercontent.com/rohan2pt0/ai-cloud-cyber-range/main/local/scripts/wsl-setup.sh | bash
+#   curl -fsSLo wsl-setup.sh https://raw.githubusercontent.com/rohan2pt0/ai-cloud-cyber-range/main/local/scripts/wsl-setup.sh && bash wsl-setup.sh
+# (saved to a file first, not piped into a shell, so it can be read before it runs)
 # Why inside WSL's own disk: the Windows drives (/mnt/c, /mnt/e) are several times slower for Docker bind mounts.
 # Safe to re-run: it updates, keeps your keys (.env), keeps downloaded models (Docker volumes), and tells you
 # the exact fix for anything missing instead of failing obscurely.
