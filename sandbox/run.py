@@ -644,7 +644,7 @@ def j_backup_encrypted(sb: H.Sandbox, c: Checks):
     c.ok(rc == 1 and "NEEDS YOU NOW" in out and "./securax protect" in out, "`crypto --strict` says in plain words that the backups need protecting, and what to run (exit 1)", tail(out, 400))
     key = tdir / "backup.key"
     # the guided flow a person uses: two answers (skip the USB stick, confirm the key is saved) and everything else is done for them
-    rc, out = sb.pty_session(["protect", "--key", str(key)], [("Drive letter", "\n"), ("Type YES once it is saved", "YES\n")], timeout=900)
+    rc, out = sb.pty_session(["protect", "--key", str(key)], [("Drive letter", ""), ("Type YES once it is saved", "YES")], timeout=900)
     enc = sorted(bdir.glob("securax-*.tar.gz.gpg"))
     c.ok(rc == 0 and "Done. Backups are encrypted" in out and sb.get_env("SECURAX_BACKUP_KEYFILE") == str(key) and len(enc) == 1 and not list(bdir.glob("securax-*.tar.gz")),
          "`protect` (a guided flow, two answers) makes the key, switches encryption on and takes the first ENCRYPTED backup (no plaintext copy)", tail(out, 600))
@@ -654,7 +654,7 @@ def j_backup_encrypted(sb: H.Sandbox, c: Checks):
     c.ok(rc != 0 and "refusing to overwrite" in out, "`crypto keygen` refuses to overwrite an existing key (it may protect backups)")
     f = enc[0] if enc else bdir / "missing"
     rc, _ = H.sh(["tar", "tzf", str(f)], timeout=30)
-    c.ok(rc != 0 and f.read_bytes()[:2] != b"\x1f\x8b", "the file is NOT a readable archive (no gzip header)")
+    c.ok(rc != 0 and f.exists() and f.read_bytes()[:2] != b"\x1f\x8b", "the file is NOT a readable archive (no gzip header)")
     rc, out = H.sh(["bash", "-c", f"GNUPGHOME=$(mktemp -d) gpg --batch --list-packets '{f}' 2>&1 | grep -E 'symkey|cipher'"], timeout=30)
     c.ok("cipher 9" in out, "it is OpenPGP symmetric AES-256 (cipher 9), no public-key step", out.strip()[:200])
     c.ok(f.stat().st_mode & 0o077 == 0, "…readable by its owner only")
