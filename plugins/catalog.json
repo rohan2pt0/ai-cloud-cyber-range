@@ -88,7 +88,7 @@
       "label": "DeepSeek",
       "kind": "llm",
       "alias": "deepseek",
-      "model": "deepseek/deepseek-chat",
+      "model": "deepseek/deepseek-v4-flash",
       "env": [
         "DEEPSEEK_API_KEY"
       ],
@@ -98,6 +98,8 @@
         "url": "https://api.deepseek.com/models",
         "prefix": "deepseek/",
         "prefer": [
+          "^deepseek-v4-flash$",
+          "^deepseek-v4",
           "^deepseek-chat$"
         ]
       }

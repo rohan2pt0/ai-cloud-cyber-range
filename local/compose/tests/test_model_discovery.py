@@ -91,3 +91,21 @@ def test_every_discoverable_provider_has_a_recipe_and_a_default():
         if d:
             assert d["kind"] in ("openai", "gemini", "anthropic") and d["url"].startswith("https://") and d["prefer"]
             assert p["model"].startswith(d["prefix"]), p["id"]
+
+
+def test_unreachable_says_why_and_no_match_lists_live_models():
+    env = {"OPENAI_API_KEY": "sk-x"}
+    r = md.check(CAT, env, opener_for({}, fail=urllib.error.HTTPError("u", 503, "down", {}, None)))[0]
+    assert r["status"] == "unreachable" and "503" in r["detail"]
+    r = md.check(CAT, env, opener_for({"openai.com": {"data": [{"id": "zzz-1"}, {"id": "zzz-2"}]}}))[0]
+    assert r["status"] == "no-match" and r["live"] == ["zzz-1", "zzz-2"]
+
+
+def test_deepseek_default_is_the_current_v4_model_and_legacy_name_is_only_a_fallback():
+    p = next(p for p in CAT["providers"] if p["id"] == "deepseek")
+    assert p["model"] == "deepseek/deepseek-v4-flash"
+    env = {"DEEPSEEK_API_KEY": "sk-x"}
+    r = md.check(CAT, env, opener_for({"deepseek.com": {"data": [{"id": "deepseek-chat"}]}}))[0]
+    assert r["status"] == "replaced" and r["new"] == "deepseek/deepseek-chat"      # old accounts keep working until the alias dies
+    r = md.check(CAT, env, opener_for({"deepseek.com": {"data": [{"id": "deepseek-v4-flash"}, {"id": "deepseek-v4-pro"}]}}))[0]
+    assert r["status"] == "ok"

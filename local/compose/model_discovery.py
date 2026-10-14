@@ -120,8 +120,9 @@ def check(catalog: dict, env: dict[str, str], opener=urllib.request.urlopen) -> 
             r["status"] = "key-rejected"
             results.append(r)
             continue
-        except OSError:
+        except OSError as e:
             r["status"] = "unreachable"
+            r["detail"] = str(e)[:80]
             results.append(r)
             continue
         if cur_id in live:
@@ -132,6 +133,7 @@ def check(catalog: dict, env: dict[str, str], opener=urllib.request.urlopen) -> 
                 r.update(status="replaced", new=prefix + best)
             else:
                 r["status"] = "no-match"
+                r["live"] = [m for m in live if not (re.search(exclude, m, re.I) if exclude else False)][:6]
         results.append(r)
     return results
 
@@ -153,8 +155,9 @@ def main(argv=None) -> int:
         msg = {"ok": f"{r['current']} is live",
                "replaced": f"{r['current']} is gone → using {r['new']}",
                "key-rejected": "the provider REJECTED this key (revoked, mistyped or wrong provider)",
-               "unreachable": "could not reach the provider (offline? keeping current)",
-               "no-match": f"{r['current']} not found and no known replacement — see the provider's model list"}[r["status"]]
+               "unreachable": f"could not get its model list ({r.get('detail') or 'no detail'}) — keeping current; a network problem or a provider-side error, not a bad key",
+               "no-match": f"{r['current']} not found and no known replacement."
+                           + (f" Live models: {', '.join(r['live'])}. Pick one:  set {r['id'].upper()}_MODEL=<prefix>/<id> in local/compose/.env" if r.get("live") else " The provider's list was empty.")}[r["status"]]
         print(f"  {sym} {r['id']:<11} {msg}")
         if r["status"] == "replaced" and a.write:
             set_env_value(a.env_file, r["id"].upper() + "_MODEL", r["new"])

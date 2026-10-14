@@ -40,7 +40,7 @@ the router config, and restarts the router. Open **http://localhost:3000** and p
 | `local` | Ollama (sovereign) | — *(always on)* | `ollama/qwen2.5:1.5b` | — |
 | `openai` | OpenAI (GPT) | `OPENAI_API_KEY` | `openai/gpt-4o-mini` | platform.openai.com/api-keys |
 | `anthropic` | Anthropic (Claude) | `ANTHROPIC_API_KEY` | `anthropic/claude-haiku-5-5` | console.anthropic.com |
-| `deepseek` | DeepSeek | `DEEPSEEK_API_KEY` | `deepseek/deepseek-chat` | platform.deepseek.com |
+| `deepseek` | DeepSeek | `DEEPSEEK_API_KEY` | `deepseek/deepseek-v4-flash` | platform.deepseek.com |
 | `mistral` | Mistral | `MISTRAL_API_KEY` | `mistral/mistral-small-latest` | console.mistral.ai |
 | `grok` | xAI (Grok) | `XAI_API_KEY` | `xai/grok-4.3` | console.x.ai |
 | `perplexity` | Perplexity (Sonar) | `PERPLEXITYAI_API_KEY` | `perplexity/sonar` | perplexity.ai/settings/api |
