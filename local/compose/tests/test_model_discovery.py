@@ -109,3 +109,11 @@ def test_deepseek_default_is_the_current_v4_model_and_legacy_name_is_only_a_fall
     assert r["status"] == "replaced" and r["new"] == "deepseek/deepseek-chat"      # old accounts keep working until the alias dies
     r = md.check(CAT, env, opener_for({"deepseek.com": {"data": [{"id": "deepseek-v4-flash"}, {"id": "deepseek-v4-pro"}]}}))[0]
     assert r["status"] == "ok"
+
+
+def test_xai_answers_a_wrong_key_with_400_and_that_is_reported_as_a_rejected_key():
+    env = {"XAI_API_KEY": "xai-wrong"}
+    err = urllib.error.HTTPError("u", 400, "Incorrect API key provided", {}, None)
+    assert md.check(CAT, env, opener_for({}, fail=err))[0]["status"] == "key-rejected"
+    # ...but a 400 from a provider that uses 401 for bad keys is still just 'unreachable'
+    assert md.check(CAT, {"OPENAI_API_KEY": "sk-x"}, opener_for({}, fail=err))[0]["status"] == "unreachable"

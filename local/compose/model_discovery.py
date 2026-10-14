@@ -76,7 +76,7 @@ def fetch_models(d: dict, key: str, opener=urllib.request.urlopen) -> list[str]:
         with opener(urllib.request.Request(url, headers=headers), timeout=TIMEOUT) as r:
             data = json.loads(r.read().decode("utf-8", "replace"))
     except urllib.error.HTTPError as e:
-        if e.code in (401, 403):
+        if e.code in d.get("auth_codes", (401, 403)):        # xAI answers a wrong key with 400, not 401
             raise PermissionError(str(e.code)) from None
         raise OSError(f"http {e.code}") from None
     except (urllib.error.URLError, TimeoutError, ValueError) as e:

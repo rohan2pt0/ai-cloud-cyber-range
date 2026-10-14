@@ -138,6 +138,7 @@
       "discover": {
         "kind": "openai",
         "url": "https://api.x.ai/v1/models",
+        "auth_codes": [400, 401, 403],
         "prefix": "xai/",
         "prefer": [
           "^grok-4\\.[0-9]+$",
