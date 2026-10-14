@@ -93,6 +93,9 @@ OffSec's [OSCP+ exam](https://www.stationx.net/?p=2050639) is reported to have a
 * **Safety rails:** cloud providers are refused without `--i-accept-cloud-cost` (a deliberately vulnerable lab that bills); installing a lab that does not fit is refused; the isolation warning is printed before every install.
 * **Not done / unverified:** the VMs were **never run here** (no hypervisor, and an install takes hours and many GB). GOAD uses 180-day Windows evaluation images (rebuild after). KubeVirt was considered and dropped: nothing I found shows GOAD supports it, and porting it would be the opposite of 80/20.
 
+## Organs directly
+`./securax organ wazuh up|stop|status|down` grows, sleeps, inspects or removes one upstream organ without touching the rest of the sprout. `./securax organ-check [name…]` fetches each pinned upstream ref, prepares it and runs `docker compose config` on it (no images are pulled): a cheap proof that the pins are still valid.
+
 ## Honest limits (read before relying on it)
 * **No cloud account was available when this was built.** Terraform is validated and its *plans* are proved offline; an actual `apply` of EKS Auto Mode / GKE Autopilot / AKS / the k3s node, the
   Argo CD bootstrap and Velero restores have **not** been executed. Expect small first-run fixes; the dormancy and plan logic will not be the surprise.

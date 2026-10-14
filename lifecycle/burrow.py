@@ -352,6 +352,34 @@ def snapshots() -> list[str]:
     return out.split() if rc == 0 else []
 
 
+def newest_snapshot() -> str:
+    """Name of the newest etcd snapshot in the server's volume (works while the twin is stopped: reads the volume, not the container)."""
+    rc, out = sh(["docker", "run", "--rm", "-v", f"{server_name()}:/v:ro", "--entrypoint", "ls", cfg()["image"], "-t", "/v/server/db/snapshots"], timeout=120)
+    names = [n for n in out.split() if n] if rc == 0 else []
+    return names[0] if names else ""
+
+
+def twin_restore(snapshot: str = "") -> int:
+    """DISASTER RECOVERY: rewind the control plane to an etcd snapshot (default: the newest). Every node must be stopped first.
+    Runs `k3s server --cluster-reset` in a throwaway container that shares the server's data volume; ~10 s on the twin."""
+    snapshot = snapshot or newest_snapshot()
+    if not snapshot:
+        say("There is no etcd snapshot to restore from (take one: ./securax burrow power, or hibernate the burrow).")
+        return 1
+    if any(container_state(cname(n["name"])) == "running" for n in twin_nodes()):
+        say("Stop the burrow first (./securax hibernate burrow): a cluster cannot be rewound while its nodes are running.")
+        return 1
+    c = cfg()
+    node = next(n["name"] for n in twin_nodes() if n["role"] == "server")
+    say(f"Restoring the control plane from snapshot {snapshot} …")
+    rc, out = sh(["docker", "run", "--rm", "--privileged", "--network", NETWORK, "-e", f"K3S_TOKEN={token()}", "-v", f"{server_name()}:/var/lib/rancher/k3s",
+                  "--tmpfs", "/run", "--tmpfs", "/var/run", c["image"], "server", "--cluster-reset",
+                  f"--cluster-reset-restore-path=/var/lib/rancher/k3s/server/db/snapshots/{snapshot}", "--node-name", node, "--secrets-encryption"], timeout=600)
+    ok = "has been reset" in out
+    say("  restored." if ok else "  restore FAILED:\n" + out[-600:])
+    return 0 if ok else 1
+
+
 def twin_stop(power: bool = True) -> int:
     """Hibernate: the reflex first (drain + snapshot), then stop every node. Volumes — the cluster's memory — stay."""
     if twin_status() == "dormant":

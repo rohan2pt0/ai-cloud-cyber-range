@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **Fitness functions + game days** (doc 33): `./securax fitness` (rails latency over adversarial inputs = ReDoS guard, memory, cold start, dependency count, plus ratchets: no new critical supply-chain findings, no undocumented commands) and `./securax gameday list|run|all` (node loss, control-plane restart and an etcd snapshot-RESTORE disaster drill on the burrow twin, each with an SLO; twin left as found). `burrow.twin_restore` rewinds the control plane to a snapshot. Journey `gameday`; wake-time budgets in `lifecycle_burrow`.
 - **Offline power-ups** (doc 32): `./securax offline sync|status` + `./securax kev` (CISA KEV and MITRE ATT&CK snapshots, streamed and slimmed, work with no network; the AI-SOC names ATT&CK techniques and `scan` flags known-exploited CVEs from them) and `./securax bench` (measures your installed local models for RAM fit / accuracy / tokens-per-second and recommends one). Verified repo ledger: llama.cpp, BitNet, whisper.cpp, llamafile, Atomic Red Team, Sigma, osv-scanner, sqlite-vec. Journey `offline_power`.
 - **Behavioural rules + `./securax diffcheck`** (docs 31): the four rules popularised by Karpathy's LLM-coding observations, in our own words, in `BUILD-CONTRACT.md`; `diffcheck` enforces the contract's mechanical hard rules on the diff and gates `autobuild` (journey `diffcheck_gate`). Adoption ledger for agent-skills, ECC (vet: BLOCK, ideas only), karpathy-skills, freellmapi, context-mode.
 ### Fixed
