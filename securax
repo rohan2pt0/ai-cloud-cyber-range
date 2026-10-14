@@ -749,6 +749,12 @@ $(python3 "$ROOT/lifecycle/forge.py" brief "$FB")"
     export AUTOBENCH_API_BASE="$(gw_url)/v1" AUTOBENCH_API_KEY="$(ev LITELLM_MASTER_KEY sk-range-dev)"
     exec python3 "$ROOT/lifecycle/autobench.py" "$@"
     ;;
+  certs)
+    # Certification path planner: OSCP+/OSWE/OSEP/OSED/OSAI, CPTS/COAE, CRTP/CRTE/CRTM, CRTO, BSCP ... ordered by shared skills, dated by your hours,
+    # costed against your yearly budget in rupees (prices are a dated snapshot with sources: verify before paying).
+    #   ./securax certs plan [--hours 30] [--budget-inr 500000]    ./securax certs next    ./securax certs mark cpts passed    ./securax certs list
+    shift; exec python3 "$ROOT/learning/certs.py" "${@:-next}"
+    ;;
   forge)
     # The ADMISSION GATE for a change: do the new tests fail without the change (fail-to-pass), do they notice deliberately broken lines
     # (mutation), is the touched code within complexity budget, and is a red log an infrastructure blip or a code fault? autobuild runs it.
@@ -1198,6 +1204,7 @@ AI & CHAT
 KEEP IT SAFE
   backup / restore FILE       save and recover your data           watch          keep an eye on it and self-heal
   scan           look for known-exploited weaknesses (offline)     kev / offline  threat data that works with no internet
+  certs          your certification plan: what next, when, what it costs
   purple         attack your own AI rails and report what held     vet            check third-party skills/plugins before use
 
 REGULATORY & EVIDENCE (any regulator: RBI, SEBI, CERT-In, IRDAI, DPDP, others as data files)
