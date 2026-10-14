@@ -1012,6 +1012,10 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
     echo "SecuRAX v${v} (${g})"
     ;;
   mcp)   exec python3 "$ROOT/mcp/securax_mcp.py" ;;
+  inspect)
+    # Sandboxed static inspection of third-party software (REA engine): ./securax inspect PATH | npm:name@ver | --diff OLD NEW | --watch | --build. Doc 43.
+    exec python3 "$ROOT/governance/inspector.py" "${@:2}"
+    ;;
   opencode)
     # ./securax opencode [args]  - the OpenCode terminal coding agent (https://opencode.ai), with EVERY model call going through the SecuRAX gateway:
     # same guardrails, audit, residency rules and build ladder (OpenCode Go -> DeepSeek -> free tiers -> local) as the rest of the estate. Docs: doc 42.
@@ -1022,8 +1026,12 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
       exit 1
     fi
     gcurl -fsS $(gw_url)/healthz >/dev/null 2>&1 || { C "The gateway is down - run  ./securax up  first."; exit 1; }
-    ENVF="$ROOT/local/compose/.env"; OCD="${SECURAX_HOME_DIR:-$HOME/.securax}/opencode"
-    python3 "$ROOT/local/compose/gen_opencode_config.py" --env-file "$ENVF" --base-url "$(gw_url)" --out "$OCD/opencode.json" >/dev/null || { C "Could not write the OpenCode config."; exit 1; }
+    ENVF="$ROOT/local/compose/.env"; OCD="${SECURAX_HOME_DIR:-$HOME/.securax}/opencode"; REAARG=""
+    if [ "${2:-}" = "--rea" ]; then
+      docker image inspect securax-rea:6.5.0 >/dev/null 2>&1 || { C "The REA sandbox image is not built yet:  ./securax inspect --build   (once; needs Docker and internet)"; exit 1; }
+      REAARG="--rea-project $PWD"; set -- "$1" "${@:3}"; C "REA (reverse engineering) is available to the agent, inside its sandbox: no network, read-only disk, this folder mounted read-only."
+    fi
+    python3 "$ROOT/local/compose/gen_opencode_config.py" --env-file "$ENVF" --base-url "$(gw_url)" $REAARG --out "$OCD/opencode.json" >/dev/null || { C "Could not write the OpenCode config."; exit 1; }
     chmod 700 "$OCD" 2>/dev/null || true
     export OPENCODE_CONFIG="$OCD/opencode.json" SECURAX_GATEWAY_KEY="$(ev WEBUI_GATEWAY_KEY "$(ev LITELLM_MASTER_KEY sk-range-dev)")"
     internal_on && export NODE_EXTRA_CA_CERTS="$(tls_home)/ca.crt"
@@ -1110,7 +1118,8 @@ START HERE (the 20% you use 80% of the time)
   notify         send the daily digest to Mattermost/Slack           capacity       what to switch on as more people join (1 to 100,000)
   tls            encrypt every web connection (HTTPS everywhere)        sync-link      one-tap sync setup for a phone / second computer
   start / stop docs|flows|all   Private Docs / Automation (skipped in lite mode; remembered across updates)
-  opencode       the OpenCode terminal coding agent, guarded: every call goes through the gateway (doc 42)
+  opencode       the OpenCode terminal coding agent, guarded: every call goes through the gateway (doc 42); --rea adds sandboxed reverse engineering
+  inspect        look inside third-party software before you trust it (npm package, file, folder): what it can do, and what a new version can do that the old one could not (doc 43)
   protect        encrypt your backups (one guided step; Windows: double-click PROTECT-BACKUPS-Windows.bat)
   crypto         plain-English protection check (--full: the technical inventory / CBOM)
 

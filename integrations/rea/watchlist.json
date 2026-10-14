@@ -1,0 +1,15 @@
+{
+  "about": "Third-party npm packages SecuRAX depends on or tells you to install, pinned. `./securax inspect --watch` compares each pin with the registry; when a newer version exists it inspects BOTH inside the REA sandbox and reports what the new one can do that the old one could not.",
+  "packages": [
+    {
+      "name": "opencode-ai",
+      "pinned": "1.19.0",
+      "why": "the OpenCode terminal agent that `./securax opencode` launches (MIT). It ships an install-time script that fetches a platform binary: accepted by a human on 14 Oct 2026; only CHANGES to it are reported."
+    },
+    {
+      "name": "rea-agents",
+      "pinned": "6.5.0",
+      "why": "REA, the engine of `./securax inspect` (MIT). Pinned by lockfile in integrations/rea; official sources are github.com/morluto/rea, rea.tools and this npm package."
+    }
+  ]
+}

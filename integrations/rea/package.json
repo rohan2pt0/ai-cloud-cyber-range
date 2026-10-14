@@ -1,0 +1,8 @@
+{
+  "name": "securax-rea-sandbox",
+  "private": true,
+  "description": "Pinned REA (Reverse Engineer Anything, MIT) for the sandboxed `./securax inspect`. Official sources only: npm package rea-agents, github.com/morluto/rea, rea.tools.",
+  "dependencies": {
+    "rea-agents": "6.5.0"
+  }
+}

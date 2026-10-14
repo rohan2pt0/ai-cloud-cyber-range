@@ -663,9 +663,11 @@
     "V"
    ],
    "status": "partial",
-   "note": "The `vet` gate assesses third-party code (pins, licence, executable surface, tamper detection) and installers are now hash-pinned; the provider ladder and local model avoid a single AI provider. No vendor questionnaire/risk register.",
+   "note": "The `vet` gate assesses third-party code (pins, licence, executable surface, tamper detection) and installers are now hash-pinned; `./securax inspect` reads third-party packages in a no-network sandbox (REA) and reports what a NEW version can do that the old one could not (new install scripts, network, program launching, hard-coded addresses), and a weekly watch applies it to every pinned dependency; the provider ladder and local model avoid a single AI provider. No vendor questionnaire/risk register.",
    "evidence": [
     "journey:vet_gate",
+    "journey:inspect_sandbox",
+    "cmd:inspect",
     "journey:key_wiring_and_failover",
     "test:lifecycle/tests/test_burrow_pinning.py"
    ],
@@ -679,10 +681,11 @@
     "V"
    ],
    "status": "partial",
-   "note": "SecuRAX is open source (source in hand). For its own releases CI runs SAST, secret scanning, Trivy, a CycloneDX SBOM; the 'free of malware/covert channels' written confirmation is a vendor attestation that does not exist.",
+   "note": "SecuRAX is open source (source in hand); `./securax inspect` gives a static behavioural report of any third-party package you evaluate (heuristic triage, not a vendor attestation). For its own releases CI runs SAST, secret scanning, Trivy, a CycloneDX SBOM; the 'free of malware/covert channels' written confirmation is a vendor attestation that does not exist.",
    "evidence": [
     "file:.github/workflows/devsecops.yml",
-    "journey:vet_gate"
+    "journey:vet_gate",
+    "cmd:inspect"
    ],
    "next": "Generate a release attestation (SBOM + scan results + signed provenance) per release; the entity still obtains it from its vendors.",
    "priority": "medium"

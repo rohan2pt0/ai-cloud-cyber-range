@@ -81,7 +81,8 @@
     "cockpit_page",
     "tls_edge",
     "tls_internal",
-    "backup_encrypted"
+    "backup_encrypted",
+    "inspect_sandbox"
    ],
    "affects": [
     "gateway",
@@ -157,6 +158,7 @@
   "governance": {
    "paths": [
     "governance/**",
+    "integrations/rea/**",
     "docs/securax/regulatory/**"
    ],
    "guarded_by": [
@@ -166,7 +168,8 @@
     "gateway_identity",
     "gateway_residency",
     "cockpit_page",
-    "backup_encrypted"
+    "backup_encrypted",
+    "inspect_sandbox"
    ],
    "affects": []
   },

