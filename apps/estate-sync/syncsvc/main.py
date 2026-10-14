@@ -8,6 +8,8 @@ SaaS, no SDK, no CDN. The PWA talks to it with plain fetch (see guiding-map/ops.
     HEAD /sync/            -> 200 (its Date header anchors the client clock)
     GET  /sync/state?user=<id>   -> { payload:{k:v}, meta:{k:ts}, updated_at }  (404 if none)
     PUT  /sync/state?user=<id>   body { payload, meta, updated_at }             -> merged
+    GET  /sync/snapshots?user=<id>        -> [{day, keys, bytes, taken_at}]  (the last SYNC_SNAPSHOT_DAYS days, newest first)
+    GET  /sync/snapshots/<YYYY-MM-DD>?user=<id>  -> { payload, meta, taken_at }  (to restore a day)
 
 Auth: Authorization: Bearer <device token>. Tokens come from SYNC_TOKENS (comma-
 separated) in the estate .env — NEVER committed. Fail-closed: if no tokens are
@@ -24,6 +26,7 @@ import asyncio
 import hmac
 import json as _json
 import os
+import re
 import sqlite3
 import time
 from contextlib import asynccontextmanager, closing
@@ -32,6 +35,8 @@ from fastapi import FastAPI, Header, HTTPException, Query, Request, Response, We
 from fastapi.responses import JSONResponse
 
 DB_PATH = os.environ.get("SYNC_DB_PATH", "/data/estate-sync.db")
+# Daily snapshots: the last merged state of each UTC day is kept for this many days, so "no backup taken" is never a thing a human has to fix.
+SNAPSHOT_DAYS = int(os.environ.get("SYNC_SNAPSHOT_DAYS", "30"))
 # Reject a single blob larger than this (bytes). A healthy life-OS state is a few
 # hundred KB; anything in the tens of MB is a bug or an attempt to fill the disk.
 MAX_BODY = int(os.environ.get("SYNC_MAX_BODY_BYTES", str(8 * 1024 * 1024)))
@@ -59,6 +64,11 @@ def _init_db() -> None:
             " payload TEXT NOT NULL,"
             " meta TEXT NOT NULL,"
             " updated_at TEXT)"
+        )
+        conn.execute(
+            "CREATE TABLE IF NOT EXISTS snapshots ("
+            " user_id TEXT NOT NULL, day TEXT NOT NULL, payload TEXT NOT NULL, meta TEXT NOT NULL, taken_at TEXT,"
+            " PRIMARY KEY (user_id, day))"
         )
         conn.commit()
 
@@ -214,6 +224,37 @@ async def put_state(request: Request,
             "ON CONFLICT(user_id) DO UPDATE SET payload=excluded.payload, meta=excluded.meta, updated_at=excluded.updated_at",
             (user, json.dumps(merged), json.dumps(merged_meta), updated_at),
         )
+        day = time.strftime("%Y-%m-%d", time.gmtime())
+        conn.execute(
+            "INSERT INTO snapshots(user_id, day, payload, meta, taken_at) VALUES(?,?,?,?,?) "
+            "ON CONFLICT(user_id, day) DO UPDATE SET payload=excluded.payload, meta=excluded.meta, taken_at=excluded.taken_at",
+            (user, day, json.dumps(merged), json.dumps(merged_meta), updated_at),
+        )
+        cutoff = time.strftime("%Y-%m-%d", time.gmtime(time.time() - SNAPSHOT_DAYS * 86400))
+        conn.execute("DELETE FROM snapshots WHERE user_id=? AND day < ?", (user, cutoff))
+        snaps = conn.execute("SELECT COUNT(*), MAX(day) FROM snapshots WHERE user_id=?", (user,)).fetchone()
         conn.commit()
     await _notify(user, updated_at, str(body.get("device") or "")[:64] or None)
-    return JSONResponse({"ok": True, "keys": len(merged), "updated_at": updated_at})
+    return JSONResponse({"ok": True, "keys": len(merged), "updated_at": updated_at, "snapshots": snaps[0], "latest_snapshot": snaps[1]})
+
+
+@app.get("/sync/snapshots")
+def list_snapshots(user: str = Query(..., min_length=1, max_length=256),
+                   authorization: str | None = Header(default=None)) -> JSONResponse:
+    _auth(authorization)
+    with closing(_db()) as conn:
+        rows = conn.execute("SELECT day, payload, taken_at FROM snapshots WHERE user_id=? ORDER BY day DESC", (user,)).fetchall()
+    return JSONResponse([{"day": d, "keys": len(_json.loads(p)), "bytes": len(p), "taken_at": t} for d, p, t in rows])
+
+
+@app.get("/sync/snapshots/{day}")
+def get_snapshot(day: str, user: str = Query(..., min_length=1, max_length=256),
+                 authorization: str | None = Header(default=None)) -> JSONResponse:
+    _auth(authorization)
+    if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", day):
+        raise HTTPException(400, "day must be YYYY-MM-DD")
+    with closing(_db()) as conn:
+        row = conn.execute("SELECT payload, meta, taken_at FROM snapshots WHERE user_id=? AND day=?", (user, day)).fetchone()
+    if not row:
+        raise HTTPException(404, "no snapshot for that day")
+    return JSONResponse({"payload": _json.loads(row[0]), "meta": _json.loads(row[1]), "taken_at": row[2]})

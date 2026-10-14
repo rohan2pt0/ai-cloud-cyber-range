@@ -2422,6 +2422,8 @@ function renderPlaybook(){
         if (!r || !r.ok) { S_("gm_sync_fails", G("gm_sync_fails", 0) + 1); return; }
         S_("gm_sync_last", ymd() + " " + new Date().toTimeString().slice(0, 5));
         S_("gm_sync_fails", 0);
+        // The estate keeps a snapshot of the merged state for every day (so nobody has to remember to export a backup).
+        return r.json().then(function (j) { if (j && j.snapshots) S_("gm_sync_snaps", { n: j.snapshots, latest: j.latest_snapshot }); }).catch(function () {});
       })
       .catch(function () { S_("gm_sync_fails", G("gm_sync_fails", 0) + 1); });
   };
@@ -2449,6 +2451,51 @@ function renderPlaybook(){
       if (cfg()) { wsTimer = setTimeout(gmLiveStart, wsBackoff); wsBackoff = Math.min(wsBackoff * 2, 60000); }
     };
     mine.onerror = function () { try { mine.close(); } catch (e) {} };
+  };
+  // One-link setup: `./securax sync-link` prints  <hub address>/#sync=<base64url JSON {url,key,user}>.  Opening it on a phone sets sync up in one
+  // tap. The data after # never leaves the browser (it is not sent to any server); we remove it from the address bar straight away, we
+  // always show WHERE the data will go before saving, and an existing setup is never replaced without a second, explicit yes.
+  function b64urlJson(t) { t = String(t).replace(/-/g, "+").replace(/_/g, "/"); while (t.length % 4) t += "="; return JSON.parse(decodeURIComponent(escape(atob(t)))); }
+  window.gmSyncLinkImport = function () {
+    var h = String(location.hash || ""), m = /^#sync=([A-Za-z0-9_-]+)$/.exec(h);
+    if (!m) return false;
+    try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+    try {
+      var o = b64urlJson(m[1]);
+      if (!o || typeof o.url !== "string" || !/^https?:\/\//.test(o.url) || typeof o.key !== "string" || !o.key || o.key.length > 300) throw new Error("not a sync link");
+      var user = String(o.user || "me").slice(0, 256), host = new URL(o.url).host;
+      if (!confirm("Turn on cross-device sync?\n\nYour data will be stored on:\n" + host + "\n\nOnly continue if this link came from your own SecuRAX estate.")) return true;
+      if (cfg() && !confirm("This device is already syncing to " + new URL(cfg().url).host + ". Replace it with " + host + "?")) return true;
+      S_("gm_sync_cfg", { url: o.url.replace(/\/+$/, ""), key: o.key, user: user });
+      alert("Sync is on. Your data will follow you across devices.");
+      setTimeout(function () { gmSyncInit(true); renderAll(); }, 50);
+    } catch (e) { alert("That setup link could not be read: " + e.message); }
+    return true;
+  };
+  function snapBase() { var c = cfg(); return String(c.url).replace(/\/+$/, "") + "/snapshots"; }
+  window.gmSnapList = function () {
+    var c = cfg(), box = document.getElementById("snapList"); if (!c || !box) return;
+    box.innerHTML = "Loading\u2026";
+    fetch(snapBase() + "?user=" + encodeURIComponent(c.user), { headers: syncHeaders(c) })
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(function (list) {
+        box.innerHTML = list.length ? list.map(function (x) {
+          return '<div style="display:flex;gap:8px;align-items:center;margin:4px 0"><span style="flex:1">' + esc(x.day) + ' \u00b7 ' + x.keys + ' items</span>'
+            + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmSnapRestore(\'' + esc(x.day) + '\')">Restore</button></div>';
+        }).join("") : "No snapshots yet: the first one is taken at your next change.";
+      }).catch(function (e) { box.textContent = "Could not read the estate's snapshots (" + e.message + "). Your data on this device is untouched."; });
+  };
+  window.gmSnapRestore = function (day) {
+    var c = cfg(); if (!c || !/^\d{4}-\d{2}-\d{2}$/.test(day)) return;
+    fetch(snapBase() + "/" + day + "?user=" + encodeURIComponent(c.user), { headers: syncHeaders(c) })
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(function (b) {
+        var keys = Object.keys(b.payload || {});
+        if (!keys.length || !confirm("Restore the estate's snapshot of " + day + " (" + keys.length + " items)? Everything on this device is replaced; you can undo this once from Ops.")) return;
+        gmSnap("before restoring the " + day + " snapshot");
+        keys.forEach(function (k) { if (k.indexOf("gm_sync") !== 0 && k.indexOf("gm_undo") !== 0) _set0(k, b.payload[k]); });
+        location.reload();
+      }).catch(function (e) { alert("Could not restore that snapshot: " + e.message); });
   };
   window.gmSyncSave = function () {
     var url = document.getElementById("syUrl").value.trim();
@@ -3882,7 +3929,12 @@ function renderPlaybook(){
     else row(true, "Storage " + kb + " KB used", "Comfortable. Browsers allow roughly 5,000 KB.");
 
     // Backups \u2014 the one that matters when everything else fails
-    if (!exp) row(false, "No local backup has ever been taken",
+    var snaps = G("gm_sync_snaps", null);
+    if (c && snaps && snaps.n) row(true, "Backed up automatically \u2014 " + snaps.n + " daily snapshot" + (snaps.n === 1 ? "" : "s") + " on your estate",
+      "Latest: " + esc(String(snaps.latest)) + ". Nothing for you to do. A downloaded file is still the safest extra copy (it survives a lost estate).",
+      '<div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmSnapList()">See / restore a day</button>'
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmExportNow()">Also export a file</button></div><div id="snapList" class="muted" style="margin-top:6px"></div>');
+    else if (!exp) row(false, "No local backup has ever been taken",
       "Sync is convenience; a dated file is your actual insurance. It survives a deleted sync backend, a cleared browser, and a lost device.",
       '<button class="btn-sm" style="background:var(--gold);color:#0d1f35;margin-top:6px" onclick="gmExportNow()">Export one now</button>');
     else {
@@ -4935,6 +4987,7 @@ function renderPlaybook(){
     }
     // Auto-fill example properties on first visit so the Property tab is explorable
     try { var pr = G("gm_props", null); if ((!pr || !pr.length) && window.P && window.P.example) { if (window.gmTplProp) gmTplProp(); } } catch (e) {}
+    gmSyncLinkImport();
     gmSyncInit();
     if (window.renderAll) renderAll();
     // Monthly backup nudge, once per month, non-blocking

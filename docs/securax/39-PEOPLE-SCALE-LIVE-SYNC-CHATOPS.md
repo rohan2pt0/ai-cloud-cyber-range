@@ -14,6 +14,12 @@ You asked three things: did live push (WebSockets) get built, where is Mattermos
 - **Client** (`guiding-map/ops.js`): reconnects with back-off up to 60 s; stops when you turn sync off.
 - **Limit**: the socket registry lives in one process and storage is SQLite, so run **one** estate-sync. Several replicas need Postgres plus a pub/sub bus first (listed as a gap in the ladder).
 
+## Ops without chores: automatic daily backups and one-tap phone setup
+Two things the Ops tab used to ask you to do are now done for you; the app is still local-first and works fully offline, so the estate is never a single point of failure.
+- **Daily snapshots.** Whenever sync pushes, the sync service keeps that day's merged state as a snapshot, 30 days by default (`SYNC_SNAPSHOT_DAYS`). Ops → System health shows "Backed up automatically — N daily snapshots", with **See / restore a day** (restoring takes one undo snapshot first). Server-side snapshots live in the same database as the rest of your estate data, so `./securax backup` covers them; a downloaded file is still the extra copy that survives losing the estate.
+- **One-tap setup.** `./securax sync-link` prints a link; opening it on a phone or second computer sets sync up after one confirmation. The sync address and device token sit after the `#`, which browsers never send to a server; the app shows **where the data will go** before saving, removes the token from the address bar immediately, and refuses to replace an existing setup without a second yes (a link is a phishing vector, so it is treated as one). Treat the link like a password.
+- Not built on purpose: predictions and cross-domain "insights". They need weeks of your real data to be worth anything; use the estate for 30 days first.
+
 ## Mattermost as a dormant organ
 Why an organ and not a default service: a solo operator does not need a chat server, and every running service is attack surface and RAM. It follows the same pinned-upstream pattern as Wazuh, MISP and TheHive: fetched at an exact commit, `shipped_defaults` makes the upstream's placeholder database password count as "unset" so a random one is generated, volumes are created owned by the container user, the port is localhost-only.
 - **Edition**: configured for Team Edition (free, open source). Single sign-on beyond the basics and high-availability clustering have been tied to paid licensed editions; **confirm the current terms with the vendor before you plan around them** — they change, and we have not priced anything.

@@ -579,6 +579,10 @@ $(tail -60 "$FB")"
     #   ./securax notify test | digest [--dry-run] [--only-bad]
     shift; exec python3 "$ROOT/governance/notify.py" "$@"
     ;;
+  sync-link)
+    # One tap to set up cross-device sync on a phone/another computer: prints a link to open there.   ./securax sync-link [--user me] [--host 100.x.y.z]
+    shift; exec python3 "$ROOT/governance/synclink.py" "$@"
+    ;;
   tls)
     # Encrypt everything that reaches a browser, a phone or another machine: a private name-constrained CA + one HTTPS edge.
     #   ./securax tls on | trust [--apply] | status | renew | off
@@ -967,7 +971,7 @@ START HERE (the 20% you use 80% of the time)
   doctor         find and fix what is wrong, in plain words          update         get the latest version (safe: backs up first)
   cockpit        one-page health view: risks, to-dos, trends         storage        how much space you use and when it runs out
   notify         send the daily digest to Mattermost/Slack           capacity       what to switch on as more people join (1 to 100,000)
-  tls            encrypt every web connection (HTTPS everywhere)
+  tls            encrypt every web connection (HTTPS everywhere)        sync-link      one-tap sync setup for a phone / second computer
 
 AI & CHAT
   keys / providers add|list   add free or paid AI keys             models         check which models your keys can use today
