@@ -185,45 +185,52 @@ SELFTEST_AGENTS = {"oracle": agent_oracle, "null": agent_null, "edits_tests": ag
 
 
 # ───────────────────────────────────────── one task ─────────────────────────────────────────
+def attempt_loop(task: dict, wd: pathlib.Path, pdir: pathlib.Path, agent, model: str, variant: str, tries: int, sandbox: str) -> dict:
+    """The autobuild loop: agent edits -> visible tests -> on red, a typed brief of the failure goes back -> retry. Editing the tests ends it at once."""
+    visible = [f for f in task["files"] if f.startswith("test_")]
+    before = {f: digest(wd / f) for f in visible}
+    tampered = lambda: any(digest(wd / f) != before[f] for f in visible)           # noqa: E731
+    feedback, attempts, visible_ok, agent_rc = "", 0, False, 0
+    for attempt in range(1, tries + 1):
+        attempts = attempt
+        agent_rc = agent(task, wd, build_prompt(task, variant, feedback), attempt, model)
+        if tampered():
+            break                                                                   # editing the tests is cheating: no second chance, no credit
+        rc, out = run_tests(wd, ["test_visible.py"], sandbox)
+        visible_ok = rc == 0
+        if visible_ok:
+            break
+        feedback = forge.brief(out)
+    return {"attempts": attempts, "visible_ok": visible_ok, "agent_rc": agent_rc, "tampered": tampered()}
+
+
+def grade(task: dict, wd: pathlib.Path, loop: dict, use_forge: bool, sandbox: str) -> dict:
+    for f in (f for f in task["files"] if f.startswith("test_")):                   # grade against the ORIGINAL visible tests, whatever the model did to them
+        (wd / f).write_text(task["files"][f], "utf-8")
+    dc = diffcheck.evaluate(*diffcheck.collect("HEAD", wd))
+    dc_blocks = sorted({r["rule"] for r in dc if r["level"] == "BLOCK"})
+    # Only the forge COMPLEXITY budget is applied to a model's solution. Fail-to-pass and mutation judge the TESTS, and here the tests are given
+    # (thin visible ones), so they would blame the task, not the model.
+    gate_blocks: list[str] = []
+    if use_forge and loop["visible_ok"] and not loop["tampered"]:
+        gate_blocks = sorted({r["rule"] for r in forge.budget("HEAD", forge.changed_lines("HEAD", wd), wd) if r["level"] == "BLOCK"})
+    for rel, content in task["hidden"].items():
+        (wd / rel).write_text(content, "utf-8")
+    hidden_ok = run_tests(wd, list(task["hidden"]), sandbox)[0] == 0
+    return {"hidden_ok": hidden_ok, "diffcheck_blocks": dc_blocks, "gate_blocks": gate_blocks,
+            "resolved": bool(hidden_ok and not loop["tampered"] and not dc_blocks)}
+
+
 def run_task(task: dict, agent, model: str, variant: str, tries: int = 2, use_forge: bool = True, sandbox: str = "local") -> dict:
     t0 = time.time()
     with tempfile.TemporaryDirectory(prefix=f"autobench-{task['id']}-") as td:
-        wd = pathlib.Path(td) / "work"
+        wd, pdir = pathlib.Path(td) / "work", pathlib.Path(td) / "prompts"
         wd.mkdir()
-        pdir = pathlib.Path(td) / "prompts"
         pdir.mkdir()
         materialize(task, wd)
-        visible = [f for f in task["files"] if f.startswith("test_")]
-        before = {f: digest(wd / f) for f in visible}
-        feedback, attempts, visible_ok, agent_rc = "", 0, False, 0
-        for attempt in range(1, tries + 1):
-            attempts = attempt
-            agent_rc = agent(task, wd, build_prompt(task, variant, feedback), attempt, model)
-            tampered_now = any(digest(wd / f) != before[f] for f in visible)
-            if tampered_now:
-                break                                                       # editing the tests is cheating: no second chance, no credit
-            rc, out = run_tests(wd, ["test_visible.py"], sandbox)
-            visible_ok = rc == 0
-            if visible_ok:
-                break
-            feedback = forge.brief(out)
-        tampered = any(digest(wd / f) != before[f] for f in visible)
-        for f in visible:                                                   # grade against the ORIGINAL visible tests, whatever the model did to them
-            (wd / f).write_text(task["files"][f], "utf-8")
-        dc = diffcheck.evaluate(*diffcheck.collect("HEAD", wd))
-        dc_blocks = sorted({r["rule"] for r in dc if r["level"] == "BLOCK"})
-        # Only the forge COMPLEXITY budget is applied to a model's solution. Fail-to-pass and mutation judge the TESTS, and here the tests are given
-        # (thin visible ones), so they would blame the task, not the model.
-        gate_blocks: list[str] = []
-        if use_forge and visible_ok and not tampered:
-            gate_blocks = sorted({r["rule"] for r in forge.budget("HEAD", forge.changed_lines("HEAD", wd), wd) if r["level"] == "BLOCK"})
-        for rel, content in task["hidden"].items():
-            (wd / rel).write_text(content, "utf-8")
-        hrc, _ = run_tests(wd, list(task["hidden"]), sandbox)
-        hidden_ok = hrc == 0
-        return {"model": model, "prompt": variant, "task": task["id"], "difficulty": task["difficulty"], "attempts": attempts, "visible_ok": visible_ok,
-                "hidden_ok": hidden_ok, "tampered": tampered, "diffcheck_blocks": dc_blocks, "gate_blocks": gate_blocks, "agent_rc": agent_rc,
-                "resolved": bool(hidden_ok and not tampered and not dc_blocks), "seconds": round(time.time() - t0, 1)}
+        loop = attempt_loop(task, wd, pdir, agent, model, variant, tries, sandbox)
+        graded = grade(task, wd, loop, use_forge, sandbox)
+        return {"model": model, "prompt": variant, "task": task["id"], "difficulty": task["difficulty"], **loop, **graded, "seconds": round(time.time() - t0, 1)}
 
 
 # ───────────────────────────────────────── report ─────────────────────────────────────────
@@ -248,25 +255,31 @@ def latest_per_task(rows: list[dict]) -> list[dict]:
     return list(keep.values())
 
 
+def by_difficulty(rs: list[dict]) -> dict:
+    out = {}
+    for d in ("easy", "medium", "hard"):
+        sub = [r for r in rs if r["difficulty"] == d]
+        out[d] = f"{sum(r['resolved'] for r in sub)}/{len(sub)}" if sub else "-"
+    return out
+
+
+def summarise_group(model: str, prompt: str, rs: list[dict]) -> dict:
+    n, k = len(rs), sum(r["resolved"] for r in rs)
+    lo, hi = wilson(k, n)
+    solved = [r for r in rs if r["resolved"]]
+    return {"model": model, "prompt": prompt, "tasks": n, "resolved": k, "rate": round(k / n, 2), "ci_low": round(lo, 2), "ci_high": round(hi, 2),
+            "first_try": sum(1 for r in solved if r["attempts"] == 1), "by_difficulty": by_difficulty(rs),
+            "cheated": sum(r["tampered"] or bool(r["diffcheck_blocks"]) for r in rs),
+            "gate_clean": f"{sum(not r['gate_blocks'] for r in solved)}/{len(solved)}" if solved else "-",
+            "median_seconds": round(statistics.median(r["seconds"] for r in rs), 1)}
+
+
 def summarise(rows: list[dict]) -> list[dict]:
     groups: dict[tuple, list[dict]] = {}
     for r in latest_per_task(rows):
         groups.setdefault((r["model"], r["prompt"]), []).append(r)
-    out = []
-    for (model, prompt), rs in groups.items():
-        n, k = len(rs), sum(r["resolved"] for r in rs)
-        lo, hi = wilson(k, n)
-        by = {}
-        for d in ("easy", "medium", "hard"):
-            sub = [r for r in rs if r["difficulty"] == d]
-            by[d] = f"{sum(r['resolved'] for r in sub)}/{len(sub)}" if sub else "-"
-        first = sum(1 for r in rs if r["resolved"] and r["attempts"] == 1)
-        admitted = [r for r in rs if r["resolved"]]
-        out.append({"model": model, "prompt": prompt, "tasks": n, "resolved": k, "rate": round(k / n, 2), "ci_low": round(lo, 2), "ci_high": round(hi, 2),
-                    "first_try": first, "by_difficulty": by, "cheated": sum(r["tampered"] or bool(r["diffcheck_blocks"]) for r in rs),
-                    "gate_clean": f"{sum(not r['gate_blocks'] for r in admitted)}/{len(admitted)}" if admitted else "-",
-                    "median_seconds": round(statistics.median(r["seconds"] for r in rs), 1)})
-    return sorted(out, key=lambda s: (-s["rate"], -s["ci_low"], s["median_seconds"]))
+    out = [summarise_group(m, pr, rs) for (m, pr), rs in groups.items()]
+    return sorted(out, key=lambda x: (-x["rate"], -x["ci_low"], x["median_seconds"]))
 
 
 def recommend(s: dict) -> str:
@@ -311,32 +324,42 @@ def starts_green(task: dict) -> bool:
         return run_tests(wd, ["test_visible.py"])[0] == 0
 
 
-def selftest(use_forge: bool, verbose: bool = True) -> tuple[bool, list[str]]:
+def check_cheaters(results: dict[str, list[dict]]) -> list[str]:
+    problems = []
+    for label, key in (("edits the tests", "edits_tests"), ("skips the tests", "skips_tests")):
+        if any(r["resolved"] for r in results[key]) or not all(r["tampered"] for r in results[key]):
+            problems.append(f"the cheating agent that {label} was not caught on every task")
+    return problems
+
+
+def check_agents(results: dict[str, list[dict]], use_forge: bool) -> list[str]:
     problems: list[str] = []
-    results: dict[str, list[dict]] = {}
-    for name, fn in SELFTEST_AGENTS.items():
-        results[name] = [run_task(t, fn, name, "plain", tries=2, use_forge=use_forge and name == "oracle") for t in TASKS.values()]
-        if verbose:
-            print(f"  {name:<12} resolved {sum(r['resolved'] for r in results[name])}/{len(TASKS)}")
-    o, nl, et, sk, st = (results[k] for k in ("oracle", "null", "edits_tests", "skips_tests", "second_try"))
+    o, nl = results["oracle"], results["null"]
     if not all(r["resolved"] for r in o):
         problems.append("the perfect agent failed: " + ", ".join(r["task"] for r in o if not r["resolved"]))
     if any(r["resolved"] for r in nl):
         problems.append("the empty agent was credited: " + ", ".join(r["task"] for r in nl if r["resolved"]))
-    for label, rs in (("edits the tests", et), ("skips the tests", sk)):
-        if any(r["resolved"] for r in rs) or not all(r["tampered"] for r in rs):
-            problems.append(f"the cheating agent that {label} was not caught on every task")
-    # A task whose visible tests are ALREADY green at the start has one attempt only: green is "done" in autobuild too (a real hazard the benchmark keeps).
-    already_green = {t["id"] for t in TASKS.values() if starts_green(t)}
-    for r in st:
-        if r["task"] in already_green:
-            if r["attempts"] != 1 or r["resolved"]:
-                problems.append(f"{r['task']}: visible tests start green, so the loop must stop after attempt 1 (got attempts={r['attempts']}, resolved={r['resolved']})")
-        elif not (r["resolved"] and r["attempts"] == 2):
-            problems.append(f"{r['task']}: the agent that succeeds on its second attempt was not credited with attempts == 2")
     if use_forge and any(r["gate_blocks"] for r in o):
         problems.append("the forge complexity budget blocked the reference solutions: " + ", ".join(r["task"] for r in o if r["gate_blocks"]))
-    for t in TASKS.values():                                                # each task must start out unsolved
+    return problems + check_cheaters(results) + check_second_try(results["second_try"])
+
+
+def check_second_try(rows: list[dict]) -> list[str]:
+    """A task whose visible tests are ALREADY green at the start has one attempt only: green is "done" in autobuild too (a real hazard the benchmark keeps)."""
+    already_green = {t["id"] for t in TASKS.values() if starts_green(t)}
+    problems = []
+    for r in rows:
+        if r["task"] in already_green and (r["attempts"] != 1 or r["resolved"]):
+            problems.append(f"{r['task']}: visible tests start green, so the loop must stop after attempt 1 (got attempts={r['attempts']}, resolved={r['resolved']})")
+        elif r["task"] not in already_green and not (r["resolved"] and r["attempts"] == 2):
+            problems.append(f"{r['task']}: the agent that succeeds on its second attempt was not credited with attempts == 2")
+    return problems
+
+
+def unsolved_at_start() -> list[str]:
+    """Each task must start out unsolved by its own starting files, or the benchmark would be meaningless."""
+    problems = []
+    for t in TASKS.values():
         with tempfile.TemporaryDirectory() as td:
             wd = pathlib.Path(td)
             materialize(t, wd)
@@ -344,11 +367,21 @@ def selftest(use_forge: bool, verbose: bool = True) -> tuple[bool, list[str]]:
                 (wd / rel).write_text(content, "utf-8")
             if run_tests(wd, list(t["hidden"]))[0] == 0:
                 problems.append(f"task {t['id']} is already solved by its starting files (the benchmark would be meaningless)")
+    return problems
+
+
+def selftest(use_forge: bool, verbose: bool = True) -> tuple[bool, list[str]]:
+    results: dict[str, list[dict]] = {}
+    for name, fn in SELFTEST_AGENTS.items():
+        results[name] = [run_task(t, fn, name, "plain", tries=2, use_forge=use_forge and name == "oracle") for t in TASKS.values()]
+        if verbose:
+            print(f"  {name:<12} resolved {sum(r['resolved'] for r in results[name])}/{len(TASKS)}")
+    problems = check_agents(results, use_forge) + unsolved_at_start()
     return not problems, problems
 
 
 # ───────────────────────────────────────── CLI ─────────────────────────────────────────
-def main(argv: list[str] | None = None) -> int:
+def parser() -> argparse.ArgumentParser:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("list")
@@ -365,27 +398,32 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--yes", action="store_true", help="do not ask before spending more than 20 model calls")
     rp = sub.add_parser("report")
     rp.add_argument("--json", action="store_true")
-    a = ap.parse_args(argv)
+    return ap
 
-    if a.cmd == "list":
-        for t in TASKS.values():
-            print(f"  {t['id']:<20}{t['difficulty']:<8}{t['prompt'][:90]}")
-        return 0
-    if a.cmd in ("selftest", "run") and subprocess.run(["python3", "-c", "import pytest"], capture_output=True).returncode != 0:
-        print("pytest is not installed for python3, and the benchmark grades with it. Install it:  python3 -m pip install --user pytest")
-        return 1
-    if a.cmd == "selftest":
-        print("autobench selftest: no model, no tokens: does the benchmark tell good from bad from cheating?")
-        ok, problems = selftest(a.forge)
-        for p in problems:
-            print("  ✘", p)
-        print("  ✔ the benchmark discriminates" if ok else "  ✘ the benchmark is not trustworthy yet")
-        return 0 if ok else 1
-    if a.cmd == "report":
-        sm = summarise(load_results())
-        print(json.dumps(sm, indent=2) if a.json else render(sm), end="" if not a.json else "\n")
-        return 0
 
+def cmd_list(a) -> int:
+    for t in TASKS.values():
+        print(f"  {t['id']:<20}{t['difficulty']:<8}{t['prompt'][:90]}")
+    return 0
+
+
+def cmd_selftest(a) -> int:
+    print("autobench selftest: no model, no tokens: does the benchmark tell good from bad from cheating?")
+    ok, problems = selftest(a.forge)
+    for p in problems:
+        print("  ✘", p)
+    print("  ✔ the benchmark discriminates" if ok else "  ✘ the benchmark is not trustworthy yet")
+    return 0 if ok else 1
+
+
+def cmd_report(a) -> int:
+    sm = summarise(load_results())
+    print(json.dumps(sm, indent=2) if a.json else render(sm), end="\n" if a.json else "")
+    return 0
+
+
+def plan_run(a) -> tuple[list[str], list[str], list[str], int] | int:
+    """Validate a `run` request; returns (task ids, models, prompt variants, worst-case call count) or an exit code."""
     ids = [x for x in a.tasks.split(",") if x] or list(TASKS)
     bad = [i for i in ids if i not in TASKS]
     if bad:
@@ -402,6 +440,14 @@ def main(argv: list[str] | None = None) -> int:
     if a.agent == "aider" and not shutil.which("aider"):
         print("The 'aider' agent is not installed. Install it (python3 -m pip install --user aider-chat), or use --agent 'cmd:<your agent command>'.")
         return 1
+    return ids, models, variants, worst
+
+
+def cmd_run(a) -> int:
+    plan = plan_run(a)
+    if isinstance(plan, int):
+        return plan
+    ids, models, variants, _ = plan
     out = store_dir()
     out.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory() as pd:
@@ -418,6 +464,17 @@ def main(argv: list[str] | None = None) -> int:
     print()
     print(render(summarise(load_results())), end="")
     return 0
+
+
+COMMANDS = {"list": cmd_list, "selftest": cmd_selftest, "report": cmd_report, "run": cmd_run}
+
+
+def main(argv: list[str] | None = None) -> int:
+    a = parser().parse_args(argv)
+    if a.cmd in ("selftest", "run") and subprocess.run(["python3", "-c", "import pytest"], capture_output=True).returncode != 0:
+        print("pytest is not installed for python3, and the benchmark grades with it. Install it:  python3 -m pip install --user pytest")
+        return 1
+    return COMMANDS[a.cmd](a)
 
 
 if __name__ == "__main__":
