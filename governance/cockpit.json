@@ -11,6 +11,7 @@
     "image_age_days": {"amber": 180, "red": 365},
     "threat_data_age_days": {"amber": 14, "red": 45},
     "key_expiry_days": {"amber": 30, "red": 7},
+    "cert_days_left": {"amber": 30, "red": 14},
     "auth_denied_24h": {"amber": 5, "red": 25},
     "coverage_pct": {"amber": 60, "red": 40}
   }

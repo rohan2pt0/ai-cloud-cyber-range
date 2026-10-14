@@ -50,6 +50,35 @@ CATS = {
     "PR.MA": "Maintenance", "DE.CM": "Monitoring", "DE.DP": "Detection", "RS.MA": "Response mgmt", "RS.CO": "Communication", "RS.AN": "Analysis",
     "RS.IM": "Improvement", "RC.RP": "Recovery plan", "RC.CO": "Recovery comms", "RC.IM": "Recovery improvement", "EV.ST": "Evolve",
 }
+# What every area on the maturity chart means, in plain words (the codes are NIST CSF 2.0 function.category letters; SEBI CSCRF uses them).
+AREAS = {
+    "GV.OC": ("Business context", "Do we know what we must protect and which rules apply to us?"),
+    "GV.RR": ("Who is responsible", "Is it clear who owns security decisions and answers for them?"),
+    "GV.PO": ("Written rules", "Security policies that leadership has approved and people follow."),
+    "GV.OV": ("Leadership oversight", "Do leaders review security results and act on them?"),
+    "GV.RM": ("Risk decisions", "How risks are weighed and chosen to be reduced, accepted or passed on."),
+    "GV.SC": ("Suppliers & software", "Are the vendors, AI models and software we depend on checked and pinned?"),
+    "ID.AM": ("Know what we have", "A current list of systems, data, models and keys."),
+    "ID.RA": ("Find weak spots", "Finding, ranking and tracking vulnerabilities and threats."),
+    "PR.AA": ("Who gets in", "Sign-in, roles, multi-factor and key handling."),
+    "PR.AT": ("People awareness", "Training and habits of the people who use the estate."),
+    "PR.DS": ("Protect the data", "Encryption, data classes, and keeping data inside allowed places."),
+    "PR.IP": ("Safe day-to-day running", "Backups, change control and safe configuration."),
+    "PR.MA": ("Patching & upkeep", "Keeping software updated and repaired in time."),
+    "DE.CM": ("Watching", "Continuous monitoring and alerts."),
+    "DE.DP": ("Spotting attacks", "Detection rules that are tested against real attack patterns."),
+    "RS.MA": ("Handling incidents", "A tested way to run an incident from first alert to close."),
+    "RS.CO": ("Telling the right people", "Reporting to regulators, customers and the board on time."),
+    "RS.AN": ("Investigating", "Finding out what happened and how far it went."),
+    "RS.IM": ("Learning from incidents", "Turning each incident into a fix."),
+    "RC.RP": ("Getting back up", "Recovery plans and restores that are practised."),
+    "RC.CO": ("Recovery messages", "Who is told what while recovering."),
+    "RC.IM": ("Recovery lessons", "Improving recovery after each test or real event."),
+    "EV.ST": ("Keeping up to date", "Staying current with new threats, rules and technology."),
+}
+FUNCTION = {"GV": "Govern", "ID": "Identify", "PR": "Protect", "DE": "Detect", "RS": "Respond", "RC": "Recover", "EV": "Evolve"}
+PRIO = {"high": 0, "medium": 1, "low": 2}
+
 THEMES = [
     ("Identity & access", ("identity", "oidc", "mfa", "access", "role", "token", "lock-out", "privileged", "login")),
     ("Backup & recovery", ("backup", "rpo", "restore", "recovery", "drill", "immutable", "dr ")),
@@ -184,6 +213,23 @@ class Collector:
         self.add("keys", "Service keys", "KRI", "Protect", f"{len(keys)} keys" + (f", {len(soon)} expiring" if soon else "") + (f", {noexp} never expire" if noexp else ""), st,
                  "Keys that never expire or expire unnoticed either stay exposed forever or break a service at 3 a.m.",
                  "Rotate or set expiry" if st != "green" else "", "./securax gateway-auth key list", urgent=st == "red", importance=2)
+
+    def c_tls(self):
+        t = _load("securax_tls", "governance/tls.py")
+        regulated = self.profile == "regulated"
+        on = t.tls_is_on()
+        info = t.cert_info(t.tls_dir() / "server.crt") if on else {}
+        days = info.get("days_left")
+        if not on:
+            st = "red" if regulated else "amber"
+            self.add("tls", "Encryption in transit", "KRI", "Protect", "plain HTTP (browsers say 'not secure')", st,
+                     "Anything on the network - Wi-Fi, a phone, another machine - can read plain HTTP. Regulators expect encryption in transit, including internal traffic.",
+                     "Turn on HTTPS everywhere" , "./securax tls on", urgent=regulated, importance=3 if regulated else 2)
+            return
+        st = "unknown" if days is None else rag(days, self.th["cert_days_left"], higher_is_better=True)
+        self.add("tls", "Encryption in transit", "KRI", "Protect", "HTTPS everywhere" + ("" if days is None else f" · certificate {days} days left"), st,
+                 "Every browser, phone and cross-machine connection is encrypted with a certificate from your own name-restricted authority. Container-to-container hops on the private Docker network are phase 2.",
+                 "Renew the certificate" if st in ("red", "amber") else "", "./securax tls renew", urgent=st == "red", importance=2)
 
     # -- recover
     def c_storage(self):
@@ -346,7 +392,7 @@ class Collector:
             self.add("covmaps", "Compliance maps consistent", "KRI", "Govern", f"{broken} problem(s)", "red", "A claim in a map points at something that no longer exists.", "Fix the maps", "./securax comply --verify", urgent=True, importance=3)
 
     def run(self) -> None:
-        for fn in (self.c_services, self.c_gateway, self.c_auth_residency, self.c_keys, self.c_storage, self.c_images, self.c_threat_data, self.c_incidents, self.c_soc,
+        for fn in (self.c_services, self.c_gateway, self.c_auth_residency, self.c_tls, self.c_keys, self.c_storage, self.c_images, self.c_threat_data, self.c_incidents, self.c_soc,
                    self.c_fitness, self.c_coverage):
             self.safe(fn)
 
@@ -368,7 +414,9 @@ def radar_scores(cscrf: dict, target: float) -> list[dict]:
         c = category_of(it["id"])
         if not c:
             continue
-        a = agg.setdefault(c, {"designed": [], "demonstrated": [], "entity": 0})
+        a = agg.setdefault(c, {"designed": [], "demonstrated": [], "entity": 0, "todo": []})
+        if it["status"] in ("partial", "gap") and it.get("next"):
+            a["todo"].append((PRIO.get(it.get("priority", "low"), 2), it["next"]))
         if it["status"] in ("entity", "na"):
             a["entity"] += it["status"] == "entity"
             continue
@@ -380,8 +428,9 @@ def radar_scores(cscrf: dict, target: float) -> list[dict]:
         a = agg.get(c)
         if not a or not a["designed"]:
             continue
-        out.append({"code": c, "name": CATS[c], "target": target, "designed": round(5 * sum(a["designed"]) / len(a["designed"]), 2),
-                    "demonstrated": round(5 * sum(a["demonstrated"]) / len(a["demonstrated"]), 2), "items": len(a["designed"]), "entity": a["entity"]})
+        out.append({"code": c, "name": AREAS.get(c, (CATS[c], ""))[0], "covers": AREAS.get(c, ("", ""))[1], "target": target, "designed": round(5 * sum(a["designed"]) / len(a["designed"]), 2),
+                    "demonstrated": round(5 * sum(a["demonstrated"]) / len(a["demonstrated"]), 2), "items": len(a["designed"]), "entity": a["entity"],
+                    "next": sorted(a["todo"])[0][1] if a["todo"] else ""})
     return out
 
 
@@ -454,8 +503,8 @@ E = html.escape
 
 def radar_svg(rows: list[dict]) -> str:
     if len(rows) < 3:
-        return "<p class='muted'>Not enough scored categories yet.</p>"
-    cx, cy, R = 270, 235, 170
+        return "<p class='muted'>Not enough scored areas yet.</p>"
+    cx, cy, R = 380, 330, 215
     n = len(rows)
 
     def pt(i, v):
@@ -469,18 +518,64 @@ def radar_svg(rows: list[dict]) -> str:
     for ring in range(1, 6):
         g.append(f"<polygon points='{' '.join(f'{pt(i, ring)[0]:.1f},{pt(i, ring)[1]:.1f}' for i in range(n))}' class='ring'/>")
         x, y = pt(0, ring)
-        g.append(f"<text x='{x + 3:.1f}' y='{y:.1f}' class='tick'>{ring}</text>")
+        g.append(f"<text x='{x + 4:.1f}' y='{y + 3:.1f}' class='tick'>{ring}</text>")
     for i, r in enumerate(rows):
         x, y = pt(i, 5)
         g.append(f"<line x1='{cx}' y1='{cy}' x2='{x:.1f}' y2='{y:.1f}' class='spoke'/>")
-        lx, ly = pt(i, 5.55)
-        anchor = "middle" if abs(lx - cx) < 12 else ("start" if lx > cx else "end")
-        g.append(f"<text x='{lx:.1f}' y='{ly:.1f}' text-anchor='{anchor}' class='axis'><title>{E(r['name'])}: designed {r['designed']}, demonstrated {r['demonstrated']} "
-                 f"({r['items']} software items, {r['entity']} for the organisation)</title>{E(r['code'])}</text>")
+        lx, ly = pt(i, 5.32)
+        anchor = "middle" if abs(lx - cx) < 14 else ("start" if lx > cx else "end")
+        tip = (f"{r['name']} ({r['code']}): {r['covers']} Built {r['designed']}/5, proven {r['demonstrated']}/5, target {r['target']:g}. "
+               f"{r['items']} software items; {r['entity']} belong to the organisation.")
+        g.append(f"<text x='{lx:.1f}' y='{ly:.1f}' text-anchor='{anchor}' class='axis'><title>{E(tip)}</title>{E(r['name'])}"
+                 f"<tspan x='{lx:.1f}' dy='13' class='code'>{E(r['code'])}</tspan></text>")
     g.append(f"<polygon points='{poly('target')}' class='s-target'/>")
     g.append(f"<polygon points='{poly('designed')}' class='s-design'/>")
     g.append(f"<polygon points='{poly('demonstrated')}' class='s-demo'/>")
-    return (f"<svg viewBox='0 0 540 480' role='img' aria-label='NIST CSF maturity radar: target, designed and demonstrated, 0 to 5'>{''.join(g)}</svg>")
+    return (f"<svg viewBox='0 0 760 680' role='img' aria-label='Cyber-security maturity by area, 0 to 5: target, built and proven. The table below gives the same numbers in words.'>{''.join(g)}</svg>")
+
+
+def verdict(r: dict) -> tuple[str, str]:
+    """(css class, words) for one area, from its numbers."""
+    if r["demonstrated"] >= r["target"]:
+        return "green", "Strong: proven"
+    if r["designed"] >= r["target"]:
+        return "amber", "Built, not proven yet"
+    return "red", "Weak: not built"
+
+
+def posture_words(rows: list[dict]) -> str:
+    """A short paragraph a non-specialist can read: how many areas are strong, which are weakest, what to do."""
+    if not rows:
+        return "<p class='muted'>No scored areas yet.</p>"
+    strong = [r for r in rows if verdict(r)[0] == "green"]
+    built = [r for r in rows if verdict(r)[0] == "amber"]
+    weak = [r for r in rows if verdict(r)[0] == "red"]
+    avg_b = sum(r["designed"] for r in rows) / len(rows)
+    avg_p = sum(r["demonstrated"] for r in rows) / len(rows)
+    worst = sorted(rows, key=lambda r: (r["demonstrated"], r["designed"]))[:3]
+    best = sorted(rows, key=lambda r: -r["demonstrated"])[:3]
+    li = "".join(f"<li><b>{E(r['name'])}</b> ({E(r['code'])}) — {E(r['covers'])} " + (f"<i>Next:</i> {E(short(r['next'], 150))}" if r["next"] else "") + "</li>" for r in worst)
+    return (f"<p><b>In plain words:</b> we measure <b>{len(rows)}</b> areas of cyber security. <b>{len(strong)}</b> are strong and proven by automatic tests, "
+            f"<b>{len(built)}</b> are built but not yet proven, and <b>{len(weak)}</b> are weak. On average the estate scores <b>{avg_b:.1f}/5 built</b> and "
+            f"<b>{avg_p:.1f}/5 proven</b>; a regulated organisation should be at <b>{rows[0]['target']:g}</b> or better in every area.</p>"
+            f"<p><b>Strongest:</b> {E(', '.join(r['name'] for r in best))}.</p><p><b>Weakest — start here:</b></p><ul>{li}</ul>")
+
+
+def area_table(rows: list[dict]) -> str:
+    order = sorted(rows, key=lambda r: (r["demonstrated"], r["designed"]))
+    out = ["<table class='areas'><thead><tr><th>Area</th><th>What it covers</th><th>Built</th><th>Proven</th><th>Verdict</th><th>Biggest next step</th></tr></thead><tbody>"]
+    for r in order:
+        cls, words = verdict(r)
+        tgt = r["target"] / 5 * 100
+
+        def bar(v, colour):
+            return (f"<div class='meter' title='{v}/5'><div class='fill' style='width:{v / 5 * 100:.0f}%;background:var({colour})'></div>"
+                    f"<div class='tgt' style='left:{tgt:.0f}%'></div></div><span class='muted'>{v}/5</span>")
+        out.append(f"<tr><td><b>{E(r['name'])}</b><div class='muted'>{E(FUNCTION.get(r['code'][:2], ''))} · {E(r['code'])}</div></td><td>{E(r['covers'])}</td>"
+                   f"<td>{bar(r['designed'], '--acc')}</td><td>{bar(r['demonstrated'], '--g')}</td><td><span class='dot {cls}' style='min-width:9em'>{E(words)}</span></td>"
+                   f"<td>{E(short(r['next'], 150)) if r['next'] else '<span class=muted>nothing flagged</span>'}</td></tr>")
+    out.append("</tbody></table>")
+    return "".join(out)
 
 
 def spark(vals: list[float], w: int = 120, h: int = 28) -> str:
@@ -506,12 +601,15 @@ main{max-width:1180px;margin:0 auto;padding:16px}h1{font-size:1.5rem;margin:.2re
 .tile.red{border-color:var(--r)}.tile.amber{border-color:var(--a)}code{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:1px 6px;font-size:.85rem}
 .two{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}.q{border:1px solid var(--line);border-radius:12px;padding:10px;min-height:110px}
 .q h3{margin:.1rem 0 .4rem;font-size:.95rem}.q.do{border-color:var(--r)}.q.schedule{border-color:var(--acc)}ul{margin:.2rem 0;padding-left:1.1rem}li{margin:.25rem 0}
-svg{max-width:100%;height:auto}.ring{fill:none;stroke:var(--ring);stroke-width:1}.spoke{stroke:var(--ring);stroke-width:1}.tick{font-size:9px;fill:var(--mut)}.axis{font-size:11px;fill:var(--ink)}
+svg{max-width:100%;height:auto}.ring{fill:none;stroke:var(--ring);stroke-width:1}.spoke{stroke:var(--ring);stroke-width:1}.tick{font-size:9px;fill:var(--mut)}.axis{font-size:13px;fill:var(--ink);font-weight:600}.axis .code{font-size:10px;fill:var(--mut);font-weight:400}
 .s-target{fill:none;stroke:var(--mut);stroke-width:2;stroke-dasharray:5 4}.s-design{fill:rgba(37,84,199,.12);stroke:var(--acc);stroke-width:2}.s-demo{fill:rgba(27,138,75,.28);stroke:var(--g);stroke-width:2.5}
 .bar{height:14px;border-radius:7px;background:var(--acc);opacity:.85}.bar.low{background:var(--u);opacity:.5}.row{display:grid;grid-template-columns:minmax(150px,1.2fr) 3fr 3.2em;gap:8px;align-items:center;margin:.3rem 0}
 .chip{display:inline-block;border:1px solid var(--line);border-radius:8px;padding:2px 8px;margin:2px;font-size:.85rem}.spark{width:120px;height:28px;color:var(--acc)}
 .legend span{margin-right:14px;font-size:.85rem}.k{display:inline-block;width:18px;height:0;border-top:3px solid;vertical-align:middle;margin-right:4px}
 details summary{cursor:pointer;font-weight:600}a{color:var(--acc)}
+table.areas{width:100%;border-collapse:collapse;font-size:.88rem}table.areas th{text-align:left;border-bottom:2px solid var(--line);padding:6px}table.areas td{border-bottom:1px solid var(--line);padding:7px 6px;vertical-align:top}
+.meter{position:relative;height:10px;background:var(--ring);border-radius:5px;min-width:90px}.meter .fill{height:100%;border-radius:5px}.meter .tgt{position:absolute;top:-3px;width:0;height:16px;border-left:2px dashed var(--mut)}
+.guide li{margin:.35rem 0}
 """
 
 
@@ -558,11 +656,19 @@ def render(c: Collector, maps: dict, hist: list[dict], ai: str, now: float, targ
         h.append(f"<div class='row'><div>{'<b>' if p['vital'] else ''}{E(p['theme'])}{'</b>' if p['vital'] else ''} <span class='muted'>({p['count']})</span></div>"
                  f"<div><div class='bar {'' if p['vital'] else 'low'}' style='width:{p['share'] * 100 * 2.2:.0f}%'></div></div><div class='muted'>{p['cum'] * 100:.0f}%</div></div>")
     h.append("</div>")
-    h.append("<div class='card'><h2>Maturity radar <span class='muted'>(NIST CSF 2.0 categories; SEBI CSCRF is built on them)</span></h2><div class='legend'>"
-             "<span><i class='k' style='border-color:var(--mut);border-top-style:dashed'></i>Target</span><span><i class='k' style='border-color:var(--acc)'></i>Designed: a mechanism or document exists</span>"
-             "<span><i class='k' style='border-color:var(--g)'></i>Demonstrated: a test or real-container journey proves it</span></div>" + radar_svg(rows)
-             + "<div class='muted'>Scale 0–5. Scores come from our own assessment in the SEBI CSCRF map (software items only; what belongs to the organisation is not scored). Hover an axis for detail. "
-               "Categories with only organisational duties are not drawn.</div></div>")
+    h.append("<div class='card'><h2>Cyber-security posture, area by area</h2>" + posture_words(rows)
+             + "<details open class='guide'><summary>How to read the chart and the table</summary><ul>"
+               "<li><b>Each spoke is one area of cyber security</b> (for example “Who gets in”, “Getting back up”). The small grey letters are the standard code (NIST Cybersecurity Framework 2.0, "
+               "which SEBI's CSCRF follows): the first two letters are the function — GV Govern, ID Identify, PR Protect, DE Detect, RS Respond, RC Recover, EV Evolve.</li>"
+               "<li><b>Further from the centre is stronger.</b> 0 = nothing; 1 = intention only; 2 = partly there; <b>3 = the level a regulated organisation should reach</b> (the dashed line); 5 = best practice.</li>"
+               "<li><b>Blue = built</b>: we have made a control, setting or document for that area. <b>Green = proven</b>: an automatic test or a real-container check shows it works. "
+               "Green inside blue means “built but not yet proven”. Blue inside the dashed line means “not built enough”.</li>"
+               "<li><b>What it says about posture:</b> a big green area near the dashed line everywhere = the controls exist and work; dents = the weak areas listed first below.</li>"
+               "<li><b>What it does not say:</b> scores are our own assessment from the SEBI CSCRF map (software items only; duties that belong to the organisation — board, people, contracts — are not scored). "
+               "It is not an audit and not proof you are secure.</li></ul></details>"
+             "<div class='legend'><span><i class='k' style='border-color:var(--mut);border-top-style:dashed'></i>Target (3)</span>"
+             "<span><i class='k' style='border-color:var(--acc)'></i>Built</span><span><i class='k' style='border-color:var(--g)'></i>Proven</span></div>"
+             + radar_svg(rows) + "<h3>All areas, weakest first</h3>" + area_table(rows) + "</div>")
     h.append("<div class='card'><h2>AI-specific risk</h2><div class='two'>")
     for key, title in (("mit-ai-risk", "MIT AI Risk Repository — 7 domains"), ("nist-ai-600-1", "NIST AI 600-1 — 12 generative-AI risks")):
         chips = "".join(f"<span class='chip'><span class='dot {({'supported': 'green', 'partial': 'amber', 'gap': 'red', 'entity': 'unknown', 'na': 'unknown'})[i['status']]}'>"

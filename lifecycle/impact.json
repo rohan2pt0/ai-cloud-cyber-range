@@ -51,6 +51,8 @@
     "local/compose/.env.example",
     "local/compose/evidence.py",
     "local/compose/guiding-map.conf",
+    "local/compose/tls.yml",
+    "local/compose/tls-edge.generated.conf",
     "local/compose/sprout/**",
     "local/compose/stage-sprout.yml",
     "local/compose/tests/**",
@@ -72,7 +74,8 @@
     "elastic_resources",
     "blockers_are_explained",
     "backup_restore",
-    "cockpit_page"
+    "cockpit_page",
+    "tls_edge"
    ],
    "affects": [
     "gateway",

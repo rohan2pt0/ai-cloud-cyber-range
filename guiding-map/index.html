@@ -2472,7 +2472,7 @@ function renderPlaybook(){
       h += '<div class="info">Optional. Without it, each device keeps its own copy and you move data with Export/Import. '
         + 'With it, all devices stay live \u2014 synced through <b>your own SecuRAX estate</b> (not a cloud SaaS), reached privately over Tailscale. '
         + 'Setup is in docs/securax/14-GUIDING-MAP.md.</div>'
-        + '<label class="f-label">Estate sync URL</label><input id="syUrl" placeholder="http://securax.your-tailnet.ts.net:8089/sync">'
+        + '<label class="f-label">Estate sync URL</label><input id="syUrl" value="' + (SECURE_ORIGIN ? "https://sync." + ESTATE_DOM + "/sync" : "") + '" placeholder="' + (SECURE_ORIGIN ? "https://sync." + ESTATE_DOM + "/sync" : "http://securax.your-tailnet.ts.net:8089/sync") + '">'
         + '<label class="f-label">Device token</label><input id="syKey" placeholder="your estate sync token">'
         + '<label class="f-label">Your row id (anything, same on every device)</label><input id="syUser" placeholder="me">'
         + '<button class="btn btn-p" onclick="gmSyncSave()">Turn sync on</button>';
@@ -4679,7 +4679,12 @@ function renderPlaybook(){
     return ASK_CONTRACT + " For THIS request you are acting as a " + a.role
       + ". Give a practical FIRST-draft opinion (not final) and tell me to confirm anything binding with " + a.prof + ".";
   }
-  function askGw() { return G("gm_ask_gw", "http://localhost:8080"); }
+  // Served over HTTPS by the estate's TLS edge? Services are reached BY NAME under the same domain (hub.<domain> -> chat.<domain>, api.<domain>):
+  // no port numbers anywhere, so a moved service or a new IP only changes DNS. Otherwise the plain localhost ports.
+  var SECURE_ORIGIN = typeof location !== "undefined" && location.protocol === "https:";
+  var ESTATE_DOM = (typeof location !== "undefined" && location.hostname.indexOf("hub.") === 0) ? location.hostname.slice(4) : "securax.localhost";
+  function estateUrl(name, plain, path) { return SECURE_ORIGIN ? "https://" + name + "." + ESTATE_DOM + (path || "") : "http://localhost:" + plain + (path || ""); }
+  function askGw() { return G("gm_ask_gw", estateUrl("api", 8080)); }
   // Only needed when the estate turned authentication on (./securax gateway-auth enable): a gateway key, kept on THIS device only.
   function askHdrs() { var k = G("gm_ask_key", ""); var h = { "Content-Type": "application/json" }; if (k) h.Authorization = "Bearer " + k; return h; }
   var ASK_RED = /aadhaar|\b[2-9]\d{3}\s?\d{4}\s?\d{4}\b|\b[A-Z]{5}\d{4}[A-Z]\b|customer|account\s*no|internal ip/i;
@@ -4710,10 +4715,10 @@ function renderPlaybook(){
 
     h += '<details class="road-col" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">⤢ Launch the estate</summary><div style="margin-top:8px" class="info">'
       + 'With <code>./securax up</code> running: '
-      + '<a href="http://localhost:3000" target="_blank" rel="noopener">Unified chat</a> · '
-      + '<a href="http://localhost:3001" target="_blank" rel="noopener">Private docs (RAG)</a> · '
-      + '<a href="http://localhost:5678" target="_blank" rel="noopener">Automations</a> · '
-      + '<a href="http://localhost:8080/healthz" target="_blank" rel="noopener">Gateway health</a></div></details>';
+      + '<a href="' + estateUrl("chat", 3000) + '" target="_blank" rel="noopener">Unified chat</a> · '
+      + '<a href="' + estateUrl("docs", 3001) + '" target="_blank" rel="noopener">Private docs (RAG)</a> · '
+      + '<a href="' + estateUrl("flows", 5678) + '" target="_blank" rel="noopener">Automations</a> · '
+      + '<a href="' + estateUrl("api", 8080, "/healthz") + '" target="_blank" rel="noopener">Gateway health</a></div></details>';
 
     h += '<div class="info" style="margin-top:12px">Gateway URL (change only if your estate is on another machine/Tailscale): '
       + '<input id="askGwIn" value="' + esc(askGw()) + '" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid var(--line,#999);border-radius:8px;background:transparent;color:inherit">'

@@ -284,10 +284,13 @@
     "IV",
     "V"
    ],
-   "status": "gap",
-   "note": "No PKI use in the estate beyond TLS to providers; the evidence pack carries SHA-256 sums but is not digitally signed.",
-   "evidence": [],
-   "next": "Sign evidence packs and release artefacts (cosign/minisign); support mTLS between gateway and router.",
+   "status": "partial",
+   "note": "A private PKI now exists: a name-constrained ECDSA CA issues the estate's server certificate and keeps its key owner-only (`./securax tls`). No HSM, revocation (CRL/OCSP) or client-certificate (mTLS) authentication yet; the evidence pack still carries SHA-256 sums but is not digitally signed.",
+   "evidence": [
+    "file:governance/tls.py",
+    "journey:tls_edge"
+   ],
+   "next": "Sign evidence packs and release artefacts (cosign/minisign); mTLS between gateway and router; keep the CA key off the machine for regulated use.",
    "priority": "medium"
   },
   {
@@ -752,11 +755,13 @@
     "V"
    ],
    "status": "partial",
-   "note": "Cloud tree/data volume use KMS encryption and TLS to providers; local compose traffic is plain HTTP on loopback; backups are unencrypted; no crypto policy check.",
+   "note": "Cloud volumes use KMS and TLS to providers. The estate edge enforces TLS 1.2/1.3 with forward-secret AEAD ciphers only, no session tickets, ECDSA P-256 certificates, checked by the tls_edge journey (TLS 1.1 refused, untrusted client refused). Internal container hops are still plain HTTP; backups are unencrypted; a quantum-vulnerable-algorithm inventory (CBOM) does not exist yet.",
    "evidence": [
-    "file:infra/terraform/lifecycle/modules/tree-aws/main.tf"
+    "file:infra/terraform/lifecycle/modules/tree-aws/main.tf",
+    "file:governance/tls.py",
+    "journey:tls_edge"
    ],
-   "next": "Add a TLS/cipher policy check (testssl) to the sandbox and require TLS on any non-loopback listener.",
+   "next": "Phase 2 internal TLS; a TLS/cipher scan of every listener in the sandbox; a cryptography inventory (CBOM) with a post-quantum plan.",
    "priority": "medium"
   },
   {

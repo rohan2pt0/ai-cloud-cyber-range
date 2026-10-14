@@ -16,6 +16,12 @@ skv(){ f="$1"; k="$2"; v="$3"; if grep -q "^$k=" "$f" 2>/dev/null; then
   else printf '%s=%s\n' "$k" "$v" >> "$f"; fi; }
 
 # ev KEY [DEFAULT] — read KEY from local/compose/.env (process env wins), else DEFAULT.
+# TLS edge on? (./securax tls on sets COMPOSE_FILE=...tls.yml in .env). Then every web URL is https and the plain web ports are not published.
+tls_on(){ case "$(sed -n 's/^COMPOSE_FILE=//p' "$ROOT/local/compose/.env" 2>/dev/null | head -1)" in *tls.yml*) return 0;; *) return 1;; esac; }
+# web_url NAME PLAIN_PORT [PATH] -> the address to give a human right now: https://NAME.<domain> (no port) with the edge on, else the plain localhost port
+web_url(){ if tls_on; then printf 'https://%s.%s%s' "$1" "$(ev SECURAX_DOMAIN securax.localhost)" "${3:-/}"; else printf 'http://localhost:%s%s' "$2" "${3:-/}"; fi; }
+# web_up NAME PLAIN_PORT -> is that web endpoint answering (verifying the certificate and the name when the edge is on)
+web_up(){ if tls_on; then _h="$1.$(ev SECURAX_DOMAIN securax.localhost)"; curl -fsS -m 3 --cacert "${SECURAX_TLS_DIR:-$HOME/.securax/tls}/ca.crt" --resolve "$_h:443:127.0.0.1" "https://$_h/" >/dev/null 2>&1; else curl -fsS -m 3 "http://localhost:$2" >/dev/null 2>&1; fi; }
 ev(){ v="${!1:-}"; [ -z "$v" ] && v="$(sed -n "s/^$1=//p" "$ROOT/local/compose/.env" 2>/dev/null | head -1)"; printf '%s' "${v:-${2:-}}"; }
 
 # ready_wait SECS — wait until the gateway reports READY (the model router is up). One line, no spinner.
@@ -153,6 +159,7 @@ case "$cmd" in
     [ -s "$GENCFG" ] || cp "$ROOT/local/compose/litellm-config.yaml" "$GENCFG"
     # Layered start: each step is a fallback for the one before (offline? image-build failed? low memory?).
     CORE="gateway litellm ollama open-webui guiding-map estate-sync"
+    if tls_on; then python3 "$ROOT/governance/tls.py" render >/dev/null 2>&1 || C "Could not write the HTTPS edge configuration: run  ./securax tls render"; CORE="$CORE tls-edge"; [ -n "$SVCS" ] && SVCS="$SVCS tls-edge"; C "TLS edge is ON: the estate is reached over HTTPS only (./securax tls status)."; fi
     if ! ( cd "$ROOT/local/compose" && docker compose --profile ai up -d --build $SVCS ); then
       C "Full start failed — fallback 1: start without rebuilding images (works offline if you've run it before)…"
       if ! ( cd "$ROOT/local/compose" && docker compose --profile ai up -d $SVCS ); then
@@ -184,29 +191,30 @@ case "$cmd" in
     # Refresh the one-page cockpit snapshot in the background (best effort: never slows or fails `up`).
     ( command -v python3 >/dev/null 2>&1 && { python3 "$ROOT/governance/cockpit.py" --quiet --fast >/dev/null 2>&1; python3 "$ROOT/governance/cockpit.py" --quiet >/dev/null 2>&1; } || true ) &
     if [ "${SECURAX_NO_OPEN:-0}" != 1 ]; then
-      C "Opening your Command Center: http://localhost:8088/hub.html"
+      C "Opening your Command Center: $(web_url hub 8088 /hub.html)"
       "$0" open >/dev/null 2>&1 || true
     fi
     [ "$cmd" = "up-status" ] && "$0" status || true
     ;;
   status)
     C "SecuRAX — open ONE page (it links everything, no URLs to remember):"
-    echo "  ⭐ Command Center : http://localhost:8088/hub.html"
+    echo "  ⭐ Command Center : $(web_url hub 8088 /hub.html)"
     echo ""
     C "Direct links (also on the Command Center):"
     cat <<URLS
-  Guiding Map (home / life-OS)         : http://localhost:8088
-  Unified chat (local+cloud, guarded)  : http://localhost:3000
-  Private document chat (Red-tier)     : http://localhost:3001
-  Automation (n8n + data-tier router)  : http://localhost:5678
-  Guardrail gateway API                : http://localhost:8080/healthz
+  Guiding Map (home / life-OS)         : $(web_url hub 8088 /)
+  Unified chat (local+cloud, guarded)  : $(web_url chat 3000 /)
+  Private document chat (Red-tier)     : $(web_url docs 3001 /)
+  Automation (n8n + data-tier router)  : $(web_url flows 5678 /)
+  Guardrail gateway API                : $(web_url api 8080 /healthz)
   MCP (let an AI operate it)           : see mcp/README.md
 URLS
+    tls_on || C "Tip: connections are plain HTTP (browsers say 'not secure'). Encrypt everything:  ./securax tls on"
     curl -fsS http://localhost:8080/healthz >/dev/null 2>&1 && C "gateway: healthy" || echo "  gateway: starting (give it a few seconds)"
     ;;
   open)
     # The single front door: the Command Center hub (links every app, no URLs to remember).
-    URL="http://localhost:8088/hub.html"
+    URL="$(web_url hub 8088 /hub.html)"
     ( command -v xdg-open >/dev/null && xdg-open "$URL" ) || ( command -v open >/dev/null && open "$URL" ) ||       ( command -v cmd.exe >/dev/null && cmd.exe /c start "$URL" ) || C "Open $URL in your browser."
     ;;
   setup)
@@ -245,7 +253,9 @@ URLS
     DISK=$(df -P . | awk 'NR==2{print $5}' | tr -d '%'); echo "  disk used: ${DISK}%  $([ "${DISK:-0}" -ge 85 ] && echo '⚠ >85% — free space' || echo 'ok')"
     if command -v free >/dev/null; then MEM=$(free | awk '/Mem:/{printf "%d",$3/$2*100}'); echo "  RAM used:  ${MEM}%  $([ "${MEM:-0}" -ge 90 ] && echo '⚠ >90% — close apps / use local-fast model' || echo 'ok')"; fi
     curl -fsS http://localhost:8080/healthz >/dev/null 2>&1 && echo "  gateway:   healthy" || echo "  gateway:   down (run ./securax up)"
-    curl -fsS http://localhost:8088 >/dev/null 2>&1 && echo "  guiding map: up" || echo "  guiding map: down"
+    web_up hub 8088 && echo "  guiding map: up" || echo "  guiding map: down"
+    if tls_on; then python3 "$ROOT/governance/tls.py" status >/dev/null 2>&1 && echo "  encryption: HTTPS edge healthy" || echo "  encryption: ⚠ HTTPS edge needs attention — run  ./securax tls status"
+    else echo "  encryption: ⚠ plain HTTP — run  ./securax tls on"; fi
     if guard_broken; then
       echo "  llama-guard: ✗ ON but NOT INSTALLED → every request is blocked (fail-closed). Fix:  ./securax guard off   (or ./securax guard on to install it)"
     elif [ -n "$(ev LLAMA_GUARD_URL)" ]; then echo "  llama-guard: on (extra model scan of every request — slower, stricter)"
@@ -568,6 +578,11 @@ $(tail -60 "$FB")"
     # Push the plain-words digest to any chat with an incoming webhook (Mattermost, Slack...). Off until SECURAX_NOTIFY_WEBHOOK is set.
     #   ./securax notify test | digest [--dry-run] [--only-bad]
     shift; exec python3 "$ROOT/governance/notify.py" "$@"
+    ;;
+  tls)
+    # Encrypt everything that reaches a browser, a phone or another machine: a private name-constrained CA + one HTTPS edge.
+    #   ./securax tls on | trust [--apply] | status | renew | off
+    shift; exec python3 "$ROOT/governance/tls.py" "$@"
     ;;
   storage)
     # Where the files are, how fast they grow, when the disk runs out, and what is safe to clean.   ./securax storage [--json] [--tidy [--yes]]
@@ -952,6 +967,7 @@ START HERE (the 20% you use 80% of the time)
   doctor         find and fix what is wrong, in plain words          update         get the latest version (safe: backs up first)
   cockpit        one-page health view: risks, to-dos, trends         storage        how much space you use and when it runs out
   notify         send the daily digest to Mattermost/Slack           capacity       what to switch on as more people join (1 to 100,000)
+  tls            encrypt every web connection (HTTPS everywhere)
 
 AI & CHAT
   keys / providers add|list   add free or paid AI keys             models         check which models your keys can use today

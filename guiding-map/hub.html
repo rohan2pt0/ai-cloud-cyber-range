@@ -95,16 +95,22 @@
 <script>
 (function(){
   var H = location.hostname, started = Date.now();
+  // Served over HTTPS by the estate's TLS edge? Then every service lives under the same domain BY NAME (hub.<domain>, chat.<domain> ...):
+  // no port numbers, and a moved service or a new IP only changes DNS. Otherwise: the plain localhost ports.
+  var SEC = location.protocol === "https:";
+  var DOM = (H.indexOf("hub.") === 0) ? H.slice(4) : "securax.localhost";
+  function web(name, plain){ return SEC ? "https://"+name+"."+DOM+"/" : "http://"+H+":"+plain+"/"; }
+  function gw(path){ return (SEC ? "https://api."+DOM : "http://"+H+":8080") + path; }
   // Core = the apps you came here to use. They get a "starting…" phase (Chat takes ~a minute to boot).
   var CORE = [
     {t:"Guiding Map", e:"🧭", d:"Your daily cockpit / life-OS — works offline, no AI needed", url:"http://"+H+":8088/", core:true},
-    {t:"Chat", e:"💬", d:"Private ChatGPT-style assistant (guarded, local + cloud)", url:"http://"+H+":3000/", core:true},
+    {t:"Chat", e:"💬", d:"Private ChatGPT-style assistant (guarded, local + cloud)", url:web("chat",3000), core:true},
     {t:"Cockpit", e:"📊", d:"One-page health: what is at risk, what to do next, trends", url:"http://"+H+":8088/portal/cockpit.html", core:false}
   ];
   // Optional = powerful, but each needs its own one-time setup — and may simply not be running (lite mode).
   var EXTRAS = [
-    {t:"Private Docs", e:"📄", d:"Chat with your PDFs/Word (RAG). Needs the local model pulled + docs uploaded.", url:"http://"+H+":3001/"},
-    {t:"Automation", e:"⚙️", d:"n8n workflows & the morning brief. Empty until you import/build a workflow.", url:"http://"+H+":5678/"}
+    {t:"Private Docs", e:"📄", d:"Chat with your PDFs/Word (RAG). Needs the local model pulled + docs uploaded.", url:web("docs",3001)},
+    {t:"Automation", e:"⚙️", d:"n8n workflows & the morning brief. Empty until you import/build a workflow.", url:web("flows",5678)}
   ];
   var ALL = CORE.concat(EXTRAS);
   render(CORE, "apps"); render(EXTRAS, "extras");
@@ -133,7 +139,7 @@
   }
   function checkInfo(){
     // Security status — a friendly pill, not raw JSON. The gateway guards every AI call.
-    fetch("http://"+H+":8080/healthz").then(function(r){return r.json();}).then(function(j){
+    fetch(gw("/healthz")).then(function(r){return r.json();}).then(function(j){
       var on = j && j.status==="ok", s = document.getElementById("secstatus");
       s.innerHTML = '<span class="pill" style="color:'+(on?'var(--green)':'var(--mut)')+';border-color:'+(on?'var(--green)':'var(--line)')+'">'
         + (on ? '🛡️ Security: '+(j.mode||'enforcing')+' — every AI call is guarded' : '🛡️ Security: starting…') + '</span>';
@@ -141,7 +147,7 @@
       var s=document.getElementById("secstatus"); if(s) s.innerHTML='<span class="pill" style="color:var(--mut);border-color:var(--line)">🛡️ Security: starting…</span>';
     });
     // live model list (reflects enabled provider plugins through the gateway)
-    fetch("http://"+H+":8080/v1/models").then(function(r){
+    fetch(gw("/v1/models")).then(function(r){
       if(r.status===401||r.status===403){var e=document.getElementById("models"); if(e) e.textContent="hidden — sign-in is switched on for this estate"; return null;}
       return r.json();
     }).then(function(j){
@@ -149,7 +155,7 @@
       var ids=(j&&j.data||[]).map(function(m){return m.id;}), el=document.getElementById("models");
       el.textContent = ids.length ? ids.join(", ") : "none yet — start the estate or add a provider";
     }).catch(function(){var el=document.getElementById("models"); if(el) el.textContent="gateway starting…";});
-    fetch("http://"+H+":8080/version").then(function(r){return r.json();})
+    fetch(gw("/version")).then(function(r){return r.json();})
       .then(function(j){document.getElementById("ver").textContent="v"+(j.version||"?");})
       .catch(function(){document.getElementById("ver").textContent="offline";});
   }
@@ -157,7 +163,7 @@
   tick(); setInterval(tick, 5000);
   // show the detected host in the LAN hint
   if(location.hostname && location.hostname!=="localhost" && location.hostname!=="127.0.0.1")
-    document.getElementById("lanurl").textContent="http://"+location.hostname+":8088";
+    document.getElementById("lanurl").textContent=(SEC?"https://"+location.hostname:"http://"+location.hostname+":8088");
 })();
 </script>
 </body>
