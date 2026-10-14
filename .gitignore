@@ -255,3 +255,7 @@ backups/
 # lifecycle: per-machine generated
 infra/terraform/lifecycle/*/securax.auto.tfvars
 infra/terraform/lifecycle/*/tenants.auto.tfvars.json
+
+# generated snapshots (./securax cockpit)
+portal/cockpit.html
+portal/cockpit.json

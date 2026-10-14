@@ -33,7 +33,7 @@ _spec = importlib.util.spec_from_file_location("securax_ccsp", HERE / "ccsp.py")
 _ccsp = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_ccsp)
 
-MAPS = {"rbi": "regmap-rbi-nbfc.json", "cscrf": "regmap-sebi-cscrf.json"}
+MAPS = {"rbi": "regmap-rbi-nbfc.json", "cscrf": "regmap-sebi-cscrf.json", "mit-ai-risk": "regmap-mit-ai-risk.json", "nist-ai-600-1": "regmap-nist-ai-600-1.json"}
 STATUSES = ("supported", "partial", "gap", "entity", "na")
 SCORE = {"supported": 1.0, "partial": 0.5, "gap": 0.0}          # only these are "software scope"
 ICON = {"supported": "✅", "partial": "🟡", "gap": "⬜", "entity": "🏛", "na": "➖"}
@@ -139,7 +139,7 @@ def evidence_artifacts(root: pathlib.Path = ROOT) -> dict[str, bytes] | None:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
-    ap.add_argument("which", nargs="?", choices=["rbi", "cscrf", "all"], default="all")
+    ap.add_argument("which", nargs="?", choices=[*MAPS, "all"], default="all")
     ap.add_argument("--category", default="", help="CSCRF: mii|qre|mid|small|self")
     ap.add_argument("--md", action="store_true")
     ap.add_argument("--json", action="store_true")

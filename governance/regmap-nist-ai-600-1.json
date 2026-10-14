@@ -1,0 +1,160 @@
+{
+ "about": "NIST AI 600-1 (Generative AI Profile) risk categories assessed against what the gateway and its surrounding estate demonstrably do. Deployer-side view: a gateway operator, not a model builder.",
+ "source": {
+  "title": "NIST AI 600-1, Artificial Intelligence Risk Management Framework: Generative AI Profile (July 2024) — 12 risk categories",
+  "url": "https://doi.org/10.6028/NIST.AI.600-1",
+  "issued": "NIST, July 2024",
+  "read_on": "2026-10-14",
+  "caveat": "Category names from NIST's profile as reported by secondary sources; suggested-action IDs (e.g. GV-1.1-001) are not mapped. Status is our own judgement."
+ },
+ "items": [
+  {
+   "id": "CBRN",
+   "title": "CBRN information or capabilities",
+   "applies": "all",
+   "status": "partial",
+   "note": "Depends on the optional Llama Guard detector; nothing specific is tested.",
+   "evidence": [
+    "file:apps/llm-gateway/app/providers.py"
+   ],
+   "next": "Include refusal probes in the purple loop.",
+   "priority": "low"
+  },
+  {
+   "id": "Confabulation",
+   "title": "Confabulation (confidently wrong output)",
+   "applies": "all",
+   "status": "partial",
+   "note": "Research agent cites sources and the build contract demands tests, but answers are not checked for grounding.",
+   "evidence": [
+    "file:agents/web_research/researcher.py"
+   ],
+   "next": "Grounding check plus a small factuality probe set.",
+   "priority": "medium"
+  },
+  {
+   "id": "Dangerous",
+   "title": "Dangerous, violent or hateful content",
+   "applies": "all",
+   "status": "partial",
+   "note": "Optional Llama Guard detector; not exercised by a journey.",
+   "evidence": [
+    "file:apps/llm-gateway/app/providers.py"
+   ],
+   "next": "Probe set in the purple loop.",
+   "priority": "medium"
+  },
+  {
+   "id": "Privacy",
+   "title": "Data privacy",
+   "applies": "all",
+   "status": "supported",
+   "note": "PII redaction (Aadhaar, PAN, cards, UPI, mobile, e-mail), residency routing and audit, proven end to end. Scope: data through the gateway.",
+   "evidence": [
+    "file:apps/llm-gateway/app/guardrails.py",
+    "test:apps/llm-gateway/tests/test_guardrails.py",
+    "journey:purple_loop",
+    "journey:gateway_residency"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "Environmental",
+   "title": "Environmental impacts",
+   "applies": "all",
+   "status": "partial",
+   "note": "Small local models, dormant-by-default stages and hibernation keep consumption low; nothing is measured.",
+   "evidence": [
+    "journey:lifecycle_sprout"
+   ],
+   "next": "Report energy-relevant measures (model size, hours awake) in the cockpit.",
+   "priority": "low"
+  },
+  {
+   "id": "HumanAI",
+   "title": "Human-AI configuration (over-reliance, automation bias)",
+   "applies": "all",
+   "status": "partial",
+   "note": "Human approval for agent write actions; no indicators of answer reliability.",
+   "evidence": [
+    "file:agents/web_research/executor.py"
+   ],
+   "next": "Confidence/grounding badge on answers.",
+   "priority": "low"
+  },
+  {
+   "id": "InfoIntegrity",
+   "title": "Information integrity",
+   "applies": "all",
+   "status": "partial",
+   "note": "Output link allow-list and canary leak checks; no provenance or watermarking of generated content.",
+   "evidence": [
+    "file:apps/llm-gateway/app/guardrails.py"
+   ],
+   "next": "Mark generated output as AI-generated in exports.",
+   "priority": "low"
+  },
+  {
+   "id": "InfoSecurity",
+   "title": "Information security",
+   "applies": "all",
+   "status": "supported",
+   "note": "Injection, exfiltration, tool-coercion rails, authentication, rate limits, audit, SOC correlation, red/purple testing, proven by journeys.",
+   "evidence": [
+    "file:apps/llm-gateway/app/guardrails.py",
+    "test:apps/llm-gateway/tests/test_guardrails.py",
+    "journey:purple_loop",
+    "journey:gateway_identity"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "IP",
+   "title": "Intellectual property",
+   "applies": "all",
+   "status": "gap",
+   "note": "No copyright or licence filter on generated text; `vet` checks licences of third-party content we vendor, not model output.",
+   "evidence": [],
+   "next": "Decide the entity's position first; add an output similarity check only if required.",
+   "priority": "low"
+  },
+  {
+   "id": "Obscene",
+   "title": "Obscene, degrading and/or abusive content",
+   "applies": "all",
+   "status": "partial",
+   "note": "Optional Llama Guard detector; not exercised by a journey.",
+   "evidence": [
+    "file:apps/llm-gateway/app/providers.py"
+   ],
+   "next": "Probe set in the purple loop.",
+   "priority": "low"
+  },
+  {
+   "id": "Bias",
+   "title": "Toxicity, bias and homogenisation",
+   "applies": "all",
+   "status": "gap",
+   "note": "No bias or homogenisation evaluation.",
+   "evidence": [],
+   "next": "Add bias probes (garak) to the purple loop; report per category.",
+   "priority": "medium"
+  },
+  {
+   "id": "ValueChain",
+   "title": "Value chain and component integration",
+   "applies": "all",
+   "status": "supported",
+   "note": "Third-party skills/plugins pass the `vet` gate; installers are version- and hash-pinned; SBOM in CI; supply-chain ratchet in the fitness functions.",
+   "evidence": [
+    "journey:vet_gate",
+    "test:lifecycle/tests/test_burrow_pinning.py",
+    "file:.github/workflows/devsecops.yml"
+   ],
+   "next": "",
+   "priority": ""
+  }
+ ]
+}

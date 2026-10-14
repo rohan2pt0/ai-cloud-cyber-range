@@ -156,6 +156,7 @@
     <a href="#pipeline">CI/CD</a>
     <a href="#resilience">Resilience</a>
     <a href="#lifecycle">Lifecycle</a>
+    <a href="#operate">Operate</a>
     <a href="#stack">Stack</a>
     <a href="#mcp">MCP</a>
     <a href="#repo">Repo</a>
@@ -554,6 +555,23 @@
       <div class="card"><span class="tag mono">forest · fly</span><h3>Multi-tenant</h3><p>One 5-line file stamps a tenant cell: namespace, quota, zero-trust, gateway, metering, own key + bucket.</p></div>
     </div>
     <p class="sub" style="margin-top:14px"><code>./securax stages</code> shows what is awake, hibernating or dormant. Dormancy is <b>proved</b>, not promised: offline Terraform plans show a sleeping estate contains only its seed bank (vault, key, data disk, budget alarm), and a real-container test sleeps and wakes the core with its data intact. Cloud stages plan only unless you pass <code>--apply</code>. Honest limits (nothing has been applied to a real cloud yet): <code>docs/securax/29-LIFECYCLE-SEED-TO-FOREST.md</code>.</p>
+  </section>
+
+  <!-- ================= OPERATE ================= -->
+  <section id="operate">
+    <p class="eyebrow">Run it, prove it, report it</p>
+    <h2>One page for health, one switch for regulation, one safe way to update</h2>
+    <p class="sub">None of these adds a service, a port or a login: they are commands that write a page or a report. Plain words first; detail behind each command.</p>
+    <div class="cards c5">
+      <div class="card"><span class="tag mono">cockpit</span><h3>Is everything OK? What next?</h3><p>One page: green/amber/red, the next three things to do, risks building up, an Eisenhower matrix, the 20% of themes that close 80% of the gap, and a maturity radar. <code>./securax cockpit</code></p></div>
+      <div class="card"><span class="tag mono">update</span><h3>Update without fear</h3><p>Backs up first, updates, checks the estate really starts, and goes back to the version that worked if it does not. <code>./securax update</code></p></div>
+      <div class="card"><span class="tag mono">storage</span><h3>Where the files are</h3><p>Sizes, how fast they grow, the day the disk fills, and the safe clean-ups. Backups can go to another disk. <code>./securax storage</code></p></div>
+      <div class="card"><span class="tag mono">regulated</span><h3>One switch for regulators</h3><p>Sign-in with roles and MFA, data kept in its allowed zones, strict cockpit. Works for any regulator: the rules are files. <code>./securax regulated on</code></p></div>
+      <div class="card"><span class="tag mono">incident</span><h3>The 6-hour clock</h3><p>One detection starts every regulator's deadline (RBI, SEBI, CERT-In…), drafts each notification, records filings, keeps a tamper-evident log. <code>./securax incident</code></p></div>
+      <div class="card"><span class="tag mono">comply</span><h3>Gaps, requirement by requirement</h3><p>RBI NBFC Directions, SEBI CSCRF, MIT AI Risk Repository, NIST AI 600-1, CCSP: every claim must point at a real file, test or journey. <code>./securax comply</code></p></div>
+      <div class="card"><span class="tag mono">impact</span><h3>What can this change hurt?</h3><p>Files changed → components touched → what they feed → which real-product proofs to re-run. <code>./securax impact</code></p></div>
+      <div class="card"><span class="tag mono">trace</span><h3>Follow one request</h3><p>Every AI request carries a W3C trace id from your browser through the gateway to the router, and into the audit line.</p></div>
+    </div>
   </section>
 
   <section id="stack">

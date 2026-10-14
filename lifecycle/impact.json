@@ -1,0 +1,229 @@
+{
+ "about": "Blast-radius map. For a change, `./securax impact` lists which components it touches, what they feed (downstream), and which real-product journeys prove they still work \u2014 so one change cannot silently hurt another part. Every tracked file must belong to a component (or be ignored on purpose); `fitness` fails otherwise, so the map cannot rot.",
+ "components": {
+  "gateway": {
+   "paths": [
+    "apps/llm-gateway/**"
+   ],
+   "guarded_by": [
+    "gateway_identity",
+    "gateway_residency",
+    "purple_loop",
+    "chat_streaming",
+    "fresh_install"
+   ],
+   "affects": [
+    "router",
+    "hub-and-pwa",
+    "agents",
+    "ai-soc",
+    "redteam",
+    "tenants",
+    "governance"
+   ]
+  },
+  "router": {
+   "paths": [
+    "plugins/**",
+    "local/compose/gen_litellm_config.py",
+    "local/compose/litellm-config.yaml",
+    "local/compose/model_discovery.py",
+    "local/compose/model_bench.py"
+   ],
+   "guarded_by": [
+    "key_wiring_and_failover",
+    "model_self_correction",
+    "providers_wizard",
+    "keys_wizard",
+    "local_model_answers"
+   ],
+   "affects": [
+    "gateway"
+   ]
+  },
+  "estate-runtime": {
+   "paths": [
+    "securax",
+    "securax.cmd",
+    "local/compose/docker-compose.yml",
+    "local/compose/full-stack.yml",
+    "local/compose/design.yml",
+    "local/compose/.env.example",
+    "local/compose/evidence.py",
+    "local/compose/guiding-map.conf",
+    "local/compose/sprout/**",
+    "local/compose/stage-sprout.yml",
+    "local/compose/tests/**",
+    "local/scripts/**",
+    "START-HERE*",
+    "WINDOWS-QUICKSTART.md",
+    "Makefile",
+    "STOP-Windows.bat",
+    "*.bat",
+    ".editorconfig",
+    ".pre-commit-config.yaml"
+   ],
+   "guarded_by": [
+    "fresh_install",
+    "self_healing",
+    "watchdog_heals_and_alerts",
+    "update_from_dirty_checkout",
+    "safe_update_rollback",
+    "elastic_resources",
+    "blockers_are_explained",
+    "backup_restore",
+    "cockpit_page"
+   ],
+   "affects": [
+    "gateway",
+    "hub-and-pwa",
+    "governance"
+   ]
+  },
+  "hub-and-pwa": {
+   "paths": [
+    "guiding-map/**",
+    "portal/**"
+   ],
+   "guarded_by": [
+    "ui_guiding_map_and_hub",
+    "open_webui_chat",
+    "cockpit_page"
+   ],
+   "affects": []
+  },
+  "estate-sync": {
+   "paths": [
+    "apps/estate-sync/**"
+   ],
+   "guarded_by": [
+    "ui_guiding_map_and_hub"
+   ],
+   "affects": [
+    "hub-and-pwa"
+   ]
+  },
+  "agents": {
+   "paths": [
+    "agents/**",
+    "routines/**",
+    "mcp/**",
+    "design/**",
+    "personal-rnd/**",
+    "intel/**",
+    "integrations/**",
+    "assistant/**",
+    "finance/**",
+    "learning/**"
+   ],
+   "guarded_by": [
+    "autobuild_loop"
+   ],
+   "affects": []
+  },
+  "ai-soc": {
+   "paths": [
+    "ai-soc/**"
+   ],
+   "guarded_by": [
+    "purple_loop",
+    "offline_power"
+   ],
+   "affects": [
+    "governance"
+   ]
+  },
+  "redteam": {
+   "paths": [
+    "redteam/**",
+    "notebooks/**"
+   ],
+   "guarded_by": [
+    "purple_loop"
+   ],
+   "affects": [
+    "governance"
+   ]
+  },
+  "governance": {
+   "paths": [
+    "governance/**",
+    "docs/securax/regulatory/**"
+   ],
+   "guarded_by": [
+    "ccsp_evidence",
+    "comply_evidence",
+    "incident_clock",
+    "gateway_identity",
+    "gateway_residency",
+    "cockpit_page"
+   ],
+   "affects": []
+  },
+  "lifecycle": {
+   "paths": [
+    "lifecycle/**",
+    "infra/**",
+    "gitops/**",
+    "policies/**",
+    "local/k8s/**",
+    "vendor/**",
+    "organs/**"
+   ],
+   "guarded_by": [
+    "lifecycle_sprout",
+    "lifecycle_burrow",
+    "lifecycle_range",
+    "lifecycle_cloud_is_safe",
+    "lifecycle_organs",
+    "gameday",
+    "vet_gate",
+    "diffcheck_gate"
+   ],
+   "affects": [
+    "governance"
+   ]
+  },
+  "tenants": {
+   "paths": [
+    "gitops/charts/tenant/**",
+    "gitops/tenants/**",
+    "gitops/metering/**"
+   ],
+   "guarded_by": [
+    "lifecycle_cloud_is_safe"
+   ],
+   "affects": []
+  },
+  "engineering": {
+   "paths": [
+    "sandbox/**",
+    "BUILD-CONTRACT.md",
+    ".github/**",
+    "pyproject.toml",
+    "pytest.ini",
+    ".gitignore",
+    ".gitleaksignore",
+    ".gitattributes",
+    "VERSION"
+   ],
+   "guarded_by": [
+    "fresh_install"
+   ],
+   "affects": [
+    "estate-runtime"
+   ]
+  }
+ },
+ "ignore": [
+  "docs/**",
+  "*.md",
+  "LICENSE*",
+  "CODEOWNERS",
+  ".github/ISSUE_TEMPLATE/**",
+  "*.png",
+  "*.svg",
+  "*.jpg"
+ ],
+ "blind_spots_note": "A component with no guarding journey is a blind spot: changes there are checked only by unit tests."
+}

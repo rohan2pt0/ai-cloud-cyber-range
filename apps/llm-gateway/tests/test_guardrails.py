@@ -306,3 +306,29 @@ def test_malformed_urls_in_model_output_do_not_crash_the_rails_and_are_removed()
         v = g.inspect_output(bad, {"rbi.org.in"}, set())          # must not raise
         assert "[abc" not in v.text and "bad.example" not in v.text and "[::1" not in v.text
         assert any(f.rule in ("OUT-untrusted-link", "OUT-md-image-exfil") for f in v.findings)
+
+
+def test_trace_context_is_kept_continued_and_echoed(monkeypatch, caplog):
+    """Observability without a dependency: a valid W3C `traceparent` keeps its trace id, every hop gets its own span, an invalid one is ignored,
+    the upstream call carries it, and the audit line names the trace so one request can be followed end to end."""
+    import json
+    import logging
+
+    import app.main as m
+    seen = {}
+
+    async def spy(payload):
+        seen["tp"] = m._TP.get()
+        return {"id": "x", "model": "m", "choices": [{"index": 0, "finish_reason": "stop", "message": {"role": "assistant", "content": "ok"}}]}
+    monkeypatch.setattr(m, "_call_upstream", spy)
+    caplog.set_level(logging.INFO, logger="audit")
+    c = TestClient(m.app)
+    tid = "4bf92f3577b34da6a3ce929d0e0e4736"
+    r = c.post("/v1/chat/completions", json={"model": "m", "messages": [{"role": "user", "content": "hi"}]}, headers={"traceparent": f"00-{tid}-00f067aa0ba902b7-01"})
+    assert r.status_code == 200
+    out = r.headers["traceparent"].split("-")
+    assert out[1] == tid and out[2] != "00f067aa0ba902b7" and seen["tp"].split("-")[1] == tid and seen["tp"] == r.headers["traceparent"]
+    assert [json.loads(x.message) for x in caplog.records if x.name == "audit"][-1]["trace_id"] == tid
+    r = c.post("/v1/chat/completions", json={"model": "m", "messages": [{"role": "user", "content": "hi"}]}, headers={"traceparent": "garbage"})
+    assert len(r.headers["traceparent"].split("-")[1]) == 32 and r.headers["traceparent"].split("-")[1] != tid
+    assert r.headers["X-Request-ID"]

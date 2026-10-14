@@ -12,10 +12,13 @@ import hashlib
 import json
 import logging
 import os
+import re
+import secrets
 import sys
 import time
 import uuid
 from collections import defaultdict, deque
+from contextvars import ContextVar
 
 import httpx
 from fastapi import FastAPI, Header, HTTPException, Request
@@ -111,6 +114,18 @@ async def _authn(request: Request, endpoint: str) -> identity.Identity:
                                                         "code": e.code, "message": e.message}}) from e
 
 
+_TP: ContextVar[str] = ContextVar("traceparent", default="")      # the current request's trace context, read where the upstream call is made
+_TRACEPARENT = re.compile(r"^00-([0-9a-f]{32})-([0-9a-f]{16})-([0-9a-f]{2})$")
+
+
+def _trace(request: Request) -> tuple[str, str]:
+    """W3C Trace Context: keep the caller's trace id when it sent a valid `traceparent`, else start a trace; always a fresh span for this hop.
+    Lets one request be followed from the browser through the gateway to the router in any OpenTelemetry-compatible tool, with no dependency."""
+    m = _TRACEPARENT.match(request.headers.get("traceparent", "").strip().lower())
+    trace_id = m.group(1) if m and m.group(1) != "0" * 32 else secrets.token_hex(16)
+    return trace_id, secrets.token_hex(8)
+
+
 def _findings(fs: list[guardrails.Finding]) -> list[dict]:
     return [f.__dict__ for f in fs]
 
@@ -167,6 +182,8 @@ async def _call_upstream(payload: dict) -> dict:
                 "choices": [{"index": 0, "finish_reason": "stop",
                              "message": {"role": "assistant", "content": f"[mock-llm] You said: {last}"}}]}
     headers = {"Authorization": f"Bearer {UPSTREAM_KEY}"} if UPSTREAM_KEY else {}
+    if _TP.get():
+        headers["traceparent"] = _TP.get()
     async with httpx.AsyncClient(timeout=UPSTREAM_TIMEOUT) as c:
         r = await c.post(f"{UPSTREAM.rstrip('/')}/chat/completions", json=payload, headers=headers)
         r.raise_for_status()
@@ -263,7 +280,8 @@ async def chat(request: Request, authorization: str | None = Header(default=None
     # Authenticated callers are rate-limited and audited by their verified subject; anonymous ones (AUTH_MODE off/optional) as before.
     caller = ident.subject if ident.method != "none" else (authorization or (request.client.host if request.client else "anon"))
     principal = hashlib.sha256(caller.encode()).hexdigest()[:12]
-    who = {"principal": principal, **(ident.audit() if ident.method != "none" else {}),
+    trace_id, span_id = _trace(request)
+    who = {"principal": principal, "trace_id": trace_id, **(ident.audit() if ident.method != "none" else {}),
            "client_ip": request.client.host if request.client else "unknown"}
 
     if _rate_limited(principal):
@@ -324,6 +342,7 @@ async def chat(request: Request, authorization: str | None = Header(default=None
 
     start = time.perf_counter()
     try:
+        _TP.set(f"00-{trace_id}-{span_id}-01")
         resp = await _call_upstream(payload)
     except (httpx.HTTPError, ValueError) as exc:    # ValueError: upstream sent something that is not JSON
         _metrics["upstream_error"] += 1
@@ -363,7 +382,8 @@ async def chat(request: Request, authorization: str | None = Header(default=None
            "findings": _findings(in_findings + out_findings)})
     resp["guardrails"] = {"req_id": req_id, "decision": decision,
                           "rules": sorted({f.rule for f in in_findings + out_findings})}
+    echo = {"traceparent": f"00-{trace_id}-{span_id}-01", "X-Request-ID": req_id}
     if want_stream:
         return StreamingResponse(_sse_from_completion(resp), media_type="text/event-stream",
-                                 headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
-    return JSONResponse(resp)
+                                 headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no", **echo})
+    return JSONResponse(resp, headers=echo)

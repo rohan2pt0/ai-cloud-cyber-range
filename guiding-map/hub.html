@@ -98,7 +98,8 @@
   // Core = the apps you came here to use. They get a "starting…" phase (Chat takes ~a minute to boot).
   var CORE = [
     {t:"Guiding Map", e:"🧭", d:"Your daily cockpit / life-OS — works offline, no AI needed", url:"http://"+H+":8088/", core:true},
-    {t:"Chat", e:"💬", d:"Private ChatGPT-style assistant (guarded, local + cloud)", url:"http://"+H+":3000/", core:true}
+    {t:"Chat", e:"💬", d:"Private ChatGPT-style assistant (guarded, local + cloud)", url:"http://"+H+":3000/", core:true},
+    {t:"Cockpit", e:"📊", d:"One-page health: what is at risk, what to do next, trends", url:"http://"+H+":8088/portal/cockpit.html", core:false}
   ];
   // Optional = powerful, but each needs its own one-time setup — and may simply not be running (lite mode).
   var EXTRAS = [
@@ -140,7 +141,11 @@
       var s=document.getElementById("secstatus"); if(s) s.innerHTML='<span class="pill" style="color:var(--mut);border-color:var(--line)">🛡️ Security: starting…</span>';
     });
     // live model list (reflects enabled provider plugins through the gateway)
-    fetch("http://"+H+":8080/v1/models").then(function(r){return r.json();}).then(function(j){
+    fetch("http://"+H+":8080/v1/models").then(function(r){
+      if(r.status===401||r.status===403){var e=document.getElementById("models"); if(e) e.textContent="hidden — sign-in is switched on for this estate"; return null;}
+      return r.json();
+    }).then(function(j){
+      if(!j) return;
       var ids=(j&&j.data||[]).map(function(m){return m.id;}), el=document.getElementById("models");
       el.textContent = ids.length ? ids.join(", ") : "none yet — start the estate or add a provider";
     }).catch(function(){var el=document.getElementById("models"); if(el) el.textContent="gateway starting…";});

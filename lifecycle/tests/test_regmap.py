@@ -70,7 +70,8 @@ def test_coverage_math_and_category_filter():
 
 
 def test_committed_reports_match_the_maps():
-    for k, name in (("rbi", "rbi-nbfc-gap-assessment.md"), ("cscrf", "sebi-cscrf-gap-assessment.md")):
+    for k, name in (("rbi", "rbi-nbfc-gap-assessment.md"), ("cscrf", "sebi-cscrf-gap-assessment.md"), ("mit-ai-risk", "mit-ai-risk-assessment.md"),
+                    ("nist-ai-600-1", "nist-ai-600-1-assessment.md")):
         m = rm.load(k)
         assert (REPO / "docs" / "securax" / "regulatory" / name).read_text("utf-8").rstrip() == rm.render_md(k, m, None, rm.problems(m)).rstrip(), \
             f"regenerate with: ./securax comply {k} --md > docs/securax/regulatory/{name}"
