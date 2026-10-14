@@ -97,3 +97,48 @@ def test_malformed_body_is_400_not_500(client):
 def test_clock_head_ok(client):
     assert client.head("/sync/").status_code == 200
     assert client.head("/sync").status_code == 200
+
+
+def _hello(ws, tok=TOK, user="me"):
+    import json
+    ws.send_text(json.dumps({"token": tok, "user": user}))
+
+
+def test_ws_rejects_bad_token(client):
+    from starlette.websockets import WebSocketDisconnect
+    with client.websocket_connect("/sync/ws") as ws:
+        _hello(ws, tok="wrong")
+        with pytest.raises(WebSocketDisconnect) as e:
+            ws.receive_text()
+        assert e.value.code == 4401
+
+
+def test_ws_push_on_put_reaches_other_device_only_signal(client):
+    import json
+    with client.websocket_connect("/sync/ws") as ws:
+        _hello(ws)
+        assert json.loads(ws.receive_text())["type"] == "ready"
+        r = client.put("/sync/state?user=me", headers=_h(),
+                       json={"payload": {"a": "1"}, "meta": {"a": 5}, "updated_at": "2026-01-01T00:00:00Z"})
+        assert r.status_code == 200
+        msg = json.loads(ws.receive_text())
+        assert msg["type"] == "changed" and msg["updated_at"] == "2026-01-01T00:00:00Z"
+        assert "payload" not in msg            # signal only: data moves through the merge endpoint
+
+
+def test_ws_other_users_not_notified(client):
+    import json
+    with client.websocket_connect("/sync/ws") as ws:
+        _hello(ws, user="alice")
+        assert json.loads(ws.receive_text())["type"] == "ready"
+        client.put("/sync/state?user=bob", headers=_h(), json={"payload": {"a": "1"}, "meta": {}})
+        assert client.get("/healthz").json()["sockets"] == 1   # alice still connected, nothing queued for her
+
+
+def test_ws_carries_origin_so_writer_can_ignore_its_own_echo(client):
+    import json
+    with client.websocket_connect("/sync/ws") as ws:
+        _hello(ws)
+        ws.receive_text()
+        client.put("/sync/state?user=me", headers=_h(), json={"payload": {"a": "1"}, "meta": {}, "device": "dev1"})
+        assert json.loads(ws.receive_text())["origin"] == "dev1"

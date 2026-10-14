@@ -99,6 +99,45 @@
       },
       "url": "https://localhost:8444",
       "warning": "First login uses TheHive's default admin account; change it immediately (see StrangeBee docs). Generated secrets live in the organ directory."
+    },
+    "mattermost": {
+      "label": "Mattermost (team chat / ChatOps for human teams)",
+      "repo": "https://github.com/mattermost/docker",
+      "ref": "497414659ee7127677d2b91b44bb4f3ea9d14695",
+      "dir": ".",
+      "ram_gb": 3,
+      "disk_gb": 10,
+      "env": {
+        "file": ".env",
+        "copy_from": "env.example",
+        "shipped_defaults": {
+          "POSTGRES_PASSWORD": "mmuser_password"
+        },
+        "set": {
+          "DOMAIN": "localhost",
+          "MATTERMOST_IMAGE": "mattermost-team-edition",
+          "MATTERMOST_IMAGE_TAG": "11.7.0",
+          "MM_SERVICESETTINGS_SITEURL": "http://localhost:8065",
+          "POSTGRES_PASSWORD": "@secret"
+        }
+      },
+      "pre": [
+        {
+          "argv": [
+            "sh",
+            "-c",
+            "docker run --rm -v \"$PWD/volumes:/v\" alpine sh -c 'mkdir -p /v/app/mattermost/config /v/app/mattermost/data /v/app/mattermost/logs /v/app/mattermost/plugins /v/app/mattermost/client/plugins /v/app/mattermost/bleve-indexes /v/db/var/lib/postgresql/data && chown -R 2000:2000 /v/app/mattermost'"
+          ],
+          "heavy": true
+        }
+      ],
+      "override": {
+        "mattermost": [
+          "127.0.0.1:8065:8065"
+        ]
+      },
+      "url": "http://localhost:8065",
+      "warning": "Team Edition (free, open source). Create the first admin account in the browser immediately. SSO/OIDC beyond the basics and high-availability clustering need a paid licensed edition - confirm current terms at mattermost.com before relying on them. Data lives in ~/.securax/organs/mattermost/volumes (back it up; `./securax storage` counts it)."
     }
   }
 }

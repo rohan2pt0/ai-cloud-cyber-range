@@ -1,0 +1,66 @@
+{
+  "about": "People-scale ladder. 'have' = built and proven here (evidence must exist), 'dormant' = built but off until the tier needs it, 'gap' = NOT built: the honest list of what you would add or buy. Headcounts are guidance bands, not guarantees; capacity numbers come from `./securax scale --bench` on YOUR hardware.",
+  "tiers": [
+    {
+      "id": "solo", "people": [1, 5], "shape": "one machine, Docker Compose",
+      "humans": "you", "toil": "near zero: ./securax up, update, cockpit",
+      "capabilities": [
+        {"name": "Guardrail gateway + audit", "state": "have", "evidence": "apps/llm-gateway/app/main.py"},
+        {"name": "Safe update with rollback, backups", "state": "have", "evidence": "securax"},
+        {"name": "Single-pane cockpit, plain-words digest", "state": "have", "evidence": "governance/cockpit.py"},
+        {"name": "Live multi-device sync (WebSocket + pull fallback)", "state": "have", "evidence": "apps/estate-sync/syncsvc/main.py"}
+      ]
+    },
+    {
+      "id": "team", "people": [6, 25], "shape": "one strong server (or two), Compose, Tailscale for access",
+      "humans": "1 part-time owner + a named deputy", "toil": "low: weekly look at the cockpit, digest in chat",
+      "capabilities": [
+        {"name": "Team chat + ChatOps (Mattermost organ, webhook digest)", "state": "dormant", "evidence": "lifecycle/organs.json", "switch": "./securax organ mattermost up ; ./securax notify digest"},
+        {"name": "Per-person identity at the gateway (API keys / OIDC JWT, roles, MFA claim)", "state": "dormant", "evidence": "apps/llm-gateway/app/identity.py", "switch": "./securax regulated on"},
+        {"name": "Audit trail with who/what/when", "state": "have", "evidence": "apps/llm-gateway/app/identity.py"},
+        {"name": "Backups to a separate disk", "state": "have", "evidence": "governance/storage.py", "switch": "SECURAX_BACKUP_DIR"},
+        {"name": "Per-person usage quotas / fair-share", "state": "gap", "next": "per-subject rate limit in the gateway keyed by the audited subject"}
+      ]
+    },
+    {
+      "id": "department", "people": [26, 250], "shape": "2-3 gateway replicas behind a load balancer; managed or replicated Postgres",
+      "humans": "a small platform group (2-3) with an on-call rota", "toil": "moderate: patching windows, capacity review monthly",
+      "capabilities": [
+        {"name": "Company SSO (Entra ID / Google / Keycloak) through OIDC JWT at the gateway", "state": "dormant", "evidence": "apps/llm-gateway/app/identity.py", "switch": "AUTH_MODE=required + OIDC_ISSUER, OIDC_AUDIENCE, OIDC_JWKS_URL"},
+        {"name": "Kubernetes (k3s burrow) with per-tenant quota and network policy", "state": "have", "evidence": "gitops/charts/tenant/templates/quota.yaml"},
+        {"name": "Autoscaling on load (KEDA)", "state": "dormant", "evidence": "gitops/platform/keda.yaml"},
+        {"name": "Metrics and alert rules (Prometheus stack)", "state": "dormant", "evidence": "gitops/platform/kube-prometheus-stack.yaml"},
+        {"name": "Runtime threat detection and policy (Falco, Kyverno)", "state": "dormant", "evidence": "gitops/platform/falco.yaml"},
+        {"name": "Mattermost for >250 people, SSO and HA clustering", "state": "gap", "next": "needs a paid Mattermost licence: confirm current edition terms with the vendor before committing"},
+        {"name": "Live sync across several estate-sync replicas", "state": "gap", "next": "estate-sync holds its socket registry in-process and uses SQLite: move to Postgres + a pub/sub bus before running more than one replica"},
+        {"name": "Connection pooling and read replicas for Postgres", "state": "gap", "next": "PgBouncer + one replica; add when the DB shows connection pressure"}
+      ]
+    },
+    {
+      "id": "enterprise", "people": [251, 5000], "shape": "multi-node Kubernetes, one cell per business unit or tenant (GitOps)",
+      "humans": "a platform team (5-15) plus a SOC; security operations by shifts", "toil": "managed by GitOps: change = pull request",
+      "capabilities": [
+        {"name": "Tenant cells from one Helm chart, GitOps app-of-apps, drift healed by Argo CD", "state": "have", "evidence": "gitops/charts/tenant/templates/gateway.yaml"},
+        {"name": "Usage metering per tenant (chargeback)", "state": "dormant", "evidence": "gitops/metering/rules.yaml"},
+        {"name": "Backups and restore for clusters (Velero)", "state": "dormant", "evidence": "gitops/templates/velero.app.yaml.tmpl"},
+        {"name": "Data residency by class and region, enforced in the gateway and in cloud apply", "state": "have", "evidence": "apps/llm-gateway/app/residency.py"},
+        {"name": "Regulatory incident clock with chained evidence", "state": "have", "evidence": "governance/incident.py"},
+        {"name": "SIEM and incident response organs (Wazuh, TheHive, MISP)", "state": "dormant", "evidence": "lifecycle/organs.json"},
+        {"name": "Central logs and distributed tracing backend (OpenTelemetry collector)", "state": "gap", "next": "W3C trace context is already propagated; add a collector + store (Loki/Tempo or your SIEM) and export from the gateway"},
+        {"name": "SCIM user provisioning and de-provisioning", "state": "gap", "next": "joiner/mover/leaver is manual: front the gateway with your IdP's groups, add SCIM when headcount makes manual removal a risk"},
+        {"name": "Canary and blue-green releases", "state": "gap", "next": "Argo Rollouts on the tenant chart; today it is rolling update + the safe-update rollback"}
+      ]
+    },
+    {
+      "id": "scale", "people": [5001, 100000], "shape": "multi-region cells on cloud (canopy), dedicated inference fleet",
+      "humans": "an SRE organisation, 24x7; this repository is a blueprint here, not a turnkey product", "toil": "owned by teams; automation first",
+      "capabilities": [
+        {"name": "Cloud genomes (AWS full, GCP/Azure skeleton) with dormancy and region allow-list proofs", "state": "have", "evidence": "infra/terraform"},
+        {"name": "Multi-region active-active, global load balancing", "state": "gap", "next": "design per region cell; keep data residency classes as the routing key"},
+        {"name": "Dedicated GPU inference tier with queueing and batching (vLLM/TGI class)", "state": "gap", "next": "LiteLLM can front it; capacity planning must be measured, not assumed"},
+        {"name": "Cost governance (FinOps) with per-team budgets and hard stops", "state": "gap", "next": "metering exists; add budgets and enforcement"},
+        {"name": "Formal SRE practice: SLOs, error budgets, game days at scale", "state": "gap", "next": "fitness checks and game days exist for one estate; SLO tooling is yours to add"}
+      ]
+    }
+  ]
+}

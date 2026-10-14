@@ -560,6 +560,15 @@ $(tail -60 "$FB")"
     #   ./securax cockpit [--open] [--ai] [--json]      writes portal/cockpit.html  ->  http://localhost:8088/portal/cockpit.html
     shift; exec python3 "$ROOT/governance/cockpit.py" "$@"
     ;;
+  capacity)
+    # What switches on as people are added (1 -> 100,000), who you need, and what is honestly not built.   ./securax capacity [--people N] [--bench]
+    shift; exec python3 "$ROOT/governance/scale.py" "$@"
+    ;;
+  notify)
+    # Push the plain-words digest to any chat with an incoming webhook (Mattermost, Slack...). Off until SECURAX_NOTIFY_WEBHOOK is set.
+    #   ./securax notify test | digest [--dry-run] [--only-bad]
+    shift; exec python3 "$ROOT/governance/notify.py" "$@"
+    ;;
   storage)
     # Where the files are, how fast they grow, when the disk runs out, and what is safe to clean.   ./securax storage [--json] [--tidy [--yes]]
     shift; exec python3 "$ROOT/governance/storage.py" "$@"
@@ -942,6 +951,7 @@ START HERE (the 20% you use 80% of the time)
   open           open the Command Center in your browser             status         what is running right now
   doctor         find and fix what is wrong, in plain words          update         get the latest version (safe: backs up first)
   cockpit        one-page health view: risks, to-dos, trends         storage        how much space you use and when it runs out
+  notify         send the daily digest to Mattermost/Slack           capacity       what to switch on as more people join (1 to 100,000)
 
 AI & CHAT
   keys / providers add|list   add free or paid AI keys             models         check which models your keys can use today
