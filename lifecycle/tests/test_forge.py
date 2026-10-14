@@ -135,3 +135,34 @@ def test_a_broken_test_command_is_reported_not_counted_as_every_mutant_killed(re
     (repo / "calc.py").write_text(GOOD_SRC)
     res, stats = fg.gate("HEAD", "python3 -c 'import sys; sys.exit(1)'", 24, 0.6, False, repo)
     assert any(r["rule"] == "mutation-baseline" and r["level"] == "BLOCK" for r in res) and stats["mutants"] == 0
+
+
+@pytest.mark.parametrize("src, want", [
+    ("x = a == b\n", "x = a != b"), ("x = a in b\n", "x = a not in b"), ("x = a is b\n", "x = a is not b"), ("x = a < b\n", "x = a >= b"),
+    ("x = a and b\n", "x = a or b"), ("x = not a\n", "x = a"), ("x = True\n", "x = False"), ("x = 5\n", "x = 6"),
+    ("def f():\n    return a\n", "return None"),
+])
+def test_each_mutation_operator_changes_exactly_what_it_says(src, want):
+    out, what = fg.mutate_file(src, {1, 2}, 0)
+    assert want in out and what
+    assert fg.mutate_file(src, {99}, 0) is None                              # lines outside the change are never touched
+    assert fg.mutate_file("x = 1\n", {1}, 5) is None                         # a target past the last mutable node mutates nothing
+
+
+def test_a_return_of_none_is_not_mutated_and_a_bool_is_not_treated_as_an_int():
+    assert fg.mutate_file("def f():\n    return None\n", {2}, 0) is None
+    assert "False" in fg.mutate_file("x = True\n", {1}, 0)[0]
+
+
+def test_a_new_very_long_function_gets_a_length_warning(repo):
+    (repo / "calc.py").write_text(BASE_SRC + "\n\ndef long(x):\n" + "    x += 1\n" * 85 + "    return x\n")
+    res = fg.budget("HEAD", fg.changed_lines("HEAD", repo), repo)
+    assert any(r["rule"] == "function-length" and r["level"] == "WARN" for r in res)
+
+
+def test_relevant_tests_finds_tests_by_module_name_and_skips_vendored_trees(repo):
+    (repo / "node_modules" / "x").mkdir(parents=True)
+    (repo / "node_modules" / "x" / "test_calc_vendored.py").write_text("import calc\n")
+    cmd = fg.relevant_tests("calc.py", repo)
+    assert "tests/test_price.py" in cmd and not any("node_modules" in c for c in cmd)
+    assert fg.relevant_tests("unrelated_module.py", repo) == fg.PYTEST      # nothing mentions it: run everything rather than nothing
