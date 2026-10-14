@@ -9,7 +9,7 @@ local-first, and under your cost ceiling. **Read [`docs/securax/07-INTEGRATIONS.
 
 ## n8n workflow templates (`n8n/`)
 Import each in n8n (**⋯ → Import from File**), set the credential on any cloud node, toggle **Active**.
-All of them call the **guardrail gateway** (`http://gateway:8080/v1`), never a model directly —
+All of them call the **guardrail gateway** (`http://gateway:8080/v1`, or `https://gateway.securax.internal:8443/v1` when internal TLS is on: the templates read `GATEWAY_URL`), never a model directly —
 so you swap API keys, not workflows, and inherit every guardrail for free.
 
 | File | What it does | Needs |

@@ -510,7 +510,7 @@
     "file:governance/tls.py",
     "journey:tls_edge"
    ],
-   "next": "Phase 2: TLS on the internal hops (gateway, router, Postgres); encrypt backups; document LUKS/FDE for the burrow.",
+   "next": "Internal hops: `tls internal on` is available (exceptions in doc 40; Postgres is not used) - make it the default under the regulated profile; encrypt backups; document LUKS/FDE for the burrow.",
    "priority": "high"
   },
   {

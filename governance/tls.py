@@ -7,6 +7,7 @@
     ./securax tls render                            (re)write the edge configuration for the current domain (done automatically by `on` and `up`)
     ./securax tls renew                             re-issue the server certificate (same CA; nothing to re-trust)
     ./securax tls off                               back to plain HTTP (the estate still works; browsers show 'not secure')
+    ./securax tls internal on|off                   ALSO encrypt the hops between the services themselves (needs `tls on` first; see docs/securax/40)
 
 What it builds (no new image, no new dependency; uses the nginx image the estate already runs, and the `openssl` that ships with Linux/WSL):
   * a private CA (ECDSA P-256) whose key never leaves ~/.securax/tls (mode 600) and that is NAME-CONSTRAINED: even if its key leaked it could
@@ -60,13 +61,24 @@ ENDPOINTS = [
 ]
 PLAIN_WEB_PORTS = (8088, 3000, 3001, 5678, 8089)          # published only while the edge is OFF
 TLS_COMPOSE = "docker-compose.yml:tls.yml"
+TLS_COMPOSE_INTERNAL = "docker-compose.yml:tls.yml:tls-internal.yml"
+SIDECAR_DIR = COMPOSE / "tls-sidecars"
+SIDECAR_PORT = 8443
+# Internal hops (phase 2): one nginx sidecar per service sharing that service's network namespace. It terminates TLS on 8443 with a certificate of
+# its own (<name>.securax.internal) and forwards to the service on 127.0.0.1, where the service now listens ONLY (so its plain port is unreachable from
+# any other container). (service, upstream port inside the container, can its image be told to listen on loopback only?)
+INTERNAL = [
+    ("gateway", 8080, True), ("litellm", 4000, True), ("ollama", 11434, True), ("open-webui", 8080, True),
+    ("n8n", 5678, True), ("estate-sync", 8089, True), ("anythingllm", 3001, False),
+]
+INTERNAL_EXCEPTIONS = ["Private Docs (AnythingLLM) cannot be told to listen on loopback only, so its plain port stays reachable from other containers on the private Docker network (its TLS sidecar protects the edge hop only)"]
 
 # Hops that stay on the private Docker networks (never leave this machine) and are NOT yet encrypted. Listed on purpose: an unmentioned
 # plaintext hop is how an audit finding is born. Phase 2 (docs/securax/40) closes them.
 INTERNAL_HOPS = [
-    "Chat / n8n / Private Docs -> gateway", "gateway -> model router (LiteLLM)", "router -> local model (Ollama)",
-    "n8n / services -> Postgres", "edge -> each service (the last hop inside this machine)",
-]
+    "Chat / n8n -> gateway", "gateway -> model router (LiteLLM)", "router -> local model (Ollama)", "Private Docs -> local model (Ollama)",
+    "edge -> each service (the last hop inside this machine)",
+]   # (no service uses Postgres, so there is no database hop to encrypt)
 
 
 def tls_dir() -> pathlib.Path:
@@ -325,25 +337,124 @@ server {
 """
 
 
-def render_edge_conf(dom: str | None = None) -> str:
+# services that are OPTIONAL (skipped in lite mode) -> what to type to start them. Used for the friendly "not running" page.
+OPTIONAL = {"docs": ("Private Docs", "docs"), "flows": ("Automation (n8n)", "flows")}
+
+
+def _upstream(svc: str, port: int, internal: bool) -> tuple[str, str]:
+    if internal and svc in {n for n, _p, _l in INTERNAL}:
+        return f"https://{svc}.securax.internal:{SIDECAR_PORT}", f"    proxy_ssl_name {svc}.securax.internal;\n"
+    return f"http://{svc}:{port}", ""
+
+
+def _probes(internal: bool) -> str:
+    """Same-origin status probes for the Command Center: /_up/<name> proxies to that service and returns ITS status (502 = not running).
+    A browser's cross-origin no-cors fetch cannot read a status, so a stopped service used to be shown as running."""
+    out = []
+    for _label, name, svc, port, _plain in ENDPOINTS:
+        if name == "hub":
+            continue
+        up, extra = _upstream(svc, port, internal)
+        out.append(f"    location = /_up/{name} {{\n        set $pu {up};\n{extra}        rewrite ^ / break;\n        proxy_pass $pu;\n    }}\n")
+    return "".join(out)
+
+
+def _down_page(label: str, name: str) -> str:
+    """What a person sees when a service is not running: a sentence and the exact command, not a bare nginx 502."""
+    cmd = f"./securax start {OPTIONAL[name][1]}" if name in OPTIONAL else "./securax up"
+    why = ("It is optional and is skipped on smaller machines (lite mode)." if name in OPTIONAL else "It is not responding (it may still be starting).")
+    body = (f"<!doctype html><meta charset=utf-8><title>{label} is not running</title>"
+            f"<body style=\"font:16px system-ui;max-width:40em;margin:4em auto;padding:0 1em\"><h1>{label} is not running</h1>"
+            f"<p>{why}</p><p>Start it, then reload this page:</p><pre>{cmd}</pre>"
+            f"<p><a href=\"https://hub.{{dom}}/hub.html\">Back to the Command Center</a></p>")
+    return body
+
+
+def render_edge_conf(dom: str | None = None, internal: bool = False) -> str:
     dom = dom or domain()
     out = [EDGE_HEAD]
+    if internal:
+        out.append("""
+# Internal TLS is ON: the edge talks to every service over HTTPS too and VERIFIES it against the estate's own CA.
+proxy_ssl_verify on;
+proxy_ssl_trusted_certificate /etc/tls/ca.crt;
+proxy_ssl_server_name on;
+proxy_ssl_protocols TLSv1.2 TLSv1.3;
+""")
     for label, name, svc, port, _plain in ENDPOINTS:
+        if svc == "guiding-map" and internal:
+            out.append(f"""
+# {label}: served by the edge itself (static files), so there is no hop to encrypt
+server {{
+    listen 443 ssl;
+    http2 on;
+    server_name {name}.{dom};
+    root /usr/share/nginx/html;
+    index index.html;
+{_probes(internal)}    location / {{ try_files $uri $uri/ /index.html; }}
+    location = /hub           {{ return 302 /hub.html; }}
+    location = /apps          {{ return 302 /hub.html; }}
+    location = /portal/hub.html {{ return 302 /hub.html; }}
+    location /portal/ {{ alias /srv/portal/; index index.html; }}
+}}
+""")
+            continue
+        up, extra = _upstream(svc, port, internal)
+        names = f"{name}.{dom}" + (" localhost 127.0.0.1" if (internal and svc == "gateway") else "")
+        probes = _probes(internal) if name == "hub" else ""
+        down = ""
+        if name != "hub" and name != "api":
+            page = _down_page(label, name).replace("{dom}", dom)
+            down = f"    error_page 502 503 504 /_down;\n    location = /_down {{ internal; default_type text/html; return 502 '{page}'; }}\n"
         out.append(f"""
 # {label}
 server {{
     listen 443 ssl;
     http2 on;
-    server_name {name}.{dom};
-    set $up http://{svc}:{port};
-    location / {{ proxy_pass $up; }}
+    server_name {names};
+    set $up {up};
+{extra}{probes}{down}    location / {{ proxy_pass $up; }}
 }}
 """)
     return "".join(out)
 
 
+def sidecar_conf(svc: str, port: int) -> str:
+    """The TLS sidecar of one service: terminate TLS with the service's own certificate, forward to the service on loopback."""
+    return f"""# TLS sidecar for {svc} - GENERATED by `./securax tls render` (do not edit; docs/securax/40).
+map $http_upgrade $connection_upgrade {{ default upgrade; '' close; }}
+server {{
+    listen {SIDECAR_PORT} ssl;
+    server_name {svc}.securax.internal;
+    ssl_certificate     /etc/tls/{svc}.crt;
+    ssl_certificate_key /etc/tls/{svc}.key;
+    ssl_protocols TLSv1.2 TLSv1.3;
+    ssl_ciphers ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-ECDSA-CHACHA20-POLY1305;
+    ssl_session_tickets off;
+    server_tokens off;
+    client_max_body_size 100m;
+    location / {{
+        proxy_pass http://127.0.0.1:{port};
+        proxy_http_version 1.1;
+        proxy_set_header Host $http_host;
+        proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
+        proxy_set_header X-Forwarded-For $http_x_forwarded_for;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_buffering off;
+        proxy_read_timeout 600s;
+        proxy_send_timeout 600s;
+    }}
+}}
+"""
+
+
 def write_edge_conf(dom: str | None = None) -> pathlib.Path:
-    EDGE_CONF.write_text(render_edge_conf(dom), "utf-8")
+    EDGE_CONF.write_text(render_edge_conf(dom, internal=tls_internal_on()), "utf-8")
+    if tls_internal_on():
+        SIDECAR_DIR.mkdir(exist_ok=True)
+        for svc, port, _loop in INTERNAL:
+            (SIDECAR_DIR / f"{svc}.conf").write_text(sidecar_conf(svc, port), "utf-8")
     return EDGE_CONF
 
 
@@ -370,6 +481,63 @@ def set_env(key: str, value: str | None) -> None:
 
 def tls_is_on() -> bool:
     return "tls.yml" in read_env().get("COMPOSE_FILE", "")
+
+
+def tls_internal_on() -> bool:
+    return tls_is_on() and read_env().get("TLS_INTERNAL") == "1"
+
+
+def system_ca_bundle() -> str:
+    """The operating system's trusted public CAs (so a client that gets OUR CA added still trusts api.openai.com etc.)."""
+    for cand in (ssl.get_default_verify_paths().cafile, "/etc/ssl/certs/ca-certificates.crt", "/etc/pki/tls/certs/ca-bundle.crt", "/etc/ssl/cert.pem"):
+        if cand and pathlib.Path(cand).exists():
+            return pathlib.Path(cand).read_text("utf-8", "replace")
+    try:
+        import certifi
+        return pathlib.Path(certifi.where()).read_text("utf-8")
+    except ImportError:
+        raise SystemExit("no public CA bundle found on this machine (install ca-certificates): clients would lose trust in the AI providers' certificates")
+
+
+def build_bundle(d: pathlib.Path) -> pathlib.Path:
+    """A COMBINED trust file: public CAs + the estate's CA. Never our CA alone - that would break every call to a cloud AI provider."""
+    out = d / "ca-bundle.pem"
+    out.write_text(system_ca_bundle().rstrip("\n") + "\n" + (d / "ca.crt").read_text("utf-8"), "utf-8")
+    os.chmod(out, 0o644)
+    return out
+
+
+def issue_internal(d: pathlib.Path) -> list[str]:
+    """One certificate + key per service (its own, so one compromised container cannot speak for another)."""
+    exe = need_openssl()
+    sub = d / "internal"
+    sub.mkdir(exist_ok=True)
+    os.chmod(sub, 0o755)
+    made = []
+    for svc, _port, _loop in INTERNAL:
+        crt = sub / f"{svc}.crt"
+        info = cert_info(crt)
+        if info and (info.get("days_left") or 0) >= RENEW_WITHIN_DAYS and f"{svc}.securax.internal" in info.get("names", []):
+            continue
+        with tempfile.TemporaryDirectory() as t:
+            ext = pathlib.Path(t) / "ext.cnf"
+            ext.write_text("basicConstraints=critical,CA:FALSE\nkeyUsage=critical,digitalSignature\nextendedKeyUsage=serverAuth\n"
+                           f"subjectAltName=DNS:{svc}.securax.internal\n")
+            csr = pathlib.Path(t) / "s.csr"
+            key = sub / f"{svc}.key"
+            r = run([exe, "req", "-new", "-newkey", "ec", "-pkeyopt", "ec_paramgen_curve:prime256v1", "-nodes", "-keyout", str(key), "-out", str(csr), "-subj", f"/CN={svc}.securax.internal"])
+            if r.returncode:
+                raise SystemExit(f"openssl could not create the {svc} key:\n" + r.stderr)
+            # the sidecar's nginx master runs as root and reads its key at start; keep it owner-only anyway
+            os.chmod(key, 0o600)
+            r = run([exe, "x509", "-req", "-in", str(csr), "-CA", str(d / "ca.crt"), "-CAkey", str(d / "ca.key"), "-CAcreateserial", "-days", str(DAYS_SERVER),
+                     "-sha256", "-extfile", str(ext), "-out", str(crt)])
+            if r.returncode:
+                raise SystemExit(f"openssl could not sign the {svc} certificate:\n" + r.stderr)
+        os.chmod(crt, 0o644)
+        made.append(svc)
+    (d / "ca.srl").unlink(missing_ok=True)
+    return made
 
 
 # ───────────────────────────────────────────── probing ─────────────────────────────────────────────
@@ -421,7 +589,7 @@ def status(as_json: bool = False) -> int:
         rows.append({"label": label, "name": fq, "https": p, "dns": resolves(fq), "plain_port": plain, "plain_open": plain_open(plain)})
     worst = 0
     if as_json:
-        print(json.dumps({"enabled": on, "domain": dom, "dir": str(d), "cert": info, "endpoints": rows, "internal_hops_not_encrypted": INTERNAL_HOPS}, indent=2))
+        print(json.dumps({"enabled": on, "domain": dom, "dir": str(d), "cert": info, "endpoints": rows, "internal_tls": tls_internal_on(), "internal_hops_not_encrypted": [] if tls_internal_on() else INTERNAL_HOPS, "internal_exceptions": INTERNAL_EXCEPTIONS if tls_internal_on() else []}, indent=2))
     else:
         print(f"TLS edge: {'ON' if on else 'off'}   domain: {dom}   certificate store: {d}")
         if info:
@@ -440,7 +608,10 @@ def status(as_json: bool = False) -> int:
             elif r["plain_open"]:
                 line += f"   ⚠ plain http://localhost:{r['plain_port']} still answers"
             print(line)
-        print("  Not yet encrypted (private Docker networks only, never leave this machine; phase 2): " + "; ".join(INTERNAL_HOPS))
+        if tls_internal_on():
+            print("  Internal TLS: ON (services listen on loopback; sidecars terminate TLS; clients trust your CA). Exception: " + "; ".join(INTERNAL_EXCEPTIONS))
+        else:
+            print("  Not yet encrypted (private Docker networks only, never leave this machine; turn on with ./securax tls internal on): " + "; ".join(INTERNAL_HOPS))
     if on:
         for r in rows:
             if not r["https"]["ok"]:
@@ -518,15 +689,45 @@ def cmd_on(extra: list[str], dom: str | None, new_ca: bool) -> int:
     return 0
 
 
+def cmd_internal(on: bool) -> int:
+    if not tls_is_on():
+        print("Turn the HTTPS edge on first:  ./securax tls on")
+        return 2
+    if not on:
+        set_env("TLS_INTERNAL", None)
+        set_env("COMPOSE_FILE", TLS_COMPOSE)
+        write_edge_conf()
+        print("Internal TLS off. Restart to apply:  ./securax down && ./securax up   (the services talk plain HTTP on the private Docker network again)")
+        return 0
+    d = tls_dir()
+    made = issue_internal(d)
+    bundle = build_bundle(d)
+    set_env("TLS_INTERNAL", "1")
+    set_env("COMPOSE_FILE", TLS_COMPOSE_INTERNAL)
+    write_edge_conf()
+    print(f"✔ certificates for {', '.join(n for n, _p, _l in INTERNAL)} ({'issued: ' + ', '.join(made) if made else 'already valid'})")
+    print(f"✔ trust file with the public CAs + yours: {bundle}")
+    print("✔ the services now listen on loopback only; each has a TLS sidecar; the CLI and agents talk to the gateway over HTTPS through the edge (https://localhost)")
+    print("  Exception, stated plainly: " + "; ".join(INTERNAL_EXCEPTIONS))
+    print("\nNext:  ./securax down && ./securax up   then  ./securax tls status")
+    return 0
+
+
 def cmd_off() -> int:
     set_env("COMPOSE_FILE", None)
     set_env("COMPOSE_PATH_SEPARATOR", None)
+    set_env("TLS_INTERNAL", None)
     print("TLS edge off. Restart to apply:  ./securax down && ./securax up   (plain http://localhost:8088 etc. return; browsers will say 'not secure')")
     return 0
 
 
 def cmd_renew() -> int:
     res = ensure(None, force=True)
+    if tls_internal_on():
+        for svc, _p, _l in INTERNAL:
+            (tls_dir() / "internal" / f"{svc}.crt").unlink(missing_ok=True)
+        issue_internal(tls_dir())
+        build_bundle(tls_dir())
     write_edge_conf()
     print(f"✔ new server certificate, {res['cert'].get('days_left')} days left. Restart the edge:  (cd local/compose && docker compose --profile ai restart tls-edge)")
     return 0
@@ -542,6 +743,8 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("off")
     sub.add_parser("renew")
     sub.add_parser("render")
+    it = sub.add_parser("internal")
+    it.add_argument("state", choices=["on", "off"])
     tr = sub.add_parser("trust")
     tr.add_argument("--apply", action="store_true")
     st = sub.add_parser("status")
@@ -556,6 +759,8 @@ def main(argv: list[str] | None = None) -> int:
     if a.cmd == "render":
         print(write_edge_conf())
         return 0
+    if a.cmd == "internal":
+        return cmd_internal(a.state == "on")
     if a.cmd == "trust":
         return cmd_trust(a.apply)
     return status(a.json)

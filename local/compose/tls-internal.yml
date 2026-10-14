@@ -1,0 +1,160 @@
+# Overlay for INTERNAL TLS (enabled by `./securax tls internal on`, on top of tls.yml). Docs: docs/securax/40.
+# Every service gets (1) a TLS sidecar nginx that shares its network namespace, (2) a loopback-only listener so its plain port is unreachable from every
+# other container, (3) an internal name <service>.securax.internal, and every CLIENT is pointed at the https name and given a trust file that holds the
+# public CAs PLUS the estate's CA (never ours alone: that would break every call to a cloud AI provider).
+x-sidecar: &sidecar
+  image: nginx:1.27-alpine
+  profiles: ["core", "security", "ai"]
+  restart: unless-stopped
+  mem_limit: 24m
+  cpus: 0.1
+  security_opt: ["no-new-privileges:true"]
+  logging:
+    driver: json-file
+    options: { max-size: "5m", max-file: "2" }
+
+x-trust: &trust
+  SSL_CERT_FILE: /etc/securax/ca-bundle.pem
+  REQUESTS_CA_BUNDLE: /etc/securax/ca-bundle.pem
+  CURL_CA_BUNDLE: /etc/securax/ca-bundle.pem
+  NODE_EXTRA_CA_CERTS: /etc/securax/ca.crt
+
+services:
+  tls-edge:
+    volumes:
+      - ${TLS_DIR:?run ./securax tls on first}/ca.crt:/etc/tls/ca.crt:ro
+      - ../../guiding-map:/usr/share/nginx/html:ro
+      - ../../portal:/srv/portal:ro
+
+  gateway-tls:
+    <<: *sidecar
+    network_mode: "service:gateway"
+    depends_on: [gateway]
+    volumes:
+      - ./tls-sidecars/gateway.conf:/etc/nginx/conf.d/default.conf:ro
+      - ${TLS_DIR}/internal/gateway.crt:/etc/tls/gateway.crt:ro
+      - ${TLS_DIR}/internal/gateway.key:/etc/tls/gateway.key:ro
+
+  litellm-tls:
+    <<: *sidecar
+    network_mode: "service:litellm"
+    depends_on: [litellm]
+    volumes:
+      - ./tls-sidecars/litellm.conf:/etc/nginx/conf.d/default.conf:ro
+      - ${TLS_DIR}/internal/litellm.crt:/etc/tls/litellm.crt:ro
+      - ${TLS_DIR}/internal/litellm.key:/etc/tls/litellm.key:ro
+
+  ollama-tls:
+    <<: *sidecar
+    network_mode: "service:ollama"
+    depends_on: [ollama]
+    volumes:
+      - ./tls-sidecars/ollama.conf:/etc/nginx/conf.d/default.conf:ro
+      - ${TLS_DIR}/internal/ollama.crt:/etc/tls/ollama.crt:ro
+      - ${TLS_DIR}/internal/ollama.key:/etc/tls/ollama.key:ro
+
+  open-webui-tls:
+    <<: *sidecar
+    network_mode: "service:open-webui"
+    depends_on: [open-webui]
+    volumes:
+      - ./tls-sidecars/open-webui.conf:/etc/nginx/conf.d/default.conf:ro
+      - ${TLS_DIR}/internal/open-webui.crt:/etc/tls/open-webui.crt:ro
+      - ${TLS_DIR}/internal/open-webui.key:/etc/tls/open-webui.key:ro
+
+  n8n-tls:
+    <<: *sidecar
+    network_mode: "service:n8n"
+    depends_on: [n8n]
+    volumes:
+      - ./tls-sidecars/n8n.conf:/etc/nginx/conf.d/default.conf:ro
+      - ${TLS_DIR}/internal/n8n.crt:/etc/tls/n8n.crt:ro
+      - ${TLS_DIR}/internal/n8n.key:/etc/tls/n8n.key:ro
+
+  estate-sync-tls:
+    <<: *sidecar
+    network_mode: "service:estate-sync"
+    depends_on: [estate-sync]
+    volumes:
+      - ./tls-sidecars/estate-sync.conf:/etc/nginx/conf.d/default.conf:ro
+      - ${TLS_DIR}/internal/estate-sync.crt:/etc/tls/estate-sync.crt:ro
+      - ${TLS_DIR}/internal/estate-sync.key:/etc/tls/estate-sync.key:ro
+
+  anythingllm-tls:
+    <<: *sidecar
+    network_mode: "service:anythingllm"
+    depends_on: [anythingllm]
+    volumes:
+      - ./tls-sidecars/anythingllm.conf:/etc/nginx/conf.d/default.conf:ro
+      - ${TLS_DIR}/internal/anythingllm.crt:/etc/tls/anythingllm.crt:ro
+      - ${TLS_DIR}/internal/anythingllm.key:/etc/tls/anythingllm.key:ro
+
+  # ---- the services: loopback-only listeners, an internal name, and (where they are clients) HTTPS + trust ----
+  gateway:
+    command: ["uvicorn", "app.main:app", "--host", "127.0.0.1", "--port", "8080", "--no-server-header"]
+    ports: !override []            # the published port cannot reach a loopback listener; the CLI uses https://localhost through the edge
+    environment:
+      <<: *trust
+      UPSTREAM_URL: https://litellm.securax.internal:8443/v1
+    volumes:
+      - ${TLS_DIR}/ca-bundle.pem:/etc/securax/ca-bundle.pem:ro
+      - ${TLS_DIR}/ca.crt:/etc/securax/ca.crt:ro
+    networks:
+      edge: { aliases: [gateway.securax.internal] }
+      modelplane: { aliases: [gateway.securax.internal] }
+
+  litellm:
+    command: ["--config", "/etc/litellm/config.yaml", "--port", "4000", "--host", "127.0.0.1"]
+    environment:
+      <<: *trust
+    volumes:
+      - ${TLS_DIR}/ca-bundle.pem:/etc/securax/ca-bundle.pem:ro
+      - ${TLS_DIR}/ca.crt:/etc/securax/ca.crt:ro
+    networks:
+      modelplane: { aliases: [litellm.securax.internal] }
+
+  ollama:
+    environment:
+      OLLAMA_HOST: 127.0.0.1:11434
+    networks:
+      modelplane: { aliases: [ollama.securax.internal] }
+
+  open-webui:
+    environment:
+      <<: *trust
+      HOST: 127.0.0.1
+      OPENAI_API_BASE_URL: https://gateway.securax.internal:8443/v1
+    volumes:
+      - ${TLS_DIR}/ca-bundle.pem:/etc/securax/ca-bundle.pem:ro
+      - ${TLS_DIR}/ca.crt:/etc/securax/ca.crt:ro
+    networks:
+      edge: { aliases: [open-webui.securax.internal] }
+      modelplane: {}
+
+  n8n:
+    environment:
+      <<: *trust
+      N8N_LISTEN_ADDRESS: 127.0.0.1
+      GATEWAY_URL: https://gateway.securax.internal:8443
+    volumes:
+      - ${TLS_DIR}/ca-bundle.pem:/etc/securax/ca-bundle.pem:ro
+      - ${TLS_DIR}/ca.crt:/etc/securax/ca.crt:ro
+    networks:
+      edge: { aliases: [n8n.securax.internal] }
+      modelplane: {}
+
+  estate-sync:
+    command: ["uvicorn", "syncsvc.main:app", "--host", "127.0.0.1", "--port", "8089", "--no-server-header"]
+    networks:
+      edge: { aliases: [estate-sync.securax.internal] }
+
+  anythingllm:
+    environment:
+      <<: *trust
+      OLLAMA_BASE_PATH: https://ollama.securax.internal:8443
+    volumes:
+      - ${TLS_DIR}/ca-bundle.pem:/etc/securax/ca-bundle.pem:ro
+      - ${TLS_DIR}/ca.crt:/etc/securax/ca.crt:ro
+    networks:
+      edge: { aliases: [anythingllm.securax.internal] }
+      modelplane: {}

@@ -103,9 +103,9 @@
   function gw(path){ return (SEC ? "https://api."+DOM : "http://"+H+":8080") + path; }
   // Core = the apps you came here to use. They get a "starting…" phase (Chat takes ~a minute to boot).
   var CORE = [
-    {t:"Guiding Map", e:"🧭", d:"Your daily cockpit / life-OS — works offline, no AI needed", url:"http://"+H+":8088/", core:true},
+    {t:"Guiding Map", e:"🧭", d:"Your daily cockpit / life-OS — works offline, no AI needed", url:web("hub",8088), core:true},
     {t:"Chat", e:"💬", d:"Private ChatGPT-style assistant (guarded, local + cloud)", url:web("chat",3000), core:true},
-    {t:"Cockpit", e:"📊", d:"One-page health: what is at risk, what to do next, trends", url:"http://"+H+":8088/portal/cockpit.html", core:false}
+    {t:"Cockpit", e:"📊", d:"One-page health: what is at risk, what to do next, trends", url:web("hub",8088)+"portal/cockpit.html", core:false}
   ];
   // Optional = powerful, but each needs its own one-time setup — and may simply not be running (lite mode).
   var EXTRAS = [
@@ -132,9 +132,16 @@
     var st = up ? "up" : (a.core ? ((Date.now()-started) < 180000 ? "starting" : "down") : "off");
     d.className = "dot " + st; d.title = TITLE[st];
   }
+  // Over HTTPS the edge answers /_up/<name> for us with the service's REAL status (a 502 means "not running"); a plain no-cors fetch
+  // cannot read a status, so a stopped service used to be shown green.
+  var PROBE = {"Chat":"chat","Private Docs":"docs","Automation":"flows"};
   function checkApps(){
     ALL.forEach(function(a){
-      fetch(a.url,{mode:"no-cors"}).then(function(){paint(a,true);}).catch(function(){paint(a,false);});
+      if(SEC && PROBE[a.t]){
+        fetch("/_up/"+PROBE[a.t],{cache:"no-store"}).then(function(r){paint(a, r.status<500);}).catch(function(){paint(a,false);});
+      } else {
+        fetch(a.url,{mode:"no-cors"}).then(function(){paint(a,true);}).catch(function(){paint(a,false);});
+      }
     });
   }
   function checkInfo(){

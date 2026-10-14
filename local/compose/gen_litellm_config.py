@@ -90,13 +90,20 @@ def model_for(p: dict, env: dict, baseline: bool = False) -> str:
     return model
 
 
+def internal_api_base(url: str, env: dict, baseline: bool = False) -> str:
+    """With internal TLS on (`./securax tls internal on`) the local model is reached over HTTPS through its sidecar, by its internal name."""
+    if not baseline and env_lookup(env, "TLS_INTERNAL") == "1" and url.rstrip("/") == "http://ollama:11434":
+        return "https://ollama.securax.internal:8443"
+    return url
+
+
 def provider_params(p: dict, env: dict, baseline: bool = False) -> dict:
     """litellm_params for one provider (everything except model_name)."""
     params: dict[str, object] = {"model": model_for(p, env, baseline)}
     if p.get("local"):
         # Ollama-style local model: literal api_base, no key. Its env entries are only on/off gate
         # flags (e.g. ENABLE_LOCAL_CODER), never an api_key.
-        params["api_base"] = p["api_base"]
+        params["api_base"] = internal_api_base(p["api_base"], env, baseline)
         params["timeout"] = LOCAL_TIMEOUT
         return params
     params["timeout"] = CLOUD_TIMEOUT

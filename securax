@@ -18,20 +18,28 @@ skv(){ f="$1"; k="$2"; v="$3"; if grep -q "^$k=" "$f" 2>/dev/null; then
 # ev KEY [DEFAULT] — read KEY from local/compose/.env (process env wins), else DEFAULT.
 # TLS edge on? (./securax tls on sets COMPOSE_FILE=...tls.yml in .env). Then every web URL is https and the plain web ports are not published.
 tls_on(){ case "$(sed -n 's/^COMPOSE_FILE=//p' "$ROOT/local/compose/.env" 2>/dev/null | head -1)" in *tls.yml*) return 0;; *) return 1;; esac; }
+# Internal TLS (./securax tls internal on): the gateway listens on loopback inside its container, so the CLI reaches it over HTTPS through the edge
+# (https://localhost) and verifies it against the estate's CA; Python tools get the combined trust file. Otherwise: the plain loopback port, as before.
+internal_on(){ tls_on && [ "$(sed -n 's/^TLS_INTERNAL=//p' "$ROOT/local/compose/.env" 2>/dev/null | head -1)" = 1 ]; }
+tls_home(){ printf '%s' "${SECURAX_TLS_DIR:-$HOME/.securax/tls}"; }
+gw_url(){ if internal_on; then printf 'https://localhost'; else printf 'http://localhost:8080'; fi; }
+gcurl(){ if internal_on; then curl --cacert "$(tls_home)/ca.crt" "$@"; else curl "$@"; fi; }
+ollama_url(){ if internal_on; then printf 'https://ollama.securax.internal:8443'; else printf 'http://ollama:11434'; fi; }
 # web_url NAME PLAIN_PORT [PATH] -> the address to give a human right now: https://NAME.<domain> (no port) with the edge on, else the plain localhost port
 web_url(){ if tls_on; then printf 'https://%s.%s%s' "$1" "$(ev SECURAX_DOMAIN securax.localhost)" "${3:-/}"; else printf 'http://localhost:%s%s' "$2" "${3:-/}"; fi; }
 # web_up NAME PLAIN_PORT -> is that web endpoint answering (verifying the certificate and the name when the edge is on)
 web_up(){ if tls_on; then _h="$1.$(ev SECURAX_DOMAIN securax.localhost)"; curl -fsS -m 3 --cacert "${SECURAX_TLS_DIR:-$HOME/.securax/tls}/ca.crt" --resolve "$_h:443:127.0.0.1" "https://$_h/" >/dev/null 2>&1; else curl -fsS -m 3 "http://localhost:$2" >/dev/null 2>&1; fi; }
 ev(){ v="${!1:-}"; [ -z "$v" ] && v="$(sed -n "s/^$1=//p" "$ROOT/local/compose/.env" 2>/dev/null | head -1)"; printf '%s' "${v:-${2:-}}"; }
+if internal_on; then export SSL_CERT_FILE="$(tls_home)/ca-bundle.pem" REQUESTS_CA_BUNDLE="$(tls_home)/ca-bundle.pem" CURL_CA_BUNDLE="$(tls_home)/ca-bundle.pem"; fi
 
 # ready_wait SECS — wait until the gateway reports READY (the model router is up). One line, no spinner.
 # A user must never be told "done" while the first chat would still fail.
 ready_wait(){
   _t="${1:-120}"; _i=0
-  curl -fsS -m 3 http://localhost:8080/readyz >/dev/null 2>&1 && return 0
+  gcurl -fsS -m 3 $(gw_url)/readyz >/dev/null 2>&1 && return 0
   C "Waiting for the AI router to finish starting (up to ${_t}s)…"
   while [ "$_i" -lt "$_t" ]; do
-    curl -fsS -m 3 http://localhost:8080/readyz >/dev/null 2>&1 && { C "  ✔ ready"; return 0; }
+    gcurl -fsS -m 3 $(gw_url)/readyz >/dev/null 2>&1 && { C "  ✔ ready"; return 0; }
     sleep 2; _i=$((_i+2))
   done
   return 1
@@ -97,7 +105,7 @@ preflight(){
   docker info >/dev/null 2>&1 || { C "Docker isn't running/reachable. Start Docker Desktop (wait for 'Engine running'); on Windows also enable WSL integration for Ubuntu."; return 1; }
   _free="$(df -Pk "$ROOT" 2>/dev/null | awk 'NR==2{printf "%d",$4/1048576}')"
   [ -n "$_free" ] && [ "$_free" -lt 8 ] && C "⚠ Only ~${_free} GB free disk here. Models + images need ~8 GB. Free some space (docker system prune -f can help)."
-  curl -fsS -m 2 http://localhost:8080/healthz >/dev/null 2>&1 && return 0        # our stack is already up: ports are ours
+  gcurl -fsS -m 2 $(gw_url)/healthz >/dev/null 2>&1 && return 0        # our stack is already up: ports are ours
   for _p in 8080 8088 3000; do
     if (exec 3<>"/dev/tcp/127.0.0.1/$_p") 2>/dev/null; then
       C "⚠ Port $_p is already used by another program (not SecuRAX). Close it, then re-run. To see what: ss -ltnp | grep :$_p"
@@ -159,7 +167,8 @@ case "$cmd" in
     [ -s "$GENCFG" ] || cp "$ROOT/local/compose/litellm-config.yaml" "$GENCFG"
     # Layered start: each step is a fallback for the one before (offline? image-build failed? low memory?).
     CORE="gateway litellm ollama open-webui guiding-map estate-sync"
-    if tls_on; then python3 "$ROOT/governance/tls.py" render >/dev/null 2>&1 || C "Could not write the HTTPS edge configuration: run  ./securax tls render"; CORE="$CORE tls-edge"; [ -n "$SVCS" ] && SVCS="$SVCS tls-edge"; C "TLS edge is ON: the estate is reached over HTTPS only (./securax tls status)."; fi
+    if tls_on; then python3 "$ROOT/governance/tls.py" render >/dev/null 2>&1 || C "Could not write the HTTPS edge configuration: run  ./securax tls render"; CORE="$CORE tls-edge"; [ -n "$SVCS" ] && SVCS="$SVCS tls-edge"
+      if internal_on; then SIDE="gateway-tls litellm-tls ollama-tls open-webui-tls estate-sync-tls"; CORE="$CORE $SIDE"; [ -n "$SVCS" ] && SVCS="$SVCS $SIDE"; C "Internal TLS is ON: the services talk to each other over HTTPS too."; fi; C "TLS edge is ON: the estate is reached over HTTPS only (./securax tls status)."; fi
     if ! ( cd "$ROOT/local/compose" && docker compose --profile ai up -d --build $SVCS ); then
       C "Full start failed — fallback 1: start without rebuilding images (works offline if you've run it before)…"
       if ! ( cd "$ROOT/local/compose" && docker compose --profile ai up -d $SVCS ); then
@@ -210,7 +219,7 @@ case "$cmd" in
   MCP (let an AI operate it)           : see mcp/README.md
 URLS
     tls_on || C "Tip: connections are plain HTTP (browsers say 'not secure'). Encrypt everything:  ./securax tls on"
-    curl -fsS http://localhost:8080/healthz >/dev/null 2>&1 && C "gateway: healthy" || echo "  gateway: starting (give it a few seconds)"
+    gcurl -fsS $(gw_url)/healthz >/dev/null 2>&1 && C "gateway: healthy" || echo "  gateway: starting (give it a few seconds)"
     ;;
   open)
     # The single front door: the Command Center hub (links every app, no URLs to remember).
@@ -252,7 +261,7 @@ URLS
     fi
     DISK=$(df -P . | awk 'NR==2{print $5}' | tr -d '%'); echo "  disk used: ${DISK}%  $([ "${DISK:-0}" -ge 85 ] && echo '⚠ >85% — free space' || echo 'ok')"
     if command -v free >/dev/null; then MEM=$(free | awk '/Mem:/{printf "%d",$3/$2*100}'); echo "  RAM used:  ${MEM}%  $([ "${MEM:-0}" -ge 90 ] && echo '⚠ >90% — close apps / use local-fast model' || echo 'ok')"; fi
-    curl -fsS http://localhost:8080/healthz >/dev/null 2>&1 && echo "  gateway:   healthy" || echo "  gateway:   down (run ./securax up)"
+    gcurl -fsS $(gw_url)/healthz >/dev/null 2>&1 && echo "  gateway:   healthy" || echo "  gateway:   down (run ./securax up)"
     web_up hub 8088 && echo "  guiding map: up" || echo "  guiding map: down"
     if tls_on; then python3 "$ROOT/governance/tls.py" status >/dev/null 2>&1 && echo "  encryption: HTTPS edge healthy" || echo "  encryption: ⚠ HTTPS edge needs attention — run  ./securax tls status"
     else echo "  encryption: ⚠ plain HTTP — run  ./securax tls on"; fi
@@ -271,7 +280,7 @@ URLS
     # The real test: send an actual message through the gateway and show who answered + the TRUE error
     # (instead of a chat UI's generic 'Oops'). Probes the same ladder Chat uses.
     KEY="$(ev GATEWAY_API_KEY "$(ev LITELLM_MASTER_KEY sk-range-dev)")"      # a gateway service key when authentication is on
-    probe(){ curl -sS -m "$2" http://localhost:8080/v1/chat/completions -H "Authorization: Bearer $KEY" \
+    probe(){ gcurl -sS -m "$2" $(gw_url)/v1/chat/completions -H "Authorization: Bearer $KEY" \
       -H 'Content-Type: application/json' \
       -d "{\"model\":\"$1\",\"max_tokens\":8,\"messages\":[{\"role\":\"user\",\"content\":\"Reply with the single word OK.\"}]}" 2>&1; }
     served(){ printf '%s' "$1" | sed -n 's/.*"model": *"\([^"]*\)".*/\1/p' | head -1; }
@@ -321,7 +330,7 @@ URLS
     ;;
   ask)
     agent="${2:?usage: ./securax ask <agent> \"question\"}"; shift 2; q="$*"
-    GATEWAY_URL="${GATEWAY_URL:-http://localhost:8080}" python3 "$ROOT/agents/personas.py" ask "$agent" "$q"
+    GATEWAY_URL="${GATEWAY_URL:-$(gw_url)}" python3 "$ROOT/agents/personas.py" ask "$agent" "$q"
     ;;
   plan)
     C "Future Financial Planner (worked example — replace finance/examples/sample-plan.json with your own, kept local):"
@@ -331,13 +340,13 @@ URLS
     # The credit-saver: improve SecuRAX itself via your OWN local/free model, not Claude.
     shift; q="$*"
     C "SecuRAX-engineer (local/free model) drafting — no Claude credits spent:"
-    GATEWAY_URL="${GATEWAY_URL:-http://localhost:8080}" python3 "$ROOT/agents/personas.py" ask engineer "$q"
+    GATEWAY_URL="${GATEWAY_URL:-$(gw_url)}" python3 "$ROOT/agents/personas.py" ask engineer "$q"
     ;;
   research)
     # Autonomous, READ-ONLY web research (the sovereign Manus/Clawbot). Allowlist is required
     # unless you pass --open. All synthesis runs on your local/free model via the gateway.
     shift
-    GATEWAY_URL="${GATEWAY_URL:-http://localhost:8080}" python3 -m agents.web_research "$@"
+    GATEWAY_URL="${GATEWAY_URL:-$(gw_url)}" python3 -m agents.web_research "$@"
     ;;
   act)
     # Execute ONE approved web action (human-in-the-loop writes). Requires --approve.
@@ -392,7 +401,7 @@ URLS
       echo "Then re-run. Docs: docs/securax/23-BUILD-WITHOUT-CLAUDE.md"
       exit 1
     fi
-    curl -fsS http://localhost:8080/healthz >/dev/null 2>&1 || { C "Gateway is down — run ./securax up first."; exit 1; }
+    gcurl -fsS $(gw_url)/healthz >/dev/null 2>&1 || { C "Gateway is down — run ./securax up first."; exit 1; }
     KEY="$(sed -n 's/^LITELLM_MASTER_KEY=//p' "$ROOT/local/compose/.env" 2>/dev/null | head -1)"; KEY="${KEY:-sk-range-dev}"
     # 'builder' = the resilient BUILD ladder (cheap DeepSeek -> free tiers -> local coder -> local), so a
     # dead key, a rate limit or an outage just slides to the next rung instead of stopping the build.
@@ -400,7 +409,7 @@ URLS
     C "Building with model '$MODEL' through the SecuRAX gateway (rigor: BUILD-CONTRACT + auto-tests)…"
     # Point Aider at the gateway (OpenAI-compatible); it runs the repo's tests after each edit and
     # iterates until they pass. --read loads the build contract as always-on context.
-    OPENAI_API_BASE="http://localhost:8080/v1" OPENAI_API_KEY="$KEY" \
+    OPENAI_API_BASE="$(gw_url)/v1" OPENAI_API_KEY="$KEY" \
       aider --model "openai/$MODEL" \
             --read "$ROOT/BUILD-CONTRACT.md" \
             --test-cmd "bash \"$ROOT/securax\" verify" --auto-test \
@@ -532,7 +541,7 @@ $(tail -60 "$FB")"
         [ -z "$CID" ] && { C "Start the estate first:  ./securax up"; exit 1; }
         C "Installing Llama Guard (llama-guard3:1b) — it then scans every request AND reply with a second model (slower on CPU)…"
         if docker exec "$CID" ollama pull llama-guard3:1b; then
-          skv "$ENVF" LLAMA_GUARD_URL "http://ollama:11434"
+          skv "$ENVF" LLAMA_GUARD_URL "$(ollama_url)"
           ( cd "$ROOT/local/compose" && docker compose --profile ai up -d gateway >/dev/null 2>&1 || true )
           C "Llama Guard ON and installed ✔  (turn off any time:  ./securax guard off)"
         else C "Could not install the model — Llama Guard stays OFF (so nothing is blocked). Check your internet and retry."; fi ;;
@@ -585,7 +594,7 @@ $(tail -60 "$FB")"
     ;;
   tls)
     # Encrypt everything that reaches a browser, a phone or another machine: a private name-constrained CA + one HTTPS edge.
-    #   ./securax tls on | trust [--apply] | status | renew | off
+    #   ./securax tls on | trust [--apply] | status | renew | off | internal on|off   (internal = also the hops between the services)
     shift; exec python3 "$ROOT/governance/tls.py" "$@"
     ;;
   storage)
@@ -673,8 +682,8 @@ $(tail -60 "$FB")"
     OUTD="${2:-$ROOT/evidence}"; mkdir -p "$OUTD"; TS="$(date +%Y%m%d-%H%M%S)"; RAW="$(mktemp -d)"; trap 'rm -rf "$RAW"' EXIT
     git -C "$ROOT" rev-parse --short HEAD > "$RAW/git_commit" 2>/dev/null || true
     docker --version > "$RAW/docker_version" 2>/dev/null || true
-    curl -fsS -m 3 http://localhost:8080/readyz > "$RAW/readyz" 2>/dev/null && echo " READY" >> "$RAW/readyz" || echo "NOT READY" > "$RAW/readyz"
-    curl -fsS -m 3 http://localhost:8080/version > "$RAW/gateway_version" 2>/dev/null || true
+    gcurl -fsS -m 3 $(gw_url)/readyz > "$RAW/readyz" 2>/dev/null && echo " READY" >> "$RAW/readyz" || echo "NOT READY" > "$RAW/readyz"
+    gcurl -fsS -m 3 $(gw_url)/version > "$RAW/gateway_version" 2>/dev/null || true
     ( cd "$ROOT/local/compose" && docker compose --profile ai ps --format '{{.Service}} {{.Image}} {{.Status}}' > "$RAW/compose_ps" 2>/dev/null; \
       docker compose --profile ai logs --no-color --tail 5000 gateway > "$RAW/gateway_log" 2>/dev/null ) || true
     python3 "$ROOT/local/compose/evidence.py" --dir "$RAW" --env-file "$ROOT/local/compose/.env" --out "$OUTD/securax-evidence-$TS.tar.gz" \
@@ -758,14 +767,14 @@ $(tail -60 "$FB")"
     LOG="$ROOT/watch.log"; ST=ok; LASTHEAL=0; WH="$(ev ALERT_WEBHOOK)"
     note(){ printf '%s %s\n' "$(date '+%F %T')" "$*" | tee -a "$LOG"; [ -n "$WH" ] && curl -fsS -m 10 -X POST -d "SecuRAX: $*" "$WH" >/dev/null 2>&1 || true; }
     while :; do
-      if curl -fsS -m 5 http://localhost:8080/readyz >/dev/null 2>&1; then
+      if gcurl -fsS -m 5 $(gw_url)/readyz >/dev/null 2>&1; then
         [ "$ST" = ok ] || note "recovered — estate is READY again"; ST=ok
       else
         if [ "$ST" = ok ]; then note "NOT READY — healing with ./securax up"; ST=down; fi
         NOW="$(date +%s)"
         if [ $(( NOW - LASTHEAL )) -ge 300 ]; then
           LASTHEAL="$NOW"; SECURAX_NO_OPEN=1 "$0" up >>"$LOG" 2>&1 || note "heal attempt failed — run ./securax doctor"
-          if curl -fsS -m 5 http://localhost:8080/readyz >/dev/null 2>&1; then note "recovered — estate is READY again"; ST=ok; fi
+          if gcurl -fsS -m 5 $(gw_url)/readyz >/dev/null 2>&1; then note "recovered — estate is READY again"; ST=ok; fi
         fi
       fi
       [ "${2:-}" = "--once" ] && break
@@ -783,13 +792,13 @@ $(tail -60 "$FB")"
     PREV="$(git -C "$ROOT" rev-parse HEAD)"
     CLEAN=0; [ -z "$(git -C "$ROOT" status --porcelain --untracked-files=no 2>/dev/null)" ] && CLEAN=1
     # 1) a safety copy, only when there is a running estate with data (never blocks the update)
-    if curl -fsS -m 3 http://localhost:8080/healthz >/dev/null 2>&1; then
+    if gcurl -fsS -m 3 $(gw_url)/healthz >/dev/null 2>&1; then
       if SAFE_OUT="$("$0" backup 2>&1)"; then C "  ✔ backup taken first: $(printf '%s' "$SAFE_OUT" | tail -1)"; else C "  (could not take a backup — continuing; your data volumes are not touched by an update)"; fi
     fi
     git -C "$ROOT" pull --ff-only || { C "git pull failed — you may have local changes. See:  git -C \"$ROOT\" status"; exit 1; }
     NEW="$(git -C "$ROOT" rev-parse HEAD)"
     "$0" down || true
-    if SECURAX_NO_OPEN=1 "$0" up && curl -fsS -m 10 http://localhost:8080/readyz >/dev/null 2>&1; then
+    if SECURAX_NO_OPEN=1 "$0" up && gcurl -fsS -m 10 $(gw_url)/readyz >/dev/null 2>&1; then
       [ "$PREV" = "$NEW" ] && C "Already on the latest version — containers recreated." || C "✔ Updated to $(git -C "$ROOT" rev-parse --short HEAD) and the estate is READY."
       "$0" open >/dev/null 2>&1 || true
       exit 0
@@ -799,7 +808,7 @@ $(tail -60 "$FB")"
       C "⚠ The new version did not start healthy. Rolling back to $(git -C "$ROOT" rev-parse --short "$PREV") (your data is untouched)…"
       git -C "$ROOT" reset --hard "$PREV" >/dev/null 2>&1
       "$0" down || true
-      if SECURAX_NO_OPEN=1 "$0" up && curl -fsS -m 10 http://localhost:8080/readyz >/dev/null 2>&1; then
+      if SECURAX_NO_OPEN=1 "$0" up && gcurl -fsS -m 10 $(gw_url)/readyz >/dev/null 2>&1; then
         C "✔ Rolled back: the previous version is running again. Please report the failed update (it was $(git -C "$ROOT" rev-parse --short "$NEW"))."
         "$0" open >/dev/null 2>&1 || true
         exit 3
@@ -835,7 +844,7 @@ $(tail -60 "$FB")"
       OUTM="$(python3 "$ROOT/local/compose/model_discovery.py" --env-file "$ENVF" --write)"; echo "$OUTM"
       if printf '%s' "$OUTM" | grep -q "updated"; then
         python3 "$ROOT/local/compose/gen_litellm_config.py" --write --env-file "$ENVF" >/dev/null
-        if curl -fsS -m 3 http://localhost:8080/healthz >/dev/null 2>&1; then
+        if gcurl -fsS -m 3 $(gw_url)/healthz >/dev/null 2>&1; then
           ( cd "$ROOT/local/compose" && docker compose --profile ai restart litellm gateway >/dev/null 2>&1 || true ); ready_wait 150 || true
         fi
       fi
@@ -865,14 +874,14 @@ $(tail -60 "$FB")"
     C "Verifying each key and model against the provider (retired model names are fixed automatically)…"
     python3 "$ROOT/local/compose/model_discovery.py" --env-file "$ENVF" --write || true
     python3 "$ROOT/local/compose/gen_litellm_config.py" --write --env-file "$ENVF" >/dev/null
-    if curl -fsS -m 3 http://localhost:8080/healthz >/dev/null 2>&1; then
+    if gcurl -fsS -m 3 $(gw_url)/healthz >/dev/null 2>&1; then
       C "Applying (reloading the router + gateway)…"
       ( cd "$ROOT/local/compose" && docker compose --profile ai up -d litellm gateway >/dev/null 2>&1 || true
         docker compose --profile ai restart litellm gateway >/dev/null 2>&1 || true )
       ready_wait 150 || C "  (router still starting — try  ./securax doctor  in a minute)"
       C "Live test — asking the router through the security gateway…"
       T0=$(date +%s)
-      R="$(curl -sS -m 120 http://localhost:8080/v1/chat/completions -H 'Content-Type: application/json' \
+      R="$(gcurl -sS -m 120 $(gw_url)/v1/chat/completions -H 'Content-Type: application/json' \
            -d '{"model":"bank-assistant","messages":[{"role":"user","content":"Reply with the single word OK."}]}' 2>&1 || true)"
       echo "  reply (${T0:+$(( $(date +%s) - T0 ))s}): $(printf '%s' "$R" | python3 -c 'import sys,json
 try: print(json.load(sys.stdin)["choices"][0]["message"]["content"][:80])
@@ -960,6 +969,19 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
     echo "SecuRAX v${v} (${g})"
     ;;
   mcp)   exec python3 "$ROOT/mcp/securax_mcp.py" ;;
+  start)
+    # Start an optional add-on that lite mode skipped (Private Docs, Automation). It needs the Chat estate to be up already.
+    preflight || exit 1
+    case "${2:-}" in docs) _svc="anythingllm"; _need="about 2 GB" ;; flows|n8n) _svc="n8n"; _need="about 1 GB" ;;
+      all) _svc="anythingllm n8n"; _need="about 3 GB" ;; *) C "usage: ./securax start docs | flows | all   (Private Docs = AnythingLLM; flows = n8n automation)"; exit 2 ;; esac
+    _list="$_svc"; if tls_on; then python3 "$ROOT/governance/tls.py" render >/dev/null 2>&1 || true; internal_on && for _s in $_svc; do _list="$_list ${_s}-tls"; done; fi
+    C "Starting: $_svc  (needs $_need of memory; the first start of Private Docs takes a minute or two)"
+    ( cd "$ROOT/local/compose" && docker compose --profile ai up -d $_list ) || { C "Could not start it. Run  ./securax doctor  and paste the output."; exit 1; }
+    for _s in $_svc; do case "$_s" in anythingllm) _n=docs; _pt=3001 ;; *) _n=flows; _pt=5678 ;; esac
+      _i=0; while [ "$_i" -lt 40 ] && ! web_up "$_n" "$_pt"; do sleep 4; _i=$((_i+1)); done
+      if web_up "$_n" "$_pt"; then C "$_n is running: $(web_url "$_n" "$_pt" /)"; else C "$_n is still starting (large first start). Reload the Command Center in a minute; if it stays grey run  ./securax doctor"; fi
+    done
+    ;;
   down)  ( cd "$ROOT/local/compose" && docker compose --profile ai down ) ; C "stopped." ;;
   help|-h|--help)
     cat <<'HELP'
@@ -972,6 +994,7 @@ START HERE (the 20% you use 80% of the time)
   cockpit        one-page health view: risks, to-dos, trends         storage        how much space you use and when it runs out
   notify         send the daily digest to Mattermost/Slack           capacity       what to switch on as more people join (1 to 100,000)
   tls            encrypt every web connection (HTTPS everywhere)        sync-link      one-tap sync setup for a phone / second computer
+  start docs|flows|all   start Private Docs / Automation (skipped in lite mode)
 
 AI & CHAT
   keys / providers add|list   add free or paid AI keys             models         check which models your keys can use today

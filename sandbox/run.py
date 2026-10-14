@@ -445,6 +445,26 @@ def j_tls_edge(sb: H.Sandbox, c: Checks):
     c.ok(get(f"sync.{dom}", "/healthz") == 200, "the sync service is served at https://sync.<domain>")
     c.ok(get(f"api.{dom}", "/readyz", ssl.create_default_context()) == 0, "a client that does NOT trust our CA is refused (no silent downgrade)")
     c.ok(get(f"unknown.{dom}", "/") == 421, "an unknown name gets no service (421), not the Command Center")
+
+    def body(name, path="/"):
+        try:
+            with socket.create_connection(("127.0.0.1", 443), timeout=10) as raw, ctx.wrap_socket(raw, server_hostname=name) as t:
+                t.sendall(f"GET {path} HTTP/1.1\r\nHost: {name}\r\nConnection: close\r\n\r\n".encode())
+                buf = b""
+                while True:
+                    chunk = t.recv(4096)
+                    if not chunk:
+                        break
+                    buf += chunk
+            return buf.decode("utf-8", "replace")
+        except (OSError, ssl.SSLError):
+            return ""
+    # lite mode skips Private Docs: that must read as "not running" with the command to start it, not a bare nginx 502 (the reported incident)
+    page = body(f"docs.{dom}", "/")
+    c.ok(" 502 " in page.split("\r\n")[0] and "is not running" in page and "./securax start docs" in page, "a stopped optional service shows a plain-English page with the exact start command (not a bare 502)", page[:200])
+    c.ok(body(f"hub.{dom}", "/_up/docs").startswith("HTTP/1.1 502") and not body(f"hub.{dom}", "/_up/chat").startswith("HTTP/1.1 5"), "the Command Center's status probe tells stopped (502) from running, same-origin")
+    hub = body(f"hub.{dom}", "/hub.html")
+    c.ok('web("hub",8088)' in hub and 'url:"http://"+H+":8088' not in hub, "the Command Center's own links carry no port number over HTTPS (they used to point at :8088)")
     rc, out = H.sh(["curl", "-s", "-o", "/dev/null", "--tls-max", "1.1", "--cacert", ca, "--resolve", f"hub.{dom}:443:127.0.0.1", f"https://hub.{dom}/"], timeout=30)
     c.ok(rc != 0, "TLS 1.1 is refused", f"curl rc={rc}")
     rc, out = H.sh(["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}", "--tlsv1.3", "--cacert", ca, "--resolve", f"hub.{dom}:443:127.0.0.1", f"https://hub.{dom}/hub.html"], timeout=30)
@@ -492,6 +512,64 @@ def j_tls_edge(sb: H.Sandbox, c: Checks):
     c.ok(f"https://hub.{dom}/hub.html" in out, "`./securax status` gives the HTTPS addresses (by name)", tail(out, 300))
     rc, out = H.sh(["bash", "./securax", "tls", "off"], cwd=sb.clone, env=envp, timeout=30)
     c.ok(rc == 0 and "tls.yml" not in sb.env_path.read_text(), "`tls off` returns to plain HTTP")
+
+
+@journey("tls_internal", "Encryption in transit INSIDE the estate: with `./securax tls internal on` every service-to-service hop (edge→gateway→router→provider, Open WebUI→gateway, n8n/sync/Ollama) is TLS to a per-service sidecar; the services themselves listen on loopback only, so plain HTTP between containers is refused while the HTTPS name works.", slow=True)
+def j_tls_internal(sb: H.Sandbox, c: Checks):
+    if not _start(sb, c, GEMINI_API_KEY=KEYS["GEMINI_API_KEY"], SYNC_TOKENS="tls-sbx-token"):
+        return
+    tdir = sb.clone.parent / "tls-home"
+    shutil.rmtree(tdir, ignore_errors=True)
+    envp = {**os.environ, "SECURAX_TLS_DIR": str(tdir)}
+    rc, out = H.sh(["bash", "./securax", "tls", "on"], cwd=sb.clone, env=envp, timeout=120)
+    c.ok(rc == 0, "`tls on` (phase 1) succeeds", tail(out, 200))
+    rc, out = H.sh(["bash", "./securax", "tls", "internal", "on"], cwd=sb.clone, env=envp, timeout=120)
+    c.ok(rc == 0 and sb.get_env("TLS_INTERNAL") == "1", "`tls internal on` switches the sidecars on", tail(out, 300))
+    c.ok((tdir / "ca-bundle.pem").exists() and (tdir / "internal" / "gateway.crt").exists(), "per-service certificates and the CA bundle exist")
+    c.ok(not (tdir / "internal" / "gateway.key").stat().st_mode & 0o077, "service keys are readable by their owner only")
+    # keep the sandbox's fake providers (override file) AND make tls-internal.yml the LAST file so it wins
+    sb.set_env(COMPOSE_FILE="docker-compose.yml:docker-compose.override.yml:tls.yml:tls-internal.yml")
+    bundle = tdir / "ca-bundle.pem"
+    fake_ca = sb.clone / "sandbox" / "out" / "certs" / "ca.crt"
+    if fake_ca.exists():
+        bundle.write_text(bundle.read_text() + "\n" + fake_ca.read_text())
+    sb.down()
+    rc, out = H.sh(["bash", "./securax", "up", "--lite"], cwd=sb.clone, env=envp, timeout=1500)
+    c.ok(rc == 0, "the estate restarts with sidecars", tail(out, 400))
+    ca = str(tdir / "ca.crt")
+    c.ok(sb.wait_until(lambda: H.sh(["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}", "--cacert", ca, "https://localhost/readyz"], timeout=20)[1].strip() == "200", 400),
+         "the gateway is READY over https://localhost (edge → sidecar → gateway)", sb.logs("gateway", 15))
+    rc, out = H.sh(["curl", "-s", "--cacert", ca, "https://localhost/v1/chat/completions", "-H", "Content-Type: application/json",
+                    "-d", '{"model":"bank-assistant","messages":[{"role":"user","content":"ping"}]}'], timeout=60)
+    c.ok("answered-by:gemini" in out, "a chat completion flows gateway → router (over TLS) → provider", tail(out, 300))
+    probe = ("import urllib.request,ssl,sys\n"
+             "def f(u):\n"
+             "    try:\n"
+             "        urllib.request.urlopen(u,timeout=5,context=ssl.create_default_context(cafile='/etc/securax/ca-bundle.pem')); return 'OK'\n"
+             "    except urllib.error.HTTPError: return 'OK'\n"
+             "    except Exception as e: return 'REFUSED'\n"
+             "for u in sys.argv[1:]: print(u, f(u))\n")
+    plain = ["http://litellm:4000/", "http://ollama:11434/", "http://estate-sync:8089/healthz", "http://open-webui:8080/"]
+    secure = ["https://litellm.securax.internal:8443/", "https://ollama.securax.internal:8443/", "https://estate-sync.securax.internal:8443/healthz", "https://open-webui.securax.internal:8443/"]
+    rc, out = sb.compose("exec", "-T", "gateway", "python", "-c", probe, *plain, *secure, timeout=120)
+    for u in plain:
+        c.ok(f"{u} REFUSED" in out, f"plain HTTP to {u.split('/')[2]} from another container is refused", tail(out, 600))
+    for u in secure:
+        c.ok(f"{u} OK" in out, f"{u.split('/')[2]} answers over verified TLS", tail(out, 600))
+    # an OPTIONAL service added later must work with sidecars too (this is what lite-mode journeys never exercised)
+    rc, out = H.sh(["bash", "./securax", "start", "flows"], cwd=sb.clone, env=envp, timeout=900)
+    c.ok(rc == 0 and "flows is running" in out, "`./securax start flows` starts n8n WITH its TLS sidecar and waits until it answers by name", tail(out, 400))
+    probe_n8n = ("import urllib.request,ssl\n"
+                 "ctx=ssl.create_default_context(cafile='/etc/securax/ca-bundle.pem')\n"
+                 "r=urllib.request.urlopen('https://n8n.securax.internal:8443/healthz',timeout=8,context=ctx); print('N8N', r.status)\n")
+    rc, out = sb.compose("exec", "-T", "gateway", "python", "-c", probe_n8n, timeout=120)
+    c.ok("N8N 200" in out, "n8n answers over verified TLS from another container", tail(out, 300))
+    rc, out = sb.compose("exec", "-T", "gateway", "python", "-c", "import urllib.request;urllib.request.urlopen('http://n8n:5678/healthz',timeout=5)", timeout=60)
+    c.ok(rc != 0, "…and plain HTTP to n8n:5678 from another container is refused", tail(out, 200))
+    rc, out = H.sh(["bash", "./securax", "tls", "status"], cwd=sb.clone, env=envp, timeout=60)
+    c.ok("Internal TLS" in out and "ON" in out, "`tls status` reports internal TLS ON", tail(out, 600))
+    rc, out = H.sh(["bash", "./securax", "tls", "internal", "off"], cwd=sb.clone, env=envp, timeout=60)
+    c.ok(rc == 0 and sb.get_env("TLS_INTERNAL") == "", "`tls internal off` clears it", tail(out, 200))
 
 
 @journey("backup_restore", "Disaster recovery: back up, LOSE the data volume, restore — the account and keys are back.")

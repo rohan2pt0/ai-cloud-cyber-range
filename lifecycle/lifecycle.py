@@ -388,6 +388,19 @@ def organ_prepare(name: str, light: bool = False) -> str:
     return wd
 
 
+def _gateway_ready_cmd() -> list[str]:
+    """The readiness probe of the gateway: plain loopback normally; HTTPS through the edge (verified against the estate's CA) when internal TLS is on."""
+    envf = os.path.join(COMPOSE_DIR, ".env")
+    try:
+        internal = "TLS_INTERNAL=1" in open(envf, encoding="utf-8").read().split()
+    except OSError:
+        internal = False
+    if internal:
+        ca = os.path.join(os.environ.get("SECURAX_TLS_DIR") or os.path.expanduser("~/.securax/tls"), "ca.crt")
+        return ["curl", "-fsS", "-m", "3", "--cacert", ca, "https://localhost/readyz"]
+    return ["curl", "-fsS", "-m", "3", "http://localhost:8080/readyz"]
+
+
 def organ_status(name: str) -> str:
     spec = organ_spec(name)
     if not os.path.isdir(os.path.join(organ_dir(name), spec["dir"])):
@@ -693,7 +706,7 @@ def cmd_stages(_: argparse.Namespace) -> int:
     head("The ladder — everything above the seed is dormant until you grow it")
     for sid, st in stages().items():
         if sid == "seed":
-            rc, _out = run(["curl", "-fsS", "-m", "3", "http://localhost:8080/readyz"], capture=True)
+            rc, _out = run(_gateway_ready_cmd(), capture=True)
             state = "awake" if rc == 0 else "dormant"
         elif sid == "sprout":
             state = sprout_status()
