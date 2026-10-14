@@ -110,3 +110,6 @@ tab renders, XSS-escaping, no NaN/Infinity, undo, EMA, drift alarms, dynamic pla
 The five things that can rot on their own and the annual 15-minute overhaul are tracked per the
 original FREEZE discipline; in the estate, the Supabase/Cloudflare items are replaced by "is the
 estate gateway reachable and backed up."
+
+## Calm mode (default since doc 47)
+Today is one screen: tap check-in, the one open action, what is due, one insight worked out for you, and what the estate already knows (`./securax lifefeed`). Every other tab and card is one tap away: "Show everything". See [47](47-CALM-MODE-LESS-INPUT-MORE-INSIGHT.md).
