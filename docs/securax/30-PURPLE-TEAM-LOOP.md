@@ -16,7 +16,7 @@ python3 redteam/purple.py --out docs/purple --fail-on-gap     # what CI runs
 ```
 
 ## What the first run found — and what was fixed because of it
-* 11 of 12 attacks were stopped, but only **3 of 12** would have alerted anyone. Fixed by new SOC rules, tuned to be low-noise (one incident per identity per rule): `injection-probe` (LOW, replaced by the burst rule when it repeats), `agentic-tool-coercion` (MEDIUM), `output-exfil-channel` (HIGH), `pii-harvesting` (MEDIUM, needs a burst). Now **11 of 12** alert.
+* 11 of 12 attacks were stopped, but only **3 of 12** would have alerted anyone (a `skill-poisoning` attack, from doc 31, was added later: now 13 attacks, 12 alert). Fixed by new SOC rules, tuned to be low-noise (one incident per identity per rule): `injection-probe` (LOW, replaced by the burst rule when it repeats), `agentic-tool-coercion` (MEDIUM), `output-exfil-channel` (HIGH), `pii-harvesting` (MEDIUM, needs a burst). Now **11 of 12** alert.
 * A **real bug**: a request whose PII was redacted was audited as `decision: allow`, so the SOC (and an auditor) could not tell data had been removed. It is now `sanitise`.
 * Remaining gap, accepted on purpose: a single PII redaction is log-only (it escalates on a burst). The report still names it so the decision stays visible.
 
