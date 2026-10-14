@@ -94,6 +94,8 @@ safe), never touches your branch, and pushes only with `AUTOBUILD_PUSH=1`. The g
 (with a stub agent) — **the quality of a real local/cheap model inside this loop is not yet measured**: try it on ~10 small
 real tasks and record pass-rate before depending on it.
 
+> **Stronger gate:** since doc 44, `autobuild` also runs `./securax forge gate` (fail-to-pass, mutation, complexity budget) and feeds back a typed brief; infrastructure reds are re-run, not "fixed".
+
 ## Tier 3 — escalate the hard 10% (and only the 10%)
 
 When the cheap/local tier can't satisfy the contract (new security design, a cross-cutting refactor, a

@@ -1822,6 +1822,36 @@ spec:
     c.ok("○ burrow" in out, "…and the stage is dormant again (the genome is intact: dig it any time)", tail(out, 200))
 
 
+def _forge():
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("securax_forge", pathlib.Path(__file__).resolve().parent.parent / "lifecycle" / "forge.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def infra_only(c: "Checks") -> bool:
+    """True only when the failed checks carry infrastructure evidence and NOTHING code-shaped (see lifecycle/forge.py classify)."""
+    failed = [i for i in c.items if not i["ok"]]
+    return bool(failed) and _forge().classify("\n".join(f"{i['label']}\n{i['detail']}" for i in failed))["verdict"] == "infra"
+
+
+def heal_docker() -> None:
+    """Best-effort restore of the machine: if the daemon is gone, say so loudly; if it is up, prune nothing (never delete the user's data)."""
+    r = H.sh(["docker", "info", "--format", "{{.ServerVersion}}"], timeout=30)[0]
+    print("    docker daemon:", "up" if r == 0 else "DOWN — restart Docker, then re-run (this tool does not restart system services)")
+    time.sleep(5)
+
+
+def run_journey(fn, sb, name: str):
+    c, t0 = Checks(name), time.time()
+    try:
+        fn(sb, c)
+    except Exception as e:  # noqa: BLE001
+        c.ok(False, f"journey crashed: {type(e).__name__}: {e}", traceback.format_exc()[-500:])
+    return c, t0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("-j", "--journey", default="", help="comma-separated journey names (default: all)")
@@ -1829,6 +1859,7 @@ def main() -> int:
     ap.add_argument("--keep", action="store_true", help="leave the stack running afterwards")
     ap.add_argument("--no-clone", action="store_true", help="reuse the previous fresh clone")
     ap.add_argument("--skip-slow", action="store_true")
+    ap.add_argument("--no-retry", action="store_true", help="do not re-run a journey whose failures are all infrastructure (daemon/network)")
     args = ap.parse_args()
     if args.list:
         for n, (_, doc, slow) in JOURNEYS.items():
@@ -1851,25 +1882,29 @@ def main() -> int:
         if slow and args.skip_slow:
             continue
         print(f"\n▶ {name} — {doc}")
-        c, t0 = Checks(name), time.time()
-        try:
-            fn(sb, c)
-        except Exception as e:  # noqa: BLE001
-            c.ok(False, f"journey crashed: {type(e).__name__}: {e}", traceback.format_exc()[-500:])
-        results.append((name, c, time.time() - t0))
-        print(f"  → {'PASS' if c.passed else 'FAIL'} ({time.time() - t0:.0f}s)")
+        c, t0 = run_journey(fn, sb, name)
+        retried = False
+        if not c.passed and infra_only(c) and not args.no_retry:
+            # SELF-HEAL: every failed check is explained by the machine (Docker daemon died, registry/network blip), none by the product.
+            # Restore the machine and run the journey once more. A failure with ANY code-shaped evidence is never retried or hidden.
+            print("  ↻ every failure looks like INFRASTRUCTURE (not the product) — restoring Docker and re-running once")
+            heal_docker()
+            c, t0 = run_journey(fn, sb, name)
+            retried = True
+        results.append((name, c, time.time() - t0, retried))
+        print(f"  → {'PASS' if c.passed else 'FAIL'} ({time.time() - t0:.0f}s){'  [passed only after an infrastructure retry]' if retried and c.passed else ''}")
     if not args.keep:
         sb.down()
 
     print("\n" + "═" * 70 + f"\nSANDBOX RESULT   ({time.time() - t_all:.0f}s)")
     bad = 0
-    for name, c, dt in results:
+    for name, c, dt, retried in results:
         n_ok = sum(i["ok"] for i in c.items)
-        print(f"  {'PASS' if c.passed else 'FAIL'}  {name:<28} {n_ok}/{len(c.items)} checks")
+        print(f"  {'PASS' if c.passed else 'FAIL'}  {name:<28} {n_ok}/{len(c.items)} checks" + ("   (after infra retry)" if retried else ""))
         bad += 0 if c.passed else 1
     H.OUT.mkdir(parents=True, exist_ok=True)
     (H.OUT / "results.json").write_text(json.dumps(
-        [{"journey": n, "passed": c.passed, "seconds": round(dt, 1), "checks": c.items} for n, c, dt in results], indent=2))
+        [{"journey": n, "passed": c.passed, "seconds": round(dt, 1), "infra_retry": r, "checks": c.items} for n, c, dt, r in results], indent=2))
     print(f"  artifacts: {H.OUT}/results.json, {H.SHOTS}/")
     return 1 if bad else 0
 

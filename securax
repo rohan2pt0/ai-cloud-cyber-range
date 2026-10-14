@@ -454,20 +454,21 @@ URLS
     [ -z "$(git -C "$ROOT" status --porcelain)" ] || { C "Your checkout has uncommitted changes — commit or stash them first (autobuild only works on a clean tree, so it can always roll back)."; exit 1; }
     ORIG="$(git -C "$ROOT" rev-parse --abbrev-ref HEAD)"; SLUG="$(printf '%s' "$TASK" | tr 'A-Z' 'a-z' | tr -cs 'a-z0-9' '-' | cut -c1-40)"
     BR="autobuild/${SLUG%-}-$(date +%H%M%S)"; FB="$(mktemp)"; : > "$FB"
-    git -C "$ROOT" checkout -q -b "$BR"; i=1
+    git -C "$ROOT" checkout -q -b "$BR"; i=1; INFRA=0
     while [ "$i" -le "$TRIES" ]; do
       C "autobuild: attempt $i/$TRIES on branch $BR"
-      if [ -n "${AUTOBUILD_AGENT:-}" ]; then
+      if [ "$INFRA" -gt 0 ]; then :                       # last red was INFRASTRUCTURE (daemon/network): re-run the gate, do not ask the model to "fix" the code
+      elif [ -n "${AUTOBUILD_AGENT:-}" ]; then
         ( cd "$ROOT" && AUTOBUILD_TASK="$TASK" AUTOBUILD_FEEDBACK="$FB" AUTOBUILD_ATTEMPT="$i" bash -c "$AUTOBUILD_AGENT" ) || true
       else
         PROMPT="$TASK"; [ -s "$FB" ] && PROMPT="$TASK
 
-The previous attempt FAILED verification. Fix exactly this:
-$(tail -60 "$FB")"
+The previous attempt FAILED verification.
+$(python3 "$ROOT/lifecycle/forge.py" brief "$FB")"
         ( cd "$ROOT" && "$0" build "$PROMPT" ) || true
       fi
       # The gate = the repo's own checks AND `diffcheck` (the contract's hard rules enforced on the diff: no skipped tests, no weakened rails, no fake green)
-      if ( cd "$ROOT" && bash -c "${AUTOBUILD_VERIFY:-\"$0\" verify}" && python3 lifecycle/diffcheck.py --base "$ORIG" ) > "$FB.new" 2>&1; then
+      if ( cd "$ROOT" && bash -c "${AUTOBUILD_VERIFY:-\"$0\" verify}" && python3 lifecycle/diffcheck.py --base "$ORIG" && python3 lifecycle/forge.py gate --base "$ORIG" ) > "$FB.new" 2>&1; then
         git -C "$ROOT" add -A
         if git -C "$ROOT" diff --cached --quiet; then C "Agent made no changes — nothing to commit."; else
           # works on a machine with no git identity configured (fresh WSL, CI): fall back to a neutral author
@@ -479,7 +480,11 @@ $(tail -60 "$FB")"
         [ "${AUTOBUILD_PUSH:-0}" = 1 ] && git -C "$ROOT" push -u origin "$BR"
         rm -f "$FB" "$FB.new"; exit 0
       fi
-      mv "$FB.new" "$FB"; C "  verify FAILED — feeding the failure back"; i=$((i+1))
+      mv "$FB.new" "$FB"
+      if python3 "$ROOT/lifecycle/forge.py" classify "$FB" >/dev/null && [ "$INFRA" -lt 2 ]; then
+        INFRA=$((INFRA+1)); C "  the failure looks like INFRASTRUCTURE (not your code) — waiting, then re-running the gate ($INFRA/2)"; sleep "${AUTOBUILD_INFRA_WAIT:-10}"; continue
+      fi
+      INFRA=0; C "  verify FAILED — feeding a typed brief of the failure back"; i=$((i+1))
     done
     BRIEF="$ROOT/autobuild-failed-$(date +%Y%m%d-%H%M%S).md"; BTMP="$(mktemp)"       # temp OUTSIDE the repo: the rollback below runs git clean
     { echo "# autobuild could not satisfy the gates after $TRIES attempts"; echo; echo "## Task"; echo "$TASK"
@@ -691,6 +696,13 @@ $(tail -60 "$FB")"
     # warns on scope creep / formatting churn. autobuild runs it before it may commit.
     #   ./securax diffcheck [--base REF] [--strict] [--json]      default: uncommitted changes vs HEAD
     shift; exec python3 "$ROOT/lifecycle/diffcheck.py" "$@"
+    ;;
+  forge)
+    # The ADMISSION GATE for a change: do the new tests fail without the change (fail-to-pass), do they notice deliberately broken lines
+    # (mutation), is the touched code within complexity budget, and is a red log an infrastructure blip or a code fault? autobuild runs it.
+    #   ./securax forge gate [--base REF] [--tests "CMD"] [--max-mutants N] [--min-score 0.6] [--strict] [--json]
+    #   ./securax forge brief FILE | classify FILE
+    shift; exec python3 "$ROOT/lifecycle/forge.py" "$@"
     ;;
   vet)
     # SUPPLY-CHAIN GATE for third-party agent skills / plugins / MCP servers. Static only: nothing from the repo is executed.
@@ -1142,7 +1154,7 @@ REGULATORY & EVIDENCE (any regulator: RBI, SEBI, CERT-In, IRDAI, DPDP, others as
   gateway-auth   who may call the AI gateway          residency ...  which data may be processed where
 
 BUILD & KEEP IT HEALTHY
-  build / autobuild / escalate "task"     build with the local or free models    diffcheck   catch cheating before commit
+  build / autobuild / escalate "task"     build with the local or free models    diffcheck   catch cheating before commit    forge   prove the tests really test the change
   verify         run every check                       fitness / gameday      measured promises; real failure drills
   impact         what a change can affect, and which proofs to re-run
 
