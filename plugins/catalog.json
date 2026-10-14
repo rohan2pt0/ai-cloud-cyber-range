@@ -83,6 +83,60 @@
       }
     },
     {
+      "id": "opencodego",
+      "label": "OpenCode Go (open models: DeepSeek V4.1 Flash)",
+      "kind": "llm",
+      "alias": "opencodego",
+      "model": "openai/deepseek-v4.1-flash",
+      "api_base": "https://opencode.ai/inference/go/v1",
+      "headers": {
+        "User-Agent": "securax-gateway",
+        "x-opencode-session": "securax-{install}"
+      },
+      "env": [
+        "OPENCODE_GO_API_KEY"
+      ],
+      "get_key": "https://opencode.ai/go",
+      "note": "Flat $10/month (Go plan) for open models hosted in the US/EU with zero retention and no training (DeepSeek V4.1 Flash: zero-retention agreement renewed monthly, valid through 31 Oct 2026). Sold for CODING-AGENT traffic: SecuRAX uses it only on the build ladder, never for Chat, and only for data you would accept sending to a US/EU cloud.",
+      "discover": {
+        "kind": "openai",
+        "url": "https://opencode.ai/inference/go/v1/models",
+        "prefix": "openai/",
+        "prefer": [
+          "^deepseek-v4\\.1-flash$",
+          "^deepseek-v4-flash$",
+          "^deepseek-flash$"
+        ]
+      }
+    },
+    {
+      "id": "opencodego_glm",
+      "label": "OpenCode Go (open models: GLM Flash)",
+      "kind": "llm",
+      "alias": "opencodego-glm",
+      "model": "openai/glm-5.3-flash",
+      "api_base": "https://opencode.ai/inference/go/v1",
+      "headers": {
+        "User-Agent": "securax-gateway",
+        "x-opencode-session": "securax-{install}"
+      },
+      "env": [
+        "OPENCODE_GO_API_KEY"
+      ],
+      "get_key": "https://opencode.ai/go",
+      "note": "Same OpenCode Go key as above; a second model family so one model's outage does not stop a build.",
+      "discover": {
+        "kind": "openai",
+        "url": "https://opencode.ai/inference/go/v1/models",
+        "prefix": "openai/",
+        "prefer": [
+          "^glm-5\\.3-flash$",
+          "^glm-5\\.[0-9]+-flash$",
+          "^glm-5"
+        ]
+      }
+    },
+    {
       "id": "deepseek",
       "key_prefix": "sk-",
       "label": "DeepSeek",
@@ -138,7 +192,11 @@
       "discover": {
         "kind": "openai",
         "url": "https://api.x.ai/v1/models",
-        "auth_codes": [400, 401, 403],
+        "auth_codes": [
+          400,
+          401,
+          403
+        ],
         "prefix": "xai/",
         "prefer": [
           "^grok-4\\.[0-9]+$",
@@ -279,6 +337,8 @@
       "local"
     ],
     "builder": [
+      "opencodego",
+      "opencodego_glm",
       "deepseek",
       "gemini",
       "groq",

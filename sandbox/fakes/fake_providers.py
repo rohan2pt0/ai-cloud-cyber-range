@@ -42,6 +42,7 @@ HOSTS = {
     "api.x.ai": "grok",
     "api.perplexity.ai": "perplexity",
     "api.anthropic.com": "anthropic",
+    "opencode.ai": "opencodego",
 }
 # What each provider's "list models" endpoint returns (a test can change it via /ctl/models).
 LIVE_MODELS: dict[str, list[str]] = {
@@ -53,6 +54,7 @@ LIVE_MODELS: dict[str, list[str]] = {
     "mistral": ["mistral-small-latest"],
     "grok": ["grok-9.1", "grok-9.1-image"],
     "openrouter": ["meta-llama/llama-3.3-70b-instruct:free"],
+    "opencodego": ["deepseek-v4.1-flash", "deepseek-v4-flash", "deepseek-v4-flash-vision-exp", "glm-5.3-flash", "glm-5.3", "kimi-k3"],
 }
 DEFAULT_LIVE_MODELS = {k: list(v) for k, v in LIVE_MODELS.items()}
 MODES: dict[str, str] = {}
@@ -114,7 +116,8 @@ async def provider_endpoint(path: str, request: Request):
     except Exception:  # noqa: BLE001
         body = {"_raw": raw[:500].decode("utf-8", "replace")}
     LOG.append({"ts": time.time(), "provider": provider, "method": request.method, "path": "/" + path,
-                "credential": _credential(request), "body": body})
+                "credential": _credential(request), "body": body,
+                "user_agent": request.headers.get("user-agent", ""), "session": request.headers.get("x-opencode-session", "")})
 
     mode = MODES.get(provider, MODES.get("*", "ok"))
     if mode.startswith("slow:"):

@@ -64,6 +64,7 @@ makes it an *ecosystem* and not five disconnected projects.
 | Live sync, team chat (Mattermost), growing from 1 to 100,000 people | [`39-PEOPLE-SCALE-LIVE-SYNC-CHATOPS.md`](39-PEOPLE-SCALE-LIVE-SYNC-CHATOPS.md) |
 | HTTPS everywhere, the private certificate authority, what is not yet encrypted | [`40-ENCRYPTION-IN-TRANSIT.md`](40-ENCRYPTION-IN-TRANSIT.md) |
 | Quantum readiness: cryptography inventory (CBOM), post-quantum key exchange, encrypted backups | [`41-QUANTUM-READINESS.md`](41-QUANTUM-READINESS.md) |
+| OpenCode Go (flat-rate open models) and the OpenCode terminal agent, guarded | [`42-OPENCODE-GO-AND-THE-TERMINAL-AGENT.md`](42-OPENCODE-GO-AND-THE-TERMINAL-AGENT.md) |
 | What well-run products do that we skipped, research cues, friction audit | [`38-ENGINEERING-PRACTICES-AND-RESEARCH.md`](38-ENGINEERING-PRACTICES-AND-RESEARCH.md) |
 | Summon a specialist advisor (first-draft opinion) | [`16-AGENTS.md`](16-AGENTS.md) |
 | The end-state blueprint every build maps to | [`17-ENTERPRISE-ARCHITECTURE.md`](17-ENTERPRISE-ARCHITECTURE.md) |

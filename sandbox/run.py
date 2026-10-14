@@ -759,6 +759,35 @@ def j_models(sb: H.Sandbox, c: Checks):
     sb.fake_reset()
 
 
+@journey("provider_opencode_go", "OpenCode Go (flat-rate open models) as a plugin: one key in .env turns on the DeepSeek V4.1 Flash and GLM rungs of the BUILD ladder, the real call reaches the provider's /inference/go/v1 endpoint with the right key and an identifying user agent + session id, a retired model name is corrected from the provider's live list, and it never answers a Chat request.", slow=True)
+def j_opencode_go(sb: H.Sandbox, c: Checks):
+    sb.fake_reset()
+    if not _start(sb, c, OPENCODE_GO_API_KEY="ocgo-sbx-key", GEMINI_API_KEY=KEYS["GEMINI_API_KEY"]):
+        return
+    sb.fake_reset()
+    rc, out = sb.securax("providers", "list", timeout=60)
+    c.ok("opencodego" in out and "[ON ]" in "".join(ln for ln in out.splitlines() if "opencodego " in ln), "`providers list` shows OpenCode Go ON with just its key", tail(out, 500))
+    r = sb.chat("builder", PROMPT_OK)
+    log = [e for e in sb.fake_log("opencodego") if e["path"].endswith("/chat/completions")]
+    c.ok(r.status == 200 and "answered-by:opencodego" in sb.answer(r), "the BUILD ladder is answered by OpenCode Go first", f"{r.status} {tail(r.text)}")
+    c.ok(log and log[-1]["path"] == "/inference/go/v1/chat/completions", "…at the provider's own /inference/go/v1 endpoint", [e["path"] for e in log][-2:])
+    c.ok(log and log[-1]["credential"] == "Bearer ocgo-sbx-key", "…with YOUR key (and only that provider's key)", log[-1]["credential"] if log else "no call")
+    c.ok(log and log[-1]["user_agent"].startswith("securax-gateway") and log[-1]["session"].startswith("securax-"),
+         "…identifying itself (custom user agent + a stable session id), as the provider asks of coding agents", log[-1] if log else "no call")
+    c.ok(log and log[-1]["body"].get("model") == "deepseek-v4.1-flash", "…asking for DeepSeek V4.1 Flash", log[-1]["body"] if log else "")
+    sb.fake_reset()
+    r = sb.chat("bank-assistant", PROMPT_OK)
+    c.ok(r.status == 200 and "answered-by:gemini" in sb.answer(r) and not sb.fake_log("opencodego"), "a CHAT request goes to Gemini and NEVER to OpenCode Go (Chat carries personal data; Go is for coding agents)", f"{r.status} {tail(r.text)}")
+    sb.set_env(OPENCODEGO_MODEL="openai/deepseek-v3-retired")
+    rc, out = sb.securax("models", "--fix", timeout=400)
+    c.eq(sb.get_env("OPENCODEGO_MODEL"), "openai/deepseek-v4.1-flash", "a retired model name is replaced by the best LIVE one (the vision/experimental variants are skipped)")
+    c.ok(sb.wait_until(lambda: sb.http("GET", f"{H.GATEWAY}/readyz").status == 200, 150, 3), "router reloaded and READY", tail(out, 300))
+    sb.fake("opencodego", "500")
+    r = sb.chat("builder", PROMPT_OK, timeout=300)
+    c.ok(r.status == 200 and "answered-by:gemini" in sb.answer(r), "OpenCode Go outage: the build ladder slides to the next rung and still answers", f"{r.status} {tail(r.text)}")
+    sb.fake_reset()
+
+
 @journey("autobuild_loop", "`./securax autobuild`: agent -> verify gate -> retry with feedback -> commit only when green; rolls back and briefs when it can't.")
 def j_autobuild(sb: H.Sandbox, c: Checks):
     sb.reset_env()

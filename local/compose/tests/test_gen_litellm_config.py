@@ -333,3 +333,39 @@ def test_cli_has_keys_size_preflight_and_elastic_helpers():
     cli = (REPO / "securax").read_text()
     for needle in ("\n  keys)", "\n  size)", "\n  preflight)", "autosize()", "docker_res()", "LOCAL_MODEL_PIN"):
         assert needle in cli, needle
+
+
+# ───────────────────────────── OpenCode Go: flat-rate open models, build ladder only ─────────────────────────────
+def test_opencode_go_heads_the_build_ladder_and_is_never_in_chat():
+    cat = _catalog()
+    env = {"OPENCODE_GO_API_KEY": "k", "DEEPSEEK_API_KEY": "d", "GEMINI_API_KEY": "g"}
+    doc = yaml.safe_load(gen.generate(cat, env))
+    head = [m for m in doc["model_list"] if m["model_name"] == "builder"][0]["litellm_params"]
+    assert head["model"] == "openai/deepseek-v4.1-flash" and head["api_base"] == "https://opencode.ai/inference/go/v1"
+    fb = _fallback_map(doc)
+    assert fb["builder"][:3] == ["opencodego-glm", "deepseek", "bank-assistant-gemini"]
+    assert "opencodego" not in fb["bank-assistant"] and "opencodego-glm" not in fb["bank-assistant"], "Chat carries personal data and Go is sold for coding agents"
+    assert [m for m in doc["model_list"] if m["model_name"] == "bank-assistant"][0]["litellm_params"]["model"].startswith("gemini/")
+
+
+def test_opencode_go_sends_the_key_from_the_environment_and_identifies_itself():
+    doc = yaml.safe_load(gen.generate(_catalog(), {"OPENCODE_GO_API_KEY": "k", "LITELLM_MASTER_KEY": "m"}))
+    p = [m for m in doc["model_list"] if m["model_name"] == "opencodego"][0]["litellm_params"]
+    assert p["api_key"] == "os.environ/OPENCODE_GO_API_KEY" and "k" not in str(p["api_base"])
+    assert p["extra_headers"]["User-Agent"] == "securax-gateway"
+    assert p["extra_headers"]["x-opencode-session"].startswith("securax-") and len(p["extra_headers"]["x-opencode-session"]) == len("securax-") + 8
+    assert "m" != p["extra_headers"]["x-opencode-session"][8:]                       # the router key itself never leaves in a header
+
+
+def test_opencode_go_is_off_without_its_key_and_both_models_share_one_key():
+    cat = _catalog()
+    assert not {"opencodego", "opencodego_glm"} & set(gen.enabled_llm_ids(cat, {}))
+    assert {"opencodego", "opencodego_glm"} <= set(gen.enabled_llm_ids(cat, {"OPENCODE_GO_API_KEY": "k"}))
+
+
+def test_opencode_go_discovery_recipe_prefers_the_flash_models_and_skips_non_chat_ones():
+    by = {p["id"]: p for p in _catalog()["providers"]}
+    assert by["opencodego"]["discover"]["url"] == "https://opencode.ai/inference/go/v1/models"
+    import re
+    prefer = by["opencodego"]["discover"]["prefer"]
+    assert re.search(prefer[0], "deepseek-v4.1-flash") and re.search(_catalog()["_discover_exclude"], "deepseek-v4-flash-vision-exp", re.I)
