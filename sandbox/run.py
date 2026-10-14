@@ -494,6 +494,54 @@ def j_tls_edge(sb: H.Sandbox, c: Checks):
     c.ok(rc == 0 and "tls.yml" not in sb.env_path.read_text(), "`tls off` returns to plain HTTP")
 
 
+@journey("tls_internal", "Encryption in transit INSIDE the estate: with `./securax tls internal on` every service-to-service hop (edge→gateway→router→provider, Open WebUI→gateway, n8n/sync/Ollama) is TLS to a per-service sidecar; the services themselves listen on loopback only, so plain HTTP between containers is refused while the HTTPS name works.", slow=True)
+def j_tls_internal(sb: H.Sandbox, c: Checks):
+    if not _start(sb, c, GEMINI_API_KEY=KEYS["GEMINI_API_KEY"], SYNC_TOKENS="tls-sbx-token"):
+        return
+    tdir = sb.clone.parent / "tls-home"
+    shutil.rmtree(tdir, ignore_errors=True)
+    envp = {**os.environ, "SECURAX_TLS_DIR": str(tdir)}
+    rc, out = H.sh(["bash", "./securax", "tls", "on"], cwd=sb.clone, env=envp, timeout=120)
+    c.ok(rc == 0, "`tls on` (phase 1) succeeds", tail(out, 200))
+    rc, out = H.sh(["bash", "./securax", "tls", "internal", "on"], cwd=sb.clone, env=envp, timeout=120)
+    c.ok(rc == 0 and sb.get_env("TLS_INTERNAL") == "1", "`tls internal on` switches the sidecars on", tail(out, 300))
+    c.ok((tdir / "ca-bundle.pem").exists() and (tdir / "internal" / "gateway.crt").exists(), "per-service certificates and the CA bundle exist")
+    c.ok(not (tdir / "internal" / "gateway.key").stat().st_mode & 0o077, "service keys are readable by their owner only")
+    # keep the sandbox's fake providers (override file) AND make tls-internal.yml the LAST file so it wins
+    sb.set_env(COMPOSE_FILE="docker-compose.yml:docker-compose.override.yml:tls.yml:tls-internal.yml")
+    bundle = tdir / "ca-bundle.pem"
+    fake_ca = sb.clone / "sandbox" / "out" / "certs" / "ca.crt"
+    if fake_ca.exists():
+        bundle.write_text(bundle.read_text() + "\n" + fake_ca.read_text())
+    sb.down()
+    rc, out = H.sh(["bash", "./securax", "up", "--lite"], cwd=sb.clone, env=envp, timeout=1500)
+    c.ok(rc == 0, "the estate restarts with sidecars", tail(out, 400))
+    ca = str(tdir / "ca.crt")
+    c.ok(sb.wait_until(lambda: H.sh(["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}", "--cacert", ca, "https://localhost/readyz"], timeout=20)[1].strip() == "200", 400),
+         "the gateway is READY over https://localhost (edge → sidecar → gateway)", sb.logs("gateway", 15))
+    rc, out = H.sh(["curl", "-s", "--cacert", ca, "https://localhost/v1/chat/completions", "-H", "Content-Type: application/json",
+                    "-d", '{"model":"bank-assistant","messages":[{"role":"user","content":"ping"}]}'], timeout=60)
+    c.ok("answered-by:gemini" in out, "a chat completion flows gateway → router (over TLS) → provider", tail(out, 300))
+    probe = ("import urllib.request,ssl,sys\n"
+             "def f(u):\n"
+             "    try:\n"
+             "        urllib.request.urlopen(u,timeout=5,context=ssl.create_default_context(cafile='/etc/securax/ca-bundle.pem')); return 'OK'\n"
+             "    except urllib.error.HTTPError: return 'OK'\n"
+             "    except Exception as e: return 'REFUSED'\n"
+             "for u in sys.argv[1:]: print(u, f(u))\n")
+    plain = ["http://litellm:4000/", "http://ollama:11434/", "http://estate-sync:8089/healthz", "http://open-webui:8080/"]
+    secure = ["https://litellm.securax.internal:8443/", "https://ollama.securax.internal:8443/", "https://estate-sync.securax.internal:8443/healthz", "https://open-webui.securax.internal:8443/"]
+    rc, out = sb.compose("exec", "-T", "gateway", "python", "-c", probe, *plain, *secure, timeout=120)
+    for u in plain:
+        c.ok(f"{u} REFUSED" in out, f"plain HTTP to {u.split('/')[2]} from another container is refused", tail(out, 600))
+    for u in secure:
+        c.ok(f"{u} OK" in out, f"{u.split('/')[2]} answers over verified TLS", tail(out, 600))
+    rc, out = H.sh(["bash", "./securax", "tls", "status"], cwd=sb.clone, env=envp, timeout=60)
+    c.ok("Internal TLS" in out and "ON" in out, "`tls status` reports internal TLS ON", tail(out, 600))
+    rc, out = H.sh(["bash", "./securax", "tls", "internal", "off"], cwd=sb.clone, env=envp, timeout=60)
+    c.ok(rc == 0 and sb.get_env("TLS_INTERNAL") == "", "`tls internal off` clears it", tail(out, 200))
+
+
 @journey("backup_restore", "Disaster recovery: back up, LOSE the data volume, restore — the account and keys are back.")
 def j_backup(sb: H.Sandbox, c: Checks):
     sb.down()

@@ -52,6 +52,8 @@
     "local/compose/evidence.py",
     "local/compose/guiding-map.conf",
     "local/compose/tls.yml",
+    "local/compose/tls-internal.yml",
+    "local/compose/tls-sidecars/**",
     "local/compose/tls-edge.generated.conf",
     "local/compose/sprout/**",
     "local/compose/stage-sprout.yml",
@@ -75,7 +77,8 @@
     "blockers_are_explained",
     "backup_restore",
     "cockpit_page",
-    "tls_edge"
+    "tls_edge",
+    "tls_internal"
    ],
    "affects": [
     "gateway",

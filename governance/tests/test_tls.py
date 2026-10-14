@@ -223,3 +223,47 @@ def test_gateway_cors_allows_only_the_configured_domain(monkeypatch):
         r = c.options("/healthz", headers={"Origin": bad, "Access-Control-Request-Method": "GET"})
         assert "access-control-allow-origin" not in r.headers, bad
     assert c.options("/healthz", headers={"Origin": "http://localhost:8088", "Access-Control-Request-Method": "GET"}).headers.get("access-control-allow-origin") == "http://localhost:8088"
+
+
+# ───────────────────────────── phase 2: internal sidecars ─────────────────────────────
+def test_internal_edge_verifies_every_upstream_and_never_uses_plain_http_for_a_sidecar_service():
+    conf = tls.render_edge_conf("securax.localhost", internal=True)
+    assert "proxy_ssl_verify on;" in conf and "proxy_ssl_trusted_certificate /etc/tls/ca.crt;" in conf
+    covered = {s for s, _p, _l in tls.INTERNAL}
+    for _label, _name, svc, port, _plain in tls.ENDPOINTS:
+        if svc in covered:
+            assert f"https://{svc}.securax.internal:{tls.SIDECAR_PORT}" in conf
+            assert f"http://{svc}:{port}" not in conf
+    assert "server_name api.securax.localhost localhost 127.0.0.1;" in conf   # the CLI's own https://localhost
+
+
+def test_phase_one_edge_is_unchanged_when_internal_is_off():
+    conf = tls.render_edge_conf("securax.localhost", internal=False)
+    assert "proxy_ssl_verify" not in conf and ".securax.internal" not in conf
+
+
+def test_sidecar_conf_terminates_tls_and_forwards_to_loopback_only():
+    s = tls.sidecar_conf("litellm", 4000)
+    assert f"listen {tls.SIDECAR_PORT} ssl;" in s and "/etc/tls/litellm.crt" in s
+    assert "proxy_pass http://127.0.0.1:4000;" in s and "TLSv1.1" not in s and "ssl_session_tickets off" in s
+
+
+def _compose_config():
+    if not shutil.which("docker"):
+        pytest.skip("docker not installed")
+    env = {**__import__("os").environ, "COMPOSE_FILE": tls.TLS_COMPOSE_INTERNAL, "TLS_DIR": "/tmp/tls", "BIND_HOST": "127.0.0.1"}
+    r = subprocess.run(["docker", "compose", "--profile", "ai", "config", "--format", "json"], cwd=ROOT / "local" / "compose", env=env, capture_output=True, text=True)
+    if r.returncode != 0:
+        pytest.skip(f"compose config unavailable: {r.stderr[-200:]}")
+    return json.loads(r.stdout)["services"]
+
+
+def test_internal_overlay_publishes_nothing_per_service_and_sidecars_share_the_service_network():
+    svcs = _compose_config()
+    for svc, _port, loop in tls.INTERNAL:
+        if not loop:
+            continue
+        assert not svcs[svc].get("ports"), f"{svc} still publishes a port"
+        sc = svcs[f"{svc}-tls"]
+        assert sc["network_mode"] == f"service:{svc}"
+    assert [p["published"] for p in svcs["tls-edge"]["ports"]] and all(p["published"] in ("443", "80") for p in svcs["tls-edge"]["ports"])

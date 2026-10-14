@@ -761,7 +761,7 @@
     "file:governance/tls.py",
     "journey:tls_edge"
    ],
-   "next": "Phase 2 internal TLS; a TLS/cipher scan of every listener in the sandbox; a cryptography inventory (CBOM) with a post-quantum plan.",
+   "next": "Internal TLS is available (`tls internal on`, phase 2; exceptions in doc 40) - make it the default for regulated profiles; a TLS/cipher scan of every listener in the sandbox; a cryptography inventory (CBOM) with a post-quantum plan.",
    "priority": "medium"
   },
   {

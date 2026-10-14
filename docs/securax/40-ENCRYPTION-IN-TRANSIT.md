@@ -39,14 +39,20 @@ HSTS is deliberately not sent: browsers key it on the host name, so it would pin
 - Real-stack journey `tls_edge` (21 checks): the estate is restarted behind the edge; Command Center, Chat, sync and gateway answer over **verified** TLS **by name on port 443**; an untrusted client is refused; an unknown name gets 421; TLS 1.1 is refused; TLS 1.3 works; port 80 only redirects; none of the old plain web ports and no per-service HTTPS port is published; the browser (CORS) may call the API from the Command Center's name only; a **WebSocket upgrade passes through** (live sync for the Life OS PWA); `tls status` is clean; `tls off` returns to plain.
 - By hand during the build: a real `wss://` live-sync push through the edge to the sync service.
 
-## Honest limits — what is NOT encrypted yet (phase 2)
-These hops stay on the private Docker networks of one machine and never reach the LAN, but a compromised container could in principle read them, and an auditor who says "internal traffic too" is right to ask:
-1. Chat / n8n / Private Docs → gateway
-2. gateway → model router (LiteLLM) → local model (Ollama)
-3. services → Postgres
-4. edge → each service (the last hop, inside this machine)
+## Phase 2 — encryption INSIDE the estate (`./securax tls internal on`)
+Each service gets a small nginx **TLS sidecar** that shares its network namespace, presents its own certificate (`<svc>.securax.internal`, issued by the same private authority — the CA key never enters a container) and forwards to the service on **loopback only**. The service itself no longer listens on the container network, so plain HTTP from another container is **refused**, not merely unused. Hops covered: edge → gateway / Open WebUI / n8n / sync; Open WebUI, n8n and AnythingLLM → gateway; gateway → LiteLLM; LiteLLM → Ollama; n8n → gateway. Containers trust a combined bundle (public CAs + ours) so calls to cloud providers still verify. The CLI reaches the gateway at `https://localhost` with the CA pinned. `./securax tls internal off` reverts.
 
-`./securax tls status` lists them every time so they cannot be forgotten. Closing them is a design choice with a cost (a sidecar or native TLS on each service, a CA bundle in each container, health-check changes, a little RAM); see the phase-2 options in the pull request. Also not covered: TLS to the cloud AI providers is theirs; backups are not encrypted (separate item); and there is **no client-certificate (mTLS)** yet. Quantum readiness (a cryptography inventory, a post-quantum plan) is a separate piece of work: today's certificates are classical ECDSA.
+Proven by real-stack journey `tls_internal` (19 checks): the estate restarts with sidecars; the gateway is ready via edge → sidecar; a chat completion flows gateway → router over TLS → provider; from inside the gateway container plain `http://litellm:4000`, `ollama:11434`, `estate-sync:8089`, `open-webui:8080` are **refused** while their `https://<svc>.securax.internal:8443` names answer with verified certificates.
+
+## Honest limits — what is still NOT encrypted
+1. **AnythingLLM** does not bind to loopback, so its plain port is still reachable inside the container network (its calls to Ollama are TLS).
+2. The optional **Sprout stage** (Prometheus scraping `gateway:8080`, Wazuh/MISP/TheHive internals) is outside this overlay.
+3. **n8n** reads the gateway address from an environment variable; this assumes env access is not blocked in workflow expressions (true for the pinned 1.74; re-test on upgrade).
+4. A compromised container sharing a service's network namespace (the sidecar) can still see that service's plaintext on loopback — that is inherent to the sidecar pattern.
+5. TLS to cloud AI providers is theirs; backups are not encrypted (separate item); there is **no client-certificate (mTLS)** between services yet. Postgres is not used by this estate, so there is no database hop.
+6. Quantum readiness: certificates are classical ECDSA P-256 (separate piece of work).
+
+`./securax tls status` lists what applies to your current setup every time.
 
 ## Regulators
 RBI NBFC 118 (strong cryptography) and 21(9) (PKI) and SEBI CSCRF PR.DS.S1–S3 now cite this work with the shortfalls above stated; none was raised to "supported". The cockpit shows an **Encryption in transit** indicator (amber on plain HTTP, red when the regulated profile is on).
