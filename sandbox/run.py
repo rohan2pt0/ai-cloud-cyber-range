@@ -1852,6 +1852,18 @@ def run_journey(fn, sb, name: str):
     return c, t0
 
 
+def run_journey_healing(fn, sb, name: str, allow_retry: bool):
+    """SELF-HEAL: when every failed check is explained by the machine (Docker daemon died, registry/network blip) and none by the product,
+    check Docker and run the journey once more. A failure with ANY code-shaped evidence is never retried or hidden."""
+    c, t0 = run_journey(fn, sb, name)
+    if c.passed or not allow_retry or not infra_only(c):
+        return c, t0, False
+    print("  ↻ every failure looks like INFRASTRUCTURE (not the product) — checking Docker and re-running once")
+    heal_docker()
+    c, t0 = run_journey(fn, sb, name)
+    return c, t0, True
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("-j", "--journey", default="", help="comma-separated journey names (default: all)")
@@ -1882,15 +1894,7 @@ def main() -> int:
         if slow and args.skip_slow:
             continue
         print(f"\n▶ {name} — {doc}")
-        c, t0 = run_journey(fn, sb, name)
-        retried = False
-        if not c.passed and infra_only(c) and not args.no_retry:
-            # SELF-HEAL: every failed check is explained by the machine (Docker daemon died, registry/network blip), none by the product.
-            # Restore the machine and run the journey once more. A failure with ANY code-shaped evidence is never retried or hidden.
-            print("  ↻ every failure looks like INFRASTRUCTURE (not the product) — restoring Docker and re-running once")
-            heal_docker()
-            c, t0 = run_journey(fn, sb, name)
-            retried = True
+        c, t0, retried = run_journey_healing(fn, sb, name, not args.no_retry)
         results.append((name, c, time.time() - t0, retried))
         print(f"  → {'PASS' if c.passed else 'FAIL'} ({time.time() - t0:.0f}s){'  [passed only after an infrastructure retry]' if retried and c.passed else ''}")
     if not args.keep:

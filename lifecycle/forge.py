@@ -214,6 +214,10 @@ def mutation_gate(files: dict[str, set[int]], test_cmd: list[str] | None, max_mu
         # deterministic sample: stable order from a hash of the file, so a re-run explains the same survivors
         order = sorted(range(total), key=lambda k: hashlib.sha1(f"{path}:{k}".encode()).hexdigest())[:budget_left]
         cmd = test_cmd or relevant_tests(path, root)
+        if sh(cmd, root, timeout).returncode != 0:                           # a red/broken test command "kills" every mutant: measure nothing rather than lie
+            res.append(dict(level="BLOCK", rule="mutation-baseline", file=path, why="the tests are not green on the unmodified change, so mutation results would be meaningless",
+                            fix="make the relevant tests pass first (command: " + " ".join(cmd[:8]) + ")"))
+            continue
         for k in order:
             made = mutate_file(original, files[path], k)
             if not made:

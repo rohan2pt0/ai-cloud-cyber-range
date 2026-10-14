@@ -129,3 +129,9 @@ def test_the_sandbox_retries_only_failures_that_are_entirely_infrastructure():
     mixed.ok(False, "the stack starts", "Cannot connect to the Docker daemon")
     mixed.ok(False, "tests pass", "FAILED tests/test_x.py::test_y - AssertionError")
     assert mod.infra_only(infra) and not mod.infra_only(code) and not mod.infra_only(mixed) and not mod.infra_only(mod.Checks("empty"))
+
+
+def test_a_broken_test_command_is_reported_not_counted_as_every_mutant_killed(repo):
+    (repo / "calc.py").write_text(GOOD_SRC)
+    res, stats = fg.gate("HEAD", "python3 -c 'import sys; sys.exit(1)'", 24, 0.6, False, repo)
+    assert any(r["rule"] == "mutation-baseline" and r["level"] == "BLOCK" for r in res) and stats["mutants"] == 0
