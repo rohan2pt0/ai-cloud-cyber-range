@@ -193,7 +193,7 @@ services:
   # Unified chat UI. All traffic is pointed at the GUARDRAIL GATEWAY (not LiteLLM
   # directly), so every prompt/response passes the Red/Yellow/Green rails first.
   open-webui:
-    image: ghcr.io/open-webui/open-webui:0.5.20
+    image: ghcr.io/open-webui/open-webui:v0.12.0
     mem_limit: 1g
     cpus: 1.0
     profiles: ["ai"]
