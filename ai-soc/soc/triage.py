@@ -36,6 +36,12 @@ guardrails = importlib.util.module_from_spec(_spec)
 _sys.modules["gw_guardrails"] = guardrails  # required so @dataclass can resolve the module
 _spec.loader.exec_module(guardrails)
 
+# Offline ATT&CK enrichment (reads ~/.securax/intel snapshots; never touches the network; absent snapshot = no enrichment)
+_espec = importlib.util.spec_from_file_location("soc_enrich", pathlib.Path(__file__).resolve().parent / "enrich.py")
+enrich = importlib.util.module_from_spec(_espec)
+_sys.modules["soc_enrich"] = enrich
+_espec.loader.exec_module(enrich)
+
 # Correlation rules: (name, predicate over the event window, severity, ATLAS, ATT&CK, action)
 SEV_ORDER = ["info", "low", "medium", "high", "critical"]
 
@@ -214,7 +220,7 @@ def triage(records: list[dict], summarize: bool = True) -> dict:
     worst = incidents[0].severity if incidents else "none"
     return {
         "events_ingested": len(events),
-        "incidents": [i.__dict__ for i in incidents],
+        "incidents": [enrich.enrich_incident(i.__dict__) for i in incidents],      # + technique names from the offline ATT&CK snapshot
         "incident_count": len(incidents),
         "highest_severity": worst,
     }

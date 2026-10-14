@@ -537,6 +537,36 @@ $(tail -60 "$FB")"
       docker run --rm --user "$(id -u):$(id -g)" -e PYTHONDONTWRITEBYTECODE=1 -v "$ROOT":/repo:ro -v "$OUTD":/out -w /repo --entrypoint python "$IMG" redteam/purple.py --out /out
     fi
     ;;
+  bench)
+    # Which of YOUR installed local models should this machine use? Measures fit-in-RAM, accuracy on 8 security tasks, tokens/second.
+    #   ./securax bench [--apply] [--models a,b] [--min-tps N]     --apply writes LOCAL_MODEL to local/compose/.env
+    #   ./securax bench --url http://host:11434 ...                  talk to an Ollama you can reach directly (no Docker)
+    shift; ENVF="$ROOT/local/compose/.env"; BM="$ROOT/local/compose/model_bench.py"
+    command -v python3 >/dev/null 2>&1 || { C "python3 is needed."; exit 1; }
+    case " $* " in *" --url "*) exec python3 "$BM" --env-file "$ENVF" "$@" ;; esac
+    command -v docker >/dev/null 2>&1 || { C "Docker is needed (or pass --url to an Ollama you can reach)."; exit 1; }
+    OC="$(cd "$ROOT/local/compose" && docker compose --profile ai ps -q ollama 2>/dev/null)"
+    [ -n "$OC" ] || { C "The estate is not running. Start it (./securax up) and pull a model first."; exit 1; }
+    NET="$(docker inspect -f '{{range $k,$v := .NetworkSettings.Networks}}{{$k}} {{end}}' "$OC" | awk '{print $1}')"
+    IMG="vulnbank/llm-gateway:dev"; docker image inspect "$IMG" >/dev/null 2>&1 || { C "The gateway image is missing: run ./securax up once."; exit 1; }
+    ARGS=(); for x in "$@"; do [ "$x" = "--apply" ] || ARGS+=("$x"); done
+    RES="$(mktemp)"; trap 'rm -f "$RES"' EXIT
+    C "Measuring your installed models inside the estate (a CPU-only box can take a few minutes)…"
+    docker run --rm --network "$NET" -v "$ROOT/local/compose":/bench:ro --entrypoint python "$IMG" /bench/model_bench.py --url http://ollama:11434 --json "${ARGS[@]}" > "$RES" || { cat "$RES"; exit 1; }
+    APPLYF=""; for x in "$@"; do [ "$x" = "--apply" ] && APPLYF="--apply --env-file $ENVF"; done
+    python3 "$BM" --from-json "$RES" $APPLYF
+    ;;
+  offline)
+    # Threat-intel snapshots (CISA KEV, MITRE ATT&CK) so the SOC and `scan` stay sharp with no network.
+    #   ./securax offline sync [kev|attack]     refresh while online (a failed refresh keeps the old snapshot)
+    #   ./securax offline status                age of each snapshot (works offline)
+    shift; exec python3 "$ROOT/lifecycle/offline.py" "${@:-status}"
+    ;;
+  kev)
+    # Is this CVE being exploited in the wild right now? Answered offline from the CISA KEV snapshot.   ./securax kev CVE-2024-3400 …
+    shift; [ $# -gt 0 ] || { echo "usage: ./securax kev CVE-YYYY-NNNN [...]"; exit 1; }
+    exec python3 "$ROOT/lifecycle/offline.py" kev "$@"
+    ;;
   diffcheck)
     # The BUILD-CONTRACT's hard rules, enforced on the diff: no skipped/removed tests, no weakened rails, no fake green, no secrets;
     # warns on scope creep / formatting churn. autobuild runs it before it may commit.
@@ -570,13 +600,15 @@ $(tail -60 "$FB")"
     command -v docker >/dev/null 2>&1 || { C "Docker is needed."; exit 1; }
     IMGS="$(cd "$ROOT/local/compose" && docker compose --profile ai config --images 2>/dev/null | sort -u || true)"
     [ -n "$IMGS" ] || { C "No images found — run ./securax up first."; exit 1; }
-    BAD=0
+    BAD=0; SCANLOG="$(mktemp)"; trap 'rm -f "$SCANLOG"' EXIT
     for I in $IMGS; do
       docker image inspect "$I" >/dev/null 2>&1 || { echo "  · $I (not pulled — skipped)"; continue; }
       C "Scanning $I"
       docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v securax-trivy-cache:/root/.cache aquasec/trivy:0.58.1 \
-        image --quiet --severity HIGH,CRITICAL --exit-code 1 "$I" || BAD=1
+        image --quiet --severity HIGH,CRITICAL --exit-code 1 "$I" 2>&1 | tee -a "$SCANLOG"; [ "${PIPESTATUS[0]}" = 0 ] || BAD=1
     done
+    # Offline prioritisation: which of these CVEs are KNOWN-EXPLOITED right now? (CISA KEV snapshot; `./securax offline sync` once)
+    python3 "$ROOT/ai-soc/soc/enrich.py" kev < "$SCANLOG" 2>/dev/null || true
     [ "$BAD" = 0 ] && C "✔ No HIGH/CRITICAL findings in the scanned images." || { C "⚠ HIGH/CRITICAL findings above. Update (./securax update) or pin a newer image tag."; [ "${2:-}" = "--strict" ] && exit 1; }
     ;;
   backup)

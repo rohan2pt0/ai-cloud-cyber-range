@@ -817,6 +817,75 @@ def j_webui(sb: H.Sandbox, c: Checks):
 
 
 # ═══════════════════════════════════════════ runner ═══════════════════════════════════════════
+@journey("offline_power", "Offline intel + low-resource model choice: snapshots (CISA KEV, MITRE ATT&CK) work with NO network, a failed refresh never destroys one, `bench` picks the model that fits.")
+def j_offline(sb: H.Sandbox, c: Checks):
+    home = sb.clone.parent / "sxhome-offline"
+    shutil.rmtree(home, ignore_errors=True)
+    env = {**os.environ, "SECURAX_HOME_DIR": str(home)}
+    sx = lambda *a, **k: H.sh(["bash", "./securax", *a], cwd=sb.clone, env={**env, **k.get("env", {})}, timeout=k.get("timeout", 300))  # noqa: E731
+
+    rc, out = sx("offline", "status")
+    c.ok(rc == 0 and "none yet" in out, "before any sync: status says so and how to get the data", tail(out, 200))
+    rc, out = sx("kev", "CVE-2024-3400")
+    c.ok(rc == 0 and "skipped" in out and "offline sync" in out, "...and a KEV lookup degrades gracefully instead of failing", tail(out, 200))
+
+    rc, out = sx("offline", "sync", timeout=600)
+    c.ok(rc == 0 and "kev:" in out and "attack:" in out, "`offline sync` fetches CISA KEV and MITRE ATT&CK (55 MB streamed, ~0.4 MB kept)", tail(out, 300))
+    kept = sum(f.stat().st_size for f in (home / "intel").glob("*.json"))
+    c.ok(0 < kept < 2_000_000, f"...the snapshots are small enough for any laptop ({kept // 1000} KB on disk)")
+
+    dead = {"HTTPS_PROXY": "http://127.0.0.1:9", "HTTP_PROXY": "http://127.0.0.1:9", "https_proxy": "http://127.0.0.1:9", "http_proxy": "http://127.0.0.1:9"}
+    rc, out = sx("kev", "CVE-2024-3400", "CVE-2099-0001", env=dead)
+    c.ok(rc == 1 and "KNOWN-EXPLOITED" in out and "CVE-2024-3400" in out and "ransomware" in out, "with the network DEAD, a KEV lookup still answers from the snapshot (and flags ransomware use)", tail(out, 300))
+    rc, out = sx("kev", "CVE-2099-0001", env=dead)
+    c.ok(rc == 0 and "none of the 1" in out, "...and a CVE that is not exploited says so", tail(out, 200))
+    rc, out = sx("offline", "sync", "kev", env=dead)
+    c.ok(rc == 1 and "keeping the existing snapshot" in out, "a refresh that FAILS (network down) keeps the good snapshot", tail(out, 300))
+    rc, out = sx("offline", "status", env=dead)
+    c.ok(rc == 0 and out.count("●") == 2, "...and status still shows both snapshots healthy", tail(out, 300))
+
+    outj = sb.clone.parent / "incidents.json"
+    rc, out = H.sh(["python3", "ai-soc/soc/triage.py", "ai-soc/samples/events.jsonl", "--no-summary", "--out", str(outj)], cwd=sb.clone, env={**env, **dead})
+    inc = json.loads(outj.read_text()) if outj.exists() else {}
+    named = [t for i in inc.get("incidents", []) for t in i.get("techniques", []) if t["name"]]
+    c.ok(rc == 0 and named, "the AI-SOC names ATT&CK techniques in its incidents with no network (e.g. T1190 → Exploit Public-Facing Application)", str([t["name"] for t in named][:4]))
+
+    fake = sb.clone.parent / "fake-ollama.py"
+    fake.write_text(r'''
+import json, sys
+from http.server import BaseHTTPRequestHandler, HTTPServer
+A = {"Ignore all previous": "Yes", "NEFT transfer": "No", "AKIAIOSFODNN7EXAMPLE": "Yes", "Kerberoasting": "T1558", "203.0.113.9": "203.0.113.9",
+     "digital personal data": "DPDP Act", "Five prompt-injection": "Block the user.", "leaked AWS access key": '{"severity": "high"}'}
+class H(BaseHTTPRequestHandler):
+    def log_message(self, *a): pass
+    def do_GET(self):
+        self.send_response(200); self.end_headers()
+        self.wfile.write(json.dumps({"models": [{"name": "small:1b", "size": 1_000_000_000}, {"name": "huge:70b", "size": 40_000_000_000}]}).encode())
+    def do_POST(self):
+        req = json.loads(self.rfile.read(int(self.headers["Content-Length"])))
+        p = req["messages"][0]["content"]
+        r = next((a for k, a in A.items() if k in p), "OK")
+        self.send_response(200); self.end_headers()
+        self.wfile.write(json.dumps({"message": {"content": r}, "eval_count": 20, "eval_duration": int(20 / 15 * 1e9)}).encode())
+HTTPServer(("127.0.0.1", int(sys.argv[1])), H).serve_forever()
+''')
+    import subprocess
+    port = "18434"
+    srv = subprocess.Popen(["python3", str(fake), port])
+    try:
+        time.sleep(1.5)
+        envf = sb.clone / "local" / "compose" / ".env"
+        if not envf.exists():
+            shutil.copy(sb.clone / "local" / "compose" / ".env.example", envf)
+        rc, out = sx("bench", "--url", f"http://127.0.0.1:{port}", "--apply", env={"SECURAX_SIM_MEM_MB": "16384"})
+        c.ok(rc == 0 and "recommended:  LOCAL_MODEL=small:1b" in out and "needs ~" in out, "`bench` rules out the 40 GB model on a 16 GB machine and recommends the one that fits", tail(out, 500))
+        c.ok("LOCAL_MODEL=small:1b" in envf.read_text(), "...and `--apply` wrote it to .env")
+        rc, out = sx("bench", "--url", f"http://127.0.0.1:{port}", env={"SECURAX_SIM_MEM_MB": "3000"})
+        c.ok(rc == 1 and "no installed model is both usable" in out, "on a 3 GB machine it says so honestly instead of recommending something that would swap", tail(out, 300))
+    finally:
+        srv.terminate()
+
+
 @journey("diffcheck_gate", "`./securax diffcheck` inside autobuild: an agent that 'goes green' by skipping a test is rejected, told why, and must do it honestly.")
 def j_diffcheck(sb: H.Sandbox, c: Checks):
     sb.reset_env()
