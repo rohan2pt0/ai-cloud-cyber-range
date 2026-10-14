@@ -465,6 +465,7 @@ def j_tls_edge(sb: H.Sandbox, c: Checks):
     c.ok(body(f"hub.{dom}", "/_up/docs").startswith("HTTP/1.1 502") and not body(f"hub.{dom}", "/_up/chat").startswith("HTTP/1.1 5"), "the Command Center's status probe tells stopped (502) from running, same-origin")
     hub = body(f"hub.{dom}", "/hub.html")
     c.ok('web("hub",8088)' in hub and 'url:"http://"+H+":8088' not in hub, "the Command Center's own links carry no port number over HTTPS (they used to point at :8088)")
+    c.ok("cache-control: no-cache" in hub.lower().split("\r\n\r\n")[0], "the Command Center is always revalidated by the browser (a fix shows up right after an update, not hours later)")
     rc, out = H.sh(["curl", "-s", "-o", "/dev/null", "--tls-max", "1.1", "--cacert", ca, "--resolve", f"hub.{dom}:443:127.0.0.1", f"https://hub.{dom}/"], timeout=30)
     c.ok(rc != 0, "TLS 1.1 is refused", f"curl rc={rc}")
     rc, out = H.sh(["curl", "-s", "-o", "/dev/null", "-w", "%{http_code}", "--tlsv1.3", "--cacert", ca, "--resolve", f"hub.{dom}:443:127.0.0.1", f"https://hub.{dom}/hub.html"], timeout=30)
@@ -572,6 +573,12 @@ def j_tls_internal(sb: H.Sandbox, c: Checks):
     c.ok("N8N 200" in out, "n8n answers over verified TLS from another container", tail(out, 300))
     rc, out = sb.compose("exec", "-T", "gateway", "python", "-c", "import urllib.request;urllib.request.urlopen('http://n8n:5678/healthz',timeout=5)", timeout=60)
     c.ok(rc != 0, "…and plain HTTP to n8n:5678 from another container is refused", tail(out, 200))
+    # what you started stays started: an update / restart must not silently drop it (this was reported)
+    c.ok("flows" in sb.get_env("SECURAX_OPTIONAL").split(), "`start` remembers the add-on", sb.get_env("SECURAX_OPTIONAL"))
+    sb.down()
+    rc, out = H.sh(["bash", "./securax", "up", "--lite"], cwd=sb.clone, env=envp, timeout=1500)
+    c.ok(rc == 0 and sb.wait_until(lambda: "N8N 200" in sb.compose("exec", "-T", "gateway", "python", "-c", probe_n8n, timeout=60)[1], 300, 5),
+         "after down + up the add-on comes back by itself (with its TLS sidecar)", tail(out, 300))
     rc, out = H.sh(["bash", "./securax", "tls", "status"], cwd=sb.clone, env=envp, timeout=60)
     c.ok("Internal TLS" in out and "ON" in out, "`tls status` reports internal TLS ON", tail(out, 600))
     rc, out = H.sh(["bash", "./securax", "tls", "internal", "off"], cwd=sb.clone, env=envp, timeout=60)
@@ -634,19 +641,20 @@ def j_backup_encrypted(sb: H.Sandbox, c: Checks):
     shutil.rmtree(bdir, ignore_errors=True)
     sb.set_env(SECURAX_BACKUP_DIR=str(bdir))
     rc, out = H.sh(["bash", "./securax", "crypto", "--strict"], cwd=sb.clone, env=envp, timeout=240)
-    c.ok(rc == 1 and "Backups at rest" in out and "harvest-now-decrypt-later exposure" in out, "`crypto --strict` flags the unprotected backups (exit 1) before any key exists", tail(out, 300))
+    c.ok(rc == 1 and "NEEDS YOU NOW" in out and "./securax protect" in out, "`crypto --strict` says in plain words that the backups need protecting, and what to run (exit 1)", tail(out, 400))
     key = tdir / "backup.key"
-    rc, out = H.sh(["bash", "./securax", "crypto", "keygen", str(key)], cwd=sb.clone, env=envp, timeout=60)
-    c.ok(rc == 0 and key.exists() and key.stat().st_mode & 0o077 == 0 and len(key.read_text().strip()) == 64, "`crypto keygen` writes a 256-bit key file readable by its owner only", tail(out, 200))
-    rc, out = H.sh(["bash", "./securax", "crypto", "keygen", str(key)], cwd=sb.clone, env=envp, timeout=60)
-    c.ok(rc != 0 and "refusing to overwrite" in out, "…and refuses to overwrite an existing key (it may protect backups)")
-    sb.set_env(SECURAX_BACKUP_KEYFILE=str(key))
-    rc, out = H.sh(["bash", "./securax", "backup", str(bdir)], cwd=sb.clone, env=envp, timeout=400)
+    # the guided flow a person uses: two answers (skip the USB stick, confirm the key is saved) and everything else is done for them
+    rc, out = sb.pty_session(["protect", "--key", str(key)], [("Drive letter", ""), ("Type YES once it is saved", "YES")], timeout=900)
     enc = sorted(bdir.glob("securax-*.tar.gz.gpg"))
-    c.ok(rc == 0 and len(enc) == 1 and not list(bdir.glob("securax-*.tar.gz")), "`backup` writes ONE encrypted file and no plaintext copy", tail(out, 300))
+    c.ok(rc == 0 and "Done. Backups are encrypted" in out and sb.get_env("SECURAX_BACKUP_KEYFILE") == str(key) and len(enc) == 1 and not list(bdir.glob("securax-*.tar.gz")),
+         "`protect` (a guided flow, two answers) makes the key, switches encryption on and takes the first ENCRYPTED backup (no plaintext copy)", tail(out, 600))
+    c.ok(key.exists() and key.stat().st_mode & 0o077 == 0 and len(key.read_text().strip()) == 64 and key.read_text().strip() in out,
+         "…the key is 256 random bits, owner-only, and was shown once so it can be saved in a password manager")
+    rc, out = H.sh(["bash", "./securax", "crypto", "keygen", str(key)], cwd=sb.clone, env=envp, timeout=60)
+    c.ok(rc != 0 and "refusing to overwrite" in out, "`crypto keygen` refuses to overwrite an existing key (it may protect backups)")
     f = enc[0] if enc else bdir / "missing"
     rc, _ = H.sh(["tar", "tzf", str(f)], timeout=30)
-    c.ok(rc != 0 and f.read_bytes()[:2] != b"\x1f\x8b", "the file is NOT a readable archive (no gzip header)")
+    c.ok(rc != 0 and f.exists() and f.read_bytes()[:2] != b"\x1f\x8b", "the file is NOT a readable archive (no gzip header)")
     rc, out = H.sh(["bash", "-c", f"GNUPGHOME=$(mktemp -d) gpg --batch --list-packets '{f}' 2>&1 | grep -E 'symkey|cipher'"], timeout=30)
     c.ok("cipher 9" in out, "it is OpenPGP symmetric AES-256 (cipher 9), no public-key step", out.strip()[:200])
     c.ok(f.stat().st_mode & 0o077 == 0, "…readable by its owner only")
@@ -671,6 +679,12 @@ def j_backup_encrypted(sb: H.Sandbox, c: Checks):
     c.ok(sb.wait_http(f"{H.WEBUI}/health", 420), "…Open WebUI starts again")
     r = sb.http("POST", f"{H.WEBUI}/api/v1/auths/signin", {"email": cred["email"], "password": cred["password"]})
     c.ok(r.status == 200 and (r.json() or {}).get("token"), "…and the SAME account signs in (data really restored from the encrypted file)", f"{r.status} {tail(r.text)}")
+    usb = sb.clone.parent / "usb-stick"
+    shutil.rmtree(usb, ignore_errors=True)
+    usb.mkdir()
+    rc, out = H.sh(["bash", "./securax", "protect", "--yes", "--key", str(key), "--copy-to", str(usb)], cwd=sb.clone, env=envp, timeout=600)
+    c.ok(rc == 0 and (usb / "securax-backup.key").read_bytes() == key.read_bytes() and "Proof: your newest backup opens with your key" in out,
+         "`protect --copy-to` saves a byte-identical second copy of the key and proves the newest backup opens with it", tail(out, 400))
     leftovers = [p for p in pathlib.Path("/tmp").glob("tmp*") if p.is_dir() and (p / "plain.tar.gz").exists()]
     c.ok(not leftovers, "no decrypted copy of the backup is left in /tmp", str(leftovers))
 

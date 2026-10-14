@@ -394,6 +394,7 @@ server {{
     server_name {name}.{dom};
     root /usr/share/nginx/html;
     index index.html;
+    add_header Cache-Control "no-cache" always;
 {_probes(internal)}    location / {{ try_files $uri $uri/ /index.html; }}
     location = /hub           {{ return 302 /hub.html; }}
     location = /apps          {{ return 302 /hub.html; }}

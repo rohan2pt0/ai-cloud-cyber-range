@@ -59,5 +59,5 @@ if [ $rc -ne 0 ]; then
   exit $rc
 fi
 echo
-C "DONE. Command Center: http://localhost:8088/hub.html   (open it in your Windows browser)"
+C "DONE. Your Command Center opens in the browser (if not:  cd ~/securax && ./securax open  - it prints the right address)."
 C "Next (2 minutes, makes answers instant):   cd ~/securax && ./securax keys"

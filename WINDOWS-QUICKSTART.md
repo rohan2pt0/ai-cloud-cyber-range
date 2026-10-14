@@ -35,7 +35,7 @@ cd ~/securax && ./securax keys
 For each of Gemini, Groq and OpenRouter it opens nothing for you — it prints the sign-up link, you create a free key there, paste it (typing is hidden) and press Enter. Press Enter on an empty line to skip one. It finishes with a **live test** showing which provider answered and how long it took.
 
 ## Step 4 — use it
-Open **http://localhost:8088/hub.html** in your Windows browser. Everything is linked from there.
+Your Command Center opens in the browser by itself (or run `./securax open`, which prints the right address: `http://localhost:8088/hub.html`, or `https://hub.securax.localhost/hub.html` once HTTPS is on). Everything is linked from there.
 
 ## Step 5 — encrypt every connection (recommended, 3 minutes)
 **First** (once): in the Guiding Map app open **Ops → System health → Export backup** — the app keeps its data per web address, and the secure address starts empty (you import the backup there, or use sync).

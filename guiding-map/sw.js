@@ -1,6 +1,6 @@
 /* The Guiding Map — offline shell.
    Bump CACHE whenever you redeploy; old caches are dropped on activate. */
-const CACHE = "guiding-map-securax-v14.3.0";   // bump on any PWA change so clients drop the old cache
+const CACHE = "guiding-map-securax-v14.4.0";   // bump on any PWA change so clients drop the old cache
 const SHELL = [
   "./",
   "./index.html",
@@ -65,7 +65,7 @@ self.addEventListener("fetch", e => {
   if (url.origin !== location.origin) return; // let fonts/CDN fail silently offline
 
   e.respondWith(
-    fetch(new Request(req, { credentials: "same-origin", redirect: "follow" }))
+    fetch(new Request(req, { credentials: "same-origin", redirect: "follow", cache: "no-cache" }))   // revalidate: skip the browser's heuristic freshness
       .then(res => {
         if (isAccessRedirect(res)) {
           // The Access session is gone. A service worker cannot complete an

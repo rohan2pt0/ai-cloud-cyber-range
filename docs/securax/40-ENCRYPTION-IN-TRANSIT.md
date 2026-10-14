@@ -60,6 +60,9 @@ Private Docs (AnythingLLM) and Automation (n8n) are **optional**: on machines th
     ./securax start docs      # Private Docs  (about 2 GB of memory)
     ./securax start flows     # Automation / n8n (about 1 GB)
     ./securax start all
+    ./securax stop docs       # stop one and forget it
+
+What you start with `start` is **remembered**: `./securax up` and `./securax update` bring Private Docs / Automation back by themselves (they used to stay off after an update).
 
 The Command Center's dots over HTTPS come from `https://hub.<domain>/_up/<name>`, which the edge answers with the service's real status (a browser cannot read the status of a cross-origin request, which is why a stopped service used to look "running"). Every link on the Command Center follows the page's scheme: by name over HTTPS, `localhost:<port>` over plain HTTP. A bookmark such as `https://hub.<domain>:8088` is a leftover from plain-HTTP days; use `https://hub.<domain>/hub.html`.
 
