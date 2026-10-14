@@ -23,11 +23,11 @@ updates:
     schedule: { interval: "weekly" }
     labels: ["dependencies", "docker"]
     commit-message: { prefix: "deps" }
-  # Container base images pinned in Dockerfiles. (Dependabot rejected a separate docker-compose entry next to this one as "overlapping directories";
-  # the third-party images in local/compose are tracked by the cockpit's "oldest running software" and re-pinned in reviewed commits.)
-  - package-ecosystem: "docker"
-    directories: ["/apps/llm-gateway", "/apps/estate-sync"]
+  # Third-party images pinned in the compose files (n8n, Open WebUI, Ollama, LiteLLM...): the biggest patching surface.
+  - package-ecosystem: "docker-compose"
+    directories: ["/local/compose"]
     schedule: { interval: "weekly" }
+    open-pull-requests-limit: 5
     labels: ["dependencies", "docker"]
     commit-message: { prefix: "deps" }
   # Terraform providers/modules of the cloud genomes (dormant by default, but they must not rot).

@@ -32,8 +32,7 @@ Honest limits: it shows only what this machine can see (not running = *No data*,
 | Component | Mechanism | Your part |
 |---|---|---|
 | SecuRAX's own code | **`./securax update`**: backup → pull → recreate → check the estate really starts → **automatic rollback** to the version that worked (exit 3) if it does not | run it weekly |
-| Python, npm, GitHub Actions, Dockerfile base images, Terraform providers | **Dependabot** opens pull requests (weekly; Terraform monthly); the sandbox and CI must pass before merge | merge when green, then `./securax update` |
-| Third-party images pinned in `local/compose` (n8n, Open WebUI, Ollama, LiteLLM…) | Dependabot's docker-compose support was rejected by GitHub next to the Dockerfile entry, so these are re-pinned in reviewed commits; the cockpit's *oldest running software* warns at 180/365 days | check the cockpit monthly; bump a tag and run the sandbox |
+| Third-party images (compose tags), Python, npm, GitHub Actions, Docker, Terraform providers | **Dependabot** opens pull requests (weekly; Terraform monthly); the sandbox and CI must pass before merge | merge when green, then `./securax update` |
 | Pinned installers (k3s, helm, kind, kubectl, Tailscale) | version- and hash-pinned; a change is a reviewed commit | re-pin with the commands in the files when you bump a version |
 | Local AI models | `./securax pull`; `./securax bench` says which installed model fits this machine | occasionally |
 | Threat data (KEV, ATT&CK) | `./securax offline sync` | monthly (the cockpit warns at 14/45 days) |

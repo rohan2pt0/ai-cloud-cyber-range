@@ -48,7 +48,7 @@ Method: re-read every request; for each ask who is affected (non-technical owner
 | F7 | Detectors were sent unredacted text (found while building residency) | the regulated operator | detectors now see redacted text only (fixed in the identity/residency PR) |
 | F8 | Docs index and explainer lacked everything since doc 28 | new readers | index + explainer section "Run it, prove it, report it" |
 | F9 | A change could break something far from where it was made | contributors | `impact` map + fitness rule |
-| F10 | Dependabot did not cover Dockerfile base images or Terraform | the operator | added docker and terraform (docker-compose was rejected by GitHub as overlapping; compose-pinned images are watched by the cockpit instead) |
+| F10 | Dependabot did not cover the compose-pinned images or Terraform | the operator | added docker-compose and terraform (Dockerfile base images were already covered) |
 | F11 | A browser opened by `--open` may not work from WSL | the Windows user | the cockpit prints the URL; the Command Center card opens it |
 | — | Still open, yours: pushing the `v0.1.0` tag (this environment cannot; the pinned tenant image does not exist until you do) | you | `git tag v0.1.0 && git push origin v0.1.0` |
 Earlier asks checked and found delivered: one-step Windows start, plugins for providers, free/local models and resource constraints, sync across devices (estate-sync), the sandbox that tests as a user, versioning, the lifecycle IaC, MCP, Claude-subscription-style routines, fallbacks for components, offline operation.
