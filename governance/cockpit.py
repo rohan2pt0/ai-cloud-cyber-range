@@ -785,6 +785,10 @@ def main(argv: list[str] | None = None) -> int:
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(page, "utf-8")
     out.with_suffix(".json").write_text(json.dumps(data, indent=1), "utf-8")
+    try:                                                                      # the Guiding Map's "From your estate" lines follow every cockpit refresh
+        _load("securax_lifefeed", "governance/lifefeed.py").write(out.parent / "estate-feed.json", cockpit=out.with_suffix(".json"))
+    except Exception:  # noqa: BLE001 - the feed is a convenience; it must never fail the cockpit
+        pass
     if a.json:
         print(json.dumps(data, indent=1))
     elif not a.quiet:

@@ -612,6 +612,11 @@ $(python3 "$ROOT/lifecycle/forge.py" brief "$FB")"
     # Before/after a change: which components it touches, what they feed, and which real-product journeys must still pass.   ./securax impact [--base REF] [--json]
     shift; exec python3 "$ROOT/lifecycle/impact.py" "$@"
     ;;
+  lifefeed)
+    # What the estate already knows (cockpit reds, your certification, backup age) for the Guiding Map's Today screen, so you never type it.
+    #   ./securax lifefeed [--print]      writes portal/estate-feed.json (also refreshed after every cockpit run, i.e. after ./securax up)
+    shift; exec python3 "$ROOT/governance/lifefeed.py" "$@"
+    ;;
   cockpit)
     # ONE page that says whether the estate is healthy and what to do next: vital signs (KPI/KRI), maturity radar, Eisenhower, 80/20, AI-risk coverage.
     #   ./securax cockpit [--open] [--ai] [--json]      writes portal/cockpit.html  ->  http://localhost:8088/portal/cockpit.html

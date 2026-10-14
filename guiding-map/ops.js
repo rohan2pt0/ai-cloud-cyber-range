@@ -577,7 +577,7 @@
     { id: "mf", label: "Mind", floor: "Three cyclic sighs \u2014 breathe in through the nose, take a second short sip of air on top, then a long slow breath out. Ninety seconds." },
     { id: "fm", label: "Family", floor: "One real question, phone in the basket." }
   ];
-  function daily3HTML() {
+  function daily3HTML(calm) {
     var done = (typeof todayChecks === "function") ? todayChecks() : [];
     var rec = inRecovery();
     var h = '<div style="background:linear-gradient(160deg,var(--navy),#152b47);border-radius:16px;padding:16px;margin-bottom:14px;color:#ece8dd">'
@@ -601,7 +601,8 @@
       + (n === 3 ? "Done. Today is a win regardless of what else happens."
         : n === 0 ? "Do the smallest version. The floor counts as a full win \u2014 that is the whole trick."
           : n + " of 3. The floor counts.") + '</div>';
-    h += strengthHTML();
+    // Calm mode: no strength bars before the first check-in (with no history they read as a scolding). The EMA itself always updates.
+    if (!calm || Object.keys((typeof S !== "undefined" && S.daily) || {}).length) h += strengthHTML(); else emaUpdate();
     if (rec) {
       h += '<div style="font-size:11px;color:var(--gold);margin-top:8px">Cadence paused until ' + esc(rec.until.slice(0, 10))
         + '. Nothing is stacking up. <span style="text-decoration:underline;cursor:pointer" onclick="gmRecoveryOff()">End early</span></div>';
@@ -1256,6 +1257,9 @@
     var runway = fixed ? ef / fixed : 0;
 
     var inc = num(l.minc), save = inc ? Math.round((num(l.fEF) + num(l.fSip)) / inc * 100) : 0;
+    // No savings split given yet: what take-home minus spending leaves is the saving rate (both come from the quick setup).
+    if (!save && !num(l.fEF) && !num(l.fSip) && window.P && !P.example && num(P.net) > 0 && num(P.exp) > 0)
+      save = Math.round((num(P.net) - num(P.exp)) / num(P.net) * 100);
 
     var age = num(l.age), ainc = num(l.inc), nw = num(l.nw);
     var mult = age < 30 ? 0.5 : age < 35 ? 1 : age < 40 ? 2 : age < 45 ? 3 : age < 50 ? 4.5 : age < 55 ? 6 : age < 60 ? 8 : 10;
@@ -2061,8 +2065,14 @@
     if (st.ym !== ymNow) { st.ym = ymNow; st.miss = {}; }        // fresh budget monthly
     // Walk each elapsed day since last update using the REAL history in S.daily.
     var d = st.last ? new Date(st.last) : null;
-    if (!d) {                                                    // first run: seed from up to 60 days of history
+    if (!d) {                                                    // first run: seed from up to 60 days of REAL history
       d = new Date(); d.setDate(d.getDate() - 60);
+      // ...but never before your first check-in: days before you used the app are not misses (they spent the month's
+      // miss budget on day one and told a new user "budget used, floor is mandatory").
+      var first = Object.keys(S.daily).filter(function (k) { return (S.daily[k] || []).length; }).sort()[0];
+      if (!first) { st.last = today; S_("gm_ema", st); return st; }
+      var f = new Date(first + "T00:00:00"); f.setDate(f.getDate() - 1);
+      if (f > d) d = f;
     }
     var stop = new Date(today);
     while (true) {
@@ -2847,6 +2857,277 @@
     return h;
   }
 
+  /* ═══════════════════════════════════════════════════════════════
+     v15 — CALM MODE: one screen, one minute, the system does the analysis
+     Measured on a phone (412 px): the first tappable action sat ~700 px down,
+     under three banners, ten numbers and a stage card; the same three habits
+     were asked twice; quarterly checklists showed in full every day; nine
+     insight cards stacked at the bottom; setup was a 20-field form and the
+     Life Map asked for the same income/net-worth again. Calm mode keeps every
+     feature (one tap: "Show everything") but the default day is:
+       check in (taps) -> the one open action -> what is due -> one insight.
+     Nothing here asks for a new number; it reads what is already stored, and
+     what the estate already knows (portal/estate-feed.json).
+     ═══════════════════════════════════════════════════════════════ */
+  var CALM_TABS = ["today", "ask", "life", "money", "ops"];
+  function calmOn() { return G("gm_calm", true) !== false; }
+  window.gmCalm = function (on) { S_("gm_calm", !!on); window.scrollTo(0, 0); renderAll(); };
+  var _calmMore = false;
+  window.gmCalmMore = function () { _calmMore = !_calmMore; renderAll(); };
+  var _calmAllInsights = false;
+  window.gmCalmInsights = function () { _calmAllInsights = !_calmAllInsights; renderAll(); };
+
+  function calmCSS() {
+    if (document.getElementById("gmCalmCss")) return;
+    var st = document.createElement("style"); st.id = "gmCalmCss";
+    st.textContent = "body.gm-calm #gmLost,body.gm-calm .gam,body.gm-calm #stageBar,body.gm-calm #hstats,body.gm-calm #gmExBan{display:none!important}"
+      + "body.gm-calm .iw.gm-hide{display:none!important}"
+      + ".gm-tap{display:inline-flex;align-items:center;justify-content:center;min-width:40px;min-height:40px;border-radius:12px;border:1.5px solid var(--border);background:var(--cardAlt);color:var(--text);font-weight:800;cursor:pointer;font-size:13px}"
+      + ".gm-tap.on{background:var(--gold);border-color:var(--gold);color:#0d1f35}";
+    document.head.appendChild(st);
+  }
+
+  /* -- day keys + the week, computed (no input) -- */
+  function dayK(off) { var d = new Date(); d.setDate(d.getDate() - off); return (typeof dKey === "function") ? dKey(d) : ymd(d); }
+  function weekStats(startOff) {
+    var hits = 0, slots = 0, per = {}, en = [], energy = G("gm_energy", {});
+    if (typeof HABITS === "undefined" || typeof S === "undefined") return { rate: 0, per: per, energy: null, days: 0 };
+    HABITS.forEach(function (h) { per[h.id] = 0; });
+    var first = Object.keys(S.daily || {}).filter(function (x) { return (S.daily[x] || []).length; }).sort()[0], days = 0;
+    for (var i = startOff; i < startOff + 7; i++) {
+      var k = dayK(i), got = (S.daily && S.daily[k]) || [];
+      if (!first || k < first) continue;                                      // days before you started are not misses
+      days++;
+      hits += got.length; slots += HABITS.length;
+      got.forEach(function (id) { if (per[id] !== undefined) per[id]++; });
+      if (energy[k]) en.push(energy[k]);
+    }
+    return { rate: slots ? Math.round(hits / slots * 100) : 0, per: per, days: days,
+             energy: en.length ? Math.round(en.reduce(function (a, b) { return a + b; }, 0) / en.length * 10) / 10 : null };
+  }
+  function weekSummary() {
+    var a = weekStats(0), b = weekStats(7), lines = [];
+    var d = a.rate - b.rate;
+    if (!a.days) return { lines: ["No check-ins yet. Tap the Daily Three above; this card then writes your week for you."], a: a, b: b };
+    lines.push("Check-ins " + (a.days < 7 ? "over your first " + a.days + " day" + (a.days > 1 ? "s" : "") : "this week") + ": " + a.rate + "%"
+      + (b.days ? " (" + (d >= 0 ? "+" : "") + d + " vs last week)" : ""));
+    if (typeof HABITS !== "undefined" && HABITS.length) {
+      var best = null, worst = null;
+      HABITS.forEach(function (h) {
+        if (!best || a.per[h.id] > a.per[best.id]) best = h;
+        if (!worst || a.per[h.id] < a.per[worst.id]) worst = h;
+      });
+      if (best && a.per[best.id] > 0) lines.push("Strongest: " + best.name + " (" + a.per[best.id] + "/" + a.days + ")");
+      if (a.days >= 3 && worst && best && worst.id !== best.id) lines.push("Slipping: " + worst.name + " (" + a.per[worst.id] + "/" + a.days + ") — make its floor smaller, not your ambition");
+    }
+    if (a.energy !== null) lines.push("Average energy: " + a.energy + "/5" + (b.energy !== null ? " (last week " + b.energy + ")" : ""));
+    return { lines: lines, a: a, b: b };
+  }
+
+  /* -- 1. setup: four questions, one at a time, written once into BOTH models -- */
+  var QUICK = [
+    { k: "age", q: "Your age", unit: "years", ph: "36" },
+    { k: "net", q: "Monthly take-home pay", unit: "₹ a month", ph: "120000" },
+    { k: "exp", q: "Monthly spending, roughly", unit: "₹ a month", ph: "80000" },
+    { k: "nw", q: "Savings + investments today (excluding your home)", unit: "₹ total", ph: "1500000" }
+  ];
+  function quickApply(ans) {
+    var l = life();
+    if (ans.age) { l.age = String(ans.age); gmClearExample("age"); }
+    if (ans.net) { l.minc = String(ans.net); gmClearExample("minc"); if (window.P) { P.net = ans.net; if (P.example || !P.gross) P.gross = ans.net; } }
+    if (ans.exp && window.P) { P.exp = ans.exp; }
+    if (ans.nw) { l.nw = String(Math.round(ans.nw / 1e4) / 10); gmClearExample("nw"); if (window.P) P.nw = ans.nw; }
+    if (ans.net && (isExample("inc") || !num(l.inc))) { l.inc = String(Math.round(ans.net * 12 / 1e4) / 10); gmClearExample("inc"); }   // from take-home; editable
+    // An invented spouse, child, parent or loan would keep steering YOUR insights. Example-only values go; real ones stay.
+    ["sage", "k1", "page", "edu", "fFixed", "fLoan", "fEF", "fSip", "ef"].forEach(function (k) { if (isExample(k)) { delete l[k]; gmClearExample(k); } });
+    S_("gm_life", l);
+    if (window.P) { if (P.example) P.loans = []; P.example = false; try { store("sovP", P); } catch (e) {} }
+    S_("gm_quick_done", true);
+    gmSnap("answered the quick setup");
+    bustDerived(); renderAll();
+  }
+  window.gmQuickSetup = function () {
+    var ans = {}, i = 0;
+    function step() {
+      if (i >= QUICK.length) { gmClose(); quickApply(ans); return; }
+      var q = QUICK[i];
+      gmDlg('<div style="font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:800">Question ' + (i + 1) + ' of ' + QUICK.length + '</div>'
+        + '<div style="font-weight:800;font-size:16px;margin:6px 0 10px">' + q.q + '</div>'
+        + '<input id="gmQin" inputmode="decimal" placeholder="' + q.ph + '" style="font-size:18px">'
+        + '<div style="font-size:11px;color:var(--muted);margin:6px 0 12px">' + q.unit + ' · a rough number is fine; you can refine it later</div>'
+        + '<div style="display:flex;gap:8px"><button class="btn-sm" id="gmQok" style="flex:1;background:var(--gold);color:#0d1f35;font-weight:800;padding:10px">Next</button>'
+        + '<button class="btn-sm" id="gmQskip" style="background:var(--cardAlt);color:var(--muted);padding:10px 14px">Skip</button></div>');
+      var inp = document.getElementById("gmQin");
+      function next(skip) { var v = skip ? 0 : num(inp.value); if (v > 0) ans[q.k] = v; i++; step(); }
+      document.getElementById("gmQok").addEventListener("click", function () { next(false); });
+      document.getElementById("gmQskip").addEventListener("click", function () { next(true); });
+      inp.addEventListener("keydown", function (e) { if (e.key === "Enter") next(false); });
+    }
+    step();
+  };
+  window.gmQuickLater = function () { var d = new Date(); d.setDate(d.getDate() + 7); S_("gm_quick_snooze", ymd(d)); renderAll(); };
+  function setupStripHTML() {
+    var example = (window.P && P.example) || exampleCount() > 0;
+    if (!example || G("gm_quick_done", false) || G("gm_quick_snooze", "") > ymd()) return "";
+    return '<div style="background:var(--amberBg);border:1px solid var(--amber);border-radius:12px;padding:11px 12px;margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">'
+      + '<div style="flex:1;min-width:180px;font-size:12px;color:var(--text);line-height:1.5"><b>These are example numbers.</b> Four quick questions make them yours (about a minute). Everything else is optional.</div>'
+      + '<button class="btn-sm" style="background:var(--gold);color:#0d1f35;font-weight:800" onclick="gmQuickSetup()">Start</button>'
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--muted)" onclick="gmQuickLater()">Later</button></div>';
+  }
+
+  /* -- 2. check-in: taps only (habits + an optional energy tap; a note only if you want one) -- */
+  window.gmEnergy = function (n) {
+    var e = G("gm_energy", {}), k = dayK(0);
+    e[k] = e[k] === n ? 0 : n; if (!e[k]) delete e[k];
+    var keys = Object.keys(e).sort(); while (keys.length > 400) { delete e[keys.shift()]; }
+    S_("gm_energy", e); renderAll();
+  };
+  window.gmNote = function () {
+    var notes = G("gm_notes", {}), k = dayK(0);
+    gmPrompt("One line about today (optional)", notes[k] || "what helped, what got in the way", function (v) {
+      if (v === null) return;
+      notes[k] = v.slice(0, 280); S_("gm_notes", notes); renderAll();
+    });
+  };
+  function checkinHTML() {
+    var h = daily3HTML(true);
+    if (typeof HABITS === "undefined") return h;
+    var done = (typeof todayChecks === "function") ? todayChecks() : [];
+    var d3 = DAILY3.map(function (d) { return d.id; });
+    var rest = [];
+    HABITS.forEach(function (hb, i) { if (d3.indexOf(hb.id) < 0) rest.push([hb, i]); });
+    var en = G("gm_energy", {})[dayK(0)] || 0, note = G("gm_notes", {})[dayK(0)];
+    h += '<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px;margin:-4px 0 14px">';
+    if (rest.length) {
+      h += '<div style="font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:7px">Also today (tap)</div><div style="display:flex;gap:8px;flex-wrap:wrap">';
+      rest.forEach(function (r) {
+        var on = done.indexOf(r[0].id) >= 0;
+        h += '<button class="gm-tap' + (on ? " on" : "") + '" style="padding:0 12px" onclick="tgHabit(' + r[1] + ')">' + (on ? "✓ " : "") + esc(r[0].icon + " " + r[0].name) + '</button>';
+      });
+      h += '</div>';
+    }
+    h += '<div style="font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:800;margin:11px 0 7px">Energy today (optional)</div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">';
+    for (var n = 1; n <= 5; n++) h += '<button class="gm-tap' + (en === n ? " on" : "") + '" aria-label="energy ' + n + ' of 5" onclick="gmEnergy(' + n + ')">' + n + '</button>';
+    h += '<span style="font-size:11.5px;color:var(--muted);margin-left:4px;cursor:pointer;text-decoration:underline" onclick="gmNote()">' + (note ? "edit note" : "+ note") + '</span></div>'
+      + (note ? '<div style="font-size:11.5px;color:var(--muted);margin-top:7px;font-style:italic">“' + esc(note) + '”</div>' : '')
+      + '</div>';
+    return h;
+  }
+
+  /* -- 3. due now: one line each, only when actually due -- */
+  var _calmOpen = null;
+  window.gmCalmOpen = function (id) { _calmOpen = _calmOpen === id ? null : id; renderAll(); };
+  function dueNowHTML() {
+    var due = dueRituals(), broken = brokenHabits();
+    if (!due.length && !broken.length) return "";
+    var h = '<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:14px">'
+      + '<div style="font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:6px">Due now</div>';
+    broken.forEach(function (b) {
+      h += '<div style="font-size:12.5px;color:var(--red);margin:6px 0">⚠ <b>' + esc(b.name) + '</b> missed twice — today the 2-minute floor is the whole job</div>';
+    });
+    due.forEach(function (r) {
+      var open = _calmOpen === r.id;
+      h += '<div style="display:flex;align-items:center;gap:8px;margin:7px 0"><div style="flex:1;font-size:12.5px;color:var(--text)">⏱ <b>' + esc(r.name) + '</b> <span style="color:var(--muted)">· ' + r.mins + ' min</span></div>'
+        + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmCalmOpen(\'' + r.id + '\')">' + (open ? "Hide" : "Open") + '</button>'
+        + '<button class="btn-sm" style="background:var(--gold);color:#0d1f35" onclick="gmRitualDone(\'' + r.id + '\')">Done</button></div>';
+      if (open) {
+        h += '<div style="font-size:12px;line-height:1.7;margin:0 0 8px 4px;color:var(--text)">' + (r.id === "sunday" ? scqaHTML() : "");
+        r.steps.forEach(function (s) { h += '<span style="color:var(--green)">▸</span> ' + esc(s) + "<br>"; });
+        h += '</div>';
+      }
+    });
+    return h + '</div>';
+  }
+
+  /* -- 4. one insight, written for you; the estate AI can turn it into a review -- */
+  function weekKey() { var d = new Date(); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return ymd(d); }
+  window.gmWeekReview = function () {
+    var ws = weekSummary(), notes = G("gm_notes", {}), said = [];
+    for (var i = 0; i < 7; i++) { var t = notes[dayK(i)]; if (t && !ASK_RED.test(t)) said.push(t); }
+    var top = document.querySelector("#insights .kl, #insights b");
+    var prompt = "Here is my week from my life-OS app. Write a short review: 1) what worked, 2) what slipped and the likely cause, "
+      + "3) ONE small change for next week (smallest version that still counts). Plain English, at most 90 words, no lecturing.\n\n"
+      + ws.lines.join("\n") + (said.length ? "\nMy one-line notes: " + said.join(" | ") : "")
+      + "\nCurrent one open action: " + ((theOneAction() || {}).text || "none");
+    var out = G("gm_week_review", {});
+    out[weekKey()] = { at: Date.now(), text: "Asking your estate AI…" }; S_("gm_week_review", out); renderAll();
+    fetch(askGw().replace(/\/$/, "") + "/v1/chat/completions", { method: "POST", headers: askHdrs(),
+      body: JSON.stringify({ model: "bank-assistant", messages: [{ role: "user", content: prompt }] }) })
+      .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
+      .then(function (j) { var t = (((j.choices || [])[0] || {}).message || {}).content || ""; out[weekKey()] = { at: Date.now(), text: t.trim() || "(empty answer)" }; })
+      .catch(function (e) { out[weekKey()] = { at: Date.now(), err: true, text: "Your estate AI is not reachable from this device (" + e.message + "). The summary above is computed here, on the device." }; })
+      .then(function () { S_("gm_week_review", out); renderAll(); });
+  };
+  function insightHTML() {
+    var ws = weekSummary(), rv = G("gm_week_review", {})[weekKey()];
+    var h = '<div style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:14px;padding:13px;margin-bottom:14px">'
+      + '<div style="font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--gold);font-weight:800;margin-bottom:6px">This week, worked out for you</div>';
+    ws.lines.forEach(function (t) { h += '<div style="font-size:12.5px;color:var(--text);line-height:1.6">• ' + esc(t) + '</div>'; });
+    if (rv) h += '<div style="font-size:12.5px;color:' + (rv.err ? "var(--muted)" : "var(--text)") + ';line-height:1.65;margin-top:9px;white-space:pre-wrap">' + esc(rv.text) + '</div>';
+    h += '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">'
+      + '<button class="btn-sm" style="background:var(--gold);color:#0d1f35" onclick="gmWeekReview()">' + (rv && !rv.err ? "Review again" : "Review my week with my estate AI") + '</button>'
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmCalmInsights()">' + (_calmAllInsights ? "Hide other insights" : "Other insights") + '</button></div>'
+      + '<div style="font-size:10.5px;color:var(--muted);margin-top:7px">The review is written by YOUR estate gateway (rails on); notes containing ID numbers are never sent.</div>';
+    return h + '</div>';
+  }
+
+  /* -- 5. from your estate: what SecuRAX already knows, no typing (./securax lifefeed writes it) -- */
+  var _feed = null, _feedTried = false;
+  function feedLoad() {
+    if (_feedTried) return; _feedTried = true;
+    if (!/^https?:/.test(location.protocol) || typeof fetch !== "function") { _feed = G("gm_estate_feed", null); return; }
+    fetch("/portal/estate-feed.json", { cache: "no-cache" })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (j) { if (j && Array.isArray(j.items)) { _feed = j; S_("gm_estate_feed", j); renderAll(); } })
+      .catch(function () { _feed = G("gm_estate_feed", null); });
+  }
+  function estateHTML() {
+    feedLoad();
+    var f = _feed;
+    if (!f || !f.items || !f.items.length) return "";
+    var h = '<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:14px">'
+      + '<div style="font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:5px">From your estate · ' + esc(String(f.generated || "").slice(0, 16).replace("T", " ")) + '</div>';
+    f.items.slice(0, 4).forEach(function (it) {
+      var col = it.level === "act" ? "var(--amber)" : it.level === "ok" ? "var(--green)" : "var(--text)";
+      h += '<div style="font-size:12.5px;line-height:1.6;margin:5px 0;color:' + col + '">' + esc(it.icon || "•") + ' ' + esc(it.text)
+        + (it.cmd ? ' <span style="color:var(--muted);font-family:monospace;font-size:11px">' + esc(it.cmd) + '</span>' : '') + '</div>';
+    });
+    return h + '</div>';
+  }
+
+  function calmTodayHTML() {
+    return '<div class="section active">' + setupStripHTML() + undoBar() + checkinHTML() + oneActionHTML() + dueNowHTML()
+      + (inRecovery() ? "" : driftHTML() + resHTML()) + msTodayHTML() + insightHTML() + estateHTML()
+      + '<div style="text-align:center;margin:6px 0 4px"><span style="font-size:11.5px;color:var(--muted);cursor:pointer;text-decoration:underline" onclick="gmCalm(false)">Show everything (all tabs, all cards)</span></div></div>';
+  }
+  function calmTabs() {
+    var bar = document.getElementById("tabBar");
+    if (!bar || typeof TABS === "undefined") return;
+    var kids = bar.children;
+    for (var i = 0; i < kids.length && i < TABS.length; i++) {
+      var keep = _calmMore || CALM_TABS.indexOf(TABS[i][0]) >= 0 || TABS[i][0] === curTab;
+      kids[i].style.display = keep ? "" : "none";
+    }
+    var m = document.createElement("div");
+    m.className = "tab"; m.tabIndex = 0; m.textContent = _calmMore ? "Less ▴" : "More ▾";
+    m.onclick = function () { gmCalmMore(); };
+    bar.appendChild(m);
+  }
+  function calmFrame() {
+    calmCSS();
+    var on = calmOn();
+    document.body.classList.toggle("gm-calm", on);
+    var iw = document.querySelector(".iw"); if (iw) iw.classList.toggle("gm-hide", on && !_calmAllInsights);
+    if (on) calmTabs();
+    else if (!document.getElementById("gmCalmBack") && document.getElementById("dash")) {
+      var b = document.createElement("div"); b.id = "gmCalmBack";
+      b.style.cssText = "text-align:center;margin:8px 0;font-size:11.5px";
+      b.innerHTML = '<span style="color:var(--muted);cursor:pointer;text-decoration:underline" onclick="gmCalm(true)">Back to Calm mode (one screen)</span>';
+      var sec = document.getElementById("sections"); if (sec) sec.parentNode.insertBefore(b, sec);
+    }
+    if (on) { var bk = document.getElementById("gmCalmBack"); if (bk) bk.remove(); }
+  }
+
   /* ── 10. Wire into the existing render loop ─────────────────────── */
   if (typeof TABS !== "undefined") {
     var keep = TABS.filter(function (t) { return ["today", "map"].indexOf(t[0]) < 0; });
@@ -2881,10 +3162,12 @@
     else if (curTab === "stack") { box.innerHTML = stackHTML(); }
     else if (curTab === "life") { box.innerHTML = lifeMapHTML(); }
     else if (curTab === "prop") { box.innerHTML = propHTML(); }
+    else if (curTab === "today" && calmOn()) { box.innerHTML = calmTodayHTML(); }
     else if (curTab === "today") {
       box.insertAdjacentHTML("afterbegin", exampleWarn() + undoBar() + daily3HTML() + msTodayHTML()
         + (inRecovery() ? "" : driftHTML() + resHTML()) + oneActionHTML() + (inRecovery() ? "" : pinnedHTML()));
     }
+    try { calmFrame(); } catch (e) { console.log(e); }
     // Inline help: self-explain every specialised term on whatever screen just rendered.
     try { gmAnnotate(box); } catch (e) { }
   };
