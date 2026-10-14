@@ -1,0 +1,178 @@
+{
+ "id": "dpdp",
+ "name": "DPDP Act 2023 / Digital Personal Data Protection Rules, 2025 — personal data breach",
+ "jurisdiction": "IN",
+ "applies_to": "Data fiduciaries processing digital personal data. Commencement of the breach rule is phased (one source: 13 May 2027) - CONFIRM.",
+ "verified": false,
+ "verified_on": "",
+ "source": {
+  "title": "Secondary sources (KPMG guidance; dpdpa.com summary of Rule 7); Gazette G.S.R. 846(E), 13 Nov 2025 is the primary text",
+  "url": "https://www.dpdpa.com/dpdparules/rule7.html",
+  "paragraphs": "Rule 7"
+ },
+ "obligations": [
+  {
+   "id": "board-initial",
+   "label": "Intimate the Data Protection Board of India of the breach",
+   "from": "detection",
+   "within_hours": 0,
+   "channel": "Data Protection Board portal",
+   "fields": [
+    {
+     "key": "entity_name",
+     "label": "Name of the regulated entity"
+    },
+    {
+     "key": "incident_id",
+     "label": "Internal incident reference",
+     "from": "id"
+    },
+    {
+     "key": "detected_at",
+     "label": "Date and time of detection",
+     "from": "detected_at"
+    },
+    {
+     "key": "title",
+     "label": "Incident summary",
+     "from": "title"
+    },
+    {
+     "key": "incident_type",
+     "label": "Type of incident (e.g. ransomware, data breach, DDoS, unauthorised access)"
+    },
+    {
+     "key": "systems_affected",
+     "label": "Systems / services affected"
+    },
+    {
+     "key": "impact",
+     "label": "Business and customer impact"
+    },
+    {
+     "key": "data_affected",
+     "label": "Data affected (categories, approximate volume)"
+    },
+    {
+     "key": "actions_taken",
+     "label": "Containment and recovery actions so far"
+    },
+    {
+     "key": "contact",
+     "label": "Contact person (name, phone, e-mail)"
+    }
+   ],
+   "notes": "'Without delay' - not defined; the tool treats it as 'as soon as possible' and shows it as due immediately. UNVERIFIED."
+  },
+  {
+   "id": "board-72h",
+   "label": "Detailed report to the Board (cause, mitigation, findings, notifications to data principals)",
+   "from": "detection",
+   "within_hours": 72,
+   "channel": "Data Protection Board portal",
+   "fields": [
+    {
+     "key": "entity_name",
+     "label": "Name of the regulated entity"
+    },
+    {
+     "key": "incident_id",
+     "label": "Internal incident reference",
+     "from": "id"
+    },
+    {
+     "key": "detected_at",
+     "label": "Date and time of detection",
+     "from": "detected_at"
+    },
+    {
+     "key": "title",
+     "label": "Incident summary",
+     "from": "title"
+    },
+    {
+     "key": "incident_type",
+     "label": "Type of incident (e.g. ransomware, data breach, DDoS, unauthorised access)"
+    },
+    {
+     "key": "systems_affected",
+     "label": "Systems / services affected"
+    },
+    {
+     "key": "impact",
+     "label": "Business and customer impact"
+    },
+    {
+     "key": "data_affected",
+     "label": "Data affected (categories, approximate volume)"
+    },
+    {
+     "key": "actions_taken",
+     "label": "Containment and recovery actions so far"
+    },
+    {
+     "key": "contact",
+     "label": "Contact person (name, phone, e-mail)"
+    }
+   ],
+   "notes": "May be extended if the Board allows. UNVERIFIED."
+  },
+  {
+   "id": "principals",
+   "label": "Notify each affected data principal",
+   "from": "detection",
+   "within_hours": 0,
+   "channel": "Direct communication",
+   "fields": [
+    {
+     "key": "entity_name",
+     "label": "Name of the regulated entity"
+    },
+    {
+     "key": "incident_id",
+     "label": "Internal incident reference",
+     "from": "id"
+    },
+    {
+     "key": "detected_at",
+     "label": "Date and time of detection",
+     "from": "detected_at"
+    },
+    {
+     "key": "title",
+     "label": "Incident summary",
+     "from": "title"
+    },
+    {
+     "key": "incident_type",
+     "label": "Type of incident (e.g. ransomware, data breach, DDoS, unauthorised access)"
+    },
+    {
+     "key": "systems_affected",
+     "label": "Systems / services affected"
+    },
+    {
+     "key": "impact",
+     "label": "Business and customer impact"
+    },
+    {
+     "key": "data_affected",
+     "label": "Data affected (categories, approximate volume)"
+    },
+    {
+     "key": "actions_taken",
+     "label": "Containment and recovery actions so far"
+    },
+    {
+     "key": "contact",
+     "label": "Contact person (name, phone, e-mail)"
+    }
+   ],
+   "notes": "'Without delay'. UNVERIFIED."
+  }
+ ],
+ "periodic": [],
+ "notes": [
+  "Unlike GDPR there is reportedly no materiality threshold."
+ ]
+}

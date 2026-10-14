@@ -11,7 +11,7 @@ providers:
     config:
       url: "${GATEWAY_URL:-http://localhost:8080}/v1/chat/completions"
       method: POST
-      headers: { "Content-Type": "application/json" }
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer ${GATEWAY_API_KEY:-}" }
       body:
         model: bank-assistant
         messages:

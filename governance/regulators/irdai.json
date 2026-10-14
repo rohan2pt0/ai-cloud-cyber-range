@@ -1,0 +1,125 @@
+{
+ "id": "irdai",
+ "name": "IRDAI — Information and Cyber Security Guidelines, 2023 (insurers and intermediaries)",
+ "jurisdiction": "IN",
+ "applies_to": "Insurers and IRDAI-licensed intermediaries. CONFIRM against the guidelines and any circular since.",
+ "verified": false,
+ "verified_on": "",
+ "source": {
+  "title": "Secondary sources only (Deloitte, news reports); sources disagree on dates and on the IRDAI reporting window",
+  "url": "https://www.deloitte.com/in/en/services/consulting/services/risk-regulatory-forensic/irdai-tightens-cyber-net.html",
+  "paragraphs": "confirm in the primary text"
+ },
+ "obligations": [
+  {
+   "id": "cert-in-6h",
+   "label": "Report to CERT-In (copy to IRDAI)",
+   "from": "detection",
+   "within_hours": 6,
+   "channel": "CERT-In, copy IRDAI",
+   "fields": [
+    {
+     "key": "entity_name",
+     "label": "Name of the regulated entity"
+    },
+    {
+     "key": "incident_id",
+     "label": "Internal incident reference",
+     "from": "id"
+    },
+    {
+     "key": "detected_at",
+     "label": "Date and time of detection",
+     "from": "detected_at"
+    },
+    {
+     "key": "title",
+     "label": "Incident summary",
+     "from": "title"
+    },
+    {
+     "key": "incident_type",
+     "label": "Type of incident (e.g. ransomware, data breach, DDoS, unauthorised access)"
+    },
+    {
+     "key": "systems_affected",
+     "label": "Systems / services affected"
+    },
+    {
+     "key": "impact",
+     "label": "Business and customer impact"
+    },
+    {
+     "key": "data_affected",
+     "label": "Data affected (categories, approximate volume)"
+    },
+    {
+     "key": "actions_taken",
+     "label": "Containment and recovery actions so far"
+    },
+    {
+     "key": "contact",
+     "label": "Contact person (name, phone, e-mail)"
+    }
+   ],
+   "notes": "UNVERIFIED against the primary text."
+  },
+  {
+   "id": "irdai-24h",
+   "label": "Submit available details to IRDAI in the prescribed format",
+   "from": "detection",
+   "within_hours": 24,
+   "channel": "IRDAI",
+   "fields": [
+    {
+     "key": "entity_name",
+     "label": "Name of the regulated entity"
+    },
+    {
+     "key": "incident_id",
+     "label": "Internal incident reference",
+     "from": "id"
+    },
+    {
+     "key": "detected_at",
+     "label": "Date and time of detection",
+     "from": "detected_at"
+    },
+    {
+     "key": "title",
+     "label": "Incident summary",
+     "from": "title"
+    },
+    {
+     "key": "incident_type",
+     "label": "Type of incident (e.g. ransomware, data breach, DDoS, unauthorised access)"
+    },
+    {
+     "key": "systems_affected",
+     "label": "Systems / services affected"
+    },
+    {
+     "key": "impact",
+     "label": "Business and customer impact"
+    },
+    {
+     "key": "data_affected",
+     "label": "Data affected (categories, approximate volume)"
+    },
+    {
+     "key": "actions_taken",
+     "label": "Containment and recovery actions so far"
+    },
+    {
+     "key": "contact",
+     "label": "Contact person (name, phone, e-mail)"
+    }
+   ],
+   "notes": "UNVERIFIED: one source gives 24 hours from intimation, others differ. Confirm."
+  }
+ ],
+ "periodic": [],
+ "notes": [
+  "Log retention of 180 days is reported by one source."
+ ]
+}

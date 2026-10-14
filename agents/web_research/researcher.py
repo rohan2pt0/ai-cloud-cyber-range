@@ -241,7 +241,9 @@ def gateway_llm(messages: list[dict]) -> str:
     """Default LLM: the estate's local model through the guardrail gateway. Needs GATEWAY_URL."""
     import httpx
     gw = os.environ.get("GATEWAY_URL", "http://localhost:8080").rstrip("/")
+    key = os.environ.get("GATEWAY_API_KEY")        # a gateway service key when authentication is on
     r = httpx.post(gw + "/v1/chat/completions", timeout=120,
+                   headers={"Authorization": f"Bearer {key}"} if key else None,
                    json={"model": "bank-assistant", "messages": messages})
     r.raise_for_status()
     return r.json()["choices"][0]["message"]["content"]

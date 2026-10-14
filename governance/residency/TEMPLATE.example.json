@@ -1,0 +1,52 @@
+{
+ "_how_to": "Copy to <JURISDICTION>.json (e.g. EU.json, SG.json, AE.json), edit, then: ./securax residency enable --jurisdiction <JURISDICTION>. Zones are YOUR names: 'local' (on-prem), a country/region name for approved clouds, 'global'. A class lists the zones it may be processed in; the most sensitive class must NOT allow '*'.",
+ "jurisdiction": "XX",
+ "description": "What this policy enforces and why",
+ "verified_on": "",
+ "order": [
+  "public",
+  "confidential",
+  "regulatory"
+ ],
+ "classes": {
+  "public": {
+   "zones": [
+    "*"
+   ]
+  },
+  "confidential": {
+   "zones": [
+    "local",
+    "xx"
+   ]
+  },
+  "regulatory": {
+   "zones": [
+    "local"
+   ]
+  }
+ },
+ "default_class": "public",
+ "class_by_finding": {
+  "CARD_PAN": "regulatory",
+  "EMAIL": "confidential"
+ },
+ "model_zones": {
+  "*-local": "local"
+ },
+ "detector_zones": {
+  "llama-guard": "local"
+ },
+ "reroute_to": [
+  "bank-assistant-local"
+ ],
+ "cloud": {
+  "regions": {
+   "aws": [
+    "xx-region-1"
+   ]
+  },
+  "requires_attestation": false,
+  "attestation_note": ""
+ }
+}

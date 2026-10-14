@@ -1,0 +1,244 @@
+{
+ "id": "sebi-cscrf",
+ "name": "SEBI — Cybersecurity and Cyber Resilience Framework (CSCRF)",
+ "jurisdiction": "IN",
+ "applies_to": "SEBI-regulated entities (MIIs, Qualified, Mid-size, Small-size, Self-certification REs).",
+ "verified": true,
+ "verified_on": "2026-10-14",
+ "source": {
+  "title": "SEBI/HO/ITD-1/ITD_CSC_EXT/P/CIR/2024/113 (20 Aug 2024), standards RS.CO.S1-S3, Annexure-O",
+  "url": "https://www.sebi.gov.in/legal/circulars/aug-2024/cybersecurity-and-cyber-resilience-framework-cscrf-for-sebi-regulated-entities-res-_85964.html",
+  "paragraphs": "RS.CO"
+ },
+ "obligations": [
+  {
+   "id": "sebi-6h",
+   "label": "Notify SEBI of an incident falling under CERT-In's directions",
+   "from": "detection",
+   "within_hours": 6,
+   "channel": "E-mail mkt_incidents@sebi.gov.in",
+   "fields": [
+    {
+     "key": "entity_name",
+     "label": "Name of the regulated entity"
+    },
+    {
+     "key": "incident_id",
+     "label": "Internal incident reference",
+     "from": "id"
+    },
+    {
+     "key": "detected_at",
+     "label": "Date and time of detection",
+     "from": "detected_at"
+    },
+    {
+     "key": "title",
+     "label": "Incident summary",
+     "from": "title"
+    },
+    {
+     "key": "incident_type",
+     "label": "Type of incident (e.g. ransomware, data breach, DDoS, unauthorised access)"
+    },
+    {
+     "key": "systems_affected",
+     "label": "Systems / services affected"
+    },
+    {
+     "key": "impact",
+     "label": "Business and customer impact"
+    },
+    {
+     "key": "data_affected",
+     "label": "Data affected (categories, approximate volume)"
+    },
+    {
+     "key": "actions_taken",
+     "label": "Containment and recovery actions so far"
+    },
+    {
+     "key": "contact",
+     "label": "Contact person (name, phone, e-mail)"
+    }
+   ],
+   "notes": "Within 6 hours of noticing, detecting, or being brought to notice. Annexure-O SOP applies."
+  },
+  {
+   "id": "sebi-portal",
+   "label": "Report the incident details on the SEBI Incident Reporting Portal",
+   "from": "detection",
+   "within_hours": 24,
+   "channel": "SEBI Incident Reporting Portal",
+   "fields": [
+    {
+     "key": "entity_name",
+     "label": "Name of the regulated entity"
+    },
+    {
+     "key": "incident_id",
+     "label": "Internal incident reference",
+     "from": "id"
+    },
+    {
+     "key": "detected_at",
+     "label": "Date and time of detection",
+     "from": "detected_at"
+    },
+    {
+     "key": "title",
+     "label": "Incident summary",
+     "from": "title"
+    },
+    {
+     "key": "incident_type",
+     "label": "Type of incident (e.g. ransomware, data breach, DDoS, unauthorised access)"
+    },
+    {
+     "key": "systems_affected",
+     "label": "Systems / services affected"
+    },
+    {
+     "key": "impact",
+     "label": "Business and customer impact"
+    },
+    {
+     "key": "data_affected",
+     "label": "Data affected (categories, approximate volume)"
+    },
+    {
+     "key": "actions_taken",
+     "label": "Containment and recovery actions so far"
+    },
+    {
+     "key": "contact",
+     "label": "Contact person (name, phone, e-mail)"
+    }
+   ],
+   "notes": "Also share threat intelligence (collected, processed, analysed) on the portal. TLP labels (white/green/amber/red) may be used for masked sharing."
+  },
+  {
+   "id": "exchange-6h",
+   "label": "Stock brokers / depository participants: also report to the stock exchange / depository",
+   "from": "detection",
+   "within_hours": 6,
+   "channel": "Stock exchange / depository (with SEBI and CERT-In)",
+   "fields": [
+    {
+     "key": "entity_name",
+     "label": "Name of the regulated entity"
+    },
+    {
+     "key": "incident_id",
+     "label": "Internal incident reference",
+     "from": "id"
+    },
+    {
+     "key": "detected_at",
+     "label": "Date and time of detection",
+     "from": "detected_at"
+    },
+    {
+     "key": "title",
+     "label": "Incident summary",
+     "from": "title"
+    },
+    {
+     "key": "incident_type",
+     "label": "Type of incident (e.g. ransomware, data breach, DDoS, unauthorised access)"
+    },
+    {
+     "key": "systems_affected",
+     "label": "Systems / services affected"
+    },
+    {
+     "key": "impact",
+     "label": "Business and customer impact"
+    },
+    {
+     "key": "data_affected",
+     "label": "Data affected (categories, approximate volume)"
+    },
+    {
+     "key": "actions_taken",
+     "label": "Containment and recovery actions so far"
+    },
+    {
+     "key": "contact",
+     "label": "Contact person (name, phone, e-mail)"
+    }
+   ],
+   "applies_to_roles": [
+    "stock-broker",
+    "depository-participant"
+   ]
+  },
+  {
+   "id": "other-24h",
+   "label": "Any other cybersecurity incident: report to SEBI, CERT-In and NCIIPC (as applicable)",
+   "from": "detection",
+   "within_hours": 24,
+   "channel": "As SEBI specifies",
+   "fields": [
+    {
+     "key": "entity_name",
+     "label": "Name of the regulated entity"
+    },
+    {
+     "key": "incident_id",
+     "label": "Internal incident reference",
+     "from": "id"
+    },
+    {
+     "key": "detected_at",
+     "label": "Date and time of detection",
+     "from": "detected_at"
+    },
+    {
+     "key": "title",
+     "label": "Incident summary",
+     "from": "title"
+    },
+    {
+     "key": "incident_type",
+     "label": "Type of incident (e.g. ransomware, data breach, DDoS, unauthorised access)"
+    },
+    {
+     "key": "systems_affected",
+     "label": "Systems / services affected"
+    },
+    {
+     "key": "impact",
+     "label": "Business and customer impact"
+    },
+    {
+     "key": "data_affected",
+     "label": "Data affected (categories, approximate volume)"
+    },
+    {
+     "key": "actions_taken",
+     "label": "Containment and recovery actions so far"
+    },
+    {
+     "key": "contact",
+     "label": "Contact person (name, phone, e-mail)"
+    }
+   ],
+   "conditional": "incident is NOT within CERT-In's directions"
+  }
+ ],
+ "periodic": [
+  {
+   "id": "quarterly",
+   "label": "Quarterly report of cyber-attacks, threats, incidents and breaches, and mitigation",
+   "frequency": "quarterly",
+   "due_days_after_period_end": 15,
+   "channel": "SEBI (as specified)",
+   "notes": "Within 15 days of the quarter ended June, September, December and March."
+  }
+ ],
+ "notes": [
+  "Provide regular RCA / forensic progress reports while SEBI processes the incident (RS.CO.S1-S3 item 6).",
+  "Notify affected customers (RS.CO.S2); press release if high impact and broad reach."
+ ]
+}

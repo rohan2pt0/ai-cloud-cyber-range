@@ -864,6 +864,182 @@ def j_comply(sb: H.Sandbox, c: Checks):
     c.ok(rc != 0 and "journey or test" in out, "turning a gap into 'supported' without proof makes `comply --verify` fail", tail(out, 300))
 
 
+@journey("gateway_identity", "The REAL gateway container with authentication on: anonymous and wrong keys are refused, a service key works and is named in the audit trail, roles limit what it can reach, repeated failures lock the source out, and the open laptop default is unchanged.")
+def j_gateway_identity(sb: H.Sandbox, c: Checks):
+    import json as _json
+    import time as _time
+    import urllib.error
+    import urllib.request
+    envf = sb.clone.parent / "gw-auth.env"
+    envf.write_text("LITELLM_MASTER_KEY=sk-range-dev\n")
+    rc, out = H.sh(["bash", "./securax", "gateway-auth", "--env-file", str(envf), "enable"], cwd=sb.clone)
+    c.ok(rc == 0 and "AUTH_MODE=required" in out, "`gateway-auth enable` turns authentication on and creates the estate's own service keys", tail(out, 300))
+    env = {k: v for k, v in (ln.split("=", 1) for ln in envf.read_text().splitlines() if "=" in ln)}
+    rc, out = H.sh(["docker", "build", "-q", "-t", "securax-gw-identity:sbx", "apps/llm-gateway"], cwd=sb.clone, timeout=600)
+    c.ok(rc == 0, "the gateway image builds", tail(out, 300))
+    name, port = "sbx-gw-identity", 18480
+    H.sh(["docker", "rm", "-f", name])
+    rc, out = H.sh(["docker", "run", "-d", "--name", name, "-p", f"127.0.0.1:{port}:8080", "-e", "UPSTREAM_URL=mock", "-e", "AUTH_MODE=required",
+                    "-e", f"GATEWAY_API_KEYS_B64={env['GATEWAY_API_KEYS_B64']}", "-e", "AUTH_MAX_FAILURES=5", "securax-gw-identity:sbx"])
+    try:
+        base = f"http://127.0.0.1:{port}"
+        for _ in range(60):
+            try:
+                urllib.request.urlopen(base + "/healthz", timeout=2)
+                break
+            except OSError:
+                _time.sleep(1)
+
+        def call(method, path, key=None, body=None):
+            req = urllib.request.Request(base + path, data=_json.dumps(body).encode() if body is not None else None, method=method,
+                                         headers={"Content-Type": "application/json", **({"Authorization": f"Bearer {key}"} if key else {})})
+            try:
+                with urllib.request.urlopen(req, timeout=15) as r:
+                    return r.status, r.read().decode()
+            except urllib.error.HTTPError as e:
+                return e.code, e.read().decode()
+        chat = {"model": "m", "messages": [{"role": "user", "content": "hello"}]}
+        st, _b = call("GET", "/healthz")
+        c.ok(st == 200 and '"auth":"required"' in _b, "liveness stays public and reports the auth mode", _b[:200])
+        st, _b = call("POST", "/v1/chat/completions", None, chat)
+        c.ok(st == 401, "an anonymous chat request is refused (401)", f"{st} {_b[:200]}")
+        st, _b = call("POST", "/v1/chat/completions", env["GATEWAY_API_KEY"], chat)
+        c.ok(st == 200 and "mock-llm" in _b, "a valid service key is accepted", f"{st} {_b[:200]}")
+        st, _b = call("GET", "/metrics", env["GATEWAY_API_KEY"])
+        c.ok(st == 200, "a service key may scrape /metrics", f"{st}")
+        rc, kout = H.sh(["bash", "./securax", "gateway-auth", "--env-file", str(envf), "key", "add", "reader", "--roles", "user"], cwd=sb.clone)
+        ukey = next((w for w in kout.split() if w.startswith("sk-sx-")), "")
+        env.update({k: v for k, v in (ln.split("=", 1) for ln in envf.read_text().splitlines() if "=" in ln)})
+        H.sh(["docker", "rm", "-f", name])
+        H.sh(["docker", "run", "-d", "--name", name, "-p", f"127.0.0.1:{port}:8080", "-e", "UPSTREAM_URL=mock", "-e", "AUTH_MODE=required",
+              "-e", f"GATEWAY_API_KEYS_B64={env['GATEWAY_API_KEYS_B64']}", "-e", "AUTH_MAX_FAILURES=5", "securax-gw-identity:sbx"])
+        for _ in range(60):
+            try:
+                urllib.request.urlopen(base + "/healthz", timeout=2)
+                break
+            except OSError:
+                _time.sleep(1)
+        st, _b = call("POST", "/v1/chat/completions", ukey, chat)
+        c.ok(st == 200, "a key limited to the `user` role can chat", f"{st} {_b[:200]}")
+        st, _b = call("GET", "/metrics", ukey)
+        c.ok(st == 403, "…but the same key cannot read /metrics (403: roles are enforced)", f"{st} {_b[:200]}")
+        for _ in range(5):
+            call("POST", "/v1/chat/completions", "sk-wrong", chat)
+        st, _b = call("POST", "/v1/chat/completions", env["GATEWAY_API_KEY"], chat)
+        c.ok(st == 429, "after repeated failures the source is locked out, even with a valid key (429)", f"{st} {_b[:200]}")
+        _rc, logs = H.sh(["docker", "logs", name])
+        events = [_json.loads(ln) for ln in logs.splitlines() if ln.startswith("{")]
+        c.ok(any(e.get("subject") == "key:reader" and e.get("auth") == "api_key" and e.get("decision") in ("allow", "sanitise") for e in events),
+             "the audit trail names the caller (subject, role, method) on allowed requests", tail(logs, 400))
+        c.ok(sum(1 for e in events if e.get("decision") == "auth_denied") >= 6, "refusals are audited with reason and source address", tail(logs, 400))
+    finally:
+        H.sh(["docker", "rm", "-f", name])
+    H.sh(["docker", "rm", "-f", name])
+    rc, out = H.sh(["docker", "run", "--rm", "-e", "UPSTREAM_URL=mock", "securax-gw-identity:sbx", "python", "-c",
+                    "from fastapi.testclient import TestClient; from app.main import app; r=TestClient(app).post('/v1/chat/completions', json={'model':'m','messages':[{'role':'user','content':'hi'}]}); print(r.status_code)"])
+    c.ok(rc == 0 and out.strip().endswith("200"), "with no AUTH_MODE the gateway behaves exactly as before (open laptop default)", tail(out, 200))
+
+
+@journey("incident_clock", "`./securax incident`: one detection starts the clock for RBI, SEBI and CERT-In together; an overdue filing is flagged (exit 2) for cron/n8n, a draft names what is missing, a filing is judged late, and editing the log is detected.")
+def j_incident_clock(sb: H.Sandbox, c: Checks):
+    import datetime as _dt
+    d = sb.clone.parent / "incident-home"
+    env = {**os.environ, "SECURAX_INCIDENT_DIR": str(d), "SECURAX_TZ": "Asia/Kolkata"}
+    run = lambda *a: H.sh(["bash", "./securax", "incident", *a], cwd=sb.clone, env=env)  # noqa: E731
+    rc, out = run("regulators")
+    c.ok(rc == 0 and "rbi-nbfc" in out and "sebi-cscrf" in out and "cert-in" in out and "UNVERIFIED" in out,
+         "regulators are listed, and the ones not verified against primary text say so", tail(out, 400))
+    seven_ago = (_dt.datetime.now(_dt.timezone.utc) - _dt.timedelta(hours=7)).strftime("%Y-%m-%dT%H:%M:%S+00:00")
+    rc, out = run("open", "Ransomware on file server", "--regulators", "rbi-nbfc,sebi-cscrf,cert-in", "--detected", seven_ago, "--severity", "high")
+    cid = next((w for w in out.split() if w.startswith("INC-")), "").rstrip(":")
+    c.ok(rc == 0 and cid and out.count("OVERDUE") >= 4, "one detection starts every regulator's clock; the 6-hour reports are already overdue", tail(out, 500))
+    rc, out = run("due")
+    c.ok(rc == 2 and "OVERDUE" in out, "`incident due` exits 2 when something is overdue (for cron / n8n alerts)", f"rc={rc} {tail(out, 200)}")
+    rc, out = run("draft", cid, "--regulator", "rbi-nbfc", "--obligation", "daksh")
+    c.ok(rc == 0 and "<<MISSING" in out and "daksh.rbi.org.in" in out, "the DAKSH draft names the channel and what is still missing", tail(out, 400))
+    run("set", cid, "systems_affected=FS01", "impact=3 branches offline")
+    rc, out = run("file", cid, "--regulator", "rbi-nbfc", "--obligation", "daksh", "--reference", "DK-001")
+    c.ok(rc == 0 and "LATE" in out, "a filing after the deadline is recorded as LATE", tail(out, 300))
+    rc, out = run("verify", cid)
+    c.ok(rc == 0 and "intact" in out, "the case log verifies", tail(out, 200))
+    log = d / f"{cid}.jsonl"
+    log.write_text(log.read_text().replace("3 branches offline", "no impact"))
+    rc, out = run("verify", cid)
+    c.ok(rc == 1 and "TAMPERING" in out, "editing a log entry is detected", tail(out, 300))
+    rc, out = run("rollup", "--regulator", "sebi-cscrf", "--period", "2026Q3")
+    c.ok(rc == 0 and "Due 15 Oct 2026" in out, "the SEBI quarterly report is due 15 days after quarter end", tail(out, 300))
+
+
+@journey("gateway_residency", "The REAL gateway container with data residency enforced (India policy): an Aadhaar-bearing prompt asked of a global model is sent to the local one and the audit says why; a plain prompt is untouched; 'block' refuses with 403; the lifecycle refuses an out-of-policy cloud region and an unattested cloud.")
+def j_gateway_residency(sb: H.Sandbox, c: Checks):
+    import importlib.util as _iu
+    import json as _json
+    import time as _time
+    import urllib.error
+    import urllib.request
+    spec = _iu.spec_from_file_location("sbx_guardrails", sb.clone / "apps" / "llm-gateway" / "app" / "guardrails.py")
+    gr = _iu.module_from_spec(spec)
+    sys.modules["sbx_guardrails"] = gr
+    spec.loader.exec_module(gr)
+    base11 = "23456789012"
+    aadhaar = next(base11 + d for d in "0123456789" if gr.verhoeff_valid(base11 + d))
+    envf = sb.clone.parent / "gw-res.env"
+    envf.write_text("LITELLM_MASTER_KEY=sk-range-dev\n")
+    rc, out = H.sh(["bash", "./securax", "residency", "--env-file", str(envf), "enable", "--jurisdiction", "IN"], cwd=sb.clone)
+    c.ok(rc == 0 and "ENFORCED" in out, "`residency enable --jurisdiction IN` turns enforcement on", tail(out, 300))
+    env = {k: v for k, v in (ln.split("=", 1) for ln in envf.read_text().splitlines() if "=" in ln)}
+    rc, out = H.sh(["docker", "build", "-q", "-t", "securax-gw-identity:sbx", "apps/llm-gateway"], cwd=sb.clone, timeout=600)
+    c.ok(rc == 0, "the gateway image builds", tail(out, 300))
+    name, port = "sbx-gw-residency", 18481
+
+    def start(action):
+        H.sh(["docker", "rm", "-f", name])
+        H.sh(["docker", "run", "-d", "--name", name, "-p", f"127.0.0.1:{port}:8080", "-e", "UPSTREAM_URL=mock", "-e", "RESIDENCY_MODE=enforce",
+              "-e", f"RESIDENCY_ACTION={action}", "-e", f"RESIDENCY_POLICY_B64={env['RESIDENCY_POLICY_B64']}", "securax-gw-identity:sbx"])
+        for _ in range(60):
+            try:
+                urllib.request.urlopen(f"http://127.0.0.1:{port}/healthz", timeout=2)
+                return
+            except OSError:
+                _time.sleep(1)
+
+    def chat(text, headers=None):
+        req = urllib.request.Request(f"http://127.0.0.1:{port}/v1/chat/completions", method="POST", data=_json.dumps(
+            {"model": "bank-assistant", "messages": [{"role": "user", "content": text}]}).encode(), headers={"Content-Type": "application/json", **(headers or {})})
+        try:
+            with urllib.request.urlopen(req, timeout=15) as r:
+                return r.status, _json.loads(r.read().decode())
+        except urllib.error.HTTPError as e:
+            return e.code, _json.loads(e.read().decode())
+    try:
+        start("reroute")
+        st, body = chat(f"customer aadhaar {aadhaar}, please summarise")
+        c.ok(st == 200 and body.get("model") == "bank-assistant-local", "an Aadhaar-bearing prompt for a global model is sent to the local model", f"{st} {str(body)[:200]}")
+        st, body = chat("what is the repo rate?")
+        c.ok(st == 200 and body.get("model") == "bank-assistant", "an ordinary prompt keeps the model it asked for", f"{st} {str(body)[:200]}")
+        st, body = chat("quarterly figures", {"X-Data-Class": "regulatory"})
+        c.ok(st == 200 and body.get("model") == "bank-assistant-local", "the X-Data-Class header can raise the class", f"{st} {str(body)[:200]}")
+        _rc, logs = H.sh(["docker", "logs", name])
+        events = [_json.loads(ln) for ln in logs.splitlines() if ln.startswith("{")]
+        c.ok(any(e.get("residency", {}).get("action") == "rerouted" and e["residency"].get("class") == "regulatory" for e in events),
+             "the audit trail records the class, the requested model and why it was rerouted", tail(logs, 400))
+        c.ok(aadhaar not in logs, "the Aadhaar number itself is not in the audit log", tail(logs, 200))
+        start("block")
+        st, body = chat(f"aadhaar {aadhaar}")
+        c.ok(st == 403 and body["error"]["type"] == "data_residency", "with action=block the request is refused (403)", f"{st} {str(body)[:200]}")
+    finally:
+        H.sh(["docker", "rm", "-f", name])
+    home = sb.clone.parent / "res-home"
+    envp = {**os.environ, "SECURAX_HOME_DIR": str(home), "TF_VAR_region": "us-east-1"}
+    rc, out = H.sh(["bash", "./securax", "residency", "--env-file", str(envf), "region", "aws", "us-east-1"], cwd=sb.clone, env=envp)
+    c.ok(rc == 1 and "not allowed" in out, "a cloud region outside the policy is refused", tail(out, 300))
+    rc, out = H.sh(["bash", "./securax", "residency", "--env-file", str(envf), "region", "aws", "ap-south-1"], cwd=sb.clone, env=envp)
+    c.ok(rc == 1 and "attest" in out, "an in-policy region is still refused until the cloud is attested", tail(out, 300))
+    H.sh(["bash", "./securax", "residency", "--env-file", str(envf), "attest", "aws", "--ref", "MeitY-123"], cwd=sb.clone, env=envp)
+    rc, out = H.sh(["bash", "./securax", "residency", "--env-file", str(envf), "region", "aws", "ap-south-1"], cwd=sb.clone, env=envp)
+    c.ok(rc == 0 and "allowed" in out, "…and allowed once the entity records its evidence reference", tail(out, 300))
+
+
 # ═══════════════════════════════════════════ runner ═══════════════════════════════════════════
 @journey("gameday", "`./securax gameday`: real failures injected into the burrow twin (node loss, control-plane restart, an etcd snapshot-RESTORE disaster drill); each must be detected, contained, recovered within its SLO; the twin is left as found.", slow=True)
 def j_gameday(sb: H.Sandbox, c: Checks):

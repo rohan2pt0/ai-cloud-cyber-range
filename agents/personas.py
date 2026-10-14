@@ -135,7 +135,9 @@ def ask_agent(agent: str, question: str, context: str = "", call_gateway: bool =
     if call_gateway and gw:
         try:
             import httpx
+            key = os.getenv("GATEWAY_API_KEY")          # a gateway service key when authentication is on
             r = httpx.post(gw.rstrip("/") + "/v1/chat/completions", timeout=90,
+                           headers={"Authorization": f"Bearer {key}"} if key else None,
                            json={"model": "bank-assistant", "messages": messages})
             if r.status_code == 200:
                 out["answer"] = r.json()["choices"][0]["message"]["content"]
