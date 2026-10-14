@@ -298,3 +298,11 @@ def test_metering_metrics_for_usage_and_sla():
         return next(float(ln.split()[-1]) for ln in text.splitlines() if ln.startswith(key))
 
     assert val(after, "guardrail_request_latency_ms_count") == val(before, "guardrail_request_latency_ms_count") + 1
+
+
+def test_malformed_urls_in_model_output_do_not_crash_the_rails_and_are_removed():
+    """Found by dogfooding: urlparse('http://[abc') raises ValueError, which used to escape the output rails (a 500 on a model reply)."""
+    for bad in ("see http://[abc for details", "![x](http://[::1)", "go to https://[bad.example/x now"):
+        v = g.inspect_output(bad, {"rbi.org.in"}, set())          # must not raise
+        assert "[abc" not in v.text and "bad.example" not in v.text and "[::1" not in v.text
+        assert any(f.rule in ("OUT-untrusted-link", "OUT-md-image-exfil") for f in v.findings)

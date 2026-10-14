@@ -1,0 +1,18 @@
+{
+  "about": "Threat-intel snapshots the estate can use with NO network. `./securax offline sync` refreshes them when you are online; everything that uses them keeps working (and says how old they are) when you are not.",
+  "dir": "intel",
+  "sources": {
+    "kev": {
+      "what": "CISA Known Exploited Vulnerabilities: CVEs attackers are using right now. Prioritise these first.",
+      "urls": ["https://www.cisa.gov/sites/default/files/feeds/known_exploited_vulnerabilities.json",
+               "https://raw.githubusercontent.com/cisagov/kev-data/develop/known_exploited_vulnerabilities.json"],
+      "licence": "CC0 (CISA)", "max_bytes": 20000000, "stale_days": 7
+    },
+    "attack": {
+      "what": "MITRE ATT&CK Enterprise: technique id → name and tactics (slim extract; the 55 MB bundle is streamed, never loaded whole).",
+      "urls": ["https://raw.githubusercontent.com/mitre-attack/attack-stix-data/master/enterprise-attack/enterprise-attack.json"],
+      "licence": "© The MITRE Corporation. Approved for public release. Used under the ATT&CK Terms of Use: https://attack.mitre.org/resources/terms-of-use/",
+      "max_bytes": 200000000, "stale_days": 180
+    }
+  }
+}

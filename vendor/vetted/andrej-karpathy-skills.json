@@ -1,0 +1,21 @@
+{
+  "name": "andrej-karpathy-skills",
+  "source": "/tmp/ks",
+  "commit": "2c606141936f1eeef17fa3043a72095b4765b9c2",
+  "upstream_tree_sha256": "955c07d2e2e70b3e571726b92620e687dc83cb2fc7dc9f6ff5d18f2b5ecb91f7",
+  "vendored_tree_sha256": "",
+  "licence": "NONE",
+  "verdict": "REVIEW",
+  "counts": {
+    "critical": 0,
+    "high": 1,
+    "medium": 0,
+    "low": 0
+  },
+  "vetted_at": "2026-10-13T23:52:54Z",
+  "vendored_path": "",
+  "review_note": "Reference only, nothing vendored: the repo has NO licence, so we wrote the four rules in our own words (BUILD-CONTRACT.md) and credit the source. Read the 2.3 KB CLAUDE.md in full: plain behavioural guidance, no instructions that target the agent against the user.",
+  "reviewed_findings": [
+    "licence@-:0"
+  ]
+}
