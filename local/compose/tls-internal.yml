@@ -3,7 +3,7 @@
 # other container, (3) an internal name <service>.securax.internal, and every CLIENT is pointed at the https name and given a trust file that holds the
 # public CAs PLUS the estate's CA (never ours alone: that would break every call to a cloud AI provider).
 x-sidecar: &sidecar
-  image: nginx:1.27-alpine
+  image: nginx:1.30-alpine
   profiles: ["core", "security", "ai"]
   restart: unless-stopped
   mem_limit: 24m

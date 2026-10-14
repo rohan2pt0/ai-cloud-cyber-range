@@ -1,0 +1,195 @@
+{
+  "about": "Post-quantum cryptography readiness of this estate, assessed against what the estate demonstrably does. Based on the NIST post-quantum standards (FIPS 203 ML-KEM, FIPS 204 ML-DSA, FIPS 205 SLH-DSA), NIST's draft transition plan (IR 8547) and the scope the RBI has given its Q-SAFE committee (cryptography inventory / CBOM, crypto-agility, most-exposed systems). Not a regulator's checklist: RBI has not issued quantum requirements yet.",
+  "source": {
+    "title": "Post-quantum cryptography: NIST FIPS 203/204/205, NIST IR 8547 (draft) and the RBI Q-SAFE committee",
+    "url": "https://csrc.nist.gov/projects/post-quantum-cryptography",
+    "issued": "FIPS 203/204/205 final 13 Aug 2024; HQC selected as a backup KEM Mar 2025; IR 8547 initial public draft Nov 2024; RBI Q-SAFE committee press release 25 May 2026",
+    "read_on": "2026-10-14",
+    "caveat": "The FIPS dates are NIST's. IR 8547 (deprecate RSA/ECC after 2030, disallow after 2035) and FIPS 206 (FN-DSA) status come from secondary sources and are DRAFTS: verify at csrc.nist.gov. The RBI committee had not reported when this was written; nothing here is an RBI requirement. Status is our own judgement."
+  },
+  "items": [
+    {
+      "id": "INV-1",
+      "title": "Cryptography inventory / CBOM of the estate",
+      "applies": "all",
+      "status": "supported",
+      "note": "`./securax crypto` reads the actual certificates, TLS configuration, verifier source and backups and ranks what to fix first; `--cbom` emits a CycloneDX 1.6 Cryptography Bill of Materials. Scope is this estate only: the entity's wider estate is theirs.",
+      "evidence": [
+        "file:governance/crypto.py",
+        "test:governance/tests/test_crypto.py",
+        "cmd:crypto",
+        "journey:backup_encrypted"
+      ]
+    },
+    {
+      "id": "KEX-1",
+      "title": "Hybrid post-quantum key exchange for traffic that leaves the machine (ML-KEM-768 + X25519, FIPS 203)",
+      "applies": "all",
+      "status": "supported",
+      "note": "The HTTPS edge offers X25519MLKEM768 first and keeps classical curves for clients that lack it; the tls_edge journey negotiates the hybrid group against the real edge (OpenSSL 3.5 client) and proves a classical-only client still connects. Browsers that support it (current Chrome, Edge, Firefox) get it automatically.",
+      "evidence": [
+        "file:governance/tls.py",
+        "test:governance/tests/test_tls.py",
+        "journey:tls_edge"
+      ]
+    },
+    {
+      "id": "KEX-2",
+      "title": "Hybrid key exchange on the internal service-to-service hops",
+      "applies": "all",
+      "status": "partial",
+      "note": "The sidecars use the same nginx build and group list, but the negotiated group is proven only at the edge. These hops never leave the machine, so harvest-now-decrypt-later is not the risk there.",
+      "evidence": [
+        "journey:tls_internal"
+      ],
+      "next": "Assert the negotiated group on a sidecar in the tls_internal journey.",
+      "priority": "low"
+    },
+    {
+      "id": "SIG-1",
+      "title": "Post-quantum signatures / certificates (ML-DSA, FIPS 204)",
+      "applies": "all",
+      "status": "gap",
+      "note": "Certificates and the private CA are ECDSA P-256. A signature is forgeable only while the algorithm is broken (never retroactively), and browsers and CA tooling do not yet accept ML-DSA certificates, so this follows rather than leads.",
+      "evidence": [],
+      "next": "Issue a hybrid or ML-DSA estate CA once OpenSSL tooling and browsers accept it; keep the algorithm a single setting in governance/tls.py.",
+      "priority": "medium"
+    },
+    {
+      "id": "SIG-2",
+      "title": "CA lifetime does not outlive the NIST draft disallow date (2035)",
+      "applies": "all",
+      "status": "partial",
+      "note": "The estate CA is valid for 10 years, so it expires after 2035, the date NIST's draft proposes for disallowing P-256. `./securax crypto` flags it from the certificate itself; the CA is private, so the reissue date is ours to choose.",
+      "evidence": [
+        "cmd:crypto",
+        "file:governance/tls.py"
+      ],
+      "next": "Shorten the CA validity or schedule its reissue before 2035; track in the rhythm.",
+      "priority": "medium"
+    },
+    {
+      "id": "AGI-1",
+      "title": "Crypto-agility of caller authentication (JWT / OIDC)",
+      "applies": "all",
+      "status": "partial",
+      "note": "The gateway verifier accepts RS256 (RSA, quantum-vulnerable for signatures) and HS256 (HMAC-SHA-256, quantum-safe with a long secret) and only the algorithms the operator allows. There is no ES256/EdDSA path and no ML-DSA path yet, so moving needs a verifier addition, not just a setting.",
+      "evidence": [
+        "file:apps/llm-gateway/app/identity.py",
+        "test:apps/llm-gateway/tests/test_identity.py"
+      ],
+      "next": "Add ES256 and EdDSA; add ML-DSA when identity providers issue it. Prefer HS256 with a 256-bit secret for service tokens meanwhile.",
+      "priority": "medium"
+    },
+    {
+      "id": "SYM-1",
+      "title": "Symmetric encryption and hashing sized for a quantum adversary",
+      "applies": "all",
+      "status": "supported",
+      "note": "TLS bulk encryption is AES-GCM / ChaCha20-Poly1305 (AES-256 and ChaCha20 stay strong under Grover; AES-128 is offered for compatibility and is the first to retire); API keys are stored as SHA-256 hashes.",
+      "evidence": [
+        "file:governance/tls.py",
+        "test:governance/tests/test_tls.py"
+      ]
+    },
+    {
+      "id": "REST-1",
+      "title": "Backups encrypted at rest with a quantum-safe construction",
+      "applies": "all",
+      "status": "supported",
+      "note": "OpenPGP symmetric AES-256 with a key file you keep off the machine or a typed passphrase; there is no public-key step to break. A wrong key and a tampered file are refused before anything is touched; `crypto --strict` fails while backups are unprotected. Strength equals the strength of your key file / passphrase. Integrity is OpenPGP's modification-detection code.",
+      "evidence": [
+        "cmd:backup",
+        "cmd:crypto",
+        "journey:backup_encrypted"
+      ]
+    },
+    {
+      "id": "EGR-1",
+      "title": "Key exchange on calls to cloud AI providers",
+      "applies": "all",
+      "status": "partial",
+      "note": "The router image that makes the calls offers hybrid key exchange (OpenSSL 3.5 or later, probed by `crypto`), but the provider decides what is accepted. Sensitive classes stay local by the data-tier router, so only what you accepted to send to a cloud travels.",
+      "evidence": [
+        "cmd:crypto",
+        "journey:gateway_residency"
+      ],
+      "next": "Re-run `./securax crypto` after each router image update; record which providers negotiate the hybrid group.",
+      "priority": "low"
+    },
+    {
+      "id": "HNDL-1",
+      "title": "Data with long confidentiality horizons is identified and kept off recordable paths",
+      "applies": "all",
+      "status": "partial",
+      "note": "Classification-aware routing keeps RED data local and the residency guard restricts regions. Nothing yet labels data by how long it must stay secret.",
+      "evidence": [
+        "journey:gateway_residency"
+      ],
+      "next": "Add a retention-horizon label to the data classes and let `crypto` list which classes cross an unprotected path.",
+      "priority": "medium"
+    },
+    {
+      "id": "VPN-1",
+      "title": "Remote-access tunnel with a post-quantum handshake",
+      "applies": "all",
+      "status": "gap",
+      "note": "Tailscale / WireGuard use Curve25519; a standard post-quantum WireGuard handshake does not exist yet (a pre-shared key mixed into the handshake is the interim mitigation). The estate does not run the VPN.",
+      "evidence": [],
+      "next": "Document the pre-shared-key option and keep sensitive traffic on the local network.",
+      "priority": "medium"
+    },
+    {
+      "id": "FIPS-1",
+      "title": "FIPS 140-3 validated cryptographic modules",
+      "applies": "all",
+      "status": "gap",
+      "note": "The estate uses the OpenSSL builds inside its images without the FIPS provider enabled.",
+      "evidence": [],
+      "next": "Document which images would need a FIPS provider and whether a validated build exists for them.",
+      "priority": "low"
+    },
+    {
+      "id": "SIGN-1",
+      "title": "Release provenance signatures",
+      "applies": "all",
+      "status": "gap",
+      "note": "SLSA attestations use Sigstore keyless signing (ECDSA P-256): quantum-vulnerable for signatures, third-party controlled, and not retroactively forgeable.",
+      "evidence": [],
+      "next": "Follow Sigstore's post-quantum signature work; nothing to change here.",
+      "priority": "low"
+    },
+    {
+      "id": "GOV-1",
+      "title": "Quantum-migration plan, owner and timeline; board reporting",
+      "applies": "all",
+      "status": "entity",
+      "note": "A plan, an accountable owner and a timeline belong to the regulated entity. `./securax crypto` supplies the inventory and the ranked do-first list as an input.",
+      "evidence": []
+    },
+    {
+      "id": "VEN-1",
+      "title": "Vendor and cloud-provider post-quantum roadmaps (concentration and third-party risk)",
+      "applies": "all",
+      "status": "entity",
+      "note": "Asking each provider and vendor for its post-quantum roadmap and contract position is the entity's process.",
+      "evidence": []
+    },
+    {
+      "id": "KMS-1",
+      "title": "Key custody for the entity's own keys (HSM / KMS, rotation)",
+      "applies": "all",
+      "status": "entity",
+      "note": "The estate holds its own CA key and the backup key file; the entity's HSM/KMS and key-ceremony controls are the entity's.",
+      "evidence": []
+    },
+    {
+      "id": "RBI-1",
+      "title": "RBI quantum-safe requirements",
+      "applies": "all",
+      "status": "na",
+      "note": "The RBI constituted the Q-SAFE committee on 25 May 2026 (cryptography inventory / CBOM, crypto-agility, most-exposed systems, vendor tool maturity, a roadmap); its report was pending when this was written. No requirement exists yet to map to. Review this map when it is published.",
+      "evidence": []
+    }
+  ]
+}

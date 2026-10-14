@@ -87,7 +87,7 @@ def measure(root: pathlib.Path = ROOT, backups: pathlib.Path | None = None, now:
     now = now or time.time()
     out: dict = {"ts": int(now), "docker": False}
     backups = backups or pathlib.Path(os.environ.get("SECURAX_BACKUP_DIR") or env_value(root, "SECURAX_BACKUP_DIR") or root / "backups")
-    files = sorted(backups.glob("securax-*.tar.gz"), key=lambda f: f.stat().st_mtime, reverse=True) if backups.exists() else []
+    files = sorted(backups.glob("securax-*.tar.gz*"), key=lambda f: f.stat().st_mtime, reverse=True) if backups.exists() else []
     out["backups"] = {"dir": str(backups), "count": len(files), "bytes": sum(f.stat().st_size for f in files),
                       "newest_age_days": round((now - files[0].stat().st_mtime) / 86400, 1) if files else None}
     out["home"] = {"dir": str(HOME), "bytes": dir_size(HOME)}

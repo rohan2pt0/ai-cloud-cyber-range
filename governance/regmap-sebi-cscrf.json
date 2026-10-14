@@ -504,7 +504,7 @@
     "mid"
    ],
    "status": "partial",
-   "note": "Cloud data volumes use KMS encryption. Every browser, phone and cross-machine connection now goes through one TLS 1.2/1.3 edge with a private, name-constrained CA (`./securax tls on`, proven by the tls_edge journey on the real stack); provider traffic is TLS. Container-to-container hops on the private Docker networks, local volumes and backups are still unencrypted; no data-in-use protection.",
+   "note": "Cloud data volumes use KMS encryption. Every browser, phone and cross-machine connection now goes through one TLS 1.2/1.3 edge with a private, name-constrained CA (`./securax tls on`, proven by the tls_edge journey on the real stack); provider traffic is TLS. Container-to-container hops are encrypted only with `tls internal on`; local volumes are not encrypted by the estate; backups are plain unless AES-256 encryption is enabled (`./securax crypto keygen`); no data-in-use protection.",
    "evidence": [
     "file:infra/terraform/lifecycle/modules/tree-aws/main.tf",
     "file:governance/tls.py",
@@ -598,7 +598,7 @@
    "title": "Data protection, backup and recovery; admin rights off by default on workstations; no sensitive data in client-side storage; renew certificates; control macros; data-migration policy",
    "applies": "all",
    "status": "partial",
-   "note": "Backup and restore are proven; endpoint admin rights, macros and certificate renewal are the entity's; backups are unencrypted.",
+   "note": "Backup and restore are proven; endpoint admin rights, macros and certificate renewal are the entity's; backups are plain unless you enable AES-256 encryption (`./securax crypto keygen`).",
    "evidence": [
     "journey:backup_restore"
    ],

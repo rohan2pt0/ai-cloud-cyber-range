@@ -49,7 +49,7 @@ Proven by real-stack journey `tls_internal` (19 checks): the estate restarts wit
 2. The optional **Sprout stage** (Prometheus scraping `gateway:8080`, Wazuh/MISP/TheHive internals) is outside this overlay.
 3. **n8n** reads the gateway address from an environment variable; this assumes env access is not blocked in workflow expressions (true for the pinned 1.74; re-test on upgrade).
 4. A compromised container sharing a service's network namespace (the sidecar) can still see that service's plaintext on loopback — that is inherent to the sidecar pattern.
-5. TLS to cloud AI providers is theirs; backups are not encrypted (separate item); there is **no client-certificate (mTLS)** between services yet. Postgres is not used by this estate, so there is no database hop.
+5. TLS to cloud AI providers is theirs; backups can be encrypted (doc 41; plain unless you set a key file); there is **no client-certificate (mTLS)** between services yet. Postgres is not used by this estate, so there is no database hop.
 6. Quantum readiness: certificates are classical ECDSA P-256 (separate piece of work).
 
 `./securax tls status` lists what applies to your current setup every time.

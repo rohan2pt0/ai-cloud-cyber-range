@@ -596,7 +596,7 @@
     "V"
    ],
    "status": "partial",
-   "note": "Restore is proven (backup_restore, etcd restore in a game day; measured restore 12.5 s on the twin). Backups are a periodic tar.gz — RPO equals the backup interval, not near-zero — and archives are not encrypted or integrity-protected.",
+   "note": "Restore is proven (backup_restore, etcd restore in a game day; measured restore 12.5 s on the twin). Backups are a periodic tar.gz — RPO equals the backup interval, not near-zero — and archives are plain unless you enable encryption (AES-256 with an off-machine key file or a passphrase: `./securax crypto keygen`; proven by the backup_encrypted journey); a plain archive carries SHA-256 sums but is not signed.",
    "evidence": [
     "journey:backup_restore",
     "journey:gameday"
@@ -755,13 +755,13 @@
     "V"
    ],
    "status": "partial",
-   "note": "Cloud volumes use KMS and TLS to providers. The estate edge enforces TLS 1.2/1.3 with forward-secret AEAD ciphers only, no session tickets, ECDSA P-256 certificates, checked by the tls_edge journey (TLS 1.1 refused, untrusted client refused). Internal container hops are still plain HTTP; backups are unencrypted; a quantum-vulnerable-algorithm inventory (CBOM) does not exist yet.",
+   "note": "Cloud volumes use KMS and TLS to providers. The estate edge enforces TLS 1.2/1.3 with forward-secret AEAD ciphers only, no session tickets, ECDSA P-256 certificates, checked by the tls_edge journey (TLS 1.1 refused, untrusted client refused). Internal container hops are encrypted only when `tls internal on` is set (phase 2); backups are plain unless encryption is enabled; the edge offers a hybrid post-quantum key exchange (X25519+ML-KEM-768) and `./securax crypto` produces the cryptography inventory (CBOM), but certificates are still ECDSA P-256 (no post-quantum signatures yet).",
    "evidence": [
     "file:infra/terraform/lifecycle/modules/tree-aws/main.tf",
     "file:governance/tls.py",
     "journey:tls_edge"
    ],
-   "next": "Internal TLS is available (`tls internal on`, phase 2; exceptions in doc 40) - make it the default for regulated profiles; a TLS/cipher scan of every listener in the sandbox; a cryptography inventory (CBOM) with a post-quantum plan.",
+   "next": "Internal TLS is available (`tls internal on`, phase 2; exceptions in doc 40) - make it the default for regulated profiles; a TLS/cipher scan of every listener in the sandbox; make encrypted backups the default; post-quantum signatures (see `comply pqc`).",
    "priority": "medium"
   },
   {
