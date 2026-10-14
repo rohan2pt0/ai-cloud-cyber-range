@@ -26,12 +26,14 @@
    "paths": [
     "plugins/**",
     "local/compose/gen_litellm_config.py",
+    "local/compose/gen_opencode_config.py",
     "local/compose/litellm-config.yaml",
     "local/compose/model_discovery.py",
     "local/compose/model_bench.py"
    ],
    "guarded_by": [
     "key_wiring_and_failover",
+    "provider_opencode_go",
     "model_self_correction",
     "providers_wizard",
     "keys_wizard",
@@ -79,7 +81,8 @@
     "cockpit_page",
     "tls_edge",
     "tls_internal",
-    "backup_encrypted"
+    "backup_encrypted",
+    "inspect_sandbox"
    ],
    "affects": [
     "gateway",
@@ -155,6 +158,7 @@
   "governance": {
    "paths": [
     "governance/**",
+    "integrations/rea/**",
     "docs/securax/regulatory/**"
    ],
    "guarded_by": [
@@ -164,7 +168,8 @@
     "gateway_identity",
     "gateway_residency",
     "cockpit_page",
-    "backup_encrypted"
+    "backup_encrypted",
+    "inspect_sandbox"
    ],
    "affects": []
   },

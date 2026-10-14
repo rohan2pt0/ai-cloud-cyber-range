@@ -39,7 +39,7 @@ WEBUI = "http://127.0.0.1:3000"
 FAKE_CTL = "http://127.0.0.1:19000"
 
 PROVIDER_HOSTS = ["generativelanguage.googleapis.com", "api.groq.com", "openrouter.ai", "api.openai.com",
-                  "api.deepseek.com", "api.mistral.ai", "api.x.ai", "api.perplexity.ai", "api.anthropic.com"]
+                  "api.deepseek.com", "api.mistral.ai", "api.x.ai", "api.perplexity.ai", "api.anthropic.com", "opencode.ai"]
 LITE_SERVICES = "gateway litellm ollama open-webui guiding-map estate-sync"
 # Pretend to be a 16 GB laptop whose Docker VM got ~9 GB (the shipped target) regardless of this host's size,
 # so the sandbox exercises the sizing a real user gets (small model, lite mode) and stays fast.

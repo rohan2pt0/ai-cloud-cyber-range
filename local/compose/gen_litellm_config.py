@@ -97,6 +97,12 @@ def internal_api_base(url: str, env: dict, baseline: bool = False) -> str:
     return url
 
 
+def install_id(env: dict) -> str:
+    """A stable, non-secret id for THIS install (8 hex chars of a hash of the router key): sent as the session id some providers ask coding agents to identify with."""
+    import hashlib
+    return hashlib.sha256((env_lookup(env, "LITELLM_MASTER_KEY") or "securax").encode()).hexdigest()[:8]
+
+
 def provider_params(p: dict, env: dict, baseline: bool = False) -> dict:
     """litellm_params for one provider (everything except model_name)."""
     params: dict[str, object] = {"model": model_for(p, env, baseline)}
@@ -118,6 +124,10 @@ def provider_params(p: dict, env: dict, baseline: bool = False) -> dict:
         params["api_key"] = f"os.environ/{keys[0]}"
     if p.get("needs_base"):
         params["api_base"] = "os.environ/AZURE_API_BASE"
+    elif p.get("api_base"):
+        params["api_base"] = p["api_base"]                       # an OpenAI-compatible endpoint that is not the vendor default (e.g. OpenCode Go)
+    if p.get("headers"):
+        params["extra_headers"] = {k: v.replace("{install}", install_id(env)) for k, v in p["headers"].items()}
     return params
 
 
@@ -158,7 +168,7 @@ def live_chain(chain_ids: list[str], enabled: set[str]) -> list[str]:
 
 def _emit_params(lines: list[str], params: dict) -> None:
     for k, v in params.items():
-        lines.append(f"      {k}: {v}")
+        lines.append(f"      {k}: {json.dumps(v) if isinstance(v, dict) else v}")
 
 
 def generate(catalog: dict, env: dict, baseline: bool = False) -> str:

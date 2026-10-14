@@ -1,0 +1,33 @@
+# Weekly: has a third-party package we pin (integrations/rea/watchlist.json) shipped a newer version that can do MORE than the pinned one
+# (new install script, network, program launching, hard-coded address, native code)? The REA sandbox inspects both versions with no network and
+# a read-only disk; the job goes RED when a person should look. Static triage by heuristics, not a verdict: see docs/securax/43.
+name: supply-chain-watch
+on:
+  schedule: [{ cron: "41 5 * * 1" }]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - name: build the pinned REA sandbox image (lockfile, integrity hashes, no install scripts)
+        run: python3 governance/inspector.py --build
+      - name: prove the sandbox is closed (no network, read-only disk, not root)
+        run: python3 governance/inspector.py --selftest
+      - name: compare every pinned package with the registry and inspect any newer version
+        run: python3 governance/inspector.py --watch --ci | tee watch.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: supply-chain-watch
+          path: |
+            watch.json
+            ~/.securax/inspect/*.json
+          retention-days: 90
