@@ -1,0 +1,1033 @@
+{
+ "about": "Standard-level assessment of the estate against the SEBI Cybersecurity and Cyber Resilience Framework (CSCRF). 'entity' rows are obligations of the regulated entity that software cannot discharge. SEBI categories: MII, Qualified RE, Mid-size, Small-size, Self-certification.",
+ "source": {
+  "title": "SEBI Cybersecurity and Cyber Resilience Framework (CSCRF) for SEBI Regulated Entities",
+  "url": "https://www.sebi.gov.in/legal/circulars/aug-2024/cybersecurity-and-cyber-resilience-framework-cscrf-for-sebi-regulated-entities-res-_85964.html",
+  "issued": "Circular SEBI/HO/ITD-1/ITD_CSC_EXT/P/CIR/2024/113, 20 Aug 2024, read with the clarifications of 31 Dec 2024 (CIR/2024/184), 30 Apr 2025 (CIR/2025/60) and 28 Aug 2025 (CIR/2025/119) and SEBI's June 2025 FAQs",
+  "read_on": "2026-10-14",
+  "caveat": "CSCRF is a circular, not a Master Direction. Standards (e.g. PR.AA.S1) are grouped where the guideline block groups them. Applicability is taken from the guideline tables in the circular; later circulars and the entity's category assignment can change it. Obtain the entity's category and check for SEBI circulars issued after 28 Aug 2025 before relying on this."
+ },
+ "categories": {
+  "mii": "Market Infrastructure Institution",
+  "qre": "Qualified RE",
+  "mid": "Mid-size RE",
+  "small": "Small-size RE",
+  "self": "Self-certification RE"
+ },
+ "items": [
+  {
+   "id": "GV.OC.S1-S3",
+   "title": "Cybersecurity roles and responsibilities (own staff, third-party staff, privileged users) defined and aligned",
+   "applies": [
+    "mii",
+    "qre",
+    "mid"
+   ],
+   "status": "entity",
+   "note": "Organisational.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "GV.OC.S2 (laws)",
+   "title": "Understand and comply with IT Act, DPDP Act 2023, SEBI/GoI circulars; audits and inspections by SEBI and its agencies; forensic auditor for root cause",
+   "applies": "all",
+   "status": "partial",
+   "note": "PII redaction targets Indian identifiers (Aadhaar with Verhoeff, PAN, UPI) before text reaches a model and a DPDP mapping exists; consent, erasure, breach notice and inspection access are the entity's processes.",
+   "evidence": [
+    "file:apps/llm-gateway/app/guardrails.py",
+    "test:apps/llm-gateway/tests/test_guardrails.py",
+    "file:docs/securax/04-COMPLIANCE-MAP.md"
+   ],
+   "next": "Add a DPDP data-principal-request helper (export/erase a user's chat data across the stores) with a journey.",
+   "priority": "medium"
+  },
+  {
+   "id": "GV.RR.S3",
+   "title": "CISO (MII, QRE: reports directly to MD & CEO) / Designated Officer (others); time-bound incident reporting channel to CISO",
+   "applies": "all",
+   "status": "entity",
+   "note": "Appointment and reporting line are the entity's. The SOC case feed is the time-bound channel SecuRAX can supply.",
+   "evidence": [
+    "file:ai-soc/soc/triage.py"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "GV.RR.S4",
+   "title": "Separate cybersecurity budget head; adequate resources",
+   "applies": [
+    "mii",
+    "qre",
+    "mid"
+   ],
+   "status": "entity",
+   "note": "Entity's budget.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "GV.RR.S5-S6",
+   "title": "Employee due diligence, screening, onboarding training, exit procedures; NDAs and due diligence of third-party providers",
+   "applies": [
+    "mii",
+    "qre",
+    "mid"
+   ],
+   "status": "entity",
+   "note": "HR and procurement.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "GV.PO.S1,S2,S5",
+   "title": "Board-approved cybersecurity and cyber-resilience policy covering CSCRF (deviations justified) and the listed sub-policies (asset, patch, vulnerability, VAPT, audit, monitoring, configuration, change, SSDLC, authentication, authorisation, segmentation, encryption, PII, etc.)",
+   "applies": "all",
+   "status": "entity",
+   "note": "Board-approved policy documents are the entity's. The compliance maps and docs 04/27 are inputs, not the policy.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "GV.PO (data to SEBI)",
+   "title": "Regulatory Data and IT & Cybersecurity Data made accessible to SEBI on request, including data held by external parties (in the agreement)",
+   "applies": "all",
+   "status": "partial",
+   "note": "The evidence pack and audit lines can be produced on demand; external-party clauses are contractual.",
+   "evidence": [
+    "cmd:evidence"
+   ],
+   "next": "Define the 'SEBI request' export (scope, format, 48 h target) as a documented command.",
+   "priority": "medium"
+  },
+  {
+   "id": "GV.PO (PDCA, compliance mgmt, IT Committee)",
+   "title": "PDCA documentation, compliance-management programme, IT Committee for REs with periodic reviews placed before the Board; review of incidents",
+   "applies": [
+    "mii",
+    "qre",
+    "mid"
+   ],
+   "status": "entity",
+   "note": "Governance forums are the entity's. `ccsp`, `comply` and `fitness` supply the review inputs.",
+   "evidence": [
+    "cmd:fitness",
+    "cmd:comply"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "GV.PO (CII, ISO 27001/27002)",
+   "title": "NCIIPC CII principles where identified as CII; adopt ISO 27001/27002 practices",
+   "applies": [
+    "mii",
+    "qre",
+    "mid"
+   ],
+   "status": "entity",
+   "note": "Entity decision; NCIIPC applicability is notified, not self-declared.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "GV.OV.S4",
+   "title": "Cyber Capability Index (CCI, Annexure-K): MII third-party assessed, Qualified RE self-assessed, half-yearly; dashboard integrated with log aggregator available at audit/inspection",
+   "applies": [
+    "mii",
+    "qre"
+   ],
+   "status": "gap",
+   "note": "CCI (Annexure-K, ~25 pages of indicators with weights) is not computed; the nearest thing is the CCSP and compliance coverage maps.",
+   "evidence": [],
+   "next": "Implement CCI scoring as a questionnaire-plus-evidence tool that reads the same evidence references as the compliance maps, with a dashboard export.",
+   "priority": "high"
+  },
+  {
+   "id": "GV.RM.S1-S2",
+   "title": "Cyber risk-management framework (ISO 27005 as guidance): risk appetite, controls, monitoring; metrics MTTD/MTTR/MTTC, false positives/negatives, phishing-test rate, EOL-software counts; risk-based transaction monitoring",
+   "applies": [
+    "mii",
+    "qre",
+    "mid"
+   ],
+   "status": "partial",
+   "note": "The purple loop reports prevented/logged/alerted and the SOC counts cases, but MTTD/MTTR/MTTC and false-positive rates are not computed and there is no EOL/asset metric.",
+   "evidence": [
+    "journey:purple_loop",
+    "file:ai-soc/soc/triage.py"
+   ],
+   "next": "Compute MTTD/MTTR/MTTC and FP/FN rates from SOC cases in the evidence pack.",
+   "priority": "medium"
+  },
+  {
+   "id": "GV.RM.S3",
+   "title": "Comprehensive scenario-based testing of cyber risks (attack scenarios per business model)",
+   "applies": [
+    "mii",
+    "qre",
+    "mid"
+   ],
+   "status": "partial",
+   "note": "Scenario-based testing exists for AI-channel attacks (purple loop) and infrastructure failures (game days); Annexure-E scenarios for exchanges are not modelled.",
+   "evidence": [
+    "journey:purple_loop",
+    "journey:gameday"
+   ],
+   "next": "Add ransomware-on-backups, credential-theft and third-party-outage scenarios.",
+   "priority": "medium"
+  },
+  {
+   "id": "GV.SC.S4",
+   "title": "Third-party service providers must adhere to CSCRF; cyber-audit certificates obtained; responsibility stays with the RE; periodic reports name providers of critical activities",
+   "applies": "all",
+   "status": "entity",
+   "note": "Contractual and assurance obligations of the entity.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "GV.SC.S5",
+   "title": "SBOM for existing and new critical software/SaaS; SBOM contents (licence, supplier, transitive dependencies, hashes...)",
+   "applies": "all",
+   "status": "partial",
+   "note": "CI generates a CycloneDX SBOM for this repository's images and `vet` records licence, pins and tree hashes for third-party content; SBOMs of the entity's other vendors must be obtained from them.",
+   "evidence": [
+    "file:.github/workflows/devsecops.yml",
+    "journey:vet_gate"
+   ],
+   "next": "Publish the SBOM as a release asset and include it in the evidence pack.",
+   "priority": "medium"
+  },
+  {
+   "id": "GV.SC.S7",
+   "title": "Identify third-party providers posing concentration risk; independent audit; validate resilience",
+   "applies": [
+    "mii",
+    "qre",
+    "mid"
+   ],
+   "status": "partial",
+   "note": "Provider failover (local → Gemini → Groq → OpenRouter...) avoids a single AI-provider dependency; no register of concentration risk.",
+   "evidence": [
+    "journey:key_wiring_and_failover"
+   ],
+   "next": "Provider register with concentration flags and exit plans.",
+   "priority": "low"
+  },
+  {
+   "id": "ID.AM.S1,S4",
+   "title": "Critical systems identified, classified and approved by the Board; inventory of hardware, software, digital assets, APIs, cloud assets, data flows; updates within 3 working days; criticality assessment (threat modelling, VA)",
+   "applies": "all",
+   "status": "partial",
+   "note": "Estate components, endpoints and models are inventoried from the genome and registry; the entity's wider inventory, Board approval and the 3-day update discipline are not automated.",
+   "evidence": [
+    "cmd:stages",
+    "file:governance/model-registry.yaml"
+   ],
+   "next": "Emit a machine-readable inventory (components, images, ports, data flows) and diff it against the previous run to prove the 3-day rule.",
+   "priority": "medium"
+  },
+  {
+   "id": "ID.AM (network diagram)",
+   "title": "Up-to-date network architecture diagram (wired and wireless)",
+   "applies": "all",
+   "status": "partial",
+   "note": "Architecture diagrams exist for the estate; not generated from live state.",
+   "evidence": [
+    "file:docs/securax/02-ARCHITECTURE.md"
+   ],
+   "next": "Generate the diagram from the compose/Kubernetes definitions so it cannot go stale.",
+   "priority": "low"
+  },
+  {
+   "id": "ID.AM.S6",
+   "title": "Configuration-management database; all IT assets in an ITSM tool; cybersecurity in product life cycles",
+   "applies": [
+    "mii"
+   ],
+   "status": "gap",
+   "note": "No CMDB/ITSM integration.",
+   "evidence": [],
+   "next": "Export the inventory in a CMDB-importable format.",
+   "priority": "low"
+  },
+  {
+   "id": "ID.RA.S1-S2",
+   "title": "Half-yearly (MII) / yearly (QRE, mid-size) risk assessment including post-quantum risk; quantifiable cyber risk score",
+   "applies": [
+    "mii",
+    "qre",
+    "mid"
+   ],
+   "status": "partial",
+   "note": "AI-SPM and the registry assess the AI estate; no risk score and no post-quantum assessment.",
+   "evidence": [
+    "file:redteam/aispm_scan.py"
+   ],
+   "next": "Compute a transparent risk score from findings × asset criticality and list quantum-vulnerable algorithms in use.",
+   "priority": "medium"
+  },
+  {
+   "id": "ID.RA.S3",
+   "title": "Dark-web monitoring and take-down; anti-phishing/anti-rogue-app services; SOPs for CERT-In/NCIIPC advisories with timeframes; process IOC/IOA/malware alerts; onboard to CERT-In intelligence platform; MIIs on NCCC",
+   "applies": [
+    "mii",
+    "qre"
+   ],
+   "status": "partial",
+   "note": "The offline CISA KEV and MITRE ATT&CK snapshots enrich SOC cases and `scan`; the MISP organ can hold indicators. No dark-web/brand monitoring, no CERT-In advisory ingestion or SOP.",
+   "evidence": [
+    "cmd:kev",
+    "journey:offline_power"
+   ],
+   "next": "Ingest CERT-In advisories (RSS/CSV the entity receives) into the SOC enrichment with a response-time clock.",
+   "priority": "medium"
+  },
+  {
+   "id": "ID.RA.S4",
+   "title": "Monitor for phishing sites impersonating the RE's domains and report to CSIRT-Fin/CERT-In; risk-based authentication (device, location, network)",
+   "applies": "all",
+   "status": "gap",
+   "note": "No look-alike-domain monitoring and no authentication at all on the gateway (see PR.AA).",
+   "evidence": [],
+   "next": "Look-alike domain watcher (certificate-transparency + DNS permutations) feeding SOC cases; risk-based login belongs to the IdP.",
+   "priority": "medium"
+  },
+  {
+   "id": "PR.AA.S1-S3,S7,S9 (access)",
+   "title": "Least-privilege, purpose- and time-bound access; periodic review of access, delegated access and unused tokens; unique logged access to critical systems retained ≥2 years (6 months online); lock-out after failed attempts; dormant-account review; leaver de-provisioning; MFA for internet-facing critical systems and all remote/VPN/webmail access",
+   "applies": "all",
+   "status": "gap",
+   "note": "No authentication, accounts, lock-out, dormant-account review or MFA at the gateway or its consoles (the principal is a hash of the caller string or IP). Log retention beyond what the shipper keeps is not enforced.",
+   "evidence": [],
+   "next": "Identity-aware gateway: OIDC/JWT validation, roles, per-subject rate limits, lock-out, session logging, MFA via IdP; retention policy enforced and tested (2 years, 6 months hot).",
+   "priority": "high"
+  },
+  {
+   "id": "PR.AA.S1-S3 (network & endpoint basics)",
+   "title": "Anti-malware/IPS on servers, baseline configuration standards with enforcement checks, secured LAN/Wi-Fi, SMTP limits",
+   "applies": "all",
+   "status": "partial",
+   "note": "The gateway manifest and Kyverno policies enforce non-root, read-only root filesystem and dropped capabilities, and Trivy scans images in CI; configuration baselines are code in git. Endpoint anti-malware and LAN/Wi-Fi controls are the entity's.",
+   "evidence": [
+    "file:.github/workflows/devsecops.yml",
+    "file:local/k8s/gateway.yaml",
+    "file:local/k8s/policies/kyverno-policies.yaml"
+   ],
+   "next": "Add a CIS-benchmark check (kube-bench/docker-bench) to CI and record the baseline.",
+   "priority": "medium"
+  },
+  {
+   "id": "PR.AA (privileged access)",
+   "title": "PIM process/solution; strong password controls; internet access policy; supervise and restrict privileged users, forbid privileged users from reading logs of their own activity",
+   "applies": [
+    "mii",
+    "qre",
+    "mid"
+   ],
+   "status": "gap",
+   "note": "No privileged-access management; no separation between who runs the gateway and who can read its audit log.",
+   "evidence": [],
+   "next": "Admin role separate from auditor role; audit-log store append-only for the admin role.",
+   "priority": "high"
+  },
+  {
+   "id": "PR.AA (segmentation & filters)",
+   "title": "Network segmentation/isolation; WAF, proxy, IPS; web/e-mail filtering; whitelisted ACLs; DNS filtering and DNSSEC; critical-server management only via intranet; SPF/DMARC/DKIM; authorised device inventory",
+   "applies": "all",
+   "status": "partial",
+   "note": "Tenant cells ship default-deny NetworkPolicies and quotas; the gateway applies an outbound link allow-list on model output. WAF, mail, DNS and device controls are the entity's perimeter.",
+   "evidence": [
+    "file:gitops/charts/tenant/templates/networkpolicy.yaml",
+    "file:apps/llm-gateway/app/guardrails.py"
+   ],
+   "next": "Provide a reference egress policy for the gateway (only the router) and test that direct egress is blocked.",
+   "priority": "medium"
+  },
+  {
+   "id": "PR.AA.S1-S3 (algo trading perimeter)",
+   "title": "Isolate and secure perimeter and connectivity of servers running algorithmic trading",
+   "applies": [
+    "mii",
+    "qre",
+    "mid",
+    "small"
+   ],
+   "status": "na",
+   "note": "No algorithmic-trading applications in the estate.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "PR.AA.S4-S5",
+   "title": "Zero-trust: critical systems deny-by-default; delegated access and unused tokens reviewed and cleaned quarterly",
+   "applies": [
+    "mii",
+    "qre"
+   ],
+   "status": "partial",
+   "note": "Default-deny network policy per tenant; user/token review and identity-based zero trust are not implemented.",
+   "evidence": [
+    "file:gitops/charts/tenant/templates/networkpolicy.yaml"
+   ],
+   "next": "Short-lived tokens issued by the IdP and a quarterly token-review report.",
+   "priority": "medium"
+  },
+  {
+   "id": "PR.AA.S6",
+   "title": "Password complexity, first-login change, history, validity; credentials stored with strong hashing; generic IDs removed",
+   "applies": "all",
+   "status": "na",
+   "note": "The gateway stores no passwords; where Keycloak/Open WebUI hold users, their policies apply and have not been tested here.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "PR.AA.S8",
+   "title": "Identify all log sources and collect them (system, application, network, database, security, audit); retention per law; monitor all logs",
+   "applies": "all",
+   "status": "partial",
+   "note": "Gateway decisions are logged and monitored; other organs are not uniformly collected. Retention is declared (≥180 days) but not enforced or tested.",
+   "evidence": [
+    "file:apps/llm-gateway/app/main.py",
+    "journey:purple_loop"
+   ],
+   "next": "Log inventory per organ, central collection, retention enforcement test.",
+   "priority": "medium"
+  },
+  {
+   "id": "PR.AA.S10-S12",
+   "title": "Physical access restricted and supervised; screening; critical-equipment room perimeter, guards, CCTV, card access; remote-support service governance, RDP with MFA and whitelisted IPs; environmental monitoring",
+   "applies": "all",
+   "status": "entity",
+   "note": "Premises and remote-support contracts. For the on-prem burrow, the room is yours.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "PR.AA.S13-S14",
+   "title": "Data-disposal and retention policy; secure disposal of media (wipe, degauss, crypto-shred, destroy)",
+   "applies": "all",
+   "status": "partial",
+   "note": "`prune` deletes stage data after a typed confirmation and keeps nothing; media sanitisation is not performed or recorded.",
+   "evidence": [
+    "journey:lifecycle_sprout"
+   ],
+   "next": "Record disposal in the evidence pack; encrypt volumes so deletion of keys crypto-shreds them.",
+   "priority": "low"
+  },
+  {
+   "id": "PR.AA.S15",
+   "title": "EPP/EDR/XDR, NG-IPS, PowerShell and local admin off by default, AD review for backdoors and service-account compromise, penetration testing of AD abuse, removable media policy; (MII) secure domain controllers",
+   "applies": [
+    "mii",
+    "qre",
+    "mid"
+   ],
+   "status": "partial",
+   "note": "The Wazuh organ gives endpoint/host detection (optional); the range (GOAD) lets you rehearse AD attacks and review controls. Production AD hygiene is the entity's.",
+   "evidence": [
+    "journey:lifecycle_range",
+    "journey:lifecycle_organs"
+   ],
+   "next": "Ship the Sigma/Atomic-test pairs for the AD abuse techniques the range reproduces.",
+   "priority": "low"
+  },
+  {
+   "id": "PR.AA.S16-S17",
+   "title": "API security (rate limiting, authentication/authorisation, OWASP API Top 10, whitelist connections); mobile-application security (root detection, anti-tamper, device binding...); SOPs for open-source application security and Generative-AI security (MII, QRE)",
+   "applies": [
+    "mii",
+    "qre",
+    "mid"
+   ],
+   "status": "partial",
+   "note": "Gateway: rate limiting, request-size limits, prompt-injection and PII rails, output link allow-list, tool-call inspection; mapped to OWASP LLM Top 10 and ATLAS and exercised by the purple loop. No API authentication (see PR.AA.S1-S3); no mobile apps.",
+   "evidence": [
+    "file:apps/llm-gateway/app/guardrails.py",
+    "test:apps/llm-gateway/tests/test_guardrails.py",
+    "journey:purple_loop"
+   ],
+   "next": "Add authentication (above), then a written GenAI-security SOP generated from the rails and the purple-loop results.",
+   "priority": "high"
+  },
+  {
+   "id": "PR.AT.S1-S2",
+   "title": "Cybersecurity awareness and training for employees (phishing, social engineering) and outsourced staff; programmes kept current",
+   "applies": "all",
+   "status": "entity",
+   "note": "People programme.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "PR.AT.S3",
+   "title": "Customer-facing grievance, fraud-reporting and investor-education features in mobile/web apps",
+   "applies": "all",
+   "status": "na",
+   "note": "No investor-facing applications in the estate.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "PR.DS.S1-S3 (encryption)",
+   "title": "Encryption in motion, at rest and in use with strong algorithms; FDE + file-based encryption; encryption of data in cloud (Annexure-J)",
+   "applies": [
+    "mii",
+    "qre",
+    "mid"
+   ],
+   "status": "partial",
+   "note": "Cloud data volumes use KMS encryption; provider traffic is TLS; local loopback traffic, local volumes and backups are unencrypted; no data-in-use protection.",
+   "evidence": [
+    "file:infra/terraform/lifecycle/modules/tree-aws/main.tf"
+   ],
+   "next": "Encrypt backups; document LUKS/FDE for the burrow; TLS between internal components; test with a TLS policy scan.",
+   "priority": "high"
+  },
+  {
+   "id": "PR.DS.S1-S3 (DLP)",
+   "title": "Data-loss prevention; prevent unauthorised access, copying, transmission of contractual/fiduciary data; authorised storage devices only",
+   "applies": [
+    "mii",
+    "qre",
+    "mid"
+   ],
+   "status": "supported",
+   "note": "On the AI channel the gateway redacts PII and secrets before text reaches a model, blocks exfiltration patterns in model output, and the purple loop proves the redaction and the alert. Scope: data passing through the gateway only — not e-mail, endpoints or removable media.",
+   "evidence": [
+    "file:apps/llm-gateway/app/guardrails.py",
+    "test:apps/llm-gateway/tests/test_guardrails.py",
+    "journey:purple_loop"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "PR.DS (app security, customer-facing)",
+   "title": "Application security for customer-facing internet applications (IBTs, portals, back office); Annexure-G measures",
+   "applies": [
+    "mii",
+    "qre",
+    "mid",
+    "small"
+   ],
+   "status": "na",
+   "note": "No customer-facing trading or back-office applications.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "PR.DS (capacity)",
+   "title": "Real-time capacity monitoring with alerts; comply with SEBI capacity-planning circulars",
+   "applies": [
+    "mii",
+    "qre",
+    "mid",
+    "small"
+   ],
+   "status": "partial",
+   "note": "Resource budgets, elasticity and a watchdog are tested; no real-time capacity alerting to a SOC and no SEBI capacity-planning report.",
+   "evidence": [
+    "journey:elastic_resources",
+    "journey:watchdog_heals_and_alerts"
+   ],
+   "next": "Export capacity metrics and thresholds to the SOC feed.",
+   "priority": "low"
+  },
+  {
+   "id": "PR.DS (data localisation)",
+   "title": "Regulatory Data kept within India in readable form; global SOC / SaaS exemption for IT & Cybersecurity Data only with annual IT-Committee and Board approval and 48-hour availability to SEBI/CERT-In",
+   "applies": "all",
+   "status": "gap",
+   "note": "Prompts go to Gemini/Groq/OpenRouter and other cloud rungs of the router when keys are present; PII redaction reduces but does not remove regulatory data. There is no rule that 'regulatory data never leaves India'. The local-only profile keeps everything local, but nothing enforces its use for classified data.",
+   "evidence": [],
+   "next": "Classification-aware routing: tag requests (by tenant/endpoint/detected data class); regulatory data may only use local or India-region providers, enforced and logged in the gateway; journey proves a classified prompt never reaches a foreign provider.",
+   "priority": "high"
+  },
+  {
+   "id": "PR.DS (data classification)",
+   "title": "Classify data per SEBI/GoI standards (IT Act, DPDP)",
+   "applies": "all",
+   "status": "partial",
+   "note": "The gateway classifies PII types it can detect; no enterprise data-classification scheme.",
+   "evidence": [
+    "file:apps/llm-gateway/app/guardrails.py",
+    "test:apps/llm-gateway/tests/test_guardrails.py"
+   ],
+   "next": "Map detected classes to the entity's classification labels and carry the label in the audit line.",
+   "priority": "medium"
+  },
+  {
+   "id": "PR.DS.S4",
+   "title": "Data protection, backup and recovery; admin rights off by default on workstations; no sensitive data in client-side storage; renew certificates; control macros; data-migration policy",
+   "applies": "all",
+   "status": "partial",
+   "note": "Backup and restore are proven; endpoint admin rights, macros and certificate renewal are the entity's; backups are unencrypted.",
+   "evidence": [
+    "journey:backup_restore"
+   ],
+   "next": "Encrypt and checksum backups.",
+   "priority": "high"
+  },
+  {
+   "id": "PR.DS.S5",
+   "title": "Separate production and non-production; SIT; OWASP/SANS-25 vulnerabilities addressed; DevSecOps",
+   "applies": [
+    "mii",
+    "qre"
+   ],
+   "status": "partial",
+   "note": "Everything is built and tested in a throwaway sandbox clone with real containers before release; CI runs SAST, secret scanning and container scanning. No DAST.",
+   "evidence": [
+    "journey:fresh_install",
+    "file:.github/workflows/devsecops.yml"
+   ],
+   "next": "Add DAST (ZAP baseline) against the sandbox gateway in CI.",
+   "priority": "medium"
+  },
+  {
+   "id": "PR.DS.S6",
+   "title": "Source code or escrow for critical applications; vulnerability-closure SLAs in contracts; vendor risk assessment for supply-chain risk; maintenance and support in contract",
+   "applies": [
+    "mii",
+    "qre"
+   ],
+   "status": "partial",
+   "note": "Open-source code is in hand; the supply-chain gate `vet` and hash-pinned installers cover third-party code; escrow and SLA clauses are contractual.",
+   "evidence": [
+    "journey:vet_gate",
+    "test:lifecycle/tests/test_burrow_pinning.py"
+   ],
+   "next": "None for the software; the contract clauses are the entity's.",
+   "priority": "low"
+  },
+  {
+   "id": "PR.IP.S1",
+   "title": "Secure by design / engineering / operations; least functionality (disable unneeded ports, services); application allow-listing on all assets",
+   "applies": "all",
+   "status": "partial",
+   "note": "Kubernetes manifests run non-root with read-only root filesystems and dropped capabilities (enforced by Kyverno); compose services expose only declared ports; no host-level application allow-listing.",
+   "evidence": [
+    "file:local/k8s/gateway.yaml",
+    "file:local/k8s/policies/kyverno-policies.yaml"
+   ],
+   "next": "Document and test the exposed-port set per stage (the sandbox can assert it).",
+   "priority": "medium"
+  },
+  {
+   "id": "PR.IP.S2",
+   "title": "Hardened vetted hardware/software; default credentials replaced; non-default ports; port whitelisting; PowerShell/wscript restricted; host firewall to limit lateral movement",
+   "applies": "all",
+   "status": "partial",
+   "note": "Pinned versions, scanned images and hardened manifests; Windows/PowerShell controls are the entity's.",
+   "evidence": [
+    "journey:fresh_install",
+    "journey:lifecycle_cloud_is_safe"
+   ],
+   "next": "Run docker-bench/kube-bench in CI and fail on regressions.",
+   "priority": "medium"
+  },
+  {
+   "id": "PR.IP.S3",
+   "title": "Change management in all third-party agreements; submit-plan-approve-implement-review-close; exceptions framework",
+   "applies": [
+    "mii",
+    "qre",
+    "mid"
+   ],
+   "status": "partial",
+   "note": "Pull requests, CI, a build contract and `diffcheck` give a controlled change trail for this estate; exception handling and agreements are the entity's.",
+   "evidence": [
+    "journey:diffcheck_gate"
+   ],
+   "next": "Release record with approver and impact note.",
+   "priority": "low"
+  },
+  {
+   "id": "PR.IP.S4,S6 (SSDLC)",
+   "title": "Regression testing, vulnerability assessment on each production release, VAPT on each major release; security requirements in BRDs; threat modelling and application security testing; OWASP ASVS; defence in depth",
+   "applies": [
+    "mii",
+    "qre",
+    "mid"
+   ],
+   "status": "partial",
+   "note": "Unit tests and the sandbox journeys gate every release; threat modelling is documented per organ; independent VAPT per major release is the entity's engagement.",
+   "evidence": [
+    "journey:fresh_install",
+    "journey:vet_gate"
+   ],
+   "next": "Attach a threat-model summary to each release.",
+   "priority": "low"
+  },
+  {
+   "id": "PR.IP.S14",
+   "title": "Cyber audit by CERT-In empanelled auditors only (3-year limit then 2-year cooling-off); MD/CEO declaration; revalidation VAPT; audit management; automated compliance dashboard (MII, QRE)",
+   "applies": [
+    "mii",
+    "qre",
+    "mid",
+    "small"
+   ],
+   "status": "entity",
+   "note": "Auditor appointment and the declaration are the entity's. `comply` and the evidence pack feed the dashboard.",
+   "evidence": [
+    "cmd:comply",
+    "cmd:evidence"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "PR.IP.S15",
+   "title": "Critical software must pass DAST, SAST, functional audit, VAPT per major release, firewall/WAF audit, SBOM, requirements traceability; all critical logs into the SOC",
+   "applies": "all",
+   "status": "partial",
+   "note": "SAST, container scan and SBOM run in CI, and a traceability table maps requirements to journeys (doc 28). No DAST; independent functional audit/VAPT is an engagement.",
+   "evidence": [
+    "file:.github/workflows/devsecops.yml",
+    "file:docs/securax/28-STATUS-AND-TRACEABILITY.md"
+   ],
+   "next": "Add DAST; feed every organ's logs to the SOC.",
+   "priority": "medium"
+  },
+  {
+   "id": "PR.IP.S16",
+   "title": "ISO 27001 certification covering primary, DR and near-DR sites, SOC and co-location (MII, QRE)",
+   "applies": [
+    "mii",
+    "qre"
+   ],
+   "status": "entity",
+   "note": "Certification is the entity's.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "PR.IP.S17",
+   "title": "Follow the latest CIS Controls or equivalent (MII, QRE)",
+   "applies": [
+    "mii",
+    "qre"
+   ],
+   "status": "partial",
+   "note": "The compliance map cites CIS Controls v8; no CIS-benchmark evidence is collected.",
+   "evidence": [
+    "file:docs/securax/04-COMPLIANCE-MAP.md"
+   ],
+   "next": "Run CIS benchmarks for the container host and Kubernetes and store results in the pack.",
+   "priority": "medium"
+  },
+  {
+   "id": "PR.MA.S2",
+   "title": "Remote access policy and secure remote access for staff and third parties; trusted devices only; continuous monitoring of remote access",
+   "applies": [
+    "mii",
+    "qre",
+    "mid"
+   ],
+   "status": "partial",
+   "note": "Cloud node access is via Tailscale (identity-based, Tailscale SSH) with a hash-pinned install; trusted-device checks and continuous remote-access monitoring are not implemented.",
+   "evidence": [
+    "test:lifecycle/tests/test_burrow_pinning.py"
+   ],
+   "next": "Tailnet ACL template + audit of remote sessions into the SOC.",
+   "priority": "medium"
+  },
+  {
+   "id": "PR.MA.S3",
+   "title": "Patch management: categorisation, test in identical non-production, replace EOL, virtual patching ≤6 months, High 1 week / Moderate 2 weeks / Low 1 month at both sites, quarterly compliance report to IT Committee",
+   "applies": "all",
+   "status": "partial",
+   "note": "Versions are pinned and scanned; the KEV report names exploited vulnerabilities; there is no patch-SLA clock or quarterly compliance report.",
+   "evidence": [
+    "cmd:kev",
+    "file:.github/workflows/devsecops.yml"
+   ],
+   "next": "Patch-age tracker with the 1-week/2-week/1-month limits and a quarterly report.",
+   "priority": "high"
+  },
+  {
+   "id": "DE.CM.S1-S3",
+   "title": "Continuous security monitoring and alerting; SOC services (own, market SOC, or third-party; small and self-cert on market SOC); SOC functional efficacy measured (Annexure-N) half-yearly; BAS/CART/decoy; MII 24×7 C-SOC",
+   "applies": "all",
+   "status": "partial",
+   "note": "The AI-SOC triages gateway events 24×7 in software with ATT&CK/KEV enrichment, and the purple loop measures detection of known attack types. It is not a staffed SOC, does not cover endpoints/network beyond the optional Wazuh organ, and Annexure-N efficacy is not computed.",
+   "evidence": [
+    "file:ai-soc/soc/triage.py",
+    "journey:purple_loop"
+   ],
+   "next": "Compute Annexure-N efficacy indicators from the purple-loop results; add decoy/canary tokens.",
+   "priority": "high"
+  },
+  {
+   "id": "DE.CM.S4",
+   "title": "Monitor IT-asset use and capacity; projections",
+   "applies": [
+    "mii",
+    "qre",
+    "mid"
+   ],
+   "status": "partial",
+   "note": "See PR.DS (capacity).",
+   "evidence": [
+    "journey:elastic_resources"
+   ],
+   "next": "As above.",
+   "priority": "low"
+  },
+  {
+   "id": "DE.CM.S5",
+   "title": "Cyber audit and VAPT with Annexure-L scope; VAPT before commissioning new critical systems; revalidation; report COTS vulnerabilities to vendors/exchanges",
+   "applies": "all",
+   "status": "partial",
+   "note": "Internal continuous testing exists (purple loop, range, scans); the independent VAPT is the entity's engagement.",
+   "evidence": [
+    "journey:purple_loop"
+   ],
+   "next": "Generate the Annexure-L scope sheet from the inventory.",
+   "priority": "medium"
+  },
+  {
+   "id": "DE.DP.S4",
+   "title": "Half-yearly red-team exercise by independent red/blue teams; CART; results to IT Committee and Board; lessons shared with SEBI within 3 months (MII, QRE)",
+   "applies": [
+    "mii",
+    "qre"
+   ],
+   "status": "partial",
+   "note": "The purple loop is an automated, AI-focused red/blue exercise with a gap backlog; it is not an independent human red team and does not cover the whole estate.",
+   "evidence": [
+    "journey:purple_loop",
+    "file:redteam/purple.py"
+   ],
+   "next": "Extend scenarios beyond the AI path and produce the 3-month lessons-learned note automatically.",
+   "priority": "medium"
+  },
+  {
+   "id": "DE.DP.S5",
+   "title": "Quarterly threat hunting using threat intelligence, IOCs, IOAs (MII, QRE)",
+   "applies": [
+    "mii",
+    "qre"
+   ],
+   "status": "gap",
+   "note": "No hunting workflow; KEV/ATT&CK enrichment helps analysts but nothing runs hunts.",
+   "evidence": [],
+   "next": "Scheduled hunts that run Sigma rules over the stored logs and file SOC cases.",
+   "priority": "medium"
+  },
+  {
+   "id": "RS.MA.S1",
+   "title": "CCMP aligned with CERT-In national CCMP, Board-approved; incident-response management plan, roles, SOPs; SEBI reporting SOP (Annexure-O)",
+   "applies": "all",
+   "status": "partial",
+   "note": "An incident runbook and SOC case classes exist; the CCMP, its approval and the Annexure-O classification handling are the entity's.",
+   "evidence": [
+    "file:docs/securax/27-INCIDENT-RUNBOOK.md"
+   ],
+   "next": "Map SOC severities to the Annexure-O categories.",
+   "priority": "medium"
+  },
+  {
+   "id": "RS.MA.S2",
+   "title": "Awareness, training, skills, cyber playbooks, knowledge base of known adverse conditions",
+   "applies": [
+    "mii",
+    "qre",
+    "mid"
+   ],
+   "status": "partial",
+   "note": "SOC rules and n8n workflow templates act as playbooks; people and training are the entity's.",
+   "evidence": [
+    "file:ai-soc/soc/triage.py"
+   ],
+   "next": "Generate a playbook per SOC rule.",
+   "priority": "low"
+  },
+  {
+   "id": "RS.MA.S5",
+   "title": "Collaborate with CERT-In's Cyber Swachhta Kendra; close alerts in time (MII, QRE)",
+   "applies": [
+    "mii",
+    "qre"
+   ],
+   "status": "entity",
+   "note": "Entity enrolment.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "RS.CO.S1-S3",
+   "title": "Report incidents to SEBI and CERT-In within 6 hours (mkt_incidents@sebi.gov.in), details on the SEBI portal within 24 hours, brokers/DPs also to exchange/depository; quarterly reports within 15 days of quarter end; share threat intelligence; RCA and forensic reports on request",
+   "applies": "all",
+   "status": "gap",
+   "note": "Nothing tracks the 6-hour and 24-hour clocks, prepares the notification or the quarterly report, or maintains the contact list.",
+   "evidence": [],
+   "next": "`./securax incident` (shared with RBI para 28/141): clock, templates for e-mail/portal fields, quarterly roll-up, TLP labelling.",
+   "priority": "high"
+  },
+  {
+   "id": "RS.CO.S2 (comms)",
+   "title": "IT Committee discusses response plans; stakeholder contact list; press release for high-impact attacks; notify affected customers; alternate-channel notification of transactions",
+   "applies": "all",
+   "status": "entity",
+   "note": "Communications are the entity's.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "RS.AN.S1-S3",
+   "title": "Investigate alerts; collect and preserve incident data (logs, traffic, forensic images); analyse scope, cause and impact",
+   "applies": "all",
+   "status": "partial",
+   "note": "Gateway audit lines and SOC cases are preserved; forensic imaging, memory capture and chain-of-custody are not provided.",
+   "evidence": [
+    "file:ai-soc/soc/triage.py",
+    "journey:purple_loop"
+   ],
+   "next": "Evidence-preservation step in `incident` (hash and seal the relevant logs).",
+   "priority": "medium"
+  },
+  {
+   "id": "RS.AN.S4-S5",
+   "title": "Root-cause analysis, forensics, incident report, compromise assessment by a CERT-In empanelled auditor, impact analysis per Annexure-O",
+   "applies": "all",
+   "status": "entity",
+   "note": "Forensics and the empanelled assessor are the entity's.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "RS.IM.S1-S2",
+   "title": "Update contingency plan, COOP, training and incident plans from lessons learnt (half-yearly for MII/QRE); Board approval of changes",
+   "applies": "all",
+   "status": "partial",
+   "note": "Game-day and purple-loop reports produce lessons; plan updates and approval are the entity's.",
+   "evidence": [
+    "journey:gameday",
+    "journey:purple_loop"
+   ],
+   "next": "Lessons-learnt register with owner and due date.",
+   "priority": "low"
+  },
+  {
+   "id": "RC.RP.S1",
+   "title": "Scenario-based recovery plan; tests involving stakeholders; golden images of critical systems off-site (MII, QRE); spare hardware; protected images/backups; immutable or air-gapped backups; drills incl. ransomware with both PDC and DR hit",
+   "applies": "all",
+   "status": "partial",
+   "note": "Etcd snapshot/restore and stage rebuild from the genome are drilled (game days). No golden images off-site, no immutable/air-gapped backup, no ransomware-on-both-sites drill.",
+   "evidence": [
+    "journey:gameday",
+    "journey:backup_restore"
+   ],
+   "next": "Immutable off-site copy (object lock / offline disk) + a ransomware game day that destroys the live and local-backup copies.",
+   "priority": "high"
+  },
+  {
+   "id": "RC.RP.S2",
+   "title": "Declare disaster within 30 minutes; RTO 2 hours and RPO 15 minutes; scenario-based resilience testing twice a year (MII, QRE: backup restore testing), stakeholders included, results to IT Committee, lessons to SEBI in 3 months",
+   "applies": "all",
+   "status": "partial",
+   "note": "Restore time on the twin is seconds-to-minutes (12.5 s etcd restore), well inside 2 hours; but a 15-minute RPO needs near-continuous data capture and today's backups are periodic. Testing is available, not scheduled, and not reported to a committee.",
+   "evidence": [
+    "journey:gameday",
+    "journey:backup_restore"
+   ],
+   "next": "Postgres WAL archiving for ≤15-minute RPO; schedule the twice-yearly drill; report generator for the IT Committee and SEBI.",
+   "priority": "high"
+  },
+  {
+   "id": "RC.RP.S3",
+   "title": "Periodic drills to test response and recovery",
+   "applies": "all",
+   "status": "partial",
+   "note": "Game days exist but are run on demand.",
+   "evidence": [
+    "journey:gameday"
+   ],
+   "next": "Schedule via `rhythm`; record attendance and outcomes.",
+   "priority": "medium"
+  },
+  {
+   "id": "RC.RP.S4",
+   "title": "Backup and recovery plan approved by IT Committee; data and server images backed up off-site; offline encrypted backups tested quarterly (MII, QRE)",
+   "applies": "all",
+   "status": "partial",
+   "note": "`backup` writes owner-only archives that you copy off the machine yourself (3-2-1 is your step); no encryption, no offline copy, no quarterly test reminder.",
+   "evidence": [
+    "journey:backup_restore"
+   ],
+   "next": "Encrypted archives, automated off-site copy, quarterly restore test via `rhythm`.",
+   "priority": "high"
+  },
+  {
+   "id": "RC.CO.S1-S3",
+   "title": "Recovery plans discussed with IT Committee; stakeholder coordination and internal/external communication",
+   "applies": "all",
+   "status": "entity",
+   "note": "Entity's governance and communications.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "RC.IM.S1-S2",
+   "title": "BCP-DR supports cyber-resilience objectives; learn from other REs' incidents; RTO met for interconnected systems; improve from drills",
+   "applies": "all",
+   "status": "partial",
+   "note": "Restore from a cyber incident is rehearsed for the estate itself; interconnected systems of other parties are not.",
+   "evidence": [
+    "journey:gameday"
+   ],
+   "next": "Add the vendor/dependency outage scenario with stakeholder sign-off fields.",
+   "priority": "low"
+  },
+  {
+   "id": "EV.ST.S1-S3",
+   "title": "Anticipate new attack vectors via threat modelling; reduce attack surface; examine emerging threats; diverse OS and logging regimes; extra capacity; correlate data with ML",
+   "applies": [
+    "mii",
+    "qre",
+    "mid"
+   ],
+   "status": "partial",
+   "note": "The purple loop and offline threat intelligence (ATT&CK, KEV) feed continuous improvement; fitness ratchets stop the attack surface (dependencies, `curl | sh`) growing; ML correlation is limited to the local triage model.",
+   "evidence": [
+    "cmd:fitness",
+    "journey:purple_loop"
+   ],
+   "next": "Quarterly threat-model review driven by ATT&CK coverage gaps from the purple loop.",
+   "priority": "low"
+  },
+  {
+   "id": "Annexure-J (cloud)",
+   "title": "Cloud adoption: hosted services on Tier-4-equivalent data centres, MeitY-empanelled CSP offerings audited by STQC-empanelled auditor, VAPT summaries available, copy of data in India if hosted abroad, data-in-use protection",
+   "applies": "all",
+   "status": "gap",
+   "note": "The cloud stages (tree, canopy) can run on AWS, GCP or Azure; nothing checks that the chosen offering is MeitY-empanelled/STQC-audited, that the region is in India, or that a copy of data stays in India.",
+   "evidence": [],
+   "next": "Provider/region guardrail in the lifecycle genome: refuse to wake a cloud stage outside an allow-list of India regions and CSPs the entity has verified; record the empanelment evidence.",
+   "priority": "high"
+  }
+ ]
+}

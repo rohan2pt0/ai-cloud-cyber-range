@@ -1,0 +1,825 @@
+{
+ "about": "Paragraph-level assessment of the estate against the Reserve Bank of India NBFC Cybersecurity, Technology: Risk, Resilience and Assurance Framework Directions, 2026. 'entity' rows are obligations of the regulated NBFC that software cannot discharge.",
+ "source": {
+  "title": "RBI (NBFCs – Cybersecurity, Technology: Risk, Resilience and Assurance Framework) Directions, 2026",
+  "url": "https://rbi.org.in",
+  "issued": "RBI/DoS/2026-27/461, 31 July 2026 (in force with immediate effect)",
+  "read_on": "2026-10-14",
+  "caveat": "Applies to NBFCs only (not to banks); the chapter that applies depends on the NBFC's layer and asset size, so the chapter is a column here. Housing finance companies report incidents to NHB, not RBI. The text was read from the copy supplied by the user."
+ },
+ "categories": {
+  "III": "Chapter III — NBFC Base Layer below ₹500 crore and Core Investment Companies",
+  "IV": "Chapter IV — NBFC Base Layer ₹500 crore and above",
+  "V": "Chapter V — NBFC Middle, Upper and Top Layer (excluding CICs)"
+ },
+ "items": [
+  {
+   "id": "6",
+   "title": "Board approves technology & cybersecurity strategy and policies; reviews at least annually",
+   "applies": "all",
+   "status": "entity",
+   "note": "Board action. SecuRAX can only supply the evidence pack the Board reviews (./securax evidence).",
+   "evidence": [
+    "cmd:evidence"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "7-9",
+   "title": "Base-layer (<₹500 cr) basics: access controls, roles, maker-checker, backup with periodic testing, BCP policy",
+   "applies": [
+    "III"
+   ],
+   "status": "partial",
+   "note": "Backup with restore test and a human-approval step for agent write actions exist; authentication/roles on the gateway do not (see 113-115).",
+   "evidence": [
+    "journey:backup_restore",
+    "cmd:act"
+   ],
+   "next": "Add caller authentication + roles to the gateway (see 113), then re-assess.",
+   "priority": "high"
+  },
+  {
+   "id": "10-14",
+   "title": "IT governance framework integrated with corporate governance; documented roles; stakeholder expectations",
+   "applies": [
+    "IV",
+    "V"
+   ],
+   "status": "entity",
+   "note": "Governance design and documentation are the entity's.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "15-17",
+   "title": "IT Strategy Committee: independent-director chair, CIO/CTO members, six-monthly (Ch IV) meetings, outsourcing governance",
+   "applies": [
+    "IV"
+   ],
+   "status": "entity",
+   "note": "Board/committee constitution is the entity's.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "70-73",
+   "title": "Board-level ITSC: ≥3 directors, independent chair with ≥7 years IT expertise, quarterly meetings, annual BCP/DR review, budget adequacy",
+   "applies": [
+    "V"
+   ],
+   "status": "entity",
+   "note": "Board/committee constitution is the entity's.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "74-76",
+   "title": "Senior management duties; IT Steering Committee with business representation, quarterly",
+   "applies": [
+    "V"
+   ],
+   "status": "entity",
+   "note": "Organisational.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "77",
+   "title": "Information Security Committee under ITSC, headed from risk management vertical",
+   "applies": [
+    "V"
+   ],
+   "status": "entity",
+   "note": "Organisational.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "78-80",
+   "title": "Head of IT function: seniority, DR/BCP ownership, first line of defence",
+   "applies": [
+    "V"
+   ],
+   "status": "entity",
+   "note": "Organisational.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "81-82",
+   "title": "CISO: senior, no reporting to Head of IT, no business targets, reports to ED/risk head, quarterly review to Board/RMCB/ITSC, manages SOC",
+   "applies": [
+    "V"
+   ],
+   "status": "entity",
+   "note": "Reporting line, grade and budget are the entity's. SecuRAX can generate the quarterly posture inputs.",
+   "evidence": [
+    "cmd:evidence",
+    "cmd:fitness"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "18",
+   "title": "Board-approved IT policy: organisation, CIO, training needs, IPv6 on public-facing infrastructure",
+   "applies": [
+    "IV"
+   ],
+   "status": "partial",
+   "note": "Policy and training are the entity's; the IPv6 readiness of public-facing endpoints is a technical item that has not been tested here.",
+   "evidence": [
+    "file:docs/securax/02-ARCHITECTURE.md"
+   ],
+   "next": "Add an IPv6 reachability check for every public endpoint to `./securax doctor` and to the sandbox.",
+   "priority": "low"
+  },
+  {
+   "id": "65-69",
+   "title": "IT governance framework with BC/DR; enterprise risk policy incorporates IT risk",
+   "applies": [
+    "V"
+   ],
+   "status": "entity",
+   "note": "Organisational.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "83-84",
+   "title": "Information security policy (objectives, ownership, exceptions, penal measures); cybersecurity policy and CCMP",
+   "applies": [
+    "V"
+   ],
+   "status": "entity",
+   "note": "Documents are the entity's; docs/securax/27 is a usable incident-runbook starting point, not an approved policy.",
+   "evidence": [
+    "file:docs/securax/27-INCIDENT-RUNBOOK.md"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "20-22",
+   "title": "Board-approved information security policy (CIA + authenticity) and cybersecurity policy",
+   "applies": [
+    "IV",
+    "V"
+   ],
+   "status": "entity",
+   "note": "Board-approved documents are the entity's.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "21(1), 91",
+   "title": "Inventory of information assets, classified by confidentiality/integrity/availability criticality",
+   "applies": [
+    "IV",
+    "V"
+   ],
+   "status": "partial",
+   "note": "Estate components and AI models are inventoried (stages, organ registry, model registry); there is no enterprise asset/CMDB feed and no C/I/A classification of the entity's own assets.",
+   "evidence": [
+    "file:governance/model-registry.yaml",
+    "cmd:stages"
+   ],
+   "next": "Emit an asset inventory (components, images, models, data stores) with a C/I/A tag and owner from the genome; accept an import of the entity's CMDB.",
+   "priority": "medium"
+  },
+  {
+   "id": "21(2-5)",
+   "title": "Segregation of IT and security functions; admin/DBA/transaction duties; personnel screening; physical security of data centre",
+   "applies": [
+    "IV"
+   ],
+   "status": "entity",
+   "note": "People, premises and org design are the entity's.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "21(3), 113-114",
+   "title": "Role-based access, need-based access, supervised and logged privileged access",
+   "applies": [
+    "IV",
+    "V"
+   ],
+   "status": "gap",
+   "note": "The gateway does NOT authenticate callers: the 'principal' is a hash of whatever Authorization string (or client IP) arrives, so there are no users, roles, privileged-user logging or revocation at the AI access point. Tenant cells have Kubernetes RBAC and Keycloak exists as an optional organ; neither is wired to the gateway.",
+   "evidence": [],
+   "next": "Put OIDC/JWT validation (Keycloak or the entity's IdP) in front of /v1/*, map claims to roles (user, analyst, admin), log the authenticated subject in every audit line, add a journey that proves anonymous calls are refused.",
+   "priority": "high"
+  },
+  {
+   "id": "21(6), 8(3)",
+   "title": "Maker-checker: transactions complete only after independent approval by at least two people",
+   "applies": [
+    "IV",
+    "V"
+   ],
+   "status": "partial",
+   "note": "Agent write actions require an explicit human `--approve` (one approver, not two); no two-person rule.",
+   "evidence": [
+    "cmd:act"
+   ],
+   "next": "Add an optional two-approver mode to the approved-action executor and prove it with a test.",
+   "priority": "low"
+  },
+  {
+   "id": "21(7), 139-142",
+   "title": "Incident management: define incidents; prevent, detect, analyse, respond; written procedures and roles; classification",
+   "applies": [
+    "IV",
+    "V"
+   ],
+   "status": "partial",
+   "note": "AI-SOC classifies gateway events, the purple loop measures prevented/logged/alerted, and a runbook exists. Classification is not mapped to the regulator's categories and procedures are not approved by the entity.",
+   "evidence": [
+    "file:ai-soc/soc/triage.py",
+    "journey:purple_loop",
+    "file:docs/securax/27-INCIDENT-RUNBOOK.md"
+   ],
+   "next": "Map SOC severities to the RBI/CERT-In incident categories and emit them on each case.",
+   "priority": "medium"
+  },
+  {
+   "id": "21(8), 109-110",
+   "title": "Audit trails exist for IT assets: detailed enough for audit, forensics, dispute resolution, non-repudiation; unauthorised activity recorded",
+   "applies": [
+    "IV",
+    "V"
+   ],
+   "status": "partial",
+   "note": "Every gateway decision is one JSON audit line (verified end-to-end by the purple loop). Not tamper-evident (no hash chain / signing), records no authenticated identity (see 113), and retention is whatever the log shipper keeps.",
+   "evidence": [
+    "file:apps/llm-gateway/app/main.py",
+    "journey:purple_loop"
+   ],
+   "next": "Hash-chain the audit lines and anchor the head in the evidence pack; add the authenticated subject; enforce and prove retention ≥180 days (CERT-In) and the longer period the entity's policy sets.",
+   "priority": "high"
+  },
+  {
+   "id": "21(9)",
+   "title": "Public Key Infrastructure for confidentiality, access control, integrity, authentication, non-repudiation",
+   "applies": [
+    "IV",
+    "V"
+   ],
+   "status": "gap",
+   "note": "No PKI use in the estate beyond TLS to providers; the evidence pack carries SHA-256 sums but is not digitally signed.",
+   "evidence": [],
+   "next": "Sign evidence packs and release artefacts (cosign/minisign); support mTLS between gateway and router.",
+   "priority": "medium"
+  },
+  {
+   "id": "23, 125-126",
+   "title": "Vulnerability management process; time-bound fixing; documented VA/PT approach with CVSS scoring, including cloud",
+   "applies": [
+    "IV",
+    "V"
+   ],
+   "status": "partial",
+   "note": "Trivy/SAST/secret scans in CI, OSV and the CISA KEV catalogue offline, KEV report in `scan`. No fixed remediation SLA per severity and no CVSS-based scoring record.",
+   "evidence": [
+    "file:.github/workflows/devsecops.yml",
+    "cmd:kev",
+    "journey:offline_power"
+   ],
+   "next": "Track findings with CVSS + KEV flag and age; fail the build when a KEV item is older than the entity's SLA.",
+   "priority": "medium"
+  },
+  {
+   "id": "24, 147-148",
+   "title": "Cybersecurity preparedness indicators; metrics for performance, recovery, RTO/RPO; IT performance and maturity scorecard",
+   "applies": [
+    "IV",
+    "V"
+   ],
+   "status": "partial",
+   "note": "Fitness functions, game-day SLOs and coverage maps give measurable indicators. They are for this estate, not an enterprise scorecard, and there is no independent audit of them.",
+   "evidence": [
+    "cmd:fitness",
+    "cmd:gameday",
+    "cmd:ccsp"
+   ],
+   "next": "Publish a quarterly indicator pack (latency/ReDoS budget, MTTD/MTTR from the purple loop, restore time) from `./securax evidence`.",
+   "priority": "medium"
+  },
+  {
+   "id": "25-27",
+   "title": "Cyber Crisis Management Plan; protect against zero-day, remote access, ransomware, DDoS, phishing, BEC, vishing, identity fraud",
+   "applies": [
+    "IV",
+    "V"
+   ],
+   "status": "partial",
+   "note": "The purple loop exercises AI-specific attacks (prompt injection, exfiltration, tool coercion, PII harvesting). DDoS, ransomware, phishing and BEC are outside this estate; the CCMP itself is the entity's.",
+   "evidence": [
+    "journey:purple_loop",
+    "file:docs/securax/27-INCIDENT-RUNBOOK.md"
+   ],
+   "next": "Add ransomware (backup-targeting) and DDoS (rate-limit) scenarios to the game days.",
+   "priority": "medium"
+  },
+  {
+   "id": "28, 141",
+   "title": "Report cyber incidents to RBI on the DAKSH platform within six hours of detection; notify CERT-In proactively",
+   "applies": [
+    "IV",
+    "V"
+   ],
+   "status": "gap",
+   "note": "Nothing tracks the six-hour clock, prepares the report fields, or reminds anyone. This is the most time-critical obligation in the Directions.",
+   "evidence": [],
+   "next": "`./securax incident open` starts a six-hour clock from detection, collects the DAKSH/CERT-In fields (classification, impact, systems, actions) from the SOC case, and exports a ready-to-file record; test it with a journey.",
+   "priority": "high"
+  },
+  {
+   "id": "29-30, 35-36",
+   "title": "Awareness for Board/senior management, customers, vendors; staff training programme with effectiveness tracking and repository",
+   "applies": [
+    "IV"
+   ],
+   "status": "entity",
+   "note": "People programme; a training-status repository is the entity's HR/LMS system.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "31",
+   "title": "Digital Signature Certificates for identity, integrity, non-repudiation in online transactions and important documents",
+   "applies": [
+    "IV"
+   ],
+   "status": "partial",
+   "note": "Out of the estate's remit except for its own artefacts, which are checksummed but not signed.",
+   "evidence": [
+    "cmd:evidence"
+   ],
+   "next": "Sign evidence packs (as 21(9)).",
+   "priority": "low"
+  },
+  {
+   "id": "32, 96, 98",
+   "title": "Annual IT risk assessment of threats, vulnerabilities and controls, brought to CRO, CIO and Board; yearly review of security infrastructure",
+   "applies": [
+    "IV",
+    "V"
+   ],
+   "status": "partial",
+   "note": "AI-SPM and the model registry assess the AI estate; an enterprise-wide risk assessment is the entity's.",
+   "evidence": [
+    "file:redteam/aispm_scan.py",
+    "file:governance/model-registry.yaml"
+   ],
+   "next": "Export the AI-estate risk register in the format the entity's risk team consumes.",
+   "priority": "low"
+  },
+  {
+   "id": "33-34",
+   "title": "Mobile financial services; social-media risks",
+   "applies": [
+    "IV",
+    "V"
+   ],
+   "status": "na",
+   "note": "The estate offers no customer mobile app or social-media presence.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "37-38",
+   "title": "Process and store information so it is available, reliable, secure, resilient; assess operational IT risk",
+   "applies": [
+    "IV"
+   ],
+   "status": "entity",
+   "note": "Entity's operational risk process.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "39-42, 112",
+   "title": "Change and patch management policy: impact assessed, approved, timely, justified, recoverable after a failed change",
+   "applies": [
+    "IV",
+    "V"
+   ],
+   "status": "partial",
+   "note": "Changes go through pull requests, CI gates, a build contract and `diffcheck` (no skipped tests, no weakened rails); `restore` and the update flow recover from a bad change. Board-approved policy, business-impact assessment and patch timelines are the entity's.",
+   "evidence": [
+    "journey:diffcheck_gate",
+    "journey:update_from_dirty_checkout",
+    "journey:backup_restore"
+   ],
+   "next": "Record an approver and a business-impact note for each release in the evidence pack.",
+   "priority": "low"
+  },
+  {
+   "id": "40",
+   "title": "Steering committee for IT projects",
+   "applies": [
+    "IV"
+   ],
+   "status": "entity",
+   "note": "Organisational.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "43-46",
+   "title": "IT-enabled MIS; regulatory returns system-driven; read-only access for RBI supervisors",
+   "applies": [
+    "IV"
+   ],
+   "status": "partial",
+   "note": "Security metrics and incident summaries feed `./securax evidence`; business MIS, returns and supervisor access are the entity's core systems. There is no read-only auditor/supervisor role (see 113).",
+   "evidence": [
+    "cmd:evidence"
+   ],
+   "next": "Add a read-only auditor role to the evidence/audit endpoints once authentication exists.",
+   "priority": "medium"
+  },
+  {
+   "id": "85-88",
+   "title": "IT project management, enterprise-architecture method, risk-aligned adoption of new technology, product approval and QA",
+   "applies": [
+    "V"
+   ],
+   "status": "partial",
+   "note": "Architecture is documented, new third-party components pass the `vet` gate, releases pass CI and the sandbox journeys. Product-approval governance is the entity's.",
+   "evidence": [
+    "journey:vet_gate",
+    "file:docs/securax/17-ENTERPRISE-ARCHITECTURE.md"
+   ],
+   "next": "Add an architecture-decision record template and require one for each new organ.",
+   "priority": "low"
+  },
+  {
+   "id": "89-90",
+   "title": "IT service management framework and service-level management with segregation of duties",
+   "applies": [
+    "V"
+   ],
+   "status": "partial",
+   "note": "Game-day SLOs and fitness budgets are measured; there is no ITSM/ticketing integration.",
+   "evidence": [
+    "cmd:gameday",
+    "cmd:fitness"
+   ],
+   "next": "Optional integration with the entity's ITSM for incident/change records.",
+   "priority": "low"
+  },
+  {
+   "id": "92-93",
+   "title": "Avoid unsupported hardware/software; monitor end-of-support and AMC dates; technology-refresh plan",
+   "applies": [
+    "V"
+   ],
+   "status": "gap",
+   "note": "Versions are pinned, but nothing tracks end-of-support dates of images, OS or runtimes.",
+   "evidence": [],
+   "next": "Add an end-of-life check (endoflife.date snapshot kept offline) to `./securax scan` and the fitness ratchets.",
+   "priority": "medium"
+  },
+  {
+   "id": "94-95, 97",
+   "title": "Risk policy includes IT/cyber risk (annual review); ISMS controls reviewed; third-party roles and conflicts; critical systems identified and fortified",
+   "applies": [
+    "V"
+   ],
+   "status": "entity",
+   "note": "Organisational; the entity's risk function owns it.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "47-58, 149-154",
+   "title": "IS Audit: framework approved by Audit Committee, skilled personnel, independence, annual, findings to Board/ACB, audit-mode access, CAATs / continuous auditing",
+   "applies": [
+    "IV",
+    "V"
+   ],
+   "status": "partial",
+   "note": "Audit framework, independence and findings handling are the entity's. SecuRAX supports CAATs/continuous auditing with scripted, repeatable checks (verify, fitness, diffcheck, compliance maps) and an evidence pack. No audit-mode (read-only) access role exists.",
+   "evidence": [
+    "cmd:verify",
+    "cmd:fitness",
+    "cmd:evidence"
+   ],
+   "next": "Auditor read-only role + a 'show me the control, the test and the last result' view per requirement.",
+   "priority": "medium"
+  },
+  {
+   "id": "8(8), 59, 127",
+   "title": "Board-approved BCP and DR policy (ISO 22301-aligned), BIA, recovery strategy, CIO ownership, Board periodic reports",
+   "applies": [
+    "III",
+    "IV",
+    "V"
+   ],
+   "status": "entity",
+   "note": "Policy, BIA and Board reporting are the entity's.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "59(3), 101-103",
+   "title": "Backup sites for critical systems; physical/environmental controls; DC and DR geographically separate; e-surveillance",
+   "applies": [
+    "IV",
+    "V"
+   ],
+   "status": "partial",
+   "note": "The lifecycle can stand up a cloud site (tree/canopy) as an alternate to the on-prem burrow, but no DR site is configured, and Mumbai-region on-prem plus a second site is not set up or tested. Physical and environmental controls are the entity's.",
+   "evidence": [
+    "journey:lifecycle_burrow",
+    "journey:lifecycle_cloud_is_safe"
+   ],
+   "next": "Define a DR pair (burrow in Mumbai + a cloud region in a different seismic zone), keep its config identical through GitOps, and rehearse it.",
+   "priority": "high"
+  },
+  {
+   "id": "59(4), 129-132",
+   "title": "Test BCP/DR at least annually (half-yearly for critical systems) with worst-case scenarios; full-working-day switch to DR; re-test after issues; Board sees results and gap analysis",
+   "applies": [
+    "IV",
+    "V"
+   ],
+   "status": "partial",
+   "note": "Game days inject real failures into the burrow twin (node loss, control-plane restart, etcd restore) with SLOs and a report. They are not a switch-over to a DR site for a business day, are not scheduled, and are not reported to the Board.",
+   "evidence": [
+    "journey:gameday",
+    "cmd:gameday",
+    "cmd:rhythm"
+   ],
+   "next": "Schedule half-yearly drills via `rhythm`, add a 'DR day' scenario that runs the workload from the second site, and produce the Board-ready gap analysis.",
+   "priority": "high"
+  },
+  {
+   "id": "128, 133-135",
+   "title": "Recovery meets RTO/RPO; near-zero RPO for critical systems; backups restored periodically; integrity preserved, access-controlled",
+   "applies": [
+    "V"
+   ],
+   "status": "partial",
+   "note": "Restore is proven (backup_restore, etcd restore in a game day; measured restore 12.5 s on the twin). Backups are a periodic tar.gz — RPO equals the backup interval, not near-zero — and archives are not encrypted or integrity-protected.",
+   "evidence": [
+    "journey:backup_restore",
+    "journey:gameday"
+   ],
+   "next": "Encrypt backups (age/GPG) with a checksum manifest, add continuous/WAL archiving for Postgres, and state the RTO/RPO the ITSC approved.",
+   "priority": "high"
+  },
+  {
+   "id": "136",
+   "title": "Documented reconciliation methodology when RPO is non-zero",
+   "applies": [
+    "V"
+   ],
+   "status": "gap",
+   "note": "Not documented.",
+   "evidence": [],
+   "next": "Write the reconciliation procedure for chat/workflow data after a restore, and test it in the restore journey.",
+   "priority": "low"
+  },
+  {
+   "id": "137",
+   "title": "Configuration and patch level identical at DC and DR",
+   "applies": [
+    "V"
+   ],
+   "status": "partial",
+   "note": "GitOps keeps one definition for every site (the twin cannot drift from the hardware definition); no automated DC-vs-DR drift report for a real pair.",
+   "evidence": [
+    "file:docs/securax/29-LIFECYCLE-SEED-TO-FOREST.md",
+    "journey:lifecycle_sprout"
+   ],
+   "next": "Drift report comparing image digests/versions across sites in `./securax status`.",
+   "priority": "medium"
+  },
+  {
+   "id": "138, 59(5), 64",
+   "title": "BCP/DR on interconnected systems and vendors; collaborative resilience testing with vendors and service providers",
+   "applies": [
+    "IV",
+    "V"
+   ],
+   "status": "entity",
+   "note": "Vendor testing is arranged by the entity.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "60-64",
+   "title": "IT outsourcing: pre-engagement risk assessment, contract terms (monitoring, audit, RBI access, logs retained), Board responsibility, BC readiness of provider",
+   "applies": [
+    "IV"
+   ],
+   "status": "entity",
+   "note": "Contracts and due diligence are the entity's. Cloud and AI-provider terms (data use, audit rights, log access) must be reviewed per provider.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "117",
+   "title": "Vendor risk assessment: concentration risk, conflicts, single point of failure, legal compliance, high availability, supply-chain risk",
+   "applies": [
+    "V"
+   ],
+   "status": "partial",
+   "note": "The `vet` gate assesses third-party code (pins, licence, executable surface, tamper detection) and installers are now hash-pinned; the provider ladder and local model avoid a single AI provider. No vendor questionnaire/risk register.",
+   "evidence": [
+    "journey:vet_gate",
+    "journey:key_wiring_and_failover",
+    "test:lifecycle/tests/test_burrow_pinning.py"
+   ],
+   "next": "Vendor register with criticality, data categories, location and exit plan.",
+   "priority": "medium"
+  },
+  {
+   "id": "104-106",
+   "title": "Vendor maintenance and support in contract; source code (or escrow); certificate that the application is free of known vulnerabilities, malware and covert channels, on each material change",
+   "applies": [
+    "V"
+   ],
+   "status": "partial",
+   "note": "SecuRAX is open source (source in hand). For its own releases CI runs SAST, secret scanning, Trivy, a CycloneDX SBOM; the 'free of malware/covert channels' written confirmation is a vendor attestation that does not exist.",
+   "evidence": [
+    "file:.github/workflows/devsecops.yml",
+    "journey:vet_gate"
+   ],
+   "next": "Generate a release attestation (SBOM + scan results + signed provenance) per release; the entity still obtains it from its vendors.",
+   "priority": "medium"
+  },
+  {
+   "id": "107-108",
+   "title": "Capacity management: systems support business functions; annual capacity assessment consistent with peaks and projections",
+   "applies": [
+    "V"
+   ],
+   "status": "partial",
+   "note": "Elastic-resource handling and capacity/footprint budgets are tested (laptop and cluster); no peak-trend capacity plan.",
+   "evidence": [
+    "journey:elastic_resources",
+    "cmd:fitness"
+   ],
+   "next": "Record peak and trend metrics in the evidence pack.",
+   "priority": "low"
+  },
+  {
+   "id": "111",
+   "title": "Regularly monitor audit trails and logs to detect and recover from unauthorised activity or attack",
+   "applies": [
+    "V"
+   ],
+   "status": "supported",
+   "note": "Gateway audit lines are consumed by the AI-SOC, which raises findings with ATT&CK/KEV enrichment; the purple loop proves prevent → log → alert end to end for AI-channel attacks. Scope: the AI estate only.",
+   "evidence": [
+    "file:ai-soc/soc/triage.py",
+    "journey:purple_loop"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "109",
+   "title": "Every system that can access or affect sensitive information has audit logging",
+   "applies": [
+    "V"
+   ],
+   "status": "partial",
+   "note": "True for the AI gateway; not for the other organs (databases, router, workflow engine), whose logs depend on their own configuration.",
+   "evidence": [
+    "file:apps/llm-gateway/app/main.py",
+    "journey:purple_loop"
+   ],
+   "next": "Inventory each organ's log source and ship them all to one store; prove it with a journey.",
+   "priority": "medium"
+  },
+  {
+   "id": "115-116",
+   "title": "Multi-factor authentication for privileged users of critical systems and for remote/teleworking access; identify remote-access devices; secure data shown in teleworking",
+   "applies": [
+    "V"
+   ],
+   "status": "gap",
+   "note": "No MFA enforcement in the estate. Tailscale (with SSO MFA, if the entity configures it) can front the cloud node; the gateway, Open WebUI and admin consoles have no MFA.",
+   "evidence": [],
+   "next": "Front all human-facing consoles with the IdP (OIDC, MFA required for admin roles); require tailnet ACLs; prove it with a journey that an unauthenticated browser is refused.",
+   "priority": "high"
+  },
+  {
+   "id": "118",
+   "title": "Strong cryptography: algorithms, key lengths, protocols not deprecated",
+   "applies": [
+    "V"
+   ],
+   "status": "partial",
+   "note": "Cloud tree/data volume use KMS encryption and TLS to providers; local compose traffic is plain HTTP on loopback; backups are unencrypted; no crypto policy check.",
+   "evidence": [
+    "file:infra/terraform/lifecycle/modules/tree-aws/main.tf"
+   ],
+   "next": "Add a TLS/cipher policy check (testssl) to the sandbox and require TLS on any non-loopback listener.",
+   "priority": "medium"
+  },
+  {
+   "id": "119-120",
+   "title": "Straight-through processing: no manual modification of data between critical applications; tested, automated, authenticated, with audit trails",
+   "applies": [
+    "V"
+   ],
+   "status": "na",
+   "note": "The estate does not process the entity's core transactions.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "99-100",
+   "title": "Data migration policy with audit trail and sign-offs; enterprise data dictionary",
+   "applies": [
+    "V"
+   ],
+   "status": "entity",
+   "note": "Entity's data governance. SecuRAX's own data model is documented in the architecture docs only.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "121-124",
+   "title": "VA every six months and PT every 12 months of critical / DMZ systems, by independent experts, throughout the lifecycle, in production",
+   "applies": [
+    "V"
+   ],
+   "status": "partial",
+   "note": "The range, purple loop, garak/promptfoo and Trivy provide continuous internal testing of the AI estate. The regulator requires independent, trained testers and production testing: that is an engagement the entity commissions.",
+   "evidence": [
+    "journey:purple_loop",
+    "journey:lifecycle_range"
+   ],
+   "next": "Produce a VAPT-ready scope pack (assets, endpoints, test accounts) from the genome for the external tester.",
+   "priority": "medium"
+  },
+  {
+   "id": "143, 146",
+   "title": "Communication plans for escalation to Board, senior management, customers; periodic crisis-communication drills with stakeholders",
+   "applies": [
+    "V"
+   ],
+   "status": "entity",
+   "note": "Entity's communications function.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "144",
+   "title": "May share threat intelligence with IB-CART",
+   "applies": [
+    "V"
+   ],
+   "status": "na",
+   "note": "Optional ('may').",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "145",
+   "title": "Improve incident response through lessons learnt from incidents, tests and drills",
+   "applies": [
+    "V"
+   ],
+   "status": "partial",
+   "note": "The purple loop's detection backlog and the fitness ratchets turn findings into permanent checks; no formal lessons-learnt register.",
+   "evidence": [
+    "journey:purple_loop",
+    "cmd:fitness"
+   ],
+   "next": "Add a lessons-learnt record to each game day / incident case and require closure before the next drill.",
+   "priority": "low"
+  }
+ ]
+}
