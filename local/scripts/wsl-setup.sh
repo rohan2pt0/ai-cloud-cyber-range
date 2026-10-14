@@ -52,6 +52,7 @@ fi
 ( cd "$DEST/local/compose" && docker compose --profile ai down >/dev/null 2>&1 ) || true
 cd "$DEST" || exit 1
 chmod +x securax 2>/dev/null || true
+./securax shortcut >/dev/null 2>&1 || true      # from now on you can type `securax <command>` from any folder
 ./securax up
 rc=$?
 if [ $rc -ne 0 ]; then

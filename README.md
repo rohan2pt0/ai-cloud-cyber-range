@@ -18,7 +18,7 @@
 ```
 Your **Guiding Map** (http://localhost:8088) is the home screen for everything — tasks, your local AI, money, OPSEC, and one-tap launch of the rest. Install it (Add to Home Screen) to use it like an app, even offline. Your data stays on your device.
 
-> Health check any time: `./securax doctor` · Stop & free RAM: `./securax down`
+> Health check any time: `./securax doctor` · Something not working: `./securax why` (Windows: double-click `WHATS-WRONG-Windows.bat`) · Update: `./securax update` (Windows: `UPDATE-Windows.bat`) · From any folder: `./securax shortcut` once, then `securax <command>` · Stop & free RAM: `./securax down`
 
 ---
 

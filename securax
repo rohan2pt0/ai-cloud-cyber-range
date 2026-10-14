@@ -32,6 +32,14 @@ web_up(){ if tls_on; then _h="$1.$(ev SECURAX_DOMAIN securax.localhost)"; curl -
 ev(){ v="${!1:-}"; [ -z "$v" ] && v="$(sed -n "s/^$1=//p" "$ROOT/local/compose/.env" 2>/dev/null | head -1)"; printf '%s' "${v:-${2:-}}"; }
 if internal_on; then export SSL_CERT_FILE="$(tls_home)/ca-bundle.pem" REQUESTS_CA_BUNDLE="$(tls_home)/ca-bundle.pem" CURL_CA_BUNDLE="$(tls_home)/ca-bundle.pem"; fi
 
+# shortcut_file — the one-line launcher that lets you type `securax <command>` from ANY folder (the #1 reason a command "does not work" is being in the wrong folder).
+shortcut_file(){ printf '%s' "$HOME/.local/bin/securax"; }
+shortcut_install(){ # quiet and harmless: one small file in ~/.local/bin. Returns 0 when it was newly written.
+  _w="$(shortcut_file)"; _want="$(printf '#!/bin/sh\n[ -x "%s/securax" ] || { echo "SecuRAX was moved. Open its folder and run:  ./securax shortcut"; exit 1; }\nexec "%s/securax" "$@"\n' "$ROOT" "$ROOT")"
+  [ "$(cat "$_w" 2>/dev/null)" = "$_want" ] && return 1
+  mkdir -p "$(dirname "$_w")" && printf '%s\n' "$_want" > "$_w" && chmod +x "$_w"
+}
+
 # ready_wait SECS — wait until the gateway reports READY (the model router is up). One line, no spinner.
 # A user must never be told "done" while the first chat would still fail.
 ready_wait(){
@@ -135,6 +143,7 @@ backup_key(){ _kf="${3:-}"; [ -z "$_kf" ] && [ "${FORCE_PROMPT:-0}" != 1 ] && _k
 cmd="${1:-up-status}"
 case "$cmd" in
   up|up-status)
+    shortcut_install >/dev/null 2>&1 && C "(tip: run  ./securax shortcut  once, then you can type  securax <command>  from any folder)" || true
     C "Starting the live estate (compose profile: ai)…"
     # Surface the real product version at runtime (gateway /version) without hardcoding it.
     export SECURAX_VERSION="$(cat "$ROOT/VERSION" 2>/dev/null || echo 0.0.0-dev)"
@@ -697,6 +706,41 @@ $(python3 "$ROOT/lifecycle/forge.py" brief "$FB")"
     #   ./securax diffcheck [--base REF] [--strict] [--json]      default: uncommitted changes vs HEAD
     shift; exec python3 "$ROOT/lifecycle/diffcheck.py" "$@"
     ;;
+  shortcut)
+    # Type `securax <command>` from any folder instead of `cd ~/securax && ./securax <command>`.   ./securax shortcut [on|off]
+    BIN="$HOME/.local/bin"; MARK="# securax-shortcut"
+    if [ "${2:-on}" = off ]; then
+      rm -f "$(shortcut_file)"
+      for rc in "$HOME/.bashrc" "$HOME/.zshrc"; do [ -f "$rc" ] && grep -q "$MARK" "$rc" && { t="$(mktemp)"; grep -v "$MARK" "$rc" > "$t" && cat "$t" > "$rc"; rm -f "$t"; }; done
+      C "Shortcut removed. Use ./securax from the SecuRAX folder again."; exit 0
+    fi
+    shortcut_install || true
+    case ":$PATH:" in
+      *":$BIN:"*) C "✔ Done. From any folder you can now type:  securax status" ;;
+      *) for rc in "$HOME/.bashrc" "$HOME/.zshrc"; do [ -f "$rc" ] || continue; grep -q "$MARK" "$rc" || printf '\nexport PATH="$HOME/.local/bin:$PATH"  %s\n' "$MARK" >> "$rc"; done
+         C "✔ Done. Close this terminal and open a new one, then from any folder type:  securax status"
+         C "  (it added one line to ~/.bashrc; undo with  ./securax shortcut off)" ;;
+    esac
+    ;;
+  why)
+    # "Something is not working": no Docker knowledge needed. Shows what is running, what stopped and WHY (the last log lines) with a plain-English hint.
+    #   ./securax why [service]        e.g. ./securax why open-webui     (no name = every container that is not running healthy)
+    command -v docker >/dev/null 2>&1 || { C "Docker is not available here. Start Docker Desktop, wait for the whale icon to settle, then run this again."; exit 1; }
+    docker info >/dev/null 2>&1 || { C "Docker is installed but not running. Start Docker Desktop, wait until it says 'Engine running', then run:  ./securax why"; exit 1; }
+    cd "$ROOT/local/compose"
+    C "What is running (and what is not):"; docker compose ps -a --format 'table {{.Service}}\t{{.Status}}' 2>&1 | head -40
+    if [ -n "${2:-}" ]; then WHY_SVCS="$2"; else
+      WHY_SVCS="$(docker compose ps -a --format '{{.Service}} {{.Status}}' 2>/dev/null | { grep -viE 'up [^(]*\((healthy|health: starting)\)|^[^ ]+ up [0-9a-z ]+$' || true; } | awk '{print $1}' | head -4 | tr '\n' ' ')"
+    fi
+    [ -n "$(printf '%s' "$WHY_SVCS" | tr -d ' ')" ] || { C "Everything that was started looks healthy. If a page still fails, run:  ./securax doctor"; exit 0; }
+    for svc in $WHY_SVCS; do
+      LOG="$(docker compose logs --no-color --tail 40 "$svc" 2>&1 || true)"
+      C ""; C "── $svc: last lines ─────────────────────────────"; printf '%s\n' "$LOG" | tail -15
+      HINT="$(printf '%s' "$LOG" | python3 "$ROOT/governance/why.py" 2>/dev/null || true)"
+      [ -n "$HINT" ] && { C "   In plain words: $HINT"; }
+    done
+    C ""; C "If it is still unclear, copy everything above into the chat — it has what is needed."
+    ;;
   forge)
     # The ADMISSION GATE for a change: do the new tests fail without the change (fail-to-pass), do they notice deliberately broken lines
     # (mutation), is the touched code within complexity budget, and is a red log an infrastructure blip or a code fault? autobuild runs it.
@@ -1125,7 +1169,8 @@ SecuRAX — one command, `./securax <command>`   (Windows: `.\securax.cmd <comma
 START HERE (the 20% you use 80% of the time)
   setup          guided first-time setup (keys, phone access)        up / down      start / stop everything
   open           open the Command Center in your browser             status         what is running right now
-  doctor         find and fix what is wrong, in plain words          update         get the latest version (safe: backs up first)
+  doctor         check health and run a real chat test               update         get the latest version (safe: backs up first)
+  why [service]  something is not working: what stopped and why      shortcut       type `securax <command>` from any folder
   cockpit        one-page health view: risks, to-dos, trends         storage        how much space you use and when it runs out
   notify         send the daily digest to Mattermost/Slack           capacity       what to switch on as more people join (1 to 100,000)
   tls            encrypt every web connection (HTTPS everywhere)        sync-link      one-tap sync setup for a phone / second computer
