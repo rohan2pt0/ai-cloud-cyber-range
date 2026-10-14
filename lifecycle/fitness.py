@@ -175,12 +175,23 @@ def check_ccsp_map() -> dict:
             "note": "every evidence reference resolves and every 'covered' is proven" if not probs else "; ".join(probs[:3])}
 
 
+def check_regulatory_maps() -> dict:
+    """The RBI NBFC and SEBI CSCRF gap maps must not rot: every evidence reference resolves, every 'supported' is proven."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("regmap", ROOT / "governance" / "regmap.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    probs = [f"{k}: {p}" for k in mod.MAPS for p in mod.problems(mod.load(k))]
+    return {"name": "regulatory-maps", "value": len(probs), "budget": 0, "unit": "problems", "ok": not probs,
+            "note": "every evidence reference resolves and every 'supported' is proven" if not probs else "; ".join(probs[:3])}
+
+
 def run_all(only_fast: bool = False) -> list[dict]:
     c, base = cfg()["budgets"], baseline()
     res = [check_rails_latency(c["rails_worst_case_ms"]), check_rails_memory(c["rails_import_rss_mb"]), check_runtime_deps(c["gateway_runtime_deps"])]
     if not only_fast:
         res += check_gateway(c["gateway_cold_start_s"], c["gateway_rss_mb"])
-    res += [check_supply_chain(base), check_commands_documented(base), check_ccsp_map()]
+    res += [check_supply_chain(base), check_commands_documented(base), check_ccsp_map(), check_regulatory_maps()]
     return res
 
 

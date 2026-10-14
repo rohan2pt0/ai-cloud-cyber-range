@@ -839,6 +839,31 @@ def j_ccsp(sb: H.Sandbox, c: Checks):
     c.ok(rc != 0 and "does not exist" in out, "a stale evidence reference makes `ccsp --verify` fail", tail(out, 300))
 
 
+@journey("comply_evidence", "`./securax comply`: the RBI NBFC and SEBI CSCRF gap maps verify (no stale reference, no unproven 'supported'), say plainly that entity obligations are not counted, and ship in the checksummed audit pack.")
+def j_comply(sb: H.Sandbox, c: Checks):
+    import hashlib
+    import tarfile
+    rc, out = H.sh(["bash", "./securax", "comply", "--verify"], cwd=sb.clone)
+    c.ok(rc == 0 and out.count("consistent") == 2, "`comply --verify` passes on both maps", tail(out, 300))
+    rc, out = H.sh(["bash", "./securax", "comply", "cscrf", "--category", "qre"], cwd=sb.clone)
+    c.ok(rc == 0 and "Qualified RE" in out and "entity obligations" in out, "`comply cscrf --category qre` narrows to that SEBI category", tail(out, 300))
+    rc, out = H.sh(["bash", "./securax", "comply"], cwd=sb.clone)
+    c.ok(rc == 0 and "cannot make an entity 100% compliant" in out, "the summary states that software cannot make an entity 100% compliant", tail(out, 300))
+    pack = sb.clone.parent / "comply-pack.tgz"
+    rc, out = H.sh(["python3", "local/compose/evidence.py", "--dir", str(sb.clone.parent), "--env-file", "/nonexistent", "--out", str(pack)], cwd=sb.clone)
+    c.ok(rc == 0 and pack.exists(), "the evidence pack is produced", tail(out, 300))
+    if pack.exists():
+        with tarfile.open(pack) as t:
+            files = {m.name: t.extractfile(m).read() for m in t.getmembers()}
+        c.ok({"compliance-rbi.md", "compliance-cscrf.md", "compliance-summary.json"} <= set(files), "the pack contains both assessments", sorted(files))
+        sums = dict(reversed(ln.split("  ")) for ln in files.get("SHA256SUMS", b"").decode().splitlines())
+        c.ok("compliance-rbi.md" in sums and all(hashlib.sha256(files[k]).hexdigest() == v for k, v in sums.items() if k in files), "…and they are covered by SHA256SUMS")
+    mp = sb.clone / "governance" / "regmap-rbi-nbfc.json"          # an overclaim must fail the gate
+    mp.write_text(mp.read_text().replace('"status": "gap"', '"status": "supported"', 1))
+    rc, out = H.sh(["bash", "./securax", "comply", "--verify"], cwd=sb.clone)
+    c.ok(rc != 0 and "journey or test" in out, "turning a gap into 'supported' without proof makes `comply --verify` fail", tail(out, 300))
+
+
 # ═══════════════════════════════════════════ runner ═══════════════════════════════════════════
 @journey("gameday", "`./securax gameday`: real failures injected into the burrow twin (node loss, control-plane restart, an etcd snapshot-RESTORE disaster drill); each must be detected, contained, recovered within its SLO; the twin is left as found.", slow=True)
 def j_gameday(sb: H.Sandbox, c: Checks):
