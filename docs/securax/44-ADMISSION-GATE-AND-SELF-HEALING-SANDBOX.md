@@ -32,7 +32,7 @@ Equivalent mutants exist (a change that cannot alter behaviour), so the threshol
 
 `./securax forge classify FILE` says whether a red log is **infrastructure** (Docker daemon down, DNS, registry rate limit, disk full) or **code**.
 `autobuild` re-runs the gate (twice, after a wait) on infrastructure reds instead of asking the model to "fix" code that is not broken, and
-`./securax forge brief FILE` replaces the old 60-line tail with the typed, de-duplicated evidence plus the no-weakening reminder.
+(proven by the `autobuild_loop` journey: the gate goes green on the re-run and the agent is called once) `./securax forge brief FILE` replaces the old 60-line tail with the typed, de-duplicated evidence plus the no-weakening reminder.
 
 The **sandbox** does the same: if every failed check of a journey carries infrastructure evidence and nothing code-shaped, it restores/checks Docker and
 re-runs that journey once. The retry is recorded in `sandbox/out/results.json` (`infra_retry`) and printed ("passed only after an infrastructure retry"), so

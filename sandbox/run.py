@@ -909,6 +909,25 @@ echo ok
     c.ok(git("rev-parse", "--abbrev-ref", "HEAD")[1].strip() == "main" and git("status", "--porcelain")[1].replace(briefs[-1].name if briefs else "", "").strip() == "",
          "…and the checkout is rolled back to a clean main")
     c.ok("autobuild/impossible" not in git("branch")[1], "…with the failed branch deleted")
+    # a red that is the MACHINE's fault (Docker daemon died) is re-run, not "fixed": the agent must not be asked to change correct code (doc 44)
+    for b in briefs:
+        b.unlink()
+    calls, flag = sb.clone.parent / "agent-calls.txt", sb.clone.parent / "infra-flag"
+    calls.write_text("")
+    flag.unlink(missing_ok=True)
+    agent2, gate2 = sb.clone.parent / "agent2.sh", sb.clone.parent / "gate2.sh"
+    agent2.write_text(f"""#!/bin/sh
+echo call >> "{calls}"
+printf 'def test_probe():\n    assert True\n' > local/compose/tests/test_autobuild_probe.py
+""")
+    gate2.write_text(f"""#!/bin/sh
+if [ ! -f "{flag}" ]; then touch "{flag}"; echo "error during connect: Cannot connect to the Docker daemon at unix:///var/run/docker.sock"; exit 1; fi
+echo ok
+""")
+    env2 = {**env, "AUTOBUILD_AGENT": f"sh {agent2}", "AUTOBUILD_VERIFY": f"sh {gate2}", "AUTOBUILD_INFRA_WAIT": "0"}
+    rc, out = H.sh(["bash", "./securax", "autobuild", "infra blip task", "--tries", "2"], cwd=sb.clone, env=env2, timeout=300)
+    c.ok(rc == 0 and "GREEN on attempt 1" in out, "an infrastructure red does not use up an attempt: the gate is re-run and goes green", tail(out, 500))
+    c.ok("INFRASTRUCTURE" in out and calls.read_text().count("call") == 1, "…and the agent was NOT asked to repair code that was not broken", f"agent calls={calls.read_text().count('call')}")
 
 
 def _lc(sb: H.Sandbox, *args: str, extra_env: dict | None = None, timeout: int = 900) -> tuple[int, str]:
