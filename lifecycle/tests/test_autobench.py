@@ -138,3 +138,26 @@ def test_cli_run_with_a_command_agent_records_results_and_reports(tmp_path, monk
     assert "SOLVED" in out and "m1" in out
     rows = ab.load_results(tmp_path / "results.jsonl")
     assert len(rows) == 1 and rows[0]["resolved"] and rows[0]["model"] == "m1"
+
+
+def test_the_aider_adapter_passes_the_model_prompt_files_and_gateway_settings(tmp_path, monkeypatch):
+    bindir = tmp_path / "bin"
+    bindir.mkdir()
+    log = tmp_path / "aider.log"
+    (tmp_path / "ref.py").write_text(T["last_n"]["reference"]["solution.py"])
+    (bindir / "aider").write_text(f'#!/bin/sh\necho "$@" > "{log}"\necho "$OPENAI_API_BASE|$OPENAI_API_KEY" >> "{log}"\ncp "{tmp_path}/ref.py" solution.py\n')
+    (bindir / "aider").chmod(0o755)
+    monkeypatch.setenv("PATH", f"{bindir}:{__import__('os').environ['PATH']}")
+    monkeypatch.setenv("AUTOBENCH_API_BASE", "https://gw.example/v1")
+    monkeypatch.setenv("AUTOBENCH_API_KEY", "sk-test")
+    r = ab.run_task(T["last_n"], ab.make_aider(tmp_path), "builder", "plain", tries=1, use_forge=False)
+    argv, env = log.read_text().splitlines()
+    assert r["resolved"] and r["agent_rc"] == 0
+    assert "--model openai/builder" in argv and "--yes" in argv and "--no-auto-commits" in argv and "--message-file" in argv and argv.endswith("solution.py")
+    assert "test_visible.py" not in argv                                            # the agent is only offered the source files
+    assert env == "https://gw.example/v1|sk-test"
+
+
+def test_a_missing_aider_is_reported_not_crashed(tmp_path, monkeypatch):
+    monkeypatch.setenv("PATH", str(tmp_path))
+    assert ab.make_aider(tmp_path)(T["last_n"], tmp_path, "p", 1, "m") == 124
