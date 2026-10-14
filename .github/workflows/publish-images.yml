@@ -8,6 +8,8 @@ on:
 permissions:
   contents: read
   packages: write
+  id-token: write      # keyless signing of the build provenance (SLSA)
+  attestations: write
 
 jobs:
   gateway:
@@ -27,8 +29,16 @@ jobs:
             type=semver,pattern={{version}}
             type=raw,value=latest
       - uses: docker/build-push-action@v6
+        id: build
         with:
           context: apps/llm-gateway
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+      # SLSA build provenance: a signed statement of which commit/workflow built this exact digest.
+      # Verify with:  gh attestation verify oci://ghcr.io/<owner>/securax-llm-gateway:<tag> --owner <owner>
+      - uses: actions/attest-build-provenance@v2
+        with:
+          subject-name: ghcr.io/${{ github.repository_owner }}/securax-llm-gateway
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true

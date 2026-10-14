@@ -4,6 +4,7 @@ Your life-OS state (the Guiding Map PWA's localStorage) lives on YOUR box, in a
 SQLite file on a Docker volume, reached privately over Tailscale. No third-party
 SaaS, no SDK, no CDN. The PWA talks to it with plain fetch (see guiding-map/ops.js):
 
+    WS   /sync/ws                -> live "changed" pings (first message {"token","user"})
     HEAD /sync/            -> 200 (its Date header anchors the client clock)
     GET  /sync/state?user=<id>   -> { payload:{k:v}, meta:{k:ts}, updated_at }  (404 if none)
     PUT  /sync/state?user=<id>   body { payload, meta, updated_at }             -> merged
@@ -19,13 +20,15 @@ NEWER by its own timestamp. Keys already stored are never silently dropped by a
 device that hasn't seen them. This is strictly safer than a last-writer-wins blob
 store and is fully compatible with the PWA's own client-side merge.
 """
+import asyncio
 import hmac
+import json as _json
 import os
 import sqlite3
 import time
 from contextlib import asynccontextmanager, closing
 
-from fastapi import FastAPI, Header, HTTPException, Query, Request, Response
+from fastapi import FastAPI, Header, HTTPException, Query, Request, Response, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 
 DB_PATH = os.environ.get("SYNC_DB_PATH", "/data/estate-sync.db")
@@ -83,9 +86,67 @@ def _auth(authorization: str | None) -> None:
         raise HTTPException(401, "invalid or missing device token")
 
 
+# ── Live change notifications (WebSocket) ─────────────────────────────────────
+# Push, not poll: a device that wrote a change wakes the user's OTHER devices, which
+# then pull through the normal per-key merge. The socket carries NO data, only
+# {"type":"changed","updated_at":...}; correctness stays with the HTTP merge, so a
+# dropped socket costs latency, never data. Auth is the first message (browsers
+# cannot set headers on a WebSocket, and a token in the URL would land in logs).
+# One process holds the registry (SQLite + a single worker is this service's design);
+# a scaled-out deployment needs a shared bus (see docs/securax/39).
+_SUBS: dict[str, set[WebSocket]] = {}
+MAX_SOCKETS = int(os.environ.get("SYNC_MAX_SOCKETS", "100"))
+WS_IDLE_S = float(os.environ.get("SYNC_WS_IDLE_SECONDS", "90"))
+
+
+def _sockets() -> int:
+    return sum(len(v) for v in _SUBS.values())
+
+
+async def _notify(user: str, updated_at: str, origin: str | None) -> None:
+    msg = _json.dumps({"type": "changed", "updated_at": updated_at, "origin": origin})
+    for ws in list(_SUBS.get(user, ())):
+        try:
+            await ws.send_text(msg)
+        except Exception:                      # dead peer: drop it, never fail the PUT
+            _SUBS.get(user, set()).discard(ws)
+
+
+@app.websocket("/sync/ws")
+async def ws_endpoint(ws: WebSocket) -> None:
+    await ws.accept()
+    user = None
+    try:
+        hello = _json.loads(await asyncio.wait_for(ws.receive_text(), timeout=10))
+        tok = str(hello.get("token", "")) if isinstance(hello, dict) else ""
+        user = str(hello.get("user", "")) if isinstance(hello, dict) else ""
+        allowed = _tokens()
+        if not allowed or not user or len(user) > 256 or not any(hmac.compare_digest(tok, a) for a in allowed):
+            await ws.close(code=4401)
+            return
+        if _sockets() >= MAX_SOCKETS:
+            await ws.close(code=4429)
+            return
+        _SUBS.setdefault(user, set()).add(ws)
+        await ws.send_text(_json.dumps({"type": "ready"}))
+        while True:                            # client pings keep it alive; idle ones are dropped
+            await asyncio.wait_for(ws.receive_text(), timeout=WS_IDLE_S)
+    except (WebSocketDisconnect, asyncio.TimeoutError, ValueError, RuntimeError):
+        pass
+    finally:
+        if user:
+            _SUBS.get(user, set()).discard(ws)
+            if not _SUBS.get(user):
+                _SUBS.pop(user, None)
+        try:
+            await ws.close()
+        except Exception:
+            pass
+
+
 @app.get("/healthz")
 def healthz() -> dict:
-    return {"ok": True, "configured": bool(_tokens())}
+    return {"ok": True, "configured": bool(_tokens()), "sockets": _sockets()}
 
 
 # The PWA's clock anchor: a HEAD to the sync base. Its Date response header (added
@@ -154,4 +215,5 @@ async def put_state(request: Request,
             (user, json.dumps(merged), json.dumps(merged_meta), updated_at),
         )
         conn.commit()
+    await _notify(user, updated_at, str(body.get("device") or "")[:64] or None)
     return JSONResponse({"ok": True, "keys": len(merged), "updated_at": updated_at})

@@ -61,6 +61,7 @@ makes it an *ecosystem* and not five disconnected projects.
 | Regulatory gap maps (RBI, SEBI, CCSP, MIT, NIST) | [`35-REGULATORY-GAP-ASSESSMENT.md`](35-REGULATORY-GAP-ASSESSMENT.md) |
 | Sign-in, incident clock, data residency | [`36-IDENTITY-INCIDENT-RESIDENCY.md`](36-IDENTITY-INCIDENT-RESIDENCY.md) |
 | One-page health, storage growth, patching, impact | [`37-COCKPIT-STORAGE-PATCHING.md`](37-COCKPIT-STORAGE-PATCHING.md) |
+| Live sync, team chat (Mattermost), growing from 1 to 100,000 people | [`39-PEOPLE-SCALE-LIVE-SYNC-CHATOPS.md`](39-PEOPLE-SCALE-LIVE-SYNC-CHATOPS.md) |
 | What well-run products do that we skipped, research cues, friction audit | [`38-ENGINEERING-PRACTICES-AND-RESEARCH.md`](38-ENGINEERING-PRACTICES-AND-RESEARCH.md) |
 | Summon a specialist advisor (first-draft opinion) | [`16-AGENTS.md`](16-AGENTS.md) |
 | The end-state blueprint every build maps to | [`17-ENTERPRISE-ARCHITECTURE.md`](17-ENTERPRISE-ARCHITECTURE.md) |

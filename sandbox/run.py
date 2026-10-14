@@ -706,7 +706,7 @@ def j_organs(sb: H.Sandbox, c: Checks):
     home = sb.clone.parent / "sxhome"
     shutil.rmtree(home, ignore_errors=True)
     rc, out = _lc(sb, "organ-check", timeout=900)
-    c.ok(rc == 0 and out.count("✔") == 3, "Wazuh, MISP and TheHive: the pinned upstream refs fetch, prepare and compose-validate", tail(out, 600))
+    c.ok(rc == 0 and out.count("✔") == 4, "Wazuh, MISP, TheHive and Mattermost: the pinned upstream refs fetch, prepare and compose-validate", tail(out, 600))
     # a stand-in organ from a LOCAL repo: proves fetch-at-exact-ref, port remapping to localhost, hibernate and wake with real containers
     src = sb.clone.parent / "organ-src"
     shutil.rmtree(src, ignore_errors=True)

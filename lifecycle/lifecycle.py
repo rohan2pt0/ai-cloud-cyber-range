@@ -329,13 +329,15 @@ def prepare_env(workdir: str, env_spec: dict) -> None:
     if not os.path.exists(target):
         shutil.copyfile(os.path.join(workdir, env_spec["copy_from"]), target)
     lines = open(target, encoding="utf-8").read().splitlines()
+    shipped = env_spec.get("shipped_defaults", {})       # upstream's published placeholder passwords count as "no value yet"
     for key, val in env_spec["set"].items():
         pat = re.compile(rf"^\s*#?\s*{re.escape(key)}\s*=(.*)$")
         done = False
         for i, ln in enumerate(lines):
             m = pat.match(ln)
             if m:
-                if val == "@secret" and not ln.lstrip().startswith("#") and m.group(1).strip():
+                if val == "@secret" and not ln.lstrip().startswith("#") and m.group(1).strip() \
+                        and m.group(1).strip() != shipped.get(key):
                     done = True                          # a secret that already has a value is kept (never rotate under a running DB)
                     break
                 lines[i] = f"{key}={new_secret() if val == '@secret' else val}"       # literal settings are always (re)applied

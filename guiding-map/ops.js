@@ -322,6 +322,7 @@
     var c = cfg(); if (!c || !c.url || !c.key || !navigator.onLine) return;
     if (!force && Date.now() - lastPull < 15000) return;   // app-switching must not hammer
     lastPull = Date.now();
+    gmLiveStart();
     syncClock(c.url).then(function () {
       return fetch(stateURL(c), { headers: syncHeaders(c) });
     }).then(function (r) {
@@ -348,13 +349,38 @@
       if (k.indexOf("gm_sync") !== 0) blob[k] = localStorage.getItem(k);
     }
     fetch(stateURL(c), { method: "PUT", headers: syncHeaders(c),
-        body: JSON.stringify({ payload: blob, meta: m, updated_at: new Date(nowSrv()).toISOString() }) })
+        body: JSON.stringify({ payload: blob, meta: m, updated_at: new Date(nowSrv()).toISOString(), device: devId }) })
       .then(function (r) {
         if (!r || !r.ok) { S_("gm_sync_fails", G("gm_sync_fails", 0) + 1); return; }
         S_("gm_sync_last", ymd() + " " + new Date().toTimeString().slice(0, 5));
         S_("gm_sync_fails", 0);
       })
       .catch(function () { S_("gm_sync_fails", G("gm_sync_fails", 0) + 1); });
+  };
+  // Live push (WebSocket): the server only says "something changed"; we then pull through
+  // the same per-key merge. If the socket cannot open or drops, the existing pull-on-open
+  // and push-on-edit paths keep working unchanged -- a socket costs latency, never data.
+  var ws = null, wsTimer = null, wsBackoff = 2000;
+  // Which device wrote: a device ignores pings about its own writes (no echo loop).
+  var devId = G("gm_sync_dev", null) || (function () { var d = Math.random().toString(36).slice(2, 10); S_("gm_sync_dev", d); return d; })();
+  function wsURL(c) { return String(c.url).replace(/\/+$/, "").replace(/^http/, "ws") + "/ws"; }
+  window.gmLiveStop = function () { clearTimeout(wsTimer); if (ws) { try { ws.close(); } catch (e) {} ws = null; } };
+  window.gmLiveStart = function () {
+    var c = cfg(); if (!c || !c.url || !c.key || typeof WebSocket === "undefined") return;
+    if (ws && ws.readyState <= 1) return;
+    try { ws = new WebSocket(wsURL(c)); } catch (e) { return; }
+    var mine = ws, ping = null;
+    mine.onopen = function () { mine.send(JSON.stringify({ token: c.key, user: c.user })); };
+    mine.onmessage = function (ev) {
+      var m = {}; try { m = JSON.parse(ev.data); } catch (e) {}
+      if (m.type === "ready") { wsBackoff = 2000; S_("gm_sync_live", 1); ping = setInterval(function () { try { mine.send("ping"); } catch (e) {} }, 30000); }
+      if (m.type === "changed" && m.origin !== devId) { lastPull = 0; gmSyncInit(true); }
+    };
+    mine.onclose = function () {
+      clearInterval(ping); S_("gm_sync_live", 0); if (ws === mine) ws = null;
+      if (cfg()) { wsTimer = setTimeout(gmLiveStart, wsBackoff); wsBackoff = Math.min(wsBackoff * 2, 60000); }
+    };
+    mine.onerror = function () { try { mine.close(); } catch (e) {} };
   };
   window.gmSyncSave = function () {
     var url = document.getElementById("syUrl").value.trim();
@@ -364,7 +390,7 @@
     S_("gm_sync_cfg", { url: url, key: key, user: user });
     gmSyncInit(true); renderAll();
   };
-  window.gmSyncOff = function () { gmSnap("turned cross-device sync off"); localStorage.removeItem("gm_sync_cfg"); renderAll(); };
+  window.gmSyncOff = function () { gmSnap("turned cross-device sync off"); localStorage.removeItem("gm_sync_cfg"); gmLiveStop(); renderAll(); };
 
   function syncHTML() {
     var c = cfg(), last = G("gm_sync_last", null);
