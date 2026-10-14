@@ -1373,6 +1373,7 @@ def j_gateway_residency(sb: H.Sandbox, c: Checks):
     finally:
         H.sh(["docker", "rm", "-f", name])
     home = sb.clone.parent / "res-home"
+    shutil.rmtree(home, ignore_errors=True)       # this journey ends by attesting a cloud: a second run on the same machine must not start already attested
     envp = {**os.environ, "SECURAX_HOME_DIR": str(home), "TF_VAR_region": "us-east-1"}
     rc, out = H.sh(["bash", "./securax", "residency", "--env-file", str(envf), "region", "aws", "us-east-1"], cwd=sb.clone, env=envp)
     c.ok(rc == 1 and "not allowed" in out, "a cloud region outside the policy is refused", tail(out, 300))
