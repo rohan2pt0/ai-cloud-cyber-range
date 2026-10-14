@@ -91,8 +91,8 @@ the next attempt. **Commits only when green** (you then review `git diff main..a
 attempts it discards the work, returns your checkout to a clean state and writes `autobuild-failed-*.md` — an
 escalation brief for the rare frontier-model hand-off. It refuses to start on a dirty tree (so rollback is always
 safe), never touches your branch, and pushes only with `AUTOBUILD_PUSH=1`. The gate is `./securax verify` unless you set `AUTOBUILD_VERIFY="<command>"` (exit 0 = green). Proven by the sandbox journey `autobuild_loop`
-(with a stub agent) — **the quality of a real local/cheap model inside this loop is not yet measured**: try it on ~10 small
-real tasks and record pass-rate before depending on it.
+(with a stub agent) — **the quality of a real local/cheap model inside this loop is now measurable**: run `./securax autobench run --models builder,coder`
+(doc 45) and read the report before depending on it.
 
 > **Stronger gate:** since doc 44, `autobuild` also runs `./securax forge gate` (fail-to-pass, mutation, complexity budget) and feeds back a typed brief; infrastructure reds are re-run, not "fixed".
 

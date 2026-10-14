@@ -741,6 +741,14 @@ $(python3 "$ROOT/lifecycle/forge.py" brief "$FB")"
     done
     C ""; C "If it is still unclear, copy everything above into the chat — it has what is needed."
     ;;
+  autobench)
+    # Measure each build model INSIDE the autobuild loop on 10 hidden-graded tasks, so the ladder order rests on data. Cloud models may cost money: it asks first.
+    #   ./securax autobench selftest                      the benchmark proves itself first (no model, no tokens)
+    #   ./securax autobench run --models builder,coder    run the models through the gateway (aider)        ./securax autobench report
+    shift
+    export AUTOBENCH_API_BASE="$(gw_url)/v1" AUTOBENCH_API_KEY="$(ev LITELLM_MASTER_KEY sk-range-dev)"
+    exec python3 "$ROOT/lifecycle/autobench.py" "$@"
+    ;;
   forge)
     # The ADMISSION GATE for a change: do the new tests fail without the change (fail-to-pass), do they notice deliberately broken lines
     # (mutation), is the touched code within complexity budget, and is a red log an infrastructure blip or a code fault? autobuild runs it.
@@ -1199,7 +1207,7 @@ REGULATORY & EVIDENCE (any regulator: RBI, SEBI, CERT-In, IRDAI, DPDP, others as
   gateway-auth   who may call the AI gateway          residency ...  which data may be processed where
 
 BUILD & KEEP IT HEALTHY
-  build / autobuild / escalate "task"     build with the local or free models    diffcheck   catch cheating before commit    forge   prove the tests really test the change
+  build / autobuild / escalate "task"     build with the local or free models    diffcheck   catch cheating before commit    forge   prove the tests really test the change    autobench   measure each build model
   verify         run every check                       fitness / gameday      measured promises; real failure drills
   impact         what a change can affect, and which proofs to re-run
 

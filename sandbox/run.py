@@ -930,6 +930,26 @@ echo ok
     c.ok("INFRASTRUCTURE" in out and calls.read_text().count("call") == 1, "…and the agent was NOT asked to repair code that was not broken", f"agent calls={calls.read_text().count('call')}")
 
 
+@journey("autobench_selftest", "`./securax autobench`: the benchmark proves it tells a perfect agent from an empty one and from two cheaters (no model, no tokens); a run is recorded and reported.")
+def j_autobench(sb: H.Sandbox, c: Checks):
+    store = sb.clone.parent / "autobench-store"
+    shutil.rmtree(store, ignore_errors=True)
+    env = {**os.environ, "SECURAX_AUTOBENCH_DIR": str(store)}
+    rc, out = H.sh(["bash", "./securax", "autobench", "report"], cwd=sb.clone, env=env, timeout=60)
+    c.ok(rc == 0 and "No results yet" in out, "before any run, the report says what to do instead of printing an empty table", tail(out, 200))
+    rc, out = H.sh(["bash", "./securax", "autobench", "selftest"], cwd=sb.clone, env=env, timeout=900)
+    c.ok(rc == 0 and "oracle       resolved 10/10" in out and "the benchmark discriminates" in out, "selftest: the perfect agent solves all 10, the benchmark is trustworthy", tail(out, 600))
+    c.ok("null         resolved 0/10" in out and "edits_tests  resolved 0/10" in out and "skips_tests  resolved 0/10" in out, "…an empty agent and both test-cheating agents solve none", tail(out, 600))
+    rc, out = H.sh(["bash", "./securax", "autobench", "run", "--models", "demo", "--tasks", "last_n", "--tries", "1", "--prompt", "plain", "--agent",
+                    "cmd:printf 'def last_n(items, n):\\n    return items[-n - 1:]\\n' > solution.py"], cwd=sb.clone, env=env, timeout=300)
+    c.ok(rc == 0 and "failed" in out and "SOLVED" not in out, "a wrong solution is recorded as failed (the hidden tests catch the bug the visible test misses)", tail(out, 400))
+    rc, out = H.sh(["bash", "./securax", "autobench", "report", "--json"], cwd=sb.clone, env=env, timeout=60)
+    rows = json.loads(out) if rc == 0 else []
+    c.ok(len(rows) == 1 and rows[0]["model"] == "demo" and rows[0]["resolved"] == 0, "…and the report shows that run", tail(out, 300))
+    rc, out = H.sh(["bash", "./securax", "autobench", "run", "--models", "a,b,c", "--prompt", "both", "--agent", "cmd:true"], cwd=sb.clone, env=env, timeout=60)
+    c.ok(rc == 1 and "--yes" in out, "a large (possibly paid) run is refused until you say --yes", tail(out, 200))
+
+
 def _lc(sb: H.Sandbox, *args: str, extra_env: dict | None = None, timeout: int = 900) -> tuple[int, str]:
     """Run the lifecycle CLI (`./securax stages|grow|…`) with a private ~/.securax so the sandbox never touches the real one."""
     home = sb.clone.parent / "sxhome"

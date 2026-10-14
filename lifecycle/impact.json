@@ -191,7 +191,8 @@
     "lifecycle_organs",
     "gameday",
     "vet_gate",
-    "diffcheck_gate"
+    "diffcheck_gate",
+    "autobench_selftest"
    ],
    "affects": [
     "governance"

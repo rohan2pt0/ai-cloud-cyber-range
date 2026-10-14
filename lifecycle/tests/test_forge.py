@@ -166,3 +166,13 @@ def test_relevant_tests_finds_tests_by_module_name_and_skips_vendored_trees(repo
     cmd = fg.relevant_tests("calc.py", repo)
     assert "tests/test_price.py" in cmd and not any("node_modules" in c for c in cmd)
     assert fg.relevant_tests("unrelated_module.py", repo) == fg.PYTEST      # nothing mentions it: run everything rather than nothing
+
+
+def test_mutation_never_leaves_stale_bytecode_of_a_mutant_behind(repo):
+    """A mutant and the original of the same size written in the same second share a .pyc stamp: the restored source would run the MUTANT's bytecode."""
+    (repo / "tests" / "test_f.py").write_text("import calc\n\ndef test_f():\n    assert calc.f(5) is True and calc.f(4) is False\n")
+    (repo / "calc.py").write_text("def f(x):\n    return x == 5")                   # no trailing newline: same byte length as the unparsed mutant `x != 5`
+    fg.gate("HEAD", None, 24, 0.6, False, repo)
+    assert not list((repo / "__pycache__").glob("calc*.pyc")), "mutation runs must not write bytecode of mutants (a same-second, same-size restore would run the stale mutant)"
+    out = subprocess.run([sys.executable, "-c", "import calc; print(calc.f(5), calc.f(4))"], cwd=repo, capture_output=True, text=True)
+    assert out.stdout.strip() == "True False", out
