@@ -88,7 +88,7 @@
       "label": "DeepSeek",
       "kind": "llm",
       "alias": "deepseek",
-      "model": "deepseek/deepseek-chat",
+      "model": "deepseek/deepseek-v4-flash",
       "env": [
         "DEEPSEEK_API_KEY"
       ],
@@ -98,6 +98,8 @@
         "url": "https://api.deepseek.com/models",
         "prefix": "deepseek/",
         "prefer": [
+          "^deepseek-v4-flash$",
+          "^deepseek-v4",
           "^deepseek-chat$"
         ]
       }
@@ -136,6 +138,7 @@
       "discover": {
         "kind": "openai",
         "url": "https://api.x.ai/v1/models",
+        "auth_codes": [400, 401, 403],
         "prefix": "xai/",
         "prefer": [
           "^grok-4\\.[0-9]+$",

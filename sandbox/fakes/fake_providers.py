@@ -49,7 +49,7 @@ LIVE_MODELS: dict[str, list[str]] = {
     "groq": ["openai/gpt-oss-120b", "llama-3.1-8b-instant", "whisper-large-v3"],
     "openai": ["gpt-9-mini", "gpt-9"],
     "anthropic": ["claude-haiku-9-1", "claude-sonnet-9-1"],
-    "deepseek": ["deepseek-chat"],
+    "deepseek": ["deepseek-v4-flash", "deepseek-v4-pro", "deepseek-chat"],
     "mistral": ["mistral-small-latest"],
     "grok": ["grok-9.1", "grok-9.1-image"],
     "openrouter": ["meta-llama/llama-3.3-70b-instruct:free"],
