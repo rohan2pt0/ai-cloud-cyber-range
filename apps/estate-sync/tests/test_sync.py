@@ -142,3 +142,39 @@ def test_ws_carries_origin_so_writer_can_ignore_its_own_echo(client):
         ws.receive_text()
         client.put("/sync/state?user=me", headers=_h(), json={"payload": {"a": "1"}, "meta": {}, "device": "dev1"})
         assert json.loads(ws.receive_text())["origin"] == "dev1"
+
+
+def _put(client, payload, meta=None, user="me"):
+    return client.put(f"/sync/state?user={user}", headers=_h(), json={"payload": payload, "meta": meta or {}})
+
+
+def test_every_put_keeps_todays_snapshot_and_reports_it(client):
+    r = _put(client, {"a": "1"}, {"a": 5})
+    assert r.json()["snapshots"] == 1 and r.json()["latest_snapshot"]
+    _put(client, {"b": "2"}, {"b": 6})                      # same day: the snapshot is replaced by the later merged state, not duplicated
+    lst = client.get("/sync/snapshots?user=me", headers=_h()).json()
+    assert len(lst) == 1 and lst[0]["keys"] == 2
+    day = lst[0]["day"]
+    got = client.get(f"/sync/snapshots/{day}?user=me", headers=_h()).json()
+    assert got["payload"] == {"a": "1", "b": "2"}
+
+
+def test_snapshots_are_per_user_authenticated_and_validated(client):
+    _put(client, {"a": "1"}, user="alice")
+    assert client.get("/sync/snapshots?user=bob", headers=_h()).json() == []
+    assert client.get("/sync/snapshots?user=alice").status_code == 401
+    assert client.get("/sync/snapshots/2026-01-01?user=alice", headers=_h()).status_code == 404
+    assert client.get("/sync/snapshots/not-a-day?user=alice", headers=_h()).status_code == 400
+
+
+def test_old_snapshots_are_pruned(client, monkeypatch):
+    import sqlite3
+
+    import syncsvc.main as m
+    _put(client, {"a": "1"})
+    with sqlite3.connect(m.DB_PATH) as c:
+        c.execute("INSERT INTO snapshots VALUES('me','2020-01-01','{}','{}','x')")
+        c.execute("INSERT INTO snapshots VALUES('me','2099-01-01','{}','{}','x')")
+    _put(client, {"b": "2"})
+    days = [r["day"] for r in client.get("/sync/snapshots?user=me", headers=_h()).json()]
+    assert "2020-01-01" not in days and "2099-01-01" in days and len(days) == 2
