@@ -66,6 +66,8 @@ makes it an *ecosystem* and not five disconnected projects.
 | Quantum readiness: cryptography inventory (CBOM), post-quantum key exchange, encrypted backups | [`41-QUANTUM-READINESS.md`](41-QUANTUM-READINESS.md) |
 | OpenCode Go (flat-rate open models) and the OpenCode terminal agent, guarded | [`42-OPENCODE-GO-AND-THE-TERMINAL-AGENT.md`](42-OPENCODE-GO-AND-THE-TERMINAL-AGENT.md) |
 | Look inside third-party software before you trust it (REA, sandboxed; capability drift) | [`43-INSPECT-THIRD-PARTY-SOFTWARE.md`](43-INSPECT-THIRD-PARTY-SOFTWARE.md) |
+| Plan the offensive + AI certification path to your hours and rupee budget (`certs`) | [`46-CERTIFICATION-PATH.md`](46-CERTIFICATION-PATH.md) |
+| Measure each build model on hidden-graded tasks before trusting it (`autobench`) | [`45-AUTOBENCH-MEASURE-YOUR-BUILD-MODELS.md`](45-AUTOBENCH-MEASURE-YOUR-BUILD-MODELS.md) |
 | Prove a change is really done (admission gate: fail-to-pass, mutation, complexity) and a sandbox that retries infrastructure-only failures | [`44-ADMISSION-GATE-AND-SELF-HEALING-SANDBOX.md`](44-ADMISSION-GATE-AND-SELF-HEALING-SANDBOX.md) |
 | What well-run products do that we skipped, research cues, friction audit | [`38-ENGINEERING-PRACTICES-AND-RESEARCH.md`](38-ENGINEERING-PRACTICES-AND-RESEARCH.md) |
 | Summon a specialist advisor (first-draft opinion) | [`16-AGENTS.md`](16-AGENTS.md) |

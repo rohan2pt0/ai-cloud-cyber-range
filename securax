@@ -741,6 +741,20 @@ $(python3 "$ROOT/lifecycle/forge.py" brief "$FB")"
     done
     C ""; C "If it is still unclear, copy everything above into the chat — it has what is needed."
     ;;
+  autobench)
+    # Measure each build model INSIDE the autobuild loop on 10 hidden-graded tasks, so the ladder order rests on data. Cloud models may cost money: it asks first.
+    #   ./securax autobench selftest                      the benchmark proves itself first (no model, no tokens)
+    #   ./securax autobench run --models builder,coder    run the models through the gateway (aider)        ./securax autobench report
+    shift
+    export AUTOBENCH_API_BASE="$(gw_url)/v1" AUTOBENCH_API_KEY="$(ev LITELLM_MASTER_KEY sk-range-dev)"
+    exec python3 "$ROOT/lifecycle/autobench.py" "$@"
+    ;;
+  certs)
+    # Certification path planner: OSCP+/OSWE/OSEP/OSED/OSAI, CPTS/COAE, CRTP/CRTE/CRTM, CRTO, BSCP ... ordered by shared skills, dated by your hours,
+    # costed against your yearly budget in rupees (prices are a dated snapshot with sources: verify before paying).
+    #   ./securax certs plan [--hours 30] [--budget-inr 500000]    ./securax certs next    ./securax certs mark cpts passed    ./securax certs list
+    shift; exec python3 "$ROOT/learning/certs.py" "${@:-next}"
+    ;;
   forge)
     # The ADMISSION GATE for a change: do the new tests fail without the change (fail-to-pass), do they notice deliberately broken lines
     # (mutation), is the touched code within complexity budget, and is a red log an infrastructure blip or a code fault? autobuild runs it.
@@ -1190,6 +1204,7 @@ AI & CHAT
 KEEP IT SAFE
   backup / restore FILE       save and recover your data           watch          keep an eye on it and self-heal
   scan           look for known-exploited weaknesses (offline)     kev / offline  threat data that works with no internet
+  certs          your certification plan: what next, when, what it costs
   purple         attack your own AI rails and report what held     vet            check third-party skills/plugins before use
 
 REGULATORY & EVIDENCE (any regulator: RBI, SEBI, CERT-In, IRDAI, DPDP, others as data files)
@@ -1199,7 +1214,7 @@ REGULATORY & EVIDENCE (any regulator: RBI, SEBI, CERT-In, IRDAI, DPDP, others as
   gateway-auth   who may call the AI gateway          residency ...  which data may be processed where
 
 BUILD & KEEP IT HEALTHY
-  build / autobuild / escalate "task"     build with the local or free models    diffcheck   catch cheating before commit    forge   prove the tests really test the change
+  build / autobuild / escalate "task"     build with the local or free models    diffcheck   catch cheating before commit    forge   prove the tests really test the change    autobench   measure each build model
   verify         run every check                       fitness / gameday      measured promises; real failure drills
   impact         what a change can affect, and which proofs to re-run
 

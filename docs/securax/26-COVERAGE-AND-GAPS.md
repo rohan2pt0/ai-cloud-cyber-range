@@ -73,4 +73,4 @@ Where AWS matters here and how SecuRAX meets it: **Bedrock** (provider plugin �
 ## 8. Ranked next (80/20) — what is still open
 1. **Pin the two floating image tags** (`litellm:main-stable`, `anythingllm:latest`) after verifying current stable tags, plus an SBOM (CycloneDX) in `scan`.
 2. Provider data-handling register (domain 11) — only with vendor-verified facts, shown when you add a key.
-3. Measure the build agent: run `autobuild` on ~10 real small tasks with the cheap/local ladder and record pass-rate and escalations (doc 23) — only then decide how much to lean on it.
+3. Measure the build agent: `./securax autobench` (doc 45) now does this with hidden-graded tasks; what remains is YOUR run against your real models and keys, then deciding the ladder order from the report.

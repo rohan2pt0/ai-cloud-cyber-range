@@ -25,6 +25,7 @@ import argparse
 import ast
 import hashlib
 import json
+import os
 import pathlib
 import re
 import shlex
@@ -36,12 +37,15 @@ import tempfile
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 TEST_PATH = re.compile(r"(^|/)(tests?|__tests__)/|(^|/)test_[^/]*\.py$")
 MAX_COMPLEXITY, MAX_FUNC_LINES = 15, 80
+# Mutation runs must not write bytecode: a mutant and the restored original of equal size written in the same second share a .pyc stamp, so the
+# restored source would silently run the mutant (false kills, and stale mutants left behind in the user's tree).
+NO_BYTECODE = {**os.environ, "PYTHONDONTWRITEBYTECODE": "1"}
 PYTEST = [sys.executable, "-m", "pytest", "-x", "-q", "-p", "no:cacheprovider"]
 
 
-def sh(args: list[str], cwd: pathlib.Path = ROOT, timeout: int = 600) -> subprocess.CompletedProcess:
+def sh(args: list[str], cwd: pathlib.Path = ROOT, timeout: int = 600, env: dict | None = None) -> subprocess.CompletedProcess:
     try:
-        return subprocess.run(args, cwd=cwd, text=True, capture_output=True, timeout=timeout)
+        return subprocess.run(args, cwd=cwd, text=True, capture_output=True, timeout=timeout, env=env)
     except subprocess.TimeoutExpired as e:
         return subprocess.CompletedProcess(args, 124, e.stdout or "", "timeout")
 
@@ -214,7 +218,7 @@ def mutation_gate(files: dict[str, set[int]], test_cmd: list[str] | None, max_mu
         # deterministic sample: stable order from a hash of the file, so a re-run explains the same survivors
         order = sorted(range(total), key=lambda k: hashlib.sha1(f"{path}:{k}".encode()).hexdigest())[:budget_left]
         cmd = test_cmd or relevant_tests(path, root)
-        if sh(cmd, root, timeout).returncode != 0:                           # a red/broken test command "kills" every mutant: measure nothing rather than lie
+        if sh(cmd, root, timeout, NO_BYTECODE).returncode != 0:              # a red/broken test command "kills" every mutant: measure nothing rather than lie
             res.append(dict(level="BLOCK", rule="mutation-baseline", file=path, why="the tests are not green on the unmodified change, so mutation results would be meaningless",
                             fix="make the relevant tests pass first (command: " + " ".join(cmd[:8]) + ")"))
             continue
@@ -227,7 +231,7 @@ def mutation_gate(files: dict[str, set[int]], test_cmd: list[str] | None, max_mu
             stats["mutants"] += 1
             try:
                 src_path.write_text(mutated, "utf-8")
-                rc = sh(cmd, root, timeout).returncode
+                rc = sh(cmd, root, timeout, NO_BYTECODE).returncode
             finally:
                 src_path.write_text(original, "utf-8")                       # ALWAYS restore: the gate never leaves a mutant behind
             if rc != 0:

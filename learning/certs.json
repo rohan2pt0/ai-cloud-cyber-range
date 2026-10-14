@@ -1,0 +1,305 @@
+{
+  "about": "Certification path planner data. Prices and formats were checked on 14 Oct 2026 from the linked pages (several are third-party and disagree); every figure is marked verify and must be checked on the vendor's own page before you pay. Hours are planning estimates for someone starting from zero, not promises: adjust with --pace.",
+  "checked": "2026-10-14",
+  "fx_usd_inr": 96.5,
+  "fx_source": "https://pluang.com/en/tools/currency-converter/usd-inr (mid-market; your card rate will differ)",
+  "landed_multiplier": 1.21,
+  "landed_note": "Assumption: +18% GST where a foreign vendor charges it on online services, +3% card forex markup. Some vendors charge no GST; check your invoice. Paid personally (no employer reimbursement), so there is no tax deduction against salary.",
+  "engines": {
+    "network-ad": {
+      "what": "Network + Active Directory penetration testing (the base every red-team cert builds on)",
+      "practice": [
+        "HTB Academy modules and the exam-style labs of each course",
+        "./securax range soil, then ./securax range install MINILAB (8 GB, VirtualBox on Windows; not inside WSL)",
+        "./securax range snapshot before each session, reset after"
+      ]
+    },
+    "web": {
+      "what": "Web application testing and source-code review",
+      "practice": [
+        "PortSwigger Web Security Academy (free): every Apprentice and Practitioner lab before BSCP",
+        "Burp Suite Professional (needed for BSCP)",
+        "read the code of the apps you break: OSWE is a code-review exam"
+      ]
+    },
+    "ai": {
+      "what": "Attacking and defending AI/LLM systems",
+      "practice": [
+        "./securax purple: attack your own gateway's guardrails and read the report",
+        "HTB Academy AI Red Teamer path",
+        "./securax demo: the red-team scorecard against your own rails"
+      ]
+    }
+  },
+  "subscriptions": {
+    "htb_silver_annual": {
+      "name": "Hack The Box Academy Silver (annual)",
+      "usd": 550,
+      "verify": true,
+      "source": "https://hackerdna.com/blog/hack-the-box-academy",
+      "note": "Reported to rise from $490 to $550 on 12 Oct 2026 and to include exam voucher(s); the planner still budgets each $210 voucher in case it does not."
+    },
+    "burp_pro": {
+      "name": "Burp Suite Professional (annual)",
+      "usd": 499,
+      "verify": true,
+      "source": "https://codeant.ai/blogs/burp-suite-pricing"
+    },
+    "offsec_unlimited": {
+      "name": "OffSec Learn Unlimited (annual: all 100-300 courses, unlimited exam attempts, Proving Grounds Practice)",
+      "usd": 6099,
+      "verify": true,
+      "source": "https://offsec.com/pricing",
+      "covers": [
+        "osai",
+        "oswe",
+        "osep",
+        "osed"
+      ],
+      "note": "Official list price; auto-renews unless cancelled. The planner uses it for the 300-level certs only (OSCP+ stays a single course in year 1, which is cheaper)."
+    }
+  },
+  "certs": [
+    {
+      "id": "cpts",
+      "name": "HTB Certified Penetration Testing Specialist (CPTS)",
+      "provider": "Hack The Box",
+      "engine": "network-ad",
+      "tier": 2,
+      "hours": 420,
+      "usd": 210,
+      "needs": [
+        "htb_silver_annual"
+      ],
+      "after": [],
+      "format": "10-day practical internal pentest incl. Active Directory, plus a professional report",
+      "source": "https://hackerdna.com/blog/hack-the-box-academy",
+      "why": "First, on purpose: broader AD and reporting than OSCP at a fraction of the price; the Academy path doubles as your foundations (Linux, networking, web basics)."
+    },
+    {
+      "id": "crtp",
+      "name": "Altered Security Certified Red Team Professional (CRTP)",
+      "provider": "Altered Security",
+      "engine": "network-ad",
+      "tier": 2,
+      "hours": 90,
+      "usd": 249,
+      "needs": [],
+      "after": [
+        "cpts"
+      ],
+      "format": "Practical Active Directory lab exam (30-day lab with the course; check the vendor for exam details)",
+      "source": "https://www.alteredsecurity.com/adlab",
+      "why": "Cheapest deep Active Directory credential; feeds CRTO, CRTE, OSEP."
+    },
+    {
+      "id": "bscp",
+      "name": "Burp Suite Certified Practitioner (BSCP)",
+      "provider": "PortSwigger",
+      "engine": "web",
+      "tier": 2,
+      "hours": 160,
+      "usd": 99,
+      "needs": [
+        "burp_pro"
+      ],
+      "after": [],
+      "format": "4-hour practical web exam; valid 5 years; needs Burp Suite Professional",
+      "source": "https://trustfoundry.net/blog/burpsuite-certified-practitioner-exam-review",
+      "why": "Cheapest credible web proof; the free Academy is the best web training there is; base for OSWE."
+    },
+    {
+      "id": "oscp_plus",
+      "name": "OffSec Certified Professional+ (OSCP+)",
+      "provider": "OffSec",
+      "engine": "network-ad",
+      "tier": 3,
+      "hours": 260,
+      "usd": 1749,
+      "needs": [],
+      "after": [
+        "cpts"
+      ],
+      "format": "~24-hour proctored practical exam + 24-hour report; 70/100 to pass; OSCP+ valid 3 years",
+      "source": "https://www.resumelens.org/blog/security/oscp-certification",
+      "why": "The name HR filters on. Taken after CPTS it is mostly exam practice, not new learning."
+    },
+    {
+      "id": "coae",
+      "name": "HTB Certified Offensive AI Expert (COAE)",
+      "provider": "Hack The Box",
+      "engine": "ai",
+      "tier": 3,
+      "hours": 130,
+      "usd": 210,
+      "needs": [
+        "htb_silver_annual"
+      ],
+      "after": [],
+      "format": "Practical AI red-teaming exam (launched 2 Apr 2026)",
+      "source": "https://jacobkrell.com/writeups/learning-resources/hack-the-box-academy-ai-red-teamer",
+      "why": "AI security in BFSI is rare; this is your differentiator, and your own estate is the lab."
+    },
+    {
+      "id": "osai",
+      "name": "OffSec AI Red Teamer (OSAI)",
+      "provider": "OffSec",
+      "engine": "ai",
+      "tier": 4,
+      "hours": 220,
+      "usd": 1749,
+      "needs": [],
+      "after": [
+        "coae",
+        "oscp_plus"
+      ],
+      "format": "24-hour proctored practical against an AI-enabled enterprise + report (launched 31 Mar 2026)",
+      "source": "https://www.offsec.com/courses/ai-300/",
+      "why": "The hardest-recognised AI offensive credential today."
+    },
+    {
+      "id": "crto",
+      "name": "Zero-Point Security Certified Red Team Operator (CRTO)",
+      "provider": "Zero-Point Security",
+      "engine": "network-ad",
+      "tier": 3,
+      "hours": 130,
+      "usd": 540,
+      "needs": [],
+      "after": [
+        "crtp"
+      ],
+      "format": "Practical red-team operation, no report (format changed in 2025; sources disagree on details)",
+      "source": "https://www.certcrush.app/blog/how-to-pass-crto-certification-2026-opsec-study-plan",
+      "why": "Red-team tradecraft and operational security; priced in GBP (£399)."
+    },
+    {
+      "id": "oswe",
+      "name": "OffSec Web Expert (OSWE)",
+      "provider": "OffSec",
+      "engine": "web",
+      "tier": 4,
+      "hours": 320,
+      "usd": 2599,
+      "needs": [],
+      "after": [
+        "bscp"
+      ],
+      "format": "~48-hour practical (white-box code review) + 24-hour report",
+      "source": "https://flashgenius.net/blog-article/oscp-vs-oswe-which-offsec-hacking-certification-is-right-for-you-in-2026",
+      "why": "The respected web-exploitation expert credential; pairs with your AppSec credibility."
+    },
+    {
+      "id": "osep",
+      "name": "OffSec Experienced Penetration Tester (OSEP)",
+      "provider": "OffSec",
+      "engine": "network-ad",
+      "tier": 4,
+      "hours": 320,
+      "usd": 2599,
+      "needs": [],
+      "after": [
+        "oscp_plus",
+        "crto"
+      ],
+      "format": "Proctored practical (evasion + advanced AD)",
+      "source": "https://flashgenius.net/blog-article/ultimate-guide-to-osep-2025-offsecs-advanced-penetration-testing-cert",
+      "why": "Advanced pentest/red team; builds directly on CRTO + OSCP+."
+    },
+    {
+      "id": "crte",
+      "name": "Altered Security Certified Red Team Expert (CRTE)",
+      "provider": "Altered Security",
+      "engine": "network-ad",
+      "tier": 3,
+      "hours": 130,
+      "usd": 299,
+      "needs": [],
+      "after": [
+        "crtp"
+      ],
+      "format": "Practical multi-forest AD lab exam (30/60/90-day lab options)",
+      "source": "https://www.alteredsecurity.com/redteamlab",
+      "why": "Enterprise AD depth; cheap for what it proves."
+    },
+    {
+      "id": "crtm",
+      "name": "Altered Security Certified Red Team Master (CRTM)",
+      "provider": "Altered Security",
+      "engine": "network-ad",
+      "tier": 5,
+      "hours": 160,
+      "usd": 399,
+      "needs": [],
+      "after": [
+        "crte"
+      ],
+      "format": "Practical lab exam on the 'Global Central Bank' range",
+      "source": "https://www.alteredsecurity.com/gcb",
+      "why": "A banking-themed master-level AD range: on-theme for BFSI credibility."
+    },
+    {
+      "id": "osed",
+      "name": "OffSec Exploit Developer (OSED)",
+      "provider": "OffSec",
+      "engine": "network-ad",
+      "tier": 5,
+      "hours": 420,
+      "usd": 2599,
+      "needs": [],
+      "after": [
+        "oscp_plus"
+      ],
+      "format": "Proctored practical exploit-development exam",
+      "source": "https://www.macksofytrainings.com/offsec-learn-one-india-pricing-roi-2026/",
+      "why": "Exploit development; only worth it after the core set (long, narrow)."
+    },
+    {
+      "id": "cwes",
+      "name": "HTB Certified Web Exploitation Specialist (CWES)",
+      "provider": "Hack The Box",
+      "engine": "web",
+      "tier": 2,
+      "optional": true,
+      "hours": 150,
+      "usd": 210,
+      "needs": [
+        "htb_silver_annual"
+      ],
+      "after": [],
+      "format": "7-day web and API exam (formerly CBBH)",
+      "source": "https://hackerdna.com/blog/hack-the-box-academy",
+      "why": "Overlaps BSCP; take only if you want a second web credential."
+    },
+    {
+      "id": "ejpt",
+      "name": "INE Junior Penetration Tester (eJPT)",
+      "provider": "INE",
+      "engine": "network-ad",
+      "tier": 1,
+      "optional": true,
+      "hours": 60,
+      "usd": 249,
+      "needs": [],
+      "after": [],
+      "format": "Entry-level practical",
+      "source": "https://hackerdna.com/blog/ejpt-certification",
+      "why": "Skipped by default: CPTS covers it; take only if you want a very early win."
+    },
+    {
+      "id": "giac",
+      "name": "GIAC (e.g. GPEN, GXPN, GWAPT) without SANS training",
+      "provider": "GIAC",
+      "engine": "network-ad",
+      "tier": 3,
+      "optional": true,
+      "hours": 120,
+      "usd": 999,
+      "needs": [],
+      "after": [],
+      "format": "Proctored knowledge exam (open book); renewal every 4 years",
+      "source": "https://unihackers.com/certifications/gcih",
+      "why": "Skipped by default: expensive per credential; take only when a specific role or employer asks for one."
+    }
+  ]
+}
