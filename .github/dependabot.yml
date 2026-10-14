@@ -23,3 +23,21 @@ updates:
     schedule: { interval: "weekly" }
     labels: ["dependencies", "docker"]
     commit-message: { prefix: "deps" }
+  # Container images pinned in Dockerfiles and the compose files (third-party images are the biggest patching surface).
+  - package-ecosystem: "docker"
+    directories: ["/apps/llm-gateway", "/apps/estate-sync"]
+    schedule: { interval: "weekly" }
+    labels: ["dependencies", "docker"]
+    commit-message: { prefix: "deps" }
+  - package-ecosystem: "docker-compose"
+    directories: ["/local/compose"]
+    schedule: { interval: "weekly" }
+    open-pull-requests-limit: 5
+    labels: ["dependencies", "docker"]
+    commit-message: { prefix: "deps" }
+  # Terraform providers/modules of the cloud genomes (dormant by default, but they must not rot).
+  - package-ecosystem: "terraform"
+    directories: ["/infra/terraform/lifecycle/aws", "/infra/terraform/lifecycle/gcp", "/infra/terraform/lifecycle/azure"]
+    schedule: { interval: "monthly" }
+    labels: ["dependencies", "terraform"]
+    commit-message: { prefix: "deps" }

@@ -1,0 +1,17 @@
+{
+  "about": "Thresholds and defaults for the cockpit (./securax cockpit). Edit here; nothing is hard-coded elsewhere. Lower is better unless the name says free/pct/coverage.",
+  "profile": "personal",
+  "profile_help": "personal: open authentication/residency are shown as 'no data' (fine on one laptop). regulated: they are red. Override with SECURAX_PROFILE in local/compose/.env.",
+  "target_maturity": 3.0,
+  "target_help": "0 non-existent, 1 initial, 2 acknowledged, 3 defined, 4 managed, 5 optimal (the scale of the NIST CSF maturity radar). 3.0 = 'defined'.",
+  "thresholds": {
+    "backup_age_days": {"amber": 2, "red": 7},
+    "disk_free_pct": {"amber": 20, "red": 10},
+    "disk_days_to_full": {"amber": 60, "red": 14},
+    "image_age_days": {"amber": 180, "red": 365},
+    "threat_data_age_days": {"amber": 14, "red": 45},
+    "key_expiry_days": {"amber": 30, "red": 7},
+    "auth_denied_24h": {"amber": 5, "red": 25},
+    "coverage_pct": {"amber": 60, "red": 40}
+  }
+}

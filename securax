@@ -181,6 +181,8 @@ case "$cmd" in
     if ! grep -q "^GEMINI_API_KEY=..*" "$ROOT/local/compose/.env" 2>/dev/null; then
       C "TIP: for INSTANT answers, run  ./securax setup  and paste a free Gemini key (else the slower local model is used)."
     fi
+    # Refresh the one-page cockpit snapshot in the background (best effort: never slows or fails `up`).
+    ( command -v python3 >/dev/null 2>&1 && { python3 "$ROOT/governance/cockpit.py" --quiet --fast >/dev/null 2>&1; python3 "$ROOT/governance/cockpit.py" --quiet >/dev/null 2>&1; } || true ) &
     if [ "${SECURAX_NO_OPEN:-0}" != 1 ]; then
       C "Opening your Command Center: http://localhost:8088/hub.html"
       "$0" open >/dev/null 2>&1 || true
@@ -545,6 +547,23 @@ $(tail -60 "$FB")"
     #   ./securax ccsp [--domain N] [--json] [--verify]
     shift; exec python3 "$ROOT/governance/ccsp.py" "$@"
     ;;
+  regulated)
+    # ONE switch for a regulated deployment: sign-in + data residency (monitor first) + strict cockpit profile.   ./securax regulated on|off|status [--jurisdiction IN] [--enforce]
+    shift; exec python3 "$ROOT/governance/regulated.py" "$@"
+    ;;
+  impact)
+    # Before/after a change: which components it touches, what they feed, and which real-product journeys must still pass.   ./securax impact [--base REF] [--json]
+    shift; exec python3 "$ROOT/lifecycle/impact.py" "$@"
+    ;;
+  cockpit)
+    # ONE page that says whether the estate is healthy and what to do next: vital signs (KPI/KRI), maturity radar, Eisenhower, 80/20, AI-risk coverage.
+    #   ./securax cockpit [--open] [--ai] [--json]      writes portal/cockpit.html  ->  http://localhost:8088/portal/cockpit.html
+    shift; exec python3 "$ROOT/governance/cockpit.py" "$@"
+    ;;
+  storage)
+    # Where the files are, how fast they grow, when the disk runs out, and what is safe to clean.   ./securax storage [--json] [--tidy [--yes]]
+    shift; exec python3 "$ROOT/governance/storage.py" "$@"
+    ;;
   residency)
     # Data residency: which data may be processed where (gateway routing by data class + the lifecycle's cloud-region guard). Rules are data
     # (governance/residency/<JURISDICTION>.json), so any regulator's jurisdiction works.
@@ -653,8 +672,8 @@ $(tail -60 "$FB")"
   backup)
     # DR / 3-2-1: one verified file holding your data (chats, accounts, workflows, sync data) + your .env keys.
     # Models are NOT included (large, re-downloadable). Copy the file to a 2nd disk + a cloud drive for 3-2-1.
-    #   ./securax backup [DIR]        default DIR = ./backups   (keeps the newest $BACKUP_KEEP, default 7)
-    DEST="${2:-$ROOT/backups}"; mkdir -p "$DEST"; TS="$(date +%Y%m%d-%H%M%S)"; OUTF="$DEST/securax-$TS.tar.gz"
+    #   ./securax backup [DIR]        default DIR = ./backups or $SECURAX_BACKUP_DIR   (keeps the newest $BACKUP_KEEP, default 7)
+    DEST="${2:-$(ev SECURAX_BACKUP_DIR "$ROOT/backups")}"; mkdir -p "$DEST"; TS="$(date +%Y%m%d-%H%M%S)"; OUTF="$DEST/securax-$TS.tar.gz"
     STG="$(mktemp -d)"; trap 'rm -rf "$STG"' EXIT
     IMG="vulnbank/llm-gateway:dev"; docker image inspect "$IMG" >/dev/null 2>&1 || IMG="alpine"
     VOLS="$(docker volume ls -q --filter label=com.docker.compose.project=vulnbank-range 2>/dev/null | grep -v '_ollama$' || true)"
@@ -726,14 +745,42 @@ $(tail -60 "$FB")"
     done
     ;;
   update)
-    # ONE command to get current: pull the latest code, then recreate the containers so it actually runs.
+    # ONE command to get current — SAFELY: back up, pull the latest code, recreate the containers, check the estate really starts, and if it does
+    # not, go back to the version that worked (your data is never touched by the code update; the backup is printed so you can always restore).
     # (A plain `git pull` only changes files on disk — running containers keep the OLD code.)
     git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1 || { C "This isn't a git checkout — download the latest ZIP instead."; exit 1; }
-    C "Updating SecuRAX (git pull, then recreate the containers)…"
+    C "Updating SecuRAX safely (backup → update → health check → automatic rollback if needed)…"
     # Legacy: older versions rewrote the tracked baseline on every `up`; restore it so the pull can't conflict.
     git -C "$ROOT" diff --quiet -- local/compose/litellm-config.yaml 2>/dev/null || git -C "$ROOT" checkout -- local/compose/litellm-config.yaml
+    PREV="$(git -C "$ROOT" rev-parse HEAD)"
+    CLEAN=0; [ -z "$(git -C "$ROOT" status --porcelain --untracked-files=no 2>/dev/null)" ] && CLEAN=1
+    # 1) a safety copy, only when there is a running estate with data (never blocks the update)
+    if curl -fsS -m 3 http://localhost:8080/healthz >/dev/null 2>&1; then
+      if SAFE_OUT="$("$0" backup 2>&1)"; then C "  ✔ backup taken first: $(printf '%s' "$SAFE_OUT" | tail -1)"; else C "  (could not take a backup — continuing; your data volumes are not touched by an update)"; fi
+    fi
     git -C "$ROOT" pull --ff-only || { C "git pull failed — you may have local changes. See:  git -C \"$ROOT\" status"; exit 1; }
-    "$0" down && exec "$0" up
+    NEW="$(git -C "$ROOT" rev-parse HEAD)"
+    "$0" down || true
+    if SECURAX_NO_OPEN=1 "$0" up && curl -fsS -m 10 http://localhost:8080/readyz >/dev/null 2>&1; then
+      [ "$PREV" = "$NEW" ] && C "Already on the latest version — containers recreated." || C "✔ Updated to $(git -C "$ROOT" rev-parse --short HEAD) and the estate is READY."
+      "$0" open >/dev/null 2>&1 || true
+      exit 0
+    fi
+    # 2) the new version did not come up healthy: go back to the one that did
+    if [ "$PREV" != "$NEW" ] && [ "$CLEAN" = 1 ]; then
+      C "⚠ The new version did not start healthy. Rolling back to $(git -C "$ROOT" rev-parse --short "$PREV") (your data is untouched)…"
+      git -C "$ROOT" reset --hard "$PREV" >/dev/null 2>&1
+      "$0" down || true
+      if SECURAX_NO_OPEN=1 "$0" up && curl -fsS -m 10 http://localhost:8080/readyz >/dev/null 2>&1; then
+        C "✔ Rolled back: the previous version is running again. Please report the failed update (it was $(git -C "$ROOT" rev-parse --short "$NEW"))."
+        "$0" open >/dev/null 2>&1 || true
+        exit 3
+      fi
+      C "✗ The previous version did not start either — run  ./securax doctor ; your data and backup are intact."
+      exit 1
+    fi
+    C "⚠ The estate did not start healthy after the update, and an automatic rollback was not safe (you have uncommitted local changes). Run  ./securax doctor ."
+    exit 1
     ;;
   pull)
     # Pull the sovereign local model in the FOREGROUND (so you can be sure it's ready, unlike the
@@ -886,5 +933,44 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
     ;;
   mcp)   exec python3 "$ROOT/mcp/securax_mcp.py" ;;
   down)  ( cd "$ROOT/local/compose" && docker compose --profile ai down ) ; C "stopped." ;;
-  *) echo 'usage: ./securax [setup|up|status|version|open|doctor|update|guard [status|on|off]|profile|pull|build "task"|escalate "task"|providers [list|add]|say "text"|demo|learn|intel|plan|advisors|ask <agent> "q"|enhance "q"|research "task" --allow d.com [--render]|act action.json --allow d.com --approve|design "prompt"|routines [list|due|run]|mcp|full up|full down|down]'; exit 1 ;;
+  help|-h|--help)
+    cat <<'HELP'
+SecuRAX — one command, `./securax <command>`   (Windows: `.\securax.cmd <command>`)
+
+START HERE (the 20% you use 80% of the time)
+  setup          guided first-time setup (keys, phone access)        up / down      start / stop everything
+  open           open the Command Center in your browser             status         what is running right now
+  doctor         find and fix what is wrong, in plain words          update         get the latest version (safe: backs up first)
+  cockpit        one-page health view: risks, to-dos, trends         storage        how much space you use and when it runs out
+
+AI & CHAT
+  keys / providers add|list   add free or paid AI keys             models         check which models your keys can use today
+  pull           download the private local model                   profile        size everything to THIS machine
+  guard [on|off] strict or relaxed safety rails                      bench          which installed model fits this machine best
+  say "text"     speak/ask quickly      ask <agent> "q"  ask an expert advisor      advisors / plan / learn / intel   daily helpers
+  research "task" --allow site.com   browse the web within limits    design "prompt"   make images      routines   scheduled jobs
+
+KEEP IT SAFE
+  backup / restore FILE       save and recover your data           watch          keep an eye on it and self-heal
+  scan           look for known-exploited weaknesses (offline)     kev / offline  threat data that works with no internet
+  purple         attack your own AI rails and report what held     vet            check third-party skills/plugins before use
+
+REGULATORY & EVIDENCE (any regulator: RBI, SEBI, CERT-In, IRDAI, DPDP, others as data files)
+  comply [rbi|cscrf|mit-ai-risk|nist-ai-600-1]    requirement-by-requirement gap view     ccsp   CCSP practice map
+  evidence       audit pack (checksummed)             incident ...   reporting clock: open, due, draft, file, seal, rollup
+  regulated on   ONE switch: sign-in + data residency + strict cockpit (then fine-tune with the two below)
+  gateway-auth   who may call the AI gateway          residency ...  which data may be processed where
+
+BUILD & KEEP IT HEALTHY
+  build / autobuild / escalate "task"     build with the local or free models    diffcheck   catch cheating before commit
+  verify         run every check                       fitness / gameday      measured promises; real failure drills
+  impact         what a change can affect, and which proofs to re-run
+
+GROW (everything dormant until you wake it; sleeping keeps your data)
+  stages / soil / grow / hibernate / prune / scale     rhythm      tenant / organ / organ-check / burrow / spore / range / full
+
+Details for any command: docs/securax/  (start at 00-OVERVIEW.md)  ·  everything above also works through your browser at /hub.html
+HELP
+    ;;
+  *) echo "unknown command '${1:-}'.  Try:  ./securax help   (the short list: setup · up · open · status · doctor · update · cockpit)"; exit 1 ;;
 esac

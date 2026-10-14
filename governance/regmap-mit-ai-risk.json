@@ -1,0 +1,102 @@
+{
+ "about": "The MIT AI Risk Repository's seven risk domains, assessed against what the gateway and its surrounding estate demonstrably do. A coverage view of AI-specific risk, complementary to the regulatory maps.",
+ "source": {
+  "title": "MIT AI Risk Repository (domain taxonomy, seven domains / 24 subdomains, December 2025 update)",
+  "url": "https://airisk.mit.edu",
+  "issued": "MIT FutureTech / AI Risk Initiative",
+  "read_on": "2026-10-14",
+  "caveat": "Domain names are from MIT's published taxonomy as reported by secondary sources; this map is at DOMAIN level (not the 24 subdomains) and the status is our own judgement. Compare with the repository itself before relying on it."
+ },
+ "items": [
+  {
+   "id": "1",
+   "title": "Discrimination & toxicity (unfair discrimination, toxic content, unequal performance)",
+   "applies": "all",
+   "status": "partial",
+   "note": "An optional Llama Guard detector can flag unsafe or toxic content; there is no bias or fairness testing and no per-group performance check.",
+   "evidence": [
+    "file:apps/llm-gateway/app/providers.py"
+   ],
+   "next": "Add bias/toxicity probes (garak/promptfoo categories) to the purple loop and report them.",
+   "priority": "medium"
+  },
+  {
+   "id": "2",
+   "title": "Privacy & security (leaking or inferring sensitive information; attacks on the AI system)",
+   "applies": "all",
+   "status": "supported",
+   "note": "PII/secret redaction, prompt-injection and exfiltration rails, authentication, residency routing and audit are proven by tests and real-container journeys. Scope: the AI channel through the gateway.",
+   "evidence": [
+    "file:apps/llm-gateway/app/guardrails.py",
+    "test:apps/llm-gateway/tests/test_guardrails.py",
+    "journey:purple_loop",
+    "journey:gateway_identity",
+    "journey:gateway_residency"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "3",
+   "title": "Misinformation (false or misleading information; degraded information ecosystem)",
+   "applies": "all",
+   "status": "partial",
+   "note": "Output link allow-list and canary checks limit some harm; the research agent cites its sources. No factuality or grounding evaluation of answers.",
+   "evidence": [
+    "file:apps/llm-gateway/app/guardrails.py",
+    "file:agents/web_research/researcher.py"
+   ],
+   "next": "Add a grounding check to the research agent (every claim has a retrieved source) and a small factuality probe set.",
+   "priority": "medium"
+  },
+  {
+   "id": "4",
+   "title": "Malicious actors & misuse (disinformation, cyberattacks, fraud, targeted manipulation)",
+   "applies": "all",
+   "status": "partial",
+   "note": "Injection, tool-coercion and exfiltration rails and the purple loop cover attacks AGAINST the system; content policy against misuse BY users depends on the optional detector.",
+   "evidence": [
+    "file:apps/llm-gateway/app/guardrails.py",
+    "journey:purple_loop"
+   ],
+   "next": "Add misuse prompts (fraud, malware writing) to the purple loop with expected refusals.",
+   "priority": "medium"
+  },
+  {
+   "id": "5",
+   "title": "Human-computer interaction (overreliance, loss of agency)",
+   "applies": "all",
+   "status": "partial",
+   "note": "Agent write actions need an explicit human approval; answers are first drafts for a human. No calibration or uncertainty indicators.",
+   "evidence": [
+    "file:agents/web_research/executor.py"
+   ],
+   "next": "Show a confidence/grounding badge on answers in the Command Center; keep approval for every write.",
+   "priority": "low"
+  },
+  {
+   "id": "6",
+   "title": "Socioeconomic & environmental (power concentration, job quality, environmental harm)",
+   "applies": "all",
+   "status": "entity",
+   "note": "Strategic and organisational. Technically: small local models and dormant-by-default stages keep the footprint low.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "7",
+   "title": "AI system safety, failures & limitations (robustness, transparency, misalignment)",
+   "applies": "all",
+   "status": "partial",
+   "note": "Detectors fail closed, answers fall back along a ladder to a local model, `bench` smoke-tests installed models on this machine, fitness budgets hold. No broad robustness evaluation suite; model behaviour is not explained to the user.",
+   "evidence": [
+    "cmd:bench",
+    "cmd:fitness",
+    "journey:model_self_correction"
+   ],
+   "next": "Add a small robustness suite (typos, long inputs, adversarial paraphrase) to `bench`.",
+   "priority": "medium"
+  }
+ ]
+}

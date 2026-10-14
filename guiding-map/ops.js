@@ -2586,6 +2586,8 @@
       + ". Give a practical FIRST-draft opinion (not final) and tell me to confirm anything binding with " + a.prof + ".";
   }
   function askGw() { return G("gm_ask_gw", "http://localhost:8080"); }
+  // Only needed when the estate turned authentication on (./securax gateway-auth enable): a gateway key, kept on THIS device only.
+  function askHdrs() { var k = G("gm_ask_key", ""); var h = { "Content-Type": "application/json" }; if (k) h.Authorization = "Bearer " + k; return h; }
   var ASK_RED = /aadhaar|\b[2-9]\d{3}\s?\d{4}\s?\d{4}\b|\b[A-Z]{5}\d{4}[A-Z]\b|customer|account\s*no|internal ip/i;
 
   function askHTML() {
@@ -2621,10 +2623,14 @@
 
     h += '<div class="info" style="margin-top:12px">Gateway URL (change only if your estate is on another machine/Tailscale): '
       + '<input id="askGwIn" value="' + esc(askGw()) + '" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid var(--line,#999);border-radius:8px;background:transparent;color:inherit">'
-      + '<button class="btn btn-s" onclick="gmAskGwSave()" style="margin-top:6px">Save</button></div>';
+      + '<button class="btn btn-s" onclick="gmAskGwSave()" style="margin-top:6px">Save</button>'
+      + '<div style="margin-top:8px">Gateway key <span style="color:var(--muted)">(only if sign-in is switched on for your estate; stays on this device)</span>: '
+      + '<input id="askKeyIn" type="password" autocomplete="off" value="' + esc(G("gm_ask_key", "")) + '" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid var(--line,#999);border-radius:8px;background:transparent;color:inherit">'
+      + '<button class="btn btn-s" onclick="gmAskKeySave()" style="margin-top:6px">Save key</button></div></div>';
     return h + '</div>';
   }
   window.gmAskSet = function (k) { askAgent = k; renderAll(); };
+  window.gmAskKeySave = function () { S_("gm_ask_key", (document.getElementById("askKeyIn").value || "").trim()); renderAll(); };
   window.gmAskGwSave = function () { var v = (document.getElementById("askGwIn").value || "").trim(); if (v) S_("gm_ask_gw", v); renderAll(); };
   // Plain-language readiness: the user double-clicks START-HERE and the page tells them,
   // in their own words, whether the AI is on, still warming up, or not running — so an
@@ -2653,7 +2659,7 @@
     var out = document.getElementById("askOut"); out.style.display = "block"; out.textContent = "Thinking… (your local model)";
     document.getElementById("askFb").style.display = "none";
     var msgs = [{ role: "system", content: askSystem(askAgent) }, { role: "user", content: q }];
-    fetch(askGw().replace(/\/$/, "") + "/v1/chat/completions", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ model: "bank-assistant", messages: msgs }) })
+    fetch(askGw().replace(/\/$/, "") + "/v1/chat/completions", { method: "POST", headers: askHdrs(), body: JSON.stringify({ model: "bank-assistant", messages: msgs }) })
       .then(function (r) {
         if (r.ok) return r.json();
         return r.text().then(function (t) {
@@ -2662,6 +2668,8 @@
             out.textContent = "A security detector is offline, so the estate is blocking requests (fail-closed). Your message was NOT judged unsafe. Run  ./securax doctor  \u2014 or  ./securax guard off  to use the built-in rails only. Nothing was sent.";
           else if (typ === "guardrail_violation")
             out.textContent = "Blocked by the guardrail \u2014 your message matched an attack pattern or exposed sensitive data. Rephrase and try again.";
+          else if (r.status === 401 || r.status === 403)
+            out.textContent = "The gateway needs a key (sign-in is switched on for this estate). Paste the gateway key into the box at the bottom of this page, or ask whoever runs SecuRAX. Nothing was sent.";
           else if (r.status === 502 || r.status === 503)
             out.textContent = "No AI model is ready yet. Add a free Gemini key (run  ./securax setup ) for instant answers, or wait for the local model to finish downloading. Nothing was sent.";
           else

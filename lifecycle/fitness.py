@@ -186,12 +186,24 @@ def check_regulatory_maps() -> dict:
             "note": "every evidence reference resolves and every 'supported' is proven" if not probs else "; ".join(probs[:3])}
 
 
+def check_impact_map() -> dict:
+    """Every tracked file belongs to a component of the blast-radius map and every journey it names exists: the map cannot silently go stale."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("impact", ROOT / "lifecycle" / "impact.py")
+    mod = importlib.util.module_from_spec(spec)
+    sys.modules["impact"] = mod
+    spec.loader.exec_module(mod)
+    probs = mod.problems(mod.load(), mod.tracked(ROOT), ROOT)
+    return {"name": "impact-map", "value": len(probs), "budget": 0, "unit": "problems", "ok": not probs,
+            "note": "every tracked file has an owner and every guarding journey exists" if not probs else "; ".join(probs[:3])}
+
+
 def run_all(only_fast: bool = False) -> list[dict]:
     c, base = cfg()["budgets"], baseline()
     res = [check_rails_latency(c["rails_worst_case_ms"]), check_rails_memory(c["rails_import_rss_mb"]), check_runtime_deps(c["gateway_runtime_deps"])]
     if not only_fast:
         res += check_gateway(c["gateway_cold_start_s"], c["gateway_rss_mb"])
-    res += [check_supply_chain(base), check_commands_documented(base), check_ccsp_map(), check_regulatory_maps()]
+    res += [check_supply_chain(base), check_commands_documented(base), check_ccsp_map(), check_regulatory_maps(), check_impact_map()]
     return res
 
 

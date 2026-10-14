@@ -58,6 +58,10 @@ makes it an *ecosystem* and not five disconnected projects.
 | Decide the community-proven way (Reddit/Amazon-style intelligence) | [`13-GLOBAL-INTELLIGENCE.md`](13-GLOBAL-INTELLIGENCE.md) |
 | The daily cockpit (life-OS PWA, sovereign sync) | [`14-GUIDING-MAP.md`](14-GUIDING-MAP.md) |
 | Never hit a usage limit (cost, models, free compute) | [`15-COST-AND-MODELS.md`](15-COST-AND-MODELS.md) |
+| Regulatory gap maps (RBI, SEBI, CCSP, MIT, NIST) | [`35-REGULATORY-GAP-ASSESSMENT.md`](35-REGULATORY-GAP-ASSESSMENT.md) |
+| Sign-in, incident clock, data residency | [`36-IDENTITY-INCIDENT-RESIDENCY.md`](36-IDENTITY-INCIDENT-RESIDENCY.md) |
+| One-page health, storage growth, patching, impact | [`37-COCKPIT-STORAGE-PATCHING.md`](37-COCKPIT-STORAGE-PATCHING.md) |
+| What well-run products do that we skipped, research cues, friction audit | [`38-ENGINEERING-PRACTICES-AND-RESEARCH.md`](38-ENGINEERING-PRACTICES-AND-RESEARCH.md) |
 | Summon a specialist advisor (first-draft opinion) | [`16-AGENTS.md`](16-AGENTS.md) |
 | The end-state blueprint every build maps to | [`17-ENTERPRISE-ARCHITECTURE.md`](17-ENTERPRISE-ARCHITECTURE.md) |
 | Plan your financial future (sovereign, offline) | [`18-FINANCIAL-PLANNER.md`](18-FINANCIAL-PLANNER.md) |

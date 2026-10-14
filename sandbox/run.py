@@ -108,6 +108,11 @@ KEYS = {"GEMINI_API_KEY": "AIza-sbx-gemini", "GROQ_API_KEY": "gsk_sbx_groq", "OP
         "MISTRAL_API_KEY": "sbx-mistral-key", "XAI_API_KEY": "xai-sbx-grok", "PERPLEXITYAI_API_KEY": "pplx-sbx-perplexity"}
 
 
+def _json_loads(path):
+    import json as _j
+    return _j.loads(path.read_text(encoding="utf-8"))
+
+
 def _start(sb: H.Sandbox, c: Checks, **env: str) -> bool:
     """Bring the estate up the way a user does (real CLI, lite mode) with the given .env settings."""
     sb.down()
@@ -337,6 +342,66 @@ def j_update(sb: H.Sandbox, c: Checks):
     c.ok((sb.clone / "NEWFILE.txt").exists(), "…and the new code arrived")
     c.ok(sb.wait_http(f"{H.GATEWAY}/healthz", 240) and sb.http("GET", f"{H.GATEWAY}/readyz").status == 200, "…and the estate is READY after the update")
     c.ok(git("status", "--porcelain")[1].strip() == "", "…and the checkout is clean afterwards")
+
+
+@journey("safe_update_rollback", "`./securax update` on a running estate: it backs up first, and when the new version does NOT start healthy it goes back to the version that worked (exit 3) with the data intact.", slow=True)
+def j_safe_update(sb: H.Sandbox, c: Checks):
+    sb.down()
+    sb.reset_env(SECURAX_LITE="1")
+    git = lambda *a, cwd=sb.clone: H.sh(["git", "-c", "user.name=sbx", "-c", "user.email=sbx@example.com", *a], cwd=cwd)  # noqa: E731
+    remote = sb.clone.parent / "remote-rb.git"
+    if remote.exists():
+        shutil.rmtree(remote)
+    H.sh(["git", "init", "-q", "--bare", "-b", "main", str(remote)])
+    git("branch", "-M", "main")
+    git("remote", "remove", "origin")
+    git("remote", "add", "origin", str(remote))
+    git("push", "-q", "-u", "origin", "main")
+    prev = git("rev-parse", "HEAD")[1].strip()
+    rc, out = sb.securax("up", timeout=1500)
+    c.ok(rc == 0 and sb.wait_http(f"{H.GATEWAY}/readyz", 240), "the estate is up and READY before the update", tail(out, 300))
+    other = sb.clone.parent / "other-rb"
+    if other.exists():
+        shutil.rmtree(other)
+    H.sh(["git", "clone", "-q", str(remote), str(other)])
+    main_py = other / "apps" / "llm-gateway" / "app" / "main.py"
+    main_py.write_text(main_py.read_text() + "\nthis line is deliberately not python\n")             # a release that cannot start
+    (other / "BAD-RELEASE.txt").write_text("a release that does not start\n")
+    git("add", "-A", cwd=other)
+    git("commit", "-q", "-m", "a bad release", cwd=other)
+    git("push", "-q", "origin", "main", cwd=other)
+    rc, out = sb.securax("update", timeout=1800)
+    c.ok("backup taken first" in out, "a backup was taken before the update", tail(out, 600))
+    c.ok(rc == 3 and "Rolling back" in out, "the bad release is detected and rolled back (exit 3)", f"rc={rc} {tail(out, 600)}")
+    c.ok(not (sb.clone / "BAD-RELEASE.txt").exists() and git("rev-parse", "HEAD")[1].strip() == prev, "…the checkout is back on the version that worked")
+    c.ok(sb.wait_http(f"{H.GATEWAY}/healthz", 240) and sb.http("GET", f"{H.GATEWAY}/readyz").status == 200, "…and the estate is READY again")
+    c.ok(any((sb.clone / "backups").glob("securax-*.tar.gz")), "…and the pre-update backup is on disk")
+
+
+@journey("cockpit_page", "The cockpit on a REAL running estate: `./securax cockpit` writes one page that the Command Center's own web server serves; it shows the live services as healthy, has no script and no external request, `storage` and `impact` answer, and `help` lists the commands a user needs.", slow=True)
+def j_cockpit(sb: H.Sandbox, c: Checks):
+    if not _start(sb, c, GEMINI_API_KEY=KEYS["GEMINI_API_KEY"]):
+        return
+    envp = {**os.environ, "SECURAX_HOME_DIR": str(sb.clone.parent / "ck-home")}
+    rc, out = H.sh(["bash", "./securax", "cockpit", "--fast"], cwd=sb.clone, env=envp, timeout=300)
+    c.ok(rc == 0 and "Cockpit written" in out, "`./securax cockpit` writes the page", tail(out, 300))
+    r = sb.http("GET", f"{H.GUIDING_MAP}/portal/cockpit.html")
+    c.ok(r.status == 200 and "SecuRAX Cockpit" in r.text, "the Command Center's web server serves it at /portal/cockpit.html", f"{r.status} {r.text[:120]}")
+    page = r.text.lower()
+    c.ok("<script" not in page and "http://" not in page.replace("http://www.w3.org", "") and "https://" not in page, "the page has no script and makes no external request")
+    data = _json_loads(sb.clone / "portal" / "cockpit.json")
+    byid = {m["id"]: m for m in data["metrics"]}
+    c.ok(byid.get("gateway", {}).get("status") in ("green", "amber"), "the live gateway shows as answering (not 'no data')", str(byid.get("gateway")))
+    c.ok(byid.get("services", {}).get("status") == "green", "the running containers show as healthy", str(byid.get("services")))
+    c.ok(len(data["radar"]) >= 15 and set(data["eisenhower"]) == {"do", "schedule", "automate", "park"}, "radar, Eisenhower and 80/20 are filled from the compliance maps")
+    hub = sb.http("GET", f"{H.GUIDING_MAP}/hub.html")
+    c.ok("portal/cockpit.html" in hub.text, "the Command Center links to the cockpit")
+    rc, out = H.sh(["bash", "./securax", "storage", "--no-record"], cwd=sb.clone, env=envp, timeout=120)
+    c.ok(rc == 0 and "SecuRAX uses about" in out and "What to do" in out, "`./securax storage` reports sizes and what to do", tail(out, 400))
+    rc, out = H.sh(["bash", "./securax", "help"], cwd=sb.clone, env=envp)
+    c.ok(rc == 0 and all(w in out for w in ("cockpit", "storage", "comply", "incident", "regulated", "gateway-auth", "residency")), "`./securax help` lists the commands a user needs", tail(out, 200))
+    rc, out = H.sh(["bash", "./securax", "regulated", "status"], cwd=sb.clone, env=envp)
+    c.ok(rc == 0 and "profile=" in out, "`./securax regulated status` answers", tail(out, 200))
 
 
 @journey("backup_restore", "Disaster recovery: back up, LOSE the data volume, restore — the account and keys are back.")
