@@ -909,7 +909,7 @@ def j_comply(sb: H.Sandbox, c: Checks):
     import hashlib
     import tarfile
     rc, out = H.sh(["bash", "./securax", "comply", "--verify"], cwd=sb.clone)
-    c.ok(rc == 0 and out.count("consistent") == 2, "`comply --verify` passes on both maps", tail(out, 300))
+    c.ok(rc == 0 and out.count(": consistent") == 4, "`comply --verify` passes on all four maps (RBI, SEBI, MIT AI-risk, NIST AI 600-1)", tail(out, 300))
     rc, out = H.sh(["bash", "./securax", "comply", "cscrf", "--category", "qre"], cwd=sb.clone)
     c.ok(rc == 0 and "Qualified RE" in out and "entity obligations" in out, "`comply cscrf --category qre` narrows to that SEBI category", tail(out, 300))
     rc, out = H.sh(["bash", "./securax", "comply"], cwd=sb.clone)
