@@ -913,7 +913,9 @@ $(python3 "$ROOT/lifecycle/forge.py" brief "$FB")"
     PREV="$(git -C "$ROOT" rev-parse HEAD)"
     CLEAN=0; [ -z "$(git -C "$ROOT" status --porcelain --untracked-files=no 2>/dev/null)" ] && CLEAN=1
     # 1) a safety copy, only when there is a running estate with data (never blocks the update)
-    if gcurl -fsS -m 3 $(gw_url)/healthz >/dev/null 2>&1; then
+    _alive=0; for _i in 1 2 3; do gcurl -fsS -m 10 $(gw_url)/healthz >/dev/null 2>&1 && { _alive=1; break; }; sleep 2; done
+    [ "$_alive" = 1 ] || C "  (no running estate answered its health check — skipping the safety backup; run ./securax backup yourself first if the estate holds data)"
+    if [ "$_alive" = 1 ]; then
       if SAFE_OUT="$("$0" backup 2>&1)"; then C "  ✔ backup taken first: $(printf '%s' "$SAFE_OUT" | tail -1)"; else C "  (could not take a backup — continuing; your data volumes are not touched by an update). Reason: $(printf '%s' "$SAFE_OUT" | tail -c 300)"; fi
     fi
     git -C "$ROOT" pull --ff-only || { C "git pull failed — you may have local changes. See:  git -C \"$ROOT\" status"; exit 1; }
