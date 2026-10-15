@@ -415,9 +415,10 @@ def test_baseline_never_carries_a_reasoning_cap():
 
 def test_builder_puts_groq_before_deepseek_and_cerebras_is_in_no_chain():
     cat = _catalog()
-    assert cat["chains"]["builder"][:5] == ["opencodego", "opencodego_glm", "groq", "groq_qwen", "deepseek"]
+    assert cat["chains"]["builder"][:6] == ["opencodego", "opencodego_glm", "groq", "groq_qwen", "nvidia_nim", "deepseek"]
     assert all("cerebras" not in v for k, v in cat["chains"].items() if not k.startswith("_"))
-    assert all("nvidia_nim" not in v for k, v in cat["chains"].items() if not k.startswith("_"))
+    # NVIDIA's free tier is for development: the build chain only, never a Chat chain
+    assert [k for k, v in cat["chains"].items() if not k.startswith("_") and "nvidia_nim" in v] == ["builder"]
     doc = yaml.safe_load(gen.generate(cat, {"CEREBRAS_API_KEY": "csk-x", "GROQ_API_KEY": "gsk_x"}))
     cer = [m for m in doc["model_list"] if m["model_name"] == "cerebras"][0]["litellm_params"]
     assert cer["model"].startswith("cerebras/") and cer["extra_headers"] == {"X-Cerebras-3rd-Party-Integration": "litellm"}

@@ -59,12 +59,12 @@ Open WebUI / PWA / OpenCode / scripts
 
 ## 4. Models: plugin catalog and ladders (`plugins/catalog.json` → `local/compose/gen_litellm_config.py`)
 
-- **Providers:** gemini (default, free), groq and groq_qwen (free), cerebras (evaluation only, in no chain), openrouter (free models), openrouter_pro (**paid, opt-in** with `OPENROUTER_PRO_OK`), deepseek, opencodego (+_glm), openai, anthropic, mistral, grok, perplexity, azure, bedrock, local, coder (local Qwen coder), plus elevenlabs and compute recipes.
+- **Providers:** gemini (default, free), groq and groq_qwen (free), nvidia_nim (free, build chain only), cerebras (evaluation only, in no chain), openrouter (free models), openrouter_pro (**paid, opt-in** with `OPENROUTER_PRO_OK`), deepseek, opencodego (+_glm), openai, anthropic, mistral, grok, perplexity, azure, bedrock, local, coder (local Qwen coder), plus elevenlabs and compute recipes.
 - **Enabling a provider:** it is ON only when all its `env` keys are set. `./securax providers add <id>` takes the key with hidden input. `<ID>_MODEL` overrides the model. `./securax models` discovers live models and repairs retired names.
 - **Chains** (every chain must end in `local`; enforced by tests):
   - `bank-assistant`: gemini → groq → openrouter → local. The free default for Chat; a paid provider is never in it.
   - `twin`: openrouter_pro (opt-in) → gemini → groq → openrouter → local. Chat Twin; DeepSeek is excluded because it is China-hosted and Chat carries personal data.
-  - `builder`: opencodego → opencodego_glm → groq → groq_qwen → deepseek → gemini → openrouter → coder → local. Coding only; reorder with `./securax providers chain builder ...` (stored as `CHAIN_BUILDER` in `.env`; Chat chains are not editable; local always last).
+  - `builder`: opencodego → opencodego_glm → groq → groq_qwen → nvidia_nim → deepseek → gemini → openrouter → coder → local. Coding only; reorder with `./securax providers chain builder ...` (stored as `CHAIN_BUILDER` in `.env`; Chat chains are not editable; local always last).
 - **Reasoning cap:** `<ID>_REASONING=<level>` is applied only where the catalog verified that LiteLLM maps it to LESS thinking (doc 50).
 - **Generated configs:** `litellm-config.yaml` (committed baseline), `litellm-config.generated.yaml` (git-ignored, from `.env`), `gitops/core/litellm.yaml` (re-render with `lifecycle/render_core.py`).
 
@@ -141,7 +141,8 @@ Open WebUI / PWA / OpenCode / scripts
 | Audit trail of which model wrote what | **Already built** | gateway audit events + autobuild commit trail. |
 | MCP tools `get/set_coding_model`, `coding_health` | **Not needed** | `./securax providers`, `models` and `bench` do this; adding MCP tools would duplicate them. |
 | Keys in OpenBao instead of `.env` | **Later** | `.env` is owner-only and git-ignored; OpenBao exists in the sprout stage. Move when there are more people or machines. |
-| NVIDIA NIM free tier | **Not adopted** | NVIDIA scopes the free tier to prototyping, development and testing. |
+| NVIDIA NIM free tier | **Adopted, build chain only** (re-reviewed 15-Oct-2026) | NVIDIA's FAQ allows free use for "prototyping, research, development and testing" and calls anything else production. Building SecuRAX is development; daily Chat would not be, so it is never in a Chat chain. No published retention statement: Green-tier only. |
+| Gemini free tier | **Kept** in Chat and build chains | the fastest generous free tier; its prompts may be used to improve Google's products and read by reviewers, so it is Green-tier. The gateway redacts Aadhaar/PAN/card/phone/e-mail before any cloud call, and `./securax residency enable` keeps Red-tier data on the local model. |
 | Groq for coding | **Adopted (owner request)** | free, about 30 requests/min and 200K tokens/day per model (organisation-wide); first cloud rung after OpenCode Go, with a second model family (`groq_qwen`) on its own quota. Green-tier only. |
 | Cerebras | **Evaluation only** | the 1M tokens/day free tier ended in July 2026; now a $5, 30-day trial at 5 requests/min with conflicting data terms. In no chain unless you add it (`./securax providers chain builder add cerebras`). |
 | gpt-oss:20b as the 16 GB local coder | **Tiered, measured** | needs about 16 GB at run time; beside the estate inside Docker it does not fit on a 16 GB laptop, which gets qwen2.5-coder:7b. Larger machines get gpt-oss:20b or qwen3-coder:30b (catalog `coder.sizing`). |

@@ -15,7 +15,7 @@
         "GEMINI_API_KEY"
       ],
       "get_key": "https://aistudio.google.com/apikey",
-      "note": "Fast, generous free tier. The recommended default for instant answers.",
+      "note": "Fast, generous free tier: the default for Chat and a build rung. Free-tier prompts may be used to improve Google's products and read by human reviewers (paid tier excluded), so it is Green-tier: the gateway redacts Aadhaar/PAN/card/phone/e-mail before any cloud call, and `./securax residency enable` keeps Red-tier data on the local model. Billing on the same key moves you to the paid terms.",
       "discover": {
         "kind": "gemini",
         "url": "https://generativelanguage.googleapis.com/v1beta/models?pageSize=200",
@@ -150,6 +150,31 @@
           "^glm-5\\.3-flash$",
           "^glm-5\\.[0-9]+-flash$",
           "^glm-5"
+        ]
+      }
+    },
+    {
+      "id": "nvidia_nim",
+      "key_prefix": "nvapi-",
+      "label": "NVIDIA NIM (free, for building only)",
+      "kind": "llm",
+      "free": true,
+      "alias": "nvidia-nim",
+      "model": "openai/qwen/qwen3-coder-480b-a35b-instruct",
+      "api_base": "https://integrate.api.nvidia.com/v1",
+      "env": [
+        "NVIDIA_NIM_API_KEY"
+      ],
+      "get_key": "https://build.nvidia.com",
+      "note": "Free with no card; requests per minute vary by model and load (about 40 is the community figure, not an SLA). NVIDIA's FAQ allows free use for prototyping, research, development and testing, and calls anything else production: building SecuRAX is development, so it is on the BUILD chain only, never in Chat. No published statement on prompt retention: Green-tier only. Another model: NVIDIA_NIM_MODEL=openai/<id> from build.nvidia.com.",
+      "discover": {
+        "kind": "openai",
+        "url": "https://integrate.api.nvidia.com/v1/models",
+        "prefix": "openai/",
+        "prefer": [
+          "^qwen/qwen3-coder",
+          "^moonshotai/kimi-k2",
+          "^z-ai/glm"
         ]
       }
     },
@@ -464,6 +489,7 @@
       "opencodego_glm",
       "groq",
       "groq_qwen",
+      "nvidia_nim",
       "deepseek",
       "gemini",
       "openrouter",

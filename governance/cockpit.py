@@ -410,7 +410,7 @@ class Collector:
             self.add("covmaps", "Compliance maps consistent", "KRI", "Govern", f"{broken} problem(s)", "red", "A claim in a map points at something that no longer exists.", "Fix the maps", "./securax comply --verify", urgent=True, importance=3)
 
     # -- coding providers (the build chain's cloud rungs + local coder)
-    CODING_IDS = ("opencodego", "groq", "deepseek", "gemini", "cerebras")
+    CODING_IDS = ("opencodego", "groq", "nvidia_nim", "deepseek", "gemini", "cerebras")
     CODING_TTL = 300
 
     def _probe(self, p: dict) -> dict:
