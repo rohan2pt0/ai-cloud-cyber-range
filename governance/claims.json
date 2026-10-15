@@ -106,6 +106,14 @@
         "test:local/compose/tests/test_gen_litellm_config.py::test_home_machine_is_on_only_for_an_address_you_own",
         "test:local/compose/tests/test_gen_litellm_config.py::test_home_rung_is_local_for_residency"
       ]
+    },
+    {
+      "id": "in-country-not-assumed",
+      "claim": "An Indian cloud rung (E2E TIR) is never treated as in-country for data residency until the owner maps it after the provider confirms it; until then it is zone 'global'.",
+      "envelope": "Gateway residency with the built-in or IN policy; the mapping is the owner's decision in governance/residency/IN.json.",
+      "evidence": [
+        "test:local/compose/tests/test_gen_litellm_config.py::test_indian_cloud_rung_is_opt_in_in_no_chain_and_not_assumed_in_country"
+      ]
     }
   ],
   "not_claimed": [

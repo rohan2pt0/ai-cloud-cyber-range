@@ -475,3 +475,24 @@ def test_home_rung_is_local_for_residency():
     _sys.modules["residency_t"] = res
     spec.loader.exec_module(res)
     assert res.Policy.from_env({"RESIDENCY_MODE": "enforce"}).model_zone("home-local") == "local"
+
+
+def test_indian_cloud_rung_is_opt_in_in_no_chain_and_not_assumed_in_country():
+    cat = _catalog()
+    assert all("e2e_tir" not in v for k, v in cat["chains"].items() if not k.startswith("_"))
+    doc = yaml.safe_load(gen.generate(cat, {"E2E_TIR_API_KEY": "k", "E2E_TIR_API_BASE": "https://example.invalid/v1"}))
+    e2e = [m for m in doc["model_list"] if m["model_name"] == "e2e-in"][0]["litellm_params"]
+    assert e2e["api_base"] == "os.environ/E2E_TIR_API_BASE" and e2e["api_key"] == "os.environ/E2E_TIR_API_KEY"
+    import importlib.util as iu
+    import sys as _sys
+    spec = iu.spec_from_file_location("residency_e2e", REPO / "apps/llm-gateway/app/residency.py")
+    res = iu.module_from_spec(spec)
+    _sys.modules["residency_e2e"] = res
+    spec.loader.exec_module(res)
+    # its region is not assumed: until the owner confirms it with E2E and maps it, it is 'global' (fail-closed)
+    assert res.Policy.from_env({"RESIDENCY_MODE": "enforce"}).model_zone("e2e-in") == "global"
+
+
+def test_ollama_context_cache_is_8bit_by_default_and_switchable():
+    env = yaml.safe_load(COMPOSE.read_text())["services"]["ollama"]["environment"]
+    assert env["OLLAMA_KV_CACHE_TYPE"] == "${OLLAMA_KV_CACHE_TYPE:-q8_0}" and env["OLLAMA_FLASH_ATTENTION"] == "${OLLAMA_FLASH_ATTENTION:-1}"

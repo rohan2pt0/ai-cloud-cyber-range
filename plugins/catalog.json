@@ -47,7 +47,8 @@
       "env": [
         "REMOTE_OLLAMA_BASE"
       ],
-      "note": "Lend the estate a stronger machine you own (a desktop with a GPU, a Mac mini): the whole model runs THERE, which is faster than splitting one model across devices. Set REMOTE_OLLAMA_BASE=http://<its Tailscale IP or name.ts.net>:11434 and HOME_MODEL=ollama/<a model pulled there>. Only loopback, private-LAN (10/8, 172.16/12, 192.168/16), Tailscale (100.64/10) or *.ts.net addresses are accepted, because this rung counts as 'local' for data residency; anything else keeps it off. See docs/securax/56-POOL-YOUR-MACHINES.md."
+      "note": "Lend the estate a stronger machine you own (a desktop with a GPU, a Mac mini): the whole model runs THERE, which is faster than splitting one model across devices. Set REMOTE_OLLAMA_BASE=http://<its Tailscale IP or name.ts.net>:11434 and HOME_MODEL=ollama/<a model pulled there>. Only loopback, private-LAN (10/8, 172.16/12, 192.168/16), Tailscale (100.64/10) or *.ts.net addresses are accepted, because this rung counts as 'local' for data residency; anything else keeps it off. See docs/securax/56-POOL-YOUR-MACHINES.md.",
+      "private_base_only": true
     },
     {
       "id": "local",
@@ -326,6 +327,20 @@
       "region_env": "AWS_REGION",
       "get_key": "https://console.aws.amazon.com/iam/",
       "note": "Enable model access in the Bedrock console first. Set AWS_REGION (e.g. us-east-1) and BEDROCK_MODEL=bedrock/<model-id> to pick a model."
+    },
+    {
+      "id": "e2e_tir",
+      "label": "E2E Networks TIR (Indian cloud, INR billing; PAID, opt-in)",
+      "kind": "llm",
+      "alias": "e2e-in",
+      "model": "openai/meta-llama/Llama-3.3-70B-Instruct",
+      "api_base_env": "E2E_TIR_API_BASE",
+      "env": [
+        "E2E_TIR_API_KEY",
+        "E2E_TIR_API_BASE"
+      ],
+      "get_key": "https://www.e2enetworks.com/tir",
+      "note": "Indian provider, GPUs in Indian data centres, INR invoices (UPI/net-banking). Its GenAI API is OpenAI-compatible: set E2E_TIR_API_BASE to the base URL shown for your model in the TIR console and E2E_TIR_MODEL=openai/<model id>. Price per token is on TIR's Usage tab. In NO chain by default. Its zone for data residency is NOT assumed: only after E2E confirms in writing that API requests stay in India, add \"e2e-in\": \"in\" to model_zones in governance/residency/IN.json (doc 57)."
     },
     {
       "id": "openrouter",

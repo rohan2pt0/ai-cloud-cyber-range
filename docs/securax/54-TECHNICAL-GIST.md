@@ -30,7 +30,7 @@ Ports bind to `127.0.0.1` by default (`BIND_HOST` / Tailscale IP to reach from a
 |---|---|---|---|
 | gateway | `vulnbank/llm-gateway:dev` (built here, FastAPI) | 8080 | the ONLY front door for model traffic: guardrails, authn, residency, audit, metrics |
 | litellm | `ghcr.io/berriai/litellm:main-stable` | internal | router: one alias per provider, ordered fallback **chains**, `max_budget` 25 USD/30 d |
-| ollama | `ollama/ollama:0.40.4` | internal | local models (default `qwen2.5:1.5b`, sized to RAM by `autosize`); one model loaded at a time |
+| ollama | `ollama/ollama:0.40.4` | internal | local models (default `qwen2.5:1.5b`, sized to RAM by `autosize`); one model loaded at a time; 8-bit context cache |
 | open-webui | `ghcr.io/open-webui/open-webui:0.12.2` | 3000 | Chat (talks only to the gateway; `ENABLE_PERSISTENT_CONFIG=false`, so `.env` is authoritative) |
 | anythingllm | `mintplexlabs/anythingllm:latest` | 3001 | Private Docs: RAG on local Ollama, LanceDB, native embeddings |
 | n8n | `n8nio/n8n:1.74.1` | 5678 | optional automation (2.x upgrade pending) |
@@ -59,7 +59,7 @@ Open WebUI / PWA / OpenCode / scripts
 
 ## 4. Models: plugin catalog and ladders (`plugins/catalog.json` → `local/compose/gen_litellm_config.py`)
 
-- **Providers:** gemini (default, free), groq and groq_qwen (free), home (your own stronger machine over Tailscale, residency-local), nvidia_nim (free, build chain only), cerebras (evaluation only, in no chain), openrouter (free models), openrouter_pro (**paid, opt-in** with `OPENROUTER_PRO_OK`), deepseek, opencodego (+_glm), openai, anthropic, mistral, grok, perplexity, azure, bedrock, local, coder (local Qwen coder), plus elevenlabs and compute recipes.
+- **Providers:** gemini (default, free), groq and groq_qwen (free), home (your own stronger machine over Tailscale, residency-local), e2e_tir (Indian cloud, opt-in, in no chain, zone global until mapped), nvidia_nim (free, build chain only), cerebras (evaluation only, in no chain), openrouter (free models), openrouter_pro (**paid, opt-in** with `OPENROUTER_PRO_OK`), deepseek, opencodego (+_glm), openai, anthropic, mistral, grok, perplexity, azure, bedrock, local, coder (local Qwen coder), plus elevenlabs and compute recipes.
 - **Enabling a provider:** it is ON only when all its `env` keys are set. `./securax providers add <id>` takes the key with hidden input. `<ID>_MODEL` overrides the model. `./securax models` discovers live models and repairs retired names.
 - **Chains** (every chain must end in `local`; enforced by tests):
   - `bank-assistant`: gemini → groq → openrouter → home → local. The free default for Chat; a paid provider is never in it.
