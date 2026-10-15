@@ -107,18 +107,29 @@ def main():
         pg.evaluate("gmClose()")
         # 8. due now shows AAR at month end (simulate date via ritual window directly)
         chk("the After-Action Review is a monthly ritual", "Monthly After-Action Review" in pg.inner_text("#sections") or "Monthly After-Action Review" in pg.evaluate("document.getElementById('sections').textContent"))
-        # 9. every tab in dark and light: errors + contrast
+        # 9. career compass: a dummy officer on notice with a contract offer and a permanent CISO offer
+        pg.evaluate("""() => { const d=new Date(); d.setDate(d.getDate()-14);
+          localStorage.setItem('gm_career', JSON.stringify({cur:{gross:160000,inhand:120000,rent:20000,perks:6000,empRet:15000,empDed:11000,otherYr:170000},
+            house:{exp:95000,emi:15000,wife:50000,ef:900000,nw:4000000}, cfg:{noticeStart:d.toISOString().slice(0,10),noticeMonths:3,birth:'1989-08',fiAge:50},
+            offers:[{name:'Regulator - contract manager',ctc:3600000,mode:'salary',contract:true,nextPct:25,gates:{rung:'?',field:'y',commute:'y',paper:'?'},scores:{next:2,stable:2}},
+                    {name:'Private - CISO',ctc:4200000,varPct:15,basicPct:40,pf:true,grat:true,health:true,mode:'salary',nextPct:40,gates:{rung:'y',field:'y',commute:'y',paper:'y'},scores:{next:4,stable:4,team:3,ai:4}}]})); }""")
+        pg.evaluate("gmClose(); document.activeElement && document.activeElement.blur(); goTab('career')"); pg.wait_for_timeout(250)
+        cs = pg.inner_text("#sections")   # visible text only: a hidden section must fail here
+        chk("career: floor, target, FI and both offers render", all(x in cs for x in ["Floor", "Target CTC", "corpus"]) and pg.evaluate("[...document.querySelectorAll('#sections input')].filter(i=>i.offsetParent).map(i=>i.value).filter(v=>/Regulator - contract manager|Private - CISO/.test(v)).length") == 2, cs[:200])
+        chk("career: the permanent CISO offer passes and is named in the call", "passes every must-have" in cs and "Private - CISO" in cs)
+        chk("career: plan item surfaces in Due now", "CTC breakdown" in pg.evaluate("(goTab('today'), document.getElementById('sections').textContent)"))
+        # 10. every tab in dark and light: errors + contrast
         tabs = pg.evaluate("TABS.map(t=>t[0])")
         pg.evaluate("gmCalmMore()")
         for theme in ["dark", "light"]:
             pg.evaluate(f"S.theme='{theme}'; store('sovS',S); applyTheme(); renderAll()")
             for t in tabs:
                 pg.evaluate(f"goTab('{t}')"); pg.wait_for_timeout(150)
-                if t == "ops":
+                if t in ("ops", "career"):
                     pg.evaluate("document.querySelectorAll('#sections details').forEach(d=>d.open=true)")
                 for item in pg.evaluate(CONTRAST_JS):
                     report["contrast"][f"{theme}:{t}"].append(item)
-                if t in ("today", "okr", "wheel", "ops", "kids", "growth"):
+                if t in ("today", "okr", "wheel", "ops", "kids", "growth", "career"):
                     pg.screenshot(path=str(OUT / f"{theme}-{t}.png"), full_page=True)
         b.close()
     # Probes to the estate (health, feed) are expected to fail from a file:// page: refused when nothing listens, CORS-blocked
