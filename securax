@@ -151,6 +151,10 @@ case "$cmd" in
     ENVF="$ROOT/local/compose/.env"
     [ -f "$ENVF" ] || cp "$ROOT/local/compose/.env.example" "$ENVF"
     chmod 600 "$ENVF" 2>/dev/null || true          # your API keys: readable by you only (no-op on Windows drives)
+    # Chat's sign-in key, made once and kept (doc 53): without it every update signs you out of Chat.
+    if [ -z "$(ev WEBUI_SECRET_KEY)" ]; then
+      skv "$ENVF" WEBUI_SECRET_KEY "$( (command -v openssl >/dev/null && openssl rand -hex 32) || head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')"
+    fi
     # One-step setup: if there's no Gemini key yet and we're in a real terminal, offer to
     # paste one right here for INSTANT answers (Enter to skip = private local model). No
     # hunting for .env. Sensitive data stays local either way.

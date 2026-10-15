@@ -285,6 +285,29 @@
       }
     },
     {
+      "id": "openrouter_pro",
+      "label": "OpenRouter, a strong open model, PAID per use (the Twin's brain)",
+      "kind": "llm",
+      "alias": "openrouter-pro",
+      "model": "openrouter/z-ai/glm-5.2",
+      "env": [
+        "OPENROUTER_API_KEY",
+        "OPENROUTER_PRO_OK"
+      ],
+      "get_key": "https://openrouter.ai/keys",
+      "note": "PAID per use: GLM-5.2 about $0.45 in / $3.31 out per million tokens (OpenRouter average, checked 15-Oct-2026). Same key as 'openrouter'. Type yes for OPENROUTER_PRO_OK to accept paid use; the router's monthly max_budget caps spend. Another model: OPENROUTER_PRO_MODEL=openrouter/<id>.",
+      "discover": {
+        "kind": "openai",
+        "url": "https://openrouter.ai/api/v1/models",
+        "prefix": "openrouter/",
+        "prefer": [
+          "^z-ai/glm-5\\.2$",
+          "^z-ai/glm-5",
+          "^moonshotai/kimi-k3"
+        ]
+      }
+    },
+    {
       "id": "groq",
       "key_prefix": "gsk_",
       "label": "Groq (fast, free tier)",
@@ -354,7 +377,7 @@
     }
   ],
   "chains": {
-    "_comment": "Degradation ladders. Each chain is tried in order; only ENABLED providers participate, so a missing key just skips that rung. Every chain MUST end in 'local' (always on) so an answer is possible even with zero keys and zero internet. Paid providers are deliberately absent from bank-assistant (cost guard); the build chain may use cheap DeepSeek first. Enforced by tests.",
+    "_comment": "Degradation ladders. Each chain is tried in order; only ENABLED providers participate, so a missing key just skips that rung. Every chain MUST end in 'local' (always on) so an answer is possible even with zero keys and zero internet. Paid providers are deliberately absent from bank-assistant (cost guard); the build chain may use cheap DeepSeek first. Enforced by tests. 'twin' is the Chat Twin (doc 53): a PAID strong open model first only when you opted in (OPENROUTER_PRO_OK), then the free bank-assistant ladder; DeepSeek is left out because Chat carries personal data.",
     "bank-assistant": [
       "gemini",
       "groq",
@@ -369,6 +392,13 @@
       "groq",
       "openrouter",
       "coder",
+      "local"
+    ],
+    "twin": [
+      "openrouter_pro",
+      "gemini",
+      "groq",
+      "openrouter",
       "local"
     ]
   },

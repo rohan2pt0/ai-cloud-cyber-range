@@ -1249,7 +1249,16 @@ def j_webui(sb: H.Sandbox, c: Checks):
     models = sb.http("GET", f"{H.WEBUI}/api/models", headers=auth).json() or {}
     ids = [m.get("id") for m in models.get("data", [])]
     c.ok("bank-assistant" in ids and "bank-assistant-local" in ids, "the model picker lists the SecuRAX models", ids)
+    c.ok("twin" in ids, "Twin: the 'twin' model is in the picker (free ladder until you opt in to the paid rung)", ids)
     c.ok(not any("arena" in str(m).lower() for m in models.get("data", [])), "no random 'Arena Model' in the picker", ids)
+    feats = (sb.http("GET", f"{H.WEBUI}/api/config", headers=auth).json() or {}).get("features", {})
+    c.ok(feats.get("enable_web_search") is True, "Twin: web search is switched on from .env (survives restarts)", feats)
+    c.ok(bool(sb.get_env("WEBUI_SECRET_KEY")), "Twin: `up` created a fixed Chat sign-in key in .env")
+    rc, out = sb.compose("--profile", "ai", "up", "-d", "--force-recreate", "--no-deps", "open-webui", timeout=300)
+    c.ok(rc == 0 and sb.wait_http(f"{H.WEBUI}/health", 420), "Chat recreated (what every update does)", tail(out))
+    r = sb.http("GET", f"{H.WEBUI}/api/models", headers=auth)
+    c.ok(r.status == 200, "Twin: you are STILL signed in after the container was recreated (before: signed out on every update)",
+         f"{r.status} {tail(r.text)}")
     body = {"model": "bank-assistant", "messages": [{"role": "user", "content": "ping"}], "stream": False}
     r = sb.http("POST", f"{H.WEBUI}/api/chat/completions", body, headers=auth, timeout=120)
     c.ok(r.status == 200 and "answered-by:gemini" in r.text, "a chat message works through Open WebUI (non-streaming)", f"{r.status} {tail(r.text)}")

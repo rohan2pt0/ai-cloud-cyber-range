@@ -49,9 +49,9 @@ It is not auto-imported.
 | Step | What you get | Status |
 |---|---|---|
 | **1. Automation pack + andon** | Section 2 | **this change** |
-| **2. Your AI history** | All past chats searchable, privately (doc 51) | done (PR #91) |
-| **3. The Twin** (chat that feels like Claude) | In Chat (Open WebUI 0.12): web search, memory, notes and the code runner switched on through `.env` (Admin-screen changes are lost on restart because of `ENABLE_PERSISTENT_CONFIG=false`); a "Twin" preset with your standing instructions and knowledge; "Twin-private" on the local model | next, after the Open WebUI 0.12.2 upgrade |
-| **4. The brain** (small monthly budget, no single point of failure) | Chat ladder: a strong open model, pay-per-use with a hard monthly cap (LiteLLM `max_budget`), then Gemini free tier, then local | next, see section 4 |
+| **2. Your AI history** | All past chats searchable, privately (doc 51) | **done** |
+| **3. The Twin** (chat that feels like Claude) | In Chat (Open WebUI 0.12): web search, memory, notes and the code runner switched on through `.env` (Admin-screen changes are lost on restart because of `ENABLE_PERSISTENT_CONFIG=false`); a "Twin" preset with your standing instructions and knowledge; "Twin-private" on the local model | **done** (doc 53) |
+| **4. The brain** (small monthly budget, no single point of failure) | Model `twin`: a strong open model, pay-per-use and opt-in, under the router's monthly cap (LiteLLM `max_budget`), then the free ladder, then local | **done** (doc 53; opt in with `./securax providers add openrouter_pro`) |
 | **5. Jarvis voice** | Voice calls in Chat (Open WebUI 0.12 lists realtime voice) with local speech-to-text where the machine allows | to verify on 0.12.2 |
 | **6. Regulator watch** | RBI/SEBI/CERT-In pages fetched by the read-only research agent, summarised, sent by the andon only when something is new | planned |
 | **7. Family Android app** | The Guiding Map wrapped as an installable Android app (works offline; syncs with your estate over Tailscale), built so a store release later is a packaging step, not a rewrite | planned |
