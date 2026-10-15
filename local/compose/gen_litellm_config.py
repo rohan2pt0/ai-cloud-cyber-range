@@ -89,7 +89,7 @@ def private_base(url: str) -> bool:
 def is_enabled(p: dict, env: dict, baseline: bool = False) -> bool:
     if p.get("always"):
         return True
-    if p.get("api_base_env") and not baseline and not private_base(env_lookup(env, p["api_base_env"])):
+    if p.get("private_base_only") and not baseline and not private_base(env_lookup(env, p["api_base_env"])):
         return False
     if baseline:
         # the shipped committed config is deterministic: only the default provider (Gemini)
@@ -157,6 +157,8 @@ def provider_params(p: dict, env: dict, baseline: bool = False) -> dict:
         params["api_key"] = f"os.environ/{keys[0]}"
     if p.get("needs_base"):
         params["api_base"] = "os.environ/AZURE_API_BASE"
+    elif p.get("api_base_env"):
+        params["api_base"] = f"os.environ/{p['api_base_env']}"            # an endpoint that is per account (e.g. E2E TIR), kept in .env
     elif p.get("api_base"):
         params["api_base"] = p["api_base"]                       # an OpenAI-compatible endpoint that is not the vendor default (e.g. OpenCode Go)
     if p.get("headers"):

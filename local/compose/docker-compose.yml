@@ -119,6 +119,8 @@ services:
       OPENCODE_GO_API_KEY: ${OPENCODE_GO_API_KEY:-}
       CEREBRAS_API_KEY: ${CEREBRAS_API_KEY:-}
       NVIDIA_NIM_API_KEY: ${NVIDIA_NIM_API_KEY:-}
+      E2E_TIR_API_KEY: ${E2E_TIR_API_KEY:-}
+      E2E_TIR_API_BASE: ${E2E_TIR_API_BASE:-}
       MISTRAL_API_KEY: ${MISTRAL_API_KEY:-}
       XAI_API_KEY: ${XAI_API_KEY:-}
       PERPLEXITYAI_API_KEY: ${PERPLEXITYAI_API_KEY:-}
@@ -146,6 +148,10 @@ services:
       OLLAMA_KEEP_ALIVE: ${OLLAMA_KEEP_ALIVE:-30m}
       OLLAMA_NUM_PARALLEL: "1"
       OLLAMA_MAX_LOADED_MODELS: "1"
+      # Context memory at half price (doc 57): the conversation cache in 8-bit instead of 16-bit, which needs flash attention. A model
+      # that cannot use it falls back to the default by itself. Set OLLAMA_KV_CACHE_TYPE=f16 to switch back.
+      OLLAMA_FLASH_ATTENTION: ${OLLAMA_FLASH_ATTENTION:-1}
+      OLLAMA_KV_CACHE_TYPE: ${OLLAMA_KV_CACHE_TYPE:-q8_0}
     volumes: ["ollama:/root/.ollama"]
     networks: [modelplane]
     # To load models after up:  docker exec -it <ollama> ollama pull qwen2.5:1.5b && ollama pull llama-guard3:1b

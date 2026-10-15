@@ -93,8 +93,9 @@ is slow. Two sovereign-friendly options:
    rung joins every chain just before this laptop's model. Only loopback, private-LAN, Tailscale or `*.ts.net` addresses are
    accepted, because the rung counts as local for data residency. Measure it first: `./securax bench --url http://100.x.y.z:11434`.
 
-> Colab notebooks are ephemeral (the VM is reclaimed) — fine for experiments, not for an
-> always-on endpoint. For a persistent GPU, a small cloud VM or your own workstation is better.
+> Colab and Kaggle notebooks are ephemeral (the VM is reclaimed) and your data goes to Google: use them for restartable,
+> Green-tier batch jobs only, never as an always-on endpoint (tunnelling a server out of a notebook is a grey area in their terms).
+> Never join a rented or cloud machine to your Tailscale as the `home` rung: it would count as local for residency (doc 57). For a persistent GPU, a small cloud VM or your own workstation is better.
 
 ## Security posture
 Every chat provider is reached **through the gateway**, so prompt-injection / PII / secret-exfil
