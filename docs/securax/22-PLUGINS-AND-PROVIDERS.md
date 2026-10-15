@@ -86,13 +86,12 @@ is slow. Two sovereign-friendly options:
 
 1. **Bedrock / a cloud LLM** (simplest): add the `bedrock` (or any cloud) plugin above — the heavy
    lifting runs in the cloud, your sensitive data still gets PII-redacted by the gateway first.
-2. **Remote Ollama on a GPU box or Colab** (keeps the model yours):
-   - On the GPU machine / Colab: `curl -fsSL https://ollama.com/install.sh | sh`, then
-     `OLLAMA_HOST=0.0.0.0 ollama serve` and `ollama pull <a-bigger-model>`.
-   - Expose it securely (Tailscale, or an SSH/Cloudflare tunnel) and note its URL.
-   - Set `REMOTE_OLLAMA_BASE=http://<that-host>:11434` in `.env`, then point the `local` plugin's
-     `api_base` at it (or set `OLLAMA_BASE_PATH` for AnythingLLM). The estate now offloads inference
-     to the GPU while everything else stays on your box.
+2. **Your own stronger machine** (keeps the model yours; doc 56): install Ollama there from its official installer or package
+   (not `curl | sh`), join it to your Tailscale network, and bind Ollama to its Tailscale address only
+   (`OLLAMA_HOST=100.x.y.z:11434`; never `0.0.0.0`, which opens it to everyone on your LAN). Pull a model there, then set
+   `REMOTE_OLLAMA_BASE=http://100.x.y.z:11434` and `HOME_MODEL=ollama/<that model>` in `.env` and run `./securax up`. The `home`
+   rung joins every chain just before this laptop's model. Only loopback, private-LAN, Tailscale or `*.ts.net` addresses are
+   accepted, because the rung counts as local for data residency. Measure it first: `./securax bench --url http://100.x.y.z:11434`.
 
 > Colab notebooks are ephemeral (the VM is reclaimed) — fine for experiments, not for an
 > always-on endpoint. For a persistent GPU, a small cloud VM or your own workstation is better.

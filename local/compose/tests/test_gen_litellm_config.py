@@ -449,3 +449,29 @@ def test_local_coder_is_sized_to_what_fits_beside_the_estate(mb, model, stepped)
 
 def _catalog_coder():
     return next(p for p in _catalog()["providers"] if p["id"] == "coder")
+
+
+@pytest.mark.parametrize("url,on", [
+    ("http://100.101.102.103:11434", True), ("http://desktop.tailnet-abc.ts.net:11434", True), ("http://192.168.1.20:11434", True),
+    ("http://127.0.0.1:11434", True), ("http://8.8.8.8:11434", False), ("https://ollama.example.com", False),
+    ("http://100.128.0.1:11434", False), ("ftp://10.0.0.2", False), ("", False)])
+def test_home_machine_is_on_only_for_an_address_you_own(url, on):
+    """The 'home' rung counts as zone 'local' for data residency: a public address must never enable it."""
+    cat = _catalog()
+    doc = yaml.safe_load(gen.generate(cat, {"REMOTE_OLLAMA_BASE": url, "HOME_MODEL": "ollama/qwen2.5:14b", "GEMINI_API_KEY": "g"}))
+    home = [m for m in doc["model_list"] if m["model_name"] == "home-local"]
+    assert bool(home) is on
+    if on:
+        assert home[0]["litellm_params"]["api_base"] == url and home[0]["litellm_params"]["model"] == "ollama/qwen2.5:14b"
+        fb = _fallback_map(doc)
+        assert fb["bank-assistant"][-2:] == ["home-local", "bank-assistant-local"]      # just before this laptop; local still last
+
+
+def test_home_rung_is_local_for_residency():
+    import importlib.util as iu
+    spec = iu.spec_from_file_location("residency_t", REPO / "apps/llm-gateway/app/residency.py")
+    res = iu.module_from_spec(spec)
+    import sys as _sys
+    _sys.modules["residency_t"] = res
+    spec.loader.exec_module(res)
+    assert res.Policy.from_env({"RESIDENCY_MODE": "enforce"}).model_zone("home-local") == "local"

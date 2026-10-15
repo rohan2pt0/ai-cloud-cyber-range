@@ -59,12 +59,12 @@ Open WebUI / PWA / OpenCode / scripts
 
 ## 4. Models: plugin catalog and ladders (`plugins/catalog.json` → `local/compose/gen_litellm_config.py`)
 
-- **Providers:** gemini (default, free), groq and groq_qwen (free), nvidia_nim (free, build chain only), cerebras (evaluation only, in no chain), openrouter (free models), openrouter_pro (**paid, opt-in** with `OPENROUTER_PRO_OK`), deepseek, opencodego (+_glm), openai, anthropic, mistral, grok, perplexity, azure, bedrock, local, coder (local Qwen coder), plus elevenlabs and compute recipes.
+- **Providers:** gemini (default, free), groq and groq_qwen (free), home (your own stronger machine over Tailscale, residency-local), nvidia_nim (free, build chain only), cerebras (evaluation only, in no chain), openrouter (free models), openrouter_pro (**paid, opt-in** with `OPENROUTER_PRO_OK`), deepseek, opencodego (+_glm), openai, anthropic, mistral, grok, perplexity, azure, bedrock, local, coder (local Qwen coder), plus elevenlabs and compute recipes.
 - **Enabling a provider:** it is ON only when all its `env` keys are set. `./securax providers add <id>` takes the key with hidden input. `<ID>_MODEL` overrides the model. `./securax models` discovers live models and repairs retired names.
 - **Chains** (every chain must end in `local`; enforced by tests):
-  - `bank-assistant`: gemini → groq → openrouter → local. The free default for Chat; a paid provider is never in it.
-  - `twin`: openrouter_pro (opt-in) → gemini → groq → openrouter → local. Chat Twin; DeepSeek is excluded because it is China-hosted and Chat carries personal data.
-  - `builder`: opencodego → opencodego_glm → groq → groq_qwen → nvidia_nim → deepseek → gemini → openrouter → coder → local. Coding only; reorder with `./securax providers chain builder ...` (stored as `CHAIN_BUILDER` in `.env`; Chat chains are not editable; local always last).
+  - `bank-assistant`: gemini → groq → openrouter → home → local. The free default for Chat; a paid provider is never in it.
+  - `twin`: openrouter_pro (opt-in) → gemini → groq → openrouter → home → local. Chat Twin; DeepSeek is excluded because it is China-hosted and Chat carries personal data.
+  - `builder`: opencodego → opencodego_glm → groq → groq_qwen → nvidia_nim → deepseek → gemini → openrouter → home → coder → local. Coding only; reorder with `./securax providers chain builder ...` (stored as `CHAIN_BUILDER` in `.env`; Chat chains are not editable; local always last).
 - **Reasoning cap:** `<ID>_REASONING=<level>` is applied only where the catalog verified that LiteLLM maps it to LESS thinking (doc 50).
 - **Generated configs:** `litellm-config.yaml` (committed baseline), `litellm-config.generated.yaml` (git-ignored, from `.env`), `gitops/core/litellm.yaml` (re-render with `lifecycle/render_core.py`).
 

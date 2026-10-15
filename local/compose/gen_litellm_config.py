@@ -68,9 +68,29 @@ def env_lookup(env: dict, key: str) -> str:
     return (env.get(key) or "").strip()
 
 
+def private_base(url: str) -> bool:
+    """True for an Ollama URL on a machine you own: loopback, private LAN, Tailscale (100.64.0.0/10) or a *.ts.net name. A rung with this
+    URL counts as zone 'local' for data residency, so a public address must never pass (it would carry Red-tier data off your machines)."""
+    import ipaddress
+    from urllib.parse import urlparse
+    try:
+        u = urlparse(url.strip())
+        host = (u.hostname or "").lower()
+        if u.scheme not in ("http", "https") or not host:
+            return False
+        if host == "localhost" or host.endswith(".ts.net"):
+            return True
+        ip = ipaddress.ip_address(host)
+        return ip.is_loopback or ip.is_private or ip in ipaddress.ip_network("100.64.0.0/10")
+    except ValueError:
+        return False
+
+
 def is_enabled(p: dict, env: dict, baseline: bool = False) -> bool:
     if p.get("always"):
         return True
+    if p.get("api_base_env") and not baseline and not private_base(env_lookup(env, p["api_base_env"])):
+        return False
     if baseline:
         # the shipped committed config is deterministic: only the default provider (Gemini)
         # plus always-on local — never influenced by whatever env this runs in.
@@ -122,7 +142,7 @@ def provider_params(p: dict, env: dict, baseline: bool = False) -> dict:
     if p.get("local"):
         # Ollama-style local model: literal api_base, no key. Its env entries are only on/off gate
         # flags (e.g. ENABLE_LOCAL_CODER), never an api_key.
-        params["api_base"] = internal_api_base(p["api_base"], env, baseline)
+        params["api_base"] = env_lookup(env, p["api_base_env"]) if p.get("api_base_env") else internal_api_base(p["api_base"], env, baseline)
         params["timeout"] = LOCAL_TIMEOUT
         return params
     params["timeout"] = CLOUD_TIMEOUT

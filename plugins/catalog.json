@@ -36,6 +36,20 @@
       }
     },
     {
+      "id": "home",
+      "label": "Your stronger machine (Ollama on your own PC/Mac, over Tailscale)",
+      "kind": "llm",
+      "local": true,
+      "free": true,
+      "alias": "home-local",
+      "model": "ollama/qwen2.5:7b",
+      "api_base_env": "REMOTE_OLLAMA_BASE",
+      "env": [
+        "REMOTE_OLLAMA_BASE"
+      ],
+      "note": "Lend the estate a stronger machine you own (a desktop with a GPU, a Mac mini): the whole model runs THERE, which is faster than splitting one model across devices. Set REMOTE_OLLAMA_BASE=http://<its Tailscale IP or name.ts.net>:11434 and HOME_MODEL=ollama/<a model pulled there>. Only loopback, private-LAN (10/8, 172.16/12, 192.168/16), Tailscale (100.64/10) or *.ts.net addresses are accepted, because this rung counts as 'local' for data residency; anything else keeps it off. See docs/securax/56-POOL-YOUR-MACHINES.md."
+    },
+    {
       "id": "local",
       "label": "Local model (Ollama, sovereign)",
       "kind": "llm",
@@ -473,15 +487,16 @@
       "env": [
         "REMOTE_OLLAMA_BASE"
       ],
-      "note": "Not a key: run Ollama on a GPU box or a Colab tunnel and set REMOTE_OLLAMA_BASE to its URL to offload the local model. See docs/securax/22-PLUGINS-AND-PROVIDERS.md § Heavy compute."
+      "note": "Not a model: the cloud-GPU / Colab recipe. For a machine you own, use the 'home' provider instead (REMOTE_OLLAMA_BASE + HOME_MODEL, doc 56). See docs/securax/22-PLUGINS-AND-PROVIDERS.md § Heavy compute."
     }
   ],
   "chains": {
-    "_comment": "Degradation ladders. Each chain is tried in order; only ENABLED providers participate, so a missing key just skips that rung. Every chain MUST end in 'local' (always on) so an answer is possible even with zero keys and zero internet. Paid providers are deliberately absent from bank-assistant (cost guard); the build chain puts Groq's free tier (two model families) right after the OpenCode Go rungs, then cheap DeepSeek. You can reorder the build chain without editing this file: CHAIN_BUILDER in .env (`./securax providers chain builder ...`); local is always kept last. Enforced by tests. 'twin' is the Chat Twin (doc 53): a PAID strong open model first only when you opted in (OPENROUTER_PRO_OK), then the free bank-assistant ladder; DeepSeek is left out because Chat carries personal data.",
+    "_comment": "Degradation ladders. Each chain is tried in order; only ENABLED providers participate, so a missing key just skips that rung. Every chain MUST end in 'local' (always on) so an answer is possible even with zero keys and zero internet. Paid providers are deliberately absent from bank-assistant (cost guard); the build chain puts Groq's free tier (two model families) right after the OpenCode Go rungs, then cheap DeepSeek. You can reorder the build chain without editing this file: CHAIN_BUILDER in .env (`./securax providers chain builder ...`); local is always kept last. Enforced by tests. 'twin' is the Chat Twin (doc 53): a PAID strong open model first only when you opted in (OPENROUTER_PRO_OK), then the free bank-assistant ladder; DeepSeek is left out because Chat carries personal data. 'home' (your own stronger machine over Tailscale) sits just before the local rungs in every chain: free, private, faster than this laptop.",
     "bank-assistant": [
       "gemini",
       "groq",
       "openrouter",
+      "home",
       "local"
     ],
     "builder": [
@@ -493,6 +508,7 @@
       "deepseek",
       "gemini",
       "openrouter",
+      "home",
       "coder",
       "local"
     ],
@@ -501,6 +517,7 @@
       "gemini",
       "groq",
       "openrouter",
+      "home",
       "local"
     ]
   },

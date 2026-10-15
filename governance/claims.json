@@ -97,6 +97,15 @@
       "evidence": [
         "test:governance/tests/test_scale_notify.py::test_ladder_is_contiguous_and_every_have_or_dormant_has_evidence"
       ]
+    },
+    {
+      "id": "home-rung-stays-yours",
+      "claim": "The 'home' machine rung (your own stronger PC/Mac) is enabled only for an address on a machine you own, so it can never carry Red-tier data off your machines while counting as local.",
+      "envelope": "Address check at config generation: loopback, private LAN, Tailscale 100.64/10 or *.ts.net. It does not prove the machine at that address is yours; Tailscale's device authentication does.",
+      "evidence": [
+        "test:local/compose/tests/test_gen_litellm_config.py::test_home_machine_is_on_only_for_an_address_you_own",
+        "test:local/compose/tests/test_gen_litellm_config.py::test_home_rung_is_local_for_residency"
+      ]
     }
   ],
   "not_claimed": [
@@ -106,6 +115,7 @@
     "Load-tested capacity beyond the measured fitness budgets: the capacity planner is planning, not a benchmark.",
     "Model quality: answers come from third-party or small local models; the rails reduce risk, they do not make answers correct.",
     "An independent security audit or certification (SOC 2, ISO 27001): none has been done.",
-    "Multi-tenant production (the forest stage): manifests render and validate; billing, per-tenant SSO and operations are not built."
+    "Multi-tenant production (the forest stage): manifests render and validate; billing, per-tenant SSO and operations are not built.",
+    "Splitting one model across several devices (llama.cpp RPC, as RAMDeck does): not built; see doc 56 for why and the conditions."
   ]
 }
