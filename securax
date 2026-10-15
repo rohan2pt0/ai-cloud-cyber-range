@@ -162,6 +162,11 @@ case "$cmd" in
     ENVF="$ROOT/local/compose/.env"
     [ -f "$ENVF" ] || cp "$ROOT/local/compose/.env.example" "$ENVF"
     chmod 600 "$ENVF" 2>/dev/null || true          # your API keys: readable by you only (no-op on Windows drives)
+    # The router/gateway service key ships as a placeholder; replace it once with a strong random one. Safe to change:
+    # every service reads it from .env on start (Chat's config is not persisted, ENABLE_PERSISTENT_CONFIG=false).
+    if [ "$(ev LITELLM_MASTER_KEY)" = "sk-range-change-me" ]; then
+      skv "$ENVF" LITELLM_MASTER_KEY "sk-$(python3 -c 'import secrets; print(secrets.token_hex(24))')" && C "  ✔ replaced the placeholder gateway key with a strong random one (kept in .env)"
+    fi
     # Chat's sign-in key, made once and kept (doc 53): without it every update signs you out of Chat.
     if [ -z "$(ev WEBUI_SECRET_KEY)" ]; then
       skv "$ENVF" WEBUI_SECRET_KEY "$( (command -v openssl >/dev/null && openssl rand -hex 32) || head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')"
@@ -1084,7 +1089,10 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
         FIRST=1
         for K in $KEYS; do
           # Typed silently (not echoed): a visible key ends up in screenshots and chat pastes.
-          printf '  %s (input hidden — paste, then press Enter) = ' "$K"; read -rs V < /dev/tty || V=""; echo
+          case "$K" in
+            *_OK) printf '  %s (type yes to accept, then press Enter) = ' "$K"; read -r V < /dev/tty || V="" ;;
+            *)    printf '  %s (input hidden — paste, then press Enter) = ' "$K"; read -rs V < /dev/tty || V=""; echo ;;
+          esac
           [ -z "$V" ] && { echo "    (skipped $K)"; FIRST=0; continue; }
           if [ "$FIRST" = 1 ]; then
             CK="$(printf '%s' "$V" | python3 "$GEN" --check-key "$PID" 2>/dev/null || echo ok)"
@@ -1096,7 +1104,8 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
             esac
           fi
           FIRST=0
-          skv "$ENVF" "$K" "$V" && echo "    ✔ saved $K (${#V} chars, starts '${V:0:5}…')"
+          case "$K" in *_OK) skv "$ENVF" "$K" "$V" && echo "    ✔ saved $K=$V" ;;
+            *) skv "$ENVF" "$K" "$V" && echo "    ✔ saved $K (${#V} chars, starts '${V:0:5}…')" ;; esac
         done
         python3 "$GEN" --write --env-file "$ENVF" >/dev/null && C "  ✔ router config regenerated from the plugin catalog."
         [ "${SECURAX_NOAPPLY:-0}" = 1 ] && exit 0      # caller (./securax keys) applies once at the end

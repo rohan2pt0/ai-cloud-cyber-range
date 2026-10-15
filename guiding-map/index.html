@@ -2561,7 +2561,7 @@ function renderPlaybook(){
       h += '<div class="info">Optional. Without it, each device keeps its own copy and you move data with Export/Import. '
         + 'With it, all devices stay live \u2014 synced through <b>your own SecuRAX estate</b> (not a cloud SaaS), reached privately over Tailscale. '
         + 'Setup is in docs/securax/14-GUIDING-MAP.md.</div>'
-        + '<label class="f-label">Estate sync URL</label><input id="syUrl" value="' + (SECURE_ORIGIN ? "https://sync." + ESTATE_DOM + "/sync" : "") + '" placeholder="' + (SECURE_ORIGIN ? "https://sync." + ESTATE_DOM + "/sync" : "http://securax.your-tailnet.ts.net:8089/sync") + '">'
+        + '<label class="f-label">Estate sync URL</label><input id="syUrl" value="' + (TS_ORIGIN ? location.origin + "/sync" : SECURE_ORIGIN ? "https://sync." + ESTATE_DOM + "/sync" : "") + '" placeholder="' + (SECURE_ORIGIN ? "https://sync." + ESTATE_DOM + "/sync" : "http://securax.your-tailnet.ts.net:8089/sync") + '">'
         + '<label class="f-label">Device token</label><input id="syKey" placeholder="your estate sync token">'
         + '<label class="f-label">Your row id (anything, same on every device)</label><input id="syUser" placeholder="me">'
         + '<button class="btn btn-p" onclick="gmSyncSave()">Turn sync on</button>';
@@ -4790,7 +4790,14 @@ function renderPlaybook(){
   // no port numbers anywhere, so a moved service or a new IP only changes DNS. Otherwise the plain localhost ports.
   var SECURE_ORIGIN = typeof location !== "undefined" && location.protocol === "https:";
   var ESTATE_DOM = (typeof location !== "undefined" && location.hostname.indexOf("hub.") === 0) ? location.hostname.slice(4) : "securax.localhost";
-  function estateUrl(name, plain, path) { return SECURE_ORIGIN ? "https://" + name + "." + ESTATE_DOM + (path || "") : "http://localhost:" + plain + (path || ""); }
+  // Opened over Tailscale (https://<laptop>.<tailnet>.ts.net, doc 58)? The gateway rides the app's own address
+  // (/v1, /healthz) and Chat is on port 10000 of the same name.
+  var TS_ORIGIN = typeof location !== "undefined" && /\.ts\.net$/i.test(location.hostname);
+  function estateUrl(name, plain, path) {
+    if (TS_ORIGIN && name === "api") return location.origin + (path || "");
+    if (TS_ORIGIN && name === "chat") return "https://" + location.hostname + ":10000" + (path || "");
+    return SECURE_ORIGIN ? "https://" + name + "." + ESTATE_DOM + (path || "") : "http://localhost:" + plain + (path || "");
+  }
   function askGw() { return G("gm_ask_gw", estateUrl("api", 8080)); }
   // Only needed when the estate turned authentication on (./securax gateway-auth enable): a gateway key, kept on THIS device only.
   function askHdrs() { var k = G("gm_ask_key", ""); var h = { "Content-Type": "application/json" }; if (k) h.Authorization = "Bearer " + k; return h; }
