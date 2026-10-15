@@ -75,3 +75,16 @@ def test_a_missing_gateway_dependency_skips_the_app_checks_instead_of_failing(mo
     monkeypatch.setattr(ft, "run_py", lambda code, timeout=120: "MISSING-DEPENDENCY ModuleNotFoundError: No module named 'fastapi'")
     res = ft.check_gateway(5, 120)
     assert all(r["ok"] and "SKIPPED" in r["note"] for r in res)
+
+
+def test_claims_ledger_cannot_claim_without_proof():
+    import json as _j
+    ok = _j.loads((REPO / "governance" / "claims.json").read_text())
+    assert ft.claims_problems(ok) == []
+    bad = {"claims": [
+        {"id": "a", "claim": "x", "envelope": "", "evidence": ["journey:does_not_exist"]},
+        {"id": "b", "claim": "x", "envelope": "y", "evidence": ["test:apps/estate-sync/tests/test_sync_properties.py::no_such_test"]},
+        {"id": "c", "claim": "x", "envelope": "y", "evidence": []}], "not_claimed": []}
+    probs = " | ".join(ft.claims_problems(bad))
+    for want in ("a: no envelope", "journey 'does_not_exist' does not exist", "has no test no_such_test", "c: no evidence", "not_claimed is empty"):
+        assert want in probs, want

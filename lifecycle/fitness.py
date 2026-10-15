@@ -198,12 +198,47 @@ def check_impact_map() -> dict:
             "note": "every tracked file has an owner and every guarding journey exists" if not probs else "; ".join(probs[:3])}
 
 
+def claims_problems(doc: dict, root: pathlib.Path = ROOT) -> list[str]:
+    """Each claim needs an envelope and at least one proof that exists: a pytest function, a test script or a sandbox journey."""
+    probs, run_py = [], (root / "sandbox" / "run.py").read_text(encoding="utf-8")
+    for c in doc.get("claims", []):
+        cid = c.get("id", "?")
+        if not c.get("envelope", "").strip():
+            probs.append(f"{cid}: no envelope (under what conditions does it hold?)")
+        if not c.get("evidence"):
+            probs.append(f"{cid}: no evidence")
+        for ev in c.get("evidence", []):
+            kind, _, ref = ev.partition(":")
+            if kind == "journey":
+                if f'@journey("{ref}"' not in run_py:
+                    probs.append(f"{cid}: journey '{ref}' does not exist")
+            elif kind in ("test", "file"):
+                path, _, fn = ref.partition("::")
+                f = root / path
+                if not f.exists():
+                    probs.append(f"{cid}: {path} does not exist")
+                elif fn and not re.search(rf"^def {re.escape(fn)}\(", f.read_text(encoding="utf-8"), re.M):
+                    probs.append(f"{cid}: {path} has no test {fn}")
+            else:
+                probs.append(f"{cid}: unknown evidence kind '{kind}'")
+    if not doc.get("not_claimed"):
+        probs.append("not_claimed is empty: say what SecuRAX does NOT do")
+    return probs
+
+
+def check_claims() -> dict:
+    """Every product claim (governance/claims.json) is proven by a test or a real-stack journey and states its envelope."""
+    probs = claims_problems(json.loads((ROOT / "governance" / "claims.json").read_text(encoding="utf-8")))
+    return {"name": "claims-proven", "value": len(probs), "budget": 0, "unit": "problems", "ok": not probs,
+            "note": "every claim has an envelope and a proof that exists" if not probs else "; ".join(probs[:3])}
+
+
 def run_all(only_fast: bool = False) -> list[dict]:
     c, base = cfg()["budgets"], baseline()
     res = [check_rails_latency(c["rails_worst_case_ms"]), check_rails_memory(c["rails_import_rss_mb"]), check_runtime_deps(c["gateway_runtime_deps"])]
     if not only_fast:
         res += check_gateway(c["gateway_cold_start_s"], c["gateway_rss_mb"])
-    res += [check_supply_chain(base), check_commands_documented(base), check_ccsp_map(), check_regulatory_maps(), check_impact_map()]
+    res += [check_supply_chain(base), check_commands_documented(base), check_ccsp_map(), check_regulatory_maps(), check_impact_map(), check_claims()]
     return res
 
 
