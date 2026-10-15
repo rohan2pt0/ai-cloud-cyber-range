@@ -759,6 +759,9 @@
     return neg ? -n : n;
   }
 
+  // A "lakh" field typed in rupees (4,00,000 instead of 4) made runway read 274219.5 months on a real phone. Treat > 10,000 as rupees.
+  function lakhs(v) { var n = num(v); return n > 10000 ? n / 1e5 : n; }
+
   function lifeInputs() {
     var l = life();
     var F = [
@@ -953,9 +956,7 @@
       + '<div class="cat-t" style="margin-top:16px">\u{1F3F3} When it goes wrong</div>'
       + '<div class="info">It will. Illness, a crisis at work, a bad month. The system does not fail then \u2014 it fails in the week after, when you decide it is broken and stop opening it. '
       + 'Recovery mode exists for exactly that week: it pauses every ritual, keeps only the daily three, and lets nothing accumulate against you.</div>'
-      + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
-      + '<button class="btn-sm" style="background:var(--amber);color:#fff" onclick="gmRecoveryOn(7)">Pause the cadence \u00b7 7 days</button>'
-      + '<button class="btn-sm" style="background:var(--amber);color:#fff" onclick="gmRecoveryOn(14)">Pause \u00b7 14 days</button></div>';
+      + recoveryHTML();
   }
   window.gmCommitSet = function (k, v) { var c = G("gm_commit", {}); c[k] = v; S_("gm_commit", c); renderAll(); };
 
@@ -1253,7 +1254,7 @@
     STACK.forEach(function (L) { L.items.forEach(function (_, i) { tot++; if ((stackState()[L.id] || {})[i]) hit++; }); });
     var stackPct = tot ? Math.round(hit / tot * 100) : 0;
 
-    var fixed = num(l.fFixed), ef = num(l.ef) * 100000;
+    var fixed = num(l.fFixed), ef = lakhs(l.ef) * 100000;
     var runway = fixed ? ef / fixed : 0;
 
     var inc = num(l.minc), save = inc ? Math.round((num(l.fEF) + num(l.fSip)) / inc * 100) : 0;
@@ -1261,14 +1262,14 @@
     if (!save && !num(l.fEF) && !num(l.fSip) && window.P && !P.example && num(P.net) > 0 && num(P.exp) > 0)
       save = Math.round((num(P.net) - num(P.exp)) / num(P.net) * 100);
 
-    var age = num(l.age), ainc = num(l.inc), nw = num(l.nw);
+    var age = num(l.age), ainc = lakhs(l.inc), nw = lakhs(l.nw);
     var mult = age < 30 ? 0.5 : age < 35 ? 1 : age < 40 ? 2 : age < 45 ? 3 : age < 50 ? 4.5 : age < 55 ? 6 : age < 60 ? 8 : 10;
     var nwPct = (ainc && age) ? Math.round(nw / (mult * ainc) * 100) : 0;
 
     return [
       { l: "Today", v: d3 + "/3", c: d3 === 3 ? "var(--green)" : d3 ? "var(--amber)" : "var(--red)", t: "today" },
       { l: "Stack", v: stackPct + "%", c: stackPct >= 80 ? "var(--green)" : stackPct >= 40 ? "var(--amber)" : "var(--red)", t: "stack" },
-      { l: "Runway", v: runway ? runway.toFixed(1) + "m" : "\u2014", c: runway >= 6 ? "var(--green)" : runway >= 3 ? "var(--amber)" : "var(--red)", t: "life" },
+      { l: "Runway", v: runway ? (runway > 120 ? "120m+" : runway.toFixed(1) + "m") : "\u2014", c: runway >= 6 ? "var(--green)" : runway >= 3 ? "var(--amber)" : "var(--red)", t: "life" },
       { l: "Saving", v: save ? save + "%" : "\u2014", c: save >= 20 ? "var(--green)" : save >= 15 ? "var(--amber)" : "var(--red)", t: "life" },
       { l: "Net worth", v: nwPct ? nwPct + "%" : "\u2014", c: nwPct >= 100 ? "var(--green)" : nwPct >= 60 ? "var(--amber)" : "var(--red)", t: "life" }
     ];
@@ -1895,8 +1896,8 @@
     var an = G("gm_sync_anomaly", null);
     if (an) row(false, "A suspicious sync merge was refused",
       esc(an) + ". Local data won. If this repeats, check the estate sync record before trusting sync again.");
-    var u = G("gm_undo", null);
-    if (u) row(null, "One change can still be undone",
+    var u = undoFresh();
+    if (u) row(null, "Your last change can still be undone (for 30 minutes)",
       "\u201c" + esc(u.label) + "\u201d. Undo is a single slot \u2014 it holds only the most recent action, and taking another replaces it.",
       '<button class="btn-sm" style="background:var(--amber);color:#fff;margin-top:6px" onclick="gmUndo()">Undo that</button>');
 
@@ -1937,6 +1938,7 @@
   };
   window.gmUndo = function () {
     var u = G("gm_undo", null); if (!u) return;
+    if (Date.now() - u.at > 30 * 60 * 1000) { localStorage.removeItem("gm_undo"); renderAll(); return; }   // never roll back days of entries
     var redo = snapKeys();
     Object.keys(localStorage).slice().forEach(function () {});
     // wipe then restore, so keys created by the undone action disappear too
@@ -1952,12 +1954,13 @@
     renderAll();
   };
   function undoBar() {
-    var u = G("gm_undo", null); if (!u) return "";
+    var u = undoFresh(); if (!u) return "";
     var mins = Math.round((Date.now() - u.at) / 60000);
     return '<div style="background:var(--amberBg);border:1px solid var(--amber);border-radius:10px;padding:10px 12px;margin-bottom:10px;display:flex;gap:10px;align-items:center">'
-      + '<div style="flex:1;font-size:11.5px;color:var(--text);line-height:1.5">Last change: <b>' + esc(u.label) + '</b>'
-      + (mins < 1 ? " \u00b7 just now" : " \u00b7 " + mins + " min ago") + '</div>'
-      + '<button class="btn-sm" style="background:var(--amber);color:#fff;white-space:nowrap" onclick="gmUndo()">Undo</button></div>';
+      + '<div style="flex:1;font-size:11.5px;color:var(--text);line-height:1.5">You just <b>' + esc(u.label) + '</b>'
+      + (mins < 1 ? " (now)" : " (" + mins + " min ago)") + '. Undo puts everything back as it was before that.</div>'
+      + '<button class="btn-sm" style="background:var(--amber);color:#1a1200;font-weight:800;white-space:nowrap" onclick="gmUndo()">Undo</button>'
+      + '<button class="btn-sm" aria-label="dismiss" style="background:transparent;color:var(--muted);font-size:16px;padding:4px 8px" onclick="gmUndoDismiss()">\u00d7</button></div>';
   }
 
 
@@ -2814,44 +2817,37 @@
 
   /* ── 9. The Ops tab ─────────────────────────────────────────────── */
   function opsHTML() {
-    var due = dueRituals().length, broken = brokenHabits().length;
+    var due = dueRituals(), broken = brokenHabits().length;
     var h = '<div class="section active">';
-    h += '<div class="cat-t">\u2699 Ops \u2014 the machine that runs the map</div>';
-    h += '<div class="info">' + (due ? due + " ritual(s) due. " : "No rituals due today. ")
-      + (broken ? broken + " habit(s) need a recovery rep." : "No habits in recovery.") + '</div>';
-
-    h += '<div class="cat-t" style="margin-top:14px">\u{1F4C5} Full cadence</div>';
+    h += '<div class="cat-t">\u2699 Ops</div>';
+    h += '<div class="info">' + (due.length ? due.length + " ritual(s) due now (they also show on Today). " : "Nothing due today. ")
+      + (broken ? broken + " habit(s) need a recovery rep." : "") + '</div>';
+    h += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px"><button class="btn-sm" style="background:var(--gold);color:#0d1f35;font-weight:800" onclick="gmQuarter()">Quarterly check-in</button>'
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmCalendar()">Add the rhythm to my calendar</button></div>';
+    var cad = "";
     RITUALS.forEach(function (r) {
       var log = cadenceLog(), done = log[r.id] === r.key(new Date());
-      h += '<details class="road-col" style="margin-bottom:8px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">'
+      cad += '<details class="road-col" style="margin-bottom:8px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">'
         + esc(r.name) + ' <span style="font-weight:500;color:var(--muted)">\u00b7 ' + esc(r.tag) + ' \u00b7 ' + r.mins + ' min'
         + (done ? ' \u00b7 \u2713 done this cycle' : '') + '</span></summary><div style="font-size:12px;line-height:1.8;margin-top:8px">';
-      r.steps.forEach(function (s) { h += '<span style="color:var(--green)">\u25b8</span> ' + esc(s) + "<br>"; });
-      h += '</div></details>';
+      r.steps.forEach(function (s) { cad += '<span style="color:var(--green)">\u25b8</span> ' + esc(s) + "<br>"; });
+      if (r.id === "aar") cad += aarHTML();
+      cad += '</div></details>';
     });
-
-    h += undoBar();
+    h += foldHTML("\u{1F4C5} The rhythm", RITUALS.length + " rituals, each shows on Today only when due", cad, false);
     h += '<div style="margin-top:16px">' + healthHTML() + '</div>';
-    h += '<div style="margin-top:16px">' + rulesHTML() + '</div>';
-    h += '<div style="margin-top:16px">' + woopHTML() + '</div>';
-    h += '<div style="margin-top:16px">' + anchorHTML() + '</div>';
-    h += '<div style="margin-top:16px">' + csfHTML() + '</div>';
-    h += '<div style="margin-top:16px">' + aarHTML() + '</div>';
-    h += '<div style="margin-top:16px">' + derivedHTML() + '</div>';
-    h += '<div style="margin-top:16px">' + msHTML() + '</div>';
-    h += '<div style="margin-top:16px">' + pushHTML() + '</div>';
-    h += '<div style="margin-top:16px">' + rapidHTML() + '</div>';
-    h += '<div style="margin-top:16px">' + toolkitHTML() + '</div>';
-    h += '<div style="margin-top:16px">' + glossHTML() + '</div>';
-    h += '<div style="margin-top:16px">' + kitHTML() + '</div>';
-    h += '<div style="margin-top:16px">' + frictionHTML() + '</div>';
-    h += '<div style="margin-top:16px">' + commitHTML() + '</div>';
-    h += '<div style="margin-top:16px">' + doneHTML() + '</div>';
-    h += '<div style="margin-top:16px">' + syncHTML() + '</div>';
-
+    h += foldHTML("\u{1F3F3} When it goes wrong", inRecovery() ? "recovery mode is ON" : "pause rituals for a bad week", recoveryHTML(), !!inRecovery());
+    h += foldHTML("\u{1F517} Connections", "sync, Microsoft 365, phone reminders \u00b7 all optional",
+      '<div class="info">None of these is needed to use the app. Sync copies your data to your own estate; Microsoft 365 shows today\u2019s calendar on Today; reminders nudge your phone when something is due.</div>'
+      + syncHTML() + '<div style="margin-top:12px">' + msHTML() + '</div><div style="margin-top:12px">' + pushHTML() + '</div>', false);
+    h += foldHTML("\u{1F9F0} Advanced tools", "optional; nothing here is needed day to day",
+      rulesHTML() + '<div style="margin-top:14px">' + woopHTML() + '</div><div style="margin-top:14px">' + anchorHTML() + '</div><div style="margin-top:14px">' + csfHTML() + '</div>'
+      + '<div style="margin-top:14px">' + derivedHTML() + '</div><div style="margin-top:14px">' + rapidHTML() + '</div><div style="margin-top:14px">' + toolkitHTML() + '</div>'
+      + '<div style="margin-top:14px">' + kitHTML() + '</div><div style="margin-top:14px">' + frictionHTML() + '</div><div style="margin-top:14px">' + commitHTML() + '</div>'
+      + '<div style="margin-top:14px">' + doneHTML() + '</div>', false);
+    h += foldHTML("\u{1F4D6} Glossary", "every term in this app", glossHTML(), false);
     h += '<div class="cat-t" style="margin-top:16px">\u{1F4F1} This device</div>'
-      + '<div class="info">Installed as an app, this opens offline in one tap and keeps its own copy of your data. '
-      + 'The phone is the system of record for daily check-ins; the laptop is for the monthly and quarterly work.</div>'
+      + '<div class="info">Installed as an app, this opens offline in one tap and keeps its own copy of your data.</div>'
       + '<button class="btn btn-p" onclick="gmInstall()">Add to home screen</button>';
     h += '</div>';
     return h;
@@ -3018,10 +3014,12 @@
   var _calmOpen = null;
   window.gmCalmOpen = function (id) { _calmOpen = _calmOpen === id ? null : id; renderAll(); };
   function dueNowHTML() {
-    var due = dueRituals(), broken = brokenHabits();
-    if (!due.length && !broken.length) return "";
+    var due = dueRituals(), broken = brokenHabits(), qd = quarterDue();
+    if (!due.length && !broken.length && !qd) return "";
     var h = '<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:14px">'
       + '<div style="font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:6px">Due now</div>';
+    if (qd) h += '<div style="display:flex;align-items:center;gap:8px;margin:7px 0"><div style="flex:1;font-size:12.5px;color:var(--text)">\u23f1 <b>Quarterly check-in</b> <span style="color:var(--muted)">\u00b7 5 min, all taps</span></div>'
+      + '<button class="btn-sm" style="background:var(--gold);color:#0d1f35" onclick="gmQuarter()">Start</button></div>';
     broken.forEach(function (b) {
       h += '<div style="font-size:12.5px;color:var(--red);margin:6px 0">⚠ <b>' + esc(b.name) + '</b> missed twice — today the 2-minute floor is the whole job</div>';
     });
@@ -3033,6 +3031,7 @@
       if (open) {
         h += '<div style="font-size:12px;line-height:1.7;margin:0 0 8px 4px;color:var(--text)">' + (r.id === "sunday" ? scqaHTML() : "");
         r.steps.forEach(function (s) { h += '<span style="color:var(--green)">▸</span> ' + esc(s) + "<br>"; });
+        if (r.id === "aar") h += aarHTML();
         h += '</div>';
       }
     });
@@ -3128,6 +3127,250 @@
     if (on) { var bk = document.getElementById("gmCalmBack"); if (bk) bk.remove(); }
   }
 
+  /* ═══════════════════════════════════════════════════════════════
+     v16 — FREEZE-READY: the quarterly system you will actually run
+     From the user's own screenshots: OKR sliders and the 8-slider wheel
+     were "too complicated to do manually"; the After-Action Review never
+     happened because nothing ever said "now"; Undo kept a 10-day-old
+     snapshot (tapping it would have wiped ten days); Ops was a wall of
+     tools; the "integrations" promised auto-fill but were paste boxes.
+     ═══════════════════════════════════════════════════════════════ */
+
+  /* -- 1. Quarterly check-in: grade last quarter (one tap per result) -> wheel (8 taps) -> pick up to 3 goals (taps) -- */
+  var QSUG = {
+    career: { o: "Make my next career move visible", krs: ["One certification exam booked or passed (./securax certs next)", "Three conversations with people already in the role I want"] },
+    money: { o: "Make my money unshakeable", krs: ["Emergency fund up by one month of expenses", "Salary-day auto-transfer ran in all three months"] },
+    health: { o: "Feel fit and rested again", krs: ["Move habit on 60 of 90 days", "Annual health check-up done and results read"] },
+    family: { o: "Be present at home", krs: ["Family-presence habit on 60 of 90 days", "One planned family outing every month (3)"] },
+    love: { o: "Invest in us", krs: ["Fortnightly couple check-in held 6 times", "One full day together, phones away"] },
+    growth: { o: "Learn one hard thing properly", krs: ["Read 3 books to the end", "Finish one course or module end to end"] },
+    fun: { o: "Make room for joy", krs: ["One hobby session every week (12)", "One weekend fully offline"] },
+    env: { o: "Fix my surroundings", krs: ["Declutter one room completely", "Close the 3 home repairs I keep postponing"] }
+  };
+  var GRADES = [[0, "Not started"], [0.25, "A little"], [0.5, "Half"], [0.75, "Most of it"], [1, "Done"]];
+  function qKeyNow() { var d = new Date(); return d.getFullYear() + "-Q" + (Math.floor(d.getMonth() / 3) + 1); }
+  function quarterDone() { return !!G("gm_quarter_done", {})[qKeyNow()]; }
+  function quarterDue() { return !quarterDone() && (new Date().getMonth() % 3 === 0 || !(S.okrs || []).length || !S.wheel); }
+  function wheelSuggestions() {
+    var dims = (typeof WHEEL_DIMS !== "undefined") ? WHEEL_DIMS : [];
+    var ranked = dims.map(function (w, i) { return { k: w[0], label: w[1], v: wheelVal(i) }; }).sort(function (a, b) { return a.v - b.v; });
+    var out = [];
+    ranked.slice(0, 3).forEach(function (r) { if (QSUG[r.k]) out.push({ k: r.k, why: r.label + " is " + r.v + "/10", o: QSUG[r.k].o, krs: QSUG[r.k].krs }); });
+    if (!out.some(function (x) { return x.k === "money"; })) {
+      var l = life(), fixed = num(l.fFixed), ef = lakhs(l.ef) * 1e5;
+      if (fixed && ef / fixed < 6) out.push({ k: "money", why: "emergency fund is " + (ef / fixed).toFixed(1) + " months", o: QSUG.money.o, krs: QSUG.money.krs });
+    }
+    (S.okrs || []).forEach(function (o) {
+      if (okrAvg(o) < 0.7 && !out.some(function (x) { return x.o === o.o; })) out.push({ k: "keep", why: "unfinished last quarter", o: o.o, krs: o.krs.map(function (k) { return k.t; }) });
+    });
+    return out.slice(0, 5);
+  }
+  function okrAvg(o) { return o.krs.length ? o.krs.reduce(function (s, k) { return s + (+k.v || 0); }, 0) / o.krs.length : 0; }
+  function qDlg(step, total, title, body, extra) {
+    gmDlg('<div style="font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:800">Quarterly check-in \u00b7 step ' + step + ' of ' + total + '</div>'
+      + '<div style="font-weight:800;font-size:15.5px;margin:6px 0 10px;line-height:1.45">' + title + '</div>' + body
+      + '<div style="display:flex;gap:8px;margin-top:12px">' + (extra || "") + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--muted);padding:9px 12px" onclick="gmClose()">Stop (progress is saved)</button></div>');
+  }
+  window.gmQuarter = function (opts) {
+    opts = opts || {};
+    var krs = [];
+    (S.okrs || []).forEach(function (o, oi) { o.krs.forEach(function (k, ki) { krs.push([oi, ki]); }); });
+    var dims = (typeof WHEEL_DIMS !== "undefined") ? WHEEL_DIMS : [];
+    var total = opts.gradeOnly ? 1 : 3, gi = 0, wi = 0, picks = [];
+    function grade() {
+      if (gi >= krs.length) { if (opts.gradeOnly) { gmClose(); gmSnap("updated goal progress"); renderAll(); gmToast("Progress saved."); return; } return wheel(); }
+      var o = S.okrs[krs[gi][0]], k = o.krs[krs[gi][1]];
+      var b = '<div style="font-size:12px;color:var(--muted);margin-bottom:8px">Goal: ' + esc(o.o) + '</div><div style="display:flex;flex-direction:column;gap:7px">';
+      GRADES.forEach(function (g) { b += '<button class="gm-tap' + (+k.v === g[0] ? " on" : "") + '" style="justify-content:flex-start;padding:0 14px" data-v="' + g[0] + '">' + g[1] + '</button>'; });
+      qDlg(1, total, esc(k.t) + ' <span style="font-weight:500;color:var(--muted)">(' + (gi + 1) + '/' + krs.length + ')</span>', b + '</div>');
+      [].forEach.call(document.querySelectorAll("#gmOverlay [data-v]"), function (el) {
+        el.addEventListener("click", function () { k.v = +el.getAttribute("data-v"); store("sovS", S); gi++; grade(); });
+      });
+    }
+    function wheel() {
+      if (wi >= dims.length) return choose();
+      var cur = (S.wheel && S.wheel[dims[wi][0]]) || 0;
+      var b = '<div style="font-size:12px;color:var(--muted);margin-bottom:8px">How satisfied are you right now? 1 = very unhappy, 10 = could not be better.' + (cur ? " Last time: " + cur + "." : "") + '</div><div style="display:grid;grid-template-columns:repeat(5,1fr);gap:7px">';
+      for (var v = 1; v <= 10; v++) b += '<button class="gm-tap' + (cur === v ? " on" : "") + '" data-v="' + v + '">' + v + '</button>';
+      qDlg(2, total, dims[wi][1] + ' <span style="font-weight:500;color:var(--muted)">(' + (wi + 1) + '/' + dims.length + ')</span>', b + '</div>');
+      [].forEach.call(document.querySelectorAll("#gmOverlay [data-v]"), function (el) {
+        el.addEventListener("click", function () { whl(wi, +el.getAttribute("data-v")); wi++; wheel(); });
+      });
+    }
+    function choose() {
+      var sug = wheelSuggestions();
+      var b = '<div style="font-size:12px;color:var(--muted);margin-bottom:8px">Picked from your lowest scores. Tap up to 3; each comes with two measurable results.</div><div style="display:flex;flex-direction:column;gap:8px">';
+      sug.forEach(function (x, i) {
+        b += '<button class="gm-tap" style="justify-content:flex-start;text-align:left;padding:9px 12px;line-height:1.4;flex-direction:column;align-items:flex-start" data-i="' + i + '"><span>' + esc(x.o) + '</span>'
+          + '<span style="font-weight:500;font-size:11px;opacity:.8">' + esc(x.why) + ' \u00b7 ' + esc(x.krs.join(" \u00b7 ")) + '</span></button>';
+      });
+      qDlg(3, total, "Your goals for this quarter", b + '</div>', '<button class="btn-sm" id="gmQfin" style="flex:1;background:var(--gold);color:#0d1f35;font-weight:800;padding:10px">Save my quarter</button>');
+      [].forEach.call(document.querySelectorAll("#gmOverlay [data-i]"), function (el) {
+        el.addEventListener("click", function () {
+          var i = +el.getAttribute("data-i"), at = picks.indexOf(i);
+          if (at >= 0) picks.splice(at, 1); else if (picks.length < 3) picks.push(i); else { gmToast("Three is the limit: fewer, deeper."); return; }
+          el.classList.toggle("on", picks.indexOf(i) >= 0);
+        });
+      });
+      document.getElementById("gmQfin").addEventListener("click", function () {
+        gmSnap("finished the quarterly check-in");
+        var hist = G("gm_okr_hist", []);
+        if ((S.okrs || []).length) hist.push({ q: G("gm_okr_q", "") || "before " + qKeyNow(), okrs: JSON.parse(JSON.stringify(S.okrs)), avg: Math.round(S.okrs.reduce(function (s, o) { return s + okrAvg(o); }, 0) / S.okrs.length * 100) / 100 });
+        while (hist.length > 12) hist.shift();
+        S_("gm_okr_hist", hist);
+        if (picks.length) { S.okrs = picks.map(function (i) { var x = sug[i]; return { o: x.o, krs: x.krs.map(function (t) { return { t: t, v: 0 }; }) }; }); }
+        store("sovS", S); S_("gm_okr_q", qKeyNow());
+        var done = G("gm_quarter_done", {}); done[qKeyNow()] = ymd(); S_("gm_quarter_done", done);
+        gmClose(); renderAll();
+        gmDlg('<div style="font-weight:800;font-size:15px;margin-bottom:8px">Quarter saved</div><div style="font-size:12.5px;line-height:1.6;color:var(--text)">'
+          + (picks.length ? picks.length + " goal(s) set. Update progress once a month with one tap per result (Today \u2192 Due now, or the OKRs tab)." : "Wheel saved; your goals stay as they were.")
+          + '<br><br>Make it a system: put the whole rhythm in your calendar once (quarterly, monthly, weekly).</div>'
+          + '<div style="display:flex;gap:8px;margin-top:12px"><button class="btn-sm" style="flex:1;background:var(--gold);color:#0d1f35;font-weight:800;padding:10px" onclick="gmCalendar();gmClose()">Add to my calendar</button>'
+          + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--muted);padding:10px" onclick="gmClose()">Close</button></div>');
+      });
+    }
+    if (krs.length && !G("gm_quarter_done", {})[qKeyNow()]) grade(); else if (opts.gradeOnly) { if (krs.length) grade(); else gmToast("No goals yet: start the quarterly check-in."); } else wheel();
+  };
+  function quarterCardHTML(tab) {
+    var due = quarterDue(), n = (S.okrs || []).length;
+    return '<div style="background:var(--card);border:2px solid var(--gold);border-radius:14px;padding:13px;margin:12px 13px 0">'
+      + '<div style="font-weight:800;font-size:13.5px;color:var(--text)">' + (due ? "\u23f1 Quarterly check-in is due" : "\u2713 Quarterly check-in done for " + qKeyNow()) + '</div>'
+      + '<div style="font-size:12px;color:var(--muted);line-height:1.55;margin:5px 0 9px">About 5 minutes, all taps: grade last quarter, rate the 8 areas of life, pick up to 3 goals from your lowest scores.</div>'
+      + '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-sm" style="background:var(--gold);color:#0d1f35;font-weight:800" onclick="gmQuarter()">' + (due ? "Start" : "Redo") + '</button>'
+      + (n && tab === "okr" ? '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmQuarter({gradeOnly:true})">Update progress (taps)</button>' : '')
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmCalendar()">Add rhythm to calendar</button></div></div>';
+  }
+
+  /* -- 2. The rhythm in your calendar: one .ics, recurring, with what to do written in each event -- */
+  function nextOn(month0s, nth, dow, hh) {           // first future date that is the nth <dow> of one of month0s (null = every month)
+    var d = new Date(); d.setHours(0, 0, 0, 0);
+    for (var add = 0; add < 400; add++) {
+      var t = new Date(d); t.setDate(d.getDate() + add);
+      if (t.getDay() !== dow) continue;
+      if (month0s && month0s.indexOf(t.getMonth()) < 0) continue;
+      if (nth && Math.ceil(t.getDate() / 7) !== nth) continue;
+      if (add === 0 && new Date().getHours() >= hh) continue;
+      return t;
+    }
+    return d;
+  }
+  function icsDate(d, hh, mm) { function z(n) { return (n < 10 ? "0" : "") + n; } return d.getFullYear() + z(d.getMonth() + 1) + z(d.getDate()) + "T" + z(hh) + z(mm) + "00"; }
+  function icsText(t) { return String(t).replace(/\\/g, "\\\\").replace(/;/g, "\;").replace(/,/g, "\\,").replace(/\n/g, "\\n"); }
+  function icsFold(line) { var out = [], s = line; while (s.length > 74) { out.push(s.slice(0, 74)); s = " " + s.slice(74); } out.push(s); return out.join("\r\n"); }
+  function rhythmEvents() {
+    var url = location.origin && /^https?:/.test(location.protocol) ? location.origin + "/" : "";
+    return [
+      { id: "quarter", name: "Quarterly check-in (Guiding Map)", rule: "FREQ=YEARLY;BYMONTH=1,4,7,10;BYDAY=1SA", start: nextOn([0, 3, 6, 9], 1, 6, 10), hh: 10, mins: 60,
+        desc: "Open the Guiding Map > Today > Due now > Quarterly check-in: grade last quarter, rate 8 areas (taps), pick up to 3 goals. Then the Quarterly Review and Red-Team checklists (Due now > Open)." },
+      { id: "monthly", name: "Monthly review: money + After-Action Review", rule: "FREQ=MONTHLY;BYDAY=1SU", start: nextOn(null, 1, 0, 10), hh: 10, mins: 45,
+        desc: "Money Date numbers, then the four questions: what did I plan, what happened, why, what will I change. Update goal progress (one tap per result)." },
+      { id: "weekly", name: "Sunday Pulse (20 min)", rule: "FREQ=WEEKLY;BYDAY=SU", start: nextOn(null, 0, 0, 19), hh: 19, mins: 20,
+        desc: "Open Today: read 'This week, worked out for you' and tap 'Review my week with my estate AI'. Pick the one change for next week." },
+      { id: "tax", name: "April tax lock-in", rule: "FREQ=YEARLY;BYMONTH=4;BYDAY=1SA", start: nextOn([3], 1, 6, 11), hh: 11, mins: 90,
+        desc: "Choose the tax regime for the year, plan the year's tax-saving investments, collect Form 16 / AIS. (Guiding Map > Ops > cadence.)" },
+      { id: "annual", name: "Annual overhaul", rule: "FREQ=YEARLY;BYMONTH=8;BYDAY=1SA", start: nextOn([7], 1, 6, 10), hh: 10, mins: 240,
+        desc: "Insurance re-quote, will and nominations, property checks, the hit-by-a-bus test with your partner. (Guiding Map > Ops > cadence.)" }
+    ].map(function (e) { e.url = url; return e; });
+  }
+  window.gmCalendarICS = function () {
+    var now = new Date(), stamp = icsDate(now, now.getHours(), now.getMinutes());
+    var L = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//SecuRAX//Guiding Map rhythm//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "X-WR-CALNAME:Life OS rhythm"];
+    rhythmEvents().forEach(function (e) {
+      var end = new Date(e.start); end.setHours(e.hh, e.mins, 0, 0);
+      L.push("BEGIN:VEVENT", "UID:securax-gm-" + e.id + "@local", "DTSTAMP:" + stamp,
+        "DTSTART:" + icsDate(e.start, e.hh, 0), "DTEND:" + icsDate(end, end.getHours(), end.getMinutes()), "RRULE:" + e.rule,
+        icsFold("SUMMARY:" + icsText(e.name)), icsFold("DESCRIPTION:" + icsText(e.desc + (e.url ? "\nOpen: " + e.url : ""))),
+        "BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:" + icsText(e.name), "TRIGGER:-PT30M", "END:VALARM", "END:VEVENT");
+    });
+    L.push("END:VCALENDAR");
+    return L.join("\r\n") + "\r\n";
+  };
+  window.gmCalendar = function () {
+    var ics = gmCalendarICS();
+    try {
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([ics], { type: "text/calendar" }));
+      a.download = "life-os-rhythm.ics"; document.body.appendChild(a); a.click(); a.remove();
+    } catch (e) {}
+    S_("gm_cal_exported", ymd());
+    gmToast("Calendar file saved. Open it to add 5 repeating events (quarterly, monthly, weekly, April, August). Already added them by hand? Skip this.");
+  };
+
+  /* -- 3. The After-Action Review now has a moment: the last week of every month, in Due now and in the calendar -- */
+  if (typeof RITUALS !== "undefined" && !RITUALS.some(function (r) { return r.id === "aar"; })) {
+    RITUALS.push({ id: "aar", name: "Monthly After-Action Review", mins: 15, tag: "Monthly \u00b7 last week",
+      window: function (d) { return d.getDate() >= 24; },
+      key: function (d) { return "aar-" + d.getFullYear() + "-" + (d.getMonth() + 1); },
+      steps: ["What did I plan this month?", "What actually happened?", "Why the difference? (one cause, not a list)", "What will I do differently next month? (one change)"] });
+  }
+
+  /* -- 4. Undo you can trust: it only offers the last 30 minutes, says what it does, and can be dismissed -- */
+  var UNDO_MS = 30 * 60 * 1000;
+  window.gmUndoDismiss = function () { localStorage.removeItem("gm_undo"); renderAll(); };
+  function undoFresh() { var u = G("gm_undo", null); return u && Date.now() - u.at < UNDO_MS ? u : null; }
+
+  /* -- 5. Recovery mode: asks before pausing; when on, says until when and ends with one tap -- */
+  window.gmRecoveryAsk = function (days) {
+    gmConfirm("Pause every ritual for " + days + " days? Only the daily three stay; nothing piles up against you. You can end it early at any time.", function (y) { if (y) gmRecoveryOn(days); });
+  };
+  function recoveryHTML() {
+    var r = inRecovery();
+    if (r) return '<div class="info" style="border:1.5px solid var(--amber)">Recovery mode is <b>on</b> until ' + esc(r.until.slice(0, 10)) + '. <button class="btn-sm" style="background:var(--gold);color:#0d1f35;margin-left:6px" onclick="gmRecoveryOff()">End it now</button></div>';
+    return '<div class="info">A bad week (illness, a crisis at work)? Pause the rituals instead of abandoning the app. Only the daily three stay.</div>'
+      + '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmRecoveryAsk(7)">Pause 7 days\u2026</button>'
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmRecoveryAsk(14)">Pause 14 days\u2026</button></div>';
+  }
+
+  /* -- 6. Kids: add a child right here (name + date of birth); the plan appears at once -- */
+  window.gmKidAdd = function () {
+    var n = (document.getElementById("gmKidN") || {}).value, d = (document.getElementById("gmKidD") || {}).value;
+    if (!n || !d) { gmToast("Name and date of birth, please."); return; }
+    gmSnap("added a child"); P.kids = P.kids || []; P.kids.push({ name: n.trim().slice(0, 40), dob: d }); store("sovP", P); renderAll();
+  };
+  function kidAddHTML(first) {
+    return '<div class="road-col" style="margin-bottom:12px"><div style="font-weight:800;font-size:13px;margin-bottom:6px">' + (first ? "Add your child" : "Add another child") + '</div>'
+      + '<div class="f-row"><div><label class="f-label">First name</label><input id="gmKidN" type="text"></div><div><label class="f-label">Date of birth</label><input id="gmKidD" type="date"></div></div>'
+      + '<button class="btn-sm" style="background:var(--gold);color:#0d1f35;font-weight:800;margin-top:8px" onclick="gmKidAdd()">Add</button>'
+      + '<div style="font-size:11px;color:var(--muted);margin-top:6px">The stage plan, health-calendar items and the education-fund schedule appear automatically. Stays on this device.</div></div>';
+  }
+
+  /* -- 6b. Each child gets THIS quarter's three actions (tick them) and the monthly SIP that funds their education -- */
+  var KID_ACTIONS = [
+    [2, ["Vaccinations up to date on the IAP schedule (check the card)", "15 minutes a day of talking, reading or singing together", "Growth and development check with the paediatrician"]],
+    [5, ["Read together at least 5 nights a week", "One outdoor physical activity every day", "Dental check (every 6 months)"]],
+    [12, ["One sport and one skill both running (confirm the classes)", "Pocket money in three jars: spend, save, give", "Eye and dental check"]],
+    [17, ["One career-exposure day (shadow someone, visit a workplace)", "Show them the family budget once and answer every question", "Annual health check, including how they are really doing"]],
+    [99, ["Plan how the education fund will be drawn down", "Teach them to run this dashboard for themselves", "Agree how you will support them for the next two years"]]
+  ];
+  window.gmKidTick = function (key) { var d = G("gm_kid_done", {}); if (d[key]) delete d[key]; else d[key] = ymd(); S_("gm_kid_done", d); renderAll(); };
+  function kidFund(ka) {
+    if (ka >= 18) return "";
+    var cost = num(life().edu) ? lakhs(life().edu) : 25, yrs = 18 - ka, need = cost * Math.pow(1.10, yrs);
+    var n = yrs * 12, r = 0.12 / 12, sip = need * 1e5 / ((Math.pow(1 + r, n) - 1) / r);
+    return '<div style="font-size:12px;color:var(--text);margin-top:8px;line-height:1.55">\u{1F393} Education fund: about <b>' + money(Math.round(sip / 100) * 100) + ' a month</b> from now reaches about ' + money(need * 1e5) + ' at 18.</div>'
+      + '<div style="font-size:10.5px;color:var(--muted)">Assumes today’s cost of ' + money(cost * 1e5) + ' (edit "Degree you are planning for" in Life Map), 10% a year education inflation and 12% a year from equity funds. A plan, not a promise.</div>';
+  }
+  window.kidStage = function (k) {
+    var ka = age(k.dob), list = null;
+    KID_ACTIONS.forEach(function (x) { if (!list && ka <= x[0]) list = x[1]; });
+    var stages = [[2, "0-2: The 1000-day window"], [5, "3-5: Play-based learning"], [12, "6-12: Skills and character"], [17, "13-17: Direction years"], [99, "18+: Launch"]];
+    var st = ""; stages.forEach(function (x) { if (!st && ka <= x[0]) st = x[1]; });
+    var done = G("gm_kid_done", {}), q = qKeyNow(), h = '<div class="kid-stage"><div class="ks-t">' + esc(k.name) + ' — age ' + ka + '</div><div class="ks-s">' + st + '</div>'
+      + '<div style="font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:800;margin:9px 0 5px">This quarter (' + q + ')</div>';
+    list.forEach(function (t, i) {
+      var key = k.name + "|" + q + "|" + i, on = !!done[key];
+      h += '<div role="button" tabindex="0" onclick="gmKidTick(decodeURIComponent(\'' + encodeURIComponent(key).replace(/'/g, "%27") + '\'))" style="display:flex;gap:9px;align-items:flex-start;cursor:pointer;margin:6px 0;font-size:12.5px;color:var(--text);line-height:1.5">'
+        + '<span class="gm-tap' + (on ? " on" : "") + '" style="min-width:26px;min-height:26px;border-radius:8px;font-size:12px">' + (on ? "✓" : "") + '</span><span' + (on ? ' style="text-decoration:line-through;opacity:.7"' : '') + '>' + esc(t) + '</span></div>';
+    });
+    return h + kidFund(ka) + '</div>';
+  };
+
+  /* -- 7. Ops in three parts: what is due (and the calendar), your connections, then advanced tools folded away -- */
+  function foldHTML(title, sub, inner, open) {
+    return '<details class="road-col" style="margin-top:12px"' + (open ? " open" : "") + '><summary style="cursor:pointer;font-weight:800;font-size:13px">' + title
+      + (sub ? ' <span style="font-weight:500;color:var(--muted);font-size:11.5px">\u00b7 ' + sub + '</span>' : '') + '</summary><div style="margin-top:10px">' + inner + '</div></details>';
+  }
+
   /* ── 10. Wire into the existing render loop ─────────────────────── */
   if (typeof TABS !== "undefined") {
     var keep = TABS.filter(function (t) { return ["today", "map"].indexOf(t[0]) < 0; });
@@ -3163,6 +3406,11 @@
     else if (curTab === "life") { box.innerHTML = lifeMapHTML(); }
     else if (curTab === "prop") { box.innerHTML = propHTML(); }
     else if (curTab === "today" && calmOn()) { box.innerHTML = calmTodayHTML(); }
+    else if (curTab === "okr" || curTab === "wheel") { box.insertAdjacentHTML("afterbegin", quarterCardHTML(curTab)); }
+    else if (curTab === "kids" && window.P) {
+      var sec = box.querySelector(".section");
+      if (sec) { var inf = sec.querySelector(".info"); if (!P.kids.length && inf) inf.outerHTML = kidAddHTML(true); else if (P.kids.length) sec.insertAdjacentHTML("beforeend", kidAddHTML(false)); }
+    }
     else if (curTab === "today") {
       box.insertAdjacentHTML("afterbegin", exampleWarn() + undoBar() + daily3HTML() + msTodayHTML()
         + (inRecovery() ? "" : driftHTML() + resHTML()) + oneActionHTML() + (inRecovery() ? "" : pinnedHTML()));

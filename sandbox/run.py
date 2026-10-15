@@ -950,6 +950,18 @@ def j_autobench(sb: H.Sandbox, c: Checks):
     c.ok(rc == 1 and "--yes" in out, "a large (possibly paid) run is refused until you say --yes", tail(out, 200))
 
 
+@journey("guiding_map_full_use", "The Guiding Map used as a person would, in a real browser, with realistic data: setup, 30 days of check-ins, the quarterly check-in, calendar file, a child, integrations, an old Undo, pausing; then every tab in dark and light mode with no page error and no text below WCAG AA contrast.")
+def j_gm_full_use(sb: H.Sandbox, c: Checks):
+    out = sb.clone.parent / "gm-ui-audit"
+    shutil.rmtree(out, ignore_errors=True)
+    rc, log = H.sh(["python3", "guiding-map/tests/ui_audit.py", str(out)], cwd=sb.clone, timeout=900)
+    summ = json.loads((out / "summary.json").read_text()) if (out / "summary.json").exists() else {}
+    c.ok(summ.get("checks", 0) >= 12 and not summ.get("failed"), "every user-level check passes (setup, quarterly check-in, calendar, kids, integrations, undo, pausing)", summ.get("failed") or tail(log, 400))
+    c.ok(summ and not summ.get("page_errors"), "no page error on any tab, in either theme", summ.get("page_errors"))
+    c.ok(summ and summ.get("contrast_failures") == 0, "no visible text below WCAG AA contrast on any tab, dark or light", f"{summ.get('contrast_failures')} failure(s); see {out}/contrast.json")
+    c.ok(rc == 0, "the audit exits 0", tail(log, 300))
+
+
 def _lc(sb: H.Sandbox, *args: str, extra_env: dict | None = None, timeout: int = 900) -> tuple[int, str]:
     """Run the lifecycle CLI (`./securax stages|grow|…`) with a private ~/.securax so the sandbox never touches the real one."""
     home = sb.clone.parent / "sxhome"
