@@ -184,7 +184,8 @@ def check_key(catalog: dict, provider_id: str, key: str) -> str:
         winners = [pid for n, pid in matches if n == best]
         if provider_id in winners:
             return "ok"
-        if len(winners) == 1 and winners[0] != provider_id:
+        # Providers that read the SAME key variable (openrouter + openrouter_pro) are one key, not an ambiguity.
+        if len({(by_id[w].get("env") or [w])[0] for w in winners}) == 1:
             return f"other:{winners[0]}:{by_id[winners[0]]['label']}"
     if want and not key.startswith(want):
         return f"prefix:{want}"

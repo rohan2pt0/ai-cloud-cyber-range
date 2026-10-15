@@ -369,6 +369,7 @@
       "label": "OpenRouter, a strong open model, PAID per use (the Twin's brain)",
       "kind": "llm",
       "alias": "openrouter-pro",
+      "key_prefix": "sk-or-",
       "model": "openrouter/z-ai/glm-5.2",
       "env": [
         "OPENROUTER_API_KEY",
@@ -427,6 +428,7 @@
       "kind": "llm",
       "free": true,
       "alias": "groq-qwen",
+      "key_prefix": "gsk_",
       "model": "groq/qwen/qwen3.8-27b",
       "env": [
         "GROQ_API_KEY"
