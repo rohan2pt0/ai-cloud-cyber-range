@@ -9,6 +9,8 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Changed
+- **Ask panel (Guiding Map)**: advisor chips are styled and show which one is selected; switching advisor no longer wipes a half-typed question; answers render as readable Markdown (bold, lists, headings, code), HTML-escaped first so model output cannot inject markup, with "Answered as: <advisor>" above the answer (test21; PWA cache v14.9.0).
+- **Cockpit, oldest running software**: names the image. The age is the vendor's build date of the pinned version, so `update` cannot lower it until a release raises that pin; stop an unused organ instead (n8n 1.74.1 today: `./securax stop flows`).
 - Image pins refreshed: Ollama 0.5.7 → 0.40.4, Open WebUI 0.5.20 → 0.12.2 (both were the oldest running images, Jan/Mar 2025, which the cockpit flagged as red). Open WebUI's 0.12.x breaking items (Valkey, MinerU, SCIM) do not apply: the estate uses LanceDB and none of those features. n8n (1.74.1) is deliberately NOT changed here: 2.x is a major upgrade that needs a planned migration.
 ### Added
 - **Compute strategy** (doc 57): Ollama keeps the conversation cache in 8-bit (`OLLAMA_KV_CACHE_TYPE=q8_0` + flash attention; about half the context memory; `f16` switches back); **`e2e-in`**, an opt-in Indian cloud rung (E2E Networks TIR, OpenAI-compatible, INR) in no chain and treated as zone `global` until the owner confirms its region and maps it; ranked guidance on home machines, notebooks (Kaggle/Colab for Green-tier batch jobs only), pay-per-use GPUs, Indian clouds and why IndiaAI subsidies and crowd-sourced GPUs do not fit.

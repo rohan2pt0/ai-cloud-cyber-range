@@ -299,19 +299,25 @@ class Collector:
         imgs = sh(["docker", "ps", "--format", "{{.Image}}"])
         if not imgs:
             return
-        oldest = 0.0
+        oldest, name = 0.0, ""
         for im in set(imgs.split()):
             c = sh(["docker", "image", "inspect", "--format", "{{.Created}}", im])
             if c:
                 try:
                     t = time.mktime(time.strptime(c.strip()[:19], "%Y-%m-%dT%H:%M:%S"))
-                    oldest = max(oldest, (self.now - t) / 86400)
+                    age = (self.now - t) / 86400
+                    if age > oldest:
+                        oldest, name = age, im
                 except ValueError:
                     pass
         if oldest:
             s = rag(oldest, self.th["image_age_days"])
-            self.add("patch", "Oldest running software", "KRI", "Protect", f"{int(oldest)} days old", s,
-                     "Old images miss security fixes. Updates are safe: they back up first and roll back if the new version does not start.",
+            # The age is the vendor's build date of the PINNED version, so `update` alone cannot lower it:
+            # name the image, so its pin can be raised (or the organ stopped) instead of updating in a loop.
+            self.add("patch", "Oldest running software", "KRI", "Protect", f"{int(oldest)} days old ({name})", s,
+                     "Old images miss security fixes. The age is the vendor's build date of the version SecuRAX pins, so "
+                     "./securax update lowers it only once a release raises that pin. Still red after updating: report the "
+                     "image named here, or stop that organ if you do not use it.",
                      "Update" if s != "green" else "", "./securax update", urgent=s == "red", importance=2)
 
     def c_threat_data(self):
