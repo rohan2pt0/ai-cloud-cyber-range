@@ -820,8 +820,11 @@ $(python3 "$ROOT/lifecycle/forge.py" brief "$FB")"
     [ -n "$VOLS" ] || C "(no data volumes yet — backing up settings only)"
     : > "$STG/MANIFEST"; echo "securax $(cat "$ROOT/VERSION" 2>/dev/null) $(date -u +%FT%TZ)" >> "$STG/MANIFEST"
     for V in $VOLS; do
-      docker run --rm --user 0 --entrypoint tar -v "$V":/v:ro -v "$STG":/out "$IMG" czf "/out/vol-$V.tgz" -C /v . 2>/dev/null \
-        && echo "volume $V" >> "$STG/MANIFEST" || { C "Could not read volume $V — aborting (no partial backup written)."; exit 1; }
+      if VOUT="$(docker run --rm --user 0 --entrypoint tar -v "$V":/v:ro -v "$STG":/out "$IMG" czf "/out/vol-$V.tgz" -C /v . 2>&1)"; then
+        echo "volume $V" >> "$STG/MANIFEST"
+      else
+        C "Could not read volume $V — aborting (no partial backup written). Reason: $(printf '%s' "$VOUT" | tail -c 400)"; exit 1
+      fi
     done
     cp "$ROOT/local/compose/.env" "$STG/env" 2>/dev/null && echo "env" >> "$STG/MANIFEST" || true
     # Sprout (phase 1) secrets live outside the volumes (DB password, S3 keys, OpenBao unseal key): without them a restored
