@@ -121,7 +121,11 @@ def main():
                 if t in ("today", "okr", "wheel", "ops", "kids", "growth"):
                     pg.screenshot(path=str(OUT / f"{theme}-{t}.png"), full_page=True)
         b.close()
-    errs = [x for x in report["errors"] if "ERR_CONNECTION_REFUSED" not in x and "ERR_NAME_NOT_RESOLVED" not in x]   # the estate is not running here
+    # Probes to the estate (health, feed) are expected to fail from a file:// page: refused when nothing listens, CORS-blocked
+    # when the estate IS running (the sandbox runner). Those are the environment, not the app; uncaught exceptions stay fatal.
+    noise = ("ERR_CONNECTION_REFUSED", "ERR_NAME_NOT_RESOLVED", "Failed to load resource: net::ERR_FAILED")
+    errs = [x for x in report["errors"] if not any(n in x for n in noise)
+            and not (x.startswith("console: Access to fetch at 'http://localhost") and "blocked by CORS policy" in x)]
     print(json.dumps({"errors": errs[:20], "checks": report["checks"]}, indent=1))
     tot = sum(len(v) for v in report["contrast"].values())
     print("contrast failures:", tot)
