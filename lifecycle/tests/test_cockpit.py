@@ -208,3 +208,35 @@ def test_coding_line_is_cached_and_fast_mode_never_probes(monkeypatch):
         monkeypatch.setattr(c2, "_probe", lambda p: (_ for _ in ()).throw(AssertionError("must not probe")))
         c2.c_coding()
         assert "Groq ✗" in c2.metrics[-1]["value"]
+
+
+def test_concurrent_writers_never_leave_a_mixed_file(tmp_path):
+    """The real failure (sandbox, cockpit_page): `up` refreshes the cockpit in the background while another refresh runs; plain
+    write_text truncates then writes, so a short write over a long one left the old tail behind ("Extra data"). With atomic_write every
+    read, at any moment, is one complete document."""
+    import threading
+    target = tmp_path / "cockpit.json"
+    long_doc, short_doc = json.dumps({"x": "y" * 50000, "n": list(range(2000))}, indent=1), json.dumps({"x": 1})
+    stop, bad = threading.Event(), []
+
+    def writer(doc):
+        while not stop.is_set():
+            ck.atomic_write(target, doc)
+
+    def reader():
+        while not stop.is_set():
+            try:
+                json.loads(target.read_text())
+            except FileNotFoundError:
+                pass
+            except ValueError as e:
+                bad.append(str(e)[:80])
+    ck.atomic_write(target, short_doc)
+    ts = [threading.Thread(target=writer, args=(d,)) for d in (long_doc, short_doc, long_doc)] + [threading.Thread(target=reader) for _ in range(2)]
+    [t.start() for t in ts]
+    import time as _t
+    _t.sleep(1.5)
+    stop.set()
+    [t.join() for t in ts]
+    assert not bad, bad[:3]
+    assert not [p for p in tmp_path.iterdir() if p.name.startswith(".cockpit.json.")], "no temporary files left behind"

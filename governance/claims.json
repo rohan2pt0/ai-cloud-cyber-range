@@ -1,36 +1,103 @@
 {
   "about": "What SecuRAX claims, the conditions each claim holds under (its envelope), and the test or real-stack journey that proves it. `./securax fitness` fails if any proof goes missing, so the docs cannot drift into marketing. Evidence forms: 'test:<path>::<function>' (a pytest function), 'file:<path>' (a test script), 'journey:<name>' (sandbox/run.py, runs the real estate in CI).",
   "claims": [
-    {"id": "sync-converges", "claim": "Cross-device sync converges: the same edits arriving in any order, any number of times, give the same state on every device and the server.",
-     "envelope": "Per-key last-writer-wins (a whole localStorage key is the unit; there is no per-item merge inside one key). Client clocks are corrected by the server's Date header. One SQLite file on one host.",
-     "evidence": ["test:apps/estate-sync/tests/test_sync_properties.py::test_every_arrival_order_converges_to_the_same_state", "test:apps/estate-sync/tests/test_sync_properties.py::test_merge_is_idempotent_and_associative", "test:apps/estate-sync/tests/test_sync_properties.py::test_tie_break_matches_the_pwa", "file:guiding-map/tests/test20.js"]},
-    {"id": "sync-no-lost-update", "claim": "Concurrent saves from several devices never erase each other's changes.",
-     "envelope": "Proven with 8 concurrent writers on separate connections against one SQLite file on local disk (WAL, an immediate write lock). Not for SQLite on network storage.",
-     "evidence": ["test:apps/estate-sync/tests/test_sync_properties.py::test_concurrent_writers_never_lose_each_others_keys"]},
-    {"id": "sync-bad-input", "claim": "Malformed sync input is refused with a clear error, never a crash, and never changes stored data.",
-     "envelope": "Bodies up to the size limit; JSON objects only; timestamps must be non-negative numbers.",
-     "evidence": ["test:apps/estate-sync/tests/test_sync_properties.py::test_a_malformed_timestamp_is_refused_not_a_crash"]},
-    {"id": "update-rollback", "claim": "An update backs up first and, when the new version does not start healthy, returns to the version that worked with the data intact.",
-     "envelope": "A git checkout without uncommitted local changes; Docker running.",
-     "evidence": ["journey:safe_update_rollback"]},
-    {"id": "backup-restore", "claim": "Backups are verified when written and restore to a working estate, encrypted or not; a wrong key or a tampered file is refused.",
-     "envelope": "Docker volumes of this estate on one host; models are not included (re-downloadable).",
-     "evidence": ["journey:backup_restore", "journey:backup_encrypted"]},
-    {"id": "fail-closed-rails", "claim": "When a safety detector is offline and FAIL_MODE is closed, the gateway refuses instead of letting unchecked text through, and says why.",
-     "envelope": "The gateway is the only path to models (BUILD-CONTRACT invariant).",
-     "evidence": ["test:apps/llm-gateway/tests/test_guardrails.py::test_offline_detector_is_reported_as_availability_not_a_policy_verdict", "journey:purple_loop"]},
-    {"id": "always-an-answer", "claim": "Every model chain ends in the local model, so an answer is possible with zero keys and no internet.",
-     "envelope": "The local model is small on a laptop: slower and weaker than cloud models.",
-     "evidence": ["test:local/compose/tests/test_gen_litellm_config.py::test_chains_end_in_local_and_use_real_providers", "journey:local_model_answers", "journey:key_wiring_and_failover"]},
-    {"id": "chat-session-survives-update", "claim": "You stay signed in to Chat after an update recreates its container.",
-     "envelope": "WEBUI_SECRET_KEY kept in .env (created by `up`).",
-     "evidence": ["journey:open_webui_chat"]},
-    {"id": "self-healing", "claim": "A crashed service is restarted and the failure is reported.",
-     "envelope": "Single host; `./securax watch` running.",
-     "evidence": ["journey:self_healing", "journey:watchdog_heals_and_alerts"]},
-    {"id": "scale-honest", "claim": "The people-scale ladder never promises a tier the repository cannot evidence; what is dormant or missing is listed.",
-     "envelope": "Planning output, not a load test.",
-     "evidence": ["test:governance/tests/test_scale_notify.py::test_ladder_is_contiguous_and_every_have_or_dormant_has_evidence"]}
+    {
+      "id": "sync-converges",
+      "claim": "Cross-device sync converges: the same edits arriving in any order, any number of times, give the same state on every device and the server.",
+      "envelope": "Per-key last-writer-wins (a whole localStorage key is the unit; there is no per-item merge inside one key). Client clocks are corrected by the server's Date header. One SQLite file on one host.",
+      "evidence": [
+        "test:apps/estate-sync/tests/test_sync_properties.py::test_every_arrival_order_converges_to_the_same_state",
+        "test:apps/estate-sync/tests/test_sync_properties.py::test_merge_is_idempotent_and_associative",
+        "test:apps/estate-sync/tests/test_sync_properties.py::test_tie_break_matches_the_pwa",
+        "file:guiding-map/tests/test20.js"
+      ]
+    },
+    {
+      "id": "sync-no-lost-update",
+      "claim": "Concurrent saves from several devices never erase each other's changes.",
+      "envelope": "Proven with 8 concurrent writers on separate connections against one SQLite file on local disk (WAL, an immediate write lock). Not for SQLite on network storage.",
+      "evidence": [
+        "test:apps/estate-sync/tests/test_sync_properties.py::test_concurrent_writers_never_lose_each_others_keys"
+      ]
+    },
+    {
+      "id": "sync-bad-input",
+      "claim": "Malformed sync input is refused with a clear error, never a crash, and never changes stored data.",
+      "envelope": "Bodies up to the size limit; JSON objects only; timestamps must be non-negative numbers.",
+      "evidence": [
+        "test:apps/estate-sync/tests/test_sync_properties.py::test_a_malformed_timestamp_is_refused_not_a_crash"
+      ]
+    },
+    {
+      "id": "status-files-atomic",
+      "claim": "The cockpit page, its data and the Guiding Map feed are never half-written, even when several refreshes run at once.",
+      "envelope": "One filesystem (rename is atomic within a directory). Proven with three writers and two readers for 1.5 s; the old plain write produced 2,266 broken reads under the same load.",
+      "evidence": [
+        "test:lifecycle/tests/test_cockpit.py::test_concurrent_writers_never_leave_a_mixed_file",
+        "journey:cockpit_page"
+      ]
+    },
+    {
+      "id": "update-rollback",
+      "claim": "An update backs up first and, when the new version does not start healthy, returns to the version that worked with the data intact.",
+      "envelope": "A git checkout without uncommitted local changes; Docker running.",
+      "evidence": [
+        "journey:safe_update_rollback"
+      ]
+    },
+    {
+      "id": "backup-restore",
+      "claim": "Backups are verified when written and restore to a working estate, encrypted or not; a wrong key or a tampered file is refused.",
+      "envelope": "Docker volumes of this estate on one host; models are not included (re-downloadable).",
+      "evidence": [
+        "journey:backup_restore",
+        "journey:backup_encrypted"
+      ]
+    },
+    {
+      "id": "fail-closed-rails",
+      "claim": "When a safety detector is offline and FAIL_MODE is closed, the gateway refuses instead of letting unchecked text through, and says why.",
+      "envelope": "The gateway is the only path to models (BUILD-CONTRACT invariant).",
+      "evidence": [
+        "test:apps/llm-gateway/tests/test_guardrails.py::test_offline_detector_is_reported_as_availability_not_a_policy_verdict",
+        "journey:purple_loop"
+      ]
+    },
+    {
+      "id": "always-an-answer",
+      "claim": "Every model chain ends in the local model, so an answer is possible with zero keys and no internet.",
+      "envelope": "The local model is small on a laptop: slower and weaker than cloud models.",
+      "evidence": [
+        "test:local/compose/tests/test_gen_litellm_config.py::test_chains_end_in_local_and_use_real_providers",
+        "journey:local_model_answers",
+        "journey:key_wiring_and_failover"
+      ]
+    },
+    {
+      "id": "chat-session-survives-update",
+      "claim": "You stay signed in to Chat after an update recreates its container.",
+      "envelope": "WEBUI_SECRET_KEY kept in .env (created by `up`).",
+      "evidence": [
+        "journey:open_webui_chat"
+      ]
+    },
+    {
+      "id": "self-healing",
+      "claim": "A crashed service is restarted and the failure is reported.",
+      "envelope": "Single host; `./securax watch` running.",
+      "evidence": [
+        "journey:self_healing",
+        "journey:watchdog_heals_and_alerts"
+      ]
+    },
+    {
+      "id": "scale-honest",
+      "claim": "The people-scale ladder never promises a tier the repository cannot evidence; what is dormant or missing is listed.",
+      "envelope": "Planning output, not a load test.",
+      "evidence": [
+        "test:governance/tests/test_scale_notify.py::test_ladder_is_contiguous_and_every_have_or_dormant_has_evidence"
+      ]
+    }
   ],
   "not_claimed": [
     "High availability or multi-region: every service runs once, on one host. A host outage is an outage; recovery is restore-from-backup.",

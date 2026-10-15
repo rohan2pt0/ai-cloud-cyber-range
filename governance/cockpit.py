@@ -112,6 +112,26 @@ def read_env(path: pathlib.Path = ENVF) -> dict:
     return out
 
 
+def atomic_write(path: pathlib.Path, text: str) -> None:
+    """Write to a unique temporary file beside `path`, then rename it into place. A reader never sees a half-written file, and two
+    writers at once (the background refresh after `up`, the 15-minute andon, you running it by hand) cannot leave a mixed file:
+    a plain write_text truncates first, so a shorter write over a longer one left the old tail behind ("Extra data" JSON)."""
+    import tempfile
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
+    try:
+        with os.fdopen(fd, "w", encoding="utf-8") as fh:
+            fh.write(text)
+        os.chmod(tmp, 0o644)
+        os.replace(tmp, path)
+    except BaseException:
+        try:
+            os.unlink(tmp)
+        except OSError:
+            pass
+        raise
+
+
 def cfg() -> dict:
     return json.loads((HERE / "cockpit.json").read_text("utf-8"))
 
@@ -384,7 +404,7 @@ class Collector:
             res = _load("securax_fitness", "lifecycle/fitness.py").run_all(only_fast=True)
             try:
                 HOME.mkdir(parents=True, exist_ok=True)
-                cache.write_text(json.dumps({"ts": self.now, "res": res}, default=str), "utf-8")
+                atomic_write(cache, json.dumps({"ts": self.now, "res": res}, default=str))
             except OSError:
                 pass
         bad = [r for r in res if not r["ok"]]
@@ -441,8 +461,7 @@ class Collector:
         fresh = cache and self.now - cache.get("at", 0) < self.CODING_TTL
         if not fresh and not self.fast:
             cache = {"at": self.now, "probes": {pid: self._probe(by_id[pid]) for pid in self.CODING_IDS if pid in enabled}}
-            cache_f.parent.mkdir(parents=True, exist_ok=True)
-            cache_f.write_text(json.dumps(cache))
+            atomic_write(cache_f, json.dumps(cache))
         probes = cache.get("probes", {})
         if not probes and self.fast:
             return
@@ -848,9 +867,8 @@ def main(argv: list[str] | None = None) -> int:
     page, data, c = build(ai=a.ai, fast=a.fast)
     save_hist(data, c)
     out = pathlib.Path(a.out)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(page, "utf-8")
-    out.with_suffix(".json").write_text(json.dumps(data, indent=1), "utf-8")
+    atomic_write(out, page)
+    atomic_write(out.with_suffix(".json"), json.dumps(data, indent=1))
     try:                                                                      # the Guiding Map's "From your estate" lines follow every cockpit refresh
         _load("securax_lifefeed", "governance/lifefeed.py").write(out.parent / "estate-feed.json", cockpit=out.with_suffix(".json"))
     except Exception:  # noqa: BLE001 - the feed is a convenience; it must never fail the cockpit

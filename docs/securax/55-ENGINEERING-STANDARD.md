@@ -29,6 +29,7 @@ Each defect below was reproduced **before** it was fixed.
 | **No lost update** under concurrent writers | 8 writers × 25 keys: **175 of 200 keys lost** (read → merge → write without a lock; harmless with today's single worker, a data-loss bug the day a second worker or container is added) | one `BEGIN IMMEDIATE` write lock around read-merge-write: 200 of 200 |
 | **Convergence**: same edits, any arrival order, same result | 39 of 40 random seeds gave an order-dependent result when two devices wrote the same key in the same millisecond | deterministic tie-break: the larger value by Unicode code point wins |
 | **Server and phone agree on a tie** | the PWA kept its own value on a tie while the server kept the larger one: two devices could show different values for ever | the PWA uses the same rule (`cpAfter`, code-point order; JavaScript's own `<` gets emoji wrong); `guiding-map/tests/test20.js` and a server test check the same pairs |
+| **Status files are never half-written** (found by the sandbox while this work was in review) | two cockpit refreshes at once left `cockpit.json` mixed ("Extra data"); the old write gave 2,266 broken reads in the contention test | write to a unique temp file, then rename (atomic): 0 broken reads |
 | **Bad input is refused, not a crash** | a non-numeric timestamp raised an exception (HTTP 500) | validated: a clear 400; stored data unchanged |
 
 The merge is now a last-writer-wins register per key. It is commutative, associative and idempotent, and the tests check each of these.
@@ -39,6 +40,7 @@ The merge is now a last-writer-wins register per key. It is commutative, associa
 |---|---|---|
 | Sync converges in any order | per-key LWW (no per-item merge inside one key); clocks corrected by the server's Date header; one SQLite host | property tests + `test20.js` |
 | Concurrent saves never erase each other | one SQLite file on local disk (not network storage) | 8-writer concurrency test |
+| Cockpit and feed files are never half-written | one filesystem | contention test + journey `cockpit_page` |
 | Malformed sync input is refused | bodies under the size limit | test |
 | Update backs up and rolls back a bad release | clean checkout, Docker running | journey `safe_update_rollback` |
 | Backups verify and restore (encrypted too) | this estate's volumes on one host | journeys `backup_restore`, `backup_encrypted` |
