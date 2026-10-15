@@ -5102,12 +5102,13 @@ function renderPlaybook(){
   var _calmOpen = null;
   window.gmCalmOpen = function (id) { _calmOpen = _calmOpen === id ? null : id; renderAll(); };
   function dueNowHTML() {
-    var due = dueRituals(), broken = brokenHabits(), qd = quarterDue();
-    if (!due.length && !broken.length && !qd) return "";
+    var due = dueRituals(), broken = brokenHabits(), qd = quarterDue(), cd = careerDueHTML();
+    if (!due.length && !broken.length && !qd && !cd) return "";
     var h = '<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px;margin-bottom:14px">'
       + '<div style="font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:6px">Due now</div>';
     if (qd) h += '<div style="display:flex;align-items:center;gap:8px;margin:7px 0"><div style="flex:1;font-size:12.5px;color:var(--text)">\u23f1 <b>Quarterly check-in</b> <span style="color:var(--muted)">\u00b7 5 min, all taps</span></div>'
       + '<button class="btn-sm" style="background:var(--gold);color:#0d1f35" onclick="gmQuarter()">Start</button></div>';
+    h += cd;
     broken.forEach(function (b) {
       h += '<div style="font-size:12.5px;color:var(--red);margin:6px 0">⚠ <b>' + esc(b.name) + '</b> missed twice — today the 2-minute floor is the whole job</div>';
     });
@@ -5192,7 +5193,7 @@ function renderPlaybook(){
     if (!bar || typeof TABS === "undefined") return;
     var kids = bar.children;
     for (var i = 0; i < kids.length && i < TABS.length; i++) {
-      var keep = _calmMore || CALM_TABS.indexOf(TABS[i][0]) >= 0 || TABS[i][0] === curTab;
+      var keep = _calmMore || CALM_TABS.indexOf(TABS[i][0]) >= 0 || TABS[i][0] === curTab || (TABS[i][0] === "career" && careerActive());
       kids[i].style.display = keep ? "" : "none";
     }
     var m = document.createElement("div");
@@ -5459,13 +5460,366 @@ function renderPlaybook(){
       + (sub ? ' <span style="font-weight:500;color:var(--muted);font-size:11.5px">\u00b7 ' + sub + '</span>' : '') + '</summary><div style="margin-top:10px">' + inner + '</div></details>';
   }
 
+  /* ── 9c. Career compass (v19): choose the next job without betting the house ─────────── */
+  // One screen: your floor (never go backwards), the 30% target, what financial independence (FI) needs, every offer through
+  // must-have gates then good-to-haves, the worst cases, the ladder worked backwards from the top, and a dated plan that
+  // shows up in "Due now". All arithmetic runs on this device from numbers you type or load from your own career file.
+  // Nothing personal ships in this file: every default is zero and the ladder is the generic BFSI security ladder.
+  var CAR_K = "gm_career";
+  function car() {
+    var c = G(CAR_K, null) || {};
+    ["cur", "house", "cfg", "done", "gaps"].forEach(function (k) { c[k] = c[k] || {}; });
+    c.offers = c.offers || [];
+    return c;
+  }
+  // While a job decision or move plan is live, Career joins the calm tab row; otherwise it waits under More.
+  function careerActive() { var c = G(CAR_K, null); return !!(c && ((c.offers && c.offers.length) || (c.cfg && (c.cfg.noticeStart || c.cfg.join)))); }
+  function carPut(c) { c.at = Date.now(); S_(CAR_K, c); }
+  function cfgv(c, k, d) { var v = c.cfg[k]; return v === undefined || v === "" ? d : num(v); }
+  function rs(n) { return "₹" + Math.round(num(n)).toLocaleString("en-IN"); }
+  function rl(n) { var x = num(n) / 1e5; return "₹" + (x >= 100 ? (x / 100).toFixed(2) + " Cr" : x.toFixed(1) + "L"); }
+
+  // New tax regime, FY 2026-27 (unchanged from FY 2025-26 per Budget 2026): nil to 4L, then 5/10/15/20/25/30%; rebate up to
+  // 12L with marginal relief; surcharge 10/15/25% above 50L/1Cr/2Cr (no marginal relief here, so it is slightly high near
+  // those lines); 4% cess. The salaried standard deduction (75,000) is applied by the caller.
+  function taxNew(ti) {
+    var sl = [[4e5, 0], [8e5, .05], [12e5, .10], [16e5, .15], [20e5, .20], [24e5, .25], [Infinity, .30]], t = 0, lo = 0;
+    for (var i = 0; i < sl.length; i++) { if (ti > lo) t += (Math.min(ti, sl[i][0]) - lo) * sl[i][1]; lo = sl[i][0]; }
+    t = ti <= 12e5 ? 0 : Math.min(t, ti - 12e5);
+    var sc = ti > 2e7 ? .25 : ti > 1e7 ? .15 : ti > 5e6 ? .10 : 0;
+    return Math.round(t * (1 + sc) * 1.04);
+  }
+  window.gmTaxNew = taxNew;
+
+  // Today's job, in cash you can actually use each month (payslip net + rent and cash-like perks the employer pays +
+  // what goes into retirement for you). This, not the brochure CTC, is the line you must never fall below.
+  function curWealth(c) { var u = c.cur; return num(u.inhand) + num(u.rent) + num(u.perks) + num(u.empRet) + num(u.empDed); }
+  function honestCtc(c) { var u = c.cur; return num(u.gross) * 12 + (num(u.rent) + num(u.perks)) * 12 + num(u.otherYr); }
+
+  // An offer, in the same units. salary: TDS on salary. fee: professional fee — 50% presumptive (44ADA) only when p44 is
+  // ticked, which you should do only after a CA confirms you qualify; otherwise the whole fee is taxed (the safe side).
+  function offerPay(o, c) {
+    var ctc = num(o.ctc), vr = Math.min(Math.max(num(o.varPct), 0), 60) / 100, fixed = ctc * (1 - vr);
+    var basic = fixed * (num(o.basicPct) || 40) / 100, pf = o.pf ? 0.12 * basic : 0, grat = o.grat ? 0.0481 * basic : 0;
+    var inh, tax;
+    if (o.mode === "fee") { tax = taxNew(o.p44 ? fixed * 0.5 : fixed); inh = (fixed - tax) / 12; pf = 0; grat = 0; }
+    else { var cash = fixed - pf - grat; tax = taxNew(Math.max(cash - 75000, 0)); inh = (cash - tax) / 12 - 208 - pf / 12; }
+    var own = (o.health ? 0 : cfgv(c, "health", 3000));
+    return { inh: Math.round(inh), tax: tax, usable: Math.round(inh - own), wealth: Math.round(inh - own + (pf * 2) / 12), varYr: Math.round(ctc * vr), ctc: ctc };
+  }
+  window.gmOfferPay = function (o) { return offerPay(o, car()); };
+  // The smallest CTC, with this offer's structure (variable share, PF, gratuity, cover, tax mode), whose real value reaches `need`.
+  function minCtc(o, c, need) {
+    var lo = 0, hi = 5e7, t = {}; Object.keys(o).forEach(function (k) { t[k] = o[k]; });
+    for (var i = 0; i < 40; i++) { var mid = (lo + hi) / 2; t.ctc = mid; if (offerPay(t, c).wealth >= need) hi = mid; else lo = mid; }
+    return Math.ceil(hi / 1e4) * 1e4;
+  }
+  window.gmMinCtc = function (i, need) { var c = car(); return minCtc(c.offers[i], c, need || curWealth(c)); };
+
+  function monthsBetween(a, b) { return (b.getFullYear() - a.getFullYear()) * 12 + b.getMonth() - a.getMonth(); }
+  function addDays(d, n) { var x = new Date(d.getTime()); x.setDate(x.getDate() + n); return x; }
+  function addMonths(d, n) { var x = new Date(d.getTime()); x.setMonth(x.getMonth() + n); return x; }
+  function pd(s) { if (!s) return null; var p = String(s).split("-"); var d = new Date(+p[0], (+p[1] || 1) - 1, +p[2] || 1); return isNaN(d) ? null : d; }
+  function lastDay(c) { var s = pd(c.cfg.noticeStart); return s ? addDays(addMonths(s, cfgv(c, "noticeMonths", 3)), -1) : null; }
+  function joinDay(c) { return pd(c.cfg.join) || (lastDay(c) ? addDays(lastDay(c), 1) : null); }
+  function ageNow(c) { var b = pd(c.cfg.birth); if (!b) return num(life().age) || 0; return Math.floor(monthsBetween(b, new Date()) / 12); }
+
+  // What the household needs from you each month, the runway if your pay stops, and the SIP that reaches FI on time.
+  function needs(c) {
+    var h = c.house, exp = num(h.exp) || (window.P && !P.example ? num(P.exp) : 0), emi = num(h.emi), wife = num(h.wife);
+    var ef = num(h.ef), nw = num(h.nw), gap = Math.max(exp + emi - wife, 0);
+    var age = ageNow(c), fiAge = cfgv(c, "fiAge", 50), yrs = Math.max(fiAge - age, 1), infl = cfgv(c, "infl", 6) / 100, ret = cfgv(c, "ret", 10) / 100;
+    var swr = cfgv(c, "swr", 3.5) / 100, corpus = exp * 12 * Math.pow(1 + infl, yrs) / swr, m = yrs * 12, rm = ret / 12;
+    var fvNow = nw * Math.pow(1 + ret, yrs), sip = Math.max((corpus - fvNow) * rm / (Math.pow(1 + rm, m) - 1), 0);
+    return { exp: exp, emi: emi, wife: wife, ef: ef, nw: nw, gap: gap, runway: gap > 0 ? ef / gap : (ef > 0 ? 99 : 0),
+      corpus: corpus, sip: sip, yrs: yrs, fiAge: fiAge, age: age, fiInhand: Math.max(exp + emi + sip - wife, 0) };
+  }
+
+  /* gates: the 20% that decides 80% of the outcome. Any ✗ rejects the offer; any ? means "not decidable yet". */
+  var GATES = [
+    ["pay", "Pays at least today's real value (computed)", "auto"],
+    ["rung", "A rung up the ladder, or clearly sets up the next rung", ""],
+    ["survive", "You survive it ending early (runway: 12 months for a contract, 6 for permanent; computed)", "auto"],
+    ["field", "Keeps you in regulated BFSI / critical infrastructure with board or regulator exposure", ""],
+    ["commute", "Door-to-door 75 min or less, or hybrid", ""],
+    ["paper", "In writing: CTC breakdown, reporting line, notice period (contracts: tenure and renewal)", ""]];
+  var GOODS = [["next", "Next-move value (title, brand)", 3], ["stable", "Stability (permanent beats contract)", 2], ["team", "Team and budget you own", 2],
+    ["ai", "AI-security mandate (your edge)", 2], ["learn", "Learning and certification budget", 1], ["perks", "Insurance, PF / NPS, gratuity", 1], ["flex", "Hybrid / flexible hours", 1]];
+
+  function gateState(o, c, k) {
+    var n = needs(c);
+    if (k === "pay") { if (!num(o.ctc) || !curWealth(c)) return "?"; return offerPay(o, c).wealth >= curWealth(c) ? "y" : "n"; }
+    if (k === "survive") { if (!n.gap) return "?"; return n.runway >= (o.contract ? 12 : 6) ? "y" : "n"; }
+    return (o.gates || {})[k] || "?";
+  }
+  function carVerdict(o, c) {
+    var fail = [], unk = [];
+    GATES.forEach(function (g) { var s = gateState(o, c, g[0]); if (s === "n") fail.push(g[1]); if (s === "?") unk.push(g[1]); });
+    var sc = o.scores || {}, w = 0, t = 0;
+    GOODS.forEach(function (g) { if (sc[g[0]]) { t += sc[g[0]] * g[2]; w += g[2]; } });
+    var score = w ? Math.round(t / w * 20) : 0;
+    return { fail: fail, unk: unk, score: score, st: fail.length ? "reject" : unk.length ? "unknown" : "go" };
+  }
+  window.gmCareerVerdict = function (i) { var c = car(); return carVerdict(c.offers[i], c); };
+
+  // 30 months at a 30% step is about 11% a year compounded, roughly 2 points a year above the 9% India Inc average
+  // increment for 2026, and well above ~6% inflation. Projects each offer's CTC to the ages that matter.
+  function project(o, c, toAge) {
+    var age = ageNow(c), ctc = num(o.ctc), step = cfgv(c, "stepPct", 30) / 100, every = cfgv(c, "stepMonths", 30) / 12, first = (num(o.nextPct) || 30) / 100;
+    if (!ctc || !age) return 0;
+    var yrs = toAge - age; if (yrs < every) return ctc;
+    var v = ctc * (1 + first), y = every;
+    while (y + every <= yrs) { v *= 1 + step; y += every; }
+    return v;
+  }
+
+  // The ladder, worked back from the top. Bands are rough Mumbai market ranges in ₹ lakh fixed (Oct 2026: one public
+  // Group CISO contract advert up to 250; aggregator tables 55-150 for Deputy CISO / CISO). Check with 2-3 search firms.
+  var RUNGS = [
+    { r: "Rung 1", role: "Senior Manager / head of one security function (SOC, GRC, AppSec)", band: "30-45", by: 38,
+      proof: ["A team you lead and a budget you own, stated in numbers", "One regulator inspection or audit cycle run end to end", "Outcomes, not percentages: findings closed, detection and response times, zero penalties"] },
+    { r: "Rung 2", role: "CISO of a smaller regulated entity, or Deputy CISO of a large bank", band: "45-75", by: 41,
+      proof: ["Quarterly board / risk-committee reporting", "Private-sector delivery (pace, budgets, vendors)", "Two talks or articles a year; known to 5 search-firm partners"] },
+    { r: "Rung 3", role: "CISO of a mid-size bank, insurer, large NBFC or payments company", band: "75-120", by: 46,
+      proof: ["CISO title held 24+ months", "A security programme with measured results over 2+ years", "An AI-security programme others copy (your edge)"] },
+    { r: "Rung 4", role: "CISO of a large bank or a BFSI group (Group CISO)", band: "120-250", by: 52,
+      proof: ["Multi-entity scope", "A crisis or inspection handled well, on record", "A successor you built"] },
+    { r: "Rung 5", role: "Work optional: board, advisory, own practice", band: "", by: 55, proof: ["FI corpus reached", "Board-ready reputation"] }];
+
+  // The dated plan. d: [anchor, days]. Anchors: notice start (N), last day (L), joining day (J).
+  var CAR_PLAN = [
+    ["offer-paper", "Get every offer's CTC breakdown, reporting line and notice terms in writing", ["N", 14]],
+    ["hr-asks", "Ask HR in writing: leave encashment, NPS shift, staff-loan closure or conversion, accommodation hand-over date", ["N", 21]],
+    ["decide", "Run every offer through this screen; accept one in writing, decline the rest politely", ["L", -45]],
+    ["health", "Buy a family health floater and a super top-up while the group cover still runs (waiting periods start now)", ["L", -30]],
+    ["term", "Buy term life cover while a salaried payslip still proves income (about 10x annual income)", ["L", -30]],
+    ["papers", "Collect relieving letter, experience certificate, Form 16 and the last 3 payslips", ["L", 0]],
+    ["nps", "Keep the same NPS account (PRAN): shift it to the new employer's corporate NPS or to All-Citizen", ["J", 30]],
+    ["ef12", "If the new role is a contract: emergency fund to 12 months of (expenses minus spouse income)", ["J", 60]],
+    ["d90", "Agree 3 measurable outcomes for your first 90 days with your boss", ["J", 30]],
+    ["first-board", "First leadership or committee update with numbers", ["J", 90]],
+    ["m12", "Month 12: rewrite the resume with this role's numbers (team, budget, outcomes)", ["J", 365]],
+    ["m18", "Month 18: two talks or articles; coffee with 5 search-firm partners", ["J", 548]],
+    ["m24", "Month 24: the move window opens; test the market with 3 real conversations", ["J", 730]],
+    ["m30", "Month 30: switch only for a rung up or 30%+; otherwise renegotiate and reset the clock", ["J", 913]]];
+  function planItems(c) {
+    var A = { N: pd(c.cfg.noticeStart), L: lastDay(c), J: joinDay(c) };
+    return CAR_PLAN.map(function (p) { var b = A[p[2][0]]; return { id: p[0], t: p[1], due: b ? addDays(b, p[2][1]) : null, done: !!c.done[p[0]] }; });
+  }
+  function careerDue(days) {
+    var c = car(); if (!c.cfg.noticeStart && !c.cfg.join) return [];
+    var lim = addDays(new Date(), days || 7);
+    return planItems(c).filter(function (p) { return !p.done && p.due && p.due <= lim; });
+  }
+  window.gmCareerDue = careerDue;
+
+  var GAPS = [
+    ["nums", "Resume states team size, budget and outcomes in numbers (not \"posture improved 45%\")"],
+    ["board", "Board / risk-committee reporting is on the resume"],
+    ["pvt", "At least one private-sector role (hiring panels for private CISO roles look for it)"],
+    ["head", "A \"Head\" or \"CISO\" title held, not only Senior Manager"],
+    ["two", "A 2-page leadership resume (the keyword list moves to LinkedIn)"],
+    ["aigov", "One AI-governance credential to back the AI-security edge (e.g. ISO/IEC 42001 Lead Auditor or IAPP AIGP)"],
+    ["voice", "Visible: talks, articles, or a chapter role (ISACA / DSCI / OWASP)"],
+    ["firms", "Known to 5 executive-search partners who place BFSI CISOs"]];
+
+  /* ---- actions ---- */
+  function setPath(o, path, v) { var p = path.split("."), x = o; for (var i = 0; i < p.length - 1; i++) { x[p[i]] = x[p[i]] || {}; x = x[p[i]]; } x[p[p.length - 1]] = v; }
+  window.gmCarSet = function (path, v) { var c = car(); setPath(c, path, v); carPut(c); renderAll(); };
+  window.gmCarOffer = function (i, k, v) { var c = car(); if (!c.offers[i]) return; c.offers[i][k] = v; carPut(c); renderAll(); };
+  window.gmCarGate = function (i, k) { var c = car(), o = c.offers[i]; if (!o) return; o.gates = o.gates || {}; var s = o.gates[k] || "?"; o.gates[k] = s === "?" ? "y" : s === "y" ? "n" : "?"; carPut(c); renderAll(); };
+  window.gmCarScore = function (i, k, v) { var c = car(), o = c.offers[i]; if (!o) return; o.scores = o.scores || {}; o.scores[k] = o.scores[k] === v ? 0 : v; carPut(c); renderAll(); };
+  window.gmCarAdd = function () { var c = car(); c.offers.push({ name: "New option", ctc: 0, varPct: 0, basicPct: 40, pf: true, grat: true, health: true, mode: "salary", nextPct: 30, gates: {}, scores: {} }); carPut(c); renderAll(); };
+  window.gmCarDel = function (i) {
+    var c = car(), o = c.offers[i]; if (!o) return;
+    gmConfirm("Remove <b>" + esc(o.name || "this option") + "</b> from the comparison?", function () { var c2 = car(); c2.offers.splice(i, 1); carPut(c2); renderAll(); });
+  };
+  window.gmCarDone = function (id) { var c = car(); if (c.done[id]) delete c.done[id]; else c.done[id] = ymd(); carPut(c); renderAll(); };
+  window.gmCarGap = function (id) { var c = car(); c.gaps[id] = !c.gaps[id]; carPut(c); renderAll(); };
+  window.gmCarLoad = function () {
+    var inp = document.createElement("input"); inp.type = "file"; inp.accept = ".json,application/json";
+    inp.onchange = function () {
+      var f = inp.files[0]; if (!f) return; var r = new FileReader();
+      r.onload = function () {
+        try { var j = JSON.parse(r.result); if (j && j.gm_career) j = j.gm_career; if (typeof j === "string") j = JSON.parse(j);
+          if (!j || typeof j !== "object" || !(j.cur || j.offers)) throw new Error("not a career file");
+          var c = car(); ["cur", "house", "cfg"].forEach(function (k) { if (j[k]) Object.keys(j[k]).forEach(function (x) { if (j[k][x] !== "" && j[k][x] !== null) c[k][x] = j[k][x]; }); });
+          if (j.offers && j.offers.length) c.offers = j.offers; carPut(c); renderAll(); gmToast("Career file loaded. It stays on this device and in your backups.");
+        } catch (e) { gmToast("That file did not load: " + e.message); }
+      };
+      r.readAsText(f);
+    };
+    inp.click();
+  };
+
+  /* ---- view ---- */
+  function fld(label, path, val, unit, help) {
+    return '<label style="display:block;margin:6px 0;font-size:12px;color:var(--text)">' + esc(label) + (unit ? ' <span style="color:var(--muted)">(' + unit + ')</span>' : '')
+      + '<input inputmode="decimal" value="' + esc(val === undefined ? "" : val) + '" onchange="gmCarSet(\'' + path + '\',this.value)" style="display:block;width:100%;margin-top:3px;padding:8px;border-radius:9px;border:1px solid var(--border);background:var(--cardAlt);color:var(--text);font-size:13px">'
+      + (help ? '<span style="font-size:11px;color:var(--muted)">' + help + '</span>' : '') + '</label>';
+  }
+  function box(inner, accent) { return '<div style="background:var(--card);border:1px solid ' + (accent || "var(--border)") + ';border-radius:14px;padding:12px;margin:10px 0">' + inner + '</div>'; }
+  function hd(t, s) { return '<div style="font-weight:800;font-size:14px;color:var(--text)">' + t + '</div>' + (s ? '<div style="font-size:11.5px;color:var(--muted);margin:2px 0 6px">' + s + '</div>' : ''); }
+  function carRow(k, v, col) { return '<div style="display:flex;justify-content:space-between;gap:8px;font-size:12.5px;margin:5px 0;color:var(--text)"><span>' + k + '</span><b style="color:' + (col || "var(--text)") + ';text-align:right">' + v + '</b></div>'; }
+  var CAR_ST = { y: ["✓", "var(--green)"], n: ["✗", "var(--red)"], "?": ["?", "var(--amber)"] };
+
+  function offerHTML(o, i, c) {
+    var p = offerPay(o, c), v = carVerdict(o, c), cw = curWealth(c);
+    var vt = v.st === "reject" ? ["Reject", "var(--red)", "fails: " + v.fail.join("; ")] : v.st === "unknown" ? ["Not decidable yet", "var(--amber)", "find out: " + v.unk.join("; ")] : ["Passes every must-have", "var(--green)", "good-to-have score " + v.score + "/100"];
+    var h = '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px"><input value="' + esc(o.name || "") + '" onchange="gmCarOffer(' + i + ',\'name\',this.value)" style="flex:1;font-weight:800;font-size:14px;padding:6px;border-radius:8px;border:1px solid var(--border);background:var(--cardAlt);color:var(--text)">'
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmCarDel(' + i + ')" aria-label="Remove">✕</button></div>'
+      + '<div style="margin:8px 0;padding:8px;border-radius:10px;border:1px solid ' + vt[1] + '"><b style="color:' + vt[1] + '">' + vt[0] + '</b><div style="font-size:11.5px;color:var(--text);margin-top:2px">' + esc(vt[2]) + '</div></div>';
+    if (p.ctc) {
+      h += carRow("In-hand each month (after tax" + (o.mode === "fee" ? (o.p44 ? ", 44ADA presumptive" : ", whole fee taxed") : "") + ")", rs(p.inh))
+        + (o.health ? "" : carRow("…minus health cover you now buy yourself", "−" + rs(cfgv(c, "health", 3000))))
+        + carRow("Real value / month (vs today " + rs(cw) + ")", rs(p.wealth) + (cw ? " (" + (p.wealth >= cw ? "+" : "") + Math.round((p.wealth / cw - 1) * 100) + "%)" : ""), p.wealth >= cw ? "var(--green)" : "var(--red)")
+        + (p.varYr ? carRow("Variable, paid yearly (not counted above)", rs(p.varYr)) : "")
+        + carRow("CTC vs your honest current CTC", rl(p.ctc) + (honestCtc(c) ? " (" + (p.ctc >= honestCtc(c) ? "+" : "") + Math.round((p.ctc / honestCtc(c) - 1) * 100) + "%)" : ""));
+      var a45 = project(o, c, 45), a50 = project(o, c, 50);
+      if (a45) h += carRow("If you keep the 30-month rhythm from here: CTC at 45 / 50", rl(a45) + " / " + rl(a50));
+    } else h += '<div style="font-size:12px;color:var(--amber);margin:6px 0">Enter the CTC to see in-hand, real value and the projection.</div>';
+    if (cw) { var mc = minCtc(o, c, cw), tc = minCtc(o, c, cw * (1 + cfgv(c, "stepPct", 30) / 100));
+      h += carRow("With this pay structure: CTC needed to match today / to beat it by " + cfgv(c, "stepPct", 30) + "%", rl(mc) + " / " + rl(tc), "var(--gold)"); }
+    h += '<details style="margin-top:8px"><summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:var(--text)">Numbers for this option</summary>'
+      + offFld(i, "Annual CTC", "ctc", o.ctc, "₹") + offFld(i, "Variable share of CTC", "varPct", o.varPct, "%") + offFld(i, "Basic as share of fixed (drives PF, gratuity)", "basicPct", o.basicPct || 40, "%")
+      + offFld(i, "Expected hike at the move after this one", "nextPct", o.nextPct || 30, "%")
+      + '<label style="display:block;font-size:12px;margin:6px 0;color:var(--text)">Where this leads in ~30 months<input value="' + esc(o.nextRole || "") + '" onchange="gmCarOffer(' + i + ',\'nextRole\',this.value)" style="display:block;width:100%;margin-top:3px;padding:8px;border-radius:9px;border:1px solid var(--border);background:var(--cardAlt);color:var(--text)"></label>'
+      + '<div style="display:flex;flex-wrap:wrap;gap:6px;margin:6px 0">'
+      + tog(i, "mode", o.mode === "fee", "Paid as a professional fee", "fee", "salary") + tog(i, "p44", o.p44, "44ADA (only after a CA confirms)") + tog(i, "contract", o.contract, "Contract role")
+      + tog(i, "pf", o.pf, "PF inside CTC") + tog(i, "grat", o.grat, "Gratuity inside CTC") + tog(i, "health", o.health, "Health cover included") + '</div></details>';
+    h += '<div style="margin-top:8px;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:800">Must-haves (tap to set)</div>';
+    GATES.forEach(function (g) {
+      var s = gateState(o, c, g[0]), t = CAR_ST[s], auto = g[2] === "auto";
+      h += '<div ' + (auto ? '' : 'role="button" tabindex="0" onclick="gmCarGate(' + i + ',\'' + g[0] + '\')" ') + 'style="display:flex;gap:9px;align-items:center;margin:5px 0;font-size:12.5px;color:var(--text);' + (auto ? '' : 'cursor:pointer') + '">'
+        + '<span class="gm-tap" style="min-width:30px;min-height:30px;border-radius:9px;color:' + t[1] + ';border-color:' + t[1] + '">' + t[0] + '</span><span>' + esc(g[1]) + (auto ? ' <span style="color:var(--muted)">· auto</span>' : '') + '</span></div>';
+    });
+    h += '<div style="margin-top:8px;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:800">Good-to-haves (1 poor … 5 great)</div>';
+    GOODS.forEach(function (g) {
+      var cur = (o.scores || {})[g[0]] || 0, b = "";
+      for (var n = 1; n <= 5; n++) b += '<span class="gm-tap' + (cur === n ? " on" : "") + '" role="button" tabindex="0" style="min-width:30px;min-height:30px;border-radius:9px;font-size:12px" onclick="gmCarScore(' + i + ',\'' + g[0] + '\',' + n + ')">' + n + '</span>';
+      h += '<div style="margin:6px 0;font-size:12.5px;color:var(--text)">' + esc(g[1]) + ' <span style="color:var(--muted)">×' + g[2] + '</span><div style="display:flex;gap:5px;margin-top:3px">' + b + '</div></div>';
+    });
+    return box(h, vt[1]);
+  }
+  function offFld(i, label, k, v, unit) {
+    return '<label style="display:block;margin:6px 0;font-size:12px;color:var(--text)">' + esc(label) + ' <span style="color:var(--muted)">(' + unit + ')</span><input inputmode="decimal" value="' + esc(v === undefined ? "" : v)
+      + '" onchange="gmCarOffer(' + i + ',\'' + k + '\',+this.value||0)" style="display:block;width:100%;margin-top:3px;padding:8px;border-radius:9px;border:1px solid var(--border);background:var(--cardAlt);color:var(--text);font-size:13px"></label>';
+  }
+  function tog(i, k, on, label, yes, no) {
+    var val = yes ? (on ? "'" + no + "'" : "'" + yes + "'") : (on ? "false" : "true");
+    return '<span role="button" tabindex="0" class="gm-tap' + (on ? " on" : "") + '" style="min-height:32px;padding:0 10px;font-size:11.5px;font-weight:700" onclick="gmCarOffer(' + i + ',\'' + k + '\',' + val + ')">' + (on ? "✓ " : "") + esc(label) + '</span>';
+  }
+
+  function careerHTML() {
+    var c = car(), n = needs(c), cw = curWealth(c), hc = honestCtc(c), cost = cfgv(c, "health", 3000) + cfgv(c, "term", 1500);
+    var h = '<div class="section active"><div class="sec-t">\u{1F4BC} Career compass</div>'
+      + '<div class="info">Pick the next job on the 20% that decides 80% of the outcome: never go backwards, a rung up, survive the worst case. Everything is computed here, on this device.</div>'
+      + '<div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0"><button class="btn-sm" style="background:var(--gold);color:#0d1f35" onclick="gmCarLoad()">Load my career file</button>'
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmCarAdd()">+ Add an offer</button></div>';
+
+    // 1. the numbers that matter
+    var walk = cw + cost, tgtCtc = hc * (1 + cfgv(c, "stepPct", 30) / 100);
+    var nums = hd("1 · Your numbers", "Never accept less than the floor. Aim for the target. FI tells you whether the target is enough.");
+    if (!cw) nums += '<div style="font-size:12.5px;color:var(--amber)">Fill in today\'s job below (or load your career file) to see your floor.</div>';
+    else nums += carRow("Today's real value / month", rs(cw))
+      + carRow("Floor: minimum in-hand at a job with no PF, NPS or health cover", rs(walk), "var(--red)")
+      + carRow("Honest current CTC (cash, rent, perks; no loan subsidies, no unvested gratuity)", rl(hc))
+      + carRow("Target CTC (+" + cfgv(c, "stepPct", 30) + "% on the honest number)", rl(tgtCtc), "var(--green)");
+    if (n.exp) nums += carRow("FI at " + n.fiAge + ": corpus needed (" + cfgv(c, "swr", 3.5) + "% withdrawal, " + cfgv(c, "infl", 6) + "% inflation)", rl(n.corpus))
+      + carRow("SIP needed every month from now (" + cfgv(c, "ret", 10) + "% return)", rs(n.sip))
+      + carRow("So your in-hand must be at least (expenses + EMIs + SIP − spouse income)", rs(n.fiInhand), cw && n.fiInhand > walk ? "var(--amber)" : "var(--green)")
+      + (cw && n.fiInhand > walk ? '<div style="font-size:11.5px;color:var(--amber)">FI needs more than the floor, so the floor alone is not enough: use the higher number as your real walk-away.</div>' : '');
+    else nums += '<div style="font-size:12px;color:var(--amber);margin-top:6px">Add household expenses in step 4 to see what FI needs.</div>';
+    h += box(nums);
+
+    // 2. offers
+    h += '<div style="font-weight:800;font-size:14px;margin:14px 0 2px;color:var(--text)">2 · Your options</div>';
+    if (!c.offers.length) h += box('<div style="font-size:12.5px;color:var(--text)">No offers yet. Tap <b>+ Add an offer</b>.</div>');
+    var best = null;
+    c.offers.forEach(function (o, i) { h += offerHTML(o, i, c); var v = carVerdict(o, c); if (v.st === "go" && (!best || v.score > best.v.score)) best = { o: o, v: v }; });
+    if (c.offers.length > 1) h += box(hd("The call", "") + '<div style="font-size:12.5px;color:var(--text);line-height:1.6">' + (best ? "<b>" + esc(best.o.name) + "</b> passes every must-have and scores highest (" + best.v.score + "/100)."
+      : "No option passes every must-have yet. Settle the <b style=\"color:var(--amber)\">?</b> items first; never decide on a ?.") + '</div>');
+
+    // 3. worst cases
+    var lw = lastDay(c);
+    var wc = hd("3 · Worst cases (are you ready?)", "Your household's worst case is not zero income: it is your spouse's income plus your emergency fund.");
+    if (!n.gap && !n.exp) wc += '<div style="font-size:12.5px;color:var(--amber)">Add expenses, EMIs, spouse income and emergency fund in step 4.</div>';
+    else {
+      var rcol = n.runway >= 12 ? "var(--green)" : n.runway >= 6 ? "var(--amber)" : "var(--red)";
+      wc += carRow("Monthly gap if your pay stops (expenses + EMIs − spouse income)", rs(n.gap))
+        + carRow("Runway on the emergency fund", (n.runway >= 99 ? "no gap" : n.runway.toFixed(1) + " months"), rcol)
+        + carRow("No job for 6 months after your last day: cash needed", rs(n.gap * 6), n.ef >= n.gap * 6 ? "var(--green)" : "var(--red)")
+        + carRow("A contract ends at month 12, 6-month search", rs(n.gap * 6) + " from the fund", n.ef >= n.gap * 6 ? "var(--green)" : "var(--red)")
+        + carRow("Medical bill of ₹5L with no group cover", c.done.health ? "covered by your own policy" : "from the fund: buy cover (plan item)", c.done.health ? "var(--green)" : "var(--red)")
+        + '<div style="font-size:11.5px;color:var(--text);margin-top:6px;line-height:1.55"><b>One-way door:</b> leaving a government or PSU post is usually final (re-entry means fresh recruitment, and age limits apply). The only undo is withdrawing the resignation before you are relieved' + (lw ? " (" + ymd(lw) + ")" : "") + ", if your service rules allow it. Decide before then.</div>";
+    }
+    h += box(wc);
+
+    // 4. inputs
+    var inp = hd("4 · Today's job and household", "From your payslip and bank app. Monthly ₹ unless marked.")
+      + fld("Payslip gross (incl. employer NPS)", "cur.gross", c.cur.gross, "₹/mo") + fld("Payslip net (credited)", "cur.inhand", c.cur.inhand, "₹/mo")
+      + fld("Rent the employer pays for you", "cur.rent", c.cur.rent, "₹/mo") + fld("Cash-like perks (fuel, phone, paper)", "cur.perks", c.cur.perks, "₹/mo")
+      + fld("Employer NPS / PF", "cur.empRet", c.cur.empRet, "₹/mo") + fld("Your own NPS / PF deduction", "cur.empDed", c.cur.empDed, "₹/mo")
+      + fld("Other yearly benefits you really get (insurance, medical, LFC, leave encashment, incentive)", "cur.otherYr", c.cur.otherYr, "₹/yr")
+      + fld("Household essentials incl. rent you will pay", "house.exp", c.house.exp, "₹/mo") + fld("EMIs", "house.emi", c.house.emi, "₹/mo")
+      + fld("Spouse take-home", "house.wife", c.house.wife, "₹/mo") + fld("Emergency fund (cash, liquid funds)", "house.ef", c.house.ef, "₹")
+      + fld("Investments towards FI (MF, stocks, NPS, PPF, EPF)", "house.nw", c.house.nw, "₹")
+      + '<details style="margin-top:6px"><summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:var(--text)">Dates and assumptions</summary>'
+      + fld("Notice period started", "cfg.noticeStart", c.cfg.noticeStart, "YYYY-MM-DD") + fld("Notice length", "cfg.noticeMonths", c.cfg.noticeMonths || 3, "months")
+      + fld("Joining date (blank: day after last day)", "cfg.join", c.cfg.join, "YYYY-MM-DD") + fld("Birth month", "cfg.birth", c.cfg.birth, "YYYY-MM")
+      + fld("FI target age", "cfg.fiAge", c.cfg.fiAge || 50, "years") + fld("Inflation", "cfg.infl", c.cfg.infl || 6, "%/yr") + fld("Investment return", "cfg.ret", c.cfg.ret || 10, "%/yr")
+      + fld("Safe withdrawal rate", "cfg.swr", c.cfg.swr || 3.5, "%") + fld("Your own health cover", "cfg.health", c.cfg.health || 3000, "₹/mo") + fld("Term life cover", "cfg.term", c.cfg.term || 1500, "₹/mo")
+      + fld("Move rhythm: step", "cfg.stepPct", c.cfg.stepPct || 30, "%") + fld("Move rhythm: every", "cfg.stepMonths", c.cfg.stepMonths || 30, "months") + '</details>';
+    h += box(inp);
+
+    // 5. the ladder, worked backwards
+    var age = ageNow(c), lad = hd("5 · The ladder, worked backwards", "Each rung needs proof, not just years. Bands: rough Mumbai fixed pay, ₹ lakh, Oct 2026; check with search firms.");
+    RUNGS.forEach(function (r) {
+      var late = age && age > r.by;
+      lad += '<div style="margin:8px 0;padding:8px;border-radius:10px;background:var(--cardAlt)"><div style="font-size:12.5px;color:var(--text)"><b>' + r.r + ' · by ' + r.by + '</b>' + (r.band ? ' · ₹' + r.band + 'L' : '') + (late ? ' <span style="color:var(--amber)">· past this age</span>' : '') + '</div>'
+        + '<div style="font-size:12.5px;color:var(--text);margin:2px 0 4px">' + esc(r.role) + '</div>'
+        + r.proof.map(function (p) { return '<div style="font-size:11.5px;color:var(--text)"><span style="color:var(--green)">▸</span> ' + esc(p) + '</div>'; }).join("") + '</div>';
+    });
+    h += box(lad);
+
+    // 6. gap check
+    var gp = hd("6 · CISO-readiness gaps", "Tick what is already true. The rest is the plan for your next role.");
+    var gd = 0;
+    GAPS.forEach(function (g) { var on = !!c.gaps[g[0]]; if (on) gd++;
+      gp += '<div role="button" tabindex="0" onclick="gmCarGap(\'' + g[0] + '\')" style="display:flex;gap:9px;align-items:flex-start;cursor:pointer;margin:6px 0;font-size:12.5px;color:var(--text);line-height:1.5"><span class="gm-tap' + (on ? " on" : "") + '" style="min-width:26px;min-height:26px;border-radius:8px;font-size:12px">' + (on ? "✓" : "") + '</span><span>' + esc(g[1]) + '</span></div>'; });
+    h += box(gp + '<div style="font-size:12px;color:var(--muted)">' + gd + ' of ' + GAPS.length + ' in place</div>');
+
+    // 7. the plan
+    var pl = hd("7 · The plan (it shows up in Due now)", c.cfg.noticeStart ? "Dates count from your notice start, last day and joining day." : "Set your notice start date in step 4 to date the plan.");
+    var today = new Date();
+    planItems(c).forEach(function (p) {
+      var over = p.due && !p.done && p.due < today;
+      pl += '<div role="button" tabindex="0" onclick="gmCarDone(\'' + p.id + '\')" style="display:flex;gap:9px;align-items:flex-start;cursor:pointer;margin:6px 0;font-size:12.5px;color:var(--text);line-height:1.5"><span class="gm-tap' + (p.done ? " on" : "") + '" style="min-width:26px;min-height:26px;border-radius:8px;font-size:12px">' + (p.done ? "✓" : "") + '</span>'
+        + '<span' + (p.done ? ' style="text-decoration:line-through;opacity:.7"' : '') + '>' + esc(p.t) + (p.due ? ' <span style="color:' + (over ? "var(--red)" : "var(--muted)") + '">· ' + (over ? "overdue " : "by ") + ymd(p.due) + '</span>' : '') + '</span></div>';
+    });
+    h += box(pl);
+    h += '<div style="font-size:11px;color:var(--muted);margin:10px 2px;line-height:1.5">Tax: new regime FY 2026-27 slabs, ₹75,000 standard deduction, rebate to ₹12L. Fee income: 44ADA applies only to notified professions, so confirm with a CA before ticking it; GST may apply above ₹20L of fees. Market bands are estimates, not quotes. This screen is a decision aid, not financial or legal advice.</div>';
+    return h + '</div>';
+  }
+  window.gmCareerHTML = careerHTML;
+
+  function careerDueHTML() {
+    var due = careerDue(7).slice(0, 2); if (!due.length) return "";
+    return due.map(function (p) {
+      var over = p.due < new Date();
+      return '<div style="display:flex;align-items:center;gap:8px;margin:7px 0"><div style="flex:1;font-size:12.5px;color:var(--text)">\u{1F4BC} <b>' + esc(p.t) + '</b> <span style="color:' + (over ? "var(--red)" : "var(--muted)") + '">· ' + (over ? "overdue since " : "by ") + ymd(p.due) + '</span></div>'
+        + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="goTab(\'career\')">Open</button>'
+        + '<button class="btn-sm" style="background:var(--gold);color:#0d1f35" onclick="gmCarDone(\'' + p.id + '\')">Done</button></div>';
+    }).join("");
+  }
+
   /* ── 10. Wire into the existing render loop ─────────────────────── */
   if (typeof TABS !== "undefined") {
     var keep = TABS.filter(function (t) { return ["today", "map"].indexOf(t[0]) < 0; });
     var today = TABS.filter(function (t) { return t[0] === "today"; });
     var map = TABS.filter(function (t) { return t[0] === "map"; });
     TABS.length = 0;
-    today.concat([["ask", "\ud83e\udd16 Ask"], ["guide", "\ud83d\udcd8 Guides"], ["stack", "\u{1F3DB} Stack"], ["life", "\u{1F9ED} Life Map"],
+    today.concat([["ask", "\ud83e\udd16 Ask"], ["guide", "\ud83d\udcd8 Guides"], ["stack", "\u{1F3DB} Stack"], ["life", "\u{1F9ED} Life Map"], ["career", "\u{1F4BC} Career"],
       ["prop", "\u{1F3E0} Property"], ["ops", "\u2699 Ops"]]).concat(map).concat(keep)
       .forEach(function (t) { TABS.push(t); });
   }
@@ -5492,6 +5846,7 @@ function renderPlaybook(){
     else if (curTab === "ops") { box.innerHTML = opsHTML(); }
     else if (curTab === "stack") { box.innerHTML = stackHTML(); }
     else if (curTab === "life") { box.innerHTML = lifeMapHTML(); }
+    else if (curTab === "career") { box.innerHTML = careerHTML(); }
     else if (curTab === "prop") { box.innerHTML = propHTML(); }
     else if (curTab === "today" && calmOn()) { box.innerHTML = calmTodayHTML(); }
     else if (curTab === "okr" || curTab === "wheel") { box.insertAdjacentHTML("afterbegin", quarterCardHTML(curTab)); }
