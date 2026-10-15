@@ -26,5 +26,12 @@
     "command": ["./securax", "doctor"],
     "description": "Sunday 8pm: weekly reminder to export a Guiding Map backup.",
     "enabled": false
+  },
+  {
+    "id": "knowledge-inbox",
+    "cron": "5 21 * * *",
+    "command": ["./securax", "knowledge", "import", "--quiet"],
+    "description": "Daily 9:05pm: import any AI-chat export dropped into vault/knowledge/inbox (silent when nothing is new).",
+    "enabled": true
   }
 ]

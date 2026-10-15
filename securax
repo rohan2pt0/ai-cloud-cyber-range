@@ -640,6 +640,11 @@ $(python3 "$ROOT/lifecycle/forge.py" brief "$FB")"
     #   ./securax tls on | trust [--apply] | status | renew | off | internal on|off   (internal = also the hops between the services)
     shift; exec python3 "$ROOT/governance/tls.py" "$@"
     ;;
+  knowledge)
+    # Your years of AI chats (Claude, ChatGPT, DeepSeek, Gemini exports) as one private, searchable library (doc 51).
+    #   ./securax knowledge import [ZIP|FOLDER ...]  (no path = the inbox)  |  status
+    shift; exec python3 "$ROOT/knowledge/importer.py" "${@:-status}"
+    ;;
   storage)
     # Where the files are, how fast they grow, when the disk runs out, and what is safe to clean.   ./securax storage [--json] [--tidy [--yes]]
     shift; exec python3 "$ROOT/governance/storage.py" "$@"
@@ -1205,6 +1210,7 @@ AI & CHAT
   guard [on|off] strict or relaxed safety rails                      bench          which installed model fits this machine best
   say "text"     speak/ask quickly      ask <agent> "q"  ask an expert advisor      advisors / plan / learn / intel   daily helpers
   research "task" --allow site.com   browse the web within limits    design "prompt"   make images      routines   scheduled jobs
+  knowledge import|status   your old Claude/ChatGPT/DeepSeek/Gemini chats as one private library you can search (doc 51)
 
 KEEP IT SAFE
   backup / restore FILE       save and recover your data           watch          keep an eye on it and self-heal
