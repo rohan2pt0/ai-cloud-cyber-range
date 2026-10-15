@@ -16,6 +16,8 @@
 ```
 One key turns on two rungs: **DeepSeek V4.1 Flash** and **GLM Flash** (`opencodego`, `opencodego-glm`). They head the **build ladder** (`./securax build`, `autobuild`, and OpenCode below): OpenCode Go, then DeepSeek (your own key, if any), then the free tiers, then your local model. If the plan's usage cap is reached or the provider has an outage, the next rung answers; nothing stops.
 
+**OpenCode gets the build chain only.** It never sees a Chat chain (`bank-assistant`, `twin`), which can carry personal data. `./securax opencode --check` prints its default model, the build chain's live rungs in order, and confirms no Chat chain is offered (exit 1 otherwise).
+
 **Deliberately NOT in Chat.** Chat carries personal and business data, and the plan is sold for coding agents (it asks clients to identify with a custom user agent and a session id; SecuRAX sends `securax-gateway` and a per-install id; per conversation is not possible through the router, so that part is per install). Change the chain in `plugins/catalog.json` if you decide otherwise.
 
 Switch model any time: `OPENCODEGO_MODEL=openai/glm-5.3` in `local/compose/.env`. Only models on the provider's **chat/completions** endpoint work through this plugin (DeepSeek, GLM, Kimi, MiMo, LongCat...); the Claude, GPT and Grok variants Go also lists use other endpoints. `./securax models` lists what is live and repairs a retired name itself.

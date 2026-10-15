@@ -104,9 +104,12 @@ def build(now: float | None = None, env: dict | None = None, cockpit: pathlib.Pa
 def write(out: pathlib.Path = OUT, **kw) -> dict:
     data = build(**kw)
     out.parent.mkdir(parents=True, exist_ok=True)
-    tmp = out.with_suffix(".tmp")
-    tmp.write_text(json.dumps(data, indent=1, ensure_ascii=False), "utf-8")
-    tmp.replace(out)                                                          # atomic: the app never reads a half-written file
+    import tempfile
+    fd, tmp = tempfile.mkstemp(prefix=f".{out.name}.", dir=out.parent)       # unique per writer: two refreshes at once cannot share a temp file
+    with os.fdopen(fd, "w", encoding="utf-8") as fh:
+        fh.write(json.dumps(data, indent=1, ensure_ascii=False))
+    os.chmod(tmp, 0o644)
+    os.replace(tmp, out)                                                      # atomic: the app never reads a half-written file
     return data
 
 

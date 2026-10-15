@@ -18,6 +18,8 @@ what's already running, how to use it, and where a gap is honestly a gap.
 | **Customize** | personalize style, defaults, memory | the **anti-hallucination contract + India/BFSI defaults** baked into every agent, the Guiding Map settings, and the **antifragility/feedback memory** that learns from 👍/👎 | `agents/personas.py`, `assistant/`, `learning/`; Guiding Map → Ops |
 | **Design** | visual/image generation | **Mermaid/SVG diagrams** from the model, **plus sovereign local text-to-image** against your own Stable-Diffusion server (opt-in) | `./securax design "…"` / MCP `image_generate`; server via `design.yml` profile `design` |
 | **Manus / Clawbot** | autonomous web browsing from instructions | the **autonomous web-research agent** — read-only, allowlisted, injection-safe, HITL | `./securax research "…" --allow …` / MCP `web_research` ([doc 19](19-AUTONOMOUS-RESEARCH.md)) |
+| **Claude-like chat** | web search, memory, projects, your instructions | **The Twin** in Chat: model `twin`, presets, knowledge | [doc 53](53-THE-TWIN.md) |
+| **Chat history / memory** | everything you asked before, searchable | **`./securax knowledge`**: your Claude/ChatGPT/DeepSeek/Gemini exports as one private library in Private Docs | [doc 51](51-YOUR-AI-HISTORY.md) |
 | **Connectors** | reach Gmail/Drive/Slack/etc. | **n8n connectors** + the **MCP** control plane | [doc 07 — Integrations](07-INTEGRATIONS.md) |
 
 ## Routines — the sovereign scheduler (shipped in this estate)

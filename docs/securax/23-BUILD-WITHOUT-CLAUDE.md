@@ -44,13 +44,19 @@ trusting any name here. Verify current pricing on each provider's page (it moves
 Enable any with `./securax providers add`. All of them route through the gateway, so the rails apply.
 
 ### Local coder by hardware (sovereign, free)
-Enable with `ENABLE_LOCAL_CODER=1` in `.env`, then pull the model your machine can run:
+Run `./securax profile` (it sets `ENABLE_LOCAL_CODER=1` when there is room), then `./securax pull coder`. The model is picked on
+every start from the catalog's `coder.sizing` tiers by **the memory Docker can see**, then stepped down if it would not fit beside the
+rest of the estate (need = file size × 1.25, leaving 3.5 GB). Pin your own with `CODER_MODEL=...` and `CODER_MODEL_PIN=1`.
 
-| Your machine | Pull this | Set |
-|---|---|---|
-| 16 GB RAM, no GPU | `./securax pull qwen2.5-coder:7b` | (default) |
-| 32 GB RAM / 12–16 GB VRAM | `./securax pull qwen2.5-coder:14b` | `CODER_MODEL=ollama/qwen2.5-coder:14b` |
-| 24 GB+ VRAM / 32 GB+ Mac | `./securax pull qwen3-coder:30b` | `CODER_MODEL=ollama/qwen3-coder:30b` |
+| Memory Docker sees | Model | Download | Why |
+|---|---|---|---|
+| 30 GB+ (and it fits) | `qwen3-coder:30b` | 19 GB | 256K context, best quality per GB (MoE, 3.3B active) |
+| 15 GB+ (and it fits) | `gpt-oss:20b` | 13 GB | 128K context, quantization-aware MXFP4, Apache-2.0 |
+| otherwise | `qwen2.5-coder:7b` | 4.7 GB | small and fast on constrained hardware |
+
+**A 16 GB laptop gets `qwen2.5-coder:7b`.** `gpt-oss:20b` needs about 16 GB while running, and inside WSL/Docker the estate's other
+services need room too. Profile says which model it would have picked and why it stepped down. On a CPU-only laptop expect single-digit
+to low-tens tokens/s; measure with `./securax bench --models gpt-oss:20b` (it flags anything under 4 tokens/s as too slow to chat with).
 
 > Coding agents need context. Raise Ollama's context window (default can be ~4k): set
 > `OLLAMA_CONTEXT_LENGTH=65536` for the ollama container, or a model `Modelfile` with `num_ctx`.

@@ -174,3 +174,69 @@ def test_expiring_keys_raise_the_key_risk(monkeypatch):
     c.c_keys()
     m = c.metrics[0]
     assert m["status"] == "red" and "never expire" in m["value"] and "expiring" in m["value"]
+
+
+def _coding_env(**kv):
+    return {"GROQ_API_KEY": "gsk_x", "GEMINI_API_KEY": "AIza_x", **kv}
+
+
+def test_coding_line_names_each_provider_and_the_local_fallback(monkeypatch):
+    c = ck.Collector(_coding_env(ENABLE_LOCAL_CODER="1", CODER_MODEL="qwen2.5-coder:7b"), 1_000_000.0, "personal", ck.cfg()["thresholds"])
+    calls = []
+
+    def probe(p):
+        calls.append(p["id"])
+        return {"ok": True, "left": {"x-ratelimit-remaining-tokens-day": "180000"}} if p["id"] == "groq" else {"ok": True, "left": {}}
+    monkeypatch.setattr(c, "_probe", probe)
+    monkeypatch.setattr(ck, "sh", lambda args, timeout=20: "vulnbank-range-ollama-1\n" if args[1] == "ps" else "NAME\nqwen2.5-coder:7b  abc  4.7 GB\n")
+    c.c_coding()
+    m = next(x for x in c.metrics if x["id"] == "coding")
+    assert sorted(calls) == ["gemini", "groq"]                       # only enabled providers are probed; no prompt is ever sent
+    assert "Groq ✓ (180K tokens left, whole organisation)" in m["value"] and "Gemini ✓ (Green-tier only)" in m["value"]
+    assert "Cerebras (not enabled)" in m["value"] and "DeepSeek (not enabled)" in m["value"]
+    assert "Local fallback: qwen2.5-coder:7b ready." in m["value"] and m["status"] == "green"
+
+
+def test_coding_line_is_cached_and_fast_mode_never_probes(monkeypatch):
+    th = ck.cfg()["thresholds"]
+    c = ck.Collector(_coding_env(), 1_000_000.0, "personal", th)
+    monkeypatch.setattr(c, "_probe", lambda p: {"ok": False, "why": "answered 401 (key refused)"})
+    c.c_coding()
+    assert "Groq ✗ (answered 401 (key refused))" in c.metrics[-1]["value"] and c.metrics[-1]["status"] == "red"
+    for now, fast in ((1_000_100.0, False), (9_999_999.0, True)):     # within 5 minutes: cache; fast: cache only, even when stale
+        c2 = ck.Collector(_coding_env(), now, "personal", th, fast=fast)
+        monkeypatch.setattr(c2, "_probe", lambda p: (_ for _ in ()).throw(AssertionError("must not probe")))
+        c2.c_coding()
+        assert "Groq ✗" in c2.metrics[-1]["value"]
+
+
+def test_concurrent_writers_never_leave_a_mixed_file(tmp_path):
+    """The real failure (sandbox, cockpit_page): `up` refreshes the cockpit in the background while another refresh runs; plain
+    write_text truncates then writes, so a short write over a long one left the old tail behind ("Extra data"). With atomic_write every
+    read, at any moment, is one complete document."""
+    import threading
+    target = tmp_path / "cockpit.json"
+    long_doc, short_doc = json.dumps({"x": "y" * 50000, "n": list(range(2000))}, indent=1), json.dumps({"x": 1})
+    stop, bad = threading.Event(), []
+
+    def writer(doc):
+        while not stop.is_set():
+            ck.atomic_write(target, doc)
+
+    def reader():
+        while not stop.is_set():
+            try:
+                json.loads(target.read_text())
+            except FileNotFoundError:
+                pass
+            except ValueError as e:
+                bad.append(str(e)[:80])
+    ck.atomic_write(target, short_doc)
+    ts = [threading.Thread(target=writer, args=(d,)) for d in (long_doc, short_doc, long_doc)] + [threading.Thread(target=reader) for _ in range(2)]
+    [t.start() for t in ts]
+    import time as _t
+    _t.sleep(1.5)
+    stop.set()
+    [t.join() for t in ts]
+    assert not bad, bad[:3]
+    assert not [p for p in tmp_path.iterdir() if p.name.startswith(".cockpit.json.")], "no temporary files left behind"

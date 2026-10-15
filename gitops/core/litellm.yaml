@@ -43,11 +43,16 @@ data:
           model: gemini/gemini-3.5-flash-lite
           timeout: 40
           api_key: os.environ/GEMINI_API_KEY
+      - model_name: twin
+        litellm_params:
+          model: gemini/gemini-3.5-flash-lite
+          timeout: 40
+          api_key: os.environ/GEMINI_API_KEY
 
     litellm_settings:
       num_retries: 1
       request_timeout: 120
-      fallbacks: [{"bank-assistant": ["bank-assistant-local"]}, {"builder": ["bank-assistant-local"]}]
+      fallbacks: [{"bank-assistant": ["bank-assistant-local"]}, {"builder": ["bank-assistant-local"]}, {"twin": ["bank-assistant-local"]}]
       drop_params: true
       json_logs: true
 

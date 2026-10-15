@@ -317,6 +317,17 @@
   //    Auth: Authorization: Bearer <device token>. No SDK, no CDN \u2014 plain fetch.
   function syncHeaders(c) { return { "Content-Type": "application/json", "Authorization": "Bearer " + c.key }; }
   function stateURL(c) { return String(c.url).replace(/\/+$/, "") + "/state?user=" + encodeURIComponent(c.user); }
+  // a > b by Unicode code point (Python's str order, used by estate-sync's tie-break); JS's own < compares UTF-16 units, which differs for emoji
+  function cpAfter(a, b) {
+    var i = 0, j = 0;
+    while (i < a.length && j < b.length) {
+      var x = a.codePointAt(i), y = b.codePointAt(j);
+      if (x !== y) return x > y;
+      i += x > 0xFFFF ? 2 : 1; j += y > 0xFFFF ? 2 : 1;
+    }
+    return a.length - i > b.length - j;
+  }
+  window.gmCpAfter = cpAfter;
   var lastPull = 0;
   window.gmSyncInit = function (force) {
     var c = cfg(); if (!c || !c.url || !c.key || !navigator.onLine) return;
@@ -334,7 +345,9 @@
         var localN = localStorage.length, remoteN = Object.keys(remote).length;
         if (localN > 10 && remoteN < localN / 2) { S_("gm_sync_anomaly", ymd() + ": remote had " + remoteN + " keys vs " + localN + " local \u2014 merge refused"); return gmPush(); }
         Object.keys(remote).forEach(function (k) {
-          if (!m[k] || (rmeta[k] || 0) > m[k]) { _set(k, remote[k]); m[k] = rmeta[k] || nowSrv(); changed = true; }
+          var rt = rmeta[k] || 0;
+          // newer wins; on an exact tie the server's rule decides (larger value by code point), so every device converges on the same value
+          if (!m[k] || rt > m[k] || (rt === m[k] && cpAfter(String(remote[k]), String(localStorage.getItem(k))))) { _set(k, remote[k]); m[k] = rt || nowSrv(); changed = true; }
         });
         if (changed) { S_("gm_meta", m); renderAll(); }
         gmPush();

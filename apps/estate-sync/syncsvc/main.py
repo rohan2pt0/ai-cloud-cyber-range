@@ -167,16 +167,34 @@ def sync_root() -> Response:
     return Response(status_code=200)
 
 
+def _canon(v) -> str:
+    """Tie-break key. The PWA stores strings and compares them by Unicode code point (guiding-map/ops.js cpAfter), which is exactly
+    Python's str order, so phone, laptop and server pick the same winner. Non-strings (other clients) compare by canonical JSON."""
+    return v if isinstance(v, str) else _json.dumps(v, sort_keys=True, separators=(",", ":"), ensure_ascii=False)
+
+
 def _merge(stored: dict, s_meta: dict, inc: dict, i_meta: dict) -> tuple[dict, dict]:
-    """Per-key timestamp merge. A field changes only when the incoming copy is newer."""
+    """Per-key last-writer-wins merge (an LWW register per key). A field changes only when the incoming copy is NEWER; on an exact
+    timestamp tie (two devices in the same millisecond) the larger canonical value wins on every server, so the merge is commutative,
+    associative and idempotent: any arrival order of the same edits converges to the same state (tests/test_sync_properties.py)."""
     out, out_meta = dict(stored), dict(s_meta)
     for k, v in inc.items():
         ts = i_meta.get(k, 0) or 0
+        if k not in out:
+            out[k], out_meta[k] = v, ts or int(time.time() * 1000)
+            continue
         prev = out_meta.get(k, 0) or 0
-        if k not in out or ts >= prev:
-            out[k] = v
-            out_meta[k] = ts or int(time.time() * 1000)
+        if ts > prev or (ts == prev and _canon(v) > _canon(out[k])):
+            out[k], out_meta[k] = v, ts
     return out, out_meta
+
+
+def _bad_meta(i_meta: dict) -> str | None:
+    """Timestamps are milliseconds since 1970: finite, non-negative numbers. Anything else is refused before it can break a comparison."""
+    for k, ts in i_meta.items():
+        if isinstance(ts, bool) or not isinstance(ts, (int, float)) or ts != ts or ts in (float("inf"), float("-inf")) or ts < 0:
+            return f"meta[{str(k)[:40]!r}] must be a timestamp in milliseconds (a non-negative number)"
+    return None
 
 
 @app.get("/sync/state")
@@ -212,13 +230,28 @@ async def put_state(request: Request,
     i_meta = body.get("meta") or {}
     if not isinstance(inc, dict) or not isinstance(i_meta, dict):
         raise HTTPException(400, "payload and meta must be objects")
+    bad = _bad_meta(i_meta)
+    if bad:
+        raise HTTPException(400, bad)
 
+    merged, updated_at, snaps = merge_write(user, inc, i_meta, body.get("updated_at"))
+    await _notify(user, updated_at, str(body.get("device") or "")[:64] or None)
+    return JSONResponse({"ok": True, "keys": len(merged), "updated_at": updated_at, "snapshots": snaps[0], "latest_snapshot": snaps[1]})
+
+
+def merge_write(user: str, inc: dict, i_meta: dict, updated_at: str | None) -> tuple[dict, str, tuple]:
+    """Read, merge and write one user's state (and today's snapshot) atomically: safe with any number of workers or processes."""
+    import json
     with closing(_db()) as conn:
+        # One write lock around read -> merge -> write. Without it, two workers (or containers) that read the same row each wrote back
+        # their own merge and the later one erased the earlier one's keys (a lost update: 175 of 200 keys in the concurrency test).
+        conn.isolation_level = None
+        conn.execute("BEGIN IMMEDIATE")
         row = conn.execute("SELECT payload, meta FROM state WHERE user_id=?", (user,)).fetchone()
         stored = json.loads(row[0]) if row else {}
         s_meta = json.loads(row[1]) if row else {}
         merged, merged_meta = _merge(stored, s_meta, inc, i_meta)
-        updated_at = body.get("updated_at") or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        updated_at = updated_at or time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         conn.execute(
             "INSERT INTO state(user_id, payload, meta, updated_at) VALUES(?,?,?,?) "
             "ON CONFLICT(user_id) DO UPDATE SET payload=excluded.payload, meta=excluded.meta, updated_at=excluded.updated_at",
@@ -233,9 +266,8 @@ async def put_state(request: Request,
         cutoff = time.strftime("%Y-%m-%d", time.gmtime(time.time() - SNAPSHOT_DAYS * 86400))
         conn.execute("DELETE FROM snapshots WHERE user_id=? AND day < ?", (user, cutoff))
         snaps = conn.execute("SELECT COUNT(*), MAX(day) FROM snapshots WHERE user_id=?", (user,)).fetchone()
-        conn.commit()
-    await _notify(user, updated_at, str(body.get("device") or "")[:64] or None)
-    return JSONResponse({"ok": True, "keys": len(merged), "updated_at": updated_at, "snapshots": snaps[0], "latest_snapshot": snaps[1]})
+        conn.execute("COMMIT")
+    return merged, updated_at, snaps
 
 
 @app.get("/sync/snapshots")

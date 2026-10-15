@@ -117,6 +117,8 @@ services:
       ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
       DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
       OPENCODE_GO_API_KEY: ${OPENCODE_GO_API_KEY:-}
+      CEREBRAS_API_KEY: ${CEREBRAS_API_KEY:-}
+      NVIDIA_NIM_API_KEY: ${NVIDIA_NIM_API_KEY:-}
       MISTRAL_API_KEY: ${MISTRAL_API_KEY:-}
       XAI_API_KEY: ${XAI_API_KEY:-}
       PERPLEXITYAI_API_KEY: ${PERPLEXITYAI_API_KEY:-}
@@ -196,7 +198,10 @@ services:
   # directly), so every prompt/response passes the Red/Yellow/Green rails first.
   open-webui:
     image: ghcr.io/open-webui/open-webui:0.12.2
-    mem_limit: 1g
+    # 1.5 GB: document search embeds INSIDE this container (local model, nothing leaves the box), which needs about
+    # 0.5 GB on its own; at 1 GB uploading your handbooks could kill it. Doing it in Ollama instead would evict your chat
+    # model (OLLAMA_MAX_LOADED_MODELS=1 keeps CPU laptops from swapping) and reload it on every document question.
+    mem_limit: ${OPENWEBUI_MEM:-1536m}
     cpus: 1.0
     profiles: ["ai"]
     restart: unless-stopped
@@ -215,6 +220,19 @@ services:
       AIOHTTP_CLIENT_TIMEOUT: "600"          # CPU-only answers can take minutes; the default 300s cut them off
       # The built-in "Arena Model" picks a RANDOM model per message (could be a paid/unexpected one) — off.
       ENABLE_EVALUATION_ARENA_MODELS: "false"
+      # ---- The Twin (doc 53). Set here, not in Admin screens: with persistent config off those are lost on restart.
+      # One sign-in key kept in .env (`up` creates it). Without it Open WebUI makes a new one whenever the container is
+      # recreated (every `./securax update`): you were signed out and tool tokens broke.
+      WEBUI_SECRET_KEY: ${WEBUI_SECRET_KEY:-}
+      JWT_EXPIRES_IN: ${OWUI_JWT_EXPIRES_IN:-7d}            # without Redis, signing out does not end a session: keep it short
+      ENABLE_PROFILE_IMAGE_URL_FORWARDING: "false"          # avatars never fetched from outside sites (would leak your IP)
+      ENABLE_WEB_SEARCH: ${OWUI_WEB_SEARCH:-true}           # the globe toggle in a chat; off per chat until you click it
+      WEB_SEARCH_ENGINE: ${OWUI_WEB_SEARCH_ENGINE:-duckduckgo}   # free, no key; the search text goes to DuckDuckGo
+      WEB_SEARCH_RESULT_COUNT: ${OWUI_WEB_SEARCH_RESULTS:-5}
+      ENABLE_MEMORIES: "true"                               # Settings → Personalization → Memory: facts it keeps about you
+      ENABLE_NOTES: "true"
+      ENABLE_FOLDERS: "true"                                # folders = projects (own instructions + knowledge)
+      ENABLE_CODE_INTERPRETER: "true"                       # runs Python in YOUR browser (Pyodide), not on the server
     ports: ["${BIND_HOST:-127.0.0.1}:3000:8080"]   # BIND_HOST=0.0.0.0 or your Tailscale IP to reach from phone/iPad
     volumes: ["openwebui:/app/backend/data"]
     networks: [edge, modelplane]

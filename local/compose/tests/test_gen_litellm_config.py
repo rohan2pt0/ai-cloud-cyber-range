@@ -4,9 +4,11 @@ No Docker and no network: we feed the generator a fake .env dict and assert the 
 enables exactly the right providers, routes the default correctly, and always stays valid YAML.
 """
 import importlib.util
+import json
 import pathlib
 import re
 
+import pytest
 import yaml
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -189,7 +191,7 @@ def test_ladder_is_free_first_and_ordered():
     fb = _fallback_map(yaml.safe_load(gen.generate(cat, env)))
     assert fb["bank-assistant"] == ["groq", "openrouter", "bank-assistant-local"]
     assert "openai" not in fb["bank-assistant"], "a paid provider must never be in the default chat chain"
-    assert fb["builder"] == ["groq", "openrouter", "bank-assistant-local"]   # no deepseek key -> gemini heads it
+    assert fb["builder"] == ["groq-qwen", "bank-assistant-gemini", "openrouter", "bank-assistant-local"]   # Groq's free tier heads the build chain
 
 
 def test_builder_prefers_cheap_deepseek_then_free_then_local():
@@ -409,3 +411,67 @@ def test_baseline_never_carries_a_reasoning_cap():
     env = {"GEMINI_API_KEY": "g", "GEMINI_REASONING": "minimal"}
     assert "reasoning_effort" not in yaml.safe_load(gen.generate(_catalog(), env, baseline=True))["model_list"][0]["litellm_params"]
     assert _params(yaml.safe_load(gen.generate(_catalog(), env)), "bank-assistant")["reasoning_effort"] == "minimal"
+
+
+def test_builder_puts_groq_before_deepseek_and_cerebras_is_in_no_chain():
+    cat = _catalog()
+    assert cat["chains"]["builder"][:6] == ["opencodego", "opencodego_glm", "groq", "groq_qwen", "nvidia_nim", "deepseek"]
+    assert all("cerebras" not in v for k, v in cat["chains"].items() if not k.startswith("_"))
+    # NVIDIA's free tier is for development: the build chain only, never a Chat chain
+    assert [k for k, v in cat["chains"].items() if not k.startswith("_") and "nvidia_nim" in v] == ["builder"]
+    doc = yaml.safe_load(gen.generate(cat, {"CEREBRAS_API_KEY": "csk-x", "GROQ_API_KEY": "gsk_x"}))
+    cer = [m for m in doc["model_list"] if m["model_name"] == "cerebras"][0]["litellm_params"]
+    assert cer["model"].startswith("cerebras/") and cer["extra_headers"] == {"X-Cerebras-3rd-Party-Integration": "litellm"}
+    assert "cerebras" not in json.dumps(_fallback_map(doc))                 # selectable on its own, never a fallback
+
+
+def test_build_chain_override_keeps_local_last_and_chat_chains_are_not_editable():
+    cat = _catalog()
+    env = {"CHAIN_BUILDER": "cerebras,bogus,local,groq", "CHAIN_BANK_ASSISTANT": "openai", "CEREBRAS_API_KEY": "c", "GROQ_API_KEY": "g", "OPENAI_API_KEY": "o"}
+    ch = gen.chains_for(cat, env)
+    assert ch["builder"] == ["cerebras", "groq", "local"]                    # unknown ids dropped, local moved to the end
+    assert ch["bank-assistant"] == cat["chains"]["bank-assistant"]          # a .env line can never put a paid model in Chat
+    assert gen.chains_for(cat, env, baseline=True)["builder"] == cat["chains"]["builder"]
+    msg, val = gen.edit_chain(cat, {}, "builder", "add", "cerebras", "deepseek")
+    assert val.split(",").index("cerebras") == val.split(",").index("deepseek") - 1 and "local" not in val
+    assert gen.edit_chain(cat, {}, "twin", "add", "cerebras", "")[1] is None
+    assert gen.edit_chain(cat, {}, "builder", "remove", "local", "")[1] is None
+    assert gen.edit_chain(cat, {}, "builder", "reset", "", "")[1] == ""
+
+
+@pytest.mark.parametrize("mb,model,stepped", [(7800, "qwen2.5-coder:7b", ""), (15500, "qwen2.5-coder:7b", "gpt-oss:20b"),
+                                              (22000, "gpt-oss:20b", ""), (31800, "qwen3-coder:30b", "")])
+def test_local_coder_is_sized_to_what_fits_beside_the_estate(mb, model, stepped):
+    r = gen.pick_coder(_catalog(), mb)
+    assert (r["model"], r["stepped_from"]) == (model, stepped)
+    assert mb - r["need_mb"] >= _catalog_coder()["sizing"]["reserve_mb"] or model == "qwen2.5-coder:7b"
+
+
+def _catalog_coder():
+    return next(p for p in _catalog()["providers"] if p["id"] == "coder")
+
+
+@pytest.mark.parametrize("url,on", [
+    ("http://100.101.102.103:11434", True), ("http://desktop.tailnet-abc.ts.net:11434", True), ("http://192.168.1.20:11434", True),
+    ("http://127.0.0.1:11434", True), ("http://8.8.8.8:11434", False), ("https://ollama.example.com", False),
+    ("http://100.128.0.1:11434", False), ("ftp://10.0.0.2", False), ("", False)])
+def test_home_machine_is_on_only_for_an_address_you_own(url, on):
+    """The 'home' rung counts as zone 'local' for data residency: a public address must never enable it."""
+    cat = _catalog()
+    doc = yaml.safe_load(gen.generate(cat, {"REMOTE_OLLAMA_BASE": url, "HOME_MODEL": "ollama/qwen2.5:14b", "GEMINI_API_KEY": "g"}))
+    home = [m for m in doc["model_list"] if m["model_name"] == "home-local"]
+    assert bool(home) is on
+    if on:
+        assert home[0]["litellm_params"]["api_base"] == url and home[0]["litellm_params"]["model"] == "ollama/qwen2.5:14b"
+        fb = _fallback_map(doc)
+        assert fb["bank-assistant"][-2:] == ["home-local", "bank-assistant-local"]      # just before this laptop; local still last
+
+
+def test_home_rung_is_local_for_residency():
+    import importlib.util as iu
+    spec = iu.spec_from_file_location("residency_t", REPO / "apps/llm-gateway/app/residency.py")
+    res = iu.module_from_spec(spec)
+    import sys as _sys
+    _sys.modules["residency_t"] = res
+    spec.loader.exec_module(res)
+    assert res.Policy.from_env({"RESIDENCY_MODE": "enforce"}).model_zone("home-local") == "local"
