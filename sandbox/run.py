@@ -372,7 +372,8 @@ def j_safe_update(sb: H.Sandbox, c: Checks):
     git("commit", "-q", "-m", "a bad release", cwd=other)
     git("push", "-q", "origin", "main", cwd=other)
     rc, out = sb.securax("update", timeout=1800)
-    c.ok("backup taken first" in out, "a backup was taken before the update", tail(out, 600))
+    c.ok("backup taken first" in out, "a backup was taken before the update",
+         "\n".join(ln for ln in out.splitlines() if "backup" in ln.lower())[-800:] or tail(out, 600))
     c.ok(rc == 3 and "Rolling back" in out, "the bad release is detected and rolled back (exit 3)", f"rc={rc} {tail(out, 600)}")
     c.ok(not (sb.clone / "BAD-RELEASE.txt").exists() and git("rev-parse", "HEAD")[1].strip() == prev, "…the checkout is back on the version that worked")
     c.ok(sb.wait_http(f"{H.GATEWAY}/healthz", 240) and sb.http("GET", f"{H.GATEWAY}/readyz").status == 200, "…and the estate is READY again")
