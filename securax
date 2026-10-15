@@ -820,7 +820,11 @@ $(python3 "$ROOT/lifecycle/forge.py" brief "$FB")"
     [ -n "$VOLS" ] || C "(no data volumes yet — backing up settings only)"
     : > "$STG/MANIFEST"; echo "securax $(cat "$ROOT/VERSION" 2>/dev/null) $(date -u +%FT%TZ)" >> "$STG/MANIFEST"
     for V in $VOLS; do
-      if VOUT="$(docker run --rm --user 0 --entrypoint tar -v "$V":/v:ro -v "$STG":/out "$IMG" czf "/out/vol-$V.tgz" -C /v . 2>&1)"; then
+      VOUT="$(docker run --rm --user 0 --entrypoint tar -v "$V":/v:ro -v "$STG":/out "$IMG" czf "/out/vol-$V.tgz" -C /v . 2>&1)" && RC=0 || RC=$?
+      # GNU tar exits 1 (not 2) when a file was written while it was read: on a RUNNING estate (Open WebUI 0.12 writes its data
+      # folder constantly) that is normal; the archive is complete and is verified below, so it counts as a good copy.
+      if [ "$RC" = 1 ] && printf '%s' "$VOUT" | grep -q "file changed as we read it" && tar tzf "$STG/vol-$V.tgz" >/dev/null 2>&1; then RC=0; fi
+      if [ "$RC" = 0 ]; then
         echo "volume $V" >> "$STG/MANIFEST"
       else
         C "Could not read volume $V — aborting (no partial backup written). Reason: $(printf '%s' "$VOUT" | tail -c 400)"; exit 1
