@@ -1,15 +1,14 @@
 """Offline tests for the AI-history importer. Fixtures are synthetic, shaped like each vendor's export."""
+import importlib.util
 import json
+import sys
 import zipfile
 from pathlib import Path
 
 import pytest
 
-import importlib.util
-
 _spec = importlib.util.spec_from_file_location("kimp", Path(__file__).resolve().parents[1] / "importer.py")
 K = importlib.util.module_from_spec(_spec)
-import sys
 sys.modules["kimp"] = K
 _spec.loader.exec_module(K)
 
