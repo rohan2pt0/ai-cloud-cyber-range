@@ -24,6 +24,15 @@
           "^gemini-[0-9.]+-flash$",
           "^gemini-[0-9.]+-flash-lite$"
         ]
+      },
+      "reasoning": {
+        "model": "^gemini/gemini-3",
+        "levels": [
+          "minimal",
+          "low",
+          "medium",
+          "high"
+        ]
       }
     },
     {
@@ -79,6 +88,14 @@
         "prefer": [
           "^claude-haiku-[0-9-]+$",
           "^claude-.*haiku.*"
+        ]
+      },
+      "reasoning": {
+        "model": "^anthropic/claude-.*-5",
+        "levels": [
+          "low",
+          "medium",
+          "high"
         ]
       }
     },
@@ -290,6 +307,14 @@
           "^openai/gpt-oss-20b$",
           "^llama-3\\.1-8b-instant$"
         ]
+      },
+      "reasoning": {
+        "model": "^groq/openai/gpt-oss",
+        "levels": [
+          "low",
+          "medium",
+          "high"
+        ]
       }
     },
     {
@@ -347,5 +372,6 @@
       "local"
     ]
   },
-  "_discover_exclude": "preview|exp|image|imagine|tts|audio|live|embed|thinking|vision|customtools|robotics|computer|transcribe|realtime|moderation|whisper|guard|safeguard|-8b"
+  "_discover_exclude": "preview|exp|image|imagine|tts|audio|live|embed|thinking|vision|customtools|robotics|computer|transcribe|realtime|moderation|whisper|guard|safeguard|-8b",
+  "_reasoning_comment": "Optional reasoning cap per provider: set <ID>_REASONING=<level> in .env. Applied only when the provider's CURRENT model matches reasoning.model and the level is listed (checked against LiteLLM's own mapping; on other providers a 'low' effort is mapped to thinking ON or to 'high'). Off by default: nothing changes until you set it. See doc 50."
 }
