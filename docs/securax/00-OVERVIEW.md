@@ -66,6 +66,7 @@ makes it an *ecosystem* and not five disconnected projects.
 | Quantum readiness: cryptography inventory (CBOM), post-quantum key exchange, encrypted backups | [`41-QUANTUM-READINESS.md`](41-QUANTUM-READINESS.md) |
 | OpenCode Go (flat-rate open models) and the OpenCode terminal agent, guarded | [`42-OPENCODE-GO-AND-THE-TERMINAL-AGENT.md`](42-OPENCODE-GO-AND-THE-TERMINAL-AGENT.md) |
 | Look inside third-party software before you trust it (REA, sandboxed; capability drift) | [`43-INSPECT-THIRD-PARTY-SOFTWARE.md`](43-INSPECT-THIRD-PARTY-SOFTWARE.md) |
+| Automation that works on day one (andon to your phone, weekly backup, review nudges) and the SuperApp plan: Twin, brain, Jarvis voice, family Android app, fly rails | [`52-AUTOMATION-PACK-AND-SUPERAPP-PLAN.md`](52-AUTOMATION-PACK-AND-SUPERAPP-PLAN.md) |
 | Your years of AI chats (Claude, ChatGPT, DeepSeek, Gemini exports) as one private library: `./securax knowledge import` | [`51-YOUR-AI-HISTORY.md`](51-YOUR-AI-HISTORY.md) |
 | Reasoning budget: meter thinking tokens, optional safe per-model cap (`<ID>_REASONING`); verdict on Hybrid Reasoning Agents | [`50-REASONING-BUDGET.md`](50-REASONING-BUDGET.md) |
 | Choose the next job without betting the house: floor, +30% target, FI need, offers through must-have gates, worst cases, ladder, dated plan (Guiding Map → Career) | [`49-CAREER-COMPASS.md`](49-CAREER-COMPASS.md) |

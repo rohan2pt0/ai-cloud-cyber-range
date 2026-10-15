@@ -627,8 +627,8 @@ $(python3 "$ROOT/lifecycle/forge.py" brief "$FB")"
     shift; exec python3 "$ROOT/governance/scale.py" "$@"
     ;;
   notify)
-    # Push the plain-words digest to any chat with an incoming webhook (Mattermost, Slack...). Off until SECURAX_NOTIFY_WEBHOOK is set.
-    #   ./securax notify test | digest [--dry-run] [--only-bad]
+    # The andon cord: push the plain-words digest to your phone (ntfy) and/or any chat webhook. Off until SECURAX_NOTIFY_NTFY or _WEBHOOK is set.
+    #   ./securax notify test | digest [--dry-run] [--only-bad] [--changed] | send "text" [--title T] [--priority high]
     shift; exec python3 "$ROOT/governance/notify.py" "$@"
     ;;
   sync-link)
@@ -1196,7 +1196,7 @@ START HERE (the 20% you use 80% of the time)
   doctor         check health and run a real chat test               update         get the latest version (safe: backs up first)
   why [service]  something is not working: what stopped and why      shortcut       type `securax <command>` from any folder
   cockpit        one-page health view: risks, to-dos, trends         storage        how much space you use and when it runs out
-  notify         send the daily digest to Mattermost/Slack           capacity       what to switch on as more people join (1 to 100,000)
+  notify         alerts to your phone (ntfy) or team chat               capacity       what to switch on as more people join (1 to 100,000)
   tls            encrypt every web connection (HTTPS everywhere)        sync-link      one-tap sync setup for a phone / second computer
   start / stop docs|flows|all   Private Docs / Automation (skipped in lite mode; remembered across updates)
   opencode       the OpenCode terminal coding agent, guarded: every call goes through the gateway (doc 42); --rea adds sandboxed reverse engineering

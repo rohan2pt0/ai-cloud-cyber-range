@@ -83,3 +83,58 @@ def test_only_bad_is_silent_when_green(monkeypatch, capsys):
     assert notify.main(["digest", "--only-bad"]) == 0 and sent == []
     monkeypatch.setattr(notify, "build_digest", lambda: ("amber", "look"))
     assert notify.main(["digest", "--only-bad"]) == 0 and sent == ["look"]
+
+
+def _isolate(monkeypatch, tmp_path):
+    for k in ("SECURAX_NOTIFY_WEBHOOK", "SECURAX_NOTIFY_NTFY", "SECURAX_NOTIFY_NTFY_TOKEN"):
+        monkeypatch.delenv(k, raising=False)
+    monkeypatch.setattr(notify, "ENV_FILE", tmp_path / ".env")
+    monkeypatch.setattr(notify, "STATE", tmp_path / "state.json")
+
+
+def test_settings_are_read_from_the_env_file(monkeypatch, tmp_path):
+    _isolate(monkeypatch, tmp_path)
+    (tmp_path / ".env").write_text('X=1\nSECURAX_NOTIFY_NTFY="https://ntfy.sh/abc-long-topic"\n')
+    assert notify.channels() == [("ntfy", "https://ntfy.sh/abc-long-topic")]
+
+
+def test_ntfy_send_carries_title_priority_and_token(monkeypatch, tmp_path):
+    _isolate(monkeypatch, tmp_path)
+    monkeypatch.setenv("SECURAX_NOTIFY_NTFY", "https://ntfy.example.com/t")
+    monkeypatch.setenv("SECURAX_NOTIFY_NTFY_TOKEN", "tk_secret")
+    seen = {}
+
+    class R:
+        status = 200
+        def __enter__(self): return self
+        def __exit__(self, *a): return False
+
+    def fake(req, timeout):
+        seen.update(url=req.full_url, body=req.data, headers=dict(req.header_items()))
+        return R()
+    monkeypatch.setattr(notify.urllib.request, "urlopen", fake)
+    assert notify.main(["send", "Backup is 9 days old", "--title", "Andon", "--priority", "high"]) == 0
+    assert seen["body"] == b"Backup is 9 days old" and seen["headers"]["Priority"] == "4"
+    assert seen["headers"]["Title"] == "Andon" and seen["headers"]["Authorization"] == "Bearer tk_secret"
+
+
+def test_changed_sends_once_then_only_on_change_including_back_to_green(monkeypatch, tmp_path, capsys):
+    _isolate(monkeypatch, tmp_path)
+    monkeypatch.setenv("SECURAX_NOTIFY_NTFY", "https://ntfy.example.com/t")
+    sent = []
+    monkeypatch.setattr(notify, "post_ntfy", lambda url, text, title, prio: sent.append((title, prio)))
+    state = {"v": ("red", "🔴 backup old")}
+    monkeypatch.setattr(notify, "build_digest", lambda: state["v"])
+    args = ["digest", "--changed", "--only-bad"]
+    assert notify.main(args) == 0 and sent == [("SecuRAX: RED", "high")]
+    assert notify.main(args) == 0 and len(sent) == 1                      # unchanged: silent
+    state["v"] = ("green", "🟢 all fine")
+    assert notify.main(args) == 0 and sent[-1] == ("SecuRAX: GREEN", "default")   # recovery is news
+    state["v"] = ("green", "🟢 all fine, new wording")
+    assert notify.main(args) == 0 and len(sent) == 2                      # green to green stays quiet
+
+
+def test_changed_without_a_channel_is_a_quiet_no_op(monkeypatch, tmp_path):
+    _isolate(monkeypatch, tmp_path)
+    monkeypatch.setattr(notify, "build_digest", lambda: ("red", "x"))
+    assert notify.main(["digest", "--changed"]) == 0
