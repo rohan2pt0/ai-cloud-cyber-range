@@ -1,377 +1,377 @@
 {
- "version": 1,
- "_comment": "SecuRAX plugin catalog — the single source of truth for provider plugins. Add a key with `./securax providers`, or by hand in local/compose/.env. The generator (gen_litellm_config.py) turns the ENABLED llm providers into the LiteLLM router config, so each one appears in Chat automatically, still routed through the security gateway. Model IDs change often — override any default with `<ID>_MODEL=...` in .env (e.g. OPENAI_MODEL=openai/gpt-4o). See docs/securax/22-PLUGINS-AND-PROVIDERS.md.",
- "providers": [
-  {
-   "id": "gemini",
-   "key_prefix": "AIza",
-   "label": "Google Gemini",
-   "kind": "llm",
-   "default": true,
-   "free": true,
-   "alias": "bank-assistant-gemini",
-   "model": "gemini/gemini-3.5-flash-lite",
-   "env": [
-    "GEMINI_API_KEY"
-   ],
-   "get_key": "https://aistudio.google.com/apikey",
-   "note": "Fast, generous free tier. The recommended default for instant answers.",
-   "discover": {
-    "kind": "gemini",
-    "url": "https://generativelanguage.googleapis.com/v1beta/models?pageSize=200",
-    "prefix": "gemini/",
-    "prefer": [
-     "^gemini-[0-9.]+-flash$",
-     "^gemini-[0-9.]+-flash-lite$"
-    ]
-   },
-   "reasoning": {
-    "model": "^gemini/gemini-3",
-    "levels": [
-     "minimal",
-     "low",
-     "medium",
-     "high"
-    ]
-   }
-  },
-  {
-   "id": "local",
-   "label": "Local model (Ollama, sovereign)",
-   "kind": "llm",
-   "always": true,
-   "local": true,
-   "free": true,
-   "alias": "bank-assistant-local",
-   "model": "ollama/qwen2.5:1.5b",
-   "api_base": "http://ollama:11434",
-   "env": [],
-   "note": "Runs on your box, never leaves it. The sovereign fallback / RED-tier choice."
-  },
-  {
-   "id": "openai",
-   "key_prefix": "sk-",
-   "label": "OpenAI (GPT)",
-   "kind": "llm",
-   "alias": "openai",
-   "model": "openai/gpt-4o-mini",
-   "env": [
-    "OPENAI_API_KEY"
-   ],
-   "get_key": "https://platform.openai.com/api-keys",
-   "discover": {
-    "kind": "openai",
-    "url": "https://api.openai.com/v1/models",
-    "prefix": "openai/",
-    "prefer": [
-     "^gpt-[0-9.]+-mini$",
-     "^gpt-4o-mini$",
-     "^gpt-[0-9.]+-nano$"
-    ]
-   }
-  },
-  {
-   "id": "anthropic",
-   "key_prefix": "sk-ant-",
-   "label": "Anthropic (Claude)",
-   "kind": "llm",
-   "alias": "claude",
-   "model": "anthropic/claude-haiku-5-5",
-   "env": [
-    "ANTHROPIC_API_KEY"
-   ],
-   "get_key": "https://console.anthropic.com/settings/keys",
-   "discover": {
-    "kind": "anthropic",
-    "url": "https://api.anthropic.com/v1/models",
-    "prefix": "anthropic/",
-    "prefer": [
-     "^claude-haiku-[0-9-]+$",
-     "^claude-.*haiku.*"
-    ]
-   },
-   "reasoning": {
-    "model": "^anthropic/claude-.*-5",
-    "levels": [
-     "low",
-     "medium",
-     "high"
-    ]
-   }
-  },
-  {
-   "id": "opencodego",
-   "label": "OpenCode Go (open models: DeepSeek V4.1 Flash)",
-   "kind": "llm",
-   "alias": "opencodego",
-   "model": "openai/deepseek-v4.1-flash",
-   "api_base": "https://opencode.ai/inference/go/v1",
-   "headers": {
-    "User-Agent": "securax-gateway",
-    "x-opencode-session": "securax-{install}"
-   },
-   "env": [
-    "OPENCODE_GO_API_KEY"
-   ],
-   "get_key": "https://opencode.ai/go",
-   "note": "Flat $10/month (Go plan) for open models hosted in the US/EU with zero retention and no training (DeepSeek V4.1 Flash: zero-retention agreement renewed monthly, valid through 31 Oct 2026). Sold for CODING-AGENT traffic: SecuRAX uses it only on the build ladder, never for Chat, and only for data you would accept sending to a US/EU cloud.",
-   "discover": {
-    "kind": "openai",
-    "url": "https://opencode.ai/inference/go/v1/models",
-    "prefix": "openai/",
-    "prefer": [
-     "^deepseek-v4\\.1-flash$",
-     "^deepseek-v4-flash$",
-     "^deepseek-flash$"
-    ]
-   }
-  },
-  {
-   "id": "opencodego_glm",
-   "label": "OpenCode Go (open models: GLM Flash)",
-   "kind": "llm",
-   "alias": "opencodego-glm",
-   "model": "openai/glm-5.3-flash",
-   "api_base": "https://opencode.ai/inference/go/v1",
-   "headers": {
-    "User-Agent": "securax-gateway",
-    "x-opencode-session": "securax-{install}"
-   },
-   "env": [
-    "OPENCODE_GO_API_KEY"
-   ],
-   "get_key": "https://opencode.ai/go",
-   "note": "Same OpenCode Go key as above; a second model family so one model's outage does not stop a build.",
-   "discover": {
-    "kind": "openai",
-    "url": "https://opencode.ai/inference/go/v1/models",
-    "prefix": "openai/",
-    "prefer": [
-     "^glm-5\\.3-flash$",
-     "^glm-5\\.[0-9]+-flash$",
-     "^glm-5"
-    ]
-   }
-  },
-  {
-   "id": "deepseek",
-   "key_prefix": "sk-",
-   "label": "DeepSeek",
-   "kind": "llm",
-   "alias": "deepseek",
-   "model": "deepseek/deepseek-v4-flash",
-   "env": [
-    "DEEPSEEK_API_KEY"
-   ],
-   "get_key": "https://platform.deepseek.com/api_keys",
-   "discover": {
-    "kind": "openai",
-    "url": "https://api.deepseek.com/models",
-    "prefix": "deepseek/",
-    "prefer": [
-     "^deepseek-v4-flash$",
-     "^deepseek-v4",
-     "^deepseek-chat$"
-    ]
-   }
-  },
-  {
-   "id": "mistral",
-   "label": "Mistral",
-   "kind": "llm",
-   "alias": "mistral",
-   "model": "mistral/mistral-small-latest",
-   "env": [
-    "MISTRAL_API_KEY"
-   ],
-   "get_key": "https://console.mistral.ai/api-keys",
-   "discover": {
-    "kind": "openai",
-    "url": "https://api.mistral.ai/v1/models",
-    "prefix": "mistral/",
-    "prefer": [
-     "^mistral-small-latest$",
-     "^mistral-small"
-    ]
-   }
-  },
-  {
-   "id": "grok",
-   "key_prefix": "xai-",
-   "label": "xAI (Grok)",
-   "kind": "llm",
-   "alias": "grok",
-   "model": "xai/grok-4.3",
-   "env": [
-    "XAI_API_KEY"
-   ],
-   "get_key": "https://console.x.ai",
-   "discover": {
-    "kind": "openai",
-    "url": "https://api.x.ai/v1/models",
-    "auth_codes": [
-     400,
-     401,
-     403
-    ],
-    "prefix": "xai/",
-    "prefer": [
-     "^grok-4\\.[0-9]+$",
-     "^grok-4",
-     "^grok-[0-9]"
-    ]
-   }
-  },
-  {
-   "id": "perplexity",
-   "key_prefix": "pplx-",
-   "label": "Perplexity (Sonar)",
-   "kind": "llm",
-   "alias": "perplexity",
-   "model": "perplexity/sonar",
-   "env": [
-    "PERPLEXITYAI_API_KEY"
-   ],
-   "get_key": "https://www.perplexity.ai/settings/api"
-  },
-  {
-   "id": "azure",
-   "label": "Azure AI Foundry / Azure OpenAI",
-   "kind": "llm",
-   "alias": "azure",
-   "model": "azure/gpt-4o-mini",
-   "env": [
-    "AZURE_API_KEY",
-    "AZURE_API_BASE"
-   ],
-   "needs_base": true,
-   "get_key": "https://ai.azure.com",
-   "note": "Set AZURE_API_BASE to your endpoint (https://<resource>.openai.azure.com) and AZURE_MODEL=azure/<your-deployment-name> (the deployment you created in the Azure portal, NOT the base model name)."
-  },
-  {
-   "id": "bedrock",
-   "label": "AWS Bedrock",
-   "kind": "llm",
-   "alias": "bedrock",
-   "model": "bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0",
-   "env": [
-    "AWS_ACCESS_KEY_ID",
-    "AWS_SECRET_ACCESS_KEY"
-   ],
-   "region_env": "AWS_REGION",
-   "get_key": "https://console.aws.amazon.com/iam/",
-   "note": "Enable model access in the Bedrock console first. Set AWS_REGION (e.g. us-east-1) and BEDROCK_MODEL=bedrock/<model-id> to pick a model."
-  },
-  {
-   "id": "openrouter",
-   "key_prefix": "sk-or-",
-   "label": "OpenRouter (incl. free models)",
-   "kind": "llm",
-   "free": true,
-   "alias": "openrouter",
-   "model": "openrouter/meta-llama/llama-3.3-70b-instruct:free",
-   "env": [
-    "OPENROUTER_API_KEY"
-   ],
-   "get_key": "https://openrouter.ai/keys",
-   "discover": {
-    "kind": "openai",
-    "url": "https://openrouter.ai/api/v1/models",
-    "prefix": "openrouter/",
-    "prefer": [
-     "^meta-llama/llama-3\\.3-70b-instruct:free$",
-     ":free$"
-    ]
-   }
-  },
-  {
-   "id": "groq",
-   "key_prefix": "gsk_",
-   "label": "Groq (fast, free tier)",
-   "kind": "llm",
-   "free": true,
-   "alias": "groq",
-   "model": "groq/openai/gpt-oss-120b",
-   "env": [
-    "GROQ_API_KEY"
-   ],
-   "get_key": "https://console.groq.com/keys",
-   "note": "Very fast inference with a free tier (daily token caps apply). Free-tier model lineups change — if this model 404s, set GROQ_MODEL=groq/<id> from console.groq.com/docs/models.",
-   "discover": {
-    "kind": "openai",
-    "url": "https://api.groq.com/openai/v1/models",
-    "prefix": "groq/",
-    "prefer": [
-     "^openai/gpt-oss-120b$",
-     "^llama-3\\.3-70b",
-     "^openai/gpt-oss-20b$",
-     "^llama-3\\.1-8b-instant$"
-    ]
-   },
-   "reasoning": {
-    "model": "^groq/openai/gpt-oss",
-    "levels": [
-     "low",
-     "medium",
-     "high"
-    ]
-   }
-  },
-  {
-   "id": "coder",
-   "label": "Local coder (Qwen2.5-Coder, sovereign)",
-   "kind": "llm",
-   "local": true,
-   "free": true,
-   "alias": "coder",
-   "model": "ollama/qwen2.5-coder:7b",
-   "api_base": "http://ollama:11434",
-   "env": [
-    "ENABLE_LOCAL_CODER"
-   ],
-   "note": "Opt-in sovereign coding model used by `./securax build`. Set ENABLE_LOCAL_CODER=1, then `./securax pull qwen2.5-coder:7b` (or :14b/:30b by RAM). Override with CODER_MODEL. See docs/securax/23-BUILD-WITHOUT-CLAUDE.md."
-  },
-  {
-   "id": "elevenlabs",
-   "key_prefix": "sk_",
-   "label": "ElevenLabs (voice / text-to-speech)",
-   "kind": "tts",
-   "env": [
-    "ELEVENLABS_API_KEY"
-   ],
-   "get_key": "https://elevenlabs.io/app/settings/api-keys",
-   "voice_env": "ELEVENLABS_VOICE_ID",
-   "note": "Read answers aloud / generate audio with `./securax say \"text\"`. Not a chat model."
-  },
-  {
-   "id": "compute",
-   "label": "Heavy compute (Colab / cloud GPU) — recipe",
-   "kind": "compute",
-   "env": [
-    "REMOTE_OLLAMA_BASE"
-   ],
-   "note": "Not a key: run Ollama on a GPU box or a Colab tunnel and set REMOTE_OLLAMA_BASE to its URL to offload the local model. See docs/securax/22-PLUGINS-AND-PROVIDERS.md § Heavy compute."
-  }
- ],
- "chains": {
-  "_comment": "Degradation ladders. Each chain is tried in order; only ENABLED providers participate, so a missing key just skips that rung. Every chain MUST end in 'local' (always on) so an answer is possible even with zero keys and zero internet. Paid providers are deliberately absent from bank-assistant (cost guard); the build chain may use cheap DeepSeek first. Enforced by tests.",
-  "bank-assistant": [
-   "gemini",
-   "groq",
-   "openrouter",
-   "local"
+  "version": 1,
+  "_comment": "SecuRAX plugin catalog — the single source of truth for provider plugins. Add a key with `./securax providers`, or by hand in local/compose/.env. The generator (gen_litellm_config.py) turns the ENABLED llm providers into the LiteLLM router config, so each one appears in Chat automatically, still routed through the security gateway. Model IDs change often — override any default with `<ID>_MODEL=...` in .env (e.g. OPENAI_MODEL=openai/gpt-4o). See docs/securax/22-PLUGINS-AND-PROVIDERS.md.",
+  "providers": [
+    {
+      "id": "gemini",
+      "key_prefix": "AIza",
+      "label": "Google Gemini",
+      "kind": "llm",
+      "default": true,
+      "free": true,
+      "alias": "bank-assistant-gemini",
+      "model": "gemini/gemini-3.5-flash-lite",
+      "env": [
+        "GEMINI_API_KEY"
+      ],
+      "get_key": "https://aistudio.google.com/apikey",
+      "note": "Fast, generous free tier. The recommended default for instant answers.",
+      "discover": {
+        "kind": "gemini",
+        "url": "https://generativelanguage.googleapis.com/v1beta/models?pageSize=200",
+        "prefix": "gemini/",
+        "prefer": [
+          "^gemini-[0-9.]+-flash$",
+          "^gemini-[0-9.]+-flash-lite$"
+        ]
+      },
+      "reasoning": {
+        "model": "^gemini/gemini-3",
+        "levels": [
+          "minimal",
+          "low",
+          "medium",
+          "high"
+        ]
+      }
+    },
+    {
+      "id": "local",
+      "label": "Local model (Ollama, sovereign)",
+      "kind": "llm",
+      "always": true,
+      "local": true,
+      "free": true,
+      "alias": "bank-assistant-local",
+      "model": "ollama/qwen2.5:1.5b",
+      "api_base": "http://ollama:11434",
+      "env": [],
+      "note": "Runs on your box, never leaves it. The sovereign fallback / RED-tier choice."
+    },
+    {
+      "id": "openai",
+      "key_prefix": "sk-",
+      "label": "OpenAI (GPT)",
+      "kind": "llm",
+      "alias": "openai",
+      "model": "openai/gpt-4o-mini",
+      "env": [
+        "OPENAI_API_KEY"
+      ],
+      "get_key": "https://platform.openai.com/api-keys",
+      "discover": {
+        "kind": "openai",
+        "url": "https://api.openai.com/v1/models",
+        "prefix": "openai/",
+        "prefer": [
+          "^gpt-[0-9.]+-mini$",
+          "^gpt-4o-mini$",
+          "^gpt-[0-9.]+-nano$"
+        ]
+      }
+    },
+    {
+      "id": "anthropic",
+      "key_prefix": "sk-ant-",
+      "label": "Anthropic (Claude)",
+      "kind": "llm",
+      "alias": "claude",
+      "model": "anthropic/claude-haiku-5-5",
+      "env": [
+        "ANTHROPIC_API_KEY"
+      ],
+      "get_key": "https://console.anthropic.com/settings/keys",
+      "discover": {
+        "kind": "anthropic",
+        "url": "https://api.anthropic.com/v1/models",
+        "prefix": "anthropic/",
+        "prefer": [
+          "^claude-haiku-[0-9-]+$",
+          "^claude-.*haiku.*"
+        ]
+      },
+      "reasoning": {
+        "model": "^anthropic/claude-.*-5",
+        "levels": [
+          "low",
+          "medium",
+          "high"
+        ]
+      }
+    },
+    {
+      "id": "opencodego",
+      "label": "OpenCode Go (open models: DeepSeek V4.1 Flash)",
+      "kind": "llm",
+      "alias": "opencodego",
+      "model": "openai/deepseek-v4.1-flash",
+      "api_base": "https://opencode.ai/inference/go/v1",
+      "headers": {
+        "User-Agent": "securax-gateway",
+        "x-opencode-session": "securax-{install}"
+      },
+      "env": [
+        "OPENCODE_GO_API_KEY"
+      ],
+      "get_key": "https://opencode.ai/go",
+      "note": "Flat $10/month (Go plan) for open models hosted in the US/EU with zero retention and no training (DeepSeek V4.1 Flash: zero-retention agreement renewed monthly, valid through 31 Oct 2026). Sold for CODING-AGENT traffic: SecuRAX uses it only on the build ladder, never for Chat, and only for data you would accept sending to a US/EU cloud.",
+      "discover": {
+        "kind": "openai",
+        "url": "https://opencode.ai/inference/go/v1/models",
+        "prefix": "openai/",
+        "prefer": [
+          "^deepseek-v4\\.1-flash$",
+          "^deepseek-v4-flash$",
+          "^deepseek-flash$"
+        ]
+      }
+    },
+    {
+      "id": "opencodego_glm",
+      "label": "OpenCode Go (open models: GLM Flash)",
+      "kind": "llm",
+      "alias": "opencodego-glm",
+      "model": "openai/glm-5.3-flash",
+      "api_base": "https://opencode.ai/inference/go/v1",
+      "headers": {
+        "User-Agent": "securax-gateway",
+        "x-opencode-session": "securax-{install}"
+      },
+      "env": [
+        "OPENCODE_GO_API_KEY"
+      ],
+      "get_key": "https://opencode.ai/go",
+      "note": "Same OpenCode Go key as above; a second model family so one model's outage does not stop a build.",
+      "discover": {
+        "kind": "openai",
+        "url": "https://opencode.ai/inference/go/v1/models",
+        "prefix": "openai/",
+        "prefer": [
+          "^glm-5\\.3-flash$",
+          "^glm-5\\.[0-9]+-flash$",
+          "^glm-5"
+        ]
+      }
+    },
+    {
+      "id": "deepseek",
+      "key_prefix": "sk-",
+      "label": "DeepSeek",
+      "kind": "llm",
+      "alias": "deepseek",
+      "model": "deepseek/deepseek-v4-flash",
+      "env": [
+        "DEEPSEEK_API_KEY"
+      ],
+      "get_key": "https://platform.deepseek.com/api_keys",
+      "discover": {
+        "kind": "openai",
+        "url": "https://api.deepseek.com/models",
+        "prefix": "deepseek/",
+        "prefer": [
+          "^deepseek-v4-flash$",
+          "^deepseek-v4",
+          "^deepseek-chat$"
+        ]
+      }
+    },
+    {
+      "id": "mistral",
+      "label": "Mistral",
+      "kind": "llm",
+      "alias": "mistral",
+      "model": "mistral/mistral-small-latest",
+      "env": [
+        "MISTRAL_API_KEY"
+      ],
+      "get_key": "https://console.mistral.ai/api-keys",
+      "discover": {
+        "kind": "openai",
+        "url": "https://api.mistral.ai/v1/models",
+        "prefix": "mistral/",
+        "prefer": [
+          "^mistral-small-latest$",
+          "^mistral-small"
+        ]
+      }
+    },
+    {
+      "id": "grok",
+      "key_prefix": "xai-",
+      "label": "xAI (Grok)",
+      "kind": "llm",
+      "alias": "grok",
+      "model": "xai/grok-4.3",
+      "env": [
+        "XAI_API_KEY"
+      ],
+      "get_key": "https://console.x.ai",
+      "discover": {
+        "kind": "openai",
+        "url": "https://api.x.ai/v1/models",
+        "auth_codes": [
+          400,
+          401,
+          403
+        ],
+        "prefix": "xai/",
+        "prefer": [
+          "^grok-4\\.[0-9]+$",
+          "^grok-4",
+          "^grok-[0-9]"
+        ]
+      }
+    },
+    {
+      "id": "perplexity",
+      "key_prefix": "pplx-",
+      "label": "Perplexity (Sonar)",
+      "kind": "llm",
+      "alias": "perplexity",
+      "model": "perplexity/sonar",
+      "env": [
+        "PERPLEXITYAI_API_KEY"
+      ],
+      "get_key": "https://www.perplexity.ai/settings/api"
+    },
+    {
+      "id": "azure",
+      "label": "Azure AI Foundry / Azure OpenAI",
+      "kind": "llm",
+      "alias": "azure",
+      "model": "azure/gpt-4o-mini",
+      "env": [
+        "AZURE_API_KEY",
+        "AZURE_API_BASE"
+      ],
+      "needs_base": true,
+      "get_key": "https://ai.azure.com",
+      "note": "Set AZURE_API_BASE to your endpoint (https://<resource>.openai.azure.com) and AZURE_MODEL=azure/<your-deployment-name> (the deployment you created in the Azure portal, NOT the base model name)."
+    },
+    {
+      "id": "bedrock",
+      "label": "AWS Bedrock",
+      "kind": "llm",
+      "alias": "bedrock",
+      "model": "bedrock/anthropic.claude-3-5-sonnet-20241022-v2:0",
+      "env": [
+        "AWS_ACCESS_KEY_ID",
+        "AWS_SECRET_ACCESS_KEY"
+      ],
+      "region_env": "AWS_REGION",
+      "get_key": "https://console.aws.amazon.com/iam/",
+      "note": "Enable model access in the Bedrock console first. Set AWS_REGION (e.g. us-east-1) and BEDROCK_MODEL=bedrock/<model-id> to pick a model."
+    },
+    {
+      "id": "openrouter",
+      "key_prefix": "sk-or-",
+      "label": "OpenRouter (incl. free models)",
+      "kind": "llm",
+      "free": true,
+      "alias": "openrouter",
+      "model": "openrouter/meta-llama/llama-3.3-70b-instruct:free",
+      "env": [
+        "OPENROUTER_API_KEY"
+      ],
+      "get_key": "https://openrouter.ai/keys",
+      "discover": {
+        "kind": "openai",
+        "url": "https://openrouter.ai/api/v1/models",
+        "prefix": "openrouter/",
+        "prefer": [
+          "^meta-llama/llama-3\\.3-70b-instruct:free$",
+          ":free$"
+        ]
+      }
+    },
+    {
+      "id": "groq",
+      "key_prefix": "gsk_",
+      "label": "Groq (fast, free tier)",
+      "kind": "llm",
+      "free": true,
+      "alias": "groq",
+      "model": "groq/openai/gpt-oss-120b",
+      "env": [
+        "GROQ_API_KEY"
+      ],
+      "get_key": "https://console.groq.com/keys",
+      "note": "Very fast inference with a free tier (daily token caps apply). Free-tier model lineups change — if this model 404s, set GROQ_MODEL=groq/<id> from console.groq.com/docs/models.",
+      "discover": {
+        "kind": "openai",
+        "url": "https://api.groq.com/openai/v1/models",
+        "prefix": "groq/",
+        "prefer": [
+          "^openai/gpt-oss-120b$",
+          "^llama-3\\.3-70b",
+          "^openai/gpt-oss-20b$",
+          "^llama-3\\.1-8b-instant$"
+        ]
+      },
+      "reasoning": {
+        "model": "^groq/openai/gpt-oss",
+        "levels": [
+          "low",
+          "medium",
+          "high"
+        ]
+      }
+    },
+    {
+      "id": "coder",
+      "label": "Local coder (Qwen2.5-Coder, sovereign)",
+      "kind": "llm",
+      "local": true,
+      "free": true,
+      "alias": "coder",
+      "model": "ollama/qwen2.5-coder:7b",
+      "api_base": "http://ollama:11434",
+      "env": [
+        "ENABLE_LOCAL_CODER"
+      ],
+      "note": "Opt-in sovereign coding model used by `./securax build`. Set ENABLE_LOCAL_CODER=1, then `./securax pull qwen2.5-coder:7b` (or :14b/:30b by RAM). Override with CODER_MODEL. See docs/securax/23-BUILD-WITHOUT-CLAUDE.md."
+    },
+    {
+      "id": "elevenlabs",
+      "key_prefix": "sk_",
+      "label": "ElevenLabs (voice / text-to-speech)",
+      "kind": "tts",
+      "env": [
+        "ELEVENLABS_API_KEY"
+      ],
+      "get_key": "https://elevenlabs.io/app/settings/api-keys",
+      "voice_env": "ELEVENLABS_VOICE_ID",
+      "note": "Read answers aloud / generate audio with `./securax say \"text\"`. Not a chat model."
+    },
+    {
+      "id": "compute",
+      "label": "Heavy compute (Colab / cloud GPU) — recipe",
+      "kind": "compute",
+      "env": [
+        "REMOTE_OLLAMA_BASE"
+      ],
+      "note": "Not a key: run Ollama on a GPU box or a Colab tunnel and set REMOTE_OLLAMA_BASE to its URL to offload the local model. See docs/securax/22-PLUGINS-AND-PROVIDERS.md § Heavy compute."
+    }
   ],
-  "builder": [
-   "opencodego",
-   "opencodego_glm",
-   "deepseek",
-   "gemini",
-   "groq",
-   "openrouter",
-   "coder",
-   "local"
-  ]
- },
- "_discover_exclude": "preview|exp|image|imagine|tts|audio|live|embed|thinking|vision|customtools|robotics|computer|transcribe|realtime|moderation|whisper|guard|safeguard|-8b",
- "_reasoning_comment": "Optional reasoning cap per provider: set <ID>_REASONING=<level> in .env. Applied only when the provider's CURRENT model matches reasoning.model and the level is listed (checked against LiteLLM's own mapping; on other providers a 'low' effort is mapped to thinking ON or to 'high'). Off by default: nothing changes until you set it. See doc 50."
+  "chains": {
+    "_comment": "Degradation ladders. Each chain is tried in order; only ENABLED providers participate, so a missing key just skips that rung. Every chain MUST end in 'local' (always on) so an answer is possible even with zero keys and zero internet. Paid providers are deliberately absent from bank-assistant (cost guard); the build chain may use cheap DeepSeek first. Enforced by tests.",
+    "bank-assistant": [
+      "gemini",
+      "groq",
+      "openrouter",
+      "local"
+    ],
+    "builder": [
+      "opencodego",
+      "opencodego_glm",
+      "deepseek",
+      "gemini",
+      "groq",
+      "openrouter",
+      "coder",
+      "local"
+    ]
+  },
+  "_discover_exclude": "preview|exp|image|imagine|tts|audio|live|embed|thinking|vision|customtools|robotics|computer|transcribe|realtime|moderation|whisper|guard|safeguard|-8b",
+  "_reasoning_comment": "Optional reasoning cap per provider: set <ID>_REASONING=<level> in .env. Applied only when the provider's CURRENT model matches reasoning.model and the level is listed (checked against LiteLLM's own mapping; on other providers a 'low' effort is mapped to thinking ON or to 'high'). Off by default: nothing changes until you set it. See doc 50."
 }
