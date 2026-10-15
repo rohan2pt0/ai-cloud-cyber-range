@@ -37,10 +37,10 @@ def build(catalog: dict, env: dict, base_url: str, rea_project: str | None = Non
 
     def add(alias: str, label: str, local: bool) -> None:
         models[alias] = {"name": label, "limit": dict(LOCAL_LIMIT if local else CLOUD_LIMIT)}
-    chains = {k: v for k, v in catalog.get("chains", {}).items() if not k.startswith("_")}
-    for name in ("builder", "bank-assistant"):
-        if name in chains and gen.live_chain(chains[name], enabled):
-            add(name, "Build ladder (OpenCode Go > DeepSeek > free tiers > local)" if name == "builder" else "Chat ladder (free tiers > local)", False)
+    chains = gen.chains_for(catalog, env)
+    # Only the BUILD ladder: a coding agent never gets a Chat chain (bank-assistant, twin), which can carry personal data.
+    if "builder" in chains and gen.live_chain(chains["builder"], enabled):
+        add("builder", "Build ladder (" + " > ".join(by_id[i]["alias"] for i in gen.live_chain(chains["builder"], enabled)) + ")", False)
     for pid in sorted(enabled, key=lambda i: list(by_id).index(i)):
         p = by_id[pid]
         add(p["alias"], p["label"], bool(p.get("local")))
@@ -67,15 +67,37 @@ def build(catalog: dict, env: dict, base_url: str, rea_project: str | None = Non
     return cfg
 
 
+def check(catalog: dict, env: dict, cfg: dict) -> int:
+    """Plain-English report for `./securax opencode --check`. Exit 1 if OpenCode would not default to the build ladder or could pick a Chat chain."""
+    by_id = {p["id"]: p for p in catalog["providers"]}
+    enabled = set(gen.enabled_llm_ids(catalog, env))
+    chains = gen.chains_for(catalog, env)
+    rungs = [by_id[i]["alias"] for i in gen.live_chain(chains.get("builder", []), enabled)]
+    models = cfg["provider"]["securax"]["models"]
+    chat = sorted(set(models) & {k for k in chains if k != "builder"})
+    print(f"OpenCode default model: {cfg['model']}  (titles and summaries: {cfg['small_model']})")
+    print("Build chain, in order: " + (" → ".join(rungs) or "(nothing enabled)") + ("   (your order, CHAIN_BUILDER in .env)" if gen.chain_override(catalog, env, "builder") else ""))
+    print("Chat chains offered to OpenCode: " + (", ".join(chat) if chat else "none (as it should be)"))
+    ok = cfg["model"] == "securax/builder" and not chat
+    print("✔ OpenCode uses the build chain only." if ok else "✗ OpenCode is NOT limited to the build chain.")
+    return 0 if ok else 1
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Generate the OpenCode config that routes through the SecuRAX gateway.")
     ap.add_argument("--env-file", default=os.path.join(HERE, ".env"))
     ap.add_argument("--base-url", default="http://localhost:8080")
-    ap.add_argument("--out", required=True)
+    ap.add_argument("--out", help="where to write the config (not needed with --check)")
+    ap.add_argument("--check", action="store_true", help="say which chain OpenCode uses and its live rungs; write nothing")
     ap.add_argument("--rea-project", default=None, help="also give the agent REA over MCP, sandboxed, with this folder mounted read-only")
     a = ap.parse_args(argv)
     env = {**gen.parse_env_file(a.env_file), **os.environ}
-    cfg = build(gen.load_catalog(gen.CATALOG), env, a.base_url, a.rea_project)
+    catalog = gen.load_catalog(gen.CATALOG)
+    cfg = build(catalog, env, a.base_url, a.rea_project)
+    if a.check:
+        return check(catalog, env, cfg)
+    if not a.out:
+        ap.error("--out is required unless --check is given")
     out = pathlib.Path(a.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(cfg, indent=2) + "\n", "utf-8")

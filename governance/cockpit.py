@@ -5,7 +5,8 @@
 
 It reads what is really there (running services, backups, disk, gateway mode, incident clocks, the AI-SOC's last day, keys, image age, the
 engineering budgets and every compliance map) and writes ONE self-contained page: portal/cockpit.html, served at
-http://localhost:8088/portal/cockpit.html next to the Command Center. No script, no new service, no new port, no external request: it is a
+http://localhost:8088/portal/cockpit.html next to the Command Center. No script, no new service, no new port. Its only outbound requests are
+the "Coding providers" line: one model-list GET per enabled build provider (no prompt, cached 5 minutes; --fast reads the cache only). It is a
 snapshot (stamped with its time) — re-run `./securax cockpit` (also done by `./securax up`) to refresh.
 
 What is on it
@@ -34,6 +35,7 @@ import re
 import subprocess
 import sys
 import time
+import urllib.error
 import urllib.request
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -407,9 +409,73 @@ class Collector:
         if broken:
             self.add("covmaps", "Compliance maps consistent", "KRI", "Govern", f"{broken} problem(s)", "red", "A claim in a map points at something that no longer exists.", "Fix the maps", "./securax comply --verify", urgent=True, importance=3)
 
+    # -- coding providers (the build chain's cloud rungs + local coder)
+    CODING_IDS = ("opencodego", "groq", "deepseek", "gemini", "cerebras")
+    CODING_TTL = 300
+
+    def _probe(self, p: dict) -> dict:
+        d = p.get("discover") or {}
+        key = self.env.get((p.get("env") or [""])[0], "")
+        url, headers = d.get("url", ""), {"User-Agent": "securax-cockpit"}
+        if d.get("kind") == "gemini":
+            headers["x-goog-api-key"] = key
+        else:
+            headers["Authorization"] = f"Bearer {key}"
+        req = urllib.request.Request(url, headers=headers)
+        try:
+            with urllib.request.urlopen(req, timeout=5) as r:      # noqa: S310 (catalog URLs, https)
+                left = {k.lower(): v for k, v in r.headers.items() if k.lower().startswith("x-ratelimit-remaining")}
+                return {"ok": True, "left": left}
+        except urllib.error.HTTPError as e:
+            return {"ok": False, "why": f"answered {e.code}" + (" (key refused)" if e.code in (401, 403) else "")}
+        except Exception as e:  # noqa: BLE001
+            return {"ok": False, "why": type(e).__name__}
+
+    def c_coding(self):
+        gen = _load("gen_litellm_config", "local/compose/gen_litellm_config.py")
+        cat = gen.load_catalog(gen.CATALOG)
+        by_id = {p["id"]: p for p in cat["providers"]}
+        enabled = set(gen.enabled_llm_ids(cat, self.env))
+        cache_f = HOME / "coding-health.json"
+        cache = json.loads(cache_f.read_text()) if cache_f.exists() else {}
+        fresh = cache and self.now - cache.get("at", 0) < self.CODING_TTL
+        if not fresh and not self.fast:
+            cache = {"at": self.now, "probes": {pid: self._probe(by_id[pid]) for pid in self.CODING_IDS if pid in enabled}}
+            cache_f.parent.mkdir(parents=True, exist_ok=True)
+            cache_f.write_text(json.dumps(cache))
+        probes = cache.get("probes", {})
+        if not probes and self.fast:
+            return
+        parts, up = [], 0
+        for pid in self.CODING_IDS:
+            name = by_id[pid]["label"].split(" (")[0]
+            if pid not in enabled:
+                parts.append(f"{name} (not enabled)")
+                continue
+            r = probes.get(pid, {})
+            if r.get("ok"):
+                up += 1
+                tok = r["left"].get("x-ratelimit-remaining-tokens-day") or r["left"].get("x-ratelimit-remaining-tokens")
+                note = f" ({int(tok) // 1000}K tokens left{', whole organisation' if pid == 'groq' else ''})" if tok and str(tok).isdigit() else ""
+                note += " (Green-tier only)" if pid == "gemini" else ""
+                parts.append(f"{name} ✓{note}")
+            else:
+                parts.append(f"{name} ✗ ({r.get('why', 'not checked yet')})")
+        local = "off"
+        if self.env.get("ENABLE_LOCAL_CODER") == "1":
+            want = (self.env.get("CODER_MODEL") or by_id["coder"]["model"]).removeprefix("ollama/")
+            names = sh(["docker", "ps", "--format", "{{.Names}}"]) or ""
+            oc = next((n for n in names.splitlines() if n.endswith("ollama-1")), "")
+            have = sh(["docker", "exec", oc, "ollama", "list"], timeout=15) if oc else None
+            local = f"{want} ready" if have and want in have else (f"{want} not downloaded (./securax pull coder)" if have is not None else f"{want} (Ollama not running)")
+        st = "green" if up and "ready" in local else ("amber" if up or "ready" in local else "red")
+        self.add("coding", "Coding providers", "KPI", "Run", " · ".join(parts) + f". Local fallback: {local}.", st,
+                 "The build chain needs at least one cloud rung or the local coder to be answering; this says which, without sending any prompt.",
+                 "" if st == "green" else "Add a free key or download the local coder", "./securax providers chain builder show", importance=1)
+
     def run(self) -> None:
         for fn in (self.c_services, self.c_gateway, self.c_auth_residency, self.c_tls, self.c_crypto, self.c_keys, self.c_storage, self.c_images, self.c_threat_data, self.c_incidents, self.c_soc,
-                   self.c_fitness, self.c_coverage):
+                   self.c_fitness, self.c_coverage, self.c_coding):
             self.safe(fn)
 
 

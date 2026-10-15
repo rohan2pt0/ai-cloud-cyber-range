@@ -179,6 +179,73 @@ def live_chain(chain_ids: list[str], enabled: set[str]) -> list[str]:
     return [i for i in chain_ids if i in enabled]
 
 
+EDITABLE_CHAINS = ("builder",)   # Chat chains (bank-assistant, twin) carry personal data: their order is reviewed code, never a .env switch
+
+
+def chain_override(catalog: dict, env: dict, name: str) -> list[str] | None:
+    """CHAIN_<NAME>=a,b,c in .env replaces the catalog order of an editable chain (`./securax providers chain`). Unknown ids are
+    dropped, NON-llm entries are dropped, and 'local' is always kept as the last rung, so an edit can never remove the floor."""
+    raw = env_lookup(env, "CHAIN_" + name.upper().replace("-", "_"))
+    if name not in EDITABLE_CHAINS or not raw:
+        return None
+    llm = {p["id"] for p in catalog.get("providers", []) if p.get("kind") == "llm"}
+    ids = [i.strip() for i in raw.split(",") if i.strip() in llm and i.strip() != "local"]
+    return list(dict.fromkeys(ids)) + ["local"]
+
+
+def edit_chain(catalog: dict, env: dict, name: str, action: str, pid: str = "", before: str = "") -> tuple[str, str | None]:
+    """(plain-English message, new CHAIN_<NAME> value or None on refusal). Never lets an edit remove 'local' or touch a Chat chain."""
+    if name not in EDITABLE_CHAINS:
+        return f"Only the build chain can be reordered here ({', '.join(EDITABLE_CHAINS)}); Chat chains carry personal data, so their order is reviewed code.", None
+    llm = {p["id"] for p in catalog.get("providers", []) if p.get("kind") == "llm"}
+    cur = chains_for(catalog, env)[name]
+    if action == "reset":
+        return f"The {name} chain is back to the shipped order.", ""
+    if pid not in llm:
+        return f"unknown provider id '{pid}'. Valid: {', '.join(sorted(llm))}", None
+    if pid == "local":
+        return "local is always the last rung of every chain; it cannot be moved or removed.", None
+    rest = [i for i in cur if i != pid]
+    if action == "remove":
+        return f"Removed {pid} from the {name} chain.", ",".join(i for i in rest if i != "local")
+    if action == "add":
+        if before and before not in rest:
+            return f"'{before}' is not in the {name} chain.", None
+        at = rest.index(before) if before else rest.index("local")
+        new = rest[:at] + [pid] + rest[at:]
+        return f"Added {pid} to the {name} chain" + (f" before {before}." if before else " (just before local)."), ",".join(i for i in new if i != "local")
+    return f"unknown action '{action}' (add, remove, reset)", None
+
+
+def pick_coder(catalog: dict, visible_mb: int) -> dict:
+    """The local coding model for a machine whose Docker sees `visible_mb` of memory: the first catalog tier whose RAM floor is met AND
+    whose runtime need (file x runtime_factor) still leaves reserve_mb for the rest of the estate. Returns model, need_mb, why, stepped_from."""
+    coder = next(p for p in catalog["providers"] if p["id"] == "coder")
+    sz = coder["sizing"]
+    wanted = None
+    for t in sz["tiers"]:
+        need = int(t["size_gb"] * 1024 * sz["runtime_factor"])
+        if visible_mb < t["min_mb"]:
+            continue
+        wanted = wanted or t["model"]
+        if visible_mb - need >= sz["reserve_mb"] or t is sz["tiers"][-1]:
+            return {"model": t["model"], "need_mb": need, "why": t["why"],
+                    "stepped_from": wanted if wanted != t["model"] else ""}
+    t = sz["tiers"][-1]
+    return {"model": t["model"], "need_mb": int(t["size_gb"] * 1024 * sz["runtime_factor"]), "why": t["why"], "stepped_from": ""}
+
+
+def chains_for(catalog: dict, env: dict, baseline: bool = False) -> dict[str, list[str]]:
+    """The ladders to generate: the catalog's, with any CHAIN_<NAME> override from .env (never in the shipped baseline)."""
+    chains = {k: list(v) for k, v in catalog.get("chains", {}).items() if not k.startswith("_")}
+    if not baseline:
+        for name in chains:
+            ov = chain_override(catalog, env, name)
+            if ov:
+                chains[name] = ov
+    return chains
+
+
 def _emit_params(lines: list[str], params: dict) -> None:
     for k, v in params.items():
         lines.append(f"      {k}: {json.dumps(v) if isinstance(v, dict) else v}")
@@ -188,7 +255,7 @@ def generate(catalog: dict, env: dict, baseline: bool = False) -> str:
     providers = catalog.get("providers", [])
     by_id = {p["id"]: p for p in providers}
     enabled = set(enabled_llm_ids(catalog, env, baseline))
-    chains = {k: v for k, v in catalog.get("chains", {}).items() if not k.startswith("_")}
+    chains = chains_for(catalog, env, baseline)
 
     lines: list[str] = [
         "# AUTO-GENERATED from plugins/catalog.json by gen_litellm_config.py — do NOT hand-edit.",
@@ -250,6 +317,9 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--catalog", default=CATALOG)
     ap.add_argument("--out", default=None, help="default: litellm-config.generated.yaml (or litellm-config.yaml with --baseline)")
     ap.add_argument("--write", action="store_true", help="write the config file")
+    ap.add_argument("--pick-coder", type=int, metavar="VISIBLE_MB", help="print '<model> <need_mb> [<model it stepped down from>]' for this much memory")
+    ap.add_argument("--chain-edit", nargs=4, metavar=("CHAIN", "ACTION", "ID", "BEFORE"),
+                    help="print the new CHAIN_<NAME> value for add|remove|reset (used by `./securax providers chain`)")
     ap.add_argument("--status", action="store_true", help="print provider enable/disable status + chains")
     ap.add_argument("--check-key", metavar="PROVIDER_ID",
                     help="read an API key on STDIN and report whether it looks like PROVIDER_ID's key")
@@ -258,6 +328,19 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     catalog = load_catalog(args.catalog)
+    if args.pick_coder is not None:
+        r = pick_coder(catalog, args.pick_coder)
+        print(f"{r['model']} {r['need_mb']} {r['stepped_from']}".rstrip())
+        return 0
+    if args.chain_edit:
+        import sys
+        msg, value = edit_chain(catalog, {**parse_env_file(args.env_file), **os.environ}, *args.chain_edit)
+        if value is None:
+            print(msg, file=sys.stderr)
+            return 1
+        print(msg, file=sys.stderr)
+        print(value)
+        return 0
     if args.check_key:
         import sys
         print(check_key(catalog, args.check_key, sys.stdin.read()))   # key via stdin: never in argv/ps
@@ -270,11 +353,9 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  [{'ON ' if on else 'off'}] {pid:<11} {label}")
         enabled = set(enabled_llm_ids(catalog, env, args.baseline))
         by_id = {p["id"]: p for p in catalog["providers"]}
-        for name, ids in catalog.get("chains", {}).items():
-            if name.startswith("_"):
-                continue
+        for name, ids in chains_for(catalog, env, args.baseline).items():
             rungs = " → ".join(by_id[i]["alias"] for i in live_chain(ids, enabled))
-            print(f"  chain {name:<15} {rungs}")
+            print(f"  chain {name:<15} {rungs}" + ("   (your order, CHAIN_" + name.upper() + " in .env)" if chain_override(catalog, env, name) and not args.baseline else ""))
         if not args.write:
             return 0
 

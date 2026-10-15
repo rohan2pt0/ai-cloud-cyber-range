@@ -154,31 +154,6 @@
       }
     },
     {
-      "id": "nvidia_nim",
-      "key_prefix": "nvapi-",
-      "label": "NVIDIA NIM (free, for building only)",
-      "kind": "llm",
-      "free": true,
-      "alias": "nvidia-nim",
-      "model": "openai/qwen/qwen3-coder-480b-a35b-instruct",
-      "api_base": "https://integrate.api.nvidia.com/v1",
-      "env": [
-        "NVIDIA_NIM_API_KEY"
-      ],
-      "get_key": "https://build.nvidia.com",
-      "note": "Free, no card; about 40 requests a minute (community figure, not an SLA). NVIDIA scopes the free tier to prototyping, development and testing, so it is on the BUILD ladder only, never in Chat. Another model: NVIDIA_NIM_MODEL=openai/<id> from build.nvidia.com.",
-      "discover": {
-        "kind": "openai",
-        "url": "https://integrate.api.nvidia.com/v1/models",
-        "prefix": "openai/",
-        "prefer": [
-          "^qwen/qwen3-coder",
-          "^moonshotai/kimi-k2",
-          "^z-ai/glm"
-        ]
-      }
-    },
-    {
       "id": "deepseek",
       "key_prefix": "sk-",
       "label": "DeepSeek",
@@ -197,6 +172,32 @@
           "^deepseek-v4-flash$",
           "^deepseek-v4",
           "^deepseek-chat$"
+        ]
+      }
+    },
+    {
+      "id": "cerebras",
+      "key_prefix": "csk-",
+      "label": "Cerebras (EVALUATION ONLY: trial credit, not a free tier)",
+      "kind": "llm",
+      "alias": "cerebras",
+      "model": "cerebras/gpt-oss-120b",
+      "headers": {
+        "X-Cerebras-3rd-Party-Integration": "litellm"
+      },
+      "env": [
+        "CEREBRAS_API_KEY"
+      ],
+      "get_key": "https://cloud.cerebras.ai",
+      "note": "Free trial: $5 credit, 30 days, 5 requests/min, payment method required (reported Oct 2026). Not a permanent free tier, and its published data terms do not agree with each other: Green-tier only. It is in NO chain by default; selectable as its own model. With paid credits: ./securax providers chain builder add cerebras.",
+      "discover": {
+        "kind": "openai",
+        "url": "https://api.cerebras.ai/v1/models",
+        "prefix": "cerebras/",
+        "prefer": [
+          "^gpt-oss-120b$",
+          "^qwen-3\\.8-27b$",
+          "^qwen-3"
         ]
       }
     },
@@ -344,15 +345,16 @@
         "GROQ_API_KEY"
       ],
       "get_key": "https://console.groq.com/keys",
-      "note": "Very fast inference with a free tier (daily token caps apply). Free-tier model lineups change — if this model 404s, set GROQ_MODEL=groq/<id> from console.groq.com/docs/models.",
+      "note": "Very fast inference with a free tier: about 30 requests/min, 1,000 requests/day, 8,000 tokens/min and 200,000 tokens/day per model (Groq's published Free-plan samples, Sep 2026; your account's limits page is authoritative, and limits apply to the whole organisation, not per key). Treat as Green-tier: no Red-tier code without checking Groq's data terms. Free-tier lineups change: if a model 404s, `./securax models` repairs it, or set GROQ_MODEL=groq/<id>.",
       "discover": {
         "kind": "openai",
         "url": "https://api.groq.com/openai/v1/models",
         "prefix": "groq/",
         "prefer": [
           "^openai/gpt-oss-120b$",
-          "^llama-3\\.3-70b",
+          "^qwen/qwen3\\.8-27b$",
           "^openai/gpt-oss-20b$",
+          "^llama-3\\.3-70b",
           "^llama-3\\.1-8b-instant$"
         ]
       },
@@ -366,8 +368,31 @@
       }
     },
     {
+      "id": "groq_qwen",
+      "label": "Groq (free tier, second model family: Qwen)",
+      "kind": "llm",
+      "free": true,
+      "alias": "groq-qwen",
+      "model": "groq/qwen/qwen3.8-27b",
+      "env": [
+        "GROQ_API_KEY"
+      ],
+      "get_key": "https://console.groq.com/keys",
+      "note": "Same Groq key as above; a second model family on its own daily quota, so one model's cap or outage does not stop a build. Green-tier only. Another model: GROQ_QWEN_MODEL=groq/<id>.",
+      "discover": {
+        "kind": "openai",
+        "url": "https://api.groq.com/openai/v1/models",
+        "prefix": "groq/",
+        "prefer": [
+          "^qwen/qwen3\\.8-27b$",
+          "^qwen/qwen3",
+          "^openai/gpt-oss-20b$"
+        ]
+      }
+    },
+    {
       "id": "coder",
-      "label": "Local coder (Qwen2.5-Coder, sovereign)",
+      "label": "Local coder (sovereign; sized to this machine)",
       "kind": "llm",
       "local": true,
       "free": true,
@@ -377,7 +402,32 @@
       "env": [
         "ENABLE_LOCAL_CODER"
       ],
-      "note": "Opt-in sovereign coding model used by `./securax build`. Set ENABLE_LOCAL_CODER=1, then `./securax pull qwen2.5-coder:7b` (or :14b/:30b by RAM). Override with CODER_MODEL. See docs/securax/23-BUILD-WITHOUT-CLAUDE.md."
+      "note": "Opt-in sovereign coding model for the build chain. Set ENABLE_LOCAL_CODER=1 (`./securax profile` does it), then `./securax pull coder`. The model is picked from `sizing` by the memory Docker can see, and stepped down when it would not fit beside the rest of the estate; pin your own with CODER_MODEL and CODER_MODEL_PIN=1. On a CPU-only laptop expect single-digit to low-tens tokens/s: `./securax bench --models <tag>` measures it. See docs/securax/23-BUILD-WITHOUT-CLAUDE.md.",
+      "sizing": {
+        "_comment": "Tiers by memory Docker can see (MB). need = file size x runtime_factor (weights + context cache) must fit, leaving reserve_mb for the rest of the estate; otherwise the next tier down is used.",
+        "runtime_factor": 1.25,
+        "reserve_mb": 3500,
+        "tiers": [
+          {
+            "min_mb": 30000,
+            "model": "qwen3-coder:30b",
+            "size_gb": 19,
+            "why": "256K context, best quality per GB (MoE, 3.3B active)"
+          },
+          {
+            "min_mb": 15000,
+            "model": "gpt-oss:20b",
+            "size_gb": 13,
+            "why": "128K context, quantization-aware MXFP4, Apache-2.0"
+          },
+          {
+            "min_mb": 0,
+            "model": "qwen2.5-coder:7b",
+            "size_gb": 4.7,
+            "why": "small and fast on constrained hardware"
+          }
+        ]
+      }
     },
     {
       "id": "elevenlabs",
@@ -402,7 +452,7 @@
     }
   ],
   "chains": {
-    "_comment": "Degradation ladders. Each chain is tried in order; only ENABLED providers participate, so a missing key just skips that rung. Every chain MUST end in 'local' (always on) so an answer is possible even with zero keys and zero internet. Paid providers are deliberately absent from bank-assistant (cost guard); the build chain may use cheap DeepSeek first. Enforced by tests. 'twin' is the Chat Twin (doc 53): a PAID strong open model first only when you opted in (OPENROUTER_PRO_OK), then the free bank-assistant ladder; DeepSeek is left out because Chat carries personal data.",
+    "_comment": "Degradation ladders. Each chain is tried in order; only ENABLED providers participate, so a missing key just skips that rung. Every chain MUST end in 'local' (always on) so an answer is possible even with zero keys and zero internet. Paid providers are deliberately absent from bank-assistant (cost guard); the build chain puts Groq's free tier (two model families) right after the OpenCode Go rungs, then cheap DeepSeek. You can reorder the build chain without editing this file: CHAIN_BUILDER in .env (`./securax providers chain builder ...`); local is always kept last. Enforced by tests. 'twin' is the Chat Twin (doc 53): a PAID strong open model first only when you opted in (OPENROUTER_PRO_OK), then the free bank-assistant ladder; DeepSeek is left out because Chat carries personal data.",
     "bank-assistant": [
       "gemini",
       "groq",
@@ -412,10 +462,10 @@
     "builder": [
       "opencodego",
       "opencodego_glm",
-      "nvidia_nim",
+      "groq",
+      "groq_qwen",
       "deepseek",
       "gemini",
-      "groq",
       "openrouter",
       "coder",
       "local"

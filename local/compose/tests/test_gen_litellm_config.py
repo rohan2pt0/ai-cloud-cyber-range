@@ -4,9 +4,11 @@ No Docker and no network: we feed the generator a fake .env dict and assert the 
 enables exactly the right providers, routes the default correctly, and always stays valid YAML.
 """
 import importlib.util
+import json
 import pathlib
 import re
 
+import pytest
 import yaml
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -189,7 +191,7 @@ def test_ladder_is_free_first_and_ordered():
     fb = _fallback_map(yaml.safe_load(gen.generate(cat, env)))
     assert fb["bank-assistant"] == ["groq", "openrouter", "bank-assistant-local"]
     assert "openai" not in fb["bank-assistant"], "a paid provider must never be in the default chat chain"
-    assert fb["builder"] == ["groq", "openrouter", "bank-assistant-local"]   # no deepseek key -> gemini heads it
+    assert fb["builder"] == ["groq-qwen", "bank-assistant-gemini", "openrouter", "bank-assistant-local"]   # Groq's free tier heads the build chain
 
 
 def test_builder_prefers_cheap_deepseek_then_free_then_local():
@@ -409,3 +411,40 @@ def test_baseline_never_carries_a_reasoning_cap():
     env = {"GEMINI_API_KEY": "g", "GEMINI_REASONING": "minimal"}
     assert "reasoning_effort" not in yaml.safe_load(gen.generate(_catalog(), env, baseline=True))["model_list"][0]["litellm_params"]
     assert _params(yaml.safe_load(gen.generate(_catalog(), env)), "bank-assistant")["reasoning_effort"] == "minimal"
+
+
+def test_builder_puts_groq_before_deepseek_and_cerebras_is_in_no_chain():
+    cat = _catalog()
+    assert cat["chains"]["builder"][:5] == ["opencodego", "opencodego_glm", "groq", "groq_qwen", "deepseek"]
+    assert all("cerebras" not in v for k, v in cat["chains"].items() if not k.startswith("_"))
+    assert all("nvidia_nim" not in v for k, v in cat["chains"].items() if not k.startswith("_"))
+    doc = yaml.safe_load(gen.generate(cat, {"CEREBRAS_API_KEY": "csk-x", "GROQ_API_KEY": "gsk_x"}))
+    cer = [m for m in doc["model_list"] if m["model_name"] == "cerebras"][0]["litellm_params"]
+    assert cer["model"].startswith("cerebras/") and cer["extra_headers"] == {"X-Cerebras-3rd-Party-Integration": "litellm"}
+    assert "cerebras" not in json.dumps(_fallback_map(doc))                 # selectable on its own, never a fallback
+
+
+def test_build_chain_override_keeps_local_last_and_chat_chains_are_not_editable():
+    cat = _catalog()
+    env = {"CHAIN_BUILDER": "cerebras,bogus,local,groq", "CHAIN_BANK_ASSISTANT": "openai", "CEREBRAS_API_KEY": "c", "GROQ_API_KEY": "g", "OPENAI_API_KEY": "o"}
+    ch = gen.chains_for(cat, env)
+    assert ch["builder"] == ["cerebras", "groq", "local"]                    # unknown ids dropped, local moved to the end
+    assert ch["bank-assistant"] == cat["chains"]["bank-assistant"]          # a .env line can never put a paid model in Chat
+    assert gen.chains_for(cat, env, baseline=True)["builder"] == cat["chains"]["builder"]
+    msg, val = gen.edit_chain(cat, {}, "builder", "add", "cerebras", "deepseek")
+    assert val.split(",").index("cerebras") == val.split(",").index("deepseek") - 1 and "local" not in val
+    assert gen.edit_chain(cat, {}, "twin", "add", "cerebras", "")[1] is None
+    assert gen.edit_chain(cat, {}, "builder", "remove", "local", "")[1] is None
+    assert gen.edit_chain(cat, {}, "builder", "reset", "", "")[1] == ""
+
+
+@pytest.mark.parametrize("mb,model,stepped", [(7800, "qwen2.5-coder:7b", ""), (15500, "qwen2.5-coder:7b", "gpt-oss:20b"),
+                                              (22000, "gpt-oss:20b", ""), (31800, "qwen3-coder:30b", "")])
+def test_local_coder_is_sized_to_what_fits_beside_the_estate(mb, model, stepped):
+    r = gen.pick_coder(_catalog(), mb)
+    assert (r["model"], r["stepped_from"]) == (model, stepped)
+    assert mb - r["need_mb"] >= _catalog_coder()["sizing"]["reserve_mb"] or model == "qwen2.5-coder:7b"
+
+
+def _catalog_coder():
+    return next(p for p in _catalog()["providers"] if p["id"] == "coder")

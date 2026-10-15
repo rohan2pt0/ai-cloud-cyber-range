@@ -38,7 +38,8 @@ def test_the_build_ladder_is_the_default_model_and_the_models_are_the_estates_al
     c = _cfg()
     assert c["model"] == "securax/builder" and c["small_model"] == "securax/builder"
     models = c["provider"]["securax"]["models"]
-    assert {"builder", "bank-assistant", "opencodego", "opencodego-glm", "bank-assistant-local"} <= set(models)
+    assert {"builder", "opencodego", "opencodego-glm", "bank-assistant-local"} <= set(models)
+    assert not {"bank-assistant", "twin"} & set(models)                  # a coding agent never gets a Chat chain (personal data)
     assert all(m["limit"]["context"] > 0 for m in models.values())
     assert models["bank-assistant-local"]["limit"]["context"] < models["builder"]["limit"]["context"]   # the small local model gets a small window
 
@@ -59,3 +60,13 @@ def test_the_launcher_without_opencode_installed_gives_a_pinned_npm_install_not_
     r = subprocess.run(["bash", str(ROOT / "securax"), "opencode"], capture_output=True, text=True, env={"PATH": "/usr/bin:/bin", "HOME": str(ROOT)})
     out = r.stdout + r.stderr
     assert r.returncode == 1 and "npm install -g opencode-ai@" in out and "| bash" not in out and "| sh" not in out
+
+
+def test_check_reports_the_build_chain_only(capsys, tmp_path):
+    env = tmp_path / ".env"
+    env.write_text("OPENCODE_GO_API_KEY=x\nGROQ_API_KEY=gsk_x\nDEEPSEEK_API_KEY=sk-x\n")
+    assert oc.main(["--env-file", str(env), "--check"]) == 0
+    out = capsys.readouterr().out
+    assert "default model: securax/builder" in out and "none (as it should be)" in out
+    chain = next(ln for ln in out.splitlines() if ln.startswith("Build chain"))
+    assert chain.index("groq") < chain.index("deepseek") and chain.rstrip().endswith("bank-assistant-local")

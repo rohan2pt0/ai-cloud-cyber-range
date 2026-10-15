@@ -174,3 +174,37 @@ def test_expiring_keys_raise_the_key_risk(monkeypatch):
     c.c_keys()
     m = c.metrics[0]
     assert m["status"] == "red" and "never expire" in m["value"] and "expiring" in m["value"]
+
+
+def _coding_env(**kv):
+    return {"GROQ_API_KEY": "gsk_x", "GEMINI_API_KEY": "AIza_x", **kv}
+
+
+def test_coding_line_names_each_provider_and_the_local_fallback(monkeypatch):
+    c = ck.Collector(_coding_env(ENABLE_LOCAL_CODER="1", CODER_MODEL="qwen2.5-coder:7b"), 1_000_000.0, "personal", ck.cfg()["thresholds"])
+    calls = []
+
+    def probe(p):
+        calls.append(p["id"])
+        return {"ok": True, "left": {"x-ratelimit-remaining-tokens-day": "180000"}} if p["id"] == "groq" else {"ok": True, "left": {}}
+    monkeypatch.setattr(c, "_probe", probe)
+    monkeypatch.setattr(ck, "sh", lambda args, timeout=20: "vulnbank-range-ollama-1\n" if args[1] == "ps" else "NAME\nqwen2.5-coder:7b  abc  4.7 GB\n")
+    c.c_coding()
+    m = next(x for x in c.metrics if x["id"] == "coding")
+    assert sorted(calls) == ["gemini", "groq"]                       # only enabled providers are probed; no prompt is ever sent
+    assert "Groq ✓ (180K tokens left, whole organisation)" in m["value"] and "Gemini ✓ (Green-tier only)" in m["value"]
+    assert "Cerebras (not enabled)" in m["value"] and "DeepSeek (not enabled)" in m["value"]
+    assert "Local fallback: qwen2.5-coder:7b ready." in m["value"] and m["status"] == "green"
+
+
+def test_coding_line_is_cached_and_fast_mode_never_probes(monkeypatch):
+    th = ck.cfg()["thresholds"]
+    c = ck.Collector(_coding_env(), 1_000_000.0, "personal", th)
+    monkeypatch.setattr(c, "_probe", lambda p: {"ok": False, "why": "answered 401 (key refused)"})
+    c.c_coding()
+    assert "Groq ✗ (answered 401 (key refused))" in c.metrics[-1]["value"] and c.metrics[-1]["status"] == "red"
+    for now, fast in ((1_000_100.0, False), (9_999_999.0, True)):     # within 5 minutes: cache; fast: cache only, even when stale
+        c2 = ck.Collector(_coding_env(), now, "personal", th, fast=fast)
+        monkeypatch.setattr(c2, "_probe", lambda p: (_ for _ in ()).throw(AssertionError("must not probe")))
+        c2.c_coding()
+        assert "Groq ✗" in c2.metrics[-1]["value"]

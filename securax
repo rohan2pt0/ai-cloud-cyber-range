@@ -102,6 +102,17 @@ EOF
     else                             _lm="qwen2.5:0.5b"; fi
     skv "$ROOT/local/compose/.env" LOCAL_MODEL "$_lm"
   fi
+  # Local coder (doc 23): picked from the catalog by what Docker can see; Ollama's cap grows to hold it (one model is loaded at a time, so
+  # the coder and the chat model take turns). Pin your own with CODER_MODEL_PIN=1.
+  if [ "$(ev ENABLE_LOCAL_CODER)" = 1 ] && [ "$(ev CODER_MODEL_PIN 0)" != 1 ]; then
+    read -r _cm _cneed _cfrom <<EOF2
+$(python3 "$ROOT/local/compose/gen_litellm_config.py" --pick-coder "$_mem" 2>/dev/null)
+EOF2
+    if [ -n "${_cm:-}" ]; then
+      skv "$ROOT/local/compose/.env" CODER_MODEL "$_cm"; [ "${_cneed:-0}" -gt "$_o" ] && _o="$_cneed"
+      [ -n "${_cfrom:-}" ] && echo "  (local coder: $_cfrom would not fit beside the estate in ${_mem} MB, so using $_cm)"
+    fi
+  fi
   skv "$ROOT/local/compose/.env" OLLAMA_MEM "${_o}m"; skv "$ROOT/local/compose/.env" OLLAMA_CPUS "$_oc"
   [ "$(ev SECURAX_LITE_PIN 0)" = 1 ] || skv "$ROOT/local/compose/.env" SECURAX_LITE "$_lite"
   C "Sized to this machine: Docker sees ${_mem} MB / ${_cpu} CPUs → model $(ev LOCAL_MODEL), Ollama cap ${_o} MB$([ "$_lite" = 1 ] && echo ', lite mode')."
@@ -545,6 +556,13 @@ $(python3 "$ROOT/lifecycle/forge.py" brief "$FB")"
     elif [ "$MEM_MB" -lt 20000 ]; then TIER=medium; LITE=1; LM="qwen2.5:1.5b"; CM="qwen2.5-coder:7b";  OMEM="6g"
     else                               TIER=large;  LITE=0; LM="qwen2.5:7b";   CM="qwen2.5-coder:14b"; OMEM="11g"
     fi
+    if [ -n "$CM" ] && [ "$(ev CODER_MODEL_PIN 0)" != 1 ]; then
+      read -r CM _cneed CFROM <<EOF2
+$(python3 "$ROOT/local/compose/gen_litellm_config.py" --pick-coder "$MEM_MB" 2>/dev/null)
+EOF2
+    elif [ -n "$CM" ]; then CM="$(ev CODER_MODEL "$CM")"; CM="${CM#ollama/}"; fi
+    case "$OMEM" in *g) _om=$(( ${OMEM%g} * 1024 )) ;; *) _om="${OMEM%m}" ;; esac
+    [ "${_cneed:-0}" -gt "$_om" ] && OMEM="${_cneed}m"     # Ollama must be able to hold the coder (it swaps with the chat model)
     OCPU=$(( CPUS > 2 ? CPUS - 1 : 2 ))
     skv "$ENVF" LOCAL_MODEL "$LM"; skv "$ENVF" OLLAMA_MEM "$OMEM"; skv "$ENVF" OLLAMA_CPUS "$OCPU"
     skv "$ENVF" SECURAX_LITE "$LITE"
@@ -554,6 +572,8 @@ $(python3 "$ROOT/lifecycle/forge.py" brief "$FB")"
     echo "  local chat model : $LM   (ollama capped at $OMEM, $OCPU cpus)"
     [ "$TIER" != large ] && echo "  speed tip        : CPU-only answers take 10-60s. For instant answers add free cloud keys:  ./securax keys"
     echo "  local coder      : ${CM:-off — not enough RAM; the BUILD ladder uses free/cheap cloud instead}"
+    [ -n "${CFROM:-}" ] && echo "                     ($CFROM would not fit beside the estate in ${MEM_MB} MB; measure any model with ./securax bench --models <tag>)"
+    [ -n "$CM" ] && echo "                     download it with:  ./securax pull coder"
     echo "  lite mode        : $([ "$LITE" = 1 ] && echo 'ON  (skips Private Docs + n8n to save RAM)' || echo 'off (everything runs)')"
     if [ "$IS_WSL" = 1 ] && [ "$MEM_MB" -lt 10000 ]; then
       C "WSL2 is capping Docker at ${MEM_MB} MB. On a 16 GB laptop, raise the cap:"
@@ -959,6 +979,12 @@ $(python3 "$ROOT/lifecycle/forge.py" brief "$FB")"
     # Pull the sovereign local model in the FOREGROUND (so you can be sure it's ready, unlike the
     # background pull `up` kicks off). This is the free/offline model Chat uses as 'bank-assistant-local'.
     LM="${2:-$(ev LOCAL_MODEL qwen2.5:1.5b)}"
+    if [ "$LM" = coder ]; then
+      # ./securax pull coder  - the local coding model chosen for this machine (can be 5-19 GB: asks first in a terminal)
+      LM="$(ev CODER_MODEL qwen2.5-coder:7b)"; LM="${LM#ollama/}"
+      C "Local coder: $LM. This is a large download (several GB) and stays on this machine."
+      if [ -t 0 ]; then printf "  Download it now? [y/N]: "; read -r _yn < /dev/tty || _yn=n; case "$_yn" in [Yy]*) ;; *) echo "  not downloaded."; exit 0 ;; esac; fi
+    fi
     CID="$(cd "$ROOT/local/compose" && docker compose ps -q ollama 2>/dev/null || true)"
     [ -z "$CID" ] && { C "ollama isn't running — start the estate first with  ./securax up"; exit 1; }
     C "Pulling local model '$LM' (first time can take a few minutes)…"
@@ -1081,7 +1107,18 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
           docker compose --profile ai restart litellm gateway >/dev/null 2>&1 || true )
         ready_wait 150 || C "  (the router is still starting — give it a minute)"
         C "Done. Open Chat (http://localhost:3000) and pick the new model from the dropdown." ;;
-      *) echo 'usage: ./securax providers [list|add]'; exit 1 ;;
+      chain)
+        # Reorder the BUILD chain without editing the repo (kept in .env as CHAIN_BUILDER; local always stays last; Chat chains are not editable).
+        #   ./securax providers chain builder show | add ID [--before ID] | remove ID | reset
+        CH="${3:-builder}"; ACT="${4:-show}"
+        if [ "$ACT" != show ]; then
+          NEW="$(python3 "$GEN" --env-file "$ENVF" --chain-edit "$CH" "$ACT" "${5:-}" "$( [ "${6:-}" = --before ] && echo "${7:-}" )")" || exit 1
+          skv "$ENVF" "CHAIN_$(printf '%s' "$CH" | tr 'a-z-' 'A-Z_')" "$NEW"
+          python3 "$GEN" --write --env-file "$ENVF" >/dev/null
+          ( cd "$ROOT/local/compose" && docker compose --profile ai restart litellm gateway >/dev/null 2>&1 || true )
+        fi
+        python3 "$GEN" --status --env-file "$ENVF" | grep "chain $CH " || { echo "unknown chain: $CH"; exit 1; } ;;
+      *) echo 'usage: ./securax providers [list|add|chain]'; exit 1 ;;
     esac
     ;;
   say)
@@ -1110,6 +1147,8 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
     exec python3 "$ROOT/governance/inspector.py" "${@:2}"
     ;;
   opencode)
+    # ./securax opencode --check   which chain OpenCode uses (always the build chain; never a Chat chain), with its live rungs
+    if [ "${2:-}" = "--check" ]; then exec python3 "$ROOT/local/compose/gen_opencode_config.py" --env-file "$ROOT/local/compose/.env" --check; fi
     # ./securax opencode [args]  - the OpenCode terminal coding agent (https://opencode.ai), with EVERY model call going through the SecuRAX gateway:
     # same guardrails, audit, residency rules and build ladder (OpenCode Go -> DeepSeek -> free tiers -> local) as the rest of the estate. Docs: doc 42.
     if ! command -v opencode >/dev/null 2>&1; then
@@ -1218,7 +1257,7 @@ START HERE (the 20% you use 80% of the time)
   crypto         plain-English protection check (--full: the technical inventory / CBOM)
 
 AI & CHAT
-  keys / providers add|list   add free or paid AI keys             models         check which models your keys can use today
+  keys / providers add|list|chain  AI keys; build-chain order         models         check which models your keys can use today
   pull           download the private local model                   profile        size everything to THIS machine
   guard [on|off] strict or relaxed safety rails                      bench          which installed model fits this machine best
   say "text"     speak/ask quickly      ask <agent> "q"  ask an expert advisor      advisors / plan / learn / intel   daily helpers

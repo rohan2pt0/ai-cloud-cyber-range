@@ -59,12 +59,12 @@ Open WebUI / PWA / OpenCode / scripts
 
 ## 4. Models: plugin catalog and ladders (`plugins/catalog.json` → `local/compose/gen_litellm_config.py`)
 
-- **Providers:** gemini (default, free), groq, openrouter (free models), openrouter_pro (**paid, opt-in** with `OPENROUTER_PRO_OK`), deepseek, opencodego (+_glm), openai, anthropic, mistral, grok, perplexity, azure, bedrock, local, coder (local Qwen coder), plus elevenlabs and compute recipes.
+- **Providers:** gemini (default, free), groq and groq_qwen (free), cerebras (evaluation only, in no chain), openrouter (free models), openrouter_pro (**paid, opt-in** with `OPENROUTER_PRO_OK`), deepseek, opencodego (+_glm), openai, anthropic, mistral, grok, perplexity, azure, bedrock, local, coder (local Qwen coder), plus elevenlabs and compute recipes.
 - **Enabling a provider:** it is ON only when all its `env` keys are set. `./securax providers add <id>` takes the key with hidden input. `<ID>_MODEL` overrides the model. `./securax models` discovers live models and repairs retired names.
 - **Chains** (every chain must end in `local`; enforced by tests):
   - `bank-assistant`: gemini → groq → openrouter → local. The free default for Chat; a paid provider is never in it.
   - `twin`: openrouter_pro (opt-in) → gemini → groq → openrouter → local. Chat Twin; DeepSeek is excluded because it is China-hosted and Chat carries personal data.
-  - `builder`: opencodego → opencodego_glm → deepseek → gemini → groq → openrouter → coder → local. Coding only.
+  - `builder`: opencodego → opencodego_glm → groq → groq_qwen → deepseek → gemini → openrouter → coder → local. Coding only; reorder with `./securax providers chain builder ...` (stored as `CHAIN_BUILDER` in `.env`; Chat chains are not editable; local always last).
 - **Reasoning cap:** `<ID>_REASONING=<level>` is applied only where the catalog verified that LiteLLM maps it to LESS thinking (doc 50).
 - **Generated configs:** `litellm-config.yaml` (committed baseline), `litellm-config.generated.yaml` (git-ignored, from `.env`), `gitops/core/litellm.yaml` (re-render with `lifecycle/render_core.py`).
 
@@ -73,7 +73,7 @@ Open WebUI / PWA / OpenCode / scripts
 | Group | Commands |
 |---|---|
 | Start | `setup`, `up [--lite]`, `down`, `status`, `open`, `doctor`, `why`, `update` (backup → update → health gate → automatic rollback, exit 3), `start/stop docs\|flows\|all`, `shortcut` |
-| AI | `keys`, `providers add\|list`, `models`, `pull`, `profile`, `bench`, `guard on\|off`, `ask <agent>`, `advisors`, `research "task" --allow site` (read-only, allowlisted web agent), `act` (one approved web action), `design` (local image generation), `opencode [--rea]` (terminal coding agent via the gateway), `knowledge import\|status` |
+| AI | `keys`, `providers add\|list\|chain`, `models`, `pull`, `profile`, `bench`, `guard on\|off`, `ask <agent>`, `advisors`, `research "task" --allow site` (read-only, allowlisted web agent), `act` (one approved web action), `design` (local image generation), `opencode [--rea\|--check]` (terminal coding agent via the gateway; build chain only), `knowledge import\|status` |
 | Safety | `backup` (verified, optional AES-256 OpenPGP), `restore`, `protect`, `watch` (self-heal), `scan`, `kev`, `offline`, `crypto [--full]` (CBOM), `purple` (attack your own rails), `vet` and `inspect` (third-party code; REA in a no-network container) |
 | Regulatory | `comply rbi\|cscrf\|mit-ai-risk\|nist-ai-600-1\|pqc`, `ccsp`, `evidence` (checksummed pack), `incident` (RBI/SEBI/CERT-In clocks as data), `regulated on`, `gateway-auth`, `residency` |
 | Ops | `cockpit` (vital signs, Eisenhower, 80/20, NIST CSF radar, KRIs), `storage`, `capacity`, `notify` (ntfy phone push or webhook; `digest --changed`), `routines list\|due\|run`, `lifefeed`, `sync-link`, `tls`, `certs` |
@@ -133,7 +133,7 @@ Open WebUI / PWA / OpenCode / scripts
 |---|---|---|
 | Route Claude Code through a proxy to free models | **No** | Anthropic's gateway docs say they don't support routing Claude Code to non-Claude models through any gateway. Features break as Claude Code evolves, and the estate's invariant is that all model traffic passes the gateway's rails. |
 | `free-claude-code` proxy installed with `curl … \| sh` | **No** | a third-party process holding every provider key; curl-to-shell is banned here (doc 31); its own reviewers call the translation layer its main source of bugs. If ever wanted: `./securax vet` + `inspect` first. |
-| A second, model-agnostic agent (OpenCode) | **Already built** | `./securax opencode`: pinned npm install, every call through the gateway, asks before edits and commands, no auto-update (doc 42). |
+| A second, model-agnostic agent (OpenCode) | **Already built** | `./securax opencode`: pinned npm install, every call through the gateway, build chain only (`--check` proves it), asks before edits and commands, no auto-update (doc 42). |
 | Router with fallback chains and local floor | **Already built** | LiteLLM chains ending in `local`; `models` self-repairs model names. |
 | Eval suite to pick models | **Already built** | `./securax autobench` (10 hidden-graded tasks, cheating detection, 95 % interval). |
 | Red/Yellow/Green rule for code and data | **Already built** | `./securax residency` + the gateway's classification routing. |
@@ -141,7 +141,10 @@ Open WebUI / PWA / OpenCode / scripts
 | Audit trail of which model wrote what | **Already built** | gateway audit events + autobuild commit trail. |
 | MCP tools `get/set_coding_model`, `coding_health` | **Not needed** | `./securax providers`, `models` and `bench` do this; adding MCP tools would duplicate them. |
 | Keys in OpenBao instead of `.env` | **Later** | `.env` is owner-only and git-ignored; OpenBao exists in the sprout stage. Move when there are more people or machines. |
-| NVIDIA NIM free tier | **Adopt, build ladder only** | 40 req/min with no card, but NVIDIA scopes it to prototyping, development and testing; never in Chat. |
+| NVIDIA NIM free tier | **Not adopted** | NVIDIA scopes the free tier to prototyping, development and testing. |
+| Groq for coding | **Adopted (owner request)** | free, about 30 requests/min and 200K tokens/day per model (organisation-wide); first cloud rung after OpenCode Go, with a second model family (`groq_qwen`) on its own quota. Green-tier only. |
+| Cerebras | **Evaluation only** | the 1M tokens/day free tier ended in July 2026; now a $5, 30-day trial at 5 requests/min with conflicting data terms. In no chain unless you add it (`./securax providers chain builder add cerebras`). |
+| gpt-oss:20b as the 16 GB local coder | **Tiered, measured** | needs about 16 GB at run time; beside the estate inside Docker it does not fit on a 16 GB laptop, which gets qwen2.5-coder:7b. Larger machines get gpt-oss:20b or qwen3-coder:30b (catalog `coder.sizing`). |
 | Aider | **Optional** | fine pair programmer; vet before installing. Not needed while OpenCode is wired. |
 | "Your laptop can run qwen2.5-coder:14b" | **Measure first** | `./securax bench` tells you; on a 16 GB laptop without a GPU a 14B model is slow. |
 
