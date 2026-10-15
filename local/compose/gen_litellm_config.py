@@ -32,6 +32,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 REPO = os.path.abspath(os.path.join(HERE, "..", ".."))
@@ -90,6 +91,16 @@ def model_for(p: dict, env: dict, baseline: bool = False) -> str:
     return model
 
 
+def reasoning_for(p: dict, env: dict, baseline: bool = False) -> str:
+    """Optional reasoning cap (<ID>_REASONING=low etc.), applied only where the catalog has checked that LiteLLM maps it to LESS
+    thinking for the provider's current model. Anything else returns "" so the request is exactly as before."""
+    level = "" if baseline else env_lookup(env, p["id"].upper() + "_REASONING").lower()
+    cap = p.get("reasoning") or {}
+    if not level or not cap or level not in cap.get("levels", []):
+        return ""
+    return level if re.search(cap.get("model", "$^"), model_for(p, env, baseline)) else ""
+
+
 def internal_api_base(url: str, env: dict, baseline: bool = False) -> str:
     """With internal TLS on (`./securax tls internal on`) the local model is reached over HTTPS through its sidecar, by its internal name."""
     if not baseline and env_lookup(env, "TLS_INTERNAL") == "1" and url.rstrip("/") == "http://ollama:11434":
@@ -106,6 +117,8 @@ def install_id(env: dict) -> str:
 def provider_params(p: dict, env: dict, baseline: bool = False) -> dict:
     """litellm_params for one provider (everything except model_name)."""
     params: dict[str, object] = {"model": model_for(p, env, baseline)}
+    if reasoning_for(p, env, baseline):
+        params["reasoning_effort"] = reasoning_for(p, env, baseline)
     if p.get("local"):
         # Ollama-style local model: literal api_base, no key. Its env entries are only on/off gate
         # flags (e.g. ENABLE_LOCAL_CODER), never an api_key.

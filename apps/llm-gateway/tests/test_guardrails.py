@@ -332,3 +332,22 @@ def test_trace_context_is_kept_continued_and_echoed(monkeypatch, caplog):
     r = c.post("/v1/chat/completions", json={"model": "m", "messages": [{"role": "user", "content": "hi"}]}, headers={"traceparent": "garbage"})
     assert len(r.headers["traceparent"].split("-")[1]) == 32 and r.headers["traceparent"].split("-")[1] != tid
     assert r.headers["X-Request-ID"]
+
+
+def test_reasoning_tokens_are_metered_separately(monkeypatch):
+    # Measure before you optimise: thinking tokens (inside completion_tokens) get their own series.
+    import app.main as m
+
+    async def fake(payload):
+        return {"id": "x", "object": "chat.completion", "model": "bank-assistant",
+                "choices": [{"index": 0, "finish_reason": "stop", "message": {"role": "assistant", "content": "ok"}}],
+                "usage": {"prompt_tokens": 10, "completion_tokens": 50, "completion_tokens_details": {"reasoning_tokens": 42}}}
+    monkeypatch.setattr(m, "_call_upstream", fake)
+    c = TestClient(app)
+
+    def val(key):
+        return next(float(ln.split()[-1]) for ln in c.get("/metrics").text.splitlines() if ln.startswith(key))
+
+    before = val('guardrail_tokens_total{kind="reasoning"}')
+    assert c.post("/v1/chat/completions", json={"model": "bank-assistant", "messages": [{"role": "user", "content": "hi"}]}).status_code == 200
+    assert val('guardrail_tokens_total{kind="reasoning"}') == before + 42

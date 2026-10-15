@@ -369,3 +369,43 @@ def test_opencode_go_discovery_recipe_prefers_the_flash_models_and_skips_non_cha
     import re
     prefer = by["opencodego"]["discover"]["prefer"]
     assert re.search(prefer[0], "deepseek-v4.1-flash") and re.search(_catalog()["_discover_exclude"], "deepseek-v4-flash-vision-exp", re.I)
+
+
+def _params(doc, name):
+    return next(m["litellm_params"] for m in doc["model_list"] if m["model_name"] == name)
+
+
+def test_reasoning_cap_is_off_by_default():
+    # Nothing changes for anyone who has not asked for it.
+    env = {"GEMINI_API_KEY": "g", "GROQ_API_KEY": "q", "ANTHROPIC_API_KEY": "a", "DEEPSEEK_API_KEY": "d"}
+    doc = yaml.safe_load(gen.generate(_catalog(), env))
+    assert all("reasoning_effort" not in m["litellm_params"] for m in doc["model_list"])
+
+
+def test_reasoning_cap_applies_only_to_the_provider_that_asked():
+    env = {"GEMINI_API_KEY": "g", "GROQ_API_KEY": "q", "GROQ_REASONING": "LOW"}
+    doc = yaml.safe_load(gen.generate(_catalog(), env))
+    assert _params(doc, "groq")["reasoning_effort"] == "low"
+    assert "reasoning_effort" not in _params(doc, "bank-assistant-gemini")
+    assert "reasoning_effort" not in _params(doc, "bank-assistant")      # chain head is Gemini, untouched
+
+
+def test_reasoning_cap_is_refused_where_litellm_would_map_it_to_more_thinking_or_an_error():
+    # LiteLLM 1.105 maps 'low' to think=True on Ollama (qwen2.5 cannot think), to thinking ON on DeepSeek, to 'high' on Mistral.
+    env = {"DEEPSEEK_API_KEY": "d", "MISTRAL_API_KEY": "m", "LOCAL_REASONING": "low", "DEEPSEEK_REASONING": "low", "MISTRAL_REASONING": "low", "CODER_REASONING": "low"}
+    doc = yaml.safe_load(gen.generate(_catalog(), env))
+    assert all("reasoning_effort" not in m["litellm_params"] for m in doc["model_list"])
+
+
+def test_reasoning_cap_follows_the_model_not_the_provider():
+    # Model discovery may move Groq to a non-reasoning Llama: the cap must then switch itself off, not send an unsupported field.
+    env = {"GROQ_API_KEY": "q", "GROQ_REASONING": "low", "GROQ_MODEL": "groq/llama-3.3-70b-versatile"}
+    assert "reasoning_effort" not in _params(yaml.safe_load(gen.generate(_catalog(), env)), "groq")
+    env = {"GROQ_API_KEY": "q", "GROQ_REASONING": "minimal"}           # not a level gpt-oss accepts
+    assert "reasoning_effort" not in _params(yaml.safe_load(gen.generate(_catalog(), env)), "groq")
+
+
+def test_baseline_never_carries_a_reasoning_cap():
+    env = {"GEMINI_API_KEY": "g", "GEMINI_REASONING": "minimal"}
+    assert "reasoning_effort" not in yaml.safe_load(gen.generate(_catalog(), env, baseline=True))["model_list"][0]["litellm_params"]
+    assert _params(yaml.safe_load(gen.generate(_catalog(), env)), "bank-assistant")["reasoning_effort"] == "minimal"
