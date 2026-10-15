@@ -825,8 +825,15 @@ $(python3 "$ROOT/lifecycle/forge.py" brief "$FB")"
     [ -n "$VOLS" ] || C "(no data volumes yet — backing up settings only)"
     : > "$STG/MANIFEST"; echo "securax $(cat "$ROOT/VERSION" 2>/dev/null) $(date -u +%FT%TZ)" >> "$STG/MANIFEST"
     for V in $VOLS; do
-      docker run --rm --user 0 --entrypoint tar -v "$V":/v:ro -v "$STG":/out "$IMG" czf "/out/vol-$V.tgz" -C /v . 2>/dev/null \
-        && echo "volume $V" >> "$STG/MANIFEST" || { C "Could not read volume $V — aborting (no partial backup written)."; exit 1; }
+      VOUT="$(docker run --rm --user 0 --entrypoint tar -v "$V":/v:ro -v "$STG":/out "$IMG" czf "/out/vol-$V.tgz" -C /v . 2>&1)" && RC=0 || RC=$?
+      # GNU tar exits 1 (not 2) when a file was written while it was read: on a RUNNING estate (Open WebUI 0.12 writes its data
+      # folder constantly) that is normal; the archive is complete and is verified below, so it counts as a good copy.
+      if [ "$RC" = 1 ] && printf '%s' "$VOUT" | grep -q "file changed as we read it" && tar tzf "$STG/vol-$V.tgz" >/dev/null 2>&1; then RC=0; fi
+      if [ "$RC" = 0 ]; then
+        echo "volume $V" >> "$STG/MANIFEST"
+      else
+        C "Could not read volume $V — aborting (no partial backup written). Reason: $(printf '%s' "$VOUT" | tail -c 400)"; exit 1
+      fi
     done
     cp "$ROOT/local/compose/.env" "$STG/env" 2>/dev/null && echo "env" >> "$STG/MANIFEST" || true
     # Sprout (phase 1) secrets live outside the volumes (DB password, S3 keys, OpenBao unseal key): without them a restored
@@ -915,8 +922,10 @@ $(python3 "$ROOT/lifecycle/forge.py" brief "$FB")"
     PREV="$(git -C "$ROOT" rev-parse HEAD)"
     CLEAN=0; [ -z "$(git -C "$ROOT" status --porcelain --untracked-files=no 2>/dev/null)" ] && CLEAN=1
     # 1) a safety copy, only when there is a running estate with data (never blocks the update)
-    if gcurl -fsS -m 3 $(gw_url)/healthz >/dev/null 2>&1; then
-      if SAFE_OUT="$("$0" backup 2>&1)"; then C "  ✔ backup taken first: $(printf '%s' "$SAFE_OUT" | tail -1)"; else C "  (could not take a backup — continuing; your data volumes are not touched by an update)"; fi
+    _alive=0; for _i in 1 2 3; do gcurl -fsS -m 10 $(gw_url)/healthz >/dev/null 2>&1 && { _alive=1; break; }; sleep 2; done
+    [ "$_alive" = 1 ] || C "  (no running estate answered its health check — skipping the safety backup; run ./securax backup yourself first if the estate holds data)"
+    if [ "$_alive" = 1 ]; then
+      if SAFE_OUT="$("$0" backup 2>&1)"; then C "  ✔ backup taken first: $(printf '%s' "$SAFE_OUT" | tail -1)"; else C "  (could not take a backup — continuing; your data volumes are not touched by an update). Reason: $(printf '%s' "$SAFE_OUT" | tail -c 300)"; fi
     fi
     git -C "$ROOT" pull --ff-only || { C "git pull failed — you may have local changes. See:  git -C \"$ROOT\" status"; exit 1; }
     NEW="$(git -C "$ROOT" rev-parse HEAD)"
