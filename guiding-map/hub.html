@@ -47,14 +47,15 @@
 
   <h2>Use it on your phone &amp; iPad</h2>
   <div class="note">
-    <b>1. Let other devices reach it.</b> In <code>local/compose/.env</code> set <code>BIND_HOST=0.0.0.0</code>
-    (same Wi-Fi) — or your Tailscale IP for secure access anywhere — then restart: <code>./securax up</code>.<br>
-    <b>2. On the phone/iPad</b> (same network), open <code id="lanurl">http://&lt;this-laptop-IP&gt;:8088</code>.
-    Find the laptop IP with <code>hostname -I</code> (Linux/WSL) or <code>ipconfig</code> (Windows).<br>
-    <b>3. Install it as an app:</b> in the browser menu choose <b>“Add to Home screen”</b> (iPhone/iPad: Share → Add to Home Screen).<br>
-    <b>4. Keep all devices in sync:</b> open the Guiding Map → <b>Ops → Cross-device sync</b>, paste the same sync token on every device
-    (<code>./securax setup</code> can generate it). <span class="pill">sovereign</span> Your data stays on your box.
-    <div style="margin-top:8px;color:var(--mut);font-size:13px">Tip: full offline “install” needs a secure URL — plain Wi-Fi works as a web page; <b>Tailscale</b> gives the full installable experience anywhere.</div>
+    <b>1. Install Tailscale</b> on this laptop and on each phone/iPad, signed in to the same account. Tailscale is the
+    only door in: never open the estate to the Wi-Fi (<code>BIND_HOST=0.0.0.0</code>).<br>
+    <b>2. Run</b> <code>./securax phones</code>. It checks what is in the way and shows your private address;
+    <code>./securax phones --apply</code> publishes it to your own devices only.<br>
+    <b>3. On the phone/iPad</b> open <code id="lanurl">https://&lt;laptop&gt;.&lt;tailnet&gt;.ts.net</code>, then
+    <b>Add to Home Screen</b> (iPhone/iPad: Share → Add to Home Screen; Android: Chrome menu → Install app).<br>
+    <b>4. Keep devices in sync:</b> Guiding Map → <b>Ops → Cross-device sync</b>. The URL is filled in; use the same token
+    on every device (<code>grep '^SYNC_TOKENS=' local/compose/.env</code>) and the user name <code>me</code>.
+    <span class="pill">sovereign</span> Your data stays on your box.
   </div>
 
   <h2>Make answers fast (optional, free)</h2>
@@ -169,8 +170,7 @@
   function tick(){ checkApps(); checkInfo(); }
   tick(); setInterval(tick, 5000);
   // show the detected host in the LAN hint
-  if(location.hostname && location.hostname!=="localhost" && location.hostname!=="127.0.0.1")
-    document.getElementById("lanurl").textContent=(SEC?"https://"+location.hostname:"http://"+location.hostname+":8088");
+  if(/\.ts\.net$/i.test(location.hostname)) document.getElementById("lanurl").textContent="https://"+location.hostname;
 })();
 </script>
 </body>

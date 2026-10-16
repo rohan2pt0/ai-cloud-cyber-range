@@ -2714,10 +2714,10 @@
     h += '<div class="chips" style="margin:8px 0"><button class="chip' + (askAgent === "general" ? " on" : "") + '" data-k="general" aria-pressed="' + (askAgent === "general") + '" onclick="gmAskSet(\'general\')">General</button>';
     ADVISORS.forEach(function (a) { h += '<button class="chip' + (askAgent === a.k ? " on" : "") + '" data-k="' + a.k + '" aria-pressed="' + (askAgent === a.k) + '" onclick="gmAskSet(\'' + a.k + '\')">' + esc(a.n) + '</button>'; });
     h += '</div>';
-    h += '<textarea id="askQ" placeholder="e.g. Right-size my emergency fund and term cover" style="width:100%;min-height:70px;padding:9px 11px;border:1px solid var(--line,#999);border-radius:10px;background:transparent;color:inherit"></textarea>';
+    h += '<textarea id="askQ" onkeydown="if((event.ctrlKey||event.metaKey)&&event.key===\'Enter\'){event.preventDefault();gmAsk();}" placeholder="e.g. Right-size my emergency fund and term cover (Ctrl+Enter to ask)" style="width:100%;min-height:70px;padding:9px 11px;border:1px solid var(--line,#999);border-radius:10px;background:transparent;color:inherit"></textarea>';
     h += '<div class="row" style="margin-top:8px;display:flex;gap:8px;align-items:center"><button class="btn btn-p" onclick="gmAsk()">Ask</button><span class="info" style="margin:0;padding:4px 8px">🔒 stays on your machine</span></div>';
     h += '<div id="askOut" class="info ask-md" style="display:none;margin-top:10px"></div>';
-    h += '<div id="askFb" class="row" style="display:none;gap:8px;align-items:center;margin-top:8px"><span class="info" style="margin:0;padding:0">Useful?</span><button class="chip" onclick="gmAskFb(\'up\')">👍</button><button class="chip" onclick="gmAskFb(\'down\')">👎</button><span class="info" style="margin:0;padding:0" id="askFbMsg"></span></div>';
+    h += '<div id="askFb" class="row" style="display:none;gap:8px;align-items:center;margin-top:8px"><span class="info" style="margin:0;padding:0">Useful?</span><button class="chip" onclick="gmAskFb(\'up\')">👍</button><button class="chip" onclick="gmAskFb(\'down\')">👎</button><button class="chip" onclick="gmAskCopy()">Copy answer</button><span class="info" style="margin:0;padding:0" id="askFbMsg"></span></div>';
 
     h += '<details class="road-col" style="margin-top:14px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">🛡 Check before you share (on-device footprint scan)</summary><div style="margin-top:8px">'
       + '<div class="info">Paste a bio/profile/message about yourself — scanned on this device for over-shared identifiers. Nothing is sent.</div>'
@@ -2783,7 +2783,7 @@
   // in their own words, whether the AI is on, still warming up, or not running — so an
   // early-opened page is never a silent, confusing dead end. Colours match the status dots.
   function askStatusHTML(colour, msg) {
-    return '<span style="color:var(--' + colour + ');font-size:15px">●</span> ' + msg;
+    return '<span style="color:var(--' + colour + ');font-size:15px;flex-shrink:0">●</span> <span>' + msg + '</span>';
   }
   window.gmAskPing = function () {
     var el = document.getElementById("askStatus"); if (!el) return;
@@ -2827,6 +2827,16 @@
       .then(function (j) { if (!j) return; lastAskQ = q; lastAskA = (j.choices && j.choices[0].message.content) || JSON.stringify(j); out.innerHTML = '<div class="ask-who">Answered as: ' + esc(askName(askAgent)) + '</div>' + mdLite(lastAskA); document.getElementById("askFb").style.display = "flex"; })
       .catch(function () { out.textContent = "AI is off right now — double-click START-HERE (or run  ./securax up ) to turn it on, then try again. (Nothing was sent.) If your estate is on another machine, set the gateway URL below."; });
   };
+  window.gmAskCopy = function () {
+    var m = document.getElementById("askFbMsg");
+    var done = function (ok) { if (m) m.textContent = ok ? "Copied." : "Copy failed: select the text instead."; };
+    try { navigator.clipboard.writeText(lastAskA).then(function () { done(true); }, function () { done(false); }); } catch (e) { done(false); }
+  };
+  // A tab picked near the edge of the scrolling tab bar slides fully into view (phones show only 4-5 tabs).
+  if (typeof document !== "undefined") document.addEventListener("click", function (e) {
+    if (!(e.target && e.target.closest && e.target.closest(".tab"))) return;
+    setTimeout(function () { var a = document.querySelector(".tab.active"); if (a && a.scrollIntoView) a.scrollIntoView({ inline: "center", block: "nearest", behavior: "smooth" }); }, 0);
+  });
   window.gmAskFb = function (r) {
     var fb = G("gm_ask_fb", []); fb.push({ ts: ymd(), rating: r, q: lastAskQ.slice(0, 200), agent: askAgent }); S_("gm_ask_fb", fb);
     var up = 0; fb.forEach(function (x) { if (x.rating === "up") up++; });

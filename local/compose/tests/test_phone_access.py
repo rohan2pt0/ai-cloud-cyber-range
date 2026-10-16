@@ -44,3 +44,12 @@ def test_consent_fields_ask_for_yes_not_a_paste():
 def test_placeholder_gateway_key_is_replaced_on_up():
     s = (ROOT / "securax").read_text()
     assert '[ "$(ev LITELLM_MASTER_KEY)" = "sk-range-change-me" ]' in s and "secrets.token_hex(24)" in s
+
+
+def test_command_center_teaches_tailscale_not_an_open_wifi_port():
+    hub = (ROOT / "guiding-map/hub.html").read_text()
+    assert "./securax phones" in hub
+    # BIND_HOST=0.0.0.0 may only appear as the thing NOT to do
+    for line in hub.splitlines():
+        if "BIND_HOST=0.0.0.0" in line:
+            assert "never" in line.lower() or "never" in hub[max(0, hub.index(line) - 200):hub.index(line)].lower()
