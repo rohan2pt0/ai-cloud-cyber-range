@@ -3,6 +3,7 @@
 #   amber = partly built, or built but not yet proven end to end (doc 28 🟡)
 #   red   = not built yet: a design, a plan or a deliberate non-goal (doc 28 ⬜)
 # Change a light here, run `python3 docs/sync_status.py`, commit. CI fails if a page and this file disagree.
+get-started/laptop-runbook.md: [green, "Every command exists; the laptop, Tailscale phone and sync paths were verified on a real Windows + WSL install."]
 get-started/quickstart.md: [green, "Every command exists and runs in CI; the Windows + WSL path was verified on one real install."]
 troubleshooting.md: [green, "Each fix points at a command that exists today."]
 securax/00-OVERVIEW.md: [green, "The map of the docs; each linked page carries its own light."]
