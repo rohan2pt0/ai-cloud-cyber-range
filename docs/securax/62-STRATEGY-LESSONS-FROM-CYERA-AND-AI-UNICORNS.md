@@ -1,7 +1,7 @@
 # 62 · Strategy: what Cyera and the AI unicorns teach, and where SecuRAX can win
 
 <!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
-> **Status: 🟡 Partly built.** The strategy and the free AI-risk check are done; most builds it lists are queued. [What the lights mean](../index.md#the-status-lights)
+> **Status: 🟡 Partly built.** The strategy, the free AI-risk check, time-to-first-block and the agent guard are done; the rest are queued. [What the lights mean](../index.md#the-status-lights)
 <!-- status:end -->
 
 Researched 16 Oct 2026 from public sources (linked). Figures are as reported and some are disputed. Treat them as
@@ -64,8 +64,8 @@ and SecuRAX already has the foundations for each:
 | # | Build | Why | Light |
 |---|---|---|---|
 | 1 | **Free AI-risk check** on the website: ten questions mapped to RBI, SEBI CSCRF and DPDP, an instant score and the top gaps | the front door, as with Cyera's "See data risk" | 🟢 built in this change (`website/assess/`) |
-| 2 | **Time-to-first-block** measured in CI and published | our "<1 day to value" | 🔴 |
-| 3 | **Agent and tool-call guard**: the same policy applied to an agent's tool calls (MCP), not only to chat prompts | the next exposure; Cyera's Agent Guardian shows demand | 🔴 |
+| 2 | **Time-to-first-block** measured in CI and published | our "<1 day to value" | 🟢 built: fitness checks `time-to-first-block` and `block-latency-p95` on every build |
+| 3 | **Agent and tool-call guard**: the same policy applied to an agent's tool calls (MCP), not only to chat prompts | the next exposure; Cyera's Agent Guardian shows demand | 🟢 built: `inspect_tool_calls` in the gateway, policy via `TOOL_POLICY_FILE` |
 | 4 | **Regulator watch and a monthly digest** (doc 60 queue #1), as the newsletter | education as distribution | 🔴 |
 | 5 | **UPI-ID and GSTIN detectors**, and GCC/SEA PII packs | regulator-native depth | 🔴 |
 | 6 | **Admin console**: policies, keys, reports | buyers expect a screen | 🔴 |
