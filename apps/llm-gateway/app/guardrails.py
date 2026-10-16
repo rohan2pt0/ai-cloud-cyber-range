@@ -49,7 +49,7 @@ class Verdict:
 # --------------------------------------------------------------------------- #
 _INJECTION_PATTERNS: list[tuple[str, str, str]] = [
     # (rule id, regex, severity)
-    ("PI-001-override", r"\b(ignore|disregard|forget|override)\b.{0,40}\b(previous|prior|above|earlier|all|your)\b.{0,30}\b(instructions?|rules|guidelines|prompts?|directives)\b", "high"),
+    ("PI-001-override", r"\b(ignore|disregard|forget|override)\b.{0,40}\b(previous|prior|above|earlier|all|your)\b.{0,30}\b(instructions?|rules|guidelines|guidance|directions|prompts?|directives|constraints|safeguards|polic(?:y|ies))\b", "high"),
     ("PI-002-sysprompt-exfil", r"\b(reveal|print|show|repeat|output|leak|tell me)\b.{0,40}\b(system|hidden|initial|developer)\s+(prompt|message|instructions?)\b", "high"),
     ("PI-003-roleplay-jailbreak", r"\b(DAN|do anything now|developer mode|jailbreak|unfiltered mode|no restrictions|god mode)\b", "high"),
     ("PI-004-new-identity", r"\byou are (now|no longer)\b|\bfrom now on,? you\b|\bact as (an? )?(unrestricted|evil|root|admin)", "medium"),

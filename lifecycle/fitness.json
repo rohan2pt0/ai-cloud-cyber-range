@@ -6,7 +6,9 @@
     "gateway_cold_start_s": 5,
     "gateway_rss_mb": 120,
     "gateway_runtime_deps": 6,
-    "intel_snapshot_total_kb": 1000
+    "intel_snapshot_total_kb": 1000,
+    "first_block_s": 5,
+    "block_latency_p95_ms": 50
   },
   "wake_budgets_s": {
     "burrow_twin_first_dig": 120,
