@@ -1,5 +1,9 @@
 # Gap assessment — NIST AI 600-1, Artificial Intelligence Risk Management Framework: Generative AI Profile (July 2024) — 12 risk categories
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** Complete; every reference resolves (fitness `regulatory-maps`). Open gaps are listed inside. [What the lights mean](../../index.md#the-status-lights)
+<!-- status:end -->
+
 > NIST AI 600-1 (Generative AI Profile) risk categories assessed against what the gateway and its surrounding estate demonstrably do. Deployer-side view: a gateway operator, not a model builder.
 
 Source: [NIST AI 600-1, Artificial Intelligence Risk Management Framework: Generative AI Profile (July 2024) — 12 risk categories](https://doi.org/10.6028/NIST.AI.600-1) — NIST, July 2024; read 2026-10-14. Category names from NIST's profile as reported by secondary sources; suggested-action IDs (e.g. GV-1.1-001) are not mapped. Status is our own judgement.

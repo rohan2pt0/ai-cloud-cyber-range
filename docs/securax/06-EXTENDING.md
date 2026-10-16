@@ -7,6 +7,10 @@
 
 # Extending SecuRAX — how to plug in any future project
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** Plugin catalog + `./securax providers add`, tested. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 **The core idea:** SecuRAX is a *platform with a spine*, not a monolith. A new project is a
 **plug** that connects to the shared spine (identity, data-tiers, AI gateway, secrets,
 observability, policy, audit) through stable, open interfaces. You never modify the base to

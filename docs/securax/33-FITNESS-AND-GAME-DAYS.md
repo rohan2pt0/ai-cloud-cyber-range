@@ -1,5 +1,9 @@
 # 33 · Fitness functions and game days — promises as numbers, resilience as rehearsal
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** Fitness functions run on every PR; game days inject real failures. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 ## Fitness functions — `./securax fitness`
 The architecture makes promises: a guardrail in every request that never becomes the bottleneck; a footprint that fits a 16 GB laptop; a supply chain that does not quietly grow new `curl | sh`; commands that are documented. Promises erode one innocent commit at a time, so each one is a check with a number (`lifecycle/fitness.json`) that **fails the build** when crossed (the *evolutionary architecture* idea: Thoughtworks/Google).
 

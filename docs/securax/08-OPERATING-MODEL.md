@@ -8,6 +8,10 @@
 
 # SecuRAX — Operating Model
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟡 Partly built.** A one-person operating model; team roles are described, not staffed. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 The world runs on a handful of durable patterns: a body that sets **standards**, a body that
 **monitors compliance**, a body that **shares intelligence**, a body that **coordinates**, and
 a body that **surveils health and resources**. SecuRAX copies those patterns so the system

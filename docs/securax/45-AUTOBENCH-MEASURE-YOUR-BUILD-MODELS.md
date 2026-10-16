@@ -1,5 +1,9 @@
 # 45 · `./securax autobench`: measure each build model before you trust it
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** Corpus, runner and self-test built. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 Doc 23 said the quality of the cheap and local models inside the `autobuild` loop was unmeasured. This measures it, on your machine, with your keys,
 so the ladder order (docs 23, 42) rests on numbers instead of reputation ("DeepSeek and GLM are enough" is one person's experience; this tells you about *your* work).
 

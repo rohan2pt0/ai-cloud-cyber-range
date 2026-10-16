@@ -1,5 +1,9 @@
 # SecuRAX — Cost, models & never hitting a limit (the FinOps playbook)
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** Free-first ladders, the local floor and the monthly budget cap are generated and tested. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 The goal: **you are never blocked by a usage limit, now or for the life of SecuRAX**, and the
 best intelligence (Claude and other frontier models) is spent only where it earns its keep.
 Everything here follows one rule: **local is the floor, free tiers fuel the build, paid frontier

@@ -1,5 +1,9 @@
 # Gap assessment — RBI (NBFCs – Cybersecurity, Technology: Risk, Resilience and Assurance Framework) Directions, 2026
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** Complete; every reference resolves (fitness `regulatory-maps`). Open gaps are listed inside. [What the lights mean](../../index.md#the-status-lights)
+<!-- status:end -->
+
 > Paragraph-level assessment of the estate against the Reserve Bank of India NBFC Cybersecurity, Technology: Risk, Resilience and Assurance Framework Directions, 2026. 'entity' rows are obligations of the regulated NBFC that software cannot discharge.
 
 Source: [RBI (NBFCs – Cybersecurity, Technology: Risk, Resilience and Assurance Framework) Directions, 2026](https://rbi.org.in) — RBI/DoS/2026-27/461, 31 July 2026 (in force with immediate effect); read 2026-10-14. Applies to NBFCs only (not to banks); the chapter that applies depends on the NBFC's layer and asset size, so the chapter is a column here. Housing finance companies report incidents to NHB, not RBI. The text was read from the copy supplied by the user.

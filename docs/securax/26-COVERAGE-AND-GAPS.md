@@ -1,5 +1,9 @@
 # 26 · Coverage check vs. the enterprise reference maps — and the 80/20 gaps
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** The gap ledger, kept current. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 Seven reference maps were compared with what SecuRAX actually ships (not what the roadmap promises): India's CyberTech capability map (TechSagar), the future-security-tech wheel, the cybersecurity vendor ecosystem, the 12-domain "secure systems" cheat sheet, the fault-tolerant-systems cheat sheet, the DevOps toolchain, and the AWS service guide.
 Rule applied: **build the ~20 % that closes ~80 % of the real risk for a sovereign, single-user, laptop-first estate; write down why the rest is deferred or out of scope.**
 Legend: ✅ shipped & tested · 🟡 partial · ⬜ not built · ➖ out of scope (with reason).

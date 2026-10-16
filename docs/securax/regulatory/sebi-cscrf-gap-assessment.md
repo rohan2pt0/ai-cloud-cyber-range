@@ -1,5 +1,9 @@
 # Gap assessment — SEBI Cybersecurity and Cyber Resilience Framework (CSCRF) for SEBI Regulated Entities
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** Complete; every reference resolves (fitness `regulatory-maps`). Open gaps are listed inside. [What the lights mean](../../index.md#the-status-lights)
+<!-- status:end -->
+
 > Standard-level assessment of the estate against the SEBI Cybersecurity and Cyber Resilience Framework (CSCRF). 'entity' rows are obligations of the regulated entity that software cannot discharge. SEBI categories: MII, Qualified RE, Mid-size, Small-size, Self-certification.
 
 Source: [SEBI Cybersecurity and Cyber Resilience Framework (CSCRF) for SEBI Regulated Entities](https://www.sebi.gov.in/legal/circulars/aug-2024/cybersecurity-and-cyber-resilience-framework-cscrf-for-sebi-regulated-entities-res-_85964.html) — Circular SEBI/HO/ITD-1/ITD_CSC_EXT/P/CIR/2024/113, 20 Aug 2024, read with the clarifications of 31 Dec 2024 (CIR/2024/184), 30 Apr 2025 (CIR/2025/60) and 28 Aug 2025 (CIR/2025/119) and SEBI's June 2025 FAQs; read 2026-10-14. CSCRF is a circular, not a Master Direction. Standards (e.g. PR.AA.S1) are grouped where the guideline block groups them. Applicability is taken from the guideline tables in the circular; later circulars and the entity's category assignment can change it. Obtain the entity's category and check for SEBI circulars issued after 28 Aug 2025 before relying on this.

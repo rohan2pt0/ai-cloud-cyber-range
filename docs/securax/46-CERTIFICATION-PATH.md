@@ -1,5 +1,9 @@
 # 46 · Certification path: the hardest offensive and AI certifications, on 30 hours a week and ₹5 lakh a year
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🔴 Not built yet.** A plan; no certification has been started. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 `./securax certs` turns "clear every serious offensive and AI certification" into a dated, costed plan that re-dates itself as you pass.
 Written 14 Oct 2026 for: starting from zero, 30 h/week, ₹5 lakh/year, paid personally, goal = credibility for every future role.
 

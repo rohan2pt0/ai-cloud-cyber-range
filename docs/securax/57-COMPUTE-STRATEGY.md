@@ -1,5 +1,9 @@
 # 57 · Compute, memory and storage: the smart way round the limits (global and Indian options)
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟡 Partly built.** 8-bit context cache and the Indian rung are built; the rest is guidance. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 **Situation:** a 16 GB laptop with no GPU that Docker can use, inside WSL/Docker, beside a full estate. The bottleneck is memory for
 local models, not storage or CPU.
 

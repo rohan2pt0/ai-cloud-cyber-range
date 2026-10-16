@@ -1,5 +1,9 @@
 # Cost Controls — staying under ₹2,500/month
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟡 Partly built.** The original cyber-range lab; superseded by doc 15. [What the lights mean](index.md#the-status-lights)
+<!-- status:end -->
+
 Design goal: **the range costs ₹0 by default** (laptop + always-free tiers) and can never
 silently exceed ₹2,500/month. Cost is treated as a security control (economic DoS, LLM10).
 

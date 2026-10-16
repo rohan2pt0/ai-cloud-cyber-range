@@ -7,6 +7,10 @@
 
 # SecuRAX — Compliance & Standards Map
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟡 Partly built.** Mappings and evidence exist; no independent audit or certification. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 Compliance-by-design: every capability is mapped to the frameworks it supports *before* it is
 built, and evidence is generated automatically where possible. This is written so an auditor
 (for example an ISACA-certified one) can trace a requirement to a control to evidence without

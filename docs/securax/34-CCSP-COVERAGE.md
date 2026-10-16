@@ -1,5 +1,9 @@
 # 34 · CCSP-aligned coverage (step 5)
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** Every 'covered' claim resolves to evidence (fitness `ccsp-map`). [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 You are preparing for CCSP within a year. This turns the estate into a **map against ISC2's six CCSP domains**, so the lab and the study plan point at each other, and it ships in the audit pack.
 
 ```

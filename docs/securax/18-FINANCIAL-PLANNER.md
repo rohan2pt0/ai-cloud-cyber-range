@@ -1,5 +1,9 @@
 # SecuRAX — Future Financial Planner (sovereign, offline)
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** Built into the Guiding Map and tested. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 A from-scratch, estate-native reimplementation of the "Future Financial Planner" spreadsheet
 (`finance/planner.py`), so you keep its power **without the friction of a fragile .xlsx** and
 **without your real numbers ever leaving your machine** — the repo ships only a neutral example.

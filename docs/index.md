@@ -35,6 +35,14 @@ by a test.
 
     [:octicons-arrow-right-24: The Twin](securax/53-THE-TWIN.md)
 
+-   :material-map-marker-path: **Where it is going**
+
+    ---
+
+    The enterprise end state, with a light on every box and the build order from easy to hard.
+
+    [:octicons-arrow-right-24: End-state map](securax/59-END-STATE-ARCHITECTURE.md)
+
 -   :material-shield-lock: **Security and compliance**
 
     ---
@@ -60,6 +68,20 @@ by a test.
     [:octicons-arrow-right-24: Troubleshooting](troubleshooting.md)
 
 </div>
+
+## The status lights
+
+Every page starts with a light, so you always know whether you are reading about something real:
+
+| Light | Means | Proof |
+|---|---|---|
+| 🟢 **Built** | works today | an automated test or a sandbox journey that runs the real estate in CI |
+| 🟡 **Partly built** | some of it works, or it works but is not yet proven end to end | the page says which part |
+| 🔴 **Not built yet** | a design, a plan, or a deliberate non-goal | – |
+
+The lights come from one file, `docs/status.yml`, and CI fails if a page and that file disagree. The
+[end-state map](securax/59-END-STATE-ARCHITECTURE.md) gives a light to every box of the enterprise architecture SecuRAX
+is heading for, with the order to build them in, from easy to hard.
 
 ## How the docs are organised
 

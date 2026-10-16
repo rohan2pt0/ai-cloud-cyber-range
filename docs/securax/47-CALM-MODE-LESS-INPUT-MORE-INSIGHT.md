@@ -1,5 +1,9 @@
 # 47 · Calm mode: less input, more insight (the Guiding Map, reviewed as a user)
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** Built into the Guiding Map and tested. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 The complaint was right: the app asked for too much and gave back too little time to act on what it said.
 This is what a review from the user's chair found, and what changed.
 

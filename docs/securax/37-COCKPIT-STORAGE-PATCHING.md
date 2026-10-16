@@ -1,5 +1,9 @@
 # 37 · Cockpit, storage growth, patching, impact
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** `cockpit_page` journey + priority tests. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 For the person who does **not** want to read logs: one page that says whether things are fine, one report that says where the files are going, one safe way to update, and one command that says what a change can hurt. None of it adds a service, a port, a script or a login.
 
 ## The cockpit — `./securax cockpit`

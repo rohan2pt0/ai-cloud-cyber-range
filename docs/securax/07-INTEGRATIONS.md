@@ -7,6 +7,10 @@
 
 # SecuRAX — Integrations & Connectivity
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟡 Partly built.** Guides exist; several flows (n8n, Gmail) are opt-in and not exercised end to end. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 This is the practical "how do I wire it to my existing tools" guide. It is honest about what
 is and isn't possible, lists the free path first, and gives the **data-classification rule**
 for every connector so you never leak Red-tier data to a cloud API.

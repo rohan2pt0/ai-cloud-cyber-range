@@ -1,5 +1,9 @@
 # 43 · Look inside third-party software before you trust it (REA, sandboxed)
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** `inspect_sandbox` journey. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 *Written 14 Oct 2026. Facts about REA are from its own README and npm page (linked at the end); what was run here is stated as such.*
 
 ## What REA is, and what the LinkedIn post gets right and wrong

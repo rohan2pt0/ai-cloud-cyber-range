@@ -1,5 +1,9 @@
 # 25 · Fallbacks & elasticity — what happens when a piece is missing
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** Ladders, cooldowns and the retry policy are generated and tested. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 Rule: **no single missing component stops you from using SecuRAX**; it degrades, tells you, and `./securax up` repairs it.
 Rows marked ✅ are exercised end-to-end by the sandbox (`python3 sandbox/run.py`); 📄 = covered by unit tests only; ⚠ = documented, not automatable.
 

@@ -1,5 +1,9 @@
 # 53 · The Twin: a Claude-like assistant you own
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** Twin chain, memory and web search configured; `open_webui_chat` journey. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 **Goal:** daily chat that feels like Claude (web search, memory, projects, your standing instructions, your past work),
 running inside your estate, so no single AI vendor is a point of failure.
 

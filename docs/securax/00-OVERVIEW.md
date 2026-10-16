@@ -8,6 +8,10 @@
 
 # SecuRAX — Overview
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** The map of the docs; each linked page carries its own light. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 **SecuRAX** = **Secu**rity · **R**obust · **A**daptive · e**X**cellence-driven.
 It is the umbrella program that unifies everything you are building into **one lifelong,
 zero-investment-to-start, vendor-agnostic foundation** that scales from a single laptop to
@@ -68,6 +72,7 @@ makes it an *ecosystem* and not five disconnected projects.
 | Look inside third-party software before you trust it (REA, sandboxed; capability drift) | [`43-INSPECT-THIRD-PARTY-SOFTWARE.md`](43-INSPECT-THIRD-PARTY-SOFTWARE.md) |
 | Compute, memory and storage: what suits this estate (home machine, 8-bit context cache, Indian cloud rung, notebooks for batch jobs), what does not (IndiaAI eligibility, crowd-sourced GPUs) and the worst cases | [`57-COMPUTE-STRATEGY.md`](57-COMPUTE-STRATEGY.md) |
 | Phones over Tailscale on one address (app, Ask, sync) and a secure shell on the laptop's WSL from your phone, anywhere | [`58-PHONES-AND-REMOTE-SHELL.md`](58-PHONES-AND-REMOTE-SHELL.md) |
+| The enterprise end state, a 🟢🟡🔴 light on every box, and the build order from easy to hard | [`59-END-STATE-ARCHITECTURE.md`](59-END-STATE-ARCHITECTURE.md) |
 | Pool your machines: lend the estate a stronger PC/Mac you own (`home` rung over Tailscale, residency-safe); what we took from RAMDeck and why model-splitting is not built | [`56-POOL-YOUR-MACHINES.md`](56-POOL-YOUR-MACHINES.md) |
 | The engineering standard: every claim has an envelope and a proof (`governance/claims.json`, fitness `claims-proven`), what SecuRAX does NOT claim, and the sync defects it found and fixed | [`55-ENGINEERING-STANDARD.md`](55-ENGINEERING-STANDARD.md) |
 | Technical gist for another engineer or AI assistant (architecture, request path, ladders, CLI, gates, known gaps) + verdict on the "free Claude Code" plan | [`54-TECHNICAL-GIST.md`](54-TECHNICAL-GIST.md) |

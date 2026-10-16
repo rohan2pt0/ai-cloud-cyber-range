@@ -1,5 +1,9 @@
 # SecuRAX — Global Intelligence (decide the community-proven way, before it commoditises)
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** `./securax intel` runs on-device and is tested. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 You already run a powerful method by hand: open **r/CCSP**, filter **Top → All time**, read the
 highest-ranked posts, spot what everyone agrees on (*Pete Zerger videos + LEARNZAPP*), and act.
 You do the same with Amazon **best-seller / BIFL / high-rating** filters, with top YouTube

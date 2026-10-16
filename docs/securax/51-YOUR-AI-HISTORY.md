@@ -1,5 +1,9 @@
 # 51 · Your AI history: years of chats as one library you own
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** The importer is built and tested. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 **Problem:** your best answers are spread across Claude, ChatGPT, DeepSeek and Gemini, each in its own app, and
 you can only search them inside each vendor's app. **Fix:** export once, then `./securax knowledge import` turns
 the exports into one folder of plain markdown, one file per conversation, that Private Docs (or any search tool)

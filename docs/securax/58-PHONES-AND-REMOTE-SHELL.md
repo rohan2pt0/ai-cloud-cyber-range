@@ -1,5 +1,9 @@
 # 58 · Phones over Tailscale, and a shell on the laptop from your phone
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟡 Partly built.** Built and tested in CI; not yet verified on a real phone (the sandbox has no second device). [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 Two things, both through your own tailnet (WireGuard, authenticated by your Tailscale login). Nothing is opened to the
 internet and no router port is forwarded.
 

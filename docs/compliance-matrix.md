@@ -1,5 +1,9 @@
 # Compliance & Framework Crosswalk
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟡 Partly built.** The original cyber-range lab; superseded by doc 04. [What the lights mean](index.md#the-status-lights)
+<!-- status:end -->
+
 One estate, mapped to every framework the five JDs name. This is the "working command of
 NIST AI RMF, ISO/IEC 42001, CSA MAESTRO/AICM and Google SAIF" artefact.
 

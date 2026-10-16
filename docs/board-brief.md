@@ -1,5 +1,9 @@
 # AI Security Assurance - Board Brief (2026-10-10)
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟡 Partly built.** The original cyber-range lab; superseded by the SecuRAX docs. [What the lights mean](index.md#the-status-lights)
+<!-- status:end -->
+
 ## Residual risk: 🟢 **LOW**  (composite assurance 100%)
 
 | Dimension | Score | Reading |

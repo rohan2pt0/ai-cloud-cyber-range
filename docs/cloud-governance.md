@@ -1,5 +1,9 @@
 # Cloud Governance Guardrails (preventive, org-wide)
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟡 Partly built.** Terraform and OPA are built and validated; cloud deployments stay dormant. [What the lights mean](index.md#the-status-lights)
+<!-- status:end -->
+
 The Terraform modules deploy *resource-level* controls. This note covers the *org-level*
 preventive guardrails a Cloud AI Security lead owns ("AWS Organizations, Control Tower,
 Azure Policy, Security Command Center"). They are documented as policy-as-code patterns;

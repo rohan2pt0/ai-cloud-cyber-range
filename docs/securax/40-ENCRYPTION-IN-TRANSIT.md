@@ -1,5 +1,9 @@
 # 40 · Encryption in transit: HTTPS everywhere, by name, from the browser to the edge
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** TLS edge and internal TLS hops are proven. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 The padlock warning in your browser ("Your connection to this site isn't secure") was true: every web address of the estate was plain HTTP. This document is what changed, what is proven, and what is **not yet** encrypted.
 
 ## Turn it on (Ubuntu, 3 minutes)

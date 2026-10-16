@@ -1,5 +1,9 @@
 # 28 · Status & traceability — every ask, what shipped, how it is proven, what is NOT done
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** The detailed ledger behind these lights. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 Honest ledger. ✅ = shipped **and** proven by an automated check · 🟡 = shipped, only partly proven (reason given) · ⬜ = not built (reason given) · 👤 = needs you.
 "Proof" names the sandbox journey (`python3 sandbox/run.py -j <name>`) or unit-test file. The sandbox runs the real product in real containers with **fake cloud providers**, so provider *behaviour* (as opposed to wiring) is never proven by it.
 

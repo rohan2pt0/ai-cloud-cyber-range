@@ -1,5 +1,9 @@
 # 48 · The Guiding Map, freeze-ready: a quarterly system you will actually run
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** UI audit with 30 days of realistic data. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 Written from the owner's own screenshots and requests (15 Oct 2026). The aim: freeze the app and use it, not research it further.
 
 ## First: the phone was running an old copy

@@ -1,5 +1,9 @@
 # 27 · Incident runbook — what to do, in order
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** Runbook steps map to commands that exist and are tested. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 Three situations, one page. Everything is a command; nothing needs thinking at 2 a.m.
 
 ## A. An API key was exposed (pasted in chat/screenshot/git, or a provider emailed you)

@@ -1,5 +1,9 @@
 # 22 · Plugins & AI Providers
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** Key wiring and failover are proven; a few providers need real credentials to prove. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 SecuRAX treats every AI provider as a **plugin** — like Mattermost plugins, you toggle one on by
 adding its key, and it just shows up. No code, no hand-editing YAML.
 

@@ -1,5 +1,9 @@
 # 38 · Engineering practices, research cues, and the friction audit
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟡 Partly built.** Some practices are adopted; others are recorded for later. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 Written to answer three questions without over-engineering: *what do well-run open-source products do that we do not, what do research bodies suggest, and where have we deviated from what you asked for?* The rule used throughout: **add only what removes real risk or friction for an actual stakeholder; every addition must not widen the attack surface; say plainly what is deliberately skipped and what would make us add it.**
 
 ## A · The Mattermost-style checklist

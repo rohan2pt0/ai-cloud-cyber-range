@@ -1,5 +1,9 @@
 # 21 — Versioning & release policy
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** Versioning, changelog and the release workflow run in CI. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 How SecuRAX is versioned and released — the discipline a professional software product follows
 (the same shape as Mattermost, Grafana, etc.), sized to this project.
 

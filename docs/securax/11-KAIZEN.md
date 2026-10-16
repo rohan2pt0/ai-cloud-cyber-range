@@ -1,5 +1,9 @@
 # SecuRAX — Kaizen & Antifragility (the UPSC lens)
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟡 Partly built.** Ratchets and fitness budgets run; the wider improvement loop is manual. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 Looked at the way a well-run state is run — the UPSC/public-administration view — a system is
 judged not by how it looks, but by **outcomes delivered to people, under constraints, over
 time, with integrity, and improving every cycle.** This page is how SecuRAX is governed to

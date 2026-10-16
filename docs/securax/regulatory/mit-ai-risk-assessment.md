@@ -1,5 +1,9 @@
 # Gap assessment — MIT AI Risk Repository (domain taxonomy, seven domains / 24 subdomains, December 2025 update)
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** Complete; every reference resolves (fitness `regulatory-maps`). Open gaps are listed inside. [What the lights mean](../../index.md#the-status-lights)
+<!-- status:end -->
+
 > The MIT AI Risk Repository's seven risk domains, assessed against what the gateway and its surrounding estate demonstrably do. A coverage view of AI-specific risk, complementary to the regulatory maps.
 
 Source: [MIT AI Risk Repository (domain taxonomy, seven domains / 24 subdomains, December 2025 update)](https://airisk.mit.edu) — MIT FutureTech / AI Risk Initiative; read 2026-10-14. Domain names are from MIT's published taxonomy as reported by secondary sources; this map is at DOMAIN level (not the 24 subdomains) and the status is our own judgement. Compare with the repository itself before relying on it.

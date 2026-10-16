@@ -1,5 +1,9 @@
 # 35 · Regulatory gap assessment — RBI NBFC Directions 2026 and SEBI CSCRF
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟡 Partly built.** The assessment is complete; some of the gaps it lists are still open. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 ```
 ./securax comply                      both, summary + top of the backlog
 ./securax comply rbi | cscrf          one regulation   (--md for the full table, --json for machines)

@@ -1,5 +1,9 @@
 # AI Cloud Cyber Range — Reference Architecture
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟡 Partly built.** The original cyber-range lab; superseded by the SecuRAX docs. [What the lights mean](index.md#the-status-lights)
+<!-- status:end -->
+
 A multi-cloud, defence-in-depth AI security estate for hands-on secure-AI engineering,
 red-teaming, AI-SPM and governance.
 Runs on an HP Spectre x360 by default (free), bursts into AWS/GCP/Azure free tiers under

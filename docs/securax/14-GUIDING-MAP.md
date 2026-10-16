@@ -1,5 +1,9 @@
 # SecuRAX — The Guiding Map (the life-OS cockpit)
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** The PWA is tested in a real browser (UI audit: contrast, errors, journeys). [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 The Guiding Map is the one screen you use every day, and now the **cockpit for the whole
 estate**. It began as a standalone, battle-tested life-OS PWA (v13, 69/69 tests green) and has
 been folded into SecuRAX as the human-facing front door — kept local-first, sovereign, and

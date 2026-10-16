@@ -1,5 +1,9 @@
 # 44 · The admission gate (`forge`) and the self-healing sandbox
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** The forge gate and the sandbox run in CI. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 **Goal:** you should not be the one who finds that a change is hollow or that a red run was only Docker dying. The harness
 decides, mechanically, with no tokens, and tells the next attempt exactly what is wrong.
 

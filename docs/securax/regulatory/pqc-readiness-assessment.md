@@ -1,5 +1,9 @@
 # Gap assessment — Post-quantum cryptography: NIST FIPS 203/204/205, NIST IR 8547 (draft) and the RBI Q-SAFE committee
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** Complete; every reference resolves (fitness `regulatory-maps`). Open gaps are listed inside. [What the lights mean](../../index.md#the-status-lights)
+<!-- status:end -->
+
 > Post-quantum cryptography readiness of this estate, assessed against what the estate demonstrably does. Based on the NIST post-quantum standards (FIPS 203 ML-KEM, FIPS 204 ML-DSA, FIPS 205 SLH-DSA), NIST's draft transition plan (IR 8547) and the scope the RBI has given its Q-SAFE committee (cryptography inventory / CBOM, crypto-agility, most-exposed systems). Not a regulator's checklist: RBI has not issued quantum requirements yet.
 
 Source: [Post-quantum cryptography: NIST FIPS 203/204/205, NIST IR 8547 (draft) and the RBI Q-SAFE committee](https://csrc.nist.gov/projects/post-quantum-cryptography) — FIPS 203/204/205 final 13 Aug 2024; HQC selected as a backup KEM Mar 2025; IR 8547 initial public draft Nov 2024; RBI Q-SAFE committee press release 25 May 2026; read 2026-10-14. The FIPS dates are NIST's. IR 8547 (deprecate RSA/ECC after 2030, disallow after 2035) and FIPS 206 (FN-DSA) status come from secondary sources and are DRAFTS: verify at csrc.nist.gov. The RBI committee had not reported when this was written; nothing here is an RBI requirement. Status is our own judgement.

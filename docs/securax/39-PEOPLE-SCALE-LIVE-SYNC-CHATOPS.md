@@ -1,5 +1,9 @@
 # 39 · Growing from one person to many: live sync, team chat, and the scale ladder
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟡 Partly built.** Live sync is proven; Mattermost and ChatOps are optional and partly proven. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 You asked three things: did live push (WebSockets) get built, where is Mattermost, and what happens if this has to carry a team of 5, 50, 5,000 or 100,000 people. Straight answers first.
 
 | Question | Answer |

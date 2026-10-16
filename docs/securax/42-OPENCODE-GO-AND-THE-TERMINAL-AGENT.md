@@ -1,5 +1,9 @@
 # 42 · OpenCode Go and the OpenCode terminal agent
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** Provider and launcher built; `--check` tested. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 *Written 14 Oct 2026 from the vendors' own pages (linked at the end). Prices and limits change: check them before you pay.*
 
 > The cheap-model path is held to a stricter gate since doc 44 (`./securax forge gate`).
