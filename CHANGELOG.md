@@ -9,9 +9,9 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
-- **Product site for cyberbaba.org** (`website/`), written to sell to an executive:
-  - The promise in one line: *"The AI your compliance team will actually approve."*
-  - The problem an executive feels (shadow AI, regulators asking, bills and lock-in), then three pillars (Private, Guarded, Provable).
+- **Product site for cyberbaba.org** (`website/`), written for anyone with something worth protecting:
+  - The promise: *"Your private superintelligence"*, for the 1% who own their AI, with the 1% club hook (1.01^365 ≈ 37.8).
+  - Who it is for, person-agnostic: individuals and families, founders, creators and public figures, professionals, organisations, governments. Then three pillars (Private, Guarded, Provable).
   - A **real guardrail demo**: the actual output of SecuRAX's rails blocking a prompt injection (OWASP LLM01, MITRE ATLAS) and redacting PAN, card and mobile.
   - A product tour with real screenshots (Today on a phone, the Money Map, the status-light roadmap), three-step setup, who it is for, proof numbers, compliance stated as "mapped, not certified", Community / Professional / Enterprise pricing, and an executive FAQ.
   - Static and responsive (no horizontal scroll at 390 px), WebP screenshots of 58–77 KB, and security headers in `website/_headers`.
