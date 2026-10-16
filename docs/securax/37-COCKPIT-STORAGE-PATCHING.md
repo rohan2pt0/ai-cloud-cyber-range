@@ -46,3 +46,10 @@ What the safe update does **not** do: roll back *data* (a code update does not t
 
 ## Following one request
 Every AI request carries a W3C `traceparent` from the caller through the gateway to the router (a valid inbound one is continued, otherwise a trace is started), is echoed in the response with `X-Request-ID`, and is named in the audit line (`trace_id`). Any OpenTelemetry-compatible tool can follow it; no SDK or dependency was added.
+
+## How "Do now" and "Next 3" are ordered
+
+Inside every Eisenhower quadrant the order is: **red before amber**, then **more important first**, then a **live vital
+sign before a backlog item**, and for backlog items **high before medium**. "Next 3" reads the top of Do now, then
+Schedule, so this order is the advice. A gap reported by two regulatory maps appears once.
+Tests: `governance/tests/test_cockpit_priority.py`.
