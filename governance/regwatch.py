@@ -201,7 +201,7 @@ def alert_text(new: list[dict]) -> str:
 
 def _deliver(text: str, title: str) -> int:
     sys.path.insert(0, str(ROOT / "governance"))
-    import notify                                                        # noqa: PLC0415 (optional channel, loaded on use)
+    import notify  # noqa: PLC0415 (optional channel, loaded on use)
     return notify.deliver(text, title=title)
 
 
