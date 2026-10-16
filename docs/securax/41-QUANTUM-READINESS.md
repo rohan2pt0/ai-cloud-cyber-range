@@ -1,5 +1,9 @@
 # 41 · Quantum readiness: what is protected, what is not, and what to do first
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟡 Partly built.** Hybrid post-quantum key exchange on the edge and the CBOM are built; the rest is planned. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 *Written 14 Oct 2026. Everything below is read from the estate by `./securax crypto`; nothing is asserted without a check.*
 
 ## The threat, in three lines

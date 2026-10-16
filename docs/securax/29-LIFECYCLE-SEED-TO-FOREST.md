@@ -1,5 +1,9 @@
 # 29 · Lifecycle — from a dormant seed to a multi-tenant forest (and back to sleep)
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟡 Partly built.** Seed and sprout proven with real containers; burrow partly; forest not built. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 **The idea, borrowed from nature:** a seed carries the whole plant. It sits dormant at almost no cost, germinates when
 conditions are right, grows only as far as the environment supports, goes back to dormancy through winter *keeping what it
 learned*, and — when a part is no longer needed — sheds it deliberately. SecuRAX is built the same way: the **genome**

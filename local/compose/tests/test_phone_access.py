@@ -53,3 +53,16 @@ def test_command_center_teaches_tailscale_not_an_open_wifi_port():
     for line in hub.splitlines():
         if "BIND_HOST=0.0.0.0" in line:
             assert "never" in line.lower() or "never" in hub[max(0, hub.index(line) - 200):hub.index(line)].lower()
+
+
+def test_router_fails_over_instead_of_retrying_what_cannot_succeed():
+    import sys
+
+    import yaml
+    sys.path.insert(0, str(ROOT / "local/compose"))
+    import gen_litellm_config as g
+    cat = json.loads((ROOT / "plugins/catalog.json").read_text())
+    rs = yaml.safe_load(g.generate(cat, {"GEMINI_API_KEY": "AIzaX", "GROQ_API_KEY": "gsk_x"}))["router_settings"]
+    assert rs["retry_policy"]["RateLimitErrorRetries"] == 0 and rs["retry_policy"]["AuthenticationErrorRetries"] == 0
+    assert rs["retry_policy"]["InternalServerErrorRetries"] == 1
+    assert rs["allowed_fails_policy"]["AuthenticationErrorAllowedFails"] == 0

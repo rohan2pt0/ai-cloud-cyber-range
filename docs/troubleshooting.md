@@ -1,5 +1,9 @@
 # Troubleshooting
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** Each fix points at a command that exists today. [What the lights mean](index.md#the-status-lights)
+<!-- status:end -->
+
 Start here: **`./securax why`** shows what stopped and why, and **`./securax doctor`** checks health and runs a real chat
 test. The table below comes from real installs.
 

@@ -1,5 +1,9 @@
 # 56 · Pool your machines: what we took from RAMDeck, and what we did not
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟡 Partly built.** The home rung is built and tested; splitting one model across machines is not built. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 **Prompt:** RAMDeck, a crowdfunded hub (Indiegogo, Oct 2026), pools the RAM of the PCs, Macs and phones you already own to run models
 too big for any one of them. It has an OpenAI-compatible API and a one-click benchmark. Is there anything for SecuRAX?
 

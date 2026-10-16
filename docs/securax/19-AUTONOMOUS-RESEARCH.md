@@ -1,5 +1,9 @@
 # 19 — Autonomous web research (the sovereign Manus / Clawbot)
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟡 Partly built.** The render engine is built; unattended research is not proven end to end. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 You asked for an agent that "actually surfs the webpages from instructions," like Manus or
 Clawbot — but on **your** terms: sovereign, free, and safe enough for someone who runs BFSI
 security for a living. This is it: `agents/web_research/`.

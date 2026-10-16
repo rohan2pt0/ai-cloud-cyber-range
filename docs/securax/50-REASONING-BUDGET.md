@@ -1,5 +1,9 @@
 # 50 · Reasoning budget: think less where it does not pay
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟡 Partly built.** Per-provider reasoning effort is wired; adaptive budgets are not built. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 **Prompt:** the paper *Hybrid Reasoning Agents* (Zou et al., Stanford / Together AI, arXiv 2610.18861, 13 Oct 2026). It reports 35-55% fewer tokens, 1.8-2.6× faster answers and 2.7-3.7× lower cost from reasoning in latent space and switching to text only to call a tool or answer.
 
 ## Verdict on adopting HybridAgent itself: not now

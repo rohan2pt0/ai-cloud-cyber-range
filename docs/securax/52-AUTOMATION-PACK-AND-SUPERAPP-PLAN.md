@@ -1,5 +1,9 @@
 # 52 · Automation that works on day one, and the SuperApp plan
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟡 Partly built.** The automation pack and alerts are built; the SuperApp is a plan. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 **Prompt:** "n8n is useless if I have to build every workflow myself. Automate what is repetitive, cut paid-AI dependency
 to the minimum without a single point of failure, make SecuRAX a super life app (later a mobile app), a Jarvis, with the kind
 of automation Japan and Israel are known for."

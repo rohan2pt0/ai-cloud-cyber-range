@@ -7,6 +7,10 @@
 
 # SecuRAX — Open-Core Model & Tiers
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🔴 Not built yet.** A business model on paper; no tiers, billing or licensing are built. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 The balance you asked for: **keep the core genuinely free and open so it spreads and earns
 trust, and charge for the parts that take real work to run at scale.** This is the
 **open-core** model — the same one GitLab, Mattermost, Elastic and HashiCorp use. The free

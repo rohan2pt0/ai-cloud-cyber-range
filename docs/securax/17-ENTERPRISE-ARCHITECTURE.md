@@ -1,5 +1,14 @@
 # SecuRAX — Enterprise Architecture alignment (the end-state blueprint)
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟡 Partly built.** The target architecture; the seed runs today. Lights per capability in doc 59. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
+!!! info "Where this is heading"
+    [![The enterprise end state](../assets/end-state-reference-architecture.png){ width="420" }](59-END-STATE-ARCHITECTURE.md)
+
+    The full end state, with a light on every box and the order to build them in: [doc 59](59-END-STATE-ARCHITECTURE.md).
+
 This is the **target-state reference architecture** every current and future SecuRAX build must
 map to. It mirrors the layers of a world-class, vendor-agnostic enterprise architecture — secure,
 highly available, fault-tolerant, resilient, scalable, observable, AI-ready, data-mesh-enabled,

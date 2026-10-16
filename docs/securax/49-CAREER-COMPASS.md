@@ -1,5 +1,9 @@
 # 49 · Career compass: choose the next job without betting the house
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** Built and covered by the UI audit. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 Guiding Map → **💼 Career**. It is one screen for a job decision, worked out from your own numbers on your own device. It shows:
 
 - your floor (never go backwards) and your target (+30%);

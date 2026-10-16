@@ -1,5 +1,9 @@
 # Quickstart
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** Every command exists and runs in CI; the Windows + WSL path was verified on one real install. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 Install SecuRAX, start it, and get a real chat answer. About 30 minutes, most of it downloads.
 
 !!! tip "Copying commands"

@@ -1,5 +1,9 @@
 # SecuRAX — The agents army (stealth specialist advisors)
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟡 Partly built.** The advisor army and build agents exist; autonomous agents are partly proven. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 A roster of specialist advisors you can summon on demand for a **first-draft opinion** — fast,
 free, grounded in globally accepted standards — so you walk into the real professional already
 prepared and ask better questions. You take the **first advice from the agent, the final advice

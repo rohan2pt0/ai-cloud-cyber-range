@@ -1,5 +1,9 @@
 # SecuRAX — Intelligent UX (the operator's lens: simple on top, disciplined underneath)
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟡 Partly built.** Calm mode and plain-language status are built; parts are still design. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 The best institutions — MBB consulting, the Big 4, well-run central banks — are not good
 because their people are individually superhuman. They are good because the **method is the
 default**: a junior analyst produces partner-grade work because the firm's templates, review

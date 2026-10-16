@@ -96,6 +96,7 @@ nav:
       - Cockpit, storage, patching: securax/37-COCKPIT-STORAGE-PATCHING.md
       - People scale, live sync, ChatOps: securax/39-PEOPLE-SCALE-LIVE-SYNC-CHATOPS.md
   - Concepts:
+      - End state and build order: securax/59-END-STATE-ARCHITECTURE.md
       - Architecture: securax/02-ARCHITECTURE.md
       - Enterprise architecture: securax/17-ENTERPRISE-ARCHITECTURE.md
       - Lifecycle, seed to forest: securax/29-LIFECYCLE-SEED-TO-FOREST.md

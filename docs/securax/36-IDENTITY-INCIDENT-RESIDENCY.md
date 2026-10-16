@@ -1,5 +1,9 @@
 # 36 · Identity, incident clock, data residency
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** Gateway identity, incident clock and residency journeys. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 Three controls built from the gaps in [doc 35](35-REGULATORY-GAP-ASSESSMENT.md). They are **regulator-agnostic by design**: the rules are data, so the same code serves an NBFC, a bank, a broker, an insurer, or an entity under another jurisdiction. Each is off (or inert) by default on a laptop and is switched on for a regulated deployment.
 
 ## 1 · Identity-aware gateway — `./securax gateway-auth`

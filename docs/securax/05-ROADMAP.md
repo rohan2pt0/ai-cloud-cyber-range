@@ -7,6 +7,10 @@
 
 # SecuRAX — Roadmap
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟡 Partly built.** Seed and sprout delivered; later stages are planned (doc 29). [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 Gradual, end-in-mind, each step independently useful. **Do not jump ahead of the trigger.**
 Effort is "evenings/weekends" scale for one person; nothing here needs a team.
 

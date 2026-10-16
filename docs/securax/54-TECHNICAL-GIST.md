@@ -1,5 +1,9 @@
 # 54 · SecuRAX technical gist (for another engineer or AI assistant)
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** A reference summary of what is built. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 Paste this whole file to a helper (DeepSeek, another model, a contractor). It is enough to propose changes that fit.
 **Do not paste:** `local/compose/.env`, backups, `vault/`, Guiding Map exports or anything personal. The repository
 is public; this file contains no secrets.

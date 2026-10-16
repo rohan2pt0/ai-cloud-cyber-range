@@ -1,5 +1,9 @@
 # SecuRAX Demo Runbook (15-minute walkthrough)
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** `./securax demo` runs the red-team scorecard and posture scan. [What the lights mean](index.md#the-status-lights)
+<!-- status:end -->
+
 A tight, rehearsed walkthrough that shows breadth (multi-cloud, governance) and depth
 (adversarial ML, K8s, code). Have the laptop plane already up (`bootstrap-laptop.sh`).
 

@@ -7,6 +7,10 @@
 
 # SecuRAX — Design Principles
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** Enforced in code by the build contract, diffcheck and the fitness functions. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 These are the rules the whole estate obeys. They are deliberately few, ordered by priority,
 and phrased so a decision can be checked against them in seconds. Think of them as the
 "constitution": architecture serves the principles, not the other way round.

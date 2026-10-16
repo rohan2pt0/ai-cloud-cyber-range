@@ -1,5 +1,9 @@
 # 25 · Fallbacks & elasticity — what happens when a piece is missing
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** Ladders, cooldowns and the retry policy are generated and tested. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 Rule: **no single missing component stops you from using SecuRAX**; it degrades, tells you, and `./securax up` repairs it.
 Rows marked ✅ are exercised end-to-end by the sandbox (`python3 sandbox/run.py`); 📄 = covered by unit tests only; ⚠ = documented, not automatable.
 
@@ -41,3 +45,17 @@ Overrides: `LOCAL_MODEL_PIN=1` (keep your model), `SECURAX_LITE_PIN=1`, `SECURAX
 ## The honest limits
 - A CPU-only 1.5B model answers in ~10–60 s and is not a frontier model. **Free cloud keys are the speed path** (`./securax keys`); local is the guaranteed floor.
 - Free-tier quotas and model lineups change often; if a provider 404s, `./securax doctor` shows the real error and `./securax providers add` re-points it.
+
+## Failing over fast (router retry policy)
+
+A rung that cannot answer **now** is skipped instead of being retried:
+
+| Error | Retries on the same rung | When the rung is cooled down (skipped for 60 s) |
+|---|---|---|
+| Rate limit (free-tier quota, 429) | 0: straight to the next rung | on the 2nd hit |
+| Timeout | 0 | on the 2nd hit |
+| Bad or expired key | 0 | at once |
+| Request rejected (bad request, content policy) | 0 | normal threshold |
+| The provider's own server error (5xx) | 1 | normal threshold |
+
+Generated into the router config by `local/compose/gen_litellm_config.py`. A test pins the policy.

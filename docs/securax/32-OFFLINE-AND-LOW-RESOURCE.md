@@ -1,5 +1,9 @@
 # 32 · Powerful offline, sharp on a small machine — what we took from the most-starred repos, and what we measured
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** `offline_power` journey. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 **How the repos were chosen.** Candidates were named from the problem (run offline, run small, security data that does not need the internet), then each repo's **public page was fetched** for stars and licence (numbers below are as shown on those pages on 2026-10-14; the pages did not show last-commit dates). Blog "top 10" lists were *not* used for ratings: they disagreed with each other.
 
 | Repo | Stars | Licence | Verdict |

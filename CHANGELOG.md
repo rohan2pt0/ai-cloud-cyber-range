@@ -9,6 +9,14 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **Status lights on every documentation page** (🟢 built and proven · 🟡 partly built or not yet proven · 🔴 not built yet):
+  - One source of truth, `docs/status.yml`; `docs/sync_status.py` writes each light into a banner under the page title, so it shows on GitHub and on the docs site.
+  - A test fails if a page and the file disagree, or if a site page has no light. The legend is on the docs home page.
+- **Doc 59, the end state and the build order:**
+  - The two enterprise reference-architecture diagrams as the destination.
+  - Every box rated with a light, the SecuRAX component that does the job, and the next step.
+  - A totals table that is checked by CI, and a six-level wiring order from easy (use what is built) to hard (a second machine, then a product).
+  - Linked from the home page, docs 00, 02 and 17, and the README.
 - **Documentation site** (MkDocs Material, Microsoft-Learn-style):
   - Home, Get started (new **Quickstart**), How-to guides, Apps, Concepts, Security and compliance, Reference (a **command reference generated from `./securax help`** on every build, plus the changelog) and a new **Troubleshooting** page built from real installs.
   - Light and dark themes, search, and a copy button on every code block.

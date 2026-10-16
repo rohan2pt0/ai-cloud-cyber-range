@@ -1,5 +1,9 @@
 # 30 · The purple-team loop — would anyone *know*?
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** `purple_loop` journey + CI gate. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 `./securax purple` fires the attack set through the **real gateway application**, captures the **real audit lines** it emits, runs the **real AI-SOC triage** over them, and reports three independent facts per attack:
 
 | | Question | Source |

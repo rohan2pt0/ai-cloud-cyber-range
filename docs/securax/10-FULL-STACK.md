@@ -1,5 +1,9 @@
 # SecuRAX — Full-Scale Mode (opt-in, turn-off-able)
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟡 Partly built.** The organs exist as dormant, pinned add-ons; not all are proven with their real images. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 Go big when you need to — a real SOC, team collaboration, private cloud — then switch it off
 when you don't. **Nothing here runs by default.** We never re-implement these tools; we run
 their **official upstream images/repos** and wire them into the estate's network.

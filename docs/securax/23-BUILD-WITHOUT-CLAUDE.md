@@ -1,5 +1,9 @@
 # 23 · Build SecuRAX without depending on Claude
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟡 Partly built.** verify / autobuild / forge are real; building fully without Claude is not yet proven. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 **Goal:** evolve SecuRAX using its *own* models, at near-zero cost, with the rigor of a frontier
 subscription — so a paid-Claude limit is never a single point of failure for the project.
 

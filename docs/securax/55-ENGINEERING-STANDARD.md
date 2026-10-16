@@ -1,5 +1,9 @@
 # 55 · The engineering standard: no claim without proof
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** Enforced by the `claims-proven` fitness function. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 A well-known critique of AI-built software goes like this. Someone gets a working prototype in twenty minutes and announces they
 have replaced Slack. In fact the prototype is a fraction of a percent of the product. The rest is concurrency, consistency, ordering,
 failure handling and years of edge cases.

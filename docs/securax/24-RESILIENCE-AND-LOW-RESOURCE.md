@@ -1,5 +1,9 @@
 # 24 · Resilience & low-resource operation
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** Sizing for 3 / 9 / 24 GB is proven (`elastic_resources`). [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 **Design goal:** SecuRAX keeps answering when a key is wrong, a free tier is exhausted, a provider is
 down, the internet is gone, or the laptop is short on RAM — degrading gracefully instead of failing.
 

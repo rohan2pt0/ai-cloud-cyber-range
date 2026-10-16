@@ -7,6 +7,15 @@
 
 # SecuRAX — Unified Architecture
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** The single-host estate described here runs today; the full end state is in doc 59. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
+!!! info "Where this is heading"
+    [![The enterprise end state](../assets/end-state-reference-architecture.png){ width="420" }](59-END-STATE-ARCHITECTURE.md)
+
+    The full end state, with a light on every box and the order to build them in: [doc 59](59-END-STATE-ARCHITECTURE.md).
+
 One estate, five pillars, **one shared spine**. The spine is what prevents five disconnected
 projects: common identity, common data-classification, common policy-as-code, common
 observability, common audit trail. Everything plugs into that spine through open interfaces

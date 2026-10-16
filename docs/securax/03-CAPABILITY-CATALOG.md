@@ -8,6 +8,10 @@
 
 # SecuRAX — Capability Catalog
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟡 Partly built.** Mixes built and planned capabilities; doc 59 gives each one its own light. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 **How to use:** find the capability, use the **Primary** tool. Alternatives exist only so you
 are never locked in (Principle P-2). The **Phase** column tells you when you actually need it
 (don't build ahead of need — Principle P-1/80-20). All Phase-0 items are free and open-source.

@@ -1,5 +1,9 @@
 # 20 — Claude-subscription parity (the sovereign equivalents)
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟡 Partly built.** Many parity features exist (routines, Twin, tools); some are still gaps. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 You asked to be sure you can do, inside your own estate, the things a Claude subscription gives you
 — **Projects, Artifacts, Code, Design, Customize, Routines** — plus **Manus/Clawbot-style
 autonomous web agents**. This maps each one to its **sovereign, local-first, free** equivalent:

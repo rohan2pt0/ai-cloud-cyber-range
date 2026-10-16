@@ -587,20 +587,30 @@ def eisenhower(metrics: list[dict], bl: list[dict]) -> dict:
         if m["status"] not in ("red", "amber") or not m["action"]:
             continue
         imp = m["importance"] + (1 if m["status"] == "red" else 0)
-        item = {"title": f"{m['label']}: {m['value']}", "why": m["why"], "action": m["action"], "cmd": m["cmd"], "src": "vital sign"}
+        item = {"title": f"{m['label']}: {m['value']}", "why": m["why"], "action": m["action"], "cmd": m["cmd"], "src": "vital sign",
+                "_rank": (0 if m["status"] == "red" else 1, -imp, 0)}
         if m["urgent"]:
             q["do" if imp >= 3 else "automate"].append(item)
         else:
             q["schedule" if imp >= 3 else "park"].append(item)
-    seen = set()
+    seen: set[str] = set()
     for b in bl:
-        key = (b["theme"], b["priority"])
-        item = {"title": short(b["title"]), "why": f"{b['theme']} · {b['src']} {b['id']}", "action": short(b["next"], 140), "cmd": "", "src": "gap backlog"}
+        title = short(b["title"])
+        if title in seen:            # the same gap reported by two maps is one piece of work
+            continue
+        seen.add(title)
+        item = {"title": title, "why": f"{b['theme']} · {b['src']} {b['id']}", "action": short(b["next"], 140), "cmd": "", "src": "gap backlog",
+                "_rank": (2, {"high": -3, "medium": -2}.get(b["priority"], -1), 1)}
         if b["priority"] in ("high", "medium"):
             q["schedule"].append(item)
         else:
             q["park"].append(item)
-        seen.add(key)
+    # Most severe first in every quadrant: red before amber, more important first, a live vital sign before a backlog item.
+    # The cockpit's "next 3" reads the top of Do now then Schedule, so this order IS the advice. Stable sort keeps ties in check order.
+    for k in q:
+        q[k].sort(key=lambda it: it["_rank"])
+        for it in q[k]:
+            it.pop("_rank", None)
     return q
 
 

@@ -1,5 +1,9 @@
 # 31 · Supply-chain gate — `./securax vet`
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** `vet_gate` journey. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 Popular is not safe. A skill is text an agent **obeys**; a plugin's hooks run with **your** privileges; an MCP server is code your agent trusts. 2026 research reports malicious skills and repo configs stealing keys and planting backdoors (e.g. [MintMCP](https://www.mintmcp.com/blog/claude-code-supply-chain-attacks); the headline figures there are not independently verified). So nothing from the internet gets near an agent until it has been **vetted, pinned and hash-checked**.
 
 ```bash
