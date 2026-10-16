@@ -8,7 +8,18 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
+### Added
+- **Documentation site** (MkDocs Material, Microsoft-Learn-style):
+  - Home, Get started (new **Quickstart**), How-to guides, Apps, Concepts, Security and compliance, Reference (a **command reference generated from `./securax help`** on every build, plus the changelog) and a new **Troubleshooting** page built from real installs.
+  - Light and dark themes, search, and a copy button on every code block.
+  - The `docs` workflow builds strictly on every PR. It publishes to GitHub Pages from `main` once Pages is enabled and the repository variable `DOCS_PAGES=true` is set.
 ### Changed
+- **No more pasting during setup** (friction seen on a real install: pasted fences left the shell waiting, a `sudo` prompt swallowed the next pasted lines, a cron line pointed at an old folder, a phone subscribed to a mistyped topic):
+  - `./securax notify setup [--new]`: random topic saved, shown, tested.
+  - `./securax routines install`: exactly one schedule line for this folder, stale ones removed, cron started (enabled at boot with systemd).
+  - `./securax phones [--apply]`: checks the HTTPS edge, the app port and Tailscale, then prints the steps with your own `*.ts.net` address (or runs the two `serve` commands).
+  - `doctor` now reports Docker reachability first (with the WSL-integration fix), and adds `phone alerts` and `schedule` lines.
+  - `why` names the WSL-integration fix too.
 - **Phones over Tailscale on one address** (doc 58): the app's web server forwards the AI gateway (`/v1`, `/healthz`) and sync (`/sync`, WebSocket included), so Ask and sync work on phones from `https://<laptop>.<tailnet>.ts.net` with no cross-origin permission and nothing else published; on a `*.ts.net` address the app defaults Ask and the sync URL to that address and Chat links to port 10000 (PWA cache v14.10.0).
 - **Strong router key**: `./securax up` replaces the shipped placeholder `LITELLM_MASTER_KEY` (`sk-range-change-me`) once with a random 48-hex key.
 - **No false "wrong provider" warning** for providers that reuse another's key (`openrouter_pro`, `groq_qwen` carry the same `key_prefix`; providers reading the same key variable count as one, so a real mix-up such as an OpenRouter key under ElevenLabs is still caught).

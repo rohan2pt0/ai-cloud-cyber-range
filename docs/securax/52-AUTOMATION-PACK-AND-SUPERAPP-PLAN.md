@@ -31,10 +31,10 @@ All of these are SecuRAX **Routines**: plain cron on your machine, no n8n workfl
 
 **Switch it on (2 minutes):**
 1. Install the **ntfy** app (Android or iPhone).
-2. In the app, subscribe to a long random topic name, e.g. `securax-` followed by 20 random characters. On the public server the topic name is the password.
-3. Put `SECURAX_NOTIFY_NTFY=https://ntfy.sh/<that-topic>` in `local/compose/.env`.
-4. Run `./securax notify test`.
-5. Make sure the one cron line from doc 20 is installed (`./securax routines run` every minute).
+2. Run `./securax notify setup`. It makes a long random topic (on the public server the topic name is the password),
+   saves it, shows it, and sends a test once you have subscribed to it in the app. A fresh topic later: `--new`.
+3. Run `./securax routines install`. It sets exactly one schedule line for this folder (lines for an old folder are
+   removed) and starts cron. `./securax doctor` shows both as `phone alerts: on` and `schedule: on`.
 
 **What leaves the box:** status colour, the top 3 actions and deadlines. Never prompts, chats, keys or file contents.
 For zero third parties, run your own ntfy server later and add `SECURAX_NOTIFY_NTFY_TOKEN`.

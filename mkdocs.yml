@@ -1,0 +1,151 @@
+# SecuRAX documentation site (Microsoft-Learn-style: Get started · How-to · Concepts · Apps · Security · Reference).
+# Build locally:  pip install -r docs/requirements.txt && python3 docs/gen_cli_reference.py && mkdocs serve
+site_name: SecuRAX Docs
+site_description: Sovereign AI estate for one person or a family, built to bank-grade security habits.
+site_url: https://rohan2pt0.github.io/ai-cloud-cyber-range/
+repo_url: https://github.com/rohan2pt0/ai-cloud-cyber-range
+repo_name: rohan2pt0/ai-cloud-cyber-range
+edit_uri: edit/main/docs/
+docs_dir: docs
+exclude_docs: |
+  *.json
+theme:
+  name: material
+  language: en
+  icon: { logo: material/shield-check, repo: fontawesome/brands/github }
+  palette:
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: amber
+      toggle: { icon: material/weather-night, name: Dark mode }
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: amber
+      toggle: { icon: material/weather-sunny, name: Light mode }
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - navigation.footer
+    - navigation.indexes
+    - navigation.instant
+    - search.suggest
+    - search.highlight
+    - content.code.copy      # one-tap copy: never paste the ``` fence lines into a terminal
+    - content.action.edit
+    - toc.follow
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - footnotes
+  - toc: { permalink: true }
+  - pymdownx.details
+  - pymdownx.highlight: { anchor_linenums: true }
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed: { alternate_style: true }
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.snippets: { base_path: [".", "docs"], check_paths: true }
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+plugins:
+  - search
+validation:
+  # Many pages link to source files elsewhere in the repository (scripts, configs); those are fine outside the site.
+  links: { not_found: info, anchors: info, unrecognized_links: info }
+extra:
+  social:
+    - { icon: fontawesome/brands/github, link: https://github.com/rohan2pt0/ai-cloud-cyber-range }
+copyright: SecuRAX · Apache-2.0 · no personal data in this repository
+nav:
+  - Home: index.md
+  - Get started:
+      - Quickstart: get-started/quickstart.md
+      - Overview: securax/00-OVERVIEW.md
+      - Principles: securax/01-PRINCIPLES.md
+      - Phones and remote shell: securax/58-PHONES-AND-REMOTE-SHELL.md
+      - Calm mode (daily use): securax/47-CALM-MODE-LESS-INPUT-MORE-INSIGHT.md
+  - How-to guides:
+      - AI providers and plugins: securax/22-PLUGINS-AND-PROVIDERS.md
+      - Integrations: securax/07-INTEGRATIONS.md
+      - Extend SecuRAX: securax/06-EXTENDING.md
+      - Automation pack and alerts: securax/52-AUTOMATION-PACK-AND-SUPERAPP-PLAN.md
+      - The Twin (your AI): securax/53-THE-TWIN.md
+      - Import your AI history: securax/51-YOUR-AI-HISTORY.md
+      - Build without Claude: securax/23-BUILD-WITHOUT-CLAUDE.md
+      - OpenCode Go and the terminal agent: securax/42-OPENCODE-GO-AND-THE-TERMINAL-AGENT.md
+      - Inspect third-party software: securax/43-INSPECT-THIRD-PARTY-SOFTWARE.md
+      - Measure your build models: securax/45-AUTOBENCH-MEASURE-YOUR-BUILD-MODELS.md
+      - Pool your machines: securax/56-POOL-YOUR-MACHINES.md
+      - Offline and low-resource: securax/32-OFFLINE-AND-LOW-RESOURCE.md
+      - Incident runbook: securax/27-INCIDENT-RUNBOOK.md
+      - Versioning and releases: securax/21-VERSIONING-AND-RELEASES.md
+  - Apps:
+      - Guiding Map: securax/14-GUIDING-MAP.md
+      - Guiding Map freeze-ready: securax/48-GUIDING-MAP-FREEZE-READY.md
+      - Financial planner: securax/18-FINANCIAL-PLANNER.md
+      - Career compass: securax/49-CAREER-COMPASS.md
+      - Cockpit, storage, patching: securax/37-COCKPIT-STORAGE-PATCHING.md
+      - People scale, live sync, ChatOps: securax/39-PEOPLE-SCALE-LIVE-SYNC-CHATOPS.md
+  - Concepts:
+      - Architecture: securax/02-ARCHITECTURE.md
+      - Enterprise architecture: securax/17-ENTERPRISE-ARCHITECTURE.md
+      - Lifecycle, seed to forest: securax/29-LIFECYCLE-SEED-TO-FOREST.md
+      - Operating model: securax/08-OPERATING-MODEL.md
+      - Cost and models: securax/15-COST-AND-MODELS.md
+      - Reasoning budget: securax/50-REASONING-BUDGET.md
+      - Compute strategy: securax/57-COMPUTE-STRATEGY.md
+      - Resilience and low resource: securax/24-RESILIENCE-AND-LOW-RESOURCE.md
+      - Fallbacks and elasticity: securax/25-FALLBACKS-AND-ELASTICITY.md
+      - Agents: securax/16-AGENTS.md
+      - Autonomous research: securax/19-AUTONOMOUS-RESEARCH.md
+      - Global intelligence: securax/13-GLOBAL-INTELLIGENCE.md
+      - Intelligent UX: securax/12-INTELLIGENT-UX.md
+      - Kaizen and antifragility: securax/11-KAIZEN.md
+      - Claude parity: securax/20-CLAUDE-PARITY.md
+      - Full stack: securax/10-FULL-STACK.md
+      - Open-core tiers: securax/09-OPEN-CORE-TIERS.md
+      - Engineering standard: securax/55-ENGINEERING-STANDARD.md
+      - Engineering practices and research: securax/38-ENGINEERING-PRACTICES-AND-RESEARCH.md
+  - Security and compliance:
+      - Capability catalog: securax/03-CAPABILITY-CATALOG.md
+      - Compliance map: securax/04-COMPLIANCE-MAP.md
+      - Identity, incident clock, residency: securax/36-IDENTITY-INCIDENT-RESIDENCY.md
+      - Encryption in transit: securax/40-ENCRYPTION-IN-TRANSIT.md
+      - Quantum readiness: securax/41-QUANTUM-READINESS.md
+      - Supply-chain vet: securax/31-SUPPLY-CHAIN-VET.md
+      - Admission gate and self-healing sandbox: securax/44-ADMISSION-GATE-AND-SELF-HEALING-SANDBOX.md
+      - Purple-team loop: securax/30-PURPLE-TEAM-LOOP.md
+      - Fitness and game days: securax/33-FITNESS-AND-GAME-DAYS.md
+      - CCSP coverage: securax/34-CCSP-COVERAGE.md
+      - Certification path: securax/46-CERTIFICATION-PATH.md
+      - Regulatory gap assessment: securax/35-REGULATORY-GAP-ASSESSMENT.md
+      - Regulatory maps:
+          - RBI NBFC Directions: securax/regulatory/rbi-nbfc-gap-assessment.md
+          - SEBI CSCRF: securax/regulatory/sebi-cscrf-gap-assessment.md
+          - NIST AI 600-1: securax/regulatory/nist-ai-600-1-assessment.md
+          - MIT AI Risk Repository: securax/regulatory/mit-ai-risk-assessment.md
+          - Post-quantum readiness: securax/regulatory/pqc-readiness-assessment.md
+  - Reference:
+      - Command reference: reference/cli.md
+      - Technical gist: securax/54-TECHNICAL-GIST.md
+      - Coverage and gaps: securax/26-COVERAGE-AND-GAPS.md
+      - Status and traceability: securax/28-STATUS-AND-TRACEABILITY.md
+      - Roadmap: securax/05-ROADMAP.md
+      - Changelog: reference/changelog.md
+      - Original cyber range:
+          - Range architecture: architecture.md
+          - Board brief: board-brief.md
+          - Cloud governance: cloud-governance.md
+          - Compliance matrix: compliance-matrix.md
+          - Cost controls: cost-controls.md
+          - Demo runbook: demo-runbook.md
+  - Troubleshooting: troubleshooting.md

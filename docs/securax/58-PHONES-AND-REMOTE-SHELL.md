@@ -14,7 +14,10 @@ On the laptop:
 ./securax tls off        # only if the local HTTPS edge is on: Tailscale provides the HTTPS instead
 ./securax up
 ```
-In **Windows PowerShell**, after installing Tailscale and turning on MagicDNS and HTTPS certificates in the admin console:
+`./securax phones` checks what is in the way (HTTPS edge, app port, Tailscale signed in) and prints the steps with
+**your** address. `./securax phones --apply` runs the two `serve` commands on Windows for you through WSL interop.
+
+Or, in **Windows PowerShell**, after installing Tailscale and turning on MagicDNS and HTTPS certificates in the admin console:
 ```
 tailscale serve --bg 8088                    # app + Ask + sync    → https://<laptop>.<tailnet>.ts.net
 tailscale serve --bg --https=10000 3000      # Chat (Open WebUI)   → https://<laptop>.<tailnet>.ts.net:10000

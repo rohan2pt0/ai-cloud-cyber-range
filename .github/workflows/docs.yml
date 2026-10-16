@@ -1,0 +1,44 @@
+# Docs site (MkDocs Material). Every PR: strict build, so a broken nav or page fails here, not on the live site.
+# main: also publish to GitHub Pages, once the owner has enabled Pages (Settings → Pages → Source: GitHub Actions)
+# and set the repository variable DOCS_PAGES=true (Settings → Secrets and variables → Actions → Variables).
+name: docs
+on:
+  pull_request:
+    paths: ["docs/**", "mkdocs.yml", "CHANGELOG.md", "securax", ".github/workflows/docs.yml"]
+  push:
+    branches: [main]
+    paths: ["docs/**", "mkdocs.yml", "CHANGELOG.md", "securax", ".github/workflows/docs.yml"]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: Install the docs toolchain (pinned)
+        run: pip install -r docs/requirements.txt
+      - name: Generate the command reference from ./securax help
+        run: python3 docs/gen_cli_reference.py
+      - name: Build (strict)
+        run: mkdocs build --strict
+      - name: Keep the built site for publishing
+        if: github.event_name != 'pull_request' && vars.DOCS_PAGES == 'true'
+        uses: actions/upload-pages-artifact@v3
+        with: { path: site }
+  publish:
+    if: github.event_name != 'pull_request' && vars.DOCS_PAGES == 'true'
+    needs: build
+    runs-on: ubuntu-latest
+    permissions: { pages: write, id-token: write }
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4
