@@ -8,6 +8,8 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
+### Fixed
+- **Command Center over Tailscale:** opened at `https://<laptop>.<tailnet>.ts.net`, its cards linked to `https://chat.securax.localhost/` and similar names that only exist on the laptop. They now use the Tailscale name (Chat on `:10000`), hide Private Docs and Automation (not published over Tailscale), and read the gateway status from the same address (`/version` added to the app's proxy).
 ### Security
 - **`./securax up` now replaces an empty or placeholder sync token** (`change-me…` from older `.env` templates) with a strong random one. A known placeholder would have let anyone who can reach the sync service read and write your data; before, it also blocked setting up cross-device sync.
 ### Added
