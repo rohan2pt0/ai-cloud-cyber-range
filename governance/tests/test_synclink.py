@@ -20,9 +20,9 @@ def decode(link):
 
 
 def test_https_link_uses_names_and_the_first_token():
-    link, where = sl.build({"SYNC_TOKENS": "tokA,tokB", "COMPOSE_FILE": "docker-compose.yml:tls.yml", "SECURAX_DOMAIN": "securax.example.in"}, "rohan")
+    link, where = sl.build({"SYNC_TOKENS": "tokA,tokB", "COMPOSE_FILE": "docker-compose.yml:tls.yml", "SECURAX_DOMAIN": "securax.example.in"}, "me")
     assert link.startswith("https://hub.securax.example.in/#sync=") and where == "https://sync.securax.example.in/sync"
-    assert decode(link) == {"url": "https://sync.securax.example.in/sync", "key": "tokA", "user": "rohan"}
+    assert decode(link) == {"url": "https://sync.securax.example.in/sync", "key": "tokA", "user": "me"}
 
 
 def test_plain_link_uses_the_host_given():
@@ -43,6 +43,6 @@ def test_no_token_is_a_plain_message_not_a_crash():
 
 
 def test_token_survives_awkward_characters_and_unicode_user():
-    link, _ = sl.build({"SYNC_TOKENS": "a+b/c=d_e-f"}, user="rohan ✓")
-    assert decode(link)["key"] == "a+b/c=d_e-f" and decode(link)["user"] == "rohan ✓"
+    link, _ = sl.build({"SYNC_TOKENS": "a+b/c=d_e-f"}, user="me ✓")
+    assert decode(link)["key"] == "a+b/c=d_e-f" and decode(link)["user"] == "me ✓"
     assert "=" not in link.split("#sync=")[1] and "+" not in link.split("#sync=")[1]            # URL-fragment safe

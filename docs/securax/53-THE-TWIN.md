@@ -50,7 +50,7 @@ Search results and uploaded documents still pass through the gateway, so the inj
    - attach your knowledge (step 4).
 
    Make a second preset, `Twin-private`, on `bank-assistant-local`, for anything personal or bank-related.
-3. **Memory.** Settings → Personalization → Memory: on. Tell it durable facts ("I am moving to NABARD on contract", "Indian tax context"), and it carries them into new chats.
+3. **Memory.** Settings → Personalization → Memory: on. Tell it durable facts ("I am changing jobs next month", "Indian tax context"), and it carries them into new chats.
 4. **Knowledge.** Workspace → Knowledge:
    - create **Handbooks** and upload your handbook files;
    - create **AI history** and upload `vault/knowledge/out` (doc 51).

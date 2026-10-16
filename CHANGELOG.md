@@ -9,6 +9,12 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **SecuRAX Shield** is the home page (`website/index.html`): *"Let your people use AI. Keep your data out of it."*, the AI firewall for regulated companies.
+  - Real blocked and redacted examples in the hero, a "one control point" flow diagram, and capabilities with honest lights (the admin console and GDPR maps are 🔴).
+  - The audiences are NBFCs, brokers, AMCs, fintechs and DPDP firms. The offer is a five-place design-partner programme.
+  - The consumer page moved to `/personal/` (SecuRAX Personal).
+- **Low-profile publishing:** `tools/publish-clean.sh <org>` makes a fresh, history-free copy under a brand organisation, rewrites links and code owners, leaves itself out, and refuses to publish while personal identifiers remain. The sweep removed a personal e-mail from a Terraform example, owner tags, a sample user name and the laptop name.
+- **Doc 61:** run SecuRAX as a business. It covers identity layers, conflicts to avoid, the entity choice (OPC/LLP), GST and LUT, Razorpay for India, a merchant of record for global sales, and the first 90 days.
 - **Product site for cyberbaba.org** (`website/`), written for anyone with something worth protecting:
   - The promise: *"Your private superintelligence"*, for the 1% who own their AI, with the 1% club hook (1.01^365 ≈ 37.8).
   - Who it is for, person-agnostic: individuals and families, founders, creators and public figures, professionals, organisations, governments. Then three pillars (Private, Guarded, Provable).

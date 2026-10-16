@@ -235,6 +235,7 @@
   "docs/**",
     "mkdocs.yml",
     "website/**",
+    "tools/publish-clean.sh",
   "*.md",
   "LICENSE*",
   "CODEOWNERS",

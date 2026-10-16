@@ -56,5 +56,5 @@ If that day comes, it enters as a **dormant organ**, built only to these conditi
 It is a pre-campaign crowdfunded device: shipping is estimated for Feb–Mar 2027 from the US, and India is not on the list of shipping
 countries it gives. The software is source-available (Apache 2.0 plus Commons Clause), not open source.
 
-Its node traffic is unencrypted by default, which is the wrong default for a BFSI security professional's data. Nothing in SecuRAX
+Its node traffic is unencrypted by default, which is the wrong default for sensitive data. Nothing in SecuRAX
 needs it.

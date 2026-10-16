@@ -58,7 +58,7 @@ requests stay in India. Until E2E confirms it in writing, `e2e-in` is treated as
 | **Vast.ai and other crowd-sourced hosts** for anything but public data | the host machine's owner can read what runs on it |
 | **Lambda, Hyperstack, CoreWeave, TPU pods** | built for multi-GPU training clusters; nothing in SecuRAX needs that |
 | **IndiaAI Compute Portal** (subsidised GPUs, about ₹65/GPU-hour in the official PIB note) | **Not eligible as an individual employee.** It is for DPIIT-recognised startups, academia, researchers and government. It becomes relevant only if SecuRAX ever becomes a registered startup. |
-| **C-DAC AIRAWAT / PARAM** | for formal research proposals, and a family member's employer is not a resource to borrow |
+| **C-DAC AIRAWAT / PARAM** | for formal research proposals from eligible institutions |
 | **Model splitting across devices** (RAMDeck / llama.cpp RPC) | see doc 56 |
 | **Google TRC (free TPUs)** | for academic or open research by application; TPUs suit training, not this estate's inference |
 
