@@ -167,6 +167,11 @@ case "$cmd" in
     if [ "$(ev LITELLM_MASTER_KEY)" = "sk-range-change-me" ]; then
       skv "$ENVF" LITELLM_MASTER_KEY "sk-$(python3 -c 'import secrets; print(secrets.token_hex(24))')" && C "  ✔ replaced the placeholder gateway key with a strong random one (kept in .env)"
     fi
+    # Cross-device sync token: an empty or placeholder value ("change-me…" from older templates) is replaced once with a
+    # strong random one. A known placeholder would let anyone who can reach the sync service read and write your data.
+    case "$(ev SYNC_TOKENS)" in ""|*change-me*|*changeme*)
+      skv "$ENVF" SYNC_TOKENS "$(python3 -c 'import secrets; print(secrets.token_hex(24))')" && C "  ✔ generated a strong cross-device sync token (show it with: grep '^SYNC_TOKENS=' local/compose/.env)";;
+    esac
     # Chat's sign-in key, made once and kept (doc 53): without it every update signs you out of Chat.
     if [ -z "$(ev WEBUI_SECRET_KEY)" ]; then
       skv "$ENVF" WEBUI_SECRET_KEY "$( (command -v openssl >/dev/null && openssl rand -hex 32) || head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')"
