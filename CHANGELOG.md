@@ -8,6 +8,11 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
+### Added
+- **Documentation site** (MkDocs Material, Microsoft-Learn-style):
+  - Home, Get started (new **Quickstart**), How-to guides, Apps, Concepts, Security and compliance, Reference (a **command reference generated from `./securax help`** on every build, plus the changelog) and a new **Troubleshooting** page built from real installs.
+  - Light and dark themes, search, and a copy button on every code block.
+  - The `docs` workflow builds strictly on every PR. It publishes to GitHub Pages from `main` once Pages is enabled and the repository variable `DOCS_PAGES=true` is set.
 ### Changed
 - **No more pasting during setup** (friction seen on a real install: pasted fences left the shell waiting, a `sudo` prompt swallowed the next pasted lines, a cron line pointed at an old folder, a phone subscribed to a mistyped topic):
   - `./securax notify setup [--new]`: random topic saved, shown, tested.
