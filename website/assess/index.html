@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Free AI-risk check · SecuRAX Shield</title>
+<meta name="description" content="Ten questions, two minutes: how exposed is your firm's AI use, mapped to RBI, SEBI CSCRF, DPDP and CERT-In. Runs in your browser; nothing is sent.">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<style>
+:root{--navy:#0b1b33;--navy2:#13294b;--ink:#0f1c33;--text:#2b3a55;--muted:#5b6b86;--line:#e3e8f0;--bg:#f6f8fb;--card:#fff;--gold:#e8b84a;--gold2:#b98a1f;--green:#15803d;--amber:#b45309;--red:#b91c1c;--radius:16px}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Inter,Arial,sans-serif;color:var(--text);background:var(--bg);line-height:1.6;font-size:16px;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+img{max-width:100%;height:auto;display:block}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+.banner{background:var(--gold);color:var(--navy);font-size:14px;text-align:center;padding:9px 16px;font-weight:600}
+.banner a{font-weight:800}
+header.nav{background:rgba(11,27,51,.96);backdrop-filter:saturate(1.4) blur(8px);color:#fff;position:sticky;top:0;z-index:10;border-bottom:1px solid rgba(255,255,255,.08)}
+.nav .wrap{display:flex;align-items:center;gap:22px;height:64px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;text-decoration:none}
+.brand small{font-weight:600;color:#b9c6dd;font-size:12px}
+.nav ul{display:flex;gap:22px;list-style:none;margin-left:auto}
+.nav ul a{text-decoration:none;color:#d7e0ef;font-size:15px}
+.nav ul a:hover{color:#fff}
+.btn{display:inline-block;border-radius:10px;padding:13px 22px;font-weight:700;text-decoration:none;font-size:15px;border:2px solid transparent;transition:transform .15s,background .15s}
+.btn:hover{transform:translateY(-1px)}
+.btn-gold{background:var(--gold);color:var(--navy)}
+.btn-gold:hover{background:#f2c862}
+.btn-ghost{border-color:rgba(255,255,255,.45);color:#fff}
+.btn-ghost:hover{border-color:#fff}
+.btn-line{border-color:var(--navy);color:var(--navy)}
+.hero{background:radial-gradient(900px 520px at 80% 0,#2a5596 0,transparent 62%),linear-gradient(165deg,var(--navy) 0,var(--navy2) 100%);color:#fff;padding:76px 0 0;overflow:hidden}
+.hero .wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:end}
+.eyebrow{display:inline-block;font-size:13px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:var(--gold);margin-bottom:16px}
+h1{font-size:clamp(36px,5.4vw,60px);line-height:1.04;letter-spacing:-1.2px;margin-bottom:20px}
+.hero p.lead{font-size:19.5px;color:#d5dfee;max-width:600px;margin-bottom:28px}
+.cta{display:flex;gap:12px;flex-wrap:wrap}
+.micro{font-size:14px;color:#a9b9d3;margin-top:16px;padding-bottom:72px}
+.hero-visual{position:relative;display:flex;justify-content:center;padding-top:10px}
+.phone{width:300px;border-radius:38px;background:#05101f;padding:10px;box-shadow:0 30px 80px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.12);margin-bottom:-60px}
+.phone .screen{border-radius:30px;overflow:hidden;height:600px}
+.phone img{width:100%;height:100%;object-fit:cover;object-position:top}
+.float{position:absolute;background:#fff;color:var(--ink);border-radius:12px;padding:12px 14px;font-size:13.5px;box-shadow:0 12px 34px rgba(0,0,0,.28);max-width:240px;line-height:1.4}
+.float b{display:block;font-size:13px}
+.f1{left:-6px;top:90px}.f2{right:-10px;top:300px}
+.tag{display:inline-block;font-size:11px;font-weight:800;border-radius:6px;padding:2px 7px;margin-bottom:6px}
+.tag-r{background:#fde8e8;color:var(--red)}.tag-g{background:#e7f6ec;color:var(--green)}
+.models{background:#fff;border-bottom:1px solid var(--line);padding:30px 0 22px}
+.models p{text-align:center;font-size:14px;color:var(--muted);font-weight:600;letter-spacing:.3px}
+.models ul{display:flex;flex-wrap:wrap;justify-content:center;gap:10px 26px;list-style:none;margin-top:12px;font-weight:800;color:#33425f;font-size:17px}
+section{padding:88px 0}
+section.alt{background:#fff}
+h2{font-size:clamp(28px,3.8vw,44px);color:var(--ink);letter-spacing:-.8px;line-height:1.1;margin-bottom:14px}
+.kicker{font-size:13px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--gold2);margin-bottom:10px;display:block}
+.sub{font-size:19px;color:var(--muted);max-width:760px;margin-bottom:42px}
+.center{text-align:center}.center .sub{margin-left:auto;margin-right:auto}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:26px}
+section.alt .card{background:var(--bg)}
+.card h3{font-size:19px;color:var(--ink);margin-bottom:8px}
+.card p{font-size:15.5px}
+.pillar{padding:30px}
+.pillar .ic{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;font-size:22px;background:var(--navy);margin-bottom:16px}
+.pillar ul{list-style:none;margin-top:14px;display:grid;gap:8px;font-size:15px}
+.pillar li::before{content:"✓  ";color:var(--green);font-weight:800}
+.demo{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.term{background:#0a1628;color:#dbe6f6;border-radius:var(--radius);padding:22px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:14px;line-height:1.65;box-shadow:0 18px 40px rgba(11,27,51,.18)}
+.term .h{color:#8aa3c8;font-size:12px;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;font-family:system-ui,sans-serif;font-weight:700}
+.term .in{color:#fff}
+.term .bad{color:#fca5a5}.term .ok{color:#86efac}.term .dim{color:#8aa3c8}
+.caption{font-size:14px;color:var(--muted);margin-top:16px;text-align:center}
+.tour{display:grid;grid-template-columns:1fr 1.15fr;gap:56px;align-items:center;margin-bottom:96px}
+.tour:last-child{margin-bottom:0}
+.tour.rev{grid-template-columns:1.15fr 1fr}
+.tour.rev .copy{order:2}
+.copy h3{font-size:clamp(24px,2.8vw,32px);color:var(--ink);letter-spacing:-.5px;line-height:1.15;margin-bottom:12px}
+.copy p{font-size:17px;margin-bottom:14px}
+.shot{border-radius:14px;overflow:hidden;box-shadow:0 24px 60px rgba(11,27,51,.22),0 0 0 1px rgba(11,27,51,.08);background:#fff}
+.shot .bar{height:34px;background:#e9eef5;display:flex;align-items:center;gap:7px;padding:0 14px}
+.shot .bar i{width:11px;height:11px;border-radius:50%;background:#c5cfdd;display:block}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;counter-reset:s}
+.step{counter-increment:s;position:relative;padding-top:58px}
+.step::before{content:counter(s);position:absolute;top:22px;left:26px;width:30px;height:30px;border-radius:50%;background:var(--gold);color:var(--navy);font-weight:800;display:grid;place-items:center}
+.step code{display:block;margin-top:12px}
+code{background:#eef2f8;border-radius:6px;padding:3px 8px;font-size:.9em;font-family:ui-monospace,Menlo,Consolas,monospace}
+.proof{background:var(--navy);color:#fff}
+.proof .wrap{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:46px 20px;text-align:center}
+.proof b{display:block;font-size:40px;letter-spacing:-1px;color:var(--gold)}
+.proof span{font-size:14.5px;color:#c4d1e6}
+.light{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;border-radius:999px;padding:3px 10px;margin-top:14px}
+.light::before{content:"";width:9px;height:9px;border-radius:50%;background:currentColor}
+.l-g{color:var(--green);background:#e7f6ec}.l-a{color:var(--amber);background:#fdf2e1}.l-r{color:var(--red);background:#fde8e8}
+.badges{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.badge{border:1px solid var(--line);background:#fff;border-radius:10px;padding:10px 14px;font-weight:700;color:var(--ink);font-size:14px}
+.note{font-size:14.5px;color:var(--muted);margin-top:16px}
+.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.tier{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:28px;display:flex;flex-direction:column}
+.tier.hl{border:2px solid var(--gold2);box-shadow:0 18px 44px rgba(11,27,51,.10);position:relative}
+.tier.hl::after{content:"Start here";position:absolute;top:-12px;left:24px;background:var(--gold);color:var(--navy);font-size:12px;font-weight:800;border-radius:999px;padding:3px 10px}
+.tier h3{font-size:22px;color:var(--ink)}
+.tier .price{font-size:28px;font-weight:800;color:var(--ink);margin:8px 0 2px}
+.tier .per{font-size:14px;color:var(--muted);margin-bottom:18px}
+.tier ul{list-style:none;display:grid;gap:9px;font-size:15px;margin-bottom:24px;flex:1}
+.tier li::before{content:"✓  ";color:var(--green);font-weight:800}
+.faq details{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:10px}
+.faq summary{cursor:pointer;font-weight:700;color:var(--ink);font-size:16.5px}
+.faq details p{margin-top:10px}
+.closing{background:radial-gradient(800px 400px at 50% 0,#2a5596 0,transparent 65%),linear-gradient(165deg,var(--navy) 0,var(--navy2) 100%);color:#fff;text-align:center}
+.closing h2{color:#fff}
+.closing p{color:#d2dcec;margin:0 auto 28px;max-width:620px;font-size:19px}
+.closing .cta{justify-content:center}
+footer{background:#071326;color:#9fb0cc;font-size:14px;padding:50px 0 30px}
+footer .cols{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:24px;margin-bottom:28px}
+footer h4{color:#fff;font-size:14px;margin-bottom:10px}
+footer ul{list-style:none;display:grid;gap:6px}
+footer a{text-decoration:none}
+footer a:hover{color:#fff}
+.fine{border-top:1px solid rgba(255,255,255,.08);padding-top:18px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+@media (max-width:960px){
+  .hero .wrap,.tour,.tour.rev,.demo{grid-template-columns:1fr}
+  .tour.rev .copy{order:0}
+  .grid3,.tiers,.steps{grid-template-columns:1fr 1fr}
+  .proof .wrap{grid-template-columns:1fr 1fr}
+  .nav ul{display:none}
+  footer .cols{grid-template-columns:1fr 1fr}
+  .micro{padding-bottom:30px}
+  .f1{left:0}.f2{right:0}
+}
+@media (max-width:600px){
+  .grid3,.tiers,.steps{grid-template-columns:1fr}
+  section{padding:60px 0}
+  .hero{padding-top:52px}
+  .brand small{display:none}
+  .nav .btn{padding:8px 14px;font-size:14px;white-space:nowrap;margin-left:auto}
+  .phone{width:250px}.phone .screen{height:500px}
+  .float{max-width:200px;font-size:12.5px}
+  .tour{margin-bottom:64px}
+}
+</style>
+<style>
+.quizwrap{max-width:820px;margin:0 auto}
+fieldset.q{border:1px solid var(--line);background:#fff;border-radius:14px;padding:16px 18px;margin-bottom:12px}
+fieldset.q legend{font-weight:700;color:var(--ink);padding:0 4px;font-size:16px}
+.q .n{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;background:var(--gold);color:var(--navy);font-size:13px;margin-right:8px}
+.q label{display:inline-flex;gap:8px;align-items:center;margin:10px 22px 0 4px;cursor:pointer}
+#quiz .btn{margin-top:10px;border:0;cursor:pointer}
+.score{background:var(--navy);color:#fff;border-radius:16px;padding:26px;text-align:center;margin:30px 0 20px}
+.score b{font-size:54px;display:block;color:var(--gold);letter-spacing:-1px}
+.score p{color:#d2dcec;margin-top:10px}
+.gap{background:#fff;border:1px solid var(--line);border-radius:14px;padding:18px;margin-bottom:12px}
+.gap .ref{font-size:13.5px;color:var(--muted)}
+#result h3{color:var(--ink);font-size:22px;margin:10px 0 14px}
+#result .cta{margin:24px 0 8px;text-align:center}
+</style>
+</head>
+<body>
+<header class="nav"><div class="wrap">
+  <a class="brand" href="../" aria-label="SecuRAX Shield home"><img src="../favicon.svg" alt="" width="30" height="30"><span>SecuRAX Shield <small>by CyberBaba</small></span></a>
+  <a class="btn btn-gold" href="mailto:hello@cyberbaba.org?subject=SecuRAX%20Shield%20design%20partner" style="margin-left:auto">Become a design partner</a>
+</div></header>
+<main>
+<section class="hero" style="padding-bottom:56px"><div class="wrap" style="display:block;text-align:center">
+  <span class="eyebrow">Free · 2 minutes · nothing leaves your browser</span>
+  <h1 style="max-width:820px;margin:0 auto 16px">How exposed is your firm's AI use?</h1>
+  <p class="lead" style="margin:0 auto">Ten questions mapped to RBI, SEBI CSCRF, DPDP and CERT-In. Get a score and your top gaps instantly.</p>
+</div></section>
+<section><div class="wrap quizwrap">
+  <form id="quiz" aria-label="AI-risk questions"><noscript>This check needs JavaScript; it runs entirely on your device.</noscript></form>
+  <div id="result" hidden></div>
+</div></section>
+</main>
+<footer><div class="wrap"><div class="fine"><span>© 2026 CyberBaba. A self-assessment, not an audit or legal advice.</span><span><a href="../">SecuRAX Shield</a></span></div></div></footer>
+<script src="assess.js"></script>
+</body>
+</html>

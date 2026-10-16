@@ -9,6 +9,14 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **Free AI-risk check** (`website/assess/`), the site's front door:
+  - Ten questions mapped to RBI, SEBI CSCRF, DPDP, CERT-In, NIST AI 600-1 and OWASP, with an instant score and the gaps, each showing Shield's real status light.
+  - It runs only in the browser and sends nothing anywhere. It is linked from the Shield banner, hero and nav.
+- **Doc 62, strategy:**
+  - Cyera's model: wedge to platform, speed-to-value proof, education and free assessments as distribution.
+  - The 2025 consolidation of standalone prompt firewalls into platforms, and the patterns shared by the unicorns.
+  - The category for SecuRAX to own: the **sovereign, regulator-native, proof-native AI firewall**, with its build order.
+- **Shield page:** the eyebrow now reads "The sovereign AI firewall", the closing reads "Use any AI. Prove you stayed in control."
 - **SecuRAX Shield** is the home page (`website/index.html`): *"Let your people use AI. Keep your data out of it."*, the AI firewall for regulated companies.
   - Real blocked and redacted examples in the hero, a "one control point" flow diagram, and capabilities with honest lights (the admin console and GDPR maps are 🔴).
   - The audiences are NBFCs, brokers, AMCs, fintechs and DPDP firms. The offer is a five-place design-partner programme.
