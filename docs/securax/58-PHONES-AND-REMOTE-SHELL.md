@@ -45,7 +45,7 @@ persisted (`ENABLE_PERSISTENT_CONFIG=false`), so nothing else needs changing.
 
 ## 2. A shell on the laptop's WSL from your phone, anywhere
 
-Recommended: **Tailscale inside WSL with Tailscale SSH**. WSL becomes its own tailnet device (for example `rc-wsl`).
+Recommended: **Tailscale inside WSL with Tailscale SSH**. WSL becomes its own tailnet device (for example `laptop-wsl`).
 
 | Property | How |
 |---|---|
@@ -61,7 +61,7 @@ Install from Tailscale's official apt repository rather than `curl | sh`:
 curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/$VERSION_CODENAME.noarmor.gpg | sudo tee /usr/share/keyrings/tailscale-archive-keyring.gpg >/dev/null
 curl -fsSL https://pkgs.tailscale.com/stable/ubuntu/$VERSION_CODENAME.tailscale-keyring.list | sudo tee /etc/apt/sources.list.d/tailscale.list
 sudo apt-get update && sudo apt-get install -y tailscale tmux
-sudo tailscale up --ssh --hostname=rc-wsl
+sudo tailscale up --ssh --hostname=laptop-wsl
 ```
 Open the login link it prints and sign in with the **same** Tailscale account.
 
@@ -72,7 +72,7 @@ Open the login link it prints and sign in with the **same** Tailscale account.
 
 ### On the OnePlus 10R
 1. Tailscale app on, same account.
-2. Install **Termux from F-Droid** (the Play Store build is outdated). Run `pkg install openssh`, then `ssh rohan@rc-wsl`.
+2. Install **Termux from F-Droid** (the Play Store build is outdated). Run `pkg install openssh`, then `ssh <your-linux-user>@laptop-wsl`.
    A GUI client such as Termius also works. The first connection opens a browser check.
 3. Then: `tmux new -A -s main`, `cd ~/securax`, and run any `./securax` command.
 

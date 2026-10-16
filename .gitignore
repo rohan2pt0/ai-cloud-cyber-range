@@ -270,3 +270,4 @@ local/compose/tls-sidecars/
 # docs site build output and the generated command reference
 site/
 docs/reference/cli.md
+website/docs/

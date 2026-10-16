@@ -3,7 +3,7 @@
 # the approval_gate below. An AI-SPM tool / CI reads this to enforce that only approved,
 # risk-classified models are used. This is the governance spine of ISO/IEC 42001 + NIST AI RMF MAP.
 version: 1
-owner: rohan
+owner: securax-maintainers
 updated: 2026-10-10
 
 # Risk tiers follow EU AI Act / NIST AI RMF framing.
@@ -26,7 +26,7 @@ models:
     approved: true
     approved_by: model-risk-committee
     dpia: docs/compliance-matrix.md
-    owner: rohan
+    owner: securax-maintainers
 
   - id: bank-assistant-gemini
     provider: gemini

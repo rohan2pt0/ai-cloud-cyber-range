@@ -15,7 +15,7 @@ permissions:
 jobs:
   sandbox:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60   # the journey suite takes ~35-40 min; 45 left no headroom (run 154 was cut off mid-journey)
     steps:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }          # the stale-update journey needs history

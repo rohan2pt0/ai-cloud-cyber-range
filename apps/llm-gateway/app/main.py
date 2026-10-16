@@ -37,6 +37,14 @@ MAX_CHARS = int(os.getenv("MAX_PROMPT_CHARS", "8000"))
 RATE_PER_MIN = int(os.getenv("RATE_LIMIT_PER_MIN", "30"))
 ALLOWED_DOMAINS = {d.strip() for d in os.getenv("ALLOWED_LINK_DOMAINS", "rbi.org.in,sebi.gov.in,cert-in.org.in").split(",") if d.strip()}
 CANARIES = {c for c in os.getenv("SYSTEM_PROMPT_CANARIES", "").split(",") if c}
+# Agent tool calls: the policy (allow / deny / require_approval, glob patterns) from a JSON file, else the built-in default.
+def _tool_policy() -> dict:
+    path = os.getenv("TOOL_POLICY_FILE", "")
+    try:
+        return json.loads(open(path, encoding="utf-8").read()) if path else {}
+    except (OSError, ValueError):
+        return {"allow": ["__invalid_policy_blocks_every_tool__"]}       # a broken policy fails closed
+TOOL_POLICY = _tool_policy()
 
 # Identity (see identity.py). A misconfigured AUTH_* setting stops the gateway at start-up rather than silently running open.
 AUTH = identity.Authenticator(identity.Config.from_env())
@@ -371,6 +379,16 @@ async def chat(request: Request, authorization: str | None = Header(default=None
             choice["finish_reason"] = "content_filter"
         elif MODE == "enforce":
             choice["message"]["content"] = v.text
+        tcs = choice.get("message", {}).get("tool_calls")
+        if tcs:                                              # the model wants to ACT: check the tool and its arguments
+            tcs, tf = guardrails.inspect_tool_calls(tcs, TOOL_POLICY, CANARIES)
+            out_findings += tf
+            stop = sorted({f.rule for f in tf if f.severity in guardrails.BLOCKING and not f.rule.startswith("PII-")})
+            if stop and MODE == "enforce":
+                _metrics["blocked_tool_call"] += 1
+                choice["message"].pop("tool_calls", None)
+                choice["message"]["content"] = "Tool call withheld by AI security policy (" + ", ".join(stop) + ")."
+                choice["finish_reason"] = "content_filter"
 
     # A request whose PII was redacted before it reached the model is NOT a plain "allow": the audit trail (and the SOC
     # reading it) must be able to tell that data was removed. (Found by the purple-team loop.)

@@ -17,6 +17,8 @@ Framework mapping (see docs/compliance-matrix.md):
 from __future__ import annotations
 
 import base64
+import fnmatch
+import json
 import re
 import unicodedata
 from dataclasses import dataclass, field
@@ -49,7 +51,7 @@ class Verdict:
 # --------------------------------------------------------------------------- #
 _INJECTION_PATTERNS: list[tuple[str, str, str]] = [
     # (rule id, regex, severity)
-    ("PI-001-override", r"\b(ignore|disregard|forget|override)\b.{0,40}\b(previous|prior|above|earlier|all|your)\b.{0,30}\b(instructions?|rules|guidelines|prompts?|directives)\b", "high"),
+    ("PI-001-override", r"\b(ignore|disregard|forget|override)\b.{0,40}\b(previous|prior|above|earlier|all|your)\b.{0,30}\b(instructions?|rules|guidelines|guidance|directions|prompts?|directives|constraints|safeguards|polic(?:y|ies))\b", "high"),
     ("PI-002-sysprompt-exfil", r"\b(reveal|print|show|repeat|output|leak|tell me)\b.{0,40}\b(system|hidden|initial|developer)\s+(prompt|message|instructions?)\b", "high"),
     ("PI-003-roleplay-jailbreak", r"\b(DAN|do anything now|developer mode|jailbreak|unfiltered mode|no restrictions|god mode)\b", "high"),
     ("PI-004-new-identity", r"\byou are (now|no longer)\b|\bfrom now on,? you\b|\bact as (an? )?(unrestricted|evil|root|admin)", "medium"),
@@ -257,6 +259,53 @@ def inspect_input(text: str, max_chars: int = 8000, redact: bool = True) -> Verd
     blocked = any(f.severity in BLOCKING and not f.rule.startswith("PII-") for f in findings)
     blocked = blocked or any(f.rule == "DOS-oversize-prompt" for f in findings)
     return Verdict(allowed=not blocked, findings=findings, text=clean)
+
+
+# --------------------------------------------------------------------------- #
+# Agent actions - tool calls the MODEL asks for (OWASP LLM06 Excessive Agency / ASI02 Tool Misuse)
+# --------------------------------------------------------------------------- #
+# Tool RESULTS are already scanned as input (indirect injection). This checks the other direction: which tool the model wants
+# to run and with what arguments, before the agent framework executes it.
+DEFAULT_TOOL_POLICY: dict = {
+    "allow": [],                                    # non-empty = ONLY these tools may be called (glob patterns)
+    "deny": ["shell", "bash", "exec*", "run_command", "*delete*", "drop_*", "rm", "eval*"],
+    "require_approval": ["*transfer*", "*payment*", "*send_money*", "wire_*", "send_email", "*refund*"],
+}
+_DESTRUCTIVE = re.compile(r"\brm\s+-[a-z]*r[a-z]*f|\bDROP\s+(TABLE|DATABASE|SCHEMA)\b|\bTRUNCATE\s+TABLE\b|\bmkfs\b|"
+                          r"\b(curl|wget)\b[^|\n]*\|\s*(ba|z)?sh\b|\bchmod\s+-?R?\s*777\b|\bshutdown\s+-[hr]\b|:\(\)\s*\{", re.I)
+
+
+def _match(name: str, patterns: list[str]) -> bool:
+    return any(fnmatch.fnmatch(name, p.lower()) for p in patterns or [])
+
+
+def inspect_tool_calls(tool_calls: list[dict], policy: dict | None = None, canaries: set[str] | None = None) -> tuple[list[dict], list[Finding]]:
+    """Check every tool call a model returned. Denied, unlisted or approval-requiring tools and destructive arguments are
+    BLOCKING findings; personal data in arguments is redacted in place (data leaving through a tool is still data leaving)."""
+    pol = {**DEFAULT_TOOL_POLICY, **(policy or {})}
+    findings: list[Finding] = []
+    for tc in tool_calls or []:
+        fn = tc.get("function") if isinstance(tc, dict) else None
+        if not isinstance(fn, dict):
+            continue
+        name = str(fn.get("name") or "").strip().lower()
+        args = fn.get("arguments")
+        args = args if isinstance(args, str) else json.dumps(args or {})
+        if pol["allow"] and not _match(name, pol["allow"]):
+            findings.append(Finding("TOOL-001-not-allowed", "LLM06/ASI02", "high", f"{name} is not on the tool allow-list"))
+        elif _match(name, pol["deny"]):
+            findings.append(Finding("TOOL-001-denied", "LLM06/ASI02", "high", f"{name} is a denied tool"))
+        elif _match(name, pol["require_approval"]):
+            findings.append(Finding("TOOL-003-needs-approval", "LLM06/ASI02", "high", f"{name} needs a human approval"))
+        if _DESTRUCTIVE.search(args):
+            findings.append(Finding("TOOL-002-destructive-args", "LLM06/ASI02", "high", f"destructive arguments for {name}"))
+        clean, leak = check_output(args, set(), canaries)
+        findings += [f for f in leak if f.rule.startswith(("SECRET-", "LEAK-"))]
+        clean, pii = redact_pii(args)
+        findings += pii
+        if pii:
+            fn["arguments"] = clean
+    return tool_calls, findings
 
 
 def inspect_output(text: str, allowed_domains: set[str], canaries: set[str] | None = None) -> Verdict:

@@ -70,6 +70,7 @@ services:
       RESIDENCY_ACTION: ${RESIDENCY_ACTION:-reroute}
       RESIDENCY_POLICY_B64: ${RESIDENCY_POLICY_B64:-}
       SYSTEM_PROMPT_CANARIES: ${SYSTEM_PROMPT_CANARY:-CANARY-7f3a9c}
+      TOOL_POLICY_FILE: ${TOOL_POLICY_FILE:-}
       SECURAX_VERSION: ${SECURAX_VERSION:-}   # ./securax up exports this from the VERSION file
       GIT_COMMIT: ${GIT_COMMIT:-}
       SECURAX_DOMAIN: ${SECURAX_DOMAIN:-securax.localhost}   # the estate's own HTTPS names may call this API from a browser (CORS)

@@ -11,7 +11,7 @@ is public; this file contains no secrets.
 ## 1. What it is
 
 A **sovereign, laptop-first AI and security estate**: one CLI (`./securax`, bash, about 1,250 lines) over Docker Compose.
-Built for an Indian BFSI security professional. It has three parts:
+Built for people and firms who handle sensitive data, India first. It has three parts:
 1. a guarded AI gateway and model router;
 2. Chat, private document Q&A and automation;
 3. a personal "life OS" PWA (Guiding Map).

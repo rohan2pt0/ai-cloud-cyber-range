@@ -32,7 +32,7 @@ variable "github_repo" {
 }
 variable "tags" {
   type    = map(string)
-  default = { project = "ai-cloud-cyber-range", owner = "rohan", managed_by = "terraform" }
+  default = { project = "ai-cloud-cyber-range", owner = "securax", managed_by = "terraform" }
 }
 
 data "aws_caller_identity" "me" {}

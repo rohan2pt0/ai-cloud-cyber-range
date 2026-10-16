@@ -1,0 +1,35 @@
+{
+  "about": "Regulator watch sources. Each RSS feed is fetched, filtered and de-duplicated into vault/regwatch.json. include_link / exclude_title are case-insensitive regexes: tune them here, not in code. 'manual' lists regulators that publish no feed; the digest links them for a human check.",
+  "feeds": [
+    {
+      "id": "rbi-notifications",
+      "regulator": "RBI",
+      "title": "RBI notifications (circulars and directions)",
+      "url": "https://www.rbi.org.in/notifications_rss.xml",
+      "link_hosts": ["rbi.org.in"]
+    },
+    {
+      "id": "rbi-press",
+      "regulator": "RBI",
+      "title": "RBI press releases",
+      "url": "https://www.rbi.org.in/pressreleases_rss.xml",
+      "link_hosts": ["rbi.org.in"],
+      "exclude_title": "auction|money market operations|statement of position|sovereign gold bond|reverse repo|\\brepo\\b|treasury bill|government securit|state government|reference rate|weekly statistical|balance of payments|foreign exchange reserves|lending and deposit rates|sectoral deployment"
+    },
+    {
+      "id": "sebi",
+      "regulator": "SEBI",
+      "title": "SEBI circulars, regulations and press releases",
+      "url": "https://www.sebi.gov.in/sebirss.xml",
+      "link_hosts": ["sebi.gov.in"],
+      "include_link": "/legal/|/press-releases/"
+    }
+  ],
+  "manual": [
+    {
+      "regulator": "CERT-In",
+      "title": "CERT-In advisories and directions (no RSS feed published)",
+      "url": "https://www.cert-in.org.in/s2cMainServlet?pageid=PUBADVLIST"
+    }
+  ]
+}

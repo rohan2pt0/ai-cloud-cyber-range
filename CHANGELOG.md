@@ -9,6 +9,40 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **Time to first block, measured on every build:** new fitness checks `time-to-first-block` (a cold gateway refusing its first prompt attack: 0.68 s locally, budget 5 s) and `block-latency-p95` (60 blocked attacks: p50 3.8 ms, p95 6.5 ms, budget 50 ms). The number is on the Shield page.
+- **Agent and tool-call guard** (OWASP LLM06 / ASI02): when a model returns `tool_calls`, the gateway checks each tool and its arguments before the agent runs it.
+  - Built-in policy: shell, exec, eval and delete tools are denied; transfer, payment, refund and e-mail tools need a human approval; `TOOL_POLICY_FILE` (JSON with `allow`, `deny`, `require_approval` glob lists) overrides it, and a broken file fails closed.
+  - Destructive arguments (`rm -rf`, `DROP TABLE`, pipe-to-shell, fork bombs) and secrets or canaries in arguments are blocking; personal data in arguments is redacted.
+  - In enforce mode a blocked call is withheld with `finish_reason: content_filter` and the rule names; counted as `blocked_tool_call`. 14 new tests.
+- **Regulator watch** (`./securax regwatch fetch|list|digest|sources`): RBI notifications and press releases and SEBI circulars from their official RSS feeds, filtered (market operations and recovery proceedings out), de-duplicated into `vault/regwatch.json`.
+  - The first fetch is a silent baseline; later fetches push only new titles to your phone. The monthly digest is Markdown with titles, dates and links only, and links CERT-In for a manual check because it publishes no feed.
+  - Links that do not point to the regulator's own site are dropped; DTD and entity declarations are refused. Daily and monthly routines added. 7 tests.
+### Fixed
+- **A real detection gap the new probe found:** "SYSTEM OVERRIDE: forget prior guidance…" was not blocked, because "guidance" was missing from the override rule (PI-001). The rule now also covers directions, constraints, safeguards and policies. Regression and benign tests were added; the red-team scorecard stays at 100 % defence with 0 false positives.
+- **Free AI-risk check** (`website/assess/`), the site's front door:
+  - Ten questions mapped to RBI, SEBI CSCRF, DPDP, CERT-In, NIST AI 600-1 and OWASP, with an instant score and the gaps, each showing Shield's real status light.
+  - It runs only in the browser and sends nothing anywhere. It is linked from the Shield banner, hero and nav.
+- **Doc 62, strategy:**
+  - Cyera's model: wedge to platform, speed-to-value proof, education and free assessments as distribution.
+  - The 2025 consolidation of standalone prompt firewalls into platforms, and the patterns shared by the unicorns.
+  - The category for SecuRAX to own: the **sovereign, regulator-native, proof-native AI firewall**, with its build order.
+- **Shield page:** the eyebrow now reads "The sovereign AI firewall", the closing reads "Use any AI. Prove you stayed in control."
+- **SecuRAX Shield** is the home page (`website/index.html`): *"Let your people use AI. Keep your data out of it."*, the AI firewall for regulated companies.
+  - Real blocked and redacted examples in the hero, a "one control point" flow diagram, and capabilities with honest lights (the admin console and GDPR maps are 🔴).
+  - The audiences are NBFCs, brokers, AMCs, fintechs and DPDP firms. The offer is a five-place design-partner programme.
+  - The consumer page moved to `/personal/` (SecuRAX Personal).
+- **Low-profile publishing:** `tools/publish-clean.sh <org>` makes a fresh, history-free copy under a brand organisation, rewrites links and code owners, leaves itself out, and refuses to publish while personal identifiers remain. The sweep removed a personal e-mail from a Terraform example, owner tags, a sample user name and the laptop name.
+- **Doc 61:** run SecuRAX as a business. It covers identity layers, conflicts to avoid, the entity choice (OPC/LLP), GST and LUT, Razorpay for India, a merchant of record for global sales, and the first 90 days.
+- **Product site for cyberbaba.org** (`website/`), written for anyone with something worth protecting:
+  - The promise: *"Your private superintelligence"*, for the 1% who own their AI, with the 1% club hook (1.01^365 ≈ 37.8).
+  - Who it is for, person-agnostic: individuals and families, founders, creators and public figures, professionals, organisations, governments. Then three pillars (Private, Guarded, Provable).
+  - A **real guardrail demo**: the actual output of SecuRAX's rails blocking a prompt injection (OWASP LLM01, MITRE ATLAS) and redacting PAN, card and mobile.
+  - A product tour with real screenshots (Today on a phone, the Money Map, the status-light roadmap), three-step setup, who it is for, proof numbers, compliance stated as "mapped, not certified", Community / Professional / Enterprise pricing, and an executive FAQ.
+  - Static and responsive (no horizontal scroll at 390 px), WebP screenshots of 58–77 KB, and security headers in `website/_headers`.
+  - `website/build.sh` builds the site with the docs at `/docs/` for Cloudflare Pages.
+- **Doc 60:** how to go live on cyberbaba.org with Cloudflare Pages (custom domain, Full (strict) TLS, free Email Routing for hello@), and how to move all development to the SecuRAX build agent (`autobuild` / `opencode` with free models, the same gates, main protected by CI), with the next builds queued as ready tasks.
+### Fixed
+- The docs footer said Apache-2.0; the licence is **MIT**.
 - **Status lights on every documentation page** (🟢 built and proven · 🟡 partly built or not yet proven · 🔴 not built yet):
   - One source of truth, `docs/status.yml`; `docs/sync_status.py` writes each light into a banner under the page title, so it shows on GitHub and on the docs site.
   - A test fails if a page and the file disagree, or if a site page has no light. The legend is on the docs home page.
