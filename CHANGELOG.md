@@ -9,6 +9,10 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **Product site for cyberbaba.org** (`website/`): a Mattermost-style structure (announcement bar, sovereign hero with two calls to action, proof numbers, platform grid with the same 🟢🟡🔴 lights as the docs, deployment options, security and compliance stated as "mapped, not certified", Community / Professional / Enterprise editions, FAQ). It is static, with security headers in `website/_headers` and responsive layout down to phone width. `website/build.sh` builds the site with the docs at `/docs/` for Cloudflare Pages.
+- **Doc 60:** how to go live on cyberbaba.org with Cloudflare Pages (custom domain, Full (strict) TLS, free Email Routing for hello@), and how to move all development to the SecuRAX build agent (`autobuild` / `opencode` with free models, the same gates, main protected by CI), with the next builds queued as ready tasks.
+### Fixed
+- The docs footer said Apache-2.0; the licence is **MIT**.
 - **Status lights on every documentation page** (🟢 built and proven · 🟡 partly built or not yet proven · 🔴 not built yet):
   - One source of truth, `docs/status.yml`; `docs/sync_status.py` writes each light into a banner under the page title, so it shows on GitHub and on the docs site.
   - A test fails if a page and the file disagree, or if a site page has no light. The legend is on the docs home page.

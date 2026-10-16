@@ -234,6 +234,7 @@
  "ignore": [
   "docs/**",
     "mkdocs.yml",
+    "website/**",
   "*.md",
   "LICENSE*",
   "CODEOWNERS",
