@@ -9,7 +9,13 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
-- **Product site for cyberbaba.org** (`website/`): a Mattermost-style structure (announcement bar, sovereign hero with two calls to action, proof numbers, platform grid with the same 🟢🟡🔴 lights as the docs, deployment options, security and compliance stated as "mapped, not certified", Community / Professional / Enterprise editions, FAQ). It is static, with security headers in `website/_headers` and responsive layout down to phone width. `website/build.sh` builds the site with the docs at `/docs/` for Cloudflare Pages.
+- **Product site for cyberbaba.org** (`website/`), written to sell to an executive:
+  - The promise in one line: *"The AI your compliance team will actually approve."*
+  - The problem an executive feels (shadow AI, regulators asking, bills and lock-in), then three pillars (Private, Guarded, Provable).
+  - A **real guardrail demo**: the actual output of SecuRAX's rails blocking a prompt injection (OWASP LLM01, MITRE ATLAS) and redacting PAN, card and mobile.
+  - A product tour with real screenshots (Today on a phone, the Money Map, the status-light roadmap), three-step setup, who it is for, proof numbers, compliance stated as "mapped, not certified", Community / Professional / Enterprise pricing, and an executive FAQ.
+  - Static and responsive (no horizontal scroll at 390 px), WebP screenshots of 58–77 KB, and security headers in `website/_headers`.
+  - `website/build.sh` builds the site with the docs at `/docs/` for Cloudflare Pages.
 - **Doc 60:** how to go live on cyberbaba.org with Cloudflare Pages (custom domain, Full (strict) TLS, free Email Routing for hello@), and how to move all development to the SecuRAX build agent (`autobuild` / `opencode` with free models, the same gates, main protected by CI), with the next builds queued as ready tasks.
 ### Fixed
 - The docs footer said Apache-2.0; the licence is **MIT**.
