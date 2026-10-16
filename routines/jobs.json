@@ -35,6 +35,20 @@
     "enabled": true
   },
   {
+    "id": "regwatch",
+    "cron": "40 8 * * *",
+    "command": ["./securax", "regwatch", "fetch", "--notify", "--quiet"],
+    "description": "Daily 8:40am: fetch the RBI and SEBI feeds; push the titles of NEW circulars and directions to your phone (silent when nothing is new).",
+    "enabled": true
+  },
+  {
+    "id": "regwatch-digest",
+    "cron": "50 8 1 * *",
+    "command": ["./securax", "regwatch", "digest", "--month", "last", "--send"],
+    "description": "1st of the month 8:50am: last month's regulator digest (titles, dates and links only) to your phone.",
+    "enabled": true
+  },
+  {
     "id": "andon",
     "cron": "*/15 * * * *",
     "command": ["./securax", "notify", "digest", "--changed", "--only-bad"],

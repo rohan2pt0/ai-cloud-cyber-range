@@ -14,6 +14,9 @@ for the versioning and release policy.
   - Built-in policy: shell, exec, eval and delete tools are denied; transfer, payment, refund and e-mail tools need a human approval; `TOOL_POLICY_FILE` (JSON with `allow`, `deny`, `require_approval` glob lists) overrides it, and a broken file fails closed.
   - Destructive arguments (`rm -rf`, `DROP TABLE`, pipe-to-shell, fork bombs) and secrets or canaries in arguments are blocking; personal data in arguments is redacted.
   - In enforce mode a blocked call is withheld with `finish_reason: content_filter` and the rule names; counted as `blocked_tool_call`. 14 new tests.
+- **Regulator watch** (`./securax regwatch fetch|list|digest|sources`): RBI notifications and press releases and SEBI circulars from their official RSS feeds, filtered (market operations and recovery proceedings out), de-duplicated into `vault/regwatch.json`.
+  - The first fetch is a silent baseline; later fetches push only new titles to your phone. The monthly digest is Markdown with titles, dates and links only, and links CERT-In for a manual check because it publishes no feed.
+  - Links that do not point to the regulator's own site are dropped; DTD and entity declarations are refused. Daily and monthly routines added. 7 tests.
 ### Fixed
 - **A real detection gap the new probe found:** "SYSTEM OVERRIDE: forget prior guidance…" was not blocked, because "guidance" was missing from the override rule (PI-001). The rule now also covers directions, constraints, safeguards and policies. Regression and benign tests were added; the red-team scorecard stays at 100 % defence with 0 false positives.
 - **Free AI-risk check** (`website/assess/`), the site's front door:

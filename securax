@@ -726,6 +726,11 @@ EOF2
     #   ./securax residency status|enable --jurisdiction IN|disable|check|region CLOUD REGION|attest CLOUD --ref REF
     shift; exec python3 "$ROOT/governance/residency.py" "$@"
     ;;
+  regwatch)
+    # Regulator watch: new RBI/SEBI circulars, directions and press releases from their RSS feeds (titles + links only).
+    #   ./securax regwatch fetch [--notify]|list [--days N]|digest [--month YYYY-MM] [--send]|sources
+    shift; exec python3 "$ROOT/governance/regwatch.py" "$@"
+    ;;
   incident)
     # The regulatory incident clock: deadlines for every regulator that applies (RBI/SEBI/CERT-In/... as data), drafts, filings, sealed evidence.
     #   ./securax incident regulators|open|status|due|set|draft|file|note|close|verify|seal|rollup   (see the header of governance/incident.py)
@@ -1346,6 +1351,7 @@ KEEP IT SAFE
 REGULATORY & EVIDENCE (any regulator: RBI, SEBI, CERT-In, IRDAI, DPDP, others as data files)
   comply [rbi|cscrf|mit-ai-risk|nist-ai-600-1|pqc]  requirement-by-requirement gap view     ccsp   CCSP practice map
   evidence       audit pack (checksummed)             incident ...   reporting clock: open, due, draft, file, seal, rollup
+  regwatch ...   new RBI/SEBI circulars: fetch, list, monthly digest (titles + links only)
   regulated on   ONE switch: sign-in + data residency + strict cockpit (then fine-tune with the two below)
   phones         phones & tablets over Tailscale (doc 58)
   gateway-auth   who may call the AI gateway          residency ...  which data may be processed where

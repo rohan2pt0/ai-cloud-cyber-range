@@ -1,7 +1,7 @@
 # 60 · Ship it on cyberbaba.org, and build SecuRAX with SecuRAX
 
 <!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
-> **Status: 🟡 Partly built.** The site, its build and the build loop exist; going live needs your Cloudflare Pages setup, and the queued builds are not done. [What the lights mean](../index.md#the-status-lights)
+> **Status: 🟡 Partly built.** The site, its build, the build loop and the regulator watch exist; going live needs your Cloudflare Pages setup, and the other queued builds are not done. [What the lights mean](../index.md#the-status-lights)
 <!-- status:end -->
 
 Two things happen in this guide. The product site and the documentation go live on **your own domain**. Then all further
@@ -119,12 +119,27 @@ Easiest and most valuable first. Each line is a ready `autobuild` task.
 
 | # | Task | Light today |
 |---|---|---|
-| 1 | **Regulator watch:** RBI, SEBI and CERT-In feeds → `vault/regwatch.json` → a cockpit tile and an ntfy alert on new items; never summarise without the source text | 🔴 |
+| 1 | **Regulator watch:** RBI and SEBI feeds → `vault/regwatch.json` → an ntfy alert on new items and a monthly digest; titles and links only (see below) | 🟢 built; a cockpit tile is still 🔴 |
 | 2 | **Update the site's numbers from CI:** test and journey counts written into `website/index.html` by a script, with a test | 🔴 |
 | 3 | **Central logs:** wake the sprout's Prometheus and add a log store; `./securax logs` | 🟡 |
 | 4 | **Keycloak SSO + MFA for Chat and the gateway** (`./securax grow sprout`) | 🟡 |
 | 5 | **Voice:** local speech-to-text and text-to-speech for the Twin | 🟡 |
 | 6 | **Family Android app:** a trusted-web-activity wrapper of the PWA | 🔴 |
+
+### The regulator watch (built)
+
+```bash
+./securax regwatch fetch            # first run records what is there without alerting
+./securax regwatch list --days 30   # what was published lately
+./securax regwatch digest --month last --out digest.md   # the monthly digest, ready to edit into a newsletter
+./securax regwatch sources          # the feeds, and the regulators to check by hand
+```
+
+Two routines run it for you: `regwatch` (daily 8:40 am, pushes **new** titles to your phone) and `regwatch-digest`
+(the 1st of each month). Sources and noise filters are data in `governance/regwatch-feeds.json`. RBI notifications and
+press releases and SEBI's circulars and press releases come from their official RSS feeds; market-operations notices
+and recovery proceedings are filtered out. **CERT-In publishes no feed**, so the digest links its advisories page for a
+check by hand. Nothing is summarised: a wrong summary of a circular is worse than none.
 
 Day-to-day setup on your devices (phones, alerts, data entry) is covered in the [Quickstart](../get-started/quickstart.md)
 and [doc 58](58-PHONES-AND-REMOTE-SHELL.md).
