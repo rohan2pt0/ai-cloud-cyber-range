@@ -91,10 +91,30 @@ def coverage(m: dict, category: str | None = None) -> dict:
             "entity_items": cnt["entity"], "total_items": len(items), "backlog": backlog}
 
 
+# The committed full reports (docs/securax/regulatory/) carry the page's status light from docs/status.yml,
+# written here so that "committed == generated" still holds (docs/sync_status.py writes the same banner).
+REPORTS = {"rbi": "rbi-nbfc-gap-assessment.md", "cscrf": "sebi-cscrf-gap-assessment.md", "mit-ai-risk": "mit-ai-risk-assessment.md",
+           "nist-ai-600-1": "nist-ai-600-1-assessment.md", "pqc": "pqc-readiness-assessment.md"}
+
+
+def _status_banner(key: str) -> str:
+    docs = pathlib.Path(__file__).resolve().parents[1] / "docs"
+    try:
+        import yaml
+        light = yaml.safe_load((docs / "status.yml").read_text())[f"securax/regulatory/{REPORTS[key]}"]
+        spec = importlib.util.spec_from_file_location("sync_status", docs / "sync_status.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod.banner(light[0], light[1], "../../index.md#the-status-lights").rstrip("\n")
+    except Exception:            # no yaml / no docs folder (e.g. an evidence pack elsewhere): the report is complete without it
+        return ""
+
+
 def render_md(key: str, m: dict, category: str | None = None, probs: list[str] | None = None) -> str:
     cov = coverage(m, category)
     c = cov["counts"]
-    o = [f"# Gap assessment — {m['source']['title']}", "",
+    banner = _status_banner(key) if category is None and key in REPORTS else ""
+    o = [f"# Gap assessment — {m['source']['title']}", "", *([banner, ""] if banner else []),
          f"> {m['about']}", "",
          f"Source: [{m['source']['title']}]({m['source']['url']}) — {m['source']['issued']}; read {m['source']['read_on']}. {m['source']['caveat']}", "",
          ("Applicability scope: " + (f"**{m['categories'][category]}**" if category else "all layers / categories (use `--category` to narrow).")), "",
