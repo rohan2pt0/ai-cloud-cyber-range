@@ -305,6 +305,10 @@ URLS
     ;;
   doctor)
     C "SecuRAX doctor — resource & health + a REAL end-to-end chat test"
+    if ! docker info >/dev/null 2>&1; then
+      echo "  docker:    ✗ not reachable from this terminal, so nothing below can be checked properly"
+      echo "             On Windows: Docker Desktop → Settings → Resources → WSL integration → turn on Ubuntu → Apply & restart, then in PowerShell  wsl --shutdown  and reopen Ubuntu."
+    fi
     # Are you running CURRENT code? (a stale checkout caused several "it still doesn't work" loops)
     if git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1; then
       timeout 6 git -C "$ROOT" fetch -q origin main 2>/dev/null || true
@@ -330,6 +334,10 @@ URLS
     else
       echo "  local model: $LM NOT pulled ✗  → run  ./securax pull"
     fi
+    [ -n "$(ev SECURAX_NOTIFY_NTFY)$(ev SECURAX_NOTIFY_WEBHOOK)" ] && echo "  phone alerts: on (test: ./securax notify test)" || echo "  phone alerts: off → ./securax notify setup"
+    if crontab -l 2>/dev/null | grep -F "securax routines run" | grep -qF "$ROOT"; then
+      pgrep -x cron >/dev/null 2>&1 && echo "  schedule:  on (cron running)" || echo "  schedule:  ⚠ cron is not running → ./securax routines install"
+    else echo "  schedule:  off → ./securax routines install"; fi
     # The real test: send an actual message through the gateway and show who answered + the TRUE error
     # (instead of a chat UI's generic 'Oops'). Probes the same ladder Chat uses.
     KEY="$(ev GATEWAY_API_KEY "$(ev LITELLM_MASTER_KEY sk-range-dev)")"      # a gateway service key when authentication is on
@@ -417,6 +425,23 @@ URLS
     # Sovereign scheduled estate tasks (the local 'Claude Routines'). Drive 'run' from a
     # 1-minute cron:  * * * * * cd "$ROOT" && ./securax routines run >> routines/.log 2>&1
     shift
+    if [ "${1:-}" = "install" ]; then
+      # One command instead of pasting cron lines: exactly ONE schedule line, for THIS folder (lines for other or old
+      # folders are removed), then cron is started, and enabled at boot when systemd runs.
+      command -v crontab >/dev/null 2>&1 || { C "cron is not installed:  sudo apt install cron"; exit 1; }
+      LINE="* * * * * cd \"$ROOT\" && ./securax routines run >> routines/.log 2>&1"
+      CUR="$(crontab -l 2>/dev/null || true)"
+      OLD="$(printf '%s\n' "$CUR" | grep -F 'securax routines run' | grep -vcF "$ROOT" || true)"
+      { printf '%s\n' "$CUR" | grep -vF 'securax routines run' | sed '/^$/d' || true; echo "$LINE"; } | crontab -
+      C "✔ schedule line set for $ROOT$([ "${OLD:-0}" -gt 0 ] && echo " (removed $OLD line(s) for another folder)")"
+      if ! pgrep -x cron >/dev/null 2>&1; then
+        C "Starting cron. It asks for your Linux password once (nothing shows while you type), then press Enter."
+        if [ "$(ps -p 1 -o comm= 2>/dev/null)" = systemd ]; then sudo systemctl enable --now cron; else sudo service cron start; fi
+      fi
+      pgrep -x cron >/dev/null 2>&1 && C "✔ cron is running. Jobs: ./securax routines list" || { C "✗ cron did not start. Run:  sudo service cron start"; exit 1; }
+      [ "$(ps -p 1 -o comm= 2>/dev/null)" = systemd ] || echo "  note: without systemd, cron stops when WSL restarts. Turn systemd on: doc 58."
+      exit 0
+    fi
     ( cd "$ROOT" && python3 -m routines "${1:-list}" )
     ;;
   verify)
@@ -658,7 +683,24 @@ EOF2
   notify)
     # The andon cord: push the plain-words digest to your phone (ntfy) and/or any chat webhook. Off until SECURAX_NOTIFY_NTFY or _WEBHOOK is set.
     #   ./securax notify test | digest [--dry-run] [--only-bad] [--changed] | send "text" [--title T] [--priority high]
-    shift; exec python3 "$ROOT/governance/notify.py" "$@"
+    shift
+    if [ "${1:-}" = "setup" ]; then
+      # One command instead of editing .env: a long random (unguessable) topic, saved, then a test once you subscribed.
+      ENVF="$ROOT/local/compose/.env"
+      if [ -n "$(sed -n 's/^SECURAX_NOTIFY_NTFY=//p' "$ENVF" 2>/dev/null)" ] && [ "${2:-}" != "--new" ]; then
+        C "Phone alerts are already set up. A fresh topic (if the old one was ever shared):  ./securax notify setup --new"
+      else
+        skv "$ENVF" SECURAX_NOTIFY_NTFY "https://ntfy.sh/securax-$(python3 -c 'import secrets; print(secrets.token_hex(12))')"
+        C "✔ new private alert topic saved"
+      fi
+      TOPIC="$(sed -n 's#^SECURAX_NOTIFY_NTFY=.*/##p' "$ENVF" | tail -1)"
+      C "On your phone: ntfy app → + → topic:"; echo; echo "    $TOPIC"; echo
+      echo "  Type it exactly (no extra / or words), leave 'Use another server' off, Subscribe."
+      echo "  Android: Settings → Apps → ntfy → Battery → Unrestricted, and allow its notifications with sound."
+      printf '  Press Enter once subscribed to send a test… '; read -r _ < /dev/tty || true
+      exec python3 "$ROOT/governance/notify.py" test
+    fi
+    exec python3 "$ROOT/governance/notify.py" "$@"
     ;;
   sync-link)
     # One tap to set up cross-device sync on a phone/another computer: prints a link to open there.   ./securax sync-link [--user me] [--host 100.x.y.z]
@@ -761,10 +803,32 @@ EOF2
          C "  (it added one line to ~/.bashrc; undo with  ./securax shortcut off)" ;;
     esac
     ;;
+  phones)
+    # Phones and tablets over Tailscale (doc 58): checks what is in the way, then the exact steps with YOUR address.
+    #   ./securax phones [--apply]     --apply runs the two 'tailscale serve' commands on Windows for you (via WSL interop)
+    TSX=""; for _c in tailscale.exe "/mnt/c/Program Files/Tailscale/tailscale.exe" tailscale; do
+      if command -v "$_c" >/dev/null 2>&1 || [ -x "$_c" ]; then TSX="$_c"; break; fi; done
+    if tls_on; then C "✗ The local HTTPS edge is on and hides the app's port. Tailscale gives the phones HTTPS instead:  ./securax tls off && ./securax up"; exit 1; fi
+    curl -fsS -m 3 http://localhost:8088/ >/dev/null 2>&1 && echo "  ✔ the app answers on port 8088" || { C "✗ the app is not answering on port 8088. Run  ./securax up  first."; exit 1; }
+    [ -n "$TSX" ] || { C "✗ Tailscale not found. Install it on Windows (https://tailscale.com/download), sign in, and turn on MagicDNS + HTTPS certificates in the admin console. Then run this again."; exit 1; }
+    NAME="$("$TSX" status --json 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin)["Self"]["DNSName"].rstrip("."))' 2>/dev/null || true)"
+    [ -n "$NAME" ] && echo "  ✔ Tailscale is on: $NAME" || echo "  ⚠ Tailscale is installed but not signed in (open the Tailscale app and sign in)"
+    if [ "${2:-}" = "--apply" ]; then
+      "$TSX" serve --bg 8088 && "$TSX" serve --bg --https=10000 3000 && echo "  ✔ published to your tailnet only (never 'funnel')"
+    else
+      C "Publish to your own devices (Windows PowerShell, or here with  ./securax phones --apply):"
+      echo "    tailscale serve --bg 8088"; echo "    tailscale serve --bg --https=10000 3000"
+    fi
+    A="${NAME:-<laptop>.<tailnet>.ts.net}"
+    C "On each phone/iPad (Tailscale app on, same account):"
+    echo "    app, Ask and sync:  https://$A"
+    echo "    Chat:               https://$A:10000"
+    echo "    Ops → Cross-device sync:  URL https://$A/sync · user me · token from:  grep '^SYNC_TOKENS=' local/compose/.env"
+    ;;
   why)
     # "Something is not working": no Docker knowledge needed. Shows what is running, what stopped and WHY (the last log lines) with a plain-English hint.
     #   ./securax why [service]        e.g. ./securax why open-webui     (no name = every container that is not running healthy)
-    command -v docker >/dev/null 2>&1 || { C "Docker is not available here. Start Docker Desktop, wait for the whale icon to settle, then run this again."; exit 1; }
+    command -v docker >/dev/null 2>&1 || { C "Docker is not available here. Start Docker Desktop, wait for the whale icon to settle, then run this again."; C "  On Windows: Docker Desktop → Settings → Resources → WSL integration → turn on Ubuntu → Apply & restart, then in PowerShell  wsl --shutdown  and reopen Ubuntu."; exit 1; }
     docker info >/dev/null 2>&1 || { C "Docker is installed but not running. Start Docker Desktop, wait until it says 'Engine running', then run:  ./securax why"; exit 1; }
     cd "$ROOT/local/compose"
     C "What is running (and what is not):"; docker compose ps -a --format 'table {{.Service}}\t{{.Status}}' 2>&1 | head -40
@@ -1283,6 +1347,7 @@ REGULATORY & EVIDENCE (any regulator: RBI, SEBI, CERT-In, IRDAI, DPDP, others as
   comply [rbi|cscrf|mit-ai-risk|nist-ai-600-1|pqc]  requirement-by-requirement gap view     ccsp   CCSP practice map
   evidence       audit pack (checksummed)             incident ...   reporting clock: open, due, draft, file, seal, rollup
   regulated on   ONE switch: sign-in + data residency + strict cockpit (then fine-tune with the two below)
+  phones         phones & tablets over Tailscale (doc 58)
   gateway-auth   who may call the AI gateway          residency ...  which data may be processed where
 
 BUILD & KEEP IT HEALTHY
