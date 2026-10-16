@@ -27,7 +27,7 @@ def test_https_link_uses_names_and_the_first_token():
 
 def test_plain_link_uses_the_host_given():
     link, where = sl.build({"SYNC_TOKENS": "t"}, host="100.101.102.103")
-    assert link.startswith("http://100.101.102.103:8088/#sync=") and decode(link)["url"] == "http://100.101.102.103:8089/sync"
+    assert link.startswith("http://100.101.102.103:8088/#sync=") and decode(link)["url"] == "http://100.101.102.103:8088/sync"   # same origin: the app proxies /sync
 
 
 def test_second_token_and_bad_index():
@@ -46,3 +46,9 @@ def test_token_survives_awkward_characters_and_unicode_user():
     link, _ = sl.build({"SYNC_TOKENS": "a+b/c=d_e-f"}, user="me ✓")
     assert decode(link)["key"] == "a+b/c=d_e-f" and decode(link)["user"] == "me ✓"
     assert "=" not in link.split("#sync=")[1] and "+" not in link.split("#sync=")[1]            # URL-fragment safe
+
+
+def test_tailscale_name_gets_https_and_same_origin_sync():
+    link, where = sl.build({"SYNC_TOKENS": "t"}, host="rc.tail678ad5.ts.net")
+    assert link.startswith("https://rc.tail678ad5.ts.net/#sync=") and where == "https://rc.tail678ad5.ts.net/sync"
+    assert decode(link)["url"] == where and decode(link)["user"] == "me"

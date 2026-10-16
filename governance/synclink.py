@@ -2,6 +2,7 @@
 """One tap to set up cross-device sync on a phone or another computer.
 
     ./securax sync-link [--user me] [--host 100.x.y.z]      prints a link; open it on the device and confirm once
+    With Tailscale on (doc 58) it prints TWO links: one for this laptop (localhost) and one for your phones (the ts.net name).
 
 The link carries your sync address and device token in the part after '#', which browsers never send to any server. The app shows WHERE
 your data will be stored before it saves anything, removes the token from the address bar at once, and never replaces an existing setup
@@ -49,9 +50,25 @@ def build(env: dict[str, str], user: str = "me", host: str = "localhost", token_
     if tls_on:
         dom = env.get("SECURAX_DOMAIN", DEFAULT_DOMAIN)
         hub, sync = f"https://hub.{dom}/", f"https://sync.{dom}/sync"
-    else:
-        hub, sync = f"http://{host}:8088/", f"http://{host}:8089/sync"
+    elif host.endswith(".ts.net"):                      # Tailscale serve: HTTPS on the laptop's own name, sync on the same origin
+        hub, sync = f"https://{host}/", f"https://{host}/sync"
+    else:                                               # the app proxies /sync on its own origin (no cross-origin call, no 2nd port)
+        hub, sync = f"http://{host}:8088/", f"http://{host}:8088/sync"
     return f"{hub}#sync={encode(sync, tokens[token_index], user)}", sync
+
+
+def tailscale_name() -> str:
+    """This machine's Tailscale name (rc.tailXXXX.ts.net), via the Windows or Linux CLI; '' when Tailscale is not on."""
+    import shutil
+    import subprocess
+    for exe in ("tailscale.exe", "/mnt/c/Program Files/Tailscale/tailscale.exe", "tailscale"):
+        if shutil.which(exe) or pathlib.Path(exe).is_file():
+            try:
+                out = subprocess.run([exe, "status", "--json"], capture_output=True, text=True, timeout=10).stdout
+                return str(json.loads(out)["Self"]["DNSName"]).rstrip(".")
+            except (OSError, ValueError, KeyError, subprocess.SubprocessError):
+                return ""
+    return ""
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -60,12 +77,16 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--host", default="localhost", help="address of this machine as the OTHER device sees it (only when HTTPS is off)")
     ap.add_argument("--token", type=int, default=1, help="which of your sync tokens to use (default 1)")
     a = ap.parse_args(argv)
-    link, sync = build(read_env(), a.user, a.host, a.token - 1)
-    print(f"Open this on the other device (its data will be stored on {sync}):\n")
+    env = read_env()
+    link, sync = build(env, a.user, a.host, a.token - 1)
+    ts = tailscale_name() if a.host == "localhost" and "tls.yml" not in env.get("COMPOSE_FILE", "") else ""
+    print("THIS LAPTOP: open this link in the browser you use for the app (or the installed app), then confirm once:\n")
     print(link)
-    print("\nIt contains your sync token: send it only over a channel you trust. The device must be able to reach that address.")
-    if sync.startswith("http://") and a.host == "localhost":
-        print("Note: 'localhost' only works on THIS machine. For a phone use  --host <this machine's Tailscale/LAN address>  (and turn on HTTPS: ./securax tls on).")
+    if ts:
+        print("\nYOUR PHONES (Tailscale on): open this link on each phone, then confirm once:\n")
+        print(build(env, a.user, ts, a.token - 1)[0])
+    print("\nYour data comes back by itself on every device after that: nothing to fill in again.")
+    print("Each link contains your sync token: send it only over a channel you trust, and never paste it into a chat.")
     return 0
 
 

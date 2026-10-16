@@ -98,10 +98,17 @@
   var H = location.hostname, started = Date.now();
   // Served over HTTPS by the estate's TLS edge? Then every service lives under the same domain BY NAME (hub.<domain>, chat.<domain> ...):
   // no port numbers, and a moved service or a new IP only changes DNS. Otherwise: the plain localhost ports.
-  var SEC = location.protocol === "https:";
+  // Opened over Tailscale (https://<laptop>.<tailnet>.ts.net, doc 58)? Then there are no per-service names: the app is this origin,
+  // Chat is the same name on :10000, the gateway rides this origin (/v1, /healthz, /version), and Docs/Automation are not published.
+  var TS = /\.ts\.net$/i.test(H);
+  var SEC = location.protocol === "https:" && !TS;
   var DOM = (H.indexOf("hub.") === 0) ? H.slice(4) : "securax.localhost";
-  function web(name, plain){ return SEC ? "https://"+name+"."+DOM+"/" : "http://"+H+":"+plain+"/"; }
-  function gw(path){ return (SEC ? "https://api."+DOM : "http://"+H+":8080") + path; }
+  var TSPORT = {hub:"", chat:":10000"};
+  function web(name, plain){
+    if(TS) return (name in TSPORT) ? "https://"+H+TSPORT[name]+"/" : "";
+    return SEC ? "https://"+name+"."+DOM+"/" : "http://"+H+":"+plain+"/";
+  }
+  function gw(path){ return (TS ? "" : SEC ? "https://api."+DOM : "http://"+H+":8080") + path; }
   // Core = the apps you came here to use. They get a "starting…" phase (Chat takes ~a minute to boot).
   var CORE = [
     {t:"Guiding Map", e:"🧭", d:"Your daily cockpit / life-OS — works offline, no AI needed", url:web("hub",8088), core:true},
@@ -118,6 +125,7 @@
   function render(list, id){
     var box = document.getElementById(id);
     list.forEach(function(a){
+      if(!a.url){ a.skip = true; return; }                 // not published to this address (Tailscale serves the app and Chat only)
       var el = document.createElement("a");
       el.className="card"; el.href=a.url; el.target="_blank"; el.rel="noopener";
       el.innerHTML = '<div class="t"><span class="dot starting" data-url="'+a.url+'"></span><span class="emoji">'+a.e+'</span> '+a.t+'</div><div class="d">'+a.d+'</div>';
@@ -138,6 +146,7 @@
   var PROBE = {"Chat":"chat","Private Docs":"docs","Automation":"flows"};
   function checkApps(){
     ALL.forEach(function(a){
+      if(a.skip) return;
       if(SEC && PROBE[a.t]){
         fetch("/_up/"+PROBE[a.t],{cache:"no-store"}).then(function(r){paint(a, r.status<500);}).catch(function(){paint(a,false);});
       } else {

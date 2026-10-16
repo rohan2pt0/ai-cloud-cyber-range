@@ -8,6 +8,13 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
+### Fixed
+- **Command Center over Tailscale:** opened at `https://<laptop>.<tailnet>.ts.net`, its cards linked to `https://chat.securax.localhost/` and similar names that only exist on the laptop. They now use the Tailscale name (Chat on `:10000`), hide Private Docs and Automation (not published over Tailscale), and read the gateway status from the same address (`/version` added to the app's proxy).
+- **`./securax sync-link` prints a laptop link and a phone link** (the Tailscale name, found automatically). Both use the app's own address for sync (`/sync`), so one tap per device restores your data after any update, new browser or new phone, with no forms. Previously the link pointed at port 8089, which phones cannot reach.
+### Added
+- **Laptop runbook** (`docs/get-started/laptop-runbook.md`): one page for one-time setup, the daily commands, sync, which address to use where (and the NordVPN caveat), what Chat keeps across updates, the website on cyberbaba.org, the build loop, and the business steps.
+### Security
+- **`./securax up` now replaces an empty or placeholder sync token** (`change-me…` from older `.env` templates) with a strong random one. A known placeholder would have let anyone who can reach the sync service read and write your data; before, it also blocked setting up cross-device sync.
 ### Added
 - **Time to first block, measured on every build:** new fitness checks `time-to-first-block` (a cold gateway refusing its first prompt attack: 0.68 s locally, budget 5 s) and `block-latency-p95` (60 blocked attacks: p50 3.8 ms, p95 6.5 ms, budget 50 ms). The number is on the Shield page.
 - **Agent and tool-call guard** (OWASP LLM06 / ASI02): when a model returns `tool_calls`, the gateway checks each tool and its arguments before the agent runs it.

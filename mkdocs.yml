@@ -69,6 +69,7 @@ nav:
   - Home: index.md
   - Get started:
       - Quickstart: get-started/quickstart.md
+      - Laptop runbook: get-started/laptop-runbook.md
       - Overview: securax/00-OVERVIEW.md
       - Principles: securax/01-PRINCIPLES.md
       - Phones and remote shell: securax/58-PHONES-AND-REMOTE-SHELL.md
