@@ -159,6 +159,9 @@ case "$cmd" in
     # Surface the real product version at runtime (gateway /version) without hardcoding it.
     export SECURAX_VERSION="$(cat "$ROOT/VERSION" 2>/dev/null || echo 0.0.0-dev)"
     export GIT_COMMIT="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)"
+    # The BUILD (release + changes since it + commit) changes with every push by itself; the app badge, Command Center
+    # and /version show it, and the app's offline cache follows it. Nobody bumps a number by hand.
+    export SECURAX_BUILD="$(python3 "$ROOT/governance/buildinfo.py" write 2>/dev/null || echo "v$SECURAX_VERSION")"
     ENVF="$ROOT/local/compose/.env"
     [ -f "$ENVF" ] || cp "$ROOT/local/compose/.env.example" "$ENVF"
     chmod 600 "$ENVF" 2>/dev/null || true          # your API keys: readable by you only (no-op on Windows drives)
@@ -425,7 +428,13 @@ URLS
       timeout 6 git -C "$ROOT" fetch -q origin main 2>/dev/null || true
       BEHIND="$(git -C "$ROOT" rev-list --count HEAD..origin/main 2>/dev/null || echo 0)"
       if [ "${BEHIND:-0}" -gt 0 ]; then echo "  code: ⚠ $BEHIND commit(s) behind main — run  ./securax update"
-      else echo "  code: up to date (v$(cat "$ROOT/VERSION" 2>/dev/null))"; fi
+      else echo "  code: up to date ($(python3 "$ROOT/governance/buildinfo.py" 2>/dev/null || echo "v$(cat "$ROOT/VERSION" 2>/dev/null)"))"; fi
+      # Is the RUNNING estate this code? (a push pulled but not restarted looks "not updated")
+      RUNC="$(gcurl -fsS -m 4 "$(gw_url)/version" 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin).get("commit",""))' 2>/dev/null)"
+      HEADC="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null)"
+      if [ -n "$RUNC" ] && [ "$RUNC" != unknown ] && [ "$RUNC" != "$HEADC" ]; then
+        echo "  running: ⚠ the estate runs build $RUNC, your code is $HEADC — run  ./securax up  to load it"
+      fi
     fi
     DISK=$(df -P . | awk 'NR==2{print $5}' | tr -d '%'); echo "  disk used: ${DISK}%  $([ "${DISK:-0}" -ge 85 ] && echo '⚠ >85% — free space' || echo 'ok')"
     if command -v free >/dev/null; then MEM=$(free | awk '/Mem:/{printf "%d",$3/$2*100}'); echo "  RAM used:  ${MEM}%  $([ "${MEM:-0}" -ge 90 ] && echo '⚠ >90% — close apps / use local-fast model' || echo 'ok')"; fi
@@ -1354,8 +1363,7 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
     ;;
   version|--version|-v)
     v="$(cat "$ROOT/VERSION" 2>/dev/null || echo 0.0.0-dev)"
-    g="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)"
-    echo "SecuRAX v${v} (${g})"
+    echo "SecuRAX $(python3 "$ROOT/governance/buildinfo.py" 2>/dev/null || echo "v$v")"
     ;;
   mcp)   exec python3 "$ROOT/mcp/securax_mcp.py" ;;
   inspect)

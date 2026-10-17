@@ -219,7 +219,8 @@ async def version() -> dict:
     """Runtime version surface (SemVer). `commit` is populated when built in CI (GIT_COMMIT)."""
     return {"product": "SecuRAX", "component": "llm-gateway",
             "version": SECURAX_VERSION, "api_version": app.version,
-            "commit": os.getenv("GIT_COMMIT", "unknown")}
+            "commit": os.getenv("GIT_COMMIT", "unknown"),
+            "build": os.getenv("SECURAX_BUILD", "")}     # e.g. "v0.1.0+74 · 21006c7": changes with every commit
 
 
 _usage: dict[str, float] = defaultdict(float)     # metering for usage reports / SLA dashboards / billing

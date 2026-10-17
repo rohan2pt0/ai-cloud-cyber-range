@@ -173,7 +173,7 @@
       el.textContent = ids.length ? ids.join(", ") : "none yet — start the estate or add a provider";
     }).catch(function(){var el=document.getElementById("models"); if(el) el.textContent="gateway starting…";});
     fetch(gw("/version")).then(function(r){return r.json();})
-      .then(function(j){document.getElementById("ver").textContent="v"+(j.version||"?");})
+      .then(function(j){document.getElementById("ver").textContent=j.build||("v"+(j.version||"?"));})
       .catch(function(){document.getElementById("ver").textContent="offline";});
   }
   function tick(){ checkApps(); checkInfo(); }

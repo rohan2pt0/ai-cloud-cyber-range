@@ -16,6 +16,16 @@
   window.gmG = G; window.gmS = S_;
 
   /* ── 1. PWA: service worker + install ───────────────────────────── */
+  // Which build is running (guiding-map/build.json, written by every `./securax up`): the badge shows it, so a push that
+  // reached this device is visible at once. Without the file the badge keeps the release number stamped by build.js.
+  var gmBuild = (window.fetch ? fetch("build.json", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; })
+                              : Promise.resolve(null)).catch(function () { return null; });
+  gmBuild.then(function (b) {
+    var el = document.getElementById("app_ver");
+    if (!b || !b.label || !el) return;
+    el.textContent = b.label;
+    el.title = "Release " + b.version + (b.changes ? ", plus " + b.changes + " change(s) since it" : "") + "; build " + b.commit + (b.date ? " of " + b.date : "");
+  });
   if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
     // Self-healing updates: when a new service worker takes control after a
     // redeploy/pull, reload the page ONCE so the fresh app shows immediately —
@@ -28,7 +38,11 @@
       _swReloaded = true;
       window.location.reload();
     });
-    navigator.serviceWorker.register("sw.js").then(function (reg) {
+    // The worker is registered per BUILD (sw.js?b=<commit>): a new build is a new worker, so the update and the cache
+    // refresh happen by themselves, with no version to bump by hand.
+    gmBuild.then(function (b) {
+      return navigator.serviceWorker.register("sw.js?b=" + encodeURIComponent((b && b.commit) || "dev"));
+    }).then(function (reg) {
       if (reg) { try { reg.update(); } catch (e) {} }   // check for a newer SW now
     }).catch(function () {});
   }

@@ -9,6 +9,10 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Fixed
+- **"v0.1.0 never updates":** the Life OS badge, the Command Center, `/version` and `./securax version` now show the build, e.g. `v0.1.0+74 · 21006c7`. It is written by every `./securax up` from git (`governance/buildinfo.py`), so each push is visible without bumping anything by hand. The release number still changes only when a release is cut.
+  - **Offline cache:** the Life OS service worker is registered per build and names its cache after it. The hand-bumped cache version (`v14.11.0`, last changed long ago) is gone, so a new build replaces the old cache and reloads once by itself.
+  - **`doctor`** warns when the running estate is an older build than the code on disk.
+  - **Test:** two commits in a scratch repository must change the label without touching `VERSION`. The old check only proved that the badge matched `VERSION`.
 - **A busy port 80/443 no longer leaves you with nothing running** (seen on Windows: `ports are not available: exposing port TCP 0.0.0.0:80`):
   - `./securax tls on` checks the ports first, changes nothing when another program holds them, and says how to find it.
   - `up` and `go` switch back to `http://localhost:8088` by themselves when the HTTPS edge cannot get its ports.

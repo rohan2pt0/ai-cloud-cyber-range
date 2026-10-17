@@ -1,6 +1,8 @@
 /* The Guiding Map — offline shell.
-   Bump CACHE whenever you redeploy; old caches are dropped on activate. */
-const CACHE = "guiding-map-securax-v14.11.0";   // bump on any PWA change so clients drop the old cache
+   The cache is named after the BUILD the page registered (sw.js?b=<commit>, from build.json, written by every
+   `./securax up`), so a new build installs a new worker and drops the old cache by itself. Nothing to bump by hand. */
+const BUILD = new URL(self.location.href).searchParams.get("b") || "dev";
+const CACHE = "guiding-map-securax-" + BUILD;
 const SHELL = [
   "./",
   "./index.html",

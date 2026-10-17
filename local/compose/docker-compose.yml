@@ -73,6 +73,7 @@ services:
       TOOL_POLICY_FILE: ${TOOL_POLICY_FILE:-}
       SECURAX_VERSION: ${SECURAX_VERSION:-}   # ./securax up exports this from the VERSION file
       GIT_COMMIT: ${GIT_COMMIT:-}
+      SECURAX_BUILD: ${SECURAX_BUILD:-}   # the build label (governance/buildinfo.py): changes with every commit
       SECURAX_DOMAIN: ${SECURAX_DOMAIN:-securax.localhost}   # the estate's own HTTPS names may call this API from a browser (CORS)
     ports: ["${BIND_HOST:-127.0.0.1}:8080:8080"]   # loopback unless you opened the estate to your devices (BIND_HOST)
     networks: [edge, modelplane]
