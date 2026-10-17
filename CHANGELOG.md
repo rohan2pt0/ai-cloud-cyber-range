@@ -14,7 +14,11 @@ for the versioning and release policy.
   - **Model inventory:** `./securax ai inventory` checks owner, third-party source, explainability, validation and yearly re-validation for high-risk models, and keeps decommissioned models' records for 10 years.
   - **Disclosure:** every answer carries `X-AI-Generated: true`.
   - **Control library:** the pack `rbi-mrm-draft-2026` adds controls ET-101 to ET-103.
-- **Agent cost guard:** `TOKEN_BUDGET_PER_DAY` sets a per-caller daily token ceiling. The gateway refuses with 429 and a plain reason until midnight.
+- **AI allowance per caller** (doc 69, on by default): 2M tokens a day and 20M a month on cloud models, about US$15 a month on a Flash-class model.
+  - **Limits:** a warning at 80%; at 100% the gateway refuses with 429 and says which limit, when it resets, and how to extend it.
+  - **`./securax ai budget`** shows each caller's use. `./securax ai budget extend --day|--month --tokens N --reason "..."` adds tokens for the current day or month only, and every extension is logged.
+  - **Local model:** not counted, so it still answers when the cloud allowance runs out.
+  - **Visibility:** remaining allowance in the response headers, a cockpit lamp, and spend that survives a gateway restart.
 
 ## [0.2.0] - 2026-10-17
 ### Added

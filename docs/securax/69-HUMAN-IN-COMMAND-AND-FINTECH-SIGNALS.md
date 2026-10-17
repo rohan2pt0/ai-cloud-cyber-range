@@ -32,13 +32,42 @@ The library gains three controls through the pack `governance/controls/packs/rbi
 ET-102 inventory, ET-103 disclosure and human hand-off), and the navigator a regulator row for the draft. They apply to
 every class (the ceiling rule) until the final text says otherwise.
 
-## 2. The cost of agents (built)
+## 2. The cost of agents: an AI allowance per caller (built, on by default)
 
-"Actions are more expensive than words": agentic coding can use thousands of times the tokens of one question. A coder agent
-in a loop can spend a month's budget in a night. The gateway now has a **daily token budget per caller**
-(`TOKEN_BUDGET_PER_DAY` in `.env`, 0 = off). When a caller reaches it, the gateway refuses with 429 and a plain reason
-until midnight, and the audit records `budget_exhausted`. The budget is counted in memory, so a gateway restart starts the
-day afresh. Set it before you let agents run unattended.
+"Actions are more expensive than words": agentic coding can use thousands of times the tokens of one question, and a coder
+agent in a loop can spend a month's budget in a night. Every caller of the gateway (a person's Chat, an agent, a script) now
+has an **allowance**, set the way current AI services and gateways set theirs:
+
+| | Default | Why this number |
+|---|---|---|
+| **Daily limit** | 2,000,000 tokens | a heavy day of agentic coding; a normal day of chat uses a few tens of thousands |
+| **Monthly limit** | 20,000,000 tokens | about US$15 a month on a Flash-class cloud model at list price (about 80% input at $0.30/M, 20% output at $2.50/M); the worst case, all output, is about $50 |
+| **Warning** | at 80% of either | a soft line that only warns, before the hard stop (the pattern AI gateways such as LiteLLM use) |
+| **Stop** | at 100% | the gateway refuses with 429, says which limit, when it resets, and how to extend it |
+| **What counts** | cloud models only | the private local model costs no money, so it still answers when the cloud allowance is used up; the rate limit (30 a minute) still caps a local loop. `AI_BUDGET_COUNT_LOCAL=1` counts it too |
+
+**Two windows, like AI subscriptions.** The day is the short window and the month the long one. Thirty full days would be
+60M, three times the month, so one heavy day is fine but a runaway week is not. (AI subscriptions pair a short session limit
+with a weekly one for the same reason.)
+
+**Extending, instead of buying credits:**
+
+```bash
+./securax ai budget                                              # each caller: used today and this month, and what is left
+./securax ai budget extend --day --tokens 1000000 --reason "release day"
+./securax ai budget extend --month --tokens 10000000 --reason "migration project" [--caller ID]
+```
+
+An extension is for the current day or month only, needs a reason, and is logged in `vault/ai-control-log.jsonl`. It is
+written to the same machine-only control file as the kill switch, so no caller can extend its own allowance. To change the
+defaults for good, set `AI_BUDGET_DAY_TOKENS` and `AI_BUDGET_MONTH_TOKENS` in `local/compose/.env` (0 switches a limit off).
+
+**Where you see it:**
+
+- Every answer carries `X-AI-Budget-Day-Left` and `X-AI-Budget-Month-Left`, so an agent can slow down by itself.
+- The cockpit lights a caution lamp at 80% and a warning when a limit is used up.
+- The audit records `budget_warning` and `budget_exhausted`.
+- Spend is kept on the gateway's own volume, so a restart does not reset the month.
 
 "Cognitive surrender", accepting AI answers without deliberation, is the human side of the same risk. SecuRAX already keeps
 a person in the loop for actions (the approved-action executor) and now for the AI itself (section 1).

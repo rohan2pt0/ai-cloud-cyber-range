@@ -34,6 +34,7 @@ volumes:
   anythingllm:  # AnythingLLM workspaces & vector index (private RAG)
   n8n:          # n8n automation workflows & credentials
   estatesync:   # sovereign cross-device life-OS state (SQLite, your box only)
+  gatewaystate: # the gateway's AI allowance ledger (tokens spent per caller today / this month)
 
 services:
   gateway:
@@ -76,10 +77,15 @@ services:
       SECURAX_BUILD: ${SECURAX_BUILD:-}   # the build label (governance/buildinfo.py): changes with every commit
       # Human-in-command (RBI MRM draft): `./securax ai stop|resume` writes this file; the gateway re-reads it on change, no restart.
       AI_CONTROL_FILE: /etc/securax/controls/ai-control.json
-      TOKEN_BUDGET_PER_DAY: ${TOKEN_BUDGET_PER_DAY:-0}   # per caller, tokens a day (0 = off); stops a runaway agent before the bill does
+      # AI allowance per caller (doc 69): daily and monthly tokens on cloud models, warning at 80%, stop at 100%, extend with
+      # ./securax ai budget extend. 2M a day / 20M a month is about US$15 a month on a Flash-class model; 0 switches a limit off.
+      AI_BUDGET_DAY_TOKENS: ${AI_BUDGET_DAY_TOKENS:-2000000}
+      AI_BUDGET_MONTH_TOKENS: ${AI_BUDGET_MONTH_TOKENS:-20000000}
+      AI_BUDGET_COUNT_LOCAL: ${AI_BUDGET_COUNT_LOCAL:-0}
       SECURAX_DOMAIN: ${SECURAX_DOMAIN:-securax.localhost}   # the estate's own HTTPS names may call this API from a browser (CORS)
     volumes:
       - ./controls:/etc/securax/controls:ro      # the AI kill switch (read-only: nothing inside the gateway can switch AI back on)
+      - gatewaystate:/var/lib/securax            # AI allowance spend (so a restart does not reset the month)
     ports: ["${BIND_HOST:-127.0.0.1}:8080:8080"]   # loopback unless you opened the estate to your devices (BIND_HOST)
     networks: [edge, modelplane]
     logging: *default-logging

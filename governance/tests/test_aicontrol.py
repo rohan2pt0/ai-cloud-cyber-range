@@ -50,3 +50,15 @@ decommissioned:
 
 def test_the_shipped_registry_is_clean():
     assert all(not r["problems"] for r in ac.inventory())
+
+
+def test_an_extension_needs_a_reason_and_applies_to_this_day_or_month_only(tmp_path):
+    ctl, log = tmp_path / "ai-control.json", tmp_path / "log.jsonl"
+    with pytest.raises(SystemExit):
+        ac.extend("day", 1000, "", "me", path=ctl, logp=log)
+    with pytest.raises(SystemExit):
+        ac.extend("week", 1000, "x", "me", path=ctl, logp=log)
+    ac.extend("day", 1000, "old", "me", today=dt.date(2026, 10, 1), path=ctl, logp=log)
+    d = ac.extend("month", 5000, "release crunch", "me", today=dt.date(2026, 10, 17), path=ctl, logp=log)
+    assert [(e["period"], e["for"]) for e in d["budget_extensions"]] == [("month", "2026-10")]     # yesterday's day-extension is gone
+    assert "budget-extend-month" in log.read_text()

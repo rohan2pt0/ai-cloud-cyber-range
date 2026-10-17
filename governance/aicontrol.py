@@ -6,6 +6,9 @@
     ./securax ai resume all|MODEL               switch it back on
     ./securax ai inventory                      the model inventory: tier, owner, third party, explainability, validation due,
                                                 decommissioned models and how long their records are kept
+    ./securax ai budget                         each caller's AI allowance: used today / this month, and what is left
+    ./securax ai budget extend --day|--month --tokens N --reason "..." [--caller ID]
+                                                more tokens for today or this month (everyone, or one caller); logged
 
 The switch is local/compose/controls/ai-control.json, mounted read-only into the gateway (apps/llm-gateway/app/killswitch.py).
 Every stop and resume is appended to vault/ai-control-log.jsonl, which is never committed and never trimmed: the draft expects
@@ -78,6 +81,30 @@ def resume(scope: str, by: str, path: pathlib.Path = CTL, logp: pathlib.Path = L
     return d
 
 
+def extend(period: str, tokens: int, reason: str, by: str, caller: str = "*", today: dt.date | None = None,
+           path: pathlib.Path = CTL, logp: pathlib.Path = LOG) -> dict:
+    """An extension is for the CURRENT day or month only: a one-off 'extra credit', never a silent new default."""
+    if period not in ("day", "month"):
+        raise SystemExit("--day or --month")
+    if tokens <= 0:
+        raise SystemExit("--tokens must be a positive number")
+    if not reason.strip():
+        raise SystemExit("A reason is required: it is kept in the record.  --reason \"...\"")
+    today = today or dt.date.today()
+    d = read(path)
+    d.setdefault("budget_extensions", []).append({"period": period, "for": today.isoformat() if period == "day" else today.strftime("%Y-%m"),
+                                                  "tokens": tokens, "caller": caller, "by": by, "reason": reason.strip()})
+    # keep only extensions that can still apply (today's and this month's); older ones stay in the log
+    d["budget_extensions"] = [e for e in d["budget_extensions"] if e["for"] in (today.isoformat(), today.strftime("%Y-%m"))]
+    write(d, path)
+    log(f"budget-extend-{period}", caller, f"+{tokens} tokens: {reason.strip()}", by, logp)
+    return d
+
+
+def _arg(argv: list[str], flag: str, default: str = "") -> str:
+    return argv[argv.index(flag) + 1] if flag in argv and argv.index(flag) + 1 < len(argv) else default
+
+
 def inventory(today: dt.date | None = None, registry: pathlib.Path = REGISTRY) -> list[dict]:
     import yaml
 
@@ -129,6 +156,35 @@ def main(argv: list[str]) -> int:
             print(f"⛔ {k} stopped by {v.get('by')} at {v.get('at')}: {v.get('reason')}")
         if not d.get("all") and not d.get("models"):
             print("✔ nothing is stopped")
+        return 0
+    if cmd == "budget":
+        if len(argv) > 1 and argv[1] == "extend":
+            period = "day" if "--day" in argv else "month" if "--month" in argv else ""
+            try:
+                tokens = int(_arg(argv, "--tokens", "0").replace(",", "").replace("_", ""))
+            except ValueError:
+                tokens = 0
+            extend(period, tokens, _arg(argv, "--reason"), by, _arg(argv, "--caller", "*"))
+            print(f"✔ +{tokens:,} tokens for {'today' if period == 'day' else 'this month'}"
+                  f" ({'every caller' if _arg(argv, '--caller', '*') == '*' else _arg(argv, '--caller')}). The gateway applies it on the next request.")
+            print(f"  recorded in {LOG.relative_to(ROOT)}")
+            return 0
+        try:                                   # ./securax pipes the gateway's /v1/budget here (it knows the address and TLS)
+            rep = json.loads(sys.stdin.read() or "{}")
+            rep["callers"]
+        except (ValueError, KeyError):
+            print("Cannot read the allowance from the gateway. Is the estate running?  ./securax up"
+                  "   (with sign-in on, set SECURAX_GATEWAY_KEY to an auditor key)")
+            return 1
+        fmt = lambda u, lim: f"{u:>11,} of {lim:,}" if lim else f"{u:>11,} (no limit)"
+        print(f"Allowance per caller: {rep['day_limit']:,} tokens a day, {rep['month_limit']:,} a month "
+              f"(warning at {int(rep['warn_at'] * 100)}%; {'local model counted' if rep['count_local'] else 'cloud models only'})")
+        for r in rep["callers"]:
+            pct = max((r["day_used"] / r["day_limit"]) if r["day_limit"] else 0, (r["month_used"] / r["month_limit"]) if r["month_limit"] else 0)
+            mark = "⛔" if pct >= 1 else "⚠" if pct >= rep["warn_at"] else "✔"
+            print(f"{mark} caller {r['caller']}  today {fmt(r['day_used'], r['day_limit'])}   month {fmt(r['month_used'], r['month_limit'])}")
+        if not rep["callers"]:
+            print("✔ nothing spent yet this month")
         return 0
     if cmd == "inventory":
         rows = inventory()
