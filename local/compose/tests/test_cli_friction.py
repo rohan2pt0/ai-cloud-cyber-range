@@ -97,3 +97,17 @@ def test_the_launcher_explains_itself_when_the_folder_was_moved(tmp_path):
     (w / "securax").chmod(0o755)
     p = subprocess.run([str(w / "securax")], capture_output=True, text=True)
     assert p.returncode == 1 and "was moved" in p.stdout
+
+
+def test_go_stops_at_the_one_real_blocker_when_docker_is_off(tmp_path):
+    b = tmp_path / "bin"
+    b.mkdir()
+    (b / "docker").write_text("#!/bin/sh\nexit 1\n")
+    (b / "docker").chmod(0o755)
+    p = run(["go", "--no-open"], tmp_path, b)
+    assert p.returncode == 1 and "Docker Desktop" in p.stdout and "WSL integration" in p.stdout and "./securax go" in p.stdout
+
+
+def test_go_is_listed_first_in_help(tmp_path):
+    out = run(["help"], tmp_path).stdout
+    assert "./securax go" in out and out.index("./securax go") < out.index("up ")

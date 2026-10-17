@@ -4,34 +4,52 @@
 > **Status: 🟢 Built.** Every command exists; the laptop, Tailscale phone and sync paths were verified on a real Windows + WSL install. [What the lights mean](../index.md#the-status-lights)
 <!-- status:end -->
 
-This page is your checklist. Do part 1 once, then part 2 is all you need day to day. Parts 3 to 5 are once-only jobs you
-can do whenever you have time.
+**One command does the whole setup and keeps it working:**
 
-## 1. One-time setup on the laptop (about 15 minutes)
+```bash
+cd ~/securax && ./securax go
+```
 
-All commands run in **Ubuntu (WSL)** unless the step says PowerShell.
+On Windows you can double-click **START-HERE-Windows.bat** instead; it runs the same command.
 
-| # | Step | Command or place | Done when |
-|---|---|---|---|
-| 1 | Get the latest code and start | `cd ~/securax && git checkout main && git pull && ./securax update` | it ends with READY |
-| 2 | Check everything | `./securax doctor` | no red lines |
-| 3 | Install the schedules (alerts, backups, regulator watch) | `./securax routines install` | `./securax routines list` shows them |
-| 4 | Phone alerts | `./securax notify setup` | your phone buzzes on `./securax notify test` |
-| 5 | Publish to your phones | `./securax phones --apply` | it prints `https://<laptop>.<tailnet>.ts.net` |
-| 6 | **Sync, so your data is never typed in twice** | `./securax sync-link` | see below |
-| 7 | Regulator watch baseline | `./securax regwatch fetch` | "nothing new (N items tracked)" |
-| 8 | First backup | `./securax backup` | "Backup saved & verified" |
+`go` is safe to run any time. Each step checks first and only acts when something is missing:
 
-### Step 6 in detail: sync once, and your data follows you
+| What `go` does | When it acts |
+|---|---|
+| Updates to the latest version (backup first, automatic rollback) or starts SecuRAX | always |
+| Installs the schedules: weekly backup, phone alerts, regulator watch | only if they are not running (asks your Linux password once) |
+| Publishes the app and Chat to your phones over Tailscale | only if Tailscale is signed in and nothing is published yet |
+| Starts the regulator watch and takes a first backup | only if there is none from the last 7 days |
+| Opens the app in your browser with sync set up | press **OK** once the first time; later runs ask nothing |
+| Sends the one-tap phone link to your phone through your ntfy alerts | only if you answer **y** |
+
+It ends with **one status screen**: a ✔ line for everything that works, and for anything that does not, one ✗ line with
+the single fix. Fix that line and run `./securax go` again.
+
+Optional, once: phone alerts with `./securax notify setup`, and Tailscale on Windows and your phone (doc 58).
+
+### The individual steps (what `go` runs for you)
+
+| Step | Command |
+|---|---|
+| Update or start | `./securax update` or `./securax up` |
+| Schedules | `./securax routines install` |
+| Phones | `./securax phones --apply` |
+| Sync links | `./securax sync-link` |
+| Regulator watch | `./securax regwatch fetch` |
+| Backup | `./securax backup` |
+| Health and a real chat test | `./securax doctor` |
+
+### Sync: why your data never needs typing in twice
 
 The Guiding Map app keeps your data in the browser, and **every address is a separate store**. `http://localhost:8088`,
 `https://<laptop>.ts.net` and the old `https://hub.securax.localhost` each start empty. Sync fixes that: your data lives
 on the laptop's sync service, and every device pulls it back by itself.
 
-1. Run `./securax sync-link`. It prints **two links**: one for this laptop and one for your phones.
-2. Open the **laptop link** in Edge, in the same window or installed app you use every day, and press **OK** once.
-3. Send the **phone link** to yourself over a private channel. Open it on each phone and press **OK** once.
-4. That's all. After an update, a new browser or a new phone, open the link again: your data comes back. No forms.
+1. `./securax go` opens the **laptop link** in your browser. Press **OK** once; later runs ask nothing.
+2. For each phone, answer **y** when `go` offers to send the phone link through your ntfy alerts, tap the notification and
+   press **OK** once. Without ntfy: `./securax sync-link` prints both links; send the phone one to yourself privately.
+3. That's all. After an update, a new browser or a new phone, open the link again: your data comes back. No forms.
 
 Each link contains your sync token, so treat it like a password and never paste it into a chat.
 
@@ -58,9 +76,8 @@ be added there.
 ## 2. Every day
 
 ```bash
-cd ~/securax && ./securax up          # after a restart; safe to run any time
-./securax update                      # when there is a new version (backs up first, rolls back if it fails)
-./securax why                         # something is not working
+cd ~/securax && ./securax go          # after a restart, or any time: updates, starts, checks, fixes what is missing
+./securax why                         # something is not working: what stopped and why
 ```
 
 Backups run by themselves every Sunday at 2:30 am. To move to a new laptop: `./securax restore <file>`, then open your sync

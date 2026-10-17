@@ -8,6 +8,10 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
+### Added
+- **`./securax go`: one command that gets everything working and keeps it working.** It updates safely or starts, installs the schedules, publishes to your phones over Tailscale, starts the regulator watch, takes a first backup, opens the app with sync set up, and can send the one-tap phone link through your ntfy alerts. Every step checks first and only acts when something is missing. It ends with one status screen: ✔ for what works, and one ✗ line with the single fix for what does not. `START-HERE-Windows.bat` now runs it, and it heads `./securax help`.
+### Changed
+- The app no longer asks anything when a sync link matches the setup it already has (so `go` can open it on every run).
 ### Fixed
 - **Command Center over Tailscale:** opened at `https://<laptop>.<tailnet>.ts.net`, its cards linked to `https://chat.securax.localhost/` and similar names that only exist on the laptop. They now use the Tailscale name (Chat on `:10000`), hide Private Docs and Automation (not published over Tailscale), and read the gateway status from the same address (`/version` added to the app's proxy).
 - **`./securax sync-link` prints a laptop link and a phone link** (the Tailscale name, found automatically). Both use the app's own address for sync (`/sync`), so one tap per device restores your data after any update, new browser or new phone, with no forms. Previously the link pointed at port 8089, which phones cannot reach.

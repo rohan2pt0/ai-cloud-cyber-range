@@ -76,8 +76,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--user", default="me", help="the name your data is stored under (use the same on every device)")
     ap.add_argument("--host", default="localhost", help="address of this machine as the OTHER device sees it (only when HTTPS is off)")
     ap.add_argument("--token", type=int, default=1, help="which of your sync tokens to use (default 1)")
+    ap.add_argument("--print-only", choices=["laptop", "phone"], help="print just that one link (used by ./securax go)")
     a = ap.parse_args(argv)
     env = read_env()
+    if a.print_only:
+        print(build(env, a.user, a.host if a.print_only == "phone" else "localhost", a.token - 1)[0])
+        return 0
     link, sync = build(env, a.user, a.host, a.token - 1)
     ts = tailscale_name() if a.host == "localhost" and "tls.yml" not in env.get("COMPOSE_FILE", "") else ""
     print("THIS LAPTOP: open this link in the browser you use for the app (or the installed app), then confirm once:\n")

@@ -2513,7 +2513,9 @@ function renderPlaybook(){
     try {
       var o = b64urlJson(m[1]);
       if (!o || typeof o.url !== "string" || !/^https?:\/\//.test(o.url) || typeof o.key !== "string" || !o.key || o.key.length > 300) throw new Error("not a sync link");
-      var user = String(o.user || "me").slice(0, 256), host = new URL(o.url).host;
+      var user = String(o.user || "me").slice(0, 256), host = new URL(o.url).host, cur = cfg();
+      // `./securax go` opens this link on every run: a device already set up exactly like this needs no question at all.
+      if (cur && String(cur.url).replace(/\/+$/, "") === o.url.replace(/\/+$/, "") && cur.key === o.key && cur.user === user) { setTimeout(function () { gmSyncInit(true); }, 50); return true; }
       if (!confirm("Turn on cross-device sync?\n\nYour data will be stored on:\n" + host + "\n\nOnly continue if this link came from your own SecuRAX estate.")) return true;
       if (cfg() && !confirm("This device is already syncing to " + new URL(cfg().url).host + ". Replace it with " + host + "?")) return true;
       S_("gm_sync_cfg", { url: o.url.replace(/\/+$/, ""), key: o.key, user: user });
