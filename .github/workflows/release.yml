@@ -13,7 +13,7 @@ jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - run: pip install -r apps/llm-gateway/requirements-dev.txt pyyaml ruff
@@ -31,7 +31,7 @@ jobs:
     needs: verify
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build versioned gateway image
         run: |
           docker build -t securax/llm-gateway:"${GITHUB_REF_NAME}" \
