@@ -830,6 +830,12 @@ EOF2
     #   ./securax config show | check | enabled <name> | render FILE...
     shift; exec python3 "$ROOT/governance/config.py" "$@"
     ;;
+  controls)
+    # The BFSI control library (RBI, SEBI, IRDAI, IFSCA, NCIIPC, CERT-In, DPDP): import the gap-assessment workbook (kept private in
+    # vault/), profiles per regulated-entity class or the strictest-of-all ceiling, and the visual navigator next to the cockpit.
+    #   ./securax controls import FILE.xlsx | profile [CLASS] | dominance | navigator | gaps [CLASS]
+    shift; exec python3 "$ROOT/governance/controls.py" "$@"
+    ;;
   postmortem)
     # Blameless postmortems (Amazon Correction of Error): what happened, five whys, and MECHANISMS tracked to done.
     #   ./securax postmortem new "title" [--severity sev2] | list | actions
@@ -1458,6 +1464,7 @@ KEEP IT SAFE
 REGULATORY & EVIDENCE (any regulator: RBI, SEBI, CERT-In, IRDAI, DPDP, others as data files)
   comply [rbi|cscrf|mit-ai-risk|nist-ai-600-1|pqc]  requirement-by-requirement gap view     ccsp   CCSP practice map
   evidence       audit pack (checksummed)             incident ...   reporting clock: open, due, draft, file, seal, rollup
+  controls ...   BFSI control library: import the workbook, profiles per RE class, navigator (grid, radar, heat map)
   config ...     show / check brand.env and integrations.txt (nothing brand-specific is hardwired)
   postmortem ... blameless postmortem after an outage; tracks the fix-it actions to done
   regwatch ...   new RBI/SEBI circulars: fetch, list, monthly digest (titles + links only)

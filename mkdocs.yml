@@ -80,6 +80,7 @@ nav:
       - Engineering resilience audit: securax/63-ENGINEERING-RESILIENCE-AUDIT.md
       - Success mantras: securax/64-SUCCESS-MANTRAS.md
       - Configuration, not code: securax/65-CONFIGURATION-NOT-CODE.md
+      - BFSI control library and navigator: securax/66-BFSI-CONTROL-LIBRARY-AND-NAVIGATOR.md
   - How-to guides:
       - AI providers and plugins: securax/22-PLUGINS-AND-PROVIDERS.md
       - Integrations: securax/07-INTEGRATIONS.md

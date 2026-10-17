@@ -705,6 +705,9 @@ def spark(vals: list[float], w: int = 120, h: int = 28) -> str:
 
 
 CSS = """
+.annun{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}.lamp{display:block;border:1px solid var(--line);border-radius:10px;padding:10px;color:var(--ink);text-decoration:none}
+.lamp b{display:block;font-size:1.5rem}.lamp.warn{border-color:var(--r)}.lamp.warn b{color:var(--r)}.lamp.caut{border-color:var(--a)}.lamp.caut b{color:var(--a)}
+.lamp.ok b{color:var(--g)}.lamp.nav{border-color:var(--acc)}.lamp.nav b{color:var(--acc)}details.plan>summary{cursor:pointer;font-size:1.05rem}
 :root{--bg:#f6f7f9;--card:#fff;--ink:#14202b;--mut:#5a6876;--line:#dde2e8;--g:#1b8a4b;--a:#b7791f;--r:#c0392b;--u:#7b8794;--acc:#2554c7;--ring:#d0d6dd}
 @media (prefers-color-scheme:dark){:root{--bg:#0f141a;--card:#18202a;--ink:#e8edf2;--mut:#9aa7b5;--line:#2b3744;--g:#4cc884;--a:#e3a63c;--r:#ff7a6b;--u:#8794a3;--acc:#7aa2ff;--ring:#33414f}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
@@ -764,7 +767,23 @@ def render(c: Collector, maps: dict, hist: list[dict], ai: str, now: float, targ
     h.append("<div class='muted'>This page is a snapshot. To refresh it run <code>./securax cockpit</code> (it also refreshes whenever you run <code>./securax up</code>). Green means “nothing measured is wrong”, not “secure”.</div></div>")
     if ai:
         h.append(f"<div class='card'><h2>AI briefing <span class='muted'>(draft, written by your local model from the numbers on this page; it changes nothing)</span></h2><p>{E(ai).replace(chr(10), '<br>')}</p></div>")
-    h.append("<div class='card'><h2>Vital signs</h2><div class='muted'>KPI = is it doing its job. KRI = is risk building up. Sorted worst first.</div><div class='grid'>" + "".join(tile(m) for m in ms) + "</div></div>")
+    # Dark-cockpit rule (Airbus, mission control): when everything is normal nothing is lit. Only what is abnormal is shown;
+    # the nominal readings and the planning views stay one click away, so the eye goes straight to what needs a decision.
+    nav = (ROOT / "portal" / "navigator.html").exists()
+    lamps = [("warn" if reds else "ok", len(reds), "Warnings: act today"), ("caut" if ambs else "ok", len(ambs), "Cautions: schedule"),
+             ("ok", sum(1 for m in ms if m["status"] == "green"), "Nominal")]
+    h.append("<div class='card'><h2>Master caution</h2><div class='annun'>" + "".join(
+        f"<div class='lamp {k}'><b>{v}</b>{E(t)}</div>" for k, v, t in lamps)
+        + ("<a class='lamp nav' href='/portal/navigator.html'><b>Controls</b>BFSI control navigator</a>" if nav else
+           "<div class='lamp'><b>Controls</b>Import the BFSI workbook: <code>./securax controls import FILE.xlsx</code></div>") + "</div></div>")
+    abnormal = [m for m in ms if m["status"] in ("red", "amber")]
+    nominal, unmeasured = [m for m in ms if m["status"] == "green"], [m for m in ms if m["status"] not in ("red", "amber", "green")]
+    h.append("<div class='card'><h2>Vital signs</h2><div class='muted'>Only what is not nominal is shown. KPI = is it doing its job. KRI = is risk building up.</div>"
+             + (f"<div class='grid'>{''.join(tile(m) for m in abnormal)}</div>" if abnormal else "<p class='big'>All vital signs nominal.</p>")
+             + (f"<details><summary>{len(unmeasured)} not measured right now (a service is off or has no data yet)</summary><div class='grid'>{''.join(tile(m) for m in unmeasured)}</div></details>" if unmeasured else "")
+             + (f"<details><summary>{len(nominal)} nominal readings</summary><div class='grid'>{''.join(tile(m) for m in nominal)}</div></details>" if nominal else "")
+             + "</div>")
+    h.append("<details class='card plan'><summary><b>Mission planning</b> <span class='muted'>· Eisenhower, 80/20, posture by area, AI risk, trends (open when you plan, not when you check)</span></summary>")
     h.append("<div class='card'><h2>Eisenhower: what to do, in what order</h2><div class='muted'>Urgent = a deadline or a measured problem. Important = it moves risk or compliance most.</div><div class='two'>"
              + quad("do", "Do now", "urgent + important", eis["do"]) + quad("schedule", "Schedule", "important, not urgent", eis["schedule"])
              + quad("automate", "Automate or delegate", "urgent, less important", eis["automate"]) + quad("park", "Park", "neither", eis["park"]) + "</div></div>")
@@ -797,6 +816,7 @@ def render(c: Collector, maps: dict, hist: list[dict], ai: str, now: float, targ
         vals = [r[key] for r in hist if key in r][-30:]
         h.append(f"<div class='tile'><div class='muted'>{E(label)}</div><div class='v'>{vals[-1] if vals else '—'}</div>{spark(vals)}</div>")
     h.append("</div></div>")
+    h.append("</details>")
     h.append("<div class='card'><details><summary>How to read this, and its limits</summary><ul>"
              "<li>It shows only what this machine can see. If something is not running, its tile says “No data”, not “OK”.</li>"
              "<li>Compliance numbers are the share of <i>software-addressable</i> requirements that are demonstrated or partly met. Board, people, contracts and sites are the organisation’s and are never counted.</li>"

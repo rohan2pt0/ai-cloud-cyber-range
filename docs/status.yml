@@ -65,6 +65,7 @@ securax/55-ENGINEERING-STANDARD.md: [green, "Enforced by the `claims-proven` fit
 securax/56-POOL-YOUR-MACHINES.md: [amber, "The home rung is built and tested; splitting one model across machines is not built."]
 securax/57-COMPUTE-STRATEGY.md: [amber, "8-bit context cache and the Indian rung are built; the rest is guidance."]
 securax/58-PHONES-AND-REMOTE-SHELL.md: [amber, "Built and tested in CI; not yet verified on a real phone (the sandbox has no second device)."]
+securax/66-BFSI-CONTROL-LIBRARY-AND-NAVIGATOR.md: [green, "Import, profiles, dominance, packs, navigator and the dark cockpit are built and tested; the library itself stays private on your machine."]
 securax/65-CONFIGURATION-NOT-CODE.md: [green, "brand.env and integrations.txt are read by the site build, the scripts and go; the config-clean fitness check enforces it in CI. The two Next rows are not built."]
 securax/64-SUCCESS-MANTRAS.md: [green, "Each mantra names the file, command or test that proves SecuRAX applies it."]
 securax/63-ENGINEERING-RESILIENCE-AUDIT.md: [green, "Every row marked built names the test that proves it; the not-applicable rows name the trigger to build them."]

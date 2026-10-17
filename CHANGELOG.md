@@ -9,6 +9,13 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **BFSI control library and navigator** (doc 66), `./securax controls import | profile | dominance | navigator | gaps`:
+  - **Import:** the gap-assessment workbook (202 controls, 20 domains, 22 regulated-entity classes, RBI/SEBI/IRDAI/IFSCA/NPCI/NCIIPC/CERT-In/DPDP citations) is read with a standard-library .xlsx reader into a private `vault/controls/library.json`. Your yellow-cell scores come with it; author metadata is never read.
+  - **Ceiling profile:** the strictest requirement per control across every class, so meeting it meets them all. `dominance` shows that SCB/PSB alone misses AUD-002/AUD-006 for NBFC-UL, AIFI, IFSC IBU, MII and brokers, and AUD-003 for insurers.
+  - **Packs** in `governance/controls/packs/` add new regulations or citations without code.
+  - **SecuRAX map:** `governance/controls/securax-map.json` covers 53 controls, each proven or partly proven with real evidence files (CI checks they exist).
+  - **Navigator** (one page per profile): master-caution lamps, the vital few, a MITRE-style 20 × 202 grid, a domain radar, a 5 × 5 heat map, regulator coverage bars and the SCB/PSB exceptions. No script, no external request.
+- **Dark cockpit:** only abnormal vital signs are lit. A master-caution panel shows warnings, cautions, the nominal count and a Controls lamp; nominal and not-measured readings are folded away, and the planning views sit in one "Mission planning" section.
 - **Configuration, not code** (doc 65): nothing brand- or vendor-specific is hardwired any more.
   - **`brand.env`** holds the brand name, product name, domain, contact address, repository and image registry; an environment variable with the same name wins. Every value is optional.
   - **`integrations.txt`** switches the optional parts on or off, one per line, like `requirements.txt` (tailscale, ntfy, webhook, cron, regwatch, backup, cloudflare-pages, github, tls). `./securax go` and `doctor` only act on what it lists; no file means everything is on.

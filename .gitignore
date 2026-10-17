@@ -271,3 +271,5 @@ local/compose/tls-sidecars/
 site/
 docs/reference/cli.md
 website/docs/
+portal/navigator.html
+portal/navigator/

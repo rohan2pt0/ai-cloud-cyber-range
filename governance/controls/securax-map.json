@@ -1,0 +1,407 @@
+{
+ "about": "What SecuRAX itself demonstrates for each control in the BFSI control library. proven = a file plus a test/CI check shows it; partial = SecuRAX supplies part, the rest is the organisation's; any control not listed is the organisation's (people, process, contracts, sites).",
+ "controls": {
+  "AM-007": {
+   "status": "partial",
+   "evidence": [
+    "lifecycle/vet.py",
+    ".github/workflows/scorecard.yml"
+   ],
+   "note": "pinned images, hashed vendored skills; a full SBOM is not yet produced"
+  },
+  "AM-010": {
+   "status": "proven",
+   "evidence": [
+    "governance/crypto.py",
+    "governance/tests/test_crypto.py"
+   ],
+   "note": "cryptographic inventory (CBOM) of the estate"
+  },
+  "AS-001": {
+   "status": "proven",
+   "evidence": [
+    ".github/workflows/devsecops.yml",
+    "lifecycle/forge.py"
+   ],
+   "note": "SAST, secrets scan, IaC and container scans, admission gate on every change"
+  },
+  "AS-002": {
+   "status": "proven",
+   "evidence": [
+    "apps/llm-gateway/app/main.py",
+    "apps/llm-gateway/tests/test_guardrails.py"
+   ],
+   "note": "authenticated, rate-limited, guarded AI API with idempotency and backpressure"
+  },
+  "AS-005": {
+   "status": "partial",
+   "evidence": [
+    "lifecycle/diffcheck.py",
+    "lifecycle/forge.py"
+   ],
+   "note": "automated diff and mutation checks; human review is the organisation's"
+  },
+  "AS-006": {
+   "status": "proven",
+   "evidence": [
+    "lifecycle/vet.py",
+    ".github/workflows/scorecard.yml"
+   ],
+   "note": "supply-chain gate for third-party skills, OpenSSF Scorecard and SLSA"
+  },
+  "AS-008": {
+   "status": "partial",
+   "evidence": [
+    ".github/workflows/devsecops.yml"
+   ],
+   "note": "dependency and container vulnerability scanning in CI"
+  },
+  "AS-012": {
+   "status": "proven",
+   "evidence": [
+    "website/_headers",
+    "local/compose/guiding-map.conf"
+   ],
+   "note": "strict security headers on the site and the app"
+  },
+  "AUD-004": {
+   "status": "proven",
+   "evidence": [
+    "lifecycle/fitness.py",
+    "governance/cockpit.py"
+   ],
+   "note": "continuous control monitoring on every build and in the cockpit"
+  },
+  "BCP-003": {
+   "status": "partial",
+   "evidence": [
+    "securax"
+   ],
+   "note": "verified backups; immutable/air-gapped copies are the organisation's"
+  },
+  "BCP-006": {
+   "status": "partial",
+   "evidence": [
+    "lifecycle/gameday.py",
+    "sandbox/run.py"
+   ],
+   "note": "self-healing and rollback drills"
+  },
+  "BCP-010": {
+   "status": "proven",
+   "evidence": [
+    "securax",
+    "sandbox/run.py"
+   ],
+   "note": "restore verifies checksums; the safe-update journey proves rollback with data intact"
+  },
+  "CL-002": {
+   "status": "partial",
+   "evidence": [
+    "redteam/aispm_scan.py"
+   ],
+   "note": "AI-SPM posture scan (CNAPP/CSPM/DSPM views)"
+  },
+  "CL-004": {
+   "status": "partial",
+   "evidence": [
+    "local/compose/docker-compose.yml",
+    ".github/workflows/devsecops.yml"
+   ],
+   "note": "non-root, resource-limited containers; image scanning"
+  },
+  "CL-006": {
+   "status": "proven",
+   "evidence": [
+    ".github/workflows/devsecops.yml"
+   ],
+   "note": "IaC scanning in CI"
+  },
+  "CR-001": {
+   "status": "proven",
+   "evidence": [
+    "governance/crypto.py",
+    "governance/tests/test_crypto.py"
+   ],
+   "note": "cryptographic inventory (CBOM) of the estate"
+  },
+  "CR-002": {
+   "status": "proven",
+   "evidence": [
+    "governance/regmap-pqc.json",
+    "governance/crypto.py"
+   ],
+   "note": "post-quantum readiness map and crypto-agility plan"
+  },
+  "CR-006": {
+   "status": "proven",
+   "evidence": [
+    "governance/tls.py",
+    "governance/tests/test_tls.py"
+   ],
+   "note": "hybrid post-quantum key exchange on the HTTPS edge"
+  },
+  "CR-007": {
+   "status": "partial",
+   "evidence": [
+    "governance/tls.py",
+    "governance/regmap-pqc.json"
+   ],
+   "note": "hybrid PQ key exchange in transit; long-term stored data is the organisation's to classify"
+  },
+  "DP-002": {
+   "status": "partial",
+   "evidence": [
+    "apps/llm-gateway/app/guardrails.py"
+   ],
+   "note": "PII (PAN, Aadhaar, cards, phones) redacted from AI traffic; enterprise DLP is wider"
+  },
+  "DP-003": {
+   "status": "proven",
+   "evidence": [
+    "apps/llm-gateway/app/residency.py",
+    "apps/llm-gateway/tests/test_residency.py"
+   ],
+   "note": "regulated data is routed only to in-country models"
+  },
+  "DP-005": {
+   "status": "proven",
+   "evidence": [
+    "apps/llm-gateway/app/residency.py",
+    "governance/residency.py"
+   ],
+   "note": "cross-border routing blocked or re-routed by data class; cloud region allow-list"
+  },
+  "DP-007": {
+   "status": "proven",
+   "evidence": [
+    "governance/tls.py",
+    "governance/tests/test_tls.py"
+   ],
+   "note": "TLS on every web connection and internal hop"
+  },
+  "DP-010": {
+   "status": "partial",
+   "evidence": [
+    "apps/llm-gateway/app/guardrails.py"
+   ],
+   "note": "personal data masked before any model sees it"
+  },
+  "DP-015": {
+   "status": "partial",
+   "evidence": [
+    "securax"
+   ],
+   "note": "verified, optionally encrypted backups; not immutable storage"
+  },
+  "ET-001": {
+   "status": "proven",
+   "evidence": [
+    "governance/model-registry.yaml",
+    "governance/regmap-nist-ai-600-1.json",
+    "redteam/run_attacks.py"
+   ],
+   "note": "model registry, NIST AI 600-1 map, evaluations before release"
+  },
+  "ET-008": {
+   "status": "proven",
+   "evidence": [
+    "lifecycle/vet.py",
+    ".github/workflows/scorecard.yml"
+   ],
+   "note": "advanced supply-chain controls (pinning, hashing, Scorecard, SLSA)"
+  },
+  "ET-009": {
+   "status": "proven",
+   "evidence": [
+    "governance/regmap-pqc.json",
+    "governance/crypto.py"
+   ],
+   "note": "quantum-threat assessment and CBOM"
+  },
+  "ET-010": {
+   "status": "proven",
+   "evidence": [
+    "apps/llm-gateway/app/guardrails.py",
+    "apps/llm-gateway/app/residency.py"
+   ],
+   "note": "every GenAI call is guarded: injection rails, PII redaction, residency, tool-call guard"
+  },
+  "GOV-006": {
+   "status": "partial",
+   "evidence": [
+    "governance/incident.py"
+   ],
+   "note": "the regulatory incident clock supports the crisis plan; the plan itself is the organisation's"
+  },
+  "GOV-010": {
+   "status": "partial",
+   "evidence": [
+    "governance/cockpit.py"
+   ],
+   "note": "the cockpit is a board-ready dashboard of measured posture"
+  },
+  "GOV-014": {
+   "status": "proven",
+   "evidence": [
+    "governance/regmap.py",
+    "governance/regmap-rbi-nbfc.json",
+    "governance/regmap-sebi-cscrf.json"
+   ],
+   "note": "requirement-by-requirement maps with evidence, checked in CI"
+  },
+  "IAM-002": {
+   "status": "partial",
+   "evidence": [
+    "apps/llm-gateway/app/identity.py",
+    "apps/llm-gateway/tests/test_identity.py"
+   ],
+   "note": "the gateway can require an MFA claim on every token"
+  },
+  "IAM-005": {
+   "status": "partial",
+   "evidence": [
+    "apps/llm-gateway/app/identity.py"
+   ],
+   "note": "per-key roles at the gateway"
+  },
+  "IAM-012": {
+   "status": "partial",
+   "evidence": [
+    "apps/llm-gateway/app/identity.py"
+   ],
+   "note": "every authenticated call is audited with its subject"
+  },
+  "IAM-013": {
+   "status": "proven",
+   "evidence": [
+    "securax"
+   ],
+   "note": "placeholder keys and sync tokens are replaced with random ones on start"
+  },
+  "IAM-014": {
+   "status": "proven",
+   "evidence": [
+    "apps/llm-gateway/app/identity.py",
+    "apps/llm-gateway/tests/test_identity.py"
+   ],
+   "note": "OIDC/JWT and API keys, roles, lock-out at the AI gateway"
+  },
+  "IR-001": {
+   "status": "proven",
+   "evidence": [
+    "governance/incident.py",
+    "governance/regulators"
+   ],
+   "note": "6-hour CERT-In clock with drafts and sealed evidence"
+  },
+  "IR-003": {
+   "status": "proven",
+   "evidence": [
+    "governance/incident.py",
+    "governance/regulators"
+   ],
+   "note": "every applicable regulator's deadline, as data"
+  },
+  "IR-005": {
+   "status": "partial",
+   "evidence": [
+    "governance/incident.py"
+   ],
+   "note": "incident drafts per regulator; scenario playbooks are the organisation's"
+  },
+  "IR-007": {
+   "status": "partial",
+   "evidence": [
+    "lifecycle/gameday.py"
+   ],
+   "note": "game days that break components on purpose"
+  },
+  "IR-008": {
+   "status": "proven",
+   "evidence": [
+    "governance/postmortem.py",
+    "governance/tests/test_postmortem.py"
+   ],
+   "note": "blameless postmortems with owned, dated actions"
+  },
+  "NS-001": {
+   "status": "partial",
+   "evidence": [
+    "local/compose/docker-compose.yml"
+   ],
+   "note": "separate edge and model networks; no published model ports"
+  },
+  "NS-005": {
+   "status": "partial",
+   "evidence": [
+    "docs/securax/58-PHONES-AND-REMOTE-SHELL.md"
+   ],
+   "note": "remote access over Tailscale (zero-trust mesh), never a public port"
+  },
+  "RM-001": {
+   "status": "partial",
+   "evidence": [
+    "governance/cockpit.py"
+   ],
+   "note": "the cockpit backlog ranks open gaps; the enterprise register is the organisation's"
+  },
+  "RM-009": {
+   "status": "partial",
+   "evidence": [
+    "governance/cockpit.json"
+   ],
+   "note": "KPI/KRI thresholds with RAG bands"
+  },
+  "SOC-003": {
+   "status": "partial",
+   "evidence": [
+    "securax"
+   ],
+   "note": "MISP organ and the KEV snapshot; sector feeds are the organisation's"
+  },
+  "SOC-005": {
+   "status": "partial",
+   "evidence": [
+    "ai-soc"
+   ],
+   "note": "AI-SOC triage mapped to MITRE ATLAS / ATT&CK"
+  },
+  "SOC-008": {
+   "status": "partial",
+   "evidence": [
+    "ai-soc"
+   ],
+   "note": "automated triage and playbooks for AI events"
+  },
+  "TP-002": {
+   "status": "partial",
+   "evidence": [
+    "governance/incident.py"
+   ],
+   "note": "the incident clock carries the escalation deadlines"
+  },
+  "VM-003": {
+   "status": "partial",
+   "evidence": [
+    ".github/workflows/devsecops.yml"
+   ],
+   "note": "continuous scanning of code and images in CI"
+  },
+  "VM-004": {
+   "status": "partial",
+   "evidence": [
+    "redteam/run_attacks.py",
+    "redteam/purple.py"
+   ],
+   "note": "red-team scorecard and purple-team loop for the AI channel"
+  },
+  "VM-006": {
+   "status": "partial",
+   "evidence": [
+    "lifecycle/offline.py"
+   ],
+   "note": "CISA KEV lookup offline (./securax kev)"
+  }
+ }
+}
