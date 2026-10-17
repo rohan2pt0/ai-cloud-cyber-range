@@ -194,7 +194,7 @@ services:
 
   # ---- on-demand DevSecOps scanners (run once, then exit) ----
   trivy:
-    image: aquasec/trivy:0.58.1
+    image: aquasec/trivy:0.75.0
     profiles: ["security"]
     entrypoint: ["sh", "-c", "trivy image --scanners vuln,secret,misconfig --exit-code 0 vulnbank/llm-gateway:dev || true; sleep infinity"]
     volumes: ["/var/run/docker.sock:/var/run/docker.sock:ro"]
