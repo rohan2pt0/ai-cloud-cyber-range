@@ -174,7 +174,7 @@ services:
 
   # ---- observability / SIEM-lite (maps to Wazuh+Sentinel+Chronicle in the cloud) ----
   loki:
-    image: grafana/loki:3.3.2
+    image: grafana/loki:3.7.8
     profiles: ["security"]
     command: ["-config.file=/etc/loki/local-config.yaml"]
     volumes: ["loki:/loki"]
