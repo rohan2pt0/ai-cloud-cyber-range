@@ -8,6 +8,11 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
+
+## [0.2.0] - 2026-10-17
+### Added
+- **Nightly safe update:** a new routine (3:15 am) runs `./securax update --auto`. It does something only when main has new commits, the checkout is on main and there are no local edits. It backs up, updates, health-checks and rolls back by itself if needed, never opens a browser, and tells your phone the outcome. Nothing new means no restart.
+
 ### Fixed
 - **"v0.1.0 never updates":** the Life OS badge, the Command Center, `/version` and `./securax version` now show the build, e.g. `v0.1.0+74 · 21006c7`. It is written by every `./securax up` from git (`governance/buildinfo.py`), so each push is visible without bumping anything by hand. The release number still changes only when a release is cut.
   - **Offline cache:** the Life OS service worker is registered per build and names its cache after it. The hand-bumped cache version (`v14.11.0`, last changed long ago) is gone, so a new build replaces the old cache and reloads once by itself.
@@ -334,5 +339,6 @@ First versioned public release. SecuRAX is a sovereign, local-first AI-security 
 - Fail-closed everywhere; no secrets in the repo (pattern-based PII/secret CI gate); SSRF + DNS-rebind
   defenses on the web agent; append-only audit trail for approved actions.
 
-[Unreleased]: https://github.com/rohan2pt0/ai-cloud-cyber-range/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/rohan2pt0/ai-cloud-cyber-range/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/rohan2pt0/ai-cloud-cyber-range/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/rohan2pt0/ai-cloud-cyber-range/releases/tag/v0.1.0

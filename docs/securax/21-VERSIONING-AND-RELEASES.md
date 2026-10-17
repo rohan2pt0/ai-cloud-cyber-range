@@ -45,6 +45,11 @@ commit, by itself. Every start (`./securax up`, so also `go` and `update`) runs 
 The Life OS service worker is registered per build (`sw.js?b=<commit>`) and names its cache after it, so a new build
 installs a new worker, drops the old cache and reloads the page once, with no cache version to bump by hand.
 
+**Getting each build onto the laptop without asking:** the `nightly-update` routine (3:15 am, installed by
+`./securax go` with the other schedules) runs `./securax update --auto`. It acts only when main has new commits and the
+code folder has no local edits; it backs up, updates, checks health, rolls back by itself on failure, and sends the
+outcome to your phone. Turn it off by setting `"enabled": false` for `nightly-update` in `routines/jobs.json`.
+
 **Why the old checks missed "v0.1.0 never changes":** they proved the badge **matched** `VERSION` (consistency), not
 that it showed **which code was running** (freshness). A label that is consistent but carries no build identity passes
 every consistency test. The fix is a test of the property people rely on: `governance/tests/test_buildinfo.py` makes

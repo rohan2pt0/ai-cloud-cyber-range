@@ -1161,6 +1161,16 @@ EOF2
     # not, go back to the version that worked (your data is never touched by the code update; the backup is printed so you can always restore).
     # (A plain `git pull` only changes files on disk — running containers keep the OLD code.)
     git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1 || { C "This isn't a git checkout — download the latest ZIP instead."; exit 1; }
+    # --auto (the nightly routine): only when main has something new, the checkout is on main and has no local edits;
+    # never opens a browser; tells your phone the outcome (when notifications are set up). Nothing new = silent, no restart.
+    AUTO=0; [ "${2:-}" = "--auto" ] && AUTO=1
+    if [ "$AUTO" = 1 ]; then
+      [ "$(git -C "$ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null)" = main ] || { C "auto-update skipped: not on the main branch"; exit 0; }
+      [ -z "$(git -C "$ROOT" status --porcelain --untracked-files=no 2>/dev/null)" ] || { C "auto-update skipped: local changes in the code folder"; exit 0; }
+      timeout 30 git -C "$ROOT" fetch -q origin main 2>/dev/null || { C "auto-update skipped: no network"; exit 0; }
+      [ "$(git -C "$ROOT" rev-list --count HEAD..origin/main 2>/dev/null || echo 0)" -gt 0 ] || exit 0
+      tell(){ "$0" notify send "$1" --title "SecuRAX update" >/dev/null 2>&1 || true; }
+    else tell(){ :; }; fi
     C "Updating SecuRAX safely (backup → update → health check → automatic rollback if needed)…"
     # Legacy: older versions rewrote the tracked baseline on every `up`; restore it so the pull can't conflict.
     git -C "$ROOT" diff --quiet -- local/compose/litellm-config.yaml 2>/dev/null || git -C "$ROOT" checkout -- local/compose/litellm-config.yaml
@@ -1177,7 +1187,8 @@ EOF2
     "$0" down || true
     if SECURAX_NO_OPEN=1 "$0" up && gcurl -fsS -m 10 $(gw_url)/readyz >/dev/null 2>&1; then
       [ "$PREV" = "$NEW" ] && C "Already on the latest version — containers recreated." || C "✔ Updated to $(git -C "$ROOT" rev-parse --short HEAD) and the estate is READY."
-      "$0" open >/dev/null 2>&1 || true
+      tell "Updated overnight to $(python3 "$ROOT/governance/buildinfo.py" 2>/dev/null) and running. Reload the app once."
+      [ "$AUTO" = 1 ] || "$0" open >/dev/null 2>&1 || true
       exit 0
     fi
     # 2) the new version did not come up healthy: go back to the one that did
@@ -1187,13 +1198,16 @@ EOF2
       "$0" down || true
       if SECURAX_NO_OPEN=1 "$0" up && gcurl -fsS -m 10 $(gw_url)/readyz >/dev/null 2>&1; then
         C "✔ Rolled back: the previous version is running again. Please report the failed update (it was $(git -C "$ROOT" rev-parse --short "$NEW"))."
-        "$0" open >/dev/null 2>&1 || true
+        tell "The overnight update to $(git -C "$ROOT" rev-parse --short "$NEW") did not start healthy, so the previous version is running again. Nothing is lost."
+        [ "$AUTO" = 1 ] || "$0" open >/dev/null 2>&1 || true
         exit 3
       fi
       C "✗ The previous version did not start either — run  ./securax doctor ; your data and backup are intact."
+      tell "Overnight update failed and the estate is down. Run ./securax go on the laptop; your data and backup are intact."
       exit 1
     fi
     C "⚠ The estate did not start healthy after the update, and an automatic rollback was not safe (you have uncommitted local changes). Run  ./securax doctor ."
+    tell "Overnight update did not start healthy. Run ./securax go on the laptop."
     exit 1
     ;;
   pull)

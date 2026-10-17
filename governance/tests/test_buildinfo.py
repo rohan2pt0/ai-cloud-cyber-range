@@ -35,3 +35,14 @@ def test_the_life_os_reads_the_build_and_its_offline_cache_follows_it():
     assert 'fetch("build.json"' in ops and '"sw.js?b="' in ops        # badge + service worker follow the running build
     assert 'searchParams.get("b")' in sw
     assert "v14." not in sw, "a hand-bumped cache version is back: it is derived from the build now"
+
+
+def test_a_bumped_but_untagged_release_shows_no_count_from_the_old_tag(tmp_path):
+    g = lambda *a: subprocess.run(["git", "-C", str(tmp_path), "-c", "user.name=t", "-c", "user.email=t@t", *a], check=True, capture_output=True)
+    g("init", "-q")
+    (tmp_path / "VERSION").write_text("1.0.0\n")
+    g("add", "."), g("commit", "-qm", "r"), g("tag", "v1.0.0")
+    (tmp_path / "VERSION").write_text("1.1.0\n")
+    g("add", "."), g("commit", "-qm", "bump")
+    i = bi.info(tmp_path)
+    assert i["changes"] is None and i["label"] == f"v1.1.0 · {i['commit']}"

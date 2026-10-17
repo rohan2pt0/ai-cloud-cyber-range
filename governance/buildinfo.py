@@ -47,7 +47,8 @@ def info(root: pathlib.Path = ROOT) -> dict:
         version = (root / "VERSION").read_text("utf-8").strip() or "0.0.0-dev"
     except OSError:
         version = "0.0.0-dev"
-    changes, commit = parse_describe(_git(root, "describe", "--tags", "--long", "--match", "v[0-9]*"))
+    # changes are counted from THIS release's tag; before it is tagged there is no count (never "0.2.0+74" from 0.1.0's tag)
+    changes, commit = parse_describe(_git(root, "describe", "--tags", "--long", "--match", f"v{version}"))
     commit = commit or _git(root, "rev-parse", "--short", "HEAD")
     return {"version": version, "changes": changes, "commit": commit, "date": _git(root, "log", "-1", "--format=%cs"),
             "label": label(version, changes, commit)}
