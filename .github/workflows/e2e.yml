@@ -4,13 +4,23 @@
 # fail-closed detector outage, or the startup race). Cloud providers are faked at the network level so
 # no keys or spend are needed. See sandbox/README.md.
 name: e2e-sandbox
+#
+# Tiers, so the gate keeps up as changes get smaller and more frequent (doc 68):
+#   pull request  -> only the journeys that guard what the PR touches (lifecycle/impact.json); a newer push cancels the old run
+#   push to main  -> every journey (catches anything the map narrowed away, within one merge)
+#   nightly       -> every journey on main, before the laptops' 3:15 am safe update
 on:
   pull_request:
   push: { branches: [main] }
+  schedule: [{ cron: "30 20 * * *" }]     # 02:00 IST
   workflow_dispatch:
 
 permissions:
   contents: read
+
+concurrency:
+  group: e2e-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
   sandbox:
@@ -21,14 +31,27 @@ jobs:
         with: { fetch-depth: 0 }          # the stale-update journey needs history
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
-      - uses: hashicorp/setup-terraform@v3          # the lifecycle_cloud_is_safe journey exercises the engine -> terraform wiring (plans only)
+      - name: Pick the journeys this change needs
+        id: pick
+        run: |
+          if [ "${{ github.event_name }}" = pull_request ]; then
+            J="$(python3 lifecycle/impact.py --base "origin/${{ github.base_ref }}" --journeys)"
+          else J=ALL; fi
+          echo "journeys=$J" >> "$GITHUB_OUTPUT"
+          echo "Journeys: ${J:-none (no journey guards these files; unit tests and fitness still ran)}" >> "$GITHUB_STEP_SUMMARY"
+      - if: steps.pick.outputs.journeys != ''
+        uses: hashicorp/setup-terraform@v3          # the lifecycle_cloud_is_safe journey exercises the engine -> terraform wiring (plans only)
         with: { terraform_version: "1.9.8", terraform_wrapper: false }
       - name: Install sandbox deps (PyYAML + Playwright/Chromium)
+        if: steps.pick.outputs.journeys != ''
         run: |
           pip install pyyaml playwright pytest
           playwright install --with-deps chromium
-      - name: Run every user journey against the real stack
-        run: python3 sandbox/run.py
+      - name: Run the user journeys against the real stack
+        if: steps.pick.outputs.journeys != ''
+        run: |
+          J="${{ steps.pick.outputs.journeys }}"
+          if [ "$J" = ALL ]; then python3 sandbox/run.py; else python3 sandbox/run.py -j "$J"; fi
       - name: Upload screenshots + results (so a failure can be SEEN)
         if: always()
         uses: actions/upload-artifact@v4

@@ -11,6 +11,10 @@ for the versioning and release policy.
 
 ## [0.2.0] - 2026-10-17
 ### Added
+- **CI at agent scale** (doc 68):
+  - **Pull requests** run only the end-to-end journeys that guard what they touch, picked by the impact map (`impact.py --journeys`). A docs-only PR runs none, a Life OS change runs 4, and the sandbox, the map, the workflow or an unmapped file run all.
+  - **Main and nightly (02:00 IST)** run all 40 journeys, so anything narrowed away is caught within one merge.
+  - **Superseded runs:** a newer push cancels the older run of the same PR.
 - **Nightly safe update:** a new routine (3:15 am) runs `./securax update --auto`. It does something only when main has new commits, the checkout is on main and there are no local edits. It backs up, updates, health-checks and rolls back by itself if needed, never opens a browser, and tells your phone the outcome. Nothing new means no restart.
 
 ### Fixed
