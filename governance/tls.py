@@ -702,6 +702,30 @@ def cmd_trust(apply: bool) -> int:
 
 
 # ───────────────────────────────────────────── commands ─────────────────────────────────────────────
+PORT_CLASH = re.compile(r"ports are not available|port is already allocated|address already in use", re.I)
+
+
+def edge_ports_taken() -> list[str]:
+    """Ports 80/443 already held by another program (on Windows often IIS, a VPN or another web server). Checked with a
+    throw-away container that only binds them, because from Ubuntu on WSL the Windows side's listeners are invisible.
+    [] when free, when the edge itself holds them, or when Docker cannot be asked (the start-up fallback still covers it)."""
+    if not shutil.which("docker"):
+        return []
+    try:
+        mine = subprocess.run(["docker", "ps", "-q", "--filter", "label=com.docker.compose.service=tls-edge"],
+                              capture_output=True, text=True, timeout=20).stdout.strip()
+        if mine:
+            return []
+        bind = read_env().get("BIND_HOST") or "127.0.0.1"
+        r = subprocess.run(["docker", "run", "--rm", "-p", f"{bind}:443:443", "-p", f"{bind}:80:80", "nginx:1.30-alpine", "true"],
+                           capture_output=True, text=True, timeout=180)
+    except (OSError, subprocess.TimeoutExpired):
+        return []
+    if r.returncode and PORT_CLASH.search(r.stderr):
+        return sorted(set(re.findall(r":(80|443)\b", r.stderr))) or ["80/443"]
+    return []
+
+
 def cmd_on(extra: list[str], dom: str | None, new_ca: bool) -> int:
     if dom and not valid_domain(dom):
         print(f"'{dom}' is not a valid domain name (example: securax.example.in)")
@@ -795,6 +819,13 @@ def main(argv: list[str] | None = None) -> int:
     st.add_argument("--json", action="store_true")
     a = ap.parse_args(argv)
     if a.cmd == "on":
+        taken = edge_ports_taken()
+        if taken:
+            print(f"✗ Port {' and '.join(taken)} on this computer is already used by another program, so the HTTPS names cannot start.")
+            print("  Nothing was changed: keep using http://localhost:8088 (it works the same).")
+            print("  To find the program, in Windows PowerShell:  netstat -ano | findstr :" + taken[0] + "   (the last number is its PID;")
+            print("  Task Manager > Details shows its name). Stop it, then run  ./securax tls on  again.")
+            return 1
         return cmd_on([h for h in a.hosts.split(",") if h], a.domain or None, a.new_ca)
     if a.cmd == "off":
         return cmd_off()

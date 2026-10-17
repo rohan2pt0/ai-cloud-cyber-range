@@ -2,7 +2,7 @@
 """The BFSI control library: every RBI / SEBI / IRDAI / IFSCA / NCIIPC / CERT-In / DPDP obligation as one set of controls,
 with per-class applicability, citations, evidence and audit tests, and a visual navigator for it.
 
-    ./securax controls import WORKBOOK.xlsx    read the gap-assessment workbook into vault/controls/library.json (private)
+    ./securax controls import [WORKBOOK.xlsx]  (no path: finds it in Downloads/Documents) read the gap-assessment workbook into vault/controls/library.json (private)
     ./securax controls profile [CLASS]         what applies: the CEILING (strictest of all 22 classes) or one class
     ./securax controls dominance               which classes are fully covered by complying with SCB/PSB (and the exceptions)
     ./securax controls navigator               write portal/navigator.html (+ one page per class): grid, radar, heat map
@@ -85,6 +85,61 @@ def read_xlsx(path: pathlib.Path) -> dict[str, list[list]]:
                 rows.append(vals)
             out[s.get("name")] = rows
         return out
+
+
+def sheet_names(path: pathlib.Path) -> list[str]:
+    try:
+        with zipfile.ZipFile(path) as z:
+            return [s.get("name") or "" for s in ET.fromstring(z.read("xl/workbook.xml")).find("m:sheets", _NS)]
+    except (OSError, KeyError, TypeError, zipfile.BadZipFile, ET.ParseError):
+        return []
+
+
+def search_dirs(home: pathlib.Path | None = None, win: pathlib.Path = pathlib.Path("/mnt/c/Users")) -> list[pathlib.Path]:
+    """Where people keep downloaded workbooks: Downloads, Documents, Desktop, here, the private inbox, and the Windows ones on WSL."""
+    home = home or pathlib.Path.home()
+    ds = [home / d for d in ("Downloads", "Documents", "Desktop")] + [ROOT / "vault" / "inbox", pathlib.Path.cwd()]
+    try:
+        ds += [u / d for u in sorted(win.iterdir()) for d in ("Downloads", "Documents", "Desktop", "OneDrive/Documents", "OneDrive/Desktop")]
+    except OSError:
+        pass
+    return [d for d in ds if d.is_dir()]
+
+
+def find_xlsx(dirs: list[pathlib.Path] | None = None) -> list[pathlib.Path]:
+    """Every .xlsx directly in those folders, newest first (Excel's own ~$ lock files skipped)."""
+    out: dict[pathlib.Path, float] = {}
+    for d in search_dirs() if dirs is None else dirs:
+        try:
+            for f in d.glob("*.xlsx"):
+                if not f.name.startswith("~$") and f.is_file():
+                    out[f.resolve()] = f.stat().st_mtime
+        except OSError:
+            continue
+    return sorted(out, key=out.get, reverse=True)
+
+
+def is_library_workbook(path: pathlib.Path) -> bool:
+    return any("Master Catalogue" in n for n in sheet_names(path))
+
+
+def confirm(found: list[pathlib.Path], what: str) -> list[pathlib.Path]:
+    """No path given: show what was found and ask once, so nobody has to type a path."""
+    if not found:
+        print(f"No {what} found in Downloads, Documents or Desktop (the Windows ones too).")
+        print("Save the .xlsx file to Downloads and run this again, or give its path after 'import'.")
+        return []
+    print(f"Found {len(found)} {what}:")
+    for f in found:
+        print(f"  {f}")
+    if not sys.stdin.isatty():
+        print("Run again with the file's path after 'import' to import it.")
+        return []
+    try:
+        ans = input(("Import it" if len(found) == 1 else "Import them") + "? [Y/n]: ")
+    except EOFError:
+        ans = "n"
+    return [] if ans.strip().lower().startswith("n") else found
 
 
 def _num(v):
@@ -430,8 +485,15 @@ def _need() -> dict:
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
     cmd = argv[0] if argv else "help"
-    if cmd == "import" and len(argv) == 2:
-        data = import_workbook(pathlib.Path(argv[1]))
+    if cmd == "import" and len(argv) <= 2:
+        if len(argv) == 2:
+            path = pathlib.Path(argv[1]).expanduser()
+        else:
+            got = confirm([f for f in find_xlsx() if is_library_workbook(f)][:1], "control-library workbook")
+            if not got:
+                return 1
+            path = got[0]
+        data = import_workbook(path)
         LIB.parent.mkdir(parents=True, exist_ok=True)
         LIB.write_text(json.dumps(data, indent=1, ensure_ascii=False), "utf-8")
         try:

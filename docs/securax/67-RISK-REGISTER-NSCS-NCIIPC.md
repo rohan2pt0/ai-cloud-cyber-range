@@ -17,11 +17,13 @@ Risks, controls, audits and incidents describe the same things from different si
 ## 1. The risk register (`./securax risks`)
 
 ```bash
-./securax risks import ~/Documents/VTR_Register.xlsx      # V/T/R: risk-wise, asset-wise, observations
-./securax risks import ~/Documents/Risk_Treatment_Plan.xlsx  # risk assessment + treatment plan
+./securax risks import          # finds your registers in Downloads / Documents / Desktop (Windows ones too) and asks once
 ./securax risks list --open
 ./securax risks overdue                                    # exit 1 when a treatment is late (a routine can nag)
 ```
+
+No path to type: it lists the workbooks that read as a register (the control-library workbook and unrelated sheets are
+skipped) and asks `Import them? [Y/n]`. To import one file only, give its path: `./securax risks import FILE.xlsx`.
 
 | What it reads | How |
 |---|---|
@@ -114,6 +116,13 @@ the edge is on. So:
 
 To switch: `./securax tls on && ./securax go`. Each address keeps its own app data, so open the laptop sync link from
 `./securax sync-link` once at the new address.
+
+**When another program already uses port 80 or 443** (on Windows often IIS, a VPN client or another web server):
+
+- `./securax tls on` checks first, changes nothing, and tells you how to find the program
+  (`netstat -ano | findstr :80` in PowerShell; the last number is its PID, Task Manager > Details shows the name).
+- If the ports become busy later, `./securax up` and `./securax go` switch back to `http://localhost:8088` by themselves,
+  so you are never left with nothing running. Free the port, then `./securax tls on && ./securax go` again.
 
 ## Limits
 

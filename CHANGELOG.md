@@ -8,7 +8,15 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
+### Fixed
+- **A busy port 80/443 no longer leaves you with nothing running** (seen on Windows: `ports are not available: exposing port TCP 0.0.0.0:80`):
+  - `./securax tls on` checks the ports first, changes nothing when another program holds them, and says how to find it.
+  - `up` and `go` switch back to `http://localhost:8088` by themselves when the HTTPS edge cannot get its ports.
+  - Any other busy port is named with the one fix, instead of the misleading "the model router rejected its config" and its log.
+- **Risk registers with a one-row header lost their first risk:** a one-row header now wins over a two-row reading when both match equally.
+
 ### Added
+- **No paths to type:** `./securax controls import` and `./securax risks import` with no file find the workbooks in Downloads, Documents and Desktop (the Windows ones too, on WSL), list them and ask once.
 - **Risk register, interlinked** (doc 67): `./securax risks import | list | overdue | cii`.
   - **Import:** reads V/T/R registers (risk-wise, asset-wise, observations) and risk assessment + treatment plan workbooks by column name (two-row headers included). Treatment-plan rows are joined to their risks by reference.
   - **Private:** the register stays in `vault/risks/`.

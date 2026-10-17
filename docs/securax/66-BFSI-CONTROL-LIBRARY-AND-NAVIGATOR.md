@@ -11,7 +11,7 @@ proves for each control, and draws it the way a mission cockpit would: the abnor
 ## Get it running (2 minutes)
 
 ```bash
-./securax controls import ~/Downloads/RBI_BFSI_Cyber_Gap_Assessment_Workbook.xlsx
+./securax controls import          # finds the workbook in Downloads / Documents / Desktop (Windows ones too) and asks once
 ./securax controls dominance        # does complying with SCB/PSB cover every other class?
 ./securax controls gaps RRB         # the vital few for one class
 ```

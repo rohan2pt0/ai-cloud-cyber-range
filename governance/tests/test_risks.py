@@ -69,3 +69,19 @@ def test_cii_self_check_follows_the_four_tests():
     assert rk.cii_verdict({"customers": True, "dependency": True}).startswith("LIKELY CII")
     assert rk.cii_verdict({"timeframe": True}).startswith("POSSIBLY CII")
     assert rk.cii_verdict({}).startswith("UNLIKELY CII")
+
+
+def test_import_without_a_path_finds_registers_but_not_the_library_or_other_workbooks(tmp_path, monkeypatch):
+    dl = tmp_path / "Downloads"
+    dl.mkdir()
+    workbook(dl / "my-register.xlsx", {"Register": [
+        ["RISK ID", "ASSET/PROCESS", "RISK DESCRIPTION (THREAT)", "Impact Value", "LIKELIHOOD SCORE", "Risk Status"],
+        ["R-9", "Staff mail", "Phishing of staff", 4, 4, "Open"]]})
+    workbook(dl / "library.xlsx", {"Master Catalogue": [["Control ID"], ["X-1"]]})
+    workbook(dl / "budget.xlsx", {"Sheet1": [["Month", "Spend"], ["Jan", 10]]})
+    (dl / "~$my-register.xlsx").write_bytes(b"lock")
+    (dl / "broken.xlsx").write_bytes(b"not a zip")
+    assert [f.name for f in rk.find_registers([dl])] == ["my-register.xlsx"]
+    assert [f.name for f in rk.controls.find_xlsx([dl]) if rk.controls.is_library_workbook(f)] == ["library.xlsx"]
+    monkeypatch.setattr("sys.stdin.isatty", lambda: False)
+    assert rk.controls.confirm(rk.find_registers([dl]), "risk register(s)") == []   # no terminal: never imports without asking

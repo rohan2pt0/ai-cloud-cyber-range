@@ -2,7 +2,7 @@
 """The risk register: vulnerability / threat / risk (V/T/R) registers and risk treatment plans in one place, linked to the
 BFSI control library, the navigator heat map, the cockpit and postmortems.
 
-    ./securax risks import FILE.xlsx      read a V/T/R register (risk-wise, asset-wise, observations) or a risk assessment +
+    ./securax risks import [FILE.xlsx]    (no path: finds registers in Downloads/Documents) read a V/T/R register (risk-wise, asset-wise, observations) or a risk assessment +
                                           treatment plan workbook into vault/risks/register.json (private, never committed)
     ./securax risks list [--open]         every risk, worst inherent score first, with its linked controls
     ./securax risks overdue               open treatments past their due date (exit 1 when there is one, for a routine)
@@ -96,7 +96,8 @@ def _header(rows: list[list]) -> tuple[int, dict[int, str]] | None:
             names[j] = lo if lo in known or not hi else hi
         two = sum(1 for n in names.values() if n in known)
         one = sum(1 for j, v in enumerate(rows[i]) if _norm(v) in known)
-        for score, last, nm in ((two, i + 1, names), (one, i, {j: _norm(v) for j, v in enumerate(rows[i])})):
+        # a one-row header wins a tie: otherwise the first data row under it would be read as a second header row and lost
+        for score, last, nm in ((one, i, {j: _norm(v) for j, v in enumerate(rows[i])}), (two, i + 1, names)):
             if score >= 4 and (best is None or score > best[0]):
                 best = (score, last, nm)
     return (best[1], best[2]) if best else None
@@ -212,20 +213,38 @@ def cii_verdict(answers: dict[str, bool]) -> str:
     return "UNLIKELY CII on these answers: use the NSCS Medium or Low risk profile, as your risk assessment decides."
 
 
+def find_registers(dirs: list[pathlib.Path] | None = None) -> list[pathlib.Path]:
+    """Workbooks in the usual folders that read as a risk register (the control-library workbook excluded)."""
+    out = []
+    for f in controls.find_xlsx(dirs):
+        if controls.is_library_workbook(f):
+            continue
+        try:
+            if import_file(f):
+                out.append(f)
+        except (SystemExit, Exception):     # not a register, or not readable: skip it, never stop the search
+            continue
+    return out
+
+
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
     cmd = argv[0] if argv else "help"
-    if cmd == "import" and len(argv) == 2:
-        new = import_file(pathlib.Path(argv[1]))
-        keep = [r for r in load() if not r["source"].startswith(pathlib.Path(argv[1]).name + " /")]   # re-import replaces that file only
-        REG.parent.mkdir(parents=True, exist_ok=True)
-        REG.write_text(json.dumps({"imported": dt.date.today().isoformat(), "risks": keep + new}, indent=1, ensure_ascii=False), "utf-8")
-        try:
-            REG.chmod(0o600)
-        except OSError:
-            pass
-        linked = sum(1 for r in new if r["controls"])
-        print(f"✔ {len(new)} risks from {pathlib.Path(argv[1]).name} ({linked} linked to library controls); register now holds {len(keep) + len(new)} (private: {REG.relative_to(ROOT)})")
+    if cmd == "import" and len(argv) <= 2:
+        paths = [pathlib.Path(argv[1]).expanduser()] if len(argv) == 2 else controls.confirm(find_registers(), "risk register(s)")
+        if not paths:
+            return 1
+        for path in paths:
+            new = import_file(path)
+            keep = [r for r in load() if not r["source"].startswith(path.name + " /")]   # re-import replaces that file only
+            REG.parent.mkdir(parents=True, exist_ok=True)
+            REG.write_text(json.dumps({"imported": dt.date.today().isoformat(), "risks": keep + new}, indent=1, ensure_ascii=False), "utf-8")
+            try:
+                REG.chmod(0o600)
+            except OSError:
+                pass
+            linked = sum(1 for r in new if r["controls"])
+            print(f"✔ {len(new)} risks from {path.name} ({linked} linked to library controls); register now holds {len(keep) + len(new)} (private: {REG.relative_to(ROOT)})")
         data = controls.load()
         if data:
             controls.write_navigator(data)

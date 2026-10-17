@@ -227,11 +227,30 @@ case "$cmd" in
       case "$OPT" in *" docs "*) SVCS="$SVCS anythingllm"; internal_on && SVCS="$SVCS anythingllm-tls" ;; esac
       case "$OPT" in *" flows "*) SVCS="$SVCS n8n"; internal_on && SVCS="$SVCS n8n-tls" ;; esac
     fi
-    if ! ( cd "$ROOT/local/compose" && docker compose --profile ai up -d --build $SVCS ); then
+    UPLOG="$(mktemp)"; trap 'rm -f "$UPLOG"' EXIT
+    dc_up(){ ( cd "$ROOT/local/compose" && docker compose --profile ai up -d "$@" ) 2>&1 | tee -a "$UPLOG"; return "${PIPESTATUS[0]}"; }
+    clash(){ grep -qiE "ports are not available|port is already allocated|address already in use" "$UPLOG"; }
+    if ! dc_up --build $SVCS; then
+      # Another program holds a port. With the HTTPS names on (ports 80/443), go back to the plain addresses by itself:
+      # the estate works the same, nothing is lost, and the user is not left with nothing running.
+      if clash && tls_on; then
+        C "Port 80 or 443 on this computer is already used by another program, so the https://hub.securax.localhost names cannot start."
+        C "→ Switching back to http://localhost:8088 by itself (nothing is lost; ./securax tls on tells you how to free the port)."
+        python3 "$ROOT/governance/tls.py" off >/dev/null
+        docker ps -aq --filter label=com.docker.compose.service=tls-edge | xargs -r docker rm -f >/dev/null 2>&1 || true
+        rm -f "$UPLOG"; exec "$0" "$@"
+      fi
+      if clash; then
+        PORT="$(grep -oiE "(TCP |bind for )?[0-9.]*:[0-9]+" "$UPLOG" | grep -oE "[0-9]+$" | head -1)"
+        C "✗ Port ${PORT:-?} on this computer is already used by another program (or an old copy of SecuRAX)."
+        echo "  Find it in Windows PowerShell:  netstat -ano | findstr :${PORT:-8088}   (last number = PID; Task Manager > Details shows the name)."
+        echo "  Stop it (or restart the computer), then run  ./securax go  again."
+        exit 1
+      fi
       C "Full start failed — fallback 1: start without rebuilding images (works offline if you've run it before)…"
-      if ! ( cd "$ROOT/local/compose" && docker compose --profile ai up -d $SVCS ); then
+      if ! dc_up $SVCS; then
         C "Fallback 2: core path only (private chat + security gateway + home screen), skipping optional services…"
-        if ! ( cd "$ROOT/local/compose" && docker compose --profile ai up -d $CORE ); then
+        if ! dc_up $CORE; then
           C "Startup failed. Most often the model router rejected its config — its log:"
           ( cd "$ROOT/local/compose" && docker compose --profile ai logs --no-color --tail 25 litellm 2>/dev/null ) || true
           echo "  Run  ./securax doctor  for a diagnosis, or paste the output above to get help."
