@@ -524,3 +524,55 @@ def test_circuit_breaker_skips_a_dead_detector_then_retries_after_cooldown(monke
     assert p.breaker_state("deadguard") == "half-open"
     asyncio.run(p.run_detectors("hi", "input"))
     assert calls["n"] == p.BREAKER_FAILS + 1 and p.breaker_state("deadguard") == "open"  # one trial, failed, open again
+
+
+# --- Idempotency keys (Stripe) and SLOs (Google SRE) ----------------------------------------------------------------------
+def _counting_upstream(monkeypatch):
+    import app.main as m
+    calls = {"n": 0}
+
+    async def fake(payload):
+        calls["n"] += 1
+        return {"id": f"r{calls['n']}", "choices": [{"index": 0, "finish_reason": "stop",
+                                                    "message": {"role": "assistant", "content": f"answer {calls['n']}"}}]}
+
+    monkeypatch.setattr(m, "_call_upstream", fake)
+    monkeypatch.setattr(m, "_IDEM", m.OrderedDict())
+    return m, calls
+
+
+def test_a_retry_with_the_same_idempotency_key_gets_the_first_answer_without_a_second_model_call(monkeypatch):
+    m, calls = _counting_upstream(monkeypatch)
+    c, body, h = TestClient(m.app), {"model": "m", "messages": [{"role": "user", "content": "hi"}]}, {"Idempotency-Key": "abc-1"}
+    r1, r2 = c.post("/v1/chat/completions", json=body, headers=h), c.post("/v1/chat/completions", json=body, headers=h)
+    assert calls["n"] == 1 and r1.json()["id"] == r2.json()["id"] == "r1" and r2.headers.get("idempotent-replayed") == "true"
+    assert c.post("/v1/chat/completions", json=body).json()["id"] == "r2"            # no key: a normal, fresh call
+
+
+def test_same_key_different_body_is_refused_and_a_failed_call_frees_the_key(monkeypatch):
+    m, calls = _counting_upstream(monkeypatch)
+    c, h = TestClient(m.app), {"Idempotency-Key": "abc-2"}
+    c.post("/v1/chat/completions", json={"model": "m", "messages": [{"role": "user", "content": "one"}]}, headers=h)
+    r = c.post("/v1/chat/completions", json={"model": "m", "messages": [{"role": "user", "content": "two"}]}, headers=h)
+    assert r.status_code == 422
+
+    async def broken(payload):
+        import httpx
+        raise httpx.ConnectError("down")
+
+    monkeypatch.setattr(m, "_call_upstream", broken)
+    body, h3 = {"model": "m", "messages": [{"role": "user", "content": "x"}]}, {"Idempotency-Key": "abc-3"}
+    assert c.post("/v1/chat/completions", json=body, headers=h3).status_code == 502
+    _counting_upstream(monkeypatch)
+    assert c.post("/v1/chat/completions", json=body, headers=h3).status_code == 200    # not stuck as "pending"
+
+
+def test_slo_reports_targets_and_the_error_budget(monkeypatch):
+    import app.main as m
+    monkeypatch.setattr(m, "_metrics", m.defaultdict(int, {"sli_total": 200, "sli_bad": 1}))
+    s = TestClient(m.app).get("/v1/slo").json()
+    a = s["availability"]
+    assert a["target"] == 0.99 and a["met"] and a["budget_remaining"] == 0.5          # 1 of the 2 allowed failures used
+    monkeypatch.setattr(m, "_metrics", m.defaultdict(int, {"sli_total": 100, "sli_bad": 3}))
+    a = TestClient(m.app).get("/v1/slo").json()["availability"]
+    assert not a["met"] and a["budget_remaining"] < 0                                  # overspent: fix reliability first

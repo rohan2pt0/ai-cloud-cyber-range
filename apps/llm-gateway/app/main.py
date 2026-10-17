@@ -18,7 +18,7 @@ import secrets
 import sys
 import time
 import uuid
-from collections import defaultdict, deque
+from collections import OrderedDict, defaultdict, deque
 from contextvars import ContextVar
 
 import httpx
@@ -42,6 +42,11 @@ MAX_INFLIGHT = int(os.getenv("MAX_INFLIGHT", "8"))
 QUEUE_WAIT_S = float(os.getenv("QUEUE_WAIT_S", "20"))
 # Latency histogram buckets (ms). Averages hide the slow tail; Prometheus computes p95/p99 from these
 # (histogram_quantile), and /v1/latency reports them directly.
+# SLOs (Google SRE): a target and the error budget it leaves. Availability counts only failures that are OURS (the model path
+# failed, or the request was shed); a policy block is the gateway working correctly. Latency counts model calls under the bar.
+SLO_AVAILABILITY = float(os.getenv("SLO_AVAILABILITY", "0.99"))
+SLO_LATENCY_MS = float(os.getenv("SLO_LATENCY_MS", "30000"))       # CPU laptops answer locally in tens of seconds
+SLO_LATENCY_TARGET = float(os.getenv("SLO_LATENCY_TARGET", "0.95"))
 LAT_BUCKETS_MS = (50, 100, 250, 500, 1000, 2500, 5000, 10000, 30000, 60000, 120000, 300000)
 ALLOWED_DOMAINS = {d.strip() for d in os.getenv("ALLOWED_LINK_DOMAINS", "rbi.org.in,sebi.gov.in,cert-in.org.in").split(",") if d.strip()}
 CANARIES = {c for c in os.getenv("SYSTEM_PROMPT_CANARIES", "").split(",") if c}
@@ -238,6 +243,26 @@ async def metrics(request: Request) -> str:
     return "\n".join(lines) + "\n"
 
 
+@app.get("/v1/slo")
+async def slo(request: Request) -> dict:
+    """Service-level objectives since start: are we inside target, and how much error budget is left (1.0 = untouched,
+    0 = spent, negative = overspent). Spend it on change; when it runs out, fix reliability before shipping features."""
+    await _authn(request, "metrics")
+    total, bad = int(_metrics["sli_total"]), int(_metrics["sli_bad"])
+    avail = 1.0 if total == 0 else (total - bad) / total
+    allowed = (1 - SLO_AVAILABILITY) * total
+    v = list(_LAT_RECENT)
+    fast = 1.0 if not v else sum(1 for x in v if x <= SLO_LATENCY_MS) / len(v)
+    allowed_slow = (1 - SLO_LATENCY_TARGET) * len(v)
+    return {
+        "availability": {"target": SLO_AVAILABILITY, "actual": round(avail, 5), "requests": total, "failed": bad,
+                         "budget_remaining": 1.0 if allowed == 0 else round(1 - bad / allowed, 3), "met": avail >= SLO_AVAILABILITY},
+        "latency": {"target": SLO_LATENCY_TARGET, "threshold_ms": SLO_LATENCY_MS, "actual": round(fast, 5), "samples": len(v),
+                    "budget_remaining": 1.0 if allowed_slow == 0 else round(1 - sum(1 for x in v if x > SLO_LATENCY_MS) / allowed_slow, 3),
+                    "met": fast >= SLO_LATENCY_TARGET},
+    }
+
+
 @app.get("/v1/latency")
 async def latency(request: Request) -> dict:
     """p50 / p95 / p99 of the last 1000 model calls, in ms. The average is shown only next to them, never alone."""
@@ -357,9 +382,57 @@ def _sse_from_completion(resp: dict, chunk_chars: int = 60):
     yield "data: [DONE]\n\n"
 
 
+# Idempotency keys (the Stripe pattern): a client that retries after a timeout or a 503 sends the SAME `Idempotency-Key`,
+# and gets the first answer back instead of a second model call: no double cost, and an agent never runs a tool call twice.
+# Same key + different body = 422 (a bug in the client); same key while the first call still runs = 409. Kept 24 h, newest 1,000.
+IDEM_TTL_S = float(os.getenv("IDEMPOTENCY_TTL_S", str(24 * 3600)))
+_IDEM: "OrderedDict[str, dict]" = OrderedDict()
+_IDEM_CTX: ContextVar[str] = ContextVar("idem", default="")
+
+
+def _idem_purge(now: float) -> None:
+    while _IDEM and (len(_IDEM) > 1000 or now - next(iter(_IDEM.values()))["t"] > IDEM_TTL_S):
+        _IDEM.popitem(last=False)
+
+
 @app.post("/v1/chat/completions")
-async def chat(request: Request, authorization: str | None = Header(default=None)) -> JSONResponse:
+async def chat(request: Request, authorization: str | None = Header(default=None)):
+    key = (request.headers.get("idempotency-key") or "").strip()
+    if not key:
+        return await _chat(request, authorization)
+    if len(key) > 128:
+        raise HTTPException(400, "Idempotency-Key must be at most 128 characters")
+    body = hashlib.sha256(await request.body()).hexdigest()
+    scope = authorization or (request.client.host if request.client else "anon")       # one caller's key never matches another's
+    ck = hashlib.sha256(f"{scope}\n{key}".encode()).hexdigest()
+    now = time.time()
+    _idem_purge(now)
+    e = _IDEM.get(ck)
+    if e:
+        if e["body"] != body:
+            raise HTTPException(422, "this Idempotency-Key was already used with a different request body")
+        if e["state"] == "pending":
+            raise HTTPException(409, "a request with this Idempotency-Key is still running", headers={"Retry-After": "5"})
+        await _authn(request, "chat")                       # a replay is still an authenticated, authorised call
+        _metrics["idempotent_replay"] += 1
+        hdr = {**e["echo"], "Idempotent-Replayed": "true"}
+        if e["stream"]:
+            return StreamingResponse(_sse_from_completion(e["resp"]), media_type="text/event-stream",
+                                     headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no", **hdr})
+        return JSONResponse(e["resp"], headers=hdr)
+    _IDEM[ck] = {"state": "pending", "body": body, "t": now}
+    tok = _IDEM_CTX.set(ck)
+    try:
+        return await _chat(request, authorization)
+    finally:
+        _IDEM_CTX.reset(tok)
+        if _IDEM.get(ck, {}).get("state") == "pending":     # failed or refused: the key is free again for a real retry
+            _IDEM.pop(ck, None)
+
+
+async def _chat(request: Request, authorization: str | None) -> JSONResponse:
     ident = await _authn(request, "chat")
+    _metrics["sli_total"] += 1
     payload = await request.json()
     req_id = str(uuid.uuid4())
     # Authenticated callers are rate-limited and audited by their verified subject; anonymous ones (AUTH_MODE off/optional) as before.
@@ -431,6 +504,7 @@ async def chat(request: Request, authorization: str | None = Header(default=None
         await asyncio.wait_for(_slots().acquire(), timeout=QUEUE_WAIT_S)
     except asyncio.TimeoutError:
         _metrics["shed_overload"] += 1
+        _metrics["sli_bad"] += 1
         _emit({"req_id": req_id, **who, "decision": "shed_overload", "inflight": _INFLIGHT})
         raise HTTPException(503, "the AI models are busy; try again shortly", headers={"Retry-After": "10"}) from None
     _INFLIGHT += 1
@@ -439,6 +513,7 @@ async def chat(request: Request, authorization: str | None = Header(default=None
         resp = await _call_upstream(payload)
     except (httpx.HTTPError, ValueError) as exc:    # ValueError: upstream sent something that is not JSON
         _metrics["upstream_error"] += 1
+        _metrics["sli_bad"] += 1
         _emit({"req_id": req_id, **who, "decision": "upstream_error", "error": str(exc)[:200]})
         raise HTTPException(502, "upstream model unavailable") from exc
     finally:
@@ -491,6 +566,9 @@ async def chat(request: Request, authorization: str | None = Header(default=None
     resp["guardrails"] = {"req_id": req_id, "decision": decision,
                           "rules": sorted({f.rule for f in in_findings + out_findings})}
     echo = {"traceparent": f"00-{trace_id}-{span_id}-01", "X-Request-ID": req_id}
+    if _IDEM_CTX.get():
+        _IDEM[_IDEM_CTX.get()] = {"state": "done", "body": _IDEM[_IDEM_CTX.get()]["body"], "t": time.time(),
+                                  "resp": resp, "stream": want_stream, "echo": echo}
     if want_stream:
         return StreamingResponse(_sse_from_completion(resp), media_type="text/event-stream",
                                  headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no", **echo})

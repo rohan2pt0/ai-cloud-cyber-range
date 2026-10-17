@@ -16,6 +16,10 @@ for the versioning and release policy.
   - **Backpressure:** at most `MAX_INFLIGHT` (8) model calls at once; past `QUEUE_WAIT_S` (20 s) a fast 503 with `Retry-After`, counted as `shed_overload`.
   - **Circuit breaker** per detector: after 3 failures it is skipped for 30 s, then one trial. Verdicts are unchanged; only the waiting is gone.
   - `Retry-After` on 429. Phone alerts retry with exponential backoff and jitter, and a failed alert goes to a dead-letter file and is re-sent first next time.
+- **Practices from the best engineering organisations** (doc 64: one success mantra per organisation, the 80/20 seven, each with its proof):
+  - **Idempotency keys** (Stripe): send `Idempotency-Key` on `/v1/chat/completions`; a retry gets the first answer, never a second model or tool call. Same key with a different body is a 422; same key while the first call runs is a 409.
+  - **SLOs and error budgets** (Google SRE): `GET /v1/slo`, availability 99 % (only our own failures count) and latency 95 % under 30 s, each with the budget left.
+  - **Blameless postmortems** (Amazon Correction of Error): `./securax postmortem new "title"` writes a five-whys template to `vault/postmortems/`; `actions` lists the open fix-it actions and fails when one is overdue or has no owner.
 ### Changed
 - The app no longer asks anything when a sync link matches the setup it already has (so `go` can open it on every run).
 ### Fixed

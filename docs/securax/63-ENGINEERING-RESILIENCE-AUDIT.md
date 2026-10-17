@@ -19,6 +19,8 @@ written down, not forgotten.
 | **Circuit breaker** | a dead detector (Llama Guard, Model Armor, Bedrock) made *every* request wait for its timeout | per-detector breaker: open after 3 failures in a row, skipped for 30 s, then one half-open trial. The verdict is unchanged (fail-closed still blocks); only the waiting is gone | `test_circuit_breaker_skips_a_dead_detector_then_retries_after_cooldown` |
 | **Rate limiting: tell the client when** | the 429 had no `Retry-After` | `429` now carries `Retry-After: 60` | `test_rate_limited_reply_says_when_to_retry` |
 | **Retry with backoff + jitter** | a phone alert that hit a network blip was lost | 3 attempts, `0.5 s × 2ⁿ` plus random jitter, so senders do not retry in lockstep | `test_retry_backs_off_with_jitter_then_succeeds` |
+| **Idempotency keys** (Stripe) | a client retrying after a timeout or a 503 caused a second model call (and could repeat an agent's tool call) | `Idempotency-Key` on `/v1/chat/completions`: the retry gets the first answer (`Idempotent-Replayed: true`); same key with a different body is a 422, while the first is still running a 409; kept 24 h, scoped to the caller | `test_a_retry_with_the_same_idempotency_key_gets_the_first_answer_without_a_second_model_call`, `test_same_key_different_body_is_refused_and_a_failed_call_frees_the_key` |
+| **SLOs / error budgets** (Google SRE) | only build-time budgets | `GET /v1/slo`: availability (target 99 %, only our own failures count) and latency (95 % under 30 s), each with the error budget left | `test_slo_reports_targets_and_the_error_budget` |
 | **Dead-letter queue, at-least-once delivery** | a failed alert was dropped | an alert that still fails is kept in `vault/notify-dlq.jsonl` (newest 50, owner-only) and re-sent, marked "(delayed)", before the next alert | `test_an_alert_that_cannot_be_sent_is_kept_and_resent_first_next_time` |
 
 ## Already in place
@@ -31,9 +33,9 @@ written down, not forgotten.
 | **Bulkheads** | per-container memory and CPU limits in `docker-compose.yml`; the local model is capped so it cannot starve Chat |
 | **Rate limiting** | per caller, per minute (`RATE_LIMIT_PER_MIN`) |
 | **Correlation IDs + tracing** | W3C `traceparent` kept or started on every request, `X-Request-ID` echoed, both in the audit line |
-| **Idempotency** | sync uses per-key timestamps with a deterministic tie-break, so replaying the same push changes nothing; backups and restores are verified by checksum before use |
+| **Idempotency (sync and backups)** | sync uses per-key timestamps with a deterministic tie-break, so replaying the same push changes nothing; backups and restores are verified by checksum before use |
 | **Optimistic concurrency** | the sync merge: newest write per key wins, ties broken the same way on every device (tested in the app's test20) |
-| **SLOs / error budgets** | fitness budgets on every build: time to first block ≤ 5 s, block latency p95 ≤ 50 ms, and the ratchets |
+| **Build-time budgets** | fitness budgets on every build: time to first block ≤ 5 s, block latency p95 ≤ 50 ms, and the ratchets |
 | **Write amplification (SQLite)** | the sync store runs in WAL mode with a busy timeout |
 | **Change data capture / the outbox idea** | the audit trail is one append-only JSON line per decision, which the AI-SOC reads, rather than a second write that could disagree |
 
