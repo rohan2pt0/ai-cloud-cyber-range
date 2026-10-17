@@ -47,6 +47,8 @@
    "paths": [
     "securax",
     "securax.cmd",
+        "brand.env",
+        "integrations.txt",
     "local/compose/docker-compose.yml",
     "local/compose/full-stack.yml",
     "local/compose/design.yml",
