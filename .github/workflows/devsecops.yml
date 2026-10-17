@@ -39,7 +39,7 @@ jobs:
         run: python redteam/aispm_scan.py --root . --out docs/aispm-report.json
       - name: Board risk brief
         run: python redteam/board_report.py --redteam redteam/results.json --aispm docs/aispm-report.json --out docs/board-brief.md
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ai-assurance-reports
           path: |
@@ -139,5 +139,5 @@ jobs:
           image: vulnbank/llm-gateway:ci
           format: cyclonedx-json
           output-file: sbom.cdx.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with: { name: sbom, path: sbom.cdx.json }

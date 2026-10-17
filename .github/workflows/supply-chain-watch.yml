@@ -23,7 +23,7 @@ jobs:
         run: python3 governance/inspector.py --selftest
       - name: compare every pinned package with the registry and inspect any newer version
         run: python3 governance/inspector.py --watch --ci | tee watch.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: supply-chain-watch

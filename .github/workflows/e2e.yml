@@ -54,7 +54,7 @@ jobs:
           if [ "$J" = ALL ]; then python3 sandbox/run.py; else python3 sandbox/run.py -j "$J"; fi
       - name: Upload screenshots + results (so a failure can be SEEN)
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: sandbox-report
           path: |
