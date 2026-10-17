@@ -274,3 +274,5 @@ website/docs/
 portal/navigator.html
 portal/navigator/
 guiding-map/build.json
+local/compose/controls/ai-control.json
+local/compose/controls/.ai-control.*

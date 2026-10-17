@@ -777,8 +777,26 @@ def render(c: Collector, maps: dict, hist: list[dict], ai: str, now: float, targ
         late = len(_rm.overdue(_rm.load()))
     except Exception:  # noqa: BLE001 - the register is optional
         late = 0
+    try:                                                          # a person stopped AI (./securax ai stop): always lit while it lasts
+        _ctl = json.loads((ROOT / "local" / "compose" / "controls" / "ai-control.json").read_text("utf-8"))
+        stopped_ai = (["all AI"] if _ctl.get("all") else []) + sorted(_ctl.get("models") or {})
+    except (OSError, ValueError):
+        stopped_ai = []
+    near = []
+    try:                                                          # AI allowance: lit only when a caller is at the 80% line or over
+        import urllib.request
+        with urllib.request.urlopen("http://127.0.0.1:8080/v1/budget", timeout=3) as r:
+            rep = json.loads(r.read())
+        for c in rep.get("callers", []):
+            pct = max((c["day_used"] / c["day_limit"]) if c["day_limit"] else 0, (c["month_used"] / c["month_limit"]) if c["month_limit"] else 0)
+            if pct >= rep.get("warn_at", 0.8):
+                near.append(pct)
+    except Exception:  # noqa: BLE001 - the gateway may be off; then there is nothing to show
+        pass
     lamps = [("warn" if reds else "ok", len(reds), "Warnings: act today"), ("caut" if ambs else "ok", len(ambs), "Cautions: schedule"),
-             ("ok", sum(1 for m in ms if m["status"] == "green"), "Nominal")] + ([("warn", late, "Risk treatments overdue")] if late else [])
+             ("ok", sum(1 for m in ms if m["status"] == "green"), "Nominal")] + ([("warn", late, "Risk treatments overdue")] if late else []) \
+        + ([("warn", len(stopped_ai), "AI stopped by a person: " + ", ".join(stopped_ai))] if stopped_ai else []) \
+        + ([("warn" if max(near) >= 1 else "caut", len(near), "AI allowance used up or near it: ./securax ai budget")] if near else [])
     h.append("<div class='card'><h2>Master caution</h2><div class='annun'>" + "".join(
         f"<div class='lamp {k}'><b>{v}</b>{E(t)}</div>" for k, v, t in lamps)
         + ("<a class='lamp nav' href='/portal/navigator.html'><b>Controls</b>BFSI control navigator</a>" if nav else

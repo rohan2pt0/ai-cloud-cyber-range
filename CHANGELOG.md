@@ -8,6 +8,24 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
+### Added
+- **README that keeps itself current:** the version badge, "What's new" and the full documentation index are generated from `VERSION`, `CHANGELOG.md` and the docs (`tools/readme_sync.py`). The `readme-current` fitness check fails CI when the README falls behind. "Start here" now leads with `./securax go`.
+- **RBI MRM draft, checked paragraph by paragraph:** the pack cites the draft's paragraphs and gains ET-104 to ET-106 (third-party models, change management, continuity).
+  - **Para 21:** `./securax ai inventory` flags models the gateway serves that are not in the inventory.
+  - **Para 42:** it flags models changed since validation.
+  - **Para 22:** it flags a missing intended use or owner.
+- **RBI Payments Vision 2028 pack:** Cyber KRI framework (3.9), governed AI access to payments data (3.11), switch on/off for every digital mode (3.1) and beneficiary-side mule detection (3.5).
+- **Lessons from national strategies** (doc 70): six patterns from Saudi Vision 2030, Vision India@2047 and the 2025 US National Security Strategy, what SecuRAX already does, the three proposed Life OS changes, and which documents to add next.
+- **Human-in-command for AI** (doc 69, following RBI's June 2026 draft model-risk guidance):
+  - **Kill switch:** `./securax ai stop all|MODEL --reason "..."` and `resume`. The gateway refuses on the next request with no restart, tells the caller who stopped it and why, and lights a cockpit lamp. The switch is a read-only file, not an API, and a malformed file stops all AI.
+  - **Model inventory:** `./securax ai inventory` checks owner, third-party source, explainability, validation and yearly re-validation for high-risk models, and keeps decommissioned models' records for 10 years.
+  - **Disclosure:** every answer carries `X-AI-Generated: true`.
+  - **Control library:** the pack `rbi-mrm-draft-2026` adds controls ET-101 to ET-103.
+- **AI allowance per caller** (doc 69, on by default): 2M tokens a day and 20M a month on cloud models, about US$15 a month on a Flash-class model.
+  - **Limits:** a warning at 80%; at 100% the gateway refuses with 429 and says which limit, when it resets, and how to extend it.
+  - **`./securax ai budget`** shows each caller's use. `./securax ai budget extend --day|--month --tokens N --reason "..."` adds tokens for the current day or month only, and every extension is logged.
+  - **Local model:** not counted, so it still answers when the cloud allowance runs out.
+  - **Visibility:** remaining allowance in the response headers, a cockpit lamp, and spend that survives a gateway restart.
 
 ## [0.2.0] - 2026-10-17
 ### Added
