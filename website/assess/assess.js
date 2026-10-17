@@ -44,7 +44,7 @@ function score(e) {
     });
   }
   var subj = encodeURIComponent("AI-risk check: " + yes + "/10 - design partner");
-  h += '<p class="cta"><a class="btn btn-gold" href="mailto:hello@cyberbaba.org?subject=' + subj + '">Get the full gap report in a 30-minute session</a></p>'
+  h += '<p class="cta"><a class="btn btn-gold" href="mailto:{{CONTACT_EMAIL}}?subject=' + subj + '">Get the full gap report in a 30-minute session</a></p>'
     + '<p class="note">Your answers never left this page. This is a self-assessment, not an audit or legal advice.</p>';
   out.innerHTML = h; out.hidden = false; out.scrollIntoView({ behavior: "smooth", block: "start" });
 }

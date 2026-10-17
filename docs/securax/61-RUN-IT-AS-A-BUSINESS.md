@@ -17,7 +17,7 @@ stays free and is the funnel. This page covers the identity, legal and payment s
 |---|---|---|
 | **Code** | Create the GitHub organisation `cyberbaba`. Publish a fresh copy with no history: `tools/publish-clean.sh cyberbaba securax` refuses to publish while any personal identifier remains. Then make the old repository **private**. | 🟢 script built and dry-run clean |
 | **Commits from now on** | In the new clone: `git config user.name "CyberBaba"` and `git config user.email "<id>+<user>@users.noreply.github.com"` (GitHub → Settings → Emails → keep my address private). Set your org membership to **private**. | you |
-| **Domain** | Namecheap → Domain List → cyberbaba.org → **WHOIS privacy on** (free). | you |
+| **Domain** | Your registrar (Namecheap today) → Domain List → cyberbaba.org → **WHOIS privacy on** (free). | you |
 | **E-mail** | Cloudflare Email Routing: `hello@cyberbaba.org` → your Gmail. To *send* as the brand, use a separate mailbox (for example Zoho Mail's free plan) instead of your personal Gmail. | you |
 | **Website** | No founder name, photo or employer anywhere. The site says "built to banking security habits", not who built it. | 🟢 done |
 | **Social** | Brand accounts only (LinkedIn page, X, YouTube). Never cross-post from personal accounts. | you |

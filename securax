@@ -270,6 +270,8 @@ case "$cmd" in
     NOOPEN=0; for _a in "${@:2}"; do [ "$_a" = "--no-open" ] && NOOPEN=1; done
     ENVF="$ROOT/local/compose/.env"; OKS=""; FIXES=""
     ok(){ OKS="$OKS\n  ✔ $*"; }; fix(){ FIXES="$FIXES\n  ✗ $*"; }
+    # integrations.txt switches the optional parts on or off (like requirements.txt); the core always runs.
+    on(){ python3 "$ROOT/governance/config.py" enabled "$1"; }; OFFS=""; off(){ OFFS="$OFFS $1"; }
     C "SecuRAX go — getting everything working. Nothing you already set up is changed."
     # 1. Docker: without it nothing else can work, so stop here with the one fix.
     if ! docker info >/dev/null 2>&1; then
@@ -291,11 +293,12 @@ case "$cmd" in
     gcurl -fsS -m 5 "$(gw_url)/healthz" >/dev/null 2>&1 && ok "AI gateway running (every AI call is guarded)" || fix "AI gateway not answering yet → wait a minute, then  ./securax go"
     web_up hub 8088 && ok "Guiding Map app running" || fix "Guiding Map app not answering → ./securax why"
     # 3. Schedules (alerts, weekly backup, regulator watch). cron needs your Linux password once.
-    if crontab -l 2>/dev/null | grep -F "securax routines run" | grep -qF "$ROOT" && pgrep -x cron >/dev/null 2>&1; then ok "Schedules running (backups, alerts, regulator watch)"
+    if ! on cron; then off cron
+    elif crontab -l 2>/dev/null | grep -F "securax routines run" | grep -qF "$ROOT" && pgrep -x cron >/dev/null 2>&1; then ok "Schedules running (backups, alerts, regulator watch)"
     else "$0" routines install && ok "Schedules installed (backups, alerts, regulator watch)" || fix "Schedules not running → ./securax routines install"; fi
     # 4. Phones over Tailscale: publish once if Tailscale is on and nothing is published yet.
-    TSX=""; for _c in tailscale.exe "/mnt/c/Program Files/Tailscale/tailscale.exe" tailscale; do
-      if command -v "$_c" >/dev/null 2>&1 || [ -x "$_c" ]; then TSX="$_c"; break; fi; done
+    TSX=""; if on tailscale; then for _c in tailscale.exe "/mnt/c/Program Files/Tailscale/tailscale.exe" tailscale; do
+      if command -v "$_c" >/dev/null 2>&1 || [ -x "$_c" ]; then TSX="$_c"; break; fi; done; else off tailscale; fi
     TSN=""
     if [ -n "$TSX" ]; then
       TSN="$("$TSX" status --json 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin)["Self"]["DNSName"].rstrip("."))' 2>/dev/null || true)"
@@ -305,15 +308,18 @@ case "$cmd" in
         "$TSX" serve status 2>/dev/null | grep -q "127.0.0.1:8088" || { "$TSX" serve --bg 8088 >/dev/null 2>&1; "$TSX" serve --bg --https=10000 3000 >/dev/null 2>&1; }
         "$TSX" serve status 2>/dev/null | grep -q "127.0.0.1:8088" && ok "Phones: https://$TSN (Chat: https://$TSN:10000), your devices only" || fix "Phones: could not publish → ./securax phones --apply"
       fi
-    else
+    elif on tailscale; then
       echo "  (phones: optional. Install Tailscale on Windows and your phone, sign in, then  ./securax go  again)"
     fi
     # 5. Phone alerts.
-    [ -n "$(ev SECURAX_NOTIFY_NTFY)$(ev SECURAX_NOTIFY_WEBHOOK)" ] && ok "Phone alerts on" || echo "  (phone alerts: optional →  ./securax notify setup)"
+    if ! on ntfy && ! on webhook; then off ntfy
+    elif [ -n "$(ev SECURAX_NOTIFY_NTFY)$(ev SECURAX_NOTIFY_WEBHOOK)" ]; then ok "Phone alerts on"
+    else echo "  (phone alerts: optional →  ./securax notify setup)"; fi
     # 6. Regulator watch baseline and a first backup, once.
-    [ -f "$ROOT/vault/regwatch.json" ] || { python3 "$ROOT/governance/regwatch.py" fetch --quiet >/dev/null 2>&1 && ok "Regulator watch started (RBI, SEBI)"; }
+    if ! on regwatch; then off regwatch; else [ -f "$ROOT/vault/regwatch.json" ] || { python3 "$ROOT/governance/regwatch.py" fetch --quiet >/dev/null 2>&1 && ok "Regulator watch started (RBI, SEBI)"; }; fi
     BDIR="$(ev SECURAX_BACKUP_DIR "$ROOT/backups")"
-    if [ -n "$(find "$BDIR" -maxdepth 1 -name 'securax-*.tar.gz*' -mtime -7 2>/dev/null | head -1)" ]; then ok "Backup from the last 7 days on disk"
+    if ! on backup; then off backup
+    elif [ -n "$(find "$BDIR" -maxdepth 1 -name 'securax-*.tar.gz*' -mtime -7 2>/dev/null | head -1)" ]; then ok "Backup from the last 7 days on disk"
     else "$0" backup >/dev/null 2>&1 && ok "Backup taken now ($BDIR)" || fix "Backup failed → ./securax backup"; fi
     # 7. Your data on every device: one link per device, no forms (the sync token rides after '#', never sent to a server).
     LAPLINK="$(python3 "$ROOT/governance/synclink.py" --print-only laptop 2>/dev/null || true)"
@@ -321,6 +327,7 @@ case "$cmd" in
     [ -n "$LAPLINK" ] && ok "Sync ready: your data is kept on this laptop and restored on every device" || fix "Sync token missing → ./securax up"
     C ""; C "════════════════════════ SecuRAX status ════════════════════════"
     printf '%b\n' "$OKS"
+    [ -n "$OFFS" ] && echo "  · switched off in integrations.txt:$OFFS"
     if [ -n "$FIXES" ]; then C ""; C "Needs one action each:"; printf '%b\n' "$FIXES"; fi
     C ""; C "Use it:"
     echo "  This laptop:  http://localhost:8088   (Chat: http://localhost:3000)"
@@ -331,7 +338,7 @@ case "$cmd" in
         || ( command -v xdg-open >/dev/null && xdg-open "$LAPLINK" >/dev/null 2>&1 ) || true
       echo "  The app just opened in your browser. If it asks 'Turn on cross-device sync?', press OK once."
     fi
-    if [ -n "$PHLINK" ] && [ -n "$(ev SECURAX_NOTIFY_NTFY)" ] && [ -t 0 ]; then
+    if [ -n "$PHLINK" ] && on ntfy && [ -n "$(ev SECURAX_NOTIFY_NTFY)" ] && [ -t 0 ]; then
       printf '  Send the one-tap phone link to your phone now (it passes through your ntfy alert topic and is not stored there)? [y/N]: '
       read -r _yn < /dev/tty || _yn=n
       case "$_yn" in [Yy]*)
@@ -418,8 +425,11 @@ URLS
     else
       echo "  local model: $LM NOT pulled ✗  → run  ./securax pull"
     fi
-    [ -n "$(ev SECURAX_NOTIFY_NTFY)$(ev SECURAX_NOTIFY_WEBHOOK)" ] && echo "  phone alerts: on (test: ./securax notify test)" || echo "  phone alerts: off → ./securax notify setup"
-    if crontab -l 2>/dev/null | grep -F "securax routines run" | grep -qF "$ROOT"; then
+    _on(){ python3 "$ROOT/governance/config.py" enabled "$1"; }
+    if ! _on ntfy && ! _on webhook; then echo "  phone alerts: switched off in integrations.txt"
+    else [ -n "$(ev SECURAX_NOTIFY_NTFY)$(ev SECURAX_NOTIFY_WEBHOOK)" ] && echo "  phone alerts: on (test: ./securax notify test)" || echo "  phone alerts: off → ./securax notify setup"; fi
+    if ! _on cron; then echo "  schedule:  switched off in integrations.txt"
+    elif crontab -l 2>/dev/null | grep -F "securax routines run" | grep -qF "$ROOT"; then
       pgrep -x cron >/dev/null 2>&1 && echo "  schedule:  on (cron running)" || echo "  schedule:  ⚠ cron is not running → ./securax routines install"
     else echo "  schedule:  off → ./securax routines install"; fi
     # The real test: send an actual message through the gateway and show who answered + the TRUE error
@@ -814,6 +824,11 @@ EOF2
     # Regulator watch: new RBI/SEBI circulars, directions and press releases from their RSS feeds (titles + links only).
     #   ./securax regwatch fetch [--notify]|list [--days N]|digest [--month YYYY-MM] [--send]|sources
     shift; exec python3 "$ROOT/governance/regwatch.py" "$@"
+    ;;
+  config)
+    # Configuration, not code: brand.env (your brand, domain, contact) and integrations.txt (optional parts, one per line).
+    #   ./securax config show | check | enabled <name> | render FILE...
+    shift; exec python3 "$ROOT/governance/config.py" "$@"
     ;;
   postmortem)
     # Blameless postmortems (Amazon Correction of Error): what happened, five whys, and MECHANISMS tracked to done.
@@ -1443,6 +1458,7 @@ KEEP IT SAFE
 REGULATORY & EVIDENCE (any regulator: RBI, SEBI, CERT-In, IRDAI, DPDP, others as data files)
   comply [rbi|cscrf|mit-ai-risk|nist-ai-600-1|pqc]  requirement-by-requirement gap view     ccsp   CCSP practice map
   evidence       audit pack (checksummed)             incident ...   reporting clock: open, due, draft, file, seal, rollup
+  config ...     show / check brand.env and integrations.txt (nothing brand-specific is hardwired)
   postmortem ... blameless postmortem after an outage; tracks the fix-it actions to done
   regwatch ...   new RBI/SEBI circulars: fetch, list, monthly digest (titles + links only)
   regulated on   ONE switch: sign-in + data residency + strict cockpit (then fine-tune with the two below)

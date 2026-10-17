@@ -34,7 +34,20 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 FEEDS = ROOT / "governance" / "regwatch-feeds.json"
 STATE = ROOT / "vault" / "regwatch.json"
 MAX_BYTES = 4_000_000
-UA = "Mozilla/5.0 (SecuRAX regwatch; +https://cyberbaba.org)"
+def _ua() -> str:
+    """Identify politely to the regulators' servers, with your own site from brand.env when you have one."""
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("config", ROOT / "governance" / "config.py")
+        cfg = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(cfg)
+        site = cfg.values().get("SITE_DOMAIN", "")
+    except Exception:  # noqa: BLE001 - a missing brand file must never stop the watch
+        site = ""
+    return "Mozilla/5.0 (SecuRAX regwatch" + (f"; +https://{site}" if site else "") + ")"
+
+
+UA = _ua()
 _CTRL = re.compile(r"[\x00-\x1f\x7f​-‏‪-‮⁠-⁤﻿]")
 
 

@@ -40,7 +40,7 @@ automatic HTTPS, rebuilt on every merge to `main`, and no server to patch. One p
 6. **Contact address:** **Email → Email Routing → enable**, then route `hello@cyberbaba.org` to your Gmail. It is free,
    and the site's "Talk to an expert" buttons use it.
 
-Namecheap stays the registrar. Do not change anything there while its nameservers point to Cloudflare.
+Your registrar (Namecheap today) stays the registrar. Do not change anything there while its nameservers point to Cloudflare. The domain itself is `SITE_DOMAIN` in `brand.env`.
 
 ??? note "Or keep GitHub Pages for the docs"
     The `docs` workflow can still publish to GitHub Pages (`DOCS_PAGES=true`). Cloudflare Pages is simpler because one

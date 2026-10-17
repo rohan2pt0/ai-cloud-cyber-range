@@ -9,6 +9,12 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **Configuration, not code** (doc 65): nothing brand- or vendor-specific is hardwired any more.
+  - **`brand.env`** holds the brand name, product name, domain, contact address, repository and image registry; an environment variable with the same name wins. Every value is optional.
+  - **`integrations.txt`** switches the optional parts on or off, one per line, like `requirements.txt` (tailscale, ntfy, webhook, cron, regwatch, backup, cloudflare-pages, github, tls). `./securax go` and `doctor` only act on what it lists; no file means everything is on.
+  - The product site uses `{{SITE_DOMAIN}}`, `{{CONTACT_EMAIL}}` and `{{BRAND_NAME}}`, filled by `website/build.sh`. `mkdocs.yml`, `tools/publish-clean.sh` and the regulator watch read the same values.
+  - `./securax config show | check | enabled | render`. A new **`config-clean`** fitness check fails CI when a brand value or a registrar/host vendor appears in code, or when either file is malformed.
+### Added
 - **`./securax go`: one command that gets everything working and keeps it working.** It updates safely or starts, installs the schedules, publishes to your phones over Tailscale, starts the regulator watch, takes a first backup, opens the app with sync set up, and can send the one-tap phone link through your ntfy alerts. Every step checks first and only acts when something is missing. It ends with one status screen: ✔ for what works, and one ✗ line with the single fix for what does not. `START-HERE-Windows.bat` now runs it, and it heads `./securax help`.
 - **Resilience fundamentals in the gateway and alerts** (doc 63, a 35-concept audit):
   - **p95 / p99 latency:** a Prometheus histogram and `GET /v1/latency` (p50/p95/p99 of the last 1,000 calls), instead of an average only.
