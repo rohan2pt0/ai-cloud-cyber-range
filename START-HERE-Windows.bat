@@ -1,12 +1,12 @@
 @echo off
 REM ===== SecuRAX - double-click to start everything on Windows =====
-REM Needs Docker Desktop running + WSL (Ubuntu). Runs the same ./securax up as Mac/Linux.
+REM Needs Docker Desktop running + WSL (Ubuntu). Runs ./securax go: start, update, schedules, phones, backup and sync, then one status screen.
 title SecuRAX
 setlocal
 echo.
 echo   Starting SecuRAX...  (this is the only step - just wait; first run downloads images)
 echo.
-call "%~dp0securax.cmd" up
+call "%~dp0securax.cmd" go
 if errorlevel 1 (
   echo.
   echo   Something needs attention - read the message above.

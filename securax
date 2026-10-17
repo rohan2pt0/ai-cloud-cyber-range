@@ -263,6 +263,85 @@ case "$cmd" in
     fi
     [ "$cmd" = "up-status" ] && "$0" status || true
     ;;
+  go)
+    # ONE command that makes everything work and keeps it working (the laptop runbook, automated). Safe to run any time:
+    # every step checks first and only acts when something is missing. Ends with ONE screen: what works, and the 1 fix if not.
+    #   ./securax go            ./securax go --no-open   (do not open the browser)
+    NOOPEN=0; for _a in "${@:2}"; do [ "$_a" = "--no-open" ] && NOOPEN=1; done
+    ENVF="$ROOT/local/compose/.env"; OKS=""; FIXES=""
+    ok(){ OKS="$OKS\n  ✔ $*"; }; fix(){ FIXES="$FIXES\n  ✗ $*"; }
+    C "SecuRAX go — getting everything working. Nothing you already set up is changed."
+    # 1. Docker: without it nothing else can work, so stop here with the one fix.
+    if ! docker info >/dev/null 2>&1; then
+      C "✗ Docker is not reachable from Ubuntu."
+      echo "  Open Docker Desktop and wait until it says 'Engine running'. If it already does:"
+      echo "  Docker Desktop → Settings → Resources → WSL integration → turn on Ubuntu → Apply & restart,"
+      echo "  then in Windows PowerShell:  wsl --shutdown   and reopen Ubuntu and run  ./securax go  again."
+      exit 1
+    fi
+    # 2. Latest code + start (update backs up first and rolls back by itself if the new version does not start).
+    timeout 8 git -C "$ROOT" fetch -q origin main 2>/dev/null || true
+    BEHIND="$(git -C "$ROOT" rev-list --count HEAD..origin/main 2>/dev/null || echo 0)"
+    if [ "${BEHIND:-0}" -gt 0 ] && [ "$(git -C "$ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null)" = main ]; then
+      C "→ $BEHIND update(s) available: updating safely (backup first, automatic rollback)…"
+      "$0" update || { C "✗ The update did not finish; your previous version is running again. Run  ./securax why  and paste the output."; exit 1; }
+    else
+      "$0" up || { C "✗ Start-up failed (details above). Run  ./securax why  and paste the output."; exit 1; }
+    fi
+    gcurl -fsS -m 5 "$(gw_url)/healthz" >/dev/null 2>&1 && ok "AI gateway running (every AI call is guarded)" || fix "AI gateway not answering yet → wait a minute, then  ./securax go"
+    web_up hub 8088 && ok "Guiding Map app running" || fix "Guiding Map app not answering → ./securax why"
+    # 3. Schedules (alerts, weekly backup, regulator watch). cron needs your Linux password once.
+    if crontab -l 2>/dev/null | grep -F "securax routines run" | grep -qF "$ROOT" && pgrep -x cron >/dev/null 2>&1; then ok "Schedules running (backups, alerts, regulator watch)"
+    else "$0" routines install && ok "Schedules installed (backups, alerts, regulator watch)" || fix "Schedules not running → ./securax routines install"; fi
+    # 4. Phones over Tailscale: publish once if Tailscale is on and nothing is published yet.
+    TSX=""; for _c in tailscale.exe "/mnt/c/Program Files/Tailscale/tailscale.exe" tailscale; do
+      if command -v "$_c" >/dev/null 2>&1 || [ -x "$_c" ]; then TSX="$_c"; break; fi; done
+    TSN=""
+    if [ -n "$TSX" ]; then
+      TSN="$("$TSX" status --json 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin)["Self"]["DNSName"].rstrip("."))' 2>/dev/null || true)"
+      if [ -z "$TSN" ]; then fix "Tailscale is installed but signed out → open the Tailscale app on Windows and sign in, then  ./securax go"
+      elif tls_on; then fix "Phones: the local HTTPS edge hides the app from Tailscale → ./securax tls off && ./securax go"
+      else
+        "$TSX" serve status 2>/dev/null | grep -q "127.0.0.1:8088" || { "$TSX" serve --bg 8088 >/dev/null 2>&1; "$TSX" serve --bg --https=10000 3000 >/dev/null 2>&1; }
+        "$TSX" serve status 2>/dev/null | grep -q "127.0.0.1:8088" && ok "Phones: https://$TSN (Chat: https://$TSN:10000), your devices only" || fix "Phones: could not publish → ./securax phones --apply"
+      fi
+    else
+      echo "  (phones: optional. Install Tailscale on Windows and your phone, sign in, then  ./securax go  again)"
+    fi
+    # 5. Phone alerts.
+    [ -n "$(ev SECURAX_NOTIFY_NTFY)$(ev SECURAX_NOTIFY_WEBHOOK)" ] && ok "Phone alerts on" || echo "  (phone alerts: optional →  ./securax notify setup)"
+    # 6. Regulator watch baseline and a first backup, once.
+    [ -f "$ROOT/vault/regwatch.json" ] || { python3 "$ROOT/governance/regwatch.py" fetch --quiet >/dev/null 2>&1 && ok "Regulator watch started (RBI, SEBI)"; }
+    BDIR="$(ev SECURAX_BACKUP_DIR "$ROOT/backups")"
+    if [ -n "$(find "$BDIR" -maxdepth 1 -name 'securax-*.tar.gz*' -mtime -7 2>/dev/null | head -1)" ]; then ok "Backup from the last 7 days on disk"
+    else "$0" backup >/dev/null 2>&1 && ok "Backup taken now ($BDIR)" || fix "Backup failed → ./securax backup"; fi
+    # 7. Your data on every device: one link per device, no forms (the sync token rides after '#', never sent to a server).
+    LAPLINK="$(python3 "$ROOT/governance/synclink.py" --print-only laptop 2>/dev/null || true)"
+    PHLINK=""; [ -n "$TSN" ] && PHLINK="$(python3 "$ROOT/governance/synclink.py" --print-only phone --host "$TSN" 2>/dev/null || true)"
+    [ -n "$LAPLINK" ] && ok "Sync ready: your data is kept on this laptop and restored on every device" || fix "Sync token missing → ./securax up"
+    C ""; C "════════════════════════ SecuRAX status ════════════════════════"
+    printf '%b\n' "$OKS"
+    if [ -n "$FIXES" ]; then C ""; C "Needs one action each:"; printf '%b\n' "$FIXES"; fi
+    C ""; C "Use it:"
+    echo "  This laptop:  http://localhost:8088   (Chat: http://localhost:3000)"
+    [ -n "$TSN" ] && echo "  Phones:       https://$TSN   (Chat: https://$TSN:10000)"
+    if [ -n "$LAPLINK" ] && [ "$NOOPEN" = 0 ]; then
+      # Opening the laptop link sets sync up in that browser in one click (or does nothing if it is already set up).
+      ( command -v powershell.exe >/dev/null && powershell.exe -NoProfile -Command "Start-Process '$LAPLINK'" >/dev/null 2>&1 ) \
+        || ( command -v xdg-open >/dev/null && xdg-open "$LAPLINK" >/dev/null 2>&1 ) || true
+      echo "  The app just opened in your browser. If it asks 'Turn on cross-device sync?', press OK once."
+    fi
+    if [ -n "$PHLINK" ] && [ -n "$(ev SECURAX_NOTIFY_NTFY)" ] && [ -t 0 ]; then
+      printf '  Send the one-tap phone link to your phone now (it passes through your ntfy alert topic and is not stored there)? [y/N]: '
+      read -r _yn < /dev/tty || _yn=n
+      case "$_yn" in [Yy]*)
+        curl -fsS -m 10 -H "Title: Open SecuRAX" -H "Click: $PHLINK" -H "Cache: no" -H "Priority: 3" \
+          -d "Tap to open SecuRAX on this phone with your data. Press OK once when it asks." "$(ev SECURAX_NOTIFY_NTFY)" >/dev/null 2>&1 \
+          && echo "  ✔ sent: tap the notification on your phone, then press OK once." || echo "  ✗ could not send. Run  ./securax sync-link  and open the phone link yourself." ;;
+      esac
+    elif [ -n "$PHLINK" ]; then echo "  Phone setup link (open it on the phone once):  ./securax sync-link"; fi
+    C ""; [ -z "$FIXES" ] && C "Everything is working. Run  ./securax go  again any time; it only fixes what is missing." || C "Fix the line(s) above, then run  ./securax go  again."
+    ;;
   status)
     C "SecuRAX — open ONE page (it links everything, no URLs to remember):"
     echo "  ⭐ Command Center : $(web_url hub 8088 /hub.html)"
@@ -735,6 +814,11 @@ EOF2
     # Regulator watch: new RBI/SEBI circulars, directions and press releases from their RSS feeds (titles + links only).
     #   ./securax regwatch fetch [--notify]|list [--days N]|digest [--month YYYY-MM] [--send]|sources
     shift; exec python3 "$ROOT/governance/regwatch.py" "$@"
+    ;;
+  postmortem)
+    # Blameless postmortems (Amazon Correction of Error): what happened, five whys, and MECHANISMS tracked to done.
+    #   ./securax postmortem new "title" [--severity sev2] | list | actions
+    shift; exec python3 "$ROOT/governance/postmortem.py" "$@"
     ;;
   incident)
     # The regulatory incident clock: deadlines for every regulator that applies (RBI/SEBI/CERT-In/... as data), drafts, filings, sealed evidence.
@@ -1325,7 +1409,10 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
     cat <<'HELP'
 SecuRAX — one command, `./securax <command>`   (Windows: `.\securax.cmd <command>`)
 
-START HERE (the 20% you use 80% of the time)
+START HERE: one command does it all
+  ./securax go   start, update, schedules, phones, backup, sync, and ONE status screen (safe to run any time)
+
+THE 20% YOU USE 80% OF THE TIME
   setup          guided first-time setup (keys, phone access)        up / down      start / stop everything
   open           open the Command Center in your browser             status         what is running right now
   doctor         check health and run a real chat test               update         get the latest version (safe: backs up first)
@@ -1356,6 +1443,7 @@ KEEP IT SAFE
 REGULATORY & EVIDENCE (any regulator: RBI, SEBI, CERT-In, IRDAI, DPDP, others as data files)
   comply [rbi|cscrf|mit-ai-risk|nist-ai-600-1|pqc]  requirement-by-requirement gap view     ccsp   CCSP practice map
   evidence       audit pack (checksummed)             incident ...   reporting clock: open, due, draft, file, seal, rollup
+  postmortem ... blameless postmortem after an outage; tracks the fix-it actions to done
   regwatch ...   new RBI/SEBI circulars: fetch, list, monthly digest (titles + links only)
   regulated on   ONE switch: sign-in + data residency + strict cockpit (then fine-tune with the two below)
   phones         phones & tablets over Tailscale (doc 58)

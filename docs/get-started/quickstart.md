@@ -53,14 +53,15 @@ docker ps
 ./securax setup
 ```
 
-The guided setup asks for free AI keys (input is hidden) and sizes the estate to your machine. Then:
+The guided setup asks for free AI keys (input is hidden) and sizes the estate to your machine. Then one command does the
+rest (start, schedules, phones, backup, sync) and ends with one status screen:
 
 ```bash
-./securax up
-./securax doctor
+./securax go
 ```
 
-`doctor` should end with **`chat: WORKS ✔`**. Make the command available from any folder:
+Every line should show ✔. A ✗ line names its one fix. `./securax doctor` adds a real chat test (it should end with
+**`chat: WORKS ✔`**). Make the command available from any folder:
 
 ```bash
 ./securax shortcut

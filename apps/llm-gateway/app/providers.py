@@ -14,6 +14,7 @@ from __future__ import annotations
 import asyncio
 import logging
 import os
+import time
 
 import httpx
 
@@ -136,17 +137,47 @@ class BedrockGuardrail(Detector):
 DETECTORS: list[Detector] = [LlamaGuardOllama(), GoogleModelArmor(), AzurePromptShields(), BedrockGuardrail()]
 
 
+# Circuit breaker per detector: after BREAKER_FAILS failures in a row the detector is skipped ("open") for BREAKER_COOLDOWN_S,
+# then ONE trial call decides ("half-open"). While open, the request gets the same DET-unavailable finding at once, so the
+# verdict (fail-closed blocks, fail-open lets through) is unchanged, but nobody waits for a dead detector's timeout.
+BREAKER_FAILS = int(os.getenv("BREAKER_FAILS", "3"))
+BREAKER_COOLDOWN_S = float(os.getenv("BREAKER_COOLDOWN_S", "30"))
+_BREAKER: dict[str, dict] = {}
+
+
+def breaker_state(name: str, now: float | None = None) -> str:
+    b = _BREAKER.get(name)
+    if not b or b["fails"] < BREAKER_FAILS:
+        return "closed"
+    return "open" if (now if now is not None else time.monotonic()) - b["opened"] < BREAKER_COOLDOWN_S else "half-open"
+
+
+def _record(name: str, ok: bool) -> None:
+    b = _BREAKER.setdefault(name, {"fails": 0, "opened": 0.0})
+    if ok:
+        b["fails"] = 0
+        return
+    b["fails"] += 1
+    if b["fails"] >= BREAKER_FAILS:
+        b["opened"] = time.monotonic()               # (re)open: a failed half-open trial starts a fresh cooldown
+
+
 async def run_detectors(text: str, direction: str, allow=None) -> list[Finding]:
     """`allow(name) -> bool` lets the caller withhold the text from detectors it may not be sent to (data residency)."""
     fail_closed = os.getenv("FAIL_MODE", "closed") == "closed"
     enabled = [d for d in DETECTORS if d.enabled() and (allow is None or allow(d.name))]
 
     async def _one(d: "Detector") -> list[Finding]:
+        sev = "high" if fail_closed else "low"
+        if breaker_state(d.name) == "open":
+            return [Finding(f"DET-unavailable-{d.name}", "availability", sev, "circuit open: detector failing, skipped until it recovers")]
         try:
-            return await d.scan(text, direction)
+            out = await d.scan(text, direction)
+            _record(d.name, True)
+            return out
         except Exception as exc:  # noqa: BLE001 - detector outage handling is the point
             log.warning("detector %s failed: %s", d.name, exc)
-            sev = "high" if fail_closed else "low"
+            _record(d.name, False)
             return [Finding(f"DET-unavailable-{d.name}", "availability", sev, str(exc)[:120])]
 
     # Run enabled detectors concurrently: per-request latency is the MAX of their round-trips,

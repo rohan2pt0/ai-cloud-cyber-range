@@ -9,6 +9,7 @@ function boot(hash, confirms, seed){
   return {dom,prompts,alerts};
 }
 const link=b64({url:"https://sync.securax.localhost/sync",key:"tok-abc",user:"me"});
+const SAME={url:"https://sync.securax.localhost/sync",key:"tok-abc",user:"me"};
 setTimeout(()=>{
  // 1. accepted link sets sync up, the secret leaves the address bar, and the user was told WHERE data goes
  let t=boot("#sync="+link,[true]);
@@ -40,7 +41,9 @@ setTimeout(()=>{
    // 4. an existing setup is never replaced without a second, explicit yes
    const old={url:"https://old.example/sync",key:"old",user:"me"};
    const r1=boot("#sync="+link,[true,false],old), r2=boot("#sync="+link,[true,true],old);
+   const same=boot("#sync="+link,[true],SAME);
    setTimeout(()=>{
+   ok("the SAME setup again (./securax go re-opens the link): no question at all", same.prompts.length===0 && same.alerts.length===0, JSON.stringify(same.prompts));
    ok("existing setup: a second confirmation is asked", r1.prompts.length===2 && r1.prompts[1].includes("already syncing"), JSON.stringify(r1.prompts.map(x=>x.slice(0,40))));
    ok("existing setup is kept when the second answer is no", JSON.parse(r1.dom.window.localStorage.getItem("gm_sync_cfg")).key==="old");
    ok("existing setup is replaced only after two yeses", JSON.parse(r2.dom.window.localStorage.getItem("gm_sync_cfg")).key==="tok-abc");

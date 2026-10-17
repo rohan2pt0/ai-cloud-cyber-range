@@ -8,6 +8,20 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
+### Added
+- **`./securax go`: one command that gets everything working and keeps it working.** It updates safely or starts, installs the schedules, publishes to your phones over Tailscale, starts the regulator watch, takes a first backup, opens the app with sync set up, and can send the one-tap phone link through your ntfy alerts. Every step checks first and only acts when something is missing. It ends with one status screen: ✔ for what works, and one ✗ line with the single fix for what does not. `START-HERE-Windows.bat` now runs it, and it heads `./securax help`.
+- **Resilience fundamentals in the gateway and alerts** (doc 63, a 35-concept audit):
+  - **p95 / p99 latency:** a Prometheus histogram and `GET /v1/latency` (p50/p95/p99 of the last 1,000 calls), instead of an average only.
+  - **Connection pooling:** one keep-alive HTTP client instead of a new connection per model call.
+  - **Backpressure:** at most `MAX_INFLIGHT` (8) model calls at once; past `QUEUE_WAIT_S` (20 s) a fast 503 with `Retry-After`, counted as `shed_overload`.
+  - **Circuit breaker** per detector: after 3 failures it is skipped for 30 s, then one trial. Verdicts are unchanged; only the waiting is gone.
+  - `Retry-After` on 429. Phone alerts retry with exponential backoff and jitter, and a failed alert goes to a dead-letter file and is re-sent first next time.
+- **Practices from the best engineering organisations** (doc 64: one success mantra per organisation, the 80/20 seven, each with its proof):
+  - **Idempotency keys** (Stripe): send `Idempotency-Key` on `/v1/chat/completions`; a retry gets the first answer, never a second model or tool call. Same key with a different body is a 422; same key while the first call runs is a 409.
+  - **SLOs and error budgets** (Google SRE): `GET /v1/slo`, availability 99 % (only our own failures count) and latency 95 % under 30 s, each with the budget left.
+  - **Blameless postmortems** (Amazon Correction of Error): `./securax postmortem new "title"` writes a five-whys template to `vault/postmortems/`; `actions` lists the open fix-it actions and fails when one is overdue or has no owner.
+### Changed
+- The app no longer asks anything when a sync link matches the setup it already has (so `go` can open it on every run).
 ### Fixed
 - **Command Center over Tailscale:** opened at `https://<laptop>.<tailnet>.ts.net`, its cards linked to `https://chat.securax.localhost/` and similar names that only exist on the laptop. They now use the Tailscale name (Chat on `:10000`), hide Private Docs and Automation (not published over Tailscale), and read the gateway status from the same address (`/version` added to the app's proxy).
 - **`./securax sync-link` prints a laptop link and a phone link** (the Tailscale name, found automatically). Both use the app's own address for sync (`/sync`), so one tap per device restores your data after any update, new browser or new phone, with no forms. Previously the link pointed at port 8089, which phones cannot reach.
