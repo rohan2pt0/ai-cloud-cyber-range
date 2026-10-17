@@ -277,13 +277,22 @@ def check_config_clean() -> dict:
             "note": "brand values live only in brand.env; optional parts only in integrations.txt" if not probs else "; ".join(probs[:3])}
 
 
+def check_readme_current() -> dict:
+    """The public front page must describe what is built: version, what's new and the docs index are generated, never hand-kept."""
+    import subprocess
+    r = subprocess.run([sys.executable, str(ROOT / "tools" / "readme_sync.py"), "--check"], capture_output=True, text=True)
+    ok = r.returncode == 0
+    return {"name": "readme-current", "value": 0 if ok else 1, "budget": 0, "unit": "stale parts", "ok": ok,
+            "note": "README.md version, what's new and docs index match VERSION, CHANGELOG.md and docs" if ok else (r.stdout or r.stderr).strip()[:200]}
+
+
 def run_all(only_fast: bool = False) -> list[dict]:
     c, base = cfg()["budgets"], baseline()
     res = [check_rails_latency(c["rails_worst_case_ms"]), check_rails_memory(c["rails_import_rss_mb"]), check_runtime_deps(c["gateway_runtime_deps"])]
     if not only_fast:
         res += check_gateway(c["gateway_cold_start_s"], c["gateway_rss_mb"])
         res += check_first_block(c["first_block_s"], c["block_latency_p95_ms"])
-    res += [check_supply_chain(base), check_commands_documented(base), check_ccsp_map(), check_regulatory_maps(), check_impact_map(), check_claims(), check_config_clean()]
+    res += [check_supply_chain(base), check_commands_documented(base), check_ccsp_map(), check_regulatory_maps(), check_impact_map(), check_claims(), check_config_clean(), check_readme_current()]
     return res
 
 

@@ -876,6 +876,10 @@ EOF2
     #   ./securax ai status | stop all|MODEL --reason "..." | resume all|MODEL | inventory
     #   ./securax ai budget [extend --day|--month --tokens N --reason "..." [--caller ID]]   daily + monthly AI allowance
     shift
+    if [ "${1:-}" = inventory ]; then                 # also checks what the gateway actually serves (para 21 of the RBI draft)
+      gcurl -fsS -m 5 ${SECURAX_GATEWAY_KEY:+-H "Authorization: Bearer $SECURAX_GATEWAY_KEY"} "$(gw_url)/v1/models" 2>/dev/null | python3 "$ROOT/governance/aicontrol.py" inventory --live
+      exit "${PIPESTATUS[1]}"
+    fi
     if [ "${1:-}" = budget ] && [ "${2:-}" != extend ]; then
       gcurl -fsS -m 5 ${SECURAX_GATEWAY_KEY:+-H "Authorization: Bearer $SECURAX_GATEWAY_KEY"} "$(gw_url)/v1/budget" 2>/dev/null | python3 "$ROOT/governance/aicontrol.py" budget
       exit "${PIPESTATUS[1]}"

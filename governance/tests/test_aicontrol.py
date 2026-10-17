@@ -33,7 +33,7 @@ def test_stop_needs_a_reason_and_the_gateway_reads_what_the_cli_writes(tmp_path)
 def test_inventory_flags_what_the_draft_expects(tmp_path):
     reg = tmp_path / "r.yaml"
     reg.write_text("""models:
-  - {id: ok, risk_tier: high, owner: a, approved: true, explainability: cites sources, validated: 2026-01-01}
+  - {id: ok, risk_tier: high, owner: a, use_case: chat, approved: true, explainability: cites sources, validated: 2026-01-01}
   - {id: stale, risk_tier: high, owner: a, approved: true, explainability: x, validated: 2024-01-01}
   - {id: blackbox, risk_tier: high, owner: a, approved: true, validated: 2026-01-01}
   - {id: never, risk_tier: limited, owner: a, approved: true}
@@ -42,9 +42,9 @@ decommissioned:
 """)
     rows = {r["id"]: r for r in ac.inventory(dt.date(2026, 10, 17), reg)}
     assert rows["ok"]["problems"] == [] and rows["ok"]["revalidate_by"] == "2027-01-01"
-    assert "re-validation overdue" in rows["stale"]["problems"]
-    assert "no explainability statement" in rows["blackbox"]["problems"]
-    assert "not validated" in rows["never"]["problems"]
+    assert "re-validation overdue (para 30)" in rows["stale"]["problems"]
+    assert "no explainability statement (para 54)" in rows["blackbox"]["problems"]
+    assert "not validated (para 29)" in rows["never"]["problems"]
     assert rows["old-scorer"]["retain_until"] == "2036-03-31"
 
 
@@ -62,3 +62,13 @@ def test_an_extension_needs_a_reason_and_applies_to_this_day_or_month_only(tmp_p
     d = ac.extend("month", 5000, "release crunch", "me", today=dt.date(2026, 10, 17), path=ctl, logp=log)
     assert [(e["period"], e["for"]) for e in d["budget_extensions"]] == [("month", "2026-10")]     # yesterday's day-extension is gone
     assert "budget-extend-month" in log.read_text()
+
+
+def test_a_model_served_but_not_listed_and_a_model_changed_since_validation_are_flagged(tmp_path):
+    reg = tmp_path / "r.yaml"
+    reg.write_text("""models:
+  - {id: a, model: m-v2, validated_model: m-v1, served_as: [chat-a], risk_tier: limited, owner: o, use_case: u, approved: true, validated: 2026-10-01}
+""")
+    rows = {r["id"]: r for r in ac.inventory(dt.date(2026, 10, 17), reg, live=["chat-a", "shadow-model"])}
+    assert "changed since validation (para 42)" in rows["a"]["problems"]
+    assert rows["shadow-model"]["problems"] == ["in use at the gateway but not in the inventory (para 21)"]

@@ -1,16 +1,16 @@
 {
- "about": "RBI Draft Guidance on Regulatory Principles for Model Risk Management, 2026 (press release 2026-2027/528, June 2026; comments were due 24 July 2026). A DRAFT: proposed expectations, not rules in force. References and links to library controls only; check the final text before relying on it.",
+ "about": "RBI draft 'Guidance on Regulatory Principles for Model Risk Management, 2026' (press release 2026-2027/528, 24 June 2026; comments were due 24 July 2026). A DRAFT: proposed expectations, not rules in force. Applies to commercial, small finance, payments, local area and regional rural banks, urban and rural co-operative banks, AIFIs, NBFCs, ARCs and credit information companies, for all models including third-party and AI/ML. Paragraph references and links to library controls only; the text is not reproduced.",
  "framework": {
   "name": "RBI MRM draft 2026",
-  "reference": "RBI press release 2026-2027/528 (draft, June 2026)",
+  "reference": "RBI press release 2026-2027/528; draft guidance (June 2026)",
   "status": "draft"
  },
  "citations": {
   "ET-001": {
-   "RBI MRM draft 2026": "board-approved framework; model inventory; risk tiering; independent validation"
+   "RBI MRM draft 2026": "paras 9, 11-13 (board-approved MRMF); 17-20 (tiering); 21-23 (inventory); 29-33 (independent validation)"
   },
   "ET-010": {
-   "RBI MRM draft 2026": "safeguards for customer-facing generative AI"
+   "RBI MRM draft 2026": "paras 54(2) (hallucination control boundaries), 55 (red-teaming), 59(i) (prompt-injection controls)"
   }
  },
  "controls": [
@@ -18,36 +18,72 @@
    "id": "ET-101",
    "domain": "ET",
    "subdomain": "AI model risk",
-   "title": "Human-in-command: override, suspension and kill switch for AI models",
+   "title": "Human oversight with override, suspension and kill switch for models",
    "tier": "Critical",
-   "description": "A named person can override, suspend or deactivate any AI model, or all AI at once, effective immediately, with the reason recorded and shown to callers.",
+   "description": "Human-in/on-the-loop oversight; override, suspension or deactivation including a kill switch; staff able to challenge and escalate; automation-bias risk considered.",
    "owner": "CRO/CISO",
    "citations": {
-    "RBI MRM draft 2026": "human oversight; override, suspension and deactivation mechanisms"
+    "RBI MRM draft 2026": "paras 60-63"
    }
   },
   {
    "id": "ET-102",
    "domain": "ET",
    "subdomain": "AI model risk",
-   "title": "Living model inventory: tier, owner, third-party source, explainability, validation and decommission records",
+   "title": "Complete model inventory; nothing used outside it; decommissioned models kept 10 years",
    "tier": "High",
-   "description": "Every model in use, internal or third-party, is listed with its risk tier, owner, explainability statement and last independent validation; retired models keep their records for at least 10 years.",
+   "description": "Inventory of active, inactive and decommissioned models with owners, developers, validators, approvers, tier, intended use and dependencies; no model used unless listed; decommissioned models retained at least ten years.",
    "owner": "Model Risk / CRO",
    "citations": {
-    "RBI MRM draft 2026": "model inventory; tiering; third-party accountability; decommissioned-model records"
+    "RBI MRM draft 2026": "paras 21-23"
    }
   },
   {
    "id": "ET-103",
    "domain": "ET",
    "subdomain": "AI model risk",
-   "title": "Customer-facing AI discloses it is AI and offers a human",
+   "title": "Customer-facing AI discloses it is AI, states its limits, and offers a human",
    "tier": "High",
-   "description": "Customers are told when they interact with AI and can switch to a human on request.",
+   "description": "Users are told they are interacting with an AI/ML system and its limitations, and can switch to human assistance on request.",
    "owner": "Business / Customer Service",
    "citations": {
-    "RBI MRM draft 2026": "consumer protection for customer-facing AI"
+    "RBI MRM draft 2026": "para 59(ii)-(iii)"
+   }
+  },
+  {
+   "id": "ET-104",
+   "domain": "ET",
+   "subdomain": "AI model risk",
+   "title": "Third-party models: own accountability, independent validation, audit rights, exit",
+   "tier": "High",
+   "description": "The RE stays accountable for third-party model outcomes, validates them independently whatever the provider certifies, and contracts for audit rights, documentation, continuity and exit.",
+   "owner": "CRO / Procurement",
+   "citations": {
+    "RBI MRM draft 2026": "paras 45-48"
+   }
+  },
+  {
+   "id": "ET-105",
+   "domain": "ET",
+   "subdomain": "AI model risk",
+   "title": "Model change management: impact assessment, change log, re-validation past materiality",
+   "tier": "High",
+   "description": "Every model change has a documented impact assessment and a logged version and approval; a material change re-starts validation and approval.",
+   "owner": "Model owner",
+   "citations": {
+    "RBI MRM draft 2026": "paras 38-42"
+   }
+  },
+  {
+   "id": "ET-106",
+   "domain": "ET",
+   "subdomain": "AI model risk",
+   "title": "Model continuity: fallback when a model is unavailable or degrades; provider concentration",
+   "tier": "High",
+   "description": "Business continuity covers model unavailability or degradation with manual, substitute or back-up arrangements, and the risk of depending on few providers is managed.",
+   "owner": "CRO / BCP",
+   "citations": {
+    "RBI MRM draft 2026": "paras 43, 53"
    }
   }
  ]

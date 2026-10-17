@@ -105,7 +105,7 @@ def _arg(argv: list[str], flag: str, default: str = "") -> str:
     return argv[argv.index(flag) + 1] if flag in argv and argv.index(flag) + 1 < len(argv) else default
 
 
-def inventory(today: dt.date | None = None, registry: pathlib.Path = REGISTRY) -> list[dict]:
+def inventory(today: dt.date | None = None, registry: pathlib.Path = REGISTRY, live: list[str] | None = None) -> list[dict]:
     import yaml
 
     today = today or dt.date.today()
@@ -119,11 +119,20 @@ def inventory(today: dt.date | None = None, registry: pathlib.Path = REGISTRY) -
             months = REVALIDATE_MONTHS.get(tier, 12)
             y, mo = divmod(v.month - 1 + months, 12)
             due = dt.date(v.year + y, mo + 1, min(v.day, 28)).isoformat()
-        problems = [p for p, bad in (("not validated", not m.get("validated")), ("re-validation overdue", bool(due) and due < today.isoformat()),
-                                     ("no explainability statement", tier == "high" and not m.get("explainability")),
-                                     ("not approved", not m.get("approved"))) if bad]
+        # each check names the paragraph of RBI's draft MRM guidance (June 2026) it comes from
+        problems = [p for p, bad in (("not validated (para 29)", not m.get("validated")),
+                                     ("re-validation overdue (para 30)", bool(due) and due < today.isoformat()),
+                                     ("changed since validation (para 42)", bool(m.get("validated_model")) and m.get("validated_model") != m.get("model")),
+                                     ("no explainability statement (para 54)", tier == "high" and not m.get("explainability")),
+                                     ("no intended use or owner (para 22)", not m.get("use_case") or not m.get("owner")),
+                                     ("not approved (para 12)", not m.get("approved"))) if bad]
         out.append({"id": m.get("id"), "tier": tier, "owner": m.get("owner", ""), "third_party": bool(m.get("third_party")),
                     "validated": str(m.get("validated", "")), "revalidate_by": due, "problems": problems})
+    if live is not None:                   # para 21: no model may be used unless it is in the inventory
+        known = {n for m in reg.get("models", []) for n in [m.get("id")] + list(m.get("served_as") or [])}
+        for name in sorted(set(live) - known):
+            out.append({"id": name, "tier": "", "owner": "", "third_party": False, "validated": "", "revalidate_by": "",
+                        "problems": ["in use at the gateway but not in the inventory (para 21)"]})
     for m in reg.get("decommissioned", []) or []:
         end = dt.date.fromisoformat(str(m.get("decommissioned")))
         out.append({"id": m.get("id"), "tier": m.get("risk_tier", ""), "decommissioned": end.isoformat(),
@@ -187,7 +196,13 @@ def main(argv: list[str]) -> int:
             print("✔ nothing spent yet this month")
         return 0
     if cmd == "inventory":
-        rows = inventory()
+        live = None
+        if "--live" in argv:                   # ./securax pipes the gateway's /v1/models here
+            try:
+                live = [m["id"] for m in json.loads(sys.stdin.read() or "{}").get("data", [])]
+            except ValueError:
+                live = None
+        rows = inventory(live=live)
         for r in rows:
             if r.get("decommissioned"):
                 print(f"  {r['id']:<26} decommissioned {r['decommissioned']}; records kept until {r['retain_until']}")

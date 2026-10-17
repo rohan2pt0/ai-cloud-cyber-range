@@ -18,6 +18,7 @@ models:
   - id: bank-assistant-local
     provider: ollama
     model: qwen2.5:1.5b
+    served_as: [bank-assistant-local]   # the names callers use at the gateway (RBI MRM draft para 21: nothing in use outside the inventory)
     hosting: on-prem-laptop
     data_residency: local
     use_case: customer banking Q&A
@@ -32,10 +33,12 @@ models:
     explainability: "answers cite the handbook passage they use; no credit or fraud decision is taken by this model"
     validated: 2026-10-10
     validated_by: redteam/run_attacks.py + sandbox journeys (independent of the model's developer)
+    validated_model: qwen2.5:1.5b   # para 42: a model changed after validation must be validated again
 
   - id: bank-assistant-gemini
     provider: gemini
     model: gemini-2.5-flash
+    served_as: [bank-assistant]
     hosting: gcp-asia-south1
     data_residency: india
     use_case: burst capacity for banking Q&A
@@ -48,6 +51,7 @@ models:
     explainability: "answers cite the handbook passage they use; no credit or fraud decision is taken by this model"
     validated: 2026-10-10
     validated_by: redteam/run_attacks.py + sandbox journeys
+    validated_model: gemini-2.5-flash
 
   - id: soc-triage-assistant
     provider: ollama
@@ -62,6 +66,7 @@ models:
     third_party: true
     validated: 2026-10-10
     validated_by: purple-team loop (redteam/purple.py)
+    validated_model: qwen2.5:1.5b
 
 # Retired models stay listed: the RBI MRM draft expects their records to be kept (10 years here; `./securax ai inventory`).
 decommissioned: []

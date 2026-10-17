@@ -418,7 +418,7 @@
     "governance/model-registry.yaml",
     "governance/aicontrol.py"
    ],
-   "note": "inventory with tier, owner, third party, explainability, validation due and 10-year decommission records; board approval is the organisation's"
+   "note": "inventory with tier, owner, third party, explainability, validation due, change-since-validation, 10-year decommission records, and models served at the gateway but not listed (para 21); board approval is the organisation's"
   },
   "ET-103": {
    "status": "partial",
@@ -426,6 +426,47 @@
     "apps/llm-gateway/app/main.py"
    ],
    "note": "every answer carries X-AI-Generated; a stopped model tells callers a human handles it. The hand-off itself is the organisation's"
+  },
+  "ET-104": {
+   "status": "partial",
+   "evidence": [
+    "governance/model-registry.yaml",
+    "redteam/run_attacks.py"
+   ],
+   "note": "third_party flagged per model and validated by our own red-team; contracts and audit rights are the organisation's"
+  },
+  "ET-105": {
+   "status": "partial",
+   "evidence": [
+    "governance/aicontrol.py",
+    "lifecycle/impact.py"
+   ],
+   "note": "a model changed after validation is flagged; every change goes through PR, CI and the impact map; the impact assessment document is the organisation's"
+  },
+  "ET-106": {
+   "status": "proven",
+   "evidence": [
+    "local/compose/gen_litellm_config.py",
+    "apps/llm-gateway/app/killswitch.py"
+   ],
+   "note": "failover ladder across providers ending in the private local model; the kill switch message names the fallback"
+  },
+  "RM-101": {
+   "status": "partial",
+   "evidence": [
+    "governance/cockpit.json",
+    "governance/cockpit.py"
+   ],
+   "note": "KRIs with thresholds and RAG bands, trends, dark-cockpit lamps"
+  },
+  "ET-107": {
+   "status": "partial",
+   "evidence": [
+    "apps/llm-gateway/app/residency.py",
+    "apps/llm-gateway/app/guardrails.py",
+    "apps/llm-gateway/app/budget.py"
+   ],
+   "note": "residency routing, PII masking, audit and per-caller allowance at the gateway; the payments data itself is the organisation's"
   }
  }
 }
