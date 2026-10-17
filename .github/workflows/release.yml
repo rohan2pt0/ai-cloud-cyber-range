@@ -52,7 +52,7 @@ jobs:
           ' CHANGELOG.md > release-notes.md
           [ -s release-notes.md ] || echo "See CHANGELOG.md for details." > release-notes.md
       - name: Publish GitHub Release
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           name: SecuRAX ${{ github.ref_name }}
           body_path: release-notes.md
