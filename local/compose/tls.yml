@@ -18,6 +18,9 @@ services:
     ports:
       - "${BIND_HOST:-127.0.0.1}:443:443"
       - "${BIND_HOST:-127.0.0.1}:80:80"
+      # device ports for phones (doc 58): loopback ONLY, reached by `tailscale serve`, never by the network directly
+      - "127.0.0.1:9443:9443"
+      - "127.0.0.1:9444:9444"
     networks: [edge]
     logging:
       driver: json-file

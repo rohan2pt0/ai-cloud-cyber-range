@@ -41,7 +41,8 @@ DOMAINS = {"GOV": "Governance", "RM": "Risk management", "IAM": "Identity & acce
            "IR": "Incident response", "BCP": "Resilience & BCP", "PS": "Physical", "HR": "People", "AW": "Awareness",
            "AUD": "Audit & assurance", "ET": "Emerging tech & AI"}
 REGULATORS = [("RBI", ("RBI Primary Citation", "RBI Secondary Citation")), ("SEBI", ("SEBI CSCRF",)), ("IRDAI", ("IRDAI 2023",)),
-              ("IFSCA", ("IFSCA 2025",)), ("NPCI / PCI / SWIFT", ("NPCI / PCI DSS / SWIFT",)), ("NCIIPC / CERT-In / DPDP", ("NCIIPC / CERT-In / DPDP",))]
+              ("IFSCA", ("IFSCA 2025",)), ("NPCI / PCI / SWIFT", ("NPCI / PCI DSS / SWIFT",)), ("NCIIPC / CERT-In / DPDP", ("NCIIPC / CERT-In / DPDP",)),
+              ("NSCS audit baseline (pack)", ("NSCS Audit Baseline 2020",)), ("NCIIPC CII framework (pack)", ("NCIIPC CII Framework",))]
 _NS = {"m": "http://schemas.openxmlformats.org/spreadsheetml/2006/main",
        "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships"}
 
@@ -189,14 +190,26 @@ def state(c: dict, sx: dict) -> str:
     return {"proven": "proven", "partial": "partial"}.get(sx.get(c["id"], {}).get("status"), "org")
 
 
-def vital_gaps(data: dict, cls: str, sx: dict, n: int = 10) -> list[dict]:
+def _risks():
+    """The private risk register (governance/risks.py), loaded lazily; (risks, module) or ([], None) when there is none."""
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("risks", ROOT / "governance" / "risks.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod.load(), mod
+    except Exception:  # noqa: BLE001 - the register is optional
+        return [], None
+
+
+def vital_gaps(data: dict, cls: str, sx: dict, n: int = 10, pressure: dict | None = None) -> list[dict]:
     """80/20: applicable MUST controls that are critical or high, not proven and not at target, worst first."""
     out = []
     for c in data["controls"]:
         if level(c, cls) != "MUST" or state(c, sx) in ("met", "proven"):
             continue
         a = c.get("assessment") or {}
-        risk = (a.get("likelihood") or 0) * (a.get("impact") or 0)
+        risk = max((a.get("likelihood") or 0) * (a.get("impact") or 0), (pressure or {}).get(c["id"], 0))   # your score, or your open risks
         breadth = sum(1 for v in c["applicability"].values() if v == "MUST")   # MUST for many classes = closes many gaps at once
         out.append((TIER_W.get(c["tier"], 0), risk, breadth, (a.get("target") or 0) - (a.get("current") or 0), c))
     out.sort(key=lambda t: (-t[0], -t[1], -t[2], -t[3], t[4]["id"]))
@@ -272,14 +285,21 @@ def radar(rows: list[dict]) -> str:
     return f"<svg viewBox='0 0 660 610' role='img' aria-label='Maturity by domain, 0 to 5'>{''.join(g)}</svg>"
 
 
-def heatmap(data: dict, cls: str) -> str:
+def heatmap(data: dict, cls: str, risks: list | None = None) -> str:
     cells = [[0] * 5 for _ in range(5)]
-    scored = 0
+    scored, source = 0, "controls you scored"
     for c in data["controls"]:
         a = c.get("assessment") or {}
         if level(c, cls) != "N/A" and a.get("likelihood") and a.get("impact"):
             cells[5 - int(a["impact"])][int(a["likelihood"]) - 1] += 1
             scored += 1
+    if not scored and risks:                                   # no control scores yet: plot the open risks from the register
+        for r in risks:
+            li, im = r.get("likelihood"), r.get("impact")
+            if li and im and 1 <= li <= 5 and 1 <= im <= 5 and not (r.get("done") or re.search(r"closed|completed|done|resolved", r.get("status") or "", re.I)):
+                cells[5 - int(round(im))][int(round(li)) - 1] += 1
+                scored += 1
+        source = "open risks in your risk register (./securax risks list --open)"
     if not scored:
         return ("<p class='muted'>No likelihood × impact scores yet. Fill the yellow <b>Likelihood</b> and <b>Impact</b> cells in the workbook, "
                 "then <code>./securax controls import WORKBOOK.xlsx</code>: this 5 × 5 map fills itself.</p>")
@@ -292,7 +312,7 @@ def heatmap(data: dict, cls: str) -> str:
             col = "#8e2a24" if s >= 20 else "#7a3a12" if s >= 12 else "#7a5a12" if s >= 6 else "#1f6f3b"
             tds.append(f"<td style='background:{col}'>{n or ''}</td>")
         h.append(f"<tr><th>{imp}</th>{''.join(tds)}</tr>")
-    return "".join(h) + "</table><p class='muted'>Score = likelihood × impact: 20–25 critical (30 days), 12–19 high (90 days), 6–11 medium, 1–5 low.</p>"
+    return "".join(h) + f"</table><p class='muted'>From {E(source)}. Score = likelihood × impact: 20–25 critical (30 days), 12–19 high (90 days), 6–11 medium, 1–5 low.</p>"
 
 
 def regulator_bars(data: dict, cls: str, sx: dict) -> str:
@@ -310,13 +330,16 @@ def regulator_bars(data: dict, cls: str, sx: dict) -> str:
     return "".join(out) + "</table>"
 
 
-def page(data: dict, cls: str, sx: dict, dom: dict) -> str:
+def page(data: dict, cls: str, sx: dict, dom: dict, risks: list | None = None, rmod=None) -> str:
     app = [c for c in data["controls"] if level(c, cls) != "N/A"]
     must = [c for c in app if level(c, cls) == "MUST"]
     crit_open = [c for c in must if c["tier"] == "Critical" and state(c, sx) not in ("met", "proven")]
     proven = sum(1 for c in app if state(c, sx) in ("proven", "met"))
     scored = sum(1 for c in app if (c.get("assessment") or {}).get("current") is not None)
-    gaps = vital_gaps(data, cls, sx)
+    risks = risks or []
+    pressure = rmod.control_pressure(risks) if rmod else {}
+    late = rmod.overdue(risks) if rmod else []
+    gaps = vital_gaps(data, cls, sx, pressure=pressure)
     misses = [] if cls == CEILING else dom.get(cls, []) if cls != "SCB/PSB" else []
     stamp = dt.datetime.now().strftime("%d %b %Y %H:%M")
     h = [f"<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
@@ -329,7 +352,8 @@ def page(data: dict, cls: str, sx: dict, dom: dict) -> str:
              ("caut" if gaps else "ok", len(gaps), "Vital few to close next (below)"),
              ("ok" if proven else "caut", proven, f"Proven or at target (of {len(app)})"),
              ("caut" if not scored else "ok", scored, "Controls you have scored"),
-             ("warn" if misses else "ok", len(misses), "Stricter here than SCB/PSB" if cls != CEILING else "Ceiling: covers every class")]
+             ("warn" if misses else "ok", len(misses), "Stricter here than SCB/PSB" if cls != CEILING else "Ceiling: covers every class"),
+             ("warn" if late else "ok", len(late), "Risk treatments overdue (./securax risks overdue)")]
     h.append("<div class='card'><h2>Master caution</h2><div class='annun'>" + "".join(
         f"<div class='lamp {k}'><b>{v}</b>{E(t)}</div>" for k, v, t in lamps) + "</div></div>")
     profiles = [CEILING] + data["classes"]
@@ -367,7 +391,7 @@ def page(data: dict, cls: str, sx: dict, dom: dict) -> str:
     rows = domain_scores(data, cls, sx)
     h.append("<div class='two'><div class='card'><h2>Maturity by domain</h2><div class='legend muted'><span><i style='border:1px dashed var(--mut)'></i>target</span>"
              "<span><i style='background:rgba(88,166,255,.5)'></i>what SecuRAX proves</span><span><i style='background:rgba(63,185,80,.5)'></i>your scored maturity</span></div>"
-             f"{radar(rows)}</div><div class='card'><h2>Risk heat map (5 × 5)</h2>{heatmap(data, cls)}</div></div>")
+             f"{radar(rows)}</div><div class='card'><h2>Risk heat map (5 × 5)</h2>{heatmap(data, cls, risks)}</div></div>")
     h.append(f"<div class='card'><h2>Regulators</h2>{regulator_bars(data, cls, sx)}</div>")
     exc = {k: v for k, v in dom.items() if v}
     h.append("<div class='card'><h2>Does complying with SCB/PSB cover the others?</h2>"
@@ -384,13 +408,14 @@ def page(data: dict, cls: str, sx: dict, dom: dict) -> str:
 def write_navigator(data: dict, out: pathlib.Path | None = None) -> list[pathlib.Path]:
     out = out or OUT
     sx, dom = sx_map(), dominance(data)
+    risks, rmod = _risks()
     written = []
     (out.parent / "navigator").mkdir(parents=True, exist_ok=True)
     for cls in [CEILING] + data["classes"]:
         p = out.parent / "navigator" / f"{slug(cls)}.html"
-        p.write_text(page(data, cls, sx, dom), "utf-8")
+        p.write_text(page(data, cls, sx, dom, risks, rmod), "utf-8")
         written.append(p)
-    out.write_text(page(data, CEILING, sx, dom), "utf-8")
+    out.write_text(page(data, CEILING, sx, dom, risks, rmod), "utf-8")
     return [out] + written
 
 

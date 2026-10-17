@@ -9,6 +9,15 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **Risk register, interlinked** (doc 67): `./securax risks import | list | overdue | cii`.
+  - **Import:** reads V/T/R registers (risk-wise, asset-wise, observations) and risk assessment + treatment plan workbooks by column name (two-row headers included). Treatment-plan rows are joined to their risks by reference.
+  - **Private:** the register stays in `vault/risks/`.
+  - **Links:** each risk is linked to the library controls that treat it. The navigator's heat map plots open risks when controls are unscored, and the vital few rank controls by your highest open risk.
+  - **Overdue treatments** light a lamp in the navigator and, only when there are any, in the cockpit.
+  - **`cii`:** the four NCIIPC impact tests, recorded as a self-check.
+- **NSCS Audit Baseline pack:** all 68 markers (csm/pro/det/res/rec/imp) are linked to library controls, with the three risk profiles recorded. `pro.19` becomes control AS-101 (change control).
+- **NCIIPC CII pack:** the evaluation framework's five phases and the identification guidelines are linked to library controls. Both packs carry references only, never the documents' text.
+- **Professional names with phones:** the HTTPS edge gets two loopback-only device ports (9443 app with same-origin `/v1`, `/sync`; 9444 Chat) for `tailscale serve`. `go` and `phones` use them, so `https://hub.securax.localhost` on the laptop and the ts.net names on phones work at the same time; `go` no longer asks you to switch the edge off.
 - **BFSI control library and navigator** (doc 66), `./securax controls import | profile | dominance | navigator | gaps`:
   - **Import:** the gap-assessment workbook (202 controls, 20 domains, 22 regulated-entity classes, RBI/SEBI/IRDAI/IFSCA/NPCI/NCIIPC/CERT-In/DPDP citations) is read with a standard-library .xlsx reader into a private `vault/controls/library.json`. Your yellow-cell scores come with it; author metadata is never read.
   - **Ceiling profile:** the strictest requirement per control across every class, so meeting it meets them all. `dominance` shows that SCB/PSB alone misses AUD-002/AUD-006 for NBFC-UL, AIFI, IFSC IBU, MII and brokers, and AUD-003 for insurers.

@@ -303,10 +303,11 @@ case "$cmd" in
     if [ -n "$TSX" ]; then
       TSN="$("$TSX" status --json 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin)["Self"]["DNSName"].rstrip("."))' 2>/dev/null || true)"
       if [ -z "$TSN" ]; then fix "Tailscale is installed but signed out → open the Tailscale app on Windows and sign in, then  ./securax go"
-      elif tls_on; then fix "Phones: the local HTTPS edge hides the app from Tailscale → ./securax tls off && ./securax go"
       else
-        "$TSX" serve status 2>/dev/null | grep -q "127.0.0.1:8088" || { "$TSX" serve --bg 8088 >/dev/null 2>&1; "$TSX" serve --bg --https=10000 3000 >/dev/null 2>&1; }
-        "$TSX" serve status 2>/dev/null | grep -q "127.0.0.1:8088" && ok "Phones: https://$TSN (Chat: https://$TSN:10000), your devices only" || fix "Phones: could not publish → ./securax phones --apply"
+        if tls_on; then _APP="https+insecure://127.0.0.1:9443"; _CHAT="https+insecure://127.0.0.1:9444"; _SEEN="127.0.0.1:9443"
+        else _APP="8088"; _CHAT="3000"; _SEEN="127.0.0.1:8088"; fi
+        "$TSX" serve status 2>/dev/null | grep -q "$_SEEN" || { "$TSX" serve --bg "$_APP" >/dev/null 2>&1; "$TSX" serve --bg --https=10000 "$_CHAT" >/dev/null 2>&1; }
+        "$TSX" serve status 2>/dev/null | grep -q "$_SEEN" && ok "Phones: https://$TSN (Chat: https://$TSN:10000), your devices only" || fix "Phones: could not publish → ./securax phones --apply"
       fi
     elif on tailscale; then
       echo "  (phones: optional. Install Tailscale on Windows and your phone, sign in, then  ./securax go  again)"
@@ -330,7 +331,7 @@ case "$cmd" in
     [ -n "$OFFS" ] && echo "  · switched off in integrations.txt:$OFFS"
     if [ -n "$FIXES" ]; then C ""; C "Needs one action each:"; printf '%b\n' "$FIXES"; fi
     C ""; C "Use it:"
-    echo "  This laptop:  http://localhost:8088   (Chat: http://localhost:3000)"
+    echo "  This laptop:  $(web_url hub 8088 /)   (Chat: $(web_url chat 3000 /))"
     [ -n "$TSN" ] && echo "  Phones:       https://$TSN   (Chat: https://$TSN:10000)"
     if [ -n "$LAPLINK" ] && [ "$NOOPEN" = 0 ]; then
       # Opening the laptop link sets sync up in that browser in one click (or does nothing if it is already set up).
@@ -836,6 +837,12 @@ EOF2
     #   ./securax controls import FILE.xlsx | profile [CLASS] | dominance | navigator | gaps [CLASS]
     shift; exec python3 "$ROOT/governance/controls.py" "$@"
     ;;
+  risks)
+    # The risk register: V/T/R registers and risk treatment plans (imported by column name, kept private in vault/), linked to the
+    # control library so the navigator ranks the controls that treat your highest open risks; overdue treatments light the cockpit.
+    #   ./securax risks import FILE.xlsx | list [--open] | overdue | cii
+    shift; exec python3 "$ROOT/governance/risks.py" "$@"
+    ;;
   postmortem)
     # Blameless postmortems (Amazon Correction of Error): what happened, five whys, and MECHANISMS tracked to done.
     #   ./securax postmortem new "title" [--severity sev2] | list | actions
@@ -923,16 +930,18 @@ EOF2
     #   ./securax phones [--apply]     --apply runs the two 'tailscale serve' commands on Windows for you (via WSL interop)
     TSX=""; for _c in tailscale.exe "/mnt/c/Program Files/Tailscale/tailscale.exe" tailscale; do
       if command -v "$_c" >/dev/null 2>&1 || [ -x "$_c" ]; then TSX="$_c"; break; fi; done
-    if tls_on; then C "✗ The local HTTPS edge is on and hides the app's port. Tailscale gives the phones HTTPS instead:  ./securax tls off && ./securax up"; exit 1; fi
-    curl -fsS -m 3 http://localhost:8088/ >/dev/null 2>&1 && echo "  ✔ the app answers on port 8088" || { C "✗ the app is not answering on port 8088. Run  ./securax up  first."; exit 1; }
+    # With the HTTPS edge on, phones go through its loopback device ports (9443 app, 9444 Chat), so this laptop keeps the names.
+    if tls_on; then APP_TO="https+insecure://127.0.0.1:9443"; CHAT_TO="https+insecure://127.0.0.1:9444"; PROBE="https://127.0.0.1:9443/"
+    else APP_TO="8088"; CHAT_TO="3000"; PROBE="http://localhost:8088/"; fi
+    curl -fsSk -m 3 "$PROBE" >/dev/null 2>&1 && echo "  ✔ the app answers ($PROBE)" || { C "✗ the app is not answering at $PROBE. Run  ./securax up  first."; exit 1; }
     [ -n "$TSX" ] || { C "✗ Tailscale not found. Install it on Windows (https://tailscale.com/download), sign in, and turn on MagicDNS + HTTPS certificates in the admin console. Then run this again."; exit 1; }
     NAME="$("$TSX" status --json 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin)["Self"]["DNSName"].rstrip("."))' 2>/dev/null || true)"
     [ -n "$NAME" ] && echo "  ✔ Tailscale is on: $NAME" || echo "  ⚠ Tailscale is installed but not signed in (open the Tailscale app and sign in)"
     if [ "${2:-}" = "--apply" ]; then
-      "$TSX" serve --bg 8088 && "$TSX" serve --bg --https=10000 3000 && echo "  ✔ published to your tailnet only (never 'funnel')"
+      "$TSX" serve --bg "$APP_TO" && "$TSX" serve --bg --https=10000 "$CHAT_TO" && echo "  ✔ published to your tailnet only (never 'funnel')"
     else
       C "Publish to your own devices (Windows PowerShell, or here with  ./securax phones --apply):"
-      echo "    tailscale serve --bg 8088"; echo "    tailscale serve --bg --https=10000 3000"
+      echo "    tailscale serve --bg $APP_TO"; echo "    tailscale serve --bg --https=10000 $CHAT_TO"
     fi
     A="${NAME:-<laptop>.<tailnet>.ts.net}"
     C "On each phone/iPad (Tailscale app on, same account):"
@@ -1464,6 +1473,7 @@ KEEP IT SAFE
 REGULATORY & EVIDENCE (any regulator: RBI, SEBI, CERT-In, IRDAI, DPDP, others as data files)
   comply [rbi|cscrf|mit-ai-risk|nist-ai-600-1|pqc]  requirement-by-requirement gap view     ccsp   CCSP practice map
   evidence       audit pack (checksummed)             incident ...   reporting clock: open, due, draft, file, seal, rollup
+  risks ...      risk register + treatment plans (V/T/R), linked to controls; overdue treatments; CII self-check
   controls ...   BFSI control library: import the workbook, profiles per RE class, navigator (grid, radar, heat map)
   config ...     show / check brand.env and integrations.txt (nothing brand-specific is hardwired)
   postmortem ... blameless postmortem after an outage; tracks the fix-it actions to done

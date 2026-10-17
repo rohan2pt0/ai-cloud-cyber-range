@@ -121,7 +121,7 @@ def test_generated_edge_config_has_one_block_per_name_and_is_modern():
     assert "ssl_protocols TLSv1.2 TLSv1.3;" in conf and "ssl_session_tickets off;" in conf
     assert not re.search(r"TLSv1\.1|SSLv|RC4|3DES|\bMD5\b|EXPORT", conf)
     assert "Strict-Transport-Security" not in conf.replace("# NOT set", "").replace("NOT set on purpose: HSTS", "")
-    assert not re.search(r"listen (?!80|443)\d+", conf)                                  # no other port appears anywhere
+    assert not re.search(r"listen (?!80\b|443\b|9443\b|9444\b)\d+", conf)                 # no other port: 443 by name + the two device ports
 
 
 def test_domain_validation_and_default(monkeypatch):
@@ -144,7 +144,8 @@ def test_overlay_publishes_only_the_edge_and_one_loopback_gateway_port():
     published = {n: [(p.get("host_ip"), int(p["published"])) for p in s.get("ports", [])] for n, s in svc.items() if s.get("ports")}
     assert set(published) == {"tls-edge", "gateway"}
     assert published["gateway"] == [("127.0.0.1", 8080)]
-    assert sorted(p for _, p in published["tls-edge"]) == [80, 443]                      # ONE name-routed HTTPS port (+ the redirect): no per-service ports
+    assert sorted(p for _, p in published["tls-edge"]) == [80, 443, 9443, 9444]          # ONE name-routed HTTPS port (+ redirect) + 2 device ports
+    assert all(ip == "127.0.0.1" for ip, p in published["tls-edge"] if p in (9443, 9444))  # device ports: loopback only, for tailscale serve
     assert not any(ip in (None, "", "0.0.0.0") for ip, _ in published["tls-edge"])          # never wide open by default
 
 
@@ -266,7 +267,7 @@ def test_internal_overlay_publishes_nothing_per_service_and_sidecars_share_the_s
         assert not svcs[svc].get("ports"), f"{svc} still publishes a port"
         sc = svcs[f"{svc}-tls"]
         assert sc["network_mode"] == f"service:{svc}"
-    assert [p["published"] for p in svcs["tls-edge"]["ports"]] and all(p["published"] in ("443", "80") for p in svcs["tls-edge"]["ports"])
+    assert [p["published"] for p in svcs["tls-edge"]["ports"]] and all(p["published"] in ("443", "80", "9443", "9444") for p in svcs["tls-edge"]["ports"])
 
 
 # ───────────────────────────── stopped services, probes, links (the reported incident) ─────────────────────────────
@@ -308,3 +309,12 @@ def test_no_launcher_or_setup_script_still_opens_the_plain_http_port_that_https_
     for f in ("START-HERE-Windows.bat", "local/scripts/wsl-setup.sh", "WINDOWS-QUICKSTART.md"):
         txt = (ROOT / f).read_text("utf-8")
         assert not re.search(r"(start \"\" |Opening your Command Center: |DONE\. Command Center: )http://localhost:8088", txt), f
+
+
+def test_device_ports_serve_the_app_same_origin_and_chat_for_tailscale():
+    conf = tls.render_edge_conf("securax.localhost")
+    app = conf[conf.index("listen 9443 ssl"):conf.index("listen 9444 ssl")]
+    assert "server_name _;" in app and "location /sync" in app and "location /v1/" in app and "location = /version" in app
+    assert "http://open-webui:8080" in conf[conf.index("listen 9444 ssl"):]
+    internal = tls.render_edge_conf("securax.localhost", internal=True)
+    assert "gateway.securax.internal" in internal[internal.index("listen 9443 ssl"):]          # internal TLS still applies on device ports

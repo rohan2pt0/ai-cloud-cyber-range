@@ -90,3 +90,9 @@ Open the login link it prints and sign in with the **same** Tailscale account.
 | Port-forwarding 22 on the home router + OpenSSH | exposed to the whole internet, and the ISP may use CGNAT anyway |
 | Windows OpenSSH server + `wsl` | a second login surface on Windows, with keys or passwords to manage |
 | Cloud "remote desktop" relays | a third party in the path, and more than you need for a shell |
+
+## Update: the HTTPS edge and phones together
+
+`./securax tls on` no longer has to be off for phones. The edge listens on two loopback-only device ports (9443 app, 9444
+Chat) and `./securax phones --apply` (or `./securax go`) points `tailscale serve` at them. The laptop keeps
+`https://hub.securax.localhost`, and phones use the ts.net name. Details: doc 67, section 5.

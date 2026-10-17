@@ -106,3 +106,24 @@ def test_every_securax_evidence_file_exists():
     assert len(sx) >= 50
     missing = [(k, e) for k, v in sx.items() for e in v["evidence"] if not (ROOT / e).exists()]
     assert missing == [] and all(v["status"] in ("proven", "partial") for v in sx.values())
+
+
+def test_shipped_packs_interlink_nscs_and_nciipc_without_copying_their_text():
+    packs = ROOT / "governance" / "controls" / "packs"
+    nscs = json.loads((packs / "nscs-audit-baseline-2020.json").read_text())
+    markers = {m.strip() for v in nscs["citations"].values() for m in v["NSCS Audit Baseline 2020"].split(",")}
+    assert len(markers) == 68 and nscs["framework"]["markers"] == 68                     # every marker is linked (pro.19 to its new control AS-101)
+    assert nscs["controls"][0]["id"] == "AS-101" and "CC BY-NC-SA" in nscs["about"]
+    cii = json.loads((packs / "nciipc-cii.json").read_text())
+    assert "GOV-005" in cii["citations"] and "not reproduced" in cii["about"]
+    for p in (nscs, cii):
+        assert all(len(str(v)) < 120 for c in p["citations"].values() for v in c.values())   # references, never passages
+
+
+def test_heat_map_falls_back_to_open_risks_from_the_register(tmp_path):
+    data, _ = lib(tmp_path)
+    for c in data["controls"]:
+        c["assessment"] = {}
+    risks = [{"likelihood": 5, "impact": 4, "status": "Open"}, {"likelihood": 2, "impact": 2, "status": "Closed"}]
+    html_out = ct.heatmap(data, ct.CEILING, risks)
+    assert "open risks in your risk register" in html_out and ">1<" in html_out

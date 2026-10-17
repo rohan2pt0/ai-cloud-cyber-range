@@ -770,8 +770,15 @@ def render(c: Collector, maps: dict, hist: list[dict], ai: str, now: float, targ
     # Dark-cockpit rule (Airbus, mission control): when everything is normal nothing is lit. Only what is abnormal is shown;
     # the nominal readings and the planning views stay one click away, so the eye goes straight to what needs a decision.
     nav = (ROOT / "portal" / "navigator.html").exists()
+    try:                                                          # overdue risk treatments light a lamp only when there are any
+        _rs = importlib.util.spec_from_file_location("risks", ROOT / "governance" / "risks.py")
+        _rm = importlib.util.module_from_spec(_rs)
+        _rs.loader.exec_module(_rm)
+        late = len(_rm.overdue(_rm.load()))
+    except Exception:  # noqa: BLE001 - the register is optional
+        late = 0
     lamps = [("warn" if reds else "ok", len(reds), "Warnings: act today"), ("caut" if ambs else "ok", len(ambs), "Cautions: schedule"),
-             ("ok", sum(1 for m in ms if m["status"] == "green"), "Nominal")]
+             ("ok", sum(1 for m in ms if m["status"] == "green"), "Nominal")] + ([("warn", late, "Risk treatments overdue")] if late else [])
     h.append("<div class='card'><h2>Master caution</h2><div class='annun'>" + "".join(
         f"<div class='lamp {k}'><b>{v}</b>{E(t)}</div>" for k, v, t in lamps)
         + ("<a class='lamp nav' href='/portal/navigator.html'><b>Controls</b>BFSI control navigator</a>" if nav else

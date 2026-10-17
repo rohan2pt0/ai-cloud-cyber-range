@@ -373,6 +373,44 @@ def _down_page(label: str, name: str) -> str:
     return body
 
 
+# Device ports (doc 58): your phones reach the estate through `tailscale serve`, which forwards to a PORT, not a name. These two
+# loopback-only ports let it do that while the edge keeps the professional names on this machine (https://hub.<domain>):
+#   127.0.0.1:9443 -> the app, with /v1, /healthz, /version and /sync on the same origin     127.0.0.1:9444 -> Chat
+# They answer whatever host name arrives (the phone sees https://<laptop>.<tailnet>.ts.net, with Tailscale's own certificate).
+DEVICE_PORTS = {"hub": 9443, "chat": 9444}
+
+
+def render_device_ports(internal: bool = False) -> str:
+    up = {name: _upstream(svc, port, internal) for _l, name, svc, port, _p in ENDPOINTS}
+    hub_up, hub_extra = up["hub"] if not internal else ("", "")
+    root = ("    root /usr/share/nginx/html;\n    index index.html;\n    location / { try_files $uri $uri/ /index.html; }\n"
+            "    location /portal/ { alias /srv/portal/; index index.html; }\n" if internal
+            else f"    set $up {hub_up};\n{hub_extra}    location / {{ proxy_pass $up; }}\n")
+    same_origin = ""
+    for path, name in (("/v1/", "api"), ("= /healthz", "api"), ("= /version", "api"), ("/sync", "sync")):
+        u, extra = up[name]
+        same_origin += f"    location {path} {{\n        set $so {u};\n{extra.replace('    ', '        ')}        proxy_pass $so;\n    }}\n"
+    chat_up, chat_extra = up["chat"]
+    return f"""
+# Device port: the app for phones over Tailscale (tailscale serve -> https+insecure://127.0.0.1:{DEVICE_PORTS['hub']})
+server {{
+    listen {DEVICE_PORTS['hub']} ssl;
+    http2 on;
+    server_name _;
+    add_header Cache-Control "no-cache" always;
+{root}{same_origin}}}
+
+# Device port: Chat for phones over Tailscale (tailscale serve --https=10000 -> https+insecure://127.0.0.1:{DEVICE_PORTS['chat']})
+server {{
+    listen {DEVICE_PORTS['chat']} ssl;
+    http2 on;
+    server_name _;
+    set $up {chat_up};
+{chat_extra}    location / {{ proxy_pass $up; }}
+}}
+"""
+
+
 def render_edge_conf(dom: str | None = None, internal: bool = False) -> str:
     dom = dom or domain()
     out = [EDGE_HEAD]
@@ -420,6 +458,7 @@ server {{
 {extra}{probes}{down}    location / {{ proxy_pass $up; }}
 }}
 """)
+    out.append(render_device_ports(internal))
     return "".join(out)
 
 

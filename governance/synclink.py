@@ -47,11 +47,11 @@ def build(env: dict[str, str], user: str = "me", host: str = "localhost", token_
     if not 0 <= token_index < len(tokens):
         raise SystemExit(f"There are {len(tokens)} sync token(s); --token must be 1..{len(tokens)}.")
     tls_on = "tls.yml" in env.get("COMPOSE_FILE", "")
-    if tls_on:
+    if host.endswith(".ts.net"):                        # phones: Tailscale's own HTTPS name, sync on the same origin (edge on or off)
+        hub, sync = f"https://{host}/", f"https://{host}/sync"
+    elif tls_on:
         dom = env.get("SECURAX_DOMAIN", DEFAULT_DOMAIN)
         hub, sync = f"https://hub.{dom}/", f"https://sync.{dom}/sync"
-    elif host.endswith(".ts.net"):                      # Tailscale serve: HTTPS on the laptop's own name, sync on the same origin
-        hub, sync = f"https://{host}/", f"https://{host}/sync"
     else:                                               # the app proxies /sync on its own origin (no cross-origin call, no 2nd port)
         hub, sync = f"http://{host}:8088/", f"http://{host}:8088/sync"
     return f"{hub}#sync={encode(sync, tokens[token_index], user)}", sync
@@ -83,7 +83,7 @@ def main(argv: list[str] | None = None) -> int:
         print(build(env, a.user, a.host if a.print_only == "phone" else "localhost", a.token - 1)[0])
         return 0
     link, sync = build(env, a.user, a.host, a.token - 1)
-    ts = tailscale_name() if a.host == "localhost" and "tls.yml" not in env.get("COMPOSE_FILE", "") else ""
+    ts = tailscale_name() if a.host == "localhost" else ""          # phones work with the HTTPS edge on too (device ports, doc 58)
     print("THIS LAPTOP: open this link in the browser you use for the app (or the installed app), then confirm once:\n")
     print(link)
     if ts:
