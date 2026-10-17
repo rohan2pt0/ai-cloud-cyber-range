@@ -31,6 +31,31 @@ Center and the gateway read it at runtime; the Guiding Map's header badge is sta
 (`test_version_badge_matches_VERSION_file`) fails if the badge drifts or a hardcoded version returns.
 (The badge once read "v13.0.2" — a legacy string from before the app joined the estate.)
 
+### Release number and build: two different things
+The **release** (`VERSION`, e.g. `0.1.0`) changes only when a release is cut, on purpose. The **build** changes with every
+commit, by itself. Every start (`./securax up`, so also `go` and `update`) runs `governance/buildinfo.py write`:
+
+| Where | Shows |
+|---|---|
+| Life OS header badge | `v0.1.0+74 · 21006c7`: release 0.1.0, 74 changes since it, commit 21006c7 (hover for the date) |
+| Command Center, gateway `GET /version` (`build`) | the same label |
+| `./securax version` | the same label |
+| `./securax doctor` | warns when the running estate is an older build than your code (pulled but not restarted) |
+
+The Life OS service worker is registered per build (`sw.js?b=<commit>`) and names its cache after it, so a new build
+installs a new worker, drops the old cache and reloads the page once, with no cache version to bump by hand.
+
+**Getting each build onto the laptop without asking:** the `nightly-update` routine (3:15 am, installed by
+`./securax go` with the other schedules) runs `./securax update --auto`. It acts only when main has new commits and the
+code folder has no local edits; it backs up, updates, checks health, rolls back by itself on failure, and sends the
+outcome to your phone. Turn it off by setting `"enabled": false` for `nightly-update` in `routines/jobs.json`.
+
+**Why the old checks missed "v0.1.0 never changes":** they proved the badge **matched** `VERSION` (consistency), not
+that it showed **which code was running** (freshness). A label that is consistent but carries no build identity passes
+every consistency test. The fix is a test of the property people rely on: `governance/tests/test_buildinfo.py` makes
+two commits in a scratch repository and fails unless the label changes between them without touching `VERSION`, and it
+fails if a hand-bumped cache version returns to `sw.js`.
+
 ## Conventional Commits
 Commit messages use [Conventional Commits](https://www.conventionalcommits.org):
 `type(scope): summary` — `feat`, `fix`, `docs`, `refactor`, `test`, `ci`, `deps`, `chore`.

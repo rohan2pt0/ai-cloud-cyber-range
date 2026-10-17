@@ -2,7 +2,7 @@
 # Build locally:  pip install -r docs/requirements.txt && python3 docs/gen_cli_reference.py && mkdocs serve
 site_name: SecuRAX Docs
 site_description: Sovereign AI estate for one person or a family, built to bank-grade security habits.
-site_url: !ENV [DOCS_SITE_URL, "https://cyberbaba.org/docs/"]
+site_url: !ENV [DOCS_SITE_URL, ""]   # set from brand.env by website/build.sh
 repo_url: https://github.com/rohan2pt0/ai-cloud-cyber-range
 repo_name: rohan2pt0/ai-cloud-cyber-range
 edit_uri: edit/main/docs/
@@ -64,7 +64,7 @@ validation:
 extra:
   social:
     - { icon: fontawesome/brands/github, link: https://github.com/rohan2pt0/ai-cloud-cyber-range }
-copyright: SecuRAX by CyberBaba · MIT licence · no personal data in this repository
+copyright: !ENV [DOCS_COPYRIGHT, "SecuRAX · MIT licence · no personal data in this repository"]
 nav:
   - Home: index.md
   - Get started:
@@ -79,6 +79,10 @@ nav:
       - Strategy (Cyera and the AI unicorns): securax/62-STRATEGY-LESSONS-FROM-CYERA-AND-AI-UNICORNS.md
       - Engineering resilience audit: securax/63-ENGINEERING-RESILIENCE-AUDIT.md
       - Success mantras: securax/64-SUCCESS-MANTRAS.md
+      - Configuration, not code: securax/65-CONFIGURATION-NOT-CODE.md
+      - BFSI control library and navigator: securax/66-BFSI-CONTROL-LIBRARY-AND-NAVIGATOR.md
+      - Risk register, NSCS and NCIIPC: securax/67-RISK-REGISTER-NSCS-NCIIPC.md
+      - CI at agent scale: securax/68-CI-AT-AGENT-SCALE.md
   - How-to guides:
       - AI providers and plugins: securax/22-PLUGINS-AND-PROVIDERS.md
       - Integrations: securax/07-INTEGRATIONS.md

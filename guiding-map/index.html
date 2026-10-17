@@ -435,7 +435,7 @@ Lost? <b style="color:var(--text)">Today</b> is the only tab you need daily — 
 <div id="dash">
 <header>
   <div class="logo"><div class="logo-ring" id="d_init">V</div>
-  <div><div class="lt1" id="d_name">The Guiding Map</div><div class="lt2">Sovereignty Command Center <span id="app_ver" style="background:#c9a84c;color:#0d1f35;border-radius:6px;padding:1px 7px;font-weight:800;font-size:9.5px;letter-spacing:.5px;margin-left:6px;">v0.1.0</span></div></div></div>
+  <div><div class="lt1" id="d_name">The Guiding Map</div><div class="lt2">Sovereignty Command Center <span id="app_ver" style="background:#c9a84c;color:#0d1f35;border-radius:6px;padding:1px 7px;font-weight:800;font-size:9.5px;letter-spacing:.5px;margin-left:6px;">v0.2.0</span></div></div></div>
   <a class="hdr-btn" href="hub.html" title="Command Center - all your apps (chat, docs, automation)" style="text-decoration:none">&#9670; All Apps</a>
   <button class="hdr-btn" onclick="editProfile()" style="margin-left:6px">Edit Profile</button>
   <button class="hdr-btn" onclick="toggleTheme()" id="themeBtn" style="margin-left:6px">\u263E Theme</button>
@@ -2121,6 +2121,18 @@ function renderPlaybook(){
   window.gmG = G; window.gmS = S_;
 
   /* ── 1. PWA: service worker + install ───────────────────────────── */
+  // Which build is running (guiding-map/build.json, written by every `./securax up`): the badge shows it, so a push that
+  // reached this device is visible at once. Without the file the badge keeps the release number stamped by build.js.
+  // Only when served (http/https): opened straight from the file, a fetch is a browser error, and there is no build to read.
+  var gmBuild = (window.fetch && location.protocol.indexOf("http") === 0
+    ? fetch("build.json", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; })
+    : Promise.resolve(null)).catch(function () { return null; });
+  gmBuild.then(function (b) {
+    var el = document.getElementById("app_ver");
+    if (!b || !b.label || !el) return;
+    el.textContent = b.label;
+    el.title = "Release " + b.version + (b.changes ? ", plus " + b.changes + " change(s) since it" : "") + "; build " + b.commit + (b.date ? " of " + b.date : "");
+  });
   if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
     // Self-healing updates: when a new service worker takes control after a
     // redeploy/pull, reload the page ONCE so the fresh app shows immediately —
@@ -2133,7 +2145,11 @@ function renderPlaybook(){
       _swReloaded = true;
       window.location.reload();
     });
-    navigator.serviceWorker.register("sw.js").then(function (reg) {
+    // The worker is registered per BUILD (sw.js?b=<commit>): a new build is a new worker, so the update and the cache
+    // refresh happen by themselves, with no version to bump by hand.
+    gmBuild.then(function (b) {
+      return navigator.serviceWorker.register("sw.js?b=" + encodeURIComponent((b && b.commit) || "dev"));
+    }).then(function (reg) {
       if (reg) { try { reg.update(); } catch (e) {} }   // check for a newer SW now
     }).catch(function () {});
   }

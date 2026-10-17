@@ -159,6 +159,9 @@ case "$cmd" in
     # Surface the real product version at runtime (gateway /version) without hardcoding it.
     export SECURAX_VERSION="$(cat "$ROOT/VERSION" 2>/dev/null || echo 0.0.0-dev)"
     export GIT_COMMIT="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)"
+    # The BUILD (release + changes since it + commit) changes with every push by itself; the app badge, Command Center
+    # and /version show it, and the app's offline cache follows it. Nobody bumps a number by hand.
+    export SECURAX_BUILD="$(python3 "$ROOT/governance/buildinfo.py" write 2>/dev/null || echo "v$SECURAX_VERSION")"
     ENVF="$ROOT/local/compose/.env"
     [ -f "$ENVF" ] || cp "$ROOT/local/compose/.env.example" "$ENVF"
     chmod 600 "$ENVF" 2>/dev/null || true          # your API keys: readable by you only (no-op on Windows drives)
@@ -227,11 +230,30 @@ case "$cmd" in
       case "$OPT" in *" docs "*) SVCS="$SVCS anythingllm"; internal_on && SVCS="$SVCS anythingllm-tls" ;; esac
       case "$OPT" in *" flows "*) SVCS="$SVCS n8n"; internal_on && SVCS="$SVCS n8n-tls" ;; esac
     fi
-    if ! ( cd "$ROOT/local/compose" && docker compose --profile ai up -d --build $SVCS ); then
+    UPLOG="$(mktemp)"; trap 'rm -f "$UPLOG"' EXIT
+    dc_up(){ ( cd "$ROOT/local/compose" && docker compose --profile ai up -d "$@" ) 2>&1 | tee -a "$UPLOG"; return "${PIPESTATUS[0]}"; }
+    clash(){ grep -qiE "ports are not available|port is already allocated|address already in use" "$UPLOG"; }
+    if ! dc_up --build $SVCS; then
+      # Another program holds a port. With the HTTPS names on (ports 80/443), go back to the plain addresses by itself:
+      # the estate works the same, nothing is lost, and the user is not left with nothing running.
+      if clash && tls_on; then
+        C "Port 80 or 443 on this computer is already used by another program, so the https://hub.securax.localhost names cannot start."
+        C "→ Switching back to http://localhost:8088 by itself (nothing is lost; ./securax tls on tells you how to free the port)."
+        python3 "$ROOT/governance/tls.py" off >/dev/null
+        docker ps -aq --filter label=com.docker.compose.service=tls-edge | xargs -r docker rm -f >/dev/null 2>&1 || true
+        rm -f "$UPLOG"; exec "$0" "$@"
+      fi
+      if clash; then
+        PORT="$(grep -oiE "(TCP |bind for )?[0-9.]*:[0-9]+" "$UPLOG" | grep -oE "[0-9]+$" | head -1)"
+        C "✗ Port ${PORT:-?} on this computer is already used by another program (or an old copy of SecuRAX)."
+        echo "  Find it in Windows PowerShell:  netstat -ano | findstr :${PORT:-8088}   (last number = PID; Task Manager > Details shows the name)."
+        echo "  Stop it (or restart the computer), then run  ./securax go  again."
+        exit 1
+      fi
       C "Full start failed — fallback 1: start without rebuilding images (works offline if you've run it before)…"
-      if ! ( cd "$ROOT/local/compose" && docker compose --profile ai up -d $SVCS ); then
+      if ! dc_up $SVCS; then
         C "Fallback 2: core path only (private chat + security gateway + home screen), skipping optional services…"
-        if ! ( cd "$ROOT/local/compose" && docker compose --profile ai up -d $CORE ); then
+        if ! dc_up $CORE; then
           C "Startup failed. Most often the model router rejected its config — its log:"
           ( cd "$ROOT/local/compose" && docker compose --profile ai logs --no-color --tail 25 litellm 2>/dev/null ) || true
           echo "  Run  ./securax doctor  for a diagnosis, or paste the output above to get help."
@@ -270,6 +292,8 @@ case "$cmd" in
     NOOPEN=0; for _a in "${@:2}"; do [ "$_a" = "--no-open" ] && NOOPEN=1; done
     ENVF="$ROOT/local/compose/.env"; OKS=""; FIXES=""
     ok(){ OKS="$OKS\n  ✔ $*"; }; fix(){ FIXES="$FIXES\n  ✗ $*"; }
+    # integrations.txt switches the optional parts on or off (like requirements.txt); the core always runs.
+    on(){ python3 "$ROOT/governance/config.py" enabled "$1"; }; OFFS=""; off(){ OFFS="$OFFS $1"; }
     C "SecuRAX go — getting everything working. Nothing you already set up is changed."
     # 1. Docker: without it nothing else can work, so stop here with the one fix.
     if ! docker info >/dev/null 2>&1; then
@@ -291,29 +315,34 @@ case "$cmd" in
     gcurl -fsS -m 5 "$(gw_url)/healthz" >/dev/null 2>&1 && ok "AI gateway running (every AI call is guarded)" || fix "AI gateway not answering yet → wait a minute, then  ./securax go"
     web_up hub 8088 && ok "Guiding Map app running" || fix "Guiding Map app not answering → ./securax why"
     # 3. Schedules (alerts, weekly backup, regulator watch). cron needs your Linux password once.
-    if crontab -l 2>/dev/null | grep -F "securax routines run" | grep -qF "$ROOT" && pgrep -x cron >/dev/null 2>&1; then ok "Schedules running (backups, alerts, regulator watch)"
+    if ! on cron; then off cron
+    elif crontab -l 2>/dev/null | grep -F "securax routines run" | grep -qF "$ROOT" && pgrep -x cron >/dev/null 2>&1; then ok "Schedules running (backups, alerts, regulator watch)"
     else "$0" routines install && ok "Schedules installed (backups, alerts, regulator watch)" || fix "Schedules not running → ./securax routines install"; fi
     # 4. Phones over Tailscale: publish once if Tailscale is on and nothing is published yet.
-    TSX=""; for _c in tailscale.exe "/mnt/c/Program Files/Tailscale/tailscale.exe" tailscale; do
-      if command -v "$_c" >/dev/null 2>&1 || [ -x "$_c" ]; then TSX="$_c"; break; fi; done
+    TSX=""; if on tailscale; then for _c in tailscale.exe "/mnt/c/Program Files/Tailscale/tailscale.exe" tailscale; do
+      if command -v "$_c" >/dev/null 2>&1 || [ -x "$_c" ]; then TSX="$_c"; break; fi; done; else off tailscale; fi
     TSN=""
     if [ -n "$TSX" ]; then
       TSN="$("$TSX" status --json 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin)["Self"]["DNSName"].rstrip("."))' 2>/dev/null || true)"
       if [ -z "$TSN" ]; then fix "Tailscale is installed but signed out → open the Tailscale app on Windows and sign in, then  ./securax go"
-      elif tls_on; then fix "Phones: the local HTTPS edge hides the app from Tailscale → ./securax tls off && ./securax go"
       else
-        "$TSX" serve status 2>/dev/null | grep -q "127.0.0.1:8088" || { "$TSX" serve --bg 8088 >/dev/null 2>&1; "$TSX" serve --bg --https=10000 3000 >/dev/null 2>&1; }
-        "$TSX" serve status 2>/dev/null | grep -q "127.0.0.1:8088" && ok "Phones: https://$TSN (Chat: https://$TSN:10000), your devices only" || fix "Phones: could not publish → ./securax phones --apply"
+        if tls_on; then _APP="https+insecure://127.0.0.1:9443"; _CHAT="https+insecure://127.0.0.1:9444"; _SEEN="127.0.0.1:9443"
+        else _APP="8088"; _CHAT="3000"; _SEEN="127.0.0.1:8088"; fi
+        "$TSX" serve status 2>/dev/null | grep -q "$_SEEN" || { "$TSX" serve --bg "$_APP" >/dev/null 2>&1; "$TSX" serve --bg --https=10000 "$_CHAT" >/dev/null 2>&1; }
+        "$TSX" serve status 2>/dev/null | grep -q "$_SEEN" && ok "Phones: https://$TSN (Chat: https://$TSN:10000), your devices only" || fix "Phones: could not publish → ./securax phones --apply"
       fi
-    else
+    elif on tailscale; then
       echo "  (phones: optional. Install Tailscale on Windows and your phone, sign in, then  ./securax go  again)"
     fi
     # 5. Phone alerts.
-    [ -n "$(ev SECURAX_NOTIFY_NTFY)$(ev SECURAX_NOTIFY_WEBHOOK)" ] && ok "Phone alerts on" || echo "  (phone alerts: optional →  ./securax notify setup)"
+    if ! on ntfy && ! on webhook; then off ntfy
+    elif [ -n "$(ev SECURAX_NOTIFY_NTFY)$(ev SECURAX_NOTIFY_WEBHOOK)" ]; then ok "Phone alerts on"
+    else echo "  (phone alerts: optional →  ./securax notify setup)"; fi
     # 6. Regulator watch baseline and a first backup, once.
-    [ -f "$ROOT/vault/regwatch.json" ] || { python3 "$ROOT/governance/regwatch.py" fetch --quiet >/dev/null 2>&1 && ok "Regulator watch started (RBI, SEBI)"; }
+    if ! on regwatch; then off regwatch; else [ -f "$ROOT/vault/regwatch.json" ] || { python3 "$ROOT/governance/regwatch.py" fetch --quiet >/dev/null 2>&1 && ok "Regulator watch started (RBI, SEBI)"; }; fi
     BDIR="$(ev SECURAX_BACKUP_DIR "$ROOT/backups")"
-    if [ -n "$(find "$BDIR" -maxdepth 1 -name 'securax-*.tar.gz*' -mtime -7 2>/dev/null | head -1)" ]; then ok "Backup from the last 7 days on disk"
+    if ! on backup; then off backup
+    elif [ -n "$(find "$BDIR" -maxdepth 1 -name 'securax-*.tar.gz*' -mtime -7 2>/dev/null | head -1)" ]; then ok "Backup from the last 7 days on disk"
     else "$0" backup >/dev/null 2>&1 && ok "Backup taken now ($BDIR)" || fix "Backup failed → ./securax backup"; fi
     # 7. Your data on every device: one link per device, no forms (the sync token rides after '#', never sent to a server).
     LAPLINK="$(python3 "$ROOT/governance/synclink.py" --print-only laptop 2>/dev/null || true)"
@@ -321,9 +350,10 @@ case "$cmd" in
     [ -n "$LAPLINK" ] && ok "Sync ready: your data is kept on this laptop and restored on every device" || fix "Sync token missing → ./securax up"
     C ""; C "════════════════════════ SecuRAX status ════════════════════════"
     printf '%b\n' "$OKS"
+    [ -n "$OFFS" ] && echo "  · switched off in integrations.txt:$OFFS"
     if [ -n "$FIXES" ]; then C ""; C "Needs one action each:"; printf '%b\n' "$FIXES"; fi
     C ""; C "Use it:"
-    echo "  This laptop:  http://localhost:8088   (Chat: http://localhost:3000)"
+    echo "  This laptop:  $(web_url hub 8088 /)   (Chat: $(web_url chat 3000 /))"
     [ -n "$TSN" ] && echo "  Phones:       https://$TSN   (Chat: https://$TSN:10000)"
     if [ -n "$LAPLINK" ] && [ "$NOOPEN" = 0 ]; then
       # Opening the laptop link sets sync up in that browser in one click (or does nothing if it is already set up).
@@ -331,7 +361,7 @@ case "$cmd" in
         || ( command -v xdg-open >/dev/null && xdg-open "$LAPLINK" >/dev/null 2>&1 ) || true
       echo "  The app just opened in your browser. If it asks 'Turn on cross-device sync?', press OK once."
     fi
-    if [ -n "$PHLINK" ] && [ -n "$(ev SECURAX_NOTIFY_NTFY)" ] && [ -t 0 ]; then
+    if [ -n "$PHLINK" ] && on ntfy && [ -n "$(ev SECURAX_NOTIFY_NTFY)" ] && [ -t 0 ]; then
       printf '  Send the one-tap phone link to your phone now (it passes through your ntfy alert topic and is not stored there)? [y/N]: '
       read -r _yn < /dev/tty || _yn=n
       case "$_yn" in [Yy]*)
@@ -398,7 +428,13 @@ URLS
       timeout 6 git -C "$ROOT" fetch -q origin main 2>/dev/null || true
       BEHIND="$(git -C "$ROOT" rev-list --count HEAD..origin/main 2>/dev/null || echo 0)"
       if [ "${BEHIND:-0}" -gt 0 ]; then echo "  code: ⚠ $BEHIND commit(s) behind main — run  ./securax update"
-      else echo "  code: up to date (v$(cat "$ROOT/VERSION" 2>/dev/null))"; fi
+      else echo "  code: up to date ($(python3 "$ROOT/governance/buildinfo.py" 2>/dev/null || echo "v$(cat "$ROOT/VERSION" 2>/dev/null)"))"; fi
+      # Is the RUNNING estate this code? (a push pulled but not restarted looks "not updated")
+      RUNC="$(gcurl -fsS -m 4 "$(gw_url)/version" 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin).get("commit",""))' 2>/dev/null)"
+      HEADC="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null)"
+      if [ -n "$RUNC" ] && [ "$RUNC" != unknown ] && [ "$RUNC" != "$HEADC" ]; then
+        echo "  running: ⚠ the estate runs build $RUNC, your code is $HEADC — run  ./securax up  to load it"
+      fi
     fi
     DISK=$(df -P . | awk 'NR==2{print $5}' | tr -d '%'); echo "  disk used: ${DISK}%  $([ "${DISK:-0}" -ge 85 ] && echo '⚠ >85% — free space' || echo 'ok')"
     if command -v free >/dev/null; then MEM=$(free | awk '/Mem:/{printf "%d",$3/$2*100}'); echo "  RAM used:  ${MEM}%  $([ "${MEM:-0}" -ge 90 ] && echo '⚠ >90% — close apps / use local-fast model' || echo 'ok')"; fi
@@ -418,8 +454,11 @@ URLS
     else
       echo "  local model: $LM NOT pulled ✗  → run  ./securax pull"
     fi
-    [ -n "$(ev SECURAX_NOTIFY_NTFY)$(ev SECURAX_NOTIFY_WEBHOOK)" ] && echo "  phone alerts: on (test: ./securax notify test)" || echo "  phone alerts: off → ./securax notify setup"
-    if crontab -l 2>/dev/null | grep -F "securax routines run" | grep -qF "$ROOT"; then
+    _on(){ python3 "$ROOT/governance/config.py" enabled "$1"; }
+    if ! _on ntfy && ! _on webhook; then echo "  phone alerts: switched off in integrations.txt"
+    else [ -n "$(ev SECURAX_NOTIFY_NTFY)$(ev SECURAX_NOTIFY_WEBHOOK)" ] && echo "  phone alerts: on (test: ./securax notify test)" || echo "  phone alerts: off → ./securax notify setup"; fi
+    if ! _on cron; then echo "  schedule:  switched off in integrations.txt"
+    elif crontab -l 2>/dev/null | grep -F "securax routines run" | grep -qF "$ROOT"; then
       pgrep -x cron >/dev/null 2>&1 && echo "  schedule:  on (cron running)" || echo "  schedule:  ⚠ cron is not running → ./securax routines install"
     else echo "  schedule:  off → ./securax routines install"; fi
     # The real test: send an actual message through the gateway and show who answered + the TRUE error
@@ -815,6 +854,23 @@ EOF2
     #   ./securax regwatch fetch [--notify]|list [--days N]|digest [--month YYYY-MM] [--send]|sources
     shift; exec python3 "$ROOT/governance/regwatch.py" "$@"
     ;;
+  config)
+    # Configuration, not code: brand.env (your brand, domain, contact) and integrations.txt (optional parts, one per line).
+    #   ./securax config show | check | enabled <name> | render FILE...
+    shift; exec python3 "$ROOT/governance/config.py" "$@"
+    ;;
+  controls)
+    # The BFSI control library (RBI, SEBI, IRDAI, IFSCA, NCIIPC, CERT-In, DPDP): import the gap-assessment workbook (kept private in
+    # vault/), profiles per regulated-entity class or the strictest-of-all ceiling, and the visual navigator next to the cockpit.
+    #   ./securax controls import FILE.xlsx | profile [CLASS] | dominance | navigator | gaps [CLASS]
+    shift; exec python3 "$ROOT/governance/controls.py" "$@"
+    ;;
+  risks)
+    # The risk register: V/T/R registers and risk treatment plans (imported by column name, kept private in vault/), linked to the
+    # control library so the navigator ranks the controls that treat your highest open risks; overdue treatments light the cockpit.
+    #   ./securax risks import FILE.xlsx | list [--open] | overdue | cii
+    shift; exec python3 "$ROOT/governance/risks.py" "$@"
+    ;;
   postmortem)
     # Blameless postmortems (Amazon Correction of Error): what happened, five whys, and MECHANISMS tracked to done.
     #   ./securax postmortem new "title" [--severity sev2] | list | actions
@@ -902,16 +958,18 @@ EOF2
     #   ./securax phones [--apply]     --apply runs the two 'tailscale serve' commands on Windows for you (via WSL interop)
     TSX=""; for _c in tailscale.exe "/mnt/c/Program Files/Tailscale/tailscale.exe" tailscale; do
       if command -v "$_c" >/dev/null 2>&1 || [ -x "$_c" ]; then TSX="$_c"; break; fi; done
-    if tls_on; then C "✗ The local HTTPS edge is on and hides the app's port. Tailscale gives the phones HTTPS instead:  ./securax tls off && ./securax up"; exit 1; fi
-    curl -fsS -m 3 http://localhost:8088/ >/dev/null 2>&1 && echo "  ✔ the app answers on port 8088" || { C "✗ the app is not answering on port 8088. Run  ./securax up  first."; exit 1; }
+    # With the HTTPS edge on, phones go through its loopback device ports (9443 app, 9444 Chat), so this laptop keeps the names.
+    if tls_on; then APP_TO="https+insecure://127.0.0.1:9443"; CHAT_TO="https+insecure://127.0.0.1:9444"; PROBE="https://127.0.0.1:9443/"
+    else APP_TO="8088"; CHAT_TO="3000"; PROBE="http://localhost:8088/"; fi
+    curl -fsSk -m 3 "$PROBE" >/dev/null 2>&1 && echo "  ✔ the app answers ($PROBE)" || { C "✗ the app is not answering at $PROBE. Run  ./securax up  first."; exit 1; }
     [ -n "$TSX" ] || { C "✗ Tailscale not found. Install it on Windows (https://tailscale.com/download), sign in, and turn on MagicDNS + HTTPS certificates in the admin console. Then run this again."; exit 1; }
     NAME="$("$TSX" status --json 2>/dev/null | python3 -c 'import json,sys; print(json.load(sys.stdin)["Self"]["DNSName"].rstrip("."))' 2>/dev/null || true)"
     [ -n "$NAME" ] && echo "  ✔ Tailscale is on: $NAME" || echo "  ⚠ Tailscale is installed but not signed in (open the Tailscale app and sign in)"
     if [ "${2:-}" = "--apply" ]; then
-      "$TSX" serve --bg 8088 && "$TSX" serve --bg --https=10000 3000 && echo "  ✔ published to your tailnet only (never 'funnel')"
+      "$TSX" serve --bg "$APP_TO" && "$TSX" serve --bg --https=10000 "$CHAT_TO" && echo "  ✔ published to your tailnet only (never 'funnel')"
     else
       C "Publish to your own devices (Windows PowerShell, or here with  ./securax phones --apply):"
-      echo "    tailscale serve --bg 8088"; echo "    tailscale serve --bg --https=10000 3000"
+      echo "    tailscale serve --bg $APP_TO"; echo "    tailscale serve --bg --https=10000 $CHAT_TO"
     fi
     A="${NAME:-<laptop>.<tailnet>.ts.net}"
     C "On each phone/iPad (Tailscale app on, same account):"
@@ -1103,6 +1161,16 @@ EOF2
     # not, go back to the version that worked (your data is never touched by the code update; the backup is printed so you can always restore).
     # (A plain `git pull` only changes files on disk — running containers keep the OLD code.)
     git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1 || { C "This isn't a git checkout — download the latest ZIP instead."; exit 1; }
+    # --auto (the nightly routine): only when main has something new, the checkout is on main and has no local edits;
+    # never opens a browser; tells your phone the outcome (when notifications are set up). Nothing new = silent, no restart.
+    AUTO=0; [ "${2:-}" = "--auto" ] && AUTO=1
+    if [ "$AUTO" = 1 ]; then
+      [ "$(git -C "$ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null)" = main ] || { C "auto-update skipped: not on the main branch"; exit 0; }
+      [ -z "$(git -C "$ROOT" status --porcelain --untracked-files=no 2>/dev/null)" ] || { C "auto-update skipped: local changes in the code folder"; exit 0; }
+      timeout 30 git -C "$ROOT" fetch -q origin main 2>/dev/null || { C "auto-update skipped: no network"; exit 0; }
+      [ "$(git -C "$ROOT" rev-list --count HEAD..origin/main 2>/dev/null || echo 0)" -gt 0 ] || exit 0
+      tell(){ "$0" notify send "$1" --title "SecuRAX update" >/dev/null 2>&1 || true; }
+    else tell(){ :; }; fi
     C "Updating SecuRAX safely (backup → update → health check → automatic rollback if needed)…"
     # Legacy: older versions rewrote the tracked baseline on every `up`; restore it so the pull can't conflict.
     git -C "$ROOT" diff --quiet -- local/compose/litellm-config.yaml 2>/dev/null || git -C "$ROOT" checkout -- local/compose/litellm-config.yaml
@@ -1119,7 +1187,8 @@ EOF2
     "$0" down || true
     if SECURAX_NO_OPEN=1 "$0" up && gcurl -fsS -m 10 $(gw_url)/readyz >/dev/null 2>&1; then
       [ "$PREV" = "$NEW" ] && C "Already on the latest version — containers recreated." || C "✔ Updated to $(git -C "$ROOT" rev-parse --short HEAD) and the estate is READY."
-      "$0" open >/dev/null 2>&1 || true
+      tell "Updated overnight to $(python3 "$ROOT/governance/buildinfo.py" 2>/dev/null) and running. Reload the app once."
+      [ "$AUTO" = 1 ] || "$0" open >/dev/null 2>&1 || true
       exit 0
     fi
     # 2) the new version did not come up healthy: go back to the one that did
@@ -1129,13 +1198,16 @@ EOF2
       "$0" down || true
       if SECURAX_NO_OPEN=1 "$0" up && gcurl -fsS -m 10 $(gw_url)/readyz >/dev/null 2>&1; then
         C "✔ Rolled back: the previous version is running again. Please report the failed update (it was $(git -C "$ROOT" rev-parse --short "$NEW"))."
-        "$0" open >/dev/null 2>&1 || true
+        tell "The overnight update to $(git -C "$ROOT" rev-parse --short "$NEW") did not start healthy, so the previous version is running again. Nothing is lost."
+        [ "$AUTO" = 1 ] || "$0" open >/dev/null 2>&1 || true
         exit 3
       fi
       C "✗ The previous version did not start either — run  ./securax doctor ; your data and backup are intact."
+      tell "Overnight update failed and the estate is down. Run ./securax go on the laptop; your data and backup are intact."
       exit 1
     fi
     C "⚠ The estate did not start healthy after the update, and an automatic rollback was not safe (you have uncommitted local changes). Run  ./securax doctor ."
+    tell "Overnight update did not start healthy. Run ./securax go on the laptop."
     exit 1
     ;;
   pull)
@@ -1305,8 +1377,7 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
     ;;
   version|--version|-v)
     v="$(cat "$ROOT/VERSION" 2>/dev/null || echo 0.0.0-dev)"
-    g="$(git -C "$ROOT" rev-parse --short HEAD 2>/dev/null || echo unknown)"
-    echo "SecuRAX v${v} (${g})"
+    echo "SecuRAX $(python3 "$ROOT/governance/buildinfo.py" 2>/dev/null || echo "v$v")"
     ;;
   mcp)   exec python3 "$ROOT/mcp/securax_mcp.py" ;;
   inspect)
@@ -1443,6 +1514,9 @@ KEEP IT SAFE
 REGULATORY & EVIDENCE (any regulator: RBI, SEBI, CERT-In, IRDAI, DPDP, others as data files)
   comply [rbi|cscrf|mit-ai-risk|nist-ai-600-1|pqc]  requirement-by-requirement gap view     ccsp   CCSP practice map
   evidence       audit pack (checksummed)             incident ...   reporting clock: open, due, draft, file, seal, rollup
+  risks ...      risk register + treatment plans (V/T/R), linked to controls; overdue treatments; CII self-check
+  controls ...   BFSI control library: import the workbook, profiles per RE class, navigator (grid, radar, heat map)
+  config ...     show / check brand.env and integrations.txt (nothing brand-specific is hardwired)
   postmortem ... blameless postmortem after an outage; tracks the fix-it actions to done
   regwatch ...   new RBI/SEBI circulars: fetch, list, monthly digest (titles + links only)
   regulated on   ONE switch: sign-in + data residency + strict cockpit (then fine-tune with the two below)

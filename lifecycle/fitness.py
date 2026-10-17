@@ -12,6 +12,7 @@ So each promise is a check with a budget (lifecycle/fitness.json) that fails the
   supply-chain     RATCHET: `vet` findings of critical severity in OUR OWN tree may only shrink (new ones fail; known ones are listed
                    with a reason in lifecycle/fitness-baseline.json)
   commands-documented   every `./securax <command>` appears in the docs (RATCHET: known gaps listed, new ones fail)
+  config-clean          no brand value (brand.env) or hosting vendor is hardwired in code; both config files are valid
 
     ./securax fitness [--json]          ./securax fitness --update-baseline   (a deliberate, reviewed act)
 Standard library only (plus the gateway's own deps for the app-level checks).
@@ -265,13 +266,24 @@ def check_claims() -> dict:
             "note": "every claim has an envelope and a proof that exists" if not probs else "; ".join(probs[:3])}
 
 
+def check_config_clean() -> dict:
+    """Configuration, not code: no brand value or registrar/host vendor is hardwired; brand.env and integrations.txt are valid."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("config", ROOT / "governance" / "config.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    probs = mod.problems(mod.values(), mod.tracked_files(), on=mod.integrations() or set())
+    return {"name": "config-clean", "value": len(probs), "budget": 0, "unit": "problems", "ok": not probs,
+            "note": "brand values live only in brand.env; optional parts only in integrations.txt" if not probs else "; ".join(probs[:3])}
+
+
 def run_all(only_fast: bool = False) -> list[dict]:
     c, base = cfg()["budgets"], baseline()
     res = [check_rails_latency(c["rails_worst_case_ms"]), check_rails_memory(c["rails_import_rss_mb"]), check_runtime_deps(c["gateway_runtime_deps"])]
     if not only_fast:
         res += check_gateway(c["gateway_cold_start_s"], c["gateway_rss_mb"])
         res += check_first_block(c["first_block_s"], c["block_latency_p95_ms"])
-    res += [check_supply_chain(base), check_commands_documented(base), check_ccsp_map(), check_regulatory_maps(), check_impact_map(), check_claims()]
+    res += [check_supply_chain(base), check_commands_documented(base), check_ccsp_map(), check_regulatory_maps(), check_impact_map(), check_claims(), check_config_clean()]
     return res
 
 

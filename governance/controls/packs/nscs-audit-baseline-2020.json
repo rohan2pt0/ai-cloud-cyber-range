@@ -1,0 +1,281 @@
+{
+ "about": "NSCS Cyber Security Audit Baseline Requirements (NSCS-46-16 Rev 1.0, Oct 2020): each library control cites the audit markers that test it. Marker IDs and links only; the publication is CC BY-NC-SA 4.0, so its text is not copied here. Source: National Security Council Secretariat.",
+ "framework": {
+  "name": "NSCS Audit Baseline 2020",
+  "reference": "NSCS-46-16 Rev 1.0 (October 2020)",
+  "markers": 68,
+  "profiles": {
+   "High risk (CII-grade)": "all markers mandatory",
+   "Medium risk": {
+    "recommended_only": [
+     "pro.12",
+     "pro.13",
+     "pro.20",
+     "det.3",
+     "res.1",
+     "res.8"
+    ]
+   },
+   "Low risk": {
+    "recommended_only": [
+     "csm.11",
+     "csm.12",
+     "csm.14",
+     "csm.15",
+     "pro.12",
+     "pro.13",
+     "pro.16",
+     "pro.20",
+     "pro.21",
+     "det.3",
+     "det.4",
+     "det.7",
+     "det.9",
+     "res.1",
+     "res.8",
+     "res.9",
+     "imp.4",
+     "imp.5"
+    ]
+   }
+  }
+ },
+ "citations": {
+  "AM-001": {
+   "NSCS Audit Baseline 2020": "csm.4, csm.6"
+  },
+  "AM-003": {
+   "NSCS Audit Baseline 2020": "csm.4, csm.5"
+  },
+  "AM-005": {
+   "NSCS Audit Baseline 2020": "csm.6"
+  },
+  "AM-006": {
+   "NSCS Audit Baseline 2020": "pro.6"
+  },
+  "AM-007": {
+   "NSCS Audit Baseline 2020": "csm.6"
+  },
+  "AM-009": {
+   "NSCS Audit Baseline 2020": "csm.18"
+  },
+  "AS-001": {
+   "NSCS Audit Baseline 2020": "pro.9"
+  },
+  "AS-006": {
+   "NSCS Audit Baseline 2020": "pro.20"
+  },
+  "AS-009": {
+   "NSCS Audit Baseline 2020": "res.8"
+  },
+  "AS-101": {
+   "NSCS Audit Baseline 2020": "pro.19"
+  },
+  "AUD-001": {
+   "NSCS Audit Baseline 2020": "csm.1, csm.17"
+  },
+  "AW-001": {
+   "NSCS Audit Baseline 2020": "pro.14, pro.15"
+  },
+  "AW-004": {
+   "NSCS Audit Baseline 2020": "csm.13, pro.14"
+  },
+  "BCP-001": {
+   "NSCS Audit Baseline 2020": "csm.11, rec.1"
+  },
+  "BCP-002": {
+   "NSCS Audit Baseline 2020": "rec.1, rec.2"
+  },
+  "BCP-004": {
+   "NSCS Audit Baseline 2020": "pro.16"
+  },
+  "BCP-005": {
+   "NSCS Audit Baseline 2020": "csm.12"
+  },
+  "DP-001": {
+   "NSCS Audit Baseline 2020": "csm.18"
+  },
+  "DP-006": {
+   "NSCS Audit Baseline 2020": "pro.17"
+  },
+  "DP-007": {
+   "NSCS Audit Baseline 2020": "pro.17"
+  },
+  "DP-011": {
+   "NSCS Audit Baseline 2020": "pro.18, pro.21"
+  },
+  "EP-001": {
+   "NSCS Audit Baseline 2020": "pro.4"
+  },
+  "EP-003": {
+   "NSCS Audit Baseline 2020": "pro.4"
+  },
+  "EP-005": {
+   "NSCS Audit Baseline 2020": "pro.6"
+  },
+  "EP-006": {
+   "NSCS Audit Baseline 2020": "pro.5"
+  },
+  "EP-008": {
+   "NSCS Audit Baseline 2020": "pro.8"
+  },
+  "GOV-001": {
+   "NSCS Audit Baseline 2020": "csm.1"
+  },
+  "GOV-002": {
+   "NSCS Audit Baseline 2020": "csm.3"
+  },
+  "GOV-006": {
+   "NSCS Audit Baseline 2020": "csm.15, imp.3, res.1"
+  },
+  "GOV-008": {
+   "NSCS Audit Baseline 2020": "csm.2"
+  },
+  "GOV-009": {
+   "NSCS Audit Baseline 2020": "csm.2"
+  },
+  "GOV-010": {
+   "NSCS Audit Baseline 2020": "csm.3, imp.2"
+  },
+  "GOV-011": {
+   "NSCS Audit Baseline 2020": "csm.13, res.3"
+  },
+  "GOV-013": {
+   "NSCS Audit Baseline 2020": "csm.14"
+  },
+  "GOV-014": {
+   "NSCS Audit Baseline 2020": "csm.16"
+  },
+  "GOV-019": {
+   "NSCS Audit Baseline 2020": "pro.18"
+  },
+  "HR-006": {
+   "NSCS Audit Baseline 2020": "csm.14"
+  },
+  "IAM-001": {
+   "NSCS Audit Baseline 2020": "pro.2"
+  },
+  "IAM-005": {
+   "NSCS Audit Baseline 2020": "csm.19, pro.2"
+  },
+  "IAM-012": {
+   "NSCS Audit Baseline 2020": "det.4"
+  },
+  "IR-001": {
+   "NSCS Audit Baseline 2020": "res.7"
+  },
+  "IR-002": {
+   "NSCS Audit Baseline 2020": "res.7"
+  },
+  "IR-003": {
+   "NSCS Audit Baseline 2020": "res.4, res.6"
+  },
+  "IR-004": {
+   "NSCS Audit Baseline 2020": "det.9, res.10"
+  },
+  "IR-005": {
+   "NSCS Audit Baseline 2020": "res.2, res.3, res.11"
+  },
+  "IR-006": {
+   "NSCS Audit Baseline 2020": "res.5, res.6"
+  },
+  "IR-007": {
+   "NSCS Audit Baseline 2020": "csm.15, imp.5, pro.13"
+  },
+  "IR-008": {
+   "NSCS Audit Baseline 2020": "imp.1, imp.2, rec.3, res.10"
+  },
+  "NS-003": {
+   "NSCS Audit Baseline 2020": "pro.10"
+  },
+  "NS-005": {
+   "NSCS Audit Baseline 2020": "pro.3"
+  },
+  "NS-006": {
+   "NSCS Audit Baseline 2020": "pro.7"
+  },
+  "NS-008": {
+   "NSCS Audit Baseline 2020": "det.5, pro.10"
+  },
+  "NS-011": {
+   "NSCS Audit Baseline 2020": "pro.8"
+  },
+  "PS-001": {
+   "NSCS Audit Baseline 2020": "pro.1"
+  },
+  "PS-004": {
+   "NSCS Audit Baseline 2020": "pro.21"
+  },
+  "PS-005": {
+   "NSCS Audit Baseline 2020": "det.6"
+  },
+  "RM-001": {
+   "NSCS Audit Baseline 2020": "csm.8, csm.10"
+  },
+  "RM-002": {
+   "NSCS Audit Baseline 2020": "csm.9"
+  },
+  "RM-003": {
+   "NSCS Audit Baseline 2020": "csm.7, csm.9"
+  },
+  "RM-004": {
+   "NSCS Audit Baseline 2020": "csm.5"
+  },
+  "RM-006": {
+   "NSCS Audit Baseline 2020": "csm.10"
+  },
+  "RM-008": {
+   "NSCS Audit Baseline 2020": "imp.4"
+  },
+  "SOC-001": {
+   "NSCS Audit Baseline 2020": "det.2, det.3"
+  },
+  "SOC-002": {
+   "NSCS Audit Baseline 2020": "det.7"
+  },
+  "SOC-003": {
+   "NSCS Audit Baseline 2020": "res.9"
+  },
+  "SOC-004": {
+   "NSCS Audit Baseline 2020": "det.1, det.8"
+  },
+  "SOC-005": {
+   "NSCS Audit Baseline 2020": "det.2"
+  },
+  "SOC-007": {
+   "NSCS Audit Baseline 2020": "det.4"
+  },
+  "SOC-009": {
+   "NSCS Audit Baseline 2020": "det.9"
+  },
+  "TP-005": {
+   "NSCS Audit Baseline 2020": "pro.20"
+  },
+  "VM-001": {
+   "NSCS Audit Baseline 2020": "pro.11"
+  },
+  "VM-002": {
+   "NSCS Audit Baseline 2020": "pro.5"
+  },
+  "VM-003": {
+   "NSCS Audit Baseline 2020": "pro.11"
+  },
+  "VM-004": {
+   "NSCS Audit Baseline 2020": "pro.12"
+  }
+ },
+ "controls": [
+  {
+   "id": "AS-101",
+   "domain": "AS",
+   "subdomain": "Change Management",
+   "title": "Change control policy and practice",
+   "tier": "High",
+   "description": "Changes to systems follow a defined, approved and recorded change-control process (NSCS marker pro.19).",
+   "owner": "CIO/CISO",
+   "citations": {
+    "NSCS Audit Baseline 2020": "pro.19"
+   }
+  }
+ ]
+}

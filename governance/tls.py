@@ -373,6 +373,44 @@ def _down_page(label: str, name: str) -> str:
     return body
 
 
+# Device ports (doc 58): your phones reach the estate through `tailscale serve`, which forwards to a PORT, not a name. These two
+# loopback-only ports let it do that while the edge keeps the professional names on this machine (https://hub.<domain>):
+#   127.0.0.1:9443 -> the app, with /v1, /healthz, /version and /sync on the same origin     127.0.0.1:9444 -> Chat
+# They answer whatever host name arrives (the phone sees https://<laptop>.<tailnet>.ts.net, with Tailscale's own certificate).
+DEVICE_PORTS = {"hub": 9443, "chat": 9444}
+
+
+def render_device_ports(internal: bool = False) -> str:
+    up = {name: _upstream(svc, port, internal) for _l, name, svc, port, _p in ENDPOINTS}
+    hub_up, hub_extra = up["hub"] if not internal else ("", "")
+    root = ("    root /usr/share/nginx/html;\n    index index.html;\n    location / { try_files $uri $uri/ /index.html; }\n"
+            "    location /portal/ { alias /srv/portal/; index index.html; }\n" if internal
+            else f"    set $up {hub_up};\n{hub_extra}    location / {{ proxy_pass $up; }}\n")
+    same_origin = ""
+    for path, name in (("/v1/", "api"), ("= /healthz", "api"), ("= /version", "api"), ("/sync", "sync")):
+        u, extra = up[name]
+        same_origin += f"    location {path} {{\n        set $so {u};\n{extra.replace('    ', '        ')}        proxy_pass $so;\n    }}\n"
+    chat_up, chat_extra = up["chat"]
+    return f"""
+# Device port: the app for phones over Tailscale (tailscale serve -> https+insecure://127.0.0.1:{DEVICE_PORTS['hub']})
+server {{
+    listen {DEVICE_PORTS['hub']} ssl;
+    http2 on;
+    server_name _;
+    add_header Cache-Control "no-cache" always;
+{root}{same_origin}}}
+
+# Device port: Chat for phones over Tailscale (tailscale serve --https=10000 -> https+insecure://127.0.0.1:{DEVICE_PORTS['chat']})
+server {{
+    listen {DEVICE_PORTS['chat']} ssl;
+    http2 on;
+    server_name _;
+    set $up {chat_up};
+{chat_extra}    location / {{ proxy_pass $up; }}
+}}
+"""
+
+
 def render_edge_conf(dom: str | None = None, internal: bool = False) -> str:
     dom = dom or domain()
     out = [EDGE_HEAD]
@@ -420,6 +458,7 @@ server {{
 {extra}{probes}{down}    location / {{ proxy_pass $up; }}
 }}
 """)
+    out.append(render_device_ports(internal))
     return "".join(out)
 
 
@@ -663,6 +702,30 @@ def cmd_trust(apply: bool) -> int:
 
 
 # ───────────────────────────────────────────── commands ─────────────────────────────────────────────
+PORT_CLASH = re.compile(r"ports are not available|port is already allocated|address already in use", re.I)
+
+
+def edge_ports_taken() -> list[str]:
+    """Ports 80/443 already held by another program (on Windows often IIS, a VPN or another web server). Checked with a
+    throw-away container that only binds them, because from Ubuntu on WSL the Windows side's listeners are invisible.
+    [] when free, when the edge itself holds them, or when Docker cannot be asked (the start-up fallback still covers it)."""
+    if not shutil.which("docker"):
+        return []
+    try:
+        mine = subprocess.run(["docker", "ps", "-q", "--filter", "label=com.docker.compose.service=tls-edge"],
+                              capture_output=True, text=True, timeout=20).stdout.strip()
+        if mine:
+            return []
+        bind = read_env().get("BIND_HOST") or "127.0.0.1"
+        r = subprocess.run(["docker", "run", "--rm", "-p", f"{bind}:443:443", "-p", f"{bind}:80:80", "nginx:1.30-alpine", "true"],
+                           capture_output=True, text=True, timeout=180)
+    except (OSError, subprocess.TimeoutExpired):
+        return []
+    if r.returncode and PORT_CLASH.search(r.stderr):
+        return sorted(set(re.findall(r":(80|443)\b", r.stderr))) or ["80/443"]
+    return []
+
+
 def cmd_on(extra: list[str], dom: str | None, new_ca: bool) -> int:
     if dom and not valid_domain(dom):
         print(f"'{dom}' is not a valid domain name (example: securax.example.in)")
@@ -756,6 +819,13 @@ def main(argv: list[str] | None = None) -> int:
     st.add_argument("--json", action="store_true")
     a = ap.parse_args(argv)
     if a.cmd == "on":
+        taken = edge_ports_taken()
+        if taken:
+            print(f"✗ Port {' and '.join(taken)} on this computer is already used by another program, so the HTTPS names cannot start.")
+            print("  Nothing was changed: keep using http://localhost:8088 (it works the same).")
+            print("  To find the program, in Windows PowerShell:  netstat -ano | findstr :" + taken[0] + "   (the last number is its PID;")
+            print("  Task Manager > Details shows its name). Stop it, then run  ./securax tls on  again.")
+            return 1
         return cmd_on([h for h in a.hosts.split(",") if h], a.domain or None, a.new_ca)
     if a.cmd == "off":
         return cmd_off()

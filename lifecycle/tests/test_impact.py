@@ -38,3 +38,14 @@ def test_downstream_closure_and_journeys_and_blind_spots():
 def test_a_change_to_the_gateway_names_the_journeys_that_prove_it():
     r = im.analyse(["apps/llm-gateway/app/main.py"], im.load())
     assert "gateway" in r["touches"] and {"gateway_identity", "purple_loop"} <= set(r["run_journeys"]) and "router" in r["also_affected"]
+
+
+def test_ci_runs_only_the_journeys_a_change_needs_and_everything_when_unsure():
+    impact = im
+    m = impact.load()
+    assert impact.journeys_to_run(["docs/securax/21-VERSIONING-AND-RELEASES.md"], m) == ""          # docs only: no journey
+    narrow = impact.journeys_to_run(["guiding-map/ops.js"], m).split(",")
+    assert "ui_guiding_map_and_hub" in narrow and "gameday" not in narrow                        # a PWA change skips the twin drills
+    assert impact.journeys_to_run(["sandbox/run.py"], m) == "ALL"                                 # changing the proof re-proves all
+    assert impact.journeys_to_run([".github/workflows/e2e.yml"], m) == "ALL"
+    assert impact.journeys_to_run(["a-file-nobody-mapped.bin"], m) == "ALL"                      # unmapped: cannot narrow

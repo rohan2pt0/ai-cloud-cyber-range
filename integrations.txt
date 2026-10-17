@@ -1,0 +1,11 @@
+# Optional integrations, one per line, like requirements.txt: delete or comment out a line to switch that integration
+# off, add it back to switch it on. SecuRAX needs NONE of them to run: the core (Docker, the gateway, the app, Chat,
+# the local model) is always on. `./securax go` and `./securax doctor` only set up and check what is listed here.
+# Known names: tailscale, ntfy, webhook, cron, regwatch, backup, cloudflare-pages, github, tls
+tailscale          # phones and other devices, over your own private network
+ntfy               # phone alerts
+cron               # schedules: weekly backup, alerts, regulator watch
+regwatch           # RBI / SEBI circulars and the monthly digest
+backup             # a verified backup taken by `go` when none is recent
+cloudflare-pages   # the public product site and docs (built by website/build.sh)
+github             # pull requests, CI and the build loop

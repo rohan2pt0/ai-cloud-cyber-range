@@ -8,6 +8,49 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
+
+## [0.2.0] - 2026-10-17
+### Added
+- **CI at agent scale** (doc 68):
+  - **Pull requests** run only the end-to-end journeys that guard what they touch, picked by the impact map (`impact.py --journeys`). A docs-only PR runs none, a Life OS change runs 4, and the sandbox, the map, the workflow or an unmapped file run all.
+  - **Main and nightly (02:00 IST)** run all 40 journeys, so anything narrowed away is caught within one merge.
+  - **Superseded runs:** a newer push cancels the older run of the same PR.
+- **Nightly safe update:** a new routine (3:15 am) runs `./securax update --auto`. It does something only when main has new commits, the checkout is on main and there are no local edits. It backs up, updates, health-checks and rolls back by itself if needed, never opens a browser, and tells your phone the outcome. Nothing new means no restart.
+
+### Fixed
+- **"v0.1.0 never updates":** the Life OS badge, the Command Center, `/version` and `./securax version` now show the build, e.g. `v0.1.0+74 · 21006c7`. It is written by every `./securax up` from git (`governance/buildinfo.py`), so each push is visible without bumping anything by hand. The release number still changes only when a release is cut.
+  - **Offline cache:** the Life OS service worker is registered per build and names its cache after it. The hand-bumped cache version (`v14.11.0`, last changed long ago) is gone, so a new build replaces the old cache and reloads once by itself.
+  - **`doctor`** warns when the running estate is an older build than the code on disk.
+  - **Test:** two commits in a scratch repository must change the label without touching `VERSION`. The old check only proved that the badge matched `VERSION`.
+- **A busy port 80/443 no longer leaves you with nothing running** (seen on Windows: `ports are not available: exposing port TCP 0.0.0.0:80`):
+  - `./securax tls on` checks the ports first, changes nothing when another program holds them, and says how to find it.
+  - `up` and `go` switch back to `http://localhost:8088` by themselves when the HTTPS edge cannot get its ports.
+  - Any other busy port is named with the one fix, instead of the misleading "the model router rejected its config" and its log.
+- **Risk registers with a one-row header lost their first risk:** a one-row header now wins over a two-row reading when both match equally.
+
+### Added
+- **No paths to type:** `./securax controls import` and `./securax risks import` with no file find the workbooks in Downloads, Documents and Desktop (the Windows ones too, on WSL), list them and ask once.
+- **Risk register, interlinked** (doc 67): `./securax risks import | list | overdue | cii`.
+  - **Import:** reads V/T/R registers (risk-wise, asset-wise, observations) and risk assessment + treatment plan workbooks by column name (two-row headers included). Treatment-plan rows are joined to their risks by reference.
+  - **Private:** the register stays in `vault/risks/`.
+  - **Links:** each risk is linked to the library controls that treat it. The navigator's heat map plots open risks when controls are unscored, and the vital few rank controls by your highest open risk.
+  - **Overdue treatments** light a lamp in the navigator and, only when there are any, in the cockpit.
+  - **`cii`:** the four NCIIPC impact tests, recorded as a self-check.
+- **NSCS Audit Baseline pack:** all 68 markers (csm/pro/det/res/rec/imp) are linked to library controls, with the three risk profiles recorded. `pro.19` becomes control AS-101 (change control).
+- **NCIIPC CII pack:** the evaluation framework's five phases and the identification guidelines are linked to library controls. Both packs carry references only, never the documents' text.
+- **Professional names with phones:** the HTTPS edge gets two loopback-only device ports (9443 app with same-origin `/v1`, `/sync`; 9444 Chat) for `tailscale serve`. `go` and `phones` use them, so `https://hub.securax.localhost` on the laptop and the ts.net names on phones work at the same time; `go` no longer asks you to switch the edge off.
+- **BFSI control library and navigator** (doc 66), `./securax controls import | profile | dominance | navigator | gaps`:
+  - **Import:** the gap-assessment workbook (202 controls, 20 domains, 22 regulated-entity classes, RBI/SEBI/IRDAI/IFSCA/NPCI/NCIIPC/CERT-In/DPDP citations) is read with a standard-library .xlsx reader into a private `vault/controls/library.json`. Your yellow-cell scores come with it; author metadata is never read.
+  - **Ceiling profile:** the strictest requirement per control across every class, so meeting it meets them all. `dominance` shows that SCB/PSB alone misses AUD-002/AUD-006 for NBFC-UL, AIFI, IFSC IBU, MII and brokers, and AUD-003 for insurers.
+  - **Packs** in `governance/controls/packs/` add new regulations or citations without code.
+  - **SecuRAX map:** `governance/controls/securax-map.json` covers 53 controls, each proven or partly proven with real evidence files (CI checks they exist).
+  - **Navigator** (one page per profile): master-caution lamps, the vital few, a MITRE-style 20 × 202 grid, a domain radar, a 5 × 5 heat map, regulator coverage bars and the SCB/PSB exceptions. No script, no external request.
+- **Dark cockpit:** only abnormal vital signs are lit. A master-caution panel shows warnings, cautions, the nominal count and a Controls lamp; nominal and not-measured readings are folded away, and the planning views sit in one "Mission planning" section.
+- **Configuration, not code** (doc 65): nothing brand- or vendor-specific is hardwired any more.
+  - **`brand.env`** holds the brand name, product name, domain, contact address, repository and image registry; an environment variable with the same name wins. Every value is optional.
+  - **`integrations.txt`** switches the optional parts on or off, one per line, like `requirements.txt` (tailscale, ntfy, webhook, cron, regwatch, backup, cloudflare-pages, github, tls). `./securax go` and `doctor` only act on what it lists; no file means everything is on.
+  - The product site uses `{{SITE_DOMAIN}}`, `{{CONTACT_EMAIL}}` and `{{BRAND_NAME}}`, filled by `website/build.sh`. `mkdocs.yml`, `tools/publish-clean.sh` and the regulator watch read the same values.
+  - `./securax config show | check | enabled | render`. A new **`config-clean`** fitness check fails CI when a brand value or a registrar/host vendor appears in code, or when either file is malformed.
 ### Added
 - **`./securax go`: one command that gets everything working and keeps it working.** It updates safely or starts, installs the schedules, publishes to your phones over Tailscale, starts the regulator watch, takes a first backup, opens the app with sync set up, and can send the one-tap phone link through your ntfy alerts. Every step checks first and only acts when something is missing. It ends with one status screen: ✔ for what works, and one ✗ line with the single fix for what does not. `START-HERE-Windows.bat` now runs it, and it heads `./securax help`.
 - **Resilience fundamentals in the gateway and alerts** (doc 63, a 35-concept audit):
@@ -300,5 +343,6 @@ First versioned public release. SecuRAX is a sovereign, local-first AI-security 
 - Fail-closed everywhere; no secrets in the repo (pattern-based PII/secret CI gate); SSRF + DNS-rebind
   defenses on the web agent; append-only audit trail for approved actions.
 
-[Unreleased]: https://github.com/rohan2pt0/ai-cloud-cyber-range/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/rohan2pt0/ai-cloud-cyber-range/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/rohan2pt0/ai-cloud-cyber-range/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/rohan2pt0/ai-cloud-cyber-range/releases/tag/v0.1.0

@@ -83,7 +83,12 @@ cd ~/securax && ./securax go          # after a restart, or any time: updates, s
 Backups run by themselves every Sunday at 2:30 am. To move to a new laptop: `./securax restore <file>`, then open your sync
 link once.
 
-## 3. The website on cyberbaba.org (once, about 30 minutes)
+## 3. The website on your domain (once, about 30 minutes)
+
+Your brand, domain and contact address live in **`brand.env`** (today: CyberBaba, `cyberbaba.org`, `hello@cyberbaba.org`).
+Change them there and the site, the docs and the scripts follow; `./securax config show` prints what is in use. The steps
+below use today's values as the example. The host (Cloudflare Pages) and the registrar (Namecheap) are your choices,
+not requirements: any static host and any registrar work, and `cloudflare-pages` can be removed from `integrations.txt`.
 
 Do these in order. Step 3.1 keeps your name off the public product.
 
@@ -99,7 +104,7 @@ Do these in order. Step 3.1 keeps your name off the public product.
    **Always Use HTTPS**.
 4. **Email.** Email → Email Routing → forward `hello@cyberbaba.org` to your own inbox. The site's "Talk to an expert"
    buttons use it.
-5. **Registrar privacy.** Namecheap → Domain List → cyberbaba.org → **WithheldForPrivacy: ON**. Leave the nameservers on
+5. **Registrar privacy.** Your registrar (Namecheap today) → Domain List → cyberbaba.org → **WithheldForPrivacy: ON**. Leave the nameservers on
    Cloudflare.
 6. Remove the GitHub environment named `DOCS_PAGES = true` (Settings → Environments). It is not used: Cloudflare serves
    the docs at `cyberbaba.org/docs/`.

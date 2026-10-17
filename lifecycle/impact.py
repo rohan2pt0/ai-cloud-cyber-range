@@ -106,13 +106,30 @@ def analyse(files: list[str], m: dict) -> dict:
     return {"touches": {k: len(v) for k, v in sorted(touched.items())}, "also_affected": sorted(down), "run_journeys": journeys, "blind_spots": blind, "unowned_files": unowned}
 
 
+# A change to the proof itself (the journeys, the map that picks them, the workflow that runs them) re-proves everything.
+RUN_ALL = ("sandbox/**", "lifecycle/impact.json", "lifecycle/impact.py", ".github/workflows/e2e.yml")
+
+
+def journeys_to_run(files: list[str], m: dict) -> str:
+    """For CI: 'ALL', or the comma-separated journeys that guard what changed ('' when none does, e.g. docs only).
+    Unmapped files run everything: what the map cannot place, it cannot narrow."""
+    if any(matches(f, pat) for f in files for pat in RUN_ALL):
+        return "ALL"
+    res = analyse(files, m)
+    return "ALL" if res["unowned_files"] else ",".join(res["run_journeys"])
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     ap.add_argument("--base", default="origin/main")
     ap.add_argument("--json", action="store_true")
+    ap.add_argument("--journeys", action="store_true", help="print only what CI should run: ALL, a comma list, or nothing")
     a = ap.parse_args(argv)
     m = load()
     files = changed(a.base)
+    if a.journeys:
+        print(journeys_to_run(files, m))
+        return 0
     res = analyse(files, m)
     if a.json:
         print(json.dumps(res, indent=2))
