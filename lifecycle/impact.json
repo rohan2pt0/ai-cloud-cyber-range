@@ -239,6 +239,7 @@
   "mkdocs.yml",
   "website/**",
   "tools/publish-clean.sh",
+  "tools/readme_sync.py",
   "*.md",
   "LICENSE*",
   "CODEOWNERS",
