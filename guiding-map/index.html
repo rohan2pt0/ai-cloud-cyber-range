@@ -2123,8 +2123,10 @@ function renderPlaybook(){
   /* ── 1. PWA: service worker + install ───────────────────────────── */
   // Which build is running (guiding-map/build.json, written by every `./securax up`): the badge shows it, so a push that
   // reached this device is visible at once. Without the file the badge keeps the release number stamped by build.js.
-  var gmBuild = (window.fetch ? fetch("build.json", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; })
-                              : Promise.resolve(null)).catch(function () { return null; });
+  // Only when served (http/https): opened straight from the file, a fetch is a browser error, and there is no build to read.
+  var gmBuild = (window.fetch && location.protocol.indexOf("http") === 0
+    ? fetch("build.json", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; })
+    : Promise.resolve(null)).catch(function () { return null; });
   gmBuild.then(function (b) {
     var el = document.getElementById("app_ver");
     if (!b || !b.label || !el) return;
