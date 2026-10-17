@@ -1,5 +1,5 @@
 {
- "about": "Blast-radius map. For a change, `./securax impact` lists which components it touches, what they feed (downstream), and which real-product journeys prove they still work \u2014 so one change cannot silently hurt another part. Every tracked file must belong to a component (or be ignored on purpose); `fitness` fails otherwise, so the map cannot rot.",
+ "about": "Blast-radius map. For a change, `./securax impact` lists which components it touches, what they feed (downstream), and which real-product journeys prove they still work — so one change cannot silently hurt another part. Every tracked file must belong to a component (or be ignored on purpose); `fitness` fails otherwise, so the map cannot rot.",
  "components": {
   "gateway": {
    "paths": [
@@ -47,8 +47,8 @@
    "paths": [
     "securax",
     "securax.cmd",
-        "brand.env",
-        "integrations.txt",
+    "brand.env",
+    "integrations.txt",
     "local/compose/docker-compose.yml",
     "local/compose/full-stack.yml",
     "local/compose/design.yml",
@@ -69,7 +69,8 @@
     "STOP-Windows.bat",
     "*.bat",
     ".editorconfig",
-    ".pre-commit-config.yaml"
+    ".pre-commit-config.yaml",
+    "local/compose/controls/**"
    ],
    "guarded_by": [
     "fresh_install",
@@ -235,9 +236,9 @@
  },
  "ignore": [
   "docs/**",
-    "mkdocs.yml",
-    "website/**",
-    "tools/publish-clean.sh",
+  "mkdocs.yml",
+  "website/**",
+  "tools/publish-clean.sh",
   "*.md",
   "LICENSE*",
   "CODEOWNERS",

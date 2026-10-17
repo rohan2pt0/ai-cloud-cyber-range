@@ -25,7 +25,7 @@ import httpx
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
 
-from . import guardrails, identity, residency
+from . import guardrails, identity, killswitch, residency
 from .providers import active_detectors, run_detectors
 
 MODE = os.getenv("GUARDRAIL_MODE", "enforce")  # enforce | monitor
@@ -102,6 +102,16 @@ if os.getenv("ALLOW_LOCAL_CORS", "1") == "1":
 
 _metrics: dict[str, int] = defaultdict(int)
 _buckets: dict[str, deque[float]] = defaultdict(deque)
+# A daily token budget per caller (0 = off). Agentic work uses far more tokens than chat, so a runaway agent or a loop
+# must hit a ceiling a person chose, not the provider's bill. Counted in memory; a gateway restart starts the day afresh.
+TOKEN_BUDGET_PER_DAY = int(os.getenv("TOKEN_BUDGET_PER_DAY", "0") or 0)
+_spent: dict[tuple[str, str], int] = defaultdict(int)
+
+
+def _budget_left(principal: str) -> int | None:
+    if TOKEN_BUDGET_PER_DAY <= 0:
+        return None
+    return TOKEN_BUDGET_PER_DAY - _spent[(principal, time.strftime("%Y-%m-%d"))]
 
 
 def _rate_limited(principal: str) -> bool:
@@ -448,6 +458,24 @@ async def _chat(request: Request, authorization: str | None) -> JSONResponse:
         _emit({"req_id": req_id, **who, "decision": "rate_limited", "category": "LLM10"})
         raise HTTPException(429, "rate limit exceeded", headers={"Retry-After": "60"})
 
+    # Human-in-command: a person stopped this model (or all AI) with `./securax ai stop`. Nothing is sent anywhere.
+    stop = killswitch.stopped(payload.get("model") or "")
+    if stop:
+        _metrics["ai_suspended"] += 1
+        _emit({"req_id": req_id, **who, "decision": "suspended", "model": payload.get("model"), "stopped": stop,
+               "category": "RBI-MRM/human-in-command"})
+        what = "All AI is" if stop["scope"] == "all" else f"The model '{stop['scope']}' is"
+        return JSONResponse(status_code=503, headers={"Retry-After": "300"}, content={"error": {
+            "type": "ai_suspended", "req_id": req_id, "stopped_by": stop.get("by"), "since": stop.get("at"),
+            "message": f"{what} switched off by a person ({stop.get('reason') or 'no reason given'}). "
+                       "A human handles this instead; ask the person who runs this service."}})
+    left = _budget_left(principal)
+    if left is not None and left <= 0:
+        _metrics["budget_exhausted"] += 1
+        _emit({"req_id": req_id, **who, "decision": "budget_exhausted", "budget": TOKEN_BUDGET_PER_DAY, "category": "LLM10/cost"})
+        raise HTTPException(429, f"today's AI budget for this caller ({TOKEN_BUDGET_PER_DAY} tokens) is used up; it resets at midnight",
+                            headers={"Retry-After": "3600"})
+
     messages = payload.get("messages", [])
     if not isinstance(messages, list) or not messages:
         raise HTTPException(400, "`messages` must be a non-empty list")
@@ -561,12 +589,19 @@ async def _chat(request: Request, authorization: str | None) -> JSONResponse:
     _usage["tokens_reasoning"] += int((u.get("completion_tokens_details") or {}).get("reasoning_tokens") or 0)   # thinking the model did, inside completion
     _usage["latency_ms_sum"] += latency_ms
     _usage["latency_ms_count"] += 1
+    if TOKEN_BUDGET_PER_DAY > 0:
+        used = int(u.get("total_tokens") or (int(u.get("prompt_tokens") or 0) + int(u.get("completion_tokens") or 0)))
+        if not used:                                     # some local models report no usage: estimate (about 4 characters a token)
+            text = json.dumps(messages) + json.dumps([c.get("message", {}).get("content") for c in resp.get("choices", [])])
+            used = max(1, len(text) // 4)
+        _spent[(principal, time.strftime("%Y-%m-%d"))] += used
     _emit({"req_id": req_id, **who, "decision": decision, "model": payload.get("model"),
            "latency_ms": latency_ms, "usage": resp.get("usage"),
            "findings": _findings(in_findings + out_findings)})
     resp["guardrails"] = {"req_id": req_id, "decision": decision,
                           "rules": sorted({f.rule for f in in_findings + out_findings})}
-    echo = {"traceparent": f"00-{trace_id}-{span_id}-01", "X-Request-ID": req_id}
+    # Customer-facing AI must say it is AI (RBI MRM draft): every answer carries the disclosure, for any client to show.
+    echo = {"traceparent": f"00-{trace_id}-{span_id}-01", "X-Request-ID": req_id, "X-AI-Generated": "true"}
     if _IDEM_CTX.get():
         _IDEM[_IDEM_CTX.get()] = {"state": "done", "body": _IDEM[_IDEM_CTX.get()]["body"], "t": time.time(),
                                   "resp": resp, "stream": want_stream, "echo": echo}

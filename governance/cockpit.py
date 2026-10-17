@@ -777,8 +777,14 @@ def render(c: Collector, maps: dict, hist: list[dict], ai: str, now: float, targ
         late = len(_rm.overdue(_rm.load()))
     except Exception:  # noqa: BLE001 - the register is optional
         late = 0
+    try:                                                          # a person stopped AI (./securax ai stop): always lit while it lasts
+        _ctl = json.loads((ROOT / "local" / "compose" / "controls" / "ai-control.json").read_text("utf-8"))
+        stopped_ai = (["all AI"] if _ctl.get("all") else []) + sorted(_ctl.get("models") or {})
+    except (OSError, ValueError):
+        stopped_ai = []
     lamps = [("warn" if reds else "ok", len(reds), "Warnings: act today"), ("caut" if ambs else "ok", len(ambs), "Cautions: schedule"),
-             ("ok", sum(1 for m in ms if m["status"] == "green"), "Nominal")] + ([("warn", late, "Risk treatments overdue")] if late else [])
+             ("ok", sum(1 for m in ms if m["status"] == "green"), "Nominal")] + ([("warn", late, "Risk treatments overdue")] if late else []) \
+        + ([("warn", len(stopped_ai), "AI stopped by a person: " + ", ".join(stopped_ai))] if stopped_ai else [])
     h.append("<div class='card'><h2>Master caution</h2><div class='annun'>" + "".join(
         f"<div class='lamp {k}'><b>{v}</b>{E(t)}</div>" for k, v, t in lamps)
         + ("<a class='lamp nav' href='/portal/navigator.html'><b>Controls</b>BFSI control navigator</a>" if nav else

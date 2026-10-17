@@ -8,6 +8,13 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
+### Added
+- **Human-in-command for AI** (doc 69, following RBI's June 2026 draft model-risk guidance):
+  - **Kill switch:** `./securax ai stop all|MODEL --reason "..."` and `resume`. The gateway refuses on the next request with no restart, tells the caller who stopped it and why, and lights a cockpit lamp. The switch is a read-only file, not an API, and a malformed file stops all AI.
+  - **Model inventory:** `./securax ai inventory` checks owner, third-party source, explainability, validation and yearly re-validation for high-risk models, and keeps decommissioned models' records for 10 years.
+  - **Disclosure:** every answer carries `X-AI-Generated: true`.
+  - **Control library:** the pack `rbi-mrm-draft-2026` adds controls ET-101 to ET-103.
+- **Agent cost guard:** `TOKEN_BUDGET_PER_DAY` sets a per-caller daily token ceiling. The gateway refuses with 429 and a plain reason until midnight.
 
 ## [0.2.0] - 2026-10-17
 ### Added

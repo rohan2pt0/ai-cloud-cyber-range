@@ -42,7 +42,8 @@ DOMAINS = {"GOV": "Governance", "RM": "Risk management", "IAM": "Identity & acce
            "AUD": "Audit & assurance", "ET": "Emerging tech & AI"}
 REGULATORS = [("RBI", ("RBI Primary Citation", "RBI Secondary Citation")), ("SEBI", ("SEBI CSCRF",)), ("IRDAI", ("IRDAI 2023",)),
               ("IFSCA", ("IFSCA 2025",)), ("NPCI / PCI / SWIFT", ("NPCI / PCI DSS / SWIFT",)), ("NCIIPC / CERT-In / DPDP", ("NCIIPC / CERT-In / DPDP",)),
-              ("NSCS audit baseline (pack)", ("NSCS Audit Baseline 2020",)), ("NCIIPC CII framework (pack)", ("NCIIPC CII Framework",))]
+              ("NSCS audit baseline (pack)", ("NSCS Audit Baseline 2020",)), ("NCIIPC CII framework (pack)", ("NCIIPC CII Framework",)),
+              ("RBI model risk draft 2026 (pack)", ("RBI MRM draft 2026",))]
 _NS = {"m": "http://schemas.openxmlformats.org/spreadsheetml/2006/main",
        "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships"}
 

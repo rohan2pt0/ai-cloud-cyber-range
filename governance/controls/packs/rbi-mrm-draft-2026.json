@@ -1,0 +1,54 @@
+{
+ "about": "RBI Draft Guidance on Regulatory Principles for Model Risk Management, 2026 (press release 2026-2027/528, June 2026; comments were due 24 July 2026). A DRAFT: proposed expectations, not rules in force. References and links to library controls only; check the final text before relying on it.",
+ "framework": {
+  "name": "RBI MRM draft 2026",
+  "reference": "RBI press release 2026-2027/528 (draft, June 2026)",
+  "status": "draft"
+ },
+ "citations": {
+  "ET-001": {
+   "RBI MRM draft 2026": "board-approved framework; model inventory; risk tiering; independent validation"
+  },
+  "ET-010": {
+   "RBI MRM draft 2026": "safeguards for customer-facing generative AI"
+  }
+ },
+ "controls": [
+  {
+   "id": "ET-101",
+   "domain": "ET",
+   "subdomain": "AI model risk",
+   "title": "Human-in-command: override, suspension and kill switch for AI models",
+   "tier": "Critical",
+   "description": "A named person can override, suspend or deactivate any AI model, or all AI at once, effective immediately, with the reason recorded and shown to callers.",
+   "owner": "CRO/CISO",
+   "citations": {
+    "RBI MRM draft 2026": "human oversight; override, suspension and deactivation mechanisms"
+   }
+  },
+  {
+   "id": "ET-102",
+   "domain": "ET",
+   "subdomain": "AI model risk",
+   "title": "Living model inventory: tier, owner, third-party source, explainability, validation and decommission records",
+   "tier": "High",
+   "description": "Every model in use, internal or third-party, is listed with its risk tier, owner, explainability statement and last independent validation; retired models keep their records for at least 10 years.",
+   "owner": "Model Risk / CRO",
+   "citations": {
+    "RBI MRM draft 2026": "model inventory; tiering; third-party accountability; decommissioned-model records"
+   }
+  },
+  {
+   "id": "ET-103",
+   "domain": "ET",
+   "subdomain": "AI model risk",
+   "title": "Customer-facing AI discloses it is AI and offers a human",
+   "tier": "High",
+   "description": "Customers are told when they interact with AI and can switch to a human on request.",
+   "owner": "Business / Customer Service",
+   "citations": {
+    "RBI MRM draft 2026": "consumer protection for customer-facing AI"
+   }
+  }
+ ]
+}

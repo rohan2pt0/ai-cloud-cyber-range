@@ -402,6 +402,30 @@
     "lifecycle/offline.py"
    ],
    "note": "CISA KEV lookup offline (./securax kev)"
+  },
+  "ET-101": {
+   "status": "proven",
+   "evidence": [
+    "apps/llm-gateway/app/killswitch.py",
+    "governance/aicontrol.py",
+    "apps/llm-gateway/tests/test_human_in_command.py"
+   ],
+   "note": "./securax ai stop|resume: one model or all AI, no restart, reason shown and logged; cockpit lamp while stopped"
+  },
+  "ET-102": {
+   "status": "partial",
+   "evidence": [
+    "governance/model-registry.yaml",
+    "governance/aicontrol.py"
+   ],
+   "note": "inventory with tier, owner, third party, explainability, validation due and 10-year decommission records; board approval is the organisation's"
+  },
+  "ET-103": {
+   "status": "partial",
+   "evidence": [
+    "apps/llm-gateway/app/main.py"
+   ],
+   "note": "every answer carries X-AI-Generated; a stopped model tells callers a human handles it. The hand-off itself is the organisation's"
   }
  }
 }

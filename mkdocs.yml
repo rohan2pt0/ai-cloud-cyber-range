@@ -83,6 +83,7 @@ nav:
       - BFSI control library and navigator: securax/66-BFSI-CONTROL-LIBRARY-AND-NAVIGATOR.md
       - Risk register, NSCS and NCIIPC: securax/67-RISK-REGISTER-NSCS-NCIIPC.md
       - CI at agent scale: securax/68-CI-AT-AGENT-SCALE.md
+      - Human-in-command for AI: securax/69-HUMAN-IN-COMMAND-AND-FINTECH-SIGNALS.md
   - How-to guides:
       - AI providers and plugins: securax/22-PLUGINS-AND-PROVIDERS.md
       - Integrations: securax/07-INTEGRATIONS.md

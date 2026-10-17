@@ -4,7 +4,7 @@
 # risk-classified models are used. This is the governance spine of ISO/IEC 42001 + NIST AI RMF MAP.
 version: 1
 owner: securax-maintainers
-updated: 2026-10-10
+updated: 2026-10-17
 
 # Risk tiers follow EU AI Act / NIST AI RMF framing.
 risk_tiers: [minimal, limited, high, unacceptable]
@@ -27,6 +27,11 @@ models:
     approved_by: model-risk-committee
     dpia: docs/compliance-matrix.md
     owner: securax-maintainers
+    # RBI MRM draft (June 2026): who supplies it, how its outputs are explained, and when it was last independently validated
+    third_party: true               # open-weights model from an outside developer, run locally
+    explainability: "answers cite the handbook passage they use; no credit or fraud decision is taken by this model"
+    validated: 2026-10-10
+    validated_by: redteam/run_attacks.py + sandbox journeys (independent of the model's developer)
 
   - id: bank-assistant-gemini
     provider: gemini
@@ -38,6 +43,11 @@ models:
     guardrails: [input-rails, output-rails, pii-redaction, model-armor]
     approved: true
     approved_by: model-risk-committee
+    owner: securax-maintainers
+    third_party: true               # a cloud provider's model: accountability stays with us (RBI MRM draft)
+    explainability: "answers cite the handbook passage they use; no credit or fraud decision is taken by this model"
+    validated: 2026-10-10
+    validated_by: redteam/run_attacks.py + sandbox journeys
 
   - id: soc-triage-assistant
     provider: ollama
@@ -48,6 +58,13 @@ models:
     risk_tier: limited              # internal, no customer data; inputs sanitised
     guardrails: [input-rails, output-rails]
     approved: true
+    owner: securax-maintainers
+    third_party: true
+    validated: 2026-10-10
+    validated_by: purple-team loop (redteam/purple.py)
+
+# Retired models stay listed: the RBI MRM draft expects their records to be kept (10 years here; `./securax ai inventory`).
+decommissioned: []
 
 # Datasets / knowledge sources governed the same way (data poisoning / supply chain).
 datasets:
