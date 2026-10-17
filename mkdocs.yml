@@ -77,6 +77,7 @@ nav:
       - Ship it and build with SecuRAX: securax/60-SHIP-IT-AND-BUILD-WITH-SECURAX.md
       - Run it as a business: securax/61-RUN-IT-AS-A-BUSINESS.md
       - Strategy (Cyera and the AI unicorns): securax/62-STRATEGY-LESSONS-FROM-CYERA-AND-AI-UNICORNS.md
+      - Engineering resilience audit: securax/63-ENGINEERING-RESILIENCE-AUDIT.md
   - How-to guides:
       - AI providers and plugins: securax/22-PLUGINS-AND-PROVIDERS.md
       - Integrations: securax/07-INTEGRATIONS.md

@@ -440,3 +440,87 @@ def test_a_broken_tool_policy_file_fails_closed(monkeypatch, tmp_path):
     pol = m._tool_policy()
     _, f = g.inspect_tool_calls([_tc("get_weather", "{}")], pol)
     assert f and f[0].rule == "TOOL-001-not-allowed"
+
+
+# --- Resilience: latency percentiles, pooling, backpressure, Retry-After, circuit breaker -------------------------------
+def test_latency_histogram_and_percentiles_are_exposed():
+    import app.main as m
+    c = TestClient(m.app)
+    for _ in range(3):
+        c.post("/v1/chat/completions", json={"model": "m", "messages": [{"role": "user", "content": "hi"}]})
+    txt = c.get("/metrics").text
+    assert 'guardrail_request_latency_ms_bucket{le="+Inf"}' in txt and "guardrail_inflight" in txt
+    lat = c.get("/v1/latency").json()
+    assert lat["samples"] >= 3 and lat["p50_ms"] <= lat["p95_ms"] <= lat["p99_ms"] and lat["max_inflight"] >= 1
+
+
+def test_percentile_is_the_tail_not_the_average():
+    import app.main as m
+    v = [10.0] * 98 + [5000.0, 6000.0]
+    assert m._percentile(v, 0.99) >= 5000 and sum(v) / len(v) < 200      # the average hides what p99 shows
+
+
+def test_one_pooled_http_client_is_reused():
+    import app.main as m
+    assert m._http() is m._http()
+
+
+def test_overload_is_shed_fast_with_retry_after(monkeypatch):
+    import asyncio
+
+    import app.main as m
+
+    async def slow(payload):
+        await asyncio.sleep(0.5)
+        return {"choices": [{"index": 0, "finish_reason": "stop", "message": {"role": "assistant", "content": "ok"}}]}
+
+    monkeypatch.setattr(m, "_call_upstream", slow)
+    monkeypatch.setattr(m, "QUEUE_WAIT_S", 0.05)
+    monkeypatch.setattr(m, "MAX_INFLIGHT", 1)
+    monkeypatch.setattr(m, "_SLOTS", None)
+
+    async def two():
+        import httpx
+        async with httpx.AsyncClient(transport=httpx.ASGITransport(app=m.app), base_url="http://t") as c:
+            body = {"model": "m", "messages": [{"role": "user", "content": "hi"}]}
+            return await asyncio.gather(c.post("/v1/chat/completions", json=body), c.post("/v1/chat/completions", json=body))
+
+    rs = asyncio.run(two())
+    codes = sorted(r.status_code for r in rs)
+    shed = [r for r in rs if r.status_code == 503]
+    assert codes == [200, 503] and shed and shed[0].headers.get("retry-after") == "10"
+
+
+def test_rate_limited_reply_says_when_to_retry(monkeypatch):
+    import app.main as m
+    monkeypatch.setattr(m, "_rate_limited", lambda p: True)
+    r = TestClient(m.app).post("/v1/chat/completions", json={"model": "m", "messages": [{"role": "user", "content": "hi"}]})
+    assert r.status_code == 429 and r.headers.get("retry-after") == "60"
+
+
+def test_circuit_breaker_skips_a_dead_detector_then_retries_after_cooldown(monkeypatch):
+    import asyncio
+
+    from app import providers as p
+    calls = {"n": 0}
+
+    class Dead:
+        name = "deadguard"
+
+        def enabled(self):
+            return True
+
+        async def scan(self, text, direction):
+            calls["n"] += 1
+            raise OSError("down")
+
+    monkeypatch.setattr(p, "DETECTORS", [Dead()])
+    monkeypatch.setattr(p, "_BREAKER", {})
+    for _ in range(5):
+        f = asyncio.run(p.run_detectors("hi", "input"))
+        assert f[0].rule == "DET-unavailable-deadguard" and f[0].severity == "high"    # fail-closed verdict unchanged
+    assert calls["n"] == p.BREAKER_FAILS and p.breaker_state("deadguard") == "open"   # stopped calling after 3 failures
+    p._BREAKER["deadguard"]["opened"] -= p.BREAKER_COOLDOWN_S + 1
+    assert p.breaker_state("deadguard") == "half-open"
+    asyncio.run(p.run_detectors("hi", "input"))
+    assert calls["n"] == p.BREAKER_FAILS + 1 and p.breaker_state("deadguard") == "open"  # one trial, failed, open again

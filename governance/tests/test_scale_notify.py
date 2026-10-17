@@ -5,6 +5,8 @@ import pathlib
 import sys
 import urllib.error
 
+import pytest
+
 G = pathlib.Path(__file__).resolve().parent.parent
 
 
@@ -17,6 +19,14 @@ def load(name):
 
 
 scale, notify = load("scale"), load("notify")
+
+
+@pytest.fixture(autouse=True)
+def _isolated_dlq_and_no_retry_waits(monkeypatch, tmp_path):
+    """Never touch the real vault/notify-dlq.jsonl, and do not really sleep between retries."""
+    monkeypatch.setattr(notify, "DLQ", tmp_path / "notify-dlq.jsonl")
+    real = notify.with_retry
+    monkeypatch.setattr(notify, "with_retry", lambda fn, attempts=3, base=0.5, sleep=None: real(fn, attempts, base, sleep or (lambda s: None)))
 
 
 def test_ladder_is_contiguous_and_every_have_or_dormant_has_evidence():
@@ -138,3 +148,33 @@ def test_changed_without_a_channel_is_a_quiet_no_op(monkeypatch, tmp_path):
     _isolate(monkeypatch, tmp_path)
     monkeypatch.setattr(notify, "build_digest", lambda: ("red", "x"))
     assert notify.main(["digest", "--changed"]) == 0
+
+
+def test_retry_backs_off_with_jitter_then_succeeds():
+    waits, calls = [], {"n": 0}
+
+    def flaky():
+        calls["n"] += 1
+        if calls["n"] < 3:
+            raise OSError("blip")
+        return "ok"
+
+    assert notify.with_retry(flaky, attempts=3, base=0.5, sleep=waits.append) == "ok"
+    assert len(waits) == 2 and 0.5 <= waits[0] < 1.0 and 1.0 <= waits[1] < 1.5      # 0.5*2^n + jitter in [0, 0.5)
+
+
+def test_an_alert_that_cannot_be_sent_is_kept_and_resent_first_next_time(monkeypatch, tmp_path):
+    sent, up = [], {"ok": False}
+    monkeypatch.setattr(notify, "channels", lambda: [("ntfy", "https://ntfy.sh/t")])
+
+    def fake_post(url, text, title="SecuRAX", priority="default", timeout=10):
+        if not up["ok"]:
+            raise OSError("offline")
+        sent.append(text)
+
+    monkeypatch.setattr(notify, "post_ntfy", fake_post)
+    assert notify.deliver("disk is full") == 1 and sent == []
+    assert [i["text"] for i in notify._dlq_load()] == ["disk is full"]                 # kept, not dropped
+    up["ok"] = True
+    assert notify.deliver("back to green") == 0
+    assert sent == ["(delayed) disk is full", "back to green"] and notify._dlq_load() == []   # old first, then cleared

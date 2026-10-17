@@ -8,6 +8,7 @@ Fluent Bit to Loki/Wazuh/Sentinel), retained >=180 days per CERT-In Directions 2
 """
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 import logging
@@ -35,6 +36,13 @@ UPSTREAM_TIMEOUT = float(os.environ.get("UPSTREAM_TIMEOUT", "480"))
 UPSTREAM_KEY = os.getenv("UPSTREAM_API_KEY", "")
 MAX_CHARS = int(os.getenv("MAX_PROMPT_CHARS", "8000"))
 RATE_PER_MIN = int(os.getenv("RATE_LIMIT_PER_MIN", "30"))
+# Backpressure: at most MAX_INFLIGHT model calls at once (a CPU-bound local model answers one or two at a time); a request
+# waits up to QUEUE_WAIT_S for a slot, then gets a fast 503 + Retry-After instead of piling up until everything times out.
+MAX_INFLIGHT = int(os.getenv("MAX_INFLIGHT", "8"))
+QUEUE_WAIT_S = float(os.getenv("QUEUE_WAIT_S", "20"))
+# Latency histogram buckets (ms). Averages hide the slow tail; Prometheus computes p95/p99 from these
+# (histogram_quantile), and /v1/latency reports them directly.
+LAT_BUCKETS_MS = (50, 100, 250, 500, 1000, 2500, 5000, 10000, 30000, 60000, 120000, 300000)
 ALLOWED_DOMAINS = {d.strip() for d in os.getenv("ALLOWED_LINK_DOMAINS", "rbi.org.in,sebi.gov.in,cert-in.org.in").split(",") if d.strip()}
 CANARIES = {c for c in os.getenv("SYSTEM_PROMPT_CANARIES", "").split(",") if c}
 # Agent tool calls: the policy (allow / deny / require_approval, glob patterns) from a JSON file, else the built-in default.
@@ -106,11 +114,63 @@ def _emit(event: dict) -> None:
     audit.info(json.dumps(event, default=str))
 
 
+_HTTP: httpx.AsyncClient | None = None
+
+
+def _http() -> httpx.AsyncClient:
+    """ONE pooled HTTP client for every outbound call: keep-alive connections are reused instead of a new TCP (and TLS)
+    handshake per request. Each call still passes its own timeout."""
+    global _HTTP
+    if _HTTP is None or _HTTP.is_closed:
+        _HTTP = httpx.AsyncClient(limits=httpx.Limits(max_connections=64, max_keepalive_connections=16, keepalive_expiry=30))
+    return _HTTP
+
+
+@app.on_event("shutdown")
+async def _close_http() -> None:
+    if _HTTP is not None:
+        await _HTTP.aclose()
+
+
+_SLOTS: asyncio.Semaphore | None = None
+_SLOTS_LOOP = None
+_INFLIGHT = 0
+
+
+def _slots() -> asyncio.Semaphore:
+    """The in-flight limit for the running event loop (a semaphore belongs to one loop; test clients start their own)."""
+    global _SLOTS, _SLOTS_LOOP
+    loop = asyncio.get_running_loop()
+    if _SLOTS is None or _SLOTS_LOOP is not loop:
+        _SLOTS, _SLOTS_LOOP = asyncio.Semaphore(max(1, MAX_INFLIGHT)), loop
+    return _SLOTS
+
+
+_LAT_HIST = [0] * (len(LAT_BUCKETS_MS) + 1)        # cumulative-at-render histogram counts; the last cell is +Inf
+_LAT_RECENT: deque = deque(maxlen=1000)             # the last 1000 latencies, for exact p50/p95/p99 on /v1/latency
+
+
+def _observe_latency(ms: float) -> None:
+    for i, b in enumerate(LAT_BUCKETS_MS):
+        if ms <= b:
+            _LAT_HIST[i] += 1
+            break
+    else:
+        _LAT_HIST[-1] += 1
+    _LAT_RECENT.append(ms)
+
+
+def _percentile(values: list[float], q: float) -> float:
+    if not values:
+        return 0.0
+    s = sorted(values)
+    return s[min(len(s) - 1, max(0, int(round(q * (len(s) - 1)))))]
+
+
 async def _fetch_json(url: str) -> dict:
-    async with httpx.AsyncClient(timeout=5) as c:
-        r = await c.get(url)
-        r.raise_for_status()
-        return r.json()
+    r = await _http().get(url, timeout=5)
+    r.raise_for_status()
+    return r.json()
 
 
 async def _authn(request: Request, endpoint: str) -> identity.Identity:
@@ -167,9 +227,24 @@ async def metrics(request: Request) -> str:
     lines += [f'guardrail_events_total{{event="{k}"}} {v}' for k, v in sorted(_metrics.items())]
     lines += ["# TYPE guardrail_tokens_total counter"]
     lines += [f'guardrail_tokens_total{{kind="{k}"}} {int(_usage[f"tokens_{k}"])}' for k in ("prompt", "completion", "reasoning")]
-    lines += ["# TYPE guardrail_request_latency_ms_sum counter", f"guardrail_request_latency_ms_sum {_usage['latency_ms_sum']:.0f}",
-              "# TYPE guardrail_request_latency_ms_count counter", f"guardrail_request_latency_ms_count {int(_usage['latency_ms_count'])}"]
+    lines += ["# TYPE guardrail_request_latency_ms histogram"]
+    cum = 0
+    for b, n in zip(LAT_BUCKETS_MS, _LAT_HIST):
+        cum += n
+        lines.append(f'guardrail_request_latency_ms_bucket{{le="{b}"}} {cum}')
+    lines += [f'guardrail_request_latency_ms_bucket{{le="+Inf"}} {cum + _LAT_HIST[-1]}',
+              f"guardrail_request_latency_ms_sum {_usage['latency_ms_sum']:.0f}", f"guardrail_request_latency_ms_count {cum + _LAT_HIST[-1]}",
+              "# TYPE guardrail_inflight gauge", f"guardrail_inflight {_INFLIGHT}"]
     return "\n".join(lines) + "\n"
+
+
+@app.get("/v1/latency")
+async def latency(request: Request) -> dict:
+    """p50 / p95 / p99 of the last 1000 model calls, in ms. The average is shown only next to them, never alone."""
+    await _authn(request, "metrics")
+    v = list(_LAT_RECENT)
+    return {"samples": len(v), "p50_ms": _percentile(v, 0.50), "p95_ms": _percentile(v, 0.95), "p99_ms": _percentile(v, 0.99),
+            "avg_ms": round(sum(v) / len(v), 1) if v else 0.0, "inflight": _INFLIGHT, "max_inflight": MAX_INFLIGHT}
 
 
 @app.post("/v1/guardrails/inspect")
@@ -197,10 +272,9 @@ async def _call_upstream(payload: dict) -> dict:
     headers = {"Authorization": f"Bearer {UPSTREAM_KEY}"} if UPSTREAM_KEY else {}
     if _TP.get():
         headers["traceparent"] = _TP.get()
-    async with httpx.AsyncClient(timeout=UPSTREAM_TIMEOUT) as c:
-        r = await c.post(f"{UPSTREAM.rstrip('/')}/chat/completions", json=payload, headers=headers)
-        r.raise_for_status()
-        return r.json()
+    r = await _http().post(f"{UPSTREAM.rstrip('/')}/chat/completions", json=payload, headers=headers, timeout=UPSTREAM_TIMEOUT)
+    r.raise_for_status()
+    return r.json()
 
 
 @app.get("/readyz")
@@ -214,8 +288,7 @@ async def readyz() -> JSONResponse:
     base = UPSTREAM.rstrip("/")
     base = base[:-3] if base.endswith("/v1") else base
     try:
-        async with httpx.AsyncClient(timeout=3) as c:
-            r = await c.get(f"{base}/health/readiness")
+        r = await _http().get(f"{base}/health/readiness", timeout=3)
         if r.status_code == 200:
             return JSONResponse({"ready": True})
         return JSONResponse({"ready": False, "reason": f"router returned {r.status_code}"}, status_code=503)
@@ -230,11 +303,10 @@ async def _upstream_model_ids() -> list[str]:
         return []
     headers = {"Authorization": f"Bearer {UPSTREAM_KEY}"} if UPSTREAM_KEY else {}
     try:
-        async with httpx.AsyncClient(timeout=5) as c:
-            r = await c.get(f"{UPSTREAM.rstrip('/')}/models", headers=headers)
-            r.raise_for_status()
-            data = r.json().get("data", [])
-            return [m["id"] for m in data if isinstance(m, dict) and m.get("id")]
+        r = await _http().get(f"{UPSTREAM.rstrip('/')}/models", headers=headers, timeout=5)
+        r.raise_for_status()
+        data = r.json().get("data", [])
+        return [m["id"] for m in data if isinstance(m, dict) and m.get("id")]
     except Exception:
         return []
 
@@ -300,7 +372,7 @@ async def chat(request: Request, authorization: str | None = Header(default=None
     if _rate_limited(principal):
         _metrics["rate_limited"] += 1
         _emit({"req_id": req_id, **who, "decision": "rate_limited", "category": "LLM10"})
-        raise HTTPException(429, "rate limit exceeded")
+        raise HTTPException(429, "rate limit exceeded", headers={"Retry-After": "60"})
 
     messages = payload.get("messages", [])
     if not isinstance(messages, list) or not messages:
@@ -353,7 +425,15 @@ async def chat(request: Request, authorization: str | None = Header(default=None
     payload["stream"] = False            # always take the reply WHOLE so the output rails can inspect it
     payload.pop("stream_options", None)  # only valid on streaming calls; upstreams reject it otherwise
 
+    global _INFLIGHT
     start = time.perf_counter()
+    try:
+        await asyncio.wait_for(_slots().acquire(), timeout=QUEUE_WAIT_S)
+    except asyncio.TimeoutError:
+        _metrics["shed_overload"] += 1
+        _emit({"req_id": req_id, **who, "decision": "shed_overload", "inflight": _INFLIGHT})
+        raise HTTPException(503, "the AI models are busy; try again shortly", headers={"Retry-After": "10"}) from None
+    _INFLIGHT += 1
     try:
         _TP.set(f"00-{trace_id}-{span_id}-01")
         resp = await _call_upstream(payload)
@@ -361,7 +441,11 @@ async def chat(request: Request, authorization: str | None = Header(default=None
         _metrics["upstream_error"] += 1
         _emit({"req_id": req_id, **who, "decision": "upstream_error", "error": str(exc)[:200]})
         raise HTTPException(502, "upstream model unavailable") from exc
+    finally:
+        _INFLIGHT -= 1
+        _slots().release()
     latency_ms = round((time.perf_counter() - start) * 1000)
+    _observe_latency(latency_ms)
 
     out_findings: list[guardrails.Finding] = []
     for choice in resp.get("choices", []):

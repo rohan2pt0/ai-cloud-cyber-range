@@ -109,25 +109,79 @@ def post_ntfy(url: str, text: str, title: str = "SecuRAX", priority: str = "defa
             raise OSError(f"ntfy answered {r.status}")
 
 
+DLQ = ROOT / "vault" / "notify-dlq.jsonl"
+DLQ_MAX = 50
+
+
+def with_retry(fn, attempts: int = 3, base: float = 0.5, sleep=None) -> None:
+    """Call fn(); on failure wait base*2^n plus random jitter (so many senders do not retry in lockstep), then try again."""
+    import random
+    import time
+    sleep = sleep or time.sleep
+    for n in range(attempts):
+        try:
+            return fn()
+        except Exception:
+            if n == attempts - 1:
+                raise
+            sleep(base * (2 ** n) + random.uniform(0, base))
+
+
+def _dlq_load(path: pathlib.Path | None = None) -> list[dict]:
+    path = path or DLQ
+    try:
+        return [json.loads(x) for x in path.read_text("utf-8").splitlines() if x.strip()]
+    except (OSError, ValueError):
+        return []
+
+
+def _dlq_save(items: list[dict], path: pathlib.Path | None = None) -> None:
+    path = path or DLQ
+    if not items:
+        path.unlink(missing_ok=True)
+        return
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("".join(json.dumps(i) + "\n" for i in items[-DLQ_MAX:]), "utf-8")
+    try:
+        path.chmod(0o600)
+    except OSError:
+        pass
+
+
+def _send_one(kind: str, url: str, text: str, title: str, priority: str) -> None:
+    with_retry(lambda: post_ntfy(url, text, title, priority) if kind == "ntfy" else post(url, text))
+
+
 def deliver(text: str, title: str = "SecuRAX", priority: str = "default") -> int:
-    """Send to every configured channel. 0 = all sent, 1 = a send failed, 2 = nothing configured / refused."""
+    """Send to every configured channel, retrying with backoff + jitter. A message that still cannot be sent goes to a
+    dead-letter file (vault/notify-dlq.jsonl, newest 50) and is re-sent, marked "(delayed)", before the next message.
+    At-least-once: a send whose reply was lost may arrive twice; an alert is never silently dropped.
+    0 = all sent, 1 = a send failed (kept for later), 2 = nothing configured / refused."""
     chans = channels()
     if not chans:
         print("not configured: set SECURAX_NOTIFY_NTFY (phone push) or SECURAX_NOTIFY_WEBHOOK (Mattermost/Slack) in local/compose/.env")
         return 2
-    rc = 0
+    rc, pending, still = 0, _dlq_load(), []
     for kind, url in chans:
         bad = url_problem(url)
         if bad:
             print(f"{kind}: refused: {bad}")
             rc = max(rc, 2)
             continue
+        for old in [p for p in pending if p.get("kind") == kind]:            # earlier alerts first, in order
+            try:
+                _send_one(kind, url, "(delayed) " + old["text"], old.get("title", "SecuRAX"), old.get("priority", "default"))
+                print(f"{kind}: delivered 1 delayed alert")
+            except Exception:
+                still.append(old)
         try:
-            post_ntfy(url, text, title, priority) if kind == "ntfy" else post(url, text)
+            _send_one(kind, url, text, title, priority)
             print(f"{kind}: sent")
         except Exception as e:                                     # the URL is a secret: never echo it
-            print(f"{kind}: send failed: {type(e).__name__}")
+            print(f"{kind}: send failed: {type(e).__name__} (kept; re-sent with the next alert)")
+            still.append({"kind": kind, "text": text[:MAX_LEN], "title": title, "priority": priority})
             rc = 1
+    _dlq_save(still + [p for p in pending if p.get("kind") not in {k for k, _ in chans}])
     return rc
 
 

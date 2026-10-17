@@ -10,6 +10,12 @@ for the versioning and release policy.
 ## [Unreleased]
 ### Added
 - **`./securax go`: one command that gets everything working and keeps it working.** It updates safely or starts, installs the schedules, publishes to your phones over Tailscale, starts the regulator watch, takes a first backup, opens the app with sync set up, and can send the one-tap phone link through your ntfy alerts. Every step checks first and only acts when something is missing. It ends with one status screen: ✔ for what works, and one ✗ line with the single fix for what does not. `START-HERE-Windows.bat` now runs it, and it heads `./securax help`.
+- **Resilience fundamentals in the gateway and alerts** (doc 63, a 35-concept audit):
+  - **p95 / p99 latency:** a Prometheus histogram and `GET /v1/latency` (p50/p95/p99 of the last 1,000 calls), instead of an average only.
+  - **Connection pooling:** one keep-alive HTTP client instead of a new connection per model call.
+  - **Backpressure:** at most `MAX_INFLIGHT` (8) model calls at once; past `QUEUE_WAIT_S` (20 s) a fast 503 with `Retry-After`, counted as `shed_overload`.
+  - **Circuit breaker** per detector: after 3 failures it is skipped for 30 s, then one trial. Verdicts are unchanged; only the waiting is gone.
+  - `Retry-After` on 429. Phone alerts retry with exponential backoff and jitter, and a failed alert goes to a dead-letter file and is re-sent first next time.
 ### Changed
 - The app no longer asks anything when a sync link matches the setup it already has (so `go` can open it on every run).
 ### Fixed
