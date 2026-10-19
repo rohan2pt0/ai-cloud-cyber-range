@@ -33,6 +33,8 @@ setTimeout(() => {
   d.window.document.getElementById("gmOk").click();
   ok(S.okrs.length === 0 && S.okrDropped.length === 1 && S.okrDropped[0].lesson === "timing was wrong", "drop keeps the lesson on record");
   ok(w.renderOKR().indexOf("Dropped on purpose") >= 0, "dropped goals stay visible");
+  S.okrs = [{ o: "From an older version", krs: [{ t: "no timestamps", v: 0.3 }] }];
+  ok(w.renderOKR().indexOf("No movement") < 0 && w.okrIdle(S.okrs[0]) === 0, "a goal with no timestamps starts its clock now, not in 1970");
   // 4. Who touched my data: logged, de-duplicated within the hour, merged across devices.
   w.gmTouch("Synced, encrypted", "your OneDrive");
   w.gmTouch("Synced, encrypted", "your OneDrive");

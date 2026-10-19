@@ -3443,7 +3443,7 @@
       GRADES.forEach(function (g) { b += '<button class="gm-tap' + (+k.v === g[0] ? " on" : "") + '" style="justify-content:flex-start;padding:0 14px" data-v="' + g[0] + '">' + g[1] + '</button>'; });
       qDlg(1, total, esc(k.t) + ' <span style="font-weight:500;color:var(--muted)">(' + (gi + 1) + '/' + krs.length + ')</span>', b + '</div>');
       [].forEach.call(document.querySelectorAll("#gmOverlay [data-v]"), function (el) {
-        el.addEventListener("click", function () { k.v = +el.getAttribute("data-v"); store("sovS", S); gi++; grade(); });
+        el.addEventListener("click", function () { k.v = +el.getAttribute("data-v"); k.at = o.at = Date.now(); store("sovS", S); gi++; grade(); });
       });
     }
     function wheel() {
@@ -3477,7 +3477,7 @@
         if ((S.okrs || []).length) hist.push({ q: G("gm_okr_q", "") || "before " + qKeyNow(), okrs: JSON.parse(JSON.stringify(S.okrs)), avg: Math.round(S.okrs.reduce(function (s, o) { return s + okrAvg(o); }, 0) / S.okrs.length * 100) / 100 });
         while (hist.length > 12) hist.shift();
         S_("gm_okr_hist", hist);
-        if (picks.length) { S.okrs = picks.map(function (i) { var x = sug[i]; return { o: x.o, krs: x.krs.map(function (t) { return { t: t, v: 0 }; }) }; }); }
+        if (picks.length) { S.okrs = picks.map(function (i) { var x = sug[i]; return { o: x.o, at: Date.now(), krs: x.krs.map(function (t) { return { t: t, v: 0, at: Date.now() }; }) }; }); }
         store("sovS", S); S_("gm_okr_q", qKeyNow());
         var done = G("gm_quarter_done", {}); done[qKeyNow()] = ymd(); S_("gm_quarter_done", done);
         gmClose(); renderAll();

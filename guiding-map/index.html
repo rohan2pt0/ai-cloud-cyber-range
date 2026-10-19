@@ -1260,7 +1260,7 @@ function parseKR(t){
   return {b:b,g:g,c:b,due:due,dueMs:isNaN(ms)?null:ms};
 }
 function krFrac(k){ if(k.b===undefined)return k.v; var f=(k.c-k.b)/(k.g-k.b); return Math.max(0,Math.min(1,Math.round(f*10)/10)); }
-function okrTouched(o){ return o.krs.reduce(function(m,k){ return Math.max(m,k.at||0); },o.at||0); }
+function okrTouched(o){ var t=o.krs.reduce(function(m,k){ return Math.max(m,k.at||0); },o.at||0); if(!t){ o.at=t=Date.now(); } return t; }   // a goal from an older version starts its clock now, not in 1970
 function okrIdle(o){ return Math.floor((Date.now()-okrTouched(o))/864e5); }
 function setStrengths(then){
   gmPrompt("Start from what you have: your 3 strengths (comma-separated)","e.g. calm in a crisis, deep regulatory knowledge, steady saver",function(t){
@@ -1516,7 +1516,7 @@ function adoptOKR(i){
   var sug=window.__sugCache; if(!sug||!sug.picks[i])return;
   var p=sug.picks[i]; S.okrs=S.okrs||[];
   if(S.okrs.length>=3){ gmToast("You already have 3 objectives. Grade or remove one first (OKRs tab)."); return; }
-  S.okrs.push({o:p.t,krs:[{t:p.kr,v:0}]}); store("sovS",S);
+  S.okrs.push({o:p.t,at:Date.now(),krs:[{t:p.kr,v:0,at:Date.now()}]}); store("sovS",S);
   curTab="okr"; renderAll(); window.scrollTo(0,0);
 }
 
@@ -5610,7 +5610,7 @@ function renderPlaybook(){
       GRADES.forEach(function (g) { b += '<button class="gm-tap' + (+k.v === g[0] ? " on" : "") + '" style="justify-content:flex-start;padding:0 14px" data-v="' + g[0] + '">' + g[1] + '</button>'; });
       qDlg(1, total, esc(k.t) + ' <span style="font-weight:500;color:var(--muted)">(' + (gi + 1) + '/' + krs.length + ')</span>', b + '</div>');
       [].forEach.call(document.querySelectorAll("#gmOverlay [data-v]"), function (el) {
-        el.addEventListener("click", function () { k.v = +el.getAttribute("data-v"); store("sovS", S); gi++; grade(); });
+        el.addEventListener("click", function () { k.v = +el.getAttribute("data-v"); k.at = o.at = Date.now(); store("sovS", S); gi++; grade(); });
       });
     }
     function wheel() {
@@ -5644,7 +5644,7 @@ function renderPlaybook(){
         if ((S.okrs || []).length) hist.push({ q: G("gm_okr_q", "") || "before " + qKeyNow(), okrs: JSON.parse(JSON.stringify(S.okrs)), avg: Math.round(S.okrs.reduce(function (s, o) { return s + okrAvg(o); }, 0) / S.okrs.length * 100) / 100 });
         while (hist.length > 12) hist.shift();
         S_("gm_okr_hist", hist);
-        if (picks.length) { S.okrs = picks.map(function (i) { var x = sug[i]; return { o: x.o, krs: x.krs.map(function (t) { return { t: t, v: 0 }; }) }; }); }
+        if (picks.length) { S.okrs = picks.map(function (i) { var x = sug[i]; return { o: x.o, at: Date.now(), krs: x.krs.map(function (t) { return { t: t, v: 0, at: Date.now() }; }) }; }); }
         store("sovS", S); S_("gm_okr_q", qKeyNow());
         var done = G("gm_quarter_done", {}); done[qKeyNow()] = ymd(); S_("gm_quarter_done", done);
         gmClose(); renderAll();
