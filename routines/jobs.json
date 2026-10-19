@@ -8,7 +8,8 @@
       "--auto"
     ],
     "description": "Daily 3:15am: when main has something new, update safely (backup first, health check, automatic rollback) and tell your phone the result. Nothing new = nothing happens.",
-    "enabled": true
+    "enabled": true,
+    "kind": "guard"
   },
   {
     "id": "morning-brief",
@@ -18,7 +19,8 @@
       "doctor"
     ],
     "description": "Weekday 7:45am: estate health + resource check to start the day.",
-    "enabled": true
+    "enabled": true,
+    "kind": "report"
   },
   {
     "id": "weekly-posture",
@@ -28,7 +30,8 @@
       "demo"
     ],
     "description": "Monday 9am: adversarial-ML scorecard + AI-security posture scan.",
-    "enabled": true
+    "enabled": true,
+    "kind": "report"
   },
   {
     "id": "weekly-research",
@@ -45,7 +48,8 @@
       "--json"
     ],
     "description": "Saturday 8:30am: autonomous read-only scan of regulator updates (sovereign).",
-    "enabled": false
+    "enabled": false,
+    "kind": "report"
   },
   {
     "id": "backup-nudge",
@@ -55,7 +59,8 @@
       "doctor"
     ],
     "description": "Sunday 8pm: weekly reminder to export a Guiding Map backup.",
-    "enabled": false
+    "enabled": false,
+    "kind": "nudge"
   },
   {
     "id": "knowledge-inbox",
@@ -67,7 +72,8 @@
       "--quiet"
     ],
     "description": "Daily 9:05pm: import any AI-chat export dropped into vault/knowledge/inbox (silent when nothing is new).",
-    "enabled": true
+    "enabled": true,
+    "kind": "guard"
   },
   {
     "id": "regwatch",
@@ -80,7 +86,8 @@
       "--quiet"
     ],
     "description": "Daily 8:40am: fetch the RBI and SEBI feeds; push the titles of NEW circulars and directions to your phone (silent when nothing is new).",
-    "enabled": true
+    "enabled": true,
+    "kind": "guard"
   },
   {
     "id": "regwatch-digest",
@@ -94,7 +101,8 @@
       "--send"
     ],
     "description": "1st of the month 8:50am: last month's regulator digest (titles, dates and links only) to your phone.",
-    "enabled": true
+    "enabled": true,
+    "kind": "nudge"
   },
   {
     "id": "andon",
@@ -107,7 +115,8 @@
       "--only-bad"
     ],
     "description": "Every 15 min: push to your phone ONLY when something turns amber/red, a deadline nears, or it is back to green (silent otherwise; needs SECURAX_NOTIFY_NTFY).",
-    "enabled": true
+    "enabled": true,
+    "kind": "guard"
   },
   {
     "id": "weekly-backup",
@@ -117,7 +126,8 @@
       "backup"
     ],
     "description": "Sunday 2:30am: a verified backup (encrypted if you set a key file); keeps the newest 7. A stale backup turns the cockpit amber, which the andon reports.",
-    "enabled": true
+    "enabled": true,
+    "kind": "guard"
   },
   {
     "id": "monthly-review",
@@ -131,7 +141,8 @@
       "Monthly review"
     ],
     "description": "1st of every month 8:50am: the monthly KPI/KRI review nudge (handbook §5-6).",
-    "enabled": true
+    "enabled": true,
+    "kind": "nudge"
   },
   {
     "id": "quarterly-checkin",
@@ -145,7 +156,8 @@
       "Quarterly check-in"
     ],
     "description": "1 Jan/Apr/Jul/Oct 8:55am: the quarterly check-in nudge.",
-    "enabled": true
+    "enabled": true,
+    "kind": "nudge"
   },
   {
     "id": "offsite-restore-drill",
@@ -156,6 +168,7 @@
       "drill"
     ],
     "description": "1 Jan/Apr/Jul/Oct 10:05am: the quarterly restore drill. The newest off-site (OneDrive) backup must decrypt, unpack and match every checksum; a failure is pushed to your phone by the andon. Silent when no off-site folder is set.",
-    "enabled": true
+    "enabled": true,
+    "kind": "guard"
   }
 ]

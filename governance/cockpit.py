@@ -801,11 +801,21 @@ def render(c: Collector, maps: dict, hist: list[dict], ai: str, now: float, targ
         share = _m[0] if _m and _m[0]["over_goal"] else None
     except Exception:  # noqa: BLE001 - not a git checkout (a release tarball): nothing to show
         pass
+    prune_items = []
+    try:                                                          # routines that do not earn their place (./securax routines prune)
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from routines import prune as _prune
+        prune_items = _prune.report()[0]
+    except Exception:  # noqa: BLE001 - no history yet, or no routines: nothing to show
+        pass
     lamps = [("warn" if reds else "ok", len(reds), "Warnings: act today"), ("caut" if ambs else "ok", len(ambs), "Cautions: schedule"),
              ("ok", sum(1 for m in ms if m["status"] == "green"), "Nominal")] + ([("warn", late, "Risk treatments overdue")] if late else []) \
         + ([("warn", len(stopped_ai), "AI stopped by a person: " + ", ".join(stopped_ai))] if stopped_ai else []) \
         + ([("warn" if max(near) >= 1 else "caut", len(near), "AI allowance used up or near it: ./securax ai budget")] if near else [])\
-        + ([("caut", f"{share['claude_share']:.0%}", "of this month's commits by Claude (goal 20%): ./securax ai share")] if share else [])
+        + ([("caut", f"{share['claude_share']:.0%}", "of this month's commits by Claude (goal 20%): ./securax ai share")] if share else [])\
+        + ([("warn" if any(i["verdict"] == "failing" for i in prune_items) else "caut", len(prune_items),
+             "Routines to fix or switch off: ./securax routines prune")] if prune_items else [])
     h.append("<div class='card'><h2>Master caution</h2><div class='annun'>" + "".join(
         f"<div class='lamp {k}'><b>{v}</b>{E(t)}</div>" for k, v, t in lamps)
         + ("<a class='lamp nav' href='/portal/navigator.html'><b>Controls</b>BFSI control navigator</a>" if nav else

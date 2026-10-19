@@ -9,6 +9,12 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **`./securax routines prune`** (doc 20): every routine has to earn its place.
+  - **The record:** each run is kept locally with whether it found anything.
+  - **The findings:** failing routines, reports that flagged nothing in 4 weeks, duplicates, and routines that never ran. Each comes with the command to act.
+  - **Never pruned:** guards (backups, updates, alerts), because silence is their success.
+  - **Switching off:** `./securax routines off ID` and `on ID` keep the choice on this machine. The cockpit lights a lamp when there is something to decide.
+- **Fixed:** `./securax routines` dropped every argument after the first.
 - **Pattern interrupt in the Life OS** (doc 74):
   - **The trigger:** 3 heavy-week signs in 7 days, counted on the device. The signs are your own words in notes or questions to the AI, and low-energy days.
   - **What Today shows:** one card with one question, one small action, a 3-hour rest block for your calendar, and a 7-day pause. It offers no plan.

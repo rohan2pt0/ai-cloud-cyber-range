@@ -32,14 +32,14 @@ even offline. Your data stays on your device.
 
 **On main, in the next release:**
 
+- [`./securax routines prune`](docs/securax/20-CLAUDE-PARITY.md)
+- Fixed
 - [Pattern interrupt in the Life OS](docs/securax/74-PATTERN-INTERRUPT.md)
 - [Claude for the hard fifth only](docs/securax/23-BUILD-WITHOUT-CLAUDE.md)
 - [`./securax finish`](docs/securax/73-FINISH-SETTING-UP-AND-PUBLISH-THE-SITE.md)
 - Product site, ready to publish on GitHub Pages
 - Life OS on a phone
 - Life OS goals, the way national strategies run them
-- "Who touched my data"
-- [Host the Life OS off the laptop](docs/securax/72-SYNC-AND-BACKUP-WITHOUT-THE-LAPTOP.md)
 
 **Release 0.2.0 - 2026-10-17:**
 

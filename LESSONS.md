@@ -17,4 +17,5 @@ autobuild adds one by itself when a red attempt turns green. Keep lines short: e
 - 2026-10-19 ci: each push to an open PR restarts the 40-minute sandbox → batch commits, and push once per round.
 - 2026-10-19 cockpit: the setup card printed https:// step links and failed cockpit_page (the page must name no external URL) → strip the scheme in anything rendered into the cockpit
 - 2026-10-19 sandbox: adding a sixth compliance map broke comply_evidence, which counted exactly five → when adding a map, update the count in sandbox/run.py
+- 2026-10-19 routines: the securax wrapper passed only the first argument to python3 -m routines, so 'off ID' lost its ID → pass "${@:-list}", never "${1:-list}", when a subcommand takes arguments
 <!-- lessons:end -->

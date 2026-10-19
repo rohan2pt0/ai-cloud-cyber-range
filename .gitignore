@@ -235,6 +235,8 @@ __pycache__/
 
 # SecuRAX Routines runtime state (per-box, not shared)
 routines/.state.json
+routines/.history.json
+routines/.off.json
 # Your imported AI conversations (./securax knowledge): personal, never committed
 vault/
 routines/.log

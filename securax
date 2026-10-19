@@ -572,7 +572,7 @@ URLS
       [ "$(ps -p 1 -o comm= 2>/dev/null)" = systemd ] || echo "  note: without systemd, cron stops when WSL restarts. Turn systemd on: doc 58."
       exit 0
     fi
-    ( cd "$ROOT" && python3 -m routines "${1:-list}" )
+    ( cd "$ROOT" && python3 -m routines "${@:-list}" )
     ;;
   verify)
     # The "definition of done" for ANY change, human- or model-made — the same floor CI enforces.
