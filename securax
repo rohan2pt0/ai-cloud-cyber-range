@@ -891,6 +891,15 @@ EOF2
     #   ./securax lessons | lessons add "what happened → what to do instead" [--area A] | lessons recent [N]
     shift; exec python3 "$ROOT/lifecycle/lessons.py" "$@"
     ;;
+  findings)
+    # The findings register (doc 76): every scan and VAPT finding once, a fix-by date from its severity, time-boxed risk acceptance.
+    #   ./securax findings [list|overdue|report] | import [FILE] | add "title" --severity S | accept ID --reason R --until DATE | fixed ID
+    shift; exec python3 "$ROOT/governance/findings.py" "$@"
+    ;;
+  repairs)
+    # Everything that needs fixing, in one list, each with its fix (doc 76).   ./securax repairs   (exit 1 when something needs action today)
+    shift; exec python3 "$ROOT/governance/repairs.py" "$@"
+    ;;
   support-packet)
     # One scrubbed zip for a bug report: versions, health, containers, setting NAMES, routine runs, recent log (doc 75).
     #   ./securax support-packet | support-packet --print
@@ -1116,6 +1125,13 @@ EOF2
       C "Scanning $I"
       docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v securax-trivy-cache:/root/.cache aquasec/trivy:0.58.1 \
         image --quiet --severity HIGH,CRITICAL --exit-code 1 "$I" 2>&1 | tee -a "$SCANLOG"; [ "${PIPESTATUS[0]}" = 0 ] || BAD=1
+      # The same scan into the findings register (doc 76): one record per CVE per image, a fix-by date, and a re-scan closes what was fixed.
+      # The vulnerability database is cached, so this second pass is quick. Each image is its own source, so one image never closes another's.
+      SARIF="$(mktemp -d)"
+      docker run --rm -v /var/run/docker.sock:/var/run/docker.sock -v securax-trivy-cache:/root/.cache -v "$SARIF":/out aquasec/trivy:0.58.1 \
+        image --quiet --severity HIGH,CRITICAL --format sarif --output /out/scan.sarif "$I" >/dev/null 2>&1 \
+        && python3 "$ROOT/governance/findings.py" import "$SARIF/scan.sarif" --source "Trivy $I" | sed 's/^/  /' || true
+      rm -rf "$SARIF"
     done
     # Offline prioritisation: which of these CVEs are KNOWN-EXPLOITED right now? (CISA KEV snapshot; `./securax offline sync` once)
     python3 "$ROOT/ai-soc/soc/enrich.py" kev < "$SCANLOG" 2>/dev/null || true
@@ -1180,6 +1196,9 @@ EOF2
     # volume is unusable, so they travel with the backup (the file is owner-only, like the rest of it).
     SPD="${SECURAX_HOME_DIR:-$HOME/.securax}/sprout"
     [ -d "$SPD" ] && tar czf "$STG/sprout-secrets.tgz" -C "$(dirname "$SPD")" sprout && echo "sprout-secrets" >> "$STG/MANIFEST" || true
+    # The private registers (controls, risks, findings, setup marks) live in vault/, outside Docker: without them a new machine starts
+    # blank. Support packets are left out: they are throw-away copies.
+    [ -d "$ROOT/vault" ] && tar czf "$STG/vault.tgz" -C "$ROOT" --exclude=vault/support vault && echo "vault" >> "$STG/MANIFEST" || true
     ( cd "$STG" && sha256sum ./* > SHA256SUMS 2>/dev/null || true )
     tar czf "$PLAIN" -C "$STG" . && tar tzf "$PLAIN" >/dev/null || { C "Backup failed verification."; rm -f "$OUTF"; exit 1; }
     if [ "$ENCRYPT" = 1 ]; then
@@ -1229,6 +1248,10 @@ EOF2
     done
     if [ -f "$STG/sprout-secrets.tgz" ]; then
       SPH="${SECURAX_HOME_DIR:-$HOME/.securax}"; mkdir -p "$SPH" && chmod 700 "$SPH" && tar xzf "$STG/sprout-secrets.tgz" -C "$SPH" && echo "  ✔ restored sprout secrets"
+    fi
+    if [ -f "$STG/vault.tgz" ]; then                   # the current vault is kept aside, never overwritten
+      [ -n "$(ls -A "$ROOT/vault" 2>/dev/null)" ] && mv "$ROOT/vault" "$ROOT/vault.pre-restore-$(date +%Y%m%d-%H%M%S)"
+      tar xzf "$STG/vault.tgz" -C "$ROOT" && chmod 700 "$ROOT/vault" && echo "  ✔ restored vault (controls, risks, findings, your marks)"
     fi
     if [ -f "$STG/env" ]; then
       [ -f "$ROOT/local/compose/.env" ] && cp "$ROOT/local/compose/.env" "$ROOT/local/compose/.env.pre-restore"

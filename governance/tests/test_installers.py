@@ -39,3 +39,21 @@ def test_an_existing_folder_is_never_changed(tmp_path):
 def test_the_tracked_installers_carry_a_placeholder_not_a_name():
     for name in ("install.sh", "install.ps1"):
         assert "{{REPO_SLUG}}" in (ROOT / name).read_text()
+
+
+def test_restore_checks_the_backup_before_installing_and_says_the_next_step(tmp_path):
+    bad = _sh("--restore", str(tmp_path / "missing.tar.gz"), "--dir", str(tmp_path / "r0"), home=tmp_path)
+    assert bad.returncode != 0 and "Backup not found" in bad.stderr and not (tmp_path / "r0").exists()
+    enc = tmp_path / "securax-x.tar.gz.gpg"
+    enc.write_bytes(b"x")
+    nokey = _sh("--restore", str(enc), "--dir", str(tmp_path / "r1"), home=tmp_path)
+    assert nokey.returncode != 0 and "--keyfile" in nokey.stderr
+    backup = tmp_path / "securax-20261101-0930.tar.gz"
+    (tmp_path / "data").mkdir()
+    (tmp_path / "data" / "MANIFEST").write_text("securax test backup\n")
+    subprocess.run(["tar", "czf", str(backup), "-C", str(tmp_path / "data"), "."], check=True)
+    arc = _release(tmp_path)
+    ok = _sh("--offline", str(arc), "--restore", str(backup), "--dir", str(tmp_path / "r2"), home=tmp_path,
+             env_extra={"PATH": "/usr/bin:/bin"})
+    assert ok.returncode == 0 and (tmp_path / "r2" / "securax").exists()
+    assert "./securax restore" in ok.stdout or "Restoring your data" in ok.stdout      # without Docker: the exact command to run later

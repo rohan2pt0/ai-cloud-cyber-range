@@ -363,6 +363,20 @@ class Collector:
         self.add("incidents", "Incident reporting clocks", "KRI", "Respond", val, s, "Regulators set hard deadlines (often 6 hours) from the moment an incident is detected.",
                  "File what is overdue" if over else ("Prepare the next filing" if soon else ""), "./securax incident status", urgent=bool(over or soon), importance=3)
 
+    def c_findings(self):
+        fd = _load("securax_findings", "governance/findings.py")
+        reg = fd.load()
+        if not reg.get("findings"):
+            return                                                   # no register yet: nothing measured, nothing lit
+        sm = fd.summary(reg)
+        opened = sum(sm["open"].values())
+        s = "red" if sm["overdue"] else ("amber" if sm["expiring"] or sm["kev_open"] else "green")
+        val = f"{opened} open · {sm['overdue']} overdue" + (f" · {sm['kev_open']} known-exploited" if sm["kev_open"] else "") \
+            + (f" · {sm['sla_met']}% fixed in time" if sm["sla_met"] is not None else "")
+        self.add("findings", "Findings fixed on time", "KRI", "Protect", val, s, "Every scan and VAPT finding has a fix-by date set by its severity; "
+                 "auditors ask for this timeline.", "Fix or accept what is overdue" if sm["overdue"] else "", "./securax findings overdue",
+                 urgent=bool(sm["overdue"]), importance=3)
+
     def c_soc(self):
         name = (sh(["docker", "ps", "--filter", "name=gateway", "--format", "{{.Names}}"]) or "").split("\n")[0].strip()
         if not name:
@@ -499,7 +513,7 @@ class Collector:
                  "" if st == "green" else "Add a free key or download the local coder", "./securax providers chain builder show", importance=1)
 
     def run(self) -> None:
-        for fn in (self.c_services, self.c_gateway, self.c_auth_residency, self.c_tls, self.c_crypto, self.c_keys, self.c_storage, self.c_images, self.c_threat_data, self.c_incidents, self.c_soc,
+        for fn in (self.c_services, self.c_gateway, self.c_auth_residency, self.c_tls, self.c_crypto, self.c_keys, self.c_storage, self.c_images, self.c_threat_data, self.c_incidents, self.c_findings, self.c_soc,
                    self.c_fitness, self.c_coverage, self.c_coding):
             self.safe(fn)
 
@@ -962,6 +976,11 @@ def main(argv: list[str] | None = None) -> int:
         left = [x for x in st if not x["done"]]
         atomic_write(out.parent / "setup.json", json.dumps({"done": len(st) - len(left), "total": len(st), "next": left[0]["title"] if left else ""}))
     except Exception:  # noqa: BLE001
+        pass
+    try:                                                                      # the Command Center's "Repairs" count (./securax repairs)
+        rp = _load("securax_repairs", "governance/repairs.py")
+        atomic_write(out.parent / "repairs.json", json.dumps(rp.summary(rp.collect(out.with_suffix(".json")))))
+    except Exception:  # noqa: BLE001 - a convenience; it must never fail the cockpit
         pass
     if a.json:
         print(json.dumps(data, indent=1))

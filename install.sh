@@ -7,6 +7,8 @@
 #   bash install.sh --stable         # the newest release tag instead
 #   bash install.sh --version v0.2.0 # one exact release
 #   bash install.sh --offline FILE   # no network: a release .tar.gz plus its SHA256SUMS next to it
+#   bash install.sh --restore BACKUP # a new or replacement machine: install, then bring back your data from a ./securax backup
+#                                    #   (add --keyfile PATH for an encrypted backup)
 #
 # What it does: checks the tools, puts the code in ~/securax (or $SECURAX_DIR), adds the `securax` shortcut, and prints
 # the next command. It never uses sudo, never starts anything and never changes an existing folder.
@@ -23,14 +25,16 @@ case "$REPO" in *"{{"*|"")
   [ -n "$REPO" ] || die "Which repository? Run:  SECURAX_REPO=owner/repo bash install.sh" ;;
 esac
 DIR="${SECURAX_DIR:-$HOME/securax}"
-MODE=rolling; WANT=""; ARCHIVE=""
+MODE=rolling; WANT=""; ARCHIVE=""; RESTORE=""; KEYFILE=""
 while [ $# -gt 0 ]; do
   case "$1" in
     --stable) MODE=stable ;;
     --version) MODE=stable; WANT="${2:?--version needs a tag, e.g. v0.2.0}"; shift ;;
     --offline) MODE=offline; ARCHIVE="${2:?--offline needs the release .tar.gz}"; shift ;;
     --dir) DIR="${2:?--dir needs a folder}"; shift ;;
-    -h|--help) sed -n '2,13p' "$0"; exit 0 ;;
+    --restore) RESTORE="${2:?--restore needs a backup file (securax-YYYYMMDD-HHMMSS.tar.gz or .gpg)}"; shift ;;
+    --keyfile) KEYFILE="${2:?--keyfile needs the key file of an encrypted backup}"; shift ;;
+    -h|--help) sed -n '2,15p' "$0"; exit 0 ;;
     *) die "Unknown option: $1   (see: bash install.sh --help)" ;;
   esac; shift
 done
@@ -40,6 +44,12 @@ OS="$(uname -s)"; WSL=""
 grep -qi microsoft /proc/version 2>/dev/null && WSL=" (WSL)"
 case "$OS" in Linux|Darwin) ;; *) die "This installer is for Linux, macOS or WSL. On Windows, run install.ps1 in PowerShell: it sets up WSL first." ;; esac
 say "SecuRAX installer · $OS$WSL · into $DIR"
+if [ -n "$RESTORE" ]; then              # check the backup BEFORE anything is installed, so a typo costs nothing
+  [ -f "$RESTORE" ] || die "Backup not found: $RESTORE"
+  RESTORE="$(cd "$(dirname "$RESTORE")" && pwd)/$(basename "$RESTORE")"
+  case "$RESTORE" in *.gpg) [ -n "$KEYFILE" ] && [ -f "$KEYFILE" ] || die "That backup is encrypted: add --keyfile PATH (the key file it was made with)." ;;
+    *) tar tzf "$RESTORE" >/dev/null 2>&1 || die "Not a readable backup: $RESTORE" ;; esac
+fi
 [ -e "$DIR" ] && die "$DIR already exists. To update it:  cd \"$DIR\" && ./securax update    (or pick another folder: --dir PATH)"
 need(){ command -v "$1" >/dev/null 2>&1; }
 need python3 || die "Python 3.10 or newer is needed. Linux: sudo apt install python3   macOS: xcode-select --install"
@@ -74,6 +84,15 @@ say "  ✔ code in $DIR ($( [ "$MODE" = rolling ] && echo "rolling: main" || ech
 # 3) The shortcut, so `securax` works from any folder
 "$DIR/securax" shortcut >/dev/null 2>&1 && say "  ✔ shortcut: type  securax <command>  from any folder (open a new terminal first)" || true
 
+if [ -n "$RESTORE" ]; then
+  if need docker && docker info >/dev/null 2>&1; then
+    say "Restoring your data from $(basename "$RESTORE") (it checks every file first, then starts the estate)…"
+    exec "$DIR/securax" restore "$RESTORE" ${KEYFILE:+--keyfile "$KEYFILE"}
+  fi
+  say "  ⚠ Docker is not running, so your data cannot be restored yet. Start Docker, then run:"
+  say "    cd \"$DIR\" && ./securax restore \"$RESTORE\"${KEYFILE:+ --keyfile \"$KEYFILE\"}"
+  exit 0
+fi
 say ""
 say "Next, one command:"
 say "  cd \"$DIR\" && ./securax up"

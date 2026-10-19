@@ -90,6 +90,7 @@ nav:
       - Finish setting up, and publish the site: securax/73-FINISH-SETTING-UP-AND-PUBLISH-THE-SITE.md
       - Pattern interrupt (heavy weeks): securax/74-PATTERN-INTERRUPT.md
       - Distribute, install, feedback: securax/75-DISTRIBUTE-INSTALL-FEEDBACK.md
+      - Findings, repairs, restore, shortcuts: securax/76-FINDINGS-REPAIRS-RESTORE-SHORTCUTS.md
   - How-to guides:
       - AI providers and plugins: securax/22-PLUGINS-AND-PROVIDERS.md
       - Integrations: securax/07-INTEGRATIONS.md

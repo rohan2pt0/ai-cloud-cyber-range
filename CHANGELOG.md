@@ -9,6 +9,18 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **`./securax findings`** (doc 76, after DefectDojo): one register for scan, SARIF and VAPT-workbook findings.
+  - **One record per problem:** duplicates are merged.
+  - **Fix-by dates:** critical 7 days, high 30, medium 90, low 180. A known-exploited CVE counts as critical.
+  - **Re-scans:** they close what is gone and reopen what came back.
+  - **Risk acceptance:** time-boxed, at most a year.
+  - **Where it shows:** `./securax scan` fills it, and a cockpit reading turns red when something is overdue, which the phone alert sees.
+- **`./securax repairs`** (doc 76, after Home Assistant): every red or amber reading, overdue finding, ending acceptance, overdue risk treatment and routine to fix, in one list, each with its command. The Command Center shows the count.
+- **`bash install.sh --restore BACKUP`** (doc 76): a new machine is installed and restored in one step. The backup is checked first.
+- **Life OS** (doc 76, after Loop):
+  - **Home-screen shortcuts:** Move, Mind, Family and Note. They tick, never untick.
+  - **Export for Excel (CSV):** one row per day.
+- **Fixed:** `./securax backup` did not include `vault/` (controls, risks, findings, setup marks), so a restored machine started blank. Backups now carry it. A restore keeps the vault already there aside, never overwriting it.
 - **The Life OS has a new look** (doc 73):
   - **The header:** one quiet line with a ⋯ menu.
   - **Today:** opens with a greeting and a progress ring. The daily three are big keyboard-reachable tiles.

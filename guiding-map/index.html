@@ -4278,6 +4278,7 @@ function renderPlaybook(){
       + '<div style="display:flex;gap:8px;margin-top:9px;flex-wrap:wrap">'
       + '<button class="btn-sm" style="background:var(--gold);color:#0d1f35" onclick="gmExportNow()">Export backup</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmImportNow()">Restore from file</button>'
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmExportCsv()">Export for Excel (CSV)</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmEmergencyExport()">Spouse emergency page</button></div>';
   }
 
@@ -6441,6 +6442,43 @@ function renderPlaybook(){
   };
   window.gmDiag = gmDiag;
 
+  /* ── Home-screen shortcuts and a spreadsheet export (from Loop Habit Tracker) ──────────────────────────────────────
+     Long-press the installed app's icon: Move, Mind, Family or Note, without opening anything else (manifest.json
+     "shortcuts" open index.html?do=...). A shortcut only ever ticks, never unticks, so a double tap cannot undo the day. */
+  function gmShortcut(act) {
+    var hit = DAILY3.filter(function (d) { return d.id === act; })[0];
+    if (hit) {
+      var idx = -1;
+      if (typeof HABITS !== "undefined") HABITS.forEach(function (hb, i) { if (hb.id === act) idx = i; });
+      if (idx >= 0 && todayChecks().indexOf(act) < 0) tgHabit(idx);
+      gmToast(hit.label + " is ticked for today.");
+      return true;
+    }
+    if (act === "note") { setTimeout(function () { gmNote(); }, 300); return true; }
+    return false;
+  }
+  window.gmShortcut = gmShortcut;
+  // One row per day for the last year: the daily three, energy and the note. Opens straight in Excel (UTF-8 with a BOM).
+  function gmCsv(days) {
+    var notes = G("gm_notes", {}), energy = G("gm_energy", {}), q = function (v) { return '"' + String(v).replace(/"/g, '""') + '"'; };
+    var rows = [["date"].concat(DAILY3.map(function (d) { return d.label.toLowerCase(); })).concat(["energy", "note"]).join(",")];
+    for (var i = 0; i < days; i++) {
+      var k = dayK(i), done = (S.daily && S.daily[k]) || [];
+      if (!done.length && !energy[k] && !notes[k]) continue;
+      rows.push([k].concat(DAILY3.map(function (d) { return done.indexOf(d.id) >= 0 ? 1 : 0; })).concat([energy[k] || "", q(notes[k] || "")]).join(","));
+    }
+    return rows.join("\r\n") + "\r\n";
+  }
+  window.gmCsv = gmCsv;
+  window.gmExportCsv = function () {
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob(["﻿" + gmCsv(366)], { type: "text/csv;charset=utf-8" }));
+    a.download = "life-os-daily-" + ymd() + ".csv";
+    document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); a.remove(); }, 500);
+    gmToast("Saved: one row per day for the last year.");
+  };
+
   /* ── 10. Wire into the existing render loop ─────────────────────── */
   if (typeof TABS !== "undefined") {
     var keep = TABS.filter(function (t) { return ["today", "map"].indexOf(t[0]) < 0; });
@@ -6532,6 +6570,9 @@ function renderPlaybook(){
     // The daily OneDrive backup takes itself (the old text said "automatically" but it only ran on a button press)
     if (msTok() && G("gm_ms_backup", null) !== ymd()) setTimeout(function () { gmMsBackup(true); }, 8000);
     if (window.renderAll) renderAll();
+    // A home-screen shortcut (?do=ex|mf|fm|note): act once, then drop it from the address so a reload does not repeat it
+    var sc = new URLSearchParams(location.search).get("do");
+    if (sc && gmShortcut(sc) && history.replaceState) history.replaceState(null, "", location.pathname);
     // Monthly backup nudge, once per month, non-blocking
     var last = G("gm_backup_seen", "");
     var mk = new Date().getFullYear() + "-" + (new Date().getMonth() + 1);
