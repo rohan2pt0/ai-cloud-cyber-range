@@ -9,6 +9,12 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **Life OS goals, the way national strategies run them** (docs 70 and 71):
+  - **Key results "from X to Y by a date":** type today's number and the score, progress bar and days left fill themselves. Free-text key results still work with the slider.
+  - **No drift:** a goal with no movement for 6 weeks asks for a decision: recommit, re-scope or drop. A drop keeps its lesson on record under "Dropped on purpose".
+  - **Strengths first:** name your 3 strengths before the first objective, and each objective says which one it builds on.
+- **"Who touched my data"** (Ops): every time Life OS data leaves a device or comes back (a sync, a backup, a restore, an export, a question to AI), one line records when, which device, what and where. Every device's log is shown, and repeats within the hour are not logged again.
+- **Host the Life OS off the laptop** (doc 72): steps for Cloudflare Pages behind Cloudflare Access, about 15 minutes once. Free-plan limits checked 19 Oct 2026.
 - **Sync without the laptop** (doc 72): the Life OS syncs each device directly with your OneDrive, end-to-end encrypted.
   - **No server:** the laptop and Docker no longer need to be on.
   - **Encryption:** AES-256-GCM, with the key derived from your passphrase through PBKDF2 (310,000 rounds).

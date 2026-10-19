@@ -483,7 +483,7 @@ function wipe(){ try{ localStorage.removeItem("sovP"); localStorage.removeItem("
 
 var P = null;
 var S = { checked:{}, vals:{}, archived:[], pts:0, daily:{}, wheel:null, okrs:[], commits:[], pdMatch:false, wheelBase:null };
-function migrate(){ S.daily=S.daily||{}; S.okrs=S.okrs||[]; S.commits=S.commits||[]; S.checked=S.checked||{}; S.vals=S.vals||{}; S.archived=S.archived||[]; S.pts=S.pts||0; if(S.pdMatch===undefined)S.pdMatch=false; S.snaps=S.snaps||[]; S.integrations=S.integrations||{}; S.intData=S.intData||{}; S.intOverride=S.intOverride||{}; if(S.theme===undefined)S.theme="dark"; }
+function migrate(){ S.daily=S.daily||{}; S.okrs=S.okrs||[]; S.strengths=S.strengths||[]; S.okrDropped=S.okrDropped||[]; S.okrs.forEach(function(o){ if(!o.at)o.at=Date.now(); }); S.commits=S.commits||[]; S.checked=S.checked||{}; S.vals=S.vals||{}; S.archived=S.archived||[]; S.pts=S.pts||0; if(S.pdMatch===undefined)S.pdMatch=false; S.snaps=S.snaps||[]; S.integrations=S.integrations||{}; S.intData=S.intData||{}; S.intOverride=S.intOverride||{}; if(S.theme===undefined)S.theme="dark"; }
 // ============== 10 LIFE-CHANGING PRINCIPLES ==============
 var PRINCIPLES = {
   pareto:    "Pareto 80/20 — one of your high-leverage moves: 20% of actions driving 80% of the result.",
@@ -1246,28 +1246,70 @@ function archiveItem(){
 function unarchive(kk){ var i=S.archived.indexOf(kk); if(i>=0)S.archived.splice(i,1); store("sovS",S); renderAll(); }
 
 // ============== OKRs ==============
+// Three habits that national strategies share (docs 70-71): every key result is "from X to Y by a date"; a goal with no
+// movement for 6 weeks gets an explicit drop / re-scope / recommit decision; and plans start from your strengths.
+function okEsc(t){ return String(t==null?"":t).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;"); }
+var OKR_IDLE_DAYS=42;
+function parseKR(t){
+  var m=/from\s+(-?[\d.,]+)[^\d-]*?\s+to\s+(-?[\d.,]+)[^]*?\bby\s+(.+?)\s*$/i.exec(t)||/(-?[\d.,]+)\s*(?:→|->)\s*(-?[\d.,]+)[^]*?\bby\s+(.+?)\s*$/i.exec(t);
+  if(!m)return null;
+  var b=parseFloat(m[1].replace(/,/g,"")), g=parseFloat(m[2].replace(/,/g,""));
+  if(isNaN(b)||isNaN(g)||b===g)return null;
+  var due=m[3], ms=Date.parse(due); if(isNaN(ms))ms=Date.parse(due+" "+new Date().getFullYear());
+  if(!isNaN(ms)&&ms<Date.now()-864e5*31)ms=Date.parse(due+" "+(new Date().getFullYear()+1));   // "31 Mar" said in November means next March
+  return {b:b,g:g,c:b,due:due,dueMs:isNaN(ms)?null:ms};
+}
+function krFrac(k){ if(k.b===undefined)return k.v; var f=(k.c-k.b)/(k.g-k.b); return Math.max(0,Math.min(1,Math.round(f*10)/10)); }
+function okrTouched(o){ return o.krs.reduce(function(m,k){ return Math.max(m,k.at||0); },o.at||0); }
+function okrIdle(o){ return Math.floor((Date.now()-okrTouched(o))/864e5); }
+function setStrengths(then){
+  gmPrompt("Start from what you have: your 3 strengths (comma-separated)","e.g. calm in a crisis, deep regulatory knowledge, steady saver",function(t){
+    if(!t){ if(then)then(); return; }
+    S.strengths=t.split(",").map(function(x){return x.trim();}).filter(Boolean).slice(0,3); store("sovS",S); renderAll(); if(then)then();
+  });
+}
 function addOKR(){
   if(S.okrs.length>=3){ gmToast("OKR discipline: maximum 3 objectives per quarter. Fewer, deeper."); return; }
+  if(!S.strengths.length){ setStrengths(addOKRNow); return; }
+  addOKRNow();
+}
+function addOKRNow(){
   gmPrompt("New Objective","e.g. Become financially unshakeable this quarter",function(o){
     if(!o)return;
-    S.okrs.push({o:o,krs:[]});
+    S.okrs.push({o:o,krs:[],at:Date.now(),s:S.strengths[0]||""});
     store("sovS",S); renderAll();
   });
 }
 function addKR(oi){
   if(S.okrs[oi].krs.length>=4){ gmToast("Max 4 key results per objective."); return; }
-  gmPrompt("New Key Result (measurable)","e.g. Emergency fund from 2 to 4 months",function(t){
+  gmPrompt("New Key Result: from X to Y by a date","e.g. Emergency fund from 2 to 4 months by 31 Mar",function(t){
     if(!t)return;
-    S.okrs[oi].krs.push({t:t,v:0});
+    var n=parseKR(t), kr={t:t,v:0,at:Date.now()};
+    if(n){ for(var x in n)kr[x]=n[x]; } else gmToast("Saved. Tip: write it as “from 2 to 4 months by 31 Mar” and the app tracks the number for you.");
+    S.okrs[oi].krs.push(kr); S.okrs[oi].at=Date.now();
     store("sovS",S); renderAll();
   });
 }
-function setKR(oi,ki,v){ S.okrs[oi].krs[ki].v=+v; store("sovS",S);
+function setKR(oi,ki,v){ var k=S.okrs[oi].krs[ki]; k.v=+v; k.at=Date.now(); store("sovS",S);
   var el=document.getElementById("krv"+oi+"_"+ki); if(el)el.textContent=(+v).toFixed(1);
   var g=document.getElementById("og"+oi); if(g){var gr=okrGrade(oi);g.textContent=gr.toFixed(2);g.style.color=gr>=0.6&&gr<=0.85?"var(--green)":gr<0.4?"var(--red)":"var(--amber)";}
 }
-function okrGrade(oi){ var k=S.okrs[oi].krs; if(!k.length)return 0; return k.reduce(function(s,x){return s+x.v;},0)/k.length; }
+function setKRNow(oi,ki,v){ var k=S.okrs[oi].krs[ki]; if(v===""||isNaN(+v))return; k.c=+v; k.v=krFrac(k); k.at=Date.now(); store("sovS",S); renderAll(); }
+function setOKRStrength(oi,v){ S.okrs[oi].s=v; S.okrs[oi].at=Date.now(); store("sovS",S); }
+function okrGrade(oi){ var k=S.okrs[oi].krs; if(!k.length)return 0; return k.reduce(function(s,x){return s+krFrac(x);},0)/k.length; }
 function delOKR(oi){ gmConfirm("Delete this objective?",function(y){ if(y){ S.okrs.splice(oi,1); store("sovS",S); renderAll(); } }); }
+function okrRecommit(oi){ var o=S.okrs[oi]; o.at=Date.now(); o.recommits=(o.recommits||0)+1; store("sovS",S); gmToast("Recommitted. Make one key result move this week."); renderAll(); }
+function okrRescope(oi){ var o=S.okrs[oi];
+  gmPrompt("Re-scope: a smaller or sharper version of “"+okEsc(o.o)+"”","e.g. the first half of it, done well",function(t){
+    if(!t)return; o.was=(o.was||[]).concat([o.o]); o.o=t; o.at=Date.now(); store("sovS",S); renderAll();
+  });
+}
+function okrDrop(oi){ var o=S.okrs[oi];
+  gmPrompt("Drop it, and keep the lesson: what did you learn? (optional)","e.g. the timing was wrong; revisit after the move",function(t){
+    S.okrDropped.push({o:o.o,krs:o.krs,at:Date.now(),lesson:t||"",idle:okrIdle(o)}); S.okrs.splice(oi,1); store("sovS",S);
+    gmToast("Dropped and recorded. Dropping on purpose is a decision, not a failure."); renderAll();
+  });
+}
 
 // ============== WHEEL OF LIFE ==============
 var WHEEL_DIMS=[["career","Career"],["money","Finances"],["health","Health"],["family","Family & Friends"],["love","Partner / Romance"],["growth","Personal Growth"],["fun","Fun & Recreation"],["env","Environment / Home"]];
@@ -1593,23 +1635,43 @@ function renderMoney(E){
 
 function renderOKR(){
   var q=Math.floor(new Date().getMonth()/3)+1;
-  var html='<div class="section active"><div class="cat-t">\uD83C\uDFAF Quarterly OKRs — Q'+q+' <span class="pill pill-t">Intel/Google method (Doerr)</span></div>';
-  html+='<div class="info">Max 3 Objectives, each with 2-4 measurable Key Results. Grade each KR 0.0-1.0 honestly. <strong>Target average \u2248 0.7</strong> — consistent 1.0 means you aimed too low; below 0.4 means refocus. Set in the quarterly check-in; update progress once a month with one tap per result.</div>';
-  if(!S.okrs.length) html+='<div class="info" style="background:var(--goldL);color:var(--gold)">No objectives yet. Good first ones: "Make my money unshakeable" (KRs: emergency months 2\u21924, savings rate 12\u219218%, will checklist 0\u219250%).</div>';
+  var html='<div class="section active"><div class="cat-t">🎯 Quarterly OKRs — Q'+q+' <span class="pill pill-t">Intel/Google method (Doerr)</span></div>';
+  html+='<div class="info">Max 3 Objectives, each with 2-4 Key Results written as <strong>from X to Y by a date</strong>: type today’s number as it moves and the score fills itself. <strong>Target average ≈ 0.7</strong>: consistent 1.0 means you aimed too low; below 0.4 means refocus. Set them in the quarterly check-in; update progress once a month.</div>';
+  html+='<div class="okr-card" style="padding:10px 12px"><div style="font-size:12px;color:var(--muted);margin-bottom:4px">Start from what you have · your strengths</div>'
+   +(S.strengths.length?'<div style="font-weight:700">'+S.strengths.map(okEsc).join(' · ')+'</div>':'<div style="font-size:12.5px">Name your 3 strengths first; each objective then builds on one.</div>')
+   +'<button class="btn-sm" style="margin-top:8px;background:var(--cardAlt);color:var(--text)" onclick="setStrengths()">'+(S.strengths.length?'Edit strengths':'Name my 3 strengths')+'</button></div>';
+  if(!S.okrs.length) html+='<div class="info" style="background:var(--goldL);color:var(--gold)">No objectives yet. A good first one: "Make my money unshakeable", with key results like "emergency fund from 2 to 4 months by 31 Mar" and "savings rate from 12 to 18% by 30 Jun".</div>';
   S.okrs.forEach(function(o,oi){
-    var g=okrGrade(oi);
+    var g=okrGrade(oi), idle=okrIdle(o);
     html+='<div class="okr-card"><span class="okr-grade" id="og'+oi+'" style="color:'+(g>=0.6&&g<=0.85?"var(--green)":g<0.4?"var(--red)":"var(--amber)")+'">'+g.toFixed(2)+'</span>'
-     +'<div class="okr-o">O'+(oi+1)+': '+o.o+'</div>';
+     +'<div class="okr-o">O'+(oi+1)+': '+okEsc(o.o)+'</div>';
+    if(idle>=OKR_IDLE_DAYS) html+='<div class="info okr-idle" style="color:var(--amber);margin:8px 0">No movement for '+Math.floor(idle/7)+' weeks. Decide, so it does not drift: '
+      +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><button class="btn-sm" style="background:var(--gold);color:#0d1f35;font-weight:800" onclick="okrRecommit('+oi+')">Recommit</button>'
+      +'<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="okrRescope('+oi+')">Re-scope</button>'
+      +'<button class="btn-sm" style="background:var(--redBg);color:var(--red)" onclick="okrDrop('+oi+')">Drop, keep the lesson</button></div></div>';
+    if(S.strengths.length) html+='<div style="font-size:12px;color:var(--muted);margin:4px 0">Builds on: <select aria-label="Strength this objective builds on" onchange="setOKRStrength('+oi+',this.value)">'
+      +S.strengths.map(function(x){ return '<option'+(x===o.s?' selected':'')+'>'+okEsc(x)+'</option>'; }).join('')+'</select></div>';
     o.krs.forEach(function(kr,ki){
-      html+='<div class="kr"><div class="kr-t">KR'+(ki+1)+': '+kr.t+'</div>'
-       +'<input type="range" min="0" max="1" step="0.1" value="'+kr.v+'" oninput="setKR('+oi+','+ki+',this.value)">'
-       +'<div class="kr-v">score: <span id="krv'+oi+'_'+ki+'">'+kr.v.toFixed(1)+'</span> / 1.0</div></div>';
+      html+='<div class="kr"><div class="kr-t">KR'+(ki+1)+': '+okEsc(kr.t)+'</div>';
+      if(kr.b!==undefined){
+        var f=krFrac(kr), left=kr.dueMs?Math.ceil((kr.dueMs-Date.now())/864e5):null;
+        html+='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px">from '+kr.b+' to '+kr.g
+         +' · now <input type="number" step="any" aria-label="Current value" value="'+kr.c+'" style="width:84px" onchange="setKRNow('+oi+','+ki+',this.value)">'
+         +' · '+(left===null?'by '+okEsc(kr.due):left>=0?left+' days left':'<span style="color:var(--red)">'+(-left)+' days overdue</span>')+'</div>'
+         +'<div style="height:8px;border-radius:4px;background:var(--cardAlt);margin-top:6px"><div style="height:8px;border-radius:4px;width:'+Math.round(f*100)+'%;background:var(--green)"></div></div>'
+         +'<div class="kr-v">score: <span id="krv'+oi+'_'+ki+'">'+f.toFixed(1)+'</span> / 1.0</div></div>';
+      } else {
+        html+='<input type="range" min="0" max="1" step="0.1" value="'+kr.v+'" oninput="setKR('+oi+','+ki+',this.value)">'
+         +'<div class="kr-v">score: <span id="krv'+oi+'_'+ki+'">'+kr.v.toFixed(1)+'</span> / 1.0</div></div>';
+      }
     });
     html+='<div style="display:flex;gap:8px;margin-top:10px">'
      +'<button class="btn-sm" style="background:var(--purpleBg);color:var(--purple)" onclick="addKR('+oi+')">+ Key Result</button>'
      +'<button class="btn-sm" style="background:var(--redBg);color:var(--red)" onclick="delOKR('+oi+')">Delete</button></div></div>';
   });
   html+='<button class="btn-add" onclick="addOKR()">+ Add Objective (max 3)</button>';
+  if(S.okrDropped.length) html+='<details class="road-col" style="margin-top:8px"><summary style="cursor:pointer;font-size:12.5px;font-weight:700">Dropped on purpose · '+S.okrDropped.length+'</summary><div style="font-size:12px;margin-top:6px">'
+    +S.okrDropped.slice().reverse().map(function(d){ return '<div style="margin-bottom:6px"><b>'+okEsc(d.o)+'</b> · '+new Date(d.at).toISOString().slice(0,10)+(d.lesson?'<br><span style="color:var(--muted)">Lesson: '+okEsc(d.lesson)+'</span>':'')+'</div>'; }).join('')+'</div></details>';
   html+='<div class="info" style="margin-top:6px"><strong>Pre-mortem (Klein, HBR):</strong> before committing to each objective, spend 5 minutes imagining it FAILED at quarter-end — list the 3 most likely causes, then build a step against each into your KPI systems. Prospective hindsight improves cause-identification by ~30%.</div>';
   html+='</div>';
   return html;
@@ -2494,7 +2556,7 @@ function renderPlaybook(){
       .then(function (r) {
         if (!r || !r.ok) { S_("gm_sync_fails", G("gm_sync_fails", 0) + 1); return; }
         S_("gm_sync_last", ymd() + " " + new Date().toTimeString().slice(0, 5));
-        S_("gm_sync_fails", 0);
+        S_("gm_sync_fails", 0); gmTouch("Synced (a copy went to the laptop)", "your estate");
         // The estate keeps a snapshot of the merged state for every day (so nobody has to remember to export a backup).
         return r.json().then(function (j) { if (j && j.snapshots) S_("gm_sync_snaps", { n: j.snapshots, latest: j.latest_snapshot }); }).catch(function () {});
       })
@@ -2506,6 +2568,36 @@ function renderPlaybook(){
   var ws = null, wsTimer = null, wsBackoff = 2000;
   // Which device wrote: a device ignores pings about its own writes (no echo loop).
   var devId = G("gm_sync_dev", null) || (function () { var d = Math.random().toString(36).slice(2, 10); S_("gm_sync_dev", d); return d; })();
+  /* Who touched my data (doc 71 pattern 4, after Estonia): one line each time your data leaves this device or comes back.
+     Each device writes only its own key (gm_access_<device>), so the per-key merge carries every device's log without clashes.
+     A repeat of the same event within the hour is not written again: a sync every minute must not log (or re-sync) itself. */
+  function devName() { var u = navigator.userAgent || ""; return /iPhone|iPad/.test(u) ? "iPhone or iPad" : /Android/.test(u) ? "Android phone" : /Windows/.test(u) ? "Windows PC" : /Mac/.test(u) ? "Mac" : /Linux/.test(u) ? "Linux" : "a device"; }
+  window.gmTouch = function (what, where) {
+    try {
+      var k = "gm_access_" + devId, log = G(k, []), now = Date.now();
+      for (var i = log.length - 1; i >= 0 && now - log[i].t < 3600000; i--) if (log[i].w === what && log[i].p === where) return;
+      log.push({ t: now, w: what, p: where, d: devName() });
+      S_(k, log.slice(-150));
+    } catch (e) {}
+  };
+  function touchRows() {
+    var rows = [];
+    for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k.indexOf("gm_access_") === 0) (G(k, []) || []).forEach(function (e) { rows.push(e); }); }
+    return rows.sort(function (a, b) { return b.t - a.t; });
+  }
+  window.gmTouchRows = touchRows;
+  function touchHTML() {
+    var rows = touchRows(), h = '<div class="info">Every time your data left a device or came back: when, which device, what, and where to. '
+      + 'It covers every device that syncs. The estate keeps its own tamper-evident log of AI requests: <code>./securax audit verify</code>.</div>';
+    if (!rows.length) return h + '<div style="font-size:12px;color:var(--muted)">Nothing yet: your data has not left this device.</div>';
+    h += '<table style="width:100%;font-size:11.5px;border-collapse:collapse">';
+    rows.slice(0, 60).forEach(function (e) {
+      var d = new Date(e.t);
+      h += '<tr style="border-bottom:1px solid var(--line,#2a3a4d)"><td style="padding:4px 6px;white-space:nowrap">' + esc(d.toISOString().slice(0, 10) + " " + d.toTimeString().slice(0, 5))
+        + '</td><td style="padding:4px 6px">' + esc(e.d || "") + '</td><td style="padding:4px 6px">' + esc(e.w) + '</td><td style="padding:4px 6px;color:var(--muted)">' + esc(e.p) + '</td></tr>';
+    });
+    return h + '</table>';
+  }
   function wsURL(c) { return String(c.url).replace(/\/+$/, "").replace(/^http/, "ws") + "/ws"; }
   window.gmLiveStop = function () { clearTimeout(wsTimer); if (ws) { try { ws.close(); } catch (e) {} ws = null; } };
   window.gmLiveStart = function () {
@@ -3748,7 +3840,7 @@ function renderPlaybook(){
       });
     }).then(function (r) {
       if (!r.ok) throw new Error("upload failed " + r.status);
-      S_("gm_ms_backup", ymd());
+      S_("gm_ms_backup", ymd()); gmTouch(enc ? "Backup saved, encrypted" : "Backup saved, NOT encrypted", "your OneDrive");
       // Rotation: keep the last 14 dated backups; monthlies (monthly-*.json) are kept forever.
       return msToken().then(function (a) {
         var mk = "monthly-" + ymd().slice(0, 7) + ".json";
@@ -3792,6 +3884,7 @@ function renderPlaybook(){
       var keys = Object.keys(b.data || {});
       if (!confirm("Restore " + keys.length + " items from " + b.name + "? Anything newer on this device is overwritten.")) return;
       keys.forEach(function (k) { if (k.indexOf("gm_sync_od") !== 0 && k.indexOf("gm_ms_tok") !== 0) localStorage.setItem(k, b.data[k]); });
+      gmTouch("Restored from " + b.name, "your OneDrive");
       alert("Restored from " + b.name + "."); location.reload();
     }).catch(function (e) { alert("Restore failed: " + e.message + (G("gm_sync_odk", null) ? "" : " (an encrypted backup needs OneDrive sync turned on with the same passphrase first)")); });
   };
@@ -3863,6 +3956,7 @@ function renderPlaybook(){
         if ((r.status === 412 || r.status === 409) && tries < 3) return round();   // another device wrote first: re-read, merge, retry
         if (!r.ok) throw new Error("OneDrive upload " + r.status);
         S_("gm_sync_od_last", ymd() + " " + new Date().toTimeString().slice(0, 5)); S_("gm_sync_od_fails", 0);
+        gmTouch("Synced, encrypted", "your OneDrive");
       });
     }
     return round().catch(function (e) {
@@ -4076,6 +4170,7 @@ function renderPlaybook(){
       var k = localStorage.key(i);
       if (k.indexOf("gm_ms_tok") !== 0 && k.indexOf("gm_sync_od") !== 0) blob[k] = localStorage.getItem(k);
     }
+    gmTouch("Exported everything to a file (not encrypted)", "a file on this device");
     var a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([JSON.stringify(blob, null, 2)], { type: "application/json" }));
     a.download = "guiding-map-" + ymd() + ".json";
@@ -5073,6 +5168,7 @@ function renderPlaybook(){
     var out = document.getElementById("askOut"); out.style.display = "block"; out.textContent = "Thinking… (your local model)";
     document.getElementById("askFb").style.display = "none";
     var msgs = [{ role: "system", content: askSystem(askAgent) }, { role: "user", content: q }];
+    gmTouch("A question went to AI", "your estate AI gateway");
     fetch(askGw().replace(/\/$/, "") + "/v1/chat/completions", { method: "POST", headers: askHdrs(), body: JSON.stringify({ model: "bank-assistant", messages: msgs }) })
       .then(function (r) {
         if (r.ok) return r.json();
@@ -5168,6 +5264,7 @@ function renderPlaybook(){
     h += foldHTML("\u{1F517} Connections", "sync, Microsoft 365, phone reminders \u00b7 all optional",
       '<div class="info">None of these is needed to use the app. Sync copies your data to your own estate; Microsoft 365 shows today\u2019s calendar on Today; reminders nudge your phone when something is due.</div>'
       + syncHTML() + '<div style="margin-top:12px">' + msHTML() + '</div><div style="margin-top:12px">' + pushHTML() + '</div>', false);
+    h += foldHTML("\u{1F441} Who touched my data", touchRows().length ? "last: " + esc(touchRows()[0].w) : "nothing has left this device", touchHTML(), false);
     h += foldHTML("\u{1F9F0} Advanced tools", "optional; nothing here is needed day to day",
       rulesHTML() + '<div style="margin-top:14px">' + woopHTML() + '</div><div style="margin-top:14px">' + anchorHTML() + '</div><div style="margin-top:14px">' + csfHTML() + '</div>'
       + '<div style="margin-top:14px">' + derivedHTML() + '</div><div style="margin-top:14px">' + rapidHTML() + '</div><div style="margin-top:14px">' + toolkitHTML() + '</div>'
@@ -5378,7 +5475,7 @@ function renderPlaybook(){
       + ws.lines.join("\n") + (said.length ? "\nMy one-line notes: " + said.join(" | ") : "")
       + "\nCurrent one open action: " + ((theOneAction() || {}).text || "none");
     var out = G("gm_week_review", {});
-    out[weekKey()] = { at: Date.now(), text: "Asking your estate AI…" }; S_("gm_week_review", out); renderAll();
+    out[weekKey()] = { at: Date.now(), text: "Asking your estate AI…" }; S_("gm_week_review", out); gmTouch("Your week summary went to AI", "your estate AI gateway"); renderAll();
     fetch(askGw().replace(/\/$/, "") + "/v1/chat/completions", { method: "POST", headers: askHdrs(),
       body: JSON.stringify({ model: "bank-assistant", messages: [{ role: "user", content: prompt }] }) })
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })

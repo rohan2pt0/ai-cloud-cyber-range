@@ -389,7 +389,7 @@
       .then(function (r) {
         if (!r || !r.ok) { S_("gm_sync_fails", G("gm_sync_fails", 0) + 1); return; }
         S_("gm_sync_last", ymd() + " " + new Date().toTimeString().slice(0, 5));
-        S_("gm_sync_fails", 0);
+        S_("gm_sync_fails", 0); gmTouch("Synced (a copy went to the laptop)", "your estate");
         // The estate keeps a snapshot of the merged state for every day (so nobody has to remember to export a backup).
         return r.json().then(function (j) { if (j && j.snapshots) S_("gm_sync_snaps", { n: j.snapshots, latest: j.latest_snapshot }); }).catch(function () {});
       })
@@ -401,6 +401,36 @@
   var ws = null, wsTimer = null, wsBackoff = 2000;
   // Which device wrote: a device ignores pings about its own writes (no echo loop).
   var devId = G("gm_sync_dev", null) || (function () { var d = Math.random().toString(36).slice(2, 10); S_("gm_sync_dev", d); return d; })();
+  /* Who touched my data (doc 71 pattern 4, after Estonia): one line each time your data leaves this device or comes back.
+     Each device writes only its own key (gm_access_<device>), so the per-key merge carries every device's log without clashes.
+     A repeat of the same event within the hour is not written again: a sync every minute must not log (or re-sync) itself. */
+  function devName() { var u = navigator.userAgent || ""; return /iPhone|iPad/.test(u) ? "iPhone or iPad" : /Android/.test(u) ? "Android phone" : /Windows/.test(u) ? "Windows PC" : /Mac/.test(u) ? "Mac" : /Linux/.test(u) ? "Linux" : "a device"; }
+  window.gmTouch = function (what, where) {
+    try {
+      var k = "gm_access_" + devId, log = G(k, []), now = Date.now();
+      for (var i = log.length - 1; i >= 0 && now - log[i].t < 3600000; i--) if (log[i].w === what && log[i].p === where) return;
+      log.push({ t: now, w: what, p: where, d: devName() });
+      S_(k, log.slice(-150));
+    } catch (e) {}
+  };
+  function touchRows() {
+    var rows = [];
+    for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k.indexOf("gm_access_") === 0) (G(k, []) || []).forEach(function (e) { rows.push(e); }); }
+    return rows.sort(function (a, b) { return b.t - a.t; });
+  }
+  window.gmTouchRows = touchRows;
+  function touchHTML() {
+    var rows = touchRows(), h = '<div class="info">Every time your data left a device or came back: when, which device, what, and where to. '
+      + 'It covers every device that syncs. The estate keeps its own tamper-evident log of AI requests: <code>./securax audit verify</code>.</div>';
+    if (!rows.length) return h + '<div style="font-size:12px;color:var(--muted)">Nothing yet: your data has not left this device.</div>';
+    h += '<table style="width:100%;font-size:11.5px;border-collapse:collapse">';
+    rows.slice(0, 60).forEach(function (e) {
+      var d = new Date(e.t);
+      h += '<tr style="border-bottom:1px solid var(--line,#2a3a4d)"><td style="padding:4px 6px;white-space:nowrap">' + esc(d.toISOString().slice(0, 10) + " " + d.toTimeString().slice(0, 5))
+        + '</td><td style="padding:4px 6px">' + esc(e.d || "") + '</td><td style="padding:4px 6px">' + esc(e.w) + '</td><td style="padding:4px 6px;color:var(--muted)">' + esc(e.p) + '</td></tr>';
+    });
+    return h + '</table>';
+  }
   function wsURL(c) { return String(c.url).replace(/\/+$/, "").replace(/^http/, "ws") + "/ws"; }
   window.gmLiveStop = function () { clearTimeout(wsTimer); if (ws) { try { ws.close(); } catch (e) {} ws = null; } };
   window.gmLiveStart = function () {
@@ -1643,7 +1673,7 @@
       });
     }).then(function (r) {
       if (!r.ok) throw new Error("upload failed " + r.status);
-      S_("gm_ms_backup", ymd());
+      S_("gm_ms_backup", ymd()); gmTouch(enc ? "Backup saved, encrypted" : "Backup saved, NOT encrypted", "your OneDrive");
       // Rotation: keep the last 14 dated backups; monthlies (monthly-*.json) are kept forever.
       return msToken().then(function (a) {
         var mk = "monthly-" + ymd().slice(0, 7) + ".json";
@@ -1687,6 +1717,7 @@
       var keys = Object.keys(b.data || {});
       if (!confirm("Restore " + keys.length + " items from " + b.name + "? Anything newer on this device is overwritten.")) return;
       keys.forEach(function (k) { if (k.indexOf("gm_sync_od") !== 0 && k.indexOf("gm_ms_tok") !== 0) localStorage.setItem(k, b.data[k]); });
+      gmTouch("Restored from " + b.name, "your OneDrive");
       alert("Restored from " + b.name + "."); location.reload();
     }).catch(function (e) { alert("Restore failed: " + e.message + (G("gm_sync_odk", null) ? "" : " (an encrypted backup needs OneDrive sync turned on with the same passphrase first)")); });
   };
@@ -1758,6 +1789,7 @@
         if ((r.status === 412 || r.status === 409) && tries < 3) return round();   // another device wrote first: re-read, merge, retry
         if (!r.ok) throw new Error("OneDrive upload " + r.status);
         S_("gm_sync_od_last", ymd() + " " + new Date().toTimeString().slice(0, 5)); S_("gm_sync_od_fails", 0);
+        gmTouch("Synced, encrypted", "your OneDrive");
       });
     }
     return round().catch(function (e) {
@@ -1971,6 +2003,7 @@
       var k = localStorage.key(i);
       if (k.indexOf("gm_ms_tok") !== 0 && k.indexOf("gm_sync_od") !== 0) blob[k] = localStorage.getItem(k);
     }
+    gmTouch("Exported everything to a file (not encrypted)", "a file on this device");
     var a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([JSON.stringify(blob, null, 2)], { type: "application/json" }));
     a.download = "guiding-map-" + ymd() + ".json";
@@ -2968,6 +3001,7 @@
     var out = document.getElementById("askOut"); out.style.display = "block"; out.textContent = "Thinking… (your local model)";
     document.getElementById("askFb").style.display = "none";
     var msgs = [{ role: "system", content: askSystem(askAgent) }, { role: "user", content: q }];
+    gmTouch("A question went to AI", "your estate AI gateway");
     fetch(askGw().replace(/\/$/, "") + "/v1/chat/completions", { method: "POST", headers: askHdrs(), body: JSON.stringify({ model: "bank-assistant", messages: msgs }) })
       .then(function (r) {
         if (r.ok) return r.json();
@@ -3063,6 +3097,7 @@
     h += foldHTML("\u{1F517} Connections", "sync, Microsoft 365, phone reminders \u00b7 all optional",
       '<div class="info">None of these is needed to use the app. Sync copies your data to your own estate; Microsoft 365 shows today\u2019s calendar on Today; reminders nudge your phone when something is due.</div>'
       + syncHTML() + '<div style="margin-top:12px">' + msHTML() + '</div><div style="margin-top:12px">' + pushHTML() + '</div>', false);
+    h += foldHTML("\u{1F441} Who touched my data", touchRows().length ? "last: " + esc(touchRows()[0].w) : "nothing has left this device", touchHTML(), false);
     h += foldHTML("\u{1F9F0} Advanced tools", "optional; nothing here is needed day to day",
       rulesHTML() + '<div style="margin-top:14px">' + woopHTML() + '</div><div style="margin-top:14px">' + anchorHTML() + '</div><div style="margin-top:14px">' + csfHTML() + '</div>'
       + '<div style="margin-top:14px">' + derivedHTML() + '</div><div style="margin-top:14px">' + rapidHTML() + '</div><div style="margin-top:14px">' + toolkitHTML() + '</div>'
@@ -3273,7 +3308,7 @@
       + ws.lines.join("\n") + (said.length ? "\nMy one-line notes: " + said.join(" | ") : "")
       + "\nCurrent one open action: " + ((theOneAction() || {}).text || "none");
     var out = G("gm_week_review", {});
-    out[weekKey()] = { at: Date.now(), text: "Asking your estate AI…" }; S_("gm_week_review", out); renderAll();
+    out[weekKey()] = { at: Date.now(), text: "Asking your estate AI…" }; S_("gm_week_review", out); gmTouch("Your week summary went to AI", "your estate AI gateway"); renderAll();
     fetch(askGw().replace(/\/$/, "") + "/v1/chat/completions", { method: "POST", headers: askHdrs(),
       body: JSON.stringify({ model: "bank-assistant", messages: [{ role: "user", content: prompt }] }) })
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })

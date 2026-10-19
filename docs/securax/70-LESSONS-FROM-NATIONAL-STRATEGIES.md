@@ -1,7 +1,7 @@
 # 70 · What national strategies teach a personal estate (80/20)
 
 <!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
-> **Status: 🟡 Partly built.** Analysis is complete and most patterns are already built; the three proposed Life OS changes (baseline-to-target key results, the stale-goal prompt, strengths first) wait for your go-ahead. [What the lights mean](../index.md#the-status-lights)
+> **Status: 🟢 Built.** Analysis is complete; the three Life OS changes (key results from X to Y by a date, the 6-week drop / re-scope / recommit prompt, strengths first) are built and tested. [What the lights mean](../index.md#the-status-lights)
 <!-- status:end -->
 
 Three national strategy documents, read for **design patterns, not policy**:
@@ -18,9 +18,9 @@ measured and kept honest. Most of it transfers directly to the Life OS and to th
 | # | Pattern | Seen in | Already in SecuRAX | Next |
 |---|---|---|---|---|
 | 1 | **Choose, and drop the rest.** "Focusing on everything means focusing on nothing." A few core goals, the rest visibly parked. | US NSS (pp.1, 8) | OKRs capped at 3 objectives; the cockpit shows only what is abnormal (dark cockpit); the vital few in the navigator | — |
-| 2 | **Every goal is from X to Y by a date.** A baseline, a target and a deadline, with interim milestones. | Saudi 2030 (pp.25, 39, 75; 2020 checkpoints) | KRIs have thresholds and RAG bands; OKRs are graded 0.0–1.0 | **Proposed:** key results with a baseline, a target and a date ("from 12% to 30% by March"), shown as a line, not only a percent |
-| 3 | **Kill what shows no impact.** Halt initiatives that do not deliver; review what was approved. | Saudi 2030 (p.65) | the quarterly check-in offers to keep or drop unfinished goals | **Proposed:** a goal with no progress for 6 weeks asks once: drop, re-scope or recommit |
-| 4 | **Start from what you have.** Plans are built on existing strengths and an inventory of means. | Saudi 2030 (pp.9, 13); US NSS (Section III) | the model inventory; the control library's evidence map (what SecuRAX already proves) | **Proposed:** the yearly setup starts with "my 3 strengths", and each goal names one |
+| 2 | **Every goal is from X to Y by a date.** A baseline, a target and a deadline, with interim milestones. | Saudi 2030 (pp.25, 39, 75; 2020 checkpoints) | KRIs have thresholds and RAG bands; OKRs are graded 0.0–1.0 | **Built:** key results with a baseline, a target and a date ("from 12 to 30% by 31 Mar"), shown as a progress bar with days left |
+| 3 | **Kill what shows no impact.** Halt initiatives that do not deliver; review what was approved. | Saudi 2030 (p.65) | the quarterly check-in offers to keep or drop unfinished goals | **Built:** a goal with no progress for 6 weeks asks: drop, re-scope or recommit; a drop keeps its lesson |
+| 4 | **Start from what you have.** Plans are built on existing strengths and an inventory of means. | Saudi 2030 (pp.9, 13); US NSS (Section III) | the model inventory; the control library's evidence map (what SecuRAX already proves) | **Built:** the OKR tab starts with "my 3 strengths", and each objective names one |
 | 5 | **Never depend on one outside source for a core part; low cost can hide costs.** | US NSS (pp.13-14, 18) | the failover ladder ending in a local model; pinned and vetted dependencies; vendor-neutral configuration (doc 65) | a hidden-cost line in vendor and tool reviews: telemetry, residency, lock-in, exit cost |
 | 6 | **A delivery unit separate from doers, publishing honest indicators.** | Saudi 2030 (pp.65, 81) | the cockpit and status lights; every claim has a proof (doc 55); CI journeys | — |
 
