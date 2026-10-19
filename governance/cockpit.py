@@ -794,10 +794,18 @@ def render(c: Collector, maps: dict, hist: list[dict], ai: str, now: float, targ
                 near.append(pct)
     except Exception:  # noqa: BLE001 - the gateway may be off; then there is nothing to show
         pass
+    share = None
+    try:                                                          # Claude's share of this month's commits: lit only above the goal (doc 23)
+        _sh = _load("securax_share", "lifecycle/share.py")
+        _m = _sh.report(_sh.commits(time.strftime("%Y-%m-01", time.localtime(now))))
+        share = _m[0] if _m and _m[0]["over_goal"] else None
+    except Exception:  # noqa: BLE001 - not a git checkout (a release tarball): nothing to show
+        pass
     lamps = [("warn" if reds else "ok", len(reds), "Warnings: act today"), ("caut" if ambs else "ok", len(ambs), "Cautions: schedule"),
              ("ok", sum(1 for m in ms if m["status"] == "green"), "Nominal")] + ([("warn", late, "Risk treatments overdue")] if late else []) \
         + ([("warn", len(stopped_ai), "AI stopped by a person: " + ", ".join(stopped_ai))] if stopped_ai else []) \
-        + ([("warn" if max(near) >= 1 else "caut", len(near), "AI allowance used up or near it: ./securax ai budget")] if near else [])
+        + ([("warn" if max(near) >= 1 else "caut", len(near), "AI allowance used up or near it: ./securax ai budget")] if near else [])\
+        + ([("caut", f"{share['claude_share']:.0%}", "of this month's commits by Claude (goal 20%): ./securax ai share")] if share else [])
     h.append("<div class='card'><h2>Master caution</h2><div class='annun'>" + "".join(
         f"<div class='lamp {k}'><b>{v}</b>{E(t)}</div>" for k, v, t in lamps)
         + ("<a class='lamp nav' href='/portal/navigator.html'><b>Controls</b>BFSI control navigator</a>" if nav else

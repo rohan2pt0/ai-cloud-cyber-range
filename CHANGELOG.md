@@ -9,6 +9,11 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **Claude for the hard fifth only** (doc 23):
+  - **`./securax route "task"`:** names the builder (local, OpenCode or Claude) and why. Its rules are data in `lifecycle/route.json`.
+  - **autobuild asks it first:** a task routed to Claude gets its brief at once. A green diff that touches a sensitive part asks for a Claude review.
+  - **`AGENTS.md` and `LESSONS.md`:** how the repo works, and what went wrong before. Every builder reads both, and Claude Code reads them through `CLAUDE.md`. autobuild adds a lesson when a red attempt turns green.
+  - **`./securax ai share`:** Claude's share of the month's commits. The cockpit lamp lights above 20%; the baseline was 98%.
 - **`./securax finish`** (doc 73): all 10 optional parts in one list, each with what it gives you, whether it is done, and the exact steps.
   - **Ticks:** items the estate can check tick themselves; the rest are ticked once with `./securax finish done ITEM`.
   - **Where it shows:** a "Finish setting up" banner on the Command Center and a card on the cockpit.

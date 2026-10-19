@@ -898,7 +898,12 @@ echo ok
     branch = git("rev-parse", "--abbrev-ref", "HEAD")[1].strip()
     c.ok(branch.startswith("autobuild/") and git("rev-parse", "main")[1].strip() == head0, "work lives on its own branch; main is untouched", branch)
     c.ok("test_autobuild_probe.py" in git("show", "--stat", "--format=", "HEAD")[1], "…and the green result is committed")
+    c.ok("add a probe test" in git("show", "HEAD:LESSONS.md")[1], "…and what the red attempt taught is in LESSONS.md, for the next agent")
     git("checkout", "-q", "main")
+    rc, out = H.sh(["bash", "./securax", "autobuild", "fix the sync merge conflict"], cwd=sb.clone, env=env, timeout=120)
+    c.ok(rc == 4 and (sb.clone / "escalation-brief.md").exists() and git("rev-parse", "--abbrev-ref", "HEAD")[1].strip() == "main",
+         "a task routed to Claude gets its brief at once: no cheap attempts, no branch", tail(out, 300))
+    (sb.clone / "escalation-brief.md").unlink(missing_ok=True)
     (sb.clone / "dirty.txt").write_text("x")
     rc, out = H.sh(["bash", "./securax", "autobuild", "x"], cwd=sb.clone, env=env, timeout=60)
     c.ok(rc != 0 and "uncommitted" in out, "a dirty checkout is refused (so rollback is always safe)", tail(out, 200))

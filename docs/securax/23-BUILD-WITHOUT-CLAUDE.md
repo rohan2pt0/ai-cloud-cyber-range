@@ -1,7 +1,7 @@
 # 23 · Build SecuRAX without depending on Claude
 
 <!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
-> **Status: 🟡 Partly built.** verify / autobuild / forge are real; building fully without Claude is not yet proven. [What the lights mean](../index.md#the-status-lights)
+> **Status: 🟡 Partly built.** verify, autobuild, forge, route, lessons and the Claude-share lamp are real and tested; Claude did 98% of commits when this shipped, so building mostly without it is not yet proven. [What the lights mean](../index.md#the-status-lights)
 <!-- status:end -->
 
 **Goal:** evolve SecuRAX using its *own* models, at near-zero cost, with the rigor of a frontier
@@ -118,6 +118,26 @@ bug unfixed after 3 honest tries):
 Paste that tight brief into Claude/Sonnet. Because it's scoped and carries the diff + the contract,
 one focused frontier call replaces many — that's how your weekly limit stops being a SPOF. Or run
 `./securax enhance "…"` to have your **local** engineer persona draft it first, free.
+
+## The card, automated: route, lessons, share
+
+Three small tools make the card below run by itself, so you do not have to remember it.
+
+- **`./securax route "task"`** names the tier and why, from the words of the task, any paths it names, and (after the work) the files the diff actually touched. The rules are data in `lifecycle/route.json`:
+  - **Claude:** security, crypto, identity, sync and merge logic, regulator mapping, a listed sensitive path, or more than 3 areas.
+  - **OpenCode:** 2 or 3 areas, or a wiring job.
+  - **Local:** the rest.
+  - **autobuild asks first.** A task routed to Claude gets its escalation brief at once, instead of three wasted cheap attempts (`--force` overrides). A green autobuild whose diff touches a sensitive path says so, and asks for a Claude review before merge.
+- **`AGENTS.md` and `LESSONS.md`:** how this repo works, and what went wrong before. Every builder reads both:
+  - Aider loads them on every run.
+  - OpenCode and Codex read `AGENTS.md`.
+  - Claude Code reads `CLAUDE.md`, which imports both.
+  - **When a red attempt turns green,** autobuild adds the lesson. You can add one with `./securax lessons add "…"`.
+  - This is the claude-mem idea (memory across sessions) without a model call, and OpenJarvis's "learn from your own traces" in its simplest form.
+  - Lines are cleaned to one plain line, because every agent reads them as context.
+- **`./securax ai share`:** how much of the month's work Claude did, by commit: Claude co-authored, `autobuild:`, or you. The cockpit lights a caution lamp above 20%, once a month has at least 10 commits.
+  - **The baseline when this shipped:** Claude 98% (October 2026).
+  - **When to change your plan:** only after two months under the goal. Commits are a proxy for effort, not tokens.
 
 ## Which tier gets the task (the 80/20 card)
 

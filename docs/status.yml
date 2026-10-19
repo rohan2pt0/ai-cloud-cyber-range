@@ -29,7 +29,7 @@ securax/19-AUTONOMOUS-RESEARCH.md: [amber, "The render engine is built; unattend
 securax/20-CLAUDE-PARITY.md: [amber, "Many parity features exist (routines, Twin, tools); some are still gaps."]
 securax/21-VERSIONING-AND-RELEASES.md: [green, "Versioning, changelog and the release workflow run in CI."]
 securax/22-PLUGINS-AND-PROVIDERS.md: [green, "Key wiring and failover are proven; a few providers need real credentials to prove."]
-securax/23-BUILD-WITHOUT-CLAUDE.md: [amber, "verify / autobuild / forge are real; building fully without Claude is not yet proven."]
+securax/23-BUILD-WITHOUT-CLAUDE.md: [amber, "verify, autobuild, forge, route, lessons and the Claude-share lamp are real and tested; Claude did 98% of commits when this shipped, so building mostly without it is not yet proven."]
 securax/24-RESILIENCE-AND-LOW-RESOURCE.md: [green, "Sizing for 3 / 9 / 24 GB is proven (`elastic_resources`)."]
 securax/25-FALLBACKS-AND-ELASTICITY.md: [green, "Ladders, cooldowns and the retry policy are generated and tested."]
 securax/26-COVERAGE-AND-GAPS.md: [green, "The gap ledger, kept current."]
