@@ -9,6 +9,11 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **Pattern interrupt in the Life OS** (doc 74):
+  - **The trigger:** 3 heavy-week signs in 7 days, counted on the device. The signs are your own words in notes or questions to the AI, and low-energy days.
+  - **What Today shows:** one card with one question, one small action, a 3-hour rest block for your calendar, and a 7-day pause. It offers no plan.
+  - **In recovery mode:** new goals and the quarterly check-in wait. The AI is told not to plan, and code replaces any answer that still offers a framework, KPI or checklist.
+  - **Repeat questions:** the AI answer now says when you have asked the same thing before, with the dates.
 - **Claude for the hard fifth only** (doc 23):
   - **`./securax route "task"`:** names the builder (local, OpenCode or Claude) and why. Its rules are data in `lifecycle/route.json`.
   - **autobuild asks it first:** a task routed to Claude gets its brief at once. A green diff that touches a sensitive part asks for a Claude review.

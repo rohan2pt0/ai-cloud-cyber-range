@@ -3000,7 +3000,10 @@
     var q = (document.getElementById("askQ").value || "").trim(); if (!q) return;
     var out = document.getElementById("askOut"); out.style.display = "block"; out.textContent = "Thinking… (your local model)";
     document.getElementById("askFb").style.display = "none";
-    var msgs = [{ role: "system", content: askSystem(askAgent) }, { role: "user", content: q }];
+    var msgs = [{ role: "system", content: askSystem(askAgent) + (inRecovery() ? RECOVERY_RULE : "") }, { role: "user", content: q }];
+    var seen = gmAskSeen(q); gmAskRemember(q);
+    var seenLine = seen.length ? '<div class="info" style="margin-bottom:8px">You have asked something like this ' + (seen.length === 1 ? "once" : seen.length + " times") + ' before ('
+      + seen.slice(-3).map(function (h) { return esc(new Date(h.t).toISOString().slice(0, 10)); }).join(", ") + '). Is this the same question, or has something changed?</div>' : "";
     gmTouch("A question went to AI", "your estate AI gateway");
     fetch(askGw().replace(/\/$/, "") + "/v1/chat/completions", { method: "POST", headers: askHdrs(), body: JSON.stringify({ model: "bank-assistant", messages: msgs }) })
       .then(function (r) {
@@ -3020,7 +3023,7 @@
           return null;
         });
       })
-      .then(function (j) { if (!j) return; lastAskQ = q; lastAskA = (j.choices && j.choices[0].message.content) || JSON.stringify(j); out.innerHTML = '<div class="ask-who">Answered as: ' + esc(askName(askAgent)) + '</div>' + mdLite(lastAskA); document.getElementById("askFb").style.display = "flex"; })
+      .then(function (j) { if (!j) return; lastAskQ = q; lastAskA = gmRecoveryGuard((j.choices && j.choices[0].message.content) || JSON.stringify(j)); out.innerHTML = seenLine + '<div class="ask-who">Answered as: ' + esc(askName(askAgent)) + '</div>' + mdLite(lastAskA); document.getElementById("askFb").style.display = "flex"; })
       .catch(function () { out.textContent = "AI is off right now — double-click START-HERE (or run  ./securax up ) to turn it on, then try again. (Nothing was sent.) If your estate is on another machine, set the gateway URL below."; });
   };
   window.gmAskCopy = function () {
@@ -3418,7 +3421,7 @@
   function calmTodayHTML() {
     var more = dueNowHTML() + (inRecovery() ? "" : driftHTML() + resHTML()) + msTodayHTML() + insightHTML() + estateHTML();
     var open = G("gm_more_today", false) === true;
-    return '<div class="section active">' + (phone() ? vitalsHTML() : "") + setupStripHTML() + undoBar() + checkinHTML() + oneActionHTML()
+    return '<div class="section active">' + (phone() ? vitalsHTML() : "") + interruptHTML() + setupStripHTML() + undoBar() + checkinHTML() + oneActionHTML()
       + (more.replace(/<[^>]*>/g, "").trim() ? '<details class="road-col gm-more-today"' + (open ? " open" : "") + ' ontoggle="gmMoreToday(this.open)">'
         + '<summary style="cursor:pointer;font-weight:800;font-size:13px">More today <span style="font-weight:500;color:var(--muted);font-size:11.5px">\u00b7 what is due, your week, calendar, estate</span></summary>'
         + '<div style="margin-top:10px">' + more + '</div></details>' : "")
@@ -3621,6 +3624,112 @@
     gmToast("Calendar file saved. Open it to add 5 repeating events (quarterly, monthly, weekly, April, August). Already added them by hand? Skip this.");
   };
 
+  /* ── Pattern interrupt: when the week is heavy, the app subtracts instead of adding ──────────────
+     The loop it breaks: in a saturated week you ask for a new system, build it for eleven days and drop it. So the app
+     watches for the signs (your own notes and questions using heavy-week words, low-energy days), and when 3 appear in 7
+     days it stops offering plans: one question, one small recovery action, one rest block, and the option to pause. In
+     recovery mode, new goals and the quarterly check-in wait, and the AI is told (and checked in code) not to hand you a
+     framework, KPI or checklist. All of it runs on this device; nothing is sent anywhere. */
+  var SAT_WORDS = ["saturated", "overwhelmed", "exhausted", "burnt out", "burned out", "can't sleep", "cannot sleep", "sleepless",
+    "a mess", "fix everything", "fix my life", "fix in one week", "new system", "too much", "drowning", "falling apart"];
+  function satWords() { var u = G("gm_sat_words", null); return (u && u.length ? u : SAT_WORDS).map(function (w) { return String(w).toLowerCase().trim(); }).filter(Boolean); }
+  function satHit(text) { var t = String(text || "").toLowerCase(); return satWords().filter(function (w) { return t.indexOf(w) >= 0; }); }
+  window.gmSatScan = function (days) {
+    days = days || 7;
+    var out = { hits: [], low: 0, score: 0 }, notes = G("gm_notes", {}), energy = G("gm_energy", {}), since = Date.now() - days * 864e5;
+    for (var i = 0; i < days; i++) {
+      var k = dayK(i), w = satHit(notes[k]);
+      if (w.length) out.hits.push({ day: k, src: "note", word: w[0] });
+      if (energy[k] && energy[k] <= 2) out.low++;
+    }
+    (G("gm_ask_hist", []) || []).forEach(function (a) { if (a.t >= since) { var w = satHit(a.q); if (w.length) out.hits.push({ day: new Date(a.t).toISOString().slice(0, 10), src: "question", word: w[0] }); } });
+    out.score = out.hits.length + out.low;
+    out.fire = out.score >= 3;
+    return out;
+  };
+  var SAT_Q = ["What is the one thing you would stop this week, if feeling lighter by Sunday were the only goal?",
+    "Who could take one thing off your plate this week, if you asked today?",
+    "What would you tell a friend who sounded the way your notes sound this week?",
+    "Which of this week's commitments could wait a fortnight without real harm?"];
+  var SAT_A = ["Walk for 20 minutes today, phone left at home.", "Go to bed 30 minutes earlier tonight; screens off an hour before.",
+    "Call one person who leaves you lighter, not one who needs something from you.", "Take half of Saturday off: no laptop, no planning."];
+  function satPick(list) { return list[Math.floor(Date.now() / 864e5 / 7) % list.length]; }   // the same one all week
+  window.gmRestIcs = function () {
+    var d = new Date(); d.setDate(d.getDate() + ((6 - d.getDay() + 7) % 7 || 7));               // next Saturday
+    var e = new Date(d), now = new Date(); e.setHours(17, 0, 0, 0);
+    var ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//SecuRAX//Guiding Map rest//EN", "BEGIN:VEVENT", "UID:securax-gm-rest-" + ymd(d) + "@local",
+      "DTSTAMP:" + icsDate(now, now.getHours(), now.getMinutes()), "DTSTART:" + icsDate(d, 14, 0), "DTEND:" + icsDate(e, 17, 0),
+      "SUMMARY:Rest (no laptop, no planning)", "DESCRIPTION:Booked by your Life OS because this week looked heavy.", "END:VEVENT", "END:VCALENDAR"].join("\r\n") + "\r\n";
+    try {
+      var a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([ics], { type: "text/calendar" }));
+      a.download = "rest-block.ics"; document.body.appendChild(a); a.click(); a.remove();
+    } catch (x) {}
+    S_("gm_sat_rest", ymd()); gmToast("Rest block saved: Saturday 14:00–17:00. Open the file to add it to your calendar.");
+    return ics;
+  };
+  window.gmSatLater = function () { var u = new Date(); u.setDate(u.getDate() + 3); S_("gm_sat_later", u.toISOString()); gmSnap("not now: pattern interrupt"); renderAll(); };
+  window.gmSatPause = function () { gmRecoveryOn(7); };
+  function interruptHTML() {
+    if (inRecovery()) return "";
+    var later = G("gm_sat_later", null); if (later && new Date(later) > new Date()) return "";
+    var s = gmSatScan(); if (!s.fire) return "";
+    var why = [];
+    var words = s.hits.map(function (h) { return h.word; }).filter(function (w, i, a) { return a.indexOf(w) === i; }).slice(0, 3);
+    if (s.hits.length) why.push(s.hits.length + " of your notes or questions said “" + words.join("”, “") + "”");
+    if (s.low) why.push("energy was 1 or 2 on " + s.low + " day" + (s.low > 1 ? "s" : ""));
+    return '<div class="road-col" style="border:1.5px solid var(--amber);margin-bottom:14px">'
+      + '<div style="font-weight:800;font-size:14px;margin-bottom:4px">This week looks heavy. It is not the week for a new plan.</div>'
+      + '<div style="font-size:12px;color:var(--muted);margin-bottom:10px">In the last 7 days ' + esc(why.join(", and ")) + '.</div>'
+      + '<div style="font-size:13px;line-height:1.6"><b>One question:</b> ' + esc(satPick(SAT_Q)) + '<br><b>One small thing:</b> ' + esc(satPick(SAT_A)) + '</div>'
+      + '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:10px">'
+      + '<button class="btn-sm" style="background:var(--gold);color:#0d1f35;font-weight:800" onclick="gmRestIcs()">Book 3 hours of rest</button>'
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmSatPause()">Pause everything but the daily three for 7 days</button>'
+      + '<button class="btn-sm" style="background:none;color:var(--muted);text-decoration:underline" onclick="gmSatLater()">Not now</button></div></div>';
+  }
+  window.gmInterruptHTML = interruptHTML;
+  // In recovery mode the app does not let you build a new system: new goals and the quarterly check-in wait.
+  ["addOKR", "addKR", "gmQuarter"].forEach(function (fn) {
+    var orig = window[fn]; if (typeof orig !== "function") return;
+    window[fn] = function () {
+      if (inRecovery()) { gmToast("Recovery mode: no new plans this week. The daily three are enough; your goals are still here when it ends."); return; }
+      return orig.apply(this, arguments);
+    };
+  });
+  window.gmSatWords = function () {
+    gmPrompt("Words that mean a heavy week for you (comma-separated)", satWords().join(", "), function (t) {
+      if (t === null) return;
+      S_("gm_sat_words", t.split(",").map(function (x) { return x.trim(); }).filter(Boolean).slice(0, 40)); renderAll();
+    });
+  };
+  function satOpsHTML() {
+    var s = gmSatScan();
+    return '<div class="info" style="margin-top:8px"><b>Heavy-week check:</b> ' + s.score + ' sign' + (s.score === 1 ? '' : 's') + ' in the last 7 days (3 turns it on). '
+      + 'It reads your daily notes, your questions to AI and your energy taps, on this device only. '
+      + '<span style="cursor:pointer;text-decoration:underline" onclick="gmSatWords()">Edit the words</span></div>';
+  }
+  // The AI, in recovery mode: told not to plan, and checked in code, because a prompt alone is not a control.
+  var RECOVERY_RULE = " The user is in RECOVERY MODE this week. Do not give a plan, framework, KPI, OKR, checklist, dashboard, roadmap or new system. "
+    + "Answer in at most 120 words: one kind question back, and one small recovery action they can do today.";
+  var PLANNING = /\b(framework|kpis?|okrs?|checklist|dashboard|roadmap|action plan|30-day|90-day|step\s*\d|phase\s*\d|week\s*1\b)/i;
+  window.gmRecoveryGuard = function (answer) {
+    if (!inRecovery()) return answer;
+    var words = String(answer || "").split(/\s+/).filter(Boolean).length;
+    if (!PLANNING.test(answer) && words <= 160) return answer;
+    return "You are in recovery mode this week, so I am not giving you a plan.\n\n**One question:** " + satPick(SAT_Q) + "\n\n**One small thing:** " + satPick(SAT_A);
+  };
+  // "Have you asked me this before?": the question every assistant should ask a heavy user, answered from your own history.
+  function askWords(q) { return String(q).toLowerCase().replace(/[^a-z0-9ऀ-ॿ ]+/g, " ").split(/\s+/).filter(function (w) { return w.length > 3; }); }
+  window.gmAskSeen = function (q) {
+    var a = askWords(q); if (a.length < 3) return [];
+    return (G("gm_ask_hist", []) || []).filter(function (h) {
+      var b = askWords(h.q), inter = a.filter(function (w) { return b.indexOf(w) >= 0; }).length, uni = a.length + b.length - inter;
+      return uni && inter / uni >= 0.5;
+    });
+  };
+  window.gmAskRemember = function (q) {
+    var h = G("gm_ask_hist", []) || []; h.push({ t: Date.now(), q: String(q).slice(0, 200) }); S_("gm_ask_hist", h.slice(-80));
+  };
+
   /* -- 3. The After-Action Review now has a moment: the last week of every month, in Due now and in the calendar -- */
   if (typeof RITUALS !== "undefined" && !RITUALS.some(function (r) { return r.id === "aar"; })) {
     RITUALS.push({ id: "aar", name: "Monthly After-Action Review", mins: 15, tag: "Monthly \u00b7 last week",
@@ -3643,7 +3752,7 @@
     if (r) return '<div class="info" style="border:1.5px solid var(--amber)">Recovery mode is <b>on</b> until ' + esc(r.until.slice(0, 10)) + '. <button class="btn-sm" style="background:var(--gold);color:#0d1f35;margin-left:6px" onclick="gmRecoveryOff()">End it now</button></div>';
     return '<div class="info">A bad week (illness, a crisis at work)? Pause the rituals instead of abandoning the app. Only the daily three stay.</div>'
       + '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmRecoveryAsk(7)">Pause 7 days\u2026</button>'
-      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmRecoveryAsk(14)">Pause 14 days\u2026</button></div>';
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmRecoveryAsk(14)">Pause 14 days\u2026</button></div>' + satOpsHTML();
   }
 
   /* -- 6. Kids: add a child right here (name + date of birth); the plan appears at once -- */
@@ -4091,7 +4200,7 @@
       if (sec) { var inf = sec.querySelector(".info"); if (!P.kids.length && inf) inf.outerHTML = kidAddHTML(true); else if (P.kids.length) sec.insertAdjacentHTML("beforeend", kidAddHTML(false)); }
     }
     else if (curTab === "today") {
-      box.insertAdjacentHTML("afterbegin", exampleWarn() + undoBar() + daily3HTML() + msTodayHTML()
+      box.insertAdjacentHTML("afterbegin", exampleWarn() + interruptHTML() + undoBar() + daily3HTML() + msTodayHTML()
         + (inRecovery() ? "" : driftHTML() + resHTML()) + oneActionHTML() + (inRecovery() ? "" : pinnedHTML()));
     }
     try { calmFrame(); } catch (e) { console.log(e); }

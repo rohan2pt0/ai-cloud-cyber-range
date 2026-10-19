@@ -91,3 +91,4 @@ compliance-matrix.md: [amber, "The original cyber-range lab; superseded by doc 0
 cost-controls.md: [amber, "The original cyber-range lab; superseded by doc 15."]
 demo-runbook.md: [green, "`./securax demo` runs the red-team scorecard and posture scan."]
 securax/73-FINISH-SETTING-UP-AND-PUBLISH-THE-SITE.md: [amber, "The checklist, the file-name-free import, the phone layout and the site build are built and tested; the site goes live after your two GitHub settings (./securax finish product-site)."]
+securax/74-PATTERN-INTERRUPT.md: [green, "Built and tested (test25, 13 checks): the heavy-week check, the one-card interrupt, the recovery-mode planning lock and AI guard, and the repeat-question notice."]
