@@ -15,6 +15,8 @@ Modelled on DefectDojo, kept to what an auditor asks for:
 - **One record per problem.** The same rule on the same asset and location is one finding, however many scans report it.
 - **A fix-by date from the severity.** Critical 7 days, high 30, medium 90, low 180. Change them in vault/findings/sla.json.
   A CVE on CISA's known-exploited list is treated as critical, whatever the scanner said (needs `./securax offline sync kev`).
+  One with an EPSS score of 50% or more (FIRST's estimate that it is exploited within 30 days) is at least high
+  (`./securax offline sync epss`).
 - **Re-importing closes what is gone.** When a new scan from the same tool no longer reports a finding, it is marked fixed.
   If it comes back, it reopens with a new fix-by date.
 - **Risk acceptance is time-boxed.** It needs a reason, a person and an end date at most a year away. When the date passes,
@@ -82,16 +84,36 @@ def key(source: str, rule: str, asset: str, location: str) -> str:
     return hashlib.sha256("|".join(x.strip().lower() for x in (source, rule, asset, location)).encode()).hexdigest()[:10]
 
 
-def kev_cves() -> set[str]:
+EPSS_HIGH = 0.5          # a 50% chance of exploitation within 30 days is treated as at least high
+
+
+def _intel(name: str) -> dict:
     try:
         sys.path.insert(0, str(ROOT / "ai-soc"))
         from soc import enrich
-        return set((enrich._load("kev") or {}).get("by_cve", {}))
+        return (enrich._load(name) or {}).get("by_cve", {})
     except Exception:  # noqa: BLE001 - no snapshot yet: scanner severities stand
-        return set()
+        return {}
     finally:
         if sys.path and sys.path[0] == str(ROOT / "ai-soc"):
             sys.path.pop(0)
+
+
+def kev_cves() -> set[str]:
+    return set(_intel("kev"))
+
+
+def epss_scores() -> dict[str, float]:
+    return {k: v[0] for k, v in _intel("epss").items()}
+
+
+def raise_for(sev: str, cve: str, kev: set, epss: dict) -> str:
+    """The severity after threat intelligence: known-exploited -> critical; EPSS >= 50% -> at least high."""
+    if cve and cve in kev:
+        return "critical"
+    if cve and epss.get(cve, 0) >= EPSS_HIGH and ORDER.index(sev) > ORDER.index("high"):
+        return "high"
+    return sev
 
 
 # -- reading scans --------------------------------------------------------------------------------------------------------
@@ -186,16 +208,17 @@ def _due(sev: str, start: dt.date, days: dict) -> str:
 
 
 def merge(reg: dict, found: list[dict], on: dt.date | None = None, days: dict | None = None, kev: set | None = None,
-          close_missing: bool = True) -> dict:
+          close_missing: bool = True, epss: dict | None = None) -> dict:
     """Add what is new, refresh what is known, reopen what came back and (per source) close what is gone. Returns counts."""
     on, days, kev = on or today(), days or sla(), kev if kev is not None else kev_cves()
+    epss = epss if epss is not None else epss_scores()
     fs = reg.setdefault("findings", {})
     n = {"new": 0, "seen": 0, "reopened": 0, "fixed": 0, "skipped": 0}
     seen_now: dict[str, set] = {}
     for f in found:
         sev = f.get("severity")
-        if f.get("cve") and f["cve"] in kev:
-            sev = "critical"
+        if sev:
+            sev = raise_for(sev, f.get("cve", ""), kev, epss)
         if not sev:
             n["skipped"] += 1                                             # informational: nothing to fix by a date
             continue
@@ -205,11 +228,14 @@ def merge(reg: dict, found: list[dict], on: dt.date | None = None, days: dict | 
         if old is None:
             fs[k] = {"id": "F-" + k[:6], "title": f["title"], "severity": sev, "source": f["source"], "asset": f.get("asset", ""),
                      "location": f.get("location", ""), "cve": f.get("cve", ""), "kev": bool(f.get("cve") and f["cve"] in kev),
+                     "epss": epss.get(f.get("cve", "")),
                      "first_seen": on.isoformat(), "last_seen": on.isoformat(), "status": "open",
                      "due": f.get("due") or _due(sev, on, days)}
             n["new"] += 1
             continue
         old["last_seen"] = on.isoformat()
+        if f.get("cve") in epss:
+            old["epss"] = epss[f["cve"]]                                 # the chance changes daily: keep the latest
         if old["status"] == "fixed":                                     # it came back: a regression, with a fresh clock
             old.update(status="open", reopened=old.get("reopened", 0) + 1, due=_due(sev, on, days))
             old.pop("fixed_on", None)
@@ -286,7 +312,8 @@ def summary(reg: dict, on: dt.date | None = None) -> dict:
     return {"open": {s: sum(1 for f in open_ if f["severity"] == s) for s in ORDER}, "overdue": len(overdue(reg, on)),
             "accepted": sum(1 for f in fs if status(f, on) == "accepted"), "expiring": len(expiring(reg, on)),
             "fixed": len(done), "sla_met": round(100 * in_sla / len(done)) if done else None,
-            "median_days_to_fix": took[len(took) // 2] if took else None, "kev_open": sum(1 for f in open_ if f.get("kev"))}
+            "median_days_to_fix": took[len(took) // 2] if took else None, "kev_open": sum(1 for f in open_ if f.get("kev")),
+            "likely_open": sum(1 for f in open_ if (f.get("epss") or 0) >= EPSS_HIGH)}
 
 
 # -- the command line -----------------------------------------------------------------------------------------------------
@@ -294,7 +321,8 @@ def _line(f: dict, on: dt.date) -> str:
     st = status(f, on)
     when = f"due {f['due']}" if st in ("open", "overdue") else (f"accepted until {f['accepted']['until']}" if st == "accepted" else f"fixed {f.get('fixed_on', '')}")
     tag = {"overdue": "✗ OVERDUE", "open": "○ open", "accepted": "◐ accepted", "fixed": "✔ fixed"}[st]
-    return f"  {f['id']}  {tag:<11} {f['severity']:<8} {when:<26} {f['title'][:70]}" + (f"  [{f['asset']}]" if f.get("asset") else "") + ("  KEV" if f.get("kev") else "")
+    return (f"  {f['id']}  {tag:<11} {f['severity']:<8} {when:<26} {f['title'][:70]}" + (f"  [{f['asset']}]" if f.get("asset") else "")
+            + ("  KEV" if f.get("kev") else "") + (f"  EPSS {f['epss']:.0%}" if f.get("epss") else ""))
 
 
 def find_reports() -> list[pathlib.Path]:
@@ -382,7 +410,8 @@ def main(argv: list[str] | None = None) -> int:
         if a.cmd == "report":
             s = summary(reg, on)
             print(f"Findings register on {on.isoformat()} (SLA days: " + ", ".join(f"{k} {v}" for k, v in sla().items()) + ")")
-            print("  Open:      " + ", ".join(f"{s['open'][k]} {k}" for k in ORDER) + (f"  ({s['kev_open']} known-exploited)" if s["kev_open"] else ""))
+            print("  Open:      " + ", ".join(f"{s['open'][k]} {k}" for k in ORDER) + (f"  ({s['kev_open']} known-exploited)" if s["kev_open"] else "")
+                  + (f"  ({s['likely_open']} with EPSS 50%+)" if s["likely_open"] else ""))
             print(f"  Overdue:   {s['overdue']}")
             print(f"  Accepted:  {s['accepted']}" + (f" ({s['expiring']} ending within 14 days)" if s["expiring"] else ""))
             print(f"  Fixed:     {s['fixed']}" + (f", {s['sla_met']}% within the SLA, median {s['median_days_to_fix']} days to fix" if s["fixed"] else ""))

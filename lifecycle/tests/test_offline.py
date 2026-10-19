@@ -122,3 +122,20 @@ def test_the_soc_names_techniques_in_its_incidents_offline(tmp_path):
     recs = [{"ts": i, "principal": "x", "decision": "block", "findings": [{"rule": "PI-001-override", "severity": "high", "category": "c"}]} for i in range(1, 5)]
     inc = tri.triage(recs, summarize=False)["incidents"][0]
     assert inc["rule"] == "repeated-prompt-injection" and inc["techniques"][0]["name"] == "Exploit Public-Facing Application"
+
+
+def test_epss_keeps_only_the_cves_worth_ranking(tmp_path):
+    import gzip
+    rows = ["#model_version:v2025.03.14,score_date:2026-10-19T12:55:00Z", "cve,epss,percentile"]
+    rows += [f"CVE-2026-{i:05d},0.00{i % 9},0.1" for i in range(1200)] + ["CVE-2024-3400,0.99999,1.0", "cve-2026-99999,0.5,0.97"]
+    raw = tmp_path / "e.csv.gz"
+    with gzip.open(raw, "wt") as fh:
+        fh.write("\n".join(rows) + "\n")
+    s = off.slim_epss(raw)
+    assert s["score_date"] == "2026-10-19" and s["rows"] == 1202 and s["count"] == 2
+    assert s["by_cve"]["CVE-2024-3400"] == [1.0, 1.0] and "CVE-2026-99999" in s["by_cve"]
+    small = tmp_path / "s.csv.gz"
+    with gzip.open(small, "wt") as fh:
+        fh.write("cve,epss,percentile\nCVE-2024-3400,0.9,1\n")
+    with pytest.raises(ValueError):
+        off.slim_epss(small)

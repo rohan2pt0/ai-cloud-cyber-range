@@ -4,6 +4,8 @@
     ./securax offline sync [kev|attack]     refresh while you are online (a failed refresh never destroys a good snapshot)
     ./securax offline status                age + size of each snapshot (works fully offline)
     ./securax kev CVE-2024-3400 ...         is this CVE known-exploited? (offline, from the snapshot)
+    ./securax offline sync epss             FIRST's EPSS: the chance each CVE is exploited in the next 30 days (the findings
+                                            register uses it to raise what is likely to be attacked soon)
 
 Low-resource by design: downloads are size-capped and streamed to disk; the 55 MB MITRE bundle is parsed object-by-object (flat
 memory) and only a slim technique map is kept. Standard library only. Consumers: ai-soc/soc/enrich.py.
@@ -11,6 +13,8 @@ memory) and only a slim technique map is kept. Standard library only. Consumers:
 from __future__ import annotations
 
 import argparse
+import csv
+import gzip
 import hashlib
 import json
 import os
@@ -117,7 +121,33 @@ def slim_attack(raw: pathlib.Path) -> dict:
     return {"attack_version": version, "count": len(techs), "techniques": techs}
 
 
-SLIMMERS = {"kev": slim_kev, "attack": slim_attack}
+EPSS_KEEP = 0.01      # CVEs under a 1% chance are left out (most of the ~300,000): absent means "unlikely", which keeps the file small
+
+
+def slim_epss(raw: pathlib.Path) -> dict:
+    """The daily EPSS file (gzipped CSV: a '#model_version:...,score_date:...' line, then cve,epss,percentile)."""
+    by, meta, rows = {}, "", 0
+    with gzip.open(raw, "rt", encoding="utf-8") as fh:
+        for row in csv.reader(fh):
+            if not row:
+                continue
+            if row[0].startswith("#"):
+                meta = ",".join(row).lstrip("#")
+                continue
+            if row[0] == "cve":
+                continue
+            rows += 1
+            score = float(row[1])
+            if score >= EPSS_KEEP:
+                by[row[0].upper()] = [round(score, 4), round(float(row[2]), 4)]
+    if rows < 1000:
+        raise ValueError("too few EPSS rows: not the file we expected")
+    info = dict(kv.split(":", 1) for kv in meta.split(",") if ":" in kv)
+    return {"model_version": info.get("model_version"), "score_date": info.get("score_date", "")[:10], "rows": rows,
+            "kept_from": EPSS_KEEP, "count": len(by), "by_cve": by}
+
+
+SLIMMERS = {"kev": slim_kev, "attack": slim_attack, "epss": slim_epss}
 
 
 def sync_one(name: str, spec: dict, out_dir: pathlib.Path) -> tuple[bool, str]:

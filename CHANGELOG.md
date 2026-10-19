@@ -9,6 +9,13 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **FIRST EPSS** (doc 77):
+  - **The snapshot:** `./securax offline sync epss` keeps the daily chance that each CVE is exploited in the next 30 days.
+  - **In the findings register:** a CVE at 50% or more is at least high, and the EPSS score is shown and kept current.
+- **OWASP Agentic Skills Top 10 in `./securax vet`** (docs 31 and 77):
+  - **Tags:** every finding is tagged with its AST risk.
+  - **New checks:** remote instructions (AST05), unrestricted tool grants (AST03), and read-only claims the code contradicts (AST04).
+  - **The mapping:** `./securax vet ast10` shows how all ten are covered.
 - **`./securax findings`** (doc 76, after DefectDojo): one register for scan, SARIF and VAPT-workbook findings.
   - **One record per problem:** duplicates are merged.
   - **Fix-by dates:** critical 7 days, high 30, medium 90, low 180. A known-exploited CVE counts as critical.

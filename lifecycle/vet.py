@@ -13,6 +13,9 @@ internet is allowed near an agent, `./securax vet` answers four questions WITHOU
 Verdict: PASS (exit 0) · REVIEW (1: a human must read the listed lines) · BLOCK (2: do not use). A pin manifest is only written
 for PASS/REVIEW with --accept, and `vet verify` later proves the vendored tree still hashes to what was vetted.
 
+Every finding is tagged with the OWASP Agentic Skills Top 10 (AST10, 2026) risk it belongs to, and `./securax vet ast10`
+shows how each of the ten is handled: by a check here, or by how the estate runs skills (pins, verify, sandbox).
+
 Static analysis finds the lazy and the obvious. It cannot prove a repo is benign: read what it flags, keep pins, re-vet on every bump.
 Standard library only.
 """
@@ -64,10 +67,40 @@ SURFACE_RULES = [
 ]
 
 
+# OWASP Agentic Skills Top 10 (owasp.org/www-project-agentic-skills-top-10): which risk each rule is evidence of. Guardrail
+# rules (prompt injection, hidden Unicode, secrets) are AST01 by default.
+AST = {
+    "AST01": "Malicious skills", "AST02": "Supply-chain compromise", "AST03": "Over-privileged skills", "AST04": "Insecure metadata",
+    "AST05": "Untrusted external instructions", "AST06": "Weak isolation", "AST07": "Update drift", "AST08": "Poor scanning",
+    "AST09": "No governance", "AST10": "Cross-platform reuse",
+}
+RULE_AST = {
+    "pipe-to-shell": "AST01", "eval-b64": "AST01", "reads-credentials": "AST01", "env-exfil": "AST01", "destructive": "AST01",
+    "persistence": "AST01", "hidden-comment-instruction": "AST01", "symlink-escape": "AST01",
+    "install-script": "AST02", "npm-dependencies": "AST02", "python-build-hook": "AST02", "licence": "AST02", "ci-secrets": "AST02",
+    "permission-widening": "AST03", "agent-hook": "AST03", "mcp-server": "AST03", "shell-out": "AST03", "wildcard-tools": "AST03",
+    "network-call": "AST03", "metadata-understates": "AST04", "remote-instructions": "AST05",
+    "binary": "AST08", "large-file": "AST08", "scan-error": "AST08",
+}
+# How the estate covers each risk beyond a single scan (printed by `vet ast10`)
+AST_HOW = {
+    "AST01": "check: code surface rules + the gateway's own prompt-injection, hidden-Unicode and secret detectors over every text file",
+    "AST02": "check: install scripts, build hooks, dependencies, licence; plus a commit pin and tree hash for every accepted skill",
+    "AST03": "check: hooks, MCP servers, shell-outs, wildcard tool grants and permission widening are flagged for a person to approve",
+    "AST04": "check: a skill that says it is read-only or offline while its code runs a shell or calls the network",
+    "AST05": "check: skill text that tells the agent to fetch instructions from a web address and follow them",
+    "AST06": "estate: autobuild runs vetted skill TEXT only; third-party code is inspected in the sandbox (./securax inspect), never run",
+    "AST07": "estate: nothing is used unpinned; ./securax vet verify (part of ./securax verify) fails on any drift from the vetted tree",
+    "AST08": "check: prose and code are both scanned; binaries, oversized and unparseable files are named for a person to read",
+    "AST09": "estate: vendor/vetted/*.json is the inventory (who, what, commit, verdict, review note); delete a pin to revoke",
+    "AST10": "estate: a pin covers one source and one format; a port to another agent platform is a new source and is vetted again",
+}
+
+
 class Finding(dict):
     @classmethod
     def mk(cls, sev: str, rule: str, path: str, msg: str, line: int = 0) -> "Finding":
-        return cls(severity=sev, rule=rule, file=path, line=line, message=msg)
+        return cls(severity=sev, rule=rule, file=path, line=line, message=msg, ast=RULE_AST.get(rule, "AST01"))
 
 
 def sha256(b: bytes) -> str:
@@ -133,11 +166,22 @@ def _scan_text(rel: str, text: str) -> list[Finding]:
             out.append(Finding.mk(sev, f.rule, rel, f"{f.category}: {f.detail}", text[:i].count("\n") + 1))
         _, outf = guardrails.check_output(chunk, set(), set())
         out += [Finding.mk("critical", f.rule, rel, "secret/credential in the text") for f in outf if f.rule.startswith("SECRET-")]
+    for m in REMOTE_INSTR.finditer(text):                    # AST05: the real instructions live elsewhere and can change after vetting
+        out.append(Finding.mk("high", "remote-instructions", rel, f"tells the agent to fetch and follow instructions from the web: {m.group(0)[:80]!r}",
+                              text[:m.start()].count("\n") + 1))
+    fm = re.match(r"---\s*\n(.*?)\n---", text, re.S)          # AST03: skill frontmatter granting every tool
+    if fm and re.search(r"(?im)^\s*allowed[-_]tools\s*:.*((^|[\s,:\[])\*($|[\s,\]])|\bBash\b(?!\())", fm.group(1)):
+        out.append(Finding.mk("medium", "wildcard-tools", rel, "the skill asks for unrestricted tools (Bash or *): grant only what it needs"))
     for m in re.finditer(r"<!--(.{0,400}?)-->", text, re.S):  # instructions hidden in HTML comments render invisible in markdown
         body = m.group(1)
         if re.search(r"\b(ignore|you must|do not (tell|mention)|secretly|system prompt|exfiltrate|send .* to)\b", body, re.I):
             out.append(Finding.mk("high", "hidden-comment-instruction", rel, "an HTML comment (invisible when rendered) addresses the agent", text[:m.start()].count("\n") + 1))
     return out
+
+
+REMOTE_INSTR = re.compile(r"\b(fetch|curl|wget|download|read|load|open|get)\b[^\n]{0,40}https?://\S+[^\n]{0,60}\b(follow|obey|execute|run|apply|use (them|it) as)\b"
+                          r"[^\n]{0,20}\b(instructions?|steps|commands?|rules|prompt)\b", re.I)
+CLAIMS_SAFE = re.compile(r"\b(read[- ]only|no network|offline only|does not (run|execute) (commands|code)|no shell)\b", re.I)
 
 
 def scan_code(rel: str, text: str) -> list[Finding]:
@@ -210,6 +254,12 @@ def vet_dir(root: pathlib.Path) -> dict:
             findings += scan_config(rel, p.name, text)
         if ext in (".yml", ".yaml") and ".github/workflows" in rel and re.search(r"pull_request_target|secrets\.", text):
             findings.append(Finding.mk("low", "ci-secrets", rel, "workflow touches secrets / pull_request_target (not an issue for us, noted)"))
+    claims = [p.relative_to(root).as_posix() for p in walk(root) if p.name.lower() in ("skill.md", "skill.json", "manifest.json", "readme.md")
+              and p.is_file() and not p.is_symlink() and CLAIMS_SAFE.search(p.read_text("utf-8", "ignore")[:20000])]
+    acts = [f for f in findings if f["rule"] in ("shell-out", "network-call", "pipe-to-shell", "env-exfil")]
+    if claims and acts:                                          # AST04: what it says it does is not what its code can do
+        findings.append(Finding.mk("high", "metadata-understates", claims[0], f"says it is read-only or offline, but {acts[0]['file']}:{acts[0]['line']} "
+                                   f"can {acts[0]['rule'].replace('-', ' ')}"))
     spdx, lic_ok, lic_file = detect_license(root)
     if not lic_ok:
         findings.append(Finding.mk("high" if spdx in ("NONE", "UNKNOWN") else "medium", "licence", lic_file or "-", f"licence is {spdx}: we may not be allowed to vendor or redistribute it"))
@@ -264,9 +314,9 @@ def report_md(name: str, src: str, sha: str, res: dict) -> str:
              f"- licence: **{res['licence']}** ({'ok to vendor' if res['licence_ok'] else 'NOT ok / unknown'})",
              f"- **verdict: {res['verdict']}** — critical {c['critical']}, high {c['high']}, medium {c['medium']}, low {c['low']}", ""]
     if res["findings"]:
-        lines += ["| severity | rule | where | what |", "|---|---|---|---|"]
+        lines += ["| severity | OWASP AST | rule | where | what |", "|---|---|---|---|---|"]
         for f in res["findings"][:80]:
-            lines.append(f"| {f['severity']} | {f['rule']} | `{f['file']}:{f['line']}` | {f['message'][:110].replace('|', '/')} |")
+            lines.append(f"| {f['severity']} | {f.get('ast', '')} {AST.get(f.get('ast', ''), '')} | {f['rule']} | `{f['file']}:{f['line']}` | {f['message'][:110].replace('|', '/')} |")
         if len(res["findings"]) > 80:
             lines.append(f"| … | | | {len(res['findings']) - 80} more in the JSON |")
     lines += ["", "Static analysis finds the lazy and the obvious; it cannot prove a repo benign. Read what is flagged, keep the pin, re-vet on every bump."]
@@ -283,7 +333,7 @@ def cmd_check(a: argparse.Namespace) -> int:
     print(f"vet {name} @ {sha[:12]}: {res['verdict']}  (critical {res['counts']['critical']}, high {res['counts']['high']}, medium {res['counts']['medium']}, low {res['counts']['low']}; licence {res['licence']})")
     for f in res["findings"][:12]:
         if SEV[f["severity"]] >= SEV["medium"]:
-            print(f"  {f['severity']:<8} {f['rule']:<22} {f['file']}:{f['line']}  {f['message'][:90]}")
+            print(f"  {f['severity']:<8} {f.get('ast', ''):<6} {f['rule']:<22} {f['file']}:{f['line']}  {f['message'][:90]}")
     out = pathlib.Path(a.out) if a.out else None
     if out:
         out.mkdir(parents=True, exist_ok=True)
@@ -351,6 +401,14 @@ def cmd_rules(a: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_ast10(_: argparse.Namespace) -> int:
+    """How each OWASP Agentic Skills Top 10 risk is handled: a check in this gate, or how the estate runs skills."""
+    print("OWASP Agentic Skills Top 10 (2026) and SecuRAX:")
+    for k, name in AST.items():
+        print(f"  {k} {name:<32} {AST_HOW[k]}")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__.split("\n\n")[0])
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -367,6 +425,7 @@ def main() -> int:
     r = sub.add_parser("rules", help="print vetted skill text for autobuild (empty unless everything verifies)")
     r.add_argument("--max-chars", type=int, default=3500)
     r.set_defaults(fn=cmd_rules)
+    sub.add_parser("ast10", help="how each OWASP Agentic Skills Top 10 risk is covered").set_defaults(fn=cmd_ast10)
     a = ap.parse_args()
     return a.fn(a)
 

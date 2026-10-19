@@ -54,3 +54,13 @@ What a pinned hash does and does not give you: the hash was taken from the vendo
 
 ## Honest limits
 Static analysis finds the lazy and the obvious. It cannot prove a repo benign, and a patient attacker can avoid every pattern here. Treat PASS as "nothing obvious", keep pins, re-vet on every bump, and run third-party code in a sandbox regardless. Hardening note: `vet` itself crashed on a malformed URL (`http://[abc`) while scanning ECC. The same unhandled error existed in the gateway's output rails (a model reply containing such a URL could 500 the request). Both are fixed: the gateway treats a malformed URL as an untrusted host and removes it; `vet` reports a file it cannot scan as a **finding** instead of dying (an attacker must not be able to hide behind a parser bug). Not covered: transitive npm/pip dependencies (flagged, not scanned), runtime behaviour, and typosquatting of the *source URL*.
+
+## The OWASP Agentic Skills Top 10
+
+Every finding is tagged with the AST10 (2026) risk it is evidence of. Three checks were added for that list:
+
+- **AST05:** instructions fetched from the web.
+- **AST03:** unrestricted tool grants.
+- **AST04:** a read-only claim that the code contradicts.
+
+`./securax vet ast10` shows how all ten are covered. Doc 77 has the details.
