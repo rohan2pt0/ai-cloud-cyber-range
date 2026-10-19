@@ -146,5 +146,16 @@
     ],
     "description": "1 Jan/Apr/Jul/Oct 8:55am: the quarterly check-in nudge.",
     "enabled": true
+  },
+  {
+    "id": "offsite-restore-drill",
+    "cron": "5 10 1 1,4,7,10 *",
+    "command": [
+      "./securax",
+      "backup",
+      "drill"
+    ],
+    "description": "1 Jan/Apr/Jul/Oct 10:05am: the quarterly restore drill. The newest off-site (OneDrive) backup must decrypt, unpack and match every checksum; a failure is pushed to your phone by the andon. Silent when no off-site folder is set.",
+    "enabled": true
   }
 ]

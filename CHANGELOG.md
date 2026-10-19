@@ -8,10 +8,20 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
-### Fixed
-- **Cockpit crashed when the gateway reported allowance callers:** a loop variable shadowed the page's configuration. Caught by the `cockpit_page` journey on a real estate, now covered by a regression test.
-
 ### Added
+- **Sync without the laptop** (doc 72): the Life OS syncs each device directly with your OneDrive, end-to-end encrypted.
+  - **No server:** the laptop and Docker no longer need to be on.
+  - **Encryption:** AES-256-GCM, with the key derived from your passphrase through PBKDF2 (310,000 rounds).
+  - **Conflicts:** writes are checked against the file's ETag, and simultaneous edits on two devices are both kept.
+- **Daily encrypted Life OS backup to OneDrive,** with one-click restore of the newest copy.
+- **Estate off-site backup and quarterly restore drill:**
+  - `./securax backup offsite` picks a OneDrive folder once; every encrypted backup is then copied there, verified byte for byte, and the newest 12 kept.
+  - `./securax backup drill` decrypts, unpacks and checks the newest copy, and runs automatically every quarter.
+- **Which tier gets the task** (doc 23): a one-table rule for sending work to a local or cheap model, OpenCode, or Claude with a brief, so Claude handles about a fifth of the work. Prices checked 19 Oct 2026.
+- **Control navigator you can read without the workbook:**
+  - **Grid:** every box shows its full control ID, and clicking it opens a panel that says, in plain words, its status, what it asks, the evidence expected, how to test and fix it, and every citation.
+  - **Maturity chart:** explained in one sentence, with a table beside it.
+  - **Risk heat map:** fills itself. SecuRAX estimates each control's likelihood from its evidence and its impact from its tier, your own workbook scores replace the estimate, and open risks from your register are plotted too.
 - **UK NCSC Cyber Assessment Framework 4.0 map** (`./securax comply caf`, doc 71): all 41 contributing outcomes scored against what SecuRAX proves, with CI-verified evidence. 15 are supported, 18 partial, 2 gaps and 6 belong to the organisation.
 - **Tamper-evident gateway audit** (CAF C1.b, Estonia's signed and logged exchange): every audit event carries the hash of the one before it. `./securax audit verify` names an edited, deleted, inserted or reordered event.
 - **What 26 national strategies agree on** (doc 71): eight patterns that several governments arrived at independently, what SecuRAX does for each, and eight ranked next steps.
@@ -32,6 +42,9 @@ for the versioning and release policy.
   - **`./securax ai budget`** shows each caller's use. `./securax ai budget extend --day|--month --tokens N --reason "..."` adds tokens for the current day or month only, and every extension is logged.
   - **Local model:** not counted, so it still answers when the cloud allowance runs out.
   - **Visibility:** remaining allowance in the response headers, a cockpit lamp, and spend that survives a gateway restart.
+
+### Fixed
+- **Cockpit crashed when the gateway reported allowance callers:** a loop variable shadowed the page's configuration. Caught by the `cockpit_page` journey on a real estate, now covered by a regression test.
 
 ## [0.2.0] - 2026-10-17
 ### Added

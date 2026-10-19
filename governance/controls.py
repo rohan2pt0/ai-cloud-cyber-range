@@ -294,6 +294,9 @@ main{max-width:1400px;margin:0 auto;padding:14px}a{color:var(--b)}h1{font-size:1
 .bar{height:12px;border-radius:3px;background:var(--g);display:inline-block;vertical-align:middle}.bar.p{background:var(--a)}.bar.o{background:var(--u)}
 table.t{border-collapse:collapse;width:100%}table.t td,table.t th{border-bottom:1px solid var(--line);padding:5px 6px;text-align:left;vertical-align:top}
 .profiles a{display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border:1px solid var(--line);border-radius:99px;text-decoration:none;font-size:.8rem}.profiles a.on{background:var(--b);color:#000}
+.det{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9;overflow:auto;padding:4vh 12px}.det:target{display:block}
+.det .box{max-width:820px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px}
+.det .x{float:right;text-decoration:none}.det th{width:30%;color:var(--mut);font-weight:600}.cell:hover,.cell:focus{outline:2px solid var(--b)}
 svg text{fill:var(--ink);font-size:11px}svg .ring{fill:none;stroke:var(--line)}svg .sp{stroke:var(--line)}
 svg .s-t{fill:none;stroke:var(--mut);stroke-dasharray:4 3}svg .s-sx{fill:rgba(88,166,255,.25);stroke:var(--b)}svg .s-me{fill:rgba(63,185,80,.25);stroke:var(--g)}
 """
@@ -342,34 +345,64 @@ def radar(rows: list[dict]) -> str:
     return f"<svg viewBox='0 0 660 610' role='img' aria-label='Maturity by domain, 0 to 5'>{''.join(g)}</svg>"
 
 
-def heatmap(data: dict, cls: str, risks: list | None = None) -> str:
-    cells = [[0] * 5 for _ in range(5)]
-    scored, source = 0, "controls you scored"
+IMPACT_BY_TIER = {"Critical": 5, "High": 4, "Medium": 3, "Low": 2}
+LIKELIHOOD_BY_STATE = {"met": 1, "proven": 1, "near": 3, "partial": 3, "far": 4, "org": 4}
+
+
+def risk_score(c: dict, cls: str, sx: dict) -> tuple[int, int, str] | None:
+    """(likelihood, impact, source) for one applicable control: your own score wins; otherwise SecuRAX estimates it
+    (ISO 31000 / NIST SP 800-30 style). Impact comes from the control's tier. Likelihood comes from the evidence: proven or at target 1,
+    partly 3, not evidenced 4 (an unproven safeguard is treated as likely to fail, the cautious reading)."""
+    if level(c, cls) == "N/A":
+        return None
+    a = c.get("assessment") or {}
+    if a.get("likelihood") and a.get("impact"):
+        return int(a["likelihood"]), int(a["impact"]), "you"
+    return LIKELIHOOD_BY_STATE.get(state(c, sx), 4), IMPACT_BY_TIER.get(c["tier"], 3), "estimate"
+
+
+def _open(r: dict) -> bool:
+    return not (r.get("done") or re.search(r"closed|completed|done|resolved", r.get("status") or "", re.I))
+
+
+def heatmap(data: dict, cls: str, risks: list | None = None, sx: dict | None = None) -> str:
+    cells = [[[] for _ in range(5)] for _ in range(5)]
+    n = {"you": 0, "estimate": 0, "register": 0}
     for c in data["controls"]:
-        a = c.get("assessment") or {}
-        if level(c, cls) != "N/A" and a.get("likelihood") and a.get("impact"):
-            cells[5 - int(a["impact"])][int(a["likelihood"]) - 1] += 1
-            scored += 1
-    if not scored and risks:                                   # no control scores yet: plot the open risks from the register
-        for r in risks:
-            li, im = r.get("likelihood"), r.get("impact")
-            if li and im and 1 <= li <= 5 and 1 <= im <= 5 and not (r.get("done") or re.search(r"closed|completed|done|resolved", r.get("status") or "", re.I)):
-                cells[5 - int(round(im))][int(round(li)) - 1] += 1
-                scored += 1
-        source = "open risks in your risk register (./securax risks list --open)"
-    if not scored:
-        return ("<p class='muted'>No likelihood × impact scores yet. Fill the yellow <b>Likelihood</b> and <b>Impact</b> cells in the workbook, "
-                "then <code>./securax controls import WORKBOOK.xlsx</code>: this 5 × 5 map fills itself.</p>")
+        rs = risk_score(c, cls, sx or {})
+        if rs:
+            li, im, src = rs
+            cells[5 - im][li - 1].append(c["id"])
+            n[src] += 1
+    for r in risks or []:                                      # open risks from the private register, plotted alongside
+        li, im = r.get("likelihood"), r.get("impact")
+        if li and im and 1 <= li <= 5 and 1 <= im <= 5 and _open(r):
+            cells[5 - int(round(im))][int(round(li)) - 1].append(str(r.get("id") or "risk"))
+            n["register"] += 1
+    if not sum(n.values()):
+        return "<p class='muted'>Nothing applies to this profile.</p>"
     h = ["<table class='hm'><tr><th>Impact ↓ / Likelihood →</th>" + "".join(f"<th>{i}</th>" for i in range(1, 6)) + "</tr>"]
     for ri, row in enumerate(cells):
         imp = 5 - ri
         tds = []
-        for li, n in enumerate(row, 1):
+        for li, ids in enumerate(row, 1):
             s = imp * li
             col = "#8e2a24" if s >= 20 else "#7a3a12" if s >= 12 else "#7a5a12" if s >= 6 else "#1f6f3b"
-            tds.append(f"<td style='background:{col}'>{n or ''}</td>")
+            tip = f"Likelihood {li} × impact {imp} = {s}: " + ", ".join(ids[:25]) + (" …" if len(ids) > 25 else "") if ids else ""
+            tds.append(f"<td style='background:{col}' title='{E(tip)}'>{len(ids) or ''}</td>")
         h.append(f"<tr><th>{imp}</th>{''.join(tds)}</tr>")
-    return "".join(h) + f"</table><p class='muted'>From {E(source)}. Score = likelihood × impact: 20–25 critical (30 days), 12–19 high (90 days), 6–11 medium, 1–5 low.</p>"
+    src = []
+    if n["you"]:
+        src.append(f"{n['you']} controls you scored")
+    if n["estimate"]:
+        src.append(f"{n['estimate']} estimated by SecuRAX")
+    if n["register"]:
+        src.append(f"{n['register']} open risks in your risk register (./securax risks list --open)")
+    return ("".join(h) + f"</table><p class='muted'>Plotted: {E('; '.join(src))}. Hover a square for the controls in it. "
+            "Score = likelihood × impact: 20–25 critical (act within 30 days), 12–19 high (90 days), 6–11 medium, 1–5 low.</p>"
+            "<p class='muted'><b>How SecuRAX estimates:</b> impact from the control's tier (Critical 5, High 4, Medium 3, Low 2); likelihood from the evidence "
+            "(proven or at your target 1, partly 3, not evidenced 4). <b>To set your own:</b> fill the yellow <b>Likelihood</b> and <b>Impact</b> cells "
+            "in the workbook, then <code>./securax controls import WORKBOOK.xlsx</code>. Your score always replaces the estimate.</p>")
 
 
 def regulator_bars(data: dict, cls: str, sx: dict) -> str:
@@ -385,6 +418,38 @@ def regulator_bars(data: dict, cls: str, sx: dict) -> str:
         out.append(f"<tr><td>{E(name)}</td><td>{len(cs)}</td><td><span class='bar' style='width:{w(p)}px'></span><span class='bar p' style='width:{w(q)}px'></span>"
                    f"<span class='bar o' style='width:{w(o)}px'></span> <span class='muted'>{p} / {q} / {o}</span></td></tr>")
     return "".join(out) + "</table>"
+
+
+STATUS_TEXT = {
+    "met": "At your target: your own score meets the target you set.",
+    "near": "One level short of the target you set.",
+    "far": "Two or more levels short of the target you set.",
+    "proven": "SecuRAX proves this with evidence (a test or a journey that runs on every change).",
+    "partial": "SecuRAX covers part of this; the rest is for the organisation to do and show.",
+    "org": "SecuRAX cannot prove this one: it is a people, process or contract duty. Score it yourself in the workbook.",
+    "na": "Does not apply to this profile.",
+}
+
+
+def detail(c: dict, cls: str, sx: dict, lv: str, st: str) -> str:
+    """One control's panel, opened by clicking its grid cell (CSS :target, no script)."""
+    a, ev = c.get("assessment") or {}, sx.get(c["id"], {})
+    rs = risk_score(c, cls, sx)
+    rows = [("Status", STATUS_TEXT.get(st, st)),
+            ("Requirement", f"{lv} for {cls} (MUST = mandatory, SHOULD = expected unless justified, MAY = optional)"),
+            ("Tier", f"{c['tier']}" + (" (white edge in the grid)" if c["tier"] == "Critical" else "")),
+            ("What it asks", c.get("description")),
+            ("SecuRAX evidence", (ev.get("note") or "") + ("" if not ev.get("evidence") else " · " + ", ".join(ev["evidence"]))),
+            ("Evidence an auditor expects", c.get("evidence")), ("How to test", c.get("test")), ("How to fix", c.get("remediation")),
+            ("Owner", c.get("owner")), ("Cost · timeline", " · ".join(x for x in (c.get("cost"), c.get("timeline")) if x)),
+            ("Your scores", "" if a.get("current") is None else f"current {a['current']} / target {a.get('target')}"),
+            ("Risk", "" if not rs else f"likelihood {rs[0]} × impact {rs[1]} = {rs[0] * rs[1]} ({'your score' if rs[2] == 'you' else 'estimated by SecuRAX'})"),
+            ("MITRE ATT&CK", c.get("mitre"))]
+    rows += [(k, v) for k, v in (c.get("citations") or {}).items()]
+    rows += [(k, v) for k, v in (c.get("frameworks") or {}).items()]
+    body = "".join(f"<tr><th>{E(k)}</th><td>{E(str(v))}</td></tr>" for k, v in rows if v)
+    return (f"<div class='det' id='c-{E(c['id'])}'><div class='box'><a class='x' href='#grid'>Close ✕</a>"
+            f"<h2>{E(c['id'])} · {E(DOMAINS.get(c['domain'], c['domain']))}</h2><h1>{E(c['title'])}</h1><table class='t'>{body}</table></div></div>")
 
 
 def page(data: dict, cls: str, sx: dict, dom: dict, risks: list | None = None, rmod=None) -> str:
@@ -423,7 +488,7 @@ def page(data: dict, cls: str, sx: dict, dom: dict, risks: list | None = None, r
             f"<tr><td><b>{E(c['id'])}</b> {E(c['title'])}</td><td>{E(c['tier'])}</td><td class='muted'>{E(str(c.get('remediation') or c.get('description'))[:160])}</td><td>{E(c.get('owner') or '')}</td></tr>"
             for c in gaps) + "</table></div>")
     # MITRE-style navigator grid: one column per domain, one cell per control.
-    cols = []
+    cols, panels = [], []
     for d, name in DOMAINS.items():
         cs = [c for c in data["controls"] if c["domain"] == d]
         if not cs:
@@ -433,22 +498,27 @@ def page(data: dict, cls: str, sx: dict, dom: dict, risks: list | None = None, r
             lv = level(c, cls)
             st = "na" if lv == "N/A" else state(c, sx)
             cl = f"cell {st}" + (" crit" if c["tier"] == "Critical" else "") + (" should" if lv == "SHOULD" else " may" if lv == "MAY" else "")
-            cite = "; ".join(f"{k}: {v}" for k, v in list(c.get("citations", {}).items())[:3])
-            ev = sx.get(c["id"], {})
-            tip = (f"{c['id']} {c['title']} | {lv} for {cls} | tier {c['tier']} | "
-                   + (f"SecuRAX {ev['status']}: {ev.get('note', '')} | " if ev else "the organisation's | ") + cite)
-            cells.append(f"<span class='{cl}' title='{E(tip)}'>{E(c['id'].split('-')[1])}</span>")
+            cells.append(f"<a class='{cl}' href='#c-{E(c['id'])}' title='{E(c['id'] + ' ' + c['title'])}'>{E(c['id'])}</a>")
+            panels.append(detail(c, cls, sx, lv, st))
         cols.append(f"<div class='col'><h3>{E(name)}<br>{E(d)}</h3>{''.join(cells)}</div>")
     h.append("<div class='card'><h2>Navigator</h2><div class='legend muted'>"
              "<span><i style='background:#1f6f3b'></i>proven by SecuRAX / at your target</span><span><i style='background:#7a5a12'></i>partly / 1 level short</span>"
              "<span><i style='background:#8e2a24'></i>2+ levels short</span><span><i style='background:var(--u)'></i>the organisation's (people, process, contracts)</span>"
              "<span><i style='background:var(--na)'></i>not applicable</span><span><i style='background:var(--u);border:1px solid #fff'></i>white edge = Critical</span>"
-             "<span>faded = SHOULD / MAY</span></div><p class='muted'>Hover a cell for the title, requirement, SecuRAX evidence and citations.</p>"
-             f"<div class='nav'>{''.join(cols)}</div></div>")
+             "<span>faded = SHOULD / MAY</span></div><p class='muted'>Each column is a domain; each box is one control, labelled with its ID. "
+             "<b>Click a box</b> to see what the control asks, whether SecuRAX proves it, how to test and fix it, and the regulations behind it.</p>"
+             f"<div class='nav' id='grid'>{''.join(cols)}</div></div>{''.join(panels)}")
     rows = domain_scores(data, cls, sx)
-    h.append("<div class='two'><div class='card'><h2>Maturity by domain</h2><div class='legend muted'><span><i style='border:1px dashed var(--mut)'></i>target</span>"
-             "<span><i style='background:rgba(88,166,255,.5)'></i>what SecuRAX proves</span><span><i style='background:rgba(63,185,80,.5)'></i>your scored maturity</span></div>"
-             f"{radar(rows)}</div><div class='card'><h2>Risk heat map (5 × 5)</h2>{heatmap(data, cls, risks)}</div></div>")
+    mine = any(r["me"] is not None for r in rows)
+    h.append("<div class='two'><div class='card'><h2>Maturity by domain</h2>"
+             "<p class='muted'>How mature each area is, on a 0–5 scale: the centre is 0 (nothing in place), the outer ring is 5 (fully in place and proven). "
+             "The further out a line reaches, the better.</p><div class='legend muted'>"
+             "<span><i style='border:1px dashed var(--mut)'></i>where you aim to be (3 unless you set targets)</span>"
+             "<span><i style='background:rgba(88,166,255,.5)'></i>what SecuRAX can prove with evidence today</span>"
+             "<span><i style='background:rgba(63,185,80,.5)'></i>your own scores" + ("" if mine else " (appears once you score controls in the workbook)") + "</span></div>"
+             f"{radar(rows)}<table class='t'><tr><th>Domain</th><th>Controls</th><th>Aim</th><th>SecuRAX proves</th><th>Your score</th></tr>"
+             + "".join(f"<tr><td><b>{E(r['code'])}</b> {E(r['name'])}</td><td>{r['n']}</td><td>{r['target']}</td><td>{r['sx']}</td>"
+                       f"<td>{'' if r['me'] is None else r['me']}</td></tr>" for r in rows) + f"</table></div><div class='card'><h2>Risk heat map (5 × 5)</h2>{heatmap(data, cls, risks, sx)}</div></div>")
     h.append(f"<div class='card'><h2>Regulators</h2>{regulator_bars(data, cls, sx)}</div>")
     exc = {k: v for k, v in dom.items() if v}
     h.append("<div class='card'><h2>Does complying with SCB/PSB cover the others?</h2>"

@@ -1079,6 +1079,35 @@ EOF2
     [ "$BAD" = 0 ] && C "✔ No HIGH/CRITICAL findings in the scanned images." || { C "⚠ HIGH/CRITICAL findings above. Update (./securax update) or pin a newer image tag."; [ "${2:-}" = "--strict" ] && exit 1; }
     ;;
   backup)
+    # Off-site ("data embassy", doc 71): ENCRYPTED backups are also copied to SECURAX_OFFSITE_DIR, e.g. your OneDrive folder, whose
+    # client uploads them. Nothing unencrypted ever leaves this machine.
+    #   ./securax backup offsite        pick the folder (finds your OneDrive folders on Windows/WSL) and save it in .env
+    #   ./securax backup drill          the quarterly restore test: newest off-site copy decrypts, unpacks and matches its checksums
+    if [ "${2:-}" = offsite ]; then
+      ENVF="$ROOT/local/compose/.env"; mapfile -t _cand < <(ls -d /mnt/c/Users/*/OneDrive* "$HOME"/OneDrive* 2>/dev/null | grep -v '/All Users/\|/Default/\|/Public/' || true)
+      if [ "${#_cand[@]}" -eq 0 ]; then C "No OneDrive folder found. Give any folder that your cloud client syncs:  ./securax backup offsite-dir /path/to/folder"; exit 1; fi
+      C "Folders your cloud client syncs (pick one; the backups go into a SecuRAX-backups folder inside it):"
+      for _i in "${!_cand[@]}"; do echo "  $((_i+1)). ${_cand[$_i]}"; done
+      printf 'Number: '; read -r _n < /dev/tty || exit 1
+      _d="${_cand[$((_n-1))]:-}"; [ -n "$_d" ] || { C "No such number."; exit 1; }
+      skv "$ENVF" SECURAX_OFFSITE_DIR "$_d/SecuRAX-backups" && mkdir -p "$_d/SecuRAX-backups"
+      C "✔ Off-site folder: $_d/SecuRAX-backups. Every ENCRYPTED backup is copied there from now on (the weekly backup routine does it by itself)."
+      [ -n "$(ev SECURAX_BACKUP_KEYFILE)" ] || C "  ⚠ Backups are not encrypted yet, so nothing will be copied. Once:  ./securax crypto keygen ~/securax-backup.key  and set SECURAX_BACKUP_KEYFILE in .env"
+      exit 0
+    fi
+    if [ "${2:-}" = offsite-dir ]; then [ -n "${3:-}" ] || { echo "usage: ./securax backup offsite-dir FOLDER"; exit 2; }
+      skv "$ROOT/local/compose/.env" SECURAX_OFFSITE_DIR "$3" && mkdir -p "$3" && C "✔ Off-site folder: $3"; exit 0; fi
+    if [ "${2:-}" = drill ]; then
+      OFF="$(ev SECURAX_OFFSITE_DIR)"; [ -n "$OFF" ] || { C "No off-site folder yet:  ./securax backup offsite"; exit 0; }
+      NEW="$(ls -1t "$OFF"/securax-*.tar.gz.gpg 2>/dev/null | head -1)"; [ -n "$NEW" ] || { C "✗ No encrypted backup in $OFF yet."; exit 1; }
+      PTMP="$(mktemp -d)"; STG="$(mktemp -d)"; trap 'rm -rf "$PTMP" "$STG"; gpg_cleanup' EXIT
+      gpg_prepare && backup_key "$PTMP" open || exit 1
+      gpg_run $GPGSYM --passphrase-file "$BKEY" -d "$NEW" 2>/dev/null | tar xzf - -C "$STG" 2>/dev/null || { C "✗ DRILL FAILED: $NEW does not decrypt and unpack with your key."; exit 1; }
+      ( cd "$STG" && sha256sum -c --quiet SHA256SUMS ) >/dev/null 2>&1 || { C "✗ DRILL FAILED: $NEW unpacks, but its contents do not match their checksums."; exit 1; }
+      mkdir -p "${SECURAX_HOME_DIR:-$HOME/.securax}"; echo "$(date -u +%FT%TZ) drill ok $(basename "$NEW")" >> "${SECURAX_HOME_DIR:-$HOME/.securax}/drills.log"
+      C "✔ Restore drill passed: $(basename "$NEW") from the off-site copy decrypts, unpacks and matches every checksum ($(grep -c '' "$STG/MANIFEST") items)."
+      exit 0
+    fi
     # DR / 3-2-1: one verified file holding your data (chats, accounts, workflows, sync data) + your .env keys.
     # Models are NOT included (large, re-downloadable). Copy the file to a 2nd disk + a cloud drive for 3-2-1.
     #   ./securax backup [DIR]        default DIR = ./backups or $SECURAX_BACKUP_DIR   (keeps the newest $BACKUP_KEEP, default 7)
@@ -1120,6 +1149,13 @@ EOF2
     { ls -1t "$DEST"/securax-*.tar.gz "$DEST"/securax-*.tar.gz.gpg 2>/dev/null || true; } | tail -n +$(( $(ev BACKUP_KEEP 7) + 1 )) | xargs -r rm -f   # (|| true: a glob with no match makes ls fail, and pipefail would end the script before the success line)
     if [ "$ENCRYPT" = 1 ]; then C "✔ Backup saved, ENCRYPTED (AES-256) & verified: $OUTF ($(du -h "$OUTF" | cut -f1)). Restore needs the same key file / passphrase: ./securax restore <file>"
     else C "✔ Backup saved & verified: $OUTF ($(du -h "$OUTF" | cut -f1)) — contains your API keys, NOT encrypted; keep it private. To encrypt:  ./securax crypto keygen ~/securax-backup.key"; fi
+    OFF="$(ev SECURAX_OFFSITE_DIR)"
+    if [ -n "$OFF" ] && [ "$ENCRYPT" = 1 ]; then
+      if mkdir -p "$OFF" && cp "$OUTF" "$OFF/" && cmp -s "$OUTF" "$OFF/$(basename "$OUTF")"; then
+        { ls -1t "$OFF"/securax-*.tar.gz.gpg 2>/dev/null || true; } | tail -n +$(( $(ev OFFSITE_KEEP 12) + 1 )) | xargs -r rm -f
+        C "✔ Off-site copy: $OFF (your OneDrive / cloud client uploads it; the newest $(ev OFFSITE_KEEP 12) are kept)"
+      else C "⚠ Could not write the off-site copy to $OFF (the local backup is fine). Is the folder still there?"; fi
+    elif [ -n "$OFF" ]; then C "⚠ Off-site copy skipped: only ENCRYPTED backups leave this machine.  ./securax crypto keygen ~/securax-backup.key  then set SECURAX_BACKUP_KEYFILE"; fi
     ;;
   restore)
     # ./securax restore FILE [--yes] — replaces current data with the backup (current .env is kept as .env.pre-restore).

@@ -315,13 +315,14 @@
       throw e;
     }
   }
-  var pushTimer = null;
+  var pushTimer = null, odTimer = null;
   try {
     localStorage.setItem = function (k, v) {
       _set(k, v);
       if (k.indexOf("gm_meta") !== 0 && k.indexOf("gm_sync") !== 0) { try { touch(k); } catch (e) {} }
       bustDerived();
       if (cfg()) { clearTimeout(pushTimer); pushTimer = setTimeout(gmPush, 1200); }
+      if (k.indexOf("gm_sync") !== 0 && k.indexOf("gm_meta") !== 0 && k.indexOf("gm_ms_") !== 0 && odOn()) { clearTimeout(odTimer); odTimer = setTimeout(gmOdSync, 4000); }
     };
   } catch (e) { console.log("[sync] setItem not writable; sync will push on tab change only"); }
   // \u2500\u2500 Transport: the SecuRAX estate sync endpoint (sovereign, over Tailscale).
@@ -344,6 +345,22 @@
     return a.length - i > b.length - j;
   }
   window.gmCpAfter = cpAfter;
+  // ONE merge rule for every transport (estate sync and OneDrive sync), so devices converge whichever path a change took.
+  function mergeRemote(remote, rmeta) {
+    var m = meta(), changed = false;
+    // Integrity guard: a remote copy that is drastically smaller than local is
+    // corruption or a wrong row, not a legitimate state. Refuse and flag.
+    var localN = localStorage.length, remoteN = Object.keys(remote).length;
+    if (localN > 10 && remoteN < localN / 2) { S_("gm_sync_anomaly", ymd() + ": remote had " + remoteN + " keys vs " + localN + " local \u2014 merge refused"); return false; }
+    Object.keys(remote).forEach(function (k) {
+      if (k.indexOf("gm_sync") === 0 || k.indexOf("gm_ms_tok") === 0) return;   // per-device settings never arrive from another device
+      var rt = rmeta[k] || 0;
+      // newer wins; on an exact tie the server's rule decides (larger value by code point), so every device converges on the same value
+      if (!m[k] || rt > m[k] || (rt === m[k] && cpAfter(String(remote[k]), String(localStorage.getItem(k))))) { _set(k, remote[k]); m[k] = rt || nowSrv(); changed = true; }
+    });
+    if (changed) { S_("gm_meta", m); renderAll(); }
+    return changed;
+  }
   var lastPull = 0;
   window.gmSyncInit = function (force) {
     var c = cfg(); if (!c || !c.url || !c.key || !navigator.onLine) return;
@@ -355,17 +372,7 @@
     }).then(function (r) {
       if (!r || !r.ok) return gmPush();                    // 404 / first run / unreachable -> push local
       return r.json().then(function (body) {
-        var remote = (body && body.payload) || {}, rmeta = (body && body.meta) || {}, m = meta(), changed = false;
-        // Integrity guard: a remote copy that is drastically smaller than local is
-        // corruption or a wrong row, not a legitimate state. Refuse and flag.
-        var localN = localStorage.length, remoteN = Object.keys(remote).length;
-        if (localN > 10 && remoteN < localN / 2) { S_("gm_sync_anomaly", ymd() + ": remote had " + remoteN + " keys vs " + localN + " local \u2014 merge refused"); return gmPush(); }
-        Object.keys(remote).forEach(function (k) {
-          var rt = rmeta[k] || 0;
-          // newer wins; on an exact tie the server's rule decides (larger value by code point), so every device converges on the same value
-          if (!m[k] || rt > m[k] || (rt === m[k] && cpAfter(String(remote[k]), String(localStorage.getItem(k))))) { _set(k, remote[k]); m[k] = rt || nowSrv(); changed = true; }
-        });
-        if (changed) { S_("gm_meta", m); renderAll(); }
+        mergeRemote((body && body.payload) || {}, (body && body.meta) || {});
         gmPush();
       });
     }).catch(function (e) { console.log("[sync]", e.message); });
@@ -1619,18 +1626,20 @@
   };
 
   /* --- push a dated JSON backup into the app's private OneDrive folder --- */
-  window.gmMsBackup = function () {
+  window.gmMsBackup = function (silent) {
     var blob = {};
     for (var i = 0; i < localStorage.length; i++) {
       var k = localStorage.key(i);
-      if (k.indexOf("gm_ms_tok") !== 0 && k.indexOf("gm_sync_cfg") !== 0) blob[k] = localStorage.getItem(k);
+      if (k.indexOf("gm_ms_tok") !== 0 && k.indexOf("gm_sync_cfg") !== 0 && k.indexOf("gm_sync_od") !== 0) blob[k] = localStorage.getItem(k);
     }
-    var name = "guiding-map-" + ymd() + ".json";
-    return msToken().then(function (a) {
+    // With OneDrive sync on, backups are sealed with the same key: Microsoft stores ciphertext only.
+    var enc = !!G("gm_sync_odk", null), name = "guiding-map-" + ymd() + (enc ? ".enc.json" : ".json");
+    var body = enc ? odKey().then(function (key) { return odSeal(key, blob, unb64(G("gm_sync_odk", null).salt)); }) : Promise.resolve(JSON.stringify(blob, null, 2));
+    return Promise.all([msToken(), body]).then(function (x) {
       return fetch(GRAPH + "/me/drive/special/approot:/" + name + ":/content", {
         method: "PUT",
-        headers: { Authorization: "Bearer " + a, "Content-Type": "application/json" },
-        body: JSON.stringify(blob, null, 2)
+        headers: { Authorization: "Bearer " + x[0], "Content-Type": "application/json" },
+        body: x[1]
       });
     }).then(function (r) {
       if (!r.ok) throw new Error("upload failed " + r.status);
@@ -1647,7 +1656,7 @@
           return fetch(GRAPH + "/me/drive/special/approot/children?$select=name,id&$top=200",
             { headers: { Authorization: "Bearer " + a } }).then(function (x) { return x.json(); });
         }).then(function (ls) {
-          var daily = ((ls && ls.value) || []).filter(function (f) { return /^guiding-map-\d{4}-\d{2}-\d{2}\.json$/.test(f.name); })
+          var daily = ((ls && ls.value) || []).filter(function (f) { return /^guiding-map-\d{4}-\d{2}-\d{2}(\.enc)?\.json$/.test(f.name); })
             .sort(function (x, y) { return x.name < y.name ? 1 : -1; });
           return Promise.all(daily.slice(14).map(function (f) {
             return fetch(GRAPH + "/me/drive/items/" + f.id, { method: "DELETE", headers: { Authorization: "Bearer " + a } }).catch(function () {});
@@ -1655,10 +1664,132 @@
         });
       }).catch(function () {});
     }).then(function () {
-      alert("Backed up to OneDrive as " + name);
+      if (!silent) alert("Backed up to OneDrive as " + name + (enc ? " (encrypted)" : ""));
       renderAll();
-    }).catch(function (e) { alert("Backup failed: " + e.message); });
+    }).catch(function (e) { S_("gm_ms_backup_fail", ymd() + ": " + e.message); if (!silent) alert("Backup failed: " + e.message); });
   };
+
+  /* --- restore the newest OneDrive backup (encrypted or not) --- */
+  window.gmMsRestore = function () {
+    var a0;
+    msToken().then(function (a) {
+      a0 = a;
+      return fetch(GRAPH + "/me/drive/special/approot/children?$select=name,id&$top=200", { headers: { Authorization: "Bearer " + a } }).then(function (x) { return x.json(); });
+    }).then(function (ls) {
+      var f = ((ls && ls.value) || []).filter(function (x) { return /^(guiding-map-\d{4}-\d{2}-\d{2}|monthly-\d{4}-\d{2})(\.enc)?\.json$/.test(x.name); })
+        .sort(function (x, y) { return x.name < y.name ? 1 : -1; })[0];
+      if (!f) throw new Error("no backup in OneDrive yet");
+      return fetch(GRAPH + "/me/drive/items/" + f.id + "/content", { headers: { Authorization: "Bearer " + a0 } })
+        .then(function (r) { return r.json(); })
+        .then(function (o) { return (o && o.ct && o.iv) ? odKey().then(function (k) { return odOpen(k, o); }) : o; })
+        .then(function (o) { return { name: f.name, data: o }; });
+    }).then(function (b) {
+      var keys = Object.keys(b.data || {});
+      if (!confirm("Restore " + keys.length + " items from " + b.name + "? Anything newer on this device is overwritten.")) return;
+      keys.forEach(function (k) { if (k.indexOf("gm_sync_od") !== 0 && k.indexOf("gm_ms_tok") !== 0) localStorage.setItem(k, b.data[k]); });
+      alert("Restored from " + b.name + "."); location.reload();
+    }).catch(function (e) { alert("Restore failed: " + e.message + (G("gm_sync_odk", null) ? "" : " (an encrypted backup needs OneDrive sync turned on with the same passphrase first)")); });
+  };
+
+  /* ═══ Sync through OneDrive: devices stay in step with the LAPTOP OFF (doc 72) ═══
+     The merged state is one file in this app's private OneDrive folder, sealed on the device with AES-256-GCM under a key
+     derived from your sync passphrase (PBKDF2-SHA256, 310 000 rounds). Microsoft stores ciphertext only; the passphrase
+     never leaves the device. Same per-key merge as the estate sync, and an ETag guard: if another device wrote in between,
+     this one re-reads, merges and tries again, so neither overwrites the other. */
+  var OD_FILE = "/me/drive/special/approot:/sync/state.enc.json";
+  function odOn() { return !!(G("gm_sync_od", null) && G("gm_sync_odk", null) && msTok()); }
+  function b64(buf) { var u = new Uint8Array(buf), t = ""; for (var i = 0; i < u.length; i += 0x8000) t += String.fromCharCode.apply(null, u.subarray(i, i + 0x8000)); return btoa(t); }
+  function unb64(t) { var b = atob(t), a = new Uint8Array(b.length); for (var i = 0; i < b.length; i++) a[i] = b.charCodeAt(i); return a; }
+  function odDerive(pass, salt) {
+    return crypto.subtle.importKey("raw", new TextEncoder().encode(pass), "PBKDF2", false, ["deriveKey"]).then(function (k) {
+      return crypto.subtle.deriveKey({ name: "PBKDF2", salt: salt, iterations: 310000, hash: "SHA-256" }, k, { name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]);
+    });
+  }
+  function odKey() { return crypto.subtle.importKey("raw", unb64(G("gm_sync_odk", null).k), "AES-GCM", false, ["encrypt", "decrypt"]); }
+  function odSeal(key, obj, salt) {
+    var iv = crypto.getRandomValues(new Uint8Array(12));
+    return crypto.subtle.encrypt({ name: "AES-GCM", iv: iv }, key, new TextEncoder().encode(JSON.stringify(obj))).then(function (ct) {
+      return JSON.stringify({ v: 1, alg: "AES-256-GCM, key PBKDF2-SHA256 x310000", salt: b64(salt), iv: b64(iv), ct: b64(ct) });
+    });
+  }
+  function odOpen(key, env) {
+    return crypto.subtle.decrypt({ name: "AES-GCM", iv: unb64(env.iv) }, key, unb64(env.ct)).then(function (pt) { return JSON.parse(new TextDecoder().decode(pt)); });
+  }
+  function odFetch(a) {                    // -> { etag, body } of the shared state, or { etag: null } when there is none yet
+    return fetch(GRAPH + OD_FILE, { headers: { Authorization: "Bearer " + a } }).then(function (r) {
+      if (r.status === 404) return { etag: null, env: null };
+      if (!r.ok) throw new Error("OneDrive " + r.status);
+      return r.json().then(function (it) {
+        return fetch(it["@microsoft.graph.downloadUrl"]).then(function (x) { return x.json(); }).then(function (env) { return { etag: it.eTag, env: env }; });
+      });
+    });
+  }
+  function odBlob() {
+    var blob = {};
+    for (var i = 0; i < localStorage.length; i++) {
+      var k = localStorage.key(i);
+      if (k.indexOf("gm_sync") !== 0 && k.indexOf("gm_ms_tok") !== 0) blob[k] = localStorage.getItem(k);
+    }
+    return blob;
+  }
+  var odBusy = false, odAgain = false;
+  window.gmOdSync = function () {
+    if (!odOn() || !navigator.onLine) return Promise.resolve();
+    if (odBusy) { odAgain = true; return Promise.resolve(); }
+    odBusy = true;
+    var tries = 0;
+    function round() {
+      tries++;
+      return msToken().then(function (a) {
+        return odFetch(a).then(function (cur) {
+          var opened = cur.env ? odKey().then(function (k) { return odOpen(k, cur.env); }) : Promise.resolve(null);
+          return opened.then(function (body) {
+            if (body) mergeRemote(body.payload || {}, body.meta || {});
+            return odKey().then(function (k) {
+              return odSeal(k, { payload: odBlob(), meta: meta(), device: devId, at: new Date(nowSrv()).toISOString() }, unb64(G("gm_sync_odk", null).salt));
+            });
+          }).then(function (sealed) {
+            var h = { Authorization: "Bearer " + a, "Content-Type": "application/json" };
+            if (cur.etag) h["If-Match"] = cur.etag; else h["If-None-Match"] = "*";
+            return fetch(GRAPH + OD_FILE + ":/content", { method: "PUT", headers: h, body: sealed });
+          });
+        });
+      }).then(function (r) {
+        if ((r.status === 412 || r.status === 409) && tries < 3) return round();   // another device wrote first: re-read, merge, retry
+        if (!r.ok) throw new Error("OneDrive upload " + r.status);
+        S_("gm_sync_od_last", ymd() + " " + new Date().toTimeString().slice(0, 5)); S_("gm_sync_od_fails", 0);
+      });
+    }
+    return round().catch(function (e) {
+      S_("gm_sync_od_fails", G("gm_sync_od_fails", 0) + 1); S_("gm_sync_od_err", e.message);
+      console.log("[onedrive-sync]", e.message);
+    }).then(function () { odBusy = false; if (odAgain) { odAgain = false; setTimeout(gmOdSync, 500); } });
+  };
+  window.gmOdSyncOn = function () {
+    var pass = ((document.getElementById("odPass") || {}).value || "").trim();
+    if (pass.length < 12) { alert("Use a sync passphrase of at least 12 characters, and the SAME one on every device.\n\nIt never leaves this device; Microsoft only ever sees encrypted data."); return; }
+    msToken().then(function (a) { return odFetch(a); }).then(function (cur) {
+      var salt = cur.env ? unb64(cur.env.salt) : crypto.getRandomValues(new Uint8Array(16));
+      return odDerive(pass, salt).then(function (key) {
+        var check = cur.env ? odOpen(key, cur.env) : Promise.resolve(null);
+        return check.then(function () { return crypto.subtle.exportKey("raw", key); }).then(function (raw) {
+          S_("gm_sync_odk", { k: b64(raw), salt: b64(salt) }); S_("gm_sync_od", { on: 1, since: ymd() }); gmOdTick();
+        }, function () { throw new Error("that passphrase does not open the data your other devices saved. Use the same passphrase as on them."); });
+      });
+    }).then(function () { return gmOdSync(); }).then(function () {
+      alert("Sync through OneDrive is on.\n\nYour devices now stay in step over the internet, even when the laptop is off. Use the same passphrase on each device.");
+      renderAll();
+    }).catch(function (e) { alert("Could not turn on OneDrive sync: " + e.message); });
+  };
+  var odTick = null;
+  window.gmOdTick = function () {   // a minute's lag at most between devices; armed only while OneDrive sync is on, so no idle timer
+    if (odTick || !odOn()) return;
+    odTick = setInterval(function () {
+      if (!odOn()) { clearInterval(odTick); odTick = null; return; }
+      if (document.visibilityState === "visible") gmOdSync();
+    }, 60000);
+  };
+  window.gmOdSyncOff = function () { localStorage.removeItem("gm_sync_od"); localStorage.removeItem("gm_sync_odk"); renderAll(); };
 
   window.gmMsOff = function () {
     gmSnap("disconnected Microsoft 365");
@@ -1695,7 +1826,20 @@
         + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
         + '<button class="btn-sm" style="background:var(--gold);color:#0d1f35" onclick="gmMsPull()">Refresh now</button>'
         + '<button class="btn-sm" style="background:var(--gold);color:#0d1f35" onclick="gmMsBackup()">Back up to OneDrive</button>'
+        + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmMsRestore()">Restore newest backup</button>'
         + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmMsOff()">Disconnect</button></div>';
+      if (G("gm_sync_od", null)) {
+        var odl = G("gm_sync_od_last", null), odf = G("gm_sync_od_fails", 0);
+        h += '<div class="info" style="margin-top:10px"><b>\u2601\ufe0f Syncing through OneDrive</b> \u2014 your devices stay in step over the internet, laptop on or off. Encrypted on this device; Microsoft sees ciphertext only. '
+          + (odl ? 'Last sync ' + esc(odl) + '.' : 'Not synced yet.') + (odf ? ' <b style="color:var(--red)">' + odf + ' failed attempt(s): ' + esc(G("gm_sync_od_err", "")) + '</b>' : '') + '</div>'
+          + '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-sm" style="background:var(--gold);color:#0d1f35" onclick="gmOdSync().then(renderAll)">Sync now</button>'
+          + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmOdSyncOff()">Stop OneDrive sync on this device</button></div>';
+      } else {
+        h += '<div class="info" style="margin-top:10px"><b>Sync my devices through OneDrive</b> (recommended): phone, laptop and tablet stay in step over the internet even when the laptop is OFF. '
+          + 'Everything is encrypted on the device with your sync passphrase before it leaves; Microsoft stores only ciphertext. Use the SAME passphrase on every device.</div>'
+          + '<label class="f-label">Sync passphrase (12+ characters)</label><input id="odPass" type="password" autocomplete="new-password" placeholder="the same on every device">'
+          + '<button class="btn btn-p" onclick="gmOdSyncOn()">Sync through OneDrive</button>';
+      }
     } else {
       h += '<div class="info">Optional. Pulls today\u2019s calendar and your open To Do tasks onto the Today tab, and writes dated JSON backups to OneDrive automatically \u2014 so the export ritual stops depending on you remembering it.<br><br>'
         + 'Setup: Azure Portal \u2192 App registrations \u2192 New registration \u2192 Accounts in any organizational directory and personal Microsoft accounts \u2192 Redirect URI type <b>Single-page application</b>, value <code>' + esc(location.origin + location.pathname) + '</code>. Copy the Application (client) ID below. No client secret is needed or wanted.</div>'
@@ -1825,7 +1969,7 @@
     var blob = {};
     for (var i = 0; i < localStorage.length; i++) {
       var k = localStorage.key(i);
-      if (k.indexOf("gm_ms_tok") !== 0) blob[k] = localStorage.getItem(k);
+      if (k.indexOf("gm_ms_tok") !== 0 && k.indexOf("gm_sync_od") !== 0) blob[k] = localStorage.getItem(k);
     }
     var a = document.createElement("a");
     a.href = URL.createObjectURL(new Blob([JSON.stringify(blob, null, 2)], { type: "application/json" }));
@@ -3858,9 +4002,10 @@
   // An installed PWA is resumed far more often than it is loaded. Pulling only
   // on "load" is why one device sat on stale state for days.
   document.addEventListener("visibilitychange", function () {
-    if (document.visibilityState === "visible") gmSyncInit();
+    if (document.visibilityState === "visible") { gmSyncInit(); gmOdSync(); }
   });
-  window.addEventListener("online", function () { gmSyncInit(); });
+  window.addEventListener("online", function () { gmSyncInit(); gmOdSync(); });
+  gmOdTick();
 
   // A service worker cannot complete an interactive Access OTP login.
   if (navigator.serviceWorker) {
@@ -3886,6 +4031,9 @@
     try { var pr = G("gm_props", null); if ((!pr || !pr.length) && window.P && window.P.example) { if (window.gmTplProp) gmTplProp(); } } catch (e) {}
     gmSyncLinkImport();
     gmSyncInit();
+    gmOdSync();
+    // The daily OneDrive backup takes itself (the old text said "automatically" but it only ran on a button press)
+    if (msTok() && G("gm_ms_backup", null) !== ymd()) setTimeout(function () { gmMsBackup(true); }, 8000);
     if (window.renderAll) renderAll();
     // Monthly backup nudge, once per month, non-blocking
     var last = G("gm_backup_seen", "");
