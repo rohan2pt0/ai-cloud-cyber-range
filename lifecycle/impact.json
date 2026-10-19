@@ -47,6 +47,8 @@
    "paths": [
     "securax",
     "securax.cmd",
+    "install.sh",
+    "install.ps1",
     "brand.env",
     "integrations.txt",
     "local/compose/docker-compose.yml",

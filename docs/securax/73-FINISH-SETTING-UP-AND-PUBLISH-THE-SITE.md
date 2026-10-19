@@ -70,3 +70,11 @@ The site (`website/`) and the documentation (`/docs/`) are built by one script, 
 - **Header.** It shrinks to one line once you scroll.
 
 Wider screens keep the full tab strip. `guiding-map/tests/test24.js` checks all of this.
+
+## The look: calm, legible, one accent
+
+- **One quiet header:** your name, All Apps and one ⋯ menu. The menu holds Edit profile, Switch theme, Install as an app, and Report a problem.
+- **A greeting that says what today needs:** "Good morning", the date, and a ring showing how many of the daily three are done.
+- **The daily three:** three big tiles you tap, or reach with Tab and Enter. Each shows its smallest version, two lines on a phone.
+- **Readable text:** the body is 15 px and nothing is under 11.5 px. Cards are soft, and gold is kept for the one main action on a screen.
+- **Contrast:** every pair passes WCAG AA in both themes (`ui_audit.py`). `guiding-map/tests/test26.js` checks the layout and the report flow.

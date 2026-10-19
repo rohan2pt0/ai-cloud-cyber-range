@@ -9,6 +9,18 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **The Life OS has a new look** (doc 73):
+  - **The header:** one quiet line with a ⋯ menu.
+  - **Today:** opens with a greeting and a progress ring. The daily three are big keyboard-reachable tiles.
+  - **Text and cards:** 15 px body text, softer cards, and gold only for the main action. Contrast passes AA in both themes.
+- **Report a problem** (Life OS, ⋯ menu): the details a helper needs, with nothing personal in them. You copy them, and a link opens the prefilled bug form. The repository comes from `brand.env` through `build.json`.
+- **`./securax support-packet`** (doc 75): a Mattermost-style zip in `vault/support/`. It holds the versions, health, containers and routine runs, the setting names but no values, and the recent log. E-mails, keys, long numbers and home paths are scrubbed out.
+- **Installers** (doc 75):
+  - `install.sh` for Linux, macOS and WSL: rolling, `--stable`, `--version`, and `--offline` with a checksum check.
+  - `install.ps1` for Windows: it checks WSL and Ubuntu, then runs `install.sh` inside.
+  - Both never use sudo and never change an existing folder.
+- **Release assets:** source `.tar.gz` and `.zip`, the rendered installers, `SHA256SUMS` and a signed build provenance, beside the SBOM.
+  - **New action:** `actions/attest-build-provenance`, GitHub's own. It lets anyone verify where a download came from.
 - **`./securax routines prune`** (doc 20): every routine has to earn its place.
   - **The record:** each run is kept locally with whether it found anything.
   - **The findings:** failing routines, reports that flagged nothing in 4 weeks, duplicates, and routines that never ran. Each comes with the command to act.

@@ -891,6 +891,11 @@ EOF2
     #   ./securax lessons | lessons add "what happened → what to do instead" [--area A] | lessons recent [N]
     shift; exec python3 "$ROOT/lifecycle/lessons.py" "$@"
     ;;
+  support-packet)
+    # One scrubbed zip for a bug report: versions, health, containers, setting NAMES, routine runs, recent log (doc 75).
+    #   ./securax support-packet | support-packet --print
+    shift; exec python3 "$ROOT/governance/support_packet.py" "$@"
+    ;;
   finish)
     # Finish setting up, one step at a time: every optional part, whether it is done, and its exact steps (doc 73).
     #   ./securax finish | finish ITEM | finish done ITEM | finish undo ITEM

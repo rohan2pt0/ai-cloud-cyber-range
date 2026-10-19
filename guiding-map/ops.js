@@ -648,32 +648,28 @@
   function daily3HTML(calm) {
     var done = (typeof todayChecks === "function") ? todayChecks() : [];
     var rec = inRecovery();
-    var h = '<div style="background:linear-gradient(160deg,var(--navy),#152b47);border-radius:16px;padding:16px;margin-bottom:14px;color:#ece8dd">'
-      + '<div style="font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;color:var(--gold);font-weight:800">'
-      + (rec ? "Recovery mode \u00b7 these three only" : "The daily three \u00b7 non-negotiable") + '</div>'
-      + '<div style="display:flex;gap:8px;margin-top:11px">';
+    var h = '<div class="gm-d3"><div class="t">' + (rec ? "Recovery mode · these three only" : "The daily three · non-negotiable") + '</div><div class="row">';
     DAILY3.forEach(function (d) {
       var idx = -1;
       if (typeof HABITS !== "undefined") HABITS.forEach(function (hb, i) { if (hb.id === d.id) idx = i; });
       var on = done.indexOf(d.id) >= 0;
-      h += '<div onclick="' + (idx >= 0 ? "tgHabit(" + idx + ")" : "") + '" style="flex:1;cursor:pointer;text-align:center;'
-        + 'background:' + (on ? "var(--gold)" : "rgba(255,255,255,.07)") + ';color:' + (on ? "#0d1f35" : "#ece8dd") + ';'
-        + 'border:1.5px solid ' + (on ? "var(--gold)" : "rgba(201,168,76,.35)") + ';border-radius:12px;padding:14px 6px">'
-        + '<div style="font-size:22px;line-height:1">' + (on ? "\u2713" : "\u25cb") + '</div>'
-        + '<div style="font-size:12.5px;font-weight:800;margin-top:5px">' + d.label + '</div>'
-        + '<div style="font-size:9.5px;opacity:.75;margin-top:3px;line-height:1.35">' + esc(d.floor) + '</div></div>';
+      // a div with a button role, not a <button>: the floor text keeps its inline-help chips, which cannot nest in a button
+      h += '<div role="button" tabindex="0" class="tile' + (on ? " on" : "") + '" aria-pressed="' + on + '"'
+        + (idx >= 0 ? ' onclick="tgHabit(' + idx + ')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();tgHabit(' + idx + ')}"' : "") + '>'
+        + '<div class="chk" aria-hidden="true">' + (on ? "\u2713" : "") + '</div>'
+        + '<div class="nm">' + d.label + '</div><div class="fl">' + esc(d.floor) + '</div></div>';
     });
     h += '</div>';
     var n = DAILY3.filter(function (d) { return done.indexOf(d.id) >= 0; }).length;
-    h += '<div style="font-size:11px;color:#9fb3c8;margin-top:10px">'
+    h += '<div class="foot">'
       + (n === 3 ? "Done. Today is a win regardless of what else happens."
-        : n === 0 ? "Do the smallest version. The floor counts as a full win \u2014 that is the whole trick."
+        : n === 0 ? "Do the smallest version. The floor counts as a full win — that is the whole trick."
           : n + " of 3. The floor counts.") + '</div>';
     // Calm mode: no strength bars before the first check-in (with no history they read as a scolding). The EMA itself always updates.
     if (!calm || Object.keys((typeof S !== "undefined" && S.daily) || {}).length) h += strengthHTML(); else emaUpdate();
     if (rec) {
-      h += '<div style="font-size:11px;color:var(--gold);margin-top:8px">Cadence paused until ' + esc(rec.until.slice(0, 10))
-        + '. Nothing is stacking up. <span style="text-decoration:underline;cursor:pointer" onclick="gmRecoveryOff()">End early</span></div>';
+      h += '<div class="foot">Cadence paused until ' + esc(rec.until.slice(0, 10))
+        + '. Nothing is stacking up. <button type="button" class="gm-link" onclick="gmRecoveryOff()">End early</button></div>';
     }
     return h + '</div>';
   }
@@ -2311,13 +2307,13 @@
       var left = Math.max(0, MISS_BUDGET - (st.miss[d3.id] || 0));
       var col = v >= 70 ? "var(--green)" : v >= 40 ? "var(--gold)" : "var(--amber)";
       h += '<div style="flex:1;text-align:center">'
-        + '<div style="height:4px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden">'
+        + '<div style="height:4px;border-radius:2px;background:var(--border);overflow:hidden">'
         + '<div style="height:100%;width:' + v + '%;background:' + col + '"></div></div>'
-        + '<div style="font-size:9px;color:#9fb3c8;margin-top:3px">strength ' + v + '% \u00b7 '
+        + '<div style="font-size:11.5px;color:var(--muted);margin-top:4px">strength ' + v + '% \u00b7 '
         + (left ? left + " guilt-free miss" + (left > 1 ? "es" : "") + " left" : "budget used \u2014 floor is mandatory") + '</div></div>';
     });
     return h + '</div>'
-      + '<div style="font-size:9.5px;color:#7f93a8;margin-top:6px">Strength is a 20-day weighted average \u2014 one miss barely moves it, which is what the habit research actually shows. Two misses a month are budgeted on purpose; perfection is not the system.</div>';
+      + '<div style="font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.45">Strength is a 20-day weighted average \u2014 one miss barely moves it, which is what the habit research actually shows. Two misses a month are budgeted on purpose; perfection is not the system.</div>';
   }
 
   /* ── 38. Drift alarms — speak only on a threshold cross ─────────── */
@@ -3421,7 +3417,7 @@
   function calmTodayHTML() {
     var more = dueNowHTML() + (inRecovery() ? "" : driftHTML() + resHTML()) + msTodayHTML() + insightHTML() + estateHTML();
     var open = G("gm_more_today", false) === true;
-    return '<div class="section active">' + (phone() ? vitalsHTML() : "") + interruptHTML() + setupStripHTML() + undoBar() + checkinHTML() + oneActionHTML()
+    return '<div class="section active">' + greetHTML() + (phone() ? vitalsHTML() : "") + interruptHTML() + setupStripHTML() + undoBar() + checkinHTML() + oneActionHTML()
       + (more.replace(/<[^>]*>/g, "").trim() ? '<details class="road-col gm-more-today"' + (open ? " open" : "") + ' ontoggle="gmMoreToday(this.open)">'
         + '<summary style="cursor:pointer;font-weight:800;font-size:13px">More today <span style="font-weight:500;color:var(--muted);font-size:11.5px">\u00b7 what is due, your week, calendar, estate</span></summary>'
         + '<div style="margin-top:10px">' + more + '</div></details>' : "")
@@ -4158,6 +4154,126 @@
     }).join("");
   }
 
+  /* ── Design v2: calm, legible, one accent ─────────────────────────────────────────────────────────────
+     What changed and why: the old screen shouted (gold borders everywhere, 9-11 px text, three header buttons, a version
+     badge and a tagline on every tab). Here: one quiet header (name + one menu), a greeting that says what today needs,
+     15 px body text with nothing under 11.5 px, soft cards, and gold kept for the one primary action per screen.
+     Every pair still passes WCAG AA in both themes (ui_audit.py). */
+  function designCSS() {
+    if (document.getElementById("gmDesignCss")) return;
+    var st = document.createElement("style"); st.id = "gmDesignCss";
+    st.textContent = ""
+      + ":root{--bg:#f4f5f7;--card:#ffffff;--cardAlt:#eef1f5;--text:#101828;--muted:#475467;--border:#e4e7ec;--shadow:0 1px 2px rgba(16,24,40,.05),0 2px 8px rgba(16,24,40,.06)}"
+      + "html[data-theme=dark]{--bg:#0b111c;--card:#131b2a;--cardAlt:#1a2436;--text:#eef2f7;--muted:#a7b3c6;--border:#243049;--shadow:0 1px 2px rgba(0,0,0,.4)}"
+      + "body{font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}"
+      + "header{padding:10px 14px}header .lt2,#app_ver{display:none}header .lt1{font-family:inherit;font-weight:700;font-size:16px;letter-spacing:-.01em}"
+      + "header .hdr-btn{font-size:12.5px;padding:7px 12px}#themeBtn,header .gm-hide-hdr{display:none}"
+      + ".gm-menu-btn{font-size:18px!important;line-height:1;padding:4px 12px!important;margin-left:6px}"
+      + ".road-col,.okr-card,.kc{border-radius:16px;box-shadow:var(--shadow)}"
+      + ".road-col{padding:14px}.info{border-radius:12px;font-size:13px;line-height:1.55}"
+      + ".cat-t{font-size:17px;letter-spacing:-.01em}"
+      + ".btn-sm{border-radius:10px;min-height:40px;font-size:13px;font-weight:700;transition:transform .08s ease,filter .15s ease}"
+      + ".btn-sm:active{transform:scale(.98)}.btn-sm:hover{filter:brightness(1.05)}"
+      + "#gmToast{bottom:calc(84px + env(safe-area-inset-bottom))!important}"
+      + ".gm-greet{display:flex;align-items:center;gap:14px;margin:4px 0 14px}"
+      + ".gm-greet h2{font-size:22px;line-height:1.2;letter-spacing:-.02em;font-weight:800;color:var(--text)}"
+      + ".gm-greet p{font-size:13px;color:var(--muted);margin-top:3px}"
+      + ".gm-ring{flex:0 0 auto}.gm-ring text{font:700 13px Inter,system-ui,sans-serif;fill:var(--text)}"
+      + ".gm-d3{background:var(--card);border:1px solid var(--border);border-radius:18px;padding:14px;margin-bottom:14px;box-shadow:var(--shadow)}"
+      + ".gm-d3 .t{font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:800}"
+      + ".gm-d3 .row{display:flex;gap:10px;margin-top:10px}"
+      + ".gm-d3 .tile{flex:1;cursor:pointer;text-align:left;background:var(--cardAlt);border:1.5px solid transparent;border-radius:14px;padding:12px;min-height:96px;transition:background .15s,border-color .15s}"
+      + ".gm-d3 .tile:focus-visible{outline:2px solid var(--gold);outline-offset:2px}"
+      + ".gm-d3 .tile.on{background:var(--greenBg);border-color:var(--green)}"
+      + ".gm-d3 .chk{width:24px;height:24px;border-radius:50%;border:2px solid var(--muted);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900}"
+      + ".gm-d3 .tile.on .chk{background:var(--green);border-color:var(--green);color:#fff}"
+      + "html[data-theme=dark] .gm-d3 .tile.on .chk{color:#0b111c}"
+      + ".gm-d3 .nm{font-size:14.5px;font-weight:800;margin-top:8px;color:var(--text)}"
+      + ".gm-d3 .fl{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.4}"
+      + ".gm-d3 .foot{font-size:12.5px;color:var(--muted);margin-top:10px}"
+      + ".gm-link{background:none;border:0;padding:0;color:inherit;font:inherit;text-decoration:underline;cursor:pointer}"
+      + "@media (max-width:700px){.hero{display:none}.gm-d3 .tile{padding:10px;min-height:88px}.gm-d3 .fl{font-size:11.5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}}";
+    document.head.appendChild(st);
+  }
+  function greetHTML() {
+    var hr = new Date().getHours(), part = hr < 5 ? "Still up" : hr < 12 ? "Good morning" : hr < 17 ? "Good afternoon" : "Good evening";
+    var fn = ((typeof P !== "undefined" && P.name) || "").trim().split(" ")[0];
+    var done = (typeof todayChecks === "function") ? todayChecks() : [];
+    var n = DAILY3.filter(function (d) { return done.indexOf(d.id) >= 0; }).length;
+    var r = 22, c = 2 * Math.PI * r, off = c * (1 - n / 3);
+    var date = new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
+    return '<div class="gm-greet"><svg class="gm-ring" width="56" height="56" viewBox="0 0 56 56" role="img" aria-label="' + n + ' of 3 done today">'
+      + '<circle cx="28" cy="28" r="' + r + '" fill="none" stroke="var(--border)" stroke-width="6"/>'
+      + '<circle cx="28" cy="28" r="' + r + '" fill="none" stroke="var(--green)" stroke-width="6" stroke-linecap="round" stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + off.toFixed(1) + '" transform="rotate(-90 28 28)"/>'
+      + '<text x="28" y="33" text-anchor="middle">' + n + '/3</text></svg>'
+      + '<div><h2>' + esc(part + (fn ? ", " + fn : "")) + '</h2><p>' + esc(date) + ' · ' + (n === 3 ? "today is already a win" : n ? (3 - n) + " left for a win today" : "three small things make today a win") + '</p></div></div>';
+  }
+  window.gmMenu = function () {
+    var ver = (document.getElementById("app_ver") || {}).textContent || "";
+    gmDlg('<div style="font-weight:800;font-size:16px;margin-bottom:12px">Menu</div>'
+      + '<div style="display:grid;gap:8px">'
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();location.href=\'hub.html\'">◆ All apps</button>'
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();editProfile()">Edit profile</button>'
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();toggleTheme()">Switch to ' + (S.theme === "dark" ? "light" : "dark") + ' theme</button>'
+      + ((window.matchMedia && matchMedia("(display-mode: standalone)").matches) ? "" : '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();gmInstall()">Install as an app (phone or computer)</button>')
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();gmReport()">Report a problem or idea</button>'
+      + '</div><div style="font-size:12px;color:var(--muted);margin-top:12px">Life OS ' + esc(ver) + ' · your data stays on your devices</div>'
+      + '<button class="btn-sm" style="margin-top:12px;background:none;color:var(--muted)" onclick="gmClose()">Close</button>');
+  };
+  function designFrame() {
+    designCSS();
+    var hdr = document.querySelector("#dash header");
+    if (hdr && !hdr.querySelector(".gm-menu-btn")) {
+      hdr.querySelectorAll(".hdr-btn").forEach(function (b) { if (!/All Apps/.test(b.textContent)) b.classList.add("gm-hide-hdr"); });
+      var m = document.createElement("button");
+      m.className = "hdr-btn gm-menu-btn"; m.setAttribute("aria-label", "Menu"); m.textContent = "⋯"; m.onclick = function () { gmMenu(); };
+      hdr.appendChild(m);
+    }
+  }
+
+  /* ── Report a problem: a bug tracker the user can reach in two taps ────────────────────────────────────────────────
+     Like a Mattermost support packet, but for a phone: the build, the browser, the screen size and the last few script
+     errors, with nothing personal in it (no names, no numbers you typed, no notes). The user sees all of it before
+     anything leaves the device, and it leaves only by their own copy or tap. */
+  var GM_ERR = [];
+  window.addEventListener("error", function (e) {
+    GM_ERR.push(ymd() + " " + String((e && e.message) || "error").slice(0, 160) + (e && e.lineno ? " @" + e.lineno : ""));
+    if (GM_ERR.length > 5) GM_ERR.shift();
+  });
+  function gmDiag(b) {
+    var ua = navigator.userAgent || "";
+    var os = /Android/.test(ua) ? "Android" : /iPhone|iPad/.test(ua) ? "iOS" : /Windows/.test(ua) ? "Windows" : /Mac/.test(ua) ? "macOS" : /Linux/.test(ua) ? "Linux" : "other";
+    var br = /Edg\//.test(ua) ? "Edge" : /Chrome\//.test(ua) ? "Chrome" : /Firefox\//.test(ua) ? "Firefox" : /Safari\//.test(ua) ? "Safari" : "other";
+    var inst = (window.matchMedia && matchMedia("(display-mode: standalone)").matches) ? "installed app" : "browser tab";
+    return ["Life OS " + ((b && b.label) || (document.getElementById("app_ver") || {}).textContent || "unknown build"),
+      os + " · " + br + " · " + inst + " · " + window.innerWidth + "x" + window.innerHeight + " · " + (S.theme || "light") + " theme",
+      "Tab: " + curTab + (typeof calmOn === "function" && calmOn() ? " (calm)" : "") + (inRecovery() ? " · recovery mode" : ""),
+      "Recent script errors: " + (GM_ERR.length ? "\n  " + GM_ERR.join("\n  ") : "none")].join("\n");
+  }
+  window.gmReport = function (known) {
+    (known ? Promise.resolve(known) : gmBuild).then(function (b) {
+      var d = gmDiag(b), repo = b && b.repo;
+      var url = repo ? "https://github.com/" + repo + "/issues/new?template=bug_report.yml&component=Life%20OS%20(Guiding%20Map)"
+        + "&version=" + encodeURIComponent((b && b.label) || "") + "&env=" + encodeURIComponent(d.split("\n")[1]) : "";
+      gmDlg('<div style="font-weight:800;font-size:16px;margin-bottom:6px">Report a problem or idea</div>'
+        + '<p style="font-size:13px;color:var(--muted);margin-bottom:10px">Say what you did, what you expected and what happened. Paste the details below with it: they hold nothing personal, only the build and the device.</p>'
+        + '<textarea id="gmDiag" readonly rows="6" style="width:100%;font:12px ui-monospace,monospace;padding:10px;border-radius:10px;border:1px solid var(--border);background:var(--cardAlt);color:var(--text)">' + esc(d) + '</textarea>'
+        + '<div style="display:grid;gap:8px;margin-top:10px">'
+        + '<button class="btn-sm" style="background:var(--gold);color:#0d1f35" onclick="gmCopyDiag()">Copy the details</button>'
+        + (url ? '<a class="btn-sm" style="display:flex;align-items:center;justify-content:center;text-decoration:none;background:var(--cardAlt);color:var(--text)" target="_blank" rel="noopener" href="' + esc(url) + '">Open a bug report (needs a free GitHub account)</a>' : '')
+        + '<div style="font-size:12px;color:var(--muted)">' + (url ? "Ideas go the same way: pick “Feature request” on that page. " : "")
+        + "Security problems: never in a public report. Use the private advisory form, or tell the estate owner.</div>"
+        + '<button class="btn-sm" style="background:none;color:var(--muted)" onclick="gmClose()">Close</button></div>');
+    });
+  };
+  window.gmCopyDiag = function () {
+    var t = document.getElementById("gmDiag"); if (!t) return;
+    var done = function () { gmToast("Copied. Paste it into the report."); };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t.value).then(done, function () { t.select(); });
+    else { t.select(); try { document.execCommand("copy"); done(); } catch (e) {} }
+  };
+  window.gmDiag = gmDiag;
+
   /* ── 10. Wire into the existing render loop ─────────────────────── */
   if (typeof TABS !== "undefined") {
     var keep = TABS.filter(function (t) { return ["today", "map"].indexOf(t[0]) < 0; });
@@ -4181,6 +4297,7 @@
     }
     _pendingRender = false;
     try { _renderAll.apply(this, arguments); } catch (e) { console.log(e); }
+    try { designFrame(); } catch (e) { console.log(e); }
     var box = document.getElementById("sections");
     if (!box) return;
     var old = document.getElementById("gmVitals");
@@ -4200,7 +4317,7 @@
       if (sec) { var inf = sec.querySelector(".info"); if (!P.kids.length && inf) inf.outerHTML = kidAddHTML(true); else if (P.kids.length) sec.insertAdjacentHTML("beforeend", kidAddHTML(false)); }
     }
     else if (curTab === "today") {
-      box.insertAdjacentHTML("afterbegin", exampleWarn() + interruptHTML() + undoBar() + daily3HTML() + msTodayHTML()
+      box.insertAdjacentHTML("afterbegin", greetHTML() + exampleWarn() + interruptHTML() + undoBar() + daily3HTML() + msTodayHTML()
         + (inRecovery() ? "" : driftHTML() + resHTML()) + oneActionHTML() + (inRecovery() ? "" : pinnedHTML()));
     }
     try { calmFrame(); } catch (e) { console.log(e); }
