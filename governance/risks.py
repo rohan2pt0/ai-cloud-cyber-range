@@ -231,7 +231,11 @@ def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
     cmd = argv[0] if argv else "help"
     if cmd == "import" and len(argv) <= 2:
-        paths = [pathlib.Path(argv[1]).expanduser()] if len(argv) == 2 else controls.confirm(find_registers(), "risk register(s)")
+        given = pathlib.Path(argv[1]).expanduser() if len(argv) == 2 else None
+        if given and not given.is_file():                       # a placeholder like FILE.xlsx, or a typo: look for the registers instead
+            print(f"No file at {given}. Looking in Downloads, Documents, Desktop and vault/inbox instead…")
+            given = None
+        paths = [given] if given else controls.confirm(find_registers(), "risk register(s)")
         if not paths:
             return 1
         for path in paths:
@@ -255,7 +259,7 @@ def main(argv: list[str] | None = None) -> int:
         for r in rs:
             print(f"{r['id'][:14]:<14} {r['inherent_rating'] or '-':<8} {(r['inherent'] or 0):>4g}  {r['threat'][:70]:<70}  → {', '.join(r['controls']) or '-'}")
         if not rs:
-            print("no risks yet:  ./securax risks import FILE.xlsx")
+            print("no risks yet: save the register in Downloads, then  ./securax risks import   (it finds the file itself)")
         return 0
     if cmd == "overdue":
         od = overdue(load())

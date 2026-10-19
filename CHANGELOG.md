@@ -8,6 +8,67 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
+### Added
+- **`./securax finish`** (doc 73): all 10 optional parts in one list, each with what it gives you, whether it is done, and the exact steps.
+  - **Ticks:** items the estate can check tick themselves; the rest are ticked once with `./securax finish done ITEM`.
+  - **Where it shows:** a "Finish setting up" banner on the Command Center and a card on the cockpit.
+- **Product site, ready to publish on GitHub Pages:**
+  - **Workflow:** builds the site and `/docs` and publishes them once `SITE_PAGES=true`.
+  - **Domain:** comes from `brand.env` or a repository variable, so moving to another domain or host is one value.
+  - **Page changes:** a phone menu with no script, a nav that never wraps, and a "Deploy your way" section.
+- **Life OS on a phone:**
+  - four fixed bottom tabs (Today, Goals, Ask, Ops) and More; no tab is hidden off-screen
+  - Today shows the Daily Three and your one open action first, with the rest under "More today"
+  - the vitals sit at the top of Today
+  - the header shrinks to one line once you scroll
+- **Life OS goals, the way national strategies run them** (docs 70 and 71):
+  - **Key results "from X to Y by a date":** type today's number and the score, progress bar and days left fill themselves. Free-text key results still work with the slider.
+  - **No drift:** a goal with no movement for 6 weeks asks for a decision: recommit, re-scope or drop. A drop keeps its lesson on record under "Dropped on purpose".
+  - **Strengths first:** name your 3 strengths before the first objective, and each objective says which one it builds on.
+- **"Who touched my data"** (Ops): every time Life OS data leaves a device or comes back (a sync, a backup, a restore, an export, a question to AI), one line records when, which device, what and where. Every device's log is shown, and repeats within the hour are not logged again.
+- **Host the Life OS off the laptop** (doc 72): steps for Cloudflare Pages behind Cloudflare Access, about 15 minutes once. Free-plan limits checked 19 Oct 2026.
+- **Sync without the laptop** (doc 72): the Life OS syncs each device directly with your OneDrive, end-to-end encrypted.
+  - **No server:** the laptop and Docker no longer need to be on.
+  - **Encryption:** AES-256-GCM, with the key derived from your passphrase through PBKDF2 (310,000 rounds).
+  - **Conflicts:** writes are checked against the file's ETag, and simultaneous edits on two devices are both kept.
+- **Daily encrypted Life OS backup to OneDrive,** with one-click restore of the newest copy.
+- **Estate off-site backup and quarterly restore drill:**
+  - `./securax backup offsite` picks a OneDrive folder once; every encrypted backup is then copied there, verified byte for byte, and the newest 12 kept.
+  - `./securax backup drill` decrypts, unpacks and checks the newest copy, and runs automatically every quarter.
+- **Which tier gets the task** (doc 23): a one-table rule for sending work to a local or cheap model, OpenCode, or Claude with a brief, so Claude handles about a fifth of the work. Prices checked 19 Oct 2026.
+- **Control navigator you can read without the workbook:**
+  - **Grid:** every box shows its full control ID, and clicking it opens a panel that says, in plain words, its status, what it asks, the evidence expected, how to test and fix it, and every citation.
+  - **Maturity chart:** explained in one sentence, with a table beside it.
+  - **Risk heat map:** fills itself. SecuRAX estimates each control's likelihood from its evidence and its impact from its tier, your own workbook scores replace the estimate, and open risks from your register are plotted too.
+- **UK NCSC Cyber Assessment Framework 4.0 map** (`./securax comply caf`, doc 71): all 41 contributing outcomes scored against what SecuRAX proves, with CI-verified evidence. 15 are supported, 18 partial, 2 gaps and 6 belong to the organisation.
+- **Tamper-evident gateway audit** (CAF C1.b, Estonia's signed and logged exchange): every audit event carries the hash of the one before it. `./securax audit verify` names an edited, deleted, inserted or reordered event.
+- **What 26 national strategies agree on** (doc 71): eight patterns that several governments arrived at independently, what SecuRAX does for each, and eight ranked next steps.
+- **README that keeps itself current:** the version badge, "What's new" and the full documentation index are generated from `VERSION`, `CHANGELOG.md` and the docs (`tools/readme_sync.py`). The `readme-current` fitness check fails CI when the README falls behind. "Start here" now leads with `./securax go`.
+- **RBI MRM draft, checked paragraph by paragraph:** the pack cites the draft's paragraphs and gains ET-104 to ET-106 (third-party models, change management, continuity).
+  - **Para 21:** `./securax ai inventory` flags models the gateway serves that are not in the inventory.
+  - **Para 42:** it flags models changed since validation.
+  - **Para 22:** it flags a missing intended use or owner.
+- **RBI Payments Vision 2028 pack:** Cyber KRI framework (3.9), governed AI access to payments data (3.11), switch on/off for every digital mode (3.1) and beneficiary-side mule detection (3.5).
+- **Lessons from national strategies** (doc 70): six patterns from Saudi Vision 2030, Vision India@2047 and the 2025 US National Security Strategy, what SecuRAX already does, the three proposed Life OS changes, and which documents to add next.
+- **Human-in-command for AI** (doc 69, following RBI's June 2026 draft model-risk guidance):
+  - **Kill switch:** `./securax ai stop all|MODEL --reason "..."` and `resume`. The gateway refuses on the next request with no restart, tells the caller who stopped it and why, and lights a cockpit lamp. The switch is a read-only file, not an API, and a malformed file stops all AI.
+  - **Model inventory:** `./securax ai inventory` checks owner, third-party source, explainability, validation and yearly re-validation for high-risk models, and keeps decommissioned models' records for 10 years.
+  - **Disclosure:** every answer carries `X-AI-Generated: true`.
+  - **Control library:** the pack `rbi-mrm-draft-2026` adds controls ET-101 to ET-103.
+- **AI allowance per caller** (doc 69, on by default): 2M tokens a day and 20M a month on cloud models, about US$15 a month on a Flash-class model.
+  - **Limits:** a warning at 80%; at 100% the gateway refuses with 429 and says which limit, when it resets, and how to extend it.
+  - **`./securax ai budget`** shows each caller's use. `./securax ai budget extend --day|--month --tokens N --reason "..."` adds tokens for the current day or month only, and every extension is logged.
+  - **Local model:** not counted, so it still answers when the cloud allowance runs out.
+  - **Visibility:** remaining allowance in the response headers, a cockpit lamp, and spend that survives a gateway restart.
+
+### Fixed
+- **`./securax controls import FILE.xlsx` crashed with a traceback** when typed as shown in the cockpit hint.
+  - **Import:** no path, a wrong path, a folder or the wrong workbook now finds the right workbook.
+  - **`./securax go`:** imports a workbook saved in Downloads by itself.
+  - **Risk import:** follows the same rule.
+- **Backup hints** now point to the guided `./securax protect` instead of "make a key, then edit .env".
+- **Phone-sync step on the Command Center:** it no longer asks you to copy a token out of `.env`.
+- **Cockpit crashed when the gateway reported allowance callers:** a loop variable shadowed the page's configuration. Caught by the `cockpit_page` journey on a real estate, now covered by a regression test.
 
 ## [0.2.0] - 2026-10-17
 ### Added

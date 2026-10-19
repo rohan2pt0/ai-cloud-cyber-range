@@ -25,7 +25,7 @@ import httpx
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
 
-from . import guardrails, identity, residency
+from . import budget, guardrails, identity, killswitch, residency
 from .providers import active_detectors, run_detectors
 
 MODE = os.getenv("GUARDRAIL_MODE", "enforce")  # enforce | monitor
@@ -114,9 +114,21 @@ def _rate_limited(principal: str) -> bool:
     return False
 
 
+# Tamper-evident audit (UK CAF C1.b "securing logs"; Estonia's signed, logged exchange): every event carries the hash of
+# the one before it, so deleting, reordering or editing a line breaks the chain. `./securax audit verify` checks it.
+_CHAIN = {"boot": secrets.token_hex(4), "seq": 0, "prev": "0" * 64}
+
+
+def chain_hash(event: dict) -> str:
+    return hashlib.sha256(json.dumps(event, sort_keys=True, default=str, separators=(",", ":")).encode()).hexdigest()
+
+
 def _emit(event: dict) -> None:
     event.setdefault("ts", time.strftime("%Y-%m-%dT%H:%M:%S%z"))
-    audit.info(json.dumps(event, default=str))
+    _CHAIN["seq"] += 1
+    event["chain"] = {"boot": _CHAIN["boot"], "seq": _CHAIN["seq"], "prev": _CHAIN["prev"]}
+    _CHAIN["prev"] = h = chain_hash(event)
+    audit.info(json.dumps({**event, "h": h}, default=str))
 
 
 _HTTP: httpx.AsyncClient | None = None
@@ -396,6 +408,13 @@ def _idem_purge(now: float) -> None:
         _IDEM.popitem(last=False)
 
 
+@app.get("/v1/budget")
+async def budget_report(request: Request) -> dict:
+    """Every caller's AI allowance and spend today and this month (callers are hashed ids, never keys)."""
+    await _authn(request, "metrics")
+    return budget.report()
+
+
 @app.post("/v1/chat/completions")
 async def chat(request: Request, authorization: str | None = Header(default=None)):
     key = (request.headers.get("idempotency-key") or "").strip()
@@ -447,6 +466,29 @@ async def _chat(request: Request, authorization: str | None) -> JSONResponse:
         _metrics["rate_limited"] += 1
         _emit({"req_id": req_id, **who, "decision": "rate_limited", "category": "LLM10"})
         raise HTTPException(429, "rate limit exceeded", headers={"Retry-After": "60"})
+
+    # Human-in-command: a person stopped this model (or all AI) with `./securax ai stop`. Nothing is sent anywhere.
+    stop = killswitch.stopped(payload.get("model") or "")
+    if stop:
+        _metrics["ai_suspended"] += 1
+        _emit({"req_id": req_id, **who, "decision": "suspended", "model": payload.get("model"), "stopped": stop,
+               "category": "RBI-MRM/human-in-command"})
+        what = "All AI is" if stop["scope"] == "all" else f"The model '{stop['scope']}' is"
+        return JSONResponse(status_code=503, headers={"Retry-After": "300"}, content={"error": {
+            "type": "ai_suspended", "req_id": req_id, "stopped_by": stop.get("by"), "since": stop.get("at"),
+            "message": f"{what} switched off by a person ({stop.get('reason') or 'no reason given'}). "
+                       "A human handles this instead; ask the person who runs this service."}})
+    # AI allowance (app/budget.py): daily and monthly tokens per caller, cloud models only by default. Agents use far more
+    # tokens than chat, so a runaway loop meets a ceiling a person chose, not the provider's bill.
+    over = budget.refusal(principal) if budget.counts(RES.model_zone(payload.get("model") or "")) else None
+    if over:
+        _metrics["budget_exhausted"] += 1
+        _emit({"req_id": req_id, **who, "decision": "budget_exhausted", **over, "category": "LLM10/cost"})
+        word = "today's" if over["period"] == "day" else "this month's"
+        raise HTTPException(429, f"{word} AI allowance for this caller ({over['limit']:,} tokens) is used up; it resets {over['resets']}. "
+                                 f"The private local model still answers, or a person can extend it: "
+                                 f"./securax ai budget extend --{over['period']} --tokens N --reason \"...\"",
+                            headers={"Retry-After": "3600"})
 
     messages = payload.get("messages", [])
     if not isinstance(messages, list) or not messages:
@@ -561,12 +603,21 @@ async def _chat(request: Request, authorization: str | None) -> JSONResponse:
     _usage["tokens_reasoning"] += int((u.get("completion_tokens_details") or {}).get("reasoning_tokens") or 0)   # thinking the model did, inside completion
     _usage["latency_ms_sum"] += latency_ms
     _usage["latency_ms_count"] += 1
+    if (budget.DAY or budget.MONTH) and budget.counts(RES.model_zone(payload.get("model") or "")):
+        used = int(u.get("total_tokens") or (int(u.get("prompt_tokens") or 0) + int(u.get("completion_tokens") or 0)))
+        if not used:                                     # some local models report no usage: estimate (about 4 characters a token)
+            text = json.dumps(messages) + json.dumps([c.get("message", {}).get("content") for c in resp.get("choices", [])])
+            used = max(1, len(text) // 4)
+        for period in budget.spend(principal, used):     # soft line (80%): warn once, never block
+            _metrics["budget_warning"] += 1
+            _emit({"req_id": req_id, **who, "decision": "budget_warning", "period": period, "category": "LLM10/cost"})
     _emit({"req_id": req_id, **who, "decision": decision, "model": payload.get("model"),
            "latency_ms": latency_ms, "usage": resp.get("usage"),
            "findings": _findings(in_findings + out_findings)})
     resp["guardrails"] = {"req_id": req_id, "decision": decision,
                           "rules": sorted({f.rule for f in in_findings + out_findings})}
-    echo = {"traceparent": f"00-{trace_id}-{span_id}-01", "X-Request-ID": req_id}
+    # Customer-facing AI must say it is AI (RBI MRM draft): every answer carries the disclosure, for any client to show.
+    echo = {"traceparent": f"00-{trace_id}-{span_id}-01", "X-Request-ID": req_id, "X-AI-Generated": "true", **budget.headers(principal)}
     if _IDEM_CTX.get():
         _IDEM[_IDEM_CTX.get()] = {"state": "done", "body": _IDEM[_IDEM_CTX.get()]["body"], "t": time.time(),
                                   "resp": resp, "stream": want_stream, "echo": echo}

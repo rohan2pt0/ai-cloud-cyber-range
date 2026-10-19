@@ -1,0 +1,62 @@
+{
+ "about": "RBI Payments Vision 2028, 'Shaping India's Payment Frontier' (27 March 2026; horizon 31 December 2028). Fifteen initiatives; most are to be explored or examined, the Cyber KRI framework (3.9) is to be developed and implemented. Initiative references and links to library controls only.",
+ "framework": {
+  "name": "RBI Payments Vision 2028",
+  "reference": "RBI DPSS, Payments Vision 2028 (27 March 2026)"
+ },
+ "citations": {
+  "RM-009": {
+   "RBI Payments Vision 2028": "3.9 (Cyber KRI framework for non-bank PSOs)"
+  }
+ },
+ "controls": [
+  {
+   "id": "RM-101",
+   "domain": "RM",
+   "subdomain": "Key risk indicators",
+   "title": "Cyber key risk indicators with thresholds and trends",
+   "tier": "High",
+   "description": "A defined set of cyber KRIs with early-warning thresholds, tracked over time and reported (RBI is developing a framework for non-bank payment system operators).",
+   "owner": "CISO / CRO",
+   "citations": {
+    "RBI Payments Vision 2028": "3.9"
+   }
+  },
+  {
+   "id": "RM-102",
+   "domain": "RM",
+   "subdomain": "Fraud risk",
+   "title": "Customer switch on/off for every digital payment mode",
+   "tier": "High",
+   "description": "Customers can enable or disable transactions on each digital payment mode through issuer channels, as already for cards.",
+   "owner": "Payments / Digital channels",
+   "citations": {
+    "RBI Payments Vision 2028": "3.1"
+   }
+  },
+  {
+   "id": "RM-103",
+   "domain": "RM",
+   "subdomain": "Fraud risk",
+   "title": "Beneficiary-side fraud and mule-account detection (shared responsibility)",
+   "tier": "High",
+   "description": "Monitoring of incoming transactions and beneficiary accounts, since the beneficiary's bank may share liability for unauthorised digital transactions.",
+   "owner": "Fraud Risk",
+   "citations": {
+    "RBI Payments Vision 2028": "3.5"
+   }
+  },
+  {
+   "id": "ET-107",
+   "domain": "ET",
+   "subdomain": "AI data access",
+   "title": "Governed AI access to payments data",
+   "tier": "High",
+   "description": "AI querying of payments data runs through a control point with data-residency rules, masking of personal data, a query audit trail and per-caller limits.",
+   "owner": "CDO / CISO",
+   "citations": {
+    "RBI Payments Vision 2028": "3.11"
+   }
+  }
+ ]
+}

@@ -2,7 +2,9 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![CI](https://github.com/rohan2pt0/ai-cloud-cyber-range/actions/workflows/devsecops.yml/badge.svg)](https://github.com/rohan2pt0/ai-cloud-cyber-range/actions/workflows/devsecops.yml)
-[![Version](https://img.shields.io/badge/version-0.1.0-blue)](CHANGELOG.md)
+<!-- readme:badge:start -->
+[![Version](https://img.shields.io/badge/version-0.2.0-blue)](CHANGELOG.md)
+<!-- readme:badge:end -->
 ![AI red-team defence](https://img.shields.io/badge/red--team%20defence-100%25%2F0%20FP-blue)
 ![Cost to start](https://img.shields.io/badge/cost%20to%20start-%E2%82%B90-success)
 ![Frameworks](https://img.shields.io/badge/mapped%20to-NIST%20%7C%20ISO%20%7C%20RBI%20FREE--AI%20%7C%20DPDP-informational)
@@ -10,15 +12,50 @@
 
 ## ▶ Start here (one step)
 
-**On Windows:** double-click **`START-HERE-Windows.bat`** → your home screen opens at **http://localhost:8088**. That's it.
-
-**On Mac/Linux:**
 ```bash
-./securax up && ./securax open      # starts everything, opens your Guiding Map
+./securax go        # gets everything working and keeps it working; safe to run any time
 ```
-Your **Guiding Map** (http://localhost:8088) is the home screen for everything — tasks, your local AI, money, OPSEC, and one-tap launch of the rest. Install it (Add to Home Screen) to use it like an app, even offline. Your data stays on your device.
 
-> Health check any time: `./securax doctor` · Something not working: `./securax why` (Windows: double-click `WHATS-WRONG-Windows.bat`) · Update: `./securax update` (Windows: `UPDATE-Windows.bat`) · From any folder: `./securax shortcut` once, then `securax <command>` · Stop & free RAM: `./securax down`
+`go` checks Docker, takes the latest code safely (backup first, automatic rollback), starts the estate, installs the schedules
+(nightly safe update, backups, alerts, regulator watch), sets up phones over Tailscale when it is on, and ends with one screen:
+what works, and the one fix if something does not. On Windows, double-click **`START-HERE-Windows.bat`**.
+
+Your **Guiding Map** (http://localhost:8088, or https://hub.securax.localhost with `./securax tls on`) is the home screen:
+tasks, your private AI, money, goals, and one-tap launch of the rest. Install it (Add to Home Screen) to use it like an app,
+even offline. Your data stays on your device.
+
+> Something not right: `./securax doctor` · `./securax why` · Which build am I on: `./securax version` · Stop AI at once:
+> `./securax ai stop all --reason "..."` · AI allowance: `./securax ai budget` · Stop and free RAM: `./securax down`
+
+<!-- readme:whats-new:start -->
+## What's new
+
+**On main, in the next release:**
+
+- [`./securax finish`](docs/securax/73-FINISH-SETTING-UP-AND-PUBLISH-THE-SITE.md)
+- Product site, ready to publish on GitHub Pages
+- Life OS on a phone
+- Life OS goals, the way national strategies run them
+- "Who touched my data"
+- [Host the Life OS off the laptop](docs/securax/72-SYNC-AND-BACKUP-WITHOUT-THE-LAPTOP.md)
+- [Sync without the laptop](docs/securax/72-SYNC-AND-BACKUP-WITHOUT-THE-LAPTOP.md)
+- Daily encrypted Life OS backup to OneDrive,
+
+**Release 0.2.0 - 2026-10-17:**
+
+- [CI at agent scale](docs/securax/68-CI-AT-AGENT-SCALE.md)
+- Nightly safe update
+- "v0.1.0 never updates"
+- A busy port 80/443 no longer leaves you with nothing running
+- Risk registers with a one-row header lost their first risk
+- No paths to type
+- [Risk register, interlinked](docs/securax/67-RISK-REGISTER-NSCS-NCIIPC.md)
+- NSCS Audit Baseline pack
+- NCIIPC CII pack
+- Professional names with phones
+
+Everything, with details: [`CHANGELOG.md`](CHANGELOG.md).
+<!-- readme:whats-new:end -->
 
 ---
 
@@ -33,9 +70,7 @@ Your **Guiding Map** (http://localhost:8088) is the home screen for everything �
 > [Overview](docs/securax/00-OVERVIEW.md) · [Principles](docs/securax/01-PRINCIPLES.md) ·
 > [Architecture](docs/securax/02-ARCHITECTURE.md) ·
 > [Capability Catalog](docs/securax/03-CAPABILITY-CATALOG.md) ·
-> 🌐 **Product site:** [cyberbaba.org](https://cyberbaba.org/) · 📘 **Documentation:** [cyberbaba.org/docs](https://cyberbaba.org/docs/) (Quickstart, how-to guides, concepts, command reference, troubleshooting; source in `docs/`, built by `mkdocs.yml`).
->
-> [Compliance Map](docs/securax/04-COMPLIANCE-MAP.md) · [Roadmap](docs/securax/05-ROADMAP.md) · [Extending](docs/securax/06-EXTENDING.md) · [Integrations](docs/securax/07-INTEGRATIONS.md) · [Operating model](docs/securax/08-OPERATING-MODEL.md) · [Tiers](docs/securax/09-OPEN-CORE-TIERS.md) · [Full-scale](docs/securax/10-FULL-STACK.md) · [Kaizen & antifragility](docs/securax/11-KAIZEN.md) · [Intelligent UX](docs/securax/12-INTELLIGENT-UX.md) · [Global Intelligence](docs/securax/13-GLOBAL-INTELLIGENCE.md) · [Guiding Map cockpit](docs/securax/14-GUIDING-MAP.md) · [Cost & models (never hit a limit)](docs/securax/15-COST-AND-MODELS.md) · [Agents army](docs/securax/16-AGENTS.md) · [Enterprise Architecture](docs/securax/17-ENTERPRISE-ARCHITECTURE.md) · [Financial Planner](docs/securax/18-FINANCIAL-PLANNER.md) · [Regulatory gap maps](docs/securax/35-REGULATORY-GAP-ASSESSMENT.md) · [Sign-in, incident clock, residency](docs/securax/36-IDENTITY-INCIDENT-RESIDENCY.md) · [Cockpit, storage, patching](docs/securax/37-COCKPIT-STORAGE-PATCHING.md) · [Practices, research, friction audit](docs/securax/38-ENGINEERING-PRACTICES-AND-RESEARCH.md) · [People scale, live sync, team chat](docs/securax/39-PEOPLE-SCALE-LIVE-SYNC-CHATOPS.md) · [Encryption in transit](docs/securax/40-ENCRYPTION-IN-TRANSIT.md) · [Quantum readiness](docs/securax/41-QUANTUM-READINESS.md) · [OpenCode Go + terminal agent](docs/securax/42-OPENCODE-GO-AND-THE-TERMINAL-AGENT.md) · [Inspect third-party software (REA)](docs/securax/43-INSPECT-THIRD-PARTY-SOFTWARE.md) · [Admission gate & self-healing sandbox](docs/securax/44-ADMISSION-GATE-AND-SELF-HEALING-SANDBOX.md) · [Measure your build models](docs/securax/45-AUTOBENCH-MEASURE-YOUR-BUILD-MODELS.md) · [Certification path](docs/securax/46-CERTIFICATION-PATH.md) · [Calm mode: less input, more insight](docs/securax/47-CALM-MODE-LESS-INPUT-MORE-INSIGHT.md) · [Guiding Map freeze-ready](docs/securax/48-GUIDING-MAP-FREEZE-READY.md) · [Career compass](docs/securax/49-CAREER-COMPASS.md) · [Reasoning budget](docs/securax/50-REASONING-BUDGET.md) · [Your AI history](docs/securax/51-YOUR-AI-HISTORY.md) · [Automation pack & SuperApp plan](docs/securax/52-AUTOMATION-PACK-AND-SUPERAPP-PLAN.md) · [The Twin](docs/securax/53-THE-TWIN.md) · [Technical gist](docs/securax/54-TECHNICAL-GIST.md) · [Engineering standard](docs/securax/55-ENGINEERING-STANDARD.md) · [Pool your machines](docs/securax/56-POOL-YOUR-MACHINES.md) · [Compute strategy](docs/securax/57-COMPUTE-STRATEGY.md) · [Phones & remote shell](docs/securax/58-PHONES-AND-REMOTE-SHELL.md) · [End state & build order](docs/securax/59-END-STATE-ARCHITECTURE.md) · [Ship it & build with SecuRAX](docs/securax/60-SHIP-IT-AND-BUILD-WITH-SECURAX.md).
+> 🌐 **Product site:** [cyberbaba.org](https://cyberbaba.org/) · 📘 **Documentation:** [cyberbaba.org/docs](https://cyberbaba.org/docs/) (source in `docs/`, built by `mkdocs.yml`). Every page is listed under [All documentation](#all-documentation) below.
 >
 > **Deploy it in 3 steps:** [`DEPLOY.md`](DEPLOY.md) (install Docker → `git clone` → one command) · **Start using it:** [`GETTING-STARTED.md`](GETTING-STARTED.md) · **See it visually:** [`portal/explainer.html`](portal/explainer.html) (one-page illustrated walkthrough).
 
@@ -100,6 +135,14 @@ Secure-by-design · privacy-by-design · zero-trust · **fail-closed** · everyt
 - `docs/cost-controls.md` — how it stays under ₹2,500/month
 - `docs/demo-runbook.md` — a 15-minute guided walkthrough
 
-> Status: 23 unit tests pass (`pytest` from repo root); all Terraform modules `validate`
-> clean; red-team defence rate 100% with 0 false positives; AI-SPM posture 16/16. Figures/
-> regulatory notes current to Oct 2026 — verify primary sources before client use.
+<!-- readme:proofs:start -->
+> **Proof, not claims:** 41 end-to-end journeys run the real estate (real containers, a real browser) on every merge and every night; pull requests run the ones their change can affect ([doc 68](docs/securax/68-CI-AT-AGENT-SCALE.md)).
+<!-- readme:proofs:end -->
+
+<!-- readme:docs:start -->
+## All documentation
+
+[SecuRAX — Overview](docs/securax/00-OVERVIEW.md) 🟢 · [SecuRAX — Design Principles](docs/securax/01-PRINCIPLES.md) 🟢 · [SecuRAX — Unified Architecture](docs/securax/02-ARCHITECTURE.md) 🟢 · [SecuRAX — Capability Catalog](docs/securax/03-CAPABILITY-CATALOG.md) 🟡 · [SecuRAX — Compliance & Standards Map](docs/securax/04-COMPLIANCE-MAP.md) 🟡 · [SecuRAX — Roadmap](docs/securax/05-ROADMAP.md) 🟡 · [Extending SecuRAX — how to plug in any future project](docs/securax/06-EXTENDING.md) 🟢 · [SecuRAX — Integrations & Connectivity](docs/securax/07-INTEGRATIONS.md) 🟡 · [SecuRAX — Operating Model](docs/securax/08-OPERATING-MODEL.md) 🟡 · [SecuRAX — Open-Core Model & Tiers](docs/securax/09-OPEN-CORE-TIERS.md) 🔴 · [SecuRAX — Full-Scale Mode (opt-in, turn-off-able)](docs/securax/10-FULL-STACK.md) 🟡 · [SecuRAX — Kaizen & Antifragility (the UPSC lens)](docs/securax/11-KAIZEN.md) 🟡 · [SecuRAX — Intelligent UX (the operator's lens: simple on top, disciplined underneath)](docs/securax/12-INTELLIGENT-UX.md) 🟡 · [SecuRAX — Global Intelligence (decide the community-proven way, before it commoditises)](docs/securax/13-GLOBAL-INTELLIGENCE.md) 🟢 · [SecuRAX — The Guiding Map (the life-OS cockpit)](docs/securax/14-GUIDING-MAP.md) 🟢 · [SecuRAX — Cost, models & never hitting a limit (the FinOps playbook)](docs/securax/15-COST-AND-MODELS.md) 🟢 · [SecuRAX — The agents army (stealth specialist advisors)](docs/securax/16-AGENTS.md) 🟡 · [SecuRAX — Enterprise Architecture alignment (the end-state blueprint)](docs/securax/17-ENTERPRISE-ARCHITECTURE.md) 🟡 · [SecuRAX — Future Financial Planner (sovereign, offline)](docs/securax/18-FINANCIAL-PLANNER.md) 🟢 · [Autonomous web research (the sovereign Manus / Clawbot)](docs/securax/19-AUTONOMOUS-RESEARCH.md) 🟡 · [Claude-subscription parity (the sovereign equivalents)](docs/securax/20-CLAUDE-PARITY.md) 🟡 · [Versioning & release policy](docs/securax/21-VERSIONING-AND-RELEASES.md) 🟢 · [Plugins & AI Providers](docs/securax/22-PLUGINS-AND-PROVIDERS.md) 🟢 · [Build SecuRAX without depending on Claude](docs/securax/23-BUILD-WITHOUT-CLAUDE.md) 🟡 · [Resilience & low-resource operation](docs/securax/24-RESILIENCE-AND-LOW-RESOURCE.md) 🟢 · [Fallbacks & elasticity — what happens when a piece is missing](docs/securax/25-FALLBACKS-AND-ELASTICITY.md) 🟢 · [Coverage check vs. the enterprise reference maps — and the 80/20 gaps](docs/securax/26-COVERAGE-AND-GAPS.md) 🟢 · [Incident runbook — what to do, in order](docs/securax/27-INCIDENT-RUNBOOK.md) 🟢 · [Status & traceability — every ask, what shipped, how it is proven, what is NOT done](docs/securax/28-STATUS-AND-TRACEABILITY.md) 🟢 · [Lifecycle — from a dormant seed to a multi-tenant forest (and back to sleep)](docs/securax/29-LIFECYCLE-SEED-TO-FOREST.md) 🟡 · [The purple-team loop — would anyone *know*?](docs/securax/30-PURPLE-TEAM-LOOP.md) 🟢 · [Supply-chain gate — `./securax vet`](docs/securax/31-SUPPLY-CHAIN-VET.md) 🟢 · [Powerful offline, sharp on a small machine — what we took from the most-starred repos, and what we measured](docs/securax/32-OFFLINE-AND-LOW-RESOURCE.md) 🟢 · [Fitness functions and game days — promises as numbers, resilience as rehearsal](docs/securax/33-FITNESS-AND-GAME-DAYS.md) 🟢 · [CCSP-aligned coverage (step 5)](docs/securax/34-CCSP-COVERAGE.md) 🟢 · [Regulatory gap assessment — RBI NBFC Directions 2026 and SEBI CSCRF](docs/securax/35-REGULATORY-GAP-ASSESSMENT.md) 🟡 · [Identity, incident clock, data residency](docs/securax/36-IDENTITY-INCIDENT-RESIDENCY.md) 🟢 · [Cockpit, storage growth, patching, impact](docs/securax/37-COCKPIT-STORAGE-PATCHING.md) 🟢 · [Engineering practices, research cues, and the friction audit](docs/securax/38-ENGINEERING-PRACTICES-AND-RESEARCH.md) 🟡 · [Growing from one person to many: live sync, team chat, and the scale ladder](docs/securax/39-PEOPLE-SCALE-LIVE-SYNC-CHATOPS.md) 🟡 · [Encryption in transit: HTTPS everywhere, by name, from the browser to the edge](docs/securax/40-ENCRYPTION-IN-TRANSIT.md) 🟢 · [Quantum readiness: what is protected, what is not, and what to do first](docs/securax/41-QUANTUM-READINESS.md) 🟡 · [OpenCode Go and the OpenCode terminal agent](docs/securax/42-OPENCODE-GO-AND-THE-TERMINAL-AGENT.md) 🟢 · [Look inside third-party software before you trust it (REA, sandboxed)](docs/securax/43-INSPECT-THIRD-PARTY-SOFTWARE.md) 🟢 · [The admission gate (`forge`) and the self-healing sandbox](docs/securax/44-ADMISSION-GATE-AND-SELF-HEALING-SANDBOX.md) 🟢 · [`./securax autobench`: measure each build model before you trust it](docs/securax/45-AUTOBENCH-MEASURE-YOUR-BUILD-MODELS.md) 🟢 · [Certification path: the hardest offensive and AI certifications, on 30 hours a week and ₹5 lakh a year](docs/securax/46-CERTIFICATION-PATH.md) 🔴 · [Calm mode: less input, more insight (the Guiding Map, reviewed as a user)](docs/securax/47-CALM-MODE-LESS-INPUT-MORE-INSIGHT.md) 🟢 · [The Guiding Map, freeze-ready: a quarterly system you will actually run](docs/securax/48-GUIDING-MAP-FREEZE-READY.md) 🟢 · [Career compass: choose the next job without betting the house](docs/securax/49-CAREER-COMPASS.md) 🟢 · [Reasoning budget: think less where it does not pay](docs/securax/50-REASONING-BUDGET.md) 🟡 · [Your AI history: years of chats as one library you own](docs/securax/51-YOUR-AI-HISTORY.md) 🟢 · [Automation that works on day one, and the SuperApp plan](docs/securax/52-AUTOMATION-PACK-AND-SUPERAPP-PLAN.md) 🟡 · [The Twin: a Claude-like assistant you own](docs/securax/53-THE-TWIN.md) 🟢 · [SecuRAX technical gist (for another engineer or AI assistant)](docs/securax/54-TECHNICAL-GIST.md) 🟢 · [The engineering standard: no claim without proof](docs/securax/55-ENGINEERING-STANDARD.md) 🟢 · [Pool your machines: what we took from RAMDeck, and what we did not](docs/securax/56-POOL-YOUR-MACHINES.md) 🟡 · [Compute, memory and storage: the smart way round the limits (global and Indian options)](docs/securax/57-COMPUTE-STRATEGY.md) 🟡 · [Phones over Tailscale, and a shell on the laptop from your phone](docs/securax/58-PHONES-AND-REMOTE-SHELL.md) 🟡 · [The end state, and how SecuRAX gets there](docs/securax/59-END-STATE-ARCHITECTURE.md) 🟡 · [Ship it on cyberbaba.org, and build SecuRAX with SecuRAX](docs/securax/60-SHIP-IT-AND-BUILD-WITH-SECURAX.md) 🟡 · [Run SecuRAX as a business, with a low profile](docs/securax/61-RUN-IT-AS-A-BUSINESS.md) 🟡 · [Strategy: what Cyera and the AI unicorns teach, and where SecuRAX can win](docs/securax/62-STRATEGY-LESSONS-FROM-CYERA-AND-AI-UNICORNS.md) 🟡 · [Engineering resilience audit: the backend fundamentals, checked against SecuRAX](docs/securax/63-ENGINEERING-RESILIENCE-AUDIT.md) 🟢 · [Success mantras: what the best organisations do, and where SecuRAX does it too](docs/securax/64-SUCCESS-MANTRAS.md) 🟢 · [Configuration, not code: nothing specific is hardwired](docs/securax/65-CONFIGURATION-NOT-CODE.md) 🟢 · [The BFSI control library, the navigator, and a dark cockpit](docs/securax/66-BFSI-CONTROL-LIBRARY-AND-NAVIGATOR.md) 🟢 · [Risk register, the NSCS audit baseline and NCIIPC CII guidance, all linked](docs/securax/67-RISK-REGISTER-NSCS-NCIIPC.md) 🟡 · [CI at agent scale: prove what changed, not everything, every time](docs/securax/68-CI-AT-AGENT-SCALE.md) 🟡 · [Human-in-command for AI, and what the October 2026 fintech signals mean for SecuRAX](docs/securax/69-HUMAN-IN-COMMAND-AND-FINTECH-SIGNALS.md) 🟢 · [What national strategies teach a personal estate (80/20)](docs/securax/70-LESSONS-FROM-NATIONAL-STRATEGIES.md) 🟢 · [What 26 national strategies agree on, and what SecuRAX does about it](docs/securax/71-WHAT-26-NATIONAL-STRATEGIES-AGREE-ON.md) 🟡 · [Sync and backup without the laptop](docs/securax/72-SYNC-AND-BACKUP-WITHOUT-THE-LAPTOP.md) 🟡 · [Finish setting up, and publish the site](docs/securax/73-FINISH-SETTING-UP-AND-PUBLISH-THE-SITE.md) 🟡
+
+🟢 built · 🟡 partly built · 🔴 not built yet ([what the lights mean](docs/index.md#the-status-lights))
+<!-- readme:docs:end -->

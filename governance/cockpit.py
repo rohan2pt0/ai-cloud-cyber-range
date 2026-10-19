@@ -777,12 +777,35 @@ def render(c: Collector, maps: dict, hist: list[dict], ai: str, now: float, targ
         late = len(_rm.overdue(_rm.load()))
     except Exception:  # noqa: BLE001 - the register is optional
         late = 0
+    try:                                                          # a person stopped AI (./securax ai stop): always lit while it lasts
+        _ctl = json.loads((ROOT / "local" / "compose" / "controls" / "ai-control.json").read_text("utf-8"))
+        stopped_ai = (["all AI"] if _ctl.get("all") else []) + sorted(_ctl.get("models") or {})
+    except (OSError, ValueError):
+        stopped_ai = []
+    near = []
+    try:                                                          # AI allowance: lit only when a caller is at the 80% line or over
+        import urllib.request
+        with urllib.request.urlopen("http://127.0.0.1:8080/v1/budget", timeout=3) as r:
+            rep = json.loads(r.read())
+        for row in rep.get("callers", []):                       # not `c`: that name is the cockpit's config in this function
+            pct = max((row["day_used"] / row["day_limit"]) if row["day_limit"] else 0,
+                      (row["month_used"] / row["month_limit"]) if row["month_limit"] else 0)
+            if pct >= rep.get("warn_at", 0.8):
+                near.append(pct)
+    except Exception:  # noqa: BLE001 - the gateway may be off; then there is nothing to show
+        pass
     lamps = [("warn" if reds else "ok", len(reds), "Warnings: act today"), ("caut" if ambs else "ok", len(ambs), "Cautions: schedule"),
-             ("ok", sum(1 for m in ms if m["status"] == "green"), "Nominal")] + ([("warn", late, "Risk treatments overdue")] if late else [])
+             ("ok", sum(1 for m in ms if m["status"] == "green"), "Nominal")] + ([("warn", late, "Risk treatments overdue")] if late else []) \
+        + ([("warn", len(stopped_ai), "AI stopped by a person: " + ", ".join(stopped_ai))] if stopped_ai else []) \
+        + ([("warn" if max(near) >= 1 else "caut", len(near), "AI allowance used up or near it: ./securax ai budget")] if near else [])
     h.append("<div class='card'><h2>Master caution</h2><div class='annun'>" + "".join(
         f"<div class='lamp {k}'><b>{v}</b>{E(t)}</div>" for k, v, t in lamps)
         + ("<a class='lamp nav' href='/portal/navigator.html'><b>Controls</b>BFSI control navigator</a>" if nav else
-           "<div class='lamp'><b>Controls</b>Import the BFSI workbook: <code>./securax controls import FILE.xlsx</code></div>") + "</div></div>")
+           "<div class='lamp'><b>Controls</b>Save the BFSI workbook in your Downloads folder and run <code>./securax go</code>: it finds and imports it by itself</div>") + "</div></div>")
+    try:                                                          # what is left to set up, with its steps (./securax finish)
+        h.append("<div id='finish'></div>" + _load("securax_finish", "governance/finish.py").html_card())
+    except Exception:  # noqa: BLE001 - the checklist is a convenience; it must never fail the cockpit
+        pass
     abnormal = [m for m in ms if m["status"] in ("red", "amber")]
     nominal, unmeasured = [m for m in ms if m["status"] == "green"], [m for m in ms if m["status"] not in ("red", "amber", "green")]
     h.append("<div class='card'><h2>Vital signs</h2><div class='muted'>Only what is not nominal is shown. KPI = is it doing its job. KRI = is risk building up.</div>"
@@ -915,6 +938,12 @@ def main(argv: list[str] | None = None) -> int:
     try:                                                                      # the Guiding Map's "From your estate" lines follow every cockpit refresh
         _load("securax_lifefeed", "governance/lifefeed.py").write(out.parent / "estate-feed.json", cockpit=out.with_suffix(".json"))
     except Exception:  # noqa: BLE001 - the feed is a convenience; it must never fail the cockpit
+        pass
+    try:                                                                      # the Command Center's "Finish setting up" line
+        st = _load("securax_finish", "governance/finish.py").status()
+        left = [x for x in st if not x["done"]]
+        atomic_write(out.parent / "setup.json", json.dumps({"done": len(st) - len(left), "total": len(st), "next": left[0]["title"] if left else ""}))
+    except Exception:  # noqa: BLE001
         pass
     if a.json:
         print(json.dumps(data, indent=1))

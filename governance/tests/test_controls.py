@@ -120,10 +120,51 @@ def test_shipped_packs_interlink_nscs_and_nciipc_without_copying_their_text():
         assert all(len(str(v)) < 120 for c in p["citations"].values() for v in c.values())   # references, never passages
 
 
-def test_heat_map_falls_back_to_open_risks_from_the_register(tmp_path):
+def test_heat_map_plots_open_risks_from_the_register_alongside_controls(tmp_path):
     data, _ = lib(tmp_path)
     for c in data["controls"]:
         c["assessment"] = {}
-    risks = [{"likelihood": 5, "impact": 4, "status": "Open"}, {"likelihood": 2, "impact": 2, "status": "Closed"}]
-    html_out = ct.heatmap(data, ct.CEILING, risks)
-    assert "open risks in your risk register" in html_out and ">1<" in html_out
+    risks = [{"id": "R-9", "likelihood": 5, "impact": 4, "status": "Open"}, {"likelihood": 2, "impact": 2, "status": "Closed"}]
+    html_out = ct.heatmap(data, ct.CEILING, risks, {})
+    assert "1 open risks in your risk register" in html_out and "R-9" in html_out and "3 estimated by SecuRAX" in html_out
+
+
+def test_heat_map_estimates_from_tier_and_evidence_and_your_score_wins(tmp_path):
+    data, _ = lib(tmp_path)
+    gov, iam, aud = data["controls"]
+    for c in data["controls"]:
+        c["assessment"] = {}
+    sx = {iam["id"]: {"status": "proven"}}
+    assert ct.risk_score(iam, ct.CEILING, sx)[:2] == (1, ct.IMPACT_BY_TIER[iam["tier"]])        # proven: unlikely to fail
+    assert ct.risk_score(aud, ct.CEILING, sx)[0] == 4                                            # not evidenced: cautious
+    gov["assessment"] = {"likelihood": 2, "impact": 3}
+    assert ct.risk_score(gov, ct.CEILING, sx) == (2, 3, "you")
+    out = ct.heatmap(data, ct.CEILING, [], sx)
+    assert "1 controls you scored" in out and "2 estimated by SecuRAX" in out and "No likelihood" not in out
+
+
+def test_every_grid_cell_opens_a_plain_language_panel(tmp_path, monkeypatch):
+    data, p = lib(tmp_path)
+    monkeypatch.setattr(ct, "SXMAP", ROOT / "governance" / "controls" / "securax-map.json")
+    pages = ct.write_navigator(ct.load(p, tmp_path / "none"), tmp_path / "portal" / "navigator.html")
+    t = pages[0].read_text()
+    for c in data["controls"]:
+        assert f"href='#c-{c['id']}'" in t and f"id='c-{c['id']}'" in t
+    assert "Click a box" in t and "estimated by SecuRAX" in t and "How to fix" in t and ".det:target" in t and "the outer ring is 5" in t
+
+
+
+def test_import_with_a_placeholder_or_wrong_path_finds_the_workbook_itself(tmp_path, monkeypatch, capsys):
+    dl = tmp_path / "Downloads"
+    dl.mkdir()
+    make_xlsx(dl / "BFSI gap assessment v1.xlsx")
+    (dl / "other.xlsx").write_bytes((dl / "BFSI gap assessment v1.xlsx").read_bytes().replace(b"Master Catalogue", b"Something Else!!"))
+    monkeypatch.setattr(ct, "search_dirs", lambda *a, **k: [dl])
+    monkeypatch.setattr(ct, "LIB", tmp_path / "vault" / "library.json")
+    monkeypatch.setattr(ct, "OUT", tmp_path / "portal" / "navigator.html")
+    monkeypatch.setattr(ct, "ROOT", tmp_path)
+    assert ct.main(["import", "FILE.xlsx", "--yes"]) == 0                       # the literal hint from the old cockpit text
+    out = capsys.readouterr().out
+    assert "No file at FILE.xlsx" in out and "3 controls" in out and ct.LIB.exists()
+    assert ct.main(["auto"]) == 0 and "library current" in capsys.readouterr().out   # nothing newer: nothing re-imported
+    assert ct.main(["import", str(dl / "other.xlsx"), "--yes"]) == 0 and "is not the control-library workbook" in capsys.readouterr().out

@@ -119,6 +119,32 @@ Paste that tight brief into Claude/Sonnet. Because it's scoped and carries the d
 one focused frontier call replaces many — that's how your weekly limit stops being a SPOF. Or run
 `./securax enhance "…"` to have your **local** engineer persona draft it first, free.
 
+## Which tier gets the task (the 80/20 card)
+
+Decide by the task, not by habit. Default to the cheap tier and escalate only on evidence.
+
+| Send it to | When the task is | Examples |
+|---|---|---|
+| **Local or cheap model:** `./securax autobuild "…"` | One area, a clear done-test, and a pattern that already exists in the repo | A new pack or regmap row, a doc, a CLI subcommand like an existing one, a fixture, a test for existing code, a UI copy fix, a dependency bump |
+| **OpenCode, interactive:** `./securax opencode` | Several files, but the design is already decided | Wiring a feature through CLI, docs and tests; a refactor inside one module |
+| **Claude, with a brief:** `./securax escalate "…"`, then paste `escalation-brief.md` | Security design, crypto, auth, sync or merge logic, a change across the estate, a red that three autobuild tries could not fix, or reading regulations into controls | New gateway rail, the OneDrive sync merge, a regulator map from a new circular |
+
+**Three habits keep Claude to about a fifth of the work:**
+
+1. **Escalate with a brief, not a chat.**
+   - `escalate` packs the task, the diff and the rules.
+   - One scoped call replaces many exploratory ones.
+2. **Let the cheap tier do the follow-through.**
+   - When Claude has designed something, hand the docs, changelog, tests for edge cases and small fixes to `autobuild`.
+   - The gate (`verify` + `forge gate`) catches what a weaker model gets wrong.
+3. **Measure, don't guess.**
+   - `./securax autobench` scores each model on this repo's own tasks.
+   - Promote a model to default only when its pass rate holds up (doc 45).
+
+> **Prices checked on 19 Oct 2026; confirm before you buy, as they change often.**
+> - **OpenCode Go:** US$5 for the first month, then US$10 a month. It has usage caps per 5 hours, per week and per month, and it offers open models (DeepSeek, Qwen, Kimi, GLM and others), not Claude ([docs](https://opencode.ai/docs/go/)).
+> - **Claude Pro in India:** about ₹2,399 a month billed monthly, or about ₹2,000 a month billed yearly, GST included, according to press reports from July 2026 ([Business Today](https://www.businesstoday.in/technology/news/story/anthropic-introduces-india-pricing-for-claude-ai-plans-pricing-starts-at-542742-2026-07-14)). Check Anthropic's own pricing page before you rely on these figures.
+
 ## Why this preserves the rigor you care about
 - **Tests are mandatory** (BUILD-CONTRACT step 4; `--auto-test`): no change lands red.
 - **Security is non-negotiable** (hard rules): a model can't weaken a rail or commit a secret and pass
