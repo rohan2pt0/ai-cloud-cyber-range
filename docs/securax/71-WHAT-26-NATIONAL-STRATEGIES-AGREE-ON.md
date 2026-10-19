@@ -61,7 +61,7 @@ Politics, national budgets, and region- or country-specific policy are left out.
 | # | Change | Why | Needs from you |
 |---|---|---|---|
 | 1 | **Life OS: key results from X to Y by a date; drop, re-scope or recommit after 6 idle weeks; strengths first** | pattern 1 and 6, seven sources | a yes (it changes the app you use daily) |
-| 2 | **Automated off-site encrypted copy** ("data embassy") and a quarterly restore drill from it | pattern 3; closes SEBI CSCRF RC.RP.S1/S4 | where it goes: an India-region bucket (pay-as-you-go, about the price of a coffee a month at your size) or an external disk you plug in weekly |
+| 2 | **Automated off-site encrypted copy** ("data embassy") and a quarterly restore drill from it | pattern 3; closes SEBI CSCRF RC.RP.S1/S4 | where it goes: an India-region cloud bucket (pay-as-you-go; current prices to be checked before you choose) or an external disk you plug in weekly |
 | 3 | **"Who touched my data" view** in the Life OS, from the gateway and sync logs | pattern 4; the highest-trust feature Estonia has | a yes |
 | 4 | **"Not exercised in 90 days" lamp** for backups, restores, game days and the kill switch | pattern 2 | none |
 | 5 | **Recorded gate decision** (pass, hold or kill, with the lesson) at each lifecycle promotion | pattern 6 | none |
