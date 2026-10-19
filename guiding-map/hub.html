@@ -38,6 +38,7 @@
   </header>
   <div class="sub">Everything in one place. Click a card — you never need to type a URL.
     <span id="secstatus" style="margin-left:8px"></span></div>
+  <a id="finish" class="note" href="/portal/cockpit.html#finish" style="display:none;text-decoration:none;color:inherit;margin-top:12px"></a>
 
   <h2>Start here — these work out of the box</h2>
   <div class="grid" id="apps"></div>
@@ -53,8 +54,9 @@
     <code>./securax phones --apply</code> publishes it to your own devices only.<br>
     <b>3. On the phone/iPad</b> open <code id="lanurl">https://&lt;laptop&gt;.&lt;tailnet&gt;.ts.net</code>, then
     <b>Add to Home Screen</b> (iPhone/iPad: Share → Add to Home Screen; Android: Chrome menu → Install app).<br>
-    <b>4. Keep devices in sync:</b> Guiding Map → <b>Ops → Cross-device sync</b>. The URL is filled in; use the same token
-    on every device (<code>grep '^SYNC_TOKENS=' local/compose/.env</code>) and the user name <code>me</code>.
+    <b>4. Keep devices in sync:</b> run <code>./securax go</code> on the laptop (it opens a one-click sync link) and
+    <code>./securax sync-link</code> for the phone link. To stay in sync with the laptop <b>off</b>, turn on
+    <b>Ops → Connections → OneDrive sync</b> in the app on each device, with the same passphrase (doc 72).
     <span class="pill">sovereign</span> Your data stays on your box.
   </div>
 
@@ -94,6 +96,13 @@
 </div>
 
 <script>
+// "Finish setting up": written by every cockpit refresh (./securax finish has the same list with its steps).
+fetch("/portal/setup.json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null;}).then(function(j){
+  var el=document.getElementById("finish"); if(!j||!el||j.done>=j.total)return;
+  el.innerHTML="<b>Finish setting up · "+j.done+" of "+j.total+" done</b> — next: "+String(j.next).replace(/[<>&]/g,"")+" <span style='white-space:nowrap'>(steps →)</span>";
+  el.style.display="block";
+}).catch(function(){});
+
 (function(){
   var H = location.hostname, started = Date.now();
   // Served over HTTPS by the estate's TLS edge? Then every service lives under the same domain BY NAME (hub.<domain>, chat.<domain> ...):

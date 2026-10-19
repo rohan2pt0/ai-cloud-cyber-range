@@ -152,3 +152,19 @@ def test_every_grid_cell_opens_a_plain_language_panel(tmp_path, monkeypatch):
         assert f"href='#c-{c['id']}'" in t and f"id='c-{c['id']}'" in t
     assert "Click a box" in t and "estimated by SecuRAX" in t and "How to fix" in t and ".det:target" in t and "the outer ring is 5" in t
 
+
+
+def test_import_with_a_placeholder_or_wrong_path_finds_the_workbook_itself(tmp_path, monkeypatch, capsys):
+    dl = tmp_path / "Downloads"
+    dl.mkdir()
+    make_xlsx(dl / "BFSI gap assessment v1.xlsx")
+    (dl / "other.xlsx").write_bytes((dl / "BFSI gap assessment v1.xlsx").read_bytes().replace(b"Master Catalogue", b"Something Else!!"))
+    monkeypatch.setattr(ct, "search_dirs", lambda *a, **k: [dl])
+    monkeypatch.setattr(ct, "LIB", tmp_path / "vault" / "library.json")
+    monkeypatch.setattr(ct, "OUT", tmp_path / "portal" / "navigator.html")
+    monkeypatch.setattr(ct, "ROOT", tmp_path)
+    assert ct.main(["import", "FILE.xlsx", "--yes"]) == 0                       # the literal hint from the old cockpit text
+    out = capsys.readouterr().out
+    assert "No file at FILE.xlsx" in out and "3 controls" in out and ct.LIB.exists()
+    assert ct.main(["auto"]) == 0 and "library current" in capsys.readouterr().out   # nothing newer: nothing re-imported
+    assert ct.main(["import", str(dl / "other.xlsx"), "--yes"]) == 0 and "is not the control-library workbook" in capsys.readouterr().out

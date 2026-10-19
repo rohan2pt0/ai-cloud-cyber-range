@@ -187,7 +187,7 @@ def inventory(tls_dir: pathlib.Path | None = None, probe_docker: bool = True) ->
         note=(("Symmetric encryption only (no public-key step), so it is quantum-safe; its strength is the strength of your key file / passphrase. " if protected else
                "A copy that leaves the machine (cloud drive, USB) can be read by whoever holds it, and recorded copies can be read later. ") + state + "."),
         action=("Keep the key file OFF this machine (USB / password manager) and practise a restore." if protected else
-                "./securax crypto keygen ~/securax-backup.key, copy it off this machine, then set SECURAX_BACKUP_KEYFILE=<that path> in local/compose/.env (or use  ./securax backup --passphrase)."),
+                "./securax protect  (one guided step: makes the key, saves a second copy off this machine and switches encryption on)."),
         evidence=["cmd:backup", "journey:backup_encrypted"], verified=("newest backup: " + latest) if latest else "no backup taken yet")
 
     # 9. things we depend on but do not control

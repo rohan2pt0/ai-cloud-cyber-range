@@ -2,7 +2,9 @@
 """The BFSI control library: every RBI / SEBI / IRDAI / IFSCA / NCIIPC / CERT-In / DPDP obligation as one set of controls,
 with per-class applicability, citations, evidence and audit tests, and a visual navigator for it.
 
-    ./securax controls import [WORKBOOK.xlsx]  (no path: finds it in Downloads/Documents) read the gap-assessment workbook into vault/controls/library.json (private)
+    ./securax controls import [WORKBOOK.xlsx]  read the gap-assessment workbook into vault/controls/library.json (private). No path, a
+                                               wrong one or a folder: it finds the workbook in Downloads/Documents/Desktop/vault/inbox
+    ./securax controls auto                    import it only if a newer workbook is there (./securax go runs this)
     ./securax controls profile [CLASS]         what applies: the CEILING (strictest of all 22 classes) or one class
     ./securax controls dominance               which classes are fully covered by complying with SCB/PSB (and the exceptions)
     ./securax controls navigator               write portal/navigator.html (+ one page per class): grid, radar, heat map
@@ -402,7 +404,7 @@ def heatmap(data: dict, cls: str, risks: list | None = None, sx: dict | None = N
             "Score = likelihood × impact: 20–25 critical (act within 30 days), 12–19 high (90 days), 6–11 medium, 1–5 low.</p>"
             "<p class='muted'><b>How SecuRAX estimates:</b> impact from the control's tier (Critical 5, High 4, Medium 3, Low 2); likelihood from the evidence "
             "(proven or at your target 1, partly 3, not evidenced 4). <b>To set your own:</b> fill the yellow <b>Likelihood</b> and <b>Impact</b> cells "
-            "in the workbook, then <code>./securax controls import WORKBOOK.xlsx</code>. Your score always replaces the estimate.</p>")
+            "in the workbook, save it in Downloads, then run <code>./securax go</code> (or <code>./securax controls import</code>): it finds and imports it. Your score always replaces the estimate.</p>")
 
 
 def regulator_bars(data: dict, cls: str, sx: dict) -> str:
@@ -550,18 +552,35 @@ def write_navigator(data: dict, out: pathlib.Path | None = None) -> list[pathlib
 def _need() -> dict:
     data = load()
     if not data:
-        raise SystemExit("No control library yet. Import your workbook first:  ./securax controls import WORKBOOK.xlsx")
+        raise SystemExit("No control library yet. Save the workbook in Downloads, then run:  ./securax controls import   (it finds the file itself)")
     return data
 
 
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
     cmd = argv[0] if argv else "help"
-    if cmd == "import" and len(argv) <= 2:
-        if len(argv) == 2:
-            path = pathlib.Path(argv[1]).expanduser()
-        else:
-            got = confirm([f for f in find_xlsx() if is_library_workbook(f)][:1], "control-library workbook")
+    if cmd in ("import", "auto"):
+        # No path, a placeholder like FILE.xlsx, a folder, or a file that is not the workbook: find the workbook instead of failing.
+        args = [a for a in argv[1:] if a not in ("--yes", "-y")]
+        yes = cmd == "auto" or len(args) < len(argv) - 1
+        path, found = (pathlib.Path(" ".join(args)).expanduser() if args else None), []
+        if path and path.is_file() and not is_library_workbook(path):
+            print(f"{path.name} is not the control-library workbook (it has no 'Master Catalogue' sheet). Looking for the right one…")
+            path = None
+        elif path and not path.is_file():
+            if not path.is_dir():
+                print(f"No file at {path}. Looking in Downloads, Documents, Desktop and vault/inbox instead…")
+            found = [f for f in find_xlsx([path] if path.is_dir() else None) if is_library_workbook(f)]
+            path = None
+        if path is None:
+            found = found or [f for f in find_xlsx() if is_library_workbook(f)]
+            if cmd == "auto":                                   # ./securax go: import only a workbook newer than the library
+                if not found or (LIB.exists() and found[0].stat().st_mtime <= LIB.stat().st_mtime):
+                    print("library current" if LIB.exists() else "no workbook found")
+                    return 0
+                got = found[:1]
+            else:
+                got = found[:1] if (yes and found) else confirm(found[:1], "control-library workbook")
             if not got:
                 return 1
             path = got[0]

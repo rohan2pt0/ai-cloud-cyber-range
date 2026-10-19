@@ -145,7 +145,7 @@ backup_key(){ _kf="${3:-}"; [ -z "$_kf" ] && [ "${FORCE_PROMPT:-0}" != 1 ] && _k
   if [ -n "$_kf" ]; then _kf="${_kf/#\~/$HOME}"
     [ -s "$_kf" ] || { C "Backup key file not found (or empty): $_kf — plug in the USB stick / fix SECURAX_BACKUP_KEYFILE in .env."; return 1; }
     BKEY="$_kf"; return 0; fi
-  [ -r /dev/tty ] || { C "No key file configured and no terminal to ask for a passphrase. Make a key file:  ./securax crypto keygen ~/securax-backup.key"; return 1; }
+  [ -r /dev/tty ] || { C "No key file configured and no terminal to ask for a passphrase. Protect backups in one guided step:  ./securax protect"; return 1; }
   printf 'Backup passphrase (at least 12 characters): ' >&2; read -rs _p1 < /dev/tty; echo >&2
   [ "${#_p1}" -ge 12 ] || { C "Too short: the backup holds your API keys. Use 12+ characters."; return 1; }
   if [ "$2" = new ]; then printf 'Again: ' >&2; read -rs _p2 < /dev/tty; echo >&2; [ "$_p1" = "$_p2" ] || { C "The two passphrases differ — nothing written."; return 1; }; fi
@@ -340,6 +340,13 @@ case "$cmd" in
     else echo "  (phone alerts: optional →  ./securax notify setup)"; fi
     # 6. Regulator watch baseline and a first backup, once.
     if ! on regwatch; then off regwatch; else [ -f "$ROOT/vault/regwatch.json" ] || { python3 "$ROOT/governance/regwatch.py" fetch --quiet >/dev/null 2>&1 && ok "Regulator watch started (RBI, SEBI)"; }; fi
+    # 6b. The control library: a workbook saved in Downloads (or vault/inbox) is imported by itself; no file name to type.
+    _CL="$(python3 "$ROOT/governance/controls.py" auto 2>/dev/null | tail -1)"
+    case "$_CL" in
+      "✔ navigator"*|"library current") ok "Control library and navigator current" ;;
+      "no workbook found") echo "  (control library: optional. Save the BFSI workbook in Downloads and run  ./securax go  again)" ;;
+      *) fix "Control library: the workbook could not be read → ./securax controls import" ;;
+    esac
     BDIR="$(ev SECURAX_BACKUP_DIR "$ROOT/backups")"
     if ! on backup; then off backup
     elif [ -n "$(find "$BDIR" -maxdepth 1 -name 'securax-*.tar.gz*' -mtime -7 2>/dev/null | head -1)" ]; then ok "Backup from the last 7 days on disk"
@@ -859,16 +866,21 @@ EOF2
     #   ./securax config show | check | enabled <name> | render FILE...
     shift; exec python3 "$ROOT/governance/config.py" "$@"
     ;;
+  finish)
+    # Finish setting up, one step at a time: every optional part, whether it is done, and its exact steps (doc 73).
+    #   ./securax finish | finish ITEM | finish done ITEM | finish undo ITEM
+    shift; exec python3 "$ROOT/governance/finish.py" "$@"
+    ;;
   controls)
     # The BFSI control library (RBI, SEBI, IRDAI, IFSCA, NCIIPC, CERT-In, DPDP): import the gap-assessment workbook (kept private in
     # vault/), profiles per regulated-entity class or the strictest-of-all ceiling, and the visual navigator next to the cockpit.
-    #   ./securax controls import FILE.xlsx | profile [CLASS] | dominance | navigator | gaps [CLASS]
+    #   ./securax controls import [FILE.xlsx] | auto | profile [CLASS] | dominance | navigator | gaps [CLASS]   (no file: it finds it)
     shift; exec python3 "$ROOT/governance/controls.py" "$@"
     ;;
   risks)
     # The risk register: V/T/R registers and risk treatment plans (imported by column name, kept private in vault/), linked to the
     # control library so the navigator ranks the controls that treat your highest open risks; overdue treatments light the cockpit.
-    #   ./securax risks import FILE.xlsx | list [--open] | overdue | cii
+    #   ./securax risks import [FILE.xlsx] | list [--open] | overdue | cii   (no file: it finds it)
     shift; exec python3 "$ROOT/governance/risks.py" "$@"
     ;;
   ai)
@@ -1092,7 +1104,7 @@ EOF2
       _d="${_cand[$((_n-1))]:-}"; [ -n "$_d" ] || { C "No such number."; exit 1; }
       skv "$ENVF" SECURAX_OFFSITE_DIR "$_d/SecuRAX-backups" && mkdir -p "$_d/SecuRAX-backups"
       C "✔ Off-site folder: $_d/SecuRAX-backups. Every ENCRYPTED backup is copied there from now on (the weekly backup routine does it by itself)."
-      [ -n "$(ev SECURAX_BACKUP_KEYFILE)" ] || C "  ⚠ Backups are not encrypted yet, so nothing will be copied. Once:  ./securax crypto keygen ~/securax-backup.key  and set SECURAX_BACKUP_KEYFILE in .env"
+      [ -n "$(ev SECURAX_BACKUP_KEYFILE)" ] || C "  ⚠ Backups are not encrypted yet, so nothing will be copied. Once:  ./securax protect  (one guided step)"
       exit 0
     fi
     if [ "${2:-}" = offsite-dir ]; then [ -n "${3:-}" ] || { echo "usage: ./securax backup offsite-dir FOLDER"; exit 2; }
@@ -1148,14 +1160,14 @@ EOF2
     chmod 600 "$OUTF" 2>/dev/null || true
     { ls -1t "$DEST"/securax-*.tar.gz "$DEST"/securax-*.tar.gz.gpg 2>/dev/null || true; } | tail -n +$(( $(ev BACKUP_KEEP 7) + 1 )) | xargs -r rm -f   # (|| true: a glob with no match makes ls fail, and pipefail would end the script before the success line)
     if [ "$ENCRYPT" = 1 ]; then C "✔ Backup saved, ENCRYPTED (AES-256) & verified: $OUTF ($(du -h "$OUTF" | cut -f1)). Restore needs the same key file / passphrase: ./securax restore <file>"
-    else C "✔ Backup saved & verified: $OUTF ($(du -h "$OUTF" | cut -f1)) — contains your API keys, NOT encrypted; keep it private. To encrypt:  ./securax crypto keygen ~/securax-backup.key"; fi
+    else C "✔ Backup saved & verified: $OUTF ($(du -h "$OUTF" | cut -f1)) — contains your API keys, NOT encrypted; keep it private. To encrypt every backup from now on:  ./securax protect  (one guided step)"; fi
     OFF="$(ev SECURAX_OFFSITE_DIR)"
     if [ -n "$OFF" ] && [ "$ENCRYPT" = 1 ]; then
       if mkdir -p "$OFF" && cp "$OUTF" "$OFF/" && cmp -s "$OUTF" "$OFF/$(basename "$OUTF")"; then
         { ls -1t "$OFF"/securax-*.tar.gz.gpg 2>/dev/null || true; } | tail -n +$(( $(ev OFFSITE_KEEP 12) + 1 )) | xargs -r rm -f
         C "✔ Off-site copy: $OFF (your OneDrive / cloud client uploads it; the newest $(ev OFFSITE_KEEP 12) are kept)"
       else C "⚠ Could not write the off-site copy to $OFF (the local backup is fine). Is the folder still there?"; fi
-    elif [ -n "$OFF" ]; then C "⚠ Off-site copy skipped: only ENCRYPTED backups leave this machine.  ./securax crypto keygen ~/securax-backup.key  then set SECURAX_BACKUP_KEYFILE"; fi
+    elif [ -n "$OFF" ]; then C "⚠ Off-site copy skipped: only ENCRYPTED backups leave this machine.  ./securax protect  (one guided step)"; fi
     ;;
   restore)
     # ./securax restore FILE [--yes] — replaces current data with the backup (current .env is kept as .env.pre-restore).
@@ -1574,6 +1586,7 @@ REGULATORY & EVIDENCE (any regulator: RBI, SEBI, CERT-In, IRDAI, DPDP, others as
   comply [rbi|cscrf|mit-ai-risk|nist-ai-600-1|pqc]  requirement-by-requirement gap view     ccsp   CCSP practice map
   evidence       audit pack (checksummed)             incident ...   reporting clock: open, due, draft, file, seal, rollup
   risks ...      risk register + treatment plans (V/T/R), linked to controls; overdue treatments; CII self-check
+  finish         what is left to set up, with the steps (also on the Command Center)
   controls ...   BFSI control library: import the workbook, profiles per RE class, navigator (grid, radar, heat map)
   config ...     show / check brand.env and integrations.txt (nothing brand-specific is hardwired)
   postmortem ... blameless postmortem after an outage; tracks the fix-it actions to done

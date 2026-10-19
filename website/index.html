@@ -25,7 +25,11 @@ header.nav{background:rgba(11,27,51,.96);backdrop-filter:saturate(1.4) blur(8px)
 .brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;text-decoration:none}
 .brand small{font-weight:600;color:#b9c6dd;font-size:12px}
 .nav ul{display:flex;gap:22px;list-style:none;margin-left:auto}
-.nav ul a{text-decoration:none;color:#d7e0ef;font-size:15px}
+.nav ul a{text-decoration:none;color:#d7e0ef;font-size:15px;white-space:nowrap}
+.nav .btn,.brand span{white-space:nowrap}
+.menu{display:none;position:relative}.menu summary{list-style:none;cursor:pointer;border:1px solid rgba(255,255,255,.35);border-radius:10px;padding:7px 12px;font-weight:700;font-size:14px}
+.menu summary::-webkit-details-marker{display:none}.menu ul{display:grid!important;position:absolute;right:0;top:46px;background:var(--navy);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:12px 16px;gap:12px;min-width:200px;box-shadow:0 18px 44px rgba(0,0,0,.35)}
+.deploy{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.deploy .card b{display:block;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:var(--gold2);margin-bottom:8px}
 .nav ul a:hover{color:#fff}
 .btn{display:inline-block;border-radius:10px;padding:13px 22px;font-weight:700;text-decoration:none;font-size:15px;border:2px solid transparent;transition:transform .15s,background .15s}
 .btn:hover{transform:translateY(-1px)}
@@ -126,7 +130,9 @@ footer a:hover{color:#fff}
   .tour.rev .copy{order:0}
   .grid3,.tiers,.steps{grid-template-columns:1fr 1fr}
   .proof .wrap{grid-template-columns:1fr 1fr}
-  .nav ul{display:none}
+  .nav .wrap>ul{display:none}
+  .menu{display:block;margin-left:auto}
+  .deploy{grid-template-columns:1fr}
   footer .cols{grid-template-columns:1fr 1fr}
   .micro{padding-bottom:30px}
   .f1{left:0}.f2{right:0}
@@ -136,7 +142,8 @@ footer a:hover{color:#fff}
   section{padding:60px 0}
   .hero{padding-top:52px}
   .brand small{display:none}
-  .nav .btn{padding:8px 14px;font-size:14px;white-space:nowrap;margin-left:auto}
+  .nav .wrap>.btn{display:none}
+  .nav .wrap{gap:10px}
   .phone{width:250px}.phone .screen{height:500px}
   .float{max-width:200px;font-size:12.5px}
   .tour{margin-bottom:64px}
@@ -173,6 +180,16 @@ footer a:hover{color:#fff}
       <li><a href="assess/">AI-risk check</a></li>
       <li><a href="docs/">Docs</a></li>
     </ul>
+    <details class="menu"><summary aria-label="Menu">Menu</summary><ul>
+      <li><a href="#how">How it works</a></li>
+      <li><a href="#capabilities">Capabilities</a></li>
+      <li><a href="#deploy">Deploy your way</a></li>
+      <li><a href="#compliance">Compliance</a></li>
+      <li><a href="#pricing">Pricing</a></li>
+      <li><a href="assess/">AI-risk check</a></li>
+      <li><a href="docs/">Docs</a></li>
+      <li><a href="mailto:{{CONTACT_EMAIL}}?subject=SecuRAX%20Shield%20design%20partner">Become a design partner</a></li>
+    </ul></details>
     <a class="btn btn-gold" href="mailto:{{CONTACT_EMAIL}}?subject=SecuRAX%20Shield%20design%20partner">Become a design partner</a>
   </div>
 </header>
@@ -272,6 +289,19 @@ footer a:hover{color:#fff}
     <div><b>&lt;1 s</b><span>from a cold start to the first blocked attack; ~4 ms per check, measured on every build</span></div>
   </div>
 </div>
+
+<section class="alt" id="deploy">
+  <div class="wrap">
+    <div class="center"><span class="kicker">Deploy your way</span>
+      <h2>Your servers, your cloud, or no internet at all.</h2>
+      <p class="sub">The same rails and the same audit trail wherever it runs. You decide where your data lives.</p></div>
+    <div class="deploy">
+      <div class="card"><b>On your own hardware</b><h3>A server or a laptop in your office</h3><p>One command starts it. Confidential work goes to a model running on your own machine, so it never leaves the building.</p></div>
+      <div class="card"><b>Your cloud, your region</b><h3>AWS, Google Cloud or Azure</h3><p>Terraform modules place it in the region you choose, such as Mumbai or Hyderabad, so you can meet data-localisation rules.</p></div>
+      <div class="card"><b>Fully offline</b><h3>No outbound connection</h3><p>Use local models only. Every request is still checked, redacted and logged, and evidence packs still build.</p></div>
+    </div>
+  </div>
+</section>
 
 <section id="compliance">
   <div class="wrap center">
