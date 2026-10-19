@@ -75,6 +75,14 @@ as part of its PR, in [Keep a Changelog](https://keepachangelog.com) format
 5. The **release** workflow (`.github/workflows/release.yml`) runs the full test suite, builds the
    container images, generates the SBOM, and publishes a **GitHub Release** whose notes are taken
    from that version's `CHANGELOG.md` section.
+   It attaches:
+   - the source as `.tar.gz` and `.zip`
+   - `install.sh` and `install.ps1`, with the repository's name written in
+   - `SHA256SUMS`, which `install.sh --offline` checks
+   - the SBOM
+   - a signed build provenance for every file (`gh attestation verify FILE --repo OWNER/REPO`)
+
+   Doc 75 covers installing and the channels.
 
 Tags are immutable; a mistake is fixed by a new patch release, never by moving a tag.
 

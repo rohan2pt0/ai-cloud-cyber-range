@@ -9,6 +9,41 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **`./securax findings`** (doc 76, after DefectDojo): one register for scan, SARIF and VAPT-workbook findings.
+  - **One record per problem:** duplicates are merged.
+  - **Fix-by dates:** critical 7 days, high 30, medium 90, low 180. A known-exploited CVE counts as critical.
+  - **Re-scans:** they close what is gone and reopen what came back.
+  - **Risk acceptance:** time-boxed, at most a year.
+  - **Where it shows:** `./securax scan` fills it, and a cockpit reading turns red when something is overdue, which the phone alert sees.
+- **`./securax repairs`** (doc 76, after Home Assistant): every red or amber reading, overdue finding, ending acceptance, overdue risk treatment and routine to fix, in one list, each with its command. The Command Center shows the count.
+- **`bash install.sh --restore BACKUP`** (doc 76): a new machine is installed and restored in one step. The backup is checked first.
+- **Life OS** (doc 76, after Loop):
+  - **Home-screen shortcuts:** Move, Mind, Family and Note. They tick, never untick.
+  - **Export for Excel (CSV):** one row per day.
+- **Fixed:** `./securax backup` did not include `vault/` (controls, risks, findings, setup marks), so a restored machine started blank. Backups now carry it. A restore keeps the vault already there aside, never overwriting it.
+- **The Life OS has a new look** (doc 73):
+  - **The header:** one quiet line with a ⋯ menu.
+  - **Today:** opens with a greeting and a progress ring. The daily three are big keyboard-reachable tiles.
+  - **Text and cards:** 15 px body text, softer cards, and gold only for the main action. Contrast passes AA in both themes.
+- **Report a problem** (Life OS, ⋯ menu): the details a helper needs, with nothing personal in them. You copy them, and a link opens the prefilled bug form. The repository comes from `brand.env` through `build.json`.
+- **`./securax support-packet`** (doc 75): a Mattermost-style zip in `vault/support/`. It holds the versions, health, containers and routine runs, the setting names but no values, and the recent log. E-mails, keys, long numbers and home paths are scrubbed out.
+- **Installers** (doc 75):
+  - `install.sh` for Linux, macOS and WSL: rolling, `--stable`, `--version`, and `--offline` with a checksum check.
+  - `install.ps1` for Windows: it checks WSL and Ubuntu, then runs `install.sh` inside.
+  - Both never use sudo and never change an existing folder.
+- **Release assets:** source `.tar.gz` and `.zip`, the rendered installers, `SHA256SUMS` and a signed build provenance, beside the SBOM.
+  - **New action:** `actions/attest-build-provenance`, GitHub's own. It lets anyone verify where a download came from.
+- **`./securax routines prune`** (doc 20): every routine has to earn its place.
+  - **The record:** each run is kept locally with whether it found anything.
+  - **The findings:** failing routines, reports that flagged nothing in 4 weeks, duplicates, and routines that never ran. Each comes with the command to act.
+  - **Never pruned:** guards (backups, updates, alerts), because silence is their success.
+  - **Switching off:** `./securax routines off ID` and `on ID` keep the choice on this machine. The cockpit lights a lamp when there is something to decide.
+- **Fixed:** `./securax routines` dropped every argument after the first.
+- **Pattern interrupt in the Life OS** (doc 74):
+  - **The trigger:** 3 heavy-week signs in 7 days, counted on the device. The signs are your own words in notes or questions to the AI, and low-energy days.
+  - **What Today shows:** one card with one question, one small action, a 3-hour rest block for your calendar, and a 7-day pause. It offers no plan.
+  - **In recovery mode:** new goals and the quarterly check-in wait. The AI is told not to plan, and code replaces any answer that still offers a framework, KPI or checklist.
+  - **Repeat questions:** the AI answer now says when you have asked the same thing before, with the dates.
 - **Claude for the hard fifth only** (doc 23):
   - **`./securax route "task"`:** names the builder (local, OpenCode or Claude) and why. Its rules are data in `lifecycle/route.json`.
   - **autobuild asks it first:** a task routed to Claude gets its brief at once. A green diff that touches a sensitive part asks for a Claude review.

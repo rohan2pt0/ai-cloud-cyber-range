@@ -38,6 +38,7 @@
   </header>
   <div class="sub">Everything in one place. Click a card — you never need to type a URL.
     <span id="secstatus" style="margin-left:8px"></span></div>
+  <div id="repairs" class="note" style="display:none;margin-top:12px"></div>
   <a id="finish" class="note" href="/portal/cockpit.html#finish" style="display:none;text-decoration:none;color:inherit;margin-top:12px"></a>
 
   <h2>Start here — these work out of the box</h2>
@@ -96,6 +97,13 @@
 </div>
 
 <script>
+// "Repairs": what needs fixing, counted by every cockpit refresh (./securax repairs lists each one with its fix).
+fetch("/portal/repairs.json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null;}).then(function(j){
+  var el=document.getElementById("repairs"); if(!j||!el||!j.count)return;
+  el.innerHTML="<b>"+(j.act?"\u2717 ":"\u25D0 ")+j.count+" to repair"+(j.act?", "+j.act+" today":"")+"</b> \u2014 first: "+String(j.top).replace(/[<>&]/g,"")
+    +"<div style='margin-top:4px;font-size:13px'>Each one with its fix: <code>./securax repairs</code></div>";
+  el.style.display="block";
+}).catch(function(){});
 // "Finish setting up": written by every cockpit refresh (./securax finish has the same list with its steps).
 fetch("/portal/setup.json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null;}).then(function(j){
   var el=document.getElementById("finish"); if(!j||!el||j.done>=j.total)return;

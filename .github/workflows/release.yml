@@ -7,7 +7,9 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: write   # create the GitHub Release
+  contents: write       # create the GitHub Release
+  id-token: write       # sign the build provenance (Sigstore, keyless)
+  attestations: write   # store it, so anyone can run: gh attestation verify FILE --repo OWNER/REPO
 
 jobs:
   verify:
@@ -51,11 +53,28 @@ jobs:
             p {print}
           ' CHANGELOG.md > release-notes.md
           [ -s release-notes.md ] || echo "See CHANGELOG.md for details." > release-notes.md
+      # What a user downloads (doc 75): the source as .tar.gz and .zip, the two installers with this repository's name
+      # written in, and SHA256SUMS, which install.sh --offline checks before it unpacks anything.
+      - name: Source archives, installers and checksums
+        run: |
+          v="${GITHUB_REF_NAME#v}"
+          mkdir -p dist
+          git archive --format=tar.gz --prefix="securax-$v/" -o "dist/securax-$v.tar.gz" HEAD
+          git archive --format=zip --prefix="securax-$v/" -o "dist/securax-$v.zip" HEAD
+          cp install.sh install.ps1 dist/
+          REPO_SLUG="${GITHUB_REPOSITORY}" python3 governance/config.py render dist/install.sh dist/install.ps1
+          if grep -l '{{REPO_SLUG}}' dist/install.sh dist/install.ps1; then echo "::error::installer not rendered"; exit 1; fi
+          cp "sbom-${GITHUB_REF_NAME}.cdx.json" dist/
+          (cd dist && sha256sum -- * > SHA256SUMS && cat SHA256SUMS)
+      - name: Build provenance (signed, verifiable)
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: "dist/*"
       - name: Publish GitHub Release
         uses: softprops/action-gh-release@v2
         with:
           name: SecuRAX ${{ github.ref_name }}
           body_path: release-notes.md
-          files: sbom-${{ github.ref_name }}.cdx.json
+          files: dist/*
           draft: false
           prerelease: ${{ startsWith(github.ref_name, 'v0.') }}

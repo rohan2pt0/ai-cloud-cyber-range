@@ -20,6 +20,7 @@ Config (routines/jobs.json): a list of jobs, each:
 from __future__ import annotations
 
 import json
+import re
 import subprocess
 import time
 from dataclasses import dataclass
@@ -29,6 +30,9 @@ from typing import Callable, Optional
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_JOBS = Path(__file__).resolve().parent / "jobs.json"
 DEFAULT_STATE = Path(__file__).resolve().parent / ".state.json"
+DEFAULT_HISTORY = Path(__file__).resolve().parent / ".history.json"     # per-job run history, for `routines prune` (local, gitignored)
+DEFAULT_OFF = Path(__file__).resolve().parent / ".off.json"             # jobs you switched off with `routines off ID` (local, gitignored)
+KINDS = ("guard", "report", "nudge")      # guard: silence is success; report: should find things; nudge: a reminder to you
 
 # field ranges for minute hour day-of-month month day-of-week
 _FIELD_BOUNDS = [(0, 59), (0, 23), (1, 31), (1, 12), (0, 7)]  # dow: 0 and 7 both = Sunday
@@ -96,6 +100,7 @@ class Job:
     command: list
     description: str = ""
     enabled: bool = True
+    kind: str = "guard"                   # unknown jobs count as guards, so prune never suggests removing one by mistake
 
 
 def parse_jobs(path: Optional[Path] = None) -> tuple[list[Job], list[str]]:
@@ -122,11 +127,42 @@ def parse_jobs(path: Optional[Path] = None) -> tuple[list[Job], list[str]]:
                 raise ValueError("command must be a non-empty argv list (no shell)")
             cron_matches(raw["cron"], time.localtime())  # validate the expression up front
             seen.add(jid)
-            jobs.append(Job(jid, raw["cron"], cmd, raw.get("description", ""), raw.get("enabled", True)))
+            kind = raw.get("kind", "guard")
+            if kind not in KINDS:
+                raise ValueError(f"kind must be one of {', '.join(KINDS)}")
+            jobs.append(Job(jid, raw["cron"], cmd, raw.get("description", ""), raw.get("enabled", True) and jid not in switched_off(), kind))
         except Exception as exc:  # noqa: BLE001
             ident = raw.get("id", "?") if isinstance(raw, dict) else "?"
             errors.append(f"job #{i} ({ident}): {exc}")
     return jobs, errors
+
+
+def switched_off(path: Optional[Path] = None) -> set:
+    try:
+        return set(json.loads(Path(path or DEFAULT_OFF).read_text()))
+    except Exception:  # noqa: BLE001 - no file (the usual case) or an unreadable one: nothing is off
+        return set()
+
+
+def set_off(job_id: str, off: bool, path: Optional[Path] = None) -> None:
+    p, cur = Path(path or DEFAULT_OFF), switched_off(path)
+    cur = (cur | {job_id}) if off else (cur - {job_id})
+    p.write_text(json.dumps(sorted(cur)))
+
+
+FINDING = re.compile(r"✗|⚠|\bFAIL|\bWARN|\berror\b|\bred\b|\bamber\b", re.I)
+
+
+def record_run(job_id: str, code: int, output: str, stamp: str, path: Optional[Path] = None, keep: int = 40) -> None:
+    """Append one run to the history: when, the exit code, and whether the output found anything."""
+    p = Path(path or DEFAULT_HISTORY)
+    try:
+        hist = json.loads(p.read_text()) if p.exists() else {}
+    except Exception:  # noqa: BLE001 - a damaged history is rebuilt, never fatal to the scheduler
+        hist = {}
+    hist.setdefault(job_id, []).append({"t": stamp, "code": code, "found": bool(FINDING.search(output or ""))})
+    hist[job_id] = hist[job_id][-keep:]
+    p.write_text(json.dumps(hist))
 
 
 def load_jobs(path: Optional[Path] = None) -> list[Job]:
@@ -175,6 +211,7 @@ def run_due(now: Optional[time.struct_time] = None, *,
     def _write(state: dict) -> None:
         sp.write_text(json.dumps(state, indent=2))
 
+    real = read_state is None                     # tests inject state; only a real run writes the history
     read_state = read_state or _read
     write_state = write_state or _write
     state = read_state()
@@ -189,6 +226,11 @@ def run_due(now: Optional[time.struct_time] = None, *,
             code, output = 1, f"runner error: {str(exc)[:200]}"
         state[j.id] = stamp
         ran_any = True
+        if real:
+            try:
+                record_run(j.id, code, output, stamp, sp.with_name(".history.json"))
+            except OSError:
+                pass
         results.append({"id": j.id, "cron": j.cron, "ran_at": stamp,
                         "exit_code": code, "output_tail": (output or "")[-400:]})
     if ran_any:

@@ -45,6 +45,23 @@ regulator-scan** via the research agent (disabled by default — enable when you
 de-dupes within a minute, survives a job crash, and records state in `routines/.state.json`
 (git-ignored, per-box). Tested offline in `routines/tests/`.
 
+### Prune what gives you nothing: `./securax routines prune`
+
+A system that only grows gets abandoned, so every routine has to earn its place. Each run is recorded on this machine, in `routines/.history.json` (not in git): when it ran, its exit code, and whether its output flagged anything (a ✗, ⚠, FAIL, WARN, error, red or amber line). The check then names four kinds of routine, each with the command to act:
+
+| Finding | Rule | What to do |
+|---|---|---|
+| **Failing** | the last 2 runs failed | fix it, or `./securax routines off ID` |
+| **Found nothing** | a report ran 4 or more times in 28 days and flagged nothing | keep it only if you read it |
+| **Duplicate** | the same command as another routine | switch one off |
+| **Never ran** | switched on, but no run in more than 35 days of history | `./securax routines install` |
+
+Each job in `routines/jobs.json` has a `kind`, which decides what the check may say about it:
+- **Guards** (update, backups, regulator watch, alerts, restore drill) are never suggested for pruning, because silence is their success. A failing guard is still shown.
+- **Nudges** are reminders to you; only a duplicate nudge is shown.
+
+`./securax routines off ID` and `on ID` switch a routine on this machine only (`routines/.off.json`), so your checkout stays clean. The cockpit lights a lamp when there is something to decide.
+
 ## Opt-in extensions (shipped, off by default)
 - **Image/visual generation ("Design").** A sovereign text-to-image client (`design/`) speaks your
   own **AUTOMATIC1111/ComfyUI** server; `./securax design "…"` or MCP `image_generate` saves PNGs

@@ -10,6 +10,7 @@ number by hand. Standard library only; without git it falls back to the release 
 """
 from __future__ import annotations
 
+import importlib.util
 import json
 import pathlib
 import re
@@ -42,6 +43,17 @@ def label(version: str, changes: int | None, commit: str) -> str:
     return f"v{version}+{changes} · {commit}" if changes else f"v{version} · {commit}"
 
 
+def repo_slug(root: pathlib.Path = ROOT) -> str:
+    """owner/repo from brand.env (or the environment), so "Report a problem" can open the right bug tracker; "" when unset."""
+    spec = importlib.util.spec_from_file_location("_brand_config", pathlib.Path(__file__).resolve().parent / "config.py")
+    cfg = importlib.util.module_from_spec(spec)
+    try:
+        spec.loader.exec_module(cfg)
+        return cfg.values(path=root / "brand.env").get("REPO_SLUG", "")
+    except Exception:  # noqa: BLE001 - no brand file: the app simply hides the bug-report link
+        return ""
+
+
 def info(root: pathlib.Path = ROOT) -> dict:
     try:
         version = (root / "VERSION").read_text("utf-8").strip() or "0.0.0-dev"
@@ -51,7 +63,7 @@ def info(root: pathlib.Path = ROOT) -> dict:
     changes, commit = parse_describe(_git(root, "describe", "--tags", "--long", "--match", f"v{version}"))
     commit = commit or _git(root, "rev-parse", "--short", "HEAD")
     return {"version": version, "changes": changes, "commit": commit, "date": _git(root, "log", "-1", "--format=%cs"),
-            "label": label(version, changes, commit)}
+            "label": label(version, changes, commit), "repo": repo_slug(root)}
 
 
 def main(argv: list[str]) -> int:

@@ -363,6 +363,20 @@ class Collector:
         self.add("incidents", "Incident reporting clocks", "KRI", "Respond", val, s, "Regulators set hard deadlines (often 6 hours) from the moment an incident is detected.",
                  "File what is overdue" if over else ("Prepare the next filing" if soon else ""), "./securax incident status", urgent=bool(over or soon), importance=3)
 
+    def c_findings(self):
+        fd = _load("securax_findings", "governance/findings.py")
+        reg = fd.load()
+        if not reg.get("findings"):
+            return                                                   # no register yet: nothing measured, nothing lit
+        sm = fd.summary(reg)
+        opened = sum(sm["open"].values())
+        s = "red" if sm["overdue"] else ("amber" if sm["expiring"] or sm["kev_open"] else "green")
+        val = f"{opened} open · {sm['overdue']} overdue" + (f" · {sm['kev_open']} known-exploited" if sm["kev_open"] else "") \
+            + (f" · {sm['sla_met']}% fixed in time" if sm["sla_met"] is not None else "")
+        self.add("findings", "Findings fixed on time", "KRI", "Protect", val, s, "Every scan and VAPT finding has a fix-by date set by its severity; "
+                 "auditors ask for this timeline.", "Fix or accept what is overdue" if sm["overdue"] else "", "./securax findings overdue",
+                 urgent=bool(sm["overdue"]), importance=3)
+
     def c_soc(self):
         name = (sh(["docker", "ps", "--filter", "name=gateway", "--format", "{{.Names}}"]) or "").split("\n")[0].strip()
         if not name:
@@ -499,7 +513,7 @@ class Collector:
                  "" if st == "green" else "Add a free key or download the local coder", "./securax providers chain builder show", importance=1)
 
     def run(self) -> None:
-        for fn in (self.c_services, self.c_gateway, self.c_auth_residency, self.c_tls, self.c_crypto, self.c_keys, self.c_storage, self.c_images, self.c_threat_data, self.c_incidents, self.c_soc,
+        for fn in (self.c_services, self.c_gateway, self.c_auth_residency, self.c_tls, self.c_crypto, self.c_keys, self.c_storage, self.c_images, self.c_threat_data, self.c_incidents, self.c_findings, self.c_soc,
                    self.c_fitness, self.c_coverage, self.c_coding):
             self.safe(fn)
 
@@ -801,11 +815,21 @@ def render(c: Collector, maps: dict, hist: list[dict], ai: str, now: float, targ
         share = _m[0] if _m and _m[0]["over_goal"] else None
     except Exception:  # noqa: BLE001 - not a git checkout (a release tarball): nothing to show
         pass
+    prune_items = []
+    try:                                                          # routines that do not earn their place (./securax routines prune)
+        if str(ROOT) not in sys.path:
+            sys.path.insert(0, str(ROOT))
+        from routines import prune as _prune
+        prune_items = _prune.report()[0]
+    except Exception:  # noqa: BLE001 - no history yet, or no routines: nothing to show
+        pass
     lamps = [("warn" if reds else "ok", len(reds), "Warnings: act today"), ("caut" if ambs else "ok", len(ambs), "Cautions: schedule"),
              ("ok", sum(1 for m in ms if m["status"] == "green"), "Nominal")] + ([("warn", late, "Risk treatments overdue")] if late else []) \
         + ([("warn", len(stopped_ai), "AI stopped by a person: " + ", ".join(stopped_ai))] if stopped_ai else []) \
         + ([("warn" if max(near) >= 1 else "caut", len(near), "AI allowance used up or near it: ./securax ai budget")] if near else [])\
-        + ([("caut", f"{share['claude_share']:.0%}", "of this month's commits by Claude (goal 20%): ./securax ai share")] if share else [])
+        + ([("caut", f"{share['claude_share']:.0%}", "of this month's commits by Claude (goal 20%): ./securax ai share")] if share else [])\
+        + ([("warn" if any(i["verdict"] == "failing" for i in prune_items) else "caut", len(prune_items),
+             "Routines to fix or switch off: ./securax routines prune")] if prune_items else [])
     h.append("<div class='card'><h2>Master caution</h2><div class='annun'>" + "".join(
         f"<div class='lamp {k}'><b>{v}</b>{E(t)}</div>" for k, v, t in lamps)
         + ("<a class='lamp nav' href='/portal/navigator.html'><b>Controls</b>BFSI control navigator</a>" if nav else
@@ -952,6 +976,11 @@ def main(argv: list[str] | None = None) -> int:
         left = [x for x in st if not x["done"]]
         atomic_write(out.parent / "setup.json", json.dumps({"done": len(st) - len(left), "total": len(st), "next": left[0]["title"] if left else ""}))
     except Exception:  # noqa: BLE001
+        pass
+    try:                                                                      # the Command Center's "Repairs" count (./securax repairs)
+        rp = _load("securax_repairs", "governance/repairs.py")
+        atomic_write(out.parent / "repairs.json", json.dumps(rp.summary(rp.collect(out.with_suffix(".json")))))
+    except Exception:  # noqa: BLE001 - a convenience; it must never fail the cockpit
         pass
     if a.json:
         print(json.dumps(data, indent=1))

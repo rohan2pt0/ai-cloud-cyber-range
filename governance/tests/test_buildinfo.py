@@ -46,3 +46,11 @@ def test_a_bumped_but_untagged_release_shows_no_count_from_the_old_tag(tmp_path)
     g("add", "."), g("commit", "-qm", "bump")
     i = bi.info(tmp_path)
     assert i["changes"] is None and i["label"] == f"v1.1.0 · {i['commit']}"
+
+
+def test_the_build_names_the_bug_tracker_from_brand_env_only(tmp_path, monkeypatch):
+    monkeypatch.delenv("REPO_SLUG", raising=False)
+    (tmp_path / "VERSION").write_text("0.1.0\n")
+    assert bi.info(tmp_path)["repo"] == ""                       # no brand file: no link, never a guessed one
+    (tmp_path / "brand.env").write_text("REPO_SLUG=example-owner/example-repo\n")
+    assert bi.info(tmp_path)["repo"] == "example-owner/example-repo"
