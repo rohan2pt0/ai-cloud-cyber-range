@@ -251,6 +251,7 @@ local/compose/litellm-config.generated.yaml
 local/compose/.models-checked
 evidence/
 autobuild-failed-*.md
+escalation-brief.md
 watch.log
 backups/
 

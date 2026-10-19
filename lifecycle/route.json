@@ -1,0 +1,33 @@
+{
+  "about": "Which builder a task goes to (./securax route). Claude only where a mistake is costly and hard to see: security, crypto, identity, sync and merge logic, regulator mapping, or a change across many areas. Everything else goes to the local or cheap tier first, which escalates on its own after 3 red attempts. Edit this file, not the code, to move the line.",
+  "claude_paths": [
+    "apps/llm-gateway/app/guardrails*",
+    "apps/llm-gateway/app/identity*",
+    "apps/llm-gateway/app/residency*",
+    "apps/llm-gateway/app/killswitch*",
+    "apps/llm-gateway/app/budget*",
+    "apps/llm-gateway/app/main.py",
+    "apps/llm-gateway/app/providers.py",
+    "governance/crypto.py",
+    "governance/auditchain.py",
+    "governance/regmap*",
+    "governance/controls/packs/**",
+    "apps/estate-sync/**",
+    "local/compose/tls*",
+    "policies/**",
+    "lifecycle/vet.py",
+    "lifecycle/diffcheck.py",
+    "lifecycle/forge.py"
+  ],
+  "claude_words": [
+    "security", "secure", "vulnerab", "exploit", "attack", "injection", "jailbreak", "redact", "pii", "dpdp",
+    "crypto", "encrypt", "decrypt", "cipher", "key exchange", "pqc", "quantum", "signature", "hash chain", "tamper",
+    "authenticat", "authoriz", "login", "sign-in", "oidc", "jwt", "mfa", "permission", "privilege", "rbac", "api key", "secret",
+    "sync", "merge", "conflict", "etag", "race", "concurren",
+    "regulat", "circular", "rbi", "sebi", "irdai", "cert-in", "nciipc", "compliance map", "regmap",
+    "architecture", "redesign", "across the estate", "every component", "migration"
+  ],
+  "opencode_words": ["refactor", "rename across", "wire", "end to end", "several files", "and update the docs"],
+  "max_local_areas": 1,
+  "max_opencode_areas": 3
+}
