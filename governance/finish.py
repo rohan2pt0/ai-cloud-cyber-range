@@ -132,9 +132,9 @@ def html_card(st: list[dict] | None = None) -> str:
     left, done = [s for s in st if not s["done"]], [s for s in st if s["done"]]
 
     def one(s, open_=False):
-        steps = "".join(f"<li>{E(x)}</li>" for x in s["steps"])
+        steps = "".join(f"<li>{E(x.replace('https://', ''))}</li>" for x in s["steps"])   # the cockpit names no external URL
         return (f"<details{' open' if open_ else ''}><summary><b>{'✔' if s['done'] else '○'} {E(s['title'])}</b> "
-                f"<span class='muted'>· {E(s['gives'])}</span></summary><ol>{steps}</ol></details>")
+                f"<span class='muted'>· {E(s['gives'].replace('https://', ''))}</span></summary><ol>{steps}</ol></details>")
     h = [f"<div class='card'><h2>Finish setting up <span class='muted'>· {len(done)} of {len(st)} done · all optional, do one when you have time</span></h2>"]
     if left:
         h.append("<p class='muted'>Next: <b>" + E(left[0]["title"]) + "</b>. Or in the terminal: <code>./securax finish</code></p>")

@@ -39,4 +39,5 @@ def test_the_command_center_card_lists_what_is_left_first_with_numbered_steps(tm
     _iso(tmp_path, monkeypatch)
     card = fin.html_card()
     assert "Finish setting up" in card and "<ol><li>" in card and "<script" not in card
+    assert "https://" not in card and "http://" not in card          # the cockpit page names no external URL (cockpit_page journey)
     assert card.index("○") < card.index("done</summary>") if "done</summary>" in card else True
