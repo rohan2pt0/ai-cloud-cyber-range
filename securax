@@ -886,6 +886,14 @@ EOF2
     fi
     exec python3 "$ROOT/governance/aicontrol.py" "${@:-status}"
     ;;
+  audit)
+    # Tamper-evident audit (UK CAF C1.b): every gateway event carries the hash of the one before it.
+    #   ./securax audit verify     check the running gateway's log: an edited, deleted or reordered event is named
+    shift
+    [ "${1:-verify}" = verify ] || { echo "usage: ./securax audit verify"; exit 2; }
+    ( cd "$ROOT/local/compose" && docker compose --profile ai logs --no-color --no-log-prefix gateway 2>/dev/null ) | python3 "$ROOT/governance/auditchain.py"
+    exit "${PIPESTATUS[1]}"
+    ;;
   postmortem)
     # Blameless postmortems (Amazon Correction of Error): what happened, five whys, and MECHANISMS tracked to done.
     #   ./securax postmortem new "title" [--severity sev2] | list | actions

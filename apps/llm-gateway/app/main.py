@@ -114,9 +114,21 @@ def _rate_limited(principal: str) -> bool:
     return False
 
 
+# Tamper-evident audit (UK CAF C1.b "securing logs"; Estonia's signed, logged exchange): every event carries the hash of
+# the one before it, so deleting, reordering or editing a line breaks the chain. `./securax audit verify` checks it.
+_CHAIN = {"boot": secrets.token_hex(4), "seq": 0, "prev": "0" * 64}
+
+
+def chain_hash(event: dict) -> str:
+    return hashlib.sha256(json.dumps(event, sort_keys=True, default=str, separators=(",", ":")).encode()).hexdigest()
+
+
 def _emit(event: dict) -> None:
     event.setdefault("ts", time.strftime("%Y-%m-%dT%H:%M:%S%z"))
-    audit.info(json.dumps(event, default=str))
+    _CHAIN["seq"] += 1
+    event["chain"] = {"boot": _CHAIN["boot"], "seq": _CHAIN["seq"], "prev": _CHAIN["prev"]}
+    _CHAIN["prev"] = h = chain_hash(event)
+    audit.info(json.dumps({**event, "h": h}, default=str))
 
 
 _HTTP: httpx.AsyncClient | None = None

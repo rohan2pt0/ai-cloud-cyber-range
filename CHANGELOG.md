@@ -8,7 +8,13 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
+### Fixed
+- **Cockpit crashed when the gateway reported allowance callers:** a loop variable shadowed the page's configuration. Caught by the `cockpit_page` journey on a real estate, now covered by a regression test.
+
 ### Added
+- **UK NCSC Cyber Assessment Framework 4.0 map** (`./securax comply caf`, doc 71): all 41 contributing outcomes scored against what SecuRAX proves, with CI-verified evidence. 15 are supported, 18 partial, 2 gaps and 6 belong to the organisation.
+- **Tamper-evident gateway audit** (CAF C1.b, Estonia's signed and logged exchange): every audit event carries the hash of the one before it. `./securax audit verify` names an edited, deleted, inserted or reordered event.
+- **What 26 national strategies agree on** (doc 71): eight patterns that several governments arrived at independently, what SecuRAX does for each, and eight ranked next steps.
 - **README that keeps itself current:** the version badge, "What's new" and the full documentation index are generated from `VERSION`, `CHANGELOG.md` and the docs (`tools/readme_sync.py`). The `readme-current` fitness check fails CI when the README falls behind. "Start here" now leads with `./securax go`.
 - **RBI MRM draft, checked paragraph by paragraph:** the pack cites the draft's paragraphs and gains ET-104 to ET-106 (third-party models, change management, continuity).
   - **Para 21:** `./securax ai inventory` flags models the gateway serves that are not in the inventory.

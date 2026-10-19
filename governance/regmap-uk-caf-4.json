@@ -1,0 +1,507 @@
+{
+ "about": "UK NCSC Cyber Assessment Framework 4.0: the 41 contributing outcomes under 4 objectives and 14 principles, assessed against what SecuRAX demonstrably does. CAF is outcome-based: indicators inform expert judgement, they are not a checklist.",
+ "source": {
+  "title": "NCSC Cyber Assessment Framework (CAF) 4.0",
+  "url": "https://www.ncsc.gov.uk/collection/cyber-assessment-framework",
+  "issued": "NCSC, 2025 (Crown copyright; Open Government Licence v3.0)",
+  "read_on": "2026-10-19",
+  "caveat": "Outcome IDs and short titles only; status is our own judgement against the indicators of good practice. Not an official CAF assessment."
+ },
+ "items": [
+  {
+   "id": "A1.a",
+   "title": "Board direction",
+   "applies": "all",
+   "status": "entity",
+   "note": "The board's own direction and accountability.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "A1.b",
+   "title": "Roles and responsibilities",
+   "applies": "all",
+   "status": "partial",
+   "note": "Gateway roles and a named owner per model; people's security roles are the organisation's.",
+   "evidence": [
+    "file:apps/llm-gateway/app/identity.py",
+    "file:governance/model-registry.yaml"
+   ],
+   "next": "Owner field on every control and KRI in the cockpit.",
+   "priority": "medium"
+  },
+  {
+   "id": "A1.c",
+   "title": "Decision-making",
+   "applies": "all",
+   "status": "partial",
+   "note": "The cockpit puts red and amber items first, with the next action; decisions themselves are people's.",
+   "evidence": [
+    "file:governance/cockpit.py"
+   ],
+   "next": "Record decisions taken from the cockpit with their reason.",
+   "priority": "low"
+  },
+  {
+   "id": "A2.a",
+   "title": "Risk management process",
+   "applies": "all",
+   "status": "partial",
+   "note": "Risk register with likelihood x impact, treatments, overdue lamp; the process and appetite are the organisation's.",
+   "evidence": [
+    "test:governance/tests/test_risks.py",
+    "file:governance/risks.py"
+   ],
+   "next": "Re-assess risk automatically when a new model or technology enters the inventory (CAF A2.a).",
+   "priority": "medium"
+  },
+  {
+   "id": "A2.b",
+   "title": "Understanding threat",
+   "applies": "all",
+   "status": "partial",
+   "note": "CISA KEV and MITRE ATT&CK snapshots; attacks replayed through the real gateway.",
+   "evidence": [
+    "journey:offline_power",
+    "journey:purple_loop"
+   ],
+   "next": "Attacker-view threat model per estate component.",
+   "priority": "medium"
+  },
+  {
+   "id": "A2.c",
+   "title": "Assurance",
+   "applies": "all",
+   "status": "supported",
+   "note": "Every claim needs a test or journey; maps fail CI when evidence goes stale; checksummed audit pack.",
+   "evidence": [
+    "journey:comply_evidence",
+    "journey:ccsp_evidence",
+    "file:governance/claims.json"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "A3.a",
+   "title": "Asset management",
+   "applies": "all",
+   "status": "partial",
+   "note": "Model inventory, including models served but not listed; the impact map covers every tracked file.",
+   "evidence": [
+    "file:governance/model-registry.yaml",
+    "test:governance/tests/test_aicontrol.py"
+   ],
+   "next": "A full data and dependency inventory beyond models.",
+   "priority": "medium"
+  },
+  {
+   "id": "A4.a",
+   "title": "Supply chain",
+   "applies": "all",
+   "status": "supported",
+   "note": "Third-party skills and code vetted, pinned and hashed; tampering withholds content.",
+   "evidence": [
+    "journey:vet_gate",
+    "file:lifecycle/vet.py"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "A4.b",
+   "title": "Secure software development and support",
+   "applies": "all",
+   "status": "supported",
+   "note": "Agent changes cannot pass by weakening tests; fitness budgets and SAST in CI.",
+   "evidence": [
+    "journey:diffcheck_gate",
+    "test:lifecycle/tests/test_fitness.py"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "B1.a",
+   "title": "Policy development",
+   "applies": "all",
+   "status": "partial",
+   "note": "BFSI control library and packs; policies themselves are the organisation's.",
+   "evidence": [
+    "file:governance/controls.py"
+   ],
+   "next": "Generate policy stubs from the applicable controls.",
+   "priority": "low"
+  },
+  {
+   "id": "B1.b",
+   "title": "Policy implementation",
+   "applies": "all",
+   "status": "partial",
+   "note": "Policies the gateway enforces (residency, identity) are proven on the real estate.",
+   "evidence": [
+    "journey:gateway_residency",
+    "journey:gateway_identity"
+   ],
+   "next": "Map each policy to the enforcing control.",
+   "priority": "low"
+  },
+  {
+   "id": "B2.a",
+   "title": "Identity, authentication and authorisation",
+   "applies": "all",
+   "status": "supported",
+   "note": "Keys and OIDC, roles, MFA claim for privileged roles, lock-out; automated functions are identities too (CAF B2).",
+   "evidence": [
+    "journey:gateway_identity",
+    "test:apps/llm-gateway/tests/test_identity.py"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "B2.b",
+   "title": "Device management",
+   "applies": "all",
+   "status": "entity",
+   "note": "Endpoint and device management are the organisation's.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "B2.c",
+   "title": "Privileged user management",
+   "applies": "all",
+   "status": "partial",
+   "note": "MFA required for admin and auditor roles at the gateway.",
+   "evidence": [
+    "test:apps/llm-gateway/tests/test_identity.py"
+   ],
+   "next": "Privileged session logging and periodic access review.",
+   "priority": "medium"
+  },
+  {
+   "id": "B2.d",
+   "title": "Identity and access management",
+   "applies": "all",
+   "status": "partial",
+   "note": "Key add, rotate and revoke for the gateway.",
+   "evidence": [
+    "file:governance/gateway_auth.py"
+   ],
+   "next": "Scheduled review of unused keys.",
+   "priority": "low"
+  },
+  {
+   "id": "B3.a",
+   "title": "Understanding data",
+   "applies": "all",
+   "status": "partial",
+   "note": "Data classes from what is found in a request; residency per class.",
+   "evidence": [
+    "test:apps/llm-gateway/tests/test_residency.py"
+   ],
+   "next": "A data inventory with owners per data type (once-only, one owning store).",
+   "priority": "medium"
+  },
+  {
+   "id": "B3.b",
+   "title": "Data in transit",
+   "applies": "all",
+   "status": "supported",
+   "note": "HTTPS edge with a private CA and TLS on every internal hop.",
+   "evidence": [
+    "journey:tls_edge",
+    "journey:tls_internal"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "B3.c",
+   "title": "Stored data",
+   "applies": "all",
+   "status": "supported",
+   "note": "AES-256 encrypted backups; wrong key and tampering refused.",
+   "evidence": [
+    "journey:backup_encrypted"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "B3.d",
+   "title": "Mobile data",
+   "applies": "all",
+   "status": "gap",
+   "note": "",
+   "evidence": [],
+   "next": "Guidance and a check for phone storage of the Life OS (device encryption, screen lock).",
+   "priority": "low"
+  },
+  {
+   "id": "B3.e",
+   "title": "Media and equipment sanitisation",
+   "applies": "all",
+   "status": "entity",
+   "note": "Disposal of devices and media is the organisation's.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "B4.a",
+   "title": "Secure by design",
+   "applies": "all",
+   "status": "supported",
+   "note": "Rails, tool-call guard and kill switch restrict what automated decision-making can do (CAF B4.a).",
+   "evidence": [
+    "journey:purple_loop",
+    "test:apps/llm-gateway/tests/test_guardrails.py"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "B4.b",
+   "title": "Secure configuration",
+   "applies": "all",
+   "status": "supported",
+   "note": "Configuration not code; config-clean and fitness checks fail CI on drift.",
+   "evidence": [
+    "test:lifecycle/tests/test_fitness.py",
+    "file:governance/config.py"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "B4.c",
+   "title": "Secure management",
+   "applies": "all",
+   "status": "partial",
+   "note": "Safe update with backup, health gate and rollback.",
+   "evidence": [
+    "journey:safe_update_rollback"
+   ],
+   "next": "Separate admin path for estate management.",
+   "priority": "low"
+  },
+  {
+   "id": "B4.d",
+   "title": "Vulnerability management",
+   "applies": "all",
+   "status": "partial",
+   "note": "KEV-prioritised findings, container and IaC scans in CI.",
+   "evidence": [
+    "journey:offline_power",
+    "file:.github/workflows/devsecops.yml"
+   ],
+   "next": "An age/end-of-life check for pinned images, models and packages.",
+   "priority": "medium"
+  },
+  {
+   "id": "B5.a",
+   "title": "Resilience preparation",
+   "applies": "all",
+   "status": "supported",
+   "note": "Failures injected with an SLO each; recovery measured.",
+   "evidence": [
+    "journey:gameday"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "B5.b",
+   "title": "Design for resilience",
+   "applies": "all",
+   "status": "supported",
+   "note": "Self-healing estate and provider failover down to a local model.",
+   "evidence": [
+    "journey:self_healing",
+    "journey:key_wiring_and_failover"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "B5.c",
+   "title": "Backups",
+   "applies": "all",
+   "status": "supported",
+   "note": "Verified restore after losing the data volume; encrypted archives.",
+   "evidence": [
+    "journey:backup_restore",
+    "journey:backup_encrypted"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "B6.a",
+   "title": "Cyber security culture",
+   "applies": "all",
+   "status": "entity",
+   "note": "Culture is the organisation's.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "B6.b",
+   "title": "Cyber security training",
+   "applies": "all",
+   "status": "entity",
+   "note": "Training is the organisation's; the certification path (doc 46) supports a person's own.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "C1.a",
+   "title": "Monitoring coverage",
+   "applies": "all",
+   "status": "partial",
+   "note": "Gateway audit feeds the AI-SOC; estate health watched.",
+   "evidence": [
+    "journey:purple_loop"
+   ],
+   "next": "Wider sources (host, network) through the Wazuh organ.",
+   "priority": "medium"
+  },
+  {
+   "id": "C1.b",
+   "title": "Securing logs",
+   "applies": "all",
+   "status": "supported",
+   "note": "Every gateway audit event carries the hash of the one before it; `./securax audit verify` names an edited, deleted or reordered event.",
+   "evidence": [
+    "test:apps/llm-gateway/tests/test_audit_chain.py",
+    "file:governance/auditchain.py",
+    "cmd:audit"
+   ],
+   "next": "A daily signed anchor of the chain head kept outside the estate, so a whole rewritten run is also detectable.",
+   "priority": "medium"
+  },
+  {
+   "id": "C1.c",
+   "title": "Generating alerts",
+   "applies": "all",
+   "status": "supported",
+   "note": "Outages detected, healed and alerted; andon pushes only on change.",
+   "evidence": [
+    "journey:watchdog_heals_and_alerts"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "C1.d",
+   "title": "Identifying security incidents",
+   "applies": "all",
+   "status": "partial",
+   "note": "AI-SOC triage maps gateway events to ATT&CK/ATLAS.",
+   "evidence": [
+    "journey:purple_loop"
+   ],
+   "next": "Triage outcome tracking (true/false positive rate).",
+   "priority": "medium"
+  },
+  {
+   "id": "C1.e",
+   "title": "Monitoring tools and skills",
+   "applies": "all",
+   "status": "entity",
+   "note": "People's monitoring skills are the organisation's.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "C1.f",
+   "title": "Understanding behaviour and threat intelligence",
+   "applies": "all",
+   "status": "partial",
+   "note": "KEV and ATT&CK snapshots offline.",
+   "evidence": [
+    "journey:offline_power"
+   ],
+   "next": "Baseline of normal gateway behaviour and alerting on deviation.",
+   "priority": "medium"
+  },
+  {
+   "id": "C2.a",
+   "title": "Threat hunting",
+   "applies": "all",
+   "status": "gap",
+   "note": "",
+   "evidence": [],
+   "next": "Documented, hypothesis-driven hunts over the audit log that become automated detections (CAF C2.a).",
+   "priority": "medium"
+  },
+  {
+   "id": "D1.a",
+   "title": "Response plan",
+   "applies": "all",
+   "status": "supported",
+   "note": "One detection starts every applicable regulator's clock; drafts and filings tracked.",
+   "evidence": [
+    "journey:incident_clock"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "D1.b",
+   "title": "Response and recovery capability",
+   "applies": "all",
+   "status": "partial",
+   "note": "Kill switch per model or all AI; restore proven.",
+   "evidence": [
+    "test:apps/llm-gateway/tests/test_human_in_command.py",
+    "journey:backup_restore"
+   ],
+   "next": "Runbooks per incident type linked from the incident clock.",
+   "priority": "medium"
+  },
+  {
+   "id": "D1.c",
+   "title": "Testing and exercising",
+   "applies": "all",
+   "status": "supported",
+   "note": "Game days with SLOs; every journey runs nightly.",
+   "evidence": [
+    "journey:gameday"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "D2.a",
+   "title": "Post-incident analysis",
+   "applies": "all",
+   "status": "partial",
+   "note": "Blameless postmortems with five whys.",
+   "evidence": [
+    "file:governance/postmortem.py"
+   ],
+   "next": "A postmortem journey on the real estate.",
+   "priority": "low"
+  },
+  {
+   "id": "D2.b",
+   "title": "Driving improvements",
+   "applies": "all",
+   "status": "partial",
+   "note": "Mechanisms tracked to done.",
+   "evidence": [
+    "file:governance/postmortem.py"
+   ],
+   "next": "Monthly lessons digest across postmortems and game days.",
+   "priority": "low"
+  }
+ ]
+}
