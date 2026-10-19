@@ -5298,6 +5298,68 @@ function renderPlaybook(){
   var _calmAllInsights = false;
   window.gmCalmInsights = function () { _calmAllInsights = !_calmAllInsights; renderAll(); };
 
+  /* ── Phone navigation: four fixed bottom tabs and More (nothing hides off-screen), a header that shrinks to one line
+     once you scroll, and the vitals at the top of Today instead of a second bar at the bottom. Wider screens keep the strip. */
+  var NAV_MAIN = [["today", "\u2600", "Today"], ["okr", "\u{1F3AF}", "Goals"], ["ask", "\u{1F916}", "Ask"], ["ops", "\u2699", "Ops"]];
+  var _navMore = false;
+  function phone() { try { return window.matchMedia("(max-width: 700px)").matches; } catch (e) { return false; } }
+  window.gmMoreToday = function (o) { S_("gm_more_today", !!o); };
+  window.gmNavMore = function (on) { _navMore = on === undefined ? !_navMore : !!on; navRender(); };
+  window.gmNavGo = function (id) { _navMore = false; goTab(id); };
+  function navCSS() {
+    if (document.getElementById("gmNavCss")) return;
+    var st = document.createElement("style"); st.id = "gmNavCss";
+    st.textContent = "#gmNav,#gmMoreSheet{display:none}"
+      + "@media (max-width:700px){"
+      + "#tabBar{display:none!important}"
+      + "#gmNav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:450;background:var(--card);border-top:1px solid var(--border);padding:4px 4px calc(4px + env(safe-area-inset-bottom));box-shadow:0 -2px 14px rgba(0,0,0,.18)}"
+      + "#gmNav button{flex:1;background:none;border:0;color:var(--muted);font:inherit;font-size:10.5px;font-weight:700;padding:6px 2px;border-radius:10px;cursor:pointer;min-height:48px}"
+      + "#gmNav button b{display:block;font-size:19px;line-height:1.1;margin-bottom:2px}"
+      + "#gmNav button.on{color:var(--text);background:var(--cardAlt);box-shadow:inset 0 3px 0 var(--gold)}"
+      + "html[data-theme=dark] #gmNav button.on{color:var(--gold)}"
+      + "#gmNav button:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}"
+      + "#gmMoreSheet.on{display:block;position:fixed;left:0;right:0;bottom:0;top:0;z-index:440;background:rgba(5,10,20,.5)}"
+      + "#gmMoreSheet .sh{position:absolute;left:0;right:0;bottom:calc(60px + env(safe-area-inset-bottom));background:var(--card);border-radius:16px 16px 0 0;padding:14px 12px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:70vh;overflow:auto}"
+      + "#gmMoreSheet .sh button{background:var(--cardAlt);border:1px solid var(--border);color:var(--text);border-radius:12px;padding:12px 4px;font:inherit;font-size:12px;font-weight:700;min-height:52px;cursor:pointer}"
+      + "#gmMoreSheet .sh button.on{border-color:var(--gold);border-width:2px}"
+      + "#gmVitals.gm-inline{position:static;box-shadow:none;border:0;background:none;padding:0 0 10px}"
+      + "body{padding-bottom:76px}"
+      + "header{transition:padding .15s ease}"
+      + "body.gm-compact header{padding:6px 12px}"
+      + "body.gm-compact header .lt2,body.gm-compact .hero{display:none}"
+      + "body.gm-compact header .logo-ring{width:26px;height:26px;font-size:12px}"
+      + "body.gm-compact header .hdr-btn{padding:4px 8px;font-size:10.5px}"
+      + "}";
+    document.head.appendChild(st);
+  }
+  function navRender() {
+    navCSS();
+    var old = document.getElementById("gmNav"); if (old) old.parentNode.removeChild(old);
+    var oldS = document.getElementById("gmMoreSheet"); if (oldS) oldS.parentNode.removeChild(oldS);
+    if (typeof TABS === "undefined") return;
+    var main = NAV_MAIN.map(function (n) { return n[0]; }), inMore = main.indexOf(curTab) < 0;
+    var h = '<nav id="gmNav" aria-label="Main">';
+    NAV_MAIN.forEach(function (n) {
+      h += '<button class="' + (curTab === n[0] && !_navMore ? "on" : "") + '" onclick="gmNavGo(\'' + n[0] + '\')"' + (curTab === n[0] ? ' aria-current="page"' : "") + '><b aria-hidden="true">' + n[1] + '</b>' + n[2] + '</button>';
+    });
+    h += '<button class="' + (_navMore || inMore ? "on" : "") + '" onclick="gmNavMore()" aria-expanded="' + _navMore + '"><b aria-hidden="true">\u2630</b>More</button></nav>';
+    var sh = '<div id="gmMoreSheet" class="' + (_navMore ? "on" : "") + '" onclick="if(event.target===this)gmNavMore(false)"><div class="sh" role="menu">';
+    TABS.forEach(function (t) {
+      if (main.indexOf(t[0]) >= 0) return;
+      sh += '<button role="menuitem" class="' + (curTab === t[0] ? "on" : "") + '" onclick="gmNavGo(\'' + t[0] + '\')">' + t[1] + '</button>';
+    });
+    sh += '<button role="menuitem" onclick="location.href=\'hub.html\'">\u25C6 All apps</button></div></div>';
+    document.body.insertAdjacentHTML("beforeend", sh + h);
+  }
+  var _compactTick = false;
+  window.addEventListener("scroll", function () {
+    if (_compactTick) return; _compactTick = true;
+    (window.requestAnimationFrame || setTimeout)(function () {
+      _compactTick = false;
+      document.body.classList.toggle("gm-compact", phone() && (window.scrollY || 0) > 40);
+    });
+  }, { passive: true });
+
   function calmCSS() {
     if (document.getElementById("gmCalmCss")) return;
     var st = document.createElement("style"); st.id = "gmCalmCss";
@@ -5521,8 +5583,12 @@ function renderPlaybook(){
   }
 
   function calmTodayHTML() {
-    return '<div class="section active">' + setupStripHTML() + undoBar() + checkinHTML() + oneActionHTML() + dueNowHTML()
-      + (inRecovery() ? "" : driftHTML() + resHTML()) + msTodayHTML() + insightHTML() + estateHTML()
+    var more = dueNowHTML() + (inRecovery() ? "" : driftHTML() + resHTML()) + msTodayHTML() + insightHTML() + estateHTML();
+    var open = G("gm_more_today", false) === true;
+    return '<div class="section active">' + (phone() ? vitalsHTML() : "") + setupStripHTML() + undoBar() + checkinHTML() + oneActionHTML()
+      + (more.replace(/<[^>]*>/g, "").trim() ? '<details class="road-col gm-more-today"' + (open ? " open" : "") + ' ontoggle="gmMoreToday(this.open)">'
+        + '<summary style="cursor:pointer;font-weight:800;font-size:13px">More today <span style="font-weight:500;color:var(--muted);font-size:11.5px">\u00b7 what is due, your week, calendar, estate</span></summary>'
+        + '<div style="margin-top:10px">' + more + '</div></details>' : "")
       + '<div style="text-align:center;margin:6px 0 4px"><span style="font-size:11.5px;color:var(--muted);cursor:pointer;text-decoration:underline" onclick="gmCalm(false)">Show everything (all tabs, all cards)</span></div></div>';
   }
   function calmTabs() {
@@ -6177,7 +6243,7 @@ function renderPlaybook(){
     if (!box) return;
     var old = document.getElementById("gmVitals");
     if (old) old.parentNode.removeChild(old);
-    document.body.insertAdjacentHTML("beforeend", vitalsHTML());
+    if (!phone()) document.body.insertAdjacentHTML("beforeend", vitalsHTML());   // on a phone the vitals sit at the top of Today
     if (curTab === "ask") { box.innerHTML = askHTML(); try { gmAskPing(); } catch (e) {} }
     else if (curTab === "guide") { box.innerHTML = guidesHTML(); }
     else if (curTab === "ops") { box.innerHTML = opsHTML(); }
@@ -6196,6 +6262,9 @@ function renderPlaybook(){
         + (inRecovery() ? "" : driftHTML() + resHTML()) + oneActionHTML() + (inRecovery() ? "" : pinnedHTML()));
     }
     try { calmFrame(); } catch (e) { console.log(e); }
+    if (phone() && curTab === "today" && !document.getElementById("gmVitals")) box.insertAdjacentHTML("afterbegin", vitalsHTML());
+    var vi = document.getElementById("gmVitals"); if (vi && phone()) vi.classList.add("gm-inline");
+    try { navRender(); } catch (e) { console.log(e); }
     // Inline help: self-explain every specialised term on whatever screen just rendered.
     try { gmAnnotate(box); } catch (e) { }
   };

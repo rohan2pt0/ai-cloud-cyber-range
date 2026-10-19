@@ -9,6 +9,18 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **`./securax finish`** (doc 73): all 10 optional parts in one list, each with what it gives you, whether it is done, and the exact steps.
+  - **Ticks:** items the estate can check tick themselves; the rest are ticked once with `./securax finish done ITEM`.
+  - **Where it shows:** a "Finish setting up" banner on the Command Center and a card on the cockpit.
+- **Product site, ready to publish on GitHub Pages:**
+  - **Workflow:** builds the site and `/docs` and publishes them once `SITE_PAGES=true`.
+  - **Domain:** comes from `brand.env` or a repository variable, so moving to another domain or host is one value.
+  - **Page changes:** a phone menu with no script, a nav that never wraps, and a "Deploy your way" section.
+- **Life OS on a phone:**
+  - four fixed bottom tabs (Today, Goals, Ask, Ops) and More; no tab is hidden off-screen
+  - Today shows the Daily Three and your one open action first, with the rest under "More today"
+  - the vitals sit at the top of Today
+  - the header shrinks to one line once you scroll
 - **Life OS goals, the way national strategies run them** (docs 70 and 71):
   - **Key results "from X to Y by a date":** type today's number and the score, progress bar and days left fill themselves. Free-text key results still work with the slider.
   - **No drift:** a goal with no movement for 6 weeks asks for a decision: recommit, re-scope or drop. A drop keeps its lesson on record under "Dropped on purpose".
@@ -50,6 +62,12 @@ for the versioning and release policy.
   - **Visibility:** remaining allowance in the response headers, a cockpit lamp, and spend that survives a gateway restart.
 
 ### Fixed
+- **`./securax controls import FILE.xlsx` crashed with a traceback** when typed as shown in the cockpit hint.
+  - **Import:** no path, a wrong path, a folder or the wrong workbook now finds the right workbook.
+  - **`./securax go`:** imports a workbook saved in Downloads by itself.
+  - **Risk import:** follows the same rule.
+- **Backup hints** now point to the guided `./securax protect` instead of "make a key, then edit .env".
+- **Phone-sync step on the Command Center:** it no longer asks you to copy a token out of `.env`.
 - **Cockpit crashed when the gateway reported allowance callers:** a loop variable shadowed the page's configuration. Caught by the `cockpit_page` journey on a real estate, now covered by a regression test.
 
 ## [0.2.0] - 2026-10-17
