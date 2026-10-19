@@ -787,8 +787,9 @@ def render(c: Collector, maps: dict, hist: list[dict], ai: str, now: float, targ
         import urllib.request
         with urllib.request.urlopen("http://127.0.0.1:8080/v1/budget", timeout=3) as r:
             rep = json.loads(r.read())
-        for c in rep.get("callers", []):
-            pct = max((c["day_used"] / c["day_limit"]) if c["day_limit"] else 0, (c["month_used"] / c["month_limit"]) if c["month_limit"] else 0)
+        for row in rep.get("callers", []):                       # not `c`: that name is the cockpit's config in this function
+            pct = max((row["day_used"] / row["day_limit"]) if row["day_limit"] else 0,
+                      (row["month_used"] / row["month_limit"]) if row["month_limit"] else 0)
             if pct >= rep.get("warn_at", 0.8):
                 near.append(pct)
     except Exception:  # noqa: BLE001 - the gateway may be off; then there is nothing to show

@@ -29,3 +29,24 @@ def test_same_gap_from_two_maps_is_listed_once_and_no_internal_keys_leak():
     q = cockpit.eisenhower([], bl)
     assert len(q["schedule"]) == 1
     assert all("_rank" not in it for v in q.values() for it in v)
+
+
+def test_the_page_renders_when_the_gateway_reports_allowance_callers(monkeypatch):
+    # Regression: the allowance lamp's loop variable once shadowed render()'s config object, so the cockpit crashed
+    # exactly when the gateway was up and had callers (CI caught it on a real estate; a laptop without callers never did).
+    import io
+    import json as _json
+    import urllib.request
+
+    real = urllib.request.urlopen
+
+    def fake(url, *a, **k):
+        u = url if isinstance(url, str) else url.full_url
+        if u.endswith("/v1/budget"):
+            body = {"warn_at": 0.8, "callers": [{"caller": "abc123def456", "day_used": 9, "day_limit": 10, "month_used": 9, "month_limit": 100}]}
+            return io.BytesIO(_json.dumps(body).encode())
+        raise OSError("offline in tests")
+    monkeypatch.setattr(urllib.request, "urlopen", fake)
+    html, data, _c = cockpit.build(fast=True)
+    assert "AI allowance used up or near it" in html and data["profile"] is not None
+    monkeypatch.setattr(urllib.request, "urlopen", real)
