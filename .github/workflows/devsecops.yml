@@ -67,13 +67,9 @@ jobs:
           node build.js
           git diff --exit-code index.html \
             || { echo "::error::index.html is out of sync with ops.js — run 'node build.js' and commit"; exit 1; }
-      - name: Behaviour suite (jsdom)
+      - name: Behaviour suite (jsdom, every test file: the same list as `npm test`)
         working-directory: guiding-map
-        run: |
-          for t in test test2 test11 test12 test13 test14; do
-            echo "== $t =="
-            node tests/$t.js
-          done
+        run: npm test
 
   sast-and-secrets:
     runs-on: ubuntu-latest

@@ -3123,7 +3123,7 @@
      Nothing here asks for a new number; it reads what is already stored, and
      what the estate already knows (portal/estate-feed.json).
      ═══════════════════════════════════════════════════════════════ */
-  var CALM_TABS = ["today", "inbox", "ask", "life", "money", "ops"];
+  var CALM_TABS = ["today", "inbox", "ask", "life", "money"];   // five, plus More (Ops, the settings, is under More)
   function calmOn() { return G("gm_calm", true) !== false; }
   window.gmCalm = function (on) { S_("gm_calm", !!on); window.scrollTo(0, 0); renderAll(); };
   var _calmMore = false;
@@ -3137,7 +3137,7 @@
   var NAV_MAIN = [["today", navIco('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/>'), "Today"],
     ["inbox", navIco('<path d="M3 13l3-8h12l3 8v6H3z"/><path d="M3 13h5l1 3h6l1-3h5"/>'), "Inbox"],
     ["okr", navIco('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>'), "Goals"],
-    ["ask", navIco('<path d="M4 5h16v11H9l-5 4z"/>'), "Ask"], ["ops", navIco('<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9L7 7M17 17l2.1 2.1M4.9 19.1L7 17M17 7l2.1-2.1"/>'), "Ops"]];
+    ["ask", navIco('<path d="M4 5h16v11H9l-5 4z"/>'), "Ask"]];
   var _navMore = false;
   function phone() { try { return window.matchMedia("(max-width: 700px)").matches; } catch (e) { return false; } }
   window.gmMoreToday = function (o) { S_("gm_more_today", !!o); };
