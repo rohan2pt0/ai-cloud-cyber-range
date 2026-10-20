@@ -306,6 +306,19 @@ window.SECURAX_FEATURES = {
    "service": false,
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION/"
+  },
+  {
+   "id": "online",
+   "group": "Your own tools",
+   "icon": "devices",
+   "name": "SecuRAX on every device",
+   "what": "Your own address on any phone, tablet or computer: sign in with Google and everything is there, synced, with the laptop off. One command sets it up.",
+   "cmd": "./securax online setup",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "light": "amber",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/85-USE-SECURAX-ANYWHERE/"
   }
  ]
 };

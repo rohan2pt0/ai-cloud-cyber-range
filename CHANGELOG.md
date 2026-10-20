@@ -9,6 +9,10 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **SecuRAX on every device, like a SaaS app** (doc 85): `./securax online setup` puts the hub and Chat on your own addresses behind Cloudflare Access (Google sign-in or an e-mailed code, an allow-list of e-mails), through an outbound-only tunnel (cloudflared 2026.10.0). The Life OS pairs its sync by itself when you sign in, checked at the origin (signature, team, application, expiry, e-mail); Chat signs you in from the same sign-in. `allow` / `remove` / `status` / `off`.
+- **An always-on server in one command:** `sudo bash install.sh --server` on a fresh Ubuntu VPS: security updates, Docker from its signed repository, a firewall that lets in SSH only, swap, the India time zone for routines, a non-root `securax` user, SecuRAX started with its schedules, then `online setup`. `--restore` brings your laptop's backup.
+- **`./securax brief "the task"`:** the brief any model can act on: the likely files with their purpose, the lessons that apply, and the checks for those files. `autobuild`, `build` and `escalate` use it.
+- **The Command Center installs as its own app**, and a 7am/7pm `checkin-nudge` routine reaches your phone through ntfy.
 - **A second home for the code, in one guided step:** `./securax continuity mirror setup` makes a key that can push only to a private GitLab project, checks it, saves the address and mirrors at once. Doc 84 records why GitLab, and why the old history is not rewritten.
 - **Crown jewels** (doc 84): `./securax jewels` ranks what the estate cannot lose from live checks. Each jewel shows DO NOW / THIS WEEK / WATCH and the one command that fixes it, and the cockpit lights the first one.
 - **The crisis and continuity plan** (doc 84): `./securax continuity` lists nine scenarios with their RTO and RPO targets.
@@ -191,6 +195,11 @@ for the versioning and release policy.
   - **Visibility:** remaining allowance in the response headers, a cockpit lamp, and spend that survives a gateway restart.
 
 ### Fixed
+- **`./securax routines on ID` did nothing for a routine that ships switched off**, while saying "switched on". It now switches it on.
+- **The installer:** a copy downloaded on its own exited silently instead of asking which repository; setting `SECURAX_REPO` produced a broken name. Both fixed.
+- **The Life OS told you to deploy a `push-worker.js` that does not exist.** Nudges now come from the estate through ntfy.
+- **`./securax incident` with no arguments** printed a parser error; it now shows the status.
+- **New guards:** a test fails when any command ends on a test that can be false (the `start flows` bug), and a smoke test runs every read-only command and fails on any traceback.
 - **A broken workflow file ran no checks at all.** A step name with a colon made the main CI workflow invalid, so GitHub skipped it without a red mark. It is fixed, and a new test fails when any workflow does not parse.
 - **Life OS: the new Inbox tab crowded calm mode and the phone bar (six tabs).** Both are five again: Today, Inbox, Ask, Life Map, Money (phone: Today, Inbox, Goals, Ask) plus More, which now holds Ops. CI also ran only 6 of the 20 Life OS test files; it now runs them all.
 - **`./securax start flows` reported failure although it worked:** a password-manager line ended the branch with a false test, so the command exited 1. It is now a plain if, and `passwords lock` says when it could not restart.

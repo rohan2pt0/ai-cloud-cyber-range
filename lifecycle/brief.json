@@ -1,0 +1,24 @@
+{
+ "about": "What people call each part of SecuRAX, and the file where that part lives (lifecycle/brief.py). Keep the words lower case; a task that uses one of these words lists the file first.",
+ "aliases": {
+  "life os|lifeos|pwa|guiding map|tab|tabs|phone navigation|inbox|calm mode|check-in|today": ["guiding-map/ops.js"],
+  "command center|hub|launcher": ["guiding-map/hub.html"],
+  "service worker|offline cache|install the app": ["guiding-map/sw.js"],
+  "cli|command|subcommand|help line": ["securax"],
+  "gateway|rail|guardrail|prompt injection|pii": ["apps/llm-gateway/app/main.py"],
+  "identity|jwt|oidc|api key": ["apps/llm-gateway/app/identity.py"],
+  "sync|cross-device|snapshot": ["apps/estate-sync/syncsvc/main.py"],
+  "online|cloudflare|tunnel|access|google sign-in": ["governance/online.py", "apps/estate-sync/syncsvc/access.py"],
+  "vps|server install|installer": ["install.sh"],
+  "routine|routines|schedule|cron|nudge": ["routines/scheduler.py", "routines/jobs.json"],
+  "continuity|rto|rpo|mirror|drill": ["governance/continuity.py", "governance/continuity.json"],
+  "crown jewel|jewels": ["governance/jewels.py", "governance/jewels.json"],
+  "compose|container|service image": ["local/compose/docker-compose.yml"],
+  "cockpit|lamp": ["governance/cockpit.py"],
+  "feature|features|website card": ["features.json", "tools/features_sync.py"],
+  "router|model chain|litellm|provider": ["plugins/catalog.json", "local/compose/gen_litellm_config.py"],
+  "cyber range|exercise|red team bot": ["exercise/"],
+  "backup|restore": ["securax"],
+  "ci|workflow|pipeline": [".github/workflows/devsecops.yml"]
+ }
+}

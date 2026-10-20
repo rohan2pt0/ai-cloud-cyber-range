@@ -302,6 +302,19 @@
    },
    "command": "cloud",
    "doc": "securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION.md"
+  },
+  {
+   "id": "online",
+   "group": "Your own tools",
+   "icon": "devices",
+   "name": "SecuRAX on every device",
+   "what": "Your own address on any phone, tablet or computer: sign in with Google and everything is there, synced, with the laptop off. One command sets it up.",
+   "open": {
+    "cmd": "./securax online setup"
+   },
+   "command": "online",
+   "doc": "securax/85-USE-SECURAX-ANYWHERE.md",
+   "highlight": true
   }
  ]
 }

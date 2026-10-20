@@ -15,6 +15,9 @@ Auth: Authorization: Bearer <device token>. Tokens come from SYNC_TOKENS (comma-
 separated) in the estate .env — NEVER committed. Fail-closed: if no tokens are
 configured the service refuses every request, so an un-configured deploy can
 never become an open, world-writable data store.
+Or, online (doc 85): a request that came through your Cloudflare Access gate carries a
+signed token, checked here (syncsvc/access.py); it may read and write only SYNC_ACCESS_USER.
+    GET  /sync/whoami            -> {user, email} for such a request (the PWA pairs itself with it)
 
 Server-side per-key merge (defense-in-depth): even if two devices race or a stale
 device pushes a whole blob, a field is only overwritten when the incoming copy is
@@ -33,6 +36,8 @@ from contextlib import asynccontextmanager, closing
 
 from fastapi import FastAPI, Header, HTTPException, Query, Request, Response, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
+
+from . import access
 
 DB_PATH = os.environ.get("SYNC_DB_PATH", "/data/estate-sync.db")
 # Daily snapshots: the last merged state of each UTC day is kept for this many days, so "no backup taken" is never a thing a human has to fix.
@@ -83,9 +88,20 @@ app = FastAPI(title="SecuRAX estate-sync", docs_url=None, redoc_url=None,
               openapi_url=None, lifespan=lifespan)
 
 
-def _auth(authorization: str | None) -> None:
-    """Fail-closed Bearer check with constant-time compare (no token leak via timing)."""
+def _auth(authorization: str | None, cf_jwt: str | None = None, user: str | None = None) -> None:
+    """Fail-closed Bearer check with constant-time compare (no token leak via timing). A verified Access sign-in is the other way in,
+    and only to its own user's data."""
+    if cf_jwt and access.configured():
+        try:
+            access.verify(cf_jwt)
+        except access.Denied as exc:
+            raise HTTPException(401, f"sign-in not accepted: {exc}")
+        if user is not None and user != access.user():
+            raise HTTPException(403, "a signed-in device may sync only its own data")
+        return
     allowed = _tokens()
+    if not allowed and access.configured():
+        raise HTTPException(401, "sign in through your SecuRAX address, or use a device token")
     if not allowed:
         # Unconfigured estate: refuse everything rather than serve an open store.
         raise HTTPException(503, "sync is not configured (set SYNC_TOKENS in the estate .env)")
@@ -131,7 +147,17 @@ async def ws_endpoint(ws: WebSocket) -> None:
         tok = str(hello.get("token", "")) if isinstance(hello, dict) else ""
         user = str(hello.get("user", "")) if isinstance(hello, dict) else ""
         allowed = _tokens()
-        if not allowed or not user or len(user) > 256 or not any(hmac.compare_digest(tok, a) for a in allowed):
+        cf = ws.headers.get("cf-access-jwt-assertion")
+        if cf and access.configured():                 # came through your Access gate: its signed token decides, for its own user only
+            try:
+                await asyncio.to_thread(access.verify, cf)
+                ok = user == access.user()
+            except access.Denied:
+                ok = False
+        else:
+            ok = bool(allowed) and bool(user) and len(user) <= 256 and any(hmac.compare_digest(tok, a) for a in allowed)
+        if not ok:
+            user = None
             await ws.close(code=4401)
             return
         if _sockets() >= MAX_SOCKETS:
@@ -156,7 +182,19 @@ async def ws_endpoint(ws: WebSocket) -> None:
 
 @app.get("/healthz")
 def healthz() -> dict:
-    return {"ok": True, "configured": bool(_tokens()), "sockets": _sockets()}
+    return {"ok": True, "configured": bool(_tokens()) or access.configured(), "sockets": _sockets()}
+
+
+@app.get("/sync/whoami")
+def whoami(cf_access_jwt_assertion: str | None = Header(default=None)) -> dict:
+    """For a device that came through your Access gate: whose data it syncs. The PWA calls this once and pairs itself."""
+    if not (cf_access_jwt_assertion and access.configured()):
+        raise HTTPException(404, "not signed in through Cloudflare Access")
+    try:
+        email = access.verify(cf_access_jwt_assertion)
+    except access.Denied as exc:
+        raise HTTPException(401, f"sign-in not accepted: {exc}")
+    return {"user": access.user(), "email": email}
 
 
 # The PWA's clock anchor: a HEAD to the sync base. Its Date response header (added
@@ -199,8 +237,9 @@ def _bad_meta(i_meta: dict) -> str | None:
 
 @app.get("/sync/state")
 def get_state(user: str = Query(..., min_length=1, max_length=256),
-              authorization: str | None = Header(default=None)) -> JSONResponse:
-    _auth(authorization)
+              authorization: str | None = Header(default=None),
+              cf_access_jwt_assertion: str | None = Header(default=None)) -> JSONResponse:
+    _auth(authorization, cf_access_jwt_assertion, user)
     import json
     with closing(_db()) as conn:
         row = conn.execute(
@@ -214,8 +253,9 @@ def get_state(user: str = Query(..., min_length=1, max_length=256),
 @app.put("/sync/state")
 async def put_state(request: Request,
                     user: str = Query(..., min_length=1, max_length=256),
-                    authorization: str | None = Header(default=None)) -> JSONResponse:
-    _auth(authorization)
+                    authorization: str | None = Header(default=None),
+                    cf_access_jwt_assertion: str | None = Header(default=None)) -> JSONResponse:
+    await asyncio.to_thread(_auth, authorization, cf_access_jwt_assertion, user)   # the first sign-in fetches Cloudflare's keys
     import json
     raw = await request.body()
     if len(raw) > MAX_BODY:
@@ -272,8 +312,9 @@ def merge_write(user: str, inc: dict, i_meta: dict, updated_at: str | None) -> t
 
 @app.get("/sync/snapshots")
 def list_snapshots(user: str = Query(..., min_length=1, max_length=256),
-                   authorization: str | None = Header(default=None)) -> JSONResponse:
-    _auth(authorization)
+                   authorization: str | None = Header(default=None),
+                   cf_access_jwt_assertion: str | None = Header(default=None)) -> JSONResponse:
+    _auth(authorization, cf_access_jwt_assertion, user)
     with closing(_db()) as conn:
         rows = conn.execute("SELECT day, payload, taken_at FROM snapshots WHERE user_id=? ORDER BY day DESC", (user,)).fetchall()
     return JSONResponse([{"day": d, "keys": len(_json.loads(p)), "bytes": len(p), "taken_at": t} for d, p, t in rows])
@@ -281,8 +322,9 @@ def list_snapshots(user: str = Query(..., min_length=1, max_length=256),
 
 @app.get("/sync/snapshots/{day}")
 def get_snapshot(day: str, user: str = Query(..., min_length=1, max_length=256),
-                 authorization: str | None = Header(default=None)) -> JSONResponse:
-    _auth(authorization)
+                 authorization: str | None = Header(default=None),
+                 cf_access_jwt_assertion: str | None = Header(default=None)) -> JSONResponse:
+    _auth(authorization, cf_access_jwt_assertion, user)
     if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", day):
         raise HTTPException(400, "day must be YYYY-MM-DD")
     with closing(_db()) as conn:

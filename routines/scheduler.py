@@ -32,6 +32,7 @@ DEFAULT_JOBS = Path(__file__).resolve().parent / "jobs.json"
 DEFAULT_STATE = Path(__file__).resolve().parent / ".state.json"
 DEFAULT_HISTORY = Path(__file__).resolve().parent / ".history.json"     # per-job run history, for `routines prune` (local, gitignored)
 DEFAULT_OFF = Path(__file__).resolve().parent / ".off.json"             # jobs you switched off with `routines off ID` (local, gitignored)
+DEFAULT_ON = Path(__file__).resolve().parent / ".on.json"               # jobs shipped off that you switched on with `routines on ID` (same)
 KINDS = ("guard", "report", "nudge")      # guard: silence is success; report: should find things; nudge: a reminder to you
 
 # field ranges for minute hour day-of-month month day-of-week
@@ -130,7 +131,7 @@ def parse_jobs(path: Optional[Path] = None) -> tuple[list[Job], list[str]]:
             kind = raw.get("kind", "guard")
             if kind not in KINDS:
                 raise ValueError(f"kind must be one of {', '.join(KINDS)}")
-            jobs.append(Job(jid, raw["cron"], cmd, raw.get("description", ""), raw.get("enabled", True) and jid not in switched_off(), kind))
+            jobs.append(Job(jid, raw["cron"], cmd, raw.get("description", ""), (raw.get("enabled", True) or jid in switched_on()) and jid not in switched_off(), kind))
         except Exception as exc:  # noqa: BLE001
             ident = raw.get("id", "?") if isinstance(raw, dict) else "?"
             errors.append(f"job #{i} ({ident}): {exc}")
@@ -144,10 +145,21 @@ def switched_off(path: Optional[Path] = None) -> set:
         return set()
 
 
-def set_off(job_id: str, off: bool, path: Optional[Path] = None) -> None:
+def switched_on(path: Optional[Path] = None) -> set:
+    try:
+        return set(json.loads(Path(path or DEFAULT_ON).read_text()))
+    except Exception:  # noqa: BLE001 - no file: nothing switched on beyond what jobs.json ships
+        return set()
+
+
+def set_off(job_id: str, off: bool, path: Optional[Path] = None, on_path: Optional[Path] = None) -> None:
+    """Off wins over everything; on also covers a job that ships switched off (enabled: false), which used to stay off silently."""
     p, cur = Path(path or DEFAULT_OFF), switched_off(path)
     cur = (cur | {job_id}) if off else (cur - {job_id})
     p.write_text(json.dumps(sorted(cur)))
+    q, on = Path(on_path or DEFAULT_ON), switched_on(on_path)
+    on = (on - {job_id}) if off else (on | {job_id})
+    q.write_text(json.dumps(sorted(on)))
 
 
 FINDING = re.compile(r"✗|⚠|\bFAIL|\bWARN|\berror\b|\bred\b|\bamber\b", re.I)

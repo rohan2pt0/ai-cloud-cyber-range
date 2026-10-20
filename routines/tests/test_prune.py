@@ -44,12 +44,25 @@ def test_runs_are_recorded_with_whether_they_found_anything_and_switch_off_is_lo
     assert [r["found"] for r in got] == [False, True]
     off = tmp_path / ".off.json"
     monkeypatch.setattr(s, "DEFAULT_OFF", off)
+    monkeypatch.setattr(s, "DEFAULT_ON", tmp_path / ".on.json")
     jobs_file = tmp_path / "jobs.json"
     jobs_file.write_text(json.dumps([{"id": "brief", "cron": "0 9 * * 1", "command": ["true"], "kind": "report"}]))
     s.set_off("brief", True)
     assert s.parse_jobs(jobs_file)[0][0].enabled is False
     s.set_off("brief", False)
     assert s.parse_jobs(jobs_file)[0][0].enabled is True
+
+
+def test_on_switches_on_a_job_that_ships_off_and_off_still_wins(tmp_path, monkeypatch):
+    monkeypatch.setattr(s, "DEFAULT_OFF", tmp_path / ".off.json")
+    monkeypatch.setattr(s, "DEFAULT_ON", tmp_path / ".on.json")
+    jobs_file = tmp_path / "jobs.json"
+    jobs_file.write_text(json.dumps([{"id": "nudge", "cron": "0 7 * * *", "command": ["true"], "kind": "nudge", "enabled": False}]))
+    assert s.parse_jobs(jobs_file)[0][0].enabled is False           # ships off
+    s.set_off("nudge", False)                                        # ./securax routines on nudge
+    assert s.parse_jobs(jobs_file)[0][0].enabled is True             # it used to stay off while saying "switched on"
+    s.set_off("nudge", True)
+    assert s.parse_jobs(jobs_file)[0][0].enabled is False
 
 
 def test_the_shipped_routines_all_have_a_kind_and_guards_cover_the_safety_nets():

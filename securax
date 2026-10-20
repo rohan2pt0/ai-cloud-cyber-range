@@ -119,9 +119,25 @@ EOF2
   [ "$_mem" -lt 6000 ] && echo "  (Low memory. Windows: raise it in %UserProfile%\\.wslconfig  memory=10GB  then  wsl --shutdown  — see WINDOWS-QUICKSTART.md)"
   return 0
 }
+# online_guard — Chat trusts the Cloudflare Access e-mail header only while every port is on 127.0.0.1 (doc 85). Answering "use it on
+# your phone" in `setup` later sets BIND_HOST=0.0.0.0: then anyone on the same Wi-Fi could send that header and be you. So the trust is
+# switched off, said plainly, and the tunnel keeps working (Chat then asks for its own password).
+online_guard(){
+  _ob="$(ev BIND_HOST 127.0.0.1)"
+  if [ -n "$(ev OWUI_TRUSTED_EMAIL_HEADER)" ] && [ "$_ob" != 127.0.0.1 ] && [ "$_ob" != localhost ]; then
+    skv "$ROOT/local/compose/.env" OWUI_TRUSTED_EMAIL_HEADER ""
+    C "⚠ BIND_HOST is $_ob, so Chat no longer trusts the sign-in header (on your network it could be forged). Chat asks for its own password now."
+    C "  To sign in to Chat with your Google sign-in again:  ./securax online setup   (it sets BIND_HOST back to 127.0.0.1)"
+  fi
+  return 0
+}
 # preflight — find the common blockers BEFORE they turn into cryptic errors.
 preflight(){
-  docker info >/dev/null 2>&1 || { C "Docker isn't running/reachable. Start Docker Desktop (wait for 'Engine running'); on Windows also enable WSL integration for Ubuntu."; return 1; }
+  docker info >/dev/null 2>&1 || {
+    if grep -qi microsoft /proc/version 2>/dev/null || [ "$(uname -s)" = Darwin ]; then
+      C "Docker isn't running/reachable. Start Docker Desktop (wait for 'Engine running'); on Windows also enable WSL integration for Ubuntu."
+    else C "Docker isn't running/reachable. On a server:  sudo systemctl start docker   (and if it says permission denied: log out and back in, so your docker group applies)."; fi
+    return 1; }
   _free="$(df -Pk "$ROOT" 2>/dev/null | awk 'NR==2{printf "%d",$4/1048576}')"
   [ -n "$_free" ] && [ "$_free" -lt 8 ] && C "⚠ Only ~${_free} GB free disk here. Models + images need ~8 GB. Free some space (docker system prune -f can help)."
   gcurl -fsS -m 2 $(gw_url)/healthz >/dev/null 2>&1 && return 0        # our stack is already up: ports are ours
@@ -195,6 +211,7 @@ case "$cmd" in
     # LITE mode (./securax up --lite, or SECURAX_LITE=1 in .env — `./securax profile` sets it for 16 GB
     # machines): only the core path (gateway, router, local model, Chat, home screen, sync). Skips
     # Private Docs + n8n + Postgres, which together want ~3 GB you may not have to spare.
+    online_guard
     preflight || exit 1
     autosize
     LITE=0; { [ "${2:-}" = "--lite" ] || [ "$(ev SECURAX_LITE)" = "1" ]; } && LITE=1
@@ -262,6 +279,9 @@ case "$cmd" in
       fi
     fi
     case " $(ev SECURAX_OPTIONAL) " in *" passwords "*) dc_up vaultwarden >/dev/null 2>&1 || C "The password manager did not start: ./securax start passwords" ;; esac
+    case " $(ev SECURAX_OPTIONAL) " in *" online "*) if [ -n "$(ev CF_TUNNEL_TOKEN)" ] && dc_up cloudflared >/dev/null 2>&1; then
+        C "Online: https://hub.$(ev ONLINE_DOMAIN) and https://chat.$(ev ONLINE_DOMAIN) (sign in on any device)"
+      else C "The online tunnel did not start: ./securax online status"; fi ;; esac
     guard_heal
     if ready_wait 150; then
       python3 "$ROOT/governance/recovery.py" --record up >/dev/null 2>&1 || true      # a working version you can always come back to (doc 82)
@@ -630,13 +650,18 @@ URLS
     # dead key, a rate limit or an outage just slides to the next rung instead of stopping the build.
     MODEL="${BUILD_MODEL:-$(ev BUILD_MODEL builder)}"
     C "Building with model '$MODEL' through the SecuRAX gateway (rigor: BUILD-CONTRACT + auto-tests)…"
+    # The brief (lifecycle/brief.py): the task plus where it lives, the lessons that apply and what "done" means, so a cheaper model
+    # edits the right files and runs the right checks. autobuild briefs once itself and says so with SECURAX_BRIEFED=1.
+    _BT="${SECURAX_BRIEF_TASK:-$TASK}"
+    [ "${SECURAX_BRIEFED:-0}" = 1 ] || TASK="$(python3 "$ROOT/lifecycle/brief.py" "$TASK" 2>/dev/null || printf '%s' "$TASK")"
+    _FILES=(); while IFS= read -r _f; do [ -f "$ROOT/$_f" ] && _FILES+=("$ROOT/$_f"); done < <(python3 "$ROOT/lifecycle/brief.py" "$_BT" --files 2>/dev/null | head -5)
     # Point Aider at the gateway (OpenAI-compatible); it runs the repo's tests after each edit and
     # iterates until they pass. --read loads the build contract as always-on context.
     OPENAI_API_BASE="$(gw_url)/v1" OPENAI_API_KEY="$KEY" \
       aider --model "openai/$MODEL" \
             --read "$ROOT/BUILD-CONTRACT.md" --read "$ROOT/AGENTS.md" --read "$ROOT/LESSONS.md" \
             --test-cmd "bash \"$ROOT/securax\" verify" --auto-test \
-            --no-gitignore --message "$TASK"
+            --no-gitignore --message "$TASK" ${_FILES[@]+"${_FILES[@]}"}
     ;;
   autobuild)
     # Unattended build loop — the 90% tier of "build SecuRAX with SecuRAX": agent -> `verify` gate -> retry with the
@@ -670,13 +695,14 @@ URLS
       C "autobuild: attempt $i/$TRIES on branch $BR"
       if [ "$INFRA" -gt 0 ]; then :                       # last red was INFRASTRUCTURE (daemon/network): re-run the gate, do not ask the model to "fix" the code
       elif [ -n "${AUTOBUILD_AGENT:-}" ]; then
-        ( cd "$ROOT" && AUTOBUILD_TASK="$TASK" AUTOBUILD_FEEDBACK="$FB" AUTOBUILD_ATTEMPT="$i" bash -c "$AUTOBUILD_AGENT" ) || true
+        python3 "$ROOT/lifecycle/brief.py" "$TASK" > "$FB.brief" 2>/dev/null || printf '%s\n' "$TASK" > "$FB.brief"
+        ( cd "$ROOT" && AUTOBUILD_TASK="$TASK" AUTOBUILD_BRIEF="$FB.brief" AUTOBUILD_FEEDBACK="$FB" AUTOBUILD_ATTEMPT="$i" bash -c "$AUTOBUILD_AGENT" ) || true
       else
-        PROMPT="$TASK"; [ -s "$FB" ] && PROMPT="$TASK
+        PROMPT="$(python3 "$ROOT/lifecycle/brief.py" "$TASK" 2>/dev/null || printf '%s' "$TASK")"; [ -s "$FB" ] && PROMPT="$PROMPT
 
 The previous attempt FAILED verification.
 $(python3 "$ROOT/lifecycle/forge.py" brief "$FB")"
-        ( cd "$ROOT" && "$0" build "$PROMPT" ) || true
+        ( cd "$ROOT" && SECURAX_BRIEFED=1 SECURAX_BRIEF_TASK="$TASK" "$0" build "$PROMPT" ) || true
       fi
       # The gate = the repo's own checks AND `diffcheck` (the contract's hard rules enforced on the diff: no skipped tests, no weakened rails, no fake green)
       if ( cd "$ROOT" && bash -c "${AUTOBUILD_VERIFY:-\"$0\" verify}" && python3 lifecycle/diffcheck.py --base "$ORIG" && python3 lifecycle/forge.py gate --base "$ORIG" ) > "$FB.new" 2>&1; then
@@ -696,7 +722,7 @@ $(python3 "$ROOT/lifecycle/forge.py" brief "$FB")"
         fi
         C "✔ GREEN on attempt $i. Review it:  git diff $ORIG..$BR     Ship it:  git push -u origin $BR   (then open a PR)"
         [ "${AUTOBUILD_PUSH:-0}" = 1 ] && git -C "$ROOT" push -u origin "$BR"
-        rm -f "$FB" "$FB.new"; exit 0
+        rm -f "$FB" "$FB.new" "$FB.brief"; exit 0
       fi
       mv "$FB.new" "$FB"
       if python3 "$ROOT/lifecycle/forge.py" classify "$FB" >/dev/null && [ "$INFRA" -lt 2 ]; then
@@ -710,8 +736,13 @@ $(python3 "$ROOT/lifecycle/forge.py" brief "$FB")"
       echo; echo "## Last attempt (discarded)"; echo '```diff'; git -C "$ROOT" add -N . 2>/dev/null; git -C "$ROOT" diff 2>/dev/null | head -300; echo '```'
       echo; echo "## Rules"; echo "See BUILD-CONTRACT.md. Hand this brief to a stronger model (./securax escalate), then re-run verify."; } > "$BTMP"
     git -C "$ROOT" reset -q --hard && git -C "$ROOT" clean -qfd && git -C "$ROOT" checkout -q "$ORIG" && git -C "$ROOT" branch -q -D "$BR"
-    mv "$BTMP" "$BRIEF"; rm -f "$FB"
+    mv "$BTMP" "$BRIEF"; rm -f "$FB" "$FB.brief"
     C "✘ Gave up after $TRIES attempts. Your branch ($ORIG) is untouched. Escalation brief: $BRIEF"; exit 2
+    ;;
+  brief)
+    # The task brief any model can act on: where it lives, the lessons that apply, what "done" means (lifecycle/brief.py, doc 83).
+    #   ./securax brief "the task" [--files|--json]    paste it into OpenCode, ChatGPT, Gemini or any chat AI
+    shift; exec python3 "$ROOT/lifecycle/brief.py" "$@"
     ;;
   review)
     # A second pair of eyes on your change from the strongest open models, through the gateway (doc 83). Refuses anything in vault/ or .env.
@@ -734,6 +765,7 @@ $(python3 "$ROOT/lifecycle/forge.py" brief "$FB")"
       echo "- Recent changes:"; git -C "$ROOT" log --oneline -5 2>/dev/null | sed 's/^/  /'
       echo; echo "## Current diff (uncommitted)"; echo '```diff'; git -C "$ROOT" diff 2>/dev/null | head -400; echo '```'
       echo; echo "## The rules it must follow"; echo "See BUILD-CONTRACT.md (hard rules, the gate loop) and AGENTS.md (how this repo works)."
+      echo; echo "## The brief (where it lives, the lessons that apply, what done means)"; python3 "$ROOT/lifecycle/brief.py" "$TASK" 2>/dev/null | sed 's/^#/##/' 
       echo; echo "## Lessons from earlier work (LESSONS.md, newest last)"; python3 "$ROOT/lifecycle/lessons.py" recent 15 2>/dev/null
       # Third-party reference skills are attached ONLY if they still hash to what was vetted (./securax vet verify).
       SK="$(python3 "$ROOT/lifecycle/vet.py" rules --max-chars 30000 2>/dev/null || true)"
@@ -948,6 +980,12 @@ EOF2
     # The crown jewels of the estate, assessed and ranked from live checks, worst first, each with its next step (doc 84).
     shift; exec python3 "$ROOT/governance/jewels.py" "$@"
     ;;
+  online)
+    # Your own addresses (hub.<domain>, chat.<domain>) behind your sign-in, on any device, through an outbound-only tunnel (doc 85).
+    #   ./securax online setup | google ID SECRET | allow EMAIL | remove EMAIL | status | off
+    shift; python3 "$ROOT/governance/online.py" "${@:-status}" || exit $?
+    case "${1:-status}" in setup|google|allow|remove) exec "$0" up ;; esac
+    ;;
   continuity)
     # The estate's crisis and continuity plan, measured: RTO/RPO per scenario, the steps, safe drills, the code mirror (doc 84).
     #   ./securax continuity | show ID | drill ID | mirror [setup [ADDRESS]] | --json
@@ -1067,7 +1105,7 @@ EOF2
   incident)
     # The regulatory incident clock: deadlines for every regulator that applies (RBI/SEBI/CERT-In/... as data), drafts, filings, sealed evidence.
     #   ./securax incident regulators|open|status|due|set|draft|file|note|close|verify|seal|rollup   (see the header of governance/incident.py)
-    shift; exec python3 "$ROOT/governance/incident.py" "$@"
+    shift; exec python3 "$ROOT/governance/incident.py" "${@:-status}"
     ;;
   gateway-auth)
     # Who may call the gateway: AUTH_MODE, hashed service keys, token checker for your identity provider (any OIDC provider).
@@ -1800,6 +1838,8 @@ BUILD & KEEP IT HEALTHY
   lessons        what earlier work taught             config / privacy   brand values in one file; names that must never be published
   ready          READY when the estate answers        support-packet     one scrubbed zip for a bug report
   jewels         the crown jewels: what SecuRAX cannot lose, how exposed each is today, and the next step, worst first
+  brief          a task brief any AI can act on: the likely files, the lessons that apply, what "done" means
+  online         use SecuRAX from any device like a SaaS app: your own addresses behind Google sign-in (setup once)
   continuity     the crisis plan: each scenario's RTO/RPO target vs today, the steps (show ID), safe drills (drill ID), the code mirror (mirror setup: a free private GitLab copy)
   names          https://hub.securax.localhost style addresses instead of localhost:port, in one guided step
   passwords      the estate's password manager (start passwords, then status | lock | open)

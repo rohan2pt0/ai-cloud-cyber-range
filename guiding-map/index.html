@@ -2499,7 +2499,8 @@ function renderPlaybook(){
   //      GET {base}/state?user=<id>  -> { payload:{k:v}, meta:{k:ts} }  (404 if none yet)
   //      PUT {base}/state?user=<id>  body { payload, meta }            (stores)
   //    Auth: Authorization: Bearer <device token>. No SDK, no CDN \u2014 plain fetch.
-  function syncHeaders(c) { return { "Content-Type": "application/json", "Authorization": "Bearer " + c.key }; }
+  // Paired by your sign-in (doc 85): no token; the browser's Cloudflare Access cookie goes with every same-origin request.
+  function syncHeaders(c) { return c.access ? { "Content-Type": "application/json" } : { "Content-Type": "application/json", "Authorization": "Bearer " + c.key }; }
   function stateURL(c) { return String(c.url).replace(/\/+$/, "") + "/state?user=" + encodeURIComponent(c.user); }
   // a > b by Unicode code point (Python's str order, used by estate-sync's tie-break); JS's own < compares UTF-16 units, which differs for emoji
   function cpAfter(a, b) {
@@ -2639,6 +2640,22 @@ function renderPlaybook(){
     } catch (e) { alert("That setup link could not be read: " + e.message); }
     return true;
   };
+  // Online (doc 85): opened at your own address behind Cloudflare Access, a device asks the estate who signed in and pairs itself.
+  // The question goes to the same address that served this app, so the data can only go back where the app came from. Never replaces
+  // a sync you set up yourself, and does nothing on localhost, on Tailscale names or without a sign-in (the answer is then 404).
+  window.gmAccessPair = function () {
+    var h = location.hostname;
+    if (cfg() || location.protocol !== "https:" || h === "localhost" || /\.(localhost|ts\.net)$/i.test(h) || typeof fetch === "undefined") return Promise.resolve(false);
+    return fetch("/sync/whoami", { credentials: "same-origin" })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (w) {
+        if (!w || typeof w.user !== "string" || !w.user || cfg()) return false;
+        S_("gm_sync_cfg", { url: location.origin + "/sync", key: "access", user: w.user.slice(0, 256), access: true, email: String(w.email || "").slice(0, 256) });
+        gmTouch("Paired by your sign-in", w.email || "your estate");
+        gmSyncInit(true); if (window.renderAll) renderAll();
+        return true;
+      }).catch(function () { return false; });
+  };
   function snapBase() { var c = cfg(); return String(c.url).replace(/\/+$/, "") + "/snapshots"; }
   window.gmSnapList = function () {
     var c = cfg(), box = document.getElementById("snapList"); if (!c || !box) return;
@@ -2678,7 +2695,7 @@ function renderPlaybook(){
     var c = cfg(), last = G("gm_sync_last", null);
     var h = '<div class="cat-t">\u{1F501} Cross-device sync <span class="pill pill-g">sovereign</span></div>';
     if (c) {
-      h += '<div class="info">Sync is on for <b>' + esc(c.user) + '</b>. Last push: ' + esc(last || "not yet") + '. '
+      h += '<div class="info">Sync is on for <b>' + esc(c.user) + '</b>' + (c.access ? ' (paired by your sign-in' + (c.email ? ' as ' + esc(c.email) : '') + ')' : '') + '. Last push: ' + esc(last || "not yet") + '. '
         + 'Edits merge per field by timestamp, so the phone and the laptop no longer overwrite each other. '
         + 'Your data stays on your own SecuRAX gateway \u2014 no third party.</div>'
         + '<button class="btn btn-s" onclick="gmSyncOff()">Turn sync off</button>';
@@ -4096,11 +4113,13 @@ function renderPlaybook(){
         + 'Register each device separately \u2014 the subscription belongs to the install, not to you.</div>'
         + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmPushOff()">Turn nudges off here</button>';
     } else {
-      h += '<div class="info">A static site cannot wake your phone on a schedule \u2014 that needs a server to sign and send. '
-        + 'The companion Worker (push-worker.js) is the smallest one that will do it: one cron trigger, one KV namespace, free tier. '
-        + 'Deploy it, then paste its URL here. On iPhone/iPad, the app must already be installed from Safari.</div>'
+      h += '<div class="info">A web app cannot wake your phone on a schedule; your SecuRAX estate can, through the free ntfy app. '
+        + 'On the estate, run <code>./securax notify setup</code> (it shows the topic to subscribe to on your phone), then '
+        + '<code>./securax routines on checkin-nudge</code> for a nudge at 7am and 7pm.</div>'
+        + '<details style="margin-top:6px"><summary style="cursor:pointer;color:var(--muted);font-size:12px">Already run your own Web Push sender?</summary>'
+        + '<div class="info">Paste its address here and this device subscribes to it. On iPhone/iPad, install the app from Safari first.</div>'
         + '<label class="f-label">Worker URL</label><input id="pushUrl" placeholder="https://gm-push.yourname.workers.dev" value="' + esc((c && c.url) || "") + '">'
-        + '<button class="btn btn-p" onclick="gmPushOn()">Enable nudges on this device</button>';
+        + '<button class="btn btn-p" onclick="gmPushOn()">Enable nudges on this device</button></details>';
     }
     return h;
   }
@@ -6698,6 +6717,7 @@ function renderPlaybook(){
     try { var pr = G("gm_props", null); if ((!pr || !pr.length) && window.P && window.P.example) { if (window.gmTplProp) gmTplProp(); } } catch (e) {}
     gmSyncLinkImport();
     gmSyncInit();
+    gmAccessPair();
     gmOdSync();
     // The daily OneDrive backup takes itself (the old text said "automatically" but it only ran on a button press)
     if (msTok() && G("gm_ms_backup", null) !== ymd()) setTimeout(function () { gmMsBackup(true); }, 8000);
