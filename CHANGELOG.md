@@ -190,6 +190,7 @@ for the versioning and release policy.
   - **Visibility:** remaining allowance in the response headers, a cockpit lamp, and spend that survives a gateway restart.
 
 ### Fixed
+- **Code mirror on a shallow checkout:** `./securax continuity mirror` now refuses a shallow clone (its bundle would not restore) and says how to fetch the whole history, instead of keeping a broken copy.
 - **The TLS CA key was in no backup.** Backups now carry it, and `restore` brings it back.
 - **Backups ran weekly.** They now run nightly (`daily-backup`), so a lost laptop costs at most a day.
 - **`update` blamed "local changes" when GitHub was unreachable.** It now says so and points to the GitHub-down steps.

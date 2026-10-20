@@ -58,12 +58,12 @@ def newest(folder: pathlib.Path | None, patterns: tuple[str, ...]) -> pathlib.Pa
     return max(files, key=lambda f: f.stat().st_mtime) if files else None
 
 
-def git(*args: str) -> tuple[int, str]:
-    p = subprocess.run(["git", "-C", str(ROOT), *args], capture_output=True, text=True)
+def git(*args: str, repo: pathlib.Path = ROOT) -> tuple[int, str]:
+    p = subprocess.run(["git", "-C", str(repo), *args], capture_output=True, text=True)
     return p.returncode, p.stdout.strip()
 
 
-def rpo_minutes(source: str, now: float | None = None) -> float | None:
+def rpo_minutes(source: str, now: float | None = None, repo: pathlib.Path = ROOT) -> float | None:
     """How much would be lost right now, in minutes; None when nothing protects it."""
     now = now or time.time()
     if source == "none":
@@ -75,7 +75,7 @@ def rpo_minutes(source: str, now: float | None = None) -> float | None:
         f = newest(pathlib.Path(off).expanduser() if off else None, ("securax-*.tar.gz.gpg",))
     elif source == "repo":
         marker = backup_dir() / "repo-latest.head"
-        head = git("rev-parse", "HEAD")[1]
+        head = git("rev-parse", "HEAD", repo=repo)[1]
         if marker.exists() and marker.read_text().strip() == head:
             return 0.0                                          # the bundle holds every commit there is
         f = backup_dir() / "repo-latest.bundle"
@@ -124,18 +124,23 @@ def _span(minutes: float | None) -> str:
 
 
 # ---------------------------------------------------------------------------------------------------- mirror and drills
-def mirror(say=print) -> int:
+def mirror(say=print, repo: pathlib.Path = ROOT) -> int:
     """A git bundle of every branch in the backup folder (and the off-site folder), then a push to each MIRROR_REMOTES entry."""
+    if git("rev-parse", "--is-shallow-repository", repo=repo)[1] == "true":
+        # a shallow checkout lacks the older commits, so its bundle would not clone: refuse rather than keep a broken copy
+        say("✗ this checkout is shallow (only recent history), so a bundle of it would not restore. Get the whole history once:")
+        say("    git fetch --unshallow        then run this again")
+        return 1
     dest = backup_dir()
     dest.mkdir(parents=True, exist_ok=True)
     tmp = dest / "repo-latest.bundle.tmp"
-    rc = subprocess.run(["git", "-C", str(ROOT), "bundle", "create", str(tmp), "--all"], capture_output=True, text=True)
-    if rc.returncode or subprocess.run(["git", "bundle", "verify", str(tmp)], capture_output=True, cwd=ROOT).returncode:
+    rc = subprocess.run(["git", "-C", str(repo), "bundle", "create", str(tmp), "--all"], capture_output=True, text=True)
+    if rc.returncode or subprocess.run(["git", "bundle", "verify", str(tmp)], capture_output=True, cwd=repo).returncode:
         say("✗ could not write a verified code bundle: " + (rc.stderr or "")[-300:])
         tmp.unlink(missing_ok=True)
         return 1
     tmp.replace(dest / "repo-latest.bundle")
-    (dest / "repo-latest.head").write_text(git("rev-parse", "HEAD")[1] + "\n")
+    (dest / "repo-latest.head").write_text(git("rev-parse", "HEAD", repo=repo)[1] + "\n")
     say(f"✔ code bundle (every branch, verified): {dest / 'repo-latest.bundle'}")
     off = env("SECURAX_OFFSITE_DIR")
     if off and pathlib.Path(off).expanduser().is_dir():
@@ -144,8 +149,8 @@ def mirror(say=print) -> int:
         say(f"✔ copied to the off-site folder: {o}")
     bad = 0
     for remote in [r.strip() for r in env("MIRROR_REMOTES").split(",") if r.strip()]:
-        p = subprocess.run(["git", "-C", str(ROOT), "push", "--quiet", remote, "--all"], capture_output=True, text=True, timeout=300)
-        subprocess.run(["git", "-C", str(ROOT), "push", "--quiet", remote, "--tags"], capture_output=True, text=True, timeout=300)
+        p = subprocess.run(["git", "-C", str(repo), "push", "--quiet", remote, "--all"], capture_output=True, text=True, timeout=300)
+        subprocess.run(["git", "-C", str(repo), "push", "--quiet", remote, "--tags"], capture_output=True, text=True, timeout=300)
         if p.returncode:
             bad += 1
             say(f"✗ mirror {remote}: {(p.stderr or '').strip()[-200:]}")
@@ -162,13 +167,13 @@ def _securax(*args: str, timeout: int = 900) -> tuple[int, str]:
     return p.returncode, (p.stdout + p.stderr)[-1500:]
 
 
-def run_drill(kind: str) -> tuple[bool, str]:
+def run_drill(kind: str, repo: pathlib.Path = ROOT) -> tuple[bool, str]:
     if kind == "rollback-check":
         rc, out = _securax("rollback", "--check")
         return rc == 0, out
     if kind == "repo-bundle":
         f = backup_dir() / "repo-latest.bundle"
-        if not f.exists() and mirror(say=lambda *_: None):
+        if not f.exists() and mirror(say=lambda *_: None, repo=repo):
             return False, "could not write the bundle"
         with tempfile.TemporaryDirectory() as d:
             c = subprocess.run(["git", "clone", "--quiet", str(f), str(pathlib.Path(d) / "repo")], capture_output=True, text=True)
