@@ -213,7 +213,7 @@ services:
 
   # ---- on-demand DevSecOps scanners (run once, then exit) ----
   trivy:
-    image: aquasec/trivy:0.58.1
+    image: aquasec/trivy:0.76.0
     security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
     profiles: ["security"]
     # It scans, prints and EXITS. It used to stay up (sleep infinity) holding the Docker socket, and the socket gives full control of
