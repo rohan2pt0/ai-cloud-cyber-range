@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
-"""Which builder a task goes to: the local/cheap tier, OpenCode, or Claude, and why (doc 23, "the 80/20 card").
+"""Which builder a task goes to: the local/cheap tier, OpenCode, or the strong open models, and why (docs 23 and 83).
 
     ./securax route "add a /metrics endpoint with a test"           before the work: from the words and any paths named
     ./securax route "…" --files a.py b.py                           with the files you expect to touch
     ./securax route "…" --base main                                 after the work: from what the diff actually touched
     ./securax route "…" --json
 
-The rules are data (lifecycle/route.json): Claude for security, crypto, identity, sync and merge logic, regulator mapping, a
+The rules are data (lifecycle/route.json): the STRONG tier for security, crypto, identity, sync and merge logic, regulator mapping, a
 listed sensitive path, or a change across many areas (components from lifecycle/impact.json); OpenCode for a few areas or a
-wiring job; local for the rest. autobuild asks this first, and writes the Claude brief straight away instead of spending three
-cheap attempts on a task that was always going to need Claude. Exit codes: 0 always for a decision, 2 bad usage.
+wiring job; local for the rest. autobuild asks this first and builds a strong-tier task with the strong chain (the strongest open
+models, through the same gates) instead of spending three cheap attempts on it. The strong tier was "claude" before doc 83; old
+rule files (claude_paths / claude_words) still load. Exit codes: 0 always for a decision, 2 bad usage.
 """
 from __future__ import annotations
 
@@ -57,16 +58,16 @@ def decide(task: str, files: list[str] | None = None, rules: dict | None = None,
     files = list(dict.fromkeys((files or []) + named_paths(task)))
     low = " " + task.lower() + " "
     why = []
-    hot = [(f, p) for f in files if (p := _match(f, r.get("claude_paths", [])))]
+    hot = [(f, p) for f in files if (p := _match(f, r.get("strong_paths", r.get("claude_paths", []))))]
     why += [f"touches {f} (sensitive: {p})" for f, p in hot[:3]]
-    words = [w for w in r.get("claude_words", []) if re.search(r"(?<![a-z])" + re.escape(w), low)]
+    words = [w for w in r.get("strong_words", r.get("claude_words", [])) if re.search(r"(?<![a-z])" + re.escape(w), low)]
     if words:
         why.append("about " + ", ".join(words[:4]))
     ar = areas(files, impact)
     if len(ar) > r.get("max_opencode_areas", 3):
         why.append(f"spans {len(ar)} areas ({', '.join(ar)})")
     if why:
-        return {"tier": "claude", "why": why, "areas": ar}
+        return {"tier": "strong", "why": why, "areas": ar}
     ow = [w for w in r.get("opencode_words", []) if w in low]
     if len(ar) > r.get("max_local_areas", 1) or ow:
         return {"tier": "opencode", "why": ([f"spans {len(ar)} areas ({', '.join(ar)})"] if len(ar) > 1 else []) + (["a wiring or refactor job"] if ow else []),
@@ -74,7 +75,8 @@ def decide(task: str, files: list[str] | None = None, rules: dict | None = None,
     return {"tier": "local", "why": ["one area, no sensitive path or topic"], "areas": ar}
 
 
-NEXT = {"local": './securax autobuild "{t}"', "opencode": "./securax opencode", "claude": './securax escalate "{t}"   (then paste escalation-brief.md into Claude)'}
+NEXT = {"local": './securax autobuild "{t}"', "opencode": "./securax opencode",
+        "strong": './securax autobuild "{t}"   (it uses the strong open models), or work on it yourself in  ./securax opencode --strong'}
 
 
 def changed(base: str) -> list[str]:

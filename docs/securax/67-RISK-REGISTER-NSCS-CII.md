@@ -1,4 +1,4 @@
-# 67 · Risk register, the NSCS audit baseline and NCIIPC CII guidance, all linked
+# 67 · Risk register, the NSCS audit baseline and national CII guidance, all linked
 
 <!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
 > **Status: 🟡 Partly built.** Risk register, packs, links, CII self-check and the edge device ports are built and tested; the device ports with a real Tailscale serve are verified only on your laptop. [What the lights mean](../index.md#the-status-lights)
@@ -8,7 +8,7 @@ Risks, controls, audits and incidents describe the same things from different si
 
 ```text
   NSCS audit markers ─┐                         ┌─ navigator (grid, radar, heat map, vital few)
-  NCIIPC CII phases ──┼─► BFSI control library ◄─┼─ SecuRAX evidence (what it proves)
+  CII guidance ───────┼─► BFSI control library ◄─┼─ SecuRAX evidence (what it proves)
   RBI/SEBI/IRDAI/... ─┘        ▲                 └─ cockpit (master caution)
                                │ links
   V/T/R register + treatment plans ─► open risks ─► heat map, ranking, overdue lamp ─► postmortems
@@ -73,9 +73,9 @@ The baseline has three **risk profiles**, all recorded in the pack:
 The publication is licensed CC BY-NC-SA 4.0 (non-commercial), so the pack carries marker IDs and links only, never its
 text.
 
-## 4. NCIIPC: evaluating and identifying Critical Information Infrastructure
+## 4. National CII guidance: evaluating and identifying Critical Information Infrastructure
 
-The pack `governance/controls/packs/nciipc-cii.json` links library controls to two NCIIPC documents.
+The pack `governance/controls/packs/cii-guidance.json` links library controls to two national CII guidance documents.
 
 The **Framework for Evaluating Cyber Security in CII** (v1) has five phases:
 
@@ -93,11 +93,11 @@ customers and business, the timeframe to serious impact, geographic spread, and 
 
 | Result | Meaning |
 |---|---|
-| **Likely CII** | treat the systems as **High-risk** infrastructure: every NSCS marker is mandatory. Engage NCIIPC through your sector regulator. |
+| **Likely CII** | treat the systems as **High-risk** infrastructure: every NSCS marker is mandatory. Engage the national CII agency through your sector regulator. |
 | **Possibly CII** | document the assessment and re-check yearly; use the Medium profile |
 | **Unlikely CII** | use the profile your risk assessment sets |
 
-It is a self-check: designation is the Government's (section 70, IT Act), on NCIIPC's advice. NCIIPC reserves all rights
+It is a self-check: designation is the Government's (section 70, IT Act), on the national CII agency's advice. The issuing agency reserves all rights
 to its documents, so the pack holds phase and paragraph references only.
 
 ## 5. Professional names and phones together
@@ -128,5 +128,5 @@ To switch: `./securax tls on && ./securax go`. Each address keeps its own app da
 
 - A risk-to-control link is a pointer to the control family that treats the risk, made from the risk's wording. Review it,
   and treat it as a starting point, not as an assessment.
-- The NSCS and NCIIPC mappings are this project's reading of those documents. Check them against the originals before an
+- The NSCS and national CII mappings are this project's reading of those documents. Check them against the originals before an
   audit.

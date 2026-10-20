@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>SecuRAX Command Center</title>
+<title>SecuRAX: how it fits together</title>
 <meta name="description" content="SecuRAX — a lifelong, zero-investment, vendor-agnostic foundation unifying AI security, SecOps, a hybrid-AI brain, a life-OS, and GRC.">
 <!--
   SecuRAX portal — self-documenting command center.
@@ -137,7 +137,8 @@
   <!-- HERO -->
   <div class="hero">
     <div class="exp" id="exp"></div>
-    <h1 id="name">SecuRAX Command Center</h1>
+    <h1 id="name">SecuRAX: how it fits together</h1>
+    <p class="tag">Looking for the apps and every feature? Open the <a href="/hub.html">Command Center</a>.</p>
     <p class="tag" id="tag"></p>
     <div class="north"><b>North-star:</b> <span id="north"></span></div>
   </div>
@@ -233,7 +234,7 @@
   function esc(s){return String(s==null?"":s).replace(/[&<>]/g,function(c){return {"&":"&amp;","<":"&lt;",">":"&gt;"}[c];});}
 
   // Hero
-  if(S.meta){ $("exp").textContent=S.meta.expansion; $("name").textContent=S.meta.name+" Command Center";
+  if(S.meta){ $("exp").textContent=S.meta.expansion; $("name").textContent=S.meta.name+": how it fits together";
     $("tag").textContent=S.meta.tagline; $("north").textContent=S.meta.northStar; }
 
   // Pillars

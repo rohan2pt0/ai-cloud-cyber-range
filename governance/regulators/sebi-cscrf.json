@@ -175,7 +175,7 @@
   },
   {
    "id": "other-24h",
-   "label": "Any other cybersecurity incident: report to SEBI, CERT-In and NCIIPC (as applicable)",
+   "label": "Any other cybersecurity incident: report to SEBI, CERT-In and the national CII agency (as applicable)",
    "from": "detection",
    "within_hours": 24,
    "channel": "As SEBI specifies",

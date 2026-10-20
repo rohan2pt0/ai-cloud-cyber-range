@@ -169,6 +169,83 @@
       }
     },
     {
+      "id": "opencodego_pro",
+      "label": "OpenCode Go (strong: DeepSeek V4 Pro)",
+      "kind": "llm",
+      "alias": "opencodego-pro",
+      "model": "openai/deepseek-v4-pro",
+      "api_base": "https://opencode.ai/inference/go/v1",
+      "headers": {
+        "User-Agent": "securax-gateway",
+        "x-opencode-session": "securax-{install}"
+      },
+      "env": [
+        "OPENCODE_GO_API_KEY"
+      ],
+      "get_key": "https://opencode.ai/go",
+      "note": "The strongest open coding models on the same OpenCode Go key, for the hard work the router sends to the strong chain (security, sync, many areas). Go caps each strong model at about $15 of use a month ($60 on Go Plus); the chain moves to the next one when a cap is reached. DeepSeek on Go: zero-retention agreement renewed monthly (check opencode.ai/docs/go).",
+      "discover": {
+        "kind": "openai",
+        "url": "https://opencode.ai/inference/go/v1/models",
+        "prefix": "openai/",
+        "prefer": [
+          "^deepseek-v4(\\.[0-9]+)?-pro$"
+        ]
+      }
+    },
+    {
+      "id": "opencodego_kimi",
+      "label": "OpenCode Go (strong: Kimi K3)",
+      "kind": "llm",
+      "alias": "opencodego-kimi",
+      "model": "openai/kimi-k3",
+      "api_base": "https://opencode.ai/inference/go/v1",
+      "headers": {
+        "User-Agent": "securax-gateway",
+        "x-opencode-session": "securax-{install}"
+      },
+      "env": [
+        "OPENCODE_GO_API_KEY"
+      ],
+      "get_key": "https://opencode.ai/go",
+      "note": "Second strong model family on the same key, so one model's cap or outage does not stop hard work.",
+      "discover": {
+        "kind": "openai",
+        "url": "https://opencode.ai/inference/go/v1/models",
+        "prefix": "openai/",
+        "prefer": [
+          "^kimi-k3$",
+          "^kimi-k2\\.7-code$"
+        ]
+      }
+    },
+    {
+      "id": "opencodego_glm_pro",
+      "label": "OpenCode Go (strong: GLM 5.3)",
+      "kind": "llm",
+      "alias": "opencodego-glm-pro",
+      "model": "openai/glm-5.3",
+      "api_base": "https://opencode.ai/inference/go/v1",
+      "headers": {
+        "User-Agent": "securax-gateway",
+        "x-opencode-session": "securax-{install}"
+      },
+      "env": [
+        "OPENCODE_GO_API_KEY"
+      ],
+      "get_key": "https://opencode.ai/go",
+      "note": "Third strong model family on the same key (MIT-licensed weights).",
+      "discover": {
+        "kind": "openai",
+        "url": "https://opencode.ai/inference/go/v1/models",
+        "prefix": "openai/",
+        "prefer": [
+          "^glm-5\\.3$",
+          "^glm-5\\.[0-9]+$"
+        ]
+      }
+    },
+    {
       "id": "nvidia_nim",
       "key_prefix": "nvapi-",
       "label": "NVIDIA NIM (free, for building only)",
@@ -508,7 +585,7 @@
     }
   ],
   "chains": {
-    "_comment": "Degradation ladders. Each chain is tried in order; only ENABLED providers participate, so a missing key just skips that rung. Every chain MUST end in 'local' (always on) so an answer is possible even with zero keys and zero internet. Paid providers are deliberately absent from bank-assistant (cost guard); the build chain puts Groq's free tier (two model families) right after the OpenCode Go rungs, then cheap DeepSeek. You can reorder the build chain without editing this file: CHAIN_BUILDER in .env (`./securax providers chain builder ...`); local is always kept last. Enforced by tests. 'twin' is the Chat Twin (doc 53): a PAID strong open model first only when you opted in (OPENROUTER_PRO_OK), then the free bank-assistant ladder; DeepSeek is left out because Chat carries personal data. 'home' (your own stronger machine over Tailscale) sits just before the local rungs in every chain: free, private, faster than this laptop.",
+    "_comment": "Degradation ladders. Each chain is tried in order; only ENABLED providers participate, so a missing key just skips that rung. Every chain MUST end in 'local' (always on) so an answer is possible even with zero keys and zero internet. Paid providers are deliberately absent from bank-assistant (cost guard); the build chain puts Groq's free tier (two model families) right after the OpenCode Go rungs, then cheap DeepSeek. You can reorder the build chain without editing this file: CHAIN_BUILDER in .env (`./securax providers chain builder ...`); local is always kept last. Enforced by tests. 'twin' is the Chat Twin (doc 53): a PAID strong open model first only when you opted in (OPENROUTER_PRO_OK), then the free bank-assistant ladder; DeepSeek is left out because Chat carries personal data. 'home' (your own stronger machine over Tailscale) sits just before the local rungs in every chain: free, private, faster than this laptop. 'strong' is for the hard coding work the router (./securax route) used to send to Claude: the strongest open models first (DeepSeek V4 Pro, Kimi K3, GLM 5.3 on the OpenCode Go key), then the paid GLM on OpenRouter only when you opted in, then the free NVIDIA tier, then the normal build rungs (doc 83).",
     "bank-assistant": [
       "gemini",
       "groq",
@@ -535,6 +612,18 @@
       "groq",
       "openrouter",
       "home",
+      "local"
+    ],
+    "strong": [
+      "opencodego_pro",
+      "opencodego_kimi",
+      "opencodego_glm_pro",
+      "openrouter_pro",
+      "nvidia_nim",
+      "opencodego",
+      "groq_qwen",
+      "home",
+      "coder",
       "local"
     ]
   },

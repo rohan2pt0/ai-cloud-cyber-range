@@ -70,3 +70,14 @@ def test_check_reports_the_build_chain_only(capsys, tmp_path):
     assert "default model: securax/builder" in out and "none (as it should be)" in out
     chain = next(ln for ln in out.splitlines() if ln.startswith("Build chain"))
     assert chain.index("groq") < chain.index("deepseek") and chain.rstrip().endswith("bank-assistant-local")
+
+
+def test_the_strong_chain_is_offered_and_the_build_rules_ride_with_every_session():
+    cat = gen.load_catalog(gen.CATALOG)
+    env = {"OPENCODE_GO_API_KEY": "sk-go"}
+    c = oc.build(cat, env, "http://localhost:8080")
+    models = c["provider"]["securax"]["models"]
+    assert {"builder", "strong", "opencodego-pro", "opencodego-kimi"} <= set(models) and c["model"] == "securax/builder"
+    assert oc.build(cat, env, "http://localhost:8080", strong=True)["model"] == "securax/strong"
+    assert [pathlib.Path(i).name for i in c["instructions"]] == ["BUILD-CONTRACT.md", "LESSONS.md"] and all(pathlib.Path(i).exists() for i in c["instructions"])
+    assert oc.check(cat, env, c) == 0                                       # strong is a coding chain, not a Chat chain

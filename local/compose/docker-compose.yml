@@ -165,6 +165,9 @@ services:
       # that cannot use it falls back to the default by itself. Set OLLAMA_KV_CACHE_TYPE=f16 to switch back.
       OLLAMA_FLASH_ATTENTION: ${OLLAMA_FLASH_ATTENTION:-1}
       OLLAMA_KV_CACHE_TYPE: ${OLLAMA_KV_CACHE_TYPE:-q8_0}
+      # The context window every local model gets. Coding agents (OpenCode, Aider) need room for files; 16K fits a 16 GB laptop with the
+      # 8-bit cache above. The OpenCode config declares the same number (gen_opencode_config.py LOCAL_LIMIT), so it never overfills it.
+      OLLAMA_CONTEXT_LENGTH: ${OLLAMA_CONTEXT_LENGTH:-16384}
     volumes: ["ollama:/root/.ollama"]
     networks: [modelplane]
     # To load models after up:  docker exec -it <ollama> ollama pull qwen2.5:1.5b && ollama pull llama-guard3:1b

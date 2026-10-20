@@ -108,13 +108,13 @@ def test_every_securax_evidence_file_exists():
     assert missing == [] and all(v["status"] in ("proven", "partial") for v in sx.values())
 
 
-def test_shipped_packs_interlink_nscs_and_nciipc_without_copying_their_text():
+def test_shipped_packs_interlink_nscs_and_cii_without_copying_their_text():
     packs = ROOT / "governance" / "controls" / "packs"
     nscs = json.loads((packs / "nscs-audit-baseline-2020.json").read_text())
     markers = {m.strip() for v in nscs["citations"].values() for m in v["NSCS Audit Baseline 2020"].split(",")}
     assert len(markers) == 68 and nscs["framework"]["markers"] == 68                     # every marker is linked (pro.19 to its new control AS-101)
     assert nscs["controls"][0]["id"] == "AS-101" and "CC BY-NC-SA" in nscs["about"]
-    cii = json.loads((packs / "nciipc-cii.json").read_text())
+    cii = json.loads((packs / "cii-guidance.json").read_text())
     assert "GOV-005" in cii["citations"] and "not reproduced" in cii["about"]
     for p in (nscs, cii):
         assert all(len(str(v)) < 120 for c in p["citations"].values() for v in c.values())   # references, never passages
@@ -168,3 +168,40 @@ def test_import_with_a_placeholder_or_wrong_path_finds_the_workbook_itself(tmp_p
     assert "No file at FILE.xlsx" in out and "3 controls" in out and ct.LIB.exists()
     assert ct.main(["auto"]) == 0 and "library current" in capsys.readouterr().out   # nothing newer: nothing re-imported
     assert ct.main(["import", str(dl / "other.xlsx"), "--yes"]) == 0 and "is not the control-library workbook" in capsys.readouterr().out
+
+
+def test_an_agency_name_in_a_column_title_becomes_the_neutral_name(tmp_path):
+    # a workbook (or a library imported earlier) may name an agency in a column title; the public estate uses neutral names
+    assert ct.neutral("ABCDE / CERT-In / DPDP") == "CII / CERT-In / DPDP" and ct.neutral("ABCDE CII Framework") == "CII Framework"
+    assert ct.neutral("SEBI CSCRF") == "SEBI CSCRF"
+    data, p = lib(tmp_path)
+    data["controls"][0]["citations"]["ABCDE / CERT-In / DPDP"] = "Rules s.5"
+    p.write_text(json.dumps(data))
+    loaded = ct.load(p, tmp_path / "no-packs")
+    g = next(c for c in loaded["controls"] if c["id"] == "GOV-001")
+    assert g["citations"]["CII / CERT-In / DPDP"] == "Rules s.5" and "ABCDE / CERT-In / DPDP" not in g["citations"]
+
+
+def test_with_no_workbook_the_built_in_starter_library_gives_a_full_matrix(tmp_path, monkeypatch):
+    monkeypatch.setattr(ct, "LIB", tmp_path / "no-library.json")
+    data = ct.load()
+    assert data["meta"]["starter"] and len({c["domain"] for c in data["controls"]}) == 20
+    ids = {c["id"] for c in data["controls"]}
+    assert set(json.loads((ROOT / "governance/controls/securax-map.json").read_text())["controls"]) <= ids   # every piece of evidence has its control
+    small, big = "NBFC (base layer)", "Commercial bank"
+    by = {c["id"]: c for c in data["controls"]}
+    assert by["GOV-001"]["applicability"][small] == "MUST"                                  # Critical: everyone
+    assert (by["IAM-005"]["applicability"][big], by["IAM-005"]["applicability"][small]) == ("MUST", "SHOULD")  # High: lighter for small
+    assert ct.base_class(data) == big and set(ct.dominance(data)) == set(data["classes"])
+    page = ct.write_navigator(data, tmp_path / "navigator.html")[0].read_text()
+    assert "built-in starter library" in page and "built in" in page and "Commercial bank" in page
+
+
+def test_go_builds_the_matrix_even_with_no_workbook(tmp_path, monkeypatch, capsys):
+    monkeypatch.setattr(ct, "LIB", tmp_path / "no-library.json")
+    monkeypatch.setattr(ct, "find_xlsx", lambda *a, **k: [])
+    out = tmp_path / "portal" / "navigator.html"
+    real = ct.write_navigator
+    monkeypatch.setattr(ct, "write_navigator", lambda data, o=None: real(data, out))
+    assert ct.main(["auto"]) == 0 and out.exists()
+    assert "starter library" in capsys.readouterr().out

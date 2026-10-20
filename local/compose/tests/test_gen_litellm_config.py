@@ -417,8 +417,8 @@ def test_builder_puts_groq_before_deepseek_and_cerebras_is_in_no_chain():
     cat = _catalog()
     assert cat["chains"]["builder"][:6] == ["opencodego", "opencodego_glm", "groq", "groq_qwen", "nvidia_nim", "deepseek"]
     assert all("cerebras" not in v for k, v in cat["chains"].items() if not k.startswith("_"))
-    # NVIDIA's free tier is for development: the build chain only, never a Chat chain
-    assert [k for k, v in cat["chains"].items() if not k.startswith("_") and "nvidia_nim" in v] == ["builder"]
+    # NVIDIA's free tier is for development: the coding chains only (build and strong), never a Chat chain
+    assert sorted(k for k, v in cat["chains"].items() if not k.startswith("_") and "nvidia_nim" in v) == ["builder", "strong"]
     doc = yaml.safe_load(gen.generate(cat, {"CEREBRAS_API_KEY": "csk-x", "GROQ_API_KEY": "gsk_x"}))
     cer = [m for m in doc["model_list"] if m["model_name"] == "cerebras"][0]["litellm_params"]
     assert cer["model"].startswith("cerebras/") and cer["extra_headers"] == {"X-Cerebras-3rd-Party-Integration": "litellm"}
@@ -496,3 +496,13 @@ def test_indian_cloud_rung_is_opt_in_in_no_chain_and_not_assumed_in_country():
 def test_ollama_context_cache_is_8bit_by_default_and_switchable():
     env = yaml.safe_load(COMPOSE.read_text())["services"]["ollama"]["environment"]
     assert env["OLLAMA_KV_CACHE_TYPE"] == "${OLLAMA_KV_CACHE_TYPE:-q8_0}" and env["OLLAMA_FLASH_ATTENTION"] == "${OLLAMA_FLASH_ATTENTION:-1}"
+
+
+def test_the_strong_chain_puts_the_strongest_open_models_first_and_still_ends_local():
+    cat = _catalog()
+    strong = cat["chains"]["strong"]
+    assert strong[:3] == ["opencodego_pro", "opencodego_kimi", "opencodego_glm_pro"] and strong[-1] == "local"
+    by = {p["id"]: p for p in cat["providers"]}
+    assert all(by[i]["env"] == ["OPENCODE_GO_API_KEY"] and by[i]["headers"]["x-opencode-session"] for i in strong[:3])   # one key, Go's session header
+    doc = yaml.safe_load(gen.generate(cat, {"OPENCODE_GO_API_KEY": "sk-go"}))
+    assert "strong" in {m["model_name"] for m in doc["model_list"]}

@@ -12,7 +12,7 @@ This comparison draws on public sources (listed below). Vendors' own claims are 
 
 | | Live-fire team exercise | Scoring and judging | Simulated users and traffic | Framework mapping | Individual skills and gamification | AI/ML threat content | Where it runs |
 |---|---|---|---|---|---|---|---|
-| **CybExer** (Estonia) | Yes: government, defence, critical infrastructure | Yes (the portal you used) | Yes | Not confirmed in sources | Limited | Not confirmed | Cloud, on-premises, hybrid |
+| **CybExer** (Estonia) | Yes: government, defence, critical infrastructure | Yes | Yes | Not confirmed in sources | Limited | Not confirmed | Cloud, on-premises, hybrid |
 | **Cyberbit** (now with RangeForce) | Yes: SOC live-fire with real tools | Yes | Yes | ATT&CK-aligned (vendor claim) | Yes: RangeForce's individual and team measurement | Not confirmed | Cloud |
 | **SimSpace** (MIT Lincoln Laboratory roots) | Yes: replicated corporate networks, users include US Cyber Command | Yes | Yes | Not confirmed in sources | Limited | Not confirmed | Cloud or on-premises; priced for large programmes |
 | **Hack The Box Enterprise** | Team exercises | Yes | Partial | Labs mapped to ATT&CK and NIST (third-party listing) | Strong: ranks, paths, certifications | Some | Cloud |

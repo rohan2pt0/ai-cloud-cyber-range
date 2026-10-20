@@ -344,11 +344,11 @@ case "$cmd" in
     else echo "  (phone alerts: optional →  ./securax notify setup)"; fi
     # 6. Regulator watch baseline and a first backup, once.
     if ! on regwatch; then off regwatch; else [ -f "$ROOT/vault/regwatch.json" ] || { python3 "$ROOT/governance/regwatch.py" fetch --quiet >/dev/null 2>&1 && ok "Regulator watch started (RBI, SEBI)"; }; fi
-    # 6b. The control library: a workbook saved in Downloads (or vault/inbox) is imported by itself; no file name to type.
+    # 6b. The control matrix: always built (the built-in starter library); a workbook of your own saved in Downloads replaces it by itself.
     _CL="$(python3 "$ROOT/governance/controls.py" auto 2>/dev/null | tail -1)"
     case "$_CL" in
       "✔ navigator"*|"library current") ok "Control library and navigator current" ;;
-      "no workbook found") echo "  (control library: optional. Save the BFSI workbook in Downloads and run  ./securax go  again)" ;;
+      "using the built-in starter library"*) ok "BFSI control matrix ready (built-in starter library; your own workbook in Downloads replaces it)" ;;
       *) fix "Control library: the workbook could not be read → ./securax controls import" ;;
     esac
     BDIR="$(ev SECURAX_BACKUP_DIR "$ROOT/backups")"
@@ -613,8 +613,8 @@ URLS
     # Build/evolve SecuRAX using ITS OWN models (via the gateway), with Claude-like rigor supplied by
     # the BUILD-CONTRACT + the repo's test gates. Uses Aider as the edit->test->fix agent.
     #   ./securax build "add a /metrics endpoint to the gateway with a test"
-    # Model: $BUILD_MODEL (default 'builder' = resilient ladder: cheap DeepSeek -> free tiers -> local). 'coder' = local only,
-    # or any alias from ./securax providers list. All traffic still passes through the guardrail.
+    # Model: $BUILD_MODEL (default 'builder' = resilient ladder: OpenCode Go flash models -> free tiers -> local; 'strong' = the strongest open
+    # models first). 'coder' = local only, or any alias from ./securax providers list. All traffic still passes through the guardrail.
     shift; TASK="$*"
     [ -z "$TASK" ] && { echo 'usage: ./securax build "what to change"   (set BUILD_MODEL=coder for local)'; exit 1; }
     if ! command -v aider >/dev/null 2>&1; then
@@ -625,7 +625,7 @@ URLS
     fi
     gcurl -fsS $(gw_url)/healthz >/dev/null 2>&1 || { C "Gateway is down — run ./securax up first."; exit 1; }
     KEY="$(sed -n 's/^LITELLM_MASTER_KEY=//p' "$ROOT/local/compose/.env" 2>/dev/null | head -1)"; KEY="${KEY:-sk-range-dev}"
-    # 'builder' = the resilient BUILD ladder (cheap DeepSeek -> free tiers -> local coder -> local), so a
+    # 'builder' = the resilient BUILD ladder (OpenCode Go flash -> free tiers -> local coder -> local), so a
     # dead key, a rate limit or an outage just slides to the next rung instead of stopping the build.
     MODEL="${BUILD_MODEL:-$(ev BUILD_MODEL builder)}"
     C "Building with model '$MODEL' through the SecuRAX gateway (rigor: BUILD-CONTRACT + auto-tests)…"
@@ -648,12 +648,17 @@ URLS
     shift; TASK=""; TRIES=3; FORCE=0
     while [ $# -gt 0 ]; do case "$1" in --tries) TRIES="${2:-3}"; shift 2;; --force) FORCE=1; shift;; *) TASK="$TASK${TASK:+ }$1"; shift;; esac; done
     [ -n "$TASK" ] || { echo 'usage: ./securax autobuild "what to build" [--tries N] [--force]'; exit 1; }
-    # Route first: a task that was always going to need Claude gets its brief now, not after three cheap red attempts.
+    # Route first: hard work (security, sync, regulator mapping, many areas) is built with the STRONG chain (the strongest open models),
+    # through the very same gates. Only when no strong model is set up does it stop and write a brief instead (doc 83).
     _RT="$(python3 "$ROOT/lifecycle/route.py" "$TASK" --json 2>/dev/null || true)"
-    if [ "$FORCE" = 0 ] && printf '%s' "$_RT" | grep -q '"tier": "claude"'; then
+    if [ "$FORCE" = 0 ] && printf '%s' "$_RT" | grep -q '"tier": "strong"'; then
       python3 "$ROOT/lifecycle/route.py" "$TASK" | head -1
-      "$0" escalate "$TASK"
-      C "This one goes to Claude, so autobuild did not spend attempts on it. To try the cheap tier anyway:  ./securax autobuild \"$TASK\" --force"; exit 4
+      if [ -z "${BUILD_MODEL:-}" ] && python3 "$ROOT/local/compose/gen_opencode_config.py" --env-file "$ROOT/local/compose/.env" --strong-ready 2>/dev/null; then
+        export BUILD_MODEL=strong; C "Hard task: building with the strong chain (strongest open models), through the same gates."
+      elif [ -z "${BUILD_MODEL:-}" ]; then
+        "$0" escalate "$TASK"
+        C "This one needs a strong model and none is set up. Add an OpenCode Go key (./securax providers add opencodego; doc 83), or try the cheap tier:  ./securax autobuild \"$TASK\" --force"; exit 4
+      fi
     fi
     git -C "$ROOT" rev-parse --git-dir >/dev/null 2>&1 || { C "autobuild needs a git checkout."; exit 1; }
     [ -z "$(git -C "$ROOT" status --porcelain)" ] || { C "Your checkout has uncommitted changes — commit or stash them first (autobuild only works on a clean tree, so it can always roll back)."; exit 1; }
@@ -685,8 +690,8 @@ $(python3 "$ROOT/lifecycle/forge.py" brief "$FB")"
               -c user.email="$(git -C "$ROOT" config user.email || echo 'autobuild@securax.local')" \
               commit -q -m "autobuild: $TASK" || { C "git commit failed — your work is on branch $BR (uncommitted). Fix the git error above and commit it yourself."; exit 3; }
         fi
-        if python3 "$ROOT/lifecycle/route.py" "$TASK" --base "$ORIG" --json 2>/dev/null | grep -q '"tier": "claude"'; then
-          C "  ⚠ The diff touches a sensitive part (security, crypto, sync or regulator mapping). Before you merge:  ./securax escalate \"review: $TASK\""
+        if python3 "$ROOT/lifecycle/route.py" "$TASK" --base "$ORIG" --json 2>/dev/null | grep -q '"tier": "strong"'; then
+          C "  ⚠ The diff touches a sensitive part (security, crypto, sync or regulator mapping). Before you merge, a second look:  ./securax review --base $ORIG"
         fi
         C "✔ GREEN on attempt $i. Review it:  git diff $ORIG..$BR     Ship it:  git push -u origin $BR   (then open a PR)"
         [ "${AUTOBUILD_PUSH:-0}" = 1 ] && git -C "$ROOT" push -u origin "$BR"
@@ -707,9 +712,16 @@ $(python3 "$ROOT/lifecycle/forge.py" brief "$FB")"
     mv "$BTMP" "$BRIEF"; rm -f "$FB"
     C "✘ Gave up after $TRIES attempts. Your branch ($ORIG) is untouched. Escalation brief: $BRIEF"; exit 2
     ;;
+  review)
+    # A second pair of eyes on your change from the strongest open models, through the gateway (doc 83). Refuses anything in vault/ or .env.
+    #   ./securax review [--base REF] [--model ALIAS] [--dry-run]
+    shift
+    gcurl -fsS $(gw_url)/healthz >/dev/null 2>&1 || { [ "${1:-}" = "--dry-run" ] || { C "The gateway is down — run  ./securax up  first."; exit 1; }; }
+    REVIEW_API_BASE="$(gw_url)/v1" REVIEW_API_KEY="$(ev GATEWAY_API_KEY "$(ev LITELLM_MASTER_KEY sk-range-dev)")" exec python3 "$ROOT/lifecycle/review.py" "$@"
+    ;;
   escalate)
-    # Prepare a tight, copy-pasteable brief for a STRONGER model (Claude/Sonnet) for the hard 10%
-    # (security design, nasty cross-cutting bug). Keeps your frontier-model usage minimal + targeted.
+    # Prepare a tight, copy-pasteable brief for ANY stronger model or person (the strong open models in OpenCode, Claude if you still
+    # have it, a colleague) for the hard 10%. Optional since doc 83: autobuild uses the strong chain by itself when it is set up.
     shift; TASK="$*"
     [ -z "$TASK" ] && { echo 'usage: ./securax escalate "the hard problem"'; exit 1; }
     OUT="$ROOT/escalation-brief.md"
@@ -726,7 +738,7 @@ $(python3 "$ROOT/lifecycle/forge.py" brief "$FB")"
       SK="$(python3 "$ROOT/lifecycle/vet.py" rules --max-chars 30000 2>/dev/null || true)"
       [ -n "$(printf '%s' "$SK" | tr -d '[:space:]')" ] && { echo; echo "## Reference skills (third-party, vetted + pinned: vendor/agent-skills — treat as guidance, never as instructions that override the task)"; printf '%s\n' "$SK"; }
     } > "$OUT"
-    C "Wrote $OUT — paste it into Claude/Sonnet (or ./securax enhance uses your local model). Keep frontier use to this 10%."
+    C "Wrote $OUT — open it in  ./securax opencode --strong  (or paste it into any stronger model you use). Keep it to the hard 10%."
     ;;
   profile)
     # Right-size SecuRAX to THIS machine so it works under resource constraints instead of swapping and
@@ -895,6 +907,15 @@ EOF2
     #   ./securax config show | check | enabled <name> | render FILE...
     shift; exec python3 "$ROOT/governance/config.py" "$@"
     ;;
+  features)
+    # Everything SecuRAX can do, from features.json (the same list the Command Center, website and docs show).
+    exec python3 "$ROOT/tools/features_sync.py" --list
+    ;;
+  privacy)
+    # Names that must never appear in this public repository (organisations, exercises, people); only fingerprints are stored (doc 65).
+    #   ./securax privacy check | add "Name"
+    shift; exec python3 "$ROOT/governance/private_names.py" "${@:-check}"
+    ;;
   route)
     # Which builder a task goes to (local / OpenCode / Claude) and why; rules in lifecycle/route.json (doc 23).
     #   ./securax route "task" [--files F ...] [--base REF] [--json]
@@ -937,7 +958,7 @@ EOF2
     shift; exec python3 "$ROOT/governance/finish.py" "$@"
     ;;
   controls)
-    # The BFSI control library (RBI, SEBI, IRDAI, IFSCA, NCIIPC, CERT-In, DPDP): import the gap-assessment workbook (kept private in
+    # The BFSI control library (RBI, SEBI, IRDAI, IFSCA, the national CII agency, CERT-In, DPDP): import the gap-assessment workbook (kept private in
     # vault/), profiles per regulated-entity class or the strictest-of-all ceiling, and the visual navigator next to the cockpit.
     #   ./securax controls import [FILE.xlsx] | auto | profile [CLASS] | dominance | navigator | gaps [CLASS]   (no file: it finds it)
     shift; exec python3 "$ROOT/governance/controls.py" "$@"
@@ -988,8 +1009,8 @@ EOF2
     shift; exec python3 "$ROOT/governance/gateway_auth.py" "$@"
     ;;
   comply)
-    # Regulatory gap assessment: RBI NBFC Cybersecurity/Technology Directions 2026 and SEBI CSCRF, requirement by requirement, every claim
-    # verifiable. Entity-owned obligations are listed separately, never counted as covered.   ./securax comply [rbi|cscrf|pqc] [--category qre] [--md|--json|--verify]
+    # Regulatory gap assessment, requirement by requirement, every claim verifiable, for every map in governance/regmap.py MAPS (RBI, SEBI CSCRF,
+    # and the rest). Entity-owned obligations are listed separately, never counted as covered.   ./securax comply [MAP|all] [--category qre] [--md|--json|--verify]
     shift; exec python3 "$ROOT/governance/regmap.py" "$@"
     ;;
   fitness)
@@ -1540,8 +1561,9 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
   opencode)
     # ./securax opencode --check   which chain OpenCode uses (always the build chain; never a Chat chain), with its live rungs
     if [ "${2:-}" = "--check" ]; then exec python3 "$ROOT/local/compose/gen_opencode_config.py" --env-file "$ROOT/local/compose/.env" --check; fi
-    # ./securax opencode [args]  - the OpenCode terminal coding agent (https://opencode.ai), with EVERY model call going through the SecuRAX gateway:
-    # same guardrails, audit, residency rules and build ladder (OpenCode Go -> DeepSeek -> free tiers -> local) as the rest of the estate. Docs: doc 42.
+    # ./securax opencode [--strong] [--rea] [args]  - the OpenCode terminal coding agent (https://opencode.ai), with EVERY model call going through
+    # the SecuRAX gateway: same guardrails, audit, residency rules and ladders (build: OpenCode Go flash models -> free tiers -> local;
+    # strong: DeepSeek V4 Pro / Kimi K3 / GLM 5.3 -> ... -> local) as the rest of the estate. Docs: docs 42 and 83.
     if ! command -v opencode >/dev/null 2>&1; then
       C "OpenCode (the terminal UI) is not installed. Install it once - a pinned version, from npm, NOT a curl-to-shell script:"
       echo "   npm install -g opencode-ai@1.19.0        # MIT licence; needs Node.js (Ubuntu/WSL:  sudo apt install nodejs npm)"
@@ -1549,12 +1571,15 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
       exit 1
     fi
     gcurl -fsS $(gw_url)/healthz >/dev/null 2>&1 || { C "The gateway is down - run  ./securax up  first."; exit 1; }
-    ENVF="$ROOT/local/compose/.env"; OCD="${SECURAX_HOME_DIR:-$HOME/.securax}/opencode"; REAARG=""
+    ENVF="$ROOT/local/compose/.env"; OCD="${SECURAX_HOME_DIR:-$HOME/.securax}/opencode"; REAARG=""; STRONGARG=""
+    if [ "${2:-}" = "--strong" ]; then     # the hard work (./securax route says "strong"): start on the strongest open models (doc 83)
+      STRONGARG="--strong"; set -- "$1" "${@:3}"; C "Starting on the strong chain (the strongest open models). The build ladder is one pick away in /models."
+    fi
     if [ "${2:-}" = "--rea" ]; then
       docker image inspect securax-rea:6.5.0 >/dev/null 2>&1 || { C "The REA sandbox image is not built yet:  ./securax inspect --build   (once; needs Docker and internet)"; exit 1; }
       REAARG="--rea-project $PWD"; set -- "$1" "${@:3}"; C "REA (reverse engineering) is available to the agent, inside its sandbox: no network, read-only disk, this folder mounted read-only."
     fi
-    python3 "$ROOT/local/compose/gen_opencode_config.py" --env-file "$ENVF" --base-url "$(gw_url)" $REAARG --out "$OCD/opencode.json" >/dev/null || { C "Could not write the OpenCode config."; exit 1; }
+    python3 "$ROOT/local/compose/gen_opencode_config.py" --env-file "$ENVF" --base-url "$(gw_url)" $REAARG $STRONGARG --out "$OCD/opencode.json" >/dev/null || { C "Could not write the OpenCode config."; exit 1; }
     chmod 700 "$OCD" 2>/dev/null || true
     export OPENCODE_CONFIG="$OCD/opencode.json" SECURAX_GATEWAY_KEY="$(ev WEBUI_GATEWAY_KEY "$(ev LITELLM_MASTER_KEY sk-range-dev)")"
     internal_on && export NODE_EXTRA_CA_CERTS="$(tls_home)/ca.crt"
@@ -1634,58 +1659,64 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
 SecuRAX — one command, `./securax <command>`   (Windows: `.\securax.cmd <command>`)
 
 START HERE: one command does it all
-  ./securax go   start, update, schedules, phones, backup, sync, and ONE status screen (safe to run any time)
+  ./securax go     start, update, schedules, phones, backup, sync, and ONE status screen (safe to run any time)
+  ./securax open   the Command Center in your browser: every feature, with what it does and how to open it
+  ./securax features   the same list, here in the terminal
 
 THE 20% YOU USE 80% OF THE TIME
   setup          guided first-time setup (keys, phone access)        up / down      start / stop everything
-  open           open the Command Center in your browser             status         what is running right now
-  doctor         check health and run a real chat test               update         get the latest version (safe: backs up first)
-  why [service]  something is not working: what stopped and why      shortcut       type `securax <command>` from any folder
+  status         what is running right now                           update         get the latest version (safe: backs up first)
+  doctor         check health and run a real chat test               why [service]  something is not working: what stopped and why
+  rollback       something broke: go back to the last version that worked (--list shows them; --latest comes forward again)
+  exercise       the CYBER RANGE: practise defending against a live red team; opens in your browser (doc 79)
   cockpit        one-page health view: risks, to-dos, trends         storage        how much space you use and when it runs out
-  rollback       something broke: go back to the last version that worked (--list shows them; --latest comes forward again; doc 82)
-  notify         alerts to your phone (ntfy) or team chat               capacity       what to switch on as more people join (1 to 100,000)
-  tls            encrypt every web connection (HTTPS everywhere)        sync-link      one-tap sync setup for a phone / second computer
+  notify         alerts to your phone (ntfy) or team chat            shortcut       type `securax <command>` from any folder
+  tls            encrypt every web connection (HTTPS everywhere)     sync-link      one-tap sync setup for a phone / second computer
   start / stop docs|flows|all   Private Docs / Automation (skipped in lite mode; remembered across updates)
-  opencode       the OpenCode terminal coding agent, guarded: every call goes through the gateway (doc 42); --rea adds sandboxed reverse engineering
-  inspect        look inside third-party software before you trust it (npm package, file, folder): what it can do, and what a new version can do that the old one could not (doc 43)
-  protect        encrypt your backups (one guided step; Windows: double-click PROTECT-BACKUPS-Windows.bat)
-  crypto         plain-English protection check (--full: the technical inventory / CBOM)
+  capacity       what to switch on as more people join (1 to 100,000)
+  protect        encrypt your backups (one guided step)              crypto         plain-English protection check (--full: the CBOM)
 
 AI & CHAT
   keys / providers add|list|chain  AI keys; build-chain order         models         check which models your keys can use today
   pull           download the private local model                   profile        size everything to THIS machine
   guard [on|off] strict or relaxed safety rails                      bench          which installed model fits this machine best
+  ai stop|resume|budget|share   stop AI at once (one model or all), the allowance, who did this month's work
   say "text"     speak/ask quickly      ask <agent> "q"  ask an expert advisor      advisors / plan / learn / intel   daily helpers
   research "task" --allow site.com   browse the web within limits    design "prompt"   make images      routines   scheduled jobs
   knowledge import|status   your old Claude/ChatGPT/DeepSeek/Gemini chats as one private library you can search (doc 51)
 
-KEEP IT SAFE
-  backup / restore FILE       save and recover your data           watch          keep an eye on it and self-heal
-  scan           look for known-exploited weaknesses (offline)     kev / offline  threat data that works with no internet
-  certs          your certification plan: what next, when, what it costs
-  purple         attack your own AI rails and report what held     vet            check third-party skills/plugins before use
+DEFEND, RESPOND, PRACTISE
+  respond ...    crisis response kit: permission first, evidence intake, IOC triage, reports (doc 78)
+  findings ...   every scan and VAPT finding once, with a fix-by date    repairs   everything that needs fixing, each with its fix
+  purple         attack your own AI rails and report what held       inspect        look inside third-party software before you trust it
+  scan           known-exploited weaknesses (offline)                kev / offline  threat data that works with no internet
+  backup / restore FILE   save and recover your data                 watch          keep an eye on it and self-heal
+  vet            check third-party skills/plugins before use         certs          your certification plan: what next, when, what it costs
 
 REGULATORY & EVIDENCE (any regulator: RBI, SEBI, CERT-In, IRDAI, DPDP, others as data files)
-  comply [rbi|cscrf|mit-ai-risk|nist-ai-600-1|pqc]  requirement-by-requirement gap view     ccsp   CCSP practice map
+  controls ...   the BFSI control matrix: works with no file (built-in starter library); your own workbook in Downloads replaces it
+  comply [map]   requirement-by-requirement gap view, every mapped regulation (or one: comply rbi)   ccsp   CCSP map
   evidence       audit pack (checksummed)             incident ...   reporting clock: open, due, draft, file, seal, rollup
   risks ...      risk register + treatment plans (V/T/R), linked to controls; overdue treatments; CII self-check
   finish         what is left to set up, with the steps (also on the Command Center)
-  route "task"   which builder a task goes to (local, OpenCode or Claude) and why;  lessons: what earlier work taught
-  controls ...   BFSI control library: import the workbook, profiles per RE class, navigator (grid, radar, heat map)
-  config ...     show / check brand.env and integrations.txt (nothing brand-specific is hardwired)
   postmortem ... blameless postmortem after an outage; tracks the fix-it actions to done
   regwatch ...   new RBI/SEBI circulars: fetch, list, monthly digest (titles + links only)
   regulated on   ONE switch: sign-in + data residency + strict cockpit (then fine-tune with the two below)
-  phones         phones & tablets over Tailscale (doc 58)
   gateway-auth   who may call the AI gateway          residency ...  which data may be processed where
+  phones         phones & tablets over Tailscale (doc 58)
 
 BUILD & KEEP IT HEALTHY
-  build / autobuild / escalate "task"     build with the local or free models    diffcheck   catch cheating before commit    forge   prove the tests really test the change    autobench   measure each build model
-  verify         run every check                       fitness / gameday      measured promises; real failure drills
-  impact         what a change can affect, and which proofs to re-run
+  opencode       the terminal coding agent on open models, every call through the gateway (doc 83)
+  build / autobuild / escalate "task"   build with the open or local models     route "task"   which builder a task goes to, and why
+  review         a second look at your change from the strongest open models, before you merge
+  verify         run every check                      fitness / gameday   measured promises; real failure drills
+  impact         what a change can affect             diffcheck / forge / autobench   catch cheating; prove the tests test; measure models
+  lessons        what earlier work taught             config / privacy   brand values in one file; names that must never be published
+  ready          READY when the estate answers        support-packet     one scrubbed zip for a bug report
 
 GROW (everything dormant until you wake it; sleeping keeps your data)
-  stages / soil / grow / hibernate / prune / scale     rhythm      tenant / organ / organ-check / burrow / spore / range / full
+  stages / soil / grow / hibernate / prune / scale     rhythm      tenant / organ / organ-check / burrow / spore / full
+  range          the Active Directory practice lab (GOAD), a sleeping organ; the cyber range is `exercise` above
 
 Details for any command: docs/securax/  (start at 00-OVERVIEW.md)  ·  everything above also works through your browser at /hub.html
 HELP

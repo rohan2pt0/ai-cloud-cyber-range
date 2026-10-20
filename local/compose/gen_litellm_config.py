@@ -202,7 +202,7 @@ def live_chain(chain_ids: list[str], enabled: set[str]) -> list[str]:
     return [i for i in chain_ids if i in enabled]
 
 
-EDITABLE_CHAINS = ("builder",)   # Chat chains (bank-assistant, twin) carry personal data: their order is reviewed code, never a .env switch
+EDITABLE_CHAINS = ("builder", "strong")   # the coding chains; Chat chains (bank-assistant, twin) carry personal data: their order is reviewed code, never a .env switch
 
 
 def chain_override(catalog: dict, env: dict, name: str) -> list[str] | None:
@@ -219,7 +219,7 @@ def chain_override(catalog: dict, env: dict, name: str) -> list[str] | None:
 def edit_chain(catalog: dict, env: dict, name: str, action: str, pid: str = "", before: str = "") -> tuple[str, str | None]:
     """(plain-English message, new CHAIN_<NAME> value or None on refusal). Never lets an edit remove 'local' or touch a Chat chain."""
     if name not in EDITABLE_CHAINS:
-        return f"Only the build chain can be reordered here ({', '.join(EDITABLE_CHAINS)}); Chat chains carry personal data, so their order is reviewed code.", None
+        return f"Only the coding chains can be reordered here ({', '.join(EDITABLE_CHAINS)}); Chat chains carry personal data, so their order is reviewed code.", None
     llm = {p["id"] for p in catalog.get("providers", []) if p.get("kind") == "llm"}
     cur = chains_for(catalog, env)[name]
     if action == "reset":

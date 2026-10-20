@@ -256,6 +256,8 @@
   "website/**",
   "tools/publish-clean.sh",
   "tools/readme_sync.py",
+  "tools/features_sync.py",
+  "features.json",
   "*.md",
   "LICENSE*",
   "CODEOWNERS",

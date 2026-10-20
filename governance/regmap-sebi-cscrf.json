@@ -124,14 +124,14 @@
   },
   {
    "id": "GV.PO (CII, ISO 27001/27002)",
-   "title": "NCIIPC CII principles where identified as CII; adopt ISO 27001/27002 practices",
+   "title": "national CII principles where identified as CII; adopt ISO 27001/27002 practices",
    "applies": [
     "mii",
     "qre",
     "mid"
    ],
    "status": "entity",
-   "note": "Entity decision; NCIIPC applicability is notified, not self-declared.",
+   "note": "Entity decision; CII applicability is notified, not self-declared.",
    "evidence": [],
    "next": "",
    "priority": ""
@@ -277,7 +277,7 @@
   },
   {
    "id": "ID.RA.S3",
-   "title": "Dark-web monitoring and take-down; anti-phishing/anti-rogue-app services; SOPs for CERT-In/NCIIPC advisories with timeframes; process IOC/IOA/malware alerts; onboard to CERT-In intelligence platform; MIIs on NCCC",
+   "title": "Dark-web monitoring and take-down; anti-phishing/anti-rogue-app services; SOPs for CERT-In/national CII agency advisories with timeframes; process IOC/IOA/malware alerts; onboard to CERT-In intelligence platform; MIIs on NCCC",
    "applies": [
     "mii",
     "qre"

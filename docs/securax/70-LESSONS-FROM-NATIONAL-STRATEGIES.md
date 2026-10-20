@@ -32,7 +32,7 @@ measured and kept honest. Most of it transfers directly to the Life OS and to th
   fit the cockpit as single percentages.
 - **Approvals automated; only exceptions to a person** (India@2047 p.7). This is how the admission gate and the safe update
   already work.
-- **Benchmark against outside standards** (Saudi 2030): the control library scores you against RBI, SEBI, NSCS, NCIIPC
+- **Benchmark against outside standards** (Saudi 2030): the control library scores you against RBI, SEBI, NSCS, national CII guidance
   and the RBI drafts, not only pass/fail.
 - **Resilience built in by default** (India@2047; US NSS p.3): every module ships with a backup, a stop path and a rollback.
 

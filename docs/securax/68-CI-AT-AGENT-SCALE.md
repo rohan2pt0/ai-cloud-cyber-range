@@ -4,7 +4,7 @@
 > **Status: 🟡 Partly built.** The four tiers, impact-picked PR journeys, cancel-superseded and the nightly full run are built and tested; merge trains, auto-revert, the CLI split, sharding and prebuilt images are queued with triggers. [What the lights mean](../index.md#the-status-lights)
 <!-- status:end -->
 
-Today every push runs all 40 real-product journeys, which takes about 40 minutes. That is fine for one person. It does
+Without the tiers, every push would run all <!-- fact:journeys -->44<!-- /fact --> real-product journeys, which takes about 40 minutes. That is fine for one person. It does
 not survive a coder agent, or a team of them, committing all day: the queue grows faster than CI drains it.
 
 Anthropic hit the same wall at a far larger scale and replaced Git in its monorepo with an in-house system, Scion
@@ -26,7 +26,7 @@ builds, CI).
 |---|---|---|---|
 | **L0 · local** | before every commit, by people and agents | `./securax verify`: lint, unit tests, budgets, maps. `autobuild` commits only when it passes. | seconds |
 | **L1 · pull request** | every push to a PR | unit tests, lint, scans (about 1 minute), plus **only the journeys that guard what the PR touches**, chosen from `lifecycle/impact.json` | 0 to a few minutes for a small change |
-| **L2 · main** | every merge | **all 40 journeys** | about 40 minutes, off the critical path |
+| **L2 · main** | every merge | **all <!-- fact:journeys -->44<!-- /fact --> journeys** | about 40 minutes, off the critical path |
 | **L3 · nightly** | 02:00 IST | all journeys on main, before the laptops' 3:15 am safe update | about 40 minutes |
 
 - **A newer push cancels the older run** of the same PR, so superseded commits stop using runners.
@@ -51,7 +51,7 @@ only moved off the path that blocks the next change.
 |---|---|---|
 | **Merge trains** | 20 agent commits in an hour become one PR and one L1 run | more than about 10 PRs a day |
 | **Auto-revert on a red main** | L2 finds the breaking merge and opens the revert itself, so main stays green without a person | the first L2 failure that a person had to chase |
-| **Split the `securax` CLI** into one module per command | today one file is guarded by 32 journeys, so any CLI edit re-proves almost everything | when CLI changes dominate L1 time |
+| **Split the `securax` CLI** into one module per command | today one file is guarded by most journeys, so any CLI edit re-proves almost everything | when CLI changes dominate L1 time |
 | **Shard L2 across runners** | 40 minutes becomes about 10 minutes with 4 runners (Actions minutes are free on public repositories) | when L2 lags behind merges |
 | **Prebuilt sandbox images** | stop rebuilding the same images in every run | when image builds pass 10% of L2 |
 

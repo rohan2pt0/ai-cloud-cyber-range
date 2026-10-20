@@ -93,3 +93,22 @@ def test_the_green_team_account_is_installed_and_checked_by_key(tmp_path):
     res = {h: (ok, why) for h, _, ok, why in people.rule_checks(g, 9, deployed, "/k", run=lambda ip, *_: answers.get(ip, (True, "greenteam wheel")))}
     assert res["www"][0] and res["dns1"] == (False, "the green-team account is no longer an administrator") and res["dns2"] == (False, "Permission denied")
     assert "terminal" not in res and people.rule_checks(g, 9, deployed, None) == []              # no key yet: nothing is claimed
+
+
+def test_exercise_with_no_words_after_it_makes_a_practice_game_and_opens_the_portal(tmp_path, monkeypatch, capsys):
+    import exercise.__main__ as cli
+    from exercise import portal
+    monkeypatch.setattr(cli, "HOME", tmp_path)
+    monkeypatch.setenv("SECURAX_NO_OPEN", "1")
+
+    class Srv:
+        def serve_forever(self):
+            raise KeyboardInterrupt
+    seen = []
+    monkeypatch.setattr(portal, "serve", lambda g, host, port: seen.append((host, port)) or Srv())
+    assert cli.main([]) == 0
+    out = capsys.readouterr().out
+    assert seen == [("127.0.0.1", 8097)] and "WHITE token" in out and "http://127.0.0.1:8097/" in out
+    assert len(list(tmp_path.glob("*/game.db"))) == 1 and list(tmp_path.glob("*.tokens.txt"))
+    assert cli.main(["open"]) == 0 and len(list(tmp_path.glob("*/game.db"))) == 1        # the second time it reuses the game
+    assert "tokens are in" in capsys.readouterr().out

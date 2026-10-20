@@ -9,6 +9,23 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **One list of features, written everywhere** (doc 65):
+  - **Source:** `features.json` holds what SecuRAX can do, in plain words.
+  - **Generated surfaces:** `tools/features_sync.py` writes it into the Command Center ("Everything SecuRAX can do"), the website's estate section, the docs home page, the README and `./securax features`.
+  - **Facts:** counts on a page (tests, journeys, mapped frameworks) are now generated from the code.
+  - **New fitness checks:** `features-current`, and `commands-in-help` (every command is in `./securax help`).
+- **`./securax exercise` on its own opens the cyber range** (doc 79): it makes a practice exercise the first time, opens the portal in your browser and says which token to use. It is also a card in the Command Center.
+- **The BFSI control matrix works with no file** (doc 66):
+  - **Starter library:** built in, public, written in plain words: 67 controls plus the packs', 20 domains, 8 entity kinds.
+  - **Your own workbook:** saved in Downloads, it replaces the starter by itself and stays private.
+  - **Command Center:** has a BFSI controls card.
+- **Build with open models** (doc 83):
+  - **Strong chain:** DeepSeek V4 Pro, Kimi K3 and GLM 5.3 on the OpenCode Go key, ending at the local model.
+  - **Router:** the `strong` tier, which was `claude`; `autobuild` builds hard work with the strong chain through the same gates.
+  - **OpenCode:** `./securax opencode --strong`; it now loads BUILD-CONTRACT.md and LESSONS.md.
+  - **Review:** `./securax review`, a second look from the strong chain that refuses vault/ and .env.
+  - **`ai share`:** counts work done with the open models.
+- **`./securax privacy`:** names that must never appear in this public repository, stored as fingerprints only; the fitness check `private-names` enforces it.
 - **`./securax rollback`: go back to a working version at any time** (doc 82):
   - **Known-good record:** every healthy `up` or `update` is recorded (commit, version, newest backup) and pinned in git; the newest 50 are kept.
   - **Safe switch:** unsaved edits are stashed, data is backed up, the version left is pinned, and a version that does not start sends you back automatically.
@@ -160,6 +177,14 @@ for the versioning and release policy.
   - **Visibility:** remaining allowance in the response headers, a cockpit lamp, and spend that survives a gateway restart.
 
 ### Fixed
+- **A confidential agency's name is gone from the repository.** The CII pack, doc 67 and every mention use neutral wording, and the importer maps a workbook's column title to the neutral name. Old commits still contain it (doc 65).
+- **Hand-kept counts that had drifted:**
+  - **Website:** "736 tests, 41 journeys"; now generated.
+  - **Docs 28, 54, 68 and the explainer:** their counts are generated too.
+  - **Doc 79:** "30 checks in the sample"; it now gives no fixed count.
+- **The help text** now lists every command (it missed `exercise`, `respond`, `findings`, `repairs`, `ai`, `ready` and others), and separates the AD lab (`range`) from the cyber range (`exercise`).
+- **Doc 15** pointed IDE agents at LiteLLM directly (port 4000), around the gateway's guardrails; it now points at the gateway.
+- **The local model's context window:** OpenCode assumed 32K. Ollama's context length is now set (16K by default), and OpenCode reads the same number.
 - **Trivy:** the range gamebox image now has a health check; its by-design root user is an accepted finding scoped to that one file (`.trivyignore.yaml`, read through `trivy.yaml`).
 - **`./securax restore` no longer leaves a secrets file that git would pick up.** It keeps the previous `.env` as `local/compose/.env.pre-restore`, which is now git-ignored. Before, the checkout stayed dirty, so `update` could not roll back safely, and the file could have been committed.
 - **Sandbox:** the CCSP and RBI-map tamper journeys put back the files they edit, so later journeys no longer start from a dirty checkout.
@@ -197,12 +222,12 @@ for the versioning and release policy.
   - **Private:** the register stays in `vault/risks/`.
   - **Links:** each risk is linked to the library controls that treat it. The navigator's heat map plots open risks when controls are unscored, and the vital few rank controls by your highest open risk.
   - **Overdue treatments** light a lamp in the navigator and, only when there are any, in the cockpit.
-  - **`cii`:** the four NCIIPC impact tests, recorded as a self-check.
+  - **`cii`:** the four the national CII agency impact tests, recorded as a self-check.
 - **NSCS Audit Baseline pack:** all 68 markers (csm/pro/det/res/rec/imp) are linked to library controls, with the three risk profiles recorded. `pro.19` becomes control AS-101 (change control).
-- **NCIIPC CII pack:** the evaluation framework's five phases and the identification guidelines are linked to library controls. Both packs carry references only, never the documents' text.
+- **national CII pack:** the evaluation framework's five phases and the identification guidelines are linked to library controls. Both packs carry references only, never the documents' text.
 - **Professional names with phones:** the HTTPS edge gets two loopback-only device ports (9443 app with same-origin `/v1`, `/sync`; 9444 Chat) for `tailscale serve`. `go` and `phones` use them, so `https://hub.securax.localhost` on the laptop and the ts.net names on phones work at the same time; `go` no longer asks you to switch the edge off.
 - **BFSI control library and navigator** (doc 66), `./securax controls import | profile | dominance | navigator | gaps`:
-  - **Import:** the gap-assessment workbook (202 controls, 20 domains, 22 regulated-entity classes, RBI/SEBI/IRDAI/IFSCA/NPCI/NCIIPC/CERT-In/DPDP citations) is read with a standard-library .xlsx reader into a private `vault/controls/library.json`. Your yellow-cell scores come with it; author metadata is never read.
+  - **Import:** the gap-assessment workbook (202 controls, 20 domains, 22 regulated-entity classes, RBI/SEBI/IRDAI/IFSCA/NPCI/CII/CERT-In/DPDP citations) is read with a standard-library .xlsx reader into a private `vault/controls/library.json`. Your yellow-cell scores come with it; author metadata is never read.
   - **Ceiling profile:** the strictest requirement per control across every class, so meeting it meets them all. `dominance` shows that SCB/PSB alone misses AUD-002/AUD-006 for NBFC-UL, AIFI, IFSC IBU, MII and brokers, and AUD-003 for insurers.
   - **Packs** in `governance/controls/packs/` add new regulations or citations without code.
   - **SecuRAX map:** `governance/controls/securax-map.json` covers 53 controls, each proven or partly proven with real evidence files (CI checks they exist).

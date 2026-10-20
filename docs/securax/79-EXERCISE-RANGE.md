@@ -12,12 +12,26 @@
 
 It serves your own team's practice first. Running exercises for other teams comes later (stage 4).
 
-The design follows the screens and rules of a commercial platform you used before (an "integrated scoring and situational awareness" portal). It is built from scratch, with open-source parts, and it holds none of that exercise's content.
+The design follows the screens and rules of commercial exercise platforms (an "integrated scoring and situational awareness" portal). It is built from scratch, with open-source parts, and holds no other exercise's content.
 
-## In five commands
+## The easy way: one command
 
 ```bash
-./securax exercise plan                      # check the scenario and see what the lite range runs (16 machines, 30 checks in the sample)
+./securax exercise
+```
+
+- **The first time:** it makes a practice exercise from the built-in sample scenario.
+- **Every time:** it opens the portal in your browser (http://127.0.0.1:8097/) and prints the sign-in tokens to use:
+  - **white:** you, running the exercise
+  - **blue:** the defenders
+- **Without Docker** it still works: tasks, reports, judging and the MITRE learning paths need no containers.
+- **The live machines to defend:** `./securax exercise lite up` adds them.
+- **Where else to find it:** the Command Center lists it under **Practise and defend**, with a live dot while the portal runs.
+
+## Step by step, when you want control
+
+```bash
+./securax exercise plan                      # check the scenario and see what the lite range runs on this machine
 ./securax exercise new --name practice       # create an exercise; prints the white, red and blue sign-in tokens ONCE
 ./securax exercise lite up                   # isolated containers, the scoring bot, simulated staff, the red-team bot
 ./securax exercise serve                     # the portal on http://127.0.0.1:8097/ ; sign in with a token

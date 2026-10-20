@@ -1,5 +1,7 @@
 """./securax exercise: run a live-fire cyber defence exercise (doc 79).
 
+    ./securax exercise                                        THE EASY WAY: makes a practice exercise if there is none, opens the
+                                                              portal in your browser and says which sign-in token to use
     ./securax exercise plan   [--scenario FILE] [--team N]   check a scenario and show what the lite range would run
     ./securax exercise new    [--scenario FILE] [--team N] [--name NAME]   create an exercise; prints the sign-in tokens ONCE
     ./securax exercise lite up [GAME]                         start the lite range (containers, isolated networks, scoring, bots)
@@ -61,6 +63,59 @@ def score_round(g: engine.Game, team: int, lite_only: bool, run_ssh=people.ssh_r
     return g.record_round(team, results, people.usersim(g, team, names, run=run_ssh), rules=rules)
 
 
+def create(scenario: str | None = None, team: int | None = None, name: str = "") -> tuple[pathlib.Path, dict, pathlib.Path]:
+    """A new exercise folder and its sign-in tokens (also written to a file only you can read)."""
+    sc = scn.load(scenario, team)
+    slug = re.sub(r"[^a-z0-9]+", "-", (name or sc["name"].split(":")[-1]).lower()).strip("-")[:30] or "exercise"
+    folder = HOME / f"EX-{dt.date.today():%Y%m%d}-{slug}"
+    tokens = engine.Game.create(folder, scenario, team)
+    tf = HOME / f"{folder.name}.tokens.txt"
+    tf.write_text("".join(f"{k}: {v}\n" for k, v in tokens.items()))
+    os.chmod(tf, 0o600)
+    return folder, tokens, tf
+
+
+def quick(port: int = 8097, open_browser: bool = True) -> int:
+    """`./securax exercise` with nothing after it: one step from nothing to the portal in your browser."""
+    from . import portal
+    games = sorted((p.parent for p in HOME.glob("*/game.db")), key=lambda d: (d / "game.db").stat().st_mtime) if HOME.exists() else []
+    if games:
+        folder, tokens = games[-1], None
+        tf = HOME / f"{folder.name}.tokens.txt"
+    else:
+        folder, tokens, tf = create(name="practice")
+        print(f"✔ made a practice exercise ({folder.name}) from the built-in sample scenario.")
+    g = engine.Game(folder)
+    url = f"http://127.0.0.1:{port}/"
+    try:
+        srv = portal.serve(g, "127.0.0.1", port)
+    except OSError:
+        print(f"The cyber range portal is already running: open {url}")
+        return 0
+    print(f"\nCYBER RANGE · {g.meta('name')}")
+    print(f"  1. Open  {url}")
+    if tokens:
+        print(f"  2. Sign in with the WHITE token (you run the exercise):  {tokens['white']}")
+        print(f"     Give the BLUE token to the defenders: {tokens.get('blue', next((v for k, v in tokens.items() if k.startswith('blue')), ''))}")
+    else:
+        print("  2. Sign in with the WHITE token (you run the exercise); give the BLUE token to the defenders.")
+    print(f"     All tokens are in {tf} (only you can read it).")
+    print("  3. Live machines to defend (needs Docker):  ./securax exercise lite up     Without them, the portal, tasks, reports,")
+    print("     judging and the MITRE learning paths all still work.")
+    print("  Stop the portal: Ctrl+C.  Guide: doc 79.")
+    if open_browser and not os.environ.get("SECURAX_NO_OPEN"):
+        try:
+            import webbrowser
+            webbrowser.open(url)
+        except Exception:  # noqa: BLE001 - opening a browser is a convenience
+            pass
+    try:
+        srv.serve_forever()
+    except KeyboardInterrupt:
+        pass
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="./securax exercise", description=__doc__.split("\n\n")[0])
     sub = ap.add_subparsers(dest="cmd")
@@ -100,8 +155,11 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("action", choices=["up", "stop", "down", "status"])
     p.add_argument("game", nargs="?")
     sub.add_parser("list")
+    sub.add_parser("open").add_argument("--port", type=int, default=8097)
     a = ap.parse_args(argv)
     try:
+        if a.cmd in (None, "open"):
+            return quick(getattr(a, "port", 8097))
         if a.cmd == "plan":
             sc = scn.load(a.scenario, a.team)
             pl = lite.plan(sc)
@@ -115,13 +173,8 @@ def main(argv: list[str] | None = None) -> int:
             for c in lite.clashes(sc):
                 print(f"  ✗ {c}: choose another team number with --team")
         elif a.cmd == "new":
-            sc = scn.load(a.scenario, a.team)
-            slug = re.sub(r"[^a-z0-9]+", "-", (a.name or sc["name"].split(":")[-1]).lower()).strip("-")[:30] or "exercise"
-            folder = HOME / f"EX-{dt.date.today():%Y%m%d}-{slug}"
-            tokens = engine.Game.create(folder, a.scenario, a.team)
-            tf = HOME / f"{folder.name}.tokens.txt"
-            tf.write_text("".join(f"{k}: {v}\n" for k, v in tokens.items()))
-            os.chmod(tf, 0o600)
+            folder, tokens, tf = create(a.scenario, a.team, a.name)
+            sc = engine.Game(folder).scenario()
             print(f"✔ exercise {folder.name} created for team {sc['team']}.\n  Sign-in tokens (also in {tf}, readable only by you):")
             for k, v in tokens.items():
                 print(f"    {k:<8} {v}")

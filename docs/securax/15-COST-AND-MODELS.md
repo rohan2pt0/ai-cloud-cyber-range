@@ -4,6 +4,8 @@
 > **Status: 🟢 Built.** Free-first ladders, the local floor and the monthly budget cap are generated and tested. [What the lights mean](../index.md#the-status-lights)
 <!-- status:end -->
 
+> **For coding work**, the current plan (the open-model chains and October 2026 prices) is [doc 83](83-BUILD-WITH-OPEN-MODELS.md).
+
 The goal: **you are never blocked by a usage limit, now or for the life of SecuRAX**, and the
 best intelligence (Claude and other frontier models) is spent only where it earns its keep.
 Everything here follows one rule: **local is the floor, free tiers fuel the build, paid frontier
@@ -49,7 +51,7 @@ Habits that cut credit burn hard:
 ## 3. Any IDE, cheaply
 SecuRAX is plain files + a local OpenAI-compatible endpoint, so it works in any editor:
 - **VS Code / Cursor / JetBrains** with **Continue.dev** or **Cline** → set the provider base URL
-  to your LiteLLM (`http://localhost:4000`) or local Ollama (`http://localhost:11434`). Free,
+  to the SecuRAX gateway (`http://localhost:8080/v1`, so every call is guarded and audited) or local Ollama (`http://localhost:11434`). Free,
   local, private in-IDE AI.
 - **Aider** (terminal) for multi-file edits on a cheap model.
 - **Codex / Claude Code** kept for the hard 20%.

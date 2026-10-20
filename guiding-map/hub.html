@@ -27,6 +27,17 @@
   .note b{color:var(--ink)} code{background:rgba(127,127,127,.15);padding:1px 6px;border-radius:6px;font-size:13px}
   .pill{display:inline-block;font-size:11px;color:var(--green);border:1px solid var(--green);border-radius:999px;padding:0 7px;margin-left:6px}
   ol{margin:6px 0 0;padding-left:20px} ol li{margin:4px 0}
+  .fgroup{font-size:14px;font-weight:700;margin:18px 0 8px;color:var(--ink)}
+  .fcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 15px;display:flex;flex-direction:column;gap:6px}
+  .fcard .t{font-weight:700;display:flex;align-items:center;gap:8px}
+  .fcard .d{color:var(--mut);font-size:13.5px}
+  .fcard .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:auto;padding-top:4px}
+  .fcard button{font:13px ui-monospace,Menlo,Consolas,monospace;background:rgba(127,127,127,.15);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:4px 8px;cursor:pointer;max-width:100%;overflow-wrap:anywhere;text-align:left}
+  .fcard a.btn{font-size:13px;color:var(--accent);text-decoration:none;font-weight:600}
+  .lt{font-size:11px;border-radius:999px;padding:0 7px;border:1px solid currentColor;white-space:nowrap}
+  .lt.green{color:var(--green)} .lt.amber{color:var(--amber)} .lt.red{color:var(--red)}
+  @media (prefers-color-scheme:light){:root{--green:#1f7a3a} .lt.amber{color:#8a5a00} .lt.red{color:#b91c1c}}
+  .sub code{color:var(--ink)} .note a{color:var(--accent)}
 </style>
 </head>
 <body>
@@ -46,6 +57,10 @@
 
   <h2>Optional add-ons <span style="text-transform:none;letter-spacing:0;font-weight:400">(each needs a little setup before it's useful)</span></h2>
   <div class="grid" id="extras"></div>
+  <h2 id="everything">Everything SecuRAX can do</h2>
+  <div class="sub" style="margin:0 0 4px">Each card says what it does in plain words. <b>Open</b> takes you there when it runs here; otherwise tap the
+    command to copy it, then paste it in a terminal inside your <code>ai-cloud-cyber-range</code> folder.</div>
+  <div id="features"></div>
 
   <h2>Use it on your phone &amp; iPad</h2>
   <div class="note">
@@ -96,6 +111,7 @@
   </div>
 </div>
 
+<script src="features.js"></script>
 <script>
 // "Repairs": what needs fixing, counted by every cockpit refresh (./securax repairs lists each one with its fix).
 fetch("/portal/repairs.json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null;}).then(function(j){
@@ -192,6 +208,33 @@ fetch("/portal/setup.json",{cache:"no-store"}).then(function(r){return r.ok?r.js
     fetch(gw("/version")).then(function(r){return r.json();})
       .then(function(j){document.getElementById("ver").textContent=j.build||("v"+(j.version||"?"));})
       .catch(function(){document.getElementById("ver").textContent="offline";});
+  }
+  // "Everything SecuRAX can do": generated from features.json (tools/features_sync.py), so a new feature appears here by itself.
+  var F = (typeof window !== "undefined" && window.SECURAX_FEATURES) || null, LT = {green:"built and proven", amber:"partly built", red:"not built yet"};
+  function esc(s){ return String(s).replace(/[&<>"']/g, function(c){ return "&#"+c.charCodeAt(0)+";"; }); }
+  if(F){
+    var fbox = document.getElementById("features");
+    F.groups.forEach(function(g){
+      var items = F.features.filter(function(f){ return f.group===g && !f.service; });
+      if(!items.length) return;
+      var head = document.createElement("div"); head.className="fgroup"; head.textContent=g; fbox.appendChild(head);
+      var grid = document.createElement("div"); grid.className="grid"; fbox.appendChild(grid);
+      items.forEach(function(f){
+        var url = f.path ? f.path : (f.port && !SEC && !TS ? "http://"+H+":"+f.port+"/" : "");
+        var el = document.createElement("div"); el.className="fcard"; el.id="f-"+f.id;
+        el.innerHTML = '<div class="t">'+(f.port&&url?'<span class="dot off" data-url="'+esc(url)+'"></span>':'')+'<span class="emoji">'+f.emoji+'</span> '+esc(f.name)
+          +' <span class="lt '+f.light+'">'+LT[f.light]+'</span></div><div class="d">'+esc(f.what)+'</div><div class="row">'
+          +(url?'<a class="btn" href="'+esc(url)+'" target="_blank" rel="noopener">Open →</a>':'')
+          +'<button type="button" title="Copy this command">'+esc(f.cmd)+'</button>'
+          +'<a class="btn" href="'+esc(f.guide)+'" target="_blank" rel="noopener">Guide</a></div>';
+        el.querySelector("button").addEventListener("click", function(ev){
+          var b = ev.currentTarget, t = f.cmd;
+          (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function(){ b.textContent="copied ✓ "+t; }, function(){ b.textContent=t; });
+        });
+        grid.appendChild(el);
+        if(f.port && url) ALL.push({t:f.name, url:url, core:false});
+      });
+    });
   }
   function tick(){ checkApps(); checkInfo(); }
   tick(); setInterval(tick, 5000);

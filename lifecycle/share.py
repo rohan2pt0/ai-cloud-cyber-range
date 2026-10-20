@@ -6,7 +6,7 @@
 
 Every commit counts once, by who wrote it:
 - **claude**: a `Co-Authored-By: Claude` trailer.
-- **cheap tier**: an `autobuild:` subject (the local/cheap builder made it, through the gates).
+- **open models**: an `autobuild:` subject, or an `Assisted-by: SecuRAX` trailer (work done in `./securax opencode`, doc 83).
 - **you**: anything else.
 
 Merge commits are skipped. The goal is Claude at about a fifth of the commits (doc 23); the cockpit lights a caution lamp
@@ -31,7 +31,7 @@ SEP = "\x1e"
 def kind(message: str) -> str:
     if re.search(r"^co-authored-by:\s*claude\b", message, re.I | re.M):
         return "claude"
-    if message.lstrip().lower().startswith("autobuild:"):
+    if message.lstrip().lower().startswith("autobuild:") or re.search(r"^assisted-by:\s*securax\b", message, re.I | re.M):
         return "cheap"
     return "you"
 
@@ -82,7 +82,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     print(f"Who did the work (commits; goal: Claude at or under {GOAL:.0%})")
     for r in rep:
-        print(f"  {r['month']}  Claude {r['claude']:>3}   cheap tier {r['cheap']:>3}   you {r['you']:>3}   "
+        print(f"  {r['month']}  Claude {r['claude']:>3}   open models {r['cheap']:>3}   you {r['you']:>3}   "
               f"→ Claude {r['claude_share']:.0%}" + ("  ⚠ over the goal" if r["over_goal"] else ""))
     print("Lower it: ./securax route \"task\" before you start; ./securax autobuild for everything it calls local.")
     print("Commits are a proxy for effort, not tokens. Change your plan only after two months under the goal.")
