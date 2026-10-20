@@ -12,6 +12,12 @@ fd = importlib.util.module_from_spec(_s)
 _s.loader.exec_module(fd)
 
 D0 = dt.date(2026, 11, 2)
+
+
+@pytest.fixture(autouse=True)
+def _no_local_intel(monkeypatch):
+    monkeypatch.setattr(fd, "epss_scores", lambda: {})                       # never read this machine's snapshots
+    monkeypatch.setattr(fd, "kev_cves", lambda: set())
 SLA = dict(fd.SLA)
 
 
@@ -113,3 +119,15 @@ def test_the_cockpit_lights_overdue_findings_so_the_phone_alert_sees_them(monkey
     monkeypatch.setattr(ck, "_load", lambda name, rel: type("E", (), {"load": staticmethod(lambda: {"findings": {}})}))
     c2.c_findings()
     assert c2.metrics == []                                                              # no register: nothing lit
+
+
+def test_a_likely_exploited_cve_is_at_least_high_and_its_score_stays_current():
+    reg = {"findings": {}}
+    scan = fd.from_sarif(_sarif([("CVE-2026-0007", "5.0", "img"), ("CVE-2026-0008", "5.0", "img")]))
+    fd.merge(reg, scan, D0, SLA, kev=set(), epss={"CVE-2026-0007": 0.62, "CVE-2026-0008": 0.03})
+    by = {f["cve"]: f for f in reg["findings"].values()}
+    assert by["CVE-2026-0007"]["severity"] == "high" and by["CVE-2026-0007"]["due"] == "2026-12-02"
+    assert by["CVE-2026-0008"]["severity"] == "medium" and by["CVE-2026-0008"]["epss"] == 0.03
+    fd.merge(reg, scan, D0 + dt.timedelta(days=1), SLA, kev=set(), epss={"CVE-2026-0007": 0.7, "CVE-2026-0008": 0.04})
+    assert by["CVE-2026-0008"]["epss"] == 0.04 and fd.summary(reg, D0)["likely_open"] == 1
+    assert "EPSS 70%" in fd._line(by["CVE-2026-0007"], D0)

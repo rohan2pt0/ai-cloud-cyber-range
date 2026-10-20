@@ -91,6 +91,7 @@ nav:
       - Pattern interrupt (heavy weeks): securax/74-PATTERN-INTERRUPT.md
       - Distribute, install, feedback: securax/75-DISTRIBUTE-INSTALL-FEEDBACK.md
       - Findings, repairs, restore, shortcuts: securax/76-FINDINGS-REPAIRS-RESTORE-SHORTCUTS.md
+      - OWASP and global projects: securax/77-OWASP-AND-GLOBAL-PROJECTS.md
   - How-to guides:
       - AI providers and plugins: securax/22-PLUGINS-AND-PROVIDERS.md
       - Integrations: securax/07-INTEGRATIONS.md

@@ -1096,6 +1096,7 @@ EOF2
     # SUPPLY-CHAIN GATE for third-party agent skills / plugins / MCP servers. Static only: nothing from the repo is executed.
     #   ./securax vet check <git-url|dir> [--ref SHA] [--name N] [--out DIR] [--accept --vendored PATH --note "why"]
     #   ./securax vet verify            re-hash every vendored path against its pin (also part of ./securax verify)
+    #   ./securax vet ast10             how each OWASP Agentic Skills Top 10 risk is covered (doc 77)
     # Exit: 0 PASS · 1 REVIEW (a human must read the flagged lines) · 2 BLOCK (never usable)
     command -v python3 >/dev/null 2>&1 || { C "python3 is needed."; exit 1; }
     shift; exec python3 "$ROOT/lifecycle/vet.py" "$@"
