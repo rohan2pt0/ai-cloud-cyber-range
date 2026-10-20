@@ -67,7 +67,7 @@ jobs:
           node build.js
           git diff --exit-code index.html \
             || { echo "::error::index.html is out of sync with ops.js — run 'node build.js' and commit"; exit 1; }
-      - name: Behaviour suite (jsdom, every test file: the same list as `npm test`)
+      - name: "Behaviour suite (jsdom): every test file, the same list as npm test"
         working-directory: guiding-map
         run: npm test
 

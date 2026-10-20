@@ -99,6 +99,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 - [CI at agent scale](docs/securax/68-CI-AT-AGENT-SCALE.md)
 - Nightly safe update
+- A broken workflow file ran no checks at all
 - Life OS: the new Inbox tab crowded calm mode and the phone bar (six tabs)
 - `./securax start flows` reported failure although it worked
 - A second home for the code, in one guided step
@@ -106,7 +107,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - A busy port 80/443 no longer leaves you with nothing running
 - Risk registers with a one-row header lost their first risk
 - No paths to type
-- [Risk register, interlinked](docs/securax/67-RISK-REGISTER-NSCS-CII.md)
 
 Everything, with details: [`CHANGELOG.md`](CHANGELOG.md).
 <!-- readme:whats-new:end -->

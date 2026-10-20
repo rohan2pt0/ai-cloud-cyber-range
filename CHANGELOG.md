@@ -191,6 +191,7 @@ for the versioning and release policy.
   - **Visibility:** remaining allowance in the response headers, a cockpit lamp, and spend that survives a gateway restart.
 
 ### Fixed
+- **A broken workflow file ran no checks at all.** A step name with a colon made the main CI workflow invalid, so GitHub skipped it without a red mark. It is fixed, and a new test fails when any workflow does not parse.
 - **Life OS: the new Inbox tab crowded calm mode and the phone bar (six tabs).** Both are five again: Today, Inbox, Ask, Life Map, Money (phone: Today, Inbox, Goals, Ask) plus More, which now holds Ops. CI also ran only 6 of the 20 Life OS test files; it now runs them all.
 - **`./securax start flows` reported failure although it worked:** a password-manager line ended the branch with a false test, so the command exited 1. It is now a plain if, and `passwords lock` says when it could not restart.
 - **Code mirror on a shallow checkout:** `./securax continuity mirror` now refuses a shallow clone (its bundle would not restore) and says how to fetch the whole history, instead of keeping a broken copy.
@@ -226,6 +227,7 @@ for the versioning and release policy.
 - **Nightly safe update:** a new routine (3:15 am) runs `./securax update --auto`. It does something only when main has new commits, the checkout is on main and there are no local edits. It backs up, updates, health-checks and rolls back by itself if needed, never opens a browser, and tells your phone the outcome. Nothing new means no restart.
 
 ### Fixed
+- **A broken workflow file ran no checks at all.** A step name with a colon made the main CI workflow invalid, so GitHub skipped it without a red mark. It is fixed, and a new test fails when any workflow does not parse.
 - **Life OS: the new Inbox tab crowded calm mode and the phone bar (six tabs).** Both are five again: Today, Inbox, Ask, Life Map, Money (phone: Today, Inbox, Goals, Ask) plus More, which now holds Ops. CI also ran only 6 of the 20 Life OS test files; it now runs them all.
 - **`./securax start flows` reported failure although it worked:** a password-manager line ended the branch with a false test, so the command exited 1. It is now a plain if, and `passwords lock` says when it could not restart.
 - **A second home for the code, in one guided step:** `./securax continuity mirror setup` makes a key that can push only to a private GitLab project, checks it, saves the address and mirrors at once. Doc 84 records why GitLab, and why the old history is not rewritten.
@@ -277,6 +279,7 @@ for the versioning and release policy.
 ### Changed
 - The app no longer asks anything when a sync link matches the setup it already has (so `go` can open it on every run).
 ### Fixed
+- **A broken workflow file ran no checks at all.** A step name with a colon made the main CI workflow invalid, so GitHub skipped it without a red mark. It is fixed, and a new test fails when any workflow does not parse.
 - **Life OS: the new Inbox tab crowded calm mode and the phone bar (six tabs).** Both are five again: Today, Inbox, Ask, Life Map, Money (phone: Today, Inbox, Goals, Ask) plus More, which now holds Ops. CI also ran only 6 of the 20 Life OS test files; it now runs them all.
 - **`./securax start flows` reported failure although it worked:** a password-manager line ended the branch with a false test, so the command exited 1. It is now a plain if, and `passwords lock` says when it could not restart.
 - **A second home for the code, in one guided step:** `./securax continuity mirror setup` makes a key that can push only to a private GitLab project, checks it, saves the address and mirrors at once. Doc 84 records why GitLab, and why the old history is not rewritten.
@@ -296,6 +299,7 @@ for the versioning and release policy.
   - The first fetch is a silent baseline; later fetches push only new titles to your phone. The monthly digest is Markdown with titles, dates and links only, and links CERT-In for a manual check because it publishes no feed.
   - Links that do not point to the regulator's own site are dropped; DTD and entity declarations are refused. Daily and monthly routines added. 7 tests.
 ### Fixed
+- **A broken workflow file ran no checks at all.** A step name with a colon made the main CI workflow invalid, so GitHub skipped it without a red mark. It is fixed, and a new test fails when any workflow does not parse.
 - **Life OS: the new Inbox tab crowded calm mode and the phone bar (six tabs).** Both are five again: Today, Inbox, Ask, Life Map, Money (phone: Today, Inbox, Goals, Ask) plus More, which now holds Ops. CI also ran only 6 of the 20 Life OS test files; it now runs them all.
 - **`./securax start flows` reported failure although it worked:** a password-manager line ended the branch with a false test, so the command exited 1. It is now a plain if, and `passwords lock` says when it could not restart.
 - **A second home for the code, in one guided step:** `./securax continuity mirror setup` makes a key that can push only to a private GitLab project, checks it, saves the address and mirrors at once. Doc 84 records why GitLab, and why the old history is not rewritten.
@@ -323,6 +327,7 @@ for the versioning and release policy.
   - `website/build.sh` builds the site with the docs at `/docs/` for Cloudflare Pages.
 - **Doc 60:** how to go live on cyberbaba.org with Cloudflare Pages (custom domain, Full (strict) TLS, free Email Routing for hello@), and how to move all development to the SecuRAX build agent (`autobuild` / `opencode` with free models, the same gates, main protected by CI), with the next builds queued as ready tasks.
 ### Fixed
+- **A broken workflow file ran no checks at all.** A step name with a colon made the main CI workflow invalid, so GitHub skipped it without a red mark. It is fixed, and a new test fails when any workflow does not parse.
 - **Life OS: the new Inbox tab crowded calm mode and the phone bar (six tabs).** Both are five again: Today, Inbox, Ask, Life Map, Money (phone: Today, Inbox, Goals, Ask) plus More, which now holds Ops. CI also ran only 6 of the 20 Life OS test files; it now runs them all.
 - **`./securax start flows` reported failure although it worked:** a password-manager line ended the branch with a false test, so the command exited 1. It is now a plain if, and `passwords lock` says when it could not restart.
 - **A second home for the code, in one guided step:** `./securax continuity mirror setup` makes a key that can push only to a private GitLab project, checks it, saves the address and mirrors at once. Doc 84 records why GitLab, and why the old history is not rewritten.
@@ -387,6 +392,7 @@ for the versioning and release policy.
 - **Offline power-ups** (doc 32): `./securax offline sync|status` + `./securax kev` (CISA KEV and MITRE ATT&CK snapshots, streamed and slimmed, work with no network; the AI-SOC names ATT&CK techniques and `scan` flags known-exploited CVEs from them) and `./securax bench` (measures your installed local models for RAM fit / accuracy / tokens-per-second and recommends one). Verified repo ledger: llama.cpp, BitNet, whisper.cpp, llamafile, Atomic Red Team, Sigma, osv-scanner, sqlite-vec. Journey `offline_power`.
 - **Behavioural rules + `./securax diffcheck`** (docs 31): the four rules popularised by Karpathy's LLM-coding observations, in our own words, in `BUILD-CONTRACT.md`; `diffcheck` enforces the contract's mechanical hard rules on the diff and gates `autobuild` (journey `diffcheck_gate`). Adoption ledger for agent-skills, ECC (vet: BLOCK, ideas only), karpathy-skills, freellmapi, context-mode.
 ### Fixed
+- **A broken workflow file ran no checks at all.** A step name with a colon made the main CI workflow invalid, so GitHub skipped it without a red mark. It is fixed, and a new test fails when any workflow does not parse.
 - **Life OS: the new Inbox tab crowded calm mode and the phone bar (six tabs).** Both are five again: Today, Inbox, Ask, Life Map, Money (phone: Today, Inbox, Goals, Ask) plus More, which now holds Ops. CI also ran only 6 of the 20 Life OS test files; it now runs them all.
 - **`./securax start flows` reported failure although it worked:** a password-manager line ended the branch with a false test, so the command exited 1. It is now a plain if, and `passwords lock` says when it could not restart.
 - **A second home for the code, in one guided step:** `./securax continuity mirror setup` makes a key that can push only to a private GitLab project, checks it, saves the address and mirrors at once. Doc 84 records why GitLab, and why the old history is not rewritten.
@@ -407,6 +413,7 @@ for the versioning and release policy.
   - **GitOps genome** (`gitops/`): Argo CD app-of-apps, platform (cert-manager, KEDA, Kyverno, Falco, Prometheus, Velero), shared router, a tenant chart stamped per `gitops/tenants/*.yaml`, per-tenant metering rules + dashboard. Gateway now exports token and latency metrics.
   - CI job `lifecycle-genome`; `./securax verify --full` runs the Terraform proofs; sandbox journeys `lifecycle_sprout`, `lifecycle_organs`, `lifecycle_cloud_is_safe`.
 ### Fixed
+- **A broken workflow file ran no checks at all.** A step name with a colon made the main CI workflow invalid, so GitHub skipped it without a red mark. It is fixed, and a new test fails when any workflow does not parse.
 - **Life OS: the new Inbox tab crowded calm mode and the phone bar (six tabs).** Both are five again: Today, Inbox, Ask, Life Map, Money (phone: Today, Inbox, Goals, Ask) plus More, which now holds Ops. CI also ran only 6 of the 20 Life OS test files; it now runs them all.
 - **`./securax start flows` reported failure although it worked:** a password-manager line ended the branch with a false test, so the command exited 1. It is now a plain if, and `passwords lock` says when it could not restart.
 - **A second home for the code, in one guided step:** `./securax continuity mirror setup` makes a key that can push only to a private GitLab project, checks it, saves the address and mirrors at once. Doc 84 records why GitLab, and why the old history is not rewritten.
@@ -497,6 +504,7 @@ for the versioning and release policy.
   The gateway is shown as a friendly security status ("every AI call is guarded"), not raw JSON.
 
 ### Fixed
+- **A broken workflow file ran no checks at all.** A step name with a colon made the main CI workflow invalid, so GitHub skipped it without a red mark. It is fixed, and a new test fails when any workflow does not parse.
 - **Life OS: the new Inbox tab crowded calm mode and the phone bar (six tabs).** Both are five again: Today, Inbox, Ask, Life Map, Money (phone: Today, Inbox, Goals, Ask) plus More, which now holds Ops. CI also ran only 6 of the 20 Life OS test files; it now runs them all.
 - **`./securax start flows` reported failure although it worked:** a password-manager line ended the branch with a false test, so the command exited 1. It is now a plain if, and `passwords lock` says when it could not restart.
 - **A second home for the code, in one guided step:** `./securax continuity mirror setup` makes a key that can push only to a private GitLab project, checks it, saves the address and mirrors at once. Doc 84 records why GitLab, and why the old history is not rewritten.
