@@ -6,7 +6,7 @@
 
 **The ask:** before freezing the setup, review it through every lens: the seven OSI layers, CISSP and CCSP domains, OffSec's attacker view, ISACA, OWASP, TOGAF and SABSA. Find any big blunder and fix it for good.
 
-**The answer in one line:** the design held up. The biggest problems were at the joins: the new VPS facing the internet, a browser on the laptop, and data coming in from outside. Each one was found by testing, fixed, and proved fixed against the old code.
+**The answer in one line:** the design held up. The biggest problems were at the joins: the new VPS facing the internet, a browser on the laptop, and data coming in from outside. Each one was found by testing, fixed, and proved fixed.
 
 ## 1. What was found and fixed
 
@@ -20,6 +20,7 @@
 | 6 | OffSec (privilege) · CIS Docker | **The Trivy scanner stayed running, holding the Docker socket.** `:ro` does not limit the Docker API | A third-party image with host-level control, for days instead of seconds | It scans and exits (`restart: "no"`) |
 | 7 | Supply chain (SLSA, OWASP A08) | **AnythingLLM ran `:latest`** | An image that changes under you, without review | Pinned to 1.18.0, not 1.17.0, so nobody's data is downgraded |
 | 8 | ISACA · default credentials | **An empty router key fell back to `sk-range-dev`**, which is published in this repository | A known key inside the estate | `up` replaces an empty, placeholder or public key with a random one |
+| 9 | CIS Docker · OffSec (privilege) | **Eleven services could gain privileges through setuid programs** (no `no-new-privileges`) | One exploited process could become root inside its container, a step closer to the host | Every service sets it; a test fails if a new one forgets it or uses `:latest`. `cap_drop: ALL` is set only where the image is ours, because Postgres and nginx need some capabilities to start |
 
 ## 2. Checked and found sound
 
@@ -73,7 +74,7 @@
 
 | By | Step |
 |---|---|
-| 2026-11-05 | The deeper audit still to run: secrets in logs, log retention, and every remaining image hardening item. The three review passes were stopped by a usage limit before they finished |
+| Done | The deeper audit: no secret is printed or logged by the CLI; the gateway's audit log records who, what and the decision, never the prompt or the answer; every container log is capped (3 × 10 MB); every service has `no-new-privileges` (row 9) |
 | 2026-11-30 | Per-node rate limits for sync tokens, and an alert after repeated refused sign-ins |
 | 2026-12-15 | The internet-facing images pinned by digest |
 
