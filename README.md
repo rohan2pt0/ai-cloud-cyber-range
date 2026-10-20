@@ -99,6 +99,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 - [CI at agent scale](docs/securax/68-CI-AT-AGENT-SCALE.md)
 - Nightly safe update
+- `./securax start flows` reported failure although it worked
 - A second home for the code, in one guided step
 - "v0.1.0 never updates"
 - A busy port 80/443 no longer leaves you with nothing running
@@ -106,7 +107,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - No paths to type
 - [Risk register, interlinked](docs/securax/67-RISK-REGISTER-NSCS-CII.md)
 - NSCS Audit Baseline pack
-- national CII pack
 
 Everything, with details: [`CHANGELOG.md`](CHANGELOG.md).
 <!-- readme:whats-new:end -->

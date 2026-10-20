@@ -968,7 +968,9 @@ EOF2
     # The estate's password manager (Vaultwarden, doc 84).   ./securax passwords status | lock | unlock | open
     case "${2:-status}" in
       lock|unlock) skv "$ROOT/local/compose/.env" PASSWORDS_SIGNUPS "$([ "$2" = lock ] && echo false || echo true)"
-        ( cd "$ROOT/local/compose" && docker compose --profile ai up -d vaultwarden >/dev/null 2>&1 ) && C "✔ sign-ups $([ "$2" = lock ] && echo closed: only the accounts that exist can sign in || echo open: create the account, then lock again)" ;;
+        if ( cd "$ROOT/local/compose" && docker compose --profile ai up -d vaultwarden >/dev/null 2>&1 ); then
+          C "✔ sign-ups $([ "$2" = lock ] && echo closed: only the accounts that exist can sign in || echo open: create the account, then lock again)"
+        else C "Could not restart the password manager. Run  ./securax doctor  and paste the output."; exit 1; fi ;;
       open) xdg-open "$(web_url pass 8222 /)" >/dev/null 2>&1 || C "Open: $(web_url pass 8222 /)" ;;
       status) if web_up pass 8222; then C "✔ password manager running: $(web_url pass 8222 /)  (sign-ups $([ "$(ev PASSWORDS_SIGNUPS true)" = false ] && echo closed || echo OPEN: lock them with  ./securax passwords lock))"
         else C "The password manager is off. Start it:  ./securax start passwords"; exit 1; fi ;;
@@ -1713,7 +1715,7 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
       passwords) _svc="vaultwarden"; _need="about 50 MB" ;;
       all) _svc="anythingllm n8n"; _need="about 3 GB" ;; *) C "usage: ./securax start docs | flows | passwords | all   (Private Docs = AnythingLLM; flows = n8n automation; passwords = Vaultwarden)"; exit 2 ;; esac
     case "${2:-}" in docs) _tok="docs" ;; flows|n8n) _tok="flows" ;; passwords) _tok="passwords" ;; *) _tok="docs flows" ;; esac
-    [ "${2:-}" = passwords ] && skv "$ROOT/local/compose/.env" PASSWORDS_URL "$(web_url pass 8222 "" | sed 's#/$##')"
+    if [ "${2:-}" = passwords ]; then skv "$ROOT/local/compose/.env" PASSWORDS_URL "$(web_url pass 8222 "" | sed 's#/$##')"; fi
     _list="$_svc"; if tls_on; then python3 "$ROOT/governance/tls.py" render >/dev/null 2>&1 || true; internal_on && for _s in $_svc; do _list="$_list ${_s}-tls"; done; fi
     C "Starting: $_svc  (needs $_need of memory; the first start of Private Docs takes a minute or two)"
     ( cd "$ROOT/local/compose" && docker compose --profile ai up -d $_list ) || { C "Could not start it. Run  ./securax doctor  and paste the output."; exit 1; }
@@ -1722,7 +1724,9 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
     for _s in $_svc; do case "$_s" in anythingllm) _n=docs; _pt=3001 ;; vaultwarden) _n=pass; _pt=8222 ;; *) _n=flows; _pt=5678 ;; esac
       _i=0; while [ "$_i" -lt 40 ] && ! web_up "$_n" "$_pt"; do sleep 4; _i=$((_i+1)); done
       if web_up "$_n" "$_pt"; then C "$_n is running: $(web_url "$_n" "$_pt" /)"
-        [ "$_n" = pass ] && { skv "$ENVF" PASSWORDS_ENABLED 1; C "  1. Open it and create YOUR account (one only). 2. Close sign-ups:  ./securax passwords lock"; C "  3. Install the Bitwarden app or browser extension, and set its server to $(web_url pass 8222 "")"; }
+        if [ "$_n" = pass ]; then                                    # an if, not `[ ] &&`: a false test as the last command made start exit 1
+          skv "$ENVF" PASSWORDS_ENABLED 1; C "  1. Open it and create YOUR account (one only). 2. Close sign-ups:  ./securax passwords lock"
+          C "  3. Install the Bitwarden app or browser extension, and set its server to $(web_url pass 8222 "")"; fi
       else C "$_n is still starting (large first start). Reload the Command Center in a minute; if it stays grey run  ./securax doctor"; fi
     done
     ;;
