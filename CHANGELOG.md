@@ -9,6 +9,15 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **`./securax respond`: a crisis response kit** for your estate or another organisation (doc 78):
+  - **Permission first:** who authorised the work, and the scope.
+  - **The USB kit:** Windows and Unix collectors that follow the order of volatility, write only to the USB and hash everything; a read-me card; a custody form.
+  - **Intake:** checks every hash, records the hand-over and stores the evidence read-only.
+  - **Chain of custody:** hash-chained, and `verify` catches any edit.
+  - **Advisory IOCs:** imported privately with their TLP, reading ranges, defanged domains and wrapped hashes.
+  - **Triage, report and requests:** leads from the IOCs and common signs of compromise; a TLP-marked report; and an information-request list fitted to the kind of incident.
+- **Docs:**
+  - **Doc 78** gives dated targets for every "later" item, the cloud GPU tier with prices, and where a Raspberry Pi helps.
 - **FIRST EPSS** (doc 77):
   - **The snapshot:** `./securax offline sync epss` keeps the daily chance that each CVE is exploited in the next 30 days.
   - **In the findings register:** a CVE at 50% or more is at least high, and the EPSS score is shown and kept current.
@@ -109,6 +118,8 @@ for the versioning and release policy.
   - **Visibility:** remaining allowance in the response headers, a cockpit lamp, and spend that survives a gateway restart.
 
 ### Fixed
+- **`./securax restore` no longer leaves a secrets file that git would pick up.** It keeps the previous `.env` as `local/compose/.env.pre-restore`, which is now git-ignored. Before, the checkout stayed dirty, so `update` could not roll back safely, and the file could have been committed.
+- **Sandbox:** the CCSP and RBI-map tamper journeys put back the files they edit, so later journeys no longer start from a dirty checkout.
 - **`./securax controls import FILE.xlsx` crashed with a traceback** when typed as shown in the cockpit hint.
   - **Import:** no path, a wrong path, a folder or the wrong workbook now finds the right workbook.
   - **`./securax go`:** imports a workbook saved in Downloads by itself.

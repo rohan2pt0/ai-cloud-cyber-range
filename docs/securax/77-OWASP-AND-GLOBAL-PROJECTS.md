@@ -58,6 +58,8 @@ These were checked against the code, not only the docs:
 
 ## Not now, and why
 
+The target date for each is in doc 78 ("When later happens").
+
 | Project | What it offers | Decision |
 |---|---|---|
 | **OWASP Juice Shop** and **CTF-in-a-Box** | A modern vulnerable web app for training, and a one-machine platform for CTF events | **Later:** worth adding as an optional practice target beside the AD range, for ZAP and purple-team drills. It adds a training target, not protection for the estate. CTF-in-a-Box is still an incubator project. |

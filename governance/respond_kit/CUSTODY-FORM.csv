@@ -1,0 +1,1 @@
+case_id,date_time_with_timezone,action (seized / collected / handed over / received / copied / sealed),item (machine, USB serial, file or bag number),from (name, organisation),to (name, organisation),where,sha256 or manifest hash (if known),signature or initials,notes
