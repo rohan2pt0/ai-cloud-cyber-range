@@ -198,6 +198,7 @@ for the versioning and release policy.
   - **Visibility:** remaining allowance in the response headers, a cockpit lamp, and spend that survives a gateway restart.
 
 ### Fixed
+- **Security review before the freeze (doc 87):** the VPS installer makes SSH keys-only (when a key is installed) and rate-limited; the gateway refuses writes from a foreign web page (a site open on the laptop could spend your AI allowance); imported or synced Inbox ids can no longer run code (a stored XSS, proved against the old code); security headers on every page; the server installer locks backups before going online; the Trivy scanner no longer stays up holding the Docker socket; AnythingLLM pinned to 1.18.0; an empty or public router key is replaced.
 - **`./securax routines on ID` did nothing for a routine that ships switched off**, while saying "switched on". It now switches it on.
 - **The installer:** a copy downloaded on its own exited silently instead of asking which repository; setting `SECURAX_REPO` produced a broken name. Both fixed.
 - **The Life OS told you to deploy a `push-worker.js` that does not exist.** Nudges now come from the estate through ntfy.

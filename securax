@@ -183,7 +183,8 @@ case "$cmd" in
     chmod 600 "$ENVF" 2>/dev/null || true          # your API keys: readable by you only (no-op on Windows drives)
     # The router/gateway service key ships as a placeholder; replace it once with a strong random one. Safe to change:
     # every service reads it from .env on start (Chat's config is not persisted, ENABLE_PERSISTENT_CONFIG=false).
-    if [ "$(ev LITELLM_MASTER_KEY)" = "sk-range-change-me" ]; then
+    # the placeholder, an empty value, or the public development key (it is in this public repository) are all replaced (doc 87)
+    if case "$(ev LITELLM_MASTER_KEY)" in ""|sk-range-change-me|sk-range-dev) true ;; *) false ;; esac; then
       skv "$ENVF" LITELLM_MASTER_KEY "sk-$(python3 -c 'import secrets; print(secrets.token_hex(24))')" && C "  ✔ replaced the placeholder gateway key with a strong random one (kept in .env)"
     fi
     # Cross-device sync token: an empty or placeholder value ("change-me…" from older templates) is replaced once with a

@@ -212,7 +212,11 @@ services:
   trivy:
     image: aquasec/trivy:0.58.1
     profiles: ["security"]
-    entrypoint: ["sh", "-c", "trivy image --scanners vuln,secret,misconfig --exit-code 0 vulnbank/llm-gateway:dev || true; sleep infinity"]
+    # It scans, prints and EXITS. It used to stay up (sleep infinity) holding the Docker socket, and the socket gives full control of
+    # the host even when mounted read-only (":ro" only stops file writes, not Docker API calls): a third-party image should hold that
+    # for the seconds a scan takes, never for days (doc 87).
+    entrypoint: ["sh", "-c", "trivy image --scanners vuln,secret,misconfig --exit-code 0 vulnbank/llm-gateway:dev || true"]
+    restart: "no"
     volumes: ["/var/run/docker.sock:/var/run/docker.sock:ro"]
     networks: [edge]
     logging: *default-logging
@@ -270,7 +274,7 @@ services:
   # Private document chat (Retrieval-Augmented Generation) for RED-TIER data.
   # Talks straight to local Ollama; nothing leaves the laptop.
   anythingllm:
-    image: mintplexlabs/anythingllm:latest
+    image: mintplexlabs/anythingllm:1.18.0   # pinned (was :latest, which changes under you); 1.18.0 so nobody's data is downgraded
     mem_limit: 2g
     cpus: 1.5
     profiles: ["ai"]
