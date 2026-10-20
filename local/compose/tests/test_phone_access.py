@@ -43,7 +43,8 @@ def test_consent_fields_ask_for_yes_not_a_paste():
 
 def test_placeholder_gateway_key_is_replaced_on_up():
     s = (ROOT / "securax").read_text()
-    assert '[ "$(ev LITELLM_MASTER_KEY)" = "sk-range-change-me" ]' in s and "secrets.token_hex(24)" in s
+    # the placeholder, an empty value and the public development key are all replaced with a random one (doc 87)
+    assert 'case "$(ev LITELLM_MASTER_KEY)" in ""|sk-range-change-me|sk-range-dev)' in s and "secrets.token_hex(24)" in s
 
 
 def test_command_center_teaches_tailscale_not_an_open_wifi_port():

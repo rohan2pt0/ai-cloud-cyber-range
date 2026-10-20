@@ -152,6 +152,7 @@ services:
 
   ollama:
     image: ollama/ollama:0.40.4
+    security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
     # Sized to YOUR machine by `./securax profile` (writes OLLAMA_MEM / OLLAMA_CPUS to .env).
     mem_limit: ${OLLAMA_MEM:-5g}
     cpus: ${OLLAMA_CPUS:-3.0}
@@ -191,6 +192,7 @@ services:
   # ---- observability / SIEM-lite (maps to Wazuh+Sentinel+Chronicle in the cloud) ----
   loki:
     image: grafana/loki:3.3.2
+    security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
     profiles: ["security"]
     command: ["-config.file=/etc/loki/local-config.yaml"]
     volumes: ["loki:/loki"]
@@ -199,6 +201,7 @@ services:
 
   grafana:
     image: grafana/grafana:11.4.0
+    security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
     profiles: ["security"]
     environment:
       GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:?set GRAFANA_PASSWORD in .env}
@@ -211,8 +214,13 @@ services:
   # ---- on-demand DevSecOps scanners (run once, then exit) ----
   trivy:
     image: aquasec/trivy:0.58.1
+    security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
     profiles: ["security"]
-    entrypoint: ["sh", "-c", "trivy image --scanners vuln,secret,misconfig --exit-code 0 vulnbank/llm-gateway:dev || true; sleep infinity"]
+    # It scans, prints and EXITS. It used to stay up (sleep infinity) holding the Docker socket, and the socket gives full control of
+    # the host even when mounted read-only (":ro" only stops file writes, not Docker API calls): a third-party image should hold that
+    # for the seconds a scan takes, never for days (doc 87).
+    entrypoint: ["sh", "-c", "trivy image --scanners vuln,secret,misconfig --exit-code 0 vulnbank/llm-gateway:dev || true"]
+    restart: "no"
     volumes: ["/var/run/docker.sock:/var/run/docker.sock:ro"]
     networks: [edge]
     logging: *default-logging
@@ -222,6 +230,7 @@ services:
   # directly), so every prompt/response passes the Red/Yellow/Green rails first.
   open-webui:
     image: ghcr.io/open-webui/open-webui:0.12.2
+    security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
     # 1.5 GB: document search embeds INSIDE this container (local model, nothing leaves the box), which needs about
     # 0.5 GB on its own; at 1 GB uploading your handbooks could kill it. Doing it in Ollama instead would evict your chat
     # model (OLLAMA_MAX_LOADED_MODELS=1 keeps CPU laptops from swapping) and reload it on every document question.
@@ -270,7 +279,8 @@ services:
   # Private document chat (Retrieval-Augmented Generation) for RED-TIER data.
   # Talks straight to local Ollama; nothing leaves the laptop.
   anythingllm:
-    image: mintplexlabs/anythingllm:latest
+    image: mintplexlabs/anythingllm:1.18.0   # pinned (was :latest, which changes under you); 1.18.0 so nobody's data is downgraded
+    security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
     mem_limit: 2g
     cpus: 1.5
     profiles: ["ai"]
@@ -292,6 +302,7 @@ services:
   # encrypted on your own device before it reaches this server. Off until `./securax start passwords`; sign-ups close after your account.
   vaultwarden:
     image: ghcr.io/dani-garcia/vaultwarden:1.37.4
+    security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
     mem_limit: 128m
     cpus: 0.5
     profiles: ["passwords"]
@@ -329,6 +340,7 @@ services:
   # Call the gateway at http://gateway:8080/v1/chat/completions from any workflow.
   n8n:
     image: n8nio/n8n:1.74.1
+    security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
     mem_limit: 768m
     cpus: 1.0
     profiles: ["ai"]
@@ -382,6 +394,7 @@ services:
   # ---- Guiding Map PWA (your local-first life OS) — tiny, always-on, private ----
   guiding-map:
     image: nginx:1.27-alpine
+    security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
     profiles: ["core", "security", "ai"]
     restart: unless-stopped
     mem_limit: 48m

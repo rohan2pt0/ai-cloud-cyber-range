@@ -4344,6 +4344,9 @@
   function ibSave(a) { S_("gm_inbox", a); }
   function ibDays(n) { var d = new Date(); d.setDate(d.getDate() + n); return ymd(d); }
   function ibId() { return "ib" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  // An id goes into onclick="…('ID')" and id="…" attributes, where escaping HTML is not enough: keep only safe characters, so an imported
+  // or synced item with a crafted id can never run code (doc 87).
+  function ibSafe(id) { return String(id == null ? "" : id).replace(/[^A-Za-z0-9_-]/g, "").slice(0, 80); }
   window.gmInboxAdd = function (text, kind, extra) {
     text = String(text || "").trim();
     if (!text) return null;
@@ -4358,9 +4361,9 @@
     if (it) { el.value = ""; if (typeof gmToast === "function") gmToast("Captured. Decide it below when you are ready."); renderAll(); }
   };
   window.gmInboxDecide = function (id, as) {
-    var a = ibAll(), it = a.filter(function (x) { return x.id === id; })[0];
+    var a = ibAll(), it = a.filter(function (x) { return ibSafe(x.id) === ibSafe(id); })[0]; // the page shows the cleaned id
     if (!it) return false;
-    if (as === "delete") { ibSave(a.filter(function (x) { return x.id !== id; })); renderAll(); return true; }
+    if (as === "delete") { ibSave(a.filter(function (x) { return x !== it; })); renderAll(); return true; }
     if (as === "note") { it.kind = "note"; it.due = ""; }
     else {
       var n = document.getElementById("ibNext_" + id), d = document.getElementById("ibDue_" + id);
@@ -4371,7 +4374,7 @@
     ibSave(a); renderAll(); return true;
   };
   window.gmInboxDone = function (id) {
-    var a = ibAll(); a.forEach(function (x) { if (x.id === id) x.done = ymd(); }); ibSave(a); renderAll();
+    var a = ibAll(); a.forEach(function (x) { if (ibSafe(x.id) === ibSafe(id)) x.done = ymd(); }); ibSave(a); renderAll();
   };
   window.gmInboxStats = function () {
     var a = ibAll(), today = ymd(), open = a.filter(function (x) { return !x.done && x.kind !== "note"; });
@@ -4412,7 +4415,7 @@
     return '<div class="ibrow' + (late ? " late" : "") + '"><div class="ibt"><b>' + esc(x.next || x.t) + '</b>'
       + (x.next && x.next !== x.t ? '<div class="ibsub">' + esc(x.t) + '</div>' : "")
       + '<div class="ibsub">' + esc(IB_KINDS[x.kind] || "Action") + (x.area ? " · " + esc(x.area) : "") + (x.due ? " · due " + esc(x.due) + (late ? " (late)" : "") : "") + '</div></div>'
-      + '<button class="btn" onclick="gmInboxDone(\'' + x.id + '\')">Done</button></div>';
+      + '<button class="btn" onclick="gmInboxDone(\'' + ibSafe(x.id) + '\')">Done</button></div>';
   }
   function inboxHTML() {
     var a = ibAll(), today = ymd();
@@ -4428,10 +4431,10 @@
       h += '<h3>To decide (' + decide.length + ')</h3>';
       decide.forEach(function (x) {
         h += '<div class="ibrow"><div class="ibt"><b>' + esc(x.t) + '</b><div class="ibsub">' + esc(IB_KINDS[x.kind] || "") + (x.from && x.from !== "capture" ? " · from " + esc(x.from) : "") + '</div>'
-          + '<div class="ibdec"><input id="ibNext_' + x.id + '" placeholder="The next physical step" aria-label="Next step"><input type="date" id="ibDue_' + x.id + '" value="' + ibDays(7) + '" aria-label="Due">'
-          + '<button class="btn primary" onclick="gmInboxDecide(\'' + x.id + '\',\'action\')">Make it an action</button>'
-          + '<button class="btn" onclick="gmInboxDecide(\'' + x.id + '\',\'note\')">Keep as a note</button>'
-          + '<button class="btn" onclick="gmInboxDecide(\'' + x.id + '\',\'delete\')">Delete</button></div></div></div>';
+          + '<div class="ibdec"><input id="ibNext_' + ibSafe(x.id) + '" placeholder="The next physical step" aria-label="Next step"><input type="date" id="ibDue_' + ibSafe(x.id) + '" value="' + ibDays(7) + '" aria-label="Due">'
+          + '<button class="btn primary" onclick="gmInboxDecide(\'' + ibSafe(x.id) + '\',\'action\')">Make it an action</button>'
+          + '<button class="btn" onclick="gmInboxDecide(\'' + ibSafe(x.id) + '\',\'note\')">Keep as a note</button>'
+          + '<button class="btn" onclick="gmInboxDecide(\'' + ibSafe(x.id) + '\',\'delete\')">Delete</button></div></div></div>';
       });
     }
     h += '<h3>Actions (' + actions.length + ')</h3>' + (actions.length ? actions.map(ibRow).join("") : '<div class="info">Nothing scheduled. Decide something above, or run a review below.</div>');
@@ -4444,7 +4447,7 @@
       }).join("") + '<button class="btn primary" onclick="gmReviewFindings(\'' + r.id + '\')">Turn my findings into actions</button> <button class="btn" onclick="gmReviewOpen(\'\')">Close</button></div>';
     }
     if (notes.length) h += '<details class="ibnotes"><summary>Notes kept (' + notes.length + ')</summary>' + notes.map(function (x) {
-      return '<div class="ibrow"><div class="ibt">' + esc(x.t) + (x.area ? '<div class="ibsub">' + esc(x.area) + '</div>' : "") + '</div><button class="btn" onclick="gmInboxDecide(\'' + x.id + '\',\'action\')">Make it an action</button></div>';
+      return '<div class="ibrow"><div class="ibt">' + esc(x.t) + (x.area ? '<div class="ibsub">' + esc(x.area) + '</div>' : "") + '</div><button class="btn" onclick="gmInboxDecide(\'' + ibSafe(x.id) + '\',\'action\')">Make it an action</button></div>';
     }).join("") + '</details>';
     return h + '</div>';
   }

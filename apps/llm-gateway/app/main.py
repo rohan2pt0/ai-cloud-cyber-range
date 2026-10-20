@@ -100,6 +100,38 @@ if os.getenv("ALLOW_LOCAL_CORS", "1") == "1":
         allow_methods=["*"], allow_headers=["*"],
     )
 
+# Cross-site requests from a browser (OWASP CSRF; doc 87). CORS stops a foreign page READING an answer, not SENDING a request: a
+# "simple" POST (text/plain, no preflight) from any website open on this laptop reached /v1/chat/completions, and with
+# AUTH_MODE=off (the laptop default) it spent your AI keys and allowance. A browser always names the page's origin on a cross-site
+# POST; command-line and server clients send none. So a write is refused when it names an origin that is neither this estate's own
+# (localhost, the estate's domain) nor the address the request itself came in on (X-Forwarded-Host from the estate's nginx).
+_OWN_ORIGIN = __import__("re").compile(r"^https?://(localhost|127\.0\.0\.1)(:\d+)?$")
+def _origin_ok(origin: str, host: str) -> bool:
+    from urllib.parse import urlsplit
+    est = os.getenv("SECURAX_DOMAIN", "securax.localhost").strip().lower()
+    if _OWN_ORIGIN.match(origin):
+        return True
+    o = urlsplit(origin)
+    oh = (o.hostname or "").lower()
+    if not oh or o.scheme not in ("http", "https"):
+        return False                                     # "null" (sandboxed frames, file pages) and anything odd
+    if oh == est or oh.endswith("." + est):
+        return True
+    return bool(host) and o.netloc.lower() == host.lower()   # same origin through the estate's front door
+
+
+@app.middleware("http")
+async def _refuse_cross_site_writes(request: Request, call_next):
+    if request.method in ("POST", "PUT", "PATCH", "DELETE"):
+        origin = request.headers.get("origin")
+        host = request.headers.get("x-forwarded-host") or request.headers.get("host", "")
+        if origin is not None and not _origin_ok(origin, host):
+            _metrics["cross_site_refused"] += 1
+            return JSONResponse(status_code=403, content={"error": {"type": "cross_site_refused",
+                                "message": "A web page from another site may not use this AI gateway."}})
+    return await call_next(request)
+
+
 _metrics: dict[str, int] = defaultdict(int)
 _buckets: dict[str, deque[float]] = defaultdict(deque)
 

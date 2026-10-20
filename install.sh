@@ -78,11 +78,27 @@ if [ "$SERVER" = 1 ]; then
       || die "Docker did not install. Run:  apt-get install -y docker-ce docker-compose-plugin   and read the error it prints."
     say "  ✔ $(docker --version 2>/dev/null || echo docker)"
   fi
-  say "3/6 firewall: SSH in, nothing else (the estate is reached only through the outbound tunnel)"
-  if [ "$DRY" = 1 ]; then echo "  [would run] ufw default deny incoming; ufw allow OpenSSH; ufw --force enable"
-  elif ufw default deny incoming >/dev/null 2>&1 && ufw default allow outgoing >/dev/null 2>&1 && ufw allow OpenSSH >/dev/null 2>&1 && ufw --force enable >/dev/null 2>&1; then
-    say "  ✔ on"
+  say "3/6 firewall: SSH in (rate-limited), nothing else (the estate is reached only through the outbound tunnel)"
+  if [ "$DRY" = 1 ]; then echo "  [would run] ufw default deny incoming; ufw limit OpenSSH; ufw --force enable"
+  elif ufw default deny incoming >/dev/null 2>&1 && ufw default allow outgoing >/dev/null 2>&1 && ufw limit OpenSSH >/dev/null 2>&1 && ufw --force enable >/dev/null 2>&1; then
+    say "  ✔ on (more than 6 SSH attempts in 30 seconds from one address are refused)"
   else say "  ⚠ the firewall could not be switched on here (a container?). Every SecuRAX port listens on 127.0.0.1 only, so nothing is exposed either way."; fi
+  # SSH is the one door left open to the internet, and many VPS images ship it accepting passwords, root included: it is then
+  # guessed at all day. Keys only, and no root password login, but ONLY when a key is already installed, so this can never lock
+  # you out. Checked with sshd -t before it applies; a bad file is removed again.
+  _keys="$(cat /root/.ssh/authorized_keys /home/*/.ssh/authorized_keys 2>/dev/null | grep -cE '^(ssh-|ecdsa-|sk-)' || true)"
+  if [ "$DRY" = 1 ]; then echo "  [would run] SSH: keys only, no root password (when a key is installed: $_keys found)"
+  elif [ "${_keys:-0}" -gt 0 ] && [ -d /etc/ssh/sshd_config.d ]; then
+    printf '%s\n' "# SecuRAX (install.sh --server): keys only. Remove this file to undo." "PasswordAuthentication no" \
+      "KbdInteractiveAuthentication no" "PermitRootLogin prohibit-password" "MaxAuthTries 3" "X11Forwarding no" > /etc/ssh/sshd_config.d/10-securax.conf
+    if sshd -t 2>/dev/null; then { systemctl reload ssh 2>/dev/null || systemctl reload sshd 2>/dev/null || service ssh reload 2>/dev/null || true; }
+      say "  ✔ SSH: keys only, no root password login (your key keeps working; undo: rm /etc/ssh/sshd_config.d/10-securax.conf)"
+    else rm -f /etc/ssh/sshd_config.d/10-securax.conf; say "  ⚠ SSH left as it was (its configuration did not accept the change)"; fi
+  else
+    _ip="$(hostname -I 2>/dev/null | awk '{print $1}')"
+    say "  ⚠ SSH still accepts passwords: no SSH key is installed on this server yet. From your laptop:  ssh-copy-id root@${_ip:-$(hostname)}"
+    say "    then run this installer again (it is safe to repeat) and it switches passwords off."
+  fi
   say "4/6 swap, so a busy moment does not stop a service"
   if [ -n "$(swapon --show=NAME --noheadings 2>/dev/null)" ]; then say "  ✔ already there"
   elif [ "$DRY" = 1 ]; then echo "  [would run] a 4 GB /swapfile, kept across restarts"
@@ -112,6 +128,11 @@ if [ "$SERVER" = 1 ]; then
     || say "  ⚠ schedules not on yet: sudo -iu securax  then  cd ~/securax && ./securax routines install"
   say ""
   say "✔ The server is ready and SecuRAX is running (it starts again by itself after a reboot)."
+  # A server's disk is copied by the provider's snapshots, and every backup holds .env with all your keys: lock the backups before
+  # anything else (doc 87). It shows the key once, waits until you saved it in your password manager, then proves a backup opens.
+  say "Next, about 1 minute: lock the backups (they hold every key this server uses)."
+  if [ -t 0 ]; then sudo -iu securax bash -lc 'cd ~/securax && ./securax protect' || say "  ⚠ backups are not locked yet: sudo -iu securax  then  cd ~/securax && ./securax protect"
+  else say "  sudo -iu securax   then   cd ~/securax && ./securax protect"; fi
   say "Last step, about 5 minutes: put it on your own addresses, behind your sign-in."
   if [ -t 0 ]; then sudo -iu securax bash -lc 'cd ~/securax && ./securax online setup' || true
   else say "  sudo -iu securax   then   cd ~/securax && ./securax online setup"; fi
