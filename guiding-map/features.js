@@ -11,7 +11,7 @@ window.SECURAX_FEATURES = {
   {
    "id": "cyber-range",
    "group": "Practise and defend",
-   "emoji": "🎯",
+   "icon": "target",
    "name": "Cyber range",
    "what": "Practise defending real-looking systems against a live red team, with scoring, judging and MITRE ATT&CK, D3FEND and ATLAS learning paths.",
    "cmd": "./securax exercise",
@@ -24,7 +24,7 @@ window.SECURAX_FEATURES = {
   {
    "id": "respond",
    "group": "Practise and defend",
-   "emoji": "🚨",
+   "icon": "siren",
    "name": "Crisis response kit",
    "what": "Step into an incident: collect evidence properly, find what is wrong, and draft the reports.",
    "cmd": "./securax respond",
@@ -37,7 +37,7 @@ window.SECURAX_FEATURES = {
   {
    "id": "purple",
    "group": "Practise and defend",
-   "emoji": "🟣",
+   "icon": "loop",
    "name": "Purple-team loop",
    "what": "Attack your own AI channel, check that the attack was detected, and keep the evidence.",
    "cmd": "./securax purple",
@@ -50,7 +50,7 @@ window.SECURAX_FEATURES = {
   {
    "id": "inspect",
    "group": "Practise and defend",
-   "emoji": "🔍",
+   "icon": "search",
    "name": "Check software before you trust it",
    "what": "Look inside a third-party package or file, in a sandbox, and see what a new version can do that the old one could not.",
    "cmd": "./securax inspect",
@@ -63,7 +63,7 @@ window.SECURAX_FEATURES = {
   {
    "id": "controls",
    "group": "Comply and govern",
-   "emoji": "🏛️",
+   "icon": "grid",
    "name": "BFSI control matrix",
    "what": "Every Indian BFSI cyber obligation as one matrix: what applies to you, what is proven, and what to close next. Works with no file from you.",
    "cmd": "./securax go",
@@ -76,7 +76,7 @@ window.SECURAX_FEATURES = {
   {
    "id": "incident-clock",
    "group": "Comply and govern",
-   "emoji": "⏱️",
+   "icon": "clock",
    "name": "Regulator incident clock",
    "what": "Every applicable regulator's reporting deadline for an incident, counting down, with the drafts ready.",
    "cmd": "./securax incident",
@@ -89,7 +89,7 @@ window.SECURAX_FEATURES = {
   {
    "id": "comply",
    "group": "Comply and govern",
-   "emoji": "📋",
+   "icon": "checklist",
    "name": "Regulatory gap maps",
    "what": "Requirement-by-requirement maps (RBI, SEBI CSCRF, NIST AI 600-1, post-quantum and more) with the evidence for each, checked on every change.",
    "cmd": "./securax comply",
@@ -102,7 +102,7 @@ window.SECURAX_FEATURES = {
   {
    "id": "risks",
    "group": "Comply and govern",
-   "emoji": "⚖️",
+   "icon": "scale",
    "name": "Risk register",
    "what": "Your risks with owners and dates, linked to the controls that treat them, with an overdue lamp.",
    "cmd": "./securax risks",
@@ -115,7 +115,7 @@ window.SECURAX_FEATURES = {
   {
    "id": "cockpit",
    "group": "Comply and govern",
-   "emoji": "📊",
+   "icon": "gauge",
    "name": "Cockpit",
    "what": "One page: what is at risk, what to do next, and the trends. Lamps light only when something needs you.",
    "cmd": "./securax cockpit",
@@ -128,7 +128,7 @@ window.SECURAX_FEATURES = {
   {
    "id": "gateway",
    "group": "Use AI safely",
-   "emoji": "🛡️",
+   "icon": "shield",
    "name": "AI security gateway",
    "what": "Every AI call is checked: personal data masked, prompt injection blocked, data kept in India when it must be, and every call logged.",
    "cmd": "./securax doctor",
@@ -141,7 +141,7 @@ window.SECURAX_FEATURES = {
   {
    "id": "chat",
    "group": "Use AI safely",
-   "emoji": "💬",
+   "icon": "chat",
    "name": "Private chat",
    "what": "A ChatGPT-style assistant that runs through the gateway, with a private local model when the data must not leave.",
    "cmd": "./securax open",
@@ -154,7 +154,7 @@ window.SECURAX_FEATURES = {
   {
    "id": "build",
    "group": "Use AI safely",
-   "emoji": "🛠️",
+   "icon": "code",
    "name": "Build with open models",
    "what": "Write and fix code with strong open models through the gateway, so no single AI subscription or its limits can stop the work.",
    "cmd": "./securax opencode",
@@ -167,7 +167,7 @@ window.SECURAX_FEATURES = {
   {
    "id": "rollback",
    "group": "Keep it running",
-   "emoji": "⏪",
+   "icon": "undo",
    "name": "Go back to a working version",
    "what": "Something broke? One command takes you back to the last version that worked; your edits and data are kept.",
    "cmd": "./securax rollback",
@@ -180,7 +180,7 @@ window.SECURAX_FEATURES = {
   {
    "id": "backup",
    "group": "Keep it running",
-   "emoji": "🔐",
+   "icon": "lock",
    "name": "Encrypted backups",
    "what": "Backups that are encrypted, copied off the laptop, and proved to restore every quarter.",
    "cmd": "./securax protect",
@@ -193,7 +193,7 @@ window.SECURAX_FEATURES = {
   {
    "id": "storage",
    "group": "Keep it running",
-   "emoji": "🗄️",
+   "icon": "disk",
    "name": "Storage that runs itself",
    "what": "Every source of growth has a limit; clean-ups run every six hours, and your phone hears only when space is still short.",
    "cmd": "./securax storage",
@@ -206,7 +206,7 @@ window.SECURAX_FEATURES = {
   {
    "id": "why",
    "group": "Keep it running",
-   "emoji": "🩺",
+   "icon": "pulse",
    "name": "What broke, and why",
    "what": "Names the service that stopped and the reason, in plain words, with the fix.",
    "cmd": "./securax why",
@@ -217,9 +217,35 @@ window.SECURAX_FEATURES = {
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/27-INCIDENT-RUNBOOK/"
   },
   {
+   "id": "jewels",
+   "group": "Keep it running",
+   "icon": "gem",
+   "name": "Crown jewels and risk",
+   "what": "What SecuRAX cannot lose, how exposed each one is today, and the one thing to do next, worst first. It re-scores itself every run.",
+   "cmd": "./securax jewels",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "light": "amber",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION/"
+  },
+  {
+   "id": "continuity",
+   "group": "Keep it running",
+   "icon": "lifebuoy",
+   "name": "Crisis and continuity plan",
+   "what": "Every crisis written down before it happens: how long it may stop you, how much it may lose, the steps, and safe drills that prove it.",
+   "cmd": "./securax continuity",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "light": "amber",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION/"
+  },
+  {
    "id": "guiding-map",
    "group": "Your own tools",
-   "emoji": "🧭",
+   "icon": "compass",
    "name": "Guiding Map",
    "what": "Your daily cockpit for life and work: goals, check-ins and plans. Works offline, no AI needed.",
    "cmd": "./securax open",
@@ -230,9 +256,22 @@ window.SECURAX_FEATURES = {
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/14-GUIDING-MAP/"
   },
   {
+   "id": "inbox",
+   "group": "Your own tools",
+   "icon": "checklist",
+   "name": "Life OS Inbox",
+   "what": "Capture one line; then each note becomes an action with a next step and a date, or stays a note. Reviews turn findings into actions; Google Keep notes come in too.",
+   "cmd": "./securax open",
+   "path": "/index.html",
+   "port": 0,
+   "service": false,
+   "light": "amber",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION/"
+  },
+  {
    "id": "knowledge",
    "group": "Your own tools",
-   "emoji": "📚",
+   "icon": "book",
    "name": "Your AI history",
    "what": "Years of chats from Claude, ChatGPT, DeepSeek or Gemini as one private library you can search.",
    "cmd": "./securax knowledge",
@@ -241,6 +280,32 @@ window.SECURAX_FEATURES = {
    "service": false,
    "light": "green",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/51-YOUR-AI-HISTORY/"
+  },
+  {
+   "id": "passwords",
+   "group": "Your own tools",
+   "icon": "key",
+   "name": "Password manager",
+   "what": "Your own password vault (Vaultwarden) for the Bitwarden apps on laptop and phone, encrypted on your device before it is stored.",
+   "cmd": "./securax start passwords",
+   "path": "",
+   "port": 8222,
+   "service": false,
+   "light": "amber",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION/"
+  },
+  {
+   "id": "cloud",
+   "group": "Your own tools",
+   "icon": "cloud",
+   "name": "Sign in to AWS, Google Cloud, Azure",
+   "what": "One command per cloud, nothing to install: open the link on any device, sign in, and start building.",
+   "cmd": "./securax cloud login aws",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "light": "amber",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION/"
   }
  ]
 };

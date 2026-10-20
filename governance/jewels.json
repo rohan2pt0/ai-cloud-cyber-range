@@ -1,0 +1,32 @@
+{
+ "about": "The crown jewels of the SecuRAX estate: what, if lost or exposed, would stop everything (doc 84). Each one has an impact (1-5), whether it is a single point of failure, the live checks that show whether it is protected today, the one treatment that matters most, and the continuity scenario that recovers it. `./securax jewels` scores and ranks them every time it runs; the cockpit shows the top one. Edit this file, not the code.",
+ "jewels": [
+  {"id": "data", "name": "Your data: chats, workflows, registers, the vault", "why": "Years of notes, risks, controls and conversations. Code can be rebuilt; this cannot.",
+   "impact": 5, "spof": true, "checks": ["backup_recent", "backup_encrypted", "offsite_recent"],
+   "treat": "Encrypt every backup and keep a daily copy off the laptop", "command": "./securax protect", "scenario": "data-lost"},
+  {"id": "backup-key", "name": "The backup key", "why": "Every encrypted backup opens only with it. Lose it and every backup is lost too.",
+   "impact": 5, "spof": true, "checks": ["backup_encrypted", "offsite_drilled"],
+   "treat": "Keep a second copy away from the laptop and prove a backup opens with it every quarter", "command": "./securax backup drill", "scenario": "backup-key-lost"},
+  {"id": "code", "name": "The code and its history", "why": "Everything runs from it. Today it lives on one laptop and one GitHub account.",
+   "impact": 5, "spof": true, "checks": ["repo_bundle_recent", "repo_mirror"],
+   "treat": "A second git host and a daily code bundle in the backups", "command": "./securax continuity mirror", "scenario": "github-down"},
+  {"id": "keys", "name": "The keys in .env (AI providers, the router, sync, the gateway)", "why": "Whoever holds them can spend your money and read your traffic.",
+   "impact": 4, "spof": false, "checks": ["router_key_changed", "env_private"],
+   "treat": "Replace the shipped default keys and keep .env readable only by you", "command": "./securax doctor", "scenario": "compromise"},
+  {"id": "laptop", "name": "The laptop itself", "why": "The only machine running the estate today: lose it and everything stops until a new one is set up.",
+   "impact": 4, "spof": true, "checks": ["offsite_recent", "known_good"],
+   "treat": "Off-site backups plus a recorded working version, so a new machine is running in hours", "command": "./securax backup offsite", "scenario": "laptop-lost"},
+  {"id": "working-version", "name": "A version known to work", "why": "Without one, a bad change means debugging under pressure.",
+   "impact": 4, "spof": false, "checks": ["known_good"],
+   "treat": "Start the estate healthy once, so a working version is recorded and pinned", "command": "./securax up", "scenario": "bad-change"},
+  {"id": "ai-access", "name": "Access to AI models", "why": "Chat, building and the twin all need a model; one provider is one point of failure.",
+   "impact": 3, "spof": false, "checks": ["two_cloud_rungs"],
+   "treat": "At least two cloud providers on the build chain, with the local model as the floor", "command": "./securax providers add", "scenario": "ai-outage"},
+  {"id": "accounts", "name": "Your accounts (Google, Microsoft, GitHub, Tailscale, the clouds)", "why": "A lock-out stops sign-in, sync, updates or the site.",
+   "impact": 4, "spof": true, "checks": ["password_manager"],
+   "treat": "Keep every recovery code in the estate's password manager", "command": "./securax start passwords", "scenario": "account-lost"},
+  {"id": "disk", "name": "Free disk space", "why": "A full disk stops the databases.",
+   "impact": 3, "spof": false, "checks": ["disk_free"],
+   "treat": "The 6-hourly clean-up and a phone alert when space is still short", "command": "./securax storage --auto", "scenario": "disk-full"}
+ ]
+}

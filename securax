@@ -261,6 +261,7 @@ case "$cmd" in
         fi
       fi
     fi
+    case " $(ev SECURAX_OPTIONAL) " in *" passwords "*) dc_up vaultwarden >/dev/null 2>&1 || C "The password manager did not start: ./securax start passwords" ;; esac
     guard_heal
     if ready_wait 150; then
       python3 "$ROOT/governance/recovery.py" --record up >/dev/null 2>&1 || true      # a working version you can always come back to (doc 82)
@@ -911,6 +912,71 @@ EOF2
     # Everything SecuRAX can do, from features.json (the same list the Command Center, website and docs show).
     exec python3 "$ROOT/tools/features_sync.py" --list
     ;;
+  cloud)
+    # Sign in to AWS, Google Cloud or Azure from SecuRAX, with nothing to install: each provider's official CLI runs in a pinned container and
+    # keeps its sign-in in ~/.securax/cloud/<provider> (never in the repository). Device-code flows: open the link on any device, sign in. (doc 84)
+    #   ./securax cloud login aws|gcp|azure  ·  ./securax cloud aws|gcp|azure <command...>  ·  ./securax cloud status
+    CD="${SECURAX_HOME_DIR:-$HOME/.securax}/cloud"; mkdir -p "$CD/aws" "$CD/gcloud" "$CD/azure"; chmod 700 "$CD"
+    cloud_run(){ _p="$1"; shift; case "$_p" in
+        aws)   docker run --rm -it -v "$CD/aws:/root/.aws" -v "$PWD:/work" -w /work amazon/aws-cli:2.38.2 "$@" ;;
+        gcp)   docker run --rm -it -v "$CD/gcloud:/root/.config/gcloud" -v "$PWD:/work" -w /work --entrypoint gcloud google/cloud-sdk:589.0.0-slim "$@" ;;
+        azure) docker run --rm -it -v "$CD/azure:/root/.azure" -v "$PWD:/work" -w /work --entrypoint az mcr.microsoft.com/azure-cli:2.91.0 "$@" ;;
+        *) C "usage: ./securax cloud login aws|gcp|azure"; return 2 ;; esac; }
+    docker info >/dev/null 2>&1 || { C "Docker is not running: start Docker Desktop, then try again."; exit 1; }
+    case "${2:-status}" in
+      login) case "${3:-}" in
+          aws)   C "AWS: a link appears below. Open it on any device, sign in with your AWS console account, and come back."; cloud_run aws login --remote && cloud_run aws sts get-caller-identity ;;
+          gcp)   C "Google Cloud: open the link, sign in, paste the code back here (twice: once for you, once for tools like Terraform)."; cloud_run gcp auth login --no-launch-browser && cloud_run gcp auth application-default login --no-launch-browser ;;
+          azure) C "Azure: open the address shown, type the code, sign in."; cloud_run azure login --use-device-code && cloud_run azure account show -o table ;;
+          *) C "usage: ./securax cloud login aws | gcp | azure"; exit 2 ;; esac ;;
+      status)
+        for _p in aws gcp azure; do case "$_p" in
+            aws) _ok="$(ls "$CD/aws" 2>/dev/null | head -1 || true)" ;; gcp) _ok="$(ls "$CD/gcloud/credentials.db" 2>/dev/null || true)" ;; azure) _ok="$(ls "$CD/azure/msal_token_cache.json" "$CD/azure/azureProfile.json" 2>/dev/null | head -1 || true)" ;; esac
+          case "$_p" in aws) _chk="aws sts get-caller-identity" ;; gcp) _chk="gcp auth list" ;; *) _chk="azure account show" ;; esac
+          if [ -n "$_ok" ]; then C "  ✔ $_p: signed in before (check it: ./securax cloud $_chk)"; else C "  · $_p: not signed in   ->  ./securax cloud login $_p"; fi
+        done ;;
+      aws|gcp|azure) _p="$2"; shift 2; cloud_run "$_p" "$@" ;;
+      *) C "usage: ./securax cloud login aws|gcp|azure | cloud aws|gcp|azure <command> | cloud status"; exit 2 ;;
+    esac
+    ;;
+  lifeos)
+    # Bring notes kept elsewhere (Google Keep, via Google Takeout) into the Life OS Inbox, where each one becomes a decision (doc 84).
+    #   ./securax lifeos import keep [FILE] | status
+    shift; exec python3 "$ROOT/governance/lifeos.py" "${@:-status}"
+    ;;
+  jewels)
+    # The crown jewels of the estate, assessed and ranked from live checks, worst first, each with its next step (doc 84).
+    shift; exec python3 "$ROOT/governance/jewels.py" "$@"
+    ;;
+  continuity)
+    # The estate's crisis and continuity plan, measured: RTO/RPO per scenario, the steps, safe drills, the code mirror (doc 84).
+    #   ./securax continuity | show ID | drill ID | mirror [setup [ADDRESS]] | --json
+    shift; exec python3 "$ROOT/governance/continuity.py" "${@:-status}"
+    ;;
+  names)
+    # Professional addresses (https://hub.securax.localhost, chat., pass. ...) instead of localhost:port, in one guided step (doc 40).
+    if tls_on; then C "Names are already on: $(web_url hub 8088 /hub.html)"; exit 0; fi
+    C "This switches every address to a name over HTTPS (https://hub.securax.localhost, https://chat.securax.localhost ...)."
+    C "Your Guiding Map data is kept per address. Before you go on: open http://localhost:8088 > Ops > System health > Export backup,"
+    C "then import that file on the new address (or turn on cross-device sync, which restores it by itself)."
+    if [ -t 0 ]; then printf "Switch now? [y/N] "; read -r _a; case "$_a" in y|Y|yes) ;; *) C "Nothing changed."; exit 0 ;; esac; fi
+    python3 "$ROOT/governance/tls.py" on || exit 1
+    python3 "$ROOT/governance/tls.py" trust --apply || C "Trust the certificate later with:  ./securax tls trust --apply"
+    "$0" down >/dev/null 2>&1 || true; SECURAX_NO_OPEN=1 "$0" up && C "✔ Open: $(web_url hub 8088 /hub.html)"
+    ;;
+  passwords)
+    # The estate's password manager (Vaultwarden, doc 84).   ./securax passwords status | lock | unlock | open
+    case "${2:-status}" in
+      lock|unlock) skv "$ROOT/local/compose/.env" PASSWORDS_SIGNUPS "$([ "$2" = lock ] && echo false || echo true)"
+        if ( cd "$ROOT/local/compose" && docker compose --profile ai up -d vaultwarden >/dev/null 2>&1 ); then
+          C "✔ sign-ups $([ "$2" = lock ] && echo closed: only the accounts that exist can sign in || echo open: create the account, then lock again)"
+        else C "Could not restart the password manager. Run  ./securax doctor  and paste the output."; exit 1; fi ;;
+      open) xdg-open "$(web_url pass 8222 /)" >/dev/null 2>&1 || C "Open: $(web_url pass 8222 /)" ;;
+      status) if web_up pass 8222; then C "✔ password manager running: $(web_url pass 8222 /)  (sign-ups $([ "$(ev PASSWORDS_SIGNUPS true)" = false ] && echo closed || echo OPEN: lock them with  ./securax passwords lock))"
+        else C "The password manager is off. Start it:  ./securax start passwords"; exit 1; fi ;;
+      *) C "usage: ./securax passwords status | lock | unlock | open"; exit 2 ;;
+    esac
+    ;;
   privacy)
     # Names that must never appear in this public repository (organisations, exercises, people); only fingerprints are stored (doc 65).
     #   ./securax privacy check | add "Name"
@@ -1247,6 +1313,8 @@ EOF2
     # The private registers (controls, risks, findings, setup marks) live in vault/, outside Docker: without them a new machine starts
     # blank. Support packets are left out: they are throw-away copies.
     [ -d "$ROOT/vault" ] && tar czf "$STG/vault.tgz" -C "$ROOT" --exclude=vault/support vault && echo "vault" >> "$STG/MANIFEST" || true
+    # The private CA (./securax tls): without its key every device must trust a new CA after a restore (a crown jewel, doc 84).
+    _TLSD="$(tls_home 2>/dev/null)"; [ -n "$_TLSD" ] && [ -d "$_TLSD" ] && tar czf "$STG/tls-ca.tgz" -C "$(dirname "$_TLSD")" "$(basename "$_TLSD")" && echo "tls-ca" >> "$STG/MANIFEST" || true
     ( cd "$STG" && sha256sum ./* > SHA256SUMS 2>/dev/null || true )
     tar czf "$PLAIN" -C "$STG" . && tar tzf "$PLAIN" >/dev/null || { C "Backup failed verification."; rm -f "$OUTF"; exit 1; }
     if [ "$ENCRYPT" = 1 ]; then
@@ -1300,6 +1368,9 @@ EOF2
     if [ -f "$STG/vault.tgz" ]; then                   # the current vault is kept aside, never overwritten
       [ -n "$(ls -A "$ROOT/vault" 2>/dev/null)" ] && mv "$ROOT/vault" "$ROOT/vault.pre-restore-$(date +%Y%m%d-%H%M%S)"
       tar xzf "$STG/vault.tgz" -C "$ROOT" && chmod 700 "$ROOT/vault" && echo "  ✔ restored vault (controls, risks, findings, your marks)"
+    fi
+    if [ -f "$STG/tls-ca.tgz" ]; then                  # the private CA: devices that trusted it keep trusting the estate
+      _TLSD="$(tls_home)"; if [ -d "$_TLSD" ]; then echo "  (kept the CA already on this machine: $_TLSD)"; else mkdir -p "$(dirname "$_TLSD")" && tar xzf "$STG/tls-ca.tgz" -C "$(dirname "$_TLSD")" && chmod 700 "$_TLSD" && echo "  ✔ restored the private CA"; fi
     fi
     if [ -f "$STG/env" ]; then
       [ -f "$ROOT/local/compose/.env" ] && cp "$ROOT/local/compose/.env" "$ROOT/local/compose/.env.pre-restore"
@@ -1355,7 +1426,15 @@ EOF2
     if [ "$_alive" = 1 ]; then
       if SAFE_OUT="$("$0" backup 2>&1)"; then C "  ✔ backup taken first: $(printf '%s' "$SAFE_OUT" | tail -1)"; else C "  (could not take a backup — continuing; your data volumes are not touched by an update). Reason: $(printf '%s' "$SAFE_OUT" | tail -c 300)"; fi
     fi
-    git -C "$ROOT" pull --ff-only || { C "git pull failed — you may have local changes. See:  git -C \"$ROOT\" status"; exit 1; }
+    if ! _PULL="$(git -C "$ROOT" pull --ff-only 2>&1)"; then
+      if printf '%s' "$_PULL" | grep -qiE "could not resolve|unable to access|connection|timed out|repository not found|authentication|403|404|5[0-9][0-9]"; then
+        C "Could not reach the code host (GitHub). Nothing changed and the estate keeps running. Details: $(printf '%s' "$_PULL" | tail -1)"
+        C "  If GitHub stays down: ./securax continuity show github-down   (the mirror and the code bundle in your backups)"
+      else
+        C "git pull failed — you may have local changes. See:  git -C \"$ROOT\" status"
+      fi
+      exit 1
+    fi
     NEW="$(git -C "$ROOT" rev-parse HEAD)"
     "$0" down || true
     if SECURAX_NO_OPEN=1 "$0" up && gcurl -fsS -m 10 $(gw_url)/readyz >/dev/null 2>&1; then
@@ -1633,22 +1712,29 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
     # Start an optional add-on that lite mode skipped (Private Docs, Automation). It needs the Chat estate to be up already.
     preflight || exit 1
     case "${2:-}" in docs) _svc="anythingllm"; _need="about 2 GB" ;; flows|n8n) _svc="n8n"; _need="about 1 GB" ;;
-      all) _svc="anythingllm n8n"; _need="about 3 GB" ;; *) C "usage: ./securax start docs | flows | all   (Private Docs = AnythingLLM; flows = n8n automation)"; exit 2 ;; esac
-    case "${2:-}" in docs) _tok="docs" ;; flows|n8n) _tok="flows" ;; *) _tok="docs flows" ;; esac
+      passwords) _svc="vaultwarden"; _need="about 50 MB" ;;
+      all) _svc="anythingllm n8n"; _need="about 3 GB" ;; *) C "usage: ./securax start docs | flows | passwords | all   (Private Docs = AnythingLLM; flows = n8n automation; passwords = Vaultwarden)"; exit 2 ;; esac
+    case "${2:-}" in docs) _tok="docs" ;; flows|n8n) _tok="flows" ;; passwords) _tok="passwords" ;; *) _tok="docs flows" ;; esac
+    if [ "${2:-}" = passwords ]; then skv "$ROOT/local/compose/.env" PASSWORDS_URL "$(web_url pass 8222 "" | sed 's#/$##')"; fi
     _list="$_svc"; if tls_on; then python3 "$ROOT/governance/tls.py" render >/dev/null 2>&1 || true; internal_on && for _s in $_svc; do _list="$_list ${_s}-tls"; done; fi
     C "Starting: $_svc  (needs $_need of memory; the first start of Private Docs takes a minute or two)"
     ( cd "$ROOT/local/compose" && docker compose --profile ai up -d $_list ) || { C "Could not start it. Run  ./securax doctor  and paste the output."; exit 1; }
     ENVF="$ROOT/local/compose/.env"; _cur=" $(ev SECURAX_OPTIONAL) "; for _t in $_tok; do case "$_cur" in *" $_t "*) ;; *) _cur="$_cur$_t " ;; esac; done
     skv "$ENVF" SECURAX_OPTIONAL "$(echo $_cur)"                     # remembered: `up` and `update` bring these back
-    for _s in $_svc; do case "$_s" in anythingllm) _n=docs; _pt=3001 ;; *) _n=flows; _pt=5678 ;; esac
+    for _s in $_svc; do case "$_s" in anythingllm) _n=docs; _pt=3001 ;; vaultwarden) _n=pass; _pt=8222 ;; *) _n=flows; _pt=5678 ;; esac
       _i=0; while [ "$_i" -lt 40 ] && ! web_up "$_n" "$_pt"; do sleep 4; _i=$((_i+1)); done
-      if web_up "$_n" "$_pt"; then C "$_n is running: $(web_url "$_n" "$_pt" /)"; else C "$_n is still starting (large first start). Reload the Command Center in a minute; if it stays grey run  ./securax doctor"; fi
+      if web_up "$_n" "$_pt"; then C "$_n is running: $(web_url "$_n" "$_pt" /)"
+        if [ "$_n" = pass ]; then                                    # an if, not `[ ] &&`: a false test as the last command made start exit 1
+          skv "$ENVF" PASSWORDS_ENABLED 1; C "  1. Open it and create YOUR account (one only). 2. Close sign-ups:  ./securax passwords lock"
+          C "  3. Install the Bitwarden app or browser extension, and set its server to $(web_url pass 8222 "")"; fi
+      else C "$_n is still starting (large first start). Reload the Command Center in a minute; if it stays grey run  ./securax doctor"; fi
     done
     ;;
   stop)
     # ./securax stop docs|flows|all — stop Private Docs / Automation and forget them (they stay off after the next `up`).
-    case "${2:-}" in docs) _svc="anythingllm"; _tok="docs" ;; flows|n8n) _svc="n8n"; _tok="flows" ;; all) _svc="anythingllm n8n"; _tok="docs flows" ;;
-      *) C "usage: ./securax stop docs | flows | all   (to stop everything: ./securax down)"; exit 2 ;; esac
+    case "${2:-}" in docs) _svc="anythingllm"; _tok="docs" ;; flows|n8n) _svc="n8n"; _tok="flows" ;; passwords) _svc="vaultwarden"; _tok="passwords" ;;
+      all) _svc="anythingllm n8n"; _tok="docs flows" ;;
+      *) C "usage: ./securax stop docs | flows | passwords | all   (to stop everything: ./securax down)"; exit 2 ;; esac
     ( cd "$ROOT/local/compose" && docker compose --profile ai stop $_svc $(for _s in $_svc; do echo "${_s}-tls"; done) 2>/dev/null ) || true
     ENVF="$ROOT/local/compose/.env"; _cur=" $(ev SECURAX_OPTIONAL) "; for _t in $_tok; do _cur="${_cur// $_t / }"; done
     skv "$ENVF" SECURAX_OPTIONAL "$(echo $_cur)"; C "stopped: $_tok"
@@ -1672,7 +1758,7 @@ THE 20% YOU USE 80% OF THE TIME
   cockpit        one-page health view: risks, to-dos, trends         storage        how much space you use and when it runs out
   notify         alerts to your phone (ntfy) or team chat            shortcut       type `securax <command>` from any folder
   tls            encrypt every web connection (HTTPS everywhere)     sync-link      one-tap sync setup for a phone / second computer
-  start / stop docs|flows|all   Private Docs / Automation (skipped in lite mode; remembered across updates)
+  start / stop docs|flows|passwords|all   Private Docs / Automation / the password manager (remembered across updates)
   capacity       what to switch on as more people join (1 to 100,000)
   protect        encrypt your backups (one guided step)              crypto         plain-English protection check (--full: the CBOM)
 
@@ -1713,6 +1799,12 @@ BUILD & KEEP IT HEALTHY
   impact         what a change can affect             diffcheck / forge / autobench   catch cheating; prove the tests test; measure models
   lessons        what earlier work taught             config / privacy   brand values in one file; names that must never be published
   ready          READY when the estate answers        support-packet     one scrubbed zip for a bug report
+  jewels         the crown jewels: what SecuRAX cannot lose, how exposed each is today, and the next step, worst first
+  continuity     the crisis plan: each scenario's RTO/RPO target vs today, the steps (show ID), safe drills (drill ID), the code mirror (mirror setup: a free private GitLab copy)
+  names          https://hub.securax.localhost style addresses instead of localhost:port, in one guided step
+  passwords      the estate's password manager (start passwords, then status | lock | open)
+  cloud          sign in to AWS, Google Cloud or Azure with nothing to install (cloud login aws|gcp|azure; cloud status)
+  lifeos         bring Google Keep notes into the Life OS Inbox, where each becomes an action or a note (lifeos import keep)
 
 GROW (everything dormant until you wake it; sleeping keeps your data)
   stages / soil / grow / hibernate / prune / scale     rhythm      tenant / organ / organ-check / burrow / spore / full

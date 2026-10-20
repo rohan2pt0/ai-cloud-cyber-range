@@ -1526,10 +1526,10 @@
     row("eduSip", null);
     row("eduGap", null);
 
-    if (!rows.length) return '<div class="cat-t">🔗 Derived</div>'
+    if (!rows.length) return '<div class="cat-t">Derived</div>'
       + '<div class="info">Nothing to derive yet. Fill the Life Map and add a property, and this panel starts computing the downstream numbers so you never enter the same thing twice.</div>';
 
-    h = '<div class="cat-t">🔗 Derived — computed, not typed</div>'
+    h = '<div class="cat-t">Derived — computed, not typed</div>'
       + '<div class="info">Every figure here comes from something you already entered elsewhere. Nothing is written over your own numbers without you tapping to accept it.</div>'
       + '<div class="road-col">' + rows.join("") + trajHTML() + '</div>'
       + '<div class="info" style="margin-top:8px;font-size:10.5px">Assumptions, honestly: 12% SIP return is the long-run index headline \u2014 stress-test at 9\u201310% before betting a deadline on it. 10% education inflation is the higher-education figure, not CPI. The 11\u00d7 term-cover rule is a quick floor; a needs-based calculation (expenses \u00d7 years to independence + loans + education corpus \u2212 assets) is the better number. Age benchmarks are US-derived and directional only. ' + TAX2026.note + '</div>';
@@ -2683,7 +2683,7 @@
 
   function guidesHTML() {
     var h = '<div class="section active">';
-    h += '<div class="cat-t">📘 Guides — how to actually do it</div>';
+    h += '<div class="cat-t">Guides — how to actually do it</div>';
     h += '<div class="info">Every instruction in the map, explained in plain steps with a visual where it helps — so you act now instead of researching. No internet needed.</div>';
     h += '<input placeholder="Search guides… (e.g. breathing, band, password)" oninput="gmGuideFilter(this.value)" '
       + 'style="width:100%;margin:10px 0;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink)">';
@@ -2900,7 +2900,7 @@
 
   function askHTML() {
     var h = '<div class="section active">';
-    h += '<div class="cat-t">🤖 Ask — your local AI + advisor army</div>';
+    h += '<div class="cat-t">Ask — your local AI + advisor army</div>';
     h += '<div class="info">Ask plainly — answered by <b>your own model</b> through the guardrail gateway, kept honest (no made-up numbers). Pick an advisor for a first-draft expert opinion, then confirm anything big with a real professional.</div>';
     h += '<div id="askStatus" class="info" style="margin-top:8px;display:flex;align-items:center;gap:7px"><span style="color:var(--muted)">●</span> Checking if your local AI is ready…</div>';
     h += '<div class="chips" style="margin:8px 0"><button class="chip' + (askAgent === "general" ? " on" : "") + '" data-k="general" aria-pressed="' + (askAgent === "general") + '" onclick="gmAskSet(\'general\')">General</button>';
@@ -3123,7 +3123,7 @@
      Nothing here asks for a new number; it reads what is already stored, and
      what the estate already knows (portal/estate-feed.json).
      ═══════════════════════════════════════════════════════════════ */
-  var CALM_TABS = ["today", "ask", "life", "money", "ops"];
+  var CALM_TABS = ["today", "inbox", "ask", "life", "money"];   // five, plus More (Ops, the settings, is under More)
   function calmOn() { return G("gm_calm", true) !== false; }
   window.gmCalm = function (on) { S_("gm_calm", !!on); window.scrollTo(0, 0); renderAll(); };
   var _calmMore = false;
@@ -3133,7 +3133,11 @@
 
   /* ── Phone navigation: four fixed bottom tabs and More (nothing hides off-screen), a header that shrinks to one line
      once you scroll, and the vitals at the top of Today instead of a second bar at the bottom. Wider screens keep the strip. */
-  var NAV_MAIN = [["today", "\u2600", "Today"], ["okr", "\u{1F3AF}", "Goals"], ["ask", "\u{1F916}", "Ask"], ["ops", "\u2699", "Ops"]];
+  function navIco(d) { return '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + d + '</svg>'; }
+  var NAV_MAIN = [["today", navIco('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/>'), "Today"],
+    ["inbox", navIco('<path d="M3 13l3-8h12l3 8v6H3z"/><path d="M3 13h5l1 3h6l1-3h5"/>'), "Inbox"],
+    ["okr", navIco('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>'), "Goals"],
+    ["ask", navIco('<path d="M4 5h16v11H9l-5 4z"/>'), "Ask"]];
   var _navMore = false;
   function phone() { try { return window.matchMedia("(max-width: 700px)").matches; } catch (e) { return false; } }
   window.gmMoreToday = function (o) { S_("gm_more_today", !!o); };
@@ -3175,7 +3179,7 @@
     NAV_MAIN.forEach(function (n) {
       h += '<button class="' + (curTab === n[0] && !_navMore ? "on" : "") + '" onclick="gmNavGo(\'' + n[0] + '\')"' + (curTab === n[0] ? ' aria-current="page"' : "") + '><b aria-hidden="true">' + n[1] + '</b>' + n[2] + '</button>';
     });
-    h += '<button class="' + (_navMore || inMore ? "on" : "") + '" onclick="gmNavMore()" aria-expanded="' + _navMore + '"><b aria-hidden="true">\u2630</b>More</button></nav>';
+    h += '<button class="' + (_navMore || inMore ? "on" : "") + '" onclick="gmNavMore()" aria-expanded="' + _navMore + '"><b aria-hidden="true">' + navIco('<path d="M4 7h16M4 12h16M4 17h16"/>') + '</b>More</button></nav>';
     var sh = '<div id="gmMoreSheet" class="' + (_navMore ? "on" : "") + '" onclick="if(event.target===this)gmNavMore(false)"><div class="sh" role="menu">';
     TABS.forEach(function (t) {
       if (main.indexOf(t[0]) >= 0) return;
@@ -4312,15 +4316,142 @@
     gmToast("Saved: one row per day for the last year.");
   };
 
+  /* ── 9b. Inbox: every note becomes a decision, every finding an action ─────────
+     Capture anything in one line. Then each item is decided: an ACTION (a next step and a date), a NOTE (kept, no date) or
+     deleted. A review (any ritual, e.g. Red-Team Your Life) runs step by step and turns each finding into a dated action.
+     Notes exported from Google Keep (./securax lifeos import keep FILE) arrive here by themselves. Stored in gm_inbox. */
+  var IB_KINDS = { action: "Action", issue: "Issue to fix", idea: "Idea", note: "Note" };
+  function ibAll() { return G("gm_inbox", []); }
+  function ibSave(a) { S_("gm_inbox", a); }
+  function ibDays(n) { var d = new Date(); d.setDate(d.getDate() + n); return ymd(d); }
+  function ibId() { return "ib" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  window.gmInboxAdd = function (text, kind, extra) {
+    text = String(text || "").trim();
+    if (!text) return null;
+    var it = Object.assign({ id: ibId(), t: text.slice(0, 500), kind: IB_KINDS[kind] ? kind : "action", area: "", due: "", next: "", done: "", from: "capture", created: Date.now() }, extra || {});
+    var a = ibAll(); a.unshift(it); ibSave(a);
+    return it;
+  };
+  window.gmInboxCapture = function () {
+    var el = document.getElementById("ibText"), k = document.getElementById("ibKind");
+    if (!el) return;
+    var it = gmInboxAdd(el.value, k ? k.value : "action");
+    if (it) { el.value = ""; if (typeof gmToast === "function") gmToast("Captured. Decide it below when you are ready."); renderAll(); }
+  };
+  window.gmInboxDecide = function (id, as) {
+    var a = ibAll(), it = a.filter(function (x) { return x.id === id; })[0];
+    if (!it) return false;
+    if (as === "delete") { ibSave(a.filter(function (x) { return x.id !== id; })); renderAll(); return true; }
+    if (as === "note") { it.kind = "note"; it.due = ""; }
+    else {
+      var n = document.getElementById("ibNext_" + id), d = document.getElementById("ibDue_" + id);
+      it.next = (n && n.value.trim()) || it.next || it.t;
+      it.due = (d && d.value) || it.due || ibDays(7);
+      if (it.kind === "note" || it.kind === "idea") it.kind = "action";
+    }
+    ibSave(a); renderAll(); return true;
+  };
+  window.gmInboxDone = function (id) {
+    var a = ibAll(); a.forEach(function (x) { if (x.id === id) x.done = ymd(); }); ibSave(a); renderAll();
+  };
+  window.gmInboxStats = function () {
+    var a = ibAll(), today = ymd(), open = a.filter(function (x) { return !x.done && x.kind !== "note"; });
+    return { decide: open.filter(function (x) { return !x.due; }).length, due: open.filter(function (x) { return x.due && x.due <= today; }).length,
+             open: open.filter(function (x) { return x.due; }).length, notes: a.filter(function (x) { return x.kind === "note"; }).length };
+  };
+  // A review: the ritual's steps one by one; whatever you write under a step becomes an issue to fix within 7 days.
+  window.gmReviewFindings = function (rid) {
+    var r = RITUALS.filter(function (x) { return x.id === rid; })[0];
+    if (!r) return 0;
+    var made = 0;
+    r.steps.forEach(function (step, i) {
+      var el = document.getElementById("rv_" + rid + "_" + i);
+      var v = el && el.value.trim();
+      if (v) { gmInboxAdd(v, "issue", { area: r.name, next: v, due: ibDays(7), from: "review:" + rid, step: step }); made++; }
+    });
+    var log = G("gm_reviews", {}); log[rid + ":" + ymd()] = made; S_("gm_reviews", log);
+    S_("gm_review_open", "");
+    if (typeof gmToast === "function") gmToast(made ? made + " finding(s) are now actions, due in a week." : "Review done: nothing to fix.");
+    renderAll();
+    return made;
+  };
+  window.gmReviewOpen = function (rid) { S_("gm_review_open", rid || ""); renderAll(); };
+  // Google Keep (and other) notes the estate imported: portal/inbox-import.json, merged once by id (only when served over http/https).
+  function ibImport() {
+    if (!(window.fetch && location.protocol.indexOf("http") === 0)) return;
+    fetch("portal/inbox-import.json", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+      if (!j || !j.items) return;
+      var a = ibAll(), have = {}, added = 0;
+      a.forEach(function (x) { have[x.id] = 1; });
+      j.items.forEach(function (x) { if (x.id && !have[x.id]) { a.push(Object.assign({ kind: "note", area: "", due: "", next: "", done: "", created: Date.now() }, x)); added++; } });
+      if (added) { ibSave(a); if (typeof gmToast === "function") gmToast(added + " imported note(s) are in your Inbox."); renderAll(); }
+    }).catch(function () {});
+  }
+  setTimeout(ibImport, 1500);
+  function ibRow(x) {
+    var today = ymd(), late = x.due && x.due < today && !x.done;
+    return '<div class="ibrow' + (late ? " late" : "") + '"><div class="ibt"><b>' + esc(x.next || x.t) + '</b>'
+      + (x.next && x.next !== x.t ? '<div class="ibsub">' + esc(x.t) + '</div>' : "")
+      + '<div class="ibsub">' + esc(IB_KINDS[x.kind] || "Action") + (x.area ? " · " + esc(x.area) : "") + (x.due ? " · due " + esc(x.due) + (late ? " (late)" : "") : "") + '</div></div>'
+      + '<button class="btn" onclick="gmInboxDone(\'' + x.id + '\')">Done</button></div>';
+  }
+  function inboxHTML() {
+    var a = ibAll(), today = ymd();
+    var decide = a.filter(function (x) { return !x.done && !x.due && x.kind !== "note"; });
+    var actions = a.filter(function (x) { return !x.done && x.due; }).sort(function (p, q) { return p.due < q.due ? -1 : 1; });
+    var notes = a.filter(function (x) { return x.kind === "note" && !x.done; });
+    var ropen = G("gm_review_open", "");
+    var h = '<div class="section active"><h2>Inbox</h2><div class="info">One line is enough. Then decide each one: an action with a next step and a date, a note to keep, or delete it. Nothing stays half-decided.</div>'
+      + '<div class="ibcap"><input id="ibText" placeholder="What is on your mind?" onkeydown="if(event.key===\'Enter\')gmInboxCapture()" aria-label="Capture">'
+      + '<select id="ibKind" aria-label="Kind">' + Object.keys(IB_KINDS).map(function (k) { return '<option value="' + k + '">' + IB_KINDS[k] + '</option>'; }).join("") + '</select>'
+      + '<button class="btn primary" onclick="gmInboxCapture()">Add</button></div>';
+    if (decide.length) {
+      h += '<h3>To decide (' + decide.length + ')</h3>';
+      decide.forEach(function (x) {
+        h += '<div class="ibrow"><div class="ibt"><b>' + esc(x.t) + '</b><div class="ibsub">' + esc(IB_KINDS[x.kind] || "") + (x.from && x.from !== "capture" ? " · from " + esc(x.from) : "") + '</div>'
+          + '<div class="ibdec"><input id="ibNext_' + x.id + '" placeholder="The next physical step" aria-label="Next step"><input type="date" id="ibDue_' + x.id + '" value="' + ibDays(7) + '" aria-label="Due">'
+          + '<button class="btn primary" onclick="gmInboxDecide(\'' + x.id + '\',\'action\')">Make it an action</button>'
+          + '<button class="btn" onclick="gmInboxDecide(\'' + x.id + '\',\'note\')">Keep as a note</button>'
+          + '<button class="btn" onclick="gmInboxDecide(\'' + x.id + '\',\'delete\')">Delete</button></div></div></div>';
+      });
+    }
+    h += '<h3>Actions (' + actions.length + ')</h3>' + (actions.length ? actions.map(ibRow).join("") : '<div class="info">Nothing scheduled. Decide something above, or run a review below.</div>');
+    h += '<h3>Run a review now</h3><div class="info">Pick a review. Answer each step in your own words; leave a step empty if all is well. Every answer becomes an action due in a week.</div>'
+      + '<div class="ibrev">' + RITUALS.map(function (r) { return '<button class="btn' + (ropen === r.id ? " primary" : "") + '" onclick="gmReviewOpen(\'' + r.id + '\')">' + esc(r.name) + ' · ' + r.mins + ' min</button>'; }).join("") + '</div>';
+    var r = RITUALS.filter(function (x) { return x.id === ropen; })[0];
+    if (r) {
+      h += '<div class="ibreview"><b>' + esc(r.name) + '</b>' + r.steps.map(function (st, i) {
+        return '<label class="ibstep"><span>' + (i + 1) + '. ' + esc(st) + '</span><textarea id="rv_' + r.id + '_' + i + '" rows="2" placeholder="What did you find? (empty if nothing)"></textarea></label>';
+      }).join("") + '<button class="btn primary" onclick="gmReviewFindings(\'' + r.id + '\')">Turn my findings into actions</button> <button class="btn" onclick="gmReviewOpen(\'\')">Close</button></div>';
+    }
+    if (notes.length) h += '<details class="ibnotes"><summary>Notes kept (' + notes.length + ')</summary>' + notes.map(function (x) {
+      return '<div class="ibrow"><div class="ibt">' + esc(x.t) + (x.area ? '<div class="ibsub">' + esc(x.area) + '</div>' : "") + '</div><button class="btn" onclick="gmInboxDecide(\'' + x.id + '\',\'action\')">Make it an action</button></div>';
+    }).join("") + '</details>';
+    return h + '</div>';
+  }
+  window.inboxHTML = inboxHTML;
+  function inboxNudgeHTML() {
+    var st = gmInboxStats();
+    if (!st.decide && !st.due) return "";
+    return '<div class="section active ibnudge" onclick="gmNavGo(\'inbox\')" style="cursor:pointer"><b>Inbox</b> · ' + (st.due ? st.due + " action(s) due today or late" : "") + (st.due && st.decide ? " · " : "") + (st.decide ? st.decide + " to decide" : "") + ' <span style="float:right">Open →</span></div>';
+  }
+  (function ibStyle() {
+    var css = ".ibcap{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.ibcap input{flex:1 1 220px;min-width:0}.ibrow{display:flex;gap:8px;align-items:flex-start;justify-content:space-between;border-top:1px solid var(--line,#2a3446);padding:8px 0}"
+      + ".ibrow.late b{color:var(--red,#e5534b)}.ibt{flex:1;min-width:0;overflow-wrap:anywhere}.ibsub{font-size:12.5px;color:var(--muted)}.ibdec{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.ibdec input{flex:1 1 160px;min-width:0}"
+      + ".ibrow>button,.ibdec button,.ibcap button,.ibrev button{width:auto;flex:0 0 auto;margin:0;padding:8px 12px}.ibcap select{width:auto;flex:0 0 auto}"
+      + ".ibrev{display:flex;gap:6px;flex-wrap:wrap}.ibreview{margin-top:10px}.ibstep{display:block;margin:8px 0}.ibstep span{display:block;font-size:13.5px;margin-bottom:4px}.ibstep textarea{width:100%;box-sizing:border-box}";
+    var st = document.createElement("style"); st.textContent = css; document.head.appendChild(st);
+  })();
+
   /* ── 10. Wire into the existing render loop ─────────────────────── */
   if (typeof TABS !== "undefined") {
     var keep = TABS.filter(function (t) { return ["today", "map"].indexOf(t[0]) < 0; });
     var today = TABS.filter(function (t) { return t[0] === "today"; });
     var map = TABS.filter(function (t) { return t[0] === "map"; });
     TABS.length = 0;
-    today.concat([["ask", "\ud83e\udd16 Ask"], ["guide", "\ud83d\udcd8 Guides"], ["stack", "\u{1F3DB} Stack"], ["life", "\u{1F9ED} Life Map"], ["career", "\u{1F4BC} Career"],
-      ["prop", "\u{1F3E0} Property"], ["ops", "\u2699 Ops"]]).concat(map).concat(keep)
-      .forEach(function (t) { TABS.push(t); });
+    today.concat([["inbox", "Inbox"], ["ask", "Ask"], ["guide", "Guides"], ["stack", "Stack"], ["life", "Life Map"], ["career", "Career"],
+      ["prop", "Property"], ["ops", "Ops"]]).concat(map).concat(keep)
+      .forEach(function (t) { TABS.push([t[0], t[1].replace(/^[^A-Za-z0-9]+/, "")]); });   // plain words in the tab bar: no emoji
   }
   var _renderAll = window.renderAll;
   var _pendingRender = false;
@@ -4343,6 +4474,7 @@
     if (!phone()) document.body.insertAdjacentHTML("beforeend", vitalsHTML());   // on a phone the vitals sit at the top of Today
     if (curTab === "ask") { box.innerHTML = askHTML(); try { gmAskPing(); } catch (e) {} }
     else if (curTab === "guide") { box.innerHTML = guidesHTML(); }
+    else if (curTab === "inbox") { box.innerHTML = inboxHTML(); }
     else if (curTab === "ops") { box.innerHTML = opsHTML(); }
     else if (curTab === "stack") { box.innerHTML = stackHTML(); }
     else if (curTab === "life") { box.innerHTML = lifeMapHTML(); }
@@ -4355,7 +4487,7 @@
       if (sec) { var inf = sec.querySelector(".info"); if (!P.kids.length && inf) inf.outerHTML = kidAddHTML(true); else if (P.kids.length) sec.insertAdjacentHTML("beforeend", kidAddHTML(false)); }
     }
     else if (curTab === "today") {
-      box.insertAdjacentHTML("afterbegin", greetHTML() + exampleWarn() + interruptHTML() + undoBar() + daily3HTML() + msTodayHTML()
+      box.insertAdjacentHTML("afterbegin", greetHTML() + exampleWarn() + interruptHTML() + undoBar() + inboxNudgeHTML() + daily3HTML() + msTodayHTML()
         + (inRecovery() ? "" : driftHTML() + resHTML()) + oneActionHTML() + (inRecovery() ? "" : pinnedHTML()));
     }
     try { calmFrame(); } catch (e) { console.log(e); }

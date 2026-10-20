@@ -56,10 +56,11 @@ ENDPOINTS = [
     ("Chat", "chat", "open-webui", 8080, 3000),
     ("Private Docs", "docs", "anythingllm", 3001, 3001),
     ("Automation (n8n)", "flows", "n8n", 5678, 5678),
+    ("Password manager", "pass", "vaultwarden", 80, 8222),
     ("Sync service (phone/PWA)", "sync", "estate-sync", 8089, 8089),
     ("Gateway API", "api", "gateway", 8080, 8080),
 ]
-PLAIN_WEB_PORTS = (8088, 3000, 3001, 5678, 8089)          # published only while the edge is OFF
+PLAIN_WEB_PORTS = (8088, 3000, 3001, 5678, 8089, 8222)          # published only while the edge is OFF
 TLS_COMPOSE = "docker-compose.yml:tls.yml"
 TLS_COMPOSE_INTERNAL = "docker-compose.yml:tls.yml:tls-internal.yml"
 SIDECAR_DIR = COMPOSE / "tls-sidecars"
@@ -341,7 +342,7 @@ server {
 
 
 # services that are OPTIONAL (skipped in lite mode) -> what to type to start them. Used for the friendly "not running" page.
-OPTIONAL = {"docs": ("Private Docs", "docs"), "flows": ("Automation (n8n)", "flows")}
+OPTIONAL = {"docs": ("Private Docs", "docs"), "flows": ("Automation (n8n)", "flows"), "pass": ("Password manager", "passwords")}
 
 
 def _upstream(svc: str, port: int, internal: bool) -> tuple[str, str]:

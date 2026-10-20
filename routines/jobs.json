@@ -143,13 +143,38 @@
     "kind": "guard"
   },
   {
-    "id": "weekly-backup",
-    "cron": "30 2 * * 0",
+    "id": "daily-backup",
+    "cron": "30 2 * * *",
     "command": [
       "./securax",
       "backup"
     ],
-    "description": "Sunday 2:30am: a verified backup (encrypted if you set a key file); keeps the newest 7. A stale backup turns the cockpit amber, which the andon reports.",
+    "description": "Every night at 2:30am: a verified backup (encrypted if you set a key file); keeps the newest 7, so a week of nights. One day is the most data a lost laptop can cost (doc 84). A stale backup turns the cockpit amber, which the andon reports.",
+    "enabled": true,
+    "kind": "guard"
+  },
+  {
+    "id": "code-mirror",
+    "cron": "50 2 * * *",
+    "command": [
+      "./securax",
+      "continuity",
+      "mirror"
+    ],
+    "description": "Every night at 2:50am: a verified git bundle of every branch in the backup and off-site folders, and a push to each MIRROR_REMOTES host, so the estate never depends on GitHub alone (doc 84).",
+    "enabled": true,
+    "kind": "guard"
+  },
+  {
+    "id": "continuity-drill",
+    "cron": "20 7 2 * *",
+    "command": [
+      "./securax",
+      "continuity",
+      "drill",
+      "github-down"
+    ],
+    "description": "The 2nd of each month, 7:20am: prove the code can be rebuilt without GitHub (clone the bundle, check it whole). Changes nothing; a failure reaches your phone through the andon.",
     "enabled": true,
     "kind": "guard"
   },

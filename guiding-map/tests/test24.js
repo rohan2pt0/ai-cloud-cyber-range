@@ -1,4 +1,4 @@
-// Phone navigation: four fixed bottom tabs + More (no tab hidden off-screen), Today shows the Daily Three and the one open
+// Phone navigation: four fixed bottom tabs (Today, Inbox, Goals, Ask) + More, which holds Ops and the rest (no tab hidden off-screen), Today shows the Daily Three and the one open
 // action first with the rest folded, the vitals sit at the top of Today, and the header shrinks once you scroll.
 const { JSDOM } = require("jsdom");
 const fs = require("fs"), path = require("path");
@@ -14,10 +14,10 @@ setTimeout(() => {
   w.goTab("today");
   const nav = doc.getElementById("gmNav");
   ok(nav && nav.querySelectorAll("button").length === 5, "five bottom buttons");
-  ok(["Today", "Goals", "Ask", "Ops", "More"].every((t) => nav.textContent.indexOf(t) >= 0), "Today, Goals, Ask, Ops, More");
+  ok(["Today", "Inbox", "Goals", "Ask", "More"].every((t) => nav.textContent.indexOf(t) >= 0), "Today, Inbox, Goals, Ask, More");
   ok(/#tabBar\{display:none!important\}/.test(doc.getElementById("gmNavCss").textContent), "the sideways strip is hidden on a phone");
   const sheet = doc.getElementById("gmMoreSheet");
-  const others = w.TABS.filter((t) => ["today", "okr", "ask", "ops"].indexOf(t[0]) < 0).length;
+  const others = w.TABS.filter((t) => ["today", "inbox", "okr", "ask"].indexOf(t[0]) < 0).length;
   ok(sheet.querySelectorAll("button").length === others + 1, "More lists every other tab, plus All apps");
   ok(doc.querySelector("#sections #gmVitals.gm-inline"), "vitals at the top of Today, not a second bottom bar");
   const sec = doc.getElementById("sections").innerHTML;

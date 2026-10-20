@@ -31,6 +31,7 @@ services:
   open-webui:  { ports: !override [] }
   anythingllm: { ports: !override [] }
   n8n:         { ports: !override [] }
+  vaultwarden: { ports: !override [] }
   estate-sync: { ports: !override [] }
   # The gateway keeps ONE plain port, bound to this machine only, because the CLI's own health checks use it
   # (phase 2 moves the CLI to HTTPS). Nothing remote can reach it.

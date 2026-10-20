@@ -27,7 +27,7 @@ All of these are SecuRAX **Routines**: plain cron on your machine, no n8n workfl
 | Routine | When | What it saves you |
 |---|---|---|
 | `andon` | every 15 min | A phone push only when something turns amber/red, a regulatory deadline nears, or it is **back to green**. Otherwise silent. |
-| `weekly-backup` | Sun 02:30 | A verified backup (encrypted if a key file is set); the newest 7 are kept. You never think about backups again. |
+| `daily-backup` | every night 02:30 | A verified backup (encrypted if a key file is set); the newest 7 are kept. You never think about backups again. |
 | `knowledge-inbox` | daily 21:05 | Imports any AI-chat export you drop into the inbox (doc 51). |
 | `monthly-review` | 1st, 08:50 | The 15-minute KPI/KRI review nudge. |
 | `quarterly-checkin` | 1 Jan/Apr/Jul/Oct | The quarterly check-in nudge. |

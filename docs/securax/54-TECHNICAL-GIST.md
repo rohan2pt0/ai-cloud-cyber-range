@@ -87,7 +87,7 @@ Open WebUI / PWA / OpenCode / scripts
 **Routines** (`routines/jobs.json`, one cron line runs `./securax routines run` every minute):
 - morning-brief, weekly-posture;
 - andon (15 min, phone push only on change);
-- weekly-backup, knowledge-inbox;
+- daily-backup, code-mirror, continuity-drill, knowledge-inbox;
 - monthly-review, quarterly-checkin.
 
 ## 6. Guiding Map (the life-OS PWA)

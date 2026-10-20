@@ -823,13 +823,23 @@ def render(c: Collector, maps: dict, hist: list[dict], ai: str, now: float, targ
         prune_items = _prune.report()[0]
     except Exception:  # noqa: BLE001 - no history yet, or no routines: nothing to show
         pass
+    jewels_now, cont_over = [], []
+    try:                                                          # crown jewels exposed now, and crises over their RTO/RPO target (doc 84)
+        _jw = _load("securax_jewels", "governance/jewels.py")
+        jewels_now = [r for r in _jw.assess() if r["priority"] == "DO NOW"]
+        _ct = _load("securax_continuity", "governance/continuity.py")
+        cont_over = [r for r in _ct.status() if not r["ok"]]
+    except Exception:  # noqa: BLE001 - a report input that cannot be read must never fail the cockpit
+        pass
     lamps = [("warn" if reds else "ok", len(reds), "Warnings: act today"), ("caut" if ambs else "ok", len(ambs), "Cautions: schedule"),
              ("ok", sum(1 for m in ms if m["status"] == "green"), "Nominal")] + ([("warn", late, "Risk treatments overdue")] if late else []) \
         + ([("warn", len(stopped_ai), "AI stopped by a person: " + ", ".join(stopped_ai))] if stopped_ai else []) \
         + ([("warn" if max(near) >= 1 else "caut", len(near), "AI allowance used up or near it: ./securax ai budget")] if near else [])\
         + ([("caut", f"{share['claude_share']:.0%}", "of this month's commits by Claude (goal 20%): ./securax ai share")] if share else [])\
         + ([("warn" if any(i["verdict"] == "failing" for i in prune_items) else "caut", len(prune_items),
-             "Routines to fix or switch off: ./securax routines prune")] if prune_items else [])
+             "Routines to fix or switch off: ./securax routines prune")] if prune_items else [])\
+        + ([("warn", len(jewels_now), "Crown jewels exposed, first: " + jewels_now[0]["name"].split(" (")[0].split(":")[0] + " → " + jewels_now[0]["command"])] if jewels_now else [])\
+        + ([("caut", len(cont_over), "Crisis scenarios not yet within target: ./securax continuity")] if cont_over else [])
     h.append("<div class='card'><h2>Master caution</h2><div class='annun'>" + "".join(
         f"<div class='lamp {k}'><b>{v}</b>{E(t)}</div>" for k, v, t in lamps)
         + ("<a class='lamp nav' href='/portal/navigator.html'><b>Controls</b>BFSI control navigator</a>" if nav else
