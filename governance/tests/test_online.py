@@ -29,7 +29,8 @@ class FakeCloudflare:
             if method == "POST":
                 self.tunnels.append({"id": str(uuid.uuid4()), **body})
                 return self.tunnels[-1]
-            return [t for t in self.tunnels if f"name={t['name']}" in q]
+            want = dict(x.split("=", 1) for x in q.split("&") if "=" in x).get("name")
+            return [t for t in self.tunnels if t["name"] == want]                    # Cloudflare's name filter is exact
         if base.endswith("/configurations"):
             self.ingress = body["config"]["ingress"]
             return {}
@@ -37,7 +38,8 @@ class FakeCloudflare:
             return "tunnel-token-for-tests"
         if "/dns_records" in base:
             if method == "GET":
-                return [r for r in self.dns if f"name={r['name']}" in q]
+                want = dict(x.split("=", 1) for x in q.split("&") if "=" in x).get("name")
+                return [r for r in self.dns if r["name"] == want]
             if method == "POST":
                 self.dns.append({"id": str(uuid.uuid4()), **body})
             else:
@@ -138,3 +140,34 @@ def test_cli_writes_env_private_and_marks_online(tmp_path, monkeypatch):
     assert any("BIND_HOST was 0.0.0.0" in x for x in out)
     monkeypatch.setattr(on, "make_api", lambda tok: (_ for _ in ()).throw(on.Refused("boom")))
     assert on.main(["setup"], say=out.append) == 1 and "not switched online" in out[-1]
+
+
+def test_beta_gets_its_own_tunnel_addresses_and_gate_and_never_touches_the_stable_ones(monkeypatch):
+    cf = FakeCloudflare()
+    monkeypatch.setenv("ONLINE_PREFIX", "")
+    on.setup(cf, "example.invalid", ["owner@example.invalid"], say=lambda *_: None)
+    monkeypatch.setenv("ONLINE_PREFIX", "beta-")
+    v = on.setup(cf, "example.invalid", ["owner@example.invalid"], say=lambda *_: None)
+    assert [t["name"] for t in cf.tunnels] == ["securax", "securax-beta"] and len(cf.apps) == 2
+    assert sorted(r["name"] for r in cf.dns) == ["beta-chat.example.invalid", "beta-hub.example.invalid", "chat.example.invalid",
+                                                 "hub.example.invalid"]
+    assert {a["name"] for a in cf.apps} == {"SecuRAX", "SecuRAX beta"} and v["ONLINE_PREFIX"] == "beta-"
+
+
+def test_invite_then_join_gives_a_second_machine_the_same_addresses_but_never_the_api_token(tmp_path, monkeypatch):
+    first, second = tmp_path / "a.env", tmp_path / "b.env"
+    first.write_text("CF_API_TOKEN=secret-api-token-for-tests\nCF_TUNNEL_TOKEN=tunnel-token-for-tests\nONLINE_DOMAIN=example.invalid\n"
+                     "ONLINE_EMAILS=owner@example.invalid\nSYNC_ACCESS_TEAM=t.cloudflareaccess.com\nSYNC_ACCESS_AUD=aud\n")
+    for k in on.JOIN_KEYS + ("CF_API_TOKEN",):
+        monkeypatch.delenv(k, raising=False)
+    monkeypatch.setattr(on, "ENVF", first)
+    out = []
+    assert on.main(["invite"], say=out.append) == 0
+    code = next(x for x in out if "online join" in x).split()[-1]
+    monkeypatch.setattr(on, "ENVF", second)
+    second.write_text("BIND_HOST=0.0.0.0\n")
+    assert on.main(["join", code], say=out.append) == 0
+    text = second.read_text()
+    assert "CF_TUNNEL_TOKEN=tunnel-token-for-tests" in text and "SYNC_ACCESS_AUD=aud" in text and "BIND_HOST=127.0.0.1" in text
+    assert "secret-api-token-for-tests" not in text and "SECURAX_OPTIONAL=online" in text
+    assert on.main(["join", "not-a-code"], say=out.append) == 2

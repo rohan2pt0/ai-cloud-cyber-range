@@ -18,6 +18,10 @@ never become an open, world-writable data store.
 Or, online (doc 85): a request that came through your Cloudflare Access gate carries a
 signed token, checked here (syncsvc/access.py); it may read and write only SYNC_ACCESS_USER.
     GET  /sync/whoami            -> {user, email} for such a request (the PWA pairs itself with it)
+Many nodes (doc 86, syncsvc/peers.py): SYNC_PEERS lists the other nodes; every round this node pulls and merges what differs and
+sends its own back, so the laptop, a VPS, a Mac mini or a cloud instance all hold the same data and any one can stop.
+    GET  /sync/users             -> [user ids]          (device token only: what a peer asks first)
+    GET  /sync/peers             -> the last round with each peer
 
 Server-side per-key merge (defense-in-depth): even if two devices race or a stale
 device pushes a whole blob, a field is only overwritten when the incoming copy is
@@ -37,7 +41,7 @@ from contextlib import asynccontextmanager, closing
 from fastapi import FastAPI, Header, HTTPException, Query, Request, Response, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 
-from . import access
+from . import access, peers
 
 DB_PATH = os.environ.get("SYNC_DB_PATH", "/data/estate-sync.db")
 # Daily snapshots: the last merged state of each UTC day is kept for this many days, so "no backup taken" is never a thing a human has to fix.
@@ -81,7 +85,42 @@ def _init_db() -> None:
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
     _init_db()
+    task = asyncio.create_task(_peer_loop()) if PEERS else None
     yield
+    if task:
+        task.cancel()
+
+
+PEERS = peers.parse()
+
+
+def _read(user: str) -> dict | None:
+    with closing(_db()) as conn:
+        row = conn.execute("SELECT payload, meta FROM state WHERE user_id=?", (user,)).fetchone()
+    return {"payload": _json.loads(row[0]), "meta": _json.loads(row[1])} if row else None
+
+
+def _users() -> list[str]:
+    with closing(_db()) as conn:
+        return [r[0] for r in conn.execute("SELECT user_id FROM state").fetchall()]
+
+
+async def _peer_loop() -> None:
+    """Rounds with the other nodes, for ever. A failing node is logged in /sync/peers and retried next round; it never stops the others."""
+    while True:
+        changed: set[str] = set()
+
+        def write(user, payload, meta):
+            merge_write(user, payload, meta, None)
+            changed.add(user)
+        try:
+            await asyncio.to_thread(peers.round_once, PEERS, _users, _read, write)
+        except Exception as exc:                  # noqa: BLE001 - a bug in one round must not end replication
+            for p in PEERS:
+                p.last = {"at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "ok": False, "error": repr(exc)[:200]}
+        for user in changed:                      # this node's own devices hear about what came from another node
+            await _notify(user, time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "node")
+        await asyncio.sleep(peers.interval())
 
 
 app = FastAPI(title="SecuRAX estate-sync", docs_url=None, redoc_url=None,
@@ -183,6 +222,19 @@ async def ws_endpoint(ws: WebSocket) -> None:
 @app.get("/healthz")
 def healthz() -> dict:
     return {"ok": True, "configured": bool(_tokens()) or access.configured(), "sockets": _sockets()}
+
+
+@app.get("/sync/users")
+def list_users(authorization: str | None = Header(default=None)) -> list[str]:
+    _auth(authorization)                          # a device token only: a signed-in browser has no business listing everyone
+    return _users()
+
+
+@app.get("/sync/peers")
+def peer_status(authorization: str | None = Header(default=None)) -> dict:
+    _auth(authorization)
+    return {"node": peers.node_name(), "interval_s": peers.interval(),
+            "peers": [{"url": p.url, "pull_only": p.pull_only, **p.last} for p in PEERS]}
 
 
 @app.get("/sync/whoami")

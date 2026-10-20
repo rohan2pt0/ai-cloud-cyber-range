@@ -7,6 +7,10 @@
     ./securax online allow EMAIL        let another of your accounts (or a family member) in
     ./securax online remove EMAIL       take someone off the list (their next sign-in is refused)
     ./securax online status             your addresses, who may sign in, and whether the tunnel is connected
+    ./securax online invite             the one line that lets ANOTHER machine serve the same addresses (no single machine needed:
+                                        Cloudflare sends each visitor to the nearest machine that is up, and to another when one stops)
+    ./securax online join CODE          run that line on the other machine
+    ./securax online setup --beta       a separate address for trying new versions (beta-hub.<domain>), so the stable one never changes
     ./securax online off                take the estate offline (the tunnel stops; `online setup` brings it back, nothing is lost)
 
 How it works. Cloudflare Tunnel makes an outbound-only connection from this machine, so no port is opened to the internet.
@@ -19,6 +23,7 @@ Standard library only; the only network calls are to api.cloudflare.com. Exit co
 """
 from __future__ import annotations
 
+import base64
 import getpass
 import json
 import os
@@ -32,11 +37,28 @@ import urllib.request
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 ENVF = ROOT / "local" / "compose" / ".env"
 API = "https://api.cloudflare.com/client/v4"
-TUNNEL_NAME = "securax"
 POLICY_NAME = "SecuRAX owners"
-APP_NAME = "SecuRAX"
 # what goes online: name -> the service inside the estate (the password manager stays off: the Bitwarden apps cannot sign in to Access)
-HOSTS = {"hub": "http://guiding-map:80", "chat": "http://open-webui:8080"}
+SERVICES = {"hub": "http://guiding-map:80", "chat": "http://open-webui:8080"}
+# what a second machine needs to serve the same addresses (online invite / join); never the Cloudflare API token
+JOIN_KEYS = ("CF_TUNNEL_TOKEN", "ONLINE_DOMAIN", "ONLINE_PREFIX", "ONLINE_EMAILS", "SYNC_ACCESS_TEAM", "SYNC_ACCESS_AUD", "SYNC_ACCESS_EMAILS",
+             "OWUI_TRUSTED_EMAIL_HEADER", "OIDC_ISSUER", "OIDC_AUDIENCE", "OIDC_JWKS_URL", "AUTH_DEFAULT_ROLES")
+
+
+def prefix() -> str:
+    """'' for the addresses you rely on, 'beta-' for the separate beta ones (online setup --beta)."""
+    return "beta-" if env_get("ONLINE_PREFIX") == "beta-" else ""
+
+
+def hosts(pre: str | None = None) -> dict[str, str]:
+    pre = prefix() if pre is None else pre
+    return {pre + name: svc for name, svc in SERVICES.items()}
+
+
+def names(pre: str | None = None) -> tuple[str, str]:
+    """(tunnel name, Access application name): the beta ones are separate, so a beta change can never reach the stable addresses."""
+    pre = prefix() if pre is None else pre
+    return ("securax-beta", "SecuRAX beta") if pre else ("securax", "SecuRAX")
 TOKEN_HELP = """A Cloudflare API token lets SecuRAX create the tunnel, the addresses and the sign-in gate for you (about 2 minutes, once):
   1. dash.cloudflare.com > My Profile > API Tokens > Create Token > Create Custom Token.
   2. Permissions (four lines):
@@ -130,9 +152,10 @@ def team_domain(call, acc: str) -> str:
 
 
 def ensure_tunnel(call, acc: str, dom: str) -> tuple[str, str]:
-    found = call("GET", f"/accounts/{acc}/cfd_tunnel?name={TUNNEL_NAME}&is_deleted=false") or []
-    tid = found[0]["id"] if found else call("POST", f"/accounts/{acc}/cfd_tunnel", {"name": TUNNEL_NAME, "config_src": "cloudflare"})["id"]
-    ingress = [{"hostname": f"{h}.{dom}", "service": svc, "originRequest": {}} for h, svc in HOSTS.items()] + [{"service": "http_status:404"}]
+    tname = names()[0]
+    found = call("GET", f"/accounts/{acc}/cfd_tunnel?name={tname}&is_deleted=false") or []
+    tid = found[0]["id"] if found else call("POST", f"/accounts/{acc}/cfd_tunnel", {"name": tname, "config_src": "cloudflare"})["id"]
+    ingress = [{"hostname": f"{h}.{dom}", "service": svc, "originRequest": {}} for h, svc in hosts().items()] + [{"service": "http_status:404"}]
     call("PUT", f"/accounts/{acc}/cfd_tunnel/{tid}/configurations", {"config": {"ingress": ingress}})
     token = call("GET", f"/accounts/{acc}/cfd_tunnel/{tid}/token")
     return tid, token
@@ -140,7 +163,7 @@ def ensure_tunnel(call, acc: str, dom: str) -> tuple[str, str]:
 
 def ensure_dns(call, zone: str, dom: str, tid: str) -> None:
     target = f"{tid}.cfargotunnel.com"
-    for h in HOSTS:
+    for h in hosts():
         name = f"{h}.{dom}"
         rec = {"type": "CNAME", "name": name, "content": target, "proxied": True, "comment": "SecuRAX online (./securax online)"}
         have = call("GET", f"/zones/{zone}/dns_records?name={name}") or []
@@ -171,11 +194,11 @@ def ensure_policy(call, acc: str, who: list[str]) -> str:
 
 
 def ensure_app(call, acc: str, dom: str, policy: str, idps: list[dict]) -> dict:
-    hosts = [f"{h}.{dom}" for h in HOSTS]
-    body = {"name": APP_NAME, "type": "self_hosted", "domain": hosts[0], "destinations": [{"type": "public", "uri": h} for h in hosts],
+    hs, app_name = [f"{h}.{dom}" for h in hosts()], names()[1]
+    body = {"name": app_name, "type": "self_hosted", "domain": hs[0], "destinations": [{"type": "public", "uri": h} for h in hs],
             "policies": [{"id": policy, "precedence": 1}], "allowed_idps": [i["id"] for i in idps], "auto_redirect_to_identity": len(idps) == 1,
             "session_duration": env_get("ONLINE_SESSION", "720h"), "app_launcher_visible": False}
-    have = [a for a in (call("GET", f"/accounts/{acc}/access/apps") or []) if a.get("domain") == hosts[0] or a.get("name") == APP_NAME]
+    have = [a for a in (call("GET", f"/accounts/{acc}/access/apps") or []) if a.get("domain") == hs[0] or a.get("name") == app_name]
     return call("PUT", f"/accounts/{acc}/access/apps/{have[0]['id']}", body) if have else call("POST", f"/accounts/{acc}/access/apps", body)
 
 
@@ -187,15 +210,19 @@ def setup(call, dom: str, who: list[str], say=print) -> dict[str, str]:
     tid, tok = ensure_tunnel(call, acc, dom)
     say("  ✔ private tunnel ready (outbound only: no port opened on this machine)")
     ensure_dns(call, zone, dom, tid)
-    say("  ✔ addresses: " + ", ".join(f"https://{h}.{dom}" for h in HOSTS))
+    say("  ✔ addresses: " + ", ".join(f"https://{h}.{dom}" for h in hosts()))
     idps = ensure_idps(call, acc)
     pol = ensure_policy(call, acc, who)
     app = ensure_app(call, acc, dom, pol, idps)
     by = "Google, or a one-time code e-mailed to you" if len(idps) > 1 else "a one-time code e-mailed to you (Google: ./securax online google)"
     say(f"  ✔ sign-in gate: only {', '.join(who)}, by {by}")
-    return {"CF_TUNNEL_TOKEN": tok, "CF_ACCOUNT_ID": acc, "ONLINE_DOMAIN": dom, "ONLINE_EMAILS": ",".join(who),
+    return {"CF_TUNNEL_TOKEN": tok, "CF_ACCOUNT_ID": acc, "ONLINE_DOMAIN": dom, "ONLINE_PREFIX": prefix(), "ONLINE_EMAILS": ",".join(who),
             "SYNC_ACCESS_TEAM": team, "SYNC_ACCESS_AUD": str(app.get("aud", "")), "SYNC_ACCESS_EMAILS": ",".join(who),
-            "OWUI_TRUSTED_EMAIL_HEADER": "Cf-Access-Authenticated-User-Email", "BIND_HOST": "127.0.0.1"}
+            "OWUI_TRUSTED_EMAIL_HEADER": "Cf-Access-Authenticated-User-Email", "BIND_HOST": "127.0.0.1",
+            # the AI gateway can know who each signed-in person is (their own allowance, no API key of theirs needed). Inert until
+            # `./securax gateway-auth enable`, which also gives Chat and the CLI their own service keys (doc 86).
+            "OIDC_ISSUER": f"https://{team}", "OIDC_AUDIENCE": str(app.get("aud", "")), "OIDC_JWKS_URL": f"https://{team}/cdn-cgi/access/certs",
+            "AUTH_DEFAULT_ROLES": "user"}
 
 
 def add_google(call, acc: str, client_id: str, secret: str) -> None:
@@ -241,6 +268,8 @@ def main(argv: list[str] | None = None, say=print) -> int:
     cmd = argv[0] if argv else "status"
     try:
         if cmd == "setup":
+            if "--beta" in argv[1:]:
+                env_set({"ONLINE_PREFIX": "beta-"})
             dom = domain()
             if not dom:
                 say("No domain: set ONLINE_DOMAIN=your-domain in local/compose/.env (it must be in your Cloudflare account).")
@@ -252,7 +281,7 @@ def main(argv: list[str] | None = None, say=print) -> int:
             values = setup(make_api(_token(say)), dom, _ask_emails(say), say)
             env_set(values)
             _optional(True)
-            say("\nStarting the tunnel with the estate. Then, on any device: open https://hub." + dom + " and sign in.")
+            say(f"\nStarting the tunnel with the estate. Then, on any device: open https://{prefix()}hub.{dom} and sign in.")
             say("  Install it: Share > Add to Home Screen (iPhone), or the browser's Install app (Android, Windows, Mac).")
             return 0
         if cmd == "google" and len(argv) == 3:
@@ -280,6 +309,27 @@ def main(argv: list[str] | None = None, say=print) -> int:
                 return 2
             env_set({"ONLINE_EMAILS": ",".join(left)})
             return main(["setup"], say)
+        if cmd == "invite":
+            if not env_get("CF_TUNNEL_TOKEN"):
+                say("This machine is not online yet: ./securax online setup")
+                return 2
+            code = base64.urlsafe_b64encode(json.dumps({k: env_get(k) for k in JOIN_KEYS}).encode()).decode().rstrip("=")
+            say("On the OTHER machine (its estate already installed), run this. Treat it like a password: it lets that machine serve")
+            say("your addresses. Send it over SSH or your password manager, never in a chat or e-mail.\n")
+            say(f"  ./securax online join {code}\n")
+            say("Also sync the data between the two:  ./securax nodes invite  (doc 86).")
+            return 0
+        if cmd == "join" and len(argv) == 2:
+            try:
+                got = json.loads(base64.urlsafe_b64decode(argv[1] + "=" * (-len(argv[1]) % 4)))
+                assert isinstance(got, dict) and got.get("CF_TUNNEL_TOKEN") and got.get("ONLINE_DOMAIN")
+            except (ValueError, AssertionError):
+                say("That is not a join line from  ./securax online invite  (copy the whole line).")
+                return 2
+            env_set({**{k: str(got.get(k, "")) for k in JOIN_KEYS}, "BIND_HOST": "127.0.0.1"})
+            _optional(True)
+            say(f"✔ this machine now serves https://{prefix()}hub.{got['ONLINE_DOMAIN']} too. Starting the estate with the tunnel…")
+            return 0
         if cmd == "off":
             _optional(False)
             subprocess.run(["docker", "compose", "--profile", "online", "stop", "cloudflared"], cwd=ROOT / "local" / "compose",
@@ -295,7 +345,7 @@ def main(argv: list[str] | None = None, say=print) -> int:
                                capture_output=True, text=True)
             running = r.returncode == 0 and r.stdout.strip().startswith("Up")
             say(f"{'✔' if on and running else '✗'} online: {'tunnel connected' if running else 'tunnel NOT running (./securax up)'}" + ("" if on else " · switched off"))
-            for h in HOSTS:
+            for h in hosts():
                 say(f"  https://{h}.{dom}")
             say("  who may sign in: " + ", ".join(emails()))
             return 0 if on and running else 1

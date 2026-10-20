@@ -63,6 +63,7 @@ services:
       OIDC_AUDIENCE: ${OIDC_AUDIENCE:-}
       OIDC_JWKS_URL: ${OIDC_JWKS_URL:-}
       OIDC_JWKS_JSON: ${OIDC_JWKS_JSON:-}
+      AUTH_DEFAULT_ROLES: ${AUTH_DEFAULT_ROLES:-}     # e.g. user: a verified sign-in with no roles may chat (doc 86); never admin
       AUTH_ROLES_CLAIM: ${AUTH_ROLES_CLAIM:-roles}
       AUTH_ROLE_MAP: ${AUTH_ROLE_MAP:-}
       AUTH_MFA_ROLES: ${AUTH_MFA_ROLES:-admin,auditor}
@@ -369,6 +370,10 @@ services:
       SYNC_ACCESS_TEAM: ${SYNC_ACCESS_TEAM:-}
       SYNC_ACCESS_AUD: ${SYNC_ACCESS_AUD:-}
       SYNC_ACCESS_EMAILS: ${SYNC_ACCESS_EMAILS:-}
+      # Many nodes (doc 86, ./securax nodes): the other machines this one keeps the same data with
+      SYNC_PEERS: ${SYNC_PEERS:-}
+      SYNC_PEER_INTERVAL: ${SYNC_PEER_INTERVAL:-30}
+      SYNC_NODE_NAME: ${SYNC_NODE_NAME:-}
     volumes: ["estatesync:/data"]
     ports: ["${SYNC_BIND:-127.0.0.1}:8089:8089"]
     networks: [edge]

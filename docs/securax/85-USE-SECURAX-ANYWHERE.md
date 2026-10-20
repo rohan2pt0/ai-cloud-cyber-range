@@ -126,7 +126,7 @@ A sign-in lasts 30 days on a device (`ONLINE_SESSION=720h` in `.env`; a shorter 
   - **The VPS company:** the nightly encrypted backup goes off the server (doc 72), and `install.sh --server --restore` rebuilds on any new VPS. That is the `laptop-lost` scenario in `./securax continuity`.
   - **Google:** the e-mail code stays switched on.
 - **Chat trusts the sign-in only while every port is on 127.0.0.1.** If you later set `BIND_HOST=0.0.0.0` (the "use it on your phone" answer in `setup`), `up` switches that trust off and says so, because on your network the header could be forged. Chat then asks for its own password; `online setup` restores it.
-- **The server is one machine.** It restarts its services by itself after a reboot. It is not two machines; that is the burrow stage (doc 29), when you need it.
+- **One server is still one machine.** It restarts its services by itself after a reboot. Add a second machine (doc 86): both then hold the same data and serve the same addresses, so either one can stop.
 
 ## 5. Building it further without Claude Code
 

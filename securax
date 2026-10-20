@@ -280,7 +280,7 @@ case "$cmd" in
     fi
     case " $(ev SECURAX_OPTIONAL) " in *" passwords "*) dc_up vaultwarden >/dev/null 2>&1 || C "The password manager did not start: ./securax start passwords" ;; esac
     case " $(ev SECURAX_OPTIONAL) " in *" online "*) if [ -n "$(ev CF_TUNNEL_TOKEN)" ] && dc_up cloudflared >/dev/null 2>&1; then
-        C "Online: https://hub.$(ev ONLINE_DOMAIN) and https://chat.$(ev ONLINE_DOMAIN) (sign in on any device)"
+        C "Online: https://$(ev ONLINE_PREFIX)hub.$(ev ONLINE_DOMAIN) and https://$(ev ONLINE_PREFIX)chat.$(ev ONLINE_DOMAIN) (sign in on any device)"
       else C "The online tunnel did not start: ./securax online status"; fi ;; esac
     guard_heal
     if ready_wait 150; then
@@ -980,11 +980,18 @@ EOF2
     # The crown jewels of the estate, assessed and ranked from live checks, worst first, each with its next step (doc 84).
     shift; exec python3 "$ROOT/governance/jewels.py" "$@"
     ;;
+  nodes)
+    # Several machines, one Life OS: every node holds the same data, and any one can stop (doc 86).
+    #   ./securax nodes | invite | add URL TOKEN [--pull-only] | remove URL
+    shift; python3 "$ROOT/governance/nodes.py" "${@:-status}" || exit $?
+    case "${1:-status}" in add|remove) ( cd "$ROOT/local/compose" && docker compose --profile ai up -d estate-sync >/dev/null 2>&1 ) \
+      && C "✔ sync service restarted with the new list" || C "Start the estate to apply it:  ./securax up" ;; esac
+    ;;
   online)
     # Your own addresses (hub.<domain>, chat.<domain>) behind your sign-in, on any device, through an outbound-only tunnel (doc 85).
-    #   ./securax online setup | google ID SECRET | allow EMAIL | remove EMAIL | status | off
+    #   ./securax online setup [--beta] | google ID SECRET | allow EMAIL | remove EMAIL | invite | join CODE | status | off
     shift; python3 "$ROOT/governance/online.py" "${@:-status}" || exit $?
-    case "${1:-status}" in setup|google|allow|remove) exec "$0" up ;; esac
+    case "${1:-status}" in setup|google|allow|remove|join) exec "$0" up ;; esac
     ;;
   continuity)
     # The estate's crisis and continuity plan, measured: RTO/RPO per scenario, the steps, safe drills, the code mirror (doc 84).
@@ -1446,11 +1453,24 @@ EOF2
     # --auto (the nightly routine): only when main has something new, the checkout is on main and has no local edits;
     # never opens a browser; tells your phone the outcome (when notifications are set up). Nothing new = silent, no restart.
     AUTO=0; [ "${2:-}" = "--auto" ] && AUTO=1
+    # The channel (doc 86, ./securax channel): beta follows main (every merged change); stable follows release tags only, so the
+    # version you rely on changes only when a release is cut, and never moves backwards.
+    CHAN="$(ev SECURAX_CHANNEL beta)"; STABLE_TO=""
+    if [ "$CHAN" = stable ]; then
+      timeout 30 git -C "$ROOT" fetch -q --tags origin 2>/dev/null || { C "update skipped: no network"; exit 0; }
+      _tag="$(git -C "$ROOT" tag -l 'v*.*.*' --sort=-v:refname | head -1)"
+      if [ -n "$_tag" ] && ! git -C "$ROOT" merge-base --is-ancestor "$_tag^{commit}" HEAD 2>/dev/null; then STABLE_TO="$_tag"; fi
+      if [ -z "$STABLE_TO" ]; then [ "$AUTO" = 1 ] || C "Stable channel: no release newer than the version you run (${_tag:-none yet}). Nothing to do."; exit 0; fi
+    fi
     if [ "$AUTO" = 1 ]; then
-      [ "$(git -C "$ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null)" = main ] || { C "auto-update skipped: not on the main branch"; exit 0; }
+      if [ "$CHAN" != stable ]; then
+        [ "$(git -C "$ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null)" = main ] || { C "auto-update skipped: not on the main branch"; exit 0; }
+      fi
       [ -z "$(git -C "$ROOT" status --porcelain --untracked-files=no 2>/dev/null)" ] || { C "auto-update skipped: local changes in the code folder"; exit 0; }
-      timeout 30 git -C "$ROOT" fetch -q origin main 2>/dev/null || { C "auto-update skipped: no network"; exit 0; }
-      [ "$(git -C "$ROOT" rev-list --count HEAD..origin/main 2>/dev/null || echo 0)" -gt 0 ] || exit 0
+      if [ "$CHAN" != stable ]; then
+        timeout 30 git -C "$ROOT" fetch -q origin main 2>/dev/null || { C "auto-update skipped: no network"; exit 0; }
+        [ "$(git -C "$ROOT" rev-list --count HEAD..origin/main 2>/dev/null || echo 0)" -gt 0 ] || exit 0
+      fi
       tell(){ "$0" notify send "$1" --title "SecuRAX update" >/dev/null 2>&1 || true; }
     else tell(){ :; }; fi
     C "Updating SecuRAX safely (backup → update → health check → automatic rollback if needed)…"
@@ -1464,7 +1484,10 @@ EOF2
     if [ "$_alive" = 1 ]; then
       if SAFE_OUT="$("$0" backup 2>&1)"; then C "  ✔ backup taken first: $(printf '%s' "$SAFE_OUT" | tail -1)"; else C "  (could not take a backup — continuing; your data volumes are not touched by an update). Reason: $(printf '%s' "$SAFE_OUT" | tail -c 300)"; fi
     fi
-    if ! _PULL="$(git -C "$ROOT" pull --ff-only 2>&1)"; then
+    if [ -n "$STABLE_TO" ]; then
+      _PULL="$(git -C "$ROOT" checkout -q --detach "$STABLE_TO" 2>&1)" || { C "Could not switch to the release $STABLE_TO: $(printf '%s' "$_PULL" | tail -1)"; exit 1; }
+      C "  stable channel: moving to the release $STABLE_TO"
+    elif ! _PULL="$(git -C "$ROOT" pull --ff-only 2>&1)"; then
       if printf '%s' "$_PULL" | grep -qiE "could not resolve|unable to access|connection|timed out|repository not found|authentication|403|404|5[0-9][0-9]"; then
         C "Could not reach the code host (GitHub). Nothing changed and the estate keeps running. Details: $(printf '%s' "$_PULL" | tail -1)"
         C "  If GitHub stays down: ./securax continuity show github-down   (the mirror and the code bundle in your backups)"
@@ -1500,6 +1523,24 @@ EOF2
     C "⚠ The estate did not start healthy after the update, and an automatic rollback was not safe (you have uncommitted local changes). Run  ./securax doctor ."
     tell "Overnight update did not start healthy. Run ./securax go on the laptop."
     exit 1
+    ;;
+  channel)
+    # Which version this machine runs (doc 86). stable: release tags only, the version you rely on. beta: every merged change, to try
+    # what is next. Switching never moves backwards and goes through the same safe update (backup, health check, automatic rollback).
+    #   ./securax channel | stable | beta
+    shift; ENVF="$ROOT/local/compose/.env"
+    case "${1:-}" in
+      "") C "Channel: $(ev SECURAX_CHANNEL beta) · running $(git -C "$ROOT" describe --tags --always 2>/dev/null)"
+          echo "  stable = release tags only (the version you rely on) · beta = every merged change (try what is next)"
+          echo "  Switch:  ./securax channel stable   or   ./securax channel beta" ;;
+      stable) skv "$ENVF" SECURAX_CHANNEL stable; C "✔ This machine now follows releases only."; exec "$0" update ;;
+      beta) skv "$ENVF" SECURAX_CHANNEL beta
+            if [ "$(git -C "$ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null)" != main ]; then
+              git -C "$ROOT" checkout -q main 2>/dev/null || { C "Could not switch to main (local changes?): git -C \"$ROOT\" status"; exit 1; }
+            fi
+            C "✔ This machine now follows every merged change (beta)."; exec "$0" update ;;
+      *) C "usage: ./securax channel [stable|beta]"; exit 2 ;;
+    esac
     ;;
   pull)
     # Pull the sovereign local model in the FOREGROUND (so you can be sure it's ready, unlike the
@@ -1839,6 +1880,8 @@ BUILD & KEEP IT HEALTHY
   ready          READY when the estate answers        support-packet     one scrubbed zip for a bug report
   jewels         the crown jewels: what SecuRAX cannot lose, how exposed each is today, and the next step, worst first
   brief          a task brief any AI can act on: the likely files, the lessons that apply, what "done" means
+  channel        stable (releases only, the version you rely on) or beta (every change); switching is safe and never goes back
+  nodes          run SecuRAX on several machines (laptop, VPS, Mac mini, cloud) with the same data; none is needed alone
   online         use SecuRAX from any device like a SaaS app: your own addresses behind Google sign-in (setup once)
   continuity     the crisis plan: each scenario's RTO/RPO target vs today, the steps (show ID), safe drills (drill ID), the code mirror (mirror setup: a free private GitLab copy)
   names          https://hub.securax.localhost style addresses instead of localhost:port, in one guided step

@@ -252,3 +252,22 @@ def test_gateway_enforces_roles_per_endpoint(client):
 
 def test_gateway_default_is_unchanged_open_mode():
     assert TestClient(app).post("/v1/chat/completions", json=BODY).status_code == 200
+
+
+def test_a_verified_token_with_no_roles_gets_the_default_roles_and_privileged_defaults_are_refused(keys, cfg):
+    # a Cloudflare Access sign-in carries an e-mail and no roles (doc 86): with AUTH_DEFAULT_ROLES=user it may chat, nothing more
+    claims = {k: v for k, v in GOOD.items() if k != "roles"}
+    assert idn.verify_jwt(mint(keys["a"][0], "a", claims), cfg, now=NOW).roles == ()
+    cfg.default_roles = ("user",)
+    ident = idn.verify_jwt(mint(keys["a"][0], "a", claims), cfg, now=NOW)
+    assert ident.roles == ("user",)
+    gate = idn.Authenticator(cfg)
+    gate.authorize(ident, "chat")                          # may chat
+    with pytest.raises(idn.AuthError):
+        gate.authorize(ident, "admin")                     # and nothing privileged
+    # roles the token DOES carry still win over the default
+    assert idn.verify_jwt(mint(keys["a"][0], "a", GOOD), cfg, now=NOW).roles == ("user",)
+    for bad in ("admin", "auditor", "user,admin", "superuser"):
+        with pytest.raises(ValueError):
+            idn.Config.from_env({"AUTH_DEFAULT_ROLES": bad})
+    assert idn.Config.from_env({"AUTH_DEFAULT_ROLES": "user"}).default_roles == ("user",)

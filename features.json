@@ -315,6 +315,31 @@
    "command": "online",
    "doc": "securax/85-USE-SECURAX-ANYWHERE.md",
    "highlight": true
+  },
+  {
+   "id": "nodes",
+   "group": "Keep it running",
+   "icon": "loop",
+   "name": "Many machines, one SecuRAX",
+   "what": "Run it on the laptop, a VPS, a Mac mini or any cloud at once: every machine holds the same data, and any one of them can stop.",
+   "open": {
+    "cmd": "./securax nodes"
+   },
+   "command": "nodes",
+   "doc": "securax/86-MANY-NODES-AND-THE-ROAD-TO-SCALE.md",
+   "highlight": true
+  },
+  {
+   "id": "channel",
+   "group": "Keep it running",
+   "icon": "undo",
+   "name": "Stable and beta versions",
+   "what": "Keep the version you rely on (stable) while a new one is tried (beta), on its own address; switching is safe and never goes back.",
+   "open": {
+    "cmd": "./securax channel"
+   },
+   "command": "channel",
+   "doc": "securax/86-MANY-NODES-AND-THE-ROAD-TO-SCALE.md"
   }
  ]
 }

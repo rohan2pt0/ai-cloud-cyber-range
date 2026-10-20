@@ -9,6 +9,9 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **Many machines, one SecuRAX** (doc 86): `./securax nodes invite|add|remove` makes every node (laptop, VPS, Mac mini, any cloud) keep the same Life OS data by syncing with the others every 30 s. There is no primary, so any node can stop; a beta node can be pull-only. `./securax online invite|join` lets a second machine serve the same addresses (Cloudflare fails over between them).
+- **Stable and beta:** `./securax channel stable|beta`. Stable follows releases only and never moves backwards; both go through the safe update with automatic rollback. `online setup --beta` gives beta its own `beta-hub` and `beta-chat` addresses.
+- **Signed-in people use AI with no key of their own:** a Cloudflare sign-in reaches the gateway as that person (verified there, role `user` only, via `AUTH_DEFAULT_ROLES`), so their own allowance counts once `gateway-auth enable` is on.
 - **SecuRAX on every device, like a SaaS app** (doc 85): `./securax online setup` puts the hub and Chat on your own addresses behind Cloudflare Access (Google sign-in or an e-mailed code, an allow-list of e-mails), through an outbound-only tunnel (cloudflared 2026.10.0). The Life OS pairs its sync by itself when you sign in, checked at the origin (signature, team, application, expiry, e-mail); Chat signs you in from the same sign-in. `allow` / `remove` / `status` / `off`.
 - **An always-on server in one command:** `sudo bash install.sh --server` on a fresh Ubuntu VPS: security updates, Docker from its signed repository, a firewall that lets in SSH only, swap, the India time zone for routines, a non-root `securax` user, SecuRAX started with its schedules, then `online setup`. `--restore` brings your laptop's backup.
 - **`./securax brief "the task"`:** the brief any model can act on: the likely files with their purpose, the lessons that apply, and the checks for those files. `autobuild`, `build` and `escalate` use it.

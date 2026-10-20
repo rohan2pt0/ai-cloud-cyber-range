@@ -139,14 +139,15 @@ fetch("/portal/setup.json",{cache:"no-store"}).then(function(r){return r.ok?r.js
   // Chat is the same name on :10000, the gateway rides this origin (/v1, /healthz, /version), and Docs/Automation are not published.
   var TS = /\.ts\.net$/i.test(H);
   var SEC = location.protocol === "https:" && !TS;
-  var DOM = (H.indexOf("hub.") === 0) ? H.slice(4) : "securax.localhost";
+  var HM = /^(beta-)?hub\.(.+)$/i.exec(H);                         // hub.<domain>, or beta-hub.<domain> for the beta address (doc 86)
+  var PRE = HM && HM[1] ? "beta-" : "", DOM = HM ? HM[2] : "securax.localhost";
   // Online (doc 85: hub.<your domain> behind your sign-in): only hub. and chat. exist, so the gateway rides this origin (/v1, /healthz).
   var ONLINE = SEC && !/\.localhost$/i.test(DOM);
   var TSPORT = {hub:"", chat:":10000"};
   function web(name, plain){
     if(TS) return (name in TSPORT) ? "https://"+H+TSPORT[name]+"/" : "";
     if(ONLINE && name !== "hub" && name !== "chat") return "";      // online, only these two are published (doc 85)
-    return SEC ? "https://"+name+"."+DOM+"/" : "http://"+H+":"+plain+"/";
+    return SEC ? "https://"+PRE+name+"."+DOM+"/" : "http://"+H+":"+plain+"/";
   }
   function gw(path){ return (TS || ONLINE ? "" : SEC ? "https://api."+DOM : "http://"+H+":8080") + path; }
   // Line icons drawn for SecuRAX (24 px grid, stroke = the text colour): one consistent, quiet style instead of emoji.
