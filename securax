@@ -891,6 +891,13 @@ EOF2
     #   ./securax lessons | lessons add "what happened → what to do instead" [--area A] | lessons recent [N]
     shift; exec python3 "$ROOT/lifecycle/lessons.py" "$@"
     ;;
+  respond)
+    # Crisis response for your estate or another organisation (doc 78): permission first, a USB kit, hash-checked intake, IOC triage, a report.
+    #   ./securax respond open "codename" --kind ransomware|fund-fraud|data-breach|compromise [--for ORG --authorised-by NAME --scope TEXT]
+    #   ./securax respond kit CASE /media/usb | intake CASE /media/usb/SECURAX | triage CASE | report CASE | requests CASE | verify CASE | list
+    #   ./securax respond ioc import advisory.pdf --source ID --tlp amber | ioc list | ioc export --format csv|hosts|plain
+    shift; exec python3 "$ROOT/governance/respond.py" "$@"
+    ;;
   findings)
     # The findings register (doc 76): every scan and VAPT finding once, a fix-by date from its severity, time-boxed risk acceptance.
     #   ./securax findings [list|overdue|report] | import [FILE] | add "title" --severity S | accept ID --reason R --until DATE | fixed ID

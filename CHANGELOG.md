@@ -9,6 +9,15 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **`./securax respond`: a crisis response kit** for your estate or another organisation (doc 78):
+  - **Permission first:** who authorised the work, and the scope.
+  - **The USB kit:** Windows and Unix collectors that follow the order of volatility, write only to the USB and hash everything; a read-me card; a custody form.
+  - **Intake:** checks every hash, records the hand-over and stores the evidence read-only.
+  - **Chain of custody:** hash-chained, and `verify` catches any edit.
+  - **Advisory IOCs:** imported privately with their TLP, reading ranges, defanged domains and wrapped hashes.
+  - **Triage, report and requests:** leads from the IOCs and common signs of compromise; a TLP-marked report; and an information-request list fitted to the kind of incident.
+- **Docs:**
+  - **Doc 78** gives dated targets for every "later" item, the cloud GPU tier with prices, and where a Raspberry Pi helps.
 - **FIRST EPSS** (doc 77):
   - **The snapshot:** `./securax offline sync epss` keeps the daily chance that each CVE is exploited in the next 30 days.
   - **In the findings register:** a CVE at 50% or more is at least high, and the EPSS score is shown and kept current.
