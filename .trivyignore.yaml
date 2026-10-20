@@ -1,0 +1,8 @@
+# Trivy findings accepted on purpose. Each entry names one rule, the exact path, and why. Nothing is ignored repo-wide.
+misconfigurations:
+  - id: AVD-DS-0002
+    paths:
+      - "exercise/gamebox/Dockerfile"
+    statement: >-
+      The exercise-range practice machine runs as root by design (sshd logs in many staff users, dnsmasq binds
+      port 53, smtpd port 25, and the blue team must harden it). It only runs on internal-only Docker networks (doc 79).

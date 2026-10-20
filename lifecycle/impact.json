@@ -87,7 +87,8 @@
     "tls_edge",
     "tls_internal",
     "backup_encrypted",
-    "inspect_sandbox"
+    "inspect_sandbox",
+    "rollback_anytime"
    ],
    "affects": [
     "gateway",
@@ -176,7 +177,8 @@
     "gateway_residency",
     "cockpit_page",
     "backup_encrypted",
-    "inspect_sandbox"
+    "inspect_sandbox",
+    "rollback_anytime"
    ],
    "affects": []
   },
@@ -225,6 +227,8 @@
     "pytest.ini",
     ".gitignore",
     ".gitleaksignore",
+    "trivy.yaml",
+    ".trivyignore.yaml",
     ".gitattributes",
     "VERSION"
    ],

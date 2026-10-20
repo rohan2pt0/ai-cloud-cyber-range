@@ -345,6 +345,48 @@ def j_update(sb: H.Sandbox, c: Checks):
     c.ok(git("status", "--porcelain")[1].strip() == "", "…and the checkout is clean afterwards")
 
 
+@journey("rollback_anytime", "`./securax rollback` on the real estate: each healthy start is recorded as a working version; going back to an older one takes a backup, pins where you were, and the estate is READY on the older code; `--check` confirms every version can be restored; `--latest` comes forward again; the checkout is left as found.", slow=True)
+def j_rollback(sb: H.Sandbox, c: Checks):
+    sb.down()
+    sb.reset_env(SECURAX_LITE="1")
+    home = sb.clone.parent / "rbhome"
+    shutil.rmtree(home, ignore_errors=True)
+    env = {**os.environ, "SECURAX_HOME_DIR": str(home), "SECURAX_NO_OPEN": "1"}
+    sx = lambda *a, t=1500: H.sh(["bash", "./securax", *a], cwd=sb.clone, env=env, timeout=t)  # noqa: E731
+    git = lambda *a: H.sh(["git", "-c", "user.name=sbx", "-c", "user.email=sbx@example.com", *a], cwd=sb.clone)  # noqa: E731
+    git("checkout", "-q", "-B", "main")
+    first = git("rev-parse", "HEAD")[1].strip()
+    try:
+        rc, out = sx("up")
+        c.ok(rc == 0 and sx("ready", t=60)[0] == 0, "the estate starts and answers READY", tail(out, 300))
+        rc, out = sx("rollback", "--list", t=60)
+        c.ok(first[:9] in out and "running now" in out, "that healthy start is recorded as a working version", out)
+        (sb.clone / "ROLLBACK-DRILL.txt").write_text("a second, newer version\n")
+        git("add", "ROLLBACK-DRILL.txt")
+        git("commit", "-q", "-m", "a newer version")
+        second = git("rev-parse", "HEAD")[1].strip()
+        rc, out = sx("up")
+        rc, out = sx("rollback", "--list", t=60)
+        c.ok(second[:9] in out and first[:9] in out, "the newer healthy start is recorded too", out)
+        rc, out = sx("rollback", "--yes", t=2400)
+        c.ok(rc == 0 and git("rev-parse", "HEAD")[1].strip() == first and not (sb.clone / "ROLLBACK-DRILL.txt").exists(),
+             "`rollback` goes back to the older working version", tail(out, 600))
+        c.ok("backed up first" in out and git("for-each-ref", "--format=%(objectname)", "refs/securax/before-rollback/")[1].strip() == second,
+             "...after taking a backup, with the version it left pinned so it can come forward again", tail(out, 600))
+        c.ok(sx("ready", t=60)[0] == 0 and "pinned" in sx("rollback", "--status", t=60)[1], "...the estate is READY on the older code, and says it is pinned")
+        rc, out = sx("rollback", "--check", t=60)
+        c.ok(rc == 0, "`rollback --check`: every recorded working version can still be restored", out)
+        rc, out = sx("rollback", "--latest", t=2400)
+        c.ok(rc == 0 and git("rev-parse", "--abbrev-ref", "HEAD")[1].strip() == "main" and git("rev-parse", "HEAD")[1].strip() == second,
+             "`rollback --latest` comes forward to the newest version, healthy", tail(out, 600))
+    finally:
+        git("checkout", "-q", "-f", "main")
+        git("reset", "-q", "--hard", first)                     # later journeys share this checkout: leave it as found
+        for ref in git("for-each-ref", "--format=%(refname)", "refs/securax/")[1].split():
+            git("update-ref", "-d", ref)
+        c.ok(not git("status", "--porcelain")[1].strip(), "the checkout is left clean")
+
+
 @journey("safe_update_rollback", "`./securax update` on a running estate: it backs up first, and when the new version does NOT start healthy it goes back to the version that worked (exit 3) with the data intact.", slow=True)
 def j_safe_update(sb: H.Sandbox, c: Checks):
     sb.down()

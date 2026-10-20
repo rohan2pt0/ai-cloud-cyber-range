@@ -9,6 +9,11 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **`./securax rollback`: go back to a working version at any time** (doc 82):
+  - **Known-good record:** every healthy `up` or `update` is recorded (commit, version, newest backup) and pinned in git; the newest 50 are kept.
+  - **Safe switch:** unsaved edits are stashed, data is backed up, the version left is pinned, and a version that does not start sends you back automatically.
+  - **Options:** `--list`, a number, commit or tag, `--with-data`, `--latest`, `--status`, `--check`; plus `./securax ready`.
+  - **Proof:** unit tests, the `rollback_anytime` sandbox journey and a weekly `rollback-check` routine.
 - **Exercise range: learning with MITRE ATT&CK, D3FEND and ATLAS** (doc 81):
   - **Tagging:** tasks, red-team attack reports and blue-team incident reports carry framework identifiers. Each is checked against a catalogue built from MITRE's own data and linked to MITRE's page.
   - **Coverage screen:** for each tactic, what was met, detected and defended. The after-action report carries the same table.
@@ -155,6 +160,7 @@ for the versioning and release policy.
   - **Visibility:** remaining allowance in the response headers, a cockpit lamp, and spend that survives a gateway restart.
 
 ### Fixed
+- **Trivy:** the range gamebox image now has a health check; its by-design root user is an accepted finding scoped to that one file (`.trivyignore.yaml`, read through `trivy.yaml`).
 - **`./securax restore` no longer leaves a secrets file that git would pick up.** It keeps the previous `.env` as `local/compose/.env.pre-restore`, which is now git-ignored. Before, the checkout stayed dirty, so `update` could not roll back safely, and the file could have been committed.
 - **Sandbox:** the CCSP and RBI-map tamper journeys put back the files they edit, so later journeys no longer start from a dirty checkout.
 - **`./securax controls import FILE.xlsx` crashed with a traceback** when typed as shown in the cockpit hint.

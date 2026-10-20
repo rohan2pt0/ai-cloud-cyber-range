@@ -21,5 +21,6 @@ if [ -s "$CFG/green_user" ] && [ -s "$CFG/green_key.pub" ]; then
   chown -R "$g:$g" "/home/$g/.ssh"; chmod 700 "/home/$g/.ssh"; chmod 600 "/home/$g/.ssh/authorized_keys"
 fi
 for s in $(echo "${SERVICES:-}" | tr ',' ' '); do svc start "$s"; done
+touch /run/range-ready                       # the image HEALTHCHECK reads this
 echo "ready: $(hostname) services=${SERVICES:-none}"
 exec sleep infinity
