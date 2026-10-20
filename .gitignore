@@ -240,6 +240,8 @@ routines/.off.json
 # Your imported AI conversations (./securax knowledge): personal, never committed
 vault/
 vault.pre-restore-*/
+# `./securax restore` keeps the previous .env as .env.pre-restore: it holds secrets, never commit it
+.env.pre-restore
 routines/.log
 
 # web-research executor audit trail + opt-in playwright/image artifacts (per-box)

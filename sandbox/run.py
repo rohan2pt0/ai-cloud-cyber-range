@@ -1319,9 +1319,13 @@ def j_ccsp(sb: H.Sandbox, c: Checks):
         sums = dict(reversed(ln.split("  ")) for ln in files.get("SHA256SUMS", b"").decode().splitlines())
         c.ok(all(hashlib.sha256(files[k]).hexdigest() == v for k, v in sums.items() if k in files) and "ccsp-coverage.md" in sums, "…and it is covered by SHA256SUMS")
     mp = sb.clone / "governance" / "ccsp-map.json"          # a stale claim must fail the gate
-    mp.write_text(mp.read_text().replace('"file:docs/securax/02-ARCHITECTURE.md"', '"file:no/such/file"', 1))
-    rc, out = H.sh(["bash", "./securax", "ccsp", "--verify"], cwd=sb.clone)
-    c.ok(rc != 0 and "does not exist" in out, "a stale evidence reference makes `ccsp --verify` fail", tail(out, 300))
+    orig = mp.read_text()
+    try:
+        mp.write_text(orig.replace('"file:docs/securax/02-ARCHITECTURE.md"', '"file:no/such/file"', 1))
+        rc, out = H.sh(["bash", "./securax", "ccsp", "--verify"], cwd=sb.clone)
+        c.ok(rc != 0 and "does not exist" in out, "a stale evidence reference makes `ccsp --verify` fail", tail(out, 300))
+    finally:
+        mp.write_text(orig)                                   # later journeys share this checkout: leave it clean
 
 
 @journey("comply_evidence", "`./securax comply`: the RBI NBFC and SEBI CSCRF gap maps verify (no stale reference, no unproven 'supported'), say plainly that entity obligations are not counted, and ship in the checksummed audit pack.")
@@ -1344,9 +1348,13 @@ def j_comply(sb: H.Sandbox, c: Checks):
         sums = dict(reversed(ln.split("  ")) for ln in files.get("SHA256SUMS", b"").decode().splitlines())
         c.ok("compliance-rbi.md" in sums and all(hashlib.sha256(files[k]).hexdigest() == v for k, v in sums.items() if k in files), "…and they are covered by SHA256SUMS")
     mp = sb.clone / "governance" / "regmap-rbi-nbfc.json"          # an overclaim must fail the gate
-    mp.write_text(mp.read_text().replace('"status": "gap"', '"status": "supported"', 1))
-    rc, out = H.sh(["bash", "./securax", "comply", "--verify"], cwd=sb.clone)
-    c.ok(rc != 0 and "journey or test" in out, "turning a gap into 'supported' without proof makes `comply --verify` fail", tail(out, 300))
+    orig = mp.read_text()
+    try:
+        mp.write_text(orig.replace('"status": "gap"', '"status": "supported"', 1))
+        rc, out = H.sh(["bash", "./securax", "comply", "--verify"], cwd=sb.clone)
+        c.ok(rc != 0 and "journey or test" in out, "turning a gap into 'supported' without proof makes `comply --verify` fail", tail(out, 300))
+    finally:
+        mp.write_text(orig)                                   # later journeys share this checkout: leave it clean
 
 
 @journey("gateway_identity", "The REAL gateway container with authentication on: anonymous and wrong keys are refused, a service key works and is named in the audit trail, roles limit what it can reach, repeated failures lock the source out, and the open laptop default is unchanged.")

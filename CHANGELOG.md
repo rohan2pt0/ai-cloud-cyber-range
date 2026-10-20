@@ -118,6 +118,8 @@ for the versioning and release policy.
   - **Visibility:** remaining allowance in the response headers, a cockpit lamp, and spend that survives a gateway restart.
 
 ### Fixed
+- **`./securax restore` no longer leaves a secrets file that git would pick up.** It keeps the previous `.env` as `local/compose/.env.pre-restore`, which is now git-ignored. Before, the checkout stayed dirty, so `update` could not roll back safely, and the file could have been committed.
+- **Sandbox:** the CCSP and RBI-map tamper journeys put back the files they edit, so later journeys no longer start from a dirty checkout.
 - **`./securax controls import FILE.xlsx` crashed with a traceback** when typed as shown in the cockpit hint.
   - **Import:** no path, a wrong path, a folder or the wrong workbook now finds the right workbook.
   - **`./securax go`:** imports a workbook saved in Downloads by itself.
