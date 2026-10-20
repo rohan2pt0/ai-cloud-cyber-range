@@ -9,6 +9,36 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **Exercise range: rules of engagement, checked every round** (doc 79):
+  - **Ping:** every machine gets the HOST check, so blocking ping scores as down.
+  - **Green-team account:** it must keep logging in by key with admin rights. A breach costs −5 per host per round until fixed.
+  - **Rules screen:** shows the rules and the live rule checks.
+- **Exercise range: a timed team plan** with owner, window, done/blocked/overdue state and check-ins.
+- **`./securax storage --auto`** and a 6-hourly `storage-guard` routine (doc 80):
+  - **Cleans:** folds old exercise data into totals, removes unused old versions of images SecuRAX built, and runs the safe clean-ups when space is tight.
+  - **Alerts:** your phone, only when the disk is still short afterwards.
+  - **Never touches:** volumes, backups or third-party images.
+- **Doc 80:** the storage plan:
+  - what bounds every source of growth
+  - hot/warm/cold tiers, with SeaweedFS as object storage that scales out
+  - indicative cold-tier prices
+  - dated next steps
+- **AGENTS.md §6:** a standing rule for handling the owner's documents (private, diagnose first, 80/20, nothing broken, growth bounded, recorded).
+- **`./securax exercise`: a live-fire cyber defence exercise range** (doc 79), stage 1:
+  - **Scenarios:** one JSON scenario serves any team number, and a broken scenario is refused.
+  - **Scoring:** a scoring bot checks every service from inside each zone, and simulated staff log in with the passwords the blue team documented.
+  - **Red-team bot:** it punishes unchanged default passwords, but only in the attack phase.
+  - **The portal** (blue, white and red roles):
+    - mission board
+    - incident and six-part situation reports
+    - judging, which sees the red team's claims
+    - scoring log and timeline
+    - target checks and per-zone awareness
+    - news injects
+    - password changes and restores
+  - **Score log:** hash-chained, so edits are caught.
+  - **Lite range:** isolated Docker networks with one jump-box door on 127.0.0.1:2222.
+  - **Verified:** in real Docker and a real browser.
 - **`./securax respond`: a crisis response kit** for your estate or another organisation (doc 78):
   - **Permission first:** who authorised the work, and the scope.
   - **The USB kit:** Windows and Unix collectors that follow the order of volatility, write only to the USB and hash everything; a read-me card; a custody form.

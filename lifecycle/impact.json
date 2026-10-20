@@ -1,5 +1,5 @@
 {
- "about": "Blast-radius map. For a change, `./securax impact` lists which components it touches, what they feed (downstream), and which real-product journeys prove they still work — so one change cannot silently hurt another part. Every tracked file must belong to a component (or be ignored on purpose); `fitness` fails otherwise, so the map cannot rot.",
+ "about": "Blast-radius map. For a change, `./securax impact` lists which components it touches, what they feed (downstream), and which real-product journeys prove they still work \u2014 so one change cannot silently hurt another part. Every tracked file must belong to a component (or be ignored on purpose); `fitness` fails otherwise, so the map cannot rot.",
  "components": {
   "gateway": {
    "paths": [
@@ -234,6 +234,16 @@
    "affects": [
     "estate-runtime"
    ]
+  },
+  "exercise": {
+   "paths": [
+    "exercise/**"
+   ],
+   "guarded_by": [
+    "exercise_lite_range",
+    "exercise_portal_ui"
+   ],
+   "affects": []
   }
  },
  "ignore": [

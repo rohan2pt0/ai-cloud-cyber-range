@@ -891,6 +891,11 @@ EOF2
     #   ./securax lessons | lessons add "what happened → what to do instead" [--area A] | lessons recent [N]
     shift; exec python3 "$ROOT/lifecycle/lessons.py" "$@"
     ;;
+  exercise)
+    # Live-fire cyber defence exercises (doc 79): scenario -> lite range -> scoring bot, simulated staff, red bot -> portal -> judging -> report.
+    #   ./securax exercise plan | new | lite up|stop|down|status | serve | start | round | attack | revert | report | verify | list
+    shift; cd "$ROOT" && exec python3 -m exercise "$@"
+    ;;
   respond)
     # Crisis response for your estate or another organisation (doc 78): permission first, a USB kit, hash-checked intake, IOC triage, a report.
     #   ./securax respond open "codename" --kind ransomware|fund-fraud|data-breach|compromise [--for ORG --authorised-by NAME --scope TEXT]

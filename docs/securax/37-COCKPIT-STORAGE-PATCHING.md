@@ -32,6 +32,8 @@ Honest limits: it shows only what this machine can see (not running = *No data*,
 | Container logs | Docker | **bounded** | rotate by themselves (10 MB × 3 per container) |
 `storage` reports sizes and free space, records a reading at most every 12 h, and forecasts the day the disk fills (needs 3 readings over 2+ days; says "learning" until then). It never deletes volumes or backups.
 
+Since doc 80, `./securax storage --auto` runs every 6 hours and does the safe part by itself.
+
 ## Patching — what gets patched, how, and by whom
 | Component | Mechanism | Your part |
 |---|---|---|

@@ -1,0 +1,24 @@
+#!/bin/sh
+# svc start|stop|restart|status ssh|http|dns|smtp: start and stop this machine's services (there is no systemd here).
+set -u
+act=${1:-status}; name=${2:-}
+pidof_() { case "$1" in ssh) pidof sshd ;; http) pgrep -f 'httpd -f' ;; dns) pidof dnsmasq ;; smtp) pidof smtpd ;; esac; }
+start() {
+  case "$1" in
+    ssh)  [ -f /etc/ssh/ssh_host_ed25519_key ] || ssh-keygen -A >/dev/null; /usr/sbin/sshd -E /var/log/sshd.log ;;
+    http) mkdir -p /var/www; [ -f /var/www/index.html ] || cp /range-config/index.html /var/www/index.html; httpd -f -p 80 -h /var/www >>/var/log/httpd.log 2>&1 & ;;
+    dns)  dnsmasq --no-resolv --no-hosts --addn-hosts=/range-config/dns-hosts --log-queries --log-facility=/var/log/dnsmasq.log ;;
+    smtp) d=$(cat /range-config/domain); mkdir -p /etc/smtpd
+          printf 'listen on 0.0.0.0\naction "local" mbox\nmatch from any for domain "%s" action "local"\nmatch from local for any action "local"\n' "$d" > /etc/smtpd/smtpd.conf
+          smtpd ;;
+    *) echo "unknown service $1 (ssh, http, dns, smtp)"; return 2 ;;
+  esac
+}
+stop() { p=$(pidof_ "$1"); [ -n "$p" ] && kill $p; }
+case "$act" in
+  start) start "$name" ;;
+  stop) stop "$name" ;;
+  restart) stop "$name"; sleep 1; start "$name" ;;
+  status) for s in ${name:-ssh http dns smtp}; do if [ -n "$(pidof_ "$s")" ]; then echo "$s: running"; else echo "$s: stopped"; fi; done ;;
+  *) echo "usage: svc start|stop|restart|status [ssh|http|dns|smtp]"; exit 2 ;;
+esac

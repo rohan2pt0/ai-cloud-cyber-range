@@ -105,6 +105,18 @@
     "kind": "nudge"
   },
   {
+    "id": "storage-guard",
+    "cron": "40 */6 * * *",
+    "command": [
+      "./securax",
+      "storage",
+      "--auto"
+    ],
+    "description": "Every 6 hours: fold old exercise data into totals, remove old versions of images SecuRAX built itself, run the safe clean-ups when space is tight, and alert your phone only if the disk is still short afterwards. Never touches volumes, backups or third-party images.",
+    "enabled": true,
+    "kind": "guard"
+  },
+  {
     "id": "andon",
     "cron": "*/15 * * * *",
     "command": [

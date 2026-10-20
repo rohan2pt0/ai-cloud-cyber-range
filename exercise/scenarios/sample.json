@@ -1,0 +1,573 @@
+{
+ "name": "Sample: Example Corp live-fire defence",
+ "about": "A FICTIONAL scenario that shows the format. One blue team defends a small organisation against a red team while scoring bots check its services and simulated staff keep working. Every name, address and password here is made up. Real exercise scenarios belong in vault/exercise/scenarios/, never in git.",
+ "org": "Example Corp",
+ "domain": "ex{X}.range.test",
+ "team_default": 61,
+ "duration_minutes": 480,
+ "phases": [
+  {
+   "name": "Hardening",
+   "until_minute": 120,
+   "about": "Secure the systems before attacks start. No red-team activity."
+  },
+  {
+   "name": "Attack",
+   "until_minute": 420,
+   "attacks_allowed": true,
+   "about": "The red team attacks. Keep services up, detect, respond and report."
+  },
+  {
+   "name": "Reporting",
+   "until_minute": 480,
+   "about": "Final reports. Attacks stop."
+  }
+ ],
+ "zones": {
+  "wan": {
+   "label": "Routing",
+   "cidr": "10.{X}.0.0/24"
+  },
+  "dmz": {
+   "label": "DMZ",
+   "cidr": "10.{X}.1.0/24"
+  },
+  "srv": {
+   "label": "Servers",
+   "cidr": "10.{X}.2.0/24"
+  },
+  "int": {
+   "label": "Workstations",
+   "cidr": "10.{X}.3.0/24"
+  },
+  "sec": {
+   "label": "Security",
+   "cidr": "10.{X}.4.0/24"
+  },
+  "wifi": {
+   "label": "Guest Wi-Fi",
+   "cidr": "10.{X}.5.0/24"
+  },
+  "ics": {
+   "label": "Cooling (ICS)",
+   "cidr": "10.{X}.6.0/24"
+  },
+  "cloud": {
+   "label": "Cloud",
+   "cidr": "10.188.{X}.0/24"
+  }
+ },
+ "admin": {
+  "username": "rangeadmin",
+  "password": "Sample-Admin-1!"
+ },
+ "green_team": {
+  "username": "greenteam",
+  "about": "Exercise control's support and scoring account. It must keep working, stay an administrator and keep its SSH key."
+ },
+ "rules": [
+  "Every service listed for a machine must keep working. You may change anything else, but not by removing or sabotaging a required service.",
+  "Do not change any machine's name or address.",
+  "Public services in the DMZ and Cloud zones must stay reachable from everywhere, including the internet. Their management services (SSH, admin pages) must stay reachable at least from the Workstations and Security zones.",
+  "Ping must stay allowed on every machine: from everywhere for public machines, and from the zones that need them for internal ones.",
+  "Do not disable, change, lock out or use the green-team account, remove it from the administrators, or remove its SSH key.",
+  "Staff accounts must keep working with normal rights. If you reset a staff password, record the new one and the reason under Staff password changes.",
+  "Staff must be able to keep using their machines and their everyday software. Do not lock them out for long.",
+  "Restoring a machine from its snapshot is for recovery only, not a defence plan, and it costs points.",
+  "Attack only the targets exercise control names. Never attack the exercise infrastructure, the scoring bots or another team."
+ ],
+ "playbook": [
+  {
+   "id": "t0-inventory",
+   "from_minute": 0,
+   "to_minute": 15,
+   "owner": "lead",
+   "task": "Read the system list and the rules; list every scored service per machine; agree who owns which zone."
+  },
+  {
+   "id": "t0-passwords",
+   "from_minute": 0,
+   "to_minute": 20,
+   "owner": "identity",
+   "task": "Change the admin password on every machine (a different one each). Do not touch staff or green-team accounts."
+  },
+  {
+   "id": "t0-baseline",
+   "from_minute": 10,
+   "to_minute": 30,
+   "owner": "soc",
+   "task": "Record a baseline per machine: users, listening services, scheduled jobs, start-up items."
+  },
+  {
+   "id": "t0-logging",
+   "from_minute": 15,
+   "to_minute": 45,
+   "owner": "soc",
+   "task": "Turn on and centralise logging (authentication, process starts, web and DNS logs)."
+  },
+  {
+   "id": "t1-harden",
+   "from_minute": 30,
+   "to_minute": 100,
+   "owner": "hosts",
+   "task": "Harden each machine: remove unneeded services and accounts, patch the obvious, keep every scored service and ping working."
+  },
+  {
+   "id": "t1-verify",
+   "from_minute": 100,
+   "to_minute": 120,
+   "owner": "lead",
+   "task": "Check the Target checks screen: every scored service green before the attack phase starts."
+  },
+  {
+   "id": "t2-hunt",
+   "from_minute": 120,
+   "to_minute": 420,
+   "owner": "soc",
+   "task": "Watch and hunt: new logins, new processes, changed web pages, new scheduled jobs. File an incident report for each event."
+  },
+  {
+   "id": "t3-report",
+   "from_minute": 420,
+   "to_minute": 480,
+   "owner": "lead",
+   "task": "Final situation report and lessons learned."
+  }
+ ],
+ "checkins_every_minutes": 60,
+ "hosts": [
+  {
+   "name": "r1",
+   "zone": "wan",
+   "ip": "10.{X}.0.1",
+   "os": "router",
+   "lite": "skip",
+   "about": "Edge router 1",
+   "services": [
+    {
+     "name": "SSH",
+     "check": "ssh",
+     "port": 22
+    },
+    {
+     "name": "BGP",
+     "check": "tcp",
+     "port": 179
+    }
+   ]
+  },
+  {
+   "name": "r2",
+   "zone": "wan",
+   "ip": "10.{X}.0.2",
+   "os": "router",
+   "lite": "skip",
+   "about": "Edge router 2",
+   "services": [
+    {
+     "name": "SSH",
+     "check": "ssh",
+     "port": 22
+    },
+    {
+     "name": "BGP",
+     "check": "tcp",
+     "port": 179
+    }
+   ]
+  },
+  {
+   "name": "fw",
+   "zone": "wan",
+   "ip": "10.{X}.0.4",
+   "os": "firewall",
+   "lite": "skip",
+   "about": "Firewall between all zones",
+   "services": [
+    {
+     "name": "SSH",
+     "check": "ssh",
+     "port": 22
+    },
+    {
+     "name": "Web admin",
+     "check": "http",
+     "port": 80
+    }
+   ]
+  },
+  {
+   "name": "dns1",
+   "zone": "dmz",
+   "ip": "10.{X}.1.2",
+   "os": "linux",
+   "lite": "gamebox",
+   "about": "Authoritative and recursive DNS (primary)",
+   "services": [
+    {
+     "name": "SSH",
+     "check": "ssh",
+     "port": 22
+    },
+    {
+     "name": "DNS",
+     "check": "dns",
+     "port": 53,
+     "query": "www.ex{X}.range.test"
+    }
+   ]
+  },
+  {
+   "name": "dns2",
+   "zone": "dmz",
+   "ip": "10.{X}.1.3",
+   "os": "linux",
+   "lite": "gamebox",
+   "about": "Authoritative and recursive DNS (secondary)",
+   "services": [
+    {
+     "name": "SSH",
+     "check": "ssh",
+     "port": 22
+    },
+    {
+     "name": "DNS",
+     "check": "dns",
+     "port": 53,
+     "query": "www.ex{X}.range.test"
+    }
+   ]
+  },
+  {
+   "name": "mail-proxy",
+   "zone": "dmz",
+   "ip": "10.{X}.1.4",
+   "os": "linux",
+   "lite": "gamebox",
+   "about": "Mail relay in front of the internal mail server",
+   "services": [
+    {
+     "name": "SSH",
+     "check": "ssh",
+     "port": 22
+    },
+    {
+     "name": "SMTP",
+     "check": "smtp",
+     "port": 25
+    }
+   ]
+  },
+  {
+   "name": "vpn",
+   "zone": "dmz",
+   "ip": "10.{X}.1.6",
+   "os": "linux",
+   "lite": "gamebox",
+   "about": "Remote-access VPN",
+   "services": [
+    {
+     "name": "SSH",
+     "check": "ssh",
+     "port": 22
+    },
+    {
+     "name": "Portal",
+     "check": "http",
+     "port": 80
+    }
+   ]
+  },
+  {
+   "name": "dc1",
+   "zone": "srv",
+   "ip": "10.{X}.2.2",
+   "os": "windows",
+   "lite": "goad",
+   "about": "Primary domain controller",
+   "services": [
+    {
+     "name": "DNS",
+     "check": "tcp",
+     "port": 53
+    },
+    {
+     "name": "Kerberos",
+     "check": "tcp",
+     "port": 88
+    },
+    {
+     "name": "LDAP",
+     "check": "tcp",
+     "port": 389
+    },
+    {
+     "name": "SMB",
+     "check": "tcp",
+     "port": 445
+    },
+    {
+     "name": "RDP",
+     "check": "tcp",
+     "port": 3389
+    }
+   ]
+  },
+  {
+   "name": "files",
+   "zone": "srv",
+   "ip": "10.{X}.2.4",
+   "os": "windows",
+   "lite": "skip",
+   "about": "File server",
+   "services": [
+    {
+     "name": "SMB",
+     "check": "tcp",
+     "port": 445
+    },
+    {
+     "name": "RDP",
+     "check": "tcp",
+     "port": 3389
+    }
+   ]
+  },
+  {
+   "name": "intranet",
+   "zone": "srv",
+   "ip": "10.{X}.2.6",
+   "os": "linux",
+   "lite": "gamebox",
+   "about": "Intranet web and uptime monitor",
+   "services": [
+    {
+     "name": "SSH",
+     "check": "ssh",
+     "port": 22
+    },
+    {
+     "name": "HTTP",
+     "check": "http",
+     "port": 80,
+     "expect": "Example Corp"
+    }
+   ]
+  },
+  {
+   "name": "ws3-1",
+   "zone": "int",
+   "ip": "10.{X}.3.31",
+   "os": "linux",
+   "lite": "gamebox",
+   "about": "Linux workstation for staff",
+   "services": [
+    {
+     "name": "SSH",
+     "check": "ssh",
+     "port": 22
+    }
+   ]
+  },
+  {
+   "name": "ws3-2",
+   "zone": "int",
+   "ip": "10.{X}.3.32",
+   "os": "linux",
+   "lite": "gamebox",
+   "about": "Linux workstation for staff",
+   "services": [
+    {
+     "name": "SSH",
+     "check": "ssh",
+     "port": 22
+    }
+   ]
+  },
+  {
+   "name": "ws1-1",
+   "zone": "int",
+   "ip": "10.{X}.3.11",
+   "os": "windows",
+   "lite": "skip",
+   "about": "Windows workstation for staff",
+   "services": [
+    {
+     "name": "SMB",
+     "check": "tcp",
+     "port": 445
+    },
+    {
+     "name": "RDP",
+     "check": "tcp",
+     "port": 3389
+    }
+   ]
+  },
+  {
+   "name": "terminal",
+   "zone": "sec",
+   "ip": "10.{X}.4.7",
+   "os": "linux",
+   "lite": "jump",
+   "about": "The blue team's jump box (in the lite range, reachable on 127.0.0.1:2222)",
+   "services": []
+  },
+  {
+   "name": "plc",
+   "zone": "ics",
+   "ip": "10.{X}.6.2",
+   "os": "linux",
+   "lite": "gamebox",
+   "about": "Cooling-system controller",
+   "services": [
+    {
+     "name": "SSH",
+     "check": "ssh",
+     "port": 22
+    }
+   ]
+  },
+  {
+   "name": "www",
+   "zone": "cloud",
+   "ip": "10.188.{X}.55",
+   "os": "linux",
+   "lite": "gamebox",
+   "about": "Public website",
+   "services": [
+    {
+     "name": "SSH",
+     "check": "ssh",
+     "port": 22
+    },
+    {
+     "name": "HTTP",
+     "check": "http",
+     "port": 80,
+     "expect": "Example Corp"
+    }
+   ]
+  }
+ ],
+ "users": [
+  {
+   "username": "alex.sample",
+   "name": "Alex Sample",
+   "password": "Sample-Pass-11!",
+   "hosts": [
+    "ws3-1",
+    "intranet"
+   ]
+  },
+  {
+   "username": "bea.example",
+   "name": "Bea Example",
+   "password": "Sample-Pass-12!",
+   "hosts": [
+    "ws3-1",
+    "ws3-2"
+   ]
+  },
+  {
+   "username": "cam.fiction",
+   "name": "Cam Fiction",
+   "password": "Sample-Pass-13!",
+   "hosts": [
+    "ws3-2",
+    "intranet"
+   ]
+  },
+  {
+   "username": "dee.madeup",
+   "name": "Dee Madeup",
+   "password": "Sample-Pass-14!",
+   "hosts": [
+    "ws3-1",
+    "mail-proxy"
+   ]
+  }
+ ],
+ "scoring": {
+  "round_seconds": 60,
+  "availability_per_check": 1,
+  "usersim_per_login": 1,
+  "attack_report": -40,
+  "restore_from_backup": -25,
+  "hint_fraction": 0.2,
+  "abandon_fraction": 0.5,
+  "incident_report_max": 20,
+  "situation_report_per_grade": 4,
+  "situation_report_max_grade": 5,
+  "compromised_minutes": 60
+ },
+ "tasks": [
+  {
+   "id": "p1-endpoints",
+   "phase": "Phase 1",
+   "points": 50,
+   "opens_at_minute": 0,
+   "title": "Defending the workstations",
+   "description": "The red team will try to get onto staff workstations, raise its privileges and move on to servers. It may trick staff into running code.",
+   "question": "Give a short plan for defending the workstations and servers. What will you do first, and how will you know if it worked?",
+   "hint": "Think about the default administrator password, who can log in remotely, and what you log."
+  },
+  {
+   "id": "p1-network",
+   "phase": "Phase 1",
+   "points": 50,
+   "opens_at_minute": 0,
+   "title": "Defending the network edge",
+   "description": "The red team will target routers, the firewall and the services the internet can reach, such as DNS and mail.",
+   "question": "Give a short plan for defending network devices and public services, without breaking the services you must keep running.",
+   "hint": "List every service the scoring bots check before you change a firewall rule."
+  },
+  {
+   "id": "p2-repeat",
+   "phase": "Phase 2",
+   "points": 50,
+   "opens_at_minute": 150,
+   "title": "Stopping repeat attacks",
+   "description": "Attackers come back through the weaknesses that worked the first time.",
+   "question": "What did you change after the first attacks so the same route cannot work again?",
+   "hint": "Use your own incident reports: each one names a way in."
+  },
+  {
+   "id": "p2-data",
+   "phase": "Phase 2",
+   "points": 50,
+   "opens_at_minute": 180,
+   "title": "Protecting the files",
+   "description": "The red team wants to steal and leak documents from the file server.",
+   "question": "How will you stop documents leaving, and how would you notice if some did?",
+   "hint": ""
+  },
+  {
+   "id": "bonus-malware",
+   "phase": "Bonus",
+   "points": 100,
+   "opens_at_minute": 300,
+   "title": "Analyse the dropped program",
+   "description": "A program left on a compromised host is provided to the team by exercise control.",
+   "question": "What does it do, how does it persist, and what would detect it?",
+   "hint": ""
+  }
+ ],
+ "injects": [
+  {
+   "at_minute": 0,
+   "title": "Welcome to Example Corp",
+   "body": "You have taken over Example Corp's IT security. Read the system list, check what must stay up, and start hardening."
+  },
+  {
+   "at_minute": 110,
+   "title": "Attacks expected soon",
+   "body": "Threat intelligence warns of an attack campaign against organisations like Example Corp starting today."
+  },
+  {
+   "at_minute": 200,
+   "title": "Journalist calls the press office",
+   "body": "A reporter says they have seen Example Corp documents online. The CEO wants a short statement for staff. Include it in your next situation report."
+  }
+ ]
+}

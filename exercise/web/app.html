@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Exercise Portal</title>
+<link rel="stylesheet" href="/app.css">
+<script src="/app.js" defer></script>
+</head>
+<body>
+<header class="top">
+  <button id="menu" class="icon" aria-label="Menu">☰</button>
+  <strong>Exercise portal</strong>
+  <span id="title" class="muted"></span>
+  <span class="grow"></span>
+  <span id="phase" class="pill"></span>
+  <span id="whoami" class="muted"></span>
+  <button id="theme" class="icon" aria-label="Switch light or dark">◐</button>
+  <button id="signout" class="link" hidden>Sign out</button>
+</header>
+<div class="layout">
+  <nav id="nav" aria-label="Sections"></nav>
+  <main id="main">
+    <section id="login" class="card narrow">
+      <h1>Sign in</h1>
+      <p>Paste the token exercise control gave your team or role.</p>
+      <form id="loginform">
+        <label for="token">Token</label>
+        <input id="token" type="password" autocomplete="off" required>
+        <button type="submit">Sign in</button>
+      </form>
+      <p id="loginerr" class="bad" role="alert"></p>
+    </section>
+  </main>
+</div>
+</body>
+</html>

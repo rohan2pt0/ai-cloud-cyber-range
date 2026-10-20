@@ -56,3 +56,18 @@ Run `./securax route "the task"`. It names the tier, and why:
 
 When a check failed for a reason the next agent could avoid, add one line:
 `./securax lessons add "what happened → what to do instead"`. Autobuild does this by itself when a red attempt turns green.
+
+## 6. When the owner shares documents or a new idea
+
+1. **Read all of it, and keep it private.** Uploaded material stays in `vault/` or a scratch folder. The repository gets only the cue, in our own words.
+2. **Diagnose before building.** Compare it with what already exists. Fix what is broken; do not rebuild what works.
+3. **Take the 20% that gives 80%.** Risk first, then what the current machine and budget allow. Say plainly what waits, and give it a target date.
+4. **Apply it without breaking anything.**
+   - **Blast radius:** run `./securax impact` to see what the change can affect.
+   - **Proof:** tests and a sandbox journey for the new behaviour.
+   - **No new single point of failure:** a second copy, a fallback, or a way back.
+5. **Bound what grows.** Anything new that writes data names its limit and its storage tier (doc 80), and `storage --auto` can clean it.
+6. **Record it.**
+   - **Ledger:** one row in the ledger of the doc it touched (for the range, "Cues taken from your material" in doc 79).
+   - **CHANGELOG:** one line.
+   - **Status:** the doc's status light.
