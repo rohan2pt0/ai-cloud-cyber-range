@@ -56,5 +56,5 @@ def test_the_shipped_routines_all_have_a_kind_and_guards_cover_the_safety_nets()
     jobs, errors = s.parse_jobs()
     assert not errors
     kinds = {j.id: j.kind for j in jobs}
-    for guard in ("nightly-update", "weekly-backup", "offsite-restore-drill", "andon", "regwatch"):
+    for guard in ("nightly-update", "daily-backup", "offsite-restore-drill", "andon", "regwatch"):
         assert kinds[guard] == "guard"

@@ -34,6 +34,7 @@ volumes:
   anythingllm:  # AnythingLLM workspaces & vector index (private RAG)
   n8n:          # n8n automation workflows & credentials
   estatesync:   # sovereign cross-device life-OS state (SQLite, your box only)
+  passwords:    # the password manager (Vaultwarden): your vault, encrypted on your devices before it is stored
   gatewaystate: # the gateway's AI allowance ledger (tokens spent per caller today / this month)
 
 services:
@@ -281,6 +282,26 @@ services:
     volumes: ["anythingllm:/app/server/storage"]
     networks: [edge, modelplane]
     depends_on: [ollama]
+    logging: *default-logging
+
+  # The password manager (doc 84): Vaultwarden, a small server for the Bitwarden apps (browser extension, phone, desktop). Your vault is
+  # encrypted on your own device before it reaches this server. Off until `./securax start passwords`; sign-ups close after your account.
+  vaultwarden:
+    image: ghcr.io/dani-garcia/vaultwarden:1.37.4
+    mem_limit: 128m
+    cpus: 0.5
+    profiles: ["passwords"]
+    restart: unless-stopped
+    environment:
+      DOMAIN: ${PASSWORDS_URL:-http://localhost:8222}
+      SIGNUPS_ALLOWED: ${PASSWORDS_SIGNUPS:-true}
+      INVITATIONS_ALLOWED: "false"
+      SHOW_PASSWORD_HINT: "false"
+      WEBSOCKET_ENABLED: "true"
+      LOG_LEVEL: warn
+    ports: ["${BIND_HOST:-127.0.0.1}:8222:80"]
+    volumes: ["passwords:/data"]
+    networks: [edge]
     logging: *default-logging
 
   # Automation engine (the "glue"): morning brief, email triage, data-tier router, etc.

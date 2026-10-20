@@ -22,7 +22,7 @@
   .dot{width:9px;height:9px;border-radius:50%;background:var(--mut);display:inline-block;flex:0 0 auto}
   .dot.up{background:var(--green)} .dot.down{background:var(--red)} .dot.off{background:var(--mut);opacity:.55}
   .dot.starting{background:var(--amber);animation:pulse 1.2s ease-in-out infinite} @keyframes pulse{50%{opacity:.35}}
-  .emoji{font-size:18px}
+  .ico{width:18px;height:18px;flex:0 0 auto;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;color:var(--accent)}
   .note{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;color:var(--mut);font-size:14px}
   .note b{color:var(--ink)} code{background:rgba(127,127,127,.15);padding:1px 6px;border-radius:6px;font-size:13px}
   .pill{display:inline-block;font-size:11px;color:var(--green);border:1px solid var(--green);border-radius:999px;padding:0 7px;margin-left:6px}
@@ -142,16 +142,35 @@ fetch("/portal/setup.json",{cache:"no-store"}).then(function(r){return r.ok?r.js
     return SEC ? "https://"+name+"."+DOM+"/" : "http://"+H+":"+plain+"/";
   }
   function gw(path){ return (TS ? "" : SEC ? "https://api."+DOM : "http://"+H+":8080") + path; }
+  // Line icons drawn for SecuRAX (24 px grid, stroke = the text colour): one consistent, quiet style instead of emoji.
+  var ICONS = {
+    compass:'<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>', chat:'<path d="M4 5h16v11H9l-5 4z"/>',
+    gauge:'<path d="M4 16a8 8 0 1 1 16 0"/><path d="M12 16l4-5"/>', doc:'<path d="M6 3h8l4 4v14H6z"/><path d="M14 3v4h4M9 12h6M9 16h6"/>',
+    flow:'<circle cx="6" cy="6" r="2"/><circle cx="18" cy="12" r="2"/><circle cx="6" cy="18" r="2"/><path d="M8 6h4l4 5M8 18h4l4-5"/>',
+    target:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+    siren:'<path d="M7 18v-6a5 5 0 0 1 10 0v6"/><path d="M5 18h14v3H5zM12 3v2M4 7l1.5 1.5M20 7l-1.5 1.5"/>',
+    loop:'<path d="M4 12a8 8 0 0 1 14-5.3L20 9M20 12a8 8 0 0 1-14 5.3L4 15"/><path d="M20 4v5h-5M4 20v-5h5"/>',
+    search:'<circle cx="11" cy="11" r="6"/><path d="M15.5 15.5L20 20"/>', grid:'<path d="M4 4h7v7H4zM13 4h7v7h-7zM4 13h7v7H4zM13 13h7v7h-7z"/>',
+    clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>', checklist:'<path d="M9 6h11M9 12h11M9 18h11M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/>',
+    scale:'<path d="M12 4v16M6 20h12M5 8h14M5 8l-2 6a3 3 0 0 0 4 0zM19 8l-2 6a3 3 0 0 0 4 0z"/>',
+    shield:'<path d="M12 3l8 3v6c0 4.5-3.4 8-8 9-4.6-1-8-4.5-8-9V6z"/>', code:'<path d="M8 8l-4 4 4 4M16 8l4 4-4 4M13 6l-2 12"/>',
+    undo:'<path d="M9 7H4V2"/><path d="M4 7a9 9 0 1 1-1 6"/>', lock:'<path d="M6 11h12v9H6z"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
+    disk:'<path d="M3 13l3-8h12l3 8v6H3z"/><path d="M3 13h18M17 16h.01"/>', pulse:'<path d="M3 12h4l2-5 4 10 2-5h6"/>',
+    book:'<path d="M5 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H5zM19 4h-4a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h4z"/>',
+    gem:'<path d="M6 4h12l3 5-9 11L3 9z"/><path d="M3 9h18M9 4l3 16 3-16"/>', lifebuoy:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M5.6 5.6l3.6 3.6M14.8 14.8l3.6 3.6M18.4 5.6l-3.6 3.6M9.2 14.8l-3.6 3.6"/>',
+    key:'<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M14 9l2 2"/>', cloud:'<path d="M7 18a4 4 0 0 1-.5-8A6 6 0 0 1 18 9a4.5 4.5 0 0 1 0 9z"/>'
+  };
+  function icon(n){ return '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">'+(ICONS[n]||ICONS.grid)+'</svg>'; }
   // Core = the apps you came here to use. They get a "starting…" phase (Chat takes ~a minute to boot).
   var CORE = [
-    {t:"Guiding Map", e:"🧭", d:"Your daily cockpit / life-OS — works offline, no AI needed", url:web("hub",8088), core:true},
-    {t:"Chat", e:"💬", d:"Private ChatGPT-style assistant (guarded, local + cloud)", url:web("chat",3000), core:true},
-    {t:"Cockpit", e:"📊", d:"One-page health: what is at risk, what to do next, trends", url:web("hub",8088)+"portal/cockpit.html", core:false}
+    {t:"Guiding Map", i:"compass", d:"Your daily cockpit / life-OS — works offline, no AI needed", url:web("hub",8088), core:true},
+    {t:"Chat", i:"chat", d:"Private ChatGPT-style assistant (guarded, local + cloud)", url:web("chat",3000), core:true},
+    {t:"Cockpit", i:"gauge", d:"One-page health: what is at risk, what to do next, trends", url:web("hub",8088)+"portal/cockpit.html", core:false}
   ];
   // Optional = powerful, but each needs its own one-time setup — and may simply not be running (lite mode).
   var EXTRAS = [
-    {t:"Private Docs", e:"📄", d:"Chat with your PDFs/Word (RAG). Needs the local model pulled + docs uploaded.", url:web("docs",3001)},
-    {t:"Automation", e:"⚙️", d:"n8n workflows & the morning brief. Empty until you import/build a workflow.", url:web("flows",5678)}
+    {t:"Private Docs", i:"doc", d:"Chat with your PDFs/Word (RAG). Needs the local model pulled + docs uploaded.", url:web("docs",3001)},
+    {t:"Automation", i:"flow", d:"n8n workflows & the morning brief. Empty until you import/build a workflow.", url:web("flows",5678)}
   ];
   var ALL = CORE.concat(EXTRAS);
   render(CORE, "apps"); render(EXTRAS, "extras");
@@ -161,7 +180,7 @@ fetch("/portal/setup.json",{cache:"no-store"}).then(function(r){return r.ok?r.js
       if(!a.url){ a.skip = true; return; }                 // not published to this address (Tailscale serves the app and Chat only)
       var el = document.createElement("a");
       el.className="card"; el.href=a.url; el.target="_blank"; el.rel="noopener";
-      el.innerHTML = '<div class="t"><span class="dot starting" data-url="'+a.url+'"></span><span class="emoji">'+a.e+'</span> '+a.t+'</div><div class="d">'+a.d+'</div>';
+      el.innerHTML = '<div class="t"><span class="dot starting" data-url="'+a.url+'"></span>'+icon(a.i)+' '+a.t+'</div><div class="d">'+a.d+'</div>';
       box.appendChild(el);
     });
   }
@@ -192,9 +211,9 @@ fetch("/portal/setup.json",{cache:"no-store"}).then(function(r){return r.ok?r.js
     fetch(gw("/healthz")).then(function(r){return r.json();}).then(function(j){
       var on = j && j.status==="ok", s = document.getElementById("secstatus");
       s.innerHTML = '<span class="pill" style="color:'+(on?'var(--green)':'var(--mut)')+';border-color:'+(on?'var(--green)':'var(--line)')+'">'
-        + (on ? '🛡️ Security: '+(j.mode||'enforcing')+' — every AI call is guarded' : '🛡️ Security: starting…') + '</span>';
+        + (on ? 'Security: '+(j.mode||'enforcing')+' — every AI call is guarded' : 'Security: starting…') + '</span>';
     }).catch(function(){
-      var s=document.getElementById("secstatus"); if(s) s.innerHTML='<span class="pill" style="color:var(--mut);border-color:var(--line)">🛡️ Security: starting…</span>';
+      var s=document.getElementById("secstatus"); if(s) s.innerHTML='<span class="pill" style="color:var(--mut);border-color:var(--line)">Security: starting…</span>';
     });
     // live model list (reflects enabled provider plugins through the gateway)
     fetch(gw("/v1/models")).then(function(r){
@@ -222,14 +241,14 @@ fetch("/portal/setup.json",{cache:"no-store"}).then(function(r){return r.ok?r.js
       items.forEach(function(f){
         var url = f.path ? f.path : (f.port && !SEC && !TS ? "http://"+H+":"+f.port+"/" : "");
         var el = document.createElement("div"); el.className="fcard"; el.id="f-"+f.id;
-        el.innerHTML = '<div class="t">'+(f.port&&url?'<span class="dot off" data-url="'+esc(url)+'"></span>':'')+'<span class="emoji">'+f.emoji+'</span> '+esc(f.name)
+        el.innerHTML = '<div class="t">'+(f.port&&url?'<span class="dot off" data-url="'+esc(url)+'"></span>':'')+icon(f.icon)+' '+esc(f.name)
           +' <span class="lt '+f.light+'">'+LT[f.light]+'</span></div><div class="d">'+esc(f.what)+'</div><div class="row">'
           +(url?'<a class="btn" href="'+esc(url)+'" target="_blank" rel="noopener">Open →</a>':'')
           +'<button type="button" title="Copy this command">'+esc(f.cmd)+'</button>'
           +'<a class="btn" href="'+esc(f.guide)+'" target="_blank" rel="noopener">Guide</a></div>';
         el.querySelector("button").addEventListener("click", function(ev){
           var b = ev.currentTarget, t = f.cmd;
-          (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function(){ b.textContent="copied ✓ "+t; }, function(){ b.textContent=t; });
+          (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function(){ b.textContent="Copied: "+t; }, function(){ b.textContent=t; });
         });
         grid.appendChild(el);
         if(f.port && url) ALL.push({t:f.name, url:url, core:false});

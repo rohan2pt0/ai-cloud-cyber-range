@@ -9,6 +9,19 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **Crown jewels** (doc 84): `./securax jewels` ranks what the estate cannot lose from live checks. Each jewel shows DO NOW / THIS WEEK / WATCH and the one command that fixes it, and the cockpit lights the first one.
+- **The crisis and continuity plan** (doc 84): `./securax continuity` lists nine scenarios with their RTO and RPO targets.
+  - **Measured:** RPO comes from the real backups and code bundle; RTO comes from timed drills.
+  - **Commands:** `show` gives the steps, `drill` runs a safe drill, `mirror` copies the code off GitHub.
+- **GitHub-independence:** a nightly verified git bundle of every branch, in the backup and off-site folders, plus pushes to `MIRROR_REMOTES`. A monthly drill proves the code rebuilds without GitHub.
+- **Password manager:** `./securax start passwords` runs Vaultwarden 1.37.4 for the Bitwarden apps; `./securax passwords lock` closes sign-ups. It is in every backup.
+- **`./securax cloud login aws|gcp|azure`:** the official CLIs in pinned containers, with device-code sign-in; nothing to install.
+- **`./securax names`:** professional `https://hub.securax.localhost` addresses in one guided step.
+- **Life OS Inbox:**
+  - **Capture and decide:** every note becomes an action with a next step and a date, or stays a note.
+  - **Reviews:** any ritual (Red-Team Your Life included) runs step by step, and its findings become dated actions.
+  - **Google Keep:** `./securax lifeos import keep` brings Keep notes in from Google Takeout.
+- **SEO basics on the product site:** canonical address, structured data, `robots.txt` and `sitemap.xml`.
 - **One list of features, written everywhere** (doc 65):
   - **Source:** `features.json` holds what SecuRAX can do, in plain words.
   - **Generated surfaces:** `tools/features_sync.py` writes it into the Command Center ("Everything SecuRAX can do"), the website's estate section, the docs home page, the README and `./securax features`.
@@ -177,6 +190,10 @@ for the versioning and release policy.
   - **Visibility:** remaining allowance in the response headers, a cockpit lamp, and spend that survives a gateway restart.
 
 ### Fixed
+- **The TLS CA key was in no backup.** Backups now carry it, and `restore` brings it back.
+- **Backups ran weekly.** They now run nightly (`daily-backup`), so a lost laptop costs at most a day.
+- **`update` blamed "local changes" when GitHub was unreachable.** It now says so and points to the GitHub-down steps.
+- **No decorative emoji in the Command Center or the Life OS tab bar:** line icons and plain words instead.
 - **A confidential agency's name is gone from the repository.** The CII pack, doc 67 and every mention use neutral wording, and the importer maps a workbook's column title to the neutral name. Old commits still contain it (doc 65).
 - **Hand-kept counts that had drifted:**
   - **Website:** "736 tests, 41 journeys"; now generated.
