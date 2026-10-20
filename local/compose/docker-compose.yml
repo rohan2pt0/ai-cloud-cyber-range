@@ -63,6 +63,7 @@ services:
       OIDC_AUDIENCE: ${OIDC_AUDIENCE:-}
       OIDC_JWKS_URL: ${OIDC_JWKS_URL:-}
       OIDC_JWKS_JSON: ${OIDC_JWKS_JSON:-}
+      AUTH_DEFAULT_ROLES: ${AUTH_DEFAULT_ROLES:-}     # e.g. user: a verified sign-in with no roles may chat (doc 86); never admin
       AUTH_ROLES_CLAIM: ${AUTH_ROLES_CLAIM:-roles}
       AUTH_ROLE_MAP: ${AUTH_ROLE_MAP:-}
       AUTH_MFA_ROLES: ${AUTH_MFA_ROLES:-admin,auditor}
@@ -233,6 +234,9 @@ services:
       OPENAI_API_BASE_URL: http://gateway:8080/v1
       OPENAI_API_KEY: ${WEBUI_GATEWAY_KEY:-${LITELLM_MASTER_KEY:-sk-range-dev}}   # a gateway service key once `gateway-auth enable` is on
       WEBUI_AUTH: "true"            # local account; stays on your machine
+      # Online (doc 85): sign in to Chat with the same Cloudflare Access sign-in. Set only by `./securax online setup`, which also binds
+      # every port to 127.0.0.1, so this header can come only through the tunnel. Empty = off.
+      WEBUI_AUTH_TRUSTED_EMAIL_HEADER: ${OWUI_TRUSTED_EMAIL_HEADER:-}
       ENABLE_OLLAMA_API: "false"    # force traffic through the gateway, not raw Ollama
       # Default new chats to the FREE/sovereign path (Gemini free-tier -> local fallback), never a
       # paid provider. Pick another model from the dropdown any time; this is just the safe default.
@@ -304,6 +308,23 @@ services:
     networks: [edge]
     logging: *default-logging
 
+  # Online (doc 85, ./securax online setup): an outbound-only Cloudflare Tunnel to hub.<domain> and chat.<domain>, behind Cloudflare
+  # Access (your sign-in). No port is published and nothing listens on the internet; it starts only when CF_TUNNEL_TOKEN is set.
+  cloudflared:
+    image: cloudflare/cloudflared:2026.10.0
+    mem_limit: 128m
+    cpus: 0.25
+    profiles: ["online"]
+    restart: unless-stopped
+    command: ["tunnel", "--no-autoupdate", "run"]
+    environment:
+      TUNNEL_TOKEN: ${CF_TUNNEL_TOKEN:-}
+    read_only: true
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    networks: [edge]
+    logging: *default-logging
+
   # Automation engine (the "glue"): morning brief, email triage, data-tier router, etc.
   # Call the gateway at http://gateway:8080/v1/chat/completions from any workflow.
   n8n:
@@ -345,6 +366,14 @@ services:
       # so it is never an open store and never blocks the rest of the stack from coming up.
       SYNC_TOKENS: ${SYNC_TOKENS:-}
       SYNC_DB_PATH: /data/estate-sync.db
+      # Online (doc 85): a device signed in through Cloudflare Access syncs with no token; the signed token is checked here.
+      SYNC_ACCESS_TEAM: ${SYNC_ACCESS_TEAM:-}
+      SYNC_ACCESS_AUD: ${SYNC_ACCESS_AUD:-}
+      SYNC_ACCESS_EMAILS: ${SYNC_ACCESS_EMAILS:-}
+      # Many nodes (doc 86, ./securax nodes): the other machines this one keeps the same data with
+      SYNC_PEERS: ${SYNC_PEERS:-}
+      SYNC_PEER_INTERVAL: ${SYNC_PEER_INTERVAL:-30}
+      SYNC_NODE_NAME: ${SYNC_NODE_NAME:-}
     volumes: ["estatesync:/data"]
     ports: ["${SYNC_BIND:-127.0.0.1}:8089:8089"]
     networks: [edge]

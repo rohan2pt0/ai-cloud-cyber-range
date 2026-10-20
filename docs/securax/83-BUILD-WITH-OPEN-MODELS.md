@@ -74,11 +74,12 @@ What closes the remaining gap here is not the model alone. It is the gates:
 |---|---|---|
 | An agent that edits, runs tests and fixes | OpenCode (and Aider in `autobuild`) through the gateway | ✅ |
 | The repository's rules in every session | OpenCode reads AGENTS.md; the config adds BUILD-CONTRACT.md and LESSONS.md | ✅ |
+| Knowing which files a task touches, and which checks prove it | `./securax brief "the task"`: the likely files with their purpose, the lessons that apply and the checks; `autobuild` and `build` send it in place of the bare task (doc 85) | ✅ |
 | A strong model for the hard parts | The strong chain, picked by `route` and `autobuild` | ✅ |
 | A review before merging | `./securax review` | ✅ |
 | Proof before a commit | `verify`, `diffcheck`, `forge` (they are stricter than a chat assistant) | ✅ |
 | Watching a pull request and fixing CI by itself | Not yet: you read CI on GitHub and paste the failure into OpenCode | 🔴 dated below |
-| Cloud sessions you can leave running | Not yet: OpenCode runs on your laptop | 🔴 dated below |
+| Cloud sessions you can leave running | Not yet: OpenCode runs on your laptop, or on your always-on server (doc 85) over SSH | 🔴 dated below |
 
 ## 6. Data: what may go to these models
 

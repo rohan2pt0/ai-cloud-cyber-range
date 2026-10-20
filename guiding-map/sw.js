@@ -9,6 +9,7 @@ const SHELL = [
   "./hub.html",
   "./features.js",
   "./manifest.json",
+  "./hub.webmanifest",
   "./icon-192.png",
   "./icon-512.png"
 ];
@@ -91,7 +92,7 @@ self.addEventListener("fetch", e => {
 });
 
 
-// ---- Web Push (sent by the companion Cloudflare Worker, see push-worker.js) ----
+// ---- Web Push (sent by a Web Push sender you run yourself; the estate's own nudges go through ntfy) ----
 self.addEventListener("push", e => {
   let d = { title: "The Guiding Map", body: "Time for your check-in." };
   try { if (e.data) d = Object.assign(d, e.data.json()); } catch (err) {}

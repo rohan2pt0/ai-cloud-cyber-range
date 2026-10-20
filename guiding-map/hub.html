@@ -4,6 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SecuRAX — Command Center</title>
+<link rel="manifest" href="hub.webmanifest">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#0b1220">
 <style>
   :root{--bg:#0b1220;--card:#121c2e;--ink:#e8eefb;--mut:#9fb0cc;--line:#223049;--accent:#5b8cff;--green:#30d158;--red:#ff453a;--amber:#ffd60a;--gold:#e8b23a}
   @media (prefers-color-scheme:light){:root{--bg:#f4f7fb;--card:#fff;--ink:#0e1726;--mut:#5a6b86;--line:#e3e9f2;--accent:#2563eb}}
@@ -135,13 +139,17 @@ fetch("/portal/setup.json",{cache:"no-store"}).then(function(r){return r.ok?r.js
   // Chat is the same name on :10000, the gateway rides this origin (/v1, /healthz, /version), and Docs/Automation are not published.
   var TS = /\.ts\.net$/i.test(H);
   var SEC = location.protocol === "https:" && !TS;
-  var DOM = (H.indexOf("hub.") === 0) ? H.slice(4) : "securax.localhost";
+  var HM = /^(beta-)?hub\.(.+)$/i.exec(H);                         // hub.<domain>, or beta-hub.<domain> for the beta address (doc 86)
+  var PRE = HM && HM[1] ? "beta-" : "", DOM = HM ? HM[2] : "securax.localhost";
+  // Online (doc 85: hub.<your domain> behind your sign-in): only hub. and chat. exist, so the gateway rides this origin (/v1, /healthz).
+  var ONLINE = SEC && !/\.localhost$/i.test(DOM);
   var TSPORT = {hub:"", chat:":10000"};
   function web(name, plain){
     if(TS) return (name in TSPORT) ? "https://"+H+TSPORT[name]+"/" : "";
-    return SEC ? "https://"+name+"."+DOM+"/" : "http://"+H+":"+plain+"/";
+    if(ONLINE && name !== "hub" && name !== "chat") return "";      // online, only these two are published (doc 85)
+    return SEC ? "https://"+PRE+name+"."+DOM+"/" : "http://"+H+":"+plain+"/";
   }
-  function gw(path){ return (TS ? "" : SEC ? "https://api."+DOM : "http://"+H+":8080") + path; }
+  function gw(path){ return (TS || ONLINE ? "" : SEC ? "https://api."+DOM : "http://"+H+":8080") + path; }
   // Line icons drawn for SecuRAX (24 px grid, stroke = the text colour): one consistent, quiet style instead of emoji.
   var ICONS = {
     compass:'<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>', chat:'<path d="M4 5h16v11H9l-5 4z"/>',
@@ -157,7 +165,7 @@ fetch("/portal/setup.json",{cache:"no-store"}).then(function(r){return r.ok?r.js
     undo:'<path d="M9 7H4V2"/><path d="M4 7a9 9 0 1 1-1 6"/>', lock:'<path d="M6 11h12v9H6z"/><path d="M8 11V8a4 4 0 0 1 8 0v3"/>',
     disk:'<path d="M3 13l3-8h12l3 8v6H3z"/><path d="M3 13h18M17 16h.01"/>', pulse:'<path d="M3 12h4l2-5 4 10 2-5h6"/>',
     book:'<path d="M5 4h6a2 2 0 0 1 2 2v14a2 2 0 0 0-2-2H5zM19 4h-4a2 2 0 0 0-2 2v14a2 2 0 0 1 2-2h4z"/>',
-    gem:'<path d="M6 4h12l3 5-9 11L3 9z"/><path d="M3 9h18M9 4l3 16 3-16"/>', lifebuoy:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M5.6 5.6l3.6 3.6M14.8 14.8l3.6 3.6M18.4 5.6l-3.6 3.6M9.2 14.8l-3.6 3.6"/>',
+    gem:'<path d="M6 4h12l3 5-9 11L3 9z"/><path d="M3 9h18M9 4l3 16 3-16"/>', devices:'<path d="M3 5h13v9H3zM1 17h13"/><path d="M17 9h5v11h-5zM19 18h1"/>', lifebuoy:'<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M5.6 5.6l3.6 3.6M14.8 14.8l3.6 3.6M18.4 5.6l-3.6 3.6M9.2 14.8l-3.6 3.6"/>',
     key:'<circle cx="8" cy="15" r="4"/><path d="M11 12l9-9M17 6l3 3M14 9l2 2"/>', cloud:'<path d="M7 18a4 4 0 0 1-.5-8A6 6 0 0 1 18 9a4.5 4.5 0 0 1 0 9z"/>'
   };
   function icon(n){ return '<svg class="ico" viewBox="0 0 24 24" aria-hidden="true">'+(ICONS[n]||ICONS.grid)+'</svg>'; }
@@ -260,6 +268,11 @@ fetch("/portal/setup.json",{cache:"no-store"}).then(function(r){return r.ok?r.js
   // show the detected host in the LAN hint
   if(/\.ts\.net$/i.test(location.hostname)) document.getElementById("lanurl").textContent="https://"+location.hostname;
 })();
+// Installable on its own (Add to Home Screen / Install app): it needs the app's service worker. The Life OS registers a versioned
+// one for the same folder; here we only register when there is none yet, so the two pages never swap it back and forth.
+if("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")){
+  navigator.serviceWorker.getRegistration("./").then(function(r){ if(!r) navigator.serviceWorker.register("sw.js"); }).catch(function(){});
+}
 </script>
 </body>
 </html>

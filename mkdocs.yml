@@ -99,6 +99,8 @@ nav:
       - Go back to a working version: securax/82-GO-BACK-TO-A-WORKING-VERSION.md
       - Build with open models: securax/83-BUILD-WITH-OPEN-MODELS.md
       - Crown jewels, crisis plan, foundation: securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION.md
+      - Use SecuRAX on every device: securax/85-USE-SECURAX-ANYWHERE.md
+      - Many machines, and the road to scale: securax/86-MANY-NODES-AND-THE-ROAD-TO-SCALE.md
   - How-to guides:
       - AI providers and plugins: securax/22-PLUGINS-AND-PROVIDERS.md
       - Integrations: securax/07-INTEGRATIONS.md

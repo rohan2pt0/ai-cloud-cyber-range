@@ -10,6 +10,8 @@ authentication, WITHOUT assuming which regulator, which identity provider, or wh
   OIDC_ISSUER / OIDC_AUDIENCE / OIDC_JWKS_URL | OIDC_JWKS_FILE | OIDC_JWKS_JSON   how to verify tokens (RS256; HS256 only with OIDC_HS256_SECRET)
   AUTH_ROLES_CLAIM     dotted path to the roles in the token (default `roles`; Keycloak realm roles: `realm_access.roles`)
   AUTH_ROLE_MAP        {"idp-role": "securax-role"} - securax roles are user, analyst, auditor, admin, service
+  AUTH_DEFAULT_ROLES   roles for a VERIFIED token that carries none (e.g. `user` for a Cloudflare Access sign-in, doc 86); never admin
+                       or auditor: a privileged role must come from the identity provider, with MFA
   AUTH_MFA_ROLES       roles that must have authenticated with MFA (default admin,auditor); proven by the token's `amr`/`acr`
   AUTH_MAX_FAILURES / AUTH_FAILURE_WINDOW_S / AUTH_LOCKOUT_S     lock-out after repeated failures (default 5 / 300 s / 900 s)
   GATEWAY_API_KEYS     (or GATEWAY_API_KEYS_B64, the same base64-encoded) JSON list of {"id","sha256","roles","expires"?,"data_class"?}; only HASHES are stored (see governance/gateway_auth.py)
@@ -110,6 +112,7 @@ class Config:
     lockout_s: int = 900
     api_keys: list = field(default_factory=list)
     data_class_claim: str = "data_class"
+    default_roles: tuple = ()
 
     @classmethod
     def from_env(cls, env=None) -> Config:
@@ -125,6 +128,11 @@ class Config:
                 jwks_url=env.get("OIDC_JWKS_URL", ""), data_class_claim=env.get("AUTH_DATA_CLASS_CLAIM", "data_class"),
                 leeway_s=int(env.get("AUTH_LEEWAY_S", "60")), max_failures=int(env.get("AUTH_MAX_FAILURES", "5")),
                 failure_window_s=int(env.get("AUTH_FAILURE_WINDOW_S", "300")), lockout_s=int(env.get("AUTH_LOCKOUT_S", "900")))
+        if env.get("AUTH_DEFAULT_ROLES"):
+            want = {r.strip() for r in env["AUTH_DEFAULT_ROLES"].split(",") if r.strip()}
+            if not want <= set(ROLES) or want & {"admin", "auditor"}:
+                raise ValueError("AUTH_DEFAULT_ROLES may name only user, analyst or service (privileged roles come from the identity provider)")
+            c.default_roles = tuple(sorted(want))
         if env.get("AUTH_ROLE_MAP"):
             c.role_map = json.loads(env["AUTH_ROLE_MAP"])
         if env.get("AUTH_MFA_ROLES") is not None:
@@ -195,7 +203,7 @@ def verify_jwt(token: str, cfg: Config, now: float | None = None) -> Identity:
         raise AuthError(401, "no_subject", "token has no subject")
     raw_roles = _dig(claims, cfg.roles_claim)
     raw_roles = raw_roles if isinstance(raw_roles, list) else ([raw_roles] if isinstance(raw_roles, str) else [])
-    roles = tuple(sorted({cfg.role_map.get(r, r) for r in raw_roles if isinstance(r, str)} & set(ROLES)))
+    roles = tuple(sorted({cfg.role_map.get(r, r) for r in raw_roles if isinstance(r, str)} & set(ROLES))) or cfg.default_roles
     amr = claims.get("amr") if isinstance(claims.get("amr"), list) else []
     mfa = bool(set(amr) & cfg.mfa_amr) or (bool(cfg.mfa_acr) and claims.get("acr") in cfg.mfa_acr)
     dc = claims.get(cfg.data_class_claim)

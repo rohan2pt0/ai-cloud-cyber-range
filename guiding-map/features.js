@@ -306,6 +306,45 @@ window.SECURAX_FEATURES = {
    "service": false,
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION/"
+  },
+  {
+   "id": "online",
+   "group": "Your own tools",
+   "icon": "devices",
+   "name": "SecuRAX on every device",
+   "what": "Your own address on any phone, tablet or computer: sign in with Google and everything is there, synced, with the laptop off. One command sets it up.",
+   "cmd": "./securax online setup",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "light": "amber",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/85-USE-SECURAX-ANYWHERE/"
+  },
+  {
+   "id": "nodes",
+   "group": "Keep it running",
+   "icon": "loop",
+   "name": "Many machines, one SecuRAX",
+   "what": "Run it on the laptop, a VPS, a Mac mini or any cloud at once: every machine holds the same data, and any one of them can stop.",
+   "cmd": "./securax nodes",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "light": "amber",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/86-MANY-NODES-AND-THE-ROAD-TO-SCALE/"
+  },
+  {
+   "id": "channel",
+   "group": "Keep it running",
+   "icon": "undo",
+   "name": "Stable and beta versions",
+   "what": "Keep the version you rely on (stable) while a new one is tried (beta), on its own address; switching is safe and never goes back.",
+   "cmd": "./securax channel",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "light": "amber",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/86-MANY-NODES-AND-THE-ROAD-TO-SCALE/"
   }
  ]
 };
