@@ -11,7 +11,7 @@
 <meta property="og:url" content="https://{{SITE_DOMAIN}}/">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <style>
-:root{--navy:#0b1b33;--navy2:#13294b;--ink:#0f1c33;--text:#2b3a55;--muted:#5b6b86;--line:#e3e8f0;--bg:#f6f8fb;--card:#fff;--gold:#e8b84a;--gold2:#b98a1f;--green:#15803d;--amber:#b45309;--red:#b91c1c;--radius:16px}
+:root{--navy:#0b1b33;--navy2:#13294b;--ink:#0f1c33;--text:#2b3a55;--muted:#5b6b86;--line:#e3e8f0;--bg:#f6f8fb;--card:#fff;--gold:#e8b84a;--gold2:#8a6514;--green:#13723a;--amber:#b45309;--red:#b91c1c;--radius:16px}
 *{box-sizing:border-box;margin:0;padding:0}
 html{scroll-behavior:smooth}
 body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Inter,Arial,sans-serif;color:var(--text);background:var(--bg);line-height:1.6;font-size:16px;-webkit-font-smoothing:antialiased}
@@ -40,11 +40,11 @@ header.nav{background:rgba(11,27,51,.96);backdrop-filter:saturate(1.4) blur(8px)
 .btn-line{border-color:var(--navy);color:var(--navy)}
 .hero{background:radial-gradient(900px 520px at 80% 0,#2a5596 0,transparent 62%),linear-gradient(165deg,var(--navy) 0,var(--navy2) 100%);color:#fff;padding:76px 0 0;overflow:hidden}
 .hero .wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:end}
-.eyebrow{display:inline-block;font-size:13px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:var(--gold);margin-bottom:16px}
+.eyebrow{display:inline-block;font-size:13px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:#f2c75c;margin-bottom:16px}
 h1{font-size:clamp(36px,5.4vw,60px);line-height:1.04;letter-spacing:-1.2px;margin-bottom:20px}
 .hero p.lead{font-size:19.5px;color:#d5dfee;max-width:600px;margin-bottom:28px}
 .cta{display:flex;gap:12px;flex-wrap:wrap}
-.micro{font-size:14px;color:#a9b9d3;margin-top:16px;padding-bottom:72px}
+.micro{font-size:14px;color:#c8d4e6;margin-top:16px;padding-bottom:72px}
 .hero-visual{position:relative;display:flex;justify-content:center;padding-top:10px}
 .phone{width:300px;border-radius:38px;background:#05101f;padding:10px;box-shadow:0 30px 80px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.12);margin-bottom:-60px}
 .phone .screen{border-radius:30px;overflow:hidden;height:600px}
@@ -281,11 +281,30 @@ footer a:hover{color:#fff}
   </div>
 </section>
 
+<!-- features:start -->
+<section class="alt" id="estate">
+  <div class="wrap center">
+    <span class="kicker">The whole estate</span>
+    <h2>More than a gateway.</h2>
+    <p class="sub">The gateway is one of <!-- fact:features -->18<!-- /fact --> things SecuRAX does. These are the ones people use most.</p>
+  </div>
+  <div class="wrap grid3">
+    <div class="card"><h3>🎯 Cyber range</h3><p>Practise defending real-looking systems against a live red team, with scoring, judging and MITRE ATT&amp;CK, D3FEND and ATLAS learning paths.</p><span class="light l-a">Partly built</span></div>
+    <div class="card"><h3>🚨 Crisis response kit</h3><p>Step into an incident: collect evidence properly, find what is wrong, and draft the reports.</p><span class="light l-a">Partly built</span></div>
+    <div class="card"><h3>🏛️ BFSI control matrix</h3><p>Every Indian BFSI cyber obligation as one matrix: what applies to you, what is proven, and what to close next. Works with no file from you.</p><span class="light l-g">Built and proven</span></div>
+    <div class="card"><h3>⏱️ Regulator incident clock</h3><p>Every applicable regulator&#x27;s reporting deadline for an incident, counting down, with the drafts ready.</p><span class="light l-g">Built and proven</span></div>
+    <div class="card"><h3>🛡️ AI security gateway</h3><p>Every AI call is checked: personal data masked, prompt injection blocked, data kept in India when it must be, and every call logged.</p><span class="light l-g">Built and proven</span></div>
+    <div class="card"><h3>🛠️ Build with open models</h3><p>Write and fix code with strong open models through the gateway, so no single AI subscription or its limits can stop the work.</p><span class="light l-a">Partly built</span></div>
+    <div class="card"><h3>⏪ Go back to a working version</h3><p>Something broke? One command takes you back to the last version that worked; your edits and data are kept.</p><span class="light l-g">Built and proven</span></div>
+  </div>
+</section>
+<!-- features:end -->
+
 <div class="proof" aria-label="Proof points">
   <div class="wrap">
-    <div><b>736</b><span>automated tests on every change</span></div>
-    <div><b>41</b><span>end-to-end journeys that run the real product in CI</span></div>
-    <div><b>6</b><span>regulatory and security frameworks mapped to evidence</span></div>
+    <div><b><!-- fact:tests -->750+<!-- /fact --></b><span>automated tests on every change</span></div>
+    <div><b><!-- fact:journeys -->44<!-- /fact --></b><span>end-to-end journeys that run the real product in CI</span></div>
+    <div><b><!-- fact:frameworks -->6<!-- /fact --></b><span>regulatory and security frameworks mapped to evidence</span></div>
     <div><b>&lt;1 s</b><span>from a cold start to the first blocked attack; ~4 ms per check, measured on every build</span></div>
   </div>
 </div>

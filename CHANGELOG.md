@@ -9,6 +9,65 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **One list of features, written everywhere** (doc 65):
+  - **Source:** `features.json` holds what SecuRAX can do, in plain words.
+  - **Generated surfaces:** `tools/features_sync.py` writes it into the Command Center ("Everything SecuRAX can do"), the website's estate section, the docs home page, the README and `./securax features`.
+  - **Facts:** counts on a page (tests, journeys, mapped frameworks) are now generated from the code.
+  - **New fitness checks:** `features-current`, and `commands-in-help` (every command is in `./securax help`).
+- **`./securax exercise` on its own opens the cyber range** (doc 79): it makes a practice exercise the first time, opens the portal in your browser and says which token to use. It is also a card in the Command Center.
+- **The BFSI control matrix works with no file** (doc 66):
+  - **Starter library:** built in, public, written in plain words: 67 controls plus the packs', 20 domains, 8 entity kinds.
+  - **Your own workbook:** saved in Downloads, it replaces the starter by itself and stays private.
+  - **Command Center:** has a BFSI controls card.
+- **Build with open models** (doc 83):
+  - **Strong chain:** DeepSeek V4 Pro, Kimi K3 and GLM 5.3 on the OpenCode Go key, ending at the local model.
+  - **Router:** the `strong` tier, which was `claude`; `autobuild` builds hard work with the strong chain through the same gates.
+  - **OpenCode:** `./securax opencode --strong`; it now loads BUILD-CONTRACT.md and LESSONS.md.
+  - **Review:** `./securax review`, a second look from the strong chain that refuses vault/ and .env.
+  - **`ai share`:** counts work done with the open models.
+- **`./securax privacy`:** names that must never appear in this public repository, stored as fingerprints only; the fitness check `private-names` enforces it.
+- **`./securax rollback`: go back to a working version at any time** (doc 82):
+  - **Known-good record:** every healthy `up` or `update` is recorded (commit, version, newest backup) and pinned in git; the newest 50 are kept.
+  - **Safe switch:** unsaved edits are stashed, data is backed up, the version left is pinned, and a version that does not start sends you back automatically.
+  - **Options:** `--list`, a number, commit or tag, `--with-data`, `--latest`, `--status`, `--check`; plus `./securax ready`.
+  - **Proof:** unit tests, the `rollback_anytime` sandbox journey and a weekly `rollback-check` routine.
+- **Exercise range: learning with MITRE ATT&CK, D3FEND and ATLAS** (doc 81):
+  - **Tagging:** tasks, red-team attack reports and blue-team incident reports carry framework identifiers. Each is checked against a catalogue built from MITRE's own data and linked to MITRE's page.
+  - **Coverage screen:** for each tactic, what was met, detected and defended. The after-action report carries the same table.
+  - **Learning paths:** six of them, with practice pointers and the certifications whose published syllabus covers each skill area. No exam content.
+  - **Players:** personal tokens, XP only from judged work, levels and badges.
+  - **AI-defence task:** a new task tagged with ATLAS.
+  - **Market comparison:** how the range compares with commercial ranges and training platforms.
+- **Exercise range: rules of engagement, checked every round** (doc 79):
+  - **Ping:** every machine gets the HOST check, so blocking ping scores as down.
+  - **Green-team account:** it must keep logging in by key with admin rights. A breach costs −5 per host per round until fixed.
+  - **Rules screen:** shows the rules and the live rule checks.
+- **Exercise range: a timed team plan** with owner, window, done/blocked/overdue state and check-ins.
+- **`./securax storage --auto`** and a 6-hourly `storage-guard` routine (doc 80):
+  - **Cleans:** folds old exercise data into totals, removes unused old versions of images SecuRAX built, and runs the safe clean-ups when space is tight.
+  - **Alerts:** your phone, only when the disk is still short afterwards.
+  - **Never touches:** volumes, backups or third-party images.
+- **Doc 80:** the storage plan:
+  - what bounds every source of growth
+  - hot/warm/cold tiers, with SeaweedFS as object storage that scales out
+  - indicative cold-tier prices
+  - dated next steps
+- **AGENTS.md §6:** a standing rule for handling the owner's documents (private, diagnose first, 80/20, nothing broken, growth bounded, recorded).
+- **`./securax exercise`: a live-fire cyber defence exercise range** (doc 79), stage 1:
+  - **Scenarios:** one JSON scenario serves any team number, and a broken scenario is refused.
+  - **Scoring:** a scoring bot checks every service from inside each zone, and simulated staff log in with the passwords the blue team documented.
+  - **Red-team bot:** it punishes unchanged default passwords, but only in the attack phase.
+  - **The portal** (blue, white and red roles):
+    - mission board
+    - incident and six-part situation reports
+    - judging, which sees the red team's claims
+    - scoring log and timeline
+    - target checks and per-zone awareness
+    - news injects
+    - password changes and restores
+  - **Score log:** hash-chained, so edits are caught.
+  - **Lite range:** isolated Docker networks with one jump-box door on 127.0.0.1:2222.
+  - **Verified:** in real Docker and a real browser.
 - **`./securax respond`: a crisis response kit** for your estate or another organisation (doc 78):
   - **Permission first:** who authorised the work, and the scope.
   - **The USB kit:** Windows and Unix collectors that follow the order of volatility, write only to the USB and hash everything; a read-me card; a custody form.
@@ -118,6 +177,15 @@ for the versioning and release policy.
   - **Visibility:** remaining allowance in the response headers, a cockpit lamp, and spend that survives a gateway restart.
 
 ### Fixed
+- **A confidential agency's name is gone from the repository.** The CII pack, doc 67 and every mention use neutral wording, and the importer maps a workbook's column title to the neutral name. Old commits still contain it (doc 65).
+- **Hand-kept counts that had drifted:**
+  - **Website:** "736 tests, 41 journeys"; now generated.
+  - **Docs 28, 54, 68 and the explainer:** their counts are generated too.
+  - **Doc 79:** "30 checks in the sample"; it now gives no fixed count.
+- **The help text** now lists every command (it missed `exercise`, `respond`, `findings`, `repairs`, `ai`, `ready` and others), and separates the AD lab (`range`) from the cyber range (`exercise`).
+- **Doc 15** pointed IDE agents at LiteLLM directly (port 4000), around the gateway's guardrails; it now points at the gateway.
+- **The local model's context window:** OpenCode assumed 32K. Ollama's context length is now set (16K by default), and OpenCode reads the same number.
+- **Trivy:** the range gamebox image now has a health check; its by-design root user is an accepted finding scoped to that one file (`.trivyignore.yaml`, read through `trivy.yaml`).
 - **`./securax restore` no longer leaves a secrets file that git would pick up.** It keeps the previous `.env` as `local/compose/.env.pre-restore`, which is now git-ignored. Before, the checkout stayed dirty, so `update` could not roll back safely, and the file could have been committed.
 - **Sandbox:** the CCSP and RBI-map tamper journeys put back the files they edit, so later journeys no longer start from a dirty checkout.
 - **`./securax controls import FILE.xlsx` crashed with a traceback** when typed as shown in the cockpit hint.
@@ -154,12 +222,12 @@ for the versioning and release policy.
   - **Private:** the register stays in `vault/risks/`.
   - **Links:** each risk is linked to the library controls that treat it. The navigator's heat map plots open risks when controls are unscored, and the vital few rank controls by your highest open risk.
   - **Overdue treatments** light a lamp in the navigator and, only when there are any, in the cockpit.
-  - **`cii`:** the four NCIIPC impact tests, recorded as a self-check.
+  - **`cii`:** the four the national CII agency impact tests, recorded as a self-check.
 - **NSCS Audit Baseline pack:** all 68 markers (csm/pro/det/res/rec/imp) are linked to library controls, with the three risk profiles recorded. `pro.19` becomes control AS-101 (change control).
-- **NCIIPC CII pack:** the evaluation framework's five phases and the identification guidelines are linked to library controls. Both packs carry references only, never the documents' text.
+- **national CII pack:** the evaluation framework's five phases and the identification guidelines are linked to library controls. Both packs carry references only, never the documents' text.
 - **Professional names with phones:** the HTTPS edge gets two loopback-only device ports (9443 app with same-origin `/v1`, `/sync`; 9444 Chat) for `tailscale serve`. `go` and `phones` use them, so `https://hub.securax.localhost` on the laptop and the ts.net names on phones work at the same time; `go` no longer asks you to switch the edge off.
 - **BFSI control library and navigator** (doc 66), `./securax controls import | profile | dominance | navigator | gaps`:
-  - **Import:** the gap-assessment workbook (202 controls, 20 domains, 22 regulated-entity classes, RBI/SEBI/IRDAI/IFSCA/NPCI/NCIIPC/CERT-In/DPDP citations) is read with a standard-library .xlsx reader into a private `vault/controls/library.json`. Your yellow-cell scores come with it; author metadata is never read.
+  - **Import:** the gap-assessment workbook (202 controls, 20 domains, 22 regulated-entity classes, RBI/SEBI/IRDAI/IFSCA/NPCI/CII/CERT-In/DPDP citations) is read with a standard-library .xlsx reader into a private `vault/controls/library.json`. Your yellow-cell scores come with it; author metadata is never read.
   - **Ceiling profile:** the strictest requirement per control across every class, so meeting it meets them all. `dominance` shows that SCB/PSB alone misses AUD-002/AUD-006 for NBFC-UL, AIFI, IFSC IBU, MII and brokers, and AUD-003 for insurers.
   - **Packs** in `governance/controls/packs/` add new regulations or citations without code.
   - **SecuRAX map:** `governance/controls/securax-map.json` covers 53 controls, each proven or partly proven with real evidence files (CI checks they exist).

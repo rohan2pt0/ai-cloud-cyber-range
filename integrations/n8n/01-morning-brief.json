@@ -13,7 +13,7 @@
     },
     {
       "parameters": {
-        "jsCode": "// Compose the brief prompt. Swap this for an RSS Read node (CERT-In, NCIIPC,\n// The Hacker News) when you want live feeds; the summariser stays the same.\nconst prompt = `You are a BFSI security analyst in India. In 5 bullets, summarise today\\'s most relevant cyber and AI-security developments for an Indian bank CISO. Add one \\\"action for today\\\". Keep it under 150 words.`;\nreturn [{ json: { prompt } }];"
+        "jsCode": "// Compose the brief prompt. Swap this for an RSS Read node (CERT-In, sector CSIRTs,\n// The Hacker News) when you want live feeds; the summariser stays the same.\nconst prompt = `You are a BFSI security analyst in India. In 5 bullets, summarise today\\'s most relevant cyber and AI-security developments for an Indian bank CISO. Add one \\\"action for today\\\". Keep it under 150 words.`;\nreturn [{ json: { prompt } }];"
       },
       "id": "compose",
       "name": "Compose brief prompt",

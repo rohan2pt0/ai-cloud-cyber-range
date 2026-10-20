@@ -52,11 +52,11 @@ def items(b: dict[str, str] | None = None) -> list[dict]:
     owner, _, repo = (b.get("REPO_SLUG") or "owner/repo").partition("/")
     pages = f"https://{owner}.github.io/{repo}/"
     return [
-        {"id": "control-library", "title": "Import the BFSI control library", "gives": "the control navigator, the heat map and the vital-few list",
-         "check": lambda: (ROOT / "vault" / "controls" / "library.json").exists(),
-         "steps": ["Save the gap-assessment workbook (.xlsx) in your Downloads folder (Windows or Ubuntu).",
-                   "Run  ./securax go  : it finds the workbook and imports it. No file name to type.",
-                   "Open the Command Center → Controls."]},
+        {"id": "control-library", "title": "See the BFSI control matrix", "gives": "the control navigator, the heat map and the vital-few list",
+         "check": lambda: (ROOT / "portal" / "navigator.html").exists(),
+         "steps": ["Run  ./securax go  : it builds the matrix from the built-in starter library. No file needed.",
+                   "Open the Command Center → BFSI controls.",
+                   "Optional: if your organisation has its own gap-assessment workbook (.xlsx), save it in Downloads; the next  ./securax go  uses it instead."]},
         {"id": "backup-key", "title": "Encrypt every backup", "gives": "backups that are safe to copy off the laptop",
          "check": lambda: bool(env("SECURAX_BACKUP_KEYFILE")),
          "steps": ["Plug in a USB stick if you have one (or have your password manager open).",

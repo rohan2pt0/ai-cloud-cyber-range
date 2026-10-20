@@ -81,7 +81,7 @@ nav:
       - Success mantras: securax/64-SUCCESS-MANTRAS.md
       - Configuration, not code: securax/65-CONFIGURATION-NOT-CODE.md
       - BFSI control library and navigator: securax/66-BFSI-CONTROL-LIBRARY-AND-NAVIGATOR.md
-      - Risk register, NSCS and NCIIPC: securax/67-RISK-REGISTER-NSCS-NCIIPC.md
+      - Risk register, NSCS and national CII: securax/67-RISK-REGISTER-NSCS-CII.md
       - CI at agent scale: securax/68-CI-AT-AGENT-SCALE.md
       - Human-in-command for AI: securax/69-HUMAN-IN-COMMAND-AND-FINTECH-SIGNALS.md
       - Lessons from national strategies: securax/70-LESSONS-FROM-NATIONAL-STRATEGIES.md
@@ -93,6 +93,11 @@ nav:
       - Findings, repairs, restore, shortcuts: securax/76-FINDINGS-REPAIRS-RESTORE-SHORTCUTS.md
       - OWASP and global projects: securax/77-OWASP-AND-GLOBAL-PROJECTS.md
       - Crisis response kit: securax/78-CRISIS-RESPONSE-KIT.md
+      - Exercise range: securax/79-EXERCISE-RANGE.md
+      - Storage that grows with you: securax/80-STORAGE-THAT-GROWS-WITH-YOU.md
+      - Range vs the market, and learning: securax/81-RANGE-VS-THE-MARKET-AND-LEARNING.md
+      - Go back to a working version: securax/82-GO-BACK-TO-A-WORKING-VERSION.md
+      - Build with open models: securax/83-BUILD-WITH-OPEN-MODELS.md
   - How-to guides:
       - AI providers and plugins: securax/22-PLUGINS-AND-PROVIDERS.md
       - Integrations: securax/07-INTEGRATIONS.md

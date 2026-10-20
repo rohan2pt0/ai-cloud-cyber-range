@@ -4,6 +4,9 @@
     ./securax storage                 report: sizes, free space, growth, forecast, what to do
     ./securax storage --json          the same for machines (the cockpit uses it)
     ./securax storage --tidy [--yes]  show (or, with --yes, do) the SAFE clean-ups: dangling images, old build cache
+    ./securax storage --auto          what the 6-hourly routine runs: the safe clean-ups when space is tight, old versions of
+                                      images SecuRAX built itself, exercise data folded to totals; your phone is told only if,
+                                      after all that, the disk is still short (needs `./securax notify setup` once)
 
 What lives where (nothing else grows):
   Docker volumes   the databases, chats, workflows, models (the Ollama model store is usually the biggest)   -> HOT: keep on a fast disk
@@ -12,7 +15,7 @@ What lives where (nothing else grows):
   Docker images    pinned third-party images + the ones built here; old versions pile up after updates     -> reclaimable by `--tidy`
   container logs   rotate by themselves (10 MB x 3 per container, set in the compose file)                   -> bounded
 History is appended at most every 12 hours; the forecast needs 3 samples over at least 2 days and says "collecting data" until then.
-It never deletes volumes or backups. Standard library only.
+It never deletes volumes, backups or third-party images. Standard library only.
 """
 from __future__ import annotations
 
@@ -30,6 +33,9 @@ HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parent
 HOME = pathlib.Path(os.environ.get("SECURAX_HOME_DIR") or pathlib.Path.home() / ".securax")
 PROJECT_PREFIXES = ("vulnbank-range_", "vulnbank-range-")
+OWN_IMAGES = ("securax-exercise-gamebox",)          # images SecuRAX builds here, tagged by content: an old tag is never used again
+TIDY_BELOW_PCT = 20                                  # --auto cleans when free space is below this, or when a lot is reclaimable
+ALERT_BELOW_PCT = 10                                 # ... and tells your phone if it is still below this afterwards
 UNIT = {"b": 1, "kb": 1e3, "mb": 1e6, "gb": 1e9, "tb": 1e12}
 
 
@@ -83,7 +89,7 @@ def env_value(root: pathlib.Path, key: str) -> str:
     return ""
 
 
-def measure(root: pathlib.Path = ROOT, backups: pathlib.Path | None = None, now: float | None = None) -> dict:
+def measure(root: pathlib.Path = ROOT, backups: pathlib.Path | None = None, now: float | None = None, no_docker: bool = False) -> dict:
     now = now or time.time()
     out: dict = {"ts": int(now), "docker": False}
     backups = backups or pathlib.Path(os.environ.get("SECURAX_BACKUP_DIR") or env_value(root, "SECURAX_BACKUP_DIR") or root / "backups")
@@ -94,7 +100,7 @@ def measure(root: pathlib.Path = ROOT, backups: pathlib.Path | None = None, now:
     out["repo"] = {"dir": str(root), "bytes": dir_size(root)}
     du = shutil.disk_usage(str(HOME if HOME.exists() else root))
     out["disk"] = {"path": str(HOME if HOME.exists() else root), "total": du.total, "free": du.free, "free_pct": round(du.free / du.total * 100, 1)}
-    txt = docker_json("system", "df", "--format", "{{json .}}")
+    txt = None if no_docker else docker_json("system", "df", "--format", "{{json .}}")
     if txt:
         out["docker"] = True
         rows = {}
@@ -199,6 +205,79 @@ def tidy(yes: bool) -> list[str]:
     return done
 
 
+def superseded(images: list[dict], in_use: set[str], current: dict[str, str]) -> list[str]:
+    """Old tags of images SecuRAX built itself that no container (running or stopped) uses: safe to remove, rebuilt if needed."""
+    out = []
+    for i in images:
+        repo, tag = i.get("Repository", ""), i.get("Tag", "")
+        if repo in OWN_IMAGES and repo in current and tag != current[repo] and f"{repo}:{tag}" not in in_use and i.get("ID") not in in_use:
+            out.append(f"{repo}:{tag}")
+    return out
+
+
+def _own_current() -> dict[str, str]:
+    try:
+        sys.path.insert(0, str(ROOT))
+        from exercise import lite
+        repo, tag = lite.image_tag().split(":")
+        return {repo: tag}
+    except Exception:             # the exercise package is optional: then every old tag is simply kept
+        return {}
+
+
+def compact_exercises(keep_rounds: int = 1440) -> int:
+    """Fold old per-round check results of every exercise into totals (scores, reports and the after-action report stay)."""
+    home = pathlib.Path(os.environ.get("SECURAX_EXERCISE_HOME") or ROOT / "vault" / "exercise")
+    if not home.exists():
+        return 0
+    try:
+        sys.path.insert(0, str(ROOT))
+        from exercise import engine
+    except Exception:
+        return 0
+    n = 0
+    for db in sorted(home.glob("*/game.db")):
+        try:
+            n += engine.Game(db.parent).compact(keep_rounds)
+        except Exception:         # a game file in use or from another version is left alone this time
+            continue
+    return n
+
+
+def auto(m: dict, notify=None) -> list[str]:
+    """The unattended policy. Only reversible or regenerable things are touched; volumes, backups and pinned images never."""
+    done = []
+    rows = compact_exercises()
+    if rows:
+        done.append(f"exercise data: {rows} old check results folded into totals")
+    if m["docker"]:
+        imgs = [json.loads(ln) for ln in (docker_json("image", "ls", "--format", "{{json .}}") or "").splitlines() if ln.strip()]
+        used = set((docker_json("ps", "-a", "--format", "{{.Image}}") or "").split())
+        for ref in superseded(imgs, used, _own_current()):
+            if docker_json("image", "rm", ref) is not None:
+                done.append(f"removed superseded image {ref}")
+        rec = m.get("docker_usage", {}).get("Images", {}).get("reclaimable_bytes", 0) + m.get("docker_usage", {}).get("Build Cache", {}).get("reclaimable_bytes", 0)
+        if m["disk"]["free_pct"] < TIDY_BELOW_PCT or rec > 3e9:
+            done += tidy(True)
+    after = measure(no_docker=True)
+    if after["disk"]["free_pct"] < ALERT_BELOW_PCT:
+        msg = (f"Only {after['disk']['free_pct']}% of the disk is free after the automatic clean-up. "
+               "Move backups or models to a bigger disk (doc 80), or remove a model you do not use.")
+        done.append("ALERT: " + msg)
+        (notify or _notify)(msg)
+    if not done:
+        done.append(f"nothing to do: {m['disk']['free_pct']}% free")
+    return done
+
+
+def _notify(msg: str) -> None:
+    try:
+        subprocess.run(["bash", str(ROOT / "securax"), "notify", "send", msg, "--title", "SecuRAX storage", "--priority", "high"],
+                       capture_output=True, timeout=60)
+    except (OSError, subprocess.SubprocessError):
+        pass
+
+
 def report(m: dict, fc: dict) -> str:
     lines = [f"Disk: {human(m['disk']['free'])} free of {human(m['disk']['total'])} ({m['disk']['free_pct']}% free)  — {m['disk']['path']}"]
     lines.append(f"SecuRAX uses about {human(m['estate_bytes'])}:")
@@ -229,6 +308,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--tidy", action="store_true")
     ap.add_argument("--yes", action="store_true")
     ap.add_argument("--no-record", action="store_true")
+    ap.add_argument("--auto", action="store_true")
     a = ap.parse_args(argv)
     m = measure()
     if not a.no_record:
@@ -236,6 +316,9 @@ def main(argv: list[str] | None = None) -> int:
     fc = forecast(load_history(), m["disk"]["free"])
     if a.tidy:
         print("\n".join(tidy(a.yes)))
+        return 0
+    if a.auto:
+        print("\n".join(auto(m)))
         return 0
     if a.json:
         print(json.dumps({"measure": m, "forecast": fc, "advice": advice(m, fc)}, indent=2))

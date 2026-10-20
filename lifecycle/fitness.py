@@ -286,13 +286,50 @@ def check_readme_current() -> dict:
             "note": "README.md version, what's new and docs index match VERSION, CHANGELOG.md and docs" if ok else (r.stdout or r.stderr).strip()[:200]}
 
 
+HELP_EXEMPT = {"act", "demo", "enhance", "lifefeed", "version", "help", "mcp", "audit", "evidence-pack"}   # internal or called by other commands
+
+
+def missing_from_help() -> list[str]:
+    src = (ROOT / "securax").read_text("utf-8")
+    m = re.search(r"cat <<'HELP'\n(.*?)\nHELP\n", src, re.S)
+    text = m.group(1) if m else ""
+    return sorted(c for c in commands() if c not in HELP_EXEMPT and not re.search(rf"(?<![\w-]){re.escape(c)}(?![\w-])", text))
+
+
+def check_commands_in_help() -> dict:
+    """Every command a person can type is in `./securax help`, so nothing is findable only by reading the code."""
+    missing = missing_from_help()
+    return {"name": "commands-in-help", "value": len(missing), "budget": 0, "unit": "missing", "ok": not missing,
+            "note": "every command is in ./securax help" if not missing else "add to the help text in securax: " + ", ".join(missing)}
+
+
+def check_features_current() -> dict:
+    """The Command Center, website, docs home page, README and every fact on a page are generated from features.json and the code."""
+    import subprocess
+    r = subprocess.run([sys.executable, str(ROOT / "tools" / "features_sync.py"), "--check"], capture_output=True, text=True)
+    ok = r.returncode == 0
+    return {"name": "features-current", "value": 0 if ok else 1, "budget": 0, "unit": "stale", "ok": ok,
+            "note": "features and facts are current everywhere" if ok else (r.stdout or r.stderr).strip()[:200]}
+
+
+def check_private_names() -> dict:
+    """No organisation, exercise or person on the private list (only fingerprints are stored) appears in any tracked file."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("private_names", ROOT / "governance" / "private_names.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    found = mod.problems()
+    return {"name": "private-names", "value": len(found), "budget": 0, "unit": "hits", "ok": not found,
+            "note": "no private name appears in any tracked file" if not found else "reword: " + ", ".join(found[:3])}
+
+
 def run_all(only_fast: bool = False) -> list[dict]:
     c, base = cfg()["budgets"], baseline()
     res = [check_rails_latency(c["rails_worst_case_ms"]), check_rails_memory(c["rails_import_rss_mb"]), check_runtime_deps(c["gateway_runtime_deps"])]
     if not only_fast:
         res += check_gateway(c["gateway_cold_start_s"], c["gateway_rss_mb"])
         res += check_first_block(c["first_block_s"], c["block_latency_p95_ms"])
-    res += [check_supply_chain(base), check_commands_documented(base), check_ccsp_map(), check_regulatory_maps(), check_impact_map(), check_claims(), check_config_clean(), check_readme_current()]
+    res += [check_supply_chain(base), check_commands_documented(base), check_ccsp_map(), check_regulatory_maps(), check_impact_map(), check_claims(), check_config_clean(), check_readme_current(), check_private_names(), check_commands_in_help(), check_features_current()]
     return res
 
 

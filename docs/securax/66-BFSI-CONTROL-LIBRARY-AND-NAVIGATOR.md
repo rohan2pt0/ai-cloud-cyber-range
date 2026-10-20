@@ -1,35 +1,52 @@
 # 66 · The BFSI control library, the navigator, and a dark cockpit
 
 <!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
-> **Status: 🟢 Built.** Import, profiles, dominance, packs, navigator and the dark cockpit are built and tested; the library itself stays private on your machine. [What the lights mean](../index.md#the-status-lights)
+> **Status: 🟢 Built.** Built and tested: the matrix works with no file (built-in starter library, 78 controls, 20 domains, 8 entity kinds); your own workbook replaces it automatically and stays private; profiles, dominance, packs, navigator and the dark cockpit. [What the lights mean](../index.md#the-status-lights)
 <!-- status:end -->
 
-One library for every Indian BFSI cyber obligation (RBI, SEBI, IRDAI, IFSCA, NPCI/PCI/SWIFT, NCIIPC, CERT-In, DPDP),
+One library for every Indian BFSI cyber obligation (RBI, SEBI, IRDAI, IFSCA, NPCI/PCI/SWIFT, national CII guidance, CERT-In, DPDP),
 mapped to controls with per-class applicability, citations, evidence and audit tests. SecuRAX reads it, shows what it
 proves for each control, and draws it the way a mission cockpit would: the abnormal first, the rest one click away.
 
-## Get it running (2 minutes)
+## Get it running (1 minute, no file needed)
 
 ```bash
-./securax controls import          # finds the workbook in Downloads / Documents / Desktop (Windows ones too) and asks once
-./securax controls dominance        # does complying with SCB/PSB cover every other class?
+./securax go                        # builds the control matrix (it also runs every morning with the rest of go)
+```
+
+Then open the Command Center → **BFSI control matrix** (or `http://localhost:8088/portal/navigator.html`).
+
+**You do not need a workbook.** SecuRAX ships a **starter library**:
+
+- **What it is:** a public library, written in our own words, at `governance/controls/starter.json`.
+  - 67 controls across all 20 domains, plus the 11 controls the packs add (new RBI drafts, NSCS, CII guidance).
+  - 8 kinds of regulated entity, from commercial banks to insurers.
+  - Each control cites its regulators by document name only, never by quoting them.
+- **Who must do what:** follows from how critical the control is.
+  - Critical: MUST for everyone.
+  - High: MUST for larger entities, SHOULD for co-operative banks and base-layer NBFCs.
+  - Medium: SHOULD or MAY.
+- **What it is not:** an indicative aid, not legal advice. Check the regulator's own text before you rely on a line.
+
+**If your organisation has its own gap-assessment workbook**, it gives more detail (202 controls and 22 entity classes in the one this was designed with):
+
+```bash
+# save the .xlsx in Downloads (Windows or Ubuntu), then:
+./securax go                        # finds it by itself and uses it instead of the starter library
+./securax controls dominance        # does complying with the first class cover every other class?
 ./securax controls gaps RRB         # the vital few for one class
 ```
 
-Then open `http://localhost:8088/portal/navigator.html` (the cockpit's **Controls** lamp links to it).
-
-- The library is **private**: it is written to `vault/controls/library.json`, which is never committed. The workbook's
-  author metadata is never read.
-- **Your scores** come from the workbook's yellow cells (Current and Target maturity, Likelihood, Impact). Fill them in
-  Excel and import again; the navigator, radar and heat map update.
-- **New regulations** are added as a pack in `governance/controls/packs/` (a JSON file with new controls, or extra
-  citations for existing ones), or by importing a newer workbook. No code changes.
+- **Your own workbook stays private:** it is written to `vault/controls/library.json`, which is never committed. The workbook's author metadata is never read.
+- **Your scores** come from the workbook's yellow cells (Current and Target maturity, Likelihood, Impact). Fill them in Excel and run `./securax go` again; the navigator, radar and heat map update. With the starter library, SecuRAX estimates them from its evidence.
+- **Neutral names:** a column title that names an agency is read under a neutral name (for example "CII / CERT-In / DPDP"), so nothing private reaches the public estate.
+- **New regulations** are added as a pack in `governance/controls/packs/` (a JSON file with new controls, or extra citations for existing ones), or by importing a newer workbook. No code changes.
 
 ## The highest standard, and why "SCB/PSB covers everyone" is almost true
 
 Each control says, per regulated-entity class, whether it is MUST, SHOULD, MAY or not applicable. Complying with the
 strictest class covers a weaker one only if no control is stricter for the weaker class. Checking all 202 controls
-against all 22 classes:
+against all 22 classes of that workbook:
 
 | Covered by SCB/PSB alone | Stricter than SCB/PSB on |
 |---|---|
@@ -71,7 +88,7 @@ One page per profile (the ceiling plus each of the 22 classes):
   - **Hover** a cell for its requirement, citations and SecuRAX evidence.
 - **Maturity by domain** (the spider web, as for NIST CSF): target, what SecuRAX proves, and your scored maturity.
 - **5 × 5 risk heat map** from your likelihood and impact scores.
-- **Regulators:** for RBI, SEBI, IRDAI, IFSCA, NPCI/PCI/SWIFT and NCIIPC/CERT-In/DPDP, how many applicable controls
+- **Regulators:** for RBI, SEBI, IRDAI, IFSCA, NPCI/PCI/SWIFT and CII/CERT-In/DPDP, how many applicable controls
   cite each, and how many SecuRAX proves, partly covers, or leaves to the organisation.
 - **The SCB/PSB exceptions** table above, for this library.
 

@@ -1,0 +1,1131 @@
+{
+ "meta": {
+  "source": "starter",
+  "version": "SecuRAX starter library v1 (October 2026)",
+  "controls": 67,
+  "starter": true
+ },
+ "about": "A public starter library, written for SecuRAX in plain words, so the control matrix works with no workbook. Regulator documents are cited by name only, never quoted. Which class a control applies to follows its criticality (Critical: MUST for everyone; High: MUST for larger entities, SHOULD for smaller ones; Medium: SHOULD / MAY). It is indicative, not legal advice: check the regulator's own text. Importing your own workbook (./securax controls import) replaces it.",
+ "classes": [
+  "Commercial bank",
+  "Small finance / payments bank",
+  "Co-operative bank",
+  "NBFC (upper / middle layer)",
+  "NBFC (base layer)",
+  "Payment system operator",
+  "Securities market entity",
+  "Insurer"
+ ],
+ "smaller": [
+  "Co-operative bank",
+  "NBFC (base layer)"
+ ],
+ "controls": [
+  {
+   "id": "GOV-001",
+   "domain": "GOV",
+   "subdomain": "",
+   "title": "A board-approved cyber security policy",
+   "description": "The board approves a cyber security policy, reviews it every year and names who owns it.",
+   "tier": "Critical",
+   "owner": "Board / CISO",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)",
+    "IRDAI 2023": "IRDAI information and cyber security guidelines (2023)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "GV.PO"
+   }
+  },
+  {
+   "id": "GOV-002",
+   "domain": "GOV",
+   "subdomain": "",
+   "title": "A named CISO with direct access to the board",
+   "description": "One senior person is accountable for cyber security and reports to the board or its risk committee.",
+   "tier": "High",
+   "owner": "Board",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)",
+    "IRDAI 2023": "IRDAI information and cyber security guidelines (2023)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "GV.RR"
+   }
+  },
+  {
+   "id": "GOV-006",
+   "domain": "GOV",
+   "subdomain": "",
+   "title": "A cyber crisis management plan",
+   "description": "A written, tested plan for a major cyber incident: who decides, who speaks, who tells the regulators.",
+   "tier": "High",
+   "owner": "CISO",
+   "citations": {
+    "RBI Primary Citation": "RBI cyber security framework for banks (2016)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)",
+    "CII / CERT-In / DPDP": "CERT-In directions (2022)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "RS.MA"
+   }
+  },
+  {
+   "id": "GOV-010",
+   "domain": "GOV",
+   "subdomain": "",
+   "title": "Regular cyber reporting to the board",
+   "description": "The board sees measured posture, top risks and open gaps at least every quarter.",
+   "tier": "Medium",
+   "owner": "CISO",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "GV.OV"
+   }
+  },
+  {
+   "id": "GOV-014",
+   "domain": "GOV",
+   "subdomain": "",
+   "title": "Regulatory requirements mapped to controls",
+   "description": "Every applicable regulatory requirement is mapped to a control and to the evidence that it works.",
+   "tier": "High",
+   "owner": "Compliance",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)",
+    "IRDAI 2023": "IRDAI information and cyber security guidelines (2023)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "GV.OC"
+   }
+  },
+  {
+   "id": "RM-001",
+   "domain": "RM",
+   "subdomain": "",
+   "title": "A cyber risk register",
+   "description": "Cyber risks are recorded with owner, likelihood, impact, treatment and a due date, and reviewed.",
+   "tier": "High",
+   "owner": "Risk",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "ID.RA"
+   }
+  },
+  {
+   "id": "RM-009",
+   "domain": "RM",
+   "subdomain": "",
+   "title": "Key risk and performance indicators",
+   "description": "Cyber KRIs and KPIs have thresholds, are measured on a schedule and trigger action when breached.",
+   "tier": "Medium",
+   "owner": "Risk",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "GV.RM"
+   }
+  },
+  {
+   "id": "IAM-002",
+   "domain": "IAM",
+   "subdomain": "",
+   "title": "Multi-factor authentication for privileged and remote access",
+   "description": "Admins, remote users and critical systems need a second factor to sign in.",
+   "tier": "Critical",
+   "owner": "IT security",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023); RBI cyber security framework for banks (2016)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)",
+    "IRDAI 2023": "IRDAI information and cyber security guidelines (2023)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "PR.AA"
+   }
+  },
+  {
+   "id": "IAM-005",
+   "domain": "IAM",
+   "subdomain": "",
+   "title": "Role-based access with least privilege",
+   "description": "People and systems get only the access their role needs; access is reviewed regularly.",
+   "tier": "High",
+   "owner": "IT security",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)",
+    "IRDAI 2023": "IRDAI information and cyber security guidelines (2023)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "PR.AA"
+   }
+  },
+  {
+   "id": "IAM-012",
+   "domain": "IAM",
+   "subdomain": "",
+   "title": "Logging of privileged and authenticated activity",
+   "description": "Every privileged action and sign-in is logged with who did it, and the logs are protected.",
+   "tier": "High",
+   "owner": "IT security",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "CII / CERT-In / DPDP": "CERT-In directions (2022)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "DE.CM"
+   }
+  },
+  {
+   "id": "IAM-013",
+   "domain": "IAM",
+   "subdomain": "",
+   "title": "No default or shared credentials",
+   "description": "Default passwords and shared accounts are removed; secrets are random and rotated.",
+   "tier": "High",
+   "owner": "IT security",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023); RBI cyber security framework for banks (2016)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "PR.AA"
+   }
+  },
+  {
+   "id": "IAM-014",
+   "domain": "IAM",
+   "subdomain": "",
+   "title": "Strong authentication for APIs",
+   "description": "Every API checks who is calling, limits what they may do and locks out abuse.",
+   "tier": "High",
+   "owner": "Application owners",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "NPCI / PCI DSS / SWIFT": "RBI digital payment security controls (2021)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "PR.AA"
+   }
+  },
+  {
+   "id": "AM-001",
+   "domain": "AM",
+   "subdomain": "",
+   "title": "An inventory of IT and OT assets",
+   "description": "Every system, application and device is listed with an owner and how critical it is.",
+   "tier": "High",
+   "owner": "IT",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023); RBI cyber security framework for banks (2016)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "ID.AM"
+   }
+  },
+  {
+   "id": "AM-007",
+   "domain": "AM",
+   "subdomain": "",
+   "title": "A software bill of materials",
+   "description": "Third-party and open-source components in each system are known, so a new flaw can be traced fast.",
+   "tier": "Medium",
+   "owner": "IT",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "ID.AM"
+   }
+  },
+  {
+   "id": "AM-010",
+   "domain": "AM",
+   "subdomain": "",
+   "title": "An inventory of cryptography",
+   "description": "Where encryption, keys and certificates are used is listed, with algorithm and expiry.",
+   "tier": "High",
+   "owner": "IT security",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "ID.AM"
+   }
+  },
+  {
+   "id": "DP-002",
+   "domain": "DP",
+   "subdomain": "",
+   "title": "Data loss prevention",
+   "description": "Sensitive data (customer, card, identity numbers) is detected and stopped from leaving by mistake or abuse.",
+   "tier": "High",
+   "owner": "IT security",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "CII / CERT-In / DPDP": "DPDP Act (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "PR.DS"
+   }
+  },
+  {
+   "id": "DP-003",
+   "domain": "DP",
+   "subdomain": "",
+   "title": "Data localisation for regulated data",
+   "description": "Data that must stay in India is stored and processed only in India.",
+   "tier": "High",
+   "owner": "Data owner",
+   "citations": {
+    "NPCI / PCI DSS / SWIFT": "RBI digital payment security controls (2021)",
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "CII / CERT-In / DPDP": "DPDP Act (2023)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "PR.DS"
+   }
+  },
+  {
+   "id": "DP-005",
+   "domain": "DP",
+   "subdomain": "",
+   "title": "Controlled cross-border data flows",
+   "description": "Data leaves the country only when the law and policy allow it, and each transfer is recorded.",
+   "tier": "High",
+   "owner": "Data owner",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "CII / CERT-In / DPDP": "DPDP Act (2023)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "PR.DS"
+   }
+  },
+  {
+   "id": "DP-007",
+   "domain": "DP",
+   "subdomain": "",
+   "title": "Encryption in transit",
+   "description": "Every connection that carries sensitive data is encrypted with current protocols.",
+   "tier": "High",
+   "owner": "IT security",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)",
+    "IRDAI 2023": "IRDAI information and cyber security guidelines (2023)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "PR.DS"
+   }
+  },
+  {
+   "id": "DP-010",
+   "domain": "DP",
+   "subdomain": "",
+   "title": "Minimise and mask personal data",
+   "description": "Only the personal data needed is collected; it is masked wherever full values are not needed.",
+   "tier": "High",
+   "owner": "Data owner",
+   "citations": {
+    "CII / CERT-In / DPDP": "DPDP Act (2023)",
+    "RBI Primary Citation": "RBI IT governance directions (2023)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "PR.DS"
+   }
+  },
+  {
+   "id": "DP-015",
+   "domain": "DP",
+   "subdomain": "",
+   "title": "Protected backups",
+   "description": "Backups are encrypted, tested and kept where an attacker who controls production cannot reach them.",
+   "tier": "High",
+   "owner": "IT",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)",
+    "IRDAI 2023": "IRDAI information and cyber security guidelines (2023)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "PR.DS"
+   }
+  },
+  {
+   "id": "NS-001",
+   "domain": "NS",
+   "subdomain": "",
+   "title": "Network segmentation",
+   "description": "Critical systems sit in separate network zones; only the traffic that is needed crosses between them.",
+   "tier": "High",
+   "owner": "Network",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023); RBI cyber security framework for banks (2016)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "PR.IR"
+   }
+  },
+  {
+   "id": "NS-005",
+   "domain": "NS",
+   "subdomain": "",
+   "title": "Secure remote access",
+   "description": "Remote access goes through an approved, authenticated, encrypted path; never an open port.",
+   "tier": "High",
+   "owner": "Network",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "PR.AA"
+   }
+  },
+  {
+   "id": "EP-001",
+   "domain": "EP",
+   "subdomain": "",
+   "title": "Endpoint protection on every device",
+   "description": "Every laptop and server runs managed anti-malware with detection and response.",
+   "tier": "High",
+   "owner": "IT security",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023); RBI cyber security framework for banks (2016)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)",
+    "IRDAI 2023": "IRDAI information and cyber security guidelines (2023)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "DE.CM"
+   }
+  },
+  {
+   "id": "EP-002",
+   "domain": "EP",
+   "subdomain": "",
+   "title": "Hardened standard builds",
+   "description": "Devices start from an approved, hardened build; deviations are found and fixed.",
+   "tier": "Medium",
+   "owner": "IT",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "PR.PS"
+   }
+  },
+  {
+   "id": "AS-001",
+   "domain": "AS",
+   "subdomain": "",
+   "title": "Security testing in the software pipeline",
+   "description": "Code is scanned for flaws, secrets and risky settings before it is released.",
+   "tier": "High",
+   "owner": "Application owners",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "PR.PS"
+   }
+  },
+  {
+   "id": "AS-002",
+   "domain": "AS",
+   "subdomain": "",
+   "title": "Secure, rate-limited APIs",
+   "description": "Public and partner APIs are authenticated, limited and validated against abuse.",
+   "tier": "High",
+   "owner": "Application owners",
+   "citations": {
+    "NPCI / PCI DSS / SWIFT": "RBI digital payment security controls (2021)",
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "PR.PS"
+   }
+  },
+  {
+   "id": "AS-005",
+   "domain": "AS",
+   "subdomain": "",
+   "title": "Secure code review",
+   "description": "Changes are reviewed for security before they reach production.",
+   "tier": "Medium",
+   "owner": "Application owners",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "PR.PS"
+   }
+  },
+  {
+   "id": "AS-006",
+   "domain": "AS",
+   "subdomain": "",
+   "title": "Supply-chain checks for software",
+   "description": "Third-party code and packages are checked before use and pinned to known versions.",
+   "tier": "High",
+   "owner": "Application owners",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "GV.SC"
+   }
+  },
+  {
+   "id": "AS-008",
+   "domain": "AS",
+   "subdomain": "",
+   "title": "Dependency vulnerability scanning",
+   "description": "Libraries and container images are scanned for known flaws on every build.",
+   "tier": "High",
+   "owner": "Application owners",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "ID.RA"
+   }
+  },
+  {
+   "id": "AS-012",
+   "domain": "AS",
+   "subdomain": "",
+   "title": "Security headers on web applications",
+   "description": "Web apps send headers that stop common browser attacks such as framing and script injection.",
+   "tier": "Medium",
+   "owner": "Application owners",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "NPCI / PCI DSS / SWIFT": "RBI digital payment security controls (2021)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "PR.PS"
+   }
+  },
+  {
+   "id": "CL-002",
+   "domain": "CL",
+   "subdomain": "",
+   "title": "Cloud security posture management",
+   "description": "Cloud settings are checked continuously against a secure baseline.",
+   "tier": "High",
+   "owner": "Cloud",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "RBI Secondary Citation": "RBI IT outsourcing directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "ID.RA"
+   }
+  },
+  {
+   "id": "CL-004",
+   "domain": "CL",
+   "subdomain": "",
+   "title": "Hardened containers and workloads",
+   "description": "Containers run as non-root with limits, from scanned images.",
+   "tier": "High",
+   "owner": "Cloud",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "PR.PS"
+   }
+  },
+  {
+   "id": "CL-006",
+   "domain": "CL",
+   "subdomain": "",
+   "title": "Infrastructure-as-code scanning",
+   "description": "Cloud and infrastructure templates are scanned before they are applied.",
+   "tier": "Medium",
+   "owner": "Cloud",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "PR.PS"
+   }
+  },
+  {
+   "id": "TP-001",
+   "domain": "TP",
+   "subdomain": "",
+   "title": "Third-party risk assessment",
+   "description": "Vendors with access to systems or data are assessed before onboarding and reviewed each year.",
+   "tier": "High",
+   "owner": "Vendor management",
+   "citations": {
+    "RBI Secondary Citation": "RBI IT outsourcing directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)",
+    "IRDAI 2023": "IRDAI information and cyber security guidelines (2023)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "GV.SC"
+   }
+  },
+  {
+   "id": "TP-002",
+   "domain": "TP",
+   "subdomain": "",
+   "title": "Incident terms in vendor contracts",
+   "description": "Contracts require vendors to report incidents fast and to allow audits.",
+   "tier": "High",
+   "owner": "Vendor management",
+   "citations": {
+    "RBI Secondary Citation": "RBI IT outsourcing directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)",
+    "CII / CERT-In / DPDP": "CERT-In directions (2022)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "GV.SC"
+   }
+  },
+  {
+   "id": "CR-001",
+   "domain": "CR",
+   "subdomain": "",
+   "title": "Approved cryptographic standards",
+   "description": "Only approved algorithms and key lengths are used; weak ones are retired on a plan.",
+   "tier": "High",
+   "owner": "IT security",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "PR.DS"
+   }
+  },
+  {
+   "id": "CR-002",
+   "domain": "CR",
+   "subdomain": "",
+   "title": "Post-quantum readiness plan",
+   "description": "A plan to move to quantum-safe cryptography, starting with data that must stay secret for years.",
+   "tier": "Medium",
+   "owner": "IT security",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "ID.RA"
+   }
+  },
+  {
+   "id": "CR-006",
+   "domain": "CR",
+   "subdomain": "",
+   "title": "Quantum-safe key exchange at the edge",
+   "description": "Internet-facing connections offer hybrid post-quantum key exchange where the software supports it.",
+   "tier": "Medium",
+   "owner": "IT security",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "PR.DS"
+   }
+  },
+  {
+   "id": "CR-007",
+   "domain": "CR",
+   "subdomain": "",
+   "title": "Crypto agility",
+   "description": "Algorithms can be swapped without rewriting systems.",
+   "tier": "Medium",
+   "owner": "IT security",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "PR.DS"
+   }
+  },
+  {
+   "id": "VM-003",
+   "domain": "VM",
+   "subdomain": "",
+   "title": "Continuous vulnerability scanning",
+   "description": "Systems and code are scanned for known flaws on a schedule and after changes.",
+   "tier": "High",
+   "owner": "IT security",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023); RBI cyber security framework for banks (2016)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)",
+    "IRDAI 2023": "IRDAI information and cyber security guidelines (2023)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "ID.RA"
+   }
+  },
+  {
+   "id": "VM-004",
+   "domain": "VM",
+   "subdomain": "",
+   "title": "Regular penetration and red-team tests",
+   "description": "Independent testers try to break in at least once a year and after big changes.",
+   "tier": "High",
+   "owner": "IT security",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)",
+    "IRDAI 2023": "IRDAI information and cyber security guidelines (2023)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "ID.IM"
+   }
+  },
+  {
+   "id": "VM-006",
+   "domain": "VM",
+   "subdomain": "",
+   "title": "Patch known-exploited flaws first",
+   "description": "Flaws that attackers already use are fixed within a short, fixed deadline.",
+   "tier": "High",
+   "owner": "IT",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "CII / CERT-In / DPDP": "CERT-In directions (2022)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "ID.RA"
+   }
+  },
+  {
+   "id": "SOC-001",
+   "domain": "SOC",
+   "subdomain": "",
+   "title": "24x7 security monitoring",
+   "description": "A security operations centre watches alerts from critical systems around the clock.",
+   "tier": "Critical",
+   "owner": "SOC",
+   "citations": {
+    "RBI Primary Citation": "RBI cyber security framework for banks (2016)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)",
+    "IRDAI 2023": "IRDAI information and cyber security guidelines (2023)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "DE.CM"
+   }
+  },
+  {
+   "id": "SOC-003",
+   "domain": "SOC",
+   "subdomain": "",
+   "title": "Threat intelligence feeds",
+   "description": "Sector and national threat feeds are received and acted on.",
+   "tier": "High",
+   "owner": "SOC",
+   "citations": {
+    "RBI Primary Citation": "RBI cyber security framework for banks (2016)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)",
+    "CII / CERT-In / DPDP": "CERT-In directions (2022)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "ID.RA"
+   }
+  },
+  {
+   "id": "SOC-005",
+   "domain": "SOC",
+   "subdomain": "",
+   "title": "Mapped detections",
+   "description": "Detections are mapped to MITRE ATT&CK so gaps in coverage are visible.",
+   "tier": "Medium",
+   "owner": "SOC",
+   "citations": {
+    "SEBI CSCRF": "SEBI CSCRF (2024)",
+    "RBI Primary Citation": "RBI IT governance directions (2023)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "DE.AE"
+   }
+  },
+  {
+   "id": "SOC-008",
+   "domain": "SOC",
+   "subdomain": "",
+   "title": "Automated triage and playbooks",
+   "description": "Common alerts are triaged and handled by tested playbooks.",
+   "tier": "Medium",
+   "owner": "SOC",
+   "citations": {
+    "SEBI CSCRF": "SEBI CSCRF (2024)",
+    "RBI Primary Citation": "RBI IT governance directions (2023)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "RS.AN"
+   }
+  },
+  {
+   "id": "SOC-010",
+   "domain": "SOC",
+   "subdomain": "",
+   "title": "Log retention",
+   "description": "Security logs are kept for the period the rules require, synchronised to a common clock.",
+   "tier": "High",
+   "owner": "SOC",
+   "citations": {
+    "CII / CERT-In / DPDP": "CERT-In directions (2022)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)",
+    "RBI Primary Citation": "RBI IT governance directions (2023)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "DE.CM"
+   }
+  },
+  {
+   "id": "IR-001",
+   "domain": "IR",
+   "subdomain": "",
+   "title": "Report incidents to CERT-In on time",
+   "description": "Reportable incidents go to CERT-In within the deadline in its directions.",
+   "tier": "Critical",
+   "owner": "CISO",
+   "citations": {
+    "CII / CERT-In / DPDP": "CERT-In directions (2022)",
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "RS.CO"
+   }
+  },
+  {
+   "id": "IR-003",
+   "domain": "IR",
+   "subdomain": "",
+   "title": "Report incidents to every regulator on time",
+   "description": "Each applicable regulator gets its incident report within its own deadline.",
+   "tier": "Critical",
+   "owner": "CISO",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)",
+    "IRDAI 2023": "IRDAI information and cyber security guidelines (2023)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "RS.CO"
+   }
+  },
+  {
+   "id": "IR-005",
+   "domain": "IR",
+   "subdomain": "",
+   "title": "Incident response playbooks",
+   "description": "Written, tested playbooks for the likely incidents: ransomware, fraud, data leak, outage.",
+   "tier": "High",
+   "owner": "CISO",
+   "citations": {
+    "RBI Primary Citation": "RBI cyber security framework for banks (2016)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)",
+    "IRDAI 2023": "IRDAI information and cyber security guidelines (2023)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "RS.MA"
+   }
+  },
+  {
+   "id": "IR-007",
+   "domain": "IR",
+   "subdomain": "",
+   "title": "Cyber drills",
+   "description": "The response is rehearsed with realistic drills at least once a year.",
+   "tier": "Medium",
+   "owner": "CISO",
+   "citations": {
+    "RBI Primary Citation": "RBI cyber security framework for banks (2016)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)",
+    "CII / CERT-In / DPDP": "CERT-In directions (2022)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "RS.MA"
+   }
+  },
+  {
+   "id": "IR-008",
+   "domain": "IR",
+   "subdomain": "",
+   "title": "Lessons learned after incidents",
+   "description": "Each significant incident ends with a review and owned, dated actions.",
+   "tier": "Medium",
+   "owner": "CISO",
+   "citations": {
+    "SEBI CSCRF": "SEBI CSCRF (2024)",
+    "RBI Primary Citation": "RBI IT governance directions (2023)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "ID.IM"
+   }
+  },
+  {
+   "id": "BCP-001",
+   "domain": "BCP",
+   "subdomain": "",
+   "title": "Business continuity and recovery targets",
+   "description": "Critical services have recovery time and data-loss targets, approved by the board.",
+   "tier": "Critical",
+   "owner": "Business continuity",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)",
+    "IRDAI 2023": "IRDAI information and cyber security guidelines (2023)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "RC.RP"
+   }
+  },
+  {
+   "id": "BCP-003",
+   "domain": "BCP",
+   "subdomain": "",
+   "title": "Isolated, immutable backups",
+   "description": "At least one backup copy cannot be changed or deleted, even by an administrator.",
+   "tier": "High",
+   "owner": "IT",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "RC.RP"
+   }
+  },
+  {
+   "id": "BCP-006",
+   "domain": "BCP",
+   "subdomain": "",
+   "title": "Recovery drills",
+   "description": "Recovery from backup and failover are tested on a schedule.",
+   "tier": "High",
+   "owner": "Business continuity",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)",
+    "IRDAI 2023": "IRDAI information and cyber security guidelines (2023)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "RC.RP"
+   }
+  },
+  {
+   "id": "BCP-010",
+   "domain": "BCP",
+   "subdomain": "",
+   "title": "Verified restores",
+   "description": "A restore is checked for completeness and integrity before it is trusted.",
+   "tier": "High",
+   "owner": "IT",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "RC.RP"
+   }
+  },
+  {
+   "id": "PS-001",
+   "domain": "PS",
+   "subdomain": "",
+   "title": "Physical security of data centres",
+   "description": "Data centres and network rooms are locked, monitored and access is logged.",
+   "tier": "Medium",
+   "owner": "Facilities",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)",
+    "IRDAI 2023": "IRDAI information and cyber security guidelines (2023)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "PR.AA"
+   }
+  },
+  {
+   "id": "HR-001",
+   "domain": "HR",
+   "subdomain": "",
+   "title": "Background checks and exit process",
+   "description": "Staff with sensitive access are vetted; access is removed on the day they leave.",
+   "tier": "Medium",
+   "owner": "HR",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)",
+    "IRDAI 2023": "IRDAI information and cyber security guidelines (2023)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "GV.RR"
+   }
+  },
+  {
+   "id": "AW-001",
+   "domain": "AW",
+   "subdomain": "",
+   "title": "Security awareness for all staff",
+   "description": "Everyone gets cyber awareness training each year, with phishing simulations.",
+   "tier": "High",
+   "owner": "HR / CISO",
+   "citations": {
+    "RBI Primary Citation": "RBI cyber security framework for banks (2016)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)",
+    "IRDAI 2023": "IRDAI information and cyber security guidelines (2023)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "PR.AT"
+   }
+  },
+  {
+   "id": "AW-002",
+   "domain": "AW",
+   "subdomain": "",
+   "title": "Customer awareness",
+   "description": "Customers are told how to spot fraud and how to report it.",
+   "tier": "Medium",
+   "owner": "Business",
+   "citations": {
+    "NPCI / PCI DSS / SWIFT": "RBI digital payment security controls (2021)",
+    "RBI Primary Citation": "RBI IT governance directions (2023)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "PR.AT"
+   }
+  },
+  {
+   "id": "AUD-001",
+   "domain": "AUD",
+   "subdomain": "",
+   "title": "Independent cyber audit",
+   "description": "An independent auditor checks cyber controls on a fixed schedule.",
+   "tier": "High",
+   "owner": "Internal audit",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)",
+    "IRDAI 2023": "IRDAI information and cyber security guidelines (2023)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "ID.IM"
+   }
+  },
+  {
+   "id": "AUD-004",
+   "domain": "AUD",
+   "subdomain": "",
+   "title": "Continuous control monitoring",
+   "description": "Key controls are checked automatically and continuously, not only at audit time.",
+   "tier": "Medium",
+   "owner": "Internal audit",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "DE.CM"
+   }
+  },
+  {
+   "id": "ET-001",
+   "domain": "ET",
+   "subdomain": "",
+   "title": "Governance of AI and machine-learning models",
+   "description": "AI models are listed, owned, tested before use and monitored.",
+   "tier": "High",
+   "owner": "CRO / CISO",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "GV.OC"
+   }
+  },
+  {
+   "id": "ET-008",
+   "domain": "ET",
+   "subdomain": "",
+   "title": "Advanced software supply-chain assurance",
+   "description": "Signed, reproducible builds and provenance for critical software.",
+   "tier": "Medium",
+   "owner": "Application owners",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "GV.SC"
+   }
+  },
+  {
+   "id": "ET-009",
+   "domain": "ET",
+   "subdomain": "",
+   "title": "Quantum threat assessment",
+   "description": "The risk quantum computing poses to today's cryptography is assessed and tracked.",
+   "tier": "Medium",
+   "owner": "CISO",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "ID.RA"
+   }
+  },
+  {
+   "id": "ET-010",
+   "domain": "ET",
+   "subdomain": "",
+   "title": "Guardrails for generative AI",
+   "description": "GenAI use is guarded against prompt injection, data leaks and unsafe actions.",
+   "tier": "High",
+   "owner": "CISO",
+   "citations": {
+    "RBI Primary Citation": "RBI IT governance directions (2023)",
+    "CII / CERT-In / DPDP": "DPDP Act (2023)",
+    "SEBI CSCRF": "SEBI CSCRF (2024)"
+   },
+   "frameworks": {
+    "NIST CSF 2.0 sub-cat": "PR.DS"
+   }
+  }
+ ]
+}

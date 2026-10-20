@@ -1,0 +1,389 @@
+{
+ "about": "Only the identifiers the exercise range uses, with MITRE's official names. Rebuild with exercise.frameworks.build().",
+ "versions": {
+  "attack": "20.0",
+  "atlas": "5.6.0",
+  "d3fend": "csv export"
+ },
+ "licences": {
+  "attack": "© The MITRE Corporation. ATT&CK Terms of Use: https://attack.mitre.org/resources/terms-of-use/",
+  "d3fend": "© The MITRE Corporation, MIT licence",
+  "atlas": "© The MITRE Corporation, Apache 2.0"
+ },
+ "attack": {
+  "T1003": {
+   "name": "OS Credential Dumping",
+   "tactics": [
+    "credential-access"
+   ]
+  },
+  "T1021.001": {
+   "name": "Remote Desktop Protocol",
+   "tactics": [
+    "lateral-movement"
+   ]
+  },
+  "T1021.004": {
+   "name": "SSH",
+   "tactics": [
+    "lateral-movement"
+   ]
+  },
+  "T1048": {
+   "name": "Exfiltration Over Alternative Protocol",
+   "tactics": [
+    "exfiltration"
+   ]
+  },
+  "T1053.003": {
+   "name": "Cron",
+   "tactics": [
+    "execution",
+    "persistence",
+    "privilege-escalation"
+   ]
+  },
+  "T1070": {
+   "name": "Indicator Removal",
+   "tactics": [
+    "stealth"
+   ]
+  },
+  "T1078": {
+   "name": "Valid Accounts",
+   "tactics": [
+    "stealth",
+    "persistence",
+    "privilege-escalation",
+    "initial-access"
+   ]
+  },
+  "T1078.001": {
+   "name": "Default Accounts",
+   "tactics": [
+    "stealth",
+    "persistence",
+    "privilege-escalation",
+    "initial-access"
+   ]
+  },
+  "T1098": {
+   "name": "Account Manipulation",
+   "tactics": [
+    "persistence",
+    "privilege-escalation"
+   ]
+  },
+  "T1098.004": {
+   "name": "SSH Authorized Keys",
+   "tactics": [
+    "persistence",
+    "privilege-escalation"
+   ]
+  },
+  "T1110": {
+   "name": "Brute Force",
+   "tactics": [
+    "credential-access"
+   ]
+  },
+  "T1110.001": {
+   "name": "Password Guessing",
+   "tactics": [
+    "credential-access"
+   ]
+  },
+  "T1136": {
+   "name": "Create Account",
+   "tactics": [
+    "persistence"
+   ]
+  },
+  "T1190": {
+   "name": "Exploit Public-Facing Application",
+   "tactics": [
+    "initial-access"
+   ]
+  },
+  "T1484.001": {
+   "name": "Group Policy Modification",
+   "tactics": [
+    "defense-impairment",
+    "privilege-escalation"
+   ]
+  },
+  "T1486": {
+   "name": "Data Encrypted for Impact",
+   "tactics": [
+    "impact"
+   ]
+  },
+  "T1491.002": {
+   "name": "External Defacement",
+   "tactics": [
+    "impact"
+   ]
+  },
+  "T1505.003": {
+   "name": "Web Shell",
+   "tactics": [
+    "persistence"
+   ]
+  },
+  "T1558.003": {
+   "name": "Kerberoasting",
+   "tactics": [
+    "credential-access"
+   ]
+  },
+  "T1560": {
+   "name": "Archive Collected Data",
+   "tactics": [
+    "collection"
+   ]
+  },
+  "T1566": {
+   "name": "Phishing",
+   "tactics": [
+    "initial-access"
+   ]
+  },
+  "T1595": {
+   "name": "Active Scanning",
+   "tactics": [
+    "reconnaissance"
+   ]
+  }
+ },
+ "d3fend": {
+  "D3-ACH": {
+   "name": "Application Configuration Hardening",
+   "tactic": "Harden",
+   "url": "https://d3fend.mitre.org/technique/d3f:ApplicationConfigurationHardening/"
+  },
+  "D3-AL": {
+   "name": "Account Locking",
+   "tactic": "Evict",
+   "url": "https://d3fend.mitre.org/technique/d3f:AccountLocking/"
+  },
+  "D3-ANET": {
+   "name": "Authentication Event Thresholding",
+   "tactic": "Detect",
+   "url": "https://d3fend.mitre.org/technique/d3f:AuthenticationEventThresholding/"
+  },
+  "D3-CRO": {
+   "name": "Credential Rotation",
+   "tactic": "Harden",
+   "url": "https://d3fend.mitre.org/technique/d3f:CredentialRotation/"
+  },
+  "D3-CV": {
+   "name": "Content Validation",
+   "tactic": "Isolate",
+   "url": "https://d3fend.mitre.org/technique/d3f:ContentValidation/"
+  },
+  "D3-DAM": {
+   "name": "Domain Account Monitoring",
+   "tactic": "Detect",
+   "url": "https://d3fend.mitre.org/technique/d3f:DomainAccountMonitoring/"
+  },
+  "D3-EAL": {
+   "name": "Executable Allowlisting",
+   "tactic": "Isolate",
+   "url": "https://d3fend.mitre.org/technique/d3f:ExecutableAllowlisting/"
+  },
+  "D3-EF": {
+   "name": "Email Filtering",
+   "tactic": "Isolate",
+   "url": "https://d3fend.mitre.org/technique/d3f:EmailFiltering/"
+  },
+  "D3-FH": {
+   "name": "File Hashing",
+   "tactic": "Detect",
+   "url": "https://d3fend.mitre.org/technique/d3f:FileHashing/"
+  },
+  "D3-FIM": {
+   "name": "File Integrity Monitoring",
+   "tactic": "Detect",
+   "url": "https://d3fend.mitre.org/technique/d3f:FileIntegrityMonitoring/"
+  },
+  "D3-ITF": {
+   "name": "Inbound Traffic Filtering",
+   "tactic": "Isolate",
+   "url": "https://d3fend.mitre.org/technique/d3f:InboundTrafficFiltering/"
+  },
+  "D3-LAM": {
+   "name": "Local Account Monitoring",
+   "tactic": "Detect",
+   "url": "https://d3fend.mitre.org/technique/d3f:LocalAccountMonitoring/"
+  },
+  "D3-MA": {
+   "name": "Message Analysis",
+   "tactic": "Detect",
+   "url": "https://d3fend.mitre.org/technique/d3f:MessageAnalysis/"
+  },
+  "D3-MFA": {
+   "name": "Multi-factor Authentication",
+   "tactic": "Harden",
+   "url": "https://d3fend.mitre.org/technique/d3f:Multi-factorAuthentication/"
+  },
+  "D3-NTA": {
+   "name": "Network Traffic Analysis",
+   "tactic": "Detect",
+   "url": "https://d3fend.mitre.org/technique/d3f:NetworkTrafficAnalysis/"
+  },
+  "D3-OTF": {
+   "name": "Outbound Traffic Filtering",
+   "tactic": "Isolate",
+   "url": "https://d3fend.mitre.org/technique/d3f:OutboundTrafficFiltering/"
+  },
+  "D3-PA": {
+   "name": "Process Analysis",
+   "tactic": "Detect",
+   "url": "https://d3fend.mitre.org/technique/d3f:ProcessAnalysis/"
+  },
+  "D3-RC": {
+   "name": "Restore Configuration",
+   "tactic": "Restore",
+   "url": "https://d3fend.mitre.org/technique/d3f:RestoreConfiguration/"
+  },
+  "D3-RF": {
+   "name": "Restore File",
+   "tactic": "Restore",
+   "url": "https://d3fend.mitre.org/technique/d3f:RestoreFile/"
+  },
+  "D3-SCP": {
+   "name": "System Configuration Permissions",
+   "tactic": "Harden",
+   "url": "https://d3fend.mitre.org/technique/d3f:SystemConfigurationPermissions/"
+  },
+  "D3-SJA": {
+   "name": "Scheduled Job Analysis",
+   "tactic": "Detect",
+   "url": "https://d3fend.mitre.org/technique/d3f:ScheduledJobAnalysis/"
+  },
+  "D3-SPP": {
+   "name": "Strong Password Policy",
+   "tactic": "Harden",
+   "url": "https://d3fend.mitre.org/technique/d3f:StrongPasswordPolicy/"
+  },
+  "D3-SU": {
+   "name": "Software Update",
+   "tactic": "Harden",
+   "url": "https://d3fend.mitre.org/technique/d3f:SoftwareUpdate/"
+  },
+  "D3-UAP": {
+   "name": "User Account Permissions",
+   "tactic": "Isolate",
+   "url": "https://d3fend.mitre.org/technique/d3f:UserAccountPermissions/"
+  }
+ },
+ "atlas": {
+  "AML.M0004": {
+   "name": "Restrict Number of AI Model Queries",
+   "tactics": [
+    "Mitigation"
+   ]
+  },
+  "AML.M0014": {
+   "name": "Verify AI Artifacts",
+   "tactics": [
+    "Mitigation"
+   ]
+  },
+  "AML.M0015": {
+   "name": "Adversarial Input Detection",
+   "tactics": [
+    "Mitigation"
+   ]
+  },
+  "AML.M0019": {
+   "name": "Control Access to AI Models and Data in Production",
+   "tactics": [
+    "Mitigation"
+   ]
+  },
+  "AML.M0020": {
+   "name": "Generative AI Guardrails",
+   "tactics": [
+    "Mitigation"
+   ]
+  },
+  "AML.M0023": {
+   "name": "AI Bill of Materials",
+   "tactics": [
+    "Mitigation"
+   ]
+  },
+  "AML.M0024": {
+   "name": "AI Telemetry Logging",
+   "tactics": [
+    "Mitigation"
+   ]
+  },
+  "AML.M0028": {
+   "name": "AI Agent Tools Permissions Configuration",
+   "tactics": [
+    "Mitigation"
+   ]
+  },
+  "AML.M0029": {
+   "name": "Human In-the-Loop for AI Agent Actions",
+   "tactics": [
+    "Mitigation"
+   ]
+  },
+  "AML.T0010": {
+   "name": "AI Supply Chain Compromise",
+   "tactics": [
+    "Initial Access"
+   ]
+  },
+  "AML.T0020": {
+   "name": "Poison Training Data",
+   "tactics": [
+    "Resource Development",
+    "Persistence"
+   ]
+  },
+  "AML.T0024": {
+   "name": "Exfiltration via AI Inference API",
+   "tactics": [
+    "Exfiltration"
+   ]
+  },
+  "AML.T0051": {
+   "name": "LLM Prompt Injection",
+   "tactics": [
+    "Execution"
+   ]
+  },
+  "AML.T0051.000": {
+   "name": "Direct",
+   "tactics": []
+  },
+  "AML.T0051.001": {
+   "name": "Indirect",
+   "tactics": []
+  },
+  "AML.T0053": {
+   "name": "AI Agent Tool Invocation",
+   "tactics": [
+    "Execution",
+    "Privilege Escalation"
+   ]
+  },
+  "AML.T0054": {
+   "name": "LLM Jailbreak",
+   "tactics": [
+    "Privilege Escalation",
+    "Defense Evasion"
+   ]
+  },
+  "AML.T0057": {
+   "name": "LLM Data Leakage",
+   "tactics": [
+    "Exfiltration"
+   ]
+  }
+ }
+}

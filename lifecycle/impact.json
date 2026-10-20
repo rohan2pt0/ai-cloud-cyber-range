@@ -1,5 +1,5 @@
 {
- "about": "Blast-radius map. For a change, `./securax impact` lists which components it touches, what they feed (downstream), and which real-product journeys prove they still work — so one change cannot silently hurt another part. Every tracked file must belong to a component (or be ignored on purpose); `fitness` fails otherwise, so the map cannot rot.",
+ "about": "Blast-radius map. For a change, `./securax impact` lists which components it touches, what they feed (downstream), and which real-product journeys prove they still work \u2014 so one change cannot silently hurt another part. Every tracked file must belong to a component (or be ignored on purpose); `fitness` fails otherwise, so the map cannot rot.",
  "components": {
   "gateway": {
    "paths": [
@@ -87,7 +87,8 @@
     "tls_edge",
     "tls_internal",
     "backup_encrypted",
-    "inspect_sandbox"
+    "inspect_sandbox",
+    "rollback_anytime"
    ],
    "affects": [
     "gateway",
@@ -176,7 +177,8 @@
     "gateway_residency",
     "cockpit_page",
     "backup_encrypted",
-    "inspect_sandbox"
+    "inspect_sandbox",
+    "rollback_anytime"
    ],
    "affects": []
   },
@@ -225,6 +227,8 @@
     "pytest.ini",
     ".gitignore",
     ".gitleaksignore",
+    "trivy.yaml",
+    ".trivyignore.yaml",
     ".gitattributes",
     "VERSION"
    ],
@@ -234,6 +238,16 @@
    "affects": [
     "estate-runtime"
    ]
+  },
+  "exercise": {
+   "paths": [
+    "exercise/**"
+   ],
+   "guarded_by": [
+    "exercise_lite_range",
+    "exercise_portal_ui"
+   ],
+   "affects": []
   }
  },
  "ignore": [
@@ -242,6 +256,8 @@
   "website/**",
   "tools/publish-clean.sh",
   "tools/readme_sync.py",
+  "tools/features_sync.py",
+  "features.json",
   "*.md",
   "LICENSE*",
   "CODEOWNERS",

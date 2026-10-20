@@ -1,0 +1,2 @@
+# Trivy settings for CI (devsecops.yml). Accepted findings live in .trivyignore.yaml, each scoped to one path with a reason.
+ignorefile: .trivyignore.yaml

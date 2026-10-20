@@ -4,6 +4,8 @@
 > **Status: 🟡 Partly built.** verify, autobuild, forge, route, lessons and the Claude-share lamp are real and tested; Claude did 98% of commits when this shipped, so building mostly without it is not yet proven. [What the lights mean](../index.md#the-status-lights)
 <!-- status:end -->
 
+> **Newer:** the step-by-step move off a Claude subscription, with the strong open-model chain, `./securax review` and October 2026 prices, is [doc 83](83-BUILD-WITH-OPEN-MODELS.md). Where this page and doc 83 differ, doc 83 is current.
+
 **Goal:** evolve SecuRAX using its *own* models, at near-zero cost, with the rigor of a frontier
 subscription — so a paid-Claude limit is never a single point of failure for the project.
 
@@ -30,8 +32,8 @@ So the strategy is three tiers + one discipline:
 
 ## Tier 1 — the build models (pick by cost/sovereignty)
 
-> **Default is `BUILD_MODEL=builder`** — a resilient *ladder* (cheap DeepSeek → free Gemini/Groq/OpenRouter →
-> local coder → local). A dead key, a rate limit or an outage slides to the next rung instead of stopping
+> **Default is `BUILD_MODEL=builder`** — a resilient *ladder* (OpenCode Go's DeepSeek V4.1 Flash and GLM Flash → free Groq/NVIDIA →
+> DeepSeek → Gemini/OpenRouter → local coder → local; the order is in `plugins/catalog.json`). Hard work uses `BUILD_MODEL=strong` (doc 83). A dead key, a rate limit or an outage slides to the next rung instead of stopping
 > your build. On a CPU-only 16 GB laptop treat the local coder as the offline fallback, not the plan.
 > See [24 · Resilience & low-resource](24-RESILIENCE-AND-LOW-RESOURCE.md).
 
@@ -40,7 +42,8 @@ trusting any name here. Verify current pricing on each provider's page (it moves
 
 | Use | Model (set `BUILD_MODEL=`) | Cost | Why |
 |---|---|---|---|
-| **Default build** | `deepseek` | ~1/6–1/7 of frontier per token | Strong coder, extremely cheap API. The workhorse. |
+| **Default build** | `builder` (the ladder above) | flat $10 a month on OpenCode Go, then free tiers | Never stops: each rung falls to the next. |
+| **Hard work** | `strong` (DeepSeek V4 Pro, Kimi K3, GLM 5.3) | inside the same Go plan, with smaller allowances | For what the router sends to the strong tier (doc 83). |
 | **Sovereign / offline** | `coder` (local Qwen2.5-Coder) | **Free** | Runs on your box. Needs enough RAM (below). |
 | **Free cloud** | `gemini` (free tier) / `openrouter` free models | **Free** | Zero cost; good for docs, tests, small changes. |
 | **Alternates** | `mistral`, GLM/MiniMax/Kimi via OpenRouter | cheap | Diversify so no one provider is a SPOF. |

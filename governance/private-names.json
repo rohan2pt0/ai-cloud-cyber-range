@@ -1,0 +1,10 @@
+{
+ "about": "SHA-256 fingerprints of lower-cased names that must never appear in this public repository (governance/private_names.py). Add with ./securax privacy add \"Name\".",
+ "fingerprints": [
+  "10b7ab7b0b47b08a9a17825549eb976b1e533211d5c47108ccfd55aa56d75a8f",
+  "13ecea3702bbd1cdbfd9efc91b61ef7553e2c859f260500a79838ad65e7fbc83",
+  "16f4fbc7db04b39e33ac7fb3bc30ce81ea6dc09d3fa8d6bd7d34f0bd7e4d1280",
+  "5b2c0f4ceeb325b9312b5b7d9ff02d45e6e2910c9862d5c1b68a99e3267e847d",
+  "675a49f9e669bbfaf3ad1ffd7753605b274a53cee1de08a453db184af0390999"
+ ]
+}

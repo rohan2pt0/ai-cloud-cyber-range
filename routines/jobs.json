@@ -105,6 +105,30 @@
     "kind": "nudge"
   },
   {
+    "id": "storage-guard",
+    "cron": "40 */6 * * *",
+    "command": [
+      "./securax",
+      "storage",
+      "--auto"
+    ],
+    "description": "Every 6 hours: fold old exercise data into totals, remove old versions of images SecuRAX built itself, run the safe clean-ups when space is tight, and alert your phone only if the disk is still short afterwards. Never touches volumes, backups or third-party images.",
+    "enabled": true,
+    "kind": "guard"
+  },
+  {
+    "id": "rollback-check",
+    "cron": "35 6 * * 1",
+    "command": [
+      "./securax",
+      "rollback",
+      "--check"
+    ],
+    "description": "Mondays 6:35am: confirm every recorded working version can still be restored (its code is pinned in git and its data backup is on disk). Changes nothing; a failure reaches your phone through the andon digest.",
+    "enabled": true,
+    "kind": "guard"
+  },
+  {
     "id": "andon",
     "cron": "*/15 * * * *",
     "command": [

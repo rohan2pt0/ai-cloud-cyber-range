@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
-"""The BFSI control library: every RBI / SEBI / IRDAI / IFSCA / NCIIPC / CERT-In / DPDP obligation as one set of controls,
+"""The BFSI control library: every RBI / SEBI / IRDAI / IFSCA / CII / CERT-In / DPDP obligation as one set of controls,
 with per-class applicability, citations, evidence and audit tests, and a visual navigator for it.
 
     ./securax controls import [WORKBOOK.xlsx]  read the gap-assessment workbook into vault/controls/library.json (private). No path, a
                                                wrong one or a folder: it finds the workbook in Downloads/Documents/Desktop/vault/inbox
     ./securax controls auto                    import it only if a newer workbook is there (./securax go runs this)
     ./securax controls profile [CLASS]         what applies: the CEILING (strictest of all 22 classes) or one class
-    ./securax controls dominance               which classes are fully covered by complying with SCB/PSB (and the exceptions)
+    ./securax controls dominance               which classes are fully covered by complying with the first class (SCB/PSB in your workbook) and the exceptions
     ./securax controls navigator               write portal/navigator.html (+ one page per class): grid, radar, heat map
     ./securax controls gaps [CLASS]            the vital few: critical MUST controls not proven and below target
 
@@ -31,6 +31,7 @@ import zipfile
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 LIB = ROOT / "vault" / "controls" / "library.json"
 PACKS = ROOT / "governance" / "controls" / "packs"
+STARTER = ROOT / "governance" / "controls" / "starter.json"       # public, plain-words library used until you import your own workbook
 SXMAP = ROOT / "governance" / "controls" / "securax-map.json"
 OUT = ROOT / "portal" / "navigator.html"
 RANK = {"MUST": 3, "SHOULD": 2, "MAY": 1, "N/A": 0, "": 0}
@@ -43,8 +44,8 @@ DOMAINS = {"GOV": "Governance", "RM": "Risk management", "IAM": "Identity & acce
            "IR": "Incident response", "BCP": "Resilience & BCP", "PS": "Physical", "HR": "People", "AW": "Awareness",
            "AUD": "Audit & assurance", "ET": "Emerging tech & AI"}
 REGULATORS = [("RBI", ("RBI Primary Citation", "RBI Secondary Citation")), ("SEBI", ("SEBI CSCRF",)), ("IRDAI", ("IRDAI 2023",)),
-              ("IFSCA", ("IFSCA 2025",)), ("NPCI / PCI / SWIFT", ("NPCI / PCI DSS / SWIFT",)), ("NCIIPC / CERT-In / DPDP", ("NCIIPC / CERT-In / DPDP",)),
-              ("NSCS audit baseline (pack)", ("NSCS Audit Baseline 2020",)), ("NCIIPC CII framework (pack)", ("NCIIPC CII Framework",)),
+              ("IFSCA", ("IFSCA 2025",)), ("NPCI / PCI / SWIFT", ("NPCI / PCI DSS / SWIFT",)), ("CII / CERT-In / DPDP", ("CII / CERT-In / DPDP",)),
+              ("NSCS audit baseline (pack)", ("NSCS Audit Baseline 2020",)), ("National CII guidance (pack)", ("CII Framework",)),
               ("RBI model risk draft 2026 (pack)", ("RBI MRM draft 2026",)),
               ("RBI Payments Vision 2028 (pack)", ("RBI Payments Vision 2028",))]
 _NS = {"m": "http://schemas.openxmlformats.org/spreadsheetml/2006/main",
@@ -154,11 +155,23 @@ def _num(v):
         return None
 
 
+# A workbook or an older library may name the national CII agency in a column title; the public code keeps the neutral name.
+_OLD_KEYS = ((re.compile(r"^[A-Z]{3,10} / CERT-In / DPDP$"), "CII / CERT-In / DPDP"), (re.compile(r"^[A-Z]{3,10} CII Framework$"), "CII Framework"))
+
+
+def neutral(key: str) -> str:
+    """The neutral column name for a citation column (an agency's name in the title becomes 'CII')."""
+    for rx, new in _OLD_KEYS:
+        if rx.match(key):
+            return new
+    return key
+
+
 def _table(rows: list[list], first: str) -> list[dict]:
     """Rows under the header row whose first cell is `first`, as dicts."""
     for i, r in enumerate(rows):
         if r and str(r[0] or "").strip() == first:
-            head = [str(h or "").strip() for h in r]
+            head = [neutral(str(h or "").strip()) for h in r]
             return [dict(zip(head, x + [None] * (len(head) - len(x)))) for x in rows[i + 1:] if x and x[0]]
     return []
 
@@ -169,7 +182,7 @@ def import_workbook(path: pathlib.Path) -> dict:
     if cat is None:
         raise SystemExit("not a gap-assessment workbook: no 'Master Catalogue' sheet")
     rows = _table(cat, "Control ID")
-    head = [str(h or "").strip() for h in next(r for r in cat if r and str(r[0] or "").strip() == "Control ID")]
+    head = [neutral(str(h or "").strip()) for h in next(r for r in cat if r and str(r[0] or "").strip() == "Control ID")]
     classes = head[head.index("Residual Risk") + 1:] if "Residual Risk" in head else []
     regcols = [c for _, cols in REGULATORS for c in cols]
     fw = ["NIST CSF 2.0 sub-cat", "ISO 27001/22301/etc.", "CIS Controls v8.1", "Other Global (DORA/MAS/BCBS)"]
@@ -198,12 +211,32 @@ def import_workbook(path: pathlib.Path) -> dict:
 
 
 # ---------------------------------------------------------------------------------------------------- library + packs
+def starter(path: pathlib.Path | None = None) -> dict:
+    """The public starter library. Which class a control applies to follows its tier: Critical is MUST for everyone; High is MUST for
+    larger entities and SHOULD for the smaller ones; Medium is SHOULD (MAY for smaller ones); Low is MAY."""
+    data = json.loads((path or STARTER).read_text("utf-8"))
+    small = set(data.pop("smaller", []))
+    rule = {"Critical": ("MUST", "MUST"), "High": ("MUST", "SHOULD"), "Medium": ("SHOULD", "MAY"), "Low": ("MAY", "MAY")}
+    for c in data["controls"]:
+        big, little = rule.get(c.get("tier"), ("MAY", "MAY"))
+        c.setdefault("applicability", {k: little if k in small else big for k in data["classes"]})
+        c.setdefault("assessment", {})
+        for k in ("evidence", "test", "remediation", "ppt", "cost", "timeline", "mitre"):
+            c.setdefault(k, "")
+    data["meta"]["imported"] = data["meta"].get("imported") or "built in"
+    return data
+
+
 def load(lib: pathlib.Path | None = None, packs: pathlib.Path | None = None) -> dict | None:
+    """Your imported library, plus the packs. With no library of your own, the public starter library (so the matrix always works)."""
+    use_starter = lib is None and not LIB.exists()
     lib, packs = lib or LIB, packs or PACKS
     try:
-        data = json.loads(lib.read_text("utf-8"))
+        data = starter() if use_starter else json.loads(lib.read_text("utf-8"))
     except (OSError, ValueError):
         return None
+    for c in data["controls"]:                                    # a library imported before the neutral names
+        c["citations"] = {neutral(k): v for k, v in c.get("citations", {}).items()}
     by_id = {c["id"]: c for c in data["controls"]}
     for p in sorted(packs.glob("*.json")) if packs.is_dir() else []:
         pack = json.loads(p.read_text("utf-8"))
@@ -227,8 +260,14 @@ def level(c: dict, cls: str) -> str:
     return ceiling(c) if cls == CEILING else c["applicability"].get(cls, "N/A")
 
 
-def dominance(data: dict, top: str = "SCB/PSB") -> dict[str, list[str]]:
+def base_class(data: dict) -> str:
+    """The class the others are compared with: SCB/PSB in the full workbook, otherwise the library's first class."""
+    return "SCB/PSB" if "SCB/PSB" in data["classes"] else data["classes"][0]
+
+
+def dominance(data: dict, top: str | None = None) -> dict[str, list[str]]:
     """For each class: the controls where it is STRICTER than `top`, i.e. what complying with `top` alone would miss."""
+    top = top or base_class(data)
     return {cls: [c["id"] for c in data["controls"] if RANK.get(c["applicability"].get(cls, ""), 0) > RANK.get(c["applicability"].get(top, ""), 0)]
             for cls in data["classes"]}
 
@@ -291,10 +330,10 @@ main{max-width:1400px;margin:0 auto;padding:14px}a{color:var(--b)}h1{font-size:1
 .cell.proven,.cell.met{background:#1f6f3b}.cell.partial,.cell.near{background:#7a5a12}.cell.far{background:#8e2a24}.cell.org{background:var(--u)}
 .cell.na{background:var(--na);color:#4b5866}.cell.crit{border-color:#fff}.cell.should{opacity:.82}.cell.may{opacity:.6}
 .legend span{display:inline-flex;align-items:center;gap:5px;margin-right:14px}.legend i{width:14px;height:14px;border-radius:3px;display:inline-block}
-.two{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(420px,1fr))}
+.two{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(420px,100%),1fr))}
 .hm{border-collapse:collapse}.hm td,.hm th{width:58px;height:40px;text-align:center;border:1px solid var(--line);font-size:.85rem}
 .bar{height:12px;border-radius:3px;background:var(--g);display:inline-block;vertical-align:middle}.bar.p{background:var(--a)}.bar.o{background:var(--u)}
-table.t{border-collapse:collapse;width:100%}table.t td,table.t th{border-bottom:1px solid var(--line);padding:5px 6px;text-align:left;vertical-align:top}
+table.t{border-collapse:collapse;width:100%}@media (max-width:600px){table.t{display:block;overflow-x:auto;max-width:100%}}.card{min-width:0}table.t td,table.t th{border-bottom:1px solid var(--line);padding:5px 6px;text-align:left;vertical-align:top}
 .profiles a{display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border:1px solid var(--line);border-radius:99px;text-decoration:none;font-size:.8rem}.profiles a.on{background:var(--b);color:#000}
 .det{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9;overflow:auto;padding:4vh 12px}.det:target{display:block}
 .det .box{max-width:820px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px}
@@ -403,8 +442,10 @@ def heatmap(data: dict, cls: str, risks: list | None = None, sx: dict | None = N
     return ("".join(h) + f"</table><p class='muted'>Plotted: {E('; '.join(src))}. Hover a square for the controls in it. "
             "Score = likelihood × impact: 20–25 critical (act within 30 days), 12–19 high (90 days), 6–11 medium, 1–5 low.</p>"
             "<p class='muted'><b>How SecuRAX estimates:</b> impact from the control's tier (Critical 5, High 4, Medium 3, Low 2); likelihood from the evidence "
-            "(proven or at your target 1, partly 3, not evidenced 4). <b>To set your own:</b> fill the yellow <b>Likelihood</b> and <b>Impact</b> cells "
-            "in the workbook, save it in Downloads, then run <code>./securax go</code> (or <code>./securax controls import</code>): it finds and imports it. Your score always replaces the estimate.</p>")
+            "(proven or at your target 1, partly 3, not evidenced 4). " + (
+            "<b>Your own scores:</b> the built-in starter library has none, so every square is SecuRAX's estimate. That is enough to start." if data["meta"].get("starter") else
+            "<b>To set your own:</b> fill the yellow <b>Likelihood</b> and <b>Impact</b> cells in the workbook, save it in Downloads, then run "
+            "<code>./securax go</code> (or <code>./securax controls import</code>): it finds and imports it. Your score always replaces the estimate.") + "</p>")
 
 
 def regulator_bars(data: dict, cls: str, sx: dict) -> str:
@@ -464,19 +505,24 @@ def page(data: dict, cls: str, sx: dict, dom: dict, risks: list | None = None, r
     pressure = rmod.control_pressure(risks) if rmod else {}
     late = rmod.overdue(risks) if rmod else []
     gaps = vital_gaps(data, cls, sx, pressure=pressure)
-    misses = [] if cls == CEILING else dom.get(cls, []) if cls != "SCB/PSB" else []
+    top = base_class(data)
+    misses = [] if cls == CEILING else dom.get(cls, []) if cls != top else []
     stamp = dt.datetime.now().strftime("%d %b %Y %H:%M")
     h = [f"<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
          f"<title>Control navigator · {E(cls)}</title><style>{CSS}</style></head><body><main>"]
-    h.append(f"<div class='muted'>SecuRAX control navigator · {E(data['meta'].get('version') or data['meta']['source'])} · imported {E(data['meta']['imported'])} · "
+    h.append(f"<div class='muted'>SecuRAX control navigator · {E(data['meta'].get('version') or data['meta']['source'])} · {'built in' if data['meta'].get('starter') else 'imported ' + E(data['meta']['imported'])} · "
              f"page {E(stamp)} · <a href='/portal/cockpit.html'>Cockpit</a> · <a href='/hub.html'>All apps</a></div>")
     h.append(f"<h1>{E(cls)}: {len(app)} controls apply, {len(must)} of them MUST</h1>")
+    if data["meta"].get("starter"):
+        h.append("<div class='card'><b>This is the built-in starter library</b> (public, written in plain words, regulators cited by name only). "
+                 "It works with no file from you. If your organisation has its own gap-assessment workbook, save it in Downloads and run "
+                 "<code>./securax go</code>: it replaces this one automatically and stays private on your machine.</div>")
     # Master caution / warning panel: lamps light only when something is abnormal (the dark-cockpit rule).
     lamps = [("warn" if crit_open else "ok", len(crit_open), "Critical MUST controls not proven or at target"),
              ("caut" if gaps else "ok", len(gaps), "Vital few to close next (below)"),
              ("ok" if proven else "caut", proven, f"Proven or at target (of {len(app)})"),
              ("caut" if not scored else "ok", scored, "Controls you have scored"),
-             ("warn" if misses else "ok", len(misses), "Stricter here than SCB/PSB" if cls != CEILING else "Ceiling: covers every class"),
+             ("warn" if misses else "ok", len(misses), f"Stricter here than {top}" if cls != CEILING else "Ceiling: covers every class"),
              ("warn" if late else "ok", len(late), "Risk treatments overdue (./securax risks overdue)")]
     h.append("<div class='card'><h2>Master caution</h2><div class='annun'>" + "".join(
         f"<div class='lamp {k}'><b>{v}</b>{E(t)}</div>" for k, v, t in lamps) + "</div></div>")
@@ -484,7 +530,7 @@ def page(data: dict, cls: str, sx: dict, dom: dict, risks: list | None = None, r
     h.append("<div class='card'><h2>Profile</h2><div class='profiles'>" + "".join(
         f"<a class='{'on' if p == cls else ''}' href='/portal/navigator/{slug(p)}.html'>{E(p)}</a>" for p in profiles) + "</div>"
         "<p class='muted'>The <b>ceiling</b> takes the strictest requirement for each control across all classes, so meeting it meets every class. "
-        "SCB/PSB alone is not enough for every class: see the exceptions table below.</p></div>")
+        f"{E(top)} alone is not enough for every class: see the exceptions table below.</p></div>")
     if gaps:
         h.append("<div class='card'><h2>The vital few (80/20)</h2><table class='t'><tr><th>Control</th><th>Tier</th><th>Why it matters</th><th>Owner</th></tr>" + "".join(
             f"<tr><td><b>{E(c['id'])}</b> {E(c['title'])}</td><td>{E(c['tier'])}</td><td class='muted'>{E(str(c.get('remediation') or c.get('description'))[:160])}</td><td>{E(c.get('owner') or '')}</td></tr>"
@@ -523,10 +569,10 @@ def page(data: dict, cls: str, sx: dict, dom: dict, risks: list | None = None, r
                        f"<td>{'' if r['me'] is None else r['me']}</td></tr>" for r in rows) + f"</table></div><div class='card'><h2>Risk heat map (5 × 5)</h2>{heatmap(data, cls, risks, sx)}</div></div>")
     h.append(f"<div class='card'><h2>Regulators</h2>{regulator_bars(data, cls, sx)}</div>")
     exc = {k: v for k, v in dom.items() if v}
-    h.append("<div class='card'><h2>Does complying with SCB/PSB cover the others?</h2>"
-             + ("<p>For these classes, SCB/PSB compliance alone leaves controls uncovered (they are stricter there):</p><table class='t'>"
+    h.append(f"<div class='card'><h2>Does complying with {E(top)} cover the others?</h2>"
+             + (f"<p>For these classes, {E(top)} compliance alone leaves controls uncovered (they are stricter there):</p><table class='t'>"
                 + "".join(f"<tr><td>{E(k)}</td><td>{', '.join(E(i) for i in v)}</td></tr>" for k, v in exc.items()) + "</table>"
-                if exc else "<p>Yes: no class is stricter than SCB/PSB on any control.</p>")
+                if exc else f"<p>Yes: no class is stricter than {E(top)} on any control.</p>")
              + "<p class='muted'>The ceiling profile includes these, so meeting the ceiling covers every class.</p></div>")
     h.append("<div class='card muted'>Colours show your own maturity score where you entered one, otherwise what SecuRAX proves with evidence "
              "(<code>governance/controls/securax-map.json</code>). Grey is not a failure: it marks a duty only the organisation can meet. "
@@ -552,7 +598,7 @@ def write_navigator(data: dict, out: pathlib.Path | None = None) -> list[pathlib
 def _need() -> dict:
     data = load()
     if not data:
-        raise SystemExit("No control library yet. Save the workbook in Downloads, then run:  ./securax controls import   (it finds the file itself)")
+        raise SystemExit("The control library could not be read. Run  ./securax doctor  (the built-in starter library ships with SecuRAX).")
     return data
 
 
@@ -576,7 +622,8 @@ def main(argv: list[str] | None = None) -> int:
             found = found or [f for f in find_xlsx() if is_library_workbook(f)]
             if cmd == "auto":                                   # ./securax go: import only a workbook newer than the library
                 if not found or (LIB.exists() and found[0].stat().st_mtime <= LIB.stat().st_mtime):
-                    print("library current" if LIB.exists() else "no workbook found")
+                    write_navigator(load())                 # always a matrix: your library, or the built-in starter library
+                    print("library current" if LIB.exists() else "using the built-in starter library (no workbook of your own: that is fine)")
                     return 0
                 got = found[:1]
             else:
@@ -607,8 +654,10 @@ def main(argv: list[str] | None = None) -> int:
         print(f"{cls}: " + ", ".join(f"{counts.get(k, 0)} {k}" for k in ("MUST", "SHOULD", "MAY", "N/A")))
         return 0
     if cmd == "dominance":
-        for cls, ids in dominance(_need()).items():
-            print(f"{'✔' if not ids else '✗'} {cls:<16} " + ("covered by SCB/PSB" if not ids else "stricter than SCB/PSB on " + ", ".join(ids)))
+        data = _need()
+        top = base_class(data)
+        for cls, ids in dominance(data).items():
+            print(f"{'✔' if not ids else '✗'} {cls:<16} " + (f"covered by {top}" if not ids else f"stricter than {top} on " + ", ".join(ids)))
         print("The ceiling profile (./securax controls profile) covers every class.")
         return 0
     if cmd == "navigator":

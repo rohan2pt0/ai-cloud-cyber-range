@@ -85,7 +85,7 @@ your task → build agent (free models via the gateway) → verify → diffcheck
         git -C ~/securax remote set-url origin git@github.com:rohan2pt0/ai-cloud-cyber-range.git
         ```
 
-2. **Check the build chain** (Groq first, then NVIDIA NIM, DeepSeek, Gemini, OpenRouter, ending on local):
+2. **Check the build chain** (the order lives in `plugins/catalog.json`; `./securax providers chain builder` prints it, always ending on local; doc 83 has the strong chain):
 
     ```bash
     ./securax providers chain builder show

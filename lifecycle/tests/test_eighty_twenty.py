@@ -18,22 +18,22 @@ IMPACT = {"components": {"gateway": {"paths": ["apps/llm-gateway/**"]}, "pwa": {
                          "gov": {"paths": ["governance/**"]}, "site": {"paths": ["website/**"]}, "life": {"paths": ["lifecycle/**"]}}}
 
 
-def test_route_sends_sensitive_work_to_claude_and_the_rest_to_the_cheap_tier():
+def test_route_sends_sensitive_work_to_the_strong_tier_and_the_rest_to_the_cheap_tier():
     r = route._load(route.RULES)
-    assert route.decide("fix the OneDrive sync merge conflict", rules=r, impact=IMPACT)["tier"] == "claude"
-    assert route.decide("tidy apps/llm-gateway/app/guardrails.py", rules=r, impact=IMPACT)["tier"] == "claude"
+    assert route.decide("fix the OneDrive sync merge conflict", rules=r, impact=IMPACT)["tier"] == "strong"
+    assert route.decide("tidy apps/llm-gateway/app/guardrails.py", rules=r, impact=IMPACT)["tier"] == "strong"
     assert route.decide("add a /metrics endpoint with a test", rules=r, impact=IMPACT)["tier"] == "local"
     assert route.decide("fix the author line in the README", rules=r, impact=IMPACT)["tier"] == "local"     # "author" is not auth
     assert route.decide("rename across the cockpit and update the docs", rules=r, impact=IMPACT)["tier"] == "opencode"
     two = route.decide("tweak", ["guiding-map/ops.js", "governance/finish.py"], rules=r, impact=IMPACT)
     assert two["tier"] == "opencode" and set(two["areas"]) == {"pwa", "gov"}
     many = route.decide("tweak", ["guiding-map/a", "governance/b", "website/c", "lifecycle/d"], rules=r, impact=IMPACT)
-    assert many["tier"] == "claude" and "spans 4 areas" in many["why"][0]
+    assert many["tier"] == "strong" and "spans 4 areas" in many["why"][0]
 
 
 def test_every_sensitive_path_in_the_rules_exists_so_the_line_cannot_silently_move():
     import glob
-    for pat in route._load(route.RULES)["claude_paths"]:
+    for pat in route._load(route.RULES)["strong_paths"]:
         assert glob.glob(str(REPO / pat), recursive=True), f"route.json names a path that no longer exists: {pat}"
 
 
@@ -69,3 +69,10 @@ def test_share_counts_who_wrote_each_commit(tmp_path):
     assert len(rep) == 1 and rep[0]["claude"] == 1 and rep[0]["cheap"] == 2 and rep[0]["you"] == 1 and rep[0]["claude_share"] == 0.25
     assert not rep[0]["over_goal"]                                                   # under MIN_COMMITS: no lamp yet
     assert share.kind("x\n\nco-authored-by: claude") == "claude" and share.kind("autobuild: y") == "cheap"
+    assert share.kind("fix the hub\n\nAssisted-by: SecuRAX open models (opencode, strong)") == "cheap"
+
+
+def test_an_old_rules_file_with_claude_keys_still_routes():
+    old = {"claude_paths": ["governance/crypto.py"], "claude_words": ["merge"]}
+    assert route.decide("fix the merge", rules=old, impact=IMPACT)["tier"] == "strong"
+    assert route.decide("tweak governance/crypto.py", rules=old, impact=IMPACT)["tier"] == "strong"

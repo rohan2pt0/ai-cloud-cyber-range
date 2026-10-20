@@ -10,9 +10,10 @@ Run `./securax route "the task"`. It names the tier, and why:
 
 - **local**: one area, an existing pattern, a clear test. `./securax autobuild "…"`.
 - **opencode**: several files, but the design is decided. `./securax opencode`.
-- **claude**: security, crypto, auth, sync or merge logic, regulator mapping, or a change across many areas. `./securax escalate "…"` writes the brief.
+- **strong**: security, crypto, auth, sync or merge logic, regulator mapping, or a change across many areas. `./securax autobuild "…"` uses the strong open models by itself; work on it by hand in `./securax opencode --strong` (doc 83).
 
-`./securax ai share` shows how much of this month's work Claude did. The goal is about a fifth.
+Before merging anything the router calls strong, get a second look: `./securax review`. `./securax ai share` shows who did this month's work
+(Claude, the open models, you). Commits made with SecuRAX's own models end with the line `Assisted-by: SecuRAX open models`.
 
 ## 2. Where things are
 
@@ -25,6 +26,7 @@ Run `./securax route "the task"`. It names the tier, and why:
 | `lifecycle/` | fitness checks, impact map, forge gate, diffcheck, vet, routing | `lifecycle/tests/` |
 | `website/`, `docs/` | product site and MkDocs docs; `bash website/build.sh` builds both | `mkdocs build --strict` |
 | `vault/` | private data (workbooks, registers, ticks). Never commit it, never paste it | — |
+| `features.json` | the one list of what SecuRAX can do; `python3 tools/features_sync.py` writes it into the Command Center, website, docs home and README | fitness `features-current` |
 
 ## 3. Before you call it done
 
@@ -36,6 +38,8 @@ Run `./securax route "the task"`. It names the tier, and why:
    - **Status lights:** edit `docs/status.yml`, then run `python3 docs/sync_status.py`.
    - **Docs nav:** a new doc goes in `mkdocs.yml` nav.
    - **README:** `python3 tools/readme_sync.py`.
+   - **A new or renamed feature:** edit `features.json`, then `python3 tools/features_sync.py` (it also refreshes every counted fact).
+   - **A new command:** a line in `./securax help` (fitness `commands-in-help`).
    - **Docs build:** `mkdocs build --strict`.
 5. Re-read your own diff as a reviewer would. Fix what you find before anyone else sees it.
 
@@ -44,15 +48,33 @@ Run `./securax route "the task"`. It names the tier, and why:
 - **Brand values** (domain, e-mail, names) live only in `brand.env`; `./securax config check` fails otherwise.
 - **The repository is public:**
   - no personal data, no employer or role hints, no uploaded document text
+  - no name on the private list: `./securax privacy check` (only fingerprints are stored; `privacy add "Name"` adds one)
   - regulator documents are cited by reference and paraphrased, never copied
 - **Test data must not look like real data.** The PII gate flags 13–19 digit runs, including all-zero GUIDs. Use obviously fake values.
 - **Generated files stay out of git:** `portal/cockpit*`, `portal/navigator*`, `portal/setup.json`, `website/docs/`.
 - **No new dependency or network call** without a reason in the PR. The estate must run offline.
 - **Never weaken a rail, skip a test or fake a green** to finish (`diffcheck` and `forge gate` catch it).
 - **Users are not experts.** Every command a user sees must work exactly as printed. Never print a placeholder such as `FILE.xlsx` without a fallback that finds the file.
+- **Never depend on a file the user may not have.** Ship a working default (like the starter control library) and let their own file improve it.
+- **No hand-kept counts.** A number on a page (tests, journeys, maps) is a `<!-- fact:NAME -->` that the generator fills.
 - **Write plainly:** short sentences, one idea each, no jargon without a gloss.
 
 ## 5. When you learn something
 
 When a check failed for a reason the next agent could avoid, add one line:
 `./securax lessons add "what happened → what to do instead"`. Autobuild does this by itself when a red attempt turns green.
+
+## 6. When the owner shares documents or a new idea
+
+1. **Read all of it, and keep it private.** Uploaded material stays in `vault/` or a scratch folder. The repository gets only the cue, in our own words.
+2. **Diagnose before building.** Compare it with what already exists. Fix what is broken; do not rebuild what works.
+3. **Take the 20% that gives 80%.** Risk first, then what the current machine and budget allow. Say plainly what waits, and give it a target date.
+4. **Apply it without breaking anything.**
+   - **Blast radius:** run `./securax impact` to see what the change can affect.
+   - **Proof:** tests and a sandbox journey for the new behaviour.
+   - **No new single point of failure:** a second copy, a fallback, or a way back.
+5. **Bound what grows.** Anything new that writes data names its limit and its storage tier (doc 80), and `storage --auto` can clean it.
+6. **Record it.**
+   - **Ledger:** one row in the ledger of the doc it touched (for the range, "Cues taken from your material" in doc 79).
+   - **CHANGELOG:** one line.
+   - **Status:** the doc's status light.

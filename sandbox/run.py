@@ -345,6 +345,48 @@ def j_update(sb: H.Sandbox, c: Checks):
     c.ok(git("status", "--porcelain")[1].strip() == "", "…and the checkout is clean afterwards")
 
 
+@journey("rollback_anytime", "`./securax rollback` on the real estate: each healthy start is recorded as a working version; going back to an older one takes a backup, pins where you were, and the estate is READY on the older code; `--check` confirms every version can be restored; `--latest` comes forward again; the checkout is left as found.", slow=True)
+def j_rollback(sb: H.Sandbox, c: Checks):
+    sb.down()
+    sb.reset_env(SECURAX_LITE="1")
+    home = sb.clone.parent / "rbhome"
+    shutil.rmtree(home, ignore_errors=True)
+    env = {**os.environ, "SECURAX_HOME_DIR": str(home), "SECURAX_NO_OPEN": "1"}
+    sx = lambda *a, t=1500: H.sh(["bash", "./securax", *a], cwd=sb.clone, env=env, timeout=t)  # noqa: E731
+    git = lambda *a: H.sh(["git", "-c", "user.name=sbx", "-c", "user.email=sbx@example.com", *a], cwd=sb.clone)  # noqa: E731
+    git("checkout", "-q", "-B", "main")
+    first = git("rev-parse", "HEAD")[1].strip()
+    try:
+        rc, out = sx("up")
+        c.ok(rc == 0 and sx("ready", t=60)[0] == 0, "the estate starts and answers READY", tail(out, 300))
+        rc, out = sx("rollback", "--list", t=60)
+        c.ok(first[:9] in out and "running now" in out, "that healthy start is recorded as a working version", out)
+        (sb.clone / "ROLLBACK-DRILL.txt").write_text("a second, newer version\n")
+        git("add", "ROLLBACK-DRILL.txt")
+        git("commit", "-q", "-m", "a newer version")
+        second = git("rev-parse", "HEAD")[1].strip()
+        rc, out = sx("up")
+        rc, out = sx("rollback", "--list", t=60)
+        c.ok(second[:9] in out and first[:9] in out, "the newer healthy start is recorded too", out)
+        rc, out = sx("rollback", "--yes", t=2400)
+        c.ok(rc == 0 and git("rev-parse", "HEAD")[1].strip() == first and not (sb.clone / "ROLLBACK-DRILL.txt").exists(),
+             "`rollback` goes back to the older working version", tail(out, 600))
+        c.ok("backed up first" in out and git("for-each-ref", "--format=%(objectname)", "refs/securax/before-rollback/")[1].strip() == second,
+             "...after taking a backup, with the version it left pinned so it can come forward again", tail(out, 600))
+        c.ok(sx("ready", t=60)[0] == 0 and "pinned" in sx("rollback", "--status", t=60)[1], "...the estate is READY on the older code, and says it is pinned")
+        rc, out = sx("rollback", "--check", t=60)
+        c.ok(rc == 0, "`rollback --check`: every recorded working version can still be restored", out)
+        rc, out = sx("rollback", "--latest", t=2400)
+        c.ok(rc == 0 and git("rev-parse", "--abbrev-ref", "HEAD")[1].strip() == "main" and git("rev-parse", "HEAD")[1].strip() == second,
+             "`rollback --latest` comes forward to the newest version, healthy", tail(out, 600))
+    finally:
+        git("checkout", "-q", "-f", "main")
+        git("reset", "-q", "--hard", first)                     # later journeys share this checkout: leave it as found
+        for ref in git("for-each-ref", "--format=%(refname)", "refs/securax/")[1].split():
+            git("update-ref", "-d", ref)
+        c.ok(not git("status", "--porcelain")[1].strip(), "the checkout is left clean")
+
+
 @journey("safe_update_rollback", "`./securax update` on a running estate: it backs up first, and when the new version does NOT start healthy it goes back to the version that worked (exit 3) with the data intact.", slow=True)
 def j_safe_update(sb: H.Sandbox, c: Checks):
     sb.down()
@@ -1720,6 +1762,86 @@ def j_purple(sb: H.Sandbox, c: Checks):
         if mds:
             md = mds[-1].read_text()
             c.ok("Detection backlog" in md and "Does **not** prove" in md and "campaign-4x-injection" in md, f"via {label}: the report names the backlog and what it does NOT prove")
+
+
+@journey("exercise_portal_ui", "The exercise portal in a real browser after a played game: every screen as blue, white and red, dark and light, desktop and phone; each role gets only its own menu, no page error, no raw object text, no text below WCAG AA contrast, no sideways scrolling.")
+def j_exercise_ui(sb: H.Sandbox, c: Checks):
+    out = sb.clone.parent / "exercise-ui-audit"
+    shutil.rmtree(out, ignore_errors=True)
+    rc, log = H.sh(["python3", "exercise/tests/ui_audit.py", str(out)], cwd=sb.clone, timeout=900)
+    summ = json.loads((out / "summary.json").read_text()) if (out / "summary.json").exists() else {}
+    failed = [x[0] for x in summ.get("checks", []) if not x[1]]
+    c.ok(len(summ.get("checks", [])) >= 200 and not failed, "every screen renders for every role, with only that role's menu", failed[:5] or tail(log, 400))
+    c.ok(summ and not summ.get("page_errors"), "no page error", summ.get("page_errors"))
+    c.ok(summ and not summ.get("contrast"), "no text below WCAG AA contrast, dark or light", (summ.get("contrast") or [])[:3])
+    c.ok(summ and not summ.get("overflow"), "nothing scrolls sideways on a 390 px phone", summ.get("overflow"))
+    c.ok(rc == 0, "the audit exits 0", tail(log, 300))
+
+
+@journey("exercise_lite_range", "`./securax exercise`: a real lite range in Docker on isolated networks; the scoring bot sees every service (and ping) up, the simulated staff log in and the green-team account is intact; the red-team bot gets in with the original admin password only in the attack phase; the blue team changes it through the jump box and the bot is shut out; breaking the green-team account is a rule breach; a rebuild costs the restore penalty; the score log verifies; the range is removed.", slow=True)
+def j_exercise_lite(sb: H.Sandbox, c: Checks):
+    home = sb.clone.parent / "exhome"
+    shutil.rmtree(home, ignore_errors=True)
+    env = {**os.environ, "SECURAX_EXERCISE_HOME": str(home)}
+    ex = lambda *a, t=900: H.sh(["bash", "./securax", "exercise", *a], cwd=sb.clone, env=env, timeout=t)  # noqa: E731
+    rc, o = ex("new", "--name", "sbx", "--team", "47")
+    c.ok(rc == 0 and "blue-47" in o, "an exercise is created and its tokens printed once", tail(o, 300))
+    game = next(home.glob("EX-*-sbx"), None)
+    if not game:
+        return
+    proj = "sxex-" + game.name.lower()
+    py = lambda code: H.sh(["python3", "-c", "import sys,time; sys.path.insert(0,'.'); from exercise import engine; g=engine.Game(sys.argv[1]); " + code, str(game)], cwd=sb.clone, timeout=60)  # noqa: E731
+    try:
+        rc, o = ex("lite", "up", t=1500)
+        c.ok(rc == 0 and "lite range up" in o, "`lite up` builds the image and starts the range", tail(o, 600))
+        if rc:
+            return
+        cfg = json.loads((game / "lite" / "compose.json").read_text())
+        c.ok(all(v["internal"] for k, v in cfg["networks"].items() if k.startswith("z-")), "every zone network is internal (no way out to the internet or the LAN)")
+        up = ""
+        for _ in range(12):
+            time.sleep(10)
+            up = H.sh(["docker", "exec", f"{proj}-scoring-bot", "python3", "-m", "exercise", "run", "--game", "/game", "--lite", "--rounds", "1"], timeout=120)[1]
+            if re.search(r"(\d+)/\1 up, (\d+)/\2 logins", up):
+                break
+        c.ok(re.search(r"(\d+)/\1 up, (\d+)/\2 logins", up) is not None, "the scoring bot finds every lite service up (ping included) and every simulated login works", up)
+        c.ok(re.search(r"([1-9]\d*)/\1 rules", up) is not None, "every rule check passes at the start (the green-team account logs in by key on each host)", up)
+        bot = lambda: H.sh(["docker", "exec", f"{proj}-red-bot", "python3", "-m", "exercise", "redbot", "--game", "/game", "--rounds", "1"], timeout=300)[1]  # noqa: E731
+        c.ok("0 new foothold" in bot(), "before the attack phase the red-team bot scores nothing")
+        py("g.start(time.time() - 125*60)")
+        o = bot()
+        c.ok(re.search(r"[1-9]\d* new foothold", o) is not None, "in the attack phase the bot gets in with the scenario's original admin password", o)
+        rc, o = py("print(len(g.attacks(47)), g.totals(47)['attack_reports'])")
+        n_att = int(o.split()[0]) if rc == 0 and o.split() else 0
+        c.ok(n_att >= 1 and float(o.split()[1]) == -40 * n_att, "each foothold is an attack report worth -40", o)
+        sc = json.loads((game / "lite" / "compose.json").read_text())["services"]
+        www_ip = sc["www"]["networks"]["z-cloud"]["ipv4_address"]
+        tag = sc["www"]["image"]
+        blue = sb.clone.parent / "exercise-blue.sh"         # what a defender types on the jump box (ssh -n: do not eat the script)
+        blue.write_text("export SSHPASS='Sample-Admin-1!'\n"
+                        f"sshpass -e ssh -n -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR rangeadmin@{www_ip} "
+                        "\"printf 'Sample-Admin-1!\\n' | sudo -S -p '' sh -c 'echo rangeadmin:Blue-Changed-77! | chpasswd' && echo CHANGED\"\n")
+        rc, o = H.sh(["docker", "run", "--rm", "--network", "host", "-e", "ROLE=tool", "-e", "SSHPASS=Sample-Admin-1!", "-v", f"{blue}:/blue.sh:ro", tag, "sh", "-c",
+                      "sshpass -e ssh -p 2222 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o LogLevel=ERROR rangeadmin@127.0.0.1 'bash -s' < /blue.sh"], timeout=120)
+        c.ok("CHANGED" in o, "the blue team reaches www through the jump box on 127.0.0.1:2222 and changes the admin password", tail(o, 300))
+        py("i=g.file_incident(47,'blue-47',{'target':'www','compromised':True,'chronology':'admin login by the red team; password changed'}); g.judge(i,'white',15,'accepted','ok')")
+        o = bot()
+        rc2, o2 = py("print(sum(1 for a in g.attacks(47) if a['target']=='www'))")
+        c.ok(o2.strip() == "1", "with the password changed (and the incident accepted) the bot cannot get back into www", o + o2)
+        H.sh(["docker", "exec", f"{proj}-www", "delgroup", "greenteam", "wheel"], timeout=60)      # a rule the blue team must not break
+        o = H.sh(["docker", "exec", f"{proj}-scoring-bot", "python3", "-m", "exercise", "run", "--game", "/game", "--lite", "--rounds", "1"], timeout=120)[1]
+        rc2, o2 = py("print(g.totals(47)['rule_breaches'])")
+        c.ok(re.search(r"(\d+)/(\d+) rules", o) is not None and o2.strip() == "-5.0", "removing the green-team account's admin right on www is a rule breach (-5 that round)", o + o2)
+        rc, o = ex("revert", game.name, "www")
+        c.ok(rc == 0 and "-25 points" in o, "rebuilding www costs the restore-from-backup penalty", tail(o, 300))
+        rc, o = ex("verify", game.name)
+        c.ok(rc == 0 and "verifies" in o, "the score log verifies after the whole game", o)
+        rc, o = ex("report", game.name)
+        rep = pathlib.Path(o.strip().split()[-1]) if rc == 0 else None
+        c.ok(rep is not None and rep.exists() and "Red-team successes" in rep.read_text(), "the after-action report is written", o)
+    finally:
+        rc, o = ex("lite", "down", game.name, t=300)
+        c.ok(rc == 0 and not _running([proj]), "`lite down` removes every range container", o)
 
 
 @journey("lifecycle_range", "The 'range' (dormant AD practice lab around GOAD): the pin is real, our RAM numbers match upstream, every verb maps to a real GOAD task, safety rails hold.")

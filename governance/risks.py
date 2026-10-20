@@ -6,7 +6,7 @@ BFSI control library, the navigator heat map, the cockpit and postmortems.
                                           treatment plan workbook into vault/risks/register.json (private, never committed)
     ./securax risks list [--open]         every risk, worst inherent score first, with its linked controls
     ./securax risks overdue               open treatments past their due date (exit 1 when there is one, for a routine)
-    ./securax risks cii                   NCIIPC CII self-check: do your functions meet the guideline's national-impact tests?
+    ./securax risks cii                   CII self-check: do your functions meet the guideline's national-impact tests?
 
 Columns are found by their HEADER NAMES (not positions), so a re-ordered or extended workbook still imports. Scores follow the
 workbooks' own scale: inherent = likelihood (1-5) x impact (1-5); 20-25 critical, 12-19 high, 6-11 medium, 1-5 low.
@@ -202,11 +202,11 @@ CII_TESTS = [
 
 
 def cii_verdict(answers: dict[str, bool]) -> str:
-    """NCIIPC CII identification guidelines (v1.0, para 7-8): the four impact parameters. A self-check only: designation is the
-    Government's (s.70 IT Act) on NCIIPC's advice."""
+    """National CII identification guidelines (v1.0, para 7-8): the four impact parameters. A self-check only: designation is the
+    Government's (s.70 IT Act) on the national CII agency's advice."""
     yes = [k for k, _ in CII_TESTS if answers.get(k)]
     if len(yes) >= 2 or "customers" in yes and "dependency" in yes:
-        return ("LIKELY CII: treat these systems as High-risk infrastructure (every NSCS audit marker mandatory) and engage NCIIPC "
+        return ("LIKELY CII: treat these systems as High-risk infrastructure (every NSCS audit marker mandatory) and engage the national CII agency "
                 "through your sector regulator for identification. Tests met: " + ", ".join(yes))
     if yes:
         return "POSSIBLY CII: one national-impact test met (" + yes[0] + "). Document the assessment and re-check yearly; use the Medium-risk NSCS profile."

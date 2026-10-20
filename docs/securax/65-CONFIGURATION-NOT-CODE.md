@@ -52,6 +52,22 @@ Human text is allowed to name them: Markdown docs, `LICENSE`, `MAINTAINERS.md`, 
 that must carry a literal repository address (Argo CD, Terraform defaults, Dockerfile labels, `CODEOWNERS`) are rewritten
 in one step by `tools/publish-clean.sh` when the code moves.
 
+## Nothing kept by hand: features, facts and private names
+
+Three more guards keep linked information from drifting apart. Each runs in CI as a fitness check, so a stale page fails the build instead of waiting for someone to notice.
+
+| What | The one source | Written to | Fitness check |
+|---|---|---|---|
+| **What SecuRAX can do** | `features.json` (plain words, the command, the guide) | The Command Center's "Everything SecuRAX can do", the website's estate section, the docs home page, the README, `./securax features` | `features-current` |
+| **Numbers on a page** (tests, journeys, mapped frameworks, docs) | Counted from the code each time | Anywhere a page writes `<!-- fact:NAME -->…<!-- /fact -->` | `features-current` |
+| **Every command** | The `securax` CLI | `./securax help` must name each one | `commands-in-help` |
+| **Names that must never be published** (an organisation, an exercise, a person) | `governance/private-names.json`: fingerprints only, never the names | Checked against every tracked file and file name | `private-names` |
+
+- **Add a feature:** a line in `features.json`, then `python3 tools/features_sync.py`. It shows up everywhere, with its status light taken from its guide.
+- **Add a private name:** `./securax privacy add "Name"`. Only its fingerprint is stored. A name you would rather not fingerprint in a public file can go in `vault/private-names.txt` (one per line, never committed); the check reads that too.
+- **The limit:** a fingerprint hides a name from a casual reader. It cannot stop someone confirming a guess.
+- **Git history:** the guard keeps a name out of new commits. Old commits still hold whatever was there before; removing it from history means rewriting the public history, which only the owner can decide.
+
 ## Further practices for a robust, distributed SecuRAX
 
 | Practice | Why | Where it stands |

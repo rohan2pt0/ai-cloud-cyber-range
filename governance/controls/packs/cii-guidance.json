@@ -1,0 +1,75 @@
+{
+ "about": "National guidance for Critical Information Infrastructure: the Framework for Evaluating Cyber Security in CII (Version 1, five phases) and the Guidelines for Identification of CII (Version 1.0, August 2019). Phase and paragraph references with links to library controls only; the documents' text is not reproduced (the issuing agency reserves all rights).",
+ "framework": {
+  "name": "national CII",
+  "reference": "the national CII Evaluation Framework v1; CII Identification Guidelines v1.0 (Aug 2019)"
+ },
+ "citations": {
+  "AM-001": {
+   "CII Framework": "Identification paras 7-8; Phase I (systems)"
+  },
+  "AM-003": {
+   "CII Framework": "Phase I (criticalities, asset owners)"
+  },
+  "AM-004": {
+   "CII Framework": "Phase I (services, interdependencies)"
+  },
+  "AM-005": {
+   "CII Framework": "Phase I (networks)"
+  },
+  "AUD-001": {
+   "CII Framework": "Phase V (ensure compliance to audit)"
+  },
+  "AUD-004": {
+   "CII Framework": "Phase IV (verify implementation of controls)"
+  },
+  "AUD-007": {
+   "CII Framework": "Phase V (ensure compliance to audit)"
+  },
+  "ET-005": {
+   "CII Framework": "Phase I (ICS/SCADA)"
+  },
+  "GOV-004": {
+   "CII Framework": "Phase I (organisational cyber security structure)"
+  },
+  "GOV-005": {
+   "CII Framework": "Identification guidelines (CII designation, protected system under s.70); Phase I"
+  },
+  "GOV-008": {
+   "CII Framework": "Phase II (international standards applied)"
+  },
+  "GOV-009": {
+   "CII Framework": "Phase II (organisational policies)"
+  },
+  "GOV-011": {
+   "CII Framework": "Phase I (organisational structure, asset owners)"
+  },
+  "GOV-014": {
+   "CII Framework": "Phase II (compliance)"
+  },
+  "HR-001": {
+   "CII Framework": "Phase II (HR policies for cyber security)"
+  },
+  "HR-004": {
+   "CII Framework": "Phase II (HR policies for cyber security)"
+  },
+  "IR-002": {
+   "CII Framework": "Rules s.5 (CII prioritisation, reporting)"
+  },
+  "NS-001": {
+   "CII Framework": "Phase II (network architecture with security devices)"
+  },
+  "RM-003": {
+   "CII Framework": "Phase II (vulnerability-threat-risk assessment)"
+  },
+  "RM-004": {
+   "CII Framework": "Identification para 7 (impact, timeframe, geography, dependency)"
+  },
+  "RM-010": {
+   "CII Framework": "Identification para 7(d) (cascading dependency); Phase I (interdependencies)"
+  },
+  "VM-001": {
+   "CII Framework": "Phase IV (verify implementation of controls)"
+  }
+ }
+}
