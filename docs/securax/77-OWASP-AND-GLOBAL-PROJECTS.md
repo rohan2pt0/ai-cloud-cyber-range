@@ -27,7 +27,7 @@ These were checked against the code, not only the docs:
 
 **What SecuRAX does with it:**
 
-- `./securax offline sync epss` keeps a snapshot on disk: about 148,000 CVEs at 1% or more, 4.7 MB.
+- `./securax offline sync epss` keeps a snapshot on disk: about 17,000 CVEs at 10% or more, 0.4 MB. A CVE that is not in it is under 10%.
 - In the findings register (doc 76), a CVE at 50% or more is treated as at least **high**, so it gets the high fix-by date.
 - `./securax findings` shows each finding's EPSS score, and the report counts the open ones at 50% or more.
 

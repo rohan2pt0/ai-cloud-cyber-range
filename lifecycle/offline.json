@@ -15,7 +15,7 @@
       "max_bytes": 200000000, "stale_days": 180
     },
     "epss": {
-      "what": "FIRST EPSS: the chance each CVE is exploited in the next 30 days (CVEs at 1% or more are kept). Ranks what to patch first.",
+      "what": "FIRST EPSS: the chance each CVE is exploited in the next 30 days (CVEs at 10% or more are kept, about 0.4 MB). Ranks what to patch first.",
       "urls": ["https://epss.empiricalsecurity.com/epss_scores-current.csv.gz",
                "https://epss.cyentia.com/epss_scores-current.csv.gz"],
       "licence": "Free to use; cite FIRST EPSS (first.org/epss)", "max_bytes": 20000000, "stale_days": 7

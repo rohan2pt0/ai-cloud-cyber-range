@@ -121,7 +121,7 @@ def slim_attack(raw: pathlib.Path) -> dict:
     return {"attack_version": version, "count": len(techs), "techniques": techs}
 
 
-EPSS_KEEP = 0.01      # CVEs under a 1% chance are left out (most of the ~300,000): absent means "unlikely", which keeps the file small
+EPSS_KEEP = 0.10      # CVEs under a 10% chance are left out (about 17,000 of ~300,000 stay, ~0.4 MB): absent means "unlikely"
 
 
 def slim_epss(raw: pathlib.Path) -> dict:
@@ -139,7 +139,7 @@ def slim_epss(raw: pathlib.Path) -> dict:
             rows += 1
             score = float(row[1])
             if score >= EPSS_KEEP:
-                by[row[0].upper()] = [round(score, 4), round(float(row[2]), 4)]
+                by[row[0].upper()] = round(score, 4)
     if rows < 1000:
         raise ValueError("too few EPSS rows: not the file we expected")
     info = dict(kv.split(":", 1) for kv in meta.split(",") if ":" in kv)

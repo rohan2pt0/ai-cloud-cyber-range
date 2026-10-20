@@ -104,7 +104,7 @@ def kev_cves() -> set[str]:
 
 
 def epss_scores() -> dict[str, float]:
-    return {k: v[0] for k, v in _intel("epss").items()}
+    return {k: (v[0] if isinstance(v, list) else v) for k, v in _intel("epss").items()}
 
 
 def raise_for(sev: str, cve: str, kev: set, epss: dict) -> str:

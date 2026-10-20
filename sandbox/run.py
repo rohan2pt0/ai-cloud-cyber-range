@@ -1548,7 +1548,7 @@ def j_gameday(sb: H.Sandbox, c: Checks):
     c.ok(bool(mds) and "Does **not** prove" in mds[-1].read_text() and "snapshot-restore" in mds[-1].read_text(), "a game-day report was written, including what it does not prove")
 
 
-@journey("offline_power", "Offline intel + low-resource model choice: snapshots (CISA KEV, MITRE ATT&CK) work with NO network, a failed refresh never destroys one, `bench` picks the model that fits.")
+@journey("offline_power", "Offline intel + low-resource model choice: snapshots (CISA KEV, MITRE ATT&CK, FIRST EPSS) work with NO network, a failed refresh never destroys one, `bench` picks the model that fits.")
 def j_offline(sb: H.Sandbox, c: Checks):
     home = sb.clone.parent / "sxhome-offline"
     shutil.rmtree(home, ignore_errors=True)
@@ -1561,7 +1561,7 @@ def j_offline(sb: H.Sandbox, c: Checks):
     c.ok(rc == 0 and "skipped" in out and "offline sync" in out, "...and a KEV lookup degrades gracefully instead of failing", tail(out, 200))
 
     rc, out = sx("offline", "sync", timeout=600)
-    c.ok(rc == 0 and "kev:" in out and "attack:" in out, "`offline sync` fetches CISA KEV and MITRE ATT&CK (55 MB streamed, ~0.4 MB kept)", tail(out, 300))
+    c.ok(rc == 0 and "kev:" in out and "attack:" in out and "epss:" in out, "`offline sync` fetches CISA KEV, MITRE ATT&CK and FIRST EPSS (~58 MB streamed, under 1 MB kept)", tail(out, 300))
     kept = sum(f.stat().st_size for f in (home / "intel").glob("*.json"))
     c.ok(0 < kept < 2_000_000, f"...the snapshots are small enough for any laptop ({kept // 1000} KB on disk)")
 
@@ -1573,7 +1573,7 @@ def j_offline(sb: H.Sandbox, c: Checks):
     rc, out = sx("offline", "sync", "kev", env=dead)
     c.ok(rc == 1 and "keeping the existing snapshot" in out, "a refresh that FAILS (network down) keeps the good snapshot", tail(out, 300))
     rc, out = sx("offline", "status", env=dead)
-    c.ok(rc == 0 and out.count("●") == 2, "...and status still shows both snapshots healthy", tail(out, 300))
+    c.ok(rc == 0 and out.count("●") == 3, "...and status still shows all three snapshots healthy", tail(out, 300))
 
     outj = sb.clone.parent / "incidents.json"
     rc, out = H.sh(["python3", "ai-soc/soc/triage.py", "ai-soc/samples/events.jsonl", "--no-summary", "--out", str(outj)], cwd=sb.clone, env={**env, **dead})
