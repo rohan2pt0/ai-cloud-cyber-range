@@ -103,6 +103,7 @@ def redbot_round(game, team: int, deployed: set[str], reach: set[str], run=ssh_r
             ok, _ = run(h["ip"], user, pw, f"echo 'red team was here at {stamp}' > /tmp/.redteam-{stamp} && id -un")
             if ok:
                 tried.append(game.attack(team, "red-bot", h["name"], f"Logged in as {user} with the scenario's original password",
-                                         f"ssh {user}@{h['ip']} succeeded; marker /tmp/.redteam-{stamp}", source="bot"))
+                                         f"ssh {user}@{h['ip']} succeeded; marker /tmp/.redteam-{stamp}", source="bot",
+                                         techniques=["T1078.001" if user == sc["admin"]["username"] else "T1078", "T1021.004"]))
                 break
     return tried

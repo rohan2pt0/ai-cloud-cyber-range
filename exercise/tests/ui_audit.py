@@ -25,9 +25,9 @@ _gm = importlib.util.module_from_spec(_s)
 _s.loader.exec_module(_gm)
 CONTRAST_JS, EXE = _gm.CONTRAST_JS, _gm.exe
 OUT = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else pathlib.Path(tempfile.gettempdir()) / "exercise-ui-audit"
-VIEWS = {"blue": ["overview", "rules", "plan", "scorelog", "timeline", "incident", "sitrep", "myreports", "targets", "awareness", "news", "missions", "creds", "restore"],
+VIEWS = {"blue": ["overview", "rules", "plan", "scorelog", "timeline", "incident", "sitrep", "myreports", "targets", "awareness", "news", "missions", "frameworks", "tracks", "progress", "creds", "restore"],
          "white": ["overview", "rules", "plan", "scorelog", "timeline", "judge-incident", "judge-sitrep", "judge-task", "control", "targets", "awareness", "news", "missions",
-                   "creds", "attack", "attacks"],
+                   "frameworks", "tracks", "progress", "creds", "attack", "attacks"],
          "red": ["overview", "rules", "targets", "news", "attack", "attacks"]}
 
 
@@ -39,15 +39,17 @@ def seed(folder: pathlib.Path) -> tuple[engine.Game, dict]:
     for i in range(6):
         g.record_round(8, [(r, not (i == 3 and r["host"] == "www"), "ok" if i != 3 else "HTTP 500") for r in rows],
                        usersim=[("alex.sample", "ws3-1", True, "logged in"), ("bea.example", "ws3-2", i != 2, "wrong password")], ts=time.time() - (6 - i) * 600)
-    g.attack(8, "red", "www", "Defaced the public website", "screenshot: index.html replaced")
+    g.attack(8, "red", "www", "Defaced the public website", "screenshot: index.html replaced", techniques=["T1491.002"])
     g.attack(8, "red-bot", "dns1", "Logged in as rangeadmin with the original password", "ssh rangeadmin@10.8.1.2", source="bot")
     s1 = g.submit_task(8, "blue-8", "p1-endpoints", "1. Change every default password.\n2. Limit remote login to the admin group.\n3. Send logs to the SIEM.")
     g.judge(s1, "white", 41, "accepted", "Good, add detection steps")
     g.use_hint(8, "blue-8", "p1-network")
     g.submit_task(8, "blue-8", "p2-repeat", "We rotated every credential the red team used.")
     g.abandon_task(8, "blue-8", "p2-data")
-    i1 = g.file_incident(8, "blue-8", {"target": "www", "compromised": True, "chronology": "10:02 defaced; 10:20 restored from image",
-                                       "impact": "Integrity of the public site", "source": "Malicious activity", "action_plan": "Rebuilt; password changed"})
+    tokens["blue-8:Asha"] = g.add_player(8, "Asha")
+    i1 = g.file_incident(8, "blue-8:Asha", {"target": "www", "compromised": True, "chronology": "10:02 defaced; 10:20 restored from image",
+                                            "impact": "Integrity of the public site", "source": "Malicious activity", "action_plan": "Rebuilt; password changed",
+                                            "techniques": ["T1491.002", "T1078.001"], "defences": ["D3-CRO", "D3-FIM", "D3-RF"]})
     g.judge(i1, "white", 16, "accepted", "Clear timeline; attach the web log next time")
     g.file_incident(8, "blue-8", {"target": "dns1", "compromised": True, "chronology": "Unknown login as rangeadmin at 11:40"})
     g.file_sitrep(8, "blue-8", {"event_overview": "Two compromises, both contained.", "status": "All services up", "other_business": "None"})
@@ -70,7 +72,7 @@ def main() -> int:
     base = f"http://127.0.0.1:{srv.server_address[1]}/"
     with sync_playwright() as p:
         br = p.chromium.launch(executable_path=EXE) if EXE else p.chromium.launch()
-        for role, tok in (("blue", tokens["blue-8"]), ("white", tokens["white"]), ("red", tokens["red"])):
+        for role, tok in (("blue", tokens["blue-8:Asha"]), ("white", tokens["white"]), ("red", tokens["red"])):
             for width in (1280, 390):
                 pg = br.new_page(viewport={"width": width, "height": 900})
                 pg.on("pageerror", lambda e, r=role: report["page_errors"].append(f"{r}: {e}"))
@@ -97,7 +99,8 @@ def main() -> int:
                             report["contrast"].append({"where": f"{role}@{width}/{theme}/{v}", **item})
                         if width == 390 and pg.evaluate("() => document.documentElement.scrollWidth > window.innerWidth + 1"):
                             report["overflow"].append(f"{role}/{theme}/{v}")
-                        if width == 1280 and (role, v) in (("blue", "timeline"), ("blue", "targets"), ("blue", "missions"), ("white", "judge-incident"), ("blue", "awareness")):
+                        if width == 1280 and (role, v) in (("blue", "timeline"), ("blue", "targets"), ("blue", "missions"), ("white", "judge-incident"), ("blue", "awareness"),
+                                                              ("blue", "frameworks"), ("blue", "tracks"), ("blue", "progress"), ("blue", "incident")):
                             pg.screenshot(path=str(OUT / f"{role}-{v}-{theme}.png"), full_page=False)
                 pg.close()
         br.close()

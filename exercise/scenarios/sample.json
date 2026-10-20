@@ -510,7 +510,20 @@
    "title": "Defending the workstations",
    "description": "The red team will try to get onto staff workstations, raise its privileges and move on to servers. It may trick staff into running code.",
    "question": "Give a short plan for defending the workstations and servers. What will you do first, and how will you know if it worked?",
-   "hint": "Think about the default administrator password, who can log in remotely, and what you log."
+   "hint": "Think about the default administrator password, who can log in remotely, and what you log.",
+   "attack": [
+    "T1078",
+    "T1021.004",
+    "T1098.004",
+    "T1053.003"
+   ],
+   "d3fend": [
+    "D3-CRO",
+    "D3-SPP",
+    "D3-LAM",
+    "D3-SJA",
+    "D3-FIM"
+   ]
   },
   {
    "id": "p1-network",
@@ -520,7 +533,19 @@
    "title": "Defending the network edge",
    "description": "The red team will target routers, the firewall and the services the internet can reach, such as DNS and mail.",
    "question": "Give a short plan for defending network devices and public services, without breaking the services you must keep running.",
-   "hint": "List every service the scoring bots check before you change a firewall rule."
+   "hint": "List every service the scoring bots check before you change a firewall rule.",
+   "attack": [
+    "T1595",
+    "T1190",
+    "T1110.001"
+   ],
+   "d3fend": [
+    "D3-ITF",
+    "D3-OTF",
+    "D3-ANET",
+    "D3-NTA",
+    "D3-ACH"
+   ]
   },
   {
    "id": "p2-repeat",
@@ -530,7 +555,16 @@
    "title": "Stopping repeat attacks",
    "description": "Attackers come back through the weaknesses that worked the first time.",
    "question": "What did you change after the first attacks so the same route cannot work again?",
-   "hint": "Use your own incident reports: each one names a way in."
+   "hint": "Use your own incident reports: each one names a way in.",
+   "attack": [
+    "T1078.001",
+    "T1098"
+   ],
+   "d3fend": [
+    "D3-CRO",
+    "D3-AL",
+    "D3-DAM"
+   ]
   },
   {
    "id": "p2-data",
@@ -540,7 +574,34 @@
    "title": "Protecting the files",
    "description": "The red team wants to steal and leak documents from the file server.",
    "question": "How will you stop documents leaving, and how would you notice if some did?",
-   "hint": ""
+   "hint": "",
+   "attack": [
+    "T1560",
+    "T1048"
+   ],
+   "d3fend": [
+    "D3-OTF",
+    "D3-NTA",
+    "D3-UAP"
+   ]
+  },
+  {
+   "id": "p2-ai",
+   "phase": "Phase 2",
+   "points": 50,
+   "opens_at_minute": 160,
+   "title": "Defending the staff AI assistant",
+   "description": "Example Corp staff use an AI assistant that can read the intranet and draft e-mails. Exercise control warns that attackers are hiding instructions in documents the assistant reads.",
+   "question": "Which guardrails, logging and approval steps would you put around the assistant, and how would you tell an injected instruction from a normal request?",
+   "hint": "Think about what the assistant is allowed to do without a person approving it, and what you would log.",
+   "atlas": [
+    "AML.T0051",
+    "AML.T0051.001",
+    "AML.T0057",
+    "AML.M0020",
+    "AML.M0024",
+    "AML.M0029"
+   ]
   },
   {
    "id": "bonus-malware",
@@ -550,7 +611,17 @@
    "title": "Analyse the dropped program",
    "description": "A program left on a compromised host is provided to the team by exercise control.",
    "question": "What does it do, how does it persist, and what would detect it?",
-   "hint": ""
+   "hint": "",
+   "attack": [
+    "T1486",
+    "T1053.003",
+    "T1070"
+   ],
+   "d3fend": [
+    "D3-FH",
+    "D3-PA",
+    "D3-RF"
+   ]
   }
  ],
  "injects": [

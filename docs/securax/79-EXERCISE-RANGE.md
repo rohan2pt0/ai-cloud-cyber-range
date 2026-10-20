@@ -161,6 +161,7 @@ Each document you share is read for what SecuRAX lacks. The best of it is applie
 | Earlier blue-team scripts | The broken SSH test, `winrs` on Linux, `Set-LocalUser` on DCs, NetBIOS off on DCs, unquoted-path fix breaking services, passwords on command lines | Lessons above; the stage 3 blue-team kit | Lessons recorded; kit due 2026-11-25 |
 | SOPs and strategy | Roles, the first 15 minutes, check-ins, playbooks; scoring weights that were guesses; risky hardening advice | The Team plan (sample playbook) and lessons above | Done |
 | Rules of engagement | Required services stay up; no address changes; ping allowed; green-team account untouched; staff accounts and software keep working; revert is for recovery only | Rule checks, Rules screen, scoring | Machine-checkable rules done; the rest are judged |
+| Ask: beat the commercial ranges; teach MITRE ATT&CK, D3FEND and ATLAS; certification-ready skills; gamify | Framework tags on everything, a coverage screen, learning paths, players, XP, badges; a market comparison | Doc 81 | Done; AI zone and commercial readiness dated |
 | 24-hour timetable | Unbounded packet capture; containers built from `:latest` | Capture rule (lessons above); pinned images and storage guard (doc 80) | Done |
 
 ## Next stages (target dates, each needs your merge)

@@ -20,7 +20,7 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
-from . import engine
+from . import engine, frameworks, progress
 
 WEB = pathlib.Path(__file__).resolve().parent / "web"
 STATIC = {"/": ("app.html", "text/html; charset=utf-8"), "/app.js": ("app.js", "text/javascript; charset=utf-8"),
@@ -120,10 +120,13 @@ def make_handler(game: engine.Game):
 
         def route(self, method: str, path: str, q: dict, who: dict):
             team = self._team(who, q)
-            actor = who["role"] if who["role"] != "blue" else f"blue-{who['team']}"
+            actor = who["role"] if who["role"] != "blue" else f"blue-{who['team']}" + (f":{who['player']}" if who.get("player") else "")
             if method == "GET":
                 if path == "/api/me":
                     return {**who, "name": game.meta("name"), "teams": game.teams}
+                if path == "/api/players":
+                    self._need(who, "white")
+                    return {"players": game.players(team)}
                 if path == "/api/overview":
                     return {"name": game.meta("name"), "phase": game.phase(), "team": team, "teams": game.teams,
                             "totals": game.totals(team) if who["role"] != "red" else None}
@@ -132,6 +135,10 @@ def make_handler(game: engine.Game):
                     return t if who["role"] != "red" else [{k: x[k] for k in ("host", "fqdn", "zone", "ip", "about")} for x in t]
                 if path == "/api/news":
                     return game.news()
+                if path == "/api/catalogue":
+                    c = frameworks.load()
+                    kinds = ("attack", "atlas") if who["role"] == "red" else frameworks.KINDS
+                    return [frameworks.lookup(i, c) for k in kinds for i in sorted(c[k])]
                 if path == "/api/rules":
                     r = game.rules(team)
                     return r if who["role"] != "red" else {"rules": r["rules"]}
@@ -159,6 +166,12 @@ def make_handler(game: engine.Game):
                     return game.creds(team)
                 if path == "/api/plan":
                     return game.plan(team)
+                if path == "/api/frameworks":
+                    return frameworks.coverage(game, team)
+                if path == "/api/progress":
+                    return {"players": progress.players(game, team), "me": who.get("player")}
+                if path == "/api/tracks":
+                    return progress.tracks(game, team)
                 if path == "/api/attacks":
                     self._need(who, "white")
                     return game.attacks(team)
@@ -196,7 +209,8 @@ def make_handler(game: engine.Game):
                 return {"points": game.restore(team, actor, str(b.get("host", "")), str(b.get("reason", "")))}
             if path == "/api/attack":
                 self._need(who, "red", "white")
-                return {"id": game.attack(team, actor, str(b.get("target", "")), str(b.get("objective", "")), str(b.get("evidence", "")))}
+                return {"id": game.attack(team, actor, str(b.get("target", "")), str(b.get("objective", "")), str(b.get("evidence", "")),
+                                          techniques=[str(x) for x in (b.get("techniques") or [])])}
             m = re.fullmatch(r"/api/judge/(\d+)", path)
             if m:
                 self._need(who, "white")

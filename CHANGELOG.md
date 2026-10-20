@@ -9,6 +9,13 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **Exercise range: learning with MITRE ATT&CK, D3FEND and ATLAS** (doc 81):
+  - **Tagging:** tasks, red-team attack reports and blue-team incident reports carry framework identifiers. Each is checked against a catalogue built from MITRE's own data and linked to MITRE's page.
+  - **Coverage screen:** for each tactic, what was met, detected and defended. The after-action report carries the same table.
+  - **Learning paths:** six of them, with practice pointers and the certifications whose published syllabus covers each skill area. No exam content.
+  - **Players:** personal tokens, XP only from judged work, levels and badges.
+  - **AI-defence task:** a new task tagged with ATLAS.
+  - **Market comparison:** how the range compares with commercial ranges and training platforms.
 - **Exercise range: rules of engagement, checked every round** (doc 79):
   - **Ping:** every machine gets the HOST check, so blocking ping scores as down.
   - **Green-team account:** it must keep logging in by key with admin rights. A breach costs −5 per host per round until fixed.

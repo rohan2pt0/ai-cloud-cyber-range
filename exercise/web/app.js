@@ -17,6 +17,7 @@ const VIEWS = [
   ["Judging", [["judge-incident", "Incident reports", "w"], ["judge-sitrep", "Situation reports", "w"], ["judge-task", "Task answers", "w"], ["control", "Exercise control", "w"]]],
   ["Situational awareness", [["targets", "Target checks status", "all"], ["awareness", "Team awareness", "bw"], ["news", "News injects", "all"]]],
   ["Tasks", [["missions", "Mission board", "bw"]]],
+  ["Learning", [["frameworks", "Framework coverage", "bw"], ["tracks", "Learning paths", "bw"], ["progress", "Players and badges", "bw"]]],
   ["Operations", [["creds", "Staff password changes", "bw"], ["restore", "Restore from backup", "b"], ["attack", "Report an attack", "rw"], ["attacks", "Attack reports", "rw"]]],
 ];
 
@@ -72,6 +73,11 @@ const card = (title, ...kids) => el("section", { class: "card" }, title ? el("h1
 const table = (heads, rows) => el("div", { class: "scroll" }, el("table", {}, el("thead", {}, el("tr", {}, heads.map((h) => el("th", { scope: "col" }, h)))),
   el("tbody", {}, rows.length ? rows : [el("tr", {}, el("td", { colspan: heads.length, class: "muted" }, "Nothing yet."))])));
 const field = (id, label, input) => [el("label", { for: id }, label), input];
+const KIND = { attack: "ATT&CK", d3fend: "D3FEND", atlas: "ATLAS" };
+function picker(id, name, items) {
+  return el("select", { id, name, multiple: true, size: "6" }, items.map((i) => el("option", { value: i.id }, `${i.id} ${i.name} (${KIND[i.kind]})`)));
+}
+const fwLink = (i) => el("a", { href: i.url, target: "_blank", rel: "noopener noreferrer" }, i.id);
 function form(onsubmit, ...kids) {
   return el("form", { onsubmit: async (ev) => { ev.preventDefault(); try { await onsubmit(new FormData(ev.target)); ev.target.reset(); } catch (e) { toast(e.message, true); } } }, ...kids);
 }
@@ -171,9 +177,10 @@ const VIEW = {
   },
   async incident() {
     const hosts = await api("/api/targets");
+    const cat = await api("/api/catalogue");
     return card("Incident report", form(async (fd) => {
       await api("/api/incident", { target: fd.get("target"), compromised: fd.get("compromised") === "yes", chronology: fd.get("chronology"), impact: fd.get("impact"),
-        source: fd.get("source"), action_plan: fd.get("action_plan"), additional: fd.get("additional") });
+        source: fd.get("source"), action_plan: fd.get("action_plan"), additional: fd.get("additional"), techniques: fd.getAll("techniques"), defences: fd.getAll("defences") });
       toast("Incident report sent for judging");
     }, ...field("i-t", "Target", el("select", { id: "i-t", name: "target" }, hosts.map((h) => el("option", { value: h.host }, h.fqdn)))),
       ...field("i-c", "Incident", el("select", { id: "i-c", name: "compromised" }, el("option", { value: "yes" }, "Compromised"), el("option", { value: "no" }, "Not compromised"))),
@@ -182,6 +189,8 @@ const VIEW = {
       ...field("i-so", "Source: system failure, accident, human error, malicious activity, third party, other?", el("textarea", { id: "i-so", name: "source" })),
       ...field("i-ap", "Action plan: estimated time to recover, steps already taken, what else you plan.", el("textarea", { id: "i-ap", name: "action_plan" })),
       ...field("i-ad", "Additional information: do you need outside help? Attach evidence as text (log lines, commands, hashes).", el("textarea", { id: "i-ad", name: "additional" })),
+      ...field("i-te", "Techniques you saw (MITRE ATT&CK, or ATLAS for AI systems; hold Ctrl to pick several)", picker("i-te", "techniques", cat.filter((i) => i.kind === "attack" || (i.kind === "atlas" && !i.id.startsWith("AML.M"))))),
+      ...field("i-de", "Defences you used (MITRE D3FEND, or ATLAS mitigations)", picker("i-de", "defences", cat.filter((i) => i.kind === "d3fend" || i.id.startsWith("AML.M")))),
       el("button", { type: "submit" }, "Submit")));
   },
   async sitrep() {
@@ -211,15 +220,54 @@ const VIEW = {
   },
   async attack() {
     const hosts = await api("/api/targets");
-    return card("Report an attack", el("p", {}, "File one report per objective achieved, with evidence the judges can check."),
-      form(async (fd) => { await api("/api/attack", { target: fd.get("target"), objective: fd.get("objective"), evidence: fd.get("evidence") }); toast("Attack recorded"); },
+    const cat = await api("/api/catalogue");
+    return card("Report an attack", el("p", {}, "File one report per objective achieved, with evidence the judges can check, and name the techniques so the blue team can learn from it."),
+      form(async (fd) => { await api("/api/attack", { target: fd.get("target"), objective: fd.get("objective"), evidence: fd.get("evidence"), techniques: fd.getAll("techniques") }); toast("Attack recorded"); },
+        ...field("k-te", "Techniques used (MITRE ATT&CK or ATLAS)", picker("k-te", "techniques", cat.filter((i) => !i.id.startsWith("AML.M")))),
         ...field("k-t", "Target", el("select", { id: "k-t", name: "target" }, hosts.map((h) => el("option", { value: h.host }, h.fqdn)))),
         ...field("k-o", "Objective achieved", el("input", { id: "k-o", name: "objective", required: true })), ...field("k-e", "Evidence", el("textarea", { id: "k-e", name: "evidence" })),
         el("button", { type: "submit" }, "Submit")));
   },
   async attacks() {
     const rows = await api("/api/attacks");
-    return card("Attack reports", table(["Time", "Target", "Objective", "Evidence", "By"], rows.map((a) => el("tr", {}, el("td", {}, a.time.slice(11, 16)), el("td", {}, a.target), el("td", {}, a.objective), el("td", {}, el("pre", {}, a.evidence || "")), el("td", {}, a.actor + " (" + a.source + ")")))));
+    return card("Attack reports", table(["Time", "Target", "Objective", "Techniques", "Evidence", "By"], rows.map((a) => el("tr", {}, el("td", {}, a.time.slice(11, 16)), el("td", {}, a.target), el("td", {}, a.objective),
+      el("td", {}, (a.technique_list || []).join(", ")), el("td", {}, el("pre", {}, a.evidence || "")), el("td", {}, a.actor + " (" + a.source + ")")))));
+  },
+  async frameworks() {
+    const c = await api("/api/frameworks");
+    const TITLE = { attack: "MITRE ATT&CK (adversary behaviour)", d3fend: "MITRE D3FEND (defensive techniques)", atlas: "MITRE ATLAS (attacks on AI systems)" };
+    const mark = (r) => r.detected.length || r.applied.length
+      ? el("span", { class: "good" }, [r.detected.length ? "detected" : "", r.applied.length ? "applied" : ""].filter(Boolean).join(", "))
+      : el("span", { class: "warn" }, "met, not yet detected");
+    const row = (r) => el("tr", {}, el("td", {}, fwLink(r)), el("td", {}, r.name), el("td", {}, mark(r)),
+      el("td", { class: "muted" }, [...r.detected, ...r.applied, ...r.met].slice(0, 3).join("; ")));
+    const group = (g) => [el("h3", {}, g.group.replace(/-/g, " ")), table(["ID", "Name", "State", "Where"], g.items.map(row))];
+    const section = (k) => el("section", { class: "card" }, el("h2", {}, TITLE[k]),
+      c.groups[k].length ? c.groups[k].map(group) : el("p", { class: "muted" }, "Nothing yet."));
+    return card("Framework coverage",
+      el("p", {}, `What this exercise threw at the team, what the team detected and which defences it applied, mapped to MITRE ATT&CK ${c.versions.attack}, D3FEND and ATLAS ${c.versions.atlas}. Each identifier opens MITRE's own page: read it after every exercise.`),
+      el("p", {}, `${c.counts.met} met · ${c.counts.detected} detected · ${c.counts.applied} defences applied`),
+      ["attack", "d3fend", "atlas"].map(section));
+  },
+  async tracks() {
+    const ts = await api("/api/tracks");
+    return card("Learning paths", el("p", { class: "muted" }, "Each path groups the techniques one skill area is about and where to practise them. Certifications are listed where their published syllabus covers the same skill area; this is not exam material."),
+      ts.map((t) => el("section", { class: "card" }, el("h2", {}, `${t.title} — ${t.progress_pct}%`),
+        el("div", { class: "stack", role: "img", "aria-label": `${t.progress_pct}% of this path practised` }, (() => { const b = el("span", { class: "bg-good" }); b.style.width = t.progress_pct + "%"; return b; })()),
+        el("p", {}, t.why),
+        t.items.length ? el("div", { class: "chips" }, t.items.map((i) => el("span", { class: "chip " + (i.detected || i.applied ? "good" : i.met ? "warn" : "muted") },
+          fwLink(i), ` ${i.name}${i.detected || i.applied ? " ✓" : ""}`))) : null,
+        el("h3", {}, "Practise"), el("ul", {}, t.practise.map((x) => el("li", {}, x))),
+        el("h3", {}, "Certifications covering this skill area"), el("ul", {}, t.certifications.map((x) => el("li", {}, x))))));
+  },
+  async progress() {
+    const p = await api("/api/progress");
+    return card("Players and badges", p.players.length ? table(["Player", "Level", "XP", "Badges", "Accepted work"], p.players.map((x) => el("tr", {},
+      el("td", {}, x.player + (x.player === p.me ? " (you)" : "")), el("td", {}, x.level.name + (x.level.next ? ` (next: ${x.level.next} at ${x.level.next_at})` : "")), el("td", {}, x.xp),
+      el("td", {}, x.badges.length ? x.badges.map((b) => el("span", { class: "pill", title: b.why }, b.name)) : el("span", { class: "muted" }, "none yet")),
+      el("td", {}, `${x.accepted.task} tasks, ${x.accepted.incident} incident reports, ${x.accepted.sitrep} situation reports, ${x.plan_done} plan items`)))) :
+      el("p", { class: "muted" }, "No personal players yet. Exercise control adds them with: ./securax exercise player NAME"),
+      el("p", { class: "muted" }, "XP comes only from work a judge accepted, plan items closed and password changes documented."));
   },
   async control(ov) {
     const v = await api("/api/verify");
@@ -252,7 +300,7 @@ async function signin(token) {
   S.me = await api("/api/me");
   S.team = S.me.team || S.me.teams[0];
   store("token", token);
-  $("whoami").textContent = S.me.role + (S.me.team ? " · team " + S.me.team : "");
+  $("whoami").textContent = S.me.role + (S.me.team ? " · team " + S.me.team : "") + (S.me.player ? " · " + S.me.player : "");
   $("signout").hidden = false;
   S.view = store("view") || "overview";
   if (!VIEWS.some(([, items]) => items.some((i) => i[0] === S.view && allowed(i[2])))) S.view = "overview";
@@ -276,5 +324,5 @@ document.addEventListener("DOMContentLoaded", () => {
   });
   const saved = store("token");
   if (saved) signin(saved).catch(() => store("token", null));
-  setInterval(() => { if (S.me && !document.querySelector("main form textarea:focus, main form input:focus") && !["incident", "sitrep", "creds", "restore", "attack", "control"].includes(S.view) && !S.view.startsWith("judge")) render(); }, 30000);
+  setInterval(() => { if (S.me && !document.querySelector("main form textarea:focus, main form input:focus") && !["incident", "sitrep", "creds", "restore", "attack", "control", "tracks", "frameworks"].includes(S.view) && !S.view.startsWith("judge")) render(); }, 30000);
 });

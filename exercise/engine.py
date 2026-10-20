@@ -17,20 +17,23 @@ import hashlib
 import json
 import os
 import pathlib
+import re
 import secrets
 import sqlite3
 import threading
 import time
 
+from . import frameworks as fw
 from . import scenario as scn
 
 CATEGORIES = ("availability", "solve_task", "abandon_task", "use_hint", "attack_reports", "incident_reports",
               "situation_reports", "restore_from_backup", "rule_breaches", "special")
 INCIDENT_FIELDS = ("target", "compromised", "chronology", "impact", "source", "action_plan", "additional")
+LIST_FIELDS = ("techniques", "defences")          # ATT&CK/ATLAS techniques seen, D3FEND/ATLAS defences used
 SITREP_SECTIONS = ("event_overview", "adversary_assessment", "impact_on_operations", "actions_taken", "status", "other_business")
 SCHEMA = """
 CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT NOT NULL);
-CREATE TABLE IF NOT EXISTS tokens (hash TEXT PRIMARY KEY, role TEXT NOT NULL, team INTEGER);
+CREATE TABLE IF NOT EXISTS tokens (hash TEXT PRIMARY KEY, role TEXT NOT NULL, team INTEGER, label TEXT);
 CREATE TABLE IF NOT EXISTS checks (id INTEGER PRIMARY KEY, round INTEGER, ts REAL, team INTEGER, host TEXT, zone TEXT,
     service TEXT, kind TEXT, ok INTEGER, detail TEXT);
 CREATE INDEX IF NOT EXISTS checks_by_round ON checks (team, round);
@@ -39,7 +42,7 @@ CREATE TABLE IF NOT EXISTS events (seq INTEGER PRIMARY KEY, ts REAL, team INTEGE
 CREATE TABLE IF NOT EXISTS submissions (id INTEGER PRIMARY KEY, kind TEXT, team INTEGER, actor TEXT, ts REAL, ref TEXT,
     body TEXT, status TEXT, points REAL, verdict TEXT, feedback TEXT, judge TEXT, judged_ts REAL);
 CREATE TABLE IF NOT EXISTS attacks (id INTEGER PRIMARY KEY, ts REAL, team INTEGER, target TEXT, objective TEXT, evidence TEXT,
-    actor TEXT, source TEXT);
+    actor TEXT, source TEXT, techniques TEXT);
 CREATE TABLE IF NOT EXISTS creds (id INTEGER PRIMARY KEY, ts REAL, team INTEGER, username TEXT, system TEXT, password TEXT,
     reason TEXT, actor TEXT);
 CREATE TABLE IF NOT EXISTS hints (team INTEGER, task TEXT, ts REAL, PRIMARY KEY (team, task));
@@ -66,6 +69,9 @@ class Game:
         self.db.row_factory = sqlite3.Row
         self.db.execute("PRAGMA journal_mode=WAL")
         self.db.executescript(SCHEMA)                      # an exercise created by an older version gains any new table
+        for table, col in (("tokens", "label"), ("attacks", "techniques")):  # ... and any new column
+            if col not in {r["name"] for r in self.db.execute(f"PRAGMA table_info({table})")}:
+                self.db.execute(f"ALTER TABLE {table} ADD COLUMN {col} TEXT")
         self.lock = threading.RLock()
         self._sc: dict[int, dict] = {}
 
@@ -83,7 +89,7 @@ class Game:
         db.executescript(SCHEMA)
         tokens = {"white": secrets.token_urlsafe(18), "red": secrets.token_urlsafe(18), f"blue-{sc['team']}": secrets.token_urlsafe(18)}
         for role, tok in tokens.items():
-            db.execute("INSERT INTO tokens VALUES (?,?,?)", (_h(tok), role.split("-")[0], sc["team"] if role.startswith("blue") else None))
+            db.execute("INSERT INTO tokens VALUES (?,?,?,?)", (_h(tok), role.split("-")[0], sc["team"] if role.startswith("blue") else None, None))
         for k, v in {"scenario": raw, "teams": json.dumps([sc["team"]]), "name": sc["name"], "created": str(time.time()), "round": "0"}.items():
             db.execute("INSERT INTO meta VALUES (?,?)", (k, v))
         db.commit()
@@ -115,8 +121,27 @@ class Game:
     def auth(self, token: str) -> dict | None:
         if not token:
             return None
-        r = self.db.execute("SELECT role, team FROM tokens WHERE hash=?", (_h(token),)).fetchone()
-        return {"role": r["role"], "team": r["team"]} if r else None
+        r = self.db.execute("SELECT role, team, label FROM tokens WHERE hash=?", (_h(token),)).fetchone()
+        if not r:
+            return None
+        return {"role": r["role"], "team": r["team"], **({"player": r["label"]} if r["label"] else {})}
+
+    def add_player(self, team: int, name: str) -> str:
+        """A personal blue-team token, so the portal can credit each person (XP, level, badges) as well as the team."""
+        name = name.strip()
+        if not re.fullmatch(r"[A-Za-z][A-Za-z0-9 ._-]{0,39}", name):
+            raise ValueError("a player name is 1-40 letters, digits, spaces, dots, dashes or underscores, starting with a letter")
+        if team not in self.teams:
+            raise KeyError(f"no team {team} in this exercise")
+        if self.db.execute("SELECT 1 FROM tokens WHERE team=? AND label=?", (team, name)).fetchone():
+            raise ValueError(f"{name} is already a player in team {team}")
+        tok = secrets.token_urlsafe(18)
+        with self.lock:
+            self.db.execute("INSERT INTO tokens VALUES (?,?,?,?)", (_h(tok), "blue", team, name))
+        return tok
+
+    def players(self, team: int) -> list[str]:
+        return [r["label"] for r in self.db.execute("SELECT label FROM tokens WHERE team=? AND label IS NOT NULL ORDER BY label", (team,))]
 
     def start(self, at: float | None = None) -> float:
         if self.meta("started"):
@@ -345,6 +370,12 @@ class Game:
         scn.host(sc, body.get("target", ""))                 # KeyError for an unknown target
         clean = {k: str(body.get(k, ""))[:8000] for k in INCIDENT_FIELDS}
         clean["compromised"] = bool(body.get("compromised"))
+        for k in LIST_FIELDS:
+            vals = [str(x) for x in (body.get(k) or [])][:30]
+            bad = fw.unknown(vals)
+            if bad:
+                raise ValueError(f"{', '.join(bad)}: not in the framework catalogue")
+            clean[k] = vals
         if not clean["chronology"].strip():
             raise ValueError("say what happened and when (chronology)")
         with self.lock:
@@ -408,21 +439,27 @@ class Game:
                 self.event(r["team"], cat, points, {"submission": sub_id, "kind": r["kind"], "ref": r["ref"], "verdict": verdict}, judge)
         return points
 
-    def attack(self, team: int, actor: str, target: str, objective: str, evidence: str = "", source: str = "human") -> int:
+    def attack(self, team: int, actor: str, target: str, objective: str, evidence: str = "", source: str = "human",
+               techniques: list[str] | None = None) -> int:
         ph = self.phase()
         if not ph.get("attacks_allowed"):
             raise ValueError(f"no attacks are scored in the {ph['name'].lower()} phase")
         scn.host(self.scenario(team), target)
         if not objective.strip():
             raise ValueError("say what the attack achieved (objective)")
+        techniques = [str(x) for x in (techniques or [])][:10]
+        bad = fw.unknown(techniques) + [x for x in techniques if fw.kind_of(x) == "d3fend"]
+        if bad:
+            raise ValueError(f"{', '.join(bad)}: name ATT&CK or ATLAS techniques from the catalogue")
         with self.lock:
-            aid = self.db.execute("INSERT INTO attacks (ts, team, target, objective, evidence, actor, source) VALUES (?,?,?,?,?,?,?)",
-                                  (time.time(), team, target, objective[:2000], evidence[:8000], actor, source)).lastrowid
+            aid = self.db.execute("INSERT INTO attacks (ts, team, target, objective, evidence, actor, source, techniques) VALUES (?,?,?,?,?,?,?,?)",
+                                  (time.time(), team, target, objective[:2000], evidence[:8000], actor, source, json.dumps(techniques))).lastrowid
             self.event(team, "attack_reports", self.scenario(team)["scoring"]["attack_report"], {"attack": aid, "target": target, "objective": objective[:200]}, actor)
         return aid
 
     def attacks(self, team: int) -> list[dict]:
-        return [dict(r, time=_iso(r["ts"])) for r in self.db.execute("SELECT * FROM attacks WHERE team=? ORDER BY id DESC", (team,))]
+        return [dict(r, time=_iso(r["ts"]), technique_list=json.loads(r["techniques"] or "[]"))
+                for r in self.db.execute("SELECT * FROM attacks WHERE team=? ORDER BY id DESC", (team,))]
 
     def restore(self, team: int, actor: str, host: str, reason: str) -> float:
         scn.host(self.scenario(team), host)
@@ -547,6 +584,11 @@ class Game:
         L += ["", "## Red-team successes", ""]
         atk = self.attacks(team)
         L += [f"- {a['time']} **{a['target']}**: {a['objective']} ({a['source']})" for a in atk] or ["None recorded."]
+        cov = fw.coverage(self, team)
+        L += ["", "## Framework coverage (MITRE ATT&CK, D3FEND, ATLAS)", "",
+              f"Met {cov['counts']['met']} techniques, detected {cov['counts']['detected']}, applied {cov['counts']['applied']} defences.", "",
+              "| id | name | met | detected | applied |", "|---|---|---|---|---|"]
+        L += [f"| [{r['id']}]({r['url']}) | {r['name']} | {'yes' if r['met'] else ''} | {'yes' if r['detected'] else ''} | {'yes' if r['applied'] else ''} |" for r in cov["rows"]]
         L += ["", "## Tasks", "", "| task | status |", "|---|---|"]
         L += [f"| {t['title']} | {t['status']} |" for t in self.tasks(team)]
         L += ["", "## Reports and judging", ""]

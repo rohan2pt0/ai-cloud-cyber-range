@@ -71,3 +71,7 @@ pre { white-space: pre-wrap; background: var(--panel2); padding: 8px; border-rad
   nav.open { transform: none; }
   .task { grid-template-columns: 1fr; }
 }
+a { color: var(--focus); }
+.pill + .pill { margin-left: 4px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+.chip { border: 1px solid var(--line); border-radius: 6px; padding: 2px 8px; font-size: 14px; }

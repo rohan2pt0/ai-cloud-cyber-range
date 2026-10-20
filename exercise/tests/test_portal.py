@@ -113,3 +113,12 @@ def test_rules_and_plan_screens(site):
     assert call(base, "/api/plan/t0-inventory", white, {"status": "done"})[0] == 403             # the team marks its own plan
     assert call(base, "/api/plan/t0-inventory", blue, {"status": "done"})[1] == {"ok": True}
     assert next(i for i in call(base, "/api/plan", white)[1]["items"] if i["id"] == "t0-inventory")["state"] == "done"
+
+
+def test_the_web_app_parses():
+    import shutil
+    import subprocess
+    if not shutil.which("node"):
+        pytest.skip("node is not installed")
+    r = subprocess.run(["node", "--check", str(ROOT / "exercise" / "web" / "app.js")], capture_output=True, text=True)
+    assert r.returncode == 0, r.stderr                                       # a syntax slip fails here, not in a browser

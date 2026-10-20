@@ -96,6 +96,11 @@ def problems(sc: dict) -> list[str]:
     if len(pids) != len(set(pids)) or any(not isinstance(i.get("from_minute"), int) or not isinstance(i.get("to_minute"), int)
                                           or i["to_minute"] < i["from_minute"] for i in sc.get("playbook", [])):
         out.append("playbook items need unique ids and whole-number from_minute <= to_minute")
+    from . import frameworks as fw
+    cat = fw.load()
+    for t in sc.get("tasks", []):
+        for bad in fw.unknown(fw.tags(t), cat):
+            out.append(f"task {t.get('id')}: {bad} is not a known ATT&CK, D3FEND or ATLAS identifier in exercise/frameworks.json")
     ids = [t.get("id") for t in sc.get("tasks", [])]
     if len(ids) != len(set(ids)):
         out.append("task ids must be unique")

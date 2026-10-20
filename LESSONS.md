@@ -21,4 +21,5 @@ autobuild adds one by itself when a red attempt turns green. Keep lines short: e
 - 2026-10-19 git: a worktree's node_modules SYMLINK was committed because 'node_modules/' matches folders only → ignore 'node_modules' without the slash; check git diff --stat for stray links before pushing
 - 2026-10-20 sandbox: adding an EPSS snapshot broke offline_power (2 MB size cap, exactly 2 healthy snapshots) → when adding an offline source, keep its slim file under ~0.5 MB and update the counts in sandbox/run.py
 - 2026-10-20 sandbox: the ccsp/comply tamper journeys left their edited map files in the shared clone, so every later journey saw a dirty checkout and update refused to roll back → restore any file a journey edits in a finally block
+- 2026-10-20 exercise portal: a missing parenthesis in one dense nested el(...) line broke the whole page → keep view code in small named helpers; test_portal runs node --check on app.js
 <!-- lessons:end -->

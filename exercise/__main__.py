@@ -6,7 +6,8 @@
     ./securax exercise serve  [GAME] [--host 127.0.0.1] [--port 8097]   the portal for blue, white and red
     ./securax exercise start  [GAME]                          start the exercise clock (white team; also a button in the portal)
     ./securax exercise round  [GAME] [--lite]                 one scoring round from this machine (a full range reached over VPN)
-    ./securax exercise attack [GAME] TARGET "objective" [--evidence TEXT]   a human red teamer's report from the terminal
+    ./securax exercise player [GAME] NAME [--team N]       a personal sign-in token for one blue-team member (XP, level, badges)
+    ./securax exercise attack [GAME] TARGET "objective" [--evidence TEXT] [--technique T1078 ...]   a human red teamer's report
     ./securax exercise revert [GAME] HOST                     rebuild one lite host from its image (costs the team points)
     ./securax exercise lite stop|down|status [GAME]           pause (state kept) / remove / show the lite range
     ./securax exercise report [GAME]                          after-action report (Markdown) in the exercise folder
@@ -89,6 +90,10 @@ def main(argv: list[str] | None = None) -> int:
     p = sub.add_parser("attack")
     p.add_argument("args", nargs="+")
     p.add_argument("--evidence", default="")
+    p.add_argument("--technique", action="append", default=[])
+    p = sub.add_parser("player")
+    p.add_argument("args", nargs="+")
+    p.add_argument("--team", type=int)
     p = sub.add_parser("revert")
     p.add_argument("args", nargs="+")
     p = sub.add_parser("lite")
@@ -176,8 +181,14 @@ def main(argv: list[str] | None = None) -> int:
         elif a.cmd == "attack":
             game, target, objective = ([None] + a.args)[-3:] if len(a.args) == 2 else a.args[:3]
             g = engine.Game(resolve(game))
-            aid = g.attack(g.teams[0], "red", target, objective, a.evidence)
+            aid = g.attack(g.teams[0], "red", target, objective, a.evidence, techniques=a.technique)
             print(f"✔ attack report {aid} on {target}: {g.scenario()['scoring']['attack_report']} points to the blue team")
+        elif a.cmd == "player":
+            game, name = ([None] + a.args)[-2:] if len(a.args) == 1 else a.args[:2]
+            g = engine.Game(resolve(game))
+            team = a.team or g.teams[0]
+            tok = g.add_player(team, name)
+            print(f"✔ {name} joins team {team}. Their personal token (shown once; give it to them privately):\n    {tok}")
         elif a.cmd == "revert":
             game, host = ([None] + a.args)[-2:] if len(a.args) == 1 else a.args[:2]
             folder = resolve(game)

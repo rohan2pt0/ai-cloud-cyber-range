@@ -113,7 +113,7 @@ def test_roles_tokens_and_the_clock(game, tmp_path):
     assert g.totals(5)["total"] == 0                                         # nothing scores before the clock starts
     g.start(T0)
     assert g.phase(T0 + 60)["name"] == "Hardening" and g.phase(T0 + 130 * 60)["attacks_allowed"]
-    assert [t["status"] for t in g.tasks(5, T0 + 60)].count("locked") == 3
+    assert [t["status"] for t in g.tasks(5, T0 + 60)].count("locked") == 4
     assert g.news(T0 + 120 * 60)[0]["title"] == "Attacks expected soon"
 
 
