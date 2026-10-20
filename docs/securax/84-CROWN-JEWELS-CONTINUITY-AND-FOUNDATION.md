@@ -77,7 +77,7 @@ Next to each target it shows what is true **today**. RPO is measured from your n
 1. **Nothing stops.** The estate runs from your laptop; GitHub is only where updates come from.
 2. **The code exists outside GitHub:**
    - a verified bundle of every branch in your backup folder and your off-site folder, refreshed nightly
-   - any second host you add (`MIRROR_REMOTES` in `local/compose/.env`, such as a free GitLab or Codeberg repository)
+   - a private **GitLab** project, pushed to daily: `./securax continuity mirror setup` walks you through it once (about five minutes)
 3. **Keep working:** commits stay local, and `./securax verify` runs every check on the laptop.
 4. **On a new machine:** `git clone repo-latest.bundle ai-cloud-cyber-range`, then `./securax restore <off-site backup>`.
 5. **Still dependent on GitHub (dated below):**
@@ -120,6 +120,26 @@ Bolting identity or customer data on later is what breaks products, so each deci
 - **Data:** the DPDP Act needs recorded consent, purpose limits and deletion on request, so the CRM and the call recordings must log all three.
 - **This is not legal advice:** confirm with counsel before the first campaign.
 
+### Two decisions taken for you (20 October 2026)
+
+**The second git host is a private GitLab.com project.**
+- **Why GitLab:**
+  - private projects are free
+  - a 10 GiB repository limit, against a SecuRAX history well under 1 GiB
+  - deploy keys with write access on the free tier
+  - you can sign in with Google
+- **Why not Codeberg:** it is a good home for free software, but its rules allow only manual mirrors (our mirror runs daily), and its 2026 terms debate on AI-written code puts this repository at risk.
+- **The key:** a dedicated SSH key that can push to that one project and nothing else. It is not your password. If it leaks, delete it in GitLab; nothing else changes.
+
+**The old history is not rewritten.** The agency name you asked to drop is gone from every current file, and the private-names check stops it coming back. Rewriting the old commits would cost more than it buys:
+- **It would not remove the name.** GitHub keeps the old commits reachable from the 135 pull-request records, its cached views and any clone. GitHub Support purges those only for sensitive data such as credentials,, and an agency name is not that.
+- **It would break what works:**
+  - every recorded working version that `./securax rollback` returns to (they are commit IDs)
+  - the released tags
+  - the GitHub-down bundle
+  - every clone you have
+- **If you ever need the history gone:** the clean way is a new repository started from today's code, not a rewrite. That is a decision to take with counsel, not by default.
+
 ## 5. Next steps (dated)
 
 | By | Step |
@@ -131,6 +151,9 @@ Bolting identity or customer data on later is what breaks products, so each deci
 | 2027-03-31 | Asterisk and the voice-agent sidecar in the lab, with DLT-registered numbers before any real call |
 
 ## Sources
+
+- [GitLab deploy keys](https://docs.gitlab.com/user/project/deploy_keys/) (write access on Free); [GitLab usage quotas](https://docs.gitlab.com/ee/user/usage_quotas) (10 GiB per project); [Codeberg FAQ](https://docs.codeberg.org/getting-started/faq/) (licences, no automatic mirrors)
+- [GitHub: removing sensitive data from a repository](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/removing-sensitive-data-from-a-repository) (pull-request refs and cached views survive a rewrite)
 
 - [Vaultwarden releases](https://github.com/dani-garcia/vaultwarden/releases): 1.37.4, 5 October, with seven security fixes
 - [AWS CLI `aws login`](https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-sign-in.html) and its [reference](https://docs.aws.amazon.com/cli/latest/reference/login/)

@@ -86,6 +86,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- A second home for the code, in one guided step
 - [Crown jewels](docs/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION.md)
 - [The crisis and continuity plan](docs/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION.md)
 - GitHub-independence
@@ -93,12 +94,12 @@ This list is generated from [`features.json`](features.json); the Command Center
 - `./securax cloud login aws|gcp|azure`
 - `./securax names`
 - Life OS Inbox
-- SEO basics on the product site
 
 **Release 0.2.0 - 2026-10-17:**
 
 - [CI at agent scale](docs/securax/68-CI-AT-AGENT-SCALE.md)
 - Nightly safe update
+- A second home for the code, in one guided step
 - "v0.1.0 never updates"
 - A busy port 80/443 no longer leaves you with nothing running
 - Risk registers with a one-row header lost their first risk
@@ -106,7 +107,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - [Risk register, interlinked](docs/securax/67-RISK-REGISTER-NSCS-CII.md)
 - NSCS Audit Baseline pack
 - national CII pack
-- Professional names with phones
 
 Everything, with details: [`CHANGELOG.md`](CHANGELOG.md).
 <!-- readme:whats-new:end -->

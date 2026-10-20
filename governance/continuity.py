@@ -5,6 +5,7 @@
     ./securax continuity show ID         the steps, in order, for one scenario (read it during the crisis)
     ./securax continuity drill ID        run that scenario's safe drill, time it, and record the result
     ./securax continuity mirror          copy the code off GitHub: a git bundle in the backup folders, and a push to MIRROR_REMOTES
+    ./securax continuity mirror setup    a second git host (a private GitLab project) in three steps, with its own write-only-there key
     ./securax continuity --json          the same as the first, for the cockpit
 
 The scenarios live in governance/continuity.json. RPO (how much may be lost) is measured from the newest backup, off-site copy or
@@ -149,16 +150,76 @@ def mirror(say=print, repo: pathlib.Path = ROOT) -> int:
         say(f"✔ copied to the off-site folder: {o}")
     bad = 0
     for remote in [r.strip() for r in env("MIRROR_REMOTES").split(",") if r.strip()]:
-        p = subprocess.run(["git", "-C", str(repo), "push", "--quiet", remote, "--all"], capture_output=True, text=True, timeout=300)
-        subprocess.run(["git", "-C", str(repo), "push", "--quiet", remote, "--tags"], capture_output=True, text=True, timeout=300)
+        p = subprocess.run(["git", "-C", str(repo), "push", "--quiet", remote, "--all"], capture_output=True, text=True, timeout=300, env=_git_env())
+        subprocess.run(["git", "-C", str(repo), "push", "--quiet", remote, "--tags"], capture_output=True, text=True, timeout=300, env=_git_env())
         if p.returncode:
             bad += 1
             say(f"✗ mirror {remote}: {(p.stderr or '').strip()[-200:]}")
         else:
             say(f"✔ mirrored to {remote}")
     if not env("MIRROR_REMOTES"):
-        say("  (no second git host yet: add MIRROR_REMOTES=<git URL> to local/compose/.env, e.g. a free GitLab or Codeberg repository)")
+        say("  (no second git host yet: ./securax continuity mirror setup  walks you through a free private GitLab copy)")
     return 1 if bad else 0
+
+
+def mirror_key() -> pathlib.Path:
+    """The SSH key that may push to the mirror and nowhere else (a GitLab deploy key on that one project)."""
+    return home() / "continuity" / "mirror_ed25519"
+
+
+def _git_env() -> dict:
+    k = mirror_key()
+    if not k.exists():
+        return dict(os.environ)
+    return {**os.environ, "GIT_SSH_COMMAND": f"ssh -i '{k}' -o IdentitiesOnly=yes -o StrictHostKeyChecking=accept-new"}
+
+
+def set_env(key: str, value: str, path: pathlib.Path | None = None) -> None:
+    """Write KEY=value into local/compose/.env (replacing an old line), keeping the file readable only by you."""
+    path = path or ENVF
+    lines = path.read_text("utf-8").splitlines() if path.exists() else []
+    lines = [x for x in lines if not x.startswith(key + "=")] + [f"{key}={value}"]
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("\n".join(lines) + "\n", "utf-8")
+    path.chmod(0o600)
+
+
+def mirror_setup(url: str = "", say=print, repo: pathlib.Path = ROOT) -> int:
+    """No address: make the key and print the steps. With the address GitLab shows: prove the key can push, save it, mirror now."""
+    k = mirror_key()
+    if not url and not k.exists():
+        k.parent.mkdir(parents=True, exist_ok=True)
+        try:
+            r = subprocess.run(["ssh-keygen", "-q", "-t", "ed25519", "-N", "", "-C", "securax-mirror", "-f", str(k)], capture_output=True, text=True)
+            err = r.stderr.strip()[-200:] if r.returncode else ""
+        except FileNotFoundError:
+            err = "ssh-keygen is not installed (Ubuntu: sudo apt install openssh-client)"
+        if err:
+            say("✗ could not make the mirror key: " + err)
+            return 1
+    if not url:
+        say("A SECOND HOME FOR THE CODE, so a GitHub outage or a lost account costs nothing. Free, about five minutes, once.\n")
+        say("  1. On gitlab.com (you can sign in with Google): New project > Create blank project. Visibility: Private.")
+        say("     Untick 'Initialize repository with a README'. Create.")
+        say("  2. In that project: Settings > Repository > Deploy keys > Add new key. Paste this, and tick 'Grant write permissions':\n")
+        say("     " + k.with_suffix(".pub").read_text().strip() + "\n")
+        say("  3. On the project page: Code > Clone with SSH > copy. Then run this, pasting the address after 'setup':")
+        say("     ./securax continuity mirror setup <the address you copied>\n")
+        say("The key can push to that one project only; it is not your GitLab password, and it stays in ~/.securax.")
+        return 0
+    if url.startswith(("http://", "https://")) and "@" not in url:
+        say("✗ that is the HTTPS address; copy the one under 'Clone with SSH' (it starts with git@).")
+        return 2
+    p = subprocess.run(["git", "-C", str(repo), "ls-remote", url], capture_output=True, text=True, timeout=60, env=_git_env())
+    if p.returncode:
+        say("✗ the mirror refused the key: " + (p.stderr or "").strip()[-200:])
+        say("  Check step 2 (the deploy key is added, with 'Grant write permissions' ticked), then run this again.")
+        return 1
+    have = [r.strip() for r in env("MIRROR_REMOTES").split(",") if r.strip()]
+    set_env("MIRROR_REMOTES", ",".join(have + ([] if url in have else [url])))
+    os.environ["MIRROR_REMOTES"] = ",".join(have + ([] if url in have else [url]))
+    say(f"✔ saved: {url} (the daily code-mirror routine pushes to it from now on)")
+    return mirror(say=say, repo=repo)
 
 
 def _securax(*args: str, timeout: int = 900) -> tuple[int, str]:
@@ -246,6 +307,8 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if cmd == "drill" and len(argv) > 1:
         return drill(argv[1])
+    if cmd == "mirror" and argv[1:2] == ["setup"]:
+        return mirror_setup(" ".join(argv[2:]).strip())
     if cmd == "mirror":
         return mirror()
     print(__doc__)

@@ -4,6 +4,7 @@ import importlib.util
 import json
 import os
 import pathlib
+import shutil
 import subprocess
 import sys
 import time
@@ -84,3 +85,24 @@ def test_a_shallow_checkout_is_refused_rather_than_bundled_broken(tmp_path, monk
     out = []
     assert ct.mirror(say=out.append, repo=tmp_path / "shallow") == 1 and "shallow" in out[0]
     assert not (tmp_path / "b" / "repo-latest.bundle").exists()
+
+
+def test_mirror_setup_makes_a_key_then_saves_the_address_and_pushes_every_branch(tmp_path, monkeypatch):
+    monkeypatch.setenv("SECURAX_BACKUP_DIR", str(tmp_path / "b"))
+    monkeypatch.setenv("SECURAX_HOME_DIR", str(tmp_path / "h"))
+    monkeypatch.setenv("MIRROR_REMOTES", "")
+    monkeypatch.setattr(ct, "ENVF", tmp_path / "env" / ".env")
+    repo = _repo(tmp_path / "r")
+    out = []
+    if shutil.which("ssh-keygen"):
+        assert ct.mirror_setup("", say=out.append, repo=repo) == 0
+        assert ct.mirror_key().exists() and any("ssh-ed25519" in x for x in out) and any("Grant write permissions" in x for x in out)
+    else:                                                                       # no traceback: a plain message and how to fix it
+        assert ct.mirror_setup("", say=out.append, repo=repo) == 1 and "apt install openssh-client" in out[0]
+    assert ct.mirror_setup("https://gitlab.example.invalid/x/y.git", say=out.append, repo=repo) == 2   # the HTTPS address is refused with a hint
+    bare = tmp_path / "mirror.git"
+    subprocess.run(["git", "init", "-q", "--bare", str(bare)], check=True)
+    assert ct.mirror_setup(str(bare), say=out.append, repo=repo) == 0
+    assert f"MIRROR_REMOTES={bare}" in ct.ENVF.read_text() and oct(ct.ENVF.stat().st_mode)[-3:] == "600"
+    head = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
+    assert head in subprocess.run(["git", "-C", str(bare), "rev-parse", "--all"], capture_output=True, text=True).stdout

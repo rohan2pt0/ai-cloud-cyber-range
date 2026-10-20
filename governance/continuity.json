@@ -8,7 +8,7 @@
   {"id": "github-down", "title": "GitHub is down, or the account or repository is lost", "notice": "./securax update says it cannot reach the code; CI does not run; the website does not update.",
    "rto_min": 60, "rpo_min": 1440, "rpo_source": "repo",
    "steps": ["Nothing stops: the estate runs from your laptop and needs GitHub only for updates.", "Check the local copy of the code is whole: ./securax continuity drill github-down",
-             "Keep working: commits stay local; ./securax verify runs every check on the laptop.", "Point at the mirror: git remote set-url origin <mirror URL> (MIRROR_REMOTES in local/compose/.env lists it)",
+             "Keep working: commits stay local; ./securax verify runs every check on the laptop.", "Point at the mirror: git remote set-url origin, followed by the GitLab address that MIRROR_REMOTES in local/compose/.env lists (none yet? ./securax continuity mirror setup)",
              "On a new machine without GitHub: git clone <backup folder>/repo-latest.bundle ai-cloud-cyber-range"],
    "drill": "repo-bundle"},
   {"id": "laptop-lost", "title": "The laptop is lost, stolen or dead", "notice": "You no longer have the machine.",

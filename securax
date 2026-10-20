@@ -950,7 +950,7 @@ EOF2
     ;;
   continuity)
     # The estate's crisis and continuity plan, measured: RTO/RPO per scenario, the steps, safe drills, the code mirror (doc 84).
-    #   ./securax continuity | show ID | drill ID | mirror | --json
+    #   ./securax continuity | show ID | drill ID | mirror [setup [ADDRESS]] | --json
     shift; exec python3 "$ROOT/governance/continuity.py" "${@:-status}"
     ;;
   names)
@@ -1796,7 +1796,7 @@ BUILD & KEEP IT HEALTHY
   lessons        what earlier work taught             config / privacy   brand values in one file; names that must never be published
   ready          READY when the estate answers        support-packet     one scrubbed zip for a bug report
   jewels         the crown jewels: what SecuRAX cannot lose, how exposed each is today, and the next step, worst first
-  continuity     the crisis plan: each scenario's RTO/RPO target vs today, the steps (show ID), safe drills (drill ID), the code mirror
+  continuity     the crisis plan: each scenario's RTO/RPO target vs today, the steps (show ID), safe drills (drill ID), the code mirror (mirror setup: a free private GitLab copy)
   names          https://hub.securax.localhost style addresses instead of localhost:port, in one guided step
   passwords      the estate's password manager (start passwords, then status | lock | open)
   cloud          sign in to AWS, Google Cloud or Azure with nothing to install (cloud login aws|gcp|azure; cloud status)
