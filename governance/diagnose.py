@@ -10,6 +10,7 @@ from __future__ import annotations
 import html
 import importlib.util
 import pathlib
+import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -63,8 +64,13 @@ def summary(rows: list[dict]) -> str:
     return f"{good} fine" + (f" · {bad} to fix" if bad else "") + (f" · {len(rows) - good - bad} to know" if len(rows) - good - bad else "")
 
 
+def bare(text: str) -> str:
+    """The cockpit names no external URL (LESSONS: cockpit_page): show addresses without their scheme."""
+    return re.sub(r"https?://", "", text)
+
+
 def html_card(rows: list[dict] | None = None) -> str:
-    rows = checks() if rows is None else rows
+    rows = [{**r, "detail": bare(r["detail"])} for r in (checks() if rows is None else rows)]
     mark = {True: ("OK", "green"), False: ("Fix", "red"), None: ("Note", "unknown")}
     body = "".join(
         f"<tr><td><span class='dot {mark[r['ok']][1]}'>{mark[r['ok']][0]}</span></td><td><b>{E(r['what'])}</b><div class='muted'>{E(r['detail'])}</div></td>"

@@ -64,6 +64,8 @@ def test_the_page_is_a_dark_cockpit(monkeypatch):
     assert head.count("class='master") == 1 and head.count("<li") <= 3
     assert "<details class='card panel' id='govern'>" in html and "<details class='card panel' id='systems'>" in html
     assert "<details open class='card panel'" not in html and "<script" not in html
+    bare = html.lower().replace("http://www.w3.org", "")
+    assert "http://" not in bare and "https://" not in bare          # the cockpit names no external URL (sandbox cockpit_page)
     assert "gap backlog" not in head and "Implement" not in head     # builders' backlog stays in Mission planning, never in "do next"
 
 

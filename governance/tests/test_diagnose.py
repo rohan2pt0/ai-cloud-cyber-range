@@ -40,3 +40,11 @@ def test_the_panel_is_folded_and_carries_every_row():
     card = dg.html_card(rows)
     assert card.startswith("<details class='card panel' id='names'>") and " open" not in card[:60]
     assert card.count("<tr>") == len(rows) and "./securax tls trust --apply" in card
+
+
+def test_the_panel_names_no_external_url():
+    # The cockpit_page journey fails on any http:// or https:// in the page.
+    rows = dg.checks(fake_tls(), {"SITE_DOMAIN": "example.org", "SITE_LIVE": "no", "SITE_URL": "https://o.github.io/r/"})
+    card = dg.html_card(rows)
+    assert "http://" not in card and "https://" not in card and "o.github.io/r/" in card
+
