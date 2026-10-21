@@ -1,0 +1,91 @@
+{
+ "about": "Public defaults for ./securax venture (doc 96). Every number here is an EXAMPLE to replace with your own: ./securax venture plan KEY=VALUE writes yours to vault/venture.json (private).",
+ "plan": {
+  "hour_value": 1500,
+  "hours_month": 40,
+  "fixed_month": 3000,
+  "growth": 200,
+  "churn_pct": 5,
+  "months": 36,
+  "tiers": {
+   "community": {
+    "name": "Community (open source, core features)",
+    "price": 0,
+    "var": 0,
+    "conv_pct": 100,
+    "cac": 0
+   },
+   "pro": {
+    "name": "Pro (one professional, e.g. a CISO: all editions, sync, updates)",
+    "price": 999,
+    "var": 120,
+    "conv_pct": 1,
+    "cac": 1500
+   },
+   "concierge": {
+    "name": "Concierge (HNI, family office, public figure: set-up done for you, private node, human review)",
+    "price": 25000,
+    "var": 10000,
+    "conv_pct": 0.05,
+    "cac": 40000
+   }
+  }
+ },
+ "price_notes": [
+  "Prices exclude GST (18% on software and services in India). Registration is due once turnover crosses Rs 20 lakh a year for services (lower in some states); confirm with your chartered accountant.",
+  "Concierge reference: published listings put one global executive digital-protection service at about USD 3,000-7,000 a person a year (about Rs 2.5-6 lakh); the example Rs 25,000 a month sits inside that band.",
+  "Free-to-paid conversion for open core is commonly quoted between 0.5% and 3% for self-serve products; well-run open core claims more. Start at the low end and measure."
+ ],
+ "dual_use": [
+  {
+   "part": "OS kit (guiding-map/kit)",
+   "uses": [
+    "Life OS for everyone (free)",
+    "Vantage for CISOs (paid tier)",
+    "any new role app in one JSON file"
+   ]
+  },
+  {
+   "part": "AI gateway with rails and audit",
+   "uses": [
+    "safe AI for the estate's own users",
+    "a governed AI front door a regulated firm can buy"
+   ]
+  },
+  {
+   "part": "Estate sync (per-key merge, daily snapshots)",
+   "uses": [
+    "your devices stay in step",
+    "the backbone of every paid app's multi-device promise"
+   ]
+  },
+  {
+   "part": "Govern catalog and template pack",
+   "uses": [
+    "a CISO's own plan and Board report",
+    "a consulting deliverable produced in an afternoon"
+   ]
+  },
+  {
+   "part": "Cyber range",
+   "uses": [
+    "your team's practice",
+    "paid training and assessments for others"
+   ]
+  },
+  {
+   "part": "Continuity, ransomguard, restore drills",
+   "uses": [
+    "your own data survives",
+    "proof for an HNI or a small firm that their data survives"
+   ]
+  },
+  {
+   "part": "Nodes on any machine",
+   "uses": [
+    "no single point of failure for you",
+    "a private node sold with the Concierge tier"
+   ]
+  }
+ ]
+}

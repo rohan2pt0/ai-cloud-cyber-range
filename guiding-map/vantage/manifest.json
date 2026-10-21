@@ -1,0 +1,24 @@
+{
+ "name": "Vantage: The CISO's operating system: see far, decide well, ",
+ "short_name": "Vantage",
+ "description": "A personal operating system for a CISO or security executive: daily rituals, the review rhythm, top risks, decisions, exceptions, stakeholders, team, KPIs and KRIs, playbooks and visible progress. Offline first.",
+ "start_url": "./index.html",
+ "scope": "./",
+ "display": "standalone",
+ "background_color": "#0d1f35",
+ "theme_color": "#0d1f35",
+ "icons": [
+  {
+   "src": "icon-192.png",
+   "sizes": "192x192",
+   "type": "image/png",
+   "purpose": "any maskable"
+  },
+  {
+   "src": "icon-512.png",
+   "sizes": "512x512",
+   "type": "image/png",
+   "purpose": "any maskable"
+  }
+ ]
+}

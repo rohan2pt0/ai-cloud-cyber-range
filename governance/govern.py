@@ -203,6 +203,27 @@ def report(a: dict, say=print, top: int = 7) -> None:
     say("\nNext: ./securax govern team (who you need) · govern board (the one-page report) · govern templates (policies, SOPs, deck)")
 
 
+def summary(a: dict, top: int = 5) -> dict:
+    """The few numbers an executive app shows (Vantage reads this as portal/govern-state.json): no notes, no marks detail."""
+    b = a["budget"]["basic"]["total"]
+    return {"maturity": a["maturity"][0], "words": a["maturity"][1], "coverage": a["overall"], "at": dt.date.today().isoformat(),
+            "budget": f"{money(*b)} a year for the minimum basic", "marked": a["marked"], "total": a["total"],
+            "top": [{"what": g["name"], "who": g["owner"], "when": g["when"], "how_much": money(*g["cost_lh"]), "tier": g["tier"]} for g in a["gaps"][:top]]}
+
+
+def write_state(a: dict | None = None) -> pathlib.Path | None:
+    """Write portal/govern-state.json for the apps on this address. Never fails the caller."""
+    out = pathlib.Path(os.environ.get("GOVERN_STATE_OUT") or ROOT / "portal" / "govern-state.json")
+    try:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        tmp = out.with_suffix(".tmp")
+        tmp.write_text(json.dumps(summary(a or analyse()), indent=1), "utf-8")
+        tmp.replace(out)
+        return out
+    except OSError:
+        return None
+
+
 def board(a: dict, top: int = 10) -> str:
     p, (lvl, words) = a["profile"], a["maturity"]
     today = dt.date.today().isoformat()
@@ -343,6 +364,8 @@ def main(argv: list[str] | None = None) -> int:
             print("    " + f.name)
         return 0
     report(res)
+    if write_state(res):
+        print("  (Vantage, the CISO app, shows this summary too: http://localhost:8088/vantage/)")
     return 0
 
 
