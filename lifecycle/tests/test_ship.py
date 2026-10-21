@@ -88,3 +88,19 @@ def test_no_token_is_a_clear_setup_step(monkeypatch, tmp_path):
         raise AssertionError("expected a setup error")
     except sh.ShipError as e:
         assert "ship login" in str(e)
+
+
+def test_after_a_merge_the_branch_starts_from_the_base_and_tracks_itself(monkeypatch, tmp_path):
+    monkeypatch.setenv("SECURAX_VAULT_DIR", str(tmp_path))
+    calls = []
+
+    def fake_git(*a, check=True):
+        calls.append(a)
+        return "feature" if a[:2] == ("rev-parse", "--abbrev-ref") else ""
+    monkeypatch.setattr(sh, "git", fake_git)
+    monkeypatch.setattr(sh, "api", lambda *a, **k: {})
+    monkeypatch.setattr(sh, "tell", lambda m: None)
+    sh.merge(4, _st("green"))
+    assert ("checkout", "-q", "-B", "feature", "origin/main") in calls
+    push = [c for c in calls if c[0] == "push"][0]
+    assert "-u" in push and "--force-with-lease" in push and push[-1] == "feature"
