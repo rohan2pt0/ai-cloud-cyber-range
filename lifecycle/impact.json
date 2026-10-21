@@ -87,6 +87,7 @@
     "tls_edge",
     "tls_internal",
     "backup_encrypted",
+    "ransomware_recovery",
     "inspect_sandbox",
     "rollback_anytime"
    ],
@@ -177,6 +178,7 @@
     "gateway_residency",
     "cockpit_page",
     "backup_encrypted",
+    "ransomware_recovery",
     "inspect_sandbox",
     "rollback_anytime"
    ],

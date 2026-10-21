@@ -732,6 +732,102 @@ def j_backup_encrypted(sb: H.Sandbox, c: Checks):
     c.ok(not leftovers, "no decrypted copy of the backup is left in /tmp", str(leftovers))
 
 
+@journey("ransomware_recovery", "The ransomware drill on the REAL estate (doc 88): encrypted backups go off-site; then the vault and its canary are encrypted; the next backup is marked -SUSPECT, deletes nothing, sends nothing off-site and alerts you (exit 3); the restore drill proves the CLEAN copy in a scratch twin (Open WebUI's database integrity-checked); the data volume is destroyed and `restore latest` brings back the same account and a readable vault; the tabletop then finds the plan ready on what the machine can prove.", slow=True)
+def j_ransomware(sb: H.Sandbox, c: Checks):
+    import http.server
+    import threading
+    got: list[str] = []
+
+    class Hook(http.server.BaseHTTPRequestHandler):
+        def do_POST(self):  # noqa: N802
+            got.append(self.rfile.read(int(self.headers.get("Content-Length", 0))).decode())
+            self.send_response(200)
+            self.end_headers()
+
+        def log_message(self, *a):
+            pass
+
+    srv = http.server.HTTPServer(("127.0.0.1", 0), Hook)
+    threading.Thread(target=srv.serve_forever, daemon=True).start()
+    base = sb.clone.parent / "ransomware"
+    shutil.rmtree(base, ignore_errors=True)
+    bdir, off, hm = base / "backups", base / "onedrive", base / "home"
+    for d in (bdir, off, hm):
+        d.mkdir(parents=True)
+    envp = {**os.environ, "SECURAX_HOME_DIR": str(hm), "SECURAX_NO_OPEN": "1"}
+    vault = sb.clone / "vault"
+    saved_vault = base / "vault-before"
+    if vault.exists():
+        shutil.copytree(vault, saved_vault)
+    try:
+        sb.down()
+        H.sh(["docker", "volume", "rm", "-f", "vulnbank-range_openwebui"])
+        if not _start(sb, c, GEMINI_API_KEY=KEYS["GEMINI_API_KEY"], ALERT_WEBHOOK=f"http://127.0.0.1:{srv.server_port}/alert"):
+            return
+        c.ok(sb.wait_http(f"{H.WEBUI}/health", 420), "Open WebUI finished starting", sb.logs("open-webui", 10))
+        cred = {"name": "RW User", "email": "rw@example.com", "password": "rw-pass-123", "profile_image_url": ""}
+        r = sb.http("POST", f"{H.WEBUI}/api/v1/auths/signup", cred)
+        if r.status != 200:
+            r = sb.http("POST", f"{H.WEBUI}/api/v1/auths/signin", {"email": cred["email"], "password": cred["password"]})
+        c.ok(r.status == 200, "an account exists (the data ransomware will hit)", f"{r.status} {tail(r.text)}")
+        reg = vault / "registers"
+        reg.mkdir(parents=True, exist_ok=True)
+        for i in range(6):
+            (reg / f"rw-{i}.json").write_text(json.dumps({"id": f"RW-{i}", "title": "Fake register row"}))
+        key = base / "backup.key"
+        rc, out = H.sh(["bash", "./securax", "crypto", "keygen", str(key)], cwd=sb.clone, env=envp, timeout=60)
+        sb.set_env(SECURAX_BACKUP_DIR=str(bdir), SECURAX_OFFSITE_DIR=str(off), SECURAX_BACKUP_KEYFILE=str(key))
+        rc, out = H.sh(["bash", "./securax", "backup"], cwd=sb.clone, env=envp, timeout=600)
+        clean = sorted(bdir.glob("securax-*.tar.gz.gpg"))
+        c.ok(rc == 0 and len(clean) == 1 and (off / clean[0].name).exists() and (vault / ".securax-canary.txt").exists(),
+             "a clean ENCRYPTED backup is taken and copied off-site; the canary file is planted in the vault", tail(out, 400))
+        off_before = sorted(f.name for f in off.iterdir())
+        # --- the attack: the vault and its canary are encrypted, and a ransom note is left
+        for f in list(reg.glob("*.json")) + [vault / ".securax-canary.txt"]:
+            f.write_bytes(os.urandom(512))
+        (vault / "HOW_TO_DECRYPT_FILES.txt").write_text("fake ransom note for the drill")
+        time.sleep(1.2)
+        rc, out = H.sh(["bash", "./securax", "backup"], cwd=sb.clone, env=envp, timeout=600)
+        sus = sorted(bdir.glob("*-SUSPECT.tar.gz.gpg"))
+        c.ok(rc == 3 and "RANSOMWARE SUSPECTED" in out and len(sus) == 1, "the next backup sees the encryption: it is marked -SUSPECT (exit 3)", tail(out, 500))
+        c.ok(clean[0].exists() and sorted(f.name for f in off.iterdir()) == off_before,
+             "…no older backup was deleted and nothing was sent off-site (the clean copies are safe)")
+        c.ok(sb.wait_until(lambda: any("RANSOMWARE SUSPECTED" in g for g in got), 20, 1), "…and you were alerted", got)
+        c.ok(not any("AIza" in g or "rw-pass" in g for g in got), "…the alert carries no keys or data")
+        rc, out = H.sh(["bash", "./securax", "continuity", "drill", "data-lost"], cwd=sb.clone, env=envp, timeout=900)
+        c.ok(rc == 0 and "passed" in out, "`continuity drill data-lost` passes and is timed", tail(out, 600))
+        rc, out = H.sh(["bash", "./securax", "backup", "drill"], cwd=sb.clone, env=envp, timeout=900)
+        c.ok(rc == 0 and clean[0].name in out and "the off-site copy" in out, "…it proves the CLEAN off-site copy, not the newest (suspect) one", tail(out, 400))
+        c.ok("restore twin" in out and "0 database(s)" not in out, "…in a scratch twin where Open WebUI's database passes SQLite's integrity check", tail(out, 400))
+        # --- the disaster: the data volume is gone too
+        sb.down()
+        H.sh(["docker", "volume", "rm", "-f", "vulnbank-range_openwebui"])
+        rc, out = H.sh(["bash", "./securax", "restore", "latest", "--yes"], cwd=sb.clone, env=envp, timeout=1500)
+        c.ok(rc == 0 and f"Restoring the newest clean backup: {clean[0]}" in out, "`restore latest` picks the newest CLEAN backup by itself", tail(out, 400))
+        c.ok(sb.wait_http(f"{H.WEBUI}/health", 420), "…Open WebUI starts again")
+        r = sb.http("POST", f"{H.WEBUI}/api/v1/auths/signin", {"email": cred["email"], "password": cred["password"]})
+        c.ok(r.status == 200 and (r.json() or {}).get("token"), "…the SAME account signs in", f"{r.status} {tail(r.text)}")
+        ok_vault = all(json.loads(f.read_text())["id"].startswith("RW-") for f in reg.glob("*.json")) and len(list(reg.glob("*.json"))) == 6
+        c.ok(ok_vault and not (vault / "HOW_TO_DECRYPT_FILES.txt").exists(), "…the vault is readable again, without the ransom note")
+        c.ok(any(sb.clone.glob("vault.pre-restore-*")), "…and the encrypted vault is kept aside as evidence")
+        rc, out = H.sh(["python3", "governance/ransomguard.py", "check"], cwd=sb.clone, env=envp, timeout=60)
+        c.ok(rc == 0, "the guard reads the restored data as clean", tail(out, 200))
+        rc, out = H.sh(["bash", "./securax", "continuity", "tabletop", "ransomware", "--answers=yyyyy"], cwd=sb.clone, env=envp, timeout=120)
+        rep = sorted((hm / "continuity" / "tabletops").glob("ransomware-*.md"))
+        c.ok(rep and "## Gaps and fixes" in rep[-1].read_text(), "the ransomware tabletop runs and writes an after-action report", tail(out, 600))
+        held = rep[-1].read_text() if rep else ""
+        c.ok("checked on this machine: alerts go to" in held and "last drill passed" in held and "encrypted with a key" in held,
+             "…the injects the machine can prove (alerts, key, drill) hold on this estate", tail(held, 900))
+    finally:
+        srv.shutdown()
+        sb.set_env(SECURAX_BACKUP_DIR="", SECURAX_OFFSITE_DIR="", SECURAX_BACKUP_KEYFILE="", ALERT_WEBHOOK="")
+        shutil.rmtree(vault, ignore_errors=True)
+        for d in sb.clone.glob("vault.pre-restore-*"):
+            shutil.rmtree(d, ignore_errors=True)
+        if saved_vault.exists():
+            shutil.copytree(saved_vault, vault)
+
+
 @journey("watchdog_heals_and_alerts", "`./securax watch`: notices an outage, heals it, and sends you an alert.")
 def j_watch(sb: H.Sandbox, c: Checks):
     import http.server

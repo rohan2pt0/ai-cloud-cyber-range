@@ -239,6 +239,18 @@
    "highlight": true
   },
   {
+   "id": "ransomware-recovery",
+   "group": "Keep it running",
+   "icon": "lifebuoy",
+   "name": "Ransomware-proof backups and recovery drills",
+   "what": "Every backup first checks that your data is still readable. If ransomware got there first, the copy is quarantined, nothing clean is deleted and you are alerted. `restore latest` picks the newest clean copy, a restore twin proves it opens, and tabletop exercises test the plan.",
+   "open": {
+    "cmd": "./securax continuity tabletop ransomware"
+   },
+   "command": "continuity",
+   "doc": "securax/88-RANSOMWARE-AND-DISASTER-RECOVERY-PROVEN.md"
+  },
+  {
    "id": "guiding-map",
    "group": "Your own tools",
    "name": "Guiding Map",

@@ -53,7 +53,8 @@ def git(*args: str, root: pathlib.Path = ROOT, check: bool = False) -> tuple[int
 
 def newest_backup(root: pathlib.Path = ROOT) -> str | None:
     d = pathlib.Path(os.environ.get("SECURAX_BACKUP_DIR") or root / "backups")
-    files = sorted(d.glob("securax-*.tar.gz*"), key=lambda f: f.stat().st_mtime, reverse=True) if d.exists() else []
+    files = sorted((f for f in d.glob("securax-*.tar.gz*") if "-SUSPECT" not in f.name), key=lambda f: f.stat().st_mtime,
+                   reverse=True) if d.exists() else []                    # a backup of encrypted data restores nothing (doc 88)
     return str(files[0]) if files else None
 
 

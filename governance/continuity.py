@@ -4,6 +4,9 @@
     ./securax continuity                 every scenario: its RTO and RPO targets, what they really are today, and the next fix
     ./securax continuity show ID         the steps, in order, for one scenario (read it during the crisis)
     ./securax continuity drill ID        run that scenario's safe drill, time it, and record the result
+    ./securax continuity tabletop [ID]   a structured tabletop exercise (ransomware, compromise, node-lost): each inject is a question;
+                                         what this machine can prove is checked, the rest you answer; writes an after-action report
+                                         (--answers=yyn... for scripts)
     ./securax continuity mirror          copy the code off GitHub: a git bundle in the backup folders, and a push to MIRROR_REMOTES
     ./securax continuity mirror setup    a second git host (a private GitLab project) in three steps, with its own write-only-there key
     ./securax continuity --json          the same as the first, for the cockpit
@@ -55,7 +58,7 @@ def backup_dir() -> pathlib.Path:
 def newest(folder: pathlib.Path | None, patterns: tuple[str, ...]) -> pathlib.Path | None:
     if not folder or not folder.is_dir():
         return None
-    files = [f for p in patterns for f in folder.glob(p) if f.is_file()]
+    files = [f for p in patterns for f in folder.glob(p) if f.is_file() and "-SUSPECT" not in f.name]   # suspect copies protect nothing
     return max(files, key=lambda f: f.stat().st_mtime) if files else None
 
 
@@ -279,6 +282,168 @@ def drill(sid: str, scenarios: list[dict] | None = None, runner=run_drill, say=p
     return 0 if ok else 1
 
 
+# ---------------------------------------------------------------------------------------------------- tabletop exercises
+TABLETOPS = ROOT / "governance" / "tabletops.json"
+KEEP_REPORTS = 20                                         # after-action reports kept per machine (bounded, doc 80)
+
+
+def exercises(path: pathlib.Path = TABLETOPS) -> list[dict]:
+    return json.loads(path.read_text("utf-8"))["exercises"]
+
+
+def _age_days(f: pathlib.Path | None, now: float) -> float | None:
+    return None if f is None else (now - f.stat().st_mtime) / 86400
+
+
+def _clean(folder: pathlib.Path | None, encrypted: bool = False) -> list[pathlib.Path]:
+    if not folder or not folder.is_dir():
+        return []
+    fs = [f for f in folder.glob("securax-*.tar.gz*") if f.is_file() and "-SUSPECT" not in f.name
+          and (f.name.endswith(".gpg") or not encrypted)]
+    return sorted(fs, key=lambda f: f.stat().st_mtime, reverse=True)
+
+
+def tabletop_check(name: str, now: float | None = None) -> tuple[bool | None, str]:
+    """What this machine can prove for one inject: True, False, or None (only you can answer)."""
+    now = now or time.time()
+    off = env("SECURAX_OFFSITE_DIR")
+    offd = pathlib.Path(off).expanduser() if off else None
+    if name == "alerts":
+        on = [k for k in ("SECURAX_NOTIFY_NTFY", "SECURAX_NOTIFY_WEBHOOK", "ALERT_WEBHOOK") if env(k)]
+        return bool(on), ("alerts go to: " + ", ".join(on)) if on else "no alert channel is set"
+    if name == "depth":
+        cl = _clean(backup_dir())
+        if not cl:
+            return False, "no clean backup on this machine"
+        newest_d, oldest_d = _age_days(cl[0], now), _age_days(cl[-1], now)
+        ok = newest_d <= 2 and oldest_d >= 6
+        return ok, f"{len(cl)} clean backup(s), newest {newest_d:.1f} days old, oldest {oldest_d:.1f} days old" + (
+            "" if ok else " (needs one from the last 2 days AND one at least a week old)")
+    if name == "encrypted":
+        k = env("SECURAX_BACKUP_KEYFILE")
+        ok = bool(k) and pathlib.Path(k).expanduser().is_file()
+        return ok, "backups are encrypted with a key you were made to save elsewhere" if ok else "backups are not encrypted"
+    if name in ("offsite", "offsite_offline"):
+        cl = _clean(offd, encrypted=True)
+        age = _age_days(cl[0], now) if cl else None
+        site_ok = age is not None and age <= 2
+        detail = f"off-site copy {age:.1f} days old" if age is not None else "no off-site copy"
+        if name == "offsite":
+            return site_ok, detail
+        log = home() / "continuity" / "offline.log"
+        last = log.read_text("utf-8").strip().splitlines()[-1][:20] if log.exists() and log.read_text("utf-8").strip() else ""
+        try:
+            off_age = (now - dt.datetime.strptime(last, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=dt.timezone.utc).timestamp()) / 86400
+        except ValueError:
+            off_age = None
+        detail += f"; offline copy {off_age:.0f} days old" if off_age is not None else "; no offline copy recorded"
+        return site_ok and off_age is not None and off_age <= 35, detail
+    if name == "drilled":
+        d = last_drills().get("data-lost")
+        if not d:
+            return False, "the restore was never drilled"
+        try:
+            age = (now - dt.datetime.fromisoformat(d["when"]).timestamp()) / 86400
+        except (KeyError, ValueError):
+            age = 1e9
+        ok = bool(d.get("ok")) and age <= 100
+        return ok, f"last drill {'passed' if d.get('ok') else 'FAILED'} {age:.0f} days ago in {d.get('minutes', 0):.1f} min"
+    if name == "allowance":
+        day, month = env("AI_BUDGET_DAY_TOKENS", "0"), env("AI_BUDGET_MONTH_TOKENS", "0")
+        ok = any(v.strip().isdigit() and int(v) > 0 for v in (day, month))
+        return (True, f"capped at {day} tokens a day, {month} a month") if ok else (None, "no token cap is set in .env")
+    if name == "known_good":
+        f = home() / "known-good.jsonl"
+        n = len(f.read_text("utf-8").splitlines()) if f.exists() else 0
+        return n > 0, f"{n} known working version(s) recorded" if n else "no working version recorded yet (./securax up records one)"
+    if name == "peers":
+        n = len([x for x in env("SYNC_PEERS").split(",") if x.strip()])
+        return n > 0, f"syncs with {n} other node(s)" if n else "syncs with no other node"
+    if name == "sync":
+        n = len([x for x in env("SYNC_PEERS").split(",") if x.strip()])
+        return None, f"this node syncs with {n} other node(s)"
+    if name == "mirror":
+        bundle = (backup_dir() / "repo-latest.bundle").exists()
+        remotes = [r for r in env("MIRROR_REMOTES").split(",") if r.strip()]
+        ok = bundle and bool(remotes)
+        return ok, ("a code bundle " + ("exists" if bundle else "is missing") + f" and {len(remotes)} mirror host(s) are set")
+    if name == "replicas":
+        return None, "only Cloudflare knows how many machines serve your address (./securax online status shows it)"
+    return None, ""
+
+
+def tabletop(eid: str, answers: str | None = None, ask=None, say=print, now: float | None = None) -> int:
+    """Walk one exercise inject by inject. A check this machine can prove decides; otherwise you answer y or n.
+    Writes an after-action report (what held, each gap and its fix) and returns 1 when there is any gap."""
+    ex = next((x for x in exercises() if x["id"] == eid), None)
+    if not ex:
+        say(f"No exercise called {eid}. The exercises: " + ", ".join(x["id"] for x in exercises()))
+        return 2
+    feed = iter((answers or "").replace(",", ""))
+    interactive = answers is None and sys.stdin.isatty()
+    ask = ask or (lambda q: input(q))
+    say(f"TABLETOP · {ex['title']}\n{ex['story']}\n")
+    rows, t0 = [], time.time()
+    for i, inj in enumerate(ex["injects"], 1):
+        say(f"[{inj['at']} · {inj['phase']}] {inj['event']}")
+        held, how = None, ""
+        if inj.get("check"):
+            held, how = tabletop_check(inj["check"], now)
+        if held is None:
+            if interactive:
+                a = ask(f"  {inj['ask']} [y/n] ").strip().lower()[:1]
+            else:
+                a = next(feed, "")
+            held = a == "y"
+            how = (how + "; " if how else "") + {"y": "you answered yes", "n": "you answered no"}.get(a, "not answered")
+        else:
+            say(f"  {inj['ask']}")
+            how = "checked on this machine: " + how
+        say(("  ✔ " if held else "  ✗ ") + how)
+        if not held:
+            say(f"    the plan expects: {inj['expect']}\n    fix: {inj['fix']}")
+        rows.append({"n": i, "at": inj["at"], "phase": inj["phase"], "ask": inj["ask"], "held": held, "how": how,
+                     "expect": inj["expect"], "fix": inj["fix"]})
+    gaps = [r for r in rows if not r["held"]]
+    rec = {"id": eid, "when": dt.datetime.now().isoformat(timespec="seconds"), "injects": len(rows), "gaps": len(gaps),
+           "minutes": round((time.time() - t0) / 60, 1)}
+    out = home() / "continuity" / "tabletops"
+    out.mkdir(parents=True, exist_ok=True)
+    report = out / f"{eid}-{dt.datetime.now().strftime('%Y%m%d-%H%M%S')}.md"
+    report.write_text(after_action(ex, rows, rec), "utf-8")
+    for old in sorted(out.glob("*.md"), key=lambda f: f.stat().st_mtime, reverse=True)[KEEP_REPORTS:]:
+        old.unlink()
+    with (home() / "continuity" / "tabletops.jsonl").open("a", encoding="utf-8") as fh:
+        fh.write(json.dumps({**rec, "report": str(report)}) + "\n")
+    say(f"\n{len(rows) - len(gaps)} of {len(rows)} held. " + ("Ready." if not gaps else f"{len(gaps)} gap(s) to close, each with its fix in the report."))
+    say(f"After-action report: {report}")
+    return 0 if not gaps else 1
+
+
+def after_action(ex: dict, rows: list[dict], rec: dict) -> str:
+    lines = [f"# After-action report: {ex['title']}", "", f"- Exercise: `{ex['id']}` (scenario `{ex.get('scenario', '')}`)",
+             f"- Run: {rec['when']}, {rec['minutes']} min", f"- Result: {rec['injects'] - rec['gaps']} of {rec['injects']} held", "",
+             "## What happened, and what held", "", "| # | When | Phase | Question | Held | How we know |", "|---|---|---|---|---|---|"]
+    lines += [f"| {r['n']} | {r['at']} | {r['phase']} | {r['ask']} | {'yes' if r['held'] else '**no**'} | {r['how']} |" for r in rows]
+    lines += ["", "## Gaps and fixes", ""]
+    lines += [f"- [ ] {r['fix']} (inject {r['n']}: {r['expect']})" for r in rows if not r["held"]] or ["- none"]
+    lines += ["", "Turn each gap into an action with an owner and a date:  ./securax postmortem new \"Tabletop " + ex["id"] + "\"", ""]
+    return "\n".join(lines)
+
+
+def last_tabletops() -> dict[str, dict]:
+    f = home() / "continuity" / "tabletops.jsonl"
+    out = {}
+    if f.exists():
+        for line in f.read_text("utf-8").splitlines():
+            try:
+                r = json.loads(line)
+                out[r["id"]] = r
+            except (ValueError, KeyError):
+                continue
+    return out
+
+
 # ---------------------------------------------------------------------------------------------------- CLI
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
@@ -295,7 +460,21 @@ def main(argv: list[str] | None = None) -> int:
             print(f"  {mark} {r['title']}")
             print(f"      RTO target {_span(r['rto_min'])}{'' if r['rto_ok'] else ' · not proven by a drill yet'}{rpo}" + (f"\n      fix: {r['fix']}" if r["fix"] else ""))
         print("\nThe steps for one:  ./securax continuity show ID   (IDs: " + ", ".join(r["id"] for r in rows) + ")")
+        tt = last_tabletops()
+        print("Tabletop exercises (talk it through, the machine checks what it can):  ./securax continuity tabletop ID")
+        for x in exercises():
+            r = tt.get(x["id"])
+            print(f"  {'·' if not r else ('✔' if not r['gaps'] else '✗')} {x['id']:<11} {x['title']}"
+                  + (f"  (last {r['when'][:10]}: {r['gaps']} gap(s))" if r else "  (never run)"))
         return 0 if all(r["ok"] for r in rows) else 1
+    if cmd == "tabletop":
+        if len(argv) < 2:
+            for x in exercises():
+                print(f"  {x['id']:<11} {x['title']}  ({len(x['injects'])} injects)")
+            print("Run one:  ./securax continuity tabletop ransomware")
+            return 0
+        ans = next((a.split("=", 1)[1] for a in argv[2:] if a.startswith("--answers=")), None)
+        return tabletop(argv[1], answers=ans)
     if cmd == "show" and len(argv) > 1:
         s = next((x for x in load() if x["id"] == argv[1]), None)
         if not s:

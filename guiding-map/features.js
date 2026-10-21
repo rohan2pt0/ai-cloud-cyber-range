@@ -243,6 +243,19 @@ window.SECURAX_FEATURES = {
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION/"
   },
   {
+   "id": "ransomware-recovery",
+   "group": "Keep it running",
+   "icon": "lifebuoy",
+   "name": "Ransomware-proof backups and recovery drills",
+   "what": "Every backup first checks that your data is still readable. If ransomware got there first, the copy is quarantined, nothing clean is deleted and you are alerted. `restore latest` picks the newest clean copy, a restore twin proves it opens, and tabletop exercises test the plan.",
+   "cmd": "./securax continuity tabletop ransomware",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "light": "green",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/88-RANSOMWARE-AND-DISASTER-RECOVERY-PROVEN/"
+  },
+  {
    "id": "guiding-map",
    "group": "Your own tools",
    "icon": "compass",
