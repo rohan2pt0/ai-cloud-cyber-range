@@ -110,14 +110,14 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- The cockpit is a dark cockpit
+- Govern needs no command
 - [Leave Claude Code for good, and store apps](docs/securax/98-SHIP-AND-STORE-APPS.md)
 - [One change, every app](docs/securax/95-OS-KIT-VANTAGE.md)
 - [The suite: built for one, ready for many](docs/securax/97-BUILT-FOR-ONE-READY-FOR-MANY.md)
 - [Vantage, the CISO's operating system, and the OS kit](docs/securax/95-OS-KIT-VANTAGE.md)
 - [Venture: is the estate paying its way?](docs/securax/96-ONE-PLATFORM-MANY-PRODUCTS.md)
 - [Govern, for decision makers](docs/securax/94-GOVERN.md)
-- [Progress you can see, and the north star](docs/securax/93-PROGRESS-YOU-CAN-SEE.md)
-- [The autopilot](docs/securax/92-THE-AUTOPILOT.md)
 
 **Release 0.2.0 - 2026-10-17:**
 

@@ -38,4 +38,5 @@ autobuild adds one by itself when a red attempt turns green. Keep lines short: e
 - 2026-10-21 kit audit: loading guiding-map/tests/ui_audit.py by path (as exercise/tests/ui_audit.py does) breaks if it imports a sibling module → load shared test code by path, never add a sibling import to a file others load by pat…
 - 2026-10-21 kit editions: json.dump re-indented vantage.json from ~400 to ~1,500 lines (compact objects exploded) → edit hand-formatted JSON with textual replacements, never a load-and-dump
 - 2026-10-21 ship merge: git checkout -B BR origin/main made the reset branch track origin/main, so the next push and status looked at main → push the reset branch with -u to track its own remote branch
+- 2026-10-21 update: a grep that crashed on a broken WSL turned a git network error into 'you may have local changes' → match in bash ( =~ ) and always print the tool's own last lines
 <!-- lessons:end -->

@@ -89,3 +89,25 @@ def test_the_cli_keeps_answers_private(tmp_path, monkeypatch):
     assert gv.main(["mark", "no-such", "done"]) == 2
     assert gv.marks()["tec-edr"]["state"] == "done" and gv.profile()["users"] == 500
     assert (tmp_path / "govern.json").stat().st_mode & 0o077 == 0
+
+
+def test_the_card_is_folded_and_shows_pictures_not_commands():
+    a = gv.analyse({"tec-edr": {"state": "done"}}, PROF)
+    card = gv.html_card(a)
+    assert card.split("<details", 1)[1].startswith(" class='card panel' id='govern'>")   # folded: no 'open' on the panel
+    assert "<svg" in card and "layer by layer" in card and "5W1H" in card and "./securax" not in card.split("</summary>", 1)[0]
+    for svg in (gv.org_svg(a), gv.stack_svg(a)):
+        assert svg.startswith("<svg") and "xmlns" not in svg and "<script" not in svg and "http" not in svg
+    org = gv.org_svg(a, "standard")
+    assert "CISO" in org and org.count("<rect") >= len(gv.team("standard", PROF))
+    stack = gv.stack_svg(a)
+    assert all(gv.short(c) in stack for c in gv.catalog()["capabilities"] if c["tier"] == "basic")
+
+
+def test_the_pictures_export_as_standalone_svg(tmp_path, monkeypatch):
+    monkeypatch.setenv("SECURAX_VAULT_DIR", str(tmp_path))
+    for cmd in ("org", "map"):
+        out = tmp_path / f"{cmd}.svg"
+        assert gv.main([cmd, "--out", str(out)]) == 0
+        s = out.read_text()
+        assert "<svg xmlns='http://www.w3.org/2000/svg' width='" in s and s.rstrip().endswith("</svg>")

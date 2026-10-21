@@ -50,3 +50,17 @@ def test_the_page_renders_when_the_gateway_reports_allowance_callers(monkeypatch
     html, data, _c = cockpit.build(fast=True)
     assert "AI allowance used up or near it" in html and data["profile"] is not None
     monkeypatch.setattr(urllib.request, "urlopen", real)
+
+
+def test_the_page_is_a_dark_cockpit(monkeypatch):
+    # One master lamp, at most three actions, instruments up front, and every detail folded away.
+    import urllib.request
+
+    def offline(*a, **k):
+        raise OSError("offline in tests")
+    monkeypatch.setattr(urllib.request, "urlopen", offline)
+    html, _d, _c = cockpit.build(fast=True)
+    head = html.split("class='inst'", 1)[0]
+    assert head.count("class='master") == 1 and head.count("<li") <= 3
+    assert "<details class='card panel' id='govern'>" in html and "<details class='card panel' id='systems'>" in html
+    assert "<details open class='card panel'" not in html and "<script" not in html

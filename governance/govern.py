@@ -10,6 +10,8 @@ highest possible look like, and what to do next with who, when and how much (doc
     ./securax govern list [--tier basic|standard|advanced]   every capability, its tier and its state
     ./securax govern team [--tier basic|standard|advanced]   the people you need: roles, how many, skills, certifications, cost
     ./securax govern board [--out FILE]    the one-page Board / executive report (Markdown), with the 5W1H for each gap
+    ./securax govern org [--tier T] [--out F.svg]   the organogram: the CISO, a lead per function, how many under each
+    ./securax govern map [--out F.svg]   every capability, layer by layer, coloured by where you stand
     ./securax govern templates [DIR] [--org "Name"]
                                            the template pack: policies, SOPs, registers, vision, executive deck, Board table
 
@@ -27,6 +29,7 @@ import json
 import math
 import os
 import pathlib
+import re
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
@@ -254,29 +257,180 @@ def board(a: dict, top: int = 10) -> str:
     return "\n".join(L)
 
 
+# ------------------------------------------------------------------------------------------------------------ pictures
+# The cockpit shows these as pictures, so a decision maker sees the shape at a glance and needs no command (doc 94, section 5).
+SHORT = {"gov-policy": "Policy and standards", "gov-structure": "CISO, committee, RACI", "gov-risk": "Risk register", "gov-metrics": "KPIs and Board report", "gov-privacy": "DPDP programme", "gov-tprm": "Vendor risk", "gov-iso27001": "ISO 27001",
+         "gov-iso22301": "ISO 22301", "gov-grc": "GRC platform", "gov-insurance": "Cyber insurance", "gov-ai": "AI governance",
+         "ppl-team": "Core security team", "ppl-awareness": "Awareness, phishing tests", "ppl-training": "Training, certifications",
+         "ppl-kt": "Knowledge transfer", "ppl-range": "Range exercises", "prc-inventory": "Asset inventory", "prc-classify": "Classification",
+         "prc-vuln": "Vuln. SLAs", "prc-patch": "Patching", "prc-change": "Change, exceptions", "prc-access": "Access reviews",
+         "prc-ir": "IR and crisis plan", "prc-backup": "Tested offline backups", "prc-sdlc": "Secure SDLC, API", "prc-vendor-sla": "Vendor scorecards",
+         "prc-drills": "BCP / DR drills", "prc-ctem": "CTEM",
+         "tec-ngfw": "Firewalls", "tec-email": "Email security", "tec-edr": "EDR", "tec-mfa": "MFA", "tec-vulnscan": "Vuln. scanning",
+         "tec-logging": "Central logging", "tec-encryption": "Encryption", "tec-waf": "WAF", "tec-ddos": "Anti-DDoS", "tec-dns": "DNS security",
+         "tec-nac": "NAC", "tec-mdm": "MDM", "tec-pam": "PAM", "tec-iam": "IAM / IGA", "tec-ad": "AD hardening", "tec-siem": "SIEM",
+         "tec-soc": "24x7 SOC", "tec-sast": "SAST / DAST", "tec-asm": "Attack surface", "tec-ti": "Threat intel", "tec-dlp": "DLP",
+         "tec-classify": "Data discovery", "tec-ztna": "ZTNA", "tec-ndr": "NDR", "tec-soar": "SOAR", "tec-ueba": "UEBA / XDR",
+         "tec-bas": "Attack simulation", "tec-deception": "Deception", "tec-api": "API security", "tec-bot": "Bots / RASP", "tec-dam": "DAM / masking",
+         "tec-drm": "DRM", "tec-forensics": "Forensics", "tec-pqc": "Quantum-safe"}
+STACK = [("Governance", lambda c: c["domain"] == "governance"), ("People", lambda c: c["domain"] == "people"),
+         ("Process", lambda c: c["domain"] == "process"),
+         *[(label, (lambda a: lambda c: c["domain"] == "technology" and c["area"] == a)(area)) for area, label in (
+             ("perimeter", "Perimeter"), ("network", "Network"), ("endpoint", "Endpoint"), ("identity", "Identity"),
+             ("application", "Application"), ("data", "Data"), ("secops", "Security operations"), ("resilience", "Resilience"))]]
+VERT = {"Governance, risk and compliance": "GRC", "Technical assurance": "Testing and assurance", "Security operations": "SOC", "Incident response": "Incident response"}
+SVG_STYLE = ("<style>.t{font:12px system-ui,sans-serif;fill:var(--ink,#14202b)}.m{font:11px system-ui,sans-serif;fill:var(--mut,#5a6876)}"
+             ".h{font:600 12px system-ui,sans-serif;fill:var(--ink,#14202b)}.box{fill:var(--card,#fff);stroke:var(--line,#c9d1da);stroke-width:1.2}"
+             ".lead{stroke:var(--acc,#2554c7);stroke-width:2}.wire{stroke:var(--mut,#5a6876);stroke-width:1;fill:none}"
+             ".done{fill:rgba(27,138,75,.16);stroke:var(--g,#1b8a4b)}.part{fill:rgba(183,121,31,.16);stroke:var(--a,#b7791f)}"
+             ".miss{fill:var(--card,#fff);stroke:var(--r,#c0392b);stroke-dasharray:4 3}.later{fill:var(--card,#fff);stroke:var(--line,#c9d1da)}"
+             ".band{fill:var(--bg,#f6f7f9)}</style>")
+
+
+def short(c: dict) -> str:
+    return SHORT.get(c["id"]) or re.split(r" \(|: | and | with ", c["name"])[0][:24]
+
+
+def plan_tier(a: dict) -> str:
+    """The tier being worked to: the first one not yet complete."""
+    return next((t for t in TIERS if a["overall"][t] < 100), TIERS[-1])
+
+
+def _lines(text: str, width: int) -> list[str]:
+    words, out, cur = text.replace(" / ", "/ ").split(), [], ""
+    for w in words:
+        if len(cur) + len(w) + 1 > width and cur:
+            out.append(cur)
+            cur = w
+        else:
+            cur = (cur + " " + w).strip()
+    return (out + [cur])[:3]
+
+
+def org_svg(a: dict | None = None, tier: str | None = None, standalone: bool = False) -> str:
+    """The organogram for the tier being worked to: the CISO, a lead per function, and who works under each."""
+    a = analyse() if a is None else a
+    tier = tier or plan_tier(a)
+    t = team(tier, a["profile"])
+    E = html.escape
+    leads = {"grc_lead", "architect", "test_lead", "tool_lead", "soc_manager", "ir_lead", "resilience_lead"}
+    cols: dict[str, list[dict]] = {}
+    for r in t:
+        if r["id"] not in ("ciso", "pmo"):
+            cols.setdefault(r["vertical"], []).append(r)
+    W, colw = 1100, max(130, (1100 - 20) // max(1, len(cols)))
+    W = max(W, 20 + colw * len(cols))
+    rows = max((len(v) for v in cols.values()), default=0)
+    H = 150 + rows * 80
+    out = [f"<svg viewBox='0 0 {W} {H}' role='img' aria-label='Organogram for the {tier} tier'>", SVG_STYLE]
+    cx = W // 2
+    ciso = next(r for r in t if r["id"] == "ciso")
+    out.append(f"<rect class='box lead' x='{cx - 120}' y='10' width='240' height='46' rx='8'/><text class='h' x='{cx}' y='30' text-anchor='middle'>{E(ciso['name'].split(' / ')[0])}</text>"
+               f"<text class='m' x='{cx}' y='47' text-anchor='middle'>owns cyber risk; reports to the Board</text>")
+    pmo = next((r for r in t if r["id"] == "pmo"), None)
+    if pmo:
+        out.append(f"<path class='wire' d='M{cx + 120} 33 H{cx + 170}' stroke-dasharray='4 3'/><rect class='box' x='{cx + 170}' y='14' width='190' height='38' rx='8'/>"
+                   f"<text class='t' x='{cx + 265}' y='37' text-anchor='middle'>{pmo['count']} × programme manager</text>")
+    if cols:
+        x0, x1 = 10 + colw // 2, 10 + colw * (len(cols) - 1) + colw // 2
+        out.append(f"<path class='wire' d='M{cx} 56 V80 M{x0} 80 H{x1}'/>")
+    for i, (vert, people) in enumerate(cols.items()):
+        x = 10 + i * colw
+        mid = x + colw // 2
+        out.append(f"<path class='wire' d='M{mid} 80 V96'/><text class='h' x='{mid}' y='112' text-anchor='middle'>{E(VERT.get(vert, vert))}</text>")
+        for k, r in enumerate(sorted(people, key=lambda r: r["id"] not in leads)):
+            y = 122 + k * 80
+            name = _lines(r["name"], max(14, (colw - 16) // 7))
+            cls = "box lead" if r["id"] in leads else "box"
+            out.append(f"<path class='wire' d='M{mid} {y - 10} V{y}'/><rect class='{cls}' x='{x + 6}' y='{y}' width='{colw - 12}' height='66' rx='8'/>"
+                       f"<text class='h' x='{mid}' y='{y + 18}' text-anchor='middle'>{r['count']} ×</text>"
+                       + "".join(f"<text class='t' x='{mid}' y='{y + 34 + n * 14}' text-anchor='middle'>{E(line)}</text>" for n, line in enumerate(name)))
+    out.append("</svg>")
+    svg = "".join(out)
+    return _standalone(svg) if standalone else svg
+
+
+def _standalone(svg: str) -> str:
+    """A file of its own (for a deck): the namespace a file needs, which a page must not carry (the cockpit names no address)."""
+    m = re.search(r"viewBox='0 0 (\d+) (\d+)'", svg)
+    size = f"width='{m.group(1)}' height='{m.group(2)}' " if m else ""
+    return "<?xml version='1.0' encoding='UTF-8'?>\n" + svg.replace("<svg ", f"<svg xmlns='http://www.w3.org/2000/svg' {size}", 1)
+
+
+def stack_svg(a: dict | None = None, m: dict | None = None, standalone: bool = False) -> str:
+    """Every capability, layer by layer: green in place, amber partly, red dashed a missing basic, grey a later tier."""
+    a = analyse() if a is None else a
+    m = marks() if m is None else m
+    E = html.escape
+    W, left, rows, y = 1100, 160, [], 10
+    for label, pick in STACK:
+        caps = [c for c in catalog()["capabilities"] if pick(c)]
+        if not caps:
+            continue
+        chips, x, line = [], left, 0
+        for c in sorted(caps, key=lambda c: (TIERS.index(c["tier"]), c["id"])):
+            text = short(c) + ("" if c["tier"] == "basic" else " ·" + c["tier"][0].upper())
+            w = 20 + int(7.0 * len(text))
+            if x + w > W - 10:
+                x, line = left, line + 1
+            st = state(c["id"], m)
+            cls = {"done": "done", "partial": "part"}.get(st, "miss" if c["tier"] == "basic" else "later")
+            chips.append((x, line, w, cls, text, c["name"]))
+            x += w + 6
+        h = 34 + line * 30
+        rows.append(f"<rect class='band' x='0' y='{y}' width='{W}' height='{h}' rx='6'/><text class='h' x='10' y='{y + 21}'>{E(label)}</text>"
+                    + "".join(f"<g><title>{E(full)}</title><rect class='{cls}' x='{cx}' y='{y + 6 + ln * 30}' width='{w}' height='22' rx='11'/>"
+                              f"<text class='t' x='{cx + w / 2:.0f}' y='{y + 21 + ln * 30}' text-anchor='middle'>{E(tx)}</text></g>" for cx, ln, w, cls, tx, full in chips))
+        y += h + 6
+    legend = (f"<g transform='translate(10,{y + 6})'><rect class='done' width='16' height='12' rx='6'/><text class='m' x='22' y='10'>in place</text>"
+              "<rect class='part' x='100' width='16' height='12' rx='6'/><text class='m' x='122' y='10'>partly</text>"
+              "<rect class='miss' x='190' width='16' height='12' rx='6'/><text class='m' x='212' y='10'>missing basic: first</text>"
+              "<rect class='later' x='350' width='16' height='12' rx='6'/><text class='m' x='372' y='10'>later tier (·S standard, ·A advanced)</text></g>")
+    svg = f"<svg viewBox='0 0 {W} {y + 26}' role='img' aria-label='Capabilities layer by layer'>{SVG_STYLE}{''.join(rows)}{legend}</svg>"
+    return _standalone(svg) if standalone else svg
+
+
+def _w5h_html(g: dict) -> str:
+    E = html.escape
+    w = w5h(g)
+    tpl = f" <span class='muted'>Template: {E(g['template'])}</span>" if g.get("template") else ""
+    return (f"<details class='gap'><summary><b>{E(g['name'])}</b> <span class='muted'>· {E(g['tier'])} · {E(g['owner'])} · "
+            f"{E(g['when'])} · {E(money(*g['cost_lh']))}</span></summary><dl class='w5h'>"
+            + "".join(f"<dt>{k}</dt><dd>{E(str(w[k]))}</dd>" for k in ("What", "Why", "Who", "When", "Where", "How", "How much")) + f"</dl>{tpl}</details>")
+
+
+GOV_CSS = ("<style>#govern dl.w5h{display:grid;grid-template-columns:7em 1fr;gap:2px 10px;margin:.4rem 0 .6rem}#govern dt{color:var(--mut);font-weight:600}"
+           "#govern dd{margin:0}#govern details.gap{border-bottom:1px solid var(--line);padding:6px 0}#govern details.sub{margin:.6rem 0}"
+           "#govern details.sub>summary{font-size:1rem}#govern table{border-collapse:collapse;width:100%;font-size:.9rem}"
+           "#govern td,#govern th{border-bottom:1px solid var(--line);padding:5px 6px;text-align:left}</style>")
+
+
 def html_card(a: dict | None = None) -> str:
-    """The Govern card for the Command Center cockpit: no script, no external address."""
+    """The Govern panel for the cockpit: folded to one line; open it and everything is there, with no command to run.
+    No script, no external address (the cockpit's rule)."""
     a = analyse() if a is None else a
     E = html.escape
     lvl, words = a["maturity"]
-    bars = "".join(
-        f"<tr><td>{E(d.title())}</td>" + "".join(f"<td><div class='bar{' low' if a['coverage'][d][t] < 60 else ''}' style='width:{max(a['coverage'][d][t], 2)}%'></div>"
-                                                 f"<span class='muted'>{a['coverage'][d][t]}%</span></td>" for t in TIERS) + "</tr>"
-        for d in DOMAINS)
-    rows = "".join(f"<tr><td><b>{E(g['name'])}</b><br><span class='muted'>{E(g['why'])}</span></td><td>{E(g['owner'])}</td>"
-                   f"<td>{E(g['when'])}</td><td>{E(money(*g['cost_lh']))}</td></tr>" for g in a["gaps"][:5])
-    b = a["budget"]
-    return ("<div class='card' id='govern'><h2>Govern <span class='muted'>· for decision makers: where we stand, the minimum "
-            "basic and the highest possible, and what it takes</span></h2>"
-            f"<p class='big'>Maturity level {lvl} of 5</p><p class='muted'>{E(words)}.</p>"
-            "<table><tr><th>Area</th><th>Minimum basic</th><th>Standard</th><th>Highest possible</th></tr>" + bars + "</table>"
-            f"<p>To reach the <b>minimum basic</b>: {E(money(*b['basic']['total']))} a year. To reach the <b>highest possible</b>: "
-            f"{E(money(*b['advanced']['total']))} a year <span class='muted'>(indicative, India, people included; confirm with "
-            "three quotes)</span>.</p>"
-            "<h3>Next five, most risk removed first</h3><table><tr><th>What and why</th><th>Who</th><th>When</th><th>How much a year</th></tr>"
-            + rows + "</table><p class='muted'>The full 5W1H, the team plan and the one-page Board report: "
-            "<code>./securax govern</code>, <code>govern team</code>, <code>govern board</code>. Policies, SOPs, registers and the "
-            "executive deck: <code>./securax govern templates</code>.</p></div>")
+    b, tier = a["budget"], plan_tier(a)
+    t = team(tier, a["profile"])
+    people = sum(r["count"] for r in t)
+    top = a["gaps"][:10]
+    basics_left = sum(1 for g in a["gaps"] if g["tier"] == "basic")
+    summary = (f"<b>Govern</b> <span class='muted'>· maturity {lvl}/5 · minimum basic {a['overall']['basic']}% in place · "
+               f"{basics_left} basic gap(s) · {E(money(*b['basic']['total']))} a year to reach it</span>")
+    budget = "".join(f"<tr><td>{lbl}</td><td>{E(money(*b[k]['tools_process']))}</td><td>{E(money(*b[k]['people']))}</td><td><b>{E(money(*b[k]['total']))}</b></td></tr>"
+                     for k, lbl in (("basic", "Minimum basic"), ("standard", "Standard"), ("advanced", "Highest possible")))
+    note = "" if a["marked"] else "<p class='muted'>Nothing is marked yet, so every capability reads as missing. Mark what you have with <code>./securax govern mark ID done</code>.</p>"
+    return (GOV_CSS + f"<details class='card panel' id='govern'><summary>{summary}</summary>"
+            f"<p class='big'>Maturity level {lvl} of 5 <span class='muted'>· {E(words)}</span></p>{note}"
+            f"<details class='sub' open><summary>The capability stack, layer by layer</summary>{stack_svg(a)}</details>"
+            f"<details class='sub'><summary>The team for the {E(tier)} tier: {people} people ({E(money(sum(r['cost'][0] for r in t), sum(r['cost'][1] for r in t)))} a year)</summary>"
+            f"{org_svg(a, tier)}<p class='muted'>Consultants can fill any box in year 1 and train the team that leads in year 2.</p></details>"
+            f"<details class='sub'><summary>The next {len(top)} to do, most risk removed first (open one for its 5W1H)</summary>{''.join(_w5h_html(g) for g in top)}"
+            f"<p class='muted'>{len(a['gaps'])} open in all; the full list is in the Board report.</p></details>"
+            f"<details class='sub'><summary>What it costs, a year</summary><table><tr><th>To reach</th><th>Tools and process</th><th>People</th><th>Total</th></tr>{budget}</table>"
+            "<p class='muted'>Indicative bands for India, October 2026; confirm each with three quotes (doc 94).</p></details>"
+            "</details>")
 
 
 def templates(dest: pathlib.Path, org: str) -> list[pathlib.Path]:
@@ -295,7 +449,7 @@ def templates(dest: pathlib.Path, org: str) -> list[pathlib.Path]:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="govern", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("cmd", nargs="?", default="report", choices=["report", "profile", "mark", "list", "team", "board", "templates", "json"])
+    ap.add_argument("cmd", nargs="?", default="report", choices=["report", "profile", "mark", "list", "team", "board", "templates", "json", "org", "map"])
     ap.add_argument("args", nargs="*")
     ap.add_argument("--users", type=int)
     ap.add_argument("--endpoints", type=int)
@@ -347,6 +501,12 @@ def main(argv: list[str] | None = None) -> int:
     res = analyse()
     if a.cmd == "json":
         print(json.dumps(res, indent=1, default=list))
+        return 0
+    if a.cmd in ("org", "map"):
+        svg = org_svg(res, a.tier, standalone=True) if a.cmd == "org" else stack_svg(res, standalone=True)
+        out = pathlib.Path(a.out or f"govern-{a.cmd}.svg")
+        out.write_text(svg, "utf-8")
+        print(f"✔ written: {out}  (open it in a browser, or drop it into the Board deck)")
         return 0
     if a.cmd == "board":
         text = board(res)

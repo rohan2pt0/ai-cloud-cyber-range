@@ -1,7 +1,7 @@
 # 37 · Cockpit, storage growth, patching, impact
 
 <!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
-> **Status: 🟢 Built.** `cockpit_page` journey + priority tests. [What the lights mean](../index.md#the-status-lights)
+> **Status: 🟢 Built.** A dark cockpit: one master lamp, at most three actions, six primary instruments, every detail folded. `cockpit_page` journey + priority and layout tests. [What the lights mean](../index.md#the-status-lights)
 <!-- status:end -->
 
 For the person who does **not** want to read logs: one page that says whether things are fine, one report that says where the files are going, one safe way to update, and one command that says what a change can hurt. None of it adds a service, a port, a script or a login.
@@ -20,6 +20,18 @@ Writes `portal/cockpit.html` (served at `http://localhost:8088/portal/cockpit.ht
 | Trends | coverage, free disk, things needing action | history kept in `~/.securax/cockpit-history.jsonl` (needs a few days) |
 
 `--ai` adds a short plain-English briefing written by your **local** model from the numbers (labelled a draft; it never changes a status). Thresholds live in `governance/cockpit.json`. `SECURAX_PROFILE=regulated` (or `./securax regulated on`) makes open sign-in and missing residency red; on a laptop they are "no data".
+### How it is laid out: a dark cockpit
+
+A fighter or shuttle cockpit stays dark while all is well, so the pilot sees at once the one thing that is not. The page follows the same rules:
+
+1. **One master lamp** at the top: *ALL CLEAR*, *WATCH*, *ACT* or *NO DATA*, with one headline.
+2. **At most three actions** under it, each with its command.
+3. **Six primary instruments** in one row: backup, disk, backup encryption, HTTPS, the gateway and SEBI CSCRF coverage, plus Govern. A nominal instrument stays grey; only a problem lights up.
+4. **Lit annunciators** only for other problems. Nothing is listed when nothing is wrong.
+5. **Everything else is folded**, each panel with a one-line summary: Systems (every vital sign), Govern, Setup, the AI briefing, Mission planning.
+
+Colours pass WCAG AA contrast in both themes; `guiding-map/tests/ui_audit.py` measures it.
+
 Honest limits: it shows only what this machine can see (not running = *No data*, never *OK*); green means "nothing measured is wrong", not "secure"; radar scores are our own assessment, not an audit; it does not update itself — run `./securax cockpit`.
 
 ## Where the files are, and how they grow — `./securax storage`

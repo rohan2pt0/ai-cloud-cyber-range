@@ -17,7 +17,7 @@ services:
     # ONE name-routed HTTPS port (+ port 80 that only redirects). No other port is published for the web UIs.
     ports:
       - "${BIND_HOST:-127.0.0.1}:443:443"
-      - "${BIND_HOST:-127.0.0.1}:80:80"
+      - "${BIND_HOST:-127.0.0.1}:${TLS_HTTP_PORT:-80}:80"   # only redirects to https; moves to 8880 when Windows holds 80
       # device ports for phones (doc 58): loopback ONLY, reached by `tailscale serve`, never by the network directly
       - "127.0.0.1:9443:9443"
       - "127.0.0.1:9444:9444"
