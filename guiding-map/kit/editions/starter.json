@@ -11,11 +11,7 @@
  "nav_main": 4,
  "nav": ["today", "cadence", "goals", "inbox", "registers:items", "scorecard", "wheel", "rituals", "playbooks", "progress", "settings"],
  "terms": { "goals": "Goals", "rituals": "Habits", "wheel": "Wheel", "cadence": "Reviews" },
- "principles": [
-  { "name": "Pareto", "text": "A few actions carry most of the result. Find them first." },
-  { "name": "Never miss twice", "text": "Missing once is life. Missing twice is the start of a new habit." },
-  { "name": "Antifragility", "text": "Every setback leaves a lesson and a change." }
- ],
+ "principles": ["pareto", "never-miss-twice"],
  "modules": {
   "today": {},
   "inbox": {},

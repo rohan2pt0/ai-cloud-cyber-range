@@ -44,6 +44,7 @@
     {"id": "govern", "critical": false, "state": "per-node", "needs": ["estate"], "full": ["estate", "vault"], "when_off": "The catalog and templates ship with the code on every machine; your own answers live in that machine's vault.", "fix": "copy the vault to the always-on machine"},
     {"id": "vantage", "critical": false, "state": "per-node", "needs": [], "full": ["estate"], "when_off": "Vantage is one offline page: it keeps working on the phone or laptop with no estate at all; only sync and the Govern feed wait.", "fix": "export a backup from Settings; sync catches up when any node is back"},
     {"id": "venture", "critical": false, "state": "per-node", "needs": [], "full": ["vault"], "when_off": "The model and its example numbers ship with the code; your own log lives in that machine's vault.", "fix": "copy the vault to the always-on machine"},
+    {"id": "suite", "critical": false, "state": "per-node", "needs": [], "full": [], "when_off": "The suite is a file in the code: it reads the same on every machine.", "fix": "nothing"},
     {"id": "channel", "critical": false, "state": "per-node", "needs": ["estate"], "full": ["estate"], "when_off": "Each node follows its own channel (stable or beta).", "fix": "nothing"}
   ],
   "reference": {

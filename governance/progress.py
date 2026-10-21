@@ -161,10 +161,22 @@ def nudges(r: dict) -> list[str]:
     return out
 
 
+def new_features(now: float, days: int = 30) -> list[dict]:
+    """What arrived in the estate lately (features.json "added"), newest first, so a person hears about it and uses it."""
+    try:
+        feats = json.loads((ROOT / "features.json").read_text("utf-8"))["features"]
+    except (OSError, ValueError, KeyError):
+        return []
+    cut = time.strftime("%Y-%m-%d", time.gmtime(now - days * 86400))
+    fresh = [f for f in feats if str(f.get("added", "")) >= cut]
+    return [{"name": f["name"], "cmd": f["open"]["cmd"], "added": f["added"], "outcome": f.get("outcome", "")}
+            for f in sorted(fresh, key=lambda f: f["added"], reverse=True)]
+
+
 def build(now: float | None = None, life=None) -> dict:
     now = now or time.time()
     r = rhythm(life_state(life), now)
-    return {"rhythm": r, "stronger": stronger(now), "next": next_step(), "nudges": nudges(r), "at": int(now)}
+    return {"rhythm": r, "stronger": stronger(now), "next": next_step(), "nudges": nudges(r), "new": new_features(now), "at": int(now)}
 
 
 def report(p: dict, say=print) -> None:
@@ -184,6 +196,10 @@ def report(p: dict, say=print) -> None:
     say(f"  postmortem actions open: {s['actions_open']}" + (f" ({s['actions_late']} late or without an owner)" if s["actions_late"] else ""))
     if s["weak_points"] is not None:
         say(f"  single points of failure still open: {s['weak_points']}" + ("  (./securax resilience)" if s["weak_points"] else ""))
+    if p.get("new"):
+        say("\nNew in the estate (the last 30 days): try one")
+        for f in p["new"][:5]:
+            say(f"  {f['added']}  {f['name']}: {f['cmd']}")
     say("\nThe one next step")
     if n:
         say(f"  {n['title']}: {n['gives']}")
@@ -203,6 +219,8 @@ def short(p: dict) -> str:
         msg += " " + p["nudges"][0]
     if n:
         msg += f" Next step: {n['title']} (./securax finish {n['id']})."
+    if p.get("new"):
+        msg += f" New: {p['new'][0]['name']} ({p['new'][0]['cmd']})" + (f" and {len(p['new']) - 1} more" if len(p["new"]) > 1 else "") + "."
     return msg
 
 

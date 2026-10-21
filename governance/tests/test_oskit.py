@@ -75,3 +75,39 @@ def test_edition_text_cannot_break_out_into_markup_or_script():
     assert "<script>window.__pwned" not in page and "<b>V</b>" not in page.split("<script>window.OSK_EDITION")[0]
     data = page.split("window.OSK_EDITION = ", 1)[1].split(";</script>", 1)[0]
     assert json.loads(data)["tagline"] == e["tagline"]
+
+
+def test_core_principles_reach_every_app_in_its_own_words():
+    v = ok.resolve(ok.editions()["vantage"])
+    core = [p["id"] for p in ok.core_principles()["principles"] if p["core"]]
+    ids = [p["id"] for p in v["principles"]]
+    assert ids[: len(core)] == core and len(set(ids)) == len(ids)
+    own = {p["id"]: p["text"] for p in v["principles"]}
+    assert "organisation" in own["ikigai"]                     # Vantage says it in a CISO's words
+    s = ok.resolve(ok.editions()["starter"])
+    assert [p["id"] for p in s["principles"]][: len(core)] == core and s["north_star"]
+    bad = json.loads(json.dumps(ok.editions()["starter"]))
+    bad["principles"] = ["made-up"]
+    assert any("made-up" in m for m in ok.validate(bad))
+
+
+def test_a_changed_principle_makes_every_app_rebuild(tmp_path, monkeypatch):
+    p = json.loads(ok.PRINCIPLES.read_text())
+    p["principles"].append({"id": "kaizen", "core": True, "name": "Kaizen", "text": "A better way to say it, for every app."})
+    f = tmp_path / "principles.json"
+    f.write_text(json.dumps(p))
+    monkeypatch.setattr(ok, "PRINCIPLES", f)
+    assert any("vantage" in m and "not current" in m for m in ok.check())
+    for ed in ("starter", "vantage"):                          # a new core principle reaches every app, whatever its own words
+        assert "A better way to say it" in ok.render(ok.editions()[ed])["index.html"].decode()
+
+
+def test_kit_news_is_checked_and_reaches_the_right_apps(tmp_path, monkeypatch):
+    news = [{"date": "2026-10-21", "text": "Something every app gets now."}, {"date": "2026-10-21", "editions": ["vantage"], "text": "Only Vantage gets this one."}]
+    f = tmp_path / "whatsnew.json"
+    f.write_text(json.dumps(news))
+    monkeypatch.setattr(ok, "WHATSNEW", f)
+    assert len(ok.resolve(ok.editions()["vantage"])["whatsnew"]) == 2 and len(ok.resolve(ok.editions()["starter"])["whatsnew"]) == 1
+    f.write_text(json.dumps([{"date": "soon", "text": "x"}, {"date": "2026-10-21", "editions": ["ghost"], "text": "For an app that is not there."}]))
+    probs = " ".join(ok.news_problems())
+    assert "needs a date" in probs and "'ghost' does not exist" in probs

@@ -11,7 +11,7 @@ SAFE = ["help", "route fix the gateway", "brief fix the sync token check", "jewe
         "online", "online status", "lifeos", "features", "lessons recent 3", "routines list", "rollback --check", "exercise list",
         "finish", "incident", "privacy check", "config check", "nodes", "channel", "online invite",
         "continuity tabletop", "govern", "govern list", "govern team",
-        "os", "os check", "venture", "venture ask"]
+        "os", "os check", "venture", "venture ask", "suite", "suite check", "suite sheet business"]
 
 
 @pytest.mark.parametrize("cmd", SAFE)

@@ -1,7 +1,7 @@
 # 95 · One kit, many apps: Vantage, the CISO's operating system
 
 <!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
-> **Status: 🟡 Partly built.** Built and tested: the OS kit (twelve reusable modules) and Vantage, the CISO's operating system, at /vantage/: next step, leadership rituals, the review rhythm, top risks, decisions, exceptions, tools, stakeholders, team, lessons, KPIs and KRIs, playbooks, progress and the Govern feed; offline, own storage names, estate sync, backup and undo. A new app is one JSON file (./securax os new). Reminders, Ask and shared registers wait, with dates. [What the lights mean](../index.md#the-status-lights)
+> **Status: 🟡 Partly built.** Built and tested: the OS kit (twelve reusable modules) and Vantage, the CISO's operating system, at /vantage/: next step, leadership rituals, the review rhythm, top risks, decisions, exceptions, tools, stakeholders, team, lessons, KPIs and KRIs, playbooks, progress and the Govern feed; offline, own storage names, estate sync, backup and undo. A new app is one JSON file (./securax os new). Core principles come from one shared file and reach every app at its next build; kit news shows on each app's Today. Reminders, Ask and shared registers wait, with dates. [What the lights mean](../index.md#the-status-lights)
 <!-- status:end -->
 
 **The ask:** reuse the Life OS components to build a personal app that guides a CISO or a similar executive to do the job well. Keep the same principles with new names, and make every module reusable so a new app for another role takes only minor changes.
@@ -90,7 +90,34 @@ Editions that would take little more than a JSON file each:
 
 Doc 96 explains why this is the business model, not only a convenience.
 
-## 6. Proof
+## 6. One change, every app: principles and news
+
+**The principles live in one file:** `governance/principles.json`.
+- Every app built from the kit carries the **core** principles (ikigai, antifragility, small wins shown, least effort) automatically. It adds the others it chooses.
+- An edition may say a principle in its own words. Vantage says ikigai in a CISO's terms. But it cannot drop a core principle.
+- When a principle improves, or a new core one is added:
+  - `./securax os check` (and CI) fails until every app is rebuilt with it;
+  - `./securax os build --all` carries it into every app.
+- A better principle therefore cannot stay in one app by accident.
+
+**What's new reaches people where they look:**
+
+| Where | What it shows | Source |
+|---|---|---|
+| Each kit app's Today | "New in Vantage" once, until Got it | `guiding-map/kit/whatsnew.json` (all apps, or named ones) |
+| Each kit app's Settings | The full list of what's new | the same file |
+| The Command Center | A **New** mark on a feature for 30 days, and a "New in the estate" strip | `features.json` `added` |
+| The docs home and the README | "New in the estate": the latest five additions | `features.json` `added` |
+| `./securax features` | The same list at the top | `features.json` `added` |
+| `./securax progress` (and its weekly message) | "New in the estate: try one" | `features.json` `added` |
+
+**The rule for builders:**
+- every feature carries its `added` date, and `features_sync` refuses one without it;
+- a change to the kit that people would notice gets a line in `whatsnew.json`.
+
+What does not follow automatically yet: the Life OS's own personal-finance engine tags its items with its own principles (Pareto, inversion and others), which predate the shared list. It keeps them until the Life OS is rebuilt on the kit. That has no date yet: it waits until the kit covers the Life OS's money and family screens.
+
+## 7. Proof
 
 - **`tests/kit1.js` (jsdom):** it uses Vantage as a CISO would.
   - The workflow: start, capture and decide, tick a ritual, record a risk, start a goal, see a late review come due, undo.
@@ -105,7 +132,7 @@ Doc 96 explains why this is the business model, not only a convenience.
   - A folder the kit did not build is never overwritten.
   - Edition text cannot inject markup.
 
-## 7. What waits
+## 8. What waits
 
 | Item | Why it waits | Target |
 |---|---|---|

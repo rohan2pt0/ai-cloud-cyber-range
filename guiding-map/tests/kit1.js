@@ -21,6 +21,10 @@ const get = (k) => JSON.parse(w.localStorage.getItem(PFX + k) || "null");
 
 setTimeout(() => {
   ok("the app started", !!K() && /Vantage/.test(d.title), d.title);
+  const recent = (K().ed.whatsnew || []).some(n => K().days(n.date) <= 30);
+  ok("recent kit news shows once on Today", !recent || /New in Vantage/.test(main()));
+  if (recent) { click('[data-a="newsSeen"]'); ok("…and Got it hides it", !/New in Vantage/.test(main())); }
+  ok("the core principles reached this app", K().ed.principles.filter(p => p.core).length >= 4 && K().ed.principles[0].core === true);
   ok("Today renders with the setup card", /Start in one minute/.test(main()));
   set("pfName", "Asha"); click('[data-a="profileSave"]');
   ok("profile saved and greeting uses it", /Asha/.test(main()) && get("profile").name === "Asha");
@@ -96,6 +100,8 @@ setTimeout(() => {
   let broken = [];
   tabs.forEach(tb => { K().go(tb.id); if (/This screen hit a problem/.test(main()) || !main().trim()) broken.push(tb.id); });
   ok("every screen renders", !broken.length, broken.join(","));
+  K().go("settings");
+  ok("Settings marks the core principles and lists what is new", /core<\/span>/.test(main()) && /What's new/.test(main()));
   K().go("today");
   ok("the bottom menu shows four screens and More", d.querySelectorAll("#oskNav button").length === 5);
   ok("no page error", !errs.length, errs.join(" | "));

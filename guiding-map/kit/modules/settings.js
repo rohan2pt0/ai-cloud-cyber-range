@@ -18,7 +18,9 @@
     render: function () {
       var p = K.get("profile", {}), ed = K.ed, h = "<h2>" + K.esc(K.term("settings", "Settings")) + "</h2>";
       h += K.card("About " + K.esc(ed.name), "<p>" + K.esc(ed.tagline || "") + "</p>" + (ed.audience ? '<p class="muted">For: ' + K.esc(ed.audience) + "</p>" : "")
-        + ((ed.principles || []).length ? "<ul class='list'>" + ed.principles.map(function (x) { return "<li><b>" + K.esc(x.name) + "</b>: " + K.esc(x.text) + "</li>"; }).join("") + "</ul>" : ""));
+        + ((ed.principles || []).length ? "<ul class='list'>" + ed.principles.map(function (x) { return "<li><b>" + K.esc(x.name) + "</b>" + (x.core ? ' <span class="tag">core</span>' : "") + ": " + K.esc(x.text) + "</li>"; }).join("") + "</ul>"
+          + '<p class="muted">Core principles come from the estate\'s one shared list, so every app carries them and gets their improvements.</p>' : ""));
+      if ((ed.whatsnew || []).length) h += K.card("What's new", "<ul class='list'>" + ed.whatsnew.slice().reverse().map(function (n) { return "<li>" + K.esc(n.text) + ' <span class="muted">' + K.esc(n.date) + "</span></li>"; }).join("") + "</ul>");
       h += K.card("You", '<label for="pfName">First name</label><input id="pfName" value="' + K.esc(p.name || "") + '"><label for="pfOrg">Organisation</label><input id="pfOrg" value="' + K.esc(p.org || "") + '"><button data-a="profileSave">Save</button>');
       h += K.card("Backup", '<p>Your data stays on this device. A backup is one file you can keep anywhere.</p><div class="btns"><button class="primary" data-a="exportNow">Export a backup</button>'
         + '<label class="file">Import a backup<input type="file" id="impFile" accept="application/json" data-c="importFile"></label></div>'
