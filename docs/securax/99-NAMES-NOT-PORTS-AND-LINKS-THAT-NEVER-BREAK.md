@@ -1,7 +1,7 @@
 # 99 · Names, not ports, and links that never break
 
 <!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
-> **Status: 🟡 Partly built.** Built and tested: docs links to repository files go to GitHub and the strict build fails on any broken link or anchor; tools/linkcheck.py checks every page of the built site (0 broken of about 19,800) and, weekly, the links to other sites; the site and README use your domain only after ./securax site live proves it serves the site; ./securax names is asked once with a one-click move of the Life OS data; fitness no-raw-addresses keeps localhost:PORT away from people. A cockpit diagnosis page and DNS-issued certificates for a private sub-domain are dated. [What the lights mean](../index.md#the-status-lights)
+> **Status: 🟡 Partly built.** Built and tested: docs links to repository files go to GitHub and the strict build fails on any broken link or anchor; tools/linkcheck.py checks every page of the built site (0 broken of about 19,800) and, weekly, the links to other sites; the site and README use your domain only after ./securax site live proves it serves the site; ./securax names is asked once with a one-click move of the Life OS data; fitness no-raw-addresses keeps localhost:PORT away from people; the cockpit's Names and site panel diagnoses names, certificate, resolution and the site. DNS-issued certificates for a private sub-domain are dated. [What the lights mean](../index.md#the-status-lights)
 <!-- status:end -->
 
 **The ask:**
@@ -62,7 +62,7 @@ Until `site live` succeeds, no page, README or doc links to the domain. `./secur
 | **Umbrel, CasaOS** | `umbrel.local:PORT` or `IP:PORT` per app | What we avoid: ports in addresses, and `.local` |
 
 **Still to do, with a date:**
-- **Diagnosis page (2026-12-15):** one diagnosis page in the cockpit for names, certificate trust, DNS and the site, in the way YunoHost presents its checks.
+- **Diagnosis page (done 2026-10-21):** the cockpit's folded **Names and site** panel checks names, the certificate, name resolution, device trust and the site, each with the one command that fixes it (`governance/diagnose.py`), in the way YunoHost presents its checks.
 - **Certificates for the domain (2027-01-31):** certificates for `home.example.org` issued through a DNS challenge, so other devices on your network need no extra trust step.
 
 ## 5. Why this needs less Claude Code next time

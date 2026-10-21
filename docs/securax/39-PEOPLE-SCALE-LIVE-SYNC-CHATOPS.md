@@ -13,7 +13,7 @@ You asked three things: did live push (WebSockets) get built, where is Mattermos
 | 5 … 100,000 people? | `./securax capacity --people N` prints the tier, who you need, what to switch on, and a list of **gaps — things not built**. Tiers 1–250 are well covered; above that this repository is a blueprint, and says so. |
 
 ## Live sync (WebSocket)
-- **Server** (`apps/estate-sync`): `WS /sync/ws`. The first message is `{"token","user"}` (browsers cannot set headers on a WebSocket, and a token in the URL ends up in logs). Bad token → closed with 4401; over `SYNC_MAX_SOCKETS` (100) → 4429; idle sockets are dropped after `SYNC_WS_IDLE_SECONDS` (90).
+- **Server** (`apps/estate-sync`): `WS /sync/ws`. The first message is `{"token","user"}` (browsers cannot set headers on a WebSocket, and a token in the URL ends up in logs). Bad token → closed with 4401; over `SYNC_MAX_SOCKETS` (100) → 4429; idle sockets are dropped after `SYNC_WS_IDLE_SECONDS` (90). Each token may make `SYNC_RATE_LIMIT` (600) requests per `SYNC_RATE_WINDOW_S` (60 s), then 429 or close 4429; `SYNC_REFUSED_ALERT_AT` (10) refused sign-ins in `SYNC_REFUSED_WINDOW_S` (900 s) write an alert (doc 87).
 - **What travels**: only `{"type":"changed","updated_at","origin"}`. No data. The device then pulls through the same per-key merge as before, so a missed message costs latency, never data. The writer's own `origin` is ignored, so there is no echo loop.
 - **Client** (`guiding-map/ops.js`): reconnects with back-off up to 60 s; stops when you turn sync off.
 - **Limit**: the socket registry lives in one process and storage is SQLite, so run **one** estate-sync. Several replicas need Postgres plus a pub/sub bus first (listed as a gap in the ladder).

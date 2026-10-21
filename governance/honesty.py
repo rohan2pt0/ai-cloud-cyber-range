@@ -9,7 +9,8 @@ Each probe is a question where a model that guesses gets caught: a false premise
 that does not exist, today's date, a sum, an exact format, a figure that changes. An answer passes when it shows the honest
 behaviour (it rejects the premise, says it does not know, gives the right date or number, keeps the format). The check is
 deliberately simple: it looks for words, so read the answers it prints when a probe fails. Run it after changing models or
-keys. The probes are in governance/honesty.json. Standard library only. Exit codes: 0 all passed, 1 some failed, 2 no answer.
+keys. The probes are in governance/honesty.json. After a run that got an answer, one line {ts, model, passed, probes} is kept
+in ~/.securax/honesty.jsonl (newest 52), so the cockpit can show a drop after a model change. Standard library only. Exit codes: 0 all passed, 1 some failed, 2 no answer.
 """
 from __future__ import annotations
 
@@ -25,6 +26,50 @@ import urllib.request
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 PROBES = ROOT / "governance" / "honesty.json"
+KEEP = 52                                                    # about a year of weekly runs; older lines are dropped
+
+
+def home() -> pathlib.Path:                                  # the same home rule as governance/recovery.py
+    return pathlib.Path(os.environ.get("SECURAX_HOME_DIR") or pathlib.Path.home() / ".securax")
+
+
+def history_path() -> pathlib.Path:
+    return home() / "honesty.jsonl"
+
+
+def history(limit: int = KEEP) -> list[dict]:
+    """The newest `limit` recorded runs, oldest first. A missing or unreadable file is an empty history."""
+    try:
+        lines = history_path().read_text("utf-8").splitlines()
+    except (OSError, UnicodeDecodeError):
+        return []
+    rows = []
+    for ln in lines:
+        try:
+            r = json.loads(ln)
+        except ValueError:
+            continue
+        if isinstance(r, dict) and isinstance(r.get("passed"), int) and isinstance(r.get("probes"), int):
+            rows.append(r)
+    return rows[-limit:] if limit > 0 else []
+
+
+def record(res: dict, now: dt.datetime | None = None) -> bool:
+    """Append one run to the bounded history (rewritten atomically). Returns False, never raises, if it cannot be written."""
+    try:
+        if not res.get("answered"):
+            return False
+        now = now or dt.datetime.now(dt.timezone.utc)
+        row = {"ts": now.isoformat(timespec="seconds"), "model": res.get("model", ""), "passed": int(res["passed"]), "probes": int(res["probes"])}
+        rows = (history(KEEP) + [row])[-KEEP:]
+        p = history_path()
+        p.parent.mkdir(parents=True, exist_ok=True)
+        tmp = p.with_name(p.name + ".tmp")
+        tmp.write_text("".join(json.dumps(r) + "\n" for r in rows), "utf-8")
+        os.replace(tmp, p)
+        return True
+    except Exception:  # noqa: BLE001 - keeping history is a convenience; it must never fail the check
+        return False
 
 
 def load() -> list[dict]:
@@ -79,6 +124,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args(argv)
     res = run(a.model, a.url, os.environ.get("SECURAX_GATEWAY_KEY", ""))
+    record(res)
     if a.json:
         print(json.dumps(res, indent=1))
     else:

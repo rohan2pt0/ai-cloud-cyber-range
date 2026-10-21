@@ -197,6 +197,30 @@ def _slots() -> asyncio.Semaphore:
 
 _LAT_HIST = [0] * (len(LAT_BUCKETS_MS) + 1)        # cumulative-at-render histogram counts; the last cell is +Inf
 _LAT_RECENT: deque = deque(maxlen=1000)             # the last 1000 latencies, for exact p50/p95/p99 on /v1/latency
+# Which model really answered (doc 83): a quiet fall from the strong model to a small local rung must be visible. Only model
+# names and times are kept (never prompt or answer text), in memory, the last SERVED_WINDOW_S, at most SERVED_CAP calls.
+SERVED_WINDOW_S = 24 * 3600
+SERVED_CAP = 2000
+_SERVED: deque = deque(maxlen=SERVED_CAP)           # (ts, requested alias, served model, weak)
+
+
+def _note_served(requested: str, served: str, now: float | None = None) -> None:
+    _SERVED.append((time.time() if now is None else now, requested, served, answering.weak(served)))
+
+
+def _served_report(requested: str = "", now: float | None = None) -> dict:
+    cut = (time.time() if now is None else now) - SERVED_WINDOW_S
+    while _SERVED and _SERVED[0][0] < cut:            # oldest first: drop what fell out of the window
+        _SERVED.popleft()
+    rows = [e for e in _SERVED if e[0] >= cut and (not requested or e[1] == requested)]
+    tally: dict[str, list] = {}
+    for _ts, _asked, served, weak in rows:
+        t = tally.setdefault(served, [0, weak])
+        t[0] += 1
+    by = sorted(({"served": k, "calls": v[0], "weak": v[1]} for k, v in tally.items()), key=lambda r: (-r["calls"], r["served"]))
+    weak_n = sum(1 for e in rows if e[3])
+    return {"window_h": SERVED_WINDOW_S // 3600, "calls": len(rows), "by_served": by,
+            "weak_share": round(weak_n / len(rows), 3) if rows else 0.0}
 
 
 def _observe_latency(ms: float) -> None:
@@ -447,6 +471,13 @@ async def budget_report(request: Request) -> dict:
     return budget.report()
 
 
+@app.get("/v1/served")
+async def served_report(request: Request, model: str = "") -> dict:
+    """Which model answered over the last 24 h (optionally for one requested alias), and the share a weak fallback served."""
+    await _authn(request, "metrics")
+    return _served_report(model)
+
+
 @app.post("/v1/chat/completions")
 async def chat(request: Request, authorization: str | None = Header(default=None)):
     key = (request.headers.get("idempotency-key") or "").strip()
@@ -486,6 +517,7 @@ async def _chat(request: Request, authorization: str | None) -> JSONResponse:
     ident = await _authn(request, "chat")
     _metrics["sli_total"] += 1
     payload = await request.json()
+    asked = str(payload.get("model") or "") if isinstance(payload, dict) else ""    # the alias asked for, before any reroute
     req_id = str(uuid.uuid4())
     # Authenticated callers are rate-limited and audited by their verified subject; anonymous ones (AUTH_MODE off/optional) as before.
     caller = ident.subject if ident.method != "none" else (authorization or (request.client.host if request.client else "anon"))
@@ -602,6 +634,7 @@ async def _chat(request: Request, authorization: str | None) -> JSONResponse:
         _slots().release()
     latency_ms = round((time.perf_counter() - start) * 1000)
     _observe_latency(latency_ms)
+    _note_served(asked, str(resp.get("model") or payload.get("model") or ""))
 
     out_findings: list[guardrails.Finding] = []
     for choice in resp.get("choices", []):

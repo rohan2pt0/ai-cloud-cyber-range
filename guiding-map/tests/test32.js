@@ -34,6 +34,24 @@ setTimeout(()=>{
   const all=d.querySelectorAll(".fcard").length, q=d.getElementById("q"); q.value="backup"; q.dispatchEvent(new c.window.Event("input"));
   const shown=[...d.querySelectorAll(".fcard")].filter(x=>!x.hidden).length;
   ok("search narrows the library", all>10 && shown>0 && shown<all, all+" -> "+shown);
+  q.value=""; q.dispatchEvent(new c.window.Event("input"));
+  // Each card says what gets better (features.json "outcome") and where the person sees it ("shows").
+  const FS=c.window.SECURAX_FEATURES.features.filter(f=>!f.service&&f.outcome), f0=FS[0], card=d.getElementById("f-"+f0.id);
+  ok("a card shows its outcome", card&&card.querySelector(".o")&&card.querySelector(".o").textContent===f0.outcome, card&&card.textContent);
+  ok("a card says where you see it", card&&card.querySelector(".s")&&card.querySelector(".s").textContent==="See it in: "+f0.shows);
+  // A word that is in one card's outcome and nowhere else on any card: searching it must find that card.
+  const cards=[...d.querySelectorAll(".fcard")];
+  const rest=(el)=>{ const x=el.cloneNode(true); x.querySelectorAll(".o").forEach(n=>n.remove()); return x.textContent.toLowerCase(); };
+  const others=cards.map(rest).join(" "), outs=cards.map(el=>el.querySelector(".o")?el.querySelector(".o").textContent.toLowerCase():"");
+  let hit=null, word=null;
+  cards.forEach((el,i)=>{ if(word||!outs[i]) return;
+    const wd=(outs[i].match(/[a-z]{6,}/g)||[]).find(x=>others.indexOf(x)<0&&outs.filter((o,j)=>j!==i&&o.indexOf(x)>=0).length===0);
+    if(wd){ hit=el; word=wd; } });
+  ok("some word appears only in one outcome", !!word);
+  if(word){ q.value=word; q.dispatchEvent(new c.window.Event("input"));
+    const vis=cards.filter(x=>!x.hidden);
+    ok("searching an outcome-only word finds that card", vis.length===1&&vis[0]===hit, word+" -> "+vis.map(x=>x.id).join(","));
+    q.value=""; q.dispatchEvent(new c.window.Event("input")); }
   ok("the app launchers are still there", d.querySelectorAll("#apps a.card").length===3 && d.querySelectorAll("#extras a.card").length===2);
   console.log(`test32 command center: ${P} passed, ${F} failed`); if(F){console.log(e.join("\n"));process.exit(1);} process.exit(0);
 },900);

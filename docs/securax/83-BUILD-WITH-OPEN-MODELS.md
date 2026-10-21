@@ -1,7 +1,7 @@
 # 83 · Build with open models: leave the Claude Code subscription without losing the rigour
 
 <!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
-> **Status: 🟡 Partly built.** Built and tested: the strong chain (DeepSeek V4 Pro, Kimi K3, GLM 5.3 on OpenCode Go), routing hard work to it in autobuild, OpenCode with the build rules and --strong, ./securax review, and open-model work counted in ai share. Not yet proven: a full day of real work on these models, measured by autobench (dated in the doc). [What the lights mean](../index.md#the-status-lights)
+> **Status: 🟡 Partly built.** Built and tested: the strong chain (DeepSeek V4 Pro, Kimi K3, GLM 5.3 on OpenCode Go), routing hard work to it in autobuild, OpenCode with the build rules and --strong, ./securax review, and open-model work counted in ai share; the cockpit shows which model answered each call (gateway /v1/served). Not yet proven: a full day of real work on these models, measured by autobench (dated in the doc). [What the lights mean](../index.md#the-status-lights)
 <!-- status:end -->
 
 **The ask:** do the estate's development work through SecuRAX itself, on strong open models, so a subscription's usage limit is never again the bottleneck.
@@ -100,9 +100,9 @@ What closes the remaining gap here is not the model alone. It is the gates:
 
 | By | Step |
 |---|---|
-| 2026-10-31 | Re-check DeepSeek's zero-retention renewal on OpenCode Go's page. If it lapsed, move it behind Kimi and GLM: `./securax providers chain strong remove opencodego_pro`, then `./securax providers chain strong add opencodego_pro --before nvidia_nim` |
+| 2026-10-31 | (Checked 2026-10-21: still valid through 31 October; the renewal can only be read after it.) Re-check DeepSeek's zero-retention renewal on OpenCode Go's page. If it lapsed, move it behind Kimi and GLM: `./securax providers chain strong remove opencodego_pro`, then `./securax providers chain strong add opencodego_pro --before nvidia_nim` |
 | 2026-11-15 | Run `./securax autobench` on the build and strong chains: replace reputation with measured numbers for this repository |
-| 2026-11-30 | Show which model answered each call in the cockpit, so a quiet fall to a weaker rung is visible |
+| ~~2026-11-30~~ done 2026-10-21 | Show which model answered each call in the cockpit, so a quiet fall to a weaker rung is visible |
 | ~~2026-12-31~~ done 2026-10-21 | A CI watcher that writes the failure brief and fixes it: `./securax ship watch` (doc 98) |
 
 ## Sources

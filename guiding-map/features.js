@@ -19,6 +19,8 @@ window.SECURAX_FEATURES = {
    "port": 0,
    "service": false,
    "added": "2026-10-21",
+   "outcome": "You see, every week, that your days and your estate are getting better, and you always know the one next step.",
+   "shows": "./securax progress, and a message on your phone every Sunday",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/93-PROGRESS-YOU-CAN-SEE/"
   },
@@ -33,6 +35,8 @@ window.SECURAX_FEATURES = {
    "port": 0,
    "service": false,
    "added": "2026-10-21",
+   "outcome": "You know when the time and money you put in come back, and which number to move first.",
+   "shows": "./securax venture: break-even month, payback month, what must be true",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/96-ONE-PLATFORM-MANY-PRODUCTS/"
   },
@@ -47,6 +51,8 @@ window.SECURAX_FEATURES = {
    "port": 0,
    "service": false,
    "added": "2026-10-21",
+   "outcome": "You can see which edition could be sold today and the one gap that unlocks the most, instead of guessing.",
+   "shows": "./securax suite: editions, readiness, the gaps that unlock the most; suite sheet EDITION",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/97-BUILT-FOR-ONE-READY-FOR-MANY/"
   },
@@ -61,6 +67,8 @@ window.SECURAX_FEATURES = {
    "port": 8097,
    "service": false,
    "added": "2026-10-20",
+   "outcome": "Your team practises a real attack and defence and gets measurably faster at both.",
+   "shows": "the exercise portal's scoreboard and the after-exercise report",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/79-EXERCISE-RANGE/"
   },
@@ -75,6 +83,8 @@ window.SECURAX_FEATURES = {
    "port": 0,
    "service": false,
    "added": "2026-10-20",
+   "outcome": "When an organisation is hit, you collect evidence that holds up and report in hours, not days.",
+   "shows": "the case report from ./securax respond report",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/78-CRISIS-RESPONSE-KIT/"
   },
@@ -89,6 +99,8 @@ window.SECURAX_FEATURES = {
    "port": 0,
    "service": false,
    "added": "2026-10-14",
+   "outcome": "You know which AI attacks your rails stop today, and which they do not.",
+   "shows": "the purple-team report and ./securax progress",
    "light": "green",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/30-PURPLE-TEAM-LOOP/"
   },
@@ -103,6 +115,8 @@ window.SECURAX_FEATURES = {
    "port": 0,
    "service": false,
    "added": "2026-10-14",
+   "outcome": "You trust third-party software only after seeing what it really does.",
+   "shows": "the inspect verdict (OK, REVIEW, BLOCK)",
    "light": "green",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/43-INSPECT-THIRD-PARTY-SOFTWARE/"
   },
@@ -117,6 +131,8 @@ window.SECURAX_FEATURES = {
    "port": 0,
    "service": false,
    "added": "2026-10-17",
+   "outcome": "Your control gaps become a short, ranked to-do list instead of a spreadsheet nobody opens.",
+   "shows": "the cockpit's control matrix",
    "light": "green",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/66-BFSI-CONTROL-LIBRARY-AND-NAVIGATOR/"
   },
@@ -131,6 +147,8 @@ window.SECURAX_FEATURES = {
    "port": 0,
    "service": false,
    "added": "2026-10-14",
+   "outcome": "No regulator deadline is missed: every clock is counted for you.",
+   "shows": "./securax incident and a phone alert before each deadline",
    "light": "green",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/36-IDENTITY-INCIDENT-RESIDENCY/"
   },
@@ -145,6 +163,8 @@ window.SECURAX_FEATURES = {
    "port": 0,
    "service": false,
    "added": "2026-10-14",
+   "outcome": "You see exactly what RBI and SEBI expect that is not yet covered, in your own words.",
+   "shows": "./securax comply",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/35-REGULATORY-GAP-ASSESSMENT/"
   },
@@ -159,6 +179,8 @@ window.SECURAX_FEATURES = {
    "port": 0,
    "service": false,
    "added": "2026-10-20",
+   "outcome": "Your biggest risks are named, owned and dated, and you see them shrink.",
+   "shows": "the cockpit's risk heat map",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/67-RISK-REGISTER-NSCS-CII/"
   },
@@ -173,6 +195,8 @@ window.SECURAX_FEATURES = {
    "port": 0,
    "service": false,
    "added": "2026-10-14",
+   "outcome": "One page tells you what needs you today, and nothing more.",
+   "shows": "the cockpit in the Command Center",
    "light": "green",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/37-COCKPIT-STORAGE-PATCHING/"
   },
@@ -187,6 +211,8 @@ window.SECURAX_FEATURES = {
    "port": 0,
    "service": false,
    "added": "2026-10-21",
+   "outcome": "Leaders decide what to fix first, who to hire and what to spend, in an afternoon instead of a consulting engagement.",
+   "shows": "the Govern card in the cockpit, and ./securax govern board",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/94-GOVERN/"
   },
@@ -201,6 +227,8 @@ window.SECURAX_FEATURES = {
    "port": 0,
    "service": false,
    "added": "2026-10-21",
+   "outcome": "A security leader's week runs on rhythm instead of memory: nothing late is missed, risks get owners and dates, and progress is there to show the Board.",
+   "shows": "Vantage at /vantage/ on your phone: Today, Risks, Rhythm, OKRs, Progress",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/95-OS-KIT-VANTAGE/"
   },
@@ -215,6 +243,8 @@ window.SECURAX_FEATURES = {
    "port": 0,
    "service": false,
    "added": "2026-10-21",
+   "outcome": "You open https://hub.securax.localhost instead of remembering port numbers, and no page you or a visitor opens ends in a 404.",
+   "shows": "./securax names and ./securax site; the Command Center at its name; a red CI check if a link breaks",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/99-NAMES-NOT-PORTS-AND-LINKS-THAT-NEVER-BREAK/"
   },
@@ -229,6 +259,8 @@ window.SECURAX_FEATURES = {
    "port": 0,
    "service": false,
    "added": "2026-10-21",
+   "outcome": "An app you built for yourself can be in a store without rewriting it, and you know in advance what a reviewer will ask for.",
+   "shows": "./securax os mobile vantage writes the project; mobile-check names what is missing",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/98-SHIP-AND-STORE-APPS/"
   },
@@ -243,6 +275,8 @@ window.SECURAX_FEATURES = {
    "port": 0,
    "service": false,
    "added": "2026-10-14",
+   "outcome": "You use AI freely without leaking data or running up a bill.",
+   "shows": "the gateway's audit and ./securax ai budget",
    "light": "green",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/36-IDENTITY-INCIDENT-RESIDENCY/"
   },
@@ -257,6 +291,8 @@ window.SECURAX_FEATURES = {
    "port": 3000,
    "service": true,
    "added": "2026-10-15",
+   "outcome": "You get a capable assistant you own, with your private data kept private.",
+   "shows": "Chat in the Command Center",
    "light": "green",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/53-THE-TWIN/"
   },
@@ -271,6 +307,8 @@ window.SECURAX_FEATURES = {
    "port": 0,
    "service": false,
    "added": "2026-10-21",
+   "outcome": "You can act on what the AI says, because it does not make things up.",
+   "shows": "./securax ai honesty, weekly on your phone",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/89-ACCURATE-ANSWERS-WITHOUT-PROMPT-ENGINEERING/"
   },
@@ -285,6 +323,8 @@ window.SECURAX_FEATURES = {
    "port": 0,
    "service": false,
    "added": "2026-10-20",
+   "outcome": "You change your own tools without hiring anyone or waiting.",
+   "shows": "the autobuild PR and its green checks",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/83-BUILD-WITH-OPEN-MODELS/"
   },
@@ -299,6 +339,8 @@ window.SECURAX_FEATURES = {
    "port": 0,
    "service": false,
    "added": "2026-10-21",
+   "outcome": "You build SecuRAX with SecuRAX alone: a red pull request gets fixed and merged without you pasting logs into a chat.",
+   "shows": "./securax ship check and ship watch; your phone when a PR is merged or needs you",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/98-SHIP-AND-STORE-APPS/"
   },
@@ -313,6 +355,8 @@ window.SECURAX_FEATURES = {
    "port": 0,
    "service": false,
    "added": "2026-10-20",
+   "outcome": "A bad update never costs you a day: you go back in one command.",
+   "shows": "./securax rollback --list",
    "light": "green",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/82-GO-BACK-TO-A-WORKING-VERSION/"
   },
@@ -327,6 +371,8 @@ window.SECURAX_FEATURES = {
    "port": 0,
    "service": false,
    "added": "2026-10-19",
+   "outcome": "You never lose your work, whatever happens to the machine.",
+   "shows": "./securax progress (backups proven) and the quarterly drill",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/72-SYNC-AND-BACKUP-WITHOUT-THE-LAPTOP/"
   },
@@ -341,6 +387,8 @@ window.SECURAX_FEATURES = {
    "port": 0,
    "service": false,
    "added": "2026-10-20",
+   "outcome": "Your disk never fills up by surprise.",
+   "shows": "./securax storage and a warning days ahead",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/80-STORAGE-THAT-GROWS-WITH-YOU/"
   },
@@ -355,6 +403,8 @@ window.SECURAX_FEATURES = {
    "port": 0,
    "service": false,
    "added": "2026-10-13",
+   "outcome": "When something goes wrong you get the reason in plain words, not a log.",
+   "shows": "./securax why",
    "light": "green",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/27-INCIDENT-RUNBOOK/"
   },
@@ -369,6 +419,8 @@ window.SECURAX_FEATURES = {
    "port": 0,
    "service": false,
    "added": "2026-10-20",
+   "outcome": "You know what to protect first, and the one thing to do next.",
+   "shows": "./securax jewels",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION/"
   },
@@ -383,6 +435,8 @@ window.SECURAX_FEATURES = {
    "port": 0,
    "service": false,
    "added": "2026-10-20",
+   "outcome": "A crisis finds you with a plan you have already practised.",
+   "shows": "the tabletop's after-action report and ./securax progress",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION/"
   },
@@ -397,6 +451,8 @@ window.SECURAX_FEATURES = {
    "port": 0,
    "service": false,
    "added": "2026-10-21",
+   "outcome": "Ransomware costs you an evening, not your data.",
+   "shows": "./securax progress (clean copies, drills passed)",
    "light": "green",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/88-RANSOMWARE-AND-DISASTER-RECOVERY-PROVEN/"
   },
@@ -411,6 +467,8 @@ window.SECURAX_FEATURES = {
    "port": 0,
    "service": true,
    "added": "2026-10-10",
+   "outcome": "Your days line up with what matters to you, and you can see it happening.",
+   "shows": "the Life OS: wheel, goals, streaks, weekly review",
    "light": "green",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/14-GUIDING-MAP/"
   },
@@ -425,6 +483,8 @@ window.SECURAX_FEATURES = {
    "port": 0,
    "service": false,
    "added": "2026-10-20",
+   "outcome": "Nothing you capture is lost; each item becomes a decision or a task.",
+   "shows": "the Life OS Inbox reaching zero",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION/"
   },
@@ -439,6 +499,8 @@ window.SECURAX_FEATURES = {
    "port": 0,
    "service": false,
    "added": "2026-10-15",
+   "outcome": "Everything you learned with other AIs becomes yours to search and reuse.",
+   "shows": "your knowledge folder in Chat",
    "light": "green",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/51-YOUR-AI-HISTORY/"
   },
@@ -453,6 +515,8 @@ window.SECURAX_FEATURES = {
    "port": 8222,
    "service": false,
    "added": "2026-10-20",
+   "outcome": "You stop reusing passwords, and get them on every device.",
+   "shows": "the Bitwarden apps",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION/"
   },
@@ -467,6 +531,8 @@ window.SECURAX_FEATURES = {
    "port": 0,
    "service": false,
    "added": "2026-10-20",
+   "outcome": "You can grow to a real cloud setup when you are ready, without starting again.",
+   "shows": "./securax stages",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION/"
   },
@@ -481,6 +547,8 @@ window.SECURAX_FEATURES = {
    "port": 0,
    "service": false,
    "added": "2026-10-20",
+   "outcome": "Your estate works from your phone anywhere, like any app.",
+   "shows": "your own addresses (hub, chat)",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/85-USE-SECURAX-ANYWHERE/"
   },
@@ -495,6 +563,8 @@ window.SECURAX_FEATURES = {
    "port": 0,
    "service": false,
    "added": "2026-10-20",
+   "outcome": "Your data is on every machine you own, so none of them is a single point of failure.",
+   "shows": "./securax nodes",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/86-MANY-NODES-AND-THE-ROAD-TO-SCALE/"
   },
@@ -509,6 +579,8 @@ window.SECURAX_FEATURES = {
    "port": 0,
    "service": false,
    "added": "2026-10-21",
+   "outcome": "You know that any one machine can carry the estate, and what to fix if not.",
+   "shows": "./securax resilience, and a phone message when a new weak point appears",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/91-ANY-MACHINE-CAN-CARRY-THE-ESTATE/"
   },
@@ -523,6 +595,8 @@ window.SECURAX_FEATURES = {
    "port": 0,
    "service": false,
    "added": "2026-10-21",
+   "outcome": "The estate gets stronger from its own failures without you noticing them first.",
+   "shows": "./securax autopilot and ./securax progress",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/92-THE-AUTOPILOT/"
   },
@@ -537,6 +611,8 @@ window.SECURAX_FEATURES = {
    "port": 0,
    "service": false,
    "added": "2026-10-20",
+   "outcome": "You try new versions without risking the one that works.",
+   "shows": "./securax channel",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/86-MANY-NODES-AND-THE-ROAD-TO-SCALE/"
   }

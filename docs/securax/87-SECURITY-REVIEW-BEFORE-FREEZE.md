@@ -1,7 +1,7 @@
 # 87 · Security review before the freeze
 
 <!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
-> **Status: 🟡 Partly built.** Eight findings fixed and proved (SSH keys-only on the VPS, cross-site writes refused by the gateway, a stored XSS in Inbox ids, security headers, encrypted server backups, the scanner no longer holding the Docker socket, no :latest image, no public router key). Accepted risks are listed with reasons. The deeper audit of logs and image hardening is dated. [What the lights mean](../index.md#the-status-lights)
+> **Status: 🟡 Partly built.** Sync tokens are rate-limited per node and repeated refused sign-ins raise an alert. Eight findings fixed and proved (SSH keys-only on the VPS, cross-site writes refused by the gateway, a stored XSS in Inbox ids, security headers, encrypted server backups, the scanner no longer holding the Docker socket, no :latest image, no public router key). Accepted risks are listed with reasons. The deeper audit of logs and image hardening is dated. [What the lights mean](../index.md#the-status-lights)
 <!-- status:end -->
 
 **The ask:** before freezing the setup, review it through every lens: the seven OSI layers, CISSP and CCSP domains, OffSec's attacker view, ISACA, OWASP, TOGAF and SABSA. Find any big blunder and fix it for good.
@@ -75,7 +75,7 @@
 | By | Step |
 |---|---|
 | Done | The deeper audit: no secret is printed or logged by the CLI; the gateway's audit log records who, what and the decision, never the prompt or the answer; every container log is capped (3 × 10 MB); every service has `no-new-privileges` (row 9) |
-| 2026-11-30 | Per-node rate limits for sync tokens, and an alert after repeated refused sign-ins |
+| ~~2026-11-30~~ done 2026-10-21 | Per-node rate limits for sync tokens (`SYNC_RATE_LIMIT`, default 600 a minute, then 429 with Retry-After), and an alert after 10 refused sign-ins in 15 minutes (`refused-signins.jsonl` next to the sync data; the count is on `/healthz`). Tokens are never stored or logged. Still to do: pass the client address from the web server, so the alert names the client rather than the proxy |
 | 2026-12-15 | The internet-facing images pinned by digest |
 
 ## Sources

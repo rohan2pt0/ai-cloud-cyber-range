@@ -64,6 +64,8 @@ def test_the_page_is_a_dark_cockpit(monkeypatch):
     assert head.count("class='master") == 1 and head.count("<li") <= 3
     assert "<details class='card panel' id='govern'>" in html and "<details class='card panel' id='systems'>" in html
     assert "<details open class='card panel'" not in html and "<script" not in html
+    bare = html.lower().replace("http://www.w3.org", "")
+    assert "http://" not in bare and "https://" not in bare          # the cockpit names no external URL (sandbox cockpit_page)
     assert "gap backlog" not in head and "Implement" not in head     # builders' backlog stays in Mission planning, never in "do next"
 
 
@@ -72,3 +74,40 @@ def test_an_instrument_shows_its_reading_whole_and_its_detail_small():
     out = cockpit.instrument(m)
     assert "<b>2.7% free</b>" in out and "<span class='note'>7.2 GB</span>" in out and "…" not in out
     assert "<span class='note'>" not in cockpit.instrument({**m, "value": "none yet"})
+
+
+def _served_metric(monkeypatch, body):
+    # The "Which model answered" metric (doc 83): unknown when the gateway is off, amber when over 20% fell to a weak rung.
+    import io
+    import json as _json
+    import urllib.request
+
+    def fake(url, *a, **k):
+        u = url if isinstance(url, str) else url.full_url
+        if body is not None and u.endswith("/v1/served"):
+            return io.BytesIO(_json.dumps(body).encode())
+        raise OSError("offline in tests")
+    monkeypatch.setattr(urllib.request, "urlopen", fake)
+    col = cockpit.Collector({}, 0.0, "personal", {})
+    col.c_served()
+    (m,) = [x for x in col.metrics if x["id"] == "served"]
+    assert m["label"] == "Which model answered" and not m["urgent"] and m["importance"] == 2
+    return m
+
+
+def test_served_metric_is_unknown_when_the_gateway_is_off(monkeypatch):
+    m = _served_metric(monkeypatch, None)
+    assert m["status"] == "unknown" and m["value"] == "gateway off"
+
+
+def test_served_metric_is_amber_when_a_weak_fallback_answered_too_often(monkeypatch):
+    m = _served_metric(monkeypatch, {"window_h": 24, "calls": 20, "weak_share": 0.35, "by_served": [
+        {"served": "gemini/gemini-2.5-flash", "calls": 13, "weak": False}, {"served": "ollama/qwen2.5:0.5b", "calls": 7, "weak": True}]})
+    assert m["status"] == "amber" and m["value"] == "35% on a weaker fallback (top: qwen2.5:0.5b)"
+    assert m["action"] == "See why the strong model was skipped" and m["cmd"] == "./securax providers list"
+
+
+def test_served_metric_is_green_when_the_strong_model_answered(monkeypatch):
+    m = _served_metric(monkeypatch, {"window_h": 24, "calls": 10, "weak_share": 0.1, "by_served": [
+        {"served": "gemini/gemini-2.5-flash", "calls": 9, "weak": False}, {"served": "ollama/qwen2.5:0.5b", "calls": 1, "weak": True}]})
+    assert m["status"] == "green" and m["value"] == "strong model on 9 calls"
