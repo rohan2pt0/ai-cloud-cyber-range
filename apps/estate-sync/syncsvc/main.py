@@ -32,6 +32,7 @@ store and is fully compatible with the PWA's own client-side merge.
 import asyncio
 import hmac
 import json as _json
+import math
 import os
 import re
 import sqlite3
@@ -41,7 +42,7 @@ from contextlib import asynccontextmanager, closing
 from fastapi import FastAPI, Header, HTTPException, Query, Request, Response, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
 
-from . import access, peers
+from . import access, guard, peers
 
 DB_PATH = os.environ.get("SYNC_DB_PATH", "/data/estate-sync.db")
 # Daily snapshots: the last merged state of each UTC day is kept for this many days, so "no backup taken" is never a thing a human has to fix.
@@ -49,6 +50,12 @@ SNAPSHOT_DAYS = int(os.environ.get("SYNC_SNAPSHOT_DAYS", "30"))
 # Reject a single blob larger than this (bytes). A healthy life-OS state is a few
 # hundred KB; anything in the tens of MB is a bug or an attempt to fill the disk.
 MAX_BODY = int(os.environ.get("SYNC_MAX_BODY_BYTES", str(8 * 1024 * 1024)))
+# Doc 87: each device token (each node) may make SYNC_RATE_LIMIT requests per SYNC_RATE_WINDOW_S seconds, then gets 429 + Retry-After;
+# SYNC_REFUSED_ALERT_AT refused sign-ins from one address in SYNC_REFUSED_WINDOW_S seconds write one line to refused-signins.jsonl
+# next to the data, and /healthz counts the addresses over it. Nobody is locked out (syncsvc/guard.py).
+LIMITER = guard.RateLimiter(guard.env_int("SYNC_RATE_LIMIT", 600), guard.env_int("SYNC_RATE_WINDOW_S", 60))
+REFUSED = guard.RefusedSignins(guard.env_int("SYNC_REFUSED_ALERT_AT", 10), guard.env_int("SYNC_REFUSED_WINDOW_S", 900),
+                               os.path.join(os.path.dirname(DB_PATH) or ".", "refused-signins.jsonl"))
 
 
 def _tokens() -> set[str]:
@@ -150,16 +157,25 @@ async def app_origins(request: Request, call_next):
     return resp
 
 
+def _limit(key: str) -> None:
+    """429 with Retry-After when this token (or signed-in account) has used up its window. Keys are hashes, never the token."""
+    wait = LIMITER.hit(key)
+    if wait:
+        raise HTTPException(429, "too many requests from this device; try again shortly",
+                            headers={"Retry-After": str(max(1, math.ceil(wait)))})
+
+
 def _auth(authorization: str | None, cf_jwt: str | None = None, user: str | None = None) -> None:
     """Fail-closed Bearer check with constant-time compare (no token leak via timing). A verified Access sign-in is the other way in,
     and only to its own user's data."""
     if cf_jwt and access.configured():
         try:
-            access.verify(cf_jwt)
+            email = access.verify(cf_jwt)
         except access.Denied as exc:
             raise HTTPException(401, f"sign-in not accepted: {exc}")
         if user is not None and user != access.user():
             raise HTTPException(403, "a signed-in device may sync only its own data")
+        _limit("a:" + guard.token_key(email))
         return
     allowed = _tokens()
     if not allowed and access.configured():
@@ -172,6 +188,16 @@ def _auth(authorization: str | None, cf_jwt: str | None = None, user: str | None
         token = authorization[7:].strip()
     if not token or not any(hmac.compare_digest(token, a) for a in allowed):
         raise HTTPException(401, "invalid or missing device token")
+    _limit(guard.token_key(token))
+
+
+@app.middleware("http")
+async def count_refused(request: Request, call_next):
+    """Every refused sign-in (401) counts against the client's address; the count only ever alerts, it never blocks."""
+    resp = await call_next(request)
+    if resp.status_code == 401:
+        REFUSED.refused(request.client.host if request.client else "")
+    return resp
 
 
 # ── Live change notifications (WebSocket) ─────────────────────────────────────
@@ -210,9 +236,10 @@ async def ws_endpoint(ws: WebSocket) -> None:
         user = str(hello.get("user", "")) if isinstance(hello, dict) else ""
         allowed = _tokens()
         cf = ws.headers.get("cf-access-jwt-assertion")
+        key = guard.token_key(tok)
         if cf and access.configured():                 # came through your Access gate: its signed token decides, for its own user only
             try:
-                await asyncio.to_thread(access.verify, cf)
+                key = "a:" + guard.token_key(await asyncio.to_thread(access.verify, cf))
                 ok = user == access.user()
             except access.Denied:
                 ok = False
@@ -220,7 +247,12 @@ async def ws_endpoint(ws: WebSocket) -> None:
             ok = bool(allowed) and bool(user) and len(user) <= 256 and any(hmac.compare_digest(tok, a) for a in allowed)
         if not ok:
             user = None
+            REFUSED.refused(ws.client.host if ws.client else "")
             await ws.close(code=4401)
+            return
+        if LIMITER.hit(key):
+            user = None
+            await ws.close(code=4429)
             return
         if _sockets() >= MAX_SOCKETS:
             await ws.close(code=4429)
@@ -244,7 +276,8 @@ async def ws_endpoint(ws: WebSocket) -> None:
 
 @app.get("/healthz")
 def healthz() -> dict:
-    return {"ok": True, "configured": bool(_tokens()) or access.configured(), "sockets": _sockets()}
+    return {"ok": True, "configured": bool(_tokens()) or access.configured(), "sockets": _sockets(),
+            "refused_signin_alerts": REFUSED.over()}
 
 
 @app.get("/sync/users")

@@ -213,6 +213,25 @@ class Collector:
                  "Every AI request passes the safety rails first." if h.get("mode") == "enforce" else "Rails are in monitor-only mode: they log but do not block.",
                  "" if h.get("mode") == "enforce" else "Switch to enforce", "./securax guard on", importance=2)
 
+    def c_served(self):
+        try:                                                          # which model really answered (doc 83): a quiet fall to a weak rung shows
+            with urllib.request.urlopen("http://127.0.0.1:8080/v1/served", timeout=3) as r:
+                rep = json.loads(r.read())
+        except Exception:  # noqa: BLE001 - the gateway may be off; then nothing is known
+            self.add("served", "Which model answered", "KPI", "Run", "gateway off", "unknown",
+                     "The gateway is not answering, so it cannot say which model served the last calls.", importance=2)
+            return
+        calls, share = int(rep.get("calls") or 0), float(rep.get("weak_share") or 0)
+        weak_rows = [row for row in rep.get("by_served", []) if row.get("weak")]     # not `c`: see LESSONS
+        if share > 0.2:
+            top = max(weak_rows, key=lambda row: row.get("calls", 0))["served"].split("/")[-1] if weak_rows else "?"
+            self.add("served", "Which model answered", "KPI", "Run", f"{share:.0%} on a weaker fallback (top: {top})", "amber",
+                     f"Of {calls} AI calls in the last {rep.get('window_h', 24)} h, {share:.0%} were answered by a small local model, "
+                     "not the strong one asked for.", "See why the strong model was skipped", "./securax providers list", importance=2)
+        else:
+            self.add("served", "Which model answered", "KPI", "Run", f"strong model on {calls - round(share * calls)} calls", "green",
+                     "The AI calls in the last day were answered by the model asked for, not a weak fallback.", importance=2)
+
     def c_auth_residency(self):
         regulated = self.profile == "regulated"
         mode = self.env.get("AUTH_MODE", "off")
@@ -412,6 +431,30 @@ class Collector:
         self.add("authdenied", "Refused logins, last 24 h", "KRI", "Detect", str(den), s, "Many refused logins from one place usually means someone is guessing credentials.",
                  "Check the source and the lock-out" if s != "green" else "", "./securax doctor", urgent=s == "red", importance=3 if s == "red" else 2)
 
+    def c_honesty(self):
+        """The AI honesty score from the last `./securax ai honesty` runs (doc 89). Reads the history file only: no network."""
+        rows = _load("securax_honesty", "governance/honesty.py").history(2)
+        cmd = "./securax ai honesty"
+        if not rows:
+            self.add("honesty", "AI honesty", "KPI", "Govern", "not checked yet", "unknown",
+                     "A model that guesses can sound sure and be wrong. A few short probes show whether yours says 'I don't know'.",
+                     "Check the AI refuses to guess", cmd, importance=2)
+            return
+        last, prev = rows[-1], (rows[-2] if len(rows) > 1 else None)
+        n, k = last["passed"], last["probes"]
+        changed = prev is not None and (prev["passed"], prev["probes"]) != (n, k)
+        value = f"{n}/{k} honest" + (f" (was {prev['passed']}/{prev['probes']})" if changed else "")
+        dropped = prev is not None and n < prev["passed"]
+        s = "red" if n * 2 < k else ("amber" if n < k or dropped else "green")
+        why = {"green": "Every probe answered honestly: it rejects false premises and says when it does not know.",
+               "amber": ("The score dropped since the last run: " if dropped else "Some probes failed: ")
+                        + "the model guessed instead of saying it did not know.",
+               "red": "Most probes failed: treat this model's answers as guesses until a stronger one is set."}[s]
+        if last.get("model"):
+            why += f" Model: {last['model']}."
+        self.add("honesty", "AI honesty", "KPI", "Govern", value, s, why,
+                 "" if s == "green" else "Read the failed answers, or set a stronger model (./securax keys)", cmd, importance=2)
+
     # -- engineering promises
     def c_fitness(self):
         cache = HOME / "cockpit-fitness.json"       # the supply-chain scan takes ~8 s; the result is good for 6 hours
@@ -522,8 +565,8 @@ class Collector:
                  "" if st == "green" else "Add a free key or download the local coder", "./securax providers chain builder show", importance=1)
 
     def run(self) -> None:
-        for fn in (self.c_services, self.c_gateway, self.c_auth_residency, self.c_tls, self.c_crypto, self.c_keys, self.c_storage, self.c_images, self.c_threat_data, self.c_incidents, self.c_findings, self.c_soc,
-                   self.c_fitness, self.c_coverage, self.c_coding):
+        for fn in (self.c_services, self.c_gateway, self.c_served, self.c_auth_residency, self.c_tls, self.c_crypto, self.c_keys, self.c_storage, self.c_images, self.c_threat_data, self.c_incidents, self.c_findings, self.c_soc,
+                   self.c_honesty, self.c_fitness, self.c_coverage, self.c_coding):
             self.safe(fn)
 
 
@@ -906,6 +949,10 @@ def render(c: Collector, maps: dict, hist: list[dict], ai: str, now: float, targ
     try:                                                          # what is left to set up (./securax finish), folded
         h.append(_load("securax_finish", "governance/finish.py").html_card(panel=True))
     except Exception:  # noqa: BLE001 - the checklist is a convenience; it must never fail the cockpit
+        pass
+    try:                                                          # names, certificate and site, diagnosed (doc 99), folded
+        h.append(_load("securax_diagnose", "governance/diagnose.py").html_card())
+    except Exception:  # noqa: BLE001 - a diagnosis panel must never fail the cockpit
         pass
     if ai:
         h.append(f"<details class='card panel'><summary><b>AI briefing</b> <span class='muted'>· a draft from your local model, from the numbers on this page; it changes nothing</span></summary><p>{E(ai).replace(chr(10), '<br>')}</p></details>")

@@ -1,7 +1,7 @@
 # 93 · Progress you can see: the point of all of it
 
 <!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
-> **Status: 🟡 Partly built.** Built and tested: the north star is AGENTS.md section 0 for every builder; every feature names its outcome and where it shows (fitness outcomes-declared); ./securax progress shows your Life OS rhythm, what made the estate stronger and the one next step, and the progress routine sends it every Sunday. Not yet seen on your own estate: it fills in as you use the Life OS. [What the lights mean](../index.md#the-status-lights)
+> **Status: 🟡 Partly built.** Built and tested: the north star is AGENTS.md section 0 for every builder; every feature names its outcome and where it shows (fitness outcomes-declared); ./securax progress shows your Life OS rhythm, what made the estate stronger and the one next step, and the progress routine sends it every Sunday; each Command Center card shows its outcome and where you see it. Not yet seen on your own estate: it fills in as you use the Life OS. [What the lights mean](../index.md#the-status-lights)
 <!-- status:end -->
 
 **The ask:** robustness, security and resilience are not the goal. The goal is that the person or team using SecuRAX is **immensely better off, and can see it**, and keeps using it until it reaches its full potential for them: their purpose (ikigai), their work, their life. Growing stronger from every shock (antifragility) is part of that. If none of this turns into a real outcome in the physical world, it is paper. Keep this goal in front of everyone, always.
@@ -35,7 +35,7 @@ The `progress` routine sends the short version to your phone every Sunday at 6:4
 
 ## 3. What each capability is for
 
-Every feature's `outcome` and `shows` are in `features.json`, where every builder sees them. Showing them on each Command Center card is the next step, due 2026-11-10. A few examples:
+Every feature's `outcome` and `shows` are in `features.json`, where every builder sees them. Since 2026-10-21 each card under Explore in the Command Center shows its outcome and where you see it, and search finds them. A few examples:
 
 | Feature | What gets better | Where you see it |
 |---|---|---|

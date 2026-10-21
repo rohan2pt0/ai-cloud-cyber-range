@@ -1,7 +1,7 @@
 # 82 · Go back to a working version, at any time: first restore, then diagnose
 
 <!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
-> **Status: 🟢 Built.** Built and tested: every healthy start is recorded and pinned in git; ./securax rollback goes back in one command (edits stashed, data backed up, the version left pinned, automatic return if the old one does not start), --with-data, --latest, a weekly --check routine and a sandbox journey on every pull request. Release tags and a safe-mode start are dated in the doc. [What the lights mean](../index.md#the-status-lights)
+> **Status: 🟢 Built.** Built and tested: every healthy start is recorded and pinned in git; ./securax rollback goes back in one command (edits stashed, data backed up, the version left pinned, automatic return if the old one does not start), --with-data, --latest, a weekly --check routine and a sandbox journey on every pull request. ./securax up --safe starts only the gateway and the Command Center; the known-good record travels in the encrypted backup. Release tags on every merge are dated in the doc. [What the lights mean](../index.md#the-status-lights)
 <!-- status:end -->
 
 **The fear:** the estate has grown fast. One bad change could stop everything. And the code may be too large to debug under pressure.
@@ -28,7 +28,8 @@ A version counts as working only when the estate really came up healthy on **thi
 
 - **When one is recorded:** every time `./securax up` or `./securax update` ends with the readiness check passing.
 - **What the record holds:** the commit, the version number, the time, and the newest data backup at that moment.
-- **Where it lives:** `~/.securax/known-good.jsonl`, outside the repository, so no change to the code can damage it.
+- **Where it lives:** `~/.securax/known-good.jsonl`, outside the repository, so no change to the code can damage it. It also travels inside every encrypted backup, so a new laptop knows which versions worked; a restore adds only records the machine does not have.
+- **Short of memory even then?** `./securax up --safe` starts only the AI gateway and the Command Center. Nothing is remembered: the next plain `./securax up` starts everything.
 - **How long it is kept:** the newest 50 versions. The same version is recorded again at most every 6 hours. Bounded, like everything else (doc 80).
 - **Pinned in git:** each version also gets a git reference (`refs/securax/good/…`). Its code cannot be lost even if the published history changes.
 
@@ -75,5 +76,5 @@ The estate also limits how much can break at once: one CLI, small modules with t
 | By | Step |
 |---|---|
 | 2026-11-15 | Tag a release (`vX.Y.Z`) on every merge to main. Only `v0.1.0` is tagged today, so "go back to v0.2.0" needs the commit id or the `--list` number |
-| 2026-12-15 | A "safe mode" start: only the gateway and the Command Center, for when even a working version is short of resources |
-| 2027-01-31 | Copy the known-good record into the encrypted off-machine backup (doc 72), so a new laptop knows which versions worked |
+| ~~2026-12-15~~ done 2026-10-21 | A "safe mode" start: only the gateway and the Command Center, for when even a working version is short of resources |
+| ~~2027-01-31~~ done 2026-10-21 | Copy the known-good record into the encrypted off-machine backup (doc 72), so a new laptop knows which versions worked |

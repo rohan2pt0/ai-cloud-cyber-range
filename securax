@@ -225,6 +225,10 @@ case "$cmd" in
     LITE=0; { [ "${2:-}" = "--lite" ] || [ "$(ev SECURAX_LITE)" = "1" ]; } && LITE=1
     SVCS=""; [ "$LITE" = 1 ] && SVCS="gateway litellm ollama open-webui guiding-map estate-sync" \
       && C "LITE mode: starting the core path only (Private Docs / n8n skipped to save RAM)."
+    # SAFE mode (./securax up --safe, doc 82): when even a working version is short of memory, start only the AI gateway, its
+    # router and the Command Center. Nothing is remembered: the next plain `up` starts everything again.
+    SAFE=0; if [ "${2:-}" = "--safe" ]; then SAFE=1; SVCS="gateway litellm guiding-map"
+      C "SAFE mode: only the AI gateway and the Command Center (Chat, the local model and add-ons stay off). Back to normal:  ./securax up"; fi
     # Regenerate the router config from .env on EVERY start, so a key added by hand (as DEPLOY.md says) or
     # via `./securax setup` just works. Deterministic + idempotent; skipped silently without python3.
     # The router mounts the generated file: it must exist as a FILE (a bind-mount of a missing path makes
@@ -260,7 +264,7 @@ case "$cmd" in
     estate_home
     CORE="gateway litellm ollama open-webui guiding-map estate-sync"
     if tls_on; then python3 "$ROOT/governance/tls.py" render >/dev/null 2>&1 || C "Could not write the HTTPS edge configuration: run  ./securax tls render"; CORE="$CORE tls-edge"; [ -n "$SVCS" ] && SVCS="$SVCS tls-edge"
-      if internal_on; then SIDE="gateway-tls litellm-tls ollama-tls open-webui-tls estate-sync-tls"; CORE="$CORE $SIDE"; [ -n "$SVCS" ] && SVCS="$SVCS $SIDE"; C "Internal TLS is ON: the services talk to each other over HTTPS too."; fi; C "TLS edge is ON: the estate is reached over HTTPS only (./securax tls status)."; fi
+      if internal_on; then SIDE="gateway-tls litellm-tls ollama-tls open-webui-tls estate-sync-tls"; [ "$SAFE" = 1 ] && SIDE="gateway-tls litellm-tls"; CORE="$CORE $SIDE"; [ -n "$SVCS" ] && SVCS="$SVCS $SIDE"; C "Internal TLS is ON: the services talk to each other over HTTPS too."; fi; C "TLS edge is ON: the estate is reached over HTTPS only (./securax tls status)."; fi
     # Private Docs / Automation you started with `./securax start` come back after every `up` and `update` (they used to silently stay off).
     OPT=" $(ev SECURAX_OPTIONAL) "
     if [ "$LITE" = 1 ] && [ "$OPT" != "  " ]; then
@@ -298,13 +302,13 @@ case "$cmd" in
         fi
       fi
     fi
-    case " $(ev SECURAX_OPTIONAL) " in *" passwords "*) dc_up vaultwarden >/dev/null 2>&1 || C "The password manager did not start: ./securax start passwords" ;; esac
-    case " $(ev SECURAX_OPTIONAL) " in *" online "*) if [ -n "$(ev CF_TUNNEL_TOKEN)" ] && dc_up cloudflared >/dev/null 2>&1; then
+    [ "$SAFE" = 1 ] || case " $(ev SECURAX_OPTIONAL) " in *" passwords "*) dc_up vaultwarden >/dev/null 2>&1 || C "The password manager did not start: ./securax start passwords" ;; esac
+    [ "$SAFE" = 1 ] || case " $(ev SECURAX_OPTIONAL) " in *" online "*) if [ -n "$(ev CF_TUNNEL_TOKEN)" ] && dc_up cloudflared >/dev/null 2>&1; then
         C "Online: https://$(ev ONLINE_PREFIX)hub.$(ev ONLINE_DOMAIN) and https://$(ev ONLINE_PREFIX)chat.$(ev ONLINE_DOMAIN) (sign in on any device)"
       else C "The online tunnel did not start: ./securax online status"; fi ;; esac
     guard_heal
     if ready_wait 150; then
-      python3 "$ROOT/governance/recovery.py" --record up >/dev/null 2>&1 || true      # a working version you can always come back to (doc 82)
+      [ "$SAFE" = 1 ] || python3 "$ROOT/governance/recovery.py" --record up >/dev/null 2>&1 || true      # a working version you can always come back to (doc 82)
     else
       C "The router is still starting — the Command Center turns green when it is ready (./securax doctor checks it)."
     fi
@@ -1478,6 +1482,10 @@ EOF2
     [ -d "$ROOT/vault" ] && tar czf "$STG/vault.tgz" -C "$ROOT" --exclude=vault/support vault && echo "vault" >> "$STG/MANIFEST" || true
     # The private CA (./securax tls): without its key every device must trust a new CA after a restore (a crown jewel, doc 84).
     _TLSD="$(tls_home 2>/dev/null)"; [ -n "$_TLSD" ] && [ -d "$_TLSD" ] && tar czf "$STG/tls-ca.tgz" -C "$(dirname "$_TLSD")" "$(basename "$_TLSD")" && echo "tls-ca" >> "$STG/MANIFEST" || true
+    # The estate's own records (doc 82): which versions worked, restore drills and honesty checks. Without them a new machine
+    # cannot say "go back to the last version that worked".
+    _RH="${SECURAX_HOME_DIR:-$HOME/.securax}"; _REC=""; for _f in known-good.jsonl drills.log honesty.jsonl; do [ -f "$_RH/$_f" ] && _REC="$_REC $_f"; done
+    [ -n "$_REC" ] && tar czf "$STG/records.tgz" -C "$_RH" $_REC && echo "records" >> "$STG/MANIFEST" || true
     ( cd "$STG" && sha256sum ./* > SHA256SUMS 2>/dev/null || true )
     tar czf "$PLAIN" -C "$STG" . && tar tzf "$PLAIN" >/dev/null || { C "Backup failed verification."; rm -f "$OUTF"; exit 1; }
     if [ "$ENCRYPT" = 1 ]; then
@@ -1554,6 +1562,10 @@ EOF2
     fi
     if [ -f "$STG/tls-ca.tgz" ]; then                  # the private CA: devices that trusted it keep trusting the estate
       _TLSD="$(tls_home)"; if [ -d "$_TLSD" ]; then echo "  (kept the CA already on this machine: $_TLSD)"; else mkdir -p "$(dirname "$_TLSD")" && tar xzf "$STG/tls-ca.tgz" -C "$(dirname "$_TLSD")" && chmod 700 "$_TLSD" && echo "  ✔ restored the private CA"; fi
+    fi
+    if [ -f "$STG/records.tgz" ]; then                 # known-good versions and drill logs: only the ones this machine does not have
+      _RH="${SECURAX_HOME_DIR:-$HOME/.securax}"; mkdir -p "$_RH" && chmod 700 "$_RH"
+      tar xzf "$STG/records.tgz" -C "$_RH" --skip-old-files 2>/dev/null && echo "  ✔ restored the estate's records (known-good versions, drills)"
     fi
     if [ -f "$STG/env" ]; then
       [ -f "$ROOT/local/compose/.env" ] && cp "$ROOT/local/compose/.env" "$ROOT/local/compose/.env.pre-restore"
@@ -1994,6 +2006,7 @@ THE 20% YOU USE 80% OF THE TIME
   status         what is running right now                           update         get the latest version (safe: backs up first)
   doctor         check health and run a real chat test               why [service]  something is not working: what stopped and why
   rollback       something broke: go back to the last version that worked (--list shows them; --latest comes forward again)
+  up --safe      short of memory: start only the AI gateway and the Command Center (the next plain up starts everything)
   exercise       the CYBER RANGE: practise defending against a live red team; opens in your browser (doc 79)
   cockpit        one-page health view: risks, to-dos, trends         storage        how much space you use and when it runs out
   notify         alerts to your phone (ntfy) or team chat            shortcut       type `securax <command>` from any folder

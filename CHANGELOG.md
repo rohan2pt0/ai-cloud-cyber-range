@@ -9,6 +9,14 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **Roadmap sweep: dated items done today.**
+  - **AI honesty in the cockpit** (doc 89): each `./securax ai honesty` run is kept (the last 52), and the cockpit shows the score and any drop since the run before.
+  - **Which model answered** (doc 83): the gateway counts the model that served each call over 24 hours (names and times only) at `/v1/served`; the cockpit turns amber when more than a fifth fell to a weaker fallback.
+  - **Outcomes on the Command Center cards** (doc 93): every card under Explore says what gets better and where you see it, and search finds it.
+  - **Names and site panel** (doc 99): a folded cockpit panel checks names, the certificate, name resolution, device trust and the public site, each with the one command that fixes it.
+  - **`./securax up --safe`** (doc 82): only the AI gateway and the Command Center, for when even a working version is short of memory.
+  - **Sync guards** (doc 87): each sync token may make 600 requests a minute (then 429 with Retry-After), and 10 refused sign-ins from one address in 15 minutes write an alert and show on `/healthz`; no token is ever stored or logged, and no one is locked out.
+  - **The known-good record travels in the encrypted backup** (doc 82), with the drill and honesty logs; a restore adds only what the new machine lacks.
 - **One look across the estate** (doc 100 §6). The cockpit, the 78 ready-reckoner pages and the control navigator take their colours and basics from `governance/design.py`, made from `design.json`. Change a colour once and every page follows. The navigator now follows light or dark. The Life OS and the kit apps keep their brand colours but gain a visible keyboard focus, calm motion and 44 px targets.
 - **A calm Command Center** (doc 100).
   - It opens on one honest status line ("2 things need you", "All clear", "Status may be out of date", "Status unknown") and at most three things to do, each with why and a one-press command.

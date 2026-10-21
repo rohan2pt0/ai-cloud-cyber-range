@@ -111,6 +111,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- Roadmap sweep: dated items done today
 - [One look across the estate](docs/securax/100-DESIGN-STANDARD.md)
 - [A calm Command Center](docs/securax/100-DESIGN-STANDARD.md)
 - [The design standard](docs/securax/100-DESIGN-STANDARD.md)
@@ -118,7 +119,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - [Docker MCP Toolkit](docs/securax/98-SHIP-AND-STORE-APPS.md)
 - [The CISO's ready reckoner](docs/securax/94-GOVERN.md)
 - [Names, not ports, and links that never break](docs/securax/99-NAMES-NOT-PORTS-AND-LINKS-THAT-NEVER-BREAK.md)
-- Contrast on the control navigator
 
 **Release 0.2.0 - 2026-10-17:**
 

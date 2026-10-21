@@ -291,3 +291,6 @@ portal/inbox-import.json
 portal/govern-state.json
 guiding-map/estate-home.json
 portal/reckoner/
+
+# agent scratch copies of the repo (Claude Code worktrees)
+.claude/worktrees/

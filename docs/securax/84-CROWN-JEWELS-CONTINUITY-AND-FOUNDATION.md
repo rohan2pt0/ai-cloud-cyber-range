@@ -146,7 +146,7 @@ Bolting identity or customer data on later is what breaks products, so each deci
 |---|---|
 | 2026-11-15 | Keycloak with Google and Microsoft sign-in; Open WebUI and the Command Center behind it |
 | 2026-11-30 | Container images mirrored to Docker Hub, so ghcr.io is not a single point of failure |
-| 2026-12-15 | The cockpit shows the top crown jewel and every continuity scenario over target |
+| ~~2026-12-15~~ done 2026-10-21 | The cockpit shows the top crown jewel and every continuity scenario over target |
 | 2027-01-31 | CRM (Twenty), Mautic and Matomo as dormant organs, pinned and checked like the others |
 | 2027-03-31 | Asterisk and the voice-agent sidecar in the lab, with DLT-registered numbers before any real call |
 
