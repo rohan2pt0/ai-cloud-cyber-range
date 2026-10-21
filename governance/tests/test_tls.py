@@ -318,3 +318,21 @@ def test_device_ports_serve_the_app_same_origin_and_chat_for_tailscale():
     assert "http://open-webui:8080" in conf[conf.index("listen 9444 ssl"):]
     internal = tls.render_edge_conf("securax.localhost", internal=True)
     assert "gateway.securax.internal" in internal[internal.index("listen 9443 ssl"):]          # internal TLS still applies on device ports
+
+
+def test_a_windows_program_on_port_80_moves_only_the_redirect(store, monkeypatch, capsys):
+    # Port 80 only redirects to https, so another program holding it must not block HTTPS; 443 taken still refuses.
+    seen = []
+
+    def taken():
+        seen.append(tls.http_port())
+        return ["80"] if tls.http_port() == "80" else []
+    monkeypatch.setattr(tls, "edge_ports_taken", taken)
+    monkeypatch.setattr(tls, "cmd_on", lambda *a: 0)
+    assert tls.main(["on"]) == 0 and seen == ["80", tls.ALT_HTTP_PORT] and tls.read_env()["TLS_HTTP_PORT"] == tls.ALT_HTTP_PORT
+    monkeypatch.setattr(tls, "edge_ports_taken", lambda: ["443"])
+    monkeypatch.setattr(tls, "windows_owner", lambda p: "")
+    assert tls.main(["on"]) == 1
+    out = capsys.readouterr().out
+    assert "not this Ubuntu window" in out and "findstr :443" in out
+    assert '${TLS_HTTP_PORT:-80}:80' in (ROOT / "local" / "compose" / "tls.yml").read_text()

@@ -706,10 +706,19 @@ def cmd_trust(apply: bool) -> int:
 PORT_CLASH = re.compile(r"ports are not available|port is already allocated|address already in use", re.I)
 
 
+def http_port() -> str:
+    """The host port of the plain-HTTP redirect: 80, or ALT_HTTP_PORT when another program holds 80."""
+    return read_env().get("TLS_HTTP_PORT") or "80"
+
+
+ALT_HTTP_PORT = "8880"
+
+
 def edge_ports_taken() -> list[str]:
-    """Ports 80/443 already held by another program (on Windows often IIS, a VPN or another web server). Checked with a
-    throw-away container that only binds them, because from Ubuntu on WSL the Windows side's listeners are invisible.
-    [] when free, when the edge itself holds them, or when Docker cannot be asked (the start-up fallback still covers it)."""
+    """Ports 443 and the redirect port already held by another program (on Windows often IIS, a VPN or another web
+    server). Checked with a throw-away container that only binds them, because from Ubuntu on WSL the Windows side's
+    listeners are invisible. [] when free, when the edge itself holds them, or when Docker cannot be asked (the start-up
+    fallback still covers it)."""
     if not shutil.which("docker"):
         return []
     try:
@@ -718,13 +727,41 @@ def edge_ports_taken() -> list[str]:
         if mine:
             return []
         bind = read_env().get("BIND_HOST") or "127.0.0.1"
-        r = subprocess.run(["docker", "run", "--rm", "-p", f"{bind}:443:443", "-p", f"{bind}:80:80", "nginx:1.30-alpine", "true"],
+        hp = http_port()
+        r = subprocess.run(["docker", "run", "--rm", "-p", f"{bind}:443:443", "-p", f"{bind}:{hp}:80", "nginx:1.30-alpine", "true"],
                            capture_output=True, text=True, timeout=180)
     except (OSError, subprocess.TimeoutExpired):
         return []
     if r.returncode and PORT_CLASH.search(r.stderr):
-        return sorted(set(re.findall(r":(80|443)\b", r.stderr))) or ["80/443"]
+        return sorted(set(re.findall(rf":(443|{re.escape(hp)})\b", r.stderr))) or [f"{hp}/443"]
     return []
+
+
+def windows_owner(port: str) -> str:
+    """The name of the Windows program listening on PORT, asked through PowerShell from WSL. '' when it cannot be asked
+    (not on WSL, or WSL cannot run Windows programs right now)."""
+    if not shutil.which("powershell.exe"):
+        return ""
+    ps = (f"Get-NetTCPConnection -State Listen -LocalPort {int(port)} -ErrorAction SilentlyContinue | "
+          "ForEach-Object { $p = Get-Process -Id $_.OwningProcess -ErrorAction SilentlyContinue; \"$($_.OwningProcess) $($p.ProcessName)\" } | "
+          "Sort-Object -Unique")
+    try:
+        r = subprocess.run(["powershell.exe", "-NoProfile", "-NonInteractive", "-Command", ps], capture_output=True, text=True, timeout=30)
+    except (OSError, subprocess.TimeoutExpired):
+        return ""
+    return ", ".join(ln.strip() for ln in r.stdout.splitlines() if ln.strip())
+
+
+def explain_taken(port: str) -> None:
+    owner = windows_owner(port)
+    if owner:
+        print(f"  It is held by (PID and name): {owner}.")
+        if owner.split()[0] == "4":
+            print("  PID 4 is Windows itself, serving for a service such as IIS (World Wide Web Publishing), SQL Server")
+            print("  Reporting Services or BranchCache. In Windows PowerShell:  netsh http show servicestate  names it.")
+    else:
+        print("  To find the program, open Windows PowerShell from the Start menu (not this Ubuntu window) and run:")
+        print(f"    netstat -ano | findstr :{port}     (the last number is its PID; Task Manager > Details shows its name)")
 
 
 def cmd_on(extra: list[str], dom: str | None, new_ca: bool) -> int:
@@ -821,11 +858,17 @@ def main(argv: list[str] | None = None) -> int:
     a = ap.parse_args(argv)
     if a.cmd == "on":
         taken = edge_ports_taken()
+        if taken == ["80"]:
+            # Port 80 only redirects to https, so it need not be 80: move it, and HTTPS on 443 works exactly the same.
+            set_env("TLS_HTTP_PORT", ALT_HTTP_PORT)
+            print(f"  Port 80 is used by another program on this computer, so the http-to-https redirect moves to {ALT_HTTP_PORT}.")
+            print("  Nothing else changes: type the https:// addresses (the Command Center links already do).")
+            taken = edge_ports_taken()
         if taken:
             print(f"✗ Port {' and '.join(taken)} on this computer is already used by another program, so the HTTPS names cannot start.")
             print("  Nothing was changed: keep using http://localhost:8088 (it works the same).")
-            print("  To find the program, in Windows PowerShell:  netstat -ano | findstr :" + taken[0] + "   (the last number is its PID;")
-            print("  Task Manager > Details shows its name). Stop it, then run  ./securax tls on  again.")
+            explain_taken(taken[0].split("/")[0])
+            print("  Stop that program, then run  ./securax tls on  again.")
             return 1
         return cmd_on([h for h in a.hosts.split(",") if h], a.domain or None, a.new_ca)
     if a.cmd == "off":
