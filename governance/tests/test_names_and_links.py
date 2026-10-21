@@ -82,8 +82,7 @@ def test_a_person_is_shown_a_name_once_names_are_on(monkeypatch):
     on = {"COMPOSE_FILE": "docker-compose.yml:tls.yml"}
     assert addr.web_url("hub", 8088, "/x", env=on) == "https://hub.securax.localhost/x"
     assert addr.web_url("chat", 3000, env={**on, "SECURAX_DOMAIN": "home.example.org"}) == "https://chat.home.example.org/"
-    sys.path.insert(0, str(ROOT))
-    from lifecycle import fitness
+    fitness = load("securax_fitness_t", "lifecycle/fitness.py")      # by path: another test may own the name 'lifecycle'
     assert fitness.raw_addresses() == [], "use web_url() / governance/addr.py instead of a raw localhost:PORT"
 
 
