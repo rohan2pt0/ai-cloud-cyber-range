@@ -1001,7 +1001,7 @@ EOF2
   govern)
     # For decision makers: where we stand on governance, people, process and technology; minimum basic vs highest possible;
     # the 5W1H and the budget for each gap; the team; the Board report; the template pack (doc 94).
-    #   ./securax govern | profile | mark ID STATE | list | team | board | templates [DIR]
+    #   ./securax govern | profile | mark ID STATE | list | team | board | templates [DIR] | org [--out F.svg] | map [--out F.svg]
     shift; exec python3 "$ROOT/governance/govern.py" "${@:-report}"
     ;;
   os)
@@ -2025,7 +2025,7 @@ BUILD & KEEP IT HEALTHY
   online         use SecuRAX from any device like a SaaS app: your own addresses behind Google sign-in (setup once)
   continuity     the crisis plan: each scenario's RTO/RPO target vs today, the steps (show ID), safe drills (drill ID), the code mirror (mirror setup: a free private GitLab copy)
   resilience     every combination of your machines being off: what still works, each single point of failure, the fix
-  govern         for decision makers: where we stand, minimum vs highest, 5W1H and budget per gap, team, Board report, templates
+  govern         for decision makers: where we stand, minimum vs highest, 5W1H and budget per gap, team, Board report, templates, org/map pictures
   os             one kit, many apps: Vantage at /vantage/; build, new ID --name, check; mobile ID (Android/iOS), mobile-check ID
   ship           build without Claude Code: open the PR, watch CI, fix red with autobuild, merge when green (check, login, pr, watch)
   suite          built for one, ready for many: editions, readiness to sell, the shared platform, datasheets (sheet EDITION)

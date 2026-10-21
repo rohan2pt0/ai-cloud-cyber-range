@@ -1,7 +1,7 @@
 # 94 · Govern: for decision makers
 
 <!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
-> **Status: 🟡 Partly built.** Built and tested: a tiered catalog across governance, people, process and technology; ./securax govern scores where you stand, the minimum basic and the highest possible, ranks the gaps with their 5W1H and an indicative India budget, sizes the team with roles, skills and certifications, writes the one-page Board report, and fills a template pack (policies, SOPs, registers, vision, executive deck, Board table). The Govern card is in the cockpit. Budget bands are indicative and need quotes; the capability marks are yours to fill. [What the lights mean](../index.md#the-status-lights)
+> **Status: 🟡 Partly built.** Built and tested: a tiered catalog across governance, people, process and technology; ./securax govern scores where you stand, the minimum basic and the highest possible, ranks the gaps with their 5W1H and an indicative India budget, sizes the team with roles, skills and certifications, writes the one-page Board report, and fills a template pack (policies, SOPs, registers, vision, executive deck, Board table). The Govern panel in the cockpit shows the capability stack and the organogram as pictures, with no command to run. Budget bands are indicative and need quotes; the capability marks are yours to fill. [What the lights mean](../index.md#the-status-lights)
 <!-- status:end -->
 
 **The ask:** one place where a CISO or another executive sees:
@@ -11,7 +11,24 @@
 - what people with what skills, what tools (with their architecture and data flow) and what processes it takes;
 - a pack of ready templates anyone can use, even to start a company: policies, SOPs, registers, a vision document and an executive deck.
 
-**The answer:** the Govern card in the cockpit, `./securax govern`, and the template pack.
+**The answer:** the Govern panel in the cockpit, `./securax govern`, and the template pack.
+
+## What you see without typing a command
+
+Open the cockpit and unfold **Govern**. Its one-line summary gives the maturity level, how much of the minimum basic is in place, the number of basic gaps, and the yearly cost to close them. Inside:
+
+- **The capability stack, layer by layer:** governance, people and process on top, then the technology layers from the perimeter to resilience. Each capability is a chip: green done, amber partial, red dashed a missing basic, grey a later tier.
+- **The organogram for the next tier:** the CISO, the programme office beside it, and one column per function with its lead and how many people of each role.
+- **The next 10 to do:** open one to read its What, Why, Who, When, Where, How and How much.
+- **What it costs, a year:** by tier, people and tools apart.
+
+To put the two pictures into a Board deck:
+
+```bash
+./securax govern org --tier standard --out org.svg   # the organogram
+./securax govern map --out stack.svg                 # the capability stack
+```
+
 
 ## 1. Five minutes to a first picture
 
@@ -184,5 +201,7 @@ These sources are often vendor-written and disagree with each other. Use the ban
   - budgets scale with size and never count what is done;
   - the team grows with size and tier;
   - the Board report and the cockpit card carry the 5W1H, with no script and no external address;
+  - the card is folded and shows the stack and the organogram as pictures, not commands;
+  - both pictures export as standalone SVG files;
   - the templates fill in the name and never overwrite an edited copy.
-- **The cockpit:** it shows the Govern card. The cockpit journey checks the page still has no script and no external request.
+- **The cockpit:** it shows the Govern panel, folded. `test_cockpit_priority.py` checks one master lamp, at most three actions and folded panels. The cockpit journey checks the page still has no script and no external request.

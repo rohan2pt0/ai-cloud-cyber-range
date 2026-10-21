@@ -125,7 +125,7 @@ def status(its: list[dict] | None = None) -> list[dict]:
     return out
 
 
-def html_card(st: list[dict] | None = None) -> str:
+def html_card(st: list[dict] | None = None, panel: bool = False) -> str:
     """The Command Center card: what is left first, each with its numbered steps; finished ones folded away."""
     E = html.escape
     st = status() if st is None else st
@@ -135,7 +135,11 @@ def html_card(st: list[dict] | None = None) -> str:
         steps = "".join(f"<li>{E(x.replace('https://', ''))}</li>" for x in s["steps"])   # the cockpit names no external URL
         return (f"<details{' open' if open_ else ''}><summary><b>{'✔' if s['done'] else '○'} {E(s['title'])}</b> "
                 f"<span class='muted'>· {E(s['gives'].replace('https://', ''))}</span></summary><ol>{steps}</ol></details>")
-    h = [f"<div class='card'><h2>Finish setting up <span class='muted'>· {len(done)} of {len(st)} done · all optional, do one when you have time</span></h2>"]
+    if panel:   # folded to one line in the cockpit: the steps are there, one click away, never in the pilot's face
+        nxt = f" · next: {E(left[0]['title'])}" if left else " · everything is set up"
+        h = [f"<details class='card panel' id='finish'><summary><b>Setup</b> <span class='muted'>· {len(done)} of {len(st)} optional steps done{nxt}</span></summary>"]
+    else:
+        h = [f"<div class='card'><h2>Finish setting up <span class='muted'>· {len(done)} of {len(st)} done · all optional, do one when you have time</span></h2>"]
     if left:
         h.append("<p class='muted'>Next: <b>" + E(left[0]["title"]) + "</b>. Or in the terminal: <code>./securax finish</code></p>")
         h += [one(s, i == 0) for i, s in enumerate(left)]
@@ -143,7 +147,7 @@ def html_card(st: list[dict] | None = None) -> str:
         h.append("<p class='big'>Everything is set up.</p>")
     if done:
         h.append(f"<details><summary class='muted'>{len(done)} done</summary>" + "".join(one(s) for s in done) + "</details>")
-    return "".join(h) + "</div>"
+    return "".join(h) + ("</details>" if panel else "</div>")
 
 
 def main(argv: list[str] | None = None) -> int:

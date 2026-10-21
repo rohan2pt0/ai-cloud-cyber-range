@@ -722,15 +722,15 @@ CSS = """
 .annun{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}.lamp{display:block;border:1px solid var(--line);border-radius:10px;padding:10px;color:var(--ink);text-decoration:none}
 .lamp b{display:block;font-size:1.5rem}.lamp.warn{border-color:var(--r)}.lamp.warn b{color:var(--r)}.lamp.caut{border-color:var(--a)}.lamp.caut b{color:var(--a)}
 .lamp.ok b{color:var(--g)}.lamp.nav{border-color:var(--acc)}.lamp.nav b{color:var(--acc)}details.plan>summary{cursor:pointer;font-size:1.05rem}
-:root{--bg:#f6f7f9;--card:#fff;--ink:#14202b;--mut:#5a6876;--line:#dde2e8;--g:#1b8a4b;--a:#b7791f;--r:#c0392b;--u:#7b8794;--acc:#2554c7;--ring:#d0d6dd}
-@media (prefers-color-scheme:dark){:root{--bg:#0f141a;--card:#18202a;--ink:#e8edf2;--mut:#9aa7b5;--line:#2b3744;--g:#4cc884;--a:#e3a63c;--r:#ff7a6b;--u:#8794a3;--acc:#7aa2ff;--ring:#33414f}}
+:root{--bg:#f6f7f9;--card:#fff;--ink:#14202b;--mut:#5a6876;--line:#dde2e8;--g:#176f3d;--a:#8a5a00;--r:#c0392b;--u:#5f6b78;--acc:#2554c7;--ring:#d0d6dd;--on:#fff}
+@media (prefers-color-scheme:dark){:root{--bg:#0f141a;--card:#18202a;--ink:#e8edf2;--mut:#9aa7b5;--line:#2b3744;--g:#4cc884;--a:#e3a63c;--r:#ff7a6b;--u:#8794a3;--acc:#7aa2ff;--ring:#33414f;--on:#0f141a}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
 main{max-width:1180px;margin:0 auto;padding:16px}h1{font-size:1.5rem;margin:.2rem 0}h2{font-size:1.1rem;margin:0 0 .5rem}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:14px 0}
 .head{border-left:8px solid var(--u)}.head.green{border-color:var(--g)}.head.amber{border-color:var(--a)}.head.red{border-color:var(--r)}
 .big{font-size:1.25rem;font-weight:650}.muted{color:var(--mut);font-size:.9rem}.grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(250px,1fr))}
 .tile{border:1px solid var(--line);border-radius:12px;padding:12px;background:var(--card)}.tile .v{font-size:1.15rem;font-weight:650}
-.dot{display:inline-block;min-width:4.2em;text-align:center;border-radius:99px;padding:1px 8px;font-size:.78rem;font-weight:700;color:#fff}
+.dot{display:inline-block;min-width:4.2em;text-align:center;border-radius:99px;padding:1px 8px;font-size:.78rem;font-weight:700;color:var(--on)}
 .green .dot,.dot.green{background:var(--g)}.amber .dot,.dot.amber{background:var(--a)}.red .dot,.dot.red{background:var(--r)}.unknown .dot,.dot.unknown{background:var(--u)}
 .tile.red{border-color:var(--r)}.tile.amber{border-color:var(--a)}code{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:1px 6px;font-size:.85rem}
 .two{display:grid;gap:14px;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}.q{border:1px solid var(--line);border-radius:12px;padding:10px;min-height:110px}
@@ -744,7 +744,32 @@ details summary{cursor:pointer;font-weight:600}a{color:var(--acc)}
 table.areas{width:100%;border-collapse:collapse;font-size:.88rem}table.areas th{text-align:left;border-bottom:2px solid var(--line);padding:6px}table.areas td{border-bottom:1px solid var(--line);padding:7px 6px;vertical-align:top}
 .meter{position:relative;height:10px;background:var(--ring);border-radius:5px;min-width:90px}.meter .fill{height:100%;border-radius:5px}.meter .tgt{position:absolute;top:-3px;width:0;height:16px;border-left:2px dashed var(--mut)}
 .guide li{margin:.35rem 0}
+.topbar{display:flex;flex-wrap:wrap;align-items:center;gap:10px}.topbar h1{flex:1;min-width:220px;margin:0}.meta{white-space:nowrap}
+.master{font-weight:800;letter-spacing:.06em;border-radius:8px;padding:6px 12px;color:var(--on);background:var(--u)}.master.red{background:var(--r)}.master.amber{background:var(--a)}.master.green{background:var(--g)}
+ol.do{margin:.6rem 0 0;padding-left:1.4rem}ol.do li{margin:.2rem 0}
+.inst{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:14px 0}
+.gauge{display:flex;flex-direction:column;gap:2px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--card);color:var(--ink);text-decoration:none;min-height:84px}
+.gauge .lbl{font-size:.78rem;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}.gauge b{font-size:1.05rem;line-height:1.25}
+.gauge.red{border:2px solid var(--r)}.gauge.red b{color:var(--r)}.gauge.amber{border:2px solid var(--a)}.gauge.quiet b{color:var(--mut);font-weight:600}
+.lit{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 6px}.ann{border:1px solid var(--line);border-radius:99px;padding:3px 10px;font-size:.85rem;background:var(--card)}
+.ann.warn{border-color:var(--r)}.ann.warn b{color:var(--r)}.ann.caut{border-color:var(--a)}.ann.caut b{color:var(--a)}
+details.panel>summary{font-size:1.02rem}details.panel[open]>summary{margin-bottom:.6rem}
 """
+
+
+PRIMARY = ["backup", "disk", "backup_enc", "tls", "gateway", "cov-cscrf"]   # the six instruments in the pilot's line of sight
+INST_LABEL = {"backup": "Last backup", "disk": "Disk free", "backup_enc": "Backups locked", "tls": "In transit", "gateway": "AI gateway",
+              "cov-cscrf": "SEBI CSCRF", "cov-rbi": "RBI", "coding": "Build models"}
+MASTER = {"red": "ACT", "amber": "WATCH", "green": "ALL CLEAR", "unknown": "NO DATA"}
+
+
+def instrument(m: dict) -> str:
+    """One primary instrument: grey while nominal (the dark cockpit), coloured only when it needs the pilot."""
+    st = m["status"] if m["status"] in ("red", "amber") else ("quiet" if m["status"] == "green" else "unknown")
+    val = str(m["value"])
+    val = val if len(val) <= 22 else val[:21] + "…"
+    return (f"<a class='gauge {st}' href='#systems' title='{E(m['why'])}'><span class='lbl'>{E(INST_LABEL.get(m['id'], m['label']))}</span><b>{E(val)}</b>"
+            f"<span class='muted'>{WORD[m['status']]}</span></a>")
 
 
 def tile(m: dict) -> str:
@@ -774,13 +799,6 @@ def render(c: Collector, maps: dict, hist: list[dict], ai: str, now: float, targ
                 "green": "All clear: nothing measured is wrong.", "unknown": "Not enough data yet: start the estate and refresh."}[overall]
     stamp = time.strftime("%d %b %Y %H:%M %Z", time.localtime(now))
     h = [f"<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>SecuRAX Cockpit</title><style>{CSS}</style></head><body><main>"]
-    h.append(f"<div class='card head {overall}'><div class='muted'>SecuRAX Cockpit · snapshot {E(stamp)} · profile: {E(c.profile)} · <a href='/hub.html'>All apps</a></div>"
-             f"<h1><span class='dot {overall}'>{WORD[overall]}</span> {E(headline)}</h1>")
-    if nxt:
-        h.append("<div class='big'>Do next</div><ol>" + "".join(f"<li><b>{E(i['title'])}</b> — {E(i['action'])}" + (f" <code>{E(i['cmd'])}</code>" if i["cmd"] else "") + "</li>" for i in nxt) + "</ol>")
-    h.append("<div class='muted'>This page is a snapshot. To refresh it run <code>./securax cockpit</code> (it also refreshes whenever you run <code>./securax up</code>). Green means “nothing measured is wrong”, not “secure”.</div></div>")
-    if ai:
-        h.append(f"<div class='card'><h2>AI briefing <span class='muted'>(draft, written by your local model from the numbers on this page; it changes nothing)</span></h2><p>{E(ai).replace(chr(10), '<br>')}</p></div>")
     # Dark-cockpit rule (Airbus, mission control): when everything is normal nothing is lit. Only what is abnormal is shown;
     # the nominal readings and the planning views stay one click away, so the eye goes straight to what needs a decision.
     nav = (ROOT / "portal" / "navigator.html").exists()
@@ -840,26 +858,48 @@ def render(c: Collector, maps: dict, hist: list[dict], ai: str, now: float, targ
              "Routines to fix or switch off: ./securax routines prune")] if prune_items else [])\
         + ([("warn", len(jewels_now), "Crown jewels exposed, first: " + jewels_now[0]["name"].split(" (")[0].split(":")[0] + " → " + jewels_now[0]["command"])] if jewels_now else [])\
         + ([("caut", len(cont_over), "Crisis scenarios not yet within target: ./securax continuity")] if cont_over else [])
-    h.append("<div class='card'><h2>Master caution</h2><div class='annun'>" + "".join(
-        f"<div class='lamp {k}'><b>{v}</b>{E(t)}</div>" for k, v, t in lamps)
-        + ("<a class='lamp nav' href='/portal/navigator.html'><b>Controls</b>BFSI control navigator</a>" if nav else
-           "<div class='lamp'><b>Controls</b>Run <code>./securax go</code> once: it builds the BFSI control matrix (no file needed)</div>") + "</div></div>")
-    try:                                                          # for decision makers: where we stand and what it takes (doc 94)
-        h.append(_load("securax_govern", "governance/govern.py").html_card())
-    except Exception:  # noqa: BLE001 - a convenience card must never fail the cockpit
+    # The cockpit, laid out like a flight deck (doc 37, section 2): ONE master lamp and the headline; at most three things
+    # to do; a row of primary instruments that stay grey while nominal and light up only when not; the other lit lamps as
+    # small annunciators; every detail folded into a panel with its status on its one line.
+    extra = lamps[3:]
+    h.append(f"<div class='card head {overall}'><div class='topbar'><span class='master {overall}'>{MASTER[overall]}</span>"
+             f"<h1>{E(headline)}</h1><span class='muted meta'>{E(stamp)} · <a href='/hub.html'>All apps</a>"
+             + (" · <a href='/portal/navigator.html'>Controls</a>" if nav else "") + "</span></div>")
+    if nxt:
+        h.append("<ol class='do'>" + "".join(f"<li><b>{E(i['title'])}</b>" + (f" <code>{E(i['cmd'])}</code>" if i["cmd"] else f" <span class='muted'>{E(short(i['action'], 80))}</span>")
+                                            + "</li>" for i in nxt) + "</ol>")
+    h.append("</div>")
+    byid = {m["id"]: m for m in ms}
+    inst = [byid[i] for i in PRIMARY if i in byid]
+    gov = None
+    try:                                                          # the Govern panel, and its maturity as one instrument
+        _gv = _load("securax_govern", "governance/govern.py")
+        _ga = _gv.analyse()
+        gov = (_gv.html_card(_ga), _ga["maturity"][0])
+    except Exception:  # noqa: BLE001 - a convenience panel must never fail the cockpit
         pass
-    try:                                                          # what is left to set up, with its steps (./securax finish)
-        h.append("<div id='finish'></div>" + _load("securax_finish", "governance/finish.py").html_card())
-    except Exception:  # noqa: BLE001 - the checklist is a convenience; it must never fail the cockpit
-        pass
+    h.append("<div class='inst'>" + "".join(instrument(m) for m in inst)
+             + (f"<a class='gauge {'red' if gov[1] == 1 else 'amber' if gov[1] < 3 else 'quiet'}' href='#govern'><span class='lbl'>Govern</span><b>{gov[1]}/5</b><span class='muted'>maturity</span></a>" if gov else "")
+             + "</div>")
+    if extra:
+        h.append("<div class='lit'>" + "".join(f"<span class='ann {k}'><b>{v}</b> {E(t)}</span>" for k, v, t in extra) + "</div>")
     abnormal = [m for m in ms if m["status"] in ("red", "amber")]
     nominal, unmeasured = [m for m in ms if m["status"] == "green"], [m for m in ms if m["status"] not in ("red", "amber", "green")]
-    h.append("<div class='card'><h2>Vital signs</h2><div class='muted'>Only what is not nominal is shown. KPI = is it doing its job. KRI = is risk building up.</div>"
+    h.append(f"<details class='card panel' id='systems'><summary><b>Systems</b> <span class='muted'>· {len(reds)} to act on · {len(ambs)} to watch · "
+             f"{len(nominal)} nominal · {len(unmeasured)} no data</span></summary><div class='muted'>KPI = is it doing its job. KRI = is risk building up.</div>"
              + (f"<div class='grid'>{''.join(tile(m) for m in abnormal)}</div>" if abnormal else "<p class='big'>All vital signs nominal.</p>")
              + (f"<details><summary>{len(unmeasured)} not measured right now (a service is off or has no data yet)</summary><div class='grid'>{''.join(tile(m) for m in unmeasured)}</div></details>" if unmeasured else "")
              + (f"<details><summary>{len(nominal)} nominal readings</summary><div class='grid'>{''.join(tile(m) for m in nominal)}</div></details>" if nominal else "")
-             + "</div>")
-    h.append("<details class='card plan'><summary><b>Mission planning</b> <span class='muted'>· Eisenhower, 80/20, posture by area, AI risk, trends (open when you plan, not when you check)</span></summary>")
+             + "</details>")
+    if gov:
+        h.append(gov[0])
+    try:                                                          # what is left to set up (./securax finish), folded
+        h.append(_load("securax_finish", "governance/finish.py").html_card(panel=True))
+    except Exception:  # noqa: BLE001 - the checklist is a convenience; it must never fail the cockpit
+        pass
+    if ai:
+        h.append(f"<details class='card panel'><summary><b>AI briefing</b> <span class='muted'>· a draft from your local model, from the numbers on this page; it changes nothing</span></summary><p>{E(ai).replace(chr(10), '<br>')}</p></details>")
+    h.append("<details class='card panel plan'><summary><b>Mission planning</b> <span class='muted'>· Eisenhower, 80/20, posture by area, AI risk, trends (open when you plan, not when you check)</span></summary>")
     h.append("<div class='card'><h2>Eisenhower: what to do, in what order</h2><div class='muted'>Urgent = a deadline or a measured problem. Important = it moves risk or compliance most.</div><div class='two'>"
              + quad("do", "Do now", "urgent + important", eis["do"]) + quad("schedule", "Schedule", "important, not urgent", eis["schedule"])
              + quad("automate", "Automate or delegate", "urgent, less important", eis["automate"]) + quad("park", "Park", "neither", eis["park"]) + "</div></div>")
