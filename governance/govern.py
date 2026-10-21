@@ -11,6 +11,8 @@ highest possible look like, and what to do next with who, when and how much (doc
     ./securax govern team [--tier basic|standard|advanced]   the people you need: roles, how many, skills, certifications, cost
     ./securax govern board [--out FILE]    the one-page Board / executive report (Markdown), with the 5W1H for each gap
     ./securax govern org [--tier T] [--out F.svg]   the organogram: the CISO, a lead per function, how many under each
+    ./securax govern reckon ID                       the ready reckoner: vendors, cost, RFP pack, placement (or a role's JD)
+    ./securax govern rfp ID [--out F.md]             an RFP pack to start from for that capability
     ./securax govern map [--out F.svg]   every capability, layer by layer, coloured by where you stand
     ./securax govern templates [DIR] [--org "Name"]
                                            the template pack: policies, SOPs, registers, vision, executive deck, Board table
@@ -31,6 +33,15 @@ import os
 import pathlib
 import re
 import sys
+
+
+def _addr():
+    """governance/addr.py, loaded by path (this module is itself loaded by path in tests): the address a person opens."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("securax_addr", pathlib.Path(__file__).resolve().parent / "addr.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 CATALOG = ROOT / "governance" / "govern.json"
@@ -284,7 +295,15 @@ SVG_STYLE = ("<style>.t{font:12px system-ui,sans-serif;fill:var(--ink,#14202b)}.
              ".lead{stroke:var(--acc,#2554c7);stroke-width:2}.wire{stroke:var(--mut,#5a6876);stroke-width:1;fill:none}"
              ".done{fill:rgba(27,138,75,.16);stroke:var(--g,#1b8a4b)}.part{fill:rgba(183,121,31,.16);stroke:var(--a,#b7791f)}"
              ".miss{fill:var(--card,#fff);stroke:var(--r,#c0392b);stroke-dasharray:4 3}.later{fill:var(--card,#fff);stroke:var(--line,#c9d1da)}"
-             ".band{fill:var(--bg,#f6f7f9)}</style>")
+             ".band{fill:var(--bg,#f6f7f9)}a rect{cursor:pointer}a:hover rect,a:focus rect{stroke-width:2.4;stroke:var(--acc,#2554c7)}</style>")
+
+
+RECKON_LINK = "reckoner/"   # the ready-reckoner pages, next to portal/cockpit.html (governance/reckoner.py writes them)
+
+
+def _a(href: str | None, inner: str) -> str:
+    """A box that opens its ready-reckoner page (doc 94 §8). Plain SVG links: no script, the cockpit stays script-free."""
+    return f"<a href='{html.escape(href)}'>{inner}</a>" if href else inner
 
 
 def short(c: dict) -> str:
@@ -307,8 +326,10 @@ def _lines(text: str, width: int) -> list[str]:
     return (out + [cur])[:3]
 
 
-def org_svg(a: dict | None = None, tier: str | None = None, standalone: bool = False) -> str:
-    """The organogram for the tier being worked to: the CISO, a lead per function, and who works under each."""
+def org_svg(a: dict | None = None, tier: str | None = None, standalone: bool = False, link: str | None = None) -> str:
+    """The organogram for the tier being worked to: the CISO, a lead per function, and who works under each.
+    link: a folder prefix (for example 'reckoner/'): each box then opens its role's page (job description, hiring)."""
+    href = (lambda rid: f"{link}role-{rid}.html") if link else (lambda rid: None)
     a = analyse() if a is None else a
     tier = tier or plan_tier(a)
     t = team(tier, a["profile"])
@@ -325,12 +346,12 @@ def org_svg(a: dict | None = None, tier: str | None = None, standalone: bool = F
     out = [f"<svg viewBox='0 0 {W} {H}' role='img' aria-label='Organogram for the {tier} tier'>", SVG_STYLE]
     cx = W // 2
     ciso = next(r for r in t if r["id"] == "ciso")
-    out.append(f"<rect class='box lead' x='{cx - 120}' y='10' width='240' height='46' rx='8'/><text class='h' x='{cx}' y='30' text-anchor='middle'>{E(ciso['name'].split(' / ')[0])}</text>"
-               f"<text class='m' x='{cx}' y='47' text-anchor='middle'>owns cyber risk; reports to the Board</text>")
+    out.append(_a(href("ciso"), f"<rect class='box lead' x='{cx - 120}' y='10' width='240' height='46' rx='8'/><text class='h' x='{cx}' y='30' text-anchor='middle'>{E(ciso['name'].split(' / ')[0])}</text>"
+               f"<text class='m' x='{cx}' y='47' text-anchor='middle'>owns cyber risk; reports to the Board</text>"))
     pmo = next((r for r in t if r["id"] == "pmo"), None)
     if pmo:
-        out.append(f"<path class='wire' d='M{cx + 120} 33 H{cx + 170}' stroke-dasharray='4 3'/><rect class='box' x='{cx + 170}' y='14' width='190' height='38' rx='8'/>"
-                   f"<text class='t' x='{cx + 265}' y='37' text-anchor='middle'>{pmo['count']} × programme manager</text>")
+        out.append(f"<path class='wire' d='M{cx + 120} 33 H{cx + 170}' stroke-dasharray='4 3'/>" + _a(href("pmo"), f"<rect class='box' x='{cx + 170}' y='14' width='190' height='38' rx='8'/>"
+                   f"<text class='t' x='{cx + 265}' y='37' text-anchor='middle'>{pmo['count']} × programme manager</text>"))
     if cols:
         x0, x1 = 10 + colw // 2, 10 + colw * (len(cols) - 1) + colw // 2
         out.append(f"<path class='wire' d='M{cx} 56 V80 M{x0} 80 H{x1}'/>")
@@ -342,9 +363,9 @@ def org_svg(a: dict | None = None, tier: str | None = None, standalone: bool = F
             y = 122 + k * 80
             name = _lines(r["name"], max(14, (colw - 16) // 7))
             cls = "box lead" if r["id"] in leads else "box"
-            out.append(f"<path class='wire' d='M{mid} {y - 10} V{y}'/><rect class='{cls}' x='{x + 6}' y='{y}' width='{colw - 12}' height='66' rx='8'/>"
+            out.append(f"<path class='wire' d='M{mid} {y - 10} V{y}'/>" + _a(href(r["id"]), f"<rect class='{cls}' x='{x + 6}' y='{y}' width='{colw - 12}' height='66' rx='8'/>"
                        f"<text class='h' x='{mid}' y='{y + 18}' text-anchor='middle'>{r['count']} ×</text>"
-                       + "".join(f"<text class='t' x='{mid}' y='{y + 34 + n * 14}' text-anchor='middle'>{E(line)}</text>" for n, line in enumerate(name)))
+                       + "".join(f"<text class='t' x='{mid}' y='{y + 34 + n * 14}' text-anchor='middle'>{E(line)}</text>" for n, line in enumerate(name))))
     out.append("</svg>")
     svg = "".join(out)
     return _standalone(svg) if standalone else svg
@@ -357,8 +378,9 @@ def _standalone(svg: str) -> str:
     return "<?xml version='1.0' encoding='UTF-8'?>\n" + svg.replace("<svg ", f"<svg xmlns='http://www.w3.org/2000/svg' {size}", 1)
 
 
-def stack_svg(a: dict | None = None, m: dict | None = None, standalone: bool = False) -> str:
-    """Every capability, layer by layer: green in place, amber partly, red dashed a missing basic, grey a later tier."""
+def stack_svg(a: dict | None = None, m: dict | None = None, standalone: bool = False, link: str | None = None) -> str:
+    """Every capability, layer by layer: green in place, amber partly, red dashed a missing basic, grey a later tier.
+    link: a folder prefix (for example 'reckoner/'): each chip then opens its page (vendors, cost, RFP pack, architecture)."""
     a = analyse() if a is None else a
     m = marks() if m is None else m
     E = html.escape
@@ -375,12 +397,12 @@ def stack_svg(a: dict | None = None, m: dict | None = None, standalone: bool = F
                 x, line = left, line + 1
             st = state(c["id"], m)
             cls = {"done": "done", "partial": "part"}.get(st, "miss" if c["tier"] == "basic" else "later")
-            chips.append((x, line, w, cls, text, c["name"]))
+            chips.append((x, line, w, cls, text, c["name"], f"{link}{c['id']}.html" if link else None))
             x += w + 6
         h = 34 + line * 30
         rows.append(f"<rect class='band' x='0' y='{y}' width='{W}' height='{h}' rx='6'/><text class='h' x='10' y='{y + 21}'>{E(label)}</text>"
-                    + "".join(f"<g><title>{E(full)}</title><rect class='{cls}' x='{cx}' y='{y + 6 + ln * 30}' width='{w}' height='22' rx='11'/>"
-                              f"<text class='t' x='{cx + w / 2:.0f}' y='{y + 21 + ln * 30}' text-anchor='middle'>{E(tx)}</text></g>" for cx, ln, w, cls, tx, full in chips))
+                    + "".join(_a(hr, f"<g><title>{E(full)}</title><rect class='{cls}' x='{cx}' y='{y + 6 + ln * 30}' width='{w}' height='22' rx='11'/>"
+                              f"<text class='t' x='{cx + w / 2:.0f}' y='{y + 21 + ln * 30}' text-anchor='middle'>{E(tx)}</text></g>") for cx, ln, w, cls, tx, full, hr in chips))
         y += h + 6
     legend = (f"<g transform='translate(10,{y + 6})'><rect class='done' width='16' height='12' rx='6'/><text class='m' x='22' y='10'>in place</text>"
               "<rect class='part' x='100' width='16' height='12' rx='6'/><text class='m' x='122' y='10'>partly</text>"
@@ -423,9 +445,9 @@ def html_card(a: dict | None = None) -> str:
     note = "" if a["marked"] else "<p class='muted'>Nothing is marked yet, so every capability reads as missing. Mark what you have with <code>./securax govern mark ID done</code>.</p>"
     return (GOV_CSS + f"<details class='card panel' id='govern'><summary>{summary}</summary>"
             f"<p class='big'>Maturity level {lvl} of 5 <span class='muted'>· {E(words)}</span></p>{note}"
-            f"<details class='sub' open><summary>The capability stack, layer by layer</summary>{stack_svg(a)}</details>"
+            f"<details class='sub' open><summary>The capability stack, layer by layer</summary>{stack_svg(a, link=RECKON_LINK)}<p class='muted'>Open any box: the vendors, cost, RFP pack and where it sits.</p></details>"
             f"<details class='sub'><summary>The team for the {E(tier)} tier: {people} people ({E(money(sum(r['cost'][0] for r in t), sum(r['cost'][1] for r in t)))} a year)</summary>"
-            f"{org_svg(a, tier)}<p class='muted'>Consultants can fill any box in year 1 and train the team that leads in year 2.</p></details>"
+            f"{org_svg(a, tier, link=RECKON_LINK)}<p class='muted'>Open any box for its job description. Consultants can fill any box in year 1 and train the team that leads in year 2.</p></details>"
             f"<details class='sub'><summary>The next {len(top)} to do, most risk removed first (open one for its 5W1H)</summary>{''.join(_w5h_html(g) for g in top)}"
             f"<p class='muted'>{len(a['gaps'])} open in all; the full list is in the Board report.</p></details>"
             f"<details class='sub'><summary>What it costs, a year</summary><table><tr><th>To reach</th><th>Tools and process</th><th>People</th><th>Total</th></tr>{budget}</table>"
@@ -448,6 +470,13 @@ def templates(dest: pathlib.Path, org: str) -> list[pathlib.Path]:
 
 
 def main(argv: list[str] | None = None) -> int:
+    argv = sys.argv[1:] if argv is None else argv
+    if argv and argv[0] in ("reckon", "rfp", "reckoner"):          # the ready reckoner (doc 94 §8) has its own module
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("securax_reckoner", pathlib.Path(__file__).resolve().parent / "reckoner.py")
+        rk = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(rk)
+        return rk.main(["check"] if argv[:2] == ["reckoner", "check"] else argv)
     ap = argparse.ArgumentParser(prog="govern", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("cmd", nargs="?", default="report", choices=["report", "profile", "mark", "list", "team", "board", "templates", "json", "org", "map"])
     ap.add_argument("args", nargs="*")
@@ -525,7 +554,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     report(res)
     if write_state(res):
-        print("  (Vantage, the CISO app, shows this summary too: http://localhost:8088/vantage/)")
+        print(f"  (Vantage, the CISO app, shows this summary too: {_addr().web_url('hub', 8088, '/vantage/')})")
     return 0
 
 

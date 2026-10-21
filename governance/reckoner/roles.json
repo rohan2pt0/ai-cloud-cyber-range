@@ -1,0 +1,1410 @@
+{
+ "as_of": "2026-10",
+ "items": {
+  "ciso": {
+   "purpose": "Own the organisation's information and cyber security strategy and risk, and give the Board an honest, independent view of how exposed the organisation is and what is being done about it.",
+   "reports_to": "MD and CEO, or for an RBI-regulated entity the Executive Director (or equivalent) who oversees risk management; never directly to the Head of IT (RBI ITGRCA Master Direction para 24(c)).",
+   "responsibilities": [
+    "Set and drive the cyber security strategy and the multi-year roadmap, tied to business goals and the risk appetite the Board approves.",
+    "Own the information and cyber security policies and enforce them across business, IT and vendors.",
+    "Run the CISO office: SOC, security engineering, GRC, testing, incident response and resilience, and make sure the deployed security tools actually work (RBI para 24(d)(4)-(5)).",
+    "Place a review of cyber risks, arrangements and preparedness before the Board, its risk committee or the IT Strategy Committee at least quarterly (RBI para 24(d)(7)).",
+    "Sit on the Information Security Committee and attend the IT Strategy and IT Steering Committees as a permanent invitee (RBI para 24(b), 24(d)(3)).",
+    "Prepare and defend a security budget sized to the current and emerging threat landscape (RBI para 24(c)(4)).",
+    "Lead the response to major incidents, including timely reporting to CERT-In within 6 hours and to the sector regulator, and act as or appoint the CERT-In point of contact.",
+    "Oversee third-party and outsourcing security risk, including right-to-audit and exit terms.",
+    "Coordinate with regulators, auditors, CERT-In, CSIRT-Fin and peer sharing forums.",
+    "Build the security team: hiring, skills plan, succession, and a security-aware culture."
+   ],
+   "must": [
+    "Risk management: turns threats into business risk in rupees and in plain words for a Board.",
+    "Indian regulation: RBI ITGRCA Directions, RBI IT Outsourcing Directions, RBI cyber security framework circulars, CERT-In 2022 Directions, DPDP Act 2023 and Rules; SEBI CSCRF or IRDAI guidelines if the group has those entities.",
+    "Security architecture across network, identity, endpoint, cloud and applications, deep enough to challenge engineers.",
+    "Incident and crisis leadership, including regulator and media communication.",
+    "Budgeting, vendor negotiation and programme governance.",
+    "Frameworks: ISO/IEC 27001:2022, NIST CSF 2.0, CIS Controls."
+   ],
+   "good": [
+    "Prior experience as a bank or NBFC CISO or deputy CISO through an RBI inspection.",
+    "Cloud and SaaS security, including MeitY-empanelled cloud and data localisation.",
+    "AI governance (ISO/IEC 42001) and AI-specific risk.",
+    "OT or payments security (PCI DSS v4.0) where relevant.",
+    "Board and audit committee presentation experience."
+   ],
+   "experience": "15-20+ years in IT and security, with 5+ years leading a security function, ideally in a regulated BFSI firm; RBI expects a senior executive, preferably at General Manager rank or equivalent, with a technical background (RBI para 24(c)).",
+   "education": "Bachelor's in engineering, computer science or IT; an MBA or a master's in information security helps for Board work. Long, proven leadership in regulated security can substitute for a specific degree, but RBI's expectation of technical background still applies.",
+   "certs_must": [
+    "CISSP or CISM (at least one)"
+   ],
+   "certs_good": [
+    "CISA",
+    "CRISC",
+    "CCISO (EC-Council)",
+    "CCSP",
+    "ISO/IEC 27001 Lead Auditor or Lead Implementer",
+    "ISO/IEC 42001 Lead Implementer"
+   ],
+   "interview": [
+    "Board paper test (45 minutes): give a one-page risk register with five top risks and ask for a one-page quarterly Board note covering posture, trend, top three asks and the money needed. Look for plain words, a clear ask and no jargon.",
+    "Live crisis scenario: 02:10 on a Saturday, the SOC reports ransomware notes on 40 servers in the DC and the DR site replicates every 15 minutes. Ask for the first two hours minute by minute: isolation, DR decision, CERT-In 6-hour report, RBI notification, customer communication, ransom stance.",
+    "Policy critique: hand over a two-page 'Acceptable Use and Remote Access' policy with planted flaws (no MFA requirement, local admin for all, personal cloud storage allowed, no owner or review date). Ask what they would change and how they would get it adopted.",
+    "Budget defence: 'The CFO wants a 25% cut next year.' Ask what they would cut, what they would refuse to cut and how they would show the residual risk.",
+    "Regulator question: 'An RBI inspection finds that VA for DMZ systems ran once last year, not every six months (ITGRCA para 26(a)).' Ask for the root cause analysis and the management response.",
+    "Reporting-line probe: 'The CTO wants you in his team for speed.' Strong candidates explain why independence from IT matters and what RBI expects."
+   ],
+   "kpis": [
+    "Top Board-approved cyber risks within appetite, and trend quarter on quarter.",
+    "Mean time to detect and contain high-severity incidents, and 100% of reportable incidents reported to CERT-In within 6 hours.",
+    "Regulatory and audit findings: zero repeat findings; high findings closed by the agreed date.",
+    "Coverage of critical controls (EDR, MFA, PAM, backups tested) as a percent of the estate.",
+    "Security programme delivered on time and within budget."
+   ],
+   "salary": "Rs 40-100 lakh per annum in a metro in 2026 for a mid-size BFSI or large enterprise; Rs 1-1.5 crore+ for large banks, GCCs and listed groups. Aggregators put mid-level CISOs (8-12 years) at Rs 35-55 lakh and executive CISOs at Rs 80 lakh-1.2 crore+; placement data puts BFSI/GCC CISO at Rs 50 lakh-1.5 crore. Indicative; fixed plus variable, before ESOPs. Sources are aggregator and placement-firm data that disagree at the top end, so benchmark with two search firms before an offer.",
+   "pipeline": "Comes from deputy CISO, head of security operations or architecture, Big Four cyber risk directors, or a CISO at a smaller regulated entity. Leads to group CISO, Chief Risk Officer or Chief Technology Risk Officer, Board advisory or independent director roles.",
+   "frameworks": {
+    "nice": [
+     "Executive Cybersecurity Leadership (Oversight and Governance)"
+    ],
+    "ecsf": [
+     "Chief Information Security Officer (CISO)"
+    ],
+    "sfia": [
+     "SCTY Information security (level 6-7)",
+     "GOVN Governance",
+     "BURM Risk management"
+    ]
+   },
+   "sources": [
+    {
+     "title": "RBI Master Direction on Information Technology Governance, Risk, Controls and Assurance Practices (RBI/2023-24/107, 7 November 2023; in force 1 April 2024), paras 24, 26, 29, 30",
+     "url": "https://www.rbi.org.in/Scripts/BS_ViewMasDirections.aspx?id=12562"
+    },
+    {
+     "title": "CERT-In Directions under section 70B(6) of the IT Act, 28 April 2022 (6-hour reporting, 180-day logs, NTP sync, point of contact)",
+     "url": "https://www.cert-in.org.in/PDF/CERT-In_Directions_70B_28.04.2022.pdf"
+    },
+    {
+     "title": "NICE Framework work roles and categories (NICCS, CISA)",
+     "url": "https://niccs.cisa.gov/tools/nice-framework"
+    },
+    {
+     "title": "ENISA European Cybersecurity Skills Framework (ECSF), 12 role profiles",
+     "url": "https://www.enisa.europa.eu/topics/cybersecurity-education/european-cybersecurity-skills-framework"
+    },
+    {
+     "title": "SFIA 9 skills directory",
+     "url": "https://sfia-online.org/en/sfia-9/skills"
+    },
+    {
+     "title": "CISO salary in India 2026 compensation guide (aggregator, indicative)",
+     "url": "https://whatisthesalary.com/it-salaries/ciso-salary-in-india/"
+    },
+    {
+     "title": "Networkers Home: cybersecurity salary in India by experience, 2026 (placement data, indicative)",
+     "url": "https://www.networkershome.com/cybersecurity-salary-india-by-experience-2026/"
+    },
+    {
+     "title": "Taggd: cybersecurity jobs in India 2026, roles and salaries (indicative)",
+     "url": "https://taggd.in/blogs/cybersecurity-jobs-in-india/"
+    },
+    {
+     "title": "ISC2: CISSP experience requirements",
+     "url": "https://www.isc2.org/certifications/cissp/cissp-experience-requirements"
+    }
+   ]
+  },
+  "grc_lead": {
+   "purpose": "Make sure the organisation knows its security risks, follows its policies and meets every regulator's and customer's security requirement, with evidence ready for any audit.",
+   "reports_to": "CISO",
+   "responsibilities": [
+    "Own the information security policy set and standards; keep them current and approved by the Information Security Committee.",
+    "Run the information security risk management process: method, register, risk acceptance, treatment tracking and reporting to the ISC.",
+    "Map controls to regulation and standards (RBI ITGRCA and outsourcing directions, CERT-In, DPDP, ISO/IEC 27001, PCI DSS, SEBI CSCRF where relevant) and keep one control library.",
+    "Plan and coordinate internal and external audits, RBI inspections and certification audits; track every finding to closure.",
+    "Run third-party (vendor and outsourcing) security risk: due diligence, contract clauses, periodic review and exit plans.",
+    "Run the exception and risk-acceptance process with time limits and owners.",
+    "Produce the CISO's committee and Board metrics.",
+    "Run security awareness and phishing programmes or oversee them.",
+    "Lead and develop the GRC analysts."
+   ],
+   "must": [
+    "Risk assessment methods (ISO/IEC 27005, NIST SP 800-30) and turning findings into business terms.",
+    "Detailed knowledge of RBI ITGRCA and IT outsourcing directions, CERT-In Directions 2022 and the DPDP Act 2023.",
+    "ISO/IEC 27001:2022 and Annex A controls; how audits are run and evidenced.",
+    "Third-party risk management and contract security schedules.",
+    "Clear writing and the ability to say no to a business owner politely and with reasons."
+   ],
+   "good": [
+    "GRC tool administration (e.g. ServiceNow IRM, Archer, MetricStream, or an open-source tool such as CISO Assistant or Eramba).",
+    "NIST CSF 2.0 profiles and maturity scoring.",
+    "PCI DSS v4.0, SOC 2, ISO 22301 or ISO/IEC 42001 exposure.",
+    "Basic scripting or spreadsheet automation for evidence collection."
+   ],
+   "experience": "8-12 years in security, audit or risk, with 3+ years leading a GRC or IT risk function in a regulated firm (bank, NBFC, insurer, payments) or a Big Four risk advisory team.",
+   "education": "Bachelor's in engineering, IT, commerce or law; a chartered accountant or MBA background works well. Strong audit experience can substitute for a technical degree.",
+   "certs_must": [
+    "CISM or CRISC or CISA (at least one)",
+    "ISO/IEC 27001 Lead Auditor"
+   ],
+   "certs_good": [
+    "CISSP",
+    "CDPSE or a DPDP/privacy certification",
+    "ISO 22301 Lead Auditor",
+    "PCI ISA"
+   ],
+   "interview": [
+    "Policy critique: give a two-page third-party security policy with gaps (no right to audit, no data localisation, no breach notification time, no exit clause). Ask them to mark it up against RBI outsourcing directions in 20 minutes.",
+    "Risk scoring exercise: three scenarios (unpatched internet-facing VPN, shared admin password at a vendor, end-of-life core banking DB). Ask them to score likelihood and impact, propose treatment and say who must accept residual risk.",
+    "Audit finding drill: an auditor says 'access reviews were not performed for 4 of 12 critical applications'. Ask for the response, the root cause and the evidence they will collect next time.",
+    "Regulator mapping: ask how RBI's half-yearly DR drill and six-monthly VA requirements show up in the control library and the audit calendar.",
+    "Stakeholder role play: a business head wants a 12-month exception to MFA for a partner portal. How do they handle it?"
+   ],
+   "kpis": [
+    "Audit and inspection findings closed on time; zero repeat findings.",
+    "Percent of critical vendors assessed within the review cycle.",
+    "Policies reviewed and approved on schedule; exceptions with an owner and expiry.",
+    "Risk register currency: top risks reviewed every quarter with treatment progress."
+   ],
+   "salary": "Rs 20-40 lakh per annum in a metro in 2026. Basis: placement data puts GRC/compliance at 7+ years at Rs 22-40 lakh; recruiter data puts cyber risk and compliance heads at Rs 20-45 lakh. Bank and Big Four roles sit at the upper half. Indicative; fixed plus variable, before ESOPs. Sources are aggregator and placement-firm data that disagree at the top end, so benchmark with two search firms before an offer.",
+   "pipeline": "Comes from Big Four IT risk advisory, internal audit (IS audit), bank IT risk teams, or a senior GRC analyst. Leads to Deputy CISO, Head of Technology Risk, Chief Risk Officer track, or CISO in a smaller entity.",
+   "frameworks": {
+    "nice": [
+     "Cybersecurity Policy and Planning",
+     "Security Control Assessment",
+     "Cybersecurity Supply Chain Risk Management"
+    ],
+    "ecsf": [
+     "Cybersecurity Risk Manager",
+     "Cyber Legal, Policy and Compliance Officer"
+    ],
+    "sfia": [
+     "BURM Risk management (level 5-6)",
+     "GOVN Governance",
+     "AUDT Audit"
+    ]
+   },
+   "sources": [
+    {
+     "title": "RBI Master Direction on Information Technology Governance, Risk, Controls and Assurance Practices (RBI/2023-24/107, 7 November 2023; in force 1 April 2024), paras 24, 26, 29, 30",
+     "url": "https://www.rbi.org.in/Scripts/BS_ViewMasDirections.aspx?id=12562"
+    },
+    {
+     "title": "CERT-In Directions under section 70B(6) of the IT Act, 28 April 2022 (6-hour reporting, 180-day logs, NTP sync, point of contact)",
+     "url": "https://www.cert-in.org.in/PDF/CERT-In_Directions_70B_28.04.2022.pdf"
+    },
+    {
+     "title": "NICE Framework work roles and categories (NICCS, CISA)",
+     "url": "https://niccs.cisa.gov/tools/nice-framework"
+    },
+    {
+     "title": "ENISA European Cybersecurity Skills Framework (ECSF), 12 role profiles",
+     "url": "https://www.enisa.europa.eu/topics/cybersecurity-education/european-cybersecurity-skills-framework"
+    },
+    {
+     "title": "SFIA 9 skills directory",
+     "url": "https://sfia-online.org/en/sfia-9/skills"
+    },
+    {
+     "title": "Networkers Home: cybersecurity salary in India by experience, 2026 (placement data, indicative)",
+     "url": "https://www.networkershome.com/cybersecurity-salary-india-by-experience-2026/"
+    },
+    {
+     "title": "Taggd: cybersecurity jobs in India 2026, roles and salaries (indicative)",
+     "url": "https://taggd.in/blogs/cybersecurity-jobs-in-india/"
+    }
+   ]
+  },
+  "grc_analyst": {
+   "purpose": "Do the day-to-day work that keeps risk registers, evidence and audits accurate and on time.",
+   "reports_to": "GRC lead",
+   "responsibilities": [
+    "Maintain the risk register and the control library; chase owners for updates.",
+    "Collect and check audit evidence; keep it organised and dated.",
+    "Run vendor security questionnaires and first-pass reviews.",
+    "Track audit and inspection findings and follow up with owners.",
+    "Draft and update policies, standards and procedures for review.",
+    "Run access review campaigns and check that they are completed.",
+    "Prepare monthly metrics for the CISO and the ISC.",
+    "Support awareness and phishing simulation campaigns."
+   ],
+   "must": [
+    "ISO/IEC 27001:2022 controls and how each is evidenced.",
+    "Working knowledge of RBI ITGRCA Directions, CERT-In Directions and the DPDP Act.",
+    "Excel or similar for registers and metrics; clear written English.",
+    "Basic IT knowledge: networks, Active Directory, cloud, backups, logs, so evidence can be judged and not just collected."
+   ],
+   "good": [
+    "Use of a GRC tool.",
+    "Internal audit experience.",
+    "Basic Python or Power Query for evidence automation.",
+    "Privacy (DPDP) or PCI DSS exposure."
+   ],
+   "experience": "2-6 years in IT audit, compliance, risk or IT operations; freshers with a strong internship can start at the junior end.",
+   "education": "Bachelor's in engineering, IT, commerce or a related field. A relevant certification plus audit experience can substitute.",
+   "certs_must": [
+    "ISO/IEC 27001 Lead Implementer or Lead Auditor"
+   ],
+   "certs_good": [
+    "CISA",
+    "CompTIA Security+",
+    "CDPSE",
+    "ISC2 CC (Certified in Cybersecurity)"
+   ],
+   "interview": [
+    "Evidence test: show three screenshots offered as proof of quarterly access review (one undated, one for the wrong system, one valid). Ask which they would accept and why.",
+    "Policy critique: a one-page password standard with outdated rules (forced 30-day change, no MFA, password hints allowed). Ask what is wrong against current guidance (NIST SP 800-63B).",
+    "Register exercise: give five raw audit findings and ask them to write them as risks with owner, rating and due date.",
+    "Questionnaire review: a vendor says 'data encrypted' and 'we follow ISO'. Ask what follow-up questions and evidence they would request.",
+    "Explain to a non-expert: in two minutes, explain why the 180-day log rule from CERT-In matters."
+   ],
+   "kpis": [
+    "Evidence ready before audit fieldwork starts (percent of controls).",
+    "Findings follow-up cadence met; ageing of open items.",
+    "Vendor assessments completed within SLA.",
+    "Quality: rework rate on evidence rejected by auditors."
+   ],
+   "salary": "Rs 6-15 lakh per annum in a metro in 2026. Basis: recruiter data puts junior GRC analysts at Rs 4-8 lakh (with certification Rs 6-8 lakh) and placement data puts 3-5 years at Rs 10-18 lakh. Indicative; fixed plus variable, before ESOPs. Sources are aggregator and placement-firm data that disagree at the top end, so benchmark with two search firms before an offer.",
+   "pipeline": "Comes from IT audit articleship, Big Four associate roles, IT operations, or graduate programmes. Leads to GRC lead, IS auditor, privacy officer or third-party risk lead.",
+   "frameworks": {
+    "nice": [
+     "Security Control Assessment",
+     "Privacy Compliance"
+    ],
+    "ecsf": [
+     "Cyber Legal, Policy and Compliance Officer",
+     "Cybersecurity Auditor"
+    ],
+    "sfia": [
+     "BURM Risk management (level 3-4)",
+     "AUDT Audit (level 3-4)"
+    ]
+   },
+   "sources": [
+    {
+     "title": "RBI Master Direction on Information Technology Governance, Risk, Controls and Assurance Practices (RBI/2023-24/107, 7 November 2023; in force 1 April 2024), paras 24, 26, 29, 30",
+     "url": "https://www.rbi.org.in/Scripts/BS_ViewMasDirections.aspx?id=12562"
+    },
+    {
+     "title": "CERT-In Directions under section 70B(6) of the IT Act, 28 April 2022 (6-hour reporting, 180-day logs, NTP sync, point of contact)",
+     "url": "https://www.cert-in.org.in/PDF/CERT-In_Directions_70B_28.04.2022.pdf"
+    },
+    {
+     "title": "NICE Framework work roles and categories (NICCS, CISA)",
+     "url": "https://niccs.cisa.gov/tools/nice-framework"
+    },
+    {
+     "title": "ENISA European Cybersecurity Skills Framework (ECSF), 12 role profiles",
+     "url": "https://www.enisa.europa.eu/topics/cybersecurity-education/european-cybersecurity-skills-framework"
+    },
+    {
+     "title": "SFIA 9 skills directory",
+     "url": "https://sfia-online.org/en/sfia-9/skills"
+    },
+    {
+     "title": "Networkers Home: cybersecurity salary in India by experience, 2026 (placement data, indicative)",
+     "url": "https://www.networkershome.com/cybersecurity-salary-india-by-experience-2026/"
+    },
+    {
+     "title": "Taggd: cybersecurity jobs in India 2026, roles and salaries (indicative)",
+     "url": "https://taggd.in/blogs/cybersecurity-jobs-in-india/"
+    }
+   ]
+  },
+  "architect": {
+   "purpose": "Make sure systems are designed secure from the start, so security is built in rather than bolted on.",
+   "reports_to": "CISO (with a dotted line to the enterprise architecture board)",
+   "responsibilities": [
+    "Own the security reference architecture: network zones, identity, zero trust, cloud landing zones, data protection.",
+    "Review designs for new applications, cloud services, APIs and integrations; sign off or set conditions.",
+    "Write security standards and patterns (hardening baselines, encryption, key management, logging).",
+    "Threat model critical systems (STRIDE or attack trees) and track design-level risks.",
+    "Advise on build-versus-buy and product selection for security tools.",
+    "Design for regulatory needs: data localisation, DC-DR separation and matching configuration (RBI ITGRCA para 18(b), 29(i)), log retention for CERT-In.",
+    "Support DevSecOps: secure CI/CD, secrets management, infrastructure-as-code policy.",
+    "Mentor engineers and review their designs."
+   ],
+   "must": [
+    "Network and segmentation design, identity (Active Directory, Entra ID, SSO, MFA, PAM), and cloud security in at least one major cloud.",
+    "Cryptography basics: TLS, PKI, key management and HSMs.",
+    "Threat modelling and secure design principles.",
+    "Application and API security (OWASP Top 10, OWASP API Top 10).",
+    "Ability to draw and explain an architecture to engineers and to executives."
+   ],
+   "good": [
+    "SABSA or TOGAF.",
+    "Kubernetes and container security.",
+    "Payments architecture (UPI, card, PCI DSS v4.0) for BFSI.",
+    "AI system security (LLM gateways, prompt-injection defences)."
+   ],
+   "experience": "10-15 years in infrastructure, development or security, with 4+ years designing security architecture for large or regulated environments.",
+   "education": "Bachelor's in engineering or computer science; master's optional. Deep, proven design work can substitute.",
+   "certs_must": [
+    "CISSP (or CISSP-ISSAP)"
+   ],
+   "certs_good": [
+    "CCSP",
+    "SABSA Chartered Foundation",
+    "TOGAF",
+    "AWS/Azure/GCP security specialty",
+    "CCSK"
+   ],
+   "interview": [
+    "Whiteboard design (45 minutes): design secure internet banking on a public cloud with an on-premise core system: zones, identity, API gateway, WAF, secrets, logging, DR in a separate region in India.",
+    "Design review: give a short design document for a partner API with planted flaws (API keys in URLs, no rate limiting, shared service account, logs kept 30 days). Ask for the review comments.",
+    "Threat model: draw a threat model for a mobile app login with OTP and device binding.",
+    "Trade-off question: 'The business wants a SaaS CRM hosted outside India holding customer data.' Ask what they would check (DPDP, RBI localisation if payment data, contract terms) and what they would recommend.",
+    "Explain zero trust to a CFO in three minutes without product names."
+   ],
+   "kpis": [
+    "Percent of new projects with a security design review before go-live.",
+    "High-severity design flaws found after go-live (should fall).",
+    "Standards and patterns published and adopted (number of projects using them).",
+    "Review turnaround time within the agreed SLA."
+   ],
+   "salary": "Rs 17-35 lakh per annum in a metro in 2026, rising to Rs 40-50 lakh for principal architects in GCCs and large banks. Basis: recruiter data Rs 17-30 lakh (Rs 22-35 lakh with certification); placement data Rs 25-50 lakh at 7+ years. Indicative; fixed plus variable, before ESOPs. Sources are aggregator and placement-firm data that disagree at the top end, so benchmark with two search firms before an offer.",
+   "pipeline": "Comes from senior network, cloud or application engineers, security engineering leads, or consulting. Leads to chief security architect, Deputy CISO or CISO.",
+   "frameworks": {
+    "nice": [
+     "Cybersecurity Architecture",
+     "Enterprise Architecture"
+    ],
+    "ecsf": [
+     "Cybersecurity Architect"
+    ],
+    "sfia": [
+     "ARCH Solution architecture",
+     "SCTY Information security (level 5-6)"
+    ]
+   },
+   "sources": [
+    {
+     "title": "RBI Master Direction on Information Technology Governance, Risk, Controls and Assurance Practices (RBI/2023-24/107, 7 November 2023; in force 1 April 2024), paras 24, 26, 29, 30",
+     "url": "https://www.rbi.org.in/Scripts/BS_ViewMasDirections.aspx?id=12562"
+    },
+    {
+     "title": "NICE Framework work roles and categories (NICCS, CISA)",
+     "url": "https://niccs.cisa.gov/tools/nice-framework"
+    },
+    {
+     "title": "ENISA European Cybersecurity Skills Framework (ECSF), 12 role profiles",
+     "url": "https://www.enisa.europa.eu/topics/cybersecurity-education/european-cybersecurity-skills-framework"
+    },
+    {
+     "title": "SFIA 9 skills directory",
+     "url": "https://sfia-online.org/en/sfia-9/skills"
+    },
+    {
+     "title": "Networkers Home: cybersecurity salary in India by experience, 2026 (placement data, indicative)",
+     "url": "https://www.networkershome.com/cybersecurity-salary-india-by-experience-2026/"
+    },
+    {
+     "title": "Taggd: cybersecurity jobs in India 2026, roles and salaries (indicative)",
+     "url": "https://taggd.in/blogs/cybersecurity-jobs-in-india/"
+    },
+    {
+     "title": "ISC2: CISSP experience requirements",
+     "url": "https://www.isc2.org/certifications/cissp/cissp-experience-requirements"
+    }
+   ]
+  },
+  "test_lead": {
+   "purpose": "Find weaknesses before attackers do, by running and overseeing security testing across applications, infrastructure and people.",
+   "reports_to": "CISO",
+   "responsibilities": [
+    "Own the security testing programme and calendar: VA at least every six months and PT at least every 12 months for critical and DMZ-facing systems (RBI ITGRCA para 26(a)), plus pre-go-live testing.",
+    "Define test methods and scoring (CVSS, with EPSS or KEV for priority) and the remediation timelines.",
+    "Select and manage external testers, including CERT-In empanelled auditors where required; review their reports for quality.",
+    "Run or oversee red-team and purple-team exercises and phishing simulations.",
+    "Make sure testers are independent of the teams that built the system (RBI para 26(c)).",
+    "Track vulnerabilities to closure with system owners; escalate overdue items.",
+    "Integrate SAST, DAST, SCA and secrets scanning into CI/CD with the engineering teams.",
+    "Report testing coverage and risk trends to the CISO."
+   ],
+   "must": [
+    "Hands-on web, API, mobile and infrastructure testing; can reproduce a finding and judge severity.",
+    "Active Directory attack paths and cloud misconfiguration testing.",
+    "Vulnerability management and risk-based prioritisation.",
+    "Writing reports that a developer can act on and a manager can understand.",
+    "Managing external testing vendors and scopes."
+   ],
+   "good": [
+    "Red-team tooling and adversary emulation (MITRE ATT&CK).",
+    "Source code review.",
+    "Bug bounty programme management.",
+    "Testing of AI and LLM applications."
+   ],
+   "experience": "8-12 years in security testing, with 3+ years leading testers or a testing programme.",
+   "education": "Bachelor's in engineering or computer science, or equivalent. Proven testing skill and public work (CVEs, bug bounties) can substitute for a degree.",
+   "certs_must": [
+    "OSCP (or an equivalent hands-on certification such as CRTP or PNPT)"
+   ],
+   "certs_good": [
+    "OSWE",
+    "OSEP",
+    "CREST CRT/CCT",
+    "GPEN",
+    "CISSP for programme leadership"
+   ],
+   "interview": [
+    "Report critique: give an external VAPT report with problems (scanner output pasted as findings, 'Critical' for missing headers, no reproduction steps). Ask what they would send back to the vendor.",
+    "Prioritisation exercise: 40 findings from a quarter's scans; ask them to pick the ten to fix this week, using CVSS, EPSS, KEV and exposure, and justify.",
+    "Hands-on lab (90 minutes): a deliberately vulnerable web app and API; find and write up two issues.",
+    "Scope test: 'Pen test the new UPI app in two weeks.' Ask for the scope, rules of engagement, test environment choice and what must be approved by the ISC if testing is not in production (RBI para 26(d)).",
+    "People question: a developer says the finding is a false positive. How do they settle it?"
+   ],
+   "kpis": [
+    "Testing coverage: percent of critical and DMZ systems tested within the RBI-required cycle.",
+    "Mean time to remediate critical and high findings, against the SLA.",
+    "Re-test pass rate; repeat findings.",
+    "Findings first caught in CI/CD versus in production (shift left)."
+   ],
+   "salary": "Rs 18-35 lakh per annum in a metro in 2026. Basis: placement data puts penetration testers at 7+ years at Rs 22-38 lakh; recruiter data puts certified mid-level testers at Rs 15-25 lakh. Indicative; fixed plus variable, before ESOPs. Sources are aggregator and placement-firm data that disagree at the top end, so benchmark with two search firms before an offer.",
+   "pipeline": "Comes from senior penetration testers in consultancies, red-team operators, or AppSec engineers. Leads to Head of Offensive Security, security architect or Deputy CISO.",
+   "frameworks": {
+    "nice": [
+     "Vulnerability Analysis",
+     "Software Security Assessment",
+     "Security Control Assessment"
+    ],
+    "ecsf": [
+     "Penetration Tester"
+    ],
+    "sfia": [
+     "PENT Penetration testing (level 5-6)",
+     "VUAS Vulnerability assessment"
+    ]
+   },
+   "sources": [
+    {
+     "title": "RBI Master Direction on Information Technology Governance, Risk, Controls and Assurance Practices (RBI/2023-24/107, 7 November 2023; in force 1 April 2024), paras 24, 26, 29, 30",
+     "url": "https://www.rbi.org.in/Scripts/BS_ViewMasDirections.aspx?id=12562"
+    },
+    {
+     "title": "NICE Framework work roles and categories (NICCS, CISA)",
+     "url": "https://niccs.cisa.gov/tools/nice-framework"
+    },
+    {
+     "title": "ENISA European Cybersecurity Skills Framework (ECSF), 12 role profiles",
+     "url": "https://www.enisa.europa.eu/topics/cybersecurity-education/european-cybersecurity-skills-framework"
+    },
+    {
+     "title": "SFIA 9 skills directory",
+     "url": "https://sfia-online.org/en/sfia-9/skills"
+    },
+    {
+     "title": "Networkers Home: cybersecurity salary in India by experience, 2026 (placement data, indicative)",
+     "url": "https://www.networkershome.com/cybersecurity-salary-india-by-experience-2026/"
+    },
+    {
+     "title": "Taggd: cybersecurity jobs in India 2026, roles and salaries (indicative)",
+     "url": "https://taggd.in/blogs/cybersecurity-jobs-in-india/"
+    }
+   ]
+  },
+  "tester": {
+   "purpose": "Test applications and systems for security flaws and help developers fix them.",
+   "reports_to": "Security testing lead",
+   "responsibilities": [
+    "Run web, API, mobile and infrastructure tests to the agreed method.",
+    "Run and tune SAST, DAST, SCA and secrets scanning, and triage results.",
+    "Write clear findings with reproduction steps, impact and fixes.",
+    "Re-test fixes and close or reopen findings.",
+    "Support developers with secure coding guidance.",
+    "Run vulnerability scans across infrastructure and track remediation.",
+    "Keep test tools and lab environments up to date."
+   ],
+   "must": [
+    "OWASP Top 10 and OWASP API Security Top 10, hands-on with Burp Suite or OWASP ZAP.",
+    "HTTP, authentication (OAuth2, JWT, sessions) and common web frameworks.",
+    "Linux and Windows basics, networking and scanning (Nmap, Nessus or OpenVAS).",
+    "Reading code in at least one language (Java, JavaScript, Python or C#)."
+   ],
+   "good": [
+    "Mobile testing (Android and iOS, Frida, MobSF).",
+    "Cloud configuration review.",
+    "Scripting for automation.",
+    "Bug bounty or CTF record."
+   ],
+   "experience": "2-7 years in security testing, development or QA; strong freshers with a lab and CTF record can start at the junior end.",
+   "education": "Bachelor's in engineering, computer science or IT, or equivalent practical skill.",
+   "certs_must": [
+    "One hands-on certification: OSCP, eJPT/eWPT, PNPT or GWAPT"
+   ],
+   "certs_good": [
+    "OSWE",
+    "Burp Suite Certified Practitioner",
+    "CEH (often asked in Indian tenders, but weaker as proof of skill)"
+   ],
+   "interview": [
+    "Hands-on lab (60 minutes): find an IDOR and a stored XSS in a test app, and write one finding as they would for a developer.",
+    "Request triage: show a captured HTTP request with a JWT using 'alg: none' and an account ID in the body. Ask what they would test.",
+    "Scanner triage: 20 DAST results; ask which are real, which are false positives and how they would confirm.",
+    "Explain a fix: tell a developer how to fix SQL injection in their framework without breaking the feature.",
+    "Ethics question: what do they do if they find customer data outside the agreed scope?"
+   ],
+   "kpis": [
+    "Tests delivered on schedule and to method.",
+    "Finding quality: low false-positive rate and low dispute rate.",
+    "Re-test turnaround time.",
+    "Developer feedback on clarity of findings."
+   ],
+   "salary": "Rs 8-20 lakh per annum in a metro in 2026. Basis: placement data puts penetration testers at Rs 5-7.5 lakh (0-2 years) and Rs 10-17 lakh (3-5 years) and AppSec engineers at Rs 13-22 lakh (3-5 years); product firms pay 20-40% more than services firms. Indicative; fixed plus variable, before ESOPs. Sources are aggregator and placement-firm data that disagree at the top end, so benchmark with two search firms before an offer.",
+   "pipeline": "Comes from developers, QA engineers, SOC analysts with a testing interest, and graduates with CTF or bug bounty records. Leads to senior tester, red-team operator, AppSec lead or security testing lead.",
+   "frameworks": {
+    "nice": [
+     "Vulnerability Analysis",
+     "Software Security Assessment"
+    ],
+    "ecsf": [
+     "Penetration Tester"
+    ],
+    "sfia": [
+     "PENT Penetration testing (level 3-4)",
+     "VUAS Vulnerability assessment (level 3-4)"
+    ]
+   },
+   "sources": [
+    {
+     "title": "RBI Master Direction on Information Technology Governance, Risk, Controls and Assurance Practices (RBI/2023-24/107, 7 November 2023; in force 1 April 2024), paras 24, 26, 29, 30",
+     "url": "https://www.rbi.org.in/Scripts/BS_ViewMasDirections.aspx?id=12562"
+    },
+    {
+     "title": "NICE Framework work roles and categories (NICCS, CISA)",
+     "url": "https://niccs.cisa.gov/tools/nice-framework"
+    },
+    {
+     "title": "ENISA European Cybersecurity Skills Framework (ECSF), 12 role profiles",
+     "url": "https://www.enisa.europa.eu/topics/cybersecurity-education/european-cybersecurity-skills-framework"
+    },
+    {
+     "title": "SFIA 9 skills directory",
+     "url": "https://sfia-online.org/en/sfia-9/skills"
+    },
+    {
+     "title": "Networkers Home: cybersecurity salary in India by experience, 2026 (placement data, indicative)",
+     "url": "https://www.networkershome.com/cybersecurity-salary-india-by-experience-2026/"
+    },
+    {
+     "title": "Taggd: cybersecurity jobs in India 2026, roles and salaries (indicative)",
+     "url": "https://taggd.in/blogs/cybersecurity-jobs-in-india/"
+    }
+   ]
+  },
+  "tool_lead": {
+   "purpose": "Choose, integrate and keep healthy the security tools, so they cover the estate and actually stop or detect attacks.",
+   "reports_to": "CISO",
+   "responsibilities": [
+    "Own the security tool portfolio and roadmap (EDR, email security, DLP, PAM, NAC, firewall policy, SIEM pipeline, vulnerability scanners).",
+    "Run product evaluations, proofs of concept and RFP technical scoring.",
+    "Integrate tools with each other and with IT: identity, CMDB, ITSM, SIEM and SOAR.",
+    "Track coverage and health: agents installed, policies enforced, licences used, tools up to date.",
+    "Make sure the deployed security tools function effectively, as RBI expects of the CISO's office (ITGRCA para 24(d)(5)).",
+    "Manage vendors and managed service providers for tools; enforce SLAs.",
+    "Lead the security engineers; plan changes through change management.",
+    "Rationalise overlapping tools and cut cost."
+   ],
+   "must": [
+    "Hands-on depth in at least three tool families (e.g. EDR, PAM, email, firewall/NAC, DLP, SIEM).",
+    "Identity and directory services (Active Directory, Entra ID) and how tools rely on them.",
+    "Networking, Windows and Linux administration.",
+    "Automation and APIs (Python, PowerShell) for integration.",
+    "Vendor and contract management, RFP scoring."
+   ],
+   "good": [
+    "Cloud security posture tools (CSPM, CNAPP).",
+    "Infrastructure-as-code (Terraform, Ansible).",
+    "Detection-as-code with the SOC.",
+    "Budget and licence optimisation."
+   ],
+   "experience": "10-14 years in infrastructure or security engineering, with 3+ years owning a portfolio of security tools in a large or regulated estate.",
+   "education": "Bachelor's in engineering or computer science, or equivalent hands-on experience.",
+   "certs_must": [
+    "CISSP or vendor-expert certifications in two of the main tools in use"
+   ],
+   "certs_good": [
+    "CCSP",
+    "Microsoft SC-100",
+    "Palo Alto PCNSE or Fortinet NSE 7",
+    "CyberArk Defender/Sentry"
+   ],
+   "interview": [
+    "Coverage puzzle: give counts (2,500 endpoints in the CMDB, 2,210 EDR agents reporting, 2,390 in AD). Ask how they find and close the gap and which number to trust.",
+    "PoC design: design a two-week EDR proof of concept with measurable pass/fail criteria (detection of five ATT&CK techniques, CPU impact, rollback, India data residency).",
+    "Integration design: sketch how a PAM tool, SIEM and ITSM should connect so every privileged session is tied to a change ticket.",
+    "Incident follow-up: 'Ransomware ran on a server that had EDR.' Ask how they would investigate why the tool did not stop it.",
+    "Rationalisation: three overlapping tools cost Rs 1.2 crore a year; how do they decide which to retire?"
+   ],
+   "kpis": [
+    "Agent and policy coverage of critical tools (target 98%+ of in-scope assets).",
+    "Tool health: percent of tools on supported versions with current content.",
+    "Detection or prevention results in purple-team tests.",
+    "Licence utilisation and cost per protected asset."
+   ],
+   "salary": "Rs 18-35 lakh per annum in a metro in 2026. Basis: recruiter data puts security managers and IAM leads (7-10 years) at Rs 15-32 lakh; AmbitionBox self-reported information security managers range from about Rs 13 lakh to Rs 42 lakh by firm and experience. Indicative; fixed plus variable, before ESOPs. Sources are aggregator and placement-firm data that disagree at the top end, so benchmark with two search firms before an offer.",
+   "pipeline": "Comes from senior security engineers, OEM or system-integrator pre-sales and professional services, or infrastructure leads. Leads to Head of Security Engineering, security architect or Deputy CISO.",
+   "frameworks": {
+    "nice": [
+     "Systems Security Management",
+     "Technology Portfolio Management",
+     "Systems Security Analysis"
+    ],
+    "ecsf": [
+     "Cybersecurity Implementer"
+    ],
+    "sfia": [
+     "SCAD Security operations (level 5)",
+     "SCTY Information security"
+    ]
+   },
+   "sources": [
+    {
+     "title": "RBI Master Direction on Information Technology Governance, Risk, Controls and Assurance Practices (RBI/2023-24/107, 7 November 2023; in force 1 April 2024), paras 24, 26, 29, 30",
+     "url": "https://www.rbi.org.in/Scripts/BS_ViewMasDirections.aspx?id=12562"
+    },
+    {
+     "title": "NICE Framework work roles and categories (NICCS, CISA)",
+     "url": "https://niccs.cisa.gov/tools/nice-framework"
+    },
+    {
+     "title": "ENISA European Cybersecurity Skills Framework (ECSF), 12 role profiles",
+     "url": "https://www.enisa.europa.eu/topics/cybersecurity-education/european-cybersecurity-skills-framework"
+    },
+    {
+     "title": "SFIA 9 skills directory",
+     "url": "https://sfia-online.org/en/sfia-9/skills"
+    },
+    {
+     "title": "Taggd: cybersecurity jobs in India 2026, roles and salaries (indicative)",
+     "url": "https://taggd.in/blogs/cybersecurity-jobs-in-india/"
+    },
+    {
+     "title": "AmbitionBox: information security manager salaries (company pages, self-reported)",
+     "url": "https://www.ambitionbox.com/salaries/automation-anywhere-salaries/information-security-manager"
+    },
+    {
+     "title": "AmbitionBox: cyber security manager salary by industry (self-reported)",
+     "url": "https://www.ambitionbox.com/profile/cyber-security-manager-salary/accounting-and-auditing-industry"
+    }
+   ]
+  },
+  "engineer": {
+   "purpose": "Run, configure and fix the security tools day to day so they keep protecting the estate.",
+   "reports_to": "Security engineering / tooling lead",
+   "responsibilities": [
+    "Deploy and maintain agents and policies for EDR, DLP, PAM, NAC, email and web security.",
+    "Manage firewall and proxy rules through change management, with rule reviews.",
+    "Onboard log sources to the SIEM and check they keep flowing.",
+    "Troubleshoot tool issues with users, IT and vendors.",
+    "Apply tool upgrades and content updates.",
+    "Produce coverage and health reports.",
+    "Support the SOC and incident responders with containment actions (isolate host, block hash or domain)."
+   ],
+   "must": [
+    "Windows, Linux and Active Directory administration.",
+    "TCP/IP, DNS, proxies and firewalls.",
+    "Hands-on with at least one EDR and one firewall platform.",
+    "Disciplined change management and documentation."
+   ],
+   "good": [
+    "PowerShell or Python scripting.",
+    "Cloud administration (Azure, AWS).",
+    "SIEM onboarding and parsing.",
+    "ITIL Foundation."
+   ],
+   "experience": "2-6 years in system, network or security administration.",
+   "education": "Bachelor's or diploma in IT, engineering or computer applications; vendor certification and hands-on experience can substitute.",
+   "certs_must": [
+    "One vendor or platform certification for a main tool in use (e.g. Microsoft SC-200 or AZ-500, Fortinet NSE 4, Palo Alto PCNSA, CyberArk Defender)"
+   ],
+   "certs_good": [
+    "CompTIA Security+",
+    "CCNA",
+    "ISC2 CC"
+   ],
+   "interview": [
+    "Troubleshooting lab: an EDR agent shows 'offline' on 30 laptops since a Windows update. Walk through how they would find the cause.",
+    "Rule review: give ten firewall rules (including 'any-any' from a vendor subnet and an unused RDP rule). Ask which to remove and how to do it safely.",
+    "Log onboarding: a new Linux server's logs do not appear in the SIEM. List the checks in order.",
+    "Containment drill: the SOC asks to isolate a host at 23:00. What do they check before and after?"
+   ],
+   "kpis": [
+    "Agent coverage and health on assigned tools.",
+    "Change success rate; no unauthorised changes.",
+    "Ticket resolution within SLA.",
+    "Firewall rule review completion."
+   ],
+   "salary": "Rs 6-15 lakh per annum in a metro in 2026. Basis: recruiter data puts security engineers at Rs 9-15 lakh and entry-level analysts at Rs 4-8 lakh; AmbitionBox self-reported information security analysts are Rs 3-14.8 lakh for 1-7 years. Indicative; fixed plus variable, before ESOPs. Sources are aggregator and placement-firm data that disagree at the top end, so benchmark with two search firms before an offer.",
+   "pipeline": "Comes from system and network administrators, SOC L1 analysts and system-integrator engineers. Leads to senior engineer, tool owner, tooling lead or cloud security engineer.",
+   "frameworks": {
+    "nice": [
+     "Systems Security Analysis",
+     "Network Operations",
+     "Systems Administration"
+    ],
+    "ecsf": [
+     "Cybersecurity Implementer"
+    ],
+    "sfia": [
+     "SCAD Security operations (level 3-4)"
+    ]
+   },
+   "sources": [
+    {
+     "title": "NICE Framework work roles and categories (NICCS, CISA)",
+     "url": "https://niccs.cisa.gov/tools/nice-framework"
+    },
+    {
+     "title": "ENISA European Cybersecurity Skills Framework (ECSF), 12 role profiles",
+     "url": "https://www.enisa.europa.eu/topics/cybersecurity-education/european-cybersecurity-skills-framework"
+    },
+    {
+     "title": "SFIA 9 skills directory",
+     "url": "https://sfia-online.org/en/sfia-9/skills"
+    },
+    {
+     "title": "Taggd: cybersecurity jobs in India 2026, roles and salaries (indicative)",
+     "url": "https://taggd.in/blogs/cybersecurity-jobs-in-india/"
+    },
+    {
+     "title": "AmbitionBox: information security analyst salary in India (self-reported)",
+     "url": "https://www.ambitionbox.com/profile/information-security-analyst-salary"
+    }
+   ]
+  },
+  "soc_manager": {
+   "purpose": "Run the Security Operations Centre 24x7 so attacks are detected, triaged and handed to response quickly and reliably.",
+   "reports_to": "CISO (RBI expects the CISO's office to manage and monitor the SOC, ITGRCA para 24(d)(4))",
+   "responsibilities": [
+    "Run SOC shifts, rosters and escalation for 24x7 coverage, in-house or through a managed provider.",
+    "Own detection engineering: use-case library mapped to MITRE ATT&CK, tuning and testing.",
+    "Own SOC playbooks and SOAR automation.",
+    "Make sure log sources are complete and logs are kept 180 days in India as CERT-In requires.",
+    "Manage the MSSP or SOC vendor contract and SLAs where outsourced.",
+    "Run threat intelligence intake (CERT-In and CSIRT-Fin advisories, ISAC feeds) and threat hunts.",
+    "Report SOC metrics to the CISO and committees.",
+    "Hire, train and retain analysts; manage burnout on night shifts."
+   ],
+   "must": [
+    "SIEM and EDR investigation depth (e.g. Splunk, Microsoft Sentinel, QRadar, Elastic, Wazuh).",
+    "MITRE ATT&CK, the cyber kill chain and detection logic.",
+    "Incident handling process (NIST SP 800-61r3) and CERT-In 6-hour reporting.",
+    "SOC metrics and capacity planning.",
+    "People management for shift teams."
+   ],
+   "good": [
+    "SOAR development.",
+    "Cloud and identity threat detection.",
+    "Sigma or KQL/SPL detection-as-code.",
+    "MSSP contract experience."
+   ],
+   "experience": "10-14 years in security operations, with 3+ years managing a SOC or a SOC shift team.",
+   "education": "Bachelor's in engineering, computer science or IT, or equivalent experience.",
+   "certs_must": [
+    "GCIH or GCIA, or a vendor SIEM expert certification (Splunk, Microsoft SC-200)"
+   ],
+   "certs_good": [
+    "CISSP",
+    "GCTI",
+    "GCDA",
+    "CompTIA CySA+"
+   ],
+   "interview": [
+    "Metrics critique: show a monthly MSSP report (12,000 alerts, 99.9% 'closed', average 4 minutes, zero incidents). Ask what it really tells them and what they would demand instead.",
+    "Coverage exercise: give a list of 25 log sources and ask which ten are must-have for a bank and what CERT-In requires for retention.",
+    "Detection design: write the logic for detecting password spraying against Entra ID or VPN, with tuning for false positives.",
+    "Night-shift scenario: at 03:00 an L1 sees EDR alerts for credential dumping on a domain controller. Ask for the escalation path, who is called, and the decision to isolate.",
+    "Staffing: work out the headcount for 24x7 two-person coverage and how they would keep analysts for more than two years."
+   ],
+   "kpis": [
+    "Mean time to detect and to escalate high-severity alerts.",
+    "Detection coverage of priority ATT&CK techniques, tested by purple-team exercises.",
+    "False-positive rate and alerts per analyst per shift.",
+    "Log source health: percent of critical sources reporting; 180-day retention met.",
+    "Analyst retention."
+   ],
+   "salary": "Rs 20-40 lakh per annum in a metro in 2026. Basis: placement data puts SOC managers (5-7+ years) at Rs 18-30 lakh; banks and GCCs running in-house SOCs pay toward Rs 35-40 lakh. Indicative; fixed plus variable, before ESOPs. Sources are aggregator and placement-firm data that disagree at the top end, so benchmark with two search firms before an offer.",
+   "pipeline": "Comes from SOC L3 leads, threat hunters, MSSP delivery managers and IR leads. Leads to Head of Cyber Defence, Deputy CISO or CISO.",
+   "frameworks": {
+    "nice": [
+     "Defensive Cybersecurity (PD-WRL-001)",
+     "Threat Analysis",
+     "Cybersecurity Workforce Management"
+    ],
+    "ecsf": [
+     "Cyber Incident Responder",
+     "Cyber Threat Intelligence Specialist"
+    ],
+    "sfia": [
+     "SCAD Security operations (level 5-6)",
+     "USUP Incident management"
+    ]
+   },
+   "sources": [
+    {
+     "title": "RBI Master Direction on Information Technology Governance, Risk, Controls and Assurance Practices (RBI/2023-24/107, 7 November 2023; in force 1 April 2024), paras 24, 26, 29, 30",
+     "url": "https://www.rbi.org.in/Scripts/BS_ViewMasDirections.aspx?id=12562"
+    },
+    {
+     "title": "CERT-In Directions under section 70B(6) of the IT Act, 28 April 2022 (6-hour reporting, 180-day logs, NTP sync, point of contact)",
+     "url": "https://www.cert-in.org.in/PDF/CERT-In_Directions_70B_28.04.2022.pdf"
+    },
+    {
+     "title": "NICE Framework work roles and categories (NICCS, CISA)",
+     "url": "https://niccs.cisa.gov/tools/nice-framework"
+    },
+    {
+     "title": "ENISA European Cybersecurity Skills Framework (ECSF), 12 role profiles",
+     "url": "https://www.enisa.europa.eu/topics/cybersecurity-education/european-cybersecurity-skills-framework"
+    },
+    {
+     "title": "SFIA 9 skills directory",
+     "url": "https://sfia-online.org/en/sfia-9/skills"
+    },
+    {
+     "title": "Networkers Home: cybersecurity salary in India by experience, 2026 (placement data, indicative)",
+     "url": "https://www.networkershome.com/cybersecurity-salary-india-by-experience-2026/"
+    },
+    {
+     "title": "Taggd: cybersecurity jobs in India 2026, roles and salaries (indicative)",
+     "url": "https://taggd.in/blogs/cybersecurity-jobs-in-india/"
+    }
+   ]
+  },
+  "soc_l2": {
+   "purpose": "Investigate escalated alerts in depth, decide whether they are real incidents, and hunt for threats the alerts missed.",
+   "reports_to": "SOC manager",
+   "responsibilities": [
+    "Investigate alerts escalated by L1, across SIEM, EDR, email, proxy and identity logs.",
+    "Decide true or false positive and severity; start containment through playbooks.",
+    "Hand confirmed incidents to incident response with a clean timeline.",
+    "Run hypothesis-driven threat hunts from intelligence and ATT&CK.",
+    "Write and tune detection rules; feed back false positives.",
+    "Coach L1 analysts and review their tickets.",
+    "Prepare input for CERT-In and regulator reports when asked."
+   ],
+   "must": [
+    "SIEM query languages (SPL, KQL, AQL or Lucene) and EDR investigation.",
+    "Windows event logs, Sysmon, Linux logs, network and proxy logs.",
+    "Attacker techniques: phishing, credential theft, lateral movement, persistence, ransomware stages.",
+    "Clear incident notes and timelines."
+   ],
+   "good": [
+    "Basic malware triage (static analysis, sandboxes).",
+    "Scripting in Python or PowerShell.",
+    "Cloud logs (Azure, AWS CloudTrail, M365 audit).",
+    "Sigma rules."
+   ],
+   "experience": "3-6 years in SOC or security operations, with at least 1-2 years at L2 or investigation level.",
+   "education": "Bachelor's in engineering, IT or computer applications, or equivalent experience.",
+   "certs_must": [
+    "One of: GCIH, Microsoft SC-200, CompTIA CySA+, Splunk Core/Enterprise Security"
+   ],
+   "certs_good": [
+    "GCIA",
+    "BTL1/BTL2 (Blue Team Level)",
+    "GCFE"
+   ],
+   "interview": [
+    "Log triage (20 minutes): give 15 Windows events showing many 4625 failures for different users from 198.51.100.24, then a 4624 logon type 10 for 'svc_backup', then 4672 special privileges and a 7045 new service. Ask what happened, how bad it is and what they do next.",
+    "Email header test: give a phishing email's headers with SPF pass but a lookalike domain and DKIM fail. Ask for the verdict and the hunt query to find other recipients.",
+    "Hunt design: 'CERT-In issued an advisory about a VPN exploit.' Ask for three hunt queries and the data needed.",
+    "Write-up test: turn a raw investigation into a five-line handover note for the IR lead.",
+    "Judgement: when do they isolate a host on their own authority, and when do they wait?"
+   ],
+   "kpis": [
+    "Investigation time for escalated alerts against SLA.",
+    "Accuracy: incidents missed or wrongly closed, found by QA review.",
+    "Detection rules created or tuned that reduce noise or add coverage.",
+    "Hunts completed and findings."
+   ],
+   "salary": "Rs 8.5-16.5 lakh per annum in a metro in 2026. Basis: recruiter data puts SOC L2/L3 at Rs 8-15 lakh (Rs 12-18 lakh with certification); placement data puts SOC L2 at Rs 7-12 lakh in the 1-3 year band. Indicative; fixed plus variable, before ESOPs. Sources are aggregator and placement-firm data that disagree at the top end, so benchmark with two search firms before an offer.",
+   "pipeline": "Comes from strong L1 analysts, MSSP analysts and system administrators. Leads to SOC L3 or threat hunter, detection engineer, IR or DFIR specialist, or SOC manager.",
+   "frameworks": {
+    "nice": [
+     "Defensive Cybersecurity (PD-WRL-001)",
+     "Threat Analysis"
+    ],
+    "ecsf": [
+     "Cyber Incident Responder",
+     "Cyber Threat Intelligence Specialist"
+    ],
+    "sfia": [
+     "SCAD Security operations (level 4)",
+     "THIN Threat intelligence (level 3-4)"
+    ]
+   },
+   "sources": [
+    {
+     "title": "CERT-In Directions under section 70B(6) of the IT Act, 28 April 2022 (6-hour reporting, 180-day logs, NTP sync, point of contact)",
+     "url": "https://www.cert-in.org.in/PDF/CERT-In_Directions_70B_28.04.2022.pdf"
+    },
+    {
+     "title": "NICE Framework work roles and categories (NICCS, CISA)",
+     "url": "https://niccs.cisa.gov/tools/nice-framework"
+    },
+    {
+     "title": "ENISA European Cybersecurity Skills Framework (ECSF), 12 role profiles",
+     "url": "https://www.enisa.europa.eu/topics/cybersecurity-education/european-cybersecurity-skills-framework"
+    },
+    {
+     "title": "SFIA 9 skills directory",
+     "url": "https://sfia-online.org/en/sfia-9/skills"
+    },
+    {
+     "title": "Networkers Home: cybersecurity salary in India by experience, 2026 (placement data, indicative)",
+     "url": "https://www.networkershome.com/cybersecurity-salary-india-by-experience-2026/"
+    },
+    {
+     "title": "Taggd: cybersecurity jobs in India 2026, roles and salaries (indicative)",
+     "url": "https://taggd.in/blogs/cybersecurity-jobs-in-india/"
+    }
+   ]
+  },
+  "soc_l1": {
+   "purpose": "Watch the alert queue around the clock, sort real threats from noise and escalate quickly and accurately.",
+   "reports_to": "SOC manager (day to day through the shift lead or L2)",
+   "responsibilities": [
+    "Monitor SIEM, EDR and email security queues during the shift.",
+    "Triage alerts with playbooks; enrich with threat intelligence and asset context.",
+    "Escalate suspected incidents to L2 within the SLA.",
+    "Record every action and decision in the ticket.",
+    "Run first containment steps allowed by playbooks (e.g. block a sender, reset a user's sessions).",
+    "Watch log source health and raise gaps.",
+    "Hand over cleanly at shift change."
+   ],
+   "must": [
+    "Networking basics (TCP/IP, DNS, HTTP) and Windows basics.",
+    "Understanding of common attacks: phishing, malware, brute force, scanning.",
+    "Following a playbook exactly and writing clear notes.",
+    "Willingness to work rotating shifts, including nights."
+   ],
+   "good": [
+    "Hands-on with a SIEM (Splunk, Sentinel, QRadar, Wazuh, Elastic).",
+    "Basic scripting.",
+    "Home lab or blue-team CTF experience."
+   ],
+   "experience": "0-3 years; freshers with a security lab, internship or helpdesk background.",
+   "education": "Bachelor's or diploma in IT, computer science, engineering or computer applications.",
+   "certs_must": [
+    "One entry certification: CompTIA Security+, ISC2 CC, Microsoft SC-200 or a SIEM vendor certification"
+   ],
+   "certs_good": [
+    "CompTIA CySA+",
+    "BTL1",
+    "CEH"
+   ],
+   "interview": [
+    "Alert triage (15 minutes): give five alerts (impossible travel for one user, EDR 'mimikatz' detection, a port scan from 203.0.113.50 against the firewall, a user reporting a phishing email, a disk-full alert on a log collector). Ask them to rank and say which to escalate now.",
+    "Phishing check: give a real-looking email with a mismatched link and urgent payment request; ask for the indicators.",
+    "Playbook test: give a short playbook and a scenario; see if they follow steps and record what they did.",
+    "Basics quiz: what is the difference between a 4624 and a 4625 event; what does a DNS query to a newly registered domain suggest?",
+    "Shift question: you are alone at 04:00 and unsure if an alert is serious. What do you do?"
+   ],
+   "kpis": [
+    "Time to triage and escalate against SLA.",
+    "Escalation accuracy (L2 confirms rather than rejects).",
+    "Ticket quality score from QA review.",
+    "Shift handover completeness."
+   ],
+   "salary": "Rs 3.5-7 lakh per annum in a metro in 2026. Basis: placement data puts SOC L1 at Rs 3.5-5 lakh (Rs 4-6 lakh with certification); recruiter data puts L1 at Rs 4-6 lakh, Rs 6-8 lakh with a certification. Night-shift allowances add to this. Indicative; fixed plus variable, before ESOPs. Sources are aggregator and placement-firm data that disagree at the top end, so benchmark with two search firms before an offer.",
+   "pipeline": "Comes from graduates, helpdesk and NOC staff, and training academies. Leads to SOC L2, security engineer, GRC analyst or tester.",
+   "frameworks": {
+    "nice": [
+     "Defensive Cybersecurity (PD-WRL-001)"
+    ],
+    "ecsf": [
+     "Cyber Incident Responder (entry)"
+    ],
+    "sfia": [
+     "SCAD Security operations (level 2-3)",
+     "USUP Incident management (level 2)"
+    ]
+   },
+   "sources": [
+    {
+     "title": "NICE Framework work roles and categories (NICCS, CISA)",
+     "url": "https://niccs.cisa.gov/tools/nice-framework"
+    },
+    {
+     "title": "ENISA European Cybersecurity Skills Framework (ECSF), 12 role profiles",
+     "url": "https://www.enisa.europa.eu/topics/cybersecurity-education/european-cybersecurity-skills-framework"
+    },
+    {
+     "title": "SFIA 9 skills directory",
+     "url": "https://sfia-online.org/en/sfia-9/skills"
+    },
+    {
+     "title": "Networkers Home: cybersecurity salary in India by experience, 2026 (placement data, indicative)",
+     "url": "https://www.networkershome.com/cybersecurity-salary-india-by-experience-2026/"
+    },
+    {
+     "title": "Taggd: cybersecurity jobs in India 2026, roles and salaries (indicative)",
+     "url": "https://taggd.in/blogs/cybersecurity-jobs-in-india/"
+    }
+   ]
+  },
+  "ir_lead": {
+   "purpose": "Lead the organisation through serious cyber incidents, so damage is contained, services come back and every legal and regulatory duty is met on time.",
+   "reports_to": "CISO",
+   "responsibilities": [
+    "Own the cyber incident response plan and the Cyber Crisis Management Plan; keep them tested and current.",
+    "Lead major incidents: containment, eradication, recovery and coordination with IT, business, legal and communications.",
+    "Make sure reportable incidents reach CERT-In within 6 hours of noticing them, and that RBI and other regulators are notified as their directions require (RBI ITGRCA para 27(d)).",
+    "Coordinate with CERT-In, CSIRT-Fin, law enforcement, insurers and external IR retainers.",
+    "Run tabletop and technical exercises at least yearly, including with the Board or senior management.",
+    "Lead post-incident reviews and track lessons to closure.",
+    "Manage the IR retainer and DFIR specialists.",
+    "Keep evidence handling and chain of custody sound for legal use."
+   ],
+   "must": [
+    "Incident handling (NIST SP 800-61r3, ISO/IEC 27035) and crisis management.",
+    "CERT-In Directions 2022, RBI incident reporting expectations and DPDP breach notification to the Data Protection Board and affected people.",
+    "Technical depth in Windows/AD, cloud and ransomware recovery to direct responders.",
+    "Calm decision-making and clear communication under pressure."
+   ],
+   "good": [
+    "Forensics and malware analysis background.",
+    "Cyber insurance claim experience.",
+    "Media and customer communication planning.",
+    "Experience with payment-system incidents (UPI, cards)."
+   ],
+   "experience": "10-14 years in security, with 4+ years in incident response or DFIR, including leading real major incidents.",
+   "education": "Bachelor's in engineering, computer science or IT, or equivalent experience.",
+   "certs_must": [
+    "GCIH or GCFA (or an equivalent IR certification)"
+   ],
+   "certs_good": [
+    "GCFR (cloud forensics)",
+    "CISSP",
+    "GNFA",
+    "CHFI",
+    "ISO/IEC 27035 Lead Incident Manager"
+   ],
+   "interview": [
+    "Tabletop (60 minutes): attackers exfiltrated customer KYC data through a compromised vendor VPN account and posted a sample online. Ask them to run the first 24 hours, including the CERT-In 6-hour report, RBI notification, DPDP notifications and customer messaging.",
+    "Timeline reconstruction: give a mixed log extract (VPN log, AD events, EDR alerts, proxy). Ask for the attack timeline and patient zero.",
+    "Decision test: 'Pay the ransom or rebuild from backups that are 30 hours old?' Ask how they frame the options for the CEO.",
+    "Plan critique: give a three-page IR plan with no contact list, no decision rights, no regulator templates and no out-of-band channel. Ask what is missing.",
+    "Lessons: ask for a post-incident review they led and what changed afterwards."
+   ],
+   "kpis": [
+    "Mean time to contain major incidents.",
+    "Regulatory reports filed on time (100% within CERT-In 6 hours).",
+    "Exercises run and actions closed.",
+    "Repeat incidents from the same root cause (should be zero)."
+   ],
+   "salary": "Rs 20-40 lakh per annum in a metro in 2026. Basis: a 2026 India hiring guide puts IR lead base pay at about Rs 22-40 lakh; placement data puts DFIR/incident responders at 7+ years at Rs 25-40 lakh, with consulting firms paying a premium. Indicative; fixed plus variable, before ESOPs. Sources are aggregator and placement-firm data that disagree at the top end, so benchmark with two search firms before an offer.",
+   "pipeline": "Comes from DFIR consultancies, senior SOC L3 or threat hunters, and law-enforcement cyber cells. Leads to Head of Cyber Defence, Deputy CISO, CISO or IR practice leader at a consultancy.",
+   "frameworks": {
+    "nice": [
+     "Incident Response (PD-WRL-003)",
+     "Digital Forensics (PD-WRL-002)"
+    ],
+    "ecsf": [
+     "Cyber Incident Responder"
+    ],
+    "sfia": [
+     "USUP Incident management (level 5-6)",
+     "SCAD Security operations"
+    ]
+   },
+   "sources": [
+    {
+     "title": "RBI Master Direction on Information Technology Governance, Risk, Controls and Assurance Practices (RBI/2023-24/107, 7 November 2023; in force 1 April 2024), paras 24, 26, 29, 30",
+     "url": "https://www.rbi.org.in/Scripts/BS_ViewMasDirections.aspx?id=12562"
+    },
+    {
+     "title": "CERT-In Directions under section 70B(6) of the IT Act, 28 April 2022 (6-hour reporting, 180-day logs, NTP sync, point of contact)",
+     "url": "https://www.cert-in.org.in/PDF/CERT-In_Directions_70B_28.04.2022.pdf"
+    },
+    {
+     "title": "NICE Framework work roles and categories (NICCS, CISA)",
+     "url": "https://niccs.cisa.gov/tools/nice-framework"
+    },
+    {
+     "title": "ENISA European Cybersecurity Skills Framework (ECSF), 12 role profiles",
+     "url": "https://www.enisa.europa.eu/topics/cybersecurity-education/european-cybersecurity-skills-framework"
+    },
+    {
+     "title": "SFIA 9 skills directory",
+     "url": "https://sfia-online.org/en/sfia-9/skills"
+    },
+    {
+     "title": "Wisemonk: hiring incident response leads in India (2026 pay bands, indicative)",
+     "url": "https://www.wisemonk.io/blogs/incident-response-leads-india"
+    },
+    {
+     "title": "Networkers Home: cybersecurity salary in India by experience, 2026 (placement data, indicative)",
+     "url": "https://www.networkershome.com/cybersecurity-salary-india-by-experience-2026/"
+    },
+    {
+     "title": "AmbitionBox: incident response analyst salary, security services industry (self-reported)",
+     "url": "https://www.ambitionbox.com/profile/incident-response-analyst-salary/security-services-industry"
+    }
+   ]
+  },
+  "dfir": {
+   "purpose": "Collect and analyse digital evidence so the organisation knows exactly what happened in an incident and can prove it.",
+   "reports_to": "Incident response lead",
+   "responsibilities": [
+    "Acquire disk, memory, cloud and mobile evidence with sound chain of custody.",
+    "Analyse artefacts to build timelines, find patient zero and the attacker's actions.",
+    "Triage and analyse malware samples (static, dynamic and sandbox).",
+    "Determine data accessed or exfiltrated, for regulator and DPDP notifications.",
+    "Write forensic reports fit for management, regulators and courts (section 63 of the Bharatiya Sakshya Adhiniyam 2023 on electronic records).",
+    "Maintain forensic tools, write-blockers and lab procedures.",
+    "Support threat hunts and post-incident reviews with findings."
+   ],
+   "must": [
+    "Windows forensics (registry, event logs, prefetch, shimcache, $MFT) and Linux artefacts.",
+    "Memory forensics (Volatility) and triage collection (KAPE, Velociraptor).",
+    "Evidence handling and chain of custody.",
+    "Clear, defensible report writing."
+   ],
+   "good": [
+    "Cloud forensics (M365, Azure, AWS).",
+    "Reverse engineering (Ghidra, IDA).",
+    "Mobile forensics.",
+    "Commercial suites (EnCase, Magnet AXIOM, X-Ways)."
+   ],
+   "experience": "4-8 years in DFIR, incident response or a SOC with forensic work; law-enforcement cyber cell experience counts.",
+   "education": "Bachelor's in computer science, IT or digital forensics; an MSc in digital forensics (e.g. from a national forensic sciences university) is a plus.",
+   "certs_must": [
+    "GCFA or GCFE (or an equivalent forensic certification)"
+   ],
+   "certs_good": [
+    "GREM",
+    "GCFR",
+    "CHFI",
+    "EnCE",
+    "Magnet Certified Forensics Examiner"
+   ],
+   "interview": [
+    "Practical image analysis (2-3 hours, take-home or lab): a small Windows triage image; find the persistence mechanism, first execution time and an exfiltration path.",
+    "Memory question: given Volatility output with a suspicious process injected into explorer.exe, ask what they conclude and what to check next.",
+    "Chain of custody: describe how they would collect a laptop from a senior executive who is a suspect, step by step.",
+    "Report critique: give a forensic report that mixes facts with guesses. Ask them to separate findings from opinions.",
+    "Scoping: 'Did the attacker read customer data?' What evidence would prove or disprove it?"
+   ],
+   "kpis": [
+    "Time from evidence receipt to first findings.",
+    "Report quality: accepted without rework by IR lead, legal and auditors.",
+    "Evidence integrity: no chain-of-custody breaks.",
+    "Detection ideas fed back to the SOC."
+   ],
+   "salary": "Rs 8-22 lakh per annum in a metro in 2026 (more in consulting). Basis: placement data puts DFIR at Rs 5-8 lakh (0-2 years) and Rs 12-20 lakh (3-5 years); AmbitionBox self-reported incident response analysts range Rs 3-19.5 lakh. Indicative; fixed plus variable, before ESOPs. Sources are aggregator and placement-firm data that disagree at the top end, so benchmark with two search firms before an offer.",
+   "pipeline": "Comes from SOC L2/L3, law-enforcement cyber cells, forensic science graduates and DFIR consultancies. Leads to senior DFIR, malware analyst, IR lead or threat intelligence.",
+   "frameworks": {
+    "nice": [
+     "Digital Forensics (PD-WRL-002)",
+     "Digital Evidence Analysis"
+    ],
+    "ecsf": [
+     "Digital Forensics Investigator"
+    ],
+    "sfia": [
+     "DGFS Digital forensics (level 4-5)"
+    ]
+   },
+   "sources": [
+    {
+     "title": "CERT-In Directions under section 70B(6) of the IT Act, 28 April 2022 (6-hour reporting, 180-day logs, NTP sync, point of contact)",
+     "url": "https://www.cert-in.org.in/PDF/CERT-In_Directions_70B_28.04.2022.pdf"
+    },
+    {
+     "title": "NICE Framework work roles and categories (NICCS, CISA)",
+     "url": "https://niccs.cisa.gov/tools/nice-framework"
+    },
+    {
+     "title": "ENISA European Cybersecurity Skills Framework (ECSF), 12 role profiles",
+     "url": "https://www.enisa.europa.eu/topics/cybersecurity-education/european-cybersecurity-skills-framework"
+    },
+    {
+     "title": "SFIA 9 skills directory",
+     "url": "https://sfia-online.org/en/sfia-9/skills"
+    },
+    {
+     "title": "Networkers Home: cybersecurity salary in India by experience, 2026 (placement data, indicative)",
+     "url": "https://www.networkershome.com/cybersecurity-salary-india-by-experience-2026/"
+    },
+    {
+     "title": "AmbitionBox: incident response analyst salary, security services industry (self-reported)",
+     "url": "https://www.ambitionbox.com/profile/incident-response-analyst-salary/security-services-industry"
+    }
+   ]
+  },
+  "resilience_lead": {
+   "purpose": "Make sure critical services can keep running or recover within agreed times after a cyber attack, outage or disaster.",
+   "reports_to": "CISO or Chief Risk Officer (business continuity is often owned by risk, with IT DR delivered by the Head of IT)",
+   "responsibilities": [
+    "Own the business continuity and IT DR policy and programme (ISO 22301).",
+    "Run business impact analysis; agree RTO and RPO for each critical service, near-zero RPO for critical systems as RBI expects (ITGRCA para 29(f)-(h)).",
+    "Plan and run DR drills at least half-yearly for critical systems, running from the DR site for at least a full working day (RBI para 29(a)-(c)).",
+    "Make sure backups are restored and tested regularly, including an offline or immutable copy for ransomware (RBI para 28(a)).",
+    "Include critical vendors and interconnected systems in the plans and tests (RBI para 29(j)).",
+    "Maintain the crisis management structure and call trees with the IR lead.",
+    "Track drill findings and fix them before the next cycle (RBI para 29(b)).",
+    "Report resilience posture to the ITSC and risk committee."
+   ],
+   "must": [
+    "ISO 22301 and BIA methods.",
+    "IT DR technologies: replication, backup, immutable storage, failover.",
+    "RBI ITGRCA BCP/DR expectations and operational resilience thinking.",
+    "Exercise design and facilitation."
+   ],
+   "good": [
+    "Cyber recovery (clean-room restore, ransomware recovery).",
+    "Cloud DR patterns within India regions.",
+    "Crisis communication.",
+    "RBI operational resilience guidance."
+   ],
+   "experience": "8-12 years in IT infrastructure, DR or business continuity, with 3+ years running a BCM programme in a regulated firm.",
+   "education": "Bachelor's in engineering, IT or management; experience can substitute.",
+   "certs_must": [
+    "ISO 22301 Lead Implementer or Lead Auditor, or DRII CBCP, or BCI CBCI"
+   ],
+   "certs_good": [
+    "MBCI",
+    "CISA",
+    "ITIL"
+   ],
+   "interview": [
+    "Drill design: plan the half-yearly DR drill for core banking, including the full-day run from DR, success criteria, rollback and evidence for auditors.",
+    "Plan critique: give a BCP with RTO 4 hours but backups only nightly and no restore test in a year. Ask what is wrong and what they would report.",
+    "Ransomware scenario: both DC and DR are encrypted because replication copied the damage. What should have been in place and what do they do now?",
+    "BIA exercise: three services (UPI payments, HR payroll, marketing website); set RTO/RPO and justify.",
+    "Vendor question: how do they test the continuity of a critical outsourced service provider?"
+   ],
+   "kpis": [
+    "Drills run on schedule and RTO/RPO achieved in drills.",
+    "Backup restore tests passed, including the offline copy.",
+    "Drill findings fixed before the next cycle.",
+    "BIA and plans current for all critical services."
+   ],
+   "salary": "Rs 15-30 lakh per annum in a metro in 2026. Basis: limited public data; set by analogy with security and risk managers (AmbitionBox self-reported information security and cyber security managers about Rs 13-38 lakh). Verify with a search firm. Indicative; fixed plus variable, before ESOPs. Sources are aggregator and placement-firm data that disagree at the top end, so benchmark with two search firms before an offer.",
+   "pipeline": "Comes from IT infrastructure and DR managers, risk managers and BCM consultants. Leads to Head of Operational Resilience, Chief Risk Officer track or Head of IT Infrastructure.",
+   "frameworks": {
+    "nice": [
+     "Systems Security Management"
+    ],
+    "ecsf": [
+     "Cybersecurity Risk Manager"
+    ],
+    "sfia": [
+     "COPL Continuity management (level 5-6)",
+     "BURM Risk management"
+    ]
+   },
+   "sources": [
+    {
+     "title": "RBI Master Direction on Information Technology Governance, Risk, Controls and Assurance Practices (RBI/2023-24/107, 7 November 2023; in force 1 April 2024), paras 24, 26, 29, 30",
+     "url": "https://www.rbi.org.in/Scripts/BS_ViewMasDirections.aspx?id=12562"
+    },
+    {
+     "title": "NICE Framework work roles and categories (NICCS, CISA)",
+     "url": "https://niccs.cisa.gov/tools/nice-framework"
+    },
+    {
+     "title": "ENISA European Cybersecurity Skills Framework (ECSF), 12 role profiles",
+     "url": "https://www.enisa.europa.eu/topics/cybersecurity-education/european-cybersecurity-skills-framework"
+    },
+    {
+     "title": "SFIA 9 skills directory",
+     "url": "https://sfia-online.org/en/sfia-9/skills"
+    },
+    {
+     "title": "AmbitionBox: information security manager salaries (company pages, self-reported)",
+     "url": "https://www.ambitionbox.com/salaries/automation-anywhere-salaries/information-security-manager"
+    },
+    {
+     "title": "AmbitionBox: cyber security manager salary by industry (self-reported)",
+     "url": "https://www.ambitionbox.com/profile/cyber-security-manager-salary/accounting-and-auditing-industry"
+    }
+   ]
+  },
+  "pmo": {
+   "purpose": "Turn the security strategy into delivered projects, on time and on budget, and keep leadership informed of progress and risk.",
+   "reports_to": "CISO",
+   "responsibilities": [
+    "Run the security programme portfolio: plans, milestones, dependencies, budgets and risks.",
+    "Run procurement steps with purchasing: RFPs, evaluations and contract milestones.",
+    "Track vendor delivery and SLAs.",
+    "Prepare status reports for the CISO, the ISC and the IT Strategy Committee.",
+    "Keep the security budget and spend tracker; flag overruns early.",
+    "Track audit and regulatory commitments that become projects.",
+    "Run governance cadence: steering meetings, decision and action logs.",
+    "Manage change and adoption so new controls are actually used."
+   ],
+   "must": [
+    "Programme and project management (plans, RAID logs, budgets).",
+    "Enough security literacy to understand what each project protects and to spot slippage that matters.",
+    "Procurement and vendor management in a regulated firm.",
+    "Clear status writing for executives."
+   ],
+   "good": [
+    "Agile and hybrid delivery methods.",
+    "Experience of RBI or audit-driven remediation programmes.",
+    "Tool skills (Jira, MS Project, Power BI).",
+    "ITIL."
+   ],
+   "experience": "8-12 years, with 4+ years managing IT or security programmes.",
+   "education": "Bachelor's in engineering, IT or management; MBA useful. Experience can substitute.",
+   "certs_must": [
+    "PMP or PRINCE2 Practitioner"
+   ],
+   "certs_good": [
+    "PgMP or MSP",
+    "ISC2 CC or CompTIA Security+ for security literacy",
+    "SAFe"
+   ],
+   "interview": [
+    "Recovery plan: a PAM rollout is 3 months late and 20% over budget with 40% of admins onboarded. Ask for a recovery plan and the message to the CISO.",
+    "Status critique: give a 'green' status report hiding a slipped critical milestone. Ask what is wrong.",
+    "RFP exercise: draft the evaluation weights and timeline for a SIEM RFP.",
+    "Prioritisation: ten projects, budget for six. Ask how they help the CISO choose.",
+    "Stakeholder role play: an infrastructure head refuses resources for an EDR rollout."
+   ],
+   "kpis": [
+    "Milestones delivered on time.",
+    "Budget variance within plus or minus 10%.",
+    "Benefits realised (coverage or risk reduction actually achieved, not just go-live).",
+    "Report timeliness and stakeholder satisfaction."
+   ],
+   "salary": "Rs 15-30 lakh per annum in a metro in 2026. Basis: AmbitionBox self-reported project managers around Rs 16.7-21.3 lakh and information security managers Rs 13-42 lakh; Glassdoor shows higher figures for security technical programme managers in product firms, but from a small sample. Indicative; fixed plus variable, before ESOPs. Sources are aggregator and placement-firm data that disagree at the top end, so benchmark with two search firms before an offer.",
+   "pipeline": "Comes from IT project managers, Big Four delivery managers and security analysts who moved into delivery. Leads to Head of Security Programmes, Chief of Staff to the CISO or IT portfolio head.",
+   "frameworks": {
+    "nice": [
+     "Program Management",
+     "Secure Project Management"
+    ],
+    "ecsf": [],
+    "sfia": [
+     "PGMG Programme management",
+     "PRMG Project management"
+    ]
+   },
+   "sources": [
+    {
+     "title": "RBI Master Direction on Information Technology Governance, Risk, Controls and Assurance Practices (RBI/2023-24/107, 7 November 2023; in force 1 April 2024), paras 24, 26, 29, 30",
+     "url": "https://www.rbi.org.in/Scripts/BS_ViewMasDirections.aspx?id=12562"
+    },
+    {
+     "title": "NICE Framework work roles and categories (NICCS, CISA)",
+     "url": "https://niccs.cisa.gov/tools/nice-framework"
+    },
+    {
+     "title": "SFIA 9 skills directory",
+     "url": "https://sfia-online.org/en/sfia-9/skills"
+    },
+    {
+     "title": "AmbitionBox: information security manager salaries (company pages, self-reported)",
+     "url": "https://www.ambitionbox.com/salaries/automation-anywhere-salaries/information-security-manager"
+    },
+    {
+     "title": "Glassdoor India: security technical program manager salaries (small sample)",
+     "url": "https://www.glassdoor.co.in/Salaries/security-technical-program-manager-salary-SRCH_KO0,34.htm"
+    }
+   ]
+  }
+ }
+}

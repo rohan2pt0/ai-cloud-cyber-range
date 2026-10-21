@@ -32,6 +32,15 @@ import sys
 import urllib.parse
 import urllib.request
 
+
+def _addr():
+    """governance/addr.py, loaded by path (this module is itself loaded by path in tests): the address a person opens."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("securax_addr", pathlib.Path(__file__).resolve().parent / "addr.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 MAX_LEN = 3500
 ICON = {"green": "🟢", "amber": "🟠", "red": "🔴"}
@@ -214,7 +223,7 @@ def build_digest(cockpit: dict | None = None, incidents: list[str] | None = None
         lines += [f"- {ln}" for ln in inc[:5]]
     if not todo and not inc:
         lines.append("Nothing urgent.")
-    lines.append("Cockpit: http://localhost:8088/portal/cockpit.html")
+    lines.append("Cockpit: " + _addr().web_url("hub", 8088, "/portal/cockpit.html"))
     return status, "\n".join(lines)
 
 

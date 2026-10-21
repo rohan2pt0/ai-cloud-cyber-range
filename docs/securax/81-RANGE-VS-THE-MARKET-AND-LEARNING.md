@@ -106,7 +106,7 @@ Each path lists its techniques, why they matter, where to practise in the estate
 - [Cyber range training platforms 2026](https://guptadeepak.com/tools/top-5-cyber-range-training-platforms-2026/)
 - [Cyberbit vs CybExer (CB Insights)](https://www.cbinsights.com/compare/cyberbit-vs-cybexer-technologies)
 - [TryHackMe vs HTB Enterprise (TryHackMe)](https://tryhackme.com/compare/hackthebox-enterprise)
-- [Immersive Labs vs Hack The Box (Immersive)](https://www.immersivelabs.com/h2h/immersive-vs-hackthebox)
+- [Immersive Labs](https://www.immersivelabs.com/) (its own comparison page with Hack The Box has been taken down)
 - [Immersive Labs Cyber Drills vs HTB Enterprise](https://cybersectools.com/compare/immersive-labs-cyber-drills-vs-hack-the-box-enterprise-platform)
 - [Locked Shields 2026 (CCDCOE)](https://ccdcoe.org/news/2026/locked-shields-2026-united-the-power-of-41-nations-to-defend-cyberspace)
 - [Locked Shields 2026 (SecurityWeek)](https://www.securityweek.com/locked-shields-2026-41-nations-strengthen-cyber-resilience-in-worlds-biggest-exercise/)

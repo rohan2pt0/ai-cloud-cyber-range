@@ -141,6 +141,26 @@ Android through Play has no such rule for the Trusted Web Activity path.
   - the Android link file needs a real fingerprint;
   - every kit app stays store-ready.
 
+## 8. More tools for the models: Docker's MCP Toolkit
+
+Docker Desktop (4.62 or later) has an **MCP Toolkit**: a catalogue of tool servers (GitHub, a web fetcher, a browser and many more) that an AI client can call through one gateway. It can save real time: the open models in `./securax opencode` could read a pull request, open a page or fill a form without you copying anything across.
+
+**Why it is safer than installing tool servers by hand:**
+- each tool runs in its own container, held to 1 CPU and 2 GB of memory;
+- tools see no files on your laptop unless you give them a folder;
+- the images under `mcp/` are built and signed by Docker, each with a software bill of materials;
+- sign-ins (GitHub and others) go through the Toolkit's own OAuth tab, where you can revoke them; secrets never sit in a config file.
+
+**How to use it, in this order:**
+1. **Free the C: drive first** (doc 80 §4). Every tool is another container image on Docker's disk.
+2. **Make one small profile**, named `securax`, with three servers to begin: GitHub (official), Fetch and Playwright. Add more only when a task needs one.
+3. **Vet a server before adding it:** prefer the signed `mcp/` images; give no folder access unless the task needs it, and then only a scratch folder, never `vault/`.
+4. **Connect OpenCode to the profile** in your own `~/.config/opencode/opencode.json` (not in this repository):
+   `"mcp": { "docker": { "type": "local", "command": ["docker", "mcp", "gateway", "run", "--profile", "securax"] } }`.
+   Claude Desktop connects from the Toolkit's **Clients** tab.
+
+**What stays the same:** the estate never needs the Toolkit to run, and nothing in it calls a tool server. The rails, the gateway's audit chain and the review step still apply to what a model does with a tool.
+
 ## Sources
 
 - [Bubblewrap and Trusted Web Activities](https://web.dev/using-a-pwa-in-your-android-app)
@@ -148,3 +168,4 @@ Android through Play has no such rule for the Trusted Web Activity path.
 - [Capacitor 8 upgrade guide](https://capawesome.io/blog/how-to-upgrade-your-capacitor-app-to-capacitor-8)
 - [Capacitor support policy](https://capacitorjs.com/docs/v7/main/reference/support-policy)
 - [Apple guideline 4.2 explained](https://www.technetexperts.com/guideline-4-2-minimum-functionality/)
+- [Docker MCP Toolkit](https://docs.docker.com/ai/mcp-catalog-and-toolkit/toolkit/)

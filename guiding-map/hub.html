@@ -2,137 +2,147 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>SecuRAX — Command Center</title>
 <link rel="manifest" href="hub.webmanifest">
 <link rel="apple-touch-icon" href="icon-192.png">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#0b1220">
+<meta name="theme-color" content="#f5f5f7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0b0f14" media="(prefers-color-scheme: dark)">
 <style>
-  :root{--bg:#0b1220;--card:#121c2e;--ink:#e8eefb;--mut:#9fb0cc;--line:#223049;--accent:#5b8cff;--green:#30d158;--red:#ff453a;--amber:#ffd60a;--gold:#e8b23a}
-  @media (prefers-color-scheme:light){:root{--bg:#f4f7fb;--card:#fff;--ink:#0e1726;--mut:#5a6b86;--line:#e3e9f2;--accent:#2563eb}}
-  *{box-sizing:border-box} body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,Segoe UI,Roboto,sans-serif}
-  .wrap{max-width:900px;margin:0 auto;padding:24px 16px 60px}
-  header{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:6px}
-  .logo{width:34px;height:34px;border-radius:9px;background:linear-gradient(135deg,var(--accent),var(--gold));display:grid;place-items:center;color:#fff;font-weight:800}
-  h1{font-size:20px;margin:0} .ver{font-size:12px;color:var(--mut);border:1px solid var(--line);border-radius:999px;padding:1px 8px}
-  .sub{color:var(--mut);margin:2px 0 18px}
-  h2{font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin:26px 0 10px}
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:12px}
-  a.card{display:block;background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 15px;text-decoration:none;color:inherit;transition:.15s}
-  a.card:hover{border-color:var(--accent);transform:translateY(-1px)}
-  .card .t{font-weight:700;display:flex;align-items:center;gap:8px}
-  .card .d{color:var(--mut);font-size:13.5px;margin-top:4px}
+  /* Design standard (doc 100): calm when all is well, the next action obvious, nothing a person has to learn first.
+     Tokens match governance/design.json; a test keeps them in step. */
+  :root{--bg:#f5f5f7;--card:#ffffff;--ink:#1d1d1f;--mut:#57606a;--line:#d2d2d7;--accent:#0a5bd8;--red:#b42318;--amber:#8a5a00;--green:#1f7a3a;--focus:#0a5bd8;
+    --r:16px;--gap:12px;--shadow:0 1px 2px rgba(0,0,0,.04),0 4px 14px rgba(0,0,0,.05)}
+  @media (prefers-color-scheme:dark){:root{--bg:#0b0f14;--card:#151b23;--ink:#f0f3f6;--mut:#9ba7b4;--line:#2a333d;--accent:#6ea8ff;--red:#ff7b72;--amber:#e3b341;--green:#56d364;--focus:#6ea8ff;
+    --shadow:0 1px 2px rgba(0,0,0,.3)}}
+  *{box-sizing:border-box} html{-webkit-text-size-adjust:100%}
+  body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI Variable","Segoe UI",Roboto,system-ui,sans-serif;
+    padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+  .wrap{max-width:760px;margin:0 auto;padding:22px 16px 64px}
+  header{display:flex;align-items:center;gap:10px;margin-bottom:22px}
+  .logo{width:30px;height:30px;border-radius:8px;background:var(--ink);color:var(--bg);display:grid;place-items:center;font-weight:800;font-size:14px}
+  .brand{font-weight:650;font-size:17px;margin:0} .ver{font-size:12px;color:var(--mut);margin-left:auto}
+  .posture{margin:0 0 18px} .posture h1{font-size:30px;line-height:1.2;margin:0 0 6px;font-weight:700;letter-spacing:-.01em}
+  .posture p{margin:0;color:var(--mut);font-size:15px}
+  .lamp{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:10px;vertical-align:middle;background:var(--mut)}
+  .lamp.red{background:var(--red)} .lamp.amber{background:var(--amber)} .lamp.green{background:var(--green)}
+  h2{font-size:13px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--mut);margin:28px 0 10px}
+  .vh{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+  ol.needs{list-style:none;margin:0;padding:0;display:grid;gap:var(--gap)}
+  .need{background:var(--card);border:1px solid var(--line);border-left:6px solid var(--amber);border-radius:var(--r);padding:16px 18px;box-shadow:var(--shadow)}
+  .need.red{border-left-color:var(--red)} .need .nt{font-weight:650;font-size:18px} .need .nw{color:var(--mut);font-size:15px;margin-top:4px}
+  .need .na{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px}
+  button,.btn{font:inherit;font-size:15px;border-radius:999px;padding:9px 16px;min-height:44px;cursor:pointer;border:1px solid var(--line);background:transparent;color:var(--ink);text-decoration:none;display:inline-flex;align-items:center}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  @media (prefers-color-scheme:dark){button.primary{color:#0b0f14}}
+  :focus-visible{outline:3px solid var(--focus);outline-offset:2px}
+  .calm{background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px;color:var(--mut)}
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:var(--gap)}
+  a.card{display:block;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:14px 16px;text-decoration:none;color:inherit;box-shadow:var(--shadow);transition:border-color .15s}
+  a.card:hover{border-color:var(--accent)} @media (prefers-reduced-motion:reduce){a.card{transition:none}}
+  .card .t{font-weight:650;display:flex;align-items:center;gap:8px} .card .d{color:var(--mut);font-size:14px;margin-top:4px}
   .dot{width:9px;height:9px;border-radius:50%;background:var(--mut);display:inline-block;flex:0 0 auto}
   .dot.up{background:var(--green)} .dot.down{background:var(--red)} .dot.off{background:var(--mut);opacity:.55}
   .dot.starting{background:var(--amber);animation:pulse 1.2s ease-in-out infinite} @keyframes pulse{50%{opacity:.35}}
+  @media (prefers-reduced-motion:reduce){.dot.starting{animation:none}}
   .ico{width:18px;height:18px;flex:0 0 auto;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;color:var(--accent)}
-  .note{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;color:var(--mut);font-size:14px}
-  .note b{color:var(--ink)} code{background:rgba(127,127,127,.15);padding:1px 6px;border-radius:6px;font-size:13px}
-  .pill{display:inline-block;font-size:11px;color:var(--green);border:1px solid var(--green);border-radius:999px;padding:0 7px;margin-left:6px}
-  ol{margin:6px 0 0;padding-left:20px} ol li{margin:4px 0}
-  .fgroup{font-size:14px;font-weight:700;margin:18px 0 8px;color:var(--ink)}
-  .fcard{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 15px;display:flex;flex-direction:column;gap:6px}
-  .fcard .t{font-weight:700;display:flex;align-items:center;gap:8px}
-  .fcard .d{color:var(--mut);font-size:13.5px}
+  details.fold{background:var(--card);border:1px solid var(--line);border-radius:var(--r);margin:10px 0;box-shadow:var(--shadow)}
+  details.fold>summary{list-style:none;cursor:pointer;padding:14px 18px;font-weight:600;display:flex;align-items:center;gap:10px;min-height:48px}
+  details.fold>summary::-webkit-details-marker{display:none} details.fold>summary::after{content:"›";margin-left:auto;color:var(--mut);transition:transform .15s}
+  details.fold[open]>summary::after{transform:rotate(90deg)} details.fold>summary .s{font-weight:400;color:var(--mut);font-size:15px}
+  .fbody{padding:0 18px 16px;color:var(--mut);font-size:15px} .fbody b{color:var(--ink)}
+  code{background:rgba(127,127,127,.15);padding:1px 6px;border-radius:6px;font-size:14px;color:var(--ink)}
+  ul.health{list-style:none;margin:0;padding:0} ul.health li{display:flex;gap:10px;padding:6px 0;border-bottom:1px solid var(--line)} ul.health li:last-child{border:0}
+  ul.health .k{flex:1;color:var(--ink)} ul.health .v{color:var(--mut);text-align:right}
+  input[type=search]{width:100%;font:inherit;font-size:16px;padding:10px 14px;border:1px solid var(--line);border-radius:12px;background:var(--bg);color:var(--ink);min-height:44px;margin-bottom:10px}
+  .fgroup{font-size:14px;font-weight:650;margin:16px 0 8px;color:var(--ink)}
+  .fcard{background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+  .fcard .t{font-weight:650;display:flex;align-items:center;gap:8px;color:var(--ink)} .fcard .d{color:var(--mut);font-size:14px}
   .fcard .row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:auto;padding-top:4px}
-  .fcard button{font:13px ui-monospace,Menlo,Consolas,monospace;background:rgba(127,127,127,.15);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:4px 8px;cursor:pointer;max-width:100%;overflow-wrap:anywhere;text-align:left}
-  .fcard a.btn{font-size:13px;color:var(--accent);text-decoration:none;font-weight:600}
+  .fcard button{font:13px ui-monospace,Menlo,Consolas,monospace;min-height:36px;border-radius:8px;padding:4px 8px;max-width:100%;overflow-wrap:anywhere;text-align:left;background:rgba(127,127,127,.12)}
+  .fcard a.btn{font-size:14px;color:var(--accent);font-weight:600;border:0;padding:4px 2px;min-height:36px}
   .lt{font-size:11px;border-radius:999px;padding:0 7px;border:1px solid currentColor;white-space:nowrap}
   .lt.green{color:var(--green)} .lt.amber{color:var(--amber)} .lt.red{color:var(--red)} .lt.new{color:var(--accent);font-weight:700}
-  #whatsnew{margin:0 0 10px} #whatsnew a{color:var(--accent)}
-  @media (prefers-color-scheme:light){:root{--green:#1f7a3a} .lt.amber{color:#8a5a00} .lt.red{color:#b91c1c}}
-  .sub code{color:var(--ink)} .note a{color:var(--accent)}
+  #whatsnew{margin:0 0 10px;font-size:14px} a{color:var(--accent)} ol.steps{margin:6px 0 0;padding-left:20px} ol.steps li{margin:6px 0}
+  .pill{font-size:13px;color:var(--mut)}
 </style>
 </head>
 <body>
 <div class="wrap">
   <header>
-    <div class="logo">◆</div>
-    <h1>SecuRAX — Command Center</h1>
+    <div class="logo" aria-hidden="true">◆</div>
+    <p class="brand">SecuRAX <span class="vh">Command Center</span></p>
     <span class="ver" id="ver">v…</span>
   </header>
-  <div class="sub">Everything in one place. Click a card — you never need to type a URL.
-    <span id="secstatus" style="margin-left:8px"></span></div>
-  <div id="repairs" class="note" style="display:none;margin-top:12px"></div>
-  <a id="finish" class="note" href="/portal/cockpit.html#finish" style="display:none;text-decoration:none;color:inherit;margin-top:12px"></a>
 
-  <h2>Start here — these work out of the box</h2>
+  <section class="posture" aria-live="polite">
+    <h1><span class="lamp" id="lamp" aria-hidden="true"></span><span id="postureText">Checking…</span></h1>
+    <p id="postureSub">Reading the latest health check.</p>
+  </section>
+
+  <section aria-labelledby="needsH">
+    <h2 id="needsH" class="vh">What needs you</h2>
+    <ol class="needs" id="needs"></ol>
+  </section>
+
+  <h2>Open</h2>
   <div class="grid" id="apps"></div>
 
-  <h2>Optional add-ons <span style="text-transform:none;letter-spacing:0;font-weight:400">(each needs a little setup before it's useful)</span></h2>
-  <div class="grid" id="extras"></div>
-  <h2 id="everything">Everything SecuRAX can do</h2>
-  <div class="sub" style="margin:0 0 4px">Each card says what it does in plain words. <b>Open</b> takes you there when it runs here; otherwise tap the
-    command to copy it, then paste it in a terminal inside your <code>ai-cloud-cyber-range</code> folder.</div>
-  <div class="note" id="whatsnew" hidden></div>
-  <div id="features"></div>
-
-  <h2>Use it on your phone &amp; iPad</h2>
-  <div class="note">
-    <b>1. Install Tailscale</b> on this laptop and on each phone/iPad, signed in to the same account. Tailscale is the
-    only door in: never open the estate to the Wi-Fi (<code>BIND_HOST=0.0.0.0</code>).<br>
-    <b>2. Run</b> <code>./securax phones</code>. It checks what is in the way and shows your private address;
-    <code>./securax phones --apply</code> publishes it to your own devices only.<br>
-    <b>3. On the phone/iPad</b> open <code id="lanurl">https://&lt;laptop&gt;.&lt;tailnet&gt;.ts.net</code>, then
-    <b>Add to Home Screen</b> (iPhone/iPad: Share → Add to Home Screen; Android: Chrome menu → Install app).<br>
-    <b>4. Keep devices in sync:</b> run <code>./securax go</code> on the laptop (it opens a one-click sync link) and
-    <code>./securax sync-link</code> for the phone link. To stay in sync with the laptop <b>off</b>, turn on
-    <b>Ops → Connections → OneDrive sync</b> in the app on each device, with the same passphrase (doc 72).
-    <span class="pill">sovereign</span> Your data stays on your box.
-  </div>
-
-  <h2>Make answers fast (optional, free)</h2>
-  <div class="note">
-    Run <code>./securax setup</code> and paste a free <b>Google AI Studio</b> key
-    (<a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener">aistudio.google.com/apikey</a>).
-    Answers then come from fast cloud Gemini; without it, the private local model is used (slower on a laptop).
-    Sensitive data always stays local either way.
-  </div>
-
-  <h2>AI provider plugins</h2>
-  <div class="note">
-    Add any provider — <b>OpenAI, Anthropic, DeepSeek, Mistral, Grok, Perplexity, Azure AI Foundry,
-    AWS Bedrock, OpenRouter</b> — with one command; its model then appears in Chat, still routed
-    through the security gateway:
-    <div style="margin:8px 0;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;color:var(--ink)">
-      ./securax providers add
+  <details class="fold" id="healthBox">
+    <summary>System health <span class="s" id="healthSum">checking…</span></summary>
+    <div class="fbody">
+      <ul class="health" id="healthList"></ul>
+      <p><span id="secstatus"></span></p>
+      <p><a href="portal/cockpit.html">Open the cockpit</a> for the full picture.</p>
     </div>
-    <div style="margin-top:4px">Models live right now (through the gateway): <span id="models" style="color:var(--mut)">checking…</span></div>
-    <div style="margin-top:8px;color:var(--mut);font-size:13px">Voice: <code>./securax say "hello"</code> (ElevenLabs).
-      Heavy compute (Colab / cloud GPU) and the full list: see <code>docs/securax/22-PLUGINS-AND-PROVIDERS.md</code>.</div>
-  </div>
+  </details>
 
-  <h2>Handy commands</h2>
-  <div class="note">
-    <b>Where to run these:</b> in a <b>terminal</b>, inside your <code>ai-cloud-cyber-range</code> folder. On
-    <b>Windows PowerShell</b> type <code>.\securax.cmd up</code> (or <code>.\securax.cmd doctor</code>, …); in
-    <b>Ubuntu/WSL</b>, Mac or Linux type <code>./securax up</code>.
-    <div style="margin-top:8px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;color:var(--ink)">
-      ./securax up &nbsp;·&nbsp; ./securax status &nbsp;·&nbsp; ./securax doctor &nbsp;·&nbsp; ./securax setup &nbsp;·&nbsp; ./securax down
+  <details class="fold" id="addons">
+    <summary>Add-ons <span class="s">each needs a little setup first</span></summary>
+    <div class="fbody"><div class="grid" id="extras"></div></div>
+  </details>
+
+  <details class="fold" id="everything">
+    <summary>Explore everything SecuRAX can do</summary>
+    <div class="fbody">
+      <input type="search" id="q" placeholder="Search: backup, incident, risk, phone…" aria-label="Search what SecuRAX can do">
+      <div id="whatsnew" hidden></div>
+      <div id="features"></div>
+      <p>Open takes you there when it runs here; otherwise press the command to copy it, then paste it in a terminal inside your <code>ai-cloud-cyber-range</code> folder.</p>
     </div>
-    <div style="margin-top:8px;color:var(--mut);font-size:13px">On Windows, <code>START-HERE-Windows.bat</code> /
-      <code>STOP-Windows.bat</code> are for <b>double-clicking in File Explorer</b> — they won't run if you
-      type them inside WSL/bash. In WSL, use <code>./securax up</code> / <code>./securax down</code> instead.</div>
-  </div>
+  </details>
+
+  <details class="fold">
+    <summary>Use it on your phone and iPad</summary>
+    <div class="fbody"><ol class="steps">
+      <li><b>Install Tailscale</b> on this laptop and on each phone or iPad, signed in to the same account. Never open the estate to the Wi-Fi.</li>
+      <li><b>Run</b> <code>./securax phones</code>, then <code>./securax phones --apply</code> to publish it to your own devices only.</li>
+      <li><b>On the phone,</b> open <code id="lanurl">https://&lt;laptop&gt;.&lt;tailnet&gt;.ts.net</code> and choose <b>Add to Home Screen</b>.</li>
+      <li><b>To stay in sync</b> with the laptop off, turn on <b>Ops → Connections → OneDrive sync</b> on each device, with the same passphrase.</li>
+    </ol></div>
+  </details>
+
+  <details class="fold">
+    <summary>Faster answers and AI providers</summary>
+    <div class="fbody">
+      <p>Run <code>./securax setup</code> and paste a free Google AI Studio key for fast answers; without it the private local model answers. Sensitive data always stays local.</p>
+      <p>Add OpenAI, Anthropic, DeepSeek, Mistral, Grok, Perplexity, Azure AI Foundry, AWS Bedrock or OpenRouter with <code>./securax providers add</code>; every call still goes through the security gateway.</p>
+      <p>Models live now: <span id="models">checking…</span></p>
+    </div>
+  </details>
+
+  <details class="fold">
+    <summary>Handy commands</summary>
+    <div class="fbody">
+      <p>In a terminal inside your <code>ai-cloud-cyber-range</code> folder: <code>./securax up</code> · <code>./securax status</code> · <code>./securax doctor</code> · <code>./securax down</code>.
+        In Windows PowerShell type <code>.\securax.cmd up</code> instead. <code>START-HERE-Windows.bat</code> is for double-clicking in File Explorer.</p>
+    </div>
+  </details>
 </div>
 
 <script src="features.js"></script>
 <script>
-// "Repairs": what needs fixing, counted by every cockpit refresh (./securax repairs lists each one with its fix).
-fetch("/portal/repairs.json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null;}).then(function(j){
-  var el=document.getElementById("repairs"); if(!j||!el||!j.count)return;
-  el.innerHTML="<b>"+(j.act?"\u2717 ":"\u25D0 ")+j.count+" to repair"+(j.act?", "+j.act+" today":"")+"</b> \u2014 first: "+String(j.top).replace(/[<>&]/g,"")
-    +"<div style='margin-top:4px;font-size:13px'>Each one with its fix: <code>./securax repairs</code></div>";
-  el.style.display="block";
-}).catch(function(){});
-// "Finish setting up": written by every cockpit refresh (./securax finish has the same list with its steps).
-fetch("/portal/setup.json",{cache:"no-store"}).then(function(r){return r.ok?r.json():null;}).then(function(j){
-  var el=document.getElementById("finish"); if(!j||!el||j.done>=j.total)return;
-  el.innerHTML="<b>Finish setting up · "+j.done+" of "+j.total+" done</b> — next: "+String(j.next).replace(/[<>&]/g,"")+" <span style='white-space:nowrap'>(steps →)</span>";
-  el.style.display="block";
-}).catch(function(){});
-
 (function(){
   var H = location.hostname, started = Date.now();
   // Served over HTTPS by the estate's TLS edge? Then every service lives under the same domain BY NAME (hub.<domain>, chat.<domain> ...):
@@ -202,6 +212,7 @@ fetch("/portal/setup.json",{cache:"no-store"}).then(function(r){return r.ok?r.js
     var d = document.querySelector('.dot[data-url="'+a.url+'"]'); if(!d) return;
     var st = up ? "up" : (a.core ? ((Date.now()-started) < 180000 ? "starting" : "down") : "off");
     d.className = "dot " + st; d.title = TITLE[st];
+    if(a.core){ APPST[a.t] = st; try{ drawNeeds(); }catch(e){} }
   }
   // Over HTTPS the edge answers /_up/<name> for us with the service's REAL status (a 502 means "not running"); a plain no-cors fetch
   // cannot read a status, so a stopped service used to be shown green.
@@ -275,6 +286,71 @@ fetch("/portal/setup.json",{cache:"no-store"}).then(function(r){return r.ok?r.js
   }
   function tick(){ checkApps(); checkInfo(); }
   tick(); setInterval(tick, 5000);
+
+  // ── The cockpit's question, answered first (doc 100): what needs me, why, and the one thing to do. Quiet when all is well;
+  // never "all clear" without a fresh health check behind it (no data and stale data are said out loud).
+  var APPST = {}, COCK = null, REP = null, SET = null, LOADED = 0;
+  var STALE = 36 * 3600 * 1000;
+  function setText(id, t){ var e = document.getElementById(id); if(e) e.textContent = t; }
+  function copyBtn(cmd, primary){
+    return '<button type="button" class="'+(primary?'primary':'')+'" data-cmd="'+esc(cmd)+'">Copy: '+esc(cmd)+'</button>';
+  }
+  function needsList(){
+    var out = [], seen = {};
+    Object.keys(APPST).forEach(function(t){
+      if(APPST[t] === "down") out.push({lvl:"red", t:"Start "+t+" again", w:t+" is not answering. Everything else keeps working.", cmd:"./securax up", rank:9});
+    });
+    if(COCK && COCK.metrics){
+      COCK.metrics.filter(function(m){ return m.status === "red" || (m.status === "amber" && m.urgent); })
+        .sort(function(a,b){ return (a.status === b.status ? 0 : a.status === "red" ? -1 : 1) || (b.importance||0) - (a.importance||0); })
+        .forEach(function(m){ seen[m.label] = 1;
+          out.push({lvl:m.status, t:m.action || m.label, w:m.label+": "+m.value+(m.why ? ". "+m.why : ""), cmd:m.cmd||"", rank:m.status === "red" ? 8 : 5}); });
+    }
+    if(REP && REP.count && REP.top && !Object.keys(seen).some(function(k){ return String(REP.top).indexOf(k) === 0; }))
+      out.push({lvl:REP.act ? "red" : "amber", t:"Repair: "+REP.top, w:REP.count+" repairs are waiting; this is the first.", cmd:"./securax repairs", rank:4});
+    if(SET && SET.done < SET.total && !out.length)
+      out.push({lvl:"amber", t:"Next setup step: "+SET.next, w:SET.done+" of "+SET.total+" optional steps done.", cmd:"./securax finish", rank:1});
+    return out.sort(function(a,b){ return b.rank - a.rank; });
+  }
+  function drawNeeds(){
+    var box = document.getElementById("needs"); if(!box || !LOADED) return;
+    var all = needsList(), top = all.slice(0, 3), fresh = COCK && COCK.ts && (Date.now() - COCK.ts * 1000) < STALE;
+    var lamp = document.getElementById("lamp"), red = all.filter(function(n){ return n.lvl === "red"; }).length;
+    if(!COCK){ setText("postureText", "Status unknown"); setText("postureSub", "No health check has run on this machine yet. Run  ./securax cockpit  to make one."); lamp.className = "lamp"; }
+    else if(red){ setText("postureText", red === 1 ? "1 thing needs you" : red+" things need you"); setText("postureSub", "Do the first one now. Everything else can wait."); lamp.className = "lamp red"; }
+    else if(all.length){ setText("postureText", "Nothing urgent"); setText("postureSub", all.length === 1 ? "One thing to look at when you have a moment." : all.length+" things to look at when you have a moment."); lamp.className = "lamp amber"; }
+    else if(!fresh){ setText("postureText", "Status may be out of date"); setText("postureSub", "The last health check is more than a day old. Run  ./securax cockpit  to refresh it."); lamp.className = "lamp"; }
+    else { setText("postureText", "All clear"); setText("postureSub", "Checked "+new Date(COCK.ts * 1000).toLocaleString()+". Nothing measured needs you."); lamp.className = "lamp green"; }
+    box.innerHTML = top.map(function(n, i){
+      return '<li class="need '+(n.lvl === "red" ? "red" : "")+'"><div class="nt">'+esc(n.t)+'</div><div class="nw">'+esc(n.w)+'</div><div class="na">'
+        +(n.cmd ? copyBtn(n.cmd, i === 0) : '')+'<a class="btn" href="portal/cockpit.html#systems">Why and how</a></div></li>';
+    }).join("") + (all.length > 3 ? '<li class="calm">'+(all.length - 3)+' more in the <a href="portal/cockpit.html">cockpit</a>. Finish these first.</li>' : '');
+    [].forEach.call(box.querySelectorAll("button[data-cmd]"), function(b){
+      b.addEventListener("click", function(){ var t = b.getAttribute("data-cmd");
+        (navigator.clipboard ? navigator.clipboard.writeText(t) : Promise.reject()).then(function(){ b.textContent = "Copied. Paste it in your terminal."; }, function(){ b.textContent = t; }); });
+    });
+    var ms = (COCK && COCK.metrics) || [], cnt = {green:0, amber:0, red:0, unknown:0};
+    ms.forEach(function(m){ cnt[m.status in cnt ? m.status : "unknown"]++; });
+    setText("healthSum", COCK ? cnt.green+" fine · "+cnt.amber+" to watch · "+cnt.red+" need you"+(cnt.unknown ? " · "+cnt.unknown+" no data" : "") : "no health check yet");
+    var hl = document.getElementById("healthList");
+    if(hl) hl.innerHTML = ms.map(function(m){ return '<li><span class="k">'+esc(m.label)+'</span><span class="v">'+esc(m.value)+' · '+esc(m.status === "green" ? "fine" : m.status === "unknown" ? "no data" : m.status === "red" ? "needs you" : "watch")+'</span></li>'; }).join("");
+  }
+  function getJson(u){ return fetch(u, {cache:"no-store"}).then(function(r){ return r.ok ? r.json() : null; }).catch(function(){ return null; }); }
+  Promise.all([getJson("/portal/cockpit.json"), getJson("/portal/repairs.json"), getJson("/portal/setup.json")]).then(function(r){
+    COCK = r[0] && r[0].metrics ? r[0] : null; REP = r[1]; SET = r[2]; LOADED = 1; drawNeeds();
+  });
+  // Explore: search as you type; a link to a feature (#f-...) or to #everything opens the library by itself.
+  try{
+    var q = document.getElementById("q"), ex = document.getElementById("everything");
+    if(q && q.addEventListener) q.addEventListener("input", function(){
+      var v = q.value.trim().toLowerCase();
+      [].forEach.call(document.querySelectorAll(".fcard"), function(c){ c.hidden = !!v && c.textContent.toLowerCase().indexOf(v) < 0; });
+      [].forEach.call(document.querySelectorAll(".fgroup"), function(g){
+        var grid = g.nextElementSibling; g.hidden = !!v && grid && !grid.querySelector(".fcard:not([hidden])"); });
+    });
+    var openFor = function(){ if(ex && /^#(f-|everything)/.test(location.hash)){ ex.open = true; var t = document.getElementById(location.hash.slice(1)); if(t && t.scrollIntoView) t.scrollIntoView(); } };
+    openFor(); if(window.addEventListener) window.addEventListener("hashchange", openFor);
+  }catch(e){}
   // show the detected host in the LAN hint
   if(/\.ts\.net$/i.test(location.hostname)) document.getElementById("lanurl").textContent="https://"+location.hostname;
 })();

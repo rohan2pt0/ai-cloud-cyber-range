@@ -25,6 +25,15 @@ import re
 import shutil
 import sys
 
+
+def _addr():
+    """governance/addr.py, loaded by path (this module is itself loaded by path in tests): the address a person opens."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("securax_addr", pathlib.Path(__file__).resolve().parent / "addr.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 GM = ROOT / "guiding-map"
 KIT = GM / "kit"
@@ -411,7 +420,7 @@ def main(argv: list[str] | None = None) -> int:
             except ValueError as ex:
                 print(f"✘ {i}: {ex}", file=sys.stderr)
                 return 1
-            print(f"✔ {E[i]['name']} built in {rel(d)}/  ->  http://localhost:8088/{i}/")
+            print(f"✔ {E[i]['name']} built in {rel(d)}/  ->  {_addr().web_url('hub', 8088, f'/{i}/')}")
         return 0
     if a.cmd == "new":
         if a.id in E:
@@ -433,7 +442,7 @@ def main(argv: list[str] | None = None) -> int:
         p.write_text(json.dumps(e, indent=1, ensure_ascii=False) + "\n", encoding="utf-8")
         d = build(e)
         print(f"✔ {a.name} created: {rel(p)} (edit its words and content), built in {rel(d)}/")
-        print(f"  Open it at http://localhost:8088/{a.id}/ once the estate is up. After an edit: ./securax os build {a.id}")
+        print(f"  Open it at {_addr().web_url('hub', 8088, f'/{a.id}/')} once the estate is up. After an edit: ./securax os build {a.id}")
         return 0
     if a.cmd in ("mobile", "mobile-check", "assetlinks"):
         try:

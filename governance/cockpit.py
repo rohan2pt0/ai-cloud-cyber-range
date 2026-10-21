@@ -38,6 +38,15 @@ import time
 import urllib.error
 import urllib.request
 
+
+def _addr():
+    """governance/addr.py, loaded by path (this module is itself loaded by path in tests): the address a person opens."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("securax_addr", pathlib.Path(__file__).resolve().parent / "addr.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parent
 OUT = ROOT / "portal" / "cockpit.html"
@@ -1021,6 +1030,10 @@ def main(argv: list[str] | None = None) -> int:
     out = pathlib.Path(a.out)
     atomic_write(out, page)
     atomic_write(out.with_suffix(".json"), json.dumps(data, indent=1))
+    try:                                   # the ready-reckoner pages the Govern boxes open (doc 94 §8), next to the cockpit
+        _load("securax_reckoner", "governance/reckoner.py").build(out.parent / "reckoner")
+    except Exception as e:  # noqa: BLE001 - the cockpit must render even if a page cannot
+        print(f"(ready reckoner not written: {e})", file=sys.stderr)
     try:                                                                      # the Guiding Map's "From your estate" lines follow every cockpit refresh
         _load("securax_lifefeed", "governance/lifefeed.py").write(out.parent / "estate-feed.json", cockpit=out.with_suffix(".json"))
     except Exception:  # noqa: BLE001 - the feed is a convenience; it must never fail the cockpit
@@ -1042,7 +1055,7 @@ def main(argv: list[str] | None = None) -> int:
         reds = sum(m["status"] == "red" for m in data["metrics"])
         ambs = sum(m["status"] == "amber" for m in data["metrics"])
         print(f"Cockpit written: {out}  ({data['overall'].upper()}: {reds} to act on, {ambs} to watch)")
-        print("View it at  http://localhost:8088/portal/cockpit.html   (the same Command Center web address, once the estate is up)  or open the file directly.")
+        print(f"View it at  {_addr().web_url('hub', 8088, '/portal/cockpit.html')}   (the same Command Center web address, once the estate is up)  or open the file directly.")
     if a.open:
         import webbrowser
         webbrowser.open(out.resolve().as_uri())

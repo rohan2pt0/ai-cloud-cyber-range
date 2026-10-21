@@ -99,8 +99,14 @@ Before merging anything the router calls strong, get a second look: `./securax r
 - **Never weaken a rail, skip a test or fake a green** to finish (`diffcheck` and `forge gate` catch it).
 - **Users are not experts.** Every command a user sees must work exactly as printed. Never print a placeholder such as `FILE.xlsx` without a fallback that finds the file.
 - **Never depend on a file the user may not have.** Ship a working default (like the starter control library) and let their own file improve it.
+- **Names, not ports (doc 99).** Never show a person `localhost:PORT`. Use `web_url` in the shell, or `governance/addr.py` in Python. Fitness `no-raw-addresses` fails a new one.
+- **Links never break (doc 99).**
+  - A doc may link to any repository file: the build sends it to GitHub.
+  - A link to something that exists nowhere fails `mkdocs build --strict`.
+  - Never write the brand domain into a link: use `{{SITE_URL}}`, which stays on GitHub Pages until `./securax site live`.
 - **No hand-kept counts.** A number on a page (tests, journeys, maps) is a `<!-- fact:NAME -->` that the generator fills.
 - **Write plainly:** short sentences, one idea each, no jargon without a gloss.
+- **Calm screens (doc 100).** Show what needs the person, why, and one action; fold what is fine. Use the tokens in `governance/design.json`; a page in its `pages_on_the_standard` is held there by `test_design_standard.py`.
 
 ## 5. When you learn something
 

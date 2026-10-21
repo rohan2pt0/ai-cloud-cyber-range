@@ -31,7 +31,7 @@ Choices that save the most time and money:
 3. **AI early (COAE in year 1).** It is your differentiator in BFSI, and you already own the lab.
 4. **The OffSec 300-level certs in ONE Learn Unlimited year.** OSAI, OSWE, OSEP and OSED cost about ₹3 lakh each as single courses, but about ₹7.1 lakh together in a [Learn Unlimited](https://offsec.com/pricing) year with unlimited attempts. The planner saves unspent budget for it.
    With your numbers that is **12 certifications in about 3 years for about ₹12.7 lakh**, against about 3.6 years and ₹16.8 lakh course by course. The planner prints both.
-5. **Skipped by default:** eJPT (CPTS covers it) and GIAC (about [$999 per attempt](https://unihackers.com/certifications/gcih); take one when a role asks for it).
+5. **Skipped by default:** eJPT (CPTS covers it) and GIAC (about $999 per attempt ([GIAC GCIH](https://www.giac.org/certifications/certified-incident-handler-gcih/); check the current price there); take one when a role asks for it).
 
 **The weekly 80/20 split** (`certs next` prints it): 60% hands-on in the labs, 20% notes plus one practice report section (OffSec and HTB exams grade the report),
 20% redoing yesterday's failures from memory. Do not binge videos.

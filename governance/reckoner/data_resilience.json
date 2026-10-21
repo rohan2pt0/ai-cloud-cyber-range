@@ -1,0 +1,1125 @@
+{
+ "as_of": "2026-10",
+ "items": {
+  "tec-encryption": {
+   "summary": "Encryption turns data on laptops, servers, databases and backups into unreadable code, and key management keeps the keys apart from that data.",
+   "protects": "Customer and staff personal data, card and payment data, backups and archives, against loss or theft of devices and media, insider copying of raw files, and cloud provider or operator access.",
+   "placement": "Agent or built-in feature on every laptop and desktop (BitLocker, FileVault); database and storage encryption on servers; backup software encryption; a key manager and hardware security modules (HSMs) in the data centre core or as a cloud HSM service. Owned by Infrastructure, keys custodied by Security.",
+   "how": "Each device, database or backup set is encrypted with a data key. Data keys are wrapped by a master key held in a key manager or HSM that never releases it in clear. Recovery keys are escrowed centrally so a lost password does not mean lost data.",
+   "pareto": [
+    "Full-disk encryption on 100% of laptops, with recovery keys escrowed centrally and reported",
+    "Encrypted backups, with keys kept away from the backup system and an offline copy of the key material",
+    "Transparent database encryption (TDE) on databases holding personal or payment data",
+    "One key manager (HSM-backed for payment and signing keys) with key rotation, dual control and an inventory of every key",
+    "TLS 1.2 or higher everywhere in transit, with an inventory of certificates and their expiry"
+   ],
+   "vendors": [
+    {
+     "name": "Thales (Luna HSM, CipherTrust Manager)",
+     "kind": "commercial",
+     "fit": "Broad third-party integrations; HSM, key manager and transparent encryption from one vendor; widely used for payment and UPI workloads.",
+     "india": "Indian bank references published by Thales (a large private bank using CipherTrust; YES BANK using Luna for UPI); Luna models listed on GeM."
+    },
+    {
+     "name": "Entrust (nShield HSM)",
+     "kind": "commercial",
+     "fit": "Security World key architecture; strong for PKI, code signing and payment use.",
+     "india": "nShield HSMs have Bureau of Indian Standards (BIS) certification; sold through Indian partners."
+    },
+    {
+     "name": "Utimaco (SecurityServer, payment HSMs)",
+     "kind": "commercial",
+     "fit": "Widely used in payment and government sectors; general purpose and payment HSMs.",
+     "india": "Sold through Indian partners; confirm local support during bidding."
+    },
+    {
+     "name": "Fortanix Data Security Manager",
+     "kind": "commercial",
+     "fit": "Software-defined key management and tokenisation on FIPS-validated hardware; SaaS or on premises.",
+     "india": "Positioned for RBI card tokenisation; on-premises deployment available; strong Indian engineering presence."
+    },
+    {
+     "name": "Cloud KMS / cloud HSM (AWS KMS and CloudHSM, Azure Key Vault Managed HSM, Google Cloud KMS)",
+     "kind": "commercial",
+     "fit": "Pay-as-you-go keys for cloud workloads; choose a dedicated or customer-held key option for regulated data.",
+     "india": "AWS CloudHSM and KMS available in the Mumbai region; Azure and Google run Indian regions."
+    },
+    {
+     "name": "BitLocker (Windows) and FileVault (macOS), with Intune or similar for key escrow",
+     "kind": "commercial",
+     "fit": "Device encryption already included in the operating system; cost is in management, not licences.",
+     "india": "Built in; no extra Indian presence needed."
+    },
+    {
+     "name": "HashiCorp Vault (community edition) / OpenBao",
+     "kind": "open source",
+     "fit": "Secrets and application key management for engineering teams; not a substitute for an HSM for payment or signing keys.",
+     "india": "Community supported; commercial support through partners."
+    }
+   ],
+   "cost": {
+    "unit": "fixed per year for management and services; HSMs per appliance (one-off plus about 18-22% a year support); cloud HSM per HSM-hour",
+    "band": "Rs 5-30 lakh a year without HSMs. On-premises network HSM: about Rs 26-50 lakh per appliance (GeM catalogue listings for Luna models). Cloud HSM: about USD 1.45-1.60 per HSM-hour, or Rs 10.5-12 lakh per HSM per year at Rs 84/USD. Cloud KMS: USD 1 per key per month plus USD 0.03 per 10,000 requests.",
+    "reference_org": "About Rs 10-30 lakh a year for device, database and backup encryption with central key escrow. Add about Rs 1-2 crore one-off for an HSM pair plus a DR unit if the organisation runs its own payment, card or signing keys, or about Rs 21-24 lakh a year for two cloud HSMs.",
+    "drivers": [
+     "Whether payment, card or signing keys need dedicated HSMs",
+     "Number of HSMs for high availability and DR",
+     "Database edition (TDE is a paid option on some editions)",
+     "Endpoint management already owned (Intune, Jamf)",
+     "Professional services for key ceremony and integration"
+    ],
+    "note": "indicative; get three quotes. Excludes 18% GST. USD cloud prices converted at about Rs 84/USD; GeM listings may be dated."
+   },
+   "rfp": {
+    "scope": [
+     "Full-disk encryption for all Windows and macOS endpoints with central recovery key escrow and compliance reporting",
+     "Database encryption (TDE or column level) for named databases holding personal and payment data",
+     "Backup and archive encryption with keys held outside the backup system",
+     "Key management system and HSMs: supply, install, key ceremony, HA and DR replication, five-year support",
+     "Certificate and key inventory, rotation procedures, runbooks and staff training"
+    ],
+    "must": [
+     "HSMs validated to FIPS 140-3 Level 3 (or FIPS 140-2 Level 3 with a stated path to 140-3), tamper responsive",
+     "Master keys never exportable in clear; dual control and split knowledge (M of N) for key ceremonies",
+     "AES-256 for data at rest; TLS 1.2 minimum, TLS 1.3 preferred, in transit",
+     "Key generation, storage and backup inside India for regulated data; key backups encrypted and held at a second site",
+     "Central recovery key escrow with 100% device coverage reporting",
+     "Audit log of every key operation, forwarded to the SIEM in real time",
+     "Roadmap for post-quantum algorithms (ML-KEM, ML-DSA) in firmware, stated in writing"
+    ],
+    "should": [
+     "KMIP and PKCS#11 support, so databases, storage and backup can use one key manager",
+     "Bring-your-own-key or hold-your-own-key for SaaS and cloud workloads",
+     "Automated certificate discovery and expiry alerts",
+     "Tokenisation service for card and Aadhaar-like identifiers"
+    ],
+    "sizing": [
+     "2,500 endpoints (split Windows / macOS)",
+     "Number and type of databases with personal or payment data",
+     "Backup volume (TB) and retention",
+     "Number of keys and certificates today, and growth",
+     "5 sites; primary and DR data centre locations",
+     "Key operations per second at peak (payments, signing)"
+    ],
+    "evaluation": [
+     "Technical fit and security certifications 35",
+     "Integration with existing databases, backup and cloud 20",
+     "Total cost over five years 25",
+     "Local support, spares and response in India 10",
+     "References in Indian regulated entities 10"
+    ],
+    "sla": [
+     "HSM cluster availability 99.99%",
+     "Critical fault response 2 hours, on-site within 4 hours in metros",
+     "Replacement HSM within next business day, with secure return of the failed unit",
+     "Firmware security fixes within 30 days of release"
+    ],
+    "clauses": [
+     "Right to audit by the organisation, its auditors and the regulator (RBI, SEBI or IRDAI as applicable), on site and remote",
+     "RBI outsourcing of IT services directions: risk assessment, sub-contracting only with consent, concentration risk noted",
+     "CERT-In directions of 28 April 2022: report incidents within 6 hours; keep ICT logs for a rolling 180 days and produce them on request",
+     "DPDP Act 2023 and DPDP Rules 2025: vendor acts as data processor, follows instructions, applies reasonable security safeguards, helps with breach notice",
+     "Exit and transition: export of all data, keys and configuration in open formats; assisted handover; data deleted with certificate",
+     "Keys and key backups for regulated data stay in India; payment system data stored only in India (RBI directive on storage of payment system data, 2018)",
+     "Vendor staff never hold master key shares; key custodians are named employees",
+     "Secure destruction (zeroisation) certificate for any HSM returned or retired"
+    ]
+   },
+   "architecture": "Endpoints report encryption status and escrow recovery keys to the endpoint manager. Databases, storage arrays and backup software call the key manager over KMIP or PKCS#11. The key manager sits in the restricted core zone of the primary data centre as an HA pair of HSMs, with a third HSM at DR replicating key material. Cloud workloads use the cloud KMS with customer-managed keys, or connect to the on-premises key manager. All key events go to the SIEM.",
+   "kpis": [
+    "Percent of laptops encrypted with escrowed recovery key (target 100%)",
+    "Percent of databases with personal or payment data encrypted at rest",
+    "Keys and certificates past their rotation or expiry date (target 0)",
+    "Successful key recovery drill in the last 12 months (yes/no)"
+   ],
+   "pitfalls": [
+    "Storing encryption keys on the same server or backup system as the data",
+    "Encrypting backups without a tested way to recover the key after a ransomware event",
+    "Buying HSMs without planning the key ceremony, custodians and DR replication",
+    "No inventory of keys and certificates, so expiry causes outages"
+   ],
+   "sources": [
+    {
+     "title": "Thales case study: YES BANK secures mobile payments with Luna HSM",
+     "url": "https://cpl.thalesgroup.com/resources/encryption/yes-bank-secures-mobile-payment-case-study"
+    },
+    {
+     "title": "Encryption Consulting: HSM vendor landscape",
+     "url": "https://www.encryptionconsulting.com/education-center/hsm-vendor-landscape/"
+    },
+    {
+     "title": "Entrust: nShield HSM achieves BIS certification",
+     "url": "https://www.entrust.com/ro/company/newsroom/ncipher-nshield-hsm-achieves-bureau-indian-standards-bis"
+    },
+    {
+     "title": "Fortanix: RBI card tokenisation compliance (press release, 2021)",
+     "url": "https://www.businesswire.com/news/home/20211020006182/en"
+    },
+    {
+     "title": "AWS KMS pricing",
+     "url": "https://aws.amazon.com/kms/pricing/"
+    },
+    {
+     "title": "AWS CloudHSM pricing (hourly per HSM)",
+     "url": "https://aws.amazon.com/cloudhsm/pricing/"
+    },
+    {
+     "title": "Third-party CloudHSM calculator (hsm2m.medium list rate)",
+     "url": "https://www.factualminds.com/tools/aws-cloudhsm-pricing-calculator/"
+    },
+    {
+     "title": "GeM catalogue: SafeNet Luna network HSM listing",
+     "url": "https://org.gem.gov.in/cart/cart_global/directBuy/363328"
+    },
+    {
+     "title": "CCA advisory: SHA-2 and FIPS 140-3 compliant cryptographic devices",
+     "url": "https://www.cca.gov.in/sites/files/pdf/news/Compatibility_with_SHA-2_and_FIPS_140-3_Compliant_Cryptographic_Devices.pdf"
+    },
+    {
+     "title": "RBI Master Direction on IT Governance, Risk, Controls and Assurance Practices (2023)",
+     "url": "https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=12562"
+    },
+    {
+     "title": "DPDP Rules 2025, Rule 6 (reasonable security safeguards)",
+     "url": "https://dpdpa.com/dpdparules/rule6.html"
+    }
+   ]
+  },
+  "tec-dlp": {
+   "summary": "Data loss prevention (DLP) spots sensitive data leaving by email, web, cloud upload, USB or print, and warns, blocks or records it.",
+   "protects": "Customer personal data, account and card numbers, source code, Board and strategy papers; against careless sharing, insider theft and data copied out by malware.",
+   "placement": "Agent on every endpoint; policy in the email gateway and the secure web gateway or SSE/CASB service; cloud API connectors for Microsoft 365 or Google Workspace. Policy owned by the data owner and the CISO; tooling run by the security operations or tooling team.",
+   "how": "Policies describe sensitive data with patterns (PAN, Aadhaar, account numbers), dictionaries, labels from the classification tool and document fingerprints. Each channel inspects content in motion and applies the policy: log, warn the user, ask for a reason, encrypt or block. Incidents go to a console and the SIEM for review.",
+   "pareto": [
+    "Start in monitor mode on three to five high-value data types (Aadhaar, PAN, card, account numbers, customer lists)",
+    "Cover email and web/cloud upload first; they carry most leaks",
+    "USB and removable media blocked by default, with an approved-exception process",
+    "Use classification labels as the main trigger, not only regex",
+    "A weekly incident review with business owners, then move tuned rules to block"
+   ],
+   "vendors": [
+    {
+     "name": "Microsoft Purview Data Loss Prevention",
+     "kind": "commercial",
+     "fit": "Best fit where Microsoft 365 E5 or E5 Compliance is already licensed; endpoint, Exchange, SharePoint, Teams in one policy.",
+     "india": "Microsoft data centres in India; Indian CSP partners resell."
+    },
+    {
+     "name": "Forcepoint DLP",
+     "kind": "commercial",
+     "fit": "Mature, deep policy library; risk-adaptive options; strong for on-premises and hybrid estates.",
+     "india": "Long-standing Indian partner network and BFSI installed base."
+    },
+    {
+     "name": "Symantec DLP (Broadcom)",
+     "kind": "commercial",
+     "fit": "Long-time Gartner leader; broad channel coverage for large, complex estates.",
+     "india": "Sold through Broadcom partners in India."
+    },
+    {
+     "name": "Seqrite (Quick Heal) Endpoint Security with DLP",
+     "kind": "Indian",
+     "fit": "Endpoint DLP bundled in the Seqrite endpoint suite (EPS Total); simple USB, email and cloud upload control at low cost.",
+     "india": "Indian vendor (Pune); used by NBFCs, co-operative banks, insurers and brokers."
+    },
+    {
+     "name": "Data Resolve inDefend",
+     "kind": "Indian",
+     "fit": "Endpoint DLP with user behaviour analytics and employee monitoring for mid-size firms.",
+     "india": "Indian vendor (Noida/Delhi NCR); distributed through Indian channels."
+    },
+    {
+     "name": "Netskope / Zscaler (SSE platforms with inline DLP)",
+     "kind": "commercial",
+     "fit": "Choose when web and cloud traffic already goes through an SSE service; DLP for SaaS and web uploads.",
+     "india": "Both run points of presence in India."
+    }
+   ],
+   "cost": {
+    "unit": "per user per year (endpoint, email and web channels), plus one-off implementation",
+    "band": "Rs 1,500-5,500 per user per year for enterprise DLP (third-party estimates of about USD 30-65 per user per year, at Rs 84/USD); Indian endpoint-only DLP bundles are lower. Implementation Rs 10-25 lakh.",
+    "reference_org": "About Rs 30 lakh-1.1 crore a year for 2,000 users, plus Rs 10-25 lakh one-off for design and tuning. Little extra licence cost if Microsoft 365 E5 or E5 Compliance is already owned.",
+    "drivers": [
+     "Channels covered (endpoint, email, web, cloud, print)",
+     "Licence already owned (Microsoft E5)",
+     "Number of policies and data types",
+     "Managed service for triage versus in-house analysts",
+     "On-premises versus cloud console"
+    ],
+    "note": "indicative; get three quotes. Excludes 18% GST. Vendor list prices are not published; bands come from third-party estimates."
+   },
+   "rfp": {
+    "scope": [
+     "Endpoint, email and web/cloud DLP for 2,000 users and 2,500 endpoints",
+     "Policy design for named data types, with monitor-then-block rollout",
+     "Integration with classification labels, SIEM and ticketing",
+     "Six months of tuning support and analyst training",
+     "Incident triage runbook and monthly reporting"
+    ],
+    "must": [
+     "Detection of Indian identifiers out of the box: Aadhaar (with checksum), PAN, IFSC, Indian mobile numbers, card numbers with Luhn check",
+     "Endpoint control of USB, print, clipboard, cloud sync and browser upload on Windows and macOS, online and offline",
+     "Reads classification labels from the chosen classification tool",
+     "False-positive rate under 10% on the agreed test set after tuning",
+     "All incidents and evidence stored in India, with role-based access and masking of matched content for reviewers",
+     "Incidents exported to the SIEM in near real time"
+    ],
+    "should": [
+     "Exact data match or fingerprinting of customer databases and key documents",
+     "OCR for images and scanned PDFs",
+     "User coaching pop-ups with justification capture",
+     "Insider-risk scoring that combines DLP and identity signals"
+    ],
+    "sizing": [
+     "2,000 users; 2,500 endpoints (OS split)",
+     "Email volume per day",
+     "Web/cloud traffic path (proxy, SSE or none)",
+     "Number of sensitive data types and document sets to fingerprint",
+     "5 sites; remote and offline users percentage"
+    ],
+    "evaluation": [
+     "Detection accuracy in a proof of concept on the organisation's own sample data 35",
+     "Channel coverage and endpoint performance 20",
+     "Total cost over three years 25",
+     "Indian support and partner capability 10",
+     "References in Indian regulated entities 10"
+    ],
+    "sla": [
+     "Console availability 99.9%",
+     "Critical issue response 4 hours, 24x7",
+     "New policy or rule change applied within 2 business days",
+     "Agent updates tested and released within 30 days of a new OS version"
+    ],
+    "clauses": [
+     "Right to audit by the organisation, its auditors and the regulator (RBI, SEBI or IRDAI as applicable), on site and remote",
+     "RBI outsourcing of IT services directions: risk assessment, sub-contracting only with consent, concentration risk noted",
+     "CERT-In directions of 28 April 2022: report incidents within 6 hours; keep ICT logs for a rolling 180 days and produce them on request",
+     "DPDP Act 2023 and DPDP Rules 2025: vendor acts as data processor, follows instructions, applies reasonable security safeguards, helps with breach notice",
+     "Exit and transition: export of all data, keys and configuration in open formats; assisted handover; data deleted with certificate",
+     "Incident data contains personal data: vendor access is logged, minimal and from India unless agreed in writing",
+     "Data localisation for payment system data captured in incidents (RBI 2018 directive)"
+    ]
+   },
+   "architecture": "Endpoint agents report to a policy server or cloud console. Email DLP sits on the outbound mail gateway or inside Microsoft 365. Web and cloud DLP sits in the secure web gateway or SSE service on the internet path. Classification labels feed policy; incidents feed the SIEM and the ticketing tool; HR and Legal see only escalated cases.",
+   "kpis": [
+    "Sensitive data incidents per month, by channel, and trend",
+    "Percent of incidents confirmed real after review (precision)",
+    "Percent of endpoints with a healthy DLP agent",
+    "Time from detection to closure for high-severity incidents"
+   ],
+   "pitfalls": [
+    "Switching on blocking before tuning, so business stops and DLP gets switched off",
+    "Regex-only rules that flood analysts with false positives",
+    "No owner in the business to decide what is a real incident",
+    "Forgetting personal cloud apps, messaging and printing"
+   ],
+   "sources": [
+    {
+     "title": "Nightfall: Forcepoint DLP pricing overview",
+     "url": "https://www.nightfall.ai/blog/forcepoint-dlp-pricing"
+    },
+    {
+     "title": "SelectHub: Forcepoint DLP vs Safetica (starting prices)",
+     "url": "https://www.selecthub.com/data-loss-prevention-software/forcepoint-dlp-vs-safetica/"
+    },
+    {
+     "title": "VendorBenchmark: Forcepoint pricing",
+     "url": "https://vendorbenchmark.com/vendors/forcepoint-pricing"
+    },
+    {
+     "title": "Cloudfy: Seqrite endpoint security for Indian businesses",
+     "url": "https://cloudfysystems.com/blog/seqrite-endpoint-security-for-businesses-india"
+    },
+    {
+     "title": "Channel Drive: Data Resolve picks Beetel for India distribution",
+     "url": "https://channeldrive.in/distribution/data-resolve-technologies-picks-beetel-teletech-for-distribution-in-india/"
+    },
+    {
+     "title": "PrecisionTech: Microsoft 365 enterprise add-on prices in India",
+     "url": "https://precisiontech.in/domain-hosting-email/email-solutions/microsoft365-enterprise-additional/"
+    },
+    {
+     "title": "DPDP Rules 2025, Rule 6",
+     "url": "https://dpdpa.com/dpdparules/rule6.html"
+    },
+    {
+     "title": "Mondaq: CERT-In 6-hour reporting directions",
+     "url": "https://www.mondaq.com/india/it-and-internet/1202576/everything-you-need-to-know-about-indias-new-guidelines-related-to-cyber-incident-reporting-by-cert-in"
+    }
+   ]
+  },
+  "tec-classify": {
+   "summary": "A discovery and classification tool scans file shares, databases, email and cloud stores to find where sensitive data really lives, and labels it.",
+   "protects": "Personal data under DPDP, payment and account data, confidential business documents; against over-sharing, forgotten copies, excess retention and blind spots in DLP and access control.",
+   "placement": "Scanners in the data centre (near file servers and databases) and API connectors to cloud services (Microsoft 365, Google, AWS, Azure); labelling add-in on user devices. Owned by the data protection officer or data governance lead, run by the tooling team.",
+   "how": "Scanners read data in place, match it against patterns, dictionaries and machine-learning classifiers, and build an inventory of where each type of data sits and who can open it. Users and rules apply labels such as Public, Internal, Confidential, Restricted. DLP, DRM and access reviews use those labels.",
+   "pareto": [
+    "A simple four-level label scheme that people understand",
+    "Scan the top file shares, Microsoft 365 or Google Drive, and the core customer databases first",
+    "Default labels on new documents, with user override and justification",
+    "Fix open access (everyone or anyone-with-link) on files that contain personal data",
+    "Feed labels to DLP and to the DPDP data inventory and retention schedule"
+   ],
+   "vendors": [
+    {
+     "name": "Microsoft Purview Information Protection and Data Map",
+     "kind": "commercial",
+     "fit": "Best fit for Microsoft-heavy estates; labels flow to Office, DLP and encryption. Check coverage of non-Microsoft stores.",
+     "india": "Indian Azure regions; Indian CSP partners."
+    },
+    {
+     "name": "Varonis Data Security Platform",
+     "kind": "commercial",
+     "fit": "Strong on file shares and Microsoft 365: links sensitive data with who can access it and automates removal of excess access.",
+     "india": "Sold through Indian partners; SaaS hosting region to be confirmed in bid."
+    },
+    {
+     "name": "BigID",
+     "kind": "commercial",
+     "fit": "Broad discovery across structured and unstructured, cloud and on-premises data; privacy-focused; needs more setup.",
+     "india": "Sold through partners; confirm data residency of the console."
+    },
+    {
+     "name": "Mage Data",
+     "kind": "commercial",
+     "fit": "Discovery and classification together with static and dynamic masking; good where masking is also needed.",
+     "india": "Markets DPDP, IRDAI and Indian banking compliance; headquartered in New York."
+    },
+    {
+     "name": "Seclore / labelling add-ons of DRM and DLP suites",
+     "kind": "Indian",
+     "fit": "Seclore (Indian origin) pairs labels with persistent protection; consider when DRM is also bought.",
+     "india": "Indian vendor headquartered in Mumbai."
+    }
+   ],
+   "cost": {
+    "unit": "fixed per year (licensed by users, data volume or data sources), plus one-off implementation",
+    "band": "Rs 15 lakh-1 crore a year depending on tool and data volume. Purview labelling is included in Microsoft 365 E5 or E5 Compliance. Third-party estimates for specialist platforms run from about USD 50 to several hundred per user per year at mid-market scale.",
+    "reference_org": "About Rs 15-40 lakh a year if built on an existing Microsoft E5 licence plus services; about Rs 50 lakh-1 crore a year for a specialist platform covering 2,000 users and the core databases.",
+    "drivers": [
+     "Number and type of data sources and connectors",
+     "Data volume to scan (TB)",
+     "Licence already owned (Microsoft E5)",
+     "Automated remediation modules",
+     "Managed service versus in-house operation"
+    ],
+    "note": "indicative; get three quotes. Excludes 18% GST. Specialist vendors do not publish prices; third-party estimates vary widely."
+   },
+   "rfp": {
+    "scope": [
+     "Discovery scans of named file shares, Microsoft 365 or Google Workspace, and named databases",
+     "Design and rollout of a four-level label scheme with user training",
+     "Data inventory report for DPDP: what personal data, where, who owns it, who can access it",
+     "Integration with DLP, DRM and the SIEM",
+     "Remediation of open access on sensitive files"
+    ],
+    "must": [
+     "Built-in classifiers for Indian identifiers (Aadhaar, PAN, IFSC, Indian phone numbers, card numbers)",
+     "Scans data in place without copying it out of India",
+     "Labels readable by the chosen DLP and DRM tools",
+     "Reports per data owner, per location and per data type, exportable to CSV",
+     "Role-based access to scan results; matched values masked in reports"
+    ],
+    "should": [
+     "Machine-learning classifiers trainable on the organisation's own documents",
+     "Permission analytics showing who can open each sensitive file",
+     "Automated retention and deletion workflows",
+     "Coverage of cloud object storage and SaaS apps"
+    ],
+    "sizing": [
+     "2,000 users",
+     "TB of file shares, mailbox and cloud drive data",
+     "Number and engines of databases",
+     "Number of SaaS apps (of 40 applications)",
+     "5 sites"
+    ],
+    "evaluation": [
+     "Detection accuracy on a proof of concept with the organisation's data 35",
+     "Connector coverage of the actual estate 20",
+     "Total cost over three years 25",
+     "Ease of use for data owners 10",
+     "Indian support and references 10"
+    ],
+    "sla": [
+     "Full scan of agreed sources completed within the agreed window",
+     "Console availability 99.5%",
+     "Critical issue response 4 hours",
+     "New connector or classifier change within 10 business days"
+    ],
+    "clauses": [
+     "Right to audit by the organisation, its auditors and the regulator (RBI, SEBI or IRDAI as applicable), on site and remote",
+     "RBI outsourcing of IT services directions: risk assessment, sub-contracting only with consent, concentration risk noted",
+     "CERT-In directions of 28 April 2022: report incidents within 6 hours; keep ICT logs for a rolling 180 days and produce them on request",
+     "DPDP Act 2023 and DPDP Rules 2025: vendor acts as data processor, follows instructions, applies reasonable security safeguards, helps with breach notice",
+     "Exit and transition: export of all data, keys and configuration in open formats; assisted handover; data deleted with certificate",
+     "Scan results are personal data: stored in India, deleted on exit"
+    ]
+   },
+   "architecture": "Scanners sit in the server zone with read-only service accounts to file servers and databases; cloud connectors use read-only APIs. The inventory feeds the DPDP register, DLP policies, DRM and access reviews in the identity governance tool. The labelling client runs inside Office and on endpoints.",
+   "kpis": [
+    "Percent of in-scope data stores scanned in the last 90 days",
+    "Percent of new documents carrying a label",
+    "Sensitive files open to everyone, trend to zero",
+    "Personal data stores without a named owner (target 0)"
+   ],
+   "pitfalls": [
+    "Too many labels, so users pick at random",
+    "Scanning everything at once and drowning in findings",
+    "Inventory never fed to DLP or retention, so it changes nothing",
+    "No data owners to act on the findings"
+   ],
+   "sources": [
+    {
+     "title": "Kanerika: sensitive data discovery tools",
+     "url": "https://kanerika.com/blogs/sensitive-data-discovery-tools/"
+    },
+    {
+     "title": "PeerSpot: BigID vs Microsoft Purview Information Protection",
+     "url": "https://www.peerspot.com/products/comparisons/bigid-next_vs_microsoft-purview-information-protection"
+    },
+    {
+     "title": "ITQlick: Varonis pricing estimates",
+     "url": "https://www.itqlick.com/varonis/pricing"
+    },
+    {
+     "title": "VendorBenchmark: Varonis pricing",
+     "url": "https://vendorbenchmark.com/vendors/varonis-pricing"
+    },
+    {
+     "title": "Mage Data: products",
+     "url": "https://www.magedata.ai/"
+    },
+    {
+     "title": "DPDP Rules 2025, Rule 6",
+     "url": "https://dpdpa.com/dpdparules/rule6.html"
+    }
+   ]
+  },
+  "tec-dam": {
+   "summary": "Database activity monitoring (DAM) records and alerts on who reads or changes sensitive data in databases; data masking replaces real values in test and development copies.",
+   "protects": "Customer, account and card data in core databases; against privileged insider misuse, stolen DBA credentials, SQL injection and leaks from non-production copies.",
+   "placement": "Agents on database servers, or network sensors on the database segment, reporting to a collector in the security zone; masking runs in the pipeline that refreshes test environments. Owned by the CISO with the database team.",
+   "how": "Agents or sensors capture every SQL statement against monitored databases, including those of DBAs, independent of the database's own logs. Policies flag mass reads, off-hours access and access to sensitive columns, and can block in some modes. Masking tools find sensitive columns and replace values consistently so test data stays usable but is not real.",
+   "pareto": [
+    "Monitor privileged and DBA access on the five to ten databases holding customer and payment data",
+    "Alert on bulk extraction and access from unusual accounts or hosts",
+    "Separate DAM administration from DBAs (segregation of duties)",
+    "Mask every non-production copy of production data before it leaves production",
+    "Send DAM alerts to the SIEM and review privileged activity monthly"
+   ],
+   "vendors": [
+    {
+     "name": "IBM Guardium Data Protection",
+     "kind": "commercial",
+     "fit": "Mature DAM with strong analytics and broad database coverage; licensed by resource value units per data source.",
+     "india": "Large Indian BFSI installed base; IBM India and partners."
+    },
+    {
+     "name": "Imperva Data Security Fabric (a Thales company)",
+     "kind": "commercial",
+     "fit": "Database and file activity monitoring with blocking and user-rights review; agent or network based.",
+     "india": "Sold through Thales and Imperva partners in India."
+    },
+    {
+     "name": "Oracle Audit Vault and Database Firewall",
+     "kind": "commercial",
+     "fit": "Combines audit logs and SQL traffic capture; natural fit for Oracle-heavy estates, also covers some non-Oracle databases.",
+     "india": "Oracle India and partners; keep on a supported release."
+    },
+    {
+     "name": "Mage Data (static and dynamic masking, discovery)",
+     "kind": "commercial",
+     "fit": "Masking for test data and role-based masking at query time; highly rated in peer reviews for data masking.",
+     "india": "Markets Indian banking, IRDAI and DPDP use cases."
+    },
+    {
+     "name": "Perforce Delphix",
+     "kind": "commercial",
+     "fit": "Test data delivery with automated masking and synthetic data, for CI/CD pipelines.",
+     "india": "Sold through partners in India."
+    },
+    {
+     "name": "pgAudit (PostgreSQL) and native database audit (MySQL/MariaDB audit plugins, SQL Server Audit)",
+     "kind": "open source",
+     "fit": "Low-cost audit logging sent to the SIEM; no independent capture or blocking, so DBAs can tamper unless logs leave the server at once.",
+     "india": "Community supported."
+    }
+   ],
+   "cost": {
+    "unit": "per monitored database source per year (DAM); per database or per TB for masking",
+    "band": "DAM about Rs 3-7 lakh per monitored data source per year (one public marketplace listing works out to about USD 7,600 per data source per year at list; discounts are common). Masking Rs 15-40 lakh a year for a mid-size estate.",
+    "reference_org": "About Rs 40 lakh-1.2 crore a year for 10-15 critical database sources plus masking for test environments, before negotiation. Native audit to SIEM is far cheaper but weaker.",
+    "drivers": [
+     "Number of database instances and engines",
+     "Agent versus network capture, and blocking mode",
+     "Collector and storage sizing for 180 days or more of activity",
+     "Masking scope (number of databases and refresh frequency)",
+     "Managed service for alert triage"
+    ],
+    "note": "indicative; get three quotes. Excludes 18% GST. USD figure from an AWS Marketplace listing converted at about Rs 84/USD."
+   },
+   "rfp": {
+    "scope": [
+     "DAM for named production databases (list engine, version, size, cluster)",
+     "Policies for privileged access, bulk reads and sensitive columns",
+     "Integration with SIEM, PAM and ticketing",
+     "Static masking for all non-production refreshes of named databases",
+     "Monthly privileged-activity report for the CISO and data owners"
+    ],
+    "must": [
+     "Captures all SQL including local and privileged sessions, independent of native database logs",
+     "DAM administrators separate from DBAs; DBAs cannot disable monitoring unnoticed",
+     "Activity data retained at least 180 days online, stored in India, tamper evident",
+     "Performance overhead under 5% on monitored servers, proven in a proof of concept",
+     "Masking is consistent across databases (same input gives same masked value) and irreversible",
+     "Support for the organisation's engines (for example Oracle, SQL Server, PostgreSQL, MySQL)"
+    ],
+    "should": [
+     "Blocking or session termination for high-risk statements",
+     "User rights review and dormant account reports",
+     "Discovery of sensitive columns to drive policies and masking",
+     "Dynamic masking for support staff views in production"
+    ],
+    "sizing": [
+     "Number of database instances, engines, versions and peak transactions per second",
+     "Database size (TB) for masking",
+     "Number of test refreshes per month",
+     "Retention requirement in days",
+     "Primary and DR sites"
+    ],
+    "evaluation": [
+     "Technical fit and proof of concept results 40",
+     "Coverage of database engines in use 15",
+     "Total cost over five years 25",
+     "Indian support and skills 10",
+     "References in Indian regulated entities 10"
+    ],
+    "sla": [
+     "Collector availability 99.9%",
+     "Critical issue response 2 hours, 24x7",
+     "Agent support for new database versions within 90 days of release",
+     "Monthly policy tuning review"
+    ],
+    "clauses": [
+     "Right to audit by the organisation, its auditors and the regulator (RBI, SEBI or IRDAI as applicable), on site and remote",
+     "RBI outsourcing of IT services directions: risk assessment, sub-contracting only with consent, concentration risk noted",
+     "CERT-In directions of 28 April 2022: report incidents within 6 hours; keep ICT logs for a rolling 180 days and produce them on request",
+     "DPDP Act 2023 and DPDP Rules 2025: vendor acts as data processor, follows instructions, applies reasonable security safeguards, helps with breach notice",
+     "Exit and transition: export of all data, keys and configuration in open formats; assisted handover; data deleted with certificate",
+     "Activity data and masked datasets stay in India",
+     "Vendor support access to collectors only through the organisation's PAM, recorded"
+    ]
+   },
+   "architecture": "Agents on each monitored database server (or a network tap on the database VLAN) send activity to collectors in the security management zone, which feed a central manager. Alerts go to the SIEM and SOC; privileged sessions are matched with PAM records. Masking runs between the production backup or snapshot and the test environment, so unmasked data never reaches non-production.",
+   "kpis": [
+    "Percent of critical databases under DAM",
+    "Privileged sessions without a matching approved change or PAM ticket",
+    "Non-production databases holding unmasked personal data (target 0)",
+    "Mean time to review high-risk DAM alerts"
+   ],
+   "pitfalls": [
+    "Letting DBAs administer the tool that watches them",
+    "Monitoring everything and storing nothing useful",
+    "Masking only some columns, leaving joinable identifiers behind",
+    "Copying production to test 'just this once' without masking"
+   ],
+   "sources": [
+    {
+     "title": "AWS Marketplace: IBM Guardium Data Protection listing",
+     "url": "https://aws.amazon.com/marketplace/pp/prodview-iwwxejrcekneg"
+    },
+    {
+     "title": "TrustRadius: IBM Guardium vs Imperva Data Security",
+     "url": "https://www.trustradius.com/compare-products/ibm-guardium-vs-imperva-data-security-vs-symantec-data-center-security"
+    },
+    {
+     "title": "Oracle Audit Vault and Database Firewall documentation",
+     "url": "https://docs.oracle.com/en/database/oracle/audit-vault-database-firewall"
+    },
+    {
+     "title": "Mage Data: products",
+     "url": "https://www.magedata.ai/"
+    },
+    {
+     "title": "Perforce Delphix",
+     "url": "https://www.perforce.com/products/delphix"
+    },
+    {
+     "title": "pgAudit on GitHub",
+     "url": "https://github.com/pgaudit/pgaudit"
+    },
+    {
+     "title": "DPDP Rules 2025, Rule 6 (masking, logging, one-year log retention)",
+     "url": "https://dpdpa.com/dpdparules/rule6.html"
+    }
+   ]
+  },
+  "tec-drm": {
+   "summary": "Digital rights management (DRM) wraps a document in encryption and rules, so only named people can open, edit, print or forward it, even after it leaves the organisation.",
+   "protects": "Board papers, legal, strategy, M&A and regulator correspondence, customer files shared with partners; against forwarding, leaks by recipients and loss after sharing.",
+   "placement": "A policy server (cloud or on premises) plus an add-in or viewer on user devices; integrations with email, document management and file sharing. Owned by the CISO with the Company Secretary and Legal for the first use cases.",
+   "how": "When a document is protected, it is encrypted and tagged with a policy naming who may do what, and for how long. Opening it checks with the policy server, which can revoke access later. Every open is logged.",
+   "pareto": [
+    "Start with Board, legal and strategy documents and a small user group",
+    "Automatic protection for documents leaving through email or the document management system",
+    "Browser-based viewing for external recipients so they need no install",
+    "Revoke access when a deal ends or a person leaves",
+    "Usage logs reviewed for the most sensitive documents"
+   ],
+   "vendors": [
+    {
+     "name": "Seclore Enterprise Digital Rights Management",
+     "kind": "Indian",
+     "fit": "File-format-agnostic protection with browser access for external users; many integrations with DMS, email and DLP.",
+     "india": "Indian vendor headquartered in Mumbai; Indian bank references (for example IDFC First Bank)."
+    },
+    {
+     "name": "Microsoft Purview Information Protection (Azure Rights Management)",
+     "kind": "commercial",
+     "fit": "Included with Microsoft 365 E5 or E5 Compliance; strongest for Office formats and Microsoft-centric collaboration.",
+     "india": "Indian Azure regions; Indian CSP partners."
+    },
+    {
+     "name": "Fasoo Enterprise DRM",
+     "kind": "commercial",
+     "fit": "Broad file-type coverage including design and engineering formats; on-premises option.",
+     "india": "Sold through partners; confirm local support."
+    },
+    {
+     "name": "Thales CipherTrust (file and transparent encryption)",
+     "kind": "commercial",
+     "fit": "Choose when the aim is encryption of file shares and servers rather than persistent document rights.",
+     "india": "Indian bank references published by Thales."
+    }
+   ],
+   "cost": {
+    "unit": "per protected user per year (authors who protect documents); viewers often free",
+    "band": "Roughly Rs 4,000-15,000 per protected user per year at a few hundred users (one public marketplace listing is about USD 50,000 for up to 100 users; per-user cost falls with volume). Included in Microsoft 365 E5 for Microsoft formats.",
+    "reference_org": "About Rs 15-50 lakh a year for 200-500 protecting users plus integration; less if built on an existing Microsoft E5 licence.",
+    "drivers": [
+     "Number of protecting users",
+     "Integrations with DMS, email and file sharing",
+     "On premises versus SaaS",
+     "File types beyond Office and PDF",
+     "External recipient volume"
+    ],
+    "note": "indicative; get three quotes. Excludes 18% GST. USD figure from an AWS Marketplace listing converted at about Rs 84/USD."
+   },
+   "rfp": {
+    "scope": [
+     "DRM for named user groups (Board, Secretariat, Legal, Strategy, Finance)",
+     "Automatic protection integrated with email and the document management system",
+     "External sharing with browser-based access",
+     "Training and a quick-reference guide for users",
+     "Usage reporting to document owners"
+    ],
+    "must": [
+     "AES-256 encryption with keys held in India or in the organisation's HSM",
+     "Revocation of access that takes effect within 15 minutes",
+     "Protects Office, PDF and image formats at minimum",
+     "External recipients open documents without installing software",
+     "Full audit trail of opens, prints and failed attempts, exportable to the SIEM",
+     "Works with the chosen classification labels"
+    ],
+    "should": [
+     "Dynamic watermarking with user name and time",
+     "Offline access windows set by policy",
+     "Mobile apps for iOS and Android",
+     "Integration with DLP to protect instead of block"
+    ],
+    "sizing": [
+     "Number of protecting users and viewers",
+     "Number of external partners and recipients",
+     "Document management and email systems in use",
+     "On premises or SaaS preference",
+     "Sites and remote users"
+    ],
+    "evaluation": [
+     "Usability for executives and external recipients 30",
+     "Security and key control 25",
+     "Integration fit 15",
+     "Total cost over three years 20",
+     "Indian support and references 10"
+    ],
+    "sla": [
+     "Policy server availability 99.9% (users cannot open documents if it is down)",
+     "Critical issue response 2 hours for Board-period support",
+     "Disaster recovery for the policy server with RTO 4 hours"
+    ],
+    "clauses": [
+     "Right to audit by the organisation, its auditors and the regulator (RBI, SEBI or IRDAI as applicable), on site and remote",
+     "RBI outsourcing of IT services directions: risk assessment, sub-contracting only with consent, concentration risk noted",
+     "CERT-In directions of 28 April 2022: report incidents within 6 hours; keep ICT logs for a rolling 180 days and produce them on request",
+     "DPDP Act 2023 and DPDP Rules 2025: vendor acts as data processor, follows instructions, applies reasonable security safeguards, helps with breach notice",
+     "Exit and transition: export of all data, keys and configuration in open formats; assisted handover; data deleted with certificate",
+     "Escrow or export of keys so protected documents stay readable after exit",
+     "Policy server and keys hosted in India for regulated data"
+    ]
+   },
+   "architecture": "The policy server runs as SaaS in an Indian region or on premises in the application zone, with keys in the organisation's key manager or HSM. Add-ins on endpoints and connectors in email and the DMS protect documents automatically, guided by classification labels. Open events go to the SIEM.",
+   "kpis": [
+    "Percent of Board and legal documents shared externally that are protected",
+    "Access revocations completed within target time",
+    "Unauthorised open attempts detected",
+    "User support tickets per 100 users (usability)"
+   ],
+   "pitfalls": [
+    "Rolling out to everyone at once, so it becomes a nuisance and is bypassed",
+    "No plan for reading protected files after leaving the vendor",
+    "Policy server without DR, so Board papers cannot be opened in an outage",
+    "Executives not trained, so they send unprotected copies instead"
+   ],
+   "sources": [
+    {
+     "title": "Seclore case study: IDFC First Bank",
+     "url": "https://www.seclore.com/resources/customer-case-studies/idfc-first-bank-automatically-secures-customer-data-beyond-the-perimeter-with-a-custom-seclore-integration/"
+    },
+    {
+     "title": "AWS Marketplace: Seclore listing",
+     "url": "https://aws.amazon.com/marketplace/pp/B09ZF3L698"
+    },
+    {
+     "title": "Fasoo: Enterprise DRM vs Microsoft Purview Information Protection",
+     "url": "https://en.fasoo.com/faq-5-top-questions-about-fasoo-enterprise-drm-vs-microsoft-aip"
+    },
+    {
+     "title": "Gartner Peer Insights: Fasoo Enterprise DRM alternatives",
+     "url": "https://www.gartner.com/reviews/product/fasoo-enterprise-drm/alternatives"
+    },
+    {
+     "title": "Thales case study: Indian leading bank (CipherTrust)",
+     "url": "https://cn.safenet-inc.com/sites/default/files/content/case_studies/field_document/2021-06/indian-leading-bank-cs.pdf"
+    }
+   ]
+  },
+  "tec-forensics": {
+   "summary": "Digital forensics is the ability to collect, preserve and analyse evidence from devices, logs and cloud accounts, so the real cause of an incident is known and the evidence holds up.",
+   "protects": "The organisation's ability to prove what happened, to regulators, insurers, courts and the Board; supports recovery, disciplinary action and claims.",
+   "placement": "A process owned by the incident response lead; a forensic triage tool deployable to endpoints; a small evidence lab (write blockers, storage, chain-of-custody forms); and a retainer with an external forensics firm for major incidents.",
+   "how": "On an incident, responders collect volatile data and triage artefacts from affected hosts, image disks or cloud accounts where needed, and record chain of custody. Analysts build a timeline from endpoint, log and network evidence. Large or legal cases go to the retained firm, which reports findings that can support a legal case.",
+   "pareto": [
+    "A signed retainer with a forensics firm with agreed response times, before you need it",
+    "Endpoint triage collection at scale (EDR live response or Velociraptor)",
+    "Logs kept 180 days and protected from tampering (CERT-In direction), so there is evidence to analyse",
+    "A chain-of-custody procedure and an evidence store with hashing",
+    "An annual drill that runs a scenario end to end, including CERT-In 6-hour reporting"
+   ],
+   "vendors": [
+    {
+     "name": "Big Four forensic practices (for example EY, KPMG, Deloitte, PwC in India)",
+     "kind": "service firm",
+     "fit": "Large investigations, Board and regulator reporting, litigation support. EY and KPMG are on SEBI's 2023 panel of digital forensic service providers.",
+     "india": "Large Indian forensic teams in metros."
+    },
+    {
+     "name": "Indian specialist forensic firms (for example Cyint Technologies, Innefu Labs, Netrika Consulting, SysTools, Cybermate Forensics)",
+     "kind": "service firm",
+     "fit": "Hands-on acquisition and analysis, often lower cost; all named here were empanelled by SEBI in 2023 for digital forensic support.",
+     "india": "Indian firms; check current CERT-In empanelment status on the CERT-In list."
+    },
+    {
+     "name": "CERT-In empanelled information security auditing organisations that offer incident response and forensics (for example AKS IT Services)",
+     "kind": "service firm",
+     "fit": "CERT-In empanels auditing organisations, not forensic labs; many of them also offer forensics and IR. Confirm forensic credentials separately.",
+     "india": "CERT-In publishes the current list on its site; it changes as empanelments renew."
+    },
+    {
+     "name": "Global IR firms (Mandiant/Google, CrowdStrike Services, Palo Alto Networks Unit 42)",
+     "kind": "service firm",
+     "fit": "Large ransomware or nation-state cases; often required or preferred by cyber insurers.",
+     "india": "Teams and partners in India; confirm on-site capacity and data handling in India."
+    },
+    {
+     "name": "Magnet AXIOM / AXIOM Cyber",
+     "kind": "commercial",
+     "fit": "Leading analysis suite for computers, mobiles and cloud; AXIOM Cyber adds remote collection.",
+     "india": "Sold through Indian resellers; used by Indian law enforcement and firms."
+    },
+    {
+     "name": "OpenText EnCase Forensic, Exterro FTK, Cellebrite (mobile)",
+     "kind": "commercial",
+     "fit": "Established court-accepted tools; Cellebrite for mobile extraction.",
+     "india": "Indian resellers and training partners."
+    },
+    {
+     "name": "Velociraptor, The Sleuth Kit and Autopsy, KAPE (free tool; community targets MIT licensed)",
+     "kind": "open source",
+     "fit": "Velociraptor (AGPL, Rapid7) for triage and hunting across thousands of endpoints; Autopsy for disk analysis.",
+     "india": "Community supported; widely used by Indian IR teams."
+    }
+   ],
+   "cost": {
+    "unit": "fixed per year (retainer plus tool licences); incident work at day rates beyond the retainer",
+    "band": "Retainer about Rs 10-30 lakh a year for pre-paid hours and guaranteed response (public price lists are not published; confirm by quote). Analysis tools about Rs 4-7 lakh per seat per year (AXIOM quotes of about USD 5,000-8,000 per seat reported publicly, at Rs 84/USD). Open-source triage tools free.",
+    "reference_org": "About Rs 15-40 lakh a year: a retainer, one or two tool seats, a small evidence kit, and training. A major incident can add Rs 25 lakh-1 crore or more in fees beyond the retainer.",
+    "drivers": [
+     "Retainer hours and guaranteed response time",
+     "On-site response commitments across 5 sites",
+     "Tool seats and mobile extraction needs",
+     "Insurer panel requirements",
+     "Expert witness and legal reporting needs"
+    ],
+    "note": "indicative; get three quotes. Excludes 18% GST. Retainer prices are not publicly listed; bands are estimates to be confirmed with quotes."
+   },
+   "rfp": {
+    "scope": [
+     "Incident response and digital forensics retainer for 24x7 support",
+     "Remote triage within agreed hours and on-site support at any of 5 sites",
+     "Forensic acquisition, analysis, root cause and timeline reports suitable for regulators and courts",
+     "Help with CERT-In, RBI and DPDP breach notifications",
+     "Annual tabletop or technical drill and readiness assessment",
+     "Unused retainer hours convertible to readiness work"
+    ],
+    "must": [
+     "Remote engagement within 2 hours, on-site within 24 hours in metros",
+     "Chain-of-custody and evidence handling aligned with ISO/IEC 27037 and Indian evidence law (Bharatiya Sakshya Adhiniyam 2023, electronic records certificate)",
+     "Named analysts with recognised forensic certifications (for example GCFA, GCFE, EnCE, CHFI)",
+     "Evidence stored and analysed in India unless the organisation agrees otherwise in writing",
+     "Support for Windows, macOS, Linux, Microsoft 365, major clouds and mobile devices"
+    ],
+    "should": [
+     "Ransomware negotiation and recovery support through approved partners",
+     "On the organisation's cyber insurer panel",
+     "Threat intelligence on the attacker group",
+     "Malware reverse engineering"
+    ],
+    "sizing": [
+     "2,500 endpoints; server count; cloud tenants",
+     "5 sites and their cities",
+     "EDR and SIEM in use (for remote triage)",
+     "Hours of retainer wanted per year",
+     "Expected number of incidents per year"
+    ],
+    "evaluation": [
+     "Team capability and certifications 30",
+     "Response time commitments 20",
+     "Indian regulated sector references 15",
+     "Commercials (retainer and day rates) 25",
+     "Report quality from a sample redacted report 10"
+    ],
+    "sla": [
+     "Acknowledge within 30 minutes, 24x7",
+     "Remote triage start within 2 hours",
+     "On-site within 24 hours (metros) and 48 hours (others)",
+     "Preliminary findings within 72 hours of evidence receipt",
+     "Daily status reports during an active incident"
+    ],
+    "clauses": [
+     "Right to audit by the organisation, its auditors and the regulator (RBI, SEBI or IRDAI as applicable), on site and remote",
+     "RBI outsourcing of IT services directions: risk assessment, sub-contracting only with consent, concentration risk noted",
+     "CERT-In directions of 28 April 2022: report incidents within 6 hours; keep ICT logs for a rolling 180 days and produce them on request",
+     "DPDP Act 2023 and DPDP Rules 2025: vendor acts as data processor, follows instructions, applies reasonable security safeguards, helps with breach notice",
+     "Exit and transition: export of all data, keys and configuration in open formats; assisted handover; data deleted with certificate",
+     "Strict confidentiality and legal privilege arrangements through counsel where needed",
+     "Evidence returned or destroyed with certificate at case close",
+     "No public disclosure of the incident by the vendor"
+    ]
+   },
+   "architecture": "The EDR, SIEM and log store feed the investigation; Velociraptor or EDR live response collects triage data from endpoints; cloud audit logs come from Microsoft 365 and cloud consoles. Evidence goes to a write-once, hashed evidence store in a restricted zone. The retained firm connects through a dedicated, logged remote access path. Findings feed lessons learned, detection rules and the risk register.",
+   "kpis": [
+    "Time from declaring an incident to forensic engagement",
+    "Percent of major incidents with a confirmed root cause",
+    "Drills held per year and actions closed",
+    "Log sources retained 180 days or more (target 100% of critical)"
+   ],
+   "pitfalls": [
+    "Signing a retainer only during an incident, at higher rates and slower response",
+    "Rebuilding infected machines before evidence is captured",
+    "Logs not kept long enough, so the root cause cannot be found",
+    "Breaking chain of custody, so evidence is not usable in disciplinary or legal action"
+   ],
+   "sources": [
+    {
+     "title": "Outlook Business: SEBI empanels 12 entities for digital forensic services (Oct 2023)",
+     "url": "https://www.outlookbusiness.com/news/sebi-empanels-12-entities-to-provide-digital-forensic-services"
+    },
+    {
+     "title": "Netaccess: CERT-In empanelled organisations (empanelment explained)",
+     "url": "https://www.netaccess-india.com/blog/cert-in-empanelled-organization/"
+    },
+    {
+     "title": "IndiaMART: AKS IT Services profile (CERT-In empanelled, forensics services)",
+     "url": "https://m.indiamart.com/aks-it-services/customprofile.html"
+    },
+    {
+     "title": "Magnet Forensics: Axiom licence packages",
+     "url": "https://www.magnetforensics.com/resources/magnet-axiom-license-packages/"
+    },
+    {
+     "title": "Forensic Focus forum: cost of Magnet AXIOM licence",
+     "url": "https://www.forensicfocus.com/forums/general/cost-of-magnetic-axiom-licence/"
+    },
+    {
+     "title": "Rapid7: Velociraptor in Rapid7 XDR",
+     "url": "https://www.rapid7.com/blog/post/2023/09/29/unlock-broader-detections-forensics-with-velociraptor-in-rapid7-xdr/"
+    },
+    {
+     "title": "Velociraptor: triage with Velociraptor (KAPE targets)",
+     "url": "https://docs.velociraptor.app/blog/2019/2019-10-02_triage-with-velociraptor-pt-1-253f57ce96c0/"
+    },
+    {
+     "title": "Mondaq: CERT-In 6-hour reporting and 180-day logs",
+     "url": "https://www.mondaq.com/india/it-and-internet/1202576/everything-you-need-to-know-about-indias-new-guidelines-related-to-cyber-incident-reporting-by-cert-in"
+    }
+   ]
+  },
+  "tec-pqc": {
+   "summary": "Quantum-safe readiness means knowing where the organisation uses cryptography and moving it, step by step, to the new post-quantum algorithms before quantum computers can break today's ones.",
+   "protects": "Long-lived confidential data (customer records, loan and KYC files, strategy) against 'harvest now, decrypt later' capture; digital signatures and PKI trust against future forgery.",
+   "placement": "A programme owned by the security architect, run across PKI, network (TLS, VPN), HSMs, applications and vendors; discovery tools scan code, hosts and network traffic.",
+   "how": "First build a cryptographic inventory (a cryptographic bill of materials, CBOM): which algorithms, keys, certificates and libraries are used where. Rank systems by how long their data must stay secret and how hard they are to change. Then adopt hybrid key exchange (classical plus ML-KEM) where products support it, require PQC roadmaps from vendors, and make systems crypto-agile so algorithms can be swapped.",
+   "pareto": [
+    "A cryptographic inventory (CBOM) of external TLS, VPN, PKI, HSMs and core applications",
+    "Turn on hybrid TLS key exchange (X25519MLKEM768) where browsers, CDNs and OpenSSL 3.5+ already support it",
+    "PQC readiness and CBOM clauses in every new purchase and renewal",
+    "HSM and PKI roadmap for ML-KEM and ML-DSA (FIPS 203 and 204)",
+    "A migration plan that meets India's DST task force milestones for enterprises (foundations by 2028, high-priority systems by 2030, full adoption by 2033)"
+   ],
+   "vendors": [
+    {
+     "name": "QNu Labs QShield",
+     "kind": "Indian",
+     "fit": "Indian PQC and crypto-agility platform (discovery, assessment, PQC, quantum key distribution and QRNG); funded under the National Quantum Mission.",
+     "india": "Bengaluru based, IIT Madras incubated."
+    },
+    {
+     "name": "Thales, Entrust and Utimaco HSMs with PQC firmware",
+     "kind": "commercial",
+     "fit": "PQC algorithms in HSMs for key generation and signing; check FIPS validation status of the PQC firmware.",
+     "india": "Indian partners; installed base in Indian banks."
+    },
+    {
+     "name": "Cryptographic discovery and CBOM tools (for example IBM Quantum Safe Explorer and Remediator, SandboxAQ AQtive Guard, Keyfactor)",
+     "kind": "commercial",
+     "fit": "Find algorithms in code, binaries and traffic; prioritise migration.",
+     "india": "Sold through partners; confirm local delivery."
+    },
+    {
+     "name": "Open Quantum Safe (liboqs), OpenSSL 3.5 and later",
+     "kind": "open source",
+     "fit": "OpenSSL 3.5 includes ML-KEM, ML-DSA and SLH-DSA and prefers hybrid X25519MLKEM768 by default; liboqs for testing.",
+     "india": "Community supported."
+    },
+    {
+     "name": "Advisory firms (Big Four and specialist cryptography consultancies)",
+     "kind": "service firm",
+     "fit": "Inventory, risk ranking and roadmap when in-house cryptography skills are thin.",
+     "india": "Indian practices in metros."
+    }
+   ],
+   "cost": {
+    "unit": "fixed per year (assessment and tools); migration costs ride on normal refresh cycles",
+    "band": "Rs 0-20 lakh a year for the readiness stage: in-house inventory with open-source tools at the low end, a discovery tool or advisory assessment at the high end. Migration costs mostly fall inside planned HSM, PKI, network and application upgrades.",
+    "reference_org": "About Rs 5-20 lakh in the first year for an inventory and roadmap; later years mainly through refresh budgets, plus any HSM firmware or replacement needed.",
+    "drivers": [
+     "Size of the PKI and number of certificates",
+     "Number of in-house applications to scan",
+     "HSMs and network devices without a PQC upgrade path",
+     "Vendor dependence for core banking and payments",
+     "Use of external advisers"
+    ],
+    "note": "indicative; get three quotes. Excludes 18% GST."
+   },
+   "rfp": {
+    "scope": [
+     "Cryptographic inventory (CBOM) of named systems: internet-facing services, VPN, PKI, HSMs, core and payment applications",
+     "Risk ranking by data lifetime and difficulty of change",
+     "Roadmap aligned to NIST FIPS 203/204/205 and India's DST task force milestones",
+     "Pilot of hybrid key exchange on selected services",
+     "Procurement clauses for PQC readiness and CBOM"
+    ],
+    "must": [
+     "Inventory covers algorithms, key sizes, certificates, libraries and protocols, with owner per system",
+     "Output in a machine-readable CBOM format (for example CycloneDX CBOM)",
+     "Recommendations use NIST standards: ML-KEM (FIPS 203), ML-DSA (FIPS 204), SLH-DSA (FIPS 205)",
+     "No production change without the organisation's change approval",
+     "All findings held in India and treated as confidential"
+    ],
+    "should": [
+     "Continuous discovery, not a one-off scan",
+     "Testing of hybrid TLS on the organisation's load balancers and CDN",
+     "Vendor questionnaire for the top 20 suppliers",
+     "Alignment with CCA guidance for digital signature devices (FIPS 140-3)"
+    ],
+    "sizing": [
+     "Number of internet-facing services and certificates",
+     "Number of internal applications (of 40) and their languages",
+     "HSMs, VPN concentrators and load balancers in use",
+     "Critical vendors (core banking, payments, cards)",
+     "5 sites"
+    ],
+    "evaluation": [
+     "Methodology and coverage 35",
+     "Cryptography expertise of the team 25",
+     "Cost 20",
+     "Quality of a sample roadmap 10",
+     "Indian regulated references 10"
+    ],
+    "sla": [
+     "Inventory delivered within the agreed weeks",
+     "Fortnightly progress reports",
+     "Critical finding (for example broken or weak crypto) reported within 24 hours"
+    ],
+    "clauses": [
+     "Right to audit by the organisation, its auditors and the regulator (RBI, SEBI or IRDAI as applicable), on site and remote",
+     "RBI outsourcing of IT services directions: risk assessment, sub-contracting only with consent, concentration risk noted",
+     "CERT-In directions of 28 April 2022: report incidents within 6 hours; keep ICT logs for a rolling 180 days and produce them on request",
+     "DPDP Act 2023 and DPDP Rules 2025: vendor acts as data processor, follows instructions, applies reasonable security safeguards, helps with breach notice",
+     "Exit and transition: export of all data, keys and configuration in open formats; assisted handover; data deleted with certificate",
+     "Vendors of new systems state their PQC roadmap and provide a CBOM (the DST task force expects CBOMs from vendors from FY 2027-28)"
+    ]
+   },
+   "architecture": "Discovery tools read code repositories, server and endpoint libraries, certificate stores and network traffic (TLS handshakes). Results feed a CBOM register linked to the asset inventory and risk register. Changes land through the PKI, HSM, load balancer, VPN and application teams; hybrid TLS is usually first switched on at the CDN or load balancer.",
+   "kpis": [
+    "Percent of critical systems in the cryptographic inventory",
+    "Percent of internet-facing TLS endpoints offering hybrid post-quantum key exchange",
+    "Percent of new contracts with PQC and CBOM clauses",
+    "Systems with no PQC upgrade path and a dated replacement plan"
+   ],
+   "pitfalls": [
+    "Waiting for a deadline instead of starting the inventory now",
+    "Buying quantum key distribution hardware before basic inventory and crypto-agility",
+    "Ignoring vendors: most cryptography sits inside bought products",
+    "Hard-coding algorithms, so each change becomes a rewrite"
+   ],
+   "sources": [
+    {
+     "title": "NIST: Post-quantum cryptography FIPS approved (13 August 2024)",
+     "url": "https://csrc.nist.gov/news/2024/postquantum-cryptography-fips-approved"
+    },
+    {
+     "title": "DST: Task force report on implementation of a quantum safe ecosystem in India (Feb 2026)",
+     "url": "https://dst.gov.in/sites/default/files/Report_TaskForce_PQMigration_4Feb26%20%28v1%29.pdf"
+    },
+    {
+     "title": "ORF: India's post-quantum cryptography migration roadmap",
+     "url": "https://www.orfonline.org/expert-speak/india-s-post-quantum-cryptography-migration-roadmap"
+    },
+    {
+     "title": "The Quantum Insider: India reveals national plan for quantum-safe security",
+     "url": "https://thequantuminsider.com/2026/02/09/india-reveals-national-plan-for-quantum-safe-security/"
+    },
+    {
+     "title": "Encryption Consulting: NIST IR 8547 (draft) 2030/2035 transition",
+     "url": "https://www.encryptionconsulting.com/nist-ir-8547-2030-2035-action-plan/"
+    },
+    {
+     "title": "Cloudflare: post-quantum cryptography support",
+     "url": "https://developers.cloudflare.com/ssl/post-quantum-cryptography/pqc-support/"
+    },
+    {
+     "title": "Quantum Computing Report: QNu Labs launches QShield 2.0",
+     "url": "https://quantumcomputingreport.com/qnu-labs-launches-qshield-2-0-to-drive-indias-national-cryptographic-assessment-assurance-framework/amp/"
+    },
+    {
+     "title": "DST: startup selected under NQM develops platform (QNu Labs)",
+     "url": "https://dst.gov.in/node/8133"
+    },
+    {
+     "title": "CCA advisory: FIPS 140-3 compliant cryptographic devices",
+     "url": "https://www.cca.gov.in/sites/files/pdf/news/Compatibility_with_SHA-2_and_FIPS_140-3_Compliant_Cryptographic_Devices.pdf"
+    }
+   ]
+  }
+ }
+}

@@ -1,7 +1,7 @@
 # 94 · Govern: for decision makers
 
 <!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
-> **Status: 🟡 Partly built.** Built and tested: a tiered catalog across governance, people, process and technology; ./securax govern scores where you stand, the minimum basic and the highest possible, ranks the gaps with their 5W1H and an indicative India budget, sizes the team with roles, skills and certifications, writes the one-page Board report, and fills a template pack (policies, SOPs, registers, vision, executive deck, Board table). The Govern panel in the cockpit shows the capability stack and the organogram as pictures, with no command to run. Budget bands are indicative and need quotes; the capability marks are yours to fill. [What the lights mean](../index.md#the-status-lights)
+> **Status: 🟡 Partly built.** Built and tested: a tiered catalog across governance, people, process and technology; ./securax govern scores where you stand, the minimum basic and the highest possible, ranks the gaps with their 5W1H and an indicative India budget, sizes the team with roles, skills and certifications, writes the one-page Board report, and fills a template pack (policies, SOPs, registers, vision, executive deck, Board table). The Govern panel in the cockpit shows the capability stack and the organogram as pictures, with no command to run; every box opens a ready-reckoner page (vendors, indicative Indian cost, RFP pack, placement; a job description for each role), from research with sources dated October 2026. Budget bands are indicative and need quotes; the capability marks are yours to fill. [What the lights mean](../index.md#the-status-lights)
 <!-- status:end -->
 
 **The ask:** one place where a CISO or another executive sees:
@@ -192,7 +192,39 @@ The budget bands are **indicative for India in October 2026**, drawn from public
 
 These sources are often vendor-written and disagree with each other. Use the bands to size a decision and frame a request for quotes, not as a price. Always get three quotes.
 
-## 8. Proof
+## 8. The ready reckoner: one click from a box to the answer
+
+Every box in the capability stack and every box in the organogram opens a page. The pages carry no script, and their only outside links are their sources.
+
+**A capability page** (all 62) answers what executive management asks:
+- **What it is and what it protects**, in one paragraph.
+- **Where it sits and how it works:** network zone, agent or cloud service; what feeds it and what it feeds.
+- **The 20% that gives 80% of the value:** the features to insist on first.
+- **At least three options in the market:** market leaders, an Indian vendor where a credible one exists, and an open-source option where a real one exists, each with its fit and India presence.
+- **What it costs:** an indicative band in rupees for the reference organisation (2,000 users, 2,500 endpoints), excluding GST, and what moves the price. Always get three quotes.
+- **An RFP pack to start from:** scope of work, mandatory and desirable specifications, sizing to give bidders, evaluation weights that sum to 100, service levels, and the India and BFSI clauses that apply (data localisation, RBI outsourcing and right to audit, CERT-In 6-hour reporting and 180-day logs, exit). Download it from the page, or run `./securax govern rfp tec-edr --org "Your organisation"`.
+- **How you know it works** (KPIs), **common mistakes**, and the **sources**.
+
+**A role page** (all 15) is a job description you can use:
+- purpose, reporting line and responsibilities;
+- must-have and good-to-have skills, experience, education and certifications;
+- practical interview tests: a log to triage, a policy to critique, a scenario;
+- the KPIs, an India salary band, and where good candidates come from.
+
+The CISO page sets out what RBI's IT governance directions (2023) expect of the role: senior rank, reporting to an executive director or equivalent and not to the Head of IT, no business targets, and a minimum term.
+
+**In a meeting, from the terminal:** `./securax govern reckon tec-siem` or `./securax govern reckon soc_l2`. A near-miss id suggests the right one.
+
+**Where the research lives:** `governance/reckoner/*.json`, one file per layer plus `roles.json`.
+- Every item has its sources and an `as_of` month (now October 2026).
+- `./securax govern reckoner check` and a test fail if any capability or role loses its entry, a field, its third option or a source.
+- The research also corrected the catalog's own cost bands. The cost table and the Board report now use the corrected bands. For example:
+  - DLP, SIEM, privileged access, identity governance and zero trust access were too low;
+  - the IR retainer and the HSMs for payment keys were missing.
+
+**Its limits.** The research ran within a shared search budget. Most vendor facts and prices were checked by search or on the vendor's own pages; a few well-known facts rest on general knowledge, and the pages say "indicative". Re-check prices with three quotes and refresh the files every six months.
+
+## 9. Proof
 
 - **`test_govern.py`:**
   - every capability is complete and uses a known tier, domain and template;
@@ -204,4 +236,10 @@ These sources are often vendor-written and disagree with each other. Use the ban
   - the card is folded and shows the stack and the organogram as pictures, not commands;
   - both pictures export as standalone SVG files;
   - the templates fill in the name and never overwrite an edited copy.
+- **`test_reckoner.py`:**
+  - every capability and role has a complete, sourced entry with at least three options;
+  - every box opens its page;
+  - the pages carry no script and link out only to their sources;
+  - the RFP pack has every section;
+  - the terminal card answers by id and suggests on a near miss.
 - **The cockpit:** it shows the Govern panel, folded. `test_cockpit_priority.py` checks one master lamp, at most three actions and folded panels. The cockpit journey checks the page still has no script and no external request.

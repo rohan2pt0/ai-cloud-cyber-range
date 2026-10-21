@@ -12,8 +12,8 @@
 - [ ] Lint passes (`ruff check .`)
 - [ ] `CHANGELOG.md` updated under **[Unreleased]** (for user-visible changes)
 - [ ] No secrets/PII added (the PII/secret CI gate stays green)
-- [ ] Honours the [principles](docs/securax/01-PRINCIPLES.md) and end-state
-      [conformance rules](docs/securax/17-ENTERPRISE-ARCHITECTURE.md)
+- [ ] Honours the [principles](../docs/securax/01-PRINCIPLES.md) and end-state
+      [conformance rules](../docs/securax/17-ENTERPRISE-ARCHITECTURE.md)
 - [ ] Docs updated if behaviour/commands changed
 
 ## How to test

@@ -100,4 +100,4 @@ Two choices already made keep this path open:
 - [Cloudflare: tunnel replicas and failover](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/deploy-tunnels/deploy-cloudflared-replicas/)
 - [OpenRouter: management (provisioning) API keys](https://openrouter.ai/docs/features/provisioning-api-keys)
 - [Gemini API free tier: data use and commercial questions](https://discuss.ai.google.dev/t/clarification-regarding-commercial-use-can-i-sell-a-web-app-built-on-top-of-gemini-api-free-tier-w/120164)
-- [Open WebUI: SSO and forwarded user headers](https://docs.openwebui.com/features/sso)
+- [Open WebUI: SSO and forwarded user headers](https://docs.openwebui.com/features/authentication-access/auth/sso/)

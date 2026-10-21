@@ -152,6 +152,6 @@ A sign-in lasts 30 days on a device (`ONLINE_SESSION=720h` in `.env`; a shorter 
 - [Cloudflare: create a tunnel through the API](https://developers.cloudflare.com/cloudflare-one/networks/connectors/cloudflare-tunnel/get-started/create-remote-tunnel-api/)
 - [Cloudflare: create an Access application](https://developers.cloudflare.com/api/resources/zero_trust/subresources/access/subresources/applications/methods/create/) and [reusable policies](https://developers.cloudflare.com/api/resources/zero_trust/subresources/access/subresources/policies/methods/create/)
 - [Cloudflare: Google as a sign-in provider](https://developers.cloudflare.com/cloudflare-one/integrations/identity-providers/google/)
-- [Open WebUI: sign-in through a trusted header (Cloudflare Access)](https://docs.openwebui.com/features/sso)
+- [Open WebUI: sign-in through a trusted header (Cloudflare Access)](https://docs.openwebui.com/features/authentication-access/auth/sso/)
 - [Hostinger: VPS in India](https://www.hostinger.com/vps/servers/india) and [Hostinger India pricing review](https://hostadvice.com/hosting-company/hostinger-reviews/hostinger-india-pricing/)
 - [Tailscale pricing](https://tailscale.com/pricing/) (the fallback path, free for 6 users)

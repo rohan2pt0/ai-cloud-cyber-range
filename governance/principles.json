@@ -6,6 +6,8 @@
   { "id": "antifragility", "core": true, "name": "Antifragility", "text": "Every failure leaves a lesson, a change and a drill, so the next stress finds you stronger." },
   { "id": "small-wins", "core": true, "name": "Small wins, shown", "text": "Progress you can see keeps you going; the app shows it every week." },
   { "id": "least-effort", "core": true, "name": "Least effort for you", "text": "The app does the remembering, the checking and the reminding; you do the one next step." },
+  { "id": "calm", "core": true, "name": "Calm by default", "text": "When all is well the screen is quiet. Only what needs you lights up, with why it matters and the one thing to do; everything else waits one tap away." },
+  { "id": "obvious", "core": true, "name": "No manual needed", "text": "Anyone can use it the first time, on a phone or a laptop, by keyboard or screen reader, in light or dark. If it needs explaining, it is not finished." },
   { "id": "pareto", "core": false, "name": "Pareto", "text": "A few actions carry most of the result. Find them first." },
   { "id": "inversion", "core": false, "name": "Inversion", "text": "Ask what could ruin it, and remove that downside before chasing upside." },
   { "id": "control-inputs", "core": false, "name": "Control the inputs", "text": "You cannot control outcomes. You control decisions, rhythm and follow-through." },

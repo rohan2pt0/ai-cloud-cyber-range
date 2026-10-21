@@ -58,9 +58,11 @@ markdown_extensions:
           format: !!python/name:pymdownx.superfences.fence_code_format
 plugins:
   - search
+hooks:
+  - docs/hooks/repo_links.py   # links to repository files outside docs/ go to GitHub; included files keep their own links
 validation:
-  # Many pages link to source files elsewhere in the repository (scripts, configs); those are fine outside the site.
-  links: { not_found: info, anchors: info, unrecognized_links: info }
+  # A link to a page or file that exists nowhere fails the strict build (doc 99). Anchors are checked too.
+  links: { not_found: warn, anchors: warn, unrecognized_links: warn }
 extra:
   social:
     - { icon: fontawesome/brands/github, link: https://github.com/rohan2pt0/ai-cloud-cyber-range }
@@ -113,6 +115,8 @@ nav:
       - One platform, many products: securax/96-ONE-PLATFORM-MANY-PRODUCTS.md
       - Built for one, ready for many: securax/97-BUILT-FOR-ONE-READY-FOR-MANY.md
       - Leave Claude Code, and store apps: securax/98-SHIP-AND-STORE-APPS.md
+      - Names, not ports, and links that never break: securax/99-NAMES-NOT-PORTS-AND-LINKS-THAT-NEVER-BREAK.md
+      - "The design standard: calm by default": securax/100-DESIGN-STANDARD.md
   - How-to guides:
       - AI providers and plugins: securax/22-PLUGINS-AND-PROVIDERS.md
       - Integrations: securax/07-INTEGRATIONS.md

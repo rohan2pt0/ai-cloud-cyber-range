@@ -6,6 +6,9 @@
 
 The padlock warning in your browser ("Your connection to this site isn't secure") was true: every web address of the estate was plain HTTP. This document is what changed, what is proven, and what is **not yet** encrypted.
 
+
+> **Since doc 99:** `./securax go` asks once, default yes, to turn names on. The Life OS moves its data from the old address in one click, and every address the estate prints is a name.
+
 ## Turn it on (Ubuntu, 3 minutes)
 ```bash
 cd ~/securax

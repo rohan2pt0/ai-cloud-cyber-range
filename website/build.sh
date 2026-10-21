@@ -9,7 +9,8 @@ eval "$(python3 governance/config.py env)"           # BRAND_NAME, SITE_DOMAIN, 
 python3 governance/config.py render $(find website -maxdepth 2 \( -name '*.html' -o -name '*.js' -o -name '_headers' -o -name 'robots.txt' -o -name 'sitemap.xml' \) -not -path 'website/docs/*')
 pip install -q -r docs/requirements.txt
 python3 docs/gen_cli_reference.py
-export DOCS_SITE_URL="${DOCS_SITE_URL:-${SITE_DOMAIN:+https://$SITE_DOMAIN/docs/}}"
+export DOCS_SITE_URL="${DOCS_SITE_URL:-${SITE_URL:+${SITE_URL}docs/}}"   # your domain once live, else GitHub Pages (doc 99)
 export DOCS_COPYRIGHT="${PRODUCT_NAME}${BRAND_NAME:+ by $BRAND_NAME} · MIT licence · no personal data in this repository"
 mkdocs build --strict -d website/docs
-echo "built: website/ (site) + website/docs/ (documentation) for ${SITE_DOMAIN:-<no SITE_DOMAIN set>}"
+python3 tools/linkcheck.py website        # every internal link and image on the built site must exist (doc 99)
+echo "built: website/ (site) + website/docs/ (documentation) for ${SITE_URL:-<no address: set REPO_SLUG or SITE_DOMAIN>}"

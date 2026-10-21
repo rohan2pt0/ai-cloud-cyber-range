@@ -1,0 +1,1361 @@
+{
+ "as_of": "2026-10",
+ "items": {
+  "tec-vulnscan": {
+   "summary": "A tool that regularly checks every server, laptop, network device and web app for known weaknesses and missing patches.",
+   "protects": "Servers, endpoints, network devices, cloud workloads and internet-facing apps, against attackers exploiting known vulnerabilities (CVEs) and misconfigurations.",
+   "placement": "Central console (cloud or on-premises) with scanners in each network zone (DMZ, data centre, each site) plus light agents on laptops and servers; owned by the security testing or vulnerability management lead.",
+   "how": "Scanners probe assets on a schedule and agents report installed software. Findings are matched to CVE databases and ranked by severity and exploit likelihood (CVSS, EPSS, CISA KEV). Tickets go to asset owners with a fix deadline, and a rescan proves the fix.",
+   "pareto": [
+    "A complete asset inventory, so nothing goes unscanned",
+    "Authenticated (credentialed) scans or agents, not just network scans",
+    "Weekly scans of everything internet-facing",
+    "Risk-based ranking (known-exploited first) with fix SLAs per severity",
+    "Rescan to verify closure, and a monthly ageing report to management"
+   ],
+   "vendors": [
+    {
+     "name": "Tenable (Nessus, Tenable Vulnerability Management, Tenable One)",
+     "kind": "commercial",
+     "fit": "Widely used scanner with broad plugin coverage; Nessus Professional suits small teams, Tenable VM suits a full estate.",
+     "india": "Sold through Indian distributors and partners; India sales office."
+    },
+    {
+     "name": "Qualys VMDR",
+     "kind": "commercial",
+     "fit": "Cloud platform with agents, scanning and patch add-on in one console; strong for large, spread-out estates.",
+     "india": "Large engineering centre in Pune; Indian partners; check the hosting region for scan data."
+    },
+    {
+     "name": "Rapid7 InsightVM (now packaged in Exposure Command)",
+     "kind": "commercial",
+     "fit": "Good risk scoring and remediation tracking; per-asset pricing published historically.",
+     "india": "Sold through Indian partners."
+    },
+    {
+     "name": "SecPod Saner CVEM",
+     "kind": "Indian",
+     "fit": "Bengaluru-based vendor combining scanning and patching in one agent; choose when an Indian vendor and built-in remediation matter.",
+     "india": "Headquartered in India; Indian support."
+    },
+    {
+     "name": "Greenbone OpenVAS (Community Edition)",
+     "kind": "open source",
+     "fit": "Free network vulnerability scanner; fits labs, small estates or a second-opinion scanner. Needs in-house skill; paid Greenbone Enterprise appliances exist.",
+     "india": "No local vendor support for the free edition; community only."
+    }
+   ],
+   "cost": {
+    "unit": "per asset (IP, endpoint or server) per year",
+    "band": "Rs 1,200-2,500 per asset per year for enterprise platforms at about 2,500+ assets; Nessus Professional is about Rs 4 lakh per scanner per year (USD list about $4,790, at Rs 84/USD)",
+    "reference_org": "About Rs 30-70 lakh a year to cover about 2,700 assets (2,500 endpoints plus servers and network devices); about Rs 10-25 lakh if only servers, network devices and internet-facing assets are covered",
+    "drivers": [
+     "Number of assets and whether endpoints are included",
+     "Add-ons: web app scanning, patching, cloud posture, external attack surface",
+     "Agent versus scanner model",
+     "Multi-year term and partner discount (volume breaks around 1,000 and 5,000 assets)"
+    ],
+    "note": "Indicative; excludes 18% GST; USD prices converted at about Rs 84/USD; vendors do not publish India list prices; get three quotes."
+   },
+   "rfp": {
+    "scope": [
+     "Discovery and scanning of all on-premises, cloud and remote assets",
+     "Authenticated scans and endpoint agents",
+     "Internet-facing and web application scanning",
+     "Risk-based prioritisation and ticketing integration",
+     "Rescan and closure reporting; monthly management report"
+    ],
+    "must": [
+     "Coverage of at least 2,700 assets with growth to 3,500 without re-licensing",
+     "Credentialed scanning for Windows, Linux, network devices and major databases",
+     "Lightweight agent for laptops that are off the corporate network",
+     "Vulnerability checks updated within 24 hours of a critical CVE being published",
+     "Prioritisation using exploit data (for example CISA KEV and EPSS), not CVSS alone",
+     "Integration with the ticketing tool and the SIEM by API",
+     "Role-based access, MFA on the console, and full audit log",
+     "Scan data stored in India, or a documented regulator-acceptable arrangement"
+    ],
+    "should": [
+     "Patch deployment or integration with the patch tool",
+     "Cloud posture checks for the main cloud provider",
+     "External attack surface discovery",
+     "Container image scanning",
+     "Dashboards by business unit and asset owner"
+    ],
+    "sizing": [
+     "2,500 endpoints, server count, network device count, 40 applications (how many internet-facing)",
+     "5 sites and their bandwidth for scanner placement",
+     "Cloud accounts and regions",
+     "Expected growth over 3 years"
+    ],
+    "evaluation": [
+     "Technical fit and coverage 35",
+     "Accuracy (false positives) in a proof of concept 20",
+     "Prioritisation and reporting 15",
+     "Integration and ease of use 10",
+     "Commercials over 3 years 15",
+     "India support and references 5"
+    ],
+    "sla": [
+     "Critical CVE checks released within 24 hours",
+     "Platform availability 99.5% or better",
+     "Support response within 4 hours for a P1 issue",
+     "Named partner engineer for onboarding"
+    ],
+    "clauses": [
+     "Data residency of scan results in India where they contain sensitive configuration",
+     "Right to audit the provider",
+     "Exit: export of all findings and history in CSV or JSON",
+     "CERT-In empanelled auditor may be required separately for the annual VAPT; the tool does not replace it"
+    ]
+   },
+   "architecture": "Console in the cloud or the data centre; one scanner appliance or VM per network zone (DMZ, server zone, each of 5 sites) reaching assets over allowed ports; agents on laptops and servers report outbound. It reads the asset inventory (CMDB, AD, cloud APIs) and feeds tickets to the ITSM tool, findings to the SIEM and risk register, and fix status to management dashboards.",
+   "kpis": [
+    "Percentage of known assets scanned in the last 30 days (target above 95%)",
+    "Mean time to fix critical and known-exploited vulnerabilities, against SLA",
+    "Number of critical findings older than SLA",
+    "Percentage of scans that are authenticated"
+   ],
+   "pitfalls": [
+    "Scanning without credentials and believing the low finding count",
+    "No asset inventory, so shadow systems are never scanned",
+    "Ranking only by CVSS and drowning teams in mediums",
+    "Reports go out but nobody owns the fix or the deadline"
+   ],
+   "sources": [
+    {
+     "title": "Tenable Nessus pricing 2026 (third-party summary)",
+     "url": "https://cipherssecurity.com/tenable-nessus-pricing-2026-editions-costs/"
+    },
+    {
+     "title": "Tenable pricing guide (third-party)",
+     "url": "https://underdefense.com/industry-pricings/tenable-pricing-2025-ultimate-guide-for-security-products/"
+    },
+    {
+     "title": "Qualys pricing in 2026 (third-party)",
+     "url": "https://beaglesecurity.com/blog/article/qualys-pricing.html"
+    },
+    {
+     "title": "Qualys VMDR launch and entry pricing, 2019",
+     "url": "https://www.nasdaq.com/press-release/qualys-brings-its-market-leading-vulnerability-management-solution-to-the-next-level"
+    },
+    {
+     "title": "Rapid7 InsightVM pricing page",
+     "url": "https://rapid7.com/products/insightvm/pricing"
+    },
+    {
+     "title": "SecPod Saner CVEM on Capterra India",
+     "url": "https://www.capterra.in/software/152523/secpod"
+    }
+   ]
+  },
+  "tec-logging": {
+   "summary": "Collecting the logs from every important system into one protected place, with correct clocks, and keeping them long enough to investigate and to meet the law.",
+   "protects": "The evidence trail: who did what, when, on firewalls, identity, endpoints, servers, cloud and key apps. Without it, attacks go unseen and cannot be investigated or reported.",
+   "placement": "Log collectors in each data centre and site; a central log store (on-premises or an India cloud region) in the management or security zone; owned by the SOC manager, with IT owning the sources.",
+   "how": "Each system sends logs (syslog, agents, cloud APIs) to collectors, which buffer, parse and forward them to a central store. Every system takes its time from NTP servers of NIC or NPL, or servers traceable to them, so timelines line up. Logs are kept tamper-evident for at least 180 days in India, with hot search for recent data and cheaper archive for the rest.",
+   "pareto": [
+    "Clock sync on every system to NIC/NPL-traceable NTP, monitored for drift",
+    "The top sources first: firewalls, VPN, AD/identity, EDR, email, DNS, cloud audit logs, critical apps",
+    "180-day rolling retention in India, protected from deletion (WORM or immutable storage)",
+    "Alert when a key source stops sending logs",
+    "A written log source list with owner, volume and retention"
+   ],
+   "vendors": [
+    {
+     "name": "Microsoft Sentinel / Azure Monitor (Auxiliary, Basic and archive tiers)",
+     "kind": "commercial",
+     "fit": "Cheap long-term tiers for bulk logs alongside a SIEM; good if the estate is Microsoft-heavy.",
+     "india": "Azure Central India and South India regions keep data in India."
+    },
+    {
+     "name": "Splunk (Cisco)",
+     "kind": "commercial",
+     "fit": "Mature collection and search at scale; licence by daily ingest or workload, so storing everything can be costly.",
+     "india": "Indian partners; check cloud region for data residency."
+    },
+    {
+     "name": "Elastic Stack (Elasticsearch, Beats, Logstash)",
+     "kind": "open source",
+     "fit": "Free core for collection, search and retention with tiered storage; paid licences add security features and support.",
+     "india": "Indian partners; self-hosted keeps data on premises."
+    },
+    {
+     "name": "Wazuh",
+     "kind": "open source",
+     "fit": "Free agent-based collection, file integrity monitoring and compliance checks, with an indexer for retention; fits a small team with Linux skills.",
+     "india": "Community and Indian integrators; self-hosted in India."
+    },
+    {
+     "name": "Indian data-centre storage from a MeitY-empanelled cloud or co-location provider (for example the large Indian telecom and data-centre firms)",
+     "kind": "service firm",
+     "fit": "Low-cost, India-resident archive for 180 days and beyond when the SIEM is abroad or expensive.",
+     "india": "Data stays in India; check MeitY empanelment."
+    }
+   ],
+   "cost": {
+    "unit": "fixed per year (collectors plus storage), driven by GB per day ingested and days retained",
+    "band": "Rs 5-25 lakh per year when logs go to a cheap archive tier or self-hosted store; archive tiers cost about Rs 2-5 per GB per month and low-cost cloud ingest tiers about Rs 50 per GB",
+    "reference_org": "About Rs 8-25 lakh a year for an assumed 60-120 GB/day kept 180 days (roughly 11-22 TB raw before compression), excluding the SIEM licence",
+    "drivers": [
+     "GB per day ingested (EDR and firewall logs dominate)",
+     "Days kept hot versus archive",
+     "Self-hosted hardware and staff versus cloud tiers",
+     "Compression and filtering of noisy logs",
+     "Number of sites needing local collectors"
+    ],
+    "note": "Indicative; excludes 18% GST; log volume for the reference organisation is an assumption to confirm with a sizing exercise; get three quotes."
+   },
+   "rfp": {
+    "scope": [
+     "Inventory and onboarding of log sources",
+     "Collectors at each site with local buffering",
+     "Central storage with 180-day rolling retention in India",
+     "NTP design and drift monitoring",
+     "Source-health monitoring and monthly retention report"
+    ],
+    "must": [
+     "Retention of all in-scope logs for at least 180 days on a rolling basis within India",
+     "Storage that cannot be altered or deleted by administrators during retention (immutable or WORM)",
+     "All sources synchronised to NIC or NPL NTP servers, or servers traceable to them; drift alarm above 1 second",
+     "Collector buffering for at least 24 hours if the link to the central store fails",
+     "Encryption in transit (TLS) and at rest",
+     "Alert within 1 hour when a critical source stops sending",
+     "Search of the last 90 days within minutes; restore of archived logs within 24 hours"
+    ],
+    "should": [
+     "Parsing to a common schema (for example ECS or OCSF)",
+     "Filtering and routing pipeline to cut noisy volume",
+     "Retention beyond 180 days (1 year or more) for critical sources",
+     "Hash chaining or signing for evidential integrity"
+    ],
+    "sizing": [
+     "List of sources and counts: firewalls, switches, servers, 2,500 endpoints, 2,000 identities, 40 apps, cloud accounts",
+     "Estimated events per second and GB per day per source",
+     "5 sites and WAN bandwidth",
+     "Retention per source class",
+     "Growth of 20-30% per year"
+    ],
+    "evaluation": [
+     "Technical fit (retention, integrity, residency) 40",
+     "Scalability and cost per GB over 3 years 25",
+     "Operations and source-health monitoring 15",
+     "Implementation plan and references 10",
+     "Support in India 10"
+    ],
+    "sla": [
+     "Log ingestion delay under 5 minutes for critical sources",
+     "Platform availability 99.9%",
+     "Zero data loss for buffered logs",
+     "Archived log restore within 24 hours"
+    ],
+    "clauses": [
+     "CERT-In Directions (April 2022): 180-day logs within Indian jurisdiction, supplied to CERT-In on request; NTP sync to NIC/NPL",
+     "Data localisation in India; RBI payment-data storage rule where payment logs are included",
+     "Right to audit and to evidence retention",
+     "Exit: bulk export of all logs in open formats"
+    ]
+   },
+   "architecture": "Sources (firewalls, VPN, AD, EDR, servers, cloud, apps) send to collectors at each site and data centre; collectors buffer and forward over TLS to the central log store in India (hot tier for recent search, archive tier for 180 days and more). The store feeds the SIEM, the SOC and investigators. Internal NTP servers in each data centre take time from NIC/NPL and serve all devices.",
+   "kpis": [
+    "Percentage of critical sources sending logs in the last 24 hours (target 100%)",
+    "Maximum clock drift across sources",
+    "Days of retention actually available, tested by a restore",
+    "Hours from a source going silent to an alert"
+   ],
+   "pitfalls": [
+    "Keeping logs in a foreign cloud region and assuming it meets CERT-In",
+    "No clock sync, so events from different systems cannot be lined up",
+    "Collecting everything into an expensive SIEM tier instead of archiving bulk logs",
+    "Never testing that old logs can actually be restored and searched"
+   ],
+   "sources": [
+    {
+     "title": "CERT-In Directions under section 70B(6) of the IT Act, 28 April 2022 (NTP sync, 6-hour reporting, 180-day logs)",
+     "url": "https://www.cert-in.org.in/PDF/CERT-In_Directions_70B_28.04.2022.pdf"
+    },
+    {
+     "title": "CERT-In Directions readiness checklist (secondary)",
+     "url": "https://cybersigmacs.com/open/cert-in-directions-checklist.md"
+    },
+    {
+     "title": "NTP time synchronisation to NIC and NPL (Indian cloud provider documentation)",
+     "url": "https://docs.neevcloud.com/neevcloud-guide/neevcloud-cert-in-compliance/ntp-time-synchronisation"
+    },
+    {
+     "title": "Microsoft Sentinel pricing in India, INR by ingestion tier (Indian partner estimate)",
+     "url": "https://ogma.in/blog/microsoft-sentinel-pricing-india-2026"
+    },
+    {
+     "title": "Stellar Cyber EPS and log volume sizing calculator",
+     "url": "https://stellarcyber.ai/sizing-calculator/"
+    },
+    {
+     "title": "Wazuh open source platform overview",
+     "url": "https://www.helpnetsecurity.com/?p=280117"
+    }
+   ]
+  },
+  "tec-siem": {
+   "summary": "A security monitoring platform that reads logs from across the organisation and raises alerts when it sees signs of an attack.",
+   "protects": "The whole estate, by detecting intrusions, account misuse, malware spread and data theft that individual tools miss.",
+   "placement": "Central platform (SaaS in an India region, or on-premises in the data centre security zone) fed by log collectors; operated by the SOC, owned by the SOC manager.",
+   "how": "Logs are parsed and stored, then detection rules and analytics look for patterns mapped to MITRE ATT&CK. Alerts go to analysts with context, and the SIEM keeps the search history for investigations. Rules are tuned every month to cut noise and fill gaps.",
+   "pareto": [
+    "The right 10-15 log sources onboarded well before adding more",
+    "20-30 high-value detections mapped to ATT&CK (identity abuse, ransomware precursors, privilege use, data exfiltration)",
+    "Monthly tuning that removes noisy rules and adds missing ones",
+    "Alert triage with clear severity and an owner",
+    "Detection coverage reviewed after every incident and BAS run"
+   ],
+   "vendors": [
+    {
+     "name": "Microsoft Sentinel",
+     "kind": "commercial",
+     "fit": "Cloud-native SIEM; Microsoft 365 and some Azure logs are free to ingest; strong fit for Microsoft estates.",
+     "india": "Hosted in Azure Central India and South India regions; many Indian partners."
+    },
+    {
+     "name": "Splunk Enterprise Security (Cisco)",
+     "kind": "commercial",
+     "fit": "Very mature search and content; suits large teams; budget for ingest-based licensing.",
+     "india": "Indian partners and large BFSI customer base."
+    },
+    {
+     "name": "Securonix Unified Defense SIEM",
+     "kind": "commercial",
+     "fit": "Cloud SIEM with built-in UEBA; offered a dedicated India cloud for regulated customers.",
+     "india": "Large engineering teams in Pune and Bengaluru; Indian channel partners."
+    },
+    {
+     "name": "Palo Alto Networks Cortex XSIAM (took over IBM QRadar SaaS in 2024)",
+     "kind": "commercial",
+     "fit": "SIEM, XDR and SOAR in one AI-driven platform; QRadar on-premises customers are still supported by IBM.",
+     "india": "Indian sales and partners."
+    },
+    {
+     "name": "Exabeam (merged with LogRhythm in 2024)",
+     "kind": "commercial",
+     "fit": "Named a Leader in the 2025 Gartner SIEM Magic Quadrant; strong UEBA heritage.",
+     "india": "Through partners."
+    },
+    {
+     "name": "Wazuh",
+     "kind": "open source",
+     "fit": "Free SIEM and XDR with agents; good for small teams or as a low-cost start; needs in-house engineering. Wazuh Cloud is a paid hosted option.",
+     "india": "Self-hosted in India; local integrators."
+    }
+   ],
+   "cost": {
+    "unit": "per GB per day ingested, per year (cloud SIEMs bill per GB ingested; some vendors per user, asset or EPS)",
+    "band": "Microsoft Sentinel about Rs 130-275 per GB ingested (pay-as-you-go to 200 GB/day commitment); ingest-licensed SIEMs often about Rs 1-1.5 lakh per GB/day per year",
+    "reference_org": "About Rs 40 lakh-1.2 crore a year for an assumed 60-100 GB/day sent to the SIEM, licence only; services and staff are in tec-soc",
+    "drivers": [
+     "Daily log volume to the analytics tier",
+     "Commitment tier and term",
+     "Retention in the hot tier beyond the included period",
+     "Add-ons: UEBA, SOAR, threat intelligence",
+     "Free-ingest sources (for example Microsoft 365 for Sentinel)"
+    ],
+    "note": "Indicative; excludes 18% GST; Sentinel INR figures are from an Indian partner using about Rs 98/USD; others converted at about Rs 84/USD; get three quotes."
+   },
+   "rfp": {
+    "scope": [
+     "SIEM platform licence and deployment",
+     "Onboarding of listed log sources with parsers",
+     "Initial detection content mapped to MITRE ATT&CK",
+     "Dashboards and regulatory reports",
+     "Knowledge transfer and 12 months of tuning"
+    ],
+    "must": [
+     "Ingest at least 100 GB/day at launch, scalable to 200 GB/day without platform change",
+     "Out-of-the-box parsers for the listed firewalls, EDR, AD/Entra ID, M365, cloud and core banking or key apps",
+     "At least 150 ready detections mapped to ATT&CK, plus custom rule authoring",
+     "Hot searchable retention of 90 days and total 180 days in India",
+     "Role-based access, MFA, and an immutable audit trail of analyst actions",
+     "API integration with SOAR, ticketing and threat intelligence platforms",
+     "Hosting in India (SaaS India region or on-premises)"
+    ],
+    "should": [
+     "Built-in UEBA",
+     "Built-in or bundled SOAR",
+     "Detection-as-code and version control",
+     "Natural-language or AI-assisted search",
+     "Data tiering for cheap long-term storage"
+    ],
+    "sizing": [
+     "Log sources and estimated GB/day per source",
+     "Peak events per second",
+     "Analyst count and shifts",
+     "Retention per source class",
+     "5 sites, cloud accounts, 40 applications"
+    ],
+    "evaluation": [
+     "Detection quality in a proof of concept 30",
+     "Platform fit and scalability 20",
+     "Ease of use for analysts 15",
+     "Integration 10",
+     "3-year total cost 20",
+     "India presence and references 5"
+    ],
+    "sla": [
+     "Platform availability 99.9%",
+     "Ingestion delay under 5 minutes",
+     "P1 support response within 1 hour, 24x7",
+     "New parser for a supported product within 30 days"
+    ],
+    "clauses": [
+     "Right to audit by the organisation, its auditors and the regulator (RBI/SEBI/IRDAI as applicable), including on-site access to the provider's SOC or data centre",
+     "RBI Master Direction on outsourcing of IT services (2023) for regulated entities: due diligence, material-outsourcing approval, concentration risk, and the entity stays accountable",
+     "CERT-In Directions (April 2022): provider must help report incidents to CERT-In within 6 hours of noticing them, and keep logs for a rolling 180 days within India",
+     "Data localisation: logs and personal data stored and processed in India; RBI payment-data storage rule where payment data is in scope; DPDP Act 2023 duties as a data processor",
+     "Exit: export of logs, rules and dashboards in open formats"
+    ]
+   },
+   "architecture": "Collectors at each site forward to the SIEM; the SIEM also pulls cloud and SaaS logs by API. It receives threat intelligence feeds and UEBA scores, and sends alerts to the SOC queue, SOAR and ticketing. Typical placement: SaaS in an India region reached over TLS from collectors in the data centre security zone, or an on-premises cluster in the security management VLAN.",
+   "kpis": [
+    "Percentage of top ATT&CK techniques with a working detection",
+    "True-positive rate of alerts (target above 30% after tuning)",
+    "Mean time to detect in drills and incidents",
+    "Percentage of critical sources onboarded"
+   ],
+   "pitfalls": [
+    "Buying by features and then onboarding few sources",
+    "Leaving default rules untuned, so analysts ignore alerts",
+    "Sending every log to the expensive tier",
+    "No owner for detection engineering after go-live"
+   ],
+   "sources": [
+    {
+     "title": "Microsoft Sentinel pricing in India, INR by ingestion tier (Indian partner estimate)",
+     "url": "https://ogma.in/blog/microsoft-sentinel-pricing-india-2026"
+    },
+    {
+     "title": "Splunk licensing in 2026: ingest versus workload (Indian partner)",
+     "url": "https://ogma.in/blog/the-complete-guide-to-splunk-licensing-in-2026-ingest-vs-workload-pricing-explained"
+    },
+    {
+     "title": "Exabeam: 2025 Gartner Magic Quadrant for SIEM",
+     "url": "https://www.exabeam.com/resources/reports/gartner-magic-quadrant-for-siem-2025/"
+    },
+    {
+     "title": "Securonix expands in India; India cloud for regulated customers",
+     "url": "https://www.securonix.com/press_release/securonix-rapidly-expands-in-india-through-legacy-siem-replacements-and-channel-program-growth/"
+    },
+    {
+     "title": "IBM sells QRadar SaaS assets to Palo Alto Networks (TechTarget)",
+     "url": "https://techtarget.com/searchsecurity/news/366585436/IBM-sells-QRadar-SaaS-assets-to-Palo-Alto-Networks"
+    },
+    {
+     "title": "LogRhythm and Exabeam merger (SiliconANGLE)",
+     "url": "https://siliconangle.com/2024/05/15/logrhythm-exabeam-announce-merger-enhance-ai-driven-cybersecurity-solutions/"
+    },
+    {
+     "title": "CERT-In Directions under section 70B(6) of the IT Act, 28 April 2022 (NTP sync, 6-hour reporting, 180-day logs)",
+     "url": "https://www.cert-in.org.in/PDF/CERT-In_Directions_70B_28.04.2022.pdf"
+    }
+   ]
+  },
+  "tec-soc": {
+   "summary": "A team, in-house, outsourced or mixed, that watches security alerts around the clock and responds to attacks.",
+   "protects": "The whole organisation, by turning alerts into fast containment of intrusions, ransomware and account takeover at any hour.",
+   "placement": "A process and people function run by the SOC manager under the CISO; analysts in a secure room or remote, or at a managed provider's SOC in India, working on the SIEM, EDR and SOAR consoles.",
+   "how": "Analysts in shifts triage alerts (L1), investigate and contain (L2), and hunt and engineer detections (L3). Runbooks say who does what, and severe incidents go to the incident response team and leadership. Regulated entities report to CERT-In within 6 hours and to their regulator as required.",
+   "pareto": [
+    "True 24x7 coverage with a named escalation path to someone who can isolate a host or disable an account",
+    "Runbooks for the top 10 incident types (phishing, ransomware, account takeover, malware, data leak)",
+    "EDR on all endpoints plus the SIEM, so the SOC can see and act",
+    "Clear SLAs: time to triage, time to escalate, time to contain",
+    "Monthly service review with metrics and detection improvements"
+   ],
+   "vendors": [
+    {
+     "name": "Tata Communications (managed security services)",
+     "kind": "Indian",
+     "fit": "Large Indian MSSP with SOCs in India; cited by Frost and Sullivan as a leading Indian MSSP; fits large, multi-site estates.",
+     "india": "Indian headquarters and SOCs."
+    },
+    {
+     "name": "Inspira Enterprise",
+     "kind": "Indian",
+     "fit": "Indian cyber services firm ranked in MSSP Alert's Top 250; strong BFSI and government focus.",
+     "india": "Indian firm with SOCs in India."
+    },
+    {
+     "name": "NopalCyber",
+     "kind": "Indian",
+     "fit": "MDR and managed SOC provider named in MSSP Alert's Top 250 in 2025 and 2026; fits mid-size firms.",
+     "india": "Operations in Hyderabad."
+    },
+    {
+     "name": "Large Indian IT services firms (for example TCS, Wipro, HCLTech) running cyber defence centres",
+     "kind": "service firm",
+     "fit": "Choose when the SOC is bundled with wider IT outsourcing; check named staff and tool ownership.",
+     "india": "SOCs across Indian cities."
+    },
+    {
+     "name": "Vendor-run MDR (for example CrowdStrike Falcon Complete, Microsoft Defender Experts, Palo Alto Unit 42 MDR)",
+     "kind": "commercial",
+     "fit": "Product vendor runs 24x7 detection and response on its own platform; fast to start, but tied to that vendor.",
+     "india": "Sold through Indian partners; check where analysts sit and where data is held."
+    },
+    {
+     "name": "In-house SOC on open tools (Wazuh, MISP, Shuffle, TheHive)",
+     "kind": "open source",
+     "fit": "Lowest licence cost; only works with a skilled, retained team of 12 or more for 24x7.",
+     "india": "Self-run in India."
+    }
+   ],
+   "cost": {
+    "unit": "fixed per year (managed: per endpoint, per device or per GB/day per month; in-house: staff plus tools)",
+    "band": "Managed SOC in India: about Rs 300-800 per endpoint per month, Rs 800-2,500 per network device per month, Rs 1,500-4,000 per server per month, or Rs 150-500 per GB of logs ingested",
+    "reference_org": "Managed: about Rs 60 lakh-2.4 crore a year (2,500 endpoints, 24x7, monitoring and response). Hybrid (provider runs L1 24x7; 3-5 own L2/L3 staff): about Rs 1.2-2.5 crore a year. In-house 24x7: about Rs 2.5-4 crore a year (about 12-15 staff, SIEM, EDR, SOAR, threat intelligence, training)",
+    "drivers": [
+     "Monitoring only versus active response (containment by the provider)",
+     "Who owns the SIEM and EDR licences",
+     "Number of devices and GB/day",
+     "Threat hunting, forensics and IR retainer hours",
+     "Staff count for 24x7: one seat around the clock needs about 5 people"
+    ],
+    "note": "Indicative; excludes 18% GST; managed bands from an Indian reseller survey, in-house from Indian salary surveys (L1 about Rs 4-8 lakh, L2 about Rs 8-16 lakh, L3 about Rs 15-25 lakh a year); get three quotes."
+   },
+   "rfp": {
+    "scope": [
+     "24x7x365 monitoring, triage and escalation",
+     "Active response: host isolation, account disablement, IOC blocking, within agreed authority",
+     "Threat hunting and monthly detection tuning",
+     "Incident response support and forensics retainer",
+     "CERT-In and regulator incident reporting support",
+     "Monthly and quarterly service reviews; annual SOC efficacy review"
+    ],
+    "must": [
+     "SOC located in India, with named analysts and background checks",
+     "24x7 coverage with at least two analysts per shift for the customer pool",
+     "Triage of critical alerts within 15 minutes and escalation by phone within 30 minutes",
+     "Use of the customer's SIEM and EDR, or provider tools with full data export",
+     "Runbooks agreed for the top 10 incident types before go-live",
+     "Support to file a CERT-In report within 6 hours of noticing a reportable incident",
+     "Monthly report: alert volumes, true-positive rate, MTTD, MTTR, detection changes"
+    ],
+    "should": [
+     "Threat hunting at least monthly with written results",
+     "SOAR playbooks run by the provider",
+     "Purple-team exercise each quarter with the BAS tool",
+     "Dedicated customer success manager",
+     "ISO 27001 certification of the SOC"
+    ],
+    "sizing": [
+     "2,000 users, 2,500 endpoints, servers, network devices, 40 apps, 5 sites",
+     "Log volume GB/day and sources",
+     "Current tools (SIEM, EDR, email security) and who owns them",
+     "Expected alerts per day",
+     "Response authority the provider will have"
+    ],
+    "evaluation": [
+     "Service quality in a 30-day pilot or reference checks 30",
+     "People: count, skills, retention 20",
+     "Process and runbooks 15",
+     "Technology and integration 10",
+     "Commercials 20",
+     "Regulatory fit (India SOC, audit rights) 5"
+    ],
+    "sla": [
+     "Critical: triage 15 minutes, escalate 30 minutes, contain within 1 hour once authorised",
+     "High: triage 30 minutes, escalate 2 hours",
+     "Monthly true-positive and missed-detection review",
+     "Service credits for missed SLAs, capped at a meaningful share of fees"
+    ],
+    "clauses": [
+     "Right to audit by the organisation, its auditors and the regulator (RBI/SEBI/IRDAI as applicable), including on-site access to the provider's SOC or data centre",
+     "RBI Master Direction on outsourcing of IT services (2023) for regulated entities: due diligence, material-outsourcing approval, concentration risk, and the entity stays accountable",
+     "CERT-In Directions (April 2022): provider must help report incidents to CERT-In within 6 hours of noticing them, and keep logs for a rolling 180 days within India",
+     "Data localisation: logs and personal data stored and processed in India; RBI payment-data storage rule where payment data is in scope; DPDP Act 2023 duties as a data processor",
+     "Exit and transition: export of all data, rules and playbooks in open formats, at no extra cost, with a 90-day handover",
+     "Confidentiality, background checks for staff with access, and breach notification to the organisation within hours, not days",
+     "SEBI CSCRF (August 2024) for SEBI-regulated entities: own, group, third-party or Market SOC, with periodic SOC efficacy assessment",
+     "RBI Cyber Security Framework (2016) for banks: C-SOC expectations even when outsourced; the bank stays responsible",
+     "Ownership of detection content and runbooks written for the customer"
+    ]
+   },
+   "architecture": "Sits on top of the SIEM, EDR/XDR, SOAR and threat intelligence; analysts reach them through a secure jump host with MFA. Alerts flow from the SIEM and EDR into the SOC queue; incidents go to the IR team, IT operations (for fixes) and the CISO. For a managed SOC, a VPN or private link connects the provider's India SOC to the customer's consoles, with least-privilege roles.",
+   "kpis": [
+    "Mean time to detect and mean time to contain for real and simulated incidents",
+    "Percentage of critical alerts triaged within SLA",
+    "True-positive rate and number of missed detections found later",
+    "Staff attrition (in-house) or analyst continuity (managed)"
+   ],
+   "pitfalls": [
+    "Paying for monitoring only, so the provider emails at 3 am and nobody acts",
+    "Contract counts alerts, not outcomes, rewarding noise",
+    "No runbooks or authority agreed before the first incident",
+    "An in-house 24x7 SOC with 4-5 people: burnout and gaps"
+   ],
+   "sources": [
+    {
+     "title": "Managed SOC pricing in India, 2026 (Indian reseller estimate)",
+     "url": "https://ogma.in/blog/managed-soc-pricing-in-india-what-it-really-costs-in-2026-and-how-to-choose-the-right-provider"
+    },
+    {
+     "title": "Inspira Enterprise among top Indian MSSPs (CRN India)",
+     "url": "https://www.crn.in/?p=39614"
+    },
+    {
+     "title": "Frost and Sullivan Indian managed security services market (Tata Communications)",
+     "url": "https://tatacommunications.com/resourcehub/cyber-security/frost-and-sullivan-indian-managed-security-services-market-forecast-to-2023"
+    },
+    {
+     "title": "NopalCyber named a Top 250 global MSSP",
+     "url": "https://www.thailand-business-news.com/pr-news/nopalcyber-named-a-top-250-global-mssp-for-second-consecutive-year"
+    },
+    {
+     "title": "SOC analyst salary in India, L1 bands (EICTA, IIT Kanpur)",
+     "url": "https://www.eicta.iitk.ac.in/knowledge-hub/cyber-security/cybersecurity-jobs"
+    },
+    {
+     "title": "SOC analyst salary India, freshers versus experienced (training firm estimate)",
+     "url": "https://www.networkershome.com/soc-analyst-salary-india-freshers-vs-experienced/"
+    },
+    {
+     "title": "Summary of SEBI Cybersecurity and Cyber Resilience Framework (CSCRF), August 2024: SOC options and Market SOC",
+     "url": "https://uniqus.com/cybersecurity-and-cyber-resilience-framework-cscrf-for-sebi-regulated-entities-res/"
+    },
+    {
+     "title": "RBI Cyber Security Framework in Banks, 2016 (C-SOC annex): summary",
+     "url": "https://www.paloaltonetworks.com/blog/2016/08/cso-3-important-takeaways-from-the-rbis-cyber-security-framework-in-banks/"
+    },
+    {
+     "title": "CERT-In Directions under section 70B(6) of the IT Act, 28 April 2022 (NTP sync, 6-hour reporting, 180-day logs)",
+     "url": "https://www.cert-in.org.in/PDF/CERT-In_Directions_70B_28.04.2022.pdf"
+    }
+   ]
+  },
+  "tec-ti": {
+   "summary": "Information about current attackers, their tools and their targets, turned into blocks, detections and decisions.",
+   "protects": "The organisation's people, brand and systems, by warning early about campaigns, leaked credentials, fake domains and exploited vulnerabilities aimed at the sector.",
+   "placement": "A threat intelligence platform in the SOC tool set, fed by government, sector and commercial feeds; owned by the SOC manager or a threat intelligence analyst.",
+   "how": "Feeds and reports are collected into a platform that removes duplicates, scores and ages indicators. Good indicators go automatically to the SIEM, firewall, proxy and EDR; reports on actors and campaigns guide hunting and patch priorities. Digital risk monitoring watches for leaked data, look-alike domains and brand abuse.",
+   "pareto": [
+    "Join and act on CERT-In and CSIRT-Fin advisories (free, sector-specific)",
+    "Automatic push of high-confidence indicators to the SIEM and blocking points",
+    "Brand, domain and credential-leak monitoring with takedown",
+    "Known-exploited vulnerability lists driving patch priority",
+    "A short monthly threat brief for leadership"
+   ],
+   "vendors": [
+    {
+     "name": "CERT-In and CSIRT-Fin advisories and sharing",
+     "kind": "service firm",
+     "fit": "Free government advisories; CSIRT-Fin works under CERT-In for the BFSI sector. Every Indian organisation should consume these.",
+     "india": "Indian government."
+    },
+    {
+     "name": "MISP",
+     "kind": "open source",
+     "fit": "Free threat intelligence sharing platform led by CIRCL, widely used by CERTs and the financial sector; good hub for feeds and sharing with peers.",
+     "india": "Self-hosted; community."
+    },
+    {
+     "name": "OpenCTI (Filigran)",
+     "kind": "open source",
+     "fit": "Free platform built on STIX 2.1 for organising actors, campaigns and indicators; Filigran sells an enterprise edition.",
+     "india": "Self-hosted; enterprise via partners."
+    },
+    {
+     "name": "CloudSEK XVigil",
+     "kind": "Indian",
+     "fit": "Digital risk and threat intelligence monitoring (leaks, brand abuse, attack surface); founded in India.",
+     "india": "Large team and customer base in India; Gartner lists its headquarters in Singapore."
+    },
+    {
+     "name": "Recorded Future (Mastercard)",
+     "kind": "commercial",
+     "fit": "Broad intelligence cloud with modules for brand, vulnerability and third-party intelligence; premium price.",
+     "india": "Through Indian partners."
+    },
+    {
+     "name": "Google Threat Intelligence (Mandiant)",
+     "kind": "commercial",
+     "fit": "Deep actor and incident-response-led intelligence; subscription by access level.",
+     "india": "Through Google Cloud and partners in India."
+    }
+   ],
+   "cost": {
+    "unit": "fixed per year (subscription)",
+    "band": "Rs 0 for government feeds and open-source platforms (staff time only); about Rs 10-25 lakh a year for digital risk monitoring; about Rs 40 lakh-1.25 crore a year for a premium intelligence platform",
+    "reference_org": "About Rs 5-25 lakh a year (free feeds, MISP or OpenCTI, plus one digital risk monitoring service); premium intelligence only for advanced maturity",
+    "drivers": [
+     "Number of modules (brand, vulnerability, third party, dark web)",
+     "Number of monitored domains, brands and VIPs",
+     "Takedown volume",
+     "Analyst access seats",
+     "Whether the SIEM or EDR already bundles intelligence"
+    ],
+    "note": "Indicative; excludes 18% GST; Recorded Future band from a third-party estimate of USD 50,000-150,000 converted at about Rs 84/USD; vendors quote on request; get three quotes."
+   },
+   "rfp": {
+    "scope": [
+     "Strategic, operational and tactical intelligence relevant to the sector in India",
+     "Indicator feeds integrated with SIEM, firewall, proxy and EDR",
+     "Brand, domain and leaked-credential monitoring with takedown",
+     "Monthly threat briefing",
+     "Analyst support for requests"
+    ],
+    "must": [
+     "Indicators delivered in STIX/TAXII or an API the SIEM can consume",
+     "Confidence score and expiry on every indicator",
+     "Coverage of threats targeting Indian BFSI and payment systems",
+     "Look-alike domain and phishing site detection with takedown within 48 hours of approval",
+     "Leaked credential alerts for the organisation's domains"
+    ],
+    "should": [
+     "Dark web and Telegram monitoring",
+     "Third-party (vendor) risk intelligence",
+     "Vulnerability intelligence with exploitation evidence",
+     "Integration with MISP or OpenCTI"
+    ],
+    "sizing": [
+     "Domains, brands, mobile apps and executive names to monitor",
+     "Consuming tools (SIEM, EDR, firewall, proxy)",
+     "Analyst seats",
+     "Expected takedowns per year"
+    ],
+    "evaluation": [
+     "Relevance to India and the sector (tested in a trial) 35",
+     "Integration and automation 20",
+     "Takedown and analyst support 15",
+     "Coverage breadth 10",
+     "Commercials 20"
+    ],
+    "sla": [
+     "Critical alert (for example leaked admin credential) notified within 1 hour",
+     "Takedown initiated within 24 hours of approval",
+     "Feed availability 99.5%"
+    ],
+    "clauses": [
+     "Lawful collection only; no hacking back or purchase of stolen data",
+     "Confidentiality of the organisation's monitored assets",
+     "Data residency for any personal data in alerts (DPDP)",
+     "Right to audit and exit with export of all collected intelligence"
+    ]
+   },
+   "architecture": "Feeds (CERT-In, CSIRT-Fin, ISAC peers, open-source, commercial) flow into a threat intelligence platform (MISP or OpenCTI or vendor portal). The platform pushes curated indicators to the SIEM for matching and to firewalls, proxies, DNS and EDR for blocking, and sends reports to the SOC, vulnerability management and leadership.",
+   "kpis": [
+    "Percentage of CERT-In and CSIRT-Fin advisories assessed and actioned within SLA",
+    "Detections or blocks attributable to intelligence each month",
+    "Time from phishing domain registration to takedown",
+    "False-positive rate of pushed indicators"
+   ],
+   "pitfalls": [
+    "Buying feeds that nobody reads or integrates",
+    "Pushing low-confidence indicators that block business traffic",
+    "No expiry, so old indicators pile up",
+    "Intelligence that never reaches patch priority or leadership"
+   ],
+   "sources": [
+    {
+     "title": "CSIRT-Fin under CERT-In for the BFSI sector (PIB document, January 2026)",
+     "url": "https://static.pib.gov.in/WriteReadData/specificdocs/documents/2026/jan/doc2026123764501.pdf"
+    },
+    {
+     "title": "CERT-In and Mastercard MoU on financial-sector cyber resilience through CSIRT-Fin (2024)",
+     "url": "https://mastercard.com/news/ap/en-in/newsroom/press-releases/en-in/2024/june/cert-in-and-mastercard-sign-mou-for-collaboration-in-cybersecurity-to-enhance-india-s-cyber-resilience-in-financial-sector"
+    },
+    {
+     "title": "MISP and ISACs training material (CIRCL)",
+     "url": "https://eugit.opencloud.lu/MISP/misp-training/raw/commit/12aa6d055679a1f950a4c96633daf17bf04a78bc/a.z-misp-and-isacs/slide.pdf"
+    },
+    {
+     "title": "OpenCTI overview",
+     "url": "https://modeldiplomat.com/learn/glossary/opencti"
+    },
+    {
+     "title": "Recorded Future pricing guide (third-party estimate)",
+     "url": "https://underdefense.com/blog/recorded-future-pricing-guide/"
+    },
+    {
+     "title": "CloudSEK XVigil on Gartner Peer Insights",
+     "url": "https://www.gartner.com/reviews/market/security-threat-intelligence-services/vendor/cloudsek/product/cloudsek-xvigil"
+    },
+    {
+     "title": "Mandiant threat intelligence on Gartner Peer Insights",
+     "url": "https://www.gartner.com/reviews/product/mandiant-security-threat-intelligence-products-and-services-legacy"
+    }
+   ]
+  },
+  "tec-soar": {
+   "summary": "Software that runs response steps automatically or at one click, so routine alerts are handled in seconds and analysts focus on real attacks.",
+   "protects": "The SOC's speed and consistency: faster containment of phishing, malware and compromised accounts, and fewer human errors under pressure.",
+   "placement": "Automation platform in the SOC tool set (SaaS or on-premises), connected by API to SIEM, EDR, email, identity, firewall and ticketing; owned by the SOC manager, built by a SOC engineer.",
+   "how": "A playbook starts when an alert arrives: it enriches it (reputation, user, asset), decides or asks an analyst, then acts (quarantine email, isolate host, disable account, block indicator) and records every step in a case. Low-risk actions run automatically; high-impact ones need approval.",
+   "pareto": [
+    "Phishing triage: extract, check and purge reported emails",
+    "Alert enrichment for every alert (user, asset, reputation)",
+    "One-click host isolation and account disablement with approval",
+    "Indicator blocking across firewall, proxy and EDR",
+    "Automatic case creation and evidence capture for reporting"
+   ],
+   "vendors": [
+    {
+     "name": "Palo Alto Networks Cortex XSOAR",
+     "kind": "commercial",
+     "fit": "Mature SOAR with a large integration marketplace; also built into Cortex XSIAM.",
+     "india": "Indian partners."
+    },
+    {
+     "name": "Splunk SOAR (Cisco)",
+     "kind": "commercial",
+     "fit": "Natural choice with Splunk SIEM; visual playbooks.",
+     "india": "Indian partners."
+    },
+    {
+     "name": "Microsoft Sentinel automation (Logic Apps playbooks)",
+     "kind": "commercial",
+     "fit": "Pay-per-run automation inside Sentinel; lowest entry cost for Microsoft estates.",
+     "india": "Azure India regions."
+    },
+    {
+     "name": "Tines",
+     "kind": "commercial",
+     "fit": "No-code automation favoured by lean teams; free Community Edition to start.",
+     "india": "SaaS; through partners."
+    },
+    {
+     "name": "Torq",
+     "kind": "commercial",
+     "fit": "AI-assisted hyper-automation; free Community Edition plus quoted tiers.",
+     "india": "SaaS."
+    },
+    {
+     "name": "Shuffle",
+     "kind": "open source",
+     "fit": "Free, open-source SOAR; good with Wazuh and TheHive; paid hosted plans exist.",
+     "india": "Self-hosted in India."
+    }
+   ],
+   "cost": {
+    "unit": "fixed per year (subscription; some price by users, actions or workflow runs)",
+    "band": "About Rs 25 lakh-1.25 crore a year for a standalone commercial SOAR; often lower or bundled when it comes with the SIEM or XDR; open source free apart from staff time",
+    "reference_org": "About Rs 20-60 lakh a year for the first 10 playbooks on a bundled or mid-tier platform, plus one SOC engineer",
+    "drivers": [
+     "Standalone versus bundled with SIEM/XDR",
+     "Number of analyst seats or workflow runs",
+     "Number of integrations needed",
+     "Professional services to build playbooks"
+    ],
+    "note": "Indicative; excludes 18% GST; vendors quote on request; standalone band from third-party estimates (Tines about USD 30,000-150,000; XSOAR about USD 50,000-300,000) at about Rs 84/USD; get three quotes."
+   },
+   "rfp": {
+    "scope": [
+     "SOAR platform and integrations",
+     "Design and build of the top 10 playbooks",
+     "Case management",
+     "Training and handover",
+     "12 months of playbook improvement"
+    ],
+    "must": [
+     "Ready integrations with the SIEM, EDR, email, identity, firewall and ticketing tools in use",
+     "Human approval step for high-impact actions",
+     "Full audit log of every automated and manual action",
+     "Playbook export in a documented format",
+     "Role-based access and MFA",
+     "Hosting in India or on-premises if case data contains personal data"
+    ],
+    "should": [
+     "Low-code playbook editor",
+     "AI-assisted summarisation of cases",
+     "Metrics on time saved per playbook",
+     "Sandbox for testing playbooks"
+    ],
+    "sizing": [
+     "Alert volume per day by type",
+     "Tools to integrate",
+     "Analyst count",
+     "Target playbooks"
+    ],
+    "evaluation": [
+     "Integration coverage 25",
+     "Ease of building playbooks (tested) 25",
+     "Case management and audit 15",
+     "Commercials 25",
+     "Support and references 10"
+    ],
+    "sla": [
+     "Platform availability 99.9%",
+     "P1 support within 1 hour",
+     "Fix of broken vendor-supplied integration within 10 working days"
+    ],
+    "clauses": [
+     "Data residency for case data with personal data (DPDP)",
+     "Right to audit",
+     "Exit: export of playbooks and cases",
+     "Liability for actions taken by vendor-built playbooks during implementation"
+    ]
+   },
+   "architecture": "Sits between detection and action: alerts arrive from the SIEM, EDR and email security; the SOAR calls threat intelligence, identity and asset data for enrichment; it acts through EDR, email, identity, firewall and proxy APIs and writes to ticketing. Usually SaaS or a VM in the security management zone with outbound API access.",
+   "kpis": [
+    "Percentage of alerts enriched automatically",
+    "Analyst hours saved per month",
+    "Median time from alert to containment for automated playbooks",
+    "Number of playbook failures"
+   ],
+   "pitfalls": [
+    "Automating before processes are written and agreed",
+    "Fully automatic blocking that takes down business systems",
+    "Playbooks that break silently when an API changes",
+    "Buying SOAR when the SIEM already includes enough automation"
+   ],
+   "sources": [
+    {
+     "title": "Torq pricing explained 2026 (third-party)",
+     "url": "https://automationatlas.io/answers/torq-pricing-explained-2026/"
+    },
+    {
+     "title": "Torq versus Tines 2026",
+     "url": "https://automationatlas.io/guides/torq-vs-tines-2026-comparison/"
+    },
+    {
+     "title": "Open source SOAR overview (Shuffle)",
+     "url": "https://aimultiple.com/tr/open-source-soar"
+    },
+    {
+     "title": "Best SOAR platforms 2026, pricing estimates (third-party)",
+     "url": "https://cipherssecurity.com/best-soar-platforms-in-2026/"
+    },
+    {
+     "title": "Cortex XSOAR on Capterra",
+     "url": "https://www.capterra.com/p/229246/Cortex-XSOAR/"
+    }
+   ]
+  },
+  "tec-ueba": {
+   "summary": "Analytics that learn how each user and device normally behaves and raise an alert when behaviour changes in a risky way; XDR joins endpoint, identity, email and network signals into one detection and response view.",
+   "protects": "Accounts and data, against stolen credentials, insider misuse, lateral movement and slow data theft that rule-based alerts miss.",
+   "placement": "An analytics layer in the SIEM or XDR platform (cloud service), fed by identity, endpoint, VPN, email and app logs; owned by the SOC manager.",
+   "how": "The tool builds a baseline per user, peer group and device (logon times, places, volumes, systems used). It scores deviations, such as an impossible journey or mass file access, and combines them into a risk score. High scores create alerts or trigger extra checks such as forced MFA.",
+   "pareto": [
+    "Identity signals first: logons, MFA, privilege changes, VPN",
+    "Watch lists for privileged users and leavers",
+    "Data-access anomalies on key file shares, SaaS and databases",
+    "Risk score feeding conditional access (step-up MFA or block)",
+    "Joined-up XDR view so one incident is not ten alerts"
+   ],
+   "vendors": [
+    {
+     "name": "Microsoft Sentinel UEBA and Defender XDR",
+     "kind": "commercial",
+     "fit": "UEBA built into Sentinel and XDR across Defender products; best value if already on Microsoft E5 or Defender.",
+     "india": "Azure India regions."
+    },
+    {
+     "name": "Securonix",
+     "kind": "commercial",
+     "fit": "SIEM with strong built-in UEBA; long track record in Indian BFSI.",
+     "india": "Engineering in Pune and Bengaluru; Indian partners."
+    },
+    {
+     "name": "Exabeam (with LogRhythm)",
+     "kind": "commercial",
+     "fit": "UEBA pioneer; timeline-based investigations.",
+     "india": "Through partners."
+    },
+    {
+     "name": "CrowdStrike Falcon (Insight XDR, Identity Protection)",
+     "kind": "commercial",
+     "fit": "XDR and identity threat detection built on the endpoint agent.",
+     "india": "Indian partners and office."
+    },
+    {
+     "name": "Palo Alto Networks Cortex XDR / XSIAM",
+     "kind": "commercial",
+     "fit": "XDR with analytics across endpoint, network and cloud.",
+     "india": "Indian partners."
+    },
+    {
+     "name": "Wazuh (rules) with OpenSearch anomaly detection",
+     "kind": "open source",
+     "fit": "Basic anomaly detection is possible with open tools, but true UEBA needs significant engineering; say so in the business case.",
+     "india": "Self-hosted."
+    }
+   ],
+   "cost": {
+    "unit": "per user per year (UEBA) or per endpoint per year (XDR); often an add-on to the SIEM or EDR",
+    "band": "About Rs 1,000-3,000 per user per year as a UEBA add-on; often included in E5 or SIEM bundles",
+    "reference_org": "About Rs 20-60 lakh a year for 2,000 users when bought as an add-on; little or no extra licence if already in the SIEM or XDR bundle",
+    "drivers": [
+     "Bundled versus standalone",
+     "Number of users and entities modelled",
+     "Log volume needed for baselines",
+     "XDR tier on the existing EDR"
+    ],
+    "note": "Indicative; excludes 18% GST; no public list prices were found for UEBA add-ons, so this band is an estimate to test with quotes; get three quotes."
+   },
+   "rfp": {
+    "scope": [
+     "Behaviour analytics for users, devices and service accounts",
+     "Integration with identity, endpoint, VPN, email and key apps",
+     "Risk scoring and alerting into the SOC queue",
+     "Tuning for 3 months after go-live"
+    ],
+    "must": [
+     "Baselines per user and per peer group, built from at least 30 days of data",
+     "Detection of impossible travel, unusual privilege use, mass download and unusual logon patterns",
+     "Explainable alerts: what changed versus the baseline",
+     "Integration with the SIEM and SOAR; risk score usable by conditional access",
+     "Personal data processed in India with access limited by role"
+    ],
+    "should": [
+     "Identity threat detection for AD and Entra ID (for example Kerberoasting, DCSync)",
+     "Peer-group modelling by department",
+     "Watch lists for privileged users and leavers"
+    ],
+    "sizing": [
+     "2,000 users, service accounts, 2,500 endpoints",
+     "Identity stack (AD, Entra ID, IAM)",
+     "Key data stores to model",
+     "Log volume per day"
+    ],
+    "evaluation": [
+     "Detection quality in a pilot with planted scenarios 35",
+     "Explainability and analyst workflow 20",
+     "Integration 15",
+     "Commercials 20",
+     "Privacy controls 10"
+    ],
+    "sla": [
+     "Platform availability 99.9%",
+     "Model and content updates at least quarterly",
+     "P1 support within 1 hour"
+    ],
+    "clauses": [
+     "DPDP Act 2023: employee monitoring needs a lawful basis and notice; keep a privacy impact assessment",
+     "Data localisation for behavioural data",
+     "Right to audit",
+     "Exit with export of risk history"
+    ]
+   },
+   "architecture": "Reads from the SIEM data lake or directly from identity (AD, Entra ID), EDR, VPN, email and key app logs; sends risk scores and alerts to the SIEM queue and SOAR, and risk signals to conditional access in the identity platform. Usually a module of the cloud SIEM or XDR, so no extra hardware.",
+   "kpis": [
+    "Account-compromise cases detected by UEBA before other tools",
+    "True-positive rate of UEBA alerts",
+    "Time from risky behaviour to analyst review",
+    "Coverage: percentage of users with a mature baseline"
+   ],
+   "pitfalls": [
+    "Turning it on before identity logs are complete",
+    "Expecting results in week one: baselines need about a month",
+    "Alert flood from normal changes (travel, new roles) without tuning",
+    "Ignoring employee-privacy duties"
+   ],
+   "sources": [
+    {
+     "title": "LogRhythm and Exabeam merge (SecurityWeek)",
+     "url": "https://www.securityweek.com/thoma-bravo-owned-logrhythm-announces-merger-with-rival-exabeam/"
+    },
+    {
+     "title": "Securonix and Astra Cybertech partner across India (December 2025)",
+     "url": "https://www.securonix.com/press_release/securonix-and-astra-cybertech-partner-to-deliver-unified-defense-siem-capabilities-across-india/"
+    },
+    {
+     "title": "Microsoft Sentinel versus third-party SIEM in India (Indian partner)",
+     "url": "https://embee.co.in/blog/microsoft-sentinel-vs-third-party-siem/"
+    },
+    {
+     "title": "Palo Alto Networks: acquisition of IBM QRadar SaaS assets",
+     "url": "https://paloaltonetworks.com/cyberpedia/ibm-qradar-acquired-by-palo-alto-networks"
+    }
+   ]
+  },
+  "tec-bas": {
+   "summary": "A tool that safely imitates real attack techniques inside the network, again and again, to prove whether the security controls actually stop or detect them.",
+   "protects": "Confidence in every other control: finds gaps in EDR, email security, firewalls, SIEM rules and segmentation before an attacker does.",
+   "placement": "Management console (SaaS or on-premises) with simulation agents on a sample of endpoints and servers in each zone; owned by the security testing lead, with results shared with the SOC (purple teaming).",
+   "how": "Agents run harmless versions of attacker techniques mapped to MITRE ATT&CK, such as credential dumping, lateral movement or data exfiltration. The tool checks whether each was blocked, detected (alert in SIEM/EDR) or missed. Gaps become tickets and new detections, and the test is rerun to prove the fix.",
+   "pareto": [
+    "Agents in every key zone (user VLAN, server zone, DMZ, cloud)",
+    "Ransomware and credential-theft scenarios first",
+    "Check detection in the SIEM, not only blocking",
+    "Monthly or weekly scheduled runs with trend reports",
+    "Every gap goes into the vulnerability or detection backlog with an owner"
+   ],
+   "vendors": [
+    {
+     "name": "Picus Security",
+     "kind": "commercial",
+     "fit": "Strong focus on prevention and detection validation with ready mitigation advice; frequently listed starting around USD 30,000 a year.",
+     "india": "Indian partners."
+    },
+    {
+     "name": "Cymulate",
+     "kind": "commercial",
+     "fit": "Modular platform (email, web, endpoint, lateral movement, exposure); modular pricing.",
+     "india": "Indian partners."
+    },
+    {
+     "name": "SafeBreach",
+     "kind": "commercial",
+     "fit": "Large attack playbook library; enterprise quoted pricing.",
+     "india": "Through partners."
+    },
+    {
+     "name": "AttackIQ",
+     "kind": "commercial",
+     "fit": "Deep ATT&CK-aligned emulation for mature teams; higher price point.",
+     "india": "Through partners."
+    },
+    {
+     "name": "MITRE Caldera and Atomic Red Team",
+     "kind": "open source",
+     "fit": "Free adversary emulation (Caldera, by MITRE) and a library of small ATT&CK tests (Atomic Red Team, by Red Canary); need skilled staff and care to run safely.",
+     "india": "Self-run."
+    },
+    {
+     "name": "Filigran OpenBAS",
+     "kind": "open source",
+     "fit": "Open-source breach and attack simulation platform from the OpenCTI team.",
+     "india": "Self-hosted."
+    },
+    {
+     "name": "CERT-In empanelled auditors offering red and purple team exercises",
+     "kind": "service firm",
+     "fit": "Choose for annual, human-led validation alongside the tool.",
+     "india": "Empanelled list published by CERT-In."
+    }
+   ],
+   "cost": {
+    "unit": "fixed per year (subscription by modules and agent count)",
+    "band": "About Rs 15-80 lakh a year for commercial BAS; open-source tools free apart from staff time",
+    "reference_org": "About Rs 15-50 lakh a year for core modules with agents in each zone; more for full modular coverage",
+    "drivers": [
+     "Number of modules (endpoint, email, web, lateral movement, cloud, data exfiltration)",
+     "Number of agents and sites",
+     "SIEM/EDR integration for detection checks",
+     "Managed purple-team services"
+    ],
+    "note": "Indicative; excludes 18% GST; based on third-party listed starting prices (Picus about USD 30,000; SafeBreach about USD 18,000; Cymulate about USD 91,000 for a 12-month bundle) at about Rs 84/USD; get three quotes."
+   },
+   "rfp": {
+    "scope": [
+     "BAS platform and agents",
+     "Scenario library aligned to MITRE ATT&CK and sector threats",
+     "Integration with SIEM and EDR to verify detection",
+     "Monthly runs and reports",
+     "Quarterly purple-team review with the SOC"
+    ],
+    "must": [
+     "Simulations are safe: no real malware detonation in production without approval; reversible actions",
+     "Library covers ransomware, credential theft, lateral movement, exfiltration and phishing",
+     "Checks both prevention and detection by reading SIEM/EDR results",
+     "New scenarios for major threats within 7 days of public disclosure",
+     "Mitigation advice per gap, including vendor-specific detection rules",
+     "Agents support Windows, Linux and macOS"
+    ],
+    "should": [
+     "Email and web gateway testing modules",
+     "Cloud control validation",
+     "Exposure management view combining BAS with vulnerability data",
+     "Scheduling and trend dashboards"
+    ],
+    "sizing": [
+     "Zones and sites where agents will run",
+     "Security controls to validate (EDR, email, proxy, firewall, SIEM)",
+     "Run frequency",
+     "Users for phishing modules"
+    ],
+    "evaluation": [
+     "Scenario relevance and safety 30",
+     "Detection-validation integration 25",
+     "Remediation guidance 15",
+     "Ease of use 10",
+     "Commercials 20"
+    ],
+    "sla": [
+     "New critical threat scenarios within 7 days",
+     "Platform availability 99.5%",
+     "P1 support within 4 hours"
+    ],
+    "clauses": [
+     "Written authorisation and change control before every run",
+     "Agents and data under the organisation's control; results stored in India",
+     "Liability for any outage caused by the tool",
+     "Right to audit and exit"
+    ]
+   },
+   "architecture": "A console (SaaS or on-premises) controls agents placed in each zone: user VLAN, server zone, DMZ and cloud. Agents run simulations between zones and to the internet; the console reads results from the SIEM and EDR APIs. Gaps go to ticketing, the vulnerability process and the detection engineering backlog.",
+   "kpis": [
+    "Percentage of simulated techniques prevented",
+    "Percentage of simulated techniques detected in the SIEM within 15 minutes",
+    "Number of gaps closed per quarter, verified by rerun",
+    "Trend of control effectiveness over time"
+   ],
+   "pitfalls": [
+    "Running once for the audit and never again",
+    "Measuring only blocks, not whether the SOC saw it",
+    "Agents in one zone only, missing segmentation gaps",
+    "Gaps reported but not owned or fixed"
+   ],
+   "sources": [
+    {
+     "title": "Top breach and attack simulation tools with starting prices (eSecurity Planet)",
+     "url": "https://esecurityplanet.com/?p=5904"
+    },
+    {
+     "title": "Cymulate pricing on TrustRadius",
+     "url": "https://www.trustradius.com/compare-products/cymulate"
+    },
+    {
+     "title": "SafeBreach pricing 2026 and alternatives including OpenBAS (third-party)",
+     "url": "https://ethicalhacking.ai/pricing/safebreach-pricing"
+    },
+    {
+     "title": "MITRE Caldera new interface (MITRE)",
+     "url": "https://www.mitre.org/news-insights/news-release/mitre-caldera-releases-new-user-interface-adversarial-emulation"
+    },
+    {
+     "title": "Atomic Red Team (Red Canary)",
+     "url": "https://redcanary.com/atomic-red-team/"
+    }
+   ]
+  },
+  "tec-deception": {
+   "summary": "Fake systems, files and credentials placed among real ones, so that any attacker who touches them sets off a reliable alarm.",
+   "protects": "The internal network and key data, by catching intruders and insiders early, during reconnaissance and lateral movement, with almost no false alarms.",
+   "placement": "Decoy devices (hardware or VMs) in the DMZ, server zone, user VLANs and cloud; decoy tokens (fake credentials, documents, cloud keys) on endpoints and file shares; alerts go to the SOC; owned by the SOC manager.",
+   "how": "Decoys pretend to be servers, databases, switches or file shares; nothing legitimate should ever touch them. Tokens such as a fake admin password or document call home when used. Any interaction sends a high-confidence alert to the SIEM and SOC.",
+   "pareto": [
+    "A few decoys in each key segment (server zone, user VLAN, DMZ)",
+    "Fake credentials and files on endpoints and shares (honeytokens)",
+    "Decoys that look like the crown jewels (core banking, payments, backups)",
+    "Every alert treated as a real incident with a runbook",
+    "Low effort: managed decoys that update themselves"
+   ],
+   "vendors": [
+    {
+     "name": "Thinkst Canary",
+     "kind": "commercial",
+     "fit": "Simple, low-maintenance decoys and unlimited Canarytokens; vendor lists about USD 7,500 a year for 5 decoys.",
+     "india": "Ships hardware or virtual and cloud decoys; sold direct."
+    },
+    {
+     "name": "Acalvio ShadowPlex",
+     "kind": "commercial",
+     "fit": "Enterprise deception fabric with automatic placement and SIEM/SOAR/EDR integration; publishes RBI framework mapping.",
+     "india": "Indian partners and BFSI customers; has published an RBI framework mapping."
+    },
+    {
+     "name": "SentinelOne Singularity Hybrid Deception (formerly Attivo Networks)",
+     "kind": "commercial",
+     "fit": "Deception and identity decoys tied to the SentinelOne platform.",
+     "india": "Indian partners."
+    },
+    {
+     "name": "Zscaler Deception",
+     "kind": "commercial",
+     "fit": "Deception integrated with Zscaler zero-trust access; fits Zscaler customers.",
+     "india": "Indian data centres and partners."
+    },
+    {
+     "name": "T-Pot (Telekom Security) and OpenCanary",
+     "kind": "open source",
+     "fit": "Free honeypot platforms: T-Pot runs 20+ honeypots on the Elastic Stack (GPL-3.0); OpenCanary is a light open-source decoy from Thinkst. Need care so decoys are not themselves a weak point.",
+     "india": "Self-hosted."
+    }
+   ],
+   "cost": {
+    "unit": "fixed per year (by number of decoys or protected endpoints)",
+    "band": "About Rs 6-10 lakh a year for a 5-decoy managed bundle (USD 7,500 list at about Rs 84/USD); enterprise deception fabrics quoted, typically higher",
+    "reference_org": "About Rs 6-40 lakh a year: 5-15 decoys across 5 sites and key segments, plus honeytokens on endpoints",
+    "drivers": [
+     "Number of decoys and segments",
+     "Endpoint lures and identity decoys",
+     "Integration with EDR and SIEM",
+     "Managed versus self-run"
+    ],
+    "note": "Indicative; excludes 18% GST; enterprise vendors quote on request; get three quotes."
+   },
+   "rfp": {
+    "scope": [
+     "Decoys across DMZ, data centre, user VLANs at 5 sites and cloud",
+     "Honeytokens on endpoints, file shares and cloud",
+     "Alert integration with SIEM and SOAR",
+     "Runbooks for decoy alerts",
+     "Quarterly review of decoy realism"
+    ],
+    "must": [
+     "Decoys that imitate the organisation's real systems (Windows, Linux, network devices, databases)",
+     "Alert to SIEM within 1 minute of any interaction",
+     "Decoys hardened so they cannot be used to attack real systems",
+     "Central management with no per-decoy manual upkeep",
+     "Honeytokens (fake credentials, documents, cloud keys) included"
+    ],
+    "should": [
+     "Automatic placement based on network discovery",
+     "Active Directory decoy accounts",
+     "OT/ICS decoys where relevant",
+     "EDR-triggered containment on decoy touch"
+    ],
+    "sizing": [
+     "Network segments and VLANs per site",
+     "Cloud accounts",
+     "Endpoints for lures",
+     "Crown-jewel systems to imitate"
+    ],
+    "evaluation": [
+     "Realism and coverage 30",
+     "Alert quality and integration 25",
+     "Manageability 15",
+     "Commercials 25",
+     "Support 5"
+    ],
+    "sla": [
+     "Alert delivery within 1 minute",
+     "Decoy health monitoring with failure alert within 1 hour",
+     "P1 support within 4 hours"
+    ],
+    "clauses": [
+     "Decoy data must be synthetic: no real personal or customer data (DPDP)",
+     "Alert data stored in India",
+     "Right to audit and exit"
+    ]
+   },
+   "architecture": "Decoys sit on spare IPs in the DMZ, server zone and each site's user VLAN, plus cloud decoys; honeytokens sit on endpoints, shares and code repositories. A management console (cloud or on-premises) monitors them and sends alerts to the SIEM, SOC queue and SOAR, which can isolate the source host via EDR.",
+   "kpis": [
+    "Percentage of key segments with at least one decoy",
+    "Time from decoy touch to SOC response",
+    "Red-team or BAS runs that tripped a decoy",
+    "Decoy alert false-positive rate (should be near zero)"
+   ],
+   "pitfalls": [
+    "Decoys that look nothing like the real estate, so attackers skip them",
+    "Alerts that go to an inbox nobody watches",
+    "Using real data in decoys",
+    "Placing decoys only in the DMZ, where internet noise drowns the signal"
+   ],
+   "sources": [
+    {
+     "title": "Thinkst Canary pricing (Vendr buyer data and list bundle)",
+     "url": "https://vendr.com/marketplace/thinkst-canary"
+    },
+    {
+     "title": "Thinkst Canary",
+     "url": "https://canary.tools"
+    },
+    {
+     "title": "Acalvio ShadowPlex and RBI cyber security compliance",
+     "url": "https://acalvio.com/wp-content/uploads/2020/04/Acalvio_ShadowPlex_RBI_CyberSecurity_Compliance.pdf"
+    },
+    {
+     "title": "Best deception vendors 2026 (overview)",
+     "url": "https://ai.tracebit.com/task/blog/best-deception-vendors-2026"
+    },
+    {
+     "title": "T-Pot honeypot platform (Telekom Security, GitHub)",
+     "url": "https://github.com/telekom-security/tpotce"
+    },
+    {
+     "title": "Attivo Networks acquisition (CB Insights)",
+     "url": "https://www.cbinsights.com/company/attivo-networks/financials"
+    }
+   ]
+  }
+ }
+}

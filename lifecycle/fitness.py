@@ -342,6 +342,36 @@ def check_outcomes_declared() -> dict:
             else "name the outcome and where it shows (features.json): " + ", ".join(bad[:5])}
 
 
+RAW_ADDR = re.compile(r"https?://(?:localhost|127\.0\.0\.1):(8088|3000|3001|5678|8222|8089)\b")
+
+
+def raw_addresses() -> list[str]:
+    """Lines that show a person a raw localhost:PORT web address instead of web_url() (doc 99). The gateway API (8080)
+    stays plain on this machine by design; a line that names the old address on purpose carries `addr-ok`."""
+    out = []
+    files = [ROOT / "securax"] + sorted((ROOT / "governance").glob("*.py")) + sorted((ROOT / "lifecycle").glob("*.py"))
+    for f in files:
+        if f.name in ("addr.py", "tls.py", "fitness.py"):
+            continue
+        for i, ln in enumerate(f.read_text("utf-8", "ignore").splitlines(), 1):
+            code = ln.strip()
+            if code.startswith("#") or "addr-ok" in ln or not RAW_ADDR.search(ln):
+                continue
+            if f.suffix == ".py" and "print(" not in ln and "say(" not in ln and ".append(" not in ln:
+                continue
+            if f.name == "securax" and not re.search(r'\b(C|echo|printf)\b', ln):
+                continue
+            out.append(f"{f.relative_to(ROOT)}:{i}")
+    return out
+
+
+def check_no_raw_addresses() -> dict:
+    bad = raw_addresses()
+    return {"name": "no-raw-addresses", "value": len(bad), "budget": 0, "unit": "lines", "ok": not bad,
+            "note": ("a person is shown localhost:PORT; use web_url() (shell) or governance/addr.py: " + ", ".join(bad[:5])) if bad
+            else "every address a person is shown is a name when names are on"}
+
+
 def check_enterprise_declared() -> dict:
     """The suite (doc 97): every feature declares the edition it starts in and the shared platform services it uses, and every
     service claimed as built is proven by its files. A component nobody can say how to sell to an organisation is not ready."""
@@ -372,7 +402,7 @@ def run_all(only_fast: bool = False) -> list[dict]:
     if not only_fast:
         res += check_gateway(c["gateway_cold_start_s"], c["gateway_rss_mb"])
         res += check_first_block(c["first_block_s"], c["block_latency_p95_ms"])
-    res += [check_supply_chain(base), check_commands_documented(base), check_ccsp_map(), check_regulatory_maps(), check_impact_map(), check_claims(), check_config_clean(), check_readme_current(), check_private_names(), check_commands_in_help(), check_features_current(), check_continuity_declared(), check_outcomes_declared(), check_enterprise_declared()]
+    res += [check_supply_chain(base), check_commands_documented(base), check_ccsp_map(), check_regulatory_maps(), check_impact_map(), check_claims(), check_config_clean(), check_readme_current(), check_private_names(), check_commands_in_help(), check_features_current(), check_continuity_declared(), check_outcomes_declared(), check_enterprise_declared(), check_no_raw_addresses()]
     return res
 
 

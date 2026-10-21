@@ -57,6 +57,25 @@ The `storage-guard` routine runs `./securax storage --auto` every 6 hours (at mi
 
 ## 4. Getting more room on the laptop today (Windows)
 
+**The C: drive fills first.** Docker's and Ubuntu's Linux disks are `.vhdx` files under your user folder on C:. They grow and never shrink by themselves, even after you delete things inside them. Local AI models (Ollama for Windows) also sit on C:. A nearly full C: breaks Windows updates, and can make WSL fail to mount drives or crash programs.
+
+One script finds what is using C: and frees it, step by step. Run it in **Windows PowerShell**, from the SecuRAX folder:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\windows\free-c-drive.ps1        # report only: changes nothing
+powershell -ExecutionPolicy Bypass -File .\tools\windows\free-c-drive.ps1 -Fix   # asks before each step
+```
+
+The steps, safest first:
+1. Old temp files.
+2. Docker's build cache and untagged image layers. Containers, images in use and volumes are kept.
+3. Ollama's models, moved to the drive with the most room.
+4. Docker's disk, moved with Docker's own setting (below).
+5. Compacting the Linux disks, which needs Administrator.
+6. Moving Ubuntu with `wsl --manage NAME --move`.
+
+It never deletes your files, a volume or a disk image. `./securax storage` reminds you when C: has under 10% free.
+
 - **Docker Desktop:** Settings → Resources → Advanced → **Disk image location**. Point it at a bigger drive. Docker moves its whole disk there, models and volumes included.
 - **Backups:** set `SECURAX_BACKUP_DIR` in `local/compose/.env` to a folder on the bigger drive.
 - **Models:** keep only the one or two local models you use. `./securax bench` tells you which model fits.

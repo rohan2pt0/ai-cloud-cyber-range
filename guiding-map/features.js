@@ -205,6 +205,20 @@ window.SECURAX_FEATURES = {
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/95-OS-KIT-VANTAGE/"
   },
   {
+   "id": "names",
+   "group": "Keep it running",
+   "icon": "globe",
+   "name": "Names, not ports, and links that never break",
+   "what": "Every part of the estate at a name over HTTPS (hub, chat, docs, flows ...), asked once with a one-click move of the Life OS data; the site and docs on GitHub Pages until your own domain is proven live, then on it with one command; every build fails on a broken link.",
+   "cmd": "./securax site",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "added": "2026-10-21",
+   "light": "amber",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/99-NAMES-NOT-PORTS-AND-LINKS-THAT-NEVER-BREAK/"
+  },
+  {
    "id": "store-apps",
    "group": "Your own tools",
    "icon": "devices",
