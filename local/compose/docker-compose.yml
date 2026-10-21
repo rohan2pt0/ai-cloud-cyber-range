@@ -84,6 +84,9 @@ services:
       AI_BUDGET_DAY_TOKENS: ${AI_BUDGET_DAY_TOKENS:-2000000}
       AI_BUDGET_MONTH_TOKENS: ${AI_BUDGET_MONTH_TOKENS:-20000000}
       AI_BUDGET_COUNT_LOCAL: ${AI_BUDGET_COUNT_LOCAL:-0}
+      ANSWER_RULES: ${ANSWER_RULES:-on}
+      ANSWER_CONTEXT: "${ANSWER_CONTEXT:-India (amounts in rupees, Indian law and tax)}"
+      ANSWER_UTC_OFFSET_MIN: ${ANSWER_UTC_OFFSET_MIN:-330}
       SECURAX_DOMAIN: ${SECURAX_DOMAIN:-securax.localhost}   # the estate's own HTTPS names may call this API from a browser (CORS)
     volumes:
       - ./controls:/etc/securax/controls:ro      # the AI kill switch (read-only: nothing inside the gateway can switch AI back on)

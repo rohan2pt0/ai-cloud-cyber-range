@@ -42,7 +42,7 @@ Search results and uploaded documents still pass through the gateway, so the inj
 
 ## Make it yours (about 5 minutes, once)
 
-1. **Standing instructions.** Settings → General → System prompt: paste your own instructions (who you are, how you want answers). They apply to every chat. Keep personal details out of the repo; your copy lives only in Chat's database (and your backups).
+1. **Standing instructions (optional).** Accuracy needs none: the gateway already gives every question today's date and the answer rules (doc 89). Add your own only for who you are and how you like answers: Settings → General → System prompt. They apply to every chat, after the gateway's rules. Keep personal details out of the repo; your copy lives only in Chat's database (and your backups).
 2. **A Twin preset.** Workspace → Models → **+**:
    - name: `Twin`, base model: `twin`;
    - paste the same instructions;

@@ -64,6 +64,7 @@
     ],
     "description": "7am and 7pm: the Life OS check-in nudge on your phone, through your ntfy alerts (./securax notify setup first).",
     "enabled": false,
+    "once": true,
     "kind": "nudge"
   },
   {
@@ -102,6 +103,7 @@
     ],
     "description": "Daily 8:40am: fetch the RBI and SEBI feeds; push the titles of NEW circulars and directions to your phone (silent when nothing is new).",
     "enabled": true,
+    "once": true,
     "kind": "guard"
   },
   {
@@ -117,6 +119,7 @@
     ],
     "description": "1st of the month 8:50am: last month's regulator digest (titles, dates and links only) to your phone.",
     "enabled": true,
+    "once": true,
     "kind": "nudge"
   },
   {
@@ -231,8 +234,58 @@
       "backup",
       "drill"
     ],
-    "description": "1 Jan/Apr/Jul/Oct 10:05am: the quarterly restore drill. The newest off-site (OneDrive) backup must decrypt, unpack and match every checksum; a failure is pushed to your phone by the andon. Silent when no off-site folder is set.",
+    "description": "1 Jan/Apr/Jul/Oct 10:05am: the quarterly restore drill. The newest CLEAN backup (off-site first) must decrypt, unpack, match every checksum and open as working data in a scratch restore twin (doc 88); a failure is pushed to your phone by the andon. With no off-site folder it proves the local copy and says so; with no backup at all it fails.",
     "enabled": true,
+    "kind": "guard"
+  },
+  {
+    "id": "honesty-check",
+    "cron": "10 9 * * 1",
+    "command": [
+      "./securax",
+      "ai",
+      "honesty"
+    ],
+    "description": "Mondays 9:10am: eight questions that catch an AI that guesses (a false premise, a circular number that does not exist, today's date, a sum). A failure means the model now answering makes things up; the andon pushes it to your phone (doc 89).",
+    "enabled": true,
+    "kind": "guard"
+  },
+  {
+    "id": "home-machine",
+    "cron": "*/5 * * * *",
+    "command": [
+      "./securax",
+      "models",
+      "home",
+      "--quiet"
+    ],
+    "description": "Every 5 minutes: is your model machine (a Mac mini or GPU box, REMOTE_OLLAMA_BASE) on? When it goes off, the router is reloaded without it, so nothing waits for it; when it is back, it answers first again. Silent and instant when no such machine is set (doc 90).",
+    "enabled": true,
+    "kind": "guard"
+  },
+  {
+    "id": "node-card",
+    "cron": "*/10 * * * *",
+    "command": [
+      "./securax",
+      "resilience",
+      "publish"
+    ],
+    "description": "Every 10 minutes: this machine shares a card of what it can do (a cloud key? the tunnel? fresh backups? no secrets) with your other machines through sync, so every one of them can check what still works if any machine is off, and so only one of them sends each reminder (doc 91).",
+    "enabled": true,
+    "kind": "guard"
+  },
+  {
+    "id": "resilience-check",
+    "cron": "25 9 * * *",
+    "command": [
+      "./securax",
+      "resilience",
+      "--notify-new"
+    ],
+    "description": "9:25am daily: every combination of your machines being on or off is checked; a NEW single point of failure, or a machine that misses far more sync rounds than usual, is pushed to your phone with its fix (doc 91).",
+    "enabled": true,
+    "once": true,
     "kind": "guard"
   }
 ]

@@ -57,7 +57,10 @@ async function turnOn(w, pass) {
   A.localStorage.setItem("gm_test_a", JSON.stringify("edit on laptop"));
   B.localStorage.setItem("gm_test_b", JSON.stringify("edit on phone"));
   await Promise.all([A.gmOdSync(), B.gmOdSync()]);
+  // whichever wrote first had not seen the other's edit yet: one more round EACH, in either order, and both must hold both
+  // (syncing only A here made the test depend on which write landed first, and it failed in CI when B won)
   await A.gmOdSync();
+  await B.gmOdSync();
   ok(A.localStorage.getItem("gm_test_b") === JSON.stringify("edit on phone") && B.localStorage.getItem("gm_test_a") === JSON.stringify("edit on laptop"),
      "simultaneous edits on two devices are both kept (neither overwrites the other)");
 

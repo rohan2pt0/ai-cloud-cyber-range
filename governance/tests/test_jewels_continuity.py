@@ -106,3 +106,75 @@ def test_mirror_setup_makes_a_key_then_saves_the_address_and_pushes_every_branch
     assert f"MIRROR_REMOTES={bare}" in ct.ENVF.read_text() and oct(ct.ENVF.stat().st_mode)[-3:] == "600"
     head = subprocess.run(["git", "-C", str(repo), "rev-parse", "HEAD"], capture_output=True, text=True).stdout.strip()
     assert head in subprocess.run(["git", "-C", str(bare), "rev-parse", "--all"], capture_output=True, text=True).stdout
+
+
+# ------------------------------------------------------------------------------------------- tabletop exercises (doc 88)
+def _tt_env(tmp_path, monkeypatch):
+    monkeypatch.setattr(ct, "ENVF", tmp_path / "no.env")
+    for k in ("SECURAX_NOTIFY_NTFY", "SECURAX_NOTIFY_WEBHOOK", "ALERT_WEBHOOK", "SECURAX_BACKUP_KEYFILE", "SECURAX_OFFSITE_DIR",
+              "SYNC_PEERS", "MIRROR_REMOTES", "AI_BUDGET_DAY_TOKENS", "AI_BUDGET_MONTH_TOKENS"):
+        monkeypatch.delenv(k, raising=False)
+    monkeypatch.setenv("SECURAX_BACKUP_DIR", str(tmp_path / "b"))
+    monkeypatch.setenv("SECURAX_HOME_DIR", str(tmp_path / "h"))
+
+
+def test_every_tabletop_inject_is_complete_and_names_a_real_check_and_command():
+    known = {"alerts", "depth", "encrypted", "offsite", "offsite_offline", "drilled", "allowance", "known_good", "peers", "sync",
+             "mirror", "replicas"}
+    scen = {s["id"] for s in ct.load()}
+    help_text = subprocess.run(["bash", str(ROOT / "securax"), "help"], capture_output=True, text=True).stdout
+    for ex in ct.exercises():
+        assert ex["scenario"] in scen and ex["injects"]
+        for inj in ex["injects"]:
+            assert {"at", "phase", "event", "ask", "expect", "fix"} <= inj.keys(), inj
+            assert inj.get("check") is None or inj["check"] in known, inj["check"]
+            cmd = inj["fix"].split("./securax ", 1)[1].split()[0] if "./securax " in inj["fix"] else ""
+            assert not cmd or cmd in help_text, f"the fix names a command help does not list: {cmd}"
+
+
+def test_an_unprepared_machine_fails_the_ransomware_tabletop_with_a_fix_for_each_gap(tmp_path, monkeypatch):
+    _tt_env(tmp_path, monkeypatch)
+    said = []
+    rc = ct.tabletop("ransomware", answers="", say=said.append)
+    assert rc == 1
+    reports = list((tmp_path / "h" / "continuity" / "tabletops").glob("ransomware-*.md"))
+    text = reports[0].read_text()
+    assert "## Gaps and fixes" in text and "./securax protect" in text and "not answered" in text
+    assert ct.last_tabletops()["ransomware"]["gaps"] == 10
+
+
+def test_a_check_the_machine_can_prove_overrides_a_yes(tmp_path, monkeypatch):
+    _tt_env(tmp_path, monkeypatch)
+    rc = ct.tabletop("ransomware", answers="y" * 20, say=lambda *_: None)
+    gaps = ct.last_tabletops()["ransomware"]["gaps"]
+    assert rc == 1 and gaps == 5, "answering yes cannot pass an inject the machine proves false (alerts, depth, key, copies, drill)"
+
+
+def test_a_prepared_machine_passes(tmp_path, monkeypatch):
+    _tt_env(tmp_path, monkeypatch)
+    b, off = tmp_path / "b", tmp_path / "off"
+    b.mkdir()
+    off.mkdir()
+    old, new = b / "securax-20260101-010101.tar.gz.gpg", b / "securax-20260102-010101.tar.gz.gpg"
+    for f in (old, new, off / new.name):
+        f.write_bytes(b"x")
+    os.utime(old, (time.time() - 10 * 86400,) * 2)
+    key = tmp_path / "k"
+    key.write_text("k")
+    monkeypatch.setenv("ALERT_WEBHOOK", "http://127.0.0.1:9/alert")
+    monkeypatch.setenv("SECURAX_BACKUP_KEYFILE", str(key))
+    monkeypatch.setenv("SECURAX_OFFSITE_DIR", str(off))
+    (tmp_path / "h" / "continuity").mkdir(parents=True)
+    (tmp_path / "h" / "continuity" / "offline.log").write_text(time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()) + " offline x\n")
+    ct.drills_path().write_text(json.dumps({"id": "data-lost", "when": time.strftime("%Y-%m-%dT%H:%M:%S"), "ok": True, "minutes": 3}) + "\n")
+    rc = ct.tabletop("ransomware", answers="yyyyy", say=lambda *_: None)
+    assert rc == 0 and ct.last_tabletops()["ransomware"]["gaps"] == 0
+
+
+def test_after_action_reports_are_bounded(tmp_path, monkeypatch):
+    _tt_env(tmp_path, monkeypatch)
+    for _ in range(ct.KEEP_REPORTS + 3):
+        ct.tabletop("node-lost", answers="", say=lambda *_: None)
+        time.sleep(0.01)
+    assert len(list((tmp_path / "h" / "continuity" / "tabletops").glob("*.md"))) <= ct.KEEP_REPORTS
+    assert ct.tabletop("no-such", say=lambda *_: None) == 2

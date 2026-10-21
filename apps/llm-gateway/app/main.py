@@ -25,7 +25,7 @@ import httpx
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
 
-from . import budget, guardrails, identity, killswitch, residency
+from . import answering, budget, guardrails, identity, killswitch, residency
 from .providers import active_detectors, run_detectors
 
 MODE = os.getenv("GUARDRAIL_MODE", "enforce")  # enforce | monitor
@@ -569,6 +569,12 @@ async def _chat(request: Request, authorization: str | None) -> JSONResponse:
                       "message": message,
                       "rules": sorted({f.rule for f in blocking})}})
 
+    # 4) accuracy without prompt engineering (app/answering.py, doc 89): today's date and the answer rules a careful expert
+    #    would write go first in a person's conversation. Exact-format callers and chat apps' housekeeping are left alone.
+    ruled = answering.apply(payload, request.headers)
+    if ruled:
+        _metrics["answer_rules"] += 1
+
     want_stream = bool(payload.get("stream"))
     payload["stream"] = False            # always take the reply WHOLE so the output rails can inspect it
     payload.pop("stream_options", None)  # only valid on streaming calls; upstreams reject it otherwise
@@ -613,6 +619,12 @@ async def _chat(request: Request, authorization: str | None) -> JSONResponse:
             choice["finish_reason"] = "content_filter"
         elif MODE == "enforce":
             choice["message"]["content"] = v.text
+        if not withhold and ruled:                           # an answer from a small offline model says so (never on JSON)
+            said = choice.get("message", {}).get("content") or ""
+            marked = answering.footnote(said, str(resp.get("model") or ""), payload, request.headers)
+            if marked != said:
+                _metrics["answer_small_model"] += 1
+                choice["message"]["content"] = marked
         tcs = choice.get("message", {}).get("tool_calls")
         if tcs:                                              # the model wants to ACT: check the tool and its arguments
             tcs, tf = guardrails.inspect_tool_calls(tcs, TOOL_POLICY, CANARIES)

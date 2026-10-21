@@ -102,6 +102,7 @@ class Job:
     description: str = ""
     enabled: bool = True
     kind: str = "guard"                   # unknown jobs count as guards, so prune never suggests removing one by mistake
+    once: bool = False                    # a routine that messages a person: on several machines, only one runs it (doc 91)
 
 
 def parse_jobs(path: Optional[Path] = None) -> tuple[list[Job], list[str]]:
@@ -131,7 +132,8 @@ def parse_jobs(path: Optional[Path] = None) -> tuple[list[Job], list[str]]:
             kind = raw.get("kind", "guard")
             if kind not in KINDS:
                 raise ValueError(f"kind must be one of {', '.join(KINDS)}")
-            jobs.append(Job(jid, raw["cron"], cmd, raw.get("description", ""), (raw.get("enabled", True) or jid in switched_on()) and jid not in switched_off(), kind))
+            jobs.append(Job(jid, raw["cron"], cmd, raw.get("description", ""), (raw.get("enabled", True) or jid in switched_on()) and jid not in switched_off(), kind,
+                            bool(raw.get("once", False))))
         except Exception as exc:  # noqa: BLE001
             ident = raw.get("id", "?") if isinstance(raw, dict) else "?"
             errors.append(f"job #{i} ({ident}): {exc}")
@@ -199,6 +201,17 @@ def due_jobs(jobs: list[Job], now: time.struct_time,
     return out
 
 
+def _is_leader() -> bool:
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("resilience", ROOT / "governance" / "resilience.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return bool(mod.is_leader())
+    except Exception:  # noqa: BLE001 (fail open: a duplicate reminder is better than none)
+        return True
+
+
 def _default_runner(cmd: list) -> tuple[int, str]:
     proc = subprocess.run(cmd, cwd=str(ROOT), capture_output=True, text=True, timeout=1800)
     return proc.returncode, (proc.stdout or "") + (proc.stderr or "")
@@ -208,7 +221,8 @@ def run_due(now: Optional[time.struct_time] = None, *,
             jobs_path: Optional[Path] = None, state_path: Optional[Path] = None,
             runner: Callable[[list], tuple] = _default_runner,
             read_state: Optional[Callable[[], dict]] = None,
-            write_state: Optional[Callable[[dict], None]] = None) -> list[dict]:
+            write_state: Optional[Callable[[dict], None]] = None,
+            leader: Optional[Callable[[], bool]] = None) -> list[dict]:
     """Run every due job once; record the run so the same minute never double-fires. Returns a
     per-job result list. All I/O is injectable, so tests run with no clock/disk/subprocess."""
     now = now or time.localtime()
@@ -231,7 +245,15 @@ def run_due(now: Optional[time.struct_time] = None, *,
     jobs, errors = parse_jobs(jobs_path)          # tolerant: a bad job can't stop the healthy ones
     results = [{"id": "(config)", "error": e} for e in errors]
     ran_any = False
+    lead: Optional[bool] = None
     for j in due_jobs(jobs, now, state):
+        if j.once:                                # one machine of several sends it; any doubt and this one does
+            if lead is None:
+                lead = (leader or _is_leader)()
+            if not lead:
+                results.append({"id": j.id, "skipped": "another machine of yours runs this one", "exit_code": 0})
+                state[j.id] = stamp
+                continue
         try:
             code, output = runner(j.command)
         except Exception as exc:  # noqa: BLE001 — a job crash must not kill the scheduler

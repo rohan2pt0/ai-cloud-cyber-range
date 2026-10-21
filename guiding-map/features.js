@@ -152,6 +152,19 @@ window.SECURAX_FEATURES = {
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/53-THE-TWIN/"
   },
   {
+   "id": "accurate-answers",
+   "group": "Use AI safely",
+   "icon": "chat",
+   "name": "Accurate answers without prompt engineering",
+   "what": "Every question reaches the AI with today's date and the rules a careful expert would write: never make things up, say \"I don't know\", flag what may have changed, show the working. A weak model says so, and a weekly check catches an AI that starts to guess.",
+   "cmd": "./securax ai honesty",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "light": "amber",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/89-ACCURATE-ANSWERS-WITHOUT-PROMPT-ENGINEERING/"
+  },
+  {
    "id": "build",
    "group": "Use AI safely",
    "icon": "code",
@@ -243,6 +256,19 @@ window.SECURAX_FEATURES = {
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION/"
   },
   {
+   "id": "ransomware-recovery",
+   "group": "Keep it running",
+   "icon": "lifebuoy",
+   "name": "Ransomware-proof backups and recovery drills",
+   "what": "Every backup first checks that your data is still readable. If ransomware got there first, the copy is quarantined, nothing clean is deleted and you are alerted. `restore latest` picks the newest clean copy, a restore twin proves it opens, and tabletop exercises test the plan.",
+   "cmd": "./securax continuity tabletop ransomware",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "light": "green",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/88-RANSOMWARE-AND-DISASTER-RECOVERY-PROVEN/"
+  },
+  {
    "id": "guiding-map",
    "group": "Your own tools",
    "icon": "compass",
@@ -325,13 +351,26 @@ window.SECURAX_FEATURES = {
    "group": "Keep it running",
    "icon": "loop",
    "name": "Many machines, one SecuRAX",
-   "what": "Run it on the laptop, a VPS, a Mac mini or any cloud at once: every machine holds the same data, and any one of them can stop.",
+   "what": "Run it on the laptop, a VPS, a Mac mini or any cloud at once: every machine holds the same data, and any one of them can stop. Each machine is an extra, never a dependency: with every other one off, this one carries on by itself (doc 90).",
    "cmd": "./securax nodes",
    "path": "",
    "port": 0,
    "service": false,
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/86-MANY-NODES-AND-THE-ROAD-TO-SCALE/"
+  },
+  {
+   "id": "resilience",
+   "group": "Keep it running",
+   "icon": "loop",
+   "name": "The estate finds its own weak points",
+   "what": "Every combination of your machines being off is checked: what still works, what slows down, what stops, and the fix for each single point of failure. A new weak point is pushed to your phone.",
+   "cmd": "./securax resilience",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "light": "amber",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/91-ANY-MACHINE-CAN-CARRY-THE-ESTATE/"
   },
   {
    "id": "channel",

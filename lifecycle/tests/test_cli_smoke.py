@@ -9,7 +9,8 @@ import pytest
 ROOT = pathlib.Path(__file__).resolve().parents[2]
 SAFE = ["help", "route fix the gateway", "brief fix the sync token check", "jewels", "continuity", "continuity show github-down",
         "online", "online status", "lifeos", "features", "lessons recent 3", "routines list", "rollback --check", "exercise list",
-        "finish", "incident", "privacy check", "config check", "nodes", "channel", "online invite"]
+        "finish", "incident", "privacy check", "config check", "nodes", "channel", "online invite",
+        "continuity tabletop"]
 
 
 @pytest.mark.parametrize("cmd", SAFE)

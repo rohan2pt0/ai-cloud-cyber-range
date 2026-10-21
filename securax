@@ -234,6 +234,9 @@ case "$cmd" in
     if command -v python3 >/dev/null 2>&1; then
       GENERR="$(python3 "$ROOT/local/compose/gen_litellm_config.py" --write --env-file "$ENVF" 2>&1 >/dev/null)" || {
         C "Could not generate the router config from your .env / plugin catalog:"; echo "  $GENERR"; }
+      if [ -n "$(ev REMOTE_OLLAMA_BASE)" ] && [ "$(cat "$ROOT/local/compose/.home-state" 2>/dev/null)" = off ]; then
+        C "Your model machine ($(ev REMOTE_OLLAMA_BASE)) is off or unreachable: this machine answers until it is back (checked every 5 minutes)."
+      fi
     else
       C "python3 not found — using the shipped default router config (Gemini + local model). Install python3 to enable your own provider keys."
     fi
@@ -375,7 +378,8 @@ case "$cmd" in
     esac
     BDIR="$(ev SECURAX_BACKUP_DIR "$ROOT/backups")"
     if ! on backup; then off backup
-    elif [ -n "$(find "$BDIR" -maxdepth 1 -name 'securax-*.tar.gz*' -mtime -7 2>/dev/null | head -1)" ]; then ok "Backup from the last 7 days on disk"
+    elif { ls -1t "$BDIR"/securax-*.tar.gz* 2>/dev/null || true; } | head -1 | grep -q -- '-SUSPECT'; then fix "RANSOMWARE SUSPECTED: the last backup found encrypted files → ./securax continuity show data-lost"
+    elif [ -n "$(find "$BDIR" -maxdepth 1 -name 'securax-*.tar.gz*' ! -name '*-SUSPECT*' -mtime -7 2>/dev/null | head -1)" ]; then ok "Backup from the last 7 days on disk"
     else "$0" backup >/dev/null 2>&1 && ok "Backup taken now ($BDIR)" || fix "Backup failed → ./securax backup"; fi
     # 7. Your data on every device: one link per device, no forms (the sync token rides after '#', never sent to a server).
     LAPLINK="$(python3 "$ROOT/governance/synclink.py" --print-only laptop 2>/dev/null || true)"
@@ -994,6 +998,11 @@ EOF2
     shift; python3 "$ROOT/governance/online.py" "${@:-status}" || exit $?
     case "${1:-status}" in setup|google|allow|remove|join) exec "$0" up ;; esac
     ;;
+  resilience)
+    # Can the estate carry on with any machine off? Every combination of your machines, checked, with the fix for each
+    # single point of failure (doc 91).   ./securax resilience | publish | card | --json | --notify-new
+    shift; exec python3 "$ROOT/governance/resilience.py" "$@"
+    ;;
   continuity)
     # The estate's crisis and continuity plan, measured: RTO/RPO per scenario, the steps, safe drills, the code mirror (doc 84).
     #   ./securax continuity | show ID | drill ID | mirror [setup [ADDRESS]] | --json
@@ -1085,8 +1094,10 @@ EOF2
     # Human-in-command (RBI MRM draft): stop/resume one model or all AI at once (no restart), and the model inventory.
     #   ./securax ai status | stop all|MODEL --reason "..." | resume all|MODEL | inventory
     #   ./securax ai budget [extend --day|--month --tokens N --reason "..." [--caller ID]]   daily + monthly AI allowance
+    #   ./securax ai honesty [--model twin]   ask the AI questions that catch guessing (false premise, fake circular, today's date)
     shift
     if [ "${1:-}" = share ]; then shift; exec python3 "$ROOT/lifecycle/share.py" "$@"; fi   # how much of the work Claude did (doc 23)
+    if [ "${1:-}" = honesty ]; then shift; exec python3 "$ROOT/governance/honesty.py" --url "$(gw_url)" "$@"; fi   # does it refuse to guess? (doc 89)
     if [ "${1:-}" = inventory ]; then                 # also checks what the gateway actually serves (para 21 of the RBI draft)
       gcurl -fsS -m 5 ${SECURAX_GATEWAY_KEY:+-H "Authorization: Bearer $SECURAX_GATEWAY_KEY"} "$(gw_url)/v1/models" 2>/dev/null | python3 "$ROOT/governance/aicontrol.py" inventory --live
       exit "${PIPESTATUS[1]}"
@@ -1301,7 +1312,10 @@ EOF2
     # Off-site ("data embassy", doc 71): ENCRYPTED backups are also copied to SECURAX_OFFSITE_DIR, e.g. your OneDrive folder, whose
     # client uploads them. Nothing unencrypted ever leaves this machine.
     #   ./securax backup offsite        pick the folder (finds your OneDrive folders on Windows/WSL) and save it in .env
-    #   ./securax backup drill          the quarterly restore test: newest off-site copy decrypts, unpacks and matches its checksums
+    #   ./securax backup drill          the quarterly restore test: the newest CLEAN copy (off-site first) decrypts, unpacks, matches
+    #                                   its checksums and opens as working data in a scratch "restore twin" (doc 88)
+    #   ./securax backup offline [DIR]  monthly: the newest clean encrypted backup onto a USB stick you then unplug (3-2-1-1)
+    #   ./securax backup clear-alarm    after a RANSOMWARE SUSPECTED alarm you checked and found false: rewrite the canaries
     if [ "${2:-}" = offsite ]; then
       ENVF="$ROOT/local/compose/.env"; mapfile -t _cand < <(ls -d /mnt/c/Users/*/OneDrive* "$HOME"/OneDrive* 2>/dev/null | grep -v '/All Users/\|/Default/\|/Public/' || true)
       if [ "${#_cand[@]}" -eq 0 ]; then C "No OneDrive folder found. Give any folder that your cloud client syncs:  ./securax backup offsite-dir /path/to/folder"; exit 1; fi
@@ -1316,15 +1330,57 @@ EOF2
     fi
     if [ "${2:-}" = offsite-dir ]; then [ -n "${3:-}" ] || { echo "usage: ./securax backup offsite-dir FOLDER"; exit 2; }
       skv "$ROOT/local/compose/.env" SECURAX_OFFSITE_DIR "$3" && mkdir -p "$3" && C "✔ Off-site folder: $3"; exit 0; fi
+    if [ "${2:-}" = clear-alarm ]; then
+      # After a RANSOMWARE SUSPECTED alarm that you checked yourself and found false: rewrite the canary files.
+      python3 "$ROOT/governance/ransomguard.py" check >/dev/null 2>&1 && { C "There is no alarm to clear: the data looks normal."; exit 0; }
+      if [ -r /dev/tty ] && [ "${3:-}" != --yes ]; then
+        printf 'Did you open the files the alarm named, and are they fine? Type YES to clear it: '; read -r _y < /dev/tty || _y=""
+        [ "$_y" = YES ] || { C "Not cleared. The plan, step by step:  ./securax continuity show data-lost"; exit 1; }
+      fi
+      python3 "$ROOT/governance/ransomguard.py" replant
+      python3 "$ROOT/governance/ransomguard.py" check || { C "Still suspect after that: the files themselves look encrypted. Do not clear it:  ./securax continuity show data-lost"; exit 3; }
+      exit 0
+    fi
+    if [ "${2:-}" = offline ]; then
+      # 3-2-1-1 (doc 88): once a month, the newest CLEAN encrypted backup onto a USB stick or disk you then unplug. Ransomware
+      # cannot reach a copy that is not connected. ./securax backup offline [FOLDER]   (no folder: asks for the drive letter)
+      SRC="$(python3 "$ROOT/governance/ransomguard.py" pick "$(ev SECURAX_BACKUP_DIR "$ROOT/backups")" --encrypted 2>/dev/null || true)"
+      [ -n "$SRC" ] || { C "No clean ENCRYPTED backup to copy yet. Once:  ./securax protect"; exit 1; }
+      TO="${3:-}"
+      if [ -z "$TO" ] && [ -r /dev/tty ]; then
+        echo "Plug in the USB stick or disk, then type its drive letter (drives found here: $(ls -d /mnt/[d-z] 2>/dev/null | sed 's#/mnt/##' | tr '\n' ' ')): "
+        read -r DL < /dev/tty || DL=""; [ -n "$DL" ] && TO="/mnt/$(printf '%s' "$DL" | tr 'A-Z' 'a-z' | tr -d ':\\/ ')"
+      fi
+      [ -n "$TO" ] && [ -d "$TO" ] || { C "No such drive or folder${TO:+: $TO}. Plug it in and run  ./securax backup offline  again (or give the folder: ./securax backup offline /media/you/USB)"; exit 1; }
+      mkdir -p "$TO/SecuRAX-offline" && cp "$SRC" "$TO/SecuRAX-offline/" && cmp -s "$SRC" "$TO/SecuRAX-offline/$(basename "$SRC")" \
+        || { C "✗ The copy to $TO did not verify. Try another stick or folder$( [ "$(stat -c %s "$SRC" 2>/dev/null || echo 0)" -gt 4294967295 ] && echo " (this backup is over 4 GB: a FAT32 stick cannot hold it; format it as exFAT)")."; exit 1; }
+      python3 "$ROOT/governance/ransomguard.py" prune "$TO/SecuRAX-offline" --keep 2 --weeks 0 --months 3 --encrypted || true
+      mkdir -p "${SECURAX_HOME_DIR:-$HOME/.securax}/continuity"; echo "$(date -u +%FT%TZ) offline $(basename "$SRC")" >> "${SECURAX_HOME_DIR:-$HOME/.securax}/continuity/offline.log"
+      C "✔ Offline copy: $TO/SecuRAX-offline/$(basename "$SRC") (verified, byte for byte). Now unplug it and keep it away from this laptop."
+      echo "  The key is NOT on it: keep the key in your password manager, so a lost stick is not a lost secret."
+      exit 0
+    fi
     if [ "${2:-}" = drill ]; then
-      OFF="$(ev SECURAX_OFFSITE_DIR)"; [ -n "$OFF" ] || { C "No off-site folder yet:  ./securax backup offsite"; exit 0; }
-      NEW="$(ls -1t "$OFF"/securax-*.tar.gz.gpg 2>/dev/null | head -1)"; [ -n "$NEW" ] || { C "✗ No encrypted backup in $OFF yet."; exit 1; }
+      # The newest CLEAN backup (never a -SUSPECT one): off-site first; with no off-site folder, the local one, said plainly.
+      OFF="$(ev SECURAX_OFFSITE_DIR)"; WHERE="the off-site copy"
+      NEW="$([ -n "$OFF" ] && python3 "$ROOT/governance/ransomguard.py" pick "$OFF" --encrypted 2>/dev/null || true)"
+      if [ -z "$NEW" ]; then
+        NEW="$(python3 "$ROOT/governance/ransomguard.py" pick "$(ev SECURAX_BACKUP_DIR "$ROOT/backups")" 2>/dev/null || true)"; WHERE="this machine (NOT off-site)"
+        [ -n "$OFF" ] || C "No off-site folder yet, so this proves the copy on this machine only. A lost or encrypted laptop takes it too:  ./securax backup offsite"
+      fi
+      [ -n "$NEW" ] || { C "✗ DRILL FAILED: there is no clean backup to restore from. Take one:  ./securax backup"; exit 1; }
       PTMP="$(mktemp -d)"; STG="$(mktemp -d)"; trap 'rm -rf "$PTMP" "$STG"; gpg_cleanup' EXIT
-      gpg_prepare && backup_key "$PTMP" open || exit 1
-      gpg_run $GPGSYM --passphrase-file "$BKEY" -d "$NEW" 2>/dev/null | tar xzf - -C "$STG" 2>/dev/null || { C "✗ DRILL FAILED: $NEW does not decrypt and unpack with your key."; exit 1; }
+      case "$NEW" in
+        *.gpg) gpg_prepare && backup_key "$PTMP" open || exit 1
+               gpg_run $GPGSYM --passphrase-file "$BKEY" -d "$NEW" 2>/dev/null | tar xzf - -C "$STG" 2>/dev/null || { C "✗ DRILL FAILED: $NEW does not decrypt and unpack with your key."; exit 1; } ;;
+        *)     tar xzf "$NEW" -C "$STG" 2>/dev/null || { C "✗ DRILL FAILED: $NEW does not unpack."; exit 1; } ;;
+      esac
       ( cd "$STG" && sha256sum -c --quiet SHA256SUMS ) >/dev/null 2>&1 || { C "✗ DRILL FAILED: $NEW unpacks, but its contents do not match their checksums."; exit 1; }
+      # The restore twin: every volume and the vault are opened in a scratch folder, databases integrity-checked (live data untouched).
+      python3 "$ROOT/governance/ransomguard.py" verify "$STG" || { C "✗ DRILL FAILED: $NEW unpacks, but a restore from it would not give you working data (above)."; exit 1; }
       mkdir -p "${SECURAX_HOME_DIR:-$HOME/.securax}"; echo "$(date -u +%FT%TZ) drill ok $(basename "$NEW")" >> "${SECURAX_HOME_DIR:-$HOME/.securax}/drills.log"
-      C "✔ Restore drill passed: $(basename "$NEW") from the off-site copy decrypts, unpacks and matches every checksum ($(grep -c '' "$STG/MANIFEST") items)."
+      _how="unpacks"; case "$NEW" in *.gpg) _how="decrypts, unpacks" ;; esac
+      C "✔ Restore drill passed: $(basename "$NEW") from $WHERE $_how, matches every checksum ($(grep -c '' "$STG/MANIFEST") items) and opens as working data."
       exit 0
     fi
     # DR / 3-2-1: one verified file holding your data (chats, accounts, workflows, sync data) + your .env keys.
@@ -1333,6 +1389,11 @@ EOF2
     #   ./securax backup --passphrase  encrypt with a passphrase you type; or set SECURAX_BACKUP_KEYFILE (./securax crypto keygen) to encrypt every backup, unattended
     DESTARG=""; FORCE_PROMPT=0; for _a in "${@:2}"; do case "$_a" in --passphrase) FORCE_PROMPT=1 ;; *) DESTARG="$_a" ;; esac; done
     DEST="${DESTARG:-$(ev SECURAX_BACKUP_DIR "$ROOT/backups")}"; mkdir -p "$DEST"; TS="$(date +%Y%m%d-%H%M%S)"; OUTF="$DEST/securax-$TS.tar.gz"
+    # Ransomware guard (doc 88): when the data looks encrypted, this backup is still written (it may be evidence) but named
+    # -SUSPECT; then no older backup is deleted, nothing goes off-site, and you are alerted. Restores skip suspect files.
+    SUSPECT=0; RGRC=0; RGOUT="$(python3 "$ROOT/governance/ransomguard.py" check 2>&1)" || RGRC=$?
+    if [ "$RGRC" = 3 ]; then SUSPECT=1; OUTF="$DEST/securax-$TS-SUSPECT.tar.gz"; C "$RGOUT"
+    elif [ "$RGRC" != 0 ]; then C "⚠ The ransomware check could not run (the backup goes ahead): $(printf '%s' "$RGOUT" | tail -c 300)"; fi
     STG="$(mktemp -d)"; PTMP="$(mktemp -d)"; trap 'rm -rf "$STG" "$PTMP"; gpg_cleanup' EXIT
     ENCRYPT=0; { [ "$FORCE_PROMPT" = 1 ] || [ -n "$(ev SECURAX_BACKUP_KEYFILE)" ]; } && ENCRYPT=1
     if [ "$ENCRYPT" = 1 ]; then gpg_prepare && backup_key "$PTMP" new || { C "Not writing an UNENCRYPTED backup when encryption was asked for."; exit 1; }; PLAIN="$PTMP/plain.tar.gz"; else PLAIN="$OUTF"; fi
@@ -1370,20 +1431,40 @@ EOF2
         || { C "Encrypting the backup failed verification — nothing was kept."; rm -f "$OUTF"; exit 1; }
     fi
     chmod 600 "$OUTF" 2>/dev/null || true
-    { ls -1t "$DEST"/securax-*.tar.gz "$DEST"/securax-*.tar.gz.gpg 2>/dev/null || true; } | tail -n +$(( $(ev BACKUP_KEEP 7) + 1 )) | xargs -r rm -f   # (|| true: a glob with no match makes ls fail, and pipefail would end the script before the success line)
+    if [ "$SUSPECT" = 1 ]; then
+      C "✗ This backup was taken from data that looks ENCRYPTED: $OUTF"
+      echo "  Kept as evidence. No older backup was deleted and nothing was copied off-site, so your clean copies are safe."
+      echo "  What to do now (the ransomware plan, step by step):  ./securax continuity show data-lost"
+      _msg="RANSOMWARE SUSPECTED on $(hostname): the nightly backup found encrypted files. Older backups are kept. Run ./securax continuity show data-lost"
+      _wh="$(ev ALERT_WEBHOOK)"; [ -n "$_wh" ] && { curl -fsS -m 10 -X POST -d "SecuRAX: $_msg" "$_wh" >/dev/null 2>&1 || true; }
+      python3 "$ROOT/governance/notify.py" send "$_msg" --title "SecuRAX: ransomware suspected" --priority high >/dev/null 2>&1 || true
+      python3 "$ROOT/governance/ransomguard.py" prune "$DEST" --keep 1 --suspects-only || true   # night after night of alarms cannot fill the disk
+      exit 3
+    fi
+    # Keep the newest BACKUP_KEEP, plus one per week for 4 weeks and one per month for 3 months: a week of silent damage can
+    # never rotate the last clean copy out (doc 88).
+    python3 "$ROOT/governance/ransomguard.py" prune "$DEST" --keep "$(ev BACKUP_KEEP 7)" || true
     if [ "$ENCRYPT" = 1 ]; then C "✔ Backup saved, ENCRYPTED (AES-256) & verified: $OUTF ($(du -h "$OUTF" | cut -f1)). Restore needs the same key file / passphrase: ./securax restore <file>"
     else C "✔ Backup saved & verified: $OUTF ($(du -h "$OUTF" | cut -f1)) — contains your API keys, NOT encrypted; keep it private. To encrypt every backup from now on:  ./securax protect  (one guided step)"; fi
     OFF="$(ev SECURAX_OFFSITE_DIR)"
     if [ -n "$OFF" ] && [ "$ENCRYPT" = 1 ]; then
       if mkdir -p "$OFF" && cp "$OUTF" "$OFF/" && cmp -s "$OUTF" "$OFF/$(basename "$OUTF")"; then
-        { ls -1t "$OFF"/securax-*.tar.gz.gpg 2>/dev/null || true; } | tail -n +$(( $(ev OFFSITE_KEEP 12) + 1 )) | xargs -r rm -f
+        python3 "$ROOT/governance/ransomguard.py" prune "$OFF" --keep "$(ev OFFSITE_KEEP 12)" --months 6 --encrypted || true
         C "✔ Off-site copy: $OFF (your OneDrive / cloud client uploads it; the newest $(ev OFFSITE_KEEP 12) are kept)"
       else C "⚠ Could not write the off-site copy to $OFF (the local backup is fine). Is the folder still there?"; fi
     elif [ -n "$OFF" ]; then C "⚠ Off-site copy skipped: only ENCRYPTED backups leave this machine.  ./securax protect  (one guided step)"; fi
     ;;
   restore)
     # ./securax restore FILE [--yes] — replaces current data with the backup (current .env is kept as .env.pre-restore).
-    F="${2:-}"; [ -f "$F" ] || { echo "usage: ./securax restore <backup.tar.gz[.gpg]> [--yes] [--keyfile PATH]   (see ./backups)"; exit 1; }
+    # ./securax restore latest — the newest backup that is NOT suspect (local folder first, then the off-site one).
+    F="${2:-}"
+    if [ "$F" = latest ]; then
+      _dirs=("$(ev SECURAX_BACKUP_DIR "$ROOT/backups")"); [ -n "$(ev SECURAX_OFFSITE_DIR)" ] && _dirs+=("$(ev SECURAX_OFFSITE_DIR)")
+      F="$(python3 "$ROOT/governance/ransomguard.py" pick "${_dirs[@]}" 2>/dev/null || true)"
+      [ -n "$F" ] || { C "No clean backup found in $(ev SECURAX_BACKUP_DIR "$ROOT/backups")$( [ -n "$(ev SECURAX_OFFSITE_DIR)" ] && echo " or $(ev SECURAX_OFFSITE_DIR)")."; exit 1; }
+      C "Restoring the newest clean backup: $F"
+    fi
+    [ -f "$F" ] || { echo "usage: ./securax restore latest | <backup.tar.gz[.gpg]> [--yes] [--keyfile PATH]   (latest = the newest backup not marked -SUSPECT)"; exit 1; }
     YES=0; RKEY=""; _prev=""; for _a in "${@:3}"; do { [ "$_a" = "--yes" ] && YES=1; }; [ "$_prev" = "--keyfile" ] && RKEY="$_a"; _prev="$_a"; done
     PTMP="$(mktemp -d)"; trap 'rm -rf "$PTMP" "${STG:-}"; gpg_cleanup' EXIT
     case "$F" in *.gpg)
@@ -1567,7 +1648,28 @@ EOF2
   models)
     # Ask each provider which models your key can use TODAY and fix any retired name in .env (self-correcting).
     #   ./securax models          report        ./securax models --fix   report + repair + reload the router
+    #   ./securax models home     is your model machine (Mac mini, GPU box: REMOTE_OLLAMA_BASE) on? When that changes, the
+    #                             router is reloaded with or without it, so nothing ever waits for a machine that is off (every 5 min)
     ENVF="$ROOT/local/compose/.env"; [ -f "$ENVF" ] || cp "$ROOT/local/compose/.env.example" "$ENVF"
+    if [ "${2:-}" = home ]; then
+      HB="$(ev REMOTE_OLLAMA_BASE)"; QUIET=0; [ "${3:-}" = --quiet ] && QUIET=1
+      if [ -z "$HB" ]; then [ "$QUIET" = 1 ] || C "No model machine is set (REMOTE_OLLAMA_BASE): this machine answers everything (doc 56)."; exit 0; fi
+      HST="$ROOT/local/compose/.home-state"; WAS="$(cat "$HST" 2>/dev/null || echo unknown)"
+      if curl -fsS -m 3 "${HB%/}/api/tags" >/dev/null 2>&1; then NOW=on; else NOW=off; fi
+      if [ "$NOW" = "$WAS" ]; then
+        [ "$QUIET" = 1 ] || C "Your model machine is $NOW ($HB)$( [ "$NOW" = off ] && echo ': this machine answers until it is back')."
+        exit 0
+      fi
+      python3 "$ROOT/local/compose/gen_litellm_config.py" --write --env-file "$ENVF" >/dev/null 2>&1 || true
+      echo "$NOW" > "$HST"
+      if gcurl -fsS -m 3 $(gw_url)/healthz >/dev/null 2>&1; then
+        ( cd "$ROOT/local/compose" && docker compose --profile ai restart litellm >/dev/null 2>&1 || true ); ready_wait 120 >/dev/null 2>&1 || true
+      fi
+      if [ "$NOW" = on ]; then _m="Your model machine is back ($HB): it answers first again."
+      else _m="Your model machine went off ($HB): this machine answers until it is back. Nothing waits for it."; fi
+      C "$_m"; python3 "$ROOT/governance/notify.py" send "$_m" --title "SecuRAX" >/dev/null 2>&1 || true
+      exit 0
+    fi
     command -v python3 >/dev/null 2>&1 || { C "python3 is needed for this check."; exit 1; }
     C "Checking your providers' live model lists…"
     if [ "${2:-}" = "--fix" ]; then
@@ -1777,7 +1879,7 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
     skv "$ENVF" SECURAX_BACKUP_KEYFILE "$KEY"
     echo "  Taking your first encrypted backup..."
     "$0" backup || { C "The backup did not finish. Encryption is switched on: run  ./securax backup  again once it is fixed (./securax doctor helps)."; exit 1; }
-    DEST="$(ev SECURAX_BACKUP_DIR "$ROOT/backups")"; NEWEST="$({ ls -1t "$DEST"/securax-*.tar.gz.gpg 2>/dev/null || true; } | head -1)"
+    DEST="$(ev SECURAX_BACKUP_DIR "$ROOT/backups")"; NEWEST="$(python3 "$ROOT/governance/ransomguard.py" pick "$DEST" --encrypted 2>/dev/null || true)"
     [ -n "$NEWEST" ] || { C "No encrypted backup was found. Run  ./securax doctor"; exit 1; }
     if gpg_run $GPGSYM --passphrase-file "$KEY" -d "$NEWEST" 2>/dev/null | tar tzf - >/dev/null; then
       C "✔ Done. Backups are encrypted from now on (also the automatic one before every update)."
@@ -1847,6 +1949,7 @@ AI & CHAT
   pull           download the private local model                   profile        size everything to THIS machine
   guard [on|off] strict or relaxed safety rails                      bench          which installed model fits this machine best
   ai stop|resume|budget|share   stop AI at once (one model or all), the allowance, who did this month's work
+  ai honesty     does the AI refuse to guess? 8 questions that catch made-up answers, scored
   say "text"     speak/ask quickly      ask <agent> "q"  ask an expert advisor      advisors / plan / learn / intel   daily helpers
   research "task" --allow site.com   browse the web within limits    design "prompt"   make images      routines   scheduled jobs
   knowledge import|status   your old Claude/ChatGPT/DeepSeek/Gemini chats as one private library you can search (doc 51)
@@ -1856,7 +1959,7 @@ DEFEND, RESPOND, PRACTISE
   findings ...   every scan and VAPT finding once, with a fix-by date    repairs   everything that needs fixing, each with its fix
   purple         attack your own AI rails and report what held       inspect        look inside third-party software before you trust it
   scan           known-exploited weaknesses (offline)                kev / offline  threat data that works with no internet
-  backup / restore FILE   save and recover your data                 watch          keep an eye on it and self-heal
+  backup / restore latest save and recover your data                 watch          keep an eye on it and self-heal
   vet            check third-party skills/plugins before use         certs          your certification plan: what next, when, what it costs
 
 REGULATORY & EVIDENCE (any regulator: RBI, SEBI, CERT-In, IRDAI, DPDP, others as data files)
@@ -1885,6 +1988,7 @@ BUILD & KEEP IT HEALTHY
   nodes          run SecuRAX on several machines (laptop, VPS, Mac mini, cloud) with the same data; none is needed alone
   online         use SecuRAX from any device like a SaaS app: your own addresses behind Google sign-in (setup once)
   continuity     the crisis plan: each scenario's RTO/RPO target vs today, the steps (show ID), safe drills (drill ID), the code mirror (mirror setup: a free private GitLab copy)
+  resilience     every combination of your machines being off: what still works, each single point of failure, the fix
   names          https://hub.securax.localhost style addresses instead of localhost:port, in one guided step
   passwords      the estate's password manager (start passwords, then status | lock | open)
   cloud          sign in to AWS, Google Cloud or Azure with nothing to install (cloud login aws|gcp|azure; cloud status)

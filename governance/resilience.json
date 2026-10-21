@@ -1,0 +1,55 @@
+{
+  "about": "How every feature survives a machine being off (doc 91). One entry per feature in features.json (fitness 'continuity-declared' fails on a missing one). needs: what a node must have for the feature to work at all; full: what it needs to work at its best. Both are lists of card checks (any node in the scenario that has all of them is enough). state: replicated (the same on every node), stateless (each node serves it alone), per-node (works anywhere, but its data stays on the node that made it), single-home (its data lives on one node only). when_off: what a person sees when no node can provide it fully. fix: what removes the single point of failure.",
+  "checks": {
+    "estate": "the node runs the estate",
+    "strong_ai": "a cloud AI key, or a model machine (a GPU box)",
+    "online": "the online tunnel (your own addresses from anywhere)",
+    "passwords": "the password manager (Vaultwarden)",
+    "vault": "your private registers (vault/)",
+    "backups": "a clean backup from the last 2 days",
+    "offsite": "encrypted copies going off-site",
+    "routines": "the routines (backups, alerts, checks) scheduled"
+  },
+  "capabilities": [
+    {"id": "guiding-map", "critical": true, "state": "replicated", "needs": ["estate"], "full": ["estate"], "when_off": "Your Life OS data is on every node; the PWA also keeps a copy on each device.", "fix": "./securax nodes invite (a second node holds the same data)"},
+    {"id": "inbox", "critical": false, "state": "replicated", "needs": ["estate"], "full": ["estate"], "when_off": "Part of the Life OS: on every node.", "fix": "./securax nodes invite"},
+    {"id": "nodes", "critical": false, "state": "replicated", "needs": ["estate"], "full": ["estate"], "when_off": "Each node syncs with whichever others answer.", "fix": "./securax nodes invite"},
+    {"id": "gateway", "critical": true, "state": "stateless", "needs": ["estate"], "full": ["estate", "strong_ai"], "when_off": "Every node has its own gateway; without a key or a model machine it answers with its own small model.", "fix": "./securax keys (on each node: a free key)"},
+    {"id": "chat", "critical": true, "state": "per-node", "needs": ["estate"], "full": ["estate", "strong_ai"], "when_off": "New chats work on any node. Past chat history stays on the node it was written on (shared history is dated in doc 86).", "fix": "./securax keys on each node; shared history: doc 86"},
+    {"id": "accurate-answers", "critical": false, "state": "stateless", "needs": ["estate"], "full": ["estate", "strong_ai"], "when_off": "The answer rules apply on every node; a small model says so on its answers.", "fix": "./securax keys (on each node)"},
+    {"id": "build", "critical": false, "state": "stateless", "needs": ["estate"], "full": ["estate", "strong_ai"], "when_off": "Building runs on any node; with no key it uses the local coder model.", "fix": "./securax keys"},
+    {"id": "online", "critical": true, "state": "stateless", "needs": ["online"], "full": ["online"], "when_off": "Your own addresses (hub, chat) are reached through any node that runs the tunnel. With none on, use the node's local or Tailscale address.", "fix": "./securax online invite (run its line on a second machine)"},
+    {"id": "passwords", "critical": true, "state": "single-home", "needs": ["passwords"], "full": ["passwords"], "when_off": "The Bitwarden apps keep an offline copy, so you can still read your passwords; saving new ones waits until that node is back.", "fix": "keep the password manager on the machine that is always on (the VPS): ./securax start passwords there, then move the data with ./securax backup and ./securax restore"},
+    {"id": "backup", "critical": true, "state": "per-node", "needs": ["backups"], "full": ["backups", "offsite"], "when_off": "Each node backs up what it holds. A node with no recent backup loses up to the age of its last one.", "fix": "./securax routines install (nightly backups) and ./securax backup offsite on each node"},
+    {"id": "ransomware-recovery", "critical": true, "state": "per-node", "needs": ["backups"], "full": ["backups", "offsite"], "when_off": "A clean copy must exist away from the machine that was hit.", "fix": "./securax protect and ./securax backup offsite on each node"},
+    {"id": "continuity", "critical": false, "state": "stateless", "needs": ["estate"], "full": ["estate", "routines"], "when_off": "The plan and its drills run on any node.", "fix": "./securax routines install"},
+    {"id": "rollback", "critical": false, "state": "per-node", "needs": ["estate"], "full": ["estate"], "when_off": "Each node keeps its own list of working versions.", "fix": "nothing: each node is its own"},
+    {"id": "storage", "critical": false, "state": "stateless", "needs": ["estate"], "full": ["estate", "routines"], "when_off": "Each node cleans its own disk.", "fix": "./securax routines install"},
+    {"id": "why", "critical": false, "state": "stateless", "needs": ["estate"], "full": ["estate"], "when_off": "Runs on any node.", "fix": "nothing"},
+    {"id": "jewels", "critical": false, "state": "stateless", "needs": ["estate"], "full": ["estate"], "when_off": "Runs on any node, about that node.", "fix": "nothing"},
+    {"id": "controls", "critical": false, "state": "per-node", "needs": ["estate"], "full": ["estate", "vault"], "when_off": "The built-in starter library works on any node; your own registers live in that node's vault.", "fix": "copy the vault with ./securax backup and ./securax restore on the node that is always on"},
+    {"id": "risks", "critical": false, "state": "per-node", "needs": ["estate", "vault"], "full": ["estate", "vault"], "when_off": "Your risk register lives in one node's vault.", "fix": "copy the vault to the always-on node (./securax backup, then ./securax restore there)"},
+    {"id": "incident-clock", "critical": true, "state": "per-node", "needs": ["estate"], "full": ["estate", "vault"], "when_off": "A new incident can be started on any node; an open incident's clock lives in the vault of the node where it was started.", "fix": "start incidents on the always-on node, or copy the vault there"},
+    {"id": "comply", "critical": false, "state": "stateless", "needs": ["estate"], "full": ["estate"], "when_off": "The maps ship with the code: any node.", "fix": "nothing"},
+    {"id": "cockpit", "critical": false, "state": "stateless", "needs": ["estate"], "full": ["estate"], "when_off": "Each node shows its own cockpit.", "fix": "nothing"},
+    {"id": "knowledge", "critical": false, "state": "per-node", "needs": ["estate"], "full": ["estate", "vault"], "when_off": "Imported AI history lives in one node's vault.", "fix": "copy the vault to the always-on node"},
+    {"id": "cyber-range", "critical": false, "state": "stateless", "needs": ["estate"], "full": ["estate"], "when_off": "Any node can run an exercise.", "fix": "nothing"},
+    {"id": "respond", "critical": false, "state": "per-node", "needs": ["estate"], "full": ["estate", "vault"], "when_off": "A case's evidence lives on the node where it was opened (keep it there: chain of custody).", "fix": "nothing: evidence stays where it was collected"},
+    {"id": "purple", "critical": false, "state": "stateless", "needs": ["estate"], "full": ["estate"], "when_off": "Any node.", "fix": "nothing"},
+    {"id": "inspect", "critical": false, "state": "stateless", "needs": ["estate"], "full": ["estate"], "when_off": "Any node with Docker.", "fix": "nothing"},
+    {"id": "cloud", "critical": false, "state": "stateless", "needs": ["estate"], "full": ["estate"], "when_off": "Dormant by default; the plans live in the code on every node.", "fix": "nothing"},
+    {"id": "resilience", "critical": false, "state": "replicated", "needs": ["estate"], "full": ["estate", "routines"], "when_off": "Every machine keeps every card and runs the check itself.", "fix": "./securax routines install (the card is shared every 10 minutes)"},
+    {"id": "channel", "critical": false, "state": "per-node", "needs": ["estate"], "full": ["estate"], "when_off": "Each node follows its own channel (stable or beta).", "fix": "nothing"}
+  ],
+  "reference": {
+    "about": "The estate SecuRAX is designed for: a laptop, a VPS and a cloud instance, each set up as the docs say. In CI no critical feature may stop working when any ONE of them is off, except what 'accepted' lists with a reason and a review date.",
+    "cards": [
+      {"name": "laptop", "checks": ["estate", "strong_ai", "vault", "backups", "offsite", "routines"]},
+      {"name": "vps", "checks": ["estate", "strong_ai", "online", "passwords", "backups", "offsite", "routines", "vault"]},
+      {"name": "cloud", "checks": ["estate", "strong_ai", "online", "backups", "offsite", "routines"]}
+    ],
+    "accepted": {
+      "passwords": "One password server: two would not sync with each other. The Bitwarden apps keep an offline copy for reading. Review 2027-01-31 (a standby that restores the nightly backup)."
+    }
+  }
+}

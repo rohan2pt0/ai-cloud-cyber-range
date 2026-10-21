@@ -76,6 +76,7 @@
    ],
    "guarded_by": [
     "fresh_install",
+    "machine_alone",
     "self_healing",
     "watchdog_heals_and_alerts",
     "update_from_dirty_checkout",
@@ -87,6 +88,7 @@
     "tls_edge",
     "tls_internal",
     "backup_encrypted",
+    "ransomware_recovery",
     "inspect_sandbox",
     "rollback_anytime"
    ],
@@ -177,6 +179,7 @@
     "gateway_residency",
     "cockpit_page",
     "backup_encrypted",
+    "ransomware_recovery",
     "inspect_sandbox",
     "rollback_anytime"
    ],
