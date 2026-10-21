@@ -4,6 +4,30 @@ Read this first, whoever you are: the local builder (`./securax build` / `autobu
 It is the short version of what a new contributor would otherwise rediscover by trial and error. The hard rules are
 in `BUILD-CONTRACT.md`; what went wrong before, and why, is in `LESSONS.md`. Read both.
 
+## 0. The north star (read this before anything else)
+
+SecuRAX exists for one reason: **the person or team using it must be visibly better off**. That means better work, better
+decisions, a calmer and more purposeful life, risks really reduced. A feature that is secure, resilient and compliant but
+unused, or that changes nothing a person can see, is paper: it does not count.
+
+Before you build, answer three questions in the PR:
+1. **What gets better for the person this week?** Name the outcome in their words (time saved, a risk closed, a goal moved,
+   a decision made easier), not the mechanism.
+2. **Where will they see it?** `./securax progress`, the Life OS, a phone message, the cockpit. If they cannot see it, they
+   will not use it, and it will not help.
+3. **How does it get them to use the estate more fully?** One clear next step, never a manual to read.
+
+The principles behind it:
+- **Purpose (ikigai):** what they love, are good at, are valued for and the world needs. The Life OS wheel, OKRs and career
+  compass carry it; never bury it under tooling.
+- **Antifragility:** every failure must leave the estate stronger. A lesson, a test and a drill come out of it, and
+  `progress` counts them.
+- **Small wins, shown:** progress you can see keeps people going.
+- **Least effort for the person:** the estate does the remembering, the checking and the reminding.
+
+Every feature in `features.json` carries its `outcome` (what gets better) and `shows` (where the person sees it); fitness
+`outcomes-declared` fails one that does not.
+
 ## 1. Pick the tier before you start
 
 Run `./securax route "the task"`. It names the tier, and why:

@@ -65,3 +65,30 @@ jobs:
         if: failure()
         run: |
           cd /tmp/securax-sandbox/clone/local/compose 2>/dev/null && docker compose --profile ai logs --no-color --tail 80 || true
+
+  # The estate's own alarm (doc 92): when the NIGHTLY run on main goes red, one issue says which journeys failed, with the
+  # run's link; a later red night adds a comment to the same issue instead of a new one; a green night closes it.
+  nightly-alarm:
+    needs: sandbox
+    if: always() && github.event_name == 'schedule'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    steps:
+      - name: "Open, update or close the nightly-red issue"
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RESULT: ${{ needs.sandbox.result }}
+          RUN: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          set -eu
+          T="Nightly sandbox is red"
+          N="$(gh issue list -R "$GITHUB_REPOSITORY" --state open --search "\"$T\" in:title" --json number -q '.[0].number' || true)"
+          if [ "$RESULT" = success ]; then
+            [ -z "$N" ] || gh issue close "$N" -R "$GITHUB_REPOSITORY" -c "Green again: $RUN"
+            exit 0
+          fi
+          B="The nightly run of every journey on main ended: $RESULT. Run and screenshots: $RUN (artifact sandbox-report). Find the root cause, add a lesson, fix and prove it with the journey."
+          if [ -n "$N" ]; then gh issue comment "$N" -R "$GITHUB_REPOSITORY" -b "Still red: $RUN"
+          else gh issue create -R "$GITHUB_REPOSITORY" -t "$T" -b "$B"; fi

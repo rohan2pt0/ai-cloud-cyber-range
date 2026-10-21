@@ -9,6 +9,19 @@ window.SECURAX_FEATURES = {
  ],
  "features": [
   {
+   "id": "progress",
+   "group": "Your own tools",
+   "icon": "target",
+   "name": "Your progress",
+   "what": "Is SecuRAX making you better off? Your Life OS rhythm, what made the estate stronger this month, and the one next step, on your phone every Sunday.",
+   "cmd": "./securax progress",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "light": "amber",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/93-PROGRESS-YOU-CAN-SEE/"
+  },
+  {
    "id": "cyber-range",
    "group": "Practise and defend",
    "icon": "target",
@@ -371,6 +384,19 @@ window.SECURAX_FEATURES = {
    "service": false,
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/91-ANY-MACHINE-CAN-CARRY-THE-ESTATE/"
+  },
+  {
+   "id": "autopilot",
+   "group": "Keep it running",
+   "icon": "loop",
+   "name": "The autopilot",
+   "what": "The estate learns from its own failures (a postmortem draft and an alert, escalated when one keeps coming back), drills itself every night where it most needs it, and warns days before disk space, backups or the AI allowance run out.",
+   "cmd": "./securax autopilot",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "light": "amber",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/92-THE-AUTOPILOT/"
   },
   {
    "id": "channel",
