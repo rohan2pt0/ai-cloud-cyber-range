@@ -25,7 +25,7 @@ The request was broad: regression testing, several kaizen rounds, a digital twin
 | # | Finding | Why it mattered | Fix (proved) |
 |---|---|---|---|
 | 1 | **Backups were kept by count only:** the newest 7 here and 12 off-site, one a night | A week of encryption nobody noticed left only encrypted copies. The rotation deleted the last clean one by itself | One a week for 4 weeks and one a month for 3 months are kept as well (6 months off-site). Suspect copies never count as clean. Tests: a 100-day history still holds a copy from months back; 8 suspect nights delete no clean copy |
-| 2 | **Nothing checked that the data was still readable** before backing it up and sending it off-site | Ransomware's output was saved, synced to OneDrive and rotated in as if it were good | Every backup first runs the guard. **Canary files** (fixed text in `vault/` and `~/.securax`) and a **format check** of the vault (JSON parses, workbooks are zip files, PDFs start with `%PDF`), plus known ransom-note names and endings. If the data looks encrypted, the backup is still written but named `-SUSPECT`. Nothing is deleted, nothing goes off-site, an alert is sent, and it exits 3 |
+| 2 | **Nothing checked that the data was still readable** before backing it up and sending it off-site | Ransomware's output was saved, synced to OneDrive and rotated in as if it were good | Every backup first runs the guard. **Canary files** (fixed text in `vault/` and `~/.securax`) and a **format check** of the vault: text must read as text, workbooks must be zip files, PDFs must start with `%PDF`. Ransom-note names and ransomware file endings only back up other evidence, never decide alone. If the data looks encrypted, the backup is still written but named `-SUSPECT`. Nothing is deleted, nothing goes off-site, an alert is sent, and it exits 3 |
 | 3 | **The restore drill passed when there was no off-site folder** (exit 0 with nothing proved) | A false green: the continuity plan recorded the ransomware scenario as drilled and within target | With no off-site folder, the drill proves the local copy and says so. With no clean backup at all, it **fails** |
 | 4 | **The drill checked checksums only** | A backup of encrypted data matches its checksums perfectly | The drill now builds a **restore twin**. Every volume and the vault are unpacked in a scratch folder. Every database passes SQLite's own integrity check, the vault's files must open, the canary must be intact, and `.env` must be there. Live data is never touched |
 | 5 | **A restore needed you to pick the right file, under stress** | On the worst day, picking the newest file picks the encrypted one | `./securax restore latest` picks the newest copy that is not suspect: local first, then off-site |
@@ -41,7 +41,22 @@ The request was broad: regression testing, several kaizen rounds, a digital twin
 
 All four are fixed and tested.
 
-**Round 3** played the whole night against the real containers (section 3). It found nothing new.
+**Round 3** was an independent, adversarial review of rounds 1 and 2. Its brief: find what would lose data, give a false green, or crash. It found six more problems, all fixed and tested:
+
+| # | Finding | Fix |
+|---|---|---|
+| 9 | **A name alone raised the alarm.** `postmortem new "Tabletop ransomware"`, which the after-action report itself suggests, or an imported advisory about ransomware, made every later backup suspect, for good | A ransom-note name or a ransomware ending now counts only next to content that really changed. Many files renamed to such an ending still count alone |
+| 10 | **A canary that went missing for an ordinary reason was suspect forever.** That covered a moved checkout, a deleted folder, or a restore from before this change | Canaries are found by place, not by remembered path. A missing one is planted again. Only one whose text changed is evidence. After a false alarm you have checked yourself: `./securax backup clear-alarm` |
+| 11 | **Suspect backups were never trimmed.** One false alarm would have added a full backup every night until the disk filled | A suspect run trims old suspect copies to the newest 3. It never touches a clean one |
+| 12 | **The restore twin failed on a link inside a volume**, which a real restore handles fine | Links are skipped. Only regular files are opened, and nothing can be written outside the twin |
+| 13 | **The twin needed about three times the backup's size on disk.** A large model volume would have filled it, a false red | The archives are read as a stream, which still proves they are whole. Only databases are written out, one volume at a time, beside the unpacked backup |
+| 14 | Small ones | The status line now looks at the newest backup only. A scrambled offline log no longer crashes the tabletop. A stick formatted FAT32 is named as the reason when a backup over 4 GB does not fit |
+
+**Text files Windows writes** also no longer look encrypted: a UTF-8 byte-order mark, UTF-16, and Excel's default code page all read as text. Encrypted bytes read as none of these.
+
+**Round 4** played the whole night against the real containers (section 3): 20 of 20 checks passed.
+
+**Regression after the change:** the full unit suite, the Life OS tests, `ruff`, fitness, `mkdocs --strict`, and the privacy and config checks.
 
 ## 3. The digital twin, in three sizes
 

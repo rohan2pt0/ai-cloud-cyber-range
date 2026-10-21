@@ -375,7 +375,7 @@ case "$cmd" in
     esac
     BDIR="$(ev SECURAX_BACKUP_DIR "$ROOT/backups")"
     if ! on backup; then off backup
-    elif [ -n "$(find "$BDIR" -maxdepth 1 -name 'securax-*-SUSPECT.tar.gz*' -mtime -2 2>/dev/null | head -1)" ]; then fix "RANSOMWARE SUSPECTED: the last backup found encrypted files → ./securax continuity show data-lost"
+    elif { ls -1t "$BDIR"/securax-*.tar.gz* 2>/dev/null || true; } | head -1 | grep -q -- '-SUSPECT'; then fix "RANSOMWARE SUSPECTED: the last backup found encrypted files → ./securax continuity show data-lost"
     elif [ -n "$(find "$BDIR" -maxdepth 1 -name 'securax-*.tar.gz*' ! -name '*-SUSPECT*' -mtime -7 2>/dev/null | head -1)" ]; then ok "Backup from the last 7 days on disk"
     else "$0" backup >/dev/null 2>&1 && ok "Backup taken now ($BDIR)" || fix "Backup failed → ./securax backup"; fi
     # 7. Your data on every device: one link per device, no forms (the sync token rides after '#', never sent to a server).
@@ -1305,6 +1305,7 @@ EOF2
     #   ./securax backup drill          the quarterly restore test: the newest CLEAN copy (off-site first) decrypts, unpacks, matches
     #                                   its checksums and opens as working data in a scratch "restore twin" (doc 88)
     #   ./securax backup offline [DIR]  monthly: the newest clean encrypted backup onto a USB stick you then unplug (3-2-1-1)
+    #   ./securax backup clear-alarm    after a RANSOMWARE SUSPECTED alarm you checked and found false: rewrite the canaries
     if [ "${2:-}" = offsite ]; then
       ENVF="$ROOT/local/compose/.env"; mapfile -t _cand < <(ls -d /mnt/c/Users/*/OneDrive* "$HOME"/OneDrive* 2>/dev/null | grep -v '/All Users/\|/Default/\|/Public/' || true)
       if [ "${#_cand[@]}" -eq 0 ]; then C "No OneDrive folder found. Give any folder that your cloud client syncs:  ./securax backup offsite-dir /path/to/folder"; exit 1; fi
@@ -1319,6 +1320,17 @@ EOF2
     fi
     if [ "${2:-}" = offsite-dir ]; then [ -n "${3:-}" ] || { echo "usage: ./securax backup offsite-dir FOLDER"; exit 2; }
       skv "$ROOT/local/compose/.env" SECURAX_OFFSITE_DIR "$3" && mkdir -p "$3" && C "✔ Off-site folder: $3"; exit 0; fi
+    if [ "${2:-}" = clear-alarm ]; then
+      # After a RANSOMWARE SUSPECTED alarm that you checked yourself and found false: rewrite the canary files.
+      python3 "$ROOT/governance/ransomguard.py" check >/dev/null 2>&1 && { C "There is no alarm to clear: the data looks normal."; exit 0; }
+      if [ -r /dev/tty ] && [ "${3:-}" != --yes ]; then
+        printf 'Did you open the files the alarm named, and are they fine? Type YES to clear it: '; read -r _y < /dev/tty || _y=""
+        [ "$_y" = YES ] || { C "Not cleared. The plan, step by step:  ./securax continuity show data-lost"; exit 1; }
+      fi
+      python3 "$ROOT/governance/ransomguard.py" replant
+      python3 "$ROOT/governance/ransomguard.py" check || { C "Still suspect after that: the files themselves look encrypted. Do not clear it:  ./securax continuity show data-lost"; exit 3; }
+      exit 0
+    fi
     if [ "${2:-}" = offline ]; then
       # 3-2-1-1 (doc 88): once a month, the newest CLEAN encrypted backup onto a USB stick or disk you then unplug. Ransomware
       # cannot reach a copy that is not connected. ./securax backup offline [FOLDER]   (no folder: asks for the drive letter)
@@ -1331,7 +1343,7 @@ EOF2
       fi
       [ -n "$TO" ] && [ -d "$TO" ] || { C "No such drive or folder${TO:+: $TO}. Plug it in and run  ./securax backup offline  again (or give the folder: ./securax backup offline /media/you/USB)"; exit 1; }
       mkdir -p "$TO/SecuRAX-offline" && cp "$SRC" "$TO/SecuRAX-offline/" && cmp -s "$SRC" "$TO/SecuRAX-offline/$(basename "$SRC")" \
-        || { C "✗ The copy to $TO did not verify. Try another stick or folder."; exit 1; }
+        || { C "✗ The copy to $TO did not verify. Try another stick or folder$( [ "$(stat -c %s "$SRC" 2>/dev/null || echo 0)" -gt 4294967295 ] && echo " (this backup is over 4 GB: a FAT32 stick cannot hold it; format it as exFAT)")."; exit 1; }
       python3 "$ROOT/governance/ransomguard.py" prune "$TO/SecuRAX-offline" --keep 2 --weeks 0 --months 3 --encrypted || true
       mkdir -p "${SECURAX_HOME_DIR:-$HOME/.securax}/continuity"; echo "$(date -u +%FT%TZ) offline $(basename "$SRC")" >> "${SECURAX_HOME_DIR:-$HOME/.securax}/continuity/offline.log"
       C "✔ Offline copy: $TO/SecuRAX-offline/$(basename "$SRC") (verified, byte for byte). Now unplug it and keep it away from this laptop."
@@ -1416,6 +1428,7 @@ EOF2
       _msg="RANSOMWARE SUSPECTED on $(hostname): the nightly backup found encrypted files. Older backups are kept. Run ./securax continuity show data-lost"
       _wh="$(ev ALERT_WEBHOOK)"; [ -n "$_wh" ] && { curl -fsS -m 10 -X POST -d "SecuRAX: $_msg" "$_wh" >/dev/null 2>&1 || true; }
       python3 "$ROOT/governance/notify.py" send "$_msg" --title "SecuRAX: ransomware suspected" --priority high >/dev/null 2>&1 || true
+      python3 "$ROOT/governance/ransomguard.py" prune "$DEST" --keep 1 --suspects-only || true   # night after night of alarms cannot fill the disk
       exit 3
     fi
     # Keep the newest BACKUP_KEEP, plus one per week for 4 weeks and one per month for 3 months: a week of silent damage can

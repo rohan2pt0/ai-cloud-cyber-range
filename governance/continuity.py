@@ -331,7 +331,8 @@ def tabletop_check(name: str, now: float | None = None) -> tuple[bool | None, st
         if name == "offsite":
             return site_ok, detail
         log = home() / "continuity" / "offline.log"
-        last = log.read_text("utf-8").strip().splitlines()[-1][:20] if log.exists() and log.read_text("utf-8").strip() else ""
+        txt = log.read_text("utf-8", errors="replace").strip() if log.exists() else ""
+        last = txt.splitlines()[-1][:20] if txt else ""
         try:
             off_age = (now - dt.datetime.strptime(last, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=dt.timezone.utc).timestamp()) / 86400
         except ValueError:

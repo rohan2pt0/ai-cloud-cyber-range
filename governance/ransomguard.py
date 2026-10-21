@@ -29,6 +29,7 @@ import json
 import os
 import pathlib
 import re
+import shutil
 import sqlite3
 import sys
 import tarfile
@@ -46,6 +47,7 @@ ENDINGS = {".locked", ".encrypted", ".crypt", ".crypted", ".lockbit", ".akira", 
 SUSPECT_TAG = "-SUSPECT"
 STAMP = re.compile(r"securax-(\d{8})-(\d{6})")
 MAX_SUSPECT = 3
+DB = re.compile(r"\.(db|sqlite3?)(-wal|-shm|-journal)?$")
 MAX_FILES = 20000                      # a scan stops here: a vault is small; this bounds the time on a huge folder
 
 
@@ -53,40 +55,22 @@ def home() -> pathlib.Path:
     return pathlib.Path(os.environ.get("SECURAX_HOME_DIR") or pathlib.Path.home() / ".securax")
 
 
-def state_path() -> pathlib.Path:
-    return home() / "continuity" / "canary.json"
+def canary_files(root: pathlib.Path = ROOT) -> dict[str, pathlib.Path]:
+    """Where the canaries live, by a name that does not change when the checkout moves (vault/ of THIS root, and ~/.securax)."""
+    return {"vault": root / "vault" / CANARY_NAME, "home": home() / CANARY_NAME}
 
 
-def canary_dirs(root: pathlib.Path = ROOT) -> list[pathlib.Path]:
-    return [root / "vault", home()]
-
-
-# ------------------------------------------------------------------------------------------------------------- canaries
-def plant(root: pathlib.Path = ROOT) -> list[str]:
-    """Write any canary that was never planted. One that WAS planted and is now missing is not replaced: that is evidence."""
-    st = _state()
-    planted = set(st.get("planted", []))
+def plant(root: pathlib.Path = ROOT, again: bool = False) -> list[str]:
+    """Write each canary that is not there. A canary whose TEXT changed is left alone (that is the evidence); `again` rewrites
+    it too, after you have checked that it was a false alarm."""
     made = []
-    for d in canary_dirs(root):
-        f = d / CANARY_NAME
-        if str(f) in planted:
+    for f in canary_files(root).values():
+        if f.exists() and not again:
             continue
-        d.mkdir(parents=True, exist_ok=True)
-        if not f.exists():
-            f.write_text(CANARY_TEXT, "utf-8")
-        planted.add(str(f))
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text(CANARY_TEXT, "utf-8")
         made.append(str(f))
-    if made:
-        state_path().parent.mkdir(parents=True, exist_ok=True)
-        state_path().write_text(json.dumps({"planted": sorted(planted), "at": _now()}), "utf-8")
     return made
-
-
-def _state() -> dict:
-    try:
-        return json.loads(state_path().read_text("utf-8"))
-    except (OSError, ValueError):
-        return {}
 
 
 def canary_ok(f: pathlib.Path) -> bool:
@@ -154,24 +138,32 @@ def scan(folders: list[pathlib.Path], canaries: list[pathlib.Path] | None = None
             if not r:
                 bad.append(str(f))
     canaries = canaries or []
-    lost = [str(c) for c in canaries if not canary_ok(c)]
+    changed = [str(c) for c in canaries if c.exists() and not canary_ok(c)]
+    gone = [str(c) for c in canaries if not c.exists()]
+    damaged = len(bad) >= 3 and len(bad) >= 0.25 * checked
+    # Names prove nothing alone (a postmortem called "Tabletop ransomware", an advisory about it, an old file.locked): a note or an
+    # ending counts only next to content that changed. A canary whose text changed, many unreadable files, or many files renamed
+    # to a ransomware ending count alone. A canary that is simply missing is planted again (a new checkout, a deleted folder).
+    content = bool(changed or bad)
     reasons = []
-    if lost:
-        reasons.append(f"{len(lost)} canary file(s) changed or gone")
-    if notes:
-        reasons.append(f"{len(notes)} file(s) named like a ransom note")
-    if odd:
-        reasons.append(f"{len(odd)} file(s) with a ransomware ending")
-    if len(bad) >= 3 and len(bad) >= 0.25 * checked:
+    if changed:
+        reasons.append(f"{len(changed)} canary file(s) no longer hold their text")
+    if damaged:
         reasons.append(f"{len(bad)} of {checked} files no longer open as what they are")
+    if len(odd) >= 3 or (odd and content):
+        reasons.append(f"{len(odd)} file(s) renamed to a ransomware ending")
+    if notes and content:
+        reasons.append(f"{len(notes)} file(s) named like a ransom note")
     return {"suspect": bool(reasons), "reasons": reasons, "checked": checked, "unreadable": bad[:20],
-            "canaries": len(canaries), "canaries_lost": lost, "notes": notes[:10], "endings": odd[:10]}
+            "canaries": len(canaries), "canaries_lost": changed + gone, "notes": notes[:10], "endings": odd[:10]}
 
 
 def check(root: pathlib.Path = ROOT) -> dict:
-    plant(root)
-    planted = [pathlib.Path(p) for p in _state().get("planted", [])]
-    return scan([root / "vault"], planted)
+    cans = list(canary_files(root).values())
+    res = scan([root / "vault"], cans)
+    if not res["suspect"]:
+        plant(root)                         # a canary that is simply missing (a new checkout, a deleted folder) comes back
+    return res
 
 
 # ------------------------------------------------------------------------------------------------------- backup files
@@ -220,9 +212,12 @@ def to_keep(files: list[pathlib.Path], keep: int, weeks: int = 4, months: int = 
     return kept
 
 
-def prune(folder: pathlib.Path, keep: int, weeks: int = 4, months: int = 3, encrypted_only: bool = False) -> list[str]:
+def prune(folder: pathlib.Path, keep: int, weeks: int = 4, months: int = 3, encrypted_only: bool = False,
+          suspects_only: bool = False) -> list[str]:
+    """Delete what retention does not keep. With suspects_only (a suspect run), only suspect copies beyond the newest few go:
+    a run of false alarms cannot fill the disk, and no clean copy is touched."""
     files = [f for f in backups(folder) if f.name.endswith(".gpg") or not encrypted_only]
-    kept = to_keep(files, keep, weeks, months)
+    kept = to_keep(files, keep, weeks, months) if not suspects_only else {f for f in files if not suspect(f)} | to_keep(files, 1, 0, 0)
     gone = []
     for f in files:
         if f not in kept:
@@ -236,31 +231,37 @@ def verify(folder: pathlib.Path) -> dict:
     """Open an unpacked backup the way a restore would, in a scratch folder: every volume and the vault unpack, every
     database passes SQLite's integrity check, the vault's files open, the canary is intact. Live data is never touched."""
     res = {"ok": True, "volumes": 0, "databases": 0, "db_bad": [], "problems": []}
-    with tempfile.TemporaryDirectory(prefix="securax-twin-") as tmp:
+    with tempfile.TemporaryDirectory(prefix="securax-twin-", dir=folder) as tmp:      # beside the unpacked backup, not in /tmp
         twin = pathlib.Path(tmp)
         for t in sorted(folder.glob("*.tgz")):
             dest = twin / t.stem
             dest.mkdir()
+            whole = t.name == "vault.tgz"                       # the vault is small: open all of it; a volume: its databases only
             try:
                 with tarfile.open(t) as tf:
-                    try:
-                        tf.extractall(dest, filter="data")          # no links out, no device files, no absolute paths
-                    except TypeError:                               # Python before 3.11.4 has no filter: refuse anything odd
-                        if any(m.issym() or m.islnk() or m.isdev() or m.name.startswith("/") or ".." in m.name for m in tf.getmembers()):
-                            raise tarfile.TarError("unsafe member") from None
-                        tf.extractall(dest)  # noqa: S202 (members checked above)
-            except (tarfile.TarError, OSError) as exc:
+                    for m in tf:                                 # reading every member proves the whole archive is intact
+                        if not m.isfile() or not (whole or DB.search(m.name)):
+                            continue
+                        if m.name.startswith("/") or ".." in pathlib.PurePosixPath(m.name).parts:
+                            raise tarfile.TarError(f"unsafe member {m.name}")
+                        out = dest / m.name
+                        out.parent.mkdir(parents=True, exist_ok=True)
+                        with tf.extractfile(m) as src, out.open("wb") as fh:
+                            shutil.copyfileobj(src, fh)
+            except (tarfile.TarError, OSError, EOFError) as exc:
                 res["problems"].append(f"{t.name} does not unpack: {exc}")
                 continue
             res["volumes"] += t.name.startswith("vol-")
-        for db in (p for p in twin.rglob("*") if p.is_file() and p.suffix in {".db", ".sqlite", ".sqlite3"}):
-            res["databases"] += 1
-            try:
-                with sqlite3.connect(f"file:{db}?mode=ro", uri=True) as con:
-                    if con.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
-                        res["db_bad"].append(db.name)
-            except sqlite3.DatabaseError:
-                res["db_bad"].append(db.name)
+            for db in (p for p in dest.rglob("*") if p.is_file() and p.suffix in {".db", ".sqlite", ".sqlite3"}):
+                res["databases"] += 1
+                try:
+                    with sqlite3.connect(f"file:{db}?mode=ro", uri=True) as con:
+                        if con.execute("PRAGMA integrity_check").fetchone()[0] != "ok":
+                            res["db_bad"].append(db.name)
+                except sqlite3.DatabaseError:
+                    res["db_bad"].append(db.name)
+            if not whole:
+                shutil.rmtree(dest, ignore_errors=True)          # one volume's databases on disk at a time
         vault = twin / "vault" / "vault"
         cans = [vault / CANARY_NAME] if (vault / CANARY_NAME).exists() else []
         res["scan"] = scan([vault], cans)
@@ -292,6 +293,8 @@ def main(argv: list[str] | None = None) -> int:
     r.add_argument("--weeks", type=int, default=4)
     r.add_argument("--months", type=int, default=3)
     r.add_argument("--encrypted", action="store_true")
+    r.add_argument("--suspects-only", action="store_true")
+    sub.add_parser("replant")
     v = sub.add_parser("verify")
     v.add_argument("dir")
     v.add_argument("--json", action="store_true")
@@ -302,6 +305,7 @@ def main(argv: list[str] | None = None) -> int:
             print(json.dumps(res))
         elif res["suspect"]:
             print("✗ RANSOMWARE SUSPECTED: " + "; ".join(res["reasons"]))
+            print("  (A false alarm? Open the files below yourself. Only if they are fine:  ./securax backup clear-alarm)")
             for f in (res["canaries_lost"] + res["notes"] + res["endings"] + res["unreadable"])[:8]:
                 print("    " + f)
         else:
@@ -313,8 +317,13 @@ def main(argv: list[str] | None = None) -> int:
             print(f)
         return 0 if f else 1
     if a.cmd == "prune":
-        for name in prune(pathlib.Path(a.dir).expanduser(), a.keep, a.weeks, a.months, a.encrypted):
+        for name in prune(pathlib.Path(a.dir).expanduser(), a.keep, a.weeks, a.months, a.encrypted, a.suspects_only):
             print(f"  removed old backup {name}")
+        return 0
+    if a.cmd == "replant":
+        for f in plant(again=True):
+            print(f"  ✔ canary rewritten: {f}")
+        print("Only do this after checking your files yourself: the next backup is guarded again from here.")
         return 0
     if a.cmd == "verify":
         res = verify(pathlib.Path(a.dir))

@@ -47,22 +47,43 @@ def test_a_normal_vault_is_clean_and_an_encrypted_one_is_suspect(tmp_path, monke
 
 def test_the_canary_catches_it_even_when_the_vault_is_almost_empty(tmp_path, monkeypatch):
     monkeypatch.setenv("SECURAX_HOME_DIR", str(tmp_path / "h"))
-    made = rg.plant(tmp_path)
-    assert len(made) == 2 and rg.check(tmp_path)["suspect"] is False
+    assert rg.check(tmp_path)["suspect"] is False and (tmp_path / "vault" / rg.CANARY_NAME).exists()
     _encrypt(tmp_path / "vault" / rg.CANARY_NAME)
     assert "canary" in rg.check(tmp_path)["reasons"][0]
-    (tmp_path / "vault" / rg.CANARY_NAME).unlink()                         # deleted after it was planted: evidence, not re-planted
-    assert rg.check(tmp_path)["suspect"] and not (tmp_path / "vault" / rg.CANARY_NAME).exists()
+    assert rg.check(tmp_path)["suspect"], "an encrypted canary is not quietly replaced"
+    rg.plant(tmp_path, again=True)
+    assert rg.check(tmp_path)["suspect"] is False
 
 
-def test_ransom_notes_and_endings_are_flagged_but_a_readme_is_not(tmp_path):
+def test_a_canary_that_is_merely_missing_is_not_an_alarm_and_comes_back(tmp_path, monkeypatch):
+    monkeypatch.setenv("SECURAX_HOME_DIR", str(tmp_path / "h"))
+    rg.check(tmp_path)
+    (tmp_path / "vault" / rg.CANARY_NAME).unlink()                         # a new checkout, a deleted folder, an old restore
+    assert rg.check(tmp_path)["suspect"] is False and (tmp_path / "vault" / rg.CANARY_NAME).exists()
+    moved = tmp_path / "moved"                                               # the checkout moved: nothing remembers the old path
+    assert rg.check(moved)["suspect"] is False
+
+
+def test_renamed_away_canary_with_ransomware_endings_is_an_alarm(tmp_path, monkeypatch):
+    monkeypatch.setenv("SECURAX_HOME_DIR", str(tmp_path / "h"))
     v = _vault(tmp_path)
-    assert rg.scan([v])["suspect"] is False
+    rg.check(tmp_path)
+    for f in list(v.rglob("*.json")) + [v / rg.CANARY_NAME]:
+        f.rename(f.with_name(f.name + ".locked"))
+    assert rg.check(tmp_path)["suspect"]
+
+
+def test_a_name_alone_is_never_an_alarm_but_backs_up_other_evidence(tmp_path):
+    v = _vault(tmp_path)
+    (v / "postmortems").mkdir()
+    (v / "postmortems" / "2026-10-21-tabletop-ransomware.md").write_text("# Tabletop ransomware\n")   # SecuRAX writes these itself
+    (v / "cert-in-ransomware-advisory-data-recovery-files.json").write_text("{}")
+    (v / "old.xlsx.locked").write_bytes(b"x")
+    res = rg.scan([v])
+    assert res["notes"] and res["endings"] and res["suspect"] is False
+    _encrypt(v / "registers" / "r0.json")                                    # one bad file + a note: now it adds up
     (v / "HOW_TO_DECRYPT_FILES.txt").write_text("pay")
-    assert rg.scan([v])["notes"]
-    (v / "HOW_TO_DECRYPT_FILES.txt").unlink()
-    (v / "registers" / "r1.json.locked").write_bytes(b"x")
-    assert rg.scan([v])["endings"]
+    assert rg.scan([v])["suspect"]
 
 
 def _files(folder: pathlib.Path, days: int, suspect_last: int = 0) -> list[pathlib.Path]:
@@ -149,12 +170,29 @@ def test_the_twin_finds_a_damaged_database_a_lost_env_and_an_encrypted_vault(tmp
     assert any("encrypted" in p for p in rg.verify(_staged(tmp_path / "3", vault_bad=True))["problems"])
 
 
+def test_a_suspect_run_trims_old_suspect_copies_and_keeps_every_clean_one(tmp_path):
+    _files(tmp_path, 30, suspect_last=10)
+    rg.prune(tmp_path, keep=1, suspects_only=True)
+    left = rg.backups(tmp_path)
+    assert sum(rg.suspect(f) for f in left) == rg.MAX_SUSPECT and sum(not rg.suspect(f) for f in left) == 20
+
+
+def test_the_twin_skips_links_inside_a_volume_instead_of_failing(tmp_path):
+    st = _staged(tmp_path)
+    with tarfile.open(st / "vol-links.tgz", "w:gz") as tf:
+        for name, target in (("./abs-link", "/etc/hostname"), ("./rel-link", "webui.db")):
+            ti = tarfile.TarInfo(name)
+            ti.type, ti.linkname = tarfile.SYMTYPE, target
+            tf.addfile(ti)
+    assert rg.verify(st)["ok"], rg.verify(st)["problems"]
+
+
 def test_the_twin_refuses_an_archive_that_escapes_its_folder(tmp_path):
     st = tmp_path / "stage"
     st.mkdir()
     with tarfile.open(st / "vol-evil.tgz", "w:gz") as tf:
         data = b"owned"
-        ti = tarfile.TarInfo("../../escaped.txt")
+        ti = tarfile.TarInfo("../../escaped.db")
         ti.size = len(data)
         tf.addfile(ti, io.BytesIO(data))
     (st / "env").write_text("X=1\n")
