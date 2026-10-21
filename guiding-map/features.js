@@ -360,6 +360,19 @@ window.SECURAX_FEATURES = {
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/86-MANY-NODES-AND-THE-ROAD-TO-SCALE/"
   },
   {
+   "id": "resilience",
+   "group": "Keep it running",
+   "icon": "loop",
+   "name": "The estate finds its own weak points",
+   "what": "Every combination of your machines being off is checked: what still works, what slows down, what stops, and the fix for each single point of failure. A new weak point is pushed to your phone.",
+   "cmd": "./securax resilience",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "light": "amber",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/91-ANY-MACHINE-CAN-CARRY-THE-ESTATE/"
+  },
+  {
    "id": "channel",
    "group": "Keep it running",
    "icon": "undo",

@@ -998,6 +998,11 @@ EOF2
     shift; python3 "$ROOT/governance/online.py" "${@:-status}" || exit $?
     case "${1:-status}" in setup|google|allow|remove|join) exec "$0" up ;; esac
     ;;
+  resilience)
+    # Can the estate carry on with any machine off? Every combination of your machines, checked, with the fix for each
+    # single point of failure (doc 91).   ./securax resilience | publish | card | --json | --notify-new
+    shift; exec python3 "$ROOT/governance/resilience.py" "$@"
+    ;;
   continuity)
     # The estate's crisis and continuity plan, measured: RTO/RPO per scenario, the steps, safe drills, the code mirror (doc 84).
     #   ./securax continuity | show ID | drill ID | mirror [setup [ADDRESS]] | --json
@@ -1983,6 +1988,7 @@ BUILD & KEEP IT HEALTHY
   nodes          run SecuRAX on several machines (laptop, VPS, Mac mini, cloud) with the same data; none is needed alone
   online         use SecuRAX from any device like a SaaS app: your own addresses behind Google sign-in (setup once)
   continuity     the crisis plan: each scenario's RTO/RPO target vs today, the steps (show ID), safe drills (drill ID), the code mirror (mirror setup: a free private GitLab copy)
+  resilience     every combination of your machines being off: what still works, each single point of failure, the fix
   names          https://hub.securax.localhost style addresses instead of localhost:port, in one guided step
   passwords      the estate's password manager (start passwords, then status | lock | open)
   cloud          sign in to AWS, Google Cloud or Azure with nothing to install (cloud login aws|gcp|azure; cloud status)

@@ -779,6 +779,13 @@ def j_alone(sb: H.Sandbox, c: Checks):
         rc, out = sb.securax("backup", str(bdir), timeout=600)
         c.ok(rc == 0 and list(bdir.glob("securax-*.tar.gz")), "a backup is taken here with the off-site folder unplugged", tail(out, 300))
         c.ok(sb.http("GET", f"{H.GUIDING_MAP}/").status == 200, "the home screen (Command Center and Life OS) serves")
+        rc, out = sb.securax("resilience", "publish", timeout=60)
+        st = sb.http("GET", f"{H.GUIDING_MAP}/sync/state?user=_estate", headers=hdr)
+        c.ok(rc == 0 and st.status == 200 and any(k.startswith("node:") for k in (st.json() or {}).get("payload", {})),
+             "doc 91: this machine shares its capability card through sync (no secrets)", tail(out, 200))
+        rc, out = sb.securax("resilience", timeout=60)
+        c.ok(rc == 1 and "Only one machine is known" in out and "Traceback" not in out,
+             "…and `resilience` says plainly that one machine is a single point of failure, with the fix", tail(out, 400))
     finally:
         sb.reset_env(SECURAX_LITE="1")
         (sb.clone / "local" / "compose" / ".home-state").unlink(missing_ok=True)

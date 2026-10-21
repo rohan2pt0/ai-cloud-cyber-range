@@ -312,6 +312,26 @@ def check_features_current() -> dict:
             "note": "features and facts are current everywhere" if ok else (r.stdout or r.stderr).strip()[:200]}
 
 
+def check_continuity_declared() -> dict:
+    """Every feature says how it survives a machine being off (governance/resilience.json), and in the reference estate (a laptop,
+    a VPS, a cloud instance) no critical feature stops or slows when any ONE machine is off, unless accepted with a reason (doc 91)."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("resilience", ROOT / "governance" / "resilience.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    m = mod.model()
+    feats = {f["id"] for f in json.loads((ROOT / "features.json").read_text("utf-8"))["features"]}
+    declared = {c["id"] for c in m["capabilities"]}
+    known = set(m["checks"])
+    bad_checks = sorted({n for c in m["capabilities"] for n in c["needs"] + c["full"] if n not in known})
+    nodes = [{"name": c["name"], "at": 0, "checks": c["checks"]} for c in m["reference"]["cards"]]
+    spof = sorted({f"{w['id']}@{w['node']}" for w in mod.blocking(mod.analyse(nodes, m))})
+    problems = [f"undeclared: {x}" for x in sorted(feats - declared)] + [f"unknown check: {x}" for x in bad_checks] + \
+               [f"single point of failure: {x}" for x in spof]
+    return {"name": "continuity-declared", "value": len(problems), "budget": 0, "unit": "problems", "ok": not problems,
+            "note": "every feature survives any one machine being off" if not problems else "; ".join(problems)[:200]}
+
+
 def check_private_names() -> dict:
     """No organisation, exercise or person on the private list (only fingerprints are stored) appears in any tracked file."""
     import importlib.util
@@ -329,7 +349,7 @@ def run_all(only_fast: bool = False) -> list[dict]:
     if not only_fast:
         res += check_gateway(c["gateway_cold_start_s"], c["gateway_rss_mb"])
         res += check_first_block(c["first_block_s"], c["block_latency_p95_ms"])
-    res += [check_supply_chain(base), check_commands_documented(base), check_ccsp_map(), check_regulatory_maps(), check_impact_map(), check_claims(), check_config_clean(), check_readme_current(), check_private_names(), check_commands_in_help(), check_features_current()]
+    res += [check_supply_chain(base), check_commands_documented(base), check_ccsp_map(), check_regulatory_maps(), check_impact_map(), check_claims(), check_config_clean(), check_readme_current(), check_private_names(), check_commands_in_help(), check_features_current(), check_continuity_declared()]
     return res
 
 

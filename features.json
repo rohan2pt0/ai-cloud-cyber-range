@@ -354,6 +354,18 @@
    "highlight": true
   },
   {
+   "id": "resilience",
+   "group": "Keep it running",
+   "icon": "loop",
+   "name": "The estate finds its own weak points",
+   "what": "Every combination of your machines being off is checked: what still works, what slows down, what stops, and the fix for each single point of failure. A new weak point is pushed to your phone.",
+   "open": {
+    "cmd": "./securax resilience"
+   },
+   "command": "resilience",
+   "doc": "securax/91-ANY-MACHINE-CAN-CARRY-THE-ESTATE.md"
+  },
+  {
    "id": "channel",
    "group": "Keep it running",
    "icon": "undo",
