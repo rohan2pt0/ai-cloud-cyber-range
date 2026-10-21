@@ -28,6 +28,8 @@ for the versioning and release policy.
   - `site domain NAME` prints the exact DNS records and the one GitHub setting.
   - `site live` switches every link to your domain only after checking that the domain serves the site over HTTPS.
 ### Fixed
+- **Cockpit "do next" listed builders' work.** A gap-backlog item such as "Implement CCI scoring" sat among your actions with no command. Only vital signs you can act on are listed now; the backlog stays in Mission planning.
+- **Cockpit instruments cut readings mid-phrase** ("plain HTTP (browsers …"). The reading now shows whole, with its detail in small type beneath.
 - **The Govern catalog's cost bands, corrected from that research.** Several were too low, for example DLP, SIEM, PAM, IGA, ZTNA, MFA, email security and backup. Others were missing the IR retainer, HSMs for payment keys, or the in-house SOC alternative. Role notes now carry RBI's CISO expectations and better certification options.
 - **404s on the site.**
   - 10 docs pages linked to repository files outside `docs/`. Those links now go to GitHub.

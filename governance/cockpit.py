@@ -759,7 +759,7 @@ ol.do{margin:.6rem 0 0;padding-left:1.4rem}ol.do li{margin:.2rem 0}
 .inst{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));margin:14px 0}
 .gauge{display:flex;flex-direction:column;gap:2px;border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--card);color:var(--ink);text-decoration:none;min-height:84px}
 .gauge .lbl{font-size:.78rem;color:var(--mut);text-transform:uppercase;letter-spacing:.04em}.gauge b{font-size:1.05rem;line-height:1.25}
-.gauge.red{border:2px solid var(--r)}.gauge.red b{color:var(--r)}.gauge.amber{border:2px solid var(--a)}.gauge.quiet b{color:var(--mut);font-weight:600}
+.gauge .note{font-size:.8rem;color:var(--mut);overflow-wrap:anywhere}.gauge.red{border:2px solid var(--r)}.gauge.red b{color:var(--r)}.gauge.amber{border:2px solid var(--a)}.gauge.quiet b{color:var(--mut);font-weight:600}
 .lit{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 6px}.ann{border:1px solid var(--line);border-radius:99px;padding:3px 10px;font-size:.85rem;background:var(--card)}
 .ann.warn{border-color:var(--r)}.ann.warn b{color:var(--r)}.ann.caut{border-color:var(--a)}.ann.caut b{color:var(--a)}
 details.panel>summary{font-size:1.02rem}details.panel[open]>summary{margin-bottom:.6rem}
@@ -775,10 +775,10 @@ MASTER = {"red": "ACT", "amber": "WATCH", "green": "ALL CLEAR", "unknown": "NO D
 def instrument(m: dict) -> str:
     """One primary instrument: grey while nominal (the dark cockpit), coloured only when it needs the pilot."""
     st = m["status"] if m["status"] in ("red", "amber") else ("quiet" if m["status"] == "green" else "unknown")
-    val = str(m["value"])
-    val = val if len(val) <= 22 else val[:21] + "…"
+    val, _, note = str(m["value"]).partition(" (")              # "2.7% free (7.2 GB)": the reading large, its detail small, never cut mid-word
+    note = note.rstrip(")")
     return (f"<a class='gauge {st}' href='#systems' title='{E(m['why'])}'><span class='lbl'>{E(INST_LABEL.get(m['id'], m['label']))}</span><b>{E(val)}</b>"
-            f"<span class='muted'>{WORD[m['status']]}</span></a>")
+            + (f"<span class='note'>{E(note)}</span>" if note else "") + f"<span class='muted'>{WORD[m['status']]}</span></a>")
 
 
 def tile(m: dict) -> str:
@@ -803,7 +803,8 @@ def render(c: Collector, maps: dict, hist: list[dict], ai: str, now: float, targ
     bl = backlog(maps)
     par = pareto(bl)
     eis = eisenhower(c.metrics, bl)
-    nxt = (eis["do"] + eis["schedule"])[:3]
+    # Only what the person can act on today: a vital sign with its action. Gap-backlog items are work for the builders and stay in Mission planning.
+    nxt = [i for i in eis["do"] + eis["schedule"] if i["src"] == "vital sign"][:3]
     headline = {"red": f"{len(reds)} thing{'s' if len(reds) != 1 else ''} need attention today.", "amber": f"Healthy, with {len(ambs)} thing{'s' if len(ambs) != 1 else ''} to schedule.",
                 "green": "All clear: nothing measured is wrong.", "unknown": "Not enough data yet: start the estate and refresh."}[overall]
     stamp = time.strftime("%d %b %Y %H:%M %Z", time.localtime(now))

@@ -117,8 +117,8 @@ This list is generated from [`features.json`](features.json); the Command Center
 - [Docker MCP Toolkit](docs/securax/98-SHIP-AND-STORE-APPS.md)
 - [The CISO's ready reckoner](docs/securax/94-GOVERN.md)
 - [Names, not ports, and links that never break](docs/securax/99-NAMES-NOT-PORTS-AND-LINKS-THAT-NEVER-BREAK.md)
-- The Govern catalog's cost bands, corrected from that research
-- 404s on the site
+- Cockpit "do next" listed builders' work
+- Cockpit instruments cut readings mid-phrase
 
 **Release 0.2.0 - 2026-10-17:**
 
