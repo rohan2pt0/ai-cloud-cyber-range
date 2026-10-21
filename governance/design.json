@@ -10,6 +10,7 @@
   "contrast": "WCAG 2.2 AA, both themes, measured by guiding-map/tests/ui_audit.py",
   "phone_width_px": 390,
   "pages_on_the_standard": ["guiding-map/hub.html"],
-  "pages_to_move": {"portal/cockpit.html": "2026-12-15", "portal/reckoner/*": "2026-12-15", "guiding-map/index.html (Life OS)": "2027-01-31", "guiding-map/kit (Vantage and kit apps)": "2027-01-31"}
+  "generators_on_the_standard": {"governance/cockpit.py": "portal/cockpit.html", "governance/reckoner.py": "portal/reckoner/*", "governance/controls.py": "portal/navigator*"},
+  "brand_apps_with_the_basics": {"guiding-map/index.html": "the Life OS keeps its navy and gold", "guiding-map/kit/kit.css": "Vantage and every kit app keep their edition colours"}
  }
 }

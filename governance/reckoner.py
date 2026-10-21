@@ -18,20 +18,22 @@ from __future__ import annotations
 
 import argparse
 import html
+import importlib.util
 import json
 import pathlib
 import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
+_spec = importlib.util.spec_from_file_location("securax_design", ROOT / "governance" / "design.py")   # by path (LESSONS)
+_design = importlib.util.module_from_spec(_spec)
+_spec.loader.exec_module(_design)
 DATA = ROOT / "governance" / "reckoner"
 OUT = ROOT / "portal" / "reckoner"
 CAP_FIELDS = ("summary", "protects", "placement", "how", "pareto", "vendors", "cost", "rfp", "kpis", "pitfalls", "sources")
 ROLE_FIELDS = ("purpose", "responsibilities", "must", "good", "experience", "certs_must", "interview", "kpis", "salary", "sources")
 E = html.escape
 
-CSS = """:root{--bg:#f6f7f9;--card:#fff;--ink:#14202b;--mut:#5a6876;--line:#dde2e8;--acc:#2554c7;--g:#176f3d;--a:#8a5a00;--r:#c0392b}
-@media (prefers-color-scheme:dark){:root{--bg:#0f141a;--card:#18202a;--ink:#e8edf2;--mut:#9aa7b5;--line:#2b3744;--acc:#7aa2ff;--g:#4cc884;--a:#e3a63c;--r:#ff7a6b}}
-*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
+CSS = """*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
 main{max-width:980px;margin:0 auto;padding:16px}h1{font-size:1.45rem;margin:.3rem 0}h2{font-size:1.05rem;margin:1.2rem 0 .4rem}
 a{color:var(--acc)}.card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;margin:12px 0}
 .muted{color:var(--mut);font-size:.9rem}.tag{display:inline-block;border:1px solid var(--line);border-radius:99px;padding:0 9px;font-size:.8rem;margin-right:6px}
@@ -40,6 +42,7 @@ th{text-align:left;border-bottom:2px solid var(--line);padding:6px}td{border-bot
 .cols{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}.big{font-size:1.1rem;font-weight:650}
 details summary{cursor:pointer;font-weight:600}nav{font-size:.9rem}code{background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:1px 6px}
 .ask{border-left:6px solid var(--acc)}.tbl{overflow-x:auto}td,li,p,a{overflow-wrap:anywhere}"""
+CSS = _design.css() + CSS                     # the shared tokens and basics (doc 100), from governance/design.json
 
 
 def _govern():
@@ -106,7 +109,7 @@ def _sources(items) -> str:
 
 
 def _page(title: str, body: str, crumbs: str) -> str:
-    return (f"<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
+    return (f"<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1,viewport-fit=cover'>"
             f"<title>{E(title)} · Ready reckoner</title><style>{CSS}</style></head><body><main><nav>{crumbs}</nav>{body}"
             "<p class='muted'>Indicative, for planning. Prices are bands for India excluding GST: get three quotes. Check each source on the day.</p>"
             "</main></body></html>")

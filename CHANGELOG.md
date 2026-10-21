@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **One look across the estate** (doc 100 §6). The cockpit, the 78 ready-reckoner pages and the control navigator take their colours and basics from `governance/design.py`, made from `design.json`. Change a colour once and every page follows. The navigator now follows light or dark. The Life OS and the kit apps keep their brand colours but gain a visible keyboard focus, calm motion and 44 px targets.
 - **A calm Command Center** (doc 100).
   - It opens on one honest status line ("2 things need you", "All clear", "Status may be out of date", "Status unknown") and at most three things to do, each with why and a one-press command.
   - Everything that is fine is folded: system health is one line, and the full library is under "Explore", with search as you type.
@@ -28,6 +29,9 @@ for the versioning and release policy.
   - `site domain NAME` prints the exact DNS records and the one GitHub setting.
   - `site live` switches every link to your domain only after checking that the domain serves the site over HTTPS.
 ### Fixed
+- **Contrast on the control navigator.** Heat-map numbers in light mode and N/A cells in dark mode were below WCAG AA. Both pass now. The cockpit's area table no longer runs off a phone screen.
+- **Cockpit "do next" listed builders' work.** A gap-backlog item such as "Implement CCI scoring" sat among your actions with no command. Only vital signs you can act on are listed now; the backlog stays in Mission planning.
+- **Cockpit instruments cut readings mid-phrase** ("plain HTTP (browsers …"). The reading now shows whole, with its detail in small type beneath.
 - **The Govern catalog's cost bands, corrected from that research.** Several were too low, for example DLP, SIEM, PAM, IGA, ZTNA, MFA, email security and backup. Others were missing the IR retainer, HSMs for payment keys, or the in-house SOC alternative. Role notes now carry RBI's CISO expectations and better certification options.
 - **404s on the site.**
   - 10 docs pages linked to repository files outside `docs/`. Those links now go to GitHub.

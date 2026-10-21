@@ -64,3 +64,11 @@ def test_the_page_is_a_dark_cockpit(monkeypatch):
     assert head.count("class='master") == 1 and head.count("<li") <= 3
     assert "<details class='card panel' id='govern'>" in html and "<details class='card panel' id='systems'>" in html
     assert "<details open class='card panel'" not in html and "<script" not in html
+    assert "gap backlog" not in head and "Implement" not in head     # builders' backlog stays in Mission planning, never in "do next"
+
+
+def test_an_instrument_shows_its_reading_whole_and_its_detail_small():
+    m = {"id": "disk", "label": "Disk", "value": "2.7% free (7.2 GB)", "status": "red", "why": "w"}
+    out = cockpit.instrument(m)
+    assert "<b>2.7% free</b>" in out and "<span class='note'>7.2 GB</span>" in out and "…" not in out
+    assert "<span class='note'>" not in cockpit.instrument({**m, "value": "none yet"})

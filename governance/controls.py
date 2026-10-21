@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import datetime as dt
 import html
+import importlib.util
 import json
 import math
 import pathlib
@@ -326,30 +327,41 @@ def vital_gaps(data: dict, cls: str, sx: dict, n: int = 10, pressure: dict | Non
 # ---------------------------------------------------------------------------------------------------- the navigator page
 E = html.escape
 CSS = """
-:root{--bg:#0b1016;--card:#121a23;--ink:#e6edf3;--mut:#8b98a6;--line:#25313d;--g:#3fb950;--a:#d29922;--r:#f85149;--b:#58a6ff;--u:#3a4652;--na:#1a222b}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.45 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
 main{max-width:1400px;margin:0 auto;padding:14px}a{color:var(--b)}h1{font-size:1.3rem;margin:.1rem 0}h2{font-size:1rem;margin:0 0 .5rem;letter-spacing:.04em;text-transform:uppercase;color:var(--mut)}
 .card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:14px;margin:12px 0}
 .annun{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}
-.lamp{border:1px solid var(--line);border-radius:8px;padding:10px;background:#0e151d}.lamp b{display:block;font-size:1.6rem}
-.lamp.warn{border-color:var(--r);background:#2a1214}.lamp.caut{border-color:var(--a);background:#2a2110}.lamp.ok b{color:var(--g)}
-.lamp.warn b{color:var(--r)}.lamp.caut b{color:var(--a)}.muted{color:var(--mut)}code{background:#0e151d;border:1px solid var(--line);border-radius:5px;padding:0 5px}
+.lamp{border:1px solid var(--line);border-radius:8px;padding:10px;background:var(--bg)}.lamp b{display:block;font-size:1.6rem}
+.lamp.warn{border-color:var(--r);background:var(--card)}.lamp.caut{border-color:var(--a);background:var(--card)}.lamp.ok b{color:var(--g)}
+.lamp.warn b{color:var(--r)}.lamp.caut b{color:var(--a)}.muted{color:var(--mut)}code{background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:0 5px}
 .nav{display:grid;grid-auto-flow:column;grid-auto-columns:minmax(76px,1fr);gap:4px;overflow-x:auto}
 .col h3{font-size:.72rem;margin:0 0 4px;color:var(--mut);text-align:center;min-height:2.6em}.cell{display:block;font-size:.66rem;padding:3px 2px;margin:0 0 3px;border-radius:3px;text-align:center;color:#fff;text-decoration:none;border:1px solid transparent}
 .cell.proven,.cell.met{background:#1f6f3b}.cell.partial,.cell.near{background:#7a5a12}.cell.far{background:#8e2a24}.cell.org{background:var(--u)}
-.cell.na{background:var(--na);color:#4b5866}.cell.crit{border-color:#fff}.cell.should{opacity:.82}.cell.may{opacity:.6}
+.cell.na{background:var(--na);color:var(--mut)}.cell.crit{border-color:var(--ink)}.cell.should{opacity:.82}.cell.may{opacity:.6}
 .legend span{display:inline-flex;align-items:center;gap:5px;margin-right:14px}.legend i{width:14px;height:14px;border-radius:3px;display:inline-block}
 .two{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(min(420px,100%),1fr))}
 .hm{border-collapse:collapse}.hm td,.hm th{width:58px;height:40px;text-align:center;border:1px solid var(--line);font-size:.85rem}
 .bar{height:12px;border-radius:3px;background:var(--g);display:inline-block;vertical-align:middle}.bar.p{background:var(--a)}.bar.o{background:var(--u)}
 table.t{border-collapse:collapse;width:100%}@media (max-width:600px){table.t{display:block;overflow-x:auto;max-width:100%}}.card{min-width:0}table.t td,table.t th{border-bottom:1px solid var(--line);padding:5px 6px;text-align:left;vertical-align:top}
-.profiles a{display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border:1px solid var(--line);border-radius:99px;text-decoration:none;font-size:.8rem}.profiles a.on{background:var(--b);color:#000}
+.profiles a{display:inline-block;margin:2px 4px 2px 0;padding:2px 8px;border:1px solid var(--line);border-radius:99px;text-decoration:none;font-size:.8rem}.profiles a.on{background:var(--b);color:var(--bg)}
 .det{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:9;overflow:auto;padding:4vh 12px}.det:target{display:block}
 .det .box{max-width:820px;margin:0 auto;background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px}
 .det .x{float:right;text-decoration:none}.det th{width:30%;color:var(--mut);font-weight:600}.cell:hover,.cell:focus{outline:2px solid var(--b)}
 svg text{fill:var(--ink);font-size:11px}svg .ring{fill:none;stroke:var(--line)}svg .sp{stroke:var(--line)}
 svg .s-t{fill:none;stroke:var(--mut);stroke-dasharray:4 3}svg .s-sx{fill:rgba(88,166,255,.25);stroke:var(--b)}svg .s-me{fill:rgba(63,185,80,.25);stroke:var(--g)}
 """
+# The shared tokens and basics (doc 100); the navigator keeps only its grid colours. It used to be dark only; it now follows the device.
+
+
+def _design():
+    """governance/design.py, loaded by path (LESSONS: another test may own a module of the same name)."""
+    spec = importlib.util.spec_from_file_location("securax_design", pathlib.Path(__file__).resolve().parent / "design.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+CSS = _design().css({"--u": "#5f6b78", "--na": "#e9ecef"}, {"--u": "#3a4652", "--na": "#1a222b"}) + CSS
 
 
 def slug(cls: str) -> str:
@@ -439,7 +451,7 @@ def heatmap(data: dict, cls: str, risks: list | None = None, sx: dict | None = N
             s = imp * li
             col = "#8e2a24" if s >= 20 else "#7a3a12" if s >= 12 else "#7a5a12" if s >= 6 else "#1f6f3b"
             tip = f"Likelihood {li} × impact {imp} = {s}: " + ", ".join(ids[:25]) + (" …" if len(ids) > 25 else "") if ids else ""
-            tds.append(f"<td style='background:{col}' title='{E(tip)}'>{len(ids) or ''}</td>")
+            tds.append(f"<td style='background:{col};color:#fff' title='{E(tip)}'>{len(ids) or ''}</td>")   # white on the heat colour, in both themes
         h.append(f"<tr><th>{imp}</th>{''.join(tds)}</tr>")
     src = []
     if n["you"]:
@@ -517,7 +529,7 @@ def page(data: dict, cls: str, sx: dict, dom: dict, risks: list | None = None, r
     top = base_class(data)
     misses = [] if cls == CEILING else dom.get(cls, []) if cls != top else []
     stamp = dt.datetime.now().strftime("%d %b %Y %H:%M")
-    h = [f"<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'>"
+    h = [f"<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1,viewport-fit=cover'>"
          f"<title>Control navigator · {E(cls)}</title><style>{CSS}</style></head><body><main>"]
     h.append(f"<div class='muted'>SecuRAX control navigator · {E(data['meta'].get('version') or data['meta']['source'])} · {'built in' if data['meta'].get('starter') else 'imported ' + E(data['meta']['imported'])} · "
              f"page {E(stamp)} · <a href='/portal/cockpit.html'>Cockpit</a> · <a href='/hub.html'>All apps</a></div>")
