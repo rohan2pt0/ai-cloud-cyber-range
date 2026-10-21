@@ -5,6 +5,7 @@
     ./securax config check                validate both files, and fail if a brand value is hardwired in code
     ./securax config enabled <name>       exit 0 when an integration is switched on (used by `go` and scripts)
     ./securax config render FILE...       replace {{KEY}} placeholders in FILEs with the values (the site build uses it)
+    ./securax config site-url             the public address of the site: your domain once SITE_LIVE=yes, else GitHub Pages
     eval "$(python3 governance/config.py env)"   export the values into a shell script
 
 brand.env        KEY=value lines; an environment variable with the same name wins. Every value is optional.
@@ -23,7 +24,8 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 BRAND_FILE = ROOT / "brand.env"
 INTEGRATIONS_FILE = ROOT / "integrations.txt"
 KNOWN = {"tailscale", "ntfy", "webhook", "cron", "regwatch", "backup", "cloudflare-pages", "github", "tls"}
-NEUTRAL = {"BRAND_NAME": "", "PRODUCT_NAME": "SecuRAX", "SITE_DOMAIN": "", "CONTACT_EMAIL": "", "REPO_SLUG": "", "IMAGE_REGISTRY": ""}
+NEUTRAL = {"BRAND_NAME": "", "PRODUCT_NAME": "SecuRAX", "SITE_DOMAIN": "", "SITE_LIVE": "", "CONTACT_EMAIL": "", "REPO_SLUG": "",
+           "IMAGE_REGISTRY": ""}
 # Values that must never be written into code: the brand-specific ones (PRODUCT_NAME is the product, so it may appear).
 GUARDED = ("BRAND_NAME", "SITE_DOMAIN", "CONTACT_EMAIL")
 # Vendor names that must stay "good to have": they may be named in docs and in brand/integration files, not in code paths.
@@ -52,8 +54,24 @@ def load(path: pathlib.Path | None = None, environ: dict | None = None) -> dict[
     return out
 
 
+def site_url(vals: dict[str, str]) -> str:
+    """Where the public site really answers (doc 99). Your domain only once it is live (SITE_LIVE=yes, which
+    ./securax site live sets after checking DNS and HTTPS); until then the GitHub Pages address, which always works.
+    Printing a domain that does not answer yet is how every link on the site turned into an error."""
+    dom = vals.get("SITE_DOMAIN", "").strip().lower()
+    if dom and vals.get("SITE_LIVE", "").strip().lower() in ("yes", "true", "1"):
+        return f"https://{dom}/"
+    slug = vals.get("REPO_SLUG", "").strip()
+    if re.fullmatch(r"[\w.-]+/[\w.-]+", slug):
+        owner, repo = slug.split("/")
+        return f"https://{owner.lower()}.github.io/{repo}/" if repo.lower() != f"{owner.lower()}.github.io" else f"https://{repo.lower()}/"
+    return ""
+
+
 def values(**kw) -> dict[str, str]:
-    return {k: v for k, (v, _) in load(**kw).items()}
+    vals = {k: v for k, (v, _) in load(**kw).items()}
+    vals["SITE_URL"] = site_url(vals)
+    return vals
 
 
 def integrations(path: pathlib.Path | None = None) -> set[str] | None:
@@ -123,6 +141,9 @@ def main(argv: list[str] | None = None) -> int:
         import shlex
         for k, v in values().items():
             print(f"export {k}={shlex.quote(v)}")
+        return 0
+    if cmd == "site-url":
+        print(values()["SITE_URL"])
         return 0
     if cmd == "enabled" and len(argv) == 2:
         return 0 if enabled(argv[1]) else 1

@@ -46,6 +46,7 @@
     {"id": "venture", "critical": false, "state": "per-node", "needs": [], "full": ["vault"], "when_off": "The model and its example numbers ship with the code; your own log lives in that machine's vault.", "fix": "copy the vault to the always-on machine"},
     {"id": "suite", "critical": false, "state": "per-node", "needs": [], "full": [], "when_off": "The suite is a file in the code: it reads the same on every machine.", "fix": "nothing"},
     {"id": "ship", "critical": false, "state": "per-node", "needs": [], "full": ["vault"], "when_off": "Without GitHub or a token nothing ships; local work, verify and autobuild go on, and the next pass catches up.", "fix": "run the pr-watch routine on any machine with the token"},
+    {"id": "names", "critical": false, "state": "per-node", "needs": ["estate"], "full": ["estate"], "when_off": "Each machine serves its own names; the public site is on GitHub Pages, so it answers with every machine off.", "fix": "nothing"},
     {"id": "store-apps", "critical": false, "state": "per-node", "needs": [], "full": [], "when_off": "A store app works offline from its own files; only sync waits for the estate.", "fix": "nothing"},
     {"id": "channel", "critical": false, "state": "per-node", "needs": ["estate"], "full": ["estate"], "when_off": "Each node follows its own channel (stable or beta).", "fix": "nothing"}
   ],

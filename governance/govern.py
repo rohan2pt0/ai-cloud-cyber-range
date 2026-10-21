@@ -32,6 +32,15 @@ import pathlib
 import re
 import sys
 
+
+def _addr():
+    """governance/addr.py, loaded by path (this module is itself loaded by path in tests): the address a person opens."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("securax_addr", pathlib.Path(__file__).resolve().parent / "addr.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 CATALOG = ROOT / "governance" / "govern.json"
 TEMPLATES = ROOT / "templates" / "govern"
@@ -525,7 +534,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     report(res)
     if write_state(res):
-        print("  (Vantage, the CISO app, shows this summary too: http://localhost:8088/vantage/)")
+        print(f"  (Vantage, the CISO app, shows this summary too: {_addr().web_url('hub', 8088, '/vantage/')})")
     return 0
 
 

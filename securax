@@ -30,6 +30,13 @@ web_url(){ if tls_on; then printf 'https://%s.%s%s' "$1" "$(ev SECURAX_DOMAIN se
 # web_up NAME PLAIN_PORT -> is that web endpoint answering (verifying the certificate and the name when the edge is on)
 web_up(){ if tls_on; then _h="$1.$(ev SECURAX_DOMAIN securax.localhost)"; curl -fsS -m 3 --cacert "${SECURAX_TLS_DIR:-$HOME/.securax/tls}/ca.crt" --resolve "$_h:443:127.0.0.1" "https://$_h/" >/dev/null 2>&1; else curl -fsS -m 3 "http://localhost:$2" >/dev/null 2>&1; fi; }
 ev(){ v="${!1:-}"; [ -z "$v" ] && v="$(sed -n "s/^$1=//p" "$ROOT/local/compose/.env" 2>/dev/null | head -1)"; printf '%s' "${v:-${2:-}}"; }
+# Names, not ports (doc 99). names_on: switch every address to https://NAME.<domain>, trust the certificate, and keep the
+# old http://localhost:8088 answering on this machine for 30 days so the Life OS can hand its data over in one click.
+names_on(){ python3 "$ROOT/governance/tls.py" on || return 1
+  python3 "$ROOT/governance/tls.py" trust --apply || C "Trust the certificate later with:  ./securax tls trust --apply"
+  skv "$ROOT/local/compose/.env" NAMES_MOVE_UNTIL "$(date -d '+30 days' +%F 2>/dev/null || date -v+30d +%F)"; skv "$ROOT/local/compose/.env" NAMES_ASKED 1; }
+# estate_home: tell the Life OS where home is (guiding-map/estate-home.json, not in git): the old address then offers the move.
+estate_home(){ _eh="$ROOT/guiding-map/estate-home.json"; if tls_on; then printf '{"home": "%s"}\n' "$(web_url hub 8088 /)" > "$_eh"; else rm -f "$_eh"; fi; }
 if internal_on; then export SSL_CERT_FILE="$(tls_home)/ca-bundle.pem" REQUESTS_CA_BUNDLE="$(tls_home)/ca-bundle.pem" CURL_CA_BUNDLE="$(tls_home)/ca-bundle.pem"; fi
 
 # shortcut_file — the one-line launcher that lets you type `securax <command>` from ANY folder (the #1 reason a command "does not work" is being in the wrong folder).
@@ -242,6 +249,15 @@ case "$cmd" in
     fi
     [ -s "$GENCFG" ] || cp "$ROOT/local/compose/litellm-config.yaml" "$GENCFG"
     # Layered start: each step is a fallback for the one before (offline? image-build failed? low memory?).
+    # Names, not ports (doc 99): asked once, in a terminal, default yes. Scripts and the nightly update are never asked.
+    if ! tls_on && [ -z "$(ev NAMES_ASKED)" ] && [ -t 0 ] && [ "$(ev SECURAX_NAMES)" != off ]; then
+      C "Use names like https://$(ev SECURAX_DOMAIN securax.localhost | sed 's/^/hub./') instead of http://localhost:8088? Your data moves over in one click. [Y/n]"   # addr-ok: the question names it
+      read -r _nm; case "$_nm" in n|N|no) skv "$ENVF" NAMES_ASKED 1; C "  Kept localhost addresses. Switch any time:  ./securax names" ;;
+        *) names_on || C "  Names could not start (see above); localhost addresses keep working. Try again:  ./securax names" ;; esac
+    fi
+    # For 30 days after the switch the old address answers on this machine only, so the Life OS can hand its data over.
+    if tls_on && [[ "$(ev NAMES_MOVE_UNTIL)" > "$(date +%F)" ]]; then export COMPOSE_FILE="$(ev COMPOSE_FILE):tls-move.yml"; fi
+    estate_home
     CORE="gateway litellm ollama open-webui guiding-map estate-sync"
     if tls_on; then python3 "$ROOT/governance/tls.py" render >/dev/null 2>&1 || C "Could not write the HTTPS edge configuration: run  ./securax tls render"; CORE="$CORE tls-edge"; [ -n "$SVCS" ] && SVCS="$SVCS tls-edge"
       if internal_on; then SIDE="gateway-tls litellm-tls ollama-tls open-webui-tls estate-sync-tls"; CORE="$CORE $SIDE"; [ -n "$SVCS" ] && SVCS="$SVCS $SIDE"; C "Internal TLS is ON: the services talk to each other over HTTPS too."; fi; C "TLS edge is ON: the estate is reached over HTTPS only (./securax tls status)."; fi
@@ -259,7 +275,7 @@ case "$cmd" in
       # the estate works the same, nothing is lost, and the user is not left with nothing running.
       if clash && tls_on; then
         C "Port 80 or 443 on this computer is already used by another program, so the https://hub.securax.localhost names cannot start."
-        C "→ Switching back to http://localhost:8088 by itself (nothing is lost; ./securax tls on tells you how to free the port)."
+        C "→ Switching back to http://localhost:8088 by itself (nothing is lost; ./securax tls on tells you how to free the port)."   # addr-ok: names failed
         python3 "$ROOT/governance/tls.py" off >/dev/null
         docker ps -aq --filter label=com.docker.compose.service=tls-edge | xargs -r docker rm -f >/dev/null 2>&1 || true
         rm -f "$UPLOG"; exec "$0" "$@"
@@ -998,6 +1014,10 @@ EOF2
     shift; python3 "$ROOT/governance/online.py" "${@:-status}" || exit $?
     case "${1:-status}" in setup|google|allow|remove|join) exec "$0" up ;; esac
     ;;
+  site)
+    # The public site's address, and your own domain without a broken link: status | domain NAME | live | off | check (doc 99).
+    shift; exec python3 "$ROOT/governance/website.py" "${@:-status}"
+    ;;
   govern)
     # For decision makers: where we stand on governance, people, process and technology; minimum basic vs highest possible;
     # the 5W1H and the budget for each gap; the team; the Board report; the template pack (doc 94).
@@ -1048,12 +1068,12 @@ EOF2
     # Professional addresses (https://hub.securax.localhost, chat., pass. ...) instead of localhost:port, in one guided step (doc 40).
     if tls_on; then C "Names are already on: $(web_url hub 8088 /hub.html)"; exit 0; fi
     C "This switches every address to a name over HTTPS (https://hub.securax.localhost, https://chat.securax.localhost ...)."
-    C "Your Guiding Map data is kept per address. Before you go on: open http://localhost:8088 > Ops > System health > Export backup,"
-    C "then import that file on the new address (or turn on cross-device sync, which restores it by itself)."
-    if [ -t 0 ]; then printf "Switch now? [y/N] "; read -r _a; case "$_a" in y|Y|yes) ;; *) C "Nothing changed."; exit 0 ;; esac; fi
-    python3 "$ROOT/governance/tls.py" on || exit 1
-    python3 "$ROOT/governance/tls.py" trust --apply || C "Trust the certificate later with:  ./securax tls trust --apply"
-    "$0" down >/dev/null 2>&1 || true; SECURAX_NO_OPEN=1 "$0" up && C "✔ Open: $(web_url hub 8088 /hub.html)"
+    C "Your Life OS data moves with one click: for 30 days the old address shows a 'Move my data there' button."
+    if [ -t 0 ]; then printf "Switch now? [Y/n] "; read -r _a; case "$_a" in n|N|no) C "Nothing changed."; exit 0 ;; esac; fi
+    names_on || exit 1
+    "$0" down >/dev/null 2>&1 || true
+    if SECURAX_NO_OPEN=1 "$0" up; then C "✔ Open: $(web_url hub 8088 /hub.html)"
+      C "  Then open the old address once (http://localhost:8088) and press 'Move my data there'."; fi   # addr-ok: the old address, on purpose
     ;;
   passwords)
     # The estate's password manager (Vaultwarden, doc 84).   ./securax passwords status | lock | unlock | open
@@ -1676,7 +1696,7 @@ EOF2
     [ -z "$CID" ] && { C "ollama isn't running — start the estate first with  ./securax up"; exit 1; }
     C "Pulling local model '$LM' (first time can take a few minutes)…"
     if docker exec "$CID" ollama pull "$LM"; then
-      C "Done ✔  In Chat (http://localhost:3000) pick 'bank-assistant-local' — free, sovereign, no key."
+      C "Done ✔  In Chat ($(web_url chat 3000 /)) pick 'bank-assistant-local' — free, sovereign, no key."
     else
       C "Pull failed — check your internet, or run  ./securax doctor  to see the real error."
     fi
@@ -1818,7 +1838,7 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
         ( cd "$ROOT/local/compose" && docker compose --profile ai up -d litellm gateway >/dev/null 2>&1 || true
           docker compose --profile ai restart litellm gateway >/dev/null 2>&1 || true )
         ready_wait 150 || C "  (the router is still starting — give it a minute)"
-        C "Done. Open Chat (http://localhost:3000) and pick the new model from the dropdown." ;;
+        C "Done. Open Chat ($(web_url chat 3000 /)) and pick the new model from the dropdown." ;;
       chain)
         # Reorder the BUILD chain without editing the repo (kept in .env as CHAIN_BUILDER; local always stays last; Chat chains are not editable).
         #   ./securax providers chain builder show | add ID [--before ID] | remove ID | reset
@@ -2027,6 +2047,7 @@ BUILD & KEEP IT HEALTHY
   online         use SecuRAX from any device like a SaaS app: your own addresses behind Google sign-in (setup once)
   continuity     the crisis plan: each scenario's RTO/RPO target vs today, the steps (show ID), safe drills (drill ID), the code mirror (mirror setup: a free private GitLab copy)
   resilience     every combination of your machines being off: what still works, each single point of failure, the fix
+  site           the public site's address; put it on your own domain (DNS records, check, then every link moves)
   govern         for decision makers: where we stand, minimum vs highest, 5W1H and budget per gap, team, Board report, templates, org/map pictures
   os             one kit, many apps: Vantage at /vantage/; build, new ID --name, check; mobile ID (Android/iOS), mobile-check ID
   ship           build without Claude Code: open the PR, watch CI, fix red with autobuild, merge when green (check, login, pr, watch)

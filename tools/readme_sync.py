@@ -78,7 +78,19 @@ def proofs() -> str:
             "and every night; pull requests run the ones their change can affect ([doc 68](docs/securax/68-CI-AT-AGENT-SCALE.md)).")
 
 
-PARTS = {"badge": badge, "whats-new": whats_new, "docs": docs_index, "proofs": proofs}
+def site() -> str:
+    """The site and docs links, from the one site address (doc 99): your domain once live, GitHub Pages until then."""
+    sys.path.insert(0, str(ROOT / "governance"))
+    import config
+    url = config.values()["SITE_URL"]
+    if not url:
+        return "> 📘 **Documentation:** in [`docs/`](docs/index.md). Every page is listed under [All documentation](#all-documentation) below."
+    shown = url.split("://", 1)[1].rstrip("/")
+    return (f"> 🌐 **Product site:** [{shown}]({url}) · 📘 **Documentation:** [{shown}/docs]({url}docs/) (source in `docs/`, "
+            "built by `mkdocs.yml`). Every page is listed under [All documentation](#all-documentation) below.")
+
+
+PARTS = {"badge": badge, "site": site, "whats-new": whats_new, "docs": docs_index, "proofs": proofs}
 
 
 def render(text: str) -> str:

@@ -8,6 +8,21 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
+### Added
+- **Names, not ports, and links that never break** (doc 99).
+  - `./securax go` asks once, default yes, to move every address to a name (`https://hub.securax.localhost` …).
+  - For 30 days the old `http://localhost:8088` offers **Move my data there**, which hands the Life OS data to the new address in one click, browser to browser.
+  - Every address the estate prints is a name once names are on; the new fitness check `no-raw-addresses` keeps it so.
+  - `./securax site` shows where the site answers.
+  - `site domain NAME` prints the exact DNS records and the one GitHub setting.
+  - `site live` switches every link to your domain only after checking that the domain serves the site over HTTPS.
+### Fixed
+- **404s on the site.**
+  - 10 docs pages linked to repository files outside `docs/`. Those links now go to GitHub.
+  - The strict docs build now fails on any broken link or anchor, where it used to only note them.
+  - `tools/linkcheck.py` checks every page of the built site in CI, and the links to other sites weekly.
+- **117 links to a domain with no DNS records.** The site, docs and README now use the GitHub Pages address until the domain is proven live.
+- 8 dead links to other sites, and the changelog's links to tags that were never created.
 ### Changed
 - **The cockpit is a dark cockpit.** One master lamp, at most three actions, six primary instruments that stay grey while all is well, lit annunciators only for problems, and every detail folded into panels with a one-line summary (Systems, Govern, Setup, AI briefing, Mission planning). The page is about a quarter of its old length. Badge colours now pass WCAG AA contrast in both themes.
 - **Govern needs no command.** Its panel is folded, and inside it shows the capability stack layer by layer (done, partial, missing basic, later tier), the organogram for the next tier (CISO, programme office, a column per function with its lead and roles), the next 10 gaps with their 5W1H, and the yearly cost. `./securax govern org` and `govern map` export both pictures as SVG for a Board deck.
@@ -612,6 +627,6 @@ First versioned public release. SecuRAX is a sovereign, local-first AI-security 
 - Fail-closed everywhere; no secrets in the repo (pattern-based PII/secret CI gate); SSRF + DNS-rebind
   defenses on the web agent; append-only audit trail for approved actions.
 
-[Unreleased]: https://github.com/rohan2pt0/ai-cloud-cyber-range/compare/v0.2.0...HEAD
-[0.2.0]: https://github.com/rohan2pt0/ai-cloud-cyber-range/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/rohan2pt0/ai-cloud-cyber-range/releases/tag/v0.1.0
+[Unreleased]: https://github.com/rohan2pt0/ai-cloud-cyber-range/compare/d82b4fd67cfef342b342780f04f952e2354534e4...main
+[0.2.0]: https://github.com/rohan2pt0/ai-cloud-cyber-range/commit/d82b4fd67cfef342b342780f04f952e2354534e4
+[0.1.0]: https://github.com/rohan2pt0/ai-cloud-cyber-range/commit/8e215f083121107d38fa15b9a1cff13454e39b67

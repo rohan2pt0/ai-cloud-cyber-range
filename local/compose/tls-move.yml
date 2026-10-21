@@ -1,0 +1,5 @@
+# Moving to names (doc 99): for 30 days after `./securax names`, the old Life OS address answers on THIS machine only
+# (127.0.0.1), so the app there can hand its data to the new https:// address in one click. `./securax up` adds this
+# file by itself while the window is open (NAMES_MOVE_UNTIL in .env) and stops adding it afterwards.
+services:
+  guiding-map: { ports: !override ["127.0.0.1:8088:80"] }

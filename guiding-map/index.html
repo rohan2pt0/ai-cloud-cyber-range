@@ -2659,6 +2659,81 @@ function renderPlaybook(){
         return true;
       }).catch(function () { return false; });
   };
+  // The move to names (doc 99): `./securax names` gives the estate addresses like https://hub.securax.localhost and writes
+  // estate-home.json with that address. Browsers keep data per address, so the old http://localhost:8088 still holds it. There
+  // the app shows one button; it opens the new address, which asks for the data, and the old page hands it over directly
+  // (postMessage, browser to browser, nothing leaves this machine). The new page accepts data only from a loopback address
+  // it was told about in its own link, and never replaces data it already has without a yes.
+  window.gmMoveAllowedFrom = function (origin) {
+    try { var u = new URL(origin); return u.protocol === "http:" && (u.hostname === "localhost" || u.hostname === "127.0.0.1") && u.origin === origin; }
+    catch (e) { return false; }
+  };
+  function moveSnapshot() {
+    var data = {};
+    for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (k !== "gm_moved_to") data[k] = localStorage.getItem(k); }
+    return data;
+  }
+  function moveBar(html) {
+    var b = document.getElementById("gmMoveBar");
+    if (!b) { b = document.createElement("div"); b.id = "gmMoveBar"; b.setAttribute("role", "status"); document.body.insertBefore(b, document.body.firstChild); }
+    b.style.cssText = "position:sticky;top:0;z-index:9000;background:var(--card);color:var(--text);border-bottom:2px solid var(--gold);padding:10px 14px;font-size:.9rem;";
+    b.innerHTML = html;
+  }
+  window.gmMoveStart = function (home) {
+    var to = new URL(home).origin, w = window.open(to + "/#gm-move=" + encodeURIComponent(location.origin), "_blank");
+    if (!w) { alert("Your browser blocked the new window. Allow pop-ups for this page, then press the button again."); return; }
+    function onMsg(ev) {
+      if (ev.origin !== to || !ev.data || typeof ev.data !== "object") return;
+      if (ev.data.type === "gm-move-ready") w.postMessage({ type: "gm-move-data", data: moveSnapshot() }, to);
+      if (ev.data.type === "gm-move-done") {
+        window.removeEventListener("message", onMsg);
+        S_("gm_moved_to", to);
+        moveBar("✔ Moved " + (+ev.data.n || 0) + " items to <b>" + esc(to) + "</b>. Use that address from now on; this old one is no longer needed.");
+      }
+    }
+    window.addEventListener("message", onMsg);
+  };
+  window.gmMoveOffer = function (home) {
+    if (!home || typeof home !== "string") return false;
+    var to; try { to = new URL(home).origin; } catch (e) { return false; }
+    if (to === location.origin || !/^https:$/.test(new URL(home).protocol)) return false;
+    var moved = G("gm_moved_to", "");
+    moveBar(moved === to
+      ? "Your data is at <b>" + esc(to) + "</b> now. <a href='" + esc(to) + "/'>Open it</a>."
+      : "SecuRAX now lives at <b>" + esc(to) + "</b>. <button class='btn-sm' id='gmMoveBtn'>Move my data there</button> "
+        + "<span class='muted'>(one click; nothing leaves this computer)</span>");
+    var btn = document.getElementById("gmMoveBtn");
+    if (btn) btn.onclick = function () { gmMoveStart(home); };
+    return true;
+  };
+  window.gmMoveReceive = function () {
+    var m = /^#gm-move=([^&]+)$/.exec(String(location.hash || ""));
+    if (!m) return false;
+    var from = decodeURIComponent(m[1]);
+    try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+    if (!gmMoveAllowedFrom(from) || !window.opener) return false;
+    function onMsg(ev) {
+      if (ev.origin !== from || !ev.data || ev.data.type !== "gm-move-data" || typeof ev.data.data !== "object") return;
+      window.removeEventListener("message", onMsg);
+      var data = ev.data.data, keys = Object.keys(data), mine = 0;
+      for (var i = 0; i < localStorage.length; i++) if (/^(gm_|sov)/.test(localStorage.key(i))) mine++;
+      if (mine > 5 && !confirm("This address already has its own data.\n\nReplace it with the " + keys.length + " items from " + from + "?")) return;
+      var n = 0;
+      keys.forEach(function (k) { if (typeof data[k] === "string") { localStorage.setItem(k, data[k]); n++; } });
+      try { (ev.source || window.opener).postMessage({ type: "gm-move-done", n: n }, from); } catch (e) {}
+      if (window.gmToast) gmToast("Moved " + n + " items here. Reloading…");
+      setTimeout(function () { location.reload(); }, 900);
+    }
+    window.addEventListener("message", onMsg);
+    window.opener.postMessage({ type: "gm-move-ready" }, from);
+    return true;
+  };
+  window.gmMoveInit = function () {
+    if (gmMoveReceive()) return;
+    if (!/^https?:$/.test(location.protocol) || typeof fetch === "undefined") return;
+    fetch("estate-home.json", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) { if (j && j.home) gmMoveOffer(String(j.home)); }).catch(function () {});
+  };
   function snapBase() { var c = cfg(); return String(c.url).replace(/\/+$/, "") + "/snapshots"; }
   window.gmSnapList = function () {
     var c = cfg(), box = document.getElementById("snapList"); if (!c || !box) return;
@@ -6722,6 +6797,7 @@ function renderPlaybook(){
     // Auto-fill example properties on first visit so the Property tab is explorable
     try { var pr = G("gm_props", null); if ((!pr || !pr.length) && window.P && window.P.example) { if (window.gmTplProp) gmTplProp(); } } catch (e) {}
     gmSyncLinkImport();
+    gmMoveInit();
     gmSyncInit();
     gmAccessPair();
     gmOdSync();

@@ -3,15 +3,19 @@
 # main: also publish to GitHub Pages once the owner has (1) Settings → Pages → Source: GitHub Actions and (2) set the
 # repository variable SITE_PAGES=true (Settings → Secrets and variables → Actions → Variables; DOCS_PAGES=true also works).
 # The domain is a variable, never code: SITE_DOMAIN in brand.env, or the repository variable SITE_DOMAIN, which wins.
+# Links use the domain only once SITE_LIVE=yes (./securax site live checks it); until then the GitHub Pages address (doc 99).
+# Every build checks that each internal link and image exists; a weekly run also checks the links to other sites.
 # Moving to another domain or host (Cloudflare Pages, Netlify, S3) changes that one value; the build is the same.
 name: docs
 on:
   pull_request:
-    paths: ["docs/**", "website/**", "brand.env", "mkdocs.yml", "CHANGELOG.md", "securax", ".github/workflows/docs.yml"]
+    paths: ["docs/**", "website/**", "brand.env", "mkdocs.yml", "CHANGELOG.md", "README.md", "securax", "governance/config.py", "tools/linkcheck.py", ".github/workflows/docs.yml"]
   push:
     branches: [main]
-    paths: ["docs/**", "website/**", "brand.env", "mkdocs.yml", "CHANGELOG.md", "securax", ".github/workflows/docs.yml"]
+    paths: ["docs/**", "website/**", "brand.env", "mkdocs.yml", "CHANGELOG.md", "README.md", "securax", "governance/config.py", "tools/linkcheck.py", ".github/workflows/docs.yml"]
   workflow_dispatch:
+  schedule:
+    - cron: "17 3 * * 1"   # Mondays: links to other sites go stale on their own
 permissions:
   contents: read
 concurrency:
@@ -27,17 +31,23 @@ jobs:
       - name: Build the product site and the docs (strict)
         env:
           SITE_DOMAIN: ${{ vars.SITE_DOMAIN }}
+          SITE_LIVE: ${{ vars.SITE_LIVE }}
           CONTACT_EMAIL: ${{ vars.CONTACT_EMAIL }}
         run: |
           [ -n "$SITE_DOMAIN" ] || unset SITE_DOMAIN          # an empty variable means: use brand.env
+          [ -n "$SITE_LIVE" ] || unset SITE_LIVE
           [ -n "$CONTACT_EMAIL" ] || unset CONTACT_EMAIL
           bash website/build.sh
+      - name: "Links to other sites (weekly report, never blocks)"
+        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        continue-on-error: true
+        run: python3 tools/linkcheck.py website --external
       - name: Keep the built site for publishing
-        if: github.event_name != 'pull_request' && (vars.SITE_PAGES == 'true' || vars.DOCS_PAGES == 'true')
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (vars.SITE_PAGES == 'true' || vars.DOCS_PAGES == 'true')
         uses: actions/upload-pages-artifact@v3
         with: { path: website }
   publish:
-    if: github.event_name != 'pull_request' && (vars.SITE_PAGES == 'true' || vars.DOCS_PAGES == 'true')
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (vars.SITE_PAGES == 'true' || vars.DOCS_PAGES == 'true')
     needs: build
     runs-on: ubuntu-latest
     permissions: { pages: write, id-token: write }

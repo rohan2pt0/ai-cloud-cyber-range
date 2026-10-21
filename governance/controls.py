@@ -28,6 +28,15 @@ import sys
 import xml.etree.ElementTree as ET
 import zipfile
 
+
+def _addr():
+    """governance/addr.py, loaded by path (this module is itself loaded by path in tests): the address a person opens."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("securax_addr", pathlib.Path(__file__).resolve().parent / "addr.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 LIB = ROOT / "vault" / "controls" / "library.json"
 PACKS = ROOT / "governance" / "controls" / "packs"
@@ -641,7 +650,7 @@ def main(argv: list[str] | None = None) -> int:
         scored = sum(1 for c in data["controls"] if c["assessment"].get("current") is not None)
         print(f"✔ {data['meta']['controls']} controls, {len(data['classes'])} classes imported into {LIB.relative_to(ROOT)} (private; {scored} scored)")
         for p in write_navigator(load())[:1]:
-            print(f"✔ navigator: {p.relative_to(ROOT)}  (http://localhost:8088/portal/navigator.html)")
+            print(f"✔ navigator: {p.relative_to(ROOT)}  ({_addr().web_url('hub', 8088, '/portal/navigator.html')})")
         return 0
     if cmd == "profile":
         data, cls = _need(), " ".join(argv[1:]) or CEILING
@@ -662,7 +671,7 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     if cmd == "navigator":
         ps = write_navigator(_need())
-        print(f"✔ wrote {len(ps)} pages; open http://localhost:8088/portal/navigator.html")
+        print(f"✔ wrote {len(ps)} pages; open {_addr().web_url('hub', 8088, '/portal/navigator.html')}")
         return 0
     if cmd == "gaps":
         data, cls = _need(), " ".join(argv[1:]) or CEILING

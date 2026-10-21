@@ -227,6 +227,21 @@
    "shows": "Vantage at /vantage/ on your phone: Today, Risks, Rhythm, OKRs, Progress"
   },
   {
+   "id": "names",
+   "group": "Keep it running",
+   "icon": "globe",
+   "name": "Names, not ports, and links that never break",
+   "added": "2026-10-21",
+   "what": "Every part of the estate at a name over HTTPS (hub, chat, docs, flows ...), asked once with a one-click move of the Life OS data; the site and docs on GitHub Pages until your own domain is proven live, then on it with one command; every build fails on a broken link.",
+   "open": {
+    "cmd": "./securax site"
+   },
+   "command": "site",
+   "doc": "securax/99-NAMES-NOT-PORTS-AND-LINKS-THAT-NEVER-BREAK.md",
+   "outcome": "You open https://hub.securax.localhost instead of remembering port numbers, and no page you or a visitor opens ends in a 404.",
+   "shows": "./securax names and ./securax site; the Command Center at its name; a red CI check if a link breaks"
+  },
+  {
    "id": "store-apps",
    "group": "Your own tools",
    "icon": "devices",

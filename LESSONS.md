@@ -39,4 +39,5 @@ autobuild adds one by itself when a red attempt turns green. Keep lines short: e
 - 2026-10-21 kit editions: json.dump re-indented vantage.json from ~400 to ~1,500 lines (compact objects exploded) → edit hand-formatted JSON with textual replacements, never a load-and-dump
 - 2026-10-21 ship merge: git checkout -B BR origin/main made the reset branch track origin/main, so the next push and status looked at main → push the reset branch with -u to track its own remote branch
 - 2026-10-21 update: a grep that crashed on a broken WSL turned a git network error into 'you may have local changes' → match in bash ( =~ ) and always print the tool's own last lines
+- 2026-10-21 site: docs linked repo files outside docs/ and the build only noted them (not_found: info), and every link used a brand domain with no DNS, so the published site 404'd → links to repo files go to GitHub via docs/hooks/re…
 <!-- lessons:end -->
