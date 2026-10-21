@@ -205,6 +205,20 @@ window.SECURAX_FEATURES = {
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/95-OS-KIT-VANTAGE/"
   },
   {
+   "id": "store-apps",
+   "group": "Your own tools",
+   "icon": "devices",
+   "name": "Apps for Android and iOS",
+   "what": "Turn any app built from the kit, or the Life OS, into an Android and iOS project in one command: a Capacitor project that works offline from the app's own files, a Trusted Web Activity manifest for the quick Android path, and a store-readiness check.",
+   "cmd": "./securax os mobile-check vantage",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "added": "2026-10-21",
+   "light": "amber",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/98-SHIP-AND-STORE-APPS/"
+  },
+  {
    "id": "gateway",
    "group": "Use AI safely",
    "icon": "shield",
@@ -259,6 +273,20 @@ window.SECURAX_FEATURES = {
    "added": "2026-10-20",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/83-BUILD-WITH-OPEN-MODELS/"
+  },
+  {
+   "id": "ship",
+   "group": "Use AI safely",
+   "icon": "loop",
+   "name": "Ship without Claude Code",
+   "what": "The pull-request loop, run by SecuRAX itself: open the PR from the repository's template, watch CI, and when it goes red, gather the failing logs into a brief and let autobuild fix it, one push a round. When everything is green and mergeable, merge and reset the branch. A routine runs it unattended on the always-on machine.",
+   "cmd": "./securax ship check",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "added": "2026-10-21",
+   "light": "amber",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/98-SHIP-AND-STORE-APPS/"
   },
   {
    "id": "rollback",

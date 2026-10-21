@@ -227,6 +227,21 @@
    "shows": "Vantage at /vantage/ on your phone: Today, Risks, Rhythm, OKRs, Progress"
   },
   {
+   "id": "store-apps",
+   "group": "Your own tools",
+   "icon": "devices",
+   "name": "Apps for Android and iOS",
+   "added": "2026-10-21",
+   "what": "Turn any app built from the kit, or the Life OS, into an Android and iOS project in one command: a Capacitor project that works offline from the app's own files, a Trusted Web Activity manifest for the quick Android path, and a store-readiness check.",
+   "open": {
+    "cmd": "./securax os mobile-check vantage"
+   },
+   "command": "os",
+   "doc": "securax/98-SHIP-AND-STORE-APPS.md",
+   "outcome": "An app you built for yourself can be in a store without rewriting it, and you know in advance what a reviewer will ask for.",
+   "shows": "./securax os mobile vantage writes the project; mobile-check names what is missing"
+  },
+  {
    "id": "gateway",
    "group": "Use AI safely",
    "name": "AI security gateway",
@@ -289,6 +304,21 @@
    "icon": "code",
    "outcome": "You change your own tools without hiring anyone or waiting.",
    "shows": "the autobuild PR and its green checks"
+  },
+  {
+   "id": "ship",
+   "group": "Use AI safely",
+   "icon": "loop",
+   "name": "Ship without Claude Code",
+   "added": "2026-10-21",
+   "what": "The pull-request loop, run by SecuRAX itself: open the PR from the repository's template, watch CI, and when it goes red, gather the failing logs into a brief and let autobuild fix it, one push a round. When everything is green and mergeable, merge and reset the branch. A routine runs it unattended on the always-on machine.",
+   "open": {
+    "cmd": "./securax ship check"
+   },
+   "command": "ship",
+   "doc": "securax/98-SHIP-AND-STORE-APPS.md",
+   "outcome": "You build SecuRAX with SecuRAX alone: a red pull request gets fixed and merged without you pasting logs into a chat.",
+   "shows": "./securax ship check and ship watch; your phone when a PR is merged or needs you"
   },
   {
    "id": "rollback",

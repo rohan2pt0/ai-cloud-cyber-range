@@ -1014,6 +1014,11 @@ EOF2
     #   ./securax venture | log time|money|revenue AMOUNT "what" | plan KEY=VALUE ... | ask | json
     shift; exec python3 "$ROOT/governance/venture.py" "${@:-report}"
     ;;
+  ship)
+    # The pull-request loop without Claude Code (doc 98): open the PR, watch CI, on red brief autobuild and push one fix a round,
+    # on green and mergeable squash-merge and reset the branch.  ./securax ship check | login | pr | status [N] | watch [N] [--fix 2] [--merge]
+    shift; exec python3 "$ROOT/lifecycle/ship.py" "${@:-check}"
+    ;;
   suite)
     # Built for one, ready for many (doc 97): editions, how ready each is to sell, the shared platform, datasheets, and the check
     # that every feature declares its edition and platform services.  ./securax suite | components | sheet EDITION | check | json
@@ -2021,7 +2026,8 @@ BUILD & KEEP IT HEALTHY
   continuity     the crisis plan: each scenario's RTO/RPO target vs today, the steps (show ID), safe drills (drill ID), the code mirror (mirror setup: a free private GitLab copy)
   resilience     every combination of your machines being off: what still works, each single point of failure, the fix
   govern         for decision makers: where we stand, minimum vs highest, 5W1H and budget per gap, team, Board report, templates
-  os             one kit, many apps: Vantage (the CISO's operating system) at /vantage/; build, new ID --name, check
+  os             one kit, many apps: Vantage at /vantage/; build, new ID --name, check; mobile ID (Android/iOS), mobile-check ID
+  ship           build without Claude Code: open the PR, watch CI, fix red with autobuild, merge when green (check, login, pr, watch)
   suite          built for one, ready for many: editions, readiness to sell, the shared platform, datasheets (sheet EDITION)
   venture        is it paying its way? break-even, payback, unit economics (your time counted); log, plan, ask
   progress       is it making you better off? your rhythm, how much stronger the estate got, the one next step

@@ -112,6 +112,7 @@ nav:
       - Vantage, the CISO's operating system: securax/95-OS-KIT-VANTAGE.md
       - One platform, many products: securax/96-ONE-PLATFORM-MANY-PRODUCTS.md
       - Built for one, ready for many: securax/97-BUILT-FOR-ONE-READY-FOR-MANY.md
+      - Leave Claude Code, and store apps: securax/98-SHIP-AND-STORE-APPS.md
   - How-to guides:
       - AI providers and plugins: securax/22-PLUGINS-AND-PROVIDERS.md
       - Integrations: securax/07-INTEGRATIONS.md

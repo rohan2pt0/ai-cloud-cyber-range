@@ -336,5 +336,23 @@
     "enabled": true,
     "once": true,
     "kind": "nudge"
+  },
+  {
+    "id": "pr-watch",
+    "cron": "*/15 * * * *",
+    "command": [
+      "./securax",
+      "ship",
+      "watch",
+      "--all",
+      "--once",
+      "--fix",
+      "2",
+      "--merge"
+    ],
+    "description": "Every 15 minutes: look at every pull request this machine opened; when CI is red, let autobuild fix it (at most 2 rounds, one push each); when it is green and mergeable, merge it and reset the branch (doc 98). Off until you run ./securax ship login, then ./securax routines on pr-watch.",
+    "enabled": false,
+    "once": true,
+    "kind": "guard"
   }
 ]

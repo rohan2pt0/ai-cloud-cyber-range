@@ -19,6 +19,7 @@ import argparse
 import hashlib
 import html as _h
 import json
+import os
 import pathlib
 import re
 import shutil
@@ -248,6 +249,125 @@ def check() -> list[str]:
     return probs
 
 
+# ------------------------------------------------------------------------------------------------ store apps (doc 98)
+CAPACITOR = "8.0.0"   # pinned: a store build must be reproducible; raise it on purpose, after reading the upgrade notes
+MOBILE_OUT = ROOT / "build" / "mobile"
+
+
+def _brand(key: str, default: str = "") -> str:
+    be = ROOT / "brand.env"
+    m = re.search(rf"^{key}=(\S+)", be.read_text("utf-8"), re.M) if be.exists() else None
+    return os.environ.get(key) or (m.group(1) if m else default)
+
+
+def app_id(eid: str) -> str:
+    """A store package id from the brand's own domain: example.org + vantage -> org.example.vantage."""
+    parts = [p for p in _brand("SITE_DOMAIN", "example.org").lower().split(".") if p][::-1]
+    parts.append(re.sub(r"[^a-z0-9]", "", eid) or "app")
+    return ".".join(p if p[0].isalpha() else "a" + p for p in parts)
+
+
+def mobile_source(eid: str) -> tuple[dict, dict[str, bytes]]:
+    """The app's own files and its edition (the Life OS is the one app not built from the kit)."""
+    if eid == "lifeos":
+        man = json.loads((GM / "manifest.json").read_text("utf-8"))
+        files = {n: (GM / n).read_bytes() for n in ("index.html", "manifest.json", "sw.js")}
+        return {"id": "lifeos", "name": man.get("short_name", "Life OS"), "tagline": man.get("description", ""), "theme": {"bg": man.get("theme_color", "#0d1f35")}}, files
+    E = editions()
+    if eid not in E or E[eid].get("template"):
+        raise ValueError(f"no app {eid!r}: ./securax os lists them (or use lifeos)")
+    return E[eid], render(E[eid])
+
+
+def mobile_problems(eid: str) -> list[tuple[str, str, str]]:
+    """Store readiness, as (level, what, fix): 'fail' blocks a store build, 'warn' risks a review comment."""
+    e, files = mobile_source(eid)
+    page = files["index.html"].decode("utf-8", "replace")
+    man = json.loads(files["manifest.json"])
+    out = []
+
+    def need(ok, level, what, fix):
+        if not ok:
+            out.append((level, what, fix))
+    need(man.get("name") and man.get("short_name") and len(man["short_name"]) <= 12, "fail", "a name, and a short name of 12 letters or fewer", "set name and short_name in the edition")
+    sizes = {i.get("sizes") for i in man.get("icons", [])}
+    need({"192x192", "512x512"} <= sizes, "fail", "icons at 192 and 512 pixels", "add both icons")
+    need(any("maskable" in str(i.get("purpose", "")) for i in man.get("icons", [])), "warn", "a maskable icon (Android crops icons to a shape)", "mark one icon purpose 'maskable'")
+    need(man.get("display") == "standalone" and man.get("start_url"), "fail", "opens full screen from its own start page", "display standalone and a start_url")
+    need("viewport-fit=cover" in page, "warn", "uses the whole screen around a notch", "viewport-fit=cover in the viewport meta")
+    need("safe-area-inset" in page, "warn", "keeps buttons clear of the notch and the home bar", "pad with env(safe-area-inset-*)")
+    need(not re.search(r"<(script|link)[^>]+(src|href)=[\"']https?://", page), "fail", "nothing loads from another site (it works offline and passes review in airplane mode)", "inline every script and style")
+    need(bool(re.search(r"min-height:\s*4\d", page)), "warn", "tap targets of 40 pixels or more", "give buttons min-height 40px or more")
+    need("serviceWorker" in page, "warn", "an offline worker for the web and Trusted Web Activity path", "register sw.js")
+    sync = (ROOT / "apps" / "estate-sync" / "syncsvc" / "main.py").read_text("utf-8")
+    need("SYNC_APP_ORIGINS" in sync, "fail", "the estate's sync answers the app's own origin", "the estate sync must allow capacitor://localhost and https://localhost")
+    out.append(("warn", "Apple's minimum-functionality rule (4.2): a wrapped web app needs at least one thing a home-screen web app cannot do",
+                "add a native plugin before submitting to the App Store: local notifications for due reviews, Face ID unlock, or the share sheet (doc 98, section 6)"))
+    return out
+
+
+def mobile(eid: str, out: pathlib.Path | None = None, host: str = "") -> pathlib.Path:
+    """A Capacitor project (Android and iOS) and a Trusted Web Activity manifest (Android), ready to open and build."""
+    e, files = mobile_source(eid)
+    d = out or MOBILE_OUT / eid
+    if d.exists() and not (d / "capacitor.config.json").exists():
+        raise ValueError(f"{d} exists and is not a project this kit made: choose --out")
+    (d / "www").mkdir(parents=True, exist_ok=True)
+    for name, data in files.items():
+        (d / "www" / name).write_bytes(data)
+    for sz in (192, 512):
+        own = EDITIONS / f"{eid}-icon-{sz}.png"
+        shutil.copyfile(own if own.exists() else GM / f"icon-{sz}.png", d / "www" / f"icon-{sz}.png")
+    aid, name = app_id(eid), e.get("name", eid)
+    bg = (e.get("theme") or {}).get("bg", "#0d1f35")
+    (d / "capacitor.config.json").write_text(json.dumps({"appId": aid, "appName": name, "webDir": "www",
+        "android": {"allowMixedContent": False}, "server": {"androidScheme": "https"}}, indent=1) + "\n", "utf-8")
+    (d / "package.json").write_text(json.dumps({"name": eid, "private": True, "version": "1.0.0",
+        "scripts": {"sync": "cap sync", "android": "cap open android", "ios": "cap open ios"},
+        "dependencies": {f"@capacitor/{p}": CAPACITOR for p in ("core", "android", "ios")},
+        "devDependencies": {"@capacitor/cli": CAPACITOR}}, indent=1) + "\n", "utf-8")
+    (d / ".gitignore").write_text("node_modules\nandroid\nios\n*.keystore\n*.jks\n", "utf-8")
+    web = (host.rstrip("/") + f"/{eid}/") if host else ""
+    if web:
+        (d / "twa-manifest.json").write_text(json.dumps({"packageId": aid, "host": re.sub(r"^https?://", "", host).split("/")[0],
+            "name": name, "launcherName": e.get("short_name", name)[:12], "startUrl": f"/{eid}/", "themeColor": bg, "backgroundColor": bg,
+            "display": "standalone", "iconUrl": web + "icon-512.png", "webManifestUrl": web + "manifest.json",
+            "signingKey": {"path": "./android.keystore", "alias": "android"}, "enableNotifications": False}, indent=1) + "\n", "utf-8")
+    readme = f"""# {name}: Android and iOS
+
+Made by `./securax os mobile {eid}` from the same files the estate serves. Change the app, not this folder: run the command again.
+
+## Android, the quick way (Trusted Web Activity)
+{"Needs the app served over https at " + web + " (your own domain, doc 78)." if web else "Run again with --host https://your.domain to get twa-manifest.json; the app must be served over https there."}
+1. `npx @bubblewrap/cli init --manifest {web + "manifest.json" if web else "https://your.domain/" + eid + "/manifest.json"}` (or use twa-manifest.json), then `npx @bubblewrap/cli build`.
+2. Put the signing key's fingerprint into `/.well-known/assetlinks.json` on that domain: `./securax os assetlinks {eid} --fingerprint AA:BB:...`
+   (`keytool -printcert -jarfile app-release-signed.apk` prints it). Without it the app opens with a browser bar.
+3. Upload the .aab in the Play Console.
+
+## Android and iOS, the full way (Capacitor: works offline, from the app's own files)
+1. `npm install`, then `npx cap add android` and (on a Mac with Xcode) `npx cap add ios`.
+2. `npx cap sync`, then `npm run android` or `npm run ios` to open the project, and build from there.
+3. Sync on the phone: in the app's Settings, pair it by itself with your estate's full address (https://your-estate/sync),
+   your user name and a device key. Cookie sign-in does not reach a store app; a device key does.
+
+Package id: `{aid}` (from SITE_DOMAIN in brand.env). Capacitor {CAPACITOR}, pinned.
+Before you submit: `./securax os mobile-check {eid}`.
+"""
+    (d / "README.md").write_text(readme, "utf-8")
+    return d
+
+
+def assetlinks(eid: str, fingerprint: str, out: pathlib.Path | None = None) -> pathlib.Path:
+    fp = fingerprint.strip().upper()
+    if not re.fullmatch(r"([0-9A-F]{2}:){31}[0-9A-F]{2}", fp):
+        raise ValueError("a SHA-256 fingerprint is 32 pairs like AB:CD:...; keytool -printcert -jarfile app.apk prints it")
+    p = out or ROOT / "portal" / ".well-known" / "assetlinks.json"
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(json.dumps([{"relation": ["delegate_permission/common.handle_all_urls"],
+                              "target": {"namespace": "android_app", "package_name": app_id(eid), "sha256_cert_fingerprints": [fp]}}], indent=1) + "\n", "utf-8")
+    return p
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="securax os", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     sub = ap.add_subparsers(dest="cmd")
@@ -261,6 +381,15 @@ def main(argv: list[str] | None = None) -> int:
     n.add_argument("--from", dest="src", default="starter")
     n.add_argument("--tagline", default="")
     sub.add_parser("check")
+    mo = sub.add_parser("mobile")
+    mo.add_argument("id")
+    mo.add_argument("--out")
+    mo.add_argument("--host", default="")
+    mc = sub.add_parser("mobile-check")
+    mc.add_argument("id")
+    al = sub.add_parser("assetlinks")
+    al.add_argument("id")
+    al.add_argument("--fingerprint", required=True)
     a = ap.parse_args(argv)
     E = editions()
     if a.cmd in (None, "list"):
@@ -306,6 +435,24 @@ def main(argv: list[str] | None = None) -> int:
         print(f"✔ {a.name} created: {rel(p)} (edit its words and content), built in {rel(d)}/")
         print(f"  Open it at http://localhost:8088/{a.id}/ once the estate is up. After an edit: ./securax os build {a.id}")
         return 0
+    if a.cmd in ("mobile", "mobile-check", "assetlinks"):
+        try:
+            if a.cmd == "assetlinks":
+                print(f"✔ written {rel(assetlinks(a.id, a.fingerprint))}: serve it at https://your-domain/.well-known/assetlinks.json")
+                return 0
+            probs = mobile_problems(a.id)
+            if a.cmd == "mobile":
+                d = mobile(a.id, pathlib.Path(a.out) if a.out else None, a.host)
+                print(f"✔ Android and iOS project for {a.id} in {rel(d)}/  (its README.md has the steps)")
+            fails = [p for p in probs if p[0] == "fail"]
+            for lvl, what, fix in probs:
+                print(f"  {'✘' if lvl == 'fail' else '⚠'} {what}\n      {fix}")
+            if a.cmd == "mobile-check" and not probs:
+                print("✔ ready for the stores")
+            return 1 if fails else 0
+        except ValueError as ex:
+            print(f"✘ {ex}", file=sys.stderr)
+            return 2
     if a.cmd == "check":
         probs = check()
         for p in probs:
