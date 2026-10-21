@@ -22,6 +22,19 @@ window.SECURAX_FEATURES = {
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/93-PROGRESS-YOU-CAN-SEE/"
   },
   {
+   "id": "venture",
+   "group": "Keep it running",
+   "icon": "scale",
+   "name": "Venture (is it paying its way?)",
+   "what": "Break-even, payback and unit economics for the business built on the estate, counting your time as a cost: log hours, spend and revenue, set your plan, and get a structured prompt that makes an AI stress-test it.",
+   "cmd": "./securax venture",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "light": "amber",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/96-ONE-PLATFORM-MANY-PRODUCTS/"
+  },
+  {
    "id": "cyber-range",
    "group": "Practise and defend",
    "icon": "target",
@@ -150,6 +163,19 @@ window.SECURAX_FEATURES = {
    "service": false,
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/94-GOVERN/"
+  },
+  {
+   "id": "vantage",
+   "group": "Comply and govern",
+   "icon": "shield",
+   "name": "Vantage (the CISO's operating system)",
+   "what": "A phone-first app for a CISO or security executive: what needs you today, leadership rituals, the review rhythm, top risks, decisions, exceptions, tools and their value, stakeholders, team, KPIs and KRIs, playbooks and visible progress. Built from the same kit as the Life OS; a new app for any role is one file.",
+   "cmd": "./securax os",
+   "path": "/vantage/",
+   "port": 0,
+   "service": false,
+   "light": "amber",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/95-OS-KIT-VANTAGE/"
   },
   {
    "id": "gateway",

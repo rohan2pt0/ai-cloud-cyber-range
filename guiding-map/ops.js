@@ -351,10 +351,13 @@
     var m = meta(), changed = false;
     // Integrity guard: a remote copy that is drastically smaller than local is
     // corruption or a wrong row, not a legitimate state. Refuse and flag.
-    var localN = localStorage.length, remoteN = Object.keys(remote).length;
+    var localN = 0, remoteN = 0;
+    for (var li = 0; li < localStorage.length; li++) if (localStorage.key(li).indexOf("osk:") !== 0) localN++;
+    Object.keys(remote).forEach(function (rk) { if (rk.indexOf("osk:") !== 0) remoteN++; });
     if (localN > 10 && remoteN < localN / 2) { S_("gm_sync_anomaly", ymd() + ": remote had " + remoteN + " keys vs " + localN + " local \u2014 merge refused"); return false; }
     Object.keys(remote).forEach(function (k) {
       if (k.indexOf("gm_sync") === 0 || k.indexOf("gm_ms_tok") === 0) return;   // per-device settings never arrive from another device
+      if (k.indexOf("osk:") === 0) return;   // an OS kit app on this address (doc 95) syncs its own keys itself
       var rt = rmeta[k] || 0;
       // newer wins; on an exact tie the server's rule decides (larger value by code point), so every device converges on the same value
       if (!m[k] || rt > m[k] || (rt === m[k] && cpAfter(String(remote[k]), String(localStorage.getItem(k))))) { _set(k, remote[k]); m[k] = rt || nowSrv(); changed = true; }
@@ -383,7 +386,7 @@
     var blob = {}, m = meta();
     for (var i = 0; i < localStorage.length; i++) {
       var k = localStorage.key(i);
-      if (k.indexOf("gm_sync") !== 0) blob[k] = localStorage.getItem(k);
+      if (k.indexOf("gm_sync") !== 0 && k.indexOf("osk:") !== 0) blob[k] = localStorage.getItem(k);   // kit apps push their own keys
     }
     fetch(stateURL(c), { method: "PUT", headers: syncHeaders(c),
         body: JSON.stringify({ payload: blob, meta: m, updated_at: new Date(nowSrv()).toISOString(), device: devId }) })

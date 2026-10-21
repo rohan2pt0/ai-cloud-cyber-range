@@ -23,6 +23,20 @@
    "shows": "./securax progress, and a message on your phone every Sunday"
   },
   {
+   "id": "venture",
+   "group": "Keep it running",
+   "icon": "scale",
+   "name": "Venture (is it paying its way?)",
+   "what": "Break-even, payback and unit economics for the business built on the estate, counting your time as a cost: log hours, spend and revenue, set your plan, and get a structured prompt that makes an AI stress-test it.",
+   "open": {
+    "cmd": "./securax venture"
+   },
+   "command": "venture",
+   "doc": "securax/96-ONE-PLATFORM-MANY-PRODUCTS.md",
+   "outcome": "You know when the time and money you put in come back, and which number to move first.",
+   "shows": "./securax venture: break-even month, payback month, what must be true"
+  },
+  {
    "id": "cyber-range",
    "group": "Practise and defend",
    "name": "Cyber range",
@@ -168,6 +182,21 @@
    "doc": "securax/94-GOVERN.md",
    "outcome": "Leaders decide what to fix first, who to hire and what to spend, in an afternoon instead of a consulting engagement.",
    "shows": "the Govern card in the cockpit, and ./securax govern board"
+  },
+  {
+   "id": "vantage",
+   "group": "Comply and govern",
+   "icon": "shield",
+   "name": "Vantage (the CISO's operating system)",
+   "what": "A phone-first app for a CISO or security executive: what needs you today, leadership rituals, the review rhythm, top risks, decisions, exceptions, tools and their value, stakeholders, team, KPIs and KRIs, playbooks and visible progress. Built from the same kit as the Life OS; a new app for any role is one file.",
+   "open": {
+    "cmd": "./securax os",
+    "path": "/vantage/"
+   },
+   "command": "os",
+   "doc": "securax/95-OS-KIT-VANTAGE.md",
+   "outcome": "A security leader's week runs on rhythm instead of memory: nothing late is missed, risks get owners and dates, and progress is there to show the Board.",
+   "shows": "Vantage at /vantage/ on your phone: Today, Risks, Rhythm, OKRs, Progress"
   },
   {
    "id": "gateway",

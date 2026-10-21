@@ -1167,6 +1167,8 @@ def j_gm_full_use(sb: H.Sandbox, c: Checks):
     c.ok(summ and not summ.get("page_errors"), "no page error on any tab, in either theme", summ.get("page_errors"))
     c.ok(summ and summ.get("contrast_failures") == 0, "no visible text below WCAG AA contrast on any tab, dark or light", f"{summ.get('contrast_failures')} failure(s); see {out}/contrast.json")
     c.ok(rc == 0, "the audit exits 0", tail(log, 300))
+    rc, log = H.sh(["python3", "guiding-map/tests/kit_audit.py", str(out / "kit")], cwd=sb.clone, timeout=600)
+    c.ok(rc == 0 and "KIT AUDIT: PASS" in log, "every OS kit app (Vantage) renders every screen, in both themes, with no page error, no contrast failure and no sideways scroll on a phone", tail(log, 400))
 
 
 def _lc(sb: H.Sandbox, *args: str, extra_env: dict | None = None, timeout: int = 900) -> tuple[int, str]:

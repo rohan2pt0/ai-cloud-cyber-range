@@ -288,3 +288,4 @@ local/compose/controls/ai-control.json
 local/compose/controls/.ai-control.*
 # Life OS: notes waiting for the Guiding Map Inbox (./securax lifeos), private
 portal/inbox-import.json
+portal/govern-state.json

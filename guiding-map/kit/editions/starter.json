@@ -1,0 +1,43 @@
+{
+ "id": "starter",
+ "template": true,
+ "name": "Starter",
+ "short_name": "Starter",
+ "mark": "S",
+ "tagline": "A personal operating system for any role",
+ "description": "The template for a new app from the OS kit: copy it with ./securax os new, then change the words and the content.",
+ "audience": "Anyone with a role worth doing well",
+ "north_star": "You are visibly better off: the right things done, on time, with energy left over.",
+ "nav_main": 4,
+ "nav": ["today", "cadence", "goals", "inbox", "registers:items", "scorecard", "wheel", "rituals", "playbooks", "progress", "settings"],
+ "terms": { "goals": "Goals", "rituals": "Habits", "wheel": "Wheel", "cadence": "Reviews" },
+ "principles": [
+  { "name": "Pareto", "text": "A few actions carry most of the result. Find them first." },
+  { "name": "Never miss twice", "text": "Missing once is life. Missing twice is the start of a new habit." },
+  { "name": "Antifragility", "text": "Every setback leaves a lesson and a change." }
+ ],
+ "modules": {
+  "today": {},
+  "inbox": {},
+  "progress": {},
+  "settings": {},
+  "goals": { "max": 3, "idle_days": 42 },
+  "rituals": { "items": [
+   { "id": "plan", "name": "Plan the day", "anchor": "IF I sit down to start THEN I pick today's one most important task", "min": "Write one line." },
+   { "id": "close", "name": "Close the day", "anchor": "IF I stop work THEN I write tomorrow's first step", "min": "One line." } ] },
+  "wheel": { "dims": [
+   { "id": "work", "label": "Work" }, { "id": "people", "label": "People" }, { "id": "health", "label": "Health" }, { "id": "growth", "label": "Growth" } ] },
+  "cadence": { "items": [
+   { "id": "weekly", "name": "Weekly review", "every": "week", "first": 6, "checklist": ["Three wins", "One lesson", "Next week's three priorities"] },
+   { "id": "quarterly", "name": "Quarter reset", "every": "quarter", "first": 30, "checklist": ["Grade the goals", "Re-score the wheel", "Set at most three goals"] } ] },
+  "registers": [
+   { "id": "items", "label": "Register", "item": "item", "title": "what", "due": "due", "status": { "field": "status", "closed": ["Done"] }, "list": ["owner"],
+     "fields": [
+      { "id": "what", "label": "What", "type": "text", "required": true },
+      { "id": "owner", "label": "Owner", "type": "text" },
+      { "id": "due", "label": "Due", "type": "date" },
+      { "id": "status", "label": "Status", "type": "select", "required": true, "options": ["Open", "Done"] } ] } ],
+  "scorecard": { "metrics": [ { "id": "main", "kind": "KPI", "name": "Your main number", "unit": "", "base": 0, "goal": 100 } ] },
+  "playbooks": { "items": [ { "id": "start", "title": "Getting started", "steps": ["Name your north star in one sentence", "Set one goal", "Pick two habits", "Put the weekly review in your calendar"] } ] }
+ }
+}

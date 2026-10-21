@@ -1004,6 +1004,16 @@ EOF2
     #   ./securax govern | profile | mark ID STATE | list | team | board | templates [DIR]
     shift; exec python3 "$ROOT/governance/govern.py" "${@:-report}"
     ;;
+  os)
+    # One kit, many apps (doc 95): each app is one JSON file (guiding-map/kit/editions/). Vantage, the CISO's operating system, is the first.
+    #   ./securax os | build [ID|--all] | new ID --name "Name" [--from starter|vantage] | check
+    shift; exec python3 "$ROOT/governance/oskit.py" "${@:-list}"
+    ;;
+  venture)
+    # Is the estate paying its way? Break-even, payback and unit economics, counting your time as a cost (doc 96). Private, in vault/.
+    #   ./securax venture | log time|money|revenue AMOUNT "what" | plan KEY=VALUE ... | ask | json
+    shift; exec python3 "$ROOT/governance/venture.py" "${@:-report}"
+    ;;
   progress)
     # Is SecuRAX making you better off? Your Life OS rhythm, how much stronger the estate got, and the ONE next step (doc 93).
     #   ./securax progress | --send (to your phone) | --json
@@ -2006,6 +2016,8 @@ BUILD & KEEP IT HEALTHY
   continuity     the crisis plan: each scenario's RTO/RPO target vs today, the steps (show ID), safe drills (drill ID), the code mirror (mirror setup: a free private GitLab copy)
   resilience     every combination of your machines being off: what still works, each single point of failure, the fix
   govern         for decision makers: where we stand, minimum vs highest, 5W1H and budget per gap, team, Board report, templates
+  os             one kit, many apps: Vantage (the CISO's operating system) at /vantage/; build, new ID --name, check
+  venture        is it paying its way? break-even, payback, unit economics (your time counted); log, plan, ask
   progress       is it making you better off? your rhythm, how much stronger the estate got, the one next step
   autopilot      what the estate learned from its own failures, which drills it ran by itself, what it foresees running out
   names          https://hub.securax.localhost style addresses instead of localhost:port, in one guided step
