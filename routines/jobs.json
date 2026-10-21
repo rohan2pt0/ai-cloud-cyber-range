@@ -246,5 +246,18 @@
     "description": "Mondays 9:10am: eight questions that catch an AI that guesses (a false premise, a circular number that does not exist, today's date, a sum). A failure means the model now answering makes things up; the andon pushes it to your phone (doc 89).",
     "enabled": true,
     "kind": "guard"
+  },
+  {
+    "id": "home-machine",
+    "cron": "*/5 * * * *",
+    "command": [
+      "./securax",
+      "models",
+      "home",
+      "--quiet"
+    ],
+    "description": "Every 5 minutes: is your model machine (a Mac mini or GPU box, REMOTE_OLLAMA_BASE) on? When it goes off, the router is reloaded without it, so nothing waits for it; when it is back, it answers first again. Silent and instant when no such machine is set (doc 90).",
+    "enabled": true,
+    "kind": "guard"
   }
 ]

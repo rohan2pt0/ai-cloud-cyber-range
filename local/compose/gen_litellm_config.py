@@ -42,6 +42,8 @@ OUT = os.path.join(HERE, "litellm-config.generated.yaml")           # what the r
 
 CLOUD_TIMEOUT = 40     # seconds: a hung cloud provider should fail over fast
 LOCAL_TIMEOUT = 300    # seconds: CPU inference is slow but sure
+HOME_TIMEOUT = 90      # seconds: your own GPU machine is fast; when it is switched off, the laptop answers after this, not 300
+HOME_STATE = os.path.join(os.path.dirname(os.path.abspath(__file__)), ".home-state")
 
 
 def load_catalog(path: str = CATALOG) -> dict:
@@ -143,7 +145,7 @@ def provider_params(p: dict, env: dict, baseline: bool = False) -> dict:
         # Ollama-style local model: literal api_base, no key. Its env entries are only on/off gate
         # flags (e.g. ENABLE_LOCAL_CODER), never an api_key.
         params["api_base"] = env_lookup(env, p["api_base_env"]) if p.get("api_base_env") else internal_api_base(p["api_base"], env, baseline)
-        params["timeout"] = LOCAL_TIMEOUT
+        params["timeout"] = HOME_TIMEOUT if p.get("api_base_env") else LOCAL_TIMEOUT
         return params
     params["timeout"] = CLOUD_TIMEOUT
     if p.get("region_env"):
@@ -339,6 +341,37 @@ def status(catalog: dict, env: dict, baseline: bool = False) -> list[tuple[str, 
     return [(p["id"], p["label"], is_enabled(p, env, baseline)) for p in catalog.get("providers", [])]
 
 
+def home_answers(base: str, timeout: float = 3.0) -> bool:
+    """Does your own model machine (REMOTE_OLLAMA_BASE) answer right now? A switched-off Mac mini or GPU box does not."""
+    import urllib.request
+    try:
+        with urllib.request.urlopen(base.rstrip("/") + "/api/tags", timeout=timeout) as r:      # noqa: S310 (a private address you set)
+            return r.status == 200
+    except (OSError, ValueError):
+        return False
+
+
+def home_gate(env: dict, probe=home_answers, state: str | None = None) -> dict:
+    """Leave the home rung out while that machine is off, so nothing waits for it; `./securax models home` (every 5 minutes)
+    puts it back when it answers again. HOME_PROBE=off keeps it in regardless. Records on/off for that check."""
+    base = env_lookup(env, "REMOTE_OLLAMA_BASE")
+    state = state or HOME_STATE
+    if not base or (env_lookup(env, "HOME_PROBE") or "").lower() == "off":
+        return env
+    up = probe(base)
+    try:
+        with open(state, "w", encoding="utf-8") as f:
+            f.write("on\n" if up else "off\n")
+    except OSError:
+        pass
+    if up:
+        return env
+    import sys
+    print(f"Your model machine at {base} is not answering: left out for now, so this machine answers. "
+          "It is added back by itself within 5 minutes of answering again.", file=sys.stderr)
+    return {**env, "REMOTE_OLLAMA_BASE": ""}
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(description="Generate the LiteLLM router config from the plugin catalog.")
     ap.add_argument("--env-file", default=os.path.join(HERE, ".env"))
@@ -387,6 +420,8 @@ def main(argv: list[str] | None = None) -> int:
         if not args.write:
             return 0
 
+    if not args.baseline:
+        env = home_gate(env)
     out = args.out or (BASELINE_OUT if args.baseline else OUT)
     with open(out, "w", encoding="utf-8", newline="\n") as f:
         f.write(generate(catalog, env, baseline=args.baseline))

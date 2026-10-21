@@ -506,3 +506,22 @@ def test_the_strong_chain_puts_the_strongest_open_models_first_and_still_ends_lo
     assert all(by[i]["env"] == ["OPENCODE_GO_API_KEY"] and by[i]["headers"]["x-opencode-session"] for i in strong[:3])   # one key, Go's session header
     doc = yaml.safe_load(gen.generate(cat, {"OPENCODE_GO_API_KEY": "sk-go"}))
     assert "strong" in {m["model_name"] for m in doc["model_list"]}
+
+
+# ---------------------------------------------------------------- the estate works with no other machine on (doc 90)
+def test_a_switched_off_model_machine_is_left_out_so_nothing_waits_for_it(tmp_path):
+    cat = _catalog()
+    env = {"REMOTE_OLLAMA_BASE": "http://100.101.102.103:11434", "HOME_MODEL": "ollama/qwen2.5:14b", "GEMINI_API_KEY": "g"}
+    state = str(tmp_path / "home-state")
+    off = gen.home_gate(env, probe=lambda base: False, state=state)
+    doc = yaml.safe_load(gen.generate(cat, off))
+    assert not [m for m in doc["model_list"] if m["model_name"] == "home-local"]
+    assert _fallback_map(doc)["bank-assistant"][-1] == "bank-assistant-local", "this machine still answers last"
+    assert open(state).read().strip() == "off"
+    on = gen.home_gate(env, probe=lambda base: True, state=state)
+    home = [m for m in yaml.safe_load(gen.generate(cat, on))["model_list"] if m["model_name"] == "home-local"]
+    assert home and home[0]["litellm_params"]["timeout"] == gen.HOME_TIMEOUT < gen.LOCAL_TIMEOUT
+    assert open(state).read().strip() == "on"
+    kept = gen.home_gate({**env, "HOME_PROBE": "off"}, probe=lambda base: False, state=state)
+    assert kept["REMOTE_OLLAMA_BASE"] == env["REMOTE_OLLAMA_BASE"]
+    assert gen.home_gate({"GEMINI_API_KEY": "g"}, probe=lambda base: 1 / 0, state=state) == {"GEMINI_API_KEY": "g"}, "no machine set: no probe"

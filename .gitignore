@@ -254,6 +254,7 @@ sandbox/out/
 
 # generated per machine from plugins/catalog.json + .env (see gen_litellm_config.py)
 local/compose/litellm-config.generated.yaml
+local/compose/.home-state
 local/compose/.models-checked
 evidence/
 autobuild-failed-*.md

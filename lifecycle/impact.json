@@ -76,6 +76,7 @@
    ],
    "guarded_by": [
     "fresh_install",
+    "machine_alone",
     "self_healing",
     "watchdog_heals_and_alerts",
     "update_from_dirty_checkout",

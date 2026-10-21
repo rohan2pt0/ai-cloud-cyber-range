@@ -742,6 +742,48 @@ def j_backup_encrypted(sb: H.Sandbox, c: Checks):
     c.ok(not leftovers, "no decrypted copy of the backup is left in /tmp", str(leftovers))
 
 
+@journey("machine_alone", "This machine on its own (doc 90): a model machine (GPU box), a VPS peer and an off-site folder are all configured but switched off, and no cloud key is set. `up` still succeeds and says the model machine is off; the router leaves it out, so a chat question is answered here without waiting for it; the Life OS saves and reads its data; `nodes` names the unreachable peer; a backup is taken; the home screen serves.", slow=True)
+def j_alone(sb: H.Sandbox, c: Checks):
+    gone = {"REMOTE_OLLAMA_BASE": "http://100.64.0.99:11434", "HOME_MODEL": "ollama/qwen2.5:14b",          # unroutable: a machine that is off
+            "SYNC_TOKENS": "alone-sbx-token", "SYNC_PEERS": "http://100.64.0.98:8088/sync|peer-sbx-token,https://vps.tail0000.ts.net/sync|peer-sbx-token",
+            "SECURAX_OFFSITE_DIR": "/proc/securax-offsite-unplugged"}
+    sb.down()
+    sb.reset_env(SECURAX_LITE="1", **gone)
+    try:
+        rc, out = sb.securax("up", "--lite", timeout=1200)
+        c.ok(rc == 0, "`./securax up --lite` exits 0 with every other machine off", tail(out))
+        c.ok("model machine" in out and "is off or unreachable" in out, "…and says plainly that the model machine is off and this one answers", tail(out, 600))
+        c.ok(sb.wait_http(f"{H.GATEWAY}/healthz", 240), "gateway healthy", sb.logs("gateway"))
+        cfg = (sb.clone / "local" / "compose" / "litellm-config.generated.yaml").read_text()
+        c.ok("home-local" not in cfg, "the router leaves the switched-off model machine out (nothing waits for it)")
+        c.ok(sb.wait_until(lambda: sb.ollama_has(sb.local_model()), 900, 5), "this machine's own model is present")
+        t0 = time.time()
+        r = sb.chat("bank-assistant", "Reply with the single word OK.")
+        took = time.time() - t0
+        c.ok(r.status == 200 and sb.answer(r).strip() != "", f"a chat question is answered HERE ({took:.0f}s)", f"{r.status} {tail(r.text)}")
+        c.ok(took < 240, "…without waiting the 300 s a switched-off model machine used to cost", f"{took:.0f}s")
+        hdr = {"Authorization": "Bearer alone-sbx-token"}
+        body = {"payload": {"goal": "Fake goal for the drill"}, "meta": {"goal": int(time.time() * 1000)}, "device": "laptop"}
+        w = sb.http("PUT", f"{H.GUIDING_MAP}/sync/state?user=alone", body, headers=hdr)
+        g = sb.http("GET", f"{H.GUIDING_MAP}/sync/state?user=alone", headers=hdr)
+        c.ok(w.status == 200 and g.status == 200 and (g.json() or {}).get("payload", {}).get("goal") == "Fake goal for the drill",
+             "the Life OS saves and reads its data here while every peer is unreachable", f"{w.status} {g.status} {tail(g.text)}")
+        c.ok(sb.wait_until(lambda: any(not p.get("ok") for p in (sb.http("GET", f"{H.GUIDING_MAP}/sync/peers", headers=hdr).json() or {}).get("peers", [])), 120, 5),
+             "…the sync service tries the peers, records them as unreachable, and keeps serving")
+        rc, out = sb.securax("nodes", timeout=120)
+        c.ok(rc == 1 and "This node" in out and "100.64.0.98" in out and "Traceback" not in out, "`nodes` names the unreachable peers (exit 1) without breaking", tail(out, 400))
+        rc, out = sb.securax("models", "home", timeout=60)
+        c.ok(rc == 0 and "off" in out, "`models home` reports the model machine off", tail(out, 200))
+        bdir = sb.clone.parent / "backups-alone"
+        shutil.rmtree(bdir, ignore_errors=True)
+        rc, out = sb.securax("backup", str(bdir), timeout=600)
+        c.ok(rc == 0 and list(bdir.glob("securax-*.tar.gz")), "a backup is taken here with the off-site folder unplugged", tail(out, 300))
+        c.ok(sb.http("GET", f"{H.GUIDING_MAP}/").status == 200, "the home screen (Command Center and Life OS) serves")
+    finally:
+        sb.reset_env(SECURAX_LITE="1")
+        (sb.clone / "local" / "compose" / ".home-state").unlink(missing_ok=True)
+
+
 @journey("ransomware_recovery", "The ransomware drill on the REAL estate (doc 88): encrypted backups go off-site; then the vault and its canary are encrypted; the next backup is marked -SUSPECT, deletes nothing, sends nothing off-site and alerts you (exit 3); the restore drill proves the CLEAN copy in a scratch twin (Open WebUI's database integrity-checked); the data volume is destroyed and `restore latest` brings back the same account and a readable vault; the tabletop then finds the plan ready on what the machine can prove.", slow=True)
 def j_ransomware(sb: H.Sandbox, c: Checks):
     import http.server

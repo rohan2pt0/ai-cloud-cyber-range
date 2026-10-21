@@ -234,6 +234,9 @@ case "$cmd" in
     if command -v python3 >/dev/null 2>&1; then
       GENERR="$(python3 "$ROOT/local/compose/gen_litellm_config.py" --write --env-file "$ENVF" 2>&1 >/dev/null)" || {
         C "Could not generate the router config from your .env / plugin catalog:"; echo "  $GENERR"; }
+      if [ -n "$(ev REMOTE_OLLAMA_BASE)" ] && [ "$(cat "$ROOT/local/compose/.home-state" 2>/dev/null)" = off ]; then
+        C "Your model machine ($(ev REMOTE_OLLAMA_BASE)) is off or unreachable: this machine answers until it is back (checked every 5 minutes)."
+      fi
     else
       C "python3 not found — using the shipped default router config (Gemini + local model). Install python3 to enable your own provider keys."
     fi
@@ -1640,7 +1643,28 @@ EOF2
   models)
     # Ask each provider which models your key can use TODAY and fix any retired name in .env (self-correcting).
     #   ./securax models          report        ./securax models --fix   report + repair + reload the router
+    #   ./securax models home     is your model machine (Mac mini, GPU box: REMOTE_OLLAMA_BASE) on? When that changes, the
+    #                             router is reloaded with or without it, so nothing ever waits for a machine that is off (every 5 min)
     ENVF="$ROOT/local/compose/.env"; [ -f "$ENVF" ] || cp "$ROOT/local/compose/.env.example" "$ENVF"
+    if [ "${2:-}" = home ]; then
+      HB="$(ev REMOTE_OLLAMA_BASE)"; QUIET=0; [ "${3:-}" = --quiet ] && QUIET=1
+      if [ -z "$HB" ]; then [ "$QUIET" = 1 ] || C "No model machine is set (REMOTE_OLLAMA_BASE): this machine answers everything (doc 56)."; exit 0; fi
+      HST="$ROOT/local/compose/.home-state"; WAS="$(cat "$HST" 2>/dev/null || echo unknown)"
+      if curl -fsS -m 3 "${HB%/}/api/tags" >/dev/null 2>&1; then NOW=on; else NOW=off; fi
+      if [ "$NOW" = "$WAS" ]; then
+        [ "$QUIET" = 1 ] || C "Your model machine is $NOW ($HB)$( [ "$NOW" = off ] && echo ': this machine answers until it is back')."
+        exit 0
+      fi
+      python3 "$ROOT/local/compose/gen_litellm_config.py" --write --env-file "$ENVF" >/dev/null 2>&1 || true
+      echo "$NOW" > "$HST"
+      if gcurl -fsS -m 3 $(gw_url)/healthz >/dev/null 2>&1; then
+        ( cd "$ROOT/local/compose" && docker compose --profile ai restart litellm >/dev/null 2>&1 || true ); ready_wait 120 >/dev/null 2>&1 || true
+      fi
+      if [ "$NOW" = on ]; then _m="Your model machine is back ($HB): it answers first again."
+      else _m="Your model machine went off ($HB): this machine answers until it is back. Nothing waits for it."; fi
+      C "$_m"; python3 "$ROOT/governance/notify.py" send "$_m" --title "SecuRAX" >/dev/null 2>&1 || true
+      exit 0
+    fi
     command -v python3 >/dev/null 2>&1 || { C "python3 is needed for this check."; exit 1; }
     C "Checking your providers' live model lists…"
     if [ "${2:-}" = "--fix" ]; then

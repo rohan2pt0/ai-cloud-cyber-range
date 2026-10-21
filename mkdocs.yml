@@ -104,6 +104,7 @@ nav:
       - Security review before the freeze: securax/87-SECURITY-REVIEW-BEFORE-FREEZE.md
       - Ransomware and disaster recovery, proven: securax/88-RANSOMWARE-AND-DISASTER-RECOVERY-PROVEN.md
       - Accurate answers without prompt engineering: securax/89-ACCURATE-ANSWERS-WITHOUT-PROMPT-ENGINEERING.md
+      - It works on whatever machine is on: securax/90-WORKS-ON-WHATEVER-IS-ON.md
   - How-to guides:
       - AI providers and plugins: securax/22-PLUGINS-AND-PROVIDERS.md
       - Integrations: securax/07-INTEGRATIONS.md

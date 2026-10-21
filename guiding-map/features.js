@@ -351,7 +351,7 @@ window.SECURAX_FEATURES = {
    "group": "Keep it running",
    "icon": "loop",
    "name": "Many machines, one SecuRAX",
-   "what": "Run it on the laptop, a VPS, a Mac mini or any cloud at once: every machine holds the same data, and any one of them can stop.",
+   "what": "Run it on the laptop, a VPS, a Mac mini or any cloud at once: every machine holds the same data, and any one of them can stop. Each machine is an extra, never a dependency: with every other one off, this one carries on by itself (doc 90).",
    "cmd": "./securax nodes",
    "path": "",
    "port": 0,
