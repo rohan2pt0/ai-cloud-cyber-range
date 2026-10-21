@@ -11,6 +11,16 @@ by a test.
 <!-- features:start -->
 ## Everything SecuRAX can do
 
+### New in the estate
+
+The latest additions, newest first (the Command Center marks each one New for 30 days):
+
+- **2026-10-21** · [Your progress](securax/93-PROGRESS-YOU-CAN-SEE.md): You see, every week, that your days and your estate are getting better, and you always know the one next step. `./securax progress`
+- **2026-10-21** · [Venture (is it paying its way?)](securax/96-ONE-PLATFORM-MANY-PRODUCTS.md): You know when the time and money you put in come back, and which number to move first. `./securax venture`
+- **2026-10-21** · [The suite (built for one, ready for many)](securax/97-BUILT-FOR-ONE-READY-FOR-MANY.md): You can see which edition could be sold today and the one gap that unlocks the most, instead of guessing. `./securax suite`
+- **2026-10-21** · [Govern (for decision makers)](securax/94-GOVERN.md): Leaders decide what to fix first, who to hire and what to spend, in an afternoon instead of a consulting engagement. `./securax govern`
+- **2026-10-21** · [Vantage (the CISO's operating system)](securax/95-OS-KIT-VANTAGE.md): A security leader's week runs on rhythm instead of memory: nothing late is missed, risks get owners and dates, and progress is there to show the Board. `./securax os`
+
 Each line names what it does, in plain words, and the one command that opens it. The light is the guide's status (what the lights mean is below).
 
 **Practise and defend**
@@ -48,6 +58,7 @@ Each line names what it does, in plain words, and the one command that opens it.
 | | What it does | How to open it |
 |---|---|---|
 | 🟡 [Venture (is it paying its way?)](securax/96-ONE-PLATFORM-MANY-PRODUCTS.md) | Break-even, payback and unit economics for the business built on the estate, counting your time as a cost: log hours, spend and revenue, set your plan, and get a structured prompt that makes an AI stress-test it. | `./securax venture` |
+| 🟡 [The suite (built for one, ready for many)](securax/97-BUILT-FOR-ONE-READY-FOR-MANY.md) | Every component is declared with the edition it starts in and the shared platform services it uses, so one person's tool can later serve an organisation of any size. Shows how ready each edition is to sell, what blocks it, and writes an honest datasheet per edition. | `./securax suite` |
 | 🟢 [Go back to a working version](securax/82-GO-BACK-TO-A-WORKING-VERSION.md) | Something broke? One command takes you back to the last version that worked; your edits and data are kept. | `./securax rollback` |
 | 🟡 [Encrypted backups](securax/72-SYNC-AND-BACKUP-WITHOUT-THE-LAPTOP.md) | Backups that are encrypted, copied off the laptop, and proved to restore every quarter. | `./securax protect` |
 | 🟡 [Storage that runs itself](securax/80-STORAGE-THAT-GROWS-WITH-YOU.md) | Every source of growth has a limit; clean-ups run every six hours, and your phone hears only when space is still short. | `./securax storage` |

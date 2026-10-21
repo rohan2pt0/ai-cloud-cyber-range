@@ -28,6 +28,22 @@ The principles behind it:
 Every feature in `features.json` carries its `outcome` (what gets better) and `shows` (where the person sees it); fitness
 `outcomes-declared` fails one that does not.
 
+**Built for one, ready for many (doc 97).** Every component is built once, for a person first, on the shared platform
+(identity, roles, audit, tenancy, policy, metering, export, residency, continuity), so the same code can later serve an
+organisation of any size. Declare each feature in `governance/suite.json`:
+- the edition it starts in;
+- the platform services it uses;
+- what its enterprise version adds.
+
+Never build a private copy of a platform service inside a component: if a component needs roles or audit, use or improve
+the shared one. Fitness `enterprise-declared` fails an undeclared feature and any service claimed as built without its files.
+The open core stays open: everything a person needs to be safe, SSO and export included.
+
+**One source for principles and news (doc 95, section 6).**
+- The principles live in `governance/principles.json`. Improve them there, never in one app. `./securax os check` then makes every app rebuild with the change.
+- Every feature in `features.json` carries its `added` date, so the Command Center, the docs, the README and the weekly progress message all show what is new.
+- A kit change that people would notice gets a line in `guiding-map/kit/whatsnew.json`.
+
 ## 1. Pick the tier before you start
 
 Run `./securax route "the task"`. It names the tier, and why:
@@ -64,6 +80,7 @@ Before merging anything the router calls strong, get a second look: `./securax r
    - **Docs nav:** a new doc goes in `mkdocs.yml` nav.
    - **README:** `python3 tools/readme_sync.py`.
    - **A new or renamed feature:** edit `features.json`, then `python3 tools/features_sync.py` (it also refreshes every counted fact).
+   - **Its suite entry:** add it to `governance/suite.json` (edition, services used, what enterprise adds); `./securax suite check`.
    - **A new command:** a line in `./securax help` (fitness `commands-in-help`).
    - **Docs build:** `mkdocs build --strict`.
 5. Re-read your own diff as a reviewer would. Fix what you find before anyone else sees it.

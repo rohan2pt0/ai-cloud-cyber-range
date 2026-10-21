@@ -27,14 +27,14 @@
   "settings": "Settings"
  },
  "principles": [
-  { "name": "Pareto", "text": "A few risks carry most of the exposure. Fix those first, and the basics before anything advanced." },
-  { "name": "Inversion", "text": "Ask what could end the organisation, and remove that downside before chasing upside." },
-  { "name": "Control the inputs", "text": "You cannot control attackers. You control decisions, rhythm and follow-through." },
-  { "name": "Compounding", "text": "A weekly review kept for a year beats a perfect plan kept for a month." },
-  { "name": "Flywheel", "text": "Visibility earns trust, trust earns budget, budget builds capability, capability earns more trust." },
-  { "name": "Ikigai", "text": "Lead where your strengths meet what the organisation needs; it keeps you going for years, not quarters." },
-  { "name": "Antifragility", "text": "Every incident and near miss leaves a lesson, a change and a drill. The programme gets stronger from stress." },
-  { "name": "Small wins, shown", "text": "Progress people can see keeps them, and you, going." }
+  { "id": "pareto", "text": "A few risks carry most of the exposure. Fix those first, and the basics before anything advanced." },
+  { "id": "inversion", "text": "Ask what could end the organisation, and remove that downside before chasing upside." },
+  { "id": "control-inputs", "text": "You cannot control attackers. You control decisions, rhythm and follow-through." },
+  { "id": "compounding", "text": "A weekly review kept for a year beats a perfect plan kept for a month." },
+  { "id": "flywheel", "text": "Visibility earns trust, trust earns budget, budget builds capability, capability earns more trust." },
+  { "id": "ikigai", "text": "Lead where your strengths meet what the organisation needs; it keeps you going for years, not quarters." },
+  { "id": "antifragility", "text": "Every incident and near miss leaves a lesson, a change and a drill. The programme gets stronger from stress." },
+  { "id": "small-wins", "text": "Progress people can see keeps them, and you, going." }
  ],
  "modules": {
   "today": {},

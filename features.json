@@ -1,5 +1,5 @@
 {
- "about": "The one list of what SecuRAX can do, in plain words. The Command Center, the product website, the docs home page, the README and `./securax features` are all generated from this file by tools/features_sync.py; CI fails if any of them is out of date (fitness check features-current). Add a feature here, run `python3 tools/features_sync.py`, and it appears everywhere. Fields: icon names a line icon drawn in the Command Center (no emoji); open.cmd is what to type; open.path is a page on the Command Center; open.port is a local app; doc is the guide; highlight puts it on the website's front page.",
+ "about": "The one list of what SecuRAX can do, in plain words. The Command Center, the product website, the docs home page, the README and `./securax features` are all generated from this file by tools/features_sync.py; CI fails if any of them is out of date (fitness check features-current). Add a feature here, run `python3 tools/features_sync.py`, and it appears everywhere. Fields: icon names a line icon drawn in the Command Center (no emoji); open.cmd is what to type; open.path is a page on the Command Center; open.port is a local app; doc is the guide; highlight puts it on the website's front page. added is the date the feature first shipped (YYYY-MM-DD): the Command Center marks a feature New for 30 days, and every page lists the latest additions.",
  "groups": [
   "Practise and defend",
   "Comply and govern",
@@ -13,6 +13,7 @@
    "group": "Your own tools",
    "icon": "target",
    "name": "Your progress",
+   "added": "2026-10-21",
    "what": "Is SecuRAX making you better off? Your Life OS rhythm, what made the estate stronger this month, and the one next step, on your phone every Sunday.",
    "open": {
     "cmd": "./securax progress"
@@ -27,6 +28,7 @@
    "group": "Keep it running",
    "icon": "scale",
    "name": "Venture (is it paying its way?)",
+   "added": "2026-10-21",
    "what": "Break-even, payback and unit economics for the business built on the estate, counting your time as a cost: log hours, spend and revenue, set your plan, and get a structured prompt that makes an AI stress-test it.",
    "open": {
     "cmd": "./securax venture"
@@ -37,9 +39,25 @@
    "shows": "./securax venture: break-even month, payback month, what must be true"
   },
   {
+   "id": "suite",
+   "group": "Keep it running",
+   "icon": "grid",
+   "name": "The suite (built for one, ready for many)",
+   "added": "2026-10-21",
+   "what": "Every component is declared with the edition it starts in and the shared platform services it uses, so one person's tool can later serve an organisation of any size. Shows how ready each edition is to sell, what blocks it, and writes an honest datasheet per edition.",
+   "open": {
+    "cmd": "./securax suite"
+   },
+   "command": "suite",
+   "doc": "securax/97-BUILT-FOR-ONE-READY-FOR-MANY.md",
+   "outcome": "You can see which edition could be sold today and the one gap that unlocks the most, instead of guessing.",
+   "shows": "./securax suite: editions, readiness, the gaps that unlock the most; suite sheet EDITION"
+  },
+  {
    "id": "cyber-range",
    "group": "Practise and defend",
    "name": "Cyber range",
+   "added": "2026-10-20",
    "what": "Practise defending real-looking systems against a live red team, with scoring, judging and MITRE ATT&CK, D3FEND and ATLAS learning paths.",
    "open": {
     "cmd": "./securax exercise",
@@ -56,6 +74,7 @@
    "id": "respond",
    "group": "Practise and defend",
    "name": "Crisis response kit",
+   "added": "2026-10-20",
    "what": "Step into an incident: collect evidence properly, find what is wrong, and draft the reports.",
    "open": {
     "cmd": "./securax respond"
@@ -71,6 +90,7 @@
    "id": "purple",
    "group": "Practise and defend",
    "name": "Purple-team loop",
+   "added": "2026-10-14",
    "what": "Attack your own AI channel, check that the attack was detected, and keep the evidence.",
    "open": {
     "cmd": "./securax purple"
@@ -85,6 +105,7 @@
    "id": "inspect",
    "group": "Practise and defend",
    "name": "Check software before you trust it",
+   "added": "2026-10-14",
    "what": "Look inside a third-party package or file, in a sandbox, and see what a new version can do that the old one could not.",
    "open": {
     "cmd": "./securax inspect"
@@ -99,6 +120,7 @@
    "id": "controls",
    "group": "Comply and govern",
    "name": "BFSI control matrix",
+   "added": "2026-10-17",
    "what": "Every Indian BFSI cyber obligation as one matrix: what applies to you, what is proven, and what to close next. Works with no file from you.",
    "open": {
     "cmd": "./securax go",
@@ -115,6 +137,7 @@
    "id": "incident-clock",
    "group": "Comply and govern",
    "name": "Regulator incident clock",
+   "added": "2026-10-14",
    "what": "Every applicable regulator's reporting deadline for an incident, counting down, with the drafts ready.",
    "open": {
     "cmd": "./securax incident"
@@ -130,6 +153,7 @@
    "id": "comply",
    "group": "Comply and govern",
    "name": "Regulatory gap maps",
+   "added": "2026-10-14",
    "what": "Requirement-by-requirement maps (RBI, SEBI CSCRF, NIST AI 600-1, post-quantum and more) with the evidence for each, checked on every change.",
    "open": {
     "cmd": "./securax comply"
@@ -144,6 +168,7 @@
    "id": "risks",
    "group": "Comply and govern",
    "name": "Risk register",
+   "added": "2026-10-20",
    "what": "Your risks with owners and dates, linked to the controls that treat them, with an overdue lamp.",
    "open": {
     "cmd": "./securax risks"
@@ -158,6 +183,7 @@
    "id": "cockpit",
    "group": "Comply and govern",
    "name": "Cockpit",
+   "added": "2026-10-14",
    "what": "One page: what is at risk, what to do next, and the trends. Lamps light only when something needs you.",
    "open": {
     "cmd": "./securax cockpit",
@@ -174,6 +200,7 @@
    "group": "Comply and govern",
    "icon": "compass",
    "name": "Govern (for decision makers)",
+   "added": "2026-10-21",
    "what": "Where the organisation stands on governance, people, process and technology; the minimum basic and the highest possible; for each gap the 5W1H and an indicative budget; the team you need; a one-page Board report; and a pack of ready policies, SOPs, registers and an executive deck.",
    "open": {
     "cmd": "./securax govern"
@@ -188,6 +215,7 @@
    "group": "Comply and govern",
    "icon": "shield",
    "name": "Vantage (the CISO's operating system)",
+   "added": "2026-10-21",
    "what": "A phone-first app for a CISO or security executive: what needs you today, leadership rituals, the review rhythm, top risks, decisions, exceptions, tools and their value, stakeholders, team, KPIs and KRIs, playbooks and visible progress. Built from the same kit as the Life OS; a new app for any role is one file.",
    "open": {
     "cmd": "./securax os",
@@ -202,6 +230,7 @@
    "id": "gateway",
    "group": "Use AI safely",
    "name": "AI security gateway",
+   "added": "2026-10-14",
    "what": "Every AI call is checked: personal data masked, prompt injection blocked, data kept in India when it must be, and every call logged.",
    "open": {
     "cmd": "./securax doctor"
@@ -217,6 +246,7 @@
    "id": "chat",
    "group": "Use AI safely",
    "name": "Private chat",
+   "added": "2026-10-15",
    "what": "A ChatGPT-style assistant that runs through the gateway, with a private local model when the data must not leave.",
    "open": {
     "cmd": "./securax open",
@@ -234,6 +264,7 @@
    "group": "Use AI safely",
    "icon": "chat",
    "name": "Accurate answers without prompt engineering",
+   "added": "2026-10-21",
    "what": "Every question reaches the AI with today's date and the rules a careful expert would write: never make things up, say \"I don't know\", flag what may have changed, show the working. A weak model says so, and a weekly check catches an AI that starts to guess.",
    "open": {
     "cmd": "./securax ai honesty"
@@ -247,6 +278,7 @@
    "id": "build",
    "group": "Use AI safely",
    "name": "Build with open models",
+   "added": "2026-10-20",
    "what": "Write and fix code with strong open models through the gateway, so no single AI subscription or its limits can stop the work.",
    "open": {
     "cmd": "./securax opencode"
@@ -262,6 +294,7 @@
    "id": "rollback",
    "group": "Keep it running",
    "name": "Go back to a working version",
+   "added": "2026-10-20",
    "what": "Something broke? One command takes you back to the last version that worked; your edits and data are kept.",
    "open": {
     "cmd": "./securax rollback"
@@ -277,6 +310,7 @@
    "id": "backup",
    "group": "Keep it running",
    "name": "Encrypted backups",
+   "added": "2026-10-19",
    "what": "Backups that are encrypted, copied off the laptop, and proved to restore every quarter.",
    "open": {
     "cmd": "./securax protect"
@@ -291,6 +325,7 @@
    "id": "storage",
    "group": "Keep it running",
    "name": "Storage that runs itself",
+   "added": "2026-10-20",
    "what": "Every source of growth has a limit; clean-ups run every six hours, and your phone hears only when space is still short.",
    "open": {
     "cmd": "./securax storage"
@@ -305,6 +340,7 @@
    "id": "why",
    "group": "Keep it running",
    "name": "What broke, and why",
+   "added": "2026-10-13",
    "what": "Names the service that stopped and the reason, in plain words, with the fix.",
    "open": {
     "cmd": "./securax why"
@@ -320,6 +356,7 @@
    "group": "Keep it running",
    "icon": "gem",
    "name": "Crown jewels and risk",
+   "added": "2026-10-20",
    "what": "What SecuRAX cannot lose, how exposed each one is today, and the one thing to do next, worst first. It re-scores itself every run.",
    "open": {
     "cmd": "./securax jewels"
@@ -335,6 +372,7 @@
    "group": "Keep it running",
    "icon": "lifebuoy",
    "name": "Crisis and continuity plan",
+   "added": "2026-10-20",
    "what": "Every crisis written down before it happens: how long it may stop you, how much it may lose, the steps, and safe drills that prove it.",
    "open": {
     "cmd": "./securax continuity"
@@ -350,6 +388,7 @@
    "group": "Keep it running",
    "icon": "lifebuoy",
    "name": "Ransomware-proof backups and recovery drills",
+   "added": "2026-10-21",
    "what": "Every backup first checks that your data is still readable. If ransomware got there first, the copy is quarantined, nothing clean is deleted and you are alerted. `restore latest` picks the newest clean copy, a restore twin proves it opens, and tabletop exercises test the plan.",
    "open": {
     "cmd": "./securax continuity tabletop ransomware"
@@ -363,6 +402,7 @@
    "id": "guiding-map",
    "group": "Your own tools",
    "name": "Guiding Map",
+   "added": "2026-10-10",
    "what": "Your daily cockpit for life and work: goals, check-ins and plans. Works offline, no AI needed.",
    "open": {
     "cmd": "./securax open",
@@ -380,6 +420,7 @@
    "group": "Your own tools",
    "icon": "checklist",
    "name": "Life OS Inbox",
+   "added": "2026-10-20",
    "what": "Capture one line; then each note becomes an action with a next step and a date, or stays a note. Reviews turn findings into actions; Google Keep notes come in too.",
    "open": {
     "cmd": "./securax open",
@@ -395,6 +436,7 @@
    "id": "knowledge",
    "group": "Your own tools",
    "name": "Your AI history",
+   "added": "2026-10-15",
    "what": "Years of chats from Claude, ChatGPT, DeepSeek or Gemini as one private library you can search.",
    "open": {
     "cmd": "./securax knowledge"
@@ -410,6 +452,7 @@
    "group": "Your own tools",
    "icon": "key",
    "name": "Password manager",
+   "added": "2026-10-20",
    "what": "Your own password vault (Vaultwarden) for the Bitwarden apps on laptop and phone, encrypted on your device before it is stored.",
    "open": {
     "cmd": "./securax start passwords",
@@ -425,6 +468,7 @@
    "group": "Your own tools",
    "icon": "cloud",
    "name": "Sign in to AWS, Google Cloud, Azure",
+   "added": "2026-10-20",
    "what": "One command per cloud, nothing to install: open the link on any device, sign in, and start building.",
    "open": {
     "cmd": "./securax cloud login aws"
@@ -439,6 +483,7 @@
    "group": "Your own tools",
    "icon": "devices",
    "name": "SecuRAX on every device",
+   "added": "2026-10-20",
    "what": "Your own address on any phone, tablet or computer: sign in with Google and everything is there, synced, with the laptop off. One command sets it up.",
    "open": {
     "cmd": "./securax online setup"
@@ -454,6 +499,7 @@
    "group": "Keep it running",
    "icon": "loop",
    "name": "Many machines, one SecuRAX",
+   "added": "2026-10-20",
    "what": "Run it on the laptop, a VPS, a Mac mini or any cloud at once: every machine holds the same data, and any one of them can stop. Each machine is an extra, never a dependency: with every other one off, this one carries on by itself (doc 90).",
    "open": {
     "cmd": "./securax nodes"
@@ -469,6 +515,7 @@
    "group": "Keep it running",
    "icon": "loop",
    "name": "The estate finds its own weak points",
+   "added": "2026-10-21",
    "what": "Every combination of your machines being off is checked: what still works, what slows down, what stops, and the fix for each single point of failure. A new weak point is pushed to your phone.",
    "open": {
     "cmd": "./securax resilience"
@@ -483,6 +530,7 @@
    "group": "Keep it running",
    "icon": "loop",
    "name": "The autopilot",
+   "added": "2026-10-21",
    "what": "The estate learns from its own failures (a postmortem draft and an alert, escalated when one keeps coming back), drills itself every night where it most needs it, and warns days before disk space, backups or the AI allowance run out.",
    "open": {
     "cmd": "./securax autopilot"
@@ -497,6 +545,7 @@
    "group": "Keep it running",
    "icon": "undo",
    "name": "Stable and beta versions",
+   "added": "2026-10-20",
    "what": "Keep the version you rely on (stable) while a new one is tried (beta), on its own address; switching is safe and never goes back.",
    "open": {
     "cmd": "./securax channel"

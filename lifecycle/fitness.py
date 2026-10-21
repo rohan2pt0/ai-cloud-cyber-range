@@ -342,6 +342,19 @@ def check_outcomes_declared() -> dict:
             else "name the outcome and where it shows (features.json): " + ", ".join(bad[:5])}
 
 
+def check_enterprise_declared() -> dict:
+    """The suite (doc 97): every feature declares the edition it starts in and the shared platform services it uses, and every
+    service claimed as built is proven by its files. A component nobody can say how to sell to an organisation is not ready."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("suite", ROOT / "governance" / "suite.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    err = mod.check()
+    return {"name": "enterprise-declared", "value": len(err), "budget": 0, "unit": "problems", "ok": not err,
+            "note": "every feature declares its edition and platform services; every built service is proven" if not err
+            else "declare it in governance/suite.json: " + "; ".join(err[:3])}
+
+
 def check_private_names() -> dict:
     """No organisation, exercise or person on the private list (only fingerprints are stored) appears in any tracked file."""
     import importlib.util
@@ -359,7 +372,7 @@ def run_all(only_fast: bool = False) -> list[dict]:
     if not only_fast:
         res += check_gateway(c["gateway_cold_start_s"], c["gateway_rss_mb"])
         res += check_first_block(c["first_block_s"], c["block_latency_p95_ms"])
-    res += [check_supply_chain(base), check_commands_documented(base), check_ccsp_map(), check_regulatory_maps(), check_impact_map(), check_claims(), check_config_clean(), check_readme_current(), check_private_names(), check_commands_in_help(), check_features_current(), check_continuity_declared(), check_outcomes_declared()]
+    res += [check_supply_chain(base), check_commands_documented(base), check_ccsp_map(), check_regulatory_maps(), check_impact_map(), check_claims(), check_config_clean(), check_readme_current(), check_private_names(), check_commands_in_help(), check_features_current(), check_continuity_declared(), check_outcomes_declared(), check_enterprise_declared()]
     return res
 
 

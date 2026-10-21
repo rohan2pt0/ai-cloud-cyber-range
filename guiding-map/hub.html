@@ -39,7 +39,8 @@
   .fcard button{font:13px ui-monospace,Menlo,Consolas,monospace;background:rgba(127,127,127,.15);color:var(--ink);border:1px solid var(--line);border-radius:8px;padding:4px 8px;cursor:pointer;max-width:100%;overflow-wrap:anywhere;text-align:left}
   .fcard a.btn{font-size:13px;color:var(--accent);text-decoration:none;font-weight:600}
   .lt{font-size:11px;border-radius:999px;padding:0 7px;border:1px solid currentColor;white-space:nowrap}
-  .lt.green{color:var(--green)} .lt.amber{color:var(--amber)} .lt.red{color:var(--red)}
+  .lt.green{color:var(--green)} .lt.amber{color:var(--amber)} .lt.red{color:var(--red)} .lt.new{color:var(--accent);font-weight:700}
+  #whatsnew{margin:0 0 10px} #whatsnew a{color:var(--accent)}
   @media (prefers-color-scheme:light){:root{--green:#1f7a3a} .lt.amber{color:#8a5a00} .lt.red{color:#b91c1c}}
   .sub code{color:var(--ink)} .note a{color:var(--accent)}
 </style>
@@ -64,6 +65,7 @@
   <h2 id="everything">Everything SecuRAX can do</h2>
   <div class="sub" style="margin:0 0 4px">Each card says what it does in plain words. <b>Open</b> takes you there when it runs here; otherwise tap the
     command to copy it, then paste it in a terminal inside your <code>ai-cloud-cyber-range</code> folder.</div>
+  <div class="note" id="whatsnew" hidden></div>
   <div id="features"></div>
 
   <h2>Use it on your phone &amp; iPad</h2>
@@ -239,7 +241,15 @@ fetch("/portal/setup.json",{cache:"no-store"}).then(function(r){return r.ok?r.js
   // "Everything SecuRAX can do": generated from features.json (tools/features_sync.py), so a new feature appears here by itself.
   var F = (typeof window !== "undefined" && window.SECURAX_FEATURES) || null, LT = {green:"built and proven", amber:"partly built", red:"not built yet"};
   function esc(s){ return String(s).replace(/[&<>"']/g, function(c){ return "&#"+c.charCodeAt(0)+";"; }); }
+  // New for 30 days after a feature ships (features.json "added"); worked out here, so the generated file never goes stale.
+  function isNew(d){ var t = Date.parse(d || ""); return !isNaN(t) && (Date.now() - t) < 30*864e5 && t <= Date.now() + 864e5; }
   if(F){
+    var fresh = F.features.filter(function(f){ return isNew(f.added); }).sort(function(a,b){ return a.added < b.added ? 1 : a.added > b.added ? -1 : 0; });
+    if(fresh.length){
+      var wn = document.getElementById("whatsnew");
+      wn.innerHTML = "<b>New in the estate:</b> " + fresh.slice(0, 8).map(function(f){ return '<a href="#f-'+esc(f.id)+'">'+esc(f.name)+'</a>'; }).join(" · ");
+      wn.hidden = false;
+    }
     var fbox = document.getElementById("features");
     F.groups.forEach(function(g){
       var items = F.features.filter(function(f){ return f.group===g && !f.service; });
@@ -250,7 +260,7 @@ fetch("/portal/setup.json",{cache:"no-store"}).then(function(r){return r.ok?r.js
         var url = f.path ? f.path : (f.port && !SEC && !TS ? "http://"+H+":"+f.port+"/" : "");
         var el = document.createElement("div"); el.className="fcard"; el.id="f-"+f.id;
         el.innerHTML = '<div class="t">'+(f.port&&url?'<span class="dot off" data-url="'+esc(url)+'"></span>':'')+icon(f.icon)+' '+esc(f.name)
-          +' <span class="lt '+f.light+'">'+LT[f.light]+'</span></div><div class="d">'+esc(f.what)+'</div><div class="row">'
+          +' <span class="lt '+f.light+'">'+LT[f.light]+'</span>'+(isNew(f.added)?' <span class="lt new">New</span>':'')+'</div><div class="d">'+esc(f.what)+'</div><div class="row">'
           +(url?'<a class="btn" href="'+esc(url)+'" target="_blank" rel="noopener">Open →</a>':'')
           +'<button type="button" title="Copy this command">'+esc(f.cmd)+'</button>'
           +'<a class="btn" href="'+esc(f.guide)+'" target="_blank" rel="noopener">Guide</a></div>';

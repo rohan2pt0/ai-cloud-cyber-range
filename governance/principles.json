@@ -1,0 +1,16 @@
+{
+ "about": "The estate's core principles, in ONE place (doc 95, section 8). Every app built from the OS kit carries the core ones automatically and may add others; an edition may say a principle in its own words but cannot drop a core one. Change a principle here and ./securax os check fails until every app is rebuilt with it (./securax os build --all), so a better principle reaches every app. AGENTS.md section 0 holds the same north star for builders.",
+ "north_star": "The person or team using it is visibly better off: better work, better decisions, a calmer and more purposeful life, risks really reduced. Not paperwork.",
+ "principles": [
+  { "id": "ikigai", "core": true, "name": "Ikigai", "text": "Work where what you love, what you are good at, what you are valued for and what the world needs meet; it keeps you going for years, not weeks." },
+  { "id": "antifragility", "core": true, "name": "Antifragility", "text": "Every failure leaves a lesson, a change and a drill, so the next stress finds you stronger." },
+  { "id": "small-wins", "core": true, "name": "Small wins, shown", "text": "Progress you can see keeps you going; the app shows it every week." },
+  { "id": "least-effort", "core": true, "name": "Least effort for you", "text": "The app does the remembering, the checking and the reminding; you do the one next step." },
+  { "id": "pareto", "core": false, "name": "Pareto", "text": "A few actions carry most of the result. Find them first." },
+  { "id": "inversion", "core": false, "name": "Inversion", "text": "Ask what could ruin it, and remove that downside before chasing upside." },
+  { "id": "control-inputs", "core": false, "name": "Control the inputs", "text": "You cannot control outcomes. You control decisions, rhythm and follow-through." },
+  { "id": "compounding", "core": false, "name": "Compounding", "text": "A small review kept every week for a year beats a perfect plan kept for a month." },
+  { "id": "flywheel", "core": false, "name": "Flywheel", "text": "Each improvement makes the next one easier: visibility earns trust, trust earns support, support builds capability." },
+  { "id": "never-miss-twice", "core": false, "name": "Never miss twice", "text": "Missing once is life. Missing twice is the start of a new habit, so the floor is two minutes." }
+ ]
+}

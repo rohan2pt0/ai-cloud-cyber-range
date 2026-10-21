@@ -18,6 +18,7 @@ window.SECURAX_FEATURES = {
    "path": "",
    "port": 0,
    "service": false,
+   "added": "2026-10-21",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/93-PROGRESS-YOU-CAN-SEE/"
   },
@@ -31,8 +32,23 @@ window.SECURAX_FEATURES = {
    "path": "",
    "port": 0,
    "service": false,
+   "added": "2026-10-21",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/96-ONE-PLATFORM-MANY-PRODUCTS/"
+  },
+  {
+   "id": "suite",
+   "group": "Keep it running",
+   "icon": "grid",
+   "name": "The suite (built for one, ready for many)",
+   "what": "Every component is declared with the edition it starts in and the shared platform services it uses, so one person's tool can later serve an organisation of any size. Shows how ready each edition is to sell, what blocks it, and writes an honest datasheet per edition.",
+   "cmd": "./securax suite",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "added": "2026-10-21",
+   "light": "amber",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/97-BUILT-FOR-ONE-READY-FOR-MANY/"
   },
   {
    "id": "cyber-range",
@@ -44,6 +60,7 @@ window.SECURAX_FEATURES = {
    "path": "",
    "port": 8097,
    "service": false,
+   "added": "2026-10-20",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/79-EXERCISE-RANGE/"
   },
@@ -57,6 +74,7 @@ window.SECURAX_FEATURES = {
    "path": "",
    "port": 0,
    "service": false,
+   "added": "2026-10-20",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/78-CRISIS-RESPONSE-KIT/"
   },
@@ -70,6 +88,7 @@ window.SECURAX_FEATURES = {
    "path": "",
    "port": 0,
    "service": false,
+   "added": "2026-10-14",
    "light": "green",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/30-PURPLE-TEAM-LOOP/"
   },
@@ -83,6 +102,7 @@ window.SECURAX_FEATURES = {
    "path": "",
    "port": 0,
    "service": false,
+   "added": "2026-10-14",
    "light": "green",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/43-INSPECT-THIRD-PARTY-SOFTWARE/"
   },
@@ -96,6 +116,7 @@ window.SECURAX_FEATURES = {
    "path": "/portal/navigator.html",
    "port": 0,
    "service": false,
+   "added": "2026-10-17",
    "light": "green",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/66-BFSI-CONTROL-LIBRARY-AND-NAVIGATOR/"
   },
@@ -109,6 +130,7 @@ window.SECURAX_FEATURES = {
    "path": "",
    "port": 0,
    "service": false,
+   "added": "2026-10-14",
    "light": "green",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/36-IDENTITY-INCIDENT-RESIDENCY/"
   },
@@ -122,6 +144,7 @@ window.SECURAX_FEATURES = {
    "path": "",
    "port": 0,
    "service": false,
+   "added": "2026-10-14",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/35-REGULATORY-GAP-ASSESSMENT/"
   },
@@ -135,6 +158,7 @@ window.SECURAX_FEATURES = {
    "path": "",
    "port": 0,
    "service": false,
+   "added": "2026-10-20",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/67-RISK-REGISTER-NSCS-CII/"
   },
@@ -148,6 +172,7 @@ window.SECURAX_FEATURES = {
    "path": "/portal/cockpit.html",
    "port": 0,
    "service": false,
+   "added": "2026-10-14",
    "light": "green",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/37-COCKPIT-STORAGE-PATCHING/"
   },
@@ -161,6 +186,7 @@ window.SECURAX_FEATURES = {
    "path": "",
    "port": 0,
    "service": false,
+   "added": "2026-10-21",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/94-GOVERN/"
   },
@@ -174,6 +200,7 @@ window.SECURAX_FEATURES = {
    "path": "/vantage/",
    "port": 0,
    "service": false,
+   "added": "2026-10-21",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/95-OS-KIT-VANTAGE/"
   },
@@ -187,6 +214,7 @@ window.SECURAX_FEATURES = {
    "path": "",
    "port": 0,
    "service": false,
+   "added": "2026-10-14",
    "light": "green",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/36-IDENTITY-INCIDENT-RESIDENCY/"
   },
@@ -200,6 +228,7 @@ window.SECURAX_FEATURES = {
    "path": "",
    "port": 3000,
    "service": true,
+   "added": "2026-10-15",
    "light": "green",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/53-THE-TWIN/"
   },
@@ -213,6 +242,7 @@ window.SECURAX_FEATURES = {
    "path": "",
    "port": 0,
    "service": false,
+   "added": "2026-10-21",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/89-ACCURATE-ANSWERS-WITHOUT-PROMPT-ENGINEERING/"
   },
@@ -226,6 +256,7 @@ window.SECURAX_FEATURES = {
    "path": "",
    "port": 0,
    "service": false,
+   "added": "2026-10-20",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/83-BUILD-WITH-OPEN-MODELS/"
   },
@@ -239,6 +270,7 @@ window.SECURAX_FEATURES = {
    "path": "",
    "port": 0,
    "service": false,
+   "added": "2026-10-20",
    "light": "green",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/82-GO-BACK-TO-A-WORKING-VERSION/"
   },
@@ -252,6 +284,7 @@ window.SECURAX_FEATURES = {
    "path": "",
    "port": 0,
    "service": false,
+   "added": "2026-10-19",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/72-SYNC-AND-BACKUP-WITHOUT-THE-LAPTOP/"
   },
@@ -265,6 +298,7 @@ window.SECURAX_FEATURES = {
    "path": "",
    "port": 0,
    "service": false,
+   "added": "2026-10-20",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/80-STORAGE-THAT-GROWS-WITH-YOU/"
   },
@@ -278,6 +312,7 @@ window.SECURAX_FEATURES = {
    "path": "",
    "port": 0,
    "service": false,
+   "added": "2026-10-13",
    "light": "green",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/27-INCIDENT-RUNBOOK/"
   },
@@ -291,6 +326,7 @@ window.SECURAX_FEATURES = {
    "path": "",
    "port": 0,
    "service": false,
+   "added": "2026-10-20",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION/"
   },
@@ -304,6 +340,7 @@ window.SECURAX_FEATURES = {
    "path": "",
    "port": 0,
    "service": false,
+   "added": "2026-10-20",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION/"
   },
@@ -317,6 +354,7 @@ window.SECURAX_FEATURES = {
    "path": "",
    "port": 0,
    "service": false,
+   "added": "2026-10-21",
    "light": "green",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/88-RANSOMWARE-AND-DISASTER-RECOVERY-PROVEN/"
   },
@@ -330,6 +368,7 @@ window.SECURAX_FEATURES = {
    "path": "/",
    "port": 0,
    "service": true,
+   "added": "2026-10-10",
    "light": "green",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/14-GUIDING-MAP/"
   },
@@ -343,6 +382,7 @@ window.SECURAX_FEATURES = {
    "path": "/index.html",
    "port": 0,
    "service": false,
+   "added": "2026-10-20",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION/"
   },
@@ -356,6 +396,7 @@ window.SECURAX_FEATURES = {
    "path": "",
    "port": 0,
    "service": false,
+   "added": "2026-10-15",
    "light": "green",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/51-YOUR-AI-HISTORY/"
   },
@@ -369,6 +410,7 @@ window.SECURAX_FEATURES = {
    "path": "",
    "port": 8222,
    "service": false,
+   "added": "2026-10-20",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION/"
   },
@@ -382,6 +424,7 @@ window.SECURAX_FEATURES = {
    "path": "",
    "port": 0,
    "service": false,
+   "added": "2026-10-20",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION/"
   },
@@ -395,6 +438,7 @@ window.SECURAX_FEATURES = {
    "path": "",
    "port": 0,
    "service": false,
+   "added": "2026-10-20",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/85-USE-SECURAX-ANYWHERE/"
   },
@@ -408,6 +452,7 @@ window.SECURAX_FEATURES = {
    "path": "",
    "port": 0,
    "service": false,
+   "added": "2026-10-20",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/86-MANY-NODES-AND-THE-ROAD-TO-SCALE/"
   },
@@ -421,6 +466,7 @@ window.SECURAX_FEATURES = {
    "path": "",
    "port": 0,
    "service": false,
+   "added": "2026-10-21",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/91-ANY-MACHINE-CAN-CARRY-THE-ESTATE/"
   },
@@ -434,6 +480,7 @@ window.SECURAX_FEATURES = {
    "path": "",
    "port": 0,
    "service": false,
+   "added": "2026-10-21",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/92-THE-AUTOPILOT/"
   },
@@ -447,6 +494,7 @@ window.SECURAX_FEATURES = {
    "path": "",
    "port": 0,
    "service": false,
+   "added": "2026-10-20",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/86-MANY-NODES-AND-THE-ROAD-TO-SCALE/"
   }

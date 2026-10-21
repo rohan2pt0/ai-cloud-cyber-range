@@ -1014,6 +1014,11 @@ EOF2
     #   ./securax venture | log time|money|revenue AMOUNT "what" | plan KEY=VALUE ... | ask | json
     shift; exec python3 "$ROOT/governance/venture.py" "${@:-report}"
     ;;
+  suite)
+    # Built for one, ready for many (doc 97): editions, how ready each is to sell, the shared platform, datasheets, and the check
+    # that every feature declares its edition and platform services.  ./securax suite | components | sheet EDITION | check | json
+    shift; exec python3 "$ROOT/governance/suite.py" "${@:-report}"
+    ;;
   progress)
     # Is SecuRAX making you better off? Your Life OS rhythm, how much stronger the estate got, and the ONE next step (doc 93).
     #   ./securax progress | --send (to your phone) | --json
@@ -2017,6 +2022,7 @@ BUILD & KEEP IT HEALTHY
   resilience     every combination of your machines being off: what still works, each single point of failure, the fix
   govern         for decision makers: where we stand, minimum vs highest, 5W1H and budget per gap, team, Board report, templates
   os             one kit, many apps: Vantage (the CISO's operating system) at /vantage/; build, new ID --name, check
+  suite          built for one, ready for many: editions, readiness to sell, the shared platform, datasheets (sheet EDITION)
   venture        is it paying its way? break-even, payback, unit economics (your time counted); log, plan, ask
   progress       is it making you better off? your rhythm, how much stronger the estate got, the one next step
   autopilot      what the estate learned from its own failures, which drills it ran by itself, what it foresees running out
