@@ -283,7 +283,7 @@ def merge(n: int, st: dict) -> None:
     if git("rev-parse", "--abbrev-ref", "HEAD", check=False) == st["branch"] and not git("status", "--porcelain", check=False):
         git("fetch", "-q", "origin", st["base"])
         git("checkout", "-q", "-B", st["branch"], f"origin/{st['base']}")
-        git("push", "-q", "--force-with-lease", "origin", st["branch"], check=False)
+        git("push", "-q", "-u", "--force-with-lease", "origin", st["branch"], check=False)   # -u: track its own remote branch, not the base
         print(f"  {st['branch']} now starts from the new {st['base']}")
     tell(f"Merged #{n}: {st['pr']['title']}")
 
