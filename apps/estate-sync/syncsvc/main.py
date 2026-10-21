@@ -126,6 +126,29 @@ async def _peer_loop() -> None:
 app = FastAPI(title="SecuRAX estate-sync", docs_url=None, redoc_url=None,
               openapi_url=None, lifespan=lifespan)
 
+# The store apps (doc 98): an app packaged for Android or iOS runs from its own origin (capacitor://localhost on iOS,
+# https://localhost on Android), not from the estate's address, so the browser asks before it lets the app read a reply.
+# Only those origins are allowed, only for the state and snapshot calls, and never with cookies: a native app always
+# sends its own device token, so allowing the origin grants nothing a token does not already grant.
+APP_ORIGINS = [o.strip() for o in os.environ.get("SYNC_APP_ORIGINS", "capacitor://localhost,https://localhost,http://localhost").split(",") if o.strip()]
+
+
+@app.middleware("http")
+async def app_origins(request: Request, call_next):
+    origin = request.headers.get("origin", "")
+    allowed = origin in APP_ORIGINS and request.url.path.startswith(("/sync/state", "/sync/snapshots"))
+    if request.method == "OPTIONS" and allowed:
+        resp = Response(status_code=204)
+    else:
+        resp = await call_next(request)
+    if allowed:
+        resp.headers["Access-Control-Allow-Origin"] = origin
+        resp.headers["Access-Control-Allow-Methods"] = "GET, PUT, OPTIONS"
+        resp.headers["Access-Control-Allow-Headers"] = "Authorization, Content-Type"
+        resp.headers["Access-Control-Max-Age"] = "600"
+        resp.headers["Vary"] = "Origin"
+    return resp
+
 
 def _auth(authorization: str | None, cf_jwt: str | None = None, user: str | None = None) -> None:
     """Fail-closed Bearer check with constant-time compare (no token leak via timing). A verified Access sign-in is the other way in,

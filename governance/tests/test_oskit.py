@@ -111,3 +111,49 @@ def test_kit_news_is_checked_and_reaches_the_right_apps(tmp_path, monkeypatch):
     f.write_text(json.dumps([{"date": "soon", "text": "x"}, {"date": "2026-10-21", "editions": ["ghost"], "text": "For an app that is not there."}]))
     probs = " ".join(ok.news_problems())
     assert "needs a date" in probs and "'ghost' does not exist" in probs
+
+
+def test_a_store_project_is_one_command(tmp_path, monkeypatch):
+    monkeypatch.setenv("SITE_DOMAIN", "example.org")
+    assert ok.app_id("vantage") == "org.example.vantage" and ok.app_id("founder-os") == "org.example.founderos"
+    d = ok.mobile("vantage", tmp_path / "m", "https://example.invalid")
+    cfg = json.loads((d / "capacitor.config.json").read_text())
+    pkg = json.loads((d / "package.json").read_text())
+    assert cfg["appId"] == "org.example.vantage" and cfg["webDir"] == "www"
+    assert pkg["dependencies"]["@capacitor/core"] == ok.CAPACITOR and not any("^" in v or "~" in v for v in pkg["dependencies"].values())
+    assert (d / "www" / "index.html").read_bytes() == ok.render(ok.editions()["vantage"])["index.html"]
+    twa = json.loads((d / "twa-manifest.json").read_text())
+    assert twa["host"] == "example.invalid" and twa["startUrl"] == "/vantage/"
+    assert "keystore" in (d / ".gitignore").read_text()
+    (tmp_path / "other").mkdir()
+    (tmp_path / "other" / "x.txt").write_text("someone else's")
+    with pytest.raises(ValueError, match="not a project"):
+        ok.mobile("vantage", tmp_path / "other")
+
+
+def test_store_readiness_blocks_what_would_fail(monkeypatch):
+    assert not [p for p in ok.mobile_problems("vantage") if p[0] == "fail"]
+    assert any("4.2" in p[1] for p in ok.mobile_problems("vantage"))           # Apple's rule is named, honestly
+    real = ok.mobile_source
+
+    def with_cdn(eid):
+        e, files = real(eid)
+        files = dict(files)
+        files["index.html"] = files["index.html"].replace(b"<head>", b'<head><script src="https://cdn.example.invalid/x.js"></script>', 1)
+        return e, files
+    monkeypatch.setattr(ok, "mobile_source", with_cdn)
+    assert any(p[0] == "fail" and "another site" in p[1] for p in ok.mobile_problems("vantage"))
+
+
+def test_assetlinks_needs_a_real_fingerprint(tmp_path):
+    with pytest.raises(ValueError, match="fingerprint"):
+        ok.assetlinks("vantage", "not-a-fingerprint", tmp_path / "a.json")
+    fp = ":".join(["AB"] * 32)
+    p = ok.assetlinks("vantage", fp, tmp_path / "a.json")
+    assert json.loads(p.read_text())[0]["target"]["sha256_cert_fingerprints"] == [fp]
+
+
+def test_every_kit_app_stays_store_ready():
+    for eid, e in ok.editions().items():
+        if not e.get("template"):
+            assert not [p for p in ok.mobile_problems(eid) if p[0] == "fail"], eid

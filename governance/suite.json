@@ -63,6 +63,8 @@
  "components": {
   "progress": { "from": "community", "uses": ["export"], "enterprise": "a team view of each person's rhythm, shared only with their consent" },
   "venture": { "from": "community", "uses": [], "enterprise": "a profit and loss per edition and per add-on" },
+  "ship": { "from": "community", "uses": ["identity", "audit", "updates"], "enterprise": "the same loop for every team's repositories, with approvals and an audit of every merge" },
+  "store-apps": { "from": "community", "uses": ["identity", "export", "continuity", "hosting"], "enterprise": "branded store apps per customer, published and updated for them" },
   "suite": { "from": "community", "uses": ["licensing"], "enterprise": "entitlements checked from the licence instead of declared on paper" },
   "cyber-range": { "from": "community", "uses": ["identity", "tenancy", "rbac", "audit", "metering"], "enterprise": "many teams and exercises at once, SSO for players, scored evidence kept for audit" },
   "respond": { "from": "community", "uses": ["audit", "export"], "enterprise": "case files shared with the crisis team under roles, evidence kept for regulators" },

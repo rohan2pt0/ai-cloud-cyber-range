@@ -78,8 +78,8 @@ What closes the remaining gap here is not the model alone. It is the gates:
 | A strong model for the hard parts | The strong chain, picked by `route` and `autobuild` | ✅ |
 | A review before merging | `./securax review` | ✅ |
 | Proof before a commit | `verify`, `diffcheck`, `forge` (they are stricter than a chat assistant) | ✅ |
-| Watching a pull request and fixing CI by itself | Not yet: you read CI on GitHub and paste the failure into OpenCode | 🔴 dated below |
-| Cloud sessions you can leave running | Not yet: OpenCode runs on your laptop, or on your always-on server (doc 85) over SSH | 🔴 dated below |
+| Opening the pull request, watching CI and fixing it by itself, merging when green | `./securax ship pr` and `ship watch --fix 2 --merge` (doc 98) | ✅ |
+| Cloud sessions you can leave running | The `pr-watch` routine runs the ship loop every 15 minutes on your always-on machine (doc 98); OpenCode itself still runs where you start it | 🟡 |
 
 ## 6. Data: what may go to these models
 
@@ -103,7 +103,7 @@ What closes the remaining gap here is not the model alone. It is the gates:
 | 2026-10-31 | Re-check DeepSeek's zero-retention renewal on OpenCode Go's page. If it lapsed, move it behind Kimi and GLM: `./securax providers chain strong remove opencodego_pro`, then `./securax providers chain strong add opencodego_pro --before nvidia_nim` |
 | 2026-11-15 | Run `./securax autobench` on the build and strong chains: replace reputation with measured numbers for this repository |
 | 2026-11-30 | Show which model answered each call in the cockpit, so a quiet fall to a weaker rung is visible |
-| 2026-12-31 | A CI watcher: when a pull request goes red, write the failure brief for OpenCode by itself |
+| ~~2026-12-31~~ done 2026-10-21 | A CI watcher that writes the failure brief and fixes it: `./securax ship watch` (doc 98) |
 
 ## Sources
 

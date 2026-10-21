@@ -1029,7 +1029,7 @@ nav#oskNav button.on { color:var(--ink); background:var(--btn); font-weight:700;
     var h = c ? "<p>Synced with your estate" + (last ? ", last at " + K.esc(last) : "") + (own ? "" : " (using the Life OS pairing on this address)") + ".</p>" + (f > 2 ? '<p class="tag late">The last ' + f + " tries failed. Your data is safe here; it will catch up.</p>" : "")
       : "<p>Not synced: your data lives on this device only. Export a backup now and then, or pair with your estate below.</p>";
     if (note) h += '<p class="muted">' + K.esc(note) + "</p>";
-    h += '<details><summary>Pair this app by itself</summary><label for="syU">Sync address</label><input id="syU" placeholder="/sync" value="' + K.esc((own && own.url) || "") + '">'
+    h += '<details><summary>Pair this app by itself</summary><label for="syU">Sync address (in a phone app from a store, your estate\'s full address ending in /sync)</label><input id="syU" placeholder="/sync" value="' + K.esc((own && own.url) || "") + '">'
       + '<label for="syN">Your user name on the estate</label><input id="syN" value="' + K.esc((own && own.user) || "") + '">'
       + '<label for="syK">Device key</label><input id="syK" type="password" autocomplete="off">'
       + '<div class="btns"><button data-a="syncSave">Pair</button>' + (own ? '<button class="ghost" data-a="syncForget">Forget this pairing</button>' : "") + "</div></details>";

@@ -53,6 +53,7 @@ Run `./securax route "the task"`. It names the tier, and why:
 - **strong**: security, crypto, auth, sync or merge logic, regulator mapping, or a change across many areas. `./securax autobuild "…"` uses the strong open models by itself; work on it by hand in `./securax opencode --strong` (doc 83).
 
 Before you start, `./securax brief "the task"` prints the likely files, the lessons that apply and the checks that prove it (autobuild sends it to the model by itself).
+To ship, `./securax ship pr`, then `./securax ship watch N --fix 2 --merge` (doc 98): it watches CI, fixes red with autobuild and merges when green.
 Before merging anything the router calls strong, get a second look: `./securax review`. `./securax ai share` shows who did this month's work
 (Claude, the open models, you). Commits made with SecuRAX's own models end with the line `Assisted-by: SecuRAX open models`.
 
