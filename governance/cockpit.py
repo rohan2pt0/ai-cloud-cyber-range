@@ -844,6 +844,10 @@ def render(c: Collector, maps: dict, hist: list[dict], ai: str, now: float, targ
         f"<div class='lamp {k}'><b>{v}</b>{E(t)}</div>" for k, v, t in lamps)
         + ("<a class='lamp nav' href='/portal/navigator.html'><b>Controls</b>BFSI control navigator</a>" if nav else
            "<div class='lamp'><b>Controls</b>Run <code>./securax go</code> once: it builds the BFSI control matrix (no file needed)</div>") + "</div></div>")
+    try:                                                          # for decision makers: where we stand and what it takes (doc 94)
+        h.append(_load("securax_govern", "governance/govern.py").html_card())
+    except Exception:  # noqa: BLE001 - a convenience card must never fail the cockpit
+        pass
     try:                                                          # what is left to set up, with its steps (./securax finish)
         h.append("<div id='finish'></div>" + _load("securax_finish", "governance/finish.py").html_card())
     except Exception:  # noqa: BLE001 - the checklist is a convenience; it must never fail the cockpit

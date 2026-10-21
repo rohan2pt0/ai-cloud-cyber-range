@@ -1,0 +1,2 @@
+risk_id,title,description,asset_or_process,owner,likelihood_1-5,impact_1-5,inherent_score,existing_controls,treatment,action,action_owner,due_date,residual_likelihood,residual_impact,residual_score,status,last_review
+R-0001,Example: ransomware on file servers,Encrypted shares stop operations,File servers,Head of IT,3,5,15,EDR; daily backups,Reduce,Offline backups and quarterly restore test,IT operations,{{DATE}},2,4,8,open,{{DATE}}

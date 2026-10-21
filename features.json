@@ -156,6 +156,20 @@
    "shows": "the cockpit in the Command Center"
   },
   {
+   "id": "govern",
+   "group": "Comply and govern",
+   "icon": "compass",
+   "name": "Govern (for decision makers)",
+   "what": "Where the organisation stands on governance, people, process and technology; the minimum basic and the highest possible; for each gap the 5W1H and an indicative budget; the team you need; a one-page Board report; and a pack of ready policies, SOPs, registers and an executive deck.",
+   "open": {
+    "cmd": "./securax govern"
+   },
+   "command": "govern",
+   "doc": "securax/94-GOVERN.md",
+   "outcome": "Leaders decide what to fix first, who to hire and what to spend, in an afternoon instead of a consulting engagement.",
+   "shows": "the Govern card in the cockpit, and ./securax govern board"
+  },
+  {
    "id": "gateway",
    "group": "Use AI safely",
    "name": "AI security gateway",

@@ -168,6 +168,7 @@
   "governance": {
    "paths": [
     "governance/**",
+    "templates/**",
     "integrations/rea/**",
     "docs/securax/regulatory/**"
    ],

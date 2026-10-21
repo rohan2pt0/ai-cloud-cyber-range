@@ -139,6 +139,19 @@ window.SECURAX_FEATURES = {
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/37-COCKPIT-STORAGE-PATCHING/"
   },
   {
+   "id": "govern",
+   "group": "Comply and govern",
+   "icon": "compass",
+   "name": "Govern (for decision makers)",
+   "what": "Where the organisation stands on governance, people, process and technology; the minimum basic and the highest possible; for each gap the 5W1H and an indicative budget; the team you need; a one-page Board report; and a pack of ready policies, SOPs, registers and an executive deck.",
+   "cmd": "./securax govern",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "light": "amber",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/94-GOVERN/"
+  },
+  {
    "id": "gateway",
    "group": "Use AI safely",
    "icon": "shield",
