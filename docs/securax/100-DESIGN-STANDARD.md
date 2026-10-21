@@ -1,7 +1,7 @@
 # 100 · The design standard: calm by default, no manual needed
 
 <!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
-> **Status: 🟡 Partly built.** Built and tested: the Command Center opens on one honest status line and at most three things to do, with everything else folded and searchable; two core principles (calm by default, no manual needed) reach every kit app; governance/design.json holds the shared tokens and rules and a test holds each page on the standard. The cockpit, the ready reckoner, the Life OS and the kit apps move to it on dated targets. [What the lights mean](../index.md#the-status-lights)
+> **Status: 🟡 Partly built.** Built and tested: the Command Center opens on one honest status line and at most three things to do, with everything else folded and searchable; two core principles (calm by default, no manual needed) reach every kit app; governance/design.json holds the shared tokens and rules and a test holds each page on the standard. The cockpit, the ready reckoner and the control navigator take one shared style from governance/design.py (83 pages measured, 0 contrast failures); the Life OS and kit apps keep their brand colours with the same basics. Role-aware views are dated. [What the lights mean](../index.md#the-status-lights)
 <!-- status:end -->
 
 **The ask:** the Command Center had become a catalogue of about 60 equal cards. The owner asked for three things:
@@ -72,7 +72,7 @@ These are sources of principles, not visual identities to copy. SecuRAX keeps it
 
 ## 5. The standard is checked, not hoped for
 
-`governance/design.json` holds the shared tokens and the rules. `governance/tests/test_design_standard.py` checks every page on the standard for:
+`governance/design.json` holds the shared tokens and the rules, and `governance/design.py` turns them into the CSS every generated page uses. `governance/tests/test_design_standard.py` checks every page and generator on the standard for:
 - the tokens in both themes;
 - `lang`, viewport and safe-area settings;
 - a visible focus, and reduced motion;
@@ -86,15 +86,37 @@ The Command Center is also checked:
   - search narrows the library.
 - **`ui_audit` contrast check:** 0 contrast failures and no horizontal scroll at 390 px, in both themes.
 
-## 6. What moves next, with dates
+## 6. Where the standard reaches
 
-| Page | Moves to the standard by |
+**Every page the estate generates, from one place.** `governance/design.py` turns `design.json` into one block of CSS:
+the tokens in both themes, safe-area padding, a visible focus, reduced motion and 44 px targets. These pages take it:
+- the Command Center;
+- the cockpit;
+- the 78 ready-reckoner pages;
+- the control navigator, about 25 pages (it was dark only; it now follows the device's light or dark setting).
+
+Change a colour in `design.json`, and every one of them follows on its next build.
+
+**Fixed on the way:**
+- **Heat map:** in light mode, the numbers on the navigator's heat-map cells were dark text on dark colour. They are white now, in both themes.
+- **N/A cells:** grey on grey, a contrast failure that was there before this change.
+- **The cockpit's "posture by area" table:** too wide for a phone. It now scrolls inside its own box.
+
+All 83 pages were measured in both themes, at laptop and phone width: no contrast failure, no page error, no sideways scroll.
+
+**Apps with their own brand keep it.** The Life OS (navy and gold) and the kit apps such as Vantage keep their colours, which are part of their identity. They meet the same basics:
+- a visible keyboard focus on every control;
+- calm motion;
+- notch-safe edges;
+- 44 px buttons and fields in the kit.
+
+Their contrast is measured by `ui_audit.py` and `kit_audit.py`.
+
+| Still to do | By |
 |---|---|
-| The cockpit and the ready-reckoner pages (already quiet; tokens and focus next) | 2026-12-15 |
-| The Life OS and the kit apps (Vantage) | 2027-01-31 |
 | Role-aware views (CISO, analyst, engineer), reusing the same pages and the existing roles service (doc 97) | 2027-03-31 |
 
-A page joins `pages_on_the_standard` in `design.json` when it moves, and the test then holds it there.
+A generator joins `generators_on_the_standard` in `design.json` when it moves; the test then holds it there.
 
 ## 7. What we deliberately did not do
 

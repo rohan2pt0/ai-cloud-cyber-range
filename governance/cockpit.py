@@ -731,8 +731,6 @@ CSS = """
 .annun{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px}.lamp{display:block;border:1px solid var(--line);border-radius:10px;padding:10px;color:var(--ink);text-decoration:none}
 .lamp b{display:block;font-size:1.5rem}.lamp.warn{border-color:var(--r)}.lamp.warn b{color:var(--r)}.lamp.caut{border-color:var(--a)}.lamp.caut b{color:var(--a)}
 .lamp.ok b{color:var(--g)}.lamp.nav{border-color:var(--acc)}.lamp.nav b{color:var(--acc)}details.plan>summary{cursor:pointer;font-size:1.05rem}
-:root{--bg:#f6f7f9;--card:#fff;--ink:#14202b;--mut:#5a6876;--line:#dde2e8;--g:#176f3d;--a:#8a5a00;--r:#c0392b;--u:#5f6b78;--acc:#2554c7;--ring:#d0d6dd;--on:#fff}
-@media (prefers-color-scheme:dark){:root{--bg:#0f141a;--card:#18202a;--ink:#e8edf2;--mut:#9aa7b5;--line:#2b3744;--g:#4cc884;--a:#e3a63c;--r:#ff7a6b;--u:#8794a3;--acc:#7aa2ff;--ring:#33414f;--on:#0f141a}}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,sans-serif}
 main{max-width:1180px;margin:0 auto;padding:16px}h1{font-size:1.5rem;margin:.2rem 0}h2{font-size:1.1rem;margin:0 0 .5rem}
 .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin:14px 0}
@@ -762,8 +760,10 @@ ol.do{margin:.6rem 0 0;padding-left:1.4rem}ol.do li{margin:.2rem 0}
 .gauge .note{font-size:.8rem;color:var(--mut);overflow-wrap:anywhere}.gauge.red{border:2px solid var(--r)}.gauge.red b{color:var(--r)}.gauge.amber{border:2px solid var(--a)}.gauge.quiet b{color:var(--mut);font-weight:600}
 .lit{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 6px}.ann{border:1px solid var(--line);border-radius:99px;padding:3px 10px;font-size:.85rem;background:var(--card)}
 .ann.warn{border-color:var(--r)}.ann.warn b{color:var(--r)}.ann.caut{border-color:var(--a)}.ann.caut b{color:var(--a)}
-details.panel>summary{font-size:1.02rem}details.panel[open]>summary{margin-bottom:.6rem}
+@media (max-width:700px){table.areas{display:block;overflow-x:auto;max-width:100%}}details.panel>summary{font-size:1.02rem}details.panel[open]>summary{margin-bottom:.6rem}
 """
+# The shared tokens and basics (doc 100) first; the cockpit keeps only its own lamp colours.
+CSS = _load("securax_design", "governance/design.py").css({"--u": "#5f6b78", "--ring": "#d0d6dd", "--on": "#fff"}, {"--u": "#8794a3", "--ring": "#33414f", "--on": "#0f141a"}) + CSS
 
 
 PRIMARY = ["backup", "disk", "backup_enc", "tls", "gateway", "cov-cscrf"]   # the six instruments in the pilot's line of sight
@@ -808,7 +808,7 @@ def render(c: Collector, maps: dict, hist: list[dict], ai: str, now: float, targ
     headline = {"red": f"{len(reds)} thing{'s' if len(reds) != 1 else ''} need attention today.", "amber": f"Healthy, with {len(ambs)} thing{'s' if len(ambs) != 1 else ''} to schedule.",
                 "green": "All clear: nothing measured is wrong.", "unknown": "Not enough data yet: start the estate and refresh."}[overall]
     stamp = time.strftime("%d %b %Y %H:%M %Z", time.localtime(now))
-    h = [f"<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>SecuRAX Cockpit</title><style>{CSS}</style></head><body><main>"]
+    h = [f"<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1,viewport-fit=cover'><title>SecuRAX Cockpit</title><style>{CSS}</style></head><body><main>"]
     # Dark-cockpit rule (Airbus, mission control): when everything is normal nothing is lit. Only what is abnormal is shown;
     # the nominal readings and the planning views stay one click away, so the eye goes straight to what needs a decision.
     nav = (ROOT / "portal" / "navigator.html").exists()

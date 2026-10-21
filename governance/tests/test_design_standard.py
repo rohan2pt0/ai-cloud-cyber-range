@@ -34,3 +34,35 @@ def test_the_command_center_shows_three_actions_at_most_and_folds_the_rest():
         tag = hub[hub.index(fold) - 40: hub.index(fold) + 40]
         assert "<details" in tag and " open" not in tag, fold
     assert "Status unknown" in hub and "Status may be out of date" in hub    # no 'all clear' without a fresh check
+
+
+def test_every_generated_page_takes_its_tokens_from_one_place(tmp_path):
+    # The cockpit, the ready reckoner and the control navigator get their colours and basics from governance/design.py,
+    # never from a palette of their own, so a change in design.json reaches every one of them.
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("securax_design_t", ROOT / "governance" / "design.py")
+    design = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(design)
+    css = design.css()
+    light, dark = blocks(css)
+    for theme, block in (("light", light), ("dark", dark)):
+        for k, v in STD["tokens"][theme].items():
+            assert f"{k}:{v}" in block, f"design.css(): {theme} {k} should be {v}"
+    assert ":focus-visible" in css and "prefers-reduced-motion" in css and "safe-area-inset" in css
+    assert f"min-height:{STD['rules']['min_target_px']}px" in css
+    for rel in STD["rules"]["generators_on_the_standard"]:
+        src = (ROOT / rel).read_text("utf-8")
+        assert "design.py" in src and "viewport-fit=cover" in src, rel
+        assert not re.search(r":root\{--bg:#", src), f"{rel} defines its own palette; take it from governance/design.py"
+    spec = importlib.util.spec_from_file_location("securax_reckoner_t", ROOT / "governance" / "reckoner.py")
+    rk = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(rk)
+    rk.build(tmp_path)
+    page = next(tmp_path.glob("*.html")).read_text("utf-8")
+    assert css in page and "viewport-fit=cover" in page
+
+
+def test_brand_apps_keep_their_colours_but_meet_the_basics():
+    for rel in STD["rules"]["brand_apps_with_the_basics"]:
+        src = (ROOT / rel).read_text("utf-8")
+        assert ":focus-visible" in src and "prefers-reduced-motion" in src, rel
