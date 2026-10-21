@@ -1,0 +1,2 @@
+asset_id,name,type,owner,business_service,location,environment,internet_facing,criticality_C1-4,data_sensitivity_S1-4,priority_P1-3,os_or_platform,version,edr,backup,last_vapt,notes
+A-0001,Example web portal,application,Name of owner,Customer service,Data centre 1,production,yes,4,4,P1,Linux,1.0,yes,daily,{{DATE}},replace this example row

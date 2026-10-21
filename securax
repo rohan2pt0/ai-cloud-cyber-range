@@ -998,6 +998,12 @@ EOF2
     shift; python3 "$ROOT/governance/online.py" "${@:-status}" || exit $?
     case "${1:-status}" in setup|google|allow|remove|join) exec "$0" up ;; esac
     ;;
+  govern)
+    # For decision makers: where we stand on governance, people, process and technology; minimum basic vs highest possible;
+    # the 5W1H and the budget for each gap; the team; the Board report; the template pack (doc 94).
+    #   ./securax govern | profile | mark ID STATE | list | team | board | templates [DIR]
+    shift; exec python3 "$ROOT/governance/govern.py" "${@:-report}"
+    ;;
   progress)
     # Is SecuRAX making you better off? Your Life OS rhythm, how much stronger the estate got, and the ONE next step (doc 93).
     #   ./securax progress | --send (to your phone) | --json
@@ -1999,6 +2005,7 @@ BUILD & KEEP IT HEALTHY
   online         use SecuRAX from any device like a SaaS app: your own addresses behind Google sign-in (setup once)
   continuity     the crisis plan: each scenario's RTO/RPO target vs today, the steps (show ID), safe drills (drill ID), the code mirror (mirror setup: a free private GitLab copy)
   resilience     every combination of your machines being off: what still works, each single point of failure, the fix
+  govern         for decision makers: where we stand, minimum vs highest, 5W1H and budget per gap, team, Board report, templates
   progress       is it making you better off? your rhythm, how much stronger the estate got, the one next step
   autopilot      what the estate learned from its own failures, which drills it ran by itself, what it foresees running out
   names          https://hub.securax.localhost style addresses instead of localhost:port, in one guided step

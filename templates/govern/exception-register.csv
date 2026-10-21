@@ -1,0 +1,2 @@
+exception_id,policy_or_standard,what_deviates,reason,risk_rating,compensating_control,business_owner,approved_by,start_date,end_date,status
+E-0001,Patch management,Legacy server cannot be patched,Vendor no longer supports it,High,Isolated network segment; extra monitoring,Head of operations,CISO,{{DATE}},replace with an end date (max 12 months),open
