@@ -779,6 +779,10 @@ def j_alone(sb: H.Sandbox, c: Checks):
         rc, out = sb.securax("backup", str(bdir), timeout=600)
         c.ok(rc == 0 and list(bdir.glob("securax-*.tar.gz")), "a backup is taken here with the off-site folder unplugged", tail(out, 300))
         c.ok(sb.http("GET", f"{H.GUIDING_MAP}/").status == 200, "the home screen (Command Center and Life OS) serves")
+        rc, out = H.sh(["python3", "governance/progress.py"], cwd=sb.clone, timeout=60,
+                       env={**os.environ, "PROGRESS_USER": "alone", "SYNC_TOKENS": "alone-sbx-token"})
+        c.ok(rc == 0 and "Your rhythm" in out and "goals updated" in out and "The one next step" in out and "Traceback" not in out,
+             "doc 93: `progress` reads the Life OS data just saved on this machine and names the one next step", tail(out, 500))
         rc, out = sb.securax("resilience", "publish", timeout=60)
         st = sb.http("GET", f"{H.GUIDING_MAP}/sync/state?user=_estate", headers=hdr)
         c.ok(rc == 0 and st.status == 200 and any(k.startswith("node:") for k in (st.json() or {}).get("payload", {})),

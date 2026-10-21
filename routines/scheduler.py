@@ -174,7 +174,8 @@ def record_run(job_id: str, code: int, output: str, stamp: str, path: Optional[P
         hist = json.loads(p.read_text()) if p.exists() else {}
     except Exception:  # noqa: BLE001 - a damaged history is rebuilt, never fatal to the scheduler
         hist = {}
-    hist.setdefault(job_id, []).append({"t": stamp, "code": code, "found": bool(FINDING.search(output or ""))})
+    hist.setdefault(job_id, []).append({"t": stamp, "code": code, "found": bool(FINDING.search(output or "")),
+                                        "tail": (output or "").strip()[-300:]})      # the last words, for `autopilot learn` (local only)
     hist[job_id] = hist[job_id][-keep:]
     p.write_text(json.dumps(hist))
 

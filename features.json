@@ -9,6 +9,20 @@
  ],
  "features": [
   {
+   "id": "progress",
+   "group": "Your own tools",
+   "icon": "target",
+   "name": "Your progress",
+   "what": "Is SecuRAX making you better off? Your Life OS rhythm, what made the estate stronger this month, and the one next step, on your phone every Sunday.",
+   "open": {
+    "cmd": "./securax progress"
+   },
+   "command": "progress",
+   "doc": "securax/93-PROGRESS-YOU-CAN-SEE.md",
+   "outcome": "You see, every week, that your days and your estate are getting better, and you always know the one next step.",
+   "shows": "./securax progress, and a message on your phone every Sunday"
+  },
+  {
    "id": "cyber-range",
    "group": "Practise and defend",
    "name": "Cyber range",
@@ -20,7 +34,9 @@
    "command": "exercise",
    "doc": "securax/79-EXERCISE-RANGE.md",
    "highlight": true,
-   "icon": "target"
+   "icon": "target",
+   "outcome": "Your team practises a real attack and defence and gets measurably faster at both.",
+   "shows": "the exercise portal's scoreboard and the after-exercise report"
   },
   {
    "id": "respond",
@@ -33,7 +49,9 @@
    "command": "respond",
    "doc": "securax/78-CRISIS-RESPONSE-KIT.md",
    "highlight": true,
-   "icon": "siren"
+   "icon": "siren",
+   "outcome": "When an organisation is hit, you collect evidence that holds up and report in hours, not days.",
+   "shows": "the case report from ./securax respond report"
   },
   {
    "id": "purple",
@@ -45,7 +63,9 @@
    },
    "command": "purple",
    "doc": "securax/30-PURPLE-TEAM-LOOP.md",
-   "icon": "loop"
+   "icon": "loop",
+   "outcome": "You know which AI attacks your rails stop today, and which they do not.",
+   "shows": "the purple-team report and ./securax progress"
   },
   {
    "id": "inspect",
@@ -57,7 +77,9 @@
    },
    "command": "inspect",
    "doc": "securax/43-INSPECT-THIRD-PARTY-SOFTWARE.md",
-   "icon": "search"
+   "icon": "search",
+   "outcome": "You trust third-party software only after seeing what it really does.",
+   "shows": "the inspect verdict (OK, REVIEW, BLOCK)"
   },
   {
    "id": "controls",
@@ -71,7 +93,9 @@
    "command": "controls",
    "doc": "securax/66-BFSI-CONTROL-LIBRARY-AND-NAVIGATOR.md",
    "highlight": true,
-   "icon": "grid"
+   "icon": "grid",
+   "outcome": "Your control gaps become a short, ranked to-do list instead of a spreadsheet nobody opens.",
+   "shows": "the cockpit's control matrix"
   },
   {
    "id": "incident-clock",
@@ -84,7 +108,9 @@
    "command": "incident",
    "doc": "securax/36-IDENTITY-INCIDENT-RESIDENCY.md",
    "highlight": true,
-   "icon": "clock"
+   "icon": "clock",
+   "outcome": "No regulator deadline is missed: every clock is counted for you.",
+   "shows": "./securax incident and a phone alert before each deadline"
   },
   {
    "id": "comply",
@@ -96,7 +122,9 @@
    },
    "command": "comply",
    "doc": "securax/35-REGULATORY-GAP-ASSESSMENT.md",
-   "icon": "checklist"
+   "icon": "checklist",
+   "outcome": "You see exactly what RBI and SEBI expect that is not yet covered, in your own words.",
+   "shows": "./securax comply"
   },
   {
    "id": "risks",
@@ -108,7 +136,9 @@
    },
    "command": "risks",
    "doc": "securax/67-RISK-REGISTER-NSCS-CII.md",
-   "icon": "scale"
+   "icon": "scale",
+   "outcome": "Your biggest risks are named, owned and dated, and you see them shrink.",
+   "shows": "the cockpit's risk heat map"
   },
   {
    "id": "cockpit",
@@ -121,7 +151,9 @@
    },
    "command": "cockpit",
    "doc": "securax/37-COCKPIT-STORAGE-PATCHING.md",
-   "icon": "gauge"
+   "icon": "gauge",
+   "outcome": "One page tells you what needs you today, and nothing more.",
+   "shows": "the cockpit in the Command Center"
   },
   {
    "id": "gateway",
@@ -134,7 +166,9 @@
    "command": "doctor",
    "doc": "securax/36-IDENTITY-INCIDENT-RESIDENCY.md",
    "highlight": true,
-   "icon": "shield"
+   "icon": "shield",
+   "outcome": "You use AI freely without leaking data or running up a bill.",
+   "shows": "the gateway's audit and ./securax ai budget"
   },
   {
    "id": "chat",
@@ -148,7 +182,9 @@
    "command": "open",
    "doc": "securax/53-THE-TWIN.md",
    "service": true,
-   "icon": "chat"
+   "icon": "chat",
+   "outcome": "You get a capable assistant you own, with your private data kept private.",
+   "shows": "Chat in the Command Center"
   },
   {
    "id": "accurate-answers",
@@ -160,7 +196,9 @@
     "cmd": "./securax ai honesty"
    },
    "command": "ai",
-   "doc": "securax/89-ACCURATE-ANSWERS-WITHOUT-PROMPT-ENGINEERING.md"
+   "doc": "securax/89-ACCURATE-ANSWERS-WITHOUT-PROMPT-ENGINEERING.md",
+   "outcome": "You can act on what the AI says, because it does not make things up.",
+   "shows": "./securax ai honesty, weekly on your phone"
   },
   {
    "id": "build",
@@ -173,7 +211,9 @@
    "command": "opencode",
    "doc": "securax/83-BUILD-WITH-OPEN-MODELS.md",
    "highlight": true,
-   "icon": "code"
+   "icon": "code",
+   "outcome": "You change your own tools without hiring anyone or waiting.",
+   "shows": "the autobuild PR and its green checks"
   },
   {
    "id": "rollback",
@@ -186,7 +226,9 @@
    "command": "rollback",
    "doc": "securax/82-GO-BACK-TO-A-WORKING-VERSION.md",
    "highlight": true,
-   "icon": "undo"
+   "icon": "undo",
+   "outcome": "A bad update never costs you a day: you go back in one command.",
+   "shows": "./securax rollback --list"
   },
   {
    "id": "backup",
@@ -198,7 +240,9 @@
    },
    "command": "protect",
    "doc": "securax/72-SYNC-AND-BACKUP-WITHOUT-THE-LAPTOP.md",
-   "icon": "lock"
+   "icon": "lock",
+   "outcome": "You never lose your work, whatever happens to the machine.",
+   "shows": "./securax progress (backups proven) and the quarterly drill"
   },
   {
    "id": "storage",
@@ -210,7 +254,9 @@
    },
    "command": "storage",
    "doc": "securax/80-STORAGE-THAT-GROWS-WITH-YOU.md",
-   "icon": "disk"
+   "icon": "disk",
+   "outcome": "Your disk never fills up by surprise.",
+   "shows": "./securax storage and a warning days ahead"
   },
   {
    "id": "why",
@@ -222,7 +268,9 @@
    },
    "command": "why",
    "doc": "securax/27-INCIDENT-RUNBOOK.md",
-   "icon": "pulse"
+   "icon": "pulse",
+   "outcome": "When something goes wrong you get the reason in plain words, not a log.",
+   "shows": "./securax why"
   },
   {
    "id": "jewels",
@@ -235,7 +283,9 @@
    },
    "command": "jewels",
    "doc": "securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION.md",
-   "highlight": true
+   "highlight": true,
+   "outcome": "You know what to protect first, and the one thing to do next.",
+   "shows": "./securax jewels"
   },
   {
    "id": "continuity",
@@ -248,7 +298,9 @@
    },
    "command": "continuity",
    "doc": "securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION.md",
-   "highlight": true
+   "highlight": true,
+   "outcome": "A crisis finds you with a plan you have already practised.",
+   "shows": "the tabletop's after-action report and ./securax progress"
   },
   {
    "id": "ransomware-recovery",
@@ -260,7 +312,9 @@
     "cmd": "./securax continuity tabletop ransomware"
    },
    "command": "continuity",
-   "doc": "securax/88-RANSOMWARE-AND-DISASTER-RECOVERY-PROVEN.md"
+   "doc": "securax/88-RANSOMWARE-AND-DISASTER-RECOVERY-PROVEN.md",
+   "outcome": "Ransomware costs you an evening, not your data.",
+   "shows": "./securax progress (clean copies, drills passed)"
   },
   {
    "id": "guiding-map",
@@ -274,7 +328,9 @@
    "command": "open",
    "doc": "securax/14-GUIDING-MAP.md",
    "service": true,
-   "icon": "compass"
+   "icon": "compass",
+   "outcome": "Your days line up with what matters to you, and you can see it happening.",
+   "shows": "the Life OS: wheel, goals, streaks, weekly review"
   },
   {
    "id": "inbox",
@@ -288,7 +344,9 @@
    },
    "command": "lifeos",
    "doc": "securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION.md",
-   "highlight": true
+   "highlight": true,
+   "outcome": "Nothing you capture is lost; each item becomes a decision or a task.",
+   "shows": "the Life OS Inbox reaching zero"
   },
   {
    "id": "knowledge",
@@ -300,7 +358,9 @@
    },
    "command": "knowledge",
    "doc": "securax/51-YOUR-AI-HISTORY.md",
-   "icon": "book"
+   "icon": "book",
+   "outcome": "Everything you learned with other AIs becomes yours to search and reuse.",
+   "shows": "your knowledge folder in Chat"
   },
   {
    "id": "passwords",
@@ -313,7 +373,9 @@
     "port": 8222
    },
    "command": "passwords",
-   "doc": "securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION.md"
+   "doc": "securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION.md",
+   "outcome": "You stop reusing passwords, and get them on every device.",
+   "shows": "the Bitwarden apps"
   },
   {
    "id": "cloud",
@@ -325,7 +387,9 @@
     "cmd": "./securax cloud login aws"
    },
    "command": "cloud",
-   "doc": "securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION.md"
+   "doc": "securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION.md",
+   "outcome": "You can grow to a real cloud setup when you are ready, without starting again.",
+   "shows": "./securax stages"
   },
   {
    "id": "online",
@@ -338,7 +402,9 @@
    },
    "command": "online",
    "doc": "securax/85-USE-SECURAX-ANYWHERE.md",
-   "highlight": true
+   "highlight": true,
+   "outcome": "Your estate works from your phone anywhere, like any app.",
+   "shows": "your own addresses (hub, chat)"
   },
   {
    "id": "nodes",
@@ -351,7 +417,9 @@
    },
    "command": "nodes",
    "doc": "securax/86-MANY-NODES-AND-THE-ROAD-TO-SCALE.md",
-   "highlight": true
+   "highlight": true,
+   "outcome": "Your data is on every machine you own, so none of them is a single point of failure.",
+   "shows": "./securax nodes"
   },
   {
    "id": "resilience",
@@ -363,7 +431,23 @@
     "cmd": "./securax resilience"
    },
    "command": "resilience",
-   "doc": "securax/91-ANY-MACHINE-CAN-CARRY-THE-ESTATE.md"
+   "doc": "securax/91-ANY-MACHINE-CAN-CARRY-THE-ESTATE.md",
+   "outcome": "You know that any one machine can carry the estate, and what to fix if not.",
+   "shows": "./securax resilience, and a phone message when a new weak point appears"
+  },
+  {
+   "id": "autopilot",
+   "group": "Keep it running",
+   "icon": "loop",
+   "name": "The autopilot",
+   "what": "The estate learns from its own failures (a postmortem draft and an alert, escalated when one keeps coming back), drills itself every night where it most needs it, and warns days before disk space, backups or the AI allowance run out.",
+   "open": {
+    "cmd": "./securax autopilot"
+   },
+   "command": "autopilot",
+   "doc": "securax/92-THE-AUTOPILOT.md",
+   "outcome": "The estate gets stronger from its own failures without you noticing them first.",
+   "shows": "./securax autopilot and ./securax progress"
   },
   {
    "id": "channel",
@@ -375,7 +459,9 @@
     "cmd": "./securax channel"
    },
    "command": "channel",
-   "doc": "securax/86-MANY-NODES-AND-THE-ROAD-TO-SCALE.md"
+   "doc": "securax/86-MANY-NODES-AND-THE-ROAD-TO-SCALE.md",
+   "outcome": "You try new versions without risking the one that works.",
+   "shows": "./securax channel"
   }
  ]
 }

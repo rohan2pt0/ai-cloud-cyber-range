@@ -39,6 +39,8 @@
     {"id": "inspect", "critical": false, "state": "stateless", "needs": ["estate"], "full": ["estate"], "when_off": "Any node with Docker.", "fix": "nothing"},
     {"id": "cloud", "critical": false, "state": "stateless", "needs": ["estate"], "full": ["estate"], "when_off": "Dormant by default; the plans live in the code on every node.", "fix": "nothing"},
     {"id": "resilience", "critical": false, "state": "replicated", "needs": ["estate"], "full": ["estate", "routines"], "when_off": "Every machine keeps every card and runs the check itself.", "fix": "./securax routines install (the card is shared every 10 minutes)"},
+    {"id": "autopilot", "critical": false, "state": "per-node", "needs": ["estate"], "full": ["estate", "routines"], "when_off": "Each machine learns, drills and forecasts for itself; an off machine misses nothing that another needs.", "fix": "./securax routines install"},
+    {"id": "progress", "critical": false, "state": "replicated", "needs": ["estate"], "full": ["estate", "routines"], "when_off": "Any machine reads the same Life OS data and shows the same rhythm.", "fix": "./securax routines install (the Sunday message)"},
     {"id": "channel", "critical": false, "state": "per-node", "needs": ["estate"], "full": ["estate"], "when_off": "Each node follows its own channel (stable or beta).", "fix": "nothing"}
   ],
   "reference": {

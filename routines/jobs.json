@@ -287,5 +287,54 @@
     "enabled": true,
     "once": true,
     "kind": "guard"
+  },
+  {
+    "id": "autopilot-learn",
+    "cron": "55 * * * *",
+    "command": [
+      "./securax",
+      "autopilot",
+      "learn"
+    ],
+    "description": "Hourly: any routine that newly fails gets a postmortem draft and an alert; one that fails 3 times in 7 days is escalated with the command that starts a fix you approve; a recovery is announced once (doc 92).",
+    "enabled": true,
+    "kind": "guard"
+  },
+  {
+    "id": "autopilot-drill",
+    "cron": "40 3 * * *",
+    "command": [
+      "./securax",
+      "autopilot",
+      "drill"
+    ],
+    "description": "3:40am: the 2 drills that most need it (never run, longest ago, failed last time, most critical) run by themselves; a failed or much slower recovery reaches your phone (doc 92).",
+    "enabled": true,
+    "kind": "guard"
+  },
+  {
+    "id": "autopilot-forecast",
+    "cron": "17 * * * *",
+    "command": [
+      "./securax",
+      "autopilot",
+      "forecast"
+    ],
+    "description": "Hourly: disk space, backup headroom, the AI allowance and answer latency are recorded; a trend that crosses its limit within 7 days is pushed to your phone, at most once a day (doc 92).",
+    "enabled": true,
+    "kind": "guard"
+  },
+  {
+    "id": "progress",
+    "cron": "40 18 * * 0",
+    "command": [
+      "./securax",
+      "progress",
+      "--send"
+    ],
+    "description": "Sundays 6:40pm: your week with SecuRAX on your phone: your Life OS rhythm, what made the estate stronger, and the one next step (doc 93).",
+    "enabled": true,
+    "once": true,
+    "kind": "nudge"
   }
 ]

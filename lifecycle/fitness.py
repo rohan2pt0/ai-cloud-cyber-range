@@ -332,6 +332,16 @@ def check_continuity_declared() -> dict:
             "note": "every feature survives any one machine being off" if not problems else "; ".join(problems)[:200]}
 
 
+def check_outcomes_declared() -> dict:
+    """The north star (AGENTS.md section 0): every feature says what gets better for a person (`outcome`) and where they see it
+    (`shows`). A feature that cannot name both is paper, and does not ship."""
+    feats = json.loads((ROOT / "features.json").read_text("utf-8"))["features"]
+    bad = [f["id"] for f in feats if len(str(f.get("outcome", "")).strip()) < 20 or len(str(f.get("shows", "")).strip()) < 5]
+    return {"name": "outcomes-declared", "value": len(bad), "budget": 0, "unit": "features", "ok": not bad,
+            "note": "every feature names what gets better for a person, and where they see it" if not bad
+            else "name the outcome and where it shows (features.json): " + ", ".join(bad[:5])}
+
+
 def check_private_names() -> dict:
     """No organisation, exercise or person on the private list (only fingerprints are stored) appears in any tracked file."""
     import importlib.util
@@ -349,7 +359,7 @@ def run_all(only_fast: bool = False) -> list[dict]:
     if not only_fast:
         res += check_gateway(c["gateway_cold_start_s"], c["gateway_rss_mb"])
         res += check_first_block(c["first_block_s"], c["block_latency_p95_ms"])
-    res += [check_supply_chain(base), check_commands_documented(base), check_ccsp_map(), check_regulatory_maps(), check_impact_map(), check_claims(), check_config_clean(), check_readme_current(), check_private_names(), check_commands_in_help(), check_features_current(), check_continuity_declared()]
+    res += [check_supply_chain(base), check_commands_documented(base), check_ccsp_map(), check_regulatory_maps(), check_impact_map(), check_claims(), check_config_clean(), check_readme_current(), check_private_names(), check_commands_in_help(), check_features_current(), check_continuity_declared(), check_outcomes_declared()]
     return res
 
 
