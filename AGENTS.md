@@ -106,6 +106,7 @@ Before merging anything the router calls strong, get a second look: `./securax r
   - Never write the brand domain into a link: use `{{SITE_URL}}`, which stays on GitHub Pages until `./securax site live`.
 - **No hand-kept counts.** A number on a page (tests, journeys, maps) is a `<!-- fact:NAME -->` that the generator fills.
 - **Write plainly:** short sentences, one idea each, no jargon without a gloss.
+- **Calm screens (doc 100).** Show what needs the person, why, and one action; fold what is fine. Use the tokens in `governance/design.json`; a page in its `pages_on_the_standard` is held there by `test_design_standard.py`.
 
 ## 5. When you learn something
 

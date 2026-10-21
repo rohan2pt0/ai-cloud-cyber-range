@@ -1,0 +1,15 @@
+{
+ "about": "The SecuRAX design standard as data (doc 100): the colour tokens every page shares, and the rules a test checks. Change a token here, then in each page that carries it; governance/tests/test_design_standard.py fails until they agree.",
+ "tokens": {
+  "light": {"--bg": "#f5f5f7", "--card": "#ffffff", "--ink": "#1d1d1f", "--mut": "#57606a", "--line": "#d2d2d7", "--accent": "#0a5bd8", "--red": "#b42318", "--amber": "#8a5a00", "--green": "#1f7a3a"},
+  "dark": {"--bg": "#0b0f14", "--card": "#151b23", "--ink": "#f0f3f6", "--mut": "#9ba7b4", "--line": "#2a333d", "--accent": "#6ea8ff", "--red": "#ff7b72", "--amber": "#e3b341", "--green": "#56d364"}
+ },
+ "rules": {
+  "max_actions_shown": 3,
+  "min_target_px": 44,
+  "contrast": "WCAG 2.2 AA, both themes, measured by guiding-map/tests/ui_audit.py",
+  "phone_width_px": 390,
+  "pages_on_the_standard": ["guiding-map/hub.html"],
+  "pages_to_move": {"portal/cockpit.html": "2026-12-15", "portal/reckoner/*": "2026-12-15", "guiding-map/index.html (Life OS)": "2027-01-31", "guiding-map/kit (Vantage and kit apps)": "2027-01-31"}
+ }
+}

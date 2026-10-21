@@ -9,6 +9,12 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **A calm Command Center** (doc 100).
+  - It opens on one honest status line ("2 things need you", "All clear", "Status may be out of date", "Status unknown") and at most three things to do, each with why and a one-press command.
+  - Everything that is fine is folded: system health is one line, and the full library is under "Explore", with search as you type.
+- **The design standard** (doc 100): shared colour tokens and rules in `governance/design.json`, checked by a test; two new core principles, *Calm by default* and *No manual needed*, reach every kit app.
+- **Free the C: drive** (doc 80 §4): `tools/windows/free-c-drive.ps1` shows what fills C: (Docker and WSL disks, Ollama models) and, with `-Fix`, moves or compacts them, asking before each step. `./securax storage` points to it when C: is under 10% free.
+- **Docker MCP Toolkit** (doc 98 §8): how to give the open models safe tools, after C: is freed.
 - **Names, not ports, and links that never break** (doc 99).
   - `./securax go` asks once, default yes, to move every address to a name (`https://hub.securax.localhost` …).
   - For 30 days the old `http://localhost:8088` offers **Move my data there**, which hands the Life OS data to the new address in one click, browser to browser.

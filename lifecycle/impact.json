@@ -263,6 +263,7 @@
   "tools/readme_sync.py",
   "tools/linkcheck.py",
   "tools/features_sync.py",
+  "tools/windows/**",
   "features.json",
   "*.md",
   "LICENSE*",

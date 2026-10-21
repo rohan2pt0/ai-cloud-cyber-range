@@ -168,8 +168,24 @@ def forecast(rows: list[dict], free: int) -> dict:
     return {"state": "growing", "days": round(free / slope, 0), "bytes_per_day": int(slope)}
 
 
+def windows_c_free() -> float | None:
+    """Free share of the Windows C: drive, seen from WSL (None when not on WSL or C: is not mounted). Docker's and Ubuntu's
+    disks live on C:, so a full C: breaks the estate even when this Linux disk looks fine."""
+    try:
+        if "microsoft" not in pathlib.Path("/proc/version").read_text().lower():
+            return None
+        st = os.statvfs("/mnt/c")
+        return round(100 * st.f_bavail / st.f_blocks, 1) if st.f_blocks else None
+    except OSError:
+        return None
+
+
 def advice(m: dict, fc: dict) -> list[str]:
     out = []
+    cfree = windows_c_free()
+    if cfree is not None and cfree < 10:
+        out.append(f"Windows C: has only {cfree}% free, and Docker's and Ubuntu's disks live there. In Windows PowerShell, from this folder: "
+                   "powershell -ExecutionPolicy Bypass -File .\\tools\\windows\\free-c-drive.ps1   (report only; add -Fix to free space step by step)")
     pct = m["disk"]["free_pct"]
     if pct < 10:
         out.append(f"URGENT: only {pct}% of the disk is free. Run `./securax storage --tidy --yes`, then move ./backups to another disk (set SECURAX_BACKUP_DIR).")
