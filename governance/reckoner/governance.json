@@ -1,0 +1,1907 @@
+{
+ "as_of": "2026-10",
+ "items": {
+  "gov-policy": {
+   "summary": "A short, Board-approved set of rules (policy) and detailed how-tos (standards) that say what everyone must do to keep information safe.",
+   "protects": "The whole estate indirectly: it makes every control enforceable, auditable and fundable; without it, misconduct and audit findings cannot be acted on.",
+   "placement": "Process, owned by the CISO; approved by the Board or its IT Strategy / Risk committee; published on the intranet and acknowledged by staff.",
+   "how": "One top-level information security policy sets intent and roles. Topic standards (access, data, cloud, vendors, incidents) set measurable rules. Each is reviewed at least yearly and after major change, and exceptions go through a tracked process.",
+   "pareto": [
+    "One top policy plus about 10-12 standards, not 60 documents",
+    "Formal approval and yearly review recorded in Board or committee minutes",
+    "Staff acknowledgement each year, tied to induction and awareness training",
+    "Every rule maps to a control someone owns and can show evidence for",
+    "An exception route with an end date, so rules bend visibly, not silently"
+   ],
+   "vendors": [
+    {
+     "name": "In-house using the SecuRAX templates",
+     "kind": "open source",
+     "fit": "Cheapest start; tailor the template policy and standards, then get approval",
+     "india": "Not applicable"
+    },
+    {
+     "name": "NAVEX PolicyTech",
+     "kind": "commercial",
+     "fit": "Dedicated policy management: versioning, approval workflow, attestations",
+     "india": "Sold through partners; SaaS hosted outside India by default, check residency"
+    },
+    {
+     "name": "Policy modules in GRC tools (MetricStream, ServiceNow IRM, eramba, CISO Assistant)",
+     "kind": "commercial",
+     "fit": "Choose if a GRC platform is already planned, so policy links to controls and risks",
+     "india": "MetricStream has a large Bengaluru centre; eramba and CISO Assistant can be self-hosted in India"
+    },
+    {
+     "name": "Big Four and Indian cyber consultancies (Deloitte, EY, KPMG, PwC India and others)",
+     "kind": "service firm",
+     "fit": "Drafting and regulator mapping (RBI, SEBI CSCRF, IRDAI) when internal time is short",
+     "india": "All have large India practices"
+    }
+   ],
+   "cost": {
+    "unit": "fixed per year",
+    "band": "Rs 0-5 lakh a year in-house; a consultant-led rewrite is a one-off of a similar order",
+    "reference_org": "about Rs 0-5 lakh a year for 2,000 users (matches govern.json)",
+    "drivers": [
+     "Number of regulators to map (RBI, SEBI, IRDAI, DPDP)",
+     "Whether a policy tool or GRC licence is bought",
+     "Translation into regional languages",
+     "Consultant days for drafting and Board papers"
+    ],
+    "note": "indicative; get three quotes; excludes 18% GST"
+   },
+   "rfp": {
+    "scope": [
+     "Gap review of current policies against ISO 27001:2022 Annex A and the applicable regulator directions",
+     "Draft or update the top policy and topic standards",
+     "Map each clause to a control and an owner",
+     "Board or committee paper for approval",
+     "Staff attestation campaign"
+    ],
+    "must": [
+     "Every standard maps to ISO 27001:2022 controls and to each applicable regulator direction, in a traceable table",
+     "Documents in plain English, top policy no longer than about 8 pages",
+     "Version control with approval date, owner and next review date on every document",
+     "Deliverables editable by the organisation (no proprietary lock-in)"
+    ],
+    "should": [
+     "Mapping to NIST CSF 2.0 and the DPDP Rules 2025",
+     "Short one-page summaries for staff",
+     "Translation into Hindi and one regional language"
+    ],
+    "sizing": [
+     "2,000 users, 5 sites, 40 applications",
+     "Regulators that apply",
+     "Count and age of current policies"
+    ],
+    "evaluation": [
+     "Regulatory mapping quality 35",
+     "Sample document clarity 25",
+     "Team experience in the sector 20",
+     "Price 20"
+    ],
+    "sla": [
+     "Draft set within 6 weeks",
+     "Two review rounds included",
+     "Final within 2 weeks of comments"
+    ],
+    "clauses": [
+     "Intellectual property in deliverables passes to the organisation",
+     "Confidentiality and non-disclosure of internal documents"
+    ]
+   },
+   "architecture": "Sits at the top of the control stack. Fed by risk assessment, regulation and incidents. Feeds standards, procedures, the control library in the GRC register, awareness training and audit scope.",
+   "kpis": [
+    "Share of policies reviewed within 12 months (target 100%)",
+    "Staff attestation rate (target 95%+)",
+    "Open exceptions past their end date (target 0)"
+   ],
+   "pitfalls": [
+    "Copying a 100-page template nobody reads",
+    "No Board approval, so the policy has no authority",
+    "Rules with no owner or evidence, so audits fail",
+    "Policy promises the organisation cannot meet (for example 'all data encrypted') which become audit findings"
+   ],
+   "sources": [
+    {
+     "title": "RBI Master Direction on IT Governance, Risk, Controls and Assurance Practices (7 Nov 2023)",
+     "url": "https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=12562"
+    },
+    {
+     "title": "KS&K: summary of the RBI IT governance Master Direction",
+     "url": "https://ksandk.com/newsletter/master-direction-on-information-technology-governance/"
+    },
+    {
+     "title": "ISO/IEC 27001:2022 (ISO catalogue)",
+     "url": "https://www.iso.org/standard/27001"
+    },
+    {
+     "title": "NIST Cybersecurity Framework 2.0 (Govern function)",
+     "url": "https://www.nist.gov/cyberframework"
+    }
+   ]
+  },
+  "gov-structure": {
+   "summary": "Who decides about security: a named CISO, a committee that meets, and a RACI chart that says who does what.",
+   "protects": "Decision-making: stops security work stalling for lack of an owner, budget or authority.",
+   "placement": "Process at Board and senior management level. For RBI-regulated entities: Board, IT Strategy Committee, Information Security Committee and a CISO with defined independence.",
+   "how": "The Board names a CISO with a direct line to senior management and the Board committee. A steering committee of business, IT, risk and legal heads meets at least quarterly and records decisions. A RACI shows owners for each control area.",
+   "pareto": [
+    "A named CISO, independent of the IT delivery head",
+    "A committee that meets quarterly with minutes and actions",
+    "A RACI for the top 15 control areas",
+    "A standing budget line for security"
+   ],
+   "vendors": [
+    {
+     "name": "RBI IT Governance Master Direction (2023) as the model",
+     "kind": "open source",
+     "fit": "The reference design for banks and NBFCs: Board IT Strategy Committee, ISC, CISO",
+     "india": "Indian regulator"
+    },
+    {
+     "name": "NIST CSF 2.0 Govern function",
+     "kind": "open source",
+     "fit": "Free, plain checklist of governance outcomes for any sector",
+     "india": "Widely used in India"
+    },
+    {
+     "name": "Big Four advisory (Deloitte, EY, KPMG, PwC India)",
+     "kind": "service firm",
+     "fit": "Governance design, Board training, virtual CISO support",
+     "india": "Large India practices"
+    },
+    {
+     "name": "Virtual CISO services from CERT-In empanelled or specialist Indian security firms",
+     "kind": "service firm",
+     "fit": "When the organisation cannot yet hire a full-time CISO",
+     "india": "Many Indian firms; check the CERT-In empanelled list"
+    }
+   ],
+   "cost": {
+    "unit": "fixed per year",
+    "band": "Rs 0 for the structure itself; the cost is people time and the CISO's salary (see the CISO role)",
+    "reference_org": "Rs 0 for the structure; a virtual CISO retainer is priced only on quotes",
+    "drivers": [
+     "Whether a full-time CISO is hired or a virtual CISO used",
+     "Board training sessions",
+     "Consultant support for the first cycle"
+    ],
+    "note": "indicative; get three quotes; excludes 18% GST"
+   },
+   "rfp": {
+    "scope": [
+     "Design of governance bodies and their terms of reference",
+     "RACI for security control areas",
+     "Board and committee training",
+     "Optional virtual CISO for 6-12 months"
+    ],
+    "must": [
+     "Terms of reference meet the regulator's direction that applies (for example RBI 2023: IT Strategy Committee meets at least quarterly)",
+     "CISO role description with reporting line and independence",
+     "RACI with exactly one Accountable per area"
+    ],
+    "should": [
+     "Quarterly Board pack template",
+     "Succession plan for the CISO"
+    ],
+    "sizing": [
+     "Board and committee structure today",
+     "Number of business units and sites (5)",
+     "Regulators that apply"
+    ],
+    "evaluation": [
+     "Regulatory fit 35",
+     "Experience with Boards in the sector 30",
+     "Approach and templates 15",
+     "Price 20"
+    ],
+    "sla": [
+     "Design within 4 weeks",
+     "Virtual CISO: named person, agreed days per month, response within one business day"
+    ],
+    "clauses": [
+     "Conflict-of-interest declaration (an adviser must not also sell the tools it recommends)",
+     "Confidentiality of Board material"
+    ]
+   },
+   "architecture": "Board and its committee at the top, CISO reporting to the CEO or CRO (not under the CIO where avoidable), steering committee linking business owners. Feeds risk appetite, budget and policy approval; fed by metrics and audit reports.",
+   "kpis": [
+    "Committee meetings held as scheduled (target 4 of 4)",
+    "Actions from minutes closed on time (target 80%+)",
+    "Security budget approved as asked or with stated reasons"
+   ],
+   "pitfalls": [
+    "CISO reports to the IT head, so conflicts of interest are never raised",
+    "Committee meets but takes no decisions",
+    "RACI with several Accountables per area"
+   ],
+   "sources": [
+    {
+     "title": "RBI Master Direction on IT Governance, Risk, Controls and Assurance Practices (7 Nov 2023)",
+     "url": "https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=12562"
+    },
+    {
+     "title": "KS&K: summary of the RBI IT governance Master Direction",
+     "url": "https://ksandk.com/newsletter/master-direction-on-information-technology-governance/"
+    },
+    {
+     "title": "NIST Cybersecurity Framework 2.0 (Govern function)",
+     "url": "https://www.nist.gov/cyberframework"
+    }
+   ]
+  },
+  "gov-risk": {
+   "summary": "A shared way to name, score, own and treat information risks, kept in one register that drives spending.",
+   "protects": "Money and attention: makes sure the biggest risks (ransomware, fraud, data leaks, outages, vendor failure) get funded first.",
+   "placement": "Process owned by the CISO with the Chief Risk Officer; part of the enterprise risk framework; register kept in a spreadsheet first, then a GRC tool.",
+   "how": "Use an ISO 31000 / ISO 27005 style method: each risk has a cause, an impact, a likelihood and an owner. The score sets a treatment (reduce, transfer, accept, avoid) against a Board-approved risk appetite. The register is reviewed monthly and the top risks go to the Board each quarter.",
+   "pareto": [
+    "A Board-approved risk appetite statement in plain words",
+    "One register, with a named business owner per risk",
+    "A simple 5x5 scale used the same way everywhere",
+    "Top-10 risk view to the Board quarterly",
+    "Money estimates (for example a FAIR-style range) for the top 5 risks only"
+   ],
+   "vendors": [
+    {
+     "name": "SecuRAX risk-register template (spreadsheet)",
+     "kind": "open source",
+     "fit": "Start here; move to a tool only once the register is used monthly",
+     "india": "Not applicable"
+    },
+    {
+     "name": "CISO Assistant (intuitem)",
+     "kind": "open source",
+     "fit": "Free self-hosted risk register with control mapping; AGPL-3.0",
+     "india": "Self-host in India"
+    },
+    {
+     "name": "MetricStream",
+     "kind": "commercial",
+     "fit": "Enterprise integrated risk management widely used by banks",
+     "india": "Large operations centre in Bengaluru"
+    },
+    {
+     "name": "Archer / ServiceNow IRM",
+     "kind": "commercial",
+     "fit": "Archer for deep risk modelling; ServiceNow if ITSM is already ServiceNow",
+     "india": "Partners and support in India"
+    },
+    {
+     "name": "Safe Security (risk quantification)",
+     "kind": "Indian",
+     "fit": "Cyber risk quantification in money terms for Board reporting",
+     "india": "India-founded, with India operations"
+    }
+   ],
+   "cost": {
+    "unit": "fixed per year",
+    "band": "Rs 0-10 lakh a year (template or open source plus some advisory days); enterprise IRM suites are quote-only and much higher",
+    "reference_org": "about Rs 0-10 lakh a year (matches govern.json); add quotes if a commercial suite is chosen",
+    "drivers": [
+     "Template vs tool",
+     "Number of risk owners and business units",
+     "Quantification tooling",
+     "Consultant days for the first assessment"
+    ],
+    "note": "indicative; get three quotes; excludes 18% GST"
+   },
+   "rfp": {
+    "scope": [
+     "Risk methodology aligned to ISO 31000 and ISO 27005",
+     "First enterprise information-risk assessment",
+     "Risk appetite statement for Board approval",
+     "Register set-up and owner training"
+    ],
+    "must": [
+     "Method documented, repeatable and aligned to the enterprise risk framework",
+     "Each risk has owner, inherent and residual score, treatment and due date",
+     "Board-ready top-10 view",
+     "Export to CSV or open format"
+    ],
+    "should": [
+     "Money-range estimates for the top risks",
+     "Links between risks, controls and incidents",
+     "Key risk indicators with thresholds"
+    ],
+    "sizing": [
+     "2,000 users, 2,500 endpoints, 40 applications, 5 sites",
+     "Number of business units and risk owners",
+     "Regulators that apply"
+    ],
+    "evaluation": [
+     "Method quality 30",
+     "Sector experience 25",
+     "Tool fit and openness 20",
+     "Price 25"
+    ],
+    "sla": [
+     "First assessment within 8 weeks",
+     "Register handed over with training"
+    ],
+    "clauses": [
+     "Exit and transition: full export of data and configuration in an open format, and reasonable transition support at agreed rates",
+     "Confidentiality, data-processing terms and deletion certificate at contract end (DPDP processor obligations)"
+    ]
+   },
+   "architecture": "Fed by asset inventory, classification, vulnerability data, incidents, audit findings and vendor assessments. Feeds the security plan, budget, insurance sizing, exceptions and the Board report.",
+   "kpis": [
+    "Risks with an owner and a treatment date (target 100%)",
+    "Top risks above appetite with an approved plan (target 100%)",
+    "Overdue treatments (trend down each quarter)"
+   ],
+   "pitfalls": [
+    "Register of 300 risks no one reads",
+    "Scores decided by IT alone, without business owners",
+    "Accepted risks never reviewed again",
+    "Buying a tool before the method is in use"
+   ],
+   "sources": [
+    {
+     "title": "ISO 31000:2018 risk management (ISO catalogue)",
+     "url": "https://www.iso.org/standard/65694.html"
+    },
+    {
+     "title": "RBI Master Direction on IT Governance, Risk, Controls and Assurance Practices (7 Nov 2023)",
+     "url": "https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=12562"
+    },
+    {
+     "title": "intuitem CISO Assistant pricing",
+     "url": "https://intuitem.com/pricing/"
+    },
+    {
+     "title": "Gartner Peer Insights: MetricStream Enterprise GRC",
+     "url": "https://www.gartner.com/reviews/product/metricstream-enterprise-grc-solution"
+    }
+   ]
+  },
+  "gov-metrics": {
+   "summary": "A few numbers that show whether security is working (KPIs) and whether risk is rising (KRIs), reported to the Board on one page each quarter.",
+   "protects": "Board oversight and funding: makes risk visible so leaders can decide and back the programme.",
+   "placement": "Process owned by the CISO; data from security tools and the risk register; reported to the IT Strategy / Risk committee and the Board.",
+   "how": "Pick 8-12 measures linked to the top risks, each with a target and a red/amber/green threshold. Collect them automatically where possible. Each quarter, one page shows posture, top risks, what changed and what the CISO needs.",
+   "pareto": [
+    "Patch and vulnerability age for internet-facing and critical systems",
+    "MFA and privileged-access coverage",
+    "Backup restore tested and time to recover",
+    "Phishing report rate and time to contain incidents",
+    "Top-5 risks with trend arrows and the ask"
+   ],
+   "vendors": [
+    {
+     "name": "SecuRAX Board progress table and cockpit",
+     "kind": "open source",
+     "fit": "One-page template; good enough for most Boards",
+     "india": "Not applicable"
+    },
+    {
+     "name": "Microsoft Power BI or similar BI tool",
+     "kind": "commercial",
+     "fit": "Cheap dashboards if data is already exported from tools",
+     "india": "Microsoft India data centres"
+    },
+    {
+     "name": "Panaseer (continuous controls monitoring)",
+     "kind": "commercial",
+     "fit": "Automates control coverage metrics across many tools; larger estates",
+     "india": "Through partners"
+    },
+    {
+     "name": "Bitsight / SecurityScorecard",
+     "kind": "commercial",
+     "fit": "Outside-in rating that Boards and insurers understand; benchmark against peers",
+     "india": "Sold in India through partners"
+    },
+    {
+     "name": "Safe Security",
+     "kind": "Indian",
+     "fit": "Money-based cyber risk metrics for the Board",
+     "india": "India-founded"
+    }
+   ],
+   "cost": {
+    "unit": "fixed per year",
+    "band": "Rs 0-5 lakh a year with templates and existing BI; ratings and controls-monitoring platforms are quote-only",
+    "reference_org": "about Rs 0-5 lakh a year (govern.json says 0; small BI or analyst time is realistic)",
+    "drivers": [
+     "Manual vs automated data collection",
+     "External rating subscription",
+     "Number of data sources"
+    ],
+    "note": "indicative; get three quotes; excludes 18% GST"
+   },
+   "rfp": {
+    "scope": [
+     "Define KPI/KRI set tied to top risks",
+     "Automate data feeds from security tools",
+     "Board pack template",
+     "Optional external security rating"
+    ],
+    "must": [
+     "Each metric has definition, data source, owner, target and threshold",
+     "Data refreshed at least monthly, automatically where a tool supports it",
+     "Board view fits one page"
+    ],
+    "should": [
+     "Peer benchmark",
+     "Trend over 4 quarters",
+     "Mapping to regulator reporting needs"
+    ],
+    "sizing": [
+     "Number of security tools and data sources",
+     "Board and committee reporting calendar"
+    ],
+    "evaluation": [
+     "Relevance to risks 35",
+     "Automation 25",
+     "Ease of use for Board 20",
+     "Price 20"
+    ],
+    "sla": [
+     "Data available by day 5 of each month",
+     "Dashboard availability 99%"
+    ],
+    "clauses": [
+     "Data used for ratings or dashboards stays confidential; no resale",
+     "Data stays in India where the law or regulator requires it (DPDP cross-border restrictions as notified; RBI payment-data storage rule for payment system data)"
+    ]
+   },
+   "architecture": "Pulls from EDR, vulnerability scanner, identity, backup, SIEM/SOC, awareness platform and the risk register. Feeds the steering committee, Board pack, insurance renewal and regulator returns.",
+   "kpis": [
+    "Board pack delivered on time each quarter",
+    "Share of metrics collected automatically (target 70%+)",
+    "Decisions or funding obtained from Board asks"
+   ],
+   "pitfalls": [
+    "Reporting tool counts (alerts, blocked emails) that mean nothing to the Board",
+    "Too many metrics",
+    "Green dashboards that hide unmeasured systems (coverage gaps)"
+   ],
+   "sources": [
+    {
+     "title": "NIST Cybersecurity Framework 2.0 (Govern function)",
+     "url": "https://www.nist.gov/cyberframework"
+    },
+    {
+     "title": "RBI Master Direction on IT Governance, Risk, Controls and Assurance Practices (7 Nov 2023)",
+     "url": "https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=12562"
+    },
+    {
+     "title": "TrustRadius: Bitsight vs Mitratech Prevalent",
+     "url": "https://www.trustradius.com/compare-products/bitsight-technologies-bitsight-security-ratings-vs-mitratech-prevalent"
+    }
+   ]
+  },
+  "gov-privacy": {
+   "summary": "The programme that makes the organisation meet India's Digital Personal Data Protection Act 2023 and DPDP Rules 2025: lawful notice and consent, security, breach reporting and people's rights.",
+   "protects": "Personal data of customers and staff; protects the organisation from penalties of up to Rs 250 crore per breach category and from loss of trust.",
+   "placement": "Process owned by a Data Protection Officer (DPO) or privacy lead with the CISO and Legal; touches every system that holds personal data; consent and rights handled in customer channels.",
+   "how": "Map what personal data is held, why, where and with whom. Give a plain notice and take consent (or rely on a listed legitimate use). Protect it (Rule 6: encryption or masking, access control, logs, backups), report breaches to the Data Protection Board and affected people, keep logs for at least one year, honour rights, and bind processors by contract. Status at October 2026: the Rules were notified on 13-14 November 2025; Board provisions apply now; consent-manager registration starts about 13 November 2026; most duties (notice, consent, security, breach reporting, retention, children's data, rights) and penalties apply from about 13 May 2027. A January 2026 MeitY proposal to shorten this to 12 months had not been notified as of early October 2026; watch the Gazette.",
+   "pareto": [
+    "Personal data map and processing register, by system and purpose",
+    "Notice and consent flows fixed in the top customer journeys",
+    "Breach process: notify the Board without delay, full report within 72 hours; tell affected people in plain words",
+    "Processor contracts with security, breach and deletion terms",
+    "Rights and grievance desk with tracked response times"
+   ],
+   "vendors": [
+    {
+     "name": "OneTrust",
+     "kind": "commercial",
+     "fit": "Broadest privacy suite: data mapping, consent, rights, DPIA",
+     "india": "India customers and partners; check hosting region"
+    },
+    {
+     "name": "Privy by IDfy",
+     "kind": "Indian",
+     "fit": "DPDP-focused consent and rights tooling from an Indian identity firm",
+     "india": "Indian company"
+    },
+    {
+     "name": "Securiti",
+     "kind": "commercial",
+     "fit": "Data discovery plus privacy automation; strong on finding personal data at scale",
+     "india": "India presence; publishes DPDP and RBI FREE-AI guidance"
+    },
+    {
+     "name": "Seclore",
+     "kind": "Indian",
+     "fit": "Data-centric protection (rights management) for documents carrying personal data",
+     "india": "India-origin company"
+    },
+    {
+     "name": "Microsoft Presidio",
+     "kind": "open source",
+     "fit": "Free PII detection and masking library for data discovery scripts",
+     "india": "Not applicable"
+    },
+    {
+     "name": "Law firms and consultancies (for example AZB, Khaitan, JSA; Big Four privacy practices)",
+     "kind": "service firm",
+     "fit": "Legal interpretation, notices, DPIA and Board training",
+     "india": "Indian firms"
+    }
+   ],
+   "cost": {
+    "unit": "fixed per year",
+    "band": "Rs 10-40 lakh in the first year (data discovery, consent tooling, legal review); Rs 5-20 lakh a year after",
+    "reference_org": "about Rs 10-40 lakh first year for 2,000 staff and the customer base; DPO salary is separate",
+    "drivers": [
+     "Number of customer records and channels",
+     "Consent manager integration",
+     "Data discovery scope (structured and unstructured)",
+     "Significant Data Fiduciary designation (adds yearly DPIA and audit)"
+    ],
+    "note": "indicative; get three quotes; excludes 18% GST; govern.json band of Rs 5-20 lakh looks low for year one"
+   },
+   "rfp": {
+    "scope": [
+     "DPDP gap assessment against the Act and Rules 2025",
+     "Personal data discovery and mapping",
+     "Notice and consent redesign",
+     "Rights and grievance workflow",
+     "Breach response playbook aligned to DPDP and CERT-In",
+     "Processor contract review"
+    ],
+    "must": [
+     "Notices meet Rule 3 (standalone, plain, itemised; available in Eighth Schedule languages on request)",
+     "Breach workflow supports Board intimation without delay and a detailed report within 72 hours",
+     "Logs and related data retained at least one year (Rule 8)",
+     "Erasure workflow with 48-hour prior warning where the Third Schedule applies",
+     "Consent records exportable and auditable",
+     "Data and tooling hosted in India or as permitted under DPDP cross-border rules"
+    ],
+    "should": [
+     "Integration with registered Consent Managers (from about Nov 2026)",
+     "Verifiable parental consent flow if children's data is processed",
+     "Automated discovery of personal data in file shares and cloud"
+    ],
+    "sizing": [
+     "Count of data principals (customers, staff)",
+     "Systems holding personal data (start with the 40 apps)",
+     "Channels: web, mobile, branch, call centre",
+     "Processors handling personal data"
+    ],
+    "evaluation": [
+     "DPDP coverage 35",
+     "India hosting and integration 20",
+     "Ease of use 15",
+     "Price 20",
+     "References in India 10"
+    ],
+    "sla": [
+     "Rights request workflow supports the organisation's published timelines (grievance response within 90 days under Rule 14 at the latest)",
+     "Tool uptime 99.5%",
+     "Breach-support response within 1 hour"
+    ],
+    "clauses": [
+     "Right to audit: the organisation, its auditors and (for RBI-regulated entities) RBI may audit the provider and its sub-contractors (RBI IT outsourcing directions, 2023)",
+     "Data stays in India where the law or regulator requires it (DPDP cross-border restrictions as notified; RBI payment-data storage rule for payment system data)",
+     "Provider reports any incident affecting the organisation without delay, early enough for the organisation to meet CERT-In's 6-hour reporting rule",
+     "Exit and transition: full export of data and configuration in an open format, and reasonable transition support at agreed rates",
+     "Confidentiality, data-processing terms and deletion certificate at contract end (DPDP processor obligations)",
+     "Processor deletes or returns data at contract end and certifies it"
+    ]
+   },
+   "architecture": "Fed by the asset and data inventory and classification. Connects to customer channels (consent), CRM and core systems (rights), the SOC (breach detection) and contracts (processors). Feeds Board reporting and the incident process.",
+   "kpis": [
+    "Systems with mapped personal data (target 100% of the 40 apps)",
+    "Rights requests closed within the published time (target 95%+)",
+    "Processors with signed DPDP terms (target 100%)",
+    "Breach drills run per year (target 2)"
+   ],
+   "pitfalls": [
+    "Treating DPDP as a legal-only project with no data map",
+    "Waiting for May 2027: the work takes 12-18 months",
+    "Consent banners that do not record or honour withdrawal",
+    "Forgetting staff and vendor personal data"
+   ],
+   "sources": [
+    {
+     "title": "PIB: DPDP Rules, 2025 notified",
+     "url": "https://www.pib.gov.in/PressNoteDetails.aspx?NoteId=156054&ModuleId=3&reg=3&lang=2"
+    },
+    {
+     "title": "AZB & Partners: DPDP Act phased rollout and compliance milestones (Nov 2025)",
+     "url": "https://www.azbpartners.com/bank/indias-digital-personal-data-protection-act-phased-rollout-and-key-compliance-milestones/"
+    },
+    {
+     "title": "MirvoLegal: DPDP Rules 2025 compliance timeline (as at September 2026)",
+     "url": "https://www.mirvolegal.com/insights/dpdp-rules-2025-compliance-timeline/"
+    },
+    {
+     "title": "The Privacy Labs: what starts on 13 November 2026 (8 Oct 2026)",
+     "url": "https://theprivacylabs.com/blogs/dpdp-13-november-2026-what-starts"
+    },
+    {
+     "title": "S.S. Rana: MeitY plans to cut the DPDP compliance timeline (Jan 2026 proposal)",
+     "url": "https://ssrana.in/articles/meity-plans-to-cut-short-dpdp-compliance-timeline-and-notify-cross-border-restrictions-for-sdfs/"
+    },
+    {
+     "title": "KPMG India: DPDP Act and Rules compliance roadmap (Dec 2025)",
+     "url": "https://assets.kpmg.com/content/dam/kpmgsites/in/pdf/2025/12/dpdp-act-and-rules-compliance-roadmap.pdf.coredownload.pdf"
+    },
+    {
+     "title": "Protiviti: flash compliance update on DPDP Rules 2025",
+     "url": "https://www.protiviti.com/sites/default/files/2025-11/flash_compliance_update_dpdp_rules-2025.pdf"
+    },
+    {
+     "title": "Privy by IDfy: DPDP compliance guide 2026",
+     "url": "https://www.privybyidfy.com/blog/dpdp-compliance-guide-2026-what-indian-enterprises-must-do-before-may-2027"
+    }
+   ]
+  },
+  "gov-tprm": {
+   "summary": "Checking and managing the security risk that comes from suppliers, from onboarding to exit.",
+   "protects": "Data and services handled by suppliers; guards against supplier breaches, outages and lock-in.",
+   "placement": "Process owned by the GRC lead with Procurement and Legal; register of vendors in the GRC tool; outside-in ratings as a cloud service.",
+   "how": "Tier each vendor by the data and access it has. Send a questionnaire sized to the tier, check evidence (ISO 27001, SOC 2, VAPT reports), and put security terms in the contract. Review critical vendors yearly and monitor them continuously; plan exits.",
+   "pareto": [
+    "A vendor register with tier (critical, high, other) and data access",
+    "Standard security and right-to-audit clauses in every contract",
+    "Deep review only for the critical 10-20% of vendors",
+    "Exit plan for every critical vendor",
+    "Incident notification duty on vendors"
+   ],
+   "vendors": [
+    {
+     "name": "OneTrust Third-Party Risk",
+     "kind": "commercial",
+     "fit": "Suite option if OneTrust is used for privacy",
+     "india": "India partners"
+    },
+    {
+     "name": "Mitratech Prevalent",
+     "kind": "commercial",
+     "fit": "Dedicated TPRM workflow with assessment library and managed services; estimated USD 50k+ a year",
+     "india": "Through partners"
+    },
+    {
+     "name": "ProcessUnity",
+     "kind": "commercial",
+     "fit": "Strong assessment workflow and lifecycle automation",
+     "india": "Through partners"
+    },
+    {
+     "name": "Bitsight / SecurityScorecard",
+     "kind": "commercial",
+     "fit": "Outside-in ratings for continuous monitoring of many vendors",
+     "india": "Sold through Indian partners"
+    },
+    {
+     "name": "eramba / CISO Assistant",
+     "kind": "open source",
+     "fit": "Low-cost vendor register and assessments inside a GRC tool",
+     "india": "Self-host in India"
+    },
+    {
+     "name": "Big Four and CERT-In empanelled auditors",
+     "kind": "service firm",
+     "fit": "On-site audits of critical vendors, pooled audits",
+     "india": "Indian practices"
+    }
+   ],
+   "cost": {
+    "unit": "fixed per year",
+    "band": "Rs 5-25 lakh a year with an open-source or GRC module and some audits; dedicated platforms start around USD 50k (about Rs 42 lakh) a year",
+    "reference_org": "about Rs 5-25 lakh a year for roughly 100-300 vendors (matches govern.json); more with a dedicated platform or ratings",
+    "drivers": [
+     "Number of vendors and critical vendors",
+     "Ratings subscription (per monitored company)",
+     "On-site audit days",
+     "Managed assessment service"
+    ],
+    "note": "USD converted at about Rs 84/USD; indicative; get three quotes; excludes 18% GST"
+   },
+   "rfp": {
+    "scope": [
+     "Vendor tiering method",
+     "Questionnaire library by tier",
+     "Platform or register",
+     "Continuous monitoring of critical vendors",
+     "Contract clause library",
+     "Optional assessment service"
+    ],
+    "must": [
+     "Vendor tiering by data and access",
+     "Questionnaires mapped to ISO 27001 and applicable RBI/SEBI rules",
+     "Evidence storage with expiry alerts",
+     "Export of all data in open format",
+     "Hosting in India or approved region"
+    ],
+    "should": [
+     "Outside-in security ratings",
+     "Fourth-party (sub-contractor) view",
+     "Portal for vendors to answer once and reuse"
+    ],
+    "sizing": [
+     "Number of vendors (estimate 100-300) and critical ones",
+     "Assessments per year",
+     "Users of the platform"
+    ],
+    "evaluation": [
+     "Workflow and library fit 30",
+     "Regulatory mapping 20",
+     "India hosting and support 15",
+     "Price 25",
+     "References 10"
+    ],
+    "sla": [
+     "Platform uptime 99.5%",
+     "Assessment turnaround agreed by tier",
+     "Rating alerts within 24 hours of change"
+    ],
+    "clauses": [
+     "Right to audit: the organisation, its auditors and (for RBI-regulated entities) RBI may audit the provider and its sub-contractors (RBI IT outsourcing directions, 2023)",
+     "Data stays in India where the law or regulator requires it (DPDP cross-border restrictions as notified; RBI payment-data storage rule for payment system data)",
+     "Provider reports any incident affecting the organisation without delay, early enough for the organisation to meet CERT-In's 6-hour reporting rule",
+     "Exit and transition: full export of data and configuration in an open format, and reasonable transition support at agreed rates",
+     "Confidentiality, data-processing terms and deletion certificate at contract end (DPDP processor obligations)",
+     "Vendor must flow down security, audit and notification terms to its sub-contractors",
+     "Vendor reports cyber incidents to the organisation promptly (RBI IT outsourcing directions expect early notice, within hours)"
+    ]
+   },
+   "architecture": "Fed by procurement (new contracts), the asset inventory (what each vendor touches) and ratings feeds. Feeds the risk register, contract management, exit planning and the Board report on concentration risk.",
+   "kpis": [
+    "Critical vendors assessed in the last 12 months (target 100%)",
+    "Contracts with standard security and audit clauses (target 100% of critical)",
+    "Critical vendors with a tested exit plan"
+   ],
+   "pitfalls": [
+    "Same 300-question form for every vendor",
+    "Assessment at onboarding only, never again",
+    "No clause to force incident notification",
+    "Ignoring cloud and SaaS providers as 'not outsourcing'"
+   ],
+   "sources": [
+    {
+     "title": "JSA Prism: RBI Master Direction on outsourcing of IT services (April 2023)",
+     "url": "https://www.jsalaw.com/newsletters-and-updates/jsa-prism-fintech-april-2023/"
+    },
+    {
+     "title": "Khaitan & Co Ergo: RBI IT outsourcing directions",
+     "url": "https://www.khaitanco.com/sites/default/files/2023-05/Ergo_15052023.pdf"
+    },
+    {
+     "title": "Atlas Systems: ProcessUnity alternatives (Gartner TPRM Market Guide 2025 context)",
+     "url": "https://www.atlassystems.com/alternatives/processunity"
+    },
+    {
+     "title": "Gartner Peer Insights: Mitratech Prevalent TPRM platform",
+     "url": "https://www.gartner.com/reviews/market/it-vendor-risk-management-solutions/vendor/mitratech-prevalent/product/prevalent-third-party-risk-management-platform"
+    },
+    {
+     "title": "eSecurity Planet: third-party risk management tools",
+     "url": "https://www.esecurityplanet.com/products/third-party-risk-management/"
+    },
+    {
+     "title": "intuitem CISO Assistant pricing",
+     "url": "https://intuitem.com/pricing/"
+    }
+   ]
+  },
+  "gov-iso27001": {
+   "summary": "An information security management system (ISMS) certified to ISO/IEC 27001:2022 by an accredited certification body.",
+   "protects": "The durability of all controls: an audited yearly cycle keeps them alive; also wins customer and regulator trust.",
+   "placement": "Process owned by the GRC lead; scope covers chosen sites, services and the 40 applications; audited yearly by an external certification body.",
+   "how": "Define scope, assess risks, choose controls in a Statement of Applicability (93 Annex A controls in the 2022 version), run them, audit internally and review with management. An accredited body does a two-stage certification audit, then surveillance audits in years 2 and 3 and recertification in year 3.",
+   "pareto": [
+    "A sensible scope (core services and data, not everything at once)",
+    "Risk assessment and Statement of Applicability that match reality",
+    "Internal audit and management review done on time",
+    "Evidence collected all year, not the month before audit",
+    "Choose a body accredited by NABCB or another IAF-MLA member"
+   ],
+   "vendors": [
+    {
+     "name": "BSI Group India",
+     "kind": "service firm",
+     "fit": "Certification body; widely recognised mark",
+     "india": "Offices in several Indian cities"
+    },
+    {
+     "name": "TÜV SÜD South Asia / TÜV Rheinland India",
+     "kind": "service firm",
+     "fit": "Certification bodies with large India auditor pools",
+     "india": "India operations"
+    },
+    {
+     "name": "Intertek India, Bureau Veritas India, SGS India, DNV",
+     "kind": "service firm",
+     "fit": "Other major certification bodies operating in India",
+     "india": "India operations"
+    },
+    {
+     "name": "STQC Certification Services (MeitY)",
+     "kind": "Indian",
+     "fit": "Government certification body, NABCB-accredited for ISO 27001; often preferred by public sector",
+     "india": "Government of India"
+    },
+    {
+     "name": "Implementation consultancies and GRC tools (Sprinto, eramba, CISO Assistant)",
+     "kind": "commercial",
+     "fit": "Gap assessment and evidence automation before the audit",
+     "india": "Sprinto is India-founded; eramba and CISO Assistant self-host"
+    }
+   ],
+   "cost": {
+    "unit": "fixed per year",
+    "band": "Year one Rs 12-30 lakh (consulting plus certification audit); later years about Rs 4-10 lakh (surveillance plus internal audit)",
+    "reference_org": "about Rs 10-30 lakh a year in year one for 2,000 users and 5 sites (matches govern.json); certification-body fees alone are a smaller share",
+    "drivers": [
+     "Scope (people, sites, services); audit days follow ISO/IEC 27006 tables",
+     "Consultant use vs in-house",
+     "Number of sites to visit",
+     "Evidence tooling"
+    ],
+    "note": "indicative; get three quotes; excludes 18% GST; published India figures vary widely (some guides say Rs 12-20 lakh for medium firms, others up to Rs 40 lakh)"
+   },
+   "rfp": {
+    "scope": [
+     "Certification audit (Stage 1 and Stage 2), two surveillance audits, recertification",
+     "Separate RFP for implementation support if needed (keep implementer and certifier separate)"
+    ],
+    "must": [
+     "Body accredited for ISO/IEC 27001 by NABCB or an IAF-MLA signatory; accreditation scope shown on certificate",
+     "Audit days quoted per ISO/IEC 27006 with the calculation",
+     "Auditors with sector experience and no consulting role in the organisation"
+    ],
+    "should": [
+     "Combined audit with ISO 22301 or ISO 27701 to save days",
+     "Auditors in the cities of the 5 sites to save travel"
+    ],
+    "sizing": [
+     "Headcount in scope (2,000)",
+     "Sites (5)",
+     "Applications and data centres in scope",
+     "Outsourced services"
+    ],
+    "evaluation": [
+     "Accreditation and reputation 30",
+     "Auditor competence 30",
+     "Price for 3-year cycle 30",
+     "Scheduling flexibility 10"
+    ],
+    "sla": [
+     "Audit report within 2 weeks of audit",
+     "Certificate within 4-6 weeks of closing nonconformities"
+    ],
+    "clauses": [
+     "Confidentiality of audit evidence",
+     "Auditor independence declaration",
+     "Fixed price for the 3-year cycle"
+    ]
+   },
+   "architecture": "Wraps the whole programme: policy, risk register, control library, internal audit and management review. Fed by metrics and incidents; feeds customer assurance, RFP responses and regulator inspections.",
+   "kpis": [
+    "Major nonconformities at audit (target 0)",
+    "Internal audit and management review on schedule",
+    "Corrective actions closed on time (target 90%+)"
+   ],
+   "pitfalls": [
+    "Scope too wide in year one",
+    "Paper ISMS that does not match how people work",
+    "Same firm consulting and certifying (not allowed)",
+    "Certificate from an unaccredited body"
+   ],
+   "sources": [
+    {
+     "title": "ISO/IEC 27001:2022 (ISO catalogue)",
+     "url": "https://www.iso.org/standard/27001"
+    },
+    {
+     "title": "STQC Certification Services: accreditations (NABCB, incl. ISO 27001)",
+     "url": "https://stqc.gov.in/en/certification/our-accreditations-and-recognitions"
+    },
+    {
+     "title": "Kanakkupillai: who can issue ISO certification in India (NABCB, IAF MLA)",
+     "url": "https://www.kanakkupillai.com/learn/who-can-issue-an-iso-certification-in-india/"
+    },
+    {
+     "title": "TCSA: ISO 27001 cost in India 2026",
+     "url": "https://www.tcsa.in/resources/iso-27001-cost-india-2026"
+    },
+    {
+     "title": "NovelVista: ISO 27001 certification cost",
+     "url": "https://www.novelvista.com/blogs/quality-management/what-is-cost-ISO-27001-certification"
+    },
+    {
+     "title": "Wattlecorp: ISO 27001 certification cost in India",
+     "url": "https://www.wattlecorp.com/iso-27001-certification-cost-india/"
+    }
+   ]
+  },
+  "gov-iso22301": {
+   "summary": "A business continuity management system (BCMS) certified to ISO 22301:2019: plans and tests that keep key services running or bring them back fast.",
+   "protects": "Critical business services against outages, ransomware, site loss and supplier failure.",
+   "placement": "Process owned by the resilience or BCM lead with business owners; plans per service and site; DR site or cloud recovery as the technology part.",
+   "how": "A business impact analysis sets recovery time and data-loss targets (RTO, RPO) per service. Strategies and plans are written to meet them, then exercised. An accredited body certifies the system with a two-stage audit and yearly surveillance.",
+   "pareto": [
+    "Business impact analysis for the top 10-15 services",
+    "Tested restore from offline or immutable backup for critical systems",
+    "Crisis communication and decision tree",
+    "At least one full exercise a year, with lessons fixed"
+   ],
+   "vendors": [
+    {
+     "name": "BSI Group India",
+     "kind": "service firm",
+     "fit": "Certification body, originator of the BS 25999 lineage",
+     "india": "India offices"
+    },
+    {
+     "name": "IRQS (Indian Register Quality Systems)",
+     "kind": "Indian",
+     "fit": "Indian certification body offering ISO 22301",
+     "india": "Indian company"
+    },
+    {
+     "name": "TÜV SÜD, DNV, Bureau Veritas, Intertek",
+     "kind": "service firm",
+     "fit": "Major certification bodies in India; can combine with ISO 27001",
+     "india": "India operations"
+    },
+    {
+     "name": "BCM tools: Fusion Risk Management, Castellan, MetricStream BCM, ServiceNow BCM",
+     "kind": "commercial",
+     "fit": "Plan management, BIA and exercise tracking once plans are many",
+     "india": "Through partners"
+    }
+   ],
+   "cost": {
+    "unit": "fixed per year",
+    "band": "Certification audits about Rs 3.5-7 lakh for a medium firm, Rs 7-15 lakh multi-site; with consulting, Rs 8-25 lakh in year one",
+    "reference_org": "about Rs 8-25 lakh in year one for 5 sites (matches govern.json); DR infrastructure is separate",
+    "drivers": [
+     "Number of sites and services in scope",
+     "Consultant support for BIA",
+     "Exercise complexity",
+     "Combined audit with ISO 27001"
+    ],
+    "note": "indicative; get three quotes; excludes 18% GST"
+   },
+   "rfp": {
+    "scope": [
+     "BIA and risk assessment",
+     "Continuity strategies and plans",
+     "Exercise programme",
+     "Certification audit cycle (separate from implementer)"
+    ],
+    "must": [
+     "RTO and RPO set per critical service and signed by owners",
+     "Plans tested at least yearly with reports",
+     "Certification body accredited for ISO 22301",
+     "Alignment with RBI business continuity expectations where applicable"
+    ],
+    "should": [
+     "Ransomware recovery scenario",
+     "Supplier continuity reviews",
+     "Combined ISO 27001 and 22301 audits"
+    ],
+    "sizing": [
+     "Services and sites (5)",
+     "Headcount",
+     "Data centres and DR sites",
+     "Critical suppliers"
+    ],
+    "evaluation": [
+     "Method and sector experience 35",
+     "Exercise design quality 20",
+     "Accreditation 15",
+     "Price 30"
+    ],
+    "sla": [
+     "BIA within 8 weeks",
+     "Exercise report within 2 weeks"
+    ],
+    "clauses": [
+     "Confidentiality of plans",
+     "Critical suppliers commit to their own tested continuity plans and to joint exercises"
+    ]
+   },
+   "architecture": "Fed by the asset inventory, classification and BIA. Drives backup, DR site and cloud recovery design, crisis communication and supplier contracts. Feeds Board reporting and regulator inspections.",
+   "kpis": [
+    "Critical services with a tested plan in the last 12 months (target 100%)",
+    "Achieved recovery time vs RTO in exercises",
+    "Exercise actions closed on time"
+   ],
+   "pitfalls": [
+    "Plans written by IT without business owners",
+    "Exercises that only read the plan aloud",
+    "RTO targets no backup design can meet",
+    "No ransomware scenario"
+   ],
+   "sources": [
+    {
+     "title": "ISO 22301:2019 (ISO catalogue)",
+     "url": "https://www.iso.org/standard/75106.html"
+    },
+    {
+     "title": "NovelVista: ISO 22301 certification cost",
+     "url": "https://www.novelvista.com/blogs/quality-management/iso-22301-certification-cost"
+    },
+    {
+     "title": "IRQS: ISO 22301 BCMS certification",
+     "url": "https://www.irqs.co.in/standards-certification/iso-22301"
+    },
+    {
+     "title": "RBI Master Direction on IT Governance, Risk, Controls and Assurance Practices (7 Nov 2023)",
+     "url": "https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=12562"
+    }
+   ]
+  },
+  "gov-grc": {
+   "summary": "Software that keeps policies, risks, controls, audits, vendors and exceptions in one place, with evidence.",
+   "protects": "Governance efficiency and audit readiness; stops spreadsheets drifting and evidence going missing.",
+   "placement": "Application (SaaS or on-premises in the management zone) owned by the GRC lead; used by control owners, auditors and risk owners.",
+   "how": "A control library maps each control to frameworks (ISO 27001, RBI, SEBI CSCRF, DPDP). Owners attach evidence and test results; risks, findings and exceptions link to controls. Dashboards and reports come out of the same data.",
+   "pareto": [
+    "One control library mapped to all frameworks that apply",
+    "Risk register linked to controls",
+    "Evidence requests with due dates and reminders",
+    "Exceptions with end dates",
+    "Reports for audit and the Board"
+   ],
+   "vendors": [
+    {
+     "name": "CISO Assistant (intuitem)",
+     "kind": "open source",
+     "fit": "AGPL-3.0 community edition free and self-hosted, 80+ frameworks; Pro on-prem EUR 2,400 per instance per year (1-5 seats), Pro SaaS EUR 39 per contributor per month",
+     "india": "Self-host in India"
+    },
+    {
+     "name": "eramba",
+     "kind": "open source",
+     "fit": "Community edition free; Enterprise flat EUR 2,500 a year on-prem or EUR 5,000 SaaS, unlimited users",
+     "india": "Self-host in India"
+    },
+    {
+     "name": "MetricStream",
+     "kind": "commercial",
+     "fit": "Enterprise GRC used by large banks; deep risk and audit",
+     "india": "Most staff in India (Bengaluru centre)"
+    },
+    {
+     "name": "ServiceNow IRM",
+     "kind": "commercial",
+     "fit": "Best when ServiceNow already runs ITSM and CMDB",
+     "india": "India data centre options and partners"
+    },
+    {
+     "name": "Archer",
+     "kind": "commercial",
+     "fit": "Mature, highly configurable enterprise risk platform",
+     "india": "Partners in India"
+    },
+    {
+     "name": "Sprinto / Scrut Automation",
+     "kind": "Indian",
+     "fit": "Compliance automation for cloud-first mid-size firms; connects to cloud for evidence",
+     "india": "India-founded companies"
+    }
+   ],
+   "cost": {
+    "unit": "fixed per year",
+    "band": "Rs 2.5-5 lakh a year for eramba or CISO Assistant paid editions; enterprise suites are quote-based and usually far higher (licence plus implementation)",
+    "reference_org": "about Rs 15-60 lakh a year for a commercial mid-market tool with implementation (govern.json band); about Rs 3-8 lakh with an open-source route plus hosting and admin time",
+    "drivers": [
+     "Number of contributors or licensed users",
+     "Modules (risk, audit, TPRM, BCM, policy)",
+     "Implementation and framework content",
+     "SaaS vs self-hosted"
+    ],
+    "note": "EUR converted at about Rs 98/EUR; indicative; get three quotes; excludes 18% GST"
+   },
+   "rfp": {
+    "scope": [
+     "Platform licence, implementation, framework content, data migration from spreadsheets, training"
+    ],
+    "must": [
+     "Control library with mapping to ISO 27001:2022, RBI/SEBI directions and DPDP",
+     "Risk, control, issue and exception linking",
+     "Role-based access with SSO and MFA",
+     "Full audit trail",
+     "Hosting in India or on-premises",
+     "Full export of data in open format"
+    ],
+    "should": [
+     "API to pull evidence from security tools",
+     "Vendor risk module",
+     "Policy attestation",
+     "Board-level reports"
+    ],
+    "sizing": [
+     "Contributors (about 30-60 control owners) and read-only users",
+     "Frameworks to map",
+     "Vendors (100-300)",
+     "Risks (100-300)"
+    ],
+    "evaluation": [
+     "Functional fit 35",
+     "Framework content for India 15",
+     "Ease of use 15",
+     "Total 5-year cost 25",
+     "Exit and openness 10"
+    ],
+    "sla": [
+     "Uptime 99.5% (SaaS)",
+     "Support response 4 business hours for high severity",
+     "Content updates within 60 days of a regulator change"
+    ],
+    "clauses": [
+     "Right to audit: the organisation, its auditors and (for RBI-regulated entities) RBI may audit the provider and its sub-contractors (RBI IT outsourcing directions, 2023)",
+     "Data stays in India where the law or regulator requires it (DPDP cross-border restrictions as notified; RBI payment-data storage rule for payment system data)",
+     "Provider reports any incident affecting the organisation without delay, early enough for the organisation to meet CERT-In's 6-hour reporting rule",
+     "Exit and transition: full export of data and configuration in an open format, and reasonable transition support at agreed rates",
+     "Confidentiality, data-processing terms and deletion certificate at contract end (DPDP processor obligations)"
+    ]
+   },
+   "architecture": "Sits in the management zone or as SaaS. Fed by policy, risk, asset inventory, vulnerability and audit data; integrates with SSO and ITSM. Feeds audit packs, Board reports and regulator returns.",
+   "kpis": [
+    "Controls with current evidence (target 90%+)",
+    "Audit preparation time (trend down)",
+    "Overdue issues and exceptions"
+   ],
+   "pitfalls": [
+    "Buying before the registers are used (the tool automates chaos)",
+    "Over-customising, so upgrades break",
+    "Too few licences, so owners never log in",
+    "No export path at exit"
+   ],
+   "sources": [
+    {
+     "title": "intuitem CISO Assistant pricing",
+     "url": "https://intuitem.com/pricing/"
+    },
+    {
+     "title": "CISO Assistant community edition (GitHub)",
+     "url": "https://github.com/intuitem/ciso-assistant-community"
+    },
+    {
+     "title": "Help Net Security: CISO Assistant, open-source GRC (Jan 2026)",
+     "url": "https://www.helpnetsecurity.com/2026/01/14/ciso-assistant-open-source-cybersecurity-management-grc/"
+    },
+    {
+     "title": "eramba Enterprise pricing",
+     "url": "https://www.eramba.org/get-enterprise"
+    },
+    {
+     "title": "Gartner Peer Insights: MetricStream Enterprise GRC",
+     "url": "https://www.gartner.com/reviews/product/metricstream-enterprise-grc-solution"
+    },
+    {
+     "title": "Sprinto: MetricStream alternatives (vendor comparison)",
+     "url": "https://sprinto.com/blog/metricstream-alternatives"
+    }
+   ]
+  },
+  "gov-insurance": {
+   "summary": "An insurance policy that pays for the money impact of a cyber incident: response costs, business interruption, data restoration, liability and regulatory defence.",
+   "protects": "The balance sheet against the residual cost of a major incident (ransomware, breach, fraud).",
+   "placement": "Process owned by the CFO with the CISO and Legal; bought through a licensed broker; claims run with the incident response team.",
+   "how": "Size the limit to a realistic worst case from the risk register. The insurer underwrites on a questionnaire about controls (MFA, backups, EDR, patching). Premium is a percentage of sum insured, adjusted for sector and posture. In a claim the insurer's panel (forensics, legal) often joins the response.",
+   "pareto": [
+    "Right limit from a worst-case scenario, not a round number",
+    "MFA, EDR, offline backups and patching proven (they drive premium and claim success)",
+    "Check exclusions: war and state actors, unpatched systems, contractual liability, regulatory fines",
+    "Know the notification clause and the insurer's panel before an incident"
+   ],
+   "vendors": [
+    {
+     "name": "Tata AIG General Insurance (CyberEdge)",
+     "kind": "commercial",
+     "fit": "Long-running corporate cyber product in India",
+     "india": "Indian insurer"
+    },
+    {
+     "name": "ICICI Lombard General Insurance",
+     "kind": "commercial",
+     "fit": "Large private insurer with corporate cyber cover",
+     "india": "Indian insurer"
+    },
+    {
+     "name": "HDFC ERGO General Insurance",
+     "kind": "commercial",
+     "fit": "Corporate cyber liability and SME packages",
+     "india": "Indian insurer"
+    },
+    {
+     "name": "Bajaj General Insurance (formerly Bajaj Allianz)",
+     "kind": "commercial",
+     "fit": "Corporate and individual cyber products",
+     "india": "Indian insurer"
+    },
+    {
+     "name": "The New India Assurance",
+     "kind": "commercial",
+     "fit": "Public-sector insurer; often lead on public-sector and large risks",
+     "india": "Indian public-sector insurer"
+    },
+    {
+     "name": "Brokers: Marsh India, Aon India, Howden India and others",
+     "kind": "service firm",
+     "fit": "Market the risk to several insurers and negotiate wording",
+     "india": "IRDAI-licensed brokers"
+    }
+   ],
+   "cost": {
+    "unit": "premium per year as a share of sum insured",
+    "band": "Roughly 0.5-2.5% of the sum insured a year (about Rs 0.5-2.5 lakh per crore of cover); financial services and data-heavy firms sit at the top",
+    "reference_org": "for Rs 10-25 crore of cover, about Rs 10-60 lakh a year (matches govern.json); 2026 renewals ran about 15-30% higher than 2025",
+    "drivers": [
+     "Sum insured and deductible",
+     "Sector and turnover",
+     "Control maturity (insurers cite 20-30% savings for mature controls)",
+     "Loss history",
+     "Reinsurance capacity in the market"
+    ],
+    "note": "indicative; get three quotes; excludes 18% GST (GST applies to premium). IRDAI context: cyber products are filed by each insurer; IRDAI's 2021 guidance on cyber product structure is mainly aimed at individual cover; corporate wordings vary, so compare them clause by clause"
+   },
+   "rfp": {
+    "scope": [
+     "Cyber liability and first-party cover for the group",
+     "Broker placement with at least three insurers"
+    ],
+    "must": [
+     "First-party: incident response, forensics, data restoration, business interruption with stated waiting period",
+     "Third-party: privacy and network security liability, regulatory defence (and fines where insurable by law)",
+     "Ransomware and cyber extortion cover stated, with any sub-limits",
+     "Social engineering and funds-transfer fraud cover stated",
+     "Choice of response vendors, or a pre-approved panel that includes the organisation's IR retainer",
+     "Worldwide territory with Indian jurisdiction"
+    ],
+    "should": [
+     "Contingent business interruption for named critical suppliers",
+     "Betterment cover after an incident",
+     "Clear wording on war and state-actor exclusions"
+    ],
+    "sizing": [
+     "Turnover and sector",
+     "Records of personal data held",
+     "Endpoints (2,500), users (2,000), sites (5)",
+     "Completed insurer questionnaire with control evidence",
+     "Loss history for 5 years"
+    ],
+    "evaluation": [
+     "Breadth of cover and exclusions 40",
+     "Claims service and panel 20",
+     "Premium and deductible 30",
+     "Insurer financial strength 10"
+    ],
+    "sla": [
+     "Breach hotline 24x7",
+     "Panel responder on call within 2-4 hours",
+     "Claims decision timeline in writing"
+    ],
+    "clauses": [
+     "Notification clause compatible with CERT-In 6-hour and DPDP 72-hour reporting (notifying the regulator first must not void cover)",
+     "Consent to pay ransom only where lawful; sanctions checks",
+     "No cancellation mid-term except for non-payment"
+    ]
+   },
+   "architecture": "Fed by the risk register (worst-case loss), control evidence and incident history. Linked to the incident response plan (who calls the insurer, when) and Board risk appetite. Feeds the financial risk transfer line in the Board report.",
+   "kpis": [
+    "Cover limit vs modelled worst case",
+    "Premium change at renewal vs market",
+    "Claim paid as expected in drills or real events"
+   ],
+   "pitfalls": [
+    "Answering the questionnaire wrongly, which can void a claim",
+    "Sub-limits for ransomware hidden in the wording",
+    "IR plan that does not say when to call the insurer",
+    "Buying insurance instead of fixing the basics"
+   ],
+   "sources": [
+    {
+     "title": "Sarvada: cyber insurance in India, guide 2026",
+     "url": "https://sarvada.ai/insurance-products/cyber-insurance-india-comprehensive-guide-2026"
+    },
+    {
+     "title": "Sarvada: cyber reinsurance capacity in India, 2026 renewals",
+     "url": "https://sarvada.ai/market-trends/reinsurance-capacity-cyber-india-2026-renewals"
+    },
+    {
+     "title": "Mitigata: cyber insurance cost in India 2026",
+     "url": "https://mitigata.com/blog/cyber-insurance-cost-india/"
+    },
+    {
+     "title": "Upstox: guide to cyber liability insurance in India 2026",
+     "url": "https://upstox.com/learning-center/corporate-insurance/complete-guide-to-cyber-liability-insurance-in-india/article-1912/"
+    },
+    {
+     "title": "Fortune India via Bajaj General: cyber insurance market and premiums (July 2026)",
+     "url": "https://www.bajajgeneralinsurance.com/download-documents/news/july-2026/05.07.26_Fortune-India-Online.pdf"
+    },
+    {
+     "title": "Ken Research: India cyber insurance market (insurers named)",
+     "url": "https://www.kenresearch.com/industry-reports/india-cyber-insurance-market"
+    },
+    {
+     "title": "Majmudar & Partners: analysis of IRDAI guidance on cyber insurance products",
+     "url": "https://www.majmudarindia.com/irdais-guidance-document-on-cyber-insurance-policies-an-analysis/"
+    },
+    {
+     "title": "Deloitte India: cyber insurance gains momentum in India",
+     "url": "https://www2.deloitte.com/in/en/pages/financial-services/articles/cyber-insurance-gains-momentum-in-India.html"
+    }
+   ]
+  },
+  "gov-ai": {
+   "summary": "Rules and checks for how the organisation buys, builds and uses AI, so it is safe, fair, lawful and under human control.",
+   "protects": "Customers and the organisation against wrong or biased decisions, data leakage into AI tools, prompt injection and model misuse, and regulatory breach.",
+   "placement": "Process owned by the CISO with the CRO and a model-risk owner; AI inventory in the GRC tool; technical guardrails at the AI gateway.",
+   "how": "Keep an inventory of every AI use and rate each by impact. Approve uses against a Board-approved AI policy, test models before use (accuracy, bias, security) and monitor them in production. A human stays accountable for decisions that affect customers. In India: RBI's FREE-AI framework (13 Aug 2025) recommends a Board-approved AI policy for regulated entities, and MeitY's India AI Governance Guidelines (5 Nov 2025) set seven principles and rely on existing laws (IT Act, DPDP) rather than a new AI statute. ISO/IEC 42001:2023 gives a certifiable management system.",
+   "pareto": [
+    "An inventory of all AI uses, including staff use of public chat tools",
+    "A Board-approved AI policy with risk tiers",
+    "Pre-use testing and approval for high-impact uses",
+    "Data rules: what may and may not go into AI tools",
+    "AI terms in vendor contracts (data use, bias, audit)"
+   ],
+   "vendors": [
+    {
+     "name": "Credo AI",
+     "kind": "commercial",
+     "fit": "AI use-case registry with regulation-mapped assessments (ISO 42001, NIST AI RMF, EU AI Act)",
+     "india": "Partnership with EXL, which has a large India base"
+    },
+    {
+     "name": "IBM watsonx.governance",
+     "kind": "commercial",
+     "fit": "Model documentation and drift monitoring, strongest in IBM estates",
+     "india": "IBM India"
+    },
+    {
+     "name": "OneTrust AI Governance",
+     "kind": "commercial",
+     "fit": "Fits firms already on OneTrust for privacy or GRC",
+     "india": "India partners"
+    },
+    {
+     "name": "Holistic AI / Collibra AI Governance",
+     "kind": "commercial",
+     "fit": "Holistic AI for bias auditing; Collibra if a data catalogue is already in use",
+     "india": "Through partners"
+    },
+    {
+     "name": "NIST AI RMF and AI Verify toolkit",
+     "kind": "open source",
+     "fit": "Free framework and open-source testing toolkit to start with",
+     "india": "Not applicable"
+    },
+    {
+     "name": "ISO 42001 certification bodies (SGS, TÜV SÜD, BSI and others)",
+     "kind": "service firm",
+     "fit": "Independent certification of the AI management system",
+     "india": "Indian firms certified in 2025-26 by SGS and TÜV SÜD"
+    }
+   ],
+   "cost": {
+    "unit": "fixed per year",
+    "band": "Rs 5-20 lakh a year for policy, inventory and testing with existing tools; dedicated platforms and ISO 42001 certification add quotes",
+    "reference_org": "about Rs 5-20 lakh a year (matches govern.json)",
+    "drivers": [
+     "Number of AI uses and high-impact models",
+     "Dedicated platform vs GRC module",
+     "External model validation",
+     "ISO 42001 certification"
+    ],
+    "note": "indicative; get three quotes; excludes 18% GST"
+   },
+   "rfp": {
+    "scope": [
+     "AI policy and risk tiering",
+     "AI inventory and assessments",
+     "Model testing (accuracy, bias, robustness, prompt injection)",
+     "Monitoring",
+     "Optional ISO 42001 readiness"
+    ],
+    "must": [
+     "Mapping to RBI FREE-AI recommendations (for regulated entities), the India AI Governance Guidelines and DPDP",
+     "Inventory with owner, purpose, data used, impact tier",
+     "Testing reports kept as evidence",
+     "No customer or personal data sent to a model provider without contract and DPDP basis",
+     "Hosting in India or approved region"
+    ],
+    "should": [
+     "ISO 42001 control mapping",
+     "Integration with the AI gateway logs",
+     "Red-team testing of generative AI apps"
+    ],
+    "sizing": [
+     "Count of AI uses (internal and vendor-embedded)",
+     "High-impact models (credit, fraud, customer-facing)",
+     "Users of generative AI tools"
+    ],
+    "evaluation": [
+     "Regulatory mapping 30",
+     "Testing depth 25",
+     "Ease of use 15",
+     "Price 20",
+     "Openness and exit 10"
+    ],
+    "sla": [
+     "Assessment of a new AI use within 10 business days",
+     "Monitoring alerts within 24 hours"
+    ],
+    "clauses": [
+     "Right to audit: the organisation, its auditors and (for RBI-regulated entities) RBI may audit the provider and its sub-contractors (RBI IT outsourcing directions, 2023)",
+     "Data stays in India where the law or regulator requires it (DPDP cross-border restrictions as notified; RBI payment-data storage rule for payment system data)",
+     "Provider reports any incident affecting the organisation without delay, early enough for the organisation to meet CERT-In's 6-hour reporting rule",
+     "Exit and transition: full export of data and configuration in an open format, and reasonable transition support at agreed rates",
+     "Confidentiality, data-processing terms and deletion certificate at contract end (DPDP processor obligations)",
+     "AI provider must not train on the organisation's data without written consent",
+     "Disclosure of model changes and sub-processors",
+     "Bias and accuracy reporting on request (RBI FREE-AI recommends AI-specific contract safeguards)"
+    ]
+   },
+   "architecture": "Inventory and approvals in the GRC tool; technical rails (data filters, identity, logging, kill switch) at the AI gateway in front of models; model monitoring feeds the SOC and model-risk committee. Fed by procurement and the data inventory.",
+   "kpis": [
+    "AI uses in the inventory with an approved tier (target 100%)",
+    "High-impact models tested before use (target 100%)",
+    "AI incidents and near misses reported and closed"
+   ],
+   "pitfalls": [
+    "Banning AI, which drives shadow use",
+    "Inventory that misses AI inside vendor products",
+    "One-time testing with no monitoring",
+    "No named human accountable for AI decisions"
+   ],
+   "sources": [
+    {
+     "title": "law.asia: RBI FREE-AI framework (Aug 2025)",
+     "url": "https://law.asia/rbi-ai-framework/"
+    },
+    {
+     "title": "Bar & Bench: RBI FREE-AI framework, legal and regulatory landscape",
+     "url": "https://www.barandbench.com/view-point/rbis-free-ai-framework-navigating-the-legal-and-regulatory-landscape"
+    },
+    {
+     "title": "Securiti: FREE-AI framework in Indian finance",
+     "url": "https://securiti.ai/free-ai-framework-in-indian-finance/"
+    },
+    {
+     "title": "Vikaspedia: India AI Governance Guidelines (MeitY, Nov 2025)",
+     "url": "https://en.vikaspedia.in/viewcontent/e-governance/digital-india/india-ai-governance-guidelines?lgn=en"
+    },
+    {
+     "title": "Mondaq: India's AI Governance Guidelines",
+     "url": "https://www.mondaq.com/india/new-technology/1746072/indias-ai-governance-guidelines"
+    },
+    {
+     "title": "ISO/IEC 42001:2023 AI management system (ISO catalogue)",
+     "url": "https://www.iso.org/standard/81230.html"
+    },
+    {
+     "title": "NIST AI Risk Management Framework",
+     "url": "https://www.nist.gov/itl/ai-risk-management-framework"
+    },
+    {
+     "title": "Credo AI: Gartner Market Guide for AI Governance Platforms 2025 (vendor post)",
+     "url": "https://credo.ai/blog/credo-ai-recognized-in-the-gartner-r-market-guide-for-ai-governance-platforms-2025"
+    },
+    {
+     "title": "Kosmoy: Credo AI alternatives (July 2026)",
+     "url": "https://kosmoy.com/resources/blog/credo-ai-alternatives/"
+    },
+    {
+     "title": "KPMG in India receives ISO 42001 certification from SGS (Dec 2025)",
+     "url": "https://uniindia.com/kpmg-in-india-receives-iso-42001-certification-for-artificial-intelligence-management-from-sgs/prnewswire/news/3673850.html"
+    },
+    {
+     "title": "CXO Digital Pulse: ISO 42001 adoption by Indian IT firms",
+     "url": "https://www.cxodigitalpulse.com/?p=40559"
+    }
+   ]
+  },
+  "prc-inventory": {
+   "summary": "A complete, current list of every device, system, application, cloud service and data store, with its owner and what it holds.",
+   "protects": "Everything else: unknown assets are unpatched, unmonitored and unprotected; the inventory is the base for patching, monitoring, DPDP mapping and continuity.",
+   "placement": "Process owned by IT with the CISO; discovery agents or scanners on the network and endpoints; a CMDB or asset register in the ITSM tool.",
+   "how": "Discovery tools find devices, software and cloud resources automatically. Each item gets an owner, a classification and a business service. The list is reconciled monthly against other sources (EDR, directory, cloud accounts, purchase records) to catch gaps.",
+   "pareto": [
+    "Automated discovery of endpoints, servers and cloud accounts",
+    "An owner and a business service for each of the 40 applications",
+    "Internet-facing assets listed and checked weekly",
+    "Monthly reconciliation of EDR, directory and CMDB counts",
+    "Data stores with personal or sensitive data flagged"
+   ],
+   "vendors": [
+    {
+     "name": "ServiceNow ITOM Discovery and CMDB",
+     "kind": "commercial",
+     "fit": "Large estates already on ServiceNow",
+     "india": "India data centre options and partners"
+    },
+    {
+     "name": "ManageEngine (Zoho) Endpoint Central / AssetExplorer / ServiceDesk Plus",
+     "kind": "Indian",
+     "fit": "Good value for mid-size estates; asset-count based pricing",
+     "india": "Zoho is an Indian company"
+    },
+    {
+     "name": "Freshservice ITAM (Freshworks)",
+     "kind": "Indian",
+     "fit": "SaaS ITSM and asset management for mid-size firms",
+     "india": "India-founded company"
+    },
+    {
+     "name": "Lansweeper",
+     "kind": "commercial",
+     "fit": "Fast agentless discovery across IT and OT",
+     "india": "Through partners"
+    },
+    {
+     "name": "Axonius (cyber asset attack surface management)",
+     "kind": "commercial",
+     "fit": "Joins data from many security tools to find coverage gaps",
+     "india": "Through partners"
+    },
+    {
+     "name": "GLPI / Snipe-IT",
+     "kind": "open source",
+     "fit": "Free inventory and CMDB (GLPI) or simple asset register (Snipe-IT; hosted plans from about USD 400 a year)",
+     "india": "Self-host in India"
+    }
+   ],
+   "cost": {
+    "unit": "fixed per year (or per asset per year)",
+    "band": "Rs 0-10 lakh a year with open source or an existing ITSM; a commercial discovery or CAASM tool adds quote-based fees per asset",
+    "reference_org": "about Rs 2-20 lakh a year for 2,500 endpoints plus servers with a mid-market tool (govern.json says 0-10 lakh; fine with open source)",
+    "drivers": [
+     "Asset count (endpoints, servers, cloud resources)",
+     "Agent vs agentless",
+     "CMDB depth (service mapping)",
+     "Integration with security tools"
+    ],
+    "note": "USD converted at about Rs 84/USD; indicative; get three quotes; excludes 18% GST"
+   },
+   "rfp": {
+    "scope": [
+     "Discovery of endpoints, servers, network devices, cloud and SaaS",
+     "CMDB or asset register",
+     "Reconciliation and reporting",
+     "Integration with EDR, vulnerability scanner, directory and ITSM"
+    ],
+    "must": [
+     "Discovers 95%+ of known assets in the pilot",
+     "Records owner, location, OS, software, classification and business service",
+     "API and CSV export",
+     "Role-based access with SSO",
+     "Hosting in India or on-premises"
+    ],
+    "should": [
+     "Cloud account discovery (AWS, Azure, GCP)",
+     "Coverage-gap reports (assets without EDR or backup)",
+     "OT and IoT discovery"
+    ],
+    "sizing": [
+     "2,500 endpoints, about 2,000 users, servers and network devices count",
+     "40 applications",
+     "5 sites",
+     "Cloud accounts and subscriptions"
+    ],
+    "evaluation": [
+     "Discovery accuracy in pilot 35",
+     "Integration 20",
+     "Ease of use 15",
+     "Price 25",
+     "India support 5"
+    ],
+    "sla": [
+     "Discovery refresh at least daily for endpoints",
+     "Support response 4 business hours",
+     "Uptime 99.5% (SaaS)"
+    ],
+    "clauses": [
+     "Data stays in India where the law or regulator requires it (DPDP cross-border restrictions as notified; RBI payment-data storage rule for payment system data)",
+     "Exit and transition: full export of data and configuration in an open format, and reasonable transition support at agreed rates"
+    ]
+   },
+   "architecture": "Discovery scanners in each site and the data centre; agents on endpoints (often the EDR or endpoint manager); cloud connectors. Feeds vulnerability management, patching, SIEM asset context, classification, DPDP data map, BIA and the risk register.",
+   "kpis": [
+    "Gap between EDR, directory and CMDB counts (target under 2%)",
+    "Assets with an owner (target 100% of applications and servers)",
+    "Internet-facing assets unknown before a scan found them (trend to 0)"
+   ],
+   "pitfalls": [
+    "One-time inventory that goes stale",
+    "Endpoints only; cloud and SaaS forgotten",
+    "No owner field, so nobody fixes findings",
+    "Several inventories that never agree"
+   ],
+   "sources": [
+    {
+     "title": "GLPI project (open-source ITSM, inventory, CMDB)",
+     "url": "https://glpi-project.org/"
+    },
+    {
+     "title": "Snipe-IT pricing (open-source asset management, hosted plans)",
+     "url": "https://snipeitapp.com/pricing"
+    },
+    {
+     "title": "ManageEngine ServiceDesk Plus pricing",
+     "url": "https://www.manageengine.com/products/service-desk/pricing.html"
+    },
+    {
+     "title": "Freshservice pricing",
+     "url": "https://www.freshworks.com/freshservice/pricing/"
+    },
+    {
+     "title": "Lansweeper pricing",
+     "url": "https://www.lansweeper.com/pricing/"
+    },
+    {
+     "title": "CERT-In Directions under section 70B(6) of the IT Act (28 April 2022)",
+     "url": "https://www.cert-in.org.in/PDF/CERT-In_Directions_70B_28.04.2022.pdf"
+    }
+   ]
+  },
+  "prc-classify": {
+   "summary": "Rating every asset for how critical it is to the business and how sensitive its data is, so effort follows importance.",
+   "protects": "Sensitive and personal data and critical services: classification decides where encryption, DLP, backups, monitoring and access rules apply first.",
+   "placement": "Process owned by business owners with the CISO; ratings kept in the asset inventory; data labels applied in email, documents and storage by a labelling tool.",
+   "how": "Each asset gets two scores, criticality and sensitivity (1-4 each, for example Public, Internal, Confidential, Restricted). The product sets its priority. Documents and email carry visible labels, applied by default or suggested by content detection, so tools such as DLP can act on them.",
+   "pareto": [
+    "Four simple levels, defined with examples",
+    "Business owners rate their own systems",
+    "Default labels in email and Office documents, user can raise",
+    "Automatic detection of personal data (Aadhaar, PAN, account numbers) to suggest labels",
+    "Labels drive DLP and encryption rules"
+   ],
+   "vendors": [
+    {
+     "name": "Microsoft Purview Information Protection",
+     "kind": "commercial",
+     "fit": "Built into Microsoft 365; manual labels in many plans, automatic labelling in higher tiers (E5 or E5 Compliance add-on)",
+     "india": "Microsoft India data centres"
+    },
+    {
+     "name": "Seclore",
+     "kind": "Indian",
+     "fit": "Labels plus persistent rights management that travels with the file",
+     "india": "India-origin company, strong in Indian BFSI"
+    },
+    {
+     "name": "Fortra (Titus, Boldon James)",
+     "kind": "commercial",
+     "fit": "Mature classification for mixed or non-Microsoft estates",
+     "india": "Through partners"
+    },
+    {
+     "name": "Varonis",
+     "kind": "commercial",
+     "fit": "Finds and classifies sensitive data in file shares and cloud at scale",
+     "india": "India presence through partners"
+    },
+    {
+     "name": "Microsoft Presidio",
+     "kind": "open source",
+     "fit": "Free PII detection library to scan data stores",
+     "india": "Not applicable"
+    }
+   ],
+   "cost": {
+    "unit": "per user per year (tooling); process itself fixed",
+    "band": "Rs 0 if the current Microsoft 365 licence includes the needed labelling; otherwise per-user add-on or third-party licences (quote-based)",
+    "reference_org": "Rs 0 for the process (govern.json); labelling tools for 2,000 users are priced on quotes and are often already partly licensed",
+    "drivers": [
+     "Existing Microsoft 365 plan",
+     "Automatic vs manual labelling",
+     "Rights management needs",
+     "Unstructured data volume to scan"
+    ],
+    "note": "indicative; get three quotes; excludes 18% GST; check the current Microsoft price list for add-on rates"
+   },
+   "rfp": {
+    "scope": [
+     "Classification standard and training",
+     "Labelling tool for email, documents and storage",
+     "Data discovery scan of file shares and cloud",
+     "Integration with DLP"
+    ],
+    "must": [
+     "Four-level scheme configurable with visible headers and metadata",
+     "Detection of Indian identifiers (Aadhaar, PAN, bank account, card numbers)",
+     "Labels readable by the DLP and email gateway",
+     "Audit log of label changes",
+     "Data processed in India or on-premises"
+    ],
+    "should": [
+     "Rights management that persists outside the organisation",
+     "Regional-language support",
+     "Mobile support"
+    ],
+    "sizing": [
+     "2,000 users",
+     "Email volume",
+     "File share and cloud storage volume (TB)",
+     "40 applications"
+    ],
+    "evaluation": [
+     "Detection accuracy in pilot 30",
+     "Ease for users 25",
+     "Integration with DLP and email 20",
+     "Price 25"
+    ],
+    "sla": [
+     "Support response 4 business hours",
+     "Pattern updates for new Indian identifiers within 30 days"
+    ],
+    "clauses": [
+     "Data stays in India where the law or regulator requires it (DPDP cross-border restrictions as notified; RBI payment-data storage rule for payment system data)",
+     "Confidentiality, data-processing terms and deletion certificate at contract end (DPDP processor obligations)"
+    ]
+   },
+   "architecture": "Ratings live in the asset inventory. Labelling agents or built-in clients on endpoints and in Microsoft 365; scanners on file shares and cloud. Feeds DLP, encryption, backup tiers, access reviews, BIA and DPDP mapping.",
+   "kpis": [
+    "Assets with both ratings (target 100% of applications)",
+    "Share of new documents labelled (target 90%+)",
+    "Restricted data found outside approved stores (trend down)"
+   ],
+   "pitfalls": [
+    "Too many levels, so users guess",
+    "Labels that drive no control (paper exercise)",
+    "IT rates business systems without the owner",
+    "Auto-labelling turned on without a pilot, causing false blocks"
+   ],
+   "sources": [
+    {
+     "title": "MirvoLegal: DPDP Rules 2025 compliance timeline (as at September 2026)",
+     "url": "https://www.mirvolegal.com/insights/dpdp-rules-2025-compliance-timeline/"
+    },
+    {
+     "title": "KPMG India: DPDP Act and Rules compliance roadmap (Dec 2025)",
+     "url": "https://assets.kpmg.com/content/dam/kpmgsites/in/pdf/2025/12/dpdp-act-and-rules-compliance-roadmap.pdf.coredownload.pdf"
+    },
+    {
+     "title": "Seclore: DPDP Rules 2025 compliance guide",
+     "url": "https://www.seclore.com/fundamentals/dpdp-rules-2025-compliance-guide/"
+    },
+    {
+     "title": "ISO/IEC 27001:2022 (ISO catalogue)",
+     "url": "https://www.iso.org/standard/27001"
+    }
+   ]
+  },
+  "prc-change": {
+   "summary": "A controlled way to make changes to systems and to grant temporary exceptions to rules, so nothing risky goes in unreviewed and no 'temporary' exception lasts forever.",
+   "protects": "Availability and integrity of systems; stops outages from bad changes and quiet holes from forgotten exceptions.",
+   "placement": "Process owned by IT (change manager) with the CISO; run in the ITSM tool; change advisory board for high-risk changes; exceptions in the GRC register.",
+   "how": "Each change is logged with a risk rating, test evidence and a back-out plan; standard low-risk changes are pre-approved, high-risk ones go to the change board. Each exception has an owner, a reason, a compensating control and an end date, and is reviewed before it expires.",
+   "pareto": [
+    "Every production change logged and linked to an approval",
+    "Pre-approved standard changes to keep speed",
+    "Emergency change route with review after the fact",
+    "Exceptions with end date and compensating control",
+    "Compare changes found by monitoring with changes approved (catch unauthorised ones)"
+   ],
+   "vendors": [
+    {
+     "name": "ServiceNow ITSM",
+     "kind": "commercial",
+     "fit": "Large estates; strong change and CMDB linkage",
+     "india": "India data centre options and partners"
+    },
+    {
+     "name": "ManageEngine ServiceDesk Plus (Zoho)",
+     "kind": "Indian",
+     "fit": "Change management included in Enterprise edition (from USD 67 per technician per month; on-prem 50 technicians and 2,000 assets about USD 21,600 a year)",
+     "india": "Indian company"
+    },
+    {
+     "name": "Freshservice (Freshworks)",
+     "kind": "Indian",
+     "fit": "SaaS; change management in Pro (USD 99 per agent per month, annual) and Enterprise",
+     "india": "India-founded company"
+    },
+    {
+     "name": "Jira Service Management (Atlassian)",
+     "kind": "commercial",
+     "fit": "Good where development teams already use Jira",
+     "india": "Through partners"
+    },
+    {
+     "name": "GLPI / iTop",
+     "kind": "open source",
+     "fit": "Free self-hosted ITSM with change workflows",
+     "india": "Self-host in India"
+    }
+   ],
+   "cost": {
+    "unit": "per technician or agent per year (tool); process fixed",
+    "band": "Rs 0 for the process; ITSM tool about Rs 15-35 lakh a year for 30-50 IT agents with change management",
+    "reference_org": "Rs 0 extra if the ITSM tool exists (govern.json); for example ManageEngine Enterprise on-prem 50 technicians / 2,000 assets about Rs 18 lakh a year, Freshservice Pro 30 agents about Rs 30 lakh a year",
+    "drivers": [
+     "Number of IT agents",
+     "Edition that includes change management",
+     "CMDB and asset count",
+     "SaaS vs on-premises"
+    ],
+    "note": "USD converted at about Rs 84/USD; indicative; get three quotes; excludes 18% GST"
+   },
+   "rfp": {
+    "scope": [
+     "ITSM tool with change, problem, incident and CMDB",
+     "Exception register (or GRC integration)",
+     "Process design and training"
+    ],
+    "must": [
+     "Change records with risk rating, approval, test and back-out evidence",
+     "Change linked to CMDB items",
+     "Emergency change workflow with post-review",
+     "Exception records with owner, end date, compensating control and reminders",
+     "Full audit trail; SSO and MFA",
+     "Hosting in India or on-premises"
+    ],
+    "should": [
+     "Change calendar and freeze windows",
+     "Integration with CI/CD pipelines for automated change records",
+     "Detection of unauthorised changes from monitoring"
+    ],
+    "sizing": [
+     "IT agents (estimate 30-50)",
+     "Changes per month",
+     "Assets in CMDB (2,500 endpoints plus servers)",
+     "40 applications"
+    ],
+    "evaluation": [
+     "Functional fit 35",
+     "Integration 20",
+     "Ease of use 15",
+     "5-year cost 25",
+     "India support 5"
+    ],
+    "sla": [
+     "Uptime 99.9% (SaaS)",
+     "Support response 1 hour for critical issues",
+     "Data export on request"
+    ],
+    "clauses": [
+     "Right to audit: the organisation, its auditors and (for RBI-regulated entities) RBI may audit the provider and its sub-contractors (RBI IT outsourcing directions, 2023)",
+     "Data stays in India where the law or regulator requires it (DPDP cross-border restrictions as notified; RBI payment-data storage rule for payment system data)",
+     "Provider reports any incident affecting the organisation without delay, early enough for the organisation to meet CERT-In's 6-hour reporting rule",
+     "Exit and transition: full export of data and configuration in an open format, and reasonable transition support at agreed rates",
+     "Confidentiality, data-processing terms and deletion certificate at contract end (DPDP processor obligations)"
+    ]
+   },
+   "architecture": "ITSM in the management zone or SaaS, linked to the CMDB, CI/CD pipelines, monitoring (to spot unapproved changes) and the GRC exception register. Feeds incident analysis, audit evidence and risk reporting.",
+   "kpis": [
+    "Changes causing incidents (target under 2%)",
+    "Unauthorised changes detected (trend to 0)",
+    "Exceptions past end date (target 0)",
+    "Emergency changes as share of all (target under 10%)"
+   ],
+   "pitfalls": [
+    "Change board that rubber-stamps everything",
+    "Process so slow that teams bypass it",
+    "Exceptions with no end date",
+    "No back-out plan for high-risk changes"
+   ],
+   "sources": [
+    {
+     "title": "ManageEngine ServiceDesk Plus pricing",
+     "url": "https://www.manageengine.com/products/service-desk/pricing.html"
+    },
+    {
+     "title": "Freshservice pricing",
+     "url": "https://www.freshworks.com/freshservice/pricing/"
+    },
+    {
+     "title": "GLPI project (open-source ITSM, inventory, CMDB)",
+     "url": "https://glpi-project.org/"
+    },
+    {
+     "title": "RBI Master Direction on IT Governance, Risk, Controls and Assurance Practices (7 Nov 2023)",
+     "url": "https://www.rbi.org.in/Scripts/NotificationUser.aspx?Id=12562"
+    },
+    {
+     "title": "ISO/IEC 27001:2022 (ISO catalogue)",
+     "url": "https://www.iso.org/standard/27001"
+    }
+   ]
+  }
+ }
+}

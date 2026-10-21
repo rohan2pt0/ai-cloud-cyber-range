@@ -1030,6 +1030,10 @@ def main(argv: list[str] | None = None) -> int:
     out = pathlib.Path(a.out)
     atomic_write(out, page)
     atomic_write(out.with_suffix(".json"), json.dumps(data, indent=1))
+    try:                                   # the ready-reckoner pages the Govern boxes open (doc 94 §8), next to the cockpit
+        _load("securax_reckoner", "governance/reckoner.py").build(out.parent / "reckoner")
+    except Exception as e:  # noqa: BLE001 - the cockpit must render even if a page cannot
+        print(f"(ready reckoner not written: {e})", file=sys.stderr)
     try:                                                                      # the Guiding Map's "From your estate" lines follow every cockpit refresh
         _load("securax_lifefeed", "governance/lifefeed.py").write(out.parent / "estate-feed.json", cockpit=out.with_suffix(".json"))
     except Exception:  # noqa: BLE001 - the feed is a convenience; it must never fail the cockpit

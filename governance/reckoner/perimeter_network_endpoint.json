@@ -1,0 +1,1589 @@
+{
+ "as_of": "2026-10",
+ "items": {
+  "tec-ngfw": {
+   "summary": "A firewall that decides which traffic may pass by application, user and content, not only by port, and blocks known attacks on the way.",
+   "protects": "Internet edge, data centre and branch networks; stops scanning, exploit attempts, malware downloads and command-and-control traffic, and limits how far an attacker can move inside.",
+   "placement": "Network zone. An HA pair at each internet edge (DC and DR), inline between the ISP routers (or the anti-DDoS device) and the DMZ/core switches; a separate internal segmentation firewall pair in the data centre between user, server, payment and management zones; a smaller firewall at each branch.",
+   "how": "Every packet is matched to an application and, where possible, a user. Rules allow only what is needed (default deny) and the allowed traffic is inspected by IPS, anti-malware, URL filtering and TLS decryption. Logs go to the SIEM, and the management console keeps rule history for audits.",
+   "pareto": [
+    "Default-deny rule base, reviewed every 6 months and cleaned once a year",
+    "IPS and anti-malware on all internet-facing and inter-zone traffic",
+    "Internal segmentation: users cannot reach server or payment zones except through named rules",
+    "TLS decryption for user web traffic (with exemptions for banking, health and privacy)",
+    "Logs to the SIEM and admin access only from a management network with MFA"
+   ],
+   "vendors": [
+    {
+     "name": "Fortinet FortiGate",
+     "kind": "commercial",
+     "fit": "Gartner 2025 Hybrid Mesh Firewall Leader, highest for Ability to Execute; strong price per Gbps through custom chips; good for many branches.",
+     "india": "Large Indian partner base; reseller INR price lists are public (for example 600F hardware about Rs 2.8-3.6 lakh)."
+    },
+    {
+     "name": "Palo Alto Networks (PA-series, VM-series)",
+     "kind": "commercial",
+     "fit": "Gartner 2025 HMF Leader, furthest for Completeness of Vision; deep application and user identification; higher price.",
+     "india": "Direct sales and partners in India; reseller hardware prices for a PA-3410 are about US$28,000-35,000 (about Rs 23-29 lakh) before subscriptions."
+    },
+    {
+     "name": "Check Point (Quantum)",
+     "kind": "commercial",
+     "fit": "Gartner 2025 HMF Leader; strong central management and threat prevention; common in Indian banks.",
+     "india": "Established India presence and partners."
+    },
+    {
+     "name": "Sophos Firewall (XGS)",
+     "kind": "commercial",
+     "fit": "Simple to run; good for branches and mid-size sites; integrates with Sophos endpoint.",
+     "india": "Very wide Indian reseller channel; desktop models from about Rs 22,000-70,000 hardware (reseller estimate)."
+    },
+    {
+     "name": "OPNsense",
+     "kind": "open source",
+     "fit": "Free firewall with Suricata IPS; fits a lab, a small site or a low-risk segment; you carry support and patching yourself.",
+     "india": "Community support; local Linux integrators can support it. Not a typical choice for a bank's primary edge."
+    }
+   ],
+   "cost": {
+    "unit": "per appliance (hardware once) plus a yearly security subscription per appliance",
+    "band": "Mid-range (600F class): about Rs 2.8-3.6 lakh hardware plus Rs 0.9-1.15 lakh a year for the threat bundle (reseller estimate, Fortinet); premium brands cost 3-5 times more at the same throughput",
+    "reference_org": "About Rs 20-80 lakh a year (2 edge HA pairs at DC and DR, 1 internal segmentation pair, 5 branch units, subscriptions, support and hardware spread over 5 years). A lower-cost brand can come in under Rs 20 lakh.",
+    "drivers": [
+     "Throughput with all inspection and TLS decryption on (not the firewall-only number)",
+     "Number of HA pairs and branches",
+     "Subscription bundle (basic vs enterprise; enterprise about 40-60% more)",
+     "Multi-year term (3-5 year terms cut 18-25%)",
+     "Managed service and rule-review hours"
+    ],
+    "note": "Indicative, October 2026, excluding 18% GST; get three quotes. USD figures converted at about Rs 84/USD."
+   },
+   "rfp": {
+    "scope": [
+     "Supply, install and configure HA firewall pairs at DC and DR internet edge",
+     "Internal segmentation firewall pair in the DC",
+     "Branch firewalls at all sites with central management",
+     "Migrate and clean up the existing rule base",
+     "Integrate logs with the SIEM and identity with the directory",
+     "Train the network team; 3-5 years of support"
+    ],
+    "must": [
+     "Threat-protection throughput (IPS + app control + anti-malware, with logging) at least 2x today's peak internet and inter-zone traffic",
+     "TLS 1.3 decryption at the required throughput",
+     "Active-passive or active-active HA with session sync; failover under 3 seconds",
+     "Application and user-based rules; integration with AD/Entra ID",
+     "Central management with rule hit counts, change history and role-based admin",
+     "Syslog/CEF export to SIEM; NTP to NIC/NPL",
+     "Threat signature updates at least daily"
+    ],
+    "should": [
+     "Shared policy for cloud (virtual) firewalls",
+     "SD-WAN for branches",
+     "Rule optimisation and unused-rule reports",
+     "API for automation",
+     "Certified by an independent lab (e.g. CyberRatings/NetSecOPEN)"
+    ],
+    "sizing": [
+     "Internet bandwidth per site and growth for 5 years",
+     "Peak concurrent sessions and new sessions per second",
+     "Number of zones and VLANs",
+     "Number of current rules",
+     "Share of traffic to be decrypted",
+     "Number of remote users if VPN is on the firewall"
+    ],
+    "evaluation": [
+     "Technical fit 40",
+     "Proof-of-concept results on real traffic 20",
+     "5-year total cost 25",
+     "Support and India presence 10",
+     "References in Indian BFSI 5"
+    ],
+    "sla": [
+     "Hardware replacement next business day (4 hours at DC/DR)",
+     "Severity-1 response 30 minutes, 24x7",
+     "Critical vulnerability patches available within 7 days of OEM release",
+     "Firewall availability 99.99% for the HA pair"
+    ],
+    "clauses": [
+     "Right to audit and inspect for the bank, its auditors and RBI, including subcontractors (RBI Master Direction on Outsourcing of IT Services, 2023).",
+     "Logs kept 180 days within Indian jurisdiction and clocks synced to NIC/NPL NTP (CERT-In directions, April 2022); the product must export them to the bank's SIEM.",
+     "Vendor notifies the bank of any incident affecting the service fast enough for the bank to report to CERT-In within 6 hours, and to RBI as its rules require.",
+     "Back-to-back OEM support for the full term, and end-of-sale/end-of-support dates disclosed; no product within 3 years of end of support.",
+     "Exit and transition: configuration and policy export in an open format, help to migrate, and data deletion certificate at the end.",
+     "Configuration escrow: the bank holds a current backup of every firewall configuration."
+    ]
+   },
+   "architecture": "Internet links from 2 ISPs land on edge routers, pass the anti-DDoS layer, then the edge NGFW HA pair; behind it sit the DMZ (web, mail relay, WAF) and the core switch. In the DC, an internal segmentation firewall pair separates user, server, payment, management and third-party zones. Branches connect over SD-WAN or MPLS through their own firewall. All firewalls feed the SIEM; identity comes from AD/Entra ID; threat feeds come from the OEM and CERT-In advisories.",
+   "kpis": [
+    "% of rules with an owner and review date (target 100%)",
+    "Unused or any-any rules removed per review",
+    "Days to apply critical firewall OS patches",
+    "Blocked high-severity IPS events reviewed by the SOC"
+   ],
+   "pitfalls": [
+    "Sizing on firewall-only throughput, then switching on inspection and running out of capacity",
+    "Rule bases that only grow; no owner, no expiry",
+    "Management interface reachable from the user network or internet",
+    "Firewall OS not patched; edge devices are a top target for exploits"
+   ],
+   "sources": [
+    {
+     "title": "Fortinet: Gartner Magic Quadrant for Hybrid Mesh Firewall 2025",
+     "url": "https://fortinet.com/resources/analyst-reports/gartner-magic-quadrant-hmf"
+    },
+    {
+     "title": "Palo Alto Networks: Leader in the first Gartner MQ for Hybrid Mesh Firewall",
+     "url": "https://www.paloaltonetworks.com/network-security/gartner-hybrid-mesh-firewalls-mq-2025"
+    },
+    {
+     "title": "Check Point: top hybrid mesh firewall companies",
+     "url": "https://www.checkpoint.com/cyber-hub/tools-vendors/top-10-hybrid-mesh-firewall-companies/"
+    },
+    {
+     "title": "Cloudfy Systems: Fortinet FortiGate pricing in India",
+     "url": "https://cloudfysystems.com/blog/fortinet-fortigate-pricing-india"
+    },
+    {
+     "title": "CDW: Palo Alto Networks PA-3410 listing",
+     "url": "https://m.cdw.com/product/palo-alto-networks-pa-3410-with-redundant-ac-power-supplies/6894481"
+    },
+    {
+     "title": "Cloudfy Systems: Sophos firewall pricing India 2026",
+     "url": "https://cloudfysystems.com/blog/sophos-firewall-pricing-india-2026"
+    },
+    {
+     "title": "RBI: Master Direction on IT Governance, Risk, Controls and Assurance Practices (Nov 2023)",
+     "url": "https://website.rbi.org.in/web/rbi/-/notifications/master-direction-on-information-technology-governance-risk-controls-and-assurance-practices"
+    },
+    {
+     "title": "Ankura: India's CERT-In cyber incident reporting directions explained",
+     "url": "https://ankura.com/insights/everything-you-need-to-know-about-indias-new-guidelines-related-to-cyber-incident-reporting-by-cert-in/"
+    },
+    {
+     "title": "Khaitan & Co: Ergo note on the CERT-In directions of 28 April 2022",
+     "url": "https://khaitanco.com/sites/default/files/2022-04/Ergo_30042022.pdf"
+    }
+   ]
+  },
+  "tec-email": {
+   "summary": "A filter that checks every email for phishing, malware, fraud and spoofing before (or just after) it reaches the inbox, plus SPF, DKIM and DMARC so others cannot send mail as you.",
+   "protects": "Users' mailboxes and the organisation's domain; stops phishing, credential theft, malicious attachments and links, invoice and CEO fraud (business email compromise) and domain spoofing.",
+   "placement": "Cloud service. Either a secure email gateway in front of the mail system (MX record points to the gateway, which relays clean mail to Microsoft 365/Google/Exchange), or API mode, connected to Microsoft 365/Google Workspace and acting inside the mailbox. Many banks run the native filter plus one of these. DMARC is a DNS setting owned by the messaging team.",
+   "how": "Mail is scored on sender reputation, authentication (SPF/DKIM/DMARC), content, links and attachments. Attachments open in a sandbox and links are rewritten and checked again at click time. Bad mail is blocked or quarantined, and mail already delivered can be pulled back from all inboxes.",
+   "pareto": [
+    "DMARC at p=reject on every domain you own, including ones that send no mail",
+    "Attachment sandboxing and time-of-click link checks",
+    "Impersonation and business-email-compromise detection for finance and executives",
+    "Automatic removal of a reported phish from every inbox",
+    "A report-phish button that feeds the SOC"
+   ],
+   "vendors": [
+    {
+     "name": "Proofpoint",
+     "kind": "commercial",
+     "fit": "Gartner 2025 Email Security Platforms Leader; deep threat intelligence; preferred for large enterprises; higher price.",
+     "india": "Sold through Indian partners; one India estimate puts Enterprise with TAP at about Rs 1.2-1.8 crore a year for 5,000 users."
+    },
+    {
+     "name": "Microsoft Defender for Office 365 (Plan 1 / Plan 2)",
+     "kind": "commercial",
+     "fit": "Native to Microsoft 365, no MX change; Plan 2 about US$5 per user a month (about Rs 5,000 a year), included in Microsoft 365 E5.",
+     "india": "Sold by Indian Microsoft CSP partners; confirm the data location for your tenant."
+    },
+    {
+     "name": "Mimecast",
+     "kind": "commercial",
+     "fit": "Gateway with archiving and continuity in one; good for mid-size firms that need mail to keep flowing during an outage.",
+     "india": "Indian resellers quote about Rs 800-2,500 per mailbox a year for mid-market bundles."
+    },
+    {
+     "name": "Check Point Harmony Email & Collaboration (formerly Avanan)",
+     "kind": "commercial",
+     "fit": "API mode with inline blocking for Microsoft 365 and Google; also scans Teams, SharePoint and OneDrive; Gartner 2025 Leader.",
+     "india": "Check Point has a direct India presence and partners."
+    },
+    {
+     "name": "Darktrace / EMAIL",
+     "kind": "commercial",
+     "fit": "Behaviour-based detection of unusual mail; Gartner 2025 Leader; useful as a second layer behind the native filter.",
+     "india": "Sold in India through partners."
+    },
+    {
+     "name": "parsedmarc (with checkdmarc)",
+     "kind": "open source",
+     "fit": "Self-hosted DMARC report parsing and dashboards; replaces a paid DMARC reporting service; not a mail filter.",
+     "india": "Community-supported; runs on your own server."
+    }
+   ],
+   "cost": {
+    "unit": "per user (mailbox) per year",
+    "band": "Rs 800-3,000 per user per year for a gateway or API product with sandboxing; Rs 350-800 for entry tiers; Rs 0 extra where Microsoft 365 E5 is already owned",
+    "reference_org": "About Rs 16-60 lakh a year for 2,000 mailboxes, plus Rs 1-5 lakh for DMARC reporting if bought as a service",
+    "drivers": [
+     "Bundle: sandbox, URL rewrite, BEC detection, archiving, continuity, awareness training",
+     "Gateway vs API mode (running both costs more)",
+     "Existing Microsoft 365 licence level",
+     "Contract length and seat count"
+    ],
+    "note": "Indicative, October 2026, excluding 18% GST; get three quotes. USD figures converted at about Rs 84/USD."
+   },
+   "rfp": {
+    "scope": [
+     "Supply and configure email filtering for all mailboxes",
+     "SPF, DKIM and DMARC for all domains, moving to p=reject in a planned sequence",
+     "Integrate with SIEM and SOAR, and the report-phish button",
+     "Migrate rules from the current filter",
+     "Train the messaging team and the SOC"
+    ],
+    "must": [
+     "Attachment sandboxing, including password-protected archives and Office macros",
+     "URL rewriting with time-of-click checks",
+     "Impersonation (display name, lookalike domain) and BEC detection",
+     "Post-delivery removal from all mailboxes within 5 minutes",
+     "Inbound and outbound TLS; outbound DLP rules",
+     "Logs and message trace kept 180 days and exported to the SIEM",
+     "Admin access with MFA and role-based rights"
+    ],
+    "should": [
+     "DMARC reporting dashboard",
+     "Coverage for Teams/SharePoint/OneDrive",
+     "Built-in phishing simulation",
+     "Email continuity during a mail outage",
+     "Banner warnings for external and first-time senders"
+    ],
+    "sizing": [
+     "Number of mailboxes, shared mailboxes and domains",
+     "Daily inbound and outbound mail volume",
+     "Mail platform (Microsoft 365, Google, on-prem Exchange)",
+     "Retention period for archive, if included"
+    ],
+    "evaluation": [
+     "Detection in a 30-day side-by-side trial 35",
+     "Technical fit 25",
+     "3-year total cost 25",
+     "Support and India presence 10",
+     "References 5"
+    ],
+    "sla": [
+     "Service availability 99.99%",
+     "Mail delivery latency under 1 minute for 95% of clean mail",
+     "False-positive release request handled within 30 minutes, 24x7",
+     "Severity-1 response 30 minutes"
+    ],
+    "clauses": [
+     "Data localisation: logs, telemetry and any customer data stored and processed in India where RBI or DPDP rules apply; name every data centre location in the bid.",
+     "Logs kept 180 days within Indian jurisdiction and clocks synced to NIC/NPL NTP (CERT-In directions, April 2022); the product must export them to the bank's SIEM.",
+     "Vendor notifies the bank of any incident affecting the service fast enough for the bank to report to CERT-In within 6 hours, and to RBI as its rules require.",
+     "Right to audit and inspect for the bank, its auditors and RBI, including subcontractors (RBI Master Direction on Outsourcing of IT Services, 2023).",
+     "Exit and transition: configuration and policy export in an open format, help to migrate, and data deletion certificate at the end.",
+     "MeitY-empanelled or RBI-acceptable cloud location where the bank's cloud policy requires it."
+    ]
+   },
+   "architecture": "Gateway mode: internet senders -> MX record -> cloud email gateway -> Microsoft 365/Exchange; outbound mail leaves through the gateway too. API mode: mail arrives at Microsoft 365, and the API product inspects and, where supported, holds it before the inbox. Feeds: DNS (SPF/DKIM/DMARC), threat intelligence, user phish reports. Feeds out: SIEM (alerts, message trace), SOAR (auto-removal), awareness platform (who clicked).",
+   "kpis": [
+    "Domains at DMARC p=reject (target 100%)",
+    "Phish click rate in real and simulated mail",
+    "Median time from first report to removal from all inboxes",
+    "Phish reported by users vs caught by the filter"
+   ],
+   "pitfalls": [
+    "DMARC left at p=none for years",
+    "Allow-listing whole partner domains, which then get spoofed",
+    "Two filters in series with no one owning the quarantine",
+    "No process to pull back mail already delivered"
+   ],
+   "sources": [
+    {
+     "title": "Darktrace: Leader in the 2025 Gartner Magic Quadrant for Email Security Platforms",
+     "url": "https://www.darktrace.com/resources/darktrace-named-a-leader-in-the-2025-gartner-magic-quadrant-for-email-security-platforms"
+    },
+    {
+     "title": "Proofpoint: Gartner Magic Quadrant for Email Security",
+     "url": "https://www.proofpoint.com/au/resources/analyst-reports/gartner-magic-quadrant-for-email-security"
+    },
+    {
+     "title": "TrustedTech: Defender for Office 365 Plan 1 vs Plan 2 pricing",
+     "url": "https://www.trustedtechteam.com/blogs/microsoft-365/microsoft-defender-for-office-365-plan-1-vs-plan-2"
+    },
+    {
+     "title": "Ogma: Defender for Office 365 vs Mimecast vs Proofpoint, India 2026",
+     "url": "https://ogma.in/blog/defender-for-office-365-vs-mimecast-proofpoint-india"
+    },
+    {
+     "title": "Cloudfy Systems: Mimecast email security pricing India 2026",
+     "url": "https://cloudfysystems.com/blog/mimecast-email-security-pricing-india-2026"
+    },
+    {
+     "title": "Check Point Harmony Email & Collaboration",
+     "url": "https://emailsecurity.checkpoint.com/about"
+    },
+    {
+     "title": "parsedmarc on PyPI",
+     "url": "https://pypi.org/project/parsedmarc/"
+    },
+    {
+     "title": "Ankura: India's CERT-In cyber incident reporting directions explained",
+     "url": "https://ankura.com/insights/everything-you-need-to-know-about-indias-new-guidelines-related-to-cyber-incident-reporting-by-cert-in/"
+    },
+    {
+     "title": "Khaitan & Co: Ergo note on the CERT-In directions of 28 April 2022",
+     "url": "https://khaitanco.com/sites/default/files/2022-04/Ergo_30042022.pdf"
+    }
+   ]
+  },
+  "tec-edr": {
+   "summary": "Software on every laptop and server that blocks malware and records what programs do, so attacks such as ransomware can be stopped and investigated.",
+   "protects": "Laptops, desktops and servers (Windows, macOS, Linux); stops malware, ransomware, credential dumping, malicious scripts and hands-on-keyboard attackers.",
+   "placement": "Agent on devices. A lightweight agent on every endpoint and server, managed from a cloud console (or on-premise console where data must stay on site), with alerts sent to the SOC.",
+   "how": "The agent blocks known and suspicious files and watches process, file, registry and network activity. It flags behaviour that matches attack techniques and can isolate a device from the network with one click or automatically. Analysts search the recorded activity across all devices to find how far an attack spread.",
+   "pareto": [
+    "100% coverage of endpoints and servers, with a daily report of devices missing the agent",
+    "Blocking (prevent) mode on, not detect-only",
+    "Tamper protection so attackers cannot switch the agent off",
+    "One-click and automatic host isolation",
+    "24x7 monitoring by the SOC or the vendor's MDR service"
+   ],
+   "vendors": [
+    {
+     "name": "CrowdStrike Falcon",
+     "kind": "commercial",
+     "fit": "Mature cloud EDR with strong threat hunting; Falcon Complete adds a managed service. Published per-device list prices: Pro about US$100, Enterprise about US$185 a year (about Rs 8,400 and Rs 15,500).",
+     "india": "India office and partners; large deals are usually well below list."
+    },
+    {
+     "name": "Microsoft Defender for Endpoint",
+     "kind": "commercial",
+     "fit": "Built into Windows and included in Microsoft 365 E5; best value if you already own E5.",
+     "india": "Sold by Indian CSP partners."
+    },
+    {
+     "name": "SentinelOne Singularity",
+     "kind": "commercial",
+     "fit": "Gartner 2025 EPP Leader for the 5th year; strong automated rollback of ransomware changes.",
+     "india": "Sold in India through partners."
+    },
+    {
+     "name": "Sophos Intercept X",
+     "kind": "commercial",
+     "fit": "Gartner 2025 EPP Leader (16th time); simple to run; MDR service available; works with Sophos Firewall.",
+     "india": "Wide Indian reseller channel."
+    },
+    {
+     "name": "Seqrite (Quick Heal)",
+     "kind": "Indian",
+     "fit": "Indian-made endpoint security with EDR in higher tiers; lowest cost; Indian data handling and support.",
+     "india": "Pune-based vendor; reseller guides put EPS Core at about Rs 800 per endpoint a year and Advanced about Rs 350 more."
+    },
+    {
+     "name": "Wazuh",
+     "kind": "open source",
+     "fit": "Free agent for file integrity, vulnerability, configuration and malware checks with active response; useful as a log and detection layer, not a full replacement for commercial EDR prevention.",
+     "india": "Community and paid support from Wazuh and integrators."
+    }
+   ],
+   "cost": {
+    "unit": "per endpoint per year",
+    "band": "Rs 1,000-1,500 per endpoint per year (Indian vendor with EDR); Rs 3,000-8,000 for global leaders after typical enterprise discount; managed MDR adds roughly the same again",
+    "reference_org": "About Rs 25 lakh-2 crore a year for 2,500 endpoints, depending on brand and whether 24x7 MDR is included",
+    "drivers": [
+     "Tier (antivirus only, EDR, XDR, MDR)",
+     "Server and cloud workload share (often priced higher)",
+     "Data retention period for telemetry",
+     "Existing Microsoft E5 licences",
+     "Contract term and volume"
+    ],
+    "note": "Indicative, October 2026, excluding 18% GST; get three quotes. USD figures converted at about Rs 84/USD. CrowdStrike list prices are from third-party guides; vendors negotiate heavily."
+   },
+   "rfp": {
+    "scope": [
+     "Supply and deploy agents on all endpoints and servers",
+     "Remove the old antivirus cleanly",
+     "Policy design, tuning and exclusions",
+     "Integration with SIEM/SOAR and the asset inventory",
+     "Optional 24x7 managed detection and response",
+     "Training for the SOC and desktop teams"
+    ],
+    "must": [
+     "Supports all OS versions in use (Windows, Windows Server, macOS, major Linux)",
+     "Prevention and behaviour detection mapped to MITRE ATT&CK",
+     "Host isolation, remote shell, file retrieval and kill process from the console",
+     "Tamper protection and agent health reporting",
+     "Telemetry kept at least 30 days searchable, alerts 180 days",
+     "Works offline with local protection",
+     "Console and data hosted in India, or written approval of the location"
+    ],
+    "should": [
+     "Ransomware rollback",
+     "Device control (USB)",
+     "Vulnerability and patch visibility",
+     "MDR service with India-based analysts",
+     "Results in independent tests (MITRE ATT&CK Evaluations, AV-Comparatives)"
+    ],
+    "sizing": [
+     "Number of endpoints by OS",
+     "Number of servers (physical, virtual, cloud)",
+     "Sites and bandwidth for agent updates",
+     "Retention period wanted",
+     "Whether MDR is in scope"
+    ],
+    "evaluation": [
+     "Detection and prevention in a proof of concept with simulated attacks 35",
+     "Technical fit 20",
+     "3-year total cost 25",
+     "Support, MDR quality and India presence 15",
+     "References 5"
+    ],
+    "sla": [
+     "Console availability 99.9%",
+     "MDR: critical alert triage within 15 minutes and containment action within 30 minutes, 24x7",
+     "New threat signatures daily",
+     "Severity-1 support response 30 minutes"
+    ],
+    "clauses": [
+     "Data localisation: logs, telemetry and any customer data stored and processed in India where RBI or DPDP rules apply; name every data centre location in the bid.",
+     "Logs kept 180 days within Indian jurisdiction and clocks synced to NIC/NPL NTP (CERT-In directions, April 2022); the product must export them to the bank's SIEM.",
+     "Vendor notifies the bank of any incident affecting the service fast enough for the bank to report to CERT-In within 6 hours, and to RBI as its rules require.",
+     "Right to audit and inspect for the bank, its auditors and RBI, including subcontractors (RBI Master Direction on Outsourcing of IT Services, 2023).",
+     "Exit and transition: configuration and policy export in an open format, help to migrate, and data deletion certificate at the end.",
+     "Vendor states how its agent updates are tested and staged, and can pause or roll back an update (lesson of the July 2024 global outage)."
+    ]
+   },
+   "architecture": "Agents on every endpoint and server report to the vendor's cloud console (India region where offered) or an on-premise server. Feeds in: asset inventory, threat intelligence. Feeds out: alerts and telemetry to the SIEM, response actions from SOAR, device risk to ZTNA/NAC, vulnerability data to the patch process.",
+   "kpis": [
+    "Agent coverage vs asset inventory (target 99%+)",
+    "Devices in blocking mode (target 100%)",
+    "Mean time to isolate a confirmed infected host",
+    "Critical alerts closed within SLA"
+   ],
+   "pitfalls": [
+    "Running in detect-only mode for months",
+    "Broad exclusions (whole folders, admin tools) that attackers use",
+    "Servers left out because of performance fears",
+    "No one watches alerts at night"
+   ],
+   "sources": [
+    {
+     "title": "SentinelOne: Leader in 2025 Gartner Magic Quadrant for EPP",
+     "url": "https://www.businesswire.com/news/home/20250715681086/en/SentinelOne-Named-a-Leader-in-2025-Gartner-Magic-Quadrant-for-Endpoint-Protection-Platforms-for-5th-consecutive-year"
+    },
+    {
+     "title": "Sophos: Leader in the 2025 Gartner Magic Quadrant for EPP",
+     "url": "https://www.sophos.com/en-us/news/sweet-16-sophos-named-a-leader-again-in-the-2025-gartner-magic-quadrant-for-endpoint-protection-platforms"
+    },
+    {
+     "title": "UnderDefense: CrowdStrike pricing guide",
+     "url": "https://underdefense.com/blog/crowdstrike-pricing/"
+    },
+    {
+     "title": "Cloudfy Systems: Seqrite endpoint pricing India 2026",
+     "url": "https://cloudfysystems.com/blog/seqrite-endpoint-pricing-india-2026"
+    },
+    {
+     "title": "Wazuh XDR",
+     "url": "https://wazuh.com/platform/xdr/"
+    },
+    {
+     "title": "Ankura: India's CERT-In cyber incident reporting directions explained",
+     "url": "https://ankura.com/insights/everything-you-need-to-know-about-indias-new-guidelines-related-to-cyber-incident-reporting-by-cert-in/"
+    },
+    {
+     "title": "Khaitan & Co: Ergo note on the CERT-In directions of 28 April 2022",
+     "url": "https://khaitanco.com/sites/default/files/2022-04/Ergo_30042022.pdf"
+    }
+   ]
+  },
+  "tec-ddos": {
+   "summary": "Protection that absorbs floods of junk traffic so that websites, internet banking, APIs and the internet link stay up during an attack.",
+   "protects": "Internet links, public websites, mobile and internet banking, APIs, DNS and VPN gateways; stops volumetric, protocol (state-exhaustion) and application-layer floods.",
+   "placement": "Three layers, used together. (1) ISP clean pipe: the ISP scrubs traffic on its backbone before it reaches your link. (2) Cloud scrubbing: traffic is diverted by BGP or DNS to a scrubbing provider and returned clean over a tunnel. (3) On-premise: an appliance inline between the ISP routers and the edge firewall, which handles small and application attacks and signals the cloud for large ones.",
+   "how": "Normal traffic is learned as a baseline. When an attack starts, traffic for the target is redirected to scrubbing centres that drop attack packets and pass clean traffic back. Always-on mode scrubs all the time; on-demand mode diverts only during an attack, which is cheaper but slower to react.",
+   "pareto": [
+    "Clean pipe or cloud scrubbing with scrubbing centres in India, sized well above link capacity",
+    "Always-on protection for internet banking, payments and DNS",
+    "An on-premise device or firewall rules that stop small and application-layer floods and protect firewall session tables",
+    "A tested runbook: who calls whom, and a drill at least once a year",
+    "Two ISPs, so one attack or outage does not cut you off"
+   ],
+   "vendors": [
+    {
+     "name": "Tata Communications DDoS Detection and Mitigation",
+     "kind": "Indian",
+     "fit": "Carrier-scale scrubbing with nodes in India; hybrid cloud plus on-premise designs used by Indian banks.",
+     "india": "Indian carrier; priced per protected bandwidth and tier, quote only."
+    },
+    {
+     "name": "Airtel DDoS Mitigation (with Radware)",
+     "kind": "Indian",
+     "fit": "ISP clean pipe with scrubbing inside India (hosted with Nxtra), always-on, L3-L7, 24x7 monitoring.",
+     "india": "Indian carrier; quote only."
+    },
+    {
+     "name": "Akamai Prolexic",
+     "kind": "commercial",
+     "fit": "Large global scrubbing network, ISP-neutral; scrubbing centres in Mumbai and Chennai.",
+     "india": "India scrubbing centres; India sales team."
+    },
+    {
+     "name": "Cloudflare Magic Transit (and CDN/WAF for web)",
+     "kind": "commercial",
+     "fit": "Very large network capacity; BGP-based, always-on; onboarding included; India points of presence.",
+     "india": "Sold directly and through partners; quote only."
+    },
+    {
+     "name": "NETSCOUT Arbor Edge Defense (AED)",
+     "kind": "commercial",
+     "fit": "On-premise stateless appliance inline before the firewall; signals cloud scrubbing for big attacks; also blocks known bad outbound traffic.",
+     "india": "Sold through partners; check Indian partner and support coverage in the bid."
+    }
+   ],
+   "cost": {
+    "unit": "fixed per year per protected link or bandwidth (clean traffic), plus appliance cost if on-premise",
+    "band": "Rs 5-15 lakh a year for on-demand protection of one link; Rs 25-60 lakh a year for always-on scrubbing of around 1 Gbps clean traffic; on-premise appliance extra",
+    "reference_org": "About Rs 10-60 lakh a year for DC and DR internet links and the internet banking front end",
+    "drivers": [
+     "Clean traffic bandwidth to protect",
+     "Always-on vs on-demand",
+     "Number of IP prefixes and sites",
+     "Whether application-layer (L7) protection is included",
+     "On-premise appliance and its support"
+    ],
+    "note": "Indicative, October 2026, excluding 18% GST; get three quotes. No Indian list price is public; the bands are built from USD service prices (an on-demand tunnel at about US$535 a month plus usage; one reported always-on 1 Gbps service at about US$5,000 a month) and should be replaced with ISP quotes. USD figures converted at about Rs 84/USD."
+   },
+   "rfp": {
+    "scope": [
+     "DDoS protection for all internet links at DC and DR",
+     "Always-on protection for named critical services",
+     "On-premise detection and mitigation device (optional)",
+     "Onboarding, baselining and runbook",
+     "Annual DDoS drill with a report",
+     "24x7 monitoring and attack reports"
+    ],
+    "must": [
+     "Scrubbing centres in India; clean traffic does not leave India for routine scrubbing",
+     "Mitigation capacity stated in Tbps; customer clean traffic of at least the link size",
+     "Time to mitigate under 5 minutes for always-on, under 15 minutes for on-demand",
+     "L3/L4 and L7 protection",
+     "BGP or GRE return path tested at both DC and DR",
+     "Attack reports and logs exported to the SIEM"
+    ],
+    "should": [
+     "Cloud signalling from the on-premise device",
+     "Customer portal with live traffic view",
+     "Protection for DNS servers",
+     "Coverage of both ISPs (ISP-neutral provider)"
+    ],
+    "sizing": [
+     "Internet link sizes at each site",
+     "Public IP prefixes (/24s) to protect",
+     "Critical services and their normal peak traffic",
+     "Past attack sizes, if any"
+    ],
+    "evaluation": [
+     "Technical fit and India scrubbing capacity 35",
+     "Time-to-mitigate commitment 20",
+     "3-year total cost 25",
+     "Drill and reporting quality 10",
+     "Indian BFSI references 10"
+    ],
+    "sla": [
+     "Time to mitigate (see must)",
+     "Service availability 99.99%",
+     "False positive rate on clean traffic under 1%",
+     "Post-attack report within 24 hours"
+    ],
+    "clauses": [
+     "Data localisation: logs, telemetry and any customer data stored and processed in India where RBI or DPDP rules apply; name every data centre location in the bid.",
+     "Logs kept 180 days within Indian jurisdiction and clocks synced to NIC/NPL NTP (CERT-In directions, April 2022); the product must export them to the bank's SIEM.",
+     "Vendor notifies the bank of any incident affecting the service fast enough for the bank to report to CERT-In within 6 hours, and to RBI as its rules require.",
+     "Right to audit and inspect for the bank, its auditors and RBI, including subcontractors (RBI Master Direction on Outsourcing of IT Services, 2023).",
+     "Exit and transition: configuration and policy export in an open format, help to migrate, and data deletion certificate at the end.",
+     "Joint drill rights: the bank may run a controlled DDoS test with notice."
+    ]
+   },
+   "architecture": "ISP 1 and ISP 2 -> (clean pipe on the ISP backbone, or BGP diversion to cloud scrubbing and GRE return) -> edge routers -> on-premise anti-DDoS appliance (inline, stateless) -> edge NGFW HA pair -> DMZ. Web apps can also sit behind a CDN/WAF with DDoS protection. Feeds out: attack alerts and flow data to the SIEM and NOC; the on-premise device signals the cloud provider when its link fills.",
+   "kpis": [
+    "Minutes of customer-facing downtime caused by DDoS (target 0)",
+    "Measured time to mitigate in the last drill",
+    "Share of public IP space covered",
+    "Drills done per year"
+   ],
+   "pitfalls": [
+    "Relying on the firewall alone; floods fill its session table first",
+    "On-demand protection never tested, so BGP diversion fails on the day",
+    "Only one ISP protected",
+    "Forgetting DNS servers and VPN gateways"
+   ],
+   "sources": [
+    {
+     "title": "Tata Communications: DDoS protection datasheet",
+     "url": "https://tatacommunications.com/hubfs/47271964/TaCO-2024/security/doc/tata-communications-ddos-protection.pdf"
+    },
+    {
+     "title": "Tata Communications: hybrid DDoS for an Indian banking group",
+     "url": "https://tatacommunications.com/resourcehub/cyber-security/hybrid-ddos-solution-for-a-leading-banking-group-in-india"
+    },
+    {
+     "title": "Airtel Business: DDoS mitigation services",
+     "url": "https://www.airtel.in/b2b/ddos-protection-services"
+    },
+    {
+     "title": "Radware: Airtel and Radware partner for cloud security in India",
+     "url": "https://www.radware.com/newsevents/pressreleases/2020/airtel-and-radware-partner-to-offer-cloud-security-services"
+    },
+    {
+     "title": "Akamai: two new scrubbing centres in India",
+     "url": "https://www.akamai.com/newsroom/press-release/akamai-launches-two-new-scrubbing-centers-in-india"
+    },
+    {
+     "title": "NETSCOUT: AED hybrid DDoS protection",
+     "url": "https://netscout.com/demo/aed-hybrid-ddos-protection"
+    },
+    {
+     "title": "Cloudflare: DDoS mitigation offer",
+     "url": "https://www.cloudflare.com/lp/better/"
+    },
+    {
+     "title": "Voxility: anti-DDoS tunnel price sheet",
+     "url": "https://www.voxility.com/anti-ddos/Anti+DDoS+Tunnel+for+Occasional+Protection?export=PDF"
+    },
+    {
+     "title": "Ankura: India's CERT-In cyber incident reporting directions explained",
+     "url": "https://ankura.com/insights/everything-you-need-to-know-about-indias-new-guidelines-related-to-cyber-incident-reporting-by-cert-in/"
+    },
+    {
+     "title": "Khaitan & Co: Ergo note on the CERT-In directions of 28 April 2022",
+     "url": "https://khaitanco.com/sites/default/files/2022-04/Ergo_30042022.pdf"
+    }
+   ]
+  },
+  "tec-dns": {
+   "summary": "A DNS service that refuses to look up known malicious or newly created risky domains, and DNSSEC on your own domains so they cannot be forged.",
+   "protects": "All users and devices, on and off the network; stops visits to phishing and malware sites, command-and-control calls, DNS tunnelling and data theft over DNS; DNSSEC protects your own domains from spoofed answers.",
+   "placement": "Cloud service or on-premise. Internal DNS resolvers forward to a protective DNS service (or apply a threat feed locally as a response policy zone); roaming laptops use an agent; branches and guest Wi-Fi point at the same service. Outbound DNS to anything else is blocked at the firewall. The network security team owns it.",
+   "how": "Every lookup is checked against threat intelligence and categories before an answer is given. Bad lookups are blocked or sent to a warning page and logged with the device and user. Logs show which machine tried to reach a malicious domain, which is often the first sign of an infection.",
+   "pareto": [
+    "All internal resolvers forward only to protective DNS; firewall blocks other outbound DNS (port 53 and known DoH servers)",
+    "Roaming agent on laptops so protection follows the user",
+    "Block newly registered domains and known malware/phishing categories",
+    "DNS logs to the SIEM with device identity",
+    "DNSSEC signing and registry lock on your own domains"
+   ],
+   "vendors": [
+    {
+     "name": "Cisco Umbrella",
+     "kind": "commercial",
+     "fit": "Widely used cloud DNS security; easy to roll out; can grow into a secure web gateway.",
+     "india": "Indian Cisco partners (e.g. Ogma) sell and deploy it; third-party price estimates US$2.25-3.71 per user a month for DNS Essentials."
+    },
+    {
+     "name": "Infoblox Threat Defense (formerly BloxOne)",
+     "kind": "commercial",
+     "fit": "Strong where Infoblox already runs internal DNS/DHCP; hybrid on-premise and cloud; detects DNS tunnelling and maps hits to device and user.",
+     "india": "Sold in India through partners."
+    },
+    {
+     "name": "Cloudflare Gateway",
+     "kind": "commercial",
+     "fit": "DNS filtering inside Cloudflare's Zero Trust suite; free tier up to 50 users; about US$7 per user a month for the paid plan (whole suite).",
+     "india": "India points of presence; sold directly and via partners."
+    },
+    {
+     "name": "Quad9",
+     "kind": "open source",
+     "fit": "Free, non-profit protective resolver (9.9.9.9) with threat blocking and no customer data kept; a sound free baseline, but no per-user policy or reporting.",
+     "india": "Global anycast service; no contract or support."
+    },
+    {
+     "name": "Self-run resolvers with a threat feed (for example BIND or Unbound with a response policy zone)",
+     "kind": "open source",
+     "fit": "Keeps all DNS data on site; needs a threat feed and staff to run it.",
+     "india": "Any Indian Linux integrator; CERT-In and sector feeds can be loaded as block lists."
+    }
+   ],
+   "cost": {
+    "unit": "per user per year (cloud), or fixed per year (self-run or appliance)",
+    "band": "Rs 0 (Quad9 or self-run with free feeds) to about Rs 1,000-3,700 per user per year for commercial cloud DNS security",
+    "reference_org": "About Rs 20-75 lakh a year for 2,000 users at commercial list-derived prices (lower after discount or when bundled in an SSE suite); Rs 2-5 lakh a year to run self-hosted resolvers",
+    "drivers": [
+     "DNS only vs full secure web gateway bundle",
+     "Roaming agent and per-user policy",
+     "Log retention",
+     "Bundling with ZTNA/SSE",
+     "Number of users"
+    ],
+    "note": "Indicative, October 2026, excluding 18% GST; get three quotes. USD figures converted at about Rs 84/USD. Cisco does not publish prices; the per-user figures are third-party estimates."
+   },
+   "rfp": {
+    "scope": [
+     "Protective DNS for all users, sites, guest networks and roaming laptops",
+     "Firewall rules to block other DNS and DoH",
+     "SIEM integration",
+     "DNSSEC signing and registrar lock for owned domains",
+     "Runbook for blocked-domain review"
+    ],
+    "must": [
+     "Blocking by threat category, newly registered domains and custom lists",
+     "DNS tunnelling and DGA detection",
+     "Logs with device/user identity kept 180 days, exported to the SIEM",
+     "Roaming agent for Windows and macOS",
+     "Resolver nodes in India; failover so DNS never stops working",
+     "API to add CERT-In and sector indicators"
+    ],
+    "should": [
+     "Secure web gateway upgrade path",
+     "Block page with user self-report",
+     "Encrypted DNS (DoH/DoT) support for the agent"
+    ],
+    "sizing": [
+     "Users and devices",
+     "Sites and guest networks",
+     "Daily DNS query volume",
+     "Number of owned domains"
+    ],
+    "evaluation": [
+     "Detection quality in trial 30",
+     "Technical fit 25",
+     "3-year total cost 30",
+     "Support and India presence 10",
+     "References 5"
+    ],
+    "sla": [
+     "Resolver availability 99.999%",
+     "Added lookup latency under 20 ms from Indian sites",
+     "New threat indicators applied within 1 hour",
+     "Severity-1 response 30 minutes"
+    ],
+    "clauses": [
+     "Data localisation: logs, telemetry and any customer data stored and processed in India where RBI or DPDP rules apply; name every data centre location in the bid.",
+     "Logs kept 180 days within Indian jurisdiction and clocks synced to NIC/NPL NTP (CERT-In directions, April 2022); the product must export them to the bank's SIEM.",
+     "Vendor notifies the bank of any incident affecting the service fast enough for the bank to report to CERT-In within 6 hours, and to RBI as its rules require.",
+     "Right to audit and inspect for the bank, its auditors and RBI, including subcontractors (RBI Master Direction on Outsourcing of IT Services, 2023).",
+     "Exit and transition: configuration and policy export in an open format, help to migrate, and data deletion certificate at the end."
+    ]
+   },
+   "architecture": "Endpoints -> internal DNS servers (AD DNS) -> forwarders -> protective DNS service; roaming laptops -> agent -> protective DNS. The firewall allows outbound DNS only from the internal resolvers. Feeds in: vendor threat intelligence, CERT-In/sector indicators. Feeds out: DNS logs to the SIEM, blocked hits to the SOC, device names to EDR for investigation.",
+   "kpis": [
+    "Share of DNS traffic going through protective DNS (target 100%)",
+    "Malicious lookups blocked per month and hosts investigated",
+    "Owned domains with DNSSEC and registry lock",
+    "Time to add a CERT-In indicator"
+   ],
+   "pitfalls": [
+    "Laptops off-network bypass protection",
+    "Browsers using their own DNS-over-HTTPS around the filter",
+    "No device identity in logs, so a block cannot be traced to a machine",
+    "Only internet-facing resolvers protected; branches use ISP DNS"
+   ],
+   "sources": [
+    {
+     "title": "Control D: Cisco Umbrella pricing",
+     "url": "https://controld.com/blog/cisco-umbrella-pricing/"
+    },
+    {
+     "title": "Ogma: Cisco Umbrella in India",
+     "url": "https://ogma.in/solutions/cisco-umbrella-india"
+    },
+    {
+     "title": "Red Hat Marketplace: BloxOne Threat Defense",
+     "url": "https://marketplace.redhat.com/en-us/products/bloxone-threat-defense"
+    },
+    {
+     "title": "Cloudflare Gateway",
+     "url": "https://www.cloudflare.com/en-ca/sase/products/gateway"
+    },
+    {
+     "title": "Control D: Cloudflare Zero Trust pricing",
+     "url": "https://controld.com/blog/cloudflare-zero-trust-pricing/"
+    },
+    {
+     "title": "Quad9 service",
+     "url": "https://quad9.net/service/"
+    },
+    {
+     "title": "Ankura: India's CERT-In cyber incident reporting directions explained",
+     "url": "https://ankura.com/insights/everything-you-need-to-know-about-indias-new-guidelines-related-to-cyber-incident-reporting-by-cert-in/"
+    },
+    {
+     "title": "Khaitan & Co: Ergo note on the CERT-In directions of 28 April 2022",
+     "url": "https://khaitanco.com/sites/default/files/2022-04/Ergo_30042022.pdf"
+    }
+   ]
+  },
+  "tec-nac": {
+   "summary": "A gate on the wired and wireless network that lets a device in only after it proves who it is and that it is healthy, and puts guests and unknown devices in a separate zone.",
+   "protects": "The internal network; stops unknown laptops, rogue devices and infected machines from connecting, and keeps printers, cameras and IoT in their own zones.",
+   "placement": "Network zone. A NAC policy server cluster (RADIUS) in the DC with a standby at DR; switches and Wi-Fi controllers at every site ask it before opening a port (802.1X, or MAC bypass for devices that cannot do 802.1X).",
+   "how": "When a device plugs in, the switch asks the NAC server who it is. The server checks a certificate or user login, profiles the device type and, optionally, checks posture (EDR running, patched). It then puts the device in the right VLAN or applies an access list; failed or unknown devices go to a quarantine or guest network.",
+   "pareto": [
+    "Full device visibility first (monitor mode) before any blocking",
+    "802.1X with certificates for company laptops",
+    "Separate guest and IoT networks with internet-only or narrow access",
+    "Enforce first in sensitive zones (DC, payment, branch counters)",
+    "Posture check that EDR is installed and running"
+   ],
+   "vendors": [
+    {
+     "name": "Cisco Identity Services Engine (ISE)",
+     "kind": "commercial",
+     "fit": "Deepest integration with Cisco switches and Wi-Fi; licensed per active endpoint in Essentials, Advantage and Premier tiers (posture needs Premier).",
+     "india": "Large Cisco partner base in India."
+    },
+    {
+     "name": "HPE Aruba Networking ClearPass Policy Manager",
+     "kind": "commercial",
+     "fit": "Vendor-neutral NAC with strong guest and BYOD onboarding.",
+     "india": "HPE Aruba partners across India."
+    },
+    {
+     "name": "Forescout (eyeSight / platform)",
+     "kind": "commercial",
+     "fit": "Agentless discovery and control of IT, IoT, OT and medical devices; good where many devices cannot run 802.1X.",
+     "india": "Sold in India through partners."
+    },
+    {
+     "name": "Fortinet FortiNAC",
+     "kind": "commercial",
+     "fit": "Good fit where FortiGate and FortiSwitch are used; IoT visibility.",
+     "india": "Fortinet India channel."
+    },
+    {
+     "name": "PacketFence",
+     "kind": "open source",
+     "fit": "Free GPL NAC with 802.1X, captive portal, BYOD and VLAN isolation; supports many switch brands; you need in-house skill or paid support.",
+     "india": "Commercial support from its maintainer and integrators."
+    }
+   ],
+   "cost": {
+    "unit": "per active endpoint (subscription) plus policy-server appliances or VMs",
+    "band": "No public list price found; Indian projects usually quote about Rs 20-60 lakh a year all-in for 5 sites and 2,500-4,000 devices (licences, servers, integration, support)",
+    "reference_org": "About Rs 20-60 lakh a year (2,500 endpoints plus printers, phones and IoT, 5 sites)",
+    "drivers": [
+     "Number of concurrent active endpoints (count IoT too)",
+     "Tier: authentication only vs profiling vs posture",
+     "Switch and Wi-Fi brands in use (old switches may not support 802.1X)",
+     "Integration effort per site",
+     "HA servers at DC and DR"
+    ],
+    "note": "Indicative, October 2026, excluding 18% GST; get three quotes. The band is carried from the SecuRAX catalogue and could not be checked against a public price; treat it as a placeholder until quotes arrive."
+   },
+   "rfp": {
+    "scope": [
+     "Discover and profile all connected devices at all 5 sites",
+     "802.1X for company devices, MAC bypass with profiling for others",
+     "Guest portal and sponsor approval",
+     "Posture checks with EDR",
+     "Phased enforcement plan, site by site",
+     "HA policy servers at DC and DR"
+    ],
+    "must": [
+     "802.1X (EAP-TLS) and MAB on all switch and Wi-Fi brands in use",
+     "Device profiling with an IoT library",
+     "Dynamic VLAN/ACL assignment",
+     "Integration with AD/Entra ID, PKI, EDR and SIEM",
+     "Fail-open policy defined per zone so a NAC outage does not stop branches",
+     "Logs kept 180 days"
+    ],
+    "should": [
+     "Agentless posture",
+     "Integration with the firewall for user-ID",
+     "Automatic quarantine on an EDR alert",
+     "TACACS+ device administration"
+    ],
+    "sizing": [
+     "Number of endpoints by type (laptops, phones, printers, cameras, IoT)",
+     "Switch and Wi-Fi models and software versions per site",
+     "Number of guests per day",
+     "Sites and their WAN links"
+    ],
+    "evaluation": [
+     "Technical fit with existing switches 35",
+     "Pilot at one site 20",
+     "5-year total cost 25",
+     "Support and India presence 15",
+     "References 5"
+    ],
+    "sla": [
+     "Policy service availability 99.99% (HA)",
+     "Severity-1 response 30 minutes",
+     "Profile library updates monthly"
+    ],
+    "clauses": [
+     "Right to audit and inspect for the bank, its auditors and RBI, including subcontractors (RBI Master Direction on Outsourcing of IT Services, 2023).",
+     "Logs kept 180 days within Indian jurisdiction and clocks synced to NIC/NPL NTP (CERT-In directions, April 2022); the product must export them to the bank's SIEM.",
+     "Vendor notifies the bank of any incident affecting the service fast enough for the bank to report to CERT-In within 6 hours, and to RBI as its rules require.",
+     "Back-to-back OEM support for the full term, and end-of-sale/end-of-support dates disclosed; no product within 3 years of end of support.",
+     "Exit and transition: configuration and policy export in an open format, help to migrate, and data deletion certificate at the end."
+    ]
+   },
+   "architecture": "Endpoints -> access switches / Wi-Fi APs (802.1X authenticators) -> NAC policy servers (RADIUS) in DC with DR standby -> directory (AD/Entra ID) and PKI for identity; EDR/MDM for posture; result returned to the switch as VLAN or ACL. Feeds out: who-is-where data to the SIEM and to the firewall for user-based rules.",
+   "kpis": [
+    "Share of switch ports with 802.1X/MAB enforcement",
+    "Unknown devices found and resolved per month",
+    "Devices blocked or quarantined",
+    "Time to on-board a new site"
+   ],
+   "pitfalls": [
+    "Jumping to enforcement before knowing every device, then blocking printers and ATMs",
+    "Old switches that cannot do 802.1X",
+    "No fail-open plan, so a NAC outage stops a branch",
+    "IoT left on the user VLAN"
+   ],
+   "sources": [
+    {
+     "title": "Cisco ISE Licensing Guide",
+     "url": "https://www.cisco.com/c/en/us/products/collateral/security/identity-services-engine/guide-c07-656177.html"
+    },
+    {
+     "title": "Gartner Peer Insights: Network Access Control market",
+     "url": "https://www.gartner.com/reviews/market/network-access-control"
+    },
+    {
+     "title": "Gartner Peer Insights: Aruba ClearPass vs FortiNAC",
+     "url": "https://www.gartner.com/reviews/market/network-access-control/compare/product/aruba-clearpass-policy-manager-vs-fortinac"
+    },
+    {
+     "title": "PacketFence",
+     "url": "https://packetfence.org"
+    },
+    {
+     "title": "Ankura: India's CERT-In cyber incident reporting directions explained",
+     "url": "https://ankura.com/insights/everything-you-need-to-know-about-indias-new-guidelines-related-to-cyber-incident-reporting-by-cert-in/"
+    },
+    {
+     "title": "Khaitan & Co: Ergo note on the CERT-In directions of 28 April 2022",
+     "url": "https://khaitanco.com/sites/default/files/2022-04/Ergo_30042022.pdf"
+    }
+   ]
+  },
+  "tec-mdm": {
+   "summary": "A service that enrols phones, tablets and laptops so IT can set security rules, push apps, keep company data in a separate container and wipe a lost device.",
+   "protects": "Company and personal (BYOD) mobile devices and the email, files and apps on them; reduces risk from lost or stolen devices, unpatched phones and data copied into personal apps.",
+   "placement": "Cloud service plus an agent or OS management profile on devices. Usually run by IT operations; tied to the identity provider so only compliant devices get email and apps (conditional access).",
+   "how": "Devices enrol (automatically for company-owned, by user choice for personal). The service enforces passcode, encryption and OS version, installs approved apps, and on personal devices manages only a work container. If a device is lost or falls out of compliance, access is cut and company data is wiped.",
+   "pareto": [
+    "Every company-owned device enrolled automatically (Apple Business Manager, Android Zero-Touch, Windows Autopilot)",
+    "Conditional access: no enrolment or compliance, no email and apps",
+    "App protection (container) on personal phones; no copy-paste to personal apps",
+    "Remote wipe tested and minimum OS version enforced",
+    "Lost-device process the user knows and uses"
+   ],
+   "vendors": [
+    {
+     "name": "Microsoft Intune",
+     "kind": "commercial",
+     "fit": "Best fit where Microsoft 365 is used; included in Microsoft 365 E3/E5 and Business Premium; standalone Plan 1 about US$8 per user a month.",
+     "india": "Indian CSP partners; often no extra cost if E3/E5 is owned."
+    },
+    {
+     "name": "Omnissa Workspace ONE UEM (formerly VMware)",
+     "kind": "commercial",
+     "fit": "Strong multi-platform management including rugged and shared devices; quote-based pricing.",
+     "india": "Sold through Indian partners."
+    },
+    {
+     "name": "Jamf Pro",
+     "kind": "commercial",
+     "fit": "Best-in-class for Apple-only fleets (Mac, iPhone, iPad); about US$3.3-3.7 per device a month (third-party estimate).",
+     "india": "Sold through Indian Apple-focused partners."
+    },
+    {
+     "name": "ManageEngine Endpoint Central / Mobile Device Manager Plus (Zoho)",
+     "kind": "Indian",
+     "fit": "Indian-origin vendor; covers laptops and mobiles with patching; cloud or on-premise, so data can stay on site; MDM Plus free up to 25 devices.",
+     "india": "Chennai-headquartered Zoho group; Indian support and partners."
+    },
+    {
+     "name": "Scalefusion",
+     "kind": "Indian",
+     "fit": "Indian-founded UEM with kiosk and frontline modes; US$2-6 per device a month by tier; minimum 10 devices.",
+     "india": "Indian company with Indian support."
+    }
+   ],
+   "cost": {
+    "unit": "per user or per device per year",
+    "band": "About Rs 1,300-6,000 per device per year for standalone products; Rs 0 extra where Microsoft 365 E3/E5 or Business Premium already includes Intune",
+    "reference_org": "About Rs 26 lakh-1.2 crore a year if 2,000 devices need a standalone product; close to zero extra if Intune is already licensed, leaving only set-up and run costs (about Rs 5-10 lakh a year)",
+    "drivers": [
+     "Existing Microsoft licences",
+     "Number of devices per user",
+     "Platforms (Apple-only vs mixed)",
+     "Add-ons: remote help, mobile threat defence, app wrapping",
+     "Cloud vs on-premise"
+    ],
+    "note": "Indicative, October 2026, excluding 18% GST; get three quotes. USD figures converted at about Rs 84/USD. Per-device figures are from vendor and third-party price pages."
+   },
+   "rfp": {
+    "scope": [
+     "Enrol all company phones, tablets and laptops",
+     "BYOD app-protection policy",
+     "Conditional access with the identity provider",
+     "App catalogue and OS update policy",
+     "Lost-device and leaver process",
+     "Train IT operations and the helpdesk"
+    ],
+    "must": [
+     "Supports iOS/iPadOS, Android Enterprise, Windows, macOS",
+     "Zero-touch enrolment for company devices",
+     "Work profile/container for personal devices with selective wipe",
+     "Compliance rules feed conditional access",
+     "Admin roles, audit log, MFA for admins",
+     "Data hosted in India or an approved location; logs exportable to SIEM"
+    ],
+    "should": [
+     "Mobile threat defence integration",
+     "Remote assistance",
+     "Kiosk mode for branch tablets",
+     "Patch management for laptop third-party apps"
+    ],
+    "sizing": [
+     "Devices by platform and ownership (company vs personal)",
+     "Users",
+     "Shared or kiosk devices",
+     "Apps to distribute"
+    ],
+    "evaluation": [
+     "Technical fit 35",
+     "Ease of use for staff (pilot) 15",
+     "3-year total cost 30",
+     "Support and India presence 15",
+     "References 5"
+    ],
+    "sla": [
+     "Service availability 99.9%",
+     "Remote wipe command executes within 15 minutes of device check-in",
+     "Severity-1 response 1 hour"
+    ],
+    "clauses": [
+     "Data localisation: logs, telemetry and any customer data stored and processed in India where RBI or DPDP rules apply; name every data centre location in the bid.",
+     "Right to audit and inspect for the bank, its auditors and RBI, including subcontractors (RBI Master Direction on Outsourcing of IT Services, 2023).",
+     "Vendor notifies the bank of any incident affecting the service fast enough for the bank to report to CERT-In within 6 hours, and to RBI as its rules require.",
+     "Exit and transition: configuration and policy export in an open format, help to migrate, and data deletion certificate at the end.",
+     "DPDP: on personal devices the tool collects only what is needed and does not read personal data; written employee notice and consent."
+    ]
+   },
+   "architecture": "Devices -> MDM cloud service (Apple/Google/Microsoft push services) <-> identity provider (conditional access) <-> email and apps. Feeds in: HR leaver list, app catalogue. Feeds out: device compliance to the identity provider and ZTNA, inventory to the CMDB, alerts to the SIEM.",
+   "kpis": [
+    "Share of company devices enrolled and compliant",
+    "Devices on a supported OS version",
+    "Time from loss report to wipe",
+    "Personal devices accessing email without app protection (target 0)"
+   ],
+   "pitfalls": [
+    "Enrolling devices but not linking compliance to access",
+    "Full device control on personal phones, which staff resist and DPDP frowns on",
+    "Forgetting shared and branch devices",
+    "No leaver step to retire devices"
+   ],
+   "sources": [
+    {
+     "title": "TrustedTech: how much Microsoft Intune costs in 2026",
+     "url": "https://www.trustedtechteam.com/blogs/microsoft-365/microsoft-intune-cost"
+    },
+    {
+     "title": "Scalefusion: products and pricing",
+     "url": "https://blog.scalefusion.com/what-is-scalefusion/"
+    },
+    {
+     "title": "Motadata: ManageEngine pricing",
+     "url": "https://www.motadata.com/blog/manageengine-pricing"
+    },
+    {
+     "title": "AIMultiple: mobile device management pricing (Workspace ONE, Jamf)",
+     "url": "https://aimultiple.com/mobile-device-management-pricing"
+    },
+    {
+     "title": "UK G-Cloud: Workspace ONE pricing document",
+     "url": "https://assets.applytosupply.digitalmarketplace.service.gov.uk/g-cloud-15/documents/92299/454519033665760-pricing-document-2026-01-26-1501.pdf"
+    }
+   ]
+  },
+  "tec-asm": {
+   "summary": "A service that keeps finding everything you have on the internet, including what IT forgot, and flags what is exposed or weak.",
+   "protects": "Internet-facing domains, sub-domains, IP addresses, cloud services, certificates and web apps; stops attackers from finding a forgotten test server, open database or expired certificate before you do.",
+   "placement": "Cloud service, outside your network (it looks from the attacker's side). Owned by the security testing lead; findings go to asset owners through the vulnerability process.",
+   "how": "Starting from your company names and known domains, it searches DNS, certificate logs, internet scans and cloud ranges to build a list of what belongs to you. It then checks each asset for open ports, known vulnerabilities, weak TLS, exposed admin pages and leaked credentials, and ranks what to fix first.",
+   "pareto": [
+    "A complete, owned inventory of internet-facing assets, refreshed at least weekly",
+    "Every new asset gets an owner within 5 working days",
+    "Alert on newly exposed risky services (RDP, databases, admin panels)",
+    "Feed findings into the vulnerability SLA process, not a separate list",
+    "Watch for lookalike domains and leaked credentials (digital risk)"
+   ],
+   "vendors": [
+    {
+     "name": "Palo Alto Networks Cortex Xpanse",
+     "kind": "commercial",
+     "fit": "Very broad internet scanning and automated fixes; premium price (one published figure about US$95,000 a year for up to 999 assets, about Rs 80 lakh).",
+     "india": "Sold through Palo Alto's India team and partners."
+    },
+    {
+     "name": "Microsoft Defender External Attack Surface Management",
+     "kind": "commercial",
+     "fit": "Low entry cost, priced per asset per day (from about US$0.01, about Rs 300 per asset a year); fits Microsoft-centred estates.",
+     "india": "Bought through Azure; Indian CSPs."
+    },
+    {
+     "name": "CyCognito",
+     "kind": "commercial",
+     "fit": "Strong discovery of unknown assets and subsidiaries, with built-in testing; AWS Marketplace lists US$30,000 a year for 250 assets (about Rs 25 lakh).",
+     "india": "Sold through partners."
+    },
+    {
+     "name": "Censys Attack Surface Management",
+     "kind": "commercial",
+     "fit": "Built on one of the largest internet scan datasets; quote-based.",
+     "india": "Sold directly and through partners."
+    },
+    {
+     "name": "CloudSEK BeVigil Enterprise and XVigil",
+     "kind": "Indian",
+     "fit": "Indian vendor combining attack surface monitoring with dark-web and brand monitoring; used by Indian banks and fintechs.",
+     "india": "Bengaluru-based; Indian customers include banks and NBFCs per its site."
+    },
+    {
+     "name": "OWASP Amass with ProjectDiscovery tools (subfinder, httpx, nuclei)",
+     "kind": "open source",
+     "fit": "Free discovery and template-based checks; needs a skilled engineer to run and triage.",
+     "india": "Community-supported."
+    }
+   ],
+   "cost": {
+    "unit": "fixed per year, priced by number of assets (domains, IPs, web apps)",
+    "band": "About Rs 3-10 lakh a year (per-asset cloud services or a managed open-source set-up) to Rs 25-80 lakh a year (premium platforms)",
+    "reference_org": "About Rs 10-40 lakh a year for 40 applications and a few hundred internet assets",
+    "drivers": [
+     "Number of assets and subsidiaries/brands",
+     "Active testing included or discovery only",
+     "Dark-web and brand monitoring add-ons",
+     "Takedown services"
+    ],
+    "note": "Indicative, October 2026, excluding 18% GST; get three quotes. USD figures converted at about Rs 84/USD."
+   },
+   "rfp": {
+    "scope": [
+     "Continuous discovery of internet-facing assets for all group entities",
+     "Risk-ranked findings with evidence",
+     "Integration with the vulnerability and ticketing process",
+     "Monthly report to the CISO",
+     "Optional dark-web, brand and lookalike-domain monitoring with takedown"
+    ],
+    "must": [
+     "Discovery from seeds (names, domains, ASNs) with attribution confidence",
+     "Weekly full refresh; daily for new exposures",
+     "Checks for known CVEs (with CISA KEV/EPSS), TLS, exposed services and admin panels",
+     "Non-intrusive by default; active tests only with written approval",
+     "API and ticketing integration",
+     "Findings data hosted in India or an approved location"
+    ],
+    "should": [
+     "Cloud account connectors (AWS, Azure, GCP) for attribution",
+     "Lookalike-domain and leaked-credential monitoring",
+     "Takedown service for fake sites and apps"
+    ],
+    "sizing": [
+     "Known domains and IP ranges",
+     "Group entities and brands",
+     "Cloud providers in use",
+     "Number of internet-facing applications"
+    ],
+    "evaluation": [
+     "Discovery quality in a 2-week trial (new assets found) 35",
+     "Technical fit 20",
+     "3-year total cost 25",
+     "Support and India presence 15",
+     "References 5"
+    ],
+    "sla": [
+     "Critical new exposure alerted within 24 hours of appearance",
+     "Platform availability 99.5%",
+     "Takedown initiated within 24 hours (if bought)"
+    ],
+    "clauses": [
+     "Right to audit and inspect for the bank, its auditors and RBI, including subcontractors (RBI Master Direction on Outsourcing of IT Services, 2023).",
+     "Vendor notifies the bank of any incident affecting the service fast enough for the bank to report to CERT-In within 6 hours, and to RBI as its rules require.",
+     "Exit and transition: configuration and policy export in an open format, help to migrate, and data deletion certificate at the end.",
+     "Written scope and authorisation for any active testing, with named IP ranges and windows.",
+     "Confidentiality of findings; no reuse of the bank's data in marketing."
+    ]
+   },
+   "architecture": "Outside-in: the ASM service scans the internet for assets tied to the organisation. Feeds in: seed domains, cloud account connectors, CMDB. Feeds out: new assets to the CMDB, findings to the vulnerability management tool and tickets, high-risk exposures to the SOC, lookalike domains to the takedown process and DNS blocklist.",
+   "kpis": [
+    "Internet assets with a named owner (target 100%)",
+    "Unknown assets found per month (should fall over time)",
+    "Median days to close critical external exposures",
+    "Expired or weak certificates on public sites (target 0)"
+   ],
+   "pitfalls": [
+    "Treating it as another report nobody owns",
+    "Not including subsidiaries, vendors hosting your apps and cloud accounts",
+    "Duplicating the vulnerability scanner instead of feeding it",
+    "Running active tests without written approval"
+   ],
+   "sources": [
+    {
+     "title": "CyCognito: Cortex Xpanse overview and pricing notes",
+     "url": "https://www.cycognito.com/learn/attack-surface/cortex-xpanse"
+    },
+    {
+     "title": "Microsoft Defender External Attack Surface Management",
+     "url": "https://azure-int.microsoft.com/en-us/products/defender-external-attack-surface-management"
+    },
+    {
+     "title": "TrustRadius: Defender EASM pricing",
+     "url": "https://trustradius.com/products/microsoft-defender-external-attack-surface-management/reviews"
+    },
+    {
+     "title": "CyCognito pricing",
+     "url": "https://www.cycognito.com/platform/pricing.php"
+    },
+    {
+     "title": "AWS Marketplace: CyCognito ASM listing",
+     "url": "https://aws.amazon.com/marketplace/pp/prodview-6oteh5oqwndco"
+    },
+    {
+     "title": "Censys pricing",
+     "url": "https://censys.com/resources/pricing/"
+    },
+    {
+     "title": "CloudSEK BeVigil Enterprise",
+     "url": "https://cloudsek.com/bevigil-enterprise"
+    },
+    {
+     "title": "Linux Handbook: OWASP Amass",
+     "url": "https://linuxhandbook.com/owasp-amass/"
+    }
+   ]
+  },
+  "tec-ztna": {
+   "summary": "Remote access that connects a checked user on a checked device to one named application at a time, instead of putting them on the whole network as a VPN does.",
+   "protects": "Internal and private cloud applications; stops attackers with a stolen VPN login from roaming the network, hides apps from the internet, and limits third-party and vendor access.",
+   "placement": "Cloud service with connectors. Users run an agent (or use a browser for vendors); small connector VMs sit next to the applications in the DC, DR and cloud and make outbound-only connections to the broker. The security architect owns the design; the network team runs it.",
+   "how": "The user signs in through the identity provider with MFA, and the device posture is checked (EDR running, managed, patched). The broker then allows a connection to that one application if policy permits. The application has no inbound port open to the internet; the connector reaches out to the broker.",
+   "pareto": [
+    "Third-party and vendor access moved off VPN first",
+    "Admin and privileged access paths next, with PAM",
+    "Device posture from EDR/MDM required for sensitive apps",
+    "Per-application policy, with all access logged to the SIEM",
+    "Retire the old VPN for each group once moved"
+   ],
+   "vendors": [
+    {
+     "name": "Zscaler Private Access (ZPA)",
+     "kind": "commercial",
+     "fit": "Gartner 2025 SSE Leader, highest for Ability to Execute; large global network; third-party estimates US$140-375 per user a year.",
+     "india": "Multiple points of presence in Indian cities; Indian partners. Confirm data processing location for logs."
+    },
+    {
+     "name": "Netskope Private Access",
+     "kind": "commercial",
+     "fit": "Gartner 2025 SSE Leader, furthest for Vision; strong data protection across web, SaaS and private apps.",
+     "india": "India presence and partners."
+    },
+    {
+     "name": "Palo Alto Networks Prisma Access",
+     "kind": "commercial",
+     "fit": "Gartner 2025 SSE Leader; one policy with Palo Alto firewalls.",
+     "india": "India presence and partners."
+    },
+    {
+     "name": "Cloudflare Access (Cloudflare One)",
+     "kind": "commercial",
+     "fit": "Simple, fast to deploy; free up to 50 users; about US$7 per user a month for the paid suite; Gartner 2025 SSE Niche Player.",
+     "india": "India points of presence."
+    },
+    {
+     "name": "InstaSafe Zero Trust Access",
+     "kind": "Indian",
+     "fit": "Bengaluru-based vendor, listed by Gartner as a representative ZTNA vendor; Indian support and pricing.",
+     "india": "Indian company; customers include Indian enterprises; on-premise controller options."
+    },
+    {
+     "name": "OpenZiti",
+     "kind": "open source",
+     "fit": "Apache 2.0 zero-trust overlay you can host yourself; no inbound ports; needs engineering skill.",
+     "india": "Community and paid support (NetFoundry)."
+    }
+   ],
+   "cost": {
+    "unit": "per user per year",
+    "band": "About Rs 4,000-25,000 per user per year (global SSE vendors at list-derived prices; Indian vendors and large discounts at the low end)",
+    "reference_org": "About Rs 20 lakh-1.25 crore a year for a first phase of 500 remote, third-party and admin users; about Rs 80 lakh-5 crore if all 2,000 users move and the full SSE suite (web gateway, CASB, DLP) is bought",
+    "drivers": [
+     "ZTNA only vs full SSE bundle",
+     "Number of users in scope",
+     "Number of connector locations",
+     "Agentless (browser) access for vendors",
+     "Log retention and India data residency"
+    ],
+    "note": "Indicative, October 2026, excluding 18% GST; get three quotes. USD figures converted at about Rs 84/USD. Zscaler does not publish prices; figures are third-party estimates."
+   },
+   "rfp": {
+    "scope": [
+     "Private application access for named user groups, replacing VPN in phases",
+     "Connectors in DC, DR and cloud",
+     "Integration with identity provider, EDR/MDM posture and SIEM",
+     "Agentless access for third parties",
+     "Migration plan and VPN retirement"
+    ],
+    "must": [
+     "Per-application access policy by user, group and device posture",
+     "No inbound ports to applications (outbound-only connectors)",
+     "MFA through the existing identity provider (SAML/OIDC)",
+     "Logs of every session kept 180 days, exported to the SIEM",
+     "Points of presence in India; customer logs stored in India or approved location",
+     "HA connectors and a documented fallback if the cloud service is down"
+    ],
+    "should": [
+     "Browser isolation for unmanaged devices",
+     "Session recording for admin apps",
+     "Same policy for on-site users",
+     "Secure web gateway and CASB in the same platform"
+    ],
+    "sizing": [
+     "Users by group (staff, admins, vendors)",
+     "Applications by location and protocol",
+     "Concurrent remote users at peak",
+     "Bandwidth per site",
+     "Managed vs unmanaged devices"
+    ],
+    "evaluation": [
+     "Technical fit and pilot results 35",
+     "Security of the vendor's own platform 15",
+     "3-year total cost 25",
+     "Support and India presence 15",
+     "References 10"
+    ],
+    "sla": [
+     "Service availability 99.999%",
+     "Added latency from Indian cities under 30 ms",
+     "Severity-1 response 15 minutes",
+     "Vendor vulnerabilities in its own service disclosed and fixed within 72 hours"
+    ],
+    "clauses": [
+     "Data localisation: logs, telemetry and any customer data stored and processed in India where RBI or DPDP rules apply; name every data centre location in the bid.",
+     "Logs kept 180 days within Indian jurisdiction and clocks synced to NIC/NPL NTP (CERT-In directions, April 2022); the product must export them to the bank's SIEM.",
+     "Vendor notifies the bank of any incident affecting the service fast enough for the bank to report to CERT-In within 6 hours, and to RBI as its rules require.",
+     "Right to audit and inspect for the bank, its auditors and RBI, including subcontractors (RBI Master Direction on Outsourcing of IT Services, 2023).",
+     "Exit and transition: configuration and policy export in an open format, help to migrate, and data deletion certificate at the end.",
+     "RBI cloud and outsourcing rules apply; MeitY-empanelled or RBI-acceptable cloud locations where policy requires."
+    ]
+   },
+   "architecture": "User device (agent, posture from EDR/MDM) -> nearest ZTNA point of presence (India) -> policy check with identity provider (MFA) -> outbound tunnel from app connector in DC/DR/cloud -> the one application. Feeds in: identity groups, device posture. Feeds out: access logs to the SIEM, risky sessions to the SOC. The old VPN remains only as a documented break-glass path.",
+   "kpis": [
+    "Share of remote and third-party access via ZTNA instead of VPN",
+    "Applications reachable from the internet with no inbound port",
+    "Access sessions denied by posture",
+    "VPN accounts remaining (should fall to break-glass only)"
+   ],
+   "pitfalls": [
+    "Recreating the flat VPN with one 'all apps' policy",
+    "Leaving the VPN running for everyone after the move",
+    "No fallback when the cloud service has an outage",
+    "Forgetting vendor access, the riskiest path"
+   ],
+   "sources": [
+    {
+     "title": "CRN Asia: Zscaler, Netskope, Palo Alto Networks lead Gartner's 2025 SSE Magic Quadrant",
+     "url": "https://www.crnasia.com/news-network/2025/zscaler"
+    },
+    {
+     "title": "Zscaler: Leader in the 2025 Gartner MQ for SSE",
+     "url": "https://ir.zscaler.com/node/14716"
+    },
+    {
+     "title": "UnderDefense: Zscaler pricing guide 2026",
+     "url": "https://underdefense.com/industry-pricings/zscaler-pricing-2026-ultimate-guide-for-security-products/"
+    },
+    {
+     "title": "Netify: Zscaler points of presence in India",
+     "url": "https://www.netify.ai/resources/networks/zscaler/country/in"
+    },
+    {
+     "title": "InstaSafe: about us",
+     "url": "https://www.instasafe.com/about-us"
+    },
+    {
+     "title": "Control D: Cloudflare Zero Trust pricing",
+     "url": "https://controld.com/blog/cloudflare-zero-trust-pricing/"
+    },
+    {
+     "title": "NetFoundry: OpenZiti introduction",
+     "url": "https://netfoundry.io/docs/openziti/intro"
+    },
+    {
+     "title": "Agama Law: decoding the RBI Master Direction on Outsourcing of IT Services",
+     "url": "https://agamalaw.in/2025/02/14/decoding-compliances-with-reserve-bank-of-indias-it-outsourcing-master-direction/"
+    },
+    {
+     "title": "Ankura: India's CERT-In cyber incident reporting directions explained",
+     "url": "https://ankura.com/insights/everything-you-need-to-know-about-indias-new-guidelines-related-to-cyber-incident-reporting-by-cert-in/"
+    },
+    {
+     "title": "Khaitan & Co: Ergo note on the CERT-In directions of 28 April 2022",
+     "url": "https://khaitanco.com/sites/default/files/2022-04/Ergo_30042022.pdf"
+    }
+   ]
+  },
+  "tec-ndr": {
+   "summary": "Sensors that watch network traffic inside the organisation and alert when something behaves like an attacker, such as scanning, lateral movement or data leaving.",
+   "protects": "Data centre and internal networks, including devices that cannot run an agent (IoT, OT, appliances, legacy servers); catches lateral movement, command-and-control, ransomware spreading and data exfiltration that EDR may miss.",
+   "placement": "Network zone. Passive sensors fed by SPAN ports or network TAPs at the DC core, the internet edge (inside the firewall), the DR site and key segments such as payment and server zones; cloud sensors read VPC/VNet traffic mirroring or flow logs. Alerts go to the SOC.",
+   "how": "Sensors copy traffic (they are not inline), decode protocols and keep metadata. Machine learning and rules flag unusual behaviour, such as a workstation talking to a server it never uses or large uploads at night. Analysts can look back at the recorded metadata, and some tools can block through the firewall or EDR.",
+   "pareto": [
+    "Sensors on DC east-west traffic and the inside of the internet edge first",
+    "Decode the key protocols (DNS, TLS metadata, SMB, Kerberos, RDP) and keep metadata 30-90 days",
+    "Alerts triaged by the SOC with clear playbooks",
+    "Response through the firewall/EDR (block, isolate)",
+    "Cover devices that cannot run EDR"
+   ],
+   "vendors": [
+    {
+     "name": "Vectra AI",
+     "kind": "commercial",
+     "fit": "Gartner 2025 NDR Leader (first NDR Magic Quadrant), highest for Ability to Execute and Vision per the vendor; strong identity and lateral-movement detection.",
+     "india": "Sold through Indian partners."
+    },
+    {
+     "name": "Darktrace / NETWORK",
+     "kind": "commercial",
+     "fit": "Gartner 2025 NDR Leader; self-learning behaviour models; optional autonomous response; median deal reported at about US$55,000 a year (about Rs 46 lakh).",
+     "india": "India presence and partners."
+    },
+    {
+     "name": "Corelight",
+     "kind": "commercial",
+     "fit": "Gartner 2025 NDR Leader; built on open-source Zeek, so evidence-rich logs that suit SOC hunting.",
+     "india": "Sold through partners."
+    },
+    {
+     "name": "ExtraHop RevealX",
+     "kind": "commercial",
+     "fit": "Deep decoding and decryption of traffic; strong for performance plus security (placement in the 2025 report not checked).",
+     "india": "Sold through partners."
+    },
+    {
+     "name": "Vehere",
+     "kind": "Indian",
+     "fit": "Indian-origin NDR and network intelligence vendor; says it serves defence and intelligence agencies (vendor claim); Redington became its India distributor in 2026.",
+     "india": "Indian vendor and channel."
+    },
+    {
+     "name": "Security Onion (Zeek + Suricata)",
+     "kind": "open source",
+     "fit": "Free platform for network monitoring, IDS and hunting; needs skilled analysts and hardware.",
+     "india": "Community; paid support from Security Onion Solutions."
+    }
+   ],
+   "cost": {
+    "unit": "fixed per year, priced by monitored bandwidth (Gbps), devices or IPs, plus sensor hardware",
+    "band": "About Rs 30 lakh-1.1 crore a year for commercial NDR (one guide's median deal about US$55,000 and 75th percentile about US$131,000); open source costs hardware and analyst time",
+    "reference_org": "About Rs 30-100 lakh a year for DC, DR and edge sensors covering 2,500 endpoints and the server estate",
+    "drivers": [
+     "Monitored throughput and number of sensors",
+     "Device or IP count",
+     "Metadata and packet retention",
+     "Response and cloud modules",
+     "TAP and packet-broker hardware"
+    ],
+    "note": "Indicative, October 2026, excluding 18% GST; get three quotes. USD figures converted at about Rs 84/USD. Benchmark deal sizes come from a single third-party guide."
+   },
+   "rfp": {
+    "scope": [
+     "Sensors at DC core, DR core, internet edge (inside), and payment/server zones",
+     "Cloud traffic coverage for workloads in public cloud",
+     "Integration with SIEM, SOAR, EDR and firewall",
+     "Tuning period and use-case design",
+     "Training for SOC analysts"
+    ],
+    "must": [
+     "Passive deployment from SPAN/TAP; no inline risk",
+     "Sensor throughput at least 1.5x peak traffic at each point",
+     "Detection of lateral movement, C2, exfiltration and ransomware behaviour, mapped to MITRE ATT&CK",
+     "Encrypted-traffic analysis without decryption (JA3/JA4, certificate and flow features)",
+     "Metadata retained at least 30 days searchable; alerts 180 days",
+     "All data stored on premises or in India"
+    ],
+    "should": [
+     "Automated response through firewall or EDR",
+     "Packet capture on demand",
+     "OT/IoT protocol support",
+     "Identity (Kerberos/AD) attack detection"
+    ],
+    "sizing": [
+     "Peak traffic at each monitoring point",
+     "Number of internal IPs and devices",
+     "Sites",
+     "Cloud environments",
+     "Retention wanted"
+    ],
+    "evaluation": [
+     "Detection in a 30-day proof of value with red-team activity 35",
+     "Technical fit 20",
+     "3-year total cost 25",
+     "Support and India presence 15",
+     "References 5"
+    ],
+    "sla": [
+     "Sensor and console availability 99.9%",
+     "Severity-1 response 30 minutes",
+     "Detection model updates at least monthly"
+    ],
+    "clauses": [
+     "Data localisation: logs, telemetry and any customer data stored and processed in India where RBI or DPDP rules apply; name every data centre location in the bid.",
+     "Logs kept 180 days within Indian jurisdiction and clocks synced to NIC/NPL NTP (CERT-In directions, April 2022); the product must export them to the bank's SIEM.",
+     "Vendor notifies the bank of any incident affecting the service fast enough for the bank to report to CERT-In within 6 hours, and to RBI as its rules require.",
+     "Right to audit and inspect for the bank, its auditors and RBI, including subcontractors (RBI Master Direction on Outsourcing of IT Services, 2023).",
+     "Back-to-back OEM support for the full term, and end-of-sale/end-of-support dates disclosed; no product within 3 years of end of support.",
+     "Exit and transition: configuration and policy export in an open format, help to migrate, and data deletion certificate at the end."
+    ]
+   },
+   "architecture": "Network TAPs or SPAN at core switches -> packet broker (optional) -> NDR sensors -> NDR console (on premises or India cloud). Feeds in: asset inventory and identity for context, threat intelligence. Feeds out: alerts and metadata to the SIEM, response through SOAR to the firewall (block) and EDR (isolate).",
+   "kpis": [
+    "Share of DC east-west traffic monitored",
+    "True-positive alerts per month and time to triage",
+    "Detections found by NDR that no other tool saw",
+    "Red-team activities detected in drills"
+   ],
+   "pitfalls": [
+    "Sensors only at the internet edge, missing east-west traffic",
+    "SPAN ports dropping packets at peak",
+    "Buying it before the SOC can handle its alerts",
+    "No context from asset inventory, so alerts are hard to act on"
+   ],
+   "sources": [
+    {
+     "title": "iTWire: Vectra AI named a Leader in the first Gartner MQ for NDR",
+     "url": "https://itwire.com/business-it-news/security/vectra-ai-named-a-leader-in-the-first-ever-gartner-magic-quadrant-for-network-detection-and-response"
+    },
+    {
+     "title": "Darktrace: Leader in the 2025 Gartner MQ for NDR",
+     "url": "https://www.darktrace.com/blog/darktrace-recognized-as-leader-in-the-2025-gartner-magic"
+    },
+    {
+     "title": "BankInfoSecurity: Corelight Leader in Gartner MQ for NDR",
+     "url": "https://www.bankinfosecurity.com/whitepapers/corelight-leader-in-gartner-magic-quadrant-for-ndr-w-15394"
+    },
+    {
+     "title": "UnderDefense: Darktrace pricing guide",
+     "url": "https://underdefense.com/blog/darktrace-pricing-guide/"
+    },
+    {
+     "title": "CRN Asia: Redington becomes India distributor for Vehere NDR",
+     "url": "https://www.crnasia.com/india/news/2026/redington-becomes-official-india-distributor-for-vehere-s-ai-powered-ndr-platform"
+    },
+    {
+     "title": "Security Onion Solutions: software",
+     "url": "https://securityonionsolutions.com/software"
+    },
+    {
+     "title": "Ankura: India's CERT-In cyber incident reporting directions explained",
+     "url": "https://ankura.com/insights/everything-you-need-to-know-about-indias-new-guidelines-related-to-cyber-incident-reporting-by-cert-in/"
+    },
+    {
+     "title": "Khaitan & Co: Ergo note on the CERT-In directions of 28 April 2022",
+     "url": "https://khaitanco.com/sites/default/files/2022-04/Ergo_30042022.pdf"
+    }
+   ]
+  }
+ }
+}

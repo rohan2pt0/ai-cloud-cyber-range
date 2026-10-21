@@ -1,0 +1,1948 @@
+{
+ "as_of": "2026-10",
+ "items": {
+  "ppl-team": {
+   "summary": "A small, named in-house security team that owns the programme, runs the tools and manages the partners.",
+   "protects": "Every other control: tools and contracts give no protection unless people configure, watch and improve them.",
+   "placement": "Process owner: CISO, with HR. Sits in the second line (risk) or in IT, but reports to the CISO.",
+   "how": "Size the team to the estate, then hire the leads first (GRC, security engineering, SOC, IR). A 24x7 watch is usually bought as a managed SOC, with an in-house manager and L2/L3 staff who own escalations. Consultants may fill gaps for a year if knowledge transfer is written into the contract.",
+   "pareto": [
+    "A named CISO with a direct line to the CEO or Board risk committee",
+    "Four leads first: GRC, security engineering, SOC/IR, security testing",
+    "Buy 24x7 L1 monitoring as a managed service; keep L2/L3 and IR in-house",
+    "A written role profile, a training plan and a backup person for every key role"
+   ],
+   "vendors": [
+    {
+     "name": "Indian IT services firms with managed security practices (for example TCS, Infosys, Wipro, HCLTech)",
+     "kind": "service firm",
+     "fit": "Co-sourced SOC and staff augmentation at scale; choose when 24x7 cover is needed fast.",
+     "india": "Headquartered in India; delivery centres in all metros."
+    },
+    {
+     "name": "Big Four advisory (Deloitte, EY, KPMG, PwC India)",
+     "kind": "service firm",
+     "fit": "Interim CISO, GRC and regulatory programmes for BFSI; choose for regulator-facing work.",
+     "india": "Large India cyber practices in Mumbai, Bengaluru, Gurugram, Hyderabad, Pune."
+    },
+    {
+     "name": "Specialist recruiters and staffing firms (for example Taggd, which publishes India cyber salary data)",
+     "kind": "service firm",
+     "fit": "Permanent hiring of security roles; useful for hard-to-fill SOC and cloud roles.",
+     "india": "India-based; pan-India hiring."
+    },
+    {
+     "name": "ISC2, ISACA and OWASP India chapters; DSCI community",
+     "kind": "service firm",
+     "fit": "Not vendors but the best talent pool: chapter meetings and job boards reach certified people.",
+     "india": "Chapters in all metro cities."
+    }
+   ],
+   "cost": {
+    "unit": "salary cost per person per year (CTC)",
+    "band": "Rs 4-10 lakh (SOC L1), Rs 7-18 lakh (engineer), Rs 15-30 lakh (BFSI specialist at 4-6 years), Rs 40 lakh-1 crore+ (CISO)",
+    "reference_org": "an in-house core of about 10-14 people (with L1 monitoring bought as a managed SOC) costs roughly Rs 2-4 crore a year in salary; a fully in-house 24x7 SOC adds about five people per seat watched around the clock",
+    "drivers": [
+     "24x7 in-house versus managed SOC",
+     "BFSI and GCC pay premiums",
+     "certifications held",
+     "city (Mumbai and Bengaluru pay most)",
+     "attrition and backfill"
+    ],
+    "note": "Salary bands are from 2026 India salary surveys and career blogs, not an authoritative pay report; check with two recruiters. indicative; get three quotes"
+   },
+   "rfp": {
+    "scope": [
+     "Staff augmentation or co-sourcing for named roles",
+     "24x7 L1 monitoring if bought as a service",
+     "Knowledge transfer to named internal staff",
+     "Background verification of all deployed staff"
+    ],
+    "must": [
+     "Named resources with CVs approved by the organisation before deployment",
+     "Replacement of a departing resource within 30 days, with a 2-week overlap",
+     "Certifications as stated per role (for example CISSP, CISM, OSCP, GCIH)",
+     "Police and employment background checks for every person"
+    ],
+    "should": [
+     "Bench strength in the same city",
+     "Resources who have worked in RBI- or SEBI-regulated entities",
+     "A training budget per resource paid by the provider"
+    ],
+    "sizing": [
+     "2,000 users, 2,500 endpoints, 40 applications, 5 sites",
+     "24x7 cover: how many seats around the clock",
+     "Expected growth in users and applications over 3 years"
+    ],
+    "evaluation": [
+     "Quality of named resources 40",
+     "Relevant BFSI experience 20",
+     "Knowledge-transfer plan 15",
+     "Commercials 25"
+    ],
+    "sla": [
+     "Resource replacement within 30 days",
+     "Attrition below 20% a year for deployed staff",
+     "Monthly timesheet and deliverable report"
+    ],
+    "clauses": [
+     "RBI IT outsourcing directions: the regulated entity keeps accountability; right to audit the provider",
+     "Confidentiality and non-disclosure for every resource",
+     "Non-solicitation in both directions, with a buy-out fee",
+     "Exit and transition: handover of all documents, credentials and runbooks"
+    ]
+   },
+   "architecture": "The CISO heads three or four leads. The SOC manager runs the managed SOC contract and the in-house L2/L3 analysts. The GRC lead owns policy, risk and audits. Engineering owns the security tools. IR leads incidents with the SOC. HR owns hiring, training budget and succession.",
+   "kpis": [
+    "Open critical roles and days to fill",
+    "Percentage of key roles with a trained backup",
+    "Annual attrition in the security team",
+    "Percentage of tools with a named owner"
+   ],
+   "pitfalls": [
+    "Buying tools before hiring the people to run them",
+    "A one-person team with no backup",
+    "Consultants doing the work with no knowledge transfer",
+    "Paying below BFSI market rates and losing staff within a year"
+   ],
+   "sources": [
+    {
+     "title": "Weekday: Cyber security salary in India 2026",
+     "url": "https://www.weekday.works/post/cyber-security-salary-in-india-2026"
+    },
+    {
+     "title": "Taggd: Cybersecurity jobs in India 2026 (roles, salaries)",
+     "url": "https://taggd.in/blogs/cybersecurity-jobs-in-india/"
+    },
+    {
+     "title": "Amity Online: Cybersecurity salary in India 2026",
+     "url": "https://amityonline.com/blog/cybersecurity-salary-in-india"
+    },
+    {
+     "title": "Mondaq summary: RBI Master Direction on Outsourcing of IT Services (10 Apr 2023)",
+     "url": "https://webiis08.mondaq.com/india/it-and-internet/1311402/rbi-master-direction-on-it-outsourcing-by-regulated-entities"
+    }
+   ]
+  },
+  "ppl-awareness": {
+   "summary": "Short, regular security lessons for every employee plus fake phishing tests that show who needs more help.",
+   "protects": "People and the accounts, money and data they can reach; against phishing, payment fraud, smishing, vishing and social engineering.",
+   "placement": "Cloud service (SaaS platform) run by the CISO's team, with HR and communications. Integrates with the e-mail system and the directory.",
+   "how": "The platform sends short lessons each month and simulated phishing e-mails, SMS or calls each quarter. It records who clicked, who reported, and who finished training. People who click get a short lesson at once; repeat clickers get one-to-one help.",
+   "pareto": [
+    "A one-click 'report phishing' button, with feedback to the reporter",
+    "Quarterly phishing simulations with instant teachable moments",
+    "Extra training for high-risk groups: finance, treasury, executives, helpdesk",
+    "Lessons in local languages and on payment-fraud scenarios",
+    "Report rate tracked, not only click rate"
+   ],
+   "vendors": [
+    {
+     "name": "KnowBe4",
+     "kind": "commercial",
+     "fit": "Largest content library and simulation templates; choose for breadth and mature reporting.",
+     "india": "Sold through Indian partners; check where data is hosted."
+    },
+    {
+     "name": "Proofpoint Security Awareness",
+     "kind": "commercial",
+     "fit": "Strong if Proofpoint already protects e-mail; uses real threat data in simulations.",
+     "india": "Indian office and partners."
+    },
+    {
+     "name": "Kaspersky Automated Security Awareness Platform (ASAP)",
+     "kind": "commercial",
+     "fit": "Automated learning paths with little admin effort; suits small teams.",
+     "india": "Indian partners; check policy on vendor origin."
+    },
+    {
+     "name": "ThreatCop (Kratikal)",
+     "kind": "Indian",
+     "fit": "Indian platform covering e-mail, SMS, voice and WhatsApp simulations and multilingual content.",
+     "india": "Noida-based; FAQ states hosting on AWS in Mumbai."
+    },
+    {
+     "name": "GoPhish",
+     "kind": "open source",
+     "fit": "Free phishing simulation engine; needs your own content and someone to run it.",
+     "india": "Self-hosted, so data stays in your own data centre."
+    }
+   ],
+   "cost": {
+    "unit": "per user per year",
+    "band": "Rs 400-2,000 per user per year (Indian platforms at the lower end; KnowBe4 list for 501-1,000 seats is about Rs 1,640-2,800)",
+    "reference_org": "about Rs 8-40 lakh a year for 2,000 users, plus about Rs 2-5 lakh of internal effort for campaigns and content",
+    "drivers": [
+     "seat count and term (3-year terms are cheaper)",
+     "tier (basic versus advanced content, SMS and voice simulation)",
+     "local-language content",
+     "managed service versus self-run"
+    ],
+    "note": "KnowBe4 publishes USD list prices per seat per month on a 3-year term (May 2026); 1,001+ seats are quote-only. USD list prices converted at about Rs 84/USD; excludes 18% GST. indicative; get three quotes"
+   },
+   "rfp": {
+    "scope": [
+     "Awareness platform for 2,000 users for 3 years",
+     "Monthly micro-lessons and quarterly phishing, SMS and voice simulations",
+     "Report-phishing button for the e-mail client",
+     "Dashboards for the CISO and the Board"
+    ],
+    "must": [
+     "Directory sync (Active Directory or Entra ID) and SSO",
+     "Content in English and Hindi, and at least two other Indian languages",
+     "Report-phishing add-in for the e-mail client",
+     "Per-user and per-department click, report and completion rates",
+     "Data hosted in India, or a clear list of where data is stored"
+    ],
+    "should": [
+     "Payment-fraud and UPI scam scenarios",
+     "Automatic remedial training for clickers",
+     "API export to the GRC tool",
+     "Simulations over WhatsApp or SMS"
+    ],
+    "sizing": [
+     "2,000 users across 5 sites",
+     "Languages needed",
+     "E-mail platform (Microsoft 365, Google Workspace, other)"
+    ],
+    "evaluation": [
+     "Content quality and languages 30",
+     "Simulation and reporting features 25",
+     "Data location and security 15",
+     "Ease of administration 10",
+     "Commercials 20"
+    ],
+    "sla": [
+     "Platform availability 99.5% a month",
+     "Support response within 4 business hours",
+     "New threat-based templates at least monthly"
+    ],
+    "clauses": [
+     "DPDP Act: the vendor is a data processor; limit personal data to name, e-mail and department",
+     "Data location in India preferred; deletion of all data at exit",
+     "Right to audit (RBI IT outsourcing directions) where the user is a regulated entity",
+     "Breach notification to the organisation without delay so it can meet the CERT-In 6-hour clock"
+    ]
+   },
+   "architecture": "The platform syncs users from the directory, sends simulations through the e-mail system (with allow-listing of its sending IPs in the e-mail gateway), and receives reports from the report-phishing button. Reported real phish go to the SOC mailbox. Results feed the GRC tool and the Board dashboard.",
+   "kpis": [
+    "Phishing click rate (target below 5%)",
+    "Report rate (target above 60%)",
+    "Training completion within 30 days (target above 95%)",
+    "Time from first report to SOC action"
+   ],
+   "pitfalls": [
+    "Measuring only clicks and shaming people, which stops them reporting",
+    "Once-a-year compliance video that changes nothing",
+    "No allow-listing, so simulations land in spam and results are false",
+    "No extra help for high-risk roles"
+   ],
+   "sources": [
+    {
+     "title": "KnowBe4 Security Awareness Training: list pricing (May 2026)",
+     "url": "https://www.knowbe4.com/products/security-awareness-training-quote"
+    },
+    {
+     "title": "Vendr: KnowBe4 buyer pricing data",
+     "url": "https://www.vendr.com/marketplace/knowbe4"
+    },
+    {
+     "title": "ThreatCop (Kratikal) helpdesk FAQ: hosting in Mumbai, multilingual",
+     "url": "https://helpdesk.threatcop.com/portal/en/kb/tsat/faqs/others"
+    },
+    {
+     "title": "ThreatCop TSAT datasheet",
+     "url": "https://threatcop.com/static/TSAT.pdf"
+    },
+    {
+     "title": "GoPhish open-source phishing toolkit",
+     "url": "https://getgophish.com/"
+    },
+    {
+     "title": "RBI Master Direction on IT Governance, Risk, Controls and Assurance Practices (7 Nov 2023)",
+     "url": "https://www.rbi.org.in/Scripts/BS_ViewMasDirections.aspx?id=12562"
+    }
+   ]
+  },
+  "ppl-training": {
+   "summary": "A training and certification plan for each security role, with a budget per person per year.",
+   "protects": "The team's skills, and so the quality of every control they run; reduces reliance on consultants.",
+   "placement": "Process owner: CISO with HR (learning and development).",
+   "how": "Each role has a list of skills and one target certification. Each person gets a yearly budget, study time and a plan agreed at appraisal. Hands-on labs and a range keep skills current between courses.",
+   "pareto": [
+    "One relevant certification per person per year, tied to the role",
+    "Hands-on lab subscriptions rather than slides",
+    "Study time in work hours, protected in the roster",
+    "A retention bond for expensive courses"
+   ],
+   "vendors": [
+    {
+     "name": "SANS Institute / GIAC",
+     "kind": "commercial",
+     "fit": "Deep, hands-on technical courses (SOC, IR, forensics, cloud); the most expensive; choose for key specialists.",
+     "india": "Live Online and OnDemand with a Special India Price."
+    },
+    {
+     "name": "OffSec (OSCP+ and others)",
+     "kind": "commercial",
+     "fit": "Practical offensive and defensive certifications; Learn One is USD 2,749 a year with labs and two exam attempts.",
+     "india": "Online; Indian partners resell."
+    },
+    {
+     "name": "ISC2 (CISSP, CCSP) and ISACA (CISM, CISA, CRISC)",
+     "kind": "commercial",
+     "fit": "Management and audit certifications that Indian regulators and banks ask for in RFPs.",
+     "india": "Pearson VUE exam centres in Indian cities; active Indian chapters."
+    },
+    {
+     "name": "EC-Council (CEH, CHFI)",
+     "kind": "commercial",
+     "fit": "Widely asked for in Indian job descriptions; entry level.",
+     "india": "Large India presence and partners."
+    },
+    {
+     "name": "Indian training partners (for example Vinsys, Koenig Solutions)",
+     "kind": "Indian",
+     "fit": "Instructor-led bootcamps for ISC2, ISACA and cloud certifications at Indian prices.",
+     "india": "Classrooms in Indian metros and online."
+    },
+    {
+     "name": "MeitY ISEA programme and C-DAC courses",
+     "kind": "Indian",
+     "fit": "Government-supported awareness and skills courses; low or no cost.",
+     "india": "Indian government programme."
+    }
+   ],
+   "cost": {
+    "unit": "per person per year (training plus exam)",
+    "band": "Rs 60,000-3 lakh per person per year for most staff; a SANS course with a GIAC attempt is about Rs 8 lakh",
+    "reference_org": "about Rs 15-40 lakh a year for a team of 12-15 (one certification each, plus two or three SANS-level courses for specialists)",
+    "drivers": [
+     "mix of SANS-level versus exam-only certifications",
+     "instructor-led versus self-paced",
+     "travel",
+     "annual maintenance fees"
+    ],
+    "note": "SANS 2026 event pages list USD 8,780 per course plus USD 999 for GIAC; OffSec Learn One USD 2,749 a year; CISSP exam about USD 749. USD list prices converted at about Rs 84/USD; excludes 18% GST. indicative; get three quotes"
+   },
+   "rfp": {
+    "scope": [
+     "Annual training plan delivery for named roles",
+     "Instructor-led bootcamps and exam vouchers",
+     "Lab or range subscription",
+     "Progress reporting to HR"
+    ],
+    "must": [
+     "Accredited or official training partner of the certification body",
+     "Exam voucher included or priced separately",
+     "Trainer with the certification and at least 5 years in the field",
+     "Attendance and assessment report per learner"
+    ],
+    "should": [
+     "Free retake if the learner fails the first attempt",
+     "Hands-on labs for at least 12 months",
+     "Weekend or evening batches"
+    ],
+    "sizing": [
+     "Number of learners per certification per year",
+     "Delivery mode (classroom, online)",
+     "Cities"
+    ],
+    "evaluation": [
+     "Trainer quality and accreditation 35",
+     "Pass rates and lab access 25",
+     "Flexibility of schedule 10",
+     "Commercials 30"
+    ],
+    "sla": [
+     "Batch starts on the agreed date",
+     "Replacement trainer within one week",
+     "Certificate of completion within 15 days"
+    ],
+    "clauses": [
+     "Training bond with the employee for costly courses (company HR policy)",
+     "Refund or credit if a batch is cancelled",
+     "No sharing of course content outside the organisation (vendor licence)"
+    ]
+   },
+   "architecture": "HR's learning system holds the plan and records. The CISO approves each person's plan at appraisal. The cyber range and lab subscriptions provide practice; results feed the skills matrix used for succession and staffing.",
+   "kpis": [
+    "Percentage of the team holding the role's target certification",
+    "Training budget used against plan",
+    "Skills-matrix gaps closed this year",
+    "Consultant days replaced by internal staff"
+   ],
+   "pitfalls": [
+    "Paying for certifications unrelated to the role",
+    "No study time, so exams are failed",
+    "No retention bond on expensive courses",
+    "Courses without hands-on practice"
+   ],
+   "sources": [
+    {
+     "title": "SANS event pricing 2026 (course and GIAC attempt)",
+     "url": "https://www.sans.org/cyber-security-training-events/chicago-2026"
+    },
+    {
+     "title": "SANS Special India Pricing",
+     "url": "https://www.sans.org/mlp/special-india-pricing"
+    },
+    {
+     "title": "OffSec individual pricing (Learn One, bundle)",
+     "url": "https://www.offsec.com/pricing/individual/"
+    },
+    {
+     "title": "ISC2 CISSP certification page",
+     "url": "https://www.isc2.org/certifications/cissp"
+    },
+    {
+     "title": "Destination Certification: CISSP exam cost 2026",
+     "url": "https://destcert.com/resources/cissp-exam-cost/"
+    },
+    {
+     "title": "Vinsys: CISSP certification cost (Indian training partner)",
+     "url": "https://www.vinsys.com/blog/cissp-certification-cost"
+    },
+    {
+     "title": "RBI Master Direction on IT Governance, Risk, Controls and Assurance Practices (7 Nov 2023)",
+     "url": "https://www.rbi.org.in/Scripts/BS_ViewMasDirections.aspx?id=12562"
+    }
+   ]
+  },
+  "ppl-kt": {
+   "summary": "A written plan that makes every consultant leave skills, documents and runbooks behind, so the internal team can take over.",
+   "protects": "The organisation's independence and continuity; against lock-in, loss of knowledge when a contract ends, and paying twice for the same work.",
+   "placement": "Process owner: CISO, enforced through procurement and each consulting contract.",
+   "how": "Each consulting statement of work names the internal shadow for each deliverable, the documents to hand over and a sign-off test. In year 1 the consultant leads and the staff shadow; in year 2 the staff lead and the consultant reviews. Payment milestones depend on accepted knowledge transfer.",
+   "pareto": [
+    "A named internal shadow for every consultant role",
+    "Runbooks, configurations and credentials handed over in a shared wiki",
+    "Reverse shadowing: staff do the task while the consultant watches",
+    "Part of the fee held back until KT sign-off"
+   ],
+   "vendors": [
+    {
+     "name": "Big Four advisory (Deloitte, EY, KPMG, PwC India)",
+     "kind": "service firm",
+     "fit": "Typical source of consultants; ask for a KT plan with named milestones.",
+     "india": "Large Indian practices."
+    },
+    {
+     "name": "Indian IT services and security specialists (for example TCS, Infosys, Wipro, and CERT-In empanelled firms)",
+     "kind": "service firm",
+     "fit": "Deliver managed services and projects; KT and exit plans must be in the contract.",
+     "india": "Headquartered or present in India."
+    },
+    {
+     "name": "Atlassian Confluence or Microsoft SharePoint",
+     "kind": "commercial",
+     "fit": "The wiki where runbooks and KT records live; use what the organisation already has.",
+     "india": "Cloud regions or partners in India."
+    },
+    {
+     "name": "MkDocs, Wiki.js or Moodle (learning records)",
+     "kind": "open source",
+     "fit": "Free wiki and learning tools for runbooks and short KT courses.",
+     "india": "Self-hosted."
+    }
+   ],
+   "cost": {
+    "unit": "no licence; effort inside each consulting contract",
+    "band": "Rs 0 extra in licence; the KT effort is built into each consulting contract",
+    "reference_org": "no separate budget line; ask bidders to price KT as a separate, visible milestone",
+    "drivers": [
+     "number of consulting contracts",
+     "how much shadow time staff can give",
+     "complexity of the systems handed over"
+    ],
+    "note": "No product price applies. Our own advice, not a sourced figure: make KT a priced milestone so it is not cut. indicative; get three quotes"
+   },
+   "rfp": {
+    "scope": [
+     "KT plan for every deliverable",
+     "Shadowing and reverse-shadowing sessions",
+     "Runbooks, design documents and configuration exports",
+     "Final KT sign-off test"
+    ],
+    "must": [
+     "KT plan submitted within 30 days of start",
+     "Named internal shadow for each consultant",
+     "All runbooks and configuration in the organisation's own wiki and repository",
+     "Sign-off by the internal owner before final payment"
+    ],
+    "should": [
+     "Recorded walkthrough sessions",
+     "A short quiz or practical task for each shadow",
+     "Support for 30-60 days after handover"
+    ],
+    "sizing": [
+     "Number of systems and processes to hand over",
+     "Number of internal staff to be trained",
+     "Contract length"
+    ],
+    "evaluation": [
+     "Quality of KT method 40",
+     "Past KT references 20",
+     "Documentation standard 15",
+     "Commercials 25"
+    ],
+    "sla": [
+     "Runbook for each managed system within 60 days",
+     "KT sessions as scheduled, at least 95% held",
+     "Hand-over complete within the exit period"
+    ],
+    "clauses": [
+     "RBI IT outsourcing directions: exit strategy and orderly transition to the organisation or a new provider",
+     "Ownership of all documents and work products by the organisation",
+     "Holdback of part of the fee until KT sign-off",
+     "Configuration escrow or export of all settings at exit"
+    ]
+   },
+   "architecture": "Procurement adds the KT schedule to every statement of work. The CISO's PMO tracks KT milestones. Runbooks live in the internal wiki; configurations in the internal repository. HR records new skills in the skills matrix.",
+   "kpis": [
+    "Percentage of consulting deliverables with signed KT",
+    "Consultant days reduced year on year",
+    "Systems with an internal runbook owner",
+    "Successful operation by internal staff during a consultant's absence"
+   ],
+   "pitfalls": [
+    "KT left to the last week of the contract",
+    "Documents kept in the consultant's own systems",
+    "No internal person free to shadow",
+    "Paying in full before KT is accepted"
+   ],
+   "sources": [
+    {
+     "title": "Mondaq summary: RBI Master Direction on Outsourcing of IT Services (10 Apr 2023)",
+     "url": "https://webiis08.mondaq.com/india/it-and-internet/1311402/rbi-master-direction-on-it-outsourcing-by-regulated-entities"
+    },
+    {
+     "title": "JSA Prism: RBI IT outsourcing directions (Apr 2023)",
+     "url": "https://www.jsalaw.com/newsletters-and-updates/jsa-prism-fintech-april-2023/"
+    },
+    {
+     "title": "RBI Master Direction on IT Governance, Risk, Controls and Assurance Practices (7 Nov 2023)",
+     "url": "https://www.rbi.org.in/Scripts/BS_ViewMasDirections.aspx?id=12562"
+    }
+   ]
+  },
+  "ppl-range": {
+   "summary": "Realistic practice attacks in a safe copy of an IT environment, so the team rehearses detection and response.",
+   "protects": "Response speed and quality: the SOC, IR and IT teams who must act during a real attack.",
+   "placement": "Isolated lab or cloud service, owned by the SOC manager; never connected to production.",
+   "how": "The range runs a scenario (for example ransomware or a phishing-led breach) in a virtual network. The team detects, contains and reports, while the range scores time and decisions. A debrief turns gaps into fixes and training.",
+   "pareto": [
+    "Quarterly exercises built on your own top threats",
+    "Use the same tools as production (SIEM, EDR) where possible",
+    "A timed debrief with actions owned and tracked",
+    "Include the regulator reporting step (CERT-In 6 hours) in the scenario"
+   ],
+   "vendors": [
+    {
+     "name": "CybExer Technologies",
+     "kind": "commercial",
+     "fit": "Full cyber range for team exercises and national drills.",
+     "india": "Partner of Rashtriya Raksha University and of Sanraksha.ai for Indian enterprises."
+    },
+    {
+     "name": "Cyberbit",
+     "kind": "commercial",
+     "fit": "Simulated SOC with live attacks and commercial tools; good for SOC team drills.",
+     "india": "Sold through partners in India."
+    },
+    {
+     "name": "Hack The Box (Enterprise)",
+     "kind": "commercial",
+     "fit": "Large library of labs and team exercises; good for individual skills and red/blue practice.",
+     "india": "Cloud service; Indian customers through direct sales."
+    },
+    {
+     "name": "Immersive (Immersive Labs)",
+     "kind": "commercial",
+     "fit": "Short labs and crisis simulations including executive exercises.",
+     "india": "Cloud service; check data location."
+    },
+    {
+     "name": "SecuRAX range, MITRE Caldera, Atomic Red Team",
+     "kind": "open source",
+     "fit": "Free starting point: emulate attacker techniques in your own lab.",
+     "india": "Self-hosted, so data stays local."
+    }
+   ],
+   "cost": {
+    "unit": "fixed per year (subscription or per exercise)",
+    "band": "Rs 0 (open-source range run in-house) to about Rs 40 lakh a year for a commercial range subscription",
+    "reference_org": "about Rs 10-40 lakh a year for quarterly commercial exercises for a SOC and IR team of 10-20; Rs 0-5 lakh using an open-source range",
+    "drivers": [
+     "number of seats and exercises",
+     "custom scenarios built for your estate",
+     "hosted versus on-premises range",
+     "facilitator days"
+    ],
+    "note": "Range vendors do not publish prices; the band follows govern.json and could not be confirmed against a public price list. indicative; get three quotes"
+   },
+   "rfp": {
+    "scope": [
+     "Range platform or exercise service for a year",
+     "Four team exercises and at least one executive exercise",
+     "Custom scenarios based on the organisation's threats",
+     "Scored debrief reports"
+    ],
+    "must": [
+     "Fully isolated from production",
+     "Scenarios mapped to MITRE ATT&CK",
+     "Per-person and team scoring with timings",
+     "At least one ransomware and one phishing-led scenario per year"
+    ],
+    "should": [
+     "Use of the organisation's own SIEM and EDR brands",
+     "Hindi or other local-language executive content",
+     "On-premises option"
+    ],
+    "sizing": [
+     "Number of participants per exercise",
+     "Exercises per year",
+     "Tools to mirror"
+    ],
+    "evaluation": [
+     "Realism of scenarios 35",
+     "Scoring and debrief quality 25",
+     "Fit with own tools 15",
+     "Commercials 25"
+    ],
+    "sla": [
+     "Platform availability during scheduled exercises 99.9%",
+     "Debrief report within 5 working days"
+    ],
+    "clauses": [
+     "No production data in the range",
+     "Confidentiality of scores and findings",
+     "Data location and deletion at exit (DPDP Act)"
+    ]
+   },
+   "architecture": "The range is a separate network or cloud tenant. Scenarios generate logs into a copy of the SIEM or the range's own tools. Results feed the training plan and the IR playbooks. Nothing connects to production.",
+   "kpis": [
+    "Mean time to detect and to contain in exercises, trend over the year",
+    "Percentage of the team in at least two exercises a year",
+    "Debrief actions closed on time"
+   ],
+   "pitfalls": [
+    "Generic scenarios that do not match the estate",
+    "No debrief, so nothing changes",
+    "Running it once for compliance",
+    "Connecting the range to production"
+   ],
+   "sources": [
+    {
+     "title": "CybExer and Rashtriya Raksha University cyber range partnership",
+     "url": "https://internationalsecurityjournal.com/?p=47601"
+    },
+    {
+     "title": "CybExer partners with Sanraksha.ai for India (2025)",
+     "url": "https://cybexer.com/news/cybexer-partners-with-sanraksha.ai-to-expand-cyber-range-capabilities-in-india"
+    },
+    {
+     "title": "CXOToday: Charlesbank invests in Cyberbit (cyber range)",
+     "url": "https://cxotoday.com/press-release/charlesbank-invests-70m-in-cyberbit/"
+    },
+    {
+     "title": "MITRE Caldera (open-source adversary emulation)",
+     "url": "https://caldera.mitre.org/"
+    },
+    {
+     "title": "Atomic Red Team (open-source tests)",
+     "url": "https://github.com/redcanaryco/atomic-red-team"
+    },
+    {
+     "title": "Mondaq: CERT-In directions of 28 April 2022 (6-hour reporting, 180-day logs)",
+     "url": "https://mondaq.co.uk/india/it-and-internet/1270332/6-hours-to-report-cyber-incidents-to-cert-in"
+    }
+   ]
+  },
+  "prc-vuln": {
+   "summary": "A repeating cycle that finds weaknesses, ranks them, gets them fixed within agreed deadlines and checks the fix.",
+   "protects": "Servers, endpoints, network devices, applications and cloud; against attackers using known flaws.",
+   "placement": "Process owner: security testing lead. Scanners sit on the internal network and in the cloud, with agents on endpoints; fixes are done by IT and application owners.",
+   "how": "Scanners and agents find flaws every week; external tests and VAPT add depth. Each finding is rated by severity, exploitation (CISA KEV, EPSS) and asset criticality, then assigned to an owner with a deadline. A re-scan or re-test closes it; overdue items are escalated.",
+   "pareto": [
+    "A complete asset list that the scanner covers (unknown assets are never fixed)",
+    "Fix known-exploited flaws (CISA KEV) first, within days",
+    "Clear closure deadlines by severity, agreed by IT and the business",
+    "Re-test before closing, and a monthly overdue report to the CIO"
+   ],
+   "vendors": [
+    {
+     "name": "Tenable (Nessus, Tenable Vulnerability Management)",
+     "kind": "commercial",
+     "fit": "Very wide plug-in coverage; strong for mixed estates.",
+     "india": "Indian office and partners."
+    },
+    {
+     "name": "Qualys VMDR",
+     "kind": "commercial",
+     "fit": "Cloud-based scanning with agents and patching add-ons; widely used by Indian banks.",
+     "india": "Large engineering centre in Pune; Indian cloud platform option should be confirmed."
+    },
+    {
+     "name": "Rapid7 InsightVM",
+     "kind": "commercial",
+     "fit": "Good dashboards and remediation projects.",
+     "india": "Sold through Indian partners."
+    },
+    {
+     "name": "Greenbone OpenVAS",
+     "kind": "open source",
+     "fit": "Free network scanner; needs more tuning and staff time.",
+     "india": "Self-hosted."
+    },
+    {
+     "name": "CERT-In empanelled auditing firms",
+     "kind": "service firm",
+     "fit": "Independent VA/PT required by regulators; RBI expects VA every 6 months and PT every 12 months for critical systems.",
+     "india": "Indian firms; list on the CERT-In site."
+    }
+   ],
+   "cost": {
+    "unit": "per asset per year (scanner licence; the process itself is staff time)",
+    "band": "Rs 1,400-3,400 per asset per year for commercial scanners at enterprise scale",
+    "reference_org": "about Rs 40 lakh-1 crore a year list for about 3,000 assets (2,500 endpoints plus servers and network); much lower with negotiated discounts, endpoint agents in an existing suite, or OpenVAS; plus Rs 10-30 lakh a year for external VA/PT",
+    "drivers": [
+     "number and type of assets",
+     "web-app and cloud modules",
+     "agents versus network scans",
+     "frequency of third-party VA/PT"
+    ],
+    "note": "Third-party 2026 estimates: Tenable about USD 26-38, Qualys about USD 17-40, Rapid7 about USD 25 per asset per year. The scanner licence is counted under tec-vulnscan in govern.json. USD list prices converted at about Rs 84/USD; excludes 18% GST. indicative; get three quotes"
+   },
+   "rfp": {
+    "scope": [
+     "Authenticated scanning of all servers, endpoints and network devices",
+     "External and web-application scanning",
+     "Half-yearly VA and yearly PT of critical systems by an independent firm",
+     "Monthly reporting and re-tests"
+    ],
+    "must": [
+     "Authenticated scans with stored credentials in a vault",
+     "CISA KEV and EPSS shown for each finding",
+     "Ticket integration (ServiceNow, Jira or the ITSM in use)",
+     "Re-scan to confirm closure",
+     "Scan data stored in India or on-premises"
+    ],
+    "should": [
+     "Agent for laptops off the network",
+     "Cloud configuration checks",
+     "Risk score by asset criticality"
+    ],
+    "sizing": [
+     "2,500 endpoints, about 300-500 servers and network devices (confirm)",
+     "40 applications, of which internet-facing",
+     "5 sites and any cloud accounts"
+    ],
+    "evaluation": [
+     "Coverage and accuracy 35",
+     "Prioritisation and reporting 20",
+     "Integration 15",
+     "Commercials 30"
+    ],
+    "sla": [
+     "Critical and KEV: fix within 7 days (internet-facing within 72 hours)",
+     "High: 30 days",
+     "Medium: 90 days",
+     "Low: 180 days or accepted risk",
+     "VA/PT report within 10 working days"
+    ],
+    "clauses": [
+     "RBI IT governance directions: VA at least every 6 months and PT every 12 months for critical and DMZ systems, by independent experts",
+     "CERT-In empanelled auditor for regulatory audits",
+     "Confidentiality of findings; no copies kept by the auditor beyond the retention period",
+     "Right to audit the scanning vendor"
+    ]
+   },
+   "architecture": "The asset inventory feeds the scanner. Scanners in each site and the cloud, plus agents on endpoints, send results to the console. The console feeds tickets to the ITSM and risk scores to the SIEM and the GRC dashboard. Patch management fixes most findings.",
+   "kpis": [
+    "Percentage of assets scanned in the last 7 days",
+    "Mean time to remediate by severity",
+    "Open KEV findings older than 7 days (target zero)",
+    "Repeat findings across scans"
+   ],
+   "pitfalls": [
+    "Unauthenticated scans that miss most flaws",
+    "Ranking by CVSS alone and drowning in 'critical' items",
+    "Closing tickets without a re-scan",
+    "Assets missing from the scanner's scope"
+   ],
+   "sources": [
+    {
+     "title": "RBI Master Direction on IT Governance, Risk, Controls and Assurance Practices (7 Nov 2023)",
+     "url": "https://www.rbi.org.in/Scripts/BS_ViewMasDirections.aspx?id=12562"
+    },
+    {
+     "title": "Tech Insider: Tenable vs Qualys vs Rapid7 (2026)",
+     "url": "https://tech-insider.org/tenable-vs-qualys-vs-rapid7-2026-3/"
+    },
+    {
+     "title": "Ciphers Security: best vulnerability management tools 2026",
+     "url": "https://cipherssecurity.com/best-vulnerability-management-tools-2026/"
+    },
+    {
+     "title": "Beagle Security: Tenable pricing 2026",
+     "url": "https://beaglesecurity.com/blog/article/tenable-pricing.html"
+    },
+    {
+     "title": "CostBench: Qualys VMDR pricing 2026",
+     "url": "https://costbench.com/software/vulnerability-management/qualys/"
+    },
+    {
+     "title": "Greenbone OpenVAS (open source)",
+     "url": "https://www.openvas.org/"
+    },
+    {
+     "title": "CISA Known Exploited Vulnerabilities catalog",
+     "url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog"
+    },
+    {
+     "title": "Qualys docs: CISA KEV and BOD 22-01 due dates",
+     "url": "https://docs.qualys.com/en/vmdr/latest/asset_and_vulnerabilities_details/cisa_known_exploitable_vulnerabilities.htm"
+    },
+    {
+     "title": "FIRST EPSS (exploit prediction scoring)",
+     "url": "https://www.first.org/epss/"
+    },
+    {
+     "title": "CERT-In home (empanelled auditors list, advisories)",
+     "url": "https://www.cert-in.org.in/"
+    }
+   ]
+  },
+  "prc-patch": {
+   "summary": "A planned monthly cycle, plus an emergency path, for installing security updates on every device and system.",
+   "protects": "Endpoints, servers, network devices and applications; against attacks on flaws that already have a fix.",
+   "placement": "Process owner: IT operations. A patch tool with agents on devices, a central console in the data centre or cloud, and change management approval.",
+   "how": "Patches are tested on a small pilot group, then deployed in rings across the estate within a set window. Flaws in CISA's KEV list, or under active attack, take the emergency path within days. A weekly coverage report shows which devices are missing patches.",
+   "pareto": [
+    "One tool that covers the operating system and the top third-party apps (browsers, PDF, Java)",
+    "Deployment rings: pilot, early, broad",
+    "An emergency path for exploited flaws, pre-approved in change management",
+    "A weekly compliance report by site and owner",
+    "A list of end-of-support systems with a replacement plan"
+   ],
+   "vendors": [
+    {
+     "name": "Microsoft Intune and Configuration Manager",
+     "kind": "commercial",
+     "fit": "Natural choice where Microsoft 365 E3/E5 is licensed; third-party app patching is limited.",
+     "india": "Microsoft India data centres and partners."
+    },
+    {
+     "name": "ManageEngine Patch Manager Plus / Endpoint Central (Zoho)",
+     "kind": "Indian",
+     "fit": "Wide third-party app catalogue at low cost; cloud or on-premises.",
+     "india": "Zoho is headquartered in Chennai; large Indian partner network."
+    },
+    {
+     "name": "Tanium",
+     "kind": "commercial",
+     "fit": "Real-time visibility and patching at very large scale; premium price, 2,000-endpoint minimum reported.",
+     "india": "Indian partners."
+    },
+    {
+     "name": "Ivanti Neurons for Patch Management",
+     "kind": "commercial",
+     "fit": "Broad third-party patch content and risk-based patching.",
+     "india": "Indian office and partners."
+    },
+    {
+     "name": "Ansible, unattended-upgrades and WSUS for Windows",
+     "kind": "open source",
+     "fit": "Free automation for Linux and basic Windows patching; needs scripting skills.",
+     "india": "Self-hosted."
+    }
+   ],
+   "cost": {
+    "unit": "per endpoint per year",
+    "band": "Rs 0 extra where Intune or Configuration Manager is already licensed; about Rs 900-1,500 per endpoint per year for a low-cost third-party tool; about Rs 1,700-5,900 for premium platforms",
+    "reference_org": "about Rs 0-25 lakh a year for 2,500 endpoints with Intune or a low-cost tool; about Rs 45 lakh-1.5 crore with a premium platform and modules",
+    "drivers": [
+     "existing Microsoft licences",
+     "third-party app coverage",
+     "cloud versus on-premises",
+     "number of modules on premium platforms"
+    ],
+    "note": "ManageEngine cloud edition from about USD 0.9 per endpoint per month (aggregator, Jun 2026); Tanium core about USD 20-24 per endpoint per year, multi-module USD 35-70 (consultant estimate); Intune Plan 1 USD 8 per user per month standalone. USD list prices converted at about Rs 84/USD; excludes 18% GST. indicative; get three quotes"
+   },
+   "rfp": {
+    "scope": [
+     "Patching of Windows, macOS and Linux endpoints and servers",
+     "Third-party application patching",
+     "Compliance reporting",
+     "Emergency patch deployment"
+    ],
+    "must": [
+     "Coverage of at least the top 100 third-party apps",
+     "Deployment rings and maintenance windows",
+     "Patches for remote devices over the internet without VPN",
+     "Rollback or uninstall of a failed patch",
+     "Report of missing patches per device, exportable"
+    ],
+    "should": [
+     "Link to vulnerability scanner findings (KEV priority)",
+     "Bandwidth control for branch sites",
+     "Network device firmware tracking"
+    ],
+    "sizing": [
+     "2,500 endpoints and about 300-500 servers (confirm)",
+     "Operating system mix",
+     "5 sites and their WAN links"
+    ],
+    "evaluation": [
+     "Coverage and reliability 35",
+     "Reporting 20",
+     "Ease of operation 15",
+     "Commercials 30"
+    ],
+    "sla": [
+     "Critical or KEV patches on 95% of devices within 7 days",
+     "Monthly patches on 95% of devices within 30 days",
+     "Vendor support response within 4 hours for P1"
+    ],
+    "clauses": [
+     "RBI IT governance directions: patches applied promptly through change management, with a recovery plan for failed patches",
+     "Tracking of end-of-support software",
+     "Data location of the cloud console",
+     "Right to audit the vendor"
+    ]
+   },
+   "architecture": "The patch console (cloud or data centre) pushes to agents on every device. Distribution points at each site save bandwidth. The vulnerability scanner checks results; failed devices create tickets in the ITSM. Change management approves each cycle.",
+   "kpis": [
+    "Percentage of devices fully patched within 30 days",
+    "Mean days to deploy KEV patches",
+    "Number of end-of-support systems",
+    "Failed patch rate"
+   ],
+   "pitfalls": [
+    "Patching only Windows and forgetting browsers and third-party apps",
+    "No emergency path, so exploited flaws wait for the monthly cycle",
+    "Servers excluded 'for stability' indefinitely",
+    "Reports that show deployment, not installation"
+   ],
+   "sources": [
+    {
+     "title": "RBI Master Direction on IT Governance, Risk, Controls and Assurance Practices (7 Nov 2023)",
+     "url": "https://www.rbi.org.in/Scripts/BS_ViewMasDirections.aspx?id=12562"
+    },
+    {
+     "title": "Microsoft Intune pricing breakdown 2026",
+     "url": "https://assetmanagementforjira.com/blog/microsoft-intune-pricing-a-no-nonsense-breakdown"
+    },
+    {
+     "title": "Fleet: what the Microsoft 365 bundle includes for Intune",
+     "url": "https://fleetdm.com/articles/intune-isnt-free-what-the-microsoft-365-bundle-really-costs"
+    },
+    {
+     "title": "SoftwareSuggest: ManageEngine Patch Manager Plus pricing (updated Jun 2026)",
+     "url": "https://www.softwaresuggest.com/patch-manager-plus"
+    },
+    {
+     "title": "Capterra: Patch Manager Plus pricing",
+     "url": "https://capterra.com/p/179288/Patch-Manager-Plus/"
+    },
+    {
+     "title": "UnderDefense: Tanium pricing guide (Jun 2026)",
+     "url": "https://underdefense.com/blog/tanium-pricing-guide/"
+    },
+    {
+     "title": "North Carolina state price list including Tanium (2024)",
+     "url": "https://it.nc.gov/media/2606/open"
+    },
+    {
+     "title": "CISA Known Exploited Vulnerabilities catalog",
+     "url": "https://www.cisa.gov/known-exploited-vulnerabilities-catalog"
+    }
+   ]
+  },
+  "prc-access": {
+   "summary": "Granting access only when needed, changing it when people move, removing it the day they leave, and reviewing it every quarter.",
+   "protects": "Accounts and data in critical systems; against leftover access, insider misuse and attackers using old accounts.",
+   "placement": "Process owners: IT and HR. HR is the source of joiners, movers and leavers; an identity governance tool or the ITSM carries the workflow.",
+   "how": "HR events start account creation, change or removal automatically. Each quarter, managers and application owners confirm who still needs access to critical systems; anything not confirmed is removed. Privileged and service accounts get a tighter, monthly review.",
+   "pareto": [
+    "HR feed drives leaver removal on the same day",
+    "Quarterly reviews of critical and payment systems",
+    "Monthly review of privileged and service accounts",
+    "Removal of dormant accounts after 90 days"
+   ],
+   "vendors": [
+    {
+     "name": "SailPoint Identity Security Cloud",
+     "kind": "commercial",
+     "fit": "Leader in identity governance; strong access certification.",
+     "india": "Indian partners; large Indian delivery ecosystem."
+    },
+    {
+     "name": "Saviynt",
+     "kind": "commercial",
+     "fit": "Cloud identity governance with access reviews and privileged access.",
+     "india": "Saviynt partners with St. Fox for India (2025)."
+    },
+    {
+     "name": "Microsoft Entra ID Governance",
+     "kind": "commercial",
+     "fit": "Access reviews and lifecycle workflows inside Entra ID; quick to start for Microsoft estates.",
+     "india": "Microsoft India data centres."
+    },
+    {
+     "name": "ManageEngine ADManager Plus / AD360 (Zoho)",
+     "kind": "Indian",
+     "fit": "Low-cost Active Directory lifecycle and review reports.",
+     "india": "Chennai-headquartered vendor."
+    },
+    {
+     "name": "Evolveum midPoint",
+     "kind": "open source",
+     "fit": "Full open-source identity governance; needs integration skills.",
+     "india": "Self-hosted."
+    }
+   ],
+   "cost": {
+    "unit": "per user per year (governance tool; the process itself is staff time)",
+    "band": "Rs 0 with spreadsheets and ITSM workflow; about Rs 7,000 per user per year at Microsoft Entra ID Governance list; enterprise IGA by quote",
+    "reference_org": "about Rs 20-80 lakh a year for an IGA tool for 2,000 users (counted under tec-iam); list prices for 2,000 users can exceed Rs 1 crore before discount",
+    "drivers": [
+     "number of identities",
+     "number of connected applications",
+     "access review only versus full lifecycle",
+     "implementation partner effort"
+    ],
+    "note": "Entra ID Governance reported at USD 7 per user per month after a July 2026 change (third-party source; confirm with Microsoft). Tool cost sits in tec-iam. USD list prices converted at about Rs 84/USD; excludes 18% GST. indicative; get three quotes"
+   },
+   "rfp": {
+    "scope": [
+     "Joiner-mover-leaver automation from HR",
+     "Quarterly access certification for critical apps",
+     "Privileged and service account reviews",
+     "Reports for auditors"
+    ],
+    "must": [
+     "Connector to the HR system as the source of truth",
+     "Leaver disablement within 4 hours of HR exit",
+     "Certification campaigns with reminders and auto-revoke",
+     "Audit trail of every grant, review and removal kept at least 180 days (longer as policy requires)",
+     "Connectors for Active Directory, Entra ID and the core banking or ERP system"
+    ],
+    "should": [
+     "Segregation-of-duties rules",
+     "Role mining",
+     "Access request portal with approvals"
+    ],
+    "sizing": [
+     "2,000 identities plus contractors and service accounts",
+     "40 applications, of which critical",
+     "Expected growth"
+    ],
+    "evaluation": [
+     "Connector coverage 30",
+     "Review workflow and reporting 25",
+     "Implementation approach 15",
+     "Commercials 30"
+    ],
+    "sla": [
+     "Leaver removal within 4 hours for critical systems, same day for others",
+     "Quarterly review completion within 15 days",
+     "P1 support within 4 hours"
+    ],
+    "clauses": [
+     "RBI IT governance directions: access on business need only; privileged activity logged and reviewed; MFA for privileged users of critical systems",
+     "CERT-In: logs of access kept 180 days in India",
+     "DPDP Act: identity data processed only for the stated purpose",
+     "Right to audit the vendor (RBI IT outsourcing directions)"
+    ]
+   },
+   "architecture": "HR system feeds the identity governance tool (or ITSM). The tool connects to the directory, core applications and the PAM vault. Review results go to the GRC tool; access logs go to the SIEM.",
+   "kpis": [
+    "Leavers with active accounts after 24 hours (target zero)",
+    "Quarterly reviews completed on time",
+    "Access removed as a result of reviews",
+    "Dormant accounts over 90 days"
+   ],
+   "pitfalls": [
+    "Reviewers approving everything ('rubber-stamping')",
+    "Contractors and service accounts left out",
+    "Reviews of AD groups that nobody understands",
+    "No link to HR, so leavers are missed"
+   ],
+   "sources": [
+    {
+     "title": "RBI Master Direction on IT Governance, Risk, Controls and Assurance Practices (7 Nov 2023)",
+     "url": "https://www.rbi.org.in/Scripts/BS_ViewMasDirections.aspx?id=12562"
+    },
+    {
+     "title": "Zero Trust Cost: Microsoft Entra pricing (2026)",
+     "url": "https://zerotrustcost.com/microsoft-entra-pricing"
+    },
+    {
+     "title": "Microsoft Q&A: Entra ID Governance for External ID pricing",
+     "url": "https://learn.microsoft.com/en-us/answers/questions/5920874/general-guidance-regarding-mircosoft-entra-externa"
+    },
+    {
+     "title": "Saviynt partners with St. Fox for India (2025)",
+     "url": "https://saviynt.com/press-release/saviynt-partners-with-st.-fox-to-build-a-scalable-trusted-identity-ecosystem-for-india"
+    },
+    {
+     "title": "Evolveum midPoint (open-source identity governance)",
+     "url": "https://evolveum.com/midpoint/"
+    },
+    {
+     "title": "Mondaq: CERT-In directions of 28 April 2022 (6-hour reporting, 180-day logs)",
+     "url": "https://mondaq.co.uk/india/it-and-internet/1270332/6-hours-to-report-cyber-incidents-to-cert-in"
+    }
+   ]
+  },
+  "prc-ir": {
+   "summary": "A written, practised plan that says who does what in a cyber incident and in a wider crisis, including reporting to regulators on time.",
+   "protects": "Operations, customers and reputation; limits damage from ransomware, breaches and fraud, and meets the CERT-In 6-hour clock.",
+   "placement": "Process owner: IR lead, with the CISO, legal, communications and business heads. Works with the SOC and an external IR retainer firm.",
+   "how": "The plan defines severity levels, roles, a contact tree and playbooks for the main threats. It names who reports to CERT-In within 6 hours and to RBI or SEBI as required. A retainer firm gives forensic help on call, and tabletop exercises test the plan twice a year.",
+   "pareto": [
+    "Playbooks for ransomware, business e-mail compromise, data leak and payment fraud",
+    "A regulator-reporting checklist (CERT-In 6 hours; RBI, SEBI, DPDP Board as applicable)",
+    "An IR retainer signed before it is needed",
+    "An out-of-band contact tree and communication channel",
+    "Logs kept 180 days in India, so forensics is possible"
+   ],
+   "vendors": [
+    {
+     "name": "Mandiant (Google Cloud)",
+     "kind": "service firm",
+     "fit": "Global IR and threat intelligence; choose for major incidents.",
+     "india": "Indian presence through Google Cloud."
+    },
+    {
+     "name": "CrowdStrike Services",
+     "kind": "service firm",
+     "fit": "IR retainer with EDR-led investigation.",
+     "india": "Indian office and partners."
+    },
+    {
+     "name": "Palo Alto Networks Unit 42",
+     "kind": "service firm",
+     "fit": "IR retainer that can convert unused hours to proactive work.",
+     "india": "Indian office."
+    },
+    {
+     "name": "Sophos Incident Response Services",
+     "kind": "service firm",
+     "fit": "Subscription-style IR retainer rather than a bank of hours.",
+     "india": "Indian office in Ahmedabad and partners."
+    },
+    {
+     "name": "CERT-In empanelled Indian firms with forensic services",
+     "kind": "Indian",
+     "fit": "Local forensic help and audit; check each firm's current empanelment and IR capability.",
+     "india": "List on the CERT-In site."
+    },
+    {
+     "name": "Velociraptor and TheHive",
+     "kind": "open source",
+     "fit": "Free tools for forensic collection and case management.",
+     "india": "Self-hosted."
+    }
+   ],
+   "cost": {
+    "unit": "fixed per year (plan and exercises; IR retainer extra)",
+    "band": "Rs 0-5 lakh a year for the plan and tabletops done in-house or with a facilitator; IR retainer about Rs 12-85 lakh a year",
+    "reference_org": "about Rs 15-60 lakh a year with a mid-size retainer and two tabletops",
+    "drivers": [
+     "retainer hours and response time",
+     "global versus Indian firm",
+     "whether unused hours convert to proactive work",
+     "on-site travel"
+    ],
+    "note": "Public guides put retainers at about USD 15,000-100,000 a year; emergency rates without a retainer at about USD 300-600 per hour. Large firms do not publish rates. USD list prices converted at about Rs 84/USD; excludes 18% GST. indicative; get three quotes"
+   },
+   "rfp": {
+    "scope": [
+     "IR plan and crisis plan review",
+     "IR retainer with forensic and recovery support",
+     "Two tabletop exercises a year",
+     "Post-incident report and lessons"
+    ],
+    "must": [
+     "Remote response within 2 hours and on-site within 24 hours for metro sites",
+     "Support for CERT-In reporting within 6 hours",
+     "Forensic evidence handled with chain of custody",
+     "Named lead consultant and 24x7 hotline",
+     "Forensic data kept in India unless the organisation agrees otherwise"
+    ],
+    "should": [
+     "Unused hours convertible to proactive services",
+     "Ransomware negotiation and recovery support",
+     "Indian-language communication support"
+    ],
+    "sizing": [
+     "2,000 users, 2,500 endpoints, 40 apps, 5 sites",
+     "EDR and SIEM in use",
+     "Hours wanted per year"
+    ],
+    "evaluation": [
+     "IR experience in Indian BFSI 30",
+     "Response time commitments 25",
+     "Forensic capability 20",
+     "Commercials 25"
+    ],
+    "sla": [
+     "Hotline answered in 15 minutes",
+     "Remote response in 2 hours",
+     "On-site in 24 hours",
+     "Initial findings within 72 hours"
+    ],
+    "clauses": [
+     "CERT-In directions (April 2022): report within 6 hours; keep logs 180 days in India",
+     "RBI IT governance directions: notify CERT-In and RBI as required; escalation plan to the Board",
+     "DPDP Act: personal data breach notice to the Data Protection Board and affected people",
+     "Confidentiality and legal privilege for forensic reports",
+     "Right to audit and data location (RBI IT outsourcing directions)"
+    ]
+   },
+   "architecture": "SOC alerts start the IR process. The IR lead runs the case in a case-management tool and calls the retainer firm. EDR, SIEM and logs supply evidence. Legal and communications join for crisis severity. Lessons feed playbooks, detection rules and training.",
+   "kpis": [
+    "Time from detection to containment",
+    "Regulator reports made within the deadline (target 100%)",
+    "Tabletops held and actions closed",
+    "Playbooks reviewed in the last 12 months"
+   ],
+   "pitfalls": [
+    "A plan nobody has practised",
+    "No retainer, so help is found during the crisis",
+    "Contact details only on systems that are down",
+    "Logs not kept long enough for forensics"
+   ],
+   "sources": [
+    {
+     "title": "NIST SP 800-61 Rev. 3, Incident Response Recommendations (April 2025)",
+     "url": "https://csrc.nist.gov/pubs/sp/800/61/r3/final"
+    },
+    {
+     "title": "Mondaq: CERT-In directions of 28 April 2022 (6-hour reporting, 180-day logs)",
+     "url": "https://mondaq.co.uk/india/it-and-internet/1270332/6-hours-to-report-cyber-incidents-to-cert-in"
+    },
+    {
+     "title": "RBI Master Direction on IT Governance, Risk, Controls and Assurance Practices (7 Nov 2023)",
+     "url": "https://www.rbi.org.in/Scripts/BS_ViewMasDirections.aspx?id=12562"
+    },
+    {
+     "title": "Gruve: incident response retainer guide (price ranges)",
+     "url": "https://gruve.ai/blog/incident-response-retainer/"
+    },
+    {
+     "title": "TrustedSec: IR retainer vs on-demand",
+     "url": "https://trustedsec.com/resources/business-resources/incident-response-retainer-vs-on-demand"
+    },
+    {
+     "title": "Sophos Incident Response Services retainer",
+     "url": "https://Sophos.Com/en-us/products/managed-detection-and-response/incident-response-services-retainer"
+    },
+    {
+     "title": "AWS Marketplace: CrowdStrike services partner IR retainer listing",
+     "url": "https://aws.amazon.com/marketplace/pp/prodview-5wksfmlmg4u44"
+    },
+    {
+     "title": "Velociraptor (open-source DFIR)",
+     "url": "https://docs.velociraptor.app/"
+    },
+    {
+     "title": "CERT-In home (empanelled auditors list, advisories)",
+     "url": "https://www.cert-in.org.in/"
+    }
+   ]
+  },
+  "prc-backup": {
+   "summary": "Copies of important data and systems kept in several places, at least one offline or immutable, and restored on a schedule to prove they work.",
+   "protects": "Business data and systems; against ransomware, deletion, corruption and site loss.",
+   "placement": "Process owner: IT operations. Backup servers in the data centre, a copy at the DR site, and an immutable or offline copy (tape, object lock or a vault).",
+   "how": "Follow 3-2-1-1-0: three copies, two media types, one off-site, one offline or immutable, and zero errors after restore tests. Backup credentials are separate from the main directory. Restores are tested every quarter and the critical systems are restored in full once a year.",
+   "pareto": [
+    "An immutable or offline copy that admins cannot delete",
+    "Backup system accounts separate from Active Directory, with MFA",
+    "Quarterly restore tests that open the data, not only checksums",
+    "Encryption of backups at rest and in transit",
+    "Backup of SaaS data (Microsoft 365, Google Workspace) too"
+   ],
+   "vendors": [
+    {
+     "name": "Veeam Data Platform",
+     "kind": "commercial",
+     "fit": "Most widely used for virtual and mixed estates; per-workload licensing.",
+     "india": "Indian office and many partners."
+    },
+    {
+     "name": "Commvault",
+     "kind": "commercial",
+     "fit": "Broad coverage for large and complex estates; per-TB licensing.",
+     "india": "Large engineering centre in Hyderabad; Indian partners."
+    },
+    {
+     "name": "Rubrik",
+     "kind": "commercial",
+     "fit": "Immutable appliance-based backup with strong ransomware recovery.",
+     "india": "Indian office in Bengaluru and partners."
+    },
+    {
+     "name": "Cohesity",
+     "kind": "commercial",
+     "fit": "Converged backup and data security; now includes former Veritas NetBackup.",
+     "india": "Engineering centre in Pune; Indian partners."
+    },
+    {
+     "name": "Druva",
+     "kind": "commercial",
+     "fit": "SaaS backup for endpoints, Microsoft 365 and cloud; Indian-founded.",
+     "india": "Founded in Pune; offices in India."
+    },
+    {
+     "name": "Bacula Community, restic, BorgBackup",
+     "kind": "open source",
+     "fit": "Free backup tools; need staff to run and test.",
+     "india": "Self-hosted."
+    }
+   ],
+   "cost": {
+    "unit": "per protected workload per year (or per front-end TB), plus storage",
+    "band": "about Rs 21,000-38,000 per workload per year (Veeam list); about Rs 3,800-7,600 per front-end TB for per-TB licences; immutable storage extra",
+    "reference_org": "about Rs 25-80 lakh a year for about 150-250 workloads and 50-100 TB, including immutable storage and a second copy",
+    "drivers": [
+     "number of servers and VMs",
+     "data volume and growth",
+     "retention period",
+     "immutable appliance versus cloud object storage",
+     "SaaS backup seats"
+    ],
+    "note": "Third-party 2026 guides: Veeam about USD 250-450 per workload per year; Commvault about USD 45-90 per front-end TB per year; Rubrik and Cohesity about USD 80-220 per TB all-in. USD list prices converted at about Rs 84/USD; excludes 18% GST. indicative; get three quotes"
+   },
+   "rfp": {
+    "scope": [
+     "Backup software and immutable storage",
+     "Backup of servers, databases, VMs, SaaS and key endpoints",
+     "DR-site copy",
+     "Quarterly restore tests and reports"
+    ],
+    "must": [
+     "Immutable copy (object lock or hardened repository) with retention that admins cannot shorten",
+     "Separate authentication with MFA for the backup console",
+     "AES-256 encryption at rest and TLS in transit",
+     "Automated restore verification",
+     "Malware scan of backups before restore"
+    ],
+    "should": [
+     "Anomaly detection for ransomware in backup data",
+     "Instant VM recovery",
+     "Backup of Microsoft 365 or Google Workspace"
+    ],
+    "sizing": [
+     "Number of servers, VMs and databases",
+     "Front-end data size and yearly growth",
+     "RPO and RTO per application tier",
+     "Retention (daily, weekly, monthly, yearly)",
+     "5 sites and WAN bandwidth"
+    ],
+    "evaluation": [
+     "Recovery capability and immutability 35",
+     "Coverage of workloads 20",
+     "Ease of operation 15",
+     "Commercials 30"
+    ],
+    "sla": [
+     "Backup success rate 99% of jobs",
+     "Restore of a critical system within the agreed RTO",
+     "P1 support within 1 hour"
+    ],
+    "clauses": [
+     "RBI IT governance directions: restore backups periodically to check they are usable; data reconciliation after recovery from the alternate site",
+     "Data location in India for regulated data (RBI payment data rules; DPDP Act)",
+     "Encryption keys held by the organisation",
+     "Exit: data export in a readable format"
+    ]
+   },
+   "architecture": "Backup servers in the main data centre copy to an immutable repository, then to the DR site and an offline or cloud vault. The backup network is separate. Backup alerts go to the SIEM. Restore tests are recorded in the GRC tool.",
+   "kpis": [
+    "Critical systems with a tested restore in the last 90 days (target 100%)",
+    "Backup job success rate",
+    "Recovery time in the last test against RTO",
+    "Percentage of data with an immutable copy"
+   ],
+   "pitfalls": [
+    "Backups joined to the same Active Directory that ransomware encrypts",
+    "Restore tests that check checksums only",
+    "No backup of SaaS data",
+    "Retention by count, so a week of silent encryption rotates out the clean copies"
+   ],
+   "sources": [
+    {
+     "title": "RBI Master Direction on IT Governance, Risk, Controls and Assurance Practices (7 Nov 2023)",
+     "url": "https://www.rbi.org.in/Scripts/BS_ViewMasDirections.aspx?id=12562"
+    },
+    {
+     "title": "Eon: Veeam pricing 2026",
+     "url": "https://eon.io/blog/veeam-pricing"
+    },
+    {
+     "title": "Tech Insider: Veeam vs Rubrik vs Cohesity vs Commvault 2026",
+     "url": "https://tech-insider.org/nl/veeam-vs-rubrik-vs-cohesity-vs-commvault-2026/"
+    },
+    {
+     "title": "Vendor Benchmark: Veeam vs Commvault pricing",
+     "url": "https://vendorbenchmark.com/blog/veeam-vs-commvault-pricing-benchmark-enterprise"
+    },
+    {
+     "title": "ServNet: best backup software 2026",
+     "url": "https://www.servnetuk.com/insights/best-backup-software-uk-2026"
+    }
+   ]
+  },
+  "prc-sdlc": {
+   "summary": "Building security into each software release: requirements, threat modelling, secure coding, testing and an API checklist before go-live.",
+   "protects": "In-house and outsourced applications and APIs; against injection, broken access control, data leaks and supply-chain flaws.",
+   "placement": "Process owner: security architect. Lives in the development pipeline (CI/CD) and in release approval.",
+   "how": "Each new feature gets security requirements (OWASP ASVS) and a short threat model. Code and dependencies are scanned in the pipeline, and APIs are tested against a checklist. A release with open critical findings does not go live without a signed exception.",
+   "pareto": [
+    "Security requirements from OWASP ASVS at design time",
+    "A threat model for every new internet-facing app or API",
+    "Dependency (SCA) and secret scanning in every build",
+    "An API checklist: authentication, authorisation per object, rate limits, logging",
+    "A security gate before go-live, with exceptions signed by the owner"
+   ],
+   "vendors": [
+    {
+     "name": "OWASP SAMM, ASVS 5.0 and NIST SSDF (SP 800-218)",
+     "kind": "open source",
+     "fit": "Free frameworks for the maturity model, requirements and practices; start here.",
+     "india": "Used worldwide; no licence."
+    },
+    {
+     "name": "Snyk",
+     "kind": "commercial",
+     "fit": "Developer-friendly SCA and SAST; price grows with developer count.",
+     "india": "Sold through Indian partners."
+    },
+    {
+     "name": "Checkmarx One",
+     "kind": "commercial",
+     "fit": "Enterprise SAST, SCA and API scanning; suits large codebases and regulated firms.",
+     "india": "Indian office and partners."
+    },
+    {
+     "name": "SonarQube (Sonar)",
+     "kind": "commercial",
+     "fit": "Code quality and security priced by lines of code; free Community Build available.",
+     "india": "Indian partners."
+    },
+    {
+     "name": "OWASP ZAP, Semgrep CE, OWASP Threat Dragon",
+     "kind": "open source",
+     "fit": "Free DAST, static analysis and threat modelling tools.",
+     "india": "Self-hosted."
+    }
+   ],
+   "cost": {
+    "unit": "process cost: training and staff time; tools priced per developer or per lines of code",
+    "band": "Rs 0-10 lakh a year for frameworks, threat-modelling training and checklists; tools about Rs 25,000-1 lakh per developer per year",
+    "reference_org": "about Rs 15-60 lakh a year for tools (counted under tec-sast) for 40 applications; the process itself costs staff time",
+    "drivers": [
+     "number of developers and repositories",
+     "in-house versus outsourced development",
+     "lines of code (SonarQube)",
+     "DAST and API testing scope"
+    ],
+    "note": "2026 guides: Snyk Team USD 25 per developer per month; Checkmarx One deals typically USD 59,000+ a year; SonarQube Developer about USD 2,500 a year at 100k lines. USD list prices converted at about Rs 84/USD; excludes 18% GST. indicative; get three quotes"
+   },
+   "rfp": {
+    "scope": [
+     "Secure SDLC policy and standards",
+     "Threat-modelling and secure-coding training",
+     "SAST, SCA, secret and DAST scanning in CI/CD",
+     "API security checklist and pre-release testing"
+    ],
+    "must": [
+     "Integration with the organisation's code repository and CI/CD",
+     "Findings mapped to OWASP Top 10 and CWE",
+     "Software bill of materials (SBOM) export",
+     "Break-the-build policy for critical findings",
+     "Code and results stay in India or on-premises"
+    ],
+    "should": [
+     "Fix suggestions in the developer's pull request",
+     "IDE plug-ins",
+     "Licence-risk checks for open-source packages"
+    ],
+    "sizing": [
+     "Number of developers (in-house and vendor)",
+     "40 applications and their languages",
+     "Repositories and builds per day"
+    ],
+    "evaluation": [
+     "Accuracy and language coverage 30",
+     "Developer experience 20",
+     "Pipeline integration 20",
+     "Commercials 30"
+    ],
+    "sla": [
+     "Critical findings fixed before release",
+     "High findings within 30 days after release",
+     "Tool support P1 within 4 hours"
+    ],
+    "clauses": [
+     "Application vendors to follow the secure SDLC and share test results before go-live",
+     "Source-code escrow for critical third-party applications",
+     "RBI IT governance directions on change management and testing before deployment",
+     "Right to audit the software vendor's development process"
+    ]
+   },
+   "architecture": "Scanners run in CI/CD on every pull request and build. Findings go to the developers' issue tracker and to the vulnerability management console. The release board checks the security gate. Production WAF and API security provide a runtime safety net.",
+   "kpis": [
+    "Percentage of releases passing the security gate first time",
+    "Critical findings reaching production (target zero)",
+    "Apps with a current threat model",
+    "Mean time to fix code findings"
+   ],
+   "pitfalls": [
+    "Scanning at the end instead of in the pipeline",
+    "Thousands of untriaged findings that developers ignore",
+    "Outsourced code with no security clauses",
+    "No check on object-level authorisation in APIs"
+   ],
+   "sources": [
+    {
+     "title": "OWASP SAMM version 2",
+     "url": "https://owaspsamm.org/tags/version-2"
+    },
+    {
+     "title": "OWASP ASVS project (latest 5.0.0)",
+     "url": "https://owasp.org/www-project-application-security-verification-standard/"
+    },
+    {
+     "title": "SmartSuite: NIST SP 800-218 SSDF practice groups",
+     "url": "https://www.smartsuite.com/frameworks/nist-sp-800-218-secure-software-development-framework-ssdf"
+    },
+    {
+     "title": "AppSec Santa: AppSec pricing guide",
+     "url": "https://appsecsanta.com/devsecops/appsec-pricing-guide"
+    },
+    {
+     "title": "Pixee: Snyk vs SonarQube 2026 pricing",
+     "url": "https://www.pixee.ai/blog/snyk-vs-sonarqube"
+    },
+    {
+     "title": "Pixee: Checkmarx alternatives 2026 (pricing)",
+     "url": "https://www.pixee.ai/blog/checkmarx-alternatives"
+    },
+    {
+     "title": "RBI Master Direction on IT Governance, Risk, Controls and Assurance Practices (7 Nov 2023)",
+     "url": "https://www.rbi.org.in/Scripts/BS_ViewMasDirections.aspx?id=12562"
+    }
+   ]
+  },
+  "prc-vendor-sla": {
+   "summary": "A quarterly scorecard for each security vendor that checks deliverables, service levels, features in use and open issues.",
+   "protects": "The security budget and the quality of outsourced services; against paying for shelfware and unmet SLAs, and against vendor-caused risk.",
+   "placement": "Process owner: GRC lead, with procurement and each tool owner. Lives in the GRC or vendor-risk tool, or a simple workbook.",
+   "how": "Each contract's deliverables and SLAs are listed once. Every quarter the owner scores delivery, SLA results, features enabled and incidents. Low scores trigger a service review, penalty or exit plan; results go to the IT strategy or risk committee.",
+   "pareto": [
+    "A list of every security contract with its SLAs and renewal date",
+    "A one-page quarterly score per vendor",
+    "Feature-use review before every renewal",
+    "Penalties and credits actually claimed"
+   ],
+   "vendors": [
+    {
+     "name": "ServiceNow Vendor Risk Management",
+     "kind": "commercial",
+     "fit": "Fits organisations already on ServiceNow ITSM; workflows and scorecards.",
+     "india": "Indian office and many partners."
+    },
+    {
+     "name": "MetricStream",
+     "kind": "commercial",
+     "fit": "GRC and third-party risk platform used by banks.",
+     "india": "Large operations in Bengaluru."
+    },
+    {
+     "name": "SecurityScorecard and Bitsight",
+     "kind": "commercial",
+     "fit": "Outside-in security ratings of vendors; add to, not replace, the scorecard.",
+     "india": "Sold in India through partners."
+    },
+    {
+     "name": "UpGuard Vendor Risk",
+     "kind": "commercial",
+     "fit": "Ratings plus questionnaires in one tool; simpler for small teams.",
+     "india": "Cloud service."
+    },
+    {
+     "name": "eramba (community edition)",
+     "kind": "open source",
+     "fit": "Free GRC tool for vendor registers, reviews and audits.",
+     "india": "Self-hosted."
+    }
+   ],
+   "cost": {
+    "unit": "process cost: staff time; tool fixed per year if bought",
+    "band": "Rs 0 with a workbook; a TPRM or GRC tool is priced under gov-tprm or gov-grc",
+    "reference_org": "about Rs 0-5 lakh a year of internal effort for 20-40 security vendors; tooling sits in gov-tprm (Rs 5-25 lakh) or gov-grc",
+    "drivers": [
+     "number of vendors in scope",
+     "ratings service subscription",
+     "GRC platform choice"
+    ],
+    "note": "Ratings and GRC vendors do not publish prices; no public figure was found. indicative; get three quotes"
+   },
+   "rfp": {
+    "scope": [
+     "Vendor register with contracts, SLAs and renewals",
+     "Quarterly scorecard workflow",
+     "Questionnaires and evidence collection",
+     "Committee reports"
+    ],
+    "must": [
+     "Scorecard template configurable by vendor type",
+     "SLA data import from the ITSM or vendor reports",
+     "Reminders before renewals and expiry of certificates",
+     "Audit trail of reviews",
+     "Data hosted in India"
+    ],
+    "should": [
+     "Outside-in security ratings",
+     "Vendor self-service portal",
+     "Concentration-risk report"
+    ],
+    "sizing": [
+     "Number of vendors (all and critical)",
+     "Number of reviewers",
+     "Integrations needed"
+    ],
+    "evaluation": [
+     "Workflow fit 35",
+     "Reporting 20",
+     "Integration 15",
+     "Commercials 30"
+    ],
+    "sla": [
+     "Platform availability 99.5%",
+     "Support response within 4 business hours"
+    ],
+    "clauses": [
+     "RBI IT outsourcing directions: monitor service performance; periodic senior management review; report adverse findings to the Board",
+     "Right to audit the provider and its sub-contractors, including by RBI",
+     "SLA penalties and service credits",
+     "Exit and transition plan for each critical vendor"
+    ]
+   },
+   "architecture": "Procurement's contract list feeds the vendor register. ITSM and vendor reports supply SLA data. Scorecards roll up to the risk committee and to renewal decisions. Critical vendors also feed the TPRM due-diligence cycle.",
+   "kpis": [
+    "Percentage of security vendors scored this quarter",
+    "SLA breaches with penalties claimed",
+    "Licences in use against licences paid",
+    "Renewals decided with a scorecard"
+   ],
+   "pitfalls": [
+    "Scoring only at renewal",
+    "Reviewing the vendor's own report without checking it",
+    "Not claiming credits that the contract allows",
+    "No exit plan for a critical vendor"
+   ],
+   "sources": [
+    {
+     "title": "Mondaq summary: RBI Master Direction on Outsourcing of IT Services (10 Apr 2023)",
+     "url": "https://webiis08.mondaq.com/india/it-and-internet/1311402/rbi-master-direction-on-it-outsourcing-by-regulated-entities"
+    },
+    {
+     "title": "JSA Prism: RBI IT outsourcing directions (Apr 2023)",
+     "url": "https://www.jsalaw.com/newsletters-and-updates/jsa-prism-fintech-april-2023/"
+    },
+    {
+     "title": "UpGuard: Bitsight vs SecurityScorecard comparison",
+     "url": "https://www.upguard.com/compare/bitsight-vs-securityscorecard.md"
+    },
+    {
+     "title": "PeerSpot: Bitsight TPRM vs SecurityScorecard",
+     "url": "https://www.itcentralstation.com/products/comparisons/bitsight_vs_securityscorecard"
+    },
+    {
+     "title": "eramba (GRC with a community edition)",
+     "url": "https://www.eramba.org/"
+    }
+   ]
+  },
+  "prc-drills": {
+   "summary": "Regular rehearsals of business continuity and disaster recovery, plus discussion-based tabletop exercises with management.",
+   "protects": "Critical services and their recovery times; against site loss, ransomware, outages and confused decision-making in a crisis.",
+   "placement": "Process owner: resilience lead (BCM), with IT operations, business heads and the CISO.",
+   "how": "Each year, critical systems are switched to the DR site and run there for at least a working day. Tabletops twice a year walk management through a scenario such as ransomware or a data-centre loss. Gaps are fixed and the drill is re-run before the next cycle.",
+   "pareto": [
+    "Half-yearly DR drills for critical systems, running live from DR for a full working day",
+    "A ransomware scenario that assumes the main directory is lost",
+    "Management tabletops that include regulator and customer communication",
+    "Re-test of every major gap before the next drill"
+   ],
+   "vendors": [
+    {
+     "name": "Fusion Risk Management",
+     "kind": "commercial",
+     "fit": "BCM platform for plans, impact analysis and exercise records.",
+     "india": "Sold through partners."
+    },
+    {
+     "name": "ServiceNow Business Continuity Management",
+     "kind": "commercial",
+     "fit": "Fits organisations already on ServiceNow.",
+     "india": "Indian office and partners."
+    },
+    {
+     "name": "MetricStream BCM",
+     "kind": "commercial",
+     "fit": "BCM inside a GRC suite used by banks.",
+     "india": "Large operations in Bengaluru."
+    },
+    {
+     "name": "Big Four and BCM consultancies; ISO 22301 certification bodies (for example BSI, TÜV SÜD)",
+     "kind": "service firm",
+     "fit": "Facilitate tabletops and DR drills and audit the BCMS.",
+     "india": "Indian offices in major cities."
+    },
+    {
+     "name": "CERT-In cyber security mock drills",
+     "kind": "Indian",
+     "fit": "Sector drills run by CERT-In with regulators; take part when invited.",
+     "india": "Indian government."
+    }
+   ],
+   "cost": {
+    "unit": "fixed per year",
+    "band": "Rs 2-10 lakh a year for facilitation of tabletops and DR drill support; a BCM tool adds cost",
+    "reference_org": "about Rs 2-10 lakh a year for two tabletops and two DR drills with outside facilitation; internal staff time and DR-site running costs are extra",
+    "drivers": [
+     "number of critical systems in the drill",
+     "outside facilitator days",
+     "BCM software",
+     "overtime and weekend work"
+    ],
+    "note": "No public price was found for facilitation or BCM tools; the band follows govern.json. indicative; get three quotes"
+   },
+   "rfp": {
+    "scope": [
+     "Annual drill calendar",
+     "Half-yearly DR drills for critical systems",
+     "Two management tabletops",
+     "Drill reports and action tracking"
+    ],
+    "must": [
+     "Scenarios include ransomware, site loss and key-vendor failure",
+     "DR drill runs live from the DR site for a full working day",
+     "Measured RTO and RPO against targets",
+     "Written report with actions and owners within 10 days"
+    ],
+    "should": [
+     "Unannounced component tests",
+     "Participation of key vendors",
+     "Regulator-reporting step in each tabletop"
+    ],
+    "sizing": [
+     "Critical systems and their RTO/RPO",
+     "Sites (5) and DR site",
+     "Participants per tabletop"
+    ],
+    "evaluation": [
+     "Facilitator experience in BFSI 35",
+     "Scenario realism 25",
+     "Reporting 15",
+     "Commercials 25"
+    ],
+    "sla": [
+     "Drill report within 10 working days",
+     "Re-test of failed items before the next drill"
+    ],
+    "clauses": [
+     "RBI IT governance directions: DR drills for critical systems at least half-yearly; major issues fixed and re-tested; operate from DR for a full working day",
+     "Confidentiality of drill findings",
+     "Vendor participation in drills written into critical-vendor contracts"
+    ]
+   },
+   "architecture": "The business impact analysis sets RTO and RPO. The BCM tool or GRC holds plans and drill records. IT runs DR switch-overs; the CISO and resilience lead run tabletops. Results feed the risk register and the Board report.",
+   "kpis": [
+    "Critical systems drilled in the last 6 months (target 100%)",
+    "RTO met in the last drill",
+    "Drill actions closed before the next drill",
+    "Tabletops held with senior management"
+   ],
+   "pitfalls": [
+    "Drills on non-critical systems only",
+    "Switching back the same evening, so DR never carries a real working day",
+    "Tabletops without senior management",
+    "No re-test of failures"
+   ],
+   "sources": [
+    {
+     "title": "RBI Master Direction on IT Governance, Risk, Controls and Assurance Practices (7 Nov 2023)",
+     "url": "https://www.rbi.org.in/Scripts/BS_ViewMasDirections.aspx?id=12562"
+    },
+    {
+     "title": "RBI circular index: RBI/2023-24/107 (IT governance directions)",
+     "url": "https://www.rbi.org.in/Scripts/BS_CircularIndexDisplay.aspx?Id=12562"
+    },
+    {
+     "title": "PIB document (Jan 2026) on CERT-In role and empanelled auditors",
+     "url": "https://static.pib.gov.in/WriteReadData/specificdocs/documents/2026/jan/doc2026123764501.pdf"
+    },
+    {
+     "title": "Mondaq: CERT-In directions of 28 April 2022 (6-hour reporting, 180-day logs)",
+     "url": "https://mondaq.co.uk/india/it-and-internet/1270332/6-hours-to-report-cyber-incidents-to-cert-in"
+    }
+   ]
+  },
+  "prc-ctem": {
+   "summary": "A continuous programme that keeps finding, ranking, testing and fixing the exposures attackers could actually use.",
+   "protects": "The whole attack surface: internet-facing assets, identities, cloud, endpoints and third-party exposure.",
+   "placement": "Process owner: CISO. Uses exposure-management, attack-surface and validation tools in the cloud and on the network; fixes go to IT and application owners.",
+   "how": "Gartner's CTEM model runs five stages in a loop: scope, discover, prioritise, validate and mobilise. Tools combine scanner, identity and cloud data into attack paths; validation (breach simulation or testing) proves which ones work. Monthly cycles hand a short, proven fix list to owners.",
+   "pareto": [
+    "Scope by business service, starting with internet-facing and payment systems",
+    "Combine vulnerability, identity and cloud data into attack paths",
+    "Validate the top exposures before asking owners to fix them",
+    "A short monthly fix list with business owners, not a long scan report"
+   ],
+   "vendors": [
+    {
+     "name": "Tenable One",
+     "kind": "commercial",
+     "fit": "Exposure platform built on Tenable scanning; new flexible pricing from April 2026.",
+     "india": "Indian office and partners."
+    },
+    {
+     "name": "XM Cyber",
+     "kind": "commercial",
+     "fit": "Attack-path modelling across on-premises, identity and cloud.",
+     "india": "Sold through Indian partners."
+    },
+    {
+     "name": "Pentera",
+     "kind": "commercial",
+     "fit": "Automated penetration testing for the validation stage.",
+     "india": "Sold through Indian partners."
+    },
+    {
+     "name": "CrowdStrike Falcon Exposure Management",
+     "kind": "commercial",
+     "fit": "Uses the EDR agent already deployed; good if Falcon is in use.",
+     "india": "Indian office."
+    },
+    {
+     "name": "CloudSEK",
+     "kind": "Indian",
+     "fit": "External attack surface and digital risk monitoring.",
+     "india": "Bengaluru-based."
+    },
+    {
+     "name": "MITRE Caldera, Nuclei, OpenVAS",
+     "kind": "open source",
+     "fit": "Free validation and discovery tools; need skilled staff.",
+     "india": "Self-hosted."
+    }
+   ],
+   "cost": {
+    "unit": "fixed per year (platform subscription)",
+    "band": "about Rs 10-60 lakh a year",
+    "reference_org": "about Rs 15-60 lakh a year for a mid-size estate; a third-party source says Tenable One typically starts around USD 50,000 (about Rs 42 lakh) a year",
+    "drivers": [
+     "number of assets and identities",
+     "validation module (automated pentest or BAS)",
+     "external attack-surface coverage",
+     "existing scanner and EDR licences that can be reused"
+    ],
+    "note": "Vendors price by quote; figures are third-party estimates. USD list prices converted at about Rs 84/USD; excludes 18% GST. indicative; get three quotes"
+   },
+   "rfp": {
+    "scope": [
+     "Exposure platform covering on-premises, cloud, identity and external assets",
+     "Attack-path analysis",
+     "Validation by automated testing or BAS",
+     "Monthly CTEM cycle reports"
+    ],
+    "must": [
+     "Ingest of existing scanner, EDR, directory and cloud data",
+     "Attack paths to named critical assets",
+     "Safe-by-design validation that does not harm production",
+     "Ticket integration with the ITSM",
+     "Data stored in India or on-premises"
+    ],
+    "should": [
+     "External attack-surface discovery",
+     "Mapping to MITRE ATT&CK",
+     "Business-service views for management"
+    ],
+    "sizing": [
+     "Assets (about 3,000), identities (2,000+), cloud accounts",
+     "Internet-facing domains and IPs",
+     "Critical business services"
+    ],
+    "evaluation": [
+     "Coverage and attack-path quality 30",
+     "Validation capability 25",
+     "Integration 15",
+     "Commercials 30"
+    ],
+    "sla": [
+     "Monthly report within 5 working days of the cycle",
+     "Critical validated exposures flagged within 24 hours",
+     "Support P1 within 4 hours"
+    ],
+    "clauses": [
+     "Written approval and scope for any active testing",
+     "CERT-In: logs and findings kept in India",
+     "Confidentiality of attack-path data",
+     "Right to audit the vendor (RBI IT outsourcing directions)"
+    ]
+   },
+   "architecture": "The platform pulls data from the vulnerability scanner, EDR, directory, cloud and attack-surface monitor. It builds attack paths to critical assets, validation tools test them, and the short fix list goes to the ITSM. Results feed the risk register and Board metrics.",
+   "kpis": [
+    "Validated critical attack paths open, trend",
+    "Mean time to close validated exposures",
+    "Percentage of critical services scoped",
+    "External exposures found by you before attackers or researchers"
+   ],
+   "pitfalls": [
+    "Buying a platform before the basics (asset list, VM, patching) work",
+    "Treating CTEM as a tool rather than a monthly management cycle",
+    "No validation, so the fix list is as long as before",
+    "Scope too wide in the first cycle"
+   ],
+   "sources": [
+    {
+     "title": "IBM: What is continuous threat exposure management",
+     "url": "https://www.ibm.com/think/topics/ctem"
+    },
+    {
+     "title": "Hadrian: the five CTEM stages",
+     "url": "https://hadrian.io/blog/what-is-ctem-the-5-stages-explained"
+    },
+    {
+     "title": "Tenable: new flexible pricing for Tenable One (Apr 2026)",
+     "url": "https://investors.tenable.com/news-releases/news-release-details/tenable-accelerates-exposure-management-adoption-new-flexible"
+    },
+    {
+     "title": "Beagle Security: Tenable pricing 2026",
+     "url": "https://beaglesecurity.com/blog/article/tenable-pricing.html"
+    },
+    {
+     "title": "Gartner Peer Insights: exposure assessment platforms market",
+     "url": "https://www.gartner.com/reviews/market/exposure-assessment-platforms/vendor/check-point-software-tech/product/check-point-exposure-management"
+    },
+    {
+     "title": "Gartner Peer Insights: CrowdStrike Falcon Exposure Management",
+     "url": "https://www.gartner.com/reviews/product/crowdstrike-falcon-exposure-management"
+    },
+    {
+     "title": "MITRE Caldera (open-source adversary emulation)",
+     "url": "https://caldera.mitre.org/"
+    }
+   ]
+  }
+ }
+}

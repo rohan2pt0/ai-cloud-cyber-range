@@ -290,3 +290,4 @@ local/compose/controls/.ai-control.*
 portal/inbox-import.json
 portal/govern-state.json
 guiding-map/estate-home.json
+portal/reckoner/

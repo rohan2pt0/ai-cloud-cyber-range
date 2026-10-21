@@ -115,10 +115,10 @@ This list is generated from [`features.json`](features.json); the Command Center
 - [The design standard](docs/securax/100-DESIGN-STANDARD.md)
 - [Free the C: drive](docs/securax/80-STORAGE-THAT-GROWS-WITH-YOU.md)
 - [Docker MCP Toolkit](docs/securax/98-SHIP-AND-STORE-APPS.md)
+- [The CISO's ready reckoner](docs/securax/94-GOVERN.md)
 - [Names, not ports, and links that never break](docs/securax/99-NAMES-NOT-PORTS-AND-LINKS-THAT-NEVER-BREAK.md)
+- The Govern catalog's cost bands, corrected from that research
 - 404s on the site
-- 117 links to a domain with no DNS records
-- The cockpit is a dark cockpit
 
 **Release 0.2.0 - 2026-10-17:**
 

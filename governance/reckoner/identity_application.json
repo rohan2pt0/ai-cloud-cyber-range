@@ -1,0 +1,1417 @@
+{
+ "as_of": "2026-10",
+ "items": {
+  "tec-mfa": {
+   "summary": "A second proof at sign-in, beyond the password, so a stolen password alone does not open an account.",
+   "protects": "Email, remote access (VPN, ZTNA, VDI), admin consoles, cloud and SaaS apps, and payment journeys. It counters phishing, password spraying, credential stuffing and reuse of leaked passwords.",
+   "placement": "A cloud identity service (identity provider) in front of all apps, plus a RADIUS or agent connector on-premise for VPN, servers and legacy apps. The IAM team owns it; the service desk owns enrolment and recovery.",
+   "how": "The identity provider asks for a second factor based on policy: who the user is, the app, the device and the risk. Phishing-resistant factors (FIDO2 security keys, passkeys, smart cards) bind the login to the real site, so a fake site cannot replay it. Weaker factors (SMS, voice, simple push) still help, but can be phished or fatigued.",
+   "pareto": [
+    "Phishing-resistant MFA (FIDO2 keys or passkeys) for every admin and every privileged role first.",
+    "MFA on remote access, email and every internet-facing app before internal apps.",
+    "Number matching on push approvals, and SMS only as a last-resort fallback.",
+    "Block legacy authentication protocols that cannot do MFA (for example basic auth to mail).",
+    "A secure, identity-verified recovery process at the service desk, because attackers target the reset."
+   ],
+   "vendors": [
+    {
+     "name": "Microsoft Entra ID (P1/P2) with Conditional Access",
+     "kind": "commercial",
+     "fit": "Best fit where Microsoft 365 E3/E5 is already licensed: P1 is included in E3, so MFA and Conditional Access may cost nothing extra.",
+     "india": "Microsoft has Indian Azure regions and a large partner network; P1 list price rose from USD 6 to 7 per user per month in July 2026."
+    },
+    {
+     "name": "Cisco Duo",
+     "kind": "commercial",
+     "fit": "Easy rollout across mixed estates (VPN, Windows logon, SSH, SaaS); Essentials USD 3, Advantage USD 6, Premier USD 9 per user per month list.",
+     "india": "Sold through Cisco partners in India; confirm where authentication data is hosted."
+    },
+    {
+     "name": "Okta Workforce Identity",
+     "kind": "commercial",
+     "fit": "Strong independent identity provider with many app integrations; now sold as suites (Starter from USD 6 per user per month).",
+     "india": "Okta publishes an India pricing page; sold via partners."
+    },
+    {
+     "name": "miniOrange",
+     "kind": "Indian",
+     "fit": "Lower-cost SSO plus MFA with on-premise and cloud options; Essential plan listed at USD 2 per user per month.",
+     "india": "Offices in Pune; sells in India through channel partners."
+    },
+    {
+     "name": "InstaSafe",
+     "kind": "Indian",
+     "fit": "Indian zero-trust access vendor with built-in MFA (OTP, biometrics, hardware token, FIDO) and RADIUS/LDAP support; on-premise option.",
+     "india": "Indian company, listed on GeM under MFA software."
+    },
+    {
+     "name": "privacyIDEA",
+     "kind": "open source",
+     "fit": "Self-hosted MFA server (AGPLv3) with FIDO2, TOTP, push and smart cards; protects VPN, SSH, Windows and Keycloak. Needs in-house skills.",
+     "india": "No vendor presence needed; data stays on your servers."
+    },
+    {
+     "name": "Keycloak",
+     "kind": "open source",
+     "fit": "Open-source identity provider (CNCF incubating) with WebAuthn, passkeys and OTP; good for in-house and customer-facing apps.",
+     "india": "Self-hosted; commercial support available from Red Hat (Red Hat build of Keycloak)."
+    }
+   ],
+   "cost": {
+    "unit": "per user per year (software), plus a one-off cost per hardware key for admins",
+    "band": "Rs 1,000-6,000 per user per year at list price (miniOrange about USD 1-2, Duo USD 3-9, Okta and Entra P1 about USD 6-7 per user per month, converted at about Rs 84/USD); near zero extra if Microsoft 365 E3/E5 already includes Entra ID P1. FIDO2 keys roughly Rs 6,000-8,000 each retail.",
+    "reference_org": "About Rs 20 lakh-1.2 crore a year for 2,000 users on a standalone product before discount; plus about Rs 10-12 lakh one-off for two keys each for about 75 admins. Open source: licence free, but budget 0.5-1 engineer.",
+    "drivers": [
+     "Whether an existing Microsoft 365 or Okta licence already includes MFA",
+     "Tier: basic MFA versus risk-based and device-trust tiers",
+     "Number of hardware keys and who gets them",
+     "Legacy and on-premise integrations (RADIUS, Windows logon, mainframe)",
+     "Hosting: India-hosted or on-premise demands"
+    ],
+    "note": "Indicative; get three quotes. USD list prices converted at about Rs 84/USD, excluding 18% GST."
+   },
+   "rfp": {
+    "scope": [
+     "Supply, install and configure MFA for 2,000 users across email, VPN/ZTNA, VDI, Windows and Linux admin logon, and 40 applications",
+     "Integrate with Active Directory and the cloud directory; SAML, OIDC and RADIUS connectors",
+     "Enrol users and issue FIDO2 keys to admins; self-service enrolment portal",
+     "Design and document the secure recovery and break-glass process",
+     "Train the service desk; 24x7 support for 3 years"
+    ],
+    "must": [
+     "FIDO2/WebAuthn and passkey support, enforceable per group (admins phishing-resistant only)",
+     "Push with number matching; SMS and voice can be switched off per group",
+     "Conditional or risk-based policy using user, device, location and app",
+     "Protocols: SAML 2.0, OIDC, RADIUS, LDAP; Windows logon and RDP agent",
+     "Admin console itself protected by phishing-resistant MFA",
+     "Logs of every authentication exported to the SIEM in near real time and kept at least 180 days",
+     "Service availability of 99.9% or better with a documented offline fallback for Windows logon",
+     "Authentication data processed and stored in India, or a clear statement of where"
+    ],
+    "should": [
+     "Device trust checks (managed, patched, encrypted) before access",
+     "Passwordless sign-in for daily users",
+     "Detection of MFA fatigue and impossible travel",
+     "Support for Indian languages in enrolment screens"
+    ],
+    "sizing": [
+     "2,000 users; about 75 admins and 150 privileged roles",
+     "40 applications, with the list of those that speak SAML/OIDC versus legacy",
+     "5 sites; remote access users count",
+     "Expected growth of users per year",
+     "Existing licences (Microsoft 365 edition, VPN make)"
+    ],
+    "evaluation": [
+     "Technical fit 40",
+     "Phishing-resistance and policy depth 15",
+     "Integration effort with our apps 10",
+     "Total cost over 3 years 25",
+     "Support and India presence 10"
+    ],
+    "sla": [
+     "Authentication service availability 99.9% monthly",
+     "Priority 1 (users cannot log in) response 15 minutes, 24x7",
+     "Priority 2 response 2 hours",
+     "Security incident notice to us within 2 hours of detection"
+    ],
+    "clauses": [
+     "Right to audit: the organisation, its auditors and the regulator (RBI, SEBI or IRDAI as applicable) may audit the provider and its sub-contractors, on site or remotely.",
+     "RBI Master Direction on Outsourcing of IT Services (2023) applies to regulated entities: due diligence, a board-approved outsourcing policy, concentration risk, and no outsourcing of accountability.",
+     "CERT-In directions of 28 April 2022: the provider reports cyber incidents to the organisation fast enough to meet the 6-hour CERT-In deadline, and keeps its relevant logs for 180 days.",
+     "Exit and transition: export of all configuration, policies and logs in an open format, and transition support for at least 90 days at contract end.",
+     "For payment channels: the RBI Authentication Mechanisms for Digital Payment Transactions Directions, 2025 (in force from 1 April 2026) require two factors with at least one dynamic factor; the product must support this.",
+     "DPDP Act 2023: enrolment data (phone numbers, biometrics templates) is personal data; the provider is a data processor bound by a processing contract."
+    ]
+   },
+   "architecture": "Users and devices sign in to the identity provider (cloud service, often the same one that runs SSO). Apps trust it through SAML or OIDC. A RADIUS proxy or agent on-premise (in the server zone, in an HA pair) links VPN, firewalls, Windows logon and legacy apps. It reads users from Active Directory or HR, and sends all sign-in logs to the SIEM. PAM sits behind it for admins.",
+   "kpis": [
+    "Share of users with MFA enforced (target 100% for remote, email and admins)",
+    "Share of admins on phishing-resistant factors (target 100%)",
+    "Number of legacy-auth sign-ins still allowed (target 0)",
+    "Account take-overs from stolen passwords per quarter"
+   ],
+   "pitfalls": [
+    "Exempting executives or service desk 'for convenience'",
+    "Leaving SMS as the default factor for admins",
+    "A weak reset process that lets an attacker re-enrol a new device by phone call",
+    "Forgetting legacy protocols, so MFA is bypassed through them"
+   ],
+   "sources": [
+    {
+     "title": "CISA: Implementing phishing-resistant MFA (fact sheet, Oct 2022)",
+     "url": "https://cisa.gov/sites/default/files/publications/fact-sheet-implementing-phishing-resistant-mfa-508c.pdf"
+    },
+    {
+     "title": "RBI press release: Authentication Mechanisms for Digital Payment Transactions Directions, 2025",
+     "url": "https://rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx?prid=61282"
+    },
+    {
+     "title": "KPMG India: summary of RBI Authentication Mechanisms Directions 2025",
+     "url": "https://kpmg.com/in/en/insights/2025/12/reserve-bank-of-india-rbi-authentication-mechanisms-for-digital-payment-transactions-directions-2025.html"
+    },
+    {
+     "title": "RBI Cyber Security Framework in Banks (2016) and Master Direction on IT Governance (2023): control mapping",
+     "url": "https://opensecurityarchitecture.org/frameworks/rbi-csf"
+    },
+    {
+     "title": "IC Consult: Microsoft Entra ID licence models (P1, P2, Entra Suite) and the July 2026 price change",
+     "url": "https://ic-consult.com/en/resources/blogs/microsoft-entra-id-license-models-explained-p1-p2-and-entra-suite/"
+    },
+    {
+     "title": "Redress Compliance: Cisco Duo licensing tiers and cost",
+     "url": "https://redresscompliance.com/cisco-duo-mfa-licensing-tiers-cost.html"
+    },
+    {
+     "title": "Okta India: plans and pricing",
+     "url": "https://www.okta.com/en-in/pricing/"
+    },
+    {
+     "title": "miniOrange: IAM pricing",
+     "url": "https://www.miniorange.com/iam/pricing"
+    },
+    {
+     "title": "InstaSafe on GeM (MFA software listing)",
+     "url": "https://www.instasafe.com/instasafe-on-gem"
+    },
+    {
+     "title": "privacyIDEA README (AGPLv3 open-source MFA server)",
+     "url": "https://fossies.org/linux/privacyidea/README.rst"
+    },
+    {
+     "title": "CNCF: Keycloak joins CNCF as an incubating project",
+     "url": "https://www.cncf.io/blog/2023/04/11/keycloak-joins-cncf-as-an-incubating-project/"
+    },
+    {
+     "title": "Keycloak Server Administration Guide (WebAuthn, passkeys, OTP)",
+     "url": "https://www.keycloak.org/docs/latest/server_admin/index.html"
+    },
+    {
+     "title": "Yubico store: YubiKey 5 Series",
+     "url": "https://www.yubico.com/it/store/yubikey-5-series/"
+    },
+    {
+     "title": "Ankura: CERT-In directions of 28 April 2022 (6-hour reporting, 180-day logs)",
+     "url": "https://ankura.com/insights/everything-you-need-to-know-about-indias-new-guidelines-related-to-cyber-incident-reporting-by-cert-in/"
+    }
+   ]
+  },
+  "tec-waf": {
+   "summary": "A filter in front of web applications that blocks common attacks (injection, cross-site scripting, known exploits) before they reach the app.",
+   "protects": "Internet-facing websites, portals and APIs, and the data behind them. It counters the OWASP Top 10 classes, known CVE exploits, scanners, and some bots and layer-7 floods. It buys time while code is fixed (virtual patching).",
+   "placement": "Inline on the path to every internet-facing app: either a cloud WAAP service (DNS points to the provider, which forwards clean traffic) or an appliance or virtual WAF in the DMZ, in an HA pair, behind the edge firewall and in front of the load balancers. Network security operates it; app owners own the tuning.",
+   "how": "Each request is checked against signatures (for example the OWASP Core Rule Set), the app's learned normal behaviour and reputation data. Bad requests are blocked, challenged or logged. Start in detection mode, tune false positives with app teams, then switch to blocking.",
+   "pareto": [
+    "Every internet-facing app behind the WAF, with origin servers reachable only from the WAF.",
+    "Blocking mode on a tuned managed rule set (OWASP CRS or vendor rules) within 30-60 days.",
+    "Virtual patching of new critical CVEs within 24-48 hours.",
+    "Rate limits on login, OTP and search endpoints.",
+    "WAF logs into the SIEM with alerts on blocked attack spikes."
+   ],
+   "vendors": [
+    {
+     "name": "Akamai App & API Protector",
+     "kind": "commercial",
+     "fit": "Large edge network with WAF, DDoS and bot options; suited to large banks and payment firms.",
+     "india": "Edge locations and large customer base in India; sold direct and via partners."
+    },
+    {
+     "name": "Cloudflare (WAF on Pro, Business, Enterprise)",
+     "kind": "commercial",
+     "fit": "Fast to deploy, transparent entry prices (Pro USD 20, Business USD 200 per month per domain, billed annually); Enterprise for advanced bot and SLAs.",
+     "india": "Data centres in several Indian cities; check data localisation terms for logs."
+    },
+    {
+     "name": "Imperva (Thales) Cloud WAF / WAF Gateway",
+     "kind": "commercial",
+     "fit": "Mature cloud and on-premise WAF with strong compliance reporting; part of Thales since December 2023.",
+     "india": "Sold via Thales and partners in India."
+    },
+    {
+     "name": "F5 (BIG-IP Advanced WAF, Distributed Cloud WAAP)",
+     "kind": "commercial",
+     "fit": "Choose when F5 load balancers are already in the data centre: WAF on the same platform, on-premise or as a service.",
+     "india": "Strong presence in Indian data centres and banks via partners."
+    },
+    {
+     "name": "Indusface AppTrana",
+     "kind": "Indian",
+     "fit": "Fully managed cloud WAAP with WAF, DDoS, bot and API protection and managed tuning; Advanced tier listed at USD 99 per site (FQDN).",
+     "india": "Indian company (Indusface Pvt. Ltd.); India support."
+    },
+    {
+     "name": "AWS WAF / Azure WAF",
+     "kind": "commercial",
+     "fit": "For apps hosted in that cloud: pay per use (AWS: USD 5 per web ACL, USD 1 per rule per month, USD 0.60 per million requests).",
+     "india": "Indian cloud regions available (AWS Mumbai and Hyderabad; Azure Central, South and West India)."
+    },
+    {
+     "name": "ModSecurity v3 or OWASP Coraza with OWASP CRS 4",
+     "kind": "open source",
+     "fit": "Free engines and rule set for NGINX, Apache, Envoy, Caddy or HAProxy; you do the tuning and patching. Coraza is a Go drop-in for ModSecurity rules; Trustwave sponsorship of ModSecurity ended July 2024 and it now sits under OWASP.",
+     "india": "Self-hosted; support from local integrators."
+    }
+   ],
+   "cost": {
+    "unit": "per protected site (FQDN) per month for cloud WAAP, or per appliance pair per year (licence plus support) on-premise",
+    "band": "Cloud: roughly Rs 8,000-50,000 per site per month depending on tier and traffic (AppTrana Advanced USD 99 per site; Cloudflare Business USD 200 per domain; enterprise tiers by quote). On-premise HA pair: by quote, usually higher in year one.",
+    "reference_org": "About Rs 10-50 lakh a year for 15-25 internet-facing apps of the 40, on a managed cloud WAAP; open source is licence free but needs about 0.5 engineer for tuning.",
+    "drivers": [
+     "Number of sites/FQDNs and APIs",
+     "Clean traffic volume (bandwidth or requests)",
+     "Managed tuning and 24x7 SOC support",
+     "Bundled DDoS, bot and API modules",
+     "On-premise hardware versus cloud"
+    ],
+    "note": "Indicative; get three quotes. USD prices converted at about Rs 84/USD, excluding 18% GST."
+   },
+   "rfp": {
+    "scope": [
+     "Protect all internet-facing applications and APIs (list attached) with a WAF in blocking mode",
+     "Onboarding, learning period and tuning with each app owner",
+     "Virtual patching service for new critical vulnerabilities",
+     "Logs and alerts integrated with our SIEM and SOC",
+     "Quarterly rule and false-positive review"
+    ],
+    "must": [
+     "Coverage of OWASP Top 10 and OWASP API Top 10 attack classes",
+     "Positive and negative security models; custom rules; rate limiting per path",
+     "Virtual patch for critical CVEs within 24 hours of public disclosure",
+     "TLS 1.2+ with our own certificates; keys held in India or in an HSM we control where required",
+     "Origin lock-down: apps reachable only from the WAF",
+     "Real-time log export (syslog or API) and 180-day retention",
+     "False-positive rate below 0.1% of legitimate requests after tuning",
+     "HA with no single point of failure; documented fail-open or fail-closed choice per app"
+    ],
+    "should": [
+     "Bundled layer-3/4/7 DDoS protection",
+     "Basic bot detection and CAPTCHA/challenge",
+     "API schema (OpenAPI) enforcement",
+     "Managed 24x7 tuning with named analysts"
+    ],
+    "sizing": [
+     "Number of internet-facing FQDNs and APIs (about 15-25 of 40 apps)",
+     "Peak requests per second and monthly bandwidth per app",
+     "Hosting locations (own data centres at 5 sites, cloud)",
+     "Peak events (salary day, results, festive sales)"
+    ],
+    "evaluation": [
+     "Technical fit 35",
+     "Detection quality in a proof of concept with our apps 20",
+     "Managed service and SOC integration 10",
+     "Total cost over 3 years 25",
+     "India presence and data residency 10"
+    ],
+    "sla": [
+     "WAF service availability 99.99%",
+     "Added latency below 50 ms at the 95th percentile",
+     "False-positive fix within 2 hours for P1 (business blocked)",
+     "Virtual patch within 24 hours of a critical CVE",
+     "Security incident notice within 2 hours"
+    ],
+    "clauses": [
+     "Right to audit: the organisation, its auditors and the regulator (RBI, SEBI or IRDAI as applicable) may audit the provider and its sub-contractors, on site or remotely.",
+     "RBI Master Direction on Outsourcing of IT Services (2023) applies to regulated entities: due diligence, a board-approved outsourcing policy, concentration risk, and no outsourcing of accountability.",
+     "CERT-In directions of 28 April 2022: the provider reports cyber incidents to the organisation fast enough to meet the 6-hour CERT-In deadline, and keeps its relevant logs for 180 days.",
+     "Exit and transition: export of all configuration, policies and logs in an open format, and transition support for at least 90 days at contract end.",
+     "Payment data: if the WAF terminates TLS for payment pages, RBI's April 2018 payment data storage direction requires that payment system data be stored only in India; logs that contain card or payment data must stay in India.",
+     "PCI DSS: the provider supplies its attestation of compliance where card data passes through it."
+    ]
+   },
+   "architecture": "Internet -> anti-DDoS scrubbing -> WAF (cloud edge or DMZ appliance pair) -> load balancer -> web/app tier. DNS for each app points to the WAF; origin firewalls allow only WAF addresses. The WAF is fed by threat intelligence and the app's API schema; it feeds alerts and logs to the SIEM, and blocks found by vulnerability scans become virtual patches.",
+   "kpis": [
+    "Share of internet-facing apps behind the WAF in blocking mode (target 100%)",
+    "Median time from critical CVE to virtual patch",
+    "False-positive tickets per month",
+    "Attacks blocked versus attacks reaching the app found in pentests"
+   ],
+   "pitfalls": [
+    "Leaving the WAF in detection mode for months",
+    "Origins still reachable directly from the internet, bypassing the WAF",
+    "No owner for tuning, so rules get switched off after the first complaint",
+    "Treating the WAF as a reason not to fix code"
+   ],
+   "sources": [
+    {
+     "title": "AWS WAF pricing (web ACL, rules, requests, Bot Control, Fraud Control)",
+     "url": "https://aws.amazon.com/waf/pricing/"
+    },
+    {
+     "title": "Cloudflare: network and CDN plans",
+     "url": "https://www.cloudflare.com/plans/network-cdn/"
+    },
+    {
+     "title": "Indusface AppTrana WAAP pricing",
+     "url": "https://www.indusface.com/pricing/apptrana-waap/"
+    },
+    {
+     "title": "OWASP Coraza WAF",
+     "url": "https://coraza.io/"
+    },
+    {
+     "title": "OWASP CRS (Core Rule Set)",
+     "url": "https://coreruleset.org/"
+    },
+    {
+     "title": "ModSecurity on GitHub (owasp-modsecurity)",
+     "url": "https://github.com/owasp-modsecurity/ModSecurity"
+    },
+    {
+     "title": "Imperva (Thales acquisition completed December 2023)",
+     "url": "https://en.wikipedia.org/wiki/Imperva"
+    },
+    {
+     "title": "OWASP API Security Top 10 (2023)",
+     "url": "https://api-security.owasp.org/editions/2023/en/0x11-t10"
+    },
+    {
+     "title": "Ankura: CERT-In directions of 28 April 2022 (6-hour reporting, 180-day logs)",
+     "url": "https://ankura.com/insights/everything-you-need-to-know-about-indias-new-guidelines-related-to-cyber-incident-reporting-by-cert-in/"
+    }
+   ]
+  },
+  "tec-pam": {
+   "summary": "A controlled gate for administrator and other powerful accounts: passwords are locked in a vault, access is granted only when needed, and sessions are recorded.",
+   "protects": "Domain admin, root, database admin, network device, cloud console, core banking and service accounts. It counters credential theft, lateral movement, insider misuse and vendor misuse of remote admin access.",
+   "placement": "Vault and session servers in a dedicated management zone of the data centre (with a DR copy), or as a SaaS with on-premise connectors. Admins reach targets only through it, from hardened admin workstations. The IAM team owns it; system owners approve access.",
+   "how": "Privileged credentials are discovered, moved into an encrypted vault and rotated automatically. Admins check out access through a portal or proxy after MFA and approval, often just-in-time for a limited period, without seeing the password. Sessions are recorded and commands can be filtered, and all activity goes to the SIEM.",
+   "pareto": [
+    "Discover and vault all domain admin, root, DBA and network device credentials, with automatic rotation.",
+    "All vendor and third-party admin access only through PAM, recorded, with approval.",
+    "Phishing-resistant MFA on the PAM portal itself.",
+    "Just-in-time access instead of standing admin rights for the most powerful roles.",
+    "Session recording reviewed for critical systems, and alerts to the SOC on risky commands."
+   ],
+   "vendors": [
+    {
+     "name": "CyberArk",
+     "kind": "commercial",
+     "fit": "Market leader (Gartner MQ Leader 2025) with the broadest coverage: vault, session, endpoint privilege, secrets, cloud. Highest price band.",
+     "india": "Large BFSI install base in India; delivered through Indian system integrators."
+    },
+    {
+     "name": "BeyondTrust",
+     "kind": "commercial",
+     "fit": "Gartner MQ Leader 2025; strong in privileged remote access for vendors and endpoint privilege management.",
+     "india": "Sold via partners in India."
+    },
+    {
+     "name": "Delinea (Secret Server, Privilege Manager)",
+     "kind": "commercial",
+     "fit": "Gartner MQ Leader 2025; simpler deployment, good for mid-size estates; quoted per privileged account or user.",
+     "india": "Sold via partners in India."
+    },
+    {
+     "name": "ARCON PAM",
+     "kind": "Indian",
+     "fit": "Indian-origin PAM, named a Challenger in the 2025 Gartner MQ (sixth year listed); widely used in Indian BFSI and government; strong on RBI-aligned reporting.",
+     "india": "Indian company (Mumbai); local support and on-premise deployment."
+    },
+    {
+     "name": "Sectona",
+     "kind": "Indian",
+     "fit": "Mumbai-based PAM vendor founded 2017; agentless, lighter platform suited to hybrid estates and mid-size budgets.",
+     "india": "Offices in Mumbai and Dubai; local support."
+    },
+    {
+     "name": "One Identity Safeguard / IBM Verify Privileged Identity",
+     "kind": "commercial",
+     "fit": "Alternatives worth a quote, especially if the organisation already uses the vendor's IGA or IBM security stack.",
+     "india": "Both sold through Indian partners."
+    },
+    {
+     "name": "JumpServer Community Edition",
+     "kind": "open source",
+     "fit": "Open-source bastion host (GPLv3) with web access to SSH, RDP, databases and Kubernetes, session recording and a credential vault. Fewer enterprise integrations; good for a lab or a small estate.",
+     "india": "Self-hosted; paid enterprise edition from the vendor."
+    }
+   ],
+   "cost": {
+    "unit": "per privileged user (named admin) per year, sometimes per managed asset or account",
+    "band": "Roughly Rs 15,000-80,000 per privileged user per year, depending on vendor and modules (third-party estimates for global leaders range widely; UK public-sector listings for Delinea show about GBP 600 per user per year). Indian vendors usually quote at the lower end.",
+    "reference_org": "About Rs 30 lakh-1.2 crore a year for about 150 privileged users and 1,500 target systems, including support; year one adds implementation. Indian bank tenders (for example NHB's 2025 GeM RFP, costed on 50 users with 5-year warranty) show the usual structure: perpetual licence plus 5-year support.",
+    "drivers": [
+     "Number of privileged users and managed targets",
+     "Modules: session recording, endpoint privilege, secrets for applications, cloud entitlements",
+     "On-premise (hardware, DR site) versus SaaS",
+     "High availability and DR copies",
+     "Implementation scope: number of target types and integrations"
+    ],
+    "note": "Indicative; get three quotes. USD/GBP converted at about Rs 84/USD, excluding 18% GST."
+   },
+   "rfp": {
+    "scope": [
+     "Discover all privileged accounts across Windows, Linux/Unix, databases, network and security devices, cloud consoles and core applications",
+     "Vault and rotate credentials; just-in-time access with approval workflow",
+     "Session proxy for RDP, SSH, web and database with recording and command control",
+     "Vendor remote access through PAM",
+     "Application-to-application secrets for scripts and service accounts",
+     "HA at the primary site and a DR instance at the DR site"
+    ],
+    "must": [
+     "Encrypted vault (AES-256), keys in HSM or equivalent; FIPS 140-2/3 validated crypto module",
+     "Automatic password rotation after each use or on schedule, with reconciliation",
+     "MFA (phishing-resistant for admins) on every PAM login",
+     "Session recording for RDP, SSH, database and web sessions, searchable, with tamper-evident storage",
+     "Real-time command filtering and session kill",
+     "Break-glass access that works when the directory is down",
+     "Integration with SIEM (syslog/CEF) and the ticketing tool; 180-day log retention minimum",
+     "Support for at least 150 concurrent sessions without degradation",
+     "Role-based administration with separation of duties within PAM itself"
+    ],
+    "should": [
+     "Endpoint privilege management (remove local admin rights)",
+     "Cloud entitlement discovery (AWS, Azure, GCP)",
+     "Analytics flagging risky sessions",
+     "Agentless discovery of new privileged accounts every 24 hours"
+    ],
+    "sizing": [
+     "About 150 privileged users (internal admins plus vendors)",
+     "Targets: servers, databases, network and security devices, cloud accounts (counts per type)",
+     "Number of concurrent sessions at peak",
+     "Number of service accounts and application secrets",
+     "Sites: 5, with primary and DR data centres"
+    ],
+    "evaluation": [
+     "Technical fit 40",
+     "Proof of concept on our targets 15",
+     "Ease of use for admins 5",
+     "Total cost over 5 years 30",
+     "India support and references in regulated firms 10"
+    ],
+    "sla": [
+     "PAM availability 99.9% (with DR failover within 4 hours)",
+     "P1 (admins locked out) response 30 minutes, 24x7",
+     "Security patches for critical vulnerabilities within 7 days",
+     "Root-cause report within 5 working days of a P1"
+    ],
+    "clauses": [
+     "Right to audit: the organisation, its auditors and the regulator (RBI, SEBI or IRDAI as applicable) may audit the provider and its sub-contractors, on site or remotely.",
+     "RBI Master Direction on Outsourcing of IT Services (2023) applies to regulated entities: due diligence, a board-approved outsourcing policy, concentration risk, and no outsourcing of accountability.",
+     "CERT-In directions of 28 April 2022: the provider reports cyber incidents to the organisation fast enough to meet the 6-hour CERT-In deadline, and keeps its relevant logs for 180 days.",
+     "Exit and transition: export of all configuration, policies and logs in an open format, and transition support for at least 90 days at contract end.",
+     "RBI Cyber Security Framework for banks (2016) baseline controls expect centralised authentication and authorisation for admin access, least privilege, MFA based on risk, and monitoring of privileged users; map each to the product in the bid.",
+     "Source code or configuration escrow for an on-premise PAM where the vendor is small or the platform is critical.",
+     "Session recordings and logs stay in India and are kept for the period in our retention policy (at least 180 days per CERT-In)."
+    ]
+   },
+   "architecture": "Admin workstation (hardened, MFA) -> PAM portal and session proxy in the management zone -> target systems, which accept admin logins only from the PAM proxy addresses. PAM reads users and groups from AD/IGA, takes approvals from the ticketing tool, and sends session events to the SIEM. A DR instance replicates the vault. IGA governs who is entitled to which PAM safe.",
+   "kpis": [
+    "Share of privileged accounts vaulted and rotated (target 100% of known)",
+    "Share of admin sessions going through PAM (target 100%)",
+    "Standing domain admin accounts (target near zero, just-in-time instead)",
+    "Vendor sessions recorded and reviewed"
+   ],
+   "pitfalls": [
+    "Vaulting passwords but leaving direct admin paths open around PAM",
+    "Ignoring service accounts and scripts with hard-coded passwords",
+    "No break-glass plan, so PAM becomes a single point of failure",
+    "Buying every module at once and finishing none"
+   ],
+   "sources": [
+    {
+     "title": "Gartner: 2025 Magic Quadrant for Privileged Access Management (abstract)",
+     "url": "https://www.gartner.com/en/documents/7051198"
+    },
+    {
+     "title": "ARCON: named a Challenger in the 2025 Gartner Magic Quadrant for PAM",
+     "url": "https://arconnet.com/?p=41602"
+    },
+    {
+     "title": "Infosecurity Magazine directory: Sectona",
+     "url": "https://www.infosecurity-magazine.com/directory/sectona/"
+    },
+    {
+     "title": "UnderDefense: CyberArk pricing guide (third-party estimates)",
+     "url": "https://underdefense.com/blog/cyberark-pricing-guide/"
+    },
+    {
+     "title": "Vendr: Delinea pricing benchmarks",
+     "url": "https://www.vendr.com/marketplace/delinea"
+    },
+    {
+     "title": "National Housing Bank: RFP for procurement and implementation of a PAM solution (GeM)",
+     "url": "https://www.nhb.org.in/en/tender/rfp-for-procurement-and-implementation-of-privileged-access-management-pam-solution-at-national-housing-bank/"
+    },
+    {
+     "title": "NPCI: EOI for procurement of a PAM solution (2024)",
+     "url": "https://www.npci.org.in/PDF/npci/tenders-notices/2024/EOI-for-procurement-of-privileged-access-management-(PAM)-solution.pdf"
+    },
+    {
+     "title": "JumpServer README (open-source bastion host, GPLv3)",
+     "url": "https://github.com/6639/jumpserver/blob/dev/README_EN.md"
+    },
+    {
+     "title": "One Identity: privileged access for Indian banks (RBI references)",
+     "url": "https://www.oneidentity.com/community/blogs/b/privileged-access-management/posts/locking-down-privileged-access-is-now-a-non-negotiable-for-indian-banks"
+    },
+    {
+     "title": "IBM Verify Privileged Identity",
+     "url": "https://www.ibm.com/products/verify-privilege"
+    },
+    {
+     "title": "RBI Cyber Security Framework in Banks (2016) and Master Direction on IT Governance (2023): control mapping",
+     "url": "https://opensecurityarchitecture.org/frameworks/rbi-csf"
+    },
+    {
+     "title": "Ankura: CERT-In directions of 28 April 2022 (6-hour reporting, 180-day logs)",
+     "url": "https://ankura.com/insights/everything-you-need-to-know-about-indias-new-guidelines-related-to-cyber-incident-reporting-by-cert-in/"
+    }
+   ]
+  },
+  "tec-iam": {
+   "summary": "One system that decides who gets which access, grants it automatically when people join or move, reviews it regularly and removes it when they leave.",
+   "protects": "All applications and data, by keeping access right-sized. It counters orphan accounts of leavers, privilege creep, toxic combinations (segregation of duties breaks) and audit findings on access reviews.",
+   "placement": "A central identity service (SaaS or on-premise in the server zone) connected to HR as the source of truth and to the directory and applications through connectors. The IAM team runs it; managers and app owners approve and review.",
+   "how": "HR events (joiner, mover, leaver) trigger automatic account creation, change and removal using roles and rules. Users request extra access through a portal, with approvals and segregation-of-duties checks. Managers and app owners certify access on a schedule, and unapproved access is removed.",
+   "pareto": [
+    "HR system as the single source of truth, with leavers disabled everywhere within 24 hours.",
+    "Connectors to the 10-15 most critical applications first (core banking, email, VPN, finance, HR).",
+    "Quarterly access reviews for critical apps and privileged roles, with automatic removal on 'revoke'.",
+    "A small set of birthright roles per department instead of copy-a-colleague access.",
+    "Orphan and dormant account clean-up every month."
+   ],
+   "vendors": [
+    {
+     "name": "SailPoint (Identity Security Cloud, IdentityIQ)",
+     "kind": "commercial",
+     "fit": "Long-standing Gartner IGA Leader; deepest governance features; priced per managed identity (third-party benchmarks about USD 30-90 per identity per year).",
+     "india": "Delivered through Indian system integrators; large Indian talent pool."
+    },
+    {
+     "name": "Saviynt",
+     "kind": "commercial",
+     "fit": "Cloud IGA with application access governance (ERP, SoD) and PAM; strong for regulated firms with SAP or Oracle.",
+     "india": "Largest global innovation hub in Bengaluru (650+ staff, opened October 2025)."
+    },
+    {
+     "name": "Microsoft Entra ID Governance",
+     "kind": "commercial",
+     "fit": "Lifecycle workflows, access reviews, entitlement management and PIM inside the Microsoft tenant; good first step for Microsoft-centred estates; needs Entra ID P1/P2 or M365 E3/E5 as prerequisite.",
+     "india": "Indian Azure regions; Microsoft partners."
+    },
+    {
+     "name": "Oracle, One Identity, Omada",
+     "kind": "commercial",
+     "fit": "Other established IGA suites; worth a quote where the estate already uses their stack.",
+     "india": "Sold via Indian partners."
+    },
+    {
+     "name": "ARCON (converged identity platform)",
+     "kind": "Indian",
+     "fit": "Indian identity security vendor; consider where its PAM is already in place and a single local vendor is preferred. Check IGA depth in a proof of concept.",
+     "india": "Indian company; local support."
+    },
+    {
+     "name": "Evolveum midPoint",
+     "kind": "open source",
+     "fit": "Full open-source IGA (provisioning, roles, reviews); EUPL-only licence from version 4.10. Needs skilled engineers or a partner.",
+     "india": "Self-hosted; paid support from Evolveum and partners."
+    }
+   ],
+   "cost": {
+    "unit": "per managed identity per year (employees, contractors and service accounts)",
+    "band": "Roughly Rs 2,500-7,500 per identity per year at list (SailPoint benchmarks USD 30-90; Entra ID Governance USD 7 per user per month), plus implementation in year one.",
+    "reference_org": "About Rs 40 lakh-1.6 crore a year for about 2,300 identities (2,000 users plus contractors and service accounts), plus roughly Rs 20-60 lakh implementation in year one for 15-40 connectors (implementation figure is an estimate; confirm in quotes).",
+    "drivers": [
+     "Number of identities, including non-human ones",
+     "Number and type of application connectors (custom and legacy apps cost most)",
+     "Modules: SoD for ERP, access request, analytics",
+     "SaaS versus on-premise",
+     "Quality of HR data before go-live"
+    ],
+    "note": "Indicative; get three quotes. USD converted at about Rs 84/USD, excluding 18% GST."
+   },
+   "rfp": {
+    "scope": [
+     "Integrate HR as the authoritative source for joiners, movers and leavers",
+     "Automated provisioning and de-provisioning to the directory and to the listed applications",
+     "Self-service access request with approval workflows and SoD checks",
+     "Periodic access certification campaigns",
+     "Role model design with the business",
+     "Reports for auditors and regulators"
+    ],
+    "must": [
+     "Leaver access removed in all connected systems within 4 hours of the HR event",
+     "Connectors for AD, Entra ID/LDAP, the core application stack, databases and SCIM apps; a flat-file or API connector for the rest",
+     "Access reviews with reminders, escalation and automatic revoke",
+     "SoD rule engine with preventive checks at request time",
+     "Full audit trail of every request, approval and change, kept at least 180 days and exportable",
+     "Role-based administration and MFA for the IGA console",
+     "Reconciliation that detects accounts created outside the system within 24 hours"
+    ],
+    "should": [
+     "Machine-learning recommendations for reviewers",
+     "Governance of service and machine identities",
+     "Integration with PAM so privileged entitlements are reviewed too",
+     "Delegated administration per subsidiary or site"
+    ],
+    "sizing": [
+     "About 2,300 identities and expected growth",
+     "HR system and its interfaces",
+     "List of applications to connect in phase 1 and phase 2, with interface type",
+     "Number of roles and entitlements today (estimate)",
+     "Review frequency and number of reviewers"
+    ],
+    "evaluation": [
+     "Technical fit 35",
+     "Connectors to our applications 20",
+     "Implementation partner quality and references 15",
+     "Total cost over 5 years 20",
+     "India presence and support 10"
+    ],
+    "sla": [
+     "Platform availability 99.9%",
+     "Provisioning job failures alerted within 15 minutes",
+     "P1 response 1 hour",
+     "Connector break after an app upgrade fixed within 5 working days"
+    ],
+    "clauses": [
+     "Right to audit: the organisation, its auditors and the regulator (RBI, SEBI or IRDAI as applicable) may audit the provider and its sub-contractors, on site or remotely.",
+     "RBI Master Direction on Outsourcing of IT Services (2023) applies to regulated entities: due diligence, a board-approved outsourcing policy, concentration risk, and no outsourcing of accountability.",
+     "CERT-In directions of 28 April 2022: the provider reports cyber incidents to the organisation fast enough to meet the 6-hour CERT-In deadline, and keeps its relevant logs for 180 days.",
+     "Exit and transition: export of all configuration, policies and logs in an open format, and transition support for at least 90 days at contract end.",
+     "DPDP Act 2023: identity data is personal data; the provider acts as a data processor with purpose limits, breach notice and deletion at end of contract.",
+     "RBI Master Direction on IT Governance, Risk, Controls and Assurance Practices (2023) expects periodic user access reviews and timely revocation; the product must evidence both."
+    ]
+   },
+   "architecture": "HR system -> IGA (SaaS or server zone) -> directory (AD/Entra ID) and applications through connectors. The identity provider (SSO and MFA) consumes the directory; PAM receives privileged entitlements from IGA. IGA sends audit events to the SIEM and access-review evidence to the GRC tool.",
+   "kpis": [
+    "Median time to remove leaver access (target under 4 hours)",
+    "Share of critical apps connected and reviewed quarterly",
+    "Orphan and dormant accounts found per month (falling)",
+    "Access-review completion on time (target 100%)"
+   ],
+   "pitfalls": [
+    "Starting with a perfect role model instead of automating leavers first",
+    "Poor HR data quality that breaks automation",
+    "Reviewers who approve everything (rubber-stamping)",
+    "Ignoring service accounts and contractors outside HR"
+   ],
+   "sources": [
+    {
+     "title": "Redress Compliance: SailPoint Identity Security Cloud licensing guide",
+     "url": "https://redresscompliance.com/sailpoint-identity-security-cloud-licensing-guide.html"
+    },
+    {
+     "title": "SecurityBrief: Gartner names SailPoint a Leader in IGA",
+     "url": "https://securitybrief.co.nz/story/gartner-names-sailpoint-leader-in-identity-governance-for-the-sixth-time"
+    },
+    {
+     "title": "Saviynt: largest global innovation hub opened in Bengaluru (Oct 2025)",
+     "url": "https://www.businesswire.com/news/home/20251006129640/en/Saviynt-Inaugurates-Its-Largest-Global-Innovation-Hub-in-Bengaluru-to-Power-the-Future-of-AI-Driven-Identity-Security"
+    },
+    {
+     "title": "Microsoft Learn: Microsoft Entra ID Governance licensing fundamentals",
+     "url": "https://learn.microsoft.com/en-us/entra/id-governance/licensing-fundamentals"
+    },
+    {
+     "title": "IC Consult: Microsoft Entra ID licence models (P1, P2, Entra Suite) and the July 2026 price change",
+     "url": "https://ic-consult.com/en/resources/blogs/microsoft-entra-id-license-models-explained-p1-p2-and-entra-suite/"
+    },
+    {
+     "title": "Interoperable Europe: midPoint moves to EUPL-only licensing",
+     "url": "https://interoperable-europe.ec.europa.eu/collection/eupl/news/eupl-open-source-identity-security"
+    },
+    {
+     "title": "RBI Cyber Security Framework in Banks (2016) and Master Direction on IT Governance (2023): control mapping",
+     "url": "https://opensecurityarchitecture.org/frameworks/rbi-csf"
+    },
+    {
+     "title": "Ankura: CERT-In directions of 28 April 2022 (6-hour reporting, 180-day logs)",
+     "url": "https://ankura.com/insights/everything-you-need-to-know-about-indias-new-guidelines-related-to-cyber-incident-reporting-by-cert-in/"
+    }
+   ]
+  },
+  "tec-ad": {
+   "summary": "A review of Active Directory (and Entra ID) for weak settings and dangerous attack paths, followed by fixes and continuous monitoring.",
+   "protects": "The directory that controls logins to almost every server and PC. It counters domain takeover, ransomware spread through Group Policy, Kerberoasting, delegation abuse, weak certificate templates (AD CS) and stale privileged accounts.",
+   "placement": "Assessment tools run from an admin workstation inside the domain; monitoring sensors sit on domain controllers or read their logs. Owned jointly by IAM and infrastructure, with the SOC watching alerts.",
+   "how": "Tools collect directory configuration and permissions and score them against known weaknesses; attack-path tools show how an ordinary user could become domain admin. Fixes follow a tiered admin model (Tier 0 = domain controllers, AD CS, AD FS and their admins). A monitoring tool or the SIEM then alerts on new risky changes and attacks such as DCSync.",
+   "pareto": [
+    "Find and shrink Tier 0: remove unneeded members of Domain Admins, Enterprise Admins and similar groups.",
+    "Fix the top attack paths shown by BloodHound or a similar tool (delegation, ACLs, AD CS templates).",
+    "Admin accounts separate from daily accounts, used only from privileged access workstations, with MFA via PAM.",
+    "Remove stale accounts and old protocols (NTLMv1, unconstrained delegation, weak Kerberos encryption).",
+    "Monitor domain controllers for attacks and reassess every quarter."
+   ],
+   "vendors": [
+    {
+     "name": "PingCastle (Netwrix)",
+     "kind": "commercial",
+     "fit": "Quick health score of AD with a clear report; free Community edition for auditing your own organisation; paid licence needed for auditing others or support.",
+     "india": "Download; commercial licences via Netwrix partners."
+    },
+    {
+     "name": "Semperis Purple Knight (and Semperis DSP)",
+     "kind": "commercial",
+     "fit": "Free assessment covering AD, Entra ID and Okta indicators of exposure and compromise; Semperis also sells AD monitoring and forest recovery.",
+     "india": "Free download; commercial products via partners."
+    },
+    {
+     "name": "BloodHound Community Edition (SpecterOps)",
+     "kind": "open source",
+     "fit": "Free, open-source attack-path mapping for AD and Entra ID; BloodHound Enterprise is the paid continuous version.",
+     "india": "Self-hosted."
+    },
+    {
+     "name": "Microsoft Defender for Identity",
+     "kind": "commercial",
+     "fit": "Sensors on domain controllers that detect identity attacks and report posture; included in Microsoft 365 E5 and EMS E5, otherwise about USD 4-6 per user per month (reseller estimates).",
+     "india": "Microsoft partners; data in Microsoft cloud regions."
+    },
+    {
+     "name": "Tenable Identity Exposure",
+     "kind": "commercial",
+     "fit": "Continuous AD and Entra ID exposure and attack detection without agents on DCs; licensed per enabled user account.",
+     "india": "Sold via Tenable partners in India."
+    },
+    {
+     "name": "CERT-In empanelled audit firms (for example Payatu, Kratikal, SISA)",
+     "kind": "service firm",
+     "fit": "Independent AD assessment and red-team testing with a report usable for regulators; check the firm's current empanelment on CERT-In's list.",
+     "india": "Indian firms; CERT-In empanelment is time-bound, so verify status."
+    }
+   ],
+   "cost": {
+    "unit": "fixed per assessment (service), plus per user per year if a commercial monitoring tool is licensed",
+    "band": "Assessment and hardening with free tools plus a service firm: roughly Rs 5-20 lakh a year (estimate; no public Indian price list). Commercial identity threat detection: about Rs 2,000-5,500 per user per year at list, or included in Microsoft 365 E5.",
+    "reference_org": "About Rs 5-20 lakh a year for an annual external assessment plus quarterly self-assessment with free tools and internal remediation; add about Rs 40 lakh-1.1 crore a year if a standalone commercial monitoring tool is bought for 2,000 users without E5.",
+    "drivers": [
+     "Number of forests, domains and domain controllers",
+     "Whether Microsoft 365 E5 already includes Defender for Identity",
+     "Depth: configuration review only, or attack-path and red-team testing",
+     "Remediation effort: tier model, PAWs, AD CS fixes",
+     "Need for AD forest recovery tooling"
+    ],
+    "note": "Indicative; get three quotes. USD/GBP converted at about Rs 84/USD, excluding 18% GST."
+   },
+   "rfp": {
+    "scope": [
+     "Assess all AD forests, domains, domain controllers, AD CS, AD FS and Entra ID hybrid sync",
+     "Attack-path analysis from a standard user to Tier 0",
+     "Prioritised remediation plan and hands-on help to fix the top findings",
+     "Design of a tiered admin model and privileged access workstations",
+     "Re-test after remediation; quarterly health scoring",
+     "Optional: deploy continuous monitoring on domain controllers"
+    ],
+    "must": [
+     "Coverage of privileged groups, delegation, ACLs, GPOs, Kerberos settings, trusts, AD CS templates, stale objects and password policy",
+     "Attack paths mapped to MITRE ATT&CK techniques",
+     "Findings rated by risk with exact fix steps",
+     "Read-only collection; no changes without written approval",
+     "Testers are employees of a CERT-In empanelled firm where the report is used for a regulator",
+     "All collected data stays in India and is deleted after the engagement, with a certificate"
+    ],
+    "should": [
+     "Entra ID and hybrid identity review",
+     "Forest recovery plan and test",
+     "Continuous monitoring tool with alerts to our SIEM",
+     "Knowledge transfer to our team"
+    ],
+    "sizing": [
+     "Number of forests, domains and domain controllers",
+     "About 2,000 users, 2,500 computers, and the number of admin and service accounts",
+     "AD CS and AD FS in use (yes/no)",
+     "Sites: 5"
+    ],
+    "evaluation": [
+     "Methodology and depth 35",
+     "Team experience and certifications 20",
+     "Sample report quality 15",
+     "Cost 20",
+     "Re-test and support 10"
+    ],
+    "sla": [
+     "Draft report within 10 working days of fieldwork",
+     "Critical findings reported the same day they are found",
+     "Re-test within 30 days of our remediation",
+     "Monitoring tool (if bought): alert delivery within 5 minutes"
+    ],
+    "clauses": [
+     "Right to audit: the organisation, its auditors and the regulator (RBI, SEBI or IRDAI as applicable) may audit the provider and its sub-contractors, on site or remotely.",
+     "RBI Master Direction on Outsourcing of IT Services (2023) applies to regulated entities: due diligence, a board-approved outsourcing policy, concentration risk, and no outsourcing of accountability.",
+     "CERT-In directions of 28 April 2022: the provider reports cyber incidents to the organisation fast enough to meet the 6-hour CERT-In deadline, and keeps its relevant logs for 180 days.",
+     "Exit and transition: export of all configuration, policies and logs in an open format, and transition support for at least 90 days at contract end.",
+     "Non-disclosure and data handling: directory data is highly sensitive; collect on our premises or our systems only, no copies leave India.",
+     "For regulated entities, RBI and SEBI audit requirements may require a CERT-In empanelled auditor; confirm current empanelment."
+    ]
+   },
+   "architecture": "Domain controllers (Tier 0, own zone) -> logs to SIEM and, if bought, to an identity threat detection sensor or service. Assessment tools run read-only from a Tier 0 admin workstation. Fixes connect to PAM (Tier 0 admin access only through PAM) and IGA (privileged group membership reviewed). Results feed the vulnerability management process.",
+   "kpis": [
+    "PingCastle or Purple Knight risk score trend (falling each quarter)",
+    "Members of Tier 0 groups (target the documented minimum)",
+    "Attack paths from standard users to Tier 0 (target 0)",
+    "Stale enabled accounts older than 90 days (target 0)"
+   ],
+   "pitfalls": [
+    "Running a free tool once and filing the report",
+    "Fixing settings but leaving Tier 0 admins logging on to ordinary servers",
+    "Forgetting AD CS certificate templates, a common path to domain takeover",
+    "No tested plan to recover the forest after ransomware"
+   ],
+   "sources": [
+    {
+     "title": "Microsoft Learn: Active Directory tier model (part of the Enterprise Access Model)",
+     "url": "https://learn.microsoft.com/en-us/windows-server/identity/ad-ds/tier-model"
+    },
+    {
+     "title": "Netwrix: compare PingCastle editions",
+     "url": "https://netwrix.com/en/products/pingcastle/pingcastle-comparison/"
+    },
+    {
+     "title": "Semperis: Purple Knight free AD security assessment tool",
+     "url": "https://www.semperis.com/press-release/semperis-releases-free-security-assessment-tool-purple-knight-to-combat-systemic-attacks-exploiting-active-directory-vulnerabilities/"
+    },
+    {
+     "title": "SpecterOps: BloodHound Community Edition",
+     "url": "https://specterops.io/bloodhound-community-edition/"
+    },
+    {
+     "title": "Microsoft Q&A: Defender for Identity pricing and bundles",
+     "url": "https://learn.microsoft.com/en-us/answers/questions/1380582/microsoft-defender-for-identity-(atp)-pricing"
+    },
+    {
+     "title": "Tenable Identity Exposure licensing",
+     "url": "https://docs.tenable.com/quick-reference/licensing-guide/Content/tenable-identity-exposure-licensing.htm"
+    },
+    {
+     "title": "Kratikal: CERT-In empanelled auditors in India, 2026 (verify against CERT-In's own list)",
+     "url": "https://kratikal.com/blog/top-10-cert-in-empanelled-auditors-in-india-in-2026/"
+    },
+    {
+     "title": "RBI Cyber Security Framework in Banks (2016) and Master Direction on IT Governance (2023): control mapping",
+     "url": "https://opensecurityarchitecture.org/frameworks/rbi-csf"
+    },
+    {
+     "title": "Ankura: CERT-In directions of 28 April 2022 (6-hour reporting, 180-day logs)",
+     "url": "https://ankura.com/insights/everything-you-need-to-know-about-indias-new-guidelines-related-to-cyber-incident-reporting-by-cert-in/"
+    }
+   ]
+  },
+  "tec-sast": {
+   "summary": "Automated and manual testing of your own software for security flaws, in code (SAST), in open-source parts (SCA) and in the running app (DAST), before release.",
+   "protects": "In-house and vendor-built applications, APIs and mobile apps, and the customer data they handle. It counters injection, broken access control, insecure libraries, leaked secrets in code and misconfiguration.",
+   "placement": "Inside the build pipeline (CI/CD) and developer tools for SAST, SCA and secrets scanning; DAST runs against test or staging environments. The security testing lead owns it; development teams fix findings.",
+   "how": "SAST reads the source code and flags risky patterns; SCA lists open-source libraries and their known vulnerabilities; DAST attacks the running app like an outsider. A release gate blocks builds with critical findings unless an exception is approved. Manual code review and penetration testing cover what tools miss, such as business logic.",
+   "pareto": [
+    "SCA and secrets scanning on every repository first: cheapest and catches the most exploited issues.",
+    "SAST on every pull request for the internet-facing apps, with critical findings blocking release.",
+    "Authenticated DAST on each internet-facing app before every major release.",
+    "Annual manual penetration test of critical apps by a CERT-In empanelled firm.",
+    "Fix-time targets by severity, tracked in the vulnerability process."
+   ],
+   "vendors": [
+    {
+     "name": "Checkmarx One",
+     "kind": "commercial",
+     "fit": "Gartner AST Leader 2025 (seventh time); SAST, SCA, DAST and API testing in one platform; now also steward of ZAP.",
+     "india": "Sold via partners in India; on-premise and SaaS."
+    },
+    {
+     "name": "Black Duck (formerly Synopsys Software Integrity)",
+     "kind": "commercial",
+     "fit": "Gartner AST Leader 2025; strongest SCA and licence compliance, plus Coverity SAST.",
+     "india": "Sold via partners in India."
+    },
+    {
+     "name": "OpenText Application Security (Fortify)",
+     "kind": "commercial",
+     "fit": "Gartner AST Leader for 11 years; long-standing SAST and DAST, on-premise option common in banks.",
+     "india": "Sold via partners in India."
+    },
+    {
+     "name": "Snyk",
+     "kind": "commercial",
+     "fit": "Gartner AST Leader 2025; developer-friendly SCA and SAST; Team plan from about USD 25 per developer per month.",
+     "india": "SaaS; sold direct and via partners."
+    },
+    {
+     "name": "Veracode",
+     "kind": "commercial",
+     "fit": "SaaS SAST, DAST and SCA with penetration testing as a service; good where you prefer no on-premise tooling.",
+     "india": "SaaS; check data residency."
+    },
+    {
+     "name": "Semgrep, SonarQube Community Build, ZAP",
+     "kind": "open source",
+     "fit": "Free starting stack: Semgrep Community (LGPL-2.1, single-file rules), SonarQube Community Build (LGPL-3.0, code quality plus some security), ZAP for DAST (Apache 2.0; no longer an OWASP project, now 'ZAP by Checkmarx').",
+     "india": "Self-hosted; commercial tiers available from Semgrep and Sonar."
+    },
+    {
+     "name": "PortSwigger Burp Suite (Professional, DAST)",
+     "kind": "commercial",
+     "fit": "Burp Professional (about USD 499 per user per year) for manual testers; Burp Suite DAST (formerly Enterprise) for scheduled scans.",
+     "india": "Online purchase; widely used by Indian testers."
+    },
+    {
+     "name": "CERT-In empanelled testing firms (for example Payatu, Kratikal)",
+     "kind": "service firm",
+     "fit": "Manual application penetration testing and source code review with reports acceptable to regulators.",
+     "india": "Indian firms; verify current empanelment."
+    }
+   ],
+   "cost": {
+    "unit": "per contributing developer per year for SAST/SCA tools; per application or fixed per year for DAST; per test for manual pentests",
+    "band": "Roughly Rs 25,000-45,000 per developer per year at list for developer-first tools (Snyk about USD 25, Semgrep USD 30-40 per contributor per month); enterprise platforms by quote; Burp Professional about Rs 42,000 per tester per year.",
+    "reference_org": "About Rs 15-60 lakh a year for about 80 developers across 40 apps (tools plus annual manual tests of critical apps); open-source stack is licence free but needs about 1 AppSec engineer.",
+    "drivers": [
+     "Number of contributing developers and repositories",
+     "Languages and frameworks (legacy languages cost more)",
+     "Modules: SAST, SCA, DAST, API, containers, IaC",
+     "On-premise versus SaaS (source code leaving the premises)",
+     "Number of manual pentests and retests per year"
+    ],
+    "note": "Indicative; get three quotes. USD converted at about Rs 84/USD, excluding 18% GST."
+   },
+   "rfp": {
+    "scope": [
+     "SAST, SCA and secrets scanning integrated in our CI/CD for all repositories",
+     "Authenticated DAST for internet-facing web apps and APIs",
+     "Policy-based release gate and exception workflow",
+     "Developer training and fix guidance in the IDE",
+     "Annual manual pentest and source code review of critical apps (separate lot for a CERT-In empanelled firm)"
+    ],
+    "must": [
+     "Language coverage for our stack (list attached), with a measured false-positive rate below 25% on our sample code in the proof of concept",
+     "Integration with our Git platform and CI tool; results in pull requests",
+     "SCA with SBOM export (SPDX or CycloneDX) and licence risk",
+     "Findings mapped to CWE and OWASP Top 10",
+     "DAST with authenticated scanning and API (OpenAPI) import",
+     "Option to keep source code on our premises or in India",
+     "Role-based access and audit log; results exportable via API to our vulnerability tool"
+    ],
+    "should": [
+     "Incremental scans under 10 minutes for a typical pull request",
+     "AI-assisted fix suggestions",
+     "IaC and container image scanning",
+     "Single dashboard across SAST, SCA and DAST"
+    ],
+    "sizing": [
+     "About 80 contributing developers; number of repositories",
+     "40 applications with languages, frameworks and build tools",
+     "Number of internet-facing apps for DAST",
+     "Number of releases per month"
+    ],
+    "evaluation": [
+     "Detection quality and false-positive rate in proof of concept 35",
+     "Developer experience and integration 15",
+     "Coverage of our languages 15",
+     "Total cost over 3 years 25",
+     "Support and India presence 10"
+    ],
+    "sla": [
+     "Platform availability 99.5% (SaaS)",
+     "New critical CVE signatures in SCA within 48 hours of publication",
+     "P1 support response 2 hours",
+     "Manual pentest report within 10 working days of testing"
+    ],
+    "clauses": [
+     "Right to audit: the organisation, its auditors and the regulator (RBI, SEBI or IRDAI as applicable) may audit the provider and its sub-contractors, on site or remotely.",
+     "RBI Master Direction on Outsourcing of IT Services (2023) applies to regulated entities: due diligence, a board-approved outsourcing policy, concentration risk, and no outsourcing of accountability.",
+     "CERT-In directions of 28 April 2022: the provider reports cyber incidents to the organisation fast enough to meet the 6-hour CERT-In deadline, and keeps its relevant logs for 180 days.",
+     "Exit and transition: export of all configuration, policies and logs in an open format, and transition support for at least 90 days at contract end.",
+     "Source code is confidential: no use for model training, deletion on request and at contract end, and storage in India or on-premise if required.",
+     "RBI IT Governance Master Direction (2023) and IT outsourcing directions expect secure development and testing before release, including for vendor-built software; vendors of bespoke software provide test evidence and source code escrow where we do not own the code."
+    ]
+   },
+   "architecture": "Developer IDE -> Git -> CI pipeline runs secrets scan, SCA and SAST -> build gate -> deploy to staging -> DAST scan -> release. Findings go to the issue tracker and the vulnerability management tool; metrics go to the security dashboard. WAF virtual patches cover findings that cannot be fixed before go-live.",
+   "kpis": [
+    "Share of apps with SAST and SCA in the pipeline (target 100%)",
+    "Critical findings open past SLA (target 0)",
+    "Median time to fix critical and high findings",
+    "Vulnerabilities found in production pentests per app (falling)"
+   ],
+   "pitfalls": [
+    "Turning on every rule, flooding developers and losing their trust",
+    "Scanning but never blocking a release",
+    "Ignoring vendor-built apps, which are often the riskiest",
+    "Confusing tool output with a pentest of business logic"
+   ],
+   "sources": [
+    {
+     "title": "Checkmarx: 2025 Gartner Magic Quadrant for Application Security Testing",
+     "url": "https://checkmarx.com/gartner_magic_quadrant_2025_report/"
+    },
+    {
+     "title": "Black Duck: 2025 Gartner Magic Quadrant for AST",
+     "url": "https://www.blackduck.com/resources/analyst-reports/gartner-magic-quadrant-appsec.html"
+    },
+    {
+     "title": "OpenText: Leader in the 2025 Gartner MQ for AST",
+     "url": "https://blogs.opentext.com/2025-gartner-magic-quadrant-for-application-security-testing-opentext-named-a-leader-11-years-running/"
+    },
+    {
+     "title": "AppSec Santa: Semgrep vs Snyk (pricing summary)",
+     "url": "https://appsecsanta.com/sast-tools/semgrep-vs-snyk"
+    },
+    {
+     "title": "Semgrep Community Edition on GitHub (LGPL-2.1)",
+     "url": "https://github.com/semgrep/semgrep"
+    },
+    {
+     "title": "SonarQube Community Build on GitHub (LGPL-3.0)",
+     "url": "https://github.com/SonarSource/sonarqube"
+    },
+    {
+     "title": "ZAP has joined forces with Checkmarx (ZAP stays Apache 2.0)",
+     "url": "https://www.zaproxy.org/blog/2024-09-24-zap-has-joined-forces-with-checkmarx/"
+    },
+    {
+     "title": "Ciphers Security: Burp Suite pricing 2026 (Pro vs DAST)",
+     "url": "https://cipherssecurity.com/burp-suite-pricing-2026-pro-vs-dast/"
+    },
+    {
+     "title": "Veracode",
+     "url": "https://www.veracode.com/"
+    },
+    {
+     "title": "Kratikal: CERT-In empanelled auditors in India, 2026 (verify against CERT-In's own list)",
+     "url": "https://kratikal.com/blog/top-10-cert-in-empanelled-auditors-in-india-in-2026/"
+    },
+    {
+     "title": "RBI Cyber Security Framework in Banks (2016) and Master Direction on IT Governance (2023): control mapping",
+     "url": "https://opensecurityarchitecture.org/frameworks/rbi-csf"
+    }
+   ]
+  },
+  "tec-api": {
+   "summary": "Tools that find every API you expose, test it for the API-specific flaws, and watch live API traffic for abuse.",
+   "protects": "Customer and transaction data behind APIs used by mobile apps, partners, fintechs, account aggregators and internal services. It counters broken object-level authorisation (one customer reading another's data), broken authentication, excessive data exposure, shadow and zombie APIs, and business-logic abuse.",
+   "placement": "Out of band, reading copies of API traffic from the API gateway, load balancer, WAF or cloud logs, plus scanners in the pipeline. Blocking is done through the WAF or API gateway. The security architect owns it; API owners fix findings.",
+   "how": "The platform builds an inventory of APIs from live traffic and code, flags sensitive data and unauthenticated endpoints, and compares calls with the API specification. It learns normal behaviour per user and per endpoint and alerts on attacks such as enumeration of object IDs. Testing modules run the OWASP API Top 10 checks before release.",
+   "pareto": [
+    "A complete API inventory, including undocumented (shadow) and old versions, with an owner for each.",
+    "Object-level authorisation tests (OWASP API1) on every API that returns customer data.",
+    "All external APIs through a gateway with authentication, rate limits and schema validation.",
+    "Runtime detection of data scraping and ID enumeration, sent to the SOC.",
+    "Retire old API versions on a fixed schedule."
+   ],
+   "vendors": [
+    {
+     "name": "Salt Security",
+     "kind": "commercial",
+     "fit": "Specialist API discovery, posture and behavioural runtime protection; agentless discovery and works through existing gateways and WAFs.",
+     "india": "Sold via partners; confirm India hosting of traffic metadata."
+    },
+    {
+     "name": "Akamai API Security (formerly Noname Security)",
+     "kind": "commercial",
+     "fit": "Discovery, posture, runtime and testing; Akamai bought Noname for about USD 450 million in June 2024; fits estates already on Akamai.",
+     "india": "Akamai has a large India presence."
+    },
+    {
+     "name": "Traceable AI (by Harness)",
+     "kind": "commercial",
+     "fit": "API posture, testing and protection with deep tracing of API calls; now under Harness.",
+     "india": "Sold via partners in India."
+    },
+    {
+     "name": "Indusface AppTrana API Security",
+     "kind": "Indian",
+     "fit": "Managed API protection with discovery, DDoS and bot mitigation bundled with the WAAP; priced per API host by quote.",
+     "india": "Indian company; India support."
+    },
+    {
+     "name": "Cloudflare API Shield / Imperva API Security / F5",
+     "kind": "commercial",
+     "fit": "API discovery and schema enforcement as add-ons to an existing WAF platform; least effort if that WAF is already in place.",
+     "india": "Via each vendor's India partners."
+    },
+    {
+     "name": "Akto",
+     "kind": "open source",
+     "fit": "Open-source (MIT) API inventory and security testing, including OWASP API Top 10 tests in CI/CD; a good free start for discovery and testing.",
+     "india": "Self-hosted; paid tiers from the vendor."
+    }
+   ],
+   "cost": {
+    "unit": "per API call volume (millions of calls per month) or per API host, per year",
+    "band": "Vendors do not publish prices; expect a fixed annual subscription by traffic volume. Our working band is about Rs 20-80 lakh a year (not verified against a public price list).",
+    "reference_org": "About Rs 20-80 lakh a year for the APIs of 40 apps at mid-size BFSI traffic; open-source discovery and testing (Akto, ZAP) is licence free but runtime protection then relies on the gateway and WAF.",
+    "drivers": [
+     "API call volume per month",
+     "Number of API hosts and environments",
+     "Modules: discovery, posture, testing, runtime blocking",
+     "SaaS analysis versus on-premise (traffic data residency)",
+     "Bundling with an existing WAF/WAAP contract"
+    ],
+    "note": "Indicative and unverified (no public price lists); get three quotes."
+   },
+   "rfp": {
+    "scope": [
+     "Discover all internal and external APIs across data centres and cloud",
+     "Classify sensitive data (PII, payment, account data) in API responses",
+     "Test APIs against the OWASP API Security Top 10 (2023) before release",
+     "Detect and help block attacks at runtime through our WAF or gateway",
+     "Report API posture to owners and to the security dashboard"
+    ],
+    "must": [
+     "Discovery from traffic mirrors, gateway logs and cloud sources without changing apps",
+     "Detection of OWASP API1 (broken object-level authorisation) and API5 (function-level authorisation) at runtime",
+     "Sensitive data detection with masking of personal data in the console",
+     "Integration with our WAF or API gateway to block, and with the SIEM to alert",
+     "Traffic metadata stored in India; no full payloads kept unless we allow it",
+     "API inventory export (OpenAPI) and API for automation"
+    ],
+    "should": [
+     "Testing in CI/CD with our API specifications",
+     "Detection of shadow and deprecated API versions",
+     "Business-logic abuse detection (scraping, enumeration)",
+     "Support for GraphQL and gRPC"
+    ],
+    "sizing": [
+     "Number of API hosts and known endpoints",
+     "API calls per month and peak calls per second",
+     "Gateways, load balancers and clouds in use",
+     "Number of partner and fintech integrations"
+    ],
+    "evaluation": [
+     "Technical fit 35",
+     "Proof of concept on our traffic (discovery and detection) 25",
+     "Integration with our WAF, gateway and SIEM 10",
+     "Total cost over 3 years 20",
+     "India presence and data residency 10"
+    ],
+    "sla": [
+     "Console availability 99.9%",
+     "Alert delivery within 5 minutes of detection",
+     "P1 response 1 hour",
+     "New attack technique detections added within 30 days of publication"
+    ],
+    "clauses": [
+     "Right to audit: the organisation, its auditors and the regulator (RBI, SEBI or IRDAI as applicable) may audit the provider and its sub-contractors, on site or remotely.",
+     "RBI Master Direction on Outsourcing of IT Services (2023) applies to regulated entities: due diligence, a board-approved outsourcing policy, concentration risk, and no outsourcing of accountability.",
+     "CERT-In directions of 28 April 2022: the provider reports cyber incidents to the organisation fast enough to meet the 6-hour CERT-In deadline, and keeps its relevant logs for 180 days.",
+     "Exit and transition: export of all configuration, policies and logs in an open format, and transition support for at least 90 days at contract end.",
+     "Payment data: traffic copies may contain payment system data; under RBI's 2018 payment data storage direction it must be stored only in India.",
+     "DPDP Act 2023: the provider processes personal data in API traffic only to secure it; minimisation, masking and deletion clauses apply."
+    ]
+   },
+   "architecture": "Clients and partners -> WAF/WAAP -> API gateway -> services. A traffic mirror or log feed from the gateway, load balancer or cloud goes to the API security platform (out of band). The platform sends block rules to the WAF/gateway, alerts to the SIEM, and findings to the vulnerability tool; testing hooks into the CI pipeline.",
+   "kpis": [
+    "Share of APIs inventoried with an owner (target 100%)",
+    "Shadow or deprecated APIs found and closed per quarter",
+    "Open critical API findings past SLA (target 0)",
+    "Mean time to detect API data scraping"
+   ],
+   "pitfalls": [
+    "Assuming the WAF already covers API logic flaws",
+    "Inventory without owners, so findings are never fixed",
+    "Mirroring full payloads to a SaaS without a data residency check",
+    "Protecting only external APIs while partner and internal ones carry the same data"
+   ],
+   "sources": [
+    {
+     "title": "OWASP API Security Top 10 (2023)",
+     "url": "https://api-security.owasp.org/editions/2023/en/0x11-t10"
+    },
+    {
+     "title": "Salt Security",
+     "url": "https://salt.security/"
+    },
+    {
+     "title": "Akamai completes acquisition of Noname Security (June 2024)",
+     "url": "https://www.akamai.com/newsroom/press-release/akamai-completes-acquisition-of-api-security-company-noname"
+    },
+    {
+     "title": "Traceable AI API Security Platform (by Harness)",
+     "url": "https://www.traceable.ai/"
+    },
+    {
+     "title": "Indusface AppTrana WAAP pricing",
+     "url": "https://www.indusface.com/pricing/apptrana-waap/"
+    },
+    {
+     "title": "Akto on GitHub (open-source API security, MIT)",
+     "url": "https://github.com/akto-api-security/akto"
+    },
+    {
+     "title": "ZAP has joined forces with Checkmarx (ZAP stays Apache 2.0)",
+     "url": "https://www.zaproxy.org/blog/2024-09-24-zap-has-joined-forces-with-checkmarx/"
+    },
+    {
+     "title": "Ankura: CERT-In directions of 28 April 2022 (6-hour reporting, 180-day logs)",
+     "url": "https://ankura.com/insights/everything-you-need-to-know-about-indias-new-guidelines-related-to-cyber-incident-reporting-by-cert-in/"
+    }
+   ]
+  },
+  "tec-bot": {
+   "summary": "Protection that tells humans from automated scripts on login, OTP, payment and sign-up journeys, plus runtime self-protection inside the application.",
+   "protects": "Customer accounts, OTP and SMS budgets, offers and inventory, and the application itself. It counters credential stuffing, account takeover, fake account creation, OTP and SMS pumping, scraping, card testing and, with RASP, exploitation of code flaws at run time.",
+   "placement": "Bot management at the edge (CDN/WAAP) or as a JavaScript and mobile SDK in the web and mobile apps, with decisions enforced at the edge. RASP is an agent inside the application runtime on the app servers. The security architect owns it, with the fraud and digital channel teams.",
+   "how": "The service collects signals (device and browser fingerprint, behaviour, IP reputation, request patterns) and scores each request as human or bot. Bad bots are blocked, slowed, challenged or fed decoy content, while good bots (search engines, partners) are allowed. RASP watches calls inside the app (such as database queries) and blocks an exploit as it happens.",
+   "pareto": [
+    "Protect login, OTP, password reset and payment endpoints first.",
+    "Credential-stuffing detection using breached-credential checks and login velocity.",
+    "Mobile SDK or app attestation for the mobile banking app.",
+    "Rate limits on OTP sends to stop SMS pumping costs.",
+    "Feed bot and fraud signals to the fraud team and the SOC."
+   ],
+   "vendors": [
+    {
+     "name": "Akamai Bot Manager and Account Protector",
+     "kind": "commercial",
+     "fit": "Mature bot scoring (0-100) with graded responses and stealthy defences; widely used by large banks and retailers.",
+     "india": "Large India presence."
+    },
+    {
+     "name": "HUMAN Security (merged with PerimeterX in 2022)",
+     "kind": "commercial",
+     "fit": "Specialist bot and fraud defence, including account takeover and scraping.",
+     "india": "Sold via partners."
+    },
+    {
+     "name": "Cloudflare Bot Management",
+     "kind": "commercial",
+     "fit": "Bot scoring built into the Cloudflare edge; full bot management on Enterprise plans.",
+     "india": "Indian data centres."
+    },
+    {
+     "name": "Radware Bot Manager",
+     "kind": "commercial",
+     "fit": "Bot management built on the ShieldSquare acquisition (January 2019); available stand-alone or with Radware WAF/DDoS.",
+     "india": "Sold via Radware partners in India."
+    },
+    {
+     "name": "AWS WAF Bot Control and Fraud Control (ATP)",
+     "kind": "commercial",
+     "fit": "Pay per use for apps on AWS: Bot Control USD 10 per month per web ACL plus per-million requests; account takeover protection charged per login request.",
+     "india": "Indian AWS regions."
+    },
+    {
+     "name": "Indusface AppTrana (bot mitigation in Premium and Enterprise tiers)",
+     "kind": "Indian",
+     "fit": "Bot mitigation bundled into a managed WAAP; simplest if AppTrana is the WAF.",
+     "india": "Indian company."
+    },
+    {
+     "name": "Contrast Security (Application Detection and Response / RASP)",
+     "kind": "commercial",
+     "fit": "Runtime protection with sensors inside the app runtime that block exploits at the framework level.",
+     "india": "Sold via partners."
+    },
+    {
+     "name": "OWASP CRS rate limiting plus CAPTCHA",
+     "kind": "open source",
+     "fit": "No mature open-source bot manager exists; ModSecurity/Coraza with CRS, rate limits and an open CAPTCHA give partial protection only.",
+     "india": "Self-hosted."
+    }
+   ],
+   "cost": {
+    "unit": "fixed per year by protected traffic (requests or logins per month), or per request for cloud-native options",
+    "band": "Enterprise bot management is quote-only; our working band is about Rs 20-60 lakh a year (not verified against a public price list). Cloud pay-per-use example: AWS account takeover protection costs USD 1,000 per million login requests for the first 2 million each month, falling with volume.",
+    "reference_org": "About Rs 20-60 lakh a year to protect login, OTP and payment journeys for a mid-size BFSI digital channel; RASP extra, usually per application server.",
+    "drivers": [
+     "Requests or logins per month on protected endpoints",
+     "Number of domains and mobile apps (SDK)",
+     "Account takeover and fraud modules",
+     "Bundling with existing CDN/WAF contract",
+     "RASP: number of applications and servers"
+    ],
+    "note": "Indicative and largely unverified (no public price lists); get three quotes. USD converted at about Rs 84/USD, excluding 18% GST."
+   },
+   "rfp": {
+    "scope": [
+     "Bot management on login, registration, OTP, password reset, payment and search endpoints for web and mobile",
+     "Mobile SDK integration for Android and iOS apps",
+     "Allow-list of good bots and partners",
+     "Dashboards and alerts for the fraud and SOC teams",
+     "Optional: RASP for the listed critical applications"
+    ],
+    "must": [
+     "Detection of credential stuffing, account creation fraud, OTP/SMS pumping and scraping",
+     "Response options: allow, monitor, challenge, rate-limit, block, serve alternate content",
+     "Accessible challenges (no image CAPTCHA only) that work on low-end phones and slow networks",
+     "Detection that works without third-party cookies",
+     "Signals and decisions exported to SIEM and fraud systems in near real time",
+     "Personal data in device fingerprints processed lawfully and stored in India where required",
+     "Added latency below 30 ms at the 95th percentile"
+    ],
+    "should": [
+     "Breached-credential checking at login",
+     "Mobile app attestation and tamper detection",
+     "Machine-learning models updated without our effort",
+     "RASP with OWASP Top 10 runtime blocking and low overhead (under 5% CPU)"
+    ],
+    "sizing": [
+     "Logins, registrations and OTP sends per month and at peak",
+     "Number of web domains and mobile apps",
+     "Current bot share of traffic if known",
+     "Peak events (festive sales, results day)"
+    ],
+    "evaluation": [
+     "Detection efficacy in a proof of concept on live traffic 35",
+     "False positives on real customers 15",
+     "Integration effort (web, mobile, fraud, SIEM) 10",
+     "Total cost over 3 years 25",
+     "India presence and data residency 15"
+    ],
+    "sla": [
+     "Service availability 99.99% (edge)",
+     "P1 (customers blocked) response 30 minutes, fix or bypass within 2 hours",
+     "New bot campaign mitigations within 24 hours",
+     "Monthly efficacy report"
+    ],
+    "clauses": [
+     "Right to audit: the organisation, its auditors and the regulator (RBI, SEBI or IRDAI as applicable) may audit the provider and its sub-contractors, on site or remotely.",
+     "RBI Master Direction on Outsourcing of IT Services (2023) applies to regulated entities: due diligence, a board-approved outsourcing policy, concentration risk, and no outsourcing of accountability.",
+     "CERT-In directions of 28 April 2022: the provider reports cyber incidents to the organisation fast enough to meet the 6-hour CERT-In deadline, and keeps its relevant logs for 180 days.",
+     "Exit and transition: export of all configuration, policies and logs in an open format, and transition support for at least 90 days at contract end.",
+     "DPDP Act 2023: device and behaviour signals can be personal data; a lawful basis, notice and minimisation are needed, and the provider acts as a data processor.",
+     "RBI Authentication Mechanisms for Digital Payment Transactions Directions, 2025: bot and risk signals can support risk-based checks, but do not replace the required two factors."
+    ]
+   },
+   "architecture": "Customer browser or mobile app (SDK collects signals) -> CDN/WAAP edge with bot management (scores and enforces) -> WAF -> login, OTP and payment services. RASP agents run inside the app servers. Decisions and signals go to the fraud engine and SIEM; the fraud team tunes policies.",
+   "kpis": [
+    "Credential-stuffing logins blocked versus account takeovers that still happen",
+    "OTP/SMS spend from bot traffic (falling)",
+    "Legitimate customers challenged or blocked (below an agreed rate)",
+    "Share of critical journeys protected (target 100%)"
+   ],
+   "pitfalls": [
+    "Protecting the website but not the mobile app API",
+    "CAPTCHAs that block real customers on slow networks",
+    "No joint ownership with the fraud team",
+    "Relying on IP blocking alone, which residential proxies defeat"
+   ],
+   "sources": [
+    {
+     "title": "Akamai Bot Manager",
+     "url": "https://www.akamai.com/products/bot-manager"
+    },
+    {
+     "title": "HUMAN Security",
+     "url": "https://www.humansecurity.com/"
+    },
+    {
+     "title": "Cloudflare: network and CDN plans",
+     "url": "https://www.cloudflare.com/plans/network-cdn/"
+    },
+    {
+     "title": "Radware (acquired ShieldSquare bot management, January 2019)",
+     "url": "https://en.wikipedia.org/wiki/Radware"
+    },
+    {
+     "title": "AWS WAF pricing (web ACL, rules, requests, Bot Control, Fraud Control)",
+     "url": "https://aws.amazon.com/waf/pricing/"
+    },
+    {
+     "title": "Indusface AppTrana WAAP pricing",
+     "url": "https://www.indusface.com/pricing/apptrana-waap/"
+    },
+    {
+     "title": "Contrast Security: Application Detection and Response (runtime protection)",
+     "url": "https://www.contrastsecurity.com/runtime-application-self-protection-rasp"
+    },
+    {
+     "title": "OWASP CRS (Core Rule Set)",
+     "url": "https://coreruleset.org/"
+    },
+    {
+     "title": "RBI press release: Authentication Mechanisms for Digital Payment Transactions Directions, 2025",
+     "url": "https://rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx?prid=61282"
+    }
+   ]
+  }
+ }
+}
