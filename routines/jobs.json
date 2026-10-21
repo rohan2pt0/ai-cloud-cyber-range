@@ -231,7 +231,19 @@
       "backup",
       "drill"
     ],
-    "description": "1 Jan/Apr/Jul/Oct 10:05am: the quarterly restore drill. The newest off-site (OneDrive) backup must decrypt, unpack and match every checksum; a failure is pushed to your phone by the andon. Silent when no off-site folder is set.",
+    "description": "1 Jan/Apr/Jul/Oct 10:05am: the quarterly restore drill. The newest CLEAN backup (off-site first) must decrypt, unpack, match every checksum and open as working data in a scratch restore twin (doc 88); a failure is pushed to your phone by the andon. With no off-site folder it proves the local copy and says so; with no backup at all it fails.",
+    "enabled": true,
+    "kind": "guard"
+  },
+  {
+    "id": "honesty-check",
+    "cron": "10 9 * * 1",
+    "command": [
+      "./securax",
+      "ai",
+      "honesty"
+    ],
+    "description": "Mondays 9:10am: eight questions that catch an AI that guesses (a false premise, a circular number that does not exist, today's date, a sum). A failure means the model now answering makes things up; the andon pushes it to your phone (doc 89).",
     "enabled": true,
     "kind": "guard"
   }

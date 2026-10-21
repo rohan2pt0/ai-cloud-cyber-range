@@ -1086,8 +1086,10 @@ EOF2
     # Human-in-command (RBI MRM draft): stop/resume one model or all AI at once (no restart), and the model inventory.
     #   ./securax ai status | stop all|MODEL --reason "..." | resume all|MODEL | inventory
     #   ./securax ai budget [extend --day|--month --tokens N --reason "..." [--caller ID]]   daily + monthly AI allowance
+    #   ./securax ai honesty [--model twin]   ask the AI questions that catch guessing (false premise, fake circular, today's date)
     shift
     if [ "${1:-}" = share ]; then shift; exec python3 "$ROOT/lifecycle/share.py" "$@"; fi   # how much of the work Claude did (doc 23)
+    if [ "${1:-}" = honesty ]; then shift; exec python3 "$ROOT/governance/honesty.py" --url "$(gw_url)" "$@"; fi   # does it refuse to guess? (doc 89)
     if [ "${1:-}" = inventory ]; then                 # also checks what the gateway actually serves (para 21 of the RBI draft)
       gcurl -fsS -m 5 ${SECURAX_GATEWAY_KEY:+-H "Authorization: Bearer $SECURAX_GATEWAY_KEY"} "$(gw_url)/v1/models" 2>/dev/null | python3 "$ROOT/governance/aicontrol.py" inventory --live
       exit "${PIPESTATUS[1]}"
@@ -1918,6 +1920,7 @@ AI & CHAT
   pull           download the private local model                   profile        size everything to THIS machine
   guard [on|off] strict or relaxed safety rails                      bench          which installed model fits this machine best
   ai stop|resume|budget|share   stop AI at once (one model or all), the allowance, who did this month's work
+  ai honesty     does the AI refuse to guess? 8 questions that catch made-up answers, scored
   say "text"     speak/ask quickly      ask <agent> "q"  ask an expert advisor      advisors / plan / learn / intel   daily helpers
   research "task" --allow site.com   browse the web within limits    design "prompt"   make images      routines   scheduled jobs
   knowledge import|status   your old Claude/ChatGPT/DeepSeek/Gemini chats as one private library you can search (doc 51)

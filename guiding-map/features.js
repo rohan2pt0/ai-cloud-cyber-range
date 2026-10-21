@@ -152,6 +152,19 @@ window.SECURAX_FEATURES = {
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/53-THE-TWIN/"
   },
   {
+   "id": "accurate-answers",
+   "group": "Use AI safely",
+   "icon": "chat",
+   "name": "Accurate answers without prompt engineering",
+   "what": "Every question reaches the AI with today's date and the rules a careful expert would write: never make things up, say \"I don't know\", flag what may have changed, show the working. A weak model says so, and a weekly check catches an AI that starts to guess.",
+   "cmd": "./securax ai honesty",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "light": "amber",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/89-ACCURATE-ANSWERS-WITHOUT-PROMPT-ENGINEERING/"
+  },
+  {
    "id": "build",
    "group": "Use AI safely",
    "icon": "code",

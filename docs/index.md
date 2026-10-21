@@ -38,6 +38,7 @@ Each line names what it does, in plain words, and the one command that opens it.
 |---|---|---|
 | 🟢 [AI security gateway](securax/36-IDENTITY-INCIDENT-RESIDENCY.md) | Every AI call is checked: personal data masked, prompt injection blocked, data kept in India when it must be, and every call logged. | `./securax doctor` |
 | 🟢 [Private chat](securax/53-THE-TWIN.md) | A ChatGPT-style assistant that runs through the gateway, with a private local model when the data must not leave. | `./securax open` |
+| 🟡 [Accurate answers without prompt engineering](securax/89-ACCURATE-ANSWERS-WITHOUT-PROMPT-ENGINEERING.md) | Every question reaches the AI with today's date and the rules a careful expert would write: never make things up, say "I don't know", flag what may have changed, show the working. A weak model says so, and a weekly check catches an AI that starts to guess. | `./securax ai honesty` |
 | 🟡 [Build with open models](securax/83-BUILD-WITH-OPEN-MODELS.md) | Write and fix code with strong open models through the gateway, so no single AI subscription or its limits can stop the work. | `./securax opencode` |
 
 **Keep it running**
