@@ -1,6 +1,6 @@
 # SecuRAX — Robust · Adaptive · eXcellence-driven
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
+[![License: FSL-1.1-MIT](https://img.shields.io/badge/License-FSL--1.1--MIT-blue.svg)](LICENSING.md)
 [![CI](https://github.com/rohan2pt0/ai-cloud-cyber-range/actions/workflows/devsecops.yml/badge.svg)](https://github.com/rohan2pt0/ai-cloud-cyber-range/actions/workflows/devsecops.yml)
 <!-- readme:badge:start -->
 [![Version](https://img.shields.io/badge/version-0.3.0-blue)](CHANGELOG.md)
@@ -110,6 +110,12 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 <!-- readme:whats-new:start -->
 ## What's new
+
+**On main, in the next release:**
+
+- [Build from a phone with the open models](docs/securax/83-BUILD-WITH-OPEN-MODELS.md)
+- [The rest of Claude Code's toolkit, on the open models](docs/securax/83-BUILD-WITH-OPEN-MODELS.md)
+- Licence: from v0.4.0, FSL-1.1-MIT
 
 **Release 0.3.0 - 2026-10-22:**
 

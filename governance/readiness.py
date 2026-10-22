@@ -6,7 +6,7 @@
                                                      IV (base layer ₹500 cr and above), V (middle layer and above)
     ./securax readiness start "NAME" --map cscrf --category small
                                                      any other map: cscrf (SEBI, by category mii|qre|mid|small|self),
-                                                     caf (UK NCSC CAF 4), nist-ai-600-1, mit-ai-risk, pqc
+                                                     caf (UK NCSC CAF 4), nist-ai-600-1, mit-ai-risk, pqc, owasp-ai (OWASP LLM and Agentic), free-ai (RBI FREE-AI)
     ./securax readiness [NAME]                       where it stands: the score, the vital few gaps, what is overdue
     ./securax readiness mark NAME ID STATUS [--evidence "..."] [--owner WHO] [--due YYYY-MM-DD]
                                                      STATUS is met | partly | gap | na; ID as listed (for example 121-124)
@@ -35,7 +35,8 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 MAPS = {"rbi": "regmap-rbi-nbfc.json", "cscrf": "regmap-sebi-cscrf.json", "caf": "regmap-uk-caf-4.json",
-        "nist-ai-600-1": "regmap-nist-ai-600-1.json", "mit-ai-risk": "regmap-mit-ai-risk.json", "pqc": "regmap-pqc.json"}
+        "nist-ai-600-1": "regmap-nist-ai-600-1.json", "mit-ai-risk": "regmap-mit-ai-risk.json", "pqc": "regmap-pqc.json",
+        "owasp-ai": "regmap-owasp-llm-agentic.json", "free-ai": "regmap-rbi-free-ai.json"}
 ALL = "all"                                        # the category of a map that is not split into categories
 STORE = ROOT / "vault" / "readiness"
 STATUSES = ("met", "partly", "gap", "na")

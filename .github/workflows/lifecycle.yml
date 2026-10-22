@@ -50,10 +50,11 @@ jobs:
         run: |
           curl -fsSL -o helm.tgz https://get.helm.sh/helm-v3.16.3-linux-amd64.tar.gz
           echo "f5355c79190951eed23c5432a3b920e071f4c00a64f75e077de0dd4cb7b294ea  helm.tgz" | sha256sum -c -
-          tar xzf helm.tgz && sudo mv linux-amd64/helm /usr/local/bin/helm
+          # unpack outside the checkout: the archives carry their own LICENSE, which would overwrite the repository's
+          tar xzf helm.tgz -C "$RUNNER_TEMP" && sudo mv "$RUNNER_TEMP/linux-amd64/helm" /usr/local/bin/helm
           curl -fsSL -o kc.tgz https://github.com/yannh/kubeconform/releases/download/v0.6.7/kubeconform-linux-amd64.tar.gz
           echo "95f14e87aa28c09d5941f11bd024c1d02fdc0303ccaa23f61cef67bc92619d73  kc.tgz" | sha256sum -c -
-          tar xzf kc.tgz && sudo mv kubeconform /usr/local/bin/kubeconform
+          tar xzf kc.tgz -C "$RUNNER_TEMP" && sudo mv "$RUNNER_TEMP/kubeconform" /usr/local/bin/kubeconform
       - name: Tenant chart lints, renders for every tier and passes Kubernetes schema validation
         run: |
           helm lint gitops/charts/tenant

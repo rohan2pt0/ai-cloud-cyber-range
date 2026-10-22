@@ -44,7 +44,7 @@ One habit we deliberately do **not** copy: lock-in. Export always works, and the
 
 | Tier | Who | What they get | Price (example, to test) |
 |---|---|---|---|
-| **Community** | Anyone: students, families, small teams | The open-source estate: Life OS, Vantage, Govern, the range, all core features, export always | Free |
+| **Community** | Anyone: students, families, small teams | The free-to-use estate (FSL-1.1-MIT): Life OS, Vantage, Govern, the range, all core features, export always | Free |
 | **Pro** | One professional: a CISO, a founder, a DPO | All editions kept current, sync hosted on an always-on node, updates and fixes first, playbook packs | Rs 999 a month |
 | **Concierge** | HNIs, family offices, entrepreneurs, public figures | Set-up done for them, a private node, a human who reviews their risks monthly, an incident hotline, family devices covered | Rs 25,000 a month |
 
@@ -110,7 +110,7 @@ These are proposals: change the numbers to fit your life. `venture` shows where 
 
 - **GST:** software and services carry 18%. Registration is needed once turnover crosses Rs 20 lakh a year for services (lower in some states). Confirm with your chartered accountant.
 - **DPDP Act:** a paid service that holds clients' personal data has clear duties: consent, purpose limits, breach notice and a grievance contact. The estate's design helps (data on the device, a private node, export), but it does not replace a written privacy notice.
-- **Licence and brand:** the code is MIT licensed, so anyone may use and even sell it. The moat is the service, the trust and the brand, so register the name as a trademark before marketing it.
+- **Licence and brand:** v0.3.0 and earlier are MIT, so anyone may use and even sell those; from v0.4.0 the code is FSL-1.1-MIT, which forbids competing resale for two years per release (LICENSING.md). The moat is the service, the trust and the brand, so register the name as a trademark before marketing it.
 - **Employment terms:** if you are employed, check your contract and your employer's policy on outside business and conflict of interest before selling to anyone.
 
 ## 8. Prompt engineering, used where it pays

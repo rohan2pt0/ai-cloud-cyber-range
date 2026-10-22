@@ -120,7 +120,7 @@ def _tt_env(tmp_path, monkeypatch):
 
 def test_every_tabletop_inject_is_complete_and_names_a_real_check_and_command():
     known = {"alerts", "depth", "encrypted", "offsite", "offsite_offline", "drilled", "allowance", "known_good", "peers", "sync",
-             "mirror", "replicas"}
+             "mirror", "replicas", "killswitch", "ai_clock"}
     scen = {s["id"] for s in ct.load()}
     help_text = subprocess.run(["bash", str(ROOT / "securax"), "help"], capture_output=True, text=True).stdout
     for ex in ct.exercises():

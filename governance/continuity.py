@@ -368,6 +368,14 @@ def tabletop_check(name: str, now: float | None = None) -> tuple[bool | None, st
         remotes = [r for r in env("MIRROR_REMOTES").split(",") if r.strip()]
         ok = bundle and bool(remotes)
         return ok, ("a code bundle " + ("exists" if bundle else "is missing") + f" and {len(remotes)} mirror host(s) are set")
+    if name == "killswitch":                    # doc 105, G11: one command stops AI, with no restart
+        compose = (ROOT / "local" / "compose" / "docker-compose.yml").read_text("utf-8")
+        ok = (ROOT / "local" / "compose" / "controls").is_dir() and "AI_CONTROL_FILE" in compose and "./controls:" in compose
+        return ok, "the AI stop switch is mounted in the gateway (./securax ai stop all)" if ok else "the AI stop switch is missing"
+    if name == "ai_clock":                      # the clocks an AI data leak usually starts are loaded
+        have = {f.stem for f in (ROOT / "governance" / "regulators").glob("*.json")}
+        need = {"cert-in", "dpdp"}
+        return need <= have, "loaded: " + ", ".join(sorted(need & have)) + ("" if need <= have else "; missing: " + ", ".join(sorted(need - have)))
     if name == "replicas":
         return None, "only Cloudflare knows how many machines serve your address (./securax online status shows it)"
     return None, ""

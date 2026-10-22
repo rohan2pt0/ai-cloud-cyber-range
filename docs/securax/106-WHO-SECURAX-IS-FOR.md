@@ -42,7 +42,7 @@ The engineering is unusually well proven. But most of its "security team" module
 | 1 | Paragraph-level maps of six regulations (RBI NBFC 2026, SEBI CSCRF, UK CAF, NIST AI 600-1, MIT AI risk, post-quantum), with chapter or category applicability | The core of Readiness; deep India coverage few tools have |
 | 2 | The regulator incident clock (RBI, SEBI, CERT-In, DPDP, IRDAI as data) | The six-hour duty, with drafts and a tamper-evident log |
 | 3 | Proof-native engineering: every claim tied to a test | Matches what an auditor wants to see |
-| 4 | Runs offline, open source (MIT) | Fits the Directions' vendor clauses: right to audit, source code available |
+| 4 | Runs offline, code you can audit (FSL-1.1-MIT, each release MIT after two years) | Fits the Directions' vendor clauses: right to audit, source code available |
 | 5 | The India-aware AI gateway | A second product for when NBFCs adopt AI (RBI FREE-AI) |
 
 **Fixed in this change:** a public repository must carry no employer or role hints. Several files still referred to the job
@@ -85,7 +85,7 @@ people's data, prove it to someone (a regulator, an auditor, a client, a Board),
 1. **Shield:** let people use any AI and keep the data out of it (the existing homepage message, kept).
 2. **Readiness:** know where you stand on any regulation, with evidence, and show it to your Board and auditor.
 
-Both run on the customer's own machine, both are open source, and both feed one audit trail.
+Both run on the customer's own machine, both have public code, and both feed one audit trail.
 
 ## 3. Positioning
 
@@ -102,14 +102,14 @@ Both run on the customer's own machine, both are open source, and both feed one 
      audited.
   2. Readiness for any regulation: only the requirements that apply to you, each with evidence, owner and date, with a board
      pack in one command.
-  3. Yours to verify: open source, offline, tested; an "unknown" is never reported as met.
+  3. Yours to verify: public code, offline, tested; an "unknown" is never reported as met.
 - **Three use cases:**
   1. A firm adopts AI and keeps customer data out of it (Shield).
   2. A regulated entity prepares for its audit (Readiness).
   3. An auditor runs one method across many clients.
 - **Why it is different:**
   - India-specific depth inside a horizontal product;
-  - offline and open source;
+  - offline, with code you can read;
   - proof-native: every status tied to a test.
 - **How a buyer verifies it:**
   - the free AI-risk check;

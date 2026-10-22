@@ -25,7 +25,7 @@ tier must be *actually useful on its own* (not crippleware), or the flywheel nev
 ## The tiers
 | Tier | Price (indicative, India) | Who it's for | What's included |
 |---|---|---|---|
-| **Community** 🟢 *(open source, MIT)* | **₹0, forever** | individuals, students, researchers, you | the whole single-node estate: guardrail gateway, AI-SOC, red-team, AI-SPM, Guiding Map PWA, MCP, local models, 3 cloud IaC modules, all docs |
+| **Community** 🟢 *(free to use; FSL-1.1-MIT, each release MIT after two years)* | **₹0, forever** | individuals, students, researchers, you | the whole single-node estate: guardrail gateway, AI-SOC, red-team, AI-SPM, Guiding Map PWA, MCP, local models, 3 cloud IaC modules, all docs |
 | **Team** | ~₹1,500–3,000 / user / mo | small teams, consultants | multi-user SSO (Keycloak), shared dashboards, hosted Guiding Map sync, more n8n automations, email support |
 | **Business** | ~₹8,000–15,000 / user / mo | SMB / regulated startups | the full SOC (Wazuh+MISP+TheHive), compliance report packs (RBI/DPDP/ISO), SLA alerting, audit-evidence export, priority support |
 | **Enterprise / MSSP** | custom | banks, MSSPs | multi-tenant isolation, on-prem/air-gapped, custom compliance mappings, 24×7, dedicated engineering, white-label |
@@ -42,13 +42,13 @@ If yes, it belongs in Community. Paywall scale and assurance, never the basics.
 
 ## The viral / adoption flywheel (how it spreads)
 1. **Free core + a great first-run** (`./securax up` → Guiding Map in one step) = people try it.
-2. **The visual tour + the PWA** are shareable; the repo is MIT and public.
+2. **The visual tour + the PWA** are shareable; the repo is public (FSL-1.1-MIT; MIT up to v0.3.0).
 3. **Content** (the LinkedIn posts, the explainer) drives awareness; GitHub stars = social proof.
 4. **A "deploy to your cloud" button** and templates lower the barrier to the paid tiers.
 5. **Community → Team → Business** as their needs grow. Land free, expand paid.
 
 ## Monetisation mechanics (proven, low-overhead)
-- **Licensing:** core under **MIT**; paid features under a separate **BSL/Enterprise** license
+- **Licensing:** from v0.4.0 the code is under **FSL-1.1-MIT** (free to use, no competing resale, each release MIT after two years; LICENSING.md); v0.3.0 and earlier stay MIT
   directory (the GitLab/Elastic pattern) so the open core is never compromised.
 - **Billing:** Stripe / Razorpay (India) for subscriptions; usage metering for Managed.
 - **Support/SLA** and **compliance report packs** are the easiest first paid products (high

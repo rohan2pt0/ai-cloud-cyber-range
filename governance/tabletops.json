@@ -140,6 +140,34 @@
          "expect": "Yes: auto-renew, a registrar lock and 2FA are on, and the domain-renewal guard warns 180 days ahead.",
          "fix": "./securax venture plan domain_expires=YYYY-MM-DD"}
       ]
+    },
+    {
+      "id": "ai-incident",
+      "title": "A model leaks a customer's data (doc 105, G11)",
+      "scenario": "compromise",
+      "story": "Monday, 11:00. A customer says the assistant showed them another customer's account details. An hour later the gateway's rails start blocking the same jailbreak from one key, again and again.",
+      "injects": [
+        {"at": "11:00", "phase": "contain", "event": "The first complaint arrives.",
+         "ask": "Can you stop every model at once, without a restart, and say why?", "check": "killswitch",
+         "expect": "Yes: ./securax ai stop all --reason \"data leak through a model\" takes effect on the next request, and the reason is logged.",
+         "fix": "./securax incident runbook ai-data-leak"},
+        {"at": "11:10", "phase": "detect", "event": "You need to know which caller, which prompts and which answers.",
+         "ask": "Is the gateway log tamper-evident, so the evidence holds up?",
+         "expect": "Yes: ./securax audit verify checks the hash chain, and ./securax incident seal keeps a copy with its hashes.",
+         "fix": "./securax audit verify"},
+        {"at": "11:15", "phase": "respond", "event": "Personal data left through a model.",
+         "ask": "Do the reporting clocks start for every rule that applies, with the deadlines in front of you?", "check": "ai_clock",
+         "expect": "Yes: ./securax incident open \"...\" --kind ai-data-leak starts CERT-In's 6 hours and the DPDP Board report, plus your sector regulator with --regulators.",
+         "fix": "./securax incident open \"title\" --kind ai-data-leak --regulators YOUR-REGULATOR"},
+        {"at": "12:00", "phase": "contain", "event": "One key keeps sending the same jailbreak.",
+         "ask": "Can you cut off that one caller without stopping everyone?",
+         "expect": "Yes: ./securax gateway-auth revoke NAME, then add the pattern to the rails and prove it with the red team before resuming.",
+         "fix": "./securax incident runbook ai-jailbreak"},
+        {"at": "14:00", "phase": "recover", "event": "Before you resume, someone asks whether the model itself was tampered with.",
+         "ask": "Can you show the weights are the approved ones?",
+         "expect": "Yes: ./securax ai check compares every local model with its approved digest and reports any CHANGED or UNLISTED one.",
+         "fix": "./securax ai check"}
+      ]
     }
   ]
 }

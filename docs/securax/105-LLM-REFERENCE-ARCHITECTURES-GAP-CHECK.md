@@ -44,7 +44,7 @@ and the cloud underneath.
 | Entry | Response router | ✅ | LiteLLM ladders with fallbacks that always end on the local model; the gateway records requested vs served model |
 | Inference | Prompt pre-processing | ✅ | Injection, jailbreak and smuggling rails; India-aware PII redaction; optional model detectors (Llama Guard, Model Armor, Prompt Shields, Bedrock) behind a circuit breaker; now every part and the system context (G1, G2) |
 | Inference | Context windowing, tokenisation | 🟡 | A size cap and the model's own window. No token-exact truncation. See G13 |
-| Inference | Model registry | 🟡 | Risk tier, approval, owner and validated model per entry; served-but-unlisted models flagged. No weight digests or scans. See G4 |
+| Inference | Model registry | ✅ | Risk tier, approval, owner and validated model per entry; served-but-unlisted models flagged. Each shipped model's digest is approved in the registry; `./securax ai check` refuses a changed or unlisted one and scans pickle-format weights for code (G4, closed 2026-10-22) |
 | Inference | LLM engine, GPU cluster | 🟡 | Ollama on CPU, a remote GPU box, cloud models through the ladder. GPU scheduling is out of scope on one machine |
 | Inference | Post-processing: sampling, fact-checking, guardrails | 🟡 | Output rails for secrets, exfiltration links, active HTML and canary leaks; the "careful" check-and-rewrite pass; stale-fact notes. Toxicity only via the optional detector. See G5, G6 |
 | Safety and output | Safety filters, toxicity | 🟡 | As above. Bias and toxicity probes are not yet in the red team. See G5 |
@@ -79,15 +79,15 @@ Each item is in `governance/queue.json`, so `./securax backlog` and the daily Ba
 | # | Gap | Risk it closes | By |
 |---|---|---|---|
 | G3 | Tool approval becomes a queue: the call waits, a person approves or refuses it from the Command Center or the phone, the agent resumes | ASI02 tool misuse; LLM06 excessive agency | 2026-11-05 |
-| G4 | The model registry records each model's digest (Ollama and pulled weights); `ai check` refuses a changed or unlisted digest; pickle-format files are scanned before load | LLM03 supply chain; LLM04 poisoning | 2026-10-29 |
+| G4 | The model registry records each model's digest (Ollama and pulled weights); `ai check` refuses a changed or unlisted digest; pickle-format files are scanned before load | LLM03 supply chain; LLM04 poisoning | done 2026-10-22 |
 | G5 | The red team covers all ten LLM and ten Agentic categories, plus bias and toxicity probes (promptfoo, garak where it runs offline), in the purple loop | LLM01–10, ASI01–10; NIST 600-1 bias | 2026-10-29 |
 | G6 | An answer-quality set for the chat models (BFSI questions with expected facts), run on every model change; the score shown in `progress` | LLM09 misinformation; drift | 2026-11-12 |
 | G7 | Thumbs up or down in the chat flows into that set, so bad answers become test cases | Human feedback, without RLHF | 2026-11-12 |
 | G8 | Rate limits, allowances and the audit chain move to a shared store when more than one gateway runs | Bypass by spreading calls over replicas | when a second replica is first used |
 | G9 | Provider keys leave the plaintext `.env` for an encrypted file (age/SOPS) unlocked at start | Key theft from a copied disk | 2026-11-19 |
 | G10 | Chat memories: off by default for shared accounts, reviewable, and inspected like any context | ASI06 memory poisoning | 2026-11-05 |
-| G11 | An AI incident runbook (jailbreak in use, data leaked through a model, model abuse, poisoned document) and a tabletop for it, wired to the incident clock | Incident response; FREE-AI incident reporting | 2026-10-30 |
-| G12 | Requirement-level maps in `comply` for OWASP LLM and Agentic, RBI FREE-AI, ISO 42001, EU AI Act (deployer), SAIF, DASF, MAESTRO and the MeitY guidelines; a board AI-policy template | Assurance and audit | FREE-AI and OWASP 2026-10-29; the rest 2026-11-26 |
+| G11 | An AI incident runbook (jailbreak in use, data leaked through a model, model abuse, poisoned document) and a tabletop for it, wired to the incident clock | Incident response; FREE-AI incident reporting | done 2026-10-22: `./securax incident runbook`, `incident open --kind`, tabletop `ai-incident` |
+| G12 | Requirement-level maps in `comply` for OWASP LLM and Agentic, RBI FREE-AI, ISO 42001, EU AI Act (deployer), SAIF, DASF, MAESTRO and the MeitY guidelines; a board AI-policy template | Assurance and audit | FREE-AI and OWASP done 2026-10-22 (`./securax comply free-ai`, `comply owasp-ai`); the rest 2026-11-26 |
 | G13 | Token-exact context management: count with the model's tokenizer, trim the oldest turns, never cut the system context | Silent truncation; LLM10 cost | 2026-12-10 |
 | G14 | The audit chain survives restarts and is anchored daily to the off-site backup (append-only) | Log tampering after a compromise | 2026-11-26 |
 | G15 | Retrieval checks: documents carry an owner and a class, and a person only retrieves what they may read; new documents are scanned before indexing | Data leakage across users; RAG poisoning | 2026-11-19 |

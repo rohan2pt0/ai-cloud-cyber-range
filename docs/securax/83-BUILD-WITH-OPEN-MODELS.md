@@ -96,7 +96,49 @@ What closes the remaining gap here is not the model alone. It is the gates:
   - vault/, .env, keys
   - client or personal data (the gateway's residency rules keep regulated data local)
 
-## 7. Next steps (dated)
+## 7. Build from your phone, without Claude
+
+**Why this exists:** in October 2026 Claude made 92% of the commits and the open models none (`./securax ai share`).
+The open-model tools were all there, but they ran only in a laptop terminal, and the work was being driven from a phone.
+From a phone, Claude was the only builder within reach. The `autobuild` workflow fixes that.
+
+**Set it up once (five minutes, on the phone):**
+1. Get an OpenCode Go key (section 4, step 1).
+2. GitHub app or github.com: **Settings > Secrets and variables > Actions > New repository secret**. Name it
+   `OPENCODE_GO_API_KEY` and paste the key.
+3. **Settings > Actions > General:** tick **Allow GitHub Actions to create and approve pull requests**.
+
+**Use it for each task:**
+- **The quick way:** **Actions > autobuild > Run workflow**, type the task, Run.
+- **Or from an issue:** open an issue whose title and body are the task, and add the label `autobuild`. Only issues you open
+  are picked up.
+
+**What happens:**
+1. The router picks the chain. Hard work (security, crypto, sync, regulator maps) goes to the strong models (DeepSeek V4 Pro,
+   then Kimi K3, then GLM 5.3); everything else to the fast ones.
+2. The model writes the change. The estate's gates decide: verify, diffcheck and forge.
+3. A failure goes back to the model, up to three attempts.
+4. **Green:** you get a PR titled `autobuild: ...`, its checks running. Review it on the phone, and merge when green.
+5. **Not green:** nothing is kept, and the run carries a brief for a stronger model.
+
+**Safety:**
+- The agent never holds a token that can push.
+- It cannot fetch web pages, so nothing it reads online can steer it.
+- It sees only this public repository: never `vault/`, never your `.env`.
+- A separate job pushes, and only a green result.
+
+**Two more pieces that replace what Claude Code gave you:**
+- **Specialist agents** (`.opencode/agents/`): planner, test-writer, code-reviewer, security-reviewer and docs-keeper, tied to
+  this repository's rules. OpenCode uses them on the laptop and in the phone build alike.
+- **A review on every pull request** (`.github/workflows/ai-review.yml`): the strong open models read the change and keep one
+  comment up to date. It uses the same secret; pull requests from forks and Dependabot get no secret, so they are skipped.
+
+**Which tasks to send:**
+- **Send:** one area, a clear test, an existing pattern: what `./securax route` calls local.
+- **Keep for a person with the strong chain, or Claude:** cross-cutting redesigns and anything you cannot judge from the diff.
+- **The goal:** Claude under 20% of the commits (`./securax ai share`). Each merged `autobuild:` PR counts for the open models.
+
+## 8. Next steps (dated)
 
 | By | Step |
 |---|---|

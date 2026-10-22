@@ -16,6 +16,9 @@ filing, keeps a tamper-evident log, and seals the evidence.
     ./securax incident note ID "text"          ./securax incident close ID          ./securax incident verify ID
     ./securax incident seal ID --evidence FILE... [--out DIR]       hash and copy the logs/screenshots you are preserving
     ./securax incident rollup --regulator sebi-cscrf --period 2026Q3    the periodic report's inputs and due date
+    ./securax incident runbook [KIND]          the AI incident runbooks (jailbreak, data leak, abuse, poisoned document; doc 105)
+    ./securax incident open "title" --kind ai-data-leak [--regulators ...]   opens the case, prints that runbook's first moves,
+                                               and starts the clocks the kind usually needs (plus any --regulators you add)
 
 Regulators are DATA (governance/regulators/*.json): adding another regulator or another jurisdiction needs no code. A rule marked
 `verified: false` was taken from secondary sources; it is shown with a warning every time and must be confirmed against the primary text.
@@ -42,6 +45,7 @@ except ImportError:  # pragma: no cover
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parent
 REG_DIR = HERE / "regulators"
+AI_KINDS = HERE / "ai-incidents.json"
 UTC = timezone.utc
 
 
@@ -259,9 +263,44 @@ def warn_unverified(regs: dict, ids: list[str]) -> None:
             print(f"  ⚠ {i}: rule NOT verified against the primary text ({regs[i]['source']['title']}) — confirm before relying on its deadlines")
 
 
+def ai_kinds() -> dict[str, dict]:
+    return {k["id"]: k for k in json.loads(AI_KINDS.read_text("utf-8"))["kinds"]}
+
+
+def runbook(kind: dict) -> None:
+    print(f"\n{kind['title']} ({kind['id']})")
+    for head, key in (("How you notice it", "signs"), ("Contain it", "contain"), ("Keep the evidence", "evidence")):
+        print(f"  {head}:")
+        for i, line in enumerate(kind[key], 1):
+            print(f"    {i}. {line}")
+    print(f"  Clocks that usually start: {', '.join(kind['regulators']) or 'none by default'}. {kind['note']}")
+
+
+def cmd_runbook(a, now: datetime) -> int:
+    kinds = ai_kinds()
+    if a.kind and a.kind not in kinds:
+        print(f"unknown kind {a.kind!r}; known: {', '.join(kinds)}")
+        return 2
+    for k in ([kinds[a.kind]] if a.kind else kinds.values()):
+        runbook(k)
+    return 0
+
+
 def cmd_open(a, now: datetime) -> int:
     regs = load_regulators()
     ids = [x for x in a.regulators.split(",") if x]
+    kind = None
+    if a.kind:
+        kinds = ai_kinds()
+        if a.kind not in kinds:
+            print(f"unknown kind {a.kind!r}; known: {', '.join(kinds)}")
+            return 2
+        kind = kinds[a.kind]
+        ids = list(dict.fromkeys(kind["regulators"] + ids))
+        if not ids:                                 # no clock by default (e.g. abuse): the case still records the decision
+            print(f"{a.kind}: no reporting clock starts by default. {kind['note']}")
+            runbook(kind)
+            return 0
     unknown = [i for i in ids if i not in regs]
     if unknown or not ids:
         print(f"unknown regulator(s) {unknown or '(none given)'}; loaded: {', '.join(regs)}")
@@ -269,10 +308,12 @@ def cmd_open(a, now: datetime) -> int:
     detected = parse_time(a.detected, now)
     n = 1 + sum(1 for c in cases() if c.id.startswith(f"INC-{now:%Y%m%d}"))
     c = Case(home() / f"INC-{now:%Y%m%d}-{n:03d}.jsonl")
-    c.append("open", {"title": a.title, "detected_at": iso(detected), "severity": a.severity, "regulators": ids,
+    c.append("open", {"title": a.title, "detected_at": iso(detected), "severity": a.severity, "regulators": ids, "kind": a.kind,
                       "entity_roles": [x for x in a.roles.split(",") if x], "rules": {i: regs[i] for i in ids}})
     print(f"Opened {c.id}: detected {local(detected)}  — the clock is running for: {', '.join(ids)}")
     warn_unverified(regs, ids)
+    if kind:
+        runbook(kind)
     return show(c, now)
 
 
@@ -334,6 +375,9 @@ def main(argv: list[str] | None = None, now: datetime | None = None) -> int:
     o.add_argument("--detected", default="now")
     o.add_argument("--severity", default="")
     o.add_argument("--roles", default="", help="the entity's roles where a rule is role-specific, e.g. stock-broker,depository-participant")
+    o.add_argument("--kind", default="", help="an AI incident kind (./securax incident runbook): adds its usual clocks and prints its runbook")
+    rb = sub.add_parser("runbook")
+    rb.add_argument("kind", nargs="?", default="")
     s = sub.add_parser("status")
     s.add_argument("id", nargs="?")
     s.add_argument("--json", action="store_true")
@@ -379,6 +423,8 @@ def main(argv: list[str] | None = None, now: datetime | None = None) -> int:
         return 0
     if a.cmd == "open":
         return cmd_open(a, now)
+    if a.cmd == "runbook":
+        return cmd_runbook(a, now)
     if a.cmd == "status":
         return cmd_status(a, now)
     if a.cmd == "due":
