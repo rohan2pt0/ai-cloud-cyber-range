@@ -73,6 +73,17 @@ def test_the_nightly_update_asks_the_poll_and_skips_a_second_backup():
     upd = CLI[CLI.index("\n  update)"):CLI.index("\n  update)") + 9000]
     assert 'governance/mission.py" poll update' in upd and "auto-update held" in upd
     assert "-mmin -120" in upd and "is the safety copy" in upd
+    # only the nightly run reuses it (a manual update at noon must not lean on a copy that misses the morning's changes),
+    # and the lookup cannot end the update: with no backups folder, find failed and pipefail stopped update silently
+    start = upd.index('_RECENT=""')
+    reuse = upd[start:upd.index("is the safety copy", start)]
+    assert 'if [ "$AUTO" = 1 ]' in reuse and "| head -1 || true)" in reuse
+
+
+def test_the_backup_lookup_survives_a_missing_folder_under_the_clis_own_shell_options():
+    import subprocess
+    script = 'set -euo pipefail; AUTO=1; _RECENT="$(find /no/such/backups -maxdepth 1 -name "securax-*" 2>/dev/null | head -1 || true)"; echo "alive:$_RECENT"'
+    assert subprocess.run(["bash", "-c", script], capture_output=True, text=True).stdout.strip() == "alive:"
 
 
 def test_the_after_action_review_counts_the_week_and_never_says_quiet_when_nothing_ran(tmp_path, monkeypatch):

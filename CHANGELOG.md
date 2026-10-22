@@ -63,7 +63,7 @@ for the versioning and release policy.
   - `site domain NAME` prints the exact DNS records and the one GitHub setting.
   - `site live` switches every link to your domain only after checking that the domain serves the site over HTTPS.
 ### Fixed
-- **Two backups on update nights.** The nightly update took its own full backup 45 minutes after the daily one; it now uses a clean backup from the last 2 hours as its safety copy.
+- **Two backups on update nights.** The nightly update took its own full backup 45 minutes after the daily one; the nightly run now uses that backup (under 2 hours old) as its safety copy. A manual update still takes a fresh one, so a copy never misses what changed since.
 - **The watchdog healed only the gateway.** A crashed Command Center or sync service stayed down, and a frozen container stayed frozen. `./securax watch` now checks all three and unfreezes before it heals (found by the new chaos experiments).
 - **Contrast on the control navigator.** Heat-map numbers in light mode and N/A cells in dark mode were below WCAG AA. Both pass now. The cockpit's area table no longer runs off a phone screen.
 - **Cockpit "do next" listed builders' work.** A gap-backlog item such as "Implement CCI scoring" sat among your actions with no command. Only vital signs you can act on are listed now; the backlog stays in Mission planning.

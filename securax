@@ -1669,10 +1669,15 @@ EOF2
     # 1) a safety copy, only when there is a running estate with data (never blocks the update)
     _alive=0; for _i in 1 2 3; do gcurl -fsS -m 10 $(gw_url)/healthz >/dev/null 2>&1 && { _alive=1; break; }; sleep 2; done
     [ "$_alive" = 1 ] || C "  (no running estate answered its health check — skipping the safety backup; run ./securax backup yourself first if the estate holds data)"
-    # A clean backup from the last 2 hours is the safety copy (the 02:30 backup before the 03:15 update): taking a second one only burns disk and time.
-    _BD="$(ev SECURAX_BACKUP_DIR "$ROOT/backups")"
-    _RECENT="$(find "$_BD" -maxdepth 1 -name 'securax-*.tar.gz*' ! -name '*-SUSPECT*' -mmin -120 2>/dev/null | head -1)"
-    if [ "$_alive" = 1 ] && [ -n "$_RECENT" ]; then C "  ✔ a backup from the last 2 hours is the safety copy: $(basename "$_RECENT")"; _alive=0; fi
+    # The nightly run only (--auto, 45 minutes after the 02:30 backup, when nobody is editing): a clean backup from the last 2 hours
+    # is the safety copy, so a second full one is not taken. A manual update always takes a fresh one: an older copy would
+    # miss what changed since. `|| true`: with no backups folder yet, find fails, and under pipefail that ended update silently.
+    _RECENT=""
+    if [ "$AUTO" = 1 ]; then
+      _BD="$(ev SECURAX_BACKUP_DIR "$ROOT/backups")"
+      _RECENT="$(find "$_BD" -maxdepth 1 -name 'securax-*.tar.gz*' ! -name '*-SUSPECT*' -mmin -120 2>/dev/null | head -1 || true)"
+    fi
+    if [ "$_alive" = 1 ] && [ -n "$_RECENT" ]; then C "  ✔ tonight's backup (under 2 hours old) is the safety copy: $(basename "$_RECENT")"; _alive=0; fi
     if [ "$_alive" = 1 ]; then
       if SAFE_OUT="$("$0" backup 2>&1)"; then C "  ✔ backup taken first: $(printf '%s' "$SAFE_OUT" | tail -1)"; else C "  (could not take a backup — continuing; your data volumes are not touched by an update). Reason: $(printf '%s' "${SAFE_OUT:-the backup stopped without a message; run ./securax backup to see it}" | tail -c 300)"; fi
     fi

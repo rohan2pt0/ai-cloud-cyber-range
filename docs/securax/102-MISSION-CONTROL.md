@@ -58,7 +58,7 @@
 
 The 27 routines were read in the order they run.
 
-- **Two backups every update night.** The 02:30 backup was followed at 03:15 by the update taking another full one. The update now uses a clean backup from the last 2 hours as its safety copy.
+- **Two backups every update night.** The 02:30 backup was followed at 03:15 by the update taking another full one. The nightly update now uses that backup (under 2 hours old) as its safety copy; a manual update during the day still takes a fresh one, because an older copy would miss what changed since.
 - **The laptop updated even after a red nightly build.** The nightly sandbox on main runs at 02:00 IST; the 03:15 update did not ask how it went. It now asks, through the Go/No-Go poll. If GitHub cannot be reached, that console alone does not hold the update.
 - **The watchdog healed only the gateway** (found by the chaos work, doc 101). It now heals the Command Center and sync too, and unfreezes a frozen container.
 
