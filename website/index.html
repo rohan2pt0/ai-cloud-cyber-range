@@ -153,6 +153,8 @@ footer a:hover{color:#fff}
   .float{max-width:200px;font-size:12.5px}
   .tour{margin-bottom:64px}
 }
+.prods{align-items:stretch}.prod{display:flex;flex-direction:column;gap:6px}.prod img{width:100%;height:auto;aspect-ratio:16/10;object-fit:cover;object-position:top;border-radius:10px;border:1px solid var(--line);margin-bottom:8px;background:#0b1b33}
+.prod .tag{font-weight:600;color:var(--ink)}.prod .for{font-size:14px;color:var(--muted)}.prod .price{font-weight:700;color:var(--ink);margin-top:auto}.prod .light{align-self:flex-start}
 </style>
 <style>
 .flow{display:grid;grid-template-columns:1fr auto 1.3fr auto 1fr;gap:14px;align-items:center}
@@ -180,6 +182,7 @@ footer a:hover{color:#fff}
     <ul>
       <li><a href="#how">How it works</a></li>
       <li><a href="#capabilities">Capabilities</a></li>
+      <li><a href="#products">Products</a></li>
       <li><a href="#readiness">Readiness</a></li>
       <li><a href="#pricing">Pricing</a></li>
       <li><a href="assess/">AI-risk check</a></li>
@@ -189,6 +192,7 @@ footer a:hover{color:#fff}
       <li><a href="#how">How it works</a></li>
       <li><a href="#capabilities">Capabilities</a></li>
       <li><a href="#deploy">Deploy your way</a></li>
+      <li><a href="#products">Products</a></li>
       <li><a href="#readiness">Readiness</a></li>
       <li><a href="#compliance">Compliance</a></li>
       <li><a href="#pricing">Pricing</a></li>
@@ -332,6 +336,66 @@ footer a:hover{color:#fff}
     </div>
   </div>
 </section>
+
+<!-- products:start -->
+<section id="products">
+  <div class="wrap center">
+    <span class="kicker">Products</span>
+    <h2>8 products, one estate.</h2>
+    <p class="sub">Buy one, or the whole estate. Every screenshot is the real product on sample data, and every light comes from its tests. Prices are founding prices, set with our design partners.</p>
+  </div>
+  <div class="wrap grid3 prods">
+    <article class="card prod" id="p-shield">
+      <img src="img/products/shield.png" alt="The gateway refusing a prompt attack and redacting personal data, real output" loading="lazy" width="1280" height="800">
+      <span class="kicker">AI security</span><h3>Shield</h3><p class="tag">Use any AI. Keep your data out of it.</p>
+      <p>One gateway in front of every model: prompt-injection and jailbreak rails (multi-part prompts and the system context included), India-aware redaction of Aadhaar, PAN, cards and UPI, data-residency routing, a tool-call guard for agents, per-user AI allowances, a kill switch and a tamper-evident audit trail. Mapped to OWASP LLM and Agentic Top 10, MITRE ATLAS and NIST AI 600-1.</p><p class="for"><b>For:</b> Any organisation whose people use AI tools or build on models</p>
+      <p class="price">₹399 a user a month, 10 users minimum</p><span class="light l-a">Partly built</span>
+    </article>
+    <article class="card prod" id="p-readiness">
+      <img src="img/products/readiness.png" alt="A sample board pack: readiness, the vital few, recurring duties" loading="lazy" width="1280" height="800">
+      <span class="kicker">Compliance</span><h3>Readiness</h3><p class="tag">Know where you stand on every regulation. Show the proof.</p>
+      <p>Only the requirements that apply to your chapter or category, each marked with evidence, owner and date; the vital few gaps; recurring-duty dates; a board pack and an auditor&#x27;s sheet in one command. RBI NBFC directions 2026, SEBI CSCRF, UK CAF 4, NIST AI 600-1, MIT AI risk, post-quantum.</p><p class="for"><b>For:</b> Regulated entities and their auditors: RBI, SEBI, UK and AI frameworks</p>
+      <p class="price">₹1.5 lakh a year for one regulation; ₹50,000 each further one</p><span class="light l-a">Partly built</span>
+    </article>
+    <article class="card prod" id="p-recipes">
+      <img src="img/products/recipes.png" alt="The BFSI control navigator on the starter library" loading="lazy" width="1280" height="800">
+      <span class="kicker">Templates</span><h3>Compliance recipes</h3><p class="tag">Ready-made policies, plans and packs, mapped to the rules.</p>
+      <p>A 67-control BFSI library with per-class applicability and citations, regulator packs, a Board one-pager, role pages with job descriptions and KPIs, RFP packs per capability, a crisis and continuity plan, and a risk register, all editable and mapped to RBI, SEBI, CERT-In and DPDP.</p><p class="for"><b>For:</b> CISOs, compliance heads and consultants who should not start from a blank page</p>
+      <p class="price">₹50,000 a year for the full template library and its updates</p><span class="light l-a">Partly built</span>
+    </article>
+    <article class="card prod" id="p-ciso-os">
+      <img src="img/products/ciso-os.png" alt="Vantage, the CISO operating system: your next step, rituals, risks, decisions" loading="lazy" width="1280" height="800">
+      <span class="kicker">Leadership</span><h3>CISO OS</h3><p class="tag">Run the security function, not the spreadsheet.</p>
+      <p>Vantage, the CISO&#x27;s operating system on phone and laptop; Govern for where you stand from minimum to highest, with 5W1H and budget per gap; the cockpit for what needs you now; team sizing, the Board report and progress you can show.</p><p class="for"><b>For:</b> CISOs and heads of security, from a one-person function to a large team</p>
+      <p class="price">₹4,999 a month per CISO</p><span class="light l-a">Partly built</span>
+    </article>
+    <article class="card prod" id="p-range">
+      <img src="img/products/range.png" alt="The exercise portal, white team view, on a sample game" loading="lazy" width="1280" height="800">
+      <span class="kicker">Training</span><h3>Cyber Range</h3><p class="tag">Practise against a live red team before the real one arrives.</p>
+      <p>A live-fire exercise with blue, red and white teams, scoring, injects and an after-action report, offline; the purple-team loop that attacks your own AI rails and reports what held; tabletop exercises; an Active Directory lab.</p><p class="for"><b>For:</b> SOC teams, CERTs, training institutes and anyone running a cyber drill</p>
+      <p class="price">₹1,000 a participant a month, or ₹2.5 lakh per hosted exercise</p><span class="light l-a">Partly built</span>
+    </article>
+    <article class="card prod" id="p-quantum">
+      <img src="img/products/quantum.png" alt="The protection check: what needs you now, what is already quantum-safe" loading="lazy" width="1280" height="800">
+      <span class="kicker">Post-quantum</span><h3>Quantum-safe</h3><p class="tag">Find the cryptography that will not survive, and fix it in order.</p>
+      <p>A plain-English protection check and a cryptography bill of materials (CBOM); hybrid post-quantum key exchange on the estate&#x27;s own edge; encrypted backups; a post-quantum readiness map with what needs you now, what is protected and what can wait.</p><p class="for"><b>For:</b> Banks, insurers, government suppliers and anyone with data that must stay secret past 2030</p>
+      <p class="price">₹75,000 for an assessment and migration plan; ₹40,000 a year to keep it current</p><span class="light l-a">Partly built</span>
+    </article>
+    <article class="card prod" id="p-respond">
+      <img src="img/products/respond.png" alt="The regulator clock on a sample incident: RBI DAKSH and CERT-In, six hours" loading="lazy" width="1280" height="800">
+      <span class="kicker">Incidents</span><h3>Respond</h3><p class="tag">Six hours goes fast. Start the clock, not the panic.</p>
+      <p>The regulator incident clock with drafts, gaps marked, filings and a sealed log; the crisis response kit (permission first, evidence intake, IOC triage, reports); continuity scenarios with RTO and RPO; ransomware-proof backups and proven restores.</p><p class="for"><b>For:</b> Anyone with a regulator&#x27;s incident clock: RBI, SEBI, CERT-In, DPDP, IRDAI</p>
+      <p class="price">₹1 lakh a year</p><span class="light l-a">Partly built</span>
+    </article>
+    <article class="card prod" id="p-personal">
+      <img src="img/products/personal.png" alt="The Life OS: goals, inbox and the vital few" loading="lazy" width="1280" height="800">
+      <span class="kicker">For you</span><h3>Personal</h3><p class="tag">Your private AI on your own devices, and your papers in order.</p>
+      <p>The Life OS (goals, inbox, the vital few), your papers read for you with renewal alarms, a password manager, your AI history in one private place, on every device, offline first.</p><p class="for"><b>For:</b> Individuals and families</p>
+      <p class="price">₹999 a month</p><span class="light l-a">Partly built</span>
+    </article>
+  </div>
+</section>
+<!-- products:end -->
 
 <section class="alt" id="readiness">
   <div class="wrap center">

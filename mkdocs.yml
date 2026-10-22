@@ -123,6 +123,10 @@ nav:
       - "Life papers, read for you": securax/104-LIFE-PAPERS-READ-FOR-YOU.md
       - "The AI plane against the reference architectures": securax/105-LLM-REFERENCE-ARCHITECTURES-GAP-CHECK.md
       - "Who SecuRAX is for, and how it sells": securax/106-WHO-SECURAX-IS-FOR.md
+      - "The conglomerate playbook": securax/107-THE-CONGLOMERATE-PLAYBOOK.md
+      - "How the giants rose and fell": securax/108-HOW-GIANTS-ROSE-AND-FELL.md
+      - "Founders who rose and fell": securax/109-FOUNDERS-WHO-ROSE-AND-FELL.md
+      - "When everything goes wrong at once": securax/110-WHEN-EVERYTHING-GOES-WRONG.md
   - How-to guides:
       - AI providers and plugins: securax/22-PLUGINS-AND-PROVIDERS.md
       - Integrations: securax/07-INTEGRATIONS.md

@@ -1,0 +1,22 @@
+{
+ "about": "The monthly failure guards (doc 108), read by ./securax venture guards. Each guard names the failures it comes from and its line. Tighten a line here; never loosen one to make a red month look green.",
+ "guards": [
+  {"id": "runway", "title": "Cash runway (months)", "line": 12, "from": "Dunzo, Byju's, Quibi: growth funded by burn until the cash ran out"},
+  {"id": "burn-multiple", "title": "Burn multiple (net burn / new revenue)", "line": 2, "from": "WeWork, Dunzo: each rupee of growth bought with several rupees of cash"},
+  {"id": "product-share", "title": "Largest product's share of revenue (%)", "line": 50, "from": "Nokia, RIM, Kodak: one product's margin defended while the market moved"},
+  {"id": "customer-share", "title": "Largest customer's share of revenue (%)", "line": 30, "from": "Small B2B firms that lost one customer and with it the company"},
+  {"id": "revenue-proof", "title": "Revenue backed by money received", "line": 0, "from": "Byju's, GoMechanic, Builder.ai: revenue reported that was not there"},
+  {"id": "independent-review", "title": "Independent review of the books", "line": 2000000, "from": "Byju's (auditor resigned), Zilingo, GoMechanic, BluSmart/Gensol: no check outside the founders"},
+  {"id": "claims", "title": "Claims the code cannot prove", "line": 0, "from": "Builder.ai, Theranos: capabilities sold that did not exist",
+   "words": ["superintelligence", "world's best", "world's first", "world-class", "industry-leading", "market-leading", "unhackable", "unbreakable", "100% secure", "guaranteed compliance", "military-grade", "revolutionary", "impossible to fail", "fully autonomous", "rbi approved", "rbi-approved", "approved by rbi", "sebi approved", "approved by sebi", "government approved", "cert-in approved", "certified compliant", "fully compliant", "100% compliant", "zero risk", "zero breaches"]},
+  {"id": "stop-tests", "title": "Stop tests past their date", "line": 0, "from": "Yahoo, Quibi: bets kept alive on hope after their test had failed"},
+  {"id": "debt", "title": "Borrowing to run the business (Rs)", "line": 0, "from": "Vijay Mallya (Kingfisher), Evergrande, Daewoo, Byju's Term Loan B: growth funded with debt"},
+  {"id": "related-party", "title": "Related-party payments without disclosure", "line": 0, "from": "Rana Kapoor (charged), Chanda Kochhar (tribunal finding), Adam Neumann, BluSmart/Gensol (SEBI order): money to family or own firms"},
+  {"id": "key-person", "title": "Handover note kept current (days)", "line": 365, "from": "Nithin Kamath's 2024 stroke and succession plan; Carlos Ghosn: everything resting on one person"},
+  {"id": "brand-cleared", "title": "Name cleared and trade mark filed", "line": 0, "from": "Fair & Lovely (a rival used the new name days before the launch), S. Syed Mohideen v Sulochana Bai (a prior user beats a registration), Satyam Infoway v Sifynet (a domain is a trade mark)"},
+  {"id": "domain-renewal", "title": "Domain paid ahead (days left)", "line": 180, "from": "passport.com (1999) and google.com (2015): a giant's own domain lapsed or was bought by a stranger"},
+  {"id": "insurance", "title": "Liability cover in force", "line": 0, "from": "Maggi 2015 (a recall and a Rs 640 crore claim before the tests cleared it), Satyam (directors and auditors held to account)"},
+  {"id": "licence-terms", "title": "Bundled licences reviewed (days)", "line": 365, "from": "Fair-code and branding clauses (n8n, Open WebUI) that forbid what a reseller assumes open source allows"},
+  {"id": "shift-watch", "title": "Platform shifts reviewed (days)", "line": 92, "from": "Nokia (Symbian), RIM (keyboards), Kodak (film), Intel (mobile): the shift was seen and not acted on"}
+ ]
+}

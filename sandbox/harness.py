@@ -181,6 +181,11 @@ class Sandbox:
             override["services"]["ollama"] = {
                 "environment": {"SSL_CERT_FILE": f"{sb}/hostfix/ca-bundle.crt"},
                 "volumes": ["../../sandbox:/sandbox:ro"]}
+        cache = os.environ.get("SECURAX_SANDBOX_MODEL_CACHE")   # CI keeps pulled models between runs (a slow registry cost a 60-min timeout)
+        if cache:
+            pathlib.Path(cache).mkdir(parents=True, exist_ok=True)
+            o = override["services"].setdefault("ollama", {})
+            o["volumes"] = [*o.get("volumes", []), f"{cache}:/root/.ollama"]
         override["services"]["open-webui"] = {"environment": {"HF_HUB_OFFLINE": "1", "OFFLINE_MODE": "true"}}
         (self.clone / "local" / "compose" / "docker-compose.override.yml").write_text(yaml.safe_dump(override))
 

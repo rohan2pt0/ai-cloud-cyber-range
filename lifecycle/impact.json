@@ -274,6 +274,8 @@
   "tools/release.py",
   "tools/windows/**",
   "features.json",
+  "products.json",
+  "tools/screenshots.py",
   "*.md",
   "LICENSE*",
   "CODEOWNERS",

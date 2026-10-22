@@ -1,6 +1,14 @@
 {
  "about": "Public defaults for ./securax venture (doc 96). Every number here is an EXAMPLE to replace with your own: ./securax venture plan KEY=VALUE writes yours to vault/venture.json (private).",
  "plan": {
+  "cash": 0,
+  "last_independent_review": "",
+  "debt": 0,
+  "name_cleared": "",
+  "trademark_filed": "",
+  "domain_expires": "",
+  "insured_until": "",
+  "licence_review": "",
   "hour_value": 1500,
   "hours_month": 40,
   "fixed_month": 3000,

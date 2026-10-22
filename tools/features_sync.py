@@ -10,6 +10,10 @@ From features.json (what SecuRAX can do, in plain words) it writes:
   * website/index.html           the "whole estate" section of the product site   <!-- features:start --> ... <!-- features:end -->
   * docs/index.md                the docs home page table                         (same markers)
   * README.md                    the "What you can do" table                      (same markers)
+From products.json (what SecuRAX sells: each product, its price and its screenshot) it writes:
+  * website/index.html           the "Products" section, with each product's real screenshot    <!-- products:start --> ... <!-- products:end -->
+  * docs/securax/106-...md       the catalogue and price table in doc 106                         (same markers)
+A product's light is the weakest light of its features, so no page claims more than the code proves.
 From the code itself it writes the FACTS (how many tests, journeys, mapped frameworks, docs) wherever a page shows one as
 <!-- fact:NAME -->123<!-- /fact -->, in the README, the website, the docs and the portal pages.
 Each feature's status light comes from its guide's light in docs/status.yml; its docs link from REPO_SLUG in brand.env.
@@ -28,6 +32,8 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 FEATURES = ROOT / "features.json"
 HUB_JS = ROOT / "guiding-map" / "features.js"
 BLOCKS = {ROOT / "website" / "index.html": "html", ROOT / "docs" / "index.md": "docs", ROOT / "README.md": "readme"}
+PRODUCTS = ROOT / "products.json"
+PRODUCT_BLOCKS = {ROOT / "website" / "index.html": "html", ROOT / "docs" / "securax" / "106-WHO-SECURAX-IS-FOR.md": "docs"}
 FACT_FILES = ["README.md", "website/index.html", "portal/explainer.html", "docs/**/*.md"]
 LIGHT = {"green": ("🟢", "l-g", "Built and proven"), "amber": ("🟡", "l-a", "Partly built"), "red": ("🔴", "l-r", "Not built yet")}
 E = html.escape
@@ -108,7 +114,71 @@ def problems(data: dict | None = None) -> list[str]:
             out.append(f"{where}: open.cmd must be a ./securax command")
         if not re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(f.get("added", ""))):
             out.append(f"{where}: needs 'added' (YYYY-MM-DD, the day it first shipped) so every page can show what is new")
+    out += product_problems(data, cmds)
     return out
+
+
+def load_products() -> list[dict]:
+    return json.loads(PRODUCTS.read_text("utf-8"))["products"] if PRODUCTS.exists() else []
+
+
+def product_problems(data: dict, cmds: set[str]) -> list[str]:
+    out, ids = [], {f["id"] for f in data["features"]}
+    for p in load_products():
+        where = f"product {p.get('id')}"
+        for k in ("id", "name", "kicker", "tagline", "for", "what", "features", "price", "anchor", "shot", "role", "kill_if"):
+            if not p.get(k):
+                out.append(f"{where}: needs '{k}'")
+        out += [f"{where}: feature '{x}' is not in features.json" for x in p.get("features", []) if x not in ids]
+        out += [f"{where}: ./securax {c} does not exist" for c in p.get("commands", []) if c not in cmds]
+        if p.get("role") and p["role"] not in ("core", "bet"):
+            out.append(f"{where}: role must be core or bet (doc 107)")
+        if p.get("kill_if") and not re.search(r"\d{4}-\d{2}-\d{2}", p["kill_if"]):
+            out.append(f"{where}: kill_if needs a date, so the test cannot drift (doc 107)")
+        if not (ROOT / "website" / "img" / "products" / f"{p.get('id')}.png").exists():
+            out.append(f"{where}: no screenshot website/img/products/{p.get('id')}.png (python3 tools/screenshots.py {p.get('id')})")
+    return out
+
+
+def product_light(p: dict, data: dict) -> str:
+    """The weakest light of the product's features: a product is only as built as its least-built part."""
+    li, docs = lights(), {f["id"]: f["doc"] for f in data["features"]}
+    order = ["red", "amber", "green"]
+    return min((li.get(docs[x], "amber") for x in p["features"] if x in docs), key=order.index, default="amber")
+
+
+def products_html(data: dict) -> str:
+    cards = []
+    for p in load_products():
+        _, cls, label = LIGHT[product_light(p, data)]
+        cards.append(
+            f'    <article class="card prod" id="p-{E(p["id"])}">\n'
+            f'      <img src="img/products/{E(p["id"])}.png" alt="{E(p["shot"]["alt"])}" loading="lazy" width="1280" height="800">\n'
+            f'      <span class="kicker">{E(p["kicker"])}</span><h3>{E(p["name"])}</h3><p class="tag">{E(p["tagline"])}</p>\n'
+            f'      <p>{E(p["what"])}</p><p class="for"><b>For:</b> {E(p["for"])}</p>\n'
+            f'      <p class="price">{E(p["price"])}</p><span class="light {cls}">{label}</span>\n    </article>')
+    return ('<section id="products">\n  <div class="wrap center">\n    <span class="kicker">Products</span>\n'
+            f"    <h2>{len(cards)} products, one estate.</h2>\n"
+            '    <p class="sub">Buy one, or the whole estate. Every screenshot is the real product on sample data, and every light comes from '
+            "its tests. Prices are founding prices, set with our design partners.</p>\n"
+            '  </div>\n  <div class="wrap grid3 prods">\n' + "\n".join(cards) + "\n  </div>\n</section>")
+
+
+def products_docs(data: dict) -> str:
+    rows = ["| Product | Line | For | What it is | Price (hypothesis) | Set against | Stop or change if | Status |", "|---|---|---|---|---|---|---|---|"]
+    for p in load_products():
+        icon, _, label = LIGHT[product_light(p, data)]
+        rows.append(f"| **{p['name']}** ({p['kicker']}) | {p['role']} | {p['for']} | {p['tagline']} | {p['price']} | {p['anchor']} | {p['kill_if']} | {icon} {label} |")
+    return ("Generated from [`products.json`](../../products.json) by `tools/features_sync.py`: edit that file to change a product or a price. "
+            "Community (the open-source core) stays free.\n\n" + "\n".join(rows))
+
+
+def put_products(text: str, body: str, kind: str) -> str:
+    start, end = ("<!-- products:start -->", "<!-- products:end -->")
+    rx = re.compile(re.escape(start) + r".*?" + re.escape(end), re.S)
+    if not rx.search(text):
+        raise SystemExit(f"no {start} marker in a {kind} page: add the two markers where the catalogue belongs")
+    return rx.sub(lambda _: f"{start}\n{body}\n{end}", text)
 
 
 def latest(data: dict, n: int = 5) -> list[dict]:
@@ -191,6 +261,10 @@ def outputs() -> dict[pathlib.Path, str]:
     out = {HUB_JS: hub_js(data)}
     for path, kind in BLOCKS.items():
         out[path] = put_block(path.read_text("utf-8"), RENDER[kind](data), kind)
+    if PRODUCTS.exists():
+        for path, kind in PRODUCT_BLOCKS.items():
+            text = out.get(path, path.read_text("utf-8"))
+            out[path] = put_products(text, products_html(data) if kind == "html" else products_docs(data), kind)
     for pattern in FACT_FILES:
         for path in sorted(ROOT.glob(pattern)):
             text = out.get(path, path.read_text("utf-8") if path.exists() else "")

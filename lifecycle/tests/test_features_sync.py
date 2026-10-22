@@ -39,3 +39,28 @@ def test_the_command_center_data_carries_light_guide_and_command():
     data = json.loads(js.split("=", 1)[1].rstrip().rstrip(";"))
     rng = next(f for f in data["features"] if f["id"] == "cyber-range")
     assert rng["light"] in ("green", "amber", "red") and rng["guide"].endswith("/securax/79-EXERCISE-RANGE/") and rng["port"] == 8097
+
+
+def test_every_product_resolves_and_no_page_claims_more_than_its_features():
+    data = fs.load()
+    assert fs.product_problems(data, fs.commands()) == []
+    order = ["red", "amber", "green"]
+    li, docs = fs.lights(), {f["id"]: f["doc"] for f in data["features"]}
+    for p in fs.load_products():
+        weakest = min((li.get(docs[x], "amber") for x in p["features"]), key=order.index)
+        assert fs.product_light(p, data) == weakest, p["id"]
+    html = fs.products_html(data)
+    assert html.count('class="card prod"') == len(fs.load_products()) and 'loading="lazy"' in html
+
+
+def test_a_product_with_a_missing_feature_command_or_screenshot_is_refused(monkeypatch, tmp_path):
+    bad = {"products": [{"id": "ghost", "name": "Ghost", "kicker": "x", "tagline": "x", "for": "x", "what": "x", "price": "x",
+                         "role": "maybe", "kill_if": "when it feels right",
+                         "anchor": "x", "shot": {"kind": "page", "page": "x", "alt": "x"}, "features": ["no-such-feature"],
+                         "commands": ["no-such-command"]}]}
+    f = tmp_path / "products.json"
+    f.write_text(json.dumps(bad))
+    monkeypatch.setattr(fs, "PRODUCTS", f)
+    probs = " ".join(fs.product_problems(fs.load(), fs.commands()))
+    assert "no-such-feature" in probs and "no-such-command does not exist" in probs and "no screenshot" in probs
+    assert "role must be core or bet" in probs and "kill_if needs a date" in probs

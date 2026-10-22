@@ -1039,7 +1039,7 @@ EOF2
     ;;
   venture)
     # Is the estate paying its way? Break-even, payback and unit economics, counting your time as a cost (doc 96). Private, in vault/.
-    #   ./securax venture | log time|money|revenue AMOUNT "what" | plan KEY=VALUE ... | ask | json
+    #   ./securax venture | log time|money|revenue AMOUNT "what" [--product ID --customer NAME --ref REF] | plan KEY=VALUE ... | ask | json | guards (doc 108)
     shift; exec python3 "$ROOT/governance/venture.py" "${@:-report}"
     ;;
   ship)
@@ -2120,7 +2120,7 @@ BUILD & KEEP IT HEALTHY
   os             one kit, many apps: Vantage at /vantage/; build, new ID --name, check; mobile ID (Android/iOS), mobile-check ID
   ship           build without Claude Code: open the PR, watch CI, fix red with autobuild, merge when green (check, login, pr, watch)
   suite          built for one, ready for many: editions, readiness to sell, the shared platform, datasheets (sheet EDITION)
-  venture        is it paying its way? break-even, payback, unit economics (your time counted); log, plan, ask
+  venture        is it paying its way? break-even, payback, unit economics (your time counted); log, plan, ask; guards: the monthly failure checks
   progress       is it making you better off? your rhythm, how much stronger the estate got, the one next step
   proofs         the claims the docs make that no journey proves yet, ranked, with the journey that could prove each
   backlog        everything started or promised and not finished: deferred asks, late promises, waiting PRs
