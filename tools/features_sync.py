@@ -126,11 +126,15 @@ def product_problems(data: dict, cmds: set[str]) -> list[str]:
     out, ids = [], {f["id"] for f in data["features"]}
     for p in load_products():
         where = f"product {p.get('id')}"
-        for k in ("id", "name", "kicker", "tagline", "for", "what", "features", "price", "anchor", "shot"):
+        for k in ("id", "name", "kicker", "tagline", "for", "what", "features", "price", "anchor", "shot", "role", "kill_if"):
             if not p.get(k):
                 out.append(f"{where}: needs '{k}'")
         out += [f"{where}: feature '{x}' is not in features.json" for x in p.get("features", []) if x not in ids]
         out += [f"{where}: ./securax {c} does not exist" for c in p.get("commands", []) if c not in cmds]
+        if p.get("role") and p["role"] not in ("core", "bet"):
+            out.append(f"{where}: role must be core or bet (doc 107)")
+        if p.get("kill_if") and not re.search(r"\d{4}-\d{2}-\d{2}", p["kill_if"]):
+            out.append(f"{where}: kill_if needs a date, so the test cannot drift (doc 107)")
         if not (ROOT / "website" / "img" / "products" / f"{p.get('id')}.png").exists():
             out.append(f"{where}: no screenshot website/img/products/{p.get('id')}.png (python3 tools/screenshots.py {p.get('id')})")
     return out
@@ -161,10 +165,10 @@ def products_html(data: dict) -> str:
 
 
 def products_docs(data: dict) -> str:
-    rows = ["| Product | For | What it is | Price (hypothesis) | Set against | Status |", "|---|---|---|---|---|---|"]
+    rows = ["| Product | Line | For | What it is | Price (hypothesis) | Set against | Stop or change if | Status |", "|---|---|---|---|---|---|---|---|"]
     for p in load_products():
         icon, _, label = LIGHT[product_light(p, data)]
-        rows.append(f"| **{p['name']}** ({p['kicker']}) | {p['for']} | {p['tagline']} | {p['price']} | {p['anchor']} | {icon} {label} |")
+        rows.append(f"| **{p['name']}** ({p['kicker']}) | {p['role']} | {p['for']} | {p['tagline']} | {p['price']} | {p['anchor']} | {p['kill_if']} | {icon} {label} |")
     return ("Generated from [`products.json`](../../products.json) by `tools/features_sync.py`: edit that file to change a product or a price. "
             "Community (the open-source core) stays free.\n\n" + "\n".join(rows))
 

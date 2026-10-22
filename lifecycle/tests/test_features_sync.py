@@ -55,6 +55,7 @@ def test_every_product_resolves_and_no_page_claims_more_than_its_features():
 
 def test_a_product_with_a_missing_feature_command_or_screenshot_is_refused(monkeypatch, tmp_path):
     bad = {"products": [{"id": "ghost", "name": "Ghost", "kicker": "x", "tagline": "x", "for": "x", "what": "x", "price": "x",
+                         "role": "maybe", "kill_if": "when it feels right",
                          "anchor": "x", "shot": {"kind": "page", "page": "x", "alt": "x"}, "features": ["no-such-feature"],
                          "commands": ["no-such-command"]}]}
     f = tmp_path / "products.json"
@@ -62,3 +63,4 @@ def test_a_product_with_a_missing_feature_command_or_screenshot_is_refused(monke
     monkeypatch.setattr(fs, "PRODUCTS", f)
     probs = " ".join(fs.product_problems(fs.load(), fs.commands()))
     assert "no-such-feature" in probs and "no-such-command does not exist" in probs and "no screenshot" in probs
+    assert "role must be core or bet" in probs and "kill_if needs a date" in probs
