@@ -25,7 +25,7 @@ jobs:
         run: python3 governance/inspector.py --watch --ci | tee watch.json
       - name: "digest pins: has a pinned image tag moved to a new build (doc 87)"
         run: python3 tools/digest_check.py
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: supply-chain-watch
