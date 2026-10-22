@@ -33,7 +33,8 @@ _spec = importlib.util.spec_from_file_location("securax_ccsp", HERE / "ccsp.py")
 _ccsp = importlib.util.module_from_spec(_spec)
 _spec.loader.exec_module(_ccsp)
 
-MAPS = {"rbi": "regmap-rbi-nbfc.json", "cscrf": "regmap-sebi-cscrf.json", "mit-ai-risk": "regmap-mit-ai-risk.json", "nist-ai-600-1": "regmap-nist-ai-600-1.json", "pqc": "regmap-pqc.json", "caf": "regmap-uk-caf-4.json"}
+MAPS = {"rbi": "regmap-rbi-nbfc.json", "cscrf": "regmap-sebi-cscrf.json", "mit-ai-risk": "regmap-mit-ai-risk.json", "nist-ai-600-1": "regmap-nist-ai-600-1.json", "pqc": "regmap-pqc.json", "caf": "regmap-uk-caf-4.json",
+        "owasp-ai": "regmap-owasp-llm-agentic.json", "free-ai": "regmap-rbi-free-ai.json"}
 STATUSES = ("supported", "partial", "gap", "entity", "na")
 SCORE = {"supported": 1.0, "partial": 0.5, "gap": 0.0}          # only these are "software scope"
 ICON = {"supported": "✅", "partial": "🟡", "gap": "⬜", "entity": "🏛", "na": "➖"}
@@ -94,7 +95,8 @@ def coverage(m: dict, category: str | None = None) -> dict:
 # The committed full reports (docs/securax/regulatory/) carry the page's status light from docs/status.yml,
 # written here so that "committed == generated" still holds (docs/sync_status.py writes the same banner).
 REPORTS = {"rbi": "rbi-nbfc-gap-assessment.md", "cscrf": "sebi-cscrf-gap-assessment.md", "mit-ai-risk": "mit-ai-risk-assessment.md",
-           "nist-ai-600-1": "nist-ai-600-1-assessment.md", "pqc": "pqc-readiness-assessment.md"}
+           "nist-ai-600-1": "nist-ai-600-1-assessment.md", "pqc": "pqc-readiness-assessment.md",
+           "owasp-ai": "owasp-llm-agentic-assessment.md", "free-ai": "rbi-free-ai-assessment.md"}
 
 
 def _status_banner(key: str) -> str:

@@ -1695,7 +1695,7 @@ def j_comply(sb: H.Sandbox, c: Checks):
     import hashlib
     import tarfile
     rc, out = H.sh(["bash", "./securax", "comply", "--verify"], cwd=sb.clone)
-    c.ok(rc == 0 and out.count(": consistent") == 6, "`comply --verify` passes on all six maps (RBI, SEBI, MIT AI-risk, NIST AI 600-1, post-quantum, UK CAF)", tail(out, 300))
+    c.ok(rc == 0 and out.count(": consistent") == 8, "`comply --verify` passes on all eight maps (RBI, SEBI, MIT AI-risk, NIST AI 600-1, post-quantum, UK CAF, OWASP LLM and Agentic, RBI FREE-AI)", tail(out, 300))
     rc, out = H.sh(["bash", "./securax", "comply", "cscrf", "--category", "qre"], cwd=sb.clone)
     c.ok(rc == 0 and "Qualified RE" in out and "entity obligations" in out, "`comply cscrf --category qre` narrows to that SEBI category", tail(out, 300))
     rc, out = H.sh(["bash", "./securax", "comply"], cwd=sb.clone)

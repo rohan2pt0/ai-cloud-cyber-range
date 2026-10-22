@@ -187,6 +187,8 @@ nav:
           - RBI NBFC Directions: securax/regulatory/rbi-nbfc-gap-assessment.md
           - SEBI CSCRF: securax/regulatory/sebi-cscrf-gap-assessment.md
           - NIST AI 600-1: securax/regulatory/nist-ai-600-1-assessment.md
+          - OWASP LLM and Agentic: securax/regulatory/owasp-llm-agentic-assessment.md
+          - RBI FREE-AI: securax/regulatory/rbi-free-ai-assessment.md
           - MIT AI Risk Repository: securax/regulatory/mit-ai-risk-assessment.md
           - Post-quantum readiness: securax/regulatory/pqc-readiness-assessment.md
   - Reference:

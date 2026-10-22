@@ -1,0 +1,285 @@
+{
+ "about": "The OWASP Top 10 for LLM Applications (2025) and for Agentic Applications (2026) assessed against what the gateway and the estate around it demonstrably do. Deployer-side view: SecuRAX runs and governs models, it does not train them. Each title is OWASP's category name; the notes are our own assessment and can be wrong: challenge them.",
+ "source": {
+  "title": "OWASP Top 10 for LLM Applications (2025) and Top 10 for Agentic Applications (2026)",
+  "url": "https://genai.owasp.org/",
+  "issued": "OWASP GenAI Security Project, November 2024 and December 2025",
+  "read_on": "2026-10-22",
+  "caveat": "Category names from OWASP's lists (the agentic names as reported by secondary sources; confirm against the official page). Status is our own judgement."
+ },
+ "items": [
+  {
+   "id": "LLM01",
+   "title": "Prompt injection",
+   "applies": "all",
+   "status": "supported",
+   "note": "Input rails for injection, jailbreak and hidden-character smuggling on every text part, tool results and the system context; the red team scores it in the purple loop.",
+   "evidence": [
+    "file:apps/llm-gateway/app/guardrails.py",
+    "test:apps/llm-gateway/tests/test_guardrails.py",
+    "journey:purple_loop"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "LLM02",
+   "title": "Sensitive information disclosure",
+   "applies": "all",
+   "status": "supported",
+   "note": "India-aware PII redaction on the way in, secret and personal-data rails on the way out, and residency routing that keeps local data off cloud models.",
+   "evidence": [
+    "file:apps/llm-gateway/app/residency.py",
+    "test:apps/llm-gateway/tests/test_residency.py",
+    "journey:gateway_residency"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "LLM03",
+   "title": "Supply chain",
+   "applies": "all",
+   "status": "supported",
+   "note": "Model weights must match an approved digest (ai check), pickle-format weights are scanned for code, third-party skills pass the vet gate, and every image is pinned and licence-listed.",
+   "evidence": [
+    "file:governance/modelcheck.py",
+    "test:governance/tests/test_modelcheck.py",
+    "test:lifecycle/tests/test_vet.py",
+    "journey:vet_gate",
+    "test:governance/tests/test_licences.py"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "LLM04",
+   "title": "Data and model poisoning",
+   "applies": "all",
+   "status": "partial",
+   "note": "Poisoned weights are caught by the digest check; documents added to a knowledge base are not yet scanned or owner-tagged at retrieval.",
+   "evidence": [
+    "file:governance/modelcheck.py",
+    "test:governance/tests/test_modelcheck.py"
+   ],
+   "next": "Per-document owner and class at retrieval, and a scan of documents on ingestion (doc 105, G15).",
+   "priority": "medium"
+  },
+  {
+   "id": "LLM05",
+   "title": "Improper output handling",
+   "applies": "all",
+   "status": "supported",
+   "note": "Output rails withhold exfiltration links, active HTML and leaked secrets before an answer reaches the caller.",
+   "evidence": [
+    "file:apps/llm-gateway/app/guardrails.py",
+    "test:apps/llm-gateway/tests/test_guardrails.py"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "LLM06",
+   "title": "Excessive agency",
+   "applies": "all",
+   "status": "partial",
+   "note": "Tool calls pass an allow, deny and approval policy that fails closed, dangerous arguments are blocked, and one command stops all AI; a call needing approval is refused rather than queued for a person.",
+   "evidence": [
+    "file:apps/llm-gateway/app/main.py",
+    "test:apps/llm-gateway/tests/test_guardrails.py",
+    "test:apps/llm-gateway/tests/test_human_in_command.py"
+   ],
+   "next": "An approval queue: the call waits for a person's yes from the Command Center or the phone (doc 105, G3).",
+   "priority": "high"
+  },
+  {
+   "id": "LLM07",
+   "title": "System prompt leakage",
+   "applies": "all",
+   "status": "supported",
+   "note": "Canary tokens in system prompts are caught on the way out, and the red team probes for leakage.",
+   "evidence": [
+    "file:apps/llm-gateway/app/guardrails.py",
+    "test:apps/llm-gateway/tests/test_guardrails.py",
+    "journey:purple_loop"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "LLM08",
+   "title": "Vector and embedding weaknesses",
+   "applies": "all",
+   "status": "partial",
+   "note": "Retrieved text arriving as system context is inspected like any prompt; the vector store itself has no per-document access control.",
+   "evidence": [
+    "file:apps/llm-gateway/app/main.py",
+    "test:apps/llm-gateway/tests/test_guardrails.py"
+   ],
+   "next": "Per-document owner and class checked at retrieval (doc 105, G15).",
+   "priority": "medium"
+  },
+  {
+   "id": "LLM09",
+   "title": "Misinformation",
+   "applies": "all",
+   "status": "partial",
+   "note": "An honesty check that catches guessing, a careful check-and-rewrite pass, and stale-fact warnings; no answer-quality set runs on each model change.",
+   "evidence": [
+    "file:governance/honesty.py",
+    "test:governance/tests/test_honesty.py",
+    "test:apps/llm-gateway/tests/test_careful.py"
+   ],
+   "next": "An answer-quality set run on every model change, scored over time (doc 105, G6).",
+   "priority": "medium"
+  },
+  {
+   "id": "LLM10",
+   "title": "Unbounded consumption",
+   "applies": "all",
+   "status": "supported",
+   "note": "Per-caller daily and monthly token allowances, request slots and timeouts; a caller over the allowance is refused.",
+   "evidence": [
+    "file:apps/llm-gateway/app/budget.py",
+    "test:apps/llm-gateway/tests/test_human_in_command.py"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "ASI01",
+   "title": "Agent goal hijack",
+   "applies": "all",
+   "status": "partial",
+   "note": "Tool results and retrieved context pass the same injection rails as user text, so an instruction hidden in content is caught; there is no separate check that a plan still serves the user's goal.",
+   "evidence": [
+    "file:apps/llm-gateway/app/main.py",
+    "test:apps/llm-gateway/tests/test_guardrails.py"
+   ],
+   "next": "Red-team probes for goal hijack through tool output in the purple loop (doc 105, G5).",
+   "priority": "high"
+  },
+  {
+   "id": "ASI02",
+   "title": "Tool misuse and exploitation",
+   "applies": "all",
+   "status": "partial",
+   "note": "Allow and deny lists with glob patterns, dangerous-argument rules, secrets in arguments blocked and personal data redacted.",
+   "evidence": [
+    "file:apps/llm-gateway/app/main.py",
+    "test:apps/llm-gateway/tests/test_guardrails.py"
+   ],
+   "next": "The approval queue for calls that need a person (doc 105, G3).",
+   "priority": "high"
+  },
+  {
+   "id": "ASI03",
+   "title": "Identity and privilege abuse",
+   "applies": "all",
+   "status": "supported",
+   "note": "Every caller is identified (signed tokens or hashed service keys, roles, an MFA claim, lock-out), and the audit log records who did what.",
+   "evidence": [
+    "file:apps/llm-gateway/app/identity.py",
+    "test:apps/llm-gateway/tests/test_identity.py",
+    "journey:gateway_identity"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "ASI04",
+   "title": "Agentic supply chain",
+   "applies": "all",
+   "status": "supported",
+   "note": "Third-party skills and plugins are vetted before use, the MCP bridge is read-only, and model weights are digest-checked.",
+   "evidence": [
+    "file:lifecycle/vet.py",
+    "file:governance/inspector.py",
+    "test:lifecycle/tests/test_vet.py",
+    "journey:vet_gate"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "ASI05",
+   "title": "Unexpected code execution",
+   "applies": "all",
+   "status": "partial",
+   "note": "Untrusted files are inspected in a sandbox, and weight files are scanned for code that would run on load; agents themselves run no generated code.",
+   "evidence": [
+    "file:governance/inspector.py",
+    "test:governance/tests/test_inspector.py",
+    "journey:inspect_sandbox"
+   ],
+   "next": "Red-team probes that try to make an agent run code (doc 105, G5).",
+   "priority": "medium"
+  },
+  {
+   "id": "ASI06",
+   "title": "Memory and context poisoning",
+   "applies": "all",
+   "status": "partial",
+   "note": "Context passed to a model is inspected; chat memories are not yet reviewable or switched off for shared accounts.",
+   "evidence": [
+    "file:apps/llm-gateway/app/main.py",
+    "test:apps/llm-gateway/tests/test_guardrails.py"
+   ],
+   "next": "Chat memories off for shared accounts, reviewable, and inspected like any input (doc 105, G10).",
+   "priority": "medium"
+  },
+  {
+   "id": "ASI07",
+   "title": "Insecure inter-agent communication",
+   "applies": "all",
+   "status": "partial",
+   "note": "Every service-to-service hop can run over internal TLS with verified names; agents do not yet sign or authenticate messages to each other.",
+   "evidence": [
+    "file:local/compose/tls-internal.yml",
+    "journey:tls_internal"
+   ],
+   "next": "Per-agent identity on calls between agents, checked by the gateway.",
+   "priority": "low"
+  },
+  {
+   "id": "ASI08",
+   "title": "Cascading failures",
+   "applies": "all",
+   "status": "partial",
+   "note": "A failing detector fails closed, a provider failure falls back down the ladder, and one command stops all AI; there is no automatic breaker that stops a looping agent.",
+   "evidence": [
+    "journey:key_wiring_and_failover",
+    "test:apps/llm-gateway/tests/test_human_in_command.py"
+   ],
+   "next": "An automatic breaker that stops an agent whose calls repeat or fail in a loop.",
+   "priority": "medium"
+  },
+  {
+   "id": "ASI09",
+   "title": "Human-agent trust exploitation",
+   "applies": "all",
+   "status": "partial",
+   "note": "Writes an agent proposes wait for a person (the approved-action executor), and the honesty check catches made-up answers.",
+   "evidence": [
+    "file:governance/honesty.py",
+    "test:governance/tests/test_honesty.py"
+   ],
+   "next": "Show the person the evidence behind each proposed action before they approve it.",
+   "priority": "low"
+  },
+  {
+   "id": "ASI10",
+   "title": "Rogue agents",
+   "applies": "all",
+   "status": "supported",
+   "note": "A per-model or all-AI stop with no restart, a per-agent allowance, and a hash-chained audit log that shows what each agent did.",
+   "evidence": [
+    "file:apps/llm-gateway/app/killswitch.py",
+    "test:apps/llm-gateway/tests/test_human_in_command.py",
+    "test:apps/llm-gateway/tests/test_audit_chain.py"
+   ],
+   "next": "",
+   "priority": ""
+  }
+ ]
+}

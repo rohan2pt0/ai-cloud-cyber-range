@@ -1,0 +1,308 @@
+{
+ "about": "The RBI FREE-AI committee report's 26 recommendations (six pillars) assessed against what the estate demonstrably does. Recommendations addressed to the RBI, the government or the industry are marked not applicable; those the board owns are entity duties and never counted as covered. The report is guidance from a committee, not a binding direction. Titles are paraphrased; the notes are our own assessment and can be wrong: challenge them.",
+ "source": {
+  "title": "RBI, Framework for Responsible and Ethical Enablement of Artificial Intelligence (FREE-AI), committee report",
+  "url": "https://www.rbi.org.in/Scripts/BS_PressReleaseDisplay.aspx?prid=61018",
+  "issued": "Reserve Bank of India, 13 August 2025",
+  "read_on": "2026-10-22",
+  "caveat": "Recommendation titles paraphrased from a professional summary of the report (the RBI's PDF could not be fetched from here); numbering is per pillar, not the report's own. Confirm against the RBI's text before relying on it. Status is our own judgement."
+ },
+ "items": [
+  {
+   "id": "INF-1",
+   "title": "Financial-sector data infrastructure",
+   "applies": "all",
+   "status": "na",
+   "note": "Addressed to the RBI, the government or the industry, not to a regulated entity's own estate.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "INF-2",
+   "title": "AI innovation sandbox",
+   "applies": "all",
+   "status": "na",
+   "note": "Addressed to the RBI, the government or the industry, not to a regulated entity's own estate.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "INF-3",
+   "title": "Incentives, funding and shared compute for smaller institutions",
+   "applies": "all",
+   "status": "na",
+   "note": "Addressed to the RBI, the government or the industry, not to a regulated entity's own estate.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "INF-4",
+   "title": "Indigenous AI models as public goods",
+   "applies": "all",
+   "status": "na",
+   "note": "Addressed to the RBI, the government or the industry, not to a regulated entity's own estate. The estate runs open models locally, so such models could be used when published.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "INF-5",
+   "title": "AI combined with digital public infrastructure",
+   "applies": "all",
+   "status": "na",
+   "note": "Addressed to the RBI, the government or the industry, not to a regulated entity's own estate.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "POL-1",
+   "title": "Adaptive policies, reviewed as AI risks change",
+   "applies": "all",
+   "status": "na",
+   "note": "Addressed to the RBI, the government or the industry, not to a regulated entity's own estate.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "POL-2",
+   "title": "AI for financial inclusion, with proportionate compliance",
+   "applies": "all",
+   "status": "na",
+   "note": "Addressed to the RBI, the government or the industry, not to a regulated entity's own estate.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "POL-3",
+   "title": "A flexible AI liability framework",
+   "applies": "all",
+   "status": "na",
+   "note": "Addressed to the RBI, the government or the industry, not to a regulated entity's own estate.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "POL-4",
+   "title": "A standing committee and institution for continuous AI oversight",
+   "applies": "all",
+   "status": "na",
+   "note": "Addressed to the RBI, the government or the industry, not to a regulated entity's own estate.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "CAP-1",
+   "title": "Training for the board and staff on AI governance and risk",
+   "applies": "all",
+   "status": "entity",
+   "note": "The entity trains its people. The estate's board report and range exercises can serve as material.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "CAP-2",
+   "title": "Capacity building for regulators and supervisors",
+   "applies": "all",
+   "status": "na",
+   "note": "Addressed to the RBI, the government or the industry, not to a regulated entity's own estate.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "CAP-3",
+   "title": "A platform for sharing AI use cases and lessons",
+   "applies": "all",
+   "status": "na",
+   "note": "Addressed to the RBI, the government or the industry, not to a regulated entity's own estate.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "CAP-4",
+   "title": "Awards and grants for responsible AI innovation",
+   "applies": "all",
+   "status": "na",
+   "note": "Addressed to the RBI, the government or the industry, not to a regulated entity's own estate.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "GOV-1",
+   "title": "A board-approved AI policy",
+   "applies": "all",
+   "status": "entity",
+   "note": "The board approves the policy. The estate supplies what the policy points to: the inventory, the approval tiers, the stop switch and the incident runbooks.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "GOV-2",
+   "title": "Data lifecycle governance for data used in AI",
+   "applies": "all",
+   "status": "partial",
+   "note": "Classification-aware routing keeps local data off cloud models, personal data is redacted, and stored data has limits and tiers; there is no record of which data sources feed which knowledge base.",
+   "evidence": [
+    "file:apps/llm-gateway/app/residency.py",
+    "test:apps/llm-gateway/tests/test_residency.py",
+    "journey:gateway_residency"
+   ],
+   "next": "A lineage record: each knowledge base and the sources it was built from, with owner and class (doc 105, G15).",
+   "priority": "medium"
+  },
+  {
+   "id": "GOV-3",
+   "title": "AI system governance across the model lifecycle",
+   "applies": "all",
+   "status": "supported",
+   "note": "Every model has a risk tier, owner, approval, validation date and decommission record; weights must match an approved digest; any model or all AI can be stopped at once.",
+   "evidence": [
+    "file:governance/model-registry.yaml",
+    "test:governance/tests/test_aicontrol.py",
+    "test:governance/tests/test_modelcheck.py",
+    "test:apps/llm-gateway/tests/test_human_in_command.py"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "GOV-4",
+   "title": "AI-specific risk checks in product approval",
+   "applies": "all",
+   "status": "partial",
+   "note": "High-risk models need named approvers and evidence (threat model, red-team scorecard, DPIA) in the registry, and the inventory flags an unapproved model; no sign-off checklist is generated for the product committee.",
+   "evidence": [
+    "file:governance/model-registry.yaml",
+    "test:governance/tests/test_aicontrol.py"
+   ],
+   "next": "A product-approval checklist generated from the registry, signed by the committee.",
+   "priority": "medium"
+  },
+  {
+   "id": "PRO-1",
+   "title": "Consumer protection: transparency, fairness and grievance redress",
+   "applies": "all",
+   "status": "partial",
+   "note": "Answers say they come from AI; grievance redress is the entity's; there are no bias or fairness probes yet.",
+   "evidence": [
+    "test:apps/llm-gateway/tests/test_human_in_command.py"
+   ],
+   "next": "Bias and toxicity probes in the purple loop (doc 105, G5); a disclosure line the entity can set per channel.",
+   "priority": "high"
+  },
+  {
+   "id": "PRO-2",
+   "title": "Cybersecurity against AI-specific threats, and AI for detection",
+   "applies": "all",
+   "status": "supported",
+   "note": "Input and output rails against injection, leakage and exfiltration, proven by the red team; the AI-SOC triages alerts.",
+   "evidence": [
+    "file:apps/llm-gateway/app/guardrails.py",
+    "test:apps/llm-gateway/tests/test_guardrails.py",
+    "journey:purple_loop",
+    "file:ai-soc/soc/triage.py"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "PRO-3",
+   "title": "Regular red teaming of AI systems",
+   "applies": "all",
+   "status": "partial",
+   "note": "The red team runs in the purple loop and scores four of the ten OWASP LLM categories.",
+   "evidence": [
+    "file:redteam/run_attacks.py",
+    "journey:purple_loop"
+   ],
+   "next": "Every OWASP LLM and Agentic category, plus bias probes (doc 105, G5).",
+   "priority": "high"
+  },
+  {
+   "id": "PRO-4",
+   "title": "AI contingencies in the business continuity plan",
+   "applies": "all",
+   "status": "supported",
+   "note": "An AI outage is a continuity scenario with its steps; a failed provider falls back to the next rung and the local model.",
+   "evidence": [
+    "file:governance/continuity.json",
+    "test:governance/tests/test_jewels_continuity.py",
+    "journey:key_wiring_and_failover"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "PRO-5",
+   "title": "AI incident reporting and sector risk intelligence",
+   "applies": "all",
+   "status": "partial",
+   "note": "AI incident runbooks start the right reporting clocks and keep sealed evidence; the sector-wide AI incident repository is the RBI's to set up, so no channel to it exists yet.",
+   "evidence": [
+    "file:governance/incident.py",
+    "test:governance/tests/test_ai_incidents.py",
+    "journey:incident_clock"
+   ],
+   "next": "Add the sector AI incident channel to the regulators once the RBI names it.",
+   "priority": "low"
+  },
+  {
+   "id": "ASR-1",
+   "title": "An AI inventory, and a contribution to a sector repository",
+   "applies": "all",
+   "status": "supported",
+   "note": "./securax ai inventory lists every model with tier, owner and validation due, and checks it against what the gateway actually serves.",
+   "evidence": [
+    "file:governance/aicontrol.py",
+    "test:governance/tests/test_aicontrol.py"
+   ],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "ASR-2",
+   "title": "Risk-based internal and third-party audits of AI",
+   "applies": "all",
+   "status": "partial",
+   "note": "A hash-chained gateway log, a checksummed evidence pack and these machine-checked maps give an auditor something to test; the audit itself is the entity's.",
+   "evidence": [
+    "test:apps/llm-gateway/tests/test_audit_chain.py",
+    "journey:comply_evidence"
+   ],
+   "next": "An auditor's export of the AI controls with their evidence, in one file.",
+   "priority": "medium"
+  },
+  {
+   "id": "ASR-3",
+   "title": "AI governance and use disclosed in annual reports",
+   "applies": "all",
+   "status": "entity",
+   "note": "The entity discloses. The inventory and the board report give the numbers.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "ASR-4",
+   "title": "A standard AI compliance toolkit",
+   "applies": "all",
+   "status": "na",
+   "note": "Addressed to the RBI, the government or the industry, not to a regulated entity's own estate. For one entity, ./securax comply and ./securax readiness do this job.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  }
+ ]
+}

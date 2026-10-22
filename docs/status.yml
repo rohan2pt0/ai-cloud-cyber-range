@@ -82,6 +82,8 @@ securax/59-END-STATE-ARCHITECTURE.md: [amber, "The end state; each capability be
 securax/regulatory/rbi-nbfc-gap-assessment.md: [green, "Complete; every reference resolves (fitness `regulatory-maps`). Open gaps are listed inside."]
 securax/regulatory/sebi-cscrf-gap-assessment.md: [green, "Complete; every reference resolves (fitness `regulatory-maps`). Open gaps are listed inside."]
 securax/regulatory/nist-ai-600-1-assessment.md: [green, "Complete; every reference resolves (fitness `regulatory-maps`). Open gaps are listed inside."]
+securax/regulatory/owasp-llm-agentic-assessment.md: [green, "Complete; every reference resolves (fitness `regulatory-maps`). Open gaps are listed inside."]
+securax/regulatory/rbi-free-ai-assessment.md: [green, "Complete; every reference resolves (fitness `regulatory-maps`). Titles paraphrased from a summary of the report: confirm against the RBI text. Open gaps are listed inside."]
 securax/regulatory/mit-ai-risk-assessment.md: [green, "Complete; every reference resolves (fitness `regulatory-maps`). Open gaps are listed inside."]
 securax/regulatory/pqc-readiness-assessment.md: [green, "Complete; every reference resolves (fitness `regulatory-maps`). Open gaps are listed inside."]
 architecture.md: [amber, "The original cyber-range lab; superseded by the SecuRAX docs."]
