@@ -8,9 +8,11 @@ local-first, and under your cost ceiling. **Read [`docs/securax/07-INTEGRATIONS.
 > 🔴 Red data stays on local models. Every workflow here enforces this.
 
 ## n8n workflow templates (`n8n/`)
-Import each in n8n (**⋯ → Import from File**), set the credential on any cloud node, toggle **Active**.
+Import each in n8n (**⋯ → Import from File**), set the credential on any cloud node, then **Publish** it (n8n 2 renamed Active).
 All of them call the **guardrail gateway** (`http://gateway:8080/v1`, or `https://gateway.securax.internal:8443/v1` when internal TLS is on: the templates read `GATEWAY_URL`), never a model directly —
 so you swap API keys, not workflows, and inherit every guardrail for free.
+n8n 2 hides the environment from workflows by default; the estate allows it because nothing secret is in n8n's
+environment (`lifecycle/tests/test_n8n_env.py` keeps it so). Keys go in n8n credentials, never in `$env`.
 
 | File | What it does | Needs |
 |---|---|---|
