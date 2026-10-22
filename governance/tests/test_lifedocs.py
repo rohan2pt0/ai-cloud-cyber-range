@@ -215,3 +215,51 @@ def test_ics_escapes_and_folds():
     raw = ld.ics([item], dt.datetime(2026, 10, 22, tzinfo=dt.timezone.utc)).encode()
     assert b"Renew\\; this\\, now\\\\" in raw and b"DESCRIPTION:a\\nb" in raw and b"\r\n " in raw
     assert all(len(ln) <= 75 for ln in raw.split(b"\r\n")) and raw.decode().count("é") == 3                # the summary and both alarms
+
+
+# -- the papers are the input (doc 104): a guided list, any format, the figures read --------------------------------------------
+
+F16PAPER = ("FORM NO. 16 under section 203 for tax deducted at source on salary (section 192)\nTAN of the deductor: FAKE-TAN\n"
+          "Gross Salary   Rs. 18,50,000.00\nTotal taxable income  16,25,000\nTotal tax deducted    2,95,400\n")
+STMT = "Statement of Account\nSavings Account IFSC FAKE-IFSC\nTotal Credits 19,10,000.00\nTotal Debits 14,60,500.00\nClosing Balance 5,69,500.00\n"
+
+
+def _docx(path, text):
+    import zipfile
+    body = "".join(f"<w:p><w:r><w:t>{line}</w:t></w:r></w:p>" for line in text.splitlines())
+    with zipfile.ZipFile(path, "w") as z:
+        z.writestr("word/document.xml", f'<w:document xmlns:w="w"><w:body>{body}</w:body></w:document>')
+
+
+def test_form16_and_a_statement_in_any_format_give_the_first_numbers(tmp_path):
+    _docx(tmp_path / "salary-paper.docx", F16PAPER)
+    (tmp_path / "statement.csv").write_text(STMT)
+    rows, _ = ld.scan(tmp_path, now=dt.date(2026, 10, 22))
+    kinds = {r["file"]: r["kind"] for r in rows}
+    assert kinds == {"salary-paper.docx": "form16", "statement.csv": "bank"}
+    f = ld.papers(rows)["figures"]
+    assert f["gross_income"] == 1850000 and f["tax_paid"] == 295400 and f["money_out"] == 1460500 and f["saving_rate_pct"] == 21
+
+
+def test_the_guided_list_asks_for_what_is_missing_and_the_ask_goes_once_the_paper_is_in(tmp_path):
+    out, life = tmp_path / "inbox-import.json", tmp_path / "life"
+    (tmp_path / "d").mkdir()
+    (tmp_path / "d" / "statement.txt").write_text(STMT)
+    rows, items = ld.scan(tmp_path / "d", now=dt.date(2026, 10, 22))
+    ld.write_all(rows, items, out, life)
+    data = json.loads(out.read_text())
+    asks = [x for x in data["items"] if x["id"].startswith("ld-paper-")]
+    assert "ld-paper-form16" in {x["id"] for x in asks} and "ld-paper-bank" not in {x["id"] for x in asks}
+    assert sum(1 for x in asks if x["vital"]) == 3 and all("./securax lifeos docs" in x["next"] for x in asks)
+    assert [c["key"] for c in data["papers"]["checklist"] if c["have"]] == ["bank"]
+    (tmp_path / "d" / "f16.txt").write_text(F16PAPER)
+    rows, items = ld.scan(tmp_path / "d", now=dt.date(2026, 10, 22))
+    assert "ld-paper-form16" in ld.write_all(rows, items, out, life)          # resolved: the Life OS ticks the ask off
+    body = out.read_text()
+    assert "FAKE-TAN" not in body and "FAKE-IFSC" not in body                 # totals only, never an identifier
+
+
+def test_papers_prints_the_guided_list(tmp_path, capsys):
+    assert ld.guide(tmp_path / "none") == 0
+    out = capsys.readouterr().out
+    assert "Your papers (0 of" in out and "Form 16" in out and "CDSL or NSDL" in out

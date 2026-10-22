@@ -9,7 +9,27 @@ closed. Read them for me, find the patterns, put the few things that matter firs
 upload (insurance policies, bank statements, ID scans): catch a policy about to lapse or a missing nominee, set the calendar
 alarms, and keep it all private.
 
-## 1. What it does
+## 1. Start here: your papers are the input
+
+Filling a spreadsheet first is the friction, so you do not have to. The Life OS Inbox opens with **Your papers**: the few
+papers that hold the numbers, why each matters and where to get it. Run `./securax lifeos papers` for the same list in the
+terminal.
+
+| Paper | What is read from it |
+|---|---|
+| Form 16 (latest year) | annual income, taxable income, tax paid |
+| AIS or Form 26AS | tax deducted on all income |
+| CDSL or NSDL consolidated account statement (CAS) | the value of your shares and funds |
+| Bank statements, 12 months, each account | money in, money out, closing balance; the saving rate against income |
+| EPF passbook, NPS statement | balances and nominees |
+| Insurance policies, Aadhaar and PAN, loan statements | renewal dates, nominees, missing IDs, what is owed |
+
+Save each one, in any format (PDF, scan, photo, Excel, Word, CSV or text) and with any name, in `vault/life/docs/`, then run
+`./securax lifeos docs`. Each paper is recognised by what it says. A paper still missing is an action in the Inbox (the first
+three are in the vital few), and it ticks itself off once the paper is in. Only totals are kept, never an account, PAN or
+other identifier.
+
+## 2. What it does
 
 | You have | Run | What arrives |
 |---|---|---|
@@ -23,7 +43,7 @@ next import ticks it off by itself, so the Inbox is the one place to see what is
 **No file named?** The workbook import looks in `vault/life/`, Downloads, Documents and Desktop (the Windows ones on WSL too),
 and takes the newest Guiding Map and growth-tracker workbooks.
 
-## 2. What it looks for
+## 3. What it looks for
 
 Sheets are recognised by their column headers, so a renamed sheet still works.
 
@@ -45,7 +65,7 @@ For documents, the text is read on the machine: `pdftotext` for PDFs, and the Te
 (`sudo apt install poppler-utils tesseract-ocr`, once). Each document is classed (insurance, bank statement, identity, loan,
 investment, property, vehicle), and its expiry, renewal, premium-due or maturity date and its nominee are found.
 
-## 3. Privacy, by design
+## 4. Privacy, by design
 
 - **Nothing leaves the machine.** No network call and no cloud model: the reading is plain pattern matching and local OCR.
 - **Secrets are never copied.** A PIN or password found in a sheet becomes an action to remove it, without the value.
@@ -54,10 +74,11 @@ investment, property, vehicle), and its expiry, renewal, premium-due or maturity
 - **Everything written is private:** `vault/life/` is readable by you only, and it and `portal/inbox-import.json` are
   git-ignored. The repository holds the code and fake test data only.
 
-## 4. Next, with dates
+## 5. Next, with dates
 
 | Step | By |
 |---|---|
 | Hand a document's text to the private Docs workspace (the estate's own RAG), so "when does my health cover renew?" is answered from your papers | 2026-11-08 |
 | A Life OS screen to tick a register item (nominee set, Aadhaar recorded) without opening the workbook; the next import reads it back | 2026-11-15 |
+| Upload a paper straight from the Life OS on the phone (a drop zone that saves it to `vault/life/docs/` on the laptop, signed in) | 2026-11-15 |
 | A weekly routine that re-reads the workbooks and documents by itself, so the Inbox is never older than a week | 2026-11-01 |

@@ -6,7 +6,9 @@ const today=new Date().toISOString().slice(0,10);
 const feed={items:[
   {id:"lw-aaaaaaaaaaa1",t:"Set a nominee: Fake Savings Account",kind:"issue",area:"Nominees",due:today,next:"fill the form",from:"workbook",vital:true,score:9},
   {id:"lw-aaaaaaaaaaa2",t:"Add to the emergency binder: Fake Will",kind:"action",area:"Family",due:today,next:"",from:"workbook",vital:false,score:2}],
-  resolved:["lw-0ldf1xed0001","ibmine123"]};
+  resolved:["lw-0ldf1xed0001","ibmine123"],
+  papers:{folder:"vault/life/docs",checklist:[{key:"form16",name:"Form 16 (latest year)",why:"income",where:"from HR",have:1},
+    {key:"cas",name:"Fake CAS paper",why:"funds",where:"by e-mail",have:0}],figures:{gross_income:1850000,saving_rate_pct:21}}};
 const dom=new JSDOM(fs.readFileSync('index.html','utf8'),{runScripts:"dangerously",pretendToBeVisual:true,url:"https://hub.securax.localhost/",
   beforeParse(w){ w.confirm=()=>true; w.alert=()=>{}; w.scrollTo=()=>{}; w.URL.createObjectURL=()=>"blob:x";
     w.fetch=(u)=>String(u).indexOf("inbox-import")>=0?Promise.resolve({ok:true,json:()=>Promise.resolve(feed)}):Promise.reject(new Error("offline"));
@@ -24,5 +26,7 @@ setTimeout(()=>{
   ok("the vital few come first", [...sec.querySelectorAll("h3")].some(h=>/^The vital few/.test(h.textContent.replace(/\s+/g," ").trim()) && /\(1\)/.test(h.textContent)) && html.indexOf("Fake Savings Account")<html.indexOf("All other actions"), "");
   ok("the rest are folded, one click away", !!sec.querySelector("details.ibnotes") && html.indexOf("All other actions (")>=0);
   ok("the Inbox section is visible (active)", !!sec.querySelector(".section.active"));
+  ok("your papers: the count, the next one to collect, and the figures read", /Your papers \(1 of 2 in\)/.test(sec.textContent) && /Next: Fake CAS paper/.test(sec.textContent)
+     && /18,50,000/.test(sec.textContent) && /21%/.test(sec.textContent), sec.textContent.slice(0,300));
   console.log(`test33 life import: ${P} passed, ${F} failed`); if(F){console.log(e.join("\n"));process.exit(1);} process.exit(0);
 },2600);

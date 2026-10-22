@@ -1002,7 +1002,7 @@ EOF2
     ;;
   lifeos)
     # Bring what you keep elsewhere into the Life OS Inbox, where each item becomes a decision (docs 84, 104):
-    #   ./securax lifeos import keep [FILE] | import workbook [FILE ...] | docs [FOLDER] | status
+    #   ./securax lifeos import keep [FILE] | import workbook [FILE ...] | docs [FOLDER] | papers | status
     shift; exec python3 "$ROOT/governance/lifeos.py" "${@:-status}"
     ;;
   jewels)
@@ -2124,7 +2124,7 @@ BUILD & KEEP IT HEALTHY
   names          https://hub.securax.localhost style addresses instead of localhost:port, in one guided step
   passwords      the estate's password manager (start passwords, then status | lock | open)
   cloud          sign in to AWS, Google Cloud or Azure with nothing to install (cloud login aws|gcp|azure; cloud status)
-  lifeos         your Keep notes, life workbooks (import workbook) and private documents (docs) into the Life OS Inbox, vital few first
+  lifeos         your Keep notes, life workbooks (import workbook) and private papers (papers: the guided list; docs: read them) into the Life OS Inbox, vital few first
 
 GROW (everything dormant until you wake it; sleeping keeps your data)
   stages / soil / grow / hibernate / prune / scale     rhythm      tenant / organ / organ-check / burrow / spore / full

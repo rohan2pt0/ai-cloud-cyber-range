@@ -4,6 +4,13 @@
     ./securax lifeos docs [FOLDER]            read every PDF, JPG or PNG in FOLDER (default vault/life/docs/, subfolders too)
     ./securax lifeos docs [FOLDER] --dry-run  show what it would add; write nothing
     ./securax lifeos docs [FOLDER] --json     the same, as JSON (numbers masked)
+    ./securax lifeos papers                   the guided list: which papers to drop in, where to get each, which are in
+
+No spreadsheet to fill: the papers are the input. Drop in your Form 16, the AIS or Form 26AS, the CDSL or NSDL consolidated
+account statement (CAS), a year of bank statements, your EPF and NPS statements, policies and ID scans (PDF, scan, photo,
+Excel, Word, CSV or text). Each is recognised by what it says, not by its name, and its key figures are read: income and
+tax from Form 16, money in and out from a statement, the portfolio value from the CAS. The Life OS shows them as "Your
+papers" (what is in, what is still missing, and the figures), so the first numbers fill themselves.
 
 Drop insurance policies, bank statements, scanned ID cards and the like into the folder. Each one is read here, on this
 machine: pdftotext for a PDF with text, tesseract for a scan or a photo. Nothing goes on the network, and no cloud model
@@ -32,6 +39,7 @@ import shutil
 import subprocess
 import sys
 import tempfile
+import zipfile
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 LIFE = ROOT / "vault" / "life"
@@ -44,9 +52,21 @@ MIN_TEXT = 40                     # fewer characters from pdftotext means a scan
 RESOLVED_KEEP = 500               # resolved ids kept in the import file
 PDF = {".pdf"}
 IMAGES = {".jpg", ".jpeg", ".png", ".tif", ".tiff", ".webp"}
+TEXT = {".txt", ".csv", ".tsv", ".md"}
+SHEETS = {".xlsx", ".xlsm"}
+WORDDOC = {".docx"}
+READABLE = PDF | IMAGES | TEXT | SHEETS | WORDDOC
 INSTALL = "could not read: install poppler-utils / tesseract-ocr (sudo apt install poppler-utils tesseract-ocr)"
 
 KINDS = [  # (kind, keywords); the kind with most hits wins, ties go to the earlier one
+    ("form16", ["form no. 16", "form no.16", "form 16", "section 192", "tds certificate", "gross salary", "salary as per provisions",
+                "deductor", "employer", "tan of the deductor"]),
+    ("taxstatement", ["annual information statement", "form 26as", "26as", "taxpayer information summary", "tax deducted at source",
+                      "traces", "assessment year"]),
+    ("cas", ["consolidated account statement", "cdsl", "nsdl", "central depository", "national securities depository",
+             "portfolio value", "isin", "demat account"]),
+    ("epf", ["employees' provident fund", "employees provident fund", "epfo", "uan", "member passbook", "provident fund"]),
+    ("nps", ["national pension system", "pran", "tier i", "tier 1", "pension fund", "cra"]),
     ("insurance", ["insurance", "policy", "premium", "sum assured", "sum insured", "insured", "nominee", "policyholder"]),
     ("bank", ["statement of account", "account statement", "opening balance", "closing balance", "ifsc", "savings account"]),
     ("identity", ["aadhaar", "uidai", "permanent account number", "income tax department", "passport", "republic of india",
@@ -56,12 +76,49 @@ KINDS = [  # (kind, keywords); the kind with most hits wins, ties go to the earl
     ("property", ["sale deed", "property tax", "khata", "registration of property", "encumbrance", "plot no", "flat no"]),
     ("vehicle", ["registration certificate", "puc", "pollution under control", "chassis", "engine no", "vehicle"]),
 ]
-AREA = {"insurance": "Insurance", "bank": "Banking", "loan": "Banking", "identity": "Identity", "investment": "Investments",
+AREA = {"form16": "Money", "taxstatement": "Money", "cas": "Investments", "epf": "Investments", "nps": "Investments",
+        "insurance": "Insurance", "bank": "Banking", "loan": "Banking", "identity": "Identity", "investment": "Investments",
         "property": "Property", "vehicle": "Vehicle", "other": "Documents"}
-WORD = {"insurance": "insurance policy", "bank": "bank account", "loan": "loan", "identity": "ID document",
+WORD = {"form16": "Form 16", "taxstatement": "tax statement", "cas": "consolidated account statement", "epf": "EPF passbook",
+        "nps": "NPS statement", "insurance": "insurance policy", "bank": "bank account", "loan": "loan", "identity": "ID document",
         "investment": "investment", "property": "property paper", "vehicle": "vehicle paper", "other": "document"}
 IMPACT = {"insurance": 3, "identity": 3, "bank": 2, "loan": 2, "investment": 2}
-NOMINEE_KINDS = {"insurance", "investment", "bank"}
+NOMINEE_KINDS = {"insurance", "investment", "bank", "cas", "epf", "nps"}
+
+# The guided list (doc 104): what to drop in, why, and where to get it. Paraphrased, no links: the steps work offline.
+CATALOG = [  # (key, kinds that count, name, why, where)
+    ("form16", {"form16"}, "Form 16 (latest year)", "your annual income and the tax already paid",
+     "from your employer (HR or the payroll portal), each June"),
+    ("tax", {"taxstatement"}, "AIS or Form 26AS", "every income the tax department sees: interest, dividends, sales",
+     "income-tax e-filing portal: Annual Information Statement, download as PDF"),
+    ("cas", {"cas", "investment"}, "CDSL or NSDL consolidated account statement (CAS)", "all your shares and mutual funds in one place",
+     "the CDSL or NSDL CAS page: ask for it by e-mail with your PAN; it comes as a PDF"),
+    ("bank", {"bank"}, "Bank statements, last 12 months, each account", "what comes in and goes out: your real spending",
+     "net banking: Statements, choose 12 months, download PDF or Excel"),
+    ("epf", {"epf"}, "EPF passbook", "your provident fund balance and the nominee",
+     "the EPFO member passbook page, signed in with your UAN"),
+    ("nps", {"nps"}, "NPS statement (if you have NPS)", "your pension balance and the nominee",
+     "your NPS record-keeper's site: transaction statement"),
+    ("insurance", {"insurance"}, "Every insurance policy (health, life, vehicle)", "renewal dates, cover and nominees",
+     "the insurer's app or e-mail: the policy schedule PDF"),
+    ("identity", {"identity"}, "Aadhaar and PAN for each family member", "who in the household is missing an ID",
+     "a scan or photo of each card, or the e-Aadhaar PDF"),
+    ("loan", {"loan"}, "Loan statements (if any)", "what you owe and the EMI dates",
+     "the lender's app: statement of account or repayment schedule"),
+]
+AMOUNT = r"(?:rs\.?|inr|₹)?\s*(?P<v>\d{1,3}(?:,\d{2,3})+(?:\.\d{1,2})?|\d{4,}(?:\.\d{1,2})?)"
+FIGURES = {  # kind: [(figure, label pattern)]; the first amount within 80 characters after the label
+    "form16": [("gross_income", r"gross\s+(?:total\s+)?(?:salary|income)"), ("taxable_income", r"(?:total|net)\s+taxable\s+income|total\s+income"),
+               ("tax_paid", r"(?:total\s+)?tax\s+deducted|net\s+tax\s+payable|tax\s+payable")],
+    "taxstatement": [("tds_total", r"total\s+tax\s+deducted|tds\s+total|total\s+tds")],
+    "cas": [("portfolio_value", r"(?:total\s+)?portfolio\s+value|grand\s+total|total\s+value|net\s+worth")],
+    "investment": [("portfolio_value", r"(?:total\s+)?portfolio\s+value|market\s+value|current\s+value")],
+    "bank": [("money_in", r"total\s+credits?|credits?\s+total|total\s+deposits?"), ("money_out", r"total\s+debits?|debits?\s+total|total\s+withdrawals?"),
+             ("closing_balance", r"closing\s+balance")],
+    "epf": [("epf_balance", r"(?:total|closing|net)\s+balance|grand\s+total")],
+    "nps": [("nps_balance", r"(?:total\s+)?(?:holding|current)\s+value|total\s+value")],
+    "loan": [("loan_outstanding", r"(?:principal\s+)?outstanding(?:\s+principal)?|balance\s+outstanding")],
+}
 
 _MON = {m: i for i, m in enumerate(["jan", "feb", "mar", "apr", "may", "jun", "jul", "aug", "sep", "oct", "nov", "dec"], 1)}
 _MONRE = r"(?:jan(?:uary)?|feb(?:ruary)?|mar(?:ch)?|apr(?:il)?|may|june?|july?|aug(?:ust)?|sept?(?:ember)?|oct(?:ober)?|nov(?:ember)?|dec(?:ember)?)"
@@ -112,11 +169,16 @@ def extract(path: pathlib.Path, run=None, which=None) -> tuple[str, str]:
     """(text, "") when read, or ("", why it could not be)."""
     which = which or shutil.which
     ext = path.suffix.lower()
-    if ext == ".txt":
+    if ext in TEXT:
         try:
             return path.read_text("utf-8", "replace"), ""
         except OSError:
             return "", "could not read: the file cannot be opened"
+    if ext in SHEETS | WORDDOC:
+        try:
+            return (_sheet_text(path) if ext in SHEETS else _docx_text(path)), ""
+        except (OSError, zipfile.BadZipFile, KeyError, ValueError):
+            return "", "could not read: the file is damaged or locked with a password (save an unlocked copy)"
     if ext in PDF:
         text = ""
         if which("pdftotext"):
@@ -135,10 +197,26 @@ def extract(path: pathlib.Path, run=None, which=None) -> tuple[str, str]:
             return "", INSTALL
         text = _run(["tesseract", str(path), "-", "-l", "eng"], 120, run) or ""
     else:
-        return "", "could not read: not a PDF, JPG or PNG"
+        return "", "could not read: not a PDF, scan, photo, Excel, Word or text file"
     if len(text.strip()) < MIN_TEXT:
         return "", "could not read: no text found (a blank or very faint scan; scan it again at 300 dpi)"
     return text, ""
+
+
+def _sheet_text(path: pathlib.Path) -> str:
+    """Every sheet as tab-separated lines, by the estate's own reader (no new dependency)."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("securax_controls_ld", ROOT / "governance" / "controls.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return "\n".join("\t".join("" if v is None else str(v) for v in row) for rows in mod.read_xlsx(path).values() for row in rows)
+
+
+def _docx_text(path: pathlib.Path) -> str:
+    with zipfile.ZipFile(path) as z:
+        xml = z.read("word/document.xml").decode("utf-8", "replace")
+    xml = re.sub(r"</w:p>|<w:br/>|<w:tab/>", "\n", xml)
+    return re.sub(r"<[^>]+>", "", xml)
 
 
 # -- understanding ---------------------------------------------------------------------------------------------------------------
@@ -211,6 +289,18 @@ def find_number(text: str) -> str:
     return ""
 
 
+def find_figures(kind: str, text: str) -> dict:
+    """{figure: rupees} for the kind's key figures. Totals only, never an account or ID number."""
+    out = {}
+    for name, label in FIGURES.get(kind, []):
+        m = re.search(r"\b(?:" + label + r")\b[^\n\d]{0,60}?" + AMOUNT, text, re.I)
+        if m:
+            v = float(m.group("v").replace(",", ""))
+            if 0 < v < 1e10:
+                out[name] = round(v)
+    return out
+
+
 def find_cover(text: str) -> int | None:
     m = COVER.search(text)
     if not m:
@@ -262,6 +352,9 @@ def read_doc(path: pathlib.Path, folder: pathlib.Path, run=None, which=None) -> 
         return {"file": rel, "kind": "unknown", "dates": [], "number": "", "nominee": "unknown", "readable": False, "why": why}, ""
     row = {"file": rel, "kind": classify(text), "dates": [{"role": r, "date": d.isoformat()} for r, d in find_dates(text)],
            "number": find_number(text), "nominee": nominee_state(text), "readable": True}
+    figs = find_figures(row["kind"], text)
+    if figs:
+        row["figures"] = figs
     cover = find_cover(text)
     if cover is not None and row["kind"] in ("insurance", "loan", "investment"):
         row["cover"] = cover
@@ -330,12 +423,43 @@ def scan(folder: pathlib.Path, now: dt.date | None = None, run=None, which=None)
     now = now or today()
     rows, items = [], []
     files = sorted(p for p in folder.rglob("*") if p.is_file() and not any(s.startswith(".") for s in p.relative_to(folder).parts)
-                   and p.suffix.lower() in PDF | IMAGES | {".txt"})
+                   and p.suffix.lower() in READABLE)
     for p in files:
         row, _text = read_doc(p, folder, run, which)
         rows.append(row)
         items += items_for(row, now)
     return rows, mark_vital(items)
+
+
+def papers(rows: list[dict]) -> dict:
+    """The guided list with what is in, and the figures summed: the Life OS shows it as "Your papers"."""
+    have = {}
+    for r in rows:
+        if r.get("readable"):
+            have[r["kind"]] = have.get(r["kind"], 0) + 1
+    checklist = [{"key": k, "name": n, "why": w, "where": wh, "have": sum(have.get(x, 0) for x in kinds)} for k, kinds, n, w, wh in CATALOG]
+    tot = {}
+    for r in rows:
+        for f, v in (r.get("figures") or {}).items():
+            if f in ("money_in", "money_out", "tds_total"):
+                tot[f] = tot.get(f, 0) + v
+            elif f in ("gross_income", "taxable_income", "tax_paid"):
+                tot[f] = max(tot.get(f, 0), v)          # the latest Form 16 is the largest; two copies are not two salaries
+            else:
+                tot[f] = tot.get(f, 0) + v
+    if tot.get("gross_income") and tot.get("money_out"):
+        tot["saving_rate_pct"] = round(100 * (1 - tot["money_out"] / tot["gross_income"]))
+    return {"checklist": checklist, "figures": tot, "read": today().isoformat(), "folder": _rel(DOCS)}
+
+
+def paper_items(pp: dict, now: dt.date) -> list[dict]:
+    """One action per paper not yet in, the first three vital: they unlock everything else. Gone once the paper is in."""
+    out, due = [], (now + dt.timedelta(days=3)).isoformat()
+    for i, c in enumerate(x for x in pp["checklist"] if not x["have"]):
+        out.append({"id": "ld-paper-" + c["key"], "t": f"Drop in: {c['name']}"[:200], "kind": "action", "area": "Papers", "due": due,
+                    "next": f"Get it {c['where']}; save it in {pp['folder']}/ and run ./securax lifeos docs."[:200],
+                    "from": SOURCE, "vital": i < 3, "score": 2.0})
+    return out
 
 
 # -- writing ---------------------------------------------------------------------------------------------------------------------
@@ -427,7 +551,9 @@ def write_all(rows: list[dict], items: list[dict], out: pathlib.Path | None = No
     """Write the three files; return the ids resolved."""
     out, life = out or OUT, life or LIFE
     _private_dir(life)
-    new, gone = merge(items, out)
+    pp = papers(rows)
+    new, gone = merge(items + paper_items(pp, today()), out)
+    new["papers"] = pp
     _write_private(out, json.dumps(new, ensure_ascii=False, indent=1))
     reg = {"about": "Your documents, as ./securax lifeos docs read them. Numbers masked; no names. Private: never committed.",
            "read": today().isoformat(), "documents": rows}
@@ -445,10 +571,25 @@ def _rel(p: pathlib.Path) -> str:
         return str(p)
 
 
+def guide(folder: pathlib.Path) -> int:
+    """The guided list in the terminal: what is in, what to get next, and where."""
+    rows = scan(folder)[0] if folder.is_dir() else []
+    pp = papers(rows)
+    print(f"Your papers ({sum(1 for c in pp['checklist'] if c['have'])} of {len(pp['checklist'])} in). Drop each into {_rel(folder)}/,"
+          " any format, any name; then run ./securax lifeos docs.")
+    for c in pp["checklist"]:
+        print(f"  {'✔' if c['have'] else '·'} {c['name']}" + ("" if c["have"] else f"\n      for {c['why']}; get it {c['where']}"))
+    if pp["figures"]:
+        print("Read from them so far: " + ", ".join(f"{k.replace('_', ' ')} {v:,}" for k, v in pp["figures"].items()))
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else list(argv)
     if argv and argv[0] == "docs":
         argv = argv[1:]
+    elif argv and argv[0] == "papers":
+        return guide(DOCS)
     if any(a in ("-h", "--help", "help") for a in argv):
         print(__doc__)
         return 0
@@ -468,14 +609,14 @@ def main(argv: list[str] | None = None) -> int:
             return 0
         _private_dir(folder.parent)
         _private_dir(folder)
-        print(f"Made {_rel(folder)}/ (readable by you only). Put your PDFs, JPGs and PNGs there, then run this again.")
-        return 0
+        print(f"Made {_rel(folder)}/ (readable by you only).")
+        return guide(folder)
     rows, items = scan(folder)
     if as_json:
         print(json.dumps({"documents": rows, "items": items}, ensure_ascii=False, indent=1))
     if not rows:
         if not as_json:
-            print(f"No PDF, JPG or PNG in {_rel(folder)}/ yet. Put your policies, statements and ID scans there, then run this again.")
+            print(f"No papers in {_rel(folder)}/ yet. Run ./securax lifeos papers for the list of what to drop in.")
         return 0
     gone = [] if dry else write_all(rows, items)
     if as_json:
