@@ -1,7 +1,7 @@
 # 21 — Versioning & release policy
 
 <!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
-> **Status: 🟢 Built.** Versioning, changelog and the release workflow run in CI. [What the lights mean](../index.md#the-status-lights)
+> **Status: 🟡 Partly built.** Built and tested: the next version is worked out from the changelog, a weekly agent cuts it into a Release PR, and merging that PR tags and publishes it (draft first, so immutable releases work). It was green on paper while no release had ever been published; it turns green when v0.3.0 is out. [What the lights mean](../index.md#the-status-lights)
 <!-- status:end -->
 
 How SecuRAX is versioned and released — the discipline a professional software product follows
@@ -68,21 +68,36 @@ as part of its PR, in [Keep a Changelog](https://keepachangelog.com) format
 (Added / Changed / Deprecated / Removed / Fixed / Security).
 
 ## Cutting a release
-1. Move **[Unreleased]** entries into a new `## [X.Y.Z] - <date>` section in `CHANGELOG.md`.
-2. Bump [`VERSION`](../../VERSION) to `X.Y.Z`.
-3. Open a PR, get it green and reviewed, merge.
-4. Tag the merge commit `vX.Y.Z` and push the tag.
-5. The **release** workflow (`.github/workflows/release.yml`) runs the full test suite, builds the
-   container images, generates the SBOM, and publishes a **GitHub Release** whose notes are taken
-   from that version's `CHANGELOG.md` section.
-   It attaches:
-   - the source as `.tar.gz` and `.zip`
-   - `install.sh` and `install.ps1`, with the repository's name written in
-   - `SHA256SUMS`, which `install.sh --offline` checks
-   - the SBOM
-   - a signed build provenance for every file (`gh attestation verify FILE --repo OWNER/REPO`)
 
-   Doc 75 covers installing and the channels.
+**Small and often, cut by an agent.** Well-run open projects publish small releases every week or two, each with its own
+notes (Open WebUI shipped 0.12.0 to 0.12.3 in two weeks). SecuRAX had the whole pipeline but had never published a release:
+the steps below were left to a person, and nobody did them, so 135 changes piled up under [Unreleased] and the stable
+channel had nothing to follow. Now an agent does the steps, and a person only decides.
+
+| Step | Who | How |
+|---|---|---|
+| Work out the next version | agent | `./securax release` reads [Unreleased]: only Fixed or Security entries make a patch (0.3.0 to 0.3.1), anything else a minor (0.3.1 to 0.4.0). A line marked BREAKING makes a major from 1.0 on |
+| Cut it | agent | every Monday, when main's nightly sandbox is green and the last release is at least a week old, the `release-cut` workflow moves [Unreleased] under `## [X.Y.Z] - date`, bumps `VERSION`, refreshes every label that shows it, and opens a **Release vX.Y.Z** PR whose text is the notes. By hand: `./securax release cut`, then a PR |
+| Decide to publish | **you** | merge the Release PR (doc 102 keeps publishing for the owner) |
+| Tag and publish | agent | `release-tag` tags the merge commit `vX.Y.Z` (a lightweight tag on the commit GitHub signed, so it shows as Verified) and runs the `release` workflow |
+
+The **release** workflow (`.github/workflows/release.yml`) runs the full test suite again, builds the gateway image and
+its SBOM, and publishes a **GitHub Release** whose notes are that version's `CHANGELOG.md` section. It attaches:
+- the source as `.tar.gz` and `.zip`
+- `install.sh` and `install.ps1`, with the repository's name written in
+- `SHA256SUMS`, which `install.sh --offline` checks
+- the SBOM
+- a signed build provenance for every file (`gh attestation verify FILE --repo OWNER/REPO`)
+
+It creates the release as a draft, attaches every file, and only then publishes it. That is the order GitHub's
+**immutable releases** need: once that repository setting is on, a published release and its tag cannot be changed or
+moved, and GitHub adds its own signed release attestation.
+
+**Two settings only you can turn on**, once (Settings > Actions > General, and Settings > General > Releases):
+1. "Allow GitHub Actions to create and approve pull requests", so the Monday agent can open the Release PR.
+2. "Enable release immutability".
+
+Doc 75 covers installing and the channels.
 
 Tags are immutable; a mistake is fixed by a new patch release, never by moving a tag.
 

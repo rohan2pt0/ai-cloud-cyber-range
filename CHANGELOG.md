@@ -14,6 +14,7 @@ for the versioning and release policy.
 - **Rail tests that would not have caught a weakened rail**, found by mutation testing: the "never allow the none algorithm" test was satisfied by a later, unrelated error, and nothing checked a wrong-shaped AI control file, a malformed sign-in token, a weak signing key, or the sync guard's window edges. Each now has its test.
 
 ### Added
+- **Releases, small and often** (doc 21): an agent works out the next version from this changelog (`./securax release`), cuts it every Monday into a "Release vX.Y.Z" PR when main's nightly is green, and merging that PR tags the commit and publishes the GitHub Release (notes, source archives, installers, SBOM, signed provenance). It publishes draft-first, so GitHub's immutable releases can be switched on. Until now nothing had ever been published, so the stable channel had nothing to follow.
 - **Mutation testing of the safety rails** (doc 101): `python3 tools/mutate.py` makes one small change at a time to the rail code and checks the tests notice; weekly in CI, with a ratchet so the known survivors can only shrink.
 - **Mission control** (doc 102): the estate's management operating system, run by AI agents.
   - `./securax mission`: one board in the OODA order (observe, orient, decide, act), ending in the one thing that needs you.

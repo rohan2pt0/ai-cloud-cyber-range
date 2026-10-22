@@ -1064,6 +1064,10 @@ EOF2
     # ./securax proofs [--top N|--all|--json] — the claims in the docs no journey proves yet, ranked, with the closest journey.
     python3 "$ROOT/governance/proofs.py" "${@:2}"
     ;;
+  release)
+    # ./securax release [plan|cut|notes X.Y.Z] — the next release from the changelog (plan, the default), or cut it (doc 21).
+    python3 "$ROOT/tools/release.py" "${@:2}"
+    ;;
   progress)
     # Is SecuRAX making you better off? Your Life OS rhythm, how much stronger the estate got, and the ONE next step (doc 93).
     #   ./securax progress | --send (to your phone) | --json
@@ -2103,6 +2107,7 @@ BUILD & KEEP IT HEALTHY
   venture        is it paying its way? break-even, payback, unit economics (your time counted); log, plan, ask
   progress       is it making you better off? your rhythm, how much stronger the estate got, the one next step
   proofs         the claims the docs make that no journey proves yet, ranked, with the journey that could prove each
+  release        the next release, worked out from the changelog; `release cut` prepares it (merging its PR publishes)
   chaos          chaos experiments: break one real thing, check the estate heals in time (plan only; --run breaks things)
   mission        mission control: the board, the Go/No-Go poll before an update, the flight rules, and the AI crew (RACI)
   autopilot      what the estate learned from its own failures, which drills it ran by itself, what it foresees running out

@@ -1,0 +1,68 @@
+# Small, frequent releases (doc 21), the way active open projects ship: every Monday, when main's nightly sandbox is green and
+# there is something under [Unreleased], an agent cuts the next version and opens a "Release vX.Y.Z" PR whose body is the
+# notes. Merging that PR is the decision to publish (doc 102); release-tag.yml then tags and publishes it.
+# Needs the repository setting "Allow GitHub Actions to create and approve pull requests" (Settings > Actions > General).
+# A PR opened by this workflow's token starts no other workflow, so its checks do not run on it; it only moves text, and the
+# release workflow runs the full test suite again before anything is published.
+name: release-cut
+on:
+  schedule:
+    - cron: "41 4 * * 1"        # Mondays 04:41 UTC (10:11 IST), after the nightly sandbox on main
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "cut even if the last release is under a week old"
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  pull-requests: write
+  actions: read
+
+jobs:
+  cut:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - uses: actions/setup-node@v4          # guiding-map/build.js stamps VERSION into the Life OS badge
+        with: { node-version: "20" }
+      - name: "Is a release due?"
+        id: due
+        env:
+          GH_TOKEN: ${{ github.token }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          next="$(python3 tools/release.py plan --json | python3 -c 'import json,sys; print(json.load(sys.stdin)["next"])')"
+          [ -n "$next" ] || { echo "Nothing under [Unreleased]: no release this week." >> "$GITHUB_STEP_SUMMARY"; exit 0; }
+          last="$(git tag -l 'v*.*.*' --sort=-creatordate | head -1)"
+          if [ -n "$last" ] && [ "$FORCE" != "true" ]; then
+            age=$(( ( $(date +%s) - $(git log -1 --format=%ct "$last") ) / 86400 ))
+            [ "$age" -ge 7 ] || { echo "Last release $last is $age day(s) old: next week." >> "$GITHUB_STEP_SUMMARY"; exit 0; }
+          fi
+          nightly="$(gh run list --workflow e2e.yml --branch main --event schedule --limit 1 --json conclusion -q '.[0].conclusion')"
+          [ "$nightly" = "success" ] || { echo "::warning::main's last nightly sandbox is '${nightly:-unknown}': no release until it is green."; exit 0; }
+          if gh pr list --state open --search "Release v$next in:title" --json number -q '.[0].number' | grep -q .; then
+            echo "A Release v$next PR is already open." >> "$GITHUB_STEP_SUMMARY"; exit 0
+          fi
+          echo "next=$next" >> "$GITHUB_OUTPUT"
+      - name: "Cut it and open the release PR"
+        if: steps.due.outputs.next != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          NEXT: ${{ steps.due.outputs.next }}
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "release/v$NEXT"
+          python3 tools/release.py cut
+          git add -A
+          git commit -m "Release v$NEXT"
+          git push -u origin "release/v$NEXT"
+          { echo "Merging this PR publishes **SecuRAX v$NEXT** (tag, notes, source archives, installers, SBOM, signed provenance)."
+            echo; echo "---"; echo; python3 tools/release.py notes "$NEXT" | head -c 60000; } > body.md   # GitHub caps a PR body at 65,536 characters
+          gh pr create --title "Release v$NEXT" --body-file body.md --base main --head "release/v$NEXT" \
+            || { echo "::error::Could not open the PR. Turn on Settings > Actions > General > 'Allow GitHub Actions to create and approve pull requests', or open release/v$NEXT by hand."; exit 1; }
