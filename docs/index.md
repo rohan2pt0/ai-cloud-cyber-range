@@ -15,11 +15,11 @@ by a test.
 
 The latest additions, newest first (the Command Center marks each one New for 30 days):
 
+- **2026-10-22** · [Readiness for any regulation](securax/106-WHO-SECURAX-IS-FOR.md): A Board-ready answer to "where do we stand on the Directions?", with proof, instead of a consultant's spreadsheet that dates in a week. `./securax readiness demo`
 - **2026-10-22** · [Life papers, read for you](securax/104-LIFE-PAPERS-READ-FOR-YOU.md): No more updating spreadsheets by hand to know what is still open: the few things that matter come to you, with a date and an alarm. `./securax lifeos import workbook`
 - **2026-10-21** · [Your progress](securax/93-PROGRESS-YOU-CAN-SEE.md): You see, every week, that your days and your estate are getting better, and you always know the one next step. `./securax progress`
 - **2026-10-21** · [Venture (is it paying its way?)](securax/96-ONE-PLATFORM-MANY-PRODUCTS.md): You know when the time and money you put in come back, and which number to move first. `./securax venture`
 - **2026-10-21** · [The suite (built for one, ready for many)](securax/97-BUILT-FOR-ONE-READY-FOR-MANY.md): You can see which edition could be sold today and the one gap that unlocks the most, instead of guessing. `./securax suite`
-- **2026-10-21** · [Govern (for decision makers)](securax/94-GOVERN.md): Leaders decide what to fix first, who to hire and what to spend, in an afternoon instead of a consulting engagement. `./securax govern`
 
 Each line names what it does, in plain words, and the one command that opens it. The light is the guide's status (what the lights mean is below).
 
@@ -36,6 +36,7 @@ Each line names what it does, in plain words, and the one command that opens it.
 
 | | What it does | How to open it |
 |---|---|---|
+| 🟡 [Readiness for any regulation](securax/106-WHO-SECURAX-IS-FOR.md) | Where your organisation stands on any regulation SecuRAX maps (RBI NBFC directions 2026, SEBI CSCRF, UK CAF, NIST AI 600-1 and more): only your chapter's or category's requirements, each marked with evidence, owner and date; the vital few gaps; VA, PT, IS audit and CISO-to-Board dates; a board pack and an auditor's sheet, kept on your machine. | `./securax readiness demo` |
 | 🟢 [BFSI control matrix](securax/66-BFSI-CONTROL-LIBRARY-AND-NAVIGATOR.md) | Every Indian BFSI cyber obligation as one matrix: what applies to you, what is proven, and what to close next. Works with no file from you. | `./securax go` |
 | 🟢 [Regulator incident clock](securax/36-IDENTITY-INCIDENT-RESIDENCY.md) | Every applicable regulator's reporting deadline for an incident, counting down, with the drafts ready. | `./securax incident` |
 | 🟡 [Regulatory gap maps](securax/35-REGULATORY-GAP-ASSESSMENT.md) | Requirement-by-requirement maps (RBI, SEBI CSCRF, NIST AI 600-1, post-quantum and more) with the evidence for each, checked on every change. | `./securax comply` |

@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Security
+- Removed references to the job descriptions some modules were first built against: the public repository carries no employer or role hints.
 - Gateway: a prompt sent as multi-part content (`[{"type": "text"}]`) skipped every input rail, and the system message (where chat apps put retrieved documents) was never inspected; both are now inspected and redacted, and ordinary system-prompt wording is recorded, not blocked (doc 105). The AI-SPM RAG check now requires that inspection.
 
 ### Fixed
@@ -18,6 +19,7 @@ for the versioning and release policy.
 - **Rail tests that would not have caught a weakened rail**, found by mutation testing: the "never allow the none algorithm" test was satisfied by a later, unrelated error, and nothing checked a wrong-shaped AI control file, a malformed sign-in token, a weak signing key, or the sync guard's window edges. Each now has its test.
 
 ### Added
+- `./securax readiness` (doc 106): your own readiness for any regulation SecuRAX maps (RBI NBFC directions 2026 by chapter, SEBI CSCRF by category, UK CAF, NIST AI 600-1 and more), with evidence and provenance for every mark, the vital few gaps, recurring-duty dates where the text sets them, a board pack and an auditor's sheet, all private; `readiness demo` shows it on sample data. The homepage now carries both pillars, Shield and Readiness, for every audience, with an NBFC industry page and a sample board pack. Doc 106: the audit, the audience (anyone who handles other people's data), positioning, one price table and a 30-day plan across segments.
 - Doc 105: the AI plane against the world's reference architectures, layer by layer and framework by framework, with every remaining gap dated in the queue.
 - Your papers (doc 104): the Life OS asks for the papers that hold the numbers (Form 16, AIS, CAS, a year of bank statements, EPF, NPS, policies, IDs) and says where to get each; `./securax lifeos docs` now also reads Excel, Word, CSV and text, and fills income, tax, spending, saving rate and portfolio value from them; `./securax lifeos papers` prints the list.
 - **Life papers, read for you** (doc 104): `./securax lifeos import workbook` reads your life workbooks and `./securax lifeos docs` reads policies, statements and ID scans (local OCR), on your own machine. Every open issue (a missing nominee, a lapsing policy, a login outside the password manager, a password left in a sheet, a late goal) becomes a dated Life OS action; the Inbox shows the vital fifth first, ticks off what the next import shows fixed, and calendar alarms come 7 days and 1 day before. Secrets are never copied, numbers are masked, nothing leaves the machine.
@@ -82,6 +84,7 @@ for the versioning and release policy.
 - **117 links to a domain with no DNS records.** The site, docs and README now use the GitHub Pages address until the domain is proven live.
 - 8 dead links to other sites, and the changelog's links to tags that were never created.
 ### Changed
+- CI runs Node 22 (Node 20 reached end of life in April 2026); jsdom 30, which needs Node 22.22.2 or later, can now be taken (Dependabot #104).
 - Azure provider 4 to 5 for the Azure canopy (Dependabot #130): azurerm 5 needs a node_provisioning_profile block; it is set to Manual, so node auto-provisioning stays off and the two pools remain the whole cluster.
 - **The cockpit is a dark cockpit.** One master lamp, at most three actions, six primary instruments that stay grey while all is well, lit annunciators only for problems, and every detail folded into panels with a one-line summary (Systems, Govern, Setup, AI briefing, Mission planning). The page is about a quarter of its old length. Badge colours now pass WCAG AA contrast in both themes.
 - **Govern needs no command.** Its panel is folded, and inside it shows the capability stack layer by layer (done, partial, missing basic, later tier), the organogram for the next tier (CISO, programme office, a column per function with its lead and roles), the next 10 gaps with their 5W1H, and the yearly cost. `./securax govern org` and `govern map` export both pictures as SVG for a Board deck.

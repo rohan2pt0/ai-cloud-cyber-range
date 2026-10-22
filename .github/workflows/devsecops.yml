@@ -1,5 +1,5 @@
 # DevSecOps pipeline: SAST + secrets + deps + container + IaC + AI red-team, all free,
-# all on GitHub-hosted runners. This IS the CI/CD evidence for the interview.
+# all on GitHub-hosted runners. This is the CI/CD evidence a buyer or auditor can inspect.
 name: devsecops
 on:
   push: { branches: [main] }      # a branch with a PR is checked by pull_request; checking its pushes too ran everything twice
@@ -62,7 +62,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: "20" }
+        with: { node-version: "22" }
       - name: Install jsdom
         working-directory: guiding-map
         run: npm ci || npm install

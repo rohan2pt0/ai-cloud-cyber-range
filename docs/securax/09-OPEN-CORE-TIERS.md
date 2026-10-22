@@ -11,6 +11,8 @@
 > **Status: 🔴 Not built yet.** A business model on paper; no tiers, billing or licensing are built. [What the lights mean](../index.md#the-status-lights)
 <!-- status:end -->
 
+> **Prices for the business product are now set in [doc 106](106-WHO-SECURAX-IS-FOR.md)** (a hypothesis to test with design partners). The tables below are kept as history.
+
 The balance you asked for: **keep the core genuinely free and open so it spreads and earns
 trust, and charge for the parts that take real work to run at scale.** This is the
 **open-core** model — the same one GitLab, Mattermost, Elastic and HashiCorp use. The free

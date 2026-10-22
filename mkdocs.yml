@@ -122,6 +122,7 @@ nav:
       - "Nothing asked is lost": securax/103-NOTHING-ASKED-IS-LOST.md
       - "Life papers, read for you": securax/104-LIFE-PAPERS-READ-FOR-YOU.md
       - "The AI plane against the reference architectures": securax/105-LLM-REFERENCE-ARCHITECTURES-GAP-CHECK.md
+      - "Who SecuRAX is for, and how it sells": securax/106-WHO-SECURAX-IS-FOR.md
   - How-to guides:
       - AI providers and plugins: securax/22-PLUGINS-AND-PROVIDERS.md
       - Integrations: securax/07-INTEGRATIONS.md

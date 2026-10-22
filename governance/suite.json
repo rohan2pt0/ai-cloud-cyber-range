@@ -92,6 +92,7 @@
   "guiding-map": { "from": "community", "uses": ["identity", "export", "continuity"], "enterprise": "a wellbeing programme employees opt into; the data stays theirs" },
   "inbox": { "from": "community", "uses": ["export"], "enterprise": "shared team inboxes" },
   "life-papers": { "from": "community", "uses": ["residency", "export"], "enterprise": "a family office or HR service reading members' papers on their own devices, with consent per document" },
+  "readiness": { "from": "community", "uses": ["export", "audit"], "enterprise": "an audit firm or a group with many entities: one assessment per entity, sign-off by a second person, evidence files, and a portfolio view" },
   "knowledge": { "from": "community", "uses": ["export", "residency"], "enterprise": "organisational knowledge with access rules" },
   "passwords": { "from": "community", "uses": ["identity", "rbac", "audit", "scim"], "enterprise": "shared vaults per team; leavers removed through SCIM" },
   "cloud": { "from": "community", "uses": ["identity", "audit"], "enterprise": "cloud sign-in governed by roles" },

@@ -33,7 +33,7 @@ jobs:
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - uses: actions/setup-node@v4          # guiding-map/build.js stamps VERSION into the Life OS badge
-        with: { node-version: "20" }
+        with: { node-version: "22" }
       - name: "Is a release due?"
         id: due
         env:

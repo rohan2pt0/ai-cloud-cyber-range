@@ -121,6 +121,22 @@ window.SECURAX_FEATURES = {
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/43-INSPECT-THIRD-PARTY-SOFTWARE/"
   },
   {
+   "id": "readiness",
+   "group": "Comply and govern",
+   "icon": "checklist",
+   "name": "Readiness for any regulation",
+   "what": "Where your organisation stands on any regulation SecuRAX maps (RBI NBFC directions 2026, SEBI CSCRF, UK CAF, NIST AI 600-1 and more): only your chapter's or category's requirements, each marked with evidence, owner and date; the vital few gaps; VA, PT, IS audit and CISO-to-Board dates; a board pack and an auditor's sheet, kept on your machine.",
+   "cmd": "./securax readiness demo",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "added": "2026-10-22",
+   "outcome": "A Board-ready answer to \"where do we stand on the Directions?\", with proof, instead of a consultant's spreadsheet that dates in a week.",
+   "shows": "the board pack (./securax readiness report)",
+   "light": "amber",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/106-WHO-SECURAX-IS-FOR/"
+  },
+  {
    "id": "controls",
    "group": "Comply and govern",
    "icon": "grid",
