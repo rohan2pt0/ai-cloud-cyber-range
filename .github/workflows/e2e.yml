@@ -14,6 +14,11 @@ on:
   push: { branches: [main] }
   schedule: [{ cron: "30 20 * * *" }]     # 02:00 IST
   workflow_dispatch:
+    inputs:
+      journeys:
+        description: "Journeys to run, comma-separated (empty = all). A single journey proves a fix in minutes, not 40."
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -36,6 +41,7 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = pull_request ]; then
             J="$(python3 lifecycle/impact.py --base "origin/${{ github.base_ref }}" --journeys)"
+          elif [ -n "${{ github.event.inputs.journeys }}" ]; then J="${{ github.event.inputs.journeys }}"
           else J=ALL; fi
           echo "journeys=$J" >> "$GITHUB_OUTPUT"
           echo "Journeys: ${J:-none (no journey guards these files; unit tests and fitness still ran)}" >> "$GITHUB_STEP_SUMMARY"

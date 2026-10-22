@@ -9,6 +9,10 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **A sandbox that proves more** (doc 101).
+  - `./securax proofs`: the claims the docs make that no journey proves yet, ranked, with the journey that could prove each.
+  - Any sandbox journey can be run on its own in CI (the e2e workflow's `journeys` input), so a fix is proved in minutes.
+  - The PowerShell scripts are parsed, linted and, where safe, run on a real Windows machine (`windows-scripts` workflow).
 - **Security round** (docs 87, 89, 92).
   - **Images pinned by digest:** the 13 services other devices or the internet reach run `name:tag@sha256:…` (`local/compose/digest-pins.json`); a test fails if one loses its pin, and `tools/digest_check.py` (weekly in supply-chain-watch) reports a tag that moved to a new build.
   - **A stolen AI key, spotted by how it behaves:** the gateway keeps a 7-day baseline per caller and writes a burst, a never-used model or an odd hour to the audit chain; the cockpit lights "Unusual AI key use". Detection only, no text stored. `GET /v1/anomalies`.

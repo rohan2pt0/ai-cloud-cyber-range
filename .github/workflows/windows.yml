@@ -1,0 +1,43 @@
+# The Windows scripts on a real Windows machine (docs 80, 78): every .ps1 in the repository is parsed and linted, and the
+# ones with a safe mode are RUN in it. They used to be checked by reading only.
+name: windows-scripts
+on:
+  pull_request:
+    paths: ["**/*.ps1", ".github/workflows/windows.yml", "PSScriptAnalyzerSettings.psd1"]
+  schedule: [{ cron: "17 6 * * 1" }]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ps1:
+    runs-on: windows-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+        with: { persist-credentials: false }
+      - name: "Parse every .ps1 (a syntax error fails the job)"
+        shell: pwsh
+        run: |
+          $bad = 0
+          Get-ChildItem -Recurse -Filter *.ps1 | Where-Object { $_.FullName -notmatch '\\node_modules\\|\\.git\\' } | ForEach-Object {
+            $errs = $null; [System.Management.Automation.Language.Parser]::ParseFile($_.FullName, [ref]$null, [ref]$errs) | Out-Null
+            if ($errs) { $bad++; $errs | ForEach-Object { Write-Host "::error file=$($_.Extent.File),line=$($_.Extent.StartLineNumber)::$($_.Message)" } }
+            else { Write-Host "parsed: $($_.FullName)" }
+          }
+          if ($bad) { exit 1 }
+      - name: "PSScriptAnalyzer (errors fail; warnings are listed)"
+        shell: pwsh
+        run: |
+          Install-Module PSScriptAnalyzer -Scope CurrentUser -Force -SkipPublisherCheck
+          $files = Get-ChildItem -Recurse -Filter *.ps1 | Where-Object { $_.FullName -notmatch '\\node_modules\\|\\.git\\' }
+          $all = $files | ForEach-Object { Invoke-ScriptAnalyzer -Path $_.FullName -Severity Warning,Error }
+          $all | Format-Table -AutoSize RuleName, Severity, ScriptName, Line, Message | Out-String -Width 220 | Write-Host
+          if ($all | Where-Object Severity -eq 'Error') { exit 1 }
+      - name: "Run free-c-drive.ps1 in its report-only mode (must change nothing and exit 0)"
+        shell: pwsh
+        run: |
+          powershell -NoProfile -ExecutionPolicy Bypass -File tools/windows/free-c-drive.ps1
+          if ($LASTEXITCODE -and $LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if ([Environment]::GetEnvironmentVariable("OLLAMA_MODELS", "User")) { Write-Host "::error::report mode set OLLAMA_MODELS"; exit 1 }

@@ -1052,6 +1052,10 @@ EOF2
     # that every feature declares its edition and platform services.  ./securax suite | components | sheet EDITION | check | json
     shift; exec python3 "$ROOT/governance/suite.py" "${@:-report}"
     ;;
+  proofs)
+    # ./securax proofs [--top N|--all|--json] — the claims in the docs no journey proves yet, ranked, with the closest journey.
+    python3 "$ROOT/governance/proofs.py" "${@:2}"
+    ;;
   progress)
     # Is SecuRAX making you better off? Your Life OS rhythm, how much stronger the estate got, and the ONE next step (doc 93).
     #   ./securax progress | --send (to your phone) | --json
@@ -2072,6 +2076,7 @@ BUILD & KEEP IT HEALTHY
   suite          built for one, ready for many: editions, readiness to sell, the shared platform, datasheets (sheet EDITION)
   venture        is it paying its way? break-even, payback, unit economics (your time counted); log, plan, ask
   progress       is it making you better off? your rhythm, how much stronger the estate got, the one next step
+  proofs         the claims the docs make that no journey proves yet, ranked, with the journey that could prove each
   autopilot      what the estate learned from its own failures, which drills it ran by itself, what it foresees running out
   names          https://hub.securax.localhost style addresses instead of localhost:port, in one guided step
   passwords      the estate's password manager (start passwords, then status | lock | open)
