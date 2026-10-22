@@ -152,9 +152,19 @@ def _alert_addrs(alerts):
     return [json.loads(ln)["addr"] for ln in alerts.read_text().splitlines()] if alerts.exists() else []
 
 
+def with_peer(app, peer):
+    """The app as seen from one peer address. Starlette's TestClient(client=...) is newer than the pinned FastAPI
+    0.115 stack CI installs, so the address is set in the ASGI scope instead; lifespan events pass through."""
+    async def wrapped(scope, receive, send):
+        if scope["type"] in ("http", "websocket"):
+            scope = {**scope, "client": peer}
+        await app(scope, receive, send)
+    return wrapped
+
+
 def _refuse(m, client, n, real_ip=None):
     hdr = {**h("guessed-token"), **({"X-Real-IP": real_ip} if real_ip is not None else {})}
-    with TestClient(m.app, client=client) as c:
+    with TestClient(with_peer(m.app, client)) as c:
         for _ in range(n):
             assert c.get("/sync/state?user=me", headers=hdr).status_code == 401
 
@@ -190,7 +200,7 @@ def test_two_clients_behind_the_proxy_are_counted_separately(svc):
 def test_the_websocket_hello_uses_the_same_rule(svc):
     m, c, clock, alerts = svc
     for client in (PROXY, OUTSIDE):
-        with TestClient(m.app, client=client) as wc:
+        with TestClient(with_peer(m.app, client)) as wc:
             for _ in range(10):
                 with wc.websocket_connect("/sync/ws", headers={"X-Real-IP": "203.0.113.9"}) as ws:
                     ws.send_text(json.dumps({"token": "guessed-token", "user": "me"}))
