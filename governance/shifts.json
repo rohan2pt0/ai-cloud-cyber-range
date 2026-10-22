@@ -1,0 +1,11 @@
+{
+ "about": "The platform shifts that could make a SecuRAX product obsolete (doc 108). Review each every quarter: what changed, and what SecuRAX does about it. ./securax venture guards fails when a review is older than 92 days. Cannibalise yourself before someone else does.",
+ "shifts": [
+  {"id": "agentic-soc", "shift": "AI agents doing first-line SOC work inside the big platforms (Microsoft, Google, CrowdStrike)", "threatens": ["respond", "range"], "response": "Integrate with them (connectors), do not race them; sell the regulator clock, evidence and India depth they lack", "reviewed": "2026-10-22"},
+  {"id": "bundled-ai-security", "shift": "AI security bundled into suites (Palo Alto bought Protect AI; Check Point is buying Lakera)", "threatens": ["shield"], "response": "Compete on offline use, India-aware redaction and residency, open code; keep Shield cheap to adopt next to a suite", "reviewed": "2026-10-22"},
+  {"id": "regulator-portals", "shift": "Regulators or exchanges offering their own compliance or SOC services (NSE/BSE Market SOC)", "threatens": ["readiness", "respond"], "response": "Feed them: export to the formats they ask for; serve the entities and auditors they do not cover", "reviewed": "2026-10-22"},
+  {"id": "pqc-standards", "shift": "Post-quantum standards and browser support moving fast", "threatens": ["quantum"], "response": "Keep the CBOM and the map current with each NIST and CERT-In step; sell the plan, not the scare", "reviewed": "2026-10-22"},
+  {"id": "local-models", "shift": "Small local models good enough for most work", "threatens": [], "response": "An opportunity: the ladder already ends on a local model; make offline the default story", "reviewed": "2026-10-22"},
+  {"id": "grc-ai", "shift": "Global GRC platforms adding Indian frameworks and AI assessments", "threatens": ["readiness", "recipes"], "response": "Stay deeper and faster on Indian rules (paragraph level, by chapter); partner with auditors they do not reach", "reviewed": "2026-10-22"}
+ ]
+}

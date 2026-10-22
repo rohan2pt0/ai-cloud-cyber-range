@@ -5,11 +5,13 @@ SecuRAX (doc 96), counting your TIME as a real cost, not only your money. Your n
     ./securax venture                         invested so far, break-even, payback month, unit economics, what must be true
     ./securax venture log time HOURS "what"   log hours you put in (valued at your hour_value)
     ./securax venture log money RS "what"     log money you spent (machines, domains, models, tools)
-    ./securax venture log revenue RS "what"   log money that came in
+    ./securax venture log revenue RS "what" [--product ID] [--customer NAME] [--ref INVOICE/UTR]
+                                              log money that came in; the tags let the guards judge concentration and proof
     ./securax venture plan KEY=VALUE ...      set your assumptions, for example
                                               hour_value=2000 hours_month=40 growth=300 tiers.pro.price=1499 tiers.pro.conv_pct=1.5
     ./securax venture ask                     a structured prompt that makes an AI stress-test the plan (a pre-mortem)
     ./securax venture json                    the same numbers for a dashboard
+    ./securax venture guards                  the monthly failure guards (doc 108): runway, burn, concentration, proof, claims
 
 The model is deliberately simple and explainable. Each month: free users grow by `growth`; each paid tier converts conv_pct% of the
 new free users at `cac` each; paid users churn churn_pct% a month; each paid user earns price less var (its contribution margin).
@@ -22,6 +24,7 @@ from __future__ import annotations
 import argparse
 import copy
 import datetime as dt
+import importlib.util
 import json
 import os
 import pathlib
@@ -246,9 +249,21 @@ def _coerce(v: str):
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="securax venture", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument("cmd", nargs="?", default="report", choices=["report", "log", "plan", "ask", "json"])
+    ap.add_argument("cmd", nargs="?", default="report", choices=["report", "log", "plan", "ask", "json", "guards"])
     ap.add_argument("args", nargs="*")
-    a = ap.parse_args(argv)
+    a, extra = ap.parse_known_args(argv)
+    if a.cmd == "guards":
+        spec = importlib.util.spec_from_file_location("securax_guards", ROOT / "governance" / "guards.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod.main(extra + a.args)
+    tags = {}
+    while extra:
+        flag = extra.pop(0)
+        if flag in ("--product", "--customer", "--ref") and extra and a.cmd == "log":
+            tags[flag[2:]] = extra.pop(0)[:80]
+        else:
+            ap.error(f"unrecognised argument {flag}")
     if a.cmd == "log":
         if len(a.args) < 2 or a.args[0] not in ("time", "money", "revenue"):
             print('usage: ./securax venture log time|money|revenue AMOUNT "what"', file=sys.stderr)
@@ -262,7 +277,8 @@ def main(argv: list[str] | None = None) -> int:
             print("the amount must not be negative", file=sys.stderr)
             return 2
         d = _mine()
-        d.setdefault("log", []).append({"d": dt.date.today().isoformat(), "kind": a.args[0], "amount": amt, "what": " ".join(a.args[2:])[:200]})
+        d.setdefault("log", []).append({"d": dt.date.today().isoformat(), "kind": a.args[0], "amount": amt, "what": " ".join(a.args[2:])[:200],
+                                        **(tags if a.args[0] == "revenue" else {})})
         d["log"] = d["log"][-5000:]   # bounded: years of daily entries
         _save(d)
         print(f"✔ logged {a.args[0]} {amt:g} (private, vault/venture.json)")

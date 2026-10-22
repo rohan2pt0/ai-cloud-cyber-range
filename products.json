@@ -43,7 +43,7 @@
    "features": ["respond", "incident-clock", "continuity", "ransomware-recovery", "backup"], "commands": ["incident", "respond", "continuity", "backup"],
    "price": "₹1 lakh a year", "anchor": "Usually bought as incident-response retainers from consultancies (no public India price found)",
    "shot": {"kind": "terminal", "cmd": "./securax incident open \"Sample: ransomware on a branch file server (fake)\" --regulators rbi-nbfc,cert-in --detected \"$(date -u -d '-2 hours' +%Y-%m-%dT%H:%MZ)\" --severity high >/dev/null && ./securax incident status", "title": "./securax incident status (a sample incident)", "alt": "The regulator clock on a sample incident: RBI DAKSH and CERT-In, six hours"}},
-  {"id": "personal", "role": "bet", "kill_if": "Fewer than 50 weekly users by 2026-12-31 (doc 96's first stage gate)", "name": "Personal", "kicker": "For you", "tagline": "Your private superintelligence, and your papers in order.",
+  {"id": "personal", "role": "bet", "kill_if": "Fewer than 50 weekly users by 2026-12-31 (doc 96's first stage gate)", "name": "Personal", "kicker": "For you", "tagline": "Your private AI on your own devices, and your papers in order.",
    "for": "Individuals and families",
    "what": "The Life OS (goals, inbox, the vital few), your papers read for you with renewal alarms, a password manager, your AI history in one private place, on every device, offline first.",
    "features": ["guiding-map", "inbox", "life-papers", "passwords", "knowledge"], "commands": ["lifeos"],
