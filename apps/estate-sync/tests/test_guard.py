@@ -138,7 +138,7 @@ def test_the_alert_file_keeps_its_last_500_lines(tmp_path):
     for i in range(guard.ALERT_LINES + 20):
         assert rs.refused(f"192.0.2.{i % 250}-{i}")                                     # documentation-range fake addresses
     lines = path.read_text().splitlines()
-    assert len(lines) == guard.ALERT_LINES
+    assert guard.ALERT_LINES == 500 and len(lines) == 500                              # the documented size, pinned
     assert json.loads(lines[-1])["addr"].endswith(f"-{guard.ALERT_LINES + 19}")
     assert len(rs._seen) <= guard.MAX_KEYS
 
@@ -243,3 +243,59 @@ def test_health_answers_through_the_command_centers_sync_route(svc):
     m, c, clock, alerts = svc
     a, b = c.get("/healthz"), c.get("/sync/healthz")
     assert a.status_code == b.status_code == 200 and a.json().keys() == b.json().keys()
+
+
+def test_a_setting_of_1_is_honoured_and_junk_keeps_the_default(monkeypatch):
+    from syncsvc import guard
+    for raw, want in (("1", 1), ("0", 600), ("-3", 600), ("many", 600), ("", 600)):
+        monkeypatch.setenv("SYNC_TEST_LIMIT", raw)
+        assert guard.env_int("SYNC_TEST_LIMIT", 600) == want, raw
+
+
+def test_the_limiter_window_slides_and_retry_after_counts_from_the_oldest_hit():
+    from syncsvc import guard
+    clock = Clock()
+    lim = guard.RateLimiter(2, 60, clock=clock)
+    t0 = clock.t
+    assert lim.hit("k") == 0
+    clock.t = t0 + 30
+    assert lim.hit("k") == 0
+    clock.t = t0 + 40
+    assert lim.hit("k") == pytest.approx(20)                 # the oldest hit (t0) leaves at t0+60
+    clock.t = t0 + 59.5
+    assert lim.hit("k") == pytest.approx(0.5)                # under a second left: say so, not a second more
+    clock.t = t0 + 61
+    assert lim.hit("k") == 0                                 # the oldest left; the one at t0+30 still counts
+    assert lim.hit("k") > 0
+
+
+def test_refused_sign_ins_slide_out_of_the_window_at_exactly_its_length():
+    from syncsvc import guard
+    clock = Clock()
+    rs = guard.RefusedSignins(2, 900, None, clock=clock)
+    t0 = clock.t
+    assert rs.refused("192.0.2.1") is False                  # below the threshold: no alert
+    clock.t = t0 + 900
+    assert rs.refused("192.0.2.1") is False                  # the first is exactly 900 s old: it has left
+    rs3 = guard.RefusedSignins(3, 900, None, clock=clock)
+    clock.t = t0
+    rs3.refused("192.0.2.2")
+    clock.t = t0 + 500
+    rs3.refused("192.0.2.2")
+    clock.t = t0 + 950
+    assert rs3.refused("192.0.2.2") is False                 # the oldest left; only two remain in the window
+
+
+def test_the_refused_sign_in_memory_is_bounded():
+    from syncsvc import guard
+    rs = guard.RefusedSignins(5, 900, None, max_keys=3, clock=Clock())
+    for i in range(10):
+        rs.refused(f"192.0.2.{i}")
+    assert len(rs._seen) == 3
+
+
+def test_the_alert_folder_is_created_when_it_does_not_exist(tmp_path):
+    from syncsvc import guard
+    path = tmp_path / "not" / "yet" / "refused-signins.jsonl"
+    assert guard.RefusedSignins(1, 900, str(path), clock=Clock()).refused("192.0.2.9")
+    assert path.exists() and len(path.read_text().splitlines()) == 1

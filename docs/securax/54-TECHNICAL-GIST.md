@@ -110,7 +110,7 @@ Open WebUI / PWA / OpenCode / scripts
 
 ## 8. Quality gates (a change is done only when these pass)
 
-- `ruff check .`; `python -m pytest -q` (<!-- fact:tests -->1000+<!-- /fact --> test functions; `pytest.ini` lists the test paths); `node` tests for the PWA.
+- `ruff check .`; `python -m pytest -q` (<!-- fact:tests -->1050+<!-- /fact --> test functions; `pytest.ini` lists the test paths); `node` tests for the PWA.
 - `./securax fitness`: latency, memory and dependency budgets; **every product claim proven** (`governance/claims.json`, doc 55); supply-chain ratchet; every CLI command documented; the impact map owns every tracked file; regulatory and CCSP maps resolve.
 - CI (`.github/workflows`): lint, app-tests, SAST and secrets, IaC scan, container scan, Trivy, Scorecard, SLSA provenance, terraform/organs/gitops, and the **sandbox** (about 40 min). The sandbox brings the real estate up on a runner and runs **41 journeys**: fresh install, chat through Open WebUI, safe update with rollback, backup/restore (also encrypted), TLS, lifecycle stages and more.
 - `BUILD-CONTRACT.md`. Hard rules:

@@ -1,7 +1,7 @@
 # 101 · A sandbox that proves more, with less of your time
 
 <!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
-> **Status: 🟡 Partly built.** Built and tested: ./securax proofs ranks the claims a journey could prove next; any journey runs on demand in CI; every PowerShell script is parsed, linted and (where safe) run on a real Windows machine; chaos experiments on the everyday estate (seeded, always reverted) run nightly, and the watchdog now heals the Command Center and sync too. Two live nodes, a phone as a second device and mutation testing of the rails are next, with dates. [What the lights mean](../index.md#the-status-lights)
+> **Status: 🟡 Partly built.** Built and tested: ./securax proofs ranks the claims a journey could prove next; any journey runs on demand in CI; every PowerShell script is parsed, linted and (where safe) run on a real Windows machine; chaos experiments on the everyday estate (seeded, always reverted) run nightly, and the watchdog now heals the Command Center and sync too. Mutation testing of the rails runs weekly with a ratchet. Two live nodes and a phone as a second device are built as journeys and wait for their first proof on CI. [What the lights mean](../index.md#the-status-lights)
 <!-- status:end -->
 
 **The ask:** the sandbox should test things it never could before, in the most prudent way, using what the best engineering organisations do. It should also cut the human steps, so the owner spends time on real life rather than on the estate.
@@ -36,6 +36,10 @@ The pages still amber mostly say the same thing: their proof needs something the
   - **Recovery:** the watchdog must heal and the estate must be normal again within the fault's time limit; the fault is always reverted, and the run stops at the first one not healed.
   - **What it found before running once:** the watchdog checked only the gateway, so a dead Command Center or sync was never healed, and `up` leaves a frozen container frozen. The watchdog now checks all three and unfreezes before it heals.
   - `./securax chaos` on your own machine shows the plan only; `--run` really breaks things, one at a time.
+- **Mutation testing of the safety rails** (`tools/mutate.py`, weekly workflow `mutation`): one small change at a time is made to the rail code (guardrails, kill switch, identity, residency, allowance, the sync service's sign-in and guard), and the tests that guard it must fail.
+  - **What it found at once:** the test that the "none" signing algorithm can never be configured passed for the wrong reason (a later, unrelated error); nothing checked a wrong-shaped AI control file, a malformed sign-in token, a weak signing key, or the sync guard's window edges. Each now has its test, and the sync guard's score went from 62% to 84%.
+  - **A ratchet, like fitness:** the known survivors are listed with a reason (a missing test, or a change that cannot alter behaviour); a new one fails the run. 61 survivors in the larger files still wait for review.
+  - The file under test is restored after every mutant and checked by hash; a journal restores it even after a killed run.
 - **Windows scripts on a real Windows machine:** the `windows-scripts` workflow parses and lints every `.ps1` (PSScriptAnalyzer) and runs `free-c-drive.ps1` in its report-only mode, weekly and on any change to a script.
 
 ## 4. Next, in this order
@@ -44,7 +48,8 @@ The pages still amber mostly say the same thing: their proof needs something the
 |---|---|---|
 | Two live nodes in one sandbox | Sync both ways, one node down then catching up, a conflict resolved the same on both | 2026-10-31 |
 | A phone as a second device (emulated) | HTTPS by name, installable, works offline, fits the screen, syncs to the laptop | 2026-10-31 |
-| Mutation testing of the rails | The tests would catch a weakened guardrail, residency, identity, kill switch, budget or sync guard | 2026-11-07 |
+| ~~Mutation testing of the rails~~ done 2026-10-22: weekly, with a ratchet | The tests would catch a weakened guardrail, residency, identity, kill switch, budget or sync guard | ~~2026-11-07~~ |
+| Review the 61 survivors still marked "triage pending" (guardrails, identity, budget, residency, access): a test or a reason for each | Every survivor is explained | 2026-11-14 |
 
 These three were started by build agents that stopped on a weekly usage limit; their partial work is kept and resumes after 2026-10-26.
 

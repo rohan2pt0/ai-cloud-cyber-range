@@ -113,12 +113,12 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 - A phone paired over HTTPS never synced
 - Rail tests that would not have caught a weakened rail
+- [Mutation testing of the safety rails](docs/securax/101-A-SANDBOX-THAT-PROVES-MORE.md)
 - [Mission control](docs/securax/102-MISSION-CONTROL.md)
 - [A sandbox that proves more](docs/securax/101-A-SANDBOX-THAT-PROVES-MORE.md)
 - Security round
 - Roadmap sweep: dated items done today
 - [One look across the estate](docs/securax/100-DESIGN-STANDARD.md)
-- [A calm Command Center](docs/securax/100-DESIGN-STANDARD.md)
 
 **Release 0.2.0 - 2026-10-17:**
 

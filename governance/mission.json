@@ -36,7 +36,7 @@
   {"n": 8, "name": "Programme and project execution", "estate": "roadmap rows with dates in every doc, ./securax proofs, ship pr / ship watch", "state": "built"},
   {"n": 9, "name": "Data and intelligence", "estate": "cockpit snapshot as the single source of truth, regwatch, threat data, autopilot forecasts", "state": "built"},
   {"n": 10, "name": "Change and transformation", "estate": "channels (stable/beta), rollback to any working version, the design standard's dated migrations", "state": "built"},
-  {"n": 11, "name": "Assurance and compliance", "estate": "compliance maps with evidence, fitness ratchets, sandbox journeys, restore drills, mutation testing (dated)", "state": "built; mutation testing dated"},
+  {"n": 11, "name": "Assurance and compliance", "estate": "compliance maps with evidence, fitness ratchets, sandbox journeys, restore drills, weekly mutation testing of the rails", "state": "built"},
   {"n": 12, "name": "Learning and improvement", "estate": "LESSONS.md, postmortems, honesty history, ./securax mission aar every Sunday", "state": "built"}
  ]
 }

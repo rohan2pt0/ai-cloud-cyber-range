@@ -195,6 +195,9 @@
   "lifecycle": {
    "paths": [
     "lifecycle/**",
+    "tools/mutate.py",
+    "tools/mutate.json",
+    "tools/mutate-baseline.json",
     "infra/**",
     "gitops/**",
     "policies/**",

@@ -13,6 +13,7 @@ for the versioning and release policy.
 - **Rail tests that would not have caught a weakened rail**, found by mutation testing: the "never allow the none algorithm" test was satisfied by a later, unrelated error, and nothing checked a wrong-shaped AI control file, a malformed sign-in token, a weak signing key, or the sync guard's window edges. Each now has its test.
 
 ### Added
+- **Mutation testing of the safety rails** (doc 101): `python3 tools/mutate.py` makes one small change at a time to the rail code and checks the tests notice; weekly in CI, with a ratchet so the known survivors can only shrink.
 - **Mission control** (doc 102): the estate's management operating system, run by AI agents.
   - `./securax mission`: one board in the OODA order (observe, orient, decide, act), ending in the one thing that needs you.
   - `./securax mission poll update`: a Go/No-Go poll (ransomware alarm, a fresh clean backup, disk, a reporting clock, main's nightly build). The nightly update runs only on GO and tells you once why it held.

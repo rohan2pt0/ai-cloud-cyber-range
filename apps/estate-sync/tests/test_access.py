@@ -112,3 +112,27 @@ def test_a_new_signing_key_is_fetched_once_and_a_fetch_failure_refuses(monkeypat
         raise OSError("no network")
     with pytest.raises(a.Denied):
         a.verify(mint(key[0]), fetch=down)
+
+
+def test_a_malformed_token_is_denied_not_an_error():
+    import syncsvc.access as a
+    for junk in ("", "abc", "a.b", "a.b.c.d", "!!.??.**"):
+        with pytest.raises(a.Denied, match="well-formed"):
+            a.verify(junk, fetch=lambda: {})
+
+
+def test_weak_keys_and_out_of_range_signatures_never_verify(key):
+    import syncsvc.access as a
+    pem, jwk = key
+    n, e = int.from_bytes(a._b64d(jwk["n"]), "big"), int.from_bytes(a._b64d(jwk["e"]), "big")
+    msg = b"header.payload"
+    sig = subprocess.run(["openssl", "dgst", "-sha256", "-sign", str(pem)], input=msg, check=True, capture_output=True).stdout
+    assert a._rsa_verify(n, e, msg, sig)                                  # the real key and signature verify
+    small = subprocess.run(["openssl", "genrsa", "1024"], check=True, capture_output=True).stdout
+    mod = subprocess.run(["openssl", "rsa", "-noout", "-modulus"], input=small, check=True, capture_output=True).stdout.decode()
+    assert not a._rsa_verify(int(mod.strip().split("=")[1], 16), e, msg, sig[:128])   # under 2048 bits
+    assert not a._rsa_verify(n, 2, msg, sig)                                           # an even exponent
+    assert not a._rsa_verify(n, 1, msg, sig)                                           # a tiny exponent
+    assert not a._rsa_verify(n, e, msg, sig[1:])                                       # the wrong signature length
+    k = (n.bit_length() + 7) // 8
+    assert not a._rsa_verify(n, e, msg, n.to_bytes(k, "big"))                          # a signature value of n or more
