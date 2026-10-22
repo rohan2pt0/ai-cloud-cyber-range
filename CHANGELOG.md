@@ -8,6 +8,9 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
+### Security
+- Gateway: a prompt sent as multi-part content (`[{"type": "text"}]`) skipped every input rail, and the system message (where chat apps put retrieved documents) was never inspected; both are now inspected and redacted, and ordinary system-prompt wording is recorded, not blocked (doc 105). The AI-SPM RAG check now requires that inspection.
+
 ### Fixed
 - **CI runs that a new push should never stop** (doc 68): devsecops ran twice for every push to a PR branch and its superseded runs kept going; lifecycle and windows kept superseded runs too; a quick second merge cancelled the first docs deploy; and a nightly sandbox cancelled because a newer run replaced it read as "main is not green", which could hold the laptop's nightly update. Every PR workflow now cancels only its own PR's older run, releases queue and are never cancelled, a cancelled run is never read as a result, and a test enforces all of it.
 - **The Command Center's web server ran an 18-month-old nginx** (1.27, superseded in April 2025; the cockpit showed "Oldest running software: 553 days"). It now runs the same nginx 1.30 as the HTTPS edge, on the current digest, and a test keeps every nginx in the estate on one line. It arrives with `./securax update` (backup first, rolls back by itself if the estate does not come up).
@@ -15,6 +18,7 @@ for the versioning and release policy.
 - **Rail tests that would not have caught a weakened rail**, found by mutation testing: the "never allow the none algorithm" test was satisfied by a later, unrelated error, and nothing checked a wrong-shaped AI control file, a malformed sign-in token, a weak signing key, or the sync guard's window edges. Each now has its test.
 
 ### Added
+- Doc 105: the AI plane against the world's reference architectures, layer by layer and framework by framework, with every remaining gap dated in the queue.
 - Your papers (doc 104): the Life OS asks for the papers that hold the numbers (Form 16, AIS, CAS, a year of bank statements, EPF, NPS, policies, IDs) and says where to get each; `./securax lifeos docs` now also reads Excel, Word, CSV and text, and fills income, tax, spending, saving rate and portfolio value from them; `./securax lifeos papers` prints the list.
 - **Life papers, read for you** (doc 104): `./securax lifeos import workbook` reads your life workbooks and `./securax lifeos docs` reads policies, statements and ID scans (local OCR), on your own machine. Every open issue (a missing nominee, a lapsing policy, a login outside the password manager, a password left in a sheet, a late goal) becomes a dated Life OS action; the Inbox shows the vital fifth first, ticks off what the next import shows fixed, and calendar alarms come 7 days and 1 day before. Secrets are never copied, numbers are masked, nothing leaves the machine.
 - **Nothing asked is lost** (doc 103): `./securax backlog` lists everything started or promised and not finished (deferred asks in `governance/queue.json`, dated promises due or late, open pull requests, branches with no PR, unpushed work, agents' scratch copies), and the daily `backlog` workflow keeps it in one GitHub issue, so an ask survives a session cut off by a usage limit or a restart. Going back over it found every feature PR on main, and 20 Dependabot PRs never handled; those are now queued.
@@ -78,6 +82,7 @@ for the versioning and release policy.
 - **117 links to a domain with no DNS records.** The site, docs and README now use the GitHub Pages address until the domain is proven live.
 - 8 dead links to other sites, and the changelog's links to tags that were never created.
 ### Changed
+- Azure provider 4 to 5 for the Azure canopy (Dependabot #130): azurerm 5 needs a node_provisioning_profile block; it is set to Manual, so node auto-provisioning stays off and the two pools remain the whole cluster.
 - **The cockpit is a dark cockpit.** One master lamp, at most three actions, six primary instruments that stay grey while all is well, lit annunciators only for problems, and every detail folded into panels with a one-line summary (Systems, Govern, Setup, AI briefing, Mission planning). The page is about a quarter of its old length. Badge colours now pass WCAG AA contrast in both themes.
 - **Govern needs no command.** Its panel is folded, and inside it shows the capability stack layer by layer (done, partial, missing basic, later tier), the organogram for the next tier (CISO, programme office, a column per function with its lead and roles), the next 10 gaps with their 5W1H, and the yearly cost. `./securax govern org` and `govern map` export both pictures as SVG for a Board deck.
 ### Added
