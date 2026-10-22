@@ -143,6 +143,9 @@ def j_incident(sb: H.Sandbox, c: Checks):
          "…and the error now says WHY (a detector is offline), not that the prompt was bad", err)
     rc, out = sb.securax("pull", timeout=1200)
     c.ok(rc == 0 and sb.ollama_has(sb.local_model()), "`./securax pull` installs the local model (so doctor/heal can run)", tail(out))
+    rc, out = sb.securax("ai", "check", timeout=120)
+    c.ok(rc == 0 and "OK" in out and sb.local_model() in out,
+         "`./securax ai check` finds the pulled model's weights are the approved ones (its digest matches the registry)", tail(out, 500))
     rc, out = sb.securax("doctor", timeout=400)
     c.ok("ON but NOT INSTALLED" in out, "`./securax doctor` names the exact problem", tail(out, 700))
     rc, out = sb.securax("up", "--lite", timeout=900)

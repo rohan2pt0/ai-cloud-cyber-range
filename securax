@@ -1179,7 +1179,16 @@ EOF2
     #   ./securax ai status | stop all|MODEL --reason "..." | resume all|MODEL | inventory
     #   ./securax ai budget [extend --day|--month --tokens N --reason "..." [--caller ID]]   daily + monthly AI allowance
     #   ./securax ai honesty [--model twin]   ask the AI questions that catch guessing (false premise, fake circular, today's date)
+    #   ./securax ai check [--approve NAME --reason "..." | --scan PATH]   local models against their approved digests (doc 105, G4)
     shift
+    if [ "${1:-}" = check ]; then
+      shift
+      if [ "${1:-}" = --scan ]; then exec python3 "$ROOT/governance/modelcheck.py" "$@"; fi
+      CID="$(cd "$ROOT/local/compose" && docker compose ps -q ollama 2>/dev/null || true)"
+      if [ -z "$CID" ]; then echo "The local model server is not running: ./securax up"; exit 1; fi
+      docker exec "$CID" ollama list 2>/dev/null | python3 "$ROOT/governance/modelcheck.py" "$@"
+      exit "${PIPESTATUS[1]}"
+    fi
     if [ "${1:-}" = share ]; then shift; exec python3 "$ROOT/lifecycle/share.py" "$@"; fi   # how much of the work Claude did (doc 23)
     if [ "${1:-}" = honesty ]; then shift; exec python3 "$ROOT/governance/honesty.py" --url "$(gw_url)" "$@"; fi   # does it refuse to guess? (doc 89)
     if [ "${1:-}" = inventory ]; then                 # also checks what the gateway actually serves (para 21 of the RBI draft)
@@ -2074,6 +2083,7 @@ AI & CHAT
   guard [on|off] strict or relaxed safety rails                      bench          which installed model fits this machine best
   ai stop|resume|budget|share   stop AI at once (one model or all), the allowance, who did this month's work
   ai honesty     does the AI refuse to guess? 8 questions that catch made-up answers, scored
+  ai check       are the local models the weights you approved? digests, and a scan of pickle files for code
   ask <agent> "q" --careful   check each claim and rewrite before answering (about twice the tokens; in Chat pick a "-careful" model)
   say "text"     speak/ask quickly      ask <agent> "q"  ask an expert advisor      advisors / plan / learn / intel   daily helpers
   research "task" --allow site.com   browse the web within limits    design "prompt"   make images      routines   scheduled jobs
