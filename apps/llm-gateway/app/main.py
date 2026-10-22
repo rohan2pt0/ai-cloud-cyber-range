@@ -273,6 +273,23 @@ def _trace(request: Request) -> tuple[str, str]:
     return trace_id, secrets.token_hex(8)
 
 
+def _texts(messages: list) -> list[tuple[dict, str, str]]:
+    """Every text the model will read, as (holder, key, role): a plain string, and each text part of a multi-part message
+    (OpenAI's [{"type": "text", "text": ...}]), so a prompt sent as parts cannot step around the rails. The user's and tools'
+    words, and the system message too: chat apps put retrieved documents there, the usual road for indirect injection."""
+    out = []
+    for m in messages:
+        if not isinstance(m, dict) or m.get("role") not in ("user", "tool", "system"):
+            continue
+        c = m.get("content")
+        if isinstance(c, str):
+            out.append((m, "content", m["role"]))
+        elif isinstance(c, list):
+            out += [(part, "text", m["role"]) for part in c
+                    if isinstance(part, dict) and part.get("type") in ("text", "input_text") and isinstance(part.get("text"), str)]
+    return out
+
+
 def _findings(fs: list[guardrails.Finding]) -> list[dict]:
     return [f.__dict__ for f in fs]
 
@@ -589,11 +606,10 @@ async def _chat(request: Request, authorization: str | None) -> JSONResponse:
         raise HTTPException(400, "`messages` must be a non-empty list")
     in_findings: list[guardrails.Finding] = []
     inspected: list[tuple[dict, guardrails.Verdict]] = []
-    for m in messages:                                   # 1) deterministic rails first: local, no text leaves the gateway
-        if m.get("role") in ("user", "tool") and isinstance(m.get("content"), str):
-            v = guardrails.inspect_input(m["content"], MAX_CHARS)
-            in_findings += v.findings
-            inspected.append((m, v))
+    for holder, key, role in _texts(messages):           # 1) deterministic rails first: local, no text leaves the gateway
+        v = (guardrails.inspect_context(holder[key]) if role == "system" else guardrails.inspect_input(holder[key], MAX_CHARS))
+        in_findings += v.findings
+        inspected.append((holder, key, v))
     # 2) data residency: classify by what was found + who is asking, and decide where this may be processed BEFORE anything is sent on
     res = RES.decide(payload.get("model") or "", in_findings, ident.data_class, request.headers.get("x-data-class", ""))
     if RES.mode != "off":
@@ -607,11 +623,11 @@ async def _chat(request: Request, authorization: str | None) -> JSONResponse:
         _metrics["residency_rerouted"] += 1
         payload["model"] = res.model
     # 3) model-based detectors, on the REDACTED text, and never a cloud detector for a class that may not leave
-    for m, v in inspected:
+    for holder, key, v in inspected:
         det = await run_detectors(v.text, "input", allow=lambda n: RES.detector_allowed(res.cls, n))
         v.findings += det
         in_findings += det
-        m["content"] = v.text  # redacted / normalised text goes upstream
+        holder[key] = v.text  # redacted / normalised text goes upstream
 
     blocking = [f for f in in_findings if f.severity in guardrails.BLOCKING and not f.rule.startswith("PII-")]
     if blocking and MODE == "enforce":
