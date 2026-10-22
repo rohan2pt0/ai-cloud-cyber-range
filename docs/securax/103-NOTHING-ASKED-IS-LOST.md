@@ -46,6 +46,23 @@ superseded, by 2026-10-26.
 
 ## 4. The asks, checked one by one
 
-The asks made in the session since 2026-10-10 were read back and each was checked against main (a commit, a changelog
-line, a doc). The ones not finished are in the queue with a date. The full table stays private, in the session's scratch
+Every message typed into this session since 2026-10-10 was read back: 270 messages, which split into 146 distinct asks.
+Each was checked against main (a commit, a changelog line, a doc). The full table stays private, in the session's scratch
 space, because it quotes the owner's own words.
+
+| Outcome | Asks |
+|---|---|
+| Done on main | 113 |
+| Partly done | 22 (five of them only wait for PR #126 to merge) |
+| Dated for later in a doc | 6 |
+| Not done | 1 (this queue, built the same day) |
+| Declined, with the reason recorded | 1 |
+| Help on the owner's own machine, given in chat | 3 |
+
+**What the partly-done ones have in common:** the code is built and tested, but the last step needs something the
+sandbox cannot give: a real phone, a real always-on server, an account (the Play Store, Cloudflare, GitLab), or a choice
+the owner keeps (spending money). These are now in the queue as **waiting for the owner**, with the exact step, so they are
+seen every day instead of forgotten. The rest of the partly-done asks have a due date and a next step in the queue.
+
+**The ask raised most often is the one least done:** building SecuRAX without paid Claude. The tools exist (route, brief,
+autobuild, ship, ai share), but Claude still made most of the commits. It is in the queue for 2026-11-05.
