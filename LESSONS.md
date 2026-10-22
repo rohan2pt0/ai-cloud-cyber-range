@@ -54,4 +54,5 @@ autobuild adds one by itself when a red attempt turns green. Keep lines short: e
 - 2026-10-22 verify: 'pytest | tail -1 && git commit' committed with a failing test, because the pipe returns tail's status → run checks with set -o pipefail (or test the exit code) before any commit in the same chain
 - 2026-10-22 gitops: hand-editing gitops/core/litellm.yaml failed the stale check; it is generated → change the source (compose pin, litellm-config.yaml) and run python3 lifecycle/render_core.py
 - 2026-10-22 release: merging the changelog's duplicate headings after ./securax release cut left the README's generated lines stale and failed app-tests → after any CHANGELOG edit run python3 tools/readme_sync.py, then fitness
+- 2026-10-22 ci: kubeconform's release tarball, unpacked in the checkout, overwrote the repository's LICENSE with Apache 2.0 in every gitops run; the new licence test caught it → unpack downloaded archives into $RUNNER_TEMP, or extra…
 <!-- lessons:end -->
