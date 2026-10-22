@@ -20,7 +20,7 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with: { persist-credentials: false }
       - name: "Parse every .ps1 (a syntax error fails the job)"
         shell: pwsh

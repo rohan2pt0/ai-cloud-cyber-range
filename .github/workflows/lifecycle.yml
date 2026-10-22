@@ -28,7 +28,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: hashicorp/setup-terraform@v3
         with: { terraform_version: "1.9.8", terraform_wrapper: false }
       - name: Format
@@ -45,7 +45,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Install helm and kubeconform (pinned, checksum-verified)
         run: |
           curl -fsSL -o helm.tgz https://get.helm.sh/helm-v3.16.3-linux-amd64.tar.gz
@@ -77,7 +77,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 20
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Pinned upstream organs still fetch, prepare and compose-validate (no images are pulled)
         env: { SECURAX_HOME_DIR: /tmp/securax-home }
         run: python3 lifecycle/lifecycle.py organ-check
