@@ -25,7 +25,7 @@ import httpx
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
 
-from . import answering, baseline, budget, guardrails, identity, killswitch, residency
+from . import answering, baseline, budget, careful, guardrails, identity, killswitch, residency
 from .providers import active_detectors, run_detectors
 
 MODE = os.getenv("GUARDRAIL_MODE", "enforce")  # enforce | monitor
@@ -419,6 +419,7 @@ async def models(request: Request) -> dict:
     # stable de-dup preserving order
     seen: set[str] = set()
     ids = [i for i in ids if not (i in seen or seen.add(i))]
+    ids += careful.aliases(ids)              # `<chat model>-careful`: draft, check each claim, rewrite (app/careful.py)
     return {"object": "list",
             "data": [{"id": i, "object": "model", "created": 0, "owned_by": "securax"} for i in ids]}
 
@@ -539,6 +540,11 @@ async def _chat(request: Request, authorization: str | None) -> JSONResponse:
     ident = await _authn(request, "chat")
     _metrics["sli_total"] += 1
     payload = await request.json()
+    # Careful mode (app/careful.py, doc 89): the alias `<name>-careful` runs on `<name>` and asks for the check, as does the header.
+    base, by_alias = careful.split_alias(str(payload.get("model") or "")) if isinstance(payload, dict) else ("", False)
+    if by_alias:
+        payload["model"] = base
+    want_careful = careful.wanted(by_alias, request.headers)
     asked = str(payload.get("model") or "") if isinstance(payload, dict) else ""    # the alias asked for, before any reroute
     req_id = str(uuid.uuid4())
     # Authenticated callers are rate-limited and audited by their verified subject; anonymous ones (AUTH_MODE off/optional) as before.
@@ -627,6 +633,7 @@ async def _chat(request: Request, authorization: str | None) -> JSONResponse:
 
     # 4) accuracy without prompt engineering (app/answering.py, doc 89): today's date and the answer rules a careful expert
     #    would write go first in a person's conversation. Exact-format callers and chat apps' housekeeping are left alone.
+    do_careful = want_careful and careful.eligible(payload, request.headers)     # decided before the rules are added
     ruled = answering.apply(payload, request.headers)
     if ruled:
         _metrics["answer_rules"] += 1
@@ -635,94 +642,182 @@ async def _chat(request: Request, authorization: str | None) -> JSONResponse:
     payload["stream"] = False            # always take the reply WHOLE so the output rails can inspect it
     payload.pop("stream_options", None)  # only valid on streaming calls; upstreams reject it otherwise
 
-    global _INFLIGHT
-    start = time.perf_counter()
-    try:
-        await asyncio.wait_for(_slots().acquire(), timeout=QUEUE_WAIT_S)
-    except asyncio.TimeoutError:
-        _metrics["shed_overload"] += 1
-        _metrics["sli_bad"] += 1
-        _emit({"req_id": req_id, **who, "decision": "shed_overload", "inflight": _INFLIGHT})
-        raise HTTPException(503, "the AI models are busy; try again shortly", headers={"Retry-After": "10"}) from None
-    _INFLIGHT += 1
-    try:
-        _TP.set(f"00-{trace_id}-{span_id}-01")
-        resp = await _call_upstream(payload)
-    except (httpx.HTTPError, ValueError) as exc:    # ValueError: upstream sent something that is not JSON
-        _metrics["upstream_error"] += 1
-        _metrics["sli_bad"] += 1
-        _emit({"req_id": req_id, **who, "decision": "upstream_error", "error": str(exc)[:200]})
-        raise HTTPException(502, "upstream model unavailable") from exc
-    finally:
-        _INFLIGHT -= 1
-        _slots().release()
-    latency_ms = round((time.perf_counter() - start) * 1000)
-    _observe_latency(latency_ms)
-    _note_served(asked, str(resp.get("model") or payload.get("model") or ""))
-
     out_findings: list[guardrails.Finding] = []
+    calls: list[dict] = []               # one row per model call (careful mode makes up to three), for the audit line
+
+    async def ask(body: dict, step: str) -> dict:
+        """ONE model call under the same controls as any other: a slot, the upstream, the output rails, the tool policy and the
+        allowance meter. The first call's failures are the request's (502/503, as before); a careful step's raise _StepFailed."""
+        global _INFLIGHT
+        start = time.perf_counter()
+        try:
+            await asyncio.wait_for(_slots().acquire(), timeout=QUEUE_WAIT_S)
+        except asyncio.TimeoutError:
+            _metrics["shed_overload"] += 1
+            if step != "draft":
+                raise _StepFailed("busy") from None
+            _metrics["sli_bad"] += 1
+            _emit({"req_id": req_id, **who, "decision": "shed_overload", "inflight": _INFLIGHT})
+            raise HTTPException(503, "the AI models are busy; try again shortly", headers={"Retry-After": "10"}) from None
+        _INFLIGHT += 1
+        try:
+            _TP.set(f"00-{trace_id}-{span_id}-01")
+            resp = await _call_upstream(body)
+        except (httpx.HTTPError, ValueError) as exc:    # ValueError: upstream sent something that is not JSON
+            _metrics["upstream_error"] += 1
+            _emit({"req_id": req_id, **who, "decision": "upstream_error", "step": step, "error": str(exc)[:200]})
+            if step != "draft":
+                raise _StepFailed("upstream") from exc
+            _metrics["sli_bad"] += 1
+            raise HTTPException(502, "upstream model unavailable") from exc
+        finally:
+            _INFLIGHT -= 1
+            _slots().release()
+        latency_ms = round((time.perf_counter() - start) * 1000)
+        _observe_latency(latency_ms)
+        if step == "draft":
+            _note_served(asked, str(resp.get("model") or body.get("model") or ""))
+
+        withheld = False
+        for choice in resp.get("choices", []):
+            content = choice.get("message", {}).get("content") or ""
+            v = guardrails.inspect_output(content, ALLOWED_DOMAINS, CANARIES)
+            v.findings += await run_detectors(content, "output", allow=lambda n: RES.detector_allowed(res.cls, n))
+            out_findings.extend(v.findings)
+            # Fail-closed: withhold if the deterministic output rails flagged it OR a model detector
+            # (Llama Guard / Model Armor / Bedrock) or a detector-outage raised a BLOCKING finding.
+            # (inspect_output set v.allowed before the detector verdicts were appended — recompute.)
+            withhold = (not v.allowed) or any(
+                f.severity in guardrails.BLOCKING and not f.rule.startswith("PII-") for f in v.findings)
+            if withhold and MODE == "enforce":
+                withheld = True
+                choice["message"]["content"] = "Response withheld by AI security policy."
+                choice["finish_reason"] = "content_filter"
+            elif MODE == "enforce":
+                choice["message"]["content"] = v.text
+            tcs = choice.get("message", {}).get("tool_calls")
+            if tcs:                                              # the model wants to ACT: check the tool and its arguments
+                tcs, tf = guardrails.inspect_tool_calls(tcs, TOOL_POLICY, CANARIES)
+                out_findings.extend(tf)
+                stop = sorted({f.rule for f in tf if f.severity in guardrails.BLOCKING and not f.rule.startswith("PII-")})
+                if stop and MODE == "enforce":
+                    _metrics["blocked_tool_call"] += 1
+                    withheld = True
+                    choice["message"].pop("tool_calls", None)
+                    choice["message"]["content"] = "Tool call withheld by AI security policy (" + ", ".join(stop) + ")."
+                    choice["finish_reason"] = "content_filter"
+        withheld_by[id(resp)] = withheld
+
+        # The allowance counts EVERY call, careful steps included.
+        u = resp.get("usage") if isinstance(resp.get("usage"), dict) else {}
+        _usage["tokens_prompt"] += int(u.get("prompt_tokens") or 0)
+        _usage["tokens_completion"] += int(u.get("completion_tokens") or 0)
+        _usage["tokens_reasoning"] += int((u.get("completion_tokens_details") or {}).get("reasoning_tokens") or 0)   # thinking the model did, inside completion
+        _usage["latency_ms_sum"] += latency_ms
+        _usage["latency_ms_count"] += 1
+        used = int(u.get("total_tokens") or (int(u.get("prompt_tokens") or 0) + int(u.get("completion_tokens") or 0)))
+        if (budget.DAY or budget.MONTH) and budget.counts(RES.model_zone(body.get("model") or "")):
+            if not used:                                 # some local models report no usage: estimate (about 4 characters a token)
+                text = json.dumps(body.get("messages")) + json.dumps([c.get("message", {}).get("content") for c in resp.get("choices", [])])
+                used = max(1, len(text) // 4)
+            for period in budget.spend(principal, used):     # soft line (80%): warn once, never block
+                _metrics["budget_warning"] += 1
+                _emit({"req_id": req_id, **who, "decision": "budget_warning", "period": period, "category": "LLM10/cost"})
+        calls.append({"step": step, "latency_ms": latency_ms, "usage": resp.get("usage")})
+        return resp
+
+    async def careful_step(step: str, msgs: list[dict]) -> dict:
+        """A careful-mode call: its new text passes the input rails, the allowance is checked again, and its answer passes the
+        output rails. Any refusal is a failed step (the person then gets the draft), never a bypass."""
+        prompt = msgs[-1]
+        v = guardrails.inspect_input(prompt["content"], MAX_CHARS)        # the same cap: a very long draft gets draft-only
+        v.findings += await run_detectors(v.text, "input", allow=lambda n: RES.detector_allowed(res.cls, n))
+        in_findings.extend(v.findings)
+        if MODE == "enforce" and any(f.severity in guardrails.BLOCKING and not f.rule.startswith("PII-") for f in v.findings):
+            raise _StepFailed("input rails")
+        prompt["content"] = v.text
+        if budget.counts(RES.model_zone(payload.get("model") or "")) and budget.refusal(principal):
+            raise _StepFailed("allowance")
+        r = await ask({**payload, "messages": msgs}, step)
+        if withheld_by.get(id(r)) and step == "check":
+            raise _StepFailed("output rails")
+        return r
+
+    def said(r: dict) -> str:
+        return (((r.get("choices") or [{}])[0].get("message") or {}).get("content") or "") if isinstance(r, dict) else ""
+
+    withheld_by: dict[int, bool] = {}
+    resp = await ask(payload, "draft")
+    state, flagged = "", 0
+    if want_careful and not do_careful:
+        state = "skipped"                                    # an exact-format or tool-calling caller: left alone
+    elif do_careful:
+        _metrics["careful_requested"] += 1
+        draft = said(resp)
+        state = "draft-only"
+        try:
+            if not draft.strip() or withheld_by.get(id(resp)):
+                raise _StepFailed("no draft to check")
+            check = said(await careful_step("check", careful.check_messages(payload["messages"], draft)))
+            if not careful.judged(check):
+                raise _StepFailed("no verdicts")
+            flagged = careful.flagged(check)
+            if flagged:                                      # nothing to fix: the draft is the answer, no third call
+                fin = await careful_step("rewrite", careful.rewrite_messages(payload["messages"], draft, check))
+                if not said(fin).strip():
+                    raise _StepFailed("empty rewrite")
+                resp = fin                                   # a withheld rewrite stays withheld: the rails decide, not the draft
+            state = "done"
+            _metrics["careful_done"] += 1
+        except _StepFailed as why:
+            flagged = 0
+            _metrics["careful_draft_only"] += 1
+            _emit({"req_id": req_id, **who, "decision": "careful_draft_only", "reason": str(why)})
+        tot = {k: sum(int((c.get("usage") or {}).get(k) or 0) for c in calls)
+               for k in ("prompt_tokens", "completion_tokens", "total_tokens")}
+        if len(calls) > 1 and any(tot.values()):
+            resp["usage"] = tot                              # the reply reports what the whole careful pass cost
+    latency_ms = sum(c["latency_ms"] for c in calls)
+
     for choice in resp.get("choices", []):
-        content = choice.get("message", {}).get("content") or ""
-        v = guardrails.inspect_output(content, ALLOWED_DOMAINS, CANARIES)
-        v.findings += await run_detectors(content, "output", allow=lambda n: RES.detector_allowed(res.cls, n))
-        out_findings += v.findings
-        # Fail-closed: withhold if the deterministic output rails flagged it OR a model detector
-        # (Llama Guard / Model Armor / Bedrock) or a detector-outage raised a BLOCKING finding.
-        # (inspect_output set v.allowed before the detector verdicts were appended — recompute.)
-        withhold = (not v.allowed) or any(
-            f.severity in guardrails.BLOCKING and not f.rule.startswith("PII-") for f in v.findings)
-        if withhold and MODE == "enforce":
-            choice["message"]["content"] = "Response withheld by AI security policy."
-            choice["finish_reason"] = "content_filter"
-        elif MODE == "enforce":
-            choice["message"]["content"] = v.text
-        if not withhold and ruled:                           # an answer from a small offline model says so (never on JSON)
-            said = choice.get("message", {}).get("content") or ""
-            marked = answering.footnote(said, str(resp.get("model") or ""), payload, request.headers)
-            if marked != said:
+        if choice.get("finish_reason") == "content_filter":
+            continue
+        text = choice.get("message", {}).get("content") or ""
+        if state == "done" and flagged:                  # the check removed or flagged claims: say so (never on JSON)
+            choice["message"]["content"] = text = careful.footnote(text, flagged)
+        if ruled:                                        # an answer from a small offline model says so (never on JSON)
+            marked = answering.footnote(text, str(resp.get("model") or ""), payload, request.headers)
+            if marked != text:
                 _metrics["answer_small_model"] += 1
                 choice["message"]["content"] = marked
-        tcs = choice.get("message", {}).get("tool_calls")
-        if tcs:                                              # the model wants to ACT: check the tool and its arguments
-            tcs, tf = guardrails.inspect_tool_calls(tcs, TOOL_POLICY, CANARIES)
-            out_findings += tf
-            stop = sorted({f.rule for f in tf if f.severity in guardrails.BLOCKING and not f.rule.startswith("PII-")})
-            if stop and MODE == "enforce":
-                _metrics["blocked_tool_call"] += 1
-                choice["message"].pop("tool_calls", None)
-                choice["message"]["content"] = "Tool call withheld by AI security policy (" + ", ".join(stop) + ")."
-                choice["finish_reason"] = "content_filter"
+            noted = answering.stale_note(choice["message"].get("content") or "", payload, request.headers)
+            if noted != (choice["message"].get("content") or ""):
+                _metrics["answer_may_be_stale"] += 1
+                choice["message"]["content"] = noted
 
     # A request whose PII was redacted before it reached the model is NOT a plain "allow": the audit trail (and the SOC
     # reading it) must be able to tell that data was removed. (Found by the purple-team loop.)
     redacted = any(f.rule.startswith("PII-") for f in in_findings)
     decision = "allow" if not (blocking or out_findings or redacted) else ("flag" if MODE == "monitor" else "sanitise")
     _metrics[f"decision_{decision}"] += 1
-    u = resp.get("usage") if isinstance(resp.get("usage"), dict) else {}
-    _usage["tokens_prompt"] += int(u.get("prompt_tokens") or 0)
-    _usage["tokens_completion"] += int(u.get("completion_tokens") or 0)
-    _usage["tokens_reasoning"] += int((u.get("completion_tokens_details") or {}).get("reasoning_tokens") or 0)   # thinking the model did, inside completion
-    _usage["latency_ms_sum"] += latency_ms
-    _usage["latency_ms_count"] += 1
-    if (budget.DAY or budget.MONTH) and budget.counts(RES.model_zone(payload.get("model") or "")):
-        used = int(u.get("total_tokens") or (int(u.get("prompt_tokens") or 0) + int(u.get("completion_tokens") or 0)))
-        if not used:                                     # some local models report no usage: estimate (about 4 characters a token)
-            text = json.dumps(messages) + json.dumps([c.get("message", {}).get("content") for c in resp.get("choices", [])])
-            used = max(1, len(text) // 4)
-        for period in budget.spend(principal, used):     # soft line (80%): warn once, never block
-            _metrics["budget_warning"] += 1
-            _emit({"req_id": req_id, **who, "decision": "budget_warning", "period": period, "category": "LLM10/cost"})
     _emit({"req_id": req_id, **who, "decision": decision, "model": payload.get("model"),
            "latency_ms": latency_ms, "usage": resp.get("usage"),
+           **({"careful": {"state": state, "flagged": flagged, "calls": calls}} if state else {}),
            "findings": _findings(in_findings + out_findings)})
     resp["guardrails"] = {"req_id": req_id, "decision": decision,
                           "rules": sorted({f.rule for f in in_findings + out_findings})}
     # Customer-facing AI must say it is AI (RBI MRM draft): every answer carries the disclosure, for any client to show.
     echo = {"traceparent": f"00-{trace_id}-{span_id}-01", "X-Request-ID": req_id, "X-AI-Generated": "true", **budget.headers(principal)}
+    if state:
+        echo["X-SecuRAX-Careful"] = state
     if _IDEM_CTX.get():
         _IDEM[_IDEM_CTX.get()] = {"state": "done", "body": _IDEM[_IDEM_CTX.get()]["body"], "t": time.time(),
                                   "resp": resp, "stream": want_stream, "echo": echo}
-    if want_stream:
+    if want_stream:                                      # careful or not, the finished, inspected answer is streamed
         return StreamingResponse(_sse_from_completion(resp), media_type="text/event-stream",
                                  headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no", **echo})
     return JSONResponse(resp, headers=echo)
+
+
+class _StepFailed(Exception):
+    """A careful-mode step could not run or was refused; the person gets the draft (X-SecuRAX-Careful: draft-only)."""

@@ -65,3 +65,27 @@ def test_through_the_real_gateway_the_rules_reach_the_model_and_the_note_reaches
     assert "small offline model" in r.json()["choices"][0]["message"]["content"]
     r = c.post("/v1/chat/completions", json={"model": "bank-assistant", "messages": [{"role": "user", "content": "### Task:\ntitle"}]})
     assert sent[-1]["messages"][0]["role"] == "user" and "small offline model" not in r.text
+
+
+def test_a_question_about_something_that_changes_says_how_to_get_the_live_figure():
+    ask = {"model": "bank-assistant", "messages": [{"role": "user", "content": "What is the current repo rate?"}]}
+    out = answering.stale_note("It is 5.5%.", ask)
+    assert out.startswith("It is 5.5%.") and answering.STALE in out and "globe" in out
+    assert answering.stale_note(out, ask) == out, "never added twice"
+
+
+def test_no_hint_when_search_results_came_with_it_or_the_question_does_not_change():
+    searched = {"model": "bank-assistant", "messages": [
+        {"role": "system", "content": "<context><source id='1'>rbi.org.in ...</source></context>"},
+        {"role": "user", "content": "What is the current repo rate?"}]}
+    assert answering.stale_note("5.5%", searched) == "5.5%"
+    timeless = {"model": "bank-assistant", "messages": [{"role": "user", "content": "Explain how TLS works."}]}
+    assert answering.stale_note("TLS ...", timeless) == "TLS ..."
+
+
+def test_no_hint_on_json_exact_format_or_when_the_caller_opts_out():
+    ask = {"model": "bank-assistant", "messages": [{"role": "user", "content": "latest NAV?"}]}
+    assert answering.stale_note('{"nav": 1}', ask) == '{"nav": 1}'
+    assert answering.stale_note("x", {**ask, "response_format": {"type": "json_object"}}) == "x"
+    assert answering.stale_note("x", ask, {"x-answer-note": "off"}) == "x"
+    assert answering.stale_note("x", {**ask, "model": "builder"}) == "x"            # only person-facing models

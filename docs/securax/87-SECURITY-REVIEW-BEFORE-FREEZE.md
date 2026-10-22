@@ -1,7 +1,7 @@
 # 87 · Security review before the freeze
 
 <!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
-> **Status: 🟡 Partly built.** Sync tokens are rate-limited per node and repeated refused sign-ins raise an alert. Eight findings fixed and proved (SSH keys-only on the VPS, cross-site writes refused by the gateway, a stored XSS in Inbox ids, security headers, encrypted server backups, the scanner no longer holding the Docker socket, no :latest image, no public router key). Accepted risks are listed with reasons. The deeper audit of logs and image hardening is dated. [What the lights mean](../index.md#the-status-lights)
+> **Status: 🟡 Partly built.** Internet-facing images are pinned by digest and checked weekly. Sync tokens are rate-limited per node and repeated refused sign-ins raise an alert. Eight findings fixed and proved (SSH keys-only on the VPS, cross-site writes refused by the gateway, a stored XSS in Inbox ids, security headers, encrypted server backups, the scanner no longer holding the Docker socket, no :latest image, no public router key). Accepted risks are listed with reasons. The deeper audit of logs and image hardening is dated. [What the lights mean](../index.md#the-status-lights)
 <!-- status:end -->
 
 **The ask:** before freezing the setup, review it through every lens: the seven OSI layers, CISSP and CCSP domains, OffSec's attacker view, ISACA, OWASP, TOGAF and SABSA. Find any big blunder and fix it for good.
@@ -50,7 +50,7 @@
 | Laptop backups are not encrypted until `./securax protect` runs once | An automatic key that nobody saved turns "someone may read it" into "nobody can restore it", the worse failure in a disaster | The crown-jewels check shows it as DO NOW; off-site copies are refused unless encrypted | When the first backup is taken |
 | Cloudflare opens the encryption at its edge | It is what makes sign-in work with nothing to install | Keep regulated customer data out of this personal estate; the gateway's residency rail still decides where AI calls go | Doc 85, section 4 |
 | The `securax` user on the server is in the `docker` group, which equals root | Docker needs it; a separate user still keeps the estate out of root's shell | SSH is keys only; nothing else listens | When the cluster stage starts (doc 29) |
-| Images are pinned by version tag, not by digest | Digests make every update a manual edit | Dependabot proposes updates; Trivy scans; `:latest` is gone | 2026-12-15: digests for the internet-facing images |
+| Images are pinned by version tag, not by digest | Digests make every update a manual edit | Dependabot proposes updates; Trivy scans; `:latest` is gone | Done 2026-10-22: the 13 services other devices or the internet reach are pinned by digest (`local/compose/digest-pins.json`); `tools/digest_check.py` reports a moved build every week |
 | The Cloudflare API token stays in `.env` after setup | `online allow`, `remove` and `google` need it | `.env` is owner-only; the token is scoped to four permissions; deleting it in Cloudflare is safe | Any time: delete it, and paste a new one only to change who may sign in |
 | A sign-in lasts 30 days on a device | Asked for: as simple as ChatGPT | Use `ONLINE_SESSION=24h` for a shared device | Your call |
 
@@ -75,8 +75,8 @@
 | By | Step |
 |---|---|
 | Done | The deeper audit: no secret is printed or logged by the CLI; the gateway's audit log records who, what and the decision, never the prompt or the answer; every container log is capped (3 × 10 MB); every service has `no-new-privileges` (row 9) |
-| ~~2026-11-30~~ done 2026-10-21 | Per-node rate limits for sync tokens (`SYNC_RATE_LIMIT`, default 600 a minute, then 429 with Retry-After), and an alert after 10 refused sign-ins in 15 minutes (`refused-signins.jsonl` next to the sync data; the count is on `/healthz`). Tokens are never stored or logged. Still to do: pass the client address from the web server, so the alert names the client rather than the proxy |
-| 2026-12-15 | The internet-facing images pinned by digest |
+| ~~2026-11-30~~ done 2026-10-21 | Per-node rate limits for sync tokens (`SYNC_RATE_LIMIT`, default 600 a minute, then 429 with Retry-After), and an alert after 10 refused sign-ins in 15 minutes (`refused-signins.jsonl` next to the sync data; the count is on `/healthz`). Tokens are never stored or logged. Since 2026-10-22 the web servers pass the client address and the sync service believes it only from a trusted proxy (`SYNC_TRUSTED_PROXIES`). Still counted together: clients through the Cloudflare tunnel, and `hub.<domain>/sync` when internal TLS is off |
+| ~~2026-12-15~~ done 2026-10-22 | The internet-facing images pinned by digest, checked weekly for a moved build |
 
 ## Sources
 

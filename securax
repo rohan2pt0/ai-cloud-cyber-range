@@ -580,8 +580,12 @@ URLS
     C "Ask one:  ./securax ask <agent> \"your question\"   (runs on your local/free model)"
     ;;
   ask)
-    agent="${2:?usage: ./securax ask <agent> \"question\"}"; shift 2; q="$*"
-    GATEWAY_URL="${GATEWAY_URL:-$(gw_url)}" python3 "$ROOT/agents/personas.py" ask "$agent" "$q"
+    # ./securax ask <agent> "question" [--careful]   --careful: the gateway checks each claim and rewrites first (doc 89)
+    agent="${2:?usage: ./securax ask <agent> \"question\" [--careful]}"; shift 2
+    CAREFUL=(); WORDS=()
+    for w in "$@"; do if [ "$w" = "--careful" ]; then CAREFUL=(--careful); else WORDS+=("$w"); fi; done
+    q="${WORDS[*]}"
+    GATEWAY_URL="${GATEWAY_URL:-$(gw_url)}" python3 "$ROOT/agents/personas.py" ask "$agent" "$q" "${CAREFUL[@]}"
     ;;
   plan)
     C "Future Financial Planner (worked example — replace finance/examples/sample-plan.json with your own, kept local):"
@@ -2021,6 +2025,7 @@ AI & CHAT
   guard [on|off] strict or relaxed safety rails                      bench          which installed model fits this machine best
   ai stop|resume|budget|share   stop AI at once (one model or all), the allowance, who did this month's work
   ai honesty     does the AI refuse to guess? 8 questions that catch made-up answers, scored
+  ask <agent> "q" --careful   check each claim and rewrite before answering (about twice the tokens; in Chat pick a "-careful" model)
   say "text"     speak/ask quickly      ask <agent> "q"  ask an expert advisor      advisors / plan / learn / intel   daily helpers
   research "task" --allow site.com   browse the web within limits    design "prompt"   make images      routines   scheduled jobs
   knowledge import|status   your old Claude/ChatGPT/DeepSeek/Gemini chats as one private library you can search (doc 51)

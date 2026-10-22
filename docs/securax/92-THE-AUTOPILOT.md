@@ -1,7 +1,7 @@
 # 92 · The autopilot: the estate learns, drills and looks ahead by itself
 
 <!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
-> **Status: 🟡 Partly built.** Built and tested: hourly, a newly failing routine gets a postmortem draft and an alert, a recurring one is escalated with the fix command, a recovery is announced; nightly, the 2 drills that most need it run and a slower recovery is flagged; hourly, disk, backup headroom, the AI allowance and latency are forecast with a robust trend and warned 7 days ahead; CI opens an issue when the nightly sandbox is red. The forecasts start after 2 days of readings on your machine. [What the lights mean](../index.md#the-status-lights)
+> **Status: 🟡 Partly built.** The gateway keeps a per-caller baseline and flags a stolen key by how it behaves. Built and tested: hourly, a newly failing routine gets a postmortem draft and an alert, a recurring one is escalated with the fix command, a recovery is announced; nightly, the 2 drills that most need it run and a slower recovery is flagged; hourly, disk, backup headroom, the AI allowance and latency are forecast with a robust trend and warned 7 days ahead; CI opens an issue when the nightly sandbox is red. The forecasts start after 2 days of readings on your machine. [What the lights mean](../index.md#the-status-lights)
 <!-- status:end -->
 
 **The ask:** make the estate more intelligent, so it stops depending on its owner to notice what is wrong. Do what is best.
@@ -63,6 +63,6 @@ Each loop below closes one of those gaps with the parts the estate already had (
 
 | By | Step |
 |---|---|
-| 2026-11-15 | Careful mode for important questions (doc 89) |
+| ~~2026-11-15~~ done 2026-10-22 | Careful mode for important questions (doc 89) |
 | 2026-11-30 | Routing each question to the model that has proved best for that kind of task, learned from the honesty, benchmark and failure records the autopilot keeps |
-| 2026-12-15 | Per-caller baselines in the gateway audit, so a stolen key is spotted by how it behaves |
+| ~~2026-12-15~~ done 2026-10-22 | Per-caller baselines in the gateway audit, so a stolen key is spotted by how it behaves: a burst, a never-used model or an odd hour is written to the audit chain once and lights "Unusual AI key use" in the cockpit; detection only, nothing is blocked |

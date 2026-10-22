@@ -56,3 +56,27 @@ def test_engineer_is_the_credit_saver():
     # the SecuRAX-engineer persona exists so the system can enhance itself on local/free models
     out = P.ask_agent("engineer", "Add a dark-mode toggle to the portal")
     assert out["name"] == "SecuRAX Engineer" and out["messages"]
+
+
+def test_careful_sends_the_header_and_waits_longer(monkeypatch):
+    import httpx
+    seen = {}
+
+    class R:
+        status_code = 200
+        headers = {"X-SecuRAX-Careful": "done"}
+
+        def json(self):
+            return {"choices": [{"message": {"content": "checked answer"}}]}
+
+    def post(url, **kw):
+        seen.update(kw)
+        return R()
+
+    monkeypatch.setenv("GATEWAY_URL", "http://gateway.invalid")
+    monkeypatch.setattr(httpx, "post", post)
+    out = P.ask_agent("finance", "How much emergency fund?", careful=True)
+    assert seen["headers"]["X-SecuRAX-Careful"] == "1" and seen["timeout"] > 90
+    assert out["answer"] == "checked answer" and out["careful"] == "done"
+    P.ask_agent("finance", "How much emergency fund?")
+    assert not seen["headers"] and seen["timeout"] == 90

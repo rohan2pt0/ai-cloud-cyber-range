@@ -9,6 +9,12 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **Security round** (docs 87, 89, 92).
+  - **Images pinned by digest:** the 13 services other devices or the internet reach run `name:tag@sha256:…` (`local/compose/digest-pins.json`); a test fails if one loses its pin, and `tools/digest_check.py` (weekly in supply-chain-watch) reports a tag that moved to a new build.
+  - **A stolen AI key, spotted by how it behaves:** the gateway keeps a 7-day baseline per caller and writes a burst, a never-used model or an odd hour to the audit chain; the cockpit lights "Unusual AI key use". Detection only, no text stored. `GET /v1/anomalies`.
+  - **Careful mode:** a `-careful` model in Chat, the `X-SecuRAX-Careful: 1` header, or `./securax ask … --careful`: draft, check each claim, rewrite. Every call goes through the rails and the allowance; a failed step returns the draft, marked.
+  - **Answers about things that change** (rates, laws, prices, news) say the figure may be old and how to get it live, unless search results came with the question.
+  - **The sync alert names the real client** behind the bundled web servers; the address is believed only from a trusted proxy (`SYNC_TRUSTED_PROXIES`).
 - **Roadmap sweep: dated items done today.**
   - **AI honesty in the cockpit** (doc 89): each `./securax ai honesty` run is kept (the last 52), and the cockpit shows the score and any drop since the run before.
   - **Which model answered** (doc 83): the gateway counts the model that served each call over 24 hours (names and times only) at `/v1/served`; the cockpit turns amber when more than a fifth fell to a weaker fallback.
