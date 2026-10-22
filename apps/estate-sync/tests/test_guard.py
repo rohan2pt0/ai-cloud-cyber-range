@@ -236,3 +236,10 @@ def test_the_trusted_list_comes_from_the_environment(tmp_path, monkeypatch):
     finally:
         monkeypatch.delenv("SYNC_TRUSTED_PROXIES")
         importlib.reload(m)
+
+
+def test_health_answers_through_the_command_centers_sync_route(svc):
+    # The Command Center's web server forwards only /sync...; the watchdog checks health there (doc 101).
+    m, c, clock, alerts = svc
+    a, b = c.get("/healthz"), c.get("/sync/healthz")
+    assert a.status_code == b.status_code == 200 and a.json().keys() == b.json().keys()

@@ -283,6 +283,7 @@ async def ws_endpoint(ws: WebSocket) -> None:
 
 
 @app.get("/healthz")
+@app.get("/sync/healthz")          # the same, through the Command Center's /sync route (the watchdog and chaos checks use it)
 def healthz() -> dict:
     return {"ok": True, "configured": bool(_tokens()) or access.configured(), "sockets": _sockets(),
             "refused_signin_alerts": REFUSED.over()}
