@@ -8,22 +8,10 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
+
+## [0.3.0] - 2026-10-22
 ### Added
 - When everything goes wrong at once (doc 110): four more monthly guards (name cleared and trade mark filed before the first invoice, domain paid 180 days ahead, liability cover in force, bundled licences reviewed), the claims guard now fails regulator-approval and compliance claims, `governance/licences.json` lists what each bundled image's licence allows once SecuRAX is sold (a test fails an unlisted image), `TRADEMARKS.md` keeps the names out of the MIT grant, and `./securax continuity tabletop everything-at-once` rehearses a bad week.
-### CI
-- The e2e sandbox keeps its pulled local models between runs (a GitHub cache keyed on the image and model pins), so a slow model registry can no longer push the journey suite past its 60-minute limit.
-### Security
-- Removed references to the job descriptions some modules were first built against: the public repository carries no employer or role hints.
-- Gateway: a prompt sent as multi-part content (`[{"type": "text"}]`) skipped every input rail, and the system message (where chat apps put retrieved documents) was never inspected; both are now inspected and redacted, and ordinary system-prompt wording is recorded, not blocked (doc 105). The AI-SPM RAG check now requires that inspection.
-
-### Fixed
-- The personal site promised "Your private superintelligence", a claim nothing in the code proves; it now says "Your private AI, on your own devices". The new claims guard keeps such words off the site.
-- **CI runs that a new push should never stop** (doc 68): devsecops ran twice for every push to a PR branch and its superseded runs kept going; lifecycle and windows kept superseded runs too; a quick second merge cancelled the first docs deploy; and a nightly sandbox cancelled because a newer run replaced it read as "main is not green", which could hold the laptop's nightly update. Every PR workflow now cancels only its own PR's older run, releases queue and are never cancelled, a cancelled run is never read as a result, and a test enforces all of it.
-- **The Command Center's web server ran an 18-month-old nginx** (1.27, superseded in April 2025; the cockpit showed "Oldest running software: 553 days"). It now runs the same nginx 1.30 as the HTTPS edge, on the current digest, and a test keeps every nginx in the estate on one line. It arrives with `./securax update` (backup first, rolls back by itself if the estate does not come up).
-- **A phone paired over HTTPS never synced.** The Life OS and `./securax sync-link` gave it `sync.<domain>`, an address the page may not call (another origin). They now use the Command Center's own `/sync`, and a device paired the old way is moved over by itself, token kept. Found while building the phone journey.
-- **Rail tests that would not have caught a weakened rail**, found by mutation testing: the "never allow the none algorithm" test was satisfied by a later, unrelated error, and nothing checked a wrong-shaped AI control file, a malformed sign-in token, a weak signing key, or the sync guard's window edges. Each now has its test.
-
-### Added
 - Doc 109, founders who rose and fell (Kamath, Vembu, Deshpande, Screwvala, Shah, Goyal, Nayar, Grover, Aggarwal, Raveendran, and those who fell in India, the Americas, Europe, Asia, Africa and Australia): three more guards in `./securax venture guards` (debt, undisclosed related-party payments, a current handover note), `venture log money --related --disclosed`, and eight owner habits.
 - `./securax venture guards` (doc 108): the monthly failure guards, learned from sourced case studies (RIM, Nokia, Kodak, Byju's, Unacademy, Dunzo, GoMechanic, Builder.ai, Paytm Payments Bank and others): cash runway, burn multiple, product and customer concentration, revenue backed by money received, an independent review, claims the code cannot prove, stop tests and platform shifts (`governance/shifts.json`). `venture log revenue` takes `--product`, `--customer` and `--ref`. NOT YET is never a pass.
 - Doc 107, the conglomerate playbook: ten mechanisms from the largest conglomerates (decentralised units with central capital allocation, hurdle rates, one operating system, dual use, a free entry, trust, bundling, core and bets, small P&L units, an ecosystem), mapped to SecuRAX, with a pre-mortem and seven rules. Every product in `products.json` is now a core line or a bet with a dated stop test (`kill_if`); CI refuses one without it.
@@ -79,25 +67,6 @@ for the versioning and release policy.
   - `./securax site` shows where the site answers.
   - `site domain NAME` prints the exact DNS records and the one GitHub setting.
   - `site live` switches every link to your domain only after checking that the domain serves the site over HTTPS.
-### Fixed
-- **Two backups on update nights.** The nightly update took its own full backup 45 minutes after the daily one; the nightly run now uses that backup (under 2 hours old) as its safety copy. A manual update still takes a fresh one, so a copy never misses what changed since.
-- **The watchdog healed only the gateway.** A crashed Command Center or sync service stayed down, and a frozen container stayed frozen. `./securax watch` now checks all three and unfreezes before it heals (found by the new chaos experiments).
-- **Contrast on the control navigator.** Heat-map numbers in light mode and N/A cells in dark mode were below WCAG AA. Both pass now. The cockpit's area table no longer runs off a phone screen.
-- **Cockpit "do next" listed builders' work.** A gap-backlog item such as "Implement CCI scoring" sat among your actions with no command. Only vital signs you can act on are listed now; the backlog stays in Mission planning.
-- **Cockpit instruments cut readings mid-phrase** ("plain HTTP (browsers …"). The reading now shows whole, with its detail in small type beneath.
-- **The Govern catalog's cost bands, corrected from that research.** Several were too low, for example DLP, SIEM, PAM, IGA, ZTNA, MFA, email security and backup. Others were missing the IR retainer, HSMs for payment keys, or the in-house SOC alternative. Role notes now carry RBI's CISO expectations and better certification options.
-- **404s on the site.**
-  - 10 docs pages linked to repository files outside `docs/`. Those links now go to GitHub.
-  - The strict docs build now fails on any broken link or anchor, where it used to only note them.
-  - `tools/linkcheck.py` checks every page of the built site in CI, and the links to other sites weekly.
-- **117 links to a domain with no DNS records.** The site, docs and README now use the GitHub Pages address until the domain is proven live.
-- 8 dead links to other sites, and the changelog's links to tags that were never created.
-### Changed
-- CI runs Node 22 (Node 20 reached end of life in April 2026); jsdom 30, which needs Node 22.22.2 or later, can now be taken (Dependabot #104).
-- Azure provider 4 to 5 for the Azure canopy (Dependabot #130): azurerm 5 needs a node_provisioning_profile block; it is set to Manual, so node auto-provisioning stays off and the two pools remain the whole cluster.
-- **The cockpit is a dark cockpit.** One master lamp, at most three actions, six primary instruments that stay grey while all is well, lit annunciators only for problems, and every detail folded into panels with a one-line summary (Systems, Govern, Setup, AI briefing, Mission planning). The page is about a quarter of its old length. Badge colours now pass WCAG AA contrast in both themes.
-- **Govern needs no command.** Its panel is folded, and inside it shows the capability stack layer by layer (done, partial, missing basic, later tier), the organogram for the next tier (CISO, programme office, a column per function with its lead and roles), the next 10 gaps with their 5W1H, and the yearly cost. `./securax govern org` and `govern map` export both pictures as SVG for a Board deck.
-### Added
 - **Leave Claude Code for good, and store apps** (doc 98). `./securax ship` runs the pull-request loop that Claude Code used to run: `check` names what this machine still needs, `pr` opens the pull request from the repository's template, and `watch --fix 2 --merge` waits for CI. On red it writes a private failure brief and lets autobuild fix it (one push a round, at most two rounds); on green and mergeable it squash-merges and resets the branch. The `pr-watch` routine runs it unattended. `./securax os mobile ID` turns any kit app, or the Life OS, into a Capacitor project for Android and iOS (offline, pinned versions, package id from your domain) and a Trusted Web Activity manifest, with `os mobile-check` and `os assetlinks`. The estate sync now answers store apps' origins (token still required, no cookies); the Life OS fits notched screens.
 - **One change, every app** (doc 95, section 6). The core principles now live in `governance/principles.json`. Every kit app carries the core ones automatically, in its own words if it has them. A changed or new principle makes `./securax os check` fail until every app is rebuilt with it. New features are noticed: every feature carries its `added` date; the Command Center marks it New for 30 days with a "New in the estate" strip; the docs home, the README and `./securax features` list the latest additions; and `./securax progress` and its weekly message name what is new. Kit news (`guiding-map/kit/whatsnew.json`) shows once on each app's Today and in full in Settings.
 - **The suite: built for one, ready for many** (doc 97). `governance/suite.json` declares, for every component, the edition it starts in (Community, Pro, Business or Enterprise), the shared platform services it uses, and what its enterprise version adds. The shared services include identity, roles, audit, tenancy, policy, metering, export, residency, continuity, updates, and the commercial admin centre, SCIM, licensing, hosting and support. `./securax suite` shows how ready each edition is to sell and the gaps that unlock the most; `suite sheet EDITION` writes a datasheet that lists only what is built. The new fitness check `enterprise-declared` fails an undeclared feature, a built claim without its files, editions that do not nest, or a broken open core (SSO, MFA and export stay open and free). AGENTS.md now tells every builder to use the shared platform and declare each component.
@@ -297,7 +266,31 @@ for the versioning and release policy.
   - **Local model:** not counted, so it still answers when the cloud allowance runs out.
   - **Visibility:** remaining allowance in the response headers, a cockpit lamp, and spend that survives a gateway restart.
 
+### CI
+- The e2e sandbox keeps its pulled local models between runs (a GitHub cache keyed on the image and model pins), so a slow model registry can no longer push the journey suite past its 60-minute limit.
+
+### Security
+- Removed references to the job descriptions some modules were first built against: the public repository carries no employer or role hints.
+- Gateway: a prompt sent as multi-part content (`[{"type": "text"}]`) skipped every input rail, and the system message (where chat apps put retrieved documents) was never inspected; both are now inspected and redacted, and ordinary system-prompt wording is recorded, not blocked (doc 105). The AI-SPM RAG check now requires that inspection.
+
 ### Fixed
+- The personal site promised "Your private superintelligence", a claim nothing in the code proves; it now says "Your private AI, on your own devices". The new claims guard keeps such words off the site.
+- **CI runs that a new push should never stop** (doc 68): devsecops ran twice for every push to a PR branch and its superseded runs kept going; lifecycle and windows kept superseded runs too; a quick second merge cancelled the first docs deploy; and a nightly sandbox cancelled because a newer run replaced it read as "main is not green", which could hold the laptop's nightly update. Every PR workflow now cancels only its own PR's older run, releases queue and are never cancelled, a cancelled run is never read as a result, and a test enforces all of it.
+- **The Command Center's web server ran an 18-month-old nginx** (1.27, superseded in April 2025; the cockpit showed "Oldest running software: 553 days"). It now runs the same nginx 1.30 as the HTTPS edge, on the current digest, and a test keeps every nginx in the estate on one line. It arrives with `./securax update` (backup first, rolls back by itself if the estate does not come up).
+- **A phone paired over HTTPS never synced.** The Life OS and `./securax sync-link` gave it `sync.<domain>`, an address the page may not call (another origin). They now use the Command Center's own `/sync`, and a device paired the old way is moved over by itself, token kept. Found while building the phone journey.
+- **Rail tests that would not have caught a weakened rail**, found by mutation testing: the "never allow the none algorithm" test was satisfied by a later, unrelated error, and nothing checked a wrong-shaped AI control file, a malformed sign-in token, a weak signing key, or the sync guard's window edges. Each now has its test.
+- **Two backups on update nights.** The nightly update took its own full backup 45 minutes after the daily one; the nightly run now uses that backup (under 2 hours old) as its safety copy. A manual update still takes a fresh one, so a copy never misses what changed since.
+- **The watchdog healed only the gateway.** A crashed Command Center or sync service stayed down, and a frozen container stayed frozen. `./securax watch` now checks all three and unfreezes before it heals (found by the new chaos experiments).
+- **Contrast on the control navigator.** Heat-map numbers in light mode and N/A cells in dark mode were below WCAG AA. Both pass now. The cockpit's area table no longer runs off a phone screen.
+- **Cockpit "do next" listed builders' work.** A gap-backlog item such as "Implement CCI scoring" sat among your actions with no command. Only vital signs you can act on are listed now; the backlog stays in Mission planning.
+- **Cockpit instruments cut readings mid-phrase** ("plain HTTP (browsers …"). The reading now shows whole, with its detail in small type beneath.
+- **The Govern catalog's cost bands, corrected from that research.** Several were too low, for example DLP, SIEM, PAM, IGA, ZTNA, MFA, email security and backup. Others were missing the IR retainer, HSMs for payment keys, or the in-house SOC alternative. Role notes now carry RBI's CISO expectations and better certification options.
+- **404s on the site.**
+  - 10 docs pages linked to repository files outside `docs/`. Those links now go to GitHub.
+  - The strict docs build now fails on any broken link or anchor, where it used to only note them.
+  - `tools/linkcheck.py` checks every page of the built site in CI, and the links to other sites weekly.
+- **117 links to a domain with no DNS records.** The site, docs and README now use the GitHub Pages address until the domain is proven live.
+- 8 dead links to other sites, and the changelog's links to tags that were never created.
 - **`tls on` no longer stops when Windows holds port 80.** Port 80 only redirects to https, so it moves to 8880 and HTTPS on 443 works the same. When 443 itself is taken, SecuRAX now names the Windows program (through PowerShell, when WSL can run it) and says to use a PowerShell window, not the Ubuntu one, for `netstat`/`findstr`.
 - **A failed update now shows git's own words.** The network-or-local-changes check used a pipe to grep; on a broken WSL, grep crashed and a network error read as "local changes". It now uses bash's own match and prints the last lines git wrote. An empty backup failure now says how to see the reason.
 - `./securax ship watch --merge` left the reset branch tracking `origin/main`; it now tracks its own remote branch.
@@ -335,6 +328,12 @@ for the versioning and release policy.
 - **Backup hints** now point to the guided `./securax protect` instead of "make a key, then edit .env".
 - **Phone-sync step on the Command Center:** it no longer asks you to copy a token out of `.env`.
 - **Cockpit crashed when the gateway reported allowance callers:** a loop variable shadowed the page's configuration. Caught by the `cockpit_page` journey on a real estate, now covered by a regression test.
+
+### Changed
+- CI runs Node 22 (Node 20 reached end of life in April 2026); jsdom 30, which needs Node 22.22.2 or later, can now be taken (Dependabot #104).
+- Azure provider 4 to 5 for the Azure canopy (Dependabot #130): azurerm 5 needs a node_provisioning_profile block; it is set to Manual, so node auto-provisioning stays off and the two pools remain the whole cluster.
+- **The cockpit is a dark cockpit.** One master lamp, at most three actions, six primary instruments that stay grey while all is well, lit annunciators only for problems, and every detail folded into panels with a one-line summary (Systems, Govern, Setup, AI briefing, Mission planning). The page is about a quarter of its old length. Badge colours now pass WCAG AA contrast in both themes.
+- **Govern needs no command.** Its panel is folded, and inside it shows the capability stack layer by layer (done, partial, missing basic, later tier), the organogram for the next tier (CISO, programme office, a column per function with its lead and roles), the next 10 gaps with their 5W1H, and the yearly cost. `./securax govern org` and `govern map` export both pictures as SVG for a Board deck.
 
 ## [0.2.0] - 2026-10-17
 ### Added
