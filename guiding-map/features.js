@@ -124,8 +124,8 @@ window.SECURAX_FEATURES = {
    "id": "readiness",
    "group": "Comply and govern",
    "icon": "checklist",
-   "name": "NBFC cyber readiness",
-   "what": "Your own readiness for a regulation, NBFCs under the RBI cyber directions 2026 first (SEBI CSCRF, UK CAF and the AI maps work the same way): only your chapter's or category's requirements, each marked with evidence, owner and date; the vital few gaps; VA, PT, IS audit and CISO-to-Board dates; a board pack and an auditor's sheet, kept on your machine.",
+   "name": "Readiness for any regulation",
+   "what": "Where your organisation stands on any regulation SecuRAX maps (RBI NBFC directions 2026, SEBI CSCRF, UK CAF, NIST AI 600-1 and more): only your chapter's or category's requirements, each marked with evidence, owner and date; the vital few gaps; VA, PT, IS audit and CISO-to-Board dates; a board pack and an auditor's sheet, kept on your machine.",
    "cmd": "./securax readiness demo",
    "path": "",
    "port": 0,
@@ -134,7 +134,7 @@ window.SECURAX_FEATURES = {
    "outcome": "A Board-ready answer to \"where do we stand on the Directions?\", with proof, instead of a consultant's spreadsheet that dates in a week.",
    "shows": "the board pack (./securax readiness report)",
    "light": "amber",
-   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/106-THE-BEACHHEAD-NBFC-READINESS/"
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/106-WHO-SECURAX-IS-FOR/"
   },
   {
    "id": "controls",

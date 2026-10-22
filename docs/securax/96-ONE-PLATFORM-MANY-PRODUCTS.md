@@ -4,7 +4,7 @@
 > **Status: 🟡 Partly built.** Built and tested: ./securax venture computes break-even, payback and unit economics with your time counted, logs hours, spend and revenue privately, and writes a stress-test prompt. The strategy (one platform, many products, dual use, free to Pro to Concierge, stage gates) is written down; prices are hypotheses to test, and licence keys and payments wait, with dates. [What the lights mean](../index.md#the-status-lights)
 <!-- status:end -->
 
-> **Prices for the business product are now set in [doc 106](106-THE-BEACHHEAD-NBFC-READINESS.md)** (a hypothesis to test with design partners). The tables below are kept as history.
+> **Prices for the business product are now set in [doc 106](106-WHO-SECURAX-IS-FOR.md)** (a hypothesis to test with design partners). The tables below are kept as history.
 
 **The ask:** build once and sell many times, as the people who built Zomato's and Zepto's systems reused them for new businesses, and as reusable rockets and robots serve both Earth and Mars. Keep no single point of failure, as India is doing with payment rails beside SWIFT. Start free and open for common people, learn from their friction, then offer the matured product to people who pay a subscription. Make the whole thing self-funding, and prove it with break-even and payback, counting time as well as money.
 
