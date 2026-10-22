@@ -3,6 +3,7 @@
  "plan": {
   "cash": 0,
   "last_independent_review": "",
+  "debt": 0,
   "hour_value": 1500,
   "hours_month": 40,
   "fixed_month": 3000,

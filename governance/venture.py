@@ -4,7 +4,8 @@ SecuRAX (doc 96), counting your TIME as a real cost, not only your money. Your n
 
     ./securax venture                         invested so far, break-even, payback month, unit economics, what must be true
     ./securax venture log time HOURS "what"   log hours you put in (valued at your hour_value)
-    ./securax venture log money RS "what"     log money you spent (machines, domains, models, tools)
+    ./securax venture log money RS "what" [--related NAME --disclosed WHERE]
+                                              log money you spent; a payment to family or your own firm needs its disclosure
     ./securax venture log revenue RS "what" [--product ID] [--customer NAME] [--ref INVOICE/UTR]
                                               log money that came in; the tags let the guards judge concentration and proof
     ./securax venture plan KEY=VALUE ...      set your assumptions, for example
@@ -260,7 +261,7 @@ def main(argv: list[str] | None = None) -> int:
     tags = {}
     while extra:
         flag = extra.pop(0)
-        if flag in ("--product", "--customer", "--ref") and extra and a.cmd == "log":
+        if flag in ("--product", "--customer", "--ref", "--related", "--disclosed") and extra and a.cmd == "log":
             tags[flag[2:]] = extra.pop(0)[:80]
         else:
             ap.error(f"unrecognised argument {flag}")
@@ -278,7 +279,7 @@ def main(argv: list[str] | None = None) -> int:
             return 2
         d = _mine()
         d.setdefault("log", []).append({"d": dt.date.today().isoformat(), "kind": a.args[0], "amount": amt, "what": " ".join(a.args[2:])[:200],
-                                        **(tags if a.args[0] == "revenue" else {})})
+                                        **{k: v for k, v in tags.items() if (a.args[0] == "revenue") == (k in ("product", "customer", "ref"))}})
         d["log"] = d["log"][-5000:]   # bounded: years of daily entries
         _save(d)
         print(f"✔ logged {a.args[0]} {amt:g} (private, vault/venture.json)")

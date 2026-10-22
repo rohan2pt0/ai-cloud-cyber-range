@@ -145,6 +145,25 @@ def check(now: dt.date | None = None, root: pathlib.Path = ROOT) -> list[dict]:
     out.append(_r("stop-tests", "fail" if due else "pass", ", ".join(due) or "none due",
                   "decide each: stop, fold into another product, or show the evidence that it passed" if due else "every stop test is in the future"))
 
+    # 10. debt: no borrowing to run the business while small
+    debt = float(p.get("debt") or 0)
+    out.append(_r("debt", "pass" if debt <= g["debt"]["line"] else "fail", v.rs(debt) if debt else "none",
+                  "pay running costs from revenue and savings, never from loans: ./securax venture plan debt=RS"))
+
+    # 11. related parties: every payment to family or your own firms carries its written disclosure
+    rel = [x for x in log if x.get("kind") == "money" and x.get("related")]
+    undisclosed = [x for x in rel if not x.get("disclosed")]
+    out.append(_r("related-party", "fail" if undisclosed else "pass", f"{len(undisclosed)} of {len(rel)} undisclosed" if rel else "none logged",
+                  "log such money with --related NAME --disclosed WHERE (for example the board minute or the adviser's e-mail)"))
+
+    # 12. key person: a handover note (keys, accounts, customers, how to keep the lights on) reviewed every year
+    note = v.vault() / "handover.md"
+    if not note.exists():
+        out.append(_r("key-person", "fail", "no handover note", f"write {note} (private): keys, accounts, customers, who to call"))
+    else:
+        age = (now - dt.date.fromtimestamp(note.stat().st_mtime)).days
+        out.append(_r("key-person", "pass" if age <= g["key-person"]["line"] else "fail", f"updated {age} days ago", "review it once a year"))
+
     # 9. platform shifts: reviewed every quarter (Nokia, RIM and Kodak saw the shift and defended the old margin)
     sh = json.loads(SHIFTS.read_text("utf-8"))
     stale = [s["id"] for s in sh["shifts"] if (now - dt.date.fromisoformat(s["reviewed"])).days > g["shift-watch"]["line"]]

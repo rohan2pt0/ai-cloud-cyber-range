@@ -10,6 +10,9 @@
   {"id": "claims", "title": "Claims the code cannot prove", "line": 0, "from": "Builder.ai, Theranos: capabilities sold that did not exist",
    "words": ["superintelligence", "world's best", "world's first", "world-class", "industry-leading", "market-leading", "unhackable", "unbreakable", "100% secure", "guaranteed compliance", "military-grade", "revolutionary", "impossible to fail", "fully autonomous"]},
   {"id": "stop-tests", "title": "Stop tests past their date", "line": 0, "from": "Yahoo, Quibi: bets kept alive on hope after their test had failed"},
+  {"id": "debt", "title": "Borrowing to run the business (Rs)", "line": 0, "from": "Vijay Mallya (Kingfisher), Evergrande, Daewoo, Byju's Term Loan B: growth funded with debt"},
+  {"id": "related-party", "title": "Related-party payments without disclosure", "line": 0, "from": "Rana Kapoor (charged), Chanda Kochhar (tribunal finding), Adam Neumann, BluSmart/Gensol (SEBI order): money to family or own firms"},
+  {"id": "key-person", "title": "Handover note kept current (days)", "line": 365, "from": "Nithin Kamath's 2024 stroke and succession plan; Carlos Ghosn: everything resting on one person"},
   {"id": "shift-watch", "title": "Platform shifts reviewed (days)", "line": 92, "from": "Nokia (Symbian), RIM (keyboards), Kodak (film), Intel (mobile): the shift was seen and not acted on"}
  ]
 }

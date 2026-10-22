@@ -97,3 +97,32 @@ def test_a_marketing_word_the_code_cannot_prove_fails(vault, monkeypatch, tmp_pa
 def test_the_real_estate_makes_no_unprovable_claim_today(vault):
     vault([])
     assert by(gd.check(NOW))["claims"]["state"] == "pass", by(gd.check(NOW))["claims"]["why"]
+
+
+def test_debt_and_undisclosed_related_party_money_fail(vault):
+    vault([e("money", 50000, 5, related="Fake Family Firm"), e("money", 10000, 6, related="Fake Own Co", disclosed="adviser e-mail")],
+          debt=500000)
+    r = by(gd.check(NOW))
+    assert r["debt"]["state"] == "fail" and r["related-party"]["state"] == "fail" and "1 of 2" in r["related-party"]["value"]
+    vault([e("money", 10000, 6, related="Fake Own Co", disclosed="adviser e-mail")])
+    r = by(gd.check(NOW))
+    assert r["debt"]["state"] == "pass" and r["related-party"]["state"] == "pass"
+
+
+def test_a_handover_note_is_needed_and_kept_current(vault, tmp_path):
+    vault([])
+    assert by(gd.check(NOW))["key-person"]["state"] == "fail"
+    (tmp_path / "handover.md").write_text("keys, accounts, customers, who to call (fake)")
+    assert by(gd.check(dt.date.today()))["key-person"]["state"] == "pass"
+
+
+def test_venture_log_keeps_the_tags_on_the_right_kind_of_entry(tmp_path, monkeypatch):
+    monkeypatch.setenv("SECURAX_VAULT_DIR", str(tmp_path))
+    _v = importlib.util.spec_from_file_location("securax_venture_tags_t", ROOT / "governance" / "venture.py")
+    v = importlib.util.module_from_spec(_v)
+    _v.loader.exec_module(v)
+    assert v.main(["log", "revenue", "1000", "fake", "--product", "shield", "--ref", "INV-1"]) == 0
+    assert v.main(["log", "money", "500", "fake", "--related", "Fake Co", "--disclosed", "minute 3"]) == 0
+    log = json.loads((tmp_path / "venture.json").read_text())["log"]
+    assert log[0]["product"] == "shield" and log[0]["ref"] == "INV-1" and "related" not in log[0]
+    assert log[1]["related"] == "Fake Co" and log[1]["disclosed"] == "minute 3" and "product" not in log[1]
