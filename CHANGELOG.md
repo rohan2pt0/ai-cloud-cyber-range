@@ -78,6 +78,7 @@ for the versioning and release policy.
 - **117 links to a domain with no DNS records.** The site, docs and README now use the GitHub Pages address until the domain is proven live.
 - 8 dead links to other sites, and the changelog's links to tags that were never created.
 ### Changed
+- Azure provider 4 to 5 for the Azure canopy (Dependabot #130): azurerm 5 needs a node_provisioning_profile block; it is set to Manual, so node auto-provisioning stays off and the two pools remain the whole cluster.
 - **The cockpit is a dark cockpit.** One master lamp, at most three actions, six primary instruments that stay grey while all is well, lit annunciators only for problems, and every detail folded into panels with a one-line summary (Systems, Govern, Setup, AI briefing, Mission planning). The page is about a quarter of its old length. Badge colours now pass WCAG AA contrast in both themes.
 - **Govern needs no command.** Its panel is folded, and inside it shows the capability stack layer by layer (done, partial, missing basic, later tier), the organogram for the next tier (CISO, programme office, a column per function with its lead and roles), the next 10 gaps with their 5W1H, and the yearly cost. `./securax govern org` and `govern map` export both pictures as SVG for a Board deck.
 ### Added
