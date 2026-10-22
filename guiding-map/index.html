@@ -6655,15 +6655,23 @@ function renderPlaybook(){
     return made;
   };
   window.gmReviewOpen = function (rid) { S_("gm_review_open", rid || ""); renderAll(); };
-  // Google Keep (and other) notes the estate imported: portal/inbox-import.json, merged once by id (only when served over http/https).
+  // Google Keep notes, your life workbooks and documents, as the estate imported them: portal/inbox-import.json, merged once by id
+  // (only when served over http/https).
   function ibImport() {
     if (!(window.fetch && location.protocol.indexOf("http") === 0)) return;
     fetch("portal/inbox-import.json", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
       if (!j || !j.items) return;
-      var a = ibAll(), have = {}, added = 0;
+      var a = ibAll(), have = {}, added = 0, closed = 0, gone = {};
       a.forEach(function (x) { have[x.id] = 1; });
       j.items.forEach(function (x) { if (x.id && !have[x.id]) { a.push(Object.assign({ kind: "note", area: "", due: "", next: "", done: "", created: Date.now() }, x)); added++; } });
-      if (added) { ibSave(a); if (typeof gmToast === "function") gmToast(added + " imported note(s) are in your Inbox."); renderAll(); }
+      // Fixed at the source (the workbook or the document now says it is done): tick it off here. Only imported items (lw-/ld-), never your own.
+      (j.resolved || []).forEach(function (id) { gone[id] = 1; });
+      a.forEach(function (x) { if (gone[x.id] && !x.done && /^l[wd]-/.test(String(x.id))) { x.done = ymd(); closed++; } });
+      if (added || closed) {
+        ibSave(a);
+        if (typeof gmToast === "function") gmToast((added ? added + " imported item(s) are in your Inbox" : "") + (added && closed ? "; " : "") + (closed ? closed + " fixed at the source, ticked off" : "") + ".");
+        renderAll();
+      }
     }).catch(function () {});
   }
   setTimeout(ibImport, 1500);
@@ -6694,7 +6702,15 @@ function renderPlaybook(){
           + '<button class="btn" onclick="gmInboxDecide(\'' + ibSafe(x.id) + '\',\'delete\')">Delete</button></div></div></div>';
       });
     }
-    h += '<h3>Actions (' + actions.length + ')</h3>' + (actions.length ? actions.map(ibRow).join("") : '<div class="info">Nothing scheduled. Decide something above, or run a review below.</div>');
+    // 80/20 (doc 104): the vital few first; the rest folded, one click away.
+    var vital = actions.filter(function (x) { return x.vital; }), rest = actions.filter(function (x) { return !x.vital; });
+    if (vital.length) {
+      h += '<h3>The vital few (' + vital.length + ')</h3><div class="info">The fifth of your open items that matters most: by area (identity, insurance, nominees, security first) and by how soon each is due.</div>'
+        + vital.map(ibRow).join("")
+        + (rest.length ? '<details class="ibnotes"><summary>All other actions (' + rest.length + ')</summary>' + rest.map(ibRow).join("") + '</details>' : "");
+    } else {
+      h += '<h3>Actions (' + actions.length + ')</h3>' + (actions.length ? actions.map(ibRow).join("") : '<div class="info">Nothing scheduled. Decide something above, or run a review below.</div>');
+    }
     h += '<h3>Run a review now</h3><div class="info">Pick a review. Answer each step in your own words; leave a step empty if all is well. Every answer becomes an action due in a week.</div>'
       + '<div class="ibrev">' + RITUALS.map(function (r) { return '<button class="btn' + (ropen === r.id ? " primary" : "") + '" onclick="gmReviewOpen(\'' + r.id + '\')">' + esc(r.name) + ' · ' + r.mins + ' min</button>'; }).join("") + '</div>';
     var r = RITUALS.filter(function (x) { return x.id === ropen; })[0];

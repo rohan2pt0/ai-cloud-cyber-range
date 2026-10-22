@@ -77,14 +77,16 @@ def convert(src: pathlib.Path) -> list[dict]:
 def write(items: list[dict], out: pathlib.Path = OUT) -> tuple[int, int]:
     """(added, total): merged with what is already waiting, each note once."""
     try:
-        old = json.loads(out.read_text("utf-8")).get("items", [])
+        whole = json.loads(out.read_text("utf-8"))
+        whole = whole if isinstance(whole, dict) else {}
     except (OSError, ValueError):
-        old = []
+        whole = {}
+    old = whole.get("items", [])
     have = {x["id"] for x in old}
     new = [x for x in items if x["id"] not in have]
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(json.dumps({"about": "Notes waiting for the Guiding Map Inbox (./securax lifeos). Private: never committed.", "items": old + new},
-                              ensure_ascii=False, indent=1), "utf-8")
+    whole.update({"about": "Notes waiting for the Guiding Map Inbox (./securax lifeos). Private: never committed.", "items": old + new})
+    out.write_text(json.dumps(whole, ensure_ascii=False, indent=1), "utf-8")        # other keys (such as "resolved") stay
     try:
         out.chmod(0o600)
     except OSError:
@@ -94,6 +96,13 @@ def write(items: list[dict], out: pathlib.Path = OUT) -> tuple[int, int]:
 
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
+    if argv[:2] == ["import", "workbook"] or argv[:1] == ["docs"]:     # the life workbooks and private documents (doc 104)
+        import importlib.util
+        rel = "governance/lifebook.py" if argv[0] == "import" else "governance/lifedocs.py"
+        spec = importlib.util.spec_from_file_location("securax_" + pathlib.Path(rel).stem, ROOT / rel)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        return mod.main(argv[2:] if argv[0] == "import" else argv[1:])
     if argv[:2] == ["import", "keep"]:
         src = pathlib.Path(" ".join(argv[2:])).expanduser() if argv[2:] else find_takeout()
         if not src or not src.exists():

@@ -478,6 +478,21 @@
    "shows": "the Life OS Inbox reaching zero"
   },
   {
+   "id": "life-papers",
+   "group": "Your own tools",
+   "icon": "checklist",
+   "name": "Life papers, read for you",
+   "added": "2026-10-22",
+   "what": "Your life workbooks and private documents (policies, statements, ID scans) are read on your own machine: every open issue becomes a dated Life OS action, the vital fifth first, with calendar alarms; a missing nominee, a lapsing policy or a password left in a sheet is found for you.",
+   "open": {
+    "cmd": "./securax lifeos import workbook"
+   },
+   "command": "lifeos",
+   "doc": "securax/104-LIFE-PAPERS-READ-FOR-YOU.md",
+   "outcome": "No more updating spreadsheets by hand to know what is still open: the few things that matter come to you, with a date and an alarm.",
+   "shows": "the Life OS Inbox: The vital few"
+  },
+  {
    "id": "knowledge",
    "group": "Your own tools",
    "name": "Your AI history",
