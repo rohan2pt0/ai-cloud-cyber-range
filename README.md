@@ -111,6 +111,10 @@ This list is generated from [`features.json`](features.json); the Command Center
 <!-- readme:whats-new:start -->
 ## What's new
 
+**On main, in the next release:**
+
+- [Build from a phone with the open models](docs/securax/83-BUILD-WITH-OPEN-MODELS.md)
+
 **Release 0.3.0 - 2026-10-22:**
 
 - [Life papers, read for you](docs/securax/104-LIFE-PAPERS-READ-FOR-YOU.md)

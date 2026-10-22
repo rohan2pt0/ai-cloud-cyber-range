@@ -8,6 +8,15 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
+### Added
+- **Build from a phone with the open models** (doc 83, section 7): `.github/workflows/autobuild.yml` runs `./securax autobuild` in CI from *Run workflow* or an owner's issue labelled `autobuild`. OpenCode Go models do the work (the strong chain for hard work), the estate's gates decide, and a green result becomes an `autobuild:` PR with its checks running. The agent holds no write token and cannot fetch web pages. In October Claude made 92% of the commits, because the open-model tools ran only in a laptop terminal.
+- `./securax ai check` (doc 105, G4): every local model against its approved digest (the shipped defaults are approved in the model registry; `--approve` keeps your own, privately), and `--scan` finds pickle code in weight files without loading them.
+- AI incident runbooks (doc 105, G11): `./securax incident runbook`, and `incident open --kind ai-data-leak` (or jailbreak, abuse, poisoned document) starts the clocks that kind usually needs and prints the first moves; the `ai-incident` tabletop checks the stop switch and the clocks on this machine.
+- Two machine-checked maps (doc 105, G12a): `./securax comply owasp-ai` (OWASP LLM and Agentic Top 10, 20 categories) and `./securax comply free-ai` (the RBI FREE-AI report's 26 recommendations), also in `./securax readiness`.
+### Security
+- LiteLLM, the router that makes every cloud call, now runs a pinned release and digest (v1.83.14-stable) instead of the floating `main-stable` tag; the cluster manifest takes the same pin from the compose file.
+### Changed
+- n8n 2.44.4 (from 1.74.1). n8n 2 hides the environment from workflows; the estate allows it for n8n only, because the shipped templates read `GATEWAY_URL`, and a test keeps every secret out of n8n's environment.
 
 ## [0.3.0] - 2026-10-22
 ### Added
