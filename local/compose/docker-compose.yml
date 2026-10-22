@@ -154,7 +154,7 @@ services:
     logging: *default-logging
 
   ollama:
-    image: ollama/ollama:0.40.4
+    image: ollama/ollama:0.40.6
     security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
     # Sized to YOUR machine by `./securax profile` (writes OLLAMA_MEM / OLLAMA_CPUS to .env).
     mem_limit: ${OLLAMA_MEM:-5g}
@@ -194,7 +194,7 @@ services:
 
   # ---- observability / SIEM-lite (maps to Wazuh+Sentinel+Chronicle in the cloud) ----
   loki:
-    image: grafana/loki:3.3.2
+    image: grafana/loki:3.7.8
     security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
     profiles: ["security"]
     command: ["-config.file=/etc/loki/local-config.yaml"]
@@ -216,7 +216,7 @@ services:
 
   # ---- on-demand DevSecOps scanners (run once, then exit) ----
   trivy:
-    image: aquasec/trivy:0.58.1
+    image: aquasec/trivy:0.76.0
     security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
     profiles: ["security"]
     # It scans, prints and EXITS. It used to stay up (sleep infinity) holding the Docker socket, and the socket gives full control of
@@ -232,7 +232,7 @@ services:
   # Unified chat UI. All traffic is pointed at the GUARDRAIL GATEWAY (not LiteLLM
   # directly), so every prompt/response passes the Red/Yellow/Green rails first.
   open-webui:
-    image: ghcr.io/open-webui/open-webui:0.12.2@sha256:10e6a78ba2d172493460a9e8a92c496aaa7a64dc4d26d622a2e95e0c736081c9
+    image: ghcr.io/open-webui/open-webui:v0.12.3@sha256:a537bbe1e6b428820f52ed4a029d7fff97062e24d5cf32c365fba36fd0542def
     security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
     # 1.5 GB: document search embeds INSIDE this container (local model, nothing leaves the box), which needs about
     # 0.5 GB on its own; at 1 GB uploading your handbooks could kill it. Doing it in Ollama instead would evict your chat
@@ -325,7 +325,7 @@ services:
   # Online (doc 85, ./securax online setup): an outbound-only Cloudflare Tunnel to hub.<domain> and chat.<domain>, behind Cloudflare
   # Access (your sign-in). No port is published and nothing listens on the internet; it starts only when CF_TUNNEL_TOKEN is set.
   cloudflared:
-    image: cloudflare/cloudflared:2026.10.0@sha256:9b49eed8f62806d5d45ddf59ecefb5710429598ea6d3fcccd2af938f621b2b07
+    image: cloudflare/cloudflared:2026.10.1@sha256:a15a3b50b8dabd57ac2090e9484c0247dba9dfa1f0df4d298d4317f9d69eb2d5
     mem_limit: 128m
     cpus: 0.25
     profiles: ["online"]
