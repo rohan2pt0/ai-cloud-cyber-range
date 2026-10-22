@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![CI](https://github.com/rohan2pt0/ai-cloud-cyber-range/actions/workflows/devsecops.yml/badge.svg)](https://github.com/rohan2pt0/ai-cloud-cyber-range/actions/workflows/devsecops.yml)
 <!-- readme:badge:start -->
-[![Version](https://img.shields.io/badge/version-0.2.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.3.0-blue)](CHANGELOG.md)
 <!-- readme:badge:end -->
 ![AI red-team defence](https://img.shields.io/badge/red--team%20defence-100%25%2F0%20FP-blue)
 ![Cost to start](https://img.shields.io/badge/cost%20to%20start-%E2%82%B90-success)
@@ -111,7 +111,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 <!-- readme:whats-new:start -->
 ## What's new
 
-**On main, in the next release:**
+**Release 0.3.0 - 2026-10-22:**
 
 - [CI runs that a new push should never stop](docs/securax/68-CI-AT-AGENT-SCALE.md)
 - The Command Center's web server ran an 18-month-old nginx
@@ -121,19 +121,8 @@ This list is generated from [`features.json`](features.json); the Command Center
 - [Nothing asked is lost](docs/securax/103-NOTHING-ASKED-IS-LOST.md)
 - [Releases, small and often](docs/securax/21-VERSIONING-AND-RELEASES.md)
 - [Mutation testing of the safety rails](docs/securax/101-A-SANDBOX-THAT-PROVES-MORE.md)
-
-**Release 0.2.0 - 2026-10-17:**
-
-- [CI at agent scale](docs/securax/68-CI-AT-AGENT-SCALE.md)
-- Nightly safe update
-- A broken workflow file ran no checks at all
-- Life OS: the new Inbox tab crowded calm mode and the phone bar (six tabs)
-- `./securax start flows` reported failure although it worked
-- A second home for the code, in one guided step
-- "v0.1.0 never updates"
-- A busy port 80/443 no longer leaves you with nothing running
-- Risk registers with a one-row header lost their first risk
-- No paths to type
+- [Mission control](docs/securax/102-MISSION-CONTROL.md)
+- [A sandbox that proves more](docs/securax/101-A-SANDBOX-THAT-PROVES-MORE.md)
 
 Everything, with details: [`CHANGELOG.md`](CHANGELOG.md).
 <!-- readme:whats-new:end -->
