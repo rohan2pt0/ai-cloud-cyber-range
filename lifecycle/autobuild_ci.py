@@ -74,8 +74,9 @@ def prompt(env: dict) -> str:
     if fb.is_file() and fb.stat().st_size:
         why = subprocess.run([sys.executable, str(ROOT / "lifecycle" / "forge.py"), "brief", str(fb)], capture_output=True, text=True).stdout
         text += "\n\nThe previous attempt FAILED the gates. Fix exactly this, and change nothing else:\n" + (why or fb.read_text("utf-8")[-4000:])
-    return text + ("\n\nWork in this checkout. Follow AGENTS.md and BUILD-CONTRACT.md. Add or update the tests that prove the change. "
-                   "Do not commit, push, skip a test or weaken a rail: the gates run after you.")
+    return text + ("\n\nWork in this checkout. Follow AGENTS.md and BUILD-CONTRACT.md. Use the @planner subagent first, the "
+                   "@test-writer for the failing test, then @code-reviewer (and @security-reviewer for sensitive code) before you stop, "
+                   "and @docs-keeper for the paperwork. Do not commit, push, skip a test or weaken a rail: the gates run after you.")
 
 
 def agent(env: dict | None = None, run=subprocess.run) -> int:

@@ -127,6 +127,12 @@ From a phone, Claude was the only builder within reach. The `autobuild` workflow
 - It sees only this public repository: never `vault/`, never your `.env`.
 - A separate job pushes, and only a green result.
 
+**Two more pieces that replace what Claude Code gave you:**
+- **Specialist agents** (`.opencode/agents/`): planner, test-writer, code-reviewer, security-reviewer and docs-keeper, tied to
+  this repository's rules. OpenCode uses them on the laptop and in the phone build alike.
+- **A review on every pull request** (`.github/workflows/ai-review.yml`): the strong open models read the change and keep one
+  comment up to date. It uses the same secret; pull requests from forks and Dependabot get no secret, so they are skipped.
+
 **Which tasks to send:**
 - **Send:** one area, a clear test, an existing pattern: what `./securax route` calls local.
 - **Keep for a person with the strong chain, or Claude:** cross-cutting redesigns and anything you cannot judge from the diff.

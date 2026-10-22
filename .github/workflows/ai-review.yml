@@ -1,0 +1,45 @@
+# A second look at every pull request from the strongest open models (doc 83), so review no longer depends on a paid
+# Claude reviewer. It runs ./securax review's engine (lifecycle/review.py) against OpenCode Go and keeps one comment per PR
+# up to date. Advice to weigh, not a gate: CI and the tests decide. It refuses a change that touches vault/ or an .env file.
+# Runs only where the secret exists: pull requests from forks and Dependabot get no secret, so they are skipped.
+name: ai-review
+on:
+  pull_request:
+    types: [opened, synchronize, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: ai-review-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  review:
+    if: github.event.pull_request.draft == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      REVIEW_API_KEY: ${{ secrets.OPENCODE_GO_API_KEY }}
+      REVIEW_API_BASE: https://opencode.ai/inference/go/v1
+      GH_TOKEN: ${{ github.token }}
+      PR: ${{ github.event.pull_request.number }}
+      BASE: ${{ github.event.pull_request.base.sha }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0, persist-credentials: false }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: "Review the change with the strong open models"
+        run: |
+          if [ -z "$REVIEW_API_KEY" ]; then echo "No OPENCODE_GO_API_KEY secret here (fork or Dependabot): skipped."; exit 0; fi
+          set +e
+          for m in deepseek-v4-pro kimi-k3 glm-5.3; do
+            python3 lifecycle/review.py --base "$BASE" --model "$m" > review.md 2>&1 && break
+          done
+          set -e
+          { echo "<!-- securax-ai-review -->"; echo "### Open-model review"; echo; cat review.md; } > body.md
+          id="$(gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" --paginate -q '.[] | select(.body | startswith("<!-- securax-ai-review -->")) | .id' | head -1)"
+          if [ -n "$id" ]; then gh api -X PATCH "repos/$GITHUB_REPOSITORY/issues/comments/$id" -F body=@body.md >/dev/null
+          else gh api "repos/$GITHUB_REPOSITORY/issues/$PR/comments" -F body=@body.md >/dev/null; fi

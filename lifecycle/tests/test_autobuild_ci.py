@@ -58,3 +58,24 @@ def test_the_workflow_keeps_the_token_from_the_agent_and_the_task_out_of_scripts
 
 def test_slugs_are_branch_safe():
     assert ci.slug("Fix: the README's `help` line!!") == "fix-the-readme-s-help-line" and ci.slug("??") == "task"
+
+
+def test_the_open_models_get_the_specialist_agents_and_reviewers_cannot_edit():
+    agents = {p.stem: p.read_text("utf-8") for p in (ROOT / ".opencode" / "agents").glob("*.md")}
+    assert {"planner", "code-reviewer", "security-reviewer", "test-writer", "docs-keeper"} <= set(agents)
+    for name, text in agents.items():
+        front = yaml.safe_load(text.split("---")[1])
+        assert front["description"] and front["mode"] == "subagent" and front["permission"]["webfetch"] == "deny", name
+    for name in ("planner", "code-reviewer", "security-reviewer"):
+        assert yaml.safe_load(agents[name].split("---")[1])["permission"]["edit"] == "deny", name
+
+
+def test_every_pull_request_gets_an_open_model_review_without_exposing_a_write_token_to_code():
+    wf = yaml.safe_load((ROOT / ".github" / "workflows" / "ai-review.yml").read_text("utf-8"))
+    on = wf.get("on", wf.get(True))
+    assert "pull_request" in on and "pull_request_target" not in on
+    assert wf["permissions"] == {"contents": "read", "pull-requests": "write"}
+    step = wf["jobs"]["review"]["steps"][0]
+    assert step["with"]["persist-credentials"] is False
+    run = wf["jobs"]["review"]["steps"][-1]["run"]
+    assert "lifecycle/review.py" in run and 'if [ -z "$REVIEW_API_KEY" ]' in run
