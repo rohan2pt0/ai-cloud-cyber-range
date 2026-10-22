@@ -18,9 +18,10 @@ on:
     - cron: "17 3 * * 1"   # Mondays: links to other sites go stale on their own
 permissions:
   contents: read
+# A newer push to the same pull request replaces its older run; a deploy from main is never cancelled.
 concurrency:
-  group: docs-${{ github.ref }}
-  cancel-in-progress: true
+  group: docs-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 jobs:
   build:
     runs-on: ubuntu-latest

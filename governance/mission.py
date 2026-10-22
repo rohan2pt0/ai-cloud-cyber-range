@@ -69,17 +69,19 @@ def backups(now: float | None = None) -> dict:
 
 
 def main_is_green(slug: str = "", opener=urllib.request.urlopen) -> bool | None:
-    """Did the last finished sandbox run on main pass? None when GitHub cannot be asked (offline is not a NO-GO)."""
+    """Did the last sandbox run on main that ran to the end pass? None when GitHub cannot be asked (offline is not a NO-GO).
+    A run cancelled or skipped because a newer one replaced it proves nothing, so it never holds an update."""
     slug = slug or _brand("REPO_SLUG")
     if not re.fullmatch(r"[\w.-]+/[\w.-]+", slug or ""):
         return None
-    url = f"https://api.github.com/repos/{slug}/actions/workflows/e2e.yml/runs?branch=main&status=completed&per_page=1"
+    url = f"https://api.github.com/repos/{slug}/actions/workflows/e2e.yml/runs?branch=main&status=completed&per_page=10"
     try:
         with opener(urllib.request.Request(url, headers={"Accept": "application/vnd.github+json"}), timeout=10) as r:
             runs = json.loads(r.read()).get("workflow_runs") or []
     except Exception:  # noqa: BLE001 - offline or rate-limited: say so, do not block on it
         return None
-    return None if not runs else runs[0].get("conclusion") == "success"
+    ran = [r for r in runs if r.get("conclusion") not in ("cancelled", "skipped")]
+    return None if not ran else ran[0].get("conclusion") == "success"
 
 
 def _brand(key: str) -> str:

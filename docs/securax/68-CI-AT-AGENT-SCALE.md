@@ -30,6 +30,10 @@ builds, CI).
 | **L3 · nightly** | 02:00 IST | all journeys on main, before the laptops' 3:15 am safe update | about 40 minutes |
 
 - **A newer push cancels the older run** of the same PR, so superseded commits stop using runners.
+- **What a push never cancels:** a run on main, the nightly, a dispatched run or a release. Every workflow that runs on pull requests keys its group by the PR number and cancels only `pull_request` runs; releases queue one at a time. `test_a_new_push_never_cancels_a_run_it_should_not` fails a workflow that breaks this.
+- **Each change is checked once:** devsecops runs for the pull request, and on main after the merge, not also for every push to the PR's branch (which ran everything twice).
+- **A cancelled run proves nothing:** the Go/No-Go poll and the Monday release agent look past a run that was cancelled or skipped to the last one that ran to the end, so a replaced nightly never holds an update or a release.
+- **Minutes:** standard GitHub-hosted runners are free for a public repository; the Free plan's real limit is 20 jobs at once, and jobs over it wait in a queue, they are not dropped.
 - **The selection is the impact map.** Every tracked file belongs to a component, and every component names the journeys
   that guard it. CI runs `python3 lifecycle/impact.py --journeys` and passes the list to `sandbox/run.py -j`.
 

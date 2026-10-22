@@ -44,6 +44,11 @@ def test_main_is_green_reads_the_last_finished_run_and_survives_errors():
     assert ok is True and bad is False
     assert mi.main_is_green("o/r", opener=lambda *a, **k: (_ for _ in ()).throw(OSError("offline"))) is None
     assert mi.main_is_green("not a slug") is None
+    # a run replaced by a newer one (cancelled) or skipped says nothing: look past it, and never hold the update on it
+    runs = lambda *c: (lambda req, timeout=0: R(json.dumps({"workflow_runs": [{"conclusion": x} for x in c]}).encode()))  # noqa: E731
+    assert mi.main_is_green("o/r", opener=runs("cancelled", "skipped", "success", "failure")) is True
+    assert mi.main_is_green("o/r", opener=runs("cancelled", "failure", "success")) is False
+    assert mi.main_is_green("o/r", opener=runs("cancelled", "cancelled")) is None
 
 
 def test_rules_fire_on_their_signs_and_the_autopilot_acts_only_on_its_own():

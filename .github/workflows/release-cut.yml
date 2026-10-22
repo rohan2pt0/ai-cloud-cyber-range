@@ -15,6 +15,10 @@ on:
         type: boolean
         default: false
 
+concurrency:
+  group: release-cut
+  cancel-in-progress: false
+
 permissions:
   contents: write
   pull-requests: write
@@ -43,7 +47,9 @@ jobs:
             age=$(( ( $(date +%s) - $(git log -1 --format=%ct "$last") ) / 86400 ))
             [ "$age" -ge 7 ] || { echo "Last release $last is $age day(s) old: next week." >> "$GITHUB_STEP_SUMMARY"; exit 0; }
           fi
-          nightly="$(gh run list --workflow e2e.yml --branch main --event schedule --limit 1 --json conclusion -q '.[0].conclusion')"
+          # the newest sandbox on main that ran to the end (nightly or after a merge); a cancelled or skipped run proves nothing
+          nightly="$(gh run list --workflow e2e.yml --branch main --status completed --limit 10 --json conclusion \
+                     -q '[.[] | select(.conclusion != "cancelled" and .conclusion != "skipped")][0].conclusion')"
           [ "$nightly" = "success" ] || { echo "::warning::main's last nightly sandbox is '${nightly:-unknown}': no release until it is green."; exit 0; }
           if gh pr list --state open --search "Release v$next in:title" --json number -q '.[0].number' | grep -q .; then
             echo "A Release v$next PR is already open." >> "$GITHUB_STEP_SUMMARY"; exit 0
