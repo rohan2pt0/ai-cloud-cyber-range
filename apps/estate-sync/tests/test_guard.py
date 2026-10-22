@@ -141,3 +141,88 @@ def test_the_alert_file_keeps_its_last_500_lines(tmp_path):
     assert len(lines) == guard.ALERT_LINES
     assert json.loads(lines[-1])["addr"].endswith(f"-{guard.ALERT_LINES + 19}")
     assert len(rs._seen) <= guard.MAX_KEYS
+
+
+# ───────────── which address is the client: X-Real-IP only from a trusted proxy (doc 87) ─────────────
+PROXY = ("172.18.0.5", 40000)          # a peer on the private Docker range (the bundled nginx)
+OUTSIDE = ("198.51.100.7", 40000)      # documentation-range fake address: not a proxy
+
+
+def _alert_addrs(alerts):
+    return [json.loads(ln)["addr"] for ln in alerts.read_text().splitlines()] if alerts.exists() else []
+
+
+def _refuse(m, client, n, real_ip=None):
+    hdr = {**h("guessed-token"), **({"X-Real-IP": real_ip} if real_ip is not None else {})}
+    with TestClient(m.app, client=client) as c:
+        for _ in range(n):
+            assert c.get("/sync/state?user=me", headers=hdr).status_code == 401
+
+
+def test_a_trusted_proxys_x_real_ip_names_the_client(svc):
+    m, c, clock, alerts = svc
+    _refuse(m, PROXY, 10, real_ip="203.0.113.9")
+    assert _alert_addrs(alerts) == ["203.0.113.9"]
+
+
+def test_an_untrusted_peers_x_real_ip_is_ignored(svc):
+    m, c, clock, alerts = svc
+    _refuse(m, OUTSIDE, 10, real_ip="203.0.113.9")
+    assert _alert_addrs(alerts) == ["198.51.100.7"]
+
+
+@pytest.mark.parametrize("bad", ["not-an-address", "203.0.113.9, 198.51.100.1", "203.0.113.0/24", "", "x" * 200])
+def test_a_garbage_x_real_ip_falls_back_to_the_peer(svc, bad):
+    m, c, clock, alerts = svc
+    _refuse(m, PROXY, 10, real_ip=bad)
+    assert _alert_addrs(alerts) == ["172.18.0.5"]
+
+
+def test_two_clients_behind_the_proxy_are_counted_separately(svc):
+    m, c, clock, alerts = svc
+    _refuse(m, PROXY, 9, real_ip="203.0.113.9")
+    _refuse(m, PROXY, 9, real_ip="203.0.113.10")
+    assert not alerts.exists()                                                        # 18 refusals, but 9 each: no alert
+    _refuse(m, PROXY, 1, real_ip="203.0.113.10")
+    assert _alert_addrs(alerts) == ["203.0.113.10"]
+
+
+def test_the_websocket_hello_uses_the_same_rule(svc):
+    m, c, clock, alerts = svc
+    for client in (PROXY, OUTSIDE):
+        with TestClient(m.app, client=client) as wc:
+            for _ in range(10):
+                with wc.websocket_connect("/sync/ws", headers={"X-Real-IP": "203.0.113.9"}) as ws:
+                    ws.send_text(json.dumps({"token": "guessed-token", "user": "me"}))
+                    with pytest.raises(Exception):
+                        ws.receive_text()
+    assert _alert_addrs(alerts) == ["203.0.113.9", "198.51.100.7"]
+
+
+def test_trusted_proxies_default_setting_and_junk():
+    from syncsvc import guard
+    nets = guard.trusted_proxies("")
+    assert {str(n) for n in nets} == {"127.0.0.0/8", "::1/128", "172.16.0.0/12"}
+    assert {str(n) for n in guard.trusted_proxies(" 10.9.0.0/16 , 192.0.2.4 ,junk")} == {"10.9.0.0/16", "192.0.2.4/32"}
+    assert guard.trusted_proxies("junk,also-junk") == ()                              # junk trusts NOBODY, never everybody
+    assert guard.client_addr("172.18.0.5", ["203.0.113.9"], ()) == "172.18.0.5"
+    assert guard.client_addr("::1", ["2001:db8::7"], nets) == "2001:db8::7"
+    assert guard.client_addr("::ffff:172.18.0.5", ["203.0.113.9"], nets) == "203.0.113.9"      # IPv4-mapped peer is still the proxy
+    assert guard.client_addr("172.18.0.5", ["203.0.113.9", "203.0.113.10"], nets) == "172.18.0.5"   # two headers: refused, not guessed
+    assert guard.client_addr("172.18.0.5", [], nets) == "172.18.0.5"
+    assert guard.client_addr("testclient", ["203.0.113.9"], nets) == "testclient"
+    assert guard.client_addr("127.0.0.1", [" 203.0.113.9 "], nets) == "203.0.113.9"
+
+
+def test_the_trusted_list_comes_from_the_environment(tmp_path, monkeypatch):
+    monkeypatch.setenv("SYNC_DB_PATH", str(tmp_path / "s.db"))
+    monkeypatch.setenv("SYNC_TRUSTED_PROXIES", "198.51.100.0/24")
+    import syncsvc.main as m
+    importlib.reload(m)
+    try:
+        assert [str(n) for n in m.TRUSTED_PROXIES] == ["198.51.100.0/24"]
+        assert m.guard.client_addr("198.51.100.7", ["203.0.113.9"], m.TRUSTED_PROXIES) == "203.0.113.9"
+        assert m.guard.client_addr("172.18.0.5", ["203.0.113.9"], m.TRUSTED_PROXIES) == "172.18.0.5"
+    finally:
+        monkeypatch.delenv("SYNC_TRUSTED_PROXIES")
+        importlib.reload(m)

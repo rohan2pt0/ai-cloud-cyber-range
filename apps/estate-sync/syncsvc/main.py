@@ -56,6 +56,9 @@ MAX_BODY = int(os.environ.get("SYNC_MAX_BODY_BYTES", str(8 * 1024 * 1024)))
 LIMITER = guard.RateLimiter(guard.env_int("SYNC_RATE_LIMIT", 600), guard.env_int("SYNC_RATE_WINDOW_S", 60))
 REFUSED = guard.RefusedSignins(guard.env_int("SYNC_REFUSED_ALERT_AT", 10), guard.env_int("SYNC_REFUSED_WINDOW_S", 900),
                                os.path.join(os.path.dirname(DB_PATH) or ".", "refused-signins.jsonl"))
+# Behind the bundled nginx every request comes from the proxy, which writes the client's address into X-Real-IP. That header counts
+# only when the direct peer is in SYNC_TRUSTED_PROXIES (default: loopback and the private Docker range); anyone else's is ignored.
+TRUSTED_PROXIES = guard.trusted_proxies()
 
 
 def _tokens() -> set[str]:
@@ -191,12 +194,17 @@ def _auth(authorization: str | None, cf_jwt: str | None = None, user: str | None
     _limit(guard.token_key(token))
 
 
+def _client(conn) -> str:
+    """The client address of an HTTP request or a WebSocket: X-Real-IP only from a trusted proxy (guard.client_addr)."""
+    return guard.client_addr(conn.client.host if conn.client else "", conn.headers.getlist("x-real-ip"), TRUSTED_PROXIES)
+
+
 @app.middleware("http")
 async def count_refused(request: Request, call_next):
     """Every refused sign-in (401) counts against the client's address; the count only ever alerts, it never blocks."""
     resp = await call_next(request)
     if resp.status_code == 401:
-        REFUSED.refused(request.client.host if request.client else "")
+        REFUSED.refused(_client(request))
     return resp
 
 
@@ -247,7 +255,7 @@ async def ws_endpoint(ws: WebSocket) -> None:
             ok = bool(allowed) and bool(user) and len(user) <= 256 and any(hmac.compare_digest(tok, a) for a in allowed)
         if not ok:
             user = None
-            REFUSED.refused(ws.client.host if ws.client else "")
+            REFUSED.refused(_client(ws))
             await ws.close(code=4401)
             return
         if LIMITER.hit(key):

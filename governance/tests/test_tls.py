@@ -249,6 +249,45 @@ def test_sidecar_conf_terminates_tls_and_forwards_to_loopback_only():
     assert "proxy_pass http://127.0.0.1:4000;" in s and "TLSv1.1" not in s and "ssl_session_tickets off" in s
 
 
+def _sync_blocks(conf: str) -> list[str]:
+    """Every nginx location that proxies to estate-sync, as text (the name may be plain or the internal TLS name)."""
+    out = []
+    for m in re.finditer(r"location /sync \{.*?\n    \}", conf, re.S):
+        out.append(m.group(0))
+    return out
+
+
+@pytest.mark.parametrize("internal", [False, True])
+def test_the_edge_overwrites_the_client_address_for_estate_sync(internal):
+    # doc 87: refused sign-ins are counted per client, so every hop to estate-sync must name the address IT saw, never append the
+    # client's own header (anyone can set X-Forwarded-For). The headers sit at http level, so a location without its own
+    # proxy_set_header inherits them; a /sync location that set any header of its own would lose them.
+    conf = tls.render_edge_conf("securax.localhost", internal=internal)
+    head = conf[:conf.index("server {")]
+    assert "proxy_set_header X-Real-IP $remote_addr;" in head and "proxy_set_header X-Forwarded-For $remote_addr;" in head
+    assert "$http_x_forwarded_for" not in conf and "$proxy_add_x_forwarded_for" not in conf
+    sync = conf[conf.index("# Sync service"):conf.index("# Gateway API")]
+    assert "estate-sync" in sync and "proxy_set_header" not in sync
+    blocks = _sync_blocks(conf)
+    assert blocks and all("proxy_set_header" not in b for b in blocks)          # the device port's /sync inherits them too
+
+
+def test_the_sync_sidecar_believes_x_real_ip_only_from_the_docker_networks():
+    s = tls.sidecar_conf("estate-sync", 8089)
+    assert "set_real_ip_from 172.16.0.0/12;" in s and "real_ip_header X-Real-IP;" in s
+    assert "set_real_ip_from 0.0.0.0/0" not in s and "real_ip_recursive on" not in s
+    assert "proxy_set_header X-Real-IP $remote_addr;" in s and "proxy_set_header X-Forwarded-For $remote_addr;" in s
+    assert "$http_x_forwarded_for" not in s and "$proxy_add_x_forwarded_for" not in s
+
+
+def test_the_app_proxy_overwrites_the_client_address_for_estate_sync():
+    conf = (ROOT / "local" / "compose" / "guiding-map.conf").read_text("utf-8")
+    blocks = _sync_blocks(conf)
+    assert len(blocks) == 1 and "estate-sync:8089" in blocks[0]
+    assert "proxy_set_header X-Real-IP $remote_addr;" in blocks[0] and "proxy_set_header X-Forwarded-For $remote_addr;" in blocks[0]
+    assert "$http_x_forwarded_for" not in conf and "$proxy_add_x_forwarded_for" not in conf and "$http_x_real_ip" not in conf
+
+
 def _compose_config():
     if not shutil.which("docker"):
         pytest.skip("docker not installed")
