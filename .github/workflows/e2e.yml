@@ -54,11 +54,30 @@ jobs:
           pip install pyyaml playwright pytest
           playwright install --with-deps chromium
           sudo apt-get install -y --no-install-recommends libnss3-tools   # certutil: the phone journey trusts the estate CA as a person does
+      # The pulled models (about 1.5 GB) are kept between runs: a slow registry once took 950 s instead of 42 s and pushed the
+      # suite past its 60-minute limit. The key follows the image and model pins, so a changed model is pulled fresh.
+      - name: Restore the pulled local models
+        id: models
+        if: steps.pick.outputs.journeys != ''
+        uses: actions/cache/restore@v4
+        with:
+          path: ~/securax-model-cache
+          key: ollama-${{ hashFiles('local/compose/docker-compose.yml', 'sandbox/harness.py', 'securax') }}
+          restore-keys: ollama-
       - name: Run the user journeys against the real stack
         if: steps.pick.outputs.journeys != ''
         run: |
+          export SECURAX_SANDBOX_MODEL_CACHE="$HOME/securax-model-cache"
           J="${{ steps.pick.outputs.journeys }}"
           if [ "$J" = ALL ]; then python3 -u sandbox/run.py; else python3 -u sandbox/run.py -j "$J"; fi   # -u: each journey shows as it finishes
+      - name: Save the pulled local models for the next run
+        if: always() && steps.pick.outputs.journeys != '' && steps.models.outputs.cache-hit != 'true'
+        run: sudo chown -R "$(id -u):$(id -g)" ~/securax-model-cache 2>/dev/null || true   # the container wrote them as root
+      - if: always() && steps.pick.outputs.journeys != '' && steps.models.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v4
+        with:
+          path: ~/securax-model-cache
+          key: ollama-${{ hashFiles('local/compose/docker-compose.yml', 'sandbox/harness.py', 'securax') }}
       - name: Upload screenshots + results (so a failure can be SEEN)
         if: always()
         uses: actions/upload-artifact@v7

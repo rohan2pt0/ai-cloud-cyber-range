@@ -8,6 +8,8 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
+### CI
+- The e2e sandbox keeps its pulled local models between runs (a GitHub cache keyed on the image and model pins), so a slow model registry can no longer push the journey suite past its 60-minute limit.
 ### Security
 - Removed references to the job descriptions some modules were first built against: the public repository carries no employer or role hints.
 - Gateway: a prompt sent as multi-part content (`[{"type": "text"}]`) skipped every input rail, and the system message (where chat apps put retrieved documents) was never inspected; both are now inspected and redacted, and ordinary system-prompt wording is recorded, not blocked (doc 105). The AI-SPM RAG check now requires that inspection.
