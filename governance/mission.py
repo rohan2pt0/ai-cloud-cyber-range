@@ -315,6 +315,16 @@ def html_card(metrics: list[dict], b: dict | None = None) -> str:
     yours = [r for r in fired if r["who"] == "owner"]
     line = ("NO-GO for the nightly update: " + ", ".join(c["console"] for c in no_go)) if no_go else "GO for the nightly update"
     line += f" · {len(fired)} flight rule{'s' if len(fired) != 1 else ''} firing · " + (f"needs you: {yours[0]['then']}" if yours else "nothing needs you")
+    try:                        # what is not finished (doc 103), from what this machine knows: the cockpit asks no network
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("securax_backlog_m", ROOT / "governance" / "backlog.py")
+        bl = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(bl)
+        bk = bl.build(offline=True)
+        if bk["items"]:
+            line += f" · {len(bk['items'])} not finished ({bk['overdue']} late): ./securax backlog"
+    except Exception:  # noqa: BLE001 - the backlog line is a convenience; it must never fail the cockpit
+        pass
     rows = "".join(f"<li>{'✔' if c['go'] else '✘'} " + E(c["why"] if c["why"].startswith(c["console"] + ":") else f"{c['console']}: {c['why']}")
                    + "</li>" for c in consoles)
     acts = "".join(f"<li><b>{E(r['id'])}</b> ({'you' if r['who'] == 'owner' else 'the autopilot acts'}): {E(r['then'])}</li>" for r in fired)
