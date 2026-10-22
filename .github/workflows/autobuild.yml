@@ -1,0 +1,119 @@
+# Build SecuRAX with SecuRAX, from a phone (doc 83, section 7): the open models do the work, the estate's own gates decide,
+# and you review a PR. No laptop and no Claude subscription needed for routine work.
+#
+# Two ways to start it, both owner-only:
+#   1. GitHub app > Actions > autobuild > Run workflow, and type the task.
+#   2. Open an issue whose title and body are the task, and add the label "autobuild".
+#
+# How it stays safe:
+# - The agent job holds no write token. Its checkout keeps no credentials, so a prompt cannot push anything.
+# - The task is passed through the environment, never pasted into a script.
+# - The agent works through `./securax autobuild`: the route decides the model, and a change is kept only when the gates pass
+#   (verify, diffcheck, forge; nothing skipped, no rail weakened, no fake green).
+# - A green result becomes a branch and a PR titled "autobuild: ...", so `./securax ai share` counts it for the open models.
+#   The PR's own checks are started by dispatch, because a PR opened by this workflow's token starts no workflow by itself.
+# - Needs the repository secret OPENCODE_GO_API_KEY (doc 83, section 4).
+name: autobuild
+on:
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "What to build, in plain words (one task)"
+        required: true
+      tries:
+        description: "Attempts before it gives up and writes a brief"
+        required: false
+        default: "3"
+  issues:
+    types: [labeled]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: autobuild
+  cancel-in-progress: false
+
+jobs:
+  build:
+    if: >-
+      github.event_name == 'workflow_dispatch' ||
+      (github.event.label.name == 'autobuild' && github.event.issue.user.login == github.repository_owner)
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    outputs:
+      green: ${{ steps.run.outputs.green }}
+      slug: ${{ steps.run.outputs.slug }}
+    env:
+      TASK: ${{ github.event_name == 'workflow_dispatch' && inputs.task || format('{0}\n\n{1}', github.event.issue.title, github.event.issue.body) }}
+      TRIES: ${{ inputs.tries || '3' }}
+      OPENCODE_GO_API_KEY: ${{ secrets.OPENCODE_GO_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0, persist-credentials: false }
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - uses: actions/setup-node@v4
+        with: { node-version: "22" }
+      - name: "Install the gates and the open-model agent"
+        run: |
+          [ -n "$OPENCODE_GO_API_KEY" ] || { echo "::error::Add the repository secret OPENCODE_GO_API_KEY (doc 83, section 4)."; exit 1; }
+          pip install -r apps/llm-gateway/requirements-dev.txt pyyaml ruff
+          npm install -g opencode-ai@1.19.0
+      - name: "Build it: open models, then the estate's gates"
+        id: run
+        run: |
+          python3 lifecycle/autobuild_ci.py config > "$RUNNER_TEMP/opencode.json"
+          export OPENCODE_CONFIG="$RUNNER_TEMP/opencode.json" BUILD_MODEL=ci
+          export AUTOBUILD_AGENT="python3 lifecycle/autobuild_ci.py agent"
+          git config user.name "SecuRAX autobuild"; git config user.email "autobuild@securax.local"
+          start="$(git rev-parse HEAD)"
+          set +e; bash ./securax autobuild "$TASK" --tries "$TRIES" --force; rc=$?; set -e
+          if [ "$rc" = 0 ] && [ "$(git rev-parse HEAD)" != "$start" ]; then
+            git format-patch --stdout "$start..HEAD" > "$RUNNER_TEMP/change.patch"
+            echo "green=1" >> "$GITHUB_OUTPUT"
+          else
+            echo "green=0" >> "$GITHUB_OUTPUT"
+          fi
+          echo "slug=$(python3 lifecycle/autobuild_ci.py slug)" >> "$GITHUB_OUTPUT"
+          python3 lifecycle/autobuild_ci.py summary "$rc" >> "$GITHUB_STEP_SUMMARY"
+      - if: steps.run.outputs.green == '1'
+        uses: actions/upload-artifact@v7
+        with: { name: change, path: "${{ runner.temp }}/change.patch" }
+      - if: steps.run.outputs.green != '1'
+        uses: actions/upload-artifact@v7
+        with: { name: escalation-brief, path: "escalation-brief.md", if-no-files-found: ignore }
+
+  publish:
+    needs: build
+    if: needs.build.outputs.green == '1'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+      issues: write
+    env:
+      GH_TOKEN: ${{ github.token }}
+      TASK: ${{ github.event_name == 'workflow_dispatch' && inputs.task || github.event.issue.title }}
+      ISSUE: ${{ github.event.issue.number }}
+      SLUG: ${{ needs.build.outputs.slug }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - uses: actions/download-artifact@v4
+        with: { name: change, path: "${{ runner.temp }}" }
+      - name: "Open the PR and start its checks"
+        run: |
+          git config user.name "SecuRAX autobuild"; git config user.email "autobuild@securax.local"
+          br="autobuild/$SLUG-$GITHUB_RUN_ID"
+          git checkout -q -b "$br" && git am -q "$RUNNER_TEMP/change.patch" && git push -q -u origin "$br"
+          title="autobuild: $(printf '%s' "$TASK" | head -1 | cut -c1-80)"
+          body="$(printf 'Built by the open models through ./securax autobuild; the gates (verify, diffcheck, forge) passed in run %s.\n\n%s\n\nAssisted-by: SecuRAX open models' "$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID" "${ISSUE:+Closes #$ISSUE}")"
+          url="$(gh pr create --base main --head "$br" --title "$title" --body "$body" 2>&1)" || {
+            url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/compare/main...$br"
+            echo "::warning::Could not open the PR (turn on Settings > Actions > General > Allow GitHub Actions to create pull requests). Open it from: $url"; }
+          gh workflow run devsecops.yml --ref "$br" || true
+          gh workflow run e2e.yml --ref "$br" || true
+          echo "PR: $url" >> "$GITHUB_STEP_SUMMARY"
+          [ -z "$ISSUE" ] || gh issue comment "$ISSUE" --body "Green, PR: $url (its checks are running)." || true
