@@ -75,3 +75,13 @@ def test_only_the_scanner_touches_the_docker_socket_and_it_does_not_stay_running
     assert holders == ["trivy"], holders
     t = services["trivy"]
     assert t.get("restart") == "no" and "sleep infinity" not in " ".join(t.get("entrypoint", []))
+
+
+def test_the_estate_runs_one_nginx_line():
+    # The Command Center's web server stayed on nginx 1.27 while the edge moved to 1.30, so the cockpit's "oldest running
+    # software" stayed red for a year-old image. One line for every nginx: raising one raises all.
+    found = {}
+    for f in sorted(COMPOSE.glob("*.yml")):
+        for m in re.finditer(r"image:\s*nginx:([^@\s]+)", f.read_text()):
+            found.setdefault(m.group(1), []).append(f.name)
+    assert len(found) == 1, f"more than one nginx line in the estate: {found}"

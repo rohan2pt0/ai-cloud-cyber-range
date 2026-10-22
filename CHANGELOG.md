@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Fixed
+- **The Command Center's web server ran an 18-month-old nginx** (1.27, superseded in April 2025; the cockpit showed "Oldest running software: 553 days"). It now runs the same nginx 1.30 as the HTTPS edge, on the current digest, and a test keeps every nginx in the estate on one line. It arrives with `./securax update` (backup first, rolls back by itself if the estate does not come up).
 - **A phone paired over HTTPS never synced.** The Life OS and `./securax sync-link` gave it `sync.<domain>`, an address the page may not call (another origin). They now use the Command Center's own `/sync`, and a device paired the old way is moved over by itself, token kept. Found while building the phone journey.
 - **Rail tests that would not have caught a weakened rail**, found by mutation testing: the "never allow the none algorithm" test was satisfied by a later, unrelated error, and nothing checked a wrong-shaped AI control file, a malformed sign-in token, a weak signing key, or the sync guard's window edges. Each now has its test.
 

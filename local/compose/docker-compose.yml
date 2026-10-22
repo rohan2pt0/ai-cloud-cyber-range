@@ -396,7 +396,7 @@ services:
 
   # ---- Guiding Map PWA (your local-first life OS) — tiny, always-on, private ----
   guiding-map:
-    image: nginx:1.27-alpine@sha256:65645c7bb6a0661892a8b03b89d0743208a18dd2f3f17a54ef4b76fb8e2f2a10
+    image: nginx:1.30-alpine@sha256:c59d1f8b1e0e42da75be973424cd72e23f7f8adfb54e982f4d1cd0216a5a5576
     security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
     profiles: ["core", "security", "ai"]
     restart: unless-stopped

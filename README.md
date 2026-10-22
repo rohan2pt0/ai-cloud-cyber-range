@@ -111,6 +111,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- The Command Center's web server ran an 18-month-old nginx
 - A phone paired over HTTPS never synced
 - Rail tests that would not have caught a weakened rail
 - [Mutation testing of the safety rails](docs/securax/101-A-SANDBOX-THAT-PROVES-MORE.md)
@@ -118,7 +119,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - [A sandbox that proves more](docs/securax/101-A-SANDBOX-THAT-PROVES-MORE.md)
 - Security round
 - Roadmap sweep: dated items done today
-- [One look across the estate](docs/securax/100-DESIGN-STANDARD.md)
 
 **Release 0.2.0 - 2026-10-17:**
 
