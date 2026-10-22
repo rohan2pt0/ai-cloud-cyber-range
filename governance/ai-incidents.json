@@ -1,0 +1,25 @@
+{
+ "about": "AI incident runbooks (doc 105, gap G11), read by ./securax incident runbook and by ./securax incident open --kind. Each kind says how you notice it, how to contain it with the estate's own controls, what evidence to keep, and which reporting clocks usually start. 'regulators' are the ones that apply to most estates; add your sector's (rbi-nbfc, sebi-cscrf, irdai, ...) with --regulators. Not legal advice: whether a clock starts depends on the facts and the text of each rule.",
+ "kinds": [
+  {"id": "ai-jailbreak", "title": "A jailbreak or prompt injection is being used against a model",
+   "signs": ["the gateway's rails block the same pattern again and again from one caller", "a model answers outside its use case or reveals its system prompt", "a canary token turns up in an answer"],
+   "contain": ["./securax ai stop MODEL --reason \"jailbreak in use\"  (or: ai stop all), then find the caller in the audit log", "./securax gateway-auth revoke NAME for a key that is being abused", "add the pattern to the rails, prove it with the red team, then ./securax ai resume MODEL"],
+   "evidence": ["./securax audit verify (the hash-chained gateway log)", "./securax incident seal ID --evidence the exported log lines and the prompts"],
+   "regulators": ["cert-in"], "note": "a jailbreak that reached data is also ai-data-leak"},
+  {"id": "ai-data-leak", "title": "Personal or confidential data left through a model",
+   "signs": ["an output rail caught a secret or personal data in an answer", "data marked local was routed to a cloud model", "a user reports seeing someone else's data in an answer"],
+   "contain": ["./securax ai stop all --reason \"data leak through a model\"", "check the data-localisation routing and the cloud allow-list before resuming", "rotate any key or secret that appeared in an answer"],
+   "evidence": ["./securax audit verify", "which records, whose, how many: the facts the 72-hour report needs (./securax incident set ID data_affected=...)"],
+   "regulators": ["cert-in", "dpdp"], "note": "DPDP asks for a report to the Board without delay and a fuller one within 72 hours, and a notice to each person affected"},
+  {"id": "ai-abuse", "title": "A model or the AI allowance is being abused (cost, volume or misuse)",
+   "signs": ["a caller's allowance runs out far faster than usual", "requests arrive outside working hours from one key", "the model is used for a purpose outside its registered use case"],
+   "contain": ["./securax ai budget (who is using what), then ./securax gateway-auth revoke NAME", "./securax ai stop MODEL --reason \"abuse\" if the misuse continues"],
+   "evidence": ["./securax audit verify", "the allowance ledger for the period"],
+   "regulators": [], "note": "usually no clock starts unless data or a system was compromised; record the decision with ./securax incident note"},
+  {"id": "ai-poisoned-document", "title": "A poisoned document or model is in use (retrieval or weights)",
+   "signs": ["answers change after a document was added to a knowledge base", "./securax ai check reports a CHANGED or UNLISTED model", "./securax ai check --scan finds code in a weight file"],
+   "contain": ["./securax ai stop MODEL --reason \"poisoned input\"", "remove the document or model; pull the approved weights again and re-run ./securax ai check", "re-run the red team against the cleaned model before resuming"],
+   "evidence": ["the document or file itself, sealed: ./securax incident seal ID --evidence FILE", "./securax ai check output before and after"],
+   "regulators": ["cert-in"], "note": "if the poisoned answers reached customers' data or decisions, treat it as ai-data-leak too"}
+ ]
+}

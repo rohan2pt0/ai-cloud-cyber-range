@@ -86,7 +86,7 @@ Each item is in `governance/queue.json`, so `./securax backlog` and the daily Ba
 | G8 | Rate limits, allowances and the audit chain move to a shared store when more than one gateway runs | Bypass by spreading calls over replicas | when a second replica is first used |
 | G9 | Provider keys leave the plaintext `.env` for an encrypted file (age/SOPS) unlocked at start | Key theft from a copied disk | 2026-11-19 |
 | G10 | Chat memories: off by default for shared accounts, reviewable, and inspected like any context | ASI06 memory poisoning | 2026-11-05 |
-| G11 | An AI incident runbook (jailbreak in use, data leaked through a model, model abuse, poisoned document) and a tabletop for it, wired to the incident clock | Incident response; FREE-AI incident reporting | 2026-10-30 |
+| G11 | An AI incident runbook (jailbreak in use, data leaked through a model, model abuse, poisoned document) and a tabletop for it, wired to the incident clock | Incident response; FREE-AI incident reporting | done 2026-10-22: `./securax incident runbook`, `incident open --kind`, tabletop `ai-incident` |
 | G12 | Requirement-level maps in `comply` for OWASP LLM and Agentic, RBI FREE-AI, ISO 42001, EU AI Act (deployer), SAIF, DASF, MAESTRO and the MeitY guidelines; a board AI-policy template | Assurance and audit | FREE-AI and OWASP 2026-10-29; the rest 2026-11-26 |
 | G13 | Token-exact context management: count with the model's tokenizer, trim the oldest turns, never cut the system context | Silent truncation; LLM10 cost | 2026-12-10 |
 | G14 | The audit chain survives restarts and is anchored daily to the off-site backup (append-only) | Log tampering after a compromise | 2026-11-26 |
