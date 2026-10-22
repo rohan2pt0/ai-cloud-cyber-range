@@ -1,0 +1,24 @@
+{
+  "_doc": "Services whose image is pinned by tag AND digest (doc 87): the ones another device or the internet can reach. Keep the tag for readers; Dependabot (docker-compose ecosystem) proposes new tags, and the weekly supply-chain-watch job runs tools/digest_check.py, which reports any pinned tag that moved to a new build (--write takes it). local/compose/tests/test_container_hardening.py fails if one loses its @sha256 pin.",
+  "files": {
+    "docker-compose.yml": {
+      "guiding-map": "the Life OS web server: published on BIND_HOST (other devices) and reached as hub.<domain> through the tunnel",
+      "open-webui": "Chat: published on BIND_HOST and reached as chat.<domain> through the tunnel",
+      "cloudflared": "the online tunnel: the one container that talks to the internet for the estate",
+      "vaultwarden": "the password manager: published on BIND_HOST for the Bitwarden apps on phones and laptops",
+      "anythingllm": "private document chat: published on BIND_HOST",
+      "n8n": "automations: published on BIND_HOST",
+      "grafana": "dashboards: published on BIND_HOST"
+    },
+    "tls.yml": {
+      "tls-edge": "the TLS edge: the one HTTPS port every device reaches (BIND_HOST:443)"
+    },
+    "stage-sprout.yml": {
+      "keycloak": "sign-in (sprout stage): published on BIND_HOST",
+      "openbao": "secrets (sprout stage): published on BIND_HOST",
+      "seaweedfs": "object storage (sprout stage): published on BIND_HOST",
+      "prometheus": "metrics (sprout stage): published on BIND_HOST",
+      "alertmanager": "alerts (sprout stage): published on BIND_HOST"
+    }
+  }
+}

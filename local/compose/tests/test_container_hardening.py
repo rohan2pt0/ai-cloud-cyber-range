@@ -1,10 +1,62 @@
 """Every service in the estate refuses privilege gain through setuid programs, and none runs an image that changes under you
-(doc 87). A new service that forgets either fails here, not in production."""
+(doc 87). A new service that forgets either fails here, not in production. The services other devices or the internet can reach
+are also pinned by digest; their list lives in local/compose/digest-pins.json."""
+import json
 import pathlib
+import re
 
 import yaml
 
 ROOT = pathlib.Path(__file__).resolve().parents[3]
+COMPOSE = ROOT / "local/compose"
+PINNED = re.compile(r"^[^@\s]+:[^@\s]+@sha256:[0-9a-f]{64}$")   # name:tag@sha256:<64 hex> (the tag stays, for readers)
+
+
+class _ComposeLoader(yaml.SafeLoader):
+    """Safe YAML plus Compose's own merge tags (`!override`, `!reset`), read as the plain value they carry."""
+
+
+for _tag in ("!override", "!reset"):
+    _ComposeLoader.add_constructor(_tag, lambda loader, node: loader.construct_sequence(node) if isinstance(node, yaml.SequenceNode)
+                                   else loader.construct_mapping(node) if isinstance(node, yaml.MappingNode) else loader.construct_scalar(node))
+
+
+def _services(fname):
+    return yaml.load((COMPOSE / fname).read_text(), Loader=_ComposeLoader)["services"]   # noqa: S506 (a SafeLoader subclass)
+
+
+def _digest_pins():
+    return json.loads((COMPOSE / "digest-pins.json").read_text())["files"]
+
+
+def test_internet_and_device_facing_images_are_pinned_by_digest():
+    pins = _digest_pins()
+    assert pins, "digest-pins.json lists no services"
+    for fname, names in pins.items():
+        services = _services(fname)
+        for name in names:
+            assert name in services, f"{fname}: {name} is listed in digest-pins.json but is not a service any more"
+            image = str(services[name].get("image", ""))
+            assert PINNED.match(image), f"{fname}: {name} image {image!r} must be name:tag@sha256:<digest> (doc 87)"
+
+
+def test_every_service_published_beyond_loopback_is_digest_pinned():
+    # A new service that takes BIND_HOST (other devices can reach it) must join the digest list, not slip past it.
+    pins = _digest_pins()
+    for fname in ("docker-compose.yml", "tls.yml", "stage-sprout.yml"):
+        services = _services(fname)
+        for name, svc in services.items():
+            if "build" in svc or "image" not in svc:
+                continue                                    # our own images are built here (Dependabot keeps their base images current)
+            if any("BIND_HOST" in str(p) for p in svc.get("ports") or []):
+                assert name in pins.get(fname, {}), f"{fname}: {name} is published on BIND_HOST; add it to digest-pins.json"
+
+
+def test_the_digest_pin_check_refuses_a_bare_tag():
+    assert PINNED.match("nginx:1.30-alpine@sha256:" + "a" * 64)
+    assert not PINNED.match("nginx:1.30-alpine")
+    assert not PINNED.match("nginx@sha256:" + "a" * 64)            # the tag must stay, so a reader knows the version
+    assert not PINNED.match("nginx:1.30-alpine@sha256:" + "a" * 63)
 
 
 def test_every_service_sets_no_new_privileges_and_no_image_is_latest():

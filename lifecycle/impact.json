@@ -64,6 +64,8 @@
     "local/compose/tls-edge.generated.conf",
     "local/compose/sprout/**",
     "local/compose/stage-sprout.yml",
+    "local/compose/digest-pins.json",
+    "tools/digest_check.py",
     "local/compose/tests/**",
     "local/scripts/**",
     "START-HERE*",

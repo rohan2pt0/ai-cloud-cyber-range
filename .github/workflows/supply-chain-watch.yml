@@ -23,6 +23,8 @@ jobs:
         run: python3 governance/inspector.py --selftest
       - name: compare every pinned package with the registry and inspect any newer version
         run: python3 governance/inspector.py --watch --ci | tee watch.json
+      - name: "digest pins: has a pinned image tag moved to a new build (doc 87)"
+        run: python3 tools/digest_check.py
       - uses: actions/upload-artifact@v4
         if: always()
         with:

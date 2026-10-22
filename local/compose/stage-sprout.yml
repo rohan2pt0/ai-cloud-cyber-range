@@ -30,7 +30,7 @@ services:
     security_opt: ["no-new-privileges:true"]
 
   keycloak:
-    image: quay.io/keycloak/keycloak:26.0.7
+    image: quay.io/keycloak/keycloak:26.0.7@sha256:4388e2379b7e870a447adbe7b80bd61f5fbf04e925832b19669fda4957f05a81
     profiles: ["sprout"]
     restart: unless-stopped
     command: ["start", "--http-enabled=true", "--hostname-strict=false", "--health-enabled=true"]
@@ -56,7 +56,7 @@ services:
     security_opt: ["no-new-privileges:true"]
 
   openbao:
-    image: ghcr.io/openbao/openbao:2.1.0
+    image: ghcr.io/openbao/openbao:2.1.0@sha256:7de07aa6df3937d44c96c2d65c188b2d4a70546f2a764ad4510301305af6a223
     profiles: ["sprout"]
     restart: unless-stopped
     # NOTE: no -config flag. The image entrypoint already loads /openbao/config; passing it again defines the listener
@@ -79,7 +79,7 @@ services:
     security_opt: ["no-new-privileges:true"]
 
   seaweedfs:
-    image: chrislusf/seaweedfs:3.80
+    image: chrislusf/seaweedfs:3.80@sha256:1055999e08eed1789b0ae45d235126e4495e23d3fb9d6396293fd42539b1ae6a
     profiles: ["sprout"]
     restart: unless-stopped
     command: ["server", "-dir=/data", "-s3", "-s3.config=/etc/seaweedfs/s3.json", "-ip.bind=0.0.0.0"]
@@ -97,7 +97,7 @@ services:
     security_opt: ["no-new-privileges:true"]
 
   prometheus:
-    image: prom/prometheus:v2.55.1
+    image: prom/prometheus:v2.55.1@sha256:2659f4c2ebb718e7695cb9b25ffa7d6be64db013daba13e05c875451cf51b0d3
     profiles: ["sprout"]
     restart: unless-stopped
     command:
@@ -115,7 +115,7 @@ services:
     security_opt: ["no-new-privileges:true"]
 
   alertmanager:
-    image: prom/alertmanager:v0.27.0
+    image: prom/alertmanager:v0.27.0@sha256:e13b6ed5cb929eeaee733479dce55e10eb3bc2e9c4586c705a4e8da41e5eacf5
     profiles: ["sprout"]
     restart: unless-stopped
     command: ["--config.file=/etc/alertmanager/alertmanager.yml", "--storage.path=/alertmanager"]
