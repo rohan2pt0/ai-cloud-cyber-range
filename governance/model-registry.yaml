@@ -1,5 +1,5 @@
-# AI model & asset registry — the "model inventory, risk classification, approval gates,
-# traceability" artefact (Deloitte/EXL/UAE JDs). Treated as code; changes go through PR +
+# AI model & asset registry — model inventory, risk classification, approval gates and
+# traceability. Treated as code; changes go through PR +
 # the approval_gate below. An AI-SPM tool / CI reads this to enforce that only approved,
 # risk-classified models are used. This is the governance spine of ISO/IEC 42001 + NIST AI RMF MAP.
 version: 1

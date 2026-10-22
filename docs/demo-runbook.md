@@ -57,9 +57,8 @@ regenerates on every CI run so it never goes stale. Move fluidly from this to th
 conversation (RBI FREE-AI, DPDP, EU AI Act residency).
 
 ## 5. Close (1 min)
-"It's 80/20: ~2,000 lines of tested code and IaC that touch every specialization track in the
-JD — secure-AI engineering, MLSecOps, AI-SPM, guardrails, agentic SecOps, governance — and
-I use the same plumbing for my own OPSEC and FIRE experiments. Here's the repo and the JD
+"It's 80/20: tested code and IaC covering secure-AI engineering, MLSecOps, AI-SPM, guardrails,
+agentic SecOps and governance, all of it open for you to verify. Here's the repo and the
 traceability matrix."
 
 ## Pre-flight checklist

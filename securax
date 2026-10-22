@@ -1215,6 +1215,12 @@ EOF2
     #   ./securax gateway-auth status|enable|disable|key add NAME --roles service|key list|revoke NAME|rotate NAME|check-token JWT
     shift; exec python3 "$ROOT/governance/gateway_auth.py" "$@"
     ;;
+  readiness)
+    # One NBFC's own readiness for the RBI cyber directions of 2026 (doc 106): the score, the vital few gaps, the recurring duties
+    # (VA, PT, IS audit, CISO to the Board), a board pack and an auditor's sheet. Private, in vault/readiness/.
+    #   ./securax readiness [demo|start NAME --layer III|IV|V|mark|done|report|list]
+    shift; exec python3 "$ROOT/governance/readiness.py" "$@"
+    ;;
   comply)
     # Regulatory gap assessment, requirement by requirement, every claim verifiable, for every map in governance/regmap.py MAPS (RBI, SEBI CSCRF,
     # and the rest). Entity-owned obligations are listed separately, never counted as covered.   ./securax comply [MAP|all] [--category qre] [--md|--json|--verify]
@@ -2083,6 +2089,7 @@ DEFEND, RESPOND, PRACTISE
 
 REGULATORY & EVIDENCE (any regulator: RBI, SEBI, CERT-In, IRDAI, DPDP, others as data files)
   controls ...   the BFSI control matrix: works with no file (built-in starter library); your own workbook in Downloads replaces it
+  readiness      one NBFC's readiness for the RBI cyber directions 2026: score, vital gaps, VA/PT/audit dates, board pack (demo first)
   comply [map]   requirement-by-requirement gap view, every mapped regulation (or one: comply rbi)   ccsp   CCSP map
   evidence       audit pack (checksummed)             incident ...   reporting clock: open, due, draft, file, seal, rollup
   risks ...      risk register + treatment plans (V/T/R), linked to controls; overdue treatments; CII self-check

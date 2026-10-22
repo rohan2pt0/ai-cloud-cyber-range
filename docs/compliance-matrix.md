@@ -4,8 +4,8 @@
 > **Status: 🟡 Partly built.** The original cyber-range lab; superseded by doc 04. [What the lights mean](index.md#the-status-lights)
 <!-- status:end -->
 
-One estate, mapped to every framework the five JDs name. This is the "working command of
-NIST AI RMF, ISO/IEC 42001, CSA MAESTRO/AICM and Google SAIF" artefact.
+One estate, mapped to the main AI governance frameworks: NIST AI RMF, ISO/IEC 42001, CSA
+MAESTRO/AICM and Google SAIF.
 
 ## NIST AI RMF (GOVERN / MAP / MEASURE / MANAGE)
 | Function | Implemented by |

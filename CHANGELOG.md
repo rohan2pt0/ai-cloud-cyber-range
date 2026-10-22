@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Security
+- Removed references to the job descriptions some modules were first built against: the public repository carries no employer or role hints.
 - Gateway: a prompt sent as multi-part content (`[{"type": "text"}]`) skipped every input rail, and the system message (where chat apps put retrieved documents) was never inspected; both are now inspected and redacted, and ordinary system-prompt wording is recorded, not blocked (doc 105). The AI-SPM RAG check now requires that inspection.
 
 ### Fixed
@@ -18,6 +19,7 @@ for the versioning and release policy.
 - **Rail tests that would not have caught a weakened rail**, found by mutation testing: the "never allow the none algorithm" test was satisfied by a later, unrelated error, and nothing checked a wrong-shaped AI control file, a malformed sign-in token, a weak signing key, or the sync guard's window edges. Each now has its test.
 
 ### Added
+- `./securax readiness` (doc 106): one NBFC's own readiness for the RBI cyber directions of 2026, by chapter, with evidence and provenance for every mark, the vital few gaps, VA/PT/IS-audit/CISO-to-Board dates, a board pack and an auditor's sheet, all private; `readiness demo` shows it on sample data. A landing page for NBFCs and auditors (`website/nbfc/`) with a sample board pack. Doc 106 sets the beachhead, the offer, one price table and a 30-day validation plan.
 - Doc 105: the AI plane against the world's reference architectures, layer by layer and framework by framework, with every remaining gap dated in the queue.
 - Your papers (doc 104): the Life OS asks for the papers that hold the numbers (Form 16, AIS, CAS, a year of bank statements, EPF, NPS, policies, IDs) and says where to get each; `./securax lifeos docs` now also reads Excel, Word, CSV and text, and fills income, tax, spending, saving rate and portfolio value from them; `./securax lifeos papers` prints the list.
 - **Life papers, read for you** (doc 104): `./securax lifeos import workbook` reads your life workbooks and `./securax lifeos docs` reads policies, statements and ID scans (local OCR), on your own machine. Every open issue (a missing nominee, a lapsing policy, a login outside the password manager, a password left in a sheet, a late goal) becomes a dated Life OS action; the Inbox shows the vital fifth first, ticks off what the next import shows fixed, and calendar alarms come 7 days and 1 day before. Secrets are never copied, numbers are masked, nothing leaves the machine.

@@ -46,7 +46,7 @@ INDMoney connector in the app; never hard-code account numbers here (and if you 
 `self_opsec.py` will flag them).
 
 ## Why this belongs in the range
-- **Privacy-by-design & DPDP** — the exact skill four JDs ask for, applied to real data.
+- **Privacy-by-design & DPDP** — applied to real data.
 - **Indirect prompt-injection** — OSINT text is attacker-controlled; sanitising it is OWASP
   LLM01/ASI01 in practice.
 - **Secure automation** — connector use with least privilege and audit is the agentic-SecOps

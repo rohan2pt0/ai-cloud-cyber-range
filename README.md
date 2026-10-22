@@ -34,11 +34,11 @@ even offline. Your data stays on your device.
 
 The latest additions, newest first (the Command Center marks each one New for 30 days):
 
+- **2026-10-22** · [NBFC cyber readiness](docs/securax/106-THE-BEACHHEAD-NBFC-READINESS.md): A Board-ready answer to "where do we stand on the Directions?", with proof, instead of a consultant's spreadsheet that dates in a week. `./securax readiness demo`
 - **2026-10-22** · [Life papers, read for you](docs/securax/104-LIFE-PAPERS-READ-FOR-YOU.md): No more updating spreadsheets by hand to know what is still open: the few things that matter come to you, with a date and an alarm. `./securax lifeos import workbook`
 - **2026-10-21** · [Your progress](docs/securax/93-PROGRESS-YOU-CAN-SEE.md): You see, every week, that your days and your estate are getting better, and you always know the one next step. `./securax progress`
 - **2026-10-21** · [Venture (is it paying its way?)](docs/securax/96-ONE-PLATFORM-MANY-PRODUCTS.md): You know when the time and money you put in come back, and which number to move first. `./securax venture`
 - **2026-10-21** · [The suite (built for one, ready for many)](docs/securax/97-BUILT-FOR-ONE-READY-FOR-MANY.md): You can see which edition could be sold today and the one gap that unlocks the most, instead of guessing. `./securax suite`
-- **2026-10-21** · [Govern (for decision makers)](docs/securax/94-GOVERN.md): Leaders decide what to fix first, who to hire and what to spend, in an afternoon instead of a consulting engagement. `./securax govern`
 
 **Practise and defend**
 
@@ -53,6 +53,7 @@ The latest additions, newest first (the Command Center marks each one New for 30
 
 | | What it does | How to open it |
 |---|---|---|
+| 🟡 [NBFC cyber readiness](docs/securax/106-THE-BEACHHEAD-NBFC-READINESS.md) | Your own readiness for a regulation, NBFCs under the RBI cyber directions 2026 first (SEBI CSCRF, UK CAF and the AI maps work the same way): only your chapter's or category's requirements, each marked with evidence, owner and date; the vital few gaps; VA, PT, IS audit and CISO-to-Board dates; a board pack and an auditor's sheet, kept on your machine. | `./securax readiness demo` |
 | 🟢 [BFSI control matrix](docs/securax/66-BFSI-CONTROL-LIBRARY-AND-NAVIGATOR.md) | Every Indian BFSI cyber obligation as one matrix: what applies to you, what is proven, and what to close next. Works with no file from you. | `./securax go` |
 | 🟢 [Regulator incident clock](docs/securax/36-IDENTITY-INCIDENT-RESIDENCY.md) | Every applicable regulator's reporting deadline for an incident, counting down, with the drafts ready. | `./securax incident` |
 | 🟡 [Regulatory gap maps](docs/securax/35-REGULATORY-GAP-ASSESSMENT.md) | Requirement-by-requirement maps (RBI, SEBI CSCRF, NIST AI 600-1, post-quantum and more) with the evidence for each, checked on every change. | `./securax comply` |
@@ -162,8 +163,8 @@ Everything, with details: [`CHANGELOG.md`](CHANGELOG.md).
 
 A multi-cloud, defence-in-depth **AI security cyber range** for hands-on mastery of secure-AI
 engineering, **AI-for-security (Agentic SOC)**, adversarial ML / red teaming, AI-SPM
-(CNAPP/CSPM/DSPM), guardrail/runtime security, and AI governance — built to demonstrate the
-skills in eight senior AI-security JDs 
+(CNAPP/CSPM/DSPM), guardrail/runtime security, and AI governance — built to show each of these
+practices working end to end
 
 Runs on a Powerful laptop by default (Ollama + Docker + kind), and bursts into
 **AWS + GCP + Azure** free tiers under a hard **₹2,500/month** ceiling with automated
@@ -204,7 +205,7 @@ python3 redteam/run_attacks.py --fail-under 0.9   # adversarial-ML scorecard
 | `personal-rnd/` | **defensive** OPSEC / self-OSINT / LifeOS / FIRE tools (self-scoped) | privacy engineering, indirect-injection defence |
 | `mcp/` | **MCP server** — let an AI assistant operate the estate (9 safe tools) | intelligent, hands-free control |
 | `integrations/` | n8n workflows + Claude/Google/Microsoft connectivity | automation, API wiring |
-| `docs/` | architecture, **JD traceability**, compliance crosswalk, cost controls, demo runbook | governance, the story you tell |
+| `docs/` | architecture, traceability, compliance crosswalk, cost controls, demo runbook | governance, the story you tell |
 | `.github/workflows/` | DevSecOps: tests + red-team gate + SAST + secrets + SBOM + container/IaC scan | secure MLOps/LLMOps, CI/CD |
 
 ## Design principles

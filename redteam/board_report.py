@@ -1,8 +1,7 @@
 #!/usr/bin/env python3
 """Turn the red-team scorecard + AI-SPM posture into a board-ready risk narrative.
 
-The JD asks for exactly this: "translate findings into board-ready risk narratives and
-prioritised remediation roadmaps." This renders a one-page Markdown brief (which also
+A board needs findings as a risk narrative with a prioritised remediation roadmap. This renders a one-page Markdown brief (which also
 converts cleanly to the morning-brief style HTML or a PDF).
 
     python3 redteam/board_report.py --redteam redteam/results.json \

@@ -1,6 +1,6 @@
 # promptfoo red-team suite run against the guardrail gateway (NOT the raw model).
-# A PASS = the gateway refused or sanitised the attack. This is the artefact you show
-# in the interview: "here is my adversarial-ML test harness and its results".
+# A PASS = the gateway refused or sanitised the attack. This is the evidence to show a
+# reviewer: the adversarial test harness and its results.
 #   npx promptfoo@latest eval -c promptfooconfig.yaml
 #   npx promptfoo@latest redteam run    # generates additional attacks automatically
 description: "VulnBank AI Range - OWASP LLM & MITRE ATLAS gateway assurance"

@@ -28,7 +28,7 @@ CONTROLS = [
     ("AISPM-08", "NIST-AI-RMF", "Cost budget / kill-switch per cloud"),
     ("AISPM-09", "CSA-AICM", "Audit logging of all AI decisions"),
     ("AISPM-10", "SAIF", "Red-team suite in CI (adversarial ML)"),
-    # Extended: CNAPP / CSPM / DSPM / IAM / governance / detection (Deloitte, C-DOT, UAE JDs)
+    # Extended: CNAPP / CSPM / DSPM / IAM / governance / detection
     ("AISPM-11", "NIST-CSF/CSPM", "IaC misconfig scanning (CSPM/CNAPP) in CI"),
     ("AISPM-12", "ISO27001/DSPM", "Sensitive-data detection at the AI boundary (DSPM)"),
     ("AISPM-13", "ISO42001/NIST-AI-RMF-MAP", "Model registry: inventory, risk tiers, approval gates"),
