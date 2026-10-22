@@ -489,6 +489,22 @@ window.SECURAX_FEATURES = {
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION/"
   },
   {
+   "id": "life-papers",
+   "group": "Your own tools",
+   "icon": "checklist",
+   "name": "Life papers, read for you",
+   "what": "Your life workbooks and private documents (policies, statements, ID scans) are read on your own machine: every open issue becomes a dated Life OS action, the vital fifth first, with calendar alarms; a missing nominee, a lapsing policy or a password left in a sheet is found for you.",
+   "cmd": "./securax lifeos import workbook",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "added": "2026-10-22",
+   "outcome": "No more updating spreadsheets by hand to know what is still open: the few things that matter come to you, with a date and an alarm.",
+   "shows": "the Life OS Inbox: The vital few",
+   "light": "amber",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/104-LIFE-PAPERS-READ-FOR-YOU/"
+  },
+  {
    "id": "knowledge",
    "group": "Your own tools",
    "icon": "book",

@@ -6655,15 +6655,24 @@ function renderPlaybook(){
     return made;
   };
   window.gmReviewOpen = function (rid) { S_("gm_review_open", rid || ""); renderAll(); };
-  // Google Keep (and other) notes the estate imported: portal/inbox-import.json, merged once by id (only when served over http/https).
+  // Google Keep notes, your life workbooks and documents, as the estate imported them: portal/inbox-import.json, merged once by id
+  // (only when served over http/https).
   function ibImport() {
     if (!(window.fetch && location.protocol.indexOf("http") === 0)) return;
     fetch("portal/inbox-import.json", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
       if (!j || !j.items) return;
-      var a = ibAll(), have = {}, added = 0;
+      if (j.papers) { try { localStorage.setItem("gm_papers", JSON.stringify(j.papers)); } catch (e) {} }
+      var a = ibAll(), have = {}, added = 0, closed = 0, gone = {};
       a.forEach(function (x) { have[x.id] = 1; });
       j.items.forEach(function (x) { if (x.id && !have[x.id]) { a.push(Object.assign({ kind: "note", area: "", due: "", next: "", done: "", created: Date.now() }, x)); added++; } });
-      if (added) { ibSave(a); if (typeof gmToast === "function") gmToast(added + " imported note(s) are in your Inbox."); renderAll(); }
+      // Fixed at the source (the workbook or the document now says it is done): tick it off here. Only imported items (lw-/ld-), never your own.
+      (j.resolved || []).forEach(function (id) { gone[id] = 1; });
+      a.forEach(function (x) { if (gone[x.id] && !x.done && /^l[wd]-/.test(String(x.id))) { x.done = ymd(); closed++; } });
+      if (added || closed) {
+        ibSave(a);
+        if (typeof gmToast === "function") gmToast((added ? added + " imported item(s) are in your Inbox" : "") + (added && closed ? "; " : "") + (closed ? closed + " fixed at the source, ticked off" : "") + ".");
+        renderAll();
+      }
     }).catch(function () {});
   }
   setTimeout(ibImport, 1500);
@@ -6673,6 +6682,32 @@ function renderPlaybook(){
       + (x.next && x.next !== x.t ? '<div class="ibsub">' + esc(x.t) + '</div>' : "")
       + '<div class="ibsub">' + esc(IB_KINDS[x.kind] || "Action") + (x.area ? " · " + esc(x.area) : "") + (x.due ? " · due " + esc(x.due) + (late ? " (late)" : "") : "") + '</div></div>'
       + '<button class="btn" onclick="gmInboxDone(\'' + ibSafe(x.id) + '\')">Done</button></div>';
+  }
+  // Your papers (doc 104): the papers are the input, not a spreadsheet. The list says what to drop in and where to get it;
+  // ./securax lifeos docs reads them on the laptop and the figures fill themselves. Before the first read, the starter list.
+  var PAPERS_START = [
+    ["Form 16 (latest year)", "your annual income and the tax already paid", "from your employer's HR or payroll portal"],
+    ["AIS or Form 26AS", "every income the tax department sees", "income-tax e-filing portal: Annual Information Statement"],
+    ["CDSL or NSDL consolidated account statement (CAS)", "all your shares and mutual funds", "ask for it by e-mail with your PAN"],
+    ["Bank statements, last 12 months, each account", "your real spending", "net banking: Statements, 12 months, PDF or Excel"],
+    ["EPF passbook", "your provident fund balance and nominee", "the EPFO member passbook page, with your UAN"],
+    ["Every insurance policy", "renewal dates, cover and nominees", "the insurer's app or e-mail: the policy schedule PDF"],
+    ["Aadhaar and PAN for each family member", "who is missing an ID", "a scan or photo of each card"]];
+  var PAPER_FIG = { gross_income: "Annual income (Form 16)", tax_paid: "Tax paid", money_in: "Money in (statements)", money_out: "Money out (statements)",
+    saving_rate_pct: "Saving rate", portfolio_value: "Shares and funds (CAS)", epf_balance: "EPF", nps_balance: "NPS", loan_outstanding: "Loans owed" };
+  function papersHTML() {
+    var pp = G("gm_papers", null), rupee = function (v) { return "\u20b9" + Number(v).toLocaleString("en-IN"); };
+    var list = pp && pp.checklist ? pp.checklist.map(function (c) { return [c.name, c.why, c.where, c.have]; }) : PAPERS_START.map(function (c) { return c.concat([0]); });
+    var inN = list.filter(function (c) { return c[3]; }).length, missing = list.filter(function (c) { return !c[3]; });
+    var h = '<h3>Your papers (' + inN + ' of ' + list.length + ' in)</h3><div class="info">No spreadsheet to fill: your papers are the input. Save each one, any format and any name, in <b>' + esc((pp && pp.folder) || "vault/life/docs") + '/</b> on the laptop, then run <b>./securax lifeos docs</b>. It reads them there (nothing leaves the machine) and the figures below fill themselves.</div>';
+    if (missing.length) h += '<div class="ibpapers">' + missing.slice(0, 3).map(function (c) {
+      return '<div class="ibrow"><div class="ibt"><b>Next: ' + esc(c[0]) + '</b><div class="ibsub">For ' + esc(c[1]) + '. Get it ' + esc(c[2]) + '.</div></div></div>';
+    }).join("") + (missing.length > 3 ? '<details class="ibnotes"><summary>The other ' + (missing.length - 3) + ' to collect</summary>' + missing.slice(3).map(function (c) {
+      return '<div class="ibrow"><div class="ibt"><b>' + esc(c[0]) + '</b><div class="ibsub">For ' + esc(c[1]) + '. Get it ' + esc(c[2]) + '.</div></div></div>'; }).join("") + '</details>' : "") + '</div>';
+    var f = (pp && pp.figures) || {}, keys = Object.keys(PAPER_FIG).filter(function (k) { return f[k] != null; });
+    if (keys.length) h += '<div class="ibfigs">' + keys.map(function (k) {
+      return '<div class="ibrow"><div class="ibt"><b>' + esc(PAPER_FIG[k]) + '</b><div class="ibsub">' + (k === "saving_rate_pct" ? esc(f[k] + "%") : esc(rupee(f[k]))) + '</div></div></div>'; }).join("") + '</div>';
+    return h;
   }
   function inboxHTML() {
     var a = ibAll(), today = ymd();
@@ -6684,6 +6719,7 @@ function renderPlaybook(){
       + '<div class="ibcap"><input id="ibText" placeholder="What is on your mind?" onkeydown="if(event.key===\'Enter\')gmInboxCapture()" aria-label="Capture">'
       + '<select id="ibKind" aria-label="Kind">' + Object.keys(IB_KINDS).map(function (k) { return '<option value="' + k + '">' + IB_KINDS[k] + '</option>'; }).join("") + '</select>'
       + '<button class="btn primary" onclick="gmInboxCapture()">Add</button></div>';
+    h += papersHTML();
     if (decide.length) {
       h += '<h3>To decide (' + decide.length + ')</h3>';
       decide.forEach(function (x) {
@@ -6694,7 +6730,15 @@ function renderPlaybook(){
           + '<button class="btn" onclick="gmInboxDecide(\'' + ibSafe(x.id) + '\',\'delete\')">Delete</button></div></div></div>';
       });
     }
-    h += '<h3>Actions (' + actions.length + ')</h3>' + (actions.length ? actions.map(ibRow).join("") : '<div class="info">Nothing scheduled. Decide something above, or run a review below.</div>');
+    // 80/20 (doc 104): the vital few first; the rest folded, one click away.
+    var vital = actions.filter(function (x) { return x.vital; }), rest = actions.filter(function (x) { return !x.vital; });
+    if (vital.length) {
+      h += '<h3>The vital few (' + vital.length + ')</h3><div class="info">The fifth of your open items that matters most: by area (identity, insurance, nominees, security first) and by how soon each is due.</div>'
+        + vital.map(ibRow).join("")
+        + (rest.length ? '<details class="ibnotes"><summary>All other actions (' + rest.length + ')</summary>' + rest.map(ibRow).join("") + '</details>' : "");
+    } else {
+      h += '<h3>Actions (' + actions.length + ')</h3>' + (actions.length ? actions.map(ibRow).join("") : '<div class="info">Nothing scheduled. Decide something above, or run a review below.</div>');
+    }
     h += '<h3>Run a review now</h3><div class="info">Pick a review. Answer each step in your own words; leave a step empty if all is well. Every answer becomes an action due in a week.</div>'
       + '<div class="ibrev">' + RITUALS.map(function (r) { return '<button class="btn' + (ropen === r.id ? " primary" : "") + '" onclick="gmReviewOpen(\'' + r.id + '\')">' + esc(r.name) + ' · ' + r.mins + ' min</button>'; }).join("") + '</div>';
     var r = RITUALS.filter(function (x) { return x.id === ropen; })[0];
