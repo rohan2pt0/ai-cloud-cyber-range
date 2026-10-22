@@ -113,6 +113,17 @@ Before merging anything the router calls strong, get a second look: `./securax r
 When a check failed for a reason the next agent could avoid, add one line:
 `./securax lessons add "what happened → what to do instead"`. Autobuild does this by itself when a red attempt turns green.
 
+## 5b. A session can end at any time: leave nothing only in your head
+
+A usage limit, a restart or a closed laptop can end a session mid-task. Work that is not on GitHub, and asks that are not
+written down, are then lost. So:
+1. **Push each round** before any long wait (a CI run, an agent): a cloud container is reclaimed when the session ends.
+2. **Write down every ask you have not finished** in `governance/queue.json`, in our own words, with a due date and the next
+   step, in the same commit as the work you did finish. Close an item (`"state": "done"`) where it was finished.
+3. **Bring back agents' work** before you stop: an agent's scratch copy (`.claude/worktrees/`) lives only in this session.
+4. `./securax backlog` lists what is not finished from every source; the daily `backlog` workflow keeps it in one GitHub
+   issue, so the next session (or the owner, on a phone) starts from it rather than from memory.
+
 ## 6. When the owner shares documents or a new idea
 
 1. **Read all of it, and keep it private.** Uploaded material stays in `vault/` or a scratch folder. The repository gets only the cue, in our own words.

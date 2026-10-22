@@ -49,9 +49,9 @@ def build(env: dict[str, str], user: str = "me", host: str = "localhost", token_
     tls_on = "tls.yml" in env.get("COMPOSE_FILE", "")
     if host.endswith(".ts.net"):                        # phones: Tailscale's own HTTPS name, sync on the same origin (edge on or off)
         hub, sync = f"https://{host}/", f"https://{host}/sync"
-    elif tls_on:
+    elif tls_on:                                        # sync on the hub's own origin: sync.<domain> is another origin, which the app may not call
         dom = env.get("SECURAX_DOMAIN", DEFAULT_DOMAIN)
-        hub, sync = f"https://hub.{dom}/", f"https://sync.{dom}/sync"
+        hub, sync = f"https://hub.{dom}/", f"https://hub.{dom}/sync"
     else:                                               # the app proxies /sync on its own origin (no cross-origin call, no 2nd port)
         hub, sync = f"http://{host}:8088/", f"http://{host}:8088/sync"
     return f"{hub}#sync={encode(sync, tokens[token_index], user)}", sync

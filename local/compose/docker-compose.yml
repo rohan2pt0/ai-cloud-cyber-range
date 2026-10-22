@@ -203,7 +203,7 @@ services:
     logging: *default-logging
 
   grafana:
-    image: grafana/grafana:11.4.0
+    image: grafana/grafana:11.4.0@sha256:d8ea37798ccc41061a62ab080f2676dda6bf7815558499f901bdb0f533a456fb
     security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
     profiles: ["security"]
     environment:
@@ -232,7 +232,7 @@ services:
   # Unified chat UI. All traffic is pointed at the GUARDRAIL GATEWAY (not LiteLLM
   # directly), so every prompt/response passes the Red/Yellow/Green rails first.
   open-webui:
-    image: ghcr.io/open-webui/open-webui:0.12.2
+    image: ghcr.io/open-webui/open-webui:0.12.2@sha256:10e6a78ba2d172493460a9e8a92c496aaa7a64dc4d26d622a2e95e0c736081c9
     security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
     # 1.5 GB: document search embeds INSIDE this container (local model, nothing leaves the box), which needs about
     # 0.5 GB on its own; at 1 GB uploading your handbooks could kill it. Doing it in Ollama instead would evict your chat
@@ -282,7 +282,7 @@ services:
   # Private document chat (Retrieval-Augmented Generation) for RED-TIER data.
   # Talks straight to local Ollama; nothing leaves the laptop.
   anythingllm:
-    image: mintplexlabs/anythingllm:1.18.0   # pinned (was :latest, which changes under you); 1.18.0 so nobody's data is downgraded
+    image: mintplexlabs/anythingllm:1.18.0@sha256:5461782e7db41318a516925949a8f8366e258dd576411fca7961fe77dff054cc   # pinned (was :latest, which changes under you); 1.18.0 so nobody's data is downgraded
     security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
     mem_limit: 2g
     cpus: 1.5
@@ -304,7 +304,7 @@ services:
   # The password manager (doc 84): Vaultwarden, a small server for the Bitwarden apps (browser extension, phone, desktop). Your vault is
   # encrypted on your own device before it reaches this server. Off until `./securax start passwords`; sign-ups close after your account.
   vaultwarden:
-    image: ghcr.io/dani-garcia/vaultwarden:1.37.4
+    image: ghcr.io/dani-garcia/vaultwarden:1.37.4@sha256:efb3cde962015fcc036b2ea625242248611943b27212ebf4392841fb30fad055
     security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
     mem_limit: 128m
     cpus: 0.5
@@ -325,7 +325,7 @@ services:
   # Online (doc 85, ./securax online setup): an outbound-only Cloudflare Tunnel to hub.<domain> and chat.<domain>, behind Cloudflare
   # Access (your sign-in). No port is published and nothing listens on the internet; it starts only when CF_TUNNEL_TOKEN is set.
   cloudflared:
-    image: cloudflare/cloudflared:2026.10.0
+    image: cloudflare/cloudflared:2026.10.0@sha256:9b49eed8f62806d5d45ddf59ecefb5710429598ea6d3fcccd2af938f621b2b07
     mem_limit: 128m
     cpus: 0.25
     profiles: ["online"]
@@ -342,7 +342,7 @@ services:
   # Automation engine (the "glue"): morning brief, email triage, data-tier router, etc.
   # Call the gateway at http://gateway:8080/v1/chat/completions from any workflow.
   n8n:
-    image: n8nio/n8n:1.74.1
+    image: n8nio/n8n:1.74.1@sha256:44bcadc60856f08493624514486a0c3edc91c618a6c82c705403db5ee5a63923
     security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
     mem_limit: 768m
     cpus: 1.0
@@ -396,7 +396,7 @@ services:
 
   # ---- Guiding Map PWA (your local-first life OS) — tiny, always-on, private ----
   guiding-map:
-    image: nginx:1.27-alpine
+    image: nginx:1.30-alpine@sha256:c59d1f8b1e0e42da75be973424cd72e23f7f8adfb54e982f4d1cd0216a5a5576
     security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
     profiles: ["core", "security", "ai"]
     restart: unless-stopped

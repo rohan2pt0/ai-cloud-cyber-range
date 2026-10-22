@@ -316,7 +316,8 @@ server_tokens off;
 proxy_http_version 1.1;
 proxy_set_header Host $http_host;
 proxy_set_header X-Forwarded-Proto https;
-proxy_set_header X-Forwarded-For $remote_addr;
+proxy_set_header X-Forwarded-For $remote_addr;   # overwritten with the address the edge saw, never appended to the client's own
+proxy_set_header X-Real-IP $remote_addr;         # the same, for services that count per client (estate-sync's refused sign-ins, doc 87)
 proxy_set_header Upgrade $http_upgrade;
 proxy_set_header Connection $connection_upgrade;
 proxy_buffering off;                # server-sent events: tokens must reach the browser as they are produced
@@ -478,12 +479,17 @@ server {{
     ssl_session_tickets off;
     server_tokens off;
     client_max_body_size 100m;
+    # The client's address: only a caller on the private Docker networks (the edge) may name it in X-Real-IP; anyone else is
+    # counted as itself. Then it is passed on OVERWRITTEN, never appended to a header the caller sent.
+    set_real_ip_from 172.16.0.0/12;
+    real_ip_header X-Real-IP;
     location / {{
         proxy_pass http://127.0.0.1:{port};
         proxy_http_version 1.1;
         proxy_set_header Host $http_host;
         proxy_set_header X-Forwarded-Proto $http_x_forwarded_proto;
-        proxy_set_header X-Forwarded-For $http_x_forwarded_for;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header Upgrade $http_upgrade;
         proxy_set_header Connection $connection_upgrade;
         proxy_buffering off;

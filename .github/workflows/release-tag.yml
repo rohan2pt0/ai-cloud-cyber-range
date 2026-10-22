@@ -1,0 +1,44 @@
+# When a release PR merges (VERSION changed on main), tag the merge commit vX.Y.Z and publish the release (doc 21).
+# The tag points at the squash commit GitHub made and signed, so the tag list shows it as Verified.
+# Merging the release PR is the person's decision to publish (doc 102: publishing is kept for the owner).
+name: release-tag
+on:
+  push:
+    branches: [main]
+    paths: ["VERSION"]
+
+concurrency:                    # one at a time, in order; a release in progress is never cancelled
+  group: release-tag
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.t.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+        with: { fetch-depth: 0 }
+      - id: t
+        name: "Tag the merge commit, unless the tag exists"
+        run: |
+          tag="v$(cat VERSION)"
+          if git rev-parse -q --verify "refs/tags/$tag" >/dev/null; then
+            echo "$tag already exists: nothing to publish."; exit 0
+          fi
+          python3 tools/release.py notes --check "${tag#v}" > /dev/null || { echo "::error::CHANGELOG.md has no section for ${tag#v}"; exit 1; }
+          # a lightweight tag on the squash commit GitHub signed: the tag list shows that signature as Verified
+          git tag "$tag" "$GITHUB_SHA"
+          git push origin "$tag"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+  publish:
+    needs: tag
+    if: needs.tag.outputs.tag != ''
+    uses: ./.github/workflows/release.yml
+    with:
+      tag: ${{ needs.tag.outputs.tag }}

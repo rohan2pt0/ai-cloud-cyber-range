@@ -15,6 +15,11 @@ on:
   push: { branches: [main] }
   workflow_dispatch:
 
+# A newer push to the same pull request replaces its older run; runs on main, schedules and dispatches are never cancelled.
+concurrency:
+  group: lifecycle-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
 permissions:
   contents: read
 

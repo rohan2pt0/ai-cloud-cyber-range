@@ -1,0 +1,12 @@
+{
+  "_doc": "Mutation targets for tools/mutate.py: the safety-rail code, most important first, and the tests that guard each file. Commands run from the repository root (pytest.ini sets the import paths), exactly as CI's app-tests job runs them.",
+  "targets": [
+    {"file": "apps/llm-gateway/app/guardrails.py", "tests": ["apps/llm-gateway/tests"]},
+    {"file": "apps/llm-gateway/app/killswitch.py", "tests": ["apps/llm-gateway/tests", "governance/tests/test_aicontrol.py"]},
+    {"file": "apps/llm-gateway/app/identity.py", "tests": ["apps/llm-gateway/tests"]},
+    {"file": "apps/llm-gateway/app/residency.py", "tests": ["apps/llm-gateway/tests"]},
+    {"file": "apps/llm-gateway/app/budget.py", "tests": ["apps/llm-gateway/tests"]},
+    {"file": "apps/estate-sync/syncsvc/access.py", "tests": ["apps/estate-sync/tests"]},
+    {"file": "apps/estate-sync/syncsvc/guard.py", "tests": ["apps/estate-sync/tests"]}
+  ]
+}

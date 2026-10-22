@@ -138,6 +138,164 @@ def test_the_alert_file_keeps_its_last_500_lines(tmp_path):
     for i in range(guard.ALERT_LINES + 20):
         assert rs.refused(f"192.0.2.{i % 250}-{i}")                                     # documentation-range fake addresses
     lines = path.read_text().splitlines()
-    assert len(lines) == guard.ALERT_LINES
+    assert guard.ALERT_LINES == 500 and len(lines) == 500                              # the documented size, pinned
     assert json.loads(lines[-1])["addr"].endswith(f"-{guard.ALERT_LINES + 19}")
     assert len(rs._seen) <= guard.MAX_KEYS
+
+
+# ───────────── which address is the client: X-Real-IP only from a trusted proxy (doc 87) ─────────────
+PROXY = ("172.18.0.5", 40000)          # a peer on the private Docker range (the bundled nginx)
+OUTSIDE = ("198.51.100.7", 40000)      # documentation-range fake address: not a proxy
+
+
+def _alert_addrs(alerts):
+    return [json.loads(ln)["addr"] for ln in alerts.read_text().splitlines()] if alerts.exists() else []
+
+
+def with_peer(app, peer):
+    """The app as seen from one peer address. Starlette's TestClient(client=...) is newer than the pinned FastAPI
+    0.115 stack CI installs, so the address is set in the ASGI scope instead; lifespan events pass through."""
+    async def wrapped(scope, receive, send):
+        if scope["type"] in ("http", "websocket"):
+            scope = {**scope, "client": peer}
+        await app(scope, receive, send)
+    return wrapped
+
+
+def _refuse(m, client, n, real_ip=None):
+    hdr = {**h("guessed-token"), **({"X-Real-IP": real_ip} if real_ip is not None else {})}
+    with TestClient(with_peer(m.app, client)) as c:
+        for _ in range(n):
+            assert c.get("/sync/state?user=me", headers=hdr).status_code == 401
+
+
+def test_a_trusted_proxys_x_real_ip_names_the_client(svc):
+    m, c, clock, alerts = svc
+    _refuse(m, PROXY, 10, real_ip="203.0.113.9")
+    assert _alert_addrs(alerts) == ["203.0.113.9"]
+
+
+def test_an_untrusted_peers_x_real_ip_is_ignored(svc):
+    m, c, clock, alerts = svc
+    _refuse(m, OUTSIDE, 10, real_ip="203.0.113.9")
+    assert _alert_addrs(alerts) == ["198.51.100.7"]
+
+
+@pytest.mark.parametrize("bad", ["not-an-address", "203.0.113.9, 198.51.100.1", "203.0.113.0/24", "", "x" * 200])
+def test_a_garbage_x_real_ip_falls_back_to_the_peer(svc, bad):
+    m, c, clock, alerts = svc
+    _refuse(m, PROXY, 10, real_ip=bad)
+    assert _alert_addrs(alerts) == ["172.18.0.5"]
+
+
+def test_two_clients_behind_the_proxy_are_counted_separately(svc):
+    m, c, clock, alerts = svc
+    _refuse(m, PROXY, 9, real_ip="203.0.113.9")
+    _refuse(m, PROXY, 9, real_ip="203.0.113.10")
+    assert not alerts.exists()                                                        # 18 refusals, but 9 each: no alert
+    _refuse(m, PROXY, 1, real_ip="203.0.113.10")
+    assert _alert_addrs(alerts) == ["203.0.113.10"]
+
+
+def test_the_websocket_hello_uses_the_same_rule(svc):
+    m, c, clock, alerts = svc
+    for client in (PROXY, OUTSIDE):
+        with TestClient(with_peer(m.app, client)) as wc:
+            for _ in range(10):
+                with wc.websocket_connect("/sync/ws", headers={"X-Real-IP": "203.0.113.9"}) as ws:
+                    ws.send_text(json.dumps({"token": "guessed-token", "user": "me"}))
+                    with pytest.raises(Exception):
+                        ws.receive_text()
+    assert _alert_addrs(alerts) == ["203.0.113.9", "198.51.100.7"]
+
+
+def test_trusted_proxies_default_setting_and_junk():
+    from syncsvc import guard
+    nets = guard.trusted_proxies("")
+    assert {str(n) for n in nets} == {"127.0.0.0/8", "::1/128", "172.16.0.0/12"}
+    assert {str(n) for n in guard.trusted_proxies(" 10.9.0.0/16 , 192.0.2.4 ,junk")} == {"10.9.0.0/16", "192.0.2.4/32"}
+    assert guard.trusted_proxies("junk,also-junk") == ()                              # junk trusts NOBODY, never everybody
+    assert guard.client_addr("172.18.0.5", ["203.0.113.9"], ()) == "172.18.0.5"
+    assert guard.client_addr("::1", ["2001:db8::7"], nets) == "2001:db8::7"
+    assert guard.client_addr("::ffff:172.18.0.5", ["203.0.113.9"], nets) == "203.0.113.9"      # IPv4-mapped peer is still the proxy
+    assert guard.client_addr("172.18.0.5", ["203.0.113.9", "203.0.113.10"], nets) == "172.18.0.5"   # two headers: refused, not guessed
+    assert guard.client_addr("172.18.0.5", [], nets) == "172.18.0.5"
+    assert guard.client_addr("testclient", ["203.0.113.9"], nets) == "testclient"
+    assert guard.client_addr("127.0.0.1", [" 203.0.113.9 "], nets) == "203.0.113.9"
+
+
+def test_the_trusted_list_comes_from_the_environment(tmp_path, monkeypatch):
+    monkeypatch.setenv("SYNC_DB_PATH", str(tmp_path / "s.db"))
+    monkeypatch.setenv("SYNC_TRUSTED_PROXIES", "198.51.100.0/24")
+    import syncsvc.main as m
+    importlib.reload(m)
+    try:
+        assert [str(n) for n in m.TRUSTED_PROXIES] == ["198.51.100.0/24"]
+        assert m.guard.client_addr("198.51.100.7", ["203.0.113.9"], m.TRUSTED_PROXIES) == "203.0.113.9"
+        assert m.guard.client_addr("172.18.0.5", ["203.0.113.9"], m.TRUSTED_PROXIES) == "172.18.0.5"
+    finally:
+        monkeypatch.delenv("SYNC_TRUSTED_PROXIES")
+        importlib.reload(m)
+
+
+def test_health_answers_through_the_command_centers_sync_route(svc):
+    # The Command Center's web server forwards only /sync...; the watchdog checks health there (doc 101).
+    m, c, clock, alerts = svc
+    a, b = c.get("/healthz"), c.get("/sync/healthz")
+    assert a.status_code == b.status_code == 200 and a.json().keys() == b.json().keys()
+
+
+def test_a_setting_of_1_is_honoured_and_junk_keeps_the_default(monkeypatch):
+    from syncsvc import guard
+    for raw, want in (("1", 1), ("0", 600), ("-3", 600), ("many", 600), ("", 600)):
+        monkeypatch.setenv("SYNC_TEST_LIMIT", raw)
+        assert guard.env_int("SYNC_TEST_LIMIT", 600) == want, raw
+
+
+def test_the_limiter_window_slides_and_retry_after_counts_from_the_oldest_hit():
+    from syncsvc import guard
+    clock = Clock()
+    lim = guard.RateLimiter(2, 60, clock=clock)
+    t0 = clock.t
+    assert lim.hit("k") == 0
+    clock.t = t0 + 30
+    assert lim.hit("k") == 0
+    clock.t = t0 + 40
+    assert lim.hit("k") == pytest.approx(20)                 # the oldest hit (t0) leaves at t0+60
+    clock.t = t0 + 59.5
+    assert lim.hit("k") == pytest.approx(0.5)                # under a second left: say so, not a second more
+    clock.t = t0 + 61
+    assert lim.hit("k") == 0                                 # the oldest left; the one at t0+30 still counts
+    assert lim.hit("k") > 0
+
+
+def test_refused_sign_ins_slide_out_of_the_window_at_exactly_its_length():
+    from syncsvc import guard
+    clock = Clock()
+    rs = guard.RefusedSignins(2, 900, None, clock=clock)
+    t0 = clock.t
+    assert rs.refused("192.0.2.1") is False                  # below the threshold: no alert
+    clock.t = t0 + 900
+    assert rs.refused("192.0.2.1") is False                  # the first is exactly 900 s old: it has left
+    rs3 = guard.RefusedSignins(3, 900, None, clock=clock)
+    clock.t = t0
+    rs3.refused("192.0.2.2")
+    clock.t = t0 + 500
+    rs3.refused("192.0.2.2")
+    clock.t = t0 + 950
+    assert rs3.refused("192.0.2.2") is False                 # the oldest left; only two remain in the window
+
+
+def test_the_refused_sign_in_memory_is_bounded():
+    from syncsvc import guard
+    rs = guard.RefusedSignins(5, 900, None, max_keys=3, clock=Clock())
+    for i in range(10):
+        rs.refused(f"192.0.2.{i}")
+    assert len(rs._seen) == 3
+
+
+def test_the_alert_folder_is_created_when_it_does_not_exist(tmp_path):
+    from syncsvc import guard
+    path = tmp_path / "not" / "yet" / "refused-signins.jsonl"
+    assert guard.RefusedSignins(1, 900, str(path), clock=Clock()).refused("192.0.2.9")
+    assert path.exists() and len(path.read_text().splitlines()) == 1

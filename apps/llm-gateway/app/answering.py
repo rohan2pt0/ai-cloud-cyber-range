@@ -74,15 +74,22 @@ def _text(m: dict) -> str:
     return ""
 
 
+def exact_format(payload: dict, headers=None) -> bool:
+    """A caller that needs an exact format (response_format) or a chat app's own housekeeping task ("### Task:"): the
+    gateway adds nothing to it (the answer rules here, careful mode in careful.py)."""
+    if payload.get("response_format"):
+        return True
+    msgs = payload.get("messages") or []
+    users = [m for m in msgs if isinstance(m, dict) and m.get("role") == "user"]
+    return bool(users) and _text(users[-1]).lstrip().startswith("### Task:")
+
+
 def applies(payload: dict, headers=None) -> bool:
-    if not enabled() or (payload.get("model") or "") not in models() or payload.get("response_format"):
+    if not enabled() or (payload.get("model") or "") not in models() or exact_format(payload, headers):
         return False
     if headers is not None and (headers.get("x-answer-rules") or "").strip().lower() == "off":
         return False
     msgs = payload.get("messages") or []
-    users = [m for m in msgs if isinstance(m, dict) and m.get("role") == "user"]
-    if users and _text(users[-1]).lstrip().startswith("### Task:"):
-        return False
     return not any(MARK in _text(m) for m in msgs if isinstance(m, dict) and m.get("role") == "system")
 
 
@@ -116,3 +123,27 @@ def footnote(content: str, served: str, payload: dict, headers=None) -> str:
     name = served.split("/")[-1]
     return (content.rstrip() + f"\n\n({NOTE} {name}, because no stronger model was available. Check anything important; "
             "./securax keys adds a free, stronger one.)")
+
+# Questions about things that change (doc 89): the model's knowledge has a cut-off, so a figure it gives may be old.
+# No search is run from here (that would send the question out); the answer only says how to get the live figure.
+CHANGES = re.compile(r"\b(repo rate|interest rate|exchange rate|inflation|rates?|prices?|price of|cost of|fees?|tariffs?|nav|sensex|nifty|"
+                     r"latest|today|current(ly)?|this (week|month|year)|right now|news|recent(ly)?|new (rule|law|circular)|circulars?|"
+                     r"notifications?|deadline|due date|amendment|budget 20\d\d)\b", re.I)
+SEARCHED = re.compile(r"<source\b|<context>|\[\d+\]\s*http|search results", re.I)
+STALE = "This may have changed since the model learned it. For the live figure, turn on web search (the globe in Chat) or check the source."
+
+
+def stale_note(content: str, payload: dict, headers=None) -> str:
+    """Add one line when a person asks about something that changes and no search results came with the question."""
+    if not enabled() or (payload.get("model") or "") not in models() or exact_format(payload, headers):
+        return content
+    if headers is not None and (headers.get("x-answer-note") or "").strip().lower() == "off":
+        return content
+    msgs = [m for m in payload.get("messages") or [] if isinstance(m, dict)]
+    asked = next((_text(m) for m in reversed(msgs) if m.get("role") == "user"), "")
+    body = (content or "").strip()
+    if not body or body[:1] in "{[" or STALE in body or not CHANGES.search(asked[:2000]):
+        return content
+    if any(SEARCHED.search(_text(m)) for m in msgs):
+        return content
+    return content.rstrip() + f"\n\n({STALE})"

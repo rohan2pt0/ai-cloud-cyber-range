@@ -64,6 +64,8 @@
     "local/compose/tls-edge.generated.conf",
     "local/compose/sprout/**",
     "local/compose/stage-sprout.yml",
+    "local/compose/digest-pins.json",
+    "tools/digest_check.py",
     "local/compose/tests/**",
     "local/scripts/**",
     "START-HERE*",
@@ -108,7 +110,8 @@
     "ui_guiding_map_and_hub",
     "guiding_map_full_use",
     "open_webui_chat",
-    "cockpit_page"
+    "cockpit_page",
+    "phone_device"
    ],
    "affects": []
   },
@@ -117,7 +120,9 @@
     "apps/estate-sync/**"
    ],
    "guarded_by": [
-    "ui_guiding_map_and_hub"
+    "ui_guiding_map_and_hub",
+    "two_nodes",
+    "phone_device"
    ],
    "affects": [
     "hub-and-pwa"
@@ -190,6 +195,9 @@
   "lifecycle": {
    "paths": [
     "lifecycle/**",
+    "tools/mutate.py",
+    "tools/mutate.json",
+    "tools/mutate-baseline.json",
     "infra/**",
     "gitops/**",
     "policies/**",
@@ -263,6 +271,7 @@
   "tools/readme_sync.py",
   "tools/linkcheck.py",
   "tools/features_sync.py",
+  "tools/release.py",
   "tools/windows/**",
   "features.json",
   "*.md",

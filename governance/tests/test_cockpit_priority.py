@@ -111,3 +111,51 @@ def test_served_metric_is_green_when_the_strong_model_answered(monkeypatch):
     m = _served_metric(monkeypatch, {"window_h": 24, "calls": 10, "weak_share": 0.1, "by_served": [
         {"served": "gemini/gemini-2.5-flash", "calls": 9, "weak": False}, {"served": "ollama/qwen2.5:0.5b", "calls": 1, "weak": True}]})
     assert m["status"] == "green" and m["value"] == "strong model on 9 calls"
+
+
+def _anomaly_metric(monkeypatch, body, now=1_800_000_000.0):
+    # "Unusual AI key use" (doc 92): unknown when the gateway is off, red when a caller behaved unlike itself in the last day.
+    import io
+    import json as _json
+    import urllib.request
+
+    def fake(url, *a, **k):
+        u = url if isinstance(url, str) else url.full_url
+        if body is not None and u.endswith("/v1/anomalies"):
+            assert k.get("timeout") == 3
+            return io.BytesIO(_json.dumps(body).encode())
+        raise OSError("offline in tests")
+    monkeypatch.setattr(urllib.request, "urlopen", fake)
+    col = cockpit.Collector({}, 0.0, "personal", {})
+    col.c_anomalies(now=now)
+    (m,) = [x for x in col.metrics if x["id"] == "anomalies"]
+    assert m["label"] == "Unusual AI key use" and m["importance"] == 3
+    assert "://" not in " ".join(str(v) for v in m.values()), "the cockpit names no external URL"
+    return m
+
+
+def _ts(t):
+    import time as _t
+    return _t.strftime("%Y-%m-%dT%H:%M:%SZ", _t.gmtime(t))
+
+
+def test_anomaly_metric_is_unknown_when_the_gateway_is_off(monkeypatch):
+    m = _anomaly_metric(monkeypatch, None)
+    assert m["status"] == "unknown" and m["value"] == "gateway off" and not m["urgent"]
+
+
+def test_anomaly_metric_is_green_when_nothing_recent(monkeypatch):
+    now = 1_800_000_000.0
+    m = _anomaly_metric(monkeypatch, {"anomalies": [{"ts": _ts(now - 30 * 3600), "caller": "key:webui", "kind": "burst", "detail": "old"}]})
+    assert m["status"] == "green" and m["value"] == "no unusual use" and not m["urgent"]
+
+
+def test_anomaly_metric_is_red_and_urgent_with_a_recent_one(monkeypatch):
+    now = 1_800_000_000.0
+    m = _anomaly_metric(monkeypatch, {"anomalies": [
+        {"ts": _ts(now - 60), "caller": "key:webui", "kind": "new_model", "detail": "asked for https://evil.example/model"},
+        {"ts": _ts(now - 3600), "caller": "key:webui", "kind": "burst", "detail": "99 requests"},
+        {"ts": _ts(now - 40 * 3600), "caller": "key:old", "kind": "odd_hour", "detail": "old"}]})
+    assert m["status"] == "red" and m["urgent"] and m["value"] == "2 in 24 h, latest: key:webui new_model"
+    assert m["action"] == "Check who used the key; revoke it if it was not you" and m["cmd"] == "./securax gateway-auth key list"
+    assert "anomalies" not in cockpit.PRIMARY

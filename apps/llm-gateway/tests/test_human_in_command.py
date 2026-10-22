@@ -45,6 +45,13 @@ def test_a_malformed_switch_file_stops_all_ai(ctl):
     assert ks.stopped("bank-assistant")["scope"] == "all"
 
 
+@pytest.mark.parametrize("body", ['{"models": []}', "[]", '"stop"'])
+def test_a_switch_file_of_the_wrong_shape_stops_all_ai_too(ctl, body):
+    ctl.write_text(body)                                    # valid JSON, wrong shape: never read as "nothing is stopped"
+    assert ks.stopped("bank-assistant")["scope"] == "all"
+    assert C.post("/v1/chat/completions", json=ASK).status_code == 503
+
+
 @pytest.fixture
 def allowance(ctl, tmp_path, monkeypatch):
     from app import budget as b

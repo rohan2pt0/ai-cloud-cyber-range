@@ -1,32 +1,49 @@
 # Keep dependencies patched automatically. https://docs.github.com/code-security/dependabot
+# Minor and patch bumps are grouped into one PR per ecosystem a week: 20 single PRs piled up unhandled for 11 days
+# (doc 103). Majors still come one by one, because each needs a decision and its own test run.
 version: 2
 updates:
   - package-ecosystem: "pip"
     directories: ["/apps/llm-gateway", "/apps/estate-sync", "/agents/web_research", "/design"]
     schedule: { interval: "weekly" }
+    groups:                         # one PR a week for the safe bumps; each major stays its own PR (it needs a decision)
+      pip-minor-and-patch:
+        update-types: ["minor", "patch"]
     open-pull-requests-limit: 5
     labels: ["dependencies", "python"]
     commit-message: { prefix: "deps" }
   - package-ecosystem: "npm"
     directory: "/guiding-map"
     schedule: { interval: "weekly" }
+    groups:                         # one PR a week for the safe bumps; each major stays its own PR (it needs a decision)
+      npm-minor-and-patch:
+        update-types: ["minor", "patch"]
     open-pull-requests-limit: 5
     labels: ["dependencies", "javascript"]
     commit-message: { prefix: "deps" }
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule: { interval: "weekly" }
+    groups:                         # one PR a week for the safe bumps; each major stays its own PR (it needs a decision)
+      github_actions-minor-and-patch:
+        update-types: ["minor", "patch"]
     labels: ["dependencies", "ci"]
     commit-message: { prefix: "ci" }
   - package-ecosystem: "docker"
     directories: ["/apps/llm-gateway", "/apps/estate-sync"]
     schedule: { interval: "weekly" }
+    groups:                         # one PR a week for the safe bumps; each major stays its own PR (it needs a decision)
+      docker-minor-and-patch:
+        update-types: ["minor", "patch"]
     labels: ["dependencies", "docker"]
     commit-message: { prefix: "deps" }
   # Third-party images pinned in the compose files (n8n, Open WebUI, Ollama, LiteLLM...): the biggest patching surface.
   - package-ecosystem: "docker-compose"
     directories: ["/local/compose"]
     schedule: { interval: "weekly" }
+    groups:                         # one PR a week for the safe bumps; each major stays its own PR (it needs a decision)
+      docker_compose-minor-and-patch:
+        update-types: ["minor", "patch"]
     open-pull-requests-limit: 5
     labels: ["dependencies", "docker"]
     commit-message: { prefix: "deps" }
@@ -34,5 +51,8 @@ updates:
   - package-ecosystem: "terraform"
     directories: ["/infra/terraform/lifecycle/aws", "/infra/terraform/lifecycle/gcp", "/infra/terraform/lifecycle/azure"]
     schedule: { interval: "monthly" }
+    groups:                         # one PR a week for the safe bumps; each major stays its own PR (it needs a decision)
+      terraform-minor-and-patch:
+        update-types: ["minor", "patch"]
     labels: ["dependencies", "terraform"]
     commit-message: { prefix: "deps" }

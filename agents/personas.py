@@ -126,9 +126,10 @@ def build_messages(agent: str, question: str, context: str = "") -> list[dict]:
     return [{"role": "system", "content": system}, {"role": "user", "content": user}]
 
 
-def ask_agent(agent: str, question: str, context: str = "", call_gateway: bool = True) -> dict:
+def ask_agent(agent: str, question: str, context: str = "", call_gateway: bool = True, careful: bool = False) -> dict:
     """Summon one agent. Returns the grounded message set, and the answer if a gateway is up.
-    Defaults to the estate's local/free model via GATEWAY_URL — zero Claude credits."""
+    Defaults to the estate's local/free model via GATEWAY_URL — zero Claude credits.
+    careful=True asks the gateway to check each claim and rewrite before answering (doc 89; about twice the tokens)."""
     messages = build_messages(agent, question, context)
     out = {"agent": agent, "name": PERSONAS[agent][0], "consult": PERSONAS[agent][2], "messages": messages}
     gw = os.getenv("GATEWAY_URL")
@@ -136,11 +137,15 @@ def ask_agent(agent: str, question: str, context: str = "", call_gateway: bool =
         try:
             import httpx
             key = os.getenv("GATEWAY_API_KEY")          # a gateway service key when authentication is on
-            r = httpx.post(gw.rstrip("/") + "/v1/chat/completions", timeout=90,
-                           headers={"Authorization": f"Bearer {key}"} if key else None,
-                           json={"model": "bank-assistant", "messages": messages})
+            hdr = {"Authorization": f"Bearer {key}"} if key else {}
+            if careful:
+                hdr["X-SecuRAX-Careful"] = "1"
+            r = httpx.post(gw.rstrip("/") + "/v1/chat/completions", timeout=270 if careful else 90,
+                           headers=hdr or None, json={"model": "bank-assistant", "messages": messages})
             if r.status_code == 200:
                 out["answer"] = r.json()["choices"][0]["message"]["content"]
+                if careful:
+                    out["careful"] = r.headers.get("X-SecuRAX-Careful", "")
             else:
                 out["answer_error"] = f"gateway HTTP {r.status_code}"
         except Exception as exc:  # noqa: BLE001
@@ -154,11 +159,12 @@ def main() -> int:
     sub.add_parser("list", help="list the advisors")
     a = sub.add_parser("ask", help="ask an advisor")
     a.add_argument("agent"); a.add_argument("question"); a.add_argument("--context", default="")
+    a.add_argument("--careful", action="store_true", help="check each claim and rewrite before answering (about twice the tokens)")
     args = ap.parse_args()
     if args.cmd == "list":
         print(json.dumps(list_agents(), indent=2))
     else:
-        print(json.dumps(ask_agent(args.agent, args.question, args.context), indent=2))
+        print(json.dumps(ask_agent(args.agent, args.question, args.context, careful=args.careful), indent=2))
     return 0
 
 

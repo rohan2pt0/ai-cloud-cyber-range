@@ -1,27 +1,50 @@
-# Release pipeline: on a vX.Y.Z tag, verify, build versioned images, SBOM, and publish a
-# GitHub Release whose notes come from CHANGELOG.md. See docs/securax/21-VERSIONING-AND-RELEASES.md.
+# Release pipeline: verify, build the versioned gateway image, SBOM, and publish a GitHub Release whose notes come from
+# CHANGELOG.md. See docs/securax/21-VERSIONING-AND-RELEASES.md.
+# Runs on a vX.Y.Z tag pushed by a person, or is called by release-tag.yml when a release PR merges (a tag pushed by the
+# workflow token itself would not start another workflow, so that one calls this one directly).
+# The release is created as a DRAFT, every file attached, and only then published: with GitHub's immutable releases on,
+# nothing can be added or changed after publishing, and the release gets GitHub's own signed attestation.
 name: release
 on:
   push:
     tags: ["v*.*.*"]
+  workflow_call:
+    inputs:
+      tag:
+        description: "the tag to release, vX.Y.Z (it must already exist)"
+        required: true
+        type: string
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "the existing tag to release, vX.Y.Z"
+        required: true
+        type: string
+
+concurrency:                    # one per tag; never cancelled once it has started
+  group: release-${{ inputs.tag || github.ref_name }}
+  cancel-in-progress: false
 
 permissions:
   contents: write       # create the GitHub Release
   id-token: write       # sign the build provenance (Sigstore, keyless)
   attestations: write   # store it, so anyone can run: gh attestation verify FILE --repo OWNER/REPO
 
+env:
+  TAG: ${{ inputs.tag || github.ref_name }}
+
 jobs:
   verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with: { ref: "${{ env.TAG }}" }
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - run: pip install -r apps/llm-gateway/requirements-dev.txt pyyaml ruff
-      - name: Tag matches VERSION
+      - name: "Tag matches VERSION"
         run: |
-          tag="${GITHUB_REF_NAME#v}"
+          tag="${TAG#v}"
           file="$(cat VERSION)"
           [ "$tag" = "$file" ] || { echo "::error::tag v$tag != VERSION $file"; exit 1; }
       - name: Lint
@@ -34,47 +57,47 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with: { ref: "${{ env.TAG }}" }
       - name: Build versioned gateway image
         run: |
-          docker build -t securax/llm-gateway:"${GITHUB_REF_NAME}" \
-            --build-arg SECURAX_VERSION="${GITHUB_REF_NAME#v}" \
-            --build-arg GIT_COMMIT="${GITHUB_SHA::7}" apps/llm-gateway
+          docker build -t securax/llm-gateway:"${TAG}" \
+            --build-arg SECURAX_VERSION="${TAG#v}" \
+            --build-arg GIT_COMMIT="$(git rev-parse --short=7 HEAD)" apps/llm-gateway
       - name: SBOM (CycloneDX)
         uses: anchore/sbom-action@v0
         with:
-          image: securax/llm-gateway:${{ github.ref_name }}
+          image: securax/llm-gateway:${{ env.TAG }}
           format: cyclonedx-json
-          output-file: sbom-${{ github.ref_name }}.cdx.json
-      - name: Extract this version's changelog section
-        run: |
-          awk -v ver="${GITHUB_REF_NAME#v}" '
-            $0 ~ "^## \\["ver"\\]" {p=1; next}
-            p && /^## \[/ {exit}
-            p {print}
-          ' CHANGELOG.md > release-notes.md
-          [ -s release-notes.md ] || echo "See CHANGELOG.md for details." > release-notes.md
+          output-file: sbom-${{ env.TAG }}.cdx.json
+      - name: "This version's notes, from CHANGELOG.md"
+        run: python3 tools/release.py notes "${TAG#v}" > release-notes.md
       # What a user downloads (doc 75): the source as .tar.gz and .zip, the two installers with this repository's name
       # written in, and SHA256SUMS, which install.sh --offline checks before it unpacks anything.
       - name: Source archives, installers and checksums
         run: |
-          v="${GITHUB_REF_NAME#v}"
+          v="${TAG#v}"
           mkdir -p dist
           git archive --format=tar.gz --prefix="securax-$v/" -o "dist/securax-$v.tar.gz" HEAD
           git archive --format=zip --prefix="securax-$v/" -o "dist/securax-$v.zip" HEAD
           cp install.sh install.ps1 dist/
           REPO_SLUG="${GITHUB_REPOSITORY}" python3 governance/config.py render dist/install.sh dist/install.ps1
           if grep -l '{{REPO_SLUG}}' dist/install.sh dist/install.ps1; then echo "::error::installer not rendered"; exit 1; fi
-          cp "sbom-${GITHUB_REF_NAME}.cdx.json" dist/
+          cp "sbom-${TAG}.cdx.json" dist/
           (cd dist && sha256sum -- * > SHA256SUMS && cat SHA256SUMS)
       - name: Build provenance (signed, verifiable)
         uses: actions/attest-build-provenance@v2
         with:
           subject-path: "dist/*"
-      - name: Publish GitHub Release
+      - name: "Draft the GitHub Release with every file attached"
         uses: softprops/action-gh-release@v2
         with:
-          name: SecuRAX ${{ github.ref_name }}
+          tag_name: ${{ env.TAG }}
+          name: SecuRAX ${{ env.TAG }}
           body_path: release-notes.md
           files: dist/*
-          draft: false
-          prerelease: ${{ startsWith(github.ref_name, 'v0.') }}
+          draft: true
+          prerelease: ${{ startsWith(env.TAG, 'v0.') }}
+      - name: "Publish it (after this, an immutable release cannot change)"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release edit "$TAG" --draft=false --repo "$GITHUB_REPOSITORY"

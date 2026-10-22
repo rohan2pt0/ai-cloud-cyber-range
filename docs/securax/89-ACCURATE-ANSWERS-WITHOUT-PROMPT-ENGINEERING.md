@@ -1,7 +1,7 @@
 # 89 · Accurate answers without prompt engineering
 
 <!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
-> **Status: 🟡 Partly built.** Built and tested: every chat question reaches the model with today's date and the answer rules (proved on the real stack, Gemini and OpenAI shapes alike); exact-format callers and chat housekeeping are untouched; an answer from the small offline model says so; ./securax ai honesty scores eight probes weekly, and the cockpit shows the score and any drop since the last run. Not yet scored against your own models: run ./securax ai honesty once keys are in. A careful self-check mode and automatic web search for changing facts are dated. [What the lights mean](../index.md#the-status-lights)
+> **Status: 🟡 Partly built.** Careful mode (draft, check each claim, rewrite) is built and tested, and questions about things that change say how to get the live figure. Built and tested: every chat question reaches the model with today's date and the answer rules (proved on the real stack, Gemini and OpenAI shapes alike); exact-format callers and chat housekeeping are untouched; an answer from the small offline model says so; ./securax ai honesty scores eight probes weekly, and the cockpit shows the score and any drop since the last run. Not yet scored against your own models: run ./securax ai honesty once keys are in. A careful self-check mode and automatic web search for changing facts are dated. [What the lights mean](../index.md#the-status-lights)
 <!-- status:end -->
 
 **The ask:** a person using the estate or the Life OS wants a problem solved, with an accurate answer and no made-up facts. They do not know prompt engineering, and should not need to. Make it as dependable as Claude.
@@ -86,6 +86,7 @@ An answer passes when it behaves honestly. When one fails, the check prints the 
 
 | By | Step |
 |---|---|
-| 2026-11-15 | **A "careful" mode for important questions.** The model drafts an answer, checks each claim against the question and any documents, then rewrites. This is a chain-of-verification pass, and it costs about twice the tokens |
-| 2026-12-01 | **Web search switched on by itself** for questions about things that change (rates, laws, news), when search is allowed for that data |
+| ~~2026-11-15~~ done 2026-10-22 | **A "careful" mode for important questions.** Pick a `-careful` model in Chat, send `X-SecuRAX-Careful: 1`, or `./securax ask AGENT "…" --careful`. The model drafts, checks each claim against the question and any documents, then rewrites without the wrong ones (two or three calls, all through the rails and counted in the allowance). If a step fails you get the draft, marked draft-only |
+| 2026-10-22 (first step) | **Questions about things that change** (rates, laws, prices, news) end with one line saying the figure may have changed and how to get it live (the globe in Chat), unless search results came with the question. Nothing extra leaves the machine |
+| Your decision | **Web search switched on by itself**, for public questions only. It would send the question text to a search engine, so it waits for the owner's yes |
 | ~~2026-12-15~~ done 2026-10-21 | **The honesty score in the cockpit**, with its history, so a drop after a model change shows at a glance |

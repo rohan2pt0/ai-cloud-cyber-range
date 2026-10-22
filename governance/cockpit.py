@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import calendar
 import html
 import importlib.util
 import json
@@ -231,6 +232,38 @@ class Collector:
         else:
             self.add("served", "Which model answered", "KPI", "Run", f"strong model on {calls - round(share * calls)} calls", "green",
                      "The AI calls in the last day were answered by the model asked for, not a weak fallback.", importance=2)
+
+    def c_anomalies(self, now: float | None = None):
+        try:                                                          # per-caller baselines (doc 92): a stolen key shows by how it behaves
+            with urllib.request.urlopen("http://127.0.0.1:8080/v1/anomalies", timeout=3) as r:
+                rep = json.loads(r.read())
+        except Exception:  # noqa: BLE001 - the gateway may be off; then nothing is known
+            self.add("anomalies", "Unusual AI key use", "KRI", "Detect", "gateway off", "unknown",
+                     "The gateway is not answering, so it cannot say whether a key was used in an unusual way.", importance=3)
+            return
+        now = time.time() if now is None else now
+
+        def when(a: dict) -> float:
+            try:
+                return float(calendar.timegm(time.strptime(str(a.get("ts")), "%Y-%m-%dT%H:%M:%SZ")))
+            except ValueError:
+                return 0.0
+
+        def plain(s: object) -> str:                                  # the cockpit names no external URL: strip any scheme
+            return re.sub(r"[A-Za-z][A-Za-z0-9+.-]*://", "", str(s or ""))[:80]
+
+        recent = sorted((a for a in rep.get("anomalies") or [] if isinstance(a, dict) and now - when(a) <= 24 * 3600),
+                        key=when, reverse=True)
+        if recent:
+            top = recent[0]
+            self.add("anomalies", "Unusual AI key use", "KRI", "Detect",
+                     plain(f"{len(recent)} in 24 h, latest: {top.get('caller', '?')} {top.get('kind', '?')}"), "red",
+                     plain(f"A caller used the AI gateway unlike its usual pattern ({top.get('detail', '')}). "
+                           "A stolen key often shows this way first."),
+                     "Check who used the key; revoke it if it was not you", "./securax gateway-auth key list", urgent=True, importance=3)
+        else:
+            self.add("anomalies", "Unusual AI key use", "KRI", "Detect", "no unusual use", "green",
+                     "Every caller used the AI gateway in its usual pattern over the last day.", importance=3)
 
     def c_auth_residency(self):
         regulated = self.profile == "regulated"
@@ -565,7 +598,7 @@ class Collector:
                  "" if st == "green" else "Add a free key or download the local coder", "./securax providers chain builder show", importance=1)
 
     def run(self) -> None:
-        for fn in (self.c_services, self.c_gateway, self.c_served, self.c_auth_residency, self.c_tls, self.c_crypto, self.c_keys, self.c_storage, self.c_images, self.c_threat_data, self.c_incidents, self.c_findings, self.c_soc,
+        for fn in (self.c_services, self.c_gateway, self.c_served, self.c_anomalies, self.c_auth_residency, self.c_tls, self.c_crypto, self.c_keys, self.c_storage, self.c_images, self.c_threat_data, self.c_incidents, self.c_findings, self.c_soc,
                    self.c_honesty, self.c_fitness, self.c_coverage, self.c_coding):
             self.safe(fn)
 
@@ -946,6 +979,10 @@ def render(c: Collector, maps: dict, hist: list[dict], ai: str, now: float, targ
              + "</details>")
     if gov:
         h.append(gov[0])
+    try:                                                          # the mission board (doc 102): the update's Go/No-Go and the rules firing, folded
+        h.append(_load("securax_mission", "governance/mission.py").html_card(ms))
+    except Exception:  # noqa: BLE001 - a convenience panel must never fail the cockpit
+        pass
     try:                                                          # what is left to set up (./securax finish), folded
         h.append(_load("securax_finish", "governance/finish.py").html_card(panel=True))
     except Exception:  # noqa: BLE001 - the checklist is a convenience; it must never fail the cockpit

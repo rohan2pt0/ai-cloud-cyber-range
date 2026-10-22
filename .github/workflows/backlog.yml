@@ -1,0 +1,43 @@
+# One issue, "Backlog: what is not finished" (doc 103), rebuilt every day on GitHub's machines from governance/backlog.py:
+# deferred asks, dated promises due or late, pull requests waiting, branches with no pull request. It needs no Claude
+# session and no laptop, so an ask cannot be lost because a session ended or a usage limit was reached.
+name: backlog
+on:
+  schedule:
+    - cron: "43 3 * * *"        # every day 03:43 UTC (09:13 IST)
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ["governance/queue.json"]
+
+concurrency:
+  group: backlog
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: read
+
+jobs:
+  issue:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: "Build the backlog"
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          python3 governance/backlog.py --markdown > body.md
+          cat body.md >> "$GITHUB_STEP_SUMMARY"
+      - name: "Write it into the one Backlog issue"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh label create backlog --color B60205 --description "what is not finished (doc 103)" --force >/dev/null
+          n="$(gh issue list --label backlog --state open --json number -q '.[0].number')"
+          if [ -n "$n" ]; then gh issue edit "$n" --body-file body.md
+          else gh issue create --title "Backlog: what is not finished" --label backlog --body-file body.md; fi

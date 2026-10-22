@@ -122,7 +122,7 @@ def test_hs256_only_with_an_operator_secret(keys, cfg):
 
 
 def test_the_none_algorithm_can_never_be_configured():
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="'none' algorithm"):          # its own refusal, not a later error about another setting
         idn.Config.from_env({"AUTH_MODE": "required", "OIDC_ALGS": "RS256,none", "GATEWAY_API_KEYS": "[]"})
 
 

@@ -8,7 +8,33 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
+### Fixed
+- **CI runs that a new push should never stop** (doc 68): devsecops ran twice for every push to a PR branch and its superseded runs kept going; lifecycle and windows kept superseded runs too; a quick second merge cancelled the first docs deploy; and a nightly sandbox cancelled because a newer run replaced it read as "main is not green", which could hold the laptop's nightly update. Every PR workflow now cancels only its own PR's older run, releases queue and are never cancelled, a cancelled run is never read as a result, and a test enforces all of it.
+- **The Command Center's web server ran an 18-month-old nginx** (1.27, superseded in April 2025; the cockpit showed "Oldest running software: 553 days"). It now runs the same nginx 1.30 as the HTTPS edge, on the current digest, and a test keeps every nginx in the estate on one line. It arrives with `./securax update` (backup first, rolls back by itself if the estate does not come up).
+- **A phone paired over HTTPS never synced.** The Life OS and `./securax sync-link` gave it `sync.<domain>`, an address the page may not call (another origin). They now use the Command Center's own `/sync`, and a device paired the old way is moved over by itself, token kept. Found while building the phone journey.
+- **Rail tests that would not have caught a weakened rail**, found by mutation testing: the "never allow the none algorithm" test was satisfied by a later, unrelated error, and nothing checked a wrong-shaped AI control file, a malformed sign-in token, a weak signing key, or the sync guard's window edges. Each now has its test.
+
 ### Added
+- **Nothing asked is lost** (doc 103): `./securax backlog` lists everything started or promised and not finished (deferred asks in `governance/queue.json`, dated promises due or late, open pull requests, branches with no PR, unpushed work, agents' scratch copies), and the daily `backlog` workflow keeps it in one GitHub issue, so an ask survives a session cut off by a usage limit or a restart. Going back over it found every feature PR on main, and 20 Dependabot PRs never handled; those are now queued.
+- **Releases, small and often** (doc 21): an agent works out the next version from this changelog (`./securax release`), cuts it every Monday into a "Release vX.Y.Z" PR when main's nightly is green, and merging that PR tags the commit and publishes the GitHub Release (notes, source archives, installers, SBOM, signed provenance). It publishes draft-first, so GitHub's immutable releases can be switched on. Until now nothing had ever been published, so the stable channel had nothing to follow.
+- **Mutation testing of the safety rails** (doc 101): `python3 tools/mutate.py` makes one small change at a time to the rail code and checks the tests notice; weekly in CI, with a ratchet so the known survivors can only shrink.
+- **Mission control** (doc 102): the estate's management operating system, run by AI agents.
+  - `./securax mission`: one board in the OODA order (observe, orient, decide, act), ending in the one thing that needs you.
+  - `./securax mission poll update`: a Go/No-Go poll (ransomware alarm, a fresh clean backup, disk, a reporting clock, main's nightly build). The nightly update runs only on GO and tells you once why it held.
+  - `./securax mission rules`: ten flight rules agreed in advance; the hourly `mission-rules` routine acts on the ones an agent may do alone and only reports the owner's.
+  - `./securax mission crew`: every role an AI agent (RACI, three lines, maker-checker), with the decisions kept for you.
+  - `./securax mission aar`: the week's after-action review, every Sunday into `vault/mission/`; `./securax mission costs`: money (your own list), machine and model tokens in one view.
+- **A sandbox that proves more** (doc 101).
+  - `./securax proofs`: the claims the docs make that no journey proves yet, ranked, with the journey that could prove each.
+  - Any sandbox journey can be run on its own in CI (the e2e workflow's `journeys` input), so a fix is proved in minutes.
+  - The PowerShell scripts are parsed, linted and, where safe, run on a real Windows machine (`windows-scripts` workflow).
+  - **Chaos experiments** on the everyday estate (`./securax chaos`, nightly journey `estate_chaos`): seeded faults, each healed within its limit and always reverted.
+- **Security round** (docs 87, 89, 92).
+  - **Images pinned by digest:** the 13 services other devices or the internet reach run `name:tag@sha256:…` (`local/compose/digest-pins.json`); a test fails if one loses its pin, and `tools/digest_check.py` (weekly in supply-chain-watch) reports a tag that moved to a new build.
+  - **A stolen AI key, spotted by how it behaves:** the gateway keeps a 7-day baseline per caller and writes a burst, a never-used model or an odd hour to the audit chain; the cockpit lights "Unusual AI key use". Detection only, no text stored. `GET /v1/anomalies`.
+  - **Careful mode:** a `-careful` model in Chat, the `X-SecuRAX-Careful: 1` header, or `./securax ask … --careful`: draft, check each claim, rewrite. Every call goes through the rails and the allowance; a failed step returns the draft, marked.
+  - **Answers about things that change** (rates, laws, prices, news) say the figure may be old and how to get it live, unless search results came with the question.
+  - **The sync alert names the real client** behind the bundled web servers; the address is believed only from a trusted proxy (`SYNC_TRUSTED_PROXIES`).
 - **Roadmap sweep: dated items done today.**
   - **AI honesty in the cockpit** (doc 89): each `./securax ai honesty` run is kept (the last 52), and the cockpit shows the score and any drop since the run before.
   - **Which model answered** (doc 83): the gateway counts the model that served each call over 24 hours (names and times only) at `/v1/served`; the cockpit turns amber when more than a fifth fell to a weaker fallback.
@@ -37,6 +63,8 @@ for the versioning and release policy.
   - `site domain NAME` prints the exact DNS records and the one GitHub setting.
   - `site live` switches every link to your domain only after checking that the domain serves the site over HTTPS.
 ### Fixed
+- **Two backups on update nights.** The nightly update took its own full backup 45 minutes after the daily one; the nightly run now uses that backup (under 2 hours old) as its safety copy. A manual update still takes a fresh one, so a copy never misses what changed since.
+- **The watchdog healed only the gateway.** A crashed Command Center or sync service stayed down, and a frozen container stayed frozen. `./securax watch` now checks all three and unfreezes before it heals (found by the new chaos experiments).
 - **Contrast on the control navigator.** Heat-map numbers in light mode and N/A cells in dark mode were below WCAG AA. Both pass now. The cockpit's area table no longer runs off a phone screen.
 - **Cockpit "do next" listed builders' work.** A gap-backlog item such as "Implement CCI scoring" sat among your actions with no command. Only vital signs you can act on are listed now; the backlog stays in Mission planning.
 - **Cockpit instruments cut readings mid-phrase** ("plain HTTP (browsers …"). The reading now shows whole, with its detail in small type beneath.

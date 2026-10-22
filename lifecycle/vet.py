@@ -109,7 +109,8 @@ def sha256(b: bytes) -> str:
 
 def walk(root: pathlib.Path):
     for dirpath, dirs, files in os.walk(root):
-        dirs[:] = sorted(d for d in dirs if d not in SKIP_DIRS)
+        dirs[:] = sorted(d for d in dirs if d not in SKIP_DIRS
+                         and not (d == "worktrees" and os.path.basename(dirpath) == ".claude"))   # agents' scratch copies (gitignored)
         for f in sorted(files):
             p = pathlib.Path(dirpath) / f
             if p.is_symlink():

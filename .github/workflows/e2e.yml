@@ -14,6 +14,11 @@ on:
   push: { branches: [main] }
   schedule: [{ cron: "30 20 * * *" }]     # 02:00 IST
   workflow_dispatch:
+    inputs:
+      journeys:
+        description: "Journeys to run, comma-separated (empty = all). A single journey proves a fix in minutes, not 40."
+        required: false
+        default: ""
 
 permissions:
   contents: read
@@ -36,6 +41,7 @@ jobs:
         run: |
           if [ "${{ github.event_name }}" = pull_request ]; then
             J="$(python3 lifecycle/impact.py --base "origin/${{ github.base_ref }}" --journeys)"
+          elif [ -n "${{ github.event.inputs.journeys }}" ]; then J="${{ github.event.inputs.journeys }}"
           else J=ALL; fi
           echo "journeys=$J" >> "$GITHUB_OUTPUT"
           echo "Journeys: ${J:-none (no journey guards these files; unit tests and fitness still ran)}" >> "$GITHUB_STEP_SUMMARY"
@@ -47,11 +53,12 @@ jobs:
         run: |
           pip install pyyaml playwright pytest
           playwright install --with-deps chromium
+          sudo apt-get install -y --no-install-recommends libnss3-tools   # certutil: the phone journey trusts the estate CA as a person does
       - name: Run the user journeys against the real stack
         if: steps.pick.outputs.journeys != ''
         run: |
           J="${{ steps.pick.outputs.journeys }}"
-          if [ "$J" = ALL ]; then python3 sandbox/run.py; else python3 sandbox/run.py -j "$J"; fi
+          if [ "$J" = ALL ]; then python3 -u sandbox/run.py; else python3 -u sandbox/run.py -j "$J"; fi   # -u: each journey shows as it finishes
       - name: Upload screenshots + results (so a failure can be SEEN)
         if: always()
         uses: actions/upload-artifact@v4

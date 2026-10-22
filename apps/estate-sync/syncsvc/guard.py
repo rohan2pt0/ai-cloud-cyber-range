@@ -4,6 +4,14 @@
     SYNC_RATE_WINDOW_S        the sliding window for that limit, in seconds                  (default 60)
     SYNC_REFUSED_ALERT_AT     refused sign-ins from one address that raise an alert          (default 10)
     SYNC_REFUSED_WINDOW_S     the sliding window for that count, in seconds                  (default 900, i.e. 15 minutes)
+    SYNC_TRUSTED_PROXIES      peers whose X-Real-IP header names the client (comma-separated IPs or CIDRs)
+                              (default 127.0.0.0/8, ::1 and 172.16.0.0/12: loopback and the private Docker range, since the
+                              compose networks set no subnet of their own; set it to a value with no valid entry to trust nobody)
+
+Which address is "the client": behind the bundled nginx every request arrives from the proxy, so the proxy writes the address it saw
+into X-Real-IP (overwriting whatever the client sent). That header is believed ONLY when the direct peer is a trusted proxy and the
+request carries exactly one well-formed address; otherwise the peer's own address is used. Anyone can send X-Real-IP, so it is never
+taken from an untrusted peer.
 
 A token over its limit gets HTTP 429 with Retry-After, and is served again as soon as its oldest request leaves the window. Refused
 sign-ins never lock anyone out: they only write ONE alert line per address when it crosses the threshold (again only after it has
@@ -16,6 +24,7 @@ timestamps per key. The alert file keeps its last ALERT_LINES lines. Standard li
 from __future__ import annotations
 
 import hashlib
+import ipaddress
 import json
 import os
 import threading
@@ -33,6 +42,49 @@ def env_int(name: str, default: int) -> int:
     except ValueError:
         return default
     return v if v > 0 else default
+
+
+DEFAULT_TRUSTED_PROXIES = "127.0.0.0/8,::1,172.16.0.0/12"
+
+
+def trusted_proxies(raw: str | None = None) -> tuple:
+    """The networks whose X-Real-IP is believed. Unset or blank: the default. Invalid entries are skipped (never widened), so a
+    setting with no valid entry trusts nobody and every request is counted by its direct peer."""
+    if raw is None:
+        raw = os.environ.get("SYNC_TRUSTED_PROXIES", "")
+    if not raw.strip():
+        raw = DEFAULT_TRUSTED_PROXIES
+    nets = []
+    for part in raw.split(","):
+        try:
+            nets.append(ipaddress.ip_network(part.strip(), strict=False))
+        except ValueError:
+            continue
+    return tuple(nets)
+
+
+def _ip(value: str | None):
+    """One IP address, or None. IPv4-mapped IPv6 (::ffff:a.b.c.d) is read as the IPv4 address it carries."""
+    if not value or len(value) > 64:
+        return None
+    try:
+        ip = ipaddress.ip_address(value.strip())
+    except ValueError:
+        return None
+    return ip.ipv4_mapped if ip.version == 6 and ip.ipv4_mapped else ip
+
+
+def client_addr(peer: str | None, real_ips: list[str], trusted: tuple) -> str:
+    """The address to count a request against: X-Real-IP when the direct peer is a trusted proxy and sent exactly one valid
+    address in it, else the peer itself. real_ips is every X-Real-IP value on the request (more than one is refused, not guessed)."""
+    peer = peer or ""
+    pip = _ip(peer)
+    if pip is None or not any(pip.version == n.version and pip in n for n in trusted):
+        return peer
+    if len(real_ips) != 1:
+        return peer
+    cip = _ip(real_ips[0])
+    return str(cip) if cip is not None else peer
 
 
 def token_key(token: str) -> str:

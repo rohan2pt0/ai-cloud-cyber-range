@@ -2,9 +2,14 @@
 # all on GitHub-hosted runners. This IS the CI/CD evidence for the interview.
 name: devsecops
 on:
-  push: { branches: ["**"] }
+  push: { branches: [main] }      # a branch with a PR is checked by pull_request; checking its pushes too ran everything twice
   pull_request:
   workflow_dispatch:
+
+# A newer push to the same pull request replaces its older run; runs on main, schedules and dispatches are never cancelled.
+concurrency:
+  group: devsecops-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
   contents: read
