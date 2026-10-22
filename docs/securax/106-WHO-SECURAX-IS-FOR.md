@@ -123,15 +123,24 @@ Both run on the customer's own machine, both are open source, and both feed one 
 ## 4. The business model (a hypothesis)
 
 This section replaces the three earlier price tables (docs 09, 96 and 97) for the business product. Those stay as history.
-Prices are per organisation, whatever its industry.
+Prices are per organisation, whatever its industry. Every product SecuRAX sells is listed here, generated from `products.json`.
 
-| Edition | Who | Price (hypothesis, to test in section 8) |
-|---|---|---|
-| Community | anyone | free, open source, self-hosted: Shield core and Readiness included |
-| Readiness | one organisation, one regulation | **₹1.5 lakh a year**; each further regulation ₹50,000 a year |
-| Shield | one organisation | **per user, from ₹399 a user a month** (the Business band in doc 97), with a minimum of 10 users |
-| Auditor | an audit firm or consultancy | **₹40,000 a year per client, five clients minimum** |
-| Personal | an individual | ₹999 a month (doc 96) |
+<!-- products:start -->
+Generated from [`products.json`](../../products.json) by `tools/features_sync.py`: edit that file to change a product or a price. Community (the open-source core) stays free.
+
+| Product | For | What it is | Price (hypothesis) | Set against | Status |
+|---|---|---|---|---|---|
+| **Shield** (AI security) | Any organisation whose people use AI tools or build on models | Use any AI. Keep your data out of it. | ₹399 a user a month, 10 users minimum | AI firewalls are quote-only; third-party sites report US$20,000–80,000 a year for one vendor's enterprise plan (unverified) | 🟡 Partly built |
+| **Readiness** (Compliance) | Regulated entities and their auditors: RBI, SEBI, UK and AI frameworks | Know where you stand on every regulation. Show the proof. | ₹1.5 lakh a year for one regulation; ₹50,000 each further one | Packaged compliance offers in India sell for ₹50,000–2 lakh a year; consulting engagements ₹6–40 lakh | 🟡 Partly built |
+| **Compliance recipes** (Templates) | CISOs, compliance heads and consultants who should not start from a blank page | Ready-made policies, plans and packs, mapped to the rules. | ₹50,000 a year for the full template library and its updates | An international ISO 27001 documentation toolkit lists at US$799–897 | 🟡 Partly built |
+| **CISO OS** (Leadership) | CISOs and heads of security, from a one-person function to a large team | Run the security function, not the spreadsheet. | ₹4,999 a month per CISO | No direct comparable found; priced as a fraction of one consulting day a month (hypothesis) | 🟡 Partly built |
+| **Cyber Range** (Training) | SOC teams, CERTs, training institutes and anyone running a cyber drill | Practise against a live red team before the real one arrives. | ₹1,000 a participant a month, or ₹2.5 lakh per hosted exercise | One public cyber range lists US$9–15 a user a month; enterprise range licences run £80,000 and up a year | 🟡 Partly built |
+| **Quantum-safe** (Post-quantum) | Banks, insurers, government suppliers and anyone with data that must stay secret past 2030 | Find the cryptography that will not survive, and fix it in order. | ₹75,000 for an assessment and migration plan; ₹40,000 a year to keep it current | CBOM and PQC tools are quote-only and the market is early (ABI Research) | 🟡 Partly built |
+| **Respond** (Incidents) | Anyone with a regulator's incident clock: RBI, SEBI, CERT-In, DPDP, IRDAI | Six hours goes fast. Start the clock, not the panic. | ₹1 lakh a year | Usually bought as incident-response retainers from consultancies (no public India price found) | 🟡 Partly built |
+| **Personal** (For you) | Individuals and families | Your private superintelligence, and your papers in order. | ₹999 a month | Set against consumer productivity and password-manager subscriptions (hypothesis) | 🟡 Partly built |
+<!-- products:end -->
+
+Auditors and consultants buy per client: ₹40,000 a year a client, five clients minimum. The whole estate, for an enterprise: priced per deal.
 
 **What the price points are anchored on:**
 - Packaged compliance offers in India sell for ₹50,000–2 lakh a year.
@@ -183,6 +192,15 @@ reduction 10%. A security failure blocks an item whatever its score.
 | **P3** | SOC connectors (SIEM, ticketing) | 2.6 | L | After the first revenue |
 
 ## 6. What was built in this change
+
+**The catalogue stays current by itself.** To add or change a product, a price or a screenshot:
+1. Edit `products.json`.
+2. Run `python3 tools/screenshots.py ID` in a clean checkout. It uses sample data only and refuses where `vault/` holds private files.
+3. Run `python3 tools/features_sync.py`. The homepage section and the table above are rewritten from the file.
+
+CI's `features-current` check fails if any product names a feature or command that does not exist, or if a screenshot is
+missing. A product's status light is the weakest light of the features it is made of.
+
 
 - **`./securax readiness`** (`governance/readiness.py`):
   - an organisation's own assessment of any mapped regulation, by chapter or category;
