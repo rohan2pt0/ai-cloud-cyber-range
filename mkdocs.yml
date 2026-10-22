@@ -118,6 +118,7 @@ nav:
       - Names, not ports, and links that never break: securax/99-NAMES-NOT-PORTS-AND-LINKS-THAT-NEVER-BREAK.md
       - "The design standard: calm by default": securax/100-DESIGN-STANDARD.md
       - "A sandbox that proves more": securax/101-A-SANDBOX-THAT-PROVES-MORE.md
+      - "Mission control": securax/102-MISSION-CONTROL.md
   - How-to guides:
       - AI providers and plugins: securax/22-PLUGINS-AND-PROVIDERS.md
       - Integrations: securax/07-INTEGRATIONS.md

@@ -111,6 +111,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- [Mission control](docs/securax/102-MISSION-CONTROL.md)
 - [A sandbox that proves more](docs/securax/101-A-SANDBOX-THAT-PROVES-MORE.md)
 - Security round
 - Roadmap sweep: dated items done today
@@ -118,7 +119,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - [A calm Command Center](docs/securax/100-DESIGN-STANDARD.md)
 - [The design standard](docs/securax/100-DESIGN-STANDARD.md)
 - [Free the C: drive](docs/securax/80-STORAGE-THAT-GROWS-WITH-YOU.md)
-- [Docker MCP Toolkit](docs/securax/98-SHIP-AND-STORE-APPS.md)
 
 **Release 0.2.0 - 2026-10-17:**
 

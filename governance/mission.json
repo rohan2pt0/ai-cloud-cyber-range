@@ -1,0 +1,42 @@
+{
+ "about": "Mission control (doc 102). The commander's intent, the crew (every role an AI agent until scope or revenue needs a person), the decisions kept for the owner, the flight rules, and the twelve management disciplines mapped onto the estate. governance/mission.py reads it; governance/tests/test_mission.py checks every command named here exists.",
+ "intent": "Keep the owner's data safe and the estate useful every day, at the lowest cost in money, machine and attention; when unsure, protect the data and wait.",
+ "owner_decides": "spending money, opening or closing an outside account, anything that cannot be undone (deleting data, rotating the backup key, publishing), and a red security finding's risk acceptance",
+ "crew": [
+  {"role": "Flight director", "line": "1", "agent": "autopilot", "does": "runs the loop: reads the board, applies the flight rules, writes postmortems", "commands": ["autopilot", "mission"], "raci": "A"},
+  {"role": "Operations", "line": "1", "agent": "watchdog, backup, update, storage", "does": "keeps the estate up, backed up, current and within its disk", "commands": ["watch", "backup", "update", "storage"], "raci": "R"},
+  {"role": "Builder", "line": "1", "agent": "autobuild (open models)", "does": "writes the fix or the feature from a brief", "commands": ["autobuild", "brief"], "raci": "R"},
+  {"role": "Checker (maker-checker)", "line": "1", "agent": "review + CI + forge gate", "does": "a second, independent look before anything merges", "commands": ["review", "forge"], "raci": "C"},
+  {"role": "Risk officer", "line": "2", "agent": "cockpit, risks, jewels, continuity", "does": "keeps the KRIs, the risk register and the crisis plans current, and says what is over appetite", "commands": ["cockpit", "risks", "jewels", "continuity"], "raci": "C"},
+  {"role": "Compliance", "line": "2", "agent": "comply, regwatch, govern", "does": "maps every obligation to a control, evidence and an owner; watches the regulators", "commands": ["comply", "regwatch", "govern"], "raci": "C"},
+  {"role": "Assurance (internal audit)", "line": "3", "agent": "fitness, proofs, drills, honesty, sandbox", "does": "independently checks that what is claimed is true: tests, drills, proof gaps, restore drills", "commands": ["fitness", "proofs", "gameday", "ai"], "raci": "R/A for assurance"},
+  {"role": "Intelligence", "line": "1", "agent": "regwatch, threat data, research", "does": "what is changing outside: regulators, threats, prices", "commands": ["regwatch", "offline"], "raci": "I"},
+  {"role": "Communications", "line": "1", "agent": "notify (andon), progress", "does": "tells the owner only what needs the owner, and the weekly progress", "commands": ["notify", "progress"], "raci": "I"}
+ ],
+ "flight_rules": [
+  {"id": "no-update-without-go", "metric": "", "when_backup": "", "then": "an update runs only when every Go/No-Go console says GO", "who": "autopilot", "cmd": []},
+  {"id": "backup-stale", "metric": "", "when_backup": "stale", "then": "take a backup now", "who": "autopilot", "cmd": ["backup"]},
+  {"id": "ransomware-suspected", "metric": "", "when_backup": "suspect", "then": "freeze updates and off-site copies; you check the alarm (./securax continuity show data-lost)", "who": "owner", "cmd": []},
+  {"id": "disk-red", "metric": "disk", "when": ["red"], "then": "clean what the storage rules allow, then report what is left", "who": "autopilot", "cmd": ["storage", "--auto"]},
+  {"id": "core-down", "metric": "services", "when": ["red"], "then": "heal with the watchdog", "who": "autopilot", "cmd": ["watch", "--once"]},
+  {"id": "honesty-drop", "metric": "honesty", "when": ["red"], "then": "answers are guessing: add a stronger model (./securax keys), or let careful mode answer important questions", "who": "owner", "cmd": []},
+  {"id": "weak-fallback", "metric": "served", "when": ["amber", "red"], "then": "the strong model is being skipped: check the provider chain", "who": "autopilot", "cmd": ["providers", "list"]},
+  {"id": "stolen-key-signs", "metric": "anomalies", "when": ["red"], "then": "a key behaves unusually: you decide whether to revoke it (./securax gateway-auth key list)", "who": "owner", "cmd": []},
+  {"id": "incident-clock", "metric": "incidents", "when": ["red"], "then": "a regulator's reporting clock is running: the incident page says what is due and when", "who": "owner", "cmd": []},
+  {"id": "threat-data-stale", "metric": "threatdata", "when": ["red"], "then": "refresh the threat data", "who": "autopilot", "cmd": ["offline", "sync"]}
+ ],
+ "disciplines": [
+  {"n": 1, "name": "Strategy and direction", "estate": "Life OS wheel and OKRs; governance/principles.json; the north star in AGENTS.md", "state": "built"},
+  {"n": 2, "name": "Performance management", "estate": "the cockpit's KPIs and KRIs, leading and lagging; ./securax progress", "state": "built"},
+  {"n": 3, "name": "Risk and resilience", "estate": "risks register, crown jewels, continuity scenarios with RTO/RPO, ransomware-proof backups, chaos experiments", "state": "built"},
+  {"n": 4, "name": "Governance and accountability", "estate": "the crew above (RACI, three lines, maker-checker), Govern's organogram, the gateway's roles and kill switch", "state": "built"},
+  {"n": 5, "name": "Operations and process excellence", "estate": "routines (SOPs as code), watchdog, safe update, postmortems by the autopilot", "state": "built"},
+  {"n": 6, "name": "Finance and resource allocation", "estate": "the AI allowance per caller, Govern's yearly cost, storage forecast", "state": "partly built: no single cost view of the estate yet"},
+  {"n": 7, "name": "People and organisation", "estate": "every role is an AI agent today; Govern's job descriptions and the people-scale planner are ready for the first hire", "state": "built for agents"},
+  {"n": 8, "name": "Programme and project execution", "estate": "roadmap rows with dates in every doc, ./securax proofs, ship pr / ship watch", "state": "built"},
+  {"n": 9, "name": "Data and intelligence", "estate": "cockpit snapshot as the single source of truth, regwatch, threat data, autopilot forecasts", "state": "built"},
+  {"n": 10, "name": "Change and transformation", "estate": "channels (stable/beta), rollback to any working version, the design standard's dated migrations", "state": "built"},
+  {"n": 11, "name": "Assurance and compliance", "estate": "compliance maps with evidence, fitness ratchets, sandbox journeys, restore drills, mutation testing (dated)", "state": "built; mutation testing dated"},
+  {"n": 12, "name": "Learning and improvement", "estate": "LESSONS.md, postmortems, honesty history, after-action review each week (doc 102)", "state": "built"}
+ ]
+}

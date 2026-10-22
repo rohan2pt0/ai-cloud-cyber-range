@@ -301,6 +301,19 @@
     "kind": "guard"
   },
   {
+    "id": "mission-rules",
+    "cron": "25 * * * *",
+    "command": [
+      "./securax",
+      "mission",
+      "rules",
+      "--act"
+    ],
+    "description": "Hourly: the flight rules (doc 102). The autopilot does what it may do alone (a missed backup is retaken, a red disk is cleaned, a core service is healed); anything kept for the owner is only reported.",
+    "enabled": true,
+    "kind": "guard"
+  },
+  {
     "id": "autopilot-drill",
     "cron": "40 3 * * *",
     "command": [

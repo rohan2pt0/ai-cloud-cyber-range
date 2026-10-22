@@ -1052,6 +1052,10 @@ EOF2
     # that every feature declares its edition and platform services.  ./securax suite | components | sheet EDITION | check | json
     shift; exec python3 "$ROOT/governance/suite.py" "${@:-report}"
     ;;
+  mission)
+    # ./securax mission [poll OP|rules [--act]|crew] [--json] — mission control (doc 102): the board, Go/No-Go, flight rules, the AI crew.
+    python3 "$ROOT/governance/mission.py" "${@:2}"
+    ;;
   chaos)
     # ./securax chaos [--seed N] [--faults N] [--run] [--json] — chaos experiments on this estate (doc 101); the plan only unless --run.
     python3 "$ROOT/lifecycle/chaos.py" "${@:2}"
@@ -1641,6 +1645,13 @@ EOF2
         [ "$(git -C "$ROOT" rev-list --count HEAD..origin/main 2>/dev/null || echo 0)" -gt 0 ] || exit 0
       fi
       tell(){ "$0" notify send "$1" --title "SecuRAX update" >/dev/null 2>&1 || true; }
+      # The Go/No-Go poll (doc 102): every console must say GO (no ransomware alarm, a clean backup from the last day, disk not red,
+      # no reporting clock running, main's nightly sandbox green). One NO-GO holds tonight's update; the owner hears why, once.
+      if ! POLL="$(python3 "$ROOT/governance/mission.py" poll update 2>&1)"; then
+        C "auto-update held: $(printf '%s' "$POLL" | grep 'NO-GO ' | sed 's/^ *NO-GO *//' | head -3 | tr '\n' ';')"
+        tell "Tonight's update was held (Go/No-Go said NO-GO): $(printf '%s' "$POLL" | grep 'NO-GO ' | sed 's/^ *NO-GO *//' | head -2 | tr '\n' ';') Nothing changed."
+        exit 0
+      fi
     else tell(){ :; }; fi
     C "Updating SecuRAX safely (backup → update → health check → automatic rollback if needed)…"
     # Legacy: older versions rewrote the tracked baseline on every `up`; restore it so the pull can't conflict.
@@ -1650,6 +1661,10 @@ EOF2
     # 1) a safety copy, only when there is a running estate with data (never blocks the update)
     _alive=0; for _i in 1 2 3; do gcurl -fsS -m 10 $(gw_url)/healthz >/dev/null 2>&1 && { _alive=1; break; }; sleep 2; done
     [ "$_alive" = 1 ] || C "  (no running estate answered its health check — skipping the safety backup; run ./securax backup yourself first if the estate holds data)"
+    # A clean backup from the last 2 hours is the safety copy (the 02:30 backup before the 03:15 update): taking a second one only burns disk and time.
+    _BD="$(ev SECURAX_BACKUP_DIR "$ROOT/backups")"
+    _RECENT="$(find "$_BD" -maxdepth 1 -name 'securax-*.tar.gz*' ! -name '*-SUSPECT*' -mmin -120 2>/dev/null | head -1)"
+    if [ "$_alive" = 1 ] && [ -n "$_RECENT" ]; then C "  ✔ a backup from the last 2 hours is the safety copy: $(basename "$_RECENT")"; _alive=0; fi
     if [ "$_alive" = 1 ]; then
       if SAFE_OUT="$("$0" backup 2>&1)"; then C "  ✔ backup taken first: $(printf '%s' "$SAFE_OUT" | tail -1)"; else C "  (could not take a backup — continuing; your data volumes are not touched by an update). Reason: $(printf '%s' "${SAFE_OUT:-the backup stopped without a message; run ./securax backup to see it}" | tail -c 300)"; fi
     fi
@@ -2089,6 +2104,7 @@ BUILD & KEEP IT HEALTHY
   progress       is it making you better off? your rhythm, how much stronger the estate got, the one next step
   proofs         the claims the docs make that no journey proves yet, ranked, with the journey that could prove each
   chaos          chaos experiments: break one real thing, check the estate heals in time (plan only; --run breaks things)
+  mission        mission control: the board, the Go/No-Go poll before an update, the flight rules, and the AI crew (RACI)
   autopilot      what the estate learned from its own failures, which drills it ran by itself, what it foresees running out
   names          https://hub.securax.localhost style addresses instead of localhost:port, in one guided step
   passwords      the estate's password manager (start passwords, then status | lock | open)
