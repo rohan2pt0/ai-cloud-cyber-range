@@ -4,6 +4,8 @@
 > **Status: 🟡 Partly built.** Built and tested: governance/suite.json declares every component's edition and the shared platform services it uses; ./securax suite shows how ready each edition is to sell and the gaps that unlock the most; suite sheet writes an honest datasheet; fitness enterprise-declared fails an undeclared feature, a built claim without its files, or a broken open core. Community is ready; the paid editions wait on audit, roles, tenancy, licensing, hosting and support, each dated. [What the lights mean](../index.md#the-status-lights)
 <!-- status:end -->
 
+> **Prices for the business product are now set in [doc 106](106-WHO-SECURAX-IS-FOR.md)** (a hypothesis to test with design partners). The tables below are kept as history.
+
 **The ask:** make it part of how every component is built that it can grow into an enterprise ecosystem, sold to everyone the way one productivity suite is sold to homes, small businesses and large enterprises, with a few core things kept open source.
 
 **The answer:**

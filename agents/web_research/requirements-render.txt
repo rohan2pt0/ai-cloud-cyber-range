@@ -1,3 +1,3 @@
 # Opt-in: the render engine (--render / make_render_fetch) needs Playwright.
 # The agent core, executor, and all tests run WITHOUT this.
-playwright==1.49.1
+playwright==1.64.0

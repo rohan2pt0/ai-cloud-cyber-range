@@ -261,6 +261,27 @@ def inspect_input(text: str, max_chars: int = 8000, redact: bool = True) -> Verd
     return Verdict(allowed=not blocked, findings=findings, text=clean)
 
 
+# Context the operator or the chat app puts in the system message: instructions, and often retrieved documents (RAG). Long by
+# nature, so no size cap; and phrases such as "### Instruction" or "you are now" are normal there, so a match is recorded
+# (audited, counted) but does not block. What is never legitimate in any context still blocks: hidden tag characters, and an
+# order to send data to an address.
+CONTEXT_BLOCKING = {"PI-100-ascii-smuggling", "PI-008-exfil-request"}
+
+
+def inspect_context(text: str, redact: bool = True) -> Verdict:
+    findings = []
+    for f in detect_prompt_injection(text):
+        if f.rule not in CONTEXT_BLOCKING and f.severity in BLOCKING:
+            f = Finding(f.rule, f.category, "medium", f.detail + " (in the system context: recorded, not blocked)")
+        findings.append(f)
+    clean = normalise(text)
+    if redact:
+        clean, pii = redact_pii(clean)
+        findings += pii
+    blocked = any(f.severity in BLOCKING and not f.rule.startswith("PII-") for f in findings)
+    return Verdict(allowed=not blocked, findings=findings, text=clean)
+
+
 # --------------------------------------------------------------------------- #
 # Agent actions - tool calls the MODEL asks for (OWASP LLM06 Excessive Agency / ASI02 Tool Misuse)
 # --------------------------------------------------------------------------- #

@@ -5,8 +5,7 @@ estate. It ingests security telemetry (the gateway's own audit JSON, Falco runti
 cloud findings), correlates it into incidents, maps each to MITRE ATLAS / ATT&CK, scores
 severity, and produces an analyst-ready incident card with a recommended action.
 
-Targets the "Agentic SecOps / AI-for-security" and "AI-SOC / autonomous detection" asks in
-the PwC, C-DOT and Abu Dhabi JDs.
+The AI-for-security half of SecuRAX: agentic SecOps and AI-SOC detection on the estate's own telemetry.
 
 Key design choice (and the headline talking point): **the SOC does not trust its own
 inputs.** Alert text is attacker-influenced (an attacker can plant strings in a prompt that

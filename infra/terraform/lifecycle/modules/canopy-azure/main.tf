@@ -33,6 +33,9 @@ resource "azurerm_kubernetes_cluster" "this" {
   }
 
   azure_policy_enabled = true
+
+  # azurerm 5 asks for this block; Manual keeps node auto-provisioning off (the pools above are the whole cluster).
+  node_provisioning_profile { mode = "Manual" }
 }
 
 resource "azurerm_kubernetes_cluster_node_pool" "user" {

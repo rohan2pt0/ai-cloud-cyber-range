@@ -28,7 +28,7 @@ CONTROLS = [
     ("AISPM-08", "NIST-AI-RMF", "Cost budget / kill-switch per cloud"),
     ("AISPM-09", "CSA-AICM", "Audit logging of all AI decisions"),
     ("AISPM-10", "SAIF", "Red-team suite in CI (adversarial ML)"),
-    # Extended: CNAPP / CSPM / DSPM / IAM / governance / detection (Deloitte, C-DOT, UAE JDs)
+    # Extended: CNAPP / CSPM / DSPM / IAM / governance / detection
     ("AISPM-11", "NIST-CSF/CSPM", "IaC misconfig scanning (CSPM/CNAPP) in CI"),
     ("AISPM-12", "ISO27001/DSPM", "Sensitive-data detection at the AI boundary (DSPM)"),
     ("AISPM-13", "ISO42001/NIST-AI-RMF-MAP", "Model registry: inventory, risk tiers, approval gates"),
@@ -88,7 +88,7 @@ def posture(root: pathlib.Path) -> list[dict]:
         "AISPM-11": has(r"scan-type:\s*config", r"conftest", r"trivy"),
         "AISPM-12": has(r"redact_pii", r"DSPM"),
         "AISPM-13": has(r"approval_gate", r"risk_tier"),
-        "AISPM-14": has(r"sanitise_chunk", r"RAG chunk", r"guardrails/inspect"),
+        "AISPM-14": has(r"def inspect_context\(", r"def _texts\("),     # the context the model reads is inspected, not merely an endpoint that could
         "AISPM-15": has(r"OpenIDConnect|openid_connect|AssumeRoleWithWebIdentity", r"automountServiceAccountToken:\s*false"),
         "AISPM-16": has(r"ai-soc", r"def correlate\(", r"kill-chain"),
     }

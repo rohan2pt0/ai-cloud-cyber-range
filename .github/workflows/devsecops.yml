@@ -1,5 +1,5 @@
 # DevSecOps pipeline: SAST + secrets + deps + container + IaC + AI red-team, all free,
-# all on GitHub-hosted runners. This IS the CI/CD evidence for the interview.
+# all on GitHub-hosted runners. This is the CI/CD evidence a buyer or auditor can inspect.
 name: devsecops
 on:
   push: { branches: [main] }      # a branch with a PR is checked by pull_request; checking its pushes too ran everything twice
@@ -44,7 +44,7 @@ jobs:
         run: python redteam/aispm_scan.py --root . --out docs/aispm-report.json
       - name: Board risk brief
         run: python redteam/board_report.py --redteam redteam/results.json --aispm docs/aispm-report.json --out docs/board-brief.md
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: ai-assurance-reports
           path: |
@@ -62,7 +62,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: "20" }
+        with: { node-version: "22" }
       - name: Install jsdom
         working-directory: guiding-map
         run: npm ci || npm install
@@ -82,7 +82,7 @@ jobs:
       - uses: actions/checkout@v4
         with: { fetch-depth: 0 }
       - name: Gitleaks (secret scanning)
-        uses: gitleaks/gitleaks-action@v2
+        uses: gitleaks/gitleaks-action@v3
         env: { GITHUB_TOKEN: "${{ secrets.GITHUB_TOKEN }}" }
       - name: Semgrep (SAST, OWASP + security-audit rulesets)
         uses: semgrep/semgrep-action@v1
@@ -106,7 +106,7 @@ jobs:
           output: trivy-config.sarif
           trivy-config: trivy.yaml            # path-scoped, reasoned exceptions in .trivyignore.yaml
           exit-code: "0"
-      - uses: github/codeql-action/upload-sarif@v3
+      - uses: github/codeql-action/upload-sarif@v4
         if: always()
         with: { sarif_file: trivy-config.sarif }
       - name: Conftest (OPA policy gate on Terraform)
@@ -132,7 +132,7 @@ jobs:
           output: trivy-image.sarif
           severity: CRITICAL,HIGH
           exit-code: "0"
-      - uses: github/codeql-action/upload-sarif@v3
+      - uses: github/codeql-action/upload-sarif@v4
         if: always()
         with: { sarif_file: trivy-image.sarif }
       - name: Generate SBOM (CycloneDX)
@@ -141,5 +141,5 @@ jobs:
           image: vulnbank/llm-gateway:ci
           format: cyclonedx-json
           output-file: sbom.cdx.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with: { name: sbom, path: sbom.cdx.json }

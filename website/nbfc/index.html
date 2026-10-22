@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NBFC cyber directions readiness · SecuRAX</title>
+<meta name="description" content="See where your NBFC stands on the RBI cyber directions of 2026, paragraph by paragraph for your layer, with evidence, owners, recurring duties and a board pack. Runs on your own machine.">
+<meta property="og:title" content="SecuRAX Shield · Let your people use AI. Keep your data out of it.">
+<meta property="og:description" content="The AI firewall for regulated companies: redaction, prompt-attack blocking, data residency and audit evidence, on your own hardware.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="{{SITE_URL}}">
+<link rel="canonical" href="{{SITE_URL}}">
+<meta name="robots" content="index,follow">
+<meta property="og:site_name" content="{{PRODUCT_NAME}}">
+<meta name="twitter:card" content="summary">
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"SoftwareApplication","name":"SecuRAX Shield","applicationCategory":"SecurityApplication","operatingSystem":"Linux, Windows (WSL), macOS","description":"The AI firewall for regulated companies: redaction, prompt-attack blocking, data residency and audit evidence, on your own hardware.","url":"{{SITE_URL}}","publisher":{"@type":"Organization","name":"{{BRAND_NAME}}","url":"{{SITE_URL}}"}}</script>
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<style>
+:root{--navy:#0b1b33;--navy2:#13294b;--ink:#0f1c33;--text:#2b3a55;--muted:#5b6b86;--line:#e3e8f0;--bg:#f6f8fb;--card:#fff;--gold:#e8b84a;--gold2:#8a6514;--green:#13723a;--amber:#b45309;--red:#b91c1c;--radius:16px}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:system-ui,-apple-system,"Segoe UI",Roboto,Inter,Arial,sans-serif;color:var(--text);background:var(--bg);line-height:1.6;font-size:16px;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+img{max-width:100%;height:auto;display:block}
+.wrap{max-width:1180px;margin:0 auto;padding:0 20px}
+.banner{background:var(--gold);color:var(--navy);font-size:14px;text-align:center;padding:9px 16px;font-weight:600}
+.banner a{font-weight:800}
+header.nav{background:rgba(11,27,51,.96);backdrop-filter:saturate(1.4) blur(8px);color:#fff;position:sticky;top:0;z-index:10;border-bottom:1px solid rgba(255,255,255,.08)}
+.nav .wrap{display:flex;align-items:center;gap:22px;height:64px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:800;font-size:19px;text-decoration:none}
+.brand small{font-weight:600;color:#b9c6dd;font-size:12px}
+.nav ul{display:flex;gap:22px;list-style:none;margin-left:auto}
+.nav ul a{text-decoration:none;color:#d7e0ef;font-size:15px;white-space:nowrap}
+.nav .btn,.brand span{white-space:nowrap}
+.menu{display:none;position:relative}.menu summary{list-style:none;cursor:pointer;border:1px solid rgba(255,255,255,.35);border-radius:10px;padding:7px 12px;font-weight:700;font-size:14px}
+.menu summary::-webkit-details-marker{display:none}.menu ul{display:grid!important;position:absolute;right:0;top:46px;background:var(--navy);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:12px 16px;gap:12px;min-width:200px;box-shadow:0 18px 44px rgba(0,0,0,.35)}
+.deploy{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}.deploy .card b{display:block;font-size:13px;letter-spacing:1px;text-transform:uppercase;color:var(--gold2);margin-bottom:8px}
+.nav ul a:hover{color:#fff}
+.btn{display:inline-block;border-radius:10px;padding:13px 22px;font-weight:700;text-decoration:none;font-size:15px;border:2px solid transparent;transition:transform .15s,background .15s}
+.btn:hover{transform:translateY(-1px)}
+.btn-gold{background:var(--gold);color:var(--navy)}
+.btn-gold:hover{background:#f2c862}
+.btn-ghost{border-color:rgba(255,255,255,.45);color:#fff}
+.btn-ghost:hover{border-color:#fff}
+.btn-line{border-color:var(--navy);color:var(--navy)}
+.hero{background:radial-gradient(900px 520px at 80% 0,#2a5596 0,transparent 62%),linear-gradient(165deg,var(--navy) 0,var(--navy2) 100%);color:#fff;padding:76px 0 0;overflow:hidden}
+.hero .wrap{display:grid;grid-template-columns:1.1fr .9fr;gap:40px;align-items:end}
+.eyebrow{display:inline-block;font-size:13px;font-weight:800;letter-spacing:1.6px;text-transform:uppercase;color:#f2c75c;margin-bottom:16px}
+h1{font-size:clamp(36px,5.4vw,60px);line-height:1.04;letter-spacing:-1.2px;margin-bottom:20px}
+.hero p.lead{font-size:19.5px;color:#d5dfee;max-width:600px;margin-bottom:28px}
+.cta{display:flex;gap:12px;flex-wrap:wrap}
+.micro{font-size:14px;color:#c8d4e6;margin-top:16px;padding-bottom:72px}
+.hero-visual{position:relative;display:flex;justify-content:center;padding-top:10px}
+.phone{width:300px;border-radius:38px;background:#05101f;padding:10px;box-shadow:0 30px 80px rgba(0,0,0,.45),0 0 0 1px rgba(255,255,255,.12);margin-bottom:-60px}
+.phone .screen{border-radius:30px;overflow:hidden;height:600px}
+.phone img{width:100%;height:100%;object-fit:cover;object-position:top}
+.float{position:absolute;background:#fff;color:var(--ink);border-radius:12px;padding:12px 14px;font-size:13.5px;box-shadow:0 12px 34px rgba(0,0,0,.28);max-width:240px;line-height:1.4}
+.float b{display:block;font-size:13px}
+.f1{left:-6px;top:90px}.f2{right:-10px;top:300px}
+.tag{display:inline-block;font-size:11px;font-weight:800;border-radius:6px;padding:2px 7px;margin-bottom:6px}
+.tag-r{background:#fde8e8;color:var(--red)}.tag-g{background:#e7f6ec;color:var(--green)}
+.models{background:#fff;border-bottom:1px solid var(--line);padding:30px 0 22px}
+.models p{text-align:center;font-size:14px;color:var(--muted);font-weight:600;letter-spacing:.3px}
+.models ul{display:flex;flex-wrap:wrap;justify-content:center;gap:10px 26px;list-style:none;margin-top:12px;font-weight:800;color:#33425f;font-size:17px}
+section{padding:88px 0}
+section.alt{background:#fff}
+h2{font-size:clamp(28px,3.8vw,44px);color:var(--ink);letter-spacing:-.8px;line-height:1.1;margin-bottom:14px}
+.kicker{font-size:13px;font-weight:800;letter-spacing:1.4px;text-transform:uppercase;color:var(--gold2);margin-bottom:10px;display:block}
+.sub{font-size:19px;color:var(--muted);max-width:760px;margin-bottom:42px}
+.center{text-align:center}.center .sub{margin-left:auto;margin-right:auto}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:26px}
+section.alt .card{background:var(--bg)}
+.card h3{font-size:19px;color:var(--ink);margin-bottom:8px}
+.card p{font-size:15.5px}
+.pillar{padding:30px}
+.pillar .ic{width:46px;height:46px;border-radius:12px;display:grid;place-items:center;font-size:22px;background:var(--navy);margin-bottom:16px}
+.pillar ul{list-style:none;margin-top:14px;display:grid;gap:8px;font-size:15px}
+.pillar li::before{content:"✓  ";color:var(--green);font-weight:800}
+.demo{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.term{background:#0a1628;color:#dbe6f6;border-radius:var(--radius);padding:22px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:14px;line-height:1.65;box-shadow:0 18px 40px rgba(11,27,51,.18)}
+.term .h{color:#8aa3c8;font-size:12px;letter-spacing:1px;text-transform:uppercase;margin-bottom:10px;font-family:system-ui,sans-serif;font-weight:700}
+.term .in{color:#fff}
+.term .bad{color:#fca5a5}.term .ok{color:#86efac}.term .dim{color:#8aa3c8}
+.caption{font-size:14px;color:var(--muted);margin-top:16px;text-align:center}
+.tour{display:grid;grid-template-columns:1fr 1.15fr;gap:56px;align-items:center;margin-bottom:96px}
+.tour:last-child{margin-bottom:0}
+.tour.rev{grid-template-columns:1.15fr 1fr}
+.tour.rev .copy{order:2}
+.copy h3{font-size:clamp(24px,2.8vw,32px);color:var(--ink);letter-spacing:-.5px;line-height:1.15;margin-bottom:12px}
+.copy p{font-size:17px;margin-bottom:14px}
+.shot{border-radius:14px;overflow:hidden;box-shadow:0 24px 60px rgba(11,27,51,.22),0 0 0 1px rgba(11,27,51,.08);background:#fff}
+.shot .bar{height:34px;background:#e9eef5;display:flex;align-items:center;gap:7px;padding:0 14px}
+.shot .bar i{width:11px;height:11px;border-radius:50%;background:#c5cfdd;display:block}
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;counter-reset:s}
+.step{counter-increment:s;position:relative;padding-top:58px}
+.step::before{content:counter(s);position:absolute;top:22px;left:26px;width:30px;height:30px;border-radius:50%;background:var(--gold);color:var(--navy);font-weight:800;display:grid;place-items:center}
+.step code{display:block;margin-top:12px}
+code{background:#eef2f8;border-radius:6px;padding:3px 8px;font-size:.9em;font-family:ui-monospace,Menlo,Consolas,monospace}
+.proof{background:var(--navy);color:#fff}
+.proof .wrap{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;padding:46px 20px;text-align:center}
+.proof b{display:block;font-size:40px;letter-spacing:-1px;color:var(--gold)}
+.proof span{font-size:14.5px;color:#c4d1e6}
+.light{display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:800;border-radius:999px;padding:3px 10px;margin-top:14px}
+.light::before{content:"";width:9px;height:9px;border-radius:50%;background:currentColor}
+.l-g{color:var(--green);background:#e7f6ec}.l-a{color:var(--amber);background:#fdf2e1}.l-r{color:var(--red);background:#fde8e8}
+.badges{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.badge{border:1px solid var(--line);background:#fff;border-radius:10px;padding:10px 14px;font-weight:700;color:var(--ink);font-size:14px}
+.note{font-size:14.5px;color:var(--muted);margin-top:16px}
+.tiers{display:grid;grid-template-columns:repeat(3,1fr);gap:20px}
+.tier{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:28px;display:flex;flex-direction:column}
+.tier.hl{border:2px solid var(--gold2);box-shadow:0 18px 44px rgba(11,27,51,.10);position:relative}
+.tier.hl::after{content:"Start here";position:absolute;top:-12px;left:24px;background:var(--gold);color:var(--navy);font-size:12px;font-weight:800;border-radius:999px;padding:3px 10px}
+.tier h3{font-size:22px;color:var(--ink)}
+.tier .price{font-size:28px;font-weight:800;color:var(--ink);margin:8px 0 2px}
+.tier .per{font-size:14px;color:var(--muted);margin-bottom:18px}
+.tier ul{list-style:none;display:grid;gap:9px;font-size:15px;margin-bottom:24px;flex:1}
+.tier li::before{content:"✓  ";color:var(--green);font-weight:800}
+.faq details{background:#fff;border:1px solid var(--line);border-radius:12px;padding:18px 20px;margin-bottom:10px}
+.faq summary{cursor:pointer;font-weight:700;color:var(--ink);font-size:16.5px}
+.faq details p{margin-top:10px}
+.closing{background:radial-gradient(800px 400px at 50% 0,#2a5596 0,transparent 65%),linear-gradient(165deg,var(--navy) 0,var(--navy2) 100%);color:#fff;text-align:center}
+.closing h2{color:#fff}
+.closing p{color:#d2dcec;margin:0 auto 28px;max-width:620px;font-size:19px}
+.closing .cta{justify-content:center}
+footer{background:#071326;color:#9fb0cc;font-size:14px;padding:50px 0 30px}
+footer .cols{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:24px;margin-bottom:28px}
+footer h4{color:#fff;font-size:14px;margin-bottom:10px}
+footer ul{list-style:none;display:grid;gap:6px}
+footer a{text-decoration:none}
+footer a:hover{color:#fff}
+.fine{border-top:1px solid rgba(255,255,255,.08);padding-top:18px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+@media (max-width:960px){
+  .hero .wrap,.tour,.tour.rev,.demo{grid-template-columns:1fr}
+  .tour.rev .copy{order:0}
+  .grid3,.tiers,.steps{grid-template-columns:1fr 1fr}
+  .proof .wrap{grid-template-columns:1fr 1fr}
+  .nav .wrap>ul{display:none}
+  .menu{display:block;margin-left:auto}
+  .deploy{grid-template-columns:1fr}
+  footer .cols{grid-template-columns:1fr 1fr}
+  .micro{padding-bottom:30px}
+  .f1{left:0}.f2{right:0}
+}
+@media (max-width:600px){
+  .grid3,.tiers,.steps{grid-template-columns:1fr}
+  section{padding:60px 0}
+  .hero{padding-top:52px}
+  .brand small{display:none}
+  .nav .wrap>.btn{display:none}
+  .nav .wrap{gap:10px}
+  .phone{width:250px}.phone .screen{height:500px}
+  .float{max-width:200px;font-size:12.5px}
+  .tour{margin-bottom:64px}
+}
+</style>
+<style>
+.flow{display:grid;grid-template-columns:1fr auto 1.3fr auto 1fr;gap:14px;align-items:center}
+.node{background:#fff;border:1px solid var(--line);border-radius:14px;padding:20px;text-align:center}
+.node.core{background:var(--navy);color:#fff;border:0;box-shadow:0 18px 44px rgba(11,27,51,.22)}
+.node.core h3{color:#fff}.node h3{font-size:18px;color:var(--ink);margin-bottom:8px}
+.node ul{list-style:none;font-size:14.5px;display:grid;gap:6px;text-align:left;margin-top:10px}
+.node.core li::before{content:"✓  ";color:var(--gold);font-weight:800}
+.arrow{font-size:28px;color:var(--gold2);font-weight:800}
+.hero-demo{display:grid;gap:14px;padding-bottom:64px}
+.hero-demo .term{box-shadow:0 24px 60px rgba(0,0,0,.35)}
+.offer{background:linear-gradient(160deg,#fff7e6,#fff);border:2px solid var(--gold2);border-radius:var(--radius);padding:30px;display:grid;grid-template-columns:1.3fr 1fr;gap:28px;align-items:center}
+.offer ul{list-style:none;display:grid;gap:8px}
+.offer li::before{content:"✓  ";color:var(--green);font-weight:800}
+@media (max-width:960px){.flow{grid-template-columns:1fr}.arrow{transform:rotate(90deg);justify-self:center}.offer{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="banner">The RBI NBFC cyber directions took effect on 31 July 2026, with no transition period. <a href="#how">See how readiness works →</a></div>
+
+<header class="nav">
+  <div class="wrap">
+    <a class="brand" href="#top" aria-label="SecuRAX Readiness"><img src="../favicon.svg" alt="" width="30" height="30"><span>SecuRAX Readiness <small>by {{BRAND_NAME}}</small></span></a>
+    <ul>
+      <li><a href="#how">How it works</a></li>
+      <li><a href="#today">What it does today</a></li>
+      <li><a href="#auditors">For auditors</a></li>
+      <li><a href="#pricing">Pricing</a></li>
+      <li><a href="../">All of SecuRAX</a></li>
+    </ul>
+    <details class="menu"><summary aria-label="Menu">Menu</summary><ul>
+      <li><a href="#how">How it works</a></li>
+      <li><a href="#today">What it does today</a></li>
+      <li><a href="#auditors">For auditors</a></li>
+      <li><a href="#pricing">Pricing</a></li>
+      <li><a href="../">All of SecuRAX</a></li>
+      <li><a href="mailto:{{CONTACT_EMAIL}}?subject=NBFC%20readiness%20design%20partner">Become a design partner</a></li>
+    </ul></details>
+    <a class="btn btn-gold" href="mailto:{{CONTACT_EMAIL}}?subject=NBFC%20readiness%20design%20partner">Become a design partner</a>
+  </div>
+</header>
+
+<main id="top">
+<section class="hero">
+  <div class="wrap">
+    <div>
+      <span class="eyebrow">For NBFCs under the RBI cyber directions, 2026</span>
+      <h1>Know where your NBFC stands. Show your Board the proof.</h1>
+      <p class="lead">SecuRAX Readiness takes the Directions paragraph by paragraph, for your layer, and turns them into one list:
+        what is met and the evidence for it, what is a gap with an owner and a date, and which recurring duties are overdue.
+        It writes the board pack and the auditor's sheet. It runs on your own machine, and nothing leaves it.</p>
+      <div class="cta">
+        <a class="btn btn-gold" href="mailto:{{CONTACT_EMAIL}}?subject=NBFC%20readiness%20design%20partner">Become a design partner</a>
+        <a class="btn btn-ghost" href="sample.html">See a sample board pack</a>
+      </div>
+      <p class="micro">Base layer, middle layer and above · Chapters III, IV and V · VA, PT, IS audit and CISO-to-Board dates · the six-hour incident clock · open source</p>
+    </div>
+    <div class="hero-demo" aria-label="Real output of the readiness command, on sample data">
+      <div class="term"><div class="h">./securax readiness (sample NBFC, Chapter V)</div>
+        <div class="in">readiness 9% of 47 items in scope · 13% assessed</div><br>
+        <div class="bad">★ 47-58  Gap  IS audit framework (owner: Audit Committee)</div>
+        <div class="bad">⚠ Penetration test overdue since 2026-09-17</div>
+        <div class="dim">  41 items not assessed: no claim made, none counted as met</div></div>
+      <div class="term"><div class="h">Then, one line per finding</div>
+        <div class="in">› readiness mark "Your NBFC" 115-116 met --evidence "MFA on all admin consoles"</div><br>
+        <div class="ok">✔ Marked Met. Kept: the evidence, who marked it, and when.</div></div>
+    </div>
+  </div>
+</section>
+
+<section>
+  <div class="wrap center">
+    <span class="kicker">The problem</span>
+    <h2>In force on day one, and it keeps recurring.</h2>
+    <p class="sub">The Directions repealed the 2023 IT governance direction and applied at once. Most of the work is not a one-off project.</p>
+  </div>
+  <div class="wrap grid3">
+    <div class="card"><h3>Which paragraphs are yours?</h3><p>What applies depends on your layer and asset size: Chapter III, IV or V.
+      A consultant's spreadsheet often mixes them; readiness shows only your chapter.</p></div>
+    <div class="card"><h3>Duties on a calendar</h3><p>Vulnerability assessment every six months, penetration testing every year, an
+      annual IS audit and IT risk assessment, and for the middle layer a quarterly CISO review with the Board.</p></div>
+    <div class="card"><h3>Six hours</h3><p>A cyber incident goes to RBI on the DAKSH platform within six hours of detection, with CERT-In
+      notified. The clock starts long before anyone writes the report.</p></div>
+  </div>
+</section>
+
+<section class="alt" id="how">
+  <div class="wrap center">
+    <span class="kicker">How it works</span>
+    <h2>Four steps, in the order a Board asks.</h2>
+  </div>
+  <div class="wrap grid3">
+    <div class="card"><h3>1. Pick your chapter</h3><p>Start an assessment for Chapter III, IV or V. Every applicable requirement starts as
+      "not assessed", never as met.</p></div>
+    <div class="card"><h3>2. Mark with evidence</h3><p>Met, partly met, gap or not applicable. A "met" needs the evidence that proves it;
+      every mark keeps who made it and when.</p></div>
+    <div class="card"><h3>3. Act on the vital few</h3><p>The five decisions that matter most come first: critical gaps such as privileged
+      MFA, the CISO's independence and the IS audit, and anything past its date.</p></div>
+  </div>
+  <div class="wrap center"><p class="sub">4. Hand over the board pack (print it to PDF) and the auditor's sheet (CSV), and record each
+    VA, PT, audit and Board review as it happens, so the next one never slips.</p></div>
+</section>
+
+<section id="today">
+  <div class="wrap center">
+    <span class="kicker">What it does today, and what is next</span>
+    <h2>Built and tested, or not claimed.</h2>
+  </div>
+  <div class="wrap grid3">
+    <div class="card"><h3>Built</h3><p>Requirements per chapter, paraphrased from the Directions with their paragraph numbers; marks with
+      evidence and provenance; the vital few; recurring-duty dates; the board pack and auditor's sheet; the six-hour incident clock
+      for RBI and CERT-In (<code>./securax incident</code>).</p></div>
+    <div class="card"><h3>Next</h3><p>A browser screen for marking (today it is a command line), attaching evidence files, sign-off by a
+      second person, and importing the workbook your consultant already uses.</p></div>
+    <div class="card"><h3>Not claimed</h3><p>It is a self-assessment tool, not an audit opinion and not a certification. It does not make
+      you compliant; your Board, policies and controls do. It shows, with evidence, how far you are.</p></div>
+  </div>
+</section>
+
+<section class="alt" id="auditors">
+  <div class="wrap center">
+    <span class="kicker">For IS auditors and consultants</span>
+    <h2>One assessment per client, one sheet per working paper.</h2>
+    <p class="sub">Keep every client's assessment on your own machine, see them side by side with <code>readiness list</code>, and hand
+      the client a board pack in your engagement. The CSV opens in any spreadsheet.</p>
+  </div>
+</section>
+
+<section id="pricing">
+  <div class="wrap">
+    <div class="offer">
+      <div><span class="kicker">Design-partner programme</span><h2>Five NBFCs, and five audit firms.</h2>
+        <p class="sub" style="margin-bottom:18px">We set it up with you, run your first assessment together, and build the next steps around
+          what your team and your auditor need.</p>
+        <ul><li>Free for the first 90 days, on your own machine</li><li>The price is a yearly subscription per NBFC, or per client for
+          audit firms, set with our design partners and locked for them</li><li>A direct line to the people who build it</li>
+          <li>In return: a 30-minute call every two weeks, and honest feedback</li></ul></div>
+      <div class="center"><a class="btn btn-gold" href="mailto:{{CONTACT_EMAIL}}?subject=NBFC%20readiness%20design%20partner">Apply as a design partner</a>
+        <p class="note">Or start on your own: the open-source edition is free.</p>
+        <p style="margin-top:10px"><a class="btn btn-line" href="../docs/get-started/quickstart/">Try it free</a></p></div>
+    </div>
+  </div>
+</section>
+
+<section class="faq">
+  <div class="wrap">
+    <h2 class="center" style="margin-bottom:28px">Questions NBFC teams ask</h2>
+    <details><summary>Does any of our data leave our machine?</summary><p>No. The assessment, the evidence notes and the board pack stay
+      on the machine you run it on, readable only by you. It makes no network call.</p></details>
+    <details><summary>Is the text of the Directions in the tool?</summary><p>No. Each requirement is paraphrased with its paragraph
+      numbers, so you can check it against the Directions themselves. Read the Directions for the exact wording.</p></details>
+    <details><summary>We are a housing finance company. Does it apply?</summary><p>The requirements largely do, but housing finance
+      companies report incidents to NHB, not RBI. Check the reporting route for your registration.</p></details>
+    <details><summary>Is this an audit?</summary><p>No. It is a self-assessment that your IS auditor can read and test. The report says
+      so on every page.</p></details>
+    <details><summary>We are not an NBFC. Can we use it?</summary><p>Yes. The same engine runs on every regulation SecuRAX maps:
+      SEBI CSCRF by category (<code>--map cscrf --category small</code>), the UK NCSC CAF, NIST AI 600-1, the MIT AI risk domains and
+      post-quantum readiness. NBFCs come first because their Directions took effect with no transition period.</p></details>
+  </div>
+</section>
+
+<section class="closing">
+  <div class="wrap">
+    <h2>Know where you stand before your auditor tells you.</h2>
+    <p>Five design-partner places for NBFCs, and five for audit firms. Free for 90 days.</p>
+    <div class="cta">
+      <a class="btn btn-gold" href="mailto:{{CONTACT_EMAIL}}?subject=NBFC%20readiness%20design%20partner">Apply as a design partner</a>
+      <a class="btn btn-ghost" href="sample.html">See a sample board pack</a>
+    </div>
+  </div>
+</section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <div class="cols">
+      <div><h4>SecuRAX by {{BRAND_NAME}}</h4><p>Readiness for the RBI NBFC cyber directions. The core is open source under the MIT licence.</p></div>
+      <div><h4>Products</h4><ul><li><a href="#top">SecuRAX Readiness</a></li><li><a href="../">SecuRAX Shield</a></li></ul></div>
+      <div><h4>Learn</h4><ul><li><a href="../docs/">Documentation</a></li><li><a href="../docs/get-started/quickstart/">Quickstart</a></li></ul></div>
+      <div><h4>Company</h4><ul><li><a href="mailto:{{CONTACT_EMAIL}}">Contact</a></li><li><a href="../docs/securax/55-ENGINEERING-STANDARD/">What we do not claim</a></li></ul></div>
+    </div>
+    <div class="fine"><span>© 2026 {{BRAND_NAME}}. SecuRAX core is MIT-licensed open source.</span><span>Made in India.</span></div>
+  </div>
+</footer>
+</body>
+</html>
