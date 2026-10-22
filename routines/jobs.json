@@ -301,6 +301,18 @@
     "kind": "guard"
   },
   {
+    "id": "mission-aar",
+    "cron": "30 18 * * 0",
+    "command": [
+      "./securax",
+      "mission",
+      "aar"
+    ],
+    "description": "Sunday, before the progress message: the week's after-action review (doc 102) drafted from the estate's own records into vault/mission/: intended, happened, what differed and why, keep, change.",
+    "enabled": true,
+    "kind": "report"
+  },
+  {
     "id": "mission-rules",
     "cron": "25 * * * *",
     "command": [

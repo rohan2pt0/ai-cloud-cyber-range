@@ -1,7 +1,7 @@
 # 102 · Mission control: the estate's management operating system, run by AI agents
 
 <!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
-> **Status: 🟡 Partly built.** Built and tested: the twelve management disciplines mapped onto the estate, every role an AI agent (RACI, three lines, maker-checker) with the owner's decisions named; ten flight rules acted on hourly by the autopilot within its intent; a Go/No-Go poll the nightly update must pass; the double nightly backup removed. A cost view, a written weekly after-action review and the board on the Command Center are dated. [What the lights mean](../index.md#the-status-lights)
+> **Status: 🟡 Partly built.** Built and tested: the twelve management disciplines mapped onto the estate, every role an AI agent (RACI, three lines, maker-checker) with the owner's decisions named; ten flight rules acted on hourly by the autopilot within its intent; a Go/No-Go poll the nightly update must pass; the double nightly backup removed. A cost view (./securax mission costs) and a weekly after-action review (./securax mission aar, Sundays) are built; the board on the Command Center is dated. [What the lights mean](../index.md#the-status-lights)
 <!-- status:end -->
 
 **The ask:** run the estate on a real management operating system: the twelve disciplines and the cycle every well-run department, company or country uses. Every role a person would hold is filled by an AI agent until scope or revenue needs a person. Check that what the estate already does happens in the right order and wastes nothing. Add an autopilot that borrows what space and military missions do well.
@@ -52,7 +52,7 @@
 | **OODA loop** | Observe, orient, decide, act | `./securax mission`: one screen, ending in the one thing that needs you, or "nothing needs you" |
 | **Two-person rule** | Nuclear and launch safety | nothing irreversible without a second check (CI and review) or the owner |
 | **Fault detection, isolation and recovery, and game days** | Spacecraft, Google DiRT | the watchdog, chaos experiments on the everyday estate (doc 101), restore drills (doc 88) |
-| **After-action review** | Army | postmortems by the autopilot and the weekly progress; a written weekly review is next |
+| **After-action review** | Army | `./securax mission aar` every Sunday: intended, what happened, what differed and why, keep, change. It never calls a week quiet when nothing ran |
 
 ## 4. The order of events, checked, and the waste removed
 
@@ -75,7 +75,7 @@ What already ran in the right order: storage clean-up before the nightly backup,
 | 3 | Risk and resilience | risk register, crown jewels, continuity, backups, chaos | built |
 | 4 | Governance and accountability | the crew (RACI, three lines, maker-checker), roles, the kill switch | built |
 | 5 | Operations and process excellence | routines as SOPs, watchdog, safe update, postmortems | built |
-| 6 | Finance and resource allocation | AI allowance, Govern's yearly cost, storage forecast | partly built: no single cost view yet |
+| 6 | Finance and resource allocation | AI allowance, Govern's yearly cost, storage forecast, `./securax mission costs` | built; money only from your own list |
 | 7 | People and organisation | AI agents today; job descriptions and the planner ready | built for agents |
 | 8 | Programme and project execution | dated roadmap rows, `proofs`, `ship` | built |
 | 9 | Data and intelligence | the cockpit snapshot as the single source of truth, regwatch, threat data | built |
@@ -87,6 +87,6 @@ What already ran in the right order: storage clean-up before the nightly backup,
 
 | Step | By |
 |---|---|
-| One cost view of the estate (money, machine, model tokens) for discipline 6 | 2026-11-15 |
-| A written weekly after-action review, drafted by the flight director from the week's logs | 2026-11-15 |
+| ~~One cost view of the estate~~ done 2026-10-22: `./securax mission costs` (money from your own private list, machine and model tokens measured) | ~~2026-11-15~~ |
+| ~~A written weekly after-action review~~ done 2026-10-22: `./securax mission aar`, every Sunday at 18:30 into `vault/mission/` (private) | ~~2026-11-15~~ |
 | The mission board on the Command Center (one line, in its folded health panel) | 2026-11-30 |

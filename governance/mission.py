@@ -7,6 +7,8 @@ control room or a military operations centre works.
     ./securax mission rules            the flight rules: each pre-agreed situation, what fires now, and who acts
     ./securax mission rules --act      the autopilot acts on the rules it may act on alone (safe, reversible steps)
     ./securax mission crew             who does what (RACI): every role is an AI agent, except the decisions kept for you
+    ./securax mission aar              the week's after-action review: intended, happened, what differed and why, keep, change
+    ./securax mission costs            what the estate costs: money (your own list), machine (disk) and model tokens
     ./securax mission --json
 
 Ideas taken, and why:
@@ -109,7 +111,28 @@ def poll(op: str = "update", state: dict | None = None) -> dict:
     ci = s["ci_main"]
     say("main build", ci is not False, "the last nightly sandbox on main passed" if ci else
         ("GitHub could not be asked; going on the other consoles" if ci is None else "the last nightly sandbox on main FAILED: wait for the fix"))
-    return {"op": op, "go": all(c["go"] for c in consoles), "consoles": consoles}
+    res = {"op": op, "go": all(c["go"] for c in consoles), "consoles": consoles}
+    if state is None:
+        log_event({"kind": "poll", "op": op, "go": res["go"], "no_go": [c["console"] for c in consoles if not c["go"]]})
+    return res
+
+
+def home() -> pathlib.Path:
+    return pathlib.Path(os.environ.get("SECURAX_HOME_DIR") or pathlib.Path.home() / ".securax")
+
+
+def log_event(ev: dict, keep: int = 500) -> None:
+    """One line in the mission log (the after-action review reads it). Bounded; a failed write never fails the caller."""
+    try:
+        p = home() / "mission.jsonl"
+        p.parent.mkdir(parents=True, exist_ok=True)
+        lines = p.read_text("utf-8").splitlines()[-(keep - 1):] if p.exists() else []
+        lines.append(json.dumps({"ts": int(time.time()), **ev}))
+        tmp = p.with_suffix(".tmp")
+        tmp.write_text("\n".join(lines) + "\n", "utf-8")
+        os.replace(tmp, p)
+    except OSError:
+        pass
 
 
 # ------------------------------------------------------------------------------------------------------- flight rules
@@ -142,6 +165,125 @@ def act(fired: list[dict], run=subprocess.run) -> list[dict]:
     return done
 
 
+# ------------------------------------------------------------------------------------------------------ the cost view
+def costs(measure=None, budget=None, subs_path: pathlib.Path | None = None) -> dict:
+    """Discipline 6: what the estate costs, in money, machine and model tokens, from what it can measure. Money comes only
+    from the owner's own list (vault/mission/subscriptions.json, private); nothing is guessed."""
+    out = {"money": {}, "machine": {}, "tokens": {}}
+    sp = subs_path or ROOT / "vault" / "mission" / "subscriptions.json"
+    try:
+        subs = json.loads(sp.read_text("utf-8"))
+        for row in subs:
+            cur = str(row.get("currency", "INR"))
+            out["money"][cur] = round(out["money"].get(cur, 0) + float(row.get("per_month", 0)), 2)
+        out["money_items"] = [str(r.get("name", "")) for r in subs]
+    except (OSError, ValueError, TypeError, AttributeError):
+        out["money_note"] = ('not set: list what you pay for in vault/mission/subscriptions.json, e.g. '
+                             '[{"name": "OpenCode Go", "per_month": 10, "currency": "USD"}]')
+    try:
+        if measure is None:
+            spec = __import__("importlib.util").util.spec_from_file_location("securax_storage_m", ROOT / "governance" / "storage.py")
+            st = __import__("importlib.util").util.module_from_spec(spec)
+            spec.loader.exec_module(st)
+            measure = st.measure
+        m = measure()
+        out["machine"] = {"estate_gb": round(m.get("estate_bytes", 0) / 1e9, 2), "backups_gb": round(m["backups"]["bytes"] / 1e9, 2),
+                          "disk_free_pct": m["disk"]["free_pct"]}
+    except Exception as e:  # noqa: BLE001 - a view, never a failure
+        out["machine"] = {"note": f"not measured: {e}"[:120]}
+    try:
+        rep = budget() if budget else _budget()
+        out["tokens"] = {"this_month": sum(int(r.get("month_used", 0)) for r in rep.get("callers", [])), "callers": len(rep.get("callers", []))}
+    except Exception:  # noqa: BLE001 - the gateway may be off or need a key
+        out["tokens"] = {"note": "the gateway did not answer (is the estate up?)"}
+    return out
+
+
+def _budget() -> dict:
+    key = _env("SECURAX_GATEWAY_KEY")
+    req = urllib.request.Request("http://127.0.0.1:8080/v1/budget", headers={"Authorization": f"Bearer {key}"} if key else {})
+    with urllib.request.urlopen(req, timeout=3) as r:
+        return json.loads(r.read())
+
+
+# ------------------------------------------------------------------------------------------------ after-action review
+def _stamp_ts(stamp: str) -> float:
+    for fmt in ("%Y-%m-%dT%H:%M:%S", "%Y-%m-%dT%H:%M", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
+        try:
+            return time.mktime(time.strptime(stamp[:19], fmt))
+        except ValueError:
+            continue
+    return 0.0
+
+
+def aar(now: float | None = None, days: int = 7) -> dict:
+    """The week's after-action review (army practice): what was intended, what happened, what differed and why, what to
+    keep and what to change. Drafted from the estate's own records; nothing is sent anywhere."""
+    now = now or time.time()
+    since = now - days * 86400
+    out = {"intended": SPEC["intent"], "happened": {}, "differed": [], "keep": [], "change": []}
+    try:
+        hist = json.loads((ROOT / "routines" / ".history.json").read_text("utf-8"))
+    except (OSError, ValueError):
+        hist = {}
+    runs = fails = 0
+    for job, rs in hist.items():
+        week = [r for r in rs if _stamp_ts(str(r.get("t", ""))) >= since]
+        bad = [r for r in week if r.get("code")]
+        runs, fails = runs + len(week), fails + len(bad)
+        if bad:
+            out["differed"].append(f"routine {job} failed {len(bad)} of {len(week)} time(s); last words: {(bad[-1].get('tail') or '')[-120:]}")
+            out["change"].append(f"fix the routine {job} (./securax autopilot learn has its postmortem draft)")
+    out["happened"]["routine runs"] = runs
+    out["happened"]["routine failures"] = fails
+    outages = 0
+    try:
+        for line in (ROOT / "watch.log").read_text("utf-8").splitlines():
+            if "NOT READY" in line and _stamp_ts(line[:19]) >= since:
+                outages += 1
+    except OSError:
+        pass
+    out["happened"]["outages the watchdog healed"] = outages
+    if outages:
+        out["differed"].append(f"the estate was not ready {outages} time(s) and the watchdog healed it")
+    holds = []
+    try:
+        for line in (home() / "mission.jsonl").read_text("utf-8").splitlines():
+            ev = json.loads(line)
+            if ev.get("kind") == "poll" and ev.get("ts", 0) >= since and not ev.get("go"):
+                holds.append(ev)
+    except (OSError, ValueError):
+        pass
+    out["happened"]["updates held by Go/No-Go"] = len(holds)
+    for h in holds[-3:]:
+        out["differed"].append(f"an {h.get('op')} was held: NO-GO from {', '.join(h.get('no_go', []))}")
+    b = backups(now)
+    out["happened"]["newest clean backup (hours old)"] = b["clean_age_h"]
+    if b["clean_age_h"] is not None and b["clean_age_h"] <= 26 and not b["newest_suspect"]:
+        out["keep"].append("daily backups are fresh and clean")
+    else:
+        out["change"].append("get a clean backup again (./securax backup; ./securax doctor says why it fails)")
+    try:
+        lessons = subprocess.run(["git", "-C", str(ROOT), "log", f"--since={days}.days", "--format=%s", "--", "LESSONS.md"],
+                                 capture_output=True, text=True, timeout=20).stdout.strip().splitlines()
+    except (OSError, subprocess.SubprocessError):
+        lessons = []
+    out["happened"]["lessons recorded"] = len(lessons)
+    if not runs:
+        out["change"].append("no routine ran this week: is the scheduler running? (./securax routines list shows the jobs; ./securax go installs the schedule)")
+    elif not fails and not outages and not holds:
+        out["keep"].append("a quiet week: every routine ran, nothing needed healing, nothing was held")
+    return out
+
+
+def aar_markdown(r: dict, week: str) -> str:
+    lines = [f"# After-action review, week {week}", "", f"**Intended:** {r['intended']}", "", "## What happened"]
+    lines += [f"- {k}: {v}" for k, v in r["happened"].items()]
+    for title, key in (("What differed, and why", "differed"), ("Keep", "keep"), ("Change", "change")):
+        lines += ["", f"## {title}"] + ([f"- {x}" for x in r[key]] or ["- nothing"])
+    return "\n".join(lines) + "\n"
+
+
 # -------------------------------------------------------------------------------------------------------- the board
 def board() -> dict:
     ck = cockpit()
@@ -160,7 +302,7 @@ def board() -> dict:
 
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="securax mission", description=__doc__.split("\n\n")[0])
-    ap.add_argument("what", nargs="?", default="board", choices=["board", "poll", "rules", "crew"])
+    ap.add_argument("what", nargs="?", default="board", choices=["board", "poll", "rules", "crew", "aar", "costs"])
     ap.add_argument("op", nargs="?", default="update")
     ap.add_argument("--act", action="store_true")
     ap.add_argument("--json", action="store_true")
@@ -184,6 +326,31 @@ def main(argv: list[str] | None = None) -> int:
                 print(f"  {'FIRES' if r['fires'] else '  -  '} {r['id']:<22} {r['then']}  [{'agent acts' if r['who'] == 'autopilot' else 'needs you'}]")
             for d in done:
                 print(f"  {'✔' if d['ok'] else '✘'} acted: {d['cmd']}")
+        return 0
+    if a.what == "costs":
+        c = costs()
+        if a.json:
+            print(json.dumps(c, indent=1))
+        else:
+            print("What the estate costs (discipline 6):")
+            print("  money:   " + (", ".join(f"{v} {k} a month" for k, v in c["money"].items()) or c.get("money_note", "")))
+            mc = c["machine"]
+            print("  machine: " + (f"{mc['estate_gb']} GB used by the estate ({mc['backups_gb']} GB of it backups); disk {mc['disk_free_pct']}% free"
+                                   if "estate_gb" in mc else mc.get("note", "")))
+            tk = c["tokens"]
+            print("  tokens:  " + (f"{tk['this_month']:,} this month across {tk['callers']} caller(s)" if "this_month" in tk else tk.get("note", "")))
+        return 0
+    if a.what == "aar":
+        r = aar()
+        week = time.strftime("%G-W%V")
+        md = aar_markdown(r, week)
+        out = ROOT / "vault" / "mission" / f"aar-{week}.md"       # private: vault/ is never committed
+        try:
+            out.parent.mkdir(parents=True, exist_ok=True)
+            out.write_text(md, "utf-8")
+        except OSError:
+            out = None
+        print(json.dumps(r, indent=1) if a.json else md + (f"\n(saved: vault/mission/{out.name})" if out else ""))
         return 0
     if a.what == "crew":
         if a.json:

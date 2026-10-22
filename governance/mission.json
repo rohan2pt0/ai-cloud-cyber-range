@@ -31,12 +31,12 @@
   {"n": 3, "name": "Risk and resilience", "estate": "risks register, crown jewels, continuity scenarios with RTO/RPO, ransomware-proof backups, chaos experiments", "state": "built"},
   {"n": 4, "name": "Governance and accountability", "estate": "the crew above (RACI, three lines, maker-checker), Govern's organogram, the gateway's roles and kill switch", "state": "built"},
   {"n": 5, "name": "Operations and process excellence", "estate": "routines (SOPs as code), watchdog, safe update, postmortems by the autopilot", "state": "built"},
-  {"n": 6, "name": "Finance and resource allocation", "estate": "the AI allowance per caller, Govern's yearly cost, storage forecast", "state": "partly built: no single cost view of the estate yet"},
+  {"n": 6, "name": "Finance and resource allocation", "estate": "the AI allowance per caller, Govern's yearly cost, storage forecast, ./securax mission costs", "state": "built; money only from the owner's own list"},
   {"n": 7, "name": "People and organisation", "estate": "every role is an AI agent today; Govern's job descriptions and the people-scale planner are ready for the first hire", "state": "built for agents"},
   {"n": 8, "name": "Programme and project execution", "estate": "roadmap rows with dates in every doc, ./securax proofs, ship pr / ship watch", "state": "built"},
   {"n": 9, "name": "Data and intelligence", "estate": "cockpit snapshot as the single source of truth, regwatch, threat data, autopilot forecasts", "state": "built"},
   {"n": 10, "name": "Change and transformation", "estate": "channels (stable/beta), rollback to any working version, the design standard's dated migrations", "state": "built"},
   {"n": 11, "name": "Assurance and compliance", "estate": "compliance maps with evidence, fitness ratchets, sandbox journeys, restore drills, mutation testing (dated)", "state": "built; mutation testing dated"},
-  {"n": 12, "name": "Learning and improvement", "estate": "LESSONS.md, postmortems, honesty history, after-action review each week (doc 102)", "state": "built"}
+  {"n": 12, "name": "Learning and improvement", "estate": "LESSONS.md, postmortems, honesty history, ./securax mission aar every Sunday", "state": "built"}
  ]
 }

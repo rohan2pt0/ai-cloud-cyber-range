@@ -14,6 +14,7 @@ for the versioning and release policy.
   - `./securax mission poll update`: a Go/No-Go poll (ransomware alarm, a fresh clean backup, disk, a reporting clock, main's nightly build). The nightly update runs only on GO and tells you once why it held.
   - `./securax mission rules`: ten flight rules agreed in advance; the hourly `mission-rules` routine acts on the ones an agent may do alone and only reports the owner's.
   - `./securax mission crew`: every role an AI agent (RACI, three lines, maker-checker), with the decisions kept for you.
+  - `./securax mission aar`: the week's after-action review, every Sunday into `vault/mission/`; `./securax mission costs`: money (your own list), machine and model tokens in one view.
 - **A sandbox that proves more** (doc 101).
   - `./securax proofs`: the claims the docs make that no journey proves yet, ranked, with the journey that could prove each.
   - Any sandbox journey can be run on its own in CI (the e2e workflow's `journeys` input), so a fix is proved in minutes.

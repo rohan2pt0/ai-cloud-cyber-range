@@ -68,3 +68,43 @@ def test_the_nightly_update_asks_the_poll_and_skips_a_second_backup():
     upd = CLI[CLI.index("\n  update)"):CLI.index("\n  update)") + 9000]
     assert 'governance/mission.py" poll update' in upd and "auto-update held" in upd
     assert "-mmin -120" in upd and "is the safety copy" in upd
+
+
+def test_the_after_action_review_counts_the_week_and_never_says_quiet_when_nothing_ran(tmp_path, monkeypatch):
+    import time as _t
+    monkeypatch.setenv("SECURAX_HOME_DIR", str(tmp_path))
+    now = _t.time()
+    hist = {"daily-backup": [{"t": _t.strftime("%Y-%m-%dT%H:%M", _t.localtime(now - 3600)), "code": 1, "tail": "disk full"},
+                             {"t": _t.strftime("%Y-%m-%dT%H:%M", _t.localtime(now - 30 * 86400)), "code": 1, "tail": "old"}]}
+    real_read = pathlib.Path.read_text
+
+    def read(self, *a, **k):
+        if self.name == ".history.json":
+            return json.dumps(hist)
+        if self.name == "watch.log":
+            return _t.strftime("%Y-%m-%d %H:%M:%S", _t.localtime(now - 7200)) + " NOT READY — healing with ./securax up\n"
+        return real_read(self, *a, **k)
+    monkeypatch.setattr(pathlib.Path, "read_text", read)
+    mi.log_event({"kind": "poll", "op": "update", "go": False, "no_go": ["backup"]})
+    r = mi.aar(now)
+    assert r["happened"]["routine runs"] == 1 and r["happened"]["routine failures"] == 1     # last month's run is not this week's
+    assert r["happened"]["outages the watchdog healed"] == 1 and r["happened"]["updates held by Go/No-Go"] == 1
+    assert any("daily-backup" in d for d in r["differed"]) and any("NO-GO from backup" in d for d in r["differed"])
+    assert not any("quiet week" in k for k in r["keep"])
+    hist.clear()
+    r = mi.aar(now)
+    assert any("no routine ran" in c for c in r["change"]) and not any("quiet week" in k for k in r["keep"])
+    md = mi.aar_markdown(r, "2026-W43")
+    assert md.startswith("# After-action review, week 2026-W43") and "## Change" in md
+
+
+def test_the_cost_view_adds_only_what_the_owner_listed_and_measures_the_rest(tmp_path):
+    subs = tmp_path / "subs.json"
+    subs.write_text(json.dumps([{"name": "OpenCode Go", "per_month": 10, "currency": "USD"}, {"name": "VPS", "per_month": 500, "currency": "INR"},
+                                {"name": "Domain", "per_month": 75, "currency": "INR"}]))
+    fake = lambda: {"estate_bytes": 12_500_000_000, "backups": {"bytes": 2_000_000_000}, "disk": {"free_pct": 31.0}}
+    c = mi.costs(measure=fake, budget=lambda: {"callers": [{"month_used": 1200}, {"month_used": 300}]}, subs_path=subs)
+    assert c["money"] == {"USD": 10.0, "INR": 575.0} and c["machine"] == {"estate_gb": 12.5, "backups_gb": 2.0, "disk_free_pct": 31.0}
+    assert c["tokens"] == {"this_month": 1500, "callers": 2}
+    none = mi.costs(measure=fake, budget=lambda: (_ for _ in ()).throw(OSError("off")), subs_path=tmp_path / "missing.json")
+    assert none["money"] == {} and "subscriptions.json" in none["money_note"] and "did not answer" in none["tokens"]["note"]
