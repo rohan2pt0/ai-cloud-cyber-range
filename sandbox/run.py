@@ -891,6 +891,141 @@ def j_ransomware(sb: H.Sandbox, c: Checks):
             shutil.copytree(saved_vault, vault)
 
 
+@journey("two_nodes", "Two live nodes, the way a laptop and a VPS run (docs 86 and 91): a second sync node starts next to this estate, each lists the other as a peer, and the Life OS data is written on either side. An edit on one appears on the other; with one node stopped the other keeps saving and names the missing peer; the stopped node catches up when it returns; the same item edited on both ends with the same, newest value on both; and a wrong token is refused.", slow=True)
+def j_two_nodes(sb: H.Sandbox, c: Checks):
+    tok_a, tok_b, name, vol = "nodea-sbx-token", "nodeb-sbx-token", "sbx-nodeb", "sbx-nodeb-data"
+    if not _start(sb, c, GEMINI_API_KEY=KEYS["GEMINI_API_KEY"], SYNC_TOKENS=tok_a,
+                  SYNC_PEERS=f"http://{name}:8089/sync|{tok_b}", SYNC_PEER_INTERVAL="5", SYNC_NODE_NAME="node-a"):
+        return
+    a, b = "http://127.0.0.1:8089/sync", "http://127.0.0.1:18089/sync"
+    ha, hb = {"Authorization": f"Bearer {tok_a}"}, {"Authorization": f"Bearer {tok_b}"}
+
+    def put(base, hdr, key, value, ts):
+        return sb.http("PUT", f"{base}/state?user=sbx", {"payload": {key: value}, "meta": {key: ts}, "device": "sbx"}, headers=hdr).status
+
+    def val(base, hdr, key):
+        r = sb.http("GET", f"{base}/state?user=sbx", headers=hdr, timeout=10)
+        return (r.json() or {}).get("payload", {}).get(key) if r.status == 200 else None
+
+    rc, cid = sb.compose("--profile", "ai", "ps", "-q", "estate-sync")
+    rc2, nets = H.sh(["docker", "inspect", "-f", "{{range $k, $v := .NetworkSettings.Networks}}{{$k}} {{end}}", cid.strip().splitlines()[0] if cid.strip() else "none"])
+    net = (nets.split() or [""])[0]
+    try:
+        rc, out = H.sh(["docker", "run", "-d", "--name", name, "--network", net, "-p", "127.0.0.1:18089:8089", "-v", f"{vol}:/data",
+                        "-e", f"SYNC_TOKENS={tok_b}", "-e", f"SYNC_PEERS=http://estate-sync:8089/sync|{tok_a}", "-e", "SYNC_PEER_INTERVAL=5",
+                        "-e", "SYNC_NODE_NAME=node-b", "-e", "SYNC_DB_PATH=/data/estate-sync.db", "securax/estate-sync:dev"], timeout=120)
+        c.ok(rc == 0 and bool(net) and sb.wait_http("http://127.0.0.1:18089/healthz", 90), "a second node starts next to this estate, on its network", tail(out, 200))
+        now = int(time.time() * 1000)
+        c.ok(put(a, ha, "from_a", "written on A", now) == 200 and sb.wait_until(lambda: val(b, hb, "from_a") == "written on A", 90, 3),
+             "an edit on node A appears on node B")
+        c.ok(put(b, hb, "from_b", "written on B", now + 1) == 200 and sb.wait_until(lambda: val(a, ha, "from_b") == "written on B", 90, 3),
+             "…and an edit on node B appears on node A")
+        H.sh(["docker", "stop", name], timeout=60)
+        ok_save = put(a, ha, "while_b_down", "saved with B off", now + 2) == 200 and val(a, ha, "while_b_down") == "saved with B off"
+        named = sb.wait_until(lambda: any(not p.get("ok") for p in (sb.http("GET", f"{a}/peers", headers=ha).json() or {}).get("peers", [])), 60, 3)
+        c.ok(ok_save and named, "with node B stopped, node A keeps saving and names the missing peer")
+        H.sh(["docker", "start", name], timeout=60)
+        c.ok(sb.wait_until(lambda: val(b, hb, "while_b_down") == "saved with B off", 120, 3), "node B catches up on what it missed when it returns")
+        put(a, ha, "same_item", "older value from A", now + 10)
+        put(b, hb, "same_item", "newer value from B", now + 20)
+        c.ok(sb.wait_until(lambda: val(a, ha, "same_item") == val(b, hb, "same_item") == "newer value from B", 90, 3),
+             "the same item edited on both nodes ends with the same, newest value on both")
+        c.ok(sb.http("GET", f"{b}/state?user=sbx", headers={"Authorization": "Bearer not-a-real-token"}).status == 401,
+             "a wrong token is refused by the other node")
+    finally:
+        H.sh(["docker", "rm", "-f", name], timeout=60)
+        H.sh(["docker", "volume", "rm", "-f", vol], timeout=60)
+
+
+@journey("phone_device", "A phone as a second device (doc 58), in a real browser emulating a Pixel and an iPhone over the HTTPS edge: the phone trusts the estate's own CA the way a person installs it (no warning bypassed), the Life OS opens by name with no page error and fits the screen, it is installable (manifest, icons, a service worker in control), it opens with the network off, the one-tap link from `./securax sync-link` turns sync on, and an entry made on the phone reaches the estate and appears on the laptop.", slow=True)
+def j_phone_device(sb: H.Sandbox, c: Checks):
+    tok, dom = "phone-sbx-token", "securax.localhost"
+    hub = f"https://hub.{dom}"
+    if not _start(sb, c, GEMINI_API_KEY=KEYS["GEMINI_API_KEY"], SYNC_TOKENS=tok):
+        return
+    tdir, home = sb.clone.parent / "tls-home-phone", sb.clone.parent / "phone-home"
+    for d in (tdir, home):
+        shutil.rmtree(d, ignore_errors=True)
+    envp = {**os.environ, "SECURAX_TLS_DIR": str(tdir)}
+    try:
+        rc, out = H.sh(["bash", "./securax", "tls", "on"], cwd=sb.clone, env=envp, timeout=120)
+        ca = tdir / "ca.crt"
+        if not c.ok(rc == 0 and ca.exists(), "`tls on` makes the estate's CA and certificate", tail(out, 300)):
+            return
+        sb.down()
+        rc, out = sb.securax("up", "--lite", timeout=1200)
+        c.ok(rc == 0 and "TLS edge is ON" in out, "the estate restarts behind the HTTPS edge", tail(out, 300))
+
+        def curl(path, *extra):
+            return H.sh(["curl", "-s", "--cacert", str(ca), "--resolve", f"hub.{dom}:443:127.0.0.1", *extra, f"{hub}{path}"], timeout=30)[1]
+        if not c.ok(sb.wait_until(lambda: "<html" in curl("/").lower(), 300), "the Life OS is served at https://hub.<domain>/"):
+            return
+        home.mkdir(parents=True)
+        if not c.ok(H.nss_trust(home, ca), "the phone trusts the estate's CA, imported as a person does (no certificate warning is bypassed)",
+                    "NSS certutil is missing (Ubuntu: libnss3-tools)"):
+            return
+        rc, out = sb.securax("sync-link", "--print-only", "laptop", timeout=60)
+        link = out.strip().splitlines()[-1] if out.strip() else ""
+        c.ok(rc == 0 and link.startswith(f"{hub}/#sync="), "`./securax sync-link` gives a one-tap link on the hub's own HTTPS name", link[:40])
+        with H.Browser(args=["--host-resolver-rules=" + H.resolver_rules(dom)], env={**os.environ, "HOME": str(home)}) as b:
+            for name in ("Pixel 7", "iPhone 14"):
+                ctx = b.context(**H.device(b.playwright, name))
+                page, errors = ctx.new_page(), []
+                page.on("pageerror", lambda e, errors=errors: errors.append(str(e)))
+                page.on("dialog", lambda d: d.accept())                    # the one "store my data here?" question, answered yes
+                try:
+                    page.goto(f"{hub}/", wait_until="networkidle")
+                except Exception as e:  # noqa: BLE001 - a refused certificate or name is exactly what this check reports
+                    c.ok(False, f"{name}: the Life OS opens over HTTPS by name", str(e)[:200])
+                    ctx.close()
+                    continue
+                c.ok(page.locator(".section.active").count() >= 1 and not errors, f"{name}: the Life OS opens over HTTPS by name, with no page error", errors[:3])
+                fits = page.evaluate("document.documentElement.scrollWidth <= window.innerWidth + 1")
+                c.ok(fits, f"{name}: the page fits the screen (no sideways scrolling)",
+                     page.evaluate("[document.documentElement.scrollWidth, window.innerWidth]"))
+                man = page.evaluate("fetch(document.querySelector('link[rel=manifest]').href, {credentials: 'include'}).then(r => r.json()).catch(() => null)") or {}
+                sizes = {i.get("sizes") for i in man.get("icons", [])}
+                c.ok(man.get("display") == "standalone" and man.get("start_url") and {"192x192", "512x512"} <= sizes,
+                     f"{name}: installable: the manifest has a start page, standalone display and both icon sizes", str(man)[:200])
+                ready = page.evaluate("navigator.serviceWorker ? Promise.race([navigator.serviceWorker.ready.then(r => !!r.active), "
+                                      "new Promise(res => setTimeout(() => res(false), 30000))]) : false")
+                page.reload(wait_until="networkidle")
+                ctl = page.evaluate("!!(navigator.serviceWorker && navigator.serviceWorker.controller)")
+                c.ok(ready and ctl, f"{name}: a service worker is installed and in control (needed to install and to work offline)", f"ready={ready} controller={ctl}")
+                ctx.set_offline(True)
+                try:
+                    page.reload(wait_until="load")
+                    off = page.locator(".section.active").count() >= 1
+                except Exception as e:  # noqa: BLE001
+                    off = False
+                    errors.append(str(e)[:200])
+                ctx.set_offline(False)
+                c.ok(off, f"{name}: the Life OS opens with the network off", errors[-1:] if not off else "")
+                H.shot(page, "phone_" + name.lower().replace(" ", "_"))
+                if name == "Pixel 7":
+                    page.goto("about:blank")                                  # a real load: a hash-only change would not re-read the link
+                    page.goto(link, wait_until="networkidle")
+                    cfg = page.evaluate("JSON.parse(localStorage.getItem('gm_sync_cfg') || 'null')") or {}
+                    c.ok(cfg.get("url") == f"{hub}/sync" and cfg.get("key") == tok, "the one-tap link turns sync on, on the page's own origin", cfg.get("url"))
+                    page.evaluate("localStorage.setItem('gm_phone_probe', 'written-on-the-phone'); gmPush()")
+                    got = lambda: "written-on-the-phone" in curl("/sync/state?user=me", "-H", f"Authorization: Bearer {tok}")  # noqa: E731
+                    c.ok(sb.wait_until(got, 60), "an entry made on the phone reaches the estate")
+                ctx.close()
+            lap = b.context(viewport={"width": 1280, "height": 900})
+            lp = lap.new_page()
+            lp.on("dialog", lambda d: d.accept())
+            lp.goto(link, wait_until="networkidle")
+            try:
+                lp.wait_for_function("localStorage.getItem('gm_phone_probe') === 'written-on-the-phone'", timeout=60000)
+                seen = True
+            except Exception:  # noqa: BLE001
+                seen = False
+            c.ok(seen, "the laptop, paired with the same link, shows the entry made on the phone")
+            lap.close()
+    finally:
+        H.sh(["bash", "./securax", "tls", "off"], cwd=sb.clone, env=envp, timeout=30)
+
+
 @journey("estate_chaos", "Chaos on the everyday estate (doc 101): with the estate normal (gateway ready, chat answers, the Command Center and sync serve), three real faults picked by a seed (crash or freeze the gateway, crash the router, the Command Center's web server or sync) are injected one at a time; after each the watchdog heals and the estate must be normal again within its time limit, and the fault is always reverted. The seed is printed, so a failure replays exactly.", slow=True)
 def j_estate_chaos(sb: H.Sandbox, c: Checks):
     import datetime as dt

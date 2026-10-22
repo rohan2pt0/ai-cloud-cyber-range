@@ -110,7 +110,8 @@
     "ui_guiding_map_and_hub",
     "guiding_map_full_use",
     "open_webui_chat",
-    "cockpit_page"
+    "cockpit_page",
+    "phone_device"
    ],
    "affects": []
   },
@@ -119,7 +120,9 @@
     "apps/estate-sync/**"
    ],
    "guarded_by": [
-    "ui_guiding_map_and_hub"
+    "ui_guiding_map_and_hub",
+    "two_nodes",
+    "phone_device"
    ],
    "affects": [
     "hub-and-pwa"

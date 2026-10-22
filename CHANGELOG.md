@@ -8,6 +8,10 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
+### Fixed
+- **A phone paired over HTTPS never synced.** The Life OS and `./securax sync-link` gave it `sync.<domain>`, an address the page may not call (another origin). They now use the Command Center's own `/sync`, and a device paired the old way is moved over by itself, token kept. Found while building the phone journey.
+- **Rail tests that would not have caught a weakened rail**, found by mutation testing: the "never allow the none algorithm" test was satisfied by a later, unrelated error, and nothing checked a wrong-shaped AI control file, a malformed sign-in token, a weak signing key, or the sync guard's window edges. Each now has its test.
+
 ### Added
 - **Mission control** (doc 102): the estate's management operating system, run by AI agents.
   - `./securax mission`: one board in the OODA order (observe, orient, decide, act), ending in the one thing that needs you.

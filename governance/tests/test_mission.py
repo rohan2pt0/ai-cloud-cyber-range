@@ -108,3 +108,14 @@ def test_the_cost_view_adds_only_what_the_owner_listed_and_measures_the_rest(tmp
     assert c["tokens"] == {"this_month": 1500, "callers": 2}
     none = mi.costs(measure=fake, budget=lambda: (_ for _ in ()).throw(OSError("off")), subs_path=tmp_path / "missing.json")
     assert none["money"] == {} and "subscriptions.json" in none["money_note"] and "did not answer" in none["tokens"]["note"]
+
+
+def test_the_command_center_line_says_go_or_why_not_and_what_needs_you():
+    fresh = {"clean_age_h": 3.0, "newest_suspect": False}
+    ok = mi.html_card([{"id": "disk", "status": "green", "value": "40% free"}], fresh)
+    assert ok.startswith("<details") and "GO for the nightly update" in ok and "nothing needs you" in ok and "NO-GO" not in ok
+    bad = mi.html_card([{"id": "disk", "status": "red", "value": "3% free"}, {"id": "anomalies", "status": "red", "value": "1"}],
+                       {"clean_age_h": None, "newest_suspect": False})
+    assert "NO-GO for the nightly update: backup, disk" in bad and "needs you: a key behaves unusually" in bad
+    assert "the autopilot acts" in bad and "main build" not in bad          # the cockpit asks nothing over the network
+    assert "https://" not in ok + bad and "<script" not in ok + bad

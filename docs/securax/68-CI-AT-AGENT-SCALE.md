@@ -4,7 +4,7 @@
 > **Status: 🟡 Partly built.** The four tiers, impact-picked PR journeys, cancel-superseded and the nightly full run are built and tested; merge trains, auto-revert, the CLI split, sharding and prebuilt images are queued with triggers. [What the lights mean](../index.md#the-status-lights)
 <!-- status:end -->
 
-Without the tiers, every push would run all <!-- fact:journeys -->47<!-- /fact --> real-product journeys, which takes about 40 minutes. That is fine for one person. It does
+Without the tiers, every push would run all <!-- fact:journeys -->49<!-- /fact --> real-product journeys, which takes about 40 minutes. That is fine for one person. It does
 not survive a coder agent, or a team of them, committing all day: the queue grows faster than CI drains it.
 
 Anthropic hit the same wall at a far larger scale and replaced Git in its monorepo with an in-house system, Scion
@@ -26,7 +26,7 @@ builds, CI).
 |---|---|---|---|
 | **L0 · local** | before every commit, by people and agents | `./securax verify`: lint, unit tests, budgets, maps. `autobuild` commits only when it passes. | seconds |
 | **L1 · pull request** | every push to a PR | unit tests, lint, scans (about 1 minute), plus **only the journeys that guard what the PR touches**, chosen from `lifecycle/impact.json` | 0 to a few minutes for a small change |
-| **L2 · main** | every merge | **all <!-- fact:journeys -->47<!-- /fact --> journeys** | about 40 minutes, off the critical path |
+| **L2 · main** | every merge | **all <!-- fact:journeys -->49<!-- /fact --> journeys** | about 40 minutes, off the critical path |
 | **L3 · nightly** | 02:00 IST | all journeys on main, before the laptops' 3:15 am safe update | about 40 minutes |
 
 - **A newer push cancels the older run** of the same PR, so superseded commits stop using runners.

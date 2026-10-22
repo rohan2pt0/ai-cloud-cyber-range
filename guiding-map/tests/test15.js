@@ -8,16 +8,22 @@ function boot(hash, confirms, seed){
     beforeParse(w){if(seed)w.localStorage.setItem("gm_sync_cfg",JSON.stringify(seed));w.confirm=m=>{prompts.push(m);return confirms[Math.min(i++,confirms.length-1)];};w.alert=m=>alerts.push(m);w.fetch=()=>Promise.reject(new Error("offline"));}});
   return {dom,prompts,alerts};
 }
-const link=b64({url:"https://sync.securax.localhost/sync",key:"tok-abc",user:"me"});
-const SAME={url:"https://sync.securax.localhost/sync",key:"tok-abc",user:"me"};
+const link=b64({url:"https://hub.securax.localhost/sync",key:"tok-abc",user:"me"});
+const SAME={url:"https://hub.securax.localhost/sync",key:"tok-abc",user:"me"};
 setTimeout(()=>{
  // 1. accepted link sets sync up, the secret leaves the address bar, and the user was told WHERE data goes
  let t=boot("#sync="+link,[true]);
  setTimeout(()=>{
   const w=t.dom.window, c=JSON.parse(w.localStorage.getItem("gm_sync_cfg")||"null");
-  ok("accepted link turns sync on", c&&c.url==="https://sync.securax.localhost/sync"&&c.key==="tok-abc"&&c.user==="me", JSON.stringify(c));
+  ok("accepted link turns sync on", c&&c.url==="https://hub.securax.localhost/sync"&&c.key==="tok-abc"&&c.user==="me", JSON.stringify(c));
   ok("the fragment is removed from the address bar immediately", w.location.hash==="");
-  ok("the destination host is shown before saving", t.prompts.length>=1 && t.prompts[0].includes("sync.securax.localhost"), t.prompts[0]);
+  // a device paired before 2026-10-22 was given sync.<domain>, another origin it may not call: it is moved to the hub's own /sync
+  const old=boot("",[true],{url:"https://sync.securax.localhost/sync",key:"tok-old",user:"me"});
+  setTimeout(()=>{
+   const oc=JSON.parse(old.dom.window.localStorage.getItem("gm_sync_cfg")||"null");
+   ok("an old cross-origin sync address is moved to the same origin, token kept", oc&&oc.url==="https://hub.securax.localhost/sync"&&oc.key==="tok-old", JSON.stringify(oc));
+  },400);
+  ok("the destination host is shown before saving", t.prompts.length>=1 && t.prompts[0].includes("hub.securax.localhost"), t.prompts[0]);
 
   // 2. declined link changes nothing
   let d=boot("#sync="+link,[false]);
@@ -52,7 +58,7 @@ setTimeout(()=>{
    // 5. automatic server-side backup shows as a green row with a restore path
    const h2=boot("",[true]); const w2=h2.dom.window;
    setTimeout(()=>{
-    w2.localStorage.setItem("gm_sync_cfg",JSON.stringify({url:"https://sync.securax.localhost/sync",key:"k",user:"me"}));
+    w2.localStorage.setItem("gm_sync_cfg",JSON.stringify({url:"https://hub.securax.localhost/sync",key:"k",user:"me"}));
     w2.localStorage.setItem("gm_sync_snaps",JSON.stringify({n:12,latest:"2026-10-14"}));
     const ids=w2.TABS.map(x=>x[0]);const oi=ids.indexOf('ops');
     w2.swT(oi>=0?oi:0);

@@ -21,8 +21,8 @@ def decode(link):
 
 def test_https_link_uses_names_and_the_first_token():
     link, where = sl.build({"SYNC_TOKENS": "tokA,tokB", "COMPOSE_FILE": "docker-compose.yml:tls.yml", "SECURAX_DOMAIN": "securax.example.in"}, "me")
-    assert link.startswith("https://hub.securax.example.in/#sync=") and where == "https://sync.securax.example.in/sync"
-    assert decode(link) == {"url": "https://sync.securax.example.in/sync", "key": "tokA", "user": "me"}
+    assert link.startswith("https://hub.securax.example.in/#sync=") and where == "https://hub.securax.example.in/sync"
+    assert decode(link) == {"url": "https://hub.securax.example.in/sync", "key": "tokA", "user": "me"}
 
 
 def test_plain_link_uses_the_host_given():

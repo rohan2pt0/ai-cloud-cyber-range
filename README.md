@@ -111,14 +111,14 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- A phone paired over HTTPS never synced
+- Rail tests that would not have caught a weakened rail
 - [Mission control](docs/securax/102-MISSION-CONTROL.md)
 - [A sandbox that proves more](docs/securax/101-A-SANDBOX-THAT-PROVES-MORE.md)
 - Security round
 - Roadmap sweep: dated items done today
 - [One look across the estate](docs/securax/100-DESIGN-STANDARD.md)
 - [A calm Command Center](docs/securax/100-DESIGN-STANDARD.md)
-- [The design standard](docs/securax/100-DESIGN-STANDARD.md)
-- [Free the C: drive](docs/securax/80-STORAGE-THAT-GROWS-WITH-YOU.md)
 
 **Release 0.2.0 - 2026-10-17:**
 
@@ -217,7 +217,7 @@ Secure-by-design · privacy-by-design · zero-trust · **fail-closed** · everyt
 - `docs/demo-runbook.md` — a 15-minute guided walkthrough
 
 <!-- readme:proofs:start -->
-> **Proof, not claims:** 47 end-to-end journeys run the real estate (real containers, a real browser) on every merge and every night; pull requests run the ones their change can affect ([doc 68](docs/securax/68-CI-AT-AGENT-SCALE.md)).
+> **Proof, not claims:** 49 end-to-end journeys run the real estate (real containers, a real browser) on every merge and every night; pull requests run the ones their change can affect ([doc 68](docs/securax/68-CI-AT-AGENT-SCALE.md)).
 <!-- readme:proofs:end -->
 
 <!-- readme:docs:start -->

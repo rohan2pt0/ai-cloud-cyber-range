@@ -979,6 +979,10 @@ def render(c: Collector, maps: dict, hist: list[dict], ai: str, now: float, targ
              + "</details>")
     if gov:
         h.append(gov[0])
+    try:                                                          # the mission board (doc 102): the update's Go/No-Go and the rules firing, folded
+        h.append(_load("securax_mission", "governance/mission.py").html_card(ms))
+    except Exception:  # noqa: BLE001 - a convenience panel must never fail the cockpit
+        pass
     try:                                                          # what is left to set up (./securax finish), folded
         h.append(_load("securax_finish", "governance/finish.py").html_card(panel=True))
     except Exception:  # noqa: BLE001 - the checklist is a convenience; it must never fail the cockpit

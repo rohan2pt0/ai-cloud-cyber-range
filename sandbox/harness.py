@@ -338,17 +338,65 @@ def chromium_path() -> str | None:
     return None   # let Playwright use its own managed browser (e.g. in CI after `playwright install`)
 
 
+def resolver_rules(domain: str, host: str = "127.0.0.1") -> str:
+    """Chromium's --host-resolver-rules value that sends every name under `domain` (and the domain itself) to `host`."""
+    return f"MAP *.{domain} {host},MAP {domain} {host}"
+
+
+def spki_pin(cert: pathlib.Path) -> str:
+    """base64(sha256(SubjectPublicKeyInfo)) of a PEM certificate: the value Chromium's --ignore-certificate-errors-spki-list takes."""
+    import base64
+    import hashlib
+    rc, pub = sh(["openssl", "x509", "-in", str(cert), "-noout", "-pubkey"], timeout=30)
+    if rc != 0 or "BEGIN PUBLIC KEY" not in pub:
+        return ""
+    body = pub.split("-----BEGIN PUBLIC KEY-----")[1].split("-----END PUBLIC KEY-----")[0]
+    return base64.b64encode(hashlib.sha256(base64.b64decode("".join(body.split()))).digest()).decode()
+
+
+def nss_trust(home: pathlib.Path, ca: pathlib.Path, nick: str = "SecuRAX estate CA") -> bool:
+    """Make a private browser profile home trust `ca`, the way a person imports it under 'Manage certificates > Authorities' on Linux
+    (Chromium reads $HOME/.pki/nssdb). False when NSS's certutil is not installed (Ubuntu: libnss3-tools)."""
+    if not shutil.which("certutil"):
+        return False
+    db = home / ".pki" / "nssdb"
+    db.mkdir(parents=True, exist_ok=True)
+    if not (db / "cert9.db").exists():
+        if sh(["certutil", "-N", "--empty-password", "-d", f"sql:{db}"], timeout=30)[0] != 0:
+            return False
+    return sh(["certutil", "-A", "-t", "C,,", "-n", nick, "-i", str(ca), "-d", f"sql:{db}"], timeout=30)[0] == 0
+
+
+def device(pw, name: str) -> dict:
+    """A Playwright device descriptor usable with Chromium's new_context (drops the engine hint; iPhones default to WebKit)."""
+    return {k: v for k, v in pw.devices[name].items() if k != "default_browser_type"}
+
+
 class Browser:
-    """Context manager: `with Browser() as b: page = b.page()` — a real Chromium, headless."""
+    """Context manager: `with Browser() as b: page = b.page()` — a real Chromium, headless.
+    `args` adds launch flags (e.g. --host-resolver-rules); `env` sets the browser's environment (e.g. HOME for its NSS trust store)."""
+    def __init__(self, args: list[str] | None = None, env: dict | None = None):
+        self._args, self._env = list(args or []), env
+
     def __enter__(self):
         from playwright.sync_api import sync_playwright
         self._pw = sync_playwright().start()
-        kw = {"headless": True, "args": ["--no-sandbox"]}
+        kw = {"headless": True, "args": ["--no-sandbox", *self._args]}
+        if self._env is not None:
+            kw["env"] = self._env
         exe = chromium_path()
         if exe:
             kw["executable_path"] = exe
         self._b = self._pw.chromium.launch(**kw)
         return self
+
+    @property
+    def playwright(self):
+        return self._pw
+
+    def context(self, **kw):
+        """A fresh browser context (its own storage, like a separate device); kw goes to Playwright's new_context."""
+        return self._b.new_context(**kw)
 
     def page(self, width: int = 1280, height: int = 900):
         ctx = self._b.new_context(viewport={"width": width, "height": height})

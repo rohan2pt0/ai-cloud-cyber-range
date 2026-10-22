@@ -300,6 +300,27 @@ def board() -> dict:
             "you": [r["then"] for r in fired if r["who"] == "owner"][:1]}
 
 
+def html_card(metrics: list[dict], b: dict | None = None) -> str:
+    """The mission board as one folded line in the Command Center (doc 102): the update's Go/No-Go, the rules firing, and the one
+    thing that needs the owner. It uses the metrics the cockpit has just measured and asks nothing over the network (the main
+    build is asked by the update itself)."""
+    import html
+    E = html.escape
+    st = {"backups": backups() if b is None else b, "cockpit": {m["id"]: m for m in metrics}, "ci_main": None}
+    consoles = [c for c in poll("update", st)["consoles"] if c["console"] != "main build"]
+    no_go = [c for c in consoles if not c["go"]]
+    fired = [r for r in rules(st) if r["fires"]]
+    yours = [r for r in fired if r["who"] == "owner"]
+    line = ("NO-GO for the nightly update: " + ", ".join(c["console"] for c in no_go)) if no_go else "GO for the nightly update"
+    line += f" · {len(fired)} flight rule{'s' if len(fired) != 1 else ''} firing · " + (f"needs you: {yours[0]['then']}" if yours else "nothing needs you")
+    rows = "".join(f"<li>{'✔' if c['go'] else '✘'} " + E(c["why"] if c["why"].startswith(c["console"] + ":") else f"{c['console']}: {c['why']}")
+                   + "</li>" for c in consoles)
+    acts = "".join(f"<li><b>{E(r['id'])}</b> ({'you' if r['who'] == 'owner' else 'the autopilot acts'}): {E(r['then'])}</li>" for r in fired)
+    return (f"<details class='card panel' id='mission'><summary><b>Mission</b> <span class='muted'>· {E(line)}</span></summary>"
+            f"<p class='muted'>{E(SPEC['intent'])}</p><ul>{rows}</ul>" + (f"<ul>{acts}</ul>" if acts else "")
+            + "<p class='muted'>The whole board: <code>./securax mission</code></p></details>").replace("https://", "")
+
+
 def main(argv: list[str] | None = None) -> int:
     ap = argparse.ArgumentParser(prog="securax mission", description=__doc__.split("\n\n")[0])
     ap.add_argument("what", nargs="?", default="board", choices=["board", "poll", "rules", "crew", "aar", "costs"])
