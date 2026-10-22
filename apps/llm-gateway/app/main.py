@@ -25,7 +25,7 @@ import httpx
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
 
-from . import answering, budget, guardrails, identity, killswitch, residency
+from . import answering, baseline, budget, guardrails, identity, killswitch, residency
 from .providers import active_detectors, run_detectors
 
 MODE = os.getenv("GUARDRAIL_MODE", "enforce")  # enforce | monitor
@@ -179,6 +179,7 @@ def _http() -> httpx.AsyncClient:
 async def _close_http() -> None:
     if _HTTP is not None:
         await _HTTP.aclose()
+    baseline.save()                                  # keep what normal looks like across a restart
 
 
 _SLOTS: asyncio.Semaphore | None = None
@@ -478,6 +479,27 @@ async def served_report(request: Request, model: str = "") -> dict:
     return _served_report(model)
 
 
+@app.get("/v1/anomalies")
+async def anomalies_report(request: Request) -> dict:
+    """The last 50 unusual uses of a caller's key (doc 92): a burst, a model it never asked for, or an hour it is never active in."""
+    await _authn(request, "metrics")
+    return baseline.report()
+
+
+def _note_behaviour(principal: str, model: str, ident: identity.Identity, req_id: str, who: dict) -> None:
+    """Per-caller baseline (app/baseline.py): detection only, never blocks, never sees prompt or answer text."""
+    try:
+        name = ident.subject if ident.method == "api_key" else principal      # a key's name helps a person revoke it; never a JWT subject
+        found = baseline.observe(principal, model, name=name)
+    except Exception:  # noqa: BLE001 - a detector fault must never fail the call it watches
+        _metrics["baseline_error"] += 1
+        return
+    for a in found:
+        _metrics[f"anomaly_{a['kind']}"] += 1
+        _emit({"req_id": req_id, **who, "decision": "anomaly", "kind": a["kind"], "detail": a["detail"],
+               "category": "LLM10/anomalous-use"})
+
+
 @app.post("/v1/chat/completions")
 async def chat(request: Request, authorization: str | None = Header(default=None)):
     key = (request.headers.get("idempotency-key") or "").strip()
@@ -525,6 +547,8 @@ async def _chat(request: Request, authorization: str | None) -> JSONResponse:
     trace_id, span_id = _trace(request)
     who = {"principal": principal, "trace_id": trace_id, **(ident.audit() if ident.method != "none" else {}),
            "client_ip": request.client.host if request.client else "unknown"}
+
+    _note_behaviour(principal, asked, ident, req_id, who)       # counted before any refusal, so a refused flood still shows
 
     if _rate_limited(principal):
         _metrics["rate_limited"] += 1
