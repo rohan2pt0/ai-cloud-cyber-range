@@ -6,7 +6,7 @@ turned into numbers with a line each that SecuRAX checks for you. Run it on the 
     ./securax venture guards --json     the same, for a dashboard
 
 What it reads, all private, all yours: vault/venture.json (the time, money and revenue you log with ./securax venture log, and
-plan settings such as cash and last_independent_review), governance/shifts.json (the platform shifts you review), products.json
+plan settings such as cash, last_independent_review, name_cleared, domain_expires and insured_until), governance/shifts.json, governance/licences.json (the platform shifts you review), products.json
 (each product's dated stop test) and the public website (the words it uses). The guards and their lines are in
 governance/guards.json, so a line can be tightened without touching code. Standard library only; no network.
 Exit codes: 0 nothing failed, 1 a guard failed.
@@ -25,6 +25,7 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 GUARDS = ROOT / "governance" / "guards.json"
 SHIFTS = ROOT / "governance" / "shifts.json"
 PRODUCTS = ROOT / "products.json"
+LICENCES = ROOT / "governance" / "licences.json"
 SITE = ROOT / "website"
 ICON = {"pass": "✔ PASS", "watch": "~ WATCH", "fail": "✗ FAIL", "notyet": "· NOT YET"}
 
@@ -163,6 +164,43 @@ def check(now: dt.date | None = None, root: pathlib.Path = ROOT) -> list[dict]:
     else:
         age = (now - dt.date.fromtimestamp(note.stat().st_mtime)).days
         out.append(_r("key-person", "pass" if age <= g["key-person"]["line"] else "fail", f"updated {age} days ago", "review it once a year"))
+
+    # 13. the name: an attorney's clearance search and a filed trade mark before money changes hands (doc 110)
+    cleared, filed = p.get("name_cleared") or "", p.get("trademark_filed") or ""
+    if cleared and filed:
+        out.append(_r("brand-cleared", "pass", f"cleared {cleared}, filed {filed}", "renew the mark every ten years"))
+    else:
+        out.append(_r("brand-cleared", "fail" if rev else "watch", "not cleared" if not cleared else "not filed",
+                      "before the first invoice: an attorney's search, then a filing in the company's name, both before any public rename: "
+                      "./securax venture plan name_cleared=YYYY-MM-DD trademark_filed=APPLICATION"))
+
+    # 14. the domain: paid well ahead, so a lapsed card cannot hand it to a stranger
+    exp = p.get("domain_expires") or ""
+    if not exp:
+        out.append(_r("domain-renewal", "notyet", "not recorded", "./securax venture plan domain_expires=YYYY-MM-DD (and turn on the registrar lock and auto-renew)"))
+    else:
+        left = (dt.date.fromisoformat(exp) - now).days
+        line = g["domain-renewal"]["line"]
+        out.append(_r("domain-renewal", "pass" if left >= line else "watch" if left >= 30 else "fail", f"{left} days left",
+                      f"keep at least {line} days paid ahead"))
+
+    # 15. liability cover: professional indemnity and cyber cover in force before the first contract
+    ins = p.get("insured_until") or ""
+    live = bool(ins) and dt.date.fromisoformat(ins) >= now
+    if not rev:
+        out.append(_r("insurance", "pass" if live else "notyet", ins or "no cover recorded", "needed before the first contract"))
+    else:
+        out.append(_r("insurance", "pass" if live else "fail", ins or "none",
+                      "professional indemnity and cyber cover, sized to the contracts' liability cap: ./securax venture plan insured_until=YYYY-MM-DD"))
+
+    # 16. the bundled licences: what each lets you do once you sell (governance/licences.json)
+    lic = json.loads(LICENCES.read_text("utf-8"))
+    held = [c["id"] for c in lic["components"] + lic["models"] if c["sell"] != "ok"]
+    seen = p.get("licence_review") or ""
+    fresh = bool(seen) and (now - dt.date.fromisoformat(seen)).days <= g["licence-terms"]["line"]
+    out.append(_r("licence-terms", "pass" if fresh else "fail" if rev else "watch", f"{len(held)} with conditions" + (f", reviewed {seen}" if seen else ""),
+                  "read governance/licences.json against what you sell, then ./securax venture plan licence_review=YYYY-MM-DD"
+                  + ("" if fresh else ": " + ", ".join(held[:4]))))
 
     # 9. platform shifts: reviewed every quarter (Nokia, RIM and Kodak saw the shift and defended the old margin)
     sh = json.loads(SHIFTS.read_text("utf-8"))

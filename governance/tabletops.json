@@ -104,6 +104,42 @@
          "expect": "Yes: a git bundle in the backup folder and a private mirror on a second host.",
          "fix": "./securax continuity mirror setup"}
       ]
+    },
+    {
+      "id": "everything-at-once",
+      "title": "Everything goes wrong in one week (doc 110)",
+      "scenario": "compromise",
+      "story": "Monday: a lawyer's letter says the name is too close to a firm that used it first. Tuesday: a customer blames SecuRAX for a breach. Wednesday: a consumer complaint cites a claim on the website. Thursday: a researcher publishes a flaw. Friday: the domain shows 20 days to expiry.",
+      "injects": [
+        {"at": "Mon", "phase": "contain", "event": "The lawyer's letter arrives, and a customer forwards a post about it.",
+         "ask": "Do you know not to answer in public, and who speaks for the company?",
+         "expect": "Nobody answers on social media. One person speaks. The letter goes to the IP lawyer the same day.",
+         "fix": "docs/securax/110-WHEN-EVERYTHING-GOES-WRONG.md, section 4"},
+        {"at": "Mon", "phase": "recover", "event": "The other firm really did use the name first.",
+         "ask": "Is a spare name already cleared, and can the product be renamed in one file?",
+         "expect": "Yes: a spare cleared name is kept, every name lives in brand.env, and ./securax config check proves the rename. A prior user is not fought (S. Syed Mohideen).",
+         "fix": "./securax venture plan name_cleared=YYYY-MM-DD trademark_filed=APPLICATION"},
+        {"at": "Tue", "phase": "detect", "event": "The customer says the gateway let a leak through.",
+         "ask": "Can you show what ran: the release, the setting and the audit chain, from before the complaint?", "check": "mirror",
+         "expect": "Yes: the release is signed, the code is mirrored off GitHub, and the gateway's audit chain shows what was allowed and why.",
+         "fix": "./securax continuity mirror setup"},
+        {"at": "Tue", "phase": "recover", "event": "The customer asks for damages.",
+         "ask": "Does the contract cap liability, and is the cover in force?",
+         "expect": "Yes: liability is capped at twelve months' fees, indirect loss is excluded, and professional indemnity cover is current. Tell the insurer within the policy's window.",
+         "fix": "./securax venture plan insured_until=YYYY-MM-DD"},
+        {"at": "Wed", "phase": "contain", "event": "The complaint quotes a sentence from the website.",
+         "ask": "Can that sentence be proved by a test today?",
+         "expect": "If not, it is removed the same day; the claims guard would have failed it first.",
+         "fix": "./securax venture guards"},
+        {"at": "Thu", "phase": "detect", "event": "A researcher publishes a flaw.",
+         "ask": "Would you hear of it on your phone, and is there a way to report flaws to you?", "check": "alerts",
+         "expect": "Yes: SECURITY.md says how to report, alerts reach the phone, and an advisory with the fix or a safe setting goes out within a day.",
+         "fix": "./securax notify"},
+        {"at": "Fri", "phase": "protect", "event": "The domain shows 20 days left, and the card on file has expired.",
+         "ask": "Is the domain paid years ahead, locked, and checked every month?",
+         "expect": "Yes: auto-renew, a registrar lock and 2FA are on, and the domain-renewal guard warns 180 days ahead.",
+         "fix": "./securax venture plan domain_expires=YYYY-MM-DD"}
+      ]
     }
   ]
 }

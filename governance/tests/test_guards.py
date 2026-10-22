@@ -126,3 +126,38 @@ def test_venture_log_keeps_the_tags_on_the_right_kind_of_entry(tmp_path, monkeyp
     log = json.loads((tmp_path / "venture.json").read_text())["log"]
     assert log[0]["product"] == "shield" and log[0]["ref"] == "INV-1" and "related" not in log[0]
     assert log[1]["related"] == "Fake Co" and log[1]["disclosed"] == "minute 3" and "product" not in log[1]
+
+
+def test_the_name_must_be_cleared_and_filed_before_the_first_invoice(vault):
+    vault([])
+    assert by(gd.check(NOW))["brand-cleared"]["state"] == "watch"                       # before revenue: a reminder
+    vault([e("revenue", 10000, 5, ref="INV-1")])
+    assert by(gd.check(NOW))["brand-cleared"]["state"] == "fail"                        # money taken under an uncleared name
+    vault([e("revenue", 10000, 5, ref="INV-1")], name_cleared="2026-10-01", trademark_filed="FAKE-APP-1")
+    assert by(gd.check(NOW))["brand-cleared"]["state"] == "pass"
+
+
+def test_a_domain_close_to_lapsing_is_watched_then_failed(vault):
+    for days, state in ((400, "pass"), (90, "watch"), (10, "fail")):
+        vault([], domain_expires=(NOW + dt.timedelta(days=days)).isoformat())
+        assert by(gd.check(NOW))["domain-renewal"]["state"] == state, days
+
+
+def test_selling_without_liability_cover_or_a_licence_review_fails(vault):
+    vault([e("revenue", 10000, 5, ref="INV-1")], insured_until="2026-01-01")             # cover lapsed
+    r = by(gd.check(NOW))
+    assert r["insurance"]["state"] == "fail" and r["licence-terms"]["state"] == "fail" and "n8nio/n8n" in r["licence-terms"]["why"]
+    vault([e("revenue", 10000, 5, ref="INV-1")], insured_until="2027-10-01", licence_review="2026-10-01")
+    r = by(gd.check(NOW))
+    assert r["insurance"]["state"] == "pass" and r["licence-terms"]["state"] == "pass"
+
+
+def test_a_claim_of_regulator_approval_fails(vault, monkeypatch, tmp_path):
+    vault([])
+    (tmp_path / "site").mkdir()
+    (tmp_path / "site" / "index.html").write_text("<p>RBI approved and fully compliant</p>")
+    (tmp_path / "products.json").write_text(json.dumps({"products": []}))
+    monkeypatch.setattr(gd, "SITE", tmp_path / "site")
+    monkeypatch.setattr(gd, "PRODUCTS", tmp_path / "products.json")
+    r = by(gd.check(NOW, root=tmp_path))["claims"]
+    assert r["state"] == "fail" and "rbi approved" in r["why"] and "fully compliant" in r["why"]

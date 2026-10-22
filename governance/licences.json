@@ -1,0 +1,31 @@
+{
+ "about": "What each bundled component's licence lets SecuRAX do once it is sold (doc 110). Read by ./securax venture guards (guard licence-terms) and held current by governance/tests/test_licences.py: every image in local/compose must be listed. 'terms' is what to keep doing; 'sell' is ok (no condition), conditions (allowed, with the condition) or ask (needs the owner's written licence first). A summary from each project's own licence page, checked 2026-10-22; the licence text itself decides.",
+ "components": [
+  {"id": "ollama/ollama", "licence": "MIT", "sell": "ok", "terms": "keep the copyright notice"},
+  {"id": "ghcr.io/berriai/litellm", "licence": "MIT (the enterprise/ folder is under a separate commercial licence)", "sell": "conditions", "terms": "use only the MIT features; enterprise features need BerriAI's licence"},
+  {"id": "ghcr.io/open-webui/open-webui", "licence": "Open WebUI License (BSD-3 with a branding clause, from v0.6.6)", "sell": "conditions", "terms": "keep the Open WebUI name and logo visible in any deployment serving more than 50 users in 30 days, unless you hold their enterprise licence"},
+  {"id": "n8nio/n8n", "licence": "Sustainable Use License (fair-code, not open source)", "sell": "ask", "terms": "internal business use and paid consulting are allowed; hosting n8n for paying customers, or selling a product whose value comes mainly from n8n, needs n8n's commercial or Embed licence"},
+  {"id": "grafana/grafana", "licence": "AGPL-3.0", "sell": "conditions", "terms": "unmodified use is fine; if you modify it and offer it over a network, publish the modified source"},
+  {"id": "grafana/loki", "licence": "AGPL-3.0", "sell": "conditions", "terms": "as Grafana"},
+  {"id": "prom/prometheus", "licence": "Apache-2.0", "sell": "ok", "terms": "keep the NOTICE"},
+  {"id": "prom/alertmanager", "licence": "Apache-2.0", "sell": "ok", "terms": "keep the NOTICE"},
+  {"id": "quay.io/keycloak/keycloak", "licence": "Apache-2.0", "sell": "ok", "terms": "keep the NOTICE"},
+  {"id": "ghcr.io/openbao/openbao", "licence": "MPL-2.0", "sell": "ok", "terms": "changes to its own files stay MPL and are published"},
+  {"id": "chrislusf/seaweedfs", "licence": "Apache-2.0", "sell": "ok", "terms": "keep the NOTICE"},
+  {"id": "cloudflare/cloudflared", "licence": "Apache-2.0", "sell": "ok", "terms": "keep the NOTICE"},
+  {"id": "ghcr.io/dani-garcia/vaultwarden", "licence": "AGPL-3.0", "sell": "conditions", "terms": "as Grafana; and never call it Bitwarden: it is an independent project, and the name is another firm's mark"},
+  {"id": "mattermost/mattermost-team-edition", "licence": "MIT for the Team Edition binary (the source is AGPL-3.0 and Apache-2.0)", "sell": "conditions", "terms": "ship the unmodified binary; enterprise features need Mattermost's licence"},
+  {"id": "mintplexlabs/anythingllm", "licence": "MIT", "sell": "ok", "terms": "keep the copyright notice"},
+  {"id": "nginx", "licence": "BSD-2-Clause", "sell": "ok", "terms": "keep the copyright notice"},
+  {"id": "postgres", "licence": "PostgreSQL License", "sell": "ok", "terms": "keep the copyright notice"},
+  {"id": "aquasec/trivy", "licence": "Apache-2.0", "sell": "ok", "terms": "keep the NOTICE"},
+  {"id": "universonic/stable-diffusion-webui", "licence": "AGPL-3.0 (the image is a community build; each model's weights carry their own use licence)", "sell": "conditions", "terms": "optional, off by default; check the chosen model's licence before any paid use"},
+  {"id": "securax/estate-sync", "licence": "MIT (this repository)", "sell": "ok", "terms": "ours"},
+  {"id": "vulnbank/llm-gateway", "licence": "MIT (this repository)", "sell": "ok", "terms": "ours"}
+ ],
+ "models": [
+  {"id": "qwen2.5 (0.5b, 1.5b, 7b) and qwen2.5-coder", "licence": "Apache-2.0", "sell": "ok", "terms": "the shipped defaults"},
+  {"id": "qwen2.5:3b and qwen2.5:72b", "licence": "Qwen licences (3B: research only)", "sell": "ask", "terms": "never a default; a person who pins one checks its licence"},
+  {"id": "llama-guard3:1b", "licence": "Llama 3.2 Community License", "sell": "conditions", "terms": "follow Meta's acceptable use policy and show 'Built with Llama'"}
+ ]
+}

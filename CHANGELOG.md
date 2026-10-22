@@ -8,6 +8,8 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
+### Added
+- When everything goes wrong at once (doc 110): four more monthly guards (name cleared and trade mark filed before the first invoice, domain paid 180 days ahead, liability cover in force, bundled licences reviewed), the claims guard now fails regulator-approval and compliance claims, `governance/licences.json` lists what each bundled image's licence allows once SecuRAX is sold (a test fails an unlisted image), `TRADEMARKS.md` keeps the names out of the MIT grant, and `./securax continuity tabletop everything-at-once` rehearses a bad week.
 ### CI
 - The e2e sandbox keeps its pulled local models between runs (a GitHub cache keyed on the image and model pins), so a slow model registry can no longer push the journey suite past its 60-minute limit.
 ### Security
