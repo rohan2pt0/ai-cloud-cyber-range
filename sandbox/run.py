@@ -891,6 +891,27 @@ def j_ransomware(sb: H.Sandbox, c: Checks):
             shutil.copytree(saved_vault, vault)
 
 
+@journey("estate_chaos", "Chaos on the everyday estate (doc 101): with the estate normal (gateway ready, chat answers, the Command Center and sync serve), three real faults picked by a seed (crash or freeze the gateway, crash the router, the Command Center's web server or sync) are injected one at a time; after each the watchdog heals and the estate must be normal again within its time limit, and the fault is always reverted. The seed is printed, so a failure replays exactly.", slow=True)
+def j_estate_chaos(sb: H.Sandbox, c: Checks):
+    import datetime as dt
+    import importlib.util
+    if not _start(sb, c, GEMINI_API_KEY=KEYS["GEMINI_API_KEY"]):
+        return
+    spec = importlib.util.spec_from_file_location("sbx_chaos", sb.clone / "lifecycle" / "chaos.py")
+    ch = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ch)
+    seed = int(os.environ.get("SANDBOX_CHAOS_SEED") or dt.date.today().strftime("%Y%m%d"))
+    try:
+        res = ch.run(seed, 3)
+        c.ok(not res["aborted"], f"the estate was normal before the experiment (seed {seed}, plan {', '.join(res['plan'])})", res["aborted"])
+        for r in res["results"]:
+            c.ok(r["ok"], f"{r['what']}: noticed, healed and normal again in {r['seconds']} s (limit {r['slo_s']} s; seed {seed})", r["why"])
+        c.ok(len(res["results"]) == len(res["plan"]) or res["aborted"], "every planned fault was tried (the run stops at the first one not healed)")
+    finally:
+        sb.compose("--profile", "ai", "unpause", timeout=60)          # whatever happened, nothing is left frozen or stopped
+        sb.compose("--profile", "ai", "start", timeout=180)
+
+
 @journey("watchdog_heals_and_alerts", "`./securax watch`: notices an outage, heals it, and sends you an alert.")
 def j_watch(sb: H.Sandbox, c: Checks):
     import http.server

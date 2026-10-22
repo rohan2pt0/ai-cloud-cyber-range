@@ -13,6 +13,7 @@ for the versioning and release policy.
   - `./securax proofs`: the claims the docs make that no journey proves yet, ranked, with the journey that could prove each.
   - Any sandbox journey can be run on its own in CI (the e2e workflow's `journeys` input), so a fix is proved in minutes.
   - The PowerShell scripts are parsed, linted and, where safe, run on a real Windows machine (`windows-scripts` workflow).
+  - **Chaos experiments** on the everyday estate (`./securax chaos`, nightly journey `estate_chaos`): seeded faults, each healed within its limit and always reverted.
 - **Security round** (docs 87, 89, 92).
   - **Images pinned by digest:** the 13 services other devices or the internet reach run `name:tag@sha256:…` (`local/compose/digest-pins.json`); a test fails if one loses its pin, and `tools/digest_check.py` (weekly in supply-chain-watch) reports a tag that moved to a new build.
   - **A stolen AI key, spotted by how it behaves:** the gateway keeps a 7-day baseline per caller and writes a burst, a never-used model or an odd hour to the audit chain; the cockpit lights "Unusual AI key use". Detection only, no text stored. `GET /v1/anomalies`.
@@ -47,6 +48,7 @@ for the versioning and release policy.
   - `site domain NAME` prints the exact DNS records and the one GitHub setting.
   - `site live` switches every link to your domain only after checking that the domain serves the site over HTTPS.
 ### Fixed
+- **The watchdog healed only the gateway.** A crashed Command Center or sync service stayed down, and a frozen container stayed frozen. `./securax watch` now checks all three and unfreezes before it heals (found by the new chaos experiments).
 - **Contrast on the control navigator.** Heat-map numbers in light mode and N/A cells in dark mode were below WCAG AA. Both pass now. The cockpit's area table no longer runs off a phone screen.
 - **Cockpit "do next" listed builders' work.** A gap-backlog item such as "Implement CCI scoring" sat among your actions with no command. Only vital signs you can act on are listed now; the backlog stays in Mission planning.
 - **Cockpit instruments cut readings mid-phrase** ("plain HTTP (browsers …"). The reading now shows whole, with its detail in small type beneath.

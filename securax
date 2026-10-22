@@ -1052,6 +1052,10 @@ EOF2
     # that every feature declares its edition and platform services.  ./securax suite | components | sheet EDITION | check | json
     shift; exec python3 "$ROOT/governance/suite.py" "${@:-report}"
     ;;
+  chaos)
+    # ./securax chaos [--seed N] [--faults N] [--run] [--json] — chaos experiments on this estate (doc 101); the plan only unless --run.
+    python3 "$ROOT/lifecycle/chaos.py" "${@:2}"
+    ;;
   proofs)
     # ./securax proofs [--top N|--all|--json] — the claims in the docs no journey proves yet, ranked, with the closest journey.
     python3 "$ROOT/governance/proofs.py" "${@:2}"
@@ -1583,20 +1587,27 @@ EOF2
     C "Restarting…"; exec "$0" up
     ;;
   watch)
-    # Watchdog: checks READY every WATCH_INTERVAL s (default 60); if down, heals with `up` (at most once per 5 min)
+    # Watchdog: checks READY (gateway, Command Center, sync) every WATCH_INTERVAL s (default 60); if down, heals with `up` (at most once per 5 min)
     # and tells you (log + optional ALERT_WEBHOOK in .env — e.g. an ntfy.sh topic URL; only a short status line is sent).
     #   ./securax watch          run forever (Ctrl+C to stop)       ./securax watch --once   check once, heal if needed
     LOG="$ROOT/watch.log"; ST=ok; LASTHEAL=0; WH="$(ev ALERT_WEBHOOK)"
+    # READY means every part a person relies on (doc 101: chaos found the hub and sync were never checked): the gateway,
+    # the Command Center's web server, and the sync service behind it.
+    sync_up(){ if tls_on; then _h="hub.$(ev SECURAX_DOMAIN securax.localhost)"; curl -fsS -m 5 --cacert "${SECURAX_TLS_DIR:-$HOME/.securax/tls}/ca.crt" --resolve "$_h:443:127.0.0.1" "https://$_h/sync/healthz" >/dev/null 2>&1
+               else curl -fsS -m 5 "http://localhost:8088/sync/healthz" >/dev/null 2>&1; fi; }
+    estate_ok(){ gcurl -fsS -m 5 $(gw_url)/readyz >/dev/null 2>&1 && web_up hub 8088 && sync_up; }
     note(){ printf '%s %s\n' "$(date '+%F %T')" "$*" | tee -a "$LOG"; [ -n "$WH" ] && curl -fsS -m 10 -X POST -d "SecuRAX: $*" "$WH" >/dev/null 2>&1 || true; }
     while :; do
-      if gcurl -fsS -m 5 $(gw_url)/readyz >/dev/null 2>&1; then
+      if estate_ok; then
         [ "$ST" = ok ] || note "recovered — estate is READY again"; ST=ok
       else
         if [ "$ST" = ok ]; then note "NOT READY — healing with ./securax up"; ST=down; fi
         NOW="$(date +%s)"
         if [ $(( NOW - LASTHEAL )) -ge 300 ]; then
-          LASTHEAL="$NOW"; SECURAX_NO_OPEN=1 "$0" up >>"$LOG" 2>&1 || note "heal attempt failed — run ./securax doctor"
-          if gcurl -fsS -m 5 $(gw_url)/readyz >/dev/null 2>&1; then note "recovered — estate is READY again"; ST=ok; fi
+          LASTHEAL="$NOW"
+          ( cd "$ROOT/local/compose" && docker compose --profile ai unpause >/dev/null 2>&1 ) || true   # a frozen (paused) container: `up` leaves it frozen
+          SECURAX_NO_OPEN=1 "$0" up >>"$LOG" 2>&1 || note "heal attempt failed — run ./securax doctor"
+          if estate_ok; then note "recovered — estate is READY again"; ST=ok; fi
         fi
       fi
       [ "${2:-}" = "--once" ] && break
@@ -2077,6 +2088,7 @@ BUILD & KEEP IT HEALTHY
   venture        is it paying its way? break-even, payback, unit economics (your time counted); log, plan, ask
   progress       is it making you better off? your rhythm, how much stronger the estate got, the one next step
   proofs         the claims the docs make that no journey proves yet, ranked, with the journey that could prove each
+  chaos          chaos experiments: break one real thing, check the estate heals in time (plan only; --run breaks things)
   autopilot      what the estate learned from its own failures, which drills it ran by itself, what it foresees running out
   names          https://hub.securax.localhost style addresses instead of localhost:port, in one guided step
   passwords      the estate's password manager (start passwords, then status | lock | open)

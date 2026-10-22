@@ -217,7 +217,7 @@ Secure-by-design · privacy-by-design · zero-trust · **fail-closed** · everyt
 - `docs/demo-runbook.md` — a 15-minute guided walkthrough
 
 <!-- readme:proofs:start -->
-> **Proof, not claims:** 46 end-to-end journeys run the real estate (real containers, a real browser) on every merge and every night; pull requests run the ones their change can affect ([doc 68](docs/securax/68-CI-AT-AGENT-SCALE.md)).
+> **Proof, not claims:** 47 end-to-end journeys run the real estate (real containers, a real browser) on every merge and every night; pull requests run the ones their change can affect ([doc 68](docs/securax/68-CI-AT-AGENT-SCALE.md)).
 <!-- readme:proofs:end -->
 
 <!-- readme:docs:start -->
