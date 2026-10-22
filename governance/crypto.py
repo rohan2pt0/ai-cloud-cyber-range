@@ -201,7 +201,7 @@ def inventory(tls_dir: pathlib.Path | None = None, probe_docker: bool = True) ->
         m = re.search(r"OpenSSL (\d+)\.(\d+)", v)
         return bool(m and (int(m.group(1)), int(m.group(2))) >= (3, 5))
     # the calls to cloud providers are made by the ROUTER (litellm), not the gateway: probe the image that actually makes them
-    router_img = "ghcr.io/berriai/litellm:main-stable"
+    router_img = "ghcr.io/berriai/litellm:v1.83.14-stable@sha256:c81eb79cd4333c6cfe374c0ec929110fd23f0ee5f7fd198855a6fbddc77b83ba"
     try:
         m_img = re.search(r"image:\s*(ghcr.io/berriai/litellm\S+)", (ROOT / "local" / "compose" / "docker-compose.yml").read_text("utf-8"))
         router_img = m_img.group(1) if m_img else router_img
