@@ -17,6 +17,7 @@ for the versioning and release policy.
 ### Security
 - LiteLLM, the router that makes every cloud call, now runs a pinned release and digest (v1.83.14-stable) instead of the floating `main-stable` tag; the cluster manifest takes the same pin from the compose file.
 ### Changed
+- **Licence: from v0.4.0, FSL-1.1-MIT** (`LICENSING.md`). Free to use, study and change for yourself or your organisation, for teaching and research, and for professional services to a licensee. Not free to sell as a competing product. Each release becomes MIT two years after it is released, and v0.3.0 and earlier stay MIT. The site, README and docs now say "source available, free to use" instead of "MIT open source", and a test keeps it so.
 - n8n 2.44.4 (from 1.74.1). n8n 2 hides the environment from workflows; the estate allows it for n8n only, because the shipped templates read `GATEWAY_URL`, and a test keeps every secret out of n8n's environment.
 
 ## [0.3.0] - 2026-10-22

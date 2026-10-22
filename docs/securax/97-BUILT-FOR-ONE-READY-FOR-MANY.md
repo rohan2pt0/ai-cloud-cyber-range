@@ -40,7 +40,7 @@ What we take from it: **build every component for a person first, on the shared 
 
 | Edition | For | Price (a hypothesis to test) |
 |---|---|---|
-| **Community** | anyone: a person, a family, a student, a small team that self-hosts | Free, open source |
+| **Community** | anyone: a person, a family, a student, a small team that self-hosts | Free to use, public code (FSL-1.1-MIT) |
 | **Pro** | one professional: a CISO, a founder, a data protection officer | Rs 999 a user a month |
 | **Business** | an organisation of 10 to 300 people | Rs 399 a user a month |
 | **Enterprise** | a regulated or large organisation, or a group of companies | Rs 1,299 a user a month |
@@ -84,7 +84,7 @@ Why the line sits here:
   - the free edition may stand only on open services;
   - a commercial service may have no code in this public repository.
 
-The code is MIT licensed, so what is already public stays usable by anyone. The moat is the platform's quality, the service, the trust and the brand, so register the name as a trademark.
+Versions up to v0.3.0 are MIT, so what was public then stays usable by anyone; from v0.4.0 the code is FSL-1.1-MIT, which bars competing resale for two years per release. The moat is the platform's quality, the service, the trust and the brand, so register the name as a trademark.
 
 ## 5. How it is enforced
 

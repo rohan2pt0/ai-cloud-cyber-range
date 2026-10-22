@@ -10,7 +10,7 @@ python3 governance/config.py render $(find website -maxdepth 2 \( -name '*.html'
 pip install -q -r docs/requirements.txt
 python3 docs/gen_cli_reference.py
 export DOCS_SITE_URL="${DOCS_SITE_URL:-${SITE_URL:+${SITE_URL}docs/}}"   # your domain once live, else GitHub Pages (doc 99)
-export DOCS_COPYRIGHT="${PRODUCT_NAME}${BRAND_NAME:+ by $BRAND_NAME} · MIT licence · no personal data in this repository"
+export DOCS_COPYRIGHT="${PRODUCT_NAME}${BRAND_NAME:+ by $BRAND_NAME} · FSL-1.1-MIT (each release becomes MIT after two years) · no personal data in this repository"
 mkdocs build --strict -d website/docs
 python3 tools/linkcheck.py website        # every internal link and image on the built site must exist (doc 99)
 echo "built: website/ (site) + website/docs/ (documentation) for ${SITE_URL:-<no address: set REPO_SLUG or SITE_DOMAIN>}"

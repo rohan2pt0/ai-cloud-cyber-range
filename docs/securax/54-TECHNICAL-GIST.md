@@ -24,7 +24,7 @@ It grows from one laptop to multi-tenant Kubernetes through dormant, code-define
 - Fail-closed rails.
 - No vendor lock-in: any model or tool swaps behind standard interfaces.
 - Plain English for the user.
-- Version 0.1.0, MIT licence.
+- Version 0.1.0 (MIT); from v0.4.0 the code is FSL-1.1-MIT (LICENSING.md).
 
 ## 2. Runtime (Docker Compose, `local/compose/docker-compose.yml`)
 

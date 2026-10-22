@@ -20,8 +20,8 @@
   {"id": "postgres", "licence": "PostgreSQL License", "sell": "ok", "terms": "keep the copyright notice"},
   {"id": "aquasec/trivy", "licence": "Apache-2.0", "sell": "ok", "terms": "keep the NOTICE"},
   {"id": "universonic/stable-diffusion-webui", "licence": "AGPL-3.0 (the image is a community build; each model's weights carry their own use licence)", "sell": "conditions", "terms": "optional, off by default; check the chosen model's licence before any paid use"},
-  {"id": "securax/estate-sync", "licence": "MIT (this repository)", "sell": "ok", "terms": "ours"},
-  {"id": "vulnbank/llm-gateway", "licence": "MIT (this repository)", "sell": "ok", "terms": "ours"}
+  {"id": "securax/estate-sync", "licence": "FSL-1.1-MIT (this repository; MIT up to v0.3.0)", "sell": "ok", "terms": "ours"},
+  {"id": "vulnbank/llm-gateway", "licence": "FSL-1.1-MIT (this repository; MIT up to v0.3.0)", "sell": "ok", "terms": "ours"}
  ],
  "models": [
   {"id": "qwen2.5 (0.5b, 1.5b, 7b) and qwen2.5-coder", "licence": "Apache-2.0", "sell": "ok", "terms": "the shipped defaults"},

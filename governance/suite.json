@@ -1,7 +1,7 @@
 {
  "about": "The suite (doc 97): every component of the estate declares the edition it starts in and the shared platform services it uses, so each one is built ready to be sold to organisations of any size, the way one productivity suite is sold to individuals, businesses and enterprises. ./securax suite reads it; fitness 'enterprise-declared' fails a feature that is not declared here.",
  "open_core": [
-  "Everything one person, family or single organisation needs to be safe is open source: every component, identity with SSO and MFA, export, residency, backups and recovery. No SSO tax, ever.",
+  "Everything one person, family or single organisation needs to be safe is free to use, with its code public (FSL-1.1-MIT, each release MIT after two years): every component, identity with SSO and MFA, export, residency, backups and recovery. No SSO tax, ever.",
   "Security fixes reach every edition at the same time.",
   "Export of your own data always works, in every edition, in a plain format.",
   "What is commercial is what running many people and many organisations takes: the tenant admin centre, SCIM provisioning, licensing and billing, managed hosting and a support desk with an SLA. That code lives in a separate private repository; this public repository carries only the interfaces.",

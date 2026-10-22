@@ -37,7 +37,7 @@ organisation of any size. Declare each feature in `governance/suite.json`:
 
 Never build a private copy of a platform service inside a component: if a component needs roles or audit, use or improve
 the shared one. Fitness `enterprise-declared` fails an undeclared feature and any service claimed as built without its files.
-The open core stays open: everything a person needs to be safe, SSO and export included.
+The core stays free to use: everything a person needs to be safe, SSO and export included (FSL-1.1-MIT, each release MIT after two years; LICENSING.md).
 
 **One source for principles and news (doc 95, section 6).**
 - The principles live in `governance/principles.json`. Improve them there, never in one app. `./securax os check` then makes every app rebuild with the change.

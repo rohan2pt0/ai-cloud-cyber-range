@@ -1,10 +1,10 @@
 # Names and logos
 
-The [MIT licence](LICENSE) covers the code. It does not cover the product name, the brand name or any logo (the names are
+The [licence](LICENSING.md) covers the code. It does not cover the product name, the brand name or any logo (the names are
 set in `brand.env`).
 
 You may:
-- use, change and sell the code, as the licence says;
+- use and change the code as the licence allows (LICENSING.md says what that covers);
 - say truthfully that your work is based on this project, or works with it.
 
 Please do not:

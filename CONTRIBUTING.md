@@ -57,4 +57,5 @@ disclosure.
 
 ## License
 By contributing, you agree your contributions are licensed under the repository's
-[MIT License](LICENSE).
+terms of the version it goes into: FSL-1.1-MIT from v0.4.0 on, becoming MIT two years after
+each release ([LICENSING.md](LICENSING.md)).
