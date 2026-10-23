@@ -15,6 +15,7 @@
    "status": "supported",
    "note": "Input rails for injection, jailbreak and hidden-character smuggling on every text part, tool results and the system context; the red team scores it in the purple loop.",
    "evidence": [
+    "test:redteam/tests/test_purple.py",
     "file:apps/llm-gateway/app/guardrails.py",
     "test:apps/llm-gateway/tests/test_guardrails.py",
     "journey:purple_loop"
@@ -29,6 +30,7 @@
    "status": "supported",
    "note": "India-aware PII redaction on the way in, secret and personal-data rails on the way out, and residency routing that keeps local data off cloud models.",
    "evidence": [
+    "test:redteam/tests/test_purple.py",
     "file:apps/llm-gateway/app/residency.py",
     "test:apps/llm-gateway/tests/test_residency.py",
     "journey:gateway_residency"
@@ -43,6 +45,7 @@
    "status": "supported",
    "note": "Model weights must match an approved digest (ai check), pickle-format weights are scanned for code, third-party skills pass the vet gate, and every image is pinned and licence-listed.",
    "evidence": [
+    "test:redteam/tests/test_purple.py",
     "file:governance/modelcheck.py",
     "test:governance/tests/test_modelcheck.py",
     "test:lifecycle/tests/test_vet.py",
@@ -59,6 +62,7 @@
    "status": "partial",
    "note": "Poisoned weights are caught by the digest check; documents added to a knowledge base are not yet scanned or owner-tagged at retrieval.",
    "evidence": [
+    "test:redteam/tests/test_purple.py",
     "file:governance/modelcheck.py",
     "test:governance/tests/test_modelcheck.py"
    ],
@@ -72,6 +76,7 @@
    "status": "supported",
    "note": "Output rails withhold exfiltration links, active HTML and leaked secrets before an answer reaches the caller.",
    "evidence": [
+    "test:redteam/tests/test_purple.py",
     "file:apps/llm-gateway/app/guardrails.py",
     "test:apps/llm-gateway/tests/test_guardrails.py"
    ],
@@ -85,6 +90,7 @@
    "status": "partial",
    "note": "Tool calls pass an allow, deny and approval policy that fails closed, dangerous arguments are blocked, and one command stops all AI; a call needing approval is refused rather than queued for a person.",
    "evidence": [
+    "test:redteam/tests/test_purple.py",
     "file:apps/llm-gateway/app/main.py",
     "test:apps/llm-gateway/tests/test_guardrails.py",
     "test:apps/llm-gateway/tests/test_human_in_command.py"
@@ -99,6 +105,7 @@
    "status": "supported",
    "note": "Canary tokens in system prompts are caught on the way out, and the red team probes for leakage.",
    "evidence": [
+    "test:redteam/tests/test_purple.py",
     "file:apps/llm-gateway/app/guardrails.py",
     "test:apps/llm-gateway/tests/test_guardrails.py",
     "journey:purple_loop"
@@ -111,8 +118,9 @@
    "title": "Vector and embedding weaknesses",
    "applies": "all",
    "status": "partial",
-   "note": "Retrieved text arriving as system context is inspected like any prompt; the vector store itself has no per-document access control.",
+   "note": "Retrieved text arriving as system context is inspected like any prompt: hidden-character smuggling and exfiltration requests are blocked, a plain override is recorded but not blocked (the purple loop shows it, G15); the vector store itself has no per-document access control.",
    "evidence": [
+    "test:redteam/tests/test_purple.py",
     "file:apps/llm-gateway/app/main.py",
     "test:apps/llm-gateway/tests/test_guardrails.py"
    ],
@@ -126,6 +134,7 @@
    "status": "partial",
    "note": "An honesty check that catches guessing, a careful check-and-rewrite pass, and stale-fact warnings; no answer-quality set runs on each model change.",
    "evidence": [
+    "test:redteam/tests/test_purple.py",
     "file:governance/honesty.py",
     "test:governance/tests/test_honesty.py",
     "test:apps/llm-gateway/tests/test_careful.py"
@@ -140,6 +149,7 @@
    "status": "supported",
    "note": "Per-caller daily and monthly token allowances, request slots and timeouts; a caller over the allowance is refused.",
    "evidence": [
+    "test:redteam/tests/test_purple.py",
     "file:apps/llm-gateway/app/budget.py",
     "test:apps/llm-gateway/tests/test_human_in_command.py"
    ],
@@ -153,6 +163,7 @@
    "status": "partial",
    "note": "Tool results and retrieved context pass the same injection rails as user text, so an instruction hidden in content is caught; there is no separate check that a plan still serves the user's goal.",
    "evidence": [
+    "test:redteam/tests/test_purple.py",
     "file:apps/llm-gateway/app/main.py",
     "test:apps/llm-gateway/tests/test_guardrails.py"
    ],
@@ -166,6 +177,7 @@
    "status": "partial",
    "note": "Allow and deny lists with glob patterns, dangerous-argument rules, secrets in arguments blocked and personal data redacted.",
    "evidence": [
+    "test:redteam/tests/test_purple.py",
     "file:apps/llm-gateway/app/main.py",
     "test:apps/llm-gateway/tests/test_guardrails.py"
    ],
@@ -179,6 +191,7 @@
    "status": "supported",
    "note": "Every caller is identified (signed tokens or hashed service keys, roles, an MFA claim, lock-out), and the audit log records who did what.",
    "evidence": [
+    "test:redteam/tests/test_purple.py",
     "file:apps/llm-gateway/app/identity.py",
     "test:apps/llm-gateway/tests/test_identity.py",
     "journey:gateway_identity"
@@ -193,6 +206,7 @@
    "status": "supported",
    "note": "Third-party skills and plugins are vetted before use, the MCP bridge is read-only, and model weights are digest-checked.",
    "evidence": [
+    "test:redteam/tests/test_purple.py",
     "file:lifecycle/vet.py",
     "file:governance/inspector.py",
     "test:lifecycle/tests/test_vet.py",
@@ -208,6 +222,7 @@
    "status": "partial",
    "note": "Untrusted files are inspected in a sandbox, and weight files are scanned for code that would run on load; agents themselves run no generated code.",
    "evidence": [
+    "test:redteam/tests/test_purple.py",
     "file:governance/inspector.py",
     "test:governance/tests/test_inspector.py",
     "journey:inspect_sandbox"
@@ -220,8 +235,9 @@
    "title": "Memory and context poisoning",
    "applies": "all",
    "status": "partial",
-   "note": "Context passed to a model is inspected; chat memories are not yet reviewable or switched off for shared accounts.",
+   "note": "Context passed to a model is inspected, but earlier assistant turns are not, so an instruction planted in chat memory reaches the model (the purple loop shows it, G10); chat memories are not yet reviewable or switched off for shared accounts.",
    "evidence": [
+    "test:redteam/tests/test_purple.py",
     "file:apps/llm-gateway/app/main.py",
     "test:apps/llm-gateway/tests/test_guardrails.py"
    ],
@@ -235,6 +251,7 @@
    "status": "partial",
    "note": "Every service-to-service hop can run over internal TLS with verified names; agents do not yet sign or authenticate messages to each other.",
    "evidence": [
+    "test:redteam/tests/test_purple.py",
     "file:local/compose/tls-internal.yml",
     "journey:tls_internal"
    ],
@@ -248,6 +265,7 @@
    "status": "partial",
    "note": "A failing detector fails closed, a provider failure falls back down the ladder, and one command stops all AI; there is no automatic breaker that stops a looping agent.",
    "evidence": [
+    "test:redteam/tests/test_purple.py",
     "journey:key_wiring_and_failover",
     "test:apps/llm-gateway/tests/test_human_in_command.py"
    ],
@@ -261,6 +279,7 @@
    "status": "partial",
    "note": "Writes an agent proposes wait for a person (the approved-action executor), and the honesty check catches made-up answers.",
    "evidence": [
+    "test:redteam/tests/test_purple.py",
     "file:governance/honesty.py",
     "test:governance/tests/test_honesty.py"
    ],
@@ -274,6 +293,7 @@
    "status": "supported",
    "note": "A per-model or all-AI stop with no restart, a per-agent allowance, and a hash-chained audit log that shows what each agent did.",
    "evidence": [
+    "test:redteam/tests/test_purple.py",
     "file:apps/llm-gateway/app/killswitch.py",
     "test:apps/llm-gateway/tests/test_human_in_command.py",
     "test:apps/llm-gateway/tests/test_audit_chain.py"
