@@ -128,7 +128,7 @@ def test_items_rules_scores_and_vital(estate):
     lapsed = next(x for x in items if x["t"].startswith("LAPSED?"))
     assert lapsed["due"] == NOW.isoformat() and lapsed["vital"] and lapsed["score"] == 9.0
     note = next(x for x in items if x["kind"] == "note")
-    assert "install poppler-utils / tesseract-ocr" in note["t"] and note["area"] == "Documents"
+    assert "lifeos readers" in note["t"] and note["area"] == "Documents"
     assert not any("sept-statement" in x["t"] for x in items)       # a statement with a nominee and no due date raises nothing
     for x in items:
         assert set(x) == {"id", "t", "kind", "area", "due", "next", "from", "vital", "score"}
@@ -263,3 +263,42 @@ def test_papers_prints_the_guided_list(tmp_path, capsys):
     assert ld.guide(tmp_path / "none") == 0
     out = capsys.readouterr().out
     assert "Your papers (0 of" in out and "Form 16" in out and "CDSL or NSDL" in out
+
+
+# ---- Phase 3: forgiving import for a non-technical owner ---------------------------------------------------------------
+def _which(present):
+    return lambda name: ("/usr/bin/" + name) if name in present else None
+
+
+def test_install_cmd_matches_the_package_manager():
+    assert "apt install poppler-utils tesseract-ocr" in ld.install_cmd(_which({"apt-get"}))
+    assert ld.install_cmd(_which({"brew"})) == "brew install poppler tesseract"
+    assert "dnf install" in ld.install_cmd(_which({"dnf"}))
+    assert "package manager" in ld.install_cmd(_which(set()))          # unknown OS: plain words, never a wrong guess
+
+
+def test_readers_names_only_what_is_missing():
+    r = ld.readers(_which({"pdftotext", "pdftoppm"}))                  # poppler present, tesseract not
+    assert r["poppler"] and not r["tesseract"] and r["missing"] == ["tesseract"] and not r["all"]
+    assert ld.readers(_which({"pdftotext", "pdftoppm", "tesseract"}))["all"]
+
+
+def test_readers_cmd_installs_only_on_request(capsys):
+    calls = []
+
+    def run(cmd):
+        calls.append(cmd)
+        return 0
+    ld.readers_cmd(install=False, run=run, which=_which(set()))
+    assert calls == [] and "readers --install" in capsys.readouterr().out    # shows how, runs nothing
+    ld.readers_cmd(install=True, run=run, which=_which({"apt-get"}))
+    assert calls and "poppler-utils" in " ".join(calls[0])                   # --install actually runs the installer
+
+
+def test_an_empty_folder_points_at_documents_you_already_have(tmp_path, monkeypatch, capsys):
+    empty = tmp_path / "docs"
+    empty.mkdir()
+    monkeypatch.setattr(ld, "found_elsewhere", lambda: [(tmp_path / "Downloads", 3)])
+    ld.main(["docs", str(empty)])
+    out = capsys.readouterr().out
+    assert "already have documents" in out and "Downloads" in out and "./securax lifeos docs" in out
