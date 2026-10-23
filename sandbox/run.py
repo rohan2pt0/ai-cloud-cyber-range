@@ -2074,14 +2074,16 @@ def j_purple(sb: H.Sandbox, c: Checks):
         shutil.rmtree(out, ignore_errors=True)
         rc, o = H.sh(["bash", "./securax", "purple", str(out)], cwd=sb.clone, env={**os.environ, **extra}, timeout=600)
         c.ok(rc == 0 and re.search(r"prevented (\d+)/\1 ", o) is not None and "false positives 0/2" in o, f"via {label}: every attack prevented, no benign request flagged", tail(o, 400))
-        m = re.search(r"alerted (\d+)/(\d+)", o)
-        c.ok(bool(m) and int(m.group(2)) - int(m.group(1)) <= 1, f"via {label}: the SOC alerted on all but (at most) the log-only PII row", tail(o, 300))
+        c.ok(re.search(r"detection backlog: \d+ known, 0 new", o) is not None, f"via {label}: every attack the SOC alerted on before still alerts (only the named backlog does not)", tail(o, 300))
+        c.ok(re.search(r"coverage: (\d+)/22 categories held · (\d+) open gaps", o) is not None and "offline gates caught 4/4" in o,
+             f"via {label}: all 20 OWASP LLM and Agentic categories plus bias and toxicity probed; open gaps named, never passed", tail(o, 300))
         mds = sorted(out.glob("purple-*.md"))
         jsons = sorted(out.glob("purple-*.json"))
         c.ok(bool(mds) and bool(jsons), f"via {label}: a Markdown report and a JSON record were written", str(list(out.iterdir()) if out.exists() else "no out dir"))
         if mds:
             md = mds[-1].read_text()
-            c.ok("Detection backlog" in md and "Does **not** prove" in md and "campaign-4x-injection" in md, f"via {label}: the report names the backlog and what it does NOT prove")
+            c.ok("Detection backlog" in md and "Does **not** prove" in md and "campaign-4x-injection" in md and "## Open gaps" in md,
+                 f"via {label}: the report names the backlog, the open gaps and what it does NOT prove")
 
 
 @journey("exercise_portal_ui", "The exercise portal in a real browser after a played game: every screen as blue, white and red, dark and light, desktop and phone; each role gets only its own menu, no page error, no raw object text, no text below WCAG AA contrast, no sideways scrolling.")

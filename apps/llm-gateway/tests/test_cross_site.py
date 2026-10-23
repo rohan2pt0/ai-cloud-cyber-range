@@ -1,5 +1,8 @@
 """A web page from another site cannot use the gateway through your browser (doc 87). CORS only hides the answer; a simple POST
 was still sent and spent your AI allowance. Command-line clients send no Origin and are unaffected; your own pages still work."""
+import json
+import logging
+
 from app.main import app
 from fastapi.testclient import TestClient
 
@@ -11,10 +14,16 @@ def post(headers):
     return c.post("/v1/guardrails/inspect", content=BODY, headers={"Content-Type": "text/plain", **headers})
 
 
-def test_a_foreign_page_is_refused_and_counted():
+def test_a_foreign_page_is_refused_and_counted(caplog):
+    caplog.set_level(logging.INFO, logger="audit")
     for origin in ("https://evil.example", "null", "https://securax.localhost.evil.example", "ftp://localhost"):
         r = post({"Origin": origin})
         assert r.status_code == 403 and r.json()["error"]["type"] == "cross_site_refused", origin
+    # audited as well as counted, so a browser-borne attempt can be investigated (doc 105, G5: the purple loop scores it)
+    lines = [json.loads(r.getMessage()) for r in caplog.records if r.name == "audit"]
+    refused = [e for e in lines if e.get("decision") == "cross_site_refused"]
+    assert [e["origin"] for e in refused] == ["https://evil.example", "null", "https://securax.localhost.evil.example", "ftp://localhost"]
+    assert all(e["category"] == "ASI07" and e["path"] == "/v1/guardrails/inspect" for e in refused)
 
 
 def test_clients_without_origin_and_the_estates_own_pages_still_work(monkeypatch):

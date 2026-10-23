@@ -46,8 +46,8 @@ and the cloud underneath.
 | Inference | Context windowing, tokenisation | 🟡 | A size cap and the model's own window. No token-exact truncation. See G13 |
 | Inference | Model registry | ✅ | Risk tier, approval, owner and validated model per entry; served-but-unlisted models flagged. Each shipped model's digest is approved in the registry; `./securax ai check` refuses a changed or unlisted one and scans pickle-format weights for code (G4, closed 2026-10-22) |
 | Inference | LLM engine, GPU cluster | 🟡 | Ollama on CPU, a remote GPU box, cloud models through the ladder. GPU scheduling is out of scope on one machine |
-| Inference | Post-processing: sampling, fact-checking, guardrails | 🟡 | Output rails for secrets, exfiltration links, active HTML and canary leaks; the "careful" check-and-rewrite pass; stale-fact notes. Toxicity only via the optional detector. See G5, G6 |
-| Safety and output | Safety filters, toxicity | 🟡 | As above. Bias and toxicity probes are not yet in the red team. See G5 |
+| Inference | Post-processing: sampling, fact-checking, guardrails | 🟡 | Output rails for secrets, exfiltration links, active HTML and canary leaks; the "careful" check-and-rewrite pass; stale-fact notes. Toxicity only via the optional detector; the purple loop probes it and reports it open (G5b). See G6 |
+| Safety and output | Safety filters, toxicity | 🟡 | As above. The purple loop now probes bias and toxicity on every run; no deterministic rail holds them yet. See G5b |
 | Safety and output | Human preference feedback | ⬜ | No feedback capture of our own. See G7 |
 | Safety and output | Reward model, PPO, training cluster | ➖ | Out of scope (section 5) |
 | Safety and output | Evaluation platform | 🟡 | Autobench grades build models. No answer-quality regression set for the chat models. See G6 |
@@ -60,10 +60,10 @@ and the cloud underneath.
 
 | Framework (version) | What it asks for | SecuRAX today | Gap |
 |---|---|---|---|
-| OWASP Top 10 for LLM Applications (2025) | Ten risks, LLM01 to LLM10 | Rails cover LLM01, 02, 05, 06, 07, 10; supply chain (03) for code and plugins; the red team scores only 01, 02, 05, 07 | G5: red-team every category; G4: model artefacts (03); G12: a full machine-checked map |
+| OWASP Top 10 for LLM Applications (2025) | Ten risks, LLM01 to LLM10 | Rails cover LLM01, 02, 05, 06, 07, 10; supply chain (03) for code and plugins; the purple loop probes all ten every run (G5, closed) | G4: model artefacts (03); G12: a full machine-checked map |
 | OWASP Top 10 for Agentic Applications (Dec 2025) | ASI01 goal hijack to ASI10 rogue agents | Tool allow, deny and approval policy; read-only MCP; SSRF-guarded web agent; kill switch; per-agent allowance | G3: an approval *queue* (today approval only blocks); G10: memory poisoning (ASI06); G12: a full map |
 | NIST AI RMF 1.0 and the GenAI profile (AI 600-1) | Govern, map, measure, manage; 12 GenAI risks | 600-1 machine-checked in `comply`: 3 supported, 7 partial, 2 gaps (IP; bias and toxicity) | G5 closes most partials; G12 adds RMF functions |
-| MITRE ATLAS | Adversary tactics against AI | Findings and red-team results tagged with ATLAS ids; AI-SOC triage maps audit events to ATLAS | G5 adds the missing techniques to the red team |
+| MITRE ATLAS | Adversary tactics against AI | Findings and red-team results tagged with ATLAS ids; AI-SOC triage maps audit events to ATLAS | G5 added the missing techniques to the purple loop (closed 2026-10-23) |
 | Google SAIF (2.0, with the agent map) | Data, infrastructure, model, application controls | Labels in the AI-SPM scan | G12: requirement-level map |
 | Databricks DASF (2.0 plus the agentic extension, 2026) | 13 components, 97 risks, 73 controls, incl. MCP client and server | Not mapped | G12: map the deployer-relevant components |
 | CSA MAESTRO | Seven-layer threat model for agents | Not mapped | G12: one threat model of the gateway, MCP and the twin, layer by layer |
@@ -80,7 +80,8 @@ Each item is in `governance/queue.json`, so `./securax backlog` and the daily Ba
 |---|---|---|---|
 | G3 | Tool approval becomes a queue: the call waits, a person approves or refuses it from the Command Center or the phone, the agent resumes | ASI02 tool misuse; LLM06 excessive agency | 2026-11-05 |
 | G4 | The model registry records each model's digest (Ollama and pulled weights); `ai check` refuses a changed or unlisted digest; pickle-format files are scanned before load | LLM03 supply chain; LLM04 poisoning | done 2026-10-22 |
-| G5 | The red team covers all ten LLM and ten Agentic categories, plus bias and toxicity probes (promptfoo, garak where it runs offline), in the purple loop | LLM01–10, ASI01–10; NIST 600-1 bias | 2026-10-29 |
+| G5 | The red team covers all ten LLM and ten Agentic categories, plus bias and toxicity probes, in the purple loop | LLM01–10, ASI01–10; NIST 600-1 bias | done 2026-10-23: `./securax purple` probes all 22 and prints a coverage table; 18 hold, 4 are open gaps owned by G5b, G10 and G15; ten prevented-but-not-alerted rows are the SOC backlog (queue `soc-control-alerts`) |
+| G5b | A deterministic rail, or the local Llama Guard detector on by default, for bias against a protected group (gender, religion, caste) and abusive output; the live promptfoo suite gains the same probes | NIST 600-1 bias and toxicity; fair treatment of customers | 2026-11-19 |
 | G6 | An answer-quality set for the chat models (BFSI questions with expected facts), run on every model change; the score shown in `progress` | LLM09 misinformation; drift | 2026-11-12 |
 | G7 | Thumbs up or down in the chat flows into that set, so bad answers become test cases | Human feedback, without RLHF | 2026-11-12 |
 | G8 | Rate limits, allowances and the audit chain move to a shared store when more than one gateway runs | Bypass by spreading calls over replicas | when a second replica is first used |

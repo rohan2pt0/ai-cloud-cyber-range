@@ -127,6 +127,8 @@ async def _refuse_cross_site_writes(request: Request, call_next):
         host = request.headers.get("x-forwarded-host") or request.headers.get("host", "")
         if origin is not None and not _origin_ok(origin, host):
             _metrics["cross_site_refused"] += 1
+            _emit({"decision": "cross_site_refused", "path": request.url.path, "origin": origin[:120],     # audited, so it can be investigated
+                   "client_ip": request.client.host if request.client else "unknown", "category": "ASI07"})
             return JSONResponse(status_code=403, content={"error": {"type": "cross_site_refused",
                                 "message": "A web page from another site may not use this AI gateway."}})
     return await call_next(request)
