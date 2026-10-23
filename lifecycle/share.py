@@ -65,6 +65,17 @@ def report(rows: list[tuple[str, str]]) -> list[dict]:
     return out
 
 
+def dependency(rep: list[dict]) -> dict:
+    """The build's single point of failure: if, over the window, the open models wrote nothing while real work shipped, the
+    estate can only be CHANGED by one external AI — whatever the runtime's own resilience. An inert open-model build (its CI
+    secret OPENCODE_GO_API_KEY unset, so autobuild and the open-model review never run) is the usual cause."""
+    total = sum(r["total"] for r in rep)
+    open_models = sum(r["cheap"] for r in rep)
+    claude = sum(r["claude"] for r in rep)
+    return {"commits": total, "open_model_commits": open_models, "claude_commits": claude,
+            "single_ai_dependency": total >= MIN_COMMITS and open_models == 0 and claude > 0}
+
+
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
     first = dt.date.today().replace(day=1)
@@ -74,8 +85,9 @@ def main(argv: list[str] | None = None) -> int:
     except RuntimeError as e:
         print(f"Cannot read history: {e}")
         return 1
+    dep = dependency(rep)
     if "--json" in argv:
-        print(json.dumps({"goal": GOAL, "months": rep}))
+        print(json.dumps({"goal": GOAL, "months": rep, "dependency": dep}))
         return 0
     if not rep:
         print("No commits in the last three months.")
@@ -84,6 +96,11 @@ def main(argv: list[str] | None = None) -> int:
     for r in rep:
         print(f"  {r['month']}  Claude {r['claude']:>3}   open models {r['cheap']:>3}   you {r['you']:>3}   "
               f"→ Claude {r['claude_share']:.0%}" + ("  ⚠ over the goal" if r["over_goal"] else ""))
+    if dep["single_ai_dependency"]:
+        print("\n  ⚠ SINGLE POINT OF FAILURE (how the estate is BUILT): the open models wrote none of the last "
+              f"{dep['commits']} commits, so only one external AI can change this estate today.")
+        print("    The open-model build is inert until its CI secret is set: add OPENCODE_GO_API_KEY (doc 83, section 4),")
+        print("    then `./securax autobuild \"task\"` and the open-model review run, and this line clears as they land commits.")
     print("Lower it: ./securax route \"task\" before you start; ./securax autobuild for everything it calls local.")
     print("Commits are a proxy for effort, not tokens. Change your plan only after two months under the goal.")
     return 0
