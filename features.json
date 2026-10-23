@@ -24,6 +24,22 @@
    "shows": "./securax progress, and a message on your phone every Sunday"
   },
   {
+   "id": "next",
+   "group": "Keep it running",
+   "name": "The one next step",
+   "added": "2026-10-23",
+   "what": "Lost or unsure? One command reads where you are and tells you the single next thing to do, in plain words — no list, no jargon.",
+   "open": {
+    "cmd": "./securax next"
+   },
+   "command": "next",
+   "doc": "securax/93-PROGRESS-YOU-CAN-SEE.md",
+   "icon": "compass",
+   "highlight": true,
+   "outcome": "You never have to learn 123 commands to be better off: one command always points to the next thing.",
+   "shows": "the terminal, and the end of every ./securax go"
+  },
+  {
    "id": "venture",
    "group": "Keep it running",
    "icon": "scale",

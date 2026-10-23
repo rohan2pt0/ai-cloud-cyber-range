@@ -71,6 +71,7 @@
   "respond": { "from": "community", "uses": ["audit", "export"], "enterprise": "case files shared with the crisis team under roles, evidence kept for regulators" },
   "purple": { "from": "community", "uses": ["audit", "tenancy"], "enterprise": "detection coverage per business unit" },
   "adversary": { "from": "community", "uses": ["audit", "export"], "enterprise": "a bounty-finding ledger per business unit, with repeat-class rate and time-to-regression on the board scorecard" },
+  "next": { "from": "community", "uses": ["policy"], "enterprise": "a role-aware next step per person and team, from the same engine" },
   "inspect": { "from": "community", "uses": ["audit", "api"], "enterprise": "one organisation-wide list of vetted software" },
   "controls": { "from": "community", "uses": ["rbac", "audit", "export"], "enterprise": "control owners across the organisation, with evidence per control" },
   "incident-clock": { "from": "community", "uses": ["audit", "rbac", "policy"], "enterprise": "reporting clocks for every entity in a group, in one regulator view" },

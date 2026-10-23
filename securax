@@ -428,6 +428,12 @@ case "$cmd" in
       esac
     elif [ -n "$PHLINK" ]; then echo "  Phone setup link (open it on the phone once):  ./securax sync-link"; fi
     C ""; [ -z "$FIXES" ] && C "Everything is working. Run  ./securax go  again any time; it only fixes what is missing." || C "Fix the line(s) above, then run  ./securax go  again."
+    python3 "$ROOT/governance/coach.py" 2>/dev/null || true     # end with the ONE next step in plain words
+    ;;
+  next)
+    # The one command to remember: where you are, and the single next thing to do, in plain words (doc 93).
+    #   ./securax next            ./securax next --json
+    shift; exec python3 "$ROOT/governance/coach.py" "$@"
     ;;
   status)
     C "SecuRAX — open ONE page (it links everything, no URLs to remember):"
@@ -2066,6 +2072,7 @@ SecuRAX — one command, `./securax <command>`   (Windows: `.\securax.cmd <comma
 
 START HERE: one command does it all
   ./securax go     start, update, schedules, phones, backup, sync, and ONE status screen (safe to run any time)
+  ./securax next   lost? the ONE next thing to do, in plain words (the only command you must remember)
   ./securax open   the Command Center in your browser: every feature, with what it does and how to open it
   ./securax features   the same list, here in the terminal
 
