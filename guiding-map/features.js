@@ -349,7 +349,7 @@ window.SECURAX_FEATURES = {
    "group": "Use AI safely",
    "icon": "code",
    "name": "Build with open models",
-   "what": "Write and fix code with strong open models through the gateway, so no single AI subscription or its limits can stop the work.",
+   "what": "Write and fix code with strong open models through the gateway, so your ability to change the estate need not rest on a single AI subscription. Turn it on by adding its CI key; ./securax ai share shows whether it is carrying real work yet.",
    "cmd": "./securax opencode",
    "path": "",
    "port": 0,

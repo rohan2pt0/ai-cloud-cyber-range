@@ -201,16 +201,23 @@ def hub_js(data: dict) -> str:
 
 def block_html(data: dict) -> str:
     li = lights()
-    cards = []
-    for f in data["features"]:
-        if not f.get("highlight"):
-            continue
+
+    def card(f: dict) -> str:
         _, cls, label = LIGHT[li.get(f["doc"], "amber")]
-        cards.append(f'    <div class="card"><h3>{E(f["name"])}</h3><p>{E(f["what"])}</p><span class="light {cls}">{label}</span></div>')
+        return f'    <div class="card"><h3>{E(f["name"])}</h3><p>{E(f["what"])}</p><span class="light {cls}">{label}</span></div>'
+
+    cards = [card(f) for f in data["features"] if f.get("highlight")]
+    # A generated "Recently shipped" strip, newest first, so a feature appears on the site the day it is added — no page is
+    # ever hand-updated to show what is new (the old curated strip above missed everything not flagged `highlight`).
+    recent = [card(f) for f in latest(data, 3) if not f.get("highlight")]
+    recent_block = ("" if not recent else
+                    '  <div class="wrap center">\n    <span class="kicker">Recently shipped</span>\n'
+                    '    <p class="sub">The newest of what the estate does, straight from the one list of features.</p>\n'
+                    '  </div>\n  <div class="wrap grid3">\n' + "\n".join(recent) + "\n  </div>\n")
     return ('<section class="alt" id="estate">\n  <div class="wrap center">\n    <span class="kicker">The whole estate</span>\n'
             "    <h2>More than a gateway.</h2>\n"
             f'    <p class="sub">The gateway is one of <!-- fact:features -->{len(data["features"])}<!-- /fact --> things SecuRAX does. These are the ones people use most.</p>\n'
-            '  </div>\n  <div class="wrap grid3">\n' + "\n".join(cards) + "\n  </div>\n</section>")
+            '  </div>\n  <div class="wrap grid3">\n' + "\n".join(cards) + "\n  </div>\n" + recent_block + "</section>")
 
 
 def _table(data: dict, link) -> str:

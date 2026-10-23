@@ -70,7 +70,7 @@ The latest additions, newest first (the Command Center marks each one New for 30
 | 🟢 [AI security gateway](docs/securax/36-IDENTITY-INCIDENT-RESIDENCY.md) | Every AI call is checked: personal data masked, prompt injection blocked, data kept in India when it must be, and every call logged. | `./securax doctor` |
 | 🟢 [Private chat](docs/securax/53-THE-TWIN.md) | A ChatGPT-style assistant that runs through the gateway, with a private local model when the data must not leave. | `./securax open` |
 | 🟡 [Accurate answers without prompt engineering](docs/securax/89-ACCURATE-ANSWERS-WITHOUT-PROMPT-ENGINEERING.md) | Every question reaches the AI with today's date and the rules a careful expert would write: never make things up, say "I don't know", flag what may have changed, show the working. A weak model says so, and a weekly check catches an AI that starts to guess. | `./securax ai honesty` |
-| 🟡 [Build with open models](docs/securax/83-BUILD-WITH-OPEN-MODELS.md) | Write and fix code with strong open models through the gateway, so no single AI subscription or its limits can stop the work. | `./securax opencode` |
+| 🟡 [Build with open models](docs/securax/83-BUILD-WITH-OPEN-MODELS.md) | Write and fix code with strong open models through the gateway, so your ability to change the estate need not rest on a single AI subscription. Turn it on by adding its CI key; ./securax ai share shows whether it is carrying real work yet. | `./securax opencode` |
 | 🟡 [Ship without Claude Code](docs/securax/98-SHIP-AND-STORE-APPS.md) | The pull-request loop, run by SecuRAX itself: open the PR from the repository's template, watch CI, and when it goes red, gather the failing logs into a brief and let autobuild fix it, one push a round. When everything is green and mergeable, merge and reset the branch. A routine runs it unattended on the always-on machine. | `./securax ship check` |
 
 **Keep it running**
@@ -114,6 +114,8 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- [The build's own single point of failure is now visible](docs/securax/23-BUILD-WITHOUT-CLAUDE.md)
+- The product site shows what is new by itself
 - [Adversary ledger — learning from a bug-bounty program](docs/securax/30-PURPLE-TEAM-LOOP.md)
 - [The purple loop probes every AI risk category](docs/securax/105-LLM-REFERENCE-ARCHITECTURES-GAP-CHECK.md)
 - [Build from a phone with the open models](docs/securax/83-BUILD-WITH-OPEN-MODELS.md)

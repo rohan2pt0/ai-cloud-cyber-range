@@ -72,6 +72,18 @@ def test_share_counts_who_wrote_each_commit(tmp_path):
     assert share.kind("fix the hub\n\nAssisted-by: SecuRAX open models (opencode, strong)") == "cheap"
 
 
+def test_share_flags_a_single_ai_dependency_when_the_open_models_do_nothing():
+    """The build-time SPOF: many commits shipped, none by the open models, some by Claude -> only one AI can change the estate."""
+    many_claude = [{"total": 12, "claude": 12, "cheap": 0, "you": 0}]
+    assert share.dependency(many_claude)["single_ai_dependency"] is True
+    with_open = [{"total": 12, "claude": 10, "cheap": 2, "you": 0}]
+    assert share.dependency(with_open)["single_ai_dependency"] is False          # the open models landed work: not a SPOF
+    too_few = [{"total": 3, "claude": 3, "cheap": 0, "you": 0}]
+    assert share.dependency(too_few)["single_ai_dependency"] is False            # under MIN_COMMITS: too little to judge
+    by_hand = [{"total": 12, "claude": 0, "cheap": 0, "you": 12}]
+    assert share.dependency(by_hand)["single_ai_dependency"] is False            # all by the owner: no AI dependency at all
+
+
 def test_an_old_rules_file_with_claude_keys_still_routes():
     old = {"claude_paths": ["governance/crypto.py"], "claude_words": ["merge"]}
     assert route.decide("fix the merge", rules=old, impact=IMPACT)["tier"] == "strong"
