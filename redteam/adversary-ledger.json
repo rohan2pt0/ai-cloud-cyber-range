@@ -1,0 +1,32 @@
+{
+ "ledger": [
+  {
+   "id": "ADV-0001",
+   "title": "Override planted in an earlier assistant turn reaches the model (history/memory poisoning)",
+   "class": "ASI06",
+   "atlas": "AML.T0080",
+   "severity": "high",
+   "source": "internal-redteam",
+   "reporter": "",
+   "reported": "2026-10-22",
+   "fixed": "2026-10-23",
+   "regression": {"probe": "history-poisoning"},
+   "lesson": "The gateway inspected every message but earlier assistant turns; replayed history/memory is attacker-influenced, so inspect it like any untrusted input (doc 105, G10).",
+   "drill": ""
+  },
+  {
+   "id": "ADV-0002",
+   "title": "A plain override inside a retrieved document is recorded but not blocked",
+   "class": "LLM08",
+   "atlas": "AML.T0070",
+   "severity": "medium",
+   "source": "internal-redteam",
+   "reporter": "",
+   "reported": "2026-10-23",
+   "fixed": null,
+   "regression": {"probe": "poisoned-doc-override"},
+   "lesson": "",
+   "drill": ""
+  }
+ ]
+}

@@ -34,11 +34,11 @@ even offline. Your data stays on your device.
 
 The latest additions, newest first (the Command Center marks each one New for 30 days):
 
+- **2026-10-23** · [Adversary ledger](docs/securax/30-PURPLE-TEAM-LOOP.md): A bug-bounty finding becomes the last of its kind: the estate gets stronger from every attacker, not just safer on paper. `./securax adversary`
 - **2026-10-22** · [Readiness for any regulation](docs/securax/106-WHO-SECURAX-IS-FOR.md): A Board-ready answer to "where do we stand on the Directions?", with proof, instead of a consultant's spreadsheet that dates in a week. `./securax readiness demo`
 - **2026-10-22** · [Life papers, read for you](docs/securax/104-LIFE-PAPERS-READ-FOR-YOU.md): No more updating spreadsheets by hand to know what is still open: the few things that matter come to you, with a date and an alarm. `./securax lifeos import workbook`
 - **2026-10-21** · [Your progress](docs/securax/93-PROGRESS-YOU-CAN-SEE.md): You see, every week, that your days and your estate are getting better, and you always know the one next step. `./securax progress`
 - **2026-10-21** · [Venture (is it paying its way?)](docs/securax/96-ONE-PLATFORM-MANY-PRODUCTS.md): You know when the time and money you put in come back, and which number to move first. `./securax venture`
-- **2026-10-21** · [The suite (built for one, ready for many)](docs/securax/97-BUILT-FOR-ONE-READY-FOR-MANY.md): You can see which edition could be sold today and the one gap that unlocks the most, instead of guessing. `./securax suite`
 
 **Practise and defend**
 
@@ -47,6 +47,7 @@ The latest additions, newest first (the Command Center marks each one New for 30
 | 🟡 [Cyber range](docs/securax/79-EXERCISE-RANGE.md) | Practise defending real-looking systems against a live red team, with scoring, judging and MITRE ATT&CK, D3FEND and ATLAS learning paths. | `./securax exercise` |
 | 🟡 [Crisis response kit](docs/securax/78-CRISIS-RESPONSE-KIT.md) | Step into an incident: collect evidence properly, find what is wrong, and draft the reports. | `./securax respond` |
 | 🟢 [Purple-team loop](docs/securax/30-PURPLE-TEAM-LOOP.md) | Attack your own AI channel, check that the attack was detected, and keep the evidence. | `./securax purple` |
+| 🟢 [Adversary ledger](docs/securax/30-PURPLE-TEAM-LOOP.md) | Turn every bounty or red-team finding into a purple probe, a lesson and a drill, and prove it stayed closed. | `./securax adversary` |
 | 🟢 [Check software before you trust it](docs/securax/43-INSPECT-THIRD-PARTY-SOFTWARE.md) | Look inside a third-party package or file, in a sandbox, and see what a new version can do that the old one could not. | `./securax inspect` |
 
 **Comply and govern**
@@ -113,6 +114,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- [Adversary ledger — learning from a bug-bounty program](docs/securax/30-PURPLE-TEAM-LOOP.md)
 - [The purple loop probes every AI risk category](docs/securax/105-LLM-REFERENCE-ARCHITECTURES-GAP-CHECK.md)
 - [Build from a phone with the open models](docs/securax/83-BUILD-WITH-OPEN-MODELS.md)
 - [The rest of Claude Code's toolkit, on the open models](docs/securax/83-BUILD-WITH-OPEN-MODELS.md)

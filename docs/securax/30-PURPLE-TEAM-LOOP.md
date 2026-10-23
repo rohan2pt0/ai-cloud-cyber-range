@@ -66,3 +66,19 @@ The first run (2026-10-23): 18 of 22 categories held. History/memory poisoning (
 * The attack set is the one in `redteam/run_attacks.py`, the control probes in `redteam/purple.py` and a 4-request campaign. One probe per category is a floor, not a proof: passing it is not a statement about attacks it does not contain.
 * Alert thresholds are lab-grade defaults; tune them to your traffic before pointing a pager at them.
 * For OSCP-style practice the attacker-side lab is the sleeping Active Directory range (`./securax range`, doc 29); wiring its network telemetry into this loop is **not built**.
+
+## The adversary ledger: learning from a bug-bounty program
+
+A purple run proves the controls you already thought of. A bug-bounty program against the estate exists to find the ones you did not — and it only pays off if each finding becomes the **last of its kind**. `./securax adversary` is that loop, the estate's antifragility principle made into a gate.
+
+The raw finding — payload, reporter, severity, fix-by date — stays private, in the findings register (`./securax findings add "bounty: …" --severity high`, kept in `vault/`, never committed). The ledger (`redteam/adversary-ledger.json`) is the **public** learning layer on top: the finding's *class* and its *permanent defence*, never a secret payload.
+
+The flow for every finding:
+
+1. **Reproduce** it as a probe in the purple loop (an open gap, if it gets through).
+2. **Fix** the rail, so the probe is promoted from a gap to an attack that holds.
+3. **Record** it: `./securax adversary add --title "…" --class ASI06 --severity high --probe <id> --lesson "…"`.
+4. **Prove** it: `./securax adversary verify` refuses any finding that is not reproduced as a probe or test that really exists, any closed one without a lesson, and any class that recurred after it was closed (the **repeat-class rate**, which must stay 0). It runs in `./securax verify`, so CI keeps the loop honest.
+5. **See** it: `./securax adversary status` and `./securax progress` show findings closed, repeat-class rate and days-to-regression — the number that tells a board the bounty spend is compounding, not a treadmill.
+
+So the 50th researcher cannot resubmit the 3rd researcher's class of bug: it is already a test the estate runs every day. `ADV-0001` (history/memory poisoning, closed) is the worked example.

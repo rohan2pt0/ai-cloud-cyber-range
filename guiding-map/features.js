@@ -105,6 +105,22 @@ window.SECURAX_FEATURES = {
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/30-PURPLE-TEAM-LOOP/"
   },
   {
+   "id": "adversary",
+   "group": "Practise and defend",
+   "icon": "shield",
+   "name": "Adversary ledger",
+   "what": "Turn every bounty or red-team finding into a purple probe, a lesson and a drill, and prove it stayed closed.",
+   "cmd": "./securax adversary",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "added": "2026-10-23",
+   "outcome": "A bug-bounty finding becomes the last of its kind: the estate gets stronger from every attacker, not just safer on paper.",
+   "shows": "./securax adversary status and ./securax progress",
+   "light": "green",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/30-PURPLE-TEAM-LOOP/"
+  },
+  {
    "id": "inspect",
    "group": "Practise and defend",
    "icon": "search",

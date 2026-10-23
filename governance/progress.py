@@ -130,12 +130,22 @@ def stronger(now: float) -> dict:
     except Exception:  # noqa: BLE001
         weak = None
     tts = _jsonl(home() / "continuity" / "tabletops.jsonl")
+    adv_closed, adv_repeat = 0, 0                                         # the bounty/red-team learning loop (redteam/adversary.py)
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("adversary_ledger", ROOT / "redteam" / "adversary.py")
+        adv = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(adv)
+        reg = adv.load()
+        adv_closed, adv_repeat = adv.recent_closed(reg, dt.date.fromtimestamp(now)), len(adv.repeat_classes(reg))
+    except Exception:  # noqa: BLE001 (a report never fails on one missing part)
+        pass
     return {"drills_passed": sum(1 for r in drills if r.get("ok")), "drills_failed": sum(1 for r in drills if not r.get("ok")),
             "restores_proven": restores, "failures_learned": len(learned),
             "failures_recovered": sum(1 for v in learned.values() if not v.get("open")),
             "failures_open": sum(1 for v in learned.values() if v.get("open")),
             "actions_open": len(open_actions), "actions_late": sum(1 for a in open_actions if a["problems"]),
-            "weak_points": weak, "tabletops": len(tts)}
+            "weak_points": weak, "tabletops": len(tts), "adversary_closed": adv_closed, "adversary_repeat": adv_repeat}
 
 
 def next_step() -> dict | None:
@@ -193,6 +203,8 @@ def report(p: dict, say=print) -> None:
     say(f"  drills passed: {s['drills_passed']}" + (f", failed: {s['drills_failed']} (each one is now a fix to make)" if s["drills_failed"] else ""))
     say(f"  restores proven: {s['restores_proven']} · tabletop exercises: {s['tabletops']}")
     say(f"  failures the estate learned from: {s['failures_learned']}, recovered: {s['failures_recovered']}, still open: {s['failures_open']}")
+    say(f"  adversary findings closed (bounty/red-team), now permanently probed: {s['adversary_closed']}"
+        + (f"  ·  repeat-class rate: {s['adversary_repeat']} (a class came back)" if s.get('adversary_repeat') else "  ·  none has come back"))
     say(f"  postmortem actions open: {s['actions_open']}" + (f" ({s['actions_late']} late or without an owner)" if s["actions_late"] else ""))
     if s["weak_points"] is not None:
         say(f"  single points of failure still open: {s['weak_points']}" + ("  (./securax resilience)" if s["weak_points"] else ""))

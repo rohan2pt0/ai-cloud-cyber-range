@@ -651,6 +651,7 @@ URLS
     step "fitness functions (budgets + ratchets)" python3 lifecycle/fitness.py --fast
     step "CCSP map is consistent (every claim verifiable)" python3 governance/ccsp.py --verify
     step "regulatory maps are consistent (RBI NBFC, SEBI CSCRF)" python3 governance/regmap.py --verify
+    step "adversary ledger is consistent (every finding reproduced, repeat-class 0)" python3 redteam/adversary.py verify
     command -v terraform >/dev/null 2>&1 && step "terraform formatting (lifecycle genome)" terraform fmt -check -recursive infra/terraform
     command -v docker >/dev/null 2>&1 && step "compose file valid" docker compose --env-file local/compose/.env.example -f local/compose/docker-compose.yml --profile ai config -q
     if [ "${2:-}" = "--full" ]; then
@@ -1147,6 +1148,11 @@ EOF2
     # The findings register (doc 76): every scan and VAPT finding once, a fix-by date from its severity, time-boxed risk acceptance.
     #   ./securax findings [list|overdue|report] | import [FILE] | add "title" --severity S | accept ID --reason R --until DATE | fixed ID
     shift; exec python3 "$ROOT/governance/findings.py" "$@"
+    ;;
+  adversary)
+    # The adversary ledger (doc 30): turn every bounty/red-team finding into a permanent purple probe + lesson + drill, and prove it stayed closed.
+    #   ./securax adversary [list] | add --title "..." --class ASI06 --severity high --probe ID [--lesson "..."] | verify | status [--json]
+    shift; exec python3 "$ROOT/redteam/adversary.py" "$@"
     ;;
   repairs)
     # Everything that needs fixing, in one list, each with its fix (doc 76).   ./securax repairs   (exit 1 when something needs action today)
@@ -2093,6 +2099,7 @@ DEFEND, RESPOND, PRACTISE
   respond ...    crisis response kit: permission first, evidence intake, IOC triage, reports (doc 78)
   findings ...   every scan and VAPT finding once, with a fix-by date    repairs   everything that needs fixing, each with its fix
   purple         attack your own AI rails and report what held       inspect        look inside third-party software before you trust it
+  adversary      the bounty/red-team ledger: every finding turned into a permanent probe + lesson, proven still closed
   scan           known-exploited weaknesses (offline)                kev / offline  threat data that works with no internet
   backup / restore latest save and recover your data                 watch          keep an eye on it and self-heal
   vet            check third-party skills/plugins before use         certs          your certification plan: what next, when, what it costs
