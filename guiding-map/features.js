@@ -473,6 +473,22 @@ window.SECURAX_FEATURES = {
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION/"
   },
   {
+   "id": "environment",
+   "group": "Keep it running",
+   "icon": "compass",
+   "name": "Set it once, then forget it",
+   "what": "Instead of telling you what to do, SecuRAX changes the setting once so the good path is the default and the harmful one takes effort: phone grey and quiet at night, autopay on every bill, pay-yourself-first on salary day, the costliest debt attacked first, a keystone habit anchored and alarmed. Each struggle becomes one obvious change with its one-time steps.",
+   "cmd": "./securax environment",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "added": "2026-10-23",
+   "outcome": "The right thing happens without willpower, because your phone and accounts are set up to make it the default — nothing to remember.",
+   "shows": "./securax environment, and (next) a one-tap Life OS screen",
+   "light": "green",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/112-SET-AND-FORGET/"
+  },
+  {
    "id": "continuity",
    "group": "Keep it running",
    "icon": "lifebuoy",

@@ -36,9 +36,9 @@ The latest additions, newest first (the Command Center marks each one New for 30
 
 - **2026-10-23** · [The one next step](docs/securax/93-PROGRESS-YOU-CAN-SEE.md): You never have to learn 123 commands to be better off: one command always points to the next thing. `./securax next`
 - **2026-10-23** · [Adversary ledger](docs/securax/30-PURPLE-TEAM-LOOP.md): A bug-bounty finding becomes the last of its kind: the estate gets stronger from every attacker, not just safer on paper. `./securax adversary`
+- **2026-10-23** · [Set it once, then forget it](docs/securax/112-SET-AND-FORGET.md): The right thing happens without willpower, because your phone and accounts are set up to make it the default — nothing to remember. `./securax environment`
 - **2026-10-22** · [Readiness for any regulation](docs/securax/106-WHO-SECURAX-IS-FOR.md): A Board-ready answer to "where do we stand on the Directions?", with proof, instead of a consultant's spreadsheet that dates in a week. `./securax readiness demo`
 - **2026-10-22** · [Life papers, read for you](docs/securax/104-LIFE-PAPERS-READ-FOR-YOU.md): No more updating spreadsheets by hand to know what is still open: the few things that matter come to you, with a date and an alarm. `./securax lifeos import workbook`
-- **2026-10-21** · [Your progress](docs/securax/93-PROGRESS-YOU-CAN-SEE.md): You see, every week, that your days and your estate are getting better, and you always know the one next step. `./securax progress`
 
 **Practise and defend**
 
@@ -86,6 +86,7 @@ The latest additions, newest first (the Command Center marks each one New for 30
 | 🟡 [Storage that runs itself](docs/securax/80-STORAGE-THAT-GROWS-WITH-YOU.md) | Every source of growth has a limit; clean-ups run every six hours, and your phone hears only when space is still short. | `./securax storage` |
 | 🟢 [What broke, and why](docs/securax/27-INCIDENT-RUNBOOK.md) | Names the service that stopped and the reason, in plain words, with the fix. | `./securax why` |
 | 🟡 [Crown jewels and risk](docs/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION.md) | What SecuRAX cannot lose, how exposed each one is today, and the one thing to do next, worst first. It re-scores itself every run. | `./securax jewels` |
+| 🟢 [Set it once, then forget it](docs/securax/112-SET-AND-FORGET.md) | Instead of telling you what to do, SecuRAX changes the setting once so the good path is the default and the harmful one takes effort: phone grey and quiet at night, autopay on every bill, pay-yourself-first on salary day, the costliest debt attacked first, a keystone habit anchored and alarmed. Each struggle becomes one obvious change with its one-time steps. | `./securax environment` |
 | 🟡 [Crisis and continuity plan](docs/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION.md) | Every crisis written down before it happens: how long it may stop you, how much it may lose, the steps, and safe drills that prove it. | `./securax continuity` |
 | 🟢 [Ransomware-proof backups and recovery drills](docs/securax/88-RANSOMWARE-AND-DISASTER-RECOVERY-PROVEN.md) | Every backup first checks that your data is still readable. If ransomware got there first, the copy is quarantined, nothing clean is deleted and you are alerted. `restore latest` picks the newest clean copy, a restore twin proves it opens, and tabletop exercises test the plan. | `./securax continuity tabletop ransomware` |
 | 🟡 [Many machines, one SecuRAX](docs/securax/86-MANY-NODES-AND-THE-ROAD-TO-SCALE.md) | Run it on the laptop, a VPS, a Mac mini or any cloud at once: every machine holds the same data, and any one of them can stop. Each machine is an extra, never a dependency: with every other one off, this one carries on by itself (doc 90). | `./securax nodes` |
@@ -115,6 +116,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- [Success by design: four new core principles + `./securax environment`](docs/securax/112-SET-AND-FORGET.md)
 - [`./securax next` — the one command to remember](docs/securax/93-PROGRESS-YOU-CAN-SEE.md)
 - [The build's own single point of failure is now visible](docs/securax/23-BUILD-WITHOUT-CLAUDE.md)
 - The product site shows what is new by itself
@@ -122,7 +124,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - [The purple loop probes every AI risk category](docs/securax/105-LLM-REFERENCE-ARCHITECTURES-GAP-CHECK.md)
 - [Build from a phone with the open models](docs/securax/83-BUILD-WITH-OPEN-MODELS.md)
 - [The rest of Claude Code's toolkit, on the open models](docs/securax/83-BUILD-WITH-OPEN-MODELS.md)
-- [History and memory poisoning closed](docs/securax/105-LLM-REFERENCE-ARCHITECTURES-GAP-CHECK.md)
 
 **Release 0.3.0 - 2026-10-22:**
 
