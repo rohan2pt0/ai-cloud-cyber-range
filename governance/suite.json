@@ -67,6 +67,7 @@
   "names": { "from": "community", "uses": ["identity", "continuity"], "enterprise": "a name per tenant on the customer's own domain, with certificates issued for them" },
   "store-apps": { "from": "community", "uses": ["identity", "export", "continuity", "hosting"], "enterprise": "branded store apps per customer, published and updated for them" },
   "suite": { "from": "community", "uses": ["licensing"], "enterprise": "entitlements checked from the licence instead of declared on paper" },
+  "map": { "from": "community", "uses": ["export"], "enterprise": "a multi-tenant estate map an operator can share with a customer as a one-page assurance picture, scoped by tenant" },
   "cyber-range": { "from": "community", "uses": ["identity", "tenancy", "rbac", "audit", "metering"], "enterprise": "many teams and exercises at once, SSO for players, scored evidence kept for audit" },
   "respond": { "from": "community", "uses": ["audit", "export"], "enterprise": "case files shared with the crisis team under roles, evidence kept for regulators" },
   "purple": { "from": "community", "uses": ["audit", "tenancy"], "enterprise": "detection coverage per business unit" },

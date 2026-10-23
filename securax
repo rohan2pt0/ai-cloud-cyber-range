@@ -1068,6 +1068,11 @@ EOF2
     # ./securax mission [poll OP|rules [--act]|crew] [--json] — mission control (doc 102): the board, Go/No-Go, flight rules, the AI crew.
     python3 "$ROOT/governance/mission.py" "${@:2}"
     ;;
+  map)
+    # Build the interactive estate map — every component and the shared platform it is built on, one self-contained HTML (doc 113).
+    shift; python3 "$ROOT/tools/estate_map.py" "$@" || exit $?
+    f="$ROOT/portal/estate-map.html"; [ -f "$f" ] && C "Open it:  $f"
+    ;;
   chaos)
     # ./securax chaos [--seed N] [--faults N] [--run] [--json] — chaos experiments on this estate (doc 101); the plan only unless --run.
     python3 "$ROOT/lifecycle/chaos.py" "${@:2}"
@@ -2150,6 +2155,7 @@ BUILD & KEEP IT HEALTHY
   os             one kit, many apps: Vantage at /vantage/; build, new ID --name, check; mobile ID (Android/iOS), mobile-check ID
   ship           build without Claude Code: open the PR, watch CI, fix red with autobuild, merge when green (check, login, pr, watch)
   suite          built for one, ready for many: editions, readiness to sell, the shared platform, datasheets (sheet EDITION)
+  map            the estate map: an interactive picture of every component and the shared platform it is built on (one HTML file)
   venture        is it paying its way? break-even, payback, unit economics (your time counted); log, plan, ask; guards: the monthly failure checks
   progress       is it making you better off? your rhythm, how much stronger the estate got, the one next step
   proofs         the claims the docs make that no journey proves yet, ranked, with the journey that could prove each

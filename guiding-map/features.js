@@ -57,6 +57,22 @@ window.SECURAX_FEATURES = {
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/96-ONE-PLATFORM-MANY-PRODUCTS/"
   },
   {
+   "id": "map",
+   "group": "Keep it running",
+   "icon": "grid",
+   "name": "The estate map",
+   "what": "An interactive picture of the whole AI estate, generated from its own declarations: every component is a node coloured by what it is for, every shared platform service is a hub, and an edge joins a component to each service it is built on. Hover, click for detail, filter or search. One self-contained HTML file, online or off.",
+   "cmd": "./securax map",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "added": "2026-10-23",
+   "outcome": "You see the whole estate and how it hangs together at a glance, instead of reading a list of 43 things.",
+   "shows": "./securax map: the interactive estate map in a browser",
+   "light": "green",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/113-THE-ESTATE-MAP/"
+  },
+  {
    "id": "suite",
    "group": "Keep it running",
    "icon": "grid",
