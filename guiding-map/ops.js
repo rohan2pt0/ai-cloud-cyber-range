@@ -1287,55 +1287,63 @@
     return h + '</div>';
   }
 
-  /* ── 22. MONEY FLOW — a Sankey you can read in three seconds ────── */
+  /* ── 22. MONEY FLOW — one bar you read in a second, with healthy-band meters ────── */
   function flowHTML() {
     var l = life(), inc = num(l.minc);
     if (!inc) {
       return '<div class="cat-t">\u{1F4B8} Where the money goes</div>'
         + '<div class="info">Add your monthly take-home and the four standing outflows to draw the flow. Five numbers, once.</div>'
         + '<div class="road-col">'
-        + '<label class="f-label">Monthly take-home (\u20b9)</label><input inputmode="decimal" value="" onchange="gmLifeSet(\'minc\',this.value)">'
+        + '<label class="f-label">Monthly take-home (₹)</label><input inputmode="decimal" value="" onchange="gmLifeSet(\'minc\',this.value)">'
         + '</div>';
     }
+    var rupee = function (v) { return "₹" + Number(v || 0).toLocaleString("en-IN"); };
+    var pc = function (v) { return Math.round(v / inc * 100); };
     var parts = [
-      ["Fixed costs", num(l.fFixed), "#6b7280"],
-      ["Family loans", num(l.fLoan), "#b45309"],
+      ["Fixed costs", num(l.fFixed), "#475569"],
+      ["Family loans", num(l.fLoan), "#9a3412"],
       ["Emergency fund", num(l.fEF), "#0f766e"],
-      ["Investing", num(l.fSip), "#2e9969"]
+      ["Investing", num(l.fSip), "#15803d"]
     ];
     var used = parts.reduce(function (a, b) { return a + b[1]; }, 0);
     var free = Math.max(0, inc - used);
     parts.push(["Guilt-free", free, "#6d28d9"]);
+    var shown = parts.filter(function (p) { return p[1] > 0; });
 
-    var W = 320, H = 200, x0 = 4, x1 = 108, x2 = 196;
-    var svg = '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto;overflow:visible">';
-    svg += '<rect x="' + x0 + '" y="10" width="16" height="' + (H - 20) + '" rx="3" fill="#c9a84c"/>';
-    var y = 10;
-    parts.forEach(function (p) {
-      var hgt = inc ? (p[1] / inc) * (H - 20) : 0;
-      if (hgt < 0.5) return;
-      var yc = y + hgt / 2, ty = y + hgt / 2;
-      svg += '<path d="M' + (x0 + 16) + ',' + yc + ' C' + ((x0 + x1) / 2) + ',' + yc + ' ' + ((x0 + x1) / 2) + ',' + ty + ' ' + x1 + ',' + ty + '" '
-        + 'stroke="' + p[2] + '" stroke-width="' + Math.max(2, hgt) + '" fill="none" opacity=".55" stroke-linecap="butt"/>';
-      svg += '<rect x="' + x1 + '" y="' + (ty - hgt / 2) + '" width="10" height="' + Math.max(2, hgt) + '" rx="2" fill="' + p[2] + '"/>';
-      svg += '<text x="' + x2 + '" y="' + (ty + 3) + '" font-size="9.5" font-weight="700" fill="currentColor">' + esc(p[0])
-        + ' \u00b7 ' + (inc ? Math.round(p[1] / inc * 100) : 0) + '%</text>';
-      y += hgt;
-    });
-    svg += '</svg>';
+    // The whole take-home as ONE bar, split by share; it wipes in left-to-right.
+    var bar = '<div class="flowbar">' + shown.map(function (p, i) {
+      return '<div class="flowseg" style="flex:' + p[1] + ';background:' + p[2] + ';animation-delay:' + (0.1 + i * 0.08).toFixed(2) + 's" title="' + esc(p[0]) + ' ' + pc(p[1]) + '%">'
+        + (pc(p[1]) >= 9 ? '<span>' + pc(p[1]) + '%</span>' : '') + '</div>';
+    }).join("") + '</div>';
+    var legend = shown.map(function (p) {
+      return '<div class="flowrow"><span class="flowdot" style="background:' + p[2] + '"></span><span class="flowname">' + esc(p[0])
+        + '</span><span class="flowamt">' + rupee(p[1]) + '</span><span class="flowpc">' + pc(p[1]) + '%</span></div>';
+    }).join("");
 
-    var savRate = inc ? Math.round((num(l.fEF) + num(l.fSip)) / inc * 100) : 0;
-    var fixPct = inc ? Math.round(num(l.fFixed) / inc * 100) : 0;
-    var freePct = inc ? Math.round(free / inc * 100) : 0;
-    var F = [["fFixed", "Fixed costs \u2014 rent, EMIs, bills, groceries (\u20b9)"], ["fLoan", "Family loan repayment (\u20b9)"],
-    ["fEF", "To emergency fund (\u20b9)"], ["fSip", "To SIP / investments (\u20b9)"], ["minc", "Monthly take-home (\u20b9)"]];
+    var fixPct = pc(num(l.fFixed)), savRate = pc(num(l.fEF) + num(l.fSip)), freePct = pc(free);
+    // A band meter: the healthy range shaded, a bar grows to where you are, green in-band / amber-or-red out.
+    function meter(label, val, lo, hi, kind, note) {
+      var inBand = kind === "ceiling" ? val <= hi : kind === "floor" ? val >= lo : (val >= lo && val <= hi);
+      var col = inBand ? "var(--green)" : (val < lo ? "var(--amber)" : "var(--red)");
+      var cl = function (p) { return Math.max(0, Math.min(100, p)); };
+      return '<div class="meter"><div class="meter-top"><span>' + label + '</span><b style="color:' + col + '">' + val + '%</b></div>'
+        + '<div class="meter-track"><div class="meter-band" style="left:' + cl(lo) + '%;width:' + (cl(hi) - cl(lo)) + '%"></div>'
+        + '<div class="meter-fill" style="width:' + cl(val) + '%;background:' + col + '"></div></div>'
+        + '<div class="meter-note">' + esc(note) + '</div></div>';
+    }
+    var meters = meter("Fixed costs", fixPct, 50, 60, "ceiling",
+        fixPct > 60 ? "Above 60% — this quietly caps everything else. The one number to bring down." : "Healthy (band 50–60%); you have room to move.")
+      + meter("Saving & investing", savRate, 15, 20, "floor",
+        savRate >= 15 ? "At or above 15% — the number that decides when you can stop needing a salary." : "Below 15% — lift the SIP first; it compounds for decades.")
+      + meter("Guilt-free", freePct, 20, 35, "range",
+        freePct < 20 ? "Under 20% — a plan with no pleasure in it rarely survives a year." : freePct > 35 ? "Over 35% — room to move more into saving." : "Healthy (band 20–35%) — sustainable.");
+
+    var F = [["fFixed", "Fixed costs — rent, EMIs, bills, groceries (₹)"], ["fLoan", "Family loan repayment (₹)"],
+    ["fEF", "To emergency fund (₹)"], ["fSip", "To SIP / investments (₹)"], ["minc", "Monthly take-home (₹)"]];
     var h = '<div class="cat-t">\u{1F4B8} Where the money goes</div>'
-      + '<div style="background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px;color:var(--text)">' + svg + '</div>';
-    h += '<div class="road-col" style="margin-top:10px">'
-      + '<div class="road-i">Fixed costs <b>' + fixPct + '%</b> \u2014 healthy band 50\u201360%. ' + (fixPct > 60 ? "Above the band; this is the number that quietly caps everything else." : "Inside the band.") + '</div>'
-      + '<div class="road-i">Saving and investing <b>' + savRate + '%</b> \u2014 target 15\u201320% minimum, and this is the single number that determines when you stop needing a salary.</div>'
-      + '<div class="road-i">Guilt-free <b>' + freePct + '%</b> \u2014 healthy band 20\u201335%. Under 10% is how budgets get abandoned; a plan with no pleasure in it does not survive a year.</div>'
-      + '</div>';
+      + '<div class="road-col reveal" style="margin-top:8px"><div class="flowhead">Every ₹100 of your take-home</div>' + bar
+      + '<div class="flowlegend">' + legend + '</div></div>'
+      + '<div class="road-col reveal" style="margin-top:10px">' + meters + '</div>';
     h += '<details class="road-col" style="margin-top:8px"><summary style="cursor:pointer;font-weight:700;font-size:12px">Edit the numbers</summary><div style="margin-top:6px">';
     F.forEach(function (f) {
       h += '<label class="f-label">' + f[1] + exampleBadge(f[0]) + '</label><input inputmode="decimal" value="' + esc(l[f[0]] || "")
@@ -4285,6 +4293,20 @@
       + ".road-col,.okr-card,.kc{border-radius:16px;box-shadow:var(--shadow)}"
       + ".road-col{padding:14px}.info{border-radius:12px;font-size:13px;line-height:1.55}"
       + ".cat-t{font-size:17px;letter-spacing:-.01em}"
+      + ".flowhead{font-size:12px;color:var(--muted);margin-bottom:6px}"
+      + ".flowbar{display:flex;height:36px;border-radius:10px;overflow:hidden;clip-path:inset(0 100% 0 0);animation:gmwipe .8s cubic-bezier(.2,.85,.25,1) .05s forwards}"
+      + ".flowseg{display:flex;align-items:center;justify-content:center;min-width:2px;opacity:0;animation:gmfade .45s ease forwards}"
+      + ".flowseg span{font-size:11px;font-weight:800;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.45)}"
+      + ".flowlegend{margin-top:10px}.flowrow{display:flex;align-items:center;gap:9px;font-size:13px;padding:4px 0;border-top:1px solid var(--border)}"
+      + ".flowrow:first-child{border-top:0}.flowdot{width:11px;height:11px;border-radius:3px;flex:0 0 auto}.flowname{flex:1}.flowamt{color:var(--muted)}.flowpc{font-weight:800;width:42px;text-align:right}"
+      + ".meter{margin:10px 0}.meter-top{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px}"
+      + ".meter-track{position:relative;height:11px;border-radius:7px;background:var(--bg);overflow:hidden}"
+      + ".meter-band{position:absolute;top:0;bottom:0;background:var(--green);opacity:.2}"
+      + ".meter-fill{position:absolute;top:0;bottom:0;left:0;border-radius:7px;transform-origin:left;animation:gmgrowx .75s cubic-bezier(.2,.85,.25,1) .12s both}"
+      + ".meter-note{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.45}"
+      + ".reveal{animation:gmrise .5s cubic-bezier(.2,.8,.2,1) both}"
+      + "@keyframes gmwipe{to{clip-path:inset(0 0 0 0)}}@keyframes gmfade{to{opacity:1}}@keyframes gmgrowx{from{transform:scaleX(0)}to{transform:scaleX(1)}}@keyframes gmrise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}"
+      + "@media (prefers-reduced-motion:reduce){.flowbar,.flowseg,.meter-fill,.reveal{animation:none!important;clip-path:none!important;opacity:1!important;transform:none!important}}"
       + ".btn-sm{border-radius:10px;min-height:40px;font-size:13px;font-weight:700;transition:transform .08s ease,filter .15s ease}"
       + ".btn-sm:active{transform:scale(.98)}.btn-sm:hover{filter:brightness(1.05)}"
       + "#gmToast{bottom:calc(84px + env(safe-area-inset-bottom))!important}"

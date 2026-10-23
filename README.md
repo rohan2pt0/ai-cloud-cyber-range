@@ -116,6 +116,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- The Life OS money view, redesigned
 - [`./securax environment` grows into the Wheel of Life, with the elite-sport levers built in](docs/securax/112-SET-AND-FORGET.md)
 - [Success by design: four new core principles + `./securax environment`](docs/securax/112-SET-AND-FORGET.md)
 - [`./securax next` — the one command to remember](docs/securax/93-PROGRESS-YOU-CAN-SEE.md)
@@ -123,7 +124,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - The product site shows what is new by itself
 - [Adversary ledger — learning from a bug-bounty program](docs/securax/30-PURPLE-TEAM-LOOP.md)
 - [The purple loop probes every AI risk category](docs/securax/105-LLM-REFERENCE-ARCHITECTURES-GAP-CHECK.md)
-- [Build from a phone with the open models](docs/securax/83-BUILD-WITH-OPEN-MODELS.md)
 
 **Release 0.3.0 - 2026-10-22:**
 
