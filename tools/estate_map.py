@@ -157,21 +157,27 @@ svg{display:block;width:100%;height:auto;touch-action:none}
    G.edges.forEach(function(e){e._l.setAttribute("x1",e.a.x);e._l.setAttribute("y1",e.a.y);e._l.setAttribute("x2",e.b.x);e._l.setAttribute("y2",e.b.y);});
    G.nodes.forEach(function(n){n._c.setAttribute("cx",n.x);n._c.setAttribute("cy",n.y);n._t.setAttribute("x",n.x);n._t.setAttribute("y",n.y-n.r-5);});
  }
- // Force simulation: repulsion between all nodes, springs along edges, gentle pull to centre, damping — beads on threads.
- var REP=5200,SPR=0.015,LEN=84,GRAV=0.0016,DAMP=0.9,settled=false,raf=0;
+ // Force layout, d3-force style: bounded charge repulsion + link springs + a gentle recentre, with an ALPHA that cools to a
+ // stop so the graph settles calmly (a second brain's graph), instead of vibrating forever. Dragging just reheats it a touch.
+ var alpha=0,alphaTarget=0,A_DECAY=0.02,A_MIN=0.0016,VDECAY=0.62,VMAX=16,CHARGE=-680,LINK=82,LINKK=0.5,raf=0;
+ G.nodes.forEach(function(n){n.x+=(Math.random()-0.5)*24;n.y+=(Math.random()-0.5)*24;});   // break exact overlaps in the seed
  function tick(){
-   var ns=G.nodes,i,j,n,m,dx,dy,d2,d,f,E=0;
+   alpha+=(alphaTarget-alpha)*A_DECAY;
+   var ns=G.nodes,i,j,n,m,dx,dy,d2,w;
    for(i=0;i<ns.length;i++){n=ns[i];
-     for(j=i+1;j<ns.length;j++){m=ns[j];dx=n.x-m.x;dy=n.y-m.y;d2=dx*dx+dy*dy||0.01;if(d2<40000){d=Math.sqrt(d2);f=REP/d2;var ux=dx/d,uy=dy/d;n.vx+=ux*f;n.vy+=uy*f;m.vx-=ux*f;m.vy-=uy*f;}}
-     n.vx+=(CX-n.x)*GRAV;n.vy+=(CY-n.y)*GRAV;
+     for(j=i+1;j<ns.length;j++){m=ns[j];dx=m.x-n.x;dy=m.y-n.y;d2=dx*dx+dy*dy;if(d2>160000)continue;if(d2<100)d2=100;w=CHARGE*alpha/d2;n.vx+=dx*w;n.vy+=dy*w;m.vx-=dx*w;m.vy-=dy*w;}
    }
-   G.edges.forEach(function(e){dx=e.b.x-e.a.x;dy=e.b.y-e.a.y;d=Math.sqrt(dx*dx+dy*dy)||0.01;f=(d-LEN)*SPR;var ux=dx/d,uy=dy/d;e.a.vx+=ux*f;e.a.vy+=uy*f;e.b.vx-=ux*f;e.b.vy-=uy*f;});
-   for(i=0;i<ns.length;i++){n=ns[i];if(n.fixed){n.vx=n.vy=0;continue;}n.vx*=DAMP;n.vy*=DAMP;n.x+=n.vx;n.y+=n.vy;n.x=Math.max(60,Math.min(W-60,n.x));n.y=Math.max(40,Math.min(H-30,n.y));E+=n.vx*n.vx+n.vy*n.vy;}
-   draw();settled=E<0.4;
+   G.edges.forEach(function(e){var a=e.a,b=e.b;dx=b.x-a.x;dy=b.y-a.y;var d=Math.sqrt(dx*dx+dy*dy)||1;var l=(d-LINK)/d*alpha*LINKK;var ka=(b.deg+1)/((a.deg+1)+(b.deg+1));dx*=l;dy*=l;b.vx-=dx*ka;b.vy-=dy*ka;a.vx+=dx*(1-ka);a.vy+=dy*(1-ka);});
+   var mx=0,my=0;
+   for(i=0;i<ns.length;i++){n=ns[i];if(n.fixed){n.vx=n.vy=0;}else{n.vx*=VDECAY;n.vy*=VDECAY;var sp=Math.sqrt(n.vx*n.vx+n.vy*n.vy);if(sp>VMAX){n.vx=n.vx/sp*VMAX;n.vy=n.vy/sp*VMAX;}n.x+=n.vx;n.y+=n.vy;}mx+=n.x;my+=n.y;}
+   if(!drag){mx=CX-mx/ns.length;my=CY-my/ns.length;for(i=0;i<ns.length;i++){ns[i].x+=mx;ns[i].y+=my;}}  // recentre the cloud, not each node
+   for(i=0;i<ns.length;i++){ns[i].x=Math.max(60,Math.min(W-60,ns[i].x));ns[i].y=Math.max(36,Math.min(H-24,ns[i].y));}
+   draw();
  }
- function loop(){tick();if(!settled&&typeof requestAnimationFrame==="function")raf=requestAnimationFrame(loop);else raf=0;}
- function reheat(){settled=false;if(!raf&&typeof requestAnimationFrame==="function")raf=requestAnimationFrame(loop);}
- draw();reheat();
+ function loop(){tick();if(alpha>A_MIN&&typeof requestAnimationFrame==="function")raf=requestAnimationFrame(loop);else raf=0;}
+ function reheat(){if(alpha<0.3)alpha=0.3;if(!raf&&typeof requestAnimationFrame==="function")raf=requestAnimationFrame(loop);}
+ var drag=null;
+ draw();alpha=0.6;reheat();
  // highlight neighbours
  var pinned=false;
  function focus(id){var keep={};keep[id]=1;for(var k in nbr[id])keep[k]=1;G.nodes.forEach(function(n){n._g.classList.toggle("dim",!keep[n.id])});G.edges.forEach(function(e){e._l.classList.toggle("dim",!(e.s===id||e.t===id))});}
@@ -193,7 +199,7 @@ svg{display:block;width:100%;height:auto;touch-action:none}
  // drag (pointer = mouse + touch): grab the nearest node, pin it to the finger, let the springs pull its neighbours.
  function pt(ev){var r=svg.getBoundingClientRect();return {x:(ev.clientX-r.left)/r.width*W,y:(ev.clientY-r.top)/r.height*H};}
  function near(p){var best=null,bd=1e9;G.nodes.forEach(function(n){var dx=n.x-p.x,dy=n.y-p.y,d=dx*dx+dy*dy;if(d<bd&&d<(n.r+10)*(n.r+10)){bd=d;best=n;}});return best;}
- var drag=null,moved=false,p0=null;
+ var moved=false,p0=null;
  svg.addEventListener("pointerdown",function(ev){var p=pt(ev),n=near(p);if(n){drag=n;n.fixed=true;moved=false;p0=p;if(svg.setPointerCapture)try{svg.setPointerCapture(ev.pointerId)}catch(e){}reheat();ev.preventDefault();}else{pinned=false;clearFocus();panel.style.display="none";}});
  svg.addEventListener("pointermove",function(ev){if(!drag)return;var p=pt(ev);if(Math.abs(p.x-p0.x)+Math.abs(p.y-p0.y)>4)moved=true;drag.x=p.x;drag.y=p.y;drag.vx=drag.vy=0;focus(drag.id);reheat();ev.preventDefault();});
  function drop(){if(!drag)return;if(!moved)pick(drag);drag.fixed=false;drag=null;reheat();}
