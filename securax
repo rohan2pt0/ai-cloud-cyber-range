@@ -1016,6 +1016,11 @@ EOF2
     # The crown jewels of the estate, assessed and ranked from live checks, worst first, each with its next step (doc 84).
     shift; exec python3 "$ROOT/governance/jewels.py" "$@"
     ;;
+  environment)
+    # Set up your devices and accounts so the right thing happens by default, then forget it (doc 112):
+    #   ./securax environment | environment focus money debt ... | environment --json
+    shift; exec python3 "$ROOT/governance/environment.py" "$@"
+    ;;
   nodes)
     # Several machines, one Life OS: every node holds the same data, and any one can stop (doc 86).
     #   ./securax nodes | invite | add URL TOKEN [--pull-only] | remove URL
@@ -2133,6 +2138,7 @@ BUILD & KEEP IT HEALTHY
   lessons        what earlier work taught             config / privacy   brand values in one file; names that must never be published
   ready          READY when the estate answers        support-packet     one scrubbed zip for a bug report
   jewels         the crown jewels: what SecuRAX cannot lose, how exposed each is today, and the next step, worst first
+  environment    set your phone and accounts so the good path is the default, then forget it (grayscale at night, autopay, pay-yourself-first)
   brief          a task brief any AI can act on: the likely files, the lessons that apply, what "done" means
   channel        stable (releases only, the version you rely on) or beta (every change); switching is safe and never goes back
   nodes          run SecuRAX on several machines (laptop, VPS, Mac mini, cloud) with the same data; none is needed alone

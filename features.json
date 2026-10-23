@@ -459,6 +459,22 @@
    "shows": "./securax jewels"
   },
   {
+   "id": "environment",
+   "group": "Keep it running",
+   "icon": "compass",
+   "name": "Set it once, then forget it",
+   "added": "2026-10-23",
+   "what": "Instead of telling you what to do, SecuRAX changes the setting once so the good path is the default and the harmful one takes effort: phone grey and quiet at night, autopay on every bill, pay-yourself-first on salary day, the costliest debt attacked first, a keystone habit anchored and alarmed. Each struggle becomes one obvious change with its one-time steps.",
+   "open": {
+    "cmd": "./securax environment"
+   },
+   "command": "environment",
+   "doc": "securax/112-SET-AND-FORGET.md",
+   "highlight": true,
+   "outcome": "The right thing happens without willpower, because your phone and accounts are set up to make it the default — nothing to remember.",
+   "shows": "./securax environment, and (next) a one-tap Life OS screen"
+  },
+  {
    "id": "continuity",
    "group": "Keep it running",
    "icon": "lifebuoy",
