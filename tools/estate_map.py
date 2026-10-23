@@ -111,9 +111,9 @@ header{padding:16px 18px 8px}h1{margin:0;font-size:20px}p.sub{margin:4px 0 0;col
 .chip{background:var(--panel);border:1px solid var(--line);color:var(--text);border-radius:999px;padding:7px 12px;cursor:pointer;font-size:13px}
 .chip[aria-pressed=true]{background:var(--accent);border-color:var(--accent);color:#06101f;font-weight:600}
 .wrap{position:relative}
-svg{display:block;width:100%;height:auto;touch-action:manipulation}
+svg{display:block;width:100%;height:auto;touch-action:none}
 .edge{stroke:#2b3a57;stroke-width:1}
-.node{cursor:pointer}
+.node{cursor:grab}.node:active{cursor:grabbing}
 .node text{fill:var(--muted);font-size:11px;paint-order:stroke;stroke:var(--bg);stroke-width:3px}
 .node.svc text{fill:var(--text);font-weight:600}
 .dim{opacity:.12}
@@ -128,7 +128,7 @@ svg{display:block;width:100%;height:auto;touch-action:manipulation}
 </style></head>
 <body>
 <header><h1>SecuRAX estate map</h1>
-<p class="sub">Every component, and the shared platform it is built on. Hover to see what it touches, click for the detail, filter or search. One file, no network — built for one, ready for many.</p></header>
+<p class="sub">Every component, and the shared platform it is built on. <b>Drag any node</b> and the ones it links to follow, like beads on a thread. Tap for the detail, hover to highlight, filter or search. One file, no network — built for one, ready for many.</p></header>
 <div class="bar" id="chips"><input id="q" type="search" placeholder="Search components and services…" aria-label="Search"></div>
 <div class="legend" id="legend"></div>
 <div class="wrap"><svg id="svg" viewBox="0 0 __W__ __H__" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Estate map"></svg></div>
@@ -137,30 +137,44 @@ svg{display:block;width:100%;height:auto;touch-action:manipulation}
 <script>
 (function(){
  var G=JSON.parse(document.getElementById("data").textContent);
+ var W=G.w,H=G.h,CX=W/2,CY=H/2;
  var svg=document.getElementById("svg"),NS="http://www.w3.org/2000/svg";
+ var byId={}; G.nodes.forEach(function(n){byId[n.id]=n;n.vx=0;n.vy=0;n.fixed=false;n.r=n.kind==="service"?11:Math.max(5,Math.min(13,5+n.deg*1.2));});
  var nbr={}; G.nodes.forEach(function(n){nbr[n.id]={}});
- G.edges.forEach(function(e){ (nbr[e.s]=nbr[e.s]||{})[e.t]=1; (nbr[e.t]=nbr[e.t]||{})[e.s]=1; });
+ G.edges.forEach(function(e){e.a=byId[e.s];e.b=byId[e.t];(nbr[e.s])[e.t]=1;(nbr[e.t])[e.s]=1;});
  function el(t,a){var e=document.createElementNS(NS,t);for(var k in a)e.setAttribute(k,a[k]);return e;}
- var els={};
- G.edges.forEach(function(e){var s=byId(e.s),t=byId(e.t);var l=el("line",{class:"edge",x1:s.x,y1:s.y,x2:t.x,y2:t.y});l._e=e;svg.appendChild(l);e._l=l;});
- function byId(id){return G.nodes.find(function(n){return n.id===id});}
+ G.edges.forEach(function(e){e._l=el("line",{class:"edge"});svg.appendChild(e._l);});
  G.nodes.forEach(function(n){
    var g=el("g",{class:"node"+(n.kind==="service"?" svc":""),tabindex:"0","data-id":n.id});
-   var r=n.kind==="service"?11:Math.max(5,Math.min(13,5+n.deg*1.2));
-   g.appendChild(el("circle",{cx:n.x,cy:n.y,r:r,fill:n.color,stroke:"#0a1322","stroke-width":1.2}));
-   var tx=el("text",{x:n.x,y:n.y-r-5,"text-anchor":"middle"});tx.textContent=n.label.length>22?n.label.slice(0,21)+"…":n.label;g.appendChild(tx);
-   g.addEventListener("mouseenter",function(){focus(n.id)});
-   g.addEventListener("mouseleave",function(){if(!pinned)clearFocus()});
-   g.addEventListener("click",function(){pick(n)});
+   n._c=el("circle",{r:n.r,fill:n.color,stroke:"#0a1322","stroke-width":1.2});g.appendChild(n._c);
+   n._t=el("text",{"text-anchor":"middle"});n._t.textContent=n.label.length>22?n.label.slice(0,21)+"…":n.label;g.appendChild(n._t);
+   g.addEventListener("mouseenter",function(){if(!drag)focus(n.id)});
+   g.addEventListener("mouseleave",function(){if(!pinned&&!drag)clearFocus()});
    g.addEventListener("keydown",function(ev){if(ev.key==="Enter")pick(n)});
-   svg.appendChild(g);els[n.id]=g;n._g=g;
+   svg.appendChild(g);n._g=g;
  });
- var pinned=false;
- function focus(id){
-   var keep={};keep[id]=1;for(var k in nbr[id])keep[k]=1;
-   G.nodes.forEach(function(n){n._g.classList.toggle("dim",!keep[n.id])});
-   G.edges.forEach(function(e){e._l.classList.toggle("dim",!(e.s===id||e.t===id))});
+ function draw(){
+   G.edges.forEach(function(e){e._l.setAttribute("x1",e.a.x);e._l.setAttribute("y1",e.a.y);e._l.setAttribute("x2",e.b.x);e._l.setAttribute("y2",e.b.y);});
+   G.nodes.forEach(function(n){n._c.setAttribute("cx",n.x);n._c.setAttribute("cy",n.y);n._t.setAttribute("x",n.x);n._t.setAttribute("y",n.y-n.r-5);});
  }
+ // Force simulation: repulsion between all nodes, springs along edges, gentle pull to centre, damping — beads on threads.
+ var REP=5200,SPR=0.015,LEN=84,GRAV=0.0016,DAMP=0.9,settled=false,raf=0;
+ function tick(){
+   var ns=G.nodes,i,j,n,m,dx,dy,d2,d,f,E=0;
+   for(i=0;i<ns.length;i++){n=ns[i];
+     for(j=i+1;j<ns.length;j++){m=ns[j];dx=n.x-m.x;dy=n.y-m.y;d2=dx*dx+dy*dy||0.01;if(d2<40000){d=Math.sqrt(d2);f=REP/d2;var ux=dx/d,uy=dy/d;n.vx+=ux*f;n.vy+=uy*f;m.vx-=ux*f;m.vy-=uy*f;}}
+     n.vx+=(CX-n.x)*GRAV;n.vy+=(CY-n.y)*GRAV;
+   }
+   G.edges.forEach(function(e){dx=e.b.x-e.a.x;dy=e.b.y-e.a.y;d=Math.sqrt(dx*dx+dy*dy)||0.01;f=(d-LEN)*SPR;var ux=dx/d,uy=dy/d;e.a.vx+=ux*f;e.a.vy+=uy*f;e.b.vx-=ux*f;e.b.vy-=uy*f;});
+   for(i=0;i<ns.length;i++){n=ns[i];if(n.fixed){n.vx=n.vy=0;continue;}n.vx*=DAMP;n.vy*=DAMP;n.x+=n.vx;n.y+=n.vy;n.x=Math.max(60,Math.min(W-60,n.x));n.y=Math.max(40,Math.min(H-30,n.y));E+=n.vx*n.vx+n.vy*n.vy;}
+   draw();settled=E<0.4;
+ }
+ function loop(){tick();if(!settled&&typeof requestAnimationFrame==="function")raf=requestAnimationFrame(loop);else raf=0;}
+ function reheat(){settled=false;if(!raf&&typeof requestAnimationFrame==="function")raf=requestAnimationFrame(loop);}
+ draw();reheat();
+ // highlight neighbours
+ var pinned=false;
+ function focus(id){var keep={};keep[id]=1;for(var k in nbr[id])keep[k]=1;G.nodes.forEach(function(n){n._g.classList.toggle("dim",!keep[n.id])});G.edges.forEach(function(e){e._l.classList.toggle("dim",!(e.s===id||e.t===id))});}
  function clearFocus(){G.nodes.forEach(function(n){n._g.classList.remove("dim")});G.edges.forEach(function(e){e._l.classList.remove("dim")});}
  var panel=document.getElementById("panel");
  function esc(s){var d=document.createElement("div");d.textContent=s==null?"":s;return d.innerHTML;}
@@ -176,19 +190,21 @@ svg{display:block;width:100%;height:auto;touch-action:manipulation}
    if(n.doc)h+='<div class="k">Doc</div><p>'+esc(n.doc)+'</p>';
    panel.innerHTML=h;panel.style.display="block";
  }
- svg.addEventListener("click",function(ev){if(ev.target===svg){pinned=false;clearFocus();panel.style.display="none";}});
+ // drag (pointer = mouse + touch): grab the nearest node, pin it to the finger, let the springs pull its neighbours.
+ function pt(ev){var r=svg.getBoundingClientRect();return {x:(ev.clientX-r.left)/r.width*W,y:(ev.clientY-r.top)/r.height*H};}
+ function near(p){var best=null,bd=1e9;G.nodes.forEach(function(n){var dx=n.x-p.x,dy=n.y-p.y,d=dx*dx+dy*dy;if(d<bd&&d<(n.r+10)*(n.r+10)){bd=d;best=n;}});return best;}
+ var drag=null,moved=false,p0=null;
+ svg.addEventListener("pointerdown",function(ev){var p=pt(ev),n=near(p);if(n){drag=n;n.fixed=true;moved=false;p0=p;if(svg.setPointerCapture)try{svg.setPointerCapture(ev.pointerId)}catch(e){}reheat();ev.preventDefault();}else{pinned=false;clearFocus();panel.style.display="none";}});
+ svg.addEventListener("pointermove",function(ev){if(!drag)return;var p=pt(ev);if(Math.abs(p.x-p0.x)+Math.abs(p.y-p0.y)>4)moved=true;drag.x=p.x;drag.y=p.y;drag.vx=drag.vy=0;focus(drag.id);reheat();ev.preventDefault();});
+ function drop(){if(!drag)return;if(!moved)pick(drag);drag.fixed=false;drag=null;reheat();}
+ svg.addEventListener("pointerup",drop);svg.addEventListener("pointercancel",drop);
  // search
- document.getElementById("q").addEventListener("input",function(e){
-   var v=e.target.value.trim().toLowerCase();
-   G.nodes.forEach(function(n){var hit=!v||(n.name+" "+n.group).toLowerCase().indexOf(v)>=0;n._g.classList.toggle("dim",!hit)});
-   if(!v)clearFocus();
- });
+ document.getElementById("q").addEventListener("input",function(e){var v=e.target.value.trim().toLowerCase();G.nodes.forEach(function(n){var hit=!v||(n.name+" "+n.group).toLowerCase().indexOf(v)>=0;n._g.classList.toggle("dim",!hit)});if(!v)clearFocus();});
  // filter chips + legend
  var chips=document.getElementById("chips"),legend=document.getElementById("legend"),groups=G.legend.map(function(l){return l.group});
  function addChip(label,val){var b=document.createElement("button");b.className="chip";b.textContent=label;b.setAttribute("aria-pressed",val==="__all__"?"true":"false");b.onclick=function(){
    [].forEach.call(chips.querySelectorAll(".chip"),function(c){c.setAttribute("aria-pressed","false")});b.setAttribute("aria-pressed","true");
-   G.nodes.forEach(function(n){n._g.classList.toggle("dim",!(val==="__all__"||n.group===val))});clearEdges(val);};chips.appendChild(b);}
- function clearEdges(val){G.edges.forEach(function(e){var a=byId(e.s),b=byId(e.t);var show=val==="__all__"||a.group===val||b.group===val;e._l.classList.toggle("dim",!show)});}
+   G.nodes.forEach(function(n){n._g.classList.toggle("dim",!(val==="__all__"||n.group===val))});G.edges.forEach(function(e){var show=val==="__all__"||e.a.group===val||e.b.group===val;e._l.classList.toggle("dim",!show)});};chips.appendChild(b);}
  addChip("All","__all__");groups.forEach(function(g){addChip(g,g)});
  G.legend.forEach(function(l){var s=document.createElement("span");s.innerHTML='<span class="dot" style="background:'+l.color+'"></span>'+esc(l.group);legend.appendChild(s);});
 })();

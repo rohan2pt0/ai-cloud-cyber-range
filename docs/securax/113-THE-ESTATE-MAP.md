@@ -18,8 +18,10 @@ of date, because it is generated from the same `features.json` and `governance/s
   with many edges leans on a lot of the platform. This is the "built for one, ready for many" story (doc 97) made visible:
   nothing builds a private copy of a platform service, and the map shows it.
 
-Hover a node to light up what it touches, click it for the detail (what it does, the command to open it, the services it
-uses, what its enterprise edition adds), filter by area, or search.
+It is a **live force graph** (like a second-brain's graph view): the nodes repel, the edges pull like springs, and the whole
+thing finds its own shape. **Drag any node and the ones it links to trail after it, like beads on a thread** — the quickest
+way to feel which parts of the estate are tied together. Tap a node for its detail (what it does, the command to open it,
+the services it uses, what its enterprise edition adds), hover to light up what it touches, filter by area, or search.
 
 ## Use it
 
