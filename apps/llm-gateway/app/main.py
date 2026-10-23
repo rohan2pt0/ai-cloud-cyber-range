@@ -278,10 +278,13 @@ def _trace(request: Request) -> tuple[str, str]:
 def _texts(messages: list) -> list[tuple[dict, str, str]]:
     """Every text the model will read, as (holder, key, role): a plain string, and each text part of a multi-part message
     (OpenAI's [{"type": "text", "text": ...}]), so a prompt sent as parts cannot step around the rails. The user's and tools'
-    words, and the system message too: chat apps put retrieved documents there, the usual road for indirect injection."""
+    words, and the system message too: chat apps put retrieved documents there, the usual road for indirect injection.
+    Prior `assistant` turns are inspected as well: the conversation history (and any chat memory replayed into it) is
+    attacker-influenced on a shared or long-lived thread, so an override planted in an earlier turn is caught like any
+    other untrusted input instead of trusted for wearing the model's role (ASI06 memory and context poisoning, G10)."""
     out = []
     for m in messages:
-        if not isinstance(m, dict) or m.get("role") not in ("user", "tool", "system"):
+        if not isinstance(m, dict) or m.get("role") not in ("user", "tool", "system", "assistant"):
             continue
         c = m.get("content")
         if isinstance(c, str):

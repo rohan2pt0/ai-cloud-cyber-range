@@ -116,6 +116,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 - [The purple loop probes every AI risk category](docs/securax/105-LLM-REFERENCE-ARCHITECTURES-GAP-CHECK.md)
 - [Build from a phone with the open models](docs/securax/83-BUILD-WITH-OPEN-MODELS.md)
 - [The rest of Claude Code's toolkit, on the open models](docs/securax/83-BUILD-WITH-OPEN-MODELS.md)
+- [History and memory poisoning closed](docs/securax/105-LLM-REFERENCE-ARCHITECTURES-GAP-CHECK.md)
 - Licence: from v0.4.0, FSL-1.1-MIT
 
 **Release 0.3.0 - 2026-10-22:**

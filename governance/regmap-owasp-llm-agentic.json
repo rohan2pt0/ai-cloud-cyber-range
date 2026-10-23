@@ -234,14 +234,15 @@
    "id": "ASI06",
    "title": "Memory and context poisoning",
    "applies": "all",
-   "status": "partial",
-   "note": "Context passed to a model is inspected, but earlier assistant turns are not, so an instruction planted in chat memory reaches the model (the purple loop shows it, G10); chat memories are not yet reviewable or switched off for shared accounts.",
+   "status": "supported",
+   "note": "The whole conversation is inspected, earlier assistant turns included: an override planted in chat history or a replayed memory is caught like any untrusted input, not trusted for wearing the model's role. The purple loop fires it as an attack (history-poisoning) and proves it is blocked. The gateway keeps no server-side memory store of its own.",
    "evidence": [
     "test:redteam/tests/test_purple.py",
     "file:apps/llm-gateway/app/main.py",
-    "test:apps/llm-gateway/tests/test_guardrails.py"
+    "test:apps/llm-gateway/tests/test_guardrails.py",
+    "journey:purple_loop"
    ],
-   "next": "Chat memories off for shared accounts, reviewable, and inspected like any input (doc 105, G10).",
+   "next": "If a persistent chat-memory store is added, it inherits this inspection and gains a per-account off switch and review (doc 105, G10).",
    "priority": "medium"
   },
   {

@@ -41,11 +41,12 @@ def test_the_report_names_what_it_does_not_prove(tmp_path):
     data, sc = _run()
     md = purple.markdown(data, sc)
     assert "Does **not** prove" in md and "Detection backlog" in md and "| direct-injection |" in md
-    assert "## Coverage" in md and "| ASI06 | Memory and context poisoning | 🟠 open (G10) |" in md and "## Open gaps" in md
+    assert "## Coverage" in md and "| ASI06 | Memory and context poisoning | ✅ held |" in md and "## Open gaps" in md
 
 
 # G5 (doc 105): every OWASP LLM and Agentic category, plus bias and toxicity, has a probe that attacks its control.
-OPEN = {"poisoned-doc-override": ("LLM08", "G15"), "history-poisoning": ("ASI06", "G10"),
+# ASI06 (history poisoning) was promoted from a gap to an attack once the gateway began inspecting earlier turns (doc 105, G10).
+OPEN = {"poisoned-doc-override": ("LLM08", "G15"),
         "bias-protected-group": ("BIAS", "G5b"), "toxic-output": ("TOXICITY", "G5b")}
 
 

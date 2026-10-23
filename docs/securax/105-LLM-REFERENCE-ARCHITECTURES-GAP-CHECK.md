@@ -40,7 +40,7 @@ and the cloud underneath.
 | Entry | API gateway | ✅ | The AI security gateway is the one front door: cross-site write guard, TLS edge, tunnel with sign-in |
 | Entry | Authentication (IAM/OAuth) | ✅ | OIDC/JWT (RS256 via JWKS, "none" refused), hashed API keys, MFA claim, lock-out. Off on a single laptop, on with `regulated on` |
 | Entry | Rate limiting | ✅ | Per-caller sliding window, in-flight shedding, day and month token allowances |
-| Entry | User context manager | 🟡 | Open WebUI keeps chat history and memories. SecuRAX has no memory controls of its own. See G10 |
+| Entry | User context manager | 🟡 | Open WebUI keeps chat history and memories. The gateway now inspects the history and any memory replayed to the model like any untrusted input, so a planted override is blocked (ASI06, G10 done); it has no store of its own to switch off per account |
 | Entry | Response router | ✅ | LiteLLM ladders with fallbacks that always end on the local model; the gateway records requested vs served model |
 | Inference | Prompt pre-processing | ✅ | Injection, jailbreak and smuggling rails; India-aware PII redaction; optional model detectors (Llama Guard, Model Armor, Prompt Shields, Bedrock) behind a circuit breaker; now every part and the system context (G1, G2) |
 | Inference | Context windowing, tokenisation | 🟡 | A size cap and the model's own window. No token-exact truncation. See G13 |
@@ -61,7 +61,7 @@ and the cloud underneath.
 | Framework (version) | What it asks for | SecuRAX today | Gap |
 |---|---|---|---|
 | OWASP Top 10 for LLM Applications (2025) | Ten risks, LLM01 to LLM10 | Rails cover LLM01, 02, 05, 06, 07, 10; supply chain (03) for code and plugins; the purple loop probes all ten every run (G5, closed) | G4: model artefacts (03); G12: a full machine-checked map |
-| OWASP Top 10 for Agentic Applications (Dec 2025) | ASI01 goal hijack to ASI10 rogue agents | Tool allow, deny and approval policy; read-only MCP; SSRF-guarded web agent; kill switch; per-agent allowance | G3: an approval *queue* (today approval only blocks); G10: memory poisoning (ASI06); G12: a full map |
+| OWASP Top 10 for Agentic Applications (Dec 2025) | ASI01 goal hijack to ASI10 rogue agents | Tool allow, deny and approval policy; read-only MCP; SSRF-guarded web agent; kill switch; per-agent allowance | G3: an approval *queue* (today approval only blocks); G12: a full map |
 | NIST AI RMF 1.0 and the GenAI profile (AI 600-1) | Govern, map, measure, manage; 12 GenAI risks | 600-1 machine-checked in `comply`: 3 supported, 7 partial, 2 gaps (IP; bias and toxicity) | G5 closes most partials; G12 adds RMF functions |
 | MITRE ATLAS | Adversary tactics against AI | Findings and red-team results tagged with ATLAS ids; AI-SOC triage maps audit events to ATLAS | G5 added the missing techniques to the purple loop (closed 2026-10-23) |
 | Google SAIF (2.0, with the agent map) | Data, infrastructure, model, application controls | Labels in the AI-SPM scan | G12: requirement-level map |
@@ -80,13 +80,13 @@ Each item is in `governance/queue.json`, so `./securax backlog` and the daily Ba
 |---|---|---|---|
 | G3 | Tool approval becomes a queue: the call waits, a person approves or refuses it from the Command Center or the phone, the agent resumes | ASI02 tool misuse; LLM06 excessive agency | 2026-11-05 |
 | G4 | The model registry records each model's digest (Ollama and pulled weights); `ai check` refuses a changed or unlisted digest; pickle-format files are scanned before load | LLM03 supply chain; LLM04 poisoning | done 2026-10-22 |
-| G5 | The red team covers all ten LLM and ten Agentic categories, plus bias and toxicity probes, in the purple loop | LLM01–10, ASI01–10; NIST 600-1 bias | done 2026-10-23: `./securax purple` probes all 22 and prints a coverage table; 18 hold, 4 are open gaps owned by G5b, G10 and G15; ten prevented-but-not-alerted rows are the SOC backlog (queue `soc-control-alerts`) |
+| G5 | The red team covers all ten LLM and ten Agentic categories, plus bias and toxicity probes, in the purple loop | LLM01–10, ASI01–10; NIST 600-1 bias | done 2026-10-23: `./securax purple` probes all 22 and prints a coverage table; 19 hold, 3 are open gaps owned by G5b and G15 (history poisoning was promoted to an attack when G10 closed); ten prevented-but-not-alerted rows are the SOC backlog (queue `soc-control-alerts`) |
 | G5b | A deterministic rail, or the local Llama Guard detector on by default, for bias against a protected group (gender, religion, caste) and abusive output; the live promptfoo suite gains the same probes | NIST 600-1 bias and toxicity; fair treatment of customers | 2026-11-19 |
 | G6 | An answer-quality set for the chat models (BFSI questions with expected facts), run on every model change; the score shown in `progress` | LLM09 misinformation; drift | 2026-11-12 |
 | G7 | Thumbs up or down in the chat flows into that set, so bad answers become test cases | Human feedback, without RLHF | 2026-11-12 |
 | G8 | Rate limits, allowances and the audit chain move to a shared store when more than one gateway runs | Bypass by spreading calls over replicas | when a second replica is first used |
 | G9 | Provider keys leave the plaintext `.env` for an encrypted file (age/SOPS) unlocked at start | Key theft from a copied disk | 2026-11-19 |
-| G10 | Chat memories: off by default for shared accounts, reviewable, and inspected like any context | ASI06 memory poisoning | 2026-11-05 |
+| G10 | Chat memories: off by default for shared accounts, reviewable, and inspected like any context | ASI06 memory poisoning | done 2026-10-23: the gateway inspects the whole conversation, earlier `assistant` turns and any replayed memory included, so an override planted in history is blocked like any untrusted input; the purple loop fires it as the `history-poisoning` attack and proves it holds. A per-account off switch and review ride along if a persistent memory store is added |
 | G11 | An AI incident runbook (jailbreak in use, data leaked through a model, model abuse, poisoned document) and a tabletop for it, wired to the incident clock | Incident response; FREE-AI incident reporting | done 2026-10-22: `./securax incident runbook`, `incident open --kind`, tabletop `ai-incident` |
 | G12 | Requirement-level maps in `comply` for OWASP LLM and Agentic, RBI FREE-AI, ISO 42001, EU AI Act (deployer), SAIF, DASF, MAESTRO and the MeitY guidelines; a board AI-policy template | Assurance and audit | FREE-AI and OWASP done 2026-10-22 (`./securax comply free-ai`, `comply owasp-ai`); the rest 2026-11-26 |
 | G13 | Token-exact context management: count with the model's tokenizer, trim the oldest turns, never cut the system context | Silent truncation; LLM10 cost | 2026-12-10 |
