@@ -20,7 +20,7 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: astral-sh/ruff-action@v3
         with: { version: "0.16.8" }
       - name: Ruff lint (config in pyproject.toml)
@@ -29,7 +29,7 @@ jobs:
   app-tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - name: Install gateway + test deps
@@ -60,7 +60,7 @@ jobs:
     # (PII/secret gating of these files runs in the python `app-tests` job.)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-node@v4
         with: { node-version: "22" }
       - name: Install jsdom
@@ -79,7 +79,7 @@ jobs:
   sast-and-secrets:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with: { fetch-depth: 0 }
       - name: Gitleaks (secret scanning)
         uses: gitleaks/gitleaks-action@v3
@@ -91,7 +91,7 @@ jobs:
   iac-scan:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Compose config validation (catches deploy-blocking errors before anyone runs it)
         working-directory: local/compose
         run: |
@@ -119,7 +119,7 @@ jobs:
   container-scan:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Build gateway image
         run: docker build -t vulnbank/llm-gateway:ci apps/llm-gateway
       - name: Build estate-sync image (sovereign cross-device state store)
