@@ -37,8 +37,8 @@ The latest additions, newest first (the Command Center marks each one New for 30
 - **2026-10-23** · [The one next step](docs/securax/93-PROGRESS-YOU-CAN-SEE.md): You never have to learn 123 commands to be better off: one command always points to the next thing. `./securax next`
 - **2026-10-23** · [Adversary ledger](docs/securax/30-PURPLE-TEAM-LOOP.md): A bug-bounty finding becomes the last of its kind: the estate gets stronger from every attacker, not just safer on paper. `./securax adversary`
 - **2026-10-23** · [Scan a document with your phone](docs/securax/104-LIFE-PAPERS-READ-FOR-YOU.md): You capture a paper document in seconds from your phone without typing it out, and it never leaves your device. `./securax open`
+- **2026-10-23** · [Understands what it sees, and spots scams](docs/securax/104-LIFE-PAPERS-READ-FOR-YOU.md): The gap between a thing in your hand and a decision in your Life OS nearly disappears — and a scam is caught before you tap, not after. `./securax open`
 - **2026-10-22** · [Readiness for any regulation](docs/securax/106-WHO-SECURAX-IS-FOR.md): A Board-ready answer to "where do we stand on the Directions?", with proof, instead of a consultant's spreadsheet that dates in a week. `./securax readiness demo`
-- **2026-10-22** · [Life papers, read for you](docs/securax/104-LIFE-PAPERS-READ-FOR-YOU.md): No more updating spreadsheets by hand to know what is still open: the few things that matter come to you, with a date and an alarm. `./securax lifeos import workbook`
 
 **Practise and defend**
 
@@ -103,6 +103,7 @@ The latest additions, newest first (the Command Center marks each one New for 30
 | 🟡 [Life OS Inbox](docs/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION.md) | Capture one line; then each note becomes an action with a next step and a date, or stays a note. Reviews turn findings into actions; Google Keep notes come in too. | `./securax open` |
 | 🟡 [Life papers, read for you](docs/securax/104-LIFE-PAPERS-READ-FOR-YOU.md) | Your life workbooks and private documents (policies, statements, ID scans) are read on your own machine: every open issue becomes a dated Life OS action, the vital fifth first, with calendar alarms; a missing nominee, a lapsing policy or a password left in a sheet is found for you. | `./securax lifeos import workbook` |
 | 🟡 [Scan a document with your phone](docs/securax/104-LIFE-PAPERS-READ-FOR-YOU.md) | Photograph a policy, bill or letter in the Life OS Inbox; the text is read on your own phone, with no upload and offline after the first scan, and dropped into the capture box to become a dated action or a note. | `./securax open` |
+| 🟡 [Understands what it sees, and spots scams](docs/securax/104-LIFE-PAPERS-READ-FOR-YOU.md) | Whatever you scan or type is understood on your own device: it is classed (a bill, a policy, an ID, an appointment), its amount and due date are pulled out so the item arrives already dated, and anything that smells like a scam — an OTP request, a 'KYC blocked' message, a UPI collect-request — is flagged in plain words with the reasons. It learns from your taps, on the phone, and nothing you teach it ever leaves it. | `./securax open` |
 | 🟢 [Your AI history](docs/securax/51-YOUR-AI-HISTORY.md) | Years of chats from Claude, ChatGPT, DeepSeek or Gemini as one private library you can search. | `./securax knowledge` |
 | 🟡 [Password manager](docs/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION.md) | Your own password vault (Vaultwarden) for the Bitwarden apps on laptop and phone, encrypted on your device before it is stored. | `./securax start passwords` |
 | 🟡 [Sign in to AWS, Google Cloud, Azure](docs/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION.md) | One command per cloud, nothing to install: open the link on any device, sign in, and start building. | `./securax cloud login aws` |
@@ -116,6 +117,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- [The lens: it understands what you capture, and spots scams — on your device](docs/securax/104-LIFE-PAPERS-READ-FOR-YOU.md)
 - [Scan a paper with your phone's camera](docs/securax/104-LIFE-PAPERS-READ-FOR-YOU.md)
 - [`./securax next` — the one command to remember](docs/securax/93-PROGRESS-YOU-CAN-SEE.md)
 - [The build's own single point of failure is now visible](docs/securax/23-BUILD-WITHOUT-CLAUDE.md)
@@ -123,7 +125,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - [Adversary ledger — learning from a bug-bounty program](docs/securax/30-PURPLE-TEAM-LOOP.md)
 - [The purple loop probes every AI risk category](docs/securax/105-LLM-REFERENCE-ARCHITECTURES-GAP-CHECK.md)
 - [Build from a phone with the open models](docs/securax/83-BUILD-WITH-OPEN-MODELS.md)
-- [The rest of Claude Code's toolkit, on the open models](docs/securax/83-BUILD-WITH-OPEN-MODELS.md)
 
 **Release 0.3.0 - 2026-10-22:**
 
