@@ -1009,7 +1009,7 @@ EOF2
     ;;
   lifeos)
     # Bring what you keep elsewhere into the Life OS Inbox, where each item becomes a decision (docs 84, 104):
-    #   ./securax lifeos import keep [FILE] | import workbook [FILE ...] | docs [FOLDER] | papers | status
+    #   ./securax lifeos import keep [FILE] | import workbook [FILE ...] | docs [FOLDER] | papers | readers [--install] | status
     shift; exec python3 "$ROOT/governance/lifeos.py" "${@:-status}"
     ;;
   jewels)

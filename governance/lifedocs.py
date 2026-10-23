@@ -4,6 +4,7 @@
     ./securax lifeos docs [FOLDER]            read every PDF, JPG or PNG in FOLDER (default vault/life/docs/, subfolders too)
     ./securax lifeos docs [FOLDER] --dry-run  show what it would add; write nothing
     ./securax lifeos docs [FOLDER] --json     the same, as JSON (numbers masked)
+    ./securax lifeos readers [--install]      are the two free PDF/scan readers installed? --install puts them on for you
     ./securax lifeos papers                   the guided list: which papers to drop in, where to get each, which are in
 
 No spreadsheet to fill: the papers are the input. Drop in your Form 16, the AIS or Form 26AS, the CDSL or NSDL consolidated
@@ -30,6 +31,7 @@ from __future__ import annotations
 
 import datetime as dt
 import hashlib
+import importlib.util
 import json
 import math
 import os
@@ -56,7 +58,31 @@ TEXT = {".txt", ".csv", ".tsv", ".md"}
 SHEETS = {".xlsx", ".xlsm"}
 WORDDOC = {".docx"}
 READABLE = PDF | IMAGES | TEXT | SHEETS | WORDDOC
-INSTALL = "could not read: install poppler-utils / tesseract-ocr (sudo apt install poppler-utils tesseract-ocr)"
+INSTALL = "could not read: the PDF and scan readers are not installed yet — run  ./securax lifeos readers  (it installs them for you)"
+
+
+def install_cmd(which=None) -> str:
+    """The exact one-line install for the two free readers, matched to this machine's package manager (never guesses an OS)."""
+    which = which or shutil.which
+    if which("apt-get") or which("apt"):
+        return "sudo apt install poppler-utils tesseract-ocr"
+    if which("brew"):
+        return "brew install poppler tesseract"
+    if which("dnf"):
+        return "sudo dnf install poppler-utils tesseract"
+    if which("pacman"):
+        return "sudo pacman -S poppler tesseract"
+    return "install 'poppler-utils' (or 'poppler') and 'tesseract-ocr' (or 'tesseract') with your system's package manager"
+
+
+def readers(which=None) -> dict:
+    """What the two free readers are and whether they are here. poppler reads text PDFs; tesseract reads scans and photos.
+    Text, Excel and Word files need neither, so a missing reader never stops those."""
+    which = which or shutil.which
+    poppler = bool(which("pdftotext") and which("pdftoppm"))      # poppler-utils ships both
+    tess = bool(which("tesseract"))
+    missing = [n for n, ok in (("poppler", poppler), ("tesseract", tess)) if not ok]
+    return {"poppler": poppler, "tesseract": tess, "all": not missing, "missing": missing, "install": install_cmd(which)}
 
 KINDS = [  # (kind, keywords); the kind with most hits wins, ties go to the earlier one
     ("form16", ["form no. 16", "form no.16", "form 16", "section 192", "tds certificate", "gross salary", "salary as per provisions",
@@ -584,8 +610,70 @@ def guide(folder: pathlib.Path) -> int:
     return 0
 
 
+def readers_cmd(install: bool = False, run=None, which=None) -> int:
+    """`./securax lifeos readers` — plain status of the two free readers, and (with --install) put them on for you."""
+    r = readers(which)
+    if r["all"]:
+        print("✔ Both readers are installed. SecuRAX can read PDFs, scans and photos (as well as text, Excel and Word).")
+        return 0
+    miss = " and ".join(r["missing"])
+    print(f"The {miss} reader(s) are not installed yet. They are free and run only on this machine — nothing goes online.")
+    print("  poppler reads PDFs that already have text; tesseract reads scans and photos. Text, Excel and Word need neither.")
+    if not install:
+        print(f"\nInstall both:  {r['install']}")
+        print("Or let SecuRAX do it for you:  ./securax lifeos readers --install")
+        return 0
+    import shlex
+    which = which or shutil.which
+    if not any(which(pm) for pm in ("apt-get", "apt", "brew", "dnf", "pacman")):
+        print(f"\nI do not recognise this machine's package manager, so I cannot install them for you. Install these two yourself:\n  {r['install']}\nthen run  ./securax lifeos docs")
+        return 1
+    print(f"\nInstalling (this may ask for your computer password):  {r['install']}")
+    runner = run or (lambda cmd: subprocess.run(cmd, timeout=600))
+    try:
+        res = runner(shlex.split(r["install"]))
+        code = res if isinstance(res, int) else getattr(res, "returncode", 1)
+    except Exception as e:  # noqa: BLE001
+        print(f"  Could not run it automatically ({e}). Run this line yourself:  {r['install']}")
+        return 1
+    if code == 0 and readers(which)["all"]:
+        print("✔ Done — both readers are installed. Now run:  ./securax lifeos docs")
+        return 0
+    print(f"  The install did not finish (it may need your password, or the network). Run it yourself:  {r['install']}")
+    return 1
+
+
+def found_elsewhere(limit: int = 500) -> list[tuple[pathlib.Path, int]]:
+    """Documents the person likely dropped in the usual places (Downloads, Documents, Desktop, the Windows ones on WSL), so an
+    empty docs folder points them at what they already have instead of a dead end. Reuses the shared folder list."""
+    try:
+        spec = importlib.util.spec_from_file_location("securax_controls", ROOT / "governance" / "controls.py")
+        controls = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(controls)
+        dirs = controls.search_dirs()
+    except Exception:  # noqa: BLE001
+        return []
+    out = []
+    try:
+        docs_resolved = DOCS.resolve()
+    except OSError:
+        docs_resolved = DOCS
+    for d in dirs:
+        try:
+            if not d.is_dir() or d.resolve() == docs_resolved:
+                continue
+            n = sum(1 for p in d.glob("*") if p.is_file() and p.suffix.lower() in READABLE)
+        except OSError:
+            continue
+        if n:
+            out.append((d, min(n, limit)))
+    return out[:5]
+
+
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else list(argv)
+    if argv and argv[0] == "readers":
+        return readers_cmd(install="--install" in argv)
     if argv and argv[0] == "docs":
         argv = argv[1:]
     elif argv and argv[0] == "papers":
@@ -616,7 +704,18 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({"documents": rows, "items": items}, ensure_ascii=False, indent=1))
     if not rows:
         if not as_json:
-            print(f"No papers in {_rel(folder)}/ yet. Run ./securax lifeos papers for the list of what to drop in.")
+            home = str(pathlib.Path.home())
+            print(f"No papers in {_rel(folder)}/ yet.")
+            elsewhere = found_elsewhere()
+            if elsewhere:
+                print("  But you already have documents in the usual places — read them without moving anything:")
+                for d, n in elsewhere:
+                    print(f"    {n} in {str(d).replace(home, '~')}  →  ./securax lifeos docs \"{d}\"")
+                print(f"  Or move them into {_rel(folder)}/ and run  ./securax lifeos docs  again.")
+            else:
+                print("  Run  ./securax lifeos papers  for the list of what to drop in, then save each one here.")
+            if not readers()["all"]:
+                print("  (PDFs and scans also need two free readers — put them on with:  ./securax lifeos readers)")
         return 0
     gone = [] if dry else write_all(rows, items)
     if as_json:
@@ -626,6 +725,8 @@ def main(argv: list[str] | None = None) -> int:
     print(("Would read" if dry else "Read") + f" {len(rows) - len(bad)} document(s); {len(bad)} could not be read.")
     for why in sorted({r["why"] for r in bad}):
         print(f"  {sum(1 for r in bad if r['why'] == why)} × {why}")
+    if any(r["why"] == INSTALL for r in bad) and not readers()["all"]:
+        print("  → The readers are missing. Put them on, then run this again:  ./securax lifeos readers --install")
     print(f"{len(issues)} issue(s)" + (" to add:" if dry else ":"))
     for x in issues:
         print(f"  {'★ ' if x['vital'] else '  '}{x['t']}" + (f" (due {x['due']})" if x["due"] else ""))
