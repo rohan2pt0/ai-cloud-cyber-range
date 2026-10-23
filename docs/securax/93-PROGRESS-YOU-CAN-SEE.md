@@ -53,3 +53,12 @@ Every feature's `outcome` and `shows` are in `features.json`, where every builde
   - the report and the phone message always name one next step.
 - **Fitness `outcomes-declared`:** every feature names its outcome and where it shows.
 - **Sandbox `machine_alone`:** on the real estate, `progress` reads the Life OS data that was just saved.
+
+## 5. The one command to remember: `./securax next`
+
+A person should never have to learn 123 commands to be better off. `./securax next` is the single command that carries the
+whole north star: it looks at where you are — is the estate running, have your life papers been read in, is the safety
+setup finished — and prints exactly **one** next step, in plain words, with the command to run, why, and what you will see.
+No list to choose from, no jargon. `./securax go` ends by printing the same next step, so after every start you know the one
+thing to do. It reuses `./securax finish` and the Life OS import ledger, so it never invents a check of its own
+(`governance/coach.py`, `test_coach.py`). Lost at any point — that is the command.

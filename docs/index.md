@@ -15,11 +15,11 @@ by a test.
 
 The latest additions, newest first (the Command Center marks each one New for 30 days):
 
+- **2026-10-23** · [The one next step](securax/93-PROGRESS-YOU-CAN-SEE.md): You never have to learn 123 commands to be better off: one command always points to the next thing. `./securax next`
 - **2026-10-23** · [Adversary ledger](securax/30-PURPLE-TEAM-LOOP.md): A bug-bounty finding becomes the last of its kind: the estate gets stronger from every attacker, not just safer on paper. `./securax adversary`
 - **2026-10-22** · [Readiness for any regulation](securax/106-WHO-SECURAX-IS-FOR.md): A Board-ready answer to "where do we stand on the Directions?", with proof, instead of a consultant's spreadsheet that dates in a week. `./securax readiness demo`
 - **2026-10-22** · [Life papers, read for you](securax/104-LIFE-PAPERS-READ-FOR-YOU.md): No more updating spreadsheets by hand to know what is still open: the few things that matter come to you, with a date and an alarm. `./securax lifeos import workbook`
 - **2026-10-21** · [Your progress](securax/93-PROGRESS-YOU-CAN-SEE.md): You see, every week, that your days and your estate are getting better, and you always know the one next step. `./securax progress`
-- **2026-10-21** · [Venture (is it paying its way?)](securax/96-ONE-PLATFORM-MANY-PRODUCTS.md): You know when the time and money you put in come back, and which number to move first. `./securax venture`
 
 Each line names what it does, in plain words, and the one command that opens it. The light is the guide's status (what the lights mean is below).
 
@@ -60,6 +60,7 @@ Each line names what it does, in plain words, and the one command that opens it.
 
 | | What it does | How to open it |
 |---|---|---|
+| 🟡 [The one next step](securax/93-PROGRESS-YOU-CAN-SEE.md) | Lost or unsure? One command reads where you are and tells you the single next thing to do, in plain words — no list, no jargon. | `./securax next` |
 | 🟡 [Venture (is it paying its way?)](securax/96-ONE-PLATFORM-MANY-PRODUCTS.md) | Break-even, payback and unit economics for the business built on the estate, counting your time as a cost: log hours, spend and revenue, set your plan, and get a structured prompt that makes an AI stress-test it. | `./securax venture` |
 | 🟡 [The suite (built for one, ready for many)](securax/97-BUILT-FOR-ONE-READY-FOR-MANY.md) | Every component is declared with the edition it starts in and the shared platform services it uses, so one person's tool can later serve an organisation of any size. Shows how ready each edition is to sell, what blocks it, and writes an honest datasheet per edition. | `./securax suite` |
 | 🟡 [Names, not ports, and links that never break](securax/99-NAMES-NOT-PORTS-AND-LINKS-THAT-NEVER-BREAK.md) | Every part of the estate at a name over HTTPS (hub, chat, docs, flows ...), asked once with a one-click move of the Life OS data; the site and docs on GitHub Pages until your own domain is proven live, then on it with one command; every build fails on a broken link. | `./securax site` |

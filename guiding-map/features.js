@@ -25,6 +25,22 @@ window.SECURAX_FEATURES = {
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/93-PROGRESS-YOU-CAN-SEE/"
   },
   {
+   "id": "next",
+   "group": "Keep it running",
+   "icon": "compass",
+   "name": "The one next step",
+   "what": "Lost or unsure? One command reads where you are and tells you the single next thing to do, in plain words — no list, no jargon.",
+   "cmd": "./securax next",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "added": "2026-10-23",
+   "outcome": "You never have to learn 123 commands to be better off: one command always points to the next thing.",
+   "shows": "the terminal, and the end of every ./securax go",
+   "light": "amber",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/93-PROGRESS-YOU-CAN-SEE/"
+  },
+  {
    "id": "venture",
    "group": "Keep it running",
    "icon": "scale",
