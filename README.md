@@ -87,7 +87,7 @@ The latest additions, newest first (the Command Center marks each one New for 30
 | 🟡 [Storage that runs itself](docs/securax/80-STORAGE-THAT-GROWS-WITH-YOU.md) | Every source of growth has a limit; clean-ups run every six hours, and your phone hears only when space is still short. | `./securax storage` |
 | 🟢 [What broke, and why](docs/securax/27-INCIDENT-RUNBOOK.md) | Names the service that stopped and the reason, in plain words, with the fix. | `./securax why` |
 | 🟡 [Crown jewels and risk](docs/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION.md) | What SecuRAX cannot lose, how exposed each one is today, and the one thing to do next, worst first. It re-scores itself every run. | `./securax jewels` |
-| 🟢 [Set it once, then forget it](docs/securax/112-SET-AND-FORGET.md) | Instead of telling you what to do, SecuRAX changes the setting once so the good path is the default and the harmful one takes effort: phone grey and quiet at night, autopay on every bill, pay-yourself-first on salary day, the costliest debt attacked first, a keystone habit anchored and alarmed. Each struggle becomes one obvious change with its one-time steps. | `./securax environment` |
+| 🟢 [Set it once, then forget it](docs/securax/112-SET-AND-FORGET.md) | Instead of telling you what to do, SecuRAX changes the setting once so the good path is the default and the harmful one takes effort: phone grey and quiet at night, autopay on every bill, pay-yourself-first on salary day, the costliest debt attacked first, a daily walk and a keystone habit anchored and alarmed. Twelve struggles mapped to the Wheel of Life, each one obvious change with its one-time steps, an if-then plan and a start-small floor — the elite-sport levers made structural. | `./securax environment` |
 | 🟡 [Crisis and continuity plan](docs/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION.md) | Every crisis written down before it happens: how long it may stop you, how much it may lose, the steps, and safe drills that prove it. | `./securax continuity` |
 | 🟢 [Ransomware-proof backups and recovery drills](docs/securax/88-RANSOMWARE-AND-DISASTER-RECOVERY-PROVEN.md) | Every backup first checks that your data is still readable. If ransomware got there first, the copy is quarantined, nothing clean is deleted and you are alerted. `restore latest` picks the newest clean copy, a restore twin proves it opens, and tabletop exercises test the plan. | `./securax continuity tabletop ransomware` |
 | 🟡 [Many machines, one SecuRAX](docs/securax/86-MANY-NODES-AND-THE-ROAD-TO-SCALE.md) | Run it on the laptop, a VPS, a Mac mini or any cloud at once: every machine holds the same data, and any one of them can stop. Each machine is an extra, never a dependency: with every other one off, this one carries on by itself (doc 90). | `./securax nodes` |
@@ -118,13 +118,13 @@ This list is generated from [`features.json`](features.json); the Command Center
 **On main, in the next release:**
 
 - [`./securax map` — see the whole estate at once](docs/securax/113-THE-ESTATE-MAP.md)
+- [`./securax environment` grows into the Wheel of Life, with the elite-sport levers built in](docs/securax/112-SET-AND-FORGET.md)
 - [Success by design: four new core principles + `./securax environment`](docs/securax/112-SET-AND-FORGET.md)
 - [`./securax next` — the one command to remember](docs/securax/93-PROGRESS-YOU-CAN-SEE.md)
 - [The build's own single point of failure is now visible](docs/securax/23-BUILD-WITHOUT-CLAUDE.md)
 - The product site shows what is new by itself
 - [Adversary ledger — learning from a bug-bounty program](docs/securax/30-PURPLE-TEAM-LOOP.md)
 - [The purple loop probes every AI risk category](docs/securax/105-LLM-REFERENCE-ARCHITECTURES-GAP-CHECK.md)
-- [Build from a phone with the open models](docs/securax/83-BUILD-WITH-OPEN-MODELS.md)
 
 **Release 0.3.0 - 2026-10-22:**
 

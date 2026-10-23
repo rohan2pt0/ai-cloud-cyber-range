@@ -493,7 +493,7 @@ window.SECURAX_FEATURES = {
    "group": "Keep it running",
    "icon": "compass",
    "name": "Set it once, then forget it",
-   "what": "Instead of telling you what to do, SecuRAX changes the setting once so the good path is the default and the harmful one takes effort: phone grey and quiet at night, autopay on every bill, pay-yourself-first on salary day, the costliest debt attacked first, a keystone habit anchored and alarmed. Each struggle becomes one obvious change with its one-time steps.",
+   "what": "Instead of telling you what to do, SecuRAX changes the setting once so the good path is the default and the harmful one takes effort: phone grey and quiet at night, autopay on every bill, pay-yourself-first on salary day, the costliest debt attacked first, a daily walk and a keystone habit anchored and alarmed. Twelve struggles mapped to the Wheel of Life, each one obvious change with its one-time steps, an if-then plan and a start-small floor — the elite-sport levers made structural.",
    "cmd": "./securax environment",
    "path": "",
    "port": 0,
