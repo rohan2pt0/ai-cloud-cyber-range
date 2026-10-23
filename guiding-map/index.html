@@ -6759,6 +6759,8 @@ function renderPlaybook(){
         + '<div class="ibread-teach"><button class="btn" onclick="gmReadSafe()">This one is safe</button>'
         + '<button class="btn" onclick="gmReadScam()">Yes, it is a scam</button></div></div>';
     }
+    var acc = "✓ Add it" + (r.suggest.due ? " — due " + r.suggest.due : r.suggest.kind === "note" ? " as a note" : " to my list");
+    html += '<div class="ibread-accept"><button class="btn primary" onclick="gmReadAccept()">' + esc(acc) + '</button><span class="ibsub">one tap, nothing else to fill</span></div>';
     box.innerHTML = html;
   };
   window.gmReadSafe = function () {                                  // teach the device: not a scam (learns locally)
@@ -6768,6 +6770,25 @@ function renderPlaybook(){
   window.gmReadScam = function () {                                 // teach the device: this IS a scam (learns locally)
     if (_read) { gmLensLearnRisk(_read.text, true); if (typeof gmToast === "function") gmToast("Flagged on this device. It will catch this kind faster next time."); }
     var box = document.getElementById("ibRead"); if (box) box.innerHTML = '<div class="ibread-risk danger"><b>⚠ Flagged as a scam.</b> Do not share any OTP, PIN or money. Delete it.</div>';
+  };
+  // ONE TAP, zero decisions: the lazy path. Take whatever the lens understood — kind, area, due date — and file it as a
+  // fully-decided item. No typing, no date-picking, no choosing. If there is no date, give a gentle default so nothing
+  // ever sits in the "to decide" pile growing guilt. This is the whole point: capture → one tap → done.
+  window.gmReadAccept = function () {
+    var el = document.getElementById("ibText"), typed = String((el && el.value) || "").trim();
+    var text = _read ? _read.text : typed; if (!text) return;
+    var r = (_read && _read.text === typed) ? _read.r : gmLensRead(text);
+    var kind = (r && r.suggest && r.suggest.kind) || "action";
+    var extra = { from: "lens", area: (r && r.suggest && r.suggest.area) || "", next: text };
+    if (r && r.suggest && r.suggest.due) extra.due = r.suggest.due;
+    else if (kind === "action" || kind === "issue") extra.due = ibDays(7);        // gentle default; Later can always push it
+    var it = gmInboxAdd(text, kind, extra);
+    if (it) {
+      gmLensLearn(text, kind);
+      if (el) el.value = ""; gmReadClear();
+      if (typeof gmToast === "function") gmToast(extra.due ? "Done — on your list for " + extra.due + ". Nothing else to do." : "Kept as a note. Nothing else to do.");
+      renderAll();
+    }
   };
   // Photograph a document and read its text on THIS device (no upload). The OCR engine (tesseract.js, ~6 MB) loads only
   // the first time you scan, and is cached by the service worker for offline use after that. If it cannot load, the
@@ -6836,6 +6857,16 @@ function renderPlaybook(){
   window.gmInboxDone = function (id) {
     var a = ibAll(); a.forEach(function (x) { if (ibSafe(x.id) === ibSafe(id)) x.done = ymd(); }); ibSave(a); renderAll();
   };
+  // Guilt-free deferral: a procrastinator's one honest button. "Later" pushes a thing 3 days out instead of letting it
+  // rot undecided or glare as "late". It gives an undecided item a date (so it leaves the decide pile) and a next step of
+  // its own text, so deferring is itself a one-tap decision. Procrastination is handled by the system, not punished.
+  window.gmInboxSnooze = function (id) {
+    var a = ibAll(); a.forEach(function (x) {
+      if (ibSafe(x.id) === ibSafe(id)) { x.due = ibDays(3); if (x.kind === "note" || x.kind === "idea") x.kind = "action"; if (!x.next) x.next = x.t; x.snoozed = ymd(); }
+    });
+    ibSave(a); renderAll();
+    if (typeof gmToast === "function") gmToast("Later it is — back in 3 days. No rush.");
+  };
   window.gmInboxStats = function () {
     var a = ibAll(), today = ymd(), open = a.filter(function (x) { return !x.done && x.kind !== "note"; });
     return { decide: open.filter(function (x) { return !x.due; }).length, due: open.filter(function (x) { return x.due && x.due <= today; }).length,
@@ -6884,7 +6915,8 @@ function renderPlaybook(){
     return '<div class="ibrow' + (late ? " late" : "") + '"><div class="ibt"><b>' + esc(x.next || x.t) + '</b>'
       + (x.next && x.next !== x.t ? '<div class="ibsub">' + esc(x.t) + '</div>' : "")
       + '<div class="ibsub">' + esc(IB_KINDS[x.kind] || "Action") + (x.area ? " · " + esc(x.area) : "") + (x.due ? " · due " + esc(x.due) + (late ? " (late)" : "") : "") + '</div></div>'
-      + '<button class="btn" onclick="gmInboxDone(\'' + ibSafe(x.id) + '\')">Done</button></div>';
+      + '<button class="btn" onclick="gmInboxDone(\'' + ibSafe(x.id) + '\')">Done</button>'
+      + '<button class="btn" onclick="gmInboxSnooze(\'' + ibSafe(x.id) + '\')">Later</button></div>';
   }
   // Your papers (doc 104): the papers are the input, not a spreadsheet. The list says what to drop in and where to get it;
   // ./securax lifeos docs reads them on the laptop and the figures fill themselves. Before the first read, the starter list.
@@ -6918,7 +6950,7 @@ function renderPlaybook(){
     var actions = a.filter(function (x) { return !x.done && x.due; }).sort(function (p, q) { return p.due < q.due ? -1 : 1; });
     var notes = a.filter(function (x) { return x.kind === "note" && !x.done; });
     var ropen = G("gm_review_open", "");
-    var h = '<div class="section active"><h2>Inbox</h2><div class="info">One line is enough. Then decide each one: an action with a next step and a date, a note to keep, or delete it. Nothing stays half-decided.</div>'
+    var h = '<div class="section active"><h2>Inbox</h2><div class="info">Scan it, or type one line. One tap files it with a date — nothing to fill in. Not now? Tap <b>Later</b>; it comes back in a few days. Nothing nags you.</div>'
       + '<div class="ibcap"><input id="ibText" placeholder="What is on your mind?" onkeydown="if(event.key===\'Enter\')gmInboxCapture()" aria-label="Capture">'
       + '<select id="ibKind" aria-label="Kind">' + Object.keys(IB_KINDS).map(function (k) { return '<option value="' + k + '">' + IB_KINDS[k] + '</option>'; }).join("") + '</select>'
       + '<button class="btn primary" onclick="gmInboxCapture()">Add</button>'
@@ -6929,10 +6961,11 @@ function renderPlaybook(){
       h += '<h3>To decide (' + decide.length + ')</h3>';
       decide.forEach(function (x) {
         h += '<div class="ibrow"><div class="ibt"><b>' + esc(x.t) + '</b><div class="ibsub">' + esc(IB_KINDS[x.kind] || "") + (x.from && x.from !== "capture" ? " · from " + esc(x.from) : "") + '</div>'
-          + '<div class="ibdec"><input id="ibNext_' + ibSafe(x.id) + '" placeholder="The next physical step" aria-label="Next step"><input type="date" id="ibDue_' + ibSafe(x.id) + '" value="' + ibDays(7) + '" aria-label="Due">'
-          + '<button class="btn primary" onclick="gmInboxDecide(\'' + ibSafe(x.id) + '\',\'action\')">Make it an action</button>'
+          + '<div class="ibdec"><button class="btn primary" onclick="gmInboxDecide(\'' + ibSafe(x.id) + '\',\'action\')">✓ Add to my list</button>'
+          + '<button class="btn" onclick="gmInboxSnooze(\'' + ibSafe(x.id) + '\')">Later</button>'
           + '<button class="btn" onclick="gmInboxDecide(\'' + ibSafe(x.id) + '\',\'note\')">Keep as a note</button>'
-          + '<button class="btn" onclick="gmInboxDecide(\'' + ibSafe(x.id) + '\',\'delete\')">Delete</button></div></div></div>';
+          + '<button class="btn" onclick="gmInboxDecide(\'' + ibSafe(x.id) + '\',\'delete\')">Delete</button></div>'
+          + '<details class="ibnotes"><summary>Set a step &amp; date yourself</summary><div class="ibdec"><input id="ibNext_' + ibSafe(x.id) + '" placeholder="The next physical step" aria-label="Next step"><input type="date" id="ibDue_' + ibSafe(x.id) + '" value="' + ibDays(7) + '" aria-label="Due"><button class="btn" onclick="gmInboxDecide(\'' + ibSafe(x.id) + '\',\'action\')">Save</button></div></details></div></div>';
       });
     }
     // 80/20 (doc 104): the vital few first; the rest folded, one click away.
@@ -6971,7 +7004,8 @@ function renderPlaybook(){
       + ".ibread{margin:-2px 0 8px}.ibread-line{font-size:13px;color:var(--muted);margin:2px 0 6px}"
       + ".ibread-risk{border-left:4px solid var(--red,#e5534b);background:rgba(229,83,75,.12);color:var(--text);border-radius:6px;padding:8px 10px;font-size:13.5px}"
       + ".ibread-risk.caution{border-left-color:var(--amber,#d79b00);background:rgba(215,155,0,.14)}.ibread-risk ul{margin:6px 0 0;padding-left:18px}.ibread-risk li{margin:2px 0}"
-      + ".ibread-teach{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.ibread-teach button{width:auto;flex:0 0 auto;margin:0;padding:6px 10px}";
+      + ".ibread-teach{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.ibread-teach button{width:auto;flex:0 0 auto;margin:0;padding:6px 10px}"
+      + ".ibread-accept{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}.ibread-accept button{width:auto;flex:0 0 auto;margin:0}";
     var st = document.createElement("style"); st.textContent = css; document.head.appendChild(st);
   })();
 

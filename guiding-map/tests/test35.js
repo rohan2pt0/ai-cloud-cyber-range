@@ -67,6 +67,31 @@ setTimeout(() => {
   const top = JSON.parse(w.localStorage.getItem("gm_inbox"))[0];
   ok(top.due === "2026-11-15" && top.from === "lens", "the captured bill arrives with its date filled in, straight from the lens");
 
+  // 9. The lazy path: ONE tap files it fully, no typing, no choices.
+  const inbox = () => JSON.parse(w.localStorage.getItem("gm_inbox") || "[]");
+  const nd = new Date(), todayStr = nd.getFullYear() + "-" + ("0" + (nd.getMonth() + 1)).slice(-2) + "-" + ("0" + nd.getDate()).slice(-2);
+  doc.getElementById("ibText").value = "LIC premium ₹8,500 due 20 Nov 2026";
+  w.gmShowRead(doc.getElementById("ibText").value);
+  ok(/Add it/.test(doc.getElementById("ibRead").textContent), "the lens offers a one-tap 'Add it' button");
+  w.gmReadAccept();
+  const acc = inbox()[0];
+  ok(acc.due === "2026-11-20" && acc.next && acc.from === "lens", "one tap files it fully decided — date and next step, no typing");
+  ok(doc.getElementById("ibText").value === "" && doc.getElementById("ibRead").innerHTML === "", "after one tap the box is clear, ready for the next thing");
+
+  // A thing with no date still gets a gentle default, so nothing sits undecided forever.
+  doc.getElementById("ibText").value = "call the plumber about the leak";
+  w.gmShowRead(doc.getElementById("ibText").value);
+  w.gmReadAccept();
+  ok(inbox()[0].due && inbox()[0].due > todayStr, "an item with no date is given a gentle future date, not left to rot");
+
+  // 10. Guilt-free 'Later': a procrastinator's honest one-tap defer.
+  const u = w.gmInboxAdd("sort out the insurance folder", "action");       // undecided (no date) → in the 'to decide' pile
+  const decideBefore = w.gmInboxStats().decide;
+  w.gmInboxSnooze(u.id);
+  const sn = inbox().find((x) => x.id === u.id);
+  ok(sn.due && sn.due > todayStr && sn.snoozed, "'Later' pushes it to a future date and records the snooze");
+  ok(w.gmInboxStats().decide === decideBefore - 1, "snoozing clears it from the 'to decide' pile — no nagging");
+
   console.log("test35 the lens: " + pass + " passed, " + fail + " failed");
   process.exit(fail ? 1 : 0);
 }, 900);
