@@ -8,3 +8,8 @@
 *.ico binary
 *.pdf binary
 *.woff2 binary
+
+# Vendored OCR engine (tesseract.js) assets — binary, never line-ending-normalised
+*.wasm binary
+*.traineddata binary
+*.traineddata.gz binary

@@ -4449,6 +4449,56 @@
     var it = gmInboxAdd(el.value, k ? k.value : "action");
     if (it) { el.value = ""; if (typeof gmToast === "function") gmToast("Captured. Decide it below when you are ready."); renderAll(); }
   };
+  // Photograph a document and read its text on THIS device (no upload). The OCR engine (tesseract.js, ~6 MB) loads only
+  // the first time you scan, and is cached by the service worker for offline use after that. If it cannot load, the
+  // button still opens the camera and the photo is simply skipped — capture by hand never breaks.
+  var _ocrLoading = null;
+  function loadTesseract() {
+    if (window.Tesseract) return Promise.resolve(window.Tesseract);
+    if (_ocrLoading) return _ocrLoading;
+    _ocrLoading = new Promise(function (resolve, reject) {
+      var s = document.createElement("script");
+      s.src = "ocr/tesseract.min.js";
+      s.onload = function () { window.Tesseract ? resolve(window.Tesseract) : reject(new Error("no Tesseract")); };
+      s.onerror = function () { _ocrLoading = null; reject(new Error("load failed")); };
+      document.head.appendChild(s);
+    });
+    return _ocrLoading;
+  }
+  window.gmScanFill = function (text) {              // drop read text into the one-line capture box (an <input> keeps no newlines)
+    var el = document.getElementById("ibText"); if (!el) return;
+    var t = (text || "").replace(/\s+/g, " ").trim();
+    if (!t) { if (typeof gmToast === "function") gmToast("No text found in that photo. Try again with more light, or type it."); return; }
+    el.value = el.value ? (el.value.replace(/\s+$/, "") + " " + t) : t;
+    el.focus();
+    if (typeof gmToast === "function") gmToast("Read it. Check the words above, then Add.");
+  };
+  window.gmScanFile = function (input) {
+    var f = input && input.files && input.files[0]; if (!f) return;
+    var btn = document.getElementById("ibScan"), label = btn && btn.textContent;
+    if (btn) { btn.disabled = true; btn.textContent = "📷 Reading…"; }
+    function done() { if (btn) { btn.disabled = false; btn.textContent = label; } input.value = ""; }
+    loadTesseract().then(function (T) {
+      return T.recognize(f, "eng", {
+        workerPath: "ocr/worker.min.js", corePath: "ocr/tesseract-core-simd-lstm.wasm.js", langPath: "ocr",
+        logger: function (m) { if (btn && m && m.status === "recognizing text") btn.textContent = "📷 Reading… " + Math.round((m.progress || 0) * 100) + "%"; }
+      });
+    }).then(function (r) {
+      gmScanFill(r && r.data && r.data.text);
+      done();
+    }).catch(function () {
+      done();
+      if (typeof gmToast === "function") gmToast("Could not read on this device. Type the note, or try a clearer photo.");
+    });
+  };
+  window.gmScan = function () {
+    var inp = document.createElement("input");
+    inp.type = "file"; inp.accept = "image/*"; inp.setAttribute("capture", "environment");
+    inp.style.display = "none";
+    inp.onchange = function () { window.gmScanFile(inp); };
+    document.body.appendChild(inp); inp.click();
+    setTimeout(function () { if (inp.parentNode) inp.parentNode.removeChild(inp); }, 60000);
+  };
   window.gmInboxDecide = function (id, as) {
     var a = ibAll(), it = a.filter(function (x) { return ibSafe(x.id) === ibSafe(id); })[0]; // the page shows the cleaned id
     if (!it) return false;
@@ -4550,7 +4600,8 @@
     var h = '<div class="section active"><h2>Inbox</h2><div class="info">One line is enough. Then decide each one: an action with a next step and a date, a note to keep, or delete it. Nothing stays half-decided.</div>'
       + '<div class="ibcap"><input id="ibText" placeholder="What is on your mind?" onkeydown="if(event.key===\'Enter\')gmInboxCapture()" aria-label="Capture">'
       + '<select id="ibKind" aria-label="Kind">' + Object.keys(IB_KINDS).map(function (k) { return '<option value="' + k + '">' + IB_KINDS[k] + '</option>'; }).join("") + '</select>'
-      + '<button class="btn primary" onclick="gmInboxCapture()">Add</button></div>';
+      + '<button class="btn primary" onclick="gmInboxCapture()">Add</button>'
+      + '<button class="btn" id="ibScan" onclick="gmScan()" title="Photograph a document; the text is read on this device and dropped into the box above">📷 Scan a document</button></div>';
     h += papersHTML();
     if (decide.length) {
       h += '<h3>To decide (' + decide.length + ')</h3>';

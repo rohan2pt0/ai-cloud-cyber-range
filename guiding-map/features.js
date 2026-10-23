@@ -553,6 +553,22 @@ window.SECURAX_FEATURES = {
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/104-LIFE-PAPERS-READ-FOR-YOU/"
   },
   {
+   "id": "scan-doc",
+   "group": "Your own tools",
+   "icon": "checklist",
+   "name": "Scan a document with your phone",
+   "what": "Photograph a policy, bill or letter in the Life OS Inbox; the text is read on your own phone, with no upload and offline after the first scan, and dropped into the capture box to become a dated action or a note.",
+   "cmd": "./securax open",
+   "path": "/index.html",
+   "port": 0,
+   "service": false,
+   "added": "2026-10-23",
+   "outcome": "You capture a paper document in seconds from your phone without typing it out, and it never leaves your device.",
+   "shows": "the Life OS Inbox: a scanned note waiting to decide",
+   "light": "amber",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/104-LIFE-PAPERS-READ-FOR-YOU/"
+  },
+  {
    "id": "knowledge",
    "group": "Your own tools",
    "icon": "book",

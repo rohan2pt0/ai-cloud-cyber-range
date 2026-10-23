@@ -82,3 +82,13 @@ investment, property, vehicle), and its expiry, renewal, premium-due or maturity
 | A Life OS screen to tick a register item (nominee set, Aadhaar recorded) without opening the workbook; the next import reads it back | 2026-11-15 |
 | Upload a paper straight from the Life OS on the phone (a drop zone that saves it to `vault/life/docs/` on the laptop, signed in) | 2026-11-15 |
 | A weekly routine that re-reads the workbooks and documents by itself, so the Inbox is never older than a week | 2026-11-01 |
+
+## 6. Scan a paper with your phone's camera
+
+Open the Life OS Inbox on your phone and tap **📷 Scan a document**. Your camera opens; photograph the policy, bill or
+letter. The text is read **on the phone itself** — the OCR engine (tesseract.js, about 6 MB) loads the first time you
+scan and is then cached for offline use — and dropped into the capture box, where you check the words and tap **Add**.
+It becomes an action with a date or a note, exactly like anything else you capture.
+
+Nothing is uploaded: the photo and its text never leave your device. If the engine cannot load (an old phone, no space),
+the box simply stays empty and you type the note by hand — scanning never blocks capture.
