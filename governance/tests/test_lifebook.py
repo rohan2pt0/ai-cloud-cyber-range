@@ -140,3 +140,26 @@ def test_dates_are_read_in_the_forms_workbooks_use():
     assert lb.as_date(str(_serial(dt.date(2026, 11, 5)))) == dt.date(2026, 11, 5)
     assert lb.as_date("05-11-2026") == lb.as_date("05/11/2026") == lb.as_date("2026-11-05") == dt.date(2026, 11, 5)
     assert lb.as_date("not a date") is None and lb.as_date("") is None
+
+
+def test_a_private_write_into_portal_keeps_the_dir_servable(tmp_path, monkeypatch):
+    # The regression that took the Command Center offline: writing the private inbox-import.json used to chmod the whole
+    # portal/ dir to 0700, so the nginx container (a different user) could no longer traverse it and every page 403'd.
+    monkeypatch.setattr(lb, "ROOT", tmp_path)
+    portal = tmp_path / "portal"
+    portal.mkdir()
+    portal.chmod(0o755)
+    f = portal / "inbox-import.json"
+    lb._private_write(f, '{"items": []}')
+    assert stat.S_IMODE(f.stat().st_mode) == 0o600, "the private file itself is owner-only"
+    assert (portal.stat().st_mode & 0o005) == 0o005, "portal/ stays world-traversable, or the Command Center 403s"
+
+
+def test_a_private_write_into_the_vault_still_locks_that_dir(tmp_path, monkeypatch):
+    monkeypatch.setattr(lb, "ROOT", tmp_path)
+    vault = tmp_path / "vault" / "life"
+    vault.mkdir(parents=True)
+    vault.chmod(0o755)
+    f = vault / "ledger.json"
+    lb._private_write(f, "{}")
+    assert (vault.stat().st_mode & 0o077) == 0, "the private vault dir is still tightened to owner-only"

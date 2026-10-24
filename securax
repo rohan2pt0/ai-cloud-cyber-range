@@ -674,11 +674,22 @@ URLS
     # models first). 'coder' = local only, or any alias from ./securax providers list. All traffic still passes through the guardrail.
     shift; TASK="$*"
     [ -z "$TASK" ] && { echo 'usage: ./securax build "what to change"   (set BUILD_MODEL=coder for local)'; exit 1; }
-    if ! command -v aider >/dev/null 2>&1; then
-      C "The local coding agent 'aider' isn't installed. Install it once (sovereign, runs on your box):"
-      echo "   python3 -m pip install --user aider-chat     # or: pipx install aider-chat"
-      echo "Then re-run. Docs: docs/securax/23-BUILD-WITHOUT-CLAUDE.md"
-      exit 1
+    # The edit agent is Aider. Prefer one on PATH; else a private venv we manage at ~/.securax/aiderenv (no system
+    # Python changes, and it works where Debian/Ubuntu block `pip install --user` with PEP 668 'externally-managed').
+    AIDER="$(command -v aider 2>/dev/null || true)"
+    [ -z "$AIDER" ] && [ -x "$HOME/.securax/aiderenv/bin/aider" ] && AIDER="$HOME/.securax/aiderenv/bin/aider"
+    if [ -z "$AIDER" ]; then
+      C "Setting up the coding agent 'aider' once — a private venv on your box, no system Python changes…"
+      if python3 -m venv "$HOME/.securax/aiderenv" >/dev/null 2>&1 && "$HOME/.securax/aiderenv/bin/pip" install -q --upgrade pip aider-chat >/dev/null 2>&1; then
+        AIDER="$HOME/.securax/aiderenv/bin/aider"; C "  ✔ aider installed at ~/.securax/aiderenv (used automatically from now on)."
+      else
+        C "Could not set it up automatically (python3-venv may be missing). Install it once, any ONE of these, then re-run:"
+        echo "   sudo apt install -y pipx && pipx install aider-chat && pipx ensurepath   # then open a new shell"
+        echo "   sudo apt install -y python3-venv   # then just re-run this command; we make the venv for you"
+        echo "   python3 -m pip install --user --break-system-packages aider-chat          # quick override of PEP 668"
+        echo "Docs: docs/securax/23-BUILD-WITHOUT-CLAUDE.md"
+        exit 1
+      fi
     fi
     gcurl -fsS $(gw_url)/healthz >/dev/null 2>&1 || { C "Gateway is down — run ./securax up first."; exit 1; }
     KEY="$(sed -n 's/^LITELLM_MASTER_KEY=//p' "$ROOT/local/compose/.env" 2>/dev/null | head -1)"; KEY="${KEY:-sk-range-dev}"
@@ -694,7 +705,7 @@ URLS
     # Point Aider at the gateway (OpenAI-compatible); it runs the repo's tests after each edit and
     # iterates until they pass. --read loads the build contract as always-on context.
     OPENAI_API_BASE="$(gw_url)/v1" OPENAI_API_KEY="$KEY" \
-      aider --model "openai/$MODEL" \
+      "$AIDER" --model "openai/$MODEL" \
             --read "$ROOT/BUILD-CONTRACT.md" --read "$ROOT/AGENTS.md" --read "$ROOT/LESSONS.md" \
             --test-cmd "bash \"$ROOT/securax\" verify" --auto-test \
             --no-gitignore --message "$TASK" ${_FILES[@]+"${_FILES[@]}"}
