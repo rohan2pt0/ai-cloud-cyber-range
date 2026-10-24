@@ -1009,12 +1009,17 @@ EOF2
     ;;
   lifeos)
     # Bring what you keep elsewhere into the Life OS Inbox, where each item becomes a decision (docs 84, 104):
-    #   ./securax lifeos import keep [FILE] | import workbook [FILE ...] | docs [FOLDER] | papers | status
+    #   ./securax lifeos import keep [FILE] | import workbook [FILE ...] | docs [FOLDER] | papers | readers [--install] | status
     shift; exec python3 "$ROOT/governance/lifeos.py" "${@:-status}"
     ;;
   jewels)
     # The crown jewels of the estate, assessed and ranked from live checks, worst first, each with its next step (doc 84).
     shift; exec python3 "$ROOT/governance/jewels.py" "$@"
+    ;;
+  environment)
+    # Set up your devices and accounts so the right thing happens by default, then forget it (doc 112):
+    #   ./securax environment | environment focus money debt ... | environment --json
+    shift; exec python3 "$ROOT/governance/environment.py" "$@"
     ;;
   nodes)
     # Several machines, one Life OS: every node holds the same data, and any one can stop (doc 86).
@@ -1062,6 +1067,11 @@ EOF2
   mission)
     # ./securax mission [poll OP|rules [--act]|crew] [--json] — mission control (doc 102): the board, Go/No-Go, flight rules, the AI crew.
     python3 "$ROOT/governance/mission.py" "${@:2}"
+    ;;
+  map)
+    # Build the interactive estate map — every component and the shared platform it is built on, one self-contained HTML (doc 113).
+    shift; python3 "$ROOT/tools/estate_map.py" "$@" || exit $?
+    f="$ROOT/portal/estate-map.html"; [ -f "$f" ] && C "Open it:  $f"
     ;;
   chaos)
     # ./securax chaos [--seed N] [--faults N] [--run] [--json] — chaos experiments on this estate (doc 101); the plan only unless --run.
@@ -2133,6 +2143,7 @@ BUILD & KEEP IT HEALTHY
   lessons        what earlier work taught             config / privacy   brand values in one file; names that must never be published
   ready          READY when the estate answers        support-packet     one scrubbed zip for a bug report
   jewels         the crown jewels: what SecuRAX cannot lose, how exposed each is today, and the next step, worst first
+  environment    set your phone and accounts so the good path is the default, then forget it (grayscale at night, autopay, pay-yourself-first)
   brief          a task brief any AI can act on: the likely files, the lessons that apply, what "done" means
   channel        stable (releases only, the version you rely on) or beta (every change); switching is safe and never goes back
   nodes          run SecuRAX on several machines (laptop, VPS, Mac mini, cloud) with the same data; none is needed alone
@@ -2144,6 +2155,7 @@ BUILD & KEEP IT HEALTHY
   os             one kit, many apps: Vantage at /vantage/; build, new ID --name, check; mobile ID (Android/iOS), mobile-check ID
   ship           build without Claude Code: open the PR, watch CI, fix red with autobuild, merge when green (check, login, pr, watch)
   suite          built for one, ready for many: editions, readiness to sell, the shared platform, datasheets (sheet EDITION)
+  map            the estate map: an interactive picture of every component and the shared platform it is built on (one HTML file)
   venture        is it paying its way? break-even, payback, unit economics (your time counted); log, plan, ask; guards: the monthly failure checks
   progress       is it making you better off? your rhythm, how much stronger the estate got, the one next step
   proofs         the claims the docs make that no journey proves yet, ranked, with the journey that could prove each

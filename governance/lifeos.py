@@ -96,13 +96,13 @@ def write(items: list[dict], out: pathlib.Path = OUT) -> tuple[int, int]:
 
 def main(argv: list[str] | None = None) -> int:
     argv = sys.argv[1:] if argv is None else argv
-    if argv[:2] == ["import", "workbook"] or argv[:1] in (["docs"], ["papers"]):     # the life workbooks and private documents (doc 104)
+    if argv[:2] == ["import", "workbook"] or argv[:1] in (["docs"], ["papers"], ["readers"]):     # the life workbooks and private documents (doc 104)
         import importlib.util
         rel = "governance/lifebook.py" if argv[0] == "import" else "governance/lifedocs.py"
         spec = importlib.util.spec_from_file_location("securax_" + pathlib.Path(rel).stem, ROOT / rel)
         mod = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(mod)
-        return mod.main(argv[2:] if argv[0] == "import" else argv if argv[0] == "papers" else argv[1:])
+        return mod.main(argv[2:] if argv[0] == "import" else argv if argv[0] in ("papers", "readers") else argv[1:])
     if argv[:2] == ["import", "keep"]:
         src = pathlib.Path(" ".join(argv[2:])).expanduser() if argv[2:] else find_takeout()
         if not src or not src.exists():

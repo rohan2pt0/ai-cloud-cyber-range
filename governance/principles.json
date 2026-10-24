@@ -13,6 +13,10 @@
   { "id": "control-inputs", "core": false, "name": "Control the inputs", "text": "You cannot control outcomes. You control decisions, rhythm and follow-through." },
   { "id": "compounding", "core": false, "name": "Compounding", "text": "A small review kept every week for a year beats a perfect plan kept for a month." },
   { "id": "flywheel", "core": false, "name": "Flywheel", "text": "Each improvement makes the next one easier: visibility earns trust, trust earns support, support builds capability." },
-  { "id": "never-miss-twice", "core": false, "name": "Never miss twice", "text": "Missing once is life. Missing twice is the start of a new habit, so the floor is two minutes." }
+  { "id": "never-miss-twice", "core": false, "name": "Never miss twice", "text": "Missing once is life. Missing twice is the start of a new habit, so the floor is two minutes." },
+  { "id": "best-default", "core": true, "name": "Best choice, pre-made", "text": "Offer the fewest, best options and pre-select the best one. Never a blank field or a wall of equal choices; the right path is the obvious, already-made choice, one tap away." },
+  { "id": "shape-environment", "core": true, "name": "Shape the environment, not the person", "text": "Change the setting, not the willpower. Make the good path automatic and the harmful path effortful, with a one-time set-up the environment then enforces — never a rule the person must remember to follow." },
+  { "id": "worst-day", "core": true, "name": "Built for the worst day", "text": "Assume the person is distracted, overwhelmed, out of willpower and short on skill, and still make success the default. Build for them and it works for everyone." },
+  { "id": "aim-at-success", "core": true, "name": "Aim at success, not only safety", "text": "Design for the win the person wants, not only the disaster to avoid. Every safeguard also moves them forward; a control that prevents harm but advances nothing is not finished." }
  ]
 }

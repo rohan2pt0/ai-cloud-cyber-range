@@ -57,6 +57,22 @@ window.SECURAX_FEATURES = {
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/96-ONE-PLATFORM-MANY-PRODUCTS/"
   },
   {
+   "id": "map",
+   "group": "Keep it running",
+   "icon": "grid",
+   "name": "The estate map",
+   "what": "An interactive picture of the whole AI estate, generated from its own declarations: every component is a node coloured by what it is for, every shared platform service is a hub, and an edge joins a component to each service it is built on. Hover, click for detail, filter or search. One self-contained HTML file, online or off.",
+   "cmd": "./securax map",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "added": "2026-10-23",
+   "outcome": "You see the whole estate and how it hangs together at a glance, instead of reading a list of 43 things.",
+   "shows": "./securax map: the interactive estate map in a browser",
+   "light": "green",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/113-THE-ESTATE-MAP/"
+  },
+  {
    "id": "suite",
    "group": "Keep it running",
    "icon": "grid",
@@ -471,6 +487,22 @@ window.SECURAX_FEATURES = {
    "shows": "./securax jewels",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION/"
+  },
+  {
+   "id": "environment",
+   "group": "Keep it running",
+   "icon": "compass",
+   "name": "Set it once, then forget it",
+   "what": "Instead of telling you what to do, SecuRAX changes the setting once so the good path is the default and the harmful one takes effort: phone grey and quiet at night, autopay on every bill, pay-yourself-first on salary day, the costliest debt attacked first, a daily walk and a keystone habit anchored and alarmed. Twelve struggles mapped to the Wheel of Life, each one obvious change with its one-time steps, an if-then plan and a start-small floor — the elite-sport levers made structural.",
+   "cmd": "./securax environment",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "added": "2026-10-23",
+   "outcome": "The right thing happens without willpower, because your phone and accounts are set up to make it the default — nothing to remember.",
+   "shows": "./securax environment, and (next) a one-tap Life OS screen",
+   "light": "green",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/112-SET-AND-FORGET/"
   },
   {
    "id": "continuity",
