@@ -119,6 +119,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- Visualization honesty: charts that pass every check but lie to the eye, fixed
 - The Life OS money view, redesigned
 - ["This week your estate had your back" — the positive half of the Life OS home](docs/securax/93-PROGRESS-YOU-CAN-SEE.md)
 - The lazy path: one tap files it, and 'Later' defers without guilt
@@ -126,7 +127,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - [Scan a paper with your phone's camera](docs/securax/104-LIFE-PAPERS-READ-FOR-YOU.md)
 - [`./securax map` — see the whole estate at once](docs/securax/113-THE-ESTATE-MAP.md)
 - [`./securax environment` grows into the Wheel of Life, with the elite-sport levers built in](docs/securax/112-SET-AND-FORGET.md)
-- [Success by design: four new core principles + `./securax environment`](docs/securax/112-SET-AND-FORGET.md)
 
 **Release 0.3.0 - 2026-10-22:**
 
