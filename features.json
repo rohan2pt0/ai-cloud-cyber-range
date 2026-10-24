@@ -55,6 +55,21 @@
    "shows": "./securax venture: break-even month, payback month, what must be true"
   },
   {
+   "id": "map",
+   "group": "Keep it running",
+   "icon": "grid",
+   "name": "The estate map",
+   "added": "2026-10-23",
+   "what": "An interactive picture of the whole AI estate, generated from its own declarations: every component is a node coloured by what it is for, every shared platform service is a hub, and an edge joins a component to each service it is built on. Hover, click for detail, filter or search. One self-contained HTML file, online or off.",
+   "open": {
+    "cmd": "./securax map"
+   },
+   "command": "map",
+   "doc": "securax/113-THE-ESTATE-MAP.md",
+   "outcome": "You see the whole estate and how it hangs together at a glance, instead of reading a list of 43 things.",
+   "shows": "./securax map: the interactive estate map in a browser"
+  },
+  {
    "id": "suite",
    "group": "Keep it running",
    "icon": "grid",
@@ -553,6 +568,39 @@
    "doc": "securax/104-LIFE-PAPERS-READ-FOR-YOU.md",
    "outcome": "No more updating spreadsheets by hand to know what is still open: the few things that matter come to you, with a date and an alarm.",
    "shows": "the Life OS Inbox: The vital few"
+  },
+  {
+   "id": "scan-doc",
+   "group": "Your own tools",
+   "icon": "checklist",
+   "name": "Scan a document with your phone",
+   "added": "2026-10-23",
+   "what": "Photograph a policy, bill or letter in the Life OS Inbox; the text is read on your own phone, with no upload and offline after the first scan, and dropped into the capture box to become a dated action or a note.",
+   "open": {
+    "cmd": "./securax open",
+    "path": "/index.html"
+   },
+   "command": "lifeos",
+   "doc": "securax/104-LIFE-PAPERS-READ-FOR-YOU.md",
+   "outcome": "You capture a paper document in seconds from your phone without typing it out, and it never leaves your device.",
+   "shows": "the Life OS Inbox: a scanned note waiting to decide"
+  },
+  {
+   "id": "lens",
+   "group": "Your own tools",
+   "icon": "shield",
+   "name": "Understands what it sees, and spots scams",
+   "added": "2026-10-23",
+   "what": "Whatever you scan or type is understood on your own device: it is classed (a bill, a policy, an ID, an appointment), its amount and due date are pulled out so the item arrives already dated, and anything that smells like a scam — an OTP request, a 'KYC blocked' message, a UPI collect-request — is flagged in plain words with the reasons. It learns from your taps, on the phone, and nothing you teach it ever leaves it.",
+   "open": {
+    "cmd": "./securax open",
+    "path": "/index.html"
+   },
+   "command": "lifeos",
+   "doc": "securax/104-LIFE-PAPERS-READ-FOR-YOU.md",
+   "highlight": true,
+   "outcome": "The gap between a thing in your hand and a decision in your Life OS nearly disappears — and a scam is caught before you tap, not after.",
+   "shows": "the Life OS Inbox: the lens's read line and a red banner on a scam"
   },
   {
    "id": "knowledge",

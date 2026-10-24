@@ -82,3 +82,42 @@ investment, property, vehicle), and its expiry, renewal, premium-due or maturity
 | A Life OS screen to tick a register item (nominee set, Aadhaar recorded) without opening the workbook; the next import reads it back | 2026-11-15 |
 | Upload a paper straight from the Life OS on the phone (a drop zone that saves it to `vault/life/docs/` on the laptop, signed in) | 2026-11-15 |
 | A weekly routine that re-reads the workbooks and documents by itself, so the Inbox is never older than a week | 2026-11-01 |
+
+## 6. Scan a paper with your phone's camera
+
+Open the Life OS Inbox on your phone and tap **📷 Scan a document**. Your camera opens; photograph the policy, bill or
+letter. The text is read **on the phone itself** — the OCR engine (tesseract.js, about 6 MB) loads the first time you
+scan and is then cached for offline use — and dropped into the capture box, where you check the words and tap **Add**.
+It becomes an action with a date or a note, exactly like anything else you capture.
+
+Nothing is uploaded: the photo and its text never leave your device. If the engine cannot load (an old phone, no space),
+the box simply stays empty and you type the note by hand — scanning never blocks capture.
+
+## 7. The lens: it understands what it sees (and spots scams)
+
+Scanning drops the words into the Inbox. The **lens** goes one step further: it *understands* them, on your own
+device, with no upload and no cloud model.
+
+- **It classes what you captured** — a bill, a policy, an ID, an appointment — and picks the right kind for you.
+- **It pulls out the amount and the due date**, so a scanned bill arrives in the Inbox already dated. No typing.
+- **It spots scams before you tap.** An OTP request, a "your KYC is blocked" message, a prize, a link to click, a
+  UPI *collect*-request sent to you — each is flagged with a red banner and the reasons in plain words. This is the
+  one thing a BFSI-grade Life OS should do that a note-taking app never will.
+- **It learns, on the phone.** When you tap **"Yes, it is a scam"** or **"This one is safe"**, the lens nudges its
+  own weights, kept on the device in `gm_lens_model` (bounded). It gets sharper the more you use it, and nothing you
+  teach it ever leaves the phone.
+
+Today the understanding is explainable heuristics plus that on-device learner — deliberately, because a security
+product must be able to say *why* it flagged something, and must run offline. A heavier on-device model is the next
+step, and it drops in behind the same `gmLensRead` interface.
+
+### The rails: one sense today, many tomorrow
+
+This is built as a **lens engine**, not a one-off feature. A lens is `{ id, name, test(text), read(text) }`, registered
+with `gmLensRegister(...)`. The capture box, the warning banner and the learning do not know or care which lens
+produced a reading. So the future senses — ambient voice capture ("I'll send that Friday" → an action), a
+compare-two-offers lens, a family-papers lens — are **plug-and-play**: each is one small lens that registers the same
+shape, and the engine, the UI and the privacy promise stay exactly as they are.
+
+This is the SixthSense idea — closing the gap between the physical world and your Life OS — made private and
+security-grade: point your phone at the world, and it becomes a decision you can trust.

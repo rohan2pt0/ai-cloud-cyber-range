@@ -6636,8 +6636,232 @@ function renderPlaybook(){
   window.gmInboxCapture = function () {
     var el = document.getElementById("ibText"), k = document.getElementById("ibKind");
     if (!el) return;
-    var it = gmInboxAdd(el.value, k ? k.value : "action");
-    if (it) { el.value = ""; if (typeof gmToast === "function") gmToast("Captured. Decide it below when you are ready."); renderAll(); }
+    var extra = {};                                                 // carry what the lens pulled out, so a scanned bill arrives already dated
+    if (_read && _read.text === String(el.value || "").trim()) {
+      if (_read.r.suggest.due) extra.due = _read.r.suggest.due;
+      if (_read.r.suggest.area) extra.area = _read.r.suggest.area;
+      extra.from = "lens";
+    }
+    var it = gmInboxAdd(el.value, k ? k.value : "action", extra);
+    if (it) {
+      if (it.t) gmLensLearn(it.t, k ? k.value : "action");          // learn from your own choice, on this device
+      el.value = ""; gmReadClear();
+      if (typeof gmToast === "function") gmToast("Captured. Decide it below when you are ready.");
+      renderAll();
+    }
+  };
+
+  /* ── 8b. The lens: understand what you captured, on THIS device ──────────────
+     Point the phone at the world (doc 104 §7). The text — from a scan or typed — is read HERE, with no
+     upload and no cloud model: it is classed (a bill, a policy, an ID, a payment request, an appointment),
+     its amount and due date are pulled out, and anything that smells like a scam is flagged with the reasons.
+     It LEARNS on this device: your own corrections and "safe / scam" taps nudge the weights in gm_lens_model
+     (bounded), so it gets sharper the more you use it and nothing you teach it ever leaves the phone.
+     Future senses (ambient voice, a compare-two-offers lens, a family lens) plug in through gmLensRegister
+     with the same shape — the engine, the UI and the learning do not change. */
+  var LENS_MODEL = "gm_lens_model", LENS_CAP = 300;
+  var MONTHS = { jan: 0, feb: 1, mar: 2, apr: 3, may: 4, jun: 5, jul: 6, aug: 7, sep: 8, oct: 9, nov: 10, dec: 11 };
+  var LENSES = [];
+  window.gmLensRegister = function (lens) {                           // {id, name, test(text)->0..1, read(text)->partial result}
+    if (lens && lens.id && typeof lens.test === "function" && typeof lens.read === "function") {
+      LENSES = LENSES.filter(function (x) { return x.id !== lens.id; }); LENSES.push(lens);
+    }
+    return LENSES.length;
+  };
+  function lensTokens(text) {
+    return String(text || "").toLowerCase().replace(/[^a-z0-9₹@.\s]/g, " ").split(/\s+/)
+      .filter(function (w) { return w.length > 2 && w.length < 24; }).slice(0, 80);
+  }
+  function lensModel() {
+    var m = G(LENS_MODEL, null);
+    if (!m || typeof m !== "object") m = {};
+    m.kind = m.kind || {}; m.risk = m.risk || { risky: {}, safe: {} };
+    return m;
+  }
+  function lensBump(dict, token, cap) {                               // bounded: never let one class grow without limit (doc 80)
+    dict[token] = (dict[token] || 0) + 1;
+    var keys = Object.keys(dict);
+    if (keys.length > cap) { var lo = keys.sort(function (a, b) { return dict[a] - dict[b]; })[0]; delete dict[lo]; }
+  }
+  window.gmLensLearn = function (text, kind) {
+    if (!text || !kind) return;
+    var m = lensModel(); m.kind[kind] = m.kind[kind] || {};
+    lensTokens(text).forEach(function (w) { lensBump(m.kind[kind], w, LENS_CAP); });
+    S_(LENS_MODEL, m);
+  };
+  window.gmLensLearnRisk = function (text, risky) {
+    if (!text) return;
+    var m = lensModel(), side = risky ? m.risk.risky : m.risk.safe;
+    lensTokens(text).forEach(function (w) { lensBump(side, w, LENS_CAP); });
+    S_(LENS_MODEL, m);
+  };
+  window.gmLensAmount = function (text) {
+    var m = /(?:₹|rs\.?|inr)\s*([\d][\d,]*(?:\.\d{1,2})?)/i.exec(String(text || ""));
+    return m ? Number(m[1].replace(/,/g, "")) : null;
+  };
+  window.gmLensDate = function (text) {                              // -> yyyy-mm-dd (year inferred forward) or ""
+    text = String(text || ""); var now = new Date(), y = now.getFullYear(), d, mo, yr, mm;
+    if ((mm = /\b(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{2,4})\b/.exec(text))) { d = +mm[1]; mo = +mm[2] - 1; yr = +mm[3]; if (yr < 100) yr += 2000; }
+    else if ((mm = /\b(\d{1,2})\s*(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s*(\d{4})?\b/i.exec(text))) { d = +mm[1]; mo = MONTHS[mm[2].toLowerCase()]; yr = mm[3] ? +mm[3] : null; }
+    else if ((mm = /\b(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.?\s*(\d{1,2})\b/i.exec(text))) { mo = MONTHS[mm[1].toLowerCase()]; d = +mm[2]; yr = null; }
+    else return "";
+    if (mo == null || isNaN(d) || d < 1 || d > 31) return "";
+    if (yr == null) { yr = y; var cand = new Date(yr, mo, d); if (cand < new Date(now.getFullYear(), now.getMonth(), now.getDate())) yr += 1; }
+    var dt = new Date(yr, mo, d); if (isNaN(dt.getTime())) return "";
+    return ymd(dt);
+  };
+  // The fraud scanner: explainable markers of the scams common in India, plus whatever you have taught it.
+  var RISK_MARKERS = [
+    [/\b(otp|one[\s-]?time\s?password|cvv|\bpin\b|upi\s?pin)\b/i, "asks for an OTP, PIN or CVV — no genuine bank or firm ever does"],
+    [/(account|card|sim).{0,20}(block|suspend|freez|deactiv)|kyc.{0,20}(updat|pending|expir|suspend|verif)|pan.{0,20}(updat|link|verif)/i, "claims your account or KYC is blocked and must be fixed now"],
+    [/\b(urgent|immediately|within\s+\d+\s*(hour|hr|min)|last\s+chance|right\s+now|act\s+now|expires?\s+(today|soon))\b/i, "pushes you to act in a hurry"],
+    [/(https?:\/\/|www\.)\S+|\b(bit\.ly|tinyurl|t\.me|rb\.gy)\b|\b\S+\.(xyz|top|link|info|click|buzz)\b/i, "contains a link to click"],
+    [/\b(lottery|jackpot|prize|you\s+(have\s+)?won|reward|cashback|refund\s+of|lucky\s+draw)\b/i, "promises a prize, refund or reward"],
+    [/\b(collect\s+request|requests?\s+(you\s+)?(₹|rs\.?|inr|money|payment)|request\s+money|pay\s+to\s+receive)\b/i, "a request for money sent TO you — approving it pays them, it does not pay you"]
+  ];
+  window.gmRiskScan = function (text) {
+    text = String(text || ""); var reasons = [], score = 0, strong = false;
+    RISK_MARKERS.forEach(function (r, i) { if (r[0].test(text)) { reasons.push(r[1]); score += 1; if (i < 2) strong = true; } });
+    var m = lensModel(), toks = lensTokens(text), risky = 0, safe = 0;                 // what you have taught it, on this device
+    toks.forEach(function (w) { risky += (m.risk.risky[w] || 0); safe += (m.risk.safe[w] || 0); });
+    if (risky >= 3 && risky > safe * 2) { score += 1; reasons.push("matches scams you have flagged before on this phone"); }
+    var level = (strong || score >= 2) ? "danger" : score === 1 ? "caution" : "safe";
+    return { level: level, score: score, reasons: reasons };
+  };
+  var TYPES = [
+    ["policy", /\b(policy|premium|sum\s+assured|insuranc|nominee|maturity|\blic\b|term\s+plan|ulip|mediclaim|health\s+cover)\b/i, "action", "Insurance"],
+    ["bill", /\b(bill|invoice|statement|electricity|broadband|recharge|amount\s+due|minimum\s+due|credit\s+card|due\s+amount|outstanding)\b/i, "action", "Bills"],
+    ["appointment", /\b(appointment|appt|meeting|visit|consult|slot\s+booked|reschedul|booked\s+for|your\s+visit)\b/i, "action", "Calendar"],
+    ["id", /\b(aadhaar|\bpan\s+card\b|passport|driving\s+licen|voter\s+id|identity\s+(card|proof))\b/i, "note", "Documents"]
+  ];
+  window.gmLensClassify = function (text) {
+    text = String(text || "");
+    for (var i = 0; i < TYPES.length; i++) if (TYPES[i][1].test(text)) return { type: TYPES[i][0], kind: TYPES[i][2], area: TYPES[i][3] };
+    var m = lensModel(), toks = lensTokens(text), best = null, bestScore = 0;          // let what you taught it break a tie
+    Object.keys(m.kind).forEach(function (kd) {
+      var s = 0, dict = m.kind[kd]; toks.forEach(function (w) { s += (dict[w] || 0); });
+      if (s > bestScore) { bestScore = s; best = kd; }
+    });
+    if (best && bestScore >= 3) return { type: "learned", kind: IB_KINDS[best] ? best : "action", area: "" };
+    return { type: "note", kind: "action", area: "" };
+  };
+  window.gmLensRead = function (text) {
+    text = String(text || "").trim();
+    if (!text) return null;
+    var hit = null, hs = 0;                                            // a registered future sense wins if it is sure
+    LENSES.forEach(function (l) { var s = 0; try { s = +l.test(text) || 0; } catch (e) { s = 0; } if (s > hs) { hs = s; hit = l; } });
+    var base = { kind: "action", area: "", type: "note", fields: {}, risk: gmRiskScan(text), suggest: {} };
+    if (hit && hs >= 0.5) { try { Object.assign(base, hit.read(text) || {}); } catch (e) { /* a broken lens never breaks capture */ } }
+    else { var c = gmLensClassify(text); base.type = c.type; base.kind = c.kind; base.area = c.area; }
+    var amt = gmLensAmount(text), due = gmLensDate(text);
+    if (amt != null) base.fields.amount = amt;
+    if (due) base.fields.due = due;
+    if (base.risk.level !== "safe") { base.kind = "issue"; if (!base.area) base.area = "Security"; }
+    base.suggest = { kind: base.kind, area: base.area, due: due || "" };
+    return base;
+  };
+  // Render what the lens understood above the capture box, and (if it smells like fraud) a plain-words warning.
+  var _read = null;
+  function esc(s) { return String(s == null ? "" : s).replace(/[&<>"]/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]; }); }
+  function gmReadClear() { _read = null; var r = document.getElementById("ibRead"); if (r) r.innerHTML = ""; }
+  window.gmShowRead = function (text) {
+    var box = document.getElementById("ibRead"); if (!box) return;
+    var r = gmLensRead(text); if (!r) { gmReadClear(); return; }
+    _read = { text: String(text || "").trim(), r: r };
+    var k = document.getElementById("ibKind"); if (k && r.suggest.kind) k.value = r.suggest.kind;    // pre-pick the kind it suggests
+    var names = { policy: "an insurance policy", bill: "a bill", appointment: "an appointment", id: "an identity document", learned: "one you have taught it before", note: "a note", payment: "a payment request" };
+    var bits = [];
+    if (r.fields.amount != null) bits.push("₹" + r.fields.amount.toLocaleString("en-IN"));
+    if (r.fields.due) bits.push("due " + r.fields.due);
+    var line = "Looks like " + (names[r.type] || "a note") + (bits.length ? " · " + bits.join(" · ") : "");
+    var html = '<div class="ibread-line">🔎 ' + esc(line) + '</div>';
+    if (r.risk.level !== "safe") {
+      html += '<div class="ibread-risk ' + r.risk.level + '"><b>' + (r.risk.level === "danger" ? "⚠ This looks like a scam" : "⚠ Be careful with this") + '</b>'
+        + '<ul>' + r.risk.reasons.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + '</ul>'
+        + '<div class="ibread-teach"><button class="btn" onclick="gmReadSafe()">This one is safe</button>'
+        + '<button class="btn" onclick="gmReadScam()">Yes, it is a scam</button></div></div>';
+    }
+    var acc = "✓ Add it" + (r.suggest.due ? " — due " + r.suggest.due : r.suggest.kind === "note" ? " as a note" : " to my list");
+    html += '<div class="ibread-accept"><button class="btn primary" onclick="gmReadAccept()">' + esc(acc) + '</button><span class="ibsub">one tap, nothing else to fill</span></div>';
+    box.innerHTML = html;
+  };
+  window.gmReadSafe = function () {                                  // teach the device: not a scam (learns locally)
+    if (_read) { gmLensLearnRisk(_read.text, false); if (typeof gmToast === "function") gmToast("Noted on this device. It will trust this kind next time."); }
+    gmReadClear();
+  };
+  window.gmReadScam = function () {                                 // teach the device: this IS a scam (learns locally)
+    if (_read) { gmLensLearnRisk(_read.text, true); if (typeof gmToast === "function") gmToast("Flagged on this device. It will catch this kind faster next time."); }
+    var box = document.getElementById("ibRead"); if (box) box.innerHTML = '<div class="ibread-risk danger"><b>⚠ Flagged as a scam.</b> Do not share any OTP, PIN or money. Delete it.</div>';
+  };
+  // ONE TAP, zero decisions: the lazy path. Take whatever the lens understood — kind, area, due date — and file it as a
+  // fully-decided item. No typing, no date-picking, no choosing. If there is no date, give a gentle default so nothing
+  // ever sits in the "to decide" pile growing guilt. This is the whole point: capture → one tap → done.
+  window.gmReadAccept = function () {
+    var el = document.getElementById("ibText"), typed = String((el && el.value) || "").trim();
+    var text = _read ? _read.text : typed; if (!text) return;
+    var r = (_read && _read.text === typed) ? _read.r : gmLensRead(text);
+    var kind = (r && r.suggest && r.suggest.kind) || "action";
+    var extra = { from: "lens", area: (r && r.suggest && r.suggest.area) || "", next: text };
+    if (r && r.suggest && r.suggest.due) extra.due = r.suggest.due;
+    else if (kind === "action" || kind === "issue") extra.due = ibDays(7);        // gentle default; Later can always push it
+    var it = gmInboxAdd(text, kind, extra);
+    if (it) {
+      gmLensLearn(text, kind);
+      if (el) el.value = ""; gmReadClear();
+      if (typeof gmToast === "function") gmToast(extra.due ? "Done — on your list for " + extra.due + ". Nothing else to do." : "Kept as a note. Nothing else to do.");
+      renderAll();
+    }
+  };
+  // Photograph a document and read its text on THIS device (no upload). The OCR engine (tesseract.js, ~6 MB) loads only
+  // the first time you scan, and is cached by the service worker for offline use after that. If it cannot load, the
+  // button still opens the camera and the photo is simply skipped — capture by hand never breaks.
+  var _ocrLoading = null;
+  function loadTesseract() {
+    if (window.Tesseract) return Promise.resolve(window.Tesseract);
+    if (_ocrLoading) return _ocrLoading;
+    _ocrLoading = new Promise(function (resolve, reject) {
+      var s = document.createElement("script");
+      s.src = "ocr/tesseract.min.js";
+      s.onload = function () { window.Tesseract ? resolve(window.Tesseract) : reject(new Error("no Tesseract")); };
+      s.onerror = function () { _ocrLoading = null; reject(new Error("load failed")); };
+      document.head.appendChild(s);
+    });
+    return _ocrLoading;
+  }
+  window.gmScanFill = function (text) {              // drop read text into the one-line capture box (an <input> keeps no newlines)
+    var el = document.getElementById("ibText"); if (!el) return;
+    var t = (text || "").replace(/\s+/g, " ").trim();
+    if (!t) { if (typeof gmToast === "function") gmToast("No text found in that photo. Try again with more light, or type it."); return; }
+    el.value = el.value ? (el.value.replace(/\s+$/, "") + " " + t) : t;
+    el.focus();
+    gmShowRead(el.value);                               // understand it on this device: kind, amount, due date, and any scam signal
+    if (typeof gmToast === "function") gmToast("Read it. Check the words above, then Add.");
+  };
+  window.gmScanFile = function (input) {
+    var f = input && input.files && input.files[0]; if (!f) return;
+    var btn = document.getElementById("ibScan"), label = btn && btn.textContent;
+    if (btn) { btn.disabled = true; btn.textContent = "📷 Reading…"; }
+    function done() { if (btn) { btn.disabled = false; btn.textContent = label; } input.value = ""; }
+    loadTesseract().then(function (T) {
+      return T.recognize(f, "eng", {
+        workerPath: "ocr/worker.min.js", corePath: "ocr/tesseract-core-simd-lstm.wasm.js", langPath: "ocr",
+        logger: function (m) { if (btn && m && m.status === "recognizing text") btn.textContent = "📷 Reading… " + Math.round((m.progress || 0) * 100) + "%"; }
+      });
+    }).then(function (r) {
+      gmScanFill(r && r.data && r.data.text);
+      done();
+    }).catch(function () {
+      done();
+      if (typeof gmToast === "function") gmToast("Could not read on this device. Type the note, or try a clearer photo.");
+    });
+  };
+  window.gmScan = function () {
+    var inp = document.createElement("input");
+    inp.type = "file"; inp.accept = "image/*"; inp.setAttribute("capture", "environment");
+    inp.style.display = "none";
+    inp.onchange = function () { window.gmScanFile(inp); };
+    document.body.appendChild(inp); inp.click();
+    setTimeout(function () { if (inp.parentNode) inp.parentNode.removeChild(inp); }, 60000);
   };
   window.gmInboxDecide = function (id, as) {
     var a = ibAll(), it = a.filter(function (x) { return ibSafe(x.id) === ibSafe(id); })[0]; // the page shows the cleaned id
@@ -6654,6 +6878,16 @@ function renderPlaybook(){
   };
   window.gmInboxDone = function (id) {
     var a = ibAll(); a.forEach(function (x) { if (ibSafe(x.id) === ibSafe(id)) x.done = ymd(); }); ibSave(a); renderAll();
+  };
+  // Guilt-free deferral: a procrastinator's one honest button. "Later" pushes a thing 3 days out instead of letting it
+  // rot undecided or glare as "late". It gives an undecided item a date (so it leaves the decide pile) and a next step of
+  // its own text, so deferring is itself a one-tap decision. Procrastination is handled by the system, not punished.
+  window.gmInboxSnooze = function (id) {
+    var a = ibAll(); a.forEach(function (x) {
+      if (ibSafe(x.id) === ibSafe(id)) { x.due = ibDays(3); if (x.kind === "note" || x.kind === "idea") x.kind = "action"; if (!x.next) x.next = x.t; x.snoozed = ymd(); }
+    });
+    ibSave(a); renderAll();
+    if (typeof gmToast === "function") gmToast("Later it is — back in 3 days. No rush.");
   };
   window.gmInboxStats = function () {
     var a = ibAll(), today = ymd(), open = a.filter(function (x) { return !x.done && x.kind !== "note"; });
@@ -6703,7 +6937,8 @@ function renderPlaybook(){
     return '<div class="ibrow' + (late ? " late" : "") + '"><div class="ibt"><b>' + esc(x.next || x.t) + '</b>'
       + (x.next && x.next !== x.t ? '<div class="ibsub">' + esc(x.t) + '</div>' : "")
       + '<div class="ibsub">' + esc(IB_KINDS[x.kind] || "Action") + (x.area ? " · " + esc(x.area) : "") + (x.due ? " · due " + esc(x.due) + (late ? " (late)" : "") : "") + '</div></div>'
-      + '<button class="btn" onclick="gmInboxDone(\'' + ibSafe(x.id) + '\')">Done</button></div>';
+      + '<button class="btn" onclick="gmInboxDone(\'' + ibSafe(x.id) + '\')">Done</button>'
+      + '<button class="btn" onclick="gmInboxSnooze(\'' + ibSafe(x.id) + '\')">Later</button></div>';
   }
   // Your papers (doc 104): the papers are the input, not a spreadsheet. The list says what to drop in and where to get it;
   // ./securax lifeos docs reads them on the laptop and the figures fill themselves. Before the first read, the starter list.
@@ -6737,19 +6972,22 @@ function renderPlaybook(){
     var actions = a.filter(function (x) { return !x.done && x.due; }).sort(function (p, q) { return p.due < q.due ? -1 : 1; });
     var notes = a.filter(function (x) { return x.kind === "note" && !x.done; });
     var ropen = G("gm_review_open", "");
-    var h = '<div class="section active"><h2>Inbox</h2><div class="info">One line is enough. Then decide each one: an action with a next step and a date, a note to keep, or delete it. Nothing stays half-decided.</div>'
+    var h = '<div class="section active"><h2>Inbox</h2><div class="info">Scan it, or type one line. One tap files it with a date — nothing to fill in. Not now? Tap <b>Later</b>; it comes back in a few days. Nothing nags you.</div>'
       + '<div class="ibcap"><input id="ibText" placeholder="What is on your mind?" onkeydown="if(event.key===\'Enter\')gmInboxCapture()" aria-label="Capture">'
       + '<select id="ibKind" aria-label="Kind">' + Object.keys(IB_KINDS).map(function (k) { return '<option value="' + k + '">' + IB_KINDS[k] + '</option>'; }).join("") + '</select>'
-      + '<button class="btn primary" onclick="gmInboxCapture()">Add</button></div>';
+      + '<button class="btn primary" onclick="gmInboxCapture()">Add</button>'
+      + '<button class="btn" id="ibScan" onclick="gmScan()" title="Photograph a document; the text is read on this device and dropped into the box above">📷 Scan a document</button></div>'
+      + '<div id="ibRead" class="ibread" aria-live="polite"></div>';
     h += papersHTML();
     if (decide.length) {
       h += '<h3>To decide (' + decide.length + ')</h3>';
       decide.forEach(function (x) {
         h += '<div class="ibrow"><div class="ibt"><b>' + esc(x.t) + '</b><div class="ibsub">' + esc(IB_KINDS[x.kind] || "") + (x.from && x.from !== "capture" ? " · from " + esc(x.from) : "") + '</div>'
-          + '<div class="ibdec"><input id="ibNext_' + ibSafe(x.id) + '" placeholder="The next physical step" aria-label="Next step"><input type="date" id="ibDue_' + ibSafe(x.id) + '" value="' + ibDays(7) + '" aria-label="Due">'
-          + '<button class="btn primary" onclick="gmInboxDecide(\'' + ibSafe(x.id) + '\',\'action\')">Make it an action</button>'
+          + '<div class="ibdec"><button class="btn primary" onclick="gmInboxDecide(\'' + ibSafe(x.id) + '\',\'action\')">✓ Add to my list</button>'
+          + '<button class="btn" onclick="gmInboxSnooze(\'' + ibSafe(x.id) + '\')">Later</button>'
           + '<button class="btn" onclick="gmInboxDecide(\'' + ibSafe(x.id) + '\',\'note\')">Keep as a note</button>'
-          + '<button class="btn" onclick="gmInboxDecide(\'' + ibSafe(x.id) + '\',\'delete\')">Delete</button></div></div></div>';
+          + '<button class="btn" onclick="gmInboxDecide(\'' + ibSafe(x.id) + '\',\'delete\')">Delete</button></div>'
+          + '<details class="ibnotes"><summary>Set a step &amp; date yourself</summary><div class="ibdec"><input id="ibNext_' + ibSafe(x.id) + '" placeholder="The next physical step" aria-label="Next step"><input type="date" id="ibDue_' + ibSafe(x.id) + '" value="' + ibDays(7) + '" aria-label="Due"><button class="btn" onclick="gmInboxDecide(\'' + ibSafe(x.id) + '\',\'action\')">Save</button></div></details></div></div>';
       });
     }
     // 80/20 (doc 104): the vital few first; the rest folded, one click away.
@@ -6784,7 +7022,12 @@ function renderPlaybook(){
     var css = ".ibcap{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}.ibcap input{flex:1 1 220px;min-width:0}.ibrow{display:flex;gap:8px;align-items:flex-start;justify-content:space-between;border-top:1px solid var(--line,#2a3446);padding:8px 0}"
       + ".ibrow.late b{color:var(--red,#e5534b)}.ibt{flex:1;min-width:0;overflow-wrap:anywhere}.ibsub{font-size:12.5px;color:var(--muted)}.ibdec{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.ibdec input{flex:1 1 160px;min-width:0}"
       + ".ibrow>button,.ibdec button,.ibcap button,.ibrev button{width:auto;flex:0 0 auto;margin:0;padding:8px 12px}.ibcap select{width:auto;flex:0 0 auto}"
-      + ".ibrev{display:flex;gap:6px;flex-wrap:wrap}.ibreview{margin-top:10px}.ibstep{display:block;margin:8px 0}.ibstep span{display:block;font-size:13.5px;margin-bottom:4px}.ibstep textarea{width:100%;box-sizing:border-box}";
+      + ".ibrev{display:flex;gap:6px;flex-wrap:wrap}.ibreview{margin-top:10px}.ibstep{display:block;margin:8px 0}.ibstep span{display:block;font-size:13.5px;margin-bottom:4px}.ibstep textarea{width:100%;box-sizing:border-box}"
+      + ".ibread{margin:-2px 0 8px}.ibread-line{font-size:13px;color:var(--muted);margin:2px 0 6px}"
+      + ".ibread-risk{border-left:4px solid var(--red,#e5534b);background:rgba(229,83,75,.12);color:var(--text);border-radius:6px;padding:8px 10px;font-size:13.5px}"
+      + ".ibread-risk.caution{border-left-color:var(--amber,#d79b00);background:rgba(215,155,0,.14)}.ibread-risk ul{margin:6px 0 0;padding-left:18px}.ibread-risk li{margin:2px 0}"
+      + ".ibread-teach{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}.ibread-teach button{width:auto;flex:0 0 auto;margin:0;padding:6px 10px}"
+      + ".ibread-accept{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}.ibread-accept button{width:auto;flex:0 0 auto;margin:0}";
     var st = document.createElement("style"); st.textContent = css; document.head.appendChild(st);
   })();
 
