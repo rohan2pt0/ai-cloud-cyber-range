@@ -82,7 +82,7 @@ Each line names what it does, in plain words, and the one command that opens it.
 
 | | What it does | How to open it |
 |---|---|---|
-| 🟡 [Your progress](securax/93-PROGRESS-YOU-CAN-SEE.md) | Is SecuRAX making you better off? Your Life OS rhythm, what made the estate stronger this month, and the one next step, on your phone every Sunday. | `./securax progress` |
+| 🟡 [Your progress](securax/93-PROGRESS-YOU-CAN-SEE.md) | Is SecuRAX making you better off? Your Life OS rhythm, what made the estate stronger this month, and the one next step, on your phone every Sunday — and a 'had your back' card on the Life OS home that shows, up front, what the estate quietly did for you this week (a safe encrypted copy, a healthy estate, failures turned into fixes), real events only. | `./securax progress` |
 | 🟡 [Apps for Android and iOS](securax/98-SHIP-AND-STORE-APPS.md) | Turn any app built from the kit, or the Life OS, into an Android and iOS project in one command: a Capacitor project that works offline from the app's own files, a Trusted Web Activity manifest for the quick Android path, and a store-readiness check. | `./securax os mobile-check vantage` |
 | 🟢 [Guiding Map](securax/14-GUIDING-MAP.md) | Your daily cockpit for life and work: goals, check-ins and plans. Works offline, no AI needed. | `./securax open` |
 | 🟡 [Life OS Inbox](securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION.md) | Capture one line; then each note becomes an action with a next step and a date, or stays a note. Reviews turn findings into actions; Google Keep notes come in too. | `./securax open` |
