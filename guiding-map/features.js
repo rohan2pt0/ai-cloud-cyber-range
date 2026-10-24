@@ -585,6 +585,38 @@ window.SECURAX_FEATURES = {
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/104-LIFE-PAPERS-READ-FOR-YOU/"
   },
   {
+   "id": "scan-doc",
+   "group": "Your own tools",
+   "icon": "checklist",
+   "name": "Scan a document with your phone",
+   "what": "Photograph a policy, bill or letter in the Life OS Inbox; the text is read on your own phone, with no upload and offline after the first scan, and dropped into the capture box to become a dated action or a note.",
+   "cmd": "./securax open",
+   "path": "/index.html",
+   "port": 0,
+   "service": false,
+   "added": "2026-10-23",
+   "outcome": "You capture a paper document in seconds from your phone without typing it out, and it never leaves your device.",
+   "shows": "the Life OS Inbox: a scanned note waiting to decide",
+   "light": "amber",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/104-LIFE-PAPERS-READ-FOR-YOU/"
+  },
+  {
+   "id": "lens",
+   "group": "Your own tools",
+   "icon": "shield",
+   "name": "Understands what it sees, and spots scams",
+   "what": "Whatever you scan or type is understood on your own device: it is classed (a bill, a policy, an ID, an appointment), its amount and due date are pulled out so the item arrives already dated, and anything that smells like a scam — an OTP request, a 'KYC blocked' message, a UPI collect-request — is flagged in plain words with the reasons. It learns from your taps, on the phone, and nothing you teach it ever leaves it.",
+   "cmd": "./securax open",
+   "path": "/index.html",
+   "port": 0,
+   "service": false,
+   "added": "2026-10-23",
+   "outcome": "The gap between a thing in your hand and a decision in your Life OS nearly disappears — and a scam is caught before you tap, not after.",
+   "shows": "the Life OS Inbox: the lens's read line and a red banner on a scam",
+   "light": "amber",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/104-LIFE-PAPERS-READ-FOR-YOU/"
+  },
+  {
    "id": "knowledge",
    "group": "Your own tools",
    "icon": "book",

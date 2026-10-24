@@ -284,6 +284,17 @@ website/docs/
 portal/navigator.html
 portal/navigator/
 guiding-map/build.json
+# Life OS UI-audit outputs (ui_audit.py writes these into the built dir; never commit)
+guiding-map/summary.json
+guiding-map/contrast.json
+guiding-map/*-wheel.png
+guiding-map/*-today.png
+guiding-map/*-ops.png
+guiding-map/*-okr.png
+guiding-map/*-growth.png
+guiding-map/*-kids.png
+guiding-map/*-career.png
+guiding-map/life-os-rhythm.ics
 local/compose/controls/ai-control.json
 local/compose/controls/.ai-control.*
 # Life OS: notes waiting for the Guiding Map Inbox (./securax lifeos), private

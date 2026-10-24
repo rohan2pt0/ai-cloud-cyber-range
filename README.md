@@ -38,7 +38,7 @@ The latest additions, newest first (the Command Center marks each one New for 30
 - **2026-10-23** · [The estate map](docs/securax/113-THE-ESTATE-MAP.md): You see the whole estate and how it hangs together at a glance, instead of reading a list of 43 things. `./securax map`
 - **2026-10-23** · [Adversary ledger](docs/securax/30-PURPLE-TEAM-LOOP.md): A bug-bounty finding becomes the last of its kind: the estate gets stronger from every attacker, not just safer on paper. `./securax adversary`
 - **2026-10-23** · [Set it once, then forget it](docs/securax/112-SET-AND-FORGET.md): The right thing happens without willpower, because your phone and accounts are set up to make it the default — nothing to remember. `./securax environment`
-- **2026-10-22** · [Readiness for any regulation](docs/securax/106-WHO-SECURAX-IS-FOR.md): A Board-ready answer to "where do we stand on the Directions?", with proof, instead of a consultant's spreadsheet that dates in a week. `./securax readiness demo`
+- **2026-10-23** · [Scan a document with your phone](docs/securax/104-LIFE-PAPERS-READ-FOR-YOU.md): You capture a paper document in seconds from your phone without typing it out, and it never leaves your device. `./securax open`
 
 **Practise and defend**
 
@@ -104,6 +104,8 @@ The latest additions, newest first (the Command Center marks each one New for 30
 | 🟢 [Guiding Map](docs/securax/14-GUIDING-MAP.md) | Your daily cockpit for life and work: goals, check-ins and plans. Works offline, no AI needed. | `./securax open` |
 | 🟡 [Life OS Inbox](docs/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION.md) | Capture one line; then each note becomes an action with a next step and a date, or stays a note. Reviews turn findings into actions; Google Keep notes come in too. | `./securax open` |
 | 🟡 [Life papers, read for you](docs/securax/104-LIFE-PAPERS-READ-FOR-YOU.md) | Your life workbooks and private documents (policies, statements, ID scans) are read on your own machine: every open issue becomes a dated Life OS action, the vital fifth first, with calendar alarms; a missing nominee, a lapsing policy or a password left in a sheet is found for you. | `./securax lifeos import workbook` |
+| 🟡 [Scan a document with your phone](docs/securax/104-LIFE-PAPERS-READ-FOR-YOU.md) | Photograph a policy, bill or letter in the Life OS Inbox; the text is read on your own phone, with no upload and offline after the first scan, and dropped into the capture box to become a dated action or a note. | `./securax open` |
+| 🟡 [Understands what it sees, and spots scams](docs/securax/104-LIFE-PAPERS-READ-FOR-YOU.md) | Whatever you scan or type is understood on your own device: it is classed (a bill, a policy, an ID, an appointment), its amount and due date are pulled out so the item arrives already dated, and anything that smells like a scam — an OTP request, a 'KYC blocked' message, a UPI collect-request — is flagged in plain words with the reasons. It learns from your taps, on the phone, and nothing you teach it ever leaves it. | `./securax open` |
 | 🟢 [Your AI history](docs/securax/51-YOUR-AI-HISTORY.md) | Years of chats from Claude, ChatGPT, DeepSeek or Gemini as one private library you can search. | `./securax knowledge` |
 | 🟡 [Password manager](docs/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION.md) | Your own password vault (Vaultwarden) for the Bitwarden apps on laptop and phone, encrypted on your device before it is stored. | `./securax start passwords` |
 | 🟡 [Sign in to AWS, Google Cloud, Azure](docs/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION.md) | One command per cloud, nothing to install: open the link on any device, sign in, and start building. | `./securax cloud login aws` |
@@ -117,14 +119,14 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- The lazy path: one tap files it, and 'Later' defers without guilt
+- [The lens: it understands what you capture, and spots scams — on your device](docs/securax/104-LIFE-PAPERS-READ-FOR-YOU.md)
+- [Scan a paper with your phone's camera](docs/securax/104-LIFE-PAPERS-READ-FOR-YOU.md)
 - [`./securax map` — see the whole estate at once](docs/securax/113-THE-ESTATE-MAP.md)
 - [`./securax environment` grows into the Wheel of Life, with the elite-sport levers built in](docs/securax/112-SET-AND-FORGET.md)
 - [Success by design: four new core principles + `./securax environment`](docs/securax/112-SET-AND-FORGET.md)
 - [`./securax next` — the one command to remember](docs/securax/93-PROGRESS-YOU-CAN-SEE.md)
 - [The build's own single point of failure is now visible](docs/securax/23-BUILD-WITHOUT-CLAUDE.md)
-- The product site shows what is new by itself
-- [Adversary ledger — learning from a bug-bounty program](docs/securax/30-PURPLE-TEAM-LOOP.md)
-- [The purple loop probes every AI risk category](docs/securax/105-LLM-REFERENCE-ARCHITECTURES-GAP-CHECK.md)
 
 **Release 0.3.0 - 2026-10-22:**
 
