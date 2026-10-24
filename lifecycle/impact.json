@@ -272,6 +272,8 @@
   "tools/linkcheck.py",
   "tools/features_sync.py",
   "tools/release.py",
+  "tools/estate_map.py",
+  "tools/tests/**",
   "tools/windows/**",
   "features.json",
   "products.json",
