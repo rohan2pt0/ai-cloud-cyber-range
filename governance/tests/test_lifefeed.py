@@ -78,3 +78,34 @@ def test_cli_writes_the_file(tmp_path, monkeypatch, capsys):
     out = tmp_path / "f.json"
     assert lf.main(["--out", str(out)]) == 0 and json.loads(out.read_text())["items"]
     assert "Estate feed written" in capsys.readouterr().out
+
+
+def test_wins_tell_the_positive_story_from_real_safe_sources(tmp_path, monkeypatch):
+    monkeypatch.setenv("SECURAX_HOME_DIR", str(tmp_path / "home"))                 # empty: no drills/failures, so those wins are absent, not faked
+    c = cockpit(tmp_path, [{"id": "tls", "label": "Encryption", "status": "green"}, {"id": "disk", "label": "Disk", "status": "green"}])
+    (tmp_path / "b").mkdir()
+    (tmp_path / "b" / "securax-1.tar.gz.gpg").write_bytes(b"x")                     # fresh AND encrypted
+    w = lf.wins(now=time.time(), env={"SECURAX_BACKUP_DIR": str(tmp_path / "b")}, cockpit=c)
+    assert w and all(x["kind"] == "win" for x in w) and len(w) <= 4
+    by = {x["src"] for x in w}
+    assert "backup" in by and any("encrypted copy" in x["text"] for x in w), "a safe encrypted backup is a win"
+    assert "cockpit" in by and any("nothing red" in x["text"] and "2 checks" in x["text"] for x in w), "an all-green cockpit is a win"
+    assert not any("₹" in x["text"] for x in w), "a win names no amount"
+
+
+def test_wins_give_no_false_reassurance(tmp_path, monkeypatch):
+    monkeypatch.setenv("SECURAX_HOME_DIR", str(tmp_path / "home"))
+    c = cockpit(tmp_path, [{"id": "tls", "label": "Encryption", "status": "red", "action": "on", "cmd": "x"}])
+    w = lf.wins(env={"SECURAX_BACKUP_DIR": str(tmp_path / "none")}, cockpit=c)      # no backup, a red cockpit
+    by = {x["src"] for x in w}
+    assert "backup" not in by and "cockpit" not in by, "no backup and a red cockpit must not read as a win"
+
+
+def test_build_carries_both_items_and_wins(tmp_path, monkeypatch):
+    monkeypatch.setenv("SECURAX_CERTS_STATE", str(tmp_path / "s.json"))
+    monkeypatch.setenv("SECURAX_HOME_DIR", str(tmp_path / "home"))
+    c = cockpit(tmp_path, [{"id": "x", "label": "L", "status": "green"}])
+    (tmp_path / "b").mkdir()
+    (tmp_path / "b" / "securax-1.tar.gz.gpg").write_bytes(b"x")
+    d = lf.build(env={"SECURAX_BACKUP_DIR": str(tmp_path / "b")}, cockpit=c)
+    assert isinstance(d.get("wins"), list) and len(d["wins"]) <= 4 and d["items"]

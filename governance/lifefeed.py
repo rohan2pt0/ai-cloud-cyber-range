@@ -2,7 +2,8 @@
 """LIFEFEED — what the estate already knows, handed to the Guiding Map so you never type it.
 
 Writes portal/estate-feed.json (served same-origin at /portal/estate-feed.json next to the cockpit). The Guiding Map's Today screen
-shows up to four lines from it under "From your estate". Sources, all read-only and local:
+shows up to four lines from its "items" under "From your estate", and up to four "wins" as the "had your back" card (the positive half:
+what the estate quietly did FOR you — a safe encrypted copy, a healthy estate, failures turned into fixes, new things to use). Sources, all read-only and local:
   * the cockpit snapshot (portal/cockpit.json): the most urgent red items, with the command that fixes each;
   * the certification planner (learning/certs.py + ~/.securax/certs-state.json): the certification you are on and its exam-by date;
   * the backup folder: how old the newest backup is, and whether it is encrypted.
@@ -89,7 +90,50 @@ def backup_item(env: dict, now: float | None = None) -> dict:
     return {"icon": "\U0001f4be", "level": lvl, "src": "backup", "text": text, "cmd": "" if lvl == "ok" else ("./securax protect" if not enc else "./securax backup")}
 
 
+def wins(now: float | None = None, env: dict | None = None, cockpit: pathlib.Path = COCKPIT) -> list[dict]:
+    """The positive half of the feed: what the estate quietly did FOR you lately — the 'had your back' story the Life OS
+    home shows (doc 93, small wins shown). Real events only; like the rest of the feed, no amounts, no names, no keys.
+    Most reassuring first (a safe copy, a healthy estate), then what it learned, then what grew."""
+    now = now or time.time()
+    env = read_env() if env is None else env
+    out: list[dict] = []
+    b = backup_item(env, now)                                                 # 1. a safe, encrypted copy of your life really exists
+    if b["level"] == "ok":
+        out.append({"icon": "\U0001f6e1", "kind": "win", "src": "backup",
+                    "text": "Kept a safe, encrypted copy of your estate — " + b["text"][0].lower() + b["text"][1:]})
+    try:                                                                      # 2. it watched everything and nothing is on fire
+        metrics = json.loads(pathlib.Path(cockpit).read_text("utf-8")).get("metrics", [])
+        if metrics and not any(m.get("status") == "red" for m in metrics):
+            out.append({"icon": "✔", "kind": "win", "src": "cockpit",
+                        "text": f"Watched {len(metrics)} checks across your estate — nothing red"})
+    except (OSError, json.JSONDecodeError):
+        pass
+    try:                                                                      # 3. it got stronger from what went wrong (all local, read-only)
+        pr = _load("securax_progress_wins", "governance/progress.py")
+        s = pr.stronger(now)
+        if s.get("drills_passed"):
+            out.append({"icon": "\U0001f9ea", "kind": "win", "src": "drills",
+                        "text": f"Rehearsed recovery {s['drills_passed']} time(s) this month, so a real bad day is practised, not a surprise"})
+        if s.get("failures_recovered"):
+            out.append({"icon": "\U0001f527", "kind": "win", "src": "antifragile",
+                        "text": f"Turned {s['failures_recovered']} failure(s) into fixes — each one cannot bite twice"})
+        if s.get("restores_proven"):
+            out.append({"icon": "♻", "kind": "win", "src": "restore",
+                        "text": f"Proved {s['restores_proven']} restore(s) really work — your data actually comes back"})
+        if s.get("adversary_closed"):
+            out.append({"icon": "⚔️", "kind": "win", "src": "adversary",
+                        "text": f"Closed {s['adversary_closed']} attacker finding(s) and now probes for each one forever"})
+        new = pr.new_features(now)                                            # 4. the estate grew: new things you can use
+        if new:
+            out.append({"icon": "✨", "kind": "win", "src": "features", "cmd": new[0]["cmd"],
+                        "text": f"Added {len(new)} new thing(s) you can use this month — newest: {new[0]['name']}"})
+    except Exception:  # noqa: BLE001 - a report never fails on one missing part
+        pass
+    return out
+
+
 def build(now: float | None = None, env: dict | None = None, cockpit: pathlib.Path = COCKPIT, today: dt.date | None = None) -> dict:
+    now = now or time.time()
     env = read_env() if env is None else env
     items = cockpit_items(cockpit)
     c = certs_item(today)
@@ -98,7 +142,8 @@ def build(now: float | None = None, env: dict | None = None, cockpit: pathlib.Pa
     if not any("backup" in (i.get("id") or "") for i in items):             # the cockpit already said it: never say the same thing twice
         items.append(backup_item(env, now))
     items.sort(key=lambda i: {"act": 0, "info": 1, "ok": 2}.get(i["level"], 3))
-    return {"generated": dt.datetime.fromtimestamp(now or time.time()).isoformat(timespec="minutes"), "items": items[:4]}
+    return {"generated": dt.datetime.fromtimestamp(now).isoformat(timespec="minutes"),
+            "items": items[:4], "wins": wins(now, env, cockpit)[:4]}
 
 
 def write(out: pathlib.Path = OUT, **kw) -> dict:
@@ -122,7 +167,7 @@ def main(argv: list[str] | None = None) -> int:
     if a.print:
         print(json.dumps(data, indent=1, ensure_ascii=False))
     else:
-        print(f"Estate feed written: {a.out} ({len(data['items'])} line(s) for the Guiding Map's Today screen)")
+        print(f"Estate feed written: {a.out} ({len(data['items'])} line(s) + {len(data.get('wins', []))} had-your-back win(s) for the Guiding Map's Today screen)")
     return 0
 
 

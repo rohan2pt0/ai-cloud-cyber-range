@@ -14,14 +14,14 @@
    "icon": "target",
    "name": "Your progress",
    "added": "2026-10-21",
-   "what": "Is SecuRAX making you better off? Your Life OS rhythm, what made the estate stronger this month, and the one next step, on your phone every Sunday.",
+   "what": "Is SecuRAX making you better off? Your Life OS rhythm, what made the estate stronger this month, and the one next step, on your phone every Sunday — and a 'had your back' card on the Life OS home that shows, up front, what the estate quietly did for you this week (a safe encrypted copy, a healthy estate, failures turned into fixes), real events only.",
    "open": {
     "cmd": "./securax progress"
    },
    "command": "progress",
    "doc": "securax/93-PROGRESS-YOU-CAN-SEE.md",
    "outcome": "You see, every week, that your days and your estate are getting better, and you always know the one next step.",
-   "shows": "./securax progress, and a message on your phone every Sunday"
+   "shows": "the 'had your back' card on the Life OS home, ./securax progress, and a message on your phone every Sunday"
   },
   {
    "id": "next",
