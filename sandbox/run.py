@@ -278,7 +278,24 @@ def j_blockers(sb: H.Sandbox, c: Checks):
     import socket
     sb.down()
     sb.reset_env()
+    # After down() the previous journey's published :8088 can linger for a moment while Docker releases the host
+    # port, so a bind here would race and crash. Wait for the port to be free, then take it to SIMULATE a conflict —
+    # the journey tests that `preflight` names the clash, not the teardown timing.
+    def _port_free(port: int) -> bool:
+        probe = socket.socket()
+        try:
+            probe.settimeout(1)
+            probe.connect(("127.0.0.1", port))
+            probe.close()
+            return False            # something is still listening
+        except OSError:
+            return True
+    for _ in range(60):
+        if _port_free(8088):
+            break
+        time.sleep(1)
     s = socket.socket()
+    s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
     s.bind(("127.0.0.1", 8088))
     s.listen(1)
     try:
