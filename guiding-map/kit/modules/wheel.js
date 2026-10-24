@@ -7,18 +7,23 @@
   function score(d, id) { var v = d.s[id]; return typeof v === "number" ? v : 0; }
   function radar(d) {
     var D = dims(), n = D.length; if (n < 3) return "";
-    var cx = 150, cy = 150, R = 110, pts = [], grid = "", labels = "";
+    var cx = 150, cy = 150, R = 110, pts = [], grid = "", labels = "", dots = "", scored = 0;
     for (var ring = 2; ring <= 10; ring += 2) {
       var g = []; for (var i = 0; i < n; i++) { var a = -Math.PI / 2 + i * 2 * Math.PI / n; g.push((cx + R * ring / 10 * Math.cos(a)).toFixed(1) + "," + (cy + R * ring / 10 * Math.sin(a)).toFixed(1)); }
       grid += '<polygon points="' + g.join(" ") + '" class="ring"/>';
     }
     D.forEach(function (x, i) {
-      var a = -Math.PI / 2 + i * 2 * Math.PI / n, v = score(d, x.id) || 0.3;
-      pts.push((cx + R * v / 10 * Math.cos(a)).toFixed(1) + "," + (cy + R * v / 10 * Math.sin(a)).toFixed(1));
+      var a = -Math.PI / 2 + i * 2 * Math.PI / n, v = score(d, x.id);
       var lx = cx + (R + 22) * Math.cos(a), ly = cy + (R + 22) * Math.sin(a);
       labels += '<text x="' + lx.toFixed(0) + '" y="' + ly.toFixed(0) + '" text-anchor="' + (Math.abs(Math.cos(a)) < 0.3 ? "middle" : Math.cos(a) > 0 ? "start" : "end") + '">' + K.esc(x.short || x.label) + "</text>";
+      var px = (cx + R * v / 10 * Math.cos(a)).toFixed(1), py = (cy + R * v / 10 * Math.sin(a)).toFixed(1);
+      if (v > 0) { scored++; pts.push(px + "," + py); dots += '<circle cx="' + px + '" cy="' + py + '" r="3.2" class="dot"/>'; }
+      else pts.push(null);
     });
-    return '<svg class="radar" viewBox="-60 0 420 300" role="img" aria-label="Wheel scores">' + grid + '<polygon points="' + pts.join(" ") + '" class="shape"/>' + labels + "</svg>";
+    // Honest rendering: the filled polygon is drawn ONLY when every area is scored — a closed shape implies a complete picture.
+    // Until then the rings stay empty and each scored area shows a dot at its value, so "not scored yet" never reads as "a 0 life".
+    var shape = scored === n ? '<polygon points="' + pts.join(" ") + '" class="shape"/>' : "";
+    return '<svg class="radar" viewBox="-60 0 420 300" role="img" aria-label="Wheel scores">' + grid + shape + dots + labels + "</svg>";
   }
   K.wheelLowest = function () {
     var d = data(), D = dims().filter(function (x) { return score(d, x.id) > 0; });

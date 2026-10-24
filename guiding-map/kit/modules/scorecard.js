@@ -17,9 +17,12 @@
   function rag(p) { return p >= 70 ? "on" : p >= 40 ? "medium" : "high"; }
   function spark(id) {
     var h = (hist()[id] || []).slice(-12); if (h.length < 2) return "";
-    var vs = h.map(function (e) { return e.v; }), lo = Math.min.apply(null, vs), hi = Math.max.apply(null, vs), span = hi - lo || 1;
+    var vs = h.map(function (e) { return e.v; }), lo = Math.min.apply(null, vs), hi = Math.max.apply(null, vs), span = hi - lo;
+    // A lo–hi range rides with the line: a sparkline auto-scales to fit, so without the real range a 4.0->4.1 wiggle would
+    // look like a cliff (a high "lie factor"). When nothing moved, say "flat" instead of drawing a line that implies a trend.
+    if (!span) return '<svg class="spark" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><polyline points="0,15 100,15"/></svg><span class="spark-range muted">flat at ' + hi + '</span>';
     var pts = h.map(function (e, i) { return (i * 100 / (h.length - 1)).toFixed(1) + "," + (28 - (e.v - lo) / span * 24).toFixed(1); }).join(" ");
-    return '<svg class="spark" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><polyline points="' + pts + '"/></svg>';
+    return '<svg class="spark" viewBox="0 0 100 30" preserveAspectRatio="none" aria-hidden="true"><polyline points="' + pts + '"/></svg><span class="spark-range muted">' + lo + '–' + hi + '</span>';
   }
   K.module({
     id: "scorecard", label: function () { return K.term("scorecard", "Scorecard"); },
