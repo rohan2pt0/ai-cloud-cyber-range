@@ -222,11 +222,18 @@ def report(p: dict, say=print) -> None:
 
 def short(p: dict) -> str:
     r, s, n = p["rhythm"], p["stronger"], p["next"]
-    bits = []
+    had = []                                                                  # the positive frame, led by what the estate really did FOR you
+    if s["drills_passed"]:
+        had.append(f"{s['drills_passed']} recovery drill(s) passed")
+    if s["failures_recovered"]:
+        had.append(f"{s['failures_recovered']} failure(s) turned into fixes")
+    if s.get("restores_proven"):
+        had.append(f"{s['restores_proven']} restore(s) proven")
+    if s.get("adversary_closed"):
+        had.append(f"{s['adversary_closed']} attacker finding(s) closed")
+    msg = ("Your estate had your back this week: " + "; ".join(had) + "." if had else "Your week with SecuRAX.")
     if r.get("known"):
-        bits.append(f"{r['checkins_7d']} check-in(s) this week")
-    bits.append(f"{s['drills_passed']} drill(s) passed, {s['failures_recovered']} failure(s) turned into fixes this month")
-    msg = "Your week with SecuRAX: " + "; ".join(bits) + "."
+        msg += f" {r['checkins_7d']} check-in(s) this week."
     if p["nudges"]:
         msg += " " + p["nudges"][0]
     if n:

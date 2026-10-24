@@ -68,6 +68,6 @@ def test_the_report_and_the_phone_message_always_name_one_next_step(tmp_path, mo
     text = "\n".join(lines)
     assert "Your rhythm" in text and "Stronger than before" in text and "The one next step" in text
     msg = pg.short(p)
-    assert msg.startswith("Your week with SecuRAX") and len(msg) < 400
+    assert msg.startswith(("Your estate had your back", "Your week with SecuRAX")) and len(msg) < 400
     if p["next"]:
         assert f"./securax finish {p['next']['id']}" in msg

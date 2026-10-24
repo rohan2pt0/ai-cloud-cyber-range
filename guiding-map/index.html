@@ -5703,10 +5703,25 @@ function renderPlaybook(){
     return h + '</div>';
   }
 
+  /* -- 5b. had your back: the POSITIVE half of the feed (./securax lifefeed writes .wins). Shown, not folded: small wins, shown (doc 93) -- */
+  function winsHTML() {
+    feedLoad();
+    var f = _feed;
+    if (!f || !Array.isArray(f.wins) || !f.wins.length) return "";
+    var h = '<div class="road-col reveal" style="border-left:3px solid var(--green);margin-bottom:14px">'
+      + '<div style="font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--green);font-weight:800;margin-bottom:7px">🛡 This week your estate had your back</div>';
+    f.wins.slice(0, 4).forEach(function (it, i) {
+      h += '<div class="reveal" style="font-size:12.5px;line-height:1.55;margin:6px 0;color:var(--text);animation-delay:' + (80 + i * 70) + 'ms">'
+        + esc(it.icon || "✔") + ' ' + esc(it.text) + '</div>';
+    });
+    return h + '<div style="font-size:10.5px;color:var(--muted);margin-top:7px">Only things that really happened · '
+      + '<span style="font-family:monospace">./securax progress</span></div></div>';
+  }
+
   function calmTodayHTML() {
     var more = dueNowHTML() + (inRecovery() ? "" : driftHTML() + resHTML()) + msTodayHTML() + insightHTML() + estateHTML();
     var open = G("gm_more_today", false) === true;
-    return '<div class="section active">' + greetHTML() + (phone() ? vitalsHTML() : "") + interruptHTML() + setupStripHTML() + undoBar() + checkinHTML() + oneActionHTML()
+    return '<div class="section active">' + greetHTML() + (phone() ? vitalsHTML() : "") + interruptHTML() + setupStripHTML() + undoBar() + checkinHTML() + oneActionHTML() + winsHTML()
       + (more.replace(/<[^>]*>/g, "").trim() ? '<details class="road-col gm-more-today"' + (open ? " open" : "") + ' ontoggle="gmMoreToday(this.open)">'
         + '<summary style="cursor:pointer;font-weight:800;font-size:13px">More today <span style="font-weight:500;color:var(--muted);font-size:11.5px">\u00b7 what is due, your week, calendar, estate</span></summary>'
         + '<div style="margin-top:10px">' + more + '</div></details>' : "")

@@ -99,7 +99,7 @@ The latest additions, newest first (the Command Center marks each one New for 30
 
 | | What it does | How to open it |
 |---|---|---|
-| 🟡 [Your progress](docs/securax/93-PROGRESS-YOU-CAN-SEE.md) | Is SecuRAX making you better off? Your Life OS rhythm, what made the estate stronger this month, and the one next step, on your phone every Sunday. | `./securax progress` |
+| 🟡 [Your progress](docs/securax/93-PROGRESS-YOU-CAN-SEE.md) | Is SecuRAX making you better off? Your Life OS rhythm, what made the estate stronger this month, and the one next step, on your phone every Sunday — and a 'had your back' card on the Life OS home that shows, up front, what the estate quietly did for you this week (a safe encrypted copy, a healthy estate, failures turned into fixes), real events only. | `./securax progress` |
 | 🟡 [Apps for Android and iOS](docs/securax/98-SHIP-AND-STORE-APPS.md) | Turn any app built from the kit, or the Life OS, into an Android and iOS project in one command: a Capacitor project that works offline from the app's own files, a Trusted Web Activity manifest for the quick Android path, and a store-readiness check. | `./securax os mobile-check vantage` |
 | 🟢 [Guiding Map](docs/securax/14-GUIDING-MAP.md) | Your daily cockpit for life and work: goals, check-ins and plans. Works offline, no AI needed. | `./securax open` |
 | 🟡 [Life OS Inbox](docs/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION.md) | Capture one line; then each note becomes an action with a next step and a date, or stays a note. Reviews turn findings into actions; Google Keep notes come in too. | `./securax open` |
@@ -121,12 +121,12 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 - Visualization honesty: charts that pass every check but lie to the eye, fixed
 - The Life OS money view, redesigned
+- ["This week your estate had your back" — the positive half of the Life OS home](docs/securax/93-PROGRESS-YOU-CAN-SEE.md)
 - The lazy path: one tap files it, and 'Later' defers without guilt
 - [The lens: it understands what you capture, and spots scams — on your device](docs/securax/104-LIFE-PAPERS-READ-FOR-YOU.md)
 - [Scan a paper with your phone's camera](docs/securax/104-LIFE-PAPERS-READ-FOR-YOU.md)
 - [`./securax map` — see the whole estate at once](docs/securax/113-THE-ESTATE-MAP.md)
 - [`./securax environment` grows into the Wheel of Life, with the elite-sport levers built in](docs/securax/112-SET-AND-FORGET.md)
-- [Success by design: four new core principles + `./securax environment`](docs/securax/112-SET-AND-FORGET.md)
 
 **Release 0.3.0 - 2026-10-22:**
 
