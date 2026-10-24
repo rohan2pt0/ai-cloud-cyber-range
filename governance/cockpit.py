@@ -128,6 +128,15 @@ def atomic_write(path: pathlib.Path, text: str) -> None:
     a plain write_text truncates first, so a shorter write over a longer one left the old tail behind ("Extra data" JSON)."""
     import tempfile
     path.parent.mkdir(parents=True, exist_ok=True)
+    # Self-heal the served directory: this page is bind-mounted into the Command Center's nginx and read by a
+    # different user (uid 101). If something left portal/ owner-only (an older life-docs import did), nginx 403s
+    # every page under it. Writing the cockpit — which `up` does on every start — restores the traversal bits.
+    try:
+        st = path.parent.stat().st_mode
+        if (st & 0o055) != 0o055:
+            os.chmod(path.parent, (st | 0o755) & 0o777)
+    except OSError:
+        pass
     fd, tmp = tempfile.mkstemp(prefix=f".{path.name}.", dir=path.parent)
     try:
         with os.fdopen(fd, "w", encoding="utf-8") as fh:

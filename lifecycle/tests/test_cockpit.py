@@ -240,3 +240,17 @@ def test_concurrent_writers_never_leave_a_mixed_file(tmp_path):
     [t.join() for t in ts]
     assert not bad, bad[:3]
     assert not [p for p in tmp_path.iterdir() if p.name.startswith(".cockpit.json.")], "no temporary files left behind"
+
+
+def test_writing_the_cockpit_self_heals_a_locked_portal_dir(tmp_path):
+    # If an older life-docs import left portal/ owner-only, the nginx container 403s every page. Writing the cockpit
+    # (which `up` does on every start) must restore the traversal bits so the Command Center serves again.
+    import os
+    import stat as _stat
+    portal = tmp_path / "portal"
+    portal.mkdir()
+    portal.chmod(0o700)
+    ck.atomic_write(portal / "cockpit.html", "<!doctype html><title>x</title>")
+    assert (portal.stat().st_mode & 0o055) == 0o055, "portal/ is traversable+readable by others after a cockpit write"
+    assert _stat.S_IMODE((portal / "cockpit.html").stat().st_mode) == 0o644
+    os.chmod(portal, 0o755)

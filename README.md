@@ -119,15 +119,14 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- The Command Center went offline (403 Forbidden) after a life-docs import
+- `./securax autobuild` / `build` couldn't install its agent on modern Debian/Ubuntu
+- Sandbox: the `blockers_are_explained` journey crashed intermittently
 - Visualization honesty: charts that pass every check but lie to the eye, fixed
 - The Life OS money view, redesigned
 - ["Go live today" — the runbook to stop building and start living](docs/securax/114-GO-LIVE-TODAY.md)
 - ["This week your estate had your back" — the positive half of the Life OS home](docs/securax/93-PROGRESS-YOU-CAN-SEE.md)
 - The lazy path: one tap files it, and 'Later' defers without guilt
-- [The lens: it understands what you capture, and spots scams — on your device](docs/securax/104-LIFE-PAPERS-READ-FOR-YOU.md)
-- [Scan a paper with your phone's camera](docs/securax/104-LIFE-PAPERS-READ-FOR-YOU.md)
-- [`./securax map` — see the whole estate at once](docs/securax/113-THE-ESTATE-MAP.md)
-- [`./securax environment` grows into the Wheel of Life, with the elite-sport levers built in](docs/securax/112-SET-AND-FORGET.md)
 
 **Release 0.3.0 - 2026-10-22:**
 

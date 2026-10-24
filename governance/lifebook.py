@@ -401,10 +401,14 @@ def ics(items: list[dict], stamp: str) -> str:
 
 def _private_write(path: pathlib.Path, data: str) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        os.chmod(path.parent, 0o700)
-    except OSError:
-        pass
+    # The FILE is owner-only (0600) — that is what keeps it private. Only tighten the DIRECTORY for the private vault
+    # tree; never for portal/, which nginx also serves (cockpit.html, explainer.html). A 0700 portal/ makes the whole
+    # Command Center 403 for the container user, which is how a life-docs import used to take the cockpit offline.
+    if path.parent.resolve() != (ROOT / "portal").resolve():
+        try:
+            os.chmod(path.parent, 0o700)
+        except OSError:
+            pass
     fd = os.open(path, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
     with os.fdopen(fd, "w", encoding="utf-8", newline="") as f:
         f.write(data)
