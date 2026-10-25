@@ -98,7 +98,7 @@ jobs:
           cp -n .env.example .env 2>/dev/null || true
           docker compose --profile ai config -q && echo "compose config valid"
       - name: Trivy IaC/misconfig scan (Terraform + K8s + Dockerfile)
-        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0 (SHA-pinned; CVE-2026-33634 tag hijack)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.35.0 (SHA-pinned; CVE-2026-33634 tag hijack)
         with:
           scan-type: config
           scan-ref: .
@@ -125,7 +125,7 @@ jobs:
       - name: Build estate-sync image (sovereign cross-device state store)
         run: docker build -t securax/estate-sync:ci apps/estate-sync
       - name: Trivy image scan (vuln + secret + misconfig)
-        uses: aquasecurity/trivy-action@57a97c7e7821a5776cebc9bb87c984fa69cba8f1 # v0.35.0 (SHA-pinned; CVE-2026-33634 tag hijack)
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.35.0 (SHA-pinned; CVE-2026-33634 tag hijack)
         with:
           image-ref: vulnbank/llm-gateway:ci
           format: sarif
