@@ -45,7 +45,7 @@ jobs:
         run: python3 tools/linkcheck.py website --external
       - name: Keep the built site for publishing
         if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (vars.SITE_PAGES == 'true' || vars.DOCS_PAGES == 'true')
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v5
         with: { path: website }
   publish:
     if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (vars.SITE_PAGES == 'true' || vars.DOCS_PAGES == 'true')
