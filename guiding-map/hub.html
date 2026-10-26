@@ -220,17 +220,23 @@
     d.className = "dot " + st; d.title = TITLE[st];
     if(a.core){ APPST[a.t] = st; try{ drawNeeds(); }catch(e){} }
   }
-  // Over HTTPS the edge answers /_up/<name> with the service's REAL status (a 502 means "not running"). Without the edge
-  // there is NO readable status: a no-cors fetch resolves even for a 502 or an error page, so a "success" is not proof
-  // the service is healthy. So we never paint green from it — a reachable address is shown as "unverified" (grey ring),
-  // a refused one as down/off. Integrity first: a green dot always means a real, confirmed "running", never a guess.
+  // Every address this page loads from — the HTTPS edge, the plain :8088 server, the Tailscale device port — answers
+  // /_up/<name> with the service's REAL status (a 502 means "not running"), so we read the truth, never guess. Integrity
+  // first: a green dot ALWAYS means a confirmed "running". A cross-origin no-cors fetch resolves even for a 502, so it is
+  // never trusted for green; a service we cannot read the status of at all is shown "unverified" (grey ring), never green.
   var PROBE = {"Chat":"chat","Private Docs":"docs","Automation":"flows"};
+  function sameOrigin(u){ try{ return new URL(u, location.href).origin === location.origin; }catch(e){ return false; } }
   function checkApps(){
     ALL.forEach(function(a){
       if(a.skip) return;
-      if(SEC && PROBE[a.t]){
+      if(PROBE[a.t]){
+        // the real status of each service, same-origin through /_up/ (served by the edge AND the plain server).
         fetch("/_up/"+PROBE[a.t],{cache:"no-store"}).then(function(r){paint(a, r.status<500);}).catch(function(){paint(a,false);});
+      } else if(sameOrigin(a.url)){
+        // the hub / Command Center itself: a same-origin response IS readable, so a <500 is a real "running".
+        fetch(a.url,{cache:"no-store"}).then(function(r){paint(a, r.status<500);}).catch(function(){paint(a,false);});
       } else {
+        // cross-origin with no probe: the status cannot be read, so be honest — never a false green.
         fetch(a.url,{mode:"no-cors"}).then(function(){paint(a,null);}).catch(function(){paint(a,false);});
       }
     });
