@@ -23,12 +23,12 @@ def run(**kw):
     return did, said, drafts
 
 
-def test_a_new_failure_gets_a_draft_and_an_alert_once(tmp_path, monkeypatch):
+def test_a_new_failure_is_drafted_silently_not_pushed(tmp_path, monkeypatch):
     monkeypatch.setenv("SECURAX_HOME_DIR", str(tmp_path))
     hist = {"daily-backup": [{"t": stamp(30), "code": 0}, {"t": stamp(5), "code": 1, "tail": "Could not read volume X"}]}
     did, said, drafts = run(history=hist)
     assert did["new"] == ["daily-backup"] and drafts == [("daily-backup", "Could not read volume X")]
-    assert "postmortem draft" in said[0] and "Could not read volume X" in said[0]
+    assert not said, "a single failure draws a postmortem silently; it does not push to the phone (signal from noise)"
     did, said, drafts = run(history=hist)
     assert not did["new"] and not drafts and not said, "the same failure is not drafted twice"
 
@@ -42,11 +42,11 @@ def test_a_failure_that_keeps_coming_back_is_escalated_with_a_fix_command(tmp_pa
     assert did["recurring"] == ["continuity-drill"] and "./securax autobuild" in said[0]
 
 
-def test_a_recovery_is_announced_and_reports_reminders_and_itself_are_ignored(tmp_path, monkeypatch):
+def test_a_recovery_is_recorded_not_pushed_and_reports_reminders_and_itself_are_ignored(tmp_path, monkeypatch):
     monkeypatch.setenv("SECURAX_HOME_DIR", str(tmp_path))
     run(history={"daily-backup": [{"t": stamp(5), "code": 1}]})
     did, said, _ = run(history={"daily-backup": [{"t": stamp(5), "code": 1}, {"t": stamp(1), "code": 0}]})
-    assert did["recovered"] == ["daily-backup"] and "green again" in said[0]
+    assert did["recovered"] == ["daily-backup"] and not said, "a recovery is recorded for the weekly progress, never pushed to the phone"
     did, _, drafts = run(history={"regwatch-digest": [{"t": stamp(1), "code": 1}], "checkin-nudge": [{"t": stamp(1), "code": 2}],
                                   "autopilot-learn": [{"t": stamp(1), "code": 1}]})
     assert not drafts and not did["new"]
