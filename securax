@@ -490,6 +490,11 @@ URLS
     done
     C "Setup complete. Start everything with:  ./securax up"
     ;;
+  selftest)
+    # Prove every command is wired, its code loads, and the read-only ones run without throwing — no side effects (doc 117).
+    #   ./securax selftest | selftest --json | selftest --quiet | selftest --no-probes
+    shift; exec python3 "$ROOT/governance/selftest.py" "$@"
+    ;;
   doctor)
     C "SecuRAX doctor — resource & health + a REAL end-to-end chat test"
     if ! docker info >/dev/null 2>&1; then
@@ -2107,6 +2112,7 @@ THE 20% YOU USE 80% OF THE TIME
   setup          guided first-time setup (keys, phone access)        up / down      start / stop everything
   status         what is running right now                           update         get the latest version (safe: backs up first)
   doctor         check health and run a real chat test               why [service]  something is not working: what stopped and why
+  selftest       prove every command is wired, loads and (read-only ones) run without throwing — no side effects
   rollback       something broke: go back to the last version that worked (--list shows them; --latest comes forward again)
   up --safe      short of memory: start only the AI gateway and the Command Center (the next plain up starts everything)
   exercise       the CYBER RANGE: practise defending against a live red team; opens in your browser (doc 79)

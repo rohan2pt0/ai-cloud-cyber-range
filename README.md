@@ -34,11 +34,11 @@ even offline. Your data stays on your device.
 
 The latest additions, newest first (the Command Center marks each one New for 30 days):
 
+- **2026-10-26** · [Prove every command works](docs/securax/117-SELFTEST.md): You can trust that the commands work: the system proves its own command surface on every change, so 'it doesn't even start / that command errors' is caught by a test, not by you at the worst moment. `./securax selftest`
 - **2026-10-26** · [One lever a week](docs/securax/112-SET-AND-FORGET.md): Every week the one thing most worth changing about your life is chosen for you and made effortless, so you improve where it actually matters without having to decide what to work on. `./securax improve`
 - **2026-10-23** · [The one next step](docs/securax/93-PROGRESS-YOU-CAN-SEE.md): You never have to learn 123 commands to be better off: one command always points to the next thing. `./securax next`
 - **2026-10-23** · [The estate map](docs/securax/113-THE-ESTATE-MAP.md): You see the whole estate and how it hangs together at a glance, instead of reading a list of 43 things. `./securax map`
 - **2026-10-23** · [Adversary ledger](docs/securax/30-PURPLE-TEAM-LOOP.md): A bug-bounty finding becomes the last of its kind: the estate gets stronger from every attacker, not just safer on paper. `./securax adversary`
-- **2026-10-23** · [Set it once, then forget it](docs/securax/112-SET-AND-FORGET.md): The right thing happens without willpower, because your phone and accounts are set up to make it the default — nothing to remember. `./securax environment`
 
 **Practise and defend**
 
@@ -78,6 +78,7 @@ The latest additions, newest first (the Command Center marks each one New for 30
 | | What it does | How to open it |
 |---|---|---|
 | 🟡 [The one next step](docs/securax/93-PROGRESS-YOU-CAN-SEE.md) | Lost or unsure? One command reads where you are and tells you the single next thing to do, in plain words — no list, no jargon. | `./securax next` |
+| 🟢 [Prove every command works](docs/securax/117-SELFTEST.md) | One command checks the whole command surface with no side effects: every command is wired (never 'unknown command'), the code behind each one loads (a syntax error, bad import or missing file is caught), and the read-only ones actually run without throwing. It runs on every change in CI, so a command that stops working fails the build before it ever reaches you. | `./securax selftest` |
 | 🟡 [Venture (is it paying its way?)](docs/securax/96-ONE-PLATFORM-MANY-PRODUCTS.md) | Break-even, payback and unit economics for the business built on the estate, counting your time as a cost: log hours, spend and revenue, set your plan, and get a structured prompt that makes an AI stress-test it. | `./securax venture` |
 | 🟢 [The estate map](docs/securax/113-THE-ESTATE-MAP.md) | An interactive picture of the whole AI estate, generated from its own declarations: every component is a node coloured by what it is for, every shared platform service is a hub, and an edge joins a component to each service it is built on. Hover, click for detail, filter or search. One self-contained HTML file, online or off. | `./securax map` |
 | 🟡 [The suite (built for one, ready for many)](docs/securax/97-BUILT-FOR-ONE-READY-FOR-MANY.md) | Every component is declared with the edition it starts in and the shared platform services it uses, so one person's tool can later serve an organisation of any size. Shows how ready each edition is to sell, what blocks it, and writes an honest datasheet per edition. | `./securax suite` |
@@ -120,6 +121,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- [`./securax selftest` — prove every command works, before you need it](docs/securax/117-SELFTEST.md)
 - ["Choose who you serve" — a new core principle, baked in forever](docs/securax/116-CHOOSE-YOUR-CUSTOMER.md)
 - [`./securax improve` — one lever a week, aimed at your weakest Wheel-of-Life area](docs/securax/112-SET-AND-FORGET.md)
 - Phone alerts: signal, not noise (less alert fatigue)
@@ -127,7 +129,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - `./securax autobuild` / `build` couldn't install its agent on modern Debian/Ubuntu
 - Sandbox: the `blockers_are_explained` journey crashed intermittently
 - Visualization honesty: charts that pass every check but lie to the eye, fixed
-- The Life OS money view, redesigned
 
 **Release 0.3.0 - 2026-10-22:**
 
