@@ -505,6 +505,22 @@ window.SECURAX_FEATURES = {
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/112-SET-AND-FORGET/"
   },
   {
+   "id": "improve",
+   "group": "Your own tools",
+   "icon": "compass",
+   "name": "One lever a week",
+   "what": "One calm nudge a week, aimed at the Wheel-of-Life area you rated lowest: the single set-and-forget change that moves it most, with its one-time steps and if-then plan, drawn from the environment catalogue and the behavioural and elite-sport research. One signal a week, where it helps you most; the opposite of a feed. It reads only the wheel you already scored, on your machine, and nothing leaves your box.",
+   "cmd": "./securax improve",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "added": "2026-10-26",
+   "outcome": "Every week the one thing most worth changing about your life is chosen for you and made effortless, so you improve where it actually matters without having to decide what to work on.",
+   "shows": "./securax improve, and a message on your phone every Saturday",
+   "light": "green",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/112-SET-AND-FORGET/"
+  },
+  {
    "id": "continuity",
    "group": "Keep it running",
    "icon": "lifebuoy",

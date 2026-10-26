@@ -362,6 +362,19 @@
     "kind": "nudge"
   },
   {
+    "id": "improve",
+    "cron": "10 9 * * 6",
+    "command": [
+      "./securax",
+      "improve",
+      "--send"
+    ],
+    "description": "Saturdays 9:10am: ONE calm self-improvement nudge aimed at the Wheel-of-Life area you rated lowest — the single set-and-forget lever that moves it most (doc 112). One signal a week, where it helps you most.",
+    "enabled": true,
+    "once": true,
+    "kind": "nudge"
+  },
+  {
     "id": "pr-watch",
     "cron": "*/15 * * * *",
     "command": [
