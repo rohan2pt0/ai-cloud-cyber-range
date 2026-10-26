@@ -124,10 +124,10 @@ This list is generated from [`features.json`](features.json); the Command Center
 - [`./securax improve` — one lever a week, aimed at your weakest Wheel-of-Life area](docs/securax/112-SET-AND-FORGET.md)
 - Phone alerts: signal, not noise (less alert fatigue)
 - The whole estate could not start — `no such service: gateway-tls` — and even rollback failed
+- CI: the `e2e-sandbox` suite was going red on `main` (and emailing a failure on every push)
 - The Command Center went offline (403 Forbidden) after a life-docs import
 - `./securax autobuild` / `build` couldn't install its agent on modern Debian/Ubuntu
 - Sandbox: the `blockers_are_explained` journey crashed intermittently
-- Visualization honesty: charts that pass every check but lie to the eye, fixed
 
 **Release 0.3.0 - 2026-10-22:**
 
