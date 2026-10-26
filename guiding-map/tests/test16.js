@@ -25,8 +25,14 @@ setTimeout(()=>{
     ok("the probe is same-origin through the edge", s.calls.some(c=>c==="/_up/docs"));
     const p=boot("http://localhost:8088/hub.html",{});
     setTimeout(()=>{
-      const h2=[...p.dom.window.document.querySelectorAll('a.card')].map(a=>a.getAttribute('href'));
+      const pcards=[...p.dom.window.document.querySelectorAll('a.card')];
+      const h2=pcards.map(a=>a.getAttribute('href'));
       ok("plain-HTTP mode keeps the localhost ports", h2.includes("http://localhost:8088/")&&h2.includes("http://localhost:3000/"), h2.join(" "));
+      // Integrity: without the edge there is no readable status, so a no-cors "success" must NOT show green — it is
+      // shown as unverified (grey ring), never a false green for a service that may actually be down.
+      const pdot=t=>{const c=pcards.find(a=>a.textContent.includes(t));return c.querySelector('.dot').className;};
+      ok("plain-HTTP never shows a false green (no readable status)", !pdot("Chat").includes("up")&&!pdot("Private Docs").includes("up"), pdot("Chat")+" | "+pdot("Private Docs"));
+      ok("plain-HTTP shows reachable-but-unverified as a grey ring (unknown)", pdot("Chat").includes("unknown"), pdot("Chat"));
       console.log("PASS",P,"  FAIL",F); if(F){console.log(e.join("\n"));process.exit(1);} process.exit(0);
     },400);
   },600);
