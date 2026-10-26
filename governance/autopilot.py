@@ -4,8 +4,9 @@
     ./securax autopilot              one screen: what failed and was learned, which drills ran and which come next, what is
                                      forecast to run out, and when
     ./securax autopilot learn        (hourly routine) every routine that newly fails gets a postmortem draft in vault/postmortems
-                                     and an alert; one that keeps failing (3 times in 7 days) is escalated with the command
-                                     that starts a fix; one that recovers says so once
+                                     SILENTLY (no push for a single self-healing blip); only one that keeps failing (3 times in
+                                     7 days) is escalated to your phone with the command that starts a fix; recoveries are
+                                     recorded for the weekly progress, not pushed (signal from noise)
     ./securax autopilot drill        (nightly routine) runs the 2 drills that most need it: never run, longest ago, failed last
                                      time, or most critical. A recovery that got much slower than usual is flagged
     ./securax autopilot forecast     (hourly routine) records disk space, backup headroom, the AI allowance and answer latency,
@@ -112,8 +113,7 @@ def learn(history: dict | None = None, now: float | None = None, say=print, aler
         if last.get("code", 0) == 0:
             if rec and rec.get("open"):
                 rec["open"] = False
-                did["recovered"].append(job)
-                alert(f"Routine {job} is green again after {rec.get('count', 1)} failure(s).")
+                did["recovered"].append(job)       # recorded; a recovery is reassurance, not a push (it rides the weekly progress, not your phone)
             continue
         week = [r for r in runs if r.get("code", 0) != 0 and _age_days(r.get("t", ""), now) <= 7]
         tail = (last.get("tail") or "").strip().splitlines()[-1:] or [""]
@@ -121,7 +121,8 @@ def learn(history: dict | None = None, now: float | None = None, say=print, aler
             path = (draft or _draft)(job, last.get("code"), tail[0])
             seen[job] = {"open": True, "first": last.get("t"), "count": 1, "postmortem": str(path), "escalated": False}
             did["new"].append(job)
-            alert(f"Routine {job} failed (exit {last.get('code')}): {tail[0][:160]}. A postmortem draft is ready: {path}")
+            # A single failure of a routine that mostly self-heals (sync blip, a feed down for a minute) is not worth a
+            # phone push — it draws a postmortem draft silently. You are alerted only once it KEEPS failing (below).
             continue
         if last.get("t") != rec.get("last_t"):
             rec["count"] = rec.get("count", 1) + 1

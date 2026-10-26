@@ -150,12 +150,19 @@ def test_anomaly_metric_is_green_when_nothing_recent(monkeypatch):
     assert m["status"] == "green" and m["value"] == "no unusual use" and not m["urgent"]
 
 
-def test_anomaly_metric_is_red_and_urgent_with_a_recent_one(monkeypatch):
+def test_a_behavioural_anomaly_is_red_and_urgent(monkeypatch):
     now = 1_800_000_000.0
     m = _anomaly_metric(monkeypatch, {"anomalies": [
-        {"ts": _ts(now - 60), "caller": "key:webui", "kind": "new_model", "detail": "asked for https://evil.example/model"},
-        {"ts": _ts(now - 3600), "caller": "key:webui", "kind": "burst", "detail": "99 requests"},
+        {"ts": _ts(now - 60), "caller": "key:webui", "kind": "new_model", "detail": "asked for opencodego/deepseek, never used before"},   # benign (a new provider): must NOT count
+        {"ts": _ts(now - 3600), "caller": "key:webui", "kind": "burst", "detail": "99 requests, seen from https://evil.example"},
         {"ts": _ts(now - 40 * 3600), "caller": "key:old", "kind": "odd_hour", "detail": "old"}]})
-    assert m["status"] == "red" and m["urgent"] and m["value"] == "2 in 24 h, latest: key:webui new_model"
+    assert m["status"] == "red" and m["urgent"] and m["value"] == "1 in 24 h, latest: key:webui burst"
     assert m["action"] == "Check who used the key; revoke it if it was not you" and m["cmd"] == "./securax gateway-auth key list"
     assert "anomalies" not in cockpit.PRIMARY
+
+
+def test_a_new_model_alone_is_not_flagged_as_a_stolen_key(monkeypatch):
+    now = 1_800_000_000.0
+    m = _anomaly_metric(monkeypatch, {"anomalies": [
+        {"ts": _ts(now - 60), "caller": "key:webui", "kind": "new_model", "detail": "asked for opencodego/deepseek-v4, never used before"}]})
+    assert m["status"] == "green" and not m["urgent"], "adding a provider or the ladder trying a new model is normal, not a stolen key"

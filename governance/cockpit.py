@@ -261,7 +261,12 @@ class Collector:
         def plain(s: object) -> str:                                  # the cockpit names no external URL: strip any scheme
             return re.sub(r"[A-Za-z][A-Za-z0-9+.-]*://", "", str(s or ""))[:80]
 
-        recent = sorted((a for a in rep.get("anomalies") or [] if isinstance(a, dict) and now - when(a) <= 24 * 3600),
+        # Only genuinely behavioural signals mean a key may be misused. "new_model" — a caller asked for a model it had not
+        # used before — fires every time you add a provider or the resilient ladder tries a new rung, so on its own it is
+        # normal, not a stolen key; flagging it RED just trains you to ignore RED. Keep burst / odd-hour as the real signal.
+        suspicious = {"burst", "odd_hour"}
+        recent = sorted((a for a in rep.get("anomalies") or []
+                         if isinstance(a, dict) and a.get("kind") in suspicious and now - when(a) <= 24 * 3600),
                         key=when, reverse=True)
         if recent:
             top = recent[0]
