@@ -521,6 +521,22 @@ window.SECURAX_FEATURES = {
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/112-SET-AND-FORGET/"
   },
   {
+   "id": "insight",
+   "group": "Your own tools",
+   "icon": "lightbulb",
+   "name": "One idea a week",
+   "what": "One durable idea a week, aimed at a goal you actually set. Not news and not a feed: a bounded, curated, on-device library of high-leverage ideas (decision-making and leadership, security and AI-risk craft, mental models, money and financial independence), each paraphrased in plain words with its source named and one concrete action. It aims by your OKRs first (the lowest-progress goal whose theme it can match), then your weakest Wheel area, and never repeats an idea until its theme is exhausted. It reads only what is on your machine; nothing leaves your box.",
+   "cmd": "./securax insight",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "added": "2026-10-26",
+   "outcome": "Every week one timeless, high-leverage idea sharpens how you think, decide and work, tied to a goal you set, so you compound as a professional and a person instead of drowning in a feed you have to wade through.",
+   "shows": "./securax insight, and a message on your phone every Wednesday",
+   "light": "green",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/115-ONE-IDEA-A-WEEK/"
+  },
+  {
    "id": "continuity",
    "group": "Keep it running",
    "icon": "lifebuoy",

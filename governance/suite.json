@@ -92,6 +92,7 @@
   "jewels": { "from": "community", "uses": ["rbac", "export"], "enterprise": "crown jewels per entity" },
   "environment": { "from": "community", "uses": ["policy"], "enterprise": "a device and account baseline an organisation can publish to its people (managed grayscale, app limits, autopay, DLP) as one-time enrolment, success as the default across the workforce" },
   "improve": { "from": "community", "uses": ["export"], "enterprise": "an opt-in weekly wellbeing nudge an organisation can offer each person, aimed by their own private self-assessment and never shared without consent" },
+  "insight": { "from": "community", "uses": ["export"], "enterprise": "a curated idea library a firm can extend with its own playbooks, served one aimed idea a week to each person, their goals and progress never leaving their device" },
   "continuity": { "from": "community", "uses": ["continuity", "audit"], "enterprise": "a group-wide continuity plan, with drills logged as evidence" },
   "ransomware-recovery": { "from": "community", "uses": ["continuity", "audit"], "enterprise": "restore drills per tenant, reported to the Board" },
   "guiding-map": { "from": "community", "uses": ["identity", "export", "continuity"], "enterprise": "a wellbeing programme employees opt into; the data stays theirs" },

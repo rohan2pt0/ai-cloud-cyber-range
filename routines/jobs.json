@@ -375,6 +375,19 @@
     "kind": "nudge"
   },
   {
+    "id": "insight",
+    "cron": "15 8 * * 3",
+    "command": [
+      "./securax",
+      "insight",
+      "--send"
+    ],
+    "description": "Wednesdays 8:15am: ONE durable idea, aimed at a goal you set (your OKRs, then your weakest Wheel area) — a curated on-device library, never repeating until a theme is exhausted (doc 115). A midweek sharpener, not a feed.",
+    "enabled": true,
+    "once": true,
+    "kind": "nudge"
+  },
+  {
     "id": "pr-watch",
     "cron": "*/15 * * * *",
     "command": [
