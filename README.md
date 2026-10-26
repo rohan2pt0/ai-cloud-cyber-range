@@ -123,11 +123,11 @@ This list is generated from [`features.json`](features.json); the Command Center
 - ["Choose who you serve" — a new core principle, baked in forever](docs/securax/116-CHOOSE-YOUR-CUSTOMER.md)
 - [`./securax improve` — one lever a week, aimed at your weakest Wheel-of-Life area](docs/securax/112-SET-AND-FORGET.md)
 - Phone alerts: signal, not noise (less alert fatigue)
+- The whole estate could not start — `no such service: gateway-tls` — and even rollback failed
 - The Command Center went offline (403 Forbidden) after a life-docs import
 - `./securax autobuild` / `build` couldn't install its agent on modern Debian/Ubuntu
 - Sandbox: the `blockers_are_explained` journey crashed intermittently
 - Visualization honesty: charts that pass every check but lie to the eye, fixed
-- The Life OS money view, redesigned
 
 **Release 0.3.0 - 2026-10-22:**
 
