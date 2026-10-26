@@ -98,10 +98,9 @@
       "./securax",
       "regwatch",
       "fetch",
-      "--notify",
       "--quiet"
     ],
-    "description": "Daily 8:40am: fetch the RBI and SEBI feeds; push the titles of NEW circulars and directions to your phone (silent when nothing is new).",
+    "description": "Daily 8:40am: fetch the RBI and SEBI feeds SILENTLY into vault/regwatch.json. New circulars are not pushed daily (most are not urgent) — the monthly regwatch-digest sends a curated summary, and a genuine deadline shows on the cockpit's Regulatory clock.",
     "enabled": true,
     "once": true,
     "kind": "guard"
@@ -296,7 +295,7 @@
       "autopilot",
       "learn"
     ],
-    "description": "Hourly: any routine that newly fails gets a postmortem draft and an alert; one that fails 3 times in 7 days is escalated with the command that starts a fix you approve; a recovery is announced once (doc 92).",
+    "description": "Hourly: any routine that newly fails gets a postmortem draft SILENTLY (no phone push for a single blip that self-heals); only one that fails 3 times in 7 days is escalated with the command that starts a fix you approve. Recoveries are recorded for the weekly progress, never pushed (doc 92, signal from noise).",
     "enabled": true,
     "kind": "guard"
   },
