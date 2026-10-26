@@ -314,13 +314,8 @@ def j_blockers(sb: H.Sandbox, c: Checks):
     rc, out = H.sh(["bash", "./securax", "up", "--lite"], cwd=sb.clone, env={**os.environ, "PATH": f"{fake}:{os.environ['PATH']}"}, timeout=1200)
     c.ok(gen.is_file() and gen.stat().st_size > 0, "the router config is a real FILE again (directory trap healed, baseline used)", tail(out, 400))
     c.ok("Could not generate the router config" in out or "python3 not found" in out, "…and the user is TOLD why it fell back")
-    # This is a cold start of the whole stack, and the journey runs late in the full suite when the CI runner is already
-    # exhausted, so the gateway can take a while to go healthy; and litellm can finish loading a moment AFTER healthz
-    # answers. A tight 240s wait plus a one-shot readyz check lost that race under load and went red on main. Give
-    # healthz room and WAIT for readyz the way every other journey does, instead of checking it once.
-    c.ok(sb.wait_http(f"{H.GATEWAY}/healthz", 420)
-         and sb.wait_until(lambda: sb.http("GET", f"{H.GATEWAY}/readyz").status == 200, 180, 3),
-         "…and the estate still comes up READY on the default config", tail(out, 400))
+    c.ok(sb.wait_http(f"{H.GATEWAY}/healthz", 240) and sb.http("GET", f"{H.GATEWAY}/readyz").status == 200,
+         "…and the estate still comes up READY on the default config")
 
 
 @journey("self_healing", "Kill components while running; `./securax up` brings the estate back and chat works again.")

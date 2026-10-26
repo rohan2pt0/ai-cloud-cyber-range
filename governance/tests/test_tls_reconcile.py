@@ -68,3 +68,16 @@ def test_up_reconciles_before_starting():
     assert 'governance/tls.py" reconcile' in cli
     # Fix C: a plain-mode last resort so the user is never left with nothing.
     assert "Fallback 3" in cli and "COMPOSE_FILE=docker-compose.yml docker compose --profile ai up -d gateway" in cli
+
+
+def test_reconcile_in_up_cannot_abort_the_start():
+    # securax runs under `set -euo pipefail`, so a non-zero command substitution in an assignment aborts the script.
+    # The reconcile call runs python3; if python3 is broken or missing it exits non-zero, and without `|| true` that
+    # would stop the WHOLE estate from starting (the blockers_are_explained journey caught exactly this). Guard it.
+    line = next(ln for ln in (ROOT / "securax").read_text("utf-8").splitlines() if 'tls.py" reconcile' in ln)
+    assert "|| true" in line, "the reconcile command substitution must not let a failing python3 abort `up`"
+    # prove the shape is safe: an assignment from a failing command with `|| true` does NOT abort under set -e.
+    import subprocess
+    out = subprocess.run(["bash", "-c", 'set -euo pipefail; v="$(false 2>/dev/null || true)"; echo CONTINUED'],
+                         capture_output=True, text=True)
+    assert out.returncode == 0 and "CONTINUED" in out.stdout
