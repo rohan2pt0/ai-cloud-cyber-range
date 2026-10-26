@@ -60,6 +60,15 @@ The same science that trains elite athletes is built into every entry, so succes
 
 Nothing here needs willpower, and nothing leaves your devices — the steps are settings on your own phone and accounts.
 
+## One lever a week, aimed at your weakest area (`./securax improve`)
+
+The catalogue is the menu; `./securax improve` is the waiter who brings you the one dish you need. It reads the **Wheel of
+Life** you scored in the quarterly check-in, finds the area you rated **lowest**, and gives you the single set-and-forget
+lever that moves it most — its one-time steps and its if-then plan — rotating the lever week to week so it never goes stale.
+The weekly `improve` routine sends it to your phone on **Saturday mornings**: one calm, useful signal, aimed where it helps
+you most, the opposite of a feed you have to wade through. It reads only the wheel you already scored, on your machine, and
+nothing leaves your box; if you have not scored your wheel yet, it says so and points you to the five-minute check-in.
+
 ## Where this is going
 
 Today the catalogue is delivered in the shell and as JSON. Next it becomes a one-tap screen in the Life OS: you pick the

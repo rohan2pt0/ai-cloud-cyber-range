@@ -15,11 +15,11 @@ by a test.
 
 The latest additions, newest first (the Command Center marks each one New for 30 days):
 
+- **2026-10-26** · [One lever a week](securax/112-SET-AND-FORGET.md): Every week the one thing most worth changing about your life is chosen for you and made effortless, so you improve where it actually matters without having to decide what to work on. `./securax improve`
 - **2026-10-23** · [The one next step](securax/93-PROGRESS-YOU-CAN-SEE.md): You never have to learn 123 commands to be better off: one command always points to the next thing. `./securax next`
 - **2026-10-23** · [The estate map](securax/113-THE-ESTATE-MAP.md): You see the whole estate and how it hangs together at a glance, instead of reading a list of 43 things. `./securax map`
 - **2026-10-23** · [Adversary ledger](securax/30-PURPLE-TEAM-LOOP.md): A bug-bounty finding becomes the last of its kind: the estate gets stronger from every attacker, not just safer on paper. `./securax adversary`
 - **2026-10-23** · [Set it once, then forget it](securax/112-SET-AND-FORGET.md): The right thing happens without willpower, because your phone and accounts are set up to make it the default — nothing to remember. `./securax environment`
-- **2026-10-23** · [Scan a document with your phone](securax/104-LIFE-PAPERS-READ-FOR-YOU.md): You capture a paper document in seconds from your phone without typing it out, and it never leaves your device. `./securax open`
 
 Each line names what it does, in plain words, and the one command that opens it. The light is the guide's status (what the lights mean is below).
 
@@ -84,6 +84,7 @@ Each line names what it does, in plain words, and the one command that opens it.
 |---|---|---|
 | 🟡 [Your progress](securax/93-PROGRESS-YOU-CAN-SEE.md) | Is SecuRAX making you better off? Your Life OS rhythm, what made the estate stronger this month, and the one next step, on your phone every Sunday — and a 'had your back' card on the Life OS home that shows, up front, what the estate quietly did for you this week (a safe encrypted copy, a healthy estate, failures turned into fixes), real events only. | `./securax progress` |
 | 🟡 [Apps for Android and iOS](securax/98-SHIP-AND-STORE-APPS.md) | Turn any app built from the kit, or the Life OS, into an Android and iOS project in one command: a Capacitor project that works offline from the app's own files, a Trusted Web Activity manifest for the quick Android path, and a store-readiness check. | `./securax os mobile-check vantage` |
+| 🟢 [One lever a week](securax/112-SET-AND-FORGET.md) | One calm nudge a week, aimed at the Wheel-of-Life area you rated lowest: the single set-and-forget change that moves it most, with its one-time steps and if-then plan, drawn from the environment catalogue and the behavioural and elite-sport research. One signal a week, where it helps you most; the opposite of a feed. It reads only the wheel you already scored, on your machine, and nothing leaves your box. | `./securax improve` |
 | 🟢 [Guiding Map](securax/14-GUIDING-MAP.md) | Your daily cockpit for life and work: goals, check-ins and plans. Works offline, no AI needed. | `./securax open` |
 | 🟡 [Life OS Inbox](securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION.md) | Capture one line; then each note becomes an action with a next step and a date, or stays a note. Reviews turn findings into actions; Google Keep notes come in too. | `./securax open` |
 | 🟡 [Life papers, read for you](securax/104-LIFE-PAPERS-READ-FOR-YOU.md) | Your life workbooks and private documents (policies, statements, ID scans) are read on your own machine: every open issue becomes a dated Life OS action, the vital fifth first, with calendar alarms; a missing nominee, a lapsing policy or a password left in a sheet is found for you. | `./securax lifeos import workbook` |
