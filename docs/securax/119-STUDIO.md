@@ -41,7 +41,7 @@ Your projects are just folders; MCP connectors are configured in Cline’s MCP s
 
 - Studio can run code, so it is **never left open**: a strong password is generated on first start.
   Set your own by putting `STUDIO_PASSWORD=…` in `local/compose/.env` before starting.
-- It binds to **loopback only** and is reached through the edge, like the other services.
+- It binds to **loopback by default** (set `BIND_HOST` to reach it from other devices, like the other add-ons) and is reached by name through the edge.
 - The repository is mounted so the agent can change it — that is the point; keep the password private.
 
 ## If the in-browser editor misbehaves (fallback)

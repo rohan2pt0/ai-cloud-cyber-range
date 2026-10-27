@@ -388,7 +388,7 @@ services:
     volumes:
       - studio:/home/coder/.local/share/code-server
       - ${STUDIO_REPO:-../..}:/home/coder/project
-    ports: ["${STUDIO_BIND:-127.0.0.1}:8300:8080"]   # loopback only; reached by name via the edge
+    ports: ["${BIND_HOST:-127.0.0.1}:8300:8080"]     # loopback by default; set BIND_HOST to reach it from other devices (it has a password)
     networks: [edge, modelplane]                      # edge: the hub nginx proxies /studio/ here; modelplane: Cline reaches the gateway
     logging: *default-logging
 
