@@ -1065,6 +1065,13 @@ EOF2
     #   ./securax improve | improve --send | improve --json
     shift; exec python3 "$ROOT/governance/improve.py" "$@"
     ;;
+  insight)
+    # One durable idea a week, aimed at a goal you set (doc 115). Not news, not a feed: a bounded, curated, on-device
+    # library (leadership, security & AI-risk craft, mental models, money) that serves ONE idea + one action a week and
+    # never repeats it until its theme is exhausted. Aims by your OKRs first, then your weakest Wheel area.
+    #   ./securax insight | insight --send | insight --json
+    shift; exec python3 "$ROOT/governance/insight.py" "$@"
+    ;;
   nodes)
     # Several machines, one Life OS: every node holds the same data, and any one can stop (doc 86).
     #   ./securax nodes | invite | add URL TOKEN [--pull-only] | remove URL
@@ -2190,6 +2197,7 @@ BUILD & KEEP IT HEALTHY
   jewels         the crown jewels: what SecuRAX cannot lose, how exposed each is today, and the next step, worst first
   environment    set your phone and accounts so the good path is the default, then forget it (grayscale at night, autopay, pay-yourself-first)
   improve        one weekly nudge aimed at your lowest Wheel-of-Life area: the single set-and-forget lever that moves it most
+  insight        one durable idea a week, aimed at a goal you set (OKRs, then weakest Wheel): a curated on-device library, never a feed
   brief          a task brief any AI can act on: the likely files, the lessons that apply, what "done" means
   channel        stable (releases only, the version you rely on) or beta (every change); switching is safe and never goes back
   nodes          run SecuRAX on several machines (laptop, VPS, Mac mini, cloud) with the same data; none is needed alone
