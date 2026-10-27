@@ -55,6 +55,21 @@
    "shows": "./securax selftest, and the CI checks on every change"
   },
   {
+   "id": "studio",
+   "group": "Keep it running",
+   "name": "Build it from a browser, on your own models",
+   "added": "2026-10-27",
+   "what": "VS Code with the Cline AI coding agent, in your browser, pointed at your own gateway - so you can build on the estate from a GUI (edit files, run commands, git, MCP connectors) without a terminal and without a paid Claude subscription. One opt-in command; it is never part of the core start, so it can never affect your running estate. Reached by name at the Command Center's /studio/ path.",
+   "open": {
+    "cmd": "./securax studio"
+   },
+   "command": "studio",
+   "doc": "securax/119-STUDIO.md",
+   "icon": "code",
+   "outcome": "Your single biggest dependency - a paid Claude Code subscription and its terminal - is removed: you build and change the estate from a familiar GUI on the open models you already run, so no outside service or plan can gate your day-to-day work.",
+   "shows": "./securax studio, then https://hub.<domain>/studio/"
+  },
+  {
    "id": "venture",
    "group": "Keep it running",
    "icon": "scale",

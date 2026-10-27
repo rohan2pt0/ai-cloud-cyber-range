@@ -133,6 +133,7 @@ nav:
       - "One idea a week": securax/115-ONE-IDEA-A-WEEK.md
       - "Selftest": securax/117-SELFTEST.md
       - "Build with your own models": securax/118-BUILD-WITH-YOUR-MODELS.md
+      - "Code Studio (browser GUI)": securax/119-STUDIO.md
       - "Choose who you serve": securax/116-CHOOSE-YOUR-CUSTOMER.md
   - How-to guides:
       - AI providers and plugins: securax/22-PLUGINS-AND-PROVIDERS.md
