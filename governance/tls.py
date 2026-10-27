@@ -5,6 +5,7 @@
     ./securax tls trust [--apply]                   make THIS computer's browsers trust the CA (Windows/WSL, macOS, Linux)
     ./securax tls status [--json]                   certificate expiry, which names resolve, which HTTPS names answer, which plain ports are still open
     ./securax tls render                            (re)write the edge configuration for the current domain (done automatically by `on` and `up`)
+    ./securax tls reconcile                         make COMPOSE_FILE match the TLS flags so `up` never asks for an undefined service (done automatically by `up`)
     ./securax tls renew                             re-issue the server certificate (same CA; nothing to re-trust)
     ./securax tls off                               back to plain HTTP (the estate still works; browsers show 'not secure')
     ./securax tls internal on|off                   ALSO encrypt the hops between the services themselves (needs `tls on` first; see docs/securax/40)
@@ -781,7 +782,10 @@ def cmd_on(extra: list[str], dom: str | None, new_ca: bool) -> int:
         print("  (allowed: localhost, private/Tailscale IPs, *.ts.net, *.local, *.securax.internal, this machine's own name" + (f", {dom}" if dom != DEFAULT_DOMAIN else "") + ")")
     set_env("TLS_DIR", res["dir"])
     set_env("SECURAX_DOMAIN", dom)
-    set_env("COMPOSE_FILE", TLS_COMPOSE)
+    # Preserve internal TLS: if it was on, keep tls-internal.yml in COMPOSE_FILE. Dropping it here (while TLS_INTERNAL
+    # stayed 1) was what left `up` asking for gateway-tls when no compose file defined it ("no such service"), so the
+    # whole estate — and even rollback — could not start.
+    set_env("COMPOSE_FILE", TLS_COMPOSE_INTERNAL if read_env().get("TLS_INTERNAL") == "1" else TLS_COMPOSE)
     set_env("COMPOSE_PATH_SEPARATOR", ":")
     write_edge_conf(dom)
     print(f"✔ certificate ready ({res['cert'].get('days_left')} days left) for: {', '.join(res['names'])}")
@@ -825,6 +829,32 @@ def cmd_internal(on: bool) -> int:
     return 0
 
 
+def cmd_reconcile() -> int:
+    """Make COMPOSE_FILE match the TLS flags, so `up` never asks for a service the loaded compose files do not define.
+    The drift that bit us: `tls on` run after `tls internal on` left TLS_INTERNAL=1 but dropped tls-internal.yml from
+    COMPOSE_FILE, so `up gateway-tls` failed with 'no such service' and even rollback could not start. This heals it in
+    place, keeping any other overlays (tls-move.yml, etc.). Prints what it repaired; silent and exit 0 when consistent."""
+    env = read_env()
+    cf = env.get("COMPOSE_FILE") or ""
+    if "tls.yml" not in cf:                       # the HTTPS edge is off: nothing here to reconcile
+        return 0
+    parts = cf.split(":")
+    want_internal = env.get("TLS_INTERNAL") == "1"
+    has_internal = "tls-internal.yml" in parts
+    if want_internal and not has_internal:
+        out: list[str] = []
+        for p in parts:                            # keep order, insert tls-internal.yml right after tls.yml
+            out.append(p)
+            if p == "tls.yml":
+                out.append("tls-internal.yml")
+        set_env("COMPOSE_FILE", ":".join(out))
+        print("added tls-internal.yml to COMPOSE_FILE (internal TLS was on but its services were not defined)")
+    elif not want_internal and has_internal:
+        set_env("COMPOSE_FILE", ":".join(p for p in parts if p != "tls-internal.yml"))
+        print("removed tls-internal.yml from COMPOSE_FILE (internal TLS is off)")
+    return 0
+
+
 def cmd_off() -> int:
     set_env("COMPOSE_FILE", None)
     set_env("COMPOSE_PATH_SEPARATOR", None)
@@ -855,6 +885,7 @@ def main(argv: list[str] | None = None) -> int:
     sub.add_parser("off")
     sub.add_parser("renew")
     sub.add_parser("render")
+    sub.add_parser("reconcile")
     it = sub.add_parser("internal")
     it.add_argument("state", choices=["on", "off"])
     tr = sub.add_parser("trust")
@@ -884,6 +915,8 @@ def main(argv: list[str] | None = None) -> int:
     if a.cmd == "render":
         print(write_edge_conf())
         return 0
+    if a.cmd == "reconcile":
+        return cmd_reconcile()
     if a.cmd == "internal":
         return cmd_internal(a.state == "on")
     if a.cmd == "trust":
