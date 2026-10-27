@@ -127,9 +127,9 @@ This list is generated from [`features.json`](features.json); the Command Center
 - ["Choose who you serve" — a new core principle, baked in forever](docs/securax/116-CHOOSE-YOUR-CUSTOMER.md)
 - [`./securax improve` — one lever a week, aimed at your weakest Wheel-of-Life area](docs/securax/112-SET-AND-FORGET.md)
 - Phone alerts: signal, not noise (less alert fatigue)
+- Life OS: impossible numbers, an unreadable phone card, and a phone that cried "sync failing" when it was simply offline
 - A stopped add-on could show a GREEN "running" dot on the home screen — a status-integrity bug
 - The whole estate could not start — `no such service: gateway-tls` — and even rollback failed
-- The Command Center went offline (403 Forbidden) after a life-docs import
 
 **Release 0.3.0 - 2026-10-22:**
 

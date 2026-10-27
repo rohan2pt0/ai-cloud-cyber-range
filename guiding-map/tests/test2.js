@@ -45,6 +45,36 @@ setTimeout(()=>{
  ok("unit-confusion warning shown for per-month field", go('life').includes('Did you type lakh'), '');
  w.gmLifeSet('inc','23'); w.gmLifeSet('minc','195000');
 
+ // ---- an impossible age is CLAMPED in the math, not just warned about ----
+ // (saneWarn told you 200 was off but the arithmetic still used 200; saneNum caps it so it can't.)
+ w.localStorage.clear();
+ w.gmLifeSet('age','200'); w.gmLifeSet('inc','23');
+ let lifeH=go('life');
+ ok("an out-of-range age still shows the range warning", /outside the usual range/.test(lifeH), '');
+ ok("an impossible age is capped in the benchmark (age 100), never used as 200",
+    /age 100/.test(lifeH) && !/age 200/.test(lifeH), (lifeH.match(/age \d+/g)||[]).join(','));
+
+ // ---- an impossible saving rate is flagged, never shown as a nonsense % ----
+ // fEF+fSip (70k/mo) over a 10k/mo income computes to 700% — a data slip, not a real rate.
+ w.localStorage.clear();
+ w.gmLifeSet('minc','10000'); w.gmLifeSet('fEF','50000'); w.gmLifeSet('fSip','20000'); go('life');
+ const vh=d.getElementById('gmVitals').innerHTML;
+ ok("an impossible saving rate shows 'check', not a nonsense percentage",
+    /check/.test(vh) && !/700%/.test(vh), vh.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').slice(0,120));
+
+ // ---- sync: an unreachable estate is a calm 'working offline', a real refusal is an alarm ----
+ w.localStorage.clear();
+ // values are stored the way the app stores them (JSON), so the health screen reads them back.
+ w.localStorage.setItem('gm_sync_cfg',JSON.stringify({url:"https://estate.example.org/sync",key:"k",user:"u"}));
+ w.localStorage.setItem('gm_sync_last',JSON.stringify('2026-10-01 09:00')); w.localStorage.setItem('gm_sync_fails','5');
+ w.localStorage.setItem('gm_sync_lastfail',JSON.stringify('unreachable'));
+ let opsH=go('ops');
+ ok("an unreachable estate reads as a calm 'working offline', not a scary failure count",
+    /Working offline/.test(opsH) && !/pushes are failing/.test(opsH), opsH.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').match(/.{0,60}(offline|refused|pushing|failing).{0,40}/i)||'no sync row');
+ w.localStorage.setItem('gm_sync_lastfail',JSON.stringify('rejected'));
+ ok("a real refusal (the estate is up but rejects us) is surfaced as needing attention",
+    /being refused/.test(go('ops')), '');
+
  // ---- empty states on every tab (fresh storage) ----
  w.localStorage.clear();
  let empties=[];
