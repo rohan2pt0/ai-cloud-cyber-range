@@ -994,7 +994,18 @@ def j_phone_device(sb: H.Sandbox, c: Checks):
                 page.on("pageerror", lambda e, errors=errors: errors.append(str(e)))
                 page.on("dialog", lambda d: d.accept())                    # the one "store my data here?" question, answered yes
                 try:
-                    page.goto(f"{hub}/", wait_until="networkidle")
+                    # ERR_NETWORK_CHANGED is a transient Chromium network re-config on the first
+                    # navigation (seen only on the first device, and cleared by a re-run). Retry it
+                    # ONCE, and only it — any other goto error is a real refusal this check must report.
+                    for _attempt in range(2):
+                        try:
+                            page.goto(f"{hub}/", wait_until="networkidle")
+                            break
+                        except Exception as e:  # noqa: BLE001
+                            if "ERR_NETWORK_CHANGED" in str(e) and _attempt == 0:
+                                time.sleep(2)
+                                continue
+                            raise
                 except Exception as e:  # noqa: BLE001 - a refused certificate or name is exactly what this check reports
                     c.ok(False, f"{name}: the Life OS opens over HTTPS by name", str(e)[:200])
                     ctx.close()

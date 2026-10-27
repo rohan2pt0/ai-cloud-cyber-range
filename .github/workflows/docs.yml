@@ -25,6 +25,9 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # pages: write lets the "Enable GitHub Pages" step turn Pages on via the API; the top-level default
+    # is contents: read, which is all the rest of this job needs.
+    permissions: { contents: read, pages: write }
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
@@ -43,6 +46,13 @@ jobs:
         if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
         continue-on-error: true
         run: python3 tools/linkcheck.py website --external
+      # Enable Pages from the workflow itself, so a deploy never 404s because the Settings -> Pages
+      # source was not set (that regressed once: the site built but actions/deploy-pages got a 404
+      # "Ensure GitHub Pages has been enabled"). enablement: true is idempotent when it is already on.
+      - name: Enable GitHub Pages
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (vars.SITE_PAGES == 'true' || vars.DOCS_PAGES == 'true')
+        uses: actions/configure-pages@v5
+        with: { enablement: true }
       - name: Keep the built site for publishing
         if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (vars.SITE_PAGES == 'true' || vars.DOCS_PAGES == 'true')
         uses: actions/upload-pages-artifact@v3
