@@ -44,6 +44,20 @@ Your projects are just folders; MCP connectors are configured in Cline’s MCP s
 - It binds to **loopback by default** (set `BIND_HOST` to reach it from other devices, like the other add-ons) and is reached by name through the edge.
 - The repository is mounted so the agent can change it — that is the point; keep the password private.
 
+## If `hub.<domain>/studio/` shows the Life OS instead of the editor
+
+Your running `guiding-map` container predates the `/studio/` route, so nginx fell through to the Life
+OS single-page app. Pull the change and recreate it:
+
+```bash
+./securax update && ./securax up      # recreates guiding-map so nginx loads the /studio/ route
+./securax studio                      # starts the editor
+```
+
+Then reload `https://hub.<domain>/studio/`. If it loads but the editor renders oddly (a sub-path
+through two proxies is the fragile bit), use the standalone version below — it serves at a root path
+and is reliable.
+
 ## If the in-browser editor misbehaves (fallback)
 
 Serving a full IDE under a sub-path through two proxies is the one part that only your first real run
