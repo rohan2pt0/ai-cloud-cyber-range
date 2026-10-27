@@ -2568,13 +2568,20 @@ function renderPlaybook(){
     fetch(stateURL(c), { method: "PUT", headers: syncHeaders(c),
         body: JSON.stringify({ payload: blob, meta: m, updated_at: new Date(nowSrv()).toISOString(), device: devId }) })
       .then(function (r) {
-        if (!r || !r.ok) { S_("gm_sync_fails", G("gm_sync_fails", 0) + 1); return; }
+        // Record WHY a push failed, so the health screen can tell "your estate is simply offline"
+        // (the normal case on a phone away from home — calm, not an alarm) from "the estate is
+        // reachable but refused us" (a real token/permission problem worth your attention).
+        if (!r || !r.ok) {
+          S_("gm_sync_fails", G("gm_sync_fails", 0) + 1);
+          S_("gm_sync_lastfail", (r && (r.status === 401 || r.status === 403)) ? "rejected" : "server");
+          return;
+        }
         S_("gm_sync_last", ymd() + " " + new Date().toTimeString().slice(0, 5));
-        S_("gm_sync_fails", 0); gmTouch("Synced (a copy went to the laptop)", "your estate");
+        S_("gm_sync_fails", 0); S_("gm_sync_lastfail", ""); gmTouch("Synced (a copy went to the laptop)", "your estate");
         // The estate keeps a snapshot of the merged state for every day (so nobody has to remember to export a backup).
         return r.json().then(function (j) { if (j && j.snapshots) S_("gm_sync_snaps", { n: j.snapshots, latest: j.latest_snapshot }); }).catch(function () {});
       })
-      .catch(function () { S_("gm_sync_fails", G("gm_sync_fails", 0) + 1); });
+      .catch(function () { S_("gm_sync_fails", G("gm_sync_fails", 0) + 1); S_("gm_sync_lastfail", "unreachable"); });
   };
   // Live push (WebSocket): the server only says "something changed"; we then pull through
   // the same per-key merge. If the socket cannot open or drops, the existing pull-on-open
@@ -3130,7 +3137,7 @@ function renderPlaybook(){
   }
 
   function lifeMapHTML() {
-    var l = life(), age = num(l.age), inc = num(l.inc), nw = num(l.nw), sage = num(l.sage), k1 = l.k1 === "" || l.k1 === undefined ? null : num(l.k1), page = num(l.page);
+    var l = life(), age = saneNum("age", l.age), inc = num(l.inc), nw = num(l.nw), sage = saneNum("sage", l.sage), k1 = l.k1 === "" || l.k1 === undefined ? null : num(l.k1), page = saneNum("page", l.page);
     var h = '<div class="section active"><div class="cat-t">\u{1F9ED} Life map</div>'
       + '<div class="info">Benchmarks, not verdicts. Where you are behind, the map gives you the action \u2014 not a score to feel bad about. '
       + 'Starting late is normal and is not disqualifying; the arithmetic simply gets less forgiving, so the response is a higher savings rate, not despair.</div>';
@@ -3607,8 +3614,13 @@ function renderPlaybook(){
     // No savings split given yet: what take-home minus spending leaves is the saving rate (both come from the quick setup).
     if (!save && !num(l.fEF) && !num(l.fSip) && window.P && !P.example && num(P.net) > 0 && num(P.exp) > 0)
       save = Math.round((num(P.net) - num(P.exp)) / num(P.net) * 100);
+    // A saving rate below -100% or above 100% is not a real rate, it is a data-entry slip (expenses
+    // typed in a different unit from income, say) — so we flag it as "check" instead of showing an
+    // impossible figure like -567%. A genuinely negative rate down to -100% (spending more than you
+    // earn, drawing on savings) is real and shown honestly in red.
+    var saveBad = save < -100 || save > 100;
 
-    var age = num(l.age), ainc = lakhs(l.inc), nw = lakhs(l.nw);
+    var age = saneNum("age", l.age), ainc = Math.min(500, Math.max(0, lakhs(l.inc))), nw = Math.max(-500, Math.min(5000, lakhs(l.nw)));
     var mult = age < 30 ? 0.5 : age < 35 ? 1 : age < 40 ? 2 : age < 45 ? 3 : age < 50 ? 4.5 : age < 55 ? 6 : age < 60 ? 8 : 10;
     var nwPct = (ainc && age) ? Math.round(nw / (mult * ainc) * 100) : 0;
 
@@ -3616,7 +3628,7 @@ function renderPlaybook(){
       { l: "Today", v: d3 + "/3", c: d3 === 3 ? "var(--green)" : d3 ? "var(--amber)" : "var(--red)", t: "today" },
       { l: "Stack", v: stackPct + "%", c: stackPct >= 80 ? "var(--green)" : stackPct >= 40 ? "var(--amber)" : "var(--red)", t: "stack" },
       { l: "Runway", v: runway ? (runway > 120 ? "120m+" : runway.toFixed(1) + "m") : "\u2014", c: runway >= 6 ? "var(--green)" : runway >= 3 ? "var(--amber)" : "var(--red)", t: "life" },
-      { l: "Saving", v: save ? save + "%" : "\u2014", c: save >= 20 ? "var(--green)" : save >= 15 ? "var(--amber)" : "var(--red)", t: "life" },
+      { l: "Saving", v: !save ? "\u2014" : saveBad ? "check" : save + "%", c: saveBad ? "var(--amber)" : save >= 20 ? "var(--green)" : save >= 15 ? "var(--amber)" : "var(--red)", t: "life" },
       { l: "Net worth", v: nwPct ? nwPct + "%" : "\u2014", c: nwPct >= 100 ? "var(--green)" : nwPct >= 60 ? "var(--amber)" : "var(--red)", t: "life" }
     ];
   }
@@ -4328,12 +4340,16 @@ function renderPlaybook(){
     else if (!last) row(false, "Sync configured but nothing has been pushed yet",
       "Change any value to trigger the first push. If this stays empty, check the estate gateway is up and reachable (Tailscale) and the browser console for a 4xx from the sync endpoint.");
     else {
-      var fails = G("gm_sync_fails", 0);
+      var fails = G("gm_sync_fails", 0), lastfail = G("gm_sync_lastfail", "");
       var lastD = new Date(String(last).slice(0, 10));
       var idle = isNaN(lastD) ? 0 : Math.floor((Date.now() - lastD.getTime()) / 86400000);
-      if (fails >= 3) row(false, "Sync pushes are failing (" + fails + " in a row)",
-        "The estate sync endpoint is unreachable or rejecting pushes. Check the SecuRAX gateway is running, "
-        + "that this device is on the same Tailscale network, and that the device token is correct. Your data on this device is safe and untouched \u2014 sync resumes on its own once the endpoint is back.");
+      // A phone is away from its estate most of the time, so "can't reach it" is the normal case, not
+      // an alarm: show a calm "working offline" and let it resume on its own (no scary running count).
+      // Only a genuine refusal (the estate is up but rejected us: a token/permission problem) is red.
+      if (fails >= 3 && lastfail === "rejected") row(false, "Sync is being refused",
+        "Your estate is reachable but rejected the last pushes \u2014 a device token or permission problem, not an outage. Re-pair this device from the link in ./securax sync-link. Your data on this device is safe and untouched.");
+      else if (fails >= 3) row(null, "Working offline \u2014 will sync when your estate is reachable",
+        "Your SecuRAX estate isn't reachable right now (it may be off, or this device isn't on its Tailscale network). Changes are saved on this device and sync automatically the next time you are on its network. Nothing is lost.");
       else if (idle >= 5) row(false, "No sync push for " + idle + " days",
         "No successful push in a while. Open the app on each device while the estate gateway is up to re-sync. "
         + "Opening the app on any synced device counts as activity, so the clock resets when the next push lands.");
@@ -4484,6 +4500,16 @@ function renderPlaybook(){
     fEF:   [0,  5000000, "\u20b9 per month"],
     fSip:  [0,  5000000, "\u20b9 per month"]
   };
+  // The value actually USED in every derived calculation. saneWarn only *tells* you a number is
+  // off; it did nothing to stop the arithmetic using it, so an age of 200 or expenses typed as
+  // rupees still drove the vitals. saneNum clamps to the field's plausible range, so an impossible
+  // entry can never produce an impossible result (the warning still shows you to fix it). A field
+  // with no range is returned unchanged.
+  function saneNum(field, val) {
+    var r = SANE[field], n = num(val);
+    if (!r) return n;
+    return Math.max(r[0], Math.min(r[1], n));
+  }
   function saneWarn(field, val) {
     var r = SANE[field]; if (!r) return "";
     var v = num(val); if (!v) return "";
@@ -6510,7 +6536,10 @@ function renderPlaybook(){
       + ".gm-d3 .fl{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.4}"
       + ".gm-d3 .foot{font-size:12.5px;color:var(--muted);margin-top:10px}"
       + ".gm-link{background:none;border:0;padding:0;color:inherit;font:inherit;text-decoration:underline;cursor:pointer}"
-      + "@media (max-width:700px){.hero{display:none}.gm-d3 .tile{padding:10px;min-height:88px}.gm-d3 .fl{font-size:11.5px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}}";
+      // On a phone the three tiles were crammed side by side (each ~1/3 of the width) and the floor
+      // line was clamped to two lines and clipped — "Shoes on, one set. That counts." became
+      // unreadable. Stack them vertically so each is full width, and let the floor text wrap in full.
+      + "@media (max-width:700px){.hero{display:none}.gm-d3 .row{flex-direction:column}.gm-d3 .tile{min-height:0;padding:12px}.gm-d3 .fl{font-size:12.5px}}";
     document.head.appendChild(st);
   }
   function greetHTML() {
