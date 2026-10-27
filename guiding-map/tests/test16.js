@@ -23,10 +23,19 @@ setTimeout(()=>{
     ok("a service that answers 502 is shown as NOT running (grey), not green", dot("Private Docs").includes("off"), dot("Private Docs"));
     ok("a service that answers is shown running", dot("Automation").includes("up")&&dot("Chat").includes("up"), dot("Automation")+" | "+dot("Chat"));
     ok("the probe is same-origin through the edge", s.calls.some(c=>c==="/_up/docs"));
-    const p=boot("http://localhost:8088/hub.html",{});
+    // Plain HTTP serves the SAME /_up/ probe (guiding-map.conf), so status is REAL here too: a down service is shown
+    // down (never a false green), a running one is shown running, and the hub's own dot is green because a same-origin
+    // response is readable. A down add-on answers 502; Chat answers 200.
+    const p=boot("http://localhost:8088/hub.html",{docs:502,chat:200});
     setTimeout(()=>{
-      const h2=[...p.dom.window.document.querySelectorAll('a.card')].map(a=>a.getAttribute('href'));
+      const pcards=[...p.dom.window.document.querySelectorAll('a.card')];
+      const h2=pcards.map(a=>a.getAttribute('href'));
       ok("plain-HTTP mode keeps the localhost ports", h2.includes("http://localhost:8088/")&&h2.includes("http://localhost:3000/"), h2.join(" "));
+      const pdot=t=>{const c=pcards.find(a=>a.textContent.includes(t));return c.querySelector('.dot').className;};
+      ok("plain-HTTP uses the same-origin /_up/ probe", p.calls.some(c=>c==="/_up/docs"), p.calls.join(" "));
+      ok("plain-HTTP: a down service is shown NOT running (grey), never a false green", pdot("Private Docs").includes("off"), pdot("Private Docs"));
+      ok("plain-HTTP: a running service is shown running (real status, not a guess)", pdot("Chat").includes("up"), pdot("Chat"));
+      ok("plain-HTTP: the hub's own dot is green (a same-origin response is readable)", pdot("Guiding Map").includes("up"), pdot("Guiding Map"));
       console.log("PASS",P,"  FAIL",F); if(F){console.log(e.join("\n"));process.exit(1);} process.exit(0);
     },400);
   },600);

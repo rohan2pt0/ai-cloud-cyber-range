@@ -40,6 +40,21 @@
    "shows": "the terminal, and the end of every ./securax go"
   },
   {
+   "id": "selftest",
+   "group": "Keep it running",
+   "name": "Prove every command works",
+   "added": "2026-10-26",
+   "what": "One command checks the whole command surface with no side effects: every command is wired (never 'unknown command'), the code behind each one loads (a syntax error, bad import or missing file is caught), and the read-only ones actually run without throwing. It runs on every change in CI, so a command that stops working fails the build before it ever reaches you.",
+   "open": {
+    "cmd": "./securax selftest"
+   },
+   "command": "selftest",
+   "doc": "securax/117-SELFTEST.md",
+   "icon": "checklist",
+   "outcome": "You can trust that the commands work: the system proves its own command surface on every change, so 'it doesn't even start / that command errors' is caught by a test, not by you at the worst moment.",
+   "shows": "./securax selftest, and the CI checks on every change"
+  },
+  {
    "id": "venture",
    "group": "Keep it running",
    "icon": "scale",

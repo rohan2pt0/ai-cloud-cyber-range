@@ -41,6 +41,22 @@ window.SECURAX_FEATURES = {
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/93-PROGRESS-YOU-CAN-SEE/"
   },
   {
+   "id": "selftest",
+   "group": "Keep it running",
+   "icon": "checklist",
+   "name": "Prove every command works",
+   "what": "One command checks the whole command surface with no side effects: every command is wired (never 'unknown command'), the code behind each one loads (a syntax error, bad import or missing file is caught), and the read-only ones actually run without throwing. It runs on every change in CI, so a command that stops working fails the build before it ever reaches you.",
+   "cmd": "./securax selftest",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "added": "2026-10-26",
+   "outcome": "You can trust that the commands work: the system proves its own command surface on every change, so 'it doesn't even start / that command errors' is caught by a test, not by you at the worst moment.",
+   "shows": "./securax selftest, and the CI checks on every change",
+   "light": "green",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/117-SELFTEST/"
+  },
+  {
    "id": "venture",
    "group": "Keep it running",
    "icon": "scale",

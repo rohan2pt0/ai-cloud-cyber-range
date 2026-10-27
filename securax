@@ -252,6 +252,12 @@ case "$cmd" in
       C "python3 not found — using the shipped default router config (Gemini + local model). Install python3 to enable your own provider keys."
     fi
     [ -s "$GENCFG" ] || cp "$ROOT/local/compose/litellm-config.yaml" "$GENCFG"
+    # Self-heal the TLS config so the service list we ask compose for always matches what the compose files define
+    # (doc 40). A stale .env (`tls on` run after `tls internal on`) left TLS_INTERNAL=1 while COMPOSE_FILE dropped
+    # tls-internal.yml, so `up gateway-tls` died with "no such service" and even rollback could not start. Fix it first.
+    # The `|| true` is load-bearing: under `set -euo pipefail`, a non-zero command substitution in an assignment aborts
+    # the script, so a broken or missing python3 here would stop the estate from starting at all. Never let it.
+    if command -v python3 >/dev/null 2>&1; then _rec="$(python3 "$ROOT/governance/tls.py" reconcile 2>/dev/null || true)"; [ -n "$_rec" ] && C "Self-healed an inconsistent HTTPS setting: $_rec"; fi
     # Layered start: each step is a fallback for the one before (offline? image-build failed? low memory?).
     # Names, not ports (doc 99): asked once, in a terminal, default yes. Scripts and the nightly update are never asked.
     if ! tls_on && [ -z "$(ev NAMES_ASKED)" ] && [ -t 0 ] && [ "$(ev SECURAX_NAMES)" != off ]; then
@@ -295,10 +301,26 @@ case "$cmd" in
       if ! dc_up $SVCS; then
         C "Fallback 2: core path only (private chat + security gateway + home screen), skipping optional services…"
         if ! dc_up $CORE; then
-          C "Startup failed. Most often the model router rejected its config — its log:"
-          ( cd "$ROOT/local/compose" && docker compose --profile ai logs --no-color --tail 25 litellm 2>/dev/null ) || true
-          echo "  Run  ./securax doctor  for a diagnosis, or paste the output above to get help."
-          exit 1
+          # Fallback 3 (last resort): if HTTPS is on and even the core will not start, bring the estate up in PLAIN
+          # http://localhost mode so you are NEVER left with nothing running — the "no single point of failure" promise.
+          # One-shot override: your HTTPS settings in .env are untouched, and ./securax tls on turns it back on.
+          if tls_on; then
+            C "Fallback 3: HTTPS could not start — bringing the estate up in plain mode so you are not left with nothing (your HTTPS settings are kept; re-enable with  ./securax tls on )…"
+            docker ps -aq --filter label=com.docker.compose.service=tls-edge | xargs -r docker rm -f >/dev/null 2>&1 || true
+            if ( cd "$ROOT/local/compose" && COMPOSE_FILE=docker-compose.yml docker compose --profile ai up -d gateway litellm ollama open-webui guiding-map estate-sync ) 2>&1 | tee -a "$UPLOG"; then
+              C "✔ Running in plain mode on this computer. Re-enable HTTPS when ready:  ./securax tls on  (then  ./securax tls internal on )."   # addr-ok: plain-mode fallback, no address shown
+            else
+              C "Startup failed even in plain mode. The model router's log:"
+              ( cd "$ROOT/local/compose" && COMPOSE_FILE=docker-compose.yml docker compose --profile ai logs --no-color --tail 25 litellm 2>/dev/null ) || true
+              echo "  Run  ./securax doctor  for a diagnosis, or paste the output above to get help."
+              exit 1
+            fi
+          else
+            C "Startup failed. Most often the model router rejected its config — its log:"
+            ( cd "$ROOT/local/compose" && docker compose --profile ai logs --no-color --tail 25 litellm 2>/dev/null ) || true
+            echo "  Run  ./securax doctor  for a diagnosis, or paste the output above to get help."
+            exit 1
+          fi
         fi
       fi
     fi
@@ -489,6 +511,11 @@ URLS
       if grep -q "^$P=change-me" "$ENVF"; then setkv "$P" "$( (command -v openssl >/dev/null && openssl rand -hex 16) || date +%s%N | sha256sum | cut -c1-32 )"; fi
     done
     C "Setup complete. Start everything with:  ./securax up"
+    ;;
+  selftest)
+    # Prove every command is wired, its code loads, and the read-only ones run without throwing — no side effects (doc 117).
+    #   ./securax selftest | selftest --json | selftest --quiet | selftest --no-probes
+    shift; exec python3 "$ROOT/governance/selftest.py" "$@"
     ;;
   doctor)
     C "SecuRAX doctor — resource & health + a REAL end-to-end chat test"
@@ -2114,6 +2141,7 @@ THE 20% YOU USE 80% OF THE TIME
   setup          guided first-time setup (keys, phone access)        up / down      start / stop everything
   status         what is running right now                           update         get the latest version (safe: backs up first)
   doctor         check health and run a real chat test               why [service]  something is not working: what stopped and why
+  selftest       prove every command is wired, loads and (read-only ones) run without throwing — no side effects
   rollback       something broke: go back to the last version that worked (--list shows them; --latest comes forward again)
   up --safe      short of memory: start only the AI gateway and the Command Center (the next plain up starts everything)
   exercise       the CYBER RANGE: practise defending against a live red team; opens in your browser (doc 79)
