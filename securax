@@ -2127,6 +2127,33 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
     skv "$ENVF" SECURAX_OPTIONAL "$(echo $_cur)"; C "stopped: $_tok"
     ;;
   down)  ( cd "$ROOT/local/compose" && docker compose --profile ai down ) ; C "stopped." ;;
+  studio)
+    # ./securax studio [up|open|down|status] — VS Code + the Cline AI coding agent in your browser, on YOUR own models
+    # through the gateway (doc 119). Build SecuRAX from a GUI, no Claude, no terminal. Opt-in add-on: NEVER part of `up`,
+    # so it can never affect the core estate. Reached by name at https://hub.<domain>/studio/.
+    preflight || exit 1
+    _url="$(web_url hub 8088 /studio/)"
+    case "${2:-up}" in
+      down)   ( cd "$ROOT/local/compose" && docker compose --profile studio stop studio 2>/dev/null ) || true; C "Studio stopped. Your estate is untouched." ;;
+      status) if curl -fsS -m 3 "http://localhost:8300/" >/dev/null 2>&1; then C "Studio is running: $_url"; else C "Studio is not running. Start it with  ./securax studio"; fi ;;
+      open)   if command -v xdg-open >/dev/null 2>&1; then xdg-open "$_url" >/dev/null 2>&1 || true; elif command -v open >/dev/null 2>&1; then open "$_url" >/dev/null 2>&1 || true; else C "Open this in your browser: $_url"; fi ;;
+      *)
+        # Secure by default: a strong password is generated and shown once (Studio can run code, so it is never left open).
+        _pw="$(ev STUDIO_PASSWORD)"
+        if [ -z "$_pw" ]; then _pw="$(head -c 24 /dev/urandom | base64 2>/dev/null | tr -dc 'A-Za-z0-9' | head -c 20)"; skv "$ROOT/local/compose/.env" STUDIO_PASSWORD "$_pw"; fi
+        C "Starting Code Studio (VS Code + Cline) on your own models - no Claude, no terminal. The first start pulls the image and the Cline extension (a minute or two)."
+        ( cd "$ROOT/local/compose" && docker compose --profile studio up -d studio ) || { C "Could not start Studio. Run  ./securax doctor  and paste the output."; exit 1; }
+        _i=0; while [ "$_i" -lt 45 ] && ! curl -fsS -m 3 "http://localhost:8300/" >/dev/null 2>&1; do sleep 4; _i=$((_i+1)); done
+        if curl -fsS -m 3 "http://localhost:8300/" >/dev/null 2>&1; then
+          C "Studio is running: $_url"
+          C "  Password: $_pw   (saved in local/compose/.env as STUDIO_PASSWORD)"
+          C "  First run, in the Cline sidebar (the robot icon) -> Settings -> API Provider: OpenAI Compatible:"
+          C "    Base URL  http://gateway:8080/v1     API key  your gateway key (blank if gateway auth is off)     Model  a coding model from  ./securax opencode --check"
+          C "  Full guide:  docs/securax/119-STUDIO.md"
+        else C "Studio is still starting (the first image pull can take a few minutes). Re-run  ./securax studio status  shortly; if it stays down run  ./securax doctor"; fi
+        ;;
+    esac
+    ;;
   help|-h|--help)
     cat <<'HELP'
 SecuRAX — one command, `./securax <command>`   (Windows: `.\securax.cmd <command>`)
@@ -2149,6 +2176,7 @@ THE 20% YOU USE 80% OF THE TIME
   notify         alerts to your phone (ntfy) or team chat            shortcut       type `securax <command>` from any folder
   tls            encrypt every web connection (HTTPS everywhere)     sync-link      one-tap sync setup for a phone / second computer
   start / stop docs|flows|passwords|all   Private Docs / Automation / the password manager (remembered across updates)
+  studio         VS Code + the Cline AI agent in your browser, on your own models (doc 119): build SecuRAX with no Claude, no terminal
   capacity       what to switch on as more people join (1 to 100,000)
   protect        encrypt your backups (one guided step)              crypto         plain-English protection check (--full: the CBOM)
 

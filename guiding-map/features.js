@@ -57,6 +57,22 @@ window.SECURAX_FEATURES = {
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/117-SELFTEST/"
   },
   {
+   "id": "studio",
+   "group": "Keep it running",
+   "icon": "code",
+   "name": "Build it from a browser, on your own models",
+   "what": "VS Code with the Cline AI coding agent, in your browser, pointed at your own gateway - so you can build on the estate from a GUI (edit files, run commands, git, MCP connectors) without a terminal and without a paid Claude subscription. One opt-in command; it is never part of the core start, so it can never affect your running estate. Reached by name at the Command Center's /studio/ path.",
+   "cmd": "./securax studio",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "added": "2026-10-27",
+   "outcome": "Your single biggest dependency - a paid Claude Code subscription and its terminal - is removed: you build and change the estate from a familiar GUI on the open models you already run, so no outside service or plan can gate your day-to-day work.",
+   "shows": "./securax studio, then https://hub.<domain>/studio/",
+   "light": "amber",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/119-STUDIO/"
+  },
+  {
    "id": "venture",
    "group": "Keep it running",
    "icon": "scale",

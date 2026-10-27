@@ -36,6 +36,7 @@ volumes:
   estatesync:   # sovereign cross-device life-OS state (SQLite, your box only)
   passwords:    # the password manager (Vaultwarden): your vault, encrypted on your devices before it is stored
   gatewaystate: # the gateway's AI allowance ledger (tokens spent per caller today / this month)
+  studio:       # Code Studio (VS Code + Cline) settings & installed extensions; your box only (doc 119)
 
 services:
   gateway:
@@ -359,6 +360,36 @@ services:
     ports: ["${BIND_HOST:-127.0.0.1}:5678:5678"]
     volumes: ["n8n:/home/node/.n8n"]
     networks: [edge, modelplane]
+    logging: *default-logging
+
+  # Code Studio (doc 119, `./securax studio`): VS Code in the browser with the Cline AI coding agent, so you can build on the
+  # estate from a GUI on YOUR own models through the gateway — no Claude, no terminal. An OPT-IN add-on (profile "studio");
+  # it is never part of `up`, so it can never affect the core estate. Bound to loopback only and reached by name at
+  # https://hub.<domain>/studio/ through the edge. The repo is mounted so Cline can read and change it; Cline is told to call
+  # the gateway (OpenAI-compatible) at http://gateway:8080/v1 — zero Claude tokens. Hardening (non-root, scoped mount,
+  # auth, a sandbox journey) is queued (doc 119); this is the usable first version.
+  studio:
+    image: codercom/code-server:4.143.1@sha256:377b66bec5645510ed52549bb00e648c273edc604d230a3f90fd2b2433afcb97
+    security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
+    mem_limit: 2g
+    cpus: 2.0
+    profiles: ["studio"]            # NOT in core up; started only by `./securax studio`
+    restart: unless-stopped
+    user: "0:0"                     # installs the extension and writes the repo mount; dropping to a non-root user is queued hardening
+    environment:
+      PASSWORD: ${STUDIO_PASSWORD:-}
+      # Informational: the gateway is OpenAI-compatible at this internal name. You set it in Cline on first run (see doc 119).
+      GATEWAY_URL: ${STUDIO_GATEWAY_URL:-http://gateway:8080/v1}
+    entrypoint: ["/bin/sh", "-lc"]
+    command:
+      - >
+        code-server --install-extension saoudrizwan.claude-dev 2>/dev/null || true;
+        exec code-server --bind-addr 0.0.0.0:8080 --disable-telemetry --disable-update-check --welcome-text "SecuRAX Studio - build on your own models" /home/coder/project
+    volumes:
+      - studio:/home/coder/.local/share/code-server
+      - ${STUDIO_REPO:-../..}:/home/coder/project
+    ports: ["${BIND_HOST:-127.0.0.1}:8300:8080"]     # loopback by default; set BIND_HOST to reach it from other devices (it has a password)
+    networks: [edge, modelplane]                      # edge: the hub nginx proxies /studio/ here; modelplane: Cline reaches the gateway
     logging: *default-logging
 
   # ---- Sovereign cross-device sync (replaces the old cloud SaaS) ---------------

@@ -5,6 +5,7 @@
   {"id": "ghcr.io/berriai/litellm", "licence": "MIT (the enterprise/ folder is under a separate commercial licence)", "sell": "conditions", "terms": "use only the MIT features; enterprise features need BerriAI's licence"},
   {"id": "ghcr.io/open-webui/open-webui", "licence": "Open WebUI License (BSD-3 with a branding clause, from v0.6.6)", "sell": "conditions", "terms": "keep the Open WebUI name and logo visible in any deployment serving more than 50 users in 30 days, unless you hold their enterprise licence"},
   {"id": "n8nio/n8n", "licence": "Sustainable Use License (fair-code, not open source)", "sell": "ask", "terms": "internal business use and paid consulting are allowed; hosting n8n for paying customers, or selling a product whose value comes mainly from n8n, needs n8n's commercial or Embed licence"},
+  {"id": "codercom/code-server", "licence": "MIT", "sell": "ok", "terms": "keep the copyright notice; it is code-server (Coder's build of Code - OSS / VS Codium), not Microsoft's VS Code, and the Cline extension installs from Open VSX, not Microsoft's Marketplace"},
   {"id": "grafana/grafana", "licence": "AGPL-3.0", "sell": "conditions", "terms": "unmodified use is fine; if you modify it and offer it over a network, publish the modified source"},
   {"id": "grafana/loki", "licence": "AGPL-3.0", "sell": "conditions", "terms": "as Grafana"},
   {"id": "prom/prometheus", "licence": "Apache-2.0", "sell": "ok", "terms": "keep the NOTICE"},

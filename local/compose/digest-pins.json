@@ -8,6 +8,7 @@
       "vaultwarden": "the password manager: published on BIND_HOST for the Bitwarden apps on phones and laptops",
       "anythingllm": "private document chat: published on BIND_HOST",
       "n8n": "automations: published on BIND_HOST",
+      "studio": "Code Studio (VS Code + Cline): the browser coding GUI, published on BIND_HOST and reached as hub.<domain>/studio/ through the edge",
       "grafana": "dashboards: published on BIND_HOST"
     },
     "tls.yml": {
