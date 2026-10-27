@@ -123,6 +123,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- [A runbook for migrating off Claude without losing anything](docs/securax/120-MIGRATE-OFF-CLAUDE.md)
 - [`./securax studio` — build the estate from a browser, on your own models (no Claude, no terminal)](docs/securax/119-STUDIO.md)
 - [`./securax insight` — one durable idea a week, aimed at a goal you set](docs/securax/115-ONE-IDEA-A-WEEK.md)
 - [`./securax selftest` — prove every command works, before you need it](docs/securax/117-SELFTEST.md)
@@ -130,7 +131,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - [`./securax improve` — one lever a week, aimed at your weakest Wheel-of-Life area](docs/securax/112-SET-AND-FORGET.md)
 - [An SOP for finishing work on the estate with your own open models, not Claude](docs/securax/118-BUILD-WITH-YOUR-MODELS.md)
 - Sandbox: the `phone_device` journey retries a transient first-navigation flake once
-- Phone alerts: signal, not noise (less alert fatigue)
 
 **Release 0.3.0 - 2026-10-22:**
 
