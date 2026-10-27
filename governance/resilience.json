@@ -43,6 +43,7 @@
     {"id": "purple", "critical": false, "state": "stateless", "needs": ["estate"], "full": ["estate"], "when_off": "Any node.", "fix": "nothing"},
   {"id": "adversary", "critical": false, "state": "stateless", "needs": ["estate"], "full": ["estate"], "when_off": "Any node.", "fix": "nothing"},
   {"id": "next", "critical": false, "state": "stateless", "needs": ["estate"], "full": ["estate"], "when_off": "Any node.", "fix": "nothing"},
+  {"id": "selftest", "critical": false, "state": "stateless", "needs": ["estate"], "full": ["estate"], "when_off": "Any node runs it from the same code; it reads nothing node-specific.", "fix": "nothing"},
     {"id": "inspect", "critical": false, "state": "stateless", "needs": ["estate"], "full": ["estate"], "when_off": "Any node with Docker.", "fix": "nothing"},
     {"id": "cloud", "critical": false, "state": "stateless", "needs": ["estate"], "full": ["estate"], "when_off": "Dormant by default; the plans live in the code on every node.", "fix": "nothing"},
     {"id": "resilience", "critical": false, "state": "replicated", "needs": ["estate"], "full": ["estate", "routines"], "when_off": "Every machine keeps every card and runs the check itself.", "fix": "./securax routines install (the card is shared every 10 minutes)"},
