@@ -1,0 +1,243 @@
+{
+  "_note": "Curated, bounded corpus for ./securax insight (doc 115). Durable, high-leverage ideas only — no news, no feed. Each idea is paraphrased in original words; 'source' is a REFERENCE (author/work), never copied text. Hand-formatted: edit with textual replacements, never a load-and-dump (LESSONS.md 2026-10-21).",
+  "domains": {
+    "leadership": {
+      "label": "Decision-making & leadership",
+      "wheel": ["career"],
+      "keywords": ["lead", "team", "manage", "manager", "hire", "hiring", "delegat", "stakeholder", "influence", "board", "present", "decision", "strateg", "prioriti", "mentor", "culture", "career", "promot", "report to", "direct report", "headcount"]
+    },
+    "security": {
+      "label": "Security & AI-risk craft",
+      "wheel": [],
+      "keywords": ["secur", "risk", "threat", "attack", "control", "audit", "complian", "resilien", "incident", "vulnerab", "govern", "assur", "detect", "zero trust", "privacy", "data protect", "ai risk", "model risk", "owasp", "mitre", "red team", "soc", "siem"]
+    },
+    "thinking": {
+      "label": "Mental models & clear thinking",
+      "wheel": ["growth"],
+      "keywords": ["think", "learn", "read", "study", "skill", "mental model", "bias", "reason", "decid", "focus", "habit", "writ", "deep work", "knowledge", "course", "certif", "exam", "grow"]
+    },
+    "money": {
+      "label": "Money & financial independence",
+      "wheel": ["money"],
+      "keywords": ["money", "save", "saving", "invest", "wealth", "fi ", "financ", "debt", "budget", "salary", "retire", "portfolio", "emergency fund", "compound", "expense", "income", "net worth", "runway"]
+    }
+  },
+  "ideas": [
+    {
+      "id": "lead-inversion",
+      "domain": "leadership",
+      "title": "Solve it backwards: invert",
+      "idea": "Instead of asking only how to succeed, ask what would guarantee failure here — then systematically avoid those things. The surest path forward is often found by clearing the obvious ways to fall over, which are easier to see than the clever moves.",
+      "source": "Charlie Munger, on inversion (after the mathematician Jacobi: 'invert, always invert')",
+      "action": "Take your biggest current goal. List the three surest ways to make it fail. This week, remove or defend against one of them."
+    },
+    {
+      "id": "lead-delegate-outcome",
+      "domain": "leadership",
+      "title": "Delegate the outcome, not the task",
+      "idea": "People grow and own their work when you hand them a result and its constraints, not a checklist of steps. Spelling out the 'how' keeps the work yours and keeps them junior. Give the what and the why; let them find the how.",
+      "source": "General management practice; echoes Drucker on management by objectives",
+      "action": "Take one task you'd normally spell out step by step. Hand over the outcome and the hard constraints only, and let them choose the method."
+    },
+    {
+      "id": "lead-bad-news-fast",
+      "domain": "leadership",
+      "title": "Make it safe to bring you bad news early",
+      "idea": "Teams hide problems from a leader who shoots the messenger, so you learn about trouble too late to act cheaply. A culture where the early warning is rewarded, and the message is separated from blame, surfaces risk while it is still small.",
+      "source": "Ron Westrum's generative culture; 'Accelerate' (Forsgren, Humble, Kim)",
+      "action": "Next time someone brings you a problem late, thank them for raising it at all, then ask what would have made it safe to raise sooner — and fix that."
+    },
+    {
+      "id": "lead-one-metric",
+      "domain": "leadership",
+      "title": "Lead with the one number that matters",
+      "idea": "A team pointed at everything moves nowhere. One honest headline measure, visible to all, aligns a dozen small decisions without you in the room. Pick the number you would stake the quarter on.",
+      "source": "John Doerr, 'Measure What Matters' (OKRs)",
+      "action": "For your function, name the single number you'd bet the quarter on. Put it somewhere the team sees it every day."
+    },
+    {
+      "id": "lead-energy-not-time",
+      "domain": "leadership",
+      "title": "Protect attention, not just hours",
+      "idea": "Your scarce resource as a leader is focused attention, not calendar time. The hardest, highest-value thinking needs protected, uninterrupted blocks; the shallow work can be delegated or batched. A full calendar is not the same as a productive one.",
+      "source": "Cal Newport, 'Deep Work'",
+      "action": "Block two 90-minute, no-meeting slots this week for your hardest thinking, and defend them like a board meeting."
+    },
+    {
+      "id": "lead-hire-judgement",
+      "domain": "leadership",
+      "title": "Hire for judgement and trajectory",
+      "idea": "Skills can be taught; judgement, drive and honesty compound and rarely can. A wrong senior hire costs years, not months. Weight how someone reasons and learns over the neatness of their résumé.",
+      "source": "General hiring wisdom; echoes Buffett on integrity, intelligence, energy",
+      "action": "In your next interview, ask for a decision they got wrong and what they changed afterwards. Listen for honest learning, not a polished save."
+    },
+    {
+      "id": "lead-specific-credit",
+      "domain": "leadership",
+      "title": "Credit in public, correct in private, be specific",
+      "idea": "Vague praise is forgotten and public blame breeds fear and hiding. Specific, timely recognition of a real decision shapes behaviour far more than a generic 'good job', and correcting in private keeps dignity intact.",
+      "source": "General management practice",
+      "action": "This week, name one specific good decision a team member made — to their face and in front of their peers."
+    },
+    {
+      "id": "sec-worst-day",
+      "domain": "security",
+      "title": "Build for the worst day, not the average one",
+      "idea": "Controls tuned to normal load fail exactly when they are stressed — the incident, the surge, the outage. Designing as if the bad day is certain turns a fragile control into one that holds when it matters.",
+      "source": "Resilience engineering; Nassim Taleb on robustness and antifragility",
+      "action": "Pick one control you own. Ask 'what happens when this is overwhelmed?' and add one fallback or graceful-degradation path."
+    },
+    {
+      "id": "sec-assume-breach",
+      "domain": "security",
+      "title": "Assume breach; limit the blast radius",
+      "idea": "Prevention eventually fails, so what decides the damage is segmentation, least privilege and fast detection once an attacker is already inside. Design as if one credential or box is already compromised.",
+      "source": "Zero-trust architecture; NIST SP 800-207",
+      "action": "For one crown-jewel system, map what an attacker reaches if a single credential is stolen, then cut one unnecessary path."
+    },
+    {
+      "id": "sec-detect-recover",
+      "domain": "security",
+      "title": "Optimise time-to-detect and time-to-recover",
+      "idea": "You cannot stop every attack, but you can shrink how long one goes unnoticed and how fast you restore service. Those two clocks, not a perfect wall, decide how bad an incident becomes.",
+      "source": "Incident-response practice; DORA recovery metrics",
+      "action": "Time your detection on one recent alert class. If you don't actually know the number, instrument it this week."
+    },
+    {
+      "id": "sec-risk-is-math",
+      "domain": "security",
+      "title": "Risk is probability times impact, not a gut label",
+      "idea": "'High / medium / low' hides the real bet and lets the loudest voice win. Even rough ranges for likelihood and rupee impact beat vague labels, and they expose which risks actually deserve the budget.",
+      "source": "Douglas Hubbard & Richard Seiersen, 'How to Measure Anything in Cybersecurity Risk'",
+      "action": "Take your top three risks. Put a rough rupee impact and a rough likelihood on each, then re-rank them. Notice what moved."
+    },
+    {
+      "id": "sec-least-privilege",
+      "domain": "security",
+      "title": "Every standing privilege is a standing liability",
+      "idea": "Access granted 'just in case' is attack surface that never sleeps and is almost never reviewed. Just-in-time, time-boxed access shrinks what a stolen credential is worth.",
+      "source": "Principle of least privilege; just-in-time access practice",
+      "action": "Find one broad standing access in your estate and make it time-boxed or request-based this week."
+    },
+    {
+      "id": "sec-no-single-point",
+      "domain": "security",
+      "title": "A control with no fallback is a gap, not a control",
+      "idea": "If one key, one box or one person going down stops protection entirely, you don't have a control — you have a single point of failure wearing a control's name. Real controls have a second copy or a manual path.",
+      "source": "Resilience engineering; defence in depth",
+      "action": "Name one control that has no second copy or manual path. Add a fallback, or at least write the manual runbook for when it's down."
+    },
+    {
+      "id": "sec-human-factor",
+      "domain": "security",
+      "title": "Design for the tired human, not the ideal one",
+      "idea": "A control that depends on people being careful, every time, fails on the worst day. The safe path has to be the easy path; friction gets worked around precisely when stress is highest.",
+      "source": "Usable security research; James Reason on human error",
+      "action": "Find one security step people routinely skip or work around. Remove the friction instead of sending another reminder."
+    },
+    {
+      "id": "think-second-order",
+      "domain": "thinking",
+      "title": "Ask 'and then what?'",
+      "idea": "The first consequence of a decision is obvious; the second and third usually decide the outcome. Most avoidable mistakes come from stopping the thought one step too early, at the move that feels good now.",
+      "source": "Ray Dalio on second- and third-order consequences",
+      "action": "On your next real decision, write out the second- and third-order effects before you commit to it."
+    },
+    {
+      "id": "think-base-rate",
+      "domain": "thinking",
+      "title": "Start from the base rate, not the story",
+      "idea": "A vivid narrative feels truer than a boring average, but the average predicts better. Anchoring on 'how have things like this usually gone?' corrects for the story you've talked yourself into.",
+      "source": "Daniel Kahneman, 'Thinking, Fast and Slow' (base-rate neglect)",
+      "action": "Before your next forecast or estimate, ask how similar things have usually turned out, and start your number from there."
+    },
+    {
+      "id": "think-via-negativa",
+      "domain": "thinking",
+      "title": "Improve by removing, not only adding",
+      "idea": "Subtracting a mistake, a meeting, a tool or a step is often higher-leverage and lower-risk than adding something new. We default to addition and rarely ask what to cut.",
+      "source": "Nassim Taleb, via negativa",
+      "action": "Remove one recurring thing this week — a meeting, a report, a tool — and watch what actually breaks. Usually less than you feared."
+    },
+    {
+      "id": "think-circle-competence",
+      "domain": "thinking",
+      "title": "Know the edge of your competence",
+      "idea": "Good decisions come from staying inside what you genuinely understand and being honest at its boundary. Trouble starts when confidence quietly extends past knowledge without anyone noticing the line.",
+      "source": "Charlie Munger / Warren Buffett, 'circle of competence'",
+      "action": "On a current decision, mark explicitly what you know, what you're guessing, and who actually knows. Go find that person for the guesses."
+    },
+    {
+      "id": "think-incentives",
+      "domain": "thinking",
+      "title": "Follow the incentive to find the outcome",
+      "idea": "People and systems do what they are rewarded for, not what you ask them to do. If behaviour won't change, the incentive hasn't — look there before you look at effort or attitude.",
+      "source": "Charlie Munger on the power of incentives",
+      "action": "Pick one behaviour you want from your team. Check whether the real incentives actually reward it, and fix the mismatch rather than repeating the ask."
+    },
+    {
+      "id": "think-deliberate-practice",
+      "domain": "thinking",
+      "title": "Practise at the edge, with feedback",
+      "idea": "Repetition inside your comfort zone plateaus quickly. Growth comes from targeted reps just beyond your current ability, paired with honest, specific feedback — not from more hours of the easy stuff.",
+      "source": "Anders Ericsson, deliberate practice",
+      "action": "Pick one skill. This week do one rep that is slightly too hard for you, and get specific feedback on that rep."
+    },
+    {
+      "id": "think-write-to-think",
+      "domain": "thinking",
+      "title": "Write to find out what you think",
+      "idea": "Fuzzy thinking survives in your head and dies on the page. Writing a decision out forces the gaps and the leaps into the open, where you can fix them before they cost you.",
+      "source": "The writing-to-think tradition (e.g. Paul Graham's essays on writing and thinking)",
+      "action": "Take one decision you've been circling. Write it as a single page: the problem, the options, your call, and why. Notice what you couldn't quite write."
+    },
+    {
+      "id": "money-avoid-ruin",
+      "domain": "money",
+      "title": "Survive first: never risk what you can't afford to lose",
+      "idea": "Compounding only works if you stay in the game, and one ruinous loss ends it permanently. Protecting the downside — insurance, a buffer, no bet-the-house moves — comes before chasing any upside.",
+      "source": "Nassim Taleb on ruin; Buffett's 'rule number one: don't lose money'",
+      "action": "Check you hold a real emergency buffer (your Career compass shows the months) before taking on any new financial risk. If it's short, top it up first."
+    },
+    {
+      "id": "money-compound",
+      "domain": "money",
+      "title": "Time in beats timing",
+      "idea": "Small, steady, automatic contributions over many years beat clever bets and market timing. The engine of wealth is time and consistency, not brilliance or luck.",
+      "source": "The mathematics of compounding; index-investing evidence",
+      "action": "Confirm a regular, automatic investment runs before you ever see the money. If it's still manual, automate it this week."
+    },
+    {
+      "id": "money-pay-yourself-first",
+      "domain": "money",
+      "title": "Pay yourself first, automatically",
+      "idea": "Saving whatever is left after spending reliably leaves nothing, because spending expands to fill the balance. Moving savings out on the day pay lands makes the good outcome the default, with no willpower needed.",
+      "source": "David Bach, 'The Automatic Millionaire'",
+      "action": "Set, or verify, an auto-debit into savings or investments dated to your salary day — before the money reaches your spending account."
+    },
+    {
+      "id": "money-freedom-to-walk",
+      "domain": "money",
+      "title": "Build the freedom to walk away",
+      "idea": "Enough saved to say no — to a bad job, a bad deal, a bad client — is one of the highest-return assets a professional can own. It turns your judgement, not your fear, into the thing making your decisions.",
+      "source": "Financial-independence / runway thinking",
+      "action": "Look at your FI or runway number in the Career compass. Name the single move that extends it most this quarter, and start it."
+    },
+    {
+      "id": "money-costs-compound",
+      "domain": "money",
+      "title": "Costs compound against you too",
+      "idea": "A small recurring fee or a high interest rate compounds against you as surely as returns compound for you, quietly eating years of gains. Cutting a cost is a guaranteed return, unlike a hoped-for one.",
+      "source": "John Bogle on the tyranny of costs",
+      "action": "Find one recurring drag — a high-interest debt, a fee, an unused subscription — and cut or refinance it this week."
+    },
+    {
+      "id": "money-lifestyle-creep",
+      "domain": "money",
+      "title": "Direct raises to freedom, not just spending",
+      "idea": "When income rises and spending rises to match, you are no freer than before — the raise bought nothing durable. Capturing part of every raise before it is absorbed is how income actually turns into independence.",
+      "source": "Hedonic adaptation / lifestyle-creep research",
+      "action": "On your next raise or bonus, pre-commit a fixed share to savings before it ever hits your spending account."
+    }
+  ]
+}

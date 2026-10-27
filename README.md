@@ -36,9 +36,9 @@ The latest additions, newest first (the Command Center marks each one New for 30
 
 - **2026-10-26** · [Prove every command works](docs/securax/117-SELFTEST.md): You can trust that the commands work: the system proves its own command surface on every change, so 'it doesn't even start / that command errors' is caught by a test, not by you at the worst moment. `./securax selftest`
 - **2026-10-26** · [One lever a week](docs/securax/112-SET-AND-FORGET.md): Every week the one thing most worth changing about your life is chosen for you and made effortless, so you improve where it actually matters without having to decide what to work on. `./securax improve`
+- **2026-10-26** · [One idea a week](docs/securax/115-ONE-IDEA-A-WEEK.md): Every week one timeless, high-leverage idea sharpens how you think, decide and work, tied to a goal you set, so you compound as a professional and a person instead of drowning in a feed you have to wade through. `./securax insight`
 - **2026-10-23** · [The one next step](docs/securax/93-PROGRESS-YOU-CAN-SEE.md): You never have to learn 123 commands to be better off: one command always points to the next thing. `./securax next`
 - **2026-10-23** · [The estate map](docs/securax/113-THE-ESTATE-MAP.md): You see the whole estate and how it hangs together at a glance, instead of reading a list of 43 things. `./securax map`
-- **2026-10-23** · [Adversary ledger](docs/securax/30-PURPLE-TEAM-LOOP.md): A bug-bounty finding becomes the last of its kind: the estate gets stronger from every attacker, not just safer on paper. `./securax adversary`
 
 **Practise and defend**
 
@@ -103,6 +103,7 @@ The latest additions, newest first (the Command Center marks each one New for 30
 | 🟡 [Your progress](docs/securax/93-PROGRESS-YOU-CAN-SEE.md) | Is SecuRAX making you better off? Your Life OS rhythm, what made the estate stronger this month, and the one next step, on your phone every Sunday — and a 'had your back' card on the Life OS home that shows, up front, what the estate quietly did for you this week (a safe encrypted copy, a healthy estate, failures turned into fixes), real events only. | `./securax progress` |
 | 🟡 [Apps for Android and iOS](docs/securax/98-SHIP-AND-STORE-APPS.md) | Turn any app built from the kit, or the Life OS, into an Android and iOS project in one command: a Capacitor project that works offline from the app's own files, a Trusted Web Activity manifest for the quick Android path, and a store-readiness check. | `./securax os mobile-check vantage` |
 | 🟢 [One lever a week](docs/securax/112-SET-AND-FORGET.md) | One calm nudge a week, aimed at the Wheel-of-Life area you rated lowest: the single set-and-forget change that moves it most, with its one-time steps and if-then plan, drawn from the environment catalogue and the behavioural and elite-sport research. One signal a week, where it helps you most; the opposite of a feed. It reads only the wheel you already scored, on your machine, and nothing leaves your box. | `./securax improve` |
+| 🟢 [One idea a week](docs/securax/115-ONE-IDEA-A-WEEK.md) | One durable idea a week, aimed at a goal you actually set. Not news and not a feed: a bounded, curated, on-device library of high-leverage ideas (decision-making and leadership, security and AI-risk craft, mental models, money and financial independence), each paraphrased in plain words with its source named and one concrete action. It aims by your OKRs first (the lowest-progress goal whose theme it can match), then your weakest Wheel area, and never repeats an idea until its theme is exhausted. It reads only what is on your machine; nothing leaves your box. | `./securax insight` |
 | 🟢 [Guiding Map](docs/securax/14-GUIDING-MAP.md) | Your daily cockpit for life and work: goals, check-ins and plans. Works offline, no AI needed. | `./securax open` |
 | 🟡 [Life OS Inbox](docs/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION.md) | Capture one line; then each note becomes an action with a next step and a date, or stays a note. Reviews turn findings into actions; Google Keep notes come in too. | `./securax open` |
 | 🟡 [Life papers, read for you](docs/securax/104-LIFE-PAPERS-READ-FOR-YOU.md) | Your life workbooks and private documents (policies, statements, ID scans) are read on your own machine: every open issue becomes a dated Life OS action, the vital fifth first, with calendar alarms; a missing nominee, a lapsing policy or a password left in a sheet is found for you. | `./securax lifeos import workbook` |
@@ -121,6 +122,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- [`./securax insight` — one durable idea a week, aimed at a goal you set](docs/securax/115-ONE-IDEA-A-WEEK.md)
 - [`./securax selftest` — prove every command works, before you need it](docs/securax/117-SELFTEST.md)
 - ["Choose who you serve" — a new core principle, baked in forever](docs/securax/116-CHOOSE-YOUR-CUSTOMER.md)
 - [`./securax improve` — one lever a week, aimed at your weakest Wheel-of-Life area](docs/securax/112-SET-AND-FORGET.md)
@@ -128,7 +130,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - A stopped add-on could show a GREEN "running" dot on the home screen — a status-integrity bug
 - The whole estate could not start — `no such service: gateway-tls` — and even rollback failed
 - The Command Center went offline (403 Forbidden) after a life-docs import
-- `./securax autobuild` / `build` couldn't install its agent on modern Debian/Ubuntu
 
 **Release 0.3.0 - 2026-10-22:**
 
