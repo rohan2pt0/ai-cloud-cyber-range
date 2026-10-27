@@ -44,6 +44,7 @@
   .card .t{font-weight:650;display:flex;align-items:center;gap:8px} .card .d{color:var(--mut);font-size:14px;margin-top:4px}
   .dot{width:9px;height:9px;border-radius:50%;background:var(--mut);display:inline-block;flex:0 0 auto}
   .dot.up{background:var(--green)} .dot.down{background:var(--red)} .dot.off{background:var(--mut);opacity:.55}
+  .dot.unknown{background:transparent;border:2px solid var(--mut);box-sizing:border-box}
   .dot.starting{background:var(--amber);animation:pulse 1.2s ease-in-out infinite} @keyframes pulse{50%{opacity:.35}}
   @media (prefers-reduced-motion:reduce){.dot.starting{animation:none}}
   .ico{width:18px;height:18px;flex:0 0 auto;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;color:var(--accent)}
@@ -205,26 +206,38 @@
       box.appendChild(el);
     });
   }
-  // green = running · amber = a core app still starting (first 3 min) · red = a core app not responding ·
-  // grey = an optional add-on that isn't running (normal — e.g. lite mode). Re-checked every 5 s, so the page
-  // never shows a stale "red" for something that finished booting a moment after you opened it.
-  var TITLE = {up:"running", starting:"starting…", down:"not responding", off:"not running (optional)"};
+  // green = running (confirmed) · amber = a core app still starting (first 3 min) · red = a core app not responding ·
+  // grey filled = an optional add-on that isn't running (normal — e.g. lite mode) · grey ring = reachable but status
+  // can't be verified from this address (open the https:// names for a live check). Re-checked every 5 s, so the page
+  // never shows a stale "red" for something that finished booting a moment after you opened it — and never a false green.
+  var TITLE = {up:"running", starting:"starting…", down:"not responding", off:"not running (optional)",
+    unknown:"status can't be verified on this address — open the https:// names, or run ./securax status"};
+  // up===true → running · up===false → down/off · up===null → reachable but NOT verifiable (never call that green).
   function paint(a, up){
     var d = document.querySelector('.dot[data-url="'+a.url+'"]'); if(!d) return;
-    var st = up ? "up" : (a.core ? ((Date.now()-started) < 180000 ? "starting" : "down") : "off");
+    var st = up === true ? "up" : up === null ? "unknown"
+           : (a.core ? ((Date.now()-started) < 180000 ? "starting" : "down") : "off");
     d.className = "dot " + st; d.title = TITLE[st];
     if(a.core){ APPST[a.t] = st; try{ drawNeeds(); }catch(e){} }
   }
-  // Over HTTPS the edge answers /_up/<name> for us with the service's REAL status (a 502 means "not running"); a plain no-cors fetch
-  // cannot read a status, so a stopped service used to be shown green.
+  // Every address this page loads from — the HTTPS edge, the plain :8088 server, the Tailscale device port — answers
+  // /_up/<name> with the service's REAL status (a 502 means "not running"), so we read the truth, never guess. Integrity
+  // first: a green dot ALWAYS means a confirmed "running". A cross-origin no-cors fetch resolves even for a 502, so it is
+  // never trusted for green; a service we cannot read the status of at all is shown "unverified" (grey ring), never green.
   var PROBE = {"Chat":"chat","Private Docs":"docs","Automation":"flows"};
+  function sameOrigin(u){ try{ return new URL(u, location.href).origin === location.origin; }catch(e){ return false; } }
   function checkApps(){
     ALL.forEach(function(a){
       if(a.skip) return;
-      if(SEC && PROBE[a.t]){
+      if(PROBE[a.t]){
+        // the real status of each service, same-origin through /_up/ (served by the edge AND the plain server).
         fetch("/_up/"+PROBE[a.t],{cache:"no-store"}).then(function(r){paint(a, r.status<500);}).catch(function(){paint(a,false);});
+      } else if(sameOrigin(a.url)){
+        // the hub / Command Center itself: a same-origin response IS readable, so a <500 is a real "running".
+        fetch(a.url,{cache:"no-store"}).then(function(r){paint(a, r.status<500);}).catch(function(){paint(a,false);});
       } else {
-        fetch(a.url,{mode:"no-cors"}).then(function(){paint(a,true);}).catch(function(){paint(a,false);});
+        // cross-origin with no probe: the status cannot be read, so be honest — never a false green.
+        fetch(a.url,{mode:"no-cors"}).then(function(){paint(a,null);}).catch(function(){paint(a,false);});
       }
     });
   }
