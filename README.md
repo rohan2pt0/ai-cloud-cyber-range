@@ -123,14 +123,14 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- `./securax studio` comes up for *any* user, not only uid 1000
+- Two systemic test gates, built because polished green checks still shipped a broken Studio to the user
 - `./securax studio` now actually starts the editor
 - [`./securax doctor` warns before a full C: drive takes the estate down](docs/securax/121-DRIVE-HOME.md)
 - [A runbook for migrating off Claude without losing anything](docs/securax/120-MIGRATE-OFF-CLAUDE.md)
 - [`./securax studio` — build the estate from a browser, on your own models (no Claude, no terminal)](docs/securax/119-STUDIO.md)
 - [`./securax insight` — one durable idea a week, aimed at a goal you set](docs/securax/115-ONE-IDEA-A-WEEK.md)
 - [`./securax selftest` — prove every command works, before you need it](docs/securax/117-SELFTEST.md)
-- ["Choose who you serve" — a new core principle, baked in forever](docs/securax/116-CHOOSE-YOUR-CUSTOMER.md)
-- [`./securax improve` — one lever a week, aimed at your weakest Wheel-of-Life area](docs/securax/112-SET-AND-FORGET.md)
 
 **Release 0.3.0 - 2026-10-22:**
 
@@ -229,7 +229,7 @@ Secure-by-design · privacy-by-design · zero-trust · **fail-closed** · everyt
 - `docs/demo-runbook.md` — a 15-minute guided walkthrough
 
 <!-- readme:proofs:start -->
-> **Proof, not claims:** 49 end-to-end journeys run the real estate (real containers, a real browser) on every merge and every night; pull requests run the ones their change can affect ([doc 68](docs/securax/68-CI-AT-AGENT-SCALE.md)).
+> **Proof, not claims:** 50 end-to-end journeys run the real estate (real containers, a real browser) on every merge and every night; pull requests run the ones their change can affect ([doc 68](docs/securax/68-CI-AT-AGENT-SCALE.md)).
 <!-- readme:proofs:end -->
 
 <!-- readme:docs:start -->

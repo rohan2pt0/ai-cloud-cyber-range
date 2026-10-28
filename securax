@@ -2159,9 +2159,13 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
         # Secure by default: a strong password is generated and shown once (Studio can run code, so it is never left open).
         _pw="$(ev STUDIO_PASSWORD)"
         if [ -z "$_pw" ]; then _pw="$(head -c 24 /dev/urandom | base64 2>/dev/null | tr -dc 'A-Za-z0-9' | head -c 20)"; skv "$ROOT/local/compose/.env" STUDIO_PASSWORD "$_pw"; fi
-        # code-server runs as a non-root user, so its data dir MUST be a folder YOU own (a root-owned volume gave EACCES
-        # and the editor never came up). Create it here and point the mount at it; vault/ is git-ignored.
-        _data="$ROOT/vault/studio-data"; mkdir -p "$_data" 2>/dev/null || true; skv "$ROOT/local/compose/.env" STUDIO_DATA "$_data"
+        # code-server runs as its non-root `coder` user (uid 1000). Its data dir must be WRITABLE by that uid whatever
+        # uid owns the host folder: a root- or runner-owned folder (any uid != 1000) gave `EACCES … coder-logs` and the
+        # editor never came up. Owning the folder yourself only helped because your own uid happened to be 1000. A
+        # world-writable local, git-ignored cache dir is the portable fix — no root, no uid match (chown needs root the
+        # user may not have). vault/ is git-ignored, single-machine, private.
+        _data="$ROOT/vault/studio-data"; mkdir -p "$_data" 2>/dev/null || true; chmod 0777 "$_data" 2>/dev/null || true
+        skv "$ROOT/local/compose/.env" STUDIO_DATA "$_data"
         C "Starting Code Studio (VS Code + Cline) on your own models - no Claude, no terminal. The first start pulls the image (a minute or two)."
         ( cd "$ROOT/local/compose" && docker compose --profile studio up -d studio ) || { C "Could not start Studio. Run  ./securax doctor  and paste the output."; exit 1; }
         _i=0; while [ "$_i" -lt 45 ] && ! curl -fsS -m 3 "http://localhost:8300/" >/dev/null 2>&1; do sleep 4; _i=$((_i+1)); done

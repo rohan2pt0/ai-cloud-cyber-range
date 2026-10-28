@@ -2372,6 +2372,40 @@ spec:
     c.ok("○ burrow" in out, "…and the stage is dormant again (the genome is intact: dig it any time)", tail(out, 200))
 
 
+@journey("studio_starts", "`./securax studio` on the REAL estate (doc 119): the opt-in VS Code + Cline editor actually comes up on its own profile, serves over its port, and — the bug that shipped — its data dir is writable by code-server's non-root user whatever uid owns the host folder, so there is NO `EACCES … coder-logs` and the editor is not a blank crash-loop.", slow=True)
+def j_studio(sb: H.Sandbox, c: Checks):
+    # This is the gate that was missing when a broken Studio reached the user: no journey ever STARTED Studio. The
+    # earlier data-dir fix only worked because the user's own uid happened to be 1000 (code-server's `coder` user); a
+    # runner or root-owned checkout (any other uid) still hit EACCES. We drive the real CLI and prove it comes up here.
+    sb.down()
+    sb.reset_env(SECURAX_LITE="1")
+    data = sb.clone / "vault" / "studio-data"
+    try:
+        rc, out = sb.securax("studio", timeout=1200)                       # real command: mkdir+chmod, compose up, wait, (best-effort Cline)
+        c.ok(rc == 0, "`./securax studio` exits 0", tail(out, 600))
+        # it serves: /healthz needs no password and proves the server process is really up (not a crash-loop)
+        c.ok(sb.wait_http("http://127.0.0.1:8300/healthz", 240), "Studio serves on its port (code-server /healthz answers)",
+             sb.logs("studio"))
+        root = sb.http("GET", "http://127.0.0.1:8300/")
+        c.ok(root.status in (200, 302), "the editor front door answers", f"{root.status} {tail(root.text, 200)}")
+        # THE REGRESSION: a non-coder-uid data dir gave `EACCES: permission denied, mkdir '…/coder-logs'` and the
+        # editor never came up. Its only mention in the logs would be that error, so its absence is the proof.
+        logs = sb.compose("--profile", "studio", "logs", "studio")[1]
+        c.ok("EACCES" not in logs, "NO EACCES in the Studio logs (data dir is writable by code-server's user)",
+             tail(logs, 600))
+        # and prove write really works: the host uid differs from coder on CI (runner 1001 ≠ 1000), yet code-server
+        # wrote its settings/extensions into the mounted, world-writable data dir.
+        wrote = data.exists() and any(data.iterdir())
+        c.ok(wrote, "code-server wrote into the data dir (so the write permission is real, not just tolerated)",
+             f"{data} contents: {[p.name for p in data.iterdir()] if data.exists() else 'MISSING'}")
+        mode = (data.stat().st_mode & 0o777) if data.exists() else 0
+        c.ok(mode & 0o002, "the data dir is world-writable (the portable fix that works for any container uid)", oct(mode))
+    finally:
+        sb.compose("--profile", "studio", "stop", "studio")                # opt-in add-on: never leave it running
+        sb.compose("--profile", "studio", "rm", "-f", "studio")
+        shutil.rmtree(data, ignore_errors=True)                            # vault/ is git-ignored, but leave the clone as found
+
+
 def _forge():
     import importlib.util
     spec = importlib.util.spec_from_file_location("securax_forge", pathlib.Path(__file__).resolve().parent.parent / "lifecycle" / "forge.py")
