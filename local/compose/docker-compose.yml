@@ -36,7 +36,6 @@ volumes:
   estatesync:   # sovereign cross-device life-OS state (SQLite, your box only)
   passwords:    # the password manager (Vaultwarden): your vault, encrypted on your devices before it is stored
   gatewaystate: # the gateway's AI allowance ledger (tokens spent per caller today / this month)
-  studio:       # Code Studio (VS Code + Cline) settings & installed extensions; your box only (doc 119)
 
 services:
   gateway:
@@ -375,18 +374,18 @@ services:
     cpus: 2.0
     profiles: ["studio"]            # NOT in core up; started only by `./securax studio`
     restart: unless-stopped
-    user: "0:0"                     # installs the extension and writes the repo mount; dropping to a non-root user is queued hardening
+    # Run as the image's own non-root `coder` user with its real entrypoint (which fixes up ids) — NOT as root with a
+    # shell override. The data dir is a HOST folder YOU own (STUDIO_DATA, created by `./securax studio`), so code-server
+    # can actually write its settings and extensions: a root-owned named volume gave `EACCES ... coder-logs` and the
+    # editor failed to come up. The Cline extension is installed by `./securax studio` after start (or from the Extensions
+    # panel), so the entrypoint stays intact.
     environment:
       PASSWORD: ${STUDIO_PASSWORD:-}
       # Informational: the gateway is OpenAI-compatible at this internal name. You set it in Cline on first run (see doc 119).
       GATEWAY_URL: ${STUDIO_GATEWAY_URL:-http://gateway:8080/v1}
-    entrypoint: ["/bin/sh", "-lc"]
-    command:
-      - >
-        code-server --install-extension saoudrizwan.claude-dev 2>/dev/null || true;
-        exec code-server --bind-addr 0.0.0.0:8080 --disable-telemetry --disable-update-check --welcome-text "SecuRAX Studio - build on your own models" /home/coder/project
+    command: ["--bind-addr", "0.0.0.0:8080", "--disable-telemetry", "--disable-update-check", "/home/coder/project"]
     volumes:
-      - studio:/home/coder/.local/share/code-server
+      - ${STUDIO_DATA:-../../vault/studio-data}:/home/coder/.local/share/code-server   # a folder YOU own, so code-server can write it
       - ${STUDIO_REPO:-../..}:/home/coder/project
     ports: ["${BIND_HOST:-127.0.0.1}:8300:8080"]     # loopback by default; set BIND_HOST to reach it from other devices (it has a password)
     networks: [edge, modelplane]                      # edge: the hub nginx proxies /studio/ here; modelplane: Cline reaches the gateway

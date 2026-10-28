@@ -65,16 +65,24 @@ can confirm. If the editor loads oddly or a panel won’t connect, you are not s
 **standalone** version, which talks to the same gateway and models:
 
 ```bash
+# the data dir must be a folder YOU own, or code-server hits EACCES and the editor fails to come up
+mkdir -p ~/.securax-studio-data
 docker run -d --name securax-studio \
   --add-host=host.docker.internal:host-gateway \
   -p 127.0.0.1:8443:8080 \
   -v "$HOME/ai-cloud-cyber-range:/home/coder/project" \
-  -v securax-studio-data:/home/coder/.local/share/code-server \
+  -v "$HOME/.securax-studio-data:/home/coder/.local/share/code-server" \
   -e PASSWORD='choose-a-strong-one' \
-  codercom/code-server:4.143.1 \
-  --install-extension saoudrizwan.claude-dev --bind-addr 0.0.0.0:8080
+  codercom/code-server:4.143.1
+# then install Cline (serve and install are separate — one command each):
+docker exec securax-studio code-server --install-extension saoudrizwan.claude-dev
 # open http://localhost:8443  — Cline base URL: http://host.docker.internal:8080/v1
 ```
+
+> Note: run `code-server` **plain** to serve; `--install-extension` is a one-shot that installs and
+> exits, so never combine it with the serve command. Install it with `docker exec` (above) or from the
+> Extensions panel. If you ever see `EACCES ... coder-logs`, the data dir isn't yours — the
+> `mkdir ~/.securax-studio-data` above fixes it (or `sudo chown -R 1000:1000 ~/.securax-studio-data`).
 
 ## What is still queued (hardening)
 

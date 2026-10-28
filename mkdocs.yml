@@ -135,6 +135,7 @@ nav:
       - "Build with your own models": securax/118-BUILD-WITH-YOUR-MODELS.md
       - "Code Studio (browser GUI)": securax/119-STUDIO.md
       - "Migrate off Claude": securax/120-MIGRATE-OFF-CLAUDE.md
+      - "A home on a roomy drive": securax/121-DRIVE-HOME.md
       - "Choose who you serve": securax/116-CHOOSE-YOUR-CUSTOMER.md
   - How-to guides:
       - AI providers and plugins: securax/22-PLUGINS-AND-PROVIDERS.md
