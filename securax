@@ -537,6 +537,24 @@ URLS
       fi
     fi
     DISK=$(df -P . | awk 'NR==2{print $5}' | tr -d '%'); echo "  disk used: ${DISK}%  $([ "${DISK:-0}" -ge 85 ] && echo '⚠ >85% — free space' || echo 'ok')"
+    # Windows/WSL drive guard (doc 121): WSL and Docker default to C:, which fills and takes the estate down — a single
+    # point of failure. On WSL, show free space per Windows drive, name the roomiest, and if this disk is low, say to move.
+    if grep -qiE 'microsoft|wsl' /proc/version 2>/dev/null && ls -d /mnt/[a-z] >/dev/null 2>&1; then
+      _best=""; _bestfree=0
+      for _m in /mnt/[a-z]; do
+        _free=$(df -P -BG "$_m" 2>/dev/null | awk 'NR==2{gsub(/[A-Za-z]/,"",$4); print $4}')
+        case "$_free" in ''|*[!0-9]*) continue ;; esac
+        _ltr=$(printf '%s' "$_m" | sed 's#/mnt/##' | tr 'a-z' 'A-Z')
+        echo "  drive ${_ltr}:  ${_free} GB free"
+        if [ "$_free" -gt "${_bestfree:-0}" ]; then _bestfree="$_free"; _best="$_ltr"; fi
+      done
+      _here=$(df -P -BG . 2>/dev/null | awk 'NR==2{gsub(/[A-Za-z]/,"",$4); print $4}')
+      case "$_here" in ''|*[!0-9]*) _here=999 ;; esac
+      if [ "$_here" -lt 15 ] && [ -n "$_best" ]; then
+        echo "  ⚠ the estate's disk has only ${_here} GB free. Move WSL + Docker to ${_best}: (the roomiest) so C: cannot fill and stop Docker."
+        echo "     One-time steps (a SPOF fix):  docs/securax/121-DRIVE-HOME.md"
+      fi
+    fi
     if command -v free >/dev/null; then MEM=$(free | awk '/Mem:/{printf "%d",$3/$2*100}'); echo "  RAM used:  ${MEM}%  $([ "${MEM:-0}" -ge 90 ] && echo '⚠ >90% — close apps / use local-fast model' || echo 'ok')"; fi
     gcurl -fsS $(gw_url)/healthz >/dev/null 2>&1 && echo "  gateway:   healthy" || echo "  gateway:   down (run ./securax up)"
     web_up hub 8088 && echo "  guiding map: up" || echo "  guiding map: down"
@@ -2141,13 +2159,19 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
         # Secure by default: a strong password is generated and shown once (Studio can run code, so it is never left open).
         _pw="$(ev STUDIO_PASSWORD)"
         if [ -z "$_pw" ]; then _pw="$(head -c 24 /dev/urandom | base64 2>/dev/null | tr -dc 'A-Za-z0-9' | head -c 20)"; skv "$ROOT/local/compose/.env" STUDIO_PASSWORD "$_pw"; fi
-        C "Starting Code Studio (VS Code + Cline) on your own models - no Claude, no terminal. The first start pulls the image and the Cline extension (a minute or two)."
+        # code-server runs as a non-root user, so its data dir MUST be a folder YOU own (a root-owned volume gave EACCES
+        # and the editor never came up). Create it here and point the mount at it; vault/ is git-ignored.
+        _data="$ROOT/vault/studio-data"; mkdir -p "$_data" 2>/dev/null || true; skv "$ROOT/local/compose/.env" STUDIO_DATA "$_data"
+        C "Starting Code Studio (VS Code + Cline) on your own models - no Claude, no terminal. The first start pulls the image (a minute or two)."
         ( cd "$ROOT/local/compose" && docker compose --profile studio up -d studio ) || { C "Could not start Studio. Run  ./securax doctor  and paste the output."; exit 1; }
         _i=0; while [ "$_i" -lt 45 ] && ! curl -fsS -m 3 "http://localhost:8300/" >/dev/null 2>&1; do sleep 4; _i=$((_i+1)); done
         if curl -fsS -m 3 "http://localhost:8300/" >/dev/null 2>&1; then
+          # Install the Cline agent (best effort; it also installs from the Extensions panel).
+          if ( cd "$ROOT/local/compose" && docker compose --profile studio exec -T studio code-server --install-extension saoudrizwan.claude-dev >/dev/null 2>&1 ); then _cl="Cline is installed."; else _cl="Install Cline from the Extensions panel (left bar, search 'Cline')."; fi
           C "Studio is running: $_url"
           C "  Password: $_pw   (saved in local/compose/.env as STUDIO_PASSWORD)"
-          C "  First run, in the Cline sidebar (the robot icon) -> Settings -> API Provider: OpenAI Compatible:"
+          C "  $_cl"
+          C "  In the Cline sidebar (the robot icon) -> Settings -> API Provider: OpenAI Compatible:"
           C "    Base URL  http://gateway:8080/v1     API key  your gateway key (blank if gateway auth is off)     Model  a coding model from  ./securax opencode --check"
           C "  Full guide:  docs/securax/119-STUDIO.md"
         else C "Studio is still starting (the first image pull can take a few minutes). Re-run  ./securax studio status  shortly; if it stays down run  ./securax doctor"; fi
