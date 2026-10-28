@@ -1,7 +1,7 @@
 # Code Studio — build the estate from a browser, on your own models
 
 <!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
-> **Status: 🟡 Partly built.** Built and shipped as the usable first version: ./securax studio starts VS Code + the Cline AI coding agent in the browser (codercom/code-server, digest-pinned) as an opt-in add-on that is never part of the core start, reached by name at hub.<domain>/studio/ through the edge, with a generated password and Cline pointed at your own gateway (OpenAI-compatible) so building the estate needs no Claude and no terminal. Amber until the queued hardening lands (non-root, a code.<domain> subdomain option, gateway-identity sign-in, a sandbox journey that proves the page loads and Cline reaches the gateway, and a digest-pin watch). A standalone docker-run fallback is documented for the first run. [What the lights mean](../index.md#the-status-lights)
+> **Status: 🟡 Partly built.** Built and shipped as the usable first version: ./securax studio starts VS Code + the Cline AI coding agent in the browser (codercom/code-server, digest-pinned) as an opt-in add-on that is never part of the core start, reached by name at hub.<domain>/studio/ through the edge, with a generated password and Cline pointed at your own gateway (OpenAI-compatible) so building the estate needs no Claude and no terminal. A sandbox journey (studio_starts) now starts it on the real estate on every change and proves it serves with its data dir writable for any uid (no EACCES), and the data-dir fix is finished so it works whatever uid owns the checkout, not only uid 1000. Amber until the rest of the queued hardening lands (non-root, a code.<domain> subdomain option, gateway-identity sign-in, the journey extended to the edge route + Cline reaching the gateway, and a digest-pin watch). A standalone docker-run fallback is documented for the first run. [What the lights mean](../index.md#the-status-lights)
 <!-- status:end -->
 
 **The friction this removes:** until now, changing SecuRAX meant a terminal and a paid Claude Code
@@ -65,8 +65,9 @@ can confirm. If the editor loads oddly or a panel won’t connect, you are not s
 **standalone** version, which talks to the same gateway and models:
 
 ```bash
-# the data dir must be a folder YOU own, or code-server hits EACCES and the editor fails to come up
-mkdir -p ~/.securax-studio-data
+# the data dir must be WRITABLE by code-server's coder user (uid 1000), or it hits EACCES and fails to come up.
+# chmod 0777 makes it work whatever uid you are (owning it only helps if your own uid is 1000); it is a local cache dir.
+mkdir -p ~/.securax-studio-data && chmod 0777 ~/.securax-studio-data
 docker run -d --name securax-studio \
   --add-host=host.docker.internal:host-gateway \
   -p 127.0.0.1:8443:8080 \
@@ -81,8 +82,8 @@ docker exec securax-studio code-server --install-extension saoudrizwan.claude-de
 
 > Note: run `code-server` **plain** to serve; `--install-extension` is a one-shot that installs and
 > exits, so never combine it with the serve command. Install it with `docker exec` (above) or from the
-> Extensions panel. If you ever see `EACCES ... coder-logs`, the data dir isn't yours — the
-> `mkdir ~/.securax-studio-data` above fixes it (or `sudo chown -R 1000:1000 ~/.securax-studio-data`).
+> Extensions panel. If you ever see `EACCES ... coder-logs`, the data dir isn't writable by the container's uid —
+> the `chmod 0777 ~/.securax-studio-data` above fixes it for any uid (or `sudo chown -R 1000:1000 ~/.securax-studio-data`).
 
 ## What is still queued (hardening)
 
@@ -93,8 +94,9 @@ This is the usable first version (shipped per *build usable today, harden after*
 - Offer Studio as its **own subdomain** (`code.<domain>`) as well as the `/studio/` path, for editors
   that prefer a root path.
 - **Sign-in through the gateway’s identity** (OIDC) instead of a shared password.
-- A **sandbox journey** that starts Studio, proves the page loads over the edge and that Cline reaches
-  the gateway, so CI tests it on every change.
+- A **sandbox journey** that starts Studio over the edge and proves Cline reaches the gateway. *(Partly
+  done: the `studio_starts` journey now starts Studio on every change and proves it serves with a
+  writable data dir and no `EACCES`; still to add — the `/studio/` edge route and the Cline→gateway hop.)*
 - Pin the image in `digest-pins.json` and let the weekly supply-chain watch track it.
 
 ## Why this matters
