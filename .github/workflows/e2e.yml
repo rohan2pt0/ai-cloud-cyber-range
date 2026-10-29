@@ -46,7 +46,7 @@ jobs:
           echo "journeys=$J" >> "$GITHUB_OUTPUT"
           echo "Journeys: ${J:-none (no journey guards these files; unit tests and fitness still ran)}" >> "$GITHUB_STEP_SUMMARY"
       - if: steps.pick.outputs.journeys != ''
-        uses: hashicorp/setup-terraform@v3          # the lifecycle_cloud_is_safe journey exercises the engine -> terraform wiring (plans only)
+        uses: hashicorp/setup-terraform@v4          # the lifecycle_cloud_is_safe journey exercises the engine -> terraform wiring (plans only)
         with: { terraform_version: "1.9.8", terraform_wrapper: false }
       - name: Install sandbox deps (PyYAML + Playwright/Chromium)
         if: steps.pick.outputs.journeys != ''
