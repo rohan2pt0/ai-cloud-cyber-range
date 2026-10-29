@@ -201,6 +201,7 @@ nav:
           - RBI FREE-AI: securax/regulatory/rbi-free-ai-assessment.md
           - MIT AI Risk Repository: securax/regulatory/mit-ai-risk-assessment.md
           - Post-quantum readiness: securax/regulatory/pqc-readiness-assessment.md
+          - CISA Zero Trust Maturity Model: securax/regulatory/ztmm-assessment.md
   - Reference:
       - Command reference: reference/cli.md
       - Technical gist: securax/54-TECHNICAL-GIST.md

@@ -86,6 +86,7 @@ securax/regulatory/owasp-llm-agentic-assessment.md: [green, "Complete; every ref
 securax/regulatory/rbi-free-ai-assessment.md: [green, "Complete; every reference resolves (fitness `regulatory-maps`). Titles paraphrased from a summary of the report: confirm against the RBI text. Open gaps are listed inside."]
 securax/regulatory/mit-ai-risk-assessment.md: [green, "Complete; every reference resolves (fitness `regulatory-maps`). Open gaps are listed inside."]
 securax/regulatory/pqc-readiness-assessment.md: [green, "Complete; every reference resolves (fitness `regulatory-maps`). Open gaps are listed inside."]
+securax/regulatory/ztmm-assessment.md: [green, "Complete; every reference resolves (fitness `regulatory-maps`). A deployer-side read of CISA's Zero Trust Maturity Model v2.0 — device-endpoint functions are the organisation's (MDM/EDR), not this software's. Open gaps are listed inside."]
 architecture.md: [amber, "The original cyber-range lab; superseded by the SecuRAX docs."]
 board-brief.md: [amber, "The original cyber-range lab; superseded by the SecuRAX docs."]
 cloud-governance.md: [amber, "Terraform and OPA are built and validated; cloud deployments stay dormant."]
