@@ -1,0 +1,43 @@
+{
+ "about": "Incident-response playbooks: a reusable, ordered checklist per scenario, run live during an incident (./securax playbook). Steps follow the NIST SP 800-61 phases (triage → contain → eradicate → recover → report → learn) and point at the estate's own commands that already do the work — respond (forensic kit + IOCs), incident (the regulator clock), findings (the fix-by register), backup/restore, and postmortem (the blameless retro). A step's `how` is a command to run or a plain instruction; `critical` steps must be done before a run can close cleanly. This is a starting library for a BFSI SOC: add your own scenarios and steps — it is data, no code change needed.",
+ "playbooks": {
+  "ransomware": {
+   "name": "Ransomware",
+   "scenario": "Files encrypted / ransom note / backups targeted.",
+   "steps": [
+    {"id": "triage-case", "phase": "triage", "title": "Open the response case and start the regulator clock", "how": "./securax respond open \"<codename>\" --kind ransomware  &&  ./securax incident open \"Ransomware\" --kind ransomware", "critical": true},
+    {"id": "contain-isolate", "phase": "contain", "title": "Isolate affected hosts from the network (do not power off — preserve memory)", "how": "Pull the network cable / disable the NIC; keep the machine running for memory capture.", "critical": true},
+    {"id": "contain-keys", "phase": "contain", "title": "Stop AI and rotate any exposed keys/credentials", "how": "./securax ai stop  &&  rotate exposed keys (./securax keys)", "critical": false},
+    {"id": "triage-iocs", "phase": "triage", "title": "Capture evidence and pull IOCs from the note / advisories", "how": "./securax respond kit <case> /media/usb  →  intake  →  ./securax respond ioc import <advisory> --source <id>", "critical": false},
+    {"id": "recover-backups", "phase": "recover", "title": "Prove a CLEAN backup exists, then restore from it (never pay first)", "how": "./securax crypto  &&  ./securax restore latest   (ransomguard checks the copy is clean before use)", "critical": true},
+    {"id": "report-file", "phase": "report", "title": "Draft and file every regulator notification before its deadline", "how": "./securax incident due  →  ./securax incident draft <id> --regulator <reg>  →  ./securax incident file ...", "critical": true},
+    {"id": "learn-retro", "phase": "learn", "title": "Blameless postmortem + turn the root cause into a permanent probe", "how": "./securax playbook retro <run>   (writes the postmortem; then ./securax adversary to keep it closed)", "critical": true}
+   ]
+  },
+  "data-exfiltration": {
+   "name": "Data exfiltration / breach",
+   "scenario": "Sensitive or personal data copied out / leaked.",
+   "steps": [
+    {"id": "triage-case", "phase": "triage", "title": "Open the case and start the regulator clock (DPDP / CERT-In / sector)", "how": "./securax respond open \"<codename>\" --kind data-breach  &&  ./securax incident open \"Data breach\" --kind ai-data-leak", "critical": true},
+    {"id": "triage-scope", "phase": "triage", "title": "Establish what data, whose, how much, and the exfiltration path", "how": "./securax respond triage <case>   (and the data inventory: what classes live where)", "critical": true},
+    {"id": "contain-cut", "phase": "contain", "title": "Cut the exfiltration path and revoke the access that was used", "how": "Block the destination; revoke the token/account; ./securax ai stop if a model egress was involved.", "critical": true},
+    {"id": "eradicate-finding", "phase": "eradicate", "title": "Record the root-cause weakness with a fix-by date", "how": "./securax findings add \"<root cause>\" --severity high", "critical": false},
+    {"id": "report-file", "phase": "report", "title": "File each notification before its deadline (and the affected-person notice if required)", "how": "./securax incident due  →  draft  →  file", "critical": true},
+    {"id": "learn-retro", "phase": "learn", "title": "Blameless postmortem + permanent probe for the leak path", "how": "./securax playbook retro <run>  →  ./securax adversary", "critical": true}
+   ]
+  },
+  "zero-day": {
+   "name": "Exploited zero-day / critical vulnerability",
+   "scenario": "A newly-exploited vulnerability affects a service you run.",
+   "steps": [
+    {"id": "triage-kev", "phase": "triage", "title": "Confirm exposure and whether it is known-exploited (offline KEV/EPSS)", "how": "./securax scan  &&  ./securax kev   (does it affect a service you run? is it being exploited?)", "critical": true},
+    {"id": "triage-case", "phase": "triage", "title": "Open a case if there is any sign of compromise", "how": "./securax respond open \"<codename>\" --kind compromise", "critical": false},
+    {"id": "contain-mitigate", "phase": "contain", "title": "Apply the vendor mitigation or take the exposed surface offline", "how": "Apply the workaround/patch; if none, remove the exposed path until one exists.", "critical": true},
+    {"id": "eradicate-patch", "phase": "eradicate", "title": "Patch and record it with a fix-by date and verification", "how": "./securax findings add \"<CVE> on <service>\" --severity high  →  patch  →  ./securax findings fixed <id>", "critical": true},
+    {"id": "recover-verify", "phase": "recover", "title": "Verify the service is healthy and the fix holds", "how": "./securax doctor  &&  ./securax verify", "critical": false},
+    {"id": "report-assess", "phase": "report", "title": "Report if it is a notifiable incident (exploited, with impact)", "how": "./securax incident open \"<CVE> exploited\" --kind compromise   (only if there was impact/compromise)", "critical": false},
+    {"id": "learn-retro", "phase": "learn", "title": "Blameless postmortem + permanent probe", "how": "./securax playbook retro <run>  →  ./securax adversary", "critical": true}
+   ]
+  }
+ }
+}

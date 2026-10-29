@@ -42,6 +42,7 @@
     {"id": "knowledge", "critical": false, "state": "per-node", "needs": ["estate"], "full": ["estate", "vault"], "when_off": "Imported AI history lives in one node's vault.", "fix": "copy the vault to the always-on node"},
     {"id": "cyber-range", "critical": false, "state": "stateless", "needs": ["estate"], "full": ["estate"], "when_off": "Any node can run an exercise.", "fix": "nothing"},
     {"id": "respond", "critical": false, "state": "per-node", "needs": ["estate"], "full": ["estate", "vault"], "when_off": "A case's evidence lives on the node where it was opened (keep it there: chain of custody).", "fix": "nothing: evidence stays where it was collected"},
+    {"id": "playbook", "critical": false, "state": "replicated", "needs": ["estate"], "full": ["estate", "vault"], "when_off": "The playbook library ships with the code (any node); a run's progress is in the vault, replicated to every node.", "fix": "./securax nodes invite"},
     {"id": "purple", "critical": false, "state": "stateless", "needs": ["estate"], "full": ["estate"], "when_off": "Any node.", "fix": "nothing"},
   {"id": "adversary", "critical": false, "state": "stateless", "needs": ["estate"], "full": ["estate"], "when_off": "Any node.", "fix": "nothing"},
   {"id": "next", "critical": false, "state": "stateless", "needs": ["estate"], "full": ["estate"], "when_off": "Any node.", "fix": "nothing"},

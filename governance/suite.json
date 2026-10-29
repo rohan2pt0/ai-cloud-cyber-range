@@ -72,6 +72,7 @@
   "map": { "from": "community", "uses": ["export"], "enterprise": "a multi-tenant estate map an operator can share with a customer as a one-page assurance picture, scoped by tenant" },
   "cyber-range": { "from": "community", "uses": ["identity", "tenancy", "rbac", "audit", "metering"], "enterprise": "many teams and exercises at once, SSO for players, scored evidence kept for audit" },
   "respond": { "from": "community", "uses": ["audit", "export"], "enterprise": "case files shared with the crisis team under roles, evidence kept for regulators" },
+  "playbook": { "from": "community", "uses": ["audit", "export", "rbac"], "enterprise": "shared playbook runs with assigned owners per role, SLA timers and a library governed per organisation" },
   "purple": { "from": "community", "uses": ["audit", "tenancy"], "enterprise": "detection coverage per business unit" },
   "adversary": { "from": "community", "uses": ["audit", "export"], "enterprise": "a bounty-finding ledger per business unit, with repeat-class rate and time-to-regression on the board scorecard" },
   "next": { "from": "community", "uses": ["policy"], "enterprise": "a role-aware next step per person and team, from the same engine" },

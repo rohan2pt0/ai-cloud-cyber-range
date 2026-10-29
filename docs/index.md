@@ -15,11 +15,11 @@ by a test.
 
 The latest additions, newest first (the Command Center marks each one New for 30 days):
 
+- **2026-10-29** · [Incident playbooks](securax/123-INCIDENT-PLAYBOOKS.md): In a real incident you follow one calm checklist instead of trying to remember every step under pressure, and nothing critical is skipped. `./securax playbook list`
 - **2026-10-29** · [Catch me up](securax/122-CATCHUP-AND-PROMPTS.md): In ten seconds you see the few things that actually need you today, nothing leaves your box. `./securax catchup`
 - **2026-10-29** · [Saved prompts](securax/122-CATCHUP-AND-PROMPTS.md): You stop retyping the same framing: one name gives the AI your usual, careful instruction every time. `./securax ask productivity --prompt standup`
 - **2026-10-27** · [Build it from a browser, on your own models](securax/119-STUDIO.md): Your single biggest dependency - a paid Claude Code subscription and its terminal - is removed: you build and change the estate from a familiar GUI on the open models you already run, so no outside service or plan can gate your day-to-day work. `./securax studio`
 - **2026-10-26** · [Prove every command works](securax/117-SELFTEST.md): You can trust that the commands work: the system proves its own command surface on every change, so 'it doesn't even start / that command errors' is caught by a test, not by you at the worst moment. `./securax selftest`
-- **2026-10-26** · [One lever a week](securax/112-SET-AND-FORGET.md): Every week the one thing most worth changing about your life is chosen for you and made effortless, so you improve where it actually matters without having to decide what to work on. `./securax improve`
 
 Each line names what it does, in plain words, and the one command that opens it. The light is the guide's status (what the lights mean is below).
 
@@ -27,6 +27,7 @@ Each line names what it does, in plain words, and the one command that opens it.
 
 | | What it does | How to open it |
 |---|---|---|
+| 🟢 [Incident playbooks](securax/123-INCIDENT-PLAYBOOKS.md) | Run an incident-response playbook as a live, ticked checklist. Pick a scenario (ransomware, data exfiltration, an exploited zero-day), start a run, and work the ordered steps through the NIST phases — triage, contain, eradicate, recover, report, learn — each step pointing at the estate's own command that does the work (the forensic kit, the regulator clock, the fix-by register, restore). It records who did what and when, will not let you close while a critical step is open, and ends by writing a blameless postmortem seeded with the run's timeline. A starting library for a BFSI SOC; add your own scenarios as data. | `./securax playbook list` |
 | 🟡 [Cyber range](securax/79-EXERCISE-RANGE.md) | Practise defending real-looking systems against a live red team, with scoring, judging and MITRE ATT&CK, D3FEND and ATLAS learning paths. | `./securax exercise` |
 | 🟡 [Crisis response kit](securax/78-CRISIS-RESPONSE-KIT.md) | Step into an incident: collect evidence properly, find what is wrong, and draft the reports. | `./securax respond` |
 | 🟢 [Purple-team loop](securax/30-PURPLE-TEAM-LOOP.md) | Attack your own AI channel, check that the attack was detected, and keep the evidence. | `./securax purple` |

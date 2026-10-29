@@ -9,6 +9,22 @@ window.SECURAX_FEATURES = {
  ],
  "features": [
   {
+   "id": "playbook",
+   "group": "Practise and defend",
+   "icon": "list-checks",
+   "name": "Incident playbooks",
+   "what": "Run an incident-response playbook as a live, ticked checklist. Pick a scenario (ransomware, data exfiltration, an exploited zero-day), start a run, and work the ordered steps through the NIST phases — triage, contain, eradicate, recover, report, learn — each step pointing at the estate's own command that does the work (the forensic kit, the regulator clock, the fix-by register, restore). It records who did what and when, will not let you close while a critical step is open, and ends by writing a blameless postmortem seeded with the run's timeline. A starting library for a BFSI SOC; add your own scenarios as data.",
+   "cmd": "./securax playbook list",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "added": "2026-10-29",
+   "outcome": "In a real incident you follow one calm checklist instead of trying to remember every step under pressure, and nothing critical is skipped.",
+   "shows": "./securax playbook",
+   "light": "green",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/123-INCIDENT-PLAYBOOKS/"
+  },
+  {
    "id": "catchup",
    "group": "Your own tools",
    "icon": "sun",
