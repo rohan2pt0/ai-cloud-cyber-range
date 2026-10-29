@@ -9,6 +9,22 @@ window.SECURAX_FEATURES = {
  ],
  "features": [
   {
+   "id": "tool-approvals",
+   "group": "Use AI safely",
+   "icon": "shield-check",
+   "name": "Human-in-command tool approvals",
+   "what": "When an AI agent asks to take a consequential action — move money, send a wire, email out — the gateway does not just block it: it holds the exact call for a human. `./securax approvals` lists what is waiting; `./securax approve <id>` grants a single-use, ten-minute approval scoped to that exact tool and arguments, and only then does the agent's next identical call go through. A different argument, a second attempt, or an expired grant is blocked again, and three blocked calls in a row stop the agent and ask for a person. Every grant is written to the tamper-evident audit chain. The dangerous tools (shell, delete, drop) stay denied outright.",
+   "cmd": "./securax approvals",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "added": "2026-10-29",
+   "outcome": "An AI agent can never move your money or act irreversibly without you saying yes to that exact action, once, on the record.",
+   "shows": "./securax approvals",
+   "light": "green",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/124-TOOL-APPROVALS/"
+  },
+  {
    "id": "playbook",
    "group": "Practise and defend",
    "icon": "list-checks",

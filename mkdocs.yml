@@ -138,6 +138,7 @@ nav:
       - "A home on a roomy drive": securax/121-DRIVE-HOME.md
       - "Catch me up, and saved prompts": securax/122-CATCHUP-AND-PROMPTS.md
       - "Incident playbooks": securax/123-INCIDENT-PLAYBOOKS.md
+      - "Tool approvals (human-in-command)": securax/124-TOOL-APPROVALS.md
       - "Choose who you serve": securax/116-CHOOSE-YOUR-CUSTOMER.md
   - How-to guides:
       - AI providers and plugins: securax/22-PLUGINS-AND-PROVIDERS.md

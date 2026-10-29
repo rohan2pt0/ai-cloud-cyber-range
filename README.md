@@ -34,11 +34,11 @@ even offline. Your data stays on your device.
 
 The latest additions, newest first (the Command Center marks each one New for 30 days):
 
+- **2026-10-29** · [Human-in-command tool approvals](docs/securax/124-TOOL-APPROVALS.md): An AI agent can never move your money or act irreversibly without you saying yes to that exact action, once, on the record. `./securax approvals`
 - **2026-10-29** · [Incident playbooks](docs/securax/123-INCIDENT-PLAYBOOKS.md): In a real incident you follow one calm checklist instead of trying to remember every step under pressure, and nothing critical is skipped. `./securax playbook list`
 - **2026-10-29** · [Catch me up](docs/securax/122-CATCHUP-AND-PROMPTS.md): In ten seconds you see the few things that actually need you today, nothing leaves your box. `./securax catchup`
 - **2026-10-29** · [Saved prompts](docs/securax/122-CATCHUP-AND-PROMPTS.md): You stop retyping the same framing: one name gives the AI your usual, careful instruction every time. `./securax ask productivity --prompt standup`
 - **2026-10-27** · [Build it from a browser, on your own models](docs/securax/119-STUDIO.md): Your single biggest dependency - a paid Claude Code subscription and its terminal - is removed: you build and change the estate from a familiar GUI on the open models you already run, so no outside service or plan can gate your day-to-day work. `./securax studio`
-- **2026-10-26** · [Prove every command works](docs/securax/117-SELFTEST.md): You can trust that the commands work: the system proves its own command surface on every change, so 'it doesn't even start / that command errors' is caught by a test, not by you at the worst moment. `./securax selftest`
 
 **Practise and defend**
 
@@ -68,6 +68,7 @@ The latest additions, newest first (the Command Center marks each one New for 30
 
 | | What it does | How to open it |
 |---|---|---|
+| 🟢 [Human-in-command tool approvals](docs/securax/124-TOOL-APPROVALS.md) | When an AI agent asks to take a consequential action — move money, send a wire, email out — the gateway does not just block it: it holds the exact call for a human. `./securax approvals` lists what is waiting; `./securax approve <id>` grants a single-use, ten-minute approval scoped to that exact tool and arguments, and only then does the agent's next identical call go through. A different argument, a second attempt, or an expired grant is blocked again, and three blocked calls in a row stop the agent and ask for a person. Every grant is written to the tamper-evident audit chain. The dangerous tools (shell, delete, drop) stay denied outright. | `./securax approvals` |
 | 🟢 [Saved prompts](docs/securax/122-CATCHUP-AND-PROMPTS.md) | Reusable, parametrised prompts you can call by name — a daily stand-up, a decision aid, a board-ready threat brief, a plain-English rewrite — with {date}, {owner} and the words you type filled in automatically. Ask any advisor with one: `./securax ask <agent> --prompt NAME`. Kept generic and private (no personal or employer data in the repository); add your own. | `./securax ask productivity --prompt standup` |
 | 🟢 [AI security gateway](docs/securax/36-IDENTITY-INCIDENT-RESIDENCY.md) | Every AI call is checked: personal data masked, prompt injection blocked, data kept in India when it must be, and every call logged. | `./securax doctor` |
 | 🟢 [Private chat](docs/securax/53-THE-TWIN.md) | A ChatGPT-style assistant that runs through the gateway, with a private local model when the data must not leave. | `./securax open` |
@@ -126,6 +127,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- Human-in-command tool approvals — the AI asks before it acts
 - [`./securax playbook` — run an incident response as a live, ticked checklist](docs/securax/123-INCIDENT-PLAYBOOKS.md)
 - [`./securax catchup` and saved prompts — two AI-UX wins from the Mattermost study, on your own data and your own models](docs/securax/122-CATCHUP-AND-PROMPTS.md)
 - A CISA Zero Trust Maturity Model gap assessment — `./securax comply ztmm`
@@ -133,7 +135,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - The one reason PRs kept going red: the local floor didn't match CI, so nobody trusted it
 - `./securax studio` comes up for *any* user, not only uid 1000
 - Two systemic test gates, built because polished green checks still shipped a broken Studio to the user
-- `./securax studio` now actually starts the editor
 
 **Release 0.3.0 - 2026-10-22:**
 

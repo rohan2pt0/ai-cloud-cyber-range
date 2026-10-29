@@ -1382,6 +1382,24 @@ EOF2
     #   ./securax playbook list | start <scenario> "title" | status [run] | step <run> <step-id> [--by WHO] | retro <run> [--force]
     shift; exec python3 "$ROOT/governance/playbook.py" "${@:-list}"
     ;;
+  approvals)
+    # Tool calls waiting for a human to approve, before the AI may act (doc 124). Approve one with  ./securax approve <id>.
+    _k="${GATEWAY_API_KEY:-}"
+    gcurl -fsS ${_k:+-H "Authorization: Bearer $_k"} "$(gw_url)/v1/approvals" 2>/dev/null | python3 -c 'import json,sys
+d=json.load(sys.stdin); p=d.get("pending",[])
+print("No tool calls are waiting for approval." if not p else f"{len(p)} waiting for your approval:")
+for a in p: print(f"  {a[\"id\"]}  {a[\"tool\"]}   {a[\"args_preview\"][:120]}")
+print("\nApprove one:  ./securax approve <id>   (a single-use, 10-minute approval for that exact call)" if p else "")' \
+      || C "Gateway not reachable — is it up?  ./securax up"
+    ;;
+  approve)
+    # Approve ONE pending agent tool call by id (doc 124): a single-use, 10-minute approval scoped to that exact tool + arguments. Audited.
+    _id="${2:?usage: ./securax approve <id>   (see the ids in  ./securax approvals)}"
+    _k="${GATEWAY_API_KEY:-}"
+    if gcurl -fsS -X POST ${_k:+-H "Authorization: Bearer $_k"} "$(gw_url)/v1/approvals/$_id/approve" 2>/dev/null | python3 -c 'import json,sys
+g=json.load(sys.stdin).get("approved",{}); print(f"✔ approved {g.get(\"tool\",\"\")} (id {g.get(\"id\",\"\")}). The AI may make that exact call once, in the next 10 minutes.")' ; then :
+    else C "Could not approve '$_id' — is it still pending?  ./securax approvals"; exit 1; fi
+    ;;
   gateway-auth)
     # Who may call the gateway: AUTH_MODE, hashed service keys, token checker for your identity provider (any OIDC provider).
     #   ./securax gateway-auth status|enable|disable|key add NAME --roles service|key list|revoke NAME|rotate NAME|check-token JWT
@@ -2297,6 +2315,7 @@ AI & CHAT
 DEFEND, RESPOND, PRACTISE
   respond ...    crisis response kit: permission first, evidence intake, IOC triage, reports (doc 78)
   playbook ...   run an IR playbook as a live checklist (ransomware, data-exfiltration, zero-day): steps → respond/incident/restore → postmortem (doc 123)
+  approvals      agent tool calls waiting for a human to approve before the AI may act    approve <id>   grant ONE, single-use, 10 min (doc 124)
   findings ...   every scan and VAPT finding once, with a fix-by date    repairs   everything that needs fixing, each with its fix
   purple         attack your own AI rails and report what held       inspect        look inside third-party software before you trust it
   adversary      the bounty/red-team ledger: every finding turned into a permanent probe + lesson, proven still closed

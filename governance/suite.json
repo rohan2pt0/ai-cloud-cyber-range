@@ -87,6 +87,7 @@
   "govern": { "from": "community", "uses": ["rbac", "export", "tenancy"], "enterprise": "maturity per entity, and a group Board report" },
   "vantage": { "from": "community", "uses": ["identity", "export", "continuity", "rbac"], "enterprise": "registers shared with deputies, and the Board pack built from the group's numbers" },
   "gateway": { "from": "community", "uses": ["identity", "rbac", "audit", "metering", "residency", "policy", "api"], "enterprise": "AI allowance, policy and audit per tenant, with residency enforced" },
+  "tool-approvals": { "from": "community", "uses": ["audit", "policy", "rbac", "identity"], "enterprise": "approvals routed to an approver role with an SLA and four-eyes, per tenant" },
   "chat": { "from": "community", "uses": ["identity", "metering", "residency"], "enterprise": "private AI chat for every employee, under the gateway's rails" },
   "accurate-answers": { "from": "community", "uses": ["api"], "enterprise": "answers grounded in the organisation's approved sources" },
   "build": { "from": "community", "uses": ["identity", "audit", "metering"], "enterprise": "governed AI coding for an engineering team" },

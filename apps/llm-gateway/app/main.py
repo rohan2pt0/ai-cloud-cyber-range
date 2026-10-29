@@ -25,7 +25,7 @@ import httpx
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
 
-from . import answering, baseline, budget, careful, guardrails, identity, killswitch, residency
+from . import answering, approvals, baseline, budget, careful, guardrails, identity, killswitch, residency
 from .providers import active_detectors, run_detectors
 
 MODE = os.getenv("GUARDRAIL_MODE", "enforce")  # enforce | monitor
@@ -58,6 +58,9 @@ def _tool_policy() -> dict:
     except (OSError, ValueError):
         return {"allow": ["__invalid_policy_blocks_every_tool__"]}       # a broken policy fails closed
 TOOL_POLICY = _tool_policy()
+# Stop-after-3: consecutive BLOCKED tool calls per conversation (an agent flailing at a wall needs a human, not more tries).
+TOOL_FAIL_STOP = int(os.getenv("TOOL_FAIL_STOP", "3"))
+_tool_fail_streak: dict[str, int] = {}
 
 # Identity (see identity.py). A misconfigured AUTH_* setting stops the gateway at start-up rather than silently running open.
 AUTH = identity.Authenticator(identity.Config.from_env())
@@ -509,6 +512,41 @@ async def anomalies_report(request: Request) -> dict:
     return baseline.report()
 
 
+def _operator(ident: identity.Identity, request: Request) -> None:
+    """Approvals are an operator action: allowed to an authenticated caller (when auth is on) or on loopback (the person on
+    the box, the laptop default). Never to an anonymous caller from off-box."""
+    ip = request.client.host if request.client else ""
+    if ident.method == "none" and ip not in ("127.0.0.1", "::1"):
+        raise HTTPException(403, detail={"error": {"type": "authorization_error", "code": "operator_only",
+                                                   "message": "approvals are operator-only (authenticated, or on loopback)"}})
+
+
+@app.get("/v1/approvals")
+async def approvals_list(request: Request) -> dict:
+    """Tool calls waiting for a human to approve (doc 124). `./securax approvals` reads this."""
+    ident = await _authn(request, "metrics")
+    _operator(ident, request)
+    return {"pending": approvals.pending()}
+
+
+@app.post("/v1/approvals/{pid}/approve")
+async def approvals_grant(pid: str, request: Request) -> dict:
+    """A human grants ONE pending tool call (doc 124): a single-use, TTL-bound approval scoped to its exact (tool, args).
+    `./securax approve <id>` calls this. Audited. Operator-only."""
+    ident = await _authn(request, "metrics")
+    _operator(ident, request)
+    by = ident.subject if ident.method != "none" else "loopback-operator"
+    try:
+        granted = approvals.grant(pid, by=by)
+    except KeyError:
+        raise HTTPException(404, detail={"error": {"type": "not_found", "code": "no_such_approval",
+                                                   "message": f"no pending approval '{pid}'"}}) from None
+    _emit({"decision": "tool_approval_granted", "approval_id": pid, "tool": granted["tool"],
+           "args_hash": granted["args_hash"][:16], "by": by, "category": "LLM06",
+           "client_ip": request.client.host if request.client else "unknown"})
+    return {"approved": granted}
+
+
 def _note_behaviour(principal: str, model: str, ident: identity.Identity, req_id: str, who: dict) -> None:
     """Per-caller baseline (app/baseline.py): detection only, never blocks, never sees prompt or answer text."""
     try:
@@ -718,15 +756,28 @@ async def _chat(request: Request, authorization: str | None) -> JSONResponse:
                 choice["message"]["content"] = v.text
             tcs = choice.get("message", {}).get("tool_calls")
             if tcs:                                              # the model wants to ACT: check the tool and its arguments
-                tcs, tf = guardrails.inspect_tool_calls(tcs, TOOL_POLICY, CANARIES)
+                tcs, tf = guardrails.inspect_tool_calls(tcs, TOOL_POLICY, CANARIES, approver=approvals)
                 out_findings.extend(tf)
+                if any(f.rule == "TOOL-004-approved" for f in tf):
+                    _emit({"req_id": req_id, **who, "decision": "tool_approved", "category": "LLM06",
+                           "rules": [f.rule for f in tf]})
                 stop = sorted({f.rule for f in tf if f.severity in guardrails.BLOCKING and not f.rule.startswith("PII-")})
+                conv = request.headers.get("x-securax-conversation", "") or caller
                 if stop and MODE == "enforce":
                     _metrics["blocked_tool_call"] += 1
+                    _tool_fail_streak[conv] = _tool_fail_streak.get(conv, 0) + 1
                     withheld = True
                     choice["message"].pop("tool_calls", None)
-                    choice["message"]["content"] = "Tool call withheld by AI security policy (" + ", ".join(stop) + ")."
+                    if _tool_fail_streak[conv] >= TOOL_FAIL_STOP:        # flailing: stop and hand it to a person
+                        _emit({"req_id": req_id, **who, "decision": "tool_calls_stopped",
+                               "streak": _tool_fail_streak[conv], "category": "LLM06"})
+                        choice["message"]["content"] = (f"Stopped: {_tool_fail_streak[conv]} tool calls in a row were blocked "
+                                                        "by AI security policy — a human should step in (./securax approvals).")
+                    else:
+                        choice["message"]["content"] = "Tool call withheld by AI security policy (" + ", ".join(stop) + ")."
                     choice["finish_reason"] = "content_filter"
+                elif MODE == "enforce":
+                    _tool_fail_streak.pop(conv, None)                     # a clean (or approved) tool call resets the streak
         withheld_by[id(resp)] = withheld
 
         # The allowance counts EVERY call, careful steps included.

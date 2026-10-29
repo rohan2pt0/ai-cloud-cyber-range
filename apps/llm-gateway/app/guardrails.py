@@ -300,9 +300,14 @@ def _match(name: str, patterns: list[str]) -> bool:
     return any(fnmatch.fnmatch(name, p.lower()) for p in patterns or [])
 
 
-def inspect_tool_calls(tool_calls: list[dict], policy: dict | None = None, canaries: set[str] | None = None) -> tuple[list[dict], list[Finding]]:
+def inspect_tool_calls(tool_calls: list[dict], policy: dict | None = None, canaries: set[str] | None = None,
+                       approver=None) -> tuple[list[dict], list[Finding]]:
     """Check every tool call a model returned. Denied, unlisted or approval-requiring tools and destructive arguments are
-    BLOCKING findings; personal data in arguments is redacted in place (data leaving through a tool is still data leaving)."""
+    BLOCKING findings; personal data in arguments is redacted in place (data leaving through a tool is still data leaving).
+
+    `approver` (optional, app.approvals) turns the approval-required block into an approve-then-proceed loop: a call whose
+    exact (tool, args) a human has granted is CONSUMED once and allowed (a non-blocking TOOL-004 marker); otherwise it is
+    recorded as pending and the blocking TOOL-003 finding names the id to approve with. With no approver it blocks as before."""
     pol = {**DEFAULT_TOOL_POLICY, **(policy or {})}
     findings: list[Finding] = []
     for tc in tool_calls or []:
@@ -317,7 +322,12 @@ def inspect_tool_calls(tool_calls: list[dict], policy: dict | None = None, canar
         elif _match(name, pol["deny"]):
             findings.append(Finding("TOOL-001-denied", "LLM06/ASI02", "high", f"{name} is a denied tool"))
         elif _match(name, pol["require_approval"]):
-            findings.append(Finding("TOOL-003-needs-approval", "LLM06/ASI02", "high", f"{name} needs a human approval"))
+            if approver is not None and approver.consume(name, args):
+                findings.append(Finding("TOOL-004-approved", "LLM06/ASI02", "low", f"{name}: human-approved, used once"))
+            else:
+                pid = approver.record_pending(name, args) if approver is not None else ""
+                findings.append(Finding("TOOL-003-needs-approval", "LLM06/ASI02", "high",
+                                        f"{name} needs a human approval" + (f" — approve: ./securax approve {pid}" if pid else "")))
         if _DESTRUCTIVE.search(args):
             findings.append(Finding("TOOL-002-destructive-args", "LLM06/ASI02", "high", f"destructive arguments for {name}"))
         clean, leak = check_output(args, set(), canaries)
