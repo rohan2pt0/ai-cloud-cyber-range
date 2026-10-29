@@ -1,0 +1,272 @@
+{
+ "about": "The CISA Zero Trust Maturity Model v2.0 (five pillars — Identity, Devices, Networks, Applications & Workloads, Data — and the three cross-cutting capabilities) assessed against what the SecuRAX estate demonstrably does. SecuRAX RUNS and GOVERNS an AI estate, a cyber range and a personal Life OS on one box; it is not an endpoint-management (MDM/EDR) product, so several device-pillar functions belong to the organisation that owns the laptops and phones, not to this software. Each title is CISA's function name; the notes are our own assessment and can be wrong: challenge them.",
+ "source": {
+  "title": "CISA Zero Trust Maturity Model v2.0",
+  "url": "https://www.cisa.gov/zero-trust-maturity-model",
+  "issued": "US Cybersecurity & Infrastructure Security Agency (CISA), April 2023",
+  "read_on": "2026-10-29",
+  "caveat": "Pillar and function names are from CISA's published model; the four maturity stages (Traditional/Initial/Advanced/Optimal) are not scored per-stage here. Status is our own judgement of a single-box lab estate, not a CISA assessment."
+ },
+ "categories": {
+  "identity": "Identity",
+  "devices": "Devices",
+  "networks": "Networks",
+  "apps": "Applications & Workloads",
+  "data": "Data",
+  "visibility": "Visibility & Analytics (cross-cutting)",
+  "automation": "Automation & Orchestration (cross-cutting)",
+  "governance": "Governance (cross-cutting)"
+ },
+ "items": [
+  {
+   "id": "ID-AUTH",
+   "title": "Identity · Authentication",
+   "applies": ["identity"],
+   "status": "supported",
+   "note": "The gateway authenticates every caller when auth is on: per-caller service keys, anonymous and wrong keys refused, repeated failures lock the source out, and the open-laptop default is explicit.",
+   "evidence": ["journey:gateway_identity", "test:apps/llm-gateway/tests/test_identity.py"],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "ID-STORE",
+   "title": "Identity · Identity Stores",
+   "applies": ["identity"],
+   "status": "partial",
+   "note": "Service identities and roles live with the gateway, and Open WebUI can trust a verified sign-in header on loopback; there is no central IdP wired by default.",
+   "evidence": ["journey:gateway_identity", "test:apps/llm-gateway/tests/test_identity.py"],
+   "next": "Offer optional OIDC sign-in through the gateway's identity so one IdP backs every surface (tracked as studio-harden / gateway identity).",
+   "priority": "medium"
+  },
+  {
+   "id": "ID-RISK",
+   "title": "Identity · Risk Assessments",
+   "applies": ["identity"],
+   "status": "partial",
+   "note": "Behavioural signals (request bursts, odd-hour activity) raise an alarm; a new model alone no longer does. There is no continuous, real-time identity-risk score.",
+   "evidence": ["test:governance/tests/test_cockpit_priority.py", "journey:gateway_identity"],
+   "next": "Add a continuous identity-risk score that adjusts access as signals change.",
+   "priority": "low"
+  },
+  {
+   "id": "ID-ACCESS",
+   "title": "Identity · Access Management",
+   "applies": ["identity"],
+   "status": "partial",
+   "note": "Roles limit what a key can reach and lockout bounds abuse, so access is scoped at provisioning; it is not yet just-in-time / just-enough.",
+   "evidence": ["journey:gateway_identity", "test:apps/llm-gateway/tests/test_identity.py"],
+   "next": "Add just-in-time, just-enough access that expires, instead of standing role grants.",
+   "priority": "medium"
+  },
+  {
+   "id": "DV-POLICY",
+   "title": "Devices · Policy Enforcement & Compliance Monitoring",
+   "applies": ["devices"],
+   "status": "entity",
+   "note": "SecuRAX hardens and monitors its OWN containers (non-root, no-new-privileges, digest pins), but endpoint posture on the laptops and phones is the organisation's MDM to enforce, not this software's.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "DV-ASSET",
+   "title": "Devices · Asset & Supply Chain Risk Management",
+   "applies": ["devices"],
+   "status": "partial",
+   "note": "Strong for the estate's SOFTWARE supply chain — third-party code is vetted and pinned, and anything new is inspected in a sandbox before trust — but device/hardware inventory is the organisation's.",
+   "evidence": ["journey:vet_gate", "journey:inspect_sandbox", "test:governance/tests/test_inspector.py"],
+   "next": "Device and hardware asset inventory remains an organisation/MDM responsibility, outside this box.",
+   "priority": "low"
+  },
+  {
+   "id": "DV-ACCESS",
+   "title": "Devices · Resource Access (device-based)",
+   "applies": ["devices"],
+   "status": "gap",
+   "note": "Access decisions do not yet consider the requesting device's posture.",
+   "evidence": [],
+   "next": "Let the edge consider a device-posture signal before granting access to estate surfaces.",
+   "priority": "low"
+  },
+  {
+   "id": "DV-THREAT",
+   "title": "Devices · Device Threat Protection",
+   "applies": ["devices"],
+   "status": "entity",
+   "note": "Endpoint threat protection (EDR/anti-malware on the user's devices) belongs to the organisation; SecuRAX protects the estate it runs, not the endpoints that reach it.",
+   "evidence": [],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "NW-SEG",
+   "title": "Networks · Network Segmentation",
+   "applies": ["networks"],
+   "status": "supported",
+   "note": "Services bind to loopback and talk over named, internal-only Docker networks (edge / modelplane / internal); the cyber range runs on fully isolated zones with no way out to the internet or LAN.",
+   "evidence": ["journey:tls_internal", "journey:exercise_lite_range"],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "NW-TRAFFIC",
+   "title": "Networks · Network Traffic Management",
+   "applies": ["networks"],
+   "status": "supported",
+   "note": "One HTTPS edge routes by name (hub./chat./api. …) on port 443; residency routing steers a request to the right model by its data.",
+   "evidence": ["journey:tls_edge", "journey:gateway_residency"],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "NW-ENCRYPT",
+   "title": "Networks · Traffic Encryption",
+   "applies": ["networks"],
+   "status": "supported",
+   "note": "TLS on every web connection at the edge, and, with internal TLS on, every service-to-service hop goes through a per-service sidecar so plain HTTP between containers is refused.",
+   "evidence": ["journey:tls_edge", "journey:tls_internal", "test:governance/tests/test_tls.py"],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "NW-RESIL",
+   "title": "Networks · Network Resilience",
+   "applies": ["networks"],
+   "status": "supported",
+   "note": "A resilient model ladder fails over rung to rung, components self-heal after a kill, and the estate still comes up and answers with a machine, a peer and the network removed.",
+   "evidence": ["journey:self_healing", "journey:estate_chaos", "journey:machine_alone"],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "AP-ACCESS",
+   "title": "Applications & Workloads · Application Access",
+   "applies": ["apps"],
+   "status": "supported",
+   "note": "Access to the AI gateway is authenticated and role-limited, and a write from a foreign origin is refused (CORS hides the answer but the request is still blocked).",
+   "evidence": ["journey:gateway_identity", "test:apps/llm-gateway/tests/test_cross_site.py"],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "AP-THREAT",
+   "title": "Applications & Workloads · Application Threat Protections",
+   "applies": ["apps"],
+   "status": "supported",
+   "note": "Input and output rails block prompt injection, jailbreaks, hidden-character smuggling, secret and PII leakage; an optional detector adds model-based safety; the red team scores it on every change.",
+   "evidence": ["journey:purple_loop", "test:apps/llm-gateway/tests/test_guardrails.py"],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "AP-EXPOSE",
+   "title": "Applications & Workloads · Accessible Applications (safely exposed, not public)",
+   "applies": ["apps"],
+   "status": "supported",
+   "note": "Everything binds to loopback by default and is reached by name through the one HTTPS edge; code-running add-ons (Studio) are password-gated and never part of the core start.",
+   "evidence": ["journey:tls_edge", "test:governance/tests/test_tls.py"],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "AP-DEVSECOPS",
+   "title": "Applications & Workloads · Secure Application Development & Deployment Workflow",
+   "applies": ["apps"],
+   "status": "supported",
+   "note": "Every change passes a gate that cannot be faked green — a diff-honesty check rejects an agent that 'passes' by skipping a test, and the forge gate classifies real failures — before it can merge.",
+   "evidence": ["journey:diffcheck_gate", "test:lifecycle/tests/test_forge.py"],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "AP-AST",
+   "title": "Applications & Workloads · Application Security Testing",
+   "applies": ["apps"],
+   "status": "supported",
+   "note": "CI runs SAST and secret scanning, container and IaC scanning, and third-party vetting on every PR; a test proves those security jobs are actually wired (an unparsable workflow can't silently skip them).",
+   "evidence": ["journey:vet_gate", "test:lifecycle/tests/test_workflows_parse.py"],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "DA-INV",
+   "title": "Data · Data Inventory Management",
+   "applies": ["data"],
+   "status": "partial",
+   "note": "The estate knows its sensitive data where it matters — India identity numbers (Aadhaar/PAN) are detected, secret columns are dropped on import, and storage is bounded by tier — but there is no full data catalogue.",
+   "evidence": ["journey:gateway_residency", "test:apps/llm-gateway/tests/test_residency.py"],
+   "next": "Add a lightweight data catalogue that lists where each class of data lives and its retention tier.",
+   "priority": "low"
+  },
+  {
+   "id": "DA-CAT",
+   "title": "Data · Data Categorization",
+   "applies": ["data"],
+   "status": "partial",
+   "note": "Data is classified where it drives a decision — PII and secrets are recognised by the rails, and residency marks India-local data — but there is no general labelling scheme.",
+   "evidence": ["test:apps/llm-gateway/tests/test_residency.py", "journey:gateway_residency"],
+   "next": "Add explicit sensitivity labels that follow data through the estate.",
+   "priority": "low"
+  },
+  {
+   "id": "DA-AVAIL",
+   "title": "Data · Data Availability",
+   "applies": ["data"],
+   "status": "supported",
+   "note": "Backups are checked before they are taken (ransomguard), kept as weeks and months not just a count, copied off-site, and a destroy-and-restore drill proves the data really comes back.",
+   "evidence": ["journey:backup_restore", "journey:ransomware_recovery"],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "DA-ACCESS",
+   "title": "Data · Data Access",
+   "applies": ["data"],
+   "status": "supported",
+   "note": "Residency routing keeps India-local data off cloud models and says why in the audit; roles bound what a caller can reach; an out-of-policy region or an unattested cloud is refused.",
+   "evidence": ["journey:gateway_residency", "test:apps/llm-gateway/tests/test_residency.py"],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "DA-ENCRYPT",
+   "title": "Data · Data Encryption",
+   "applies": ["data"],
+   "status": "supported",
+   "note": "Backups are AES-256 encrypted with a key kept off the box (quantum-safe, no public-key step), a wrong key or tampered file is refused before anything is touched, and data in transit is TLS.",
+   "evidence": ["journey:backup_encrypted", "test:governance/tests/test_crypto.py"],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "XV-VIS",
+   "title": "Cross-cutting · Visibility & Analytics",
+   "applies": ["visibility"],
+   "status": "supported",
+   "note": "Every AI call is written to a tamper-evident audit chain; one cockpit page shows live risks and health; a watchdog proves readiness and alerts; offline threat intel (KEV/ATT&CK/EPSS) answers with no network.",
+   "evidence": ["test:apps/llm-gateway/tests/test_audit_chain.py", "journey:cockpit_page", "journey:watchdog_heals_and_alerts"],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "XA-AUTO",
+   "title": "Cross-cutting · Automation & Orchestration",
+   "applies": ["automation"],
+   "status": "supported",
+   "note": "Scheduled routines, self-healing on failure, and a single incident detection that starts the regulator reporting clock for RBI, SEBI and CERT-In together — security response runs without a person watching.",
+   "evidence": ["journey:self_healing", "journey:incident_clock", "test:governance/tests/test_autopilot.py"],
+   "next": "",
+   "priority": ""
+  },
+  {
+   "id": "XG-GOV",
+   "title": "Cross-cutting · Governance",
+   "applies": ["governance"],
+   "status": "supported",
+   "note": "One source of principles propagates to every app; every feature declares its edition and platform services; a requirement-by-requirement compliance view and a checksummed evidence pack make policy enforceable and auditable; one switch turns on sign-in, residency and a strict cockpit.",
+   "evidence": ["journey:comply_evidence", "journey:gateway_residency", "test:governance/tests/test_suite.py"],
+   "next": "",
+   "priority": ""
+  }
+ ]
+}
