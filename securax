@@ -1882,7 +1882,15 @@ g=json.load(sys.stdin).get("approved",{}); print(f"✔ approved {g.get(\"tool\",
       C "  stable channel: moving to the release $STABLE_TO"
     elif ! _PULL="$(git -C "$ROOT" pull --ff-only 2>&1)"; then
       # bash's own match, not a pipe to grep: a crashed grep once turned a network error into "local changes"
-      if [[ "${_PULL,,}" =~ could\ not\ resolve|unable\ to\ access|connection|timed\ out|repository\ not\ found|authentication|403|404|5[0-9][0-9] ]]; then
+      if [[ "${_PULL,,}" =~ could\ not\ resolve ]]; then
+        # DNS can't resolve the host — almost always LOCAL (WSL after a wsl --shutdown, a VPN, corporate DNS), not GitHub.
+        C "Could not resolve github.com — this is DNS on THIS machine, not GitHub being down. Nothing changed; the estate keeps running. Details: $(printf '%s' "$_PULL" | tail -1)"
+        if grep -qiE 'microsoft|wsl' /proc/version 2>/dev/null; then
+          C "  WSL DNS fix:  printf '[network]\\ngenerateResolvConf=false\\n' | sudo tee /etc/wsl.conf ; sudo rm -f /etc/resolv.conf ; printf 'nameserver 1.1.1.1\\nnameserver 8.8.8.8\\n' | sudo tee /etc/resolv.conf   then (in Windows)  wsl --shutdown  and reopen (doc 121)."
+        else
+          C "  Check DNS/VPN here:  getent hosts github.com   — then retry. If GitHub really is down: ./securax continuity show github-down (the mirror + the code bundle in your backups)."
+        fi
+      elif [[ "${_PULL,,}" =~ unable\ to\ access|connection|timed\ out|repository\ not\ found|authentication|403|404|5[0-9][0-9] ]]; then
         C "Could not reach the code host (GitHub). Nothing changed and the estate keeps running. Details: $(printf '%s' "$_PULL" | tail -1)"
         C "  If GitHub stays down: ./securax continuity show github-down   (the mirror and the code bundle in your backups)"
       else

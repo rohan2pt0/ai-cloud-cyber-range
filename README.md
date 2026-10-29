@@ -131,10 +131,10 @@ This list is generated from [`features.json`](features.json); the Command Center
 - [`./securax playbook` — run an incident response as a live, ticked checklist](docs/securax/123-INCIDENT-PLAYBOOKS.md)
 - [`./securax catchup` and saved prompts — two AI-UX wins from the Mattermost study, on your own data and your own models](docs/securax/122-CATCHUP-AND-PROMPTS.md)
 - A CISA Zero Trust Maturity Model gap assessment — `./securax comply ztmm`
+- [The drive-move runbook (doc 121) now says to quit Docker Desktop first, and `./securax update` stops blaming GitHub for a local DNS failure](docs/securax/121-DRIVE-HOME.md)
 - The weekly OpenSSF Scorecard workflow stopped failing (and stopped emailing you on every merge)
 - The one reason PRs kept going red: the local floor didn't match CI, so nobody trusted it
 - `./securax studio` comes up for *any* user, not only uid 1000
-- Two systemic test gates, built because polished green checks still shipped a broken Studio to the user
 
 **Release 0.3.0 - 2026-10-22:**
 
