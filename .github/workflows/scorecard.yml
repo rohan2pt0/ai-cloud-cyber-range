@@ -1,10 +1,9 @@
 # OpenSSF Scorecard: an outside-in score of our supply-chain hygiene (pinned deps, branch protection,
-# token permissions, signed releases...). Weekly + on main. Process signal, not a security guarantee:
+# token permissions, signed releases...). Weekly (and on demand). Process signal, not a security guarantee:
 # read it as a to-do list. Results appear in Security > Code scanning; the badge needs a public repo.
 name: scorecard
 on:
   schedule: [{ cron: "23 4 * * 1" }]
-  push: { branches: [main] }
   workflow_dispatch:
 
 permissions: read-all
@@ -18,7 +17,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with: { persist-credentials: false }
-      - uses: ossf/scorecard-action@v2.4.0
+      - uses: ossf/scorecard-action@v2.4.4   # v2.4.1+ pulls the action image from ghcr.io; v2.4.0 pulled gcr.io, whose OpenSSF project is billing-denied (every run died at the image pull)
         with:
           results_file: results.sarif
           results_format: sarif

@@ -123,6 +123,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- The weekly OpenSSF Scorecard workflow stopped failing (and stopped emailing you on every merge)
 - The one reason PRs kept going red: the local floor didn't match CI, so nobody trusted it
 - `./securax studio` comes up for *any* user, not only uid 1000
 - Two systemic test gates, built because polished green checks still shipped a broken Studio to the user
@@ -130,7 +131,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - [`./securax doctor` warns before a full C: drive takes the estate down](docs/securax/121-DRIVE-HOME.md)
 - [A runbook for migrating off Claude without losing anything](docs/securax/120-MIGRATE-OFF-CLAUDE.md)
 - [`./securax studio` — build the estate from a browser, on your own models (no Claude, no terminal)](docs/securax/119-STUDIO.md)
-- [`./securax insight` — one durable idea a week, aimed at a goal you set](docs/securax/115-ONE-IDEA-A-WEEK.md)
 
 **Release 0.3.0 - 2026-10-22:**
 
