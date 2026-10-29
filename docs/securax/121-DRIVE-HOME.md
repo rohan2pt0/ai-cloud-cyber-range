@@ -20,16 +20,33 @@ wsl -l -v                               # your distros and their WSL version
 Get-PSDrive -PSProvider FileSystem      # free space per drive — pick the roomiest (e.g. D:)
 ```
 
-## 2. Move the WSL distro (shut everything down first)
+## 2. Move the WSL distro (quit Docker Desktop FIRST, or the move is blocked)
+
+The move needs the distro's disk file to be fully released. `wsl --shutdown` alone is **not enough**: Docker Desktop
+restarts the WSL backend within seconds and re-mounts the disk, so `--move` keeps failing with
+`WSL_E_DISTRO_NOT_STOPPED` / "the VHD is currently in use" no matter how many times you run `wsl --shutdown`. The tell is
+`wsl -l -v` still showing `docker-desktop  Running`.
+
+So, in this order:
 
 ```powershell
+# 1) Quit Docker Desktop: tray icon → Quit Docker Desktop.
+#    Settings → General → uncheck "Start Docker Desktop when you sign in".
+# 2) Stop its Windows service so it can't auto-restart (run PowerShell as Administrator):
+net stop com.docker.service
+#    Also close any VS Code window attached to WSL and any open Ubuntu terminal — they pin the disk too.
+# 3) Now stop WSL and CONFIRM everything is Stopped:
 wsl --shutdown
+Start-Sleep 10
+wsl -l -v            # every distro, especially docker-desktop, must read "Stopped" before you go on
 ```
 
 **Easiest (Windows 11 / recent WSL) — one step, moves the disk and updates the registry:**
 ```powershell
 wsl --manage <Distro> --move D:\wsl\<Distro>
 ```
+If it *still* says "VHD is currently in use", a process is holding it — `docker-desktop` is up again (re-do step 2), or a
+VS Code / terminal is attached. When nothing can be stopped, the export/import path below is immune to this.
 
 **If `--manage --move` isn't available, export/import (works on any WSL2):**
 ```powershell
@@ -48,6 +65,18 @@ intact (`./securax status`). Only then delete the backup.
 Docker Desktop → **Settings → Resources → Advanced → Disk image location → `D:\DockerData`** → Apply &
 Restart. Docker keeps two hidden distros (`docker-desktop`, `docker-desktop-data`); confirm neither is
 left on C: with `wsl -l -v`.
+
+**If after all the `wsl --shutdown`s a command inside WSL can't reach the internet** (e.g. `./securax update` says
+`Could not resolve host: github.com`): that is **WSL DNS**, not the site being down — the shutdown/restart often leaves
+`/etc/resolv.conf` pointing at a nameserver that no longer answers. Inside Ubuntu, test with `getent hosts github.com`;
+if it fails, pin a working resolver:
+```bash
+printf '[network]\ngenerateResolvConf = false\n' | sudo tee /etc/wsl.conf
+sudo rm -f /etc/resolv.conf
+printf 'nameserver 1.1.1.1\nnameserver 8.8.8.8\n' | sudo tee /etc/resolv.conf
+```
+then `wsl --shutdown` once more and reopen. (A VPN or corporate DNS can cause the same; so can Docker Desktop still
+starting up.)
 
 ## 4. The real antifragility: don't depend on one drive
 
