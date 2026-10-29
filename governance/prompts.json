@@ -1,0 +1,21 @@
+{
+ "about": "Saved, reusable prompts for ./securax ask <agent> --prompt NAME [extra words]. Variables {date}, {owner} (from SECURAX_OWNER, else 'you') and {extra} (words typed after the name) are filled in. Keep these generic: no personal data, no employer or client names — the repository is public. Add your own; a {owner}-specific detail belongs in your environment, not here.",
+ "prompts": {
+  "standup": {
+   "about": "A crisp daily stand-up framing: yesterday, today, blockers.",
+   "template": "It is {date}. Help {owner} run a 2-minute stand-up: in three short lines — what likely moved yesterday, the single most important thing to finish today, and any blocker to flag. {extra}"
+  },
+  "threat-brief": {
+   "about": "Summarise a security development into a board-ready paragraph.",
+   "template": "Summarise the following security development for a BFSI risk audience in one tight paragraph — what it is, who it affects, the realistic blast radius, and the one action worth taking — plainly, no hype: {extra}"
+  },
+  "decide": {
+   "about": "A fast, structured decision aid (options, trade-offs, a recommendation).",
+   "template": "Help {owner} decide. Lay out the realistic options, the key trade-off of each in one line, the main risk, and end with a single clear recommendation and why. Decision to make: {extra}"
+  },
+  "explain-plainly": {
+   "about": "Rewrite something dense into plain, short sentences.",
+   "template": "Rewrite the following in plain words a busy non-specialist can act on — short sentences, one idea each, no jargon without a gloss, and keep every fact exact: {extra}"
+  }
+ }
+}

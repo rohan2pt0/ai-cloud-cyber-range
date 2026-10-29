@@ -9,6 +9,36 @@
  ],
  "features": [
   {
+   "id": "catchup",
+   "group": "Your own tools",
+   "icon": "sun",
+   "name": "Catch me up",
+   "added": "2026-10-29",
+   "what": "One short brief of what needs YOU right now, from your own estate: the things to act on today (an overdue finding, an overdue risk treatment, a failing routine, a red cockpit reading), your one next step, and your Life OS rhythm. A model summarises it through the gateway when one is up (so it inherits the rails, the allowance and the audit trail); with no gateway it shows the same facts plainly. The 'act today' list is the ground truth and is always shown, so a summary can never hide a real overdue item.",
+   "open": {
+    "cmd": "./securax catchup"
+   },
+   "command": "catchup",
+   "doc": "securax/122-CATCHUP-AND-PROMPTS.md",
+   "outcome": "In ten seconds you see the few things that actually need you today, nothing leaves your box.",
+   "shows": "./securax catchup"
+  },
+  {
+   "id": "saved-prompts",
+   "group": "Use AI safely",
+   "icon": "bookmark",
+   "name": "Saved prompts",
+   "added": "2026-10-29",
+   "what": "Reusable, parametrised prompts you can call by name — a daily stand-up, a decision aid, a board-ready threat brief, a plain-English rewrite — with {date}, {owner} and the words you type filled in automatically. Ask any advisor with one: `./securax ask <agent> --prompt NAME`. Kept generic and private (no personal or employer data in the repository); add your own.",
+   "open": {
+    "cmd": "./securax ask productivity --prompt standup"
+   },
+   "command": "ask",
+   "doc": "securax/122-CATCHUP-AND-PROMPTS.md",
+   "outcome": "You stop retyping the same framing: one name gives the AI your usual, careful instruction every time.",
+   "shows": "./securax ask <agent> --prompt NAME"
+  },
+  {
    "id": "progress",
    "group": "Your own tools",
    "icon": "target",

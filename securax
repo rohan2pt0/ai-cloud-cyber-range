@@ -653,12 +653,24 @@ URLS
     C "Ask one:  ./securax ask <agent> \"your question\"   (runs on your local/free model)"
     ;;
   ask)
-    # ./securax ask <agent> "question" [--careful]   --careful: the gateway checks each claim and rewrites first (doc 89)
-    agent="${2:?usage: ./securax ask <agent> \"question\" [--careful]}"; shift 2
-    CAREFUL=(); WORDS=()
-    for w in "$@"; do if [ "$w" = "--careful" ]; then CAREFUL=(--careful); else WORDS+=("$w"); fi; done
-    q="${WORDS[*]}"
-    GATEWAY_URL="${GATEWAY_URL:-$(gw_url)}" python3 "$ROOT/agents/personas.py" ask "$agent" "$q" "${CAREFUL[@]}"
+    # ./securax ask <agent> "question" [--careful] [--prompt NAME]   (doc 89, doc 122)
+    #   --careful     the gateway checks each claim and rewrites first (about twice the tokens)
+    #   --prompt NAME use a saved, reusable prompt (governance/prompts.json; {date}/{owner}/{extra} filled in); words typed after it are the {extra}
+    agent="${2:?usage: ./securax ask <agent> \"question\" [--careful] [--prompt NAME]}"; shift 2
+    FLAGS=(); WORDS=()
+    while [ $# -gt 0 ]; do
+      case "$1" in
+        --careful) FLAGS+=(--careful); shift ;;
+        --prompt)  FLAGS+=(--prompt "${2:?--prompt needs a NAME}"); shift 2 ;;
+        *)         WORDS+=("$1"); shift ;;
+      esac
+    done
+    GATEWAY_URL="${GATEWAY_URL:-$(gw_url)}" python3 "$ROOT/agents/personas.py" ask "$agent" "${WORDS[*]}" ${FLAGS[@]+"${FLAGS[@]}"}
+    ;;
+  catchup)
+    # ./securax catchup [--json] — one short brief of what needs you right now, from your own estate (doc 122)
+    shift
+    GATEWAY_URL="${GATEWAY_URL:-$(gw_url)}" python3 "$ROOT/governance/catchup.py" "$@"
     ;;
   plan)
     C "Future Financial Planner (worked example — replace finance/examples/sample-plan.json with your own, kept local):"
@@ -2271,6 +2283,8 @@ AI & CHAT
   ai honesty     does the AI refuse to guess? 8 questions that catch made-up answers, scored
   ai check       are the local models the weights you approved? digests, and a scan of pickle files for code
   ask <agent> "q" --careful   check each claim and rewrite before answering (about twice the tokens; in Chat pick a "-careful" model)
+  ask <agent> --prompt NAME   use a saved, reusable prompt (governance/prompts.json; standup, decide, threat-brief, explain-plainly)
+  catchup        one short brief of what needs you right now, from your own estate (overdue items, next step, rhythm) (doc 122)
   say "text"     speak/ask quickly      ask <agent> "q"  ask an expert advisor      advisors / plan / learn / intel   daily helpers
   research "task" --allow site.com   browse the web within limits    design "prompt"   make images      routines   scheduled jobs
   knowledge import|status   your old Claude/ChatGPT/DeepSeek/Gemini chats as one private library you can search (doc 51)

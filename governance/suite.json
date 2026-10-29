@@ -62,6 +62,8 @@
  },
  "components": {
   "progress": { "from": "community", "uses": ["export"], "enterprise": "a team view of each person's rhythm, shared only with their consent" },
+  "catchup": { "from": "community", "uses": ["audit", "metering", "policy"], "enterprise": "a team catch-up and per-role briefs, each reader seeing only what their role may" },
+  "saved-prompts": { "from": "community", "uses": ["audit", "policy"], "enterprise": "a shared, governed prompt library per organisation, with approval and versioning" },
   "venture": { "from": "community", "uses": [], "enterprise": "a profit and loss per edition and per add-on" },
   "ship": { "from": "community", "uses": ["identity", "audit", "updates"], "enterprise": "the same loop for every team's repositories, with approvals and an audit of every merge" },
   "names": { "from": "community", "uses": ["identity", "continuity"], "enterprise": "a name per tenant on the customer's own domain, with certificates issued for them" },

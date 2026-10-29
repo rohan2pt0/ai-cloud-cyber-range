@@ -153,18 +153,51 @@ def ask_agent(agent: str, question: str, context: str = "", call_gateway: bool =
     return out
 
 
+import datetime as _dt
+import pathlib as _pathlib
+
+PROMPTS = _pathlib.Path(__file__).resolve().parent.parent / "governance" / "prompts.json"
+
+
+def load_prompts() -> dict:
+    try:
+        return json.loads(PROMPTS.read_text("utf-8")).get("prompts", {})
+    except Exception:  # noqa: BLE001 - a missing or broken store just means no saved prompts
+        return {}
+
+
+def render_prompt(name: str, extra: str = "") -> str:
+    """A reusable, parametrised prompt (governance/prompts.json). Variables {date}/{owner}/{extra} are filled; {owner}
+    comes from SECURAX_OWNER or is 'you' (no personal data is stored in the repo). `extra` is any words typed after it."""
+    prompts = load_prompts()
+    if name not in prompts:
+        raise KeyError(f"unknown prompt '{name}'. Saved prompts: {', '.join(sorted(prompts)) or '(none)'}")
+    vals = {"date": _dt.date.today().isoformat(), "owner": os.getenv("SECURAX_OWNER", "you"), "extra": extra.strip()}
+    body = prompts[name]["template"] if isinstance(prompts[name], dict) else str(prompts[name])
+    for k, v in vals.items():
+        body = body.replace("{" + k + "}", v)
+    return (body + ("\n\n" + extra.strip() if extra.strip() and "{extra}" not in str(prompts[name]) else "")).strip()
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Agents army — summon a specialist advisor (first-draft opinion).")
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("list", help="list the advisors")
+    sub.add_parser("prompts", help="list the saved, reusable prompts")
     a = sub.add_parser("ask", help="ask an advisor")
-    a.add_argument("agent"); a.add_argument("question"); a.add_argument("--context", default="")
+    a.add_argument("agent"); a.add_argument("question", nargs="?", default=""); a.add_argument("--context", default="")
+    a.add_argument("--prompt", default="", help="use a saved prompt by name (./securax ask <agent> --prompt NAME [extra words])")
     a.add_argument("--careful", action="store_true", help="check each claim and rewrite before answering (about twice the tokens)")
     args = ap.parse_args()
     if args.cmd == "list":
         print(json.dumps(list_agents(), indent=2))
+    elif args.cmd == "prompts":
+        print(json.dumps({k: (v.get("about", "") if isinstance(v, dict) else "") for k, v in sorted(load_prompts().items())}, indent=2))
     else:
-        print(json.dumps(ask_agent(args.agent, args.question, args.context, careful=args.careful), indent=2))
+        question = render_prompt(args.prompt, args.question) if args.prompt else args.question
+        if not question.strip():
+            ap.error("give a question, or a saved prompt with --prompt NAME")
+        print(json.dumps(ask_agent(args.agent, question, args.context, careful=args.careful), indent=2))
     return 0
 
 
