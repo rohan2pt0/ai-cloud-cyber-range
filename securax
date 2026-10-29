@@ -1377,6 +1377,11 @@ EOF2
     #   ./securax incident regulators|open|status|due|set|draft|file|note|close|verify|seal|rollup   (see the header of governance/incident.py)
     shift; exec python3 "$ROOT/governance/incident.py" "${@:-status}"
     ;;
+  playbook)
+    # Incident-response playbooks as a live, ticked checklist (doc 123): a scenario's ordered steps point at respond/incident/findings/restore, and the run ends in a postmortem.
+    #   ./securax playbook list | start <scenario> "title" | status [run] | step <run> <step-id> [--by WHO] | retro <run> [--force]
+    shift; exec python3 "$ROOT/governance/playbook.py" "${@:-list}"
+    ;;
   gateway-auth)
     # Who may call the gateway: AUTH_MODE, hashed service keys, token checker for your identity provider (any OIDC provider).
     #   ./securax gateway-auth status|enable|disable|key add NAME --roles service|key list|revoke NAME|rotate NAME|check-token JWT
@@ -2291,6 +2296,7 @@ AI & CHAT
 
 DEFEND, RESPOND, PRACTISE
   respond ...    crisis response kit: permission first, evidence intake, IOC triage, reports (doc 78)
+  playbook ...   run an IR playbook as a live checklist (ransomware, data-exfiltration, zero-day): steps → respond/incident/restore → postmortem (doc 123)
   findings ...   every scan and VAPT finding once, with a fix-by date    repairs   everything that needs fixing, each with its fix
   purple         attack your own AI rails and report what held       inspect        look inside third-party software before you trust it
   adversary      the bounty/red-team ledger: every finding turned into a permanent probe + lesson, proven still closed

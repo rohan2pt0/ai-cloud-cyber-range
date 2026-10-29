@@ -34,16 +34,17 @@ even offline. Your data stays on your device.
 
 The latest additions, newest first (the Command Center marks each one New for 30 days):
 
+- **2026-10-29** · [Incident playbooks](docs/securax/123-INCIDENT-PLAYBOOKS.md): In a real incident you follow one calm checklist instead of trying to remember every step under pressure, and nothing critical is skipped. `./securax playbook list`
 - **2026-10-29** · [Catch me up](docs/securax/122-CATCHUP-AND-PROMPTS.md): In ten seconds you see the few things that actually need you today, nothing leaves your box. `./securax catchup`
 - **2026-10-29** · [Saved prompts](docs/securax/122-CATCHUP-AND-PROMPTS.md): You stop retyping the same framing: one name gives the AI your usual, careful instruction every time. `./securax ask productivity --prompt standup`
 - **2026-10-27** · [Build it from a browser, on your own models](docs/securax/119-STUDIO.md): Your single biggest dependency - a paid Claude Code subscription and its terminal - is removed: you build and change the estate from a familiar GUI on the open models you already run, so no outside service or plan can gate your day-to-day work. `./securax studio`
 - **2026-10-26** · [Prove every command works](docs/securax/117-SELFTEST.md): You can trust that the commands work: the system proves its own command surface on every change, so 'it doesn't even start / that command errors' is caught by a test, not by you at the worst moment. `./securax selftest`
-- **2026-10-26** · [One lever a week](docs/securax/112-SET-AND-FORGET.md): Every week the one thing most worth changing about your life is chosen for you and made effortless, so you improve where it actually matters without having to decide what to work on. `./securax improve`
 
 **Practise and defend**
 
 | | What it does | How to open it |
 |---|---|---|
+| 🟢 [Incident playbooks](docs/securax/123-INCIDENT-PLAYBOOKS.md) | Run an incident-response playbook as a live, ticked checklist. Pick a scenario (ransomware, data exfiltration, an exploited zero-day), start a run, and work the ordered steps through the NIST phases — triage, contain, eradicate, recover, report, learn — each step pointing at the estate's own command that does the work (the forensic kit, the regulator clock, the fix-by register, restore). It records who did what and when, will not let you close while a critical step is open, and ends by writing a blameless postmortem seeded with the run's timeline. A starting library for a BFSI SOC; add your own scenarios as data. | `./securax playbook list` |
 | 🟡 [Cyber range](docs/securax/79-EXERCISE-RANGE.md) | Practise defending real-looking systems against a live red team, with scoring, judging and MITRE ATT&CK, D3FEND and ATLAS learning paths. | `./securax exercise` |
 | 🟡 [Crisis response kit](docs/securax/78-CRISIS-RESPONSE-KIT.md) | Step into an incident: collect evidence properly, find what is wrong, and draft the reports. | `./securax respond` |
 | 🟢 [Purple-team loop](docs/securax/30-PURPLE-TEAM-LOOP.md) | Attack your own AI channel, check that the attack was detected, and keep the evidence. | `./securax purple` |
@@ -125,6 +126,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- [`./securax playbook` — run an incident response as a live, ticked checklist](docs/securax/123-INCIDENT-PLAYBOOKS.md)
 - [`./securax catchup` and saved prompts — two AI-UX wins from the Mattermost study, on your own data and your own models](docs/securax/122-CATCHUP-AND-PROMPTS.md)
 - A CISA Zero Trust Maturity Model gap assessment — `./securax comply ztmm`
 - The weekly OpenSSF Scorecard workflow stopped failing (and stopped emailing you on every merge)
@@ -132,7 +134,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - `./securax studio` comes up for *any* user, not only uid 1000
 - Two systemic test gates, built because polished green checks still shipped a broken Studio to the user
 - `./securax studio` now actually starts the editor
-- [`./securax doctor` warns before a full C: drive takes the estate down](docs/securax/121-DRIVE-HOME.md)
 
 **Release 0.3.0 - 2026-10-22:**
 
