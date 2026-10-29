@@ -156,6 +156,28 @@ preflight(){
   return 0
 }
 
+# verify_python — the #1 reason PRs went red was a LOCAL floor that did not match CI: `python3 -m pytest` on a dev box is
+# missing pyyaml/fastapi/pytest, so `verify` threw a false red, which trained everyone to distrust it and let CI be the
+# first real test — so paperwork drift and real test breaks both slipped through. This gives `verify` the SAME interpreter
+# CI uses: a managed private venv at ~/.securax/testenv with exactly what CI installs (apps/llm-gateway/requirements-dev.txt
+# + pyyaml), created once, reused after, and NO change to system Python. It echoes the python to use. If the venv already
+# has the deps it is instant. If it cannot be built (offline, no python3-venv) it falls back to system python3 and sets
+# VERIFY_PY_FAITHFUL=0 so `verify` can warn that the local test result is not authoritative (CI still gates it).
+VERIFY_PY_FAITHFUL=1
+verify_python(){
+  local venv="$HOME/.securax/testenv" py="$HOME/.securax/testenv/bin/python"
+  # faithful already? (pytest + yaml + fastapi importable)
+  if [ -x "$py" ] && "$py" -c 'import pytest, yaml, fastapi' >/dev/null 2>&1; then printf '%s' "$py"; return 0; fi
+  # build/refresh it once (best effort; never abort the caller under set -e)
+  if { [ -x "$py" ] || python3 -m venv "$venv" >/dev/null 2>&1; } \
+     && "$py" -m pip install -q --upgrade pip >/dev/null 2>&1 \
+     && "$py" -m pip install -q -r "$ROOT/apps/llm-gateway/requirements-dev.txt" pyyaml >/dev/null 2>&1 \
+     && "$py" -c 'import pytest, yaml, fastapi' >/dev/null 2>&1; then
+    printf '%s' "$py"; return 0
+  fi
+  VERIFY_PY_FAITHFUL=0; printf 'python3'; return 0
+}
+
 # ---- encrypted backups (docs/securax/41): OpenPGP symmetric AES-256, key = a key file kept OFF this machine, or a passphrase you type ----
 # No public-key step anywhere, so the file stays safe against a future quantum computer; its strength is the strength of the key file / passphrase.
 GPGSYM="--batch --yes --no-tty --pinentry-mode loopback --compress-algo none --cipher-algo AES256 --s2k-mode 3 --s2k-digest-algo SHA512 --s2k-count 65011712"
@@ -695,21 +717,54 @@ URLS
     #   ./securax verify --full   + the user-perspective sandbox (real containers + browser; ~10 min)
     cd "$ROOT"; rc=0
     step(){ C "▶ $1"; shift; "$@" || { C "✘ FAILED: $*"; rc=1; }; }
+    # Run python checks on the SAME interpreter CI uses (a managed venv with CI's test deps), so a missing local
+    # dep can never throw a false red (which is what trained everyone to distrust `verify` and push blind).
+    C "▶ preparing the test environment (matches CI: requirements-dev.txt + pyyaml; one-time, a private venv)…"
+    PY="$(verify_python)"
+    if [ "$VERIFY_PY_FAITHFUL" = 1 ]; then
+      # Put the venv first on PATH so that every `python3`/`python` a test (or selftest, or suite) shells out to is
+      # the SAME faithful interpreter — otherwise a test that spawns bare `python3` (e.g. test_autobench) hits a system
+      # python with no pytest and throws a false red, which is exactly the distrust this change removes.
+      export PATH="$(dirname "$PY"):$PATH"
+    else C "  ⚠ could not build the faithful test venv here (offline, or python3-venv missing: 'sudo apt install -y python3-venv'). Falling back to system python3 — a local PASS is NOT authoritative; CI runs the real suite."; fi
     command -v ruff >/dev/null 2>&1 && step "lint (ruff)" ruff check . || echo "  (ruff not installed — pip install ruff; CI will still check)"
-    step "unit tests (pytest)" python3 -m pytest -q
-    step "router config baseline is current" bash -c 'python3 local/compose/gen_litellm_config.py --baseline --write --out "$0" >/dev/null && diff -q "$0" local/compose/litellm-config.yaml' "$(mktemp)"
-    step "third-party content still matches its vet pin" python3 lifecycle/vet.py verify
-    step "fitness functions (budgets + ratchets)" python3 lifecycle/fitness.py --fast
-    step "CCSP map is consistent (every claim verifiable)" python3 governance/ccsp.py --verify
-    step "regulatory maps are consistent (RBI NBFC, SEBI CSCRF)" python3 governance/regmap.py --verify
-    step "adversary ledger is consistent (every finding reproduced, repeat-class 0)" python3 redteam/adversary.py verify
+    # git add -A first: an untracked new file is invisible to the impact-map/fitness checks (a repeat CI red), so stage before we test.
+    git -C "$ROOT" add -A >/dev/null 2>&1 || true
+    step "unit tests (pytest — the full suite CI runs)" "$PY" -m pytest -q
+    step "router config baseline is current" bash -c "$PY local/compose/gen_litellm_config.py --baseline --write --out \"\$0\" >/dev/null && diff -q \"\$0\" local/compose/litellm-config.yaml" "$(mktemp)"
+    step "third-party content still matches its vet pin" "$PY" lifecycle/vet.py verify
+    step "fitness functions (budgets + ratchets)" "$PY" lifecycle/fitness.py --fast
+    step "CCSP map is consistent (every claim verifiable)" "$PY" governance/ccsp.py --verify
+    step "regulatory maps are consistent (RBI NBFC, SEBI CSCRF)" "$PY" governance/regmap.py --verify
+    step "adversary ledger is consistent (every finding reproduced, repeat-class 0)" "$PY" redteam/adversary.py verify
+    # selftest + suite are securax subcommands; the PATH above already points their internal python3 at the faithful venv.
+    step "every command works (selftest: wired, loads, read-only ones run clean)" bash "$ROOT/securax" selftest --quiet
+    step "suite declarations are consistent (editions, services, open core)" bash "$ROOT/securax" suite check
+    # The PWA floor (its own CI job): the generated index.html must equal `node build.js`, and the jsdom suite must pass.
+    # These were real PR reds that `verify` never checked. Skipped honestly when node is absent (CI still checks).
+    if command -v node >/dev/null 2>&1; then
+      ( cd "$ROOT/guiding-map" && node build.js >/dev/null 2>&1 ) || true
+      step "Life OS: index.html is in sync with ops.js (run 'cd guiding-map && node build.js' and commit if this fails)" \
+        bash -c "cd '$ROOT' && git diff --exit-code guiding-map/index.html >/dev/null"
+      [ -d "$ROOT/guiding-map/node_modules" ] || ( cd "$ROOT/guiding-map" && npm ci >/dev/null 2>&1 || npm install >/dev/null 2>&1 ) || true
+      step "Life OS: behaviour suite (jsdom, the full npm test)" bash -c "cd '$ROOT/guiding-map' && npm test --silent"
+    else echo "  (node not installed — the Life OS build-sync + jsdom suite are skipped; CI will still check)"; fi
+    # Secret scan on just this branch's diff, exactly as CI's sast-and-secrets does (origin/main..HEAD), so a fake-key probe
+    # or a quoted secret is caught before the push, not after. Skipped honestly when gitleaks is absent.
+    if command -v gitleaks >/dev/null 2>&1; then
+      git -C "$ROOT" fetch -q origin main 2>/dev/null || true
+      step "no secret in this branch's diff (gitleaks origin/main..HEAD)" \
+        bash -c "cd '$ROOT' && gitleaks detect --no-banner --log-opts='origin/main..HEAD' >/dev/null 2>&1 || gitleaks git --no-banner --log-opts='origin/main..HEAD' >/dev/null 2>&1"
+    else echo "  (gitleaks not installed — the secret scan is skipped; CI will still check)"; fi
     command -v terraform >/dev/null 2>&1 && step "terraform formatting (lifecycle genome)" terraform fmt -check -recursive infra/terraform
     command -v docker >/dev/null 2>&1 && step "compose file valid" docker compose --env-file local/compose/.env.example -f local/compose/docker-compose.yml --profile ai config -q
     if [ "${2:-}" = "--full" ]; then
-      command -v terraform >/dev/null 2>&1 && step "lifecycle dormancy + security proofs (offline terraform plans)" python3 infra/terraform/lifecycle/prove.py
-      step "user-perspective sandbox" python3 sandbox/run.py
+      command -v terraform >/dev/null 2>&1 && step "lifecycle dormancy + security proofs (offline terraform plans)" "$PY" infra/terraform/lifecycle/prove.py
+      step "user-perspective sandbox" "$PY" sandbox/run.py
     fi
-    [ "$rc" = 0 ] && C "✔ verify passed" || { C "✘ verify FAILED — fix the above before calling it done"; exit 1; }
+    if [ "$rc" = 0 ]; then
+      [ "$VERIFY_PY_FAITHFUL" = 1 ] && C "✔ verify passed" || C "✔ verify passed (but the test env was NOT faithful here — let CI confirm the pytest suite)"
+    else C "✘ verify FAILED — fix the above before calling it done"; exit 1; fi
     ;;
   build)
     # Build/evolve SecuRAX using ITS OWN models (via the gateway), with Claude-like rigor supplied by
