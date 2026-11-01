@@ -50,6 +50,20 @@ def test_fresh_profile_never_renders_a_dangling_possessive():
     assert 'fn+"\'s Life OS"' not in idx and 'fn+"\'s Life Operating System"' not in idx
 
 
+def test_fonts_are_native_and_need_no_network():
+    # An offline-first app must never block on, or depend on, a web font: a Google Fonts @import
+    # left the display headings falling back to Times when the font didn't load. Type is now a
+    # native system stack (SF / Segoe UI / Roboto), with hierarchy from weight + tracking.
+    for page in ("index.html", "hub.html"):
+        html = (GM / page).read_text(encoding="utf-8")
+        assert "fonts.googleapis.com" not in html and "fonts.gstatic.com" not in html, \
+            f"{page} loads a web font over the network — breaks offline; use the native --font-ui stack"
+        assert "DM Serif Display" not in html, \
+            f"{page} still references the DM Serif display face (fell back to Times offline)"
+    idx = (GM / "index.html").read_text(encoding="utf-8")
+    assert "--font-ui:" in idx and "var(--font-ui)" in idx, "the native font token must drive the UI type"
+
+
 def test_command_center_rechecks_status_instead_of_one_snapshot():
     hub = (GM / "hub.html").read_text(encoding="utf-8")
     assert "setInterval(tick, 5000)" in hub, "status must be re-polled, or a slow-booting app stays red"
