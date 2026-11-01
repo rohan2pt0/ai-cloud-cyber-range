@@ -6,7 +6,8 @@
     python3 governance/ransomguard.py check [--json]       is the data on this machine readable, and are the canary files intact?
     python3 governance/ransomguard.py pick DIR [DIR...]    the newest backup that is NOT suspect (what `restore latest` uses)
     python3 governance/ransomguard.py prune DIR --keep N [--weeks W] [--months M]
-                                     keep the newest N, plus the newest of each of the last W weeks and M months; never the
+                                     keep the newest N, plus the newest clean copy at least 1..W weeks old and at least 1..M
+                                     months old (depth anchored to age, so it never dips at a week/month boundary); never the
                                      newest clean one; at most 3 suspect files
     python3 governance/ransomguard.py verify FOLDER [--json]
                                      the restore twin: an unpacked backup is opened file by file (databases checked with SQLite's
@@ -196,18 +197,27 @@ def pick(*dirs: pathlib.Path, encrypted_only: bool = False) -> pathlib.Path | No
 
 
 def to_keep(files: list[pathlib.Path], keep: int, weeks: int = 4, months: int = 3) -> set[pathlib.Path]:
+    # Depth is anchored to AGE, not the calendar. Calendar buckets (newest-of-each-month) look
+    # right mid-month but collapse at a boundary: on the 1st, "the last 3 months" spans only ~32
+    # days, so the oldest clean copy a daily routine keeps is barely a month old — and a longer
+    # silent-encryption run could rotate the last clean copy out exactly when it matters. Instead,
+    # keep the newest clean copy at least 1..weeks weeks old and at least 1..months months old
+    # (30-day months), so the oldest clean copy is always ~weeks*7 / months*30 days deep whatever
+    # today's date is. A half-day slack keeps a daily backup taken at the same clock time each day
+    # from falling a few seconds short of a band.
     clean = [f for f in sorted(files, key=when, reverse=True) if not suspect(f)]
+    now = dt.datetime.now().timestamp()
     kept = set(clean[:max(keep, 1)])
-    seen_w, seen_m = set(), set()
-    for f in clean:
-        d = dt.datetime.fromtimestamp(when(f))
-        w, m = d.isocalendar()[:2], (d.year, d.month)
-        if w not in seen_w and len(seen_w) < weeks:
-            seen_w.add(w)
-            kept.add(f)
-        if m not in seen_m and len(seen_m) < months:
-            seen_m.add(m)
-            kept.add(f)
+
+    def add_depth_bands(step_days: int, bands: int) -> None:
+        for i in range(1, bands + 1):
+            thresh = i * step_days - 0.5                                  # days; newest clean copy at least this old
+            pick = next((f for f in clean if (now - when(f)) / 86400 >= thresh), None)
+            if pick is not None:
+                kept.add(pick)
+
+    add_depth_bands(7, weeks)
+    add_depth_bands(30, months)
     kept.update(sorted((f for f in files if suspect(f)), key=when, reverse=True)[:MAX_SUSPECT])
     return kept
 

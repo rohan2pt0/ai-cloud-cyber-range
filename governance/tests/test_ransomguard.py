@@ -104,7 +104,11 @@ def test_retention_keeps_weeks_and_months_not_just_the_last_week(tmp_path):
     left = rg.backups(tmp_path)
     ages = [(time.time() - rg.when(f)) / 86400 for f in left]
     assert gone and len(left) <= 7 + 4 + 3
-    assert max(ages) > 50, "a copy from months back survives: a week of silent damage cannot rotate the last clean copy out"
+    # Depth is anchored to age, so this holds on ANY calendar date — including the 1st of a
+    # month, where calendar-bucket retention used to leave the oldest clean copy only ~32 days
+    # old. With months=3 the oldest clean copy is always ~90 days deep: a long silent-encryption
+    # run cannot rotate the last clean copy out.
+    assert max(ages) >= 3 * 30 - 2, "a ~3-month-old clean copy always survives, whatever today's date"
     assert sum(a < 7 for a in ages) == 7
 
 

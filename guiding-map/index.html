@@ -6536,6 +6536,16 @@ function renderPlaybook(){
       + ".gm-d3 .fl{font-size:12px;color:var(--muted);margin-top:2px;line-height:1.4}"
       + ".gm-d3 .foot{font-size:12.5px;color:var(--muted);margin-top:10px}"
       + ".gm-link{background:none;border:0;padding:0;color:inherit;font:inherit;text-decoration:underline;cursor:pointer}"
+      // Welcome-back hero: fixed navy→gold card (not token-driven) so its white/gold text passes AA in BOTH themes.
+      + ".gm-wb{position:relative;background:linear-gradient(135deg,#0d1f35 0%,#15314f 55%,#1e4d3a 100%);background-color:#0d1f35;border:1.5px solid #c9a84c;border-radius:18px;padding:18px 16px 16px;margin:4px 0 14px;color:#fff;box-shadow:0 6px 22px rgba(13,31,53,.28);overflow:hidden}"
+      + ".gm-wb:before{content:'';position:absolute;top:-40px;right:-28px;width:150px;height:150px;border-radius:50%;background:radial-gradient(circle,rgba(201,168,76,.26),transparent 70%);pointer-events:none}"
+      + ".gm-wb-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}"
+      + ".gm-wb-eyebrow{font-size:10.5px;letter-spacing:1.6px;text-transform:uppercase;font-weight:800;color:#e8c96a}"
+      + ".gm-wb-x{background:rgba(255,255,255,.14);border:0;color:#fff;width:30px;height:30px;border-radius:50%;font-size:18px;line-height:1;cursor:pointer}"
+      + ".gm-wb-h{font-family:'DM Serif Display',serif;font-size:21px;line-height:1.15;margin:0 0 6px;color:#fff}"
+      + ".gm-wb-p{font-size:13.5px;line-height:1.5;color:rgba(255,255,255,.92);margin:0 0 14px}"
+      + ".gm-wb-cta{display:inline-flex;align-items:center;gap:6px;background:#c9a84c;color:#0d1f35;border:0;border-radius:11px;min-height:44px;padding:0 18px;font-size:14px;font-weight:800;cursor:pointer;transition:transform .08s ease,filter .15s ease}"
+      + ".gm-wb-cta:active{transform:scale(.98)}.gm-wb-cta:hover{filter:brightness(1.06)}"
       // On a phone the three tiles were crammed side by side (each ~1/3 of the width) and the floor
       // line was clamped to two lines and clipped — "Shoes on, one set. That counts." became
       // unreadable. Stack them vertically so each is full width, and let the floor text wrap in full.
@@ -6549,12 +6559,72 @@ function renderPlaybook(){
     var n = DAILY3.filter(function (d) { return done.indexOf(d.id) >= 0; }).length;
     var r = 22, c = 2 * Math.PI * r, off = c * (1 - n / 3);
     var date = new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
-    return '<div class="gm-greet"><svg class="gm-ring" width="56" height="56" viewBox="0 0 56 56" role="img" aria-label="' + n + ' of 3 done today">'
+    return welcomeBackHTML() + '<div class="gm-greet"><svg class="gm-ring" width="56" height="56" viewBox="0 0 56 56" role="img" aria-label="' + n + ' of 3 done today">'
       + '<circle cx="28" cy="28" r="' + r + '" fill="none" stroke="var(--border)" stroke-width="6"/>'
       + '<circle cx="28" cy="28" r="' + r + '" fill="none" stroke="var(--green)" stroke-width="6" stroke-linecap="round" stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + off.toFixed(1) + '" transform="rotate(-90 28 28)"/>'
       + '<text x="28" y="33" text-anchor="middle">' + n + '/3</text></svg>'
       + '<div><h2>' + esc(part + (fn ? ", " + fn : "")) + '</h2><p>' + esc(date) + ' · ' + (n === 3 ? "today is already a win" : n ? (3 - n) + " left for a win today" : "three small things make today a win") + '</p></div></div>';
   }
+
+  /* ── Welcome back: the return is the hardest moment, so reward it ──────────────────────────────────────
+     People stop opening a life app not because it failed but because returning feels like facing a backlog.
+     So when someone has been away a while, the FIRST thing they see is not a guilt-wall of missed days —
+     it is a warm hello that says nothing is owed, framed by the habit-strength evidence the estate already
+     holds (EMA, not a streak: "missing one opportunity did not materially affect habit formation", Lally 2010).
+     One zero-input tap drops them straight onto today's three. Shown once per day, from the 4th day away.
+     State: two tiny date strings (gm_lastOpen, gm_wb_hide) — bounded, never grows. */
+  var _wbPrev, _wbDone = false;
+  function wbCapture() {                      // once per page load: remember the last open, then stamp today
+    if (_wbDone) return; _wbDone = true;
+    try { _wbPrev = G("gm_lastOpen", ""); S_("gm_lastOpen", ymd()); } catch (e) { _wbPrev = ""; }
+  }
+  function wbDaysAway() {
+    wbCapture();
+    if (!_wbPrev || typeof _wbPrev !== "string") return 0;
+    var a = new Date(_wbPrev + "T00:00:00"), b = new Date(ymd() + "T00:00:00");
+    if (isNaN(a.getTime())) return 0;
+    return Math.round((b.getTime() - a.getTime()) / 86400000);
+  }
+  function wbStrengthPct() {                   // the EMA "showing up" score across the daily three, 0..100, or -1 if unknown
+    try {
+      if (typeof emaUpdate !== "function" || typeof DAILY3 === "undefined") return -1;
+      var st = emaUpdate(); if (!st || !st.s) return -1;
+      var vals = DAILY3.map(function (d) { return st.s[d.id]; }).filter(function (v) { return typeof v === "number"; });
+      if (!vals.length) return -1;
+      return Math.round(vals.reduce(function (a, v) { return a + v; }, 0) / vals.length * 100);
+    } catch (e) { return -1; }
+  }
+  function welcomeBackHTML() {
+    var gap = wbDaysAway();
+    if (gap < 4) return "";                    // daily and weekend users never see it
+    try { if (G("gm_wb_hide", "") === ymd()) return ""; } catch (e) {}
+    var fn = ((typeof P !== "undefined" && P && P.name) || "").trim().split(" ")[0];
+    var line = gap >= 30 ? "It's been a while. No catching up owed — one small win today is the whole job."
+      : gap >= 10 ? "It's been " + gap + " days away. Your foundations are still here — pick up gently."
+      : "It's been " + gap + " days. Nothing's owed — one small thing today and it counts.";
+    var pct = wbStrengthPct();
+    if (pct >= 50) line += " Your habits barely noticed you were gone — still holding at " + pct + "%.";
+    else if (pct >= 0) line += " We'll restart gently: just the floor today.";
+    return '<div class="gm-wb reveal" role="region" aria-label="Welcome back">'
+      + '<div class="gm-wb-top"><span class="gm-wb-eyebrow">Welcome back</span>'
+      + '<button class="gm-wb-x" type="button" aria-label="Dismiss welcome message" onclick="gmWelcomeHide()">×</button></div>'
+      + '<h2 class="gm-wb-h">' + (fn ? "Good to see you again, " + esc(fn) : "Good to see you again") + '</h2>'
+      + '<p class="gm-wb-p">' + esc(line) + '</p>'
+      + '<button class="gm-wb-cta" type="button" onclick="gmWelcomeStart()">Pick up where you left off →</button></div>';
+  }
+  window.gmWelcomeHide = function () {
+    try { S_("gm_wb_hide", ymd()); } catch (e) {}
+    var el = document.querySelector(".gm-wb"); if (el && el.parentNode) el.parentNode.removeChild(el);
+  };
+  window.gmWelcomeStart = function () {
+    try { S_("gm_wb_hide", ymd()); } catch (e) {}
+    var el = document.querySelector(".gm-wb"); if (el && el.parentNode) el.parentNode.removeChild(el);
+    var d3 = document.querySelector(".gm-d3");                 // drop them straight onto today's three
+    if (d3) {
+      if (typeof d3.scrollIntoView === "function") { try { d3.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (e) {} }
+      var tile = d3.querySelector(".tile"); if (tile && typeof tile.focus === "function") { try { tile.focus(); } catch (e) {} }
+    }
+  };
   window.gmMenu = function () {
     var ver = (document.getElementById("app_ver") || {}).textContent || "";
     gmDlg('<div style="font-weight:800;font-size:16px;margin-bottom:12px">Menu</div>'
@@ -7088,6 +7158,7 @@ function renderPlaybook(){
   var _renderAll = window.renderAll;
   var _pendingRender = false;
   window.renderAll = function () {
+    try { wbCapture(); } catch (e) {}   // stamp "last open" once per load, before any screen reads the gap
     // Never rebuild the DOM out from under someone who is mid-entry.
     if (isTyping() && !_pendingRender) {
       _pendingRender = true;
