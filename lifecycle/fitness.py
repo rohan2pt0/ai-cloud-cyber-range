@@ -332,6 +332,61 @@ def check_continuity_declared() -> dict:
             "note": "every feature survives any one machine being off" if not problems else "; ".join(problems)[:200]}
 
 
+def spof_ratchet_problems(accepted: dict, crit_spof: set, baseline: int, today) -> list[str]:
+    """Pure core of the single-point-of-failure ratchet, so it can be tested with synthetic estates.
+    `accepted` is reference.accepted ({id: reason}); `crit_spof` is the set of ids that are a CRITICAL single point of
+    failure when nothing is accepted. Rules: the count of accepted critical SPOFs may not exceed the baseline (a new one is
+    a deliberate raise, reviewed in the diff); a stale acceptance whose SPOF is fixed must be removed; every acceptance is
+    substantive and carries a live `Review YYYY-MM-DD` date (or `Standing:` with a reason) and is not past that date."""
+    import datetime
+    import re
+    problems: list[str] = []
+    acc_crit = sorted(i for i in accepted if i in crit_spof)
+    if len(acc_crit) > baseline:
+        problems.append(f"{len(acc_crit)} accepted critical SPOF(s) > baseline {baseline}: adding one must be a deliberate, reviewed raise of fitness.json")
+    for i in sorted(accepted):
+        reason = str(accepted[i]).strip()
+        if i not in crit_spof:
+            problems.append(f"stale acceptance: '{i}' is no longer a critical single point of failure — remove it (the ratchet only goes down)")
+            continue
+        md = re.search(r"[Rr]eview\s+(\d{4}-\d{2}-\d{2})", reason)
+        standing = reason.lower().startswith("standing")
+        if len(reason) < 40:
+            problems.append(f"'{i}': acceptance reason is too thin — state the risk, the planned fix, and a review date")
+        elif not md and not standing:
+            problems.append(f"'{i}': acceptance needs a 'Review YYYY-MM-DD' date, or 'Standing: <why it can never be removed>'")
+        elif md:
+            try:
+                if datetime.date.fromisoformat(md.group(1)) < today:
+                    problems.append(f"'{i}': SPOF review overdue ({md.group(1)}) — re-justify with a new date, or remove the single point of failure")
+            except ValueError:
+                problems.append(f"'{i}': unreadable review date '{md.group(1)}'")
+    return problems
+
+
+def check_spof_ratchet(baseline: int) -> dict:
+    """Every accepted single point of failure is a conscious, shrinking, self-expiring decision — never a silent escape
+    hatch (doc 91). `continuity-declared` fails on an UNACCEPTED critical SPOF; this fails when an ACCEPTED one is thin,
+    un-dated, past its review date, stale (already fixed), or pushes the count above the shrink-only baseline. So no
+    feature — now or in future — can quietly ship an unreviewed critical SPOF, and every accepted one is pulled back
+    into view on its review date."""
+    import datetime
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("resilience", ROOT / "governance" / "resilience.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    m = mod.model()
+    accepted = m.get("reference", {}).get("accepted", {})
+    nodes = [{"name": c["name"], "at": 0, "checks": c["checks"]} for c in m["reference"]["cards"]]
+    crit_spof = {w["id"] for w in mod.analyse(nodes, m, accepted={})["weak"] if w["critical"]}
+    problems = spof_ratchet_problems(accepted, crit_spof, baseline, datetime.date.today())
+    acc_crit = sorted(i for i in accepted if i in crit_spof)
+    note = ("; ".join(problems)[:200] if problems else
+            f"{len(acc_crit)} accepted critical SPOF(s), each with a fix and a live review date; baseline {baseline}"
+            + (f" (lower it to {len(acc_crit)} to lock the ratchet)" if len(acc_crit) < baseline else ""))
+    return {"name": "spof-ratchet", "value": len(problems), "budget": 0, "unit": "problems", "ok": not problems, "note": note}
+
+
 def check_outcomes_declared() -> dict:
     """The north star (AGENTS.md section 0): every feature says what gets better for a person (`outcome`) and where they see it
     (`shows`). A feature that cannot name both is paper, and does not ship."""
@@ -402,7 +457,7 @@ def run_all(only_fast: bool = False) -> list[dict]:
     if not only_fast:
         res += check_gateway(c["gateway_cold_start_s"], c["gateway_rss_mb"])
         res += check_first_block(c["first_block_s"], c["block_latency_p95_ms"])
-    res += [check_supply_chain(base), check_commands_documented(base), check_ccsp_map(), check_regulatory_maps(), check_impact_map(), check_claims(), check_config_clean(), check_readme_current(), check_private_names(), check_commands_in_help(), check_features_current(), check_continuity_declared(), check_outcomes_declared(), check_enterprise_declared(), check_no_raw_addresses()]
+    res += [check_supply_chain(base), check_commands_documented(base), check_ccsp_map(), check_regulatory_maps(), check_impact_map(), check_claims(), check_config_clean(), check_readme_current(), check_private_names(), check_commands_in_help(), check_features_current(), check_continuity_declared(), check_spof_ratchet(c.get("spof_accepted_baseline", 1)), check_outcomes_declared(), check_enterprise_declared(), check_no_raw_addresses()]
     return res
 
 

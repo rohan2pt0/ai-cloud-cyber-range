@@ -45,6 +45,31 @@ def test_dependency_budget_fails_when_exceeded():
     assert ft.check_runtime_deps(99)["ok"] and not ft.check_runtime_deps(1)["ok"]
 
 
+def test_spof_ratchet_is_a_shrinking_self_expiring_register():
+    import datetime
+    today = datetime.date(2026, 11, 2)
+    good = "One password server; two would not sync. Offline copies read. Review 2099-01-31 (a standby restores the backup)."
+    crit = {"passwords"}
+    # the disciplined, in-date, within-baseline case passes
+    assert ft.spof_ratchet_problems({"passwords": good}, crit, 1, today) == []
+    # a new accepted critical SPOF beyond the baseline fails (the ratchet cannot grow silently)
+    two = {"passwords": good, "incident-clock": "Clock on one node. Review 2099-01-01 — replicate it to the always-on node."}
+    assert any("baseline" in p for p in ft.spof_ratchet_problems(two, {"passwords", "incident-clock"}, 1, today))
+    # a stale acceptance (its SPOF is fixed, no longer critical) must be removed — ratchet down
+    assert any("stale" in p for p in ft.spof_ratchet_problems({"passwords": good}, set(), 1, today))
+    # an acceptance past its review date fails — it is pulled back into view, never indefinite
+    overdue = "One password server; offline copies read. Review 2020-01-01 (a standby restores the backup)."
+    assert any("overdue" in p for p in ft.spof_ratchet_problems({"passwords": overdue}, crit, 1, today))
+    # thin, and un-dated non-standing, acceptances fail
+    assert any("thin" in p for p in ft.spof_ratchet_problems({"passwords": "ok"}, crit, 1, today))
+    assert any("Review" in p for p in ft.spof_ratchet_problems({"passwords": "A long reason with no review date at all here."}, crit, 1, today))
+    # a 'Standing:' acceptance (a risk that can never be removed) is allowed without a date
+    standing = "Standing: a single password vault is correct; two servers cannot safely sync secrets to each other."
+    assert ft.spof_ratchet_problems({"passwords": standing}, crit, 1, today) == []
+    # and it passes on the real register today
+    assert ft.check_spof_ratchet(1)["ok"]
+
+
 def test_supply_chain_ratchet_fails_on_new_findings_and_celebrates_fixed_ones():
     now = ft.own_critical_findings()
     victim = sorted(now)[0]

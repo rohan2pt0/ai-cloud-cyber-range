@@ -127,6 +127,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- The single-point-of-failure ratchet — accepted risks can only shrink, and never sit unreviewed (`spof-ratchet` fitness check)
 - One serif brand moment, bundled so it renders offline
 - The Life OS now reads like a modern software product — one native typeface, no web-font dependency
 - Ransomware backup retention now guarantees ~3 months of clean-copy depth on *any* date (it used to dip to ~1 month at a month boundary)
@@ -134,7 +135,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - Human-in-command tool approvals — the AI asks before it acts
 - [`./securax playbook` — run an incident response as a live, ticked checklist](docs/securax/123-INCIDENT-PLAYBOOKS.md)
 - [`./securax catchup` and saved prompts — two AI-UX wins from the Mattermost study, on your own data and your own models](docs/securax/122-CATCHUP-AND-PROMPTS.md)
-- A CISA Zero Trust Maturity Model gap assessment — `./securax comply ztmm`
 
 **Release 0.3.0 - 2026-10-22:**
 
