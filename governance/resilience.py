@@ -186,6 +186,24 @@ def blocking(res: dict) -> list[dict]:
     return [w for w in res["weak"] if w["critical"] and not w["accepted"]]
 
 
+def grounded_problems(m: dict | None = None) -> list[str]:
+    """A resilience label must not lie. `replicated` ("the same on every node") and `stateless` ("each node serves it
+    alone") both claim the feature survives losing ANY one machine — which is only true if at least two reference nodes
+    can actually serve it. A feature so labelled but served by fewer than two reference nodes is really `single-home` or
+    `per-node`, and would read as safe while being a hidden single point of failure. (The runtime failover these labels
+    promise is drilled for real by the `two_nodes` sandbox journey: edit on A reaches B, and one node down does not stop
+    the other.) Pure and side-effect free, so it is both a fitness gate and a unit test."""
+    m = m or model()
+    nodes = m["reference"]["cards"]
+    out = []
+    for c in m["capabilities"]:
+        if c["state"] in ("replicated", "stateless"):
+            providers = sum(1 for n in nodes if provides(n, c["needs"]))
+            if providers < 2:
+                out.append(f"{c['id']}: labelled '{c['state']}' but only {providers} reference node(s) can serve it — it is really single-home/per-node")
+    return out
+
+
 # ------------------------------------------------------------------------------------------------------- early warning
 def health_path() -> pathlib.Path:
     return home() / "resilience" / "health.jsonl"

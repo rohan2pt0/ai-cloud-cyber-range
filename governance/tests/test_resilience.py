@@ -62,6 +62,18 @@ def test_every_feature_is_declared_with_known_checks():
         assert c["state"] in ("replicated", "stateless", "per-node", "single-home") and c["fix"] and c["when_off"]
 
 
+def test_a_resilience_label_cannot_lie():
+    """replicated/stateless claims survival of any one machine being off; the real estate must back that with >=2 providers."""
+    # the real model is grounded: no replicated/stateless label is served by fewer than two reference nodes
+    assert rs.grounded_problems(rs.model()) == []
+    # a feature that CLAIMS replicated but needs a check only one node has is caught as the hidden single point of failure it is
+    liar = {"reference": {"cards": [{"name": "laptop", "checks": ["estate"]}, {"name": "vps", "checks": ["estate", "passwords"]}]},
+            "capabilities": [{"id": "fake", "state": "replicated", "critical": True, "needs": ["passwords"], "full": ["passwords"],
+                              "when_off": "x", "fix": "x"}]}
+    probs = rs.grounded_problems(liar)
+    assert probs and "fake" in probs[0] and "single-home" in probs[0]
+
+
 def test_the_early_warning_fires_on_a_sudden_drop_not_on_a_peer_that_is_always_flaky():
     s = []
     for h in range(8 * 24):                                    # a week of hourly samples
