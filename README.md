@@ -127,6 +127,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- Resilience labels can no longer lie (`resilience-grounded` fitness check)
 - The single-point-of-failure ratchet — accepted risks can only shrink, and never sit unreviewed (`spof-ratchet` fitness check)
 - One serif brand moment, bundled so it renders offline
 - The Life OS now reads like a modern software product — one native typeface, no web-font dependency
@@ -134,7 +135,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - A "welcome back" moment in the Life OS — returning after time away is rewarded, not shamed
 - Human-in-command tool approvals — the AI asks before it acts
 - [`./securax playbook` — run an incident response as a live, ticked checklist](docs/securax/123-INCIDENT-PLAYBOOKS.md)
-- [`./securax catchup` and saved prompts — two AI-UX wins from the Mattermost study, on your own data and your own models](docs/securax/122-CATCHUP-AND-PROMPTS.md)
 
 **Release 0.3.0 - 2026-10-22:**
 

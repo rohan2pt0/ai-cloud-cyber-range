@@ -387,6 +387,21 @@ def check_spof_ratchet(baseline: int) -> dict:
     return {"name": "spof-ratchet", "value": len(problems), "budget": 0, "unit": "problems", "ok": not problems, "note": note}
 
 
+def check_resilience_grounded() -> dict:
+    """A resilience label must not lie (doc 91). `continuity-declared` proves no critical feature stops when a machine is
+    off; this proves the labels that claim it are honest — a feature marked `replicated` or `stateless` (survives losing
+    any one machine) must actually be servable by at least two reference nodes, or it is a hidden single point of failure
+    wearing a safe label. The runtime failover itself is drilled by the `two_nodes` sandbox journey."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("resilience", ROOT / "governance" / "resilience.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    problems = mod.grounded_problems(mod.model())
+    return {"name": "resilience-grounded", "value": len(problems), "budget": 0, "unit": "problems", "ok": not problems,
+            "note": "every replicated/stateless label is backed by ≥2 reference nodes (failover drilled by two_nodes)" if not problems
+            else "; ".join(problems)[:200]}
+
+
 def check_outcomes_declared() -> dict:
     """The north star (AGENTS.md section 0): every feature says what gets better for a person (`outcome`) and where they see it
     (`shows`). A feature that cannot name both is paper, and does not ship."""
@@ -457,7 +472,7 @@ def run_all(only_fast: bool = False) -> list[dict]:
     if not only_fast:
         res += check_gateway(c["gateway_cold_start_s"], c["gateway_rss_mb"])
         res += check_first_block(c["first_block_s"], c["block_latency_p95_ms"])
-    res += [check_supply_chain(base), check_commands_documented(base), check_ccsp_map(), check_regulatory_maps(), check_impact_map(), check_claims(), check_config_clean(), check_readme_current(), check_private_names(), check_commands_in_help(), check_features_current(), check_continuity_declared(), check_spof_ratchet(c.get("spof_accepted_baseline", 1)), check_outcomes_declared(), check_enterprise_declared(), check_no_raw_addresses()]
+    res += [check_supply_chain(base), check_commands_documented(base), check_ccsp_map(), check_regulatory_maps(), check_impact_map(), check_claims(), check_config_clean(), check_readme_current(), check_private_names(), check_commands_in_help(), check_features_current(), check_continuity_declared(), check_spof_ratchet(c.get("spof_accepted_baseline", 1)), check_resilience_grounded(), check_outcomes_declared(), check_enterprise_declared(), check_no_raw_addresses()]
     return res
 
 
