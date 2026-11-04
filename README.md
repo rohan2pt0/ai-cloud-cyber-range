@@ -127,6 +127,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- The regulatory incident clock now survives the machine it runs on dying — read-only replication to every node
 - Resilience labels can no longer lie (`resilience-grounded` fitness check)
 - The single-point-of-failure ratchet — accepted risks can only shrink, and never sit unreviewed (`spof-ratchet` fitness check)
 - One serif brand moment, bundled so it renders offline
@@ -134,7 +135,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - Ransomware backup retention now guarantees ~3 months of clean-copy depth on *any* date (it used to dip to ~1 month at a month boundary)
 - A "welcome back" moment in the Life OS — returning after time away is rewarded, not shamed
 - Human-in-command tool approvals — the AI asks before it acts
-- [`./securax playbook` — run an incident response as a live, ticked checklist](docs/securax/123-INCIDENT-PLAYBOOKS.md)
 
 **Release 0.3.0 - 2026-10-22:**
 
