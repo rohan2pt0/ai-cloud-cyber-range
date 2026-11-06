@@ -34,17 +34,18 @@ even offline. Your data stays on your device.
 
 The latest additions, newest first (the Command Center marks each one New for 30 days):
 
+- **2026-11-06** · [Crisis coordination](docs/securax/125-CRISIS-COORDINATION.md): A regulator or police requisition stops being a multi-week scramble: you see who owns each record and what is overdue, and hand over a complete pack on time instead of facing a show-cause for missing the deadline. `./securax crisis templates`
 - **2026-10-29** · [Human-in-command tool approvals](docs/securax/124-TOOL-APPROVALS.md): An AI agent can never move your money or act irreversibly without you saying yes to that exact action, once, on the record. `./securax approvals`
 - **2026-10-29** · [Incident playbooks](docs/securax/123-INCIDENT-PLAYBOOKS.md): In a real incident you follow one calm checklist instead of trying to remember every step under pressure, and nothing critical is skipped. `./securax playbook list`
 - **2026-10-29** · [Catch me up](docs/securax/122-CATCHUP-AND-PROMPTS.md): In ten seconds you see the few things that actually need you today, nothing leaves your box. `./securax catchup`
 - **2026-10-29** · [Saved prompts](docs/securax/122-CATCHUP-AND-PROMPTS.md): You stop retyping the same framing: one name gives the AI your usual, careful instruction every time. `./securax ask productivity --prompt standup`
-- **2026-10-27** · [Build it from a browser, on your own models](docs/securax/119-STUDIO.md): Your single biggest dependency - a paid Claude Code subscription and its terminal - is removed: you build and change the estate from a familiar GUI on the open models you already run, so no outside service or plan can gate your day-to-day work. `./securax studio`
 
 **Practise and defend**
 
 | | What it does | How to open it |
 |---|---|---|
 | 🟢 [Incident playbooks](docs/securax/123-INCIDENT-PLAYBOOKS.md) | Run an incident-response playbook as a live, ticked checklist. Pick a scenario (ransomware, data exfiltration, an exploited zero-day), start a run, and work the ordered steps through the NIST phases — triage, contain, eradicate, recover, report, learn — each step pointing at the estate's own command that does the work (the forensic kit, the regulator clock, the fix-by register, restore). It records who did what and when, will not let you close while a critical step is open, and ends by writing a blameless postmortem seeded with the run's timeline. A starting library for a BFSI SOC; add your own scenarios as data. | `./securax playbook list` |
+| 🟢 [Crisis coordination](docs/securax/125-CRISIS-COORDINATION.md) | Coordinate a multi-agency cyber crisis and hit every agency deadline. When a regulator, a sectoral CERT or the police send a requisition — each with a short deadline and each item needing a specific record from a specific team — open it from a ready template, and every item is already assigned to its owning team. Track what is done, pending and overdue against the clock, generate the response pack (a register plus a filled cover letter) to hand over, and keep the ready documents for the moments that stall a real response: a forensic-tool policy-exception form, a chain-of-custody form, a forensic-collection SOP and a duty roster. The templates are generic data — add your own agencies, items and documents. Pairs with the regulator clock (incident) and the response checklist (playbook). | `./securax crisis templates` |
 | 🟡 [Cyber range](docs/securax/79-EXERCISE-RANGE.md) | Practise defending real-looking systems against a live red team, with scoring, judging and MITRE ATT&CK, D3FEND and ATLAS learning paths. | `./securax exercise` |
 | 🟡 [Crisis response kit](docs/securax/78-CRISIS-RESPONSE-KIT.md) | Step into an incident: collect evidence properly, find what is wrong, and draft the reports. | `./securax respond` |
 | 🟢 [Purple-team loop](docs/securax/30-PURPLE-TEAM-LOOP.md) | Attack your own AI channel, check that the attack was detected, and keep the evidence. | `./securax purple` |
@@ -127,6 +128,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- [`./securax crisis` — coordinate a multi-agency cyber crisis and hit every agency deadline (doc 125)](docs/securax/125-CRISIS-COORDINATION.md)
 - The regulatory incident clock now survives the machine it runs on dying — read-only replication to every node
 - Resilience labels can no longer lie (`resilience-grounded` fitness check)
 - The single-point-of-failure ratchet — accepted risks can only shrink, and never sit unreviewed (`spof-ratchet` fitness check)
@@ -134,7 +136,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - The Life OS now reads like a modern software product — one native typeface, no web-font dependency
 - Ransomware backup retention now guarantees ~3 months of clean-copy depth on *any* date (it used to dip to ~1 month at a month boundary)
 - A "welcome back" moment in the Life OS — returning after time away is rewarded, not shamed
-- Human-in-command tool approvals — the AI asks before it acts
 
 **Release 0.3.0 - 2026-10-22:**
 

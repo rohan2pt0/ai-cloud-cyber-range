@@ -1382,6 +1382,11 @@ EOF2
     #   ./securax playbook list | start <scenario> "title" | status [run] | step <run> <step-id> [--by WHO] | retro <run> [--force]
     shift; exec python3 "$ROOT/governance/playbook.py" "${@:-list}"
     ;;
+  crisis)
+    # Multi-agency cyber-crisis coordination (doc 125): open an agency requisition from a ready template, every item assigned to its owning team, track done/pending/overdue against the deadline, and generate the response pack.
+    #   ./securax crisis templates | doc <name> | new <template> --agency "who" --ref "ref" [--due 72h] | list | status [id] | assign <id> <section|item> --to "who" | set <id> <item> [--done|--na] [--evidence "ref"] | pack <id>
+    shift; exec python3 "$ROOT/governance/crisis.py" "${@:-templates}"
+    ;;
   approvals)
     # Tool calls waiting for a human to approve, before the AI may act (doc 124). Approve one with  ./securax approve <id>.
     _k="${GATEWAY_API_KEY:-}"
@@ -2323,6 +2328,7 @@ AI & CHAT
 DEFEND, RESPOND, PRACTISE
   respond ...    crisis response kit: permission first, evidence intake, IOC triage, reports (doc 78)
   playbook ...   run an IR playbook as a live checklist (ransomware, data-exfiltration, zero-day): steps → respond/incident/restore → postmortem (doc 123)
+  crisis ...     coordinate a multi-agency crisis & hit every deadline: open an agency requisition from a ready template, track by team, generate the response pack (doc 125)
   approvals      agent tool calls waiting for a human to approve before the AI may act    approve <id>   grant ONE, single-use, 10 min (doc 124)
   findings ...   every scan and VAPT finding once, with a fix-by date    repairs   everything that needs fixing, each with its fix
   purple         attack your own AI rails and report what held       inspect        look inside third-party software before you trust it

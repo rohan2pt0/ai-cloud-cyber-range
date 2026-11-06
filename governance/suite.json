@@ -73,6 +73,7 @@
   "cyber-range": { "from": "community", "uses": ["identity", "tenancy", "rbac", "audit", "metering"], "enterprise": "many teams and exercises at once, SSO for players, scored evidence kept for audit" },
   "respond": { "from": "community", "uses": ["audit", "export"], "enterprise": "case files shared with the crisis team under roles, evidence kept for regulators" },
   "playbook": { "from": "community", "uses": ["audit", "export", "rbac"], "enterprise": "shared playbook runs with assigned owners per role, SLA timers and a library governed per organisation" },
+  "crisis": { "from": "community", "uses": ["audit", "export", "rbac"], "enterprise": "shared requisition runs with per-team owners and SPOCs, deadline SLA timers and escalation, a war-room roster, and an organisation-governed template and document library" },
   "purple": { "from": "community", "uses": ["audit", "tenancy"], "enterprise": "detection coverage per business unit" },
   "adversary": { "from": "community", "uses": ["audit", "export"], "enterprise": "a bounty-finding ledger per business unit, with repeat-class rate and time-to-regression on the board scorecard" },
   "next": { "from": "community", "uses": ["policy"], "enterprise": "a role-aware next step per person and team, from the same engine" },
