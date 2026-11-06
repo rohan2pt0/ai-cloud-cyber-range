@@ -455,6 +455,53 @@ def check_enterprise_declared() -> dict:
             else "declare it in governance/suite.json: " + "; ".join(err[:3])}
 
 
+def evolution_problems(evolution: dict, known_ids: set, baseline: int) -> list[str]:
+    """Pure core of the amoeba ratchet (principle `amoeba`, doc 128). Every capability in governance/evolution.json must
+    name a real feature/component and declare a well-formed growth path: an amoeba stage that is already had, and for each
+    larger stage the conditions that trigger it, the rail already built to reach it, and a graded actuation. The count of
+    declared growth paths may only RATCHET UP (never drop below the baseline), so the rails accumulate and are never quietly
+    dropped. It does not force all features to declare at once — it locks in the ones that have, and grows from there."""
+    problems: list[str] = []
+    caps = evolution.get("capabilities", {})
+    if len(caps) < baseline:
+        problems.append(f"{len(caps)} declared growth path(s) < baseline {baseline}: a rail may be added but not removed "
+                        f"(the amoeba ratchet only goes up)")
+    for cid, cap in sorted(caps.items()):
+        if known_ids and cid not in known_ids:
+            problems.append(f"'{cid}': growth map names a capability that is not a feature or suite component")
+        if not cap.get("organism"):
+            problems.append(f"'{cid}': name the amoeba form (its simplest living shape) in `organism`")
+        stages = cap.get("stages", [])
+        if not stages or not (stages[0].get("have") and stages[0].get("id") == "amoeba"):
+            problems.append(f"'{cid}': the first stage must be the amoeba you already ship (id 'amoeba', have:true)")
+        for st in stages[1:]:
+            sid = st.get("id", "?")
+            if not st.get("when"):
+                problems.append(f"'{cid}/{sid}': a larger stage must name the conditions (`when`) that trigger it")
+            if not st.get("rail"):
+                problems.append(f"'{cid}/{sid}': declare the rail already built so this stage can self-assemble")
+            if st.get("actuation") not in ("auto", "assisted"):
+                problems.append(f"'{cid}/{sid}': actuation must be 'auto' (safe, in-box) or 'assisted' (behind approve)")
+    return problems
+
+
+def check_evolution_declared(baseline: int) -> dict:
+    """The amoeba principle made enforceable (doc 128): a capability that can grow into an enterprise organism must ship the
+    RAIL to become one, declared in governance/evolution.json — the amoeba form it has, the conditions that trigger each
+    larger form, and the dormant seam already built to reach it. The count of declared rails only ratchets up, so the DNA
+    accumulates and is never quietly dropped. `./securax evolve` reads the live conditions and shows what is ready to grow."""
+    evo = json.loads((ROOT / "governance" / "evolution.json").read_text("utf-8"))
+    feats = {f["id"] for f in json.loads((ROOT / "features.json").read_text("utf-8"))["features"]}
+    comps = set(json.loads((ROOT / "governance" / "suite.json").read_text("utf-8")).get("components", {}))
+    problems = evolution_problems(evo, feats | comps, baseline)
+    n = len(evo.get("capabilities", {}))
+    note = ("; ".join(problems)[:200] if problems else
+            f"{n} capability(ies) declare a growth rail; baseline {baseline}"
+            + (f" (raise the baseline to {n} to lock the ratchet)" if n > baseline else ""))
+    return {"name": "evolution-declared", "value": len(problems), "budget": 0, "unit": "problems", "ok": not problems,
+            "note": note}
+
+
 def check_private_names() -> dict:
     """No organisation, exercise or person on the private list (only fingerprints are stored) appears in any tracked file."""
     import importlib.util
@@ -472,7 +519,7 @@ def run_all(only_fast: bool = False) -> list[dict]:
     if not only_fast:
         res += check_gateway(c["gateway_cold_start_s"], c["gateway_rss_mb"])
         res += check_first_block(c["first_block_s"], c["block_latency_p95_ms"])
-    res += [check_supply_chain(base), check_commands_documented(base), check_ccsp_map(), check_regulatory_maps(), check_impact_map(), check_claims(), check_config_clean(), check_readme_current(), check_private_names(), check_commands_in_help(), check_features_current(), check_continuity_declared(), check_spof_ratchet(c.get("spof_accepted_baseline", 1)), check_resilience_grounded(), check_outcomes_declared(), check_enterprise_declared(), check_no_raw_addresses()]
+    res += [check_supply_chain(base), check_commands_documented(base), check_ccsp_map(), check_regulatory_maps(), check_impact_map(), check_claims(), check_config_clean(), check_readme_current(), check_private_names(), check_commands_in_help(), check_features_current(), check_continuity_declared(), check_spof_ratchet(c.get("spof_accepted_baseline", 1)), check_resilience_grounded(), check_outcomes_declared(), check_enterprise_declared(), check_evolution_declared(c.get("evolution_declared_baseline", 4)), check_no_raw_addresses()]
     return res
 
 
