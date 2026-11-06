@@ -85,3 +85,43 @@ def test_the_response_pack_is_generated(tmp_path, monkeypatch):
         rows = list(csv.DictReader(f))
     r1 = next(r for r in rows if r["item"] == "r.1")
     assert r1["status"] == "provided" and r1["evidence"] == "report.pdf"
+
+
+def test_start_stands_up_a_scenario_in_one_step(tmp_path, monkeypatch):
+    monkeypatch.setenv("SECURAX_CRISIS_DIR", str(tmp_path))
+    assert cr.main(["start", "payment-fraud", "--title", "Payment fraud"], now=NOW) == 0
+    # the scenario's requisitions are all opened
+    opened = {r["template"] for r in cr.runs()}
+    assert opened == set(cr.lib()["scenarios"]["payment-fraud"]["requisitions"])
+
+
+def test_next_names_the_single_most_urgent_action(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("SECURAX_CRISIS_DIR", str(tmp_path))
+    cr.main(["start", "payment-fraud", "--title", "X"], now=NOW)
+    capsys.readouterr()
+    # the CERT forensic requisition has the tightest default deadline (6h), so it is surfaced first
+    assert cr.main(["next"], now=NOW + datetime.timedelta(hours=1)) == 0
+    out = capsys.readouterr().out
+    assert "forensic" in out.lower() and "deadline" in out.lower()
+    # with nothing open, next points at how to stand a crisis up
+    cr2 = tmp_path / "empty"
+    monkeypatch.setenv("SECURAX_CRISIS_DIR", str(cr2))
+    cr.main(["next"], now=NOW)
+    assert "crisis start" in capsys.readouterr().out
+
+
+def test_comms_drafts_are_generic_short_and_legally_safe(capsys):
+    data = cr._comms()
+    assert data["rules"] and data["drafts"]
+    blob = (ROOT / "governance" / "crisis-comms.json").read_text("utf-8")
+    for banned in ("Central Bank", "Maharashtra", "CERT-In", "Belapur", "Rohan", "Choudhari"):
+        assert banned not in blob, f"the comms library must not name {banned!r}"
+    for d in data["drafts"]:
+        assert d["body"] and d["audience"] and d["medium"]
+        # a legally-safe draft never admits fault
+        assert "our fault" not in d["body"].lower() and "we are to blame" not in d["body"].lower()
+        if "sms" in d["medium"]:
+            assert len(d["body"]) <= 320, f"{d['id']} is too long for SMS"
+    # printing a single draft works and nudges toward sign-off
+    assert cr.main(["comms", "exec-sitrep"]) == 0
+    assert "approve before it goes out" in capsys.readouterr().out

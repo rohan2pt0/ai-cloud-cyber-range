@@ -6,6 +6,9 @@ send a requisition with a short deadline, and each item needs a specific record 
 scramble into a tracked, templated workflow — open a requisition from a ready template, every item already assigned to
 its owning team, see what is done / pending / overdue against the clock, and generate the response pack to hand over.
 
+  ./securax crisis start <scenario> [--agency "<who>"] [--ref "<ref>"] [--title "<t>"]   one command: stand up the scenario's requisitions + the next steps (clock, checklist, first messages)
+  ./securax crisis next [<id>]                            the single most urgent action right now — zero thinking required
+  ./securax crisis comms [<id>|--audience .. --medium .. --scenario ..]   ready, legally-defensible messages (SITREP, staff, customers, public, partners) per medium (SMS/WhatsApp/email/letter/call)
   ./securax crisis templates                              the requisition library (law-enforcement, CERT forensics, regulator) and the ready documents
   ./securax crisis doc <name>                             print a ready document (forensic-tool-exception, chain-of-custody, forensic-collection-sop, agency-cover-letter, duty-roster)
   ./securax crisis new <template> --agency "<who>" --ref "<their ref>" [--due 72h|<ISO>] [--title "<t>"]
@@ -34,6 +37,7 @@ import sys
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parent
 LIB = HERE / "crisis.json"
+COMMS = HERE / "crisis-comms.json"
 DOCS = HERE / "crisis-templates"
 UTC = dt.timezone.utc
 
@@ -107,28 +111,127 @@ def runs() -> list[dict]:
     return sorted((json.loads(p.read_text("utf-8")) for p in runs_dir().glob("CRISIS-*.json")), key=lambda r: r["id"])
 
 
-def cmd_new(a, now: dt.datetime) -> int:
-    reqs = lib()["requisitions"]
-    if a.template not in reqs:
-        print(f"unknown template {a.template!r}; known: {', '.join(reqs)}")
-        return 2
-    t = reqs[a.template]
+def _build(template: str, agency: str, ref: str, title: str, due: str, now: dt.datetime) -> dict:
+    t = lib()["requisitions"][template]
     n = 1 + sum(1 for r in runs() if r["id"].startswith(f"CRISIS-{now:%Y%m%d}"))
     cid = f"CRISIS-{now:%Y%m%d}-{n:03d}"
-    sections = []
-    for s in t["sections"]:
-        sections.append({"id": s["id"], "title": s["title"], "owner": s["owner"], "spoc": "",
-                         "items": [{"id": it["id"], "q": it["q"], "record": it["record"], "owner": s["owner"],
-                                    "status": "pending", "note": "", "evidence": "", "updated_at": ""} for it in s["items"]]})
-    run = {"id": cid, "template": a.template, "name": t["name"], "tier": t["tier"], "agency": a.agency, "ref": a.ref,
-           "title": a.title or t["name"], "opened_at": iso(now), "due_at": parse_due(a.due, t.get("default_due_hours", 72), now),
+    sections = [{"id": s["id"], "title": s["title"], "owner": s["owner"], "spoc": "",
+                 "items": [{"id": it["id"], "q": it["q"], "record": it["record"], "owner": s["owner"],
+                            "status": "pending", "note": "", "evidence": "", "updated_at": ""} for it in s["items"]]}
+                for s in t["sections"]]
+    run = {"id": cid, "template": template, "name": t["name"], "tier": t["tier"], "agency": agency, "ref": ref,
+           "title": title or t["name"], "opened_at": iso(now), "due_at": parse_due(due, t.get("default_due_hours", 72), now),
            "sections": sections}
     save_run(run)
-    n_items = sum(len(s["items"]) for s in sections)
-    print(f"Opened {cid}: {t['name']} for {a.agency} (ref {a.ref}).")
-    print(f"  {len(sections)} sections, {n_items} items; due {local(run['due_at'])}.")
-    print(f"  Start the regulator clock too:  ./securax incident open \"{a.title or t['name']}\"")
-    print(f"  Track it:  ./securax crisis status {cid}")
+    return run
+
+
+def cmd_new(a, now: dt.datetime) -> int:
+    if a.template not in lib()["requisitions"]:
+        print(f"unknown template {a.template!r}; known: {', '.join(lib()['requisitions'])}")
+        return 2
+    run = _build(a.template, a.agency, a.ref, a.title, a.due, now)
+    n_items = sum(len(s["items"]) for s in run["sections"])
+    print(f"Opened {run['id']}: {run['name']} for {a.agency} (ref {a.ref}).")
+    print(f"  {len(run['sections'])} sections, {n_items} items; due {local(run['due_at'])}.")
+    print(f"  Start the regulator clock too:  ./securax incident open \"{run['title']}\"")
+    print(f"  Next action:  {next_action(run, now)}")
+    return 0
+
+
+def next_action(run: dict, now: dt.datetime) -> str:
+    """The single most useful thing to do on this requisition right now — zero thinking required."""
+    owners = lib()["owners"]
+    items = [i for s in run["sections"] for i in s["items"]]
+    _, _, pend = _counts(items)
+    if pend == 0:
+        return f"all items resolved — generate the pack:  ./securax crisis pack {run['id']}"
+    left = (dt.datetime.fromisoformat(run["due_at"].replace("Z", "+00:00")) - now).total_seconds()
+    s = max(run["sections"], key=lambda x: _counts(x["items"])[2])
+    p = _counts(s["items"])[2]
+    who = s.get("spoc") or owners.get(s["owner"], s["owner"])
+    head = f"OVERDUE by {fmt_left(left)} — escalate and close" if left < 0 else f"{fmt_left(left)} to deadline — work"
+    return f"{head}: '{s['title']}' ({p} items) → {who}   (./securax crisis assign {run['id']} {s['id']} --to \"<SPOC>\")"
+
+
+def cmd_next(a, now: dt.datetime) -> int:
+    rs = [load_run(a.id)] if a.id else runs()
+    open_rs = [r for r in rs if _counts([i for s in r["sections"] for i in s["items"]])[2] > 0]
+    if not open_rs:
+        print("No open requisition needs you. If a crisis is unfolding, stand it up in one step:")
+        print("  ./securax crisis start <scenario>        (scenarios: " + ", ".join(lib()["scenarios"]) + ")")
+        return 0
+    open_rs.sort(key=lambda r: r["due_at"])     # nearest deadline first
+    r = open_rs[0]
+    print(f"▶ {r['id']}  {r['name']} — {r['agency']} (ref {r['ref']})")
+    print(f"  {next_action(r, now)}")
+    print("  Also: regulator deadlines →  ./securax incident due    ·    first messages →  ./securax crisis comms")
+    if len(open_rs) > 1:
+        print(f"  ({len(open_rs) - 1} other open requisition(s); see ./securax crisis status)")
+    return 0
+
+
+def _comms() -> dict:
+    return json.loads(COMMS.read_text("utf-8"))
+
+
+def cmd_comms(a, now: dt.datetime) -> int:
+    data = _comms()
+    drafts = data["drafts"]
+    if a.id:
+        d = next((x for x in drafts if x["id"] == a.id), None)
+        if not d:
+            print(f"no draft {a.id!r}. See: ./securax crisis comms")
+            return 2
+        sel = [d]
+    else:
+        sel = [d for d in drafts
+               if (not a.audience or a.audience.lower() in d["audience"].lower())
+               and (not a.medium or a.medium.lower() in d["medium"].lower())
+               and (not a.scenario or d["scenario"] in (a.scenario, "any"))]
+    if not a.id and not (a.audience or a.medium or a.scenario):
+        print("Crisis-communication drafts (./securax crisis comms <id>, or --audience/--medium/--scenario):")
+        for d in drafts:
+            print(f"  {d['id']:<24} [{d['medium']:<26}] {d['audience']}  ·  {d['scenario']}")
+        print("\nRules (every draft obeys these):")
+        for r in data["rules"]:
+            print(f"  - {r}")
+        print(f"\n{data['severity_note']}")
+        return 0
+    for d in sel:
+        print(f"\n===== {d['id']}  ·  {d['audience']}  ·  {d['medium']}  ·  scenario: {d['scenario']} =====")
+        if d.get("subject"):
+            print(f"Subject: {d['subject']}")
+        print(d["body"])
+        if d.get("notes"):
+            print(f"\n[guidance] {d['notes']}")
+    print("\nFill the <…> placeholders; legal / compliance / comms approve before it goes out. One source of truth across channels.")
+    return 0 if sel else 2
+
+
+def cmd_start(a, now: dt.datetime) -> int:
+    scen = lib()["scenarios"]
+    if a.scenario not in scen:
+        print(f"unknown scenario {a.scenario!r}; known: {', '.join(scen)}")
+        return 2
+    sc = scen[a.scenario]
+    title = a.title or f"{a.scenario} incident"
+    print(f"Standing up the crisis for: {title}\n")
+    opened = []
+    for tmpl in sc["requisitions"]:
+        run = _build(tmpl, a.agency or "<fill: agency>", a.ref or "<fill: ref>", title, "", now)
+        opened.append(run)
+        print(f"  ✔ requisition {run['id']}: {run['name']}  (due {local(run['due_at'])})")
+    print("\nNow, in order:")
+    kind = f" --kind {sc['incident_kind']}" if sc.get("incident_kind") else ""
+    print(f"  1. Start the regulator clock:   ./securax incident open \"{title}\"{kind}")
+    pb = sc.get("playbook")
+    print(f"  2. Open the response checklist:  ./securax playbook start {pb} \"{title}\"" if pb else
+          "  2. Open the response checklist:  ./securax playbook list   (pick the closest scenario)")
+    print("  3. First messages to send:       ./securax crisis comms exec-sitrep   &&   ./securax crisis comms staff-alert-sms")
+    print("  4. What to do right now:         ./securax crisis next")
+    if not a.agency:
+        print("\n  Set each agency and reference as the notices arrive:  ./securax crisis status   then edit, or re-open with --agency/--ref.")
     return 0
 
 
@@ -167,6 +270,8 @@ def cmd_status(a, now: dt.datetime) -> int:
         overdue_pending = [i for i in items if i["status"] == "pending"] if left < 0 else []
         if overdue_pending:
             print(f"  ⚠ {len(overdue_pending)} item(s) still open past the deadline — escalate or request an extension.")
+        if pend:
+            print(f"  ▶ next: {next_action(run, now)}")
     return worst
 
 
@@ -298,6 +403,18 @@ def main(argv: list[str] | None = None, now: dt.datetime | None = None) -> int:
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("templates")
     sub.add_parser("list")
+    nx = sub.add_parser("next")
+    nx.add_argument("id", nargs="?")
+    cm = sub.add_parser("comms")
+    cm.add_argument("id", nargs="?")
+    cm.add_argument("--audience", default="")
+    cm.add_argument("--medium", default="")
+    cm.add_argument("--scenario", default="")
+    sr = sub.add_parser("start")
+    sr.add_argument("scenario")
+    sr.add_argument("--agency", default="")
+    sr.add_argument("--ref", default="")
+    sr.add_argument("--title", default="")
     d = sub.add_parser("doc")
     d.add_argument("name")
     nw = sub.add_parser("new")
@@ -326,7 +443,7 @@ def main(argv: list[str] | None = None, now: dt.datetime | None = None) -> int:
     pk.add_argument("id")
     a = ap.parse_args(argv)
     fn = {"templates": cmd_templates, "list": cmd_list, "doc": cmd_doc, "new": cmd_new, "status": cmd_status,
-          "assign": cmd_assign, "set": cmd_set, "pack": cmd_pack}[a.cmd]
+          "assign": cmd_assign, "set": cmd_set, "pack": cmd_pack, "next": cmd_next, "comms": cmd_comms, "start": cmd_start}[a.cmd]
     return fn(a, now)
 
 

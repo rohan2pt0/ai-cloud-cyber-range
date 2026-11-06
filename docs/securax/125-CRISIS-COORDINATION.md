@@ -15,7 +15,23 @@ is **coordination and completeness against a clock**, not the writing of each an
 it): sections, each owned by a team, each item a question plus the record to attach. You open a run, every item
 is pre-assigned, and you track it to done.
 
-## The flow
+## Least-friction path (you, alone, under pressure)
+
+One command stands the whole crisis up; one command tells you what to do next. No remembering, no juggling tools.
+
+```bash
+./securax crisis start payment-fraud --title "<codename>"
+./securax crisis next
+./securax crisis comms exec-sitrep
+```
+
+- **start `<scenario>`** — opens the standard requisitions for the scenario (ransomware, payment-fraud,
+  data-breach, outage) in one step, and prints the ordered next moves: start the regulator clock, open the
+  response checklist, and the first messages to send.
+- **next** — the single most urgent action right now, named with the exact command: the requisition nearest
+  its deadline, the section with the most pending items, and who owns it. Zero thinking required.
+
+## The full flow
 
 ```bash
 ./securax crisis templates
@@ -61,6 +77,26 @@ The moments that stall a real response have a template, so they are a fill-in, n
 - **duty-roster** — the shift-wise roster agencies almost always ask for first; keep it current so it is a
   copy-out, not a scramble.
 - **agency-cover-letter** — the covering letter for the response pack.
+
+## Crisis communications — everyone on the same page
+
+In a crisis people write too much, too slowly, and in ways that create legal and reputational risk. `crisis
+comms` is a library of **short, factual, legally-defensible** drafts — one source of truth per audience, so
+every channel says the same thing.
+
+```bash
+./securax crisis comms                              # list all drafts + the rules
+./securax crisis comms staff-alert-sms              # one draft, with guidance
+./securax crisis comms --audience customers --medium sms
+```
+
+Audiences and media: an executive **SITREP** (email), a **staff alert** (SMS) and brief (email/broadcast), a
+**frontline script** (one line the whole counter says), **customer** reassurance (SMS/WhatsApp) and a data
+notice (letter), a **public holding statement**, a **partner recall** request (beneficiary banks), and an
+**IR-vendor activation** note. Every draft obeys the same rules — facts only, no admission of fault, no
+sensitive detail, one action and one contact, keep it short — and carries a fold-in anti-fraud line where it
+faces customers. Fill the `<…>` placeholders; legal / compliance / communications **approve before anything
+goes out**.
 
 ## Where it fits
 

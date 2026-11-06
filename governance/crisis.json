@@ -15,6 +15,12 @@
   "core": "Core banking",
   "forensics": "Digital forensics / IR"
  },
+ "scenarios": {
+  "ransomware": {"requisitions": ["sectoral-cert-forensics", "regulator-incident-report"], "incident_kind": "ransomware", "playbook": "ransomware", "comms": "any"},
+  "payment-fraud": {"requisitions": ["le-production-notice", "sectoral-cert-forensics", "regulator-incident-report"], "incident_kind": "fund-fraud", "playbook": "data-exfiltration", "comms": "payment-fraud"},
+  "data-breach": {"requisitions": ["sectoral-cert-forensics", "regulator-incident-report"], "incident_kind": "ai-data-leak", "playbook": "data-exfiltration", "comms": "data-breach"},
+  "outage": {"requisitions": ["regulator-incident-report"], "incident_kind": "", "playbook": "", "comms": "outage"}
+ },
  "requisitions": {
   "le-production-notice": {
    "name": "Law-enforcement production notice",
