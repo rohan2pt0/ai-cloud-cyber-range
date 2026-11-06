@@ -1,0 +1,62 @@
+{
+ "about": "The growth map (doc 128, principle `amoeba`). Each capability declares the simplest living form it ships in (the amoeba — one person, no server, offline), the stages it can grow into, the CONDITIONS that trigger each stage (favourable: more nodes/teams/traffic/resources; unfavourable: load, failure, a lost node — antifragile), and the RAIL already built into the amoeba so the next form can self-assemble. Actuation is graded: 'auto' steps are safe, reversible and in-box (the estate may do them itself); 'assisted' steps provision infrastructure, cost money or touch endpoints and stay behind a human's ./securax approve. ./securax evolve senses the current conditions and names what is ready to grow and the one step to grow it. This file is DATA; every enterprise-capable feature should carry an entry (fitness evolution-declared ratchets the count up, never down). Seeded with the capabilities whose rails are built; extend it as each feature grows its seam.",
+ "conditions": {
+  "about": "How the estate reads its own conditions, honestly and locally — no telemetry leaves the box.",
+  "signals": {
+   "nodes": "how many reference/sync nodes are live (governance/resilience.py reference; 1 = a lone amoeba)",
+   "gateway": "a model gateway is configured (GATEWAY_URL) — the estate can think, not only react",
+   "fleet_server": "a Velociraptor/endpoint server is configured (a standing organism, not a one-off collector)",
+   "internal_mirror": "an internal tool/registry mirror is set (SECURAX_HUNT_MIRROR) — mass deployment without vendor egress",
+   "teams": "more than one team/tenant uses the estate (platform tenancy in use)",
+   "load": "sustained load or repeated incidents — a stress signal that the amoeba form is being outgrown",
+   "lost_node": "a node went down — fall back to the amoeba form (no-SPOF), then regrow when it returns"
+  }
+ },
+ "capabilities": {
+  "hunt": {
+   "organism": "an offline Velociraptor collector on one host or in the pipeline — no server",
+   "stages": [
+    {"id": "amoeba", "is": "offline collector, no server, one host / DevSecOps pipeline; deterministic triage", "have": true, "actuation": "auto"},
+    {"id": "colony", "when": ["fleet_server", "nodes>3", "load"], "grows_to": "a Velociraptor server with clients, fleet-wide hunts, throttling", "rail": "the SAME packs run as a fleet hunt unchanged; the client-config generator; throttle settings in the pack", "actuation": "assisted"},
+    {"id": "organism", "when": ["teams", "internal_mirror"], "grows_to": "a managed fleet with per-team RBAC and multi-org tenancy, an org-governed tool mirror with EULA acceptance, scheduled hunts, AI-agent triage and drafted remediation behind approval", "rail": "SECURAX_HUNT_MIRROR as the tool source; the rbac/tenancy/policy platform services; the gated-tool EULA-acceptance ledger; the approve workflow", "actuation": "assisted"}
+   ],
+   "unfavourable": {"lost_node": "the fleet server is a natural SPOF — on its loss, fall back to the offline-collector amoeba, which needs no server; regrow when it returns"}
+  },
+  "crisis": {
+   "organism": "a single responder tracking one agency requisition in the local vault",
+   "stages": [
+    {"id": "amoeba", "is": "one person, the register and the ready documents, runs offline in the vault", "have": true, "actuation": "auto"},
+    {"id": "colony", "when": ["teams", "nodes>1"], "grows_to": "per-team owners and SPOCs, the chase routine nudging each team, shared runs across nodes", "rail": "every requisition item already carries an owning team; the crisis-watch routine; the read-only mirror of the clock to every node", "actuation": "auto"},
+    {"id": "organism", "when": ["teams", "gateway"], "grows_to": "shared requisition runs with SLA timers and escalation, a war-room roster, an org-governed template library, AI-drafted filings behind approval", "rail": "the audit/export/rbac platform services; the approve gate for anything that leaves the building", "actuation": "assisted"}
+   ],
+   "unfavourable": {"lost_node": "a live requisition lives in the node's vault and the backups; track it on the always-on node or restore the vault"}
+  },
+  "wargame": {
+   "organism": "a lone responder running a scored tabletop from the local vault",
+   "stages": [
+    {"id": "amoeba", "is": "one person, deterministic scoring, no gateway, runs offline", "have": true, "actuation": "auto"},
+    {"id": "colony", "when": ["gateway"], "grows_to": "model-graded free text and an AI-played sender under the governed rails", "rail": "the gateway call is already wired and degrades to the rubric when absent", "actuation": "auto"},
+    {"id": "organism", "when": ["teams"], "grows_to": "shared multi-player runs with a facilitator and live team scoreboards, an org-governed scenario library, after-action reports rolled into the exercise programme", "rail": "the scenarios are data; runs are per-node and replicate; the export/audit services", "actuation": "assisted"}
+   ],
+   "unfavourable": {"load": "when coordination keeps failing a scenario, the after-action report turns each gap into a standing lesson and a drill — the stress makes the next run stronger"}
+  },
+  "evolve": {
+   "organism": "a read-only growth map on one node: senses conditions, recommends, proposes the rail",
+   "stages": [
+    {"id": "amoeba", "is": "senses local conditions and shows what is ready to grow; does nothing on its own", "have": true, "actuation": "auto"},
+    {"id": "colony", "when": ["nodes>1"], "grows_to": "the estate performs the safe, in-box growth steps itself (enable a toggle, arm a routine, add a model rung) when conditions warrant", "rail": "each stage already carries an `actuation` grade; the auto-graded steps are the safe seam to actuate", "actuation": "auto"},
+    {"id": "organism", "when": ["teams"], "grows_to": "org-wide growth governance: a fleet-level view, policy over which capabilities may auto-grow, scheduled condition-driven scaling under the approval workflow", "rail": "the policy platform service; the approve workflow; the per-capability actuation grades", "actuation": "assisted"}
+   ],
+   "unfavourable": {"lost_node": "it holds no state and runs from the code, so any node answers; nothing to recover"}
+  },
+  "gateway": {
+   "organism": "a local/free model behind the rails, serving one person with zero external calls",
+   "stages": [
+    {"id": "amoeba", "is": "one node, a local model, the rails + allowance + audit chain, offline-capable", "have": true, "actuation": "auto"},
+    {"id": "colony", "when": ["nodes>1", "load"], "grows_to": "a provider ladder with failover and a kill switch across nodes", "rail": "the model ladder and the kill switch are already in the config; add a rung", "actuation": "auto"},
+    {"id": "organism", "when": ["teams"], "grows_to": "per-team allowances and metering, tenant isolation, an organisation-governed policy", "rail": "the identity/tenancy/metering/policy platform services the gateway already speaks to", "actuation": "assisted"}
+   ],
+   "unfavourable": {"lost_node": "answers fall back along the ladder to a local model; no single provider or node is the dependency"}
+  }
+ }
+}

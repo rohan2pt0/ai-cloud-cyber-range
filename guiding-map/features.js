@@ -89,6 +89,22 @@ window.SECURAX_FEATURES = {
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/127-THREAT-HUNTING-DFIR/"
   },
   {
+   "id": "evolve",
+   "group": "Keep it running",
+   "icon": "sprout",
+   "name": "Growth map",
+   "what": "The estate is built to start as an amoeba — the simplest living thing that helps today, one person, no server, offline — and carry the DNA to become an enterprise organism, with the dormant rail already built into each capability so it can grow when conditions call for it. This is where you see and steer that growth. It reads the estate's own conditions locally (how many nodes are live, whether a model gateway, a fleet server, an internal tool mirror or more than one team is present, and stress signals like load or a lost node) and, for each capability, shows the stage it is in, whether conditions now favour the next stage, and the exact rail to pull — ransomware hunting that is an offline collector today and a governed fleet when there are endpoints and teams; a crisis that is one responder today and per-team owners with SLA timers when there are teams and nodes; a gateway that is a local model today and a metered multi-tenant service when the organisation scales. The safe, in-box steps the estate can grow by itself; anything that provisions infrastructure, costs money or touches endpoints is proposed for your approval, never done silently. Nature is the architect: the organism grows only as conditions warrant, and falls back to the amoeba form under stress so no scaled-up part is ever a single point of failure. The growth map is data (governance/evolution.json); fitness evolution-declared makes every enterprise-capable feature ship its rail.",
+   "cmd": "./securax evolve",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "added": "2026-11-06",
+   "outcome": "You never over-build and never hit a ceiling: the estate runs at exactly the size today needs, tells you in one screen what is ready to grow as you scale, and grows the safe steps itself — so one laptop and a thousand-endpoint fleet are the same system at two stages of the same life, not two products.",
+   "shows": "the growth map from ./securax evolve",
+   "light": "green",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/128-GROWTH-MAP-AMOEBA/"
+  },
+  {
    "id": "catchup",
    "group": "Your own tools",
    "icon": "sun",

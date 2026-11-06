@@ -24,6 +24,16 @@ The principles behind it:
   `progress` counts them.
 - **Small wins, shown:** progress you can see keeps people going.
 - **Least effort for the person:** the estate does the remembering, the checking and the reminding.
+- **Start as an amoeba, carry the DNA (`amoeba`):** ship the simplest living thing that helps today — one person, no
+  server, offline — but carry the full blueprint inside it and build the dormant seam (the *rail*) that lets each part
+  grow into its enterprise form. When you offer options, make the simplest that works the natural first choice, and still
+  lay the rails for the larger ones so they can self-assemble when conditions call for them. Nature is the architect: a
+  cell becomes an organism only as conditions warrant. So the estate senses its own conditions — favourable (more nodes,
+  more teams, traffic north-south and east-west, spare resources) and unfavourable (load, failure, a lost node) — and
+  grows the next form when they warrant it: the safe, in-box steps by itself, the ones that provision, cost or touch
+  endpoints behind a human's approval. Declare each capability's growth path in `governance/evolution.json`; fitness
+  `evolution-declared` fails an enterprise-capable feature that ships no rail to become one, and `./securax evolve` shows
+  what is ready to grow. Never build the organism before the amoeba is alive and used; never ship an amoeba with no DNA.
 
 Every feature in `features.json` carries its `outcome` (what gets better) and `shows` (where the person sees it); fitness
 `outcomes-declared` fails one that does not.

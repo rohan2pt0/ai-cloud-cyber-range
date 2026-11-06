@@ -70,6 +70,43 @@ def test_spof_ratchet_is_a_shrinking_self_expiring_register():
     assert ft.check_spof_ratchet(1)["ok"]
 
 
+def test_evolution_ratchet_requires_a_well_formed_rail_and_only_grows():
+    known = {"hunt", "crisis", "wargame", "gateway", "evolve"}
+    good = {"capabilities": {
+        "hunt": {"organism": "offline collector",
+                 "stages": [{"id": "amoeba", "have": True, "actuation": "auto"},
+                            {"id": "organism", "when": ["teams"], "grows_to": "fleet",
+                             "rail": "same packs run as a fleet", "actuation": "assisted"}]}}}
+    # a well-formed single rail at baseline 1 passes
+    assert ft.evolution_problems(good, known, 1) == []
+    # fewer declared rails than the baseline fails — the ratchet only goes up
+    assert any("baseline" in p for p in ft.evolution_problems(good, known, 2))
+    # a larger stage with no rail fails (an ambition with no seam to grow into it)
+    norail = {"capabilities": {"hunt": {"organism": "x", "stages": [
+        {"id": "amoeba", "have": True, "actuation": "auto"},
+        {"id": "organism", "when": ["teams"], "actuation": "assisted"}]}}}
+    assert any("rail" in p for p in ft.evolution_problems(norail, known, 1))
+    # a larger stage with no trigger conditions fails
+    nowhen = {"capabilities": {"hunt": {"organism": "x", "stages": [
+        {"id": "amoeba", "have": True, "actuation": "auto"},
+        {"id": "organism", "rail": "r", "actuation": "assisted"}]}}}
+    assert any("conditions" in p for p in ft.evolution_problems(nowhen, known, 1))
+    # a bad actuation grade fails
+    badact = {"capabilities": {"hunt": {"organism": "x", "stages": [
+        {"id": "amoeba", "have": True, "actuation": "auto"},
+        {"id": "organism", "when": ["teams"], "rail": "r", "actuation": "whenever"}]}}}
+    assert any("actuation" in p for p in ft.evolution_problems(badact, known, 1))
+    # a capability that is not a real feature/component fails
+    ghost = {"capabilities": {"ghost": {"organism": "x", "stages": [{"id": "amoeba", "have": True, "actuation": "auto"}]}}}
+    assert any("not a feature" in p for p in ft.evolution_problems(ghost, known, 1))
+    # the first stage must be the amoeba you already ship
+    noamoeba = {"capabilities": {"hunt": {"organism": "x", "stages": [
+        {"id": "organism", "when": ["teams"], "rail": "r", "actuation": "assisted"}]}}}
+    assert any("amoeba" in p for p in ft.evolution_problems(noamoeba, known, 1))
+    # and it passes on the real growth map today
+    assert ft.check_evolution_declared(5)["ok"]
+
+
 def test_supply_chain_ratchet_fails_on_new_findings_and_celebrates_fixed_ones():
     now = ft.own_critical_findings()
     victim = sorted(now)[0]
