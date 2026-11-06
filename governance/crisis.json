@@ -1,0 +1,184 @@
+{
+ "about": "Agency-requisition templates for a cyber crisis (doc 125). When a regulator or law-enforcement agency sends a requisition with a deadline during an incident, the bulk of the pain is coordinating many teams to produce the exact records each item asks for, on time. Each template is a ready structure: sections, each owned by a team, each item a question + the record to attach. `./securax crisis` opens a run from a template, assigns each item to its owner, tracks what is done vs pending vs overdue against the deadline, and generates the response pack. This is a STARTING library, deliberately generic (no organisation, person, address, IP or case number in it) — add your own agencies and items; it is data, no code change. Tiers: state (law-enforcement / police), national (sectoral CERT, central bank, national cyber agency), global (information-sharing bodies). Nothing here is legal advice; your legal and compliance teams own the actual response.",
+ "owners": {
+  "exec": "Crisis lead / CISO",
+  "legal": "Legal & compliance",
+  "comms": "Corporate communications",
+  "ops": "Payments / operations",
+  "appmw": "Application & middleware",
+  "infra": "Servers & database",
+  "network": "Network, security & SOC",
+  "iam": "Identity & access",
+  "hr": "Human resources",
+  "physical": "Physical security & admin",
+  "vendor": "Vendor & procurement",
+  "core": "Core banking",
+  "forensics": "Digital forensics / IR"
+ },
+ "scenarios": {
+  "ransomware": {"requisitions": ["sectoral-cert-forensics", "regulator-incident-report"], "incident_kind": "ransomware", "playbook": "ransomware", "comms": "any"},
+  "payment-fraud": {"requisitions": ["le-production-notice", "sectoral-cert-forensics", "regulator-incident-report"], "incident_kind": "fund-fraud", "playbook": "data-exfiltration", "comms": "payment-fraud"},
+  "data-breach": {"requisitions": ["sectoral-cert-forensics", "regulator-incident-report"], "incident_kind": "ai-data-leak", "playbook": "data-exfiltration", "comms": "data-breach"},
+  "outage": {"requisitions": ["regulator-incident-report"], "incident_kind": "", "playbook": "", "comms": "outage"}
+ },
+ "requisitions": {
+  "le-production-notice": {
+   "name": "Law-enforcement production notice",
+   "tier": "state",
+   "about": "A police / state cyber agency production-or-appearance notice (e.g. a summons for documents under the local criminal-procedure code) after a payment-fraud complaint. Typically a long schedule of questions, each needing a specific record from a specific team, within a short deadline. Generalised from a real drill.",
+   "default_due_hours": 72,
+   "sections": [
+    {"id": "org", "title": "Organisation and duty roster", "owner": "hr", "items": [
+     {"id": "1.1", "q": "Org chart of every team that handles the payment rail (payments cell, treasury/settlement, back office, IT application, middleware, server, database, network, information security, SOC), with names as on the incident date.", "record": "Organisation chart with names"},
+     {"id": "1.2", "q": "Head of each team and their reporting officer.", "record": "Reporting matrix"},
+     {"id": "1.3", "q": "Shift-wise duty roster for each team over the incident window: shift timings, persons rostered and who actually attended.", "record": "Approved rosters; attendance / biometric records"},
+     {"id": "1.4", "q": "Who was on night / weekend / holiday duty, and anyone on duty outside their normal shift.", "record": "Overtime and shift-swap approvals"},
+     {"id": "1.5", "q": "Anyone on leave, tour, work-from-home or newly posted; who stood in, and did the stand-in use their own user ID.", "record": "Leave records; delegation / charge-handover letters"},
+     {"id": "1.6", "q": "Who was on call / standby for each team; were they contacted, and by whom.", "record": "On-call list; call logs of official phones"},
+     {"id": "1.7", "q": "Staff who joined, transferred in/out, resigned or retired from these teams in the period.", "record": "HR movement register"}
+    ]},
+    {"id": "makers", "title": "Rail makers, checkers and authorisers", "owner": "ops", "items": [
+     {"id": "2.1", "q": "The normal maker-checker flow for an outward payment, from branch/entity entry to signing and release; who acts at each step.", "record": "Process note / SOP"},
+     {"id": "2.2", "q": "Every user who held maker, checker, authoriser or signing rights in the core and rail applications during the window, with role and access level.", "record": "User-role matrix extract"},
+     {"id": "2.3", "q": "For each disputed message: maker ID, checker ID, signer ID / certificate, terminal or IP, and timestamp at each step; if a field is blank, say so.", "record": "Transaction-wise audit trail (spreadsheet)"},
+     {"id": "2.4", "q": "Who logged in to the rail screens in the period: login/logout time, terminal and IP per session.", "record": "Application login logs"},
+     {"id": "2.5", "q": "Which signing certificates or HSM keys signed the disputed messages; custodian of each, where kept, who held the PIN.", "record": "Certificate register; HSM access log"},
+     {"id": "2.6", "q": "Were any disputed messages approved in bulk, by an auto-approval rule, or by a system / service account; name the account and who controls it.", "record": "Rule configuration; service-account list"},
+     {"id": "2.7", "q": "Were any maker-checker limits, approval rules or straight-through settings changed shortly before the incident; who requested, approved and made the change.", "record": "Change requests; configuration audit log"},
+     {"id": "2.8", "q": "Did any one person act as both maker and checker, or use another person's ID, in this period.", "record": "Exception reports"}
+    ]},
+    {"id": "railops", "title": "Rail operators and administrators (messaging interface)", "owner": "ops", "items": [
+     {"id": "3.1", "q": "Every user of the secure-messaging member interface (operator, verifier, authoriser, security officer) with ID and rights during the window.", "record": "Messaging user list"},
+     {"id": "3.2", "q": "Who logged in to the messaging interface in the period, from which terminal / IP, for how long.", "record": "Messaging login and audit logs"},
+     {"id": "3.3", "q": "Who holds the administrator and security-officer roles; who can create users and reset passwords.", "record": "Role assignment"},
+     {"id": "3.4", "q": "Were any messaging users created, unlocked, reset or re-privileged near the incident; by whom.", "record": "User admin log"},
+     {"id": "3.5", "q": "The bank's contact person with the rail operator; did anyone call or email the operator during the window.", "record": "Call and email records with the operator"}
+    ]},
+    {"id": "appmw", "title": "Application and middleware administrators", "owner": "appmw", "items": [
+     {"id": "4.1", "q": "Administrators of the rail gateway, integration broker, message queue and dispatcher during the window (staff or vendor), with user IDs.", "record": "Admin list per application"},
+     {"id": "4.2", "q": "Who could put, browse, move or delete messages on the rail queues.", "record": "Queue authority records"},
+     {"id": "4.3", "q": "Who logged in to the middleware / gateway consoles in the period, from where and when.", "record": "Console and admin logs"},
+     {"id": "4.4", "q": "Any deployment, patch, script, flow or configuration change to these applications shortly before the incident; who made it and who approved it.", "record": "Change tickets; deployment logs"},
+     {"id": "4.5", "q": "Any scripts, batch jobs or schedulers that write to the rail application or queues that ran in the period; who owns each.", "record": "Job scheduler history"},
+     {"id": "4.6", "q": "Who knows the service-account passwords used by the gateway/middleware, and when they were last changed.", "record": "Service-account register"}
+    ]},
+    {"id": "infra", "title": "Server and database administrators", "owner": "infra", "items": [
+     {"id": "5.1", "q": "All servers in the rail chain (hostname, OS, IP, location) and their OS administrators.", "record": "Server inventory"},
+     {"id": "5.2", "q": "Who had root / administrator / sudo rights on these servers during the window.", "record": "Privileged-user list; sudoers files"},
+     {"id": "5.3", "q": "Who logged in to these servers in the period, from which IP, and what commands they ran.", "record": "OS login & shell history; PAM session recordings"},
+     {"id": "5.4", "q": "DBAs for the rail and core databases, with DB user IDs; which DB accounts could INSERT/UPDATE/DELETE the rail tables; is the application account's password known to any individual.", "record": "DBA list; DB grants extract"},
+     {"id": "5.5", "q": "Any direct SQL, data-fix or back-end update run on the rail or core database during the window; who ran it, under which approval.", "record": "DB audit logs; data-fix tickets"},
+     {"id": "5.6", "q": "Were DB or OS audit logs switched off, purged, rotated early or edited in this period; who has rights to do so.", "record": "Audit-configuration history"},
+     {"id": "5.7", "q": "Any backups, restores or DR drills run in the period; who ran them.", "record": "Backup and DR logs"}
+    ]},
+    {"id": "network", "title": "Network, security and SOC staff", "owner": "network", "items": [
+     {"id": "6.1", "q": "Network and firewall administrators on duty during the window.", "record": "Roster"},
+     {"id": "6.2", "q": "SOC analysts and SOC manager on each shift; is the SOC in-house or outsourced.", "record": "SOC roster; vendor contract"},
+     {"id": "6.3", "q": "Did the SOC raise any alert on the rail servers, queues, messaging or privileged accounts in this period; who saw it and what was done.", "record": "SIEM alerts and ticket history"},
+     {"id": "6.4", "q": "Who used VPN, jump servers or PAM to reach the rail systems in this period: user, source IP, time and target.", "record": "VPN, jump-server and PAM logs"},
+     {"id": "6.5", "q": "Any firewall rules, VPN accounts or remote-access tools (remote-desktop software) added or changed shortly before the incident; by whom.", "record": "Firewall change log"},
+     {"id": "6.6", "q": "The CISO and information-security officers; when were they told of the incident, and by whom.", "record": "Escalation emails"}
+    ]},
+    {"id": "iam", "title": "User IDs and access control", "owner": "iam", "items": [
+     {"id": "7.1", "q": "Any user IDs on the rail chain shared by more than one person, or generic (admin/root/support/test); who knows their passwords.", "record": "Generic-ID register"},
+     {"id": "7.2", "q": "Every user ID created, re-activated, unlocked, given higher rights or password-reset in the run-up to the incident; who requested and who approved each.", "record": "IAM tickets; admin audit log"},
+     {"id": "7.3", "q": "IDs of staff who left, transferred or are on long leave but are still active.", "record": "Active-ID list vs HR list"},
+     {"id": "7.4", "q": "Any user ID used from two locations or terminals at the same time, or outside office hours.", "record": "Login analytics"},
+     {"id": "7.5", "q": "When was the last user-access review for these systems; who signed it, and were any findings left open.", "record": "Last access-review report"}
+    ]},
+    {"id": "recon", "title": "Reconciliation and escalation", "owner": "ops", "items": [
+     {"id": "8.1", "q": "Who does the daily reconciliation of the rail settlement account; who did it on each day of the window and at what time.", "record": "Daily reconciliation sheets"},
+     {"id": "8.2", "q": "Who first noticed the mismatch, at what time, and whom they told.", "record": "First alert email / message"},
+     {"id": "8.3", "q": "Timeline from first notice onward of who was informed, when, and what each person decided.", "record": "Escalation emails; meeting minutes"},
+     {"id": "8.4", "q": "Why outward payments were not stopped after the mismatch was noticed; who had authority to stop them, and was this considered.", "record": "Decision note"},
+     {"id": "8.5", "q": "Who decided the timing of the complaint to police and the report to the regulator.", "record": "Board / committee note"},
+     {"id": "8.6", "q": "Who requested recalls / holds from beneficiary banks, and when; which banks responded.", "record": "Recall requests; replies"}
+    ]},
+    {"id": "vendor", "title": "Vendors, outsourced staff and connected entities", "owner": "vendor", "items": [
+     {"id": "9.1", "q": "Every vendor / outsourced firm supporting the core, rail, databases, network or SOC, and the staff deployed, with user IDs.", "record": "Vendor list; deployment letters"},
+     {"id": "9.2", "q": "Which vendor staff worked on-site or remotely during the window; times and access method.", "record": "Visitor register; remote-session logs"},
+     {"id": "9.3", "q": "Any vendor staff who joined, left or were replaced in the period.", "record": "Vendor change notices"},
+     {"id": "9.4", "q": "Connected sub-entities (correspondent/sponsored entities) able to create rail requests, and how they log in.", "record": "Connected-entity list; user list"},
+     {"id": "9.5", "q": "The incident-response firm under the cyber-insurance cover, its subcontractor, and every person from them who accessed systems since the incident, with dates and actions.", "record": "Engagement letters; IR access log; evidence-handover records"}
+    ]},
+    {"id": "physical", "title": "Physical access and devices", "owner": "physical", "items": [
+     {"id": "10.1", "q": "Who entered the data centre, DR site, rail cell and server rooms during the window; entry and exit times.", "record": "Access-card & biometric logs; visitor register"},
+     {"id": "10.2", "q": "Preserve CCTV footage of these areas for the window; who has custody of it.", "record": "CCTV footage with hash values"},
+     {"id": "10.3", "q": "Desktops, laptops and terminals used by the persons named; have any been formatted, reissued or sent for repair since the incident.", "record": "Asset register; IT service tickets"},
+     {"id": "10.4", "q": "Were USB ports, personal devices or mobile hotspots allowed in these areas; any data-loss-prevention alerts in the period.", "record": "DLP logs"}
+    ]},
+    {"id": "staff", "title": "Staff records", "owner": "hr", "items": [
+     {"id": "11.1", "q": "Has any named person faced disciplinary action, a vigilance case or an audit finding in the last five years.", "record": "Vigilance and HR records"},
+     {"id": "11.2", "q": "Has any named person taken leave, resigned, sought transfer or stopped attending since the incident.", "record": "Leave and HR records"},
+     {"id": "11.3", "q": "Did any named person report a phishing email, lost phone, stolen ID card or shared password before or during this period.", "record": "IT-helpdesk and security-incident tickets"},
+     {"id": "11.4", "q": "Has any staff member or vendor raised a concern or complaint about rail operations or access in the last year.", "record": "Whistle-blower and internal-complaint records"}
+    ]},
+    {"id": "connectivity", "title": "Network connectivity, whitelisting and report server", "owner": "network", "items": [
+     {"id": "12.1", "q": "Every IP address and range whitelisted with the rail operator for the messaging and rail links, for both DC and DR, as on the incident date.", "record": "IP-whitelisting forms and letters exchanged with the operator"},
+     {"id": "12.2", "q": "Which servers/devices use each whitelisted IP (gateway, HSM, routers); the NAT mapping and firewall rules for each.", "record": "Network diagram; NAT & firewall-rule extract"},
+     {"id": "12.3", "q": "Any IP added, removed or changed in the whitelist in the period; who requested and approved it.", "record": "Change requests to the operator; approvals"},
+     {"id": "12.4", "q": "The source IP of each disputed message as recorded at the bank's gateway; was every message sent from a whitelisted IP.", "record": "Gateway and firewall logs"},
+     {"id": "12.5", "q": "Which certificates or keys are registered with the operator; custodian of each.", "record": "Certificate register"},
+     {"id": "12.6", "q": "The report server (hostname, IP, OS, application, connected databases, DC/DR, purpose); which reports it produces and who receives them; did the reports for the incident days show the disputed messages — if not, why.", "record": "Server inventory extract; report list & schedule; reports as generated"},
+     {"id": "12.7", "q": "Who viewed, downloaded or exported rail reports during the window.", "record": "Report-server access logs"}
+    ]},
+    {"id": "accounts", "title": "Disputed debtor / remitter accounts", "owner": "core", "items": [
+     {"id": "13.1", "q": "For each account in the disputed messages: is it a customer, office/GL, settlement, connected-entity or non-existent account; account number, name, type, branch, date opened, status.", "record": "Account list mapped to transaction references; account master extract"},
+     {"id": "13.2", "q": "Who created each account, in which system, and when; maker and checker IDs, terminal and IP.", "record": "Account-creation audit trail"},
+     {"id": "13.3", "q": "For customer accounts: opening form, KYC documents, approving officer. For office/GL: the approval note and authorising officer.", "record": "Opening form; KYC; approval note"},
+     {"id": "13.4", "q": "Was any such account created, re-activated or changed (name, limits, rail-enabled flag, mandate, linked mobile) in the run-up; by whom.", "record": "Account-maintenance log"},
+     {"id": "13.5", "q": "Why do the debits not appear in core banking; the accounting entries posted and the accounts actually debited.", "record": "Voucher and GL entries"},
+     {"id": "13.6", "q": "Were the same accounts used in any rail message before the incident window; statements for each account for the period.", "record": "Rail history; account statements"}
+    ]}
+   ]
+  },
+  "sectoral-cert-forensics": {
+   "name": "Sectoral / national CERT forensic-artefact requisition",
+   "tier": "national",
+   "about": "A national or sectoral CERT asks for forensic artefacts from the affected systems within a short window (often 6 hours for the first report, then follow-ups). The pain is running the right collectors with proper authority and chain-of-custody without disturbing a running production system. Pair with the forensic-collection SOP, the tool-exception form and the chain-of-custody template.",
+   "default_due_hours": 6,
+   "sections": [
+    {"id": "report", "title": "First incident report (short deadline)", "owner": "exec", "items": [
+     {"id": "r.1", "q": "Nature of the incident, systems affected, time of detection, current status.", "record": "Incident report form"},
+     {"id": "r.2", "q": "Indicators of compromise observed so far (IPs, domains, hashes, accounts).", "record": "IOC list"},
+     {"id": "r.3", "q": "Immediate containment actions taken.", "record": "Action log"}
+    ]},
+    {"id": "authority", "title": "Authority to collect on production systems", "owner": "legal", "items": [
+     {"id": "a.1", "q": "Written, time-boxed approval to run forensic collectors from external media on the named production servers, with admin access, server administrator present, output only to approved media.", "record": "Tool-exception / policy-exception form (see crisis doc forensic-tool-exception)"},
+     {"id": "a.2", "q": "Scope and read-only assurance: no other change is made to the servers; all actions are time-logged.", "record": "Scope note; time-wise action log"}
+    ]},
+    {"id": "collect", "title": "Artefact collection", "owner": "forensics", "items": [
+     {"id": "c.1", "q": "Volatile data first (memory, running processes, network connections, logged-on users) before any shutdown.", "record": "Collection log with hashes (see forensic-collection-sop)"},
+     {"id": "c.2", "q": "Targeted triage artefacts (system, security and application event logs, registry/hives, scheduled tasks, services, prefetch, browser and PowerShell history) using an approved triage collector.", "record": "Triage package with SHA-256 per file"},
+     {"id": "c.3", "q": "Application, gateway, messaging, database-audit and firewall/gateway logs for the incident window.", "record": "Exported logs with hashes"},
+     {"id": "c.4", "q": "Disk image where required, taken with a write-blocker or forensically-sound method.", "record": "Image with hash; imaging log"}
+    ]},
+    {"id": "custody", "title": "Chain of custody and handover", "owner": "forensics", "items": [
+     {"id": "k.1", "q": "A signed chain-of-custody form for every artefact: what, when, by whom, hash, and each handover.", "record": "Chain-of-custody form (see crisis doc chain-of-custody)"},
+     {"id": "k.2", "q": "Secure handover of the artefacts to the CERT / IR firm, with a verifiable hash manifest.", "record": "Handover note; SHA-256 manifest"}
+    ]}
+   ]
+  },
+  "regulator-incident-report": {
+   "name": "Financial-regulator incident report",
+   "tier": "national",
+   "about": "The financial regulator's incident-reporting obligation (an initial report within hours, a detailed report and a root-cause/closure report later). Deadlines and channels vary by jurisdiction; the incident clock (./securax incident) tracks the exact times. This template is the content the regulator typically wants.",
+   "default_due_hours": 6,
+   "sections": [
+    {"id": "initial", "title": "Initial report", "owner": "exec", "items": [
+     {"id": "i.1", "q": "What happened, when detected, systems and services affected, customer impact, current status.", "record": "Initial report"},
+     {"id": "i.2", "q": "Whether critical services (payments, customer channels) are up, degraded or down, and the workaround.", "record": "Service-status note"}
+    ]},
+    {"id": "detail", "title": "Detailed report", "owner": "exec", "items": [
+     {"id": "d.1", "q": "Timeline from first anomaly to containment; decisions and who took them.", "record": "Timeline (./securax incident status)"},
+     {"id": "d.2", "q": "Attack vector and extent, data/funds affected, and recovery actions.", "record": "Analysis"},
+     {"id": "d.3", "q": "Notifications made to other agencies (CERT, police, card networks, insurer) and their references.", "record": "Notification register"}
+    ]},
+    {"id": "closure", "title": "Root-cause and closure report", "owner": "exec", "items": [
+     {"id": "z.1", "q": "Root cause, the control that failed, and the permanent fix with a date.", "record": "RCA; fix-by register (./securax findings)"},
+     {"id": "z.2", "q": "Lessons and the drill/test that will prove it stays fixed.", "record": "Postmortem (./securax playbook retro)"}
+    ]}
+   ]
+  }
+ }
+}

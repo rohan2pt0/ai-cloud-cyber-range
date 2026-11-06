@@ -39,6 +39,21 @@
    "shows": "./securax playbook"
   },
   {
+   "id": "crisis",
+   "group": "Practise and defend",
+   "icon": "siren",
+   "name": "Crisis coordination",
+   "added": "2026-11-06",
+   "what": "Coordinate a multi-agency cyber crisis and hit every agency deadline. When a regulator, a sectoral CERT or the police send a requisition — each with a short deadline and each item needing a specific record from a specific team — open it from a ready template, and every item is already assigned to its owning team. Track what is done, pending and overdue against the clock, generate the response pack (a register plus a filled cover letter) to hand over, and keep the ready documents for the moments that stall a real response: a forensic-tool policy-exception form, a chain-of-custody form, a forensic-collection SOP and a duty roster. The templates are generic data — add your own agencies, items and documents. Pairs with the regulator clock (incident) and the response checklist (playbook).",
+   "open": {
+    "cmd": "./securax crisis templates"
+   },
+   "command": "crisis",
+   "doc": "securax/125-CRISIS-COORDINATION.md",
+   "outcome": "A regulator or police requisition stops being a multi-week scramble: you see who owns each record and what is overdue, and hand over a complete pack on time instead of facing a show-cause for missing the deadline.",
+   "shows": "./securax crisis"
+  },
+  {
    "id": "catchup",
    "group": "Your own tools",
    "icon": "sun",
