@@ -21,6 +21,30 @@
   "data-breach": {"requisitions": ["sectoral-cert-forensics", "regulator-incident-report"], "incident_kind": "ai-data-leak", "playbook": "data-exfiltration", "comms": "data-breach"},
   "outage": {"requisitions": ["regulator-incident-report"], "incident_kind": "", "playbook": "", "comms": "outage"}
  },
+ "sources": {
+  "le-production-notice": {
+   "1.3": {"cmd": "./securax crisis doc duty-roster", "why": "a ready duty-roster template to fill from HR/attendance records"},
+   "8.3": {"cmd": "./securax incident status", "why": "the incident escalation timeline the estate already keeps"}
+  },
+  "sectoral-cert-forensics": {
+   "a.1": {"cmd": "./securax crisis doc forensic-tool-exception", "why": "the policy-exception form, pre-drafted"},
+   "a.2": {"cmd": "./securax crisis doc forensic-collection-sop", "why": "the scope note and time-wise action log pattern"},
+   "c.1": {"cmd": "./securax crisis doc forensic-collection-sop", "why": "the collection order of work (volatile first, hash everything)"},
+   "c.2": {"cmd": "./securax respond kit <case> /media/usb", "why": "the estate's own triage collectors and read-me card"},
+   "k.1": {"cmd": "./securax crisis doc chain-of-custody", "why": "the chain-of-custody form, one per artefact"},
+   "k.2": {"cmd": "./securax respond report <case>", "why": "the custody record and SHA-256 manifest the estate produces"},
+   "r.1": {"cmd": "./securax incident status", "why": "the incident facts and status, timestamped"},
+   "r.2": {"cmd": "./securax respond ioc export", "why": "the IOC list the estate already holds"},
+   "r.3": {"cmd": "./securax incident status", "why": "the containment actions recorded on the clock"}
+  },
+  "regulator-incident-report": {
+   "i.1": {"cmd": "./securax incident status", "why": "the confirmed facts and current status"},
+   "d.1": {"cmd": "./securax incident status", "why": "the timeline from first anomaly to containment"},
+   "d.3": {"cmd": "./securax crisis status", "why": "the register of notifications made to every agency"},
+   "z.1": {"cmd": "./securax findings", "why": "the root-cause weakness and its fix-by date"},
+   "z.2": {"cmd": "./securax playbook retro <run>", "why": "the blameless postmortem seeded with the timeline"}
+  }
+ },
  "requisitions": {
   "le-production-notice": {
    "name": "Law-enforcement production notice",
