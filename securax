@@ -1387,6 +1387,11 @@ EOF2
     #   ./securax crisis templates | doc <name> | new <template> --agency "who" --ref "ref" [--due 72h] | list | status [id] | assign <id> <section|item> --to "who" | set <id> <item> [--done|--na] [--evidence "ref"] | pack <id>
     shift; exec python3 "$ROOT/governance/crisis.py" "${@:-templates}"
     ;;
+  wargame)
+    # Rehearse the coordination of a cyber crisis as a timed tabletop and score it (doc 126): a scenario is a timeline of injects, you respond to each in free text, the estate scores whether the right action reached the right team in time, and writes the after-action report with the coordination gaps.
+    #   ./securax wargame list | start <scenario> [--title "t"] | now [id] | respond <id> <inject> --action "what" [--minutes N] | advance [id] [--to m|--by m] | status [id] | aar [id] [--save] [--lessons]
+    shift; exec python3 "$ROOT/governance/wargame.py" "${@:-list}"
+    ;;
   approvals)
     # Tool calls waiting for a human to approve, before the AI may act (doc 124). Approve one with  ./securax approve <id>.
     _k="${GATEWAY_API_KEY:-}"
@@ -2329,6 +2334,7 @@ DEFEND, RESPOND, PRACTISE
   respond ...    crisis response kit: permission first, evidence intake, IOC triage, reports (doc 78)
   playbook ...   run an IR playbook as a live checklist (ransomware, data-exfiltration, zero-day): steps → respond/incident/restore → postmortem (doc 123)
   crisis ...     coordinate a multi-agency crisis & hit every deadline: open an agency requisition from a ready template, track by team, generate the response pack (doc 125)
+  wargame ...    rehearse crisis coordination as a timed tabletop & score it: a scenario of timed injects, respond to each, the estate scores who-did-what-in-time and writes the after-action report (doc 126)
   approvals      agent tool calls waiting for a human to approve before the AI may act    approve <id>   grant ONE, single-use, 10 min (doc 124)
   findings ...   every scan and VAPT finding once, with a fix-by date    repairs   everything that needs fixing, each with its fix
   purple         attack your own AI rails and report what held       inspect        look inside third-party software before you trust it

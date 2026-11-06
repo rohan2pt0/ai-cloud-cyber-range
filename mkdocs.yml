@@ -140,6 +140,7 @@ nav:
       - "Incident playbooks": securax/123-INCIDENT-PLAYBOOKS.md
       - "Tool approvals (human-in-command)": securax/124-TOOL-APPROVALS.md
       - "Crisis coordination": securax/125-CRISIS-COORDINATION.md
+      - "Crisis wargame": securax/126-CRISIS-WARGAME.md
       - "Choose who you serve": securax/116-CHOOSE-YOUR-CUSTOMER.md
   - How-to guides:
       - AI providers and plugins: securax/22-PLUGINS-AND-PROVIDERS.md

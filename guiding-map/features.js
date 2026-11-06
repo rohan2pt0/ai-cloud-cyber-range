@@ -57,6 +57,22 @@ window.SECURAX_FEATURES = {
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/125-CRISIS-COORDINATION/"
   },
   {
+   "id": "wargame",
+   "group": "Practise and defend",
+   "icon": "siren",
+   "name": "Crisis wargame",
+   "what": "Rehearse the coordination of a cyber crisis as a timed tabletop, and score it. The hard part of a real crisis is not the attack but the coordination — the right action reaching the right team in time while deadlines collide, a key person is on leave and a second hit lands mid-response — and you cannot practise that from a document. A scenario is a timeline of injects (a thing that happens, owned by a team, with an expected action and an SLA); the clock starts, each inject fires on time, you respond in free text, and the estate scores whether the right action reached the right owner in time. It then writes an after-action report: the per-inject scores, the coordination gaps (what went unanswered, what was late, what was incomplete), and a specific, owned improvement action for each — which you can turn into standing lessons in one line. Worst-cases are built in by design: colliding agency deadlines, the one person who knows the system unreachable, a node that holds the clock going down. Scoring is deterministic (a keyword rubric against each inject's expected action plus timeliness against its SLA), so it runs the same offline and in CI; when a gateway is configured it also asks a model to grade the free text and to play the inject's sender under pressure, inheriting the gateway's rails and audit trail. The scenarios are generic data — add your own. Pairs with the real coordination (crisis) and the technical tabletop (continuity).",
+   "cmd": "./securax wargame list",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "added": "2026-11-06",
+   "outcome": "Your team practises the coordination that decides a real crisis — every week, in minutes, alone or together — and each run hands back the exact handoffs that slipped and who must drill them, so the gaps close before a real incident finds them.",
+   "shows": "the after-action report from ./securax wargame aar",
+   "light": "green",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/126-CRISIS-WARGAME/"
+  },
+  {
    "id": "catchup",
    "group": "Your own tools",
    "icon": "sun",
