@@ -1,0 +1,520 @@
+#!/usr/bin/env python3
+"""`./securax hunt` — enterprise threat hunting & post-crisis DFIR, in minimal (offline) or fleet mode (doc 127).
+
+After a cyber crisis the question is: where is the foothold, how far did it spread, and what did they leave to get
+back in? This drives Velociraptor (the Apache-2.0 endpoint engine) to collect and hunt — as a single self-contained
+OFFLINE COLLECTOR with no server (the minimal mode that fits a DevSecOps pipeline or one suspect host), or across a
+fleet. It ships no proprietary binary: triage collection uses Velociraptor's open Windows.KapeFiles.Targets and native
+VQL. A hunt pack names the artifacts to collect, deterministic rules that score the output into prioritised findings,
+and the candidate response actions — and every action that TOUCHES an endpoint stays behind ./securax approve.
+
+  ./securax hunt tools [--json]                  the tool manifest: each tool, its licence, whether it may be redistributed, and its status (fetch-not-vendor)
+  ./securax hunt tools accept <id>               record a human's acceptance of a gated tool's EULA (audited) before it may be fetched
+  ./securax hunt packs [--json]                  the hunt packs (mapped to the crisis/wargame scenarios)
+  ./securax hunt plan <pack>                     what a pack collects, how it scores the output, and the actions it may warrant — no execution
+  ./securax hunt collector <pack> [--out DIR]    generate a self-contained offline collector (spec + run script) for minimal/pipeline mode
+  ./securax hunt auto <scenario> [--input DIR]   post-crisis automation: pick the pack for the scenario, prepare the collector, triage if results are given
+  ./securax hunt triage <run> [--input DIR]      score the collected output into prioritised findings (deterministic; an AI second opinion when a gateway is up)
+  ./securax hunt act <run>                        the response actions the findings warrant — each as an approve-gated command (nothing is executed here)
+  ./securax hunt sweep [--notify]                the estate watches for an open crisis with no hunt prepared and nudges — from one node only (no SPOF)
+  ./securax hunt status [<run>]                  your hunt runs and their state
+
+Runs are stored in vault/hunt-runs/ (private, never in git). Tools are fetched into vault/hunt-tools/ on use, or from
+your internal mirror (SECURAX_HUNT_MIRROR) — never bundled. Tools and packs are DATA (governance/hunt-tools.json,
+governance/hunt-packs.json). Standard library only; no network in this tool itself. This is a coordination and triage
+aid, not a verdict and not legal advice: a human owns every endpoint action, behind ./securax approve.
+"""
+from __future__ import annotations
+
+import argparse
+import datetime as dt
+import importlib.util
+import json
+import os
+import pathlib
+import subprocess
+import sys
+
+HERE = pathlib.Path(__file__).resolve().parent
+ROOT = HERE.parent
+TOOLS = HERE / "hunt-tools.json"
+PACKS = HERE / "hunt-packs.json"
+UTC = dt.timezone.utc
+
+
+def tools_lib() -> dict:
+    return json.loads(TOOLS.read_text("utf-8"))
+
+
+def packs_lib() -> dict:
+    return json.loads(PACKS.read_text("utf-8"))
+
+
+def runs_dir() -> pathlib.Path:
+    base = pathlib.Path(os.environ.get("SECURAX_HUNT_DIR") or (ROOT / "vault" / "hunt-runs"))
+    base.mkdir(parents=True, exist_ok=True)
+    return base
+
+
+def tz() -> dt.tzinfo:
+    try:
+        from zoneinfo import ZoneInfo
+        return ZoneInfo(os.environ.get("SECURAX_TZ", "Asia/Kolkata"))
+    except Exception:  # noqa: BLE001
+        return dt.timezone(dt.timedelta(hours=5, minutes=30))
+
+
+def iso(t: dt.datetime) -> str:
+    return t.astimezone(UTC).strftime("%Y-%m-%dT%H:%M:%SZ")
+
+
+def local(s: str) -> str:
+    return dt.datetime.fromisoformat(s.replace("Z", "+00:00")).astimezone(tz()).strftime("%d %b %Y %H:%M %Z")
+
+
+def run_path(rid: str) -> pathlib.Path:
+    return runs_dir() / f"{rid}.json"
+
+
+def load_run(rid: str) -> dict:
+    p = run_path(rid)
+    if not p.exists():
+        raise SystemExit(f"no such hunt run {rid} (see: ./securax hunt status)")
+    return json.loads(p.read_text("utf-8"))
+
+
+def save_run(run: dict) -> None:
+    p = run_path(run["id"])
+    p.write_text(json.dumps(run, indent=1) + "\n", "utf-8")
+    os.chmod(p, 0o600)
+
+
+def runs() -> list[dict]:
+    return sorted((json.loads(p.read_text("utf-8")) for p in runs_dir().glob("HUNT-*.json")), key=lambda r: r["id"])
+
+
+def _accepted_path() -> pathlib.Path:
+    base = pathlib.Path(os.environ.get("SECURAX_HUNT_TOOLS_DIR") or (ROOT / "vault" / "hunt-tools"))
+    base.mkdir(parents=True, exist_ok=True)
+    return base / "accepted.json"
+
+
+def _accepted() -> dict:
+    p = _accepted_path()
+    if p.exists():
+        try:
+            return json.loads(p.read_text("utf-8"))
+        except Exception:  # noqa: BLE001
+            return {}
+    return {}
+
+
+def cmd_tools(a, now: dt.datetime) -> int:
+    data = tools_lib()
+    if a.json:
+        print(json.dumps(data, indent=2))
+        return 0
+    accepted = _accepted()
+    print(data["about"])
+    mirror = os.environ.get(data.get("mirror_env", "SECURAX_HUNT_MIRROR"))
+    print(f"\nFetch source: {'internal mirror ' + mirror if mirror else 'official vendor sources (set ' + data.get('mirror_env', 'SECURAX_HUNT_MIRROR') + ' for an internal mirror)'}")
+    print("\nTools (fetched on use, never bundled):\n")
+    for t in data["tools"]:
+        redis = "redistributable" if t["redistributable"] else "NOT redistributable"
+        if t["status"] == "active":
+            mark = "✔ active"
+        elif t["id"] in accepted:
+            mark = "✔ EULA accepted"
+        else:
+            mark = "⛔ gated — needs: ./securax hunt tools accept " + t["id"]
+        print(f"  {t['name']}")
+        print(f"      {t['role']}")
+        print(f"      licence: {t['licence']}  ·  {redis}  ·  {mark}")
+        if t.get("licence_note"):
+            print(f"      note: {t['licence_note']}")
+        print(f"      source: {t['source']}")
+        print()
+    print("SecuRAX ships no third-party forensic binary. The non-redistributable tools above are listed for completeness;")
+    print("each stays disabled until a human accepts its EULA, and is then fetched from the vendor (or your mirror), hash-pinned.")
+    return 0
+
+
+def cmd_tools_accept(a, now: dt.datetime) -> int:
+    data = tools_lib()
+    t = next((x for x in data["tools"] if x["id"] == a.id), None)
+    if not t:
+        print(f"no tool {a.id!r}; see ./securax hunt tools")
+        return 2
+    if t["status"] == "active":
+        print(f"{t['name']} is {t['licence']} and needs no acceptance — it is already active.")
+        return 0
+    acc = _accepted()
+    acc[a.id] = {"name": t["name"], "licence": t["licence"], "accepted_at": iso(now),
+                 "by": os.environ.get("SECURAX_OWNER", "operator"),
+                 "licence_note": t.get("licence_note", ""), "source": t["source"]}
+    p = _accepted_path()
+    p.write_text(json.dumps(acc, indent=1) + "\n", "utf-8")
+    os.chmod(p, 0o600)
+    # best-effort: record to the estate's audit trail
+    try:
+        subprocess.run([str(ROOT / "securax"), "notify", "send",
+                        f"hunt: EULA accepted for {t['name']} ({t['licence']}) — tool may now be fetched"],
+                       capture_output=True, timeout=20)
+    except Exception:  # noqa: BLE001
+        pass
+    print(f"Recorded acceptance of the {t['name']} EULA ({t['licence']}).")
+    print(f"  {t.get('licence_note', '')}")
+    print("  The tool may now be fetched from its vendor source (or your internal mirror), verified against its pinned SHA-256.")
+    print("  You remain responsible for holding the right to use it for your purpose.")
+    return 0
+
+
+def cmd_packs(a, now: dt.datetime) -> int:
+    data = packs_lib()
+    if a.json:
+        print(json.dumps(data, indent=2))
+        return 0
+    print(data["about"])
+    print("\nHunt packs (./securax hunt plan <id>):\n")
+    for pid, p in data["packs"].items():
+        print(f"  {pid:<26} {p['name']}")
+        print(f"       scenario: {p['scenario']:<14} mode: {p['mode']:<8} {len(p['artifacts'])} artifacts")
+        print(f"       {p['about']}")
+        print()
+    print(data["severity_note"])
+    return 0
+
+
+def _pack(pid: str) -> dict:
+    data = packs_lib()
+    if pid not in data["packs"]:
+        raise SystemExit(f"no hunt pack {pid!r}; see ./securax hunt packs")
+    return data["packs"][pid]
+
+
+def cmd_plan(a, now: dt.datetime) -> int:
+    p = _pack(a.pack)
+    print(f"▶ Hunt pack: {p['name']}  (scenario: {p['scenario']}, mode: {p['mode']})")
+    print(f"  {p['about']}\n")
+    print("  Collects these Velociraptor artifacts:")
+    for art in p["artifacts"]:
+        print(f"    · {art}")
+    print("\n  Scores the collected output by these rules (first pass to focus a human, never a verdict):")
+    for r in p["triage_rules"]:
+        print(f"    [{r['weight']}] {r['signal']:<22} → {r['says']}")
+    print("\n  Response actions it may warrant — each a human decision behind ./securax approve:")
+    for act in p["actions"]:
+        print(f"    · {act['action']}  (approve: {act['approve']})  — {act['why']}")
+    print(f"\n  Prepare a collector:  ./securax hunt collector {a.pack}")
+    return 0
+
+
+def _new_id(now: dt.datetime) -> str:
+    n = 1 + sum(1 for r in runs() if r["id"].startswith(f"HUNT-{now:%Y%m%d}"))
+    return f"HUNT-{now:%Y%m%d}-{n:03d}"
+
+
+def _write_collector(run: dict, p: dict, out: pathlib.Path) -> None:
+    out.mkdir(parents=True, exist_ok=True)
+    spec = {"name": run["id"], "pack": run["pack"], "type": "offline",
+            "artifacts": p["artifacts"],
+            "note": "Self-contained Velociraptor offline collection. No server required.",
+            "output": f"{run['id']}-collection.zip"}
+    (out / "collector-spec.json").write_text(json.dumps(spec, indent=1) + "\n", "utf-8")
+    # the exact, copy-paste commands for minimal/pipeline mode — no server, one host
+    lines = ["#!/usr/bin/env bash",
+             "# SecuRAX hunt — offline collection (minimal mode). Run on the suspect host or in the pipeline.",
+             "# Needs the velociraptor binary (fetch per governance/hunt-tools.json; never bundled). No server.",
+             "set -euo pipefail",
+             'VELO="${VELOCIRAPTOR:-velociraptor}"',
+             f'OUT="{run["id"]}-collection.zip"',
+             '"$VELO" artifacts collect \\']
+    for art in p["artifacts"]:
+        lines.append(f'  {art} \\')
+    lines += ['  --output "$OUT"',
+              'echo "collected → $OUT   then: ./securax hunt triage ' + run["id"] + ' --input <unzipped dir>"']
+    sh = out / "collect.sh"
+    sh.write_text("\n".join(lines) + "\n", "utf-8")
+    os.chmod(sh, 0o700)
+    ps = ["# SecuRAX hunt — offline collection (minimal mode), PowerShell.",
+          "$Velo = if ($env:VELOCIRAPTOR) { $env:VELOCIRAPTOR } else { 'velociraptor.exe' }",
+          f"$Out = '{run['id']}-collection.zip'",
+          "& $Velo artifacts collect " + " ".join(p["artifacts"]) + " --output $Out"]
+    (out / "collect.ps1").write_text("\n".join(ps) + "\n", "utf-8")
+    readme = [f"# Hunt collector — {run['id']} ({p['name']})", "",
+              "Minimal / offline mode: a self-contained Velociraptor collection, no server.", "",
+              "1. Put the `velociraptor` binary on PATH (fetch per governance/hunt-tools.json; set VELOCIRAPTOR to its path).",
+              "2. Run `collect.sh` (Linux/macOS target) or `collect.ps1` (Windows target) on the suspect host or in the pipeline.",
+              "3. Bring the resulting zip back, unzip it, and run:",
+              f"   `./securax hunt triage {run['id']} --input <unzipped dir>`", "",
+              "For a fleet, run the same artifacts as a server-side hunt instead (see doc 127).", "",
+              "No endpoint is changed by collection. Any response action is a human decision behind `./securax approve`."]
+    (out / "README.md").write_text("\n".join(readme) + "\n", "utf-8")
+
+
+def cmd_collector(a, now: dt.datetime) -> int:
+    p = _pack(a.pack)
+    rid = _new_id(now)
+    run = {"id": rid, "pack": a.pack, "name": p["name"], "scenario": p["scenario"], "mode": "offline",
+           "artifacts": p["artifacts"], "created_at": iso(now), "state": "planned", "findings": []}
+    save_run(run)
+    out = pathlib.Path(a.out) if a.out else (runs_dir() / rid)
+    _write_collector(run, p, out)
+    print(f"▶ Prepared offline collector {rid} for '{p['name']}' (no server needed):")
+    for name in ("collect.sh", "collect.ps1", "collector-spec.json", "README.md"):
+        print(f"    {out / name}")
+    print("\n  Run it on the suspect host or in your pipeline, then bring the zip back and triage:")
+    print(f"    ./securax hunt triage {rid} --input <unzipped collection dir>")
+    print("  Collection changes nothing on the endpoint. Response actions stay behind ./securax approve.")
+    return 0
+
+
+def _scan(input_dir: pathlib.Path, rules: list[dict]) -> list[dict]:
+    """Deterministic triage: scan the collected text for each rule's signal; score by weight. Offline, repeatable."""
+    findings = []
+    texts = []
+    for fp in sorted(input_dir.rglob("*")):
+        if fp.is_file() and fp.stat().st_size <= 8 * 1024 * 1024:
+            try:
+                texts.append((fp.name, fp.read_text("utf-8", errors="ignore").lower().replace("\\", "/")))
+            except Exception:  # noqa: BLE001
+                continue
+    for r in rules:
+        sig = r["signal"].lower().replace("\\", "/")
+        hits = [name for name, body in texts if sig in body]
+        if hits:
+            findings.append({"id": r["id"], "signal": r["signal"], "weight": r["weight"],
+                             "says": r["says"], "seen_in": sorted(set(hits))[:8]})
+    findings.sort(key=lambda f: f["weight"], reverse=True)
+    return findings
+
+
+def _ai_triage(pack_name: str, findings: list[dict]) -> str | None:
+    """Optional AI second opinion through the gateway (rails + audit). Offline-safe: None without GATEWAY_URL or on error."""
+    if not os.getenv("GATEWAY_URL") or not findings:
+        return None
+    try:
+        spec = importlib.util.spec_from_file_location("hunt_personas", ROOT / "agents" / "personas.py")
+        personas = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(personas)
+        brief = "\n".join(f"- [{f['weight']}] {f['signal']}: {f['says']} (seen in {', '.join(f['seen_in'])})"
+                          for f in findings)
+        q = ("You are triaging the findings of a post-crisis endpoint hunt ('" + pack_name + "'). "
+             "Given the signals below, reply in at most four short lines: the single most likely story that ties them "
+             "together, the one host or artifact to look at first, and the one containment action to put to a human for "
+             "approval. Do not invent signals beyond those given; do not recommend acting without human approval.\n\n"
+             + brief)
+        res = personas.ask_agent("negotiation", q, careful=False)
+        return res.get("answer")
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def cmd_triage(a, now: dt.datetime) -> int:
+    run = load_run(a.run)
+    p = _pack(run["pack"])
+    src = pathlib.Path(a.input) if a.input else (runs_dir() / run["id"])
+    if not src.exists():
+        print(f"no input at {src}. Collect first (./securax hunt collector {run['pack']}), then pass --input <dir>.")
+        return 2
+    findings = _scan(src, p["triage_rules"])
+    run["findings"] = findings
+    run["state"] = "triaged"
+    run["triaged_at"] = iso(now)
+    risk = sum(f["weight"] for f in findings)
+    run["risk"] = risk
+    save_run(run)
+    out = runs_dir() / run["id"]
+    out.mkdir(parents=True, exist_ok=True)
+    md = [f"# Hunt triage — {run['id']} ({p['name']})", "",
+          f"**Scored:** {local(iso(now))}  ·  **Scenario:** {run['scenario']}  ·  **Risk tally:** {risk}", "",
+          "A first pass to focus a human, never a verdict. Every action below is a decision behind `./securax approve`.", ""]
+    if findings:
+        md.append("## Prioritised findings\n")
+        md.append("| Priority | Signal | What it means | Seen in |")
+        md.append("|---|---|---|---|")
+        for f in findings:
+            md.append(f"| {f['weight']} | `{f['signal']}` | {f['says']} | {', '.join(f['seen_in'])} |")
+    else:
+        md.append("No rule matched the collected output. That is not a clean bill of health — widen the pack, "
+                  "lengthen the window, or hunt by hand.")
+    ai = _ai_triage(p["name"], findings)
+    if ai:
+        md += ["", "## AI second opinion (through the governed gateway)", "", ai.strip(),
+               "", "_A drafted hypothesis, not a verdict; a human confirms it._"]
+    (out / "triage-report.md").write_text("\n".join(md) + "\n", "utf-8")
+    print(f"▶ {run['id']} triaged: {len(findings)} finding(s), risk tally {risk}.")
+    for f in findings[:6]:
+        print(f"    [{f['weight']}] {f['signal']:<22} {f['says']}")
+        print(f"         seen in: {', '.join(f['seen_in'])}")
+    if ai:
+        print("\n  AI second opinion (gateway):")
+        for ln in ai.strip().splitlines()[:4]:
+            print(f"    {ln}")
+    print(f"\n  Report: {out / 'triage-report.md'}")
+    print(f"  The actions these warrant (approve-gated):  ./securax hunt act {run['id']}")
+    return 0
+
+
+def cmd_act(a, now: dt.datetime) -> int:
+    run = load_run(a.run)
+    p = _pack(run["pack"])
+    if run.get("state") != "triaged":
+        print(f"{run['id']} is not triaged yet. Run:  ./securax hunt triage {run['id']} --input <dir>")
+        return 2
+    print(f"▶ {run['id']} — response actions for '{p['name']}'.")
+    print("  AI and the estate DRAFT; a human approves anything that touches an endpoint. Nothing is executed here.\n")
+    if not run.get("findings"):
+        print("  No findings scored, so no action is proposed. If you hunted by hand and found something, act on that")
+        print("  through ./securax approve directly.")
+        return 0
+    for act in p["actions"]:
+        print(f"  • {act['action']}")
+        print(f"      why: {act['why']}")
+        print(f"      run, with a human's single-use approval:  ./securax approve {act['approve']} --run {run['id']}")
+        print()
+    print("  Each ./securax approve grant is single-use, time-boxed and audited. No agent acts on an endpoint on its own.")
+    return 0
+
+
+def _scenario_pack(scenario: str) -> str | None:
+    data = packs_lib()["packs"]
+    for pid, p in data.items():
+        if p["scenario"] == scenario:
+            return pid
+    return data and next((pid for pid, p in data.items() if p["scenario"] == "any"), None)
+
+
+def cmd_auto(a, now: dt.datetime) -> int:
+    """Post-crisis automation: pick the pack for the scenario, prepare the collector, and triage if results are given."""
+    pid = _scenario_pack(a.scenario)
+    if not pid:
+        print(f"no hunt pack maps to scenario {a.scenario!r}; see ./securax hunt packs")
+        return 2
+    p = _pack(pid)
+    rid = _new_id(now)
+    run = {"id": rid, "pack": pid, "name": p["name"], "scenario": a.scenario, "mode": "offline",
+           "artifacts": p["artifacts"], "created_at": iso(now), "state": "planned", "findings": [],
+           "auto": True}
+    save_run(run)
+    out = runs_dir() / rid
+    _write_collector(run, p, out)
+    print(f"▶ Post-crisis hunt auto-prepared for '{a.scenario}': {rid} using pack '{p['name']}'.")
+    print(f"    collector → {out}")
+    if a.input:
+        print()
+        return cmd_triage(argparse.Namespace(run=rid, input=a.input), now)
+    print(f"  Run the collector (see {out / 'README.md'}), then:  ./securax hunt triage {rid} --input <dir>")
+    print("  Collection is read-only on the endpoint; response actions stay behind ./securax approve.")
+    return 0
+
+
+def _notify(msg: str) -> None:
+    """Nudge the configured channel, best-effort, from ONE node only (no duplicate nudges, no SPOF)."""
+    try:
+        spec = importlib.util.spec_from_file_location("resilience", HERE / "resilience.py")
+        res = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(res)
+        if not res.is_leader():
+            return
+    except Exception:  # noqa: BLE001
+        pass
+    try:
+        subprocess.run([str(ROOT / "securax"), "notify", "send", msg], capture_output=True, timeout=30)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def _open_crises() -> list[str]:
+    """Open crisis requisition runs (vault/crisis-runs) with pending items — a crisis is in progress."""
+    cdir = pathlib.Path(os.environ.get("SECURAX_CRISIS_DIR") or (ROOT / "vault" / "crisis-runs"))
+    out = []
+    if not cdir.exists():
+        return out
+    for fp in sorted(cdir.glob("CRISIS-*.json")):
+        try:
+            run = json.loads(fp.read_text("utf-8"))
+            items = [i for s in run.get("sections", []) for i in s.get("items", [])]
+            if any(i.get("status") == "pending" for i in items):
+                out.append(run["id"])
+        except Exception:  # noqa: BLE001
+            continue
+    return out
+
+
+def cmd_sweep(a, now: dt.datetime) -> int:
+    """During/after a crisis, the estate checks that a hunt is being gathered and nudges if not — one node only."""
+    open_crises = _open_crises()
+    have_hunt = any(r.get("state") in ("planned", "triaged") for r in runs())
+    if not open_crises:
+        if not a.quiet:
+            print("No open crisis — nothing to hunt for right now.")
+        return 0
+    if have_hunt:
+        if not a.quiet:
+            print(f"{len(open_crises)} open crisis; a hunt is already prepared.")
+        return 0
+    msg = (f"SecuRAX hunt — {len(open_crises)} open crisis and no endpoint hunt prepared yet. "
+           f"Gather the evidence now:  ./securax hunt auto <scenario>  (scenarios: see ./securax hunt packs)")
+    print(msg)
+    if a.notify:
+        _notify(msg)
+    return 1
+
+
+def cmd_status(a, now: dt.datetime) -> int:
+    if a.run:
+        run = load_run(a.run)
+        print(json.dumps(run, indent=2))
+        return 0
+    rs = runs()
+    if not rs:
+        print("No hunt runs yet. Prepare one:  ./securax hunt collector <pack>   (packs: ./securax hunt packs)")
+        return 0
+    for r in rs:
+        tag = {"planned": "collector ready", "triaged": f"triaged · risk {r.get('risk', 0)}"}.get(r["state"], r["state"])
+        print(f"  {r['id']}  {r['name']:<34} [{r['scenario']:<13}] {tag}")
+    return 0
+
+
+def main(argv: list[str] | None = None, now: dt.datetime | None = None) -> int:
+    now = now or dt.datetime.now(UTC)
+    argv = list(sys.argv[1:] if argv is None else argv)
+    # allow `hunt tools accept <id>` as an alias of `hunt accept <id>`
+    if len(argv) >= 2 and argv[0] == "tools" and argv[1] == "accept":
+        argv = ["accept", *argv[2:]]
+    ap = argparse.ArgumentParser(prog="hunt", description=__doc__.split("\n\n")[0])
+    sub = ap.add_subparsers(dest="cmd", required=True)
+    tl = sub.add_parser("tools")
+    tl.add_argument("--json", action="store_true")
+    ta = sub.add_parser("accept")
+    ta.add_argument("id")
+    pk = sub.add_parser("packs")
+    pk.add_argument("--json", action="store_true")
+    pl = sub.add_parser("plan")
+    pl.add_argument("pack")
+    co = sub.add_parser("collector")
+    co.add_argument("pack")
+    co.add_argument("--out", default="")
+    au = sub.add_parser("auto")
+    au.add_argument("scenario")
+    au.add_argument("--input", default="")
+    tr = sub.add_parser("triage")
+    tr.add_argument("run")
+    tr.add_argument("--input", default="")
+    ac = sub.add_parser("act")
+    ac.add_argument("run")
+    sw = sub.add_parser("sweep")
+    sw.add_argument("--notify", action="store_true")
+    sw.add_argument("--quiet", action="store_true")
+    stt = sub.add_parser("status")
+    stt.add_argument("run", nargs="?")
+    a = ap.parse_args(argv)
+    fn = {"tools": cmd_tools, "accept": cmd_tools_accept, "packs": cmd_packs, "plan": cmd_plan,
+          "collector": cmd_collector, "auto": cmd_auto, "triage": cmd_triage, "act": cmd_act,
+          "sweep": cmd_sweep, "status": cmd_status}[a.cmd]
+    return fn(a, now)
+
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -1392,6 +1392,11 @@ EOF2
     #   ./securax wargame list | start <scenario> [--title "t"] | now [id] | respond <id> <inject> --action "what" [--minutes N] | advance [id] [--to m|--by m] | status [id] | aar [id] [--save] [--lessons]
     shift; exec python3 "$ROOT/governance/wargame.py" "${@:-list}"
     ;;
+  hunt)
+    # Enterprise threat hunting & post-crisis DFIR (doc 127): drives Velociraptor (fetch-not-vendor; no proprietary binary) as a self-contained offline collector for minimal/pipeline mode or across a fleet. A hunt pack names the artifacts to collect, deterministic rules that score the output into prioritised findings, and the response actions — every endpoint action behind ./securax approve.
+    #   ./securax hunt tools | packs | plan <pack> | collector <pack> [--out DIR] | auto <scenario> [--input DIR] | triage <run> --input DIR | act <run> | sweep [--notify] | status [run]
+    shift; exec python3 "$ROOT/governance/hunt.py" "${@:-packs}"
+    ;;
   approvals)
     # Tool calls waiting for a human to approve, before the AI may act (doc 124). Approve one with  ./securax approve <id>.
     _k="${GATEWAY_API_KEY:-}"
@@ -2335,6 +2340,7 @@ DEFEND, RESPOND, PRACTISE
   playbook ...   run an IR playbook as a live checklist (ransomware, data-exfiltration, zero-day): steps → respond/incident/restore → postmortem (doc 123)
   crisis ...     coordinate a multi-agency crisis & hit every deadline: open an agency requisition from a ready template, track by team, generate the response pack (doc 125)
   wargame ...    rehearse crisis coordination as a timed tabletop & score it: a scenario of timed injects, respond to each, the estate scores who-did-what-in-time and writes the after-action report (doc 126)
+  hunt ...       enterprise threat hunting & post-crisis DFIR: drive Velociraptor as an offline collector (minimal/pipeline mode) or a fleet, score the output into findings, response actions behind approve (doc 127)
   approvals      agent tool calls waiting for a human to approve before the AI may act    approve <id>   grant ONE, single-use, 10 min (doc 124)
   findings ...   every scan and VAPT finding once, with a fix-by date    repairs   everything that needs fixing, each with its fix
   purple         attack your own AI rails and report what held       inspect        look inside third-party software before you trust it

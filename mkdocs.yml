@@ -141,6 +141,7 @@ nav:
       - "Tool approvals (human-in-command)": securax/124-TOOL-APPROVALS.md
       - "Crisis coordination": securax/125-CRISIS-COORDINATION.md
       - "Crisis wargame": securax/126-CRISIS-WARGAME.md
+      - "Threat hunting & DFIR": securax/127-THREAT-HUNTING-DFIR.md
       - "Choose who you serve": securax/116-CHOOSE-YOUR-CUSTOMER.md
   - How-to guides:
       - AI providers and plugins: securax/22-PLUGINS-AND-PROVIDERS.md
