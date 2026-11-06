@@ -74,6 +74,7 @@
   "respond": { "from": "community", "uses": ["audit", "export"], "enterprise": "case files shared with the crisis team under roles, evidence kept for regulators" },
   "playbook": { "from": "community", "uses": ["audit", "export", "rbac"], "enterprise": "shared playbook runs with assigned owners per role, SLA timers and a library governed per organisation" },
   "crisis": { "from": "community", "uses": ["audit", "export", "rbac"], "enterprise": "shared requisition runs with per-team owners and SPOCs, deadline SLA timers and escalation, a war-room roster, and an organisation-governed template and document library" },
+  "wargame": { "from": "community", "uses": ["audit", "export"], "enterprise": "shared multi-player runs with a facilitator and live team scoreboards, an organisation-governed scenario library, model-graded free text and AI-played senders through the governed gateway, and after-action reports that roll up into the exercise programme" },
   "purple": { "from": "community", "uses": ["audit", "tenancy"], "enterprise": "detection coverage per business unit" },
   "adversary": { "from": "community", "uses": ["audit", "export"], "enterprise": "a bounty-finding ledger per business unit, with repeat-class rate and time-to-regression on the board scorecard" },
   "next": { "from": "community", "uses": ["policy"], "enterprise": "a role-aware next step per person and team, from the same engine" },
