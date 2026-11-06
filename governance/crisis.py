@@ -7,6 +7,8 @@ scramble into a tracked, templated workflow — open a requisition from a ready 
 its owning team, see what is done / pending / overdue against the clock, and generate the response pack to hand over.
 
   ./securax crisis start <scenario> [--agency "<who>"] [--ref "<ref>"] [--title "<t>"]   one command: stand up the scenario's requisitions + the next steps (clock, checklist, first messages)
+  ./securax crisis auto <id>                              the estate prepares every item it can source itself; the rest stay assigned to their team for the chase
+  ./securax crisis watch [--notify] [--within H]          the estate chases the deadlines and owners itself (run as a routine; one node only, no duplicate nudges)
   ./securax crisis next [<id>]                            the single most urgent action right now — zero thinking required
   ./securax crisis comms [<id>|--audience .. --medium .. --scenario ..]   ready, legally-defensible messages (SITREP, staff, customers, public, partners) per medium (SMS/WhatsApp/email/letter/call)
   ./securax crisis templates                              the requisition library (law-enforcement, CERT forensics, regulator) and the ready documents
@@ -32,6 +34,7 @@ import json
 import os
 import pathlib
 import re
+import subprocess
 import sys
 
 HERE = pathlib.Path(__file__).resolve().parent
@@ -373,6 +376,77 @@ def cmd_doc(a, now: dt.datetime) -> int:
     return 0
 
 
+def cmd_auto(a, now: dt.datetime) -> int:
+    """The estate prepares every item it can source itself; the rest stay assigned to their owning team for the chase."""
+    run = load_run(a.id)
+    owners = lib()["owners"]
+    srcmap = lib().get("sources", {}).get(run["template"], {})
+    prepared, team_items = 0, 0
+    for s in run["sections"]:
+        for i in s["items"]:
+            if i["status"] != "pending":
+                continue
+            src = srcmap.get(i["id"])
+            if src:
+                i["status"], i["evidence"] = "drafted", src["cmd"]
+                i["note"] = f"auto-sourced from the estate: {src['why']}"
+                i["updated_at"] = iso(now)
+                prepared += 1
+            else:
+                team_items += 1          # the owning team already holds it; the chase will nudge them
+    save_run(run)
+    print(f"{run['id']}: auto-prepared {prepared} item(s) the estate can source itself (marked 'drafted' — each item's")
+    print("  evidence field holds the exact command or document that produces its record; review before you attach it).")
+    print(f"  {team_items} item(s) are their owning team's to produce — the chase keeps after them:  ./securax crisis watch")
+    print(f"  Review:  ./securax crisis status {run['id']}   ·   then hand over:  ./securax crisis pack {run['id']}")
+    _ = owners
+    return 0
+
+
+def _notify(msg: str) -> None:
+    """Send the chase to the configured channel, best-effort, from ONE node only (no duplicate nudges, no SPOF)."""
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("resilience", HERE / "resilience.py")
+        res = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(res)
+        if not res.is_leader():
+            return
+    except Exception:  # noqa: BLE001  (fail open: a nudge is better than silence)
+        pass
+    try:
+        subprocess.run([str(ROOT / "securax"), "notify", "send", msg], capture_output=True, timeout=30)
+    except Exception:  # noqa: BLE001
+        pass
+
+
+def cmd_watch(a, now: dt.datetime) -> int:
+    """The estate chases the deadlines and the owners itself, so no human has to track a spreadsheet of who owes what."""
+    owners = lib()["owners"]
+    open_rs = [r for r in runs() if _counts([i for s in r["sections"] for i in s["items"]])[2] > 0]
+    overdue, lines = False, []
+    for r in sorted(open_rs, key=lambda x: x["due_at"]):
+        left = (dt.datetime.fromisoformat(r["due_at"].replace("Z", "+00:00")) - now).total_seconds()
+        pend = _counts([i for s in r["sections"] for i in s["items"]])[2]
+        s = max(r["sections"], key=lambda x: _counts(x["items"])[2])
+        p = _counts(s["items"])[2]
+        who = s.get("spoc") or owners.get(s["owner"], s["owner"])
+        if left < 0:
+            overdue = True
+            lines.append(f"OVERDUE {fmt_left(left)}: {r['id']} ({r['agency']}) — {pend} items open; chase '{s['title']}' ({p}) → {who}")
+        elif left < a.within * 3600:
+            lines.append(f"DUE {fmt_left(left)}: {r['id']} ({r['agency']}) — {pend} items; chase '{s['title']}' ({p}) → {who}")
+    if not lines:
+        if not a.quiet:
+            print("No requisition needs chasing right now.")
+        return 0
+    msg = "SecuRAX crisis chase — act on these:\n" + "\n".join(lines)
+    print(msg)
+    if a.notify:
+        _notify(msg)
+    return 2 if overdue else 1
+
+
 def cmd_templates(a, now: dt.datetime) -> int:
     data = lib()
     print("Requisition templates (./securax crisis new <id> …):")
@@ -441,9 +515,16 @@ def main(argv: list[str] | None = None, now: dt.datetime | None = None) -> int:
     se.add_argument("--note", default=None)
     pk = sub.add_parser("pack")
     pk.add_argument("id")
+    au = sub.add_parser("auto")
+    au.add_argument("id")
+    wt = sub.add_parser("watch")
+    wt.add_argument("--within", type=float, default=6.0)
+    wt.add_argument("--notify", action="store_true")
+    wt.add_argument("--quiet", action="store_true")
     a = ap.parse_args(argv)
     fn = {"templates": cmd_templates, "list": cmd_list, "doc": cmd_doc, "new": cmd_new, "status": cmd_status,
-          "assign": cmd_assign, "set": cmd_set, "pack": cmd_pack, "next": cmd_next, "comms": cmd_comms, "start": cmd_start}[a.cmd]
+          "assign": cmd_assign, "set": cmd_set, "pack": cmd_pack, "next": cmd_next, "comms": cmd_comms, "start": cmd_start,
+          "auto": cmd_auto, "watch": cmd_watch}[a.cmd]
     return fn(a, now)
 
 

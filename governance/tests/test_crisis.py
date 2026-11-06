@@ -125,3 +125,28 @@ def test_comms_drafts_are_generic_short_and_legally_safe(capsys):
     # printing a single draft works and nudges toward sign-off
     assert cr.main(["comms", "exec-sitrep"]) == 0
     assert "approve before it goes out" in capsys.readouterr().out
+
+
+def test_auto_prepares_every_item_the_estate_can_source_itself(tmp_path, monkeypatch):
+    monkeypatch.setenv("SECURAX_CRISIS_DIR", str(tmp_path))
+    cr.main(["new", "sectoral-cert-forensics", "--agency", "CERT", "--ref", "C/1"], now=NOW)
+    cid = cr.runs()[0]["id"]
+    assert cr.main(["auto", cid], now=NOW) == 0
+    items = {i["id"]: i for s in cr.load_run(cid)["sections"] for i in s["items"]}
+    sourced = cr.lib()["sources"]["sectoral-cert-forensics"]
+    # every item with a known source is now 'drafted' with the producing command in its evidence field
+    for iid, src in sourced.items():
+        assert items[iid]["status"] == "drafted" and items[iid]["evidence"] == src["cmd"]
+    # items with no estate source stay pending for their owning team (the chase handles them)
+    assert any(i["status"] == "pending" for i in items.values())
+
+
+def test_watch_chases_by_urgency_and_exits_for_a_routine(tmp_path, monkeypatch):
+    monkeypatch.setenv("SECURAX_CRISIS_DIR", str(tmp_path))
+    cr.main(["new", "sectoral-cert-forensics", "--agency", "CERT", "--ref", "C/1", "--due", "6h"], now=NOW)
+    # long before the deadline, with a wide window off: calm, exit 0
+    assert cr.main(["watch", "--within", "1", "--quiet"], now=NOW) == 0
+    # inside the window: due-soon, exit 1
+    assert cr.main(["watch", "--within", "8"], now=NOW + datetime.timedelta(hours=1)) == 1
+    # past the deadline with items open: overdue, exit 2 (a routine escalates on this)
+    assert cr.main(["watch", "--within", "8"], now=NOW + datetime.timedelta(hours=7)) == 2

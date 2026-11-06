@@ -31,6 +31,30 @@ One command stands the whole crisis up; one command tells you what to do next. N
 - **next** — the single most urgent action right now, named with the exact command: the requisition nearest
   its deadline, the section with the most pending items, and who owns it. Zero thinking required.
 
+## Let the estate do the coordination (least human effort)
+
+Two commands take the tedious coordination off you entirely.
+
+```bash
+./securax crisis auto <id>      # the estate prepares every item it can source itself
+./securax crisis watch          # the estate chases the deadlines and the owners
+```
+
+- **auto** — for every item whose record the estate already produces (the incident timeline, the IOC list,
+  the chain-of-custody and forensic-SOP and duty-roster documents, the response pack), it marks the item
+  *drafted* and writes the **exact command or document that produces it** into the item's evidence field. You
+  review; you don't hunt. The items only a human team can produce stay pending, already assigned to that team.
+- **watch** — the estate **chases, so no person has to track a spreadsheet**. It scans every open requisition,
+  and for anything due soon or overdue it names the requisition, the fullest pending section and **who to
+  nudge**. Run as the `crisis-watch` routine it fires every 30 minutes during a crisis, nudging the owning
+  team through your notify channel — **from one node only** (no duplicate nudges, no single point of failure),
+  and silently does nothing when no requisition is open. Exit codes let any automation escalate on *overdue*.
+
+**AI drafts, humans approve the irreversible.** Drafting an answer or a message is automated; anything that
+leaves the building — a filing to a regulator, a public statement, a recall request — stays behind
+`./securax approve` (a single-use, time-boxed, audited, human-in-command approval). No agent files or sends
+anything on its own.
+
 ## The full flow
 
 ```bash
