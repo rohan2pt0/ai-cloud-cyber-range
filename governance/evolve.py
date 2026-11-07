@@ -82,7 +82,7 @@ def _stage_now(cap: dict, cond: dict) -> int:
         if i == 0:
             continue
         when = st.get("when", [])
-        if when and all(_met(w, cond) for w in when):
+        if st.get("have") or (when and all(_met(w, cond) for w in when)):     # a stage already built is where you ARE
             idx = i
     return idx
 
@@ -90,7 +90,7 @@ def _stage_now(cap: dict, cond: dict) -> int:
 def _next_ready(cap: dict, cond: dict) -> dict | None:
     """The next stage up from the amoeba whose conditions are now met but which is not the baseline stage — i.e. ready to grow."""
     for i, st in enumerate(cap["stages"]):
-        if i == 0:
+        if i == 0 or st.get("have"):          # the amoeba, and any stage already built, are not "ready to grow"
             continue
         when = st.get("when", [])
         if when and all(_met(w, cond) for w in when):

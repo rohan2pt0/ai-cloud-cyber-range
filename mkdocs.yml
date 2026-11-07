@@ -144,6 +144,7 @@ nav:
       - "Threat hunting & DFIR": securax/127-THREAT-HUNTING-DFIR.md
       - "Growth map (amoeba principle)": securax/128-GROWTH-MAP-AMOEBA.md
       - "Hunt fleet (mass deployment)": securax/129-HUNT-FLEET.md
+      - "Go-live runbook (new laptop, server, AI)": securax/130-GO-LIVE-RUNBOOK.md
       - "Choose who you serve": securax/116-CHOOSE-YOUR-CUSTOMER.md
   - How-to guides:
       - AI providers and plugins: securax/22-PLUGINS-AND-PROVIDERS.md

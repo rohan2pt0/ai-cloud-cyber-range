@@ -281,6 +281,8 @@ local/compose/tls-sidecars/
 site/
 docs/reference/cli.md
 website/docs/
+website/app/
+website/vantage/
 portal/navigator.html
 portal/navigator/
 guiding-map/build.json
