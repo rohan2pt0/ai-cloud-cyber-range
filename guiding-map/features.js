@@ -733,7 +733,7 @@ window.SECURAX_FEATURES = {
    "group": "Your own tools",
    "icon": "compass",
    "name": "Guiding Map",
-   "what": "Your daily cockpit for life and work: goals, check-ins and plans. Works offline, no AI needed.",
+   "what": "Your daily cockpit for life and work: goals, check-ins and plans. Works offline, no AI needed. It is also published with the product site, so it opens and installs on every device even with all your own machines off (doc 130).",
    "cmd": "./securax open",
    "path": "/",
    "port": 0,

@@ -270,6 +270,7 @@
   "tools/publish-clean.sh",
   "tools/readme_sync.py",
   "tools/linkcheck.py",
+  "tools/pwa_publish.py",
   "tools/features_sync.py",
   "tools/release.py",
   "tools/estate_map.py",

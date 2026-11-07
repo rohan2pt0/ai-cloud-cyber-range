@@ -71,3 +71,18 @@ def test_evolve_is_read_only_and_runs_offline(monkeypatch, capsys):
     assert "growth map" in out.lower()
     # an unknown capability is a clean error, not a crash
     assert ev.main(["does-not-exist"]) == 2
+
+
+def test_a_stage_already_built_is_where_you_are_not_ready_to_grow():
+    cap = {"organism": "x", "stages": [
+        {"id": "amoeba", "have": True, "actuation": "auto"},
+        {"id": "colony", "have": True, "when": ["nodes>1"], "rail": "r", "actuation": "auto"},
+        {"id": "organism", "when": ["teams"], "rail": "r", "actuation": "assisted"}]}
+    lone = {"nodes": 3, "teams": False}
+    assert ev._stage_now(cap, lone) == 1                     # the built colony is the current stage
+    assert ev._next_ready(cap, lone) is None                  # and it is not offered again as "ready to grow"
+    team = {"nodes": 3, "teams": True}
+    assert ev._next_ready(cap, team)["id"] == "organism"      # but the next, unbuilt stage still is, when its conditions are met
+    # the Life OS, now hosted off any one machine, declares exactly that
+    lifeos = json.loads((ROOT / "governance" / "evolution.json").read_text("utf-8"))["capabilities"]["guiding-map"]
+    assert lifeos["stages"][1]["have"] is True and lifeos["stages"][1]["rail"]
