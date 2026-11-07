@@ -1,7 +1,7 @@
 # 127 · Threat hunting & post-crisis DFIR — find the foothold, at any scale
 
 <!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
-> **Status: 🟢 Built.** Enterprise threat hunting & post-crisis DFIR: ./securax hunt drives Velociraptor (fetch-not-vendor; ships no proprietary binary) as a self-contained offline collector for minimal/pipeline mode or across a fleet at scale. The tool manifest declares each tool's licence + redistribution status + pinned hash (KAPE/FTK/Autoruns/Resource Hacker gated behind an audited EULA acceptance; KAPE-style triage via Velociraptor's open Windows.KapeFiles.Targets, no Kroll binary). Hunt packs (data, mapped to crisis scenarios) collect artefacts, score the output into prioritised findings deterministically (AI second opinion via the gateway when up), and list response actions — every endpoint action behind ./securax approve. The estate auto-prepares the hunt when a crisis is open (hunt-sweep routine, one node, no SPOF). Runs private in vault/hunt-runs/. Tests: test_hunt.py. [What the lights mean](../index.md#the-status-lights)
+> **Status: 🟢 Built.** Enterprise threat hunting & post-crisis DFIR: ./securax hunt drives Velociraptor (fetch-not-vendor; ships no proprietary binary) as a self-contained offline collector for minimal/pipeline mode or across a fleet at scale. The tool manifest declares each tool's licence + redistribution status + pinned hash (KAPE/FTK/Autoruns/Resource Hacker gated behind an audited EULA acceptance; KAPE-style triage via Velociraptor's open Windows.KapeFiles.Targets, no Kroll binary). Hunt packs (data, mapped to crisis scenarios) collect artefacts, score the output into prioritised findings deterministically (AI second opinion via the gateway when up), and turn them into an ordered, approve-gated remediation plan (each action declares the findings it addresses, so only fired-finding actions are proposed, most-supported first; AI drafts the narrative order when a gateway is up). hunt report writes a post-hunt report to feed the crisis pack and lessons. Every crisis scenario plus insider and supply-chain has its own pack; every endpoint action behind ./securax approve. The estate auto-prepares the hunt when a crisis is open (hunt-sweep routine, one node, no SPOF). Runs private in vault/hunt-runs/. Tests: test_hunt.py. [What the lights mean](../index.md#the-status-lights)
 <!-- status:end -->
 
 **The problem this solves.** When a crisis is contained, the real work starts: *where was the foothold, how far did it
@@ -55,12 +55,25 @@ A **pack** (data, in `governance/hunt-packs.json`, mapped to the crisis and warg
 3. the **response actions** each finding may warrant.
 
 ```bash
-./securax hunt packs                         # the library (ransomware-aftermath, payment-fraud-persistence, lateral-movement-sweep, quick-triage)
+./securax hunt packs                         # the library, one pack per scenario
 ./securax hunt plan ransomware-aftermath     # what it collects, how it scores, what it may warrant — no execution
 ./securax hunt collector ransomware-aftermath   # generate a self-contained offline collector (minimal mode)
 ./securax hunt triage <run> --input <dir>    # score the collected output into prioritised findings
-./securax hunt act <run>                     # the response actions — each as an approve-gated command
+./securax hunt act <run>                     # the ordered remediation plan — each step an approve-gated command
+./securax hunt report <run>                  # a post-hunt report (findings + plan + approve steps) to feed the crisis pack and lessons
 ```
+
+Every crisis scenario, plus the two angles a BFSI estate most fears, has its own pack: **ransomware-aftermath**,
+**payment-fraud-persistence**, **lateral-movement-sweep** (data breach), **service-outage** (attack or accident?),
+**insider-misuse**, **supply-chain-compromise**, and **quick-triage** (any host). So `hunt auto <scenario>` resolves
+straight from an incident to the right hunt.
+
+**The plan, not a list.** Each response action declares the findings it addresses, so `hunt act` proposes *only* the
+actions whose findings actually fired, ordered by the weight of the evidence behind them — the most-supported
+containment first, nothing irrelevant. When a gateway is up, an AI agent drafts the same plan as a short responder
+narrative (the one to do first, what must precede a restore) through the governed rails and audit; it never replaces the
+deterministic plan. `hunt report` writes it all — findings, plan, the exact approve commands, and a "what was done"
+section — ready to feed `./securax crisis` and `./securax lessons`.
 
 `collector` writes a run folder with `collect.sh` / `collect.ps1` (the exact `velociraptor artifacts collect …`
 commands) and a spec — run it in the pipeline, bring the zip back, and `triage` it. Triage scoring is **deterministic**,

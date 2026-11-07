@@ -137,3 +137,53 @@ def test_sweep_nudges_only_when_a_crisis_is_open_and_no_hunt_prepared(tmp_path, 
     # once a hunt is prepared, the sweep is calm again
     hunt.main(["collector", "ransomware-aftermath"], now=NOW)
     assert hunt.main(["sweep", "--quiet"], now=NOW) == 0
+
+
+def test_every_crisis_scenario_plus_insider_and_supply_chain_maps_to_a_pack():
+    # each crisis scenario, and the two new angles, resolve to a real pack (no 'any' fallback needed)
+    for scenario in ("ransomware", "payment-fraud", "data-breach", "outage", "insider", "supply-chain"):
+        pid = hunt._scenario_pack(scenario)
+        assert pid and hunt._pack(pid)["scenario"] == scenario, f"{scenario} must map to its own pack"
+
+
+def test_remediation_plan_only_proposes_actions_whose_findings_fired_and_orders_by_weight():
+    pack = {"actions": [
+        {"id": "a1", "action": "isolate", "approve": "host-isolate", "for": ["r1", "r6"], "why": "contain"},
+        {"id": "a2", "action": "restore-gate", "approve": "restore-gate", "for": ["r2"], "why": "clean restore"},
+        {"id": "a3", "action": "always", "approve": "note", "why": "no-for action always applies"}]}
+    findings = [{"id": "r1", "weight": 3}, {"id": "r6", "weight": 3}]   # r2 did NOT fire
+    plan = hunt.remediation_plan(pack, findings)
+    approves = [s["approve"] for s in plan]
+    assert "restore-gate" not in approves, "an action whose findings did not fire is not proposed"
+    assert {"host-isolate", "note"} <= set(approves)
+    # ordered by the weight of the findings that justify each step (highest first)
+    assert plan[0]["priority"] >= plan[-1]["priority"]
+    # the isolate step records exactly which fired findings it addresses
+    iso = next(s for s in plan if s["approve"] == "host-isolate")
+    assert iso["addresses"] == ["r1", "r6"]
+
+
+def test_act_shows_the_ordered_plan_and_report_writes_the_artifact(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("SECURAX_HUNT_DIR", str(tmp_path))
+    monkeypatch.delenv("GATEWAY_URL", raising=False)
+    hunt.main(["collector", "ransomware-aftermath"], now=NOW)
+    rid = hunt.runs()[0]["id"]
+    collected = tmp_path / "c"
+    collected.mkdir()
+    (collected / "a.txt").write_text("vssadmin delete shadows /all; mimikatz sekurlsa", "utf-8")
+    hunt.main(["triage", rid, "--input", str(collected)], now=NOW)
+    capsys.readouterr()
+    assert hunt.main(["act", rid], now=NOW) == 0
+    out = capsys.readouterr().out
+    assert "remediation plan" in out.lower() and "./securax approve" in out
+    # report writes the artifact and advances the run state
+    assert hunt.main(["report", rid], now=NOW) == 0
+    rpt = tmp_path / rid / "post-hunt-report.md"
+    assert rpt.exists()
+    body = rpt.read_text("utf-8")
+    assert "Remediation plan" in body and "approve" in body and "What was done" in body
+    assert hunt.load_run(rid)["state"] == "reported"
+    # report refuses before triage
+    hunt.main(["collector", "service-outage"], now=NOW)
+    rid2 = [r["id"] for r in hunt.runs() if r["pack"] == "service-outage"][0]
+    assert hunt.main(["report", rid2], now=NOW) == 2

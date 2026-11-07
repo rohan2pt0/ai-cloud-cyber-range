@@ -15,7 +15,8 @@ and the candidate response actions — and every action that TOUCHES an endpoint
   ./securax hunt collector <pack> [--out DIR]    generate a self-contained offline collector (spec + run script) for minimal/pipeline mode
   ./securax hunt auto <scenario> [--input DIR]   post-crisis automation: pick the pack for the scenario, prepare the collector, triage if results are given
   ./securax hunt triage <run> [--input DIR]      score the collected output into prioritised findings (deterministic; an AI second opinion when a gateway is up)
-  ./securax hunt act <run>                        the response actions the findings warrant — each as an approve-gated command (nothing is executed here)
+  ./securax hunt act <run>                        the ordered remediation plan the findings warrant — each step an approve-gated command (nothing is executed here)
+  ./securax hunt report <run>                     write a post-hunt report (findings + the plan + the approve steps) to feed the crisis pack and the lessons
   ./securax hunt sweep [--notify]                the estate watches for an open crisis with no hunt prepared and nudges — from one node only (no SPOF)
   ./securax hunt status [<run>]                  your hunt runs and their state
 
@@ -356,24 +357,122 @@ def cmd_triage(a, now: dt.datetime) -> int:
     return 0
 
 
+def remediation_plan(pack: dict, findings: list[dict]) -> list[dict]:
+    """Turn the fired findings into an ordered, approve-gated remediation plan. An action is proposed only when the
+    findings it addresses (its `for` rule ids) actually fired — or always, if it names no `for`. Deterministic: ordered by
+    the weight of the findings that justify each step, so the most-supported containment comes first. Each step stays a
+    human decision behind ./securax approve; this drafts, it never acts."""
+    by_weight = {f["id"]: f["weight"] for f in findings}
+    fired = set(by_weight)
+    plan = []
+    for act in pack.get("actions", []):
+        need = act.get("for")
+        hits = sorted(set(need) & fired) if need else sorted(fired)
+        if need and not hits:
+            continue                      # the findings this action addresses did not fire — do not propose it
+        priority = max((by_weight[i] for i in hits), default=0)
+        plan.append({"action": act["action"], "approve": act["approve"], "why": act["why"],
+                     "addresses": hits, "priority": priority})
+    plan.sort(key=lambda s: s["priority"], reverse=True)
+    return plan
+
+
+def _ai_remediation(pack_name: str, plan: list[dict], findings: list[dict]) -> str | None:
+    """Optional: ask the gateway to draft the plan as a short narrative a responder can act on, under the governed rails and
+    audit trail. Offline-safe — None without GATEWAY_URL or on error; the deterministic plan is always what is executed."""
+    if not os.getenv("GATEWAY_URL") or not plan:
+        return None
+    try:
+        spec = importlib.util.spec_from_file_location("hunt_personas", ROOT / "agents" / "personas.py")
+        personas = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(personas)
+        steps = "\n".join(f"- {s['action']} (addresses {', '.join(s['addresses']) or 'the findings'})" for s in plan)
+        sig = "\n".join(f"- [{f['weight']}] {f['signal']}: {f['says']}" for f in findings)
+        q = ("You are drafting a short containment-and-recovery plan for a responder after a post-crisis hunt ('"
+             + pack_name + "'). The deterministic plan (already ordered, each step a human-approved action) is:\n" + steps
+             + "\n\nThe findings behind it:\n" + sig
+             + "\n\nIn at most five short lines, put these in the right order for a responder, say the ONE to do first and "
+             "why, and name anything that must happen before a restore. Do not add steps that are not above; do not tell "
+             "anyone to act without approval.")
+        res = personas.ask_agent("negotiation", q, careful=False)
+        return res.get("answer")
+    except Exception:  # noqa: BLE001
+        return None
+
+
 def cmd_act(a, now: dt.datetime) -> int:
     run = load_run(a.run)
     p = _pack(run["pack"])
     if run.get("state") != "triaged":
         print(f"{run['id']} is not triaged yet. Run:  ./securax hunt triage {run['id']} --input <dir>")
         return 2
-    print(f"▶ {run['id']} — response actions for '{p['name']}'.")
+    print(f"▶ {run['id']} — remediation plan for '{p['name']}'.")
     print("  AI and the estate DRAFT; a human approves anything that touches an endpoint. Nothing is executed here.\n")
     if not run.get("findings"):
         print("  No findings scored, so no action is proposed. If you hunted by hand and found something, act on that")
         print("  through ./securax approve directly.")
         return 0
-    for act in p["actions"]:
-        print(f"  • {act['action']}")
-        print(f"      why: {act['why']}")
-        print(f"      run, with a human's single-use approval:  ./securax approve {act['approve']} --run {run['id']}")
+    plan = remediation_plan(p, run["findings"])
+    for n, s in enumerate(plan, 1):
+        print(f"  {n}. {s['action']}   [priority {s['priority']}]")
+        print(f"      addresses: {', '.join(s['addresses'])}")
+        print(f"      why: {s['why']}")
+        print(f"      run, with a human's single-use approval:  ./securax approve {s['approve']} --run {run['id']}")
+        print()
+    ai = _ai_remediation(p["name"], plan, run["findings"])
+    if ai:
+        print("  AI-drafted order (through the governed gateway):")
+        for ln in ai.strip().splitlines()[:5]:
+            print(f"    {ln}")
         print()
     print("  Each ./securax approve grant is single-use, time-boxed and audited. No agent acts on an endpoint on its own.")
+    print(f"  Write the post-hunt report:  ./securax hunt report {run['id']}")
+    return 0
+
+
+def cmd_report(a, now: dt.datetime) -> int:
+    """A post-hunt report: the findings, the drafted remediation plan, and the approve-gated steps — ready to feed the
+    crisis response pack and to turn gaps into lessons. It records what to do; a human still approves each action."""
+    run = load_run(a.run)
+    p = _pack(run["pack"])
+    if run.get("state") != "triaged":
+        print(f"{run['id']} is not triaged yet. Run:  ./securax hunt triage {run['id']} --input <dir>")
+        return 2
+    plan = remediation_plan(p, run["findings"])
+    out = runs_dir() / run["id"]
+    out.mkdir(parents=True, exist_ok=True)
+    md = [f"# Post-hunt report — {run['id']} ({p['name']})", "",
+          f"**Scenario:** {run['scenario']}  ·  **Written:** {local(iso(now))}  ·  **Risk tally:** {run.get('risk', 0)}", "",
+          "A first pass to focus a human, never a verdict. Every action below is a decision behind `./securax approve`.", "",
+          "## Findings", ""]
+    if run.get("findings"):
+        md += ["| Priority | Signal | What it means | Seen in |", "|---|---|---|---|"]
+        md += [f"| {f['weight']} | `{f['signal']}` | {f['says']} | {', '.join(f['seen_in'])} |" for f in run["findings"]]
+    else:
+        md.append("No rule matched the collected output — widen the pack or hunt by hand; not a clean bill of health.")
+    md += ["", "## Remediation plan (ordered, approve-gated)", ""]
+    if plan:
+        for n, s in enumerate(plan, 1):
+            md.append(f"{n}. **{s['action']}** — {s['why']}  \n   addresses {', '.join(s['addresses'])}; "
+                      f"run with `./securax approve {s['approve']} --run {run['id']}`")
+    else:
+        md.append("No action proposed from the findings.")
+    ai = _ai_remediation(p["name"], plan, run["findings"])
+    if ai:
+        md += ["", "## AI-drafted order (through the governed gateway)", "", ai.strip(),
+               "", "_A drafted order, not a verdict; a human confirms and approves each step._"]
+    md += ["", "## What was done", "",
+           "_Record here which steps were approved, by whom, and the outcome — then feed the gaps to "
+           "`./securax crisis` (the response pack) and `./securax lessons add`._"]
+    (out / "post-hunt-report.md").write_text("\n".join(md) + "\n", "utf-8")
+    os.chmod(out / "post-hunt-report.md", 0o600)
+    run["state"] = "reported"
+    run["reported_at"] = iso(now)
+    save_run(run)
+    print(f"▶ Wrote the post-hunt report for {run['id']} ({len(plan)} planned step(s)):")
+    print(f"    {out / 'post-hunt-report.md'}")
+    print("  Feed it to the crisis response pack and turn each gap into a lesson:")
+    print(f"    ./securax crisis status      ·      ./securax lessons add \"hunt {run['scenario']}: <what to fix>\"")
     return 0
 
 
@@ -504,6 +603,8 @@ def main(argv: list[str] | None = None, now: dt.datetime | None = None) -> int:
     tr.add_argument("--input", default="")
     ac = sub.add_parser("act")
     ac.add_argument("run")
+    rp = sub.add_parser("report")
+    rp.add_argument("run")
     sw = sub.add_parser("sweep")
     sw.add_argument("--notify", action="store_true")
     sw.add_argument("--quiet", action="store_true")
@@ -512,7 +613,7 @@ def main(argv: list[str] | None = None, now: dt.datetime | None = None) -> int:
     a = ap.parse_args(argv)
     fn = {"tools": cmd_tools, "accept": cmd_tools_accept, "packs": cmd_packs, "plan": cmd_plan,
           "collector": cmd_collector, "auto": cmd_auto, "triage": cmd_triage, "act": cmd_act,
-          "sweep": cmd_sweep, "status": cmd_status}[a.cmd]
+          "report": cmd_report, "sweep": cmd_sweep, "status": cmd_status}[a.cmd]
     return fn(a, now)
 
 
