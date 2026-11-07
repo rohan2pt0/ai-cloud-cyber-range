@@ -131,6 +131,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- [`./securax hunt fleet` — mass deployment, generated not provisioned: the actuated enterprise rail of the hunt (doc 129)](docs/securax/129-HUNT-FLEET.md)
 - [`./securax hunt` grows: every crisis type now auto-maps to a hunt, and the findings become an ordered, approve-gated remediation plan (doc 127)](docs/securax/127-THREAT-HUNTING-DFIR.md)
 - [A new core principle — "start as an amoeba, carry the DNA" — made real and enforceable, with `./securax evolve` (doc 128)](docs/securax/128-GROWTH-MAP-AMOEBA.md)
 - [`./securax hunt` — enterprise threat hunting & post-crisis DFIR, in minimal (offline) or fleet mode (doc 127)](docs/securax/127-THREAT-HUNTING-DFIR.md)
@@ -138,7 +139,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - `./securax crisis` now does the coordination itself — the estate prepares the records and chases the humans, so a lone responder barely has to
 - [`./securax crisis` — coordinate a multi-agency cyber crisis and hit every agency deadline (doc 125)](docs/securax/125-CRISIS-COORDINATION.md)
 - The regulatory incident clock now survives the machine it runs on dying — read-only replication to every node
-- Resilience labels can no longer lie (`resilience-grounded` fitness check)
 
 **Release 0.3.0 - 2026-10-22:**
 

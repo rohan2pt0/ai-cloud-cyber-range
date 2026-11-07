@@ -17,8 +17,8 @@
    "organism": "an offline Velociraptor collector on one host or in the pipeline — no server",
    "stages": [
     {"id": "amoeba", "is": "offline collector, no server, one host / DevSecOps pipeline; deterministic triage", "have": true, "actuation": "auto"},
-    {"id": "colony", "when": ["fleet_server", "nodes>3", "load"], "grows_to": "a Velociraptor server with clients, fleet-wide hunts, throttling", "rail": "the SAME packs run as a fleet hunt unchanged; the client-config generator; throttle settings in the pack", "actuation": "assisted"},
-    {"id": "organism", "when": ["teams", "internal_mirror"], "grows_to": "a managed fleet with per-team RBAC and multi-org tenancy, an org-governed tool mirror with EULA acceptance, scheduled hunts, AI-agent triage and drafted remediation behind approval", "rail": "SECURAX_HUNT_MIRROR as the tool source; the rbac/tenancy/policy platform services; the gated-tool EULA-acceptance ledger; the approve workflow", "actuation": "assisted"}
+    {"id": "colony", "when": ["fleet_server", "nodes>3", "load"], "grows_to": "a Velociraptor server with clients, fleet-wide hunts, throttling", "rail": "./securax hunt fleet generates the server setup, the client rollout (GPO/Intune/SCCM/Ansible) and a throttled fleet hunt — the SAME packs run unchanged; provisions nothing (approved steps)", "actuation": "assisted"},
+    {"id": "organism", "when": ["teams", "internal_mirror"], "grows_to": "a managed fleet with per-team RBAC and multi-org tenancy, an org-governed tool mirror with EULA acceptance, scheduled hunts, AI-agent triage and drafted remediation behind approval", "rail": "./securax hunt fleet points binaries at SECURAX_HUNT_MIRROR (no vendor egress); Velociraptor's built-in RBAC/multi-org maps to the rbac/tenancy/policy platform services; the gated-tool EULA-acceptance ledger; the approve workflow", "actuation": "assisted"}
    ],
    "unfavourable": {"lost_node": "the fleet server is a natural SPOF — on its loss, fall back to the offline-collector amoeba, which needs no server; regrow when it returns"}
   },

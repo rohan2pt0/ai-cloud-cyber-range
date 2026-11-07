@@ -187,3 +187,40 @@ def test_act_shows_the_ordered_plan_and_report_writes_the_artifact(tmp_path, mon
     hunt.main(["collector", "service-outage"], now=NOW)
     rid2 = [r["id"] for r in hunt.runs() if r["pack"] == "service-outage"][0]
     assert hunt.main(["report", rid2], now=NOW) == 2
+
+
+def test_fleet_generates_the_deploy_artifacts_and_provisions_nothing(tmp_path, monkeypatch):
+    monkeypatch.setenv("SECURAX_HUNT_FLEET_DIR", str(tmp_path))
+    monkeypatch.setenv("SECURAX_HUNT_MIRROR", "nexus.bank.internal")
+    # server setup
+    assert hunt.main(["fleet", "server"], now=NOW) == 0
+    assert (tmp_path / "server" / "server-setup.sh").exists()
+    # clients: all methods, each pulling from the internal mirror (no vendor egress) and no <MIRROR> placeholder left
+    assert hunt.main(["fleet", "clients"], now=NOW) == 0
+    cdir = tmp_path / "clients"
+    files = list(cdir.glob("deploy-*"))
+    assert {f.name for f in files} == {"deploy-msiexec.txt", "deploy-gpo.txt", "deploy-intune.txt", "deploy-ansible.yml"}
+    for f in files:
+        body = f.read_text("utf-8")
+        assert "nexus.bank.internal" in body and "<MIRROR>" not in body
+    # a throttled fleet hunt from a pack (same artifacts as the offline collector)
+    assert hunt.main(["fleet", "hunt", "ransomware-aftermath"], now=NOW) == 0
+    defn = json.loads((tmp_path / "hunts" / "fleet-hunt-ransomware-aftermath.json").read_text("utf-8"))
+    assert defn["artifacts"] == hunt._pack("ransomware-aftermath")["artifacts"]
+    assert defn["throttle"]["ops_per_second"] >= 1 and defn["throttle"]["cpu_limit_percent"] >= 1
+
+
+def test_fleet_rejects_an_unknown_method_and_a_missing_pack(tmp_path, monkeypatch):
+    monkeypatch.setenv("SECURAX_HUNT_FLEET_DIR", str(tmp_path))
+    assert hunt.main(["fleet", "hunt"], now=NOW) == 2            # no pack given
+    assert hunt.main(["fleet", "hunt", "no-such-pack"], now=NOW) == 2
+
+
+def test_fleet_warns_when_the_mirror_is_unset(tmp_path, monkeypatch, capsys):
+    monkeypatch.setenv("SECURAX_HUNT_FLEET_DIR", str(tmp_path))
+    monkeypatch.delenv("SECURAX_HUNT_MIRROR", raising=False)
+    hunt.main(["fleet", "clients", "--method", "ansible"], now=NOW)
+    out = capsys.readouterr().out
+    assert "SECURAX_HUNT_MIRROR" in out                         # tells you to set the internal mirror
+    # the placeholder is written (not a real vendor URL) so nothing egresses by accident
+    assert "set SECURAX_HUNT_MIRROR" in (tmp_path / "clients" / "deploy-ansible.yml").read_text("utf-8")
