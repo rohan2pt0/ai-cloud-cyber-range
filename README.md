@@ -131,14 +131,14 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- The reference bar gains the vital few it lacked (AGENTS.md section 7)
 - Build from the Claude chat with the open models doing the heavy lifting (`delegate` skill, doc 83)
 - [The SOC now pages on six controls that held but told nobody (doc 30)](docs/securax/30-PURPLE-TEAM-LOOP.md)
 - The personal app's page shows its tools, newest first, generated from the one list of features
+- The reference bar for enterprise grade (AGENTS.md section 7)
 - Threat modelling is now a core principle, held as plain text by a check (`threat-model`, doc 133)
 - Enterprise review is now a standing rule, not something to ask for each time (`enterprise-grade`, AGENTS.md section 7), and the first sweep found a real gap
 - [A new core principle, "one door, no passwords": sign in once, reach everything, take it away in one place (doc 132)](docs/securax/132-ONE-DOOR.md)
-- [The Command Center no longer needs a machine to open: a hosted front door that finds whichever of your machines is up (doc 131)](docs/securax/131-NO-SINGLE-POINT-OF-FAILURE.md)
-- [The Life OS and Vantage are now hosted with the product site, so they open on every device with no machine of yours running; plus a go-live runbook (doc 130)](docs/securax/130-GO-LIVE-RUNBOOK.md)
 
 **Release 0.3.0 - 2026-10-22:**
 

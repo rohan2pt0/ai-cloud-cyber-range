@@ -180,3 +180,23 @@ fast gates first and the full tests in the background, reading only the last lin
 open the PR, set ONE check-in, merge when green. One PR per round, pushed once. Replies: the result, what was not tested, the next step. At about 60% of
 the room, push, update the queue and stop; the next session starts from the repository, not from this conversation.
 
+**The reference bar (the vital few, from the AWS, Azure and Google Well-Architected frameworks, Google SRE, Netflix resilience, Cloudflare
+Zero Trust and the open-core model).** Judge every change against these; each is held by a check or dated in the queue, never just stated:
+- **Modular, loosely coupled, contract-first:** a clear owner and interface per component (`lifecycle/impact.json`); versioned APIs; a
+  modular monolith beats needless microservices.
+- **No unmitigated single point of failure, recovery proven:** tested RTO/RPO and restore drills, not diagrams (`resilience`, `continuity`,
+  `spof-ratchet`); count correlated failures too (one identity, DNS, credential or person).
+- **Fault isolation:** timeouts, retries with backoff, rate limits, graceful degradation (the gateway's ladder and kill switch).
+- **Zero Trust and identity first:** no trust by network location; one door, least privilege, MFA or passkeys (`one-door`).
+- **Secure by design and supply chain:** a threat model, signed artefacts, an SBOM, pinned dependencies (`threat-model`, Trivy, gitleaks).
+- **Observable and operable:** logs, metrics and traces with one correlation id; a runbook and `./securax why` for every failure.
+- **Delivered safely:** infrastructure as code, staged rollout, one-command rollback (`update` rolls back by itself).
+- **Documentation as a product:** a fresh engineer can install, run, troubleshoot, upgrade and recover from the docs alone.
+- **Fails well:** every error says what happened, why, and the one next step, in plain words; a failure seen twice gets an entry `./securax why`
+  can find (a known-error list), not a second investigation.
+- **Evolves without breaking:** versioned contracts, a deprecation named a release ahead, upgrade and rollback tested in the sandbox (doc 21).
+- **Simple beats clever:** the fewest moving parts that meet the need today (the amoeba); a part is added only when a measured condition calls for it.
+- **Measured by outcomes, not activity:** the four delivery keys (how often we ship, how long a change takes, how often a change fails, how fast
+  we restore) come from git and CI and show in `progress` (queue `delivery-four-keys`).
+**Applying it, 80/20:** list the gaps a change touches, rank them by risk × how many people it reaches ÷ effort, fix the top three this round and
+date the rest in the queue. Hard gates (security, recoverability, regulation) are pass/fail regardless of any score.
