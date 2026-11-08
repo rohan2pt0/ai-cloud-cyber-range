@@ -51,6 +51,9 @@ Keep the core sovereign — run your own cloud instead of renting:
   multi-node/multi-tenant scale (this is what large sovereign clouds run).
 - **k3s/Talos** for the Kubernetes layer on top (the Terraform modules already target K8s).
 
+When the private cloud and OpenStack are actually built — each with its date and the trigger that makes it worth it — is
+spelled out in [29 · Lifecycle — "When the forest grows"](29-LIFECYCLE-SEED-TO-FOREST.md#when-the-forest-grows).
+
 ## 4. Turn it all off (and keep it ready)
 ```bash
 ./securax full down                    # Mattermost
