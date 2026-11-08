@@ -269,6 +269,7 @@
   "website/**",
   "tools/publish-clean.sh",
   "tools/readme_sync.py",
+  "tools/site_css.py",
   "tools/linkcheck.py",
   "tools/pwa_publish.py",
   "tools/features_sync.py",
