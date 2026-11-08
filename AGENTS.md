@@ -22,6 +22,11 @@ The principles behind it:
   compass carry it; never bury it under tooling.
 - **Antifragility:** every failure must leave the estate stronger. A lesson, a test and a drill come out of it, and
   `progress` counts them.
+- **One door, no passwords (`one-door`):** a person signs in once, with an account they already have (a passkey, Microsoft or
+  Google), and that is the only door. A new feature that needs sign-in never builds its own login screen and never keeps a password:
+  add one entry to `governance/identity.json` (what it needs, the narrowest permission, what works as a guest, how one switch takes
+  it away). Ask for a permission only when the feature is used. Everything works as a guest first. Fitness `signin-declared` fails an
+  incomplete entry, an over-broad permission, and any new separate login: the count of separate logins only goes down.
 - **Small wins, shown:** progress you can see keeps people going.
 - **Least effort for the person:** the estate does the remembering, the checking and the reminding.
 - **Start as an amoeba, carry the DNA (`amoeba`):** ship the simplest living thing that helps today — one person, no

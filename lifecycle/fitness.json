@@ -10,7 +10,8 @@
     "first_block_s": 5,
     "block_latency_p95_ms": 50,
     "spof_accepted_baseline": 1,
-    "evolution_declared_baseline": 6
+    "evolution_declared_baseline": 6,
+    "separate_logins_baseline": 4
   },
   "wake_budgets_s": {
     "burrow_twin_first_dig": 120,

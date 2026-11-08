@@ -502,6 +502,70 @@ def check_evolution_declared(baseline: int) -> dict:
             "note": note}
 
 
+def identity_problems(reg: dict, known_ids: set, baseline: int, today=None) -> list[str]:
+    """Pure core of the one-door check (principle `one-door`, doc 132), so it can be tested with synthetic registries. Every
+    service the estate reaches is declared in governance/identity.json with what works as a guest, what signing in adds, the
+    narrowest permission it needs and where one switch takes it away. A login that is not through the one door ('separate') must
+    carry its fix and a date (a date that has passed fails), or a standing reason; and the COUNT of separate logins may only go
+    down, so a new one is a deliberate, reviewed raise of lifecycle/fitness.json."""
+    import datetime
+    import re
+    today = today or datetime.date.today()
+    problems: list[str] = []
+    if reg.get("primary_idp") not in reg.get("idps", {}):
+        problems.append("primary_idp must name one of the declared identity providers (idps)")
+    protocols = {"none", "oidc", "oauth2-pkce", "saml", "device-code", "api-key"}
+    too_broad = {"*", "https://mail.google.com/", "https://www.googleapis.com/auth/drive", "Files.ReadWrite.All", "Mail.ReadWrite",
+                 "Directory.ReadWrite.All", "User.ReadWrite.All", "Sites.FullControl.All"}
+    separate = 0
+    for sid, s in sorted(reg.get("services", {}).items()):
+        for f in ("name", "provider", "protocol", "guest", "signed_in", "login", "revoke", "status"):
+            if not str(s.get(f, "")).strip():
+                problems.append(f"'{sid}': say its {f}")
+        if s.get("protocol") not in protocols:
+            problems.append(f"'{sid}': protocol must be one of {sorted(protocols)}")
+        if s.get("status") not in ("built", "partial", "planned"):
+            problems.append(f"'{sid}': status must be built, partial or planned")
+        if s.get("login") not in ("primary", "separate"):
+            problems.append(f"'{sid}': login must be 'primary' (through the one door) or 'separate'")
+        for sc in s.get("scopes", []):
+            if sc in too_broad or "*" in sc:
+                problems.append(f"'{sid}': permission {sc!r} is broader than a feature needs: ask for the narrowest, when it is used")
+        if s.get("feature") and known_ids and s["feature"] not in known_ids:
+            problems.append(f"'{sid}': feature {s['feature']!r} is not a feature or component")
+        if s.get("login") != "separate":
+            continue
+        separate += 1
+        if str(s.get("standing", "")).strip():
+            if len(str(s["standing"]).strip()) < 40:
+                problems.append(f"'{sid}': a standing separate login needs a real reason, not a word")
+        elif not (s.get("fix") and re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(s.get("by", "")))):
+            problems.append(f"'{sid}': a separate login needs `fix` and a `by` date (YYYY-MM-DD), or a `standing` reason")
+        else:
+            try:
+                if datetime.date.fromisoformat(s["by"]) < today:
+                    problems.append(f"'{sid}': its fix date {s['by']} has passed: do it, or re-date it with a reason")
+            except ValueError:
+                problems.append(f"'{sid}': unreadable date {s['by']!r}")
+    if separate > baseline:
+        problems.append(f"{separate} separate logins > baseline {baseline}: a new separate login is a deliberate, reviewed raise (the one-door ratchet only goes down)")
+    return problems
+
+
+def check_signin_declared(baseline: int) -> dict:
+    """The one-door principle made enforceable (doc 132): a new feature that needs a sign-in is ONE entry in governance/identity.json,
+    never a new login screen or a stored password; the friction register of separate logins only shrinks."""
+    reg = json.loads((ROOT / "governance" / "identity.json").read_text("utf-8"))
+    feats = {f["id"] for f in json.loads((ROOT / "features.json").read_text("utf-8"))["features"]}
+    comps = set(json.loads((ROOT / "governance" / "suite.json").read_text("utf-8")).get("components", {}))
+    problems = identity_problems(reg, feats | comps, baseline)
+    n = sum(1 for s in reg.get("services", {}).values() if s.get("login") == "separate")
+    note = ("; ".join(problems)[:200] if problems else
+            f"{len(reg.get('services', {}))} service(s) declared, {n} separate login(s) each with a fix date or a standing reason; baseline {baseline}"
+            + (f" (lower it to {n} to lock the ratchet)" if n < baseline else ""))
+    return {"name": "signin-declared", "value": len(problems), "budget": 0, "unit": "problems", "ok": not problems, "note": note}
+
+
 def check_private_names() -> dict:
     """No organisation, exercise or person on the private list (only fingerprints are stored) appears in any tracked file."""
     import importlib.util
@@ -519,7 +583,7 @@ def run_all(only_fast: bool = False) -> list[dict]:
     if not only_fast:
         res += check_gateway(c["gateway_cold_start_s"], c["gateway_rss_mb"])
         res += check_first_block(c["first_block_s"], c["block_latency_p95_ms"])
-    res += [check_supply_chain(base), check_commands_documented(base), check_ccsp_map(), check_regulatory_maps(), check_impact_map(), check_claims(), check_config_clean(), check_readme_current(), check_private_names(), check_commands_in_help(), check_features_current(), check_continuity_declared(), check_spof_ratchet(c.get("spof_accepted_baseline", 1)), check_resilience_grounded(), check_outcomes_declared(), check_enterprise_declared(), check_evolution_declared(c.get("evolution_declared_baseline", 4)), check_no_raw_addresses()]
+    res += [check_supply_chain(base), check_commands_documented(base), check_ccsp_map(), check_regulatory_maps(), check_impact_map(), check_claims(), check_config_clean(), check_readme_current(), check_private_names(), check_commands_in_help(), check_features_current(), check_continuity_declared(), check_spof_ratchet(c.get("spof_accepted_baseline", 1)), check_resilience_grounded(), check_outcomes_declared(), check_enterprise_declared(), check_evolution_declared(c.get("evolution_declared_baseline", 4)), check_signin_declared(c.get("separate_logins_baseline", 4)), check_no_raw_addresses()]
     return res
 
 
