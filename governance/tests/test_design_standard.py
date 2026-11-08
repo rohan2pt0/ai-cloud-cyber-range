@@ -81,6 +81,35 @@ def test_the_site_stylesheet_is_the_generators_output():
     assert ":focus-visible" in on_disk and "prefers-reduced-motion" in on_disk, "website/site.css"
 
 
+def test_the_product_site_pages_take_their_colours_from_the_one_stylesheet():
+    # The four product-site pages keep their navy and gold but take every colour from the shared generated website/site.css,
+    # never from an inline palette of their own, and meet the notch-safe basics.
+    pages = {
+        "website/index.html": 'rel="stylesheet" href="site.css"',
+        "website/assess/index.html": 'rel="stylesheet" href="../site.css"',
+        "website/nbfc/index.html": 'rel="stylesheet" href="../site.css"',
+        "website/personal/index.html": 'rel="stylesheet" href="../site.css"',
+    }
+    for rel, href in pages.items():
+        page = (ROOT / rel).read_text("utf-8")
+        assert href in page, f"{rel}: missing {href}"
+        assert "viewport-fit=cover" in page, rel
+        assert ":root{" not in page, f"{rel} defines its own palette; take it from website/site.css"
+        assert "background:#fff" not in page, f"{rel} hardcodes white cards; use var(--card)"
+
+
+def test_the_dark_status_colours_pass_on_the_dark_card():
+    # The site's dark theme keeps its own lifted green, amber and red so a status light stays readable on the navy card
+    # #111e33 (WCAG AA); the light values are the deep shades the site has always used on white.
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("securax_site_css_dark_t", ROOT / "tools" / "site_css.py")
+    sc = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(sc)
+    _, dark = blocks(sc.render())
+    for k, v in (("--green", "#4ade80"), ("--amber", "#fbbf24"), ("--red", "#f87171")):
+        assert f"{k}:{v}" in dark, f"site.css dark {k} should be {v} (AA on #111e33)"
+
+
 def test_site_css_cli_writes_and_checks_exactly(tmp_path):
     # main() is the CLI: it writes the file and returns 0, checks a current file and returns 0, and a stale one and
     # returns exactly 1 (so a loosened or dropped return value fails here; the forge gate mutates these returns).
