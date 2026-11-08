@@ -131,6 +131,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- `./securax progress` now shows the first two delivery keys, read from git alone
 - The product site is on the design standard, held by a real-browser audit
 - The lifecycle doc now says plainly, with dates, when the forest stage and the private cloud are built
 - The core database moves to PostgreSQL 18 without the start-up failure a plain version bump would cause
@@ -138,7 +139,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - [The four product-site pages now take every colour from the one generated stylesheet (doc 100)](docs/securax/100-DESIGN-STANDARD.md)
 - A test now keeps the Life OS installable as a phone app on every change
 - [The product site's stylesheet is now generated from the shared design standard (doc 100)](docs/securax/100-DESIGN-STANDARD.md)
-- Open-model builds no longer hang for hours
 
 **Release 0.3.0 - 2026-10-22:**
 
