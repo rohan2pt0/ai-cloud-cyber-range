@@ -332,6 +332,76 @@ def check_continuity_declared() -> dict:
             "note": "every feature survives any one machine being off" if not problems else "; ".join(problems)[:200]}
 
 
+def spof_ratchet_problems(accepted: dict, crit_spof: set, baseline: int, today) -> list[str]:
+    """Pure core of the single-point-of-failure ratchet, so it can be tested with synthetic estates.
+    `accepted` is reference.accepted ({id: reason}); `crit_spof` is the set of ids that are a CRITICAL single point of
+    failure when nothing is accepted. Rules: the count of accepted critical SPOFs may not exceed the baseline (a new one is
+    a deliberate raise, reviewed in the diff); a stale acceptance whose SPOF is fixed must be removed; every acceptance is
+    substantive and carries a live `Review YYYY-MM-DD` date (or `Standing:` with a reason) and is not past that date."""
+    import datetime
+    import re
+    problems: list[str] = []
+    acc_crit = sorted(i for i in accepted if i in crit_spof)
+    if len(acc_crit) > baseline:
+        problems.append(f"{len(acc_crit)} accepted critical SPOF(s) > baseline {baseline}: adding one must be a deliberate, reviewed raise of fitness.json")
+    for i in sorted(accepted):
+        reason = str(accepted[i]).strip()
+        if i not in crit_spof:
+            problems.append(f"stale acceptance: '{i}' is no longer a critical single point of failure — remove it (the ratchet only goes down)")
+            continue
+        md = re.search(r"[Rr]eview\s+(\d{4}-\d{2}-\d{2})", reason)
+        standing = reason.lower().startswith("standing")
+        if len(reason) < 40:
+            problems.append(f"'{i}': acceptance reason is too thin — state the risk, the planned fix, and a review date")
+        elif not md and not standing:
+            problems.append(f"'{i}': acceptance needs a 'Review YYYY-MM-DD' date, or 'Standing: <why it can never be removed>'")
+        elif md:
+            try:
+                if datetime.date.fromisoformat(md.group(1)) < today:
+                    problems.append(f"'{i}': SPOF review overdue ({md.group(1)}) — re-justify with a new date, or remove the single point of failure")
+            except ValueError:
+                problems.append(f"'{i}': unreadable review date '{md.group(1)}'")
+    return problems
+
+
+def check_spof_ratchet(baseline: int) -> dict:
+    """Every accepted single point of failure is a conscious, shrinking, self-expiring decision — never a silent escape
+    hatch (doc 91). `continuity-declared` fails on an UNACCEPTED critical SPOF; this fails when an ACCEPTED one is thin,
+    un-dated, past its review date, stale (already fixed), or pushes the count above the shrink-only baseline. So no
+    feature — now or in future — can quietly ship an unreviewed critical SPOF, and every accepted one is pulled back
+    into view on its review date."""
+    import datetime
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("resilience", ROOT / "governance" / "resilience.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    m = mod.model()
+    accepted = m.get("reference", {}).get("accepted", {})
+    nodes = [{"name": c["name"], "at": 0, "checks": c["checks"]} for c in m["reference"]["cards"]]
+    crit_spof = {w["id"] for w in mod.analyse(nodes, m, accepted={})["weak"] if w["critical"]}
+    problems = spof_ratchet_problems(accepted, crit_spof, baseline, datetime.date.today())
+    acc_crit = sorted(i for i in accepted if i in crit_spof)
+    note = ("; ".join(problems)[:200] if problems else
+            f"{len(acc_crit)} accepted critical SPOF(s), each with a fix and a live review date; baseline {baseline}"
+            + (f" (lower it to {len(acc_crit)} to lock the ratchet)" if len(acc_crit) < baseline else ""))
+    return {"name": "spof-ratchet", "value": len(problems), "budget": 0, "unit": "problems", "ok": not problems, "note": note}
+
+
+def check_resilience_grounded() -> dict:
+    """A resilience label must not lie (doc 91). `continuity-declared` proves no critical feature stops when a machine is
+    off; this proves the labels that claim it are honest — a feature marked `replicated` or `stateless` (survives losing
+    any one machine) must actually be servable by at least two reference nodes, or it is a hidden single point of failure
+    wearing a safe label. The runtime failover itself is drilled by the `two_nodes` sandbox journey."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("resilience", ROOT / "governance" / "resilience.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    problems = mod.grounded_problems(mod.model())
+    return {"name": "resilience-grounded", "value": len(problems), "budget": 0, "unit": "problems", "ok": not problems,
+            "note": "every replicated/stateless label is backed by ≥2 reference nodes (failover drilled by two_nodes)" if not problems
+            else "; ".join(problems)[:200]}
+
+
 def check_outcomes_declared() -> dict:
     """The north star (AGENTS.md section 0): every feature says what gets better for a person (`outcome`) and where they see it
     (`shows`). A feature that cannot name both is paper, and does not ship."""
@@ -385,6 +455,196 @@ def check_enterprise_declared() -> dict:
             else "declare it in governance/suite.json: " + "; ".join(err[:3])}
 
 
+def evolution_problems(evolution: dict, known_ids: set, baseline: int) -> list[str]:
+    """Pure core of the amoeba ratchet (principle `amoeba`, doc 128). Every capability in governance/evolution.json must
+    name a real feature/component and declare a well-formed growth path: an amoeba stage that is already had, and for each
+    larger stage the conditions that trigger it, the rail already built to reach it, and a graded actuation. The count of
+    declared growth paths may only RATCHET UP (never drop below the baseline), so the rails accumulate and are never quietly
+    dropped. It does not force all features to declare at once — it locks in the ones that have, and grows from there."""
+    problems: list[str] = []
+    caps = evolution.get("capabilities", {})
+    if len(caps) < baseline:
+        problems.append(f"{len(caps)} declared growth path(s) < baseline {baseline}: a rail may be added but not removed "
+                        f"(the amoeba ratchet only goes up)")
+    for cid, cap in sorted(caps.items()):
+        if known_ids and cid not in known_ids:
+            problems.append(f"'{cid}': growth map names a capability that is not a feature or suite component")
+        if not cap.get("organism"):
+            problems.append(f"'{cid}': name the amoeba form (its simplest living shape) in `organism`")
+        stages = cap.get("stages", [])
+        if not stages or not (stages[0].get("have") and stages[0].get("id") == "amoeba"):
+            problems.append(f"'{cid}': the first stage must be the amoeba you already ship (id 'amoeba', have:true)")
+        for st in stages[1:]:
+            sid = st.get("id", "?")
+            if not st.get("when"):
+                problems.append(f"'{cid}/{sid}': a larger stage must name the conditions (`when`) that trigger it")
+            if not st.get("rail"):
+                problems.append(f"'{cid}/{sid}': declare the rail already built so this stage can self-assemble")
+            if st.get("actuation") not in ("auto", "assisted"):
+                problems.append(f"'{cid}/{sid}': actuation must be 'auto' (safe, in-box) or 'assisted' (behind approve)")
+    return problems
+
+
+def check_evolution_declared(baseline: int) -> dict:
+    """The amoeba principle made enforceable (doc 128): a capability that can grow into an enterprise organism must ship the
+    RAIL to become one, declared in governance/evolution.json — the amoeba form it has, the conditions that trigger each
+    larger form, and the dormant seam already built to reach it. The count of declared rails only ratchets up, so the DNA
+    accumulates and is never quietly dropped. `./securax evolve` reads the live conditions and shows what is ready to grow."""
+    evo = json.loads((ROOT / "governance" / "evolution.json").read_text("utf-8"))
+    feats = {f["id"] for f in json.loads((ROOT / "features.json").read_text("utf-8"))["features"]}
+    comps = set(json.loads((ROOT / "governance" / "suite.json").read_text("utf-8")).get("components", {}))
+    problems = evolution_problems(evo, feats | comps, baseline)
+    n = len(evo.get("capabilities", {}))
+    note = ("; ".join(problems)[:200] if problems else
+            f"{n} capability(ies) declare a growth rail; baseline {baseline}"
+            + (f" (raise the baseline to {n} to lock the ratchet)" if n > baseline else ""))
+    return {"name": "evolution-declared", "value": len(problems), "budget": 0, "unit": "problems", "ok": not problems,
+            "note": note}
+
+
+def identity_problems(reg: dict, known_ids: set, baseline: int, today=None) -> list[str]:
+    """Pure core of the one-door check (principle `one-door`, doc 132), so it can be tested with synthetic registries. Every
+    service the estate reaches is declared in governance/identity.json with what works as a guest, what signing in adds, the
+    narrowest permission it needs and where one switch takes it away. A login that is not through the one door ('separate') must
+    carry its fix and a date (a date that has passed fails), or a standing reason; and the COUNT of separate logins may only go
+    down, so a new one is a deliberate, reviewed raise of lifecycle/fitness.json."""
+    import datetime
+    import re
+    today = today or datetime.date.today()
+    problems: list[str] = []
+    if reg.get("primary_idp") not in reg.get("idps", {}):
+        problems.append("primary_idp must name one of the declared identity providers (idps)")
+    protocols = {"none", "oidc", "oauth2-pkce", "saml", "device-code", "api-key"}
+    too_broad = {"*", "https://mail.google.com/", "https://www.googleapis.com/auth/drive", "Files.ReadWrite.All", "Mail.ReadWrite",
+                 "Directory.ReadWrite.All", "User.ReadWrite.All", "Sites.FullControl.All"}
+    separate = 0
+    for sid, s in sorted(reg.get("services", {}).items()):
+        for f in ("name", "provider", "protocol", "guest", "signed_in", "login", "revoke", "status"):
+            if not str(s.get(f, "")).strip():
+                problems.append(f"'{sid}': say its {f}")
+        if s.get("protocol") not in protocols:
+            problems.append(f"'{sid}': protocol must be one of {sorted(protocols)}")
+        if s.get("status") not in ("built", "partial", "planned"):
+            problems.append(f"'{sid}': status must be built, partial or planned")
+        if s.get("login") not in ("primary", "separate"):
+            problems.append(f"'{sid}': login must be 'primary' (through the one door) or 'separate'")
+        for sc in s.get("scopes", []):
+            if sc in too_broad or "*" in sc:
+                problems.append(f"'{sid}': permission {sc!r} is broader than a feature needs: ask for the narrowest, when it is used")
+        if s.get("feature") and known_ids and s["feature"] not in known_ids:
+            problems.append(f"'{sid}': feature {s['feature']!r} is not a feature or component")
+        if s.get("login") != "separate":
+            continue
+        separate += 1
+        if str(s.get("standing", "")).strip():
+            if len(str(s["standing"]).strip()) < 40:
+                problems.append(f"'{sid}': a standing separate login needs a real reason, not a word")
+        elif not (s.get("fix") and re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(s.get("by", "")))):
+            problems.append(f"'{sid}': a separate login needs `fix` and a `by` date (YYYY-MM-DD), or a `standing` reason")
+        else:
+            try:
+                if datetime.date.fromisoformat(s["by"]) < today:
+                    problems.append(f"'{sid}': its fix date {s['by']} has passed: do it, or re-date it with a reason")
+            except ValueError:
+                problems.append(f"'{sid}': unreadable date {s['by']!r}")
+    if separate > baseline:
+        problems.append(f"{separate} separate logins > baseline {baseline}: a new separate login is a deliberate, reviewed raise (the one-door ratchet only goes down)")
+    return problems
+
+
+def check_signin_declared(baseline: int) -> dict:
+    """The one-door principle made enforceable (doc 132): a new feature that needs a sign-in is ONE entry in governance/identity.json,
+    never a new login screen or a stored password; the friction register of separate logins only shrinks."""
+    reg = json.loads((ROOT / "governance" / "identity.json").read_text("utf-8"))
+    feats = {f["id"] for f in json.loads((ROOT / "features.json").read_text("utf-8"))["features"]}
+    comps = set(json.loads((ROOT / "governance" / "suite.json").read_text("utf-8")).get("components", {}))
+    problems = identity_problems(reg, feats | comps, baseline)
+    n = sum(1 for s in reg.get("services", {}).values() if s.get("login") == "separate")
+    note = ("; ".join(problems)[:200] if problems else
+            f"{len(reg.get('services', {}))} service(s) declared, {n} separate login(s) each with a fix date or a standing reason; baseline {baseline}"
+            + (f" (lower it to {n} to lock the ratchet)" if n < baseline else ""))
+    return {"name": "signin-declared", "value": len(problems), "budget": 0, "unit": "problems", "ok": not problems, "note": note}
+
+
+def threat_model_problems(reg: dict, root, baseline: int, today=None) -> list[str]:
+    """Pure core of the threat-model check (principle `threat-model`, doc 133). Each model names its parts, its flows and where trust
+    changes, and considers ALL SIX STRIDE categories; each threat is mitigated (with evidence that exists), accepted (a real reason and a
+    review date that has not passed) or ruled out (a reason). The number of models only goes up."""
+    import datetime
+    import pathlib
+    import re
+    today = today or datetime.date.today()
+    root = pathlib.Path(root)
+    problems: list[str] = []
+    cats = set(reg.get("categories", {}))
+    if cats != set("STRIDE"):
+        problems.append("categories must be exactly S, T, R, I, D and E")
+    models = reg.get("models", {})
+    if len(models) < baseline:
+        problems.append(f"{len(models)} threat model(s) < baseline {baseline}: a model may be added but not removed (the ratchet only goes up)")
+    seen_ids: set[str] = set()
+    for mid, m in sorted(models.items()):
+        elems = {e.get("id") for e in m.get("elements", [])}
+        if not m.get("boundaries") or not elems:
+            problems.append(f"'{mid}': name its trust boundaries and its elements")
+        flows = m.get("flows", [])
+        if not any(f.get("crosses") for f in flows):
+            problems.append(f"'{mid}': no data flow crosses a trust boundary: say which one does")
+        for f in flows:
+            if f.get("from") not in elems or f.get("to") not in elems:
+                problems.append(f"'{mid}': a flow names an element that is not declared")
+        covered = set()
+        for t in m.get("threats", []):
+            tid = t.get("id", "?")
+            if tid in seen_ids:
+                problems.append(f"'{tid}': threat ids must be unique")
+            seen_ids.add(tid)
+            covered.add(t.get("stride"))
+            if t.get("stride") not in cats:
+                problems.append(f"'{tid}': stride must be one of S, T, R, I, D, E")
+            if t.get("element") not in elems:
+                problems.append(f"'{tid}': its element is not declared in '{mid}'")
+            if len(str(t.get("threat", "")).strip()) < 20:
+                problems.append(f"'{tid}': say what could go wrong, in a sentence")
+            st = t.get("status")
+            if st == "mitigated":
+                ev = str(t.get("evidence", ""))
+                if not str(t.get("mitigation", "")).strip() or not ev or not (root / ev).exists():
+                    problems.append(f"'{tid}': a mitigated threat needs its mitigation and an evidence file that exists ({ev or 'none given'})")
+            elif st == "accepted":
+                rv = str(t.get("review", ""))
+                if len(str(t.get("reason", "")).strip()) < 40 or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", rv):
+                    problems.append(f"'{tid}': an accepted threat needs a real reason and a review date (YYYY-MM-DD)")
+                else:
+                    try:
+                        if datetime.date.fromisoformat(rv) < today:
+                            problems.append(f"'{tid}': its review date {rv} has passed: mitigate it, or re-accept it with a reason and a new date")
+                    except ValueError:
+                        problems.append(f"'{tid}': unreadable review date {rv!r}")
+            elif st == "not-applicable":
+                if len(str(t.get("reason", "")).strip()) < 20:
+                    problems.append(f"'{tid}': a ruled-out threat needs the reason it cannot happen")
+            else:
+                problems.append(f"'{tid}': status must be mitigated, accepted or not-applicable")
+        for c in sorted(set("STRIDE") - covered):
+            problems.append(f"'{mid}': STRIDE category {c} ({reg.get('categories', {}).get(c, c)}) has not been considered")
+    return problems
+
+
+def check_threat_modelled(baseline: int) -> dict:
+    """Think like the attacker before you build (doc 133): a component that crosses a trust boundary has a plain-text threat model, all six
+    STRIDE ways considered, every threat mitigated with proof, accepted with a date, or ruled out with a reason."""
+    import json as _json
+    reg = _json.loads((ROOT / "governance" / "threat-models.json").read_text("utf-8"))
+    problems = threat_model_problems(reg, ROOT, baseline)
+    n = len(reg.get("models", {}))
+    t = sum(len(m.get("threats", [])) for m in reg.get("models", {}).values())
+    note = ("; ".join(problems)[:200] if problems else
+            f"{n} component(s) modelled, {t} threat(s), each mitigated with proof, accepted with a date, or ruled out; baseline {baseline}"
+            + (f" (raise the baseline to {n} to lock the ratchet)" if n > baseline else ""))
+    return {"name": "threat-modelled", "value": len(problems), "budget": 0, "unit": "problems", "ok": not problems, "note": note}
+
+
 def check_private_names() -> dict:
     """No organisation, exercise or person on the private list (only fingerprints are stored) appears in any tracked file."""
     import importlib.util
@@ -402,7 +662,7 @@ def run_all(only_fast: bool = False) -> list[dict]:
     if not only_fast:
         res += check_gateway(c["gateway_cold_start_s"], c["gateway_rss_mb"])
         res += check_first_block(c["first_block_s"], c["block_latency_p95_ms"])
-    res += [check_supply_chain(base), check_commands_documented(base), check_ccsp_map(), check_regulatory_maps(), check_impact_map(), check_claims(), check_config_clean(), check_readme_current(), check_private_names(), check_commands_in_help(), check_features_current(), check_continuity_declared(), check_outcomes_declared(), check_enterprise_declared(), check_no_raw_addresses()]
+    res += [check_supply_chain(base), check_commands_documented(base), check_ccsp_map(), check_regulatory_maps(), check_impact_map(), check_claims(), check_config_clean(), check_readme_current(), check_private_names(), check_commands_in_help(), check_features_current(), check_continuity_declared(), check_spof_ratchet(c.get("spof_accepted_baseline", 1)), check_resilience_grounded(), check_outcomes_declared(), check_enterprise_declared(), check_evolution_declared(c.get("evolution_declared_baseline", 4)), check_signin_declared(c.get("separate_logins_baseline", 4)), check_threat_modelled(c.get("threat_models_baseline", 2)), check_no_raw_addresses()]
     return res
 
 

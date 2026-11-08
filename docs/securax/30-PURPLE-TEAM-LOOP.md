@@ -59,7 +59,7 @@ The first run (2026-10-23): 18 of 22 categories held. History/memory poisoning (
 | An abusive reply | No deterministic output rail; only the optional detector | G5b |
 
 * **Fixed on the way:** a write refused because it came from a foreign web page was counted, but never written to the audit log. It is audited now, with its origin.
-* **Detection backlog:** ten rows are prevented and logged, but no SOC rule pages anyone for a single event. They are tool calls withheld, identity refusals, an exhausted allowance, a stopped AI, a detector outage and the foreign write. Each row carries the rule to write, and the queue item `soc-control-alerts` owns them.
+* **Detection backlog:** six of the ten silent rows now raise one incident per identity (2026-11-08): a denied or destructive tool call (medium), a tool call held for a person (low), an exhausted allowance (low), a stopped AI still calling (medium) and a detector outage (high). Three remain: the forged key, the privilege escalation and the foreign write. Their refused callers log a client address but no identity, so the score cannot tie an incident to them yet; the queue item `soc-auth-refusal-alerts` owns them. A single PII redaction stays log-only by design.
 
 ## Honest limits
 * Deterministic rails only: **no** model-based detectors (Llama Guard etc.), **no** real LLM, **no** runtime (Falco) detections, **no** SIEM. It proves the gateway → audit → SOC chain as shipped, offline and repeatably.

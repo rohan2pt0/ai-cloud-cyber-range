@@ -8,7 +8,11 @@
     "gateway_runtime_deps": 6,
     "intel_snapshot_total_kb": 1000,
     "first_block_s": 5,
-    "block_latency_p95_ms": 50
+    "block_latency_p95_ms": 50,
+    "spof_accepted_baseline": 1,
+    "evolution_declared_baseline": 6,
+    "separate_logins_baseline": 4,
+    "threat_models_baseline": 2
   },
   "wake_budgets_s": {
     "burrow_twin_first_dig": 120,

@@ -404,5 +404,35 @@
     "enabled": false,
     "once": true,
     "kind": "guard"
+  },
+  {
+    "id": "crisis-watch",
+    "cron": "*/30 * * * *",
+    "command": [
+      "./securax",
+      "crisis",
+      "watch",
+      "--notify",
+      "--quiet"
+    ],
+    "description": "Every 30 minutes DURING a crisis: the estate chases open agency requisitions itself — it nudges the owning team for anything due soon or overdue, from one node only (no duplicate nudges, no single point of failure). Silent and a no-op when no requisition is open, so no human has to track who owes what by when (doc 125).",
+    "enabled": true,
+    "once": true,
+    "kind": "guard"
+  },
+  {
+    "id": "hunt-sweep",
+    "cron": "*/30 * * * *",
+    "command": [
+      "./securax",
+      "hunt",
+      "sweep",
+      "--notify",
+      "--quiet"
+    ],
+    "description": "Every 30 minutes DURING a crisis: the estate checks that endpoint evidence is being gathered — if a crisis is open and no hunt is prepared yet, it nudges to auto-prepare one, from one node only (no duplicate nudges, no single point of failure). Silent and a no-op when no crisis is open. Collection is read-only; any response action stays behind ./securax approve (doc 127).",
+    "enabled": true,
+    "once": true,
+    "kind": "guard"
   }
 ]

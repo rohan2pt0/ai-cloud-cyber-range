@@ -1,0 +1,66 @@
+{
+ "about": "Ready crisis-communication drafts (doc 125). Under pressure, people write too much, too slowly, and in ways that create legal and reputational risk. These are short, factual, legally-defensible templates — one source of truth per audience, so everyone says the same thing across every channel. Pick by audience and medium; fill the few `<…>` placeholders; your legal / compliance / communications leads approve before anything goes out. Deliberately generic: no organisation, person, address, number or case in it.",
+ "rules": [
+  "Facts only. Say what is known; never speculate on cause, scope, blame or numbers before they are confirmed.",
+  "No admission of liability, fault or blame — internally or externally.",
+  "One source of truth: the same confirmed facts on every channel, updated from one place.",
+  "One action and one contact per message. Tell the reader exactly what to do and whom to reach.",
+  "No sensitive detail (no IPs, hostnames, account numbers, counts, attacker claims) in any external message.",
+  "Say who is handling it ('experts engaged, authorities informed') without over-committing on timelines.",
+  "Short. If it does not change what the reader does or thinks, cut it.",
+  "Reassure on safety and continuity where true; never promise what you cannot yet guarantee.",
+  "Keep every version; note the time and the approver. Supersede, never silently edit."
+ ],
+ "severity_note": "For a confirmed material incident, brief executives first, then staff, then — on legal sign-off — customers / partners / public. Regulators and agencies are handled by ./securax incident (the clock) and ./securax crisis (the requisition pack), not by these drafts.",
+ "drafts": [
+  {"id": "exec-sitrep", "audience": "executives / board", "medium": "email", "scenario": "any",
+   "subject": "SITREP <n> — <incident codename> — <time, time zone>",
+   "body": "SITUATION: <one line: what is confirmed>.\nIMPACT: <services affected / not affected; customer-facing yes/no>.\nACTIONS TAKEN: <containment; experts engaged; authorities informed>.\nDECISIONS NEEDED: <the 1-2 decisions only leadership can make, with the deadline for each>.\nNEXT UPDATE: <time>.\nSingle point of contact: <name, role, number>.",
+   "notes": "The only long-ish one, and still a fixed shape. Send a numbered SITREP at a fixed cadence (e.g. hourly) so no one asks 'any update?'."},
+
+  {"id": "staff-alert-sms", "audience": "all staff", "medium": "sms", "scenario": "any",
+   "subject": "",
+   "body": "<ORG> security notice: we are managing an IT security incident. Do NOT discuss it outside the bank or on social media. Await official updates only. Report anything unusual to <contact>.",
+   "notes": "Under ~200 chars. The job of the first staff message is to stop rumour and external talk, not to explain."},
+
+  {"id": "staff-brief", "audience": "all staff", "medium": "email / internal-broadcast", "scenario": "any",
+   "subject": "Important: IT security incident — what to do",
+   "body": "We are managing an IT security incident. Teams are responding and external experts and the authorities are engaged as needed.\n\nWHAT YOU SHOULD DO:\n- Keep working normally unless your manager tells you otherwise.\n- Do NOT speak to the media, post on social media, or discuss this outside the bank. Refer any query to <comms contact>.\n- Watch for phishing; do not click unexpected links or share credentials. Report suspicious messages to <security contact>.\n\nWHAT WE ARE DOING: containing the issue, preserving evidence, and keeping services running. We will update you at <time / cadence>.\n\n— <name, role>",
+   "notes": "No cause, no scope, no names. One do-list, one don't-list, one contact."},
+
+  {"id": "frontline-script", "audience": "branch / call-centre staff", "medium": "call-script", "scenario": "any",
+   "subject": "",
+   "body": "If a customer asks about the incident, say ONLY:\n\"We are aware of a technical issue and our teams are working on it. Your money and your account are our priority. I can help you with <alternative channel / next step>. For updates please see <official channel>.\"\n\nDo NOT: confirm a cyber-attack, give numbers, blame anyone, or promise a time. Escalate anything you cannot answer to <supervisor / contact>.",
+   "notes": "One line the customer hears, identical from everyone. Removes improvisation at the counter."},
+
+  {"id": "customer-reassure-sms", "audience": "customers", "medium": "sms / whatsapp", "scenario": "any",
+   "subject": "",
+   "body": "<ORG>: We are aware of a technical issue affecting some services. Your account is safe. We are working to restore normal service. Beware of fraud: we will never ask for your OTP/PIN/password. Updates: <official channel>.",
+   "notes": "Legal-safe: 'technical issue', not 'breach'. Always fold in the anti-fraud line — attackers exploit the confusion. Only send once legal/comms approve."},
+
+  {"id": "customer-service-status", "audience": "customers", "medium": "email / portal notice", "scenario": "outage",
+   "subject": "Service update",
+   "body": "Some of our services are temporarily unavailable due to a technical issue. We are working to restore them and expect <service> to be back by <time / 'as soon as possible'>.\n\nIn the meantime you can <alternative channel>. Your account and funds are secure. We are sorry for the inconvenience.\n\nPlease be alert to fraud: we will never ask for your OTP, PIN or password by call, SMS or email. Report anything suspicious to <contact>.",
+   "notes": "For an availability issue with no confirmed data impact. Keep to service + workaround + anti-fraud."},
+
+  {"id": "customer-data-notice", "audience": "affected customers", "medium": "email / letter", "scenario": "data-breach",
+   "subject": "An important notice about the security of your information",
+   "body": "We are writing to let you know about a security incident that may have affected some of your information. We detected this on <date>, acted immediately to contain it, engaged external security experts and informed the relevant authorities.\n\nWHAT HAPPENED: <one factual line, confirmed only>.\nWHAT INFORMATION: <only the categories confirmed; do not over-state>.\nWHAT WE HAVE DONE: contained the incident and strengthened our defences.\nWHAT YOU CAN DO: <specific steps — e.g. change your password, watch your statements, ignore unexpected requests for credentials>.\n\nWe will never ask you for your OTP, PIN or password. For help, contact <dedicated contact / helpline>.\n\nWe take the protection of your information seriously and are sorry for the concern this may cause.",
+   "notes": "Only send on legal sign-off, after facts are confirmed, and in line with the data-protection notification rules. Say what is confirmed, the steps, and a dedicated contact — no liability language."},
+
+  {"id": "public-holding", "audience": "media / public", "medium": "statement (email / portal)", "scenario": "any",
+   "subject": "Statement",
+   "body": "<ORG> is aware of a <technical issue / security incident> affecting some of its systems. On becoming aware, we acted immediately to contain it, engaged external cybersecurity experts, and informed the relevant authorities. Protecting our customers and their funds is our highest priority. Essential services <are operating / are being restored>. We will provide further updates as the situation is assessed. For queries, contact <media / comms contact>.",
+   "notes": "The holding statement: enough to show control, nothing to speculate on. One spokesperson only; all media routed to <comms contact>. No technical detail, no attacker claims, no numbers."},
+
+  {"id": "partner-recall", "audience": "beneficiary / partner banks", "medium": "email / secure message", "scenario": "payment-fraud",
+   "subject": "Urgent: request to hold / recall funds — <reference>",
+   "body": "This is an urgent request in connection with suspected fraudulent transactions. We request you to HOLD and, where possible, RECALL the funds for the transactions listed in the attached secure schedule (reference <ref>), and to freeze the beneficiary accounts pending investigation.\n\nPlease acknowledge receipt immediately and confirm the action taken, to <contact, number, secure email>. We are coordinating with the authorities and will provide any details required through the proper channel.",
+   "notes": "Operational and time-critical. The transaction detail goes in a SEPARATE secure attachment, never in the message body. Acknowledge-and-confirm loop so nothing is lost."},
+
+  {"id": "vendor-activation", "audience": "incident-response vendor / managed security provider", "medium": "email / call", "scenario": "any",
+   "subject": "Incident response activation — <incident codename>",
+   "body": "We are declaring a security incident and activating you under <engagement / retainer reference>.\n\nSUMMARY: <one or two confirmed lines>.\nSCOPE OF HELP NEEDED: <forensics / containment / negotiation / advisory>.\nACCESS & AUTHORITY: <who authorises; what you may touch; the tool-exception process (./securax crisis doc forensic-tool-exception)>.\nSINGLE POINT OF CONTACT: <name, role, number>.\nEVIDENCE HANDLING: chain-of-custody per ./securax crisis doc chain-of-custody; all actions time-logged.\n\nPlease confirm your responder, ETA and secure channel.",
+   "notes": "Activate under the existing contract. Name the authoriser, the scope and the evidence rules up front so no time is lost on process."}
+ ]
+}

@@ -12,3 +12,18 @@
   Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self' mailto:
 /assess/
   Content-Security-Policy: default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self' mailto:
+
+# The hosted apps hold a person's own data, so they get their own rules (doc 131). The Life OS and Vantage are single files with inline code, so
+# their policy forbids framing, plugins and a rewritten base address, but not inline scripts. Both sign in through a window of another site (OneDrive),
+# so they detach the global same-origin rule and use the popup-friendly one. NOTE: GitHub Pages ignores this file; a host that reads it (Cloudflare
+# Pages, Netlify) is what makes these headers real, and gives the apps an origin of their own.
+/app/*
+  ! Cross-Origin-Opener-Policy
+  Cross-Origin-Opener-Policy: same-origin-allow-popups
+  Content-Security-Policy: frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'
+/vantage/*
+  ! Cross-Origin-Opener-Policy
+  Cross-Origin-Opener-Policy: same-origin-allow-popups
+  Content-Security-Policy: frame-ancestors 'none'; object-src 'none'; base-uri 'self'; form-action 'self'
+/command/*
+  Content-Security-Policy: default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https: http://localhost:* http://127.0.0.1:* http://*.localhost:*; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'

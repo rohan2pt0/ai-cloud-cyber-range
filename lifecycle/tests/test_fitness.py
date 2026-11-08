@@ -45,6 +45,68 @@ def test_dependency_budget_fails_when_exceeded():
     assert ft.check_runtime_deps(99)["ok"] and not ft.check_runtime_deps(1)["ok"]
 
 
+def test_spof_ratchet_is_a_shrinking_self_expiring_register():
+    import datetime
+    today = datetime.date(2026, 11, 2)
+    good = "One password server; two would not sync. Offline copies read. Review 2099-01-31 (a standby restores the backup)."
+    crit = {"passwords"}
+    # the disciplined, in-date, within-baseline case passes
+    assert ft.spof_ratchet_problems({"passwords": good}, crit, 1, today) == []
+    # a new accepted critical SPOF beyond the baseline fails (the ratchet cannot grow silently)
+    two = {"passwords": good, "incident-clock": "Clock on one node. Review 2099-01-01 — replicate it to the always-on node."}
+    assert any("baseline" in p for p in ft.spof_ratchet_problems(two, {"passwords", "incident-clock"}, 1, today))
+    # a stale acceptance (its SPOF is fixed, no longer critical) must be removed — ratchet down
+    assert any("stale" in p for p in ft.spof_ratchet_problems({"passwords": good}, set(), 1, today))
+    # an acceptance past its review date fails — it is pulled back into view, never indefinite
+    overdue = "One password server; offline copies read. Review 2020-01-01 (a standby restores the backup)."
+    assert any("overdue" in p for p in ft.spof_ratchet_problems({"passwords": overdue}, crit, 1, today))
+    # thin, and un-dated non-standing, acceptances fail
+    assert any("thin" in p for p in ft.spof_ratchet_problems({"passwords": "ok"}, crit, 1, today))
+    assert any("Review" in p for p in ft.spof_ratchet_problems({"passwords": "A long reason with no review date at all here."}, crit, 1, today))
+    # a 'Standing:' acceptance (a risk that can never be removed) is allowed without a date
+    standing = "Standing: a single password vault is correct; two servers cannot safely sync secrets to each other."
+    assert ft.spof_ratchet_problems({"passwords": standing}, crit, 1, today) == []
+    # and it passes on the real register today
+    assert ft.check_spof_ratchet(1)["ok"]
+
+
+def test_evolution_ratchet_requires_a_well_formed_rail_and_only_grows():
+    known = {"hunt", "crisis", "wargame", "gateway", "evolve"}
+    good = {"capabilities": {
+        "hunt": {"organism": "offline collector",
+                 "stages": [{"id": "amoeba", "have": True, "actuation": "auto"},
+                            {"id": "organism", "when": ["teams"], "grows_to": "fleet",
+                             "rail": "same packs run as a fleet", "actuation": "assisted"}]}}}
+    # a well-formed single rail at baseline 1 passes
+    assert ft.evolution_problems(good, known, 1) == []
+    # fewer declared rails than the baseline fails — the ratchet only goes up
+    assert any("baseline" in p for p in ft.evolution_problems(good, known, 2))
+    # a larger stage with no rail fails (an ambition with no seam to grow into it)
+    norail = {"capabilities": {"hunt": {"organism": "x", "stages": [
+        {"id": "amoeba", "have": True, "actuation": "auto"},
+        {"id": "organism", "when": ["teams"], "actuation": "assisted"}]}}}
+    assert any("rail" in p for p in ft.evolution_problems(norail, known, 1))
+    # a larger stage with no trigger conditions fails
+    nowhen = {"capabilities": {"hunt": {"organism": "x", "stages": [
+        {"id": "amoeba", "have": True, "actuation": "auto"},
+        {"id": "organism", "rail": "r", "actuation": "assisted"}]}}}
+    assert any("conditions" in p for p in ft.evolution_problems(nowhen, known, 1))
+    # a bad actuation grade fails
+    badact = {"capabilities": {"hunt": {"organism": "x", "stages": [
+        {"id": "amoeba", "have": True, "actuation": "auto"},
+        {"id": "organism", "when": ["teams"], "rail": "r", "actuation": "whenever"}]}}}
+    assert any("actuation" in p for p in ft.evolution_problems(badact, known, 1))
+    # a capability that is not a real feature/component fails
+    ghost = {"capabilities": {"ghost": {"organism": "x", "stages": [{"id": "amoeba", "have": True, "actuation": "auto"}]}}}
+    assert any("not a feature" in p for p in ft.evolution_problems(ghost, known, 1))
+    # the first stage must be the amoeba you already ship
+    noamoeba = {"capabilities": {"hunt": {"organism": "x", "stages": [
+        {"id": "organism", "when": ["teams"], "rail": "r", "actuation": "assisted"}]}}}
+    assert any("amoeba" in p for p in ft.evolution_problems(noamoeba, known, 1))
+    # and it passes on the real growth map today
+    assert ft.check_evolution_declared(5)["ok"]
+
+
 def test_supply_chain_ratchet_fails_on_new_findings_and_celebrates_fixed_ones():
     now = ft.own_critical_findings()
     victim = sorted(now)[0]

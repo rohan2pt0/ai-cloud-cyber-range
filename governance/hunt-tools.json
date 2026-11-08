@@ -1,0 +1,91 @@
+{
+ "about": "Threat-hunting and post-crisis DFIR tooling (doc 127). SecuRAX does not ship, bundle or re-host any third-party forensic binary: the law of these tools forbids it. Instead this is a manifest — each tool is declared with its official source, a pinned SHA-256, its licence and whether it may be redistributed at all, and is FETCHED on first use into a private, git-ignored cache (vault/hunt-tools/), or pulled from your own internal mirror. Tools whose licence forbids redistribution are 'gated': they are listed here for completeness but stay disabled until a human accepts their EULA (./securax hunt tools accept <id>), which is recorded to the audit chain. Velociraptor is the engine (Apache-2.0): it runs both as a fleet server+clients at mass scale and as a single self-contained OFFLINE COLLECTOR with no server — the minimal mode for a DevSecOps pipeline or a lone suspect host. Velociraptor's built-in Windows.KapeFiles.Targets artifact is generated from the OPEN-SOURCE KapeFiles project, not the Kroll KAPE binary, so KAPE-style triage carries no Kroll licensing exposure. The manifest is data; add your own tools, mirror URLs and pins.",
+ "cache": "vault/hunt-tools/",
+ "mirror_env": "SECURAX_HUNT_MIRROR",
+ "mirror_note": "Set SECURAX_HUNT_MIRROR to a base URL of your own internal registry (Nexus/Artifactory/S3). When set, every tool is fetched from <mirror>/<id>/<file> instead of the official source — no endpoint egress to vendor sites — and the pinned SHA-256 is still verified. Mass deployment should always use an internal mirror.",
+ "tools": [
+  {
+   "id": "velociraptor",
+   "name": "Velociraptor",
+   "role": "The engine: endpoint monitoring, collection and hunting — fleet server+clients at scale, or a self-contained offline collector for minimal/pipeline mode.",
+   "licence": "Apache-2.0",
+   "redistributable": true,
+   "status": "active",
+   "source": "https://github.com/Velocidex/velociraptor/releases",
+   "sha256": "",
+   "pin_note": "Version-pinned per environment in your deploy config; set the release asset's SHA-256 here or in your mirror. CI never downloads it.",
+   "bundled": false
+  },
+  {
+   "id": "system-informer",
+   "name": "System Informer",
+   "role": "Live process, handle, service and driver inspection (the successor to Process Hacker) — triage of a running suspect host.",
+   "licence": "MIT",
+   "redistributable": true,
+   "status": "active",
+   "source": "https://github.com/winsiderss/systeminformer/releases",
+   "sha256": "",
+   "pin_note": "MIT — redistributable with notice; still fetched+pinned so every node runs the same verified build.",
+   "bundled": false
+  },
+  {
+   "id": "kapefiles-targets",
+   "name": "KapeFiles targets (open source, via Velociraptor)",
+   "role": "KAPE-style triage collection (the .tkape target definitions) reimplemented in Velociraptor's Windows.KapeFiles.Targets artifact — ships INSIDE Velociraptor, no separate binary.",
+   "licence": "Apache-2.0 / MIT (KapeFiles project)",
+   "redistributable": true,
+   "status": "active",
+   "source": "built into Velociraptor (Windows.KapeFiles.Targets)",
+   "sha256": "",
+   "bundled": false
+  },
+  {
+   "id": "kape",
+   "name": "KAPE (Kroll Artifact Parser and Extractor)",
+   "role": "Kroll's triage collector+parser. Not needed for triage collection — Velociraptor's Windows.KapeFiles.Targets covers it without the binary. Listed for teams with an internal-use or Enterprise right who want the native tool.",
+   "licence": "Kroll EULA (proprietary)",
+   "redistributable": false,
+   "status": "gated",
+   "licence_note": "Free for INTERNAL company use; commercial / third-party-network / paid-engagement use requires a KAPE Enterprise Licence. Licensed-not-sold, non-transferable — may not be redistributed. Confirm your right before enabling.",
+   "source": "https://www.kroll.com/en/services/cyber/reactive-services/kroll-artifact-parser-and-extractor-kape",
+   "sha256": "",
+   "bundled": false
+  },
+  {
+   "id": "ftk-imager",
+   "name": "FTK Imager",
+   "role": "Forensic disk/volume imaging and the quick capture of volatile memory, with hashing for admissibility.",
+   "licence": "Exterro EULA (proprietary)",
+   "redistributable": false,
+   "status": "gated",
+   "licence_note": "Free to use; the EULA prohibits sharing the binary with third parties not bound by it — do not re-host. Fetch from the vendor on each node.",
+   "source": "https://www.exterro.com/digital-forensics-software/ftk-imager",
+   "sha256": "",
+   "bundled": false
+  },
+  {
+   "id": "autoruns",
+   "name": "Autoruns / autorunsc (Sysinternals)",
+   "role": "Enumerate every autostart/persistence location. Velociraptor has native persistence artifacts that do NOT need this binary; enable autorunsc only if you want its exact output.",
+   "licence": "Microsoft Sysinternals EULA",
+   "redistributable": false,
+   "status": "gated",
+   "licence_note": "Free; redistribution restricted. The no-bundle path is the official live.sysinternals.com share. Pin the exact EULA clause when enabling.",
+   "source": "https://learn.microsoft.com/sysinternals/downloads/autoruns",
+   "sha256": "",
+   "bundled": false
+  },
+  {
+   "id": "resource-hacker",
+   "name": "Resource Hacker",
+   "role": "Inspect/extract resources from a suspect PE (icons, manifests, embedded payloads) during malware triage.",
+   "licence": "Freeware (angusj terms, proprietary)",
+   "redistributable": false,
+   "status": "gated",
+   "licence_note": "Freeware, but the author's terms forbid distributing it via any website or media without prior written approval. Fetch from angusj.com only; never bundle or mirror without that approval.",
+   "source": "https://www.angusj.com/resourcehacker/",
+   "sha256": "",
+   "bundled": false
+  }
+ ]
+}

@@ -53,8 +53,8 @@ MUST_ALERT_EVEN_ONCE = {"out-secret-leak", "out-canary-leak"}
 # Prevented and logged, but no SOC rule raises an incident for one event yet: the known detection backlog (queue: soc-control-alerts).
 # Any OTHER attack that is not alerted is a regression and fails the run. Remove an id here when a SOC rule covers it.
 ALERT_BACKLOG = {"pii-aadhaar",                                         # a single PII redaction is log-only by design
-                 "tool-denied", "tool-needs-approval", "tool-destructive-args", "foreign-origin-write", "forged-key",
-                 "privilege-escalation", "allowance-exhausted", "stopped-by-a-person", "detector-down-fails-closed"}
+                 # refused callers log no identity, only a client address, so the score cannot tie an incident to them yet
+                 "foreign-origin-write", "forged-key", "privilege-escalation"}
 SUGGESTION = {
     "LLM01": "Add a SOC rule: a single critical/high prompt-injection block from a NEW identity → low-severity 'injection-probe' incident (aggregate by source).",
     "ASI02": "Add a SOC rule: any tool/agent-coercion block (ASI02) → medium incident; tool abuse is rarely benign.",

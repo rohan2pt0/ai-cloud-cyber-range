@@ -1,0 +1,43 @@
+{
+ "about": "Fleet mass-deployment for hunting (doc 129): the actuated 'organism' rail of ./securax hunt. The amoeba is the offline collector (one host, no server); this GENERATES everything needed to stand up a Velociraptor server and roll clients out at scale — the server config steps, the per-method client rollout (GPO, Intune, SCCM/msiexec, Ansible), and a throttled fleet hunt definition. It PROVISIONS NOTHING itself: generating is safe and offline; standing up a server, pushing an MSI to every endpoint and running a fleet hunt are consequential, so they are the human's approved steps (./securax approve), exactly as the growth map grades them 'assisted'. Binaries are pulled from your internal mirror (SECURAX_HUNT_MIRROR), hash-pinned, so endpoints never egress to a vendor. RBAC and multi-org are the platform's, named here so the fleet is governed from day one. This file is DATA; edit the templates, add your own rollout method, point the mirror at your registry.",
+ "server": {
+  "about": "Stand up the Velociraptor server (frontend + GUI + datastore). Run on the always-on node; it is the control plane for the fleet, so give it a standby (the offline-collector mode is the no-server fallback).",
+  "steps": [
+   "velociraptor config generate > server.config.yaml   # then set: GUI bind + a strong admin, Frontend public hostname (a NAME, not an IP), Datastore path on durable storage",
+   "velociraptor --config server.config.yaml user add <admin> --role administrator",
+   "velociraptor --config server.config.yaml frontend -v   # runs the server; put it behind your reverse proxy / service manager",
+   "velociraptor --config server.config.yaml config client > client.config.yaml   # the client config every endpoint needs"
+  ],
+  "rbac": "Velociraptor has built-in roles (administrator, analyst, investigator, reader) and multi-org; map each team to a role and, for many business units, an org. These are the platform's RBAC/tenancy services — govern the fleet from day one, do not hand everyone administrator.",
+  "note": "The server is a control-plane single point of failure: keep a standby, back up the datastore, and remember the offline collector needs no server at all (the fallback)."
+ },
+ "throttle": {
+  "about": "Bulk triage on a large fleet moves terabytes; throttle every fleet hunt so it does not saturate the server or the network.",
+  "ops_per_second": 20,
+  "cpu_limit_percent": 25,
+  "max_rows": 1000000,
+  "note": "Tune per your server and link; start conservative and raise it. A KAPE-style file collection on 10k endpoints can be multiple terabytes."
+ },
+ "methods": {
+  "msiexec": {
+   "name": "SCCM / msiexec (Windows MSI)",
+   "about": "Repack the client config into an MSI and push it with SCCM, or install directly. The standard Windows route.",
+   "template": "# Repack the MSI with your client config (on the server), then host it on your internal share/registry:\n#   velociraptor --config server.config.yaml config repack --exe velociraptor-<ver>-windows-amd64.msi client.config.yaml velociraptor-client.msi\n# Fetch from the internal mirror (no vendor egress), verify the hash, then install silently:\nmsiexec /i \\\\<MIRROR>\\velociraptor\\velociraptor-client.msi /quiet /norestart\n# SCCM: import velociraptor-client.msi as an Application, deploy to the target device collection."
+  },
+  "gpo": {
+   "name": "Group Policy (Active Directory)",
+   "about": "Assign the MSI by GPO software-installation to an OU, or run a startup scheduled task for a temporary IR push.",
+   "template": "# GPO software installation: Computer Config > Policies > Software Settings > Software installation >\n#   New > Package > \\\\<MIRROR>\\velociraptor\\velociraptor-client.msi > Assigned. Scope the GPO to the target OU.\n# Or a startup script (temporary/IR), from the internal mirror only:\nmsiexec /i \\\\<MIRROR>\\velociraptor\\velociraptor-client.msi /quiet /norestart\n# gpupdate /force on a test OU first; confirm the service 'Velociraptor' is running before widening scope."
+  },
+  "intune": {
+   "name": "Microsoft Intune (Win32 app)",
+   "about": "Wrap the MSI as a Win32 app (.intunewin) and deploy to an Entra device group.",
+   "template": "# Package: IntuneWinAppUtil.exe -c <folder with the MSI> -s velociraptor-client.msi -o <out>\n# Intune > Apps > Windows > Add > Windows app (Win32) > upload the .intunewin.\n# Install command:   msiexec /i velociraptor-client.msi /quiet /norestart\n# Uninstall:         msiexec /x velociraptor-client.msi /quiet /norestart\n# Detection rule: service 'Velociraptor' exists / the client binary present. Assign to the target device group."
+  },
+  "ansible": {
+   "name": "Ansible (Linux & Windows)",
+   "about": "Config-package the binary and push it as a managed service with a playbook — good for Linux fleets and mixed estates.",
+   "template": "- name: Deploy Velociraptor client from the internal mirror\n  hosts: endpoints\n  become: true\n  vars:\n    mirror: \"{{ securax_hunt_mirror }}\"      # your internal registry base, no vendor egress\n    sha256: \"<PINNED_SHA256>\"\n  tasks:\n    - name: Fetch the client binary (hash-pinned)\n      get_url:\n        url: \"{{ mirror }}/velociraptor/velociraptor-client\"\n        dest: /usr/local/bin/velociraptor-client\n        checksum: \"sha256:{{ sha256 }}\"\n        mode: \"0755\"\n    - name: Install the client config\n      copy: { src: client.config.yaml, dest: /etc/velociraptor/client.config.yaml, mode: \"0640\" }\n    - name: Install and start the service\n      shell: /usr/local/bin/velociraptor-client --config /etc/velociraptor/client.config.yaml service install\n      args: { creates: /etc/systemd/system/velociraptor_client.service }"
+  }
+ }
+}

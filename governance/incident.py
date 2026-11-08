@@ -34,7 +34,9 @@ import json
 import os
 import pathlib
 import shutil
+import socket
 import sys
+import urllib.request
 from datetime import datetime, timedelta, timezone
 
 try:
@@ -135,6 +137,7 @@ class Case:
         with open(self.path, "a", encoding="utf-8") as f:
             f.write(json.dumps(rec, sort_keys=True) + "\n")
         os.chmod(self.path, 0o600)
+        _mirror_push(self, closing=(kind == "close"))   # replicate read-only to every node; best-effort, never fails the append
         return rec
 
     def verify(self) -> list[str]:
@@ -257,6 +260,79 @@ def get_case(cid: str) -> Case:
     return Case(p)
 
 
+# ---- read-only replication of an OPEN incident to every node (doc 91) ------------------------------------------------
+# The clock is a self-verifying hash chain, so a copy carries its own proof. We mirror each open incident to the shared
+# sync store — the same transport that replicates the Life OS, drilled for real by the two_nodes journey — READ-ONLY on
+# other nodes: if the node that owns an incident goes off, every other node still shows its deadlines and verified
+# timeline, while the authoritative chain stays single-origin and is never forked. Best-effort: with no sync configured,
+# or the hub down, the tool works exactly as before, fully offline.
+SYNC_USER = "_incidents"
+
+
+def _sync(method: str, body: dict | None = None, timeout: float = 4):
+    """Best-effort call to the shared sync store's incident namespace. Returns the parsed body, or None on any failure
+    (no sync token, hub down, bad response) — replication is a convenience and must never break the incident tool."""
+    tok = next((t.strip() for t in os.environ.get("SYNC_TOKENS", "").split(",") if t.strip()), "")
+    if not tok:
+        return None
+    url = f"{os.environ.get('SECURAX_SYNC_URL', 'http://127.0.0.1:8088/sync')}/state?user={SYNC_USER}"
+    data = json.dumps(body).encode() if body is not None else None
+    hdr = {"Authorization": f"Bearer {tok}", **({"Content-Type": "application/json"} if data else {})}
+    try:
+        req = urllib.request.Request(url, data=data, headers=hdr, method=method)  # noqa: S310
+        with urllib.request.urlopen(req, timeout=timeout) as r:  # noqa: S310
+            return json.loads(r.read() or b"null")
+    except Exception:  # noqa: BLE001
+        return None
+
+
+def _node() -> str:
+    return os.environ.get("SYNC_NODE_NAME") or socket.gethostname().split(".")[0] or "this-machine"
+
+
+def _mirror_push(case: Case, closing: bool = False) -> None:
+    """Mirror this open incident's chain to every node, or tombstone it when the case closes. Best-effort and guarded.
+    The key is namespaced by node, because two nodes can mint the same incident id (INC-<date>-<seq> counts LOCAL cases);
+    without the namespace one would silently overwrite the other in the shared store."""
+    if not os.environ.get("SYNC_TOKENS"):
+        return
+    key = f"{_node()}:{case.id}"
+    value = None if closing else {"node": _node(), "id": case.id, "events": case.events()}
+    _sync("PUT", {"payload": {key: value}, "meta": {key: int(datetime.now(UTC).timestamp() * 1000)}, "device": _node()})
+
+
+class MirrorCase(Case):
+    """A read-only copy of an incident held on another node: the same state/verify/show, but it cannot be appended to
+    here, so the authoritative tamper-evident chain is never forked. `verify()` still runs on the copy, because the hash
+    chain carries its own proof — a tampered mirror is shown as failed, never silently trusted."""
+
+    def __init__(self, cid: str, events: list[dict], node: str):
+        super().__init__(home() / f"{cid}.jsonl")
+        self._id, self._events, self.node = cid, events, node
+
+    @property
+    def id(self) -> str:
+        return self._id
+
+    def events(self) -> list[dict]:
+        return self._events
+
+    def append(self, *a, **k):
+        raise RuntimeError(f"{self._id} is a read-only copy from node {self.node}; continue it on that node, or open a new linked case")
+
+
+def mirror_cases() -> list[MirrorCase]:
+    """Open incidents mirrored from OTHER nodes (not held locally). Best-effort: empty when sync is off or the hub is down."""
+    d = _sync("GET")
+    payload = ((d or {}).get("payload") or {}) if isinstance(d, dict) else {}
+    mine, out = _node(), []
+    for key, v in payload.items():
+        if not isinstance(v, dict) or not v.get("events") or v.get("node") == mine:
+            continue                                    # a tombstone, or this node's own incident (shown from its local file)
+        out.append(MirrorCase(v.get("id") or key.split(":", 1)[-1], v["events"], v.get("node", "another node")))
+    return sorted(out, key=lambda c: (c.node, c.id))
+
+
 def warn_unverified(regs: dict, ids: list[str]) -> None:
     for i in ids:
         if i in regs and not regs[i].get("verified"):
@@ -337,18 +413,26 @@ def show(c: Case, now: datetime, as_json: bool = False) -> int:
 
 
 def cmd_status(a, now: datetime) -> int:
-    cs = [get_case(a.id)] if a.id else [c for c in cases() if not c.state()["closed"]]
+    if a.id:
+        cs: list[Case] = [get_case(a.id)]
+    else:
+        cs = [c for c in cases() if not c.state()["closed"]]
+        cs += [c for c in mirror_cases() if not c.state()["closed"]]   # open incidents mirrored read-only from other nodes
     if not cs:
         print("no open incidents")
         return 0
     for c in cs:
         show(c, now, a.json)
+        if isinstance(c, MirrorCase) and not a.json:
+            probs = c.verify()
+            print(f"  · read-only copy from node {c.node}" + (" — continue it there, or open a new linked case"
+                  if not probs else f"  ⚠ INTEGRITY FAILED ({probs[0]}): do not rely on this copy"))
     return 0
 
 
 def cmd_due(a, now: datetime) -> int:
     regs, worst = load_regulators(), 0
-    for c in cases():
+    for c in cases() + mirror_cases():       # a deadline on another node's open incident still alerts here
         st = c.state()
         if st["closed"]:
             continue

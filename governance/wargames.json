@@ -1,0 +1,80 @@
+{
+ "about": "Crisis wargames (doc 126): a scenario is a timeline of injects — a thing that happens (an agency sends a requisition, a bank asks for a recall, the press calls, a second incident lands, a key person is unavailable) — each owned by a team, each with an expected action and a deadline (SLA). You run it as a tabletop, respond to each inject, and the estate scores whether the right action reached the right team in time, then writes an after-action report with the coordination gaps and the improvement actions. Worst-case is built in: colliding deadlines, missing people, a second hit mid-response. Deliberately generic — no organisation, person or case. The library is data; add your own scenarios and injects. Scoring is deterministic (keyword rubric); when a gateway is configured it also asks a model to grade the free-text and to play the inject's sender, inheriting the rails and the audit trail. Not a substitute for a real exercise programme; a frictionless way to practise the coordination every week.",
+ "owners": {
+  "exec": "Crisis lead / CISO", "legal": "Legal & compliance", "comms": "Corporate communications",
+  "ops": "Payments / operations", "infra": "Servers & database", "network": "Network, security & SOC",
+  "forensics": "Digital forensics / IR", "hr": "Human resources", "vendor": "Vendor & procurement"
+ },
+ "scenarios": {
+  "payment-fraud": {
+   "name": "Payment-rail fraud, multi-agency",
+   "about": "Fraudulent outward payments are discovered at reconciliation. Within hours a sectoral CERT, the financial regulator and the police are all involved — and the coordination, not the attack, decides the outcome.",
+   "worst_case": ["the deadlines of two agencies collide", "the single person who knows the rail is on leave", "a second batch of fraud lands while you respond"],
+   "injects": [
+    {"id": "i1", "at_min": 0, "from": "SOC", "severity": "high", "owner": "exec",
+     "text": "Daily reconciliation shows the settlement account is short; outward payments do not match the core ledger.",
+     "expect": "declare an incident; start the regulator clock and the crisis requisitions; do not let more payments go",
+     "hint": "./securax crisis start payment-fraud  ·  ./securax incident open", "sla_min": 30},
+    {"id": "i2", "at_min": 20, "from": "Operations", "severity": "critical", "owner": "ops",
+     "text": "More outward messages are queued for release in the next window. Who can stop them, and will you?",
+     "expect": "stop or hold outward release; name who has authority; record the decision",
+     "hint": "decision note; recall/hold request to beneficiary banks", "sla_min": 30},
+    {"id": "i3", "at_min": 60, "from": "Sectoral CERT", "severity": "critical", "owner": "forensics",
+     "text": "The CERT requires forensic artefacts from the affected servers within 6 hours.",
+     "expect": "get the tool-exception signed; collect volatile data first with chain-of-custody; keep the clock",
+     "hint": "./securax crisis doc forensic-tool-exception  ·  forensic-collection-sop", "sla_min": 360},
+    {"id": "i4", "at_min": 90, "from": "Beneficiary bank", "severity": "high", "owner": "ops",
+     "text": "A beneficiary bank asks for written confirmation before it will hold the funds.",
+     "expect": "send the recall/hold request with the transaction schedule in a separate secure attachment; get acknowledgement",
+     "hint": "./securax crisis comms partner-recall", "sla_min": 60},
+    {"id": "i5", "at_min": 120, "from": "Press", "severity": "medium", "owner": "comms",
+     "text": "A journalist calls: 'We hear your bank has been hacked and customer money is gone. Comment?'",
+     "expect": "one holding statement, one spokesperson; facts only, no speculation, no numbers; route all media to comms",
+     "hint": "./securax crisis comms public-holding", "sla_min": 30},
+    {"id": "i6", "at_min": 150, "from": "HR", "severity": "high", "owner": "exec",
+     "text": "WORST CASE: the one engineer who understands the rail is on leave and unreachable.",
+     "expect": "activate the deputy / vendor under the retainer; do not let a single person be the dependency",
+     "hint": "./securax crisis comms vendor-activation; name a deputy", "sla_min": 60},
+    {"id": "i7", "at_min": 180, "from": "Police", "severity": "critical", "owner": "legal",
+     "text": "The police serve a production notice: a long schedule of records, each from a different team, due in 72 hours.",
+     "expect": "open the production-notice requisition; auto-prepare what the estate holds; assign and chase the rest",
+     "hint": "./securax crisis new le-production-notice; ./securax crisis auto; ./securax crisis watch", "sla_min": 180},
+    {"id": "i8", "at_min": 240, "from": "Regulator", "severity": "critical", "owner": "exec",
+     "text": "WORST CASE: the regulator's initial-report deadline and the CERT artefact deadline fall within the same hour.",
+     "expect": "parallelise across teams; do not serialise; the clock shows both — file the regulator report, hand the CERT pack, in parallel",
+     "hint": "./securax incident due  ·  ./securax crisis status", "sla_min": 60}
+   ]
+  },
+  "ransomware": {
+   "name": "Ransomware, data-centre wide",
+   "about": "Systems are encrypted and a ransom note appears; backups are a target. The test is whether containment, a clean restore, the regulator clock and the comms all move at once without a single coordinator becoming the bottleneck.",
+   "worst_case": ["the newest backup is also encrypted", "a node that holds the incident clock goes down", "staff start posting on social media"],
+   "injects": [
+    {"id": "r1", "at_min": 0, "from": "SOC", "severity": "critical", "owner": "exec",
+     "text": "Multiple servers are encrypted; a ransom note is on the screens. What is the first move?",
+     "expect": "declare the incident; isolate affected hosts (do not power off — preserve memory); start the clock and the playbook",
+     "hint": "./securax crisis start ransomware  ·  ./securax playbook start ransomware", "sla_min": 20},
+    {"id": "r2", "at_min": 20, "from": "Infra", "severity": "critical", "owner": "infra",
+     "text": "WORST CASE: the newest backup is also encrypted. Do you still have a clean copy?",
+     "expect": "prove a CLEAN off-site copy exists before restoring (ransomguard checks it); never pay first",
+     "hint": "./securax crypto  ·  ./securax restore latest", "sla_min": 60},
+    {"id": "r3", "at_min": 40, "from": "Staff", "severity": "medium", "owner": "comms",
+     "text": "Employees are asking what happened; some are posting on social media.",
+     "expect": "send the staff alert: stop external talk and social posts; one source of truth; route media to comms",
+     "hint": "./securax crisis comms staff-alert-sms", "sla_min": 30},
+    {"id": "r4", "at_min": 60, "from": "Sectoral CERT", "severity": "critical", "owner": "forensics",
+     "text": "The CERT wants the first incident report in 6 hours and forensic artefacts to follow.",
+     "expect": "file the initial report; begin forensic collection with authority and chain-of-custody",
+     "hint": "./securax crisis start ransomware (opens the CERT requisition)  ·  incident due", "sla_min": 360},
+    {"id": "r5", "at_min": 90, "from": "Estate", "severity": "high", "owner": "exec",
+     "text": "WORST CASE: the machine holding the incident clock goes down mid-response.",
+     "expect": "another node already has the open incident read-only; continue from there — no single point of failure",
+     "hint": "./securax incident status on another node", "sla_min": 30},
+    {"id": "r6", "at_min": 120, "from": "Regulator", "severity": "critical", "owner": "exec",
+     "text": "The regulator asks whether customer-facing services are up, and when they will be.",
+     "expect": "give the service status and the restore ETA; a customer service notice; no over-commitment",
+     "hint": "./securax crisis comms customer-service-status", "sla_min": 60}
+   ]
+  }
+ }
+}
