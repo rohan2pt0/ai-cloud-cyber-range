@@ -26,7 +26,7 @@ networks:
     internal: true   # Postgres never needs the internet — kept fully isolated.
 
 volumes:
-  pgdata:
+  pgdata18:
   ollama:
   loki:
   grafana:
@@ -180,14 +180,15 @@ services:
     logging: *default-logging
 
   postgres:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     profiles: ["core", "security", "ai"]
     restart: unless-stopped
     environment:
       POSTGRES_USER: range
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: range
-    volumes: ["pgdata:/var/lib/postgresql/data"]
+    # 18+ keeps its data in /var/lib/postgresql/18/docker and refuses the old .../data mount; a fresh volume, as 16 held no data
+    volumes: ["pgdata18:/var/lib/postgresql"]
     networks: [data]
     security_opt: ["no-new-privileges:true"]
     logging: *default-logging

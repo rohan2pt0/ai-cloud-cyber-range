@@ -131,6 +131,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- The core database moves to PostgreSQL 18 without the start-up failure a plain version bump would cause
 - The product site's dark mode is readable everywhere
 - [The four product-site pages now take every colour from the one generated stylesheet (doc 100)](docs/securax/100-DESIGN-STANDARD.md)
 - A test now keeps the Life OS installable as a phone app on every change
@@ -138,7 +139,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - Open-model builds no longer hang for hours
 - Delegating to the open models has no single point of failure and needs no settings page
 - The reference bar gains the vital few it lacked (AGENTS.md section 7)
-- Build from the Claude chat with the open models doing the heavy lifting (`delegate` skill, doc 83)
 
 **Release 0.3.0 - 2026-10-22:**
 
