@@ -131,6 +131,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- Delegating to the open models has no single point of failure and needs no settings page
 - The reference bar gains the vital few it lacked (AGENTS.md section 7)
 - Build from the Claude chat with the open models doing the heavy lifting (`delegate` skill, doc 83)
 - [The SOC now pages on six controls that held but told nobody (doc 30)](docs/securax/30-PURPLE-TEAM-LOOP.md)
@@ -138,7 +139,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - The reference bar for enterprise grade (AGENTS.md section 7)
 - Threat modelling is now a core principle, held as plain text by a check (`threat-model`, doc 133)
 - Enterprise review is now a standing rule, not something to ask for each time (`enterprise-grade`, AGENTS.md section 7), and the first sweep found a real gap
-- [A new core principle, "one door, no passwords": sign in once, reach everything, take it away in one place (doc 132)](docs/securax/132-ONE-DOOR.md)
 
 **Release 0.3.0 - 2026-10-22:**
 
