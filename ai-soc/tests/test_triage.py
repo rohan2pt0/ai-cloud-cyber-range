@@ -89,3 +89,14 @@ def test_repeated_refused_credentials_from_one_source_raise_an_incident():
 def test_a_single_refused_credential_is_not_an_incident():
     rep = triage.triage([{"decision": "auth_denied", "endpoint": "chat", "reason": "expired", "client_ip": "198.51.100.7", "ts": "2026-10-14T10:00:00"}], summarize=False)
     assert not [i for i in rep["incidents"] if i["rule"] == "auth-bruteforce"]
+
+
+def test_controls_that_held_now_page_once_per_identity_with_the_right_severity():
+    recs = [_one("TOOL-001-denied", "sanitise", principal="t"), _one("TOOL-002-destructive-args", "sanitise", principal="t"),
+            _one("TOOL-003-needs-approval", "sanitise", principal="h"), _one("DET-unavailable-x", principal="d"),
+            {"ts": 1_760_000_000, "principal": "s", "decision": "suspended"},
+            {"ts": 1_760_000_000, "principal": "b", "decision": "budget_exhausted"}]
+    got = {(i["principal"], i["rule"]): i["severity"] for i in triage.triage(recs, summarize=False)["incidents"]}
+    assert got == {("t", "tool-misuse"): "medium", ("h", "tool-held-for-approval"): "low", ("d", "detector-down"): "high",
+                   ("s", "stopped-agent-still-calling"): "medium", ("b", "allowance-exhausted"): "low"}
+    assert [i["count"] for i in triage.triage(recs, summarize=False)["incidents"] if i["rule"] == "tool-misuse"] == [2]

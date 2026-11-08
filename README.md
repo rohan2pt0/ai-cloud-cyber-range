@@ -131,14 +131,14 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- [The SOC now pages on six controls that held but told nobody (doc 30)](docs/securax/30-PURPLE-TEAM-LOOP.md)
+- The personal app's page shows its tools, newest first, generated from the one list of features
 - Threat modelling is now a core principle, held as plain text by a check (`threat-model`, doc 133)
 - Enterprise review is now a standing rule, not something to ask for each time (`enterprise-grade`, AGENTS.md section 7), and the first sweep found a real gap
 - [A new core principle, "one door, no passwords": sign in once, reach everything, take it away in one place (doc 132)](docs/securax/132-ONE-DOOR.md)
 - [The Command Center no longer needs a machine to open: a hosted front door that finds whichever of your machines is up (doc 131)](docs/securax/131-NO-SINGLE-POINT-OF-FAILURE.md)
 - [The Life OS and Vantage are now hosted with the product site, so they open on every device with no machine of yours running; plus a go-live runbook (doc 130)](docs/securax/130-GO-LIVE-RUNBOOK.md)
 - [`./securax hunt fleet` — mass deployment, generated not provisioned: the actuated enterprise rail of the hunt (doc 129)](docs/securax/129-HUNT-FLEET.md)
-- [`./securax hunt` grows: every crisis type now auto-maps to a hunt, and the findings become an ordered, approve-gated remediation plan (doc 127)](docs/securax/127-THREAT-HUNTING-DFIR.md)
-- [A new core principle — "start as an amoeba, carry the DNA" — made real and enforceable, with `./securax evolve` (doc 128)](docs/securax/128-GROWTH-MAP-AMOEBA.md)
 
 **Release 0.3.0 - 2026-10-22:**
 
