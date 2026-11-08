@@ -131,6 +131,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- [The product site's stylesheet is now generated from the shared design standard (doc 100)](docs/securax/100-DESIGN-STANDARD.md)
 - Open-model builds no longer hang for hours
 - Delegating to the open models has no single point of failure and needs no settings page
 - The reference bar gains the vital few it lacked (AGENTS.md section 7)
@@ -138,7 +139,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - [The SOC now pages on six controls that held but told nobody (doc 30)](docs/securax/30-PURPLE-TEAM-LOOP.md)
 - The personal app's page shows its tools, newest first, generated from the one list of features
 - The reference bar for enterprise grade (AGENTS.md section 7)
-- Threat modelling is now a core principle, held as plain text by a check (`threat-model`, doc 133)
 
 **Release 0.3.0 - 2026-10-22:**
 

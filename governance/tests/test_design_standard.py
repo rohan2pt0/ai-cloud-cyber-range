@@ -66,3 +66,32 @@ def test_brand_apps_keep_their_colours_but_meet_the_basics():
     for rel in STD["rules"]["brand_apps_with_the_basics"]:
         src = (ROOT / rel).read_text("utf-8")
         assert ":focus-visible" in src and "prefers-reduced-motion" in src, rel
+
+
+def test_the_site_stylesheet_is_the_generators_output():
+    # The product site keeps its own navy and gold but takes the standard's basics from governance/design.py, so a change in
+    # design.json reaches the site too. website/site.css is the checked-in result of tools/site_css.py; the two must agree.
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("securax_site_css_t", ROOT / "tools" / "site_css.py")
+    sc = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(sc)
+    css = sc.render()
+    on_disk = (ROOT / "website" / "site.css").read_text("utf-8")
+    assert on_disk == css, "website/site.css is stale: run  python3 tools/site_css.py"
+    assert ":focus-visible" in on_disk and "prefers-reduced-motion" in on_disk, "website/site.css"
+
+
+def test_site_css_cli_writes_and_checks_exactly(tmp_path):
+    # main() is the CLI: it writes the file and returns 0, checks a current file and returns 0, and a stale one and
+    # returns exactly 1 (so a loosened or dropped return value fails here; the forge gate mutates these returns).
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("securax_site_css_cli_t", ROOT / "tools" / "site_css.py")
+    sc = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(sc)
+    out = tmp_path / "site.css"
+    sc.OUT = out
+    assert sc.main([]) == 0                                        # the write path returns 0
+    assert out.read_text("utf-8") == sc.render()                  # and writes the generator's output
+    assert sc.main(["--check"]) == 0                              # a current file checks clean, exit 0
+    out.write_text("stale", "utf-8")
+    assert sc.main(["--check"]) == 1                              # a stale file fails with exactly 1
