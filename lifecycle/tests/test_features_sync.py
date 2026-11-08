@@ -64,3 +64,15 @@ def test_a_product_with_a_missing_feature_command_or_screenshot_is_refused(monke
     probs = " ".join(fs.product_problems(fs.load(), fs.commands()))
     assert "no-such-feature" in probs and "no-such-command does not exist" in probs and "no screenshot" in probs
     assert "role must be core or bet" in probs and "kill_if needs a date" in probs
+
+
+def test_the_personal_page_shows_its_tools_newest_first_and_marks_the_newest_new():
+    data = fs.load()
+    body = fs.block_personal(data)
+    mine = [f for f in data["features"] if f["group"] == fs.PERSONAL_GROUP]
+    assert body.count('<div class="card">') == len(mine) and body.count(">New · ") == 3
+    newest = max(mine, key=lambda f: f["added"])
+    assert body.index(fs.E(newest["name"])) < min(body.index(fs.E(f["name"])) for f in mine if f["added"] < newest["added"])
+    assert all(fs.E(f["open"]["cmd"]) in body for f in mine)
+    page = (fs.ROOT / "website" / "personal" / "index.html").read_text("utf-8")
+    assert fs.put_block(page, body, "personal") == page, "run: python3 tools/features_sync.py"

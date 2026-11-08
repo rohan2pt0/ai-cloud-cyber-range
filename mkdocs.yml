@@ -139,6 +139,15 @@ nav:
       - "Catch me up, and saved prompts": securax/122-CATCHUP-AND-PROMPTS.md
       - "Incident playbooks": securax/123-INCIDENT-PLAYBOOKS.md
       - "Tool approvals (human-in-command)": securax/124-TOOL-APPROVALS.md
+      - "Crisis coordination": securax/125-CRISIS-COORDINATION.md
+      - "Crisis wargame": securax/126-CRISIS-WARGAME.md
+      - "Threat hunting & DFIR": securax/127-THREAT-HUNTING-DFIR.md
+      - "Growth map (amoeba principle)": securax/128-GROWTH-MAP-AMOEBA.md
+      - "Hunt fleet (mass deployment)": securax/129-HUNT-FLEET.md
+      - "Go-live runbook (new laptop, server, AI)": securax/130-GO-LIVE-RUNBOOK.md
+      - "No single point of failure (the door)": securax/131-NO-SINGLE-POINT-OF-FAILURE.md
+      - "One door (sign in once)": securax/132-ONE-DOOR.md
+      - "Threat modelling (STRIDE as text)": securax/133-THREAT-MODELLING.md
       - "Choose who you serve": securax/116-CHOOSE-YOUR-CUSTOMER.md
   - How-to guides:
       - AI providers and plugins: securax/22-PLUGINS-AND-PROVIDERS.md

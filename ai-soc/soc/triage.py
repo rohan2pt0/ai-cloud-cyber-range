@@ -177,6 +177,28 @@ def correlate(events: list[Event], window_s: float = 300.0, burst: int = 3) -> l
         if len(pii) >= burst and _within(pii, window_s):
             incidents.append(_mk("pii-harvesting", principal, "medium", "AML.T0057 (LLM data leakage)", "T1213 (data from repositories)",
                                  pii, "Repeated PII in prompts from one identity: confirm it is a real user, not data mining or a pasted dataset."))
+        # 3c) Controls that held but paged nobody (the purple loop's ALERT_BACKLOG): one low-noise incident per principal per rule.
+        gw = [e for e in evs if e.source == "gateway"]
+        misuse = [e for e in gw if "TOOL-001-denied" in e.detail or "TOOL-002-destructive-args" in e.detail]
+        if misuse:
+            incidents.append(_mk("tool-misuse", principal, "medium", "AML.T0053 (LLM plugin compromise)", "T1059 (command execution)",
+                                 misuse, "An agent asked for a denied tool or destructive arguments: review its tools and the prompt that led there."))
+        held = [e for e in gw if "TOOL-003-needs-approval" in e.detail]
+        if held:
+            incidents.append(_mk("tool-held-for-approval", principal, "low", "AML.T0053 (LLM plugin compromise)", "T1059 (command execution)",
+                                 held, "A consequential tool call waits for a person: approve or refuse it (./securax approvals)."))
+        spent = [e for e in gw if e.kind == "budget_exhausted"]
+        if spent:
+            incidents.append(_mk("allowance-exhausted", principal, "low", "AML.T0034 (cost harvesting)", "T1496 (resource hijacking)",
+                                 spent, "An identity used its whole allowance: confirm the use is real, not a runaway loop or a stolen key."))
+        stopped = [e for e in gw if e.kind == "suspended"]
+        if stopped:
+            incidents.append(_mk("stopped-agent-still-calling", principal, "medium", "AML.T0029 (denial of ML service)", "T1489 (service stop)",
+                                 stopped, "An agent a person stopped is still calling: find and end the process, then lift the stop on purpose."))
+        blind = [e for e in gw if "DET-unavailable" in e.detail]
+        if blind:
+            incidents.append(_mk("detector-down", principal, "high", "AML.T0029 (denial of ML service)", "T1562.001 (impair defences)",
+                                 blind, "A guardrail detector is down and requests fail closed: restore it; users are being refused meanwhile."))
         # 4) Cross-source correlation: injection + runtime event on same principal = kill-chain.
         if blocks and runtime:
             incidents.append(_mk("kill-chain-injection-to-runtime", principal, "critical",

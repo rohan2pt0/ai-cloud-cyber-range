@@ -1,0 +1,139 @@
+{
+ "about": "Hunt packs (doc 127): a pack is a named set of Velociraptor artifacts to collect for a given situation, a set of deterministic triage rules that score the collected output into prioritised findings, and the candidate response actions each finding may warrant — every action that TOUCHES an endpoint gated behind ./securax approve. Packs map to the crisis/wargame scenarios so a hunt can be launched (or auto-prepared) straight from an incident. They run in minimal/offline mode (a self-contained collector, no server) and on a fleet server. The artifacts named are stock Velociraptor artifacts; the packs are data — edit the artifacts, rules and actions, add your own. No proprietary binary is required: triage collection uses Windows.KapeFiles.Targets (open KapeFiles) and native VQL.",
+ "severity_note": "Triage scores are a FIRST pass to focus a human, never a verdict: a high score means look here first. Every response action is a human decision behind ./securax approve (single-use, time-boxed, audited). AI drafts; a human approves anything irreversible.",
+ "packs": {
+  "quick-triage": {
+   "name": "Quick triage (any host)",
+   "scenario": "any",
+   "mode": "both",
+   "about": "The fast, low-footprint first look at one suspect host: running processes, network connections, autostarts, recent execution. Minutes, not hours; safe to run anywhere.",
+   "artifacts": ["Windows.System.Pslist", "Windows.Network.Netstat", "Windows.Sys.StartupItems",
+                 "Windows.System.Services", "Windows.Forensics.Prefetch"],
+   "triage_rules": [
+    {"id": "t1", "signal": "lsass", "weight": 3, "says": "a process is touching LSASS — possible credential theft; isolate and dump for analysis"},
+    {"id": "t2", "signal": "powershell -enc", "weight": 3, "says": "encoded PowerShell — decode the command before anything else"},
+    {"id": "t3", "signal": "/temp/", "weight": 1, "says": "execution from a temp/cache path — common for droppers; check the parent process"},
+    {"id": "t4", "signal": "rundll32", "weight": 1, "says": "rundll32 with an unusual argument — check what DLL/export it loads"},
+    {"id": "t5", "signal": "0.0.0.0:4444", "weight": 3, "says": "a listener on a classic implant port — treat as C2 until proven otherwise"}
+   ],
+   "actions": [
+    {"id": "a1", "action": "isolate the host from the network", "approve": "host-isolate", "for": ["t1", "t5"], "why": "stop lateral movement and C2 while you investigate"},
+    {"id": "a2", "action": "capture volatile memory before power state changes", "approve": "memory-capture", "for": ["t1", "t2"], "why": "RAM holds keys, injected code and live connections that a reboot destroys"}
+   ]
+  },
+  "ransomware-aftermath": {
+   "name": "Ransomware aftermath sweep",
+   "scenario": "ransomware",
+   "mode": "both",
+   "about": "After a ransomware hit: find the foothold and the blast radius across hosts — persistence, the encryptor's traces, deleted shadow copies, lateral-movement tooling, and the earliest sign of entry — so recovery restores clean and the same door is shut.",
+   "artifacts": ["Windows.KapeFiles.Targets", "Windows.EventLogs.Hayabusa", "Windows.Detection.Yara.Process",
+                 "Windows.Forensics.Usn", "Windows.System.Services", "Windows.Persistence.Debug",
+                 "Windows.Network.Netstat", "Windows.Forensics.Shellbags"],
+   "triage_rules": [
+    {"id": "r1", "signal": "vssadmin delete", "weight": 3, "says": "shadow copies were deleted — a ransomware signature; find the process and time, it anchors the timeline"},
+    {"id": "r2", "signal": "wbadmin delete", "weight": 3, "says": "backup catalog deletion — the attacker went for recovery; confirm your off-site copy is intact (ransomguard)"},
+    {"id": "r3", "signal": "cobaltstrike", "weight": 3, "says": "Cobalt Strike indicator — assume hands-on-keyboard and lateral movement; widen the hunt"},
+    {"id": "r4", "signal": "psexec", "weight": 2, "says": "PsExec-style remote execution — map which hosts it reached from this one"},
+    {"id": "r5", "signal": ".onion", "weight": 1, "says": "a Tor address in the ransom note or traffic — the C2/leak channel; preserve it for the regulator and police"},
+    {"id": "r6", "signal": "mimikatz", "weight": 3, "says": "credential-dumping tool — rotate every credential that touched this host"}
+   ],
+   "actions": [
+    {"id": "a1", "action": "isolate every host that shows the foothold", "approve": "host-isolate", "for": ["r1", "r2", "r3", "r4", "r6"], "why": "contain before restore; a missed host re-infects the clean estate"},
+    {"id": "a2", "action": "prove a clean off-site backup exists before any restore", "approve": "restore-gate", "for": ["r1", "r2"], "why": "never restore onto a live foothold or from an encrypted copy"},
+    {"id": "a3", "action": "force-rotate credentials seen on affected hosts", "approve": "cred-rotate", "for": ["r3", "r6"], "why": "dumped credentials are the attacker's way back"}
+   ]
+  },
+  "payment-fraud-persistence": {
+   "name": "Payment-rail fraud — foothold & persistence",
+   "scenario": "payment-fraud",
+   "mode": "both",
+   "about": "After fraudulent outward payments: hunt the hosts that touch the payment rail and the maker/checker terminals for the foothold that let it happen — persistence, remote access, injected processes, and tampering with the terminals or logs — so you can tell the regulator and police how, and shut it.",
+   "artifacts": ["Windows.KapeFiles.Targets", "Windows.EventLogs.Hayabusa", "Windows.System.Services",
+                 "Windows.Sys.StartupItems", "Windows.Network.NetstatEnriched", "Windows.Forensics.Timeline",
+                 "Windows.Detection.Yara.Process"],
+   "triage_rules": [
+    {"id": "p1", "signal": "anydesk", "weight": 2, "says": "remote-access tool on a payment terminal — confirm it is sanctioned; a common fraud vector"},
+    {"id": "p2", "signal": "teamviewer", "weight": 2, "says": "remote-access tool on a payment terminal — confirm it is sanctioned"},
+    {"id": "p3", "signal": "keylog", "weight": 3, "says": "a keylogger indicator near a maker/checker terminal — operator credentials may be compromised"},
+    {"id": "p4", "signal": "schtasks /create", "weight": 2, "says": "a scheduled task was created — a persistence foothold; check what it runs and when"},
+    {"id": "p5", "signal": "clear-eventlog", "weight": 3, "says": "event logs were cleared — anti-forensics; note the gap and pull the SIEM copy"}
+   ],
+   "actions": [
+    {"id": "a1", "action": "isolate the implicated payment terminal(s)", "approve": "host-isolate", "for": ["p1", "p2", "p3"], "why": "stop further fraudulent release while preserving the host for forensics"},
+    {"id": "a2", "action": "preserve the terminal image with chain-of-custody", "approve": "forensic-image", "for": ["p1", "p2", "p3", "p4", "p5"], "why": "the police production notice will ask for it; collect it admissibly now"}
+   ]
+  },
+  "lateral-movement-sweep": {
+   "name": "Lateral-movement & persistence sweep (fleet)",
+   "scenario": "data-breach",
+   "mode": "server",
+   "about": "A fleet-wide hunt for how far an intruder moved and what they left to get back in: remote-execution traces, new services and tasks, run-key and WMI persistence, and anomalous authentication — the sweep you run across every host once one is found compromised.",
+   "artifacts": ["Windows.Persistence.Debug", "Windows.System.Services", "Windows.Sys.StartupItems",
+                 "Windows.Detection.WMIEventConsumers", "Windows.EventLogs.RDPAuth", "Windows.Network.Netstat"],
+   "triage_rules": [
+    {"id": "l1", "signal": "wmi event consumer", "weight": 3, "says": "WMI event-consumer persistence — stealthy and fileless; remediate across every host that has it"},
+    {"id": "l2", "signal": "wsmprovhost", "weight": 2, "says": "WinRM/PowerShell remoting activity — map the source and destination of the movement"},
+    {"id": "l3", "signal": "type 10 logon", "weight": 1, "says": "remote interactive (RDP) logon — correlate the account and source IP with your baseline"},
+    {"id": "l4", "signal": "new service", "weight": 2, "says": "a newly installed service — a classic persistence and remote-exec foothold; verify it is sanctioned"}
+   ],
+   "actions": [
+    {"id": "a1", "action": "quarantine the persistence mechanism on every host that shows it", "approve": "persistence-remove", "for": ["l1", "l4"], "why": "leave one and the intruder returns; remediate the whole set at once"},
+    {"id": "a2", "action": "disable and investigate the implicated accounts", "approve": "account-disable", "for": ["l2", "l3"], "why": "cut the credential the movement rode on"}
+   ]
+  },
+  "service-outage": {
+   "name": "Service outage — attack or accident?",
+   "scenario": "outage",
+   "mode": "both",
+   "about": "When a service falls over, the first question is whether it is an accident or an attack wearing the mask of one: a wiper, resource exhaustion, a killed service, a deleted config or a saturating process. This separates the two fast so you recover down the right path and do not treat a breach as a glitch.",
+   "artifacts": ["Windows.System.Services", "Windows.System.Pslist", "Windows.EventLogs.Hayabusa",
+                 "Windows.Forensics.Usn", "Windows.Network.Netstat"],
+   "triage_rules": [
+    {"id": "o1", "signal": "stop-service", "weight": 2, "says": "a service was stopped by a command, not a crash — look at who and when; sabotage masquerades as an outage"},
+    {"id": "o2", "signal": "fltmc", "weight": 1, "says": "a filter driver was unloaded — a tampering/EDR-blinding step; check what ran next"},
+    {"id": "o3", "signal": "format ", "weight": 3, "says": "a format/wipe command — this is destruction, not a fault; switch to the ransomware/wiper path and preserve what remains"},
+    {"id": "o4", "signal": "cipher /w", "weight": 3, "says": "secure-wipe of free space — anti-forensics/destruction; image before anything is overwritten"}
+   ],
+   "actions": [
+    {"id": "a1", "action": "preserve the host image before restoring the service", "approve": "forensic-image", "for": ["o3", "o4"], "why": "if it is destruction, restoring over it loses the evidence of how"},
+    {"id": "a2", "action": "isolate the host if a tampering or wipe signal fired", "approve": "host-isolate", "for": ["o2", "o3", "o4"], "why": "a masked attack spreads while you treat it as an outage"}
+   ]
+  },
+  "insider-misuse": {
+   "name": "Insider data misuse",
+   "scenario": "insider",
+   "mode": "both",
+   "about": "When a trusted account may have taken data it should not, the signals are different from an intrusion: mass reads, bulk copy to removable media or personal cloud, archiving before exfil, and access outside the person's role or hours. This gathers them for a defensible, proportionate look — people, not just machines, so handle with HR and legal.",
+   "artifacts": ["Windows.Forensics.Usn", "Windows.Forensics.Shellbags", "Windows.EventLogs.Hayabusa",
+                 "Windows.Registry.USB", "Windows.Forensics.Prefetch"],
+   "triage_rules": [
+    {"id": "n1", "signal": "usbstor", "weight": 2, "says": "a USB mass-storage device was attached — correlate with large file reads around that time"},
+    {"id": "n2", "signal": ".7z", "weight": 1, "says": "archive creation — staging before exfiltration; check its size and contents list"},
+    {"id": "n3", "signal": "rclone", "weight": 3, "says": "a cloud-sync/exfil tool on an endpoint that should not have it — a strong exfiltration signal"},
+    {"id": "n4", "signal": "megasync", "weight": 2, "says": "a personal-cloud client — unsanctioned data egress; confirm against policy"}
+   ],
+   "actions": [
+    {"id": "a1", "action": "preserve the endpoint and the access logs with HR and legal present", "approve": "forensic-image", "for": ["n1", "n2", "n3", "n4"], "why": "an insider case is an HR/legal matter first; evidence handling must be defensible and proportionate"},
+    {"id": "a2", "action": "suspend the account's data access pending review", "approve": "account-disable", "for": ["n3", "n4"], "why": "stop ongoing egress without tipping off before the review is set up"}
+   ]
+  },
+  "supply-chain-compromise": {
+   "name": "Supply-chain / software compromise",
+   "scenario": "supply-chain",
+   "mode": "server",
+   "about": "When a trusted vendor update or signed component may be the entry, the hunt is for the thing that should be safe behaving badly: an update process spawning a shell, a signed binary from the wrong path, a new scheduled task or service installed by an installer, or a vendor agent making unexpected network connections — across every host that runs it.",
+   "artifacts": ["Windows.System.Services", "Windows.Sys.StartupItems", "Windows.Detection.Yara.Process",
+                 "Windows.Network.NetstatEnriched", "Windows.Forensics.Timeline"],
+   "triage_rules": [
+    {"id": "s1", "signal": "msiexec", "weight": 1, "says": "an installer ran — correlate with what it created; a trojanised update installs its foothold this way"},
+    {"id": "s2", "signal": "cmd.exe /c", "weight": 2, "says": "a shell spawned by an update/installer process — updates should not spawn shells; trace the parent"},
+    {"id": "s3", "signal": "appdata/roaming", "weight": 2, "says": "a signed-looking binary running from a user-writable path — a common trojanised-component location"},
+    {"id": "s4", "signal": "beacon", "weight": 3, "says": "beaconing from a vendor/agent process — the update channel may be the C2; isolate and widen across every host that runs it"}
+   ],
+   "actions": [
+    {"id": "a1", "action": "quarantine the suspected component across every host that runs it", "approve": "persistence-remove", "for": ["s2", "s3", "s4"], "why": "a supply-chain foothold is on the whole fleet, not one host; remediate the set"},
+    {"id": "a2", "action": "block the vendor update channel pending vendor confirmation", "approve": "egress-block", "for": ["s4"], "why": "if the update channel is the C2, stop it without breaking unaffected systems more than needed"}
+   ]
+  }
+ }
+}

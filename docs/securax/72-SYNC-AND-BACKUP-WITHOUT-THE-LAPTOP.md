@@ -49,6 +49,8 @@ Keep the passphrase in your password manager. Without it, the OneDrive copy cann
 
 ## Host the app off the laptop (Cloudflare Pages behind Cloudflare Access)
 
+> **Already built in (doc 130):** the product site now carries the Life OS (at `app/`) and Vantage (at `vantage/`), so the app opens and installs on every device with no setup and no machine running. The Cloudflare route below is the optional extra: it puts a sign-in in front of the app.
+
 An installed PWA opens from its own cache with no network, but a first install and updates need somewhere to load it from. Today that is the laptop. A static host removes that last dependency. The host only ever serves the app's code, which is already public in this repo; your data stays on your devices and, encrypted, in your OneDrive.
 
 **Why Cloudflare.**
