@@ -131,6 +131,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- [The four product-site pages now take every colour from the one generated stylesheet (doc 100)](docs/securax/100-DESIGN-STANDARD.md)
 - A test now keeps the Life OS installable as a phone app on every change
 - [The product site's stylesheet is now generated from the shared design standard (doc 100)](docs/securax/100-DESIGN-STANDARD.md)
 - Open-model builds no longer hang for hours
@@ -138,7 +139,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - The reference bar gains the vital few it lacked (AGENTS.md section 7)
 - Build from the Claude chat with the open models doing the heavy lifting (`delegate` skill, doc 83)
 - [The SOC now pages on six controls that held but told nobody (doc 30)](docs/securax/30-PURPLE-TEAM-LOOP.md)
-- The personal app's page shows its tools, newest first, generated from the one list of features
 
 **Release 0.3.0 - 2026-10-22:**
 

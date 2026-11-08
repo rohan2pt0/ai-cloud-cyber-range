@@ -19,14 +19,14 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / "website" / "site.css"
 
-# The site's brand variables, layered over the standard's tokens: light first, then dark. The dark theme keeps the navy, gold,
-# green, amber, red and radius from light and only overrides the surfaces and text (--bg, --card, --ink, --text, --muted, --line,
-# --gold2), because a fixed navy card needs the light gold for contrast.
+# The site's brand variables, layered over the standard's tokens: light first, then dark. The dark theme keeps the navy, gold
+# and radius from light and overrides the surfaces and text (--bg, --card, --ink, --text, --muted, --line, --gold2), plus the
+# status colours (--green, --amber, --red), lifted so a light on the dark navy card #111e33 passes WCAG AA.
 LIGHT = {"--navy": "#0b1b33", "--navy2": "#13294b", "--ink": "#0f1c33", "--text": "#2b3a55", "--muted": "#5b6b86",
          "--line": "#e3e8f0", "--bg": "#f6f8fb", "--card": "#fff", "--gold": "#e8b84a", "--gold2": "#8a6514",
          "--green": "#15803d", "--amber": "#b45309", "--red": "#b91c1c", "--radius": "16px"}
 DARK = {**LIGHT, "--bg": "#0a1220", "--card": "#111e33", "--ink": "#edf2f9", "--text": "#c4cfdd", "--muted": "#96a5ba",
-        "--line": "#26374e", "--gold2": "#e8b84a"}
+        "--line": "#26374e", "--gold2": "#e8b84a", "--green": "#4ade80", "--amber": "#fbbf24", "--red": "#f87171"}
 
 
 def render() -> str:
