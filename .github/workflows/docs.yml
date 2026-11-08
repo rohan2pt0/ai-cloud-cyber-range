@@ -9,10 +9,10 @@
 name: docs
 on:
   pull_request:
-    paths: ["docs/**", "website/**", "brand.env", "mkdocs.yml", "CHANGELOG.md", "README.md", "securax", "governance/config.py", "tools/linkcheck.py", ".github/workflows/docs.yml"]
+    paths: ["docs/**", "website/**", "brand.env", "mkdocs.yml", "CHANGELOG.md", "README.md", "securax", "governance/config.py", "tools/linkcheck.py", "tools/pwa_publish.py", "guiding-map/**", ".github/workflows/docs.yml"]
   push:
     branches: [main]
-    paths: ["docs/**", "website/**", "brand.env", "mkdocs.yml", "CHANGELOG.md", "README.md", "securax", "governance/config.py", "tools/linkcheck.py", ".github/workflows/docs.yml"]
+    paths: ["docs/**", "website/**", "brand.env", "mkdocs.yml", "CHANGELOG.md", "README.md", "securax", "governance/config.py", "tools/linkcheck.py", "tools/pwa_publish.py", "guiding-map/**", ".github/workflows/docs.yml"]
   workflow_dispatch:
   schedule:
     - cron: "17 3 * * 1"   # Mondays: links to other sites go stale on their own

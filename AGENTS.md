@@ -22,8 +22,29 @@ The principles behind it:
   compass carry it; never bury it under tooling.
 - **Antifragility:** every failure must leave the estate stronger. A lesson, a test and a drill come out of it, and
   `progress` counts them.
+- **One door, no passwords (`one-door`):** a person signs in once, with an account they already have (a passkey, Microsoft or
+  Google), and that is the only door. A new feature that needs sign-in never builds its own login screen and never keeps a password:
+  add one entry to `governance/identity.json` (what it needs, the narrowest permission, what works as a guest, how one switch takes
+  it away). Ask for a permission only when the feature is used. Everything works as a guest first. Fitness `signin-declared` fails an
+  incomplete entry, an over-broad permission, and any new separate login: the count of separate logins only goes down.
+- **Think like the attacker first (`threat-model`):** a component that crosses a trust boundary gets a plain-text threat model in
+  `governance/threat-models.json` (parts, data flows, trust boundaries, then all six STRIDE ways) BEFORE it is built; each threat is mitigated
+  with evidence that exists, accepted with a reason and a review date, or ruled out with a reason. Fitness `threat-modelled` holds it;
+  the number of models only goes up. Doc 133 has the template.
+- **Enterprise grade (`enterprise-grade`):** design every component as if for the largest organisations. Section 7 is the review to run
+  FIRST in every session and before every merge, and how to spend a session's room.
 - **Small wins, shown:** progress you can see keeps people going.
 - **Least effort for the person:** the estate does the remembering, the checking and the reminding.
+- **Start as an amoeba, carry the DNA (`amoeba`):** ship the simplest living thing that helps today — one person, no
+  server, offline — but carry the full blueprint inside it and build the dormant seam (the *rail*) that lets each part
+  grow into its enterprise form. When you offer options, make the simplest that works the natural first choice, and still
+  lay the rails for the larger ones so they can self-assemble when conditions call for them. Nature is the architect: a
+  cell becomes an organism only as conditions warrant. So the estate senses its own conditions — favourable (more nodes,
+  more teams, traffic north-south and east-west, spare resources) and unfavourable (load, failure, a lost node) — and
+  grows the next form when they warrant it: the safe, in-box steps by itself, the ones that provision, cost or touch
+  endpoints behind a human's approval. Declare each capability's growth path in `governance/evolution.json`; fitness
+  `evolution-declared` fails an enterprise-capable feature that ships no rail to become one, and `./securax evolve` shows
+  what is ready to grow. Never build the organism before the amoeba is alive and used; never ship an amoeba with no DNA.
 
 Every feature in `features.json` carries its `outcome` (what gets better) and `shows` (where the person sees it); fitness
 `outcomes-declared` fails one that does not.
@@ -53,6 +74,8 @@ Run `./securax route "the task"`. It names the tier, and why:
 - **strong**: security, crypto, auth, sync or merge logic, regulator mapping, or a change across many areas. `./securax autobuild "…"` uses the strong open models by itself; work on it by hand in `./securax opencode --strong` (doc 83).
 
 Before you start, `./securax brief "the task"` prints the likely files, the lessons that apply and the checks that prove it (autobuild sends it to the model by itself).
+From a Claude chat, the `delegate` skill (`.claude/skills/delegate/`) does this for the owner: it routes the task, sends local and opencode work
+to the open models (`autobuild.yml`), and keeps Claude for strong-tier work and the review before merge.
 To ship, `./securax ship pr`, then `./securax ship watch N --fix 2 --merge` (doc 98): it watches CI, fixes red with autobuild and merges when green.
 Before merging anything the router calls strong, get a second look: `./securax review`. `./securax ai share` shows who did this month's work
 (Claude, the open models, you). Commits made with SecuRAX's own models end with the line `Assisted-by: SecuRAX open models`.
@@ -138,3 +161,42 @@ written down, are then lost. So:
    - **Ledger:** one row in the ledger of the doc it touched (for the range, "Cues taken from your material" in doc 79).
    - **CHANGELOG:** one line.
    - **Status:** the doc's status light.
+
+## 7. Enterprise grade, and a session that does not run out of room
+
+**Run these five lenses first in every session, on what you will touch, and before every merge.** Fix the cheap findings now; put the rest in
+`governance/queue.json` with a date and the next step. Say plainly what you could not test.
+1. **Single points of failure.** What stops if one machine, host, account, key or person is gone? (`./securax resilience`; the register in doc 131.)
+   Add a second node, active-active where it can be, active-passive where it cannot.
+2. **Friction.** Any login, step or screen a person repeats or needs a manual for? (`one-door`; `governance/identity.json`; fitness `signin-declared`.) Guest first.
+3. **UI and UX.** Both themes, a 390 px screen, keyboard, offline, no page errors, no contrast failures, in a real browser, not only jsdom
+   (`python3 guiding-map/tests/ui_audit.py OUTDIR`).
+4. **Security and privacy.** A threat model for anything that crosses a trust boundary (`governance/threat-models.json`); the narrowest permission; the origin and the headers of anything hosted (`website/_headers`); no secret or personal data in
+   the repository; sensitive data stays on local models.
+5. **Operate.** Can it be seen, recovered and taken away (offboarding)? A test or a drill proves it, not a sentence.
+
+**Spend the room like money.** Read the queue and only the lines of a file you need (`grep -n`, `sed -n`, `head`, `tail`); never print a whole file. Run the
+fast gates first and the full tests in the background, reading only the last lines. Do not subscribe to pull-request events (each is thousands of tokens):
+open the PR, set ONE check-in, merge when green. One PR per round, pushed once. Replies: the result, what was not tested, the next step. At about 60% of
+the room, push, update the queue and stop; the next session starts from the repository, not from this conversation.
+
+**The reference bar (the vital few, from the AWS, Azure and Google Well-Architected frameworks, Google SRE, Netflix resilience, Cloudflare
+Zero Trust and the open-core model).** Judge every change against these; each is held by a check or dated in the queue, never just stated:
+- **Modular, loosely coupled, contract-first:** a clear owner and interface per component (`lifecycle/impact.json`); versioned APIs; a
+  modular monolith beats needless microservices.
+- **No unmitigated single point of failure, recovery proven:** tested RTO/RPO and restore drills, not diagrams (`resilience`, `continuity`,
+  `spof-ratchet`); count correlated failures too (one identity, DNS, credential or person).
+- **Fault isolation:** timeouts, retries with backoff, rate limits, graceful degradation (the gateway's ladder and kill switch).
+- **Zero Trust and identity first:** no trust by network location; one door, least privilege, MFA or passkeys (`one-door`).
+- **Secure by design and supply chain:** a threat model, signed artefacts, an SBOM, pinned dependencies (`threat-model`, Trivy, gitleaks).
+- **Observable and operable:** logs, metrics and traces with one correlation id; a runbook and `./securax why` for every failure.
+- **Delivered safely:** infrastructure as code, staged rollout, one-command rollback (`update` rolls back by itself).
+- **Documentation as a product:** a fresh engineer can install, run, troubleshoot, upgrade and recover from the docs alone.
+- **Fails well:** every error says what happened, why, and the one next step, in plain words; a failure seen twice gets an entry `./securax why`
+  can find (a known-error list), not a second investigation.
+- **Evolves without breaking:** versioned contracts, a deprecation named a release ahead, upgrade and rollback tested in the sandbox (doc 21).
+- **Simple beats clever:** the fewest moving parts that meet the need today (the amoeba); a part is added only when a measured condition calls for it.
+- **Measured by outcomes, not activity:** the four delivery keys (how often we ship, how long a change takes, how often a change fails, how fast
+  we restore) come from git and CI and show in `progress` (queue `delivery-four-keys`).
+**Applying it, 80/20:** list the gaps a change touches, rank them by risk × how many people it reaches ÷ effort, fix the top three this round and
+date the rest in the queue. Hard gates (security, recoverability, regulation) are pass/fail regardless of any score.

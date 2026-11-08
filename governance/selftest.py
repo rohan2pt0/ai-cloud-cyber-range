@@ -38,7 +38,7 @@ READONLY: dict[str, list[str]] = {
     "help": ["help"], "suite": ["suite", "check"], "resilience": ["resilience"], "risks": ["risks"],
     "progress": ["progress"], "map": ["map"], "improve": ["improve"], "insight": ["insight"],
     "readiness": ["readiness"], "impact": ["impact"], "proofs": ["proofs"], "evidence": ["evidence"],
-    "findings": ["findings"], "lessons": ["lessons"], "backlog": ["backlog"], "next": ["next", "--json"],
+    "findings": ["findings"], "lessons": ["lessons"], "backlog": ["backlog", "--offline"], "next": ["next", "--json"],
     "jewels": ["jewels"], "govern": ["govern"], "comply": ["comply"], "venture": ["venture", "guards"],
     "adversary": ["adversary", "status"], "regwatch": ["regwatch", "status"], "tls": ["tls", "status"],
     "routines": ["routines", "list"], "privacy": ["privacy", "check"], "vet": ["vet", "check"],

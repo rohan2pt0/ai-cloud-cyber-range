@@ -4374,7 +4374,9 @@
       + ".gm-wb-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}"
       + ".gm-wb-eyebrow{font-size:10.5px;letter-spacing:1.6px;text-transform:uppercase;font-weight:800;color:#e8c96a}"
       + ".gm-wb-x{background:rgba(255,255,255,.14);border:0;color:#fff;width:30px;height:30px;border-radius:50%;font-size:18px;line-height:1;cursor:pointer}"
-      + ".gm-wb-h{font-family:var(--font-display);font-weight:800;letter-spacing:-.022em;font-size:21px;line-height:1.15;margin:0 0 6px;color:#fff}"
+      // One brand moment in an elegant bundled serif (Instrument Serif, embedded as a data-URI @font-face in the
+      // static head, so it never falls back to Times offline). Georgia is a decent universal serif if even that fails.
+      + ".gm-wb-h{font-family:'Instrument Serif',Georgia,serif;font-weight:400;letter-spacing:.002em;font-size:27px;line-height:1.08;margin:0 0 7px;color:#fff}"
       + ".gm-wb-p{font-size:13.5px;line-height:1.5;color:rgba(255,255,255,.92);margin:0 0 14px}"
       + ".gm-wb-cta{display:inline-flex;align-items:center;gap:6px;background:#c9a84c;color:#0d1f35;border:0;border-radius:11px;min-height:44px;padding:0 18px;font-size:14px;font-weight:800;cursor:pointer;transition:transform .08s ease,filter .15s ease}"
       + ".gm-wb-cta:active{transform:scale(.98)}.gm-wb-cta:hover{filter:brightness(1.06)}"

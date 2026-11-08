@@ -62,6 +62,11 @@ def test_fonts_are_native_and_need_no_network():
             f"{page} still references the DM Serif display face (fell back to Times offline)"
     idx = (GM / "index.html").read_text(encoding="utf-8")
     assert "--font-ui:" in idx and "var(--font-ui)" in idx, "the native font token must drive the UI type"
+    # The one serif brand headline (Instrument Serif) is bundled as a data URI, not fetched — so it
+    # renders offline and never falls back to Times. Its OFL licence must ride along in the repo.
+    assert "@font-face" in idx and "data:font/woff2;base64," in idx, \
+        "the serif brand face must be embedded as a data URI, not loaded over the network"
+    assert (GM / "fonts" / "Instrument_Serif-OFL.txt").exists(), "bundled font must ship its OFL licence"
 
 
 def test_command_center_rechecks_status_instead_of_one_snapshot():
