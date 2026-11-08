@@ -566,6 +566,85 @@ def check_signin_declared(baseline: int) -> dict:
     return {"name": "signin-declared", "value": len(problems), "budget": 0, "unit": "problems", "ok": not problems, "note": note}
 
 
+def threat_model_problems(reg: dict, root, baseline: int, today=None) -> list[str]:
+    """Pure core of the threat-model check (principle `threat-model`, doc 133). Each model names its parts, its flows and where trust
+    changes, and considers ALL SIX STRIDE categories; each threat is mitigated (with evidence that exists), accepted (a real reason and a
+    review date that has not passed) or ruled out (a reason). The number of models only goes up."""
+    import datetime
+    import pathlib
+    import re
+    today = today or datetime.date.today()
+    root = pathlib.Path(root)
+    problems: list[str] = []
+    cats = set(reg.get("categories", {}))
+    if cats != set("STRIDE"):
+        problems.append("categories must be exactly S, T, R, I, D and E")
+    models = reg.get("models", {})
+    if len(models) < baseline:
+        problems.append(f"{len(models)} threat model(s) < baseline {baseline}: a model may be added but not removed (the ratchet only goes up)")
+    seen_ids: set[str] = set()
+    for mid, m in sorted(models.items()):
+        elems = {e.get("id") for e in m.get("elements", [])}
+        if not m.get("boundaries") or not elems:
+            problems.append(f"'{mid}': name its trust boundaries and its elements")
+        flows = m.get("flows", [])
+        if not any(f.get("crosses") for f in flows):
+            problems.append(f"'{mid}': no data flow crosses a trust boundary: say which one does")
+        for f in flows:
+            if f.get("from") not in elems or f.get("to") not in elems:
+                problems.append(f"'{mid}': a flow names an element that is not declared")
+        covered = set()
+        for t in m.get("threats", []):
+            tid = t.get("id", "?")
+            if tid in seen_ids:
+                problems.append(f"'{tid}': threat ids must be unique")
+            seen_ids.add(tid)
+            covered.add(t.get("stride"))
+            if t.get("stride") not in cats:
+                problems.append(f"'{tid}': stride must be one of S, T, R, I, D, E")
+            if t.get("element") not in elems:
+                problems.append(f"'{tid}': its element is not declared in '{mid}'")
+            if len(str(t.get("threat", "")).strip()) < 20:
+                problems.append(f"'{tid}': say what could go wrong, in a sentence")
+            st = t.get("status")
+            if st == "mitigated":
+                ev = str(t.get("evidence", ""))
+                if not str(t.get("mitigation", "")).strip() or not ev or not (root / ev).exists():
+                    problems.append(f"'{tid}': a mitigated threat needs its mitigation and an evidence file that exists ({ev or 'none given'})")
+            elif st == "accepted":
+                rv = str(t.get("review", ""))
+                if len(str(t.get("reason", "")).strip()) < 40 or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", rv):
+                    problems.append(f"'{tid}': an accepted threat needs a real reason and a review date (YYYY-MM-DD)")
+                else:
+                    try:
+                        if datetime.date.fromisoformat(rv) < today:
+                            problems.append(f"'{tid}': its review date {rv} has passed: mitigate it, or re-accept it with a reason and a new date")
+                    except ValueError:
+                        problems.append(f"'{tid}': unreadable review date {rv!r}")
+            elif st == "not-applicable":
+                if len(str(t.get("reason", "")).strip()) < 20:
+                    problems.append(f"'{tid}': a ruled-out threat needs the reason it cannot happen")
+            else:
+                problems.append(f"'{tid}': status must be mitigated, accepted or not-applicable")
+        for c in sorted(set("STRIDE") - covered):
+            problems.append(f"'{mid}': STRIDE category {c} ({reg.get('categories', {}).get(c, c)}) has not been considered")
+    return problems
+
+
+def check_threat_modelled(baseline: int) -> dict:
+    """Think like the attacker before you build (doc 133): a component that crosses a trust boundary has a plain-text threat model, all six
+    STRIDE ways considered, every threat mitigated with proof, accepted with a date, or ruled out with a reason."""
+    import json as _json
+    reg = _json.loads((ROOT / "governance" / "threat-models.json").read_text("utf-8"))
+    problems = threat_model_problems(reg, ROOT, baseline)
+    n = len(reg.get("models", {}))
+    t = sum(len(m.get("threats", [])) for m in reg.get("models", {}).values())
+    note = ("; ".join(problems)[:200] if problems else
+            f"{n} component(s) modelled, {t} threat(s), each mitigated with proof, accepted with a date, or ruled out; baseline {baseline}"
+            + (f" (raise the baseline to {n} to lock the ratchet)" if n > baseline else ""))
+    return {"name": "threat-modelled", "value": len(problems), "budget": 0, "unit": "problems", "ok": not problems, "note": note}
+
+
 def check_private_names() -> dict:
     """No organisation, exercise or person on the private list (only fingerprints are stored) appears in any tracked file."""
     import importlib.util
@@ -583,7 +662,7 @@ def run_all(only_fast: bool = False) -> list[dict]:
     if not only_fast:
         res += check_gateway(c["gateway_cold_start_s"], c["gateway_rss_mb"])
         res += check_first_block(c["first_block_s"], c["block_latency_p95_ms"])
-    res += [check_supply_chain(base), check_commands_documented(base), check_ccsp_map(), check_regulatory_maps(), check_impact_map(), check_claims(), check_config_clean(), check_readme_current(), check_private_names(), check_commands_in_help(), check_features_current(), check_continuity_declared(), check_spof_ratchet(c.get("spof_accepted_baseline", 1)), check_resilience_grounded(), check_outcomes_declared(), check_enterprise_declared(), check_evolution_declared(c.get("evolution_declared_baseline", 4)), check_signin_declared(c.get("separate_logins_baseline", 4)), check_no_raw_addresses()]
+    res += [check_supply_chain(base), check_commands_documented(base), check_ccsp_map(), check_regulatory_maps(), check_impact_map(), check_claims(), check_config_clean(), check_readme_current(), check_private_names(), check_commands_in_help(), check_features_current(), check_continuity_declared(), check_spof_ratchet(c.get("spof_accepted_baseline", 1)), check_resilience_grounded(), check_outcomes_declared(), check_enterprise_declared(), check_evolution_declared(c.get("evolution_declared_baseline", 4)), check_signin_declared(c.get("separate_logins_baseline", 4)), check_threat_modelled(c.get("threat_models_baseline", 2)), check_no_raw_addresses()]
     return res
 
 

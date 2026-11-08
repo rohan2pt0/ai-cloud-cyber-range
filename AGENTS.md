@@ -27,6 +27,10 @@ The principles behind it:
   add one entry to `governance/identity.json` (what it needs, the narrowest permission, what works as a guest, how one switch takes
   it away). Ask for a permission only when the feature is used. Everything works as a guest first. Fitness `signin-declared` fails an
   incomplete entry, an over-broad permission, and any new separate login: the count of separate logins only goes down.
+- **Think like the attacker first (`threat-model`):** a component that crosses a trust boundary gets a plain-text threat model in
+  `governance/threat-models.json` (parts, data flows, trust boundaries, then all six STRIDE ways) BEFORE it is built; each threat is mitigated
+  with evidence that exists, accepted with a reason and a review date, or ruled out with a reason. Fitness `threat-modelled` holds it;
+  the number of models only goes up. Doc 133 has the template.
 - **Enterprise grade (`enterprise-grade`):** design every component as if for the largest organisations. Section 7 is the review to run
   FIRST in every session and before every merge, and how to spend a session's room.
 - **Small wins, shown:** progress you can see keeps people going.
@@ -165,7 +169,7 @@ written down, are then lost. So:
 2. **Friction.** Any login, step or screen a person repeats or needs a manual for? (`one-door`; `governance/identity.json`; fitness `signin-declared`.) Guest first.
 3. **UI and UX.** Both themes, a 390 px screen, keyboard, offline, no page errors, no contrast failures, in a real browser, not only jsdom
    (`python3 guiding-map/tests/ui_audit.py OUTDIR`).
-4. **Security and privacy.** The narrowest permission; the origin and the headers of anything hosted (`website/_headers`); no secret or personal data in
+4. **Security and privacy.** A threat model for anything that crosses a trust boundary (`governance/threat-models.json`); the narrowest permission; the origin and the headers of anything hosted (`website/_headers`); no secret or personal data in
    the repository; sensitive data stays on local models.
 5. **Operate.** Can it be seen, recovered and taken away (offboarding)? A test or a drill proves it, not a sentence.
 
