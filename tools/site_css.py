@@ -44,7 +44,12 @@ DARK_RULES = ("@media (prefers-color-scheme:dark){"
               "html .l-r,html .tag-r{background:rgba(248,113,113,.14)}"
               "html code{background:#1b2a42;color:var(--ink)}"
               "html .models ul{color:var(--text)}"
-              "html .btn-line{border-color:var(--ink);color:var(--ink)}}\n")
+              "html .btn-line{border-color:var(--ink);color:var(--ink)}"
+              "html .offer{background:linear-gradient(160deg,#2a2210,var(--card))}}\n"
+              # Both themes: the hero's glow was #2a5596, where the gold eyebrow (4.0:1) and the small print (3.7:1) failed AA.
+              "html .hero{background:radial-gradient(900px 520px at 80% 0,#1f4378 0,transparent 62%),"
+              "linear-gradient(165deg,var(--navy) 0,var(--navy2) 100%)}"
+              "html .micro{color:#c8d4e6}\n")
 
 
 def main(argv: list[str]) -> int:
