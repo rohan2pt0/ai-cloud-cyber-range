@@ -113,7 +113,7 @@ The latest additions, newest first (the Command Center marks each one New for 30
 | 🟡 [Apps for Android and iOS](docs/securax/98-SHIP-AND-STORE-APPS.md) | Turn any app built from the kit, or the Life OS, into an Android and iOS project in one command: a Capacitor project that works offline from the app's own files, a Trusted Web Activity manifest for the quick Android path, and a store-readiness check. | `./securax os mobile-check vantage` |
 | 🟢 [One lever a week](docs/securax/112-SET-AND-FORGET.md) | One calm nudge a week, aimed at the Wheel-of-Life area you rated lowest: the single set-and-forget change that moves it most, with its one-time steps and if-then plan, drawn from the environment catalogue and the behavioural and elite-sport research. One signal a week, where it helps you most; the opposite of a feed. It reads only the wheel you already scored, on your machine, and nothing leaves your box. | `./securax improve` |
 | 🟢 [One idea a week](docs/securax/115-ONE-IDEA-A-WEEK.md) | One durable idea a week, aimed at a goal you actually set. Not news and not a feed: a bounded, curated, on-device library of high-leverage ideas (decision-making and leadership, security and AI-risk craft, mental models, money and financial independence), each paraphrased in plain words with its source named and one concrete action. It aims by your OKRs first (the lowest-progress goal whose theme it can match), then your weakest Wheel area, and never repeats an idea until its theme is exhausted. It reads only what is on your machine; nothing leaves your box. | `./securax insight` |
-| 🟢 [Guiding Map](docs/securax/14-GUIDING-MAP.md) | Your daily cockpit for life and work: goals, check-ins and plans. Works offline, no AI needed. It is also published with the product site, so it opens and installs on every device even with all your own machines off (doc 130). | `./securax open` |
+| 🟢 [Guiding Map](docs/securax/14-GUIDING-MAP.md) | Your daily cockpit for life and work: goals, check-ins and plans. Works offline, no AI needed. It is also published with the product site, so it opens and installs on every device even with all your own machines off (doc 130). A hosted Command Center door finds whichever of your machines is up and opens it, so the front door needs no machine either (doc 131). | `./securax open` |
 | 🟡 [Life OS Inbox](docs/securax/84-CROWN-JEWELS-CONTINUITY-AND-FOUNDATION.md) | Capture one line; then each note becomes an action with a next step and a date, or stays a note. Reviews turn findings into actions; Google Keep notes come in too. | `./securax open` |
 | 🟡 [Life papers, read for you](docs/securax/104-LIFE-PAPERS-READ-FOR-YOU.md) | Your life workbooks and private documents (policies, statements, ID scans) are read on your own machine: every open issue becomes a dated Life OS action, the vital fifth first, with calendar alarms; a missing nominee, a lapsing policy or a password left in a sheet is found for you. | `./securax lifeos import workbook` |
 | 🟡 [Scan a document with your phone](docs/securax/104-LIFE-PAPERS-READ-FOR-YOU.md) | Photograph a policy, bill or letter in the Life OS Inbox; the text is read on your own phone, with no upload and offline after the first scan, and dropped into the capture box to become a dated action or a note. | `./securax open` |
@@ -131,6 +131,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- [The Command Center no longer needs a machine to open: a hosted front door that finds whichever of your machines is up (doc 131)](docs/securax/131-NO-SINGLE-POINT-OF-FAILURE.md)
 - [The Life OS and Vantage are now hosted with the product site, so they open on every device with no machine of yours running; plus a go-live runbook (doc 130)](docs/securax/130-GO-LIVE-RUNBOOK.md)
 - [`./securax hunt fleet` — mass deployment, generated not provisioned: the actuated enterprise rail of the hunt (doc 129)](docs/securax/129-HUNT-FLEET.md)
 - [`./securax hunt` grows: every crisis type now auto-maps to a hunt, and the findings become an ordered, approve-gated remediation plan (doc 127)](docs/securax/127-THREAT-HUNTING-DFIR.md)
@@ -138,7 +139,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - [`./securax hunt` — enterprise threat hunting & post-crisis DFIR, in minimal (offline) or fleet mode (doc 127)](docs/securax/127-THREAT-HUNTING-DFIR.md)
 - [`./securax wargame` — rehearse the coordination of a cyber crisis as a timed tabletop, and score it (doc 126)](docs/securax/126-CRISIS-WARGAME.md)
 - `./securax crisis` now does the coordination itself — the estate prepares the records and chases the humans, so a lone responder barely has to
-- [`./securax crisis` — coordinate a multi-agency cyber crisis and hit every agency deadline (doc 125)](docs/securax/125-CRISIS-COORDINATION.md)
 
 **Release 0.3.0 - 2026-10-22:**
 

@@ -705,7 +705,7 @@
    "group": "Your own tools",
    "name": "Guiding Map",
    "added": "2026-10-10",
-   "what": "Your daily cockpit for life and work: goals, check-ins and plans. Works offline, no AI needed. It is also published with the product site, so it opens and installs on every device even with all your own machines off (doc 130).",
+   "what": "Your daily cockpit for life and work: goals, check-ins and plans. Works offline, no AI needed. It is also published with the product site, so it opens and installs on every device even with all your own machines off (doc 130). A hosted Command Center door finds whichever of your machines is up and opens it, so the front door needs no machine either (doc 131).",
    "open": {
     "cmd": "./securax open",
     "path": "/"

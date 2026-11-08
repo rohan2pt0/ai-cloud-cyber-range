@@ -6,7 +6,8 @@ The Life OS (the Guiding Map) and Vantage (the CISO edition) are single-page, of
 when it died, the app stopped. This copies the committed builds into the static site, where GitHub Pages (or any static host:
 Cloudflare Pages, Netlify, S3) serves them with HTTPS, so they install on every device and update by themselves.
 
-  python3 tools/pwa_publish.py [OUTDIR]       default: website   ->  OUTDIR/app/ (Life OS) and OUTDIR/vantage/ (Vantage)
+  python3 tools/pwa_publish.py [OUTDIR]       default: website   ->  OUTDIR/app/ (Life OS), OUTDIR/vantage/ (Vantage) and
+                                              OUTDIR/command/ (the Command Center door, doc 131)
 
 `website/build.sh` runs it, so the Pages deploy carries the apps with no extra step. It writes build.json from the real commit,
 so the service worker's cache is renamed on every release and a device picks up the new build by itself. Nothing personal is
@@ -28,6 +29,8 @@ GM = ROOT / "guiding-map"
 LIFE_OS_FILES = ["index.html", "manifest.json", "sw.js", "features.js", "icon-192.png", "icon-512.png"]
 LIFE_OS_DIRS = ["fonts", "ocr"]                  # the font licence travels with the embedded font; ocr/ is the on-device document reader
 VANTAGE_FILES = ["index.html", "manifest.json", "sw.js", "icon-192.png", "icon-512.png"]
+COMMAND_FILES = ["index.html", "door.css", "door-logic.js", "door.js", "manifest.json", "sw.js"]   # its icons are the Life OS's: one copy in the repo
+COMMAND_ICONS = ["icon-192.png", "icon-512.png"]
 
 
 def _buildinfo() -> dict:
@@ -67,7 +70,7 @@ main{max-width:34rem;padding:1.5rem}a{color:#c9a84c}h1{font-size:1.4rem;margin:0
 <body><main><h1>All Apps lives on your own SecuRAX node</h1>
 <p>This copy of the Life OS is hosted so it opens on any device, even with every machine off. The Command Center (chat, the
 AI gateway, the other apps) runs on your own laptop or server.</p>
-<p>Open it at that machine's address. Your Life OS data stays on this device, and in your own encrypted sync copy if you turned it on.</p>
+<p>The <a href="../command/index.html">Command Center door</a> finds whichever of your machines is up and opens it. Your Life OS data stays on this device, and in your own encrypted sync copy if you turned it on.</p>
 <p><a href="index.html">&larr; Back to the Life OS</a></p></main></body></html>
 """
 
@@ -76,8 +79,14 @@ def publish(out: pathlib.Path) -> dict:
     """Copy both apps under `out` and return {"app": [...missing], "vantage": [...missing], "build": {...}}."""
     info = _buildinfo()
     result = {"app": _copy(GM, out / "app", LIFE_OS_FILES, LIFE_OS_DIRS),
-              "vantage": _copy(GM / "vantage", out / "vantage", VANTAGE_FILES, []), "build": info}
-    for sub in ("app", "vantage"):
+              "vantage": _copy(GM / "vantage", out / "vantage", VANTAGE_FILES, []),
+              "command": _copy(GM / "command", out / "command", COMMAND_FILES, []), "build": info}
+    for icon in COMMAND_ICONS:
+        if (GM / icon).is_file():
+            shutil.copy2(GM / icon, out / "command" / icon)
+        else:
+            result["command"].append(icon)
+    for sub in ("app", "vantage", "command"):
         (out / sub / "build.json").write_text(json.dumps(info, indent=1) + "\n", "utf-8")
     (out / "app" / "hub.html").write_text(HUB_STUB, "utf-8")
     return result
@@ -86,11 +95,11 @@ def publish(out: pathlib.Path) -> dict:
 def main(argv: list[str]) -> int:
     out = pathlib.Path(argv[0]) if argv else ROOT / "website"
     res = publish(out)
-    bad = {k: v for k, v in res.items() if k in ("app", "vantage") and v}
+    bad = {k: v for k, v in res.items() if k in ("app", "vantage", "command") and v}
     if bad:
         print(f"✘ the app build is incomplete (run `node build.js` in guiding-map/): missing {bad}")
         return 1
-    print(f"published the Life OS to {out / 'app'} and Vantage to {out / 'vantage'}  (build {res['build']['label']})")
+    print(f"published the Life OS to {out / 'app'}, Vantage to {out / 'vantage'} and the Command Center door to {out / 'command'}  (build {res['build']['label']})")
     return 0
 
 

@@ -733,7 +733,7 @@ window.SECURAX_FEATURES = {
    "group": "Your own tools",
    "icon": "compass",
    "name": "Guiding Map",
-   "what": "Your daily cockpit for life and work: goals, check-ins and plans. Works offline, no AI needed. It is also published with the product site, so it opens and installs on every device even with all your own machines off (doc 130).",
+   "what": "Your daily cockpit for life and work: goals, check-ins and plans. Works offline, no AI needed. It is also published with the product site, so it opens and installs on every device even with all your own machines off (doc 130). A hosted Command Center door finds whichever of your machines is up and opens it, so the front door needs no machine either (doc 131).",
    "cmd": "./securax open",
    "path": "/",
    "port": 0,
