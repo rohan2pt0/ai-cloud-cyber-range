@@ -74,6 +74,8 @@ Run `./securax route "the task"`. It names the tier, and why:
 - **strong**: security, crypto, auth, sync or merge logic, regulator mapping, or a change across many areas. `./securax autobuild "…"` uses the strong open models by itself; work on it by hand in `./securax opencode --strong` (doc 83).
 
 Before you start, `./securax brief "the task"` prints the likely files, the lessons that apply and the checks that prove it (autobuild sends it to the model by itself).
+From a Claude chat, the `delegate` skill (`.claude/skills/delegate/`) does this for the owner: it routes the task, sends local and opencode work
+to the open models (`autobuild.yml`), and keeps Claude for strong-tier work and the review before merge.
 To ship, `./securax ship pr`, then `./securax ship watch N --fix 2 --merge` (doc 98): it watches CI, fixes red with autobuild and merges when green.
 Before merging anything the router calls strong, get a second look: `./securax review`. `./securax ai share` shows who did this month's work
 (Claude, the open models, you). Commits made with SecuRAX's own models end with the line `Assisted-by: SecuRAX open models`.
@@ -190,4 +192,11 @@ Zero Trust and the open-core model).** Judge every change against these; each is
 - **Observable and operable:** logs, metrics and traces with one correlation id; a runbook and `./securax why` for every failure.
 - **Delivered safely:** infrastructure as code, staged rollout, one-command rollback (`update` rolls back by itself).
 - **Documentation as a product:** a fresh engineer can install, run, troubleshoot, upgrade and recover from the docs alone.
-Hard gates (security, recoverability, regulation) are pass/fail regardless of any score.
+- **Fails well:** every error says what happened, why, and the one next step, in plain words; a failure seen twice gets an entry `./securax why`
+  can find (a known-error list), not a second investigation.
+- **Evolves without breaking:** versioned contracts, a deprecation named a release ahead, upgrade and rollback tested in the sandbox (doc 21).
+- **Simple beats clever:** the fewest moving parts that meet the need today (the amoeba); a part is added only when a measured condition calls for it.
+- **Measured by outcomes, not activity:** the four delivery keys (how often we ship, how long a change takes, how often a change fails, how fast
+  we restore) come from git and CI and show in `progress` (queue `delivery-four-keys`).
+**Applying it, 80/20:** list the gaps a change touches, rank them by risk × how many people it reaches ÷ effort, fix the top three this round and
+date the rest in the queue. Hard gates (security, recoverability, regulation) are pass/fail regardless of any score.
