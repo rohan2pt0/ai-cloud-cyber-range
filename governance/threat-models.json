@@ -1,0 +1,260 @@
+{
+ "about": "Threat models as plain text (doc 133, principle `threat-model`). Think like the attacker before you build: for every component that crosses a trust boundary, list its parts, its data flows and where trust changes, then say what could go wrong for each part in all six STRIDE ways. Each threat is mitigated with proof (an evidence file that exists), accepted with a reason and a review date that has not passed, or ruled out with a reason. Draw the diagram in any tool you like (the Microsoft Threat Modeling Tool, OWASP Threat Dragon, a whiteboard); this file is what the repository keeps, because a binary model file cannot be checked and a public repository should not hold one. Fitness `threat-modelled` holds the structure, the evidence and the dates; the number of models only goes up.",
+ "method": "STRIDE per element (Microsoft SDL)",
+ "categories": {
+  "S": "Spoofing",
+  "T": "Tampering",
+  "R": "Repudiation",
+  "I": "Information disclosure",
+  "D": "Denial of service",
+  "E": "Elevation of privilege"
+ },
+ "models": {
+  "command-door": {
+   "name": "The hosted Command Center door and each node's /_door.json",
+   "scope": "A static page that lists a person's machines and asks each whether it is up; the one path each node answers itself.",
+   "boundaries": [
+    "the person's browser (this device)",
+    "the static site host",
+    "the internet between the page and a machine",
+    "a link sent by someone else"
+   ],
+   "elements": [
+    {
+     "id": "door-page",
+     "kind": "process"
+    },
+    {
+     "id": "device-list",
+     "kind": "store"
+    },
+    {
+     "id": "node-door",
+     "kind": "process"
+    },
+    {
+     "id": "site-host",
+     "kind": "external"
+    },
+    {
+     "id": "setup-link",
+     "kind": "external"
+    }
+   ],
+   "flows": [
+    {
+     "from": "door-page",
+     "to": "node-door",
+     "data": "GET /_door.json: no cookie, no body",
+     "crosses": "the internet"
+    },
+    {
+     "from": "setup-link",
+     "to": "door-page",
+     "data": "a list of addresses in a link",
+     "crosses": "a link sent by someone else"
+    },
+    {
+     "from": "site-host",
+     "to": "door-page",
+     "data": "the page's own code",
+     "crosses": "the static site host"
+    }
+   ],
+   "threats": [
+    {
+     "id": "cd-s1",
+     "stride": "S",
+     "element": "setup-link",
+     "threat": "A crafted link adds a machine the attacker controls, so the person opens a look-alike Command Center.",
+     "status": "mitigated",
+     "mitigation": "the link only shows what it wants to add and waits for a yes; only https addresses or this device are accepted; nothing but a plain GET is ever sent to a listed machine",
+     "evidence": "governance/tests/test_command_door.py"
+    },
+    {
+     "id": "cd-s2",
+     "stride": "S",
+     "element": "node-door",
+     "threat": "Something that is not the machine (a dead tunnel's error page, a look-alike) answers the status check, so a dead machine reads as up.",
+     "status": "mitigated",
+     "mitigation": "a machine counts as up only on one exact sentence, readable cross-origin; both false-green cases are tested",
+     "evidence": "governance/tests/test_command_door.py"
+    },
+    {
+     "id": "cd-t1",
+     "stride": "T",
+     "element": "setup-link",
+     "threat": "A malformed, oversized or prototype-polluting link corrupts the list.",
+     "status": "mitigated",
+     "mitigation": "every field is rebuilt from validated parts; the list is capped; garbage is ignored",
+     "evidence": "governance/tests/test_command_door.py"
+    },
+    {
+     "id": "cd-t2",
+     "stride": "T",
+     "element": "site-host",
+     "threat": "The host, or the account that publishes to it, is compromised and serves altered page code.",
+     "status": "accepted",
+     "reason": "The page holds no keys and sends only credential-free requests, so the damage is a wrong machine address; the account is protected and the apps move to a host that applies headers.",
+     "review": "2026-11-20"
+    },
+    {
+     "id": "cd-r1",
+     "stride": "R",
+     "element": "door-page",
+     "threat": "A person denies an action the door took for them.",
+     "status": "not-applicable",
+     "reason": "The door performs no action on anyone's behalf: it only lists and links; the machine it opens keeps its own audit."
+    },
+    {
+     "id": "cd-i1",
+     "stride": "I",
+     "element": "door-page",
+     "threat": "The list of machines or the visit leaks to a third party.",
+     "status": "mitigated",
+     "mitigation": "no request leaves except to a listed machine, without cookies or referrer; a strict content policy forbids anything else",
+     "evidence": "website/_headers"
+    },
+    {
+     "id": "cd-i2",
+     "stride": "I",
+     "element": "device-list",
+     "threat": "Another site on the same browser origin reads the list from storage.",
+     "status": "accepted",
+     "reason": "The list holds addresses only (no keys or passwords), and the shared origin is removed by hosting the apps on an origin of their own.",
+     "review": "2026-11-20"
+    },
+    {
+     "id": "cd-d1",
+     "stride": "D",
+     "element": "node-door",
+     "threat": "A hostile or hung machine stalls the page or floods it.",
+     "status": "mitigated",
+     "mitigation": "a four-second timeout, a cap on the number of machines, and a fifteen-second interval only while the page is visible",
+     "evidence": "governance/tests/test_command_door.py"
+    },
+    {
+     "id": "cd-e1",
+     "stride": "E",
+     "element": "door-page",
+     "threat": "Text from a link or a machine becomes script in the page.",
+     "status": "mitigated",
+     "mitigation": "text is only ever set as text, never as markup; no inline script is allowed by the policy; a test forbids innerHTML and its relatives",
+     "evidence": "governance/tests/test_command_door.py"
+    }
+   ]
+  },
+  "hosted-apps": {
+   "name": "The hosted Life OS and Vantage, with OneDrive sync",
+   "scope": "Single-file apps served from a static host, holding a person's data on the device and an encrypted copy in their own OneDrive.",
+   "boundaries": [
+    "the person's browser (this device)",
+    "the static site host",
+    "Microsoft's sign-in and OneDrive"
+   ],
+   "elements": [
+    {
+     "id": "app-page",
+     "kind": "process"
+    },
+    {
+     "id": "device-store",
+     "kind": "store"
+    },
+    {
+     "id": "onedrive-copy",
+     "kind": "store"
+    },
+    {
+     "id": "ms-signin",
+     "kind": "external"
+    },
+    {
+     "id": "site-host",
+     "kind": "external"
+    }
+   ],
+   "flows": [
+    {
+     "from": "app-page",
+     "to": "onedrive-copy",
+     "data": "an encrypted copy of the person's data",
+     "crosses": "Microsoft's sign-in and OneDrive"
+    },
+    {
+     "from": "site-host",
+     "to": "app-page",
+     "data": "the app's own code",
+     "crosses": "the static site host"
+    }
+   ],
+   "threats": [
+    {
+     "id": "ha-s1",
+     "stride": "S",
+     "element": "ms-signin",
+     "threat": "A look-alike copy of the app asks for the Microsoft sign-in.",
+     "status": "mitigated",
+     "mitigation": "the sign-in only returns to addresses allow-listed in the person's own app registration",
+     "evidence": "docs/securax/72-SYNC-AND-BACKUP-WITHOUT-THE-LAPTOP.md"
+    },
+    {
+     "id": "ha-t1",
+     "stride": "T",
+     "element": "onedrive-copy",
+     "threat": "The OneDrive copy is altered or rolled back.",
+     "status": "mitigated",
+     "mitigation": "authenticated encryption (AES-256-GCM); a copy that would wipe most of the data is refused",
+     "evidence": "docs/securax/72-SYNC-AND-BACKUP-WITHOUT-THE-LAPTOP.md"
+    },
+    {
+     "id": "ha-r1",
+     "stride": "R",
+     "element": "app-page",
+     "threat": "Two devices edit and nobody can say which change came from where.",
+     "status": "accepted",
+     "reason": "Sync merges per key by last writer and keeps no per-edit audit; for one person's own data this is a convenience loss, not a control gap.",
+     "review": "2027-01-31"
+    },
+    {
+     "id": "ha-i1",
+     "stride": "I",
+     "element": "onedrive-copy",
+     "threat": "Microsoft, or anyone who gets the file, reads the person's data.",
+     "status": "mitigated",
+     "mitigation": "the copy is encrypted on the device with a key from the person's passphrase, which never leaves the device",
+     "evidence": "docs/securax/72-SYNC-AND-BACKUP-WITHOUT-THE-LAPTOP.md"
+    },
+    {
+     "id": "ha-i2",
+     "stride": "I",
+     "element": "device-store",
+     "threat": "Other sites on the same browser origin, and a host that sends no security headers, expose the stored data to framing and storage reads.",
+     "status": "accepted",
+     "reason": "GitHub Pages ignores the header file and shares one origin per account; header rules are written and an origin of its own is dated.",
+     "review": "2026-11-20",
+     "evidence": "website/_headers"
+    },
+    {
+     "id": "ha-d1",
+     "stride": "D",
+     "element": "site-host",
+     "threat": "The static host is down, so the app cannot load.",
+     "status": "mitigated",
+     "mitigation": "every device keeps its own copy through a service worker; the app opens with the host down and with no network",
+     "evidence": "governance/tests/test_pwa_publish.py"
+    },
+    {
+     "id": "ha-e1",
+     "stride": "E",
+     "element": "app-page",
+     "threat": "Script injected into the single-file app reads the data and the sign-in tokens.",
+     "status": "accepted",
+     "reason": "The app carries inline code, so a strict script policy is not yet possible; framing and plugins are forbidden and the app's own origin plus a nonce policy are dated.",
+     "review": "2026-11-20",
+     "evidence": "website/_headers"
+    }
+   ]
+  }
+ }
+}

@@ -1,0 +1,75 @@
+{
+ "about": "The one door (doc 132, principle `one-door`). A person signs in ONCE, with an account they already have, and that is the only door: a passkey, Microsoft or Google. Every service the estate reaches is declared here, so adding one is ONE ENTRY, never a new login screen and never a stored password. Each entry says what works as a guest (everything should, first), what signing in adds, the narrowest permission it needs (asked for only when the feature is used), and the one place that takes it away. `login` is `primary` when the service is reached through the one door, and `separate` when it has its own credentials: a separate login is the friction register. Each one carries the fix and a date, or a standing reason it cannot go away, and fitness `signin-declared` lets the count only go down. To change the primary identity, change `primary_idp` and the sign-in method on Cloudflare Access: nothing else moves. Never put a secret, a token or a person here.",
+ "primary_idp": "microsoft",
+ "idps": {
+  "microsoft": {"name": "Microsoft (Entra ID)", "protocols": ["oidc", "saml"], "why": "your Azure app and OneDrive sync already use it, and Cloudflare Access has it built in"},
+  "google": {"name": "Google", "protocols": ["oidc"], "why": "the other native choice; doc 85 section 2.4 shows Google as the Access sign-in"}
+ },
+ "services": {
+  "life-os": {
+   "name": "Life OS and Vantage", "feature": "guiding-map", "provider": "microsoft", "protocol": "oauth2-pkce",
+   "scopes": ["Files.ReadWrite.AppFolder", "offline_access"],
+   "guest": "everything: the whole app works on this device with no sign-in",
+   "signed_in": "your data follows you across devices through your own encrypted OneDrive copy",
+   "login": "primary", "revoke": "Ops, then disconnect, on each device; or remove the app's access in your Microsoft account", "status": "built"
+  },
+  "command-center-door": {
+   "name": "Command Center door", "provider": "none", "protocol": "none", "scopes": [],
+   "guest": "the hosted door opens and lists your machines with no sign-in",
+   "signed_in": "the machines it opens ask you to sign in once, through the one door",
+   "login": "primary", "revoke": "nothing to revoke: it keeps no account; clear this device's list", "status": "built"
+  },
+  "cloudflare-access": {
+   "name": "Your own addresses (Command Center, Chat)", "provider": "cloudflare", "protocol": "oidc", "scopes": ["openid", "email", "profile"],
+   "guest": "none: it guards your own machines, so a sign-in is the point; on the machine itself nothing is asked",
+   "signed_in": "the Command Center and Chat on any device, with no password",
+   "login": "primary", "revoke": "./securax online remove <email>, then remove the person from the primary identity", "status": "partial"
+  },
+  "ai-gateway": {
+   "name": "The AI gateway", "provider": "cloudflare", "protocol": "oidc", "scopes": [],
+   "guest": "the local model answers with no sign-in, on the machine itself",
+   "signed_in": "your own allowance and audit trail, as the signed-in person",
+   "login": "primary", "revoke": "removing the person from Access ends their allowance; device and API keys are revoked in ./securax", "status": "built"
+  },
+  "tailscale": {
+   "name": "Private network between your machines", "provider": "tailscale", "protocol": "oidc", "scopes": [],
+   "guest": "none: a private network needs a sign-in; sign in with the SAME account as the primary identity",
+   "signed_in": "your machines and phones reach each other with no open port",
+   "login": "primary", "revoke": "remove the device or the user in the Tailscale admin", "status": "built"
+  },
+  "azure": {
+   "name": "Azure", "provider": "azure", "protocol": "device-code", "scopes": [],
+   "guest": "none: it is a cloud account; ./securax cloud status shows what is signed in",
+   "signed_in": "the Azure account you already own, with nothing installed",
+   "login": "primary", "revoke": "sign out of the cached sign-in under ~/.securax/cloud; remove the user in Entra", "status": "built"
+  },
+  "aws": {
+   "name": "AWS", "provider": "aws", "protocol": "device-code", "scopes": [],
+   "guest": "none: it is a cloud account",
+   "signed_in": "the AWS account you already own, with nothing installed",
+   "login": "separate", "revoke": "sign out of the cached sign-in under ~/.securax/cloud; delete the access key in AWS",
+   "fix": "AWS IAM Identity Center with the primary identity as its sign-in (it needs AWS Organizations and supports SAML 2.0 and SCIM)", "by": "2026-12-15", "status": "built"
+  },
+  "gcp": {
+   "name": "Google Cloud", "provider": "gcp", "protocol": "device-code", "scopes": [],
+   "guest": "none: it is a cloud account",
+   "signed_in": "the Google Cloud account you already own, with nothing installed",
+   "login": "separate", "revoke": "sign out of the cached sign-in under ~/.securax/cloud; remove the member in IAM",
+   "fix": "make Google the primary identity, or Workforce Identity Federation with the primary one (it needs a Google Cloud organization)", "by": "2027-01-31", "status": "built"
+  },
+  "github": {
+   "name": "GitHub (the code and its releases)", "provider": "github", "protocol": "oauth2-pkce", "scopes": [],
+   "guest": "the public repository reads with no sign-in",
+   "signed_in": "pull requests, releases and the site build",
+   "login": "separate", "revoke": "remove the token or the app's access in GitHub settings",
+   "standing": "A personal GitHub account has its own sign-in and no company single sign-on; the answer is a passkey on it, not a second password.", "status": "built"
+  },
+  "ai-provider-keys": {
+   "name": "Free AI provider keys (Gemini, Groq, OpenRouter, NVIDIA)", "provider": "various", "protocol": "api-key", "scopes": [],
+   "guest": "the local model needs no key at all",
+   "signed_in": "faster hosted answers on the free tiers",
+   "login": "separate", "revoke": "./securax providers list shows each; delete the key at its provider",
+   "standing": "Each provider issues its own key at its own sign-up; the estate keeps them in one place (./securax keys) and works with none.", "status": "built"
+  }
+ }
+}
