@@ -62,6 +62,7 @@ machine only when it says the exact sentence. It carries no cookie and no data, 
 | **Backups** | The laptop | Each node, your OneDrive, and the dormant cloud seed banks | The cloud banks are not applied yet (doc 29) | First live apply, dated in the queue |
 | **The code and releases** | GitHub | GitHub, plus a private GitLab mirror once you run its guided step | **Yes** until the mirror is on | In the queue, waiting for you |
 | **The domain** | github.io | github.io today; your own domain not live | Adding a domain adds a DNS dependency; keep both | — |
+| **Where the apps live in the browser** | One shared origin (`rohan2pt0.github.io`), with no security headers (GitHub Pages ignores `_headers`) | Header rules for the apps are written (`website/_headers`) | **Yes**: every Pages site on the account shares this origin's storage | An origin of their own on a host that reads the headers, dated in the queue |
 | **You, and the assistant** | You, and one paid assistant | A runbook, `./securax why`, `./securax next`, `./securax ask` on free keys | **Yes** for decisions only you can make | The emergency sheet in the Life OS |
 
 **Be careful with one claim.** The reference estate (a laptop, a server, a cloud instance) has no unaccepted critical single

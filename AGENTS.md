@@ -27,6 +27,8 @@ The principles behind it:
   add one entry to `governance/identity.json` (what it needs, the narrowest permission, what works as a guest, how one switch takes
   it away). Ask for a permission only when the feature is used. Everything works as a guest first. Fitness `signin-declared` fails an
   incomplete entry, an over-broad permission, and any new separate login: the count of separate logins only goes down.
+- **Enterprise grade (`enterprise-grade`):** design every component as if for the largest organisations. Section 7 is the review to run
+  FIRST in every session and before every merge, and how to spend a session's room.
 - **Small wins, shown:** progress you can see keeps people going.
 - **Least effort for the person:** the estate does the remembering, the checking and the reminding.
 - **Start as an amoeba, carry the DNA (`amoeba`):** ship the simplest living thing that helps today — one person, no
@@ -153,3 +155,22 @@ written down, are then lost. So:
    - **Ledger:** one row in the ledger of the doc it touched (for the range, "Cues taken from your material" in doc 79).
    - **CHANGELOG:** one line.
    - **Status:** the doc's status light.
+
+## 7. Enterprise grade, and a session that does not run out of room
+
+**Run these five lenses first in every session, on what you will touch, and before every merge.** Fix the cheap findings now; put the rest in
+`governance/queue.json` with a date and the next step. Say plainly what you could not test.
+1. **Single points of failure.** What stops if one machine, host, account, key or person is gone? (`./securax resilience`; the register in doc 131.)
+   Add a second node, active-active where it can be, active-passive where it cannot.
+2. **Friction.** Any login, step or screen a person repeats or needs a manual for? (`one-door`; `governance/identity.json`; fitness `signin-declared`.) Guest first.
+3. **UI and UX.** Both themes, a 390 px screen, keyboard, offline, no page errors, no contrast failures, in a real browser, not only jsdom
+   (`python3 guiding-map/tests/ui_audit.py OUTDIR`).
+4. **Security and privacy.** The narrowest permission; the origin and the headers of anything hosted (`website/_headers`); no secret or personal data in
+   the repository; sensitive data stays on local models.
+5. **Operate.** Can it be seen, recovered and taken away (offboarding)? A test or a drill proves it, not a sentence.
+
+**Spend the room like money.** Read the queue and only the lines of a file you need (`grep -n`, `sed -n`, `head`, `tail`); never print a whole file. Run the
+fast gates first and the full tests in the background, reading only the last lines. Do not subscribe to pull-request events (each is thousands of tokens):
+open the PR, set ONE check-in, merge when green. One PR per round, pushed once. Replies: the result, what was not tested, the next step. At about 60% of
+the room, push, update the queue and stop; the next session starts from the repository, not from this conversation.
+
