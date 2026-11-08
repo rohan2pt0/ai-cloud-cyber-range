@@ -23,6 +23,12 @@ def test_the_estate_passes_its_own_selftest():
     assert "selftest" in [r["command"] for r in data["commands"]]
 
 
+def test_network_probes_run_offline_so_ci_does_not_time_out():
+    # a read-only probe must not depend on a live network: `backlog` reaches GitHub (15s api timeout) and timed out past
+    # the 60s cap in CI, so its probe uses the local-only --offline mode the cockpit already uses.
+    assert st.READONLY["backlog"] == ["backlog", "--offline"]
+
+
 def test_every_advertised_command_is_wired():
     text = (ROOT / "securax").read_text("utf-8")
     known = st.recognized(text)

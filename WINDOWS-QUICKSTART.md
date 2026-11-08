@@ -5,14 +5,19 @@ Everything below is copy-paste. Don't skip a step. If a step prints a message th
 ## Step 1 — give SecuRAX enough memory (PowerShell, as Administrator)
 Right-click **Start → Terminal (Admin)** (or "Windows PowerShell (Admin)"), paste, press Enter:
 ```powershell
+# Reads this PC's memory and gives SecuRAX a safe share of it (Windows keeps the rest). Nothing to edit.
+$gb   = [math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1GB)
+$mem  = if ($gb -ge 14) { 10 } elseif ($gb -ge 11) { 6 } else { 3 }
+$swap = if ($gb -ge 14) { 6 } else { 8 }
 @"
 [wsl2]
-memory=10GB
-swap=6GB
+memory=${mem}GB
+swap=${swap}GB
 "@ | Set-Content -Path "$env:USERPROFILE\.wslconfig" -Encoding ascii
 wsl --shutdown
+Write-Host "This PC has $gb GB. SecuRAX gets ${mem}GB, with ${swap}GB of swap."
 ```
-(This reserves 10 GB of your 16 GB for Docker; Windows keeps 6 GB. If you ever have other heavy apps open, lower it to `8GB`.)
+(A 16 GB PC gives SecuRAX 10 GB and Windows keeps 6 GB. An 8 GB PC, such as an HP 240 G9 with one 8 GB module, gives it 3 GB: the estate sees how little it has and starts only its core by itself. If it still struggles, `./securax up --safe` runs just the AI gateway and the Command Center, and the always-on work belongs on a server: see [the go-live runbook](docs/securax/130-GO-LIVE-RUNBOOK.md). If you ever have other heavy apps open on a 16 GB PC, lower it to `8GB`.)
 
 ## Step 2 — start Docker Desktop and switch on the Ubuntu link
 1. Start menu → **Docker Desktop**. Wait until the bottom-left says **Engine running**.

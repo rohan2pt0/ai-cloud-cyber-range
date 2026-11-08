@@ -10,6 +10,7 @@ From features.json (what SecuRAX can do, in plain words) it writes:
   * website/index.html           the "whole estate" section of the product site   <!-- features:start --> ... <!-- features:end -->
   * docs/index.md                the docs home page table                         (same markers)
   * README.md                    the "What you can do" table                      (same markers)
+  * website/personal/index.html  the personal app's "Your own tools" cards, newest first, the newest marked New   (same markers)
 From products.json (what SecuRAX sells: each product, its price and its screenshot) it writes:
   * website/index.html           the "Products" section, with each product's real screenshot    <!-- products:start --> ... <!-- products:end -->
   * docs/securax/106-...md       the catalogue and price table in doc 106                         (same markers)
@@ -31,7 +32,9 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 FEATURES = ROOT / "features.json"
 HUB_JS = ROOT / "guiding-map" / "features.js"
-BLOCKS = {ROOT / "website" / "index.html": "html", ROOT / "docs" / "index.md": "docs", ROOT / "README.md": "readme"}
+BLOCKS = {ROOT / "website" / "index.html": "html", ROOT / "docs" / "index.md": "docs", ROOT / "README.md": "readme",
+          ROOT / "website" / "personal" / "index.html": "personal"}
+PERSONAL_GROUP = "Your own tools"  # the group the personal app sells; the rest of the estate is one link away
 PRODUCTS = ROOT / "products.json"
 PRODUCT_BLOCKS = {ROOT / "website" / "index.html": "html", ROOT / "docs" / "securax" / "106-WHO-SECURAX-IS-FOR.md": "docs"}
 FACT_FILES = ["README.md", "website/index.html", "portal/explainer.html", "docs/**/*.md"]
@@ -220,6 +223,25 @@ def block_html(data: dict) -> str:
             '  </div>\n  <div class="wrap grid3">\n' + "\n".join(cards) + "\n  </div>\n" + recent_block + "</section>")
 
 
+def block_personal(data: dict, new: int = 3) -> str:
+    """The personal app's tools, newest first, so the page shows what is current and what is new without a hand edit. A fixed
+    count marks New (not 'the last 30 days'), so the page does not change by itself as days pass."""
+    li = lights()
+    mine = [f for f in latest(data, len(data["features"])) if f["group"] == PERSONAL_GROUP]
+
+    def card(i: int, f: dict) -> str:
+        _, cls, label = LIGHT[li.get(f["doc"], "amber")]
+        tag = f'<span class="kicker">New · {E(f.get("added", ""))}</span>' if i < new else ""
+        return (f'    <div class="card">{tag}<h3>{E(f["name"])}</h3><p>{E(f["outcome"])}</p>'
+                f'<code>{E(f["open"]["cmd"])}</code><br><span class="light {cls}">{label}</span></div>')
+
+    return ('<section id="tools">\n  <div class="wrap center">\n    <span class="kicker">Your own tools</span>\n'
+            "    <h2>What it does for you today.</h2>\n"
+            f'    <p class="sub">{len(mine)} tools for one person, newest first, each with the one command that opens it. They are part of the '
+            f'<a href="../#estate"><!-- fact:features -->{len(data["features"])}<!-- /fact --> things SecuRAX does</a>.</p>\n'
+            '  </div>\n  <div class="wrap grid3">\n' + "\n".join(card(i, f) for i, f in enumerate(mine)) + "\n  </div>\n</section>")
+
+
 def _table(data: dict, link) -> str:
     li, out = lights(), []
     for g in data["groups"]:
@@ -246,7 +268,7 @@ def block_readme(data: dict) -> str:
             + "\n\nThis list is generated from [`features.json`](features.json); the Command Center, the website and the docs home page show the same one.")
 
 
-RENDER = {"html": block_html, "docs": block_docs, "readme": block_readme}
+RENDER = {"html": block_html, "docs": block_docs, "readme": block_readme, "personal": block_personal}
 
 
 def put_block(text: str, body: str, kind: str) -> str:
