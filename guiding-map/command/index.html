@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>SecuRAX Command Center</title>
+<meta name="description" content="Your front door to SecuRAX. It finds a machine of yours that is up.">
+<meta name="theme-color" content="#0d1f35">
+<!-- No inline code and nothing from another site: scripts and styles are this page's own files, and the only outside calls are the
+     probes to the machines you list (https, or this device). -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self'; img-src 'self' data:; connect-src 'self' https: http://localhost:* http://127.0.0.1:* http://*.localhost:*; manifest-src 'self'; worker-src 'self'; base-uri 'none'; form-action 'none'">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="door.css">
+</head>
+<body>
+<main>
+  <header>
+    <h1>Command Center</h1>
+    <p class="sub">Your front door. It finds a machine of yours that is up.</p>
+  </header>
+
+  <section id="status" class="card" aria-live="polite"><p>Checking your machines…</p></section>
+
+  <section id="import" class="card" hidden>
+    <h2>Add these machines?</h2>
+    <p>This link wants to add the machines below to this device. Check each address is yours.</p>
+    <ul id="import-list" class="plain"></ul>
+    <div class="row"><button id="import-yes" class="btn" type="button">Add them</button><button id="import-no" class="btn quiet" type="button">Ignore</button></div>
+  </section>
+
+  <section class="card">
+    <h2>Always available</h2>
+    <p class="mut">These open from this device's own copy, with every machine off.</p>
+    <div class="row"><a class="btn quiet" href="../app/">Life OS</a><a class="btn quiet" href="../vantage/">Vantage</a><a class="btn quiet" href="../docs/">Documentation</a></div>
+  </section>
+
+  <details id="machines" class="card">
+    <summary>Your machines <span id="count" class="mut"></span></summary>
+    <ul id="list" class="plain"></ul>
+    <form id="add" autocomplete="off">
+      <h2>Add a machine</h2>
+      <label>Name <input id="f-name" name="name" maxlength="40" placeholder="Server"></label>
+      <label>Address where you open the Command Center on it
+        <input id="f-url" name="url" type="url" inputmode="url" required placeholder="https://my-server.example.ts.net/"></label>
+      <label>Role
+        <select id="f-role" name="role">
+          <option value="primary">Primary: used whenever it is up (several primaries share the work)</option>
+          <option value="standby">Standby: used only when no primary is up</option>
+        </select></label>
+      <p id="msg" class="warn" role="alert" hidden></p>
+      <button class="btn" type="submit">Add machine</button>
+    </form>
+    <div class="share">
+      <button id="share" class="btn quiet" type="button">Copy a setup link for another device</button>
+      <p class="mut">The link holds the addresses only: no passwords, no keys. Anyone you send it to can add them to their own copy.</p>
+      <input id="share-box" type="text" readonly hidden aria-label="Setup link">
+    </div>
+  </details>
+
+  <footer><p class="mut">Your list of machines stays on this device. Nothing here is sent to anyone but the machines you list.</p></footer>
+</main>
+<script src="door-logic.js"></script>
+<script src="door.js"></script>
+</body>
+</html>

@@ -14,7 +14,7 @@ spec.loader.exec_module(pp)
 
 def _publish(tmp_path):
     res = pp.publish(tmp_path)
-    assert res["app"] == [] and res["vantage"] == [], f"incomplete build: {res}"
+    assert res["app"] == [] and res["vantage"] == [] and res["command"] == [], f"incomplete build: {res}"
     return res
 
 
@@ -25,6 +25,9 @@ def test_both_apps_are_published_with_everything_they_need(tmp_path):
         assert (tmp_path / "vantage" / name).is_file(), f"vantage/{name}"
     assert (tmp_path / "app" / "features.js").is_file()
     assert (tmp_path / "app" / "fonts").is_dir() and (tmp_path / "app" / "ocr").is_dir()
+    # the Command Center door (doc 131): its own files, the Life OS's icons, and a build.json
+    for name in ("index.html", "door.css", "door-logic.js", "door.js", "manifest.json", "sw.js", "icon-192.png", "icon-512.png", "build.json"):
+        assert (tmp_path / "command" / name).is_file(), f"command/{name}"
 
 
 def test_nothing_that_is_not_the_app_is_published(tmp_path):
@@ -39,7 +42,7 @@ def test_nothing_that_is_not_the_app_is_published(tmp_path):
 
 def test_the_build_json_carries_the_real_commit_so_devices_update_themselves(tmp_path):
     res = _publish(tmp_path)
-    for sub in ("app", "vantage"):
+    for sub in ("app", "vantage", "command"):
         b = json.loads((tmp_path / sub / "build.json").read_text("utf-8"))
         assert b["commit"] and re.fullmatch(r"[0-9a-f]{7,}", b["commit"]), b
         assert b == res["build"]
@@ -50,7 +53,7 @@ def test_the_build_json_carries_the_real_commit_so_devices_update_themselves(tmp
 def test_the_published_apps_work_from_a_subpath(tmp_path):
     """GitHub Pages serves a project site at /<repo>/app/, so nothing may point at the site root."""
     _publish(tmp_path)
-    for sub in ("app", "vantage"):
+    for sub in ("app", "vantage", "command"):
         html = (tmp_path / sub / "index.html").read_text("utf-8")
         rooted = re.findall(r'(?:src|href)="(/[^"]*)"', html)
         assert not rooted, f"{sub}/index.html has root-absolute references that break under a subpath: {rooted[:3]}"
@@ -71,12 +74,21 @@ def test_the_offline_shell_is_all_there(tmp_path):
     assert set(missing) <= {"hub.webmanifest"}, f"the offline shell names files that are not published: {missing}"
 
 
+def test_the_door_offline_shell_is_all_there(tmp_path):
+    _publish(tmp_path)
+    sw = (tmp_path / "command" / "sw.js").read_text("utf-8")
+    shell = re.findall(r'"\./([^"]*)"', sw.split("const SHELL = [")[1].split("];")[0])
+    missing = [f for f in shell if f and not (tmp_path / "command" / f).exists()]
+    assert not missing, f"the door's offline shell names files that are not published: {missing}"
+
+
 def test_all_apps_has_an_honest_landing_page_not_a_dead_link(tmp_path):
     """The app's All Apps button opens hub.html (the Command Center), which only a SecuRAX node has: a static host serves a
     landing page that says so and links back."""
     _publish(tmp_path)
     stub = (tmp_path / "app" / "hub.html").read_text("utf-8")
     assert "your own SecuRAX node" in stub and 'href="index.html"' in stub
+    assert 'href="../command/index.html"' in stub, "and it points at the door, which finds the node"
 
 
 def test_an_incomplete_app_build_is_refused(tmp_path, monkeypatch):
@@ -91,6 +103,6 @@ def test_the_build_script_publishes_the_apps_and_git_ignores_the_output():
     assert "tools/pwa_publish.py website" in build
     assert build.index("pwa_publish.py") < build.index("linkcheck.py"), "publish before the link check, so the check covers it"
     ignore = (ROOT / ".gitignore").read_text("utf-8")
-    assert "website/app/" in ignore and "website/vantage/" in ignore, "generated apps must stay out of git"
+    assert "website/app/" in ignore and "website/vantage/" in ignore and "website/command/" in ignore, "generated apps must stay out of git"
     docs = (ROOT / ".github" / "workflows" / "docs.yml").read_text("utf-8")
     assert docs.count('"guiding-map/**"') == 2, "a PWA change must republish the site (pull_request and push)"

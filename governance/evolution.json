@@ -53,7 +53,7 @@
    "organism": "the Life OS on one device: its data in that browser, working offline, opened from wherever it was installed",
    "stages": [
     {"id": "amoeba", "is": "one device, data in the browser, works offline; it depended on the one machine that served it", "have": true, "actuation": "auto"},
-    {"id": "colony", "have": true, "when": ["nodes>1"], "grows_to": "hosted as a static site so it opens on every device with no machine of yours running, and synced across devices through your own encrypted OneDrive copy", "rail": "tools/pwa_publish.py publishes it with the site (doc 130); OneDrive sync with a passphrase (doc 72); node-to-node sync (doc 86)", "actuation": "auto"},
+    {"id": "colony", "have": true, "when": ["nodes>1"], "grows_to": "hosted as a static site so it opens on every device with no machine of yours running, and synced across devices through your own encrypted OneDrive copy", "rail": "tools/pwa_publish.py publishes it with the site (doc 130); OneDrive sync with a passphrase (doc 72); node-to-node sync (doc 86); the hosted door finds a live node (doc 131)", "actuation": "auto"},
     {"id": "organism", "when": ["teams"], "grows_to": "an organisation's own address behind its sign-in, one person per account, a shared hub node, SSO", "rail": "Cloudflare Access in front of the app (doc 72, doc 85); the identity and tenancy platform services; hub sync", "actuation": "assisted"}
    ],
    "unfavourable": {"lost_node": "the hosted copy and the device copy both keep working with every machine of yours off; data returns from OneDrive sync or an exported backup"}

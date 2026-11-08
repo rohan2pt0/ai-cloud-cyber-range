@@ -110,6 +110,9 @@ line it prints, then the same the other way round. `./securax nodes` shows each 
 
 Check: `./securax nodes` and `./securax resilience` show no machine that everything depends on.
 
+**One front door that finds whichever machine is up.** Open the Command Center door at the site address plus `command/`, add each machine
+once, and it opens the one that is up (doc 131). On each machine first run `./securax update`, then `./securax down` and `./securax up`.
+
 ## 4. AWS, Google Cloud and Azure: sign in now, wake nothing yet
 
 The cloud Terraform has been proved by offline plans only, never applied to a live account (doc 29). So, while you are away:
