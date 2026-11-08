@@ -124,3 +124,11 @@ def test_site_css_cli_writes_and_checks_exactly(tmp_path):
     assert sc.main(["--check"]) == 0                              # a current file checks clean, exit 0
     out.write_text("stale", "utf-8")
     assert sc.main(["--check"]) == 1                              # a stale file fails with exactly 1
+
+
+def test_dark_pills_tags_and_code_are_overridden_after_the_inline_styles():
+    # The inline <style> of each page loads after site.css; without these higher-specificity dark rules the light pill and
+    # code backgrounds stay, and text on them fell to 1.4-2.4:1 in the first real-browser audit.
+    css = (ROOT / "website" / "site.css").read_text("utf-8")
+    for sel in ("html .l-g", "html .tag-r", "html code", "html .models ul"):
+        assert sel in css, f"site.css dark rules lack {sel}"

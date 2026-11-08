@@ -24,7 +24,7 @@ OUT = ROOT / "website" / "site.css"
 # status colours (--green, --amber, --red), lifted so a light on the dark navy card #111e33 passes WCAG AA.
 LIGHT = {"--navy": "#0b1b33", "--navy2": "#13294b", "--ink": "#0f1c33", "--text": "#2b3a55", "--muted": "#5b6b86",
          "--line": "#e3e8f0", "--bg": "#f6f8fb", "--card": "#fff", "--gold": "#e8b84a", "--gold2": "#8a6514",
-         "--green": "#15803d", "--amber": "#b45309", "--red": "#b91c1c", "--radius": "16px"}
+         "--green": "#13723a", "--amber": "#b45309", "--red": "#b91c1c", "--radius": "16px"}
 DARK = {**LIGHT, "--bg": "#0a1220", "--card": "#111e33", "--ink": "#edf2f9", "--text": "#c4cfdd", "--muted": "#96a5ba",
         "--line": "#26374e", "--gold2": "#e8b84a", "--green": "#4ade80", "--amber": "#fbbf24", "--red": "#f87171"}
 
@@ -33,7 +33,18 @@ def render() -> str:
     spec = importlib.util.spec_from_file_location("securax_site_design", ROOT / "governance" / "design.py")
     design = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(design)
-    return design.css(LIGHT, DARK)
+    return design.css(LIGHT, DARK) + DARK_RULES
+
+
+# The pages' own inline <style> loads after this file, so a dark override needs one more element in its selector to win.
+# Tinted pills, tags and code keep their light backgrounds otherwise, and their lifted text becomes unreadable on them.
+DARK_RULES = ("@media (prefers-color-scheme:dark){"
+              "html .l-g,html .tag-g{background:rgba(74,222,128,.14)}"
+              "html .l-a{background:rgba(251,191,36,.14)}"
+              "html .l-r,html .tag-r{background:rgba(248,113,113,.14)}"
+              "html code{background:#1b2a42;color:var(--ink)}"
+              "html .models ul{color:var(--text)}"
+              "html .btn-line{border-color:var(--ink);color:var(--ink)}}\n")
 
 
 def main(argv: list[str]) -> int:
