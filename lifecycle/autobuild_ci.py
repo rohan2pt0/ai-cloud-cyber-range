@@ -19,6 +19,7 @@ import pathlib
 import re
 import subprocess
 import sys
+import time
 
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 CATALOG = ROOT / "plugins" / "catalog.json"
@@ -67,25 +68,67 @@ def tier(task: str) -> str:
         return "strong"                      # unsure: the stronger models, never the weaker
 
 
-def prompt(env: dict) -> str:
+def prompt(env: dict, strong: bool = True) -> str:
     brief = pathlib.Path(env.get("AUTOBUILD_BRIEF", ""))
     text = brief.read_text("utf-8") if brief.is_file() else env.get("AUTOBUILD_TASK", "")
     fb = pathlib.Path(env.get("AUTOBUILD_FEEDBACK", ""))
     if fb.is_file() and fb.stat().st_size:
         why = subprocess.run([sys.executable, str(ROOT / "lifecycle" / "forge.py"), "brief", str(fb)], capture_output=True, text=True).stdout
         text += "\n\nThe previous attempt FAILED the gates. Fix exactly this, and change nothing else:\n" + (why or fb.read_text("utf-8")[-4000:])
-    return text + ("\n\nWork in this checkout. Follow AGENTS.md and BUILD-CONTRACT.md. Use the @planner subagent first, the "
-                   "@test-writer for the failing test, then @code-reviewer (and @security-reviewer for sensitive code) before you stop, "
-                   "and @docs-keeper for the paperwork. Do not commit, push, skip a test or weaken a rail: the gates run after you.")
+    how = ("Use the @planner subagent first, the @test-writer for the failing test, then @code-reviewer (and @security-reviewer for "
+           "sensitive code) before you stop, and @docs-keeper for the paperwork." if strong else
+           "Work directly: no subagents (each one is a whole extra model session, and this task is small). Read only what you need.")
+    return text + ("\n\nWork in this checkout. Follow AGENTS.md and BUILD-CONTRACT.md. " + how +
+                   " Do not commit, push, skip a test or weaken a rail: the gates run after you.")
+
+
+PROBE_CACHE = pathlib.Path.home() / ".cache" / "securax" / "go-models.json"
+PROBE_TTL_S = 6 * 3600
+
+
+def usable(models: list[str], run=subprocess.run, cache: pathlib.Path = PROBE_CACHE, now: float | None = None) -> list[str]:
+    """The models that answer a one-line prompt within a minute, remembered for six hours. A model the account cannot use
+    (a region or plan limit) or one that hangs is dropped before the real work, instead of costing an attempt. Never empty:
+    if none answers, the whole chain is tried as before."""
+    now = time.time() if now is None else now
+    try:
+        seen = json.loads(cache.read_text("utf-8"))
+    except (OSError, ValueError):
+        seen = {}
+    keep = []
+    for m in models:
+        hit = seen.get(m)
+        if not hit or now - hit.get("at", 0) > PROBE_TTL_S:
+            try:
+                ok = run(["opencode", "run", "--model", f"{PROVIDER}/{m}", "Reply with the single word OK."], cwd=str(ROOT),
+                         timeout=60, capture_output=True).returncode == 0
+            except subprocess.TimeoutExpired:
+                ok = False
+            hit = seen[m] = {"ok": ok, "at": now}
+        if hit["ok"]:
+            keep.append(m)
+    try:
+        cache.parent.mkdir(parents=True, exist_ok=True)
+        cache.write_text(json.dumps(seen), "utf-8")
+    except OSError:
+        pass
+    return keep or models
 
 
 def agent(env: dict | None = None, run=subprocess.run) -> int:
     env = dict(os.environ if env is None else env)
-    models = chain("strong" if tier(env.get("AUTOBUILD_TASK", "")) == "strong" else "builder")
-    text = prompt(env)
+    strong = tier(env.get("AUTOBUILD_TASK", "")) == "strong"
+    models = chain("strong" if strong else "builder")
+    if env.get("AUTOBUILD_PROBE", "1") != "0":
+        models = usable(models, run)
+    text = prompt(env, strong)
+    budget = int(env.get("AUTOBUILD_MODEL_MINUTES", "25")) * 60     # a hung model call must not hold the whole run
     rc = 1
     for m in models:
-        rc = run(["opencode", "run", "--model", f"{PROVIDER}/{m}", text], cwd=str(ROOT)).returncode
+        try:
+            rc = run(["opencode", "run", "--model", f"{PROVIDER}/{m}", text], cwd=str(ROOT), timeout=budget).returncode
+        except subprocess.TimeoutExpired:
+            rc = 124
         if rc == 0:
             break
         print(f"autobuild_ci: {m} did not finish (exit {rc}); trying the next model in the chain", file=sys.stderr)

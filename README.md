@@ -131,6 +131,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- Open-model builds no longer hang for hours
 - Delegating to the open models has no single point of failure and needs no settings page
 - The reference bar gains the vital few it lacked (AGENTS.md section 7)
 - Build from the Claude chat with the open models doing the heavy lifting (`delegate` skill, doc 83)
@@ -138,7 +139,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - The personal app's page shows its tools, newest first, generated from the one list of features
 - The reference bar for enterprise grade (AGENTS.md section 7)
 - Threat modelling is now a core principle, held as plain text by a check (`threat-model`, doc 133)
-- Enterprise review is now a standing rule, not something to ask for each time (`enterprise-grade`, AGENTS.md section 7), and the first sweep found a real gap
 
 **Release 0.3.0 - 2026-10-22:**
 

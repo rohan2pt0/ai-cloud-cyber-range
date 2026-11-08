@@ -26,11 +26,11 @@ def test_the_config_reaches_only_opencode_go_and_cannot_fetch_the_web():
 def test_hard_work_uses_the_strong_chain_and_a_failed_model_hands_over(monkeypatch, tmp_path):
     calls = []
 
-    def run(cmd, cwd=None):
+    def run(cmd, cwd=None, **kw):
         calls.append(cmd)
         return subprocess.CompletedProcess(cmd, 1 if len(calls) == 1 else 0)
     monkeypatch.setattr(ci, "tier", lambda task: "strong")
-    assert ci.agent({"AUTOBUILD_TASK": "fake: harden the sync merge"}, run=run) == 0
+    assert ci.agent({"AUTOBUILD_TASK": "fake: harden the sync merge", "AUTOBUILD_PROBE": "0"}, run=run) == 0
     models = [c[3] for c in calls if c[0] == "opencode"]
     assert models[:2] == ["gocode/deepseek-v4-pro", "gocode/kimi-k3"]
     assert calls[-1] == ["git", "add", "-A"]
@@ -79,3 +79,37 @@ def test_every_pull_request_gets_an_open_model_review_without_exposing_a_write_t
     assert step["with"]["persist-credentials"] is False
     run = wf["jobs"]["review"]["steps"][-1]["run"]
     assert "lifecycle/review.py" in run and 'if [ -z "$REVIEW_API_KEY" ]' in run
+
+
+def test_a_hung_model_is_cut_off_and_the_next_one_takes_over(monkeypatch):
+    calls = []
+
+    def run(cmd, cwd=None, timeout=None, **kw):
+        calls.append((cmd, timeout))
+        if cmd[0] == "opencode" and len([c for c in calls if c[0][0] == "opencode"]) == 1:
+            raise subprocess.TimeoutExpired(cmd, timeout)
+        return subprocess.CompletedProcess(cmd, 0)
+    monkeypatch.setattr(ci, "tier", lambda task: "local")
+    assert ci.agent({"AUTOBUILD_TASK": "fake: a small page fix", "AUTOBUILD_PROBE": "0", "AUTOBUILD_MODEL_MINUTES": "2"}, run=run) == 0
+    tried = [(c[3], t) for c, t in calls if c[0] == "opencode"]
+    assert len(tried) == 2 and tried[0][1] == 120 and tried[0][0] != tried[1][0]
+
+
+def test_models_the_account_cannot_use_are_dropped_once_and_remembered(tmp_path):
+    cache, calls = tmp_path / "go.json", []
+
+    def run(cmd, cwd=None, **kw):
+        calls.append(cmd[3])
+        if cmd[3].endswith("blocked"):
+            return subprocess.CompletedProcess(cmd, 1)
+        if cmd[3].endswith("hangs"):
+            raise subprocess.TimeoutExpired(cmd, 60)
+        return subprocess.CompletedProcess(cmd, 0)
+    assert ci.usable(["blocked", "hangs", "good"], run, cache, now=1000.0) == ["good"]
+    assert ci.usable(["blocked", "hangs", "good"], run, cache, now=2000.0) == ["good"] and len(calls) == 3   # remembered
+    assert ci.usable(["blocked"], run, cache, now=1000.0 + ci.PROBE_TTL_S + 1) == ["blocked"]              # never empty
+
+
+def test_small_work_skips_the_subagents_and_hard_work_keeps_them():
+    assert "no subagents" in ci.prompt({"AUTOBUILD_TASK": "fake"}, strong=False)
+    assert "@planner" in ci.prompt({"AUTOBUILD_TASK": "fake"}, strong=True)
