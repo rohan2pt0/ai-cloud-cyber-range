@@ -17,9 +17,10 @@ command -v opencode >/dev/null 2>&1 || npm install -g -s opencode-ai@1.19.0 >/de
   echo "CANNOT-START opencode could not be installed (npm blocked?)"; exit 2; }
 export OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY:-placeholder-the-proxy-adds-the-real-key}"
 
-git fetch -q origin main
+BASE="${DELEGATE_BASE:-origin/main}"   # a branch whose fixes are not merged yet can be the base
+git fetch -q origin "${BASE#origin/}"
 WT="$(mktemp -d)/build"
-git worktree add -q --detach "$WT" origin/main
+git worktree add -q --detach "$WT" "$BASE"
 trap 'git -C "$ROOT" worktree remove --force "$WT" >/dev/null 2>&1 || true' EXIT
 cd "$WT"
 
