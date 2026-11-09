@@ -1667,11 +1667,19 @@ def j_webui(sb: H.Sandbox, c: Checks):
         page = b.page()
         page.goto(f"{H.WEBUI}/auth")
         page.wait_for_load_state("networkidle")
-        if page.locator("input[type=email]").count():
-            page.fill("input[type=email]", "sbx@example.com")
-            page.fill("input[type=password]", "sbx-pass-123")
+        # Find the sign-in fields by name, not type: Open WebUI 0.13 made the e-mail field type="text" inputmode="email",
+        # so 'input[type=email]' matched nothing, the journey never signed in, and #chat-input never appeared.
+        email, password = "input[name=email], input[type=email]", "input[name=password], input[type=password]"
+        if page.locator(email).count():
+            page.locator(email).first.fill("sbx@example.com")
+            page.locator(password).first.fill("sbx-pass-123")
             page.click("button[type=submit]")
-        page.wait_for_selector("#chat-input", timeout=45000)
+        try:
+            page.wait_for_selector("#chat-input", timeout=45000)
+        except Exception:  # noqa: BLE001
+            H.shot(page, "open_webui_signin_stuck")
+            raise RuntimeError(f"the chat box never appeared after signing in; the page is {page.url} "
+                               "(see open_webui_signin_stuck.png: a changed sign-in form is the usual cause)") from None
         page.wait_for_timeout(2500)
         ok_btn = page.get_by_role("button", name=re.compile("Okay", re.I))     # the first-login "What's New" modal
         if ok_btn.count():
