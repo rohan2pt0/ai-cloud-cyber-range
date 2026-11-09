@@ -18,7 +18,8 @@ command -v opencode >/dev/null 2>&1 || npm install -g -s opencode-ai@1.19.0 >/de
 export OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY:-placeholder-the-proxy-adds-the-real-key}"
 
 BASE="${DELEGATE_BASE:-origin/main}"   # a branch whose fixes are not merged yet can be the base
-git fetch -q origin "${BASE#origin/}"
+# two runs started together race for the same ref lock: retry the fetch a few times before giving up
+for _try in 1 2 3 4; do git fetch -q origin "${BASE#origin/}" && break; sleep $((_try * 3)); done
 WT="$(mktemp -d)/build"
 git worktree add -q --detach "$WT" "$BASE"
 trap 'git -C "$ROOT" worktree remove --force "$WT" >/dev/null 2>&1 || true' EXIT
