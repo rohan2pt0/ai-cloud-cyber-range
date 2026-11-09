@@ -51,6 +51,7 @@ def _addr():
 HERE = pathlib.Path(__file__).resolve().parent
 ROOT = HERE.parent
 OUT = ROOT / "portal" / "cockpit.html"
+PORTAL = ROOT / "portal"
 ENVF = ROOT / "local" / "compose" / ".env"
 HOME = pathlib.Path(os.environ.get("SECURAX_HOME_DIR") or pathlib.Path.home() / ".securax")
 RAG_ORDER = {"red": 0, "amber": 1, "unknown": 2, "green": 3}
@@ -884,6 +885,13 @@ def quad(key: str, title: str, sub: str, items: list[dict], limit: int = 5) -> s
     return f"<div class='q {key}'><h3>{E(title)} <span class='muted'>· {E(sub)}</span></h3>{('<ul>' + li + '</ul>') if items else '<div class=muted>Nothing here.</div>'}{more}</div>"
 
 
+def estate_map_link() -> str:
+    # The estate map is one tap away: a relative link once ./securax map has built it, otherwise how to build it (no dead link).
+    if (PORTAL / "estate-map.html").exists():
+        return " · <a href='estate-map.html'>Estate map</a>"
+    return " · build it: ./securax map"
+
+
 def render(c: Collector, maps: dict, hist: list[dict], ai: str, now: float, target: float) -> tuple[str, dict]:
     ms = sorted(c.metrics, key=lambda m: (RAG_ORDER[m["status"]], m["id"]))
     reds = [m for m in ms if m["status"] == "red"]
@@ -901,7 +909,7 @@ def render(c: Collector, maps: dict, hist: list[dict], ai: str, now: float, targ
     h = [f"<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1,viewport-fit=cover'><title>SecuRAX Cockpit</title><style>{CSS}</style></head><body><main>"]
     # Dark-cockpit rule (Airbus, mission control): when everything is normal nothing is lit. Only what is abnormal is shown;
     # the nominal readings and the planning views stay one click away, so the eye goes straight to what needs a decision.
-    nav = (ROOT / "portal" / "navigator.html").exists()
+    nav = (PORTAL / "navigator.html").exists()
     try:                                                          # overdue risk treatments light a lamp only when there are any
         _rs = importlib.util.spec_from_file_location("risks", ROOT / "governance" / "risks.py")
         _rm = importlib.util.module_from_spec(_rs)
@@ -964,7 +972,7 @@ def render(c: Collector, maps: dict, hist: list[dict], ai: str, now: float, targ
     extra = lamps[3:]
     h.append(f"<div class='card head {overall}'><div class='topbar'><span class='master {overall}'>{MASTER[overall]}</span>"
              f"<h1>{E(headline)}</h1><span class='muted meta'>{E(stamp)} · <a href='/hub.html'>All apps</a>"
-             + (" · <a href='/portal/navigator.html'>Controls</a>" if nav else "") + "</span></div>")
+             + (" · <a href='/portal/navigator.html'>Controls</a>" if nav else "") + estate_map_link() + "</span></div>")
     if nxt:
         h.append("<ol class='do'>" + "".join(f"<li><b>{E(i['title'])}</b>" + (f" <code>{E(i['cmd'])}</code>" if i["cmd"] else f" <span class='muted'>{E(short(i['action'], 80))}</span>")
                                             + "</li>" for i in nxt) + "</ol>")

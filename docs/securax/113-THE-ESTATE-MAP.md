@@ -1,7 +1,7 @@
 # The estate map: see the whole thing at once
 
 <!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
-> **Status: 🟢 Built.** Built and tested: ./securax map generates an interactive, self-contained HTML picture of the whole estate from features.json and governance/suite.json — 43 components coloured by area around the 16 shared platform services they use, with hover, click-for-detail, filter and search; works offline in light or dark. Tested by tools/tests/test_estate_map.py (every component a node, every 'uses' an edge, no external resource). A Command Center link and resilience/compliance overlays are queued. [What the lights mean](../index.md#the-status-lights)
+> **Status: 🟢 Built.** Built and tested: ./securax map generates an interactive, self-contained HTML picture of the whole estate from features.json and governance/suite.json — 43 components coloured by area around the 16 shared platform services they use, with hover, click-for-detail, filter and search; works offline in light or dark. Tested by tools/tests/test_estate_map.py (every component a node, every 'uses' an edge, no external resource). One tap from the Command Center cockpit (a relative link, or 'build it: ./securax map' until built). Resilience/compliance overlays are queued. [What the lights mean](../index.md#the-status-lights)
 <!-- status:end -->
 
 A long list of 43 components tells you what exists; it does not show you how the estate hangs together. `./securax map`

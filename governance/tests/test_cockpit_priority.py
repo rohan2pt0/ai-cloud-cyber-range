@@ -69,6 +69,24 @@ def test_the_page_is_a_dark_cockpit(monkeypatch):
     assert "gap backlog" not in head and "Implement" not in head     # builders' backlog stays in Mission planning, never in "do next"
 
 
+def test_estate_map_is_one_tap_from_the_cockpit(monkeypatch, tmp_path):
+    # The estate map is a relative link beside "All apps" and "Controls"; until it is built, the cockpit says how, no dead link.
+    import urllib.request
+
+    def offline(*a, **k):
+        raise OSError("offline in tests")
+    monkeypatch.setattr(urllib.request, "urlopen", offline)
+    monkeypatch.setattr(cockpit, "PORTAL", tmp_path)
+
+    (tmp_path / "estate-map.html").write_text("")
+    html, _d, _c = cockpit.build(fast=True)
+    assert "href='estate-map.html'" in html and "Estate map" in html
+
+    (tmp_path / "estate-map.html").unlink()
+    html, _d, _c = cockpit.build(fast=True)
+    assert "./securax map" in html and "href='estate-map.html'" not in html
+
+
 def test_an_instrument_shows_its_reading_whole_and_its_detail_small():
     m = {"id": "disk", "label": "Disk", "value": "2.7% free (7.2 GB)", "status": "red", "why": "w"}
     out = cockpit.instrument(m)
