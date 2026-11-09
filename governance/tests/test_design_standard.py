@@ -205,3 +205,24 @@ def test_the_display_serif_is_self_hosted_and_matches_the_life_os():
         page = (ROOT / rel).read_text("utf-8")
         assert base64.b64encode(font).decode() in page, f"{rel}: the serif is embedded, so it works offline"
         assert "#000000" not in page and not re.search(r"background:#000[;}\s]", page), f"{rel}: no pure black"
+
+
+def test_the_hosted_door_is_on_the_premium_language_and_may_load_its_serif(tmp_path):
+    # The door people reach from the hosted site (guiding-map/command/, published to /command/) has a strict policy with no
+    # inline code, so it links the serif as a same-origin file that the publish step copies in, and its policy allows fonts.
+    css = (ROOT / "guiding-map" / "command" / "door.css").read_text("utf-8")
+    light, dark = blocks(css.replace(":root{color-scheme:light dark;", ":root{"))
+    for theme, block in (("light", light), ("dark", dark)):
+        for k, v in PREM["tokens"][theme].items():
+            assert f"{k}:{v}" in block, f"door.css: {theme} {k}"
+    assert "url(serif.woff2)" in css and "prefers-reduced-motion" in css and "min-height:44px" in css
+    page = (ROOT / "guiding-map" / "command" / "index.html").read_text("utf-8")
+    assert "font-src 'self'" in page
+    assert '"./serif.woff2"' in (ROOT / "guiding-map" / "command" / "sw.js").read_text("utf-8"), "cached for offline"
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("securax_pwa_publish_t", ROOT / "tools" / "pwa_publish.py")
+    pub = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(pub)
+    res = pub.publish(tmp_path)
+    assert res["command"] == [], res["command"]
+    assert (tmp_path / "command" / "serif.woff2").read_bytes() == (ROOT / PREM["type"]["display_font_file"]).read_bytes()

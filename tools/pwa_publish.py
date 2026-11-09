@@ -86,6 +86,11 @@ def publish(out: pathlib.Path) -> dict:
             shutil.copy2(GM / icon, out / "command" / icon)
         else:
             result["command"].append(icon)
+    font = ROOT / "guiding-map" / "fonts" / "InstrumentSerif-Regular.woff2"   # the door's serif: one copy in the repo
+    if font.is_file():
+        shutil.copy2(font, out / "command" / "serif.woff2")
+    else:
+        result["command"].append("serif.woff2")
     for sub in ("app", "vantage", "command"):
         (out / sub / "build.json").write_text(json.dumps(info, indent=1) + "\n", "utf-8")
     (out / "app" / "hub.html").write_text(HUB_STUB, "utf-8")

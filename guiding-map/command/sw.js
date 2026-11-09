@@ -3,7 +3,7 @@
    old cache by itself. Only this site's own files are touched: the probes to your machines are other sites and pass straight through. */
 const BUILD = new URL(self.location.href).searchParams.get("b") || "dev";
 const CACHE = "securax-door-" + BUILD;
-const SHELL = ["./", "./index.html", "./door.css", "./door-logic.js", "./door.js", "./manifest.json", "./icon-192.png", "./icon-512.png"];
+const SHELL = ["./", "./index.html", "./door.css", "./serif.woff2", "./door-logic.js", "./door.js", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 
 self.addEventListener("install", e => {
   e.waitUntil(

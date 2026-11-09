@@ -138,7 +138,7 @@ The product should read as private-bank grade: calm, exact, a little precious. T
   data stay on the neutrals.
 - **Copy.** Short, warm and certain, like a concierge. No exclamation marks.
 
-**Rollout.** The Command Center door is the first screen on the language (before and after, both themes, phone and laptop, in the PR).
+**Rollout.** The Command Center is the first screen on the language: the hosted door people reach from the site (`guiding-map/command/`) and the node's own page (`hub.html`) (before and after, both themes, phone and laptop, in the PR).
 The product site home and the Life OS Today screen follow as one slice each. Only after the owner says yes to all three does `premium` replace
 the older `tokens` for every page.
 

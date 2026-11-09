@@ -131,7 +131,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
-- A premium design language, and the Command Center door is the first screen on it
+- A premium design language, and the Command Center (the hosted door and the node's page) is the first screen on it
 - `./securax progress` now shows the first two delivery keys, read from git alone
 - The product site is on the design standard, held by a real-browser audit
 - The lifecycle doc now says plainly, with dates, when the forest stage and the private cloud are built
