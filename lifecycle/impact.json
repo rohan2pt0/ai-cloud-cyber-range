@@ -51,7 +51,7 @@
     "install.ps1",
     "brand.env",
     "integrations.txt",
-    "local/compose/docker-compose.yml",
+    "local/compose/docker-compose.yml", ".devcontainer/devcontainer.json",
     "local/compose/full-stack.yml",
     "local/compose/design.yml",
     "local/compose/.env.example",

@@ -92,3 +92,13 @@ Then the checks:
 - It does not put a chat client in the browser that calls a model with your own key. That would bypass the gateway's rails: the
   allowance, the audit chain and the data-class check. A hosted page is for finding the machine, not for skipping the controls.
 - It does not stand up cloud machines while nobody is watching.
+
+## When the laptop dies: the estate in your browser (2026-11-09)
+
+The hosted door only finds a running machine; it cannot replace one. So the estate now has a cloud standby that needs no
+purchase: a GitHub Codespace built from `.devcontainer/devcontainer.json` (Docker inside, the gate's packages installed).
+From any browser, phone included: github.com, this repository, **Code → Codespaces → Create codespace on main**; in its
+terminal, `./securax up`; the Command Center opens on its forwarded address, behind your GitHub sign-in. A personal
+account's free allowance is 120 core hours a month (about 60 hours on the 2-core machine this uses); a codespace stops
+when idle, so it is a standby you start when needed, not an always-on node. Private data (`vault/`) is never in the
+repository, so the standby starts without it; restore it from your off-site backup or sync copy.

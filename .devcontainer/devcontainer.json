@@ -1,0 +1,15 @@
+{
+  "name": "SecuRAX estate (cloud standby)",
+  "image": "mcr.microsoft.com/devcontainers/python:3.12",
+  "features": {
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/node:1": { "version": "22" }
+  },
+  "hostRequirements": { "cpus": 2, "memory": "8gb" },
+  "postCreateCommand": "pip install -q -r apps/llm-gateway/requirements-dev.txt pyyaml ruff && (cd guiding-map && npm ci --silent || true)",
+  "portsAttributes": {
+    "8222": { "label": "Command Center", "onAutoForward": "openBrowser" },
+    "8080": { "label": "AI gateway", "onAutoForward": "silent" }
+  },
+  "remoteEnv": { "SECURAX_STANDBY": "codespace" }
+}
