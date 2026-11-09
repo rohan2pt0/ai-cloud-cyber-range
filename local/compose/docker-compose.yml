@@ -154,7 +154,7 @@ services:
     logging: *default-logging
 
   ollama:
-    image: ollama/ollama:0.40.6
+    image: ollama/ollama:0.40.14
     security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
     # Sized to YOUR machine by `./securax profile` (writes OLLAMA_MEM / OLLAMA_CPUS to .env).
     mem_limit: ${OLLAMA_MEM:-5g}
@@ -195,7 +195,7 @@ services:
 
   # ---- observability / SIEM-lite (maps to Wazuh+Sentinel+Chronicle in the cloud) ----
   loki:
-    image: grafana/loki:3.7.8
+    image: grafana/loki:3.7.9
     security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
     profiles: ["security"]
     command: ["-config.file=/etc/loki/local-config.yaml"]
@@ -204,7 +204,7 @@ services:
     logging: *default-logging
 
   grafana:
-    image: grafana/grafana:13.2.4@sha256:dbbc38ea21103cefb50396340cd88afec779c7e070b0a7bf5a75b4ce46651d3f
+    image: grafana/grafana:13.3.0@sha256:488984b716c0862639f91a698adbe2862677a5a07bad42da5f03f3030883b205
     security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
     profiles: ["security"]
     environment:
@@ -217,7 +217,7 @@ services:
 
   # ---- on-demand DevSecOps scanners (run once, then exit) ----
   trivy:
-    image: aquasec/trivy:0.76.0
+    image: aquasec/trivy:0.76.2
     security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
     profiles: ["security"]
     # It scans, prints and EXITS. It used to stay up (sleep infinity) holding the Docker socket, and the socket gives full control of
@@ -233,7 +233,7 @@ services:
   # Unified chat UI. All traffic is pointed at the GUARDRAIL GATEWAY (not LiteLLM
   # directly), so every prompt/response passes the Red/Yellow/Green rails first.
   open-webui:
-    image: ghcr.io/open-webui/open-webui:v0.12.3@sha256:a537bbe1e6b428820f52ed4a029d7fff97062e24d5cf32c365fba36fd0542def
+    image: ghcr.io/open-webui/open-webui:v0.13.2@sha256:4f1dd4d81ef1445d4e4bfb4a7a55838dfb1de38a834a0fbe7615d92990333a71
     security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
     # 1.5 GB: document search embeds INSIDE this container (local model, nothing leaves the box), which needs about
     # 0.5 GB on its own; at 1 GB uploading your handbooks could kill it. Doing it in Ollama instead would evict your chat
@@ -283,7 +283,7 @@ services:
   # Private document chat (Retrieval-Augmented Generation) for RED-TIER data.
   # Talks straight to local Ollama; nothing leaves the laptop.
   anythingllm:
-    image: mintplexlabs/anythingllm:1.18.0@sha256:5461782e7db41318a516925949a8f8366e258dd576411fca7961fe77dff054cc   # pinned (was :latest, which changes under you); 1.18.0 so nobody's data is downgraded
+    image: mintplexlabs/anythingllm:1.19.0@sha256:daf5a6ae9d363ed578e7d41e2d0668c7eaa604bd90b0ff27435f893b0906833e   # pinned (was :latest, which changes under you); 1.18.0 so nobody's data is downgraded
     security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
     mem_limit: 2g
     cpus: 1.5
@@ -305,7 +305,7 @@ services:
   # The password manager (doc 84): Vaultwarden, a small server for the Bitwarden apps (browser extension, phone, desktop). Your vault is
   # encrypted on your own device before it reaches this server. Off until `./securax start passwords`; sign-ups close after your account.
   vaultwarden:
-    image: ghcr.io/dani-garcia/vaultwarden:1.37.4@sha256:efb3cde962015fcc036b2ea625242248611943b27212ebf4392841fb30fad055
+    image: ghcr.io/dani-garcia/vaultwarden:1.37.5@sha256:4fe17f415f90087377d37c755e0ea3cf189dcc6794e49cdd2a9adbb4937d9e1f
     security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
     mem_limit: 128m
     cpus: 0.5
@@ -326,7 +326,7 @@ services:
   # Online (doc 85, ./securax online setup): an outbound-only Cloudflare Tunnel to hub.<domain> and chat.<domain>, behind Cloudflare
   # Access (your sign-in). No port is published and nothing listens on the internet; it starts only when CF_TUNNEL_TOKEN is set.
   cloudflared:
-    image: cloudflare/cloudflared:2026.10.1@sha256:a15a3b50b8dabd57ac2090e9484c0247dba9dfa1f0df4d298d4317f9d69eb2d5
+    image: cloudflare/cloudflared:2026.10.7@sha256:4955524aeaa379e154023d5a027c250f7b35041a2e7e950cf13f144bc9b9c5ba
     mem_limit: 128m
     cpus: 0.25
     profiles: ["online"]
@@ -343,7 +343,7 @@ services:
   # Automation engine (the "glue"): morning brief, email triage, data-tier router, etc.
   # Call the gateway at http://gateway:8080/v1/chat/completions from any workflow.
   n8n:
-    image: n8nio/n8n:2.44.4@sha256:c72fa9f1bd9b59626deeb284824c0495625c3f6d894d395d27e241bf192d9900
+    image: n8nio/n8n:2.46.6@sha256:8602f5dfacbe2c931eeafd010de0e68182310e9f309921e780ab69182e92b3ae
     security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
     mem_limit: 768m
     cpus: 1.0
@@ -369,7 +369,7 @@ services:
   # the gateway (OpenAI-compatible) at http://gateway:8080/v1 — zero Claude tokens. Hardening (non-root, scoped mount,
   # auth, a sandbox journey) is queued (doc 119); this is the usable first version.
   studio:
-    image: codercom/code-server:4.143.1@sha256:377b66bec5645510ed52549bb00e648c273edc604d230a3f90fd2b2433afcb97
+    image: codercom/code-server:4.145.0-39@sha256:c09d2717f75005996866720f117437d939126e5592ddb9d03bbac901da479da2
     security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
     mem_limit: 2g
     cpus: 2.0
