@@ -46,6 +46,20 @@ READONLY: dict[str, list[str]] = {
     "stages": ["stages"], "phones": ["phones"], "status": ["status"],
 }
 
+# Extra argv lists per command, run after its READONLY probe so the common read-only SUBCOMMANDS are proven too, not just
+# each command's default form. Same pass/fail rule: a crash fails, a clean non-zero exit ("not set up") does not.
+#   comply runs once per map in governance/regmap.py MAPS, so a broken map file (owasp-ai, free-ai, ...) is caught here.
+#   readiness list / lessons recent are the read-only listings of their private stores (the write forms are start/mark/done
+#   and add — left out on purpose).
+#   Candidates already proven by READONLY above and so not repeated: routines list, suite check, ai share, tls status.
+#   lessons has no "list" subcommand: its default list is READONLY["lessons"], and "recent" is the only named read-only form.
+SUBCOMMAND_PROBES: dict[str, list[list[str]]] = {
+    "comply": [["comply", name] for name in
+               ("rbi", "cscrf", "mit-ai-risk", "nist-ai-600-1", "pqc", "caf", "owasp-ai", "free-ai", "ztmm")],
+    "readiness": [["readiness", "list"]],
+    "lessons": [["lessons", "recent"]],
+}
+
 # A traceback or a shell/dispatch error means the command threw; a clean non-zero exit (a handled "not set up") does not.
 _THREW = re.compile(r"Traceback \(most recent call last\)|unknown command|command not found|No such file or directory"
                     r"|ModuleNotFoundError|SyntaxError|IndentationError")
@@ -134,37 +148,106 @@ def run_probe(argv: list[str]) -> tuple[str, str]:
     return "ok", ""
 
 
+def _is_ok(r: dict) -> bool:
+    """A command passes only when it is wired, every module loads and every probe ran clean."""
+    modules_ok = all(m["state"] != "fail" for m in r["modules"])
+    probe_ok = r["probe"] is None or r["probe"]["state"] == "ok"
+    subprobes_ok = all(p["state"] == "ok" for p in r["subprobes"])
+    return r["wired"] and modules_ok and probe_ok and subprobes_ok
+
+
+def _command_result(c: str, known: set[str], bodies: dict[str, str], probe_readonly: bool) -> dict:
+    r: dict = {"command": c, "wired": c in known, "modules": [], "probe": None, "subprobes": []}
+    for rel in modules_in(bodies.get(c, "")):
+        state, detail = load_module(rel)
+        r["modules"].append({"file": rel, "state": state, "detail": detail})
+    if probe_readonly:
+        if c in READONLY:
+            state, detail = run_probe(READONLY[c])
+            r["probe"] = {"argv": READONLY[c], "state": state, "detail": detail}
+        for argv in SUBCOMMAND_PROBES.get(c, []):
+            state, detail = run_probe(argv)
+            r["subprobes"].append({"argv": argv, "state": state, "detail": detail})
+    r["ok"] = _is_ok(r)
+    return r
+
+
+def _summarize(results: list[dict]) -> dict:
+    probes_run = 0
+    probes_failed: list[str] = []
+    modules_broken: list[str] = []
+    loaded = 0
+    need_dep = 0
+    wired = 0
+    not_wired: list[str] = []
+    failed_commands: list[str] = []
+    for r in results:
+        if r["wired"]:
+            wired += 1
+        else:
+            not_wired.append(r["command"])
+        if not r["ok"]:
+            failed_commands.append(r["command"])
+        probes_run += (1 if r["probe"] else 0) + len(r["subprobes"])
+        for p in [r["probe"], *r["subprobes"]]:
+            if p and p["state"] == "fail":
+                probes_failed.append(f"{r['command']} {' '.join(p['argv'])}: {p['detail']}")
+        for m in r["modules"]:
+            state = m["state"]
+            if state == "ok":
+                loaded += 1
+            elif state == "dep":
+                need_dep += 1
+            else:
+                modules_broken.append(f"{m['file']} ({m['detail']})")
+    return {
+        "commands": len(results),
+        "wired": wired,
+        "not_wired": not_wired,
+        "modules_loaded": loaded,
+        "modules_need_dep": need_dep,
+        "modules_broken": modules_broken,
+        "probes_run": probes_run,
+        "probes_failed": probes_failed,
+        "failed_commands": failed_commands,
+    }
+
+
 def run(probe_readonly: bool = True) -> dict:
     text = CLI.read_text("utf-8")
     cmds = advertised()
+    for c in SUBCOMMAND_PROBES:            # a probed subcommand must run even if its help line is too rich for advertised()
+        if c not in cmds:
+            cmds.append(c)
     known = recognized(text)
     bodies = dispatch_table(text)
-    results = []
-    for c in cmds:
-        r: dict = {"command": c, "wired": c in known, "modules": [], "probe": None}
-        for rel in modules_in(bodies.get(c, "")):
-            state, detail = load_module(rel)
-            r["modules"].append({"file": rel, "state": state, "detail": detail})
-        if probe_readonly and c in READONLY:
-            state, detail = run_probe(READONLY[c])
-            r["probe"] = {"argv": READONLY[c], "state": state, "detail": detail}
-        r["ok"] = (r["wired"]
-                   and all(m["state"] != "fail" for m in r["modules"])
-                   and (r["probe"] is None or r["probe"]["state"] == "ok"))
-        results.append(r)
-    summary = {
-        "commands": len(results),
-        "wired": sum(1 for r in results if r["wired"]),
-        "not_wired": [r["command"] for r in results if not r["wired"]],
-        "modules_loaded": sum(len([m for m in r["modules"] if m["state"] == "ok"]) for r in results),
-        "modules_need_dep": sum(len([m for m in r["modules"] if m["state"] == "dep"]) for r in results),
-        "modules_broken": [f"{m['file']} ({m['detail']})" for r in results for m in r["modules"] if m["state"] == "fail"],
-        "probes_run": sum(1 for r in results if r["probe"]),
-        "probes_failed": [f"{r['command']} {' '.join(r['probe']['argv'])}: {r['probe']['detail']}"
-                          for r in results if r["probe"] and r["probe"]["state"] == "fail"],
-        "failed_commands": [r["command"] for r in results if not r["ok"]],
-    }
+    results = [_command_result(c, known, bodies, probe_readonly) for c in cmds]
+    summary = _summarize(results)
     return {"ok": not summary["failed_commands"], "summary": summary, "commands": results}
+
+
+def _probe_note(p: dict) -> str:
+    verb = "ran " if p["state"] == "ok" else "THREW "
+    detail = f" — {p['detail']}" if p["state"] == "fail" else ""
+    return verb + "`" + " ".join(p["argv"]) + "`" + detail
+
+
+def _note_for(r: dict) -> str:
+    bad = [m for m in r["modules"] if m["state"] == "fail"]
+    dep = [m for m in r["modules"] if m["state"] == "dep"]
+    mark = "✔" if r["ok"] else "✘"
+    note = []
+    if not r["wired"]:
+        note.append("NOT WIRED")
+    if bad:
+        note.append("broken: " + ", ".join(f"{m['file']} — {m['detail']}" for m in bad))
+    if dep:
+        note.append("needs a dependency: " + ", ".join(m["file"] for m in dep))
+    if r["probe"]:
+        note.append(_probe_note(r["probe"]))
+    for p in r.get("subprobes", []):
+        note.append(_probe_note(p))
+    return f"  {mark} {r['command']:<14} {'; '.join(note)}"
 
 
 def report(data: dict, quiet: bool = False, say=print) -> None:
@@ -172,20 +255,7 @@ def report(data: dict, quiet: bool = False, say=print) -> None:
     if not quiet:
         say("SELFTEST · every ./securax command, proved it loads and the safe ones run (no side effects).\n")
         for r in data["commands"]:
-            bad = [m for m in r["modules"] if m["state"] == "fail"]
-            dep = [m for m in r["modules"] if m["state"] == "dep"]
-            mark = "✔" if r["ok"] else "✘"
-            note = []
-            if not r["wired"]:
-                note.append("NOT WIRED")
-            if bad:
-                note.append("broken: " + ", ".join(f"{m['file']} — {m['detail']}" for m in bad))
-            if dep:
-                note.append("needs a dependency: " + ", ".join(m["file"] for m in dep))
-            if r["probe"]:
-                note.append(("ran " if r["probe"]["state"] == "ok" else "THREW ")
-                            + "`" + " ".join(r["probe"]["argv"]) + "`" + (f" — {r['probe']['detail']}" if r["probe"]["state"] == "fail" else ""))
-            say(f"  {mark} {r['command']:<14} {'; '.join(note)}")
+            say(_note_for(r))
         say("")
     say(f"{s['commands']} commands · {s['wired']} wired · {s['modules_loaded']} modules load"
         f" ({s['modules_need_dep']} need a dependency) · {s['probes_run']} read-only probes run.")

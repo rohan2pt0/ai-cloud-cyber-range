@@ -29,6 +29,22 @@ def test_network_probes_run_offline_so_ci_does_not_time_out():
     assert st.READONLY["backlog"] == ["backlog", "--offline"]
 
 
+def test_subcommand_probes_are_real_and_read_only():
+    # every SUBCOMMAND_PROBES key is a command the CLI dispatches (found via dispatch_table on the real securax text),
+    # and no probe argv uses a word that changes state, so the extra probes stay side-effect free like READONLY.
+    text = (ROOT / "securax").read_text("utf-8")
+    bodies = st.dispatch_table(text)
+    deny = {"up", "down", "start", "stop", "render", "reconcile", "pull", "push",
+            "send", "write", "add", "approve", "install", "update", "release"}
+    assert set(st.SUBCOMMAND_PROBES) <= set(bodies), \
+        f"not a dispatched command: {sorted(set(st.SUBCOMMAND_PROBES) - set(bodies))}"
+    for cmd, argvs in st.SUBCOMMAND_PROBES.items():
+        assert argvs, f"{cmd} lists no subcommand probes"
+        for argv in argvs:
+            bad = deny & set(argv)
+            assert not bad, f"{cmd} probe {argv} uses a state-changing word: {bad}"
+
+
 def test_every_advertised_command_is_wired():
     text = (ROOT / "securax").read_text("utf-8")
     known = st.recognized(text)
@@ -64,6 +80,43 @@ def test_threw_detects_a_traceback_not_a_handled_nonzero():
     thrown = subprocess.CompletedProcess([], 1, "", "Traceback (most recent call last):\n  ValueError")
     handled = subprocess.CompletedProcess([], 1, "nothing configured yet\n", "")
     assert st._threw(thrown) and not st._threw(handled)
+
+
+def test_is_ok_requires_wired_clean_modules_and_clean_probes():
+    clean = {"command": "x", "wired": True, "modules": [{"state": "ok"}], "probe": {"state": "ok"}, "subprobes": []}
+    assert st._is_ok(clean)
+    assert not st._is_ok({"command": "x", "wired": False, "modules": [], "probe": None, "subprobes": []})
+    assert not st._is_ok({"command": "x", "wired": True, "modules": [{"state": "fail"}], "probe": None, "subprobes": []})
+    assert not st._is_ok({"command": "x", "wired": True, "modules": [], "probe": {"state": "fail"}, "subprobes": []})
+    assert not st._is_ok({"command": "x", "wired": True, "modules": [], "probe": None, "subprobes": [{"state": "fail"}]})
+
+
+def test_summary_counts_probes_and_lists_failures():
+    # _summarize is pure, so feed it synthetic results to prove the counts and the failure list are exact.
+    results = [
+        {"command": "comply", "wired": True, "modules": [{"file": "a.py", "state": "ok", "detail": ""}],
+         "probe": {"argv": ["comply", "rbi"], "state": "ok", "detail": ""},
+         "subprobes": [{"argv": ["comply", "owasp-ai"], "state": "fail", "detail": "boom"}], "ok": False},
+        {"command": "bogus", "wired": False, "modules": [{"file": "b.py", "state": "fail", "detail": "x"},
+                                                          {"file": "c.py", "state": "dep", "detail": "y"}],
+         "probe": None, "subprobes": [], "ok": False},
+    ]
+    s = st._summarize(results)
+    assert s["probes_run"] == 2
+    assert s["probes_failed"] == ["comply comply owasp-ai: boom"]
+    assert s["modules_broken"] == ["b.py (x)"]
+    assert s["modules_loaded"] == 1
+    assert s["modules_need_dep"] == 1
+    assert s["wired"] == 1
+    assert s["not_wired"] == ["bogus"]
+    assert s["failed_commands"] == ["comply", "bogus"]
+
+
+def test_summary_reports_every_probe_run_on_the_real_estate():
+    data = st.run(probe_readonly=True)
+    expected = sum((1 if r["probe"] else 0) + len(r["subprobes"]) for r in data["commands"])
+    assert data["summary"]["probes_run"] == expected
+    assert expected > 0
 
 
 def test_report_marks_a_failure_clearly():

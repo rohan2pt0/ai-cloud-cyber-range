@@ -131,6 +131,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- `./securax selftest` now also runs the common read-only subcommands, not just each command's default form
 - `./securax progress` now shows the first two delivery keys, read from git alone
 - The product site is on the design standard, held by a real-browser audit
 - The lifecycle doc now says plainly, with dates, when the forest stage and the private cloud are built
@@ -138,7 +139,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - The product site's dark mode is readable everywhere
 - [The four product-site pages now take every colour from the one generated stylesheet (doc 100)](docs/securax/100-DESIGN-STANDARD.md)
 - A test now keeps the Life OS installable as a phone app on every change
-- [The product site's stylesheet is now generated from the shared design standard (doc 100)](docs/securax/100-DESIGN-STANDARD.md)
 
 **Release 0.3.0 - 2026-10-22:**
 
