@@ -131,14 +131,14 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
-- Delegating to the open models has no single point of failure and needs no settings page
-- The reference bar gains the vital few it lacked (AGENTS.md section 7)
-- Build from the Claude chat with the open models doing the heavy lifting (`delegate` skill, doc 83)
-- [The SOC now pages on six controls that held but told nobody (doc 30)](docs/securax/30-PURPLE-TEAM-LOOP.md)
-- The personal app's page shows its tools, newest first, generated from the one list of features
-- The reference bar for enterprise grade (AGENTS.md section 7)
-- Threat modelling is now a core principle, held as plain text by a check (`threat-model`, doc 133)
-- Enterprise review is now a standing rule, not something to ask for each time (`enterprise-grade`, AGENTS.md section 7), and the first sweep found a real gap
+- `./securax progress` now shows the first two delivery keys, read from git alone
+- The product site is on the design standard, held by a real-browser audit
+- The lifecycle doc now says plainly, with dates, when the forest stage and the private cloud are built
+- The core database moves to PostgreSQL 18 without the start-up failure a plain version bump would cause
+- The product site's dark mode is readable everywhere
+- [The four product-site pages now take every colour from the one generated stylesheet (doc 100)](docs/securax/100-DESIGN-STANDARD.md)
+- A test now keeps the Life OS installable as a phone app on every change
+- [The product site's stylesheet is now generated from the shared design standard (doc 100)](docs/securax/100-DESIGN-STANDARD.md)
 
 **Release 0.3.0 - 2026-10-22:**
 

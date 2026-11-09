@@ -867,7 +867,8 @@ $(python3 "$ROOT/lifecycle/forge.py" brief "$FB")"
       if ( cd "$ROOT" && bash -c "${AUTOBUILD_VERIFY:-\"$0\" verify}" && python3 lifecycle/diffcheck.py --base "$ORIG" && python3 lifecycle/forge.py gate --base "$ORIG" ) > "$FB.new" 2>&1; then
         if [ "$i" -gt 1 ] && [ -s "$FB" ]; then                 # it went red, then green: keep what the red taught, for the next agent
           _WHY="$(python3 "$ROOT/lifecycle/forge.py" brief "$FB" 2>/dev/null | grep -v '^[[:space:]]*$' | head -1)"
-          python3 "$ROOT/lifecycle/lessons.py" add --area autobuild "$TASK: first attempt failed on ${_WHY:-the gate}; fixed on attempt $i" >/dev/null 2>&1 || true
+          _T="$(printf '%s' "$TASK" | head -1 | cut -c1-70)"   # the task's title, never the whole brief (it once pasted 20 lines into LESSONS.md)
+          python3 "$ROOT/lifecycle/lessons.py" add --area autobuild "$_T: first attempt failed on ${_WHY:-the gate}; fixed on attempt $i" >/dev/null 2>&1 || true
         fi
         git -C "$ROOT" add -A
         if git -C "$ROOT" diff --cached --quiet; then C "Agent made no changes — nothing to commit."; else

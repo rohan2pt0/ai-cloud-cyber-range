@@ -171,6 +171,24 @@ def nudges(r: dict) -> list[str]:
     return out
 
 
+def delivery_line(cwd: pathlib.Path | None = None) -> str | None:
+    """The first two delivery keys from git (governance/delivery.py), or None when git is missing or fails. The report
+    never fails on it: with no git there is simply no line."""
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("delivery", ROOT / "governance" / "delivery.py")
+        dlv = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(dlv)
+        d = dlv.compute(cwd=cwd or ROOT)
+    except Exception:  # noqa: BLE001 (git may be missing; skip the line, never break the report)
+        return None
+    if not d.get("git_ok"):
+        return None
+    ships = d["ships_per_week"]
+    unit = "ship" if ships == 1 else "ships"
+    return f"Delivery: {ships:g} {unit} a week, {round(d['change_fail_rate'] * 100)}% needed a fix (last 4 weeks)"
+
+
 def new_features(now: float, days: int = 30) -> list[dict]:
     """What arrived in the estate lately (features.json "added"), newest first, so a person hears about it and uses it."""
     try:
@@ -208,6 +226,9 @@ def report(p: dict, say=print) -> None:
     say(f"  postmortem actions open: {s['actions_open']}" + (f" ({s['actions_late']} late or without an owner)" if s["actions_late"] else ""))
     if s["weak_points"] is not None:
         say(f"  single points of failure still open: {s['weak_points']}" + ("  (./securax resilience)" if s["weak_points"] else ""))
+    d = delivery_line()
+    if d:
+        say("\n" + d)
     if p.get("new"):
         say("\nNew in the estate (the last 30 days): try one")
         for f in p["new"][:5]:

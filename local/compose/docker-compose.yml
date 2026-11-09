@@ -26,7 +26,7 @@ networks:
     internal: true   # Postgres never needs the internet — kept fully isolated.
 
 volumes:
-  pgdata:
+  pgdata18:
   ollama:
   loki:
   grafana:
@@ -180,14 +180,15 @@ services:
     logging: *default-logging
 
   postgres:
-    image: postgres:16-alpine
+    image: postgres:18-alpine
     profiles: ["core", "security", "ai"]
     restart: unless-stopped
     environment:
       POSTGRES_USER: range
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
       POSTGRES_DB: range
-    volumes: ["pgdata:/var/lib/postgresql/data"]
+    # 18+ keeps its data in /var/lib/postgresql/18/docker and refuses the old .../data mount; a fresh volume, as 16 held no data
+    volumes: ["pgdata18:/var/lib/postgresql"]
     networks: [data]
     security_opt: ["no-new-privileges:true"]
     logging: *default-logging
@@ -429,7 +430,7 @@ services:
 
   # ---- Guiding Map PWA (your local-first life OS) — tiny, always-on, private ----
   guiding-map:
-    image: nginx:1.30-alpine@sha256:c59d1f8b1e0e42da75be973424cd72e23f7f8adfb54e982f4d1cd0216a5a5576
+    image: nginx:1.31-alpine@sha256:785835ea65db4bba6f021acc0f3be91b0fef76a53fe41f8588c6698d2aed0606
     security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
     profiles: ["core", "security", "ai"]
     restart: unless-stopped

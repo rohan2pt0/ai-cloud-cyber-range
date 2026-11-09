@@ -66,3 +66,69 @@ def test_brand_apps_keep_their_colours_but_meet_the_basics():
     for rel in STD["rules"]["brand_apps_with_the_basics"]:
         src = (ROOT / rel).read_text("utf-8")
         assert ":focus-visible" in src and "prefers-reduced-motion" in src, rel
+
+
+def test_the_site_stylesheet_is_the_generators_output():
+    # The product site keeps its own navy and gold but takes the standard's basics from governance/design.py, so a change in
+    # design.json reaches the site too. website/site.css is the checked-in result of tools/site_css.py; the two must agree.
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("securax_site_css_t", ROOT / "tools" / "site_css.py")
+    sc = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(sc)
+    css = sc.render()
+    on_disk = (ROOT / "website" / "site.css").read_text("utf-8")
+    assert on_disk == css, "website/site.css is stale: run  python3 tools/site_css.py"
+    assert ":focus-visible" in on_disk and "prefers-reduced-motion" in on_disk, "website/site.css"
+
+
+def test_the_product_site_pages_take_their_colours_from_the_one_stylesheet():
+    # The four product-site pages keep their navy and gold but take every colour from the shared generated website/site.css,
+    # never from an inline palette of their own, and meet the notch-safe basics.
+    pages = {
+        "website/index.html": 'rel="stylesheet" href="site.css"',
+        "website/assess/index.html": 'rel="stylesheet" href="../site.css"',
+        "website/nbfc/index.html": 'rel="stylesheet" href="../site.css"',
+        "website/personal/index.html": 'rel="stylesheet" href="../site.css"',
+    }
+    for rel, href in pages.items():
+        page = (ROOT / rel).read_text("utf-8")
+        assert href in page, f"{rel}: missing {href}"
+        assert "viewport-fit=cover" in page, rel
+        assert ":root{" not in page, f"{rel} defines its own palette; take it from website/site.css"
+        assert "background:#fff" not in page, f"{rel} hardcodes white cards; use var(--card)"
+
+
+def test_the_dark_status_colours_pass_on_the_dark_card():
+    # The site's dark theme keeps its own lifted green, amber and red so a status light stays readable on the navy card
+    # #111e33 (WCAG AA); the light values are the deep shades the site has always used on white.
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("securax_site_css_dark_t", ROOT / "tools" / "site_css.py")
+    sc = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(sc)
+    _, dark = blocks(sc.render())
+    for k, v in (("--green", "#4ade80"), ("--amber", "#fbbf24"), ("--red", "#f87171")):
+        assert f"{k}:{v}" in dark, f"site.css dark {k} should be {v} (AA on #111e33)"
+
+
+def test_site_css_cli_writes_and_checks_exactly(tmp_path):
+    # main() is the CLI: it writes the file and returns 0, checks a current file and returns 0, and a stale one and
+    # returns exactly 1 (so a loosened or dropped return value fails here; the forge gate mutates these returns).
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("securax_site_css_cli_t", ROOT / "tools" / "site_css.py")
+    sc = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(sc)
+    out = tmp_path / "site.css"
+    sc.OUT = out
+    assert sc.main([]) == 0                                        # the write path returns 0
+    assert out.read_text("utf-8") == sc.render()                  # and writes the generator's output
+    assert sc.main(["--check"]) == 0                              # a current file checks clean, exit 0
+    out.write_text("stale", "utf-8")
+    assert sc.main(["--check"]) == 1                              # a stale file fails with exactly 1
+
+
+def test_dark_pills_tags_and_code_are_overridden_after_the_inline_styles():
+    # The inline <style> of each page loads after site.css; without these higher-specificity dark rules the light pill and
+    # code backgrounds stay, and text on them fell to 1.4-2.4:1 in the first real-browser audit.
+    css = (ROOT / "website" / "site.css").read_text("utf-8")
+    for sel in ("html .l-g", "html .tag-r", "html code", "html .models ul"):
+        assert sel in css, f"site.css dark rules lack {sel}"

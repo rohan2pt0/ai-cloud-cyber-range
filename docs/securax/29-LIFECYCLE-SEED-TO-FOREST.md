@@ -100,6 +100,19 @@ OffSec's [OSCP+ exam](https://www.stationx.net/?p=2050639) is reported to have a
 ## Organs directly
 `./securax organ wazuh up|stop|status|down` grows, sleeps, inspects or removes one upstream organ without touching the rest of the sprout. `./securax organ-check [name…]` fetches each pinned upstream ref, prepares it and runs `docker compose config` on it (no images are pulled): a cheap proof that the pins are still valid.
 
+## When the forest grows
+
+Seed and sprout are proven today (real containers); burrow is partly built. The forest stage (multi-tenant) and the
+OpenStack-like private cloud both wait on one thing: **the hardware purchase — a second always-on machine**. Each stage is
+built only when its trigger is true, in the spirit of the amoeba principle (the next form grows when conditions call for it,
+never before).
+
+| Stage | When | Trigger — the condition that makes it worth building |
+|---|---|---|
+| **Burrow finished** | 2026-12-31 | A second always-on machine is bought. Burrow is *own* hardware as a real k3s cluster; one machine (sprout) is not enough for it, so it stays a rehearsed Docker twin until the metal is real. |
+| **Forest on one cloud account** | First quarter 2027 | The always-on server is up **and** someone other than you uses it. Multi-tenant (each tenant its own namespace, quota, network policy, gateway and metering) earns its keep only then; the first account runs behind a `monthly_budget_usd` alarm so learning costs little. |
+| **Private cloud (OpenStack-like)** | After the hardware purchase — no date until it is bought | You own enough metal that running your own cloud beats renting one (doc 10). Built only after the hardware is real, never on a guess. |
+
 ## Honest limits (read before relying on it)
 * **No cloud account was available when this was built.** Terraform is validated and its *plans* are proved offline; an actual `apply` of EKS Auto Mode / GKE Autopilot / AKS / the k3s node, the
   Argo CD bootstrap and Velero restores have **not** been executed. Expect small first-run fixes; the dormancy and plan logic will not be the surprise.

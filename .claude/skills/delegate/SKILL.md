@@ -25,6 +25,10 @@ Write the task as one self-contained brief of 3 to 8 lines. The model cannot see
 - the paperwork it needs (CHANGELOG line, queue item to close, `features_sync`, and so on);
 - the queue id, if there is one.
 
+**Size it for one attempt.** An open model takes 20 to 40 minutes per attempt, and longer when it uses its planner and test-writer agents.
+A brief that touches more than about four files, or has more than three steps, goes out as slices of one step each, in order.
+Each slice is told "work directly; skip the planner and test-writer agents". For path B, start each slice with Bash `timeout: 7200000`, the maximum.
+
 Then take the first path that works. Each later path catches the failure of the one before it.
 - **A. GitHub Actions** (survives this session ending). Use `mcp__github__actions_run_trigger` with `method: run_workflow`,
   `workflow_id: autobuild.yml`, `ref: main`, `inputs: {"task": BRIEF, "tries": "3"}`. After about 2 minutes, list the run once.
