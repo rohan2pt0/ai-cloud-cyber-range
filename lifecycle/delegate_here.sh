@@ -16,6 +16,9 @@ cd "$ROOT"
 command -v opencode >/dev/null 2>&1 || npm install -g -s opencode-ai@1.19.0 >/dev/null 2>&1 || {
   echo "CANNOT-START opencode could not be installed (npm blocked?)"; exit 2; }
 export OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY:-placeholder-the-proxy-adds-the-real-key}"
+# the gates need what CI installs first (the gateway's packages, ruff); without them a correct change fails on an import
+python3 -c "import fastapi, httpx, ruff" >/dev/null 2>&1 || python3 -m pip install -q -r "$ROOT/apps/llm-gateway/requirements-dev.txt" pyyaml ruff >/dev/null 2>&1 || {
+  echo "CANNOT-START the gate's Python packages could not be installed"; exit 2; }
 
 BASE="${DELEGATE_BASE:-origin/main}"   # a branch whose fixes are not merged yet can be the base
 # two runs started together race for the same ref lock: retry the fetch a few times before giving up
