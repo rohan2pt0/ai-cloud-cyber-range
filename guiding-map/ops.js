@@ -4404,6 +4404,7 @@
         + "html[data-theme=dark]{--bg:#18181b;--card:#222226;--cardAlt:#2b2b30;--text:#f3efe7;--muted:#aba69d;--border:#38373d;--navy:#1b1a18;--shadow:none}"
         + "body{background:var(--bg)}"
         + "header{background:var(--navy);border-bottom:1px solid rgba(255,255,255,.06)}"
+        + ".hero{background:#1b1a18;border-bottom:1px solid rgba(255,255,255,.06)}.hero h1{font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:24px;letter-spacing:-.005em}.hero p{color:rgba(246,243,238,.72)}"
         + ".gm-greet h2{font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:32px;line-height:1.1;letter-spacing:-.01em}"
         + ".gm-greet p{font-size:14px;margin-top:6px}"
         + ".gm-d3{border-radius:20px;padding:16px;margin-bottom:16px}"
