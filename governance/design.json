@@ -15,6 +15,15 @@
    "pressed_scale": 0.97, "press_ms": 120, "disabled_opacity": 0.45,
    "haptic_on": ["a daily-three tick", "marking something done", "a confirmation"], "haptic_never": ["every tap", "scrolling", "typing"]
   },
+  "alerts": {
+   "about": "Four kinds, each a tinted card with a thin left edge in its colour, an icon, a short sentence-case title, plain ink text and at most one action. Red is for real danger only (a scam, data loss, a security block); a missed habit is attention, never danger. One alert per cause: never repeat the same message per item. Errors say what happened, why, and the one next step.",
+   "kinds": {
+    "note": {"icon": "\u2139", "light": {"bg": "#fffdf9", "rim": "#857e72"}, "dark": {"bg": "#222226", "rim": "#7d7972"}},
+    "attention": {"icon": "\u25D0", "light": {"bg": "#fbf3e2", "rim": "#9c7a18"}, "dark": {"bg": "#2b2620", "rim": "#e2c172"}},
+    "danger": {"icon": "\u26A0", "light": {"bg": "#fbeceb", "rim": "#a8261b"}, "dark": {"bg": "#2e2020", "rim": "#f2958b"}},
+    "success": {"icon": "\u2713", "light": {"bg": "#edf4ee", "rim": "#1f6b3a"}, "dark": {"bg": "#1f2a22", "rim": "#7fcf98"}}
+   }
+  },
   "corners": {"shape": "squircle", "how": "progressive: corner-shape where the browser supports it (Chromium 139+), plain rounded corners elsewhere"},
   "never": {"page_backgrounds": ["#000000", "#000"], "why": "dark grey, never pure black: obsidian is a surface accent, not the page"},
   "type": {

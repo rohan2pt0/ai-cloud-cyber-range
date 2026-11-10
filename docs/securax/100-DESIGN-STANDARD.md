@@ -146,6 +146,10 @@ The product should read as private-bank grade: calm, exact, a little precious. T
   acts by itself; one switch turns suggestions off (safety warnings stay).
 - **Access by default.** A skip link, more contrast when the phone asks, Windows high-contrast mode, an in-app motion switch,
   and squircle corners where the browser can draw them (plain rounded corners elsewhere).
+- **Alerts, said once and calmly.** Four kinds (note, attention, danger, success): a tinted card, a thin edge in its colour,
+  an icon, a short sentence-case title, ink text and at most one action. Red only for real danger (a scam, data loss, a
+  security block); a missed habit is attention. One alert per cause, never one per item. An error says what happened, why
+  and the next step.
 - **Copy.** Short, warm and certain, like a concierge. No exclamation marks.
 
 **Rollout, done 2026-11-10.** Every page is on the language: the Command Center (the hosted door and the node's page), the

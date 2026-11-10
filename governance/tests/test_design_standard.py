@@ -327,3 +327,27 @@ def test_every_remaining_page_is_on_the_premium_language():
     assert "stylesheets/premium.css" in mk and "font: false" in mk and "primary: custom" in mk
     for rel in ("guiding-map/kit/kit.css", "exercise/web/app.css"):
         assert "#0d1f35" not in (ROOT / rel).read_text("utf-8").split("}")[0], f"{rel}: no old navy page background"
+
+
+def test_alerts_are_calm_readable_and_said_once():
+    # premium.alerts (owner, 2026-11-10: "make error reporting and such alerts with proper aesthetics"): text stays ink and
+    # secondary text stays 4.5:1 on every tint, red is for danger only, a slipped habit is one attention card (never one
+    # red box per habit), and Ask's errors arrive as titled alerts.
+    for kind, k in PREM["alerts"]["kinds"].items():
+        for theme in ("light", "dark"):
+            t = PREM["tokens"][theme]
+            for fg in ("--ink", "--mut"):
+                assert _ratio(t[fg], k[theme]["bg"]) >= 4.5, f"{kind}/{theme}: {fg} on the tint is {_ratio(t[fg], k[theme]['bg']):.2f}:1"
+            assert _ratio(k[theme]["rim"], k[theme]["bg"]) >= 3, f"{kind}/{theme}: the edge must be visible"
+    ops = (ROOT / "guiding-map" / "ops.js").read_text("utf-8")
+    page = (ROOT / "guiding-map" / "index.html").read_text("utf-8")
+    pinned = ops[ops.index("function pinnedHTML()"):ops.index("function pinnedHTML()") + 1500]
+    assert 'class="gm-alert attention"' in pinned and "var(--redBg)" not in pinned and "mandatory" not in pinned.lower()
+    today = page[page.index("function renderToday(){"):page.index("function renderMoney(")]
+    assert 'class="warn"' not in today and "hab-floor" in today, "no per-habit alarm on the full Today list"
+    assert ops.count("askFail(out, ") >= 6 and "function askFail(out, kind, title, msg)" in ops
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("securax_design_a", ROOT / "governance" / "design.py")
+    design = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(design)
+    assert all(f".alert-{n}{{" in design.css() for n in PREM["alerts"]["kinds"]), "every generated page can show the four alerts"

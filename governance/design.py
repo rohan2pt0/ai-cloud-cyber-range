@@ -38,7 +38,7 @@ def css(extra_light: dict | None = None, extra_dark: dict | None = None) -> str:
             f"button,summary,.btn{{min-height:{px}px}}summary{{display:list-item;padding:10px 0;cursor:pointer}}\n"
             "a{color:var(--accent);text-underline-offset:3px}\n"
             "@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}\n"
-            + buttons_css())
+            + buttons_css() + alerts_css())
 
 
 # ---- The premium language (design.json "premium"): every page's language since the owner's yes (2026-11-10). ----
@@ -88,7 +88,19 @@ def premium_css(extra_light: dict | None = None, extra_dark: dict | None = None,
             ":focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:4px}\n"
             f"button,summary,.btn{{min-height:{px}px}}\n"
             "@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}\n"
-            + finish_css() + glass_css() + buttons_css())
+            + finish_css() + glass_css() + buttons_css() + alerts_css())
+
+
+def alerts_css(dark_selector: str = "@media (prefers-color-scheme:dark){:root{%s}}") -> str:
+    """The four alert kinds (premium.alerts): .alert plus .alert-note / -attention / -danger / -success, with .alert-t (title)
+    and .alert-b (body). Text stays ink on a light tint, so every pair keeps its contrast; colour is only the edge and icon."""
+    k = PREMIUM["alerts"]["kinds"]
+    light = ";".join(f"--al-{n}-bg:{v['light']['bg']};--al-{n}-rim:{v['light']['rim']}" for n, v in k.items())
+    dark = ";".join(f"--al-{n}-bg:{v['dark']['bg']};--al-{n}-rim:{v['dark']['rim']}" for n, v in k.items())
+    kinds = "".join(f".alert-{n}{{background:var(--al-{n}-bg);border-left-color:var(--al-{n}-rim)}}" for n in k)
+    return (f":root{{{light}}}" + (dark_selector % dark)
+            + ".alert{border:1px solid var(--line);border-left:3px solid var(--edge);border-radius:12px;padding:16px;margin:0 0 16px;color:var(--ink)}"
+            + kinds + ".alert-t{font-weight:600;font-size:15px;line-height:1.35;margin:0 0 4px}.alert-b{font-size:14px;line-height:1.5;color:var(--mut)}\n")
 
 
 def glass_css() -> str:
