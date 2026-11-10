@@ -131,6 +131,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- An app's own content in Hindi and Marathi, safely (multilingual slice 2c)
 - multilingual slice 2: Wheel, Feeds, Settings and Today in Hindi and Marathi
 - multilingual slice 2: Registers, Scorecard, Playbooks and Progress in Hindi and Marathi
 - multilingual slice 2: Inbox, Goals, Rituals and Rhythm in Hindi and Marathi
@@ -138,7 +139,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - Career dates and renewals in your calendar
 - One open action, chosen by risk: a new core principle (`one-open-action`), on every screen where things compete
 - Build the system, not the goal: a new core principle (`build-the-system`)
-- A system lives in the calendar: a new core principle (`in-the-calendar`), and the family preventive calendar is in it
 
 **Release 0.3.0 - 2026-10-22:**
 

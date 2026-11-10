@@ -54,6 +54,14 @@ setTimeout(() => {
   ok("the Settings screen is translated (Hindi)", /बैकअप/.test(main(H)) && /हल्का या गहरा/.test(main(H)), main(H).slice(0, 400));
   H.OSK.go("today");
   ok("the Today greeting and set-up are translated (Hindi)", /सुप्रभात|नमस्कार|शुभ संध्या/.test(main(H)), main(H).slice(0, 200));
+  // the edition's own words (kit/i18n/editions/vantage.<lang>.json): tab names and ritual names, and back to English cleanly
+  H.OSK.go("rituals");
+  ok("Hindi: the edition's ritual names are translated", /खतरे और अलर्ट की जानकारी/.test(main(H)) && !/Threat and alert brief/.test(main(H)), main(H).slice(0, 200));
+  ok("Hindi: the tab names come from the edition overlay", /जोखिम/.test(H.document.getElementById("oskNav").textContent), H.document.getElementById("oskNav").textContent);
+  ok("Hindi: structure is untouched (ritual ids, register field names)", H.OSK.ed.modules.rituals.items[0].id === "brief" && H.OSK.ed.modules.registers[0].title === "risk");
+  H.OSK.setLang("en"); H.OSK.go("rituals");
+  ok("switching back to English restores the edition's English words", /Threat and alert brief/.test(main(H)) && /Risks/.test(H.document.getElementById("oskNav").textContent));
+  H.OSK.setLang("hi");
   // every catalog key exists in every catalog (a language never silently lags another's screens)
   const cats = ["hi", "mr"].map(l => JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'kit', 'i18n', l + '.json'), 'utf8')));
   const keys = cats.map(c => Object.keys(c.strings).sort().join("|"));

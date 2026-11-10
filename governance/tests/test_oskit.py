@@ -157,3 +157,22 @@ def test_every_kit_app_stays_store_ready():
     for eid, e in ok.editions().items():
         if not e.get("template"):
             assert not [p for p in ok.mobile_problems(eid) if p[0] == "fail"], eid
+
+
+# ── an edition's own words in other languages (multilingual 2c): words only, never structure ──
+def test_a_translation_overlay_may_change_words_but_never_structure():
+    e = json.loads((ROOT / "guiding-map" / "kit" / "editions" / "vantage.json").read_text("utf-8"))
+    good = {"terms": {"today": "आज"}, "modules": {"rituals": {"items": [{"id": "brief", "name": "x"}]},
+                                                 "registers": [{"id": "risks", "label": "x", "fields": [{"id": "area", "label": "x"}]}]}}
+    assert ok.overlay_problems(e, good) == []
+    bad = {"modules": {"registers": [{"id": "risks", "title": "x", "fields": [{"id": "area", "options": ["x"]}, {"id": "treatment", "type": "text"}]}]},
+           "nope": "x"}
+    got = " ".join(ok.overlay_problems(e, bad))
+    for why in (".title: 'title' is structure", ".options[0]: 'options' is structure", ".type: 'type' is structure", ".nope: not in the edition"):
+        assert why in got, why
+
+
+def test_the_shipped_overlays_are_safe_and_baked_into_the_app():
+    assert not [p for p in ok.check() if "i18n/editions" in p]
+    built = (ROOT / "guiding-map" / "vantage" / "index.html").read_text("utf-8")
+    assert "i18n_ed" in built and "खतरे और अलर्ट की जानकारी" in built
