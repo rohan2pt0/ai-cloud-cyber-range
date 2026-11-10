@@ -205,3 +205,12 @@ def test_vantage_overlays_translate_the_top_words_rituals_and_wheel():
         for did in dims:
             for k in ("label", "short", "lever"):
                 assert devanagari(gd[did].get(k)), (lang, "wheel", did, k)
+        cadence = {i["id"]: i for i in e["modules"]["cadence"]["items"]}
+        reviewed = {i["id"]: i for i in ov["modules"]["cadence"]["items"]}
+        assert set(reviewed) == set(cadence), lang
+        for cid in cadence:
+            for k in ("name", "why"):
+                assert devanagari(reviewed[cid].get(k)), (lang, "cadence", cid, k)
+            assert len(reviewed[cid]["checklist"]) == len(cadence[cid]["checklist"]), (lang, "cadence", cid)
+            for line in reviewed[cid]["checklist"]:
+                assert devanagari(line), (lang, "cadence", cid, line)
