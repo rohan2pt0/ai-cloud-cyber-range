@@ -50,6 +50,17 @@ The principles behind it:
   4. **Craft:** is the unseen part (errors, empty states, slow network, dark mode, a screen reader) as finished as the demo?
   5. **Proof:** which test, audit or number shows it worked for a person, not just that it runs?
   6. **Ethics:** would we be proud to show the person exactly how and why it nudges them?
+  7. **System:** which loop makes this happen without willpower, and what is its one binding constraint? (`build-the-system`)
+- **Build the system, not the goal (`build-the-system`):** people do not rise to their goals; they fall to their systems. For any
+  outcome (a habit, a review, a check-up, a sale, a release) build the loop that makes it happen without willpower, and judge a
+  change by whether the loop now runs:
+  1. **Cue:** when and where it starts: the calendar (`in-the-calendar`), one phone message, a screen they already open.
+  2. **Smallest step:** the floor that still counts (two minutes, one tap); make the right step the default.
+  3. **Visible reward:** a win shown at once (the ring, a streak, progress), so the brain wants it again.
+  4. **Environment:** remove the friction from the right step and add it to the wrong one.
+  5. **Feedback:** a regular review that measures the outcome and improves the loop (`progress`, the four delivery keys).
+  6. **Constraint:** find the ONE bottleneck that limits the whole loop (time, money, attention, a dependency, a person) and
+     fix that first; 80/20 everywhere else. Prefer the loop that delivers value soonest and pays for itself.
 - **A system lives in the calendar (`in-the-calendar`):** anything that repeats (a ritual, a review, a check-up, a renewal) gets
   "Add to calendar" next to it, made from the ONE registry in `guiding-map/ops.js` (`CALENDAR`), never a one-off file. The contract,
   so a later version never clashes with an earlier one:
@@ -71,6 +82,11 @@ The principles behind it:
   endpoints behind a human's approval. Declare each capability's growth path in `governance/evolution.json`; fitness
   `evolution-declared` fails an enterprise-capable feature that ships no rail to become one, and `./securax evolve` shows
   what is ready to grow. Never build the organism before the amoeba is alive and used; never ship an amoeba with no DNA.
+
+**Decide and recommend (the owner, 2026-11-10).** The owner wants decisions, not questions. Take the best decision, say what you
+chose and why in one line, and act: merge a PR the owner approved once every check is green, and pick the order of the queue by
+risk × reach ÷ effort. Ask first only for what is irreversible, costs money, touches the owner's devices or accounts, or is
+published beyond the repository.
 
 Every feature in `features.json` carries its `outcome` (what gets better) and `shows` (where the person sees it); fitness
 `outcomes-declared` fails one that does not.

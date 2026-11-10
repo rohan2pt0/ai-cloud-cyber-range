@@ -9,6 +9,9 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **Build the system, not the goal: a new core principle (`build-the-system`).** Results come from loops, not willpower, so agents now build, for every outcome, the cue, the smallest step, a visible reward, the environment, a feedback review and the one binding constraint to remove first. The 360 review gains a seventh question (System). AGENTS.md also records the owner's standing instruction: decide and recommend, act on approved green PRs, and ask only for what is irreversible, costs money, touches the owner's devices or accounts, or is published.
+
+### Added
 - **A system lives in the calendar: a new core principle (`in-the-calendar`), and the family preventive calendar is in it.** Every repeating step is made from one registry, and calendar files now follow a contract so a later version never clashes with an earlier one: permanent event ids, fixed start dates (not moved to today on each export), a version on each event, and retired steps ended cleanly (an end date plus cancelled) instead of left behind. The Family Preventive Calendar gets "Add the four to my calendar" (first Monday of each quarter, what to do written inside), and its shouted "set reminders NOW" is now an invitation. Semicolons in event text are now escaped properly. `test38.js` fails if an event id ever disappears.
 
 ### Fixed
