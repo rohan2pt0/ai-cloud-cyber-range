@@ -43,7 +43,7 @@ securax/33-FITNESS-AND-GAME-DAYS.md: [green, "Fitness functions run on every PR;
 securax/34-CCSP-COVERAGE.md: [green, "Every 'covered' claim resolves to evidence (fitness `ccsp-map`)."]
 securax/35-REGULATORY-GAP-ASSESSMENT.md: [amber, "The assessment is complete; some of the gaps it lists are still open."]
 securax/36-IDENTITY-INCIDENT-RESIDENCY.md: [green, "Gateway identity, incident clock and residency journeys."]
-securax/37-COCKPIT-STORAGE-PATCHING.md: [green, "A dark cockpit: one master lamp, at most three actions, six primary instruments, every detail folded. `cockpit_page` journey + priority and layout tests."]
+securax/37-COCKPIT-STORAGE-PATCHING.md: [green, "A dark cockpit: one master lamp, one action with the rest under Later, six primary instruments, every detail folded. `cockpit_page` journey + priority and layout tests."]
 securax/38-ENGINEERING-PRACTICES-AND-RESEARCH.md: [amber, "Some practices are adopted; others are recorded for later."]
 securax/39-PEOPLE-SCALE-LIVE-SYNC-CHATOPS.md: [amber, "Live sync is proven; Mattermost and ChatOps are optional and partly proven."]
 securax/40-ENCRYPTION-IN-TRANSIT.md: [green, "TLS edge and internal TLS hops are proven."]
