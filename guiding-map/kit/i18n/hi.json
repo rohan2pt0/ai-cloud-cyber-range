@@ -1,6 +1,17 @@
 {
  "_meta": {"name": "हिंदी", "locale": "hi-IN", "status": "beta", "note": "Machine-drafted, waiting for a native speaker's review. Money and legal terms with no common Hindi word keep the English term."},
  "strings": {
+  "core.nothing_undo": "पूर्ववत करने के लिए कुछ नहीं।",
+  "core.undone": "पूर्ववत किया",
+  "core.failed": "यह काम नहीं कर पाया: ",
+  "core.undo": "पूर्ववत करें",
+  "core.more": "और",
+  "core.problem": "इस स्क्रीन में दिक्कत आई",
+  "core.problem_note": "आपका डेटा सुरक्षित है। कोई दूसरी स्क्रीन खोलें, या आख़िरी बदलाव पूर्ववत करें।",
+  "core.no_modules": "इस संस्करण में कोई मॉड्यूल चालू नहीं है।",
+  "core.skip": "सामग्री पर जाएँ",
+  "core.theme": "थीम",
+  "core.theme_label": "हल्का या गहरा बदलें",
   "today.title": "आज",
   "today.next": "आपका अगला कदम",
   "today.do": "अभी करें",

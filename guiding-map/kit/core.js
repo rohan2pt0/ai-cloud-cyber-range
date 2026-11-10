@@ -28,11 +28,11 @@
   };
   K.undo = function () {
     var u = K.get("~undo", []), e = u.pop();
-    if (!e) { K.toast("Nothing to undo."); return; }
+    if (!e) { K.toast(K.t("core.nothing_undo", "Nothing to undo.")); return; }
     put("~undo", JSON.stringify(u));
     if (e.v === null) { try { localStorage.removeItem(PFX + e.k); } catch (x) { delete MEM[e.k]; } } else put(e.k, e.v);
     var m = K.get("~meta", {}); m[e.k] = Date.now(); put("~meta", JSON.stringify(m));
-    K.syncSoon(); K.render(); K.toast("Undone" + (e.w ? ": " + e.w : "") + ".");
+    K.syncSoon(); K.render(); K.toast(K.t("core.undone", "Undone") + (e.w ? ": " + e.w : "") + ".");
   };
   K.keys = function () {
     var out = [];
@@ -101,7 +101,7 @@
   K.val = function (id) { var e = document.getElementById(id); return e ? String(e.value || "").trim() : ""; };
   K.toast = function (msg) {
     var t = document.getElementById("oskToast"); if (!t) return;
-    t.innerHTML = K.esc(msg) + (K.get("~undo", []).length ? ' <button data-a="undo">Undo</button>' : "");
+    t.innerHTML = K.esc(msg) + (K.get("~undo", []).length ? ' <button data-a="undo">' + K.esc(K.t("core.undo", "Undo")) + '</button>' : "");
     t.className = "on"; clearTimeout(K._tt); K._tt = setTimeout(function () { t.className = ""; }, 5000);
   };
   /* The calendar contract (principle `in-the-calendar`), shared by every kit app: one .ics writer. Each event's UID is
@@ -164,10 +164,13 @@
     if (!K.tab || !tabs.some(function (t) { return t.id === K.tab; })) K.tab = tabs.length ? tabs[0].id : null;
     var parts = (K.tab || "").split(":"), m = K.mods[parts[0]];
     var main = document.getElementById("oskMain");
-    try { main.innerHTML = m ? m.render(parts[1]) : "<p>No modules are switched on in this edition.</p>"; }
-    catch (e) { main.innerHTML = K.card("This screen hit a problem", "<p>" + K.esc(e.message) + "</p><p>Your data is safe. Try another screen, or Undo the last change.</p>"); if (window.console) console.error(e); }
+    try { main.innerHTML = m ? m.render(parts[1]) : "<p>" + K.esc(K.t("core.no_modules", "No modules are switched on in this edition.")) + "</p>"; }
+    catch (e) { main.innerHTML = K.card(K.esc(K.t("core.problem", "This screen hit a problem")), "<p>" + K.esc(e.message) + "</p><p>" + K.esc(K.t("core.problem_note", "Your data is safe. Try another screen, or Undo the last change.")) + "</p>"); if (window.console) console.error(e); }
     navRender(tabs);
     var h = document.getElementById("oskWho"); if (h) h.textContent = K.get("profile", {}).name || "";
+    var sk = document.querySelector(".skip"); if (sk) sk.textContent = K.t("core.skip", "Skip to content");
+    var th = document.querySelector('[data-a="theme"]');
+    if (th) { th.textContent = K.t("core.theme", "Theme"); th.setAttribute("aria-label", K.t("core.theme_label", "Switch light or dark")); }
   };
   function navRender(tabs) {
     var nav = document.getElementById("oskNav"), more = document.getElementById("oskMore");
@@ -179,7 +182,7 @@
       if (i < n) h += b; else s += b;
     });
     var inMore = tabs.slice(n).some(function (t) { return t.id === K.tab; });
-    if (s) h += '<button data-a="more"' + (inMore ? ' class="on"' : "") + ' aria-haspopup="true">More</button>';
+    if (s) h += '<button data-a="more"' + (inMore ? ' class="on"' : "") + ' aria-haspopup="true">' + K.esc(K.t("core.more", "More")) + '</button>';
     nav.innerHTML = h; more.innerHTML = '<div class="sheet" role="menu">' + s + "</div>";
   }
 
@@ -198,7 +201,7 @@
     var f = K.acts[el.getAttribute("data-a")];
     if (!f) return;
     ev.preventDefault();
-    try { f(el.getAttribute("data-x"), el); } catch (e) { K.toast("That did not work: " + e.message); if (window.console) console.error(e); }
+    try { f(el.getAttribute("data-x"), el); } catch (e) { K.toast(K.t("core.failed", "That did not work: ") + e.message); if (window.console) console.error(e); }
   });
   document.addEventListener("change", function (ev) {
     var el = ev.target; if (!el.getAttribute) return;
