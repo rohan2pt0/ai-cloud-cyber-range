@@ -38,6 +38,14 @@ setTimeout(() => {
   ok("the Goals screen is translated (Hindi)", /नया लक्ष्य/.test(main(H)), main(H).slice(0, 160));
   M.OSK.go("inbox");
   ok("the Inbox screen is translated (Marathi)", /कॅप्चर/.test(main(M)), main(M).slice(0, 160));
+  H.OSK.go("registers:risks");
+  ok("the Registers screen is translated (Hindi)", /कुछ भी खुला नहीं/.test(main(H)), main(H).slice(0, 160));
+  H.OSK.go("scorecard");
+  ok("the Scorecard screen is translated (Hindi)", /जोखिम संकेतक \(KRI\)/.test(main(H)), main(H).slice(0, 160));
+  H.OSK.go("playbooks");
+  ok("the Playbooks screen is translated (Hindi)", /खोलें/.test(main(H)), main(H).slice(0, 160));
+  M.OSK.go("progress");
+  ok("the Progress screen is translated (Marathi)", /हा आठवडा/.test(main(M)), main(M).slice(0, 160));
   // every catalog key exists in every catalog (a language never silently lags another's screens)
   const cats = ["hi", "mr"].map(l => JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'kit', 'i18n', l + '.json'), 'utf8')));
   const keys = cats.map(c => Object.keys(c.strings).sort().join("|"));
