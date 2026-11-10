@@ -65,6 +65,12 @@ The principles behind it:
   action in view, chosen for the person by risk (the lowest unfinished layer, else risk × reach ÷ effort); everything else
   folded under "Later (n)" until it is done; "Show only the vital few (80/20)" where a list is long. Never make the person
   choose what to do next. `guiding-map/tests/test39.js` holds it on the Life OS and the kit, `test32.js` on the Command Center.
+- **Built for the world, at home in one place (`global-ready`, owner 2026-11-10):** SecuRAX launches for ultra-high-net-worth people
+  worldwide, while the owner uses it at home first. So: every visible word goes through the catalog (`K.t` in the kit, its
+  overlays for an edition's content); numbers, dates and money through `Intl` with the person's region; CSS uses logical
+  properties so Arabic and Hebrew work right to left; and content true in one country only carries a `where` tag. A region
+  switch chooses **Local** (one country's rules and money: India today) or **Global** (no country assumed); the device sets
+  the first default. Launch languages are reviewed by native professionals before a global launch; machine drafts stay beta.
 - **A system lives in the calendar (`in-the-calendar`):** anything that repeats (a ritual, a review, a check-up, a renewal) gets
   "Add to calendar" next to it, made from the ONE registry in `guiding-map/ops.js` (`CALENDAR`), never a one-off file. The contract,
   so a later version never clashes with an earlier one:
