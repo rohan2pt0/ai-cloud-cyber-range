@@ -93,7 +93,7 @@ def main():
         chk("progress is updated with one tap per result", pg.evaluate("S.okrs[0].krs[0].v===0.5 && S.okrs[1].krs[1].v===1"), pg.evaluate("JSON.stringify(S.okrs)"))
         # 3. calendar file
         with pg.expect_download() as d:
-            pg.evaluate("gmCalendar()")
+            pg.evaluate("gmCalendar('rhythm')")
         ics = pathlib.Path(d.value.path()).read_bytes().decode()
         chk("calendar file has 5 repeating events with reminders", ics.count("BEGIN:VEVENT") == 5 and ics.count("RRULE:") == 5 and ics.count("TRIGGER:-PT30M") == 5, ics[:120])
         chk("calendar file lines are folded to 75 octets and CRLF", all(len(x.encode()) <= 75 for x in ics.split("\r\n")) and "\r\n" in ics)

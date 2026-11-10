@@ -360,7 +360,7 @@ def test_human_first_and_whole_view_are_core_and_tell_agents_what_to_do():
     assert "Never trick anyone" in princ["human-first"]["text"] and "delete before adding" in princ["whole-view"]["text"]
     agents = (ROOT / "AGENTS.md").read_text("utf-8").split("## 1. Pick the tier")[0]
     assert "(`human-first`)" in agents and "(`whole-view`)" in agents and "**360 review**" in agents
-    for q in ("**Person:**", "**First principles:**", "**Whole system:**", "**Craft:**", "**Proof:**", "**Ethics:**"):
+    for q in ("**Person:**", "**First principles:**", "**Whole system:**", "**Craft:**", "**Proof:**", "**Ethics:**", "**System:**"):
         assert q in agents, f"the 360 review asks {q}"
     doc = (ROOT / "docs" / "securax" / "100-DESIGN-STANDARD.md").read_text("utf-8")
     assert "## 6c. Design for the human mind" in doc and "No dark patterns" in doc
@@ -372,3 +372,12 @@ def test_the_owner_ui_rules_are_measured_by_the_site_audit():
     for rule in ("tap-target", "input-font", "keyboard", "line-height", "pure-black", "link-underline"):
         assert f"['{rule}'" in src, f"the audit checks {rule}"
     assert 'and not report["rules"]' in src, "a rule break fails the audit"
+
+
+def test_build_the_system_is_core_and_agents_have_the_loop():
+    princ = {p["id"]: p for p in json.loads((ROOT / "governance" / "principles.json").read_text("utf-8"))["principles"]}
+    assert princ["build-the-system"]["core"] is True and "not willpower" in princ["build-the-system"]["text"]
+    agents = (ROOT / "AGENTS.md").read_text("utf-8").split("## 1. Pick the tier")[0]
+    for step in ("**Cue:**", "**Smallest step:**", "**Visible reward:**", "**Environment:**", "**Feedback:**", "**Constraint:**"):
+        assert step in agents, f"the system loop names {step}"
+    assert "**Decide and recommend" in agents
