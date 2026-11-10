@@ -364,3 +364,11 @@ def test_human_first_and_whole_view_are_core_and_tell_agents_what_to_do():
         assert q in agents, f"the 360 review asks {q}"
     doc = (ROOT / "docs" / "securax" / "100-DESIGN-STANDARD.md").read_text("utf-8")
     assert "## 6c. Design for the human mind" in doc and "No dark patterns" in doc
+
+
+def test_the_owner_ui_rules_are_measured_by_the_site_audit():
+    # ui-rules-lint: the rules are checked in a real browser (website/tests/ui_audit.py), and any break fails the audit.
+    src = (ROOT / "website" / "tests" / "ui_audit.py").read_text("utf-8")
+    for rule in ("tap-target", "input-font", "keyboard", "line-height", "pure-black", "link-underline"):
+        assert f"['{rule}'" in src, f"the audit checks {rule}"
+    assert 'and not report["rules"]' in src, "a rule break fails the audit"

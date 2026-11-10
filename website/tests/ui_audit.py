@@ -39,6 +39,45 @@ PAGES = [
 _EMOJI = re.compile("[\U0001F000-\U0001FAFF\U0001F1E6-\U0001F1FF\U00002600-\U000027BF\U00002B00-\U00002BFF\U0000FE0F\U0000200D]")
 
 
+# The owner's UI rules a browser can measure (doc 100; queue ui-rules-lint): 44 px tap targets, 16 px inputs, the right
+# keyboard on number/phone/e-mail fields, body line height 1.4-1.6, no pure-black backgrounds, underlined links in running
+# text. Other audits load this file by path and reuse UI_RULES_JS.
+UI_RULES_JS = r"""() => {
+  const out = [];
+  const vis = e => e.offsetParent && e.getBoundingClientRect().width > 0 && !e.closest('details:not([open]) > :not(summary)');
+  const label = e => (e.textContent || e.getAttribute('aria-label') || e.name || e.id || '').trim().slice(0, 30);
+  // 1. tap targets: buttons and stand-alone links (not links inside running text) at least 44 x 44
+  document.querySelectorAll('button, [role=button], a.btn, summary, input[type=checkbox], input[type=radio], select').forEach(e => {
+    if (!vis(e)) return; const t = (e.type === 'checkbox' || e.type === 'radio') ? (e.closest('label') || e) : e; const r = t.getBoundingClientRect();
+    if (r.height < 43.5 || r.width < 43.5) out.push(['tap-target', label(e), Math.round(r.width) + 'x' + Math.round(r.height)]);
+  });
+  // 2. inputs at 16 px or more (smaller makes a phone zoom in)
+  document.querySelectorAll('input:not([type=checkbox]):not([type=radio]):not([type=hidden]), select, textarea').forEach(e => {
+    if (vis(e) && parseFloat(getComputedStyle(e).fontSize) < 16) out.push(['input-font', label(e), getComputedStyle(e).fontSize]);
+  });
+  // 3. the right keyboard: number, phone and e-mail fields say so (type or inputmode)
+  document.querySelectorAll('input[type=text], input:not([type])').forEach(e => {
+    const hint = ((e.name || '') + ' ' + (e.id || '') + ' ' + (e.placeholder || '') + ' ' + (e.getAttribute('aria-label') || '')).toLowerCase();
+    if (vis(e) && /phone|mobile|email|e-mail|amount|age|number|count|pin\b|otp/.test(hint) && !e.getAttribute('inputmode')) out.push(['keyboard', label(e) || hint.slice(0, 30), 'no inputmode']);
+  });
+  // 4. body text: line height 1.4-1.6 for paragraphs of running text
+  document.querySelectorAll('p, li').forEach(e => {
+    if (!vis(e) || (e.textContent || '').trim().length < 80) return;
+    const cs = getComputedStyle(e), lh = parseFloat(cs.lineHeight) / parseFloat(cs.fontSize);
+    if (lh && (lh < 1.35 || lh > 1.75)) out.push(['line-height', label(e), lh.toFixed(2)]);
+  });
+  // 5. never pure black backgrounds
+  [document.documentElement, document.body, ...document.querySelectorAll('main, section, header, footer, .card')].forEach(e => {
+    if (e && /^rgba?\(0, 0, 0(, 1)?\)$/.test(getComputedStyle(e).backgroundColor)) out.push(['pure-black', e.tagName, 'background is #000']);
+  });
+  // 6. links in running text are underlined (colour alone is not enough)
+  document.querySelectorAll('p a, li a').forEach(e => {
+    if (!vis(e) || e.classList.contains('btn') || e.closest('nav, header, footer, .nav, .menu, .foot, [role=navigation]')) return;
+    if (!/underline/.test(getComputedStyle(e).textDecorationLine)) out.push(['link-underline', label(e), 'not underlined']);
+  });
+  return out;
+}"""
+
 NAV_OVERLAP_JS = """() => { const b = document.querySelector('.nav .brand'); if (!b) return false;
   const br = b.getBoundingClientRect();
   return [...document.querySelectorAll('.nav .wrap > ul > li, .nav .wrap > .btn, .nav .wrap > .menu > summary')]
@@ -53,7 +92,7 @@ def _emoji_only(text: str) -> bool:
 
 def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
-    report = {"page_errors": [], "contrast": [], "overflow": []}
+    report = {"page_errors": [], "contrast": [], "overflow": [], "rules": []}
     with sync_playwright() as p:
         br = p.chromium.launch(executable_path=EXE) if EXE else p.chromium.launch()
         for name, rel in PAGES:
@@ -71,6 +110,8 @@ def main() -> int:
                         report["contrast"].append({"where": where, **item})
                     if pg.evaluate("() => document.documentElement.scrollWidth > document.documentElement.clientWidth"):
                         report["overflow"].append(where)
+                    for rule, what, value in pg.evaluate(UI_RULES_JS):
+                        report["rules"].append(f"{where}: {rule}: {what} ({value})")
                     # the menu bar: nothing in the visible bar may run under the brand (the byline once covered "How it works")
                     if pg.evaluate(NAV_OVERLAP_JS):
                         report["overflow"].append(where + " (menu bar: an item runs under the brand)")
@@ -81,12 +122,14 @@ def main() -> int:
         print("page error:", e)
     for o in report["overflow"]:
         print("overflow:", o)
+    for r in report["rules"]:
+        print("ui rule:", r)
     for c in report["contrast"]:
         print("contrast", c["where"], c["t"], f"{c['ratio']}:1 (need {c['need']})", c["fg"], "on", c["bg"], "|", c["cls"] or c["style"])
     print(f"pages {len(PAGES) * 2 * 2}; page errors {len(report['page_errors'])}; contrast failures {len(report['contrast'])}; "
-          f"overflow {len(report['overflow'])}")
+          f"overflow {len(report['overflow'])}; ui-rule breaks {len(report['rules'])}")
     (OUT / "summary.json").write_text(json.dumps(report, indent=1, default=str))
-    return 0 if not report["page_errors"] and not report["contrast"] and not report["overflow"] else 1
+    return 0 if not report["page_errors"] and not report["contrast"] and not report["overflow"] and not report["rules"] else 1
 
 
 if __name__ == "__main__":

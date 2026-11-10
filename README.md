@@ -131,6 +131,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- The owner's UI rules are now checked, not just written (ui-rules-lint, slice 1)
 - The site's menu bar at laptop width
 - Two new core principles: `human-first` and `whole-view`
 - A premium design language, and the Command Center (the hosted door and the node's page) is the first screen on it
@@ -138,7 +139,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - The product site is on the design standard, held by a real-browser audit
 - The lifecycle doc now says plainly, with dates, when the forest stage and the private cloud are built
 - The core database moves to PostgreSQL 18 without the start-up failure a plain version bump would cause
-- The product site's dark mode is readable everywhere
 
 **Release 0.3.0 - 2026-10-22:**
 
