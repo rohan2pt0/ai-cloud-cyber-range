@@ -57,6 +57,44 @@
     t.innerHTML = K.esc(msg) + (K.get("~undo", []).length ? ' <button data-a="undo">Undo</button>' : "");
     t.className = "on"; clearTimeout(K._tt); K._tt = setTimeout(function () { t.className = ""; }, 5000);
   };
+  /* The calendar contract (principle `in-the-calendar`), shared by every kit app: one .ics writer. Each event's UID is
+     permanent (securax-<edition>-<id>@local), its start is fixed (the first occurrence on or after 2026-01-01, so every export
+     of the same version is identical), its version goes out as SEQUENCE, and a retired item ends with UNTIL plus CANCELLED.
+     Import into the same calendar each time: apps match events by UID within a calendar, so a newer file updates in place. */
+  var CAL_DAYS = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
+  K.icsText = function (t) { return String(t).replace(/\\/g, "\\\\").replace(/;/g, "\;").replace(/,/g, "\\,").replace(/\n/g, "\\n"); };
+  function icsFold(line) { var out = [], s = line; while (s.length > 74) { out.push(s.slice(0, 74)); s = " " + s.slice(74); } out.push(s); return out.join("\r\n"); }
+  function icsStamp(d, hh, mm) { function z(n) { return (n < 10 ? "0" : "") + n; } return d.getFullYear() + z(d.getMonth() + 1) + z(d.getDate()) + "T" + z(hh) + z(mm) + "00"; }
+  K.calFirst = function (match) {                        // the first day on or after the fixed epoch that matches the rule
+    var e = new Date(2026, 0, 1);
+    for (var add = 0; add < 800; add++) { var t = new Date(2026, 0, 1 + add); if (match(t)) return t; }
+    return e;
+  };
+  // events: [{ id, v, name, desc, rule, start (Date), hh, mins, retired }]
+  K.ics = function (title, events) {
+    var now = new Date(), stamp = icsStamp(now, now.getHours(), now.getMinutes());
+    var L = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//SecuRAX//" + K.icsText(ED.name || "OS kit") + " calendar//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", icsFold("X-WR-CALNAME:" + K.icsText(title))];
+    events.forEach(function (e) {
+      var end = new Date(e.start); end.setHours(e.hh, e.mins || 30, 0, 0);
+      L.push("BEGIN:VEVENT", "UID:securax-" + ED.id + "-" + e.id + "@local", "SEQUENCE:" + (e.v || 1), "DTSTAMP:" + stamp,
+        "DTSTART:" + icsStamp(e.start, e.hh, 0), "DTEND:" + icsStamp(end, end.getHours(), end.getMinutes()),
+        "RRULE:" + e.rule + (e.retired ? ";UNTIL=" + String(e.retired).replace(/-/g, "") + "T235959" : ""),
+        "STATUS:" + (e.retired ? "CANCELLED" : "CONFIRMED"),
+        icsFold("SUMMARY:" + K.icsText(e.name)), icsFold("DESCRIPTION:" + K.icsText(e.desc || "")),
+        "BEGIN:VALARM", "ACTION:DISPLAY", icsFold("DESCRIPTION:" + K.icsText(e.name)), "TRIGGER:-PT30M", "END:VALARM", "END:VEVENT");
+    });
+    L.push("END:VCALENDAR");
+    return L.join("\r\n") + "\r\n";
+  };
+  K.icsDays = CAL_DAYS;
+  K.edition = function () { return ED; };
+  K.download = function (name, text, type) {
+    try {
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([text], { type: type || "text/plain" }));
+      a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    } catch (e) { /* a browser without downloads still keeps the app working */ }
+  };
   K.card = function (title, body, extra) { return '<section class="card' + (extra ? " " + extra : "") + '">' + (title ? "<h3>" + title + "</h3>" : "") + body + "</section>"; };
   K.bar = function (pct) { pct = Math.max(0, Math.min(100, Math.round(pct))); return '<div class="bar" role="img" aria-label="' + pct + ' percent"><i style="width:' + Math.max(pct, 2) + '%"></i></div>'; };
 
