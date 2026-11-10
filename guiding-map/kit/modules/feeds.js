@@ -19,10 +19,10 @@
   var VIEWS = {
     govern: function (j, f) {
       var tiers = j.coverage || {}, recs = (j.top || []).slice(0, f.top || 3);
-      var h = '<p><b>Maturity ' + K.esc(j.maturity) + "/5</b> · " + Object.keys(tiers).map(function (t) { return K.esc(t) + " " + K.esc(tiers[t]) + "%"; }).join(" · ") + "</p>";
-      if (j.budget) h += '<p class="muted">To close the gaps: ' + K.esc(j.budget) + "</p>";
+      var h = '<p><b>' + K.esc(K.t("feeds.maturity", "Maturity {n}/5", { n: j.maturity })) + "</b> · " + Object.keys(tiers).map(function (t) { return K.esc(t) + " " + K.esc(tiers[t]) + "%"; }).join(" · ") + "</p>";
+      if (j.budget) h += '<p class="muted">' + K.esc(K.t("feeds.close_gaps", "To close the gaps: ")) + K.esc(j.budget) + "</p>";
       if (recs.length) h += "<ol class='list'>" + recs.map(function (r) { return "<li><b>" + K.esc(r.what) + '</b><div class="muted">' + K.esc([r.who, r.when, r.how_much].filter(Boolean).join(" · ")) + "</div></li>"; }).join("") + "</ol>";
-      h += '<p class="muted">From <code>./securax govern</code>' + (j.at ? ", " + K.esc(j.at) : "") + ".</p>";
+      h += '<p class="muted">' + K.esc(K.t("feeds.from", "From ")) + '<code>./securax govern</code>' + (j.at ? ", " + K.esc(j.at) : "") + ".</p>";
       return h;
     }
   };
@@ -36,7 +36,7 @@
     todayCard: function () { return feeds().filter(function (f) { return f.today; }).map(view).join(""); },
     render: function () {
       var h = feeds().map(view).join("");
-      return "<h2>" + K.esc(K.term("feeds", "From the estate")) + "</h2>" + (h || "<p>Nothing from the estate yet. On the estate machine run <code>./securax govern</code> once; this screen then fills itself.</p>");
+      return "<h2>" + K.esc(K.term("feeds", "From the estate")) + "</h2>" + (h || "<p>" + K.esc(K.t("feeds.empty_pre", "Nothing from the estate yet. On the estate machine run")) + " <code>./securax govern</code> " + K.esc(K.t("feeds.empty_post", "once; this screen then fills itself.")) + "</p>");
     }
   });
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", fetchAll); else setTimeout(fetchAll, 0);
