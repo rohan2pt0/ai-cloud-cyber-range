@@ -41,7 +41,7 @@ _EMOJI = re.compile("[\U0001F000-\U0001FAFF\U0001F1E6-\U0001F1FF\U00002600-\U000
 
 # The owner's UI rules a browser can measure (doc 100; queue ui-rules-lint): 44 px tap targets, 16 px inputs, the right
 # keyboard on number/phone/e-mail fields, body line height 1.4-1.6, no pure-black backgrounds, underlined links in running
-# text, at most 75 characters a line, and nothing that only a mouse hover reveals. Other audits load this file by path and reuse UI_RULES_JS.
+# text, at most 75 characters a line, nothing that only a mouse hover reveals, and numeric right-aligned. Other audits load this file by path and reuse UI_RULES_JS.
 UI_RULES_JS = r"""() => {
   const out = [];
   const vis = e => e.offsetParent && e.getBoundingClientRect().width > 0 && !e.closest('details:not([open]) > :not(summary)');
@@ -107,6 +107,12 @@ UI_RULES_JS = r"""() => {
       });
     });
     walk(rules);
+  });
+  // 9. numbers in tables line up: a numeric cell (money, a count, a percent) is right-aligned so the digits compare
+  const num = /^[-+]?[₹$]?\s?[\d,]+(\.\d+)?\s?(%|[A-Za-z]{1,3})?$/;
+  document.querySelectorAll('tbody td, tbody th').forEach(e => {
+    if (!vis(e) || !num.test((e.textContent || '').trim())) return;
+    const ta = getComputedStyle(e).textAlign; if (ta !== 'right' && ta !== 'end') out.push(['numeric-align', label(e), ta]);
   });
   return out;
 }"""

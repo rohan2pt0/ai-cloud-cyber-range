@@ -137,8 +137,8 @@ This list is generated from [`features.json`](features.json); the Command Center
 - Build the system, not the goal: a new core principle (`build-the-system`)
 - A system lives in the calendar: a new core principle (`in-the-calendar`), and the family preventive calendar is in it
 - Vantage's review rhythm in the calendar
+- ui-rules-lint slice 4a: numbers in tables must be right-aligned, checked by the audits
 - Delegated work is 2-3x faster, with the same gates
-- The cockpit shows one "Do next" action, the rest under "Later (n)" (`one-open-action`)
 
 **Release 0.3.0 - 2026-10-22:**
 
