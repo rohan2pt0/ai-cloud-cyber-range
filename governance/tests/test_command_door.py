@@ -127,7 +127,7 @@ def test_the_door_keeps_a_copy_on_the_device_and_never_touches_the_probes():
     sw = (DOOR / "sw.js").read_text("utf-8")
     shell = re.findall(r'"\./([^"]*)"', sw.split("const SHELL = [")[1].split("];")[0])
     for f in shell:
-        assert not f or (DOOR / f).exists() or f in ("icon-192.png", "icon-512.png"), f"the offline shell names {f}, which is not shipped"
+        assert not f or (DOOR / f).exists() or f in ("icon-192.png", "icon-512.png", "serif.woff2"), f"the offline shell names {f}, which is not shipped"  # icons and the serif are copied in at publish (test_pwa_publish checks the shipped shell)
     assert "url.origin !== self.location.origin" in sw, "the probes to your machines are other sites: the worker must pass them through"
     m = json.loads((DOOR / "manifest.json").read_text("utf-8"))
     assert m["start_url"] == "./index.html" and m["scope"] == "./" and m["display"] == "standalone"

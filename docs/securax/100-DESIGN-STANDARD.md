@@ -120,6 +120,34 @@ Their contrast is measured by `ui_audit.py` and `kit_audit.py`.
 
 A generator joins `generators_on_the_standard` in `design.json` when it moves; the test then holds it there.
 
+## 6b. The premium language (2026-11-09)
+
+The product should read as private-bank grade: calm, exact, a little precious. The language lives once, in
+`governance/design.json` under `premium`, and `governance/design.py` turns it into CSS (`premium_css()`), so no page keeps a palette of its own.
+
+- **Colour: obsidian and ivory.** Warm ivory surfaces in light; dark grey, never pure black, in dark, with surfaces that rise in lighter greys
+  rather than shadows. One gold accent, used like leaf: the action rim, a mark, a link. Status colours are muted. Every text pair is at least
+  4.5:1 in both themes, and a test measures each one.
+- **Type.** A display serif (Instrument Serif, self-hosted under the SIL Open Font License, no font service) for the few words that matter, a
+  quiet system sans for the rest, one scale (13, 15, 17, 21, 28, 36, 48 px), tabular figures on numbers only.
+- **Space and material.** One spacing scale: 4, 8, 16, 24, 32. Hairline borders, soft depth in light, 20 px cards.
+- **Motion and touch.** 150 to 250 ms with one easing curve, on a change of state only, and off under reduced motion. Presses scale a little, so
+  they feel physical. Haptics are hooks: an element with `data-haptic` asks for a short pulse, never under reduced motion.
+- **Finishes.** Six lit "pebbles" (Gold Leaf, Rose Gold, Obsidian Mirror; and the limited Jade, Midnight Blue, Amethyst), each a base, a
+  highlight and a rim, drawn by one CSS layer with no images. They are accents only: editions, milestones, the owner's chosen tint. Text and
+  data stay on the neutrals.
+- **Copy.** Short, warm and certain, like a concierge. No exclamation marks.
+
+**Rollout.** The Command Center is the first screen on the language: the hosted door people reach from the site (`guiding-map/command/`) and the node's own page (`hub.html`) (before and after, both themes, phone and laptop, in the PR).
+The product site home and the Life OS Today screen follow as one slice each. Only after the owner says yes to all three does `premium` replace
+the older `tokens` for every page.
+
+**The rules the owner collected,** held mechanically where a browser can measure them (queue `ui-rules-lint`): body line height 1.4 to 1.6 and
+45 to 75 characters a line; one primary action per view; labels that stay; buttons that say what happens; the 4/8/16/24/32 scale; one accent;
+never colour alone; underlined links; 44 px targets and the main action near the thumb; 16 px inputs with the right keyboard; no hover-only
+actions; bottom sheets, not centred dialogs; dark grey, never black; dashboards that lead with one number, with a period and a change,
+bars from zero, sorted bars instead of pies, figures right-aligned.
+
 ## 7. What we deliberately did not do
 
 - **No framework migration.** The pages stay plain HTML that works offline and on any phone (doc 98).
