@@ -56,7 +56,11 @@ def named_paths(task: str) -> list[str]:
 def decide(task: str, files: list[str] | None = None, rules: dict | None = None, impact: dict | None = None) -> dict:
     r = rules if rules is not None else _load(RULES)
     files = list(dict.fromkeys((files or []) + named_paths(task)))
-    low = " " + task.lower() + " "
+    # Topic words are read from the prose only. File names and identifiers are not topics: every brief names
+    # tools/readme_sync.py for its paperwork, and reading "sync" in it sent every task to the strong tier (3-4x slower,
+    # 2026-11-10). A sensitive FILE is still caught above, by its path (strong_paths), whatever the prose says.
+    prose = re.sub(r"[\w.-]+(?:/[\w.*-]+)+|\S*\w_\w\S*|\S+\.(?:py|json|js|md|yml|yaml|sh|html|css|toml)\b", " ", task)
+    low = " " + prose.lower() + " "
     why = []
     hot = [(f, p) for f in files if (p := _match(f, r.get("strong_paths", r.get("claude_paths", []))))]
     why += [f"touches {f} (sensitive: {p})" for f, p in hot[:3]]

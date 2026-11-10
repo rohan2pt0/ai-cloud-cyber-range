@@ -78,7 +78,11 @@ def prompt(env: dict, strong: bool = True) -> str:
     how = ("Use the @planner subagent first, the @test-writer for the failing test, then @code-reviewer (and @security-reviewer for "
            "sensitive code) before you stop, and @docs-keeper for the paperwork." if strong else
            "Work directly: no subagents (each one is a whole extra model session, and this task is small). Read only what you need.")
-    return text + ("\n\nWork in this checkout. Follow AGENTS.md and BUILD-CONTRACT.md. " + how +
+    # The gates that decide, named, so the model runs them itself before it stops. Not naming diffcheck cost a whole failed
+    # attempt per task (2026-11-10: the model reported "all green" from pytest and fitness, then diffcheck blocked it).
+    gates = (" Before you stop, run the same gates that will judge you, and fix everything they report: ./securax verify ;"
+             " python3 lifecycle/diffcheck.py ; python3 lifecycle/forge.py gate --base HEAD .")
+    return text + ("\n\nWork in this checkout. Follow AGENTS.md and BUILD-CONTRACT.md. " + how + gates +
                    " Do not commit, push, skip a test or weaken a rail: the gates run after you.")
 
 

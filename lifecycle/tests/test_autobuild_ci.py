@@ -113,3 +113,33 @@ def test_models_the_account_cannot_use_are_dropped_once_and_remembered(tmp_path)
 def test_small_work_skips_the_subagents_and_hard_work_keeps_them():
     assert "no subagents" in ci.prompt({"AUTOBUILD_TASK": "fake"}, strong=False)
     assert "@planner" in ci.prompt({"AUTOBUILD_TASK": "fake"}, strong=True)
+
+
+# ── speed without lowering the bar (2026-11-10): a delegated task took 46-80+ min because every brief was routed strong ──
+_r = importlib.util.spec_from_file_location("securax_route_t", ROOT / "lifecycle" / "route.py")
+route = importlib.util.module_from_spec(_r)
+_r.loader.exec_module(route)
+
+
+def test_a_file_name_in_the_paperwork_is_not_a_sensitive_topic():
+    # every brief ends with "python3 tools/readme_sync.py"; "sync" in a file name made every task strong (3-4x slower)
+    t = "Add a CHANGELOG line; python3 tools/readme_sync.py and python3 docs/sync_status.py; then features_sync"
+    assert route.decide(t, impact={})["tier"] != "strong"
+
+
+def test_real_sensitive_work_still_goes_strong():
+    for t in ("fix the sync merge conflict in the hub", "rotate the api key handling", "change how the jwt is checked"):
+        assert route.decide(t, impact={})["tier"] == "strong", t
+    assert route.decide("edit apps/estate-sync/app.py to log more", impact={})["tier"] == "strong"   # a sensitive path, by path
+
+
+def test_the_agent_is_told_the_exact_gates_that_will_judge_it():
+    p = ci.prompt({"AUTOBUILD_TASK": "a small thing"}, strong=False)
+    for gate in ("./securax verify", "lifecycle/diffcheck.py", "lifecycle/forge.py gate"):
+        assert gate in p, gate
+
+
+def test_a_red_attempt_shows_why_in_the_log_and_the_commit_title_is_short():
+    src = (ROOT / "securax").read_text("utf-8")
+    assert 'forge.py" brief "$FB" 2>/dev/null | head -14' in src
+    assert "commit -q -m \"autobuild: $(printf '%s' \"$TASK\" | head -1 | cut -c1-120)\"" in src

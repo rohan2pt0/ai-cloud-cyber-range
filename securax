@@ -875,7 +875,7 @@ $(python3 "$ROOT/lifecycle/forge.py" brief "$FB")"
           # works on a machine with no git identity configured (fresh WSL, CI): fall back to a neutral author
           git -C "$ROOT" -c user.name="$(git -C "$ROOT" config user.name || echo 'SecuRAX autobuild')" \
               -c user.email="$(git -C "$ROOT" config user.email || echo 'autobuild@securax.local')" \
-              commit -q -m "autobuild: $TASK" || { C "git commit failed — your work is on branch $BR (uncommitted). Fix the git error above and commit it yourself."; exit 3; }
+              commit -q -m "autobuild: $(printf '%s' "$TASK" | head -1 | cut -c1-120)" -m "$TASK" || { C "git commit failed — your work is on branch $BR (uncommitted). Fix the git error above and commit it yourself."; exit 3; }
         fi
         if python3 "$ROOT/lifecycle/route.py" "$TASK" --base "$ORIG" --json 2>/dev/null | grep -q '"tier": "strong"'; then
           C "  ⚠ The diff touches a sensitive part (security, crypto, sync or regulator mapping). Before you merge, a second look:  ./securax review --base $ORIG"
@@ -888,7 +888,9 @@ $(python3 "$ROOT/lifecycle/forge.py" brief "$FB")"
       if python3 "$ROOT/lifecycle/forge.py" classify "$FB" >/dev/null && [ "$INFRA" -lt 2 ]; then
         INFRA=$((INFRA+1)); C "  the failure looks like INFRASTRUCTURE (not your code) — waiting, then re-running the gate ($INFRA/2)"; sleep "${AUTOBUILD_INFRA_WAIT:-10}"; continue
       fi
-      INFRA=0; C "  verify FAILED — feeding a typed brief of the failure back"; i=$((i+1))
+      INFRA=0; C "  verify FAILED — feeding a typed brief of the failure back:"
+      python3 "$ROOT/lifecycle/forge.py" brief "$FB" 2>/dev/null | head -14 | sed 's/^/    /' || true   # in the log, so a red attempt can be diagnosed
+      i=$((i+1))
     done
     BRIEF="$ROOT/autobuild-failed-$(date +%Y%m%d-%H%M%S).md"; BTMP="$(mktemp)"       # temp OUTSIDE the repo: the rollback below runs git clean
     { echo "# autobuild could not satisfy the gates after $TRIES attempts"; echo; echo "## Task"; echo "$TASK"
