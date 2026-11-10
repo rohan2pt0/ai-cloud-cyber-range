@@ -75,6 +75,11 @@ def main() -> int:
                         fails.append(f"{app} {theme} {t}: contrast {c['ratio']} < {c['need']} on {c['t']!r}")
                     for r in pg.evaluate(_ui_rules_js()):
                         fails.append(f"{app} {theme} {t}: ui rule " + " ".join(map(str, r)))
+                    pg.set_viewport_size({"width": 1280, "height": 900})          # ui-rules-lint slice 3: the wide-screen rules
+                    for r in pg.evaluate(_ui_rules_js()):
+                        if r[0] in ("line-length", "hover-only"):
+                            fails.append(f"{app} {theme} {t} @1280: ui rule " + " ".join(map(str, r)))
+                    pg.set_viewport_size({"width": 390, "height": 844})
                     wide = pg.evaluate("() => document.documentElement.scrollWidth - window.innerWidth")
                     if wide > 1:
                         fails.append(f"{app} {theme} {t}: {wide}px horizontal scroll at phone width")

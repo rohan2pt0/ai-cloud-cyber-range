@@ -57,7 +57,10 @@ PREMIUM_RULES = ("html h1,html h2{font-family:'Instrument Serif',Georgia,serif;f
                  # byline shows only where it fits, and the menu tightens a little before the phone menu takes over at 960 px.
                  "@media (min-width:961px){html .nav .brand{flex:0 0 auto}html .nav ul{min-width:0}}"
                  "@media (max-width:1359px){html .nav .brand small{display:none}}"
-                 "@media (min-width:961px) and (max-width:1199px){html .nav ul{gap:14px}html .nav ul a{font-size:14px}html .nav .wrap{gap:16px}}\n")
+                 "@media (min-width:961px) and (max-width:1199px){html .nav ul{gap:14px}html .nav ul a{font-size:14px}html .nav .wrap{gap:16px}}"
+                 # ui-rules-lint slice 3: running text keeps a readable measure (at most ~75 characters a line) on a wide screen
+                 "html .note,html .caption,html .sub{max-width:min(100%,58ch)}html .micro{max-width:min(100%,52ch)}"
+                 "html .center .note,html .center .micro,html .caption,html .center .sub{margin-left:auto;margin-right:auto}\n")
 
 
 def _glass_rules() -> str:

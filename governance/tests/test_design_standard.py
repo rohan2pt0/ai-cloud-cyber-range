@@ -371,7 +371,7 @@ def test_human_first_and_whole_view_are_core_and_tell_agents_what_to_do():
 def test_the_owner_ui_rules_are_measured_by_the_site_audit():
     # ui-rules-lint: the rules are checked in a real browser (website/tests/ui_audit.py), and any break fails the audit.
     src = (ROOT / "website" / "tests" / "ui_audit.py").read_text("utf-8")
-    for rule in ("tap-target", "input-font", "keyboard", "line-height", "pure-black", "link-underline"):
+    for rule in ("tap-target", "input-font", "keyboard", "line-height", "pure-black", "link-underline", "line-length", "hover-only"):
         assert f"['{rule}'" in src, f"the audit checks {rule}"
     assert 'and not report["rules"]' in src, "a rule break fails the audit"
 
@@ -393,3 +393,10 @@ def test_one_open_action_is_core_and_held_on_every_screen():
     assert "(`one-open-action`)" in agents and "test39.js" in agents
     pkg = (ROOT / "guiding-map" / "package.json").read_text("utf-8")
     assert " test39 " in pkg, "npm test runs the one-open-action test"
+
+
+def test_the_wide_screen_rules_run_in_every_app_audit():
+    # ui-rules-lint slice 3: line length and hover-only controls only show on a wide screen, so each app audit has a 1280 px pass
+    for f in ("guiding-map/tests/ui_audit.py", "guiding-map/tests/kit_audit.py"):
+        src = (ROOT / f).read_text("utf-8")
+        assert '"width": 1280' in src and '"line-length", "hover-only"' in src, f

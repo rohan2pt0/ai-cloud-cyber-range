@@ -41,7 +41,7 @@ _EMOJI = re.compile("[\U0001F000-\U0001FAFF\U0001F1E6-\U0001F1FF\U00002600-\U000
 
 # The owner's UI rules a browser can measure (doc 100; queue ui-rules-lint): 44 px tap targets, 16 px inputs, the right
 # keyboard on number/phone/e-mail fields, body line height 1.4-1.6, no pure-black backgrounds, underlined links in running
-# text. Other audits load this file by path and reuse UI_RULES_JS.
+# text, at most 75 characters a line, and nothing that only a mouse hover reveals. Other audits load this file by path and reuse UI_RULES_JS.
 UI_RULES_JS = r"""() => {
   const out = [];
   const vis = e => e.offsetParent && e.getBoundingClientRect().width > 0 && !e.closest('details:not([open]) > :not(summary)');
@@ -75,6 +75,38 @@ UI_RULES_JS = r"""() => {
   document.querySelectorAll('p a, li a').forEach(e => {
     if (!vis(e) || e.classList.contains('btn') || e.closest('nav, header, footer, .nav, .menu, .foot, [role=navigation]')) return;
     if (!/underline/.test(getComputedStyle(e).textDecorationLine)) out.push(['link-underline', label(e), 'not underlined']);
+  });
+  // 7. line length: running text averages at most 75 characters a line (45-75 is the comfortable measure; on a phone
+  //    the screen sets the lower bound, so only the upper one is held). Lines are counted from the text's own boxes.
+  document.querySelectorAll('p, li, div').forEach(e => {
+    const text = (e.textContent || '').replace(/\s+/g, ' ').trim();
+    if (e.closest('.banner, [role=banner], nav, header')) return;   // a one-line announcement strip or the menu is not running text
+    if (!vis(e) || text.length < 90 || e.querySelector('p, li, ul, ol, pre, table, code, div, button, input, select')) return;
+    if (e.tagName === 'DIV' && [...e.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').trim().length < 30) return;   // a leaf block of running text
+    const rg = document.createRange(); rg.selectNodeContents(e);
+    const tops = new Set([...rg.getClientRects()].filter(r => r.width > 1).map(r => Math.round(r.top)));
+    const per = tops.size ? text.length / tops.size : 0;
+    if (tops.size && per > 75) out.push(['line-length', label(e), Math.round(per) + ' chars a line']);
+  });
+  // 8. no hover-only controls: what a ':hover' rule reveals must already be visible without a mouse (touch has none)
+  const seen = new Set();
+  [...document.styleSheets].forEach(sh => { let rules; try { rules = sh.cssRules; } catch (x) { return; }
+    const walk = list => [...list].forEach(r => {
+      if (r.cssRules && !r.selectorText) { walk(r.cssRules); return; }
+      if (!r.selectorText || !/:hover/.test(r.selectorText)) return;
+      const st = r.style, reveals = st.opacity === '1' || st.visibility === 'visible' || (st.display && st.display !== 'none') || st.pointerEvents === 'auto';
+      if (!reveals) return;
+      r.selectorText.split(',').filter(x => /:hover\s*\S/.test(x)).forEach(sel => {
+        const target = sel.replace(/:hover/g, '').trim(); let els = [];
+        try { els = [...document.querySelectorAll(target)]; } catch (x) { return; }
+        els.forEach(el => { if (seen.has(el) || !el.offsetParent && getComputedStyle(el).display !== 'none') return;
+          const cs = getComputedStyle(el);
+          if (!el.matches('button, a, [role=button], input, select, summary') && !el.querySelector('button, a, [role=button]')) return;
+          if (cs.opacity === '0' || cs.visibility === 'hidden' || cs.display === 'none' || cs.pointerEvents === 'none') { seen.add(el); out.push(['hover-only', label(el), sel.trim().slice(0, 50)]); }
+        });
+      });
+    });
+    walk(rules);
   });
   return out;
 }"""

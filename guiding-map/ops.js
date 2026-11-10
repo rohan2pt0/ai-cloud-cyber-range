@@ -4462,6 +4462,8 @@
       + ".gm-menu-btn{font-size:18px!important;line-height:1;padding:4px 12px!important;margin-left:6px}"
       + ".road-col,.okr-card,.kc{border-radius:16px;box-shadow:var(--shadow)}"
       + ".road-col{padding:14px}.info{border-radius:12px;font-size:13px;line-height:1.55}"
+      // ui-rules-lint slice 3: on a wide screen, running text keeps a readable measure (at most ~75 characters a line)
+      + "@media (min-width:700px){#sections p,#sections li,#sections div:not(:has(div,table,button,svg,canvas,input,select,textarea,img,ul,ol)){max-width:54ch}}"
       + ".cat-t{font-size:17px;letter-spacing:-.01em}"
       + ".flowhead{font-size:12px;color:var(--muted);margin-bottom:6px}"
       + ".flowbar{display:flex;height:36px;border-radius:10px;overflow:hidden;clip-path:inset(0 100% 0 0);animation:gmwipe .8s cubic-bezier(.2,.85,.25,1) .05s forwards}"
