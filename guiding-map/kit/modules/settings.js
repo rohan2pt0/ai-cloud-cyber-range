@@ -21,6 +21,11 @@
         + ((ed.principles || []).length ? "<ul class='list'>" + ed.principles.map(function (x) { return "<li><b>" + K.esc(x.name) + "</b>" + (x.core ? ' <span class="tag">core</span>' : "") + ": " + K.esc(x.text) + "</li>"; }).join("") + "</ul>"
           + '<p class="muted">Core principles come from the estate\'s one shared list, so every app carries them and gets their improvements.</p>' : ""));
       if ((ed.whatsnew || []).length) h += K.card("What's new", "<ul class='list'>" + ed.whatsnew.slice().reverse().map(function (n) { return "<li>" + K.esc(n.text) + ' <span class="muted">' + K.esc(n.date) + "</span></li>"; }).join("") + "</ul>");
+      var L = K.langs();
+      h += K.card(K.esc(K.t("settings.language", "Language")), "<p class='muted'>" + K.esc(K.t("settings.language_note", "Your choice is remembered on this device. Anything not translated yet shows in English.")) + "</p><div class='btns'>"
+        + Object.keys(L).map(function (k) { var on = k === K.lang;
+          return '<button data-a="setLang" data-x="' + K.esc(k) + '" aria-pressed="' + on + '" lang="' + K.esc(k) + '"' + (on ? ' class="primary"' : "") + ">" + K.esc(L[k].name || k)
+            + (L[k].status === "beta" ? " · " + K.esc(K.t("lang.beta", "beta")) : "") + "</button>"; }).join("") + "</div>");
       h += K.card("You", '<label for="pfName">First name</label><input id="pfName" value="' + K.esc(p.name || "") + '"><label for="pfOrg">Organisation</label><input id="pfOrg" value="' + K.esc(p.org || "") + '"><button data-a="profileSave">Save</button>');
       h += K.card("Backup", '<p>Your data stays on this device. A backup is one file you can keep anywhere.</p><div class="btns"><button class="primary" data-a="exportNow">Export a backup</button>'
         + '<label class="file">Import a backup<input type="file" id="impFile" accept="application/json" data-c="importFile"></label></div>'
@@ -36,6 +41,7 @@
       return null;
     },
     acts: {
+      setLang: function (l) { K.setLang(l); },
       exportNow: function () {
         K.set("lastExport", K.ymd(), { noUndo: true });
         var blob = new Blob([JSON.stringify(K.dump(), null, 1)], { type: "application/json" });

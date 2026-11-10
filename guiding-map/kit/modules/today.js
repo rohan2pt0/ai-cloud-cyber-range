@@ -20,12 +20,12 @@
   K.nextStep = function () { return K.nextSteps()[0] || null; };
   function oneStep(quiet) {
     var all = K.nextSteps(), n = all[0], later = all.slice(1);
-    if (!n) return K.card("Your next step", "<p class='big'>All clear. Nothing is late and nothing waits on you.</p><p class='muted'>A good day to think ahead: open " + K.esc(K.term("playbooks", "Playbooks")) + ".</p>", "hero");
-    return K.card("Your next step", "<p class='big'>" + K.esc(n.text) + "</p>" + (n.why ? "<p class='muted'>" + K.esc(n.why) + "</p>" : "")
-      + (n.go ? '<button class="' + (quiet ? "" : "primary") + '" data-a="go" data-x="' + K.esc(n.go) + '">Do it now</button>' : "")
-      + (later.length ? '<details class="later"><summary>Later (' + later.length + ')</summary><ul class="list">'
+    if (!n) return K.card(K.esc(K.t("today.next", "Your next step")), "<p class='big'>" + K.esc(K.t("today.clear", "All clear. Nothing is late and nothing waits on you.")) + "</p><p class='muted'>A good day to think ahead: open " + K.esc(K.term("playbooks", "Playbooks")) + ".</p>", "hero");
+    return K.card(K.esc(K.t("today.next", "Your next step")), "<p class='big'>" + K.esc(n.text) + "</p>" + (n.why ? "<p class='muted'>" + K.esc(n.why) + "</p>" : "")
+      + (n.go ? '<button class="' + (quiet ? "" : "primary") + '" data-a="go" data-x="' + K.esc(n.go) + '">' + K.esc(K.t("today.do", "Do it now")) + '</button>' : "")
+      + (later.length ? '<details class="later"><summary>' + K.esc(K.t("today.later", "Later ({n})", { n: later.length })) + '</summary><ul class="list">'
         + later.slice(0, 12).map(function (x) { return "<li>" + (x.go ? '<a href="#" data-a="go" data-x="' + K.esc(x.go) + '">' + K.esc(x.text) + "</a>" : K.esc(x.text)) + "</li>"; }).join("")
-        + "</ul><p class='muted'>Chosen by risk. Finish the first; the next moves up by itself.</p></details>" : ""), "hero");
+        + "</ul><p class='muted'>" + K.esc(K.t("today.later_note", "Chosen by risk. Finish the first; the next moves up by itself.")) + "</p></details>" : ""), "hero");
   }
   function setup() {
     var p = K.get("profile", null);
@@ -45,7 +45,7 @@
       + '</ul><button class="ghost" data-a="newsSeen" data-x="' + K.esc(fresh[fresh.length - 1].date) + '">Got it</button>');
   }
   K.module({
-    id: "today", icon: "", label: function () { return K.term("today", "Today"); },
+    id: "today", icon: "", label: function () { return K.t("today.title", K.term("today", "Today")); },
     render: function () {
       var h = '<p class="greet">' + K.esc(greet()) + "</p>";
       if (K.ed.north_star) h += '<p class="north">' + K.esc(K.ed.north_star) + "</p>";

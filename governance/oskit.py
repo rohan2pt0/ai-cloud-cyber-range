@@ -167,6 +167,9 @@ def resolve(e: dict) -> dict:
     out.setdefault("north_star", core["north_star"])
     news = json.loads(WHATSNEW.read_text(encoding="utf-8")) if WHATSNEW.exists() else []
     out["whatsnew"] = [n for n in news if not n.get("editions") or e.get("id") in n["editions"]][-10:]
+    # Languages (queue multilingual): every catalog in kit/i18n is baked in, so a language works offline; English is the
+    # source text in the code itself, and any key a catalog lacks falls back to it.
+    out["i18n"] = {f.stem: json.loads(f.read_text(encoding="utf-8")) for f in sorted((KIT / "i18n").glob("*.json"))}
     return out
 
 
