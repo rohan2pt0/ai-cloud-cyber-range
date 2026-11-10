@@ -2946,7 +2946,7 @@ function renderPlaybook(){
       if (typeof HABITS !== "undefined") HABITS.forEach(function (hb, i) { if (hb.id === d.id) idx = i; });
       var on = done.indexOf(d.id) >= 0;
       // a div with a button role, not a <button>: the floor text keeps its inline-help chips, which cannot nest in a button
-      h += '<div role="button" tabindex="0" class="tile' + (on ? " on" : "") + '" aria-pressed="' + on + '"'
+      h += '<div role="button" tabindex="0" data-haptic="success" class="tile' + (on ? " on" : "") + '" aria-pressed="' + on + '"'
         + (idx >= 0 ? ' onclick="tgHabit(' + idx + ')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();tgHabit(' + idx + ')}"' : "") + '>'
         + '<div class="chk" aria-hidden="true">' + (on ? "\u2713" : "") + '</div>'
         + '<div class="nm">' + d.label + '</div><div class="fl">' + esc(d.floor) + '</div></div>';
@@ -3059,7 +3059,7 @@ function renderPlaybook(){
       + '<div style="font-size:10.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--gold);font-weight:800">Your one open action \u00b7 ' + a.layer.id + ' ' + a.layer.name + (a.vital ? ' \u00b7 \u2605 vital few' : '') + '</div>'
       + '<div style="font-size:15px;font-weight:700;line-height:1.5;margin:8px 0 4px;color:var(--text)">' + esc(a.text) + '</div>'
       + '<div style="font-size:11.5px;color:var(--muted);line-height:1.6">Rule 1 says one in-progress action at a time. This is it. Nothing below this layer is finished, so nothing above it is yours to work on yet.</div>'
-      + '<button class="btn btn-p" style="margin-top:10px" onclick="gmStackTg(\'' + a.layer.id + '\',' + a.idx + ')">Mark this done</button></div>';
+      + '<button class="btn btn-p" data-haptic="success" style="margin-top:10px" onclick="gmStackTg(\'' + a.layer.id + '\',' + a.idx + ')">Mark this done</button></div>';
   }
   function stackHTML() {
     var h = '<div class="section active">';
@@ -5322,6 +5322,14 @@ function renderPlaybook(){
   window.gmAsk = function () {
     var q = (document.getElementById("askQ").value || "").trim(); if (!q) return;
     var out = document.getElementById("askOut"); out.style.display = "block"; out.textContent = "Thinking… (your local model)";
+    var askBtn = document.querySelector('[onclick="gmAsk()"]');
+    if (askBtn && window.MutationObserver) {                      // busy until the answer (or a plain-words error) arrives
+      askBtn.setAttribute("aria-busy", "true");
+      var unbusy = function () { askBtn.removeAttribute("aria-busy"); if (mo) mo.disconnect(); };
+      var mo = new MutationObserver(function () { if (!/^Thinking/.test(out.textContent)) unbusy(); });
+      mo.observe(out, { childList: true, characterData: true, subtree: true });
+      setTimeout(unbusy, 120000);
+    }
     document.getElementById("askFb").style.display = "none";
     var msgs = [{ role: "system", content: askSystem(askAgent) + (inRecovery() ? RECOVERY_RULE : "") }, { role: "user", content: q }];
     var seen = gmAskSeen(q); gmAskRemember(q);
@@ -5617,7 +5625,7 @@ function renderPlaybook(){
     if (!example || G("gm_quick_done", false) || G("gm_quick_snooze", "") > ymd()) return "";
     return '<div class="gm-setup" style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:16px;padding:16px;margin-bottom:16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
       + '<div style="flex:1;min-width:180px;font-size:12px;color:var(--text);line-height:1.5"><b>These are example numbers.</b> Four quick questions make them yours (about a minute). Everything else is optional.</div>'
-      + '<button class="btn-sm gm-action" style="background:var(--text);color:var(--bg);font-weight:600;box-shadow:inset 0 0 0 1px var(--gold)" onclick="gmQuickSetup()">Make them mine</button>'
+      + '<button class="btn-sm gm-action gm-secondary" onclick="gmQuickSetup()">Make them mine</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--muted)" onclick="gmQuickLater()">Later</button></div>';
   }
 
@@ -6579,8 +6587,8 @@ function renderPlaybook(){
     if (!st) {
       st = document.createElement("style"); st.id = "gmPremiumCss";
       st.textContent = ""
-        + ":root{--bg:#f6f3ee;--card:#fffdf9;--cardAlt:#f1ece3;--text:#1b1a18;--muted:#5f5b54;--border:#e3ddd2;--navy:#1b1a18;--shadow:0 1px 1px rgba(27,26,24,.04),0 8px 24px rgba(27,26,24,.06)}"
-        + "html[data-theme=dark]{--bg:#18181b;--card:#222226;--cardAlt:#2b2b30;--text:#f3efe7;--muted:#aba69d;--border:#38373d;--navy:#1b1a18;--shadow:none}"
+        + ":root{--edge:#857e72;--bg:#f6f3ee;--card:#fffdf9;--cardAlt:#f1ece3;--text:#1b1a18;--muted:#5f5b54;--border:#e3ddd2;--navy:#1b1a18;--shadow:0 1px 1px rgba(27,26,24,.04),0 8px 24px rgba(27,26,24,.06)}"
+        + "html[data-theme=dark]{--edge:#7d7972;--bg:#18181b;--card:#222226;--cardAlt:#2b2b30;--text:#f3efe7;--muted:#aba69d;--border:#38373d;--navy:#1b1a18;--shadow:none}"
         + "body{background:var(--bg)}"
         + "header{background:var(--navy);border-bottom:1px solid rgba(255,255,255,.06)}"
         + ".hero{background:#1b1a18;border-bottom:1px solid rgba(255,255,255,.06)}.hero h1{font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:24px;letter-spacing:-.005em}.hero p{color:rgba(246,243,238,.72)}"
@@ -6595,10 +6603,62 @@ function renderPlaybook(){
         + "#gmVitals.gm-inline{gap:8px}#gmVitals.gm-inline > div{background:var(--card)!important;border:1px solid var(--border)!important;border-radius:12px!important;box-shadow:none!important}"
         + ".gm-action{min-height:44px;border-radius:999px;padding:0 20px}"
         + "#gmNav{box-shadow:none}#gmNav button{font-weight:600}"
+        // Buttons (premium.buttons): primary = solid ink with a leaf rim, one per screen; secondary = outlined with --edge
+        // (3:1 on every surface); tertiary = an underlined link. Pressed, busy, done and disabled states for all.
+        + ".btn-p,.btn.primary,.btn-sm[style*='background:var(--gold)']{background:var(--text)!important;color:var(--bg)!important;border:1px solid var(--text)!important;box-shadow:inset 0 0 0 1px var(--gold)!important;border-radius:999px!important;font-weight:600!important}"
+        + ".btn-s,.btn:not(.btn-p):not(.primary),.btn-sm[style*='background:var(--cardAlt)'],.gm-secondary{background:transparent!important;color:var(--text)!important;border:1px solid var(--edge)!important;border-radius:999px!important;font-weight:600!important}"
+        + ".btn,.btn-sm,.btn-p,.btn-s{transition:transform 120ms cubic-bezier(.2,.8,.2,1),background-color 200ms cubic-bezier(.2,.8,.2,1)}"
+        + ".btn:active,.btn-sm:active,.btn-p:active,.btn-s:active{transform:scale(.97)}"
+        + "button:disabled{opacity:.45!important;cursor:not-allowed;transform:none}"
+        + "[aria-busy=true]{position:relative;color:transparent!important;pointer-events:none}"
+        + "[aria-busy=true]::after{content:'';position:absolute;inset:0;margin:auto;width:16px;height:16px;border-radius:50%;border:2px solid var(--bg);border-right-color:transparent;animation:gmspin .7s linear infinite}"
+        + "@keyframes gmspin{to{transform:rotate(360deg)}}"
+        + ".gm-d3 .tile.on .chk{animation:gmpop 220ms cubic-bezier(.2,.8,.2,1)}@keyframes gmpop{from{transform:scale(.6)}to{transform:scale(1)}}"
+        + ".gm-why ul{padding-left:20px;margin:4px 0}.gm-why{margin-top:6px;font-size:13px;color:var(--muted)}.gm-why summary{display:inline;cursor:pointer;text-decoration:underline;text-underline-offset:3px;min-height:0;padding:0}"
+        + ".gm-suggested{display:inline-block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;font-weight:600;color:var(--muted);border:1px solid var(--edge);border-radius:999px;padding:1px 8px;margin-right:6px}"
+        + ".skip{position:absolute;left:-9999px;top:8px;z-index:10000;background:var(--text)!important;color:var(--bg)!important;padding:8px 16px;border-radius:999px}.skip:focus{left:16px}"
+        + "html.gm-still *{animation:none!important;transition:none!important;scroll-behavior:auto!important}"
+        + "@media (prefers-contrast:more){:root{--muted:#3f3c37;--border:#6f695f}html[data-theme=dark]{--muted:#d6d1c8;--border:#8f8b84}}"
+        + "@media (forced-colors:active){button,.btn,.btn-sm,.gm-d3 .tile,#gmVitals>div{border:1px solid ButtonText!important}:focus-visible{outline:2px solid Highlight}}"
+        + "@supports (corner-shape:squircle){.gm-d3,.gm-d3 .tile,.road-col,.kc,.okr-card,.gm-setup,#gmVitals>div,#gmOverlay>div,#gmMoreSheet .sh{corner-shape:squircle}}"
+        // Glass on the floating layers only (premium.material.glass): the sticky header, the tab bar, the More sheet and
+        // dialogs. Solid where blur is unsupported or the person asks for less transparency.
+        + "@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){"
+        + "header{background:rgba(27,26,24,.92);-webkit-backdrop-filter:blur(24px) saturate(1.4);backdrop-filter:blur(24px) saturate(1.4)}"
+        + "#gmNav{background:rgba(255,253,249,.92);-webkit-backdrop-filter:blur(24px) saturate(1.4);backdrop-filter:blur(24px) saturate(1.4);box-shadow:inset 0 1px 0 rgba(255,255,255,.65)}"
+        + "html[data-theme=dark] #gmNav{background:rgba(34,34,38,.92);box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}"
+        + "#gmMoreSheet.on{background:rgba(24,24,27,.32);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}"
+        + "#gmMoreSheet .sh{background:rgba(255,253,249,.92);-webkit-backdrop-filter:blur(24px) saturate(1.4);backdrop-filter:blur(24px) saturate(1.4);box-shadow:inset 0 1px 0 rgba(255,255,255,.65)}"
+        + "html[data-theme=dark] #gmMoreSheet .sh{background:rgba(34,34,38,.92);box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}"
+        + "#gmOverlay{background:rgba(24,24,27,.38)!important;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}"
+        + "#gmOverlay>div{border-radius:20px!important}"
+        + "}"
+        + "@media (prefers-reduced-transparency:reduce){header{background:#1b1a18;backdrop-filter:none;-webkit-backdrop-filter:none}"
+        + "#gmNav,#gmMoreSheet .sh{background:var(--card);backdrop-filter:none;-webkit-backdrop-filter:none}#gmOverlay,#gmMoreSheet.on{backdrop-filter:none;-webkit-backdrop-filter:none}}"
         + "@media (prefers-reduced-motion:reduce){.gm-d3 .tile{transition:none!important}.gm-d3 .tile:active{transform:none}}";
     }
     document.head.appendChild(st);   // (re)append: always the last stylesheet
+    document.documentElement.classList.toggle("gm-still", !!G("gm_still", false));
   }
+  // Haptics on the moments that matter only (premium.buttons.haptic_on): a daily-three tick, marking something done, a
+  // confirmation. Never under reduced motion or the in-app "still" switch, and nothing where the phone cannot vibrate.
+  var HAPTIC = { tap: [8], success: [10, 40, 10], warn: [24] };
+  window.gmHaptic = function (kind) {
+    try {
+      if (G("gm_still", false) || !navigator.vibrate) return;
+      if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      navigator.vibrate(HAPTIC[kind] || HAPTIC.tap);
+    } catch (e) { /* a missing motor is never an error */ }
+  };
+  if (!window._gmHapticWired) {
+    window._gmHapticWired = true;
+    document.addEventListener("click", function (e) {
+      var h = e.target && e.target.closest ? e.target.closest("[data-haptic]") : null;
+      if (h) gmHaptic(h.getAttribute("data-haptic"));
+    }, true);
+  }
+  window.gmToggleStill = function () { S_("gm_still", !G("gm_still", false)); premiumCSS(); gmMenu(); };
+  window.gmToggleSmart = function () { S_("gm_smart_off", !G("gm_smart_off", false)); gmMenu(); };
   function greetHTML() {
     var hr = new Date().getHours(), part = hr < 5 ? "Still up" : hr < 12 ? "Good morning" : hr < 17 ? "Good afternoon" : "Good evening";
     var fn = ((typeof P !== "undefined" && P.name) || "").trim().split(" ")[0];
@@ -6680,6 +6740,8 @@ function renderPlaybook(){
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();editProfile()">Edit profile</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();toggleTheme()">Switch to ' + (curTheme() === "dark" ? "light" : "dark") + ' theme</button>'
       + ((window.matchMedia && matchMedia("(display-mode: standalone)").matches) ? "" : '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();gmInstall()">Install as an app (phone or computer)</button>')
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" role="switch" aria-checked="' + (!G("gm_still", false)) + '" onclick="gmToggleStill()">Motion and haptics: ' + (G("gm_still", false) ? "off" : "on") + '</button>'
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" role="switch" aria-checked="' + (!G("gm_smart_off", false)) + '" onclick="gmToggleSmart()">Smart suggestions: ' + (G("gm_smart_off", false) ? "off" : "on") + '</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();gmReport()">Report a problem or idea</button>'
       + '</div><div style="font-size:12px;color:var(--muted);margin-top:12px">Life OS ' + esc(ver) + ' · your data stays on your devices</div>'
       + '<button class="btn-sm" style="margin-top:12px;background:none;color:var(--muted)" onclick="gmClose()">Close</button>');
@@ -6687,6 +6749,10 @@ function renderPlaybook(){
   function designFrame() {
     designCSS();
     premiumCSS();
+    if (!document.querySelector("a.skip") && document.getElementById("sections")) {
+      var sk = document.createElement("a"); sk.className = "skip"; sk.href = "#sections"; sk.textContent = "Skip to content";
+      document.body.insertBefore(sk, document.body.firstChild);
+    }
     var hdr = document.querySelector("#dash header");
     if (hdr && !hdr.querySelector(".gm-menu-btn")) {
       hdr.querySelectorAll(".hdr-btn").forEach(function (b) { if (!/All Apps/.test(b.textContent)) b.classList.add("gm-hide-hdr"); });
@@ -6930,13 +6996,26 @@ function renderPlaybook(){
     var box = document.getElementById("ibRead"); if (!box) return;
     var r = gmLensRead(text); if (!r) { gmReadClear(); return; }
     _read = { text: String(text || "").trim(), r: r };
+    var smart = !G("gm_smart_off", false);   // the person can switch suggestions off (menu); scam warnings always stay
+    if (!smart) {
+      box.innerHTML = r.risk.level !== "safe" ? '<div class="ibread-risk ' + r.risk.level + '"><b>' + (r.risk.level === "danger" ? "\u26A0 This looks like a scam" : "\u26A0 Be careful with this") + '</b><ul>'
+        + r.risk.reasons.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + '</ul></div>' : "";
+      return;
+    }
     var k = document.getElementById("ibKind"); if (k && r.suggest.kind) k.value = r.suggest.kind;    // pre-pick the kind it suggests
     var names = { policy: "an insurance policy", bill: "a bill", appointment: "an appointment", id: "an identity document", learned: "one you have taught it before", note: "a note", payment: "a payment request" };
     var bits = [];
     if (r.fields.amount != null) bits.push("₹" + r.fields.amount.toLocaleString("en-IN"));
     if (r.fields.due) bits.push("due " + r.fields.due);
     var line = "Looks like " + (names[r.type] || "a note") + (bits.length ? " · " + bits.join(" · ") : "");
-    var html = '<div class="ibread-line">🔎 ' + esc(line) + '</div>';
+    var why = [];
+    why.push(r.type && r.type !== "note" ? "its words match how " + (names[r.type] || "this kind") + " usually reads" : "nothing marks it as a bill, policy or appointment, so it is kept as a note");
+    if (r.fields.amount != null) why.push("it mentions an amount (\u20B9" + r.fields.amount.toLocaleString("en-IN") + ")");
+    if (r.fields.due) why.push("it mentions a date (" + r.fields.due + ")");
+    why.push("worked out on this device; nothing was sent anywhere");
+    var html = '<div class="ibread-line"><span class="gm-suggested">Suggested</span>🔎 ' + esc(line) + '</div>'
+      + '<details class="gm-why"><summary>Why?</summary><ul>' + why.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + '</ul>'
+      + '<div>Not useful? Switch smart suggestions off in the \u22EF menu.</div></details>';
     if (r.risk.level !== "safe") {
       html += '<div class="ibread-risk ' + r.risk.level + '"><b>' + (r.risk.level === "danger" ? "⚠ This looks like a scam" : "⚠ Be careful with this") + '</b>'
         + '<ul>' + r.risk.reasons.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + '</ul>'
@@ -6944,7 +7023,7 @@ function renderPlaybook(){
         + '<button class="btn" onclick="gmReadScam()">Yes, it is a scam</button></div></div>';
     }
     var acc = "✓ Add it" + (r.suggest.due ? " — due " + r.suggest.due : r.suggest.kind === "note" ? " as a note" : " to my list");
-    html += '<div class="ibread-accept"><button class="btn primary" onclick="gmReadAccept()">' + esc(acc) + '</button><span class="ibsub">one tap, nothing else to fill</span></div>';
+    html += '<div class="ibread-accept"><button class="btn gm-secondary" data-haptic="success" onclick="gmReadAccept()">' + esc(acc) + '</button><span class="ibsub">one tap, nothing else to fill</span></div>';
     box.innerHTML = html;
   };
   window.gmReadSafe = function () {                                  // teach the device: not a scam (learns locally)

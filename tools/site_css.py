@@ -19,21 +19,50 @@ import sys
 ROOT = pathlib.Path(__file__).resolve().parent.parent
 OUT = ROOT / "website" / "site.css"
 
-# The site's brand variables, layered over the standard's tokens: light first, then dark. The dark theme keeps the navy, gold
+# The site's brand variables on the premium language (design.json "premium": obsidian and ivory, gold as leaf), layered
+# over the standard's tokens: light first, then dark. The dark theme keeps the navy, gold
 # and radius from light and overrides the surfaces and text (--bg, --card, --ink, --text, --muted, --line, --gold2), plus the
 # status colours (--green, --amber, --red), lifted so a light on the dark navy card #111e33 passes WCAG AA.
-LIGHT = {"--navy": "#0b1b33", "--navy2": "#13294b", "--ink": "#0f1c33", "--text": "#2b3a55", "--muted": "#5b6b86",
-         "--line": "#e3e8f0", "--bg": "#f6f8fb", "--card": "#fff", "--gold": "#e8b84a", "--gold2": "#8a6514",
-         "--green": "#13723a", "--amber": "#b45309", "--red": "#b91c1c", "--radius": "16px"}
-DARK = {**LIGHT, "--bg": "#0a1220", "--card": "#111e33", "--ink": "#edf2f9", "--text": "#c4cfdd", "--muted": "#96a5ba",
-        "--line": "#26374e", "--gold2": "#e8b84a", "--green": "#4ade80", "--amber": "#fbbf24", "--red": "#f87171"}
+LIGHT = {"--navy": "#1b1a18", "--navy2": "#2a2825", "--ink": "#1b1a18", "--text": "#3a3732", "--muted": "#5f5b54",
+         "--line": "#e3ddd2", "--bg": "#f6f3ee", "--card": "#fffdf9", "--gold": "#e2c172", "--gold2": "#7a5a12", "--edge": "#857e72",
+         "--green": "#1f6b3a", "--amber": "#7d5300", "--red": "#a8261b", "--radius": "20px"}
+DARK = {**LIGHT, "--bg": "#18181b", "--card": "#222226", "--ink": "#f3efe7", "--text": "#d9d4ca", "--muted": "#aba69d",
+        "--line": "#38373d", "--edge": "#7d7972", "--gold2": "#e2c172", "--green": "#7fcf98", "--amber": "#e6b85c", "--red": "#f2958b"}
 
 
 def render() -> str:
     spec = importlib.util.spec_from_file_location("securax_site_design", ROOT / "governance" / "design.py")
     design = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(design)
-    return design.css(LIGHT, DARK) + DARK_RULES
+    return design.font_face("serif.woff2") + design.css(LIGHT, DARK) + PREMIUM_RULES + _glass_rules() + DARK_RULES
+
+
+# The premium look (design-premium-showcase): headings in the self-hosted serif (website/build.sh copies the one font file
+# next to this stylesheet; the site's policy allows same-origin fonts), a calm banner instead of a gold block, numbers in
+# tabular figures.
+PREMIUM_RULES = ("html h1,html h2{font-family:'Instrument Serif',Georgia,serif;font-weight:400;letter-spacing:-.01em}"
+                 "html h1{line-height:1.02}"
+                 "html .banner{background:var(--card);color:var(--ink);border-bottom:1px solid var(--line);font-weight:500}"
+                 "html .banner a{color:var(--gold2);text-decoration:underline;text-underline-offset:3px}"
+                 ".num,data,time{font-variant-numeric:tabular-nums}"
+                 # the owner's tactile and accessibility rules: a skip link, more contrast on request, Windows high-contrast
+                 # mode, and squircle corners where the browser can draw them (plain rounded corners elsewhere)
+                 ".skip{position:absolute;left:-9999px;top:8px;z-index:10000;background:var(--navy);color:#fff;padding:8px 16px;border-radius:999px}.skip:focus{left:16px}"
+                 "@media (prefers-contrast:more){:root{--muted:#3f3c37;--line:#6f695f}}"
+                 "@media (prefers-contrast:more) and (prefers-color-scheme:dark){:root{--muted:#d6d1c8;--line:#8f8b84}}"
+                 "@media (forced-colors:active){.btn,.card,button{border:1px solid ButtonText}:focus-visible{outline:2px solid Highlight}}"
+                 "@supports (corner-shape:squircle){.card,.btn,.term,button{corner-shape:squircle}}"
+                 "html .btn:active{transform:scale(.97)}html .btn:disabled{opacity:.45;cursor:not-allowed}\n")
+
+
+def _glass_rules() -> str:
+    # The sticky menu bar is the site's one floating layer, so it is the one place for glass (premium.material.glass).
+    import json
+    g = json.loads((ROOT / "governance" / "design.json").read_text("utf-8"))["premium"]["material"]["glass"]
+    blur = f"blur({g['blur_px']}px) saturate({g['saturate']})"
+    return ("@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){"
+            f"html header.nav{{background:{g['obsidian']};-webkit-backdrop-filter:{blur};backdrop-filter:{blur}}}}}"
+            "@media (prefers-reduced-transparency:reduce){html header.nav{background:#1b1a18;-webkit-backdrop-filter:none;backdrop-filter:none}}\n")
 
 
 # The pages' own inline <style> loads after this file, so a dark override needs one more element in its selector to win.
@@ -42,14 +71,14 @@ DARK_RULES = ("@media (prefers-color-scheme:dark){"
               "html .l-g,html .tag-g{background:rgba(74,222,128,.14)}"
               "html .l-a{background:rgba(251,191,36,.14)}"
               "html .l-r,html .tag-r{background:rgba(248,113,113,.14)}"
-              "html code{background:#1b2a42;color:var(--ink)}"
+              "html code{background:#2b2b30;color:var(--ink)}"
               "html .models ul{color:var(--text)}"
               "html .btn-line{border-color:var(--ink);color:var(--ink)}"
-              "html .offer{background:linear-gradient(160deg,#2a2210,var(--card))}}\n"
-              # Both themes: the hero's glow was #2a5596, where the gold eyebrow (4.0:1) and the small print (3.7:1) failed AA.
-              "html .hero{background:radial-gradient(900px 520px at 80% 0,#1f4378 0,transparent 62%),"
+              "html .offer{background:linear-gradient(160deg,#2b2620,var(--card))}}\n"
+              # Both themes: an obsidian hero with a faint warm glow (the old blue glow failed AA under the gold eyebrow).
+              "html .hero{background:radial-gradient(900px 520px at 80% 0,#3a352c 0,transparent 62%),"
               "linear-gradient(165deg,var(--navy) 0,var(--navy2) 100%)}"
-              "html .micro{color:#c8d4e6}\n")
+              "html .micro{color:#d8d2c6}\n")
 
 
 def main(argv: list[str]) -> int:
