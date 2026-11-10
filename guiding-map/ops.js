@@ -4487,6 +4487,13 @@
         + "@media (prefers-contrast:more){:root{--muted:#3f3c37;--border:#6f695f}html[data-theme=dark]{--muted:#d6d1c8;--border:#8f8b84}}"
         + "@media (forced-colors:active){button,.btn,.btn-sm,.gm-d3 .tile,#gmVitals>div{border:1px solid ButtonText!important}:focus-visible{outline:2px solid Highlight}}"
         + "@supports (corner-shape:squircle){.gm-d3,.gm-d3 .tile,.road-col,.kc,.okr-card,.gm-setup,#gmVitals>div,#gmOverlay>div,#gmMoreSheet .sh{corner-shape:squircle}}"
+        // The owner's UI rules (ui-rules-lint): every control a thumb can hit is at least 44 x 44 px; inputs are 16 px so a phone
+        // does not zoom; fold headers are full-height targets. Help terms inside a sentence stay inline (WCAG 2.5.8 exempts them).
+        + ".btn,.btn-sm,.btn-p,.btn-s,.chip,.gm-tap,.hdr-btn,.gm-menu-btn,button.danger,.danger[role=button],[role=button].danger{min-height:44px!important;min-width:44px!important}"
+        + ".chip,.gm-tap,button.danger,.danger[role=button]{display:inline-flex;align-items:center;justify-content:center}"
+        + "#sections summary,#gmOverlay summary{min-height:44px;display:flex;align-items:center;gap:6px;cursor:pointer}"
+        + "#sections div[role=button],.btn-add{min-height:44px}.gm-term{display:inline!important}"
+        + "#sections input:not([type=checkbox]):not([type=radio]):not([type=range]),#sections select,#sections textarea,#gmOverlay input:not([type=checkbox]):not([type=radio]),#gmOverlay select,#gmOverlay textarea{font-size:16px!important}"
         // Alerts (premium.alerts): a tinted card, a thin edge in its colour, a sentence-case title, ink text, one action.
         // Red only for real danger; a missed habit is attention. The older .warn/.info/.ibread-risk boxes join the same family.
         + ":root{--al-note-bg:#fffdf9;--al-note-rim:#857e72;--al-attention-bg:#fbf3e2;--al-attention-rim:#9c7a18;--al-danger-bg:#fbeceb;--al-danger-rim:#a8261b;--al-success-bg:#edf4ee;--al-success-rim:#1f6b3a}html[data-theme=dark]{--al-note-bg:#222226;--al-note-rim:#7d7972;--al-attention-bg:#2b2620;--al-attention-rim:#e2c172;--al-danger-bg:#2e2020;--al-danger-rim:#f2958b;--al-success-bg:#1f2a22;--al-success-rim:#7fcf98}"

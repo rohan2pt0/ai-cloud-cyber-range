@@ -34,6 +34,17 @@ SEED = r"""() => { const K = window.OSK, t = K.ymd();
   K.render(); }"""
 
 
+def _ui_rules_js() -> str:
+    """The owner's UI rules, measured in a real browser (ui-rules-lint): the one copy lives in website/tests/ui_audit.py,
+    loaded by path (that file imports nothing from here)."""
+    import importlib.util as _u
+    _p = pathlib.Path(__file__).resolve().parents[2] / "website" / "tests" / "ui_audit.py"
+    _s = _u.spec_from_file_location("securax_site_ui_audit_rules", _p)
+    _m = _u.module_from_spec(_s)
+    _s.loader.exec_module(_m)
+    return _m.UI_RULES_JS
+
+
 def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
     class Quiet(http.server.SimpleHTTPRequestHandler):
@@ -62,6 +73,8 @@ def main() -> int:
                         fails.append(f"{app} {theme} {t}: the screen failed to render")
                     for c in pg.evaluate(CONTRAST_JS):
                         fails.append(f"{app} {theme} {t}: contrast {c['ratio']} < {c['need']} on {c['t']!r}")
+                    for r in pg.evaluate(_ui_rules_js()):
+                        fails.append(f"{app} {theme} {t}: ui rule " + " ".join(map(str, r)))
                     wide = pg.evaluate("() => document.documentElement.scrollWidth - window.innerWidth")
                     if wide > 1:
                         fails.append(f"{app} {theme} {t}: {wide}px horizontal scroll at phone width")
