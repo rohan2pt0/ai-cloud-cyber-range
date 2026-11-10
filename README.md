@@ -136,9 +136,9 @@ This list is generated from [`features.json`](features.json); the Command Center
 - Build the system, not the goal: a new core principle (`build-the-system`)
 - A system lives in the calendar: a new core principle (`in-the-calendar`), and the family preventive calendar is in it
 - Vantage's review rhythm in the calendar
+- Claude navigates, the open models build: now enforced, not remembered
 - Readable lines on a wide screen, and nothing only a mouse can reveal (ui-rules-lint, slice 3)
 - The first run, reviewed as a person meets it (human-first-review)
-- Every control a thumb can hit is now at least 44 x 44 px, in every app (ui-rules-lint, slice 2)
 
 **Release 0.3.0 - 2026-10-22:**
 

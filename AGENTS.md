@@ -116,6 +116,12 @@ The core stays free to use: everything a person needs to be safe, SSO and export
 
 ## 1. Pick the tier before you start
 
+**Claude is the navigator, the open models are the builders (owner, 2026-11-10).** A Claude session never builds local or
+opencode-tier work by hand: it invokes the `delegate` skill, which routes the task and hands it to OpenCode Go (path B,
+`lifecycle/delegate_here.sh`, works in any cloud session because the proxy injects the opencode.ai key). The repository hook
+(`.claude/settings.json` -> `lifecycle/navigator_hook.py`) puts this rule and this month's Claude share in front of every
+message, so it does not depend on the model remembering. `./securax ai share` is the score: Claude at or under 20%.
+
 Run `./securax route "the task"`. It names the tier, and why:
 
 - **local**: one area, an existing pattern, a clear test. `./securax autobuild "…"`.
