@@ -77,7 +77,7 @@
         "3-line note \u2014 what worked / what didn't / what to adjust",
         "Notes app: clear the capture inbox to zero, look at each active project, update the ongoing areas",
         "OPSEC check: this week's threats, update incident response plan if needed",
-        "Habit streaks: anything missed twice \u2192 mandatory recovery day"
+        "Habit streaks: anything missed twice \u2192 a recovery day, the floor only"
       ]
     },
     {
@@ -755,13 +755,13 @@
      in this app is optional on any given day. */
   var DAILY3 = [
     { id: "ex", label: "Move", floor: "Shoes on, one set. That counts." },
-    { id: "mf", label: "Mind", floor: "Three cyclic sighs \u2014 breathe in through the nose, take a second short sip of air on top, then a long slow breath out. Ninety seconds." },
+    { id: "mf", label: "Mind", floor: "Three slow breaths, each breath out longer than the breath in." },
     { id: "fm", label: "Family", floor: "One real question, phone in the basket." }
   ];
   function daily3HTML(calm) {
     var done = (typeof todayChecks === "function") ? todayChecks() : [];
     var rec = inRecovery();
-    var h = '<div class="gm-d3"><div class="t">' + (rec ? "Recovery mode · these three only" : "The daily three · non-negotiable") + '</div><div class="row">';
+    var h = '<div class="gm-d3"><div class="t">' + (rec ? "Recovery mode · these three only" : "The daily three · the floor is enough") + '</div><div class="row">';
     DAILY3.forEach(function (d) {
       var idx = -1;
       if (typeof HABITS !== "undefined") HABITS.forEach(function (hb, i) { if (hb.id === d.id) idx = i; });
@@ -1465,12 +1465,13 @@
     ];
   }
   function vitalsHTML() {
-    var h = '<div id="gmVitals">';
+    var h = '<div id="gmVitals">', exampleNums = !!((window.P && P.example) || exampleCount() > 0);
     // Premium calm (design-premium-showcase): numbers stay neutral ink. Progress (Today, Stack) is never 'danger'; a money
     // figure in its risk band gets a small dot AND a word in its accessible name, so red only ever means danger.
     vitals().forEach(function (v) {
       var prog = v.t === "today" || v.t === "stack";
-      var st = prog ? "" : v.c === "var(--red)" ? "low" : v.c === "var(--amber)" ? "watch" : "";
+      // human-first: example numbers are not the person's, so they never raise an alarm (no "low" on a made-up net worth)
+      var st = prog || exampleNums ? "" : v.c === "var(--red)" ? "low" : v.c === "var(--amber)" ? "watch" : "";
       var dot = st ? '<span aria-hidden="true" style="display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle;background:' + v.c + '"></span>' : "";
       h += '<div role="button" tabindex="0" aria-label="' + esc(v.l) + ': ' + esc(v.v) + (st ? " (" + st + ")" : "") + '. Open the tab that changes this."'
         + ' onclick="goTab(\'' + v.t + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();goTab(\'' + v.t + '\');}"' + (st ? ' data-state="' + st + '"' : "") + '>'
@@ -2458,7 +2459,7 @@
         + '<div style="height:4px;border-radius:2px;background:var(--border);overflow:hidden">'
         + '<div style="height:100%;width:' + v + '%;background:' + col + '"></div></div>'
         + '<div style="font-size:11.5px;color:var(--muted);margin-top:4px">strength ' + v + '% \u00b7 '
-        + (left ? left + " guilt-free miss" + (left > 1 ? "es" : "") + " left" : "budget used \u2014 floor is mandatory") + '</div></div>';
+        + (left ? left + " guilt-free miss" + (left > 1 ? "es" : "") + " left" : "budget used \u2014 today the floor is enough") + '</div></div>';
     });
     return h + '</div>'
       + '<div style="font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.45">Strength is a 20-day weighted average \u2014 one miss barely moves it, which is what the habit research actually shows. Two misses a month are budgeted on purpose; perfection is not the system.</div>';
@@ -2765,7 +2766,7 @@
 
   var GUIDES = [
     { id: "daily3", icon: "☀", title: "The Daily Three: Move, Mind, Family", tag: "daily · 2-min floor",
-      what: "The three non-negotiables. Each has a 2-minute floor — the smallest version that still counts as a win, so you never miss twice.",
+      what: "The three daily floors. Each has a 2-minute floor — the smallest version that still counts as a win, so you never miss twice.",
       steps: ["MOVE — get your body working: a brisk 10-min walk, the strength workout, stairs, or stretching. Floor: 2 minutes of any movement.",
         "MIND — train attention/calm: box breathing, 10 slow breaths, or 5 min journaling. Floor: 1 minute of slow breathing.",
         "FAMILY — one real connection: a proper conversation, a call to parents, phone away at a meal. Floor: one undistracted 2-min talk."],
@@ -3454,7 +3455,7 @@
     var example = (window.P && P.example) || exampleCount() > 0;
     if (!example || G("gm_quick_done", false) || G("gm_quick_snooze", "") > ymd()) return "";
     return '<div class="gm-setup" style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:16px;padding:16px;margin-bottom:16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
-      + '<div style="flex:1;min-width:180px;font-size:12px;color:var(--text);line-height:1.5"><b>These are example numbers.</b> Four quick questions make them yours (about a minute). Everything else is optional.</div>'
+      + '<div style="flex:1;min-width:180px;font-size:12px;color:var(--text);line-height:1.5"><b>Example numbers for now.</b> Four quick questions make them yours.</div>'
       + '<button class="btn-sm gm-action gm-secondary" onclick="gmQuickSetup()">Make them mine</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--muted)" onclick="gmQuickLater()">Later</button></div>';
   }
@@ -3601,7 +3602,7 @@
   function calmTodayHTML() {
     var more = dueNowHTML() + (inRecovery() ? "" : driftHTML() + resHTML()) + msTodayHTML() + insightHTML() + estateHTML();
     var open = G("gm_more_today", false) === true;
-    return '<div class="section active">' + greetHTML() + (phone() ? vitalsHTML() : "") + interruptHTML() + setupStripHTML() + undoBar() + checkinHTML() + todayFocusHTML() + winsHTML()
+    return '<div class="section active">' + greetHTML() + (phone() ? vitalsHTML() : "") + interruptHTML() + undoBar() + checkinHTML() + setupStripHTML() + todayFocusHTML() + winsHTML()
       + (more.replace(/<[^>]*>/g, "").trim() ? '<details class="road-col gm-more-today"' + (open ? " open" : "") + ' ontoggle="gmMoreToday(this.open)">'
         + '<summary style="cursor:pointer;font-weight:800;font-size:13px">More today <span style="font-weight:500;color:var(--muted);font-size:11.5px">\u00b7 what is due, your week, calendar, estate</span></summary>'
         + '<div style="margin-top:10px">' + more + '</div></details>' : "")
@@ -3838,6 +3839,75 @@
     S_("gm_cal_exported" + (group ? "_" + group : ""), ymd());
     gmToast("Calendar file saved: " + n + " repeating events. Open it and add them to the same calendar each time; a newer file updates these events, it never doubles them.");
   };
+
+  /* ── Dated items in the calendar (queue calendar-everywhere): the career plan's dates and the papers' renewals.
+     The same contract, for things that happen once on a date of the person's own:
+     - the UID comes from the item's permanent id (securax-gm-car-<id>, securax-gm-ib-<id>), never from its text;
+     - the date is the item's own date, so the same data always gives the same file;
+     - a ledger on this device (gm_cal_seq) remembers what each UID last said; when the date or wording changes,
+       SEQUENCE goes up by one, so calendar apps update the event in place instead of adding a second one;
+     - an item that is done, or gone from the list, is sent once more as CANCELLED, so apps remove it.
+     The ledger is bounded: entries gone for over a year are forgotten (their events are long past). */
+  var RENEW_RX = /\b(renew|renewal|premium|expir|lapsed|matur)/i;
+  function datedItems(group) {
+    var out = [];
+    if (!group || group === "career") {
+      var c = car();
+      if (c.cfg.noticeStart || c.cfg.join) planItems(c).forEach(function (p) {
+        if (p.due) out.push({ uid: "car-" + p.id, date: ymd(p.due), name: "Career: " + p.t, desc: "Your move plan in the Life OS (Career, step 7). Tick it there when it is done.", done: p.done, group: "career" });
+      });
+    }
+    if (!group || group === "renewals") {
+      ibAll().forEach(function (x) {
+        if (x.kind === "note" || !x.due || !RENEW_RX.test((x.t || "") + " " + (x.next || ""))) return;
+        out.push({ uid: "ib-" + ibSafe(x.id), date: x.due, name: x.t, desc: (x.next ? x.next + "\n" : "") + "From your papers, in the Life OS Inbox. Mark it done there.", done: !!x.done, group: "renewals" });
+      });
+    }
+    return out;
+  }
+  function calSig(e) { return e.date + "|" + e.name + "|" + (e.done ? 1 : 0); }
+  function datedPlan(group) {
+    var led = G("gm_cal_seq", {}), now = datedItems(group), seen = {}, ev = [];
+    now.forEach(function (e) {
+      var k = "securax-gm-" + e.uid, prev = led[k], v = !prev ? 1 : prev.s === calSig(e) ? prev.v : prev.v + 1;
+      seen[k] = 1; ev.push({ k: k, v: v, s: calSig(e), e: e, cancel: e.done });
+    });
+    Object.keys(led).forEach(function (k) {                    // gone from the list: cancel it, once more, with its last words
+      var o = led[k]; if (seen[k] || (group && o.g !== group) || o.x) return;
+      ev.push({ k: k, v: o.v + 1, s: "gone", e: { date: o.d, name: o.n, desc: "No longer on your list.", group: o.g }, cancel: true, gone: true });
+    });
+    return ev.sort(function (a, b) { return a.k < b.k ? -1 : 1; });
+  }
+  window.gmCalendarDatedICS = function (group) {
+    var now = new Date(), stamp = icsDate(now, now.getHours(), now.getMinutes());
+    var L = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//SecuRAX//Life OS calendar//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
+      "X-WR-CALNAME:" + (group === "career" ? "Career plan" : group === "renewals" ? "Renewals" : "Life OS dates")];
+    datedPlan(group).forEach(function (x) {
+      var d = String(x.e.date).replace(/-/g, "").slice(0, 8), nd = new Date(x.e.date + "T00:00:00"); nd.setDate(nd.getDate() + 1);
+      L.push("BEGIN:VEVENT", "UID:" + x.k + "@local", "SEQUENCE:" + x.v, "DTSTAMP:" + stamp, "DTSTART;VALUE=DATE:" + d, "DTEND;VALUE=DATE:" + ymd(nd).replace(/-/g, ""),
+        "STATUS:" + (x.cancel ? "CANCELLED" : "CONFIRMED"), icsFold("SUMMARY:" + icsText(x.e.name)), icsFold("DESCRIPTION:" + icsText(x.e.desc)));
+      if (!x.cancel) L.push("BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:" + icsText(x.e.name), "TRIGGER:PT9H", "END:VALARM");
+      L.push("END:VEVENT");
+    });
+    L.push("END:VCALENDAR");
+    return L.join("\r\n") + "\r\n";
+  };
+  window.gmCalendarDated = function (group) {
+    var ics = gmCalendarDatedICS(group), plan = datedPlan(group), led = G("gm_cal_seq", {}), today = ymd();
+    plan.forEach(function (x) { led[x.k] = { s: x.s, v: x.v, d: x.e.date, n: String(x.e.name).slice(0, 120), g: x.e.group || group || "", x: x.gone ? today : "" }; });
+    var keys = Object.keys(led);                                // bounded: forget what has been gone for over a year, and keep at most 500
+    keys.forEach(function (k) { if (led[k].x && led[k].x < ymd(new Date(Date.now() - 365 * 864e5))) delete led[k]; });
+    keys = Object.keys(led); if (keys.length > 500) keys.sort(function (a, b) { return (led[a].d || "") < (led[b].d || "") ? -1 : 1; }).slice(0, keys.length - 500).forEach(function (k) { delete led[k]; });
+    S_("gm_cal_seq", led);
+    try {
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([ics], { type: "text/calendar" }));
+      a.download = (group || "life-os") + "-dates.ics"; document.body.appendChild(a); a.click(); a.remove();
+    } catch (e) {}
+    var live = plan.filter(function (x) { return !x.cancel; }).length;
+    gmToast("Calendar file saved: " + live + " dated event" + (live === 1 ? "" : "s") + ". Add it to the same calendar each time; a newer file moves or removes these events, it never doubles them.");
+  };
+  function datedCount(group) { return datedItems(group).filter(function (e) { return !e.done; }).length; }
 
 
   /* ── Pattern interrupt: when the week is heavy, the app subtracts instead of adding ──────────────
@@ -4358,6 +4428,7 @@
       pl += '<div role="button" tabindex="0" onclick="gmCarDone(\'' + p.id + '\')" style="display:flex;gap:9px;align-items:flex-start;cursor:pointer;margin:6px 0;font-size:12.5px;color:var(--text);line-height:1.5"><span class="gm-tap' + (p.done ? " on" : "") + '" style="min-width:26px;min-height:26px;border-radius:8px;font-size:12px">' + (p.done ? "✓" : "") + '</span>'
         + '<span' + (p.done ? ' style="text-decoration:line-through;opacity:.7"' : '') + '>' + esc(p.t) + (p.due ? ' <span style="color:' + (over ? "var(--red)" : "var(--muted)") + '">· ' + (over ? "overdue " : "by ") + ymd(p.due) + '</span>' : '') + '</span></div>';
     });
+    if (datedCount("career")) pl += '<button class="btn-sm" data-haptic="success" style="margin-top:8px;background:var(--cardAlt);color:var(--text)" onclick="gmCalendarDated(\'career\')">Add the plan to my calendar</button>';
     h += box(pl);
     h += '<div style="font-size:11px;color:var(--muted);margin:10px 2px;line-height:1.5">Tax: new regime FY 2026-27 slabs, ₹75,000 standard deduction, rebate to ₹12L. Fee income: 44ADA applies only to notified professions, so confirm with a CA before ticking it; GST may apply above ₹20L of fees. Market bands are estimates, not quotes. This screen is a decision aid, not financial or legal advice.</div>';
     return h + '</div>';
@@ -4391,6 +4462,8 @@
       + ".gm-menu-btn{font-size:18px!important;line-height:1;padding:4px 12px!important;margin-left:6px}"
       + ".road-col,.okr-card,.kc{border-radius:16px;box-shadow:var(--shadow)}"
       + ".road-col{padding:14px}.info{border-radius:12px;font-size:13px;line-height:1.55}"
+      // ui-rules-lint slice 3: on a wide screen, running text keeps a readable measure (at most ~75 characters a line)
+      + "@media (min-width:700px){#sections p,#sections li,#sections div:not(:has(div,table,button,svg,canvas,input,select,textarea,img,ul,ol)){max-width:54ch}}"
       + ".cat-t{font-size:17px;letter-spacing:-.01em}"
       + ".flowhead{font-size:12px;color:var(--muted);margin-bottom:6px}"
       + ".flowbar{display:flex;height:36px;border-radius:10px;overflow:hidden;clip-path:inset(0 100% 0 0);animation:gmwipe .8s cubic-bezier(.2,.85,.25,1) .05s forwards}"
@@ -5129,6 +5202,8 @@
     } else {
       h += '<h3>Actions (' + actions.length + ')</h3>' + (actions.length ? actions.map(ibRow).join("") : '<div class="info">Nothing scheduled. Decide something above, or run a review below.</div>');
     }
+    var rn = datedCount("renewals");
+    if (rn) h += '<div class="ibdec"><button class="btn" data-haptic="success" onclick="gmCalendarDated(\'renewals\')">Add ' + rn + ' renewal' + (rn === 1 ? "" : "s") + ' to my calendar</button></div>';
     h += '<h3>Run a review now</h3><div class="info">Pick a review. Answer each step in your own words; leave a step empty if all is well. Every answer becomes an action due in a week.</div>'
       + '<div class="ibrev">' + RITUALS.map(function (r) { return '<button class="btn' + (ropen === r.id ? " primary" : "") + '" onclick="gmReviewOpen(\'' + r.id + '\')">' + esc(r.name) + ' · ' + r.mins + ' min</button>'; }).join("") + '</div>';
     var r = RITUALS.filter(function (x) { return x.id === ropen; })[0];

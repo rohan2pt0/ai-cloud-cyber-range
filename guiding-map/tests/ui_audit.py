@@ -165,6 +165,19 @@ def main():
             hub.evaluate("document.querySelectorAll('details').forEach(d=>d.open=true)")
             for r in hub.evaluate(RULES):
                 report["rules"].append(f"{theme}:hub: " + " ".join(map(str, r)))
+        # 13. laptop width (ui-rules-lint slice 3): line length and hover-only controls show only on a wide screen
+        for theme in ["dark", "light"]:
+            for page in ("hub.html", "index.html"):
+                wd = b.new_context(viewport={"width": 1280, "height": 900}, color_scheme=theme).new_page()
+                wd.goto((GM / page).as_uri()); wd.wait_for_timeout(700)
+                tabs = wd.evaluate("typeof TABS === 'undefined' ? [''] : TABS.map(t => t[0])") if page == "index.html" else [""]
+                for t in tabs:
+                    if t:
+                        wd.evaluate(f"goTab({json.dumps(t)})"); wd.wait_for_timeout(40)
+                    wd.evaluate("document.querySelectorAll('details').forEach(d=>d.open=true)")
+                    for r in wd.evaluate(RULES):
+                        if r[0] in ("line-length", "hover-only"):
+                            report["rules"].append(f"{theme}:{page}{'#' + t if t else ''}@1280: " + " ".join(map(str, r)))
         b.close()
     # Probes to the estate (health, feed) are expected to fail from a file:// page: refused when nothing listens, CORS-blocked
     # when the estate IS running (the sandbox runner). Those are the environment, not the app; uncaught exceptions stay fatal.
