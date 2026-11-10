@@ -35,12 +35,12 @@ input.num { width:96px; flex:none; }
 .inline { display:flex; gap:8px; } .inline input { flex:1; }
 .btns { display:flex; flex-wrap:wrap; gap:8px; margin-top:10px; }
 .cols { display:flex; gap:8px; } .cols > span { flex:1; min-width:0; }
-.chips { display:flex; flex-wrap:wrap; gap:6px; } .chips button { font-size:14px; min-height:34px; padding:6px 10px; }
+.chips { display:flex; flex-wrap:wrap; gap:6px; } .chips button { font-size:14px; min-height:44px; padding:6px 12px; }
 .list { list-style:none; margin:0; padding:0; } ol.list { list-style:decimal; padding-left:20px; }
 .list > li { padding:8px 0; border-bottom:1px solid var(--line); } .list > li:last-child { border-bottom:0; }
 .row { display:flex; align-items:center; gap:10px; } .row .grow { flex:1; min-width:0; overflow-wrap:anywhere; }
 .form { background:var(--bg); border-radius:10px; padding:10px; margin:6px 0; }
-.check { width:40px; height:40px; flex:none; border-radius:50%; padding:0; font-weight:800; }
+.check { width:44px; height:44px; flex:none; border-radius:50%; padding:0; font-weight:800; }
 .tick.done .check { background:var(--on); color:var(--on-ink); border-color:var(--on); }
 .tag { display:inline-block; font-size:12px; font-weight:700; padding:1px 8px; border-radius:99px; background:var(--low); color:var(--low-ink); }
 .tag.late, .tag.high { background:var(--late); color:var(--late-ink); }
@@ -77,3 +77,7 @@ nav#oskNav button.on { color:var(--ink); background:var(--btn); font-weight:700;
 @supports (corner-shape:squircle) { button, .card, input, select, textarea { corner-shape:squircle; } }
 button:active { transform:scale(.97); }
 button:disabled { opacity:.45; cursor:not-allowed; transform:none; }
+/* The owner's UI rules (ui-rules-lint): every control a thumb can hit is at least 44 x 44 px; fold headers are full-height targets. */
+button { min-height:44px; min-width:44px; }
+summary { min-height:44px; display:flex; align-items:center; }
+#oskToast button { min-height:44px; }

@@ -44,8 +44,20 @@ def seed(pg):
       const e={},n={}; for(let i=0;i<14;i++){ const d=new Date(); d.setDate(d.getDate()-i); e[dKey(d)]=1+Math.floor(Math.random()*5); }
       n[dKey(new Date(Date.now()-86400000))]='slept late, skipped reading; good walk with family';
       localStorage.setItem('gm_energy',JSON.stringify(e)); localStorage.setItem('gm_notes',JSON.stringify(n)); }""")
+def _ui_rules_js() -> str:
+    """The owner's UI rules, measured in a real browser (ui-rules-lint): the one copy lives in website/tests/ui_audit.py,
+    loaded by path (that file imports nothing from here)."""
+    import importlib.util as _u
+    _p = pathlib.Path(__file__).resolve().parents[2] / "website" / "tests" / "ui_audit.py"
+    _s = _u.spec_from_file_location("securax_site_ui_audit_rules", _p)
+    _m = _u.module_from_spec(_s)
+    _s.loader.exec_module(_m)
+    return _m.UI_RULES_JS
+
+
 def main():
-    report = {"errors": [], "contrast": collections.defaultdict(list), "checks": []}
+    report = {"errors": [], "contrast": collections.defaultdict(list), "checks": [], "rules": []}
+    RULES = _ui_rules_js()
     def chk(name, cond, detail=""): report["checks"].append((name, bool(cond), str(detail)[:200]))
     with sync_playwright() as p:
         OUT.mkdir(parents=True, exist_ok=True)
@@ -129,6 +141,8 @@ def main():
                     pg.evaluate("document.querySelectorAll('#sections details').forEach(d=>d.open=true)")
                 for item in pg.evaluate(CONTRAST_JS):
                     report["contrast"][f"{theme}:{t}"].append(item)
+                for r in pg.evaluate(RULES):
+                    report["rules"].append(f"{theme}:{t}: " + " ".join(map(str, r)))
                 if t in ("today", "okr", "wheel", "ops", "kids", "growth", "career"):
                     pg.screenshot(path=str(OUT / f"{theme}-{t}.png"), full_page=True)
         # 11. the FULL Today view (calm mode off) on a day after two misses: the recovery card, the habit list and the stats
@@ -144,6 +158,13 @@ def main():
                 pg.evaluate("[document.querySelectorAll('.gm-alert.attention').length, document.querySelectorAll('#sections .warn').length]"))
             pg.screenshot(path=str(OUT / f"{theme}-today-full.png"), full_page=True)
         pg.evaluate("localStorage.setItem('gm_calm','true')")
+        # 12. the Command Center (hub.html) against the same UI rules, every fold open, both themes
+        for theme in ["dark", "light"]:
+            hub = b.new_context(viewport={"width": 412, "height": 900}, color_scheme=theme).new_page()
+            hub.goto((GM / "hub.html").as_uri()); hub.wait_for_timeout(500)
+            hub.evaluate("document.querySelectorAll('details').forEach(d=>d.open=true)")
+            for r in hub.evaluate(RULES):
+                report["rules"].append(f"{theme}:hub: " + " ".join(map(str, r)))
         b.close()
     # Probes to the estate (health, feed) are expected to fail from a file:// page: refused when nothing listens, CORS-blocked
     # when the estate IS running (the sandbox runner). Those are the environment, not the app; uncaught exceptions stay fatal.
@@ -161,6 +182,9 @@ def main():
     failed = [c for c in report["checks"] if not c[1]]
     summary = {"checks": len(report["checks"]), "failed": [c[0] for c in failed], "page_errors": errs, "contrast_failures": tot}
     (OUT / "summary.json").write_text(json.dumps(summary, indent=1))
-    return 0 if not failed and not errs and not tot else 1
+    print("ui-rule breaks:", len(report["rules"]))
+    for r in report["rules"][:40]:
+        print("ui rule:", r)
+    return 0 if not failed and not errs and not tot and not report["rules"] else 1
 if __name__ == "__main__":
     sys.exit(main())

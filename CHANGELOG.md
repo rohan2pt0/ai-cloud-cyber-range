@@ -9,6 +9,9 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Fixed
+- **Every control a thumb can hit is now at least 44 x 44 px, in every app (ui-rules-lint, slice 2).** The owner's UI rules now run in the Life OS audit (every tab, both themes, plus the Command Center hub) and the kit audit, as well as the site, and any break fails them. They found 224 small targets in the Life OS (40 px buttons, 28 px menu button, 23 px fold headers, 30 px rating taps), 240 in the hub's command list (36 px) and 12 in Vantage; all are fixed, and Life OS inputs are 16 px so a phone no longer zooms in. Help terms inside a sentence stay inline, as WCAG 2.5.8 allows.
+
+### Fixed
 - **The owner's UI rules are now checked, not just written (ui-rules-lint, slice 1).** The site audit measures six rules in a real browser on every page, both themes, laptop and phone: 44 px tap targets, 16 px inputs, the right keyboard for number, phone and e-mail fields, body line height, no pure-black backgrounds, and underlined links in running text. Any break fails the audit. Its first run found the AI-risk check's Yes/No answers at 26 px tall; they are now 44 px, with the chosen answer tinted.
 - **The site's menu bar at laptop width.** The brand's "by …" byline ran under "How it works". The brand no longer shrinks above 960 px, the byline shows only where it fits (1360 px and up), and the menu tightens slightly between 961 and 1199 px. `website/tests/ui_audit.py` now fails if anything in the visible menu bar runs under the brand.
 

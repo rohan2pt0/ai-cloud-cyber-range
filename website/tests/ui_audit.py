@@ -48,8 +48,9 @@ UI_RULES_JS = r"""() => {
   const label = e => (e.textContent || e.getAttribute('aria-label') || e.name || e.id || '').trim().slice(0, 30);
   // 1. tap targets: buttons and stand-alone links (not links inside running text) at least 44 x 44
   document.querySelectorAll('button, [role=button], a.btn, summary, input[type=checkbox], input[type=radio], select').forEach(e => {
-    if (!vis(e)) return; const t = (e.type === 'checkbox' || e.type === 'radio') ? (e.closest('label') || e) : e; const r = t.getBoundingClientRect();
-    if (r.height < 43.5 || r.width < 43.5) out.push(['tap-target', label(e), Math.round(r.width) + 'x' + Math.round(r.height)]);
+    if (!vis(e)) return; if (getComputedStyle(e).display === 'inline' || e.classList.contains('gm-term')) return;   // WCAG 2.5.8: a target inside a line of text (or an inline help term) is exempt
+    const t = (e.type === 'checkbox' || e.type === 'radio') ? (e.closest('label') || e) : e; const r = t.getBoundingClientRect();
+    if (r.height < 43.5 || r.width < 43.5) out.push(['tap-target', label(e), Math.round(r.width) + 'x' + Math.round(r.height), (e.className && String(e.className).slice(0, 30)) || e.tagName]);
   });
   // 2. inputs at 16 px or more (smaller makes a phone zoom in)
   document.querySelectorAll('input:not([type=checkbox]):not([type=radio]):not([type=hidden]), select, textarea').forEach(e => {
