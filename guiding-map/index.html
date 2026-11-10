@@ -1790,7 +1790,8 @@ function renderAll(){
   else if(curTab==="cal"){
     html='<div class="section active"><div class="cat-t">\uD83D\uDCC5 Family Preventive Calendar</div>';
     var who="you"+(P.pname?" + "+P.pname:"")+(P.kids.length?" + "+P.kids.map(function(k){return k.name;}).join(", "):"")+(P.parents?" + parents":"");
-    html+='<div class="info">Covers: '+who+'. Set 4 recurring phone reminders for the 1st Monday of each quarter NOW. USPSTF: colorectal screening starts at 45; BP every visit; diabetes screen 35+ if overweight.</div>';
+    html+='<div class="info">Covers: '+who+'. The four reminders below can sit in your calendar, on the first Monday of each quarter, so the year runs itself. USPSTF: colorectal screening starts at 45; BP every visit; diabetes screen 35+ if overweight.'
+      +'<div style="margin-top:12px"><button class="btn-sm btn-p" data-haptic="success" onclick="gmCalendar(\'family\')">Add the four to my calendar</button></div></div>';
     html+='<div class="cal-q"><div class="cal-qt">Q1 (Apr-Jun) — Blood Work</div><div class="cal-qb">Self'+(P.pname?" + "+P.pname:"")+': CBC, fasting lipids, HbA1c, TSH, Vit D + B12, LFT, KFT. ~'+money(1800)+'/person home visit (Thyrocare Aarogyam / Healthians). Track trends year over year.'+(E.a>=45?' Age 45+: colorectal screening per USPSTF — discuss FIT test vs colonoscopy.':'')+'</div></div>';
     html+='<div class="cal-q"><div class="cal-qt">Q2 (Jul-Sep) — Dental + Vision</div><div class="cal-qb">Whole family dental scaling (~'+money(800)+'/person)'+(P.kids.length?'; kids every 6 months':'')+'. Eye tests for all screen users.</div></div>';
     html+='<div class="cal-q"><div class="cal-qt">Q3 (Oct-Dec) — '+(P.parents?'Parents + ':'')+'Kids</div><div class="cal-qb">'+(P.parents?'Parents: BP + diabetes panel, ECG (echo/TMT if 60+ per doctor), bone density (mother), cataract/glaucoma screen. ':'')+(P.kids.length?P.kids.map(function(k){return k.name;}).join(", ")+': pediatric annual + vaccination check + growth percentiles.':'Self: skin/mole check + Q1 follow-ups.')+'</div></div>';
@@ -5418,7 +5419,7 @@ function renderPlaybook(){
     h += '<div class="info">' + (due.length ? due.length + " ritual(s) due now (they also show on Today). " : "Nothing due today. ")
       + (broken ? broken + " habit(s) need a recovery rep." : "") + '</div>';
     h += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px"><button class="btn-sm" style="background:var(--gold);color:#0d1f35;font-weight:800" onclick="gmQuarter()">Quarterly check-in</button>'
-      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmCalendar()">Add the rhythm to my calendar</button></div>';
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmCalendar(\'rhythm\')">Add the rhythm to my calendar</button></div>';
     var cad = "";
     RITUALS.forEach(function (r) {
       var log = cadenceLog(), done = log[r.id] === r.key(new Date());
@@ -5920,7 +5921,7 @@ function renderPlaybook(){
       + '<div style="font-size:12px;color:var(--muted);line-height:1.55;margin:5px 0 9px">About 5 minutes, all taps: grade last quarter, rate the 8 areas of life, pick up to 3 goals from your lowest scores.</div>'
       + '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-sm" style="background:var(--gold);color:#0d1f35;font-weight:800" onclick="gmQuarter()">' + (due ? "Start" : "Redo") + '</button>'
       + (n && tab === "okr" ? '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmQuarter({gradeOnly:true})">Update progress (taps)</button>' : '')
-      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmCalendar()">Add rhythm to calendar</button></div></div>';
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmCalendar(\'rhythm\')">Add rhythm to calendar</button></div></div>';
   }
 
   /* -- 2. The rhythm in your calendar: one .ics, recurring, with what to do written in each event -- */
@@ -5937,46 +5938,82 @@ function renderPlaybook(){
     return d;
   }
   function icsDate(d, hh, mm) { function z(n) { return (n < 10 ? "0" : "") + n; } return d.getFullYear() + z(d.getMonth() + 1) + z(d.getDate()) + "T" + z(hh) + z(mm) + "00"; }
-  function icsText(t) { return String(t).replace(/\\/g, "\\\\").replace(/;/g, "\;").replace(/,/g, "\\,").replace(/\n/g, "\\n"); }
+  function icsText(t) { return String(t).replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n"); }
   function icsFold(line) { var out = [], s = line; while (s.length > 74) { out.push(s.slice(0, 74)); s = " " + s.slice(74); } out.push(s); return out.join("\r\n"); }
-  function rhythmEvents() {
-    var url = location.origin && /^https?:/.test(location.protocol) ? location.origin + "/" : "";
-    return [
-      { id: "quarter", name: "Quarterly check-in (Guiding Map)", rule: "FREQ=YEARLY;BYMONTH=1,4,7,10;BYDAY=1SA", start: nextOn([0, 3, 6, 9], 1, 6, 10), hh: 10, mins: 60,
-        desc: "Open the Guiding Map > Today > Due now > Quarterly check-in: grade last quarter, rate 8 areas (taps), pick up to 3 goals. Then the Quarterly Review and Red-Team checklists (Due now > Open)." },
-      { id: "monthly", name: "Monthly review: money + After-Action Review", rule: "FREQ=MONTHLY;BYDAY=1SU", start: nextOn(null, 1, 0, 10), hh: 10, mins: 45,
-        desc: "Money Date numbers, then the four questions: what did I plan, what happened, why, what will I change. Update goal progress (one tap per result)." },
-      { id: "weekly", name: "Sunday Pulse (20 min)", rule: "FREQ=WEEKLY;BYDAY=SU", start: nextOn(null, 0, 0, 19), hh: 19, mins: 20,
-        desc: "Open Today: read 'This week, worked out for you' and tap 'Review my week with my estate AI'. Pick the one change for next week." },
-      { id: "tax", name: "April tax lock-in", rule: "FREQ=YEARLY;BYMONTH=4;BYDAY=1SA", start: nextOn([3], 1, 6, 11), hh: 11, mins: 90,
-        desc: "Choose the tax regime for the year, plan the year's tax-saving investments, collect Form 16 / AIS. (Guiding Map > Ops > cadence.)" },
-      { id: "annual", name: "Annual overhaul", rule: "FREQ=YEARLY;BYMONTH=8;BYDAY=1SA", start: nextOn([7], 1, 6, 10), hh: 10, mins: 240,
-        desc: "Insurance re-quote, will and nominations, property checks, the hit-by-a-bus test with your partner. (Guiding Map > Ops > cadence.)" }
-    ].map(function (e) { e.url = url; return e; });
+  /* The calendar contract (principle `in-the-calendar`): every recurring step lives in ONE registry, and the calendar file is
+     made from it so that a later version never conflicts with an earlier one.
+     - Each item keeps its UID for ever (securax-gm-<id>@local). Never reuse an id for a new meaning; rename the item instead.
+     - The start date is FIXED (the first occurrence on or after 2026-01-01), so every export of the same version is identical.
+     - "v" is the item's version: raise it whenever its time, rule or wording changes; it goes out as SEQUENCE, so calendar
+       apps that read it treat the new file as an update of the same event.
+     - An item is never deleted: set "retired" to a date. It is then exported with an UNTIL at that date (the series stops in
+       every app) and STATUS:CANCELLED (apps that honour it remove it).
+     - Import into the SAME calendar each time: apps match events by UID within a calendar, so they update in place.
+     A test (test38.js) holds the ids: one that disappears from the registry fails the build. */
+  var CAL_EPOCH = new Date(2026, 0, 1);
+  var CALENDAR = [
+    { id: "quarter", group: "rhythm", v: 1, name: "Quarterly check-in (Life OS)", rule: "FREQ=YEARLY;BYMONTH=1,4,7,10;BYDAY=1SA", months: [0, 3, 6, 9], nth: 1, dow: 6, hh: 10, mins: 60,
+      desc: "Open the Life OS > Today > Quarterly check-in: grade last quarter, rate 8 areas (taps), pick up to 3 goals." },
+    { id: "monthly", group: "rhythm", v: 1, name: "Monthly review: money + After-Action Review", rule: "FREQ=MONTHLY;BYDAY=1SU", months: null, nth: 1, dow: 0, hh: 10, mins: 45,
+      desc: "Money Date numbers, then four questions: what did I plan, what happened, why, what will I change. Update goal progress (one tap per result)." },
+    { id: "weekly", group: "rhythm", v: 1, name: "Sunday Pulse (20 min)", rule: "FREQ=WEEKLY;BYDAY=SU", months: null, nth: 0, dow: 0, hh: 19, mins: 20,
+      desc: "Open Today: read 'This week, worked out for you' and pick the one change for next week." },
+    { id: "tax", group: "rhythm", v: 1, name: "April tax lock-in", rule: "FREQ=YEARLY;BYMONTH=4;BYDAY=1SA", months: [3], nth: 1, dow: 6, hh: 11, mins: 90,
+      desc: "Choose the tax regime for the year, plan the year's tax-saving investments, collect Form 16 and AIS." },
+    { id: "annual", group: "rhythm", v: 1, name: "Annual overhaul", rule: "FREQ=YEARLY;BYMONTH=8;BYDAY=1SA", months: [7], nth: 1, dow: 6, hh: 10, mins: 240,
+      desc: "Insurance re-quote, will and nominations, property checks, the hit-by-a-bus test with your partner." },
+    { id: "family-q1", group: "family", v: 1, name: "Family health Q1: blood work", rule: "FREQ=YEARLY;BYMONTH=4;BYDAY=1MO", months: [3], nth: 1, dow: 1, hh: 9, mins: 30,
+      desc: "Book the yearly blood panel for the adults (CBC, fasting lipids, HbA1c, TSH, vitamin D and B12, liver and kidney). Home collection is fine. Track the trend year over year." },
+    { id: "family-q2", group: "family", v: 1, name: "Family health Q2: dental and vision", rule: "FREQ=YEARLY;BYMONTH=7;BYDAY=1MO", months: [6], nth: 1, dow: 1, hh: 9, mins: 30,
+      desc: "Dental scaling for the whole family (children every 6 months) and eye tests for everyone who uses a screen." },
+    { id: "family-q3", group: "family", v: 1, name: "Family health Q3: children and parents", rule: "FREQ=YEARLY;BYMONTH=10;BYDAY=1MO", months: [9], nth: 1, dow: 1, hh: 9, mins: 30,
+      desc: "Children: annual paediatric visit, vaccination check, growth. Parents: blood pressure and diabetes panel, and the checks their doctor advises." },
+    { id: "family-q4", group: "family", v: 1, name: "Family health Q4: closure", rule: "FREQ=YEARLY;BYMONTH=1;BYDAY=1MO", months: [0], nth: 1, dow: 1, hh: 9, mins: 30,
+      desc: "Second dental visit for adults, close every value flagged in Q1, the age-based screenings to discuss with your doctor, and one shared family-health folder." }
+  ];
+  function calFirst(e) {                                        // the first occurrence on or after the fixed epoch: stable for ever
+    for (var add = 0; add < 400; add++) {
+      var t = new Date(CAL_EPOCH); t.setDate(CAL_EPOCH.getDate() + add);
+      if (t.getDay() !== e.dow) continue;
+      if (e.months && e.months.indexOf(t.getMonth()) < 0) continue;
+      if (e.nth && Math.ceil(t.getDate() / 7) !== e.nth) continue;
+      return t;
+    }
+    return new Date(CAL_EPOCH);
   }
-  window.gmCalendarICS = function () {
+  function rhythmEvents(group) {
+    var url = location.origin && /^https?:/.test(location.protocol) ? location.origin + "/" : "";
+    return CALENDAR.filter(function (e) { return !group || e.group === group; })
+      .map(function (e) { var o = Object.assign({}, e); o.start = calFirst(e); o.url = url; return o; });
+  }
+  window.gmCalendarRegistry = function () { return CALENDAR.map(function (e) { return { id: e.id, group: e.group, v: e.v, retired: e.retired || "" }; }); };
+  window.gmCalendarICS = function (group) {
     var now = new Date(), stamp = icsDate(now, now.getHours(), now.getMinutes());
-    var L = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//SecuRAX//Guiding Map rhythm//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "X-WR-CALNAME:Life OS rhythm"];
-    rhythmEvents().forEach(function (e) {
+    var title = group === "family" ? "Family health" : group === "rhythm" ? "Life OS rhythm" : "Life OS";
+    var L = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//SecuRAX//Life OS calendar//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "X-WR-CALNAME:" + title];
+    rhythmEvents(group).forEach(function (e) {
       var end = new Date(e.start); end.setHours(e.hh, e.mins, 0, 0);
-      L.push("BEGIN:VEVENT", "UID:securax-gm-" + e.id + "@local", "DTSTAMP:" + stamp,
-        "DTSTART:" + icsDate(e.start, e.hh, 0), "DTEND:" + icsDate(end, end.getHours(), end.getMinutes()), "RRULE:" + e.rule,
+      var rule = e.rule + (e.retired ? ";UNTIL=" + e.retired.replace(/-/g, "") + "T235959" : "");
+      L.push("BEGIN:VEVENT", "UID:securax-gm-" + e.id + "@local", "SEQUENCE:" + (e.v || 1), "DTSTAMP:" + stamp,
+        "DTSTART:" + icsDate(e.start, e.hh, 0), "DTEND:" + icsDate(end, end.getHours(), end.getMinutes()), "RRULE:" + rule,
+        "STATUS:" + (e.retired ? "CANCELLED" : "CONFIRMED"),
         icsFold("SUMMARY:" + icsText(e.name)), icsFold("DESCRIPTION:" + icsText(e.desc + (e.url ? "\nOpen: " + e.url : ""))),
         "BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:" + icsText(e.name), "TRIGGER:-PT30M", "END:VALARM", "END:VEVENT");
     });
     L.push("END:VCALENDAR");
     return L.join("\r\n") + "\r\n";
   };
-  window.gmCalendar = function () {
-    var ics = gmCalendarICS();
+  window.gmCalendar = function (group) {
+    var ics = gmCalendarICS(group), n = rhythmEvents(group).length;
     try {
       var a = document.createElement("a");
       a.href = URL.createObjectURL(new Blob([ics], { type: "text/calendar" }));
-      a.download = "life-os-rhythm.ics"; document.body.appendChild(a); a.click(); a.remove();
+      a.download = (group === "family" ? "family-health" : "life-os-rhythm") + ".ics"; document.body.appendChild(a); a.click(); a.remove();
     } catch (e) {}
-    S_("gm_cal_exported", ymd());
-    gmToast("Calendar file saved. Open it to add 5 repeating events (quarterly, monthly, weekly, April, August). Already added them by hand? Skip this.");
+    S_("gm_cal_exported" + (group ? "_" + group : ""), ymd());
+    gmToast("Calendar file saved: " + n + " repeating events. Open it and add them to the same calendar each time; a newer file updates these events, it never doubles them.");
   };
+
 
   /* ── Pattern interrupt: when the week is heavy, the app subtracts instead of adding ──────────────
      The loop it breaks: in a saturated week you ask for a new system, build it for eleven days and drop it. So the app

@@ -8,6 +8,12 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
+### Added
+- **Build the system, not the goal: a new core principle (`build-the-system`).** Results come from loops, not willpower, so agents now build, for every outcome, the cue, the smallest step, a visible reward, the environment, a feedback review and the one binding constraint to remove first. The 360 review gains a seventh question (System). AGENTS.md also records the owner's standing instruction: decide and recommend, act on approved green PRs, and ask only for what is irreversible, costs money, touches the owner's devices or accounts, or is published.
+
+### Added
+- **A system lives in the calendar: a new core principle (`in-the-calendar`), and the family preventive calendar is in it.** Every repeating step is made from one registry, and calendar files now follow a contract so a later version never clashes with an earlier one: permanent event ids, fixed start dates (not moved to today on each export), a version on each event, and retired steps ended cleanly (an end date plus cancelled) instead of left behind. The Family Preventive Calendar gets "Add the four to my calendar" (first Monday of each quarter, what to do written inside), and its shouted "set reminders NOW" is now an invitation. Semicolons in event text are now escaped properly. `test38.js` fails if an event id ever disappears.
+
 ### Fixed
 - **Every control a thumb can hit is now at least 44 x 44 px, in every app (ui-rules-lint, slice 2).** The owner's UI rules now run in the Life OS audit (every tab, both themes, plus the Command Center hub) and the kit audit, as well as the site, and any break fails them. They found 224 small targets in the Life OS (40 px buttons, 28 px menu button, 23 px fold headers, 30 px rating taps), 240 in the hub's command list (36 px) and 12 in Vantage; all are fixed, and Life OS inputs are 16 px so a phone no longer zooms in. Help terms inside a sentence stay inline, as WCAG 2.5.8 allows.
 
