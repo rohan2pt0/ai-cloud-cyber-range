@@ -1,0 +1,14 @@
+{
+ "_meta": {"name": "मराठी", "locale": "mr-IN", "status": "beta", "note": "Machine-drafted, waiting for a native speaker's review. Money and legal terms with no common Marathi word keep the English term."},
+ "strings": {
+  "today.title": "आज",
+  "today.next": "तुमचे पुढचे पाऊल",
+  "today.do": "आत्ता करा",
+  "today.later": "नंतर ({n})",
+  "today.later_note": "जोखमीनुसार निवडलेले. पहिले काम पूर्ण करा; पुढचे आपोआप वर येईल.",
+  "today.clear": "सगळे ठीक आहे. काहीही उशिरा नाही आणि काहीही तुमची वाट पाहत नाही.",
+  "settings.language": "भाषा",
+  "settings.language_note": "तुम्ही निवडलेली भाषा याच डिव्हाइसवर लक्षात राहते. जे अजून भाषांतरित नाही ते इंग्रजीत दिसेल.",
+  "lang.beta": "बीटा"
+ }
+}

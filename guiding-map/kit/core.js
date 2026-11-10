@@ -50,6 +50,29 @@
   K.quarter = function (d) { d = d || new Date(); return d.getFullYear() + "-Q" + (Math.floor(d.getMonth() / 3) + 1); };
   // The edition's own word for a thing ("goals" -> "Security OKRs"); the module's default otherwise.
   K.term = function (k, d) { return (ED.terms && ED.terms[k]) || d || k; };
+
+  /* ── languages (queue multilingual) ─────────────────────────────────────────────────────────────
+     K.t("today.do", "Do it now") gives the chosen language's text, or the English written in the code: never a blank and
+     never a raw key. The language is the person's choice (Settings), else the device's own if a catalog exists, else
+     English. Catalogs are baked into the app at build (kit/i18n/<lang>.json), so they work offline. */
+  K.langs = function () { var L = { en: { name: "English", locale: "en-IN", status: "source" } };
+    Object.keys(ED.i18n || {}).forEach(function (k) { L[k] = (ED.i18n[k] || {})._meta || { name: k }; }); return L; };
+  K.lang = (function () {
+    var cat = ED.i18n || {}, pick = null;
+    try { pick = JSON.parse(localStorage.getItem(PFX + "~lang") || "null"); } catch (e) { pick = null; }
+    if (pick && (pick === "en" || cat[pick])) return pick;
+    var dev = String((navigator.languages && navigator.languages[0]) || navigator.language || "en").slice(0, 2).toLowerCase();
+    return cat[dev] ? dev : "en";
+  })();
+  K.locale = function () { return (K.langs()[K.lang] || {}).locale || "en-IN"; };
+  K.t = function (key, en, vars) {
+    var c = (ED.i18n || {})[K.lang], s = (c && c.strings && c.strings[key]) || en || key;
+    if (vars) Object.keys(vars).forEach(function (v) { s = s.split("{" + v + "}").join(vars[v]); });
+    return s;
+  };
+  K.num = function (n, opt) { try { return new Intl.NumberFormat(K.locale(), opt).format(n); } catch (e) { return String(n); } };
+  K.setLang = function (l) { K.set("~lang", l); K.lang = l; document.documentElement.lang = l; K.render(); };
+  try { document.documentElement.lang = K.lang; } catch (e) {}
   K.cfg = function (mod) { return (ED.modules && ED.modules[mod]) || null; };
   K.val = function (id) { var e = document.getElementById(id); return e ? String(e.value || "").trim() : ""; };
   K.toast = function (msg) {

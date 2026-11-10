@@ -131,14 +131,14 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- Languages, starting with हिंदी and मराठी (multilingual, slice 1)
 - Career dates and renewals in your calendar
 - One open action, chosen by risk: a new core principle (`one-open-action`), on every screen where things compete
 - Build the system, not the goal: a new core principle (`build-the-system`)
 - A system lives in the calendar: a new core principle (`in-the-calendar`), and the family preventive calendar is in it
 - Vantage's review rhythm in the calendar
+- Delegated work is 2-3x faster, with the same gates
 - The cockpit shows one "Do next" action, the rest under "Later (n)" (`one-open-action`)
-- Claude navigates, the open models build: now enforced, not remembered
-- Readable lines on a wide screen, and nothing only a mouse can reveal (ui-rules-lint, slice 3)
 
 **Release 0.3.0 - 2026-10-22:**
 

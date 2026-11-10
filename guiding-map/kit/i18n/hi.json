@@ -1,0 +1,14 @@
+{
+ "_meta": {"name": "हिंदी", "locale": "hi-IN", "status": "beta", "note": "Machine-drafted, waiting for a native speaker's review. Money and legal terms with no common Hindi word keep the English term."},
+ "strings": {
+  "today.title": "आज",
+  "today.next": "आपका अगला कदम",
+  "today.do": "अभी करें",
+  "today.later": "बाद में ({n})",
+  "today.later_note": "जोखिम के हिसाब से चुना गया। पहला काम पूरा करें; अगला अपने आप ऊपर आ जाएगा।",
+  "today.clear": "सब ठीक है। कुछ भी देर से नहीं है और कुछ भी आपका इंतज़ार नहीं कर रहा।",
+  "settings.language": "भाषा",
+  "settings.language_note": "आपकी चुनी हुई भाषा इसी डिवाइस पर याद रहती है। जो अभी अनुवादित नहीं है, वह अंग्रेज़ी में दिखेगा।",
+  "lang.beta": "बीटा"
+ }
+}

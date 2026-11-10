@@ -113,3 +113,69 @@ def test_models_the_account_cannot_use_are_dropped_once_and_remembered(tmp_path)
 def test_small_work_skips_the_subagents_and_hard_work_keeps_them():
     assert "no subagents" in ci.prompt({"AUTOBUILD_TASK": "fake"}, strong=False)
     assert "@planner" in ci.prompt({"AUTOBUILD_TASK": "fake"}, strong=True)
+
+
+# ── speed without lowering the bar (2026-11-10): a delegated task took 46-80+ min because every brief was routed strong ──
+_r = importlib.util.spec_from_file_location("securax_route_t", ROOT / "lifecycle" / "route.py")
+route = importlib.util.module_from_spec(_r)
+_r.loader.exec_module(route)
+
+
+def test_a_file_name_in_the_paperwork_is_not_a_sensitive_topic():
+    # every brief ends with "python3 tools/readme_sync.py"; "sync" in a file name made every task strong (3-4x slower)
+    t = "Add a CHANGELOG line; python3 tools/readme_sync.py and python3 docs/sync_status.py; then features_sync"
+    assert route.decide(t, impact={})["tier"] != "strong"
+
+
+def test_real_sensitive_work_still_goes_strong():
+    for t in ("fix the sync merge conflict in the hub", "rotate the api key handling", "change how the jwt is checked"):
+        assert route.decide(t, impact={})["tier"] == "strong", t
+    assert route.decide("edit apps/estate-sync/app.py to log more", impact={})["tier"] == "strong"   # a sensitive path, by path
+
+
+def test_the_agent_is_told_the_exact_gates_that_will_judge_it():
+    p = ci.prompt({"AUTOBUILD_TASK": "a small thing"}, strong=False)
+    for gate in ("./securax verify", "lifecycle/diffcheck.py", "lifecycle/forge.py gate"):
+        assert gate in p, gate
+
+
+def test_a_red_attempt_shows_why_in_the_log_and_the_commit_title_is_short():
+    src = (ROOT / "securax").read_text("utf-8")
+    assert 'forge.py" brief "$FB" 2>/dev/null | head -14' in src
+    assert "commit -q -m \"autobuild: $(printf '%s' \"$TASK\" | head -1 | cut -c1-120)\"" in src
+
+
+def test_a_timed_out_model_hands_its_work_over_instead_of_the_next_starting_blind():
+    import subprocess as sp
+    seen = []
+
+    def run(cmd, **kw):
+        if cmd[:2] == ["opencode", "run"]:
+            seen.append(cmd[-1])
+            if len(seen) == 1:
+                raise sp.TimeoutExpired(cmd, 1)
+        return sp.CompletedProcess(cmd, 0)
+    ci.agent({"AUTOBUILD_TASK": "a small thing", "AUTOBUILD_PROBE": "0"}, run=run)
+    assert len(seen) == 2 and "ran out of time" not in seen[0] and "git diff FIRST" in seen[1]
+
+
+def test_the_delegate_skill_keeps_slow_audits_out_of_briefs():
+    assert "Never put a slow check in a brief" in (ROOT / ".claude" / "skills" / "delegate" / "SKILL.md").read_text("utf-8")
+
+
+def test_a_silent_model_is_stopped_early_and_a_talking_one_is_not(tmp_path):
+    import sys as _s
+    import time as _t
+    t0 = _t.time()
+    rc = ci.watched([_s.executable, "-c", "import time; time.sleep(30)"], budget=60, stall=2, cwd=str(tmp_path))
+    assert rc == 124 and _t.time() - t0 < 15                       # silent: stopped at the stall, not at the budget
+    talk = "import time,sys\nfor i in range(4):\n    print('working', i, flush=True); time.sleep(1)"
+    assert ci.watched([_s.executable, "-c", talk], budget=60, stall=2, cwd=str(tmp_path)) == 0   # output keeps it alive
+
+
+def test_a_hung_model_is_skipped_for_six_hours(tmp_path):
+    cache = tmp_path / "probe.json"
+    ci._mark_hung("some-model", cache)
+    calls = []
+    keep = ci.usable(["some-model", "other"], run=lambda *a, **k: (calls.append(a), ci.subprocess.CompletedProcess(a, 0))[1], cache=cache)
+    assert keep == ["other"]
