@@ -54,7 +54,8 @@
   "cues": ["Restraint is the luxury: one thing to do per screen, the rest folded or gone.", "Type carries the brand: a serif for the few words that matter, a quiet sans for everything else, figures that line up.", "Colour is a jewel, not paint: neutrals everywhere, gold only on the one action or mark that earns it.", "Material over decoration: hairlines, soft depth, a lit rim; never a flat grey box or a stock picture.", "Motion confirms, never performs: short, eased, only on a change of state, and gone when asked.", "Copy like a concierge: short, warm, certain; no exclamation marks, no jargon.", "Fast is premium: the first screen is useful in under a second, offline."]
  },
  "rules": {
-  "max_actions_shown": 3,
+  "max_actions_shown": 1,
+  "rest_folded_as": "Later (n)",
   "min_target_px": 44,
   "contrast": "WCAG 2.2 AA, both themes, measured by guiding-map/tests/ui_audit.py",
   "phone_width_px": 390,

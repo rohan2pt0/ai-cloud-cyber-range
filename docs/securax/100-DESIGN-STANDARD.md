@@ -1,7 +1,7 @@
 # 100 · The design standard: calm by default, no manual needed
 
 <!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
-> **Status: 🟡 Partly built.** Built and tested: the Command Center opens on one honest status line and at most three things to do, with everything else folded and searchable; two core principles (calm by default, no manual needed) reach every kit app; governance/design.json holds the shared tokens and rules and a test holds each page on the standard. The cockpit, the ready reckoner and the control navigator take one shared style from governance/design.py (83 pages measured, 0 contrast failures); the Life OS and kit apps keep their brand colours with the same basics. The product site joined on 2026-11-08: one generated stylesheet with a dark theme, 16 page views audited in a real browser, 0 failures. Role-aware views are dated. [What the lights mean](../index.md#the-status-lights)
+> **Status: 🟡 Partly built.** Built and tested: the Command Center opens on one honest status line and one thing to do (chosen by risk, the rest under Later), with everything else folded and searchable; two core principles (calm by default, no manual needed) reach every kit app; governance/design.json holds the shared tokens and rules and a test holds each page on the standard. The cockpit, the ready reckoner and the control navigator take one shared style from governance/design.py (83 pages measured, 0 contrast failures); the Life OS and kit apps keep their brand colours with the same basics. The product site joined on 2026-11-08: one generated stylesheet with a dark theme, 16 page views audited in a real browser, 0 failures. Role-aware views are dated. [What the lights mean](../index.md#the-status-lights)
 <!-- status:end -->
 
 **The ask:** the Command Center had become a catalogue of about 60 equal cards. The owner asked for three things:
@@ -31,7 +31,7 @@ Two new **core principles** carry this into every app, through `governance/princ
 | WCAG 2.2 (W3C) | AA contrast; targets at least 24 px (2.5.8); visible focus | Contrast measured in both themes; 44 px targets; a 3 px focus ring |
 | Microsoft Fluent and IBM Carbon | Enterprise consistency, keyboard first, accessible tokens | Shared colour tokens in `governance/design.json`; everything works by keyboard |
 | Samsung One UI and Material | Reachable controls and adaptive layouts on a phone | One column at 390 px, nothing wider than the screen, safe-area padding for notches |
-| Security operations tools (SOC consoles, observability) | Triage first, then drill down | At most three actions, then the cockpit for evidence, then the logs |
+| Security operations tools (SOC consoles, observability) | Triage first, then drill down | One open action, the rest under Later, then the cockpit for evidence, then the logs |
 
 These are sources of principles, not visual identities to copy. SecuRAX keeps its own restrained look.
 
@@ -39,7 +39,7 @@ These are sources of principles, not visual identities to copy. SecuRAX keeps it
 
 | Level | What it shows | Where |
 |---|---|---|
-| **Glance** | One status line, and at most three things to do | The top of the Command Center |
+| **Glance** | One status line, and one thing to do (the rest under Later) | The top of the Command Center |
 | **Decide** | Why each matters, the evidence, the command | Each action card, and "Why and how" |
 | **Investigate** | Every vital sign, every capability, history and settings | The folded panels, the cockpit, the ready reckoner |
 
@@ -76,12 +76,12 @@ These are sources of principles, not visual identities to copy. SecuRAX keeps it
 - the tokens in both themes;
 - `lang`, viewport and safe-area settings;
 - a visible focus, and reduced motion;
-- 44 px targets, three actions at most, and the folds closed by default.
+- 44 px targets, one open action (the rest under Later), and the folds closed by default.
 
 The Command Center is also checked:
 - **`guiding-map/tests/test32.js`:**
   - unknown is never all clear, and red leads;
-  - at most three items, one primary button, and no repeats;
+  - one open item with the one primary button, the rest folded under Later (n), and no repeats;
   - stale data is said out loud;
   - search narrows the library.
 - **`ui_audit` contrast check:** 0 contrast failures and no horizontal scroll at 390 px, in both themes.
@@ -174,7 +174,7 @@ estate already uses them:
 | Stage | Lever (the effect behind it) | In the estate |
 |---|---|---|
 | First seconds | Beauty reads as quality (aesthetic-usability) | the premium language (section 6b) |
-| First seconds | Fewer choices, faster decisions (Hick's law) | one action per screen; three actions at most in the Command Center |
+| First seconds | Fewer choices, faster decisions (Hick's law) | one action per screen, chosen by risk; the rest under Later (`one-open-action`) |
 | First seconds | Under about 0.4 s feels instant | offline-first pages; the one-second target in the premium review |
 | First week | People keep the default (default effect) | guest first; best defaults; the one-tap capture |
 | First week | A started task gets finished (endowed progress) | example numbers they correct, not a blank form |

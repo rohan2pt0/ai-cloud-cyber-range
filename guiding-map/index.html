@@ -5776,7 +5776,7 @@ function renderPlaybook(){
   function calmTodayHTML() {
     var more = dueNowHTML() + (inRecovery() ? "" : driftHTML() + resHTML()) + msTodayHTML() + insightHTML() + estateHTML();
     var open = G("gm_more_today", false) === true;
-    return '<div class="section active">' + greetHTML() + (phone() ? vitalsHTML() : "") + interruptHTML() + setupStripHTML() + undoBar() + checkinHTML() + oneActionHTML() + winsHTML()
+    return '<div class="section active">' + greetHTML() + (phone() ? vitalsHTML() : "") + interruptHTML() + setupStripHTML() + undoBar() + checkinHTML() + todayFocusHTML() + winsHTML()
       + (more.replace(/<[^>]*>/g, "").trim() ? '<details class="road-col gm-more-today"' + (open ? " open" : "") + ' ontoggle="gmMoreToday(this.open)">'
         + '<summary style="cursor:pointer;font-weight:800;font-size:13px">More today <span style="font-weight:500;color:var(--muted);font-size:11.5px">\u00b7 what is due, your week, calendar, estate</span></summary>'
         + '<div style="margin-top:10px">' + more + '</div></details>' : "")
@@ -7277,20 +7277,23 @@ function renderPlaybook(){
     var h = '<div class="section active"><h2>Inbox</h2><div class="info">Scan it, or type one line. One tap files it with a date — nothing to fill in. Not now? Tap <b>Later</b>; it comes back in a few days. Nothing nags you.</div>'
       + '<div class="ibcap"><input id="ibText" placeholder="What is on your mind?" onkeydown="if(event.key===\'Enter\')gmInboxCapture()" aria-label="Capture">'
       + '<select id="ibKind" aria-label="Kind">' + Object.keys(IB_KINDS).map(function (k) { return '<option value="' + k + '">' + IB_KINDS[k] + '</option>'; }).join("") + '</select>'
-      + '<button class="btn primary" onclick="gmInboxCapture()">Add</button>'
+      + '<button class="btn' + (decide.length ? "" : " primary") + '" onclick="gmInboxCapture()">Add</button>'
       + '<button class="btn" id="ibScan" onclick="gmScan()" title="Photograph a document; the text is read on this device and dropped into the box above">📷 Scan a document</button></div>'
       + '<div id="ibRead" class="ibread" aria-live="polite"></div>';
     h += papersHTML();
     if (decide.length) {
       h += '<h3>To decide (' + decide.length + ')</h3>';
-      decide.forEach(function (x) {
-        h += '<div class="ibrow"><div class="ibt"><b>' + esc(x.t) + '</b><div class="ibsub">' + esc(IB_KINDS[x.kind] || "") + (x.from && x.from !== "capture" ? " · from " + esc(x.from) : "") + '</div>'
-          + '<div class="ibdec"><button class="btn primary" onclick="gmInboxDecide(\'' + ibSafe(x.id) + '\',\'action\')">✓ Add to my list</button>'
+      // one-open-action: decide one at a time; the rest wait, folded, under Later (n)
+      var decRow = function (x, first) {
+        return '<div class="ibrow"><div class="ibt"><b>' + esc(x.t) + '</b><div class="ibsub">' + esc(IB_KINDS[x.kind] || "") + (x.from && x.from !== "capture" ? " · from " + esc(x.from) : "") + '</div>'
+          + '<div class="ibdec"><button class="btn' + (first ? " primary" : "") + '" onclick="gmInboxDecide(\'' + ibSafe(x.id) + '\',\'action\')">✓ Add to my list</button>'
           + '<button class="btn" onclick="gmInboxSnooze(\'' + ibSafe(x.id) + '\')">Later</button>'
           + '<button class="btn" onclick="gmInboxDecide(\'' + ibSafe(x.id) + '\',\'note\')">Keep as a note</button>'
           + '<button class="btn" onclick="gmInboxDecide(\'' + ibSafe(x.id) + '\',\'delete\')">Delete</button></div>'
           + '<details class="ibnotes"><summary>Set a step &amp; date yourself</summary><div class="ibdec"><input id="ibNext_' + ibSafe(x.id) + '" placeholder="The next physical step" aria-label="Next step"><input type="date" id="ibDue_' + ibSafe(x.id) + '" value="' + ibDays(7) + '" aria-label="Due"><button class="btn" onclick="gmInboxDecide(\'' + ibSafe(x.id) + '\',\'action\')">Save</button></div></details></div></div>';
-      });
+      };
+      h += decRow(decide[0], true)
+        + (decide.length > 1 ? '<details class="ibnotes"><summary>Later (' + (decide.length - 1) + '): still to decide</summary>' + decide.slice(1).map(function (x) { return decRow(x, false); }).join("") + '</details>' : "");
     }
     // 80/20 (doc 104): the vital few first; the rest folded, one click away.
     var vital = actions.filter(function (x) { return x.vital; }), rest = actions.filter(function (x) { return !x.vital; });
@@ -7332,6 +7335,56 @@ function renderPlaybook(){
       + ".ibread-accept{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:8px}.ibread-accept button{width:auto;flex:0 0 auto;margin:0}";
     var st = document.createElement("style"); st.textContent = css; document.head.appendChild(st);
   })();
+
+  /* ── 9b. ONE OPEN ACTION (principle one-open-action, owner 2026-11-10) ──────────────
+     The Stack's discipline on every screen where things compete: ONE open action, chosen for the
+     person by risk; everything else folded under "Later (n)" until it is done. Today ranks across
+     sources: a habit slipping twice (never miss twice), late inbox actions, the Stack's lowest
+     unfinished layer (identity and trust are downside removal), what is due today, the quarter.
+     Score = risk x reach / effort, kept as plain integers so the order is easy to explain. */
+  var STACK_RISK = { L0: 82, L1: 80, L2: 60, L3: 45, L4: 30 };   // a late, dated obligation (86+) outranks open-ended groundwork
+  function focusCands() {
+    var c = [], today = ymd();
+    brokenHabits().forEach(function (b) {
+      c.push({ id: "habit-" + b.id, score: 85, text: esc(b.name) + ": today, the two-minute floor is the whole job", why: "Missed twice. One more miss turns a slip into a new habit.", btn: "Go to check-in", act: "window.scrollTo(0,0)" });
+    });
+    ibAll().filter(function (x) { return !x.done && x.due && x.due <= today && x.kind !== "note"; })
+      .sort(function (p, q) { return (q.vital ? 1 : 0) - (p.vital ? 1 : 0) || (p.due < q.due ? -1 : 1); })
+      .forEach(function (x) {
+        var late = x.due < today;
+        c.push({ id: "ib-" + ibSafe(x.id), score: (late ? 86 : 70) + (x.vital ? 6 : 0), text: esc(x.next || x.t), why: (late ? "Late since " + esc(x.due) : "Due today") + (x.area ? " · " + esc(x.area) : "") + ".", btn: "Done", act: "gmInboxDone('" + ibSafe(x.id) + "')" });
+      });
+    var a = theOneAction();
+    if (a) c.push({ id: "stack", score: (STACK_RISK[a.layer.id] || 40) + (a.vital ? 4 : 0), stack: true, text: esc(a.text), why: a.layer.id + " " + esc(a.layer.name) + ": the lowest unfinished layer of your stack.", btn: "Mark this done", act: "gmStackTg('" + a.layer.id + "'," + a.idx + ")" });
+    dueRituals().forEach(function (r) {
+      c.push({ id: "rit-" + r.id, score: 50, text: esc(r.name) + " · " + r.mins + " min", why: "Due now. Open it under More today for the steps.", btn: "Done", act: "gmRitualDone('" + r.id + "')" });
+    });
+    if (quarterDue()) c.push({ id: "quarter", score: 40, text: "Quarterly check-in · 5 min, all taps", why: "Sets the goals the rest of the quarter runs on.", btn: "Start", act: "gmQuarter()" });
+    var order = {}; c.forEach(function (x, i) { order[x.id] = i; });
+    return c.sort(function (p, q) { return q.score - p.score || order[p.id] - order[q.id]; });
+  }
+  window.gmFocusCands = focusCands;
+  function laterHTML(rest) {
+    if (!rest.length) return "";
+    return '<details class="road-col gm-later" style="margin:-6px 0 14px"><summary style="cursor:pointer;font-weight:800;font-size:13px">Later (' + rest.length + ') '
+      + '<span style="font-weight:500;color:var(--muted);font-size:11.5px">· ranked by risk; the next one moves up when this is done</span></summary>'
+      + rest.slice(0, 12).map(function (x) {
+        return '<div style="display:flex;align-items:center;gap:8px;margin:8px 0"><div style="flex:1;font-size:12.5px;color:var(--text)">' + x.text
+          + '<div style="font-size:11px;color:var(--muted)">' + x.why + '</div></div>'
+          + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="' + x.act + '">' + x.btn + '</button></div>';
+      }).join("") + '</details>';
+  }
+  function todayFocusHTML() {
+    var c = focusCands(), one = c[0];
+    if (!one) return oneActionHTML();
+    var h = one.stack ? oneActionHTML()
+      : '<div class="gm-one" style="background:var(--card);border:2px solid var(--gold);border-radius:14px;padding:15px;margin-bottom:14px">'
+        + '<div style="font-size:10.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--gold);font-weight:800">Your one open action · chosen by risk</div>'
+        + '<div style="font-size:15px;font-weight:700;line-height:1.5;margin:8px 0 4px;color:var(--text)">' + one.text + '</div>'
+        + '<div style="font-size:11.5px;color:var(--muted);line-height:1.6">' + one.why + ' Everything else waits below, folded.</div>'
+        + '<button class="btn btn-p" data-haptic="success" style="margin-top:10px" onclick="' + one.act + '">' + one.btn + '</button></div>';
+    return h + laterHTML(c.slice(1));
+  }
 
   /* ── 10. Wire into the existing render loop ─────────────────────── */
   if (typeof TABS !== "undefined") {

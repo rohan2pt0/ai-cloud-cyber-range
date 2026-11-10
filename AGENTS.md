@@ -61,6 +61,10 @@ The principles behind it:
   5. **Feedback:** a regular review that measures the outcome and improves the loop (`progress`, the four delivery keys).
   6. **Constraint:** find the ONE bottleneck that limits the whole loop (time, money, attention, a dependency, a person) and
      fix that first; 80/20 everywhere else. Prefer the loop that delivers value soonest and pays for itself.
+- **One open action (`one-open-action`):** the Stack's discipline on every screen where things compete. Exactly one primary
+  action in view, chosen for the person by risk (the lowest unfinished layer, else risk × reach ÷ effort); everything else
+  folded under "Later (n)" until it is done; "Show only the vital few (80/20)" where a list is long. Never make the person
+  choose what to do next. `guiding-map/tests/test39.js` holds it on the Life OS and the kit, `test32.js` on the Command Center.
 - **A system lives in the calendar (`in-the-calendar`):** anything that repeats (a ritual, a review, a check-up, a renewal) gets
   "Add to calendar" next to it, made from the ONE registry in `guiding-map/ops.js` (`CALENDAR`), never a one-off file. The contract,
   so a later version never clashes with an earlier one:

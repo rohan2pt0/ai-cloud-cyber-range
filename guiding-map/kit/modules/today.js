@@ -6,21 +6,26 @@
     var h = new Date().getHours(), p = K.get("profile", {});
     return (h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening") + (p.name ? ", " + p.name : "");
   }
-  // Every module may offer its most pressing item; the highest score wins. Ties keep the module order of the edition.
-  K.nextStep = function () {
-    var best = null;
+  // Every module may offer its pressing items; the highest score (risk) wins. Ties keep the module order of the edition.
+  // One open action (principle one-open-action): the winner is the only primary; the rest wait, folded, under "Later (n)".
+  K.nextSteps = function () {
+    var all = [], order = 0;
     Object.keys(K.mods).forEach(function (id) {
       var m = K.mods[id]; if (!m.next || !K.cfg(id)) return;
       var c; try { c = m.next(); } catch (e) { c = null; }
-      (Array.isArray(c) ? c : c ? [c] : []).forEach(function (x) { if (x && (!best || x.score > best.score)) best = x; });
+      (Array.isArray(c) ? c : c ? [c] : []).forEach(function (x) { if (x && x.text) all.push({ x: x, o: order++ }); });
     });
-    return best;
+    return all.sort(function (a, b) { return (b.x.score || 0) - (a.x.score || 0) || a.o - b.o; }).map(function (a) { return a.x; });
   };
-  function oneStep() {
-    var n = K.nextStep();
+  K.nextStep = function () { return K.nextSteps()[0] || null; };
+  function oneStep(quiet) {
+    var all = K.nextSteps(), n = all[0], later = all.slice(1);
     if (!n) return K.card("Your next step", "<p class='big'>All clear. Nothing is late and nothing waits on you.</p><p class='muted'>A good day to think ahead: open " + K.esc(K.term("playbooks", "Playbooks")) + ".</p>", "hero");
     return K.card("Your next step", "<p class='big'>" + K.esc(n.text) + "</p>" + (n.why ? "<p class='muted'>" + K.esc(n.why) + "</p>" : "")
-      + (n.go ? '<button class="primary" data-a="go" data-x="' + K.esc(n.go) + '">Do it now</button>' : ""), "hero");
+      + (n.go ? '<button class="' + (quiet ? "" : "primary") + '" data-a="go" data-x="' + K.esc(n.go) + '">Do it now</button>' : "")
+      + (later.length ? '<details class="later"><summary>Later (' + later.length + ')</summary><ul class="list">'
+        + later.slice(0, 12).map(function (x) { return "<li>" + (x.go ? '<a href="#" data-a="go" data-x="' + K.esc(x.go) + '">' + K.esc(x.text) + "</a>" : K.esc(x.text)) + "</li>"; }).join("")
+        + "</ul><p class='muted'>Chosen by risk. Finish the first; the next moves up by itself.</p></details>" : ""), "hero");
   }
   function setup() {
     var p = K.get("profile", null);
@@ -44,7 +49,8 @@
     render: function () {
       var h = '<p class="greet">' + K.esc(greet()) + "</p>";
       if (K.ed.north_star) h += '<p class="north">' + K.esc(K.ed.north_star) + "</p>";
-      h += setup() + newsCard() + oneStep();
+      var su = setup();
+      h += su + newsCard() + oneStep(!!su);   // during first-run setup, Start is the one primary
       if (K.mods.rituals && K.cfg("rituals")) h += K.mods.rituals.todayCard();
       if (K.mods.inbox && K.cfg("inbox")) h += K.mods.inbox.captureCard();
       if (K.mods.feeds && K.cfg("feeds")) h += K.mods.feeds.todayCard();

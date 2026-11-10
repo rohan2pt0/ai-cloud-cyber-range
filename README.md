@@ -131,6 +131,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- One open action, chosen by risk: a new core principle (`one-open-action`), on every screen where things compete
 - Build the system, not the goal: a new core principle (`build-the-system`)
 - A system lives in the calendar: a new core principle (`in-the-calendar`), and the family preventive calendar is in it
 - Vantage's review rhythm in the calendar
@@ -138,7 +139,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - The owner's UI rules are now checked, not just written (ui-rules-lint, slice 1)
 - The site's menu bar at laptop width
 - Two new core principles: `human-first` and `whole-view`
-- A premium design language, and the Command Center (the hosted door and the node's page) is the first screen on it
 
 **Release 0.3.0 - 2026-10-22:**
 

@@ -1,4 +1,4 @@
-// v32: the Command Center answers "what needs me" first (doc 100). Unknown is never "all clear"; red items come first, at most three;
+// v32: the Command Center answers "what needs me" first (doc 100). Unknown is never "all clear"; red items come first, ONE open (one-open-action), the rest under Later (n);
 // all clear only with a fresh check; a stale check says so; the feature library is folded away and searchable.
 const fs=require('fs'),{JSDOM}=require('jsdom');
 let P=0,F=0,e=[];const ok=(n,c,d)=>{c?P++:(F++,e.push(n+(d?" :: "+d:"")));};
@@ -20,10 +20,11 @@ setTimeout(()=>{
   ok("no health check means 'Status unknown', never all clear", T(a)==="Status unknown", T(a));
   ok("red items lead: '4 things need you'", T(b)==="4 things need you", T(b));
   const ib=items(b);
-  ok("at most three things are shown", ib.length===3, ib.length);
+  ok("one open action: exactly one card is shown", ib.length===1, ib.length);
   ok("the most important red comes first, as an action", ib[0].querySelector(".nt").textContent==="Fix backup", ib.map(i=>i.querySelector(".nt").textContent).join(" | "));
-  ok("the first item's command is the one primary button", ib[0].querySelector("button.primary")&&!ib[1].querySelector("button.primary"));
-  ok("the rest are counted, not listed", /more in the/.test(b.window.document.getElementById("needs").textContent));
+  const nb=b.window.document.getElementById("needs"), lat=nb.querySelector("li.later details");
+  ok("the first item's command is the one primary button on the list", nb.querySelectorAll("button.primary").length===1 && ib[0].querySelector("button.primary"));
+  ok("the rest are folded under 'Later (n)', closed, in risk order", lat && !lat.open && /Later \(4\)/.test(lat.querySelector("summary").textContent) && /Fix x/.test(lat.querySelector("li b").textContent), lat&&lat.textContent);
   ok("a repair already shown as a metric is not repeated", !ib.some(i=>/^Repair:/.test(i.querySelector(".nt").textContent)));
   ok("only amber means 'Nothing urgent'", T(w)==="Nothing urgent", T(w));
   ok("fresh and all green is 'All clear' with nothing listed", T(c)==="All clear" && items(c).length===0, T(c));

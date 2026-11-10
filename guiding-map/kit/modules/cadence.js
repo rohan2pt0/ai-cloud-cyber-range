@@ -57,9 +57,12 @@
     render: function () {
       var c = K.cfg("cadence") || {}, L = items().slice();
       L.sort(function (a, b) { return K.cadenceDue(b).late - K.cadenceDue(a).late; });
+      var now = L.filter(function (it) { return K.cadenceDue(it).late >= 0; }), later = L.filter(function (it) { return K.cadenceDue(it).late < 0; });
       return "<h2>" + K.esc(K.term("cadence", "Rhythm")) + "</h2>" + (c.intro ? '<p class="muted">' + K.esc(c.intro) + "</p>" : "")
-        + '<p><button class="primary" data-a="cadCal" data-haptic="success">Add the rhythm to my calendar</button></p>'
-        + K.card("", "<ul class='list'>" + L.map(row).join("") + "</ul>");
+        + '<p><button class="' + (K._cad ? "" : "primary") + '" data-a="cadCal" data-haptic="success">Add the rhythm to my calendar</button></p>'
+        // one-open-action: what is due or late is shown, most late first; the rest waits under "Later (n)"
+        + K.card("", (now.length ? "<ul class='list'>" + now.map(row).join("") + "</ul>" : "<p>Nothing is due. Every review is on time.</p>")
+          + (later.length ? '<details class="later"' + (later.some(function (it) { return it.id === K._cad; }) ? " open" : "") + '><summary>Later (' + later.length + ')</summary><ul class="list">' + later.map(row).join("") + "</ul></details>" : ""));
     },
     next: function () {
       var out = [];
