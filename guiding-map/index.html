@@ -3648,8 +3648,8 @@ function renderPlaybook(){
       var dot = st ? '<span aria-hidden="true" style="display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle;background:' + v.c + '"></span>' : "";
       h += '<div role="button" tabindex="0" aria-label="' + esc(v.l) + ': ' + esc(v.v) + (st ? " (" + st + ")" : "") + '. Open the tab that changes this."'
         + ' onclick="goTab(\'' + v.t + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();goTab(\'' + v.t + '\');}"' + (st ? ' data-state="' + st + '"' : "") + '>'
-        + '<div class="gm-vv" style="font-size:15px;white-space:nowrap;font-weight:600;color:var(--text);line-height:1.15;font-variant-numeric:tabular-nums">' + dot + v.v + (st === "low" ? '<span style="font-size:11px;font-weight:600;color:var(--muted);margin-left:3px">low</span>' : "") + '</div>'
-        + '<div style="font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-top:3px;white-space:nowrap">' + v.l + '</div></div>';
+        + '<div class="gm-vv" style="font-size:15px;white-space:nowrap;font-weight:600;color:var(--text);line-height:1.15;font-variant-numeric:tabular-nums">' + dot + v.v + '</div>'
+        + '<div style="font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-top:3px;white-space:nowrap">' + v.l + '</div>' + (st === "low" ? '<div style="font-size:10px;font-weight:600;letter-spacing:.04em;color:var(--muted);margin-top:2px">low</div>' : "") + '</div>';
     });
     return h + '</div>';
   }
