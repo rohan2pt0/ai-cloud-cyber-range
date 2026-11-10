@@ -178,7 +178,7 @@ def test_the_shipped_overlays_are_safe_and_baked_into_the_app():
     assert "i18n_ed" in built and "खतरे और अलर्ट की जानकारी" in built
 
 
-def test_vantage_overlays_translate_the_top_words_rituals_and_wheel():
+def test_vantage_overlays_translate_the_top_words_rituals_wheel_and_registers():
     def devanagari(s):
         return isinstance(s, str) and any("\u0900" <= c <= "\u097f" for c in s)
 
@@ -214,3 +214,26 @@ def test_vantage_overlays_translate_the_top_words_rituals_and_wheel():
             assert len(reviewed[cid]["checklist"]) == len(cadence[cid]["checklist"]), (lang, "cadence", cid)
             for line in reviewed[cid]["checklist"]:
                 assert devanagari(line), (lang, "cadence", cid, line)
+        # registers (multilingual 2c-c): each register's label, intro, item, next verb and guide, and every field's
+        # label, hint and placeholder are translated, with the same keys and structure in both languages.
+        regs = {r["id"]: r for r in e["modules"]["registers"]}
+        got_regs = {r["id"]: r for r in ov["modules"]["registers"]}
+        assert set(got_regs) == set(regs), lang
+        for rid, er in regs.items():
+            gr = got_regs[rid]
+            for k in ("label", "intro", "item"):
+                assert devanagari(gr.get(k)), (lang, "registers", rid, k)
+            if "next_verb" in er:
+                assert devanagari(gr.get("next_verb")), (lang, "registers", rid, "next_verb")
+            if "guide" in er:
+                assert len(gr["guide"]) == len(er["guide"]), (lang, "registers", rid, "guide")
+                for line in gr["guide"]:
+                    assert devanagari(line), (lang, "registers", rid, line)
+            gfields = {f["id"]: f for f in gr["fields"]}
+            assert set(gfields) == {f["id"] for f in er["fields"]}, (lang, "registers", rid)
+            for ef in er["fields"]:
+                gf = gfields[ef["id"]]
+                assert devanagari(gf.get("label")), (lang, "registers", rid, ef["id"], "label")
+                for k in ("hint", "placeholder"):
+                    if k in ef:
+                        assert devanagari(gf.get(k)), (lang, "registers", rid, ef["id"], k)

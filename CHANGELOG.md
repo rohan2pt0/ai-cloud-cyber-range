@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Added
+- **multilingual 2c-c: Vantage's registers in Hindi and Marathi.** Each register's label, intro, item, next verb and guide, and every field's label, hint and placeholder now come from the edition overlays, with the same keys in Hindi and Marathi and no structure changed (ids, titles, field types, options, due and status stay the edition's). `./securax os check` and `test_oskit.py` hold it.
 - **multilingual 2c-b: the Rhythm's reviews in Hindi and Marathi.** Each review's name, reason and checklist now come from the edition overlays, with the same keys and the same checklists in the same order in Hindi and Marathi, and no structure changed. `./securax os check` holds it.
 - **multilingual 2c-a: Vantage's own top words, rituals and wheel in Hindi and Marathi.** The tagline, description, audience, north star and welcome, the rituals intro with each ritual's trigger, two-minute floor and reason, and the wheel intro with each area's label, short name and lever now come from the edition overlays, with the same keys in Hindi and Marathi and no structure changed. `test_oskit.py` holds it.
 - **multilingual slice 2b: the kit's own frame in Hindi and Marathi.** The skip link, the Theme button and its label, the More button, the Undo button and its toast, the error card and the failed-action toast now go through the kit's `K.t`, with the same keys in `guiding-map/kit/i18n/hi.json` and `mr.json`; the shell HTML stays as it is and core.js sets these at each render. `kit4.js` holds it.
