@@ -18,7 +18,7 @@
   function tickRow(r) {
     var done = on(K.ymd(), r.id), s = K.streak(r.id);
     return '<li class="row tick' + (done ? " done" : "") + '"><button class="check" data-a="ritTick" data-x="' + K.esc(r.id) + '" aria-pressed="' + done + '" aria-label="' + K.esc(r.name) + '">' + (done ? "✓" : "") + "</button>"
-      + '<div class="grow"><b>' + K.esc(r.name) + "</b>" + (s > 1 ? ' <span class="tag">' + s + " days</span>" : "") + (missedTwice(r.id) ? ' <span class="tag late">missed twice</span>' : "")
+      + '<div class="grow"><b>' + K.esc(r.name) + "</b>" + (s > 1 ? ' <span class="tag">' + K.esc(K.t("rituals.days", "{n} days", { n: s })) + "</span>" : "") + (missedTwice(r.id) ? ' <span class="tag late">' + K.esc(K.t("rituals.missed_twice", "missed twice")) + "</span>" : "")
       + '<div class="muted">' + K.esc(done ? r.anchor || "" : r.min || r.anchor || "") + "</div></div></li>";
   }
   K.module({
@@ -32,21 +32,21 @@
       var L = list(), c = K.cfg("rituals") || {}, h = "<h2>" + K.esc(K.term("rituals", "Rituals")) + "</h2>";
       if (c.intro) h += '<p class="muted">' + K.esc(c.intro) + "</p>";
       h += this.todayCard();
-      h += K.card("How each one is anchored", "<ul class='list'>" + L.map(function (r) { return "<li><b>" + K.esc(r.name) + "</b><div>" + K.esc(r.anchor || "") + '</div><div class="muted">Floor: ' + K.esc(r.min || "") + "</div>" + (r.why ? '<div class="muted">Why: ' + K.esc(r.why) + "</div>" : "") + "</li>"; }).join("") + "</ul>");
+      h += K.card(K.esc(K.t("rituals.anchored", "How each one is anchored")), "<ul class='list'>" + L.map(function (r) { return "<li><b>" + K.esc(r.name) + "</b><div>" + K.esc(r.anchor || "") + '</div><div class="muted">' + K.esc(K.t("rituals.floor", "Floor: {n}", { n: r.min || "" })) + "</div>" + (r.why ? '<div class="muted">' + K.esc(K.t("rituals.why", "Why: {n}", { n: r.why })) + "</div>" : "") + "</li>"; }).join("") + "</ul>");
       var days = [], lg = log(); for (var i = 27; i >= 0; i--) days.push(K.addDays(K.ymd(), -i));
-      h += K.card("The last four weeks", '<div class="dots" role="img" aria-label="Rituals done each day, last 28 days">' + days.map(function (d) { var n = (lg[d] || []).length, f = L.length ? n / L.length : 0; return '<i class="d' + (f >= 0.99 ? 3 : f >= 0.5 ? 2 : n ? 1 : 0) + '" title="' + d + ": " + n + '"></i>'; }).join("") + "</div>");
+      h += K.card(K.esc(K.t("rituals.four_weeks", "The last four weeks")), '<div class="dots" role="img" aria-label="' + K.esc(K.t("rituals.dots_aria", "Rituals done each day, last 28 days")) + '">' + days.map(function (d) { var n = (lg[d] || []).length, f = L.length ? n / L.length : 0; return '<i class="d' + (f >= 0.99 ? 3 : f >= 0.5 ? 2 : n ? 1 : 0) + '" title="' + d + ": " + n + '"></i>'; }).join("") + "</div>");
       return h;
     },
     next: function () {
       var m = list().filter(function (r) { return missedTwice(r.id); });
-      if (m.length) return { score: 60, text: "Do the two-minute floor of “" + m[0].name + "”: " + (m[0].min || m[0].anchor || ""), why: "Missed twice. Never miss three times.", go: "today" };
+      if (m.length) return { score: 60, text: K.t("rituals.next_floor", "Do the two-minute floor of “{n}”: {m}", { n: m[0].name, m: m[0].min || m[0].anchor || "" }), why: K.t("rituals.next_missed_why", "Missed twice. Never miss three times."), go: "today" };
       var todo = list().filter(function (r) { return !on(K.ymd(), r.id); });
-      if (todo.length && new Date().getHours() >= 17) return { score: 25, text: todo[0].name + ": " + (todo[0].min || ""), why: "Still open today. The floor is enough.", go: "today" };
+      if (todo.length && new Date().getHours() >= 17) return { score: 25, text: todo[0].name + ": " + (todo[0].min || ""), why: K.t("rituals.next_open_why", "Still open today. The floor is enough."), go: "today" };
       return null;
     },
     week: function (from) {
       var lg = log(), n = 0; Object.keys(lg).forEach(function (d) { if (d >= from) n += lg[d].length; });
-      return n ? [{ n: n, what: "ritual(s) kept" }] : [];
+      return n ? [{ n: n, what: K.t("rituals.week", "ritual(s) kept") }] : [];
     },
     acts: {
       ritTick: function (id) {

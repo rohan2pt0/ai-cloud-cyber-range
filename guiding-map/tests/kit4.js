@@ -33,6 +33,11 @@ setTimeout(() => {
   b.dispatchEvent(new E.MouseEvent("click", { bubbles: true }));
   ok("one tap switches, sets lang and is remembered on this device", E.OSK.lang === "hi" && E.document.documentElement.lang === "hi"
     && JSON.parse(E.localStorage.getItem(PFX + "~lang")) === "hi" && /भाषा/.test(main(E)));
+  // module screens are translated too, not only Today and Settings (multilingual slice 2)
+  H.OSK.go("goals");
+  ok("the Goals screen is translated (Hindi)", /नया लक्ष्य/.test(main(H)), main(H).slice(0, 160));
+  M.OSK.go("inbox");
+  ok("the Inbox screen is translated (Marathi)", /कॅप्चर/.test(main(M)), main(M).slice(0, 160));
   // every catalog key exists in every catalog (a language never silently lags another's screens)
   const cats = ["hi", "mr"].map(l => JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'kit', 'i18n', l + '.json'), 'utf8')));
   const keys = cats.map(c => Object.keys(c.strings).sort().join("|"));

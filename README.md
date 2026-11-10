@@ -131,6 +131,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- multilingual slice 2: Inbox, Goals, Rituals and Rhythm in Hindi and Marathi
 - Languages, starting with हिंदी and मराठी (multilingual, slice 1)
 - Career dates and renewals in your calendar
 - One open action, chosen by risk: a new core principle (`one-open-action`), on every screen where things compete
@@ -138,7 +139,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - A system lives in the calendar: a new core principle (`in-the-calendar`), and the family preventive calendar is in it
 - Vantage's review rhythm in the calendar
 - Delegated work is 2-3x faster, with the same gates
-- The cockpit shows one "Do next" action, the rest under "Later (n)" (`one-open-action`)
 
 **Release 0.3.0 - 2026-10-22:**
 
