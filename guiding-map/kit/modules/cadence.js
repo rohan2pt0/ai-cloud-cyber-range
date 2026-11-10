@@ -40,15 +40,15 @@
   K.cadenceICS = function () { return K.ics((K.edition().name || "OS kit") + " rhythm", items().map(calOf)); };
   function row(it) {
     var st = K.cadenceDue(it), open = K._cad === it.id, ck = K.get("cadChk", {})[it.id] || [];
-    var tag = st.late > 0 ? '<span class="tag late">' + st.late + " day(s) late</span>" : st.late === 0 ? '<span class="tag due">due today</span>' : '<span class="muted">next ' + K.esc(st.due) + "</span>";
-    var h = '<li class="row"><div class="grow"><b>' + K.esc(it.name) + '</b> <span class="muted">every ' + K.esc(it.every) + "</span> " + tag + (it.why ? '<div class="muted">' + K.esc(it.why) + "</div>" : "") + "</div>"
-      + '<button data-a="cadOpen" data-x="' + K.esc(it.id) + '" aria-expanded="' + open + '">' + (open ? "Close" : "Open") + "</button></li>";
+    var tag = st.late > 0 ? '<span class="tag late">' + K.esc(K.t("cadence.days_late", "{n} day(s) late", { n: st.late })) + "</span>" : st.late === 0 ? '<span class="tag due">' + K.esc(K.t("cadence.due_today", "due today")) + '</span>' : '<span class="muted">' + K.esc(K.t("cadence.next", "next {d}", { d: st.due })) + "</span>";
+    var h = '<li class="row"><div class="grow"><b>' + K.esc(it.name) + '</b> <span class="muted">' + K.esc(K.t("cadence.every", "every {n}", { n: it.every })) + "</span> " + tag + (it.why ? '<div class="muted">' + K.esc(it.why) + "</div>" : "") + "</div>"
+      + '<button data-a="cadOpen" data-x="' + K.esc(it.id) + '" aria-expanded="' + open + '">' + K.esc(K.t(open ? "cadence.close" : "cadence.open", open ? "Close" : "Open")) + "</button></li>";
     if (open) {
       h += '<li class="form"><ul class="list">' + (it.checklist || []).map(function (s, i) {
         var on = ck.indexOf(i) >= 0;
-        return '<li class="row tick' + (on ? " done" : "") + '"><button class="check" data-a="cadChk" data-x="' + K.esc(it.id + "|" + i) + '" aria-pressed="' + on + '" aria-label="Step ' + (i + 1) + '">' + (on ? "✓" : "") + '</button><div class="grow">' + K.esc(s) + "</div></li>";
-      }).join("") + "</ul>" + (it.cmd ? '<p class="muted">On the estate: <code>' + K.esc(it.cmd) + "</code></p>" : "")
-        + '<button class="primary" data-a="cadDone" data-x="' + K.esc(it.id) + '">Mark done for this ' + K.esc(it.every) + "</button></li>";
+        return '<li class="row tick' + (on ? " done" : "") + '"><button class="check" data-a="cadChk" data-x="' + K.esc(it.id + "|" + i) + '" aria-pressed="' + on + '" aria-label="' + K.esc(K.t("cadence.step_n", "Step {n}", { n: i + 1 })) + '">' + (on ? "✓" : "") + '</button><div class="grow">' + K.esc(s) + "</div></li>";
+      }).join("") + "</ul>" + (it.cmd ? '<p class="muted">' + K.esc(K.t("cadence.on_estate", "On the estate: ")) + '<code>' + K.esc(it.cmd) + "</code></p>" : "")
+        + '<button class="primary" data-a="cadDone" data-x="' + K.esc(it.id) + '">' + K.esc(K.t("cadence.mark_done", "Mark done for this {n}", { n: it.every })) + "</button></li>";
     }
     return h;
   }
@@ -59,19 +59,19 @@
       L.sort(function (a, b) { return K.cadenceDue(b).late - K.cadenceDue(a).late; });
       var now = L.filter(function (it) { return K.cadenceDue(it).late >= 0; }), later = L.filter(function (it) { return K.cadenceDue(it).late < 0; });
       return "<h2>" + K.esc(K.term("cadence", "Rhythm")) + "</h2>" + (c.intro ? '<p class="muted">' + K.esc(c.intro) + "</p>" : "")
-        + '<p><button class="' + (K._cad ? "" : "primary") + '" data-a="cadCal" data-haptic="success">Add the rhythm to my calendar</button></p>'
+        + '<p><button class="' + (K._cad ? "" : "primary") + '" data-a="cadCal" data-haptic="success">' + K.esc(K.t("cadence.add_calendar", "Add the rhythm to my calendar")) + '</button></p>'
         // one-open-action: what is due or late is shown, most late first; the rest waits under "Later (n)"
-        + K.card("", (now.length ? "<ul class='list'>" + now.map(row).join("") + "</ul>" : "<p>Nothing is due. Every review is on time.</p>")
-          + (later.length ? '<details class="later"' + (later.some(function (it) { return it.id === K._cad; }) ? " open" : "") + '><summary>Later (' + later.length + ')</summary><ul class="list">' + later.map(row).join("") + "</ul></details>" : ""));
+        + K.card("", (now.length ? "<ul class='list'>" + now.map(row).join("") + "</ul>" : "<p>" + K.esc(K.t("cadence.nothing_due", "Nothing is due. Every review is on time.")) + "</p>")
+          + (later.length ? '<details class="later"' + (later.some(function (it) { return it.id === K._cad; }) ? " open" : "") + '><summary>' + K.esc(K.t("cadence.later", "Later ({n})", { n: later.length })) + '</summary><ul class="list">' + later.map(row).join("") + "</ul></details>" : ""));
     },
     next: function () {
       var out = [];
-      items().forEach(function (it) { var st = K.cadenceDue(it); if (st.late >= 0) out.push({ score: 70 + Math.min(st.late, 20) + (it.weight || 0), text: it.name + (st.late > 0 ? " (" + st.late + " day(s) late)" : " is due today"), why: it.why || "", go: "cadence" }); });
+      items().forEach(function (it) { var st = K.cadenceDue(it); if (st.late >= 0) out.push({ score: 70 + Math.min(st.late, 20) + (it.weight || 0), text: st.late > 0 ? K.t("cadence.next_late", "{n} ({d} day(s) late)", { n: it.name, d: st.late }) : K.t("cadence.next_due_today", "{n} is due today", { n: it.name }), why: it.why || "", go: "cadence" }); });
       return out;
     },
     week: function (from) {
       var n = 0, lg = log(); Object.keys(lg).forEach(function (k) { (lg[k] || []).forEach(function (d) { if (d >= from) n++; }); });
-      return n ? [{ n: n, what: "review(s) done on time or caught up" }] : [];
+      return n ? [{ n: n, what: K.t("cadence.week", "review(s) done on time or caught up") }] : [];
     },
     // the share of reviews done within a week of their due date, over the last 90 days (feeds the resilience index)
     onTime: function () {
@@ -87,7 +87,7 @@
       cadCal: function () {
         K.download((K.edition().id || "kit") + "-rhythm.ics", K.cadenceICS(), "text/calendar");
         K.set("calExported", K.ymd(), { noUndo: true });
-        K.toast("Calendar file saved: " + items().length + " repeating reviews. Add them to the same calendar each time; a newer file updates them, it never doubles them.");
+        K.toast(K.t("cadence.toast_saved", "Calendar file saved: {n} repeating reviews. Add them to the same calendar each time; a newer file updates them, it never doubles them.", { n: items().length }));
       },
       cadOpen: function (id) { K._cad = K._cad === id ? null : id; K.render(); },
       cadChk: function (x) {
@@ -99,7 +99,7 @@
         var lg = log(), a = lg[id] || (lg[id] = []); if (a[a.length - 1] !== K.ymd()) a.push(K.ymd());
         lg[id] = a.slice(-60);
         var m = K.get("cadChk", {}); delete m[id];
-        K.set("cadence", lg, { what: "review done" }); K.set("cadChk", m, { noUndo: true }); K._cad = null; K.render(); K.toast("Done. The next one is dated by itself.");
+        K.set("cadence", lg, { what: "review done" }); K.set("cadChk", m, { noUndo: true }); K._cad = null; K.render(); K.toast(K.t("cadence.toast_done", "Done. The next one is dated by itself."));
       }
     }
   });
