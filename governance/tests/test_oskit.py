@@ -176,3 +176,32 @@ def test_the_shipped_overlays_are_safe_and_baked_into_the_app():
     assert not [p for p in ok.check() if "i18n/editions" in p]
     built = (ROOT / "guiding-map" / "vantage" / "index.html").read_text("utf-8")
     assert "i18n_ed" in built and "खतरे और अलर्ट की जानकारी" in built
+
+
+def test_vantage_overlays_translate_the_top_words_rituals_and_wheel():
+    def devanagari(s):
+        return isinstance(s, str) and any("\u0900" <= c <= "\u097f" for c in s)
+
+    e = json.loads((ROOT / "guiding-map" / "kit" / "editions" / "vantage.json").read_text("utf-8"))
+    top = ("tagline", "description", "audience", "north_star", "welcome")
+    rituals = {i["id"]: i for i in e["modules"]["rituals"]["items"]}
+    dims = {d["id"]: d for d in e["modules"]["wheel"]["dims"]}
+    for lang in ("hi", "mr"):
+        ov = json.loads((ROOT / "guiding-map" / "kit" / "i18n" / "editions" / f"vantage.{lang}.json").read_text("utf-8"))
+        assert not ok.overlay_problems(e, ov), lang
+        for k in top:
+            assert devanagari(ov.get(k)), (lang, k)
+        r = ov["modules"]["rituals"]
+        assert devanagari(r.get("intro")), (lang, "rituals.intro")
+        got = {i["id"]: i for i in r["items"]}
+        assert set(got) == set(rituals), lang
+        for rid in rituals:
+            for k in ("name", "anchor", "min", "why"):
+                assert devanagari(got[rid].get(k)), (lang, "rituals", rid, k)
+        w = ov["modules"]["wheel"]
+        assert devanagari(w.get("intro")), (lang, "wheel.intro")
+        gd = {d["id"]: d for d in w["dims"]}
+        assert set(gd) == set(dims), lang
+        for did in dims:
+            for k in ("label", "short", "lever"):
+                assert devanagari(gd[did].get(k)), (lang, "wheel", did, k)

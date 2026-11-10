@@ -131,6 +131,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- multilingual 2c-a: Vantage's own top words, rituals and wheel in Hindi and Marathi
 - multilingual slice 2b: the kit's own frame in Hindi and Marathi
 - An app's own content in Hindi and Marathi, safely (multilingual slice 2c)
 - multilingual slice 2: Wheel, Feeds, Settings and Today in Hindi and Marathi
@@ -138,7 +139,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - multilingual slice 2: Inbox, Goals, Rituals and Rhythm in Hindi and Marathi
 - Languages, starting with हिंदी and मराठी (multilingual, slice 1)
 - Career dates and renewals in your calendar
-- One open action, chosen by risk: a new core principle (`one-open-action`), on every screen where things compete
 
 **Release 0.3.0 - 2026-10-22:**
 
