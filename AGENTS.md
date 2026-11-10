@@ -74,6 +74,9 @@ The principles behind it:
   - tell the person to import into the same calendar each time (apps match by UID per calendar).
 
   `guiding-map/tests/test38.js` lists every id ever handed out and fails if one disappears.
+  Things that happen once on the person's own date (the career plan, renewals from their papers) follow the same contract
+  in `gmCalendarDated`: the UID comes from the item's permanent id, the date is its own, a ledger on the device raises
+  SEQUENCE when the date or wording changes, and a done or vanished item goes out once more as CANCELLED (`test40.js`).
 - **Small wins, shown:** progress you can see keeps people going.
 - **Least effort for the person:** the estate does the remembering, the checking and the reminding.
 - **Start as an amoeba, carry the DNA (`amoeba`):** ship the simplest living thing that helps today — one person, no
