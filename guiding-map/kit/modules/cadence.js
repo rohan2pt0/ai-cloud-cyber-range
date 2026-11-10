@@ -11,6 +11,33 @@
     var due = last ? K.addDays(last, gap) : K.addDays(start, Math.min(gap, it.first || 7) - 1);
     return { last: last || null, due: due, late: K.days(due) };   // late > 0: days past due
   };
+  // The rhythm in the calendar (principle `in-the-calendar`): one repeating event per review, made from this edition's own
+  // cadence list, so the ids there are the permanent UIDs. An edition item may set "cal" (rule + start, hh, mins), "v" and
+  // "retired"; otherwise the rule follows "every" and "first". Never delete an item: retire it.
+  function calOf(it) {
+    var c = it.cal || {}, f = +it.first || 1, D = K.icsDays;
+    var dayOfMonth = Math.min(28, ((f - 1) % 28) + 1);
+    var hh = c.hh || (it.every === "week" ? 9 : 10), rule, match;
+    if (c.rule && c.start) {                                           // a custom rule names its own fixed first date (YYYY-MM-DD)
+      rule = c.rule; var st = String(c.start); match = function (x) { return K.ymd(x) >= st; };
+    }
+    else if (it.every === "week" || it.every === "fortnight") {
+      var dow = it.every === "week" ? (f % 7) : ((f % 5) + 1);          // week: first = weekday (1 = Monday); fortnight: a weekday
+      rule = "FREQ=WEEKLY;" + (it.every === "fortnight" ? "INTERVAL=2;" : "") + "BYDAY=" + D[dow];
+      match = function (t) { return t.getDay() === dow; };
+    } else if (it.every === "year") {
+      var mon = Math.min(11, Math.floor((f - 1) / 30));                  // year: "first" days in becomes a month and a day
+      rule = "FREQ=YEARLY;BYMONTH=" + (mon + 1) + ";BYMONTHDAY=" + dayOfMonth;
+      match = function (t) { return t.getMonth() === mon && t.getDate() === dayOfMonth; };
+    } else {
+      var n = { month: 1, quarter: 3, half: 6 }[it.every] || 1;
+      rule = "FREQ=MONTHLY;" + (n > 1 ? "INTERVAL=" + n + ";" : "") + "BYMONTHDAY=" + dayOfMonth;
+      match = function (t) { return t.getDate() === dayOfMonth; };
+    }
+    var desc = (it.why ? it.why + "\n" : "") + (it.checklist || []).map(function (s) { return "- " + s; }).join("\n");
+    return { id: it.id, v: it.v || 1, retired: it.retired || "", name: it.name, desc: desc, rule: rule, start: K.calFirst(match), hh: hh, mins: c.mins || (it.every === "week" ? 30 : 60) };
+  }
+  K.cadenceICS = function () { return K.ics((K.edition().name || "OS kit") + " rhythm", items().map(calOf)); };
   function row(it) {
     var st = K.cadenceDue(it), open = K._cad === it.id, ck = K.get("cadChk", {})[it.id] || [];
     var tag = st.late > 0 ? '<span class="tag late">' + st.late + " day(s) late</span>" : st.late === 0 ? '<span class="tag due">due today</span>' : '<span class="muted">next ' + K.esc(st.due) + "</span>";
@@ -31,6 +58,7 @@
       var c = K.cfg("cadence") || {}, L = items().slice();
       L.sort(function (a, b) { return K.cadenceDue(b).late - K.cadenceDue(a).late; });
       return "<h2>" + K.esc(K.term("cadence", "Rhythm")) + "</h2>" + (c.intro ? '<p class="muted">' + K.esc(c.intro) + "</p>" : "")
+        + '<p><button class="primary" data-a="cadCal" data-haptic="success">Add the rhythm to my calendar</button></p>'
         + K.card("", "<ul class='list'>" + L.map(row).join("") + "</ul>");
     },
     next: function () {
@@ -53,6 +81,11 @@
       return all ? hit / all : null;
     },
     acts: {
+      cadCal: function () {
+        K.download((K.edition().id || "kit") + "-rhythm.ics", K.cadenceICS(), "text/calendar");
+        K.set("calExported", K.ymd(), { noUndo: true });
+        K.toast("Calendar file saved: " + items().length + " repeating reviews. Add them to the same calendar each time; a newer file updates them, it never doubles them.");
+      },
       cadOpen: function (id) { K._cad = K._cad === id ? null : id; K.render(); },
       cadChk: function (x) {
         var p = String(x).split("|"), m = K.get("cadChk", {}), a = m[p[0]] || (m[p[0]] = []), i = +p[1], j = a.indexOf(i);

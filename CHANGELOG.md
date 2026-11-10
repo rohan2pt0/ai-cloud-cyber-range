@@ -8,6 +8,9 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
+### Added
+- **Vantage's review rhythm in the calendar.** Rhythm > "Add the rhythm to my calendar" turns each of Vantage's 19 reviews (the Monday risk review, the Friday wins, one-to-ones, the monthly ExCo update, the quarterly board report, the yearly BCP test and the rest) into one repeating event with its checklist written inside and a reminder 30 minutes before. It follows the calendar contract: permanent ids, fixed start dates, a version on each event, retired reviews ended cleanly. The writer lives in the kit core (`K.ics`), so every kit app gets it. The six daily rituals stay in the app, not the calendar, so it is not flooded. `kit3.js` holds every review id ever handed out.
+
 ### Fixed
 - **Every control a thumb can hit is now at least 44 x 44 px, in every app (ui-rules-lint, slice 2).** The owner's UI rules now run in the Life OS audit (every tab, both themes, plus the Command Center hub) and the kit audit, as well as the site, and any break fails them. They found 224 small targets in the Life OS (40 px buttons, 28 px menu button, 23 px fold headers, 30 px rating taps), 240 in the hub's command list (36 px) and 12 in Vantage; all are fixed, and Life OS inputs are 16 px so a phone no longer zooms in. Help terms inside a sentence stay inline, as WCAG 2.5.8 allows.
 

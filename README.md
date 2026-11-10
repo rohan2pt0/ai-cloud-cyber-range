@@ -131,6 +131,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- Vantage's review rhythm in the calendar
 - Every control a thumb can hit is now at least 44 x 44 px, in every app (ui-rules-lint, slice 2)
 - The owner's UI rules are now checked, not just written (ui-rules-lint, slice 1)
 - The site's menu bar at laptop width
@@ -138,7 +139,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - A premium design language, and the Command Center (the hosted door and the node's page) is the first screen on it
 - `./securax progress` now shows the first two delivery keys, read from git alone
 - The product site is on the design standard, held by a real-browser audit
-- The lifecycle doc now says plainly, with dates, when the forest stage and the private cloud are built
 
 **Release 0.3.0 - 2026-10-22:**
 
