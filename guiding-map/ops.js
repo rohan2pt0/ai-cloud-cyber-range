@@ -4416,6 +4416,20 @@
         + "#gmVitals.gm-inline{gap:8px}#gmVitals.gm-inline > div{background:var(--card)!important;border:1px solid var(--border)!important;border-radius:12px!important;box-shadow:none!important}"
         + ".gm-action{min-height:44px;border-radius:999px;padding:0 20px}"
         + "#gmNav{box-shadow:none}#gmNav button{font-weight:600}"
+        // Glass on the floating layers only (premium.material.glass): the sticky header, the tab bar, the More sheet and
+        // dialogs. Solid where blur is unsupported or the person asks for less transparency.
+        + "@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){"
+        + "header{background:rgba(27,26,24,.92);-webkit-backdrop-filter:blur(24px) saturate(1.4);backdrop-filter:blur(24px) saturate(1.4)}"
+        + "#gmNav{background:rgba(255,253,249,.92);-webkit-backdrop-filter:blur(24px) saturate(1.4);backdrop-filter:blur(24px) saturate(1.4);box-shadow:inset 0 1px 0 rgba(255,255,255,.65)}"
+        + "html[data-theme=dark] #gmNav{background:rgba(34,34,38,.92);box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}"
+        + "#gmMoreSheet.on{background:rgba(24,24,27,.32);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}"
+        + "#gmMoreSheet .sh{background:rgba(255,253,249,.92);-webkit-backdrop-filter:blur(24px) saturate(1.4);backdrop-filter:blur(24px) saturate(1.4);box-shadow:inset 0 1px 0 rgba(255,255,255,.65)}"
+        + "html[data-theme=dark] #gmMoreSheet .sh{background:rgba(34,34,38,.92);box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}"
+        + "#gmOverlay{background:rgba(24,24,27,.38)!important;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}"
+        + "#gmOverlay>div{border-radius:20px!important}"
+        + "}"
+        + "@media (prefers-reduced-transparency:reduce){header{background:#1b1a18;backdrop-filter:none;-webkit-backdrop-filter:none}"
+        + "#gmNav,#gmMoreSheet .sh{background:var(--card);backdrop-filter:none;-webkit-backdrop-filter:none}#gmOverlay,#gmMoreSheet.on{backdrop-filter:none;-webkit-backdrop-filter:none}}"
         + "@media (prefers-reduced-motion:reduce){.gm-d3 .tile{transition:none!important}.gm-d3 .tile:active{transform:none}}";
     }
     document.head.appendChild(st);   // (re)append: always the last stylesheet

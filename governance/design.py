@@ -84,7 +84,22 @@ def premium_css(extra_light: dict | None = None, extra_dark: dict | None = None,
             ":focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:4px}\n"
             f"button,summary,.btn{{min-height:{px}px}}\n"
             "@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}\n"
-            + finish_css())
+            + finish_css() + glass_css())
+
+
+def glass_css() -> str:
+    """Frosted glass for floating layers only (premium.material.glass): `.glass` on a light surface, `.glass-dark` on an
+    obsidian bar. Blur only where the browser supports it; solid where it does not, or where the person asks for less
+    transparency (prefers-reduced-transparency), so text keeps its contrast either way."""
+    g = PREMIUM["material"]["glass"]
+    blur = f"blur({g['blur_px']}px) saturate({g['saturate']})"
+    return (f".glass{{background:var(--card);box-shadow:{g['rim_light']}}}.glass-dark{{background:#1b1a18}}"
+            f"@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){{"
+            f".glass{{background:{g['light']};-webkit-backdrop-filter:{blur};backdrop-filter:{blur}}}"
+            f".glass-dark{{background:{g['obsidian']};-webkit-backdrop-filter:{blur};backdrop-filter:{blur}}}"
+            f"@media (prefers-color-scheme:dark){{.glass{{background:{g['dark']};box-shadow:{g['rim_dark']}}}}}}}"
+            "@media (prefers-reduced-transparency:reduce){.glass{background:var(--card);-webkit-backdrop-filter:none;backdrop-filter:none}"
+            ".glass-dark{background:#1b1a18;-webkit-backdrop-filter:none;backdrop-filter:none}}\n")
 
 
 HAPTIC_JS = ("function securaxHaptic(kind){try{if(matchMedia('(prefers-reduced-motion: reduce)').matches||!navigator.vibrate)return;"

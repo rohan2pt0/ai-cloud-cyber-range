@@ -136,6 +136,9 @@ The product should read as private-bank grade: calm, exact, a little precious. T
 - **Finishes.** Six lit "pebbles" (Gold Leaf, Rose Gold, Obsidian Mirror; and the limited Jade, Midnight Blue, Amethyst), each a base, a
   highlight and a rim, drawn by one CSS layer with no images. They are accents only: editions, milestones, the owner's chosen tint. Text and
   data stay on the neutrals.
+- **Glass, sparingly.** Frosted glass only on layers that float over scrolling content (sticky bars, the tab bar, sheets,
+  dialogs), never on cards or whole pages: on a flat page it is just grey. It stays 92% opaque so text reads even where a
+  phone does not draw the blur, and turns solid when the person asks for less transparency.
 - **Copy.** Short, warm and certain, like a concierge. No exclamation marks.
 
 **Rollout.** The Command Center is the first screen on the language: the hosted door people reach from the site (`guiding-map/command/`) and the node's own page (`hub.html`) (before and after, both themes, phone and laptop, in the PR).

@@ -34,7 +34,7 @@ def render() -> str:
     spec = importlib.util.spec_from_file_location("securax_site_design", ROOT / "governance" / "design.py")
     design = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(design)
-    return design.font_face("serif.woff2") + design.css(LIGHT, DARK) + PREMIUM_RULES + DARK_RULES
+    return design.font_face("serif.woff2") + design.css(LIGHT, DARK) + PREMIUM_RULES + _glass_rules() + DARK_RULES
 
 
 # The premium look (design-premium-showcase): headings in the self-hosted serif (website/build.sh copies the one font file
@@ -45,6 +45,16 @@ PREMIUM_RULES = ("html h1,html h2{font-family:'Instrument Serif',Georgia,serif;f
                  "html .banner{background:var(--card);color:var(--ink);border-bottom:1px solid var(--line);font-weight:500}"
                  "html .banner a{color:var(--gold2);text-decoration:underline;text-underline-offset:3px}"
                  ".num,data,time{font-variant-numeric:tabular-nums}\n")
+
+
+def _glass_rules() -> str:
+    # The sticky menu bar is the site's one floating layer, so it is the one place for glass (premium.material.glass).
+    import json
+    g = json.loads((ROOT / "governance" / "design.json").read_text("utf-8"))["premium"]["material"]["glass"]
+    blur = f"blur({g['blur_px']}px) saturate({g['saturate']})"
+    return ("@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){"
+            f"html header.nav{{background:{g['obsidian']};-webkit-backdrop-filter:{blur};backdrop-filter:{blur}}}}}"
+            "@media (prefers-reduced-transparency:reduce){html header.nav{background:#1b1a18;-webkit-backdrop-filter:none;backdrop-filter:none}}\n")
 
 
 # The pages' own inline <style> loads after this file, so a dark override needs one more element in its selector to win.

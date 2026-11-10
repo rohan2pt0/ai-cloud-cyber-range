@@ -263,3 +263,26 @@ def test_the_product_site_is_on_the_premium_language():
     for page in ("index.html", "assess/index.html", "nbfc/index.html", "personal/index.html"):
         src = (ROOT / "website" / page).read_text("utf-8")
         assert "rgba(11,27,51," not in src and "#2a5596" not in src, f"{page}: the old navy is gone"
+
+
+def test_glass_is_kept_to_floating_layers_with_a_solid_fallback():
+    # Glassmorphism, used the way the platforms use it: frosted only on what floats over scrolling content (sticky bars,
+    # the tab bar, sheets, dialogs), opaque enough to read where blur is not drawn, and solid on request.
+    g = PREM["material"]["glass"]
+    for k in ("light", "dark", "obsidian"):
+        assert float(g[k].rsplit(",", 1)[1].rstrip(")")) >= 0.9, f"glass {k} must stay legible without blur"
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("securax_design_g", ROOT / "governance" / "design.py")
+    design = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(design)
+    ops = (ROOT / "guiding-map" / "ops.js").read_text("utf-8")
+    site = (ROOT / "website" / "site.css").read_text("utf-8")
+    for name, src in (("design.premium_css()", design.premium_css()), ("ops.js", ops), ("site.css", site)):
+        assert "@supports ((backdrop-filter:blur(1px))" in src and "prefers-reduced-transparency:reduce" in src, name
+        assert f"blur({g['blur_px']}px)" in src, f"{name}: blur radius from design.json"
+    for k in ("light", "dark", "obsidian"):
+        assert g[k] in ops, f"ops.js glass {k} equals design.json"
+    assert g["obsidian"] in site
+    layer = ops[ops.index("function premiumCSS()"):ops.index("function greetHTML()")]
+    glassed = {sel for sel in ("header", "#gmNav", "#gmMoreSheet .sh", "#gmOverlay") if sel + "{background:" in layer or sel + "{background:rgba" in layer}
+    assert glassed <= {"header", "#gmNav", "#gmMoreSheet .sh", "#gmOverlay"} and ".gm-d3{background:rgba" not in layer, "no glass on cards"
