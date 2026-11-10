@@ -49,7 +49,10 @@ setTimeout(()=>{
  // inline help: specialised terms self-explain in place on every screen (not a separate tab)
  go('today');
  const chips=d.querySelectorAll('#sections .gm-term');
- ok("inline '?' help chips appear on Today", chips.length>=3, String(chips.length));
+ // two real terms on a first-run Today; the third chip used to be a FALSE hit ("sip" in the breathing step glossed as an
+ // investment SIP), removed by the human-first review, so the floor is two and the false hit must stay gone.
+ ok("inline '?' help chips appear on Today", chips.length>=2, String(chips.length));
+ ok("…and none is a false hit on an everyday word", ![...chips].some(c=>/^sip\b/i.test(c.textContent)));
  if(chips.length){ const idx=+chips[0].getAttribute('onclick').match(/gmHelp\((\d+)/)[1]; w.gmHelp(idx,chips[0]);
    ok("tapping a term opens its plain explanation inline", !!d.querySelector('.gm-pop')); }
 

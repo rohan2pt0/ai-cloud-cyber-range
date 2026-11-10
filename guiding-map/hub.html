@@ -340,7 +340,7 @@
     var all = needsList(), fresh = COCK && COCK.ts && (Date.now() - COCK.ts * 1000) < STALE;
     var lamp = document.getElementById("lamp"), red = all.filter(function(n){ return n.lvl === "red"; }).length;
     if(!COCK){ setText("postureText", "Status unknown"); setText("postureSub", "No health check has run on this machine yet. Run  ./securax cockpit  to make one."); lamp.className = "lamp"; }
-    else if(red){ setText("postureText", red === 1 ? "1 thing needs you" : red+" things need you"); setText("postureSub", "Do the first one now. Everything else can wait."); lamp.className = "lamp red"; }
+    else if(red){ setText("postureText", red === 1 ? "1 thing needs you" : red+" things need you"); setText("postureSub", "Start with the first one when you can; the rest can wait."); lamp.className = "lamp red"; }
     else if(all.length){ setText("postureText", "Nothing urgent"); setText("postureSub", all.length === 1 ? "One thing to look at when you have a moment." : all.length+" things to look at when you have a moment."); lamp.className = "lamp amber"; }
     else if(!fresh){ setText("postureText", "Status may be out of date"); setText("postureSub", "The last health check is more than a day old. Run  ./securax cockpit  to refresh it."); lamp.className = "lamp"; }
     else { setText("postureText", "All clear"); setText("postureSub", "Checked "+new Date(COCK.ts * 1000).toLocaleString()+". Nothing measured needs you."); lamp.className = "lamp green"; }

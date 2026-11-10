@@ -77,7 +77,7 @@
         "3-line note \u2014 what worked / what didn't / what to adjust",
         "Notes app: clear the capture inbox to zero, look at each active project, update the ongoing areas",
         "OPSEC check: this week's threats, update incident response plan if needed",
-        "Habit streaks: anything missed twice \u2192 mandatory recovery day"
+        "Habit streaks: anything missed twice \u2192 a recovery day, the floor only"
       ]
     },
     {
@@ -755,13 +755,13 @@
      in this app is optional on any given day. */
   var DAILY3 = [
     { id: "ex", label: "Move", floor: "Shoes on, one set. That counts." },
-    { id: "mf", label: "Mind", floor: "Three cyclic sighs \u2014 breathe in through the nose, take a second short sip of air on top, then a long slow breath out. Ninety seconds." },
+    { id: "mf", label: "Mind", floor: "Three slow breaths, each breath out longer than the breath in." },
     { id: "fm", label: "Family", floor: "One real question, phone in the basket." }
   ];
   function daily3HTML(calm) {
     var done = (typeof todayChecks === "function") ? todayChecks() : [];
     var rec = inRecovery();
-    var h = '<div class="gm-d3"><div class="t">' + (rec ? "Recovery mode · these three only" : "The daily three · non-negotiable") + '</div><div class="row">';
+    var h = '<div class="gm-d3"><div class="t">' + (rec ? "Recovery mode · these three only" : "The daily three · the floor is enough") + '</div><div class="row">';
     DAILY3.forEach(function (d) {
       var idx = -1;
       if (typeof HABITS !== "undefined") HABITS.forEach(function (hb, i) { if (hb.id === d.id) idx = i; });
@@ -1465,12 +1465,13 @@
     ];
   }
   function vitalsHTML() {
-    var h = '<div id="gmVitals">';
+    var h = '<div id="gmVitals">', exampleNums = !!((window.P && P.example) || exampleCount() > 0);
     // Premium calm (design-premium-showcase): numbers stay neutral ink. Progress (Today, Stack) is never 'danger'; a money
     // figure in its risk band gets a small dot AND a word in its accessible name, so red only ever means danger.
     vitals().forEach(function (v) {
       var prog = v.t === "today" || v.t === "stack";
-      var st = prog ? "" : v.c === "var(--red)" ? "low" : v.c === "var(--amber)" ? "watch" : "";
+      // human-first: example numbers are not the person's, so they never raise an alarm (no "low" on a made-up net worth)
+      var st = prog || exampleNums ? "" : v.c === "var(--red)" ? "low" : v.c === "var(--amber)" ? "watch" : "";
       var dot = st ? '<span aria-hidden="true" style="display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle;background:' + v.c + '"></span>' : "";
       h += '<div role="button" tabindex="0" aria-label="' + esc(v.l) + ': ' + esc(v.v) + (st ? " (" + st + ")" : "") + '. Open the tab that changes this."'
         + ' onclick="goTab(\'' + v.t + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();goTab(\'' + v.t + '\');}"' + (st ? ' data-state="' + st + '"' : "") + '>'
@@ -2458,7 +2459,7 @@
         + '<div style="height:4px;border-radius:2px;background:var(--border);overflow:hidden">'
         + '<div style="height:100%;width:' + v + '%;background:' + col + '"></div></div>'
         + '<div style="font-size:11.5px;color:var(--muted);margin-top:4px">strength ' + v + '% \u00b7 '
-        + (left ? left + " guilt-free miss" + (left > 1 ? "es" : "") + " left" : "budget used \u2014 floor is mandatory") + '</div></div>';
+        + (left ? left + " guilt-free miss" + (left > 1 ? "es" : "") + " left" : "budget used \u2014 today the floor is enough") + '</div></div>';
     });
     return h + '</div>'
       + '<div style="font-size:11.5px;color:var(--muted);margin-top:8px;line-height:1.45">Strength is a 20-day weighted average \u2014 one miss barely moves it, which is what the habit research actually shows. Two misses a month are budgeted on purpose; perfection is not the system.</div>';
@@ -2765,7 +2766,7 @@
 
   var GUIDES = [
     { id: "daily3", icon: "☀", title: "The Daily Three: Move, Mind, Family", tag: "daily · 2-min floor",
-      what: "The three non-negotiables. Each has a 2-minute floor — the smallest version that still counts as a win, so you never miss twice.",
+      what: "The three daily floors. Each has a 2-minute floor — the smallest version that still counts as a win, so you never miss twice.",
       steps: ["MOVE — get your body working: a brisk 10-min walk, the strength workout, stairs, or stretching. Floor: 2 minutes of any movement.",
         "MIND — train attention/calm: box breathing, 10 slow breaths, or 5 min journaling. Floor: 1 minute of slow breathing.",
         "FAMILY — one real connection: a proper conversation, a call to parents, phone away at a meal. Floor: one undistracted 2-min talk."],
@@ -3454,7 +3455,7 @@
     var example = (window.P && P.example) || exampleCount() > 0;
     if (!example || G("gm_quick_done", false) || G("gm_quick_snooze", "") > ymd()) return "";
     return '<div class="gm-setup" style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:16px;padding:16px;margin-bottom:16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
-      + '<div style="flex:1;min-width:180px;font-size:12px;color:var(--text);line-height:1.5"><b>These are example numbers.</b> Four quick questions make them yours (about a minute). Everything else is optional.</div>'
+      + '<div style="flex:1;min-width:180px;font-size:12px;color:var(--text);line-height:1.5"><b>Example numbers for now.</b> Four quick questions make them yours.</div>'
       + '<button class="btn-sm gm-action gm-secondary" onclick="gmQuickSetup()">Make them mine</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--muted)" onclick="gmQuickLater()">Later</button></div>';
   }
@@ -3601,7 +3602,7 @@
   function calmTodayHTML() {
     var more = dueNowHTML() + (inRecovery() ? "" : driftHTML() + resHTML()) + msTodayHTML() + insightHTML() + estateHTML();
     var open = G("gm_more_today", false) === true;
-    return '<div class="section active">' + greetHTML() + (phone() ? vitalsHTML() : "") + interruptHTML() + setupStripHTML() + undoBar() + checkinHTML() + todayFocusHTML() + winsHTML()
+    return '<div class="section active">' + greetHTML() + (phone() ? vitalsHTML() : "") + interruptHTML() + undoBar() + checkinHTML() + setupStripHTML() + todayFocusHTML() + winsHTML()
       + (more.replace(/<[^>]*>/g, "").trim() ? '<details class="road-col gm-more-today"' + (open ? " open" : "") + ' ontoggle="gmMoreToday(this.open)">'
         + '<summary style="cursor:pointer;font-weight:800;font-size:13px">More today <span style="font-weight:500;color:var(--muted);font-size:11.5px">\u00b7 what is due, your week, calendar, estate</span></summary>'
         + '<div style="margin-top:10px">' + more + '</div></details>' : "")
