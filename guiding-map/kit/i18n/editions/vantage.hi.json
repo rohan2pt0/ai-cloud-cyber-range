@@ -1,0 +1,12 @@
+{
+ "terms": {"today": "आज", "inbox": "इनबॉक्स", "goals": "सुरक्षा OKR", "rituals": "नेतृत्व दिनचर्या", "wheel": "कार्यक्रम चक्र", "cadence": "समीक्षा लय", "playbooks": "प्लेबुक", "scorecard": "KPI और KRI", "progress": "प्रगति", "resilience": "लचीलापन सूचकांक", "feeds": "गवर्नेंस", "settings": "सेटिंग्स"},
+ "nav_short": {"registers:risks": "जोखिम", "goals": "OKR", "scorecard": "KPI", "registers:decisions": "निर्णय", "registers:tools": "टूल्स"},
+ "modules": {"rituals": {"items": [
+  {"id": "brief", "name": "खतरे और अलर्ट की जानकारी"},
+  {"id": "decide", "name": "एक जोखिम निर्णय"},
+  {"id": "stake", "name": "एक हितधारक से संपर्क"},
+  {"id": "team", "name": "एक व्यक्ति की रुकावट दूर करें"},
+  {"id": "think", "name": "सोचें और सीखें"},
+  {"id": "close", "name": "दिन समेटें"}
+ ]}}
+}

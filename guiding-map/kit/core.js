@@ -64,6 +64,30 @@
     var dev = String((navigator.languages && navigator.languages[0]) || navigator.language || "en").slice(0, 2).toLowerCase();
     return cat[dev] ? dev : "en";
   })();
+  // The edition's own words in the chosen language: an overlay (kit/i18n/editions/<id>.<lang>.json) is merged over a
+  // pristine copy, string over string, only where oskit's check allowed it (TRANSLATABLE keys); list items match by id.
+  var ED0 = JSON.parse(JSON.stringify(ED));
+  function mergeWords(base, over) {
+    if (Array.isArray(over) && Array.isArray(base)) {
+      over.forEach(function (v, i) {
+        var b = v && typeof v === "object" && v.id ? base.filter(function (x) { return x && x.id === v.id; })[0] : null;
+        if (b) mergeWords(b, v); else if (typeof v === "string" && typeof base[i] === "string") base[i] = v; else if (base[i] && typeof base[i] === "object") mergeWords(base[i], v);
+      });
+    } else if (over && typeof over === "object" && base && typeof base === "object") {
+      Object.keys(over).forEach(function (k) {
+        if (!(k in base) || k === "id") return;
+        if (typeof over[k] === "string") { if (typeof base[k] === "string") base[k] = over[k]; }
+        else mergeWords(base[k], over[k]);
+      });
+    }
+  }
+  K.applyLang = function () {
+    Object.keys(ED).forEach(function (k) { if (k !== "i18n" && k !== "i18n_ed") delete ED[k]; });
+    Object.keys(ED0).forEach(function (k) { if (k !== "i18n" && k !== "i18n_ed") ED[k] = JSON.parse(JSON.stringify(ED0[k])); });
+    var ov = (ED.i18n_ed || {})[K.lang];
+    if (ov) mergeWords(ED, ov);
+  };
+  K.applyLang();
   K.locale = function () { return (K.langs()[K.lang] || {}).locale || "en-IN"; };
   K.t = function (key, en, vars) {
     var c = (ED.i18n || {})[K.lang], s = (c && c.strings && c.strings[key]) || en || key;
@@ -71,7 +95,7 @@
     return s;
   };
   K.num = function (n, opt) { try { return new Intl.NumberFormat(K.locale(), opt).format(n); } catch (e) { return String(n); } };
-  K.setLang = function (l) { K.set("~lang", l); K.lang = l; document.documentElement.lang = l; K.render(); };
+  K.setLang = function (l) { K.set("~lang", l); K.lang = l; K.applyLang(); document.documentElement.lang = l; K.render(); };
   try { document.documentElement.lang = K.lang; } catch (e) {}
   K.cfg = function (mod) { return (ED.modules && ED.modules[mod]) || null; };
   K.val = function (id) { var e = document.getElementById(id); return e ? String(e.value || "").trim() : ""; };

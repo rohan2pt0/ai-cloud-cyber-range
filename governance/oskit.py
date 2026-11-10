@@ -148,6 +148,44 @@ def validate(e: dict, stem: str | None = None) -> list[str]:
     return err
 
 
+# Keys whose string values are words a person reads. Everything else in an edition is structure (ids, field names, stored
+# select values, commands, paths, colours) and must never be translated, or a register or a goal would break.
+TRANSLATABLE = {"name", "label", "intro", "why", "hint", "checklist", "steps", "text", "item", "next_verb", "placeholder",
+                "guide", "tagline", "description", "audience", "north_star", "welcome", "anchor", "min", "short", "lever",
+                "when", "o", "t", "u", "terms", "nav_short"}
+
+
+def overlay_problems(base, over, path: str = "", key: str = "") -> list[str]:
+    """Why an edition translation overlay is unsafe: a key the edition lacks, or a non-translatable string."""
+    out: list[str] = []
+    if isinstance(over, dict):
+        if not isinstance(base, dict):
+            return [f"{path}: the edition has no object here"]
+        for k, v in over.items():
+            if k not in base:
+                out.append(f"{path}.{k}: not in the edition")
+            else:
+                out += overlay_problems(base[k], v, f"{path}.{k}", k if key not in ("terms", "nav_short") else key)
+    elif isinstance(over, list):
+        if not isinstance(base, list):
+            return [f"{path}: the edition has no list here"]
+        ids = {b.get("id"): b for b in base if isinstance(b, dict) and b.get("id")}
+        for i, v in enumerate(over):
+            b = ids.get(v.get("id")) if isinstance(v, dict) and v.get("id") else (base[i] if i < len(base) else None)
+            if b is None:
+                out.append(f"{path}[{i}]: no matching item in the edition (match by id)")
+            else:
+                out += overlay_problems(b, v, f"{path}[{i}]", key)
+    elif isinstance(over, str):
+        if key not in TRANSLATABLE and key != "id":
+            out.append(f"{path}: '{key}' is structure, not words; it must not be translated")
+        elif key == "id" and over != base:
+            out.append(f"{path}: an id must match the edition exactly")
+        elif not isinstance(base, str):
+            out.append(f"{path}: the edition has no text here")
+    return out
+
+
 def core_principles() -> dict:
     return json.loads(PRINCIPLES.read_text(encoding="utf-8"))
 
@@ -170,6 +208,10 @@ def resolve(e: dict) -> dict:
     # Languages (queue multilingual): every catalog in kit/i18n is baked in, so a language works offline; English is the
     # source text in the code itself, and any key a catalog lacks falls back to it.
     out["i18n"] = {f.stem: json.loads(f.read_text(encoding="utf-8")) for f in sorted((KIT / "i18n").glob("*.json"))}
+    # The edition's own content in other languages: kit/i18n/editions/<edition>.<lang>.json mirror only the words a person
+    # reads (TRANSLATABLE keys); the app merges one over the edition at start. check() rejects anything else.
+    out["i18n_ed"] = {f.name.split(".")[1]: json.loads(f.read_text(encoding="utf-8"))
+                      for f in sorted((KIT / "i18n" / "editions").glob(f"{e.get('id')}.*.json"))}
     return out
 
 
@@ -251,6 +293,13 @@ def check() -> list[str]:
     probs = news_problems()
     for stem, e in editions().items():
         probs += [f"{stem}: {m}" for m in validate(e, stem)]
+        for f in sorted((KIT / "i18n" / "editions").glob(f"{e.get('id')}.*.json")):
+            try:
+                ov = json.loads(f.read_text(encoding="utf-8"))
+            except ValueError as x:
+                probs.append(f"{rel(f)}: not valid JSON ({x})")
+                continue
+            probs += [f"{rel(f)}: {m}" for m in overlay_problems(e, ov)]
         if e.get("template") or probs:
             continue
         d = out_dir(e["id"])

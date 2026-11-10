@@ -88,6 +88,7 @@ def prompt(env: dict, strong: bool = True) -> str:
 
 PROBE_CACHE = pathlib.Path.home() / ".cache" / "securax" / "go-models.json"
 PROBE_TTL_S = 6 * 3600
+HUNG_TTL_S = 30 * 60     # a model marked hung on a real task is looked at again after this (an outage clears, a bad model stays out)
 
 
 def usable(models: list[str], run=subprocess.run, cache: pathlib.Path = PROBE_CACHE, now: float | None = None) -> list[str]:
@@ -102,10 +103,15 @@ def usable(models: list[str], run=subprocess.run, cache: pathlib.Path = PROBE_CA
     keep = []
     for m in models:
         hit = seen.get(m)
-        if not hit or now - hit.get("at", 0) > PROBE_TTL_S:
+        ttl = HUNG_TTL_S if hit and hit.get("why") else PROBE_TTL_S      # a hang may have been the provider: look again soon
+        if not hit or now - hit.get("at", 0) > ttl:
             try:
-                ok = run(["opencode", "run", "--model", f"{PROVIDER}/{m}", "Reply with the single word OK."], cwd=str(ROOT),
-                         timeout=60, capture_output=True).returncode == 0
+                r = run(["opencode", "run", "--model", f"{PROVIDER}/{m}", "Reply with the single word OK."], cwd=str(ROOT),
+                        timeout=60, capture_output=True, text=True)
+                said = (getattr(r, "stdout", "") or "") + (getattr(r, "stderr", "") or "")
+                # opencode exits 0 even on a provider error ("Error: UnknownError ... Unexpected server error", 2026-11-10),
+                # so a model is usable only if it really answered OK and printed no error
+                ok = r.returncode == 0 and bool(re.search(r"\bOK\b", said)) and not re.search(r"\bError\b|UnknownError", said)
             except subprocess.TimeoutExpired:
                 ok = False
             hit = seen[m] = {"ok": ok, "at": now}
@@ -116,6 +122,9 @@ def usable(models: list[str], run=subprocess.run, cache: pathlib.Path = PROBE_CA
         cache.write_text(json.dumps(seen), "utf-8")
     except OSError:
         pass
+    if not keep:
+        print("autobuild_ci: no OpenCode Go model answers right now (the provider is failing or out of allowance); "
+              "trying the chain anyway, and the watchdog will stop a silent one", file=sys.stderr)
     return keep or models
 
 
