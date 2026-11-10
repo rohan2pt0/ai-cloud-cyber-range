@@ -19,7 +19,7 @@ def test_pages_on_the_standard_carry_the_shared_tokens_and_basics():
     for rel in STD["rules"]["pages_on_the_standard"]:
         page = (ROOT / rel).read_text("utf-8")
         light, dark = blocks(page)
-        tokens = STD["premium"]["tokens"] if rel in STD["rules"].get("pages_on_the_premium_language", []) else STD["tokens"]
+        tokens = STD["premium"]["tokens"]
         for theme, block in (("light", light), ("dark", dark)):
             for k, v in tokens[theme].items():
                 assert f"{k}:{v}" in block, f"{rel}: {theme} {k} should be {v}"
@@ -47,7 +47,7 @@ def test_every_generated_page_takes_its_tokens_from_one_place(tmp_path):
     css = design.css()
     light, dark = blocks(css)
     for theme, block in (("light", light), ("dark", dark)):
-        for k, v in STD["tokens"][theme].items():
+        for k, v in STD["premium"]["tokens"][theme].items():
             assert f"{k}:{v}" in block, f"design.css(): {theme} {k} should be {v}"
     assert ":focus-visible" in css and "prefers-reduced-motion" in css and "safe-area-inset" in css
     assert f"min-height:{STD['rules']['min_target_px']}px" in css
@@ -310,3 +310,65 @@ def test_buttons_have_three_kinds_visible_edges_and_every_state():
     assert 'askBtn.setAttribute("aria-busy", "true")' in ops
     for rel in ("guiding-map/hub.html", "guiding-map/command/index.html", "website/index.html"):
         assert 'class="skip"' in (ROOT / rel).read_text("utf-8"), f"{rel}: a skip link"
+
+
+def test_every_remaining_page_is_on_the_premium_language():
+    # The rollout (owner, 2026-11-10): the kit apps, the exercise portal and the docs carry the premium neutrals too.
+    L, D = PREM["tokens"]["light"], PREM["tokens"]["dark"]
+    kit = (ROOT / "guiding-map" / "kit" / "kit.css").read_text("utf-8")
+    assert f"--bg:{D['--bg']}; --card:{D['--card']}; --ink:{D['--ink']}" in kit and f"--bg:{L['--bg']}; --card:{L['--card']}; --ink:{L['--ink']}" in kit
+    assert "prefers-contrast:more" in kit and "forced-colors:active" in kit and ".skip" in kit
+    assert 'class="skip"' in (ROOT / "guiding-map" / "kit" / "shell.html").read_text("utf-8")
+    ex = (ROOT / "exercise" / "web" / "app.css").read_text("utf-8")
+    assert f"--bg: {L['--bg']}; --panel: {L['--card']}" in ex and f"--bg: {D['--bg']}; --panel: {D['--card']}" in ex
+    docs = (ROOT / "docs" / "stylesheets" / "premium.css").read_text("utf-8")
+    assert f"--md-default-bg-color: {L['--bg']}" in docs and f"--md-default-bg-color: {D['--bg']}" in docs
+    mk = (ROOT / "mkdocs.yml").read_text("utf-8")
+    assert "stylesheets/premium.css" in mk and "font: false" in mk and "primary: custom" in mk
+    for rel in ("guiding-map/kit/kit.css", "exercise/web/app.css"):
+        assert "#0d1f35" not in (ROOT / rel).read_text("utf-8").split("}")[0], f"{rel}: no old navy page background"
+
+
+def test_alerts_are_calm_readable_and_said_once():
+    # premium.alerts (owner, 2026-11-10: "make error reporting and such alerts with proper aesthetics"): text stays ink and
+    # secondary text stays 4.5:1 on every tint, red is for danger only, a slipped habit is one attention card (never one
+    # red box per habit), and Ask's errors arrive as titled alerts.
+    for kind, k in PREM["alerts"]["kinds"].items():
+        for theme in ("light", "dark"):
+            t = PREM["tokens"][theme]
+            for fg in ("--ink", "--mut"):
+                assert _ratio(t[fg], k[theme]["bg"]) >= 4.5, f"{kind}/{theme}: {fg} on the tint is {_ratio(t[fg], k[theme]['bg']):.2f}:1"
+            assert _ratio(k[theme]["rim"], k[theme]["bg"]) >= 3, f"{kind}/{theme}: the edge must be visible"
+    ops = (ROOT / "guiding-map" / "ops.js").read_text("utf-8")
+    page = (ROOT / "guiding-map" / "index.html").read_text("utf-8")
+    pinned = ops[ops.index("function pinnedHTML()"):ops.index("function pinnedHTML()") + 1500]
+    assert 'class="gm-alert attention"' in pinned and "var(--redBg)" not in pinned and "mandatory" not in pinned.lower()
+    today = page[page.index("function renderToday(){"):page.index("function renderMoney(")]
+    assert 'class="warn"' not in today and "hab-floor" in today, "no per-habit alarm on the full Today list"
+    assert ops.count("askFail(out, ") >= 6 and "function askFail(out, kind, title, msg)" in ops
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("securax_design_a", ROOT / "governance" / "design.py")
+    design = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(design)
+    assert all(f".alert-{n}{{" in design.css() for n in PREM["alerts"]["kinds"]), "every generated page can show the four alerts"
+
+
+def test_human_first_and_whole_view_are_core_and_tell_agents_what_to_do():
+    princ = {p["id"]: p for p in json.loads((ROOT / "governance" / "principles.json").read_text("utf-8"))["principles"]}
+    for pid in ("human-first", "whole-view"):
+        assert princ[pid]["core"] is True, f"{pid} reaches every app"
+    assert "Never trick anyone" in princ["human-first"]["text"] and "delete before adding" in princ["whole-view"]["text"]
+    agents = (ROOT / "AGENTS.md").read_text("utf-8").split("## 1. Pick the tier")[0]
+    assert "(`human-first`)" in agents and "(`whole-view`)" in agents and "**360 review**" in agents
+    for q in ("**Person:**", "**First principles:**", "**Whole system:**", "**Craft:**", "**Proof:**", "**Ethics:**"):
+        assert q in agents, f"the 360 review asks {q}"
+    doc = (ROOT / "docs" / "securax" / "100-DESIGN-STANDARD.md").read_text("utf-8")
+    assert "## 6c. Design for the human mind" in doc and "No dark patterns" in doc
+
+
+def test_the_owner_ui_rules_are_measured_by_the_site_audit():
+    # ui-rules-lint: the rules are checked in a real browser (website/tests/ui_audit.py), and any break fails the audit.
+    src = (ROOT / "website" / "tests" / "ui_audit.py").read_text("utf-8")
+    for rule in ("tap-target", "input-font", "keyboard", "line-height", "pure-black", "link-underline"):
+        assert f"['{rule}'" in src, f"the audit checks {rule}"
+    assert 'and not report["rules"]' in src, "a rule break fails the audit"

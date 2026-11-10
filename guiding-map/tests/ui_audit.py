@@ -131,6 +131,19 @@ def main():
                     report["contrast"][f"{theme}:{t}"].append(item)
                 if t in ("today", "okr", "wheel", "ops", "kids", "growth", "career"):
                     pg.screenshot(path=str(OUT / f"{theme}-{t}.png"), full_page=True)
+        # 11. the FULL Today view (calm mode off) on a day after two misses: the recovery card, the habit list and the stats
+        #     band must read in both themes, and a slipped habit is said once (one card), never once per habit.
+        pg.evaluate("""() => { localStorage.setItem('gm_calm','false'); const H=HABITS.map(h=>h.id);
+          for(let i=1;i<=2;i++){const d=new Date();d.setDate(d.getDate()-i);S.daily[dKey(d)]=[];} store('sovS',S); }""")
+        for theme in ["dark", "light"]:
+            pg.evaluate(f"S.theme='{theme}'; store('sovS',S); applyTheme(); goTab('today')"); pg.wait_for_timeout(200)
+            for item in pg.evaluate(CONTRAST_JS):
+                report["contrast"][f"{theme}:today-full"].append(item)
+            chk(f"{theme}: a slipped habit is said once (one recovery card, no per-habit alarm)",
+                pg.evaluate("document.querySelectorAll('.gm-alert.attention').length === 1 && !document.querySelector('#sections .warn')"),
+                pg.evaluate("[document.querySelectorAll('.gm-alert.attention').length, document.querySelectorAll('#sections .warn').length]"))
+            pg.screenshot(path=str(OUT / f"{theme}-today-full.png"), full_page=True)
+        pg.evaluate("localStorage.setItem('gm_calm','true')")
         b.close()
     # Probes to the estate (health, feed) are expected to fail from a file:// page: refused when nothing listens, CORS-blocked
     # when the estate IS running (the sandbox runner). Those are the environment, not the app; uncaught exceptions stay fatal.

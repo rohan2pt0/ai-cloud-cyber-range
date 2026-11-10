@@ -12,6 +12,7 @@ import json
 import pathlib
 
 STD = json.loads((pathlib.Path(__file__).resolve().parent / "design.json").read_text("utf-8"))
+PREMIUM = STD["premium"]
 
 # The short names older pages use, mapped onto the shared tokens. var() resolves where it is used, so each alias follows
 # the theme: --r is the light red in light mode and the dark red in dark mode.
@@ -25,19 +26,22 @@ def _block(tokens: dict) -> str:
 def css(extra_light: dict | None = None, extra_dark: dict | None = None) -> str:
     """The shared tokens in both themes, the aliases, and the basics. extra_*: a page's own variables (not colours the
     standard owns), for example the text colour on a lamp."""
-    t = STD["tokens"]
+    # Rolled out (owner, 2026-11-10): every generated page takes the premium language's tokens, buttons and access rules.
+    t = PREMIUM["tokens"]
     px = STD["rules"]["min_target_px"]
     light = _block({**t["light"], **ALIASES, **(extra_light or {})})
     dark = _block({**t["dark"], **(extra_dark or {})})
     return (f":root{{{light}}}\n@media (prefers-color-scheme:dark){{:root{{{dark}}}}}\n"
-            "body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}\n"
+            "body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);"
+            "-webkit-font-smoothing:antialiased}\n"
             ":focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:4px}\n"
             f"button,summary,.btn{{min-height:{px}px}}summary{{display:list-item;padding:10px 0;cursor:pointer}}\n"
-            "@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}\n")
+            "a{color:var(--accent);text-underline-offset:3px}\n"
+            "@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}\n"
+            + buttons_css() + alerts_css())
 
 
-# ---- The premium language (design.json "premium"): opt-in until the owner says yes to the three hero screens. ----
-PREMIUM = STD["premium"]
+# ---- The premium language (design.json "premium"): every page's language since the owner's yes (2026-11-10). ----
 FONT_FILE = pathlib.Path(__file__).resolve().parent.parent / PREMIUM["type"]["display_font_file"]
 
 
@@ -84,7 +88,19 @@ def premium_css(extra_light: dict | None = None, extra_dark: dict | None = None,
             ":focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:4px}\n"
             f"button,summary,.btn{{min-height:{px}px}}\n"
             "@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}\n"
-            + finish_css() + glass_css() + buttons_css())
+            + finish_css() + glass_css() + buttons_css() + alerts_css())
+
+
+def alerts_css(dark_selector: str = "@media (prefers-color-scheme:dark){:root{%s}}") -> str:
+    """The four alert kinds (premium.alerts): .alert plus .alert-note / -attention / -danger / -success, with .alert-t (title)
+    and .alert-b (body). Text stays ink on a light tint, so every pair keeps its contrast; colour is only the edge and icon."""
+    k = PREMIUM["alerts"]["kinds"]
+    light = ";".join(f"--al-{n}-bg:{v['light']['bg']};--al-{n}-rim:{v['light']['rim']}" for n, v in k.items())
+    dark = ";".join(f"--al-{n}-bg:{v['dark']['bg']};--al-{n}-rim:{v['dark']['rim']}" for n, v in k.items())
+    kinds = "".join(f".alert-{n}{{background:var(--al-{n}-bg);border-left-color:var(--al-{n}-rim)}}" for n in k)
+    return (f":root{{{light}}}" + (dark_selector % dark)
+            + ".alert{border:1px solid var(--line);border-left:3px solid var(--edge);border-radius:12px;padding:16px;margin:0 0 16px;color:var(--ink)}"
+            + kinds + ".alert-t{font-weight:600;font-size:15px;line-height:1.35;margin:0 0 4px}.alert-b{font-size:14px;line-height:1.5;color:var(--mut)}\n")
 
 
 def glass_css() -> str:

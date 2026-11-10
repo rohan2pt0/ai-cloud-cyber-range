@@ -1589,19 +1589,14 @@ function renderToday(){
   var html='<div class="section active">';
   var d=new Date();
   html+='<div class="today-date">'+d.toLocaleDateString("en-US",{weekday:"long",day:"numeric",month:"long"})+' — daily check-in (5 pts each)</div>';
-  // never-miss-twice warnings
-  HABITS.forEach(function(h){
-    if(missedTwice(h.id)){
-      html+='<div class="warn">\u26A0 NEVER MISS TWICE: you missed "'+h.name+'" yesterday. Today is a mandatory recovery day — the 2-minute floor counts: '+h.min.replace("2-min floor: ","")+'</div>';
-    }
-  });
+  // never-miss-twice: the one recovery card above says it once; each slipped habit gets a quiet "floor today" tag below
   var tc=todayChecks();
   HABITS.forEach(function(h,i){
     var done=tc.indexOf(h.id)>=0;
     var stk=habitStreak(h.id);
     html+='<div class="hab'+(done?" done":"")+'">'
      +'<div class="hab-chk" onclick="tgHabit('+i+')">'+(done?"\u2713":"")+'</div>'
-     +'<div style="flex:1"><div class="hab-t">'+h.icon+' '+h.name+'</div>'
+     +'<div style="flex:1"><div class="hab-t">'+h.icon+' '+h.name+(!done&&missedTwice(h.id)?'<span class="hab-floor">Floor today</span>':'')+'</div>'
      +'<div class="hab-anchor">\u26A1 '+h.anchor+'</div>'
      +'<div class="hab-min">\uD83D\uDEDF '+h.min+'</div>'
      +'<div class="week-dots">'+weekDots(h.id)+'</div></div>'
@@ -2354,22 +2349,22 @@ function renderPlaybook(){
   function pinnedHTML() {
     var h = "", broken = brokenHabits(), due = dueRituals();
     if (broken.length) {
-      h += '<div style="background:var(--redBg);border:1.5px solid var(--red);border-radius:12px;padding:13px;margin-bottom:12px">'
-        + '<div style="font-weight:800;font-size:12px;letter-spacing:.6px;text-transform:uppercase;color:var(--red)">\u26a0 Never Miss Twice \u2014 recovery is mandatory today</div>'
-        + '<div style="font-size:12px;line-height:1.7;margin-top:7px;color:var(--text)">';
-      broken.forEach(function (b) { h += "\u2022 <b>" + esc(b.name) + "</b> \u2014 " + esc(b.min || "do the 2-minute floor, nothing more") + "<br>"; });
-      h += '</div><div style="font-size:11px;color:var(--muted);margin-top:6px">One miss is an accident. Two starts a new habit. The floor counts as a win.</div></div>';
+      // One calm card for every slipped habit (never one alarm per habit): attention, not danger; the floor is the whole ask.
+      h += '<div class="gm-alert attention" role="status"><div class="t"><span class="ic" aria-hidden="true">\u25D0</span>'
+        + (broken.length === 1 ? "Recovery day for one habit" : "Recovery day for " + broken.length + " habits") + ' \u2014 the floor is enough</div><ul>';
+      broken.forEach(function (b) { h += "<li><b>" + esc(b.name) + "</b> \u2014 " + esc(String(b.min || "the 2-minute floor, nothing more").replace(/^2-min floor:\s*/, "")) + "</li>"; });
+      h += '</ul><div class="f">Yesterday slipped. One miss is an accident; doing the smallest version today keeps the habit alive.</div></div>';
     }
     if (due.length) {
       due.forEach(function (r) {
-        h += '<div style="background:var(--amberBg);border:1.5px solid var(--amber);border-radius:12px;padding:13px;margin-bottom:12px">'
+        h += '<div class="gm-alert attention">'
           + '<div style="display:flex;justify-content:space-between;align-items:center;gap:8px">'
           + '<div style="font-weight:800;font-size:12.5px;color:var(--amber)">\u23f1 ' + esc(r.name) + '</div>'
           + '<div style="font-size:10px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted)">' + esc(r.tag) + ' \u00b7 ' + r.mins + ' min</div></div>';
         if (r.id === "sunday") h += scqaHTML();
         h += '<div style="font-size:12px;line-height:1.75;margin-top:8px;color:var(--text)">';
         r.steps.forEach(function (s) { h += '<span style="color:var(--green)">\u25b8</span> ' + esc(s) + "<br>"; });
-        h += '</div><button class="btn-sm" style="background:var(--amber);color:#fff;margin-top:9px" onclick="gmRitualDone(\'' + r.id + '\')">Mark done</button></div>';
+        h += '</div><button class="btn-sm gm-secondary" data-haptic="success" style="margin-top:9px" onclick="gmRitualDone(\'' + r.id + '\')">Mark done</button></div>';
       });
     }
     return h;
@@ -3653,8 +3648,8 @@ function renderPlaybook(){
       var dot = st ? '<span aria-hidden="true" style="display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle;background:' + v.c + '"></span>' : "";
       h += '<div role="button" tabindex="0" aria-label="' + esc(v.l) + ': ' + esc(v.v) + (st ? " (" + st + ")" : "") + '. Open the tab that changes this."'
         + ' onclick="goTab(\'' + v.t + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();goTab(\'' + v.t + '\');}"' + (st ? ' data-state="' + st + '"' : "") + '>'
-        + '<div class="gm-vv" style="font-size:15px;white-space:nowrap;font-weight:600;color:var(--text);line-height:1.15;font-variant-numeric:tabular-nums">' + dot + v.v + (st === "low" ? '<span style="font-size:11px;font-weight:600;color:var(--muted);margin-left:3px">low</span>' : "") + '</div>'
-        + '<div style="font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-top:3px;white-space:nowrap">' + v.l + '</div></div>';
+        + '<div class="gm-vv" style="font-size:15px;white-space:nowrap;font-weight:600;color:var(--text);line-height:1.15;font-variant-numeric:tabular-nums">' + dot + v.v + '</div>'
+        + '<div style="font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-top:3px;white-space:nowrap">' + v.l + '</div>' + (st === "low" ? '<div style="font-size:10px;font-weight:600;letter-spacing:.04em;color:var(--muted);margin-top:2px">low</div>' : "") + '</div>';
     });
     return h + '</div>';
   }
@@ -5319,9 +5314,18 @@ function renderPlaybook(){
         el.innerHTML = askStatusHTML("muted", "AI is off right now — double-click <b>START-HERE</b> (or run <code>./securax up</code>) to turn it on. Everything else on this page works offline.");
       });
   };
+  // An Ask error as an alert (premium.alerts): what happened as the title, why and the next step as the body.
+  function askFail(out, kind, title, msg) {
+    out.className = "gm-alert " + kind;
+    out.setAttribute("role", "alert");
+    var body = String(msg);                                         // never say the title twice
+    if (body.toLowerCase().indexOf(title.toLowerCase()) === 0) body = body.slice(title.length).replace(/^[\s\u2014\-:.,]+/, "");
+    body = body.charAt(0).toUpperCase() + body.slice(1);
+    out.innerHTML = '<div class="t"><span class="ic" aria-hidden="true">' + (kind === "danger" ? "\u26A0" : "\u25D0") + '</span>' + esc(title) + '</div><div>' + esc(body) + '</div>';
+  }
   window.gmAsk = function () {
     var q = (document.getElementById("askQ").value || "").trim(); if (!q) return;
-    var out = document.getElementById("askOut"); out.style.display = "block"; out.textContent = "Thinking… (your local model)";
+    var out = document.getElementById("askOut"); out.style.display = "block"; out.className = "info ask-md"; out.textContent = "Thinking… (your local model)";
     var askBtn = document.querySelector('[onclick="gmAsk()"]');
     if (askBtn && window.MutationObserver) {                      // busy until the answer (or a plain-words error) arrives
       askBtn.setAttribute("aria-busy", "true");
@@ -5342,20 +5346,20 @@ function renderPlaybook(){
         return r.text().then(function (t) {
           var typ = "", why = ""; try { var er = JSON.parse(t).error || {}; typ = er.type || ""; why = er.reason || ""; } catch (e) {}
           if (typ === "guardrail_violation" && why === "detector_unavailable")
-            out.textContent = "A security detector is offline, so the estate is blocking requests (fail-closed). Your message was NOT judged unsafe. Run  ./securax doctor  \u2014 or  ./securax guard off  to use the built-in rails only. Nothing was sent.";
+            askFail(out, "attention", "Paused for safety", "A security detector is offline, so the estate is blocking requests (fail-closed). Your message was NOT judged unsafe. Run  ./securax doctor  \u2014 or  ./securax guard off  to use the built-in rails only. Nothing was sent.");
           else if (typ === "guardrail_violation")
-            out.textContent = "Blocked by the guardrail \u2014 your message matched an attack pattern or exposed sensitive data. Rephrase and try again.";
+            askFail(out, "danger", "Blocked by the guardrail", "Blocked by the guardrail \u2014 your message matched an attack pattern or exposed sensitive data. Rephrase and try again.");
           else if (r.status === 401 || r.status === 403)
-            out.textContent = "The gateway needs a key (sign-in is switched on for this estate). Paste the gateway key into the box at the bottom of this page, or ask whoever runs SecuRAX. Nothing was sent.";
+            askFail(out, "attention", "Sign-in needed", "The gateway needs a key (sign-in is switched on for this estate). Paste the gateway key into the box at the bottom of this page, or ask whoever runs SecuRAX. Nothing was sent.");
           else if (r.status === 502 || r.status === 503)
-            out.textContent = "No AI model is ready yet. Add a free Gemini key (run  ./securax setup ) for instant answers, or wait for the local model to finish downloading. Nothing was sent.";
+            askFail(out, "attention", "No AI model is ready yet", "No AI model is ready yet. Add a free Gemini key (run  ./securax setup ) for instant answers, or wait for the local model to finish downloading. Nothing was sent.");
           else
-            out.textContent = "The AI could not answer (HTTP " + r.status + "). Run  ./securax doctor  to check the estate. Nothing was sent.";
+            askFail(out, "danger", "The AI could not answer", "The AI could not answer (HTTP " + r.status + "). Run  ./securax doctor  to check the estate. Nothing was sent.");
           return null;
         });
       })
       .then(function (j) { if (!j) return; lastAskQ = q; lastAskA = gmRecoveryGuard((j.choices && j.choices[0].message.content) || JSON.stringify(j)); out.innerHTML = seenLine + '<div class="ask-who">Answered as: ' + esc(askName(askAgent)) + '</div>' + mdLite(lastAskA); document.getElementById("askFb").style.display = "flex"; })
-      .catch(function () { out.textContent = "AI is off right now — double-click START-HERE (or run  ./securax up ) to turn it on, then try again. (Nothing was sent.) If your estate is on another machine, set the gateway URL below."; });
+      .catch(function () { askFail(out, "attention", "AI is off right now", "AI is off right now — double-click START-HERE (or run  ./securax up ) to turn it on, then try again. (Nothing was sent.) If your estate is on another machine, set the gateway URL below."); });
   };
   window.gmAskCopy = function () {
     var m = document.getElementById("askFbMsg");
@@ -6621,6 +6625,19 @@ function renderPlaybook(){
         + "@media (prefers-contrast:more){:root{--muted:#3f3c37;--border:#6f695f}html[data-theme=dark]{--muted:#d6d1c8;--border:#8f8b84}}"
         + "@media (forced-colors:active){button,.btn,.btn-sm,.gm-d3 .tile,#gmVitals>div{border:1px solid ButtonText!important}:focus-visible{outline:2px solid Highlight}}"
         + "@supports (corner-shape:squircle){.gm-d3,.gm-d3 .tile,.road-col,.kc,.okr-card,.gm-setup,#gmVitals>div,#gmOverlay>div,#gmMoreSheet .sh{corner-shape:squircle}}"
+        // Alerts (premium.alerts): a tinted card, a thin edge in its colour, a sentence-case title, ink text, one action.
+        // Red only for real danger; a missed habit is attention. The older .warn/.info/.ibread-risk boxes join the same family.
+        + ":root{--al-note-bg:#fffdf9;--al-note-rim:#857e72;--al-attention-bg:#fbf3e2;--al-attention-rim:#9c7a18;--al-danger-bg:#fbeceb;--al-danger-rim:#a8261b;--al-success-bg:#edf4ee;--al-success-rim:#1f6b3a}html[data-theme=dark]{--al-note-bg:#222226;--al-note-rim:#7d7972;--al-attention-bg:#2b2620;--al-attention-rim:#e2c172;--al-danger-bg:#2e2020;--al-danger-rim:#f2958b;--al-success-bg:#1f2a22;--al-success-rim:#7fcf98}"
+        + ".gm-alert,.warn,.info,.ibread-risk{background:var(--al-note-bg)!important;border:1px solid var(--border)!important;border-left:3px solid var(--al-note-rim)!important;border-radius:12px!important;padding:16px!important;color:var(--text)!important;font-size:14px!important;line-height:1.5!important;font-weight:400!important}"
+        + ".gm-alert.note{background:var(--al-note-bg)!important;border-left-color:var(--al-note-rim)!important}.gm-alert.attention{background:var(--al-attention-bg)!important;border-left-color:var(--al-attention-rim)!important}.gm-alert.danger{background:var(--al-danger-bg)!important;border-left-color:var(--al-danger-rim)!important}.gm-alert.success{background:var(--al-success-bg)!important;border-left-color:var(--al-success-rim)!important}"
+        + ".warn,.ibread-risk{background:var(--al-danger-bg)!important;border-left-color:var(--al-danger-rim)!important}.ibread-risk.caution{background:var(--al-attention-bg)!important;border-left-color:var(--al-attention-rim)!important}"
+        + ".info strong,.info b{color:var(--text)}.gm-alert .t{display:flex;gap:8px;align-items:baseline;font-weight:600;font-size:15px;margin:0 0 6px;color:var(--text)}.gm-alert .ic{font-size:18px;line-height:1}.gm-alert.attention .ic{font-size:0;width:10px;height:10px;border-radius:50%;background:var(--al-attention-rim);display:inline-block;flex:0 0 auto;transform:translateY(-1px)}.gm-alert .ic{color:var(--al-attention-rim)}.gm-alert.danger .ic{color:var(--al-danger-rim)}.gm-alert.success .ic{color:var(--al-success-rim)}.gm-alert.note .ic{color:var(--muted)}"
+        + ".gm-alert ul{margin:4px 0 0;padding-left:20px}.gm-alert li{margin:4px 0}.gm-alert .f{font-size:13px;color:var(--muted);margin-top:8px}"
+        // The stats band on the obsidian title (full Today view): 40% white labels were 3.6:1 and dark-mode --goldL text 1.1:1.
+        + ".hs .l{color:rgba(246,243,238,.78)!important;font-size:10px!important;letter-spacing:.06em}.hs .n,.gam-lvl{color:#e2c172!important}html[data-theme=dark] .stage-t{color:#e2c172!important}"
+        // Text set in the brand colour vanished in dark mode (obsidian on dark grey); in dark it reads as plain text instead.
+        + "html[data-theme=dark] :is(.road-h,.h1,.stk-w b,.tab.active,.today-date,.okr-o,.mval,.cal-qt){color:var(--text)!important}"
+        + ".hab-floor{display:inline-block;margin-left:8px;font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--text);border:1px solid var(--al-attention-rim);background:var(--al-attention-bg);border-radius:999px;padding:1px 8px;vertical-align:middle}"
         // Glass on the floating layers only (premium.material.glass): the sticky header, the tab bar, the More sheet and
         // dialogs. Solid where blur is unsupported or the person asks for less transparency.
         + "@supports ((backdrop-filter:blur(1px)) or (-webkit-backdrop-filter:blur(1px))){"

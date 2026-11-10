@@ -187,7 +187,7 @@ def render(e: dict) -> dict[str, bytes]:
         css += f"\n:root {{ --accent:{th['accent']}; }}"
     vals = {
         "TITLE": _h.escape(f"{e['name']}: {e['tagline']}"), "DESCRIPTION": _h.escape(e.get("description", e["tagline"])),
-        "BG": _h.escape(th.get("bg", "#0d1f35")), "ID": e["id"], "CSS": css, "MARK": _h.escape(e.get("mark", e["name"][:1])),
+        "BG": _h.escape(th.get("bg", "#18181b")), "ID": e["id"], "CSS": css, "MARK": _h.escape(e.get("mark", e["name"][:1])),
         "NAME": _h.escape(e["name"]), "TAGLINE": _h.escape(e["tagline"]), "EDITION": _script_json(e), "JS": js,
     }
     page = (KIT / "shell.html").read_text(encoding="utf-8")
@@ -196,8 +196,8 @@ def render(e: dict) -> dict[str, bytes]:
     h = hashlib.sha256(page.encode()).hexdigest()[:12]
     sw = (KIT / "sw.js").read_text(encoding="utf-8").replace("{{ID}}", e["id"]).replace("{{HASH}}", h)
     man = {"name": f"{e['name']}: {e['tagline']}"[:60], "short_name": e.get("short_name", e["name"])[:12], "description": e.get("description", e["tagline"]),
-           "start_url": "./index.html", "scope": "./", "display": "standalone", "background_color": th.get("bg", "#0d1f35"),
-           "theme_color": th.get("bg", "#0d1f35"),
+           "start_url": "./index.html", "scope": "./", "display": "standalone", "background_color": th.get("bg", "#18181b"),
+           "theme_color": th.get("bg", "#18181b"),
            "icons": [{"src": f"icon-{s}.png", "sizes": f"{s}x{s}", "type": "image/png", "purpose": "any maskable"} for s in (192, 512)]}
     return {"index.html": page.encode(), "manifest.json": (json.dumps(man, indent=1) + "\n").encode(), "sw.js": sw.encode()}
 
@@ -281,7 +281,7 @@ def mobile_source(eid: str) -> tuple[dict, dict[str, bytes]]:
     if eid == "lifeos":
         man = json.loads((GM / "manifest.json").read_text("utf-8"))
         files = {n: (GM / n).read_bytes() for n in ("index.html", "manifest.json", "sw.js")}
-        return {"id": "lifeos", "name": man.get("short_name", "Life OS"), "tagline": man.get("description", ""), "theme": {"bg": man.get("theme_color", "#0d1f35")}}, files
+        return {"id": "lifeos", "name": man.get("short_name", "Life OS"), "tagline": man.get("description", ""), "theme": {"bg": man.get("theme_color", "#18181b")}}, files
     E = editions()
     if eid not in E or E[eid].get("template"):
         raise ValueError(f"no app {eid!r}: ./securax os lists them (or use lifeos)")
