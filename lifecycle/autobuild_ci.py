@@ -136,6 +136,11 @@ def agent(env: dict | None = None, run=subprocess.run) -> int:
         if rc == 0:
             break
         print(f"autobuild_ci: {m} did not finish (exit {rc}); trying the next model in the chain", file=sys.stderr)
+        if rc == 124 and "ran out of time" not in text:
+            # Hand over, do not restart: the timed-out model's edits are still in this checkout. Without this note the next
+            # model began blind, judged the task done and stopped, and the run went "green" with no change (2026-11-10).
+            text += ("\n\nA previous model ran out of time on this task. Its unfinished changes are in this checkout: run "
+                     "git status and git diff FIRST, keep what is right, and finish the task from there. Do not start over.")
     run(["git", "add", "-A"], cwd=str(ROOT))      # new files must be staged, or the impact-map check cannot see them
     return 0                                     # the gates decide, not the agent's exit code
 

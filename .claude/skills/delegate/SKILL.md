@@ -25,6 +25,10 @@ Write the task as one self-contained brief of 3 to 8 lines. The model cannot see
 - the paperwork it needs (CHANGELOG line, queue item to close, `features_sync`, and so on);
 - the queue id, if there is one.
 
+**Never put a slow check in a brief.** The browser audits (`ui_audit.py`, `kit_audit.py`, `website/tests/ui_audit.py`) take 5 to 15
+minutes each and the model has 25. Claude runs them on the green branch before merge, and CI runs the sandbox. When a fix
+needs an audit's findings, run the audit first and put the exact list of breaks in the brief.
+
 **Size it for one attempt.** An open model takes 20 to 40 minutes per attempt, and longer when it uses its planner and test-writer agents.
 A brief that touches more than about four files, or has more than three steps, goes out as slices of one step each, in order.
 Each slice is told "work directly; skip the planner and test-writer agents". For path B, start each slice with Bash `timeout: 7200000`, the maximum.

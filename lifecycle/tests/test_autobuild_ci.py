@@ -143,3 +143,21 @@ def test_a_red_attempt_shows_why_in_the_log_and_the_commit_title_is_short():
     src = (ROOT / "securax").read_text("utf-8")
     assert 'forge.py" brief "$FB" 2>/dev/null | head -14' in src
     assert "commit -q -m \"autobuild: $(printf '%s' \"$TASK\" | head -1 | cut -c1-120)\"" in src
+
+
+def test_a_timed_out_model_hands_its_work_over_instead_of_the_next_starting_blind():
+    import subprocess as sp
+    seen = []
+
+    def run(cmd, **kw):
+        if cmd[:2] == ["opencode", "run"]:
+            seen.append(cmd[-1])
+            if len(seen) == 1:
+                raise sp.TimeoutExpired(cmd, 1)
+        return sp.CompletedProcess(cmd, 0)
+    ci.agent({"AUTOBUILD_TASK": "a small thing", "AUTOBUILD_PROBE": "0"}, run=run)
+    assert len(seen) == 2 and "ran out of time" not in seen[0] and "git diff FIRST" in seen[1]
+
+
+def test_the_delegate_skill_keeps_slow_audits_out_of_briefs():
+    assert "Never put a slow check in a brief" in (ROOT / ".claude" / "skills" / "delegate" / "SKILL.md").read_text("utf-8")
