@@ -100,15 +100,17 @@ def test_the_product_site_pages_take_their_colours_from_the_one_stylesheet():
 
 
 def test_the_dark_status_colours_pass_on_the_dark_card():
-    # The site's dark theme keeps its own lifted green, amber and red so a status light stays readable on the navy card
-    # #111e33 (WCAG AA); the light values are the deep shades the site has always used on white.
+    # The site's dark theme lifts its green, amber and red so a status light stays readable on its dark card (WCAG AA),
+    # measured on the card the site really uses, not pinned to old values.
     import importlib.util
     spec = importlib.util.spec_from_file_location("securax_site_css_dark_t", ROOT / "tools" / "site_css.py")
     sc = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(sc)
     _, dark = blocks(sc.render())
-    for k, v in (("--green", "#4ade80"), ("--amber", "#fbbf24"), ("--red", "#f87171")):
-        assert f"{k}:{v}" in dark, f"site.css dark {k} should be {v} (AA on #111e33)"
+    vals = dict(kv.split(":", 1) for kv in dark.split(";") if ":" in kv)
+    card = vals["--card"]
+    for k in ("--green", "--amber", "--red"):
+        assert _ratio(vals[k], card) >= 4.5, f"site.css dark {k} {vals[k]} is {_ratio(vals[k], card):.2f}:1 on {card}"
 
 
 def test_site_css_cli_writes_and_checks_exactly(tmp_path):
@@ -244,3 +246,20 @@ def test_the_life_os_today_is_on_the_premium_language_and_follows_the_phone():
     assert "prefers-color-scheme: dark" in page and "S.themeChosen=true" in page
     # red means danger only: progress tiles never take a status colour
     assert 'var prog = v.t === "today" || v.t === "stack";' in ops and "color:var(--text);line-height:1.15" in ops
+
+
+def test_the_product_site_is_on_the_premium_language():
+    # design-premium-showcase: the site keeps its own variable names (navy, gold) but on obsidian-and-ivory values, with
+    # the serif for headings linked as a same-origin file that website/build.sh copies in (the site CSP refuses data: fonts).
+    css = (ROOT / "website" / "site.css").read_text("utf-8")
+    light, dark = blocks(css)
+    for theme, block in (("light", light), ("dark", dark)):
+        t = PREM["tokens"][theme]
+        for mine, std in (("--bg", "--bg"), ("--card", "--card"), ("--ink", "--ink"), ("--muted", "--mut"), ("--line", "--line")):
+            assert f"{mine}:{t[std]}" in block, f"site.css {theme} {mine} should be {t[std]}"
+    assert "url(serif.woff2)" in css and "html h1,html h2{font-family:'Instrument Serif'" in css
+    build = (ROOT / "website" / "build.sh").read_text("utf-8")
+    assert "guiding-map/fonts/InstrumentSerif-Regular.woff2 website/serif.woff2" in build
+    for page in ("index.html", "assess/index.html", "nbfc/index.html", "personal/index.html"):
+        src = (ROOT / "website" / page).read_text("utf-8")
+        assert "rgba(11,27,51," not in src and "#2a5596" not in src, f"{page}: the old navy is gone"
