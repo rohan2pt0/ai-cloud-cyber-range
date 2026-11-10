@@ -104,7 +104,7 @@ def test_models_the_account_cannot_use_are_dropped_once_and_remembered(tmp_path)
             return subprocess.CompletedProcess(cmd, 1)
         if cmd[3].endswith("hangs"):
             raise subprocess.TimeoutExpired(cmd, 60)
-        return subprocess.CompletedProcess(cmd, 0)
+        return subprocess.CompletedProcess(cmd, 0, stdout="OK")     # a healthy model really answers
     assert ci.usable(["blocked", "hangs", "good"], run, cache, now=1000.0) == ["good"]
     assert ci.usable(["blocked", "hangs", "good"], run, cache, now=2000.0) == ["good"] and len(calls) == 3   # remembered
     assert ci.usable(["blocked"], run, cache, now=1000.0 + ci.PROBE_TTL_S + 1) == ["blocked"]              # never empty
@@ -177,5 +177,15 @@ def test_a_hung_model_is_skipped_for_six_hours(tmp_path):
     cache = tmp_path / "probe.json"
     ci._mark_hung("some-model", cache)
     calls = []
-    keep = ci.usable(["some-model", "other"], run=lambda *a, **k: (calls.append(a), ci.subprocess.CompletedProcess(a, 0))[1], cache=cache)
-    assert keep == ["other"]
+    keep = ci.usable(["some-model", "other"], run=lambda *a, **k: (calls.append(a), ci.subprocess.CompletedProcess(a, 0, stdout="OK"))[1], cache=cache)
+    assert keep == ["other"]                                             # still barred while the mark is fresh
+    later = ci.usable(["some-model", "other"], run=lambda *a, **k: ci.subprocess.CompletedProcess(a, 0, stdout="OK"), cache=cache,
+                      now=ci.time.time() + ci.HUNG_TTL_S + 1)
+    assert later == ["some-model", "other"]                              # re-probed after 30 min: an outage clears
+
+
+def test_a_provider_error_with_exit_0_is_not_a_healthy_model(tmp_path):
+    # opencode exits 0 on "Error: UnknownError ... Unexpected server error" (2026-11-10); the probe must read the answer
+    err = 'Error: {"name": "UnknownError", "data": {"message": "Unexpected server error."}}'
+    run = lambda cmd, **k: ci.subprocess.CompletedProcess(cmd, 0, stdout="", stderr=err) if "bad" in cmd[3] else ci.subprocess.CompletedProcess(cmd, 0, stdout="OK")
+    assert ci.usable(["gocode-bad", "good"], run=run, cache=tmp_path / "p.json") == ["good"]
