@@ -371,7 +371,7 @@ def test_human_first_and_whole_view_are_core_and_tell_agents_what_to_do():
 def test_the_owner_ui_rules_are_measured_by_the_site_audit():
     # ui-rules-lint: the rules are checked in a real browser (website/tests/ui_audit.py), and any break fails the audit.
     src = (ROOT / "website" / "tests" / "ui_audit.py").read_text("utf-8")
-    for rule in ("tap-target", "input-font", "keyboard", "line-height", "pure-black", "link-underline", "line-length", "hover-only"):
+    for rule in ("tap-target", "input-font", "keyboard", "line-height", "pure-black", "link-underline", "line-length", "hover-only", "numeric-align"):
         assert f"['{rule}'" in src, f"the audit checks {rule}"
     assert 'and not report["rules"]' in src, "a rule break fails the audit"
 
