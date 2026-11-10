@@ -260,3 +260,50 @@ def test_vantage_overlays_translate_the_playbooks():
             assert len(gp["steps"]) == len(ep["steps"]), (lang, "playbooks", pid)
             for line in gp["steps"]:
                 assert devanagari(line), (lang, "playbooks", pid, line)
+
+
+def test_vantage_overlays_translate_the_goals_starter_and_the_scorecard():
+    # multilingual 2c-e: each starter goal's objective, each key result's words and unit, and every scorecard name and
+    # why, in Hindi and Marathi; numbers, areas and unit-free structure stay the edition's own. Vantage's feeds items
+    # carry only a title, which oskit holds as structure, so there is nothing of feeds to translate here.
+    def devanagari(s):
+        return isinstance(s, str) and any("\u0900" <= c <= "\u097f" for c in s)
+
+    e = json.loads((ROOT / "guiding-map" / "kit" / "editions" / "vantage.json").read_text("utf-8"))
+    starter = e["modules"]["goals"]["starter"]
+    metrics = {m["id"]: m for m in e["modules"]["scorecard"]["metrics"]}
+    covered = []
+    for lang in ("hi", "mr"):
+        ov = json.loads((ROOT / "guiding-map" / "kit" / "i18n" / "editions" / f"vantage.{lang}.json").read_text("utf-8"))
+        assert not ok.overlay_problems(e, ov), lang
+        covered.append(ov)
+        st = ov["modules"]["goals"].get("starter") or []
+        assert len(st) == len(starter), lang
+        for i, (ego, go) in enumerate(zip(starter, st)):
+            assert devanagari(go["o"]) and go["o"] != ego["o"], (lang, "goals", i, "o")
+            assert "area" not in go, (lang, "goals", i)   # the area names a select option: structure
+            assert len(go["krs"]) == len(ego["krs"]), (lang, "goals", i)
+            for j, (ekr, gkr) in enumerate(zip(ego["krs"], go["krs"])):
+                assert devanagari(gkr["t"]) and gkr["t"] != ekr["t"], (lang, "goals", i, j, "t")
+                assert gkr["u"] == ekr["u"] or devanagari(gkr["u"]), (lang, "goals", i, j, "u")
+                assert not {"b", "g"} & set(gkr), (lang, "goals", i, j)   # the numbers stay numbers
+        sc = ov["modules"]["scorecard"]
+        assert devanagari(sc.get("intro")), (lang, "scorecard", "intro")
+        gm = {m["id"]: m for m in sc["metrics"]}
+        assert set(gm) == set(metrics), lang
+        for mid, em in metrics.items():
+            assert devanagari(gm[mid]["name"]) and gm[mid]["name"] != em["name"], (lang, "scorecard", mid, "name")
+            if em.get("why"):
+                assert devanagari(gm[mid].get("why")), (lang, "scorecard", mid, "why")
+            assert not {"unit", "base", "goal", "kind"} & set(gm[mid]), (lang, "scorecard", mid)
+
+    # Hindi and Marathi must cover the same keys, in the same shapes.
+
+    def shape(x):
+        if isinstance(x, list):
+            return shape(x[0]) if x else None
+        if isinstance(x, dict):
+            return tuple(sorted((k, (shape(v) if isinstance(v, (dict, list)) else "s")) for k, v in x.items()))
+        return None
+    assert shape(covered[0]) == shape(covered[1]), "hi and mr must cover the same keys"
+
