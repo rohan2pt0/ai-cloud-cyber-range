@@ -62,6 +62,10 @@ setTimeout(() => {
   H.OSK.setLang("en"); H.OSK.go("rituals");
   ok("switching back to English restores the edition's English words", /Threat and alert brief/.test(main(H)) && /Risks/.test(H.document.getElementById("oskNav").textContent));
   H.OSK.setLang("hi");
+  // the kit's own frame is translated too, not only the module screens (multilingual slice 2b)
+  const moreBtn = H.document.querySelector('[data-a="more"]'), themeBtn = H.document.querySelector('[data-a="theme"]');
+  ok("Hindi: the More button shows Hindi", moreBtn && moreBtn.textContent === H.OSK.t("core.more", "More") && /[\u0900-\u097F]/.test(moreBtn.textContent), moreBtn && moreBtn.textContent);
+  ok("Hindi: the Theme button and its label show Hindi", themeBtn && themeBtn.textContent === H.OSK.t("core.theme", "Theme") && themeBtn.getAttribute("aria-label") === H.OSK.t("core.theme_label", "Switch light or dark") && /[\u0900-\u097F]/.test(themeBtn.textContent), themeBtn && themeBtn.textContent + " / " + (themeBtn && themeBtn.getAttribute("aria-label")));
   // every catalog key exists in every catalog (a language never silently lags another's screens)
   const cats = ["hi", "mr"].map(l => JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'kit', 'i18n', l + '.json'), 'utf8')));
   const keys = cats.map(c => Object.keys(c.strings).sort().join("|"));
