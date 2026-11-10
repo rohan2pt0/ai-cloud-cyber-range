@@ -161,3 +161,21 @@ def test_a_timed_out_model_hands_its_work_over_instead_of_the_next_starting_blin
 
 def test_the_delegate_skill_keeps_slow_audits_out_of_briefs():
     assert "Never put a slow check in a brief" in (ROOT / ".claude" / "skills" / "delegate" / "SKILL.md").read_text("utf-8")
+
+
+def test_a_silent_model_is_stopped_early_and_a_talking_one_is_not(tmp_path):
+    import sys as _s
+    import time as _t
+    t0 = _t.time()
+    rc = ci.watched([_s.executable, "-c", "import time; time.sleep(30)"], budget=60, stall=2, cwd=str(tmp_path))
+    assert rc == 124 and _t.time() - t0 < 15                       # silent: stopped at the stall, not at the budget
+    talk = "import time,sys\nfor i in range(4):\n    print('working', i, flush=True); time.sleep(1)"
+    assert ci.watched([_s.executable, "-c", talk], budget=60, stall=2, cwd=str(tmp_path)) == 0   # output keeps it alive
+
+
+def test_a_hung_model_is_skipped_for_six_hours(tmp_path):
+    cache = tmp_path / "probe.json"
+    ci._mark_hung("some-model", cache)
+    calls = []
+    keep = ci.usable(["some-model", "other"], run=lambda *a, **k: (calls.append(a), ci.subprocess.CompletedProcess(a, 0))[1], cache=cache)
+    assert keep == ["other"]
