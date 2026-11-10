@@ -132,13 +132,13 @@ This list is generated from [`features.json`](features.json); the Command Center
 **On main, in the next release:**
 
 - A new core principle, `global-ready`: built for the world, at home in one place
+- multilingual 2c-e: Vantage's goal starters and scorecard in Hindi and Marathi
+- multilingual 2c-d: Vantage's playbooks in Hindi and Marathi
+- multilingual 2c-c: Vantage's registers in Hindi and Marathi
+- multilingual 2c-b: the Rhythm's reviews in Hindi and Marathi
+- multilingual 2c-a: Vantage's own top words, rituals and wheel in Hindi and Marathi
+- multilingual slice 2b: the kit's own frame in Hindi and Marathi
 - An app's own content in Hindi and Marathi, safely (multilingual slice 2c)
-- multilingual slice 2: Wheel, Feeds, Settings and Today in Hindi and Marathi
-- multilingual slice 2: Registers, Scorecard, Playbooks and Progress in Hindi and Marathi
-- multilingual slice 2: Inbox, Goals, Rituals and Rhythm in Hindi and Marathi
-- Languages, starting with हिंदी and मराठी (multilingual, slice 1)
-- Career dates and renewals in your calendar
-- One open action, chosen by risk: a new core principle (`one-open-action`), on every screen where things compete
 
 **Release 0.3.0 - 2026-10-22:**
 

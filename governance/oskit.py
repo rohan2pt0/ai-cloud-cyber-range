@@ -155,35 +155,57 @@ TRANSLATABLE = {"name", "label", "intro", "why", "hint", "checklist", "steps", "
                 "when", "o", "t", "u", "terms", "nav_short"}
 
 
+def _words_problem(base, over, path: str, key: str, words: bool) -> list[str]:
+    """Why one string may not be translated: a non-word key, or an id that moved."""
+    if words:
+        return [] if isinstance(base, str) else [f"{path}: the edition has no text here"]
+    if key == "id":
+        return [] if over == base else [f"{path}: an id must match the edition exactly"]
+    return [f"{path}: '{key}' is structure, not words; it must not be translated"]
+
+
+def _dict_problems(base, over, path: str, key: str) -> list[str]:
+    if not isinstance(base, dict):
+        return [f"{path}: the edition has no object here"]
+    out: list[str] = []
+    for k, v in over.items():
+        if k not in base:
+            out.append(f"{path}.{k}: not in the edition")
+            continue
+        child = k if key not in ("terms", "nav_short") else key
+        if isinstance(v, str):
+            # A playbook's title is a heading a person reads (its item carries steps). A register's title names a
+            # field ("what", "tool"), so it stays structure.
+            words = child in TRANSLATABLE or (k == "title" and isinstance(base.get("steps"), list))
+            out += _words_problem(base[k], v, f"{path}.{k}", child, words)
+        else:
+            out += overlay_problems(base[k], v, f"{path}.{k}", child)
+    return out
+
+
+def _list_problems(base, over, path: str, key: str) -> list[str]:
+    if not isinstance(base, list):
+        return [f"{path}: the edition has no list here"]
+    ids = {b.get("id"): b for b in base if isinstance(b, dict) and b.get("id")}
+    out: list[str] = []
+    for i, v in enumerate(over):
+        b = ids.get(v.get("id")) if isinstance(v, dict) and v.get("id") else (base[i] if i < len(base) else None)
+        if b is None:
+            out.append(f"{path}[{i}]: no matching item in the edition (match by id)")
+        else:
+            out += overlay_problems(b, v, f"{path}[{i}]", key)
+    return out
+
+
 def overlay_problems(base, over, path: str = "", key: str = "") -> list[str]:
     """Why an edition translation overlay is unsafe: a key the edition lacks, or a non-translatable string."""
-    out: list[str] = []
     if isinstance(over, dict):
-        if not isinstance(base, dict):
-            return [f"{path}: the edition has no object here"]
-        for k, v in over.items():
-            if k not in base:
-                out.append(f"{path}.{k}: not in the edition")
-            else:
-                out += overlay_problems(base[k], v, f"{path}.{k}", k if key not in ("terms", "nav_short") else key)
-    elif isinstance(over, list):
-        if not isinstance(base, list):
-            return [f"{path}: the edition has no list here"]
-        ids = {b.get("id"): b for b in base if isinstance(b, dict) and b.get("id")}
-        for i, v in enumerate(over):
-            b = ids.get(v.get("id")) if isinstance(v, dict) and v.get("id") else (base[i] if i < len(base) else None)
-            if b is None:
-                out.append(f"{path}[{i}]: no matching item in the edition (match by id)")
-            else:
-                out += overlay_problems(b, v, f"{path}[{i}]", key)
-    elif isinstance(over, str):
-        if key not in TRANSLATABLE and key != "id":
-            out.append(f"{path}: '{key}' is structure, not words; it must not be translated")
-        elif key == "id" and over != base:
-            out.append(f"{path}: an id must match the edition exactly")
-        elif not isinstance(base, str):
-            out.append(f"{path}: the edition has no text here")
-    return out
+        return _dict_problems(base, over, path, key)
+    if isinstance(over, list):
+        return _list_problems(base, over, path, key)
+    if isinstance(over, str):
+        return _words_problem(base, over, path, key, key in TRANSLATABLE)
+    return []
 
 
 def core_principles() -> dict:

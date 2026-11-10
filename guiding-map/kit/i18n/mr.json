@@ -1,6 +1,17 @@
 {
  "_meta": {"name": "मराठी", "locale": "mr-IN", "status": "beta", "note": "Machine-drafted, waiting for a native speaker's review. Money and legal terms with no common Marathi word keep the English term."},
  "strings": {
+  "core.nothing_undo": "पूर्वस्थितीत करण्यासाठी काही नाही.",
+  "core.undone": "पूर्वस्थितीत आणले",
+  "core.failed": "हे काम करू शकले नाही: ",
+  "core.undo": "पूर्वस्थितीत आणा",
+  "core.more": "अधिक",
+  "core.problem": "या स्क्रीनमध्ये अडचण आली",
+  "core.problem_note": "तुमचा डेटा सुरक्षित आहे. दुसरी स्क्रीन उघडा, किंवा शेवटचा बदल पूर्वस्थितीत आणा.",
+  "core.no_modules": "या आवृत्तीत कोणतेही मॉड्यूल सुरू नाही.",
+  "core.skip": "सामग्रीवर जा",
+  "core.theme": "थीम",
+  "core.theme_label": "फिकट किंवा गडद बदला",
   "today.title": "आज",
   "today.next": "तुमचे पुढचे पाऊल",
   "today.do": "आत्ता करा",
