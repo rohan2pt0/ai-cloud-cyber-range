@@ -53,7 +53,8 @@ def test_the_page_renders_when_the_gateway_reports_allowance_callers(monkeypatch
 
 
 def test_the_page_is_a_dark_cockpit(monkeypatch):
-    # One master lamp, at most three actions, instruments up front, and every detail folded away.
+    # One master lamp, one action up front (the rest under Later), instruments up front, and every detail folded away.
+    import re
     import urllib.request
 
     def offline(*a, **k):
@@ -61,12 +62,54 @@ def test_the_page_is_a_dark_cockpit(monkeypatch):
     monkeypatch.setattr(urllib.request, "urlopen", offline)
     html, _d, _c = cockpit.build(fast=True)
     head = html.split("class='inst'", 1)[0]
-    assert head.count("class='master") == 1 and head.count("<li") <= 3
+    shown = re.sub(r"<details class='later'>.*?</details>", "", head, flags=re.S)
+    assert head.count("class='master") == 1 and shown.count("<li") <= 1
     assert "<details class='card panel' id='govern'>" in html and "<details class='card panel' id='systems'>" in html
     assert "<details open class='card panel'" not in html and "<script" not in html
     bare = html.lower().replace("http://www.w3.org", "")
     assert "http://" not in bare and "https://" not in bare          # the cockpit names no external URL (sandbox cockpit_page)
     assert "gap backlog" not in head and "Implement" not in head     # builders' backlog stays in Mission planning, never in "do next"
+
+
+def test_three_red_vital_signs_render_one_do_next_item_and_later_2(monkeypatch):
+    # The one-open-action rule: exactly one "Do next" item in view, the rest folded under "Later (N)".
+    import urllib.request
+
+    def offline(*a, **k):
+        raise OSError("offline in tests")
+    monkeypatch.setattr(urllib.request, "urlopen", offline)
+    reds = [{"id": f"red{i}", "label": f"Thing {i}", "kind": "KPI", "area": "Run", "value": "broken", "status": "red",
+             "why": "why", "action": f"Fix {i}", "cmd": f"./securax fix {i}", "urgent": True, "importance": 3, "trend": ""}
+            for i in range(3)]
+    monkeypatch.setattr(cockpit.Collector, "run", lambda self: (setattr(self, "metrics", reds), setattr(self, "facts", {"coverage": {}})))
+    html, _d, _c = cockpit.build(fast=True)
+    head = html.split("class='inst'", 1)[0]
+    do = head.split("<ol class='do'>", 1)[1].split("</ol>", 1)[0]
+    assert do.count("<li") == 1
+    assert "Thing 0: broken" in do and "Thing 1: broken" not in do   # the one in view is the first (most severe), not a later one
+    assert "Later (2)</summary>" in head and head.count("<details class='later'>") == 1
+
+
+def _item(title, action="act", cmd=""):
+    return {"title": title, "action": action, "cmd": cmd}
+
+
+def test_do_next_folds_everything_after_the_first_under_later_capped_at_12():
+    # The one-open-action rule at the unit level: one "Do next" item, the rest (at most 12) folded under "Later (N)".
+    out = cockpit.do_next([_item(f"t{i}") for i in range(14)])
+    assert out.count("<li") == 13                                   # 1 do next + 12 later
+    assert "<summary>Later (12)</summary>" in out and out.count("<details class='later'>") == 1
+    assert out.split("<ol class='do'>", 1)[1].startswith("<li><b>t0</b>")   # the first (most severe) is the one in view
+    assert "<li><b>t13</b>" not in out                              # the 14th is beyond the cap
+
+
+def test_do_next_returns_nothing_when_there_is_nothing_to_do():
+    assert cockpit.do_next([]) == ""
+
+
+def test_do_next_truncates_a_long_action_to_80_chars():
+    out = cockpit.do_next([_item("t", action="A" * 90)])
+    assert "A" * 79 + "…" in out and "A" * 80 + "…" not in out
 
 
 def test_an_instrument_shows_its_reading_whole_and_its_detail_small():

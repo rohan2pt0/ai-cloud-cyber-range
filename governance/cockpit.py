@@ -10,7 +10,7 @@ the "Coding providers" line: one model-list GET per enabled build provider (no p
 snapshot (stamped with its time) — re-run `./securax cockpit` (also done by `./securax up`) to refresh.
 
 What is on it
-  Headline        green / amber / red in one sentence, and the three things to do next
+  Headline        green / amber / red in one sentence, and the one thing to do next, the rest under Later
   Vital signs     KPIs (is it doing its job) and KRIs (is risk building up), each with a plain 'why it matters' and the command to act
   Maturity radar  NIST CSF 2.0 categories (SEBI's CSCRF is built on it): TARGET vs DESIGNED (a mechanism exists) vs DEMONSTRATED (a test proves it)
   Eisenhower      urgent x important: Do now / Schedule / Automate / Park, filled from the vital signs and the gap backlog
@@ -884,6 +884,19 @@ def quad(key: str, title: str, sub: str, items: list[dict], limit: int = 5) -> s
     return f"<div class='q {key}'><h3>{E(title)} <span class='muted'>· {E(sub)}</span></h3>{('<ul>' + li + '</ul>') if items else '<div class=muted>Nothing here.</div>'}{more}</div>"
 
 
+def do_next(items: list[dict]) -> str:
+    """ONE thing to do next, chosen by risk; the rest (at most 12) folded under Later, so the pilot never has to choose."""
+    def row(i: dict) -> str:
+        return f"<li><b>{E(i['title'])}</b>" + (f" <code>{E(i['cmd'])}</code>" if i["cmd"] else f" <span class='muted'>{E(short(i['action'], 80))}</span>") + "</li>"
+    if not items:
+        return ""
+    out = "<ol class='do'>" + row(items[0]) + "</ol>"
+    rest = items[1:13]
+    if rest:
+        out += "<details class='later'><summary>Later (" + str(len(rest)) + ")</summary><ol>" + "".join(row(i) for i in rest) + "</ol></details>"
+    return out
+
+
 def render(c: Collector, maps: dict, hist: list[dict], ai: str, now: float, target: float) -> tuple[str, dict]:
     ms = sorted(c.metrics, key=lambda m: (RAG_ORDER[m["status"]], m["id"]))
     reds = [m for m in ms if m["status"] == "red"]
@@ -894,7 +907,7 @@ def render(c: Collector, maps: dict, hist: list[dict], ai: str, now: float, targ
     par = pareto(bl)
     eis = eisenhower(c.metrics, bl)
     # Only what the person can act on today: a vital sign with its action. Gap-backlog items are work for the builders and stay in Mission planning.
-    nxt = [i for i in eis["do"] + eis["schedule"] if i["src"] == "vital sign"][:3]
+    nxt = [i for i in eis["do"] + eis["schedule"] if i["src"] == "vital sign"]
     headline = {"red": f"{len(reds)} thing{'s' if len(reds) != 1 else ''} need attention today.", "amber": f"Healthy, with {len(ambs)} thing{'s' if len(ambs) != 1 else ''} to schedule.",
                 "green": "All clear: nothing measured is wrong.", "unknown": "Not enough data yet: start the estate and refresh."}[overall]
     stamp = time.strftime("%d %b %Y %H:%M %Z", time.localtime(now))
@@ -965,9 +978,7 @@ def render(c: Collector, maps: dict, hist: list[dict], ai: str, now: float, targ
     h.append(f"<div class='card head {overall}'><div class='topbar'><span class='master {overall}'>{MASTER[overall]}</span>"
              f"<h1>{E(headline)}</h1><span class='muted meta'>{E(stamp)} · <a href='/hub.html'>All apps</a>"
              + (" · <a href='/portal/navigator.html'>Controls</a>" if nav else "") + "</span></div>")
-    if nxt:
-        h.append("<ol class='do'>" + "".join(f"<li><b>{E(i['title'])}</b>" + (f" <code>{E(i['cmd'])}</code>" if i["cmd"] else f" <span class='muted'>{E(short(i['action'], 80))}</span>")
-                                            + "</li>" for i in nxt) + "</ol>")
+    h.append(do_next(nxt))
     h.append("</div>")
     byid = {m["id"]: m for m in ms}
     inst = [byid[i] for i in PRIMARY if i in byid]
