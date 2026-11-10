@@ -1,9 +1,9 @@
 /* The Command Center door on the premium language (governance/design.json "premium"): obsidian and ivory, gold like leaf.
    Calm by default: one card says what is true and the one thing to do; the rest folds away. */
 @font-face{font-family:'Instrument Serif';font-style:normal;font-weight:400;font-display:swap;src:url(serif.woff2) format('woff2')}
-:root{color-scheme:light dark;--bg:#f6f3ee;--card:#fffdf9;--raise:#fffefb;--ink:#1b1a18;--mut:#5f5b54;--line:#e3ddd2;--accent:#7a5a12;--on-accent:#fffdf9;--action:#1b1a18;--on-action:#f6f3ee;--leaf:#b8901f;--red:#a8261b;--amber:#7d5300;--green:#1f6b3a;--text:var(--ink);--btn:var(--action);--btn-t:var(--on-action);--warn:var(--red);
+:root{color-scheme:light dark;--bg:#f6f3ee;--card:#fffdf9;--raise:#fffefb;--ink:#1b1a18;--mut:#5f5b54;--line:#e3ddd2;--accent:#7a5a12;--on-accent:#fffdf9;--action:#1b1a18;--on-action:#f6f3ee;--leaf:#b8901f;--edge:#857e72;--red:#a8261b;--amber:#7d5300;--green:#1f6b3a;--text:var(--ink);--btn:var(--action);--btn-t:var(--on-action);--warn:var(--red);
   --ease:cubic-bezier(.2,.8,.2,1);--shadow:0 1px 1px rgba(27,26,24,.04),0 8px 24px rgba(27,26,24,.06)}
-@media (prefers-color-scheme:dark){:root{--bg:#18181b;--card:#222226;--raise:#2b2b30;--ink:#f3efe7;--mut:#aba69d;--line:#38373d;--accent:#e2c172;--on-accent:#18181b;--action:#f3efe7;--on-action:#18181b;--leaf:#e2c172;--red:#f2958b;--amber:#e6b85c;--green:#7fcf98;--shadow:none}}
+@media (prefers-color-scheme:dark){:root{--bg:#18181b;--card:#222226;--raise:#2b2b30;--ink:#f3efe7;--mut:#aba69d;--line:#38373d;--accent:#e2c172;--on-accent:#18181b;--action:#f3efe7;--on-action:#18181b;--leaf:#e2c172;--edge:#7d7972;--red:#f2958b;--amber:#e6b85c;--green:#7fcf98;--shadow:none}}
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--text);font:16px/1.5 -apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI Variable","Segoe UI",Roboto,system-ui,sans-serif;-webkit-font-smoothing:antialiased;
   padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
@@ -23,7 +23,9 @@ p{margin:4px 0 16px}
 .btn{display:inline-flex;align-items:center;min-height:44px;padding:8px 20px;border-radius:999px;border:1px solid var(--btn);background:var(--btn);color:var(--btn-t);
   box-shadow:inset 0 0 0 1px var(--leaf);font:inherit;font-weight:600;text-decoration:none;cursor:pointer;transition:transform 150ms var(--ease),background-color 200ms var(--ease)}
 .btn:active{transform:scale(.97)}
-.btn.quiet{background:transparent;color:var(--text);border-color:var(--line);box-shadow:none}
+.btn.quiet{background:transparent;color:var(--text);border-color:var(--edge);box-shadow:none}
+.btn:disabled{opacity:.45;cursor:not-allowed;transform:none}
+@media (prefers-contrast:more){:root{--mut:#3f3c37;--line:#6f695f}}@media (prefers-contrast:more) and (prefers-color-scheme:dark){:root{--mut:#d6d1c8;--line:#8f8b84}}@media (forced-colors:active){button,.btn,a.card,.card,details.fold{border:1px solid ButtonText}:focus-visible{outline:2px solid Highlight}}@supports (corner-shape:squircle){a.card,.need,.calm,details.fold,.card,.btn,button{corner-shape:squircle}}.skip{position:absolute;left:-9999px;top:8px;z-index:10000;background:var(--btn);color:var(--btn-t);padding:8px 16px;border-radius:999px}.skip:focus{left:16px}
 .btn:focus-visible,summary:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
 .big{font-size:21px;font-weight:600;display:flex;align-items:center;gap:12px}
 .dot{width:10px;height:10px;border-radius:50%;flex:0 0 auto;background:var(--mut)}

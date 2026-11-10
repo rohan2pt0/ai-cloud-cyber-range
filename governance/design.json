@@ -7,9 +7,19 @@
  "premium": {
   "about": "The premium language (design-premium-language, 2026-11-09): obsidian and ivory, one gold accent used like leaf, a display serif with a calm sans. A page opts in with design.premium_css(); after the owner's yes on the three hero screens it replaces 'tokens' for every page. Each colour pair is AA in both themes (test_design_standard.py measures them).",
   "tokens": {
-   "light": {"--bg": "#f6f3ee", "--card": "#fffdf9", "--raise": "#fffefb", "--ink": "#1b1a18", "--mut": "#5f5b54", "--line": "#e3ddd2", "--accent": "#7a5a12", "--on-accent": "#fffdf9", "--action": "#1b1a18", "--on-action": "#f6f3ee", "--leaf": "#b8901f", "--red": "#a8261b", "--amber": "#7d5300", "--green": "#1f6b3a"},
-   "dark": {"--bg": "#18181b", "--card": "#222226", "--raise": "#2b2b30", "--ink": "#f3efe7", "--mut": "#aba69d", "--line": "#38373d", "--accent": "#e2c172", "--on-accent": "#18181b", "--action": "#f3efe7", "--on-action": "#18181b", "--leaf": "#e2c172", "--red": "#f2958b", "--amber": "#e6b85c", "--green": "#7fcf98"}
+   "light": {"--bg": "#f6f3ee", "--card": "#fffdf9", "--raise": "#fffefb", "--ink": "#1b1a18", "--mut": "#5f5b54", "--line": "#e3ddd2", "--accent": "#7a5a12", "--on-accent": "#fffdf9", "--action": "#1b1a18", "--on-action": "#f6f3ee", "--leaf": "#b8901f", "--edge": "#857e72", "--red": "#a8261b", "--amber": "#7d5300", "--green": "#1f6b3a"},
+   "dark": {"--bg": "#18181b", "--card": "#222226", "--raise": "#2b2b30", "--ink": "#f3efe7", "--mut": "#aba69d", "--line": "#38373d", "--accent": "#e2c172", "--on-accent": "#18181b", "--action": "#f3efe7", "--on-action": "#18181b", "--leaf": "#e2c172", "--edge": "#7d7972", "--red": "#f2958b", "--amber": "#e6b85c", "--green": "#7fcf98"}
   },
+  "contrast_more": {"about": "When the person asks for more contrast (prefers-contrast: more): secondary text near ink, hairlines become edges.", "light": {"--mut": "#3f3c37", "--line": "#6f695f"}, "dark": {"--mut": "#d6d1c8", "--line": "#8f8b84"}},
+  "buttons": {
+   "about": "Three kinds, one primary per screen. Primary: solid action colour with a leaf rim. Secondary: outlined with --edge (3:1 against every surface, WCAG 1.4.11). Tertiary: an underlined text link. Every button has pressed, busy (aria-busy), done and disabled states; a suggestion is never primary and never acts by itself.",
+   "primary": {"background": "var(--action)", "color": "var(--on-action)", "rim": "inset 0 0 0 1px var(--leaf)"},
+   "secondary": {"background": "transparent", "color": "var(--ink)", "border": "1px solid var(--edge)"},
+   "tertiary": {"color": "var(--accent)", "decoration": "underline"},
+   "pressed_scale": 0.97, "press_ms": 120, "disabled_opacity": 0.45,
+   "haptic_on": ["a daily-three tick", "marking something done", "a confirmation"], "haptic_never": ["every tap", "scrolling", "typing"]
+  },
+  "corners": {"shape": "squircle", "how": "progressive: corner-shape where the browser supports it (Chromium 139+), plain rounded corners elsewhere"},
   "never": {"page_backgrounds": ["#000000", "#000"], "why": "dark grey, never pure black: obsidian is a surface accent, not the page"},
   "type": {
    "display": "'Instrument Serif',Georgia,'Times New Roman',serif",

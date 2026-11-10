@@ -84,7 +84,7 @@ def premium_css(extra_light: dict | None = None, extra_dark: dict | None = None,
             ":focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:4px}\n"
             f"button,summary,.btn{{min-height:{px}px}}\n"
             "@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}\n"
-            + finish_css() + glass_css())
+            + finish_css() + glass_css() + buttons_css())
 
 
 def glass_css() -> str:
@@ -102,7 +102,33 @@ def glass_css() -> str:
             ".glass-dark{background:#1b1a18;-webkit-backdrop-filter:none;backdrop-filter:none}}\n")
 
 
-HAPTIC_JS = ("function securaxHaptic(kind){try{if(matchMedia('(prefers-reduced-motion: reduce)').matches||!navigator.vibrate)return;"
+def buttons_css() -> str:
+    """The three button kinds and their states (premium.buttons), high-contrast and forced-colours support, squircle
+    corners where the browser can draw them, and a skip link. Shared by every page on the premium language."""
+    b = PREMIUM["buttons"]
+    cm = PREMIUM["contrast_more"]
+    return (".btn-primary{background:var(--action);color:var(--on-action);border:1px solid var(--action);box-shadow:inset 0 0 0 1px var(--leaf);font-weight:600}"
+            ".btn-secondary{background:transparent;color:var(--ink);border:1px solid var(--edge)}"
+            ".btn-tertiary{background:none;border:0;color:var(--accent);text-decoration:underline;text-underline-offset:3px;padding:0;min-height:44px}"
+            f".btn-primary,.btn-secondary{{border-radius:999px;padding:8px 20px;min-height:44px;cursor:pointer;transition:transform {b['press_ms']}ms var(--ease,ease),background-color 200ms var(--ease,ease)}}"
+            f".btn-primary:active,.btn-secondary:active{{transform:scale({b['pressed_scale']})}}"
+            f"button:disabled,.btn-primary:disabled,.btn-secondary:disabled{{opacity:{b['disabled_opacity']};cursor:not-allowed;transform:none}}"
+            "[aria-busy=true]{position:relative;color:transparent!important;pointer-events:none}"
+            "[aria-busy=true]::after{content:'';position:absolute;inset:0;margin:auto;width:16px;height:16px;border-radius:50%;"
+            "border:2px solid var(--on-action);border-right-color:transparent;animation:sxspin .7s linear infinite}"
+            ".btn-secondary[aria-busy=true]::after{border-color:var(--ink);border-right-color:transparent}"
+            "@keyframes sxspin{to{transform:rotate(360deg)}}"
+            ".skip{position:absolute;left:-9999px;top:8px;z-index:10000;background:var(--action);color:var(--on-action);padding:8px 16px;border-radius:999px}"
+            ".skip:focus{left:16px}"
+            f"@media (prefers-contrast:more){{:root{{{_block(cm['light'])}}}}}"
+            f"@media (prefers-contrast:more) and (prefers-color-scheme:dark){{:root{{{_block(cm['dark'])}}}}}"
+            "@media (forced-colors:active){.btn-primary,.btn-secondary,button,.card{border:1px solid ButtonText}"
+            ":focus-visible{outline:2px solid Highlight}.pebble{forced-color-adjust:none}}"
+            "@supports (corner-shape:squircle){.card,.btn-primary,.btn-secondary,button{corner-shape:squircle}}\n")
+
+
+HAPTIC_JS = ("function securaxHaptic(kind){try{if(matchMedia('(prefers-reduced-motion: reduce)').matches||!navigator.vibrate"
+             "||document.documentElement.classList.contains('gm-still'))return;"
              "navigator.vibrate(" + json.dumps({k: v for k, v in PREMIUM["haptics"].items() if k != "about"}, separators=(",", ":"))
              + "[kind]||0)}catch(e){}}"
              "document.addEventListener('click',function(e){var h=e.target.closest&&e.target.closest('[data-haptic]');"

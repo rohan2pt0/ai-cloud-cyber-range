@@ -24,10 +24,10 @@ OUT = ROOT / "website" / "site.css"
 # and radius from light and overrides the surfaces and text (--bg, --card, --ink, --text, --muted, --line, --gold2), plus the
 # status colours (--green, --amber, --red), lifted so a light on the dark navy card #111e33 passes WCAG AA.
 LIGHT = {"--navy": "#1b1a18", "--navy2": "#2a2825", "--ink": "#1b1a18", "--text": "#3a3732", "--muted": "#5f5b54",
-         "--line": "#e3ddd2", "--bg": "#f6f3ee", "--card": "#fffdf9", "--gold": "#e2c172", "--gold2": "#7a5a12",
+         "--line": "#e3ddd2", "--bg": "#f6f3ee", "--card": "#fffdf9", "--gold": "#e2c172", "--gold2": "#7a5a12", "--edge": "#857e72",
          "--green": "#1f6b3a", "--amber": "#7d5300", "--red": "#a8261b", "--radius": "20px"}
 DARK = {**LIGHT, "--bg": "#18181b", "--card": "#222226", "--ink": "#f3efe7", "--text": "#d9d4ca", "--muted": "#aba69d",
-        "--line": "#38373d", "--gold2": "#e2c172", "--green": "#7fcf98", "--amber": "#e6b85c", "--red": "#f2958b"}
+        "--line": "#38373d", "--edge": "#7d7972", "--gold2": "#e2c172", "--green": "#7fcf98", "--amber": "#e6b85c", "--red": "#f2958b"}
 
 
 def render() -> str:
@@ -44,7 +44,15 @@ PREMIUM_RULES = ("html h1,html h2{font-family:'Instrument Serif',Georgia,serif;f
                  "html h1{line-height:1.02}"
                  "html .banner{background:var(--card);color:var(--ink);border-bottom:1px solid var(--line);font-weight:500}"
                  "html .banner a{color:var(--gold2);text-decoration:underline;text-underline-offset:3px}"
-                 ".num,data,time{font-variant-numeric:tabular-nums}\n")
+                 ".num,data,time{font-variant-numeric:tabular-nums}"
+                 # the owner's tactile and accessibility rules: a skip link, more contrast on request, Windows high-contrast
+                 # mode, and squircle corners where the browser can draw them (plain rounded corners elsewhere)
+                 ".skip{position:absolute;left:-9999px;top:8px;z-index:10000;background:var(--navy);color:#fff;padding:8px 16px;border-radius:999px}.skip:focus{left:16px}"
+                 "@media (prefers-contrast:more){:root{--muted:#3f3c37;--line:#6f695f}}"
+                 "@media (prefers-contrast:more) and (prefers-color-scheme:dark){:root{--muted:#d6d1c8;--line:#8f8b84}}"
+                 "@media (forced-colors:active){.btn,.card,button{border:1px solid ButtonText}:focus-visible{outline:2px solid Highlight}}"
+                 "@supports (corner-shape:squircle){.card,.btn,.term,button{corner-shape:squircle}}"
+                 "html .btn:active{transform:scale(.97)}html .btn:disabled{opacity:.45;cursor:not-allowed}\n")
 
 
 def _glass_rules() -> str:

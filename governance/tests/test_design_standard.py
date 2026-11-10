@@ -286,3 +286,27 @@ def test_glass_is_kept_to_floating_layers_with_a_solid_fallback():
     layer = ops[ops.index("function premiumCSS()"):ops.index("function greetHTML()")]
     glassed = {sel for sel in ("header", "#gmNav", "#gmMoreSheet .sh", "#gmOverlay") if sel + "{background:" in layer or sel + "{background:rgba" in layer}
     assert glassed <= {"header", "#gmNav", "#gmMoreSheet .sh", "#gmOverlay"} and ".gm-d3{background:rgba" not in layer, "no glass on cards"
+
+
+def test_buttons_have_three_kinds_visible_edges_and_every_state():
+    # premium.buttons: primary / secondary / tertiary; the secondary edge is 3:1 on every surface (WCAG 1.4.11); pressed,
+    # busy, done and disabled exist; a suggestion is never the primary and never acts by itself.
+    for theme, t in PREM["tokens"].items():
+        for bg in ("--bg", "--card", "--raise"):
+            assert _ratio(t["--edge"], t[bg]) >= 3, f"{theme}: --edge on {bg} is {_ratio(t['--edge'], t[bg]):.2f}:1"
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("securax_design_b", ROOT / "governance" / "design.py")
+    design = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(design)
+    css = design.premium_css()
+    for need in (".btn-primary{", ".btn-secondary{", ".btn-tertiary{", "[aria-busy=true]", "button:disabled", "prefers-contrast:more",
+                 "forced-colors:active", "corner-shape:squircle", ".skip{"):
+        assert need in css, f"premium_css() lacks {need}"
+    ops = (ROOT / "guiding-map" / "ops.js").read_text("utf-8")
+    assert 'class="btn gm-secondary" data-haptic="success" onclick="gmReadAccept()"' in ops, "the lens suggestion is secondary"
+    assert '<span class="gm-suggested">Suggested</span>' in ops and '<details class="gm-why"><summary>Why?</summary>' in ops
+    assert 'G("gm_smart_off", false)' in ops and "scam warnings always stay" in ops
+    assert 'data-haptic="success" class="tile' in ops and 'G("gm_still", false)' in ops and "prefers-reduced-motion: reduce" in ops
+    assert 'askBtn.setAttribute("aria-busy", "true")' in ops
+    for rel in ("guiding-map/hub.html", "guiding-map/command/index.html", "website/index.html"):
+        assert 'class="skip"' in (ROOT / rel).read_text("utf-8"), f"{rel}: a skip link"
