@@ -1,11 +1,7 @@
 {
- "about": "The SecuRAX design standard as data (doc 100): the colour tokens every page shares, and the rules a test checks. Change a token here, then in each page that carries it; governance/tests/test_design_standard.py fails until they agree.",
- "tokens": {
-  "light": {"--bg": "#f5f5f7", "--card": "#ffffff", "--ink": "#1d1d1f", "--mut": "#57606a", "--line": "#d2d2d7", "--accent": "#0a5bd8", "--red": "#b42318", "--amber": "#8a5a00", "--green": "#1f7a3a"},
-  "dark": {"--bg": "#0b0f14", "--card": "#151b23", "--ink": "#f0f3f6", "--mut": "#9ba7b4", "--line": "#2a333d", "--accent": "#6ea8ff", "--red": "#ff7b72", "--amber": "#e3b341", "--green": "#56d364"}
- },
+ "about": "The SecuRAX design standard as data (doc 100): the premium language every page shares (since the owner's yes, 2026-11-10) and the rules a test checks. Change a value here; governance/design.py carries it to every generated page, and governance/tests/test_design_standard.py fails until hand-written pages agree.",
  "premium": {
-  "about": "The premium language (design-premium-language, 2026-11-09): obsidian and ivory, one gold accent used like leaf, a display serif with a calm sans. A page opts in with design.premium_css(); after the owner's yes on the three hero screens it replaces 'tokens' for every page. Each colour pair is AA in both themes (test_design_standard.py measures them).",
+  "about": "The premium language (design-premium-language, 2026-11-09): obsidian and ivory, one gold accent used like leaf, a display serif with a calm sans. Every page uses it: generated pages through design.css() or design.premium_css(), hand-written pages by carrying the same values. Each colour pair is AA in both themes (test_design_standard.py measures them).",
   "tokens": {
    "light": {"--bg": "#f6f3ee", "--card": "#fffdf9", "--raise": "#fffefb", "--ink": "#1b1a18", "--mut": "#5f5b54", "--line": "#e3ddd2", "--accent": "#7a5a12", "--on-accent": "#fffdf9", "--action": "#1b1a18", "--on-action": "#f6f3ee", "--leaf": "#b8901f", "--edge": "#857e72", "--red": "#a8261b", "--amber": "#7d5300", "--green": "#1f6b3a"},
    "dark": {"--bg": "#18181b", "--card": "#222226", "--raise": "#2b2b30", "--ink": "#f3efe7", "--mut": "#aba69d", "--line": "#38373d", "--accent": "#e2c172", "--on-accent": "#18181b", "--action": "#f3efe7", "--on-action": "#18181b", "--leaf": "#e2c172", "--edge": "#7d7972", "--red": "#f2958b", "--amber": "#e6b85c", "--green": "#7fcf98"}
@@ -56,6 +52,7 @@
   "pages_on_the_standard": ["guiding-map/hub.html"],
   "pages_on_the_premium_language": ["guiding-map/hub.html"],
   "generators_on_the_standard": {"governance/cockpit.py": "portal/cockpit.html", "governance/reckoner.py": "portal/reckoner/*", "governance/controls.py": "portal/navigator*", "tools/site_css.py": "website/site.css"},
-  "brand_apps_with_the_basics": {"guiding-map/index.html": "the Life OS keeps its navy and gold", "guiding-map/kit/kit.css": "Vantage and every kit app keep their edition colours"}
+  "brand_apps_with_the_basics": {"guiding-map/index.html": "the Life OS: premium values in its own token names (ops.js premiumCSS)", "guiding-map/kit/kit.css": "Vantage and every kit app: premium neutrals; an edition may still set its accent"},
+  "also_on_the_language": {"exercise/web/app.css": "the exercise portal: premium neutrals, its chart colours unchanged", "docs/stylesheets/premium.css": "the docs: obsidian and ivory, serif headings, no Google Fonts"}
  }
 }

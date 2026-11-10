@@ -19,7 +19,7 @@ def test_pages_on_the_standard_carry_the_shared_tokens_and_basics():
     for rel in STD["rules"]["pages_on_the_standard"]:
         page = (ROOT / rel).read_text("utf-8")
         light, dark = blocks(page)
-        tokens = STD["premium"]["tokens"] if rel in STD["rules"].get("pages_on_the_premium_language", []) else STD["tokens"]
+        tokens = STD["premium"]["tokens"]
         for theme, block in (("light", light), ("dark", dark)):
             for k, v in tokens[theme].items():
                 assert f"{k}:{v}" in block, f"{rel}: {theme} {k} should be {v}"
@@ -47,7 +47,7 @@ def test_every_generated_page_takes_its_tokens_from_one_place(tmp_path):
     css = design.css()
     light, dark = blocks(css)
     for theme, block in (("light", light), ("dark", dark)):
-        for k, v in STD["tokens"][theme].items():
+        for k, v in STD["premium"]["tokens"][theme].items():
             assert f"{k}:{v}" in block, f"design.css(): {theme} {k} should be {v}"
     assert ":focus-visible" in css and "prefers-reduced-motion" in css and "safe-area-inset" in css
     assert f"min-height:{STD['rules']['min_target_px']}px" in css
@@ -310,3 +310,20 @@ def test_buttons_have_three_kinds_visible_edges_and_every_state():
     assert 'askBtn.setAttribute("aria-busy", "true")' in ops
     for rel in ("guiding-map/hub.html", "guiding-map/command/index.html", "website/index.html"):
         assert 'class="skip"' in (ROOT / rel).read_text("utf-8"), f"{rel}: a skip link"
+
+
+def test_every_remaining_page_is_on_the_premium_language():
+    # The rollout (owner, 2026-11-10): the kit apps, the exercise portal and the docs carry the premium neutrals too.
+    L, D = PREM["tokens"]["light"], PREM["tokens"]["dark"]
+    kit = (ROOT / "guiding-map" / "kit" / "kit.css").read_text("utf-8")
+    assert f"--bg:{D['--bg']}; --card:{D['--card']}; --ink:{D['--ink']}" in kit and f"--bg:{L['--bg']}; --card:{L['--card']}; --ink:{L['--ink']}" in kit
+    assert "prefers-contrast:more" in kit and "forced-colors:active" in kit and ".skip" in kit
+    assert 'class="skip"' in (ROOT / "guiding-map" / "kit" / "shell.html").read_text("utf-8")
+    ex = (ROOT / "exercise" / "web" / "app.css").read_text("utf-8")
+    assert f"--bg: {L['--bg']}; --panel: {L['--card']}" in ex and f"--bg: {D['--bg']}; --panel: {D['--card']}" in ex
+    docs = (ROOT / "docs" / "stylesheets" / "premium.css").read_text("utf-8")
+    assert f"--md-default-bg-color: {L['--bg']}" in docs and f"--md-default-bg-color: {D['--bg']}" in docs
+    mk = (ROOT / "mkdocs.yml").read_text("utf-8")
+    assert "stylesheets/premium.css" in mk and "font: false" in mk and "primary: custom" in mk
+    for rel in ("guiding-map/kit/kit.css", "exercise/web/app.css"):
+        assert "#0d1f35" not in (ROOT / rel).read_text("utf-8").split("}")[0], f"{rel}: no old navy page background"

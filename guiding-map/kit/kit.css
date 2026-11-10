@@ -1,9 +1,9 @@
-/* OS kit: one stylesheet for every edition. Colours are tokens; an edition may set --accent and --accent-ink.
+/* OS kit: one stylesheet for every edition, on the premium language (governance/design.json "premium": obsidian and ivory). Colours are tokens; an edition may set --accent and --accent-ink.
    Both themes meet WCAG AA (tests/kit_audit.py measures every visible text in both). */
-:root { --bg:#0d1f35; --card:#132a45; --ink:#eef3f8; --muted:#b9c7d6; --line:#2a4466; --accent:#e8c96a; --accent-ink:#1a1405;
-  --btn:#1d3a5c; --btn-ink:#eef3f8; --late:#5c1d1d; --late-ink:#ffd9d9; --due:#4a3b0c; --due-ink:#ffeaa8; --on:#164a2e; --on-ink:#cdf5dd; --low:#1f3550; --low-ink:#d8e5f5; }
-:root[data-theme="light"] { --bg:#f3f5f8; --card:#ffffff; --ink:#13233a; --muted:#4a5a6e; --line:#d5dde7; --accent:#13233a; --accent-ink:#ffffff;
-  --btn:#e7edf4; --btn-ink:#13233a; --late:#fde2e2; --late-ink:#7a1010; --due:#fff1c2; --due-ink:#5c4300; --on:#d8f3e3; --on-ink:#0f5132; --low:#e4ecf6; --low-ink:#1c3352; }
+:root { --bg:#18181b; --card:#222226; --ink:#f3efe7; --muted:#aba69d; --line:#38373d; --accent:#e2c172; --accent-ink:#18181b;
+  --btn:#2b2b30; --btn-ink:#f3efe7; --late:#5c1d1d; --late-ink:#ffd9d9; --due:#4a3b0c; --due-ink:#ffeaa8; --on:#164a2e; --on-ink:#cdf5dd; --low:#2b2b30; --low-ink:#e8e2d6; --edge:#7d7972; }
+:root[data-theme="light"] { --bg:#f6f3ee; --card:#fffdf9; --ink:#1b1a18; --muted:#5f5b54; --line:#e3ddd2; --accent:#1b1a18; --accent-ink:#fffdf9;
+  --btn:#f1ece3; --btn-ink:#1b1a18; --late:#fde2e2; --late-ink:#7a1010; --due:#fff1c2; --due-ink:#5c4300; --on:#d8f3e3; --on-ink:#0f5132; --low:#efe9df; --low-ink:#3a3732; --edge:#857e72; }
 * { box-sizing:border-box; }
 /* The design standard's basics (doc 100): a focus you can see, calm motion, notch-safe edges. */
 :focus-visible { outline:3px solid currentColor; outline-offset:2px; }
@@ -68,3 +68,12 @@ nav#oskNav button.on { color:var(--ink); background:var(--btn); font-weight:700;
 #oskToast.on { display:flex; align-items:center; justify-content:space-between; gap:10px; }
 #oskToast button { background:var(--bg); color:var(--ink); min-height:32px; padding:4px 10px; }
 @media (min-width: 900px) { body { padding-bottom:20px; } nav#oskNav { position:sticky; top:0; bottom:auto; max-width:760px; margin:0 auto; border:1px solid var(--line); border-radius:12px; } #oskToast { bottom:20px; } }
+
+/* Premium language (design.json "premium"): a skip link, more contrast on request, Windows high contrast, squircles. */
+.skip { position:absolute; left:-9999px; top:8px; z-index:10000; background:var(--ink); color:var(--bg); padding:8px 16px; border-radius:999px; }
+.skip:focus { left:16px; }
+@media (prefers-contrast:more) { :root { --muted:#d6d1c8; --line:#8f8b84; } :root[data-theme="light"] { --muted:#3f3c37; --line:#6f695f; } }
+@media (forced-colors:active) { button, .card { border:1px solid ButtonText; } :focus-visible { outline:2px solid Highlight; } }
+@supports (corner-shape:squircle) { button, .card, input, select, textarea { corner-shape:squircle; } }
+button:active { transform:scale(.97); }
+button:disabled { opacity:.45; cursor:not-allowed; transform:none; }

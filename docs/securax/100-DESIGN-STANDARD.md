@@ -148,9 +148,10 @@ The product should read as private-bank grade: calm, exact, a little precious. T
   and squircle corners where the browser can draw them (plain rounded corners elsewhere).
 - **Copy.** Short, warm and certain, like a concierge. No exclamation marks.
 
-**Rollout.** The Command Center is the first screen on the language: the hosted door people reach from the site (`guiding-map/command/`) and the node's own page (`hub.html`) (before and after, both themes, phone and laptop, in the PR).
-The product site home and the Life OS Today screen follow as one slice each. Only after the owner says yes to all three does `premium` replace
-the older `tokens` for every page.
+**Rollout, done 2026-11-10.** Every page is on the language: the Command Center (the hosted door and the node's page), the
+Life OS, the product site, the generated pages (cockpit, ready reckoner, control navigator), the kit apps, the exercise portal
+and the docs. The three hero screens went first, each with before and after pictures for the owner's yes; then `premium`
+replaced the older `tokens`, so there is one source.
 
 **The rules the owner collected,** held mechanically where a browser can measure them (queue `ui-rules-lint`): body line height 1.4 to 1.6 and
 45 to 75 characters a line; one primary action per view; labels that stay; buttons that say what happens; the 4/8/16/24/32 scale; one accent;

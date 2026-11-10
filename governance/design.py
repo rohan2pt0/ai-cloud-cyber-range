@@ -12,6 +12,7 @@ import json
 import pathlib
 
 STD = json.loads((pathlib.Path(__file__).resolve().parent / "design.json").read_text("utf-8"))
+PREMIUM = STD["premium"]
 
 # The short names older pages use, mapped onto the shared tokens. var() resolves where it is used, so each alias follows
 # the theme: --r is the light red in light mode and the dark red in dark mode.
@@ -25,19 +26,22 @@ def _block(tokens: dict) -> str:
 def css(extra_light: dict | None = None, extra_dark: dict | None = None) -> str:
     """The shared tokens in both themes, the aliases, and the basics. extra_*: a page's own variables (not colours the
     standard owns), for example the text colour on a lamp."""
-    t = STD["tokens"]
+    # Rolled out (owner, 2026-11-10): every generated page takes the premium language's tokens, buttons and access rules.
+    t = PREMIUM["tokens"]
     px = STD["rules"]["min_target_px"]
     light = _block({**t["light"], **ALIASES, **(extra_light or {})})
     dark = _block({**t["dark"], **(extra_dark or {})})
     return (f":root{{{light}}}\n@media (prefers-color-scheme:dark){{:root{{{dark}}}}}\n"
-            "body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}\n"
+            "body{padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);"
+            "-webkit-font-smoothing:antialiased}\n"
             ":focus-visible{outline:3px solid var(--accent);outline-offset:2px;border-radius:4px}\n"
             f"button,summary,.btn{{min-height:{px}px}}summary{{display:list-item;padding:10px 0;cursor:pointer}}\n"
-            "@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}\n")
+            "a{color:var(--accent);text-underline-offset:3px}\n"
+            "@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important;scroll-behavior:auto!important}}\n"
+            + buttons_css())
 
 
-# ---- The premium language (design.json "premium"): opt-in until the owner says yes to the three hero screens. ----
-PREMIUM = STD["premium"]
+# ---- The premium language (design.json "premium"): every page's language since the owner's yes (2026-11-10). ----
 FONT_FILE = pathlib.Path(__file__).resolve().parent.parent / PREMIUM["type"]["display_font_file"]
 
 

@@ -9,20 +9,23 @@ edit_uri: edit/main/docs/
 docs_dir: docs
 exclude_docs: |
   *.json
+extra_css:
+  - stylesheets/premium.css
 theme:
   name: material
   language: en
   icon: { logo: material/shield-check, repo: fontawesome/brands/github }
+  font: false            # system fonts: no Google Fonts call, works offline (premium language, doc 100)
   palette:
     - media: "(prefers-color-scheme: light)"
       scheme: default
-      primary: indigo
-      accent: amber
+      primary: custom
+      accent: custom
       toggle: { icon: material/weather-night, name: Dark mode }
     - media: "(prefers-color-scheme: dark)"
       scheme: slate
-      primary: indigo
-      accent: amber
+      primary: custom
+      accent: custom
       toggle: { icon: material/weather-sunny, name: Light mode }
   features:
     - navigation.tabs

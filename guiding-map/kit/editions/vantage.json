@@ -8,7 +8,7 @@
  "audience": "A CISO, a deputy, or any executive who owns security risk",
  "north_star": "Risks really reduced, decisions made on time, a team that grows, and a leader who keeps their energy. Not paperwork.",
  "welcome": "Vantage guides your week as a security leader: what needs you today, the reviews that keep the programme honest, and the progress you can show. Everything stays on this device unless you pair it with your estate.",
- "theme": { "bg": "#0d1f35" },
+ "theme": { "bg": "#18181b" },
  "nav_main": 4,
  "nav_short": { "registers:risks": "Risks", "goals": "OKRs", "scorecard": "KPIs", "registers:decisions": "Decisions", "registers:tools": "Tools" },
  "nav": ["today", "registers:risks", "cadence", "goals", "inbox", "scorecard", "registers:decisions", "registers:exceptions", "registers:tools", "registers:stakeholders", "registers:team", "registers:lessons", "wheel", "rituals", "playbooks", "feeds", "progress", "settings"],

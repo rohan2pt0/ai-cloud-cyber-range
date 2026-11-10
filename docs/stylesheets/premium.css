@@ -1,0 +1,20 @@
+/* The docs on the premium language (governance/design.json "premium"): obsidian and ivory, gold used like leaf, the serif
+   for headings. The serif is the one font file website/build.sh copies next to the site (same origin; no font service). */
+@font-face { font-family: "Instrument Serif"; font-style: normal; font-weight: 400; font-display: swap; src: url(../../serif.woff2) format("woff2"); }
+[data-md-color-scheme="default"] {
+  --md-primary-fg-color: #1b1a18; --md-primary-fg-color--light: #2a2825; --md-primary-fg-color--dark: #141416;
+  --md-primary-bg-color: #f6f3ee; --md-primary-bg-color--light: rgba(246, 243, 238, .7);
+  --md-accent-fg-color: #7a5a12; --md-accent-fg-color--transparent: rgba(122, 90, 18, .1);
+  --md-default-bg-color: #f6f3ee; --md-typeset-a-color: #7a5a12; --md-code-bg-color: #efe9df;
+  --md-default-fg-color--light: rgba(0, 0, 0, .66);   /* Material's .54 is 4.3:1 on the drawer grey; AA needs 4.5 */
+}
+[data-md-color-scheme="slate"] {
+  --md-primary-fg-color: #222226; --md-primary-fg-color--light: #2b2b30; --md-primary-fg-color--dark: #18181b;
+  --md-primary-bg-color: #f3efe7;
+  --md-accent-fg-color: #e2c172; --md-accent-fg-color--transparent: rgba(226, 193, 114, .1);
+  --md-default-bg-color: #18181b; --md-default-fg-color: rgba(243, 239, 231, .87); --md-default-fg-color--light: rgba(243, 239, 231, .68); --md-typeset-a-color: #e2c172; --md-code-bg-color: #2b2b30;
+}
+.md-typeset h1, .md-typeset h2 { font-family: "Instrument Serif", Georgia, serif; font-weight: 400; letter-spacing: -.01em; }
+.md-typeset h1 { color: var(--md-default-fg-color); }
+.md-typeset a { text-decoration: underline; text-underline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { * { animation: none !important; transition: none !important; } }
