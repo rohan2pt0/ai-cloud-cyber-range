@@ -131,6 +131,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- The site's menu bar at laptop width
 - Two new core principles: `human-first` and `whole-view`
 - A premium design language, and the Command Center (the hosted door and the node's page) is the first screen on it
 - `./securax progress` now shows the first two delivery keys, read from git alone
@@ -138,7 +139,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - The lifecycle doc now says plainly, with dates, when the forest stage and the private cloud are built
 - The core database moves to PostgreSQL 18 without the start-up failure a plain version bump would cause
 - The product site's dark mode is readable everywhere
-- [The four product-site pages now take every colour from the one generated stylesheet (doc 100)](docs/securax/100-DESIGN-STANDARD.md)
 
 **Release 0.3.0 - 2026-10-22:**
 

@@ -52,7 +52,12 @@ PREMIUM_RULES = ("html h1,html h2{font-family:'Instrument Serif',Georgia,serif;f
                  "@media (prefers-contrast:more) and (prefers-color-scheme:dark){:root{--muted:#d6d1c8;--line:#8f8b84}}"
                  "@media (forced-colors:active){.btn,.card,button{border:1px solid ButtonText}:focus-visible{outline:2px solid Highlight}}"
                  "@supports (corner-shape:squircle){.card,.btn,.term,button{corner-shape:squircle}}"
-                 "html .btn:active{transform:scale(.97)}html .btn:disabled{opacity:.45;cursor:not-allowed}\n")
+                 "html .btn:active{transform:scale(.97)}html .btn:disabled{opacity:.45;cursor:not-allowed}"
+                 # The menu bar at laptop width: the brand never shrinks (its byline used to run under "How it works"), the
+                 # byline shows only where it fits, and the menu tightens a little before the phone menu takes over at 960 px.
+                 "@media (min-width:961px){html .nav .brand{flex:0 0 auto}html .nav ul{min-width:0}}"
+                 "@media (max-width:1359px){html .nav .brand small{display:none}}"
+                 "@media (min-width:961px) and (max-width:1199px){html .nav ul{gap:14px}html .nav ul a{font-size:14px}html .nav .wrap{gap:16px}}\n")
 
 
 def _glass_rules() -> str:

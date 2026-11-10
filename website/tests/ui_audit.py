@@ -39,6 +39,13 @@ PAGES = [
 _EMOJI = re.compile("[\U0001F000-\U0001FAFF\U0001F1E6-\U0001F1FF\U00002600-\U000027BF\U00002B00-\U00002BFF\U0000FE0F\U0000200D]")
 
 
+NAV_OVERLAP_JS = """() => { const b = document.querySelector('.nav .brand'); if (!b) return false;
+  const br = b.getBoundingClientRect();
+  return [...document.querySelectorAll('.nav .wrap > ul > li, .nav .wrap > .btn, .nav .wrap > .menu > summary')]
+    .filter(e => !e.closest('details:not([open]) > :not(summary)') && e.offsetParent && e.getBoundingClientRect().width > 0)
+    .some(e => e.getBoundingClientRect().left < br.right - 0.5); }"""
+
+
 def _emoji_only(text: str) -> bool:
     t = "".join(text.split())
     return bool(t) and all(_EMOJI.fullmatch(ch) is not None for ch in t)
@@ -64,6 +71,9 @@ def main() -> int:
                         report["contrast"].append({"where": where, **item})
                     if pg.evaluate("() => document.documentElement.scrollWidth > document.documentElement.clientWidth"):
                         report["overflow"].append(where)
+                    # the menu bar: nothing in the visible bar may run under the brand (the byline once covered "How it works")
+                    if pg.evaluate(NAV_OVERLAP_JS):
+                        report["overflow"].append(where + " (menu bar: an item runs under the brand)")
                     pg.screenshot(path=str(OUT / f"{name}-{width}-{scheme}.png"), full_page=False)
                     ctx.close()
         br.close()
