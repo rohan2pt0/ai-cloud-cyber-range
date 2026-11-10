@@ -10,7 +10,7 @@ the "Coding providers" line: one model-list GET per enabled build provider (no p
 snapshot (stamped with its time) — re-run `./securax cockpit` (also done by `./securax up`) to refresh.
 
 What is on it
-  Headline        green / amber / red in one sentence, and the three things to do next
+  Headline        green / amber / red in one sentence, and the one thing to do next, the rest under Later
   Vital signs     KPIs (is it doing its job) and KRIs (is risk building up), each with a plain 'why it matters' and the command to act
   Maturity radar  NIST CSF 2.0 categories (SEBI's CSCRF is built on it): TARGET vs DESIGNED (a mechanism exists) vs DEMONSTRATED (a test proves it)
   Eisenhower      urgent x important: Do now / Schedule / Automate / Park, filled from the vital signs and the gap backlog
@@ -719,7 +719,7 @@ def eisenhower(metrics: list[dict], bl: list[dict]) -> dict:
         else:
             q["park"].append(item)
     # Most severe first in every quadrant: red before amber, more important first, a live vital sign before a backlog item.
-    # The cockpit's "next 3" reads the top of Do now then Schedule, so this order IS the advice. Stable sort keeps ties in check order.
+    # The cockpit's "Do next" reads the top of Do now then Schedule, so this order IS the advice. Stable sort keeps ties in check order.
     for k in q:
         q[k].sort(key=lambda it: it["_rank"])
         for it in q[k]:
@@ -884,163 +884,259 @@ def quad(key: str, title: str, sub: str, items: list[dict], limit: int = 5) -> s
     return f"<div class='q {key}'><h3>{E(title)} <span class='muted'>· {E(sub)}</span></h3>{('<ul>' + li + '</ul>') if items else '<div class=muted>Nothing here.</div>'}{more}</div>"
 
 
-def render(c: Collector, maps: dict, hist: list[dict], ai: str, now: float, target: float) -> tuple[str, dict]:
+def _summary(c: Collector) -> tuple[list[dict], list[dict], list[dict], str]:
     ms = sorted(c.metrics, key=lambda m: (RAG_ORDER[m["status"]], m["id"]))
     reds = [m for m in ms if m["status"] == "red"]
     ambs = [m for m in ms if m["status"] == "amber"]
     overall = "red" if reds else ("amber" if ambs else ("green" if any(m["status"] == "green" for m in ms) else "unknown"))
-    rows = radar_scores(maps["cscrf"], target)
-    bl = backlog(maps)
-    par = pareto(bl)
-    eis = eisenhower(c.metrics, bl)
-    # Only what the person can act on today: a vital sign with its action. Gap-backlog items are work for the builders and stay in Mission planning.
-    nxt = [i for i in eis["do"] + eis["schedule"] if i["src"] == "vital sign"][:3]
-    headline = {"red": f"{len(reds)} thing{'s' if len(reds) != 1 else ''} need attention today.", "amber": f"Healthy, with {len(ambs)} thing{'s' if len(ambs) != 1 else ''} to schedule.",
-                "green": "All clear: nothing measured is wrong.", "unknown": "Not enough data yet: start the estate and refresh."}[overall]
-    stamp = time.strftime("%d %b %Y %H:%M %Z", time.localtime(now))
-    h = [f"<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1,viewport-fit=cover'><title>SecuRAX Cockpit</title><style>{CSS}</style></head><body><main>"]
-    # Dark-cockpit rule (Airbus, mission control): when everything is normal nothing is lit. Only what is abnormal is shown;
-    # the nominal readings and the planning views stay one click away, so the eye goes straight to what needs a decision.
-    nav = (ROOT / "portal" / "navigator.html").exists()
-    try:                                                          # overdue risk treatments light a lamp only when there are any
+    return ms, reds, ambs, overall
+
+
+def _headline(overall: str, reds: list[dict], ambs: list[dict]) -> str:
+    return {"red": f"{len(reds)} thing{'s' if len(reds) != 1 else ''} need attention today.",
+            "amber": f"Healthy, with {len(ambs)} thing{'s' if len(ambs) != 1 else ''} to schedule.",
+            "green": "All clear: nothing measured is wrong.",
+            "unknown": "Not enough data yet: start the estate and refresh."}[overall]
+
+
+def _late_risks() -> int:
+    try:
         _rs = importlib.util.spec_from_file_location("risks", ROOT / "governance" / "risks.py")
         _rm = importlib.util.module_from_spec(_rs)
         _rs.loader.exec_module(_rm)
-        late = len(_rm.overdue(_rm.load()))
+        return len(_rm.overdue(_rm.load()))
     except Exception:  # noqa: BLE001 - the register is optional
-        late = 0
-    try:                                                          # a person stopped AI (./securax ai stop): always lit while it lasts
+        return 0
+
+
+def _stopped_ai() -> list[str]:
+    try:
         _ctl = json.loads((ROOT / "local" / "compose" / "controls" / "ai-control.json").read_text("utf-8"))
-        stopped_ai = (["all AI"] if _ctl.get("all") else []) + sorted(_ctl.get("models") or {})
+        return (["all AI"] if _ctl.get("all") else []) + sorted(_ctl.get("models") or {})
     except (OSError, ValueError):
-        stopped_ai = []
+        return []
+
+
+def _allowance_near() -> list[float]:
     near = []
-    try:                                                          # AI allowance: lit only when a caller is at the 80% line or over
+    try:
         import urllib.request
         with urllib.request.urlopen("http://127.0.0.1:8080/v1/budget", timeout=3) as r:
             rep = json.loads(r.read())
-        for row in rep.get("callers", []):                       # not `c`: that name is the cockpit's config in this function
+        for row in rep.get("callers", []):
             pct = max((row["day_used"] / row["day_limit"]) if row["day_limit"] else 0,
                       (row["month_used"] / row["month_limit"]) if row["month_limit"] else 0)
             if pct >= rep.get("warn_at", 0.8):
                 near.append(pct)
     except Exception:  # noqa: BLE001 - the gateway may be off; then there is nothing to show
         pass
-    share = None
-    try:                                                          # Claude's share of this month's commits: lit only above the goal (doc 23)
+    return near
+
+
+def _share_light(now: float):
+    try:
         _sh = _load("securax_share", "lifecycle/share.py")
         _m = _sh.report(_sh.commits(time.strftime("%Y-%m-01", time.localtime(now))))
-        share = _m[0] if _m and _m[0]["over_goal"] else None
+        return _m[0] if _m and _m[0]["over_goal"] else None
     except Exception:  # noqa: BLE001 - not a git checkout (a release tarball): nothing to show
-        pass
-    prune_items = []
-    try:                                                          # routines that do not earn their place (./securax routines prune)
+        return None
+
+
+def _prune_items() -> list:
+    try:
         if str(ROOT) not in sys.path:
             sys.path.insert(0, str(ROOT))
         from routines import prune as _prune
-        prune_items = _prune.report()[0]
+        return _prune.report()[0]
     except Exception:  # noqa: BLE001 - no history yet, or no routines: nothing to show
-        pass
+        return []
+
+
+def _jewels_and_continuity() -> tuple[list, list]:
     jewels_now, cont_over = [], []
-    try:                                                          # crown jewels exposed now, and crises over their RTO/RPO target (doc 84)
+    try:
         _jw = _load("securax_jewels", "governance/jewels.py")
         jewels_now = [r for r in _jw.assess() if r["priority"] == "DO NOW"]
         _ct = _load("securax_continuity", "governance/continuity.py")
         cont_over = [r for r in _ct.status() if not r["ok"]]
     except Exception:  # noqa: BLE001 - a report input that cannot be read must never fail the cockpit
         pass
+    return jewels_now, cont_over
+
+
+def _lamps(now: float, reds: list[dict], ambs: list[dict], ms: list[dict]) -> list[tuple]:
+    late = _late_risks()
+    stopped_ai = _stopped_ai()
+    near = _allowance_near()
+    share = _share_light(now)
+    prune_items = _prune_items()
+    jewels_now, cont_over = _jewels_and_continuity()
     lamps = [("warn" if reds else "ok", len(reds), "Warnings: act today"), ("caut" if ambs else "ok", len(ambs), "Cautions: schedule"),
-             ("ok", sum(1 for m in ms if m["status"] == "green"), "Nominal")] + ([("warn", late, "Risk treatments overdue")] if late else []) \
-        + ([("warn", len(stopped_ai), "AI stopped by a person: " + ", ".join(stopped_ai))] if stopped_ai else []) \
-        + ([("warn" if max(near) >= 1 else "caut", len(near), "AI allowance used up or near it: ./securax ai budget")] if near else [])\
-        + ([("caut", f"{share['claude_share']:.0%}", "of this month's commits by Claude (goal 20%): ./securax ai share")] if share else [])\
-        + ([("warn" if any(i["verdict"] == "failing" for i in prune_items) else "caut", len(prune_items),
-             "Routines to fix or switch off: ./securax routines prune")] if prune_items else [])\
-        + ([("warn", len(jewels_now), "Crown jewels exposed, first: " + jewels_now[0]["name"].split(" (")[0].split(":")[0] + " → " + jewels_now[0]["command"])] if jewels_now else [])\
-        + ([("caut", len(cont_over), "Crisis scenarios not yet within target: ./securax continuity")] if cont_over else [])
-    # The cockpit, laid out like a flight deck (doc 37, section 2): ONE master lamp and the headline; at most three things
-    # to do; a row of primary instruments that stay grey while nominal and light up only when not; the other lit lamps as
-    # small annunciators; every detail folded into a panel with its status on its one line.
-    extra = lamps[3:]
-    h.append(f"<div class='card head {overall}'><div class='topbar'><span class='master {overall}'>{MASTER[overall]}</span>"
-             f"<h1>{E(headline)}</h1><span class='muted meta'>{E(stamp)} · <a href='/hub.html'>All apps</a>"
-             + (" · <a href='/portal/navigator.html'>Controls</a>" if nav else "") + "</span></div>")
+             ("ok", sum(1 for m in ms if m["status"] == "green"), "Nominal")]
+    if late:
+        lamps.append(("warn", late, "Risk treatments overdue"))
+    if stopped_ai:
+        lamps.append(("warn", len(stopped_ai), "AI stopped by a person: " + ", ".join(stopped_ai)))
+    if near:
+        lamps.append(("warn" if max(near) >= 1 else "caut", len(near), "AI allowance used up or near it: ./securax ai budget"))
+    if share:
+        lamps.append(("caut", f"{share['claude_share']:.0%}", "of this month's commits by Claude (goal 20%): ./securax ai share"))
+    if prune_items:
+        lamps.append(("warn" if any(i["verdict"] == "failing" for i in prune_items) else "caut", len(prune_items),
+                      "Routines to fix or switch off: ./securax routines prune"))
+    if jewels_now:
+        lamps.append(("warn", len(jewels_now), "Crown jewels exposed, first: " + jewels_now[0]["name"].split(" (")[0].split(":")[0] + " → " + jewels_now[0]["command"]))
+    if cont_over:
+        lamps.append(("caut", len(cont_over), "Crisis scenarios not yet within target: ./securax continuity"))
+    return lamps
+
+
+def _head_card(overall: str, headline: str, stamp: str, nxt: list[dict]) -> str:
+    nav = (ROOT / "portal" / "navigator.html").exists()
+    out = [f"<div class='card head {overall}'><div class='topbar'><span class='master {overall}'>{MASTER[overall]}</span>"
+           f"<h1>{E(headline)}</h1><span class='muted meta'>{E(stamp)} · <a href='/hub.html'>All apps</a>"
+           + (" · <a href='/portal/navigator.html'>Controls</a>" if nav else "") + "</span></div>"]
+
+    def li(i: dict) -> str:
+        return (f"<li><b>{E(i['title'])}</b>"
+                + (f" <code>{E(i['cmd'])}</code>" if i["cmd"] else f" <span class='muted'>{E(short(i['action'], 80))}</span>")
+                + "</li>")
     if nxt:
-        h.append("<ol class='do'>" + "".join(f"<li><b>{E(i['title'])}</b>" + (f" <code>{E(i['cmd'])}</code>" if i["cmd"] else f" <span class='muted'>{E(short(i['action'], 80))}</span>")
-                                            + "</li>" for i in nxt) + "</ol>")
-    h.append("</div>")
-    byid = {m["id"]: m for m in ms}
-    inst = [byid[i] for i in PRIMARY if i in byid]
-    gov = None
-    try:                                                          # the Govern panel, and its maturity as one instrument
+        out.append("<ol class='do'>" + li(nxt[0]) + "</ol>")
+        rest = nxt[1:13]                                          # one open action: the rest wait, at most 12 shown
+        if rest:
+            out.append(f"<details class='later'><summary>Later ({len(rest)})</summary><ol>" + "".join(li(i) for i in rest) + "</ol></details>")
+    out.append("</div>")
+    return "".join(out)
+
+
+def _govern_card():
+    try:
         _gv = _load("securax_govern", "governance/govern.py")
         _ga = _gv.analyse()
-        gov = (_gv.html_card(_ga), _ga["maturity"][0])
+        return (_gv.html_card(_ga), _ga["maturity"][0])
     except Exception:  # noqa: BLE001 - a convenience panel must never fail the cockpit
-        pass
-    h.append("<div class='inst'>" + "".join(instrument(m) for m in inst)
-             + (f"<a class='gauge {'red' if gov[1] == 1 else 'amber' if gov[1] < 3 else 'quiet'}' href='#govern'><span class='lbl'>Govern</span><b>{gov[1]}/5</b><span class='muted'>maturity</span></a>" if gov else "")
-             + "</div>")
-    if extra:
-        h.append("<div class='lit'>" + "".join(f"<span class='ann {k}'><b>{v}</b> {E(t)}</span>" for k, v, t in extra) + "</div>")
-    abnormal = [m for m in ms if m["status"] in ("red", "amber")]
-    nominal, unmeasured = [m for m in ms if m["status"] == "green"], [m for m in ms if m["status"] not in ("red", "amber", "green")]
-    h.append(f"<details class='card panel' id='systems'><summary><b>Systems</b> <span class='muted'>· {len(reds)} to act on · {len(ambs)} to watch · "
-             f"{len(nominal)} nominal · {len(unmeasured)} no data</span></summary><div class='muted'>KPI = is it doing its job. KRI = is risk building up.</div>"
-             + (f"<div class='grid'>{''.join(tile(m) for m in abnormal)}</div>" if abnormal else "<p class='big'>All vital signs nominal.</p>")
-             + (f"<details><summary>{len(unmeasured)} not measured right now (a service is off or has no data yet)</summary><div class='grid'>{''.join(tile(m) for m in unmeasured)}</div></details>" if unmeasured else "")
-             + (f"<details><summary>{len(nominal)} nominal readings</summary><div class='grid'>{''.join(tile(m) for m in nominal)}</div></details>" if nominal else "")
-             + "</details>")
+        return None
+
+
+def _instruments(ms: list[dict], gov) -> str:
+    byid = {m["id"]: m for m in ms}
+    inst = [byid[i] for i in PRIMARY if i in byid]
+    out = ["<div class='inst'>" + "".join(instrument(m) for m in inst)]
     if gov:
-        h.append(gov[0])
-    try:                                                          # the mission board (doc 102): the update's Go/No-Go and the rules firing, folded
-        h.append(_load("securax_mission", "governance/mission.py").html_card(ms))
+        out.append(f"<a class='gauge {'red' if gov[1] == 1 else 'amber' if gov[1] < 3 else 'quiet'}' href='#govern'><span class='lbl'>Govern</span><b>{gov[1]}/5</b><span class='muted'>maturity</span></a>")
+    out.append("</div>")
+    return "".join(out)
+
+
+def _systems_card(ms: list[dict], reds: list[dict], ambs: list[dict]) -> str:
+    abnormal = [m for m in ms if m["status"] in ("red", "amber")]
+    nominal = [m for m in ms if m["status"] == "green"]
+    unmeasured = [m for m in ms if m["status"] not in ("red", "amber", "green")]
+    out = [f"<details class='card panel' id='systems'><summary><b>Systems</b> <span class='muted'>· {len(reds)} to act on · {len(ambs)} to watch · "
+           f"{len(nominal)} nominal · {len(unmeasured)} no data</span></summary><div class='muted'>KPI = is it doing its job. KRI = is risk building up.</div>"]
+    if abnormal:
+        out.append(f"<div class='grid'>{''.join(tile(m) for m in abnormal)}</div>")
+    else:
+        out.append("<p class='big'>All vital signs nominal.</p>")
+    if unmeasured:
+        out.append(f"<details><summary>{len(unmeasured)} not measured right now (a service is off or has no data yet)</summary><div class='grid'>{''.join(tile(m) for m in unmeasured)}</div></details>")
+    if nominal:
+        out.append(f"<details><summary>{len(nominal)} nominal readings</summary><div class='grid'>{''.join(tile(m) for m in nominal)}</div></details>")
+    out.append("</details>")
+    return "".join(out)
+
+
+def _convenience_panels(ms: list[dict]) -> list[str]:
+    out = []
+    try:
+        out.append(_load("securax_mission", "governance/mission.py").html_card(ms))
     except Exception:  # noqa: BLE001 - a convenience panel must never fail the cockpit
         pass
-    try:                                                          # what is left to set up (./securax finish), folded
-        h.append(_load("securax_finish", "governance/finish.py").html_card(panel=True))
+    try:
+        out.append(_load("securax_finish", "governance/finish.py").html_card(panel=True))
     except Exception:  # noqa: BLE001 - the checklist is a convenience; it must never fail the cockpit
         pass
-    try:                                                          # names, certificate and site, diagnosed (doc 99), folded
-        h.append(_load("securax_diagnose", "governance/diagnose.py").html_card())
+    try:
+        out.append(_load("securax_diagnose", "governance/diagnose.py").html_card())
     except Exception:  # noqa: BLE001 - a diagnosis panel must never fail the cockpit
         pass
-    if ai:
-        h.append(f"<details class='card panel'><summary><b>AI briefing</b> <span class='muted'>· a draft from your local model, from the numbers on this page; it changes nothing</span></summary><p>{E(ai).replace(chr(10), '<br>')}</p></details>")
-    h.append("<details class='card panel plan'><summary><b>Mission planning</b> <span class='muted'>· Eisenhower, 80/20, posture by area, AI risk, trends (open when you plan, not when you check)</span></summary>")
-    h.append("<div class='card'><h2>Eisenhower: what to do, in what order</h2><div class='muted'>Urgent = a deadline or a measured problem. Important = it moves risk or compliance most.</div><div class='two'>"
-             + quad("do", "Do now", "urgent + important", eis["do"]) + quad("schedule", "Schedule", "important, not urgent", eis["schedule"])
-             + quad("automate", "Automate or delegate", "urgent, less important", eis["automate"]) + quad("park", "Park", "neither", eis["park"]) + "</div></div>")
-    h.append("<div class='card'><h2>80/20: the few themes that close most of the gap</h2><div class='muted'>Weighted by priority across all the compliance and AI-risk maps. Start at the top: the highlighted themes together account for about 80%.</div>")
+    return out
+
+
+def _ai_brief_card(ai: str) -> str:
+    if not ai:
+        return ""
+    return f"<details class='card panel'><summary><b>AI briefing</b> <span class='muted'>· a draft from your local model, from the numbers on this page; it changes nothing</span></summary><p>{E(ai).replace(chr(10), '<br>')}</p></details>"
+
+
+def _planning_cards(par: list[dict], rows: list[dict], eis: dict, maps: dict, hist: list[dict]) -> str:
+    out = ["<details class='card panel plan'><summary><b>Mission planning</b> <span class='muted'>· Eisenhower, 80/20, posture by area, AI risk, trends (open when you plan, not when you check)</span></summary>"]
+    out.append("<div class='card'><h2>Eisenhower: what to do, in what order</h2><div class='muted'>Urgent = a deadline or a measured problem. Important = it moves risk or compliance most.</div><div class='two'>"
+               + quad("do", "Do now", "urgent + important", eis["do"]) + quad("schedule", "Schedule", "important, not urgent", eis["schedule"])
+               + quad("automate", "Automate or delegate", "urgent, less important", eis["automate"]) + quad("park", "Park", "neither", eis["park"]) + "</div></div>")
+    out.append("<div class='card'><h2>80/20: the few themes that close most of the gap</h2><div class='muted'>Weighted by priority across all the compliance and AI-risk maps. Start at the top: the highlighted themes together account for about 80%.</div>")
     for p in par:
-        h.append(f"<div class='row'><div>{'<b>' if p['vital'] else ''}{E(p['theme'])}{'</b>' if p['vital'] else ''} <span class='muted'>({p['count']})</span></div>"
-                 f"<div><div class='bar {'' if p['vital'] else 'low'}' style='width:{p['share'] * 100 * 2.2:.0f}%'></div></div><div class='muted'>{p['cum'] * 100:.0f}%</div></div>")
-    h.append("</div>")
-    h.append("<div class='card'><h2>Cyber-security posture, area by area</h2>" + posture_words(rows)
-             + "<details open class='guide'><summary>How to read the chart and the table</summary><ul>"
-               "<li><b>Each spoke is one area of cyber security</b> (for example “Who gets in”, “Getting back up”). The small grey letters are the standard code (NIST Cybersecurity Framework 2.0, "
-               "which SEBI's CSCRF follows): the first two letters are the function — GV Govern, ID Identify, PR Protect, DE Detect, RS Respond, RC Recover, EV Evolve.</li>"
-               "<li><b>Further from the centre is stronger.</b> 0 = nothing; 1 = intention only; 2 = partly there; <b>3 = the level a regulated organisation should reach</b> (the dashed line); 5 = best practice.</li>"
-               "<li><b>Blue = built</b>: we have made a control, setting or document for that area. <b>Green = proven</b>: an automatic test or a real-container check shows it works. "
-               "Green inside blue means “built but not yet proven”. Blue inside the dashed line means “not built enough”.</li>"
-               "<li><b>What it says about posture:</b> a big green area near the dashed line everywhere = the controls exist and work; dents = the weak areas listed first below.</li>"
-               "<li><b>What it does not say:</b> scores are our own assessment from the SEBI CSCRF map (software items only; duties that belong to the organisation — board, people, contracts — are not scored). "
-               "It is not an audit and not proof you are secure.</li></ul></details>"
-             "<div class='legend'><span><i class='k' style='border-color:var(--mut);border-top-style:dashed'></i>Target (3)</span>"
-             "<span><i class='k' style='border-color:var(--acc)'></i>Built</span><span><i class='k' style='border-color:var(--g)'></i>Proven</span></div>"
-             + radar_svg(rows) + "<h3>All areas, weakest first</h3>" + area_table(rows) + "</div>")
-    h.append("<div class='card'><h2>AI-specific risk</h2><div class='two'>")
+        out.append(f"<div class='row'><div>{'<b>' if p['vital'] else ''}{E(p['theme'])}{'</b>' if p['vital'] else ''} <span class='muted'>({p['count']})</span></div>"
+                   f"<div><div class='bar {'' if p['vital'] else 'low'}' style='width:{p['share'] * 100 * 2.2:.0f}%'></div></div><div class='muted'>{p['cum'] * 100:.0f}%</div></div>")
+    out.append("</div>")
+    out.append("<div class='card'><h2>Cyber-security posture, area by area</h2>" + posture_words(rows)
+               + "<details open class='guide'><summary>How to read the chart and the table</summary><ul>"
+                 "<li><b>Each spoke is one area of cyber security</b> (for example “Who gets in”, “Getting back up”). The small grey letters are the standard code (NIST Cybersecurity Framework 2.0, "
+                 "which SEBI's CSCRF follows): the first two letters are the function — GV Govern, ID Identify, PR Protect, DE Detect, RS Respond, RC Recover, EV Evolve.</li>"
+                 "<li><b>Further from the centre is stronger.</b> 0 = nothing; 1 = intention only; 2 = partly there; <b>3 = the level a regulated organisation should reach</b> (the dashed line); 5 = best practice.</li>"
+                 "<li><b>Blue = built</b>: we have made a control, setting or document for that area. <b>Green = proven</b>: an automatic test or a real-container check shows it works. "
+                 "Green inside blue means “built but not yet proven”. Blue inside the dashed line means “not built enough”.</li>"
+                 "<li><b>What it says about posture:</b> a big green area near the dashed line everywhere = the controls exist and work; dents = the weak areas listed first below.</li>"
+                 "<li><b>What it does not say:</b> scores are our own assessment from the SEBI CSCRF map (software items only; duties that belong to the organisation — board, people, contracts — are not scored). "
+                 "It is not an audit and not proof you are secure.</li></ul></details>"
+               "<div class='legend'><span><i class='k' style='border-color:var(--mut);border-top-style:dashed'></i>Target (3)</span>"
+               "<span><i class='k' style='border-color:var(--acc)'></i>Built</span><span><i class='k' style='border-color:var(--g)'></i>Proven</span></div>"
+               + radar_svg(rows) + "<h3>All areas, weakest first</h3>" + area_table(rows) + "</div>")
+    out.append("<div class='card'><h2>AI-specific risk</h2><div class='two'>")
     for key, title in (("mit-ai-risk", "MIT AI Risk Repository — 7 domains"), ("nist-ai-600-1", "NIST AI 600-1 — 12 generative-AI risks")):
         chips = "".join(f"<span class='chip'><span class='dot {({'supported': 'green', 'partial': 'amber', 'gap': 'red', 'entity': 'unknown', 'na': 'unknown'})[i['status']]}'>"
                         f"{ {'supported': 'proven', 'partial': 'partly', 'gap': 'missing', 'entity': 'org', 'na': 'n/a'}[i['status']] }</span> {E(i['title'].split('(')[0].strip())}</span>" for i in maps[key]["items"])
-        h.append(f"<div><b>{E(title)}</b><div>{chips}</div></div>")
-    h.append("</div><div class='muted'>“proven” = a test or journey demonstrates it for the AI channel; “partly” = something exists, see <code>./securax comply mit-ai-risk</code>.</div></div>")
-    h.append("<div class='card'><h2>Trends</h2><div class='grid'>")
+        out.append(f"<div><b>{E(title)}</b><div>{chips}</div></div>")
+    out.append("</div><div class='muted'>“proven” = a test or journey demonstrates it for the AI channel; “partly” = something exists, see <code>./securax comply mit-ai-risk</code>.</div></div>")
+    out.append("<div class='card'><h2>Trends</h2><div class='grid'>")
     for key, label in (("cov_rbi", "RBI coverage %"), ("cov_cscrf", "SEBI CSCRF coverage %"), ("disk_free_pct", "Free disk %"), ("reds", "Things needing action")):
         vals = [r[key] for r in hist if key in r][-30:]
-        h.append(f"<div class='tile'><div class='muted'>{E(label)}</div><div class='v'>{vals[-1] if vals else '—'}</div>{spark(vals)}</div>")
-    h.append("</div></div>")
-    h.append("</details>")
+        out.append(f"<div class='tile'><div class='muted'>{E(label)}</div><div class='v'>{vals[-1] if vals else '—'}</div>{spark(vals)}</div>")
+    out.append("</div></div>")
+    out.append("</details>")
+    return "".join(out)
+
+
+def render(c: Collector, maps: dict, hist: list[dict], ai: str, now: float, target: float) -> tuple[str, dict]:
+    ms, reds, ambs, overall = _summary(c)
+    rows = radar_scores(maps["cscrf"], target)
+    bl = backlog(maps)
+    par = pareto(bl)
+    eis = eisenhower(c.metrics, bl)
+    # Only what the person can act on today: a vital sign with its action. Gap-backlog items are work for the builders and stay in Mission planning.
+    nxt = [i for i in eis["do"] + eis["schedule"] if i["src"] == "vital sign"]
+    headline = _headline(overall, reds, ambs)
+    stamp = time.strftime("%d %b %Y %H:%M %Z", time.localtime(now))
+    h = [f"<!doctype html><html lang='en'><head><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1,viewport-fit=cover'><title>SecuRAX Cockpit</title><style>{CSS}</style></head><body><main>"]
+    # Dark-cockpit rule (Airbus, mission control): when everything is normal nothing is lit. Only what is abnormal is shown;
+    # the nominal readings and the planning views stay one click away, so the eye goes straight to what needs a decision.
+    lamps = _lamps(now, reds, ambs, ms)
+    extra = lamps[3:]
+    # The cockpit, laid out like a flight deck (doc 37, section 2): ONE master lamp and the headline; one thing
+    # to do, the rest under Later; a row of primary instruments that stay grey while nominal and light up only when not; the other lit lamps as
+    # small annunciators; every detail folded into a panel with its status on its one line.
+    h.append(_head_card(overall, headline, stamp, nxt))
+    gov = _govern_card()
+    h.append(_instruments(ms, gov))
+    if extra:
+        h.append("<div class='lit'>" + "".join(f"<span class='ann {k}'><b>{v}</b> {E(t)}</span>" for k, v, t in extra) + "</div>")
+    h.append(_systems_card(ms, reds, ambs))
+    if gov:
+        h.append(gov[0])
+    h.extend(_convenience_panels(ms))
+    h.append(_ai_brief_card(ai))
+    h.append(_planning_cards(par, rows, eis, maps, hist))
     h.append("<div class='card'><details><summary>How to read this, and its limits</summary><ul>"
              "<li>It shows only what this machine can see. If something is not running, its tile says “No data”, not “OK”.</li>"
              "<li>Compliance numbers are the share of <i>software-addressable</i> requirements that are demonstrated or partly met. Board, people, contracts and sites are the organisation’s and are never counted.</li>"

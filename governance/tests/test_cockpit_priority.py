@@ -1,4 +1,5 @@
-"""The cockpit's advice order: the most severe item comes first, so "next 3" is the real next 3."""
+"""The cockpit's advice order: the most severe item comes first, so the one thing to do next is the real next thing."""
+import re
 import sys
 from pathlib import Path
 
@@ -53,7 +54,7 @@ def test_the_page_renders_when_the_gateway_reports_allowance_callers(monkeypatch
 
 
 def test_the_page_is_a_dark_cockpit(monkeypatch):
-    # One master lamp, at most three actions, instruments up front, and every detail folded away.
+    # One master lamp, one Do-next action (the rest under Later), instruments up front, and every detail folded away.
     import urllib.request
 
     def offline(*a, **k):
@@ -61,12 +62,91 @@ def test_the_page_is_a_dark_cockpit(monkeypatch):
     monkeypatch.setattr(urllib.request, "urlopen", offline)
     html, _d, _c = cockpit.build(fast=True)
     head = html.split("class='inst'", 1)[0]
-    assert head.count("class='master") == 1 and head.count("<li") <= 3
+    assert head.count("class='master") == 1
+    assert re.sub(r"<details class='later'>.*?</details>", "", head, flags=re.S).count("<li") <= 1
     assert "<details class='card panel' id='govern'>" in html and "<details class='card panel' id='systems'>" in html
     assert "<details open class='card panel'" not in html and "<script" not in html
     bare = html.lower().replace("http://www.w3.org", "")
     assert "http://" not in bare and "https://" not in bare          # the cockpit names no external URL (sandbox cockpit_page)
     assert "gap backlog" not in head and "Implement" not in head     # builders' backlog stays in Mission planning, never in "do next"
+
+
+def test_one_do_next_action_and_the_rest_under_later(monkeypatch):
+    # One open action: with three red vital signs, exactly one "Do next" item, and "Later (2)" folds the other two.
+    import urllib.request
+
+    def offline(*a, **k):
+        raise OSError("offline in tests")
+    monkeypatch.setattr(urllib.request, "urlopen", offline)
+
+    def three_red(self):
+        for i, lbl in enumerate(["Disk full", "Backup too old", "Unpatched software"]):
+            self.add(f"red{i}", lbl, "KRI", "Protect", "critical", "red", "why", f"Fix {lbl}", f"./securax fix {i}", urgent=True, importance=3)
+    monkeypatch.setattr(cockpit.Collector, "run", three_red)
+    html, _d, _c = cockpit.build(fast=True)
+    head = html.split("class='inst'", 1)[0]
+    assert "<ol class='do'>" in head and "Later (2)" in head
+    assert re.sub(r"<details class='later'>.*?</details>", "", head, flags=re.S).count("<li") == 1
+
+
+def _quiet_lamps(monkeypatch):
+    # The lamp helpers read files and the network; stub them so the lamp logic itself is what a test asserts.
+    monkeypatch.setattr(cockpit, "_late_risks", lambda: 0)
+    monkeypatch.setattr(cockpit, "_stopped_ai", lambda: [])
+    monkeypatch.setattr(cockpit, "_allowance_near", lambda: [])
+    monkeypatch.setattr(cockpit, "_share_light", lambda now: None)
+    monkeypatch.setattr(cockpit, "_prune_items", lambda: [])
+    monkeypatch.setattr(cockpit, "_jewels_and_continuity", lambda: ([], []))
+
+
+def test_headline_amber_is_singular_for_one_thing():
+    assert "1 thing to schedule" in cockpit._headline("amber", [], [_m("a", "amber", 2)])
+
+
+def test_lamps_nominal_count_is_the_number_of_green_metrics(monkeypatch):
+    _quiet_lamps(monkeypatch)
+    ms = [{"id": "a", "status": "green"}, {"id": "b", "status": "green"}]
+    nominal = [l for l in cockpit._lamps(0.0, [], [], ms) if l[2] == "Nominal"][0]
+    assert nominal[1] == 2
+
+
+def test_allowance_near_the_line_is_a_caution_not_a_warning(monkeypatch):
+    _quiet_lamps(monkeypatch)
+    monkeypatch.setattr(cockpit, "_allowance_near", lambda: [0.9])
+    lamp = [l for l in cockpit._lamps(0.0, [], [], []) if "AI allowance" in l[2]][0]
+    assert lamp[0] == "caut"
+
+
+def test_allowance_fully_used_is_a_warning(monkeypatch):
+    _quiet_lamps(monkeypatch)
+    monkeypatch.setattr(cockpit, "_allowance_near", lambda: [1.5])
+    lamp = [l for l in cockpit._lamps(0.0, [], [], []) if "AI allowance" in l[2]][0]
+    assert lamp[0] == "warn"
+
+
+def test_crown_jewel_lamp_names_the_first_jewel(monkeypatch):
+    _quiet_lamps(monkeypatch)
+    monkeypatch.setattr(cockpit, "_jewels_and_continuity", lambda: ([{"priority": "DO NOW", "name": "Key vault", "command": "./securax jewels"}], []))
+    assert any("Crown jewels exposed" in l[2] and "Key vault" in l[2] for l in cockpit._lamps(0.0, [], [], []))
+
+
+def test_later_folds_extra_actions_to_at_most_twelve():
+    nxt = [{"title": f"t{i}", "cmd": "", "action": "a"} for i in range(14)]
+    assert "Later (12)" in cockpit._head_card("red", "headline", "stamp", nxt)
+
+
+def test_govern_gauge_is_red_at_maturity_one():
+    assert "gauge red" in cockpit._instruments([], ("<div id='govern'></div>", 1))
+
+
+def test_systems_summary_counts_nominal_metrics():
+    m = {**_m("a", "green", 2), "kind": "KPI", "area": "Protect"}
+    out = cockpit._systems_card([m], [], [])
+    assert "1 nominal" in out
+
+
+def test_ai_brief_renders_a_folded_panel():
+    assert "<details" in cockpit._ai_brief_card("hello")
 
 
 def test_an_instrument_shows_its_reading_whole_and_its_detail_small():

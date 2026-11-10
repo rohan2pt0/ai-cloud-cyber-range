@@ -1,7 +1,7 @@
 # 37 · Cockpit, storage growth, patching, impact
 
 <!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
-> **Status: 🟢 Built.** A dark cockpit: one master lamp, at most three actions, six primary instruments, every detail folded. `cockpit_page` journey + priority and layout tests. [What the lights mean](../index.md#the-status-lights)
+> **Status: 🟢 Built.** A dark cockpit: one master lamp, one action with the rest under Later, six primary instruments, every detail folded. `cockpit_page` journey + priority and layout tests. [What the lights mean](../index.md#the-status-lights)
 <!-- status:end -->
 
 For the person who does **not** want to read logs: one page that says whether things are fine, one report that says where the files are going, one safe way to update, and one command that says what a change can hurt. None of it adds a service, a port, a script or a login.
@@ -11,7 +11,7 @@ Writes `portal/cockpit.html` (served at `http://localhost:8088/portal/cockpit.ht
 
 | Section | What it answers | Where the numbers come from |
 |---|---|---|
-| Headline + *Do next* | Is it OK, and what are the three things to do? | worst status across the vital signs; urgent+important items first |
+| Headline + *Do next* | Is it OK, and what is the one thing to do (the rest under *Later*)? | worst status across the vital signs; urgent+important items first |
 | **Vital signs** (KPI = doing its job, KRI = risk building up) | services healthy, gateway answering, who may call it, where sensitive data may go, key expiry, latest backup, free disk, days until full, oldest running software, threat-data age, incident clocks, requests/refusals in 24 h, engineering promises, compliance coverage | docker, the gateway's `/healthz` and audit log, `.env`, `storage`, `incident`, `fitness`, the maps |
 | **Eisenhower** | urgent × important → *Do now / Schedule / Automate / Park* | urgent = a deadline or measured problem; important = moves risk or compliance most |
 | **80/20** | which few themes close most of the weighted gap | all maps' backlogs weighted by priority (gap 1.5×), grouped by theme; the highlighted bars are the first ~80 % |
@@ -25,7 +25,7 @@ Writes `portal/cockpit.html` (served at `http://localhost:8088/portal/cockpit.ht
 A fighter or shuttle cockpit stays dark while all is well, so the pilot sees at once the one thing that is not. The page follows the same rules:
 
 1. **One master lamp** at the top: *ALL CLEAR*, *WATCH*, *ACT* or *NO DATA*, with one headline.
-2. **At most three actions** under it, each with its command.
+2. **One action** under it, with its command, the rest folded under *Later*.
 3. **Six primary instruments** in one row: backup, disk, backup encryption, HTTPS, the gateway and SEBI CSCRF coverage, plus Govern. A nominal instrument stays grey; only a problem lights up.
 4. **Lit annunciators** only for other problems. Nothing is listed when nothing is wrong.
 5. **Everything else is folded**, each panel with a one-line summary: Systems (every vital sign), Govern, Setup, the AI briefing, Mission planning.
@@ -65,9 +65,9 @@ What the safe update does **not** do: roll back *data* (a code update does not t
 ## Following one request
 Every AI request carries a W3C `traceparent` from the caller through the gateway to the router (a valid inbound one is continued, otherwise a trace is started), is echoed in the response with `X-Request-ID`, and is named in the audit line (`trace_id`). Any OpenTelemetry-compatible tool can follow it; no SDK or dependency was added.
 
-## How "Do now" and "Next 3" are ordered
+## How "Do next" and "Later" are ordered
 
 Inside every Eisenhower quadrant the order is: **red before amber**, then **more important first**, then a **live vital
-sign before a backlog item**, and for backlog items **high before medium**. "Next 3" reads the top of Do now, then
-Schedule, so this order is the advice. A gap reported by two regulatory maps appears once.
+sign before a backlog item**, and for backlog items **high before medium**. "Do next" is the single top item of Do now,
+then Schedule; the rest (at most 12) is folded under "Later". A gap reported by two regulatory maps appears once.
 Tests: `governance/tests/test_cockpit_priority.py`.

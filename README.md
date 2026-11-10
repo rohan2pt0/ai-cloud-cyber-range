@@ -136,9 +136,9 @@ This list is generated from [`features.json`](features.json); the Command Center
 - A system lives in the calendar: a new core principle (`in-the-calendar`), and the family preventive calendar is in it
 - Vantage's review rhythm in the calendar
 - Every control a thumb can hit is now at least 44 x 44 px, in every app (ui-rules-lint, slice 2)
+- The cockpit now shows one action, not three (one-open-action, slice 1)
 - The owner's UI rules are now checked, not just written (ui-rules-lint, slice 1)
 - The site's menu bar at laptop width
-- Two new core principles: `human-first` and `whole-view`
 
 **Release 0.3.0 - 2026-10-22:**
 
