@@ -28,9 +28,11 @@ def test_pages_on_the_standard_carry_the_shared_tokens_and_basics():
         assert f"min-height:{STD['rules']['min_target_px']}px" in page, rel
 
 
-def test_the_command_center_shows_three_actions_at_most_and_folds_the_rest():
+def test_the_command_center_shows_one_open_action_and_folds_the_rest():
+    # one-open-action: one card open, the rest under "Later (n)" (design.json rules)
     hub = (ROOT / "guiding-map" / "hub.html").read_text("utf-8")
-    assert f"all.slice(0, {STD['rules']['max_actions_shown']})" in hub
+    assert STD["rules"]["max_actions_shown"] == 1 and STD["rules"]["rest_folded_as"] == "Later (n)"
+    assert "var one = all[0], later = all.slice(1);" in hub and "<summary>Later ('+later.length" in hub
     for fold in ('id="everything"', 'id="addons"', 'id="healthBox"'):
         tag = hub[hub.index(fold) - 40: hub.index(fold) + 40]
         assert "<details" in tag and " open" not in tag, fold
@@ -381,3 +383,13 @@ def test_build_the_system_is_core_and_agents_have_the_loop():
     for step in ("**Cue:**", "**Smallest step:**", "**Visible reward:**", "**Environment:**", "**Feedback:**", "**Constraint:**"):
         assert step in agents, f"the system loop names {step}"
     assert "**Decide and recommend" in agents
+
+
+def test_one_open_action_is_core_and_held_on_every_screen():
+    # one-open-action (owner, 2026-11-10): one primary in view, chosen by risk, the rest folded under "Later (n)".
+    princ = {p["id"]: p for p in json.loads((ROOT / "governance" / "principles.json").read_text("utf-8"))["principles"]}
+    assert princ["one-open-action"]["core"] is True and "Later" in princ["one-open-action"]["text"]
+    agents = (ROOT / "AGENTS.md").read_text("utf-8").split("## 1. Pick the tier")[0]
+    assert "(`one-open-action`)" in agents and "test39.js" in agents
+    pkg = (ROOT / "guiding-map" / "package.json").read_text("utf-8")
+    assert " test39 " in pkg, "npm test runs the one-open-action test"

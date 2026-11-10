@@ -55,8 +55,12 @@
           || String((when(r, x) || {}).d || "9").localeCompare(String((when(r, y) || {}).d || "9"));
       });
       var open = a.filter(function (x) { return isOpen(r, x); }), shown = showAll ? a : open;
+      // one-open-action: a long list gets "Show only the vital few (80/20)": the top fifth by risk (at least three)
+      var long = !showAll && open.length > 7, vital = long && K.get("regVital", {})[r.id];
+      if (vital) shown = open.slice(0, Math.max(3, Math.ceil(open.length / 5)));
       var h = "<h2>" + K.esc(r.label) + "</h2>" + (r.intro ? '<p class="muted">' + K.esc(r.intro) + "</p>" : "");
       h += K.card("", (shown.length ? "<ul class='list'>" + shown.map(function (x) { return line(r, x); }).join("") + "</ul>" : "<p>Nothing open.</p>")
+        + (long ? '<button class="ghost" data-a="regVital" data-x="' + K.esc(r.id) + '" aria-pressed="' + !!vital + '">' + (vital ? "Show all " + open.length + " open" : "Show only the vital few (80/20)") + "</button>" : "")
         + (a.length > open.length ? '<button class="ghost" data-a="regAll" data-x="' + K.esc(r.id) + '">' + (showAll ? "Hide closed" : "Show closed (" + (a.length - open.length) + ")") + "</button>" : ""));
       h += K._regNew === r.id ? K.card("New " + K.esc(r.item || "item"), form(r, null)) : '<button class="primary" data-a="regNew" data-x="' + K.esc(r.id) + '">Add a ' + K.esc(r.item || "item") + "</button>";
       if (r.guide) h += K.card("How to use it well", "<ul class='list'>" + r.guide.map(function (g) { return "<li>" + K.esc(g) + "</li>"; }).join("") + "</ul>");
@@ -87,6 +91,7 @@
       regNew: function (rid) { K._regNew = rid; K._regEdit = null; K.render(); },
       regCancel: function () { K._regNew = K._regEdit = null; K.render(); },
       regAll: function (rid) { K._regAll = K._regAll === rid ? null : rid; K.render(); },
+      regVital: function (rid) { var v = K.get("regVital", {}); v[rid] = !v[rid]; K.set("regVital", v); K.render(); },
       regEdit: function (x) { K._regEdit = K._regEdit === x ? null : x; K._regNew = null; K.render(); },
       regSave: function (x) {
         var p = String(x).split("|"), r = reg(p[0]); if (!r) return;
