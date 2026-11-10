@@ -163,7 +163,8 @@ def test_every_kit_app_stays_store_ready():
 def test_a_translation_overlay_may_change_words_but_never_structure():
     e = json.loads((ROOT / "guiding-map" / "kit" / "editions" / "vantage.json").read_text("utf-8"))
     good = {"terms": {"today": "आज"}, "modules": {"rituals": {"items": [{"id": "brief", "name": "x"}]},
-                                                 "registers": [{"id": "risks", "label": "x", "fields": [{"id": "area", "label": "x"}]}]}}
+                                                 "registers": [{"id": "risks", "label": "x", "fields": [{"id": "area", "label": "x"}]}],
+                                                 "playbooks": {"items": [{"id": "first90", "title": "x", "when": "x"}]}}}
     assert ok.overlay_problems(e, good) == []
     bad = {"modules": {"registers": [{"id": "risks", "title": "x", "fields": [{"id": "area", "options": ["x"]}, {"id": "treatment", "type": "text"}]}]},
            "nope": "x"}
@@ -237,3 +238,25 @@ def test_vantage_overlays_translate_the_top_words_rituals_wheel_and_registers():
                 for k in ("hint", "placeholder"):
                     if k in ef:
                         assert devanagari(gf.get(k)), (lang, "registers", rid, ef["id"], k)
+
+
+def test_vantage_overlays_translate_the_playbooks():
+    def devanagari(s):
+        return isinstance(s, str) and any("\u0900" <= c <= "\u097f" for c in s)
+
+    e = json.loads((ROOT / "guiding-map" / "kit" / "editions" / "vantage.json").read_text("utf-8"))
+    plays = {p["id"]: p for p in e["modules"]["playbooks"]["items"]}
+    for lang in ("hi", "mr"):
+        ov = json.loads((ROOT / "guiding-map" / "kit" / "i18n" / "editions" / f"vantage.{lang}.json").read_text("utf-8"))
+        assert not ok.overlay_problems(e, ov), lang
+        pb = ov["modules"]["playbooks"]
+        assert devanagari(pb.get("intro")), (lang, "playbooks.intro")
+        got = {p["id"]: p for p in pb["items"]}
+        assert set(got) == set(plays), lang
+        for pid, ep in plays.items():
+            gp = got[pid]
+            for k in ("title", "when"):
+                assert devanagari(gp.get(k)), (lang, "playbooks", pid, k)
+            assert len(gp["steps"]) == len(ep["steps"]), (lang, "playbooks", pid)
+            for line in gp["steps"]:
+                assert devanagari(line), (lang, "playbooks", pid, line)
