@@ -351,3 +351,16 @@ def test_alerts_are_calm_readable_and_said_once():
     design = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(design)
     assert all(f".alert-{n}{{" in design.css() for n in PREM["alerts"]["kinds"]), "every generated page can show the four alerts"
+
+
+def test_human_first_and_whole_view_are_core_and_tell_agents_what_to_do():
+    princ = {p["id"]: p for p in json.loads((ROOT / "governance" / "principles.json").read_text("utf-8"))["principles"]}
+    for pid in ("human-first", "whole-view"):
+        assert princ[pid]["core"] is True, f"{pid} reaches every app"
+    assert "Never trick anyone" in princ["human-first"]["text"] and "delete before adding" in princ["whole-view"]["text"]
+    agents = (ROOT / "AGENTS.md").read_text("utf-8").split("## 1. Pick the tier")[0]
+    assert "(`human-first`)" in agents and "(`whole-view`)" in agents and "**360 review**" in agents
+    for q in ("**Person:**", "**First principles:**", "**Whole system:**", "**Craft:**", "**Proof:**", "**Ethics:**"):
+        assert q in agents, f"the 360 review asks {q}"
+    doc = (ROOT / "docs" / "securax" / "100-DESIGN-STANDARD.md").read_text("utf-8")
+    assert "## 6c. Design for the human mind" in doc and "No dark patterns" in doc

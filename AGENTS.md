@@ -33,6 +33,23 @@ The principles behind it:
   the number of models only goes up. Doc 133 has the template.
 - **Enterprise grade (`enterprise-grade`):** design every component as if for the largest organisations. Section 7 is the review to run
   FIRST in every session and before every merge, and how to spend a session's room.
+- **Built for a human mind (`human-first`):** design for how people really behave, not how a spec says they should. People
+  judge in seconds by the look (first impressions colour how usable and trustworthy everything else seems), then stay or leave
+  by how it feels to use. Apply the vital few, in this order, to anything a person sees:
+  1. **First seconds:** one clear promise, one obvious action, the premium look, useful in under a second, nothing to read first.
+  2. **First week:** the right choice is the default; it works as a guest; it is already partly done for them (example data
+     they correct); one tap, never a form.
+  3. **Every day:** progress they can see; end each visit on a small win; recall a slip once and kindly, then help.
+  4. **Never against them:** invite, never command (pressure makes people resist: "Mandatory" loses, "the floor is enough" wins);
+     give them the choice and the off switch; no guilt, no fake urgency, no hidden costs, no dark patterns.
+- **See the whole (`whole-view`):** think like the great generalists. Before you build, run the **360 review** on the change and
+  write the answers in the PR:
+  1. **Person:** who uses this, in what moment and mood, and what do they feel at each step? (`human-first`)
+  2. **First principles:** what is the real need? Question the requirement, delete a part, simplify, and only then speed up and automate.
+  3. **Whole system:** what else does it touch: other apps, data, identity, failure, cost, the next ten years? (`./securax impact`)
+  4. **Craft:** is the unseen part (errors, empty states, slow network, dark mode, a screen reader) as finished as the demo?
+  5. **Proof:** which test, audit or number shows it worked for a person, not just that it runs?
+  6. **Ethics:** would we be proud to show the person exactly how and why it nudges them?
 - **Small wins, shown:** progress you can see keeps people going.
 - **Least effort for the person:** the estate does the remembering, the checking and the reminding.
 - **Start as an amoeba, carry the DNA (`amoeba`):** ship the simplest living thing that helps today — one person, no

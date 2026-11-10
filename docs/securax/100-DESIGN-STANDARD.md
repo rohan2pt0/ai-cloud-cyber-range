@@ -163,6 +163,46 @@ never colour alone; underlined links; 44 px targets and the main action near the
 actions; bottom sheets, not centred dialogs; dark grey, never black; dashboards that lead with one number, with a period and a change,
 bars from zero, sorted bars instead of pies, figures right-aligned.
 
+## 6c. Design for the human mind (principles `human-first` and `whole-view`, 2026-11-10)
+
+Everything here is built for people, so their psychology is a design input, not an afterthought. A person judges in two
+stages: **first by the look** (a study flashed web pages for 50 ms and the verdicts matched those given after longer viewing;
+that first feeling then colours how usable and trustworthy the rest seems), **then by the use** (speed, few steps, nothing to
+learn, nothing that nags). The look earns the second visit; the use earns the hundredth. The vital few levers, with where the
+estate already uses them:
+
+| Stage | Lever (the effect behind it) | In the estate |
+|---|---|---|
+| First seconds | Beauty reads as quality (aesthetic-usability) | the premium language (section 6b) |
+| First seconds | Fewer choices, faster decisions (Hick's law) | one action per screen; three actions at most in the Command Center |
+| First seconds | Under about 0.4 s feels instant | offline-first pages; the one-second target in the premium review |
+| First week | People keep the default (default effect) | guest first; best defaults; the one-tap capture |
+| First week | A started task gets finished (endowed progress) | example numbers they correct, not a blank form |
+| First week | What you shaped, you value (IKEA effect) | "Make them mine"; their own goals in three taps |
+| Every day | Behaviour = motivation × ability × a prompt (Fogg) | the floor version of each habit; one gentle reminder |
+| Every day | Visits are remembered by their peak and their end (peak-end) | end on a small win; the daily three ring |
+| Every day | Visible progress keeps people going (small wins) | `./securax progress`, streaks, the vitals |
+| Always | Pressure makes people push back (reactance, the root of "reverse psychology") | invite, never command: "the floor is enough", not "mandatory" |
+| Always | Losses weigh about twice as much as gains (loss aversion) | used only for real risk (a scam, a lapsed policy), never to guilt |
+
+**Guardrails.** No dark patterns: no fake scarcity or urgency, no guilt, no confirm-shaming, no hidden costs, no hard-to-find
+off switch. Every nudge passes the test of showing the person exactly how and why it nudges them.
+
+**The 360 review** (AGENTS.md section 0) is how `whole-view` is applied, in the spirit of the great generalists. Leonardo
+studied the whole subject before drawing a part. Jobs started from the experience and worked back to the technology, and
+finished the unseen side of the box. Musk's sequence is: question the requirement, delete the part, simplify, then speed up,
+then automate. Before building, answer six questions in the PR:
+1. the person;
+2. first principles;
+3. the whole system;
+4. craft, including the unseen;
+5. proof;
+6. ethics.
+
+Sources, cited by reference: Lindgaard and others, *Behaviour & Information Technology* (2006), on 50 ms first impressions
+(their participants had no task, so use still decides whether people stay); Brehm (1966) on reactance; Kahneman's peak-end
+findings; Fogg's behaviour model; Thaler and Sunstein on defaults.
+
 ## 7. What we deliberately did not do
 
 - **No framework migration.** The pages stay plain HTML that works offline and on any phone (doc 98).
