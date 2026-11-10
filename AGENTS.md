@@ -50,6 +50,15 @@ The principles behind it:
   4. **Craft:** is the unseen part (errors, empty states, slow network, dark mode, a screen reader) as finished as the demo?
   5. **Proof:** which test, audit or number shows it worked for a person, not just that it runs?
   6. **Ethics:** would we be proud to show the person exactly how and why it nudges them?
+- **A system lives in the calendar (`in-the-calendar`):** anything that repeats (a ritual, a review, a check-up, a renewal) gets
+  "Add to calendar" next to it, made from the ONE registry in `guiding-map/ops.js` (`CALENDAR`), never a one-off file. The contract,
+  so a later version never clashes with an earlier one:
+  - an item's id, and so its UID, is permanent: never delete or reuse one; retire it (`retired` date: UNTIL plus CANCELLED);
+  - its start date is fixed, not "next from today";
+  - raise its `v` (SEQUENCE) whenever its time, rule or wording changes;
+  - tell the person to import into the same calendar each time (apps match by UID per calendar).
+
+  `guiding-map/tests/test38.js` lists every id ever handed out and fails if one disappears.
 - **Small wins, shown:** progress you can see keeps people going.
 - **Least effort for the person:** the estate does the remembering, the checking and the reminding.
 - **Start as an amoeba, carry the DNA (`amoeba`):** ship the simplest living thing that helps today — one person, no

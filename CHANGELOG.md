@@ -8,6 +8,9 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
+### Added
+- **A system lives in the calendar: a new core principle (`in-the-calendar`), and the family preventive calendar is in it.** Every repeating step is made from one registry, and calendar files now follow a contract so a later version never clashes with an earlier one: permanent event ids, fixed start dates (not moved to today on each export), a version on each event, and retired steps ended cleanly (an end date plus cancelled) instead of left behind. The Family Preventive Calendar gets "Add the four to my calendar" (first Monday of each quarter, what to do written inside), and its shouted "set reminders NOW" is now an invitation. Semicolons in event text are now escaped properly. `test38.js` fails if an event id ever disappears.
+
 ### Fixed
 - **The owner's UI rules are now checked, not just written (ui-rules-lint, slice 1).** The site audit measures six rules in a real browser on every page, both themes, laptop and phone: 44 px tap targets, 16 px inputs, the right keyboard for number, phone and e-mail fields, body line height, no pure-black backgrounds, and underlined links in running text. Any break fails the audit. Its first run found the AI-risk check's Yes/No answers at 26 px tall; they are now 44 px, with the chosen answer tinted.
 - **The site's menu bar at laptop width.** The brand's "by …" byline ran under "How it works". The brand no longer shrinks above 960 px, the byline shows only where it fits (1360 px and up), and the menu tightens slightly between 961 and 1199 px. `website/tests/ui_audit.py` now fails if anything in the visible menu bar runs under the brand.

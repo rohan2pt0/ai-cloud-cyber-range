@@ -131,6 +131,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- A system lives in the calendar: a new core principle (`in-the-calendar`), and the family preventive calendar is in it
 - The owner's UI rules are now checked, not just written (ui-rules-lint, slice 1)
 - The site's menu bar at laptop width
 - Two new core principles: `human-first` and `whole-view`
@@ -138,7 +139,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - `./securax progress` now shows the first two delivery keys, read from git alone
 - The product site is on the design standard, held by a real-browser audit
 - The lifecycle doc now says plainly, with dates, when the forest stage and the private cloud are built
-- The core database moves to PostgreSQL 18 without the start-up failure a plain version bump would cause
 
 **Release 0.3.0 - 2026-10-22:**
 

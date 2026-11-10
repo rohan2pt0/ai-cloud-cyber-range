@@ -36,7 +36,7 @@ setTimeout(()=>{
   ok("the OKRs tab leads with the check-in and a one-tap progress update", txt().includes("Quarterly check-in done") && txt().includes("Update progress (taps)"));
   ok("the OKR guidance says monthly, not weekly", !txt().includes("grade weekly") && txt().includes("once a month"));
   // calendar file
-  const ics=w.gmCalendarICS();
+  const ics=w.gmCalendarICS("rhythm");
   ok("calendar: five repeating events", (ics.match(/BEGIN:VEVENT/g)||[]).length===5 && (ics.match(/RRULE:/g)||[]).length===5);
   ok("calendar: quarterly event on the first Saturday of Jan/Apr/Jul/Oct", ics.includes("RRULE:FREQ=YEARLY;BYMONTH=1,4,7,10;BYDAY=1SA"));
   ok("calendar: monthly review is the After-Action Review trigger", /SUMMARY:Monthly review: money \+ After-Action Review/.test(ics));
