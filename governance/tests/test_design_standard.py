@@ -226,3 +226,21 @@ def test_the_hosted_door_is_on_the_premium_language_and_may_load_its_serif(tmp_p
     res = pub.publish(tmp_path)
     assert res["command"] == [], res["command"]
     assert (tmp_path / "command" / "serif.woff2").read_bytes() == (ROOT / PREM["type"]["display_font_file"]).read_bytes()
+
+
+def test_the_life_os_today_is_on_the_premium_language_and_follows_the_phone():
+    # design-premium-showcase: the Life OS keeps its own token names but takes the premium values, in a layer loaded last.
+    ops = (ROOT / "guiding-map" / "ops.js").read_text("utf-8")
+    layer = ops[ops.index("function premiumCSS()"):ops.index("function greetHTML()")]
+    for theme, sel in (("light", ":root{"), ("dark", "html[data-theme=dark]{")):
+        t = PREM["tokens"][theme]
+        block = layer[layer.index(sel):]
+        block = block[:block.index("}")]
+        for mine, std in (("--bg", "--bg"), ("--card", "--card"), ("--text", "--ink"), ("--muted", "--mut"), ("--border", "--line")):
+            assert f"{mine}:{t[std]}" in block, f"Life OS {theme} {mine} should be {t[std]}"
+    assert "premiumCSS();" in ops and "document.head.appendChild(st)" in layer, "the layer is (re)appended last"
+    page = (ROOT / "guiding-map" / "index.html").read_text("utf-8")
+    assert 'S.theme="dark"' not in page.replace(" ", ""), "no forced dark default: the theme follows the phone"
+    assert "prefers-color-scheme: dark" in page and "S.themeChosen=true" in page
+    # red means danger only: progress tiles never take a status colour
+    assert 'var prog = v.t === "today" || v.t === "stack";' in ops and "color:var(--text);line-height:1.15" in ops

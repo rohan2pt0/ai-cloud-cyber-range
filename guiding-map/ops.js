@@ -1466,11 +1466,16 @@
   }
   function vitalsHTML() {
     var h = '<div id="gmVitals">';
+    // Premium calm (design-premium-showcase): numbers stay neutral ink. Progress (Today, Stack) is never 'danger'; a money
+    // figure in its risk band gets a small dot AND a word in its accessible name, so red only ever means danger.
     vitals().forEach(function (v) {
-      h += '<div role="button" tabindex="0" aria-label="' + esc(v.l) + ': ' + esc(v.v) + '. Open the tab that changes this."'
-        + ' onclick="goTab(\'' + v.t + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();goTab(\'' + v.t + '\');}">'
-        + '<div style="font-size:15px;font-weight:800;color:' + v.c + ';line-height:1.15">' + v.v + '</div>'
-        + '<div style="font-size:8.5px;letter-spacing:.5px;text-transform:uppercase;color:var(--muted);font-weight:700;margin-top:2px">' + v.l + '</div></div>';
+      var prog = v.t === "today" || v.t === "stack";
+      var st = prog ? "" : v.c === "var(--red)" ? "low" : v.c === "var(--amber)" ? "watch" : "";
+      var dot = st ? '<span aria-hidden="true" style="display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle;background:' + v.c + '"></span>' : "";
+      h += '<div role="button" tabindex="0" aria-label="' + esc(v.l) + ': ' + esc(v.v) + (st ? " (" + st + ")" : "") + '. Open the tab that changes this."'
+        + ' onclick="goTab(\'' + v.t + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();goTab(\'' + v.t + '\');}"' + (st ? ' data-state="' + st + '"' : "") + '>'
+        + '<div class="gm-vv" style="font-size:15px;white-space:nowrap;font-weight:600;color:var(--text);line-height:1.15;font-variant-numeric:tabular-nums">' + dot + v.v + (st === "low" ? '<span style="font-size:11px;font-weight:600;color:var(--muted);margin-left:3px">low</span>' : "") + '</div>'
+        + '<div style="font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-top:3px;white-space:nowrap">' + v.l + '</div></div>';
     });
     return h + '</div>';
   }
@@ -3431,9 +3436,9 @@
   function setupStripHTML() {
     var example = (window.P && P.example) || exampleCount() > 0;
     if (!example || G("gm_quick_done", false) || G("gm_quick_snooze", "") > ymd()) return "";
-    return '<div style="background:var(--amberBg);border:1px solid var(--amber);border-radius:12px;padding:11px 12px;margin-bottom:12px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">'
+    return '<div class="gm-setup" style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:16px;padding:16px;margin-bottom:16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
       + '<div style="flex:1;min-width:180px;font-size:12px;color:var(--text);line-height:1.5"><b>These are example numbers.</b> Four quick questions make them yours (about a minute). Everything else is optional.</div>'
-      + '<button class="btn-sm" style="background:var(--gold);color:#0d1f35;font-weight:800" onclick="gmQuickSetup()">Start</button>'
+      + '<button class="btn-sm gm-action" style="background:var(--text);color:var(--bg);font-weight:600;box-shadow:inset 0 0 0 1px var(--gold)" onclick="gmQuickSetup()">Make them mine</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--muted)" onclick="gmQuickLater()">Later</button></div>';
   }
 
@@ -4386,6 +4391,34 @@
       + "@media (max-width:700px){.hero{display:none}.gm-d3 .row{flex-direction:column}.gm-d3 .tile{min-height:0;padding:12px}.gm-d3 .fl{font-size:12.5px}}";
     document.head.appendChild(st);
   }
+  /* ── Premium language (design-premium-showcase; governance/design.json "premium") ────────────────────────────
+     Obsidian and ivory: dark grey (never black) in dark, warm ivory in light; gold kept as leaf for the one action.
+     Loaded LAST and re-appended on every frame, so it wins over the older layers without rewriting them. A test keeps
+     these values equal to design.json. */
+  function premiumCSS() {
+    var st = document.getElementById("gmPremiumCss");
+    if (!st) {
+      st = document.createElement("style"); st.id = "gmPremiumCss";
+      st.textContent = ""
+        + ":root{--bg:#f6f3ee;--card:#fffdf9;--cardAlt:#f1ece3;--text:#1b1a18;--muted:#5f5b54;--border:#e3ddd2;--navy:#1b1a18;--shadow:0 1px 1px rgba(27,26,24,.04),0 8px 24px rgba(27,26,24,.06)}"
+        + "html[data-theme=dark]{--bg:#18181b;--card:#222226;--cardAlt:#2b2b30;--text:#f3efe7;--muted:#aba69d;--border:#38373d;--navy:#1b1a18;--shadow:none}"
+        + "body{background:var(--bg)}"
+        + "header{background:var(--navy);border-bottom:1px solid rgba(255,255,255,.06)}"
+        + ".gm-greet h2{font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:32px;line-height:1.1;letter-spacing:-.01em}"
+        + ".gm-greet p{font-size:14px;margin-top:6px}"
+        + ".gm-d3{border-radius:20px;padding:16px;margin-bottom:16px}"
+        + ".gm-d3 .t{font-size:12px;letter-spacing:.08em;font-weight:600}"
+        + ".gm-d3 .row{gap:8px;margin-top:16px}"
+        + ".gm-d3 .tile{border-radius:12px;padding:16px;transition:background-color 200ms cubic-bezier(.2,.8,.2,1),border-color 200ms cubic-bezier(.2,.8,.2,1),transform 150ms cubic-bezier(.2,.8,.2,1)}"
+        + ".gm-d3 .tile:active{transform:scale(.985)}"
+        + ".gm-d3 .nm{font-size:16px;font-weight:600}.gm-d3 .fl{font-size:14px;line-height:1.5}.gm-d3 .foot{font-size:14px;margin-top:16px}"
+        + "#gmVitals.gm-inline{gap:8px}#gmVitals.gm-inline > div{background:var(--card)!important;border:1px solid var(--border)!important;border-radius:12px!important;box-shadow:none!important}"
+        + ".gm-action{min-height:44px;border-radius:999px;padding:0 20px}"
+        + "#gmNav{box-shadow:none}#gmNav button{font-weight:600}"
+        + "@media (prefers-reduced-motion:reduce){.gm-d3 .tile{transition:none!important}.gm-d3 .tile:active{transform:none}}";
+    }
+    document.head.appendChild(st);   // (re)append: always the last stylesheet
+  }
   function greetHTML() {
     var hr = new Date().getHours(), part = hr < 5 ? "Still up" : hr < 12 ? "Good morning" : hr < 17 ? "Good afternoon" : "Good evening";
     var fn = ((typeof P !== "undefined" && P.name) || "").trim().split(" ")[0];
@@ -4465,7 +4498,7 @@
       + '<div style="display:grid;gap:8px">'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();location.href=\'hub.html\'">◆ All apps</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();editProfile()">Edit profile</button>'
-      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();toggleTheme()">Switch to ' + (S.theme === "dark" ? "light" : "dark") + ' theme</button>'
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();toggleTheme()">Switch to ' + (curTheme() === "dark" ? "light" : "dark") + ' theme</button>'
       + ((window.matchMedia && matchMedia("(display-mode: standalone)").matches) ? "" : '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();gmInstall()">Install as an app (phone or computer)</button>')
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();gmReport()">Report a problem or idea</button>'
       + '</div><div style="font-size:12px;color:var(--muted);margin-top:12px">Life OS ' + esc(ver) + ' · your data stays on your devices</div>'
@@ -4473,6 +4506,7 @@
   };
   function designFrame() {
     designCSS();
+    premiumCSS();
     var hdr = document.querySelector("#dash header");
     if (hdr && !hdr.querySelector(".gm-menu-btn")) {
       hdr.querySelectorAll(".hdr-btn").forEach(function (b) { if (!/All Apps/.test(b.textContent)) b.classList.add("gm-hide-hdr"); });
