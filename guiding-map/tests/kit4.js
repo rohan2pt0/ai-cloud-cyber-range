@@ -33,6 +33,27 @@ setTimeout(() => {
   b.dispatchEvent(new E.MouseEvent("click", { bubbles: true }));
   ok("one tap switches, sets lang and is remembered on this device", E.OSK.lang === "hi" && E.document.documentElement.lang === "hi"
     && JSON.parse(E.localStorage.getItem(PFX + "~lang")) === "hi" && /भाषा/.test(main(E)));
+  // module screens are translated too, not only Today and Settings (multilingual slice 2)
+  H.OSK.go("goals");
+  ok("the Goals screen is translated (Hindi)", /नया लक्ष्य/.test(main(H)), main(H).slice(0, 160));
+  M.OSK.go("inbox");
+  ok("the Inbox screen is translated (Marathi)", /कॅप्चर/.test(main(M)), main(M).slice(0, 160));
+  H.OSK.go("registers:risks");
+  ok("the Registers screen is translated (Hindi)", /कुछ भी खुला नहीं/.test(main(H)), main(H).slice(0, 160));
+  H.OSK.go("scorecard");
+  ok("the Scorecard screen is translated (Hindi)", /जोखिम संकेतक \(KRI\)/.test(main(H)), main(H).slice(0, 160));
+  H.OSK.go("playbooks");
+  ok("the Playbooks screen is translated (Hindi)", /खोलें/.test(main(H)), main(H).slice(0, 160));
+  M.OSK.go("progress");
+  ok("the Progress screen is translated (Marathi)", /हा आठवडा/.test(main(M)), main(M).slice(0, 160));
+  H.OSK.go("wheel");
+  ok("the Wheel screen is translated (Hindi)", /हर क्षेत्र को 1-10 में स्कोर करें/.test(main(H)), main(H).slice(0, 200));
+  H.OSK.go("feeds");
+  ok("the Feeds screen is translated (Hindi)", /एस्टेट से अभी कुछ नहीं आया/.test(main(H)), main(H).slice(0, 200));
+  H.OSK.go("settings");
+  ok("the Settings screen is translated (Hindi)", /बैकअप/.test(main(H)) && /हल्का या गहरा/.test(main(H)), main(H).slice(0, 400));
+  H.OSK.go("today");
+  ok("the Today greeting and set-up are translated (Hindi)", /सुप्रभात|नमस्कार|शुभ संध्या/.test(main(H)), main(H).slice(0, 200));
   // every catalog key exists in every catalog (a language never silently lags another's screens)
   const cats = ["hi", "mr"].map(l => JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'kit', 'i18n', l + '.json'), 'utf8')));
   const keys = cats.map(c => Object.keys(c.strings).sort().join("|"));

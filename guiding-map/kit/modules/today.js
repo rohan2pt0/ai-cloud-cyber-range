@@ -4,7 +4,7 @@
   var K = window.OSK;
   function greet() {
     var h = new Date().getHours(), p = K.get("profile", {});
-    return (h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening") + (p.name ? ", " + p.name : "");
+    return K.t(h < 12 ? "today.morning" : h < 17 ? "today.afternoon" : "today.evening", h < 12 ? "Good morning" : h < 17 ? "Good afternoon" : "Good evening") + (p.name ? ", " + p.name : "");
   }
   // Every module may offer its pressing items; the highest score (risk) wins. Ties keep the module order of the edition.
   // One open action (principle one-open-action): the winner is the only primary; the rest wait, folded, under "Later (n)".
@@ -20,7 +20,7 @@
   K.nextStep = function () { return K.nextSteps()[0] || null; };
   function oneStep(quiet) {
     var all = K.nextSteps(), n = all[0], later = all.slice(1);
-    if (!n) return K.card(K.esc(K.t("today.next", "Your next step")), "<p class='big'>" + K.esc(K.t("today.clear", "All clear. Nothing is late and nothing waits on you.")) + "</p><p class='muted'>A good day to think ahead: open " + K.esc(K.term("playbooks", "Playbooks")) + ".</p>", "hero");
+    if (!n) return K.card(K.esc(K.t("today.next", "Your next step")), "<p class='big'>" + K.esc(K.t("today.clear", "All clear. Nothing is late and nothing waits on you.")) + "</p><p class='muted'>" + K.esc(K.t("today.think_ahead", "A good day to think ahead: open {p}.", { p: K.term("playbooks", "Playbooks") })) + "</p>", "hero");
     return K.card(K.esc(K.t("today.next", "Your next step")), "<p class='big'>" + K.esc(n.text) + "</p>" + (n.why ? "<p class='muted'>" + K.esc(n.why) + "</p>" : "")
       + (n.go ? '<button class="' + (quiet ? "" : "primary") + '" data-a="go" data-x="' + K.esc(n.go) + '">' + K.esc(K.t("today.do", "Do it now")) + '</button>' : "")
       + (later.length ? '<details class="later"><summary>' + K.esc(K.t("today.later", "Later ({n})", { n: later.length })) + '</summary><ul class="list">'
@@ -31,18 +31,18 @@
     var p = K.get("profile", null);
     if (p && p.name) return "";
     var ed = K.ed;
-    return K.card("Start in one minute",
-      "<p>" + K.esc(ed.welcome || "Tell the app who it is for. Everything stays on this device unless you pair it with your estate.") + "</p>"
-      + '<label for="pfName">Your first name</label><input id="pfName" autocomplete="given-name">'
-      + '<label for="pfOrg">Organisation (optional)</label><input id="pfOrg" autocomplete="organization">'
-      + '<button class="primary" data-a="profileSave">Start</button>');
+    return K.card(K.esc(K.t("today.setup_title", "Start in one minute")),
+      "<p>" + K.esc(ed.welcome || K.t("today.setup_welcome", "Tell the app who it is for. Everything stays on this device unless you pair it with your estate.")) + "</p>"
+      + '<label for="pfName">' + K.esc(K.t("today.first_name", "Your first name")) + '</label><input id="pfName" autocomplete="given-name">'
+      + '<label for="pfOrg">' + K.esc(K.t("today.org_optional", "Organisation (optional)")) + '</label><input id="pfOrg" autocomplete="organization">'
+      + '<button class="primary" data-a="profileSave">' + K.esc(K.t("today.start", "Start")) + '</button>');
   }
   // What changed in the kit or this app, shown once: dismissing it hides everything up to that day.
   function newsCard() {
     var seen = K.get("~newsSeen", ""), fresh = (K.ed.whatsnew || []).filter(function (n) { return n.date > seen && K.days(n.date) <= 30; });
     if (!fresh.length) return "";
-    return K.card("New in " + K.esc(K.ed.name), "<ul class='list'>" + fresh.map(function (n) { return "<li>" + K.esc(n.text) + ' <span class="muted">' + K.esc(n.date) + "</span></li>"; }).join("")
-      + '</ul><button class="ghost" data-a="newsSeen" data-x="' + K.esc(fresh[fresh.length - 1].date) + '">Got it</button>');
+    return K.card(K.esc(K.t("today.new_in", "New in {name}", { name: K.ed.name })), "<ul class='list'>" + fresh.map(function (n) { return "<li>" + K.esc(n.text) + ' <span class="muted">' + K.esc(n.date) + "</span></li>"; }).join("")
+      + '</ul><button class="ghost" data-a="newsSeen" data-x="' + K.esc(fresh[fresh.length - 1].date) + '">' + K.esc(K.t("today.got_it", "Got it")) + '</button>');
   }
   K.module({
     id: "today", icon: "", label: function () { return K.t("today.title", K.term("today", "Today")); },
@@ -60,7 +60,7 @@
     acts: {
       newsSeen: function (d) { var all = (K.ed.whatsnew || []).map(function (n) { return n.date; }).sort(); K.set("~newsSeen", all[all.length - 1] || d); K.render(); },
       profileSave: function () {
-        var n = K.val("pfName"); if (!n) { K.toast("Type a first name, or anything you like to be called."); return; }
+        var n = K.val("pfName"); if (!n) { K.toast(K.t("today.toast_name", "Type a first name, or anything you like to be called.")); return; }
         K.set("profile", { name: n, org: K.val("pfOrg"), at: K.ymd() }, { what: "profile" }); K.render();
       }
     }
