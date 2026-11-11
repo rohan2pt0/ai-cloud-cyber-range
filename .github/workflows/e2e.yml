@@ -52,12 +52,13 @@ jobs:
         if: steps.pick.outputs.journeys != ''
         run: |
           pip install pyyaml playwright pytest
-          # Ubuntu's mirrors sometimes stop resolving on the runner (2026-11-11: twice in an hour), and the fonts --with-deps pulls
-          # then fail the whole run before a single journey starts. Retry with backoff; if the mirrors stay down, install the browser
-          # itself (it comes from Playwright's own CDN) and let the journeys run, so a mirror outage never reads as a product failure.
-          ok=0; for i in 1 2 3; do if playwright install --with-deps chromium; then ok=1; break; fi; echo "mirror retry $i"; sleep $((i * 20)); done
-          if [ "$ok" != 1 ]; then echo "::warning::Ubuntu mirrors unreachable; installing Chromium without system fonts"; playwright install chromium; fi
-          for i in 1 2 3; do if sudo apt-get install -y --no-install-recommends libnss3-tools; then break; fi; sleep $((i * 20)); done   # certutil: the phone journey trusts the estate CA as a person does
+          # Ubuntu's mirrors sometimes stop resolving on the runner (2026-11-11: for hours). Each package then waits ~20 s per try,
+          # so retries alone ran the whole job into its 60-minute limit before a single journey. Ask the mirror once, in 5 s: if it
+          # answers, install with system fonts (time-boxed); if not, install the browser alone from Playwright's CDN. Every step
+          # has a hard limit, so a mirror outage costs minutes, never the run, and never reads as a product failure.
+          if timeout 5 getent hosts archive.ubuntu.com >/dev/null && timeout 900 playwright install --with-deps chromium; then echo "browser and fonts installed"
+          else echo "::warning::Ubuntu mirrors unreachable or slow; installing Chromium without system fonts"; timeout 600 playwright install chromium; fi
+          timeout 5 getent hosts archive.ubuntu.com >/dev/null && timeout 300 sudo apt-get install -y --no-install-recommends libnss3-tools || echo "::warning::certutil not installed (mirror down); the phone journey will say so"   # certutil: the phone journey trusts the estate CA as a person does
       # The pulled models (about 1.5 GB) are kept between runs: a slow registry once took 950 s instead of 42 s and pushed the
       # suite past its 60-minute limit. The key follows the image and model pins, so a changed model is pulled fresh.
       - name: Restore the pulled local models
