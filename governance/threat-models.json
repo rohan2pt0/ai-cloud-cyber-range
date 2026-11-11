@@ -144,6 +144,165 @@
     }
    ]
   },
+  "kit-lock": {
+   "name": "The app lock in every kit app (Vantage first): device biometrics, encryption at rest, a recovery phrase",
+   "scope": "A person's data in the browser on their own device, locked behind the device's Face ID, fingerprint or Windows Hello (WebAuthn, user verification), encrypted at rest where the browser supports the PRF extension.",
+   "boundaries": [
+    "the person's device and its authenticator",
+    "the browser's storage for this app",
+    "the estate's sync service"
+   ],
+   "elements": [
+    {
+     "id": "app",
+     "kind": "process"
+    },
+    {
+     "id": "authenticator",
+     "kind": "external"
+    },
+    {
+     "id": "store",
+     "kind": "store"
+    },
+    {
+     "id": "lock-record",
+     "kind": "store"
+    },
+    {
+     "id": "recovery-phrase",
+     "kind": "external"
+    },
+    {
+     "id": "sync",
+     "kind": "process"
+    }
+   ],
+   "flows": [
+    {
+     "from": "authenticator",
+     "to": "app",
+     "data": "a user-verified assertion and the PRF secret for this app's salt",
+     "crosses": "the person's device and its authenticator"
+    },
+    {
+     "from": "app",
+     "to": "store",
+     "data": "every value except four device keys, AES-GCM encrypted under a random data key",
+     "crosses": "the browser's storage for this app"
+    },
+    {
+     "from": "app",
+     "to": "lock-record",
+     "data": "credential id, salts, the data key wrapped twice (biometric, phrase)",
+     "crosses": "the browser's storage for this app"
+    },
+    {
+     "from": "recovery-phrase",
+     "to": "app",
+     "data": "the phrase typed by the person, PBKDF2 310,000 rounds",
+     "crosses": "the person's device and its authenticator"
+    },
+    {
+     "from": "app",
+     "to": "sync",
+     "data": "the person's values, only while unlocked",
+     "crosses": "the estate's sync service"
+    }
+   ],
+   "threats": [
+    {
+     "id": "kl-s1",
+     "stride": "S",
+     "element": "authenticator",
+     "threat": "Someone else at the device (a family member, staff, a thief with the unlocked phone) opens the app and reads everything.",
+     "status": "mitigated",
+     "mitigation": "the app opens only after a user-verified biometric or the device PIN; a different face or device gets a different PRF secret, which unwraps nothing",
+     "evidence": "guiding-map/tests/kit6.js"
+    },
+    {
+     "id": "kl-i1",
+     "stride": "I",
+     "element": "store",
+     "threat": "Reading the browser's storage directly (devtools, a copied profile, disk forensics) exposes the person's data in plain text.",
+     "status": "mitigated",
+     "mitigation": "with PRF every value is AES-GCM encrypted under a random data key that only the biometric or the recovery phrase can unwrap; only language, theme, discreet setting and the lock record stay plain",
+     "evidence": "guiding-map/tests/kit6.js"
+    },
+    {
+     "id": "kl-i2",
+     "stride": "I",
+     "element": "app",
+     "threat": "A glance at the screen or the phone's app switcher shows private content after the person looked away.",
+     "status": "mitigated",
+     "mitigation": "the screen is veiled while hidden and the app locks after being away longer than the chosen time (1, 5 or 15 minutes)",
+     "evidence": "guiding-map/tests/kit6.js"
+    },
+    {
+     "id": "kl-i3",
+     "stride": "I",
+     "element": "store",
+     "threat": "On a browser without PRF the lock is only a screen gate, so the stored data is readable by anyone with the device's browser profile and the know-how.",
+     "status": "accepted",
+     "reason": "PRF is in current Chrome, Edge, Android and Safari 18 and later; on an older browser a screen gate still stops the casual look, and the app says plainly that the data itself is not encrypted, so the person can choose another browser",
+     "review": "2027-02-15"
+    },
+    {
+     "id": "kl-t1",
+     "stride": "T",
+     "element": "sync",
+     "threat": "A sync while locked writes the estate's plain copy over the encrypted values, or pushes a copy of nulls that wipes the synced data.",
+     "status": "mitigated",
+     "mitigation": "no push, pull or merge runs while locked; sync resumes after unlock",
+     "evidence": "guiding-map/tests/kit6.js"
+    },
+    {
+     "id": "kl-t2",
+     "stride": "T",
+     "element": "lock-record",
+     "threat": "Someone edits the lock record to switch the lock off or point it at their own credential.",
+     "status": "mitigated",
+     "mitigation": "the data key is wrapped, not stored: a changed record unwraps nothing, the data stays encrypted, and turning the lock off is possible only while unlocked",
+     "evidence": "guiding-map/tests/kit6.js"
+    },
+    {
+     "id": "kl-r1",
+     "stride": "R",
+     "element": "app",
+     "threat": "The person cannot tell whether their data on this device is really encrypted or only behind a screen.",
+     "status": "mitigated",
+     "mitigation": "Settings states the mode in plain words: encrypted, or screen lock only",
+     "evidence": "guiding-map/tests/kit6.js"
+    },
+    {
+     "id": "kl-d1",
+     "stride": "D",
+     "element": "recovery-phrase",
+     "threat": "A new phone, a reset fingerprint or a broken sensor locks the person out of their own data for good.",
+     "status": "mitigated",
+     "mitigation": "a one-time recovery phrase (20 base32 characters, PBKDF2 310,000 rounds) wraps the same data key; the encrypted backup and sync remain as before",
+     "evidence": "guiding-map/tests/kit6.js"
+    },
+    {
+     "id": "kl-d2",
+     "stride": "D",
+     "element": "store",
+     "threat": "A write made just before the tab closes is lost, because encryption is asynchronous.",
+     "status": "accepted",
+     "reason": "each write is encrypted within milliseconds and queued in order; losing the last keystroke when a tab is killed mid-write is the same risk the app had before, and the undo and sync copies remain",
+     "review": "2027-02-15"
+    },
+    {
+     "id": "kl-e1",
+     "stride": "E",
+     "element": "app",
+     "threat": "Script injected into the page while unlocked reads the decrypted values from memory.",
+     "status": "mitigated",
+     "mitigation": "the kit renders every value through one escape helper and uses data-a actions instead of inline code, and the hosted apps carry a strict content security policy; encryption protects data at rest, not a compromised running page",
+     "evidence": "guiding-map/tests/kit1.js"
+    }
+   ]
+  },
   "hosted-apps": {
    "name": "The hosted Life OS and Vantage, with OneDrive sync",
    "scope": "Single-file apps served from a static host, holding a person's data on the device and an encrypted copy in their own OneDrive.",

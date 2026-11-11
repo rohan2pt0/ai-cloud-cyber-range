@@ -1,5 +1,10 @@
 {
- "_meta": {"name": "हिंदी", "locale": "hi-IN", "status": "beta", "note": "Machine-drafted, waiting for a native speaker's review. Money and legal terms with no common Hindi word keep the English term."},
+ "_meta": {
+  "name": "हिंदी",
+  "locale": "hi-IN",
+  "status": "beta",
+  "note": "Machine-drafted, waiting for a native speaker's review. Money and legal terms with no common Hindi word keep the English term."
+ },
  "strings": {
   "core.nothing_undo": "पूर्ववत करने के लिए कुछ नहीं।",
   "core.undone": "पूर्ववत किया",
@@ -255,6 +260,29 @@
   "settings.device_key": "डिवाइस कुंजी",
   "settings.pair": "जोड़ें",
   "settings.forget": "यह जोड़ी भूल जाएँ",
-  "settings.sync_now": "अभी सिंक करें"
+  "settings.sync_now": "अभी सिंक करें",
+  "lock.title": "लॉक",
+  "lock.body": "इस डिवाइस के फ़ेस आईडी, फ़िंगरप्रिंट या Windows Hello से खोलें।",
+  "lock.unlock": "खोलें",
+  "lock.use_phrase": "अपने रिकवरी वाक्यांश से खोलें",
+  "lock.phrase": "रिकवरी वाक्यांश",
+  "lock.failed": "नहीं खुला। फिर कोशिश करें, या रिकवरी वाक्यांश इस्तेमाल करें।",
+  "lock.bad_phrase": "यह रिकवरी वाक्यांश मेल नहीं खाता।",
+  "lock.unsupported": "यह ब्राउज़र डिवाइस लॉक का उपयोग नहीं कर सकता।",
+  "lock.cancelled": "चालू नहीं हुआ। आप कभी भी फिर कोशिश कर सकते हैं।",
+  "lock.phrase_title": "आपका रिकवरी वाक्यांश",
+  "lock.phrase_body": "अगर इस डिवाइस का फ़ेस आईडी या फ़िंगरप्रिंट कभी बदल जाए, तो यह वाक्यांश आपका डेटा खोलेगा। इसे इस डिवाइस से दूर किसी सुरक्षित जगह रखें। यह केवल एक बार दिखाया जाता है।",
+  "lock.saved": "मैंने इसे सहेज लिया है",
+  "lock.title_off": "लॉक",
+  "lock.offer": "इसे निजी रखें: इस डिवाइस के फ़ेस आईडी, फ़िंगरप्रिंट या Windows Hello से खोलें। कोई नया पासवर्ड नहीं।",
+  "lock.turn_on": "चालू करें",
+  "lock.not_now": "अभी नहीं",
+  "lock.title_on": "लॉक चालू है",
+  "lock.mode_enc": "इस डिवाइस पर आपका डेटा एन्क्रिप्टेड है, और केवल आपके चेहरे, फ़िंगरप्रिंट या रिकवरी वाक्यांश से खुलता है।",
+  "lock.mode_gate": "केवल स्क्रीन लॉक: यह ब्राउज़र डिवाइस लॉक से एन्क्रिप्ट नहीं कर सकता, इसलिए डेटा स्वयं एन्क्रिप्टेड नहीं है।",
+  "lock.idle": "इतनी देर दूर रहने पर लॉक करें",
+  "lock.lock_now": "अभी लॉक करें",
+  "lock.turn_off": "बंद करें",
+  "lock.off_done": "लॉक बंद है।"
  }
 }

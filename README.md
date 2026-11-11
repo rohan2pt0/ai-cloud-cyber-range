@@ -131,6 +131,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- The apps lock, with the device's own Face ID, fingerprint or Windows Hello (app-lock, kit first)
 - One command sets up a laptop or node, end to end
 - A new core principle, `global-ready`: built for the world, at home in one place
 - multilingual 2c-e: Vantage's goal starters and scorecard in Hindi and Marathi
@@ -138,7 +139,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - multilingual 2c-c: Vantage's registers in Hindi and Marathi
 - multilingual 2c-b: the Rhythm's reviews in Hindi and Marathi
 - multilingual 2c-a: Vantage's own top words, rituals and wheel in Hindi and Marathi
-- multilingual slice 2b: the kit's own frame in Hindi and Marathi
 
 **Release 0.3.0 - 2026-10-22:**
 

@@ -83,3 +83,5 @@ summary { min-height:44px; display:flex; align-items:center; }
 #oskToast button { min-height:44px; }
 /* ui-rules-lint slice 3: running text keeps a readable measure (at most ~75 characters a line) on a wide screen */
 @media (min-width:700px) { #oskMain p, #oskMain li { max-width:60ch; } }
+/* the lock (app-lock): hidden in the app switcher and away from the screen, nothing of the person shows */
+body.osk-veil #oskMain, body.osk-veil #oskNav, body.osk-veil #oskMore, body.osk-veil #oskWho { visibility:hidden; }

@@ -1,5 +1,10 @@
 {
- "_meta": {"name": "मराठी", "locale": "mr-IN", "status": "beta", "note": "Machine-drafted, waiting for a native speaker's review. Money and legal terms with no common Marathi word keep the English term."},
+ "_meta": {
+  "name": "मराठी",
+  "locale": "mr-IN",
+  "status": "beta",
+  "note": "Machine-drafted, waiting for a native speaker's review. Money and legal terms with no common Marathi word keep the English term."
+ },
  "strings": {
   "core.nothing_undo": "पूर्वस्थितीत करण्यासाठी काही नाही.",
   "core.undone": "पूर्वस्थितीत आणले",
@@ -255,6 +260,29 @@
   "settings.device_key": "डिव्हाइस किल्ली",
   "settings.pair": "जोडा",
   "settings.forget": "ही जोड विसरा",
-  "settings.sync_now": "आता सिंक करा"
+  "settings.sync_now": "आता सिंक करा",
+  "lock.title": "लॉक",
+  "lock.body": "या डिव्हाइसच्या फेस आयडी, फिंगरप्रिंट किंवा Windows Hello ने उघडा.",
+  "lock.unlock": "उघडा",
+  "lock.use_phrase": "तुमच्या रिकव्हरी वाक्यांशाने उघडा",
+  "lock.phrase": "रिकव्हरी वाक्यांश",
+  "lock.failed": "उघडले नाही. पुन्हा प्रयत्न करा, किंवा रिकव्हरी वाक्यांश वापरा.",
+  "lock.bad_phrase": "हा रिकव्हरी वाक्यांश जुळत नाही.",
+  "lock.unsupported": "हा ब्राउझर डिव्हाइस लॉक वापरू शकत नाही.",
+  "lock.cancelled": "सुरू झाले नाही. तुम्ही कधीही पुन्हा प्रयत्न करू शकता.",
+  "lock.phrase_title": "तुमचा रिकव्हरी वाक्यांश",
+  "lock.phrase_body": "या डिव्हाइसचा फेस आयडी किंवा फिंगरप्रिंट कधी बदलला, तर हा वाक्यांश तुमचा डेटा उघडेल. तो या डिव्हाइसपासून दूर सुरक्षित ठिकाणी ठेवा. तो फक्त एकदाच दाखवला जातो.",
+  "lock.saved": "मी तो जतन केला आहे",
+  "lock.title_off": "लॉक",
+  "lock.offer": "हे खाजगी ठेवा: या डिव्हाइसच्या फेस आयडी, फिंगरप्रिंट किंवा Windows Hello ने उघडा. कोणताही नवीन पासवर्ड नाही.",
+  "lock.turn_on": "सुरू करा",
+  "lock.not_now": "आत्ता नाही",
+  "lock.title_on": "लॉक सुरू आहे",
+  "lock.mode_enc": "या डिव्हाइसवरील तुमचा डेटा एन्क्रिप्टेड आहे, आणि फक्त तुमचा चेहरा, फिंगरप्रिंट किंवा रिकव्हरी वाक्यांशानेच उघडतो.",
+  "lock.mode_gate": "फक्त स्क्रीन लॉक: हा ब्राउझर डिव्हाइस लॉकने एन्क्रिप्ट करू शकत नाही, त्यामुळे डेटा स्वतः एन्क्रिप्टेड नाही.",
+  "lock.idle": "इतका वेळ दूर राहिल्यावर लॉक करा",
+  "lock.lock_now": "आत्ता लॉक करा",
+  "lock.turn_off": "बंद करा",
+  "lock.off_done": "लॉक बंद आहे."
  }
 }
