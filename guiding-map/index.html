@@ -470,7 +470,7 @@ Lost? <b style="color:var(--text)">Today</b> is the only tab you need daily — 
 <div class="stage-bar" id="stageBar"></div>
 <div class="tabs" id="tabBar"></div>
 <div id="sections"></div>
-<div class="iw"><div class="cat-t">Live Insights</div><div id="insights"></div></div>
+<div class="iw"><div id="insights"></div></div>
 <footer>Saved automatically on this device &middot; <span id="lastSave"></span></footer>
 </div>
 
@@ -1614,7 +1614,7 @@ function renderToday(){
      +'<div class="hab-min">'+h.min+'</div>'
      +(!done&&missedTwice(h.id)?'<div class="hab-floor-note">the floor is enough today</div>':'')
      +'<div class="week-dots">'+weekDots(h.id)+'</div></div>'
-     +(stk>0?'<div class="hab-streak"><div class="streak-n">'+stk+' days</div></div>':'')
+     +(stk>0?'<div class="hab-streak"><div class="streak-n">'+stk+(stk===1?' day':' days')+'</div></div>':'')
      +'</div>';
   });
   html+='<details class="info" style="margin-top:12px"><summary style="cursor:pointer;font-weight:600">Why this works</summary><div style="margin-top:8px">Habits take a median 66 days to automate (Lally 2010, range 18-254). One miss never hurts formation — two does. If-then anchors raise success by d=0.65 (Gollwitzer, 94 studies). The floor version keeps the chain alive on your worst day.</div></details>';
