@@ -8,6 +8,8 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
+### Added
+- **The Life OS speaks Hindi and Marathi (beta).** The kit apps had Hindi and Marathi since 10 Nov but the Life OS, the app used every day, had none. Now a language switch sits at the top of Ops (each name in its own script); the device language is the first default; a choice is remembered on this device. Text is swapped after each screen renders from catalogs in `guiding-map/i18n/` (inlined, so it works offline); anything not yet translated stays in English, never a key. This first slice translates the navigation and key buttons; the daily screens' 653 strings follow from the open models. `test50.js`.
 ### Fixed
 - **Accessible names on the Life OS controls.** The eight Wheel sliders, the Ask address and key, the Commit deadline and the Life Map take-home now have plain-word aria-labels; the Career plan row is no longer a button wrapping a glossary button, so controls are not nested; and the out-of-storage alert names the gold button "Save encrypted backup" instead of a label that no longer exists. `test49.js` (9 checks).
 - **Plain words on the main Life OS tabs.** Map, Pillars, Scorecard, Plan, Money, Career, Playbook and Commit now say "measure", "quarterly goal", "main goal", "financial independence", "spending plan", "safe withdrawal rate" and "emergency fund" instead of KPI, OKR, KGI, FI, CSP, SWR and EF; shouted headings are sentence case; and researcher names, years, effect sizes and forum citations are gone while the claim stays. `test48.js` (48 checks).

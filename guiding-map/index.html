@@ -2213,6 +2213,7 @@ function renderPlaybook(){
 
 <!-- ops.js INLINED below by build.js. To modify the ops layer: edit ops.js, then run `node build.js`. -->
 <script>
+window.GM_I18N = {"hi":{"_meta":{"locale":"hi-IN","status":"beta","note":"machine draft; a native professional reviews it before the global launch"},"strings":{"Today":"आज","Inbox":"इनबॉक्स","Goals":"लक्ष्य","Ask":"पूछें","More":"और","Language":"भाषा","Save encrypted backup":"एन्क्रिप्टेड बैकअप सहेजें","Restore from file":"फ़ाइल से वापस लाएँ","Later":"बाद में","Danger zone":"ख़तरे का क्षेत्र"}},"mr":{"_meta":{"locale":"mr-IN","status":"beta","note":"machine draft; a native professional reviews it before the global launch"},"strings":{"Today":"आज","Inbox":"इनबॉक्स","Goals":"उद्दिष्टे","Ask":"विचारा","More":"अधिक","Language":"भाषा","Save encrypted backup":"एन्क्रिप्टेड बॅकअप जतन करा","Restore from file":"फाइलमधून परत आणा","Later":"नंतर","Danger zone":"धोक्याचे क्षेत्र"}}};
 /* ═══════════════════════════════════════════════════════════════════
    THE GUIDING MAP — OPS LAYER v4.0
    Adds: PWA install + offline, cadence engine, Never-Miss-Twice
@@ -5625,7 +5626,7 @@ function renderPlaybook(){
       cad += '</div></details>';
     });
     h += foldHTML("\u{1F4C5} The rhythm", RITUALS.length + " rituals, each shows on Today only when due", cad, false);
-    h += '<div style="margin-top:16px">' + healthHTML() + '</div>';
+    h += (window.gmLangHTML ? gmLangHTML() : '') + '<div style="margin-top:16px">' + healthHTML() + '</div>';
     h += foldHTML("\u{1F3F3} When it goes wrong", inRecovery() ? "recovery mode is ON" : "pause rituals for a bad week", recoveryHTML(), !!inRecovery());
     h += foldHTML("\u{1F517} Connections", "sync, Microsoft 365, phone reminders \u00b7 all optional",
       '<div class="info">None of these is needed to use the app. Sync copies your data to your own estate; Microsoft 365 shows today\u2019s calendar on Today; reminders nudge your phone when something is due.</div>'
@@ -7794,6 +7795,73 @@ function renderPlaybook(){
       }, 1500);
     }
   });
+})();
+
+/* ══ Languages for the Life OS (owner, 2026-11-11: the Life OS must be bilingual, like the kit apps) ══
+   The screens are built from English in many places, so the words are swapped after they render: a watcher reads each
+   text and the placeholder, aria-label and title of each element, and replaces an exact match from the catalog of the
+   chosen language (guiding-map/i18n/lifeos.<lang>.json, inlined by build.js as window.GM_I18N, so it works offline).
+   Anything not in the catalog stays in English: never blank, never a key. The device's language is the first default;
+   a choice in Ops wins and is remembered on this device (gm_lang). Numbers, names and the person's own words are never
+   touched, because only exact catalog matches change. Machine drafts are beta until a native professional reviews them. */
+(function () {
+  var CAT = window.GM_I18N || {}, ORIG = "__gmEn", ATTRS = ["placeholder", "aria-label", "title"];
+  var NAMES = { en: "English", hi: "\u0939\u093f\u0902\u0926\u0940", mr: "\u092e\u0930\u093e\u0920\u0940" };
+  function get() { try { return JSON.parse(localStorage.getItem("gm_lang")); } catch (e) { return null; } }
+  function pick() {
+    var saved = get(); if (saved && (saved === "en" || CAT[saved])) return saved;
+    var dev = String((navigator.languages && navigator.languages[0]) || navigator.language || "en").slice(0, 2).toLowerCase();
+    return CAT[dev] ? dev : "en";
+  }
+  var lang = pick(), busy = false, queued = false;
+  function table() { return lang === "en" ? null : ((CAT[lang] || {}).strings || {}); }
+  function swapText(n, T) {
+    var en = n[ORIG] !== undefined ? n[ORIG] : n.textContent, key = en.replace(/\s+/g, " ").trim();
+    if (!key) return;
+    var tr = T && T[key];
+    if (tr) { if (n[ORIG] === undefined) n[ORIG] = en; var want = en.replace(key, tr); if (n.textContent !== want) n.textContent = want; }
+    else if (n[ORIG] !== undefined) { if (n.textContent !== n[ORIG]) n.textContent = n[ORIG]; }
+  }
+  function swapAttrs(el, T) {
+    ATTRS.forEach(function (a) {
+      if (!el.hasAttribute(a)) return;
+      var store = "__gmEn_" + a, en = el[store] !== undefined ? el[store] : el.getAttribute(a), tr = T && T[en.trim()];
+      if (tr) { if (el[store] === undefined) el[store] = en; if (el.getAttribute(a) !== tr) el.setAttribute(a, tr); }
+      else if (el[store] !== undefined && el.getAttribute(a) !== el[store]) el.setAttribute(a, el[store]);
+    });
+  }
+  function run(root) {
+    if (busy) { queued = true; return; }
+    busy = true;
+    try {
+      var T = table(), w = document.createTreeWalker(root || document.body, NodeFilter.SHOW_TEXT), n;
+      while ((n = w.nextNode())) { var p = n.parentElement; if (!p || /^(SCRIPT|STYLE|TEXTAREA)$/.test(p.tagName) || p.isContentEditable) continue; swapText(n, T); }
+      (root || document.body).querySelectorAll("[placeholder],[aria-label],[title]").forEach(function (el) { swapAttrs(el, T); });
+      document.documentElement.lang = lang;
+    } catch (e) {}
+    busy = false;
+    if (queued) { queued = false; setTimeout(function () { run(); }, 0); }
+  }
+  var timer = null;
+  function soon() { clearTimeout(timer); timer = setTimeout(function () { run(); }, 30); }
+  window.gmLang = function () { return lang; };
+  window.gmLangs = function () { var o = { en: { name: NAMES.en, status: "reviewed" } }; Object.keys(CAT).forEach(function (k) { o[k] = { name: NAMES[k] || k, status: (CAT[k]._meta || {}).status || "beta" }; }); return o; };
+  window.gmSetLang = function (l) {
+    if (l !== "en" && !CAT[l]) return;
+    lang = l; try { localStorage.setItem("gm_lang", JSON.stringify(l)); } catch (e) {}
+    try { if (window.renderAll) renderAll(); } catch (e) {}
+    run();
+  };
+  // the language switch, in plain view at the top of Ops: one tap, each name in its own script
+  window.gmLangHTML = function () {
+    var L = gmLangs(), h = '<div class="road-col gm-lang" style="margin-bottom:12px"><div style="font-weight:800;font-size:13px;margin-bottom:6px">Language</div><div style="display:flex;gap:8px;flex-wrap:wrap">';
+    Object.keys(L).forEach(function (k) {
+      h += '<button class="btn-sm" lang="' + k + '" aria-pressed="' + (k === lang) + '" style="background:' + (k === lang ? "var(--navy);color:#fff" : "var(--cardAlt);color:var(--text)") + '" onclick="gmSetLang(\'' + k + '\')">' + L[k].name + '</button>';
+    });
+    return h + '</div>' + (lang !== "en" ? '<div class="muted" style="font-size:11.5px;margin-top:6px">Beta: a machine draft, checked by a person before the global launch. Anything not translated yet stays in English.</div>' : '') + '</div>';
+  };
+  try { new MutationObserver(function () { if (!busy && lang !== "en") soon(); }).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) {}
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { run(); }); else run();
 })();
 
 </script>

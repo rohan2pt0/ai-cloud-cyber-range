@@ -131,6 +131,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- The Life OS speaks Hindi and Marathi (beta)
 - Accessible names on the Life OS controls
 - Plain words on the main Life OS tabs
 - 360 audit, round 1: a security hole and four frictions fixed
@@ -138,7 +139,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - Today is calm again: one small row per habit, and the science folded away
 - Backups are encrypted by default
 - Ask by how often it changes: fixed facts fold away, changing numbers are one tap away
-- Ask once: the Life OS stops asking for the same facts again
 
 **Release 0.3.0 - 2026-10-22:**
 
