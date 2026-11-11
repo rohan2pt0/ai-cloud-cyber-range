@@ -17,6 +17,7 @@
     id: "settings", label: function () { return K.term("settings", "Settings"); },
     render: function () {
       var p = K.get("profile", {}), ed = K.ed, h = "<h2>" + K.esc(K.term("settings", "Settings")) + "</h2>";
+      h += K.lockCard();
       h += K.card(K.esc(K.t("settings.about", "About {n}", { n: ed.name })), "<p>" + K.esc(ed.tagline || "") + "</p>" + (ed.audience ? '<p class="muted">' + K.esc(K.t("settings.for", "For: ")) + K.esc(ed.audience) + "</p>" : "")
         + ((ed.principles || []).length ? "<ul class='list'>" + ed.principles.map(function (x) { return "<li><b>" + K.esc(x.name) + "</b>" + (x.core ? ' <span class="tag">' + K.esc(K.t("settings.core", "core")) + '</span>' : "") + ": " + K.esc(x.text) + "</li>"; }).join("") + "</ul>"
           + '<p class="muted">' + K.esc(K.t("settings.principles_note", "Core principles come from the estate's one shared list, so every app carries them and gets their improvements.")) + '</p>' : ""));
@@ -41,6 +42,11 @@
       return null;
     },
     acts: {
+      lockOn: function () { K.lockStart(); },
+      lockSaved: function () { K._phrase = null; K.render(); },
+      lockNowBtn: function () { K.lockNow(); },
+      lockOff: function () { K.lockDisable().then(function () { K.toast(K.t("lock.off_done", "The lock is off.")); }).catch(function (e) { K.toast(e.message); }); },
+      lockIdleSet: function (x) { K.lockIdle(parseInt(x, 10) || 300); K.render(); },
       setLang: function (l) { K.setLang(l); },
       exportNow: function () {
         K.set("lastExport", K.ymd(), { noUndo: true });

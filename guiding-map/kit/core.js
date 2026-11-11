@@ -10,8 +10,23 @@
   var K = window.OSK = { ed: ED, pfx: PFX, mods: {}, acts: {}, tab: null };
 
   /* ── storage ─────────────────────────────────────────────────────── */
-  function raw(k) { try { return localStorage.getItem(PFX + k); } catch (e) { return MEM[k] === undefined ? null : MEM[k]; } }
-  function put(k, s) { try { localStorage.setItem(PFX + k, s); } catch (e) { MEM[k] = s; } }
+  // The lock (queue app-lock, threat model "kit-lock"): with a biometric lock whose browser supports the WebAuthn PRF
+  // extension, every value except the few device keys in PLAIN is stored encrypted ("enc1:" + AES-GCM), and decrypted
+  // only into CACHE while unlocked. Without PRF the lock is a screen gate only, and says so.
+  var PLAIN = { "~lock": 1, "~lang": 1, "~theme": 1, "~discreet": 1 };   // device keys that say nothing about the person
+  var DK = null, CACHE = null, WQ = Promise.resolve();
+  function sealed(k) { return !!CACHE && !PLAIN[k]; }
+  function rawDisk(k) { try { return localStorage.getItem(PFX + k); } catch (e) { return MEM[k] === undefined ? null : MEM[k]; } }
+  function raw(k) {
+    if (sealed(k)) return Object.prototype.hasOwnProperty.call(CACHE, k) ? CACHE[k] : null;
+    var s = rawDisk(k);
+    return s && s.indexOf("enc1:") === 0 ? null : s;                      // locked: an encrypted value reads as absent
+  }
+  function put(k, s) {
+    if (sealed(k)) { CACHE[k] = s; var key = DK; WQ = WQ.then(function () { return seal(key, s); }).then(function (c) { try { localStorage.setItem(PFX + k, c); } catch (e) { MEM[k] = c; } }); return; }
+    try { localStorage.setItem(PFX + k, s); } catch (e) { MEM[k] = s; }
+  }
+  function drop(k) { if (CACHE) delete CACHE[k]; try { localStorage.removeItem(PFX + k); } catch (x) { delete MEM[k]; } }
   K.get = function (k, d) { var s = raw(k); if (s === null) return d; try { return JSON.parse(s); } catch (e) { return d; } };
   // Every write stamps the key's time (the sync merge rule: newer wins) and keeps the old value for Undo.
   K.set = function (k, v, opt) {
@@ -30,7 +45,7 @@
     var u = K.get("~undo", []), e = u.pop();
     if (!e) { K.toast(K.t("core.nothing_undo", "Nothing to undo.")); return; }
     put("~undo", JSON.stringify(u));
-    if (e.v === null) { try { localStorage.removeItem(PFX + e.k); } catch (x) { delete MEM[e.k]; } } else put(e.k, e.v);
+    if (e.v === null) drop(e.k); else put(e.k, e.v);
     var m = K.get("~meta", {}); m[e.k] = Date.now(); put("~meta", JSON.stringify(m));
     K.syncSoon(); K.render(); K.toast(K.t("core.undone", "Undone") + (e.w ? ": " + e.w : "") + ".");
   };
@@ -40,6 +55,154 @@
     catch (e) { out = Object.keys(MEM); }
     return out;
   };
+
+  /* ── the lock: device biometrics, encryption at rest, no new password ─────────────────────────
+     Unlock is the device's own Face ID, fingerprint or Windows Hello (a WebAuthn platform credential made on this device,
+     user verification required). Where the browser supports PRF, the authenticator's secret output derives the key that
+     wraps a random data key; a one-time recovery phrase (PBKDF2, 310,000 rounds) wraps it too, so no one is ever locked
+     out. Nothing is sent anywhere: no server, no account. Locks after IDLE seconds away; the screen is veiled when hidden. */
+  var SUB = window.crypto && window.crypto.subtle, ENC = new TextEncoder(), DEC = new TextDecoder();
+  function rnd(n) { var a = new Uint8Array(n); window.crypto.getRandomValues(a); return a; }
+  function b64(u) { var s = ""; u = new Uint8Array(u); for (var i = 0; i < u.length; i++) s += String.fromCharCode(u[i]); return btoa(s); }
+  function unb64(t) { var s = atob(t), u = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) u[i] = s.charCodeAt(i); return u; }
+  function seal(key, text) {
+    var iv = rnd(12);
+    return SUB.encrypt({ name: "AES-GCM", iv: iv }, key, ENC.encode(text)).then(function (ct) {
+      var o = new Uint8Array(12 + ct.byteLength); o.set(iv); o.set(new Uint8Array(ct), 12); return "enc1:" + b64(o); });
+  }
+  function unseal(key, c) { var u = unb64(c.slice(5)); return SUB.decrypt({ name: "AES-GCM", iv: u.slice(0, 12) }, key, u.slice(12)).then(function (p) { return DEC.decode(p); }); }
+  function kekPrf(prf, salt) {
+    return SUB.importKey("raw", prf, "HKDF", false, ["deriveKey"]).then(function (k) {
+      return SUB.deriveKey({ name: "HKDF", hash: "SHA-256", salt: salt, info: ENC.encode("securax-kit-lock-v1") }, k, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]); });
+  }
+  function kekPhrase(phrase, salt) {
+    return SUB.importKey("raw", ENC.encode(String(phrase).toUpperCase().replace(/[^A-Z2-7]/g, "")), "PBKDF2", false, ["deriveKey"]).then(function (k) {
+      return SUB.deriveKey({ name: "PBKDF2", hash: "SHA-256", salt: salt, iterations: 310000 }, k, { name: "AES-GCM", length: 256 }, false, ["encrypt", "decrypt"]); });
+  }
+  function wrapDK(kek, dkRaw) { return seal(kek, b64(dkRaw)); }
+  function unwrapDK(kek, w) {
+    return unseal(kek, w).then(function (t) { return SUB.importKey("raw", unb64(t), "AES-GCM", true, ["encrypt", "decrypt"]); });
+  }
+  function phrase() { var A = "ABCDEFGHIJKLMNOPQRSTUVWXYZ234567", r = rnd(20), s = ""; for (var i = 0; i < 20; i++) { s += A[r[i] % 32]; if (i % 4 === 3 && i < 19) s += "-"; } return s; }
+  function lockRec() { try { return JSON.parse(localStorage.getItem(PFX + "~lock") || "null"); } catch (e) { return null; } }
+  function loadCache(dk) {
+    var c = {}, ks = K.keys().filter(function (k) { return !PLAIN[k]; });
+    return Promise.all(ks.map(function (k) {
+      var s = rawDisk(k); if (s === null) return null;
+      if (s.indexOf("enc1:") !== 0) { c[k] = s; return null; }
+      return unseal(dk, s).then(function (t) { c[k] = t; });
+    })).then(function () { return c; });
+  }
+  K.lockInfo = function () { var r = lockRec(); return { on: !!r, mode: r ? r.mode : "off", idle: (r && r.idle) || 300, prf: K.prfSupported() }; };
+  K.locked = !!lockRec();
+  K.prfSupported = function () { return !!(window.PublicKeyCredential && navigator.credentials && SUB); };
+  function webauthnGet(rec) {
+    var opt = { publicKey: { challenge: rnd(32), userVerification: "required", timeout: 60000,
+      allowCredentials: [{ type: "public-key", id: unb64(rec.cred), transports: ["internal"] }] } };
+    if (rec.mode === "encrypted") opt.publicKey.extensions = { prf: { eval: { first: unb64(rec.salt) } } };
+    return navigator.credentials.get(opt);
+  }
+  function prfOf(cred) { var x = cred && cred.getClientExtensionResults ? cred.getClientExtensionResults() : {}; return x && x.prf && x.prf.results && x.prf.results.first; }
+  // Turn the lock on: one biometric prompt (two on browsers that only give PRF on sign-in), then the recovery phrase once.
+  K.lockEnable = function () {
+    if (!K.prfSupported()) return Promise.reject(new Error(K.t("lock.unsupported", "This browser cannot use the device lock.")));
+    var salt = rnd(32), user = rnd(16);
+    return navigator.credentials.create({ publicKey: { challenge: rnd(32), rp: { name: ED.name || "SecuRAX" },
+      user: { id: user, name: (ED.name || "SecuRAX") + " on this device", displayName: K.get("profile", {}).name || (ED.name || "SecuRAX") },
+      pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }], timeout: 60000,
+      authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "preferred" },
+      extensions: { prf: { eval: { first: salt } } } } }).then(function (cred) {
+      var rec = { v: 1, cred: b64(cred.rawId), salt: b64(salt), idle: 300, mode: "encrypted" };
+      var x = cred.getClientExtensionResults ? cred.getClientExtensionResults() : {};
+      if (!(x.prf && x.prf.enabled)) { rec.mode = "gate"; return rec; }
+      var out = prfOf(cred);
+      return out ? (rec.prf0 = out, rec) : webauthnGet(rec).then(function (c2) { var o = prfOf(c2); if (!o) rec.mode = "gate"; else rec.prf0 = o; return rec; });
+    }).then(function (rec) {
+      var pass = phrase(), out = rec.prf0; delete rec.prf0;
+      if (rec.mode === "gate") { localStorage.setItem(PFX + "~lock", JSON.stringify(rec)); K.locked = false; return { phrase: null, mode: "gate" }; }
+      return SUB.generateKey({ name: "AES-GCM", length: 256 }, true, ["encrypt", "decrypt"]).then(function (dk) {
+        var rsalt = rnd(16);
+        return SUB.exportKey("raw", dk).then(function (dkRaw) {
+          return Promise.all([kekPrf(out, unb64(rec.salt)).then(function (k) { return wrapDK(k, dkRaw); }),
+                              kekPhrase(pass, rsalt).then(function (k) { return wrapDK(k, dkRaw); })]);
+        }).then(function (w) {
+          rec.wrapped = w[0]; rec.rwrapped = w[1]; rec.rsalt = b64(rsalt);
+          return loadCache(dk).then(function (c) {
+            DK = dk; CACHE = c;
+            Object.keys(c).forEach(function (k) { put(k, c[k]); });          // every existing value, re-written encrypted
+            return WQ.then(function () { localStorage.setItem(PFX + "~lock", JSON.stringify(rec)); K.locked = false; return { phrase: pass, mode: "encrypted" }; });
+          });
+        });
+      });
+    });
+  };
+  function opened(dk) { return loadCache(dk).then(function (c) { DK = dk; CACHE = c; K.locked = false; K.render(); }); }
+  K.unlock = function () {
+    var rec = lockRec(); if (!rec) { K.locked = false; return Promise.resolve(); }
+    return webauthnGet(rec).then(function (cred) {
+      if (rec.mode !== "encrypted") { K.locked = false; K.render(); return; }
+      var out = prfOf(cred); if (!out) throw new Error(K.t("lock.failed", "That did not unlock. Try again, or use your recovery phrase."));
+      return kekPrf(out, unb64(rec.salt)).then(function (k) { return unwrapDK(k, rec.wrapped); }).then(opened);
+    });
+  };
+  K.unlockPhrase = function (p) {
+    var rec = lockRec(); if (!rec || rec.mode !== "encrypted") return Promise.reject(new Error("no recovery phrase"));
+    return kekPhrase(p, unb64(rec.rsalt)).then(function (k) { return unwrapDK(k, rec.rwrapped); }).then(opened)
+      .catch(function () { throw new Error(K.t("lock.bad_phrase", "That recovery phrase does not match.")); });
+  };
+  // Turn it off: only while unlocked; every value goes back to plain storage first, then the lock record goes.
+  K.lockDisable = function () {
+    if (K.locked) return Promise.reject(new Error("unlock first"));
+    var c = CACHE || {};
+    return WQ.then(function () {
+      CACHE = null; DK = null;
+      Object.keys(c).forEach(function (k) { try { localStorage.setItem(PFX + k, c[k]); } catch (e) { MEM[k] = c[k]; } });
+      localStorage.removeItem(PFX + "~lock"); K.render();
+    });
+  };
+  K.lockNow = function () { if (!lockRec()) return; DK = null; CACHE = null; K.locked = true; K.render(); };
+  K.lockIdle = function (sec) { var r = lockRec(); if (!r) return; r.idle = sec; localStorage.setItem(PFX + "~lock", JSON.stringify(r)); };
+  // Away too long: lock. Hidden: veil the screen, so the app switcher and a glance over the shoulder show nothing.
+  var hiddenAt = 0;
+  document.addEventListener("visibilitychange", function () {
+    if (!lockRec()) return;
+    if (document.hidden) { hiddenAt = Date.now(); document.body.classList.add("osk-veil"); return; }
+    document.body.classList.remove("osk-veil");
+    if (!K.locked && hiddenAt && Date.now() - hiddenAt > K.lockInfo().idle * 1000) K.lockNow();
+  });
+  K.lockScreen = function () {
+    var rec = lockRec(), enc = rec && rec.mode === "encrypted";
+    return K.card(K.esc(K.t("lock.title", "Locked")),
+      "<p>" + K.esc(K.t("lock.body", "Unlock with this device's Face ID, fingerprint or Windows Hello.")) + "</p>"
+      + '<button class="primary" data-a="unlock">' + K.esc(K.t("lock.unlock", "Unlock")) + "</button>"
+      + (enc ? '<details><summary>' + K.esc(K.t("lock.use_phrase", "Use your recovery phrase")) + '</summary><label for="lkPhrase">'
+        + K.esc(K.t("lock.phrase", "Recovery phrase")) + '</label><input id="lkPhrase" autocomplete="off" autocapitalize="characters" spellcheck="false">'
+        + '<button data-a="unlockPhrase">' + K.esc(K.t("lock.unlock", "Unlock")) + "</button></details>" : ""), "hero");
+  };
+  // Turn on from Settings or the Today invitation: one biometric prompt, then the recovery phrase shown once.
+  K.lockStart = function () {
+    K.lockEnable().then(function (r) { K._phrase = r.phrase; K._lockMode = r.mode; K.go("settings"); })
+      .catch(function (e) { K.toast((e && e.name === "NotAllowedError") ? K.t("lock.cancelled", "Not turned on. You can try again any time.") : (e && e.message) || "Error"); });
+  };
+  K.lockCard = function () {
+    var i = K.lockInfo(), T = function (k, d, v) { return K.esc(K.t(k, d, v)); };
+    if (K._phrase) return K.card(T("lock.phrase_title", "Your recovery phrase"),
+      "<p>" + T("lock.phrase_body", "If this device's Face ID or fingerprint ever changes, this phrase opens your data. Keep it somewhere safe, away from this device. It is shown once.") + "</p>"
+      + '<p class="big" style="font-family:ui-monospace,monospace;letter-spacing:.06em;word-break:break-all">' + K.esc(K._phrase) + "</p>"
+      + '<button class="primary" data-a="lockSaved">' + T("lock.saved", "I have saved it") + "</button>", "hero");
+    if (!i.on) return K.card(T("lock.title_off", "Lock"),
+      "<p>" + T("lock.offer", "Keep this private: unlock with this device's Face ID, fingerprint or Windows Hello. No new password.") + "</p>"
+      + (i.prf ? '<button class="primary" data-a="lockOn">' + T("lock.turn_on", "Turn on") + "</button>"
+               : '<p class="muted">' + T("lock.unsupported", "This browser cannot use the device lock.") + "</p>"));
+    var idle = i.idle, opt = function (sec, lab) { return '<button data-a="lockIdleSet" data-x="' + sec + '" aria-pressed="' + (idle === sec) + '"' + (idle === sec ? ' class="on"' : "") + ">" + lab + "</button>"; };
+    return K.card(T("lock.title_on", "Lock is on"),
+      "<p>" + (i.mode === "encrypted" ? T("lock.mode_enc", "Your data on this device is encrypted, and opens only with your face, fingerprint or recovery phrase.")
+                                        : T("lock.mode_gate", "Screen lock only: this browser cannot encrypt with the device lock, so the data itself is not encrypted.")) + "</p>"
+      + "<p>" + T("lock.idle", "Lock after being away for") + '</p><div class="btns">' + opt(60, "1 min") + opt(300, "5 min") + opt(900, "15 min") + "</div>"
+      + '<div class="btns"><button data-a="lockNowBtn">' + T("lock.lock_now", "Lock now") + '</button><button class="ghost" data-a="lockOff">' + T("lock.turn_off", "Turn off") + "</button></div>");
+  };
+  K.acts.unlock = function () { K.unlock().catch(function (e) { K.toast(e && e.message ? e.message : K.t("lock.failed", "That did not unlock. Try again, or use your recovery phrase.")); }); };
+  K.acts.unlockPhrase = function () { K.unlockPhrase(K.val("lkPhrase")).catch(function (e) { K.toast(e.message); }); };
 
   /* ── small helpers ───────────────────────────────────────────────── */
   K.esc = function (s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;"); };
@@ -160,6 +323,12 @@
   };
   K.go = function (id) { K.tab = id; try { history.replaceState(null, "", "#" + id); } catch (e) {} K.render(); window.scrollTo(0, 0); };
   K.render = function () {
+    if (K.locked) {                                                     // locked: nothing of the person's on screen
+      document.getElementById("oskMain").innerHTML = K.lockScreen();
+      document.getElementById("oskNav").innerHTML = ""; document.getElementById("oskMore").innerHTML = "";
+      var w = document.getElementById("oskWho"); if (w) w.textContent = "";
+      return;
+    }
     var tabs = K.tabs();
     if (!K.tab || !tabs.some(function (t) { return t.id === K.tab; })) K.tab = tabs.length ? tabs[0].id : null;
     var parts = (K.tab || "").split(":"), m = K.mods[parts[0]];
@@ -238,7 +407,10 @@
     while (i < a.length && j < b.length) { var x = a.codePointAt(i), y = b.codePointAt(j); if (x !== y) return x > y; i += x > 0xFFFF ? 2 : 1; j += y > 0xFFFF ? 2 : 1; }
     return a.length - i > b.length - j;
   }
+  // Locked: no sync at all. A push would read every encrypted value as absent and send a copy of nulls, and a merge would
+  // write the estate's plain copy over the encrypted one (both found in review, 2026-11-11). Sync resumes on unlock.
   K.merge = function (payload, rmeta) {
+    if (K.locked) return 0;
     var m = K.get("~meta", {}), changed = 0, mine = K.keys().filter(function (k) { return k.charAt(0) !== "~"; }).length, theirs = 0;
     Object.keys(payload).forEach(function (fk) { if (fk.indexOf(PFX) === 0 && fk.charAt(PFX.length) !== "~") theirs++; });
     // A remote copy with far fewer of our keys than we hold is a wrong or damaged row, not a real state: refuse it.
@@ -254,7 +426,7 @@
     return changed;
   };
   K.push = function () {
-    var c = syncCfg(); if (!c || !window.fetch) return Promise.resolve(false);
+    var c = syncCfg(); if (K.locked || !c || !window.fetch) return Promise.resolve(false);
     var m = K.get("~meta", {}), payload = {}, meta = {};
     K.keys().forEach(function (k) { if (k.charAt(0) === "~") return; payload[PFX + k] = raw(k); meta[PFX + k] = m[k] || Date.now(); });
     return fetch(stateURL(c), { method: "PUT", headers: hdrs(c), credentials: "same-origin", body: JSON.stringify({ payload: payload, meta: meta, updated_at: new Date().toISOString(), device: K.dev() }) })
@@ -262,7 +434,7 @@
       .catch(function () { K.set("~syncFails", K.get("~syncFails", 0) + 1); return false; });
   };
   K.pull = function () {
-    var c = syncCfg(); if (!c || !window.fetch || (navigator.onLine === false)) return Promise.resolve(0);
+    var c = syncCfg(); if (K.locked || !c || !window.fetch || (navigator.onLine === false)) return Promise.resolve(0);
     return fetch(stateURL(c), { headers: hdrs(c), credentials: "same-origin" })
       .then(function (r) { if (r.status === 404) return { payload: {}, meta: {} }; if (!r.ok) throw new Error(r.status); return r.json(); })
       .then(function (b) { var n = K.merge((b && b.payload) || {}, (b && b.meta) || {}); if (n > 0) K.render(); return K.push().then(function () { return n; }); })

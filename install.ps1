@@ -5,9 +5,9 @@
 #   powershell -ExecutionPolicy Bypass -File install.ps1            # rolling channel (main)
 #   powershell -ExecutionPolicy Bypass -File install.ps1 -Stable    # newest release
 #
-# SecuRAX runs inside WSL (Ubuntu on Windows), like most Linux server software on a Windows PC. This script checks that
-# WSL and Ubuntu are there (and tells you the one command if not), then runs install.sh inside Ubuntu. It changes nothing
-# on Windows itself.
+# SecuRAX runs inside WSL (Ubuntu on Windows). This script sizes WSL's memory from the PC (only when there is no .wslconfig),
+# installs WSL and Ubuntu when missing (run as Administrator; one restart), then runs install.sh inside Ubuntu, which installs
+# Docker Engine there (no Docker Desktop), turns HTTPS on, starts the estate and opens the Command Center.
 param([switch]$Stable, [string]$Version = "")
 $ErrorActionPreference = "Stop"
 $Repo = if ($env:SECURAX_REPO) { $env:SECURAX_REPO } else { "{{REPO_SLUG}}" }
@@ -19,17 +19,30 @@ if ($Repo -like "*{{*") {
 
 function Say($t) { Write-Host $t -ForegroundColor Cyan }
 
-if (-not (Get-Command wsl -ErrorAction SilentlyContinue)) {
-  Say "WSL is not available on this Windows. Open PowerShell as Administrator, run:  wsl --install -d Ubuntu"
-  Say "Restart when it asks, open Ubuntu once to make a user, then run this installer again."
-  exit 1
+$admin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
+
+# 1) Memory for WSL, sized from this PC (was a copy-paste step): only written when there is no .wslconfig yet
+$wslcfg = Join-Path $env:USERPROFILE ".wslconfig"
+if (-not (Test-Path $wslcfg)) {
+  $gb   = [math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1GB)
+  $mem  = if ($gb -ge 14) { 10 } elseif ($gb -ge 11) { 6 } else { 3 }
+  $swap = if ($gb -ge 14) { 6 } else { 8 }
+  "[wsl2]`nmemory=${mem}GB`nswap=${swap}GB`n" | Set-Content -Path $wslcfg -Encoding ascii
+  Say "This PC has $gb GB: SecuRAX gets ${mem}GB, with ${swap}GB of swap (Windows keeps the rest)."
 }
+
+# 2) WSL and Ubuntu: installed for you when missing (one restart), then run this same command again
 $env:WSL_UTF8 = "1"
-$distro = (wsl -l -q 2>$null) | ForEach-Object { $_.Trim() } | Where-Object { $_ -and $_ -notlike "docker-desktop*" } | Select-Object -First 1
+$distro = $null
+if (Get-Command wsl -ErrorAction SilentlyContinue) {
+  $distro = (wsl -l -q 2>$null) | ForEach-Object { $_.Trim() } | Where-Object { $_ -and $_ -notlike "docker-desktop*" } | Select-Object -First 1
+}
 if (-not $distro) {
-  Say "WSL is there but no Linux is installed. Open PowerShell as Administrator, run:  wsl --install -d Ubuntu"
-  Say "Then open Ubuntu once from the Start menu to make a user, and run this installer again."
-  exit 1
+  if (-not $admin) { Say "Ubuntu (WSL) is needed. Run this same command again in PowerShell as Administrator (right-click Start > Terminal (Admin))."; exit 1 }
+  Say "Installing Ubuntu (WSL). Windows may ask to restart: do, then open Ubuntu once from the Start menu to pick a username,"
+  Say "and run this same command again. It carries on from where it stopped."
+  wsl --install -d Ubuntu
+  exit 0
 }
 Say "SecuRAX installer: installing inside $distro (the fast WSL disk, not C:)"
 $opt = if ($Version) { "--version $Version" } elseif ($Stable) { "--stable" } else { "" }
@@ -38,5 +51,4 @@ $cmd = "cd ~ && curl -fsSLO https://raw.githubusercontent.com/$Repo/main/install
 wsl -d $distro -e bash -lc $cmd
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 Say ""
-Say "Docker: install Docker Desktop, then Settings > Resources > WSL integration > turn on $distro."
-Say "Then start everything from here with:  wsl -d $distro --cd ~/securax ./securax up"
+Say "Done. Docker Engine runs inside $distro (no Docker Desktop needed). Daily: open Ubuntu and type  securax up"

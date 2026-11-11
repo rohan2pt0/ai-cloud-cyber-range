@@ -57,3 +57,47 @@ def test_restore_checks_the_backup_before_installing_and_says_the_next_step(tmp_
              env_extra={"PATH": "/usr/bin:/bin"})
     assert ok.returncode == 0 and (tmp_path / "r2" / "securax").exists()
     assert "./securax restore" in ok.stdout or "Restoring your data" in ok.stdout      # without Docker: the exact command to run later
+
+
+# ── one command ends with a running estate (owner, 2026-11-11: setup was still tedious) ──
+def _stubs(tmp_path, sudo_rc=1):
+    """A bin folder that makes the laptop path testable offline: git clone copies this checkout, docker has no compose,
+    and sudo records what it was asked to run (and fails, so nothing real is installed)."""
+    b = tmp_path / "bin"
+    b.mkdir()
+    (b / "git").write_text(f'#!/bin/bash\nif [ "$1" = clone ]; then d="${{@: -1}}"; mkdir -p "$d"; /usr/bin/git -C {ROOT} archive HEAD | tar -x -C "$d"; exit 0; fi\nexec /usr/bin/git "$@"\n')
+    (b / "docker").write_text("#!/bin/bash\nexit 1\n")
+    (b / "sudo").write_text(f'#!/bin/bash\necho "$@" >> {tmp_path}/sudo.log\nexit {sudo_rc}\n')
+    for f in b.iterdir():
+        f.chmod(0o755)
+    return {"PATH": f"{b}:/usr/bin:/bin:/usr/local/bin", "SECURAX_REPO": "owner/repo"}
+
+
+def test_without_docker_and_without_a_yes_it_asks_nothing_installs_nothing_and_says_the_one_next_step(tmp_path):
+    r = _sh("--dir", str(tmp_path / "s"), home=tmp_path, env_extra=_stubs(tmp_path))
+    assert r.returncode == 0, r.stderr
+    assert "install.sh\" --docker" in r.stdout and "securax up" in r.stdout
+    assert not (tmp_path / "sudo.log").exists()                         # no tty, no --yes: never escalates by itself
+
+
+def test_with_yes_it_installs_docker_through_the_shared_audited_path_and_fails_plainly(tmp_path):
+    r = _sh("--yes", "--dir", str(tmp_path / "s"), home=tmp_path, env_extra=_stubs(tmp_path, sudo_rc=1))
+    called = (tmp_path / "sudo.log").read_text()
+    assert f"{tmp_path / 's'}/install.sh --docker" in called            # the local copy just cloned, never a second download
+    assert r.returncode != 0 and "Docker did not install" in r.stderr
+
+
+def test_docker_mode_is_root_only_and_installs_from_dockers_own_repository_for_the_sudo_user(tmp_path):
+    stub = _stubs(tmp_path)                                               # docker without compose: "not installed"
+    r = subprocess.run(["bash", str(ROOT / "install.sh"), "--docker"], capture_output=True, text=True, timeout=60,
+                       env={"PATH": stub["PATH"], "HOME": str(tmp_path), "SECURAX_SERVER_DRYRUN": "1", "SUDO_USER": "fakeuser",
+                            "SECURAX_REPO": "owner/repo"})
+    if subprocess.run(["id", "-u"], capture_output=True, text=True).stdout.strip() != "0":
+        assert r.returncode != 0 and "runs as root" in r.stderr
+        return
+    out = r.stdout
+    assert r.returncode == 0, r.stderr
+    assert "download.docker.com" in out and "signed-by=/etc/apt/keyrings/docker.asc" in out
+    assert "usermod -aG docker fakeuser" in out
+    src = (ROOT / "install.sh").read_text()
+    assert src.count("install_docker") == 3                            # one definition, used by --server and --docker

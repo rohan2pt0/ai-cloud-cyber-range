@@ -326,8 +326,12 @@ def test_windows_install_path_is_scripted_and_documented():
     assert subprocess.run(["bash", "-n", str(sh)]).returncode == 0
     txt = sh.read_text()
     assert "docker info" in txt and "WSL integration" in txt and ".env" in txt
+    # since 2026-11-11 the documented path is ONE command: install.ps1 sizes WSL's memory (.wslconfig), installs Ubuntu and
+    # runs install.sh, which installs Docker Engine and starts the estate; keys are optional, offered by `securax finish`
     qs = (REPO / "WINDOWS-QUICKSTART.md").read_text()
-    assert "wsl-setup.sh" in qs and "./securax keys" in qs and ".wslconfig" in qs
+    ps1 = (REPO / "install.ps1").read_text()
+    assert "install.ps1" in qs and "securax finish" in qs and "Administrator" in qs
+    assert ".wslconfig" in ps1 and "install.sh" in ps1 and "wsl --install -d Ubuntu" in ps1
     assert "~/securax" in (REPO / "securax.cmd").read_text()
 
 

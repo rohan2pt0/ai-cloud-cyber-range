@@ -51,6 +51,10 @@
       if (K.ed.north_star) h += '<p class="north">' + K.esc(K.ed.north_star) + "</p>";
       var su = setup();
       h += su + newsCard() + oneStep(!!su);   // during first-run setup, Start is the one primary
+      // one quiet invitation to lock, once there is something to protect: never at first run, dismissed for good in one tap
+      if (!su && !K.lockInfo().on && K.lockInfo().prf && !K.get("~lockOfferSeen", false))
+        h += K.card(K.esc(K.t("lock.title_off", "Lock")), "<p>" + K.esc(K.t("lock.offer", "Keep this private: unlock with this device's Face ID, fingerprint or Windows Hello. No new password.")) + "</p>"
+          + '<div class="btns"><button data-a="lockOn">' + K.esc(K.t("lock.turn_on", "Turn on")) + '</button><button class="ghost" data-a="lockLater">' + K.esc(K.t("lock.not_now", "Not now")) + "</button></div>");
       if (K.mods.rituals && K.cfg("rituals")) h += K.mods.rituals.todayCard();
       if (K.mods.inbox && K.cfg("inbox")) h += K.mods.inbox.captureCard();
       if (K.mods.feeds && K.cfg("feeds")) h += K.mods.feeds.todayCard();
@@ -58,6 +62,8 @@
       return h;
     },
     acts: {
+      lockOn: function () { K.set("~lockOfferSeen", true); K.lockStart(); },
+      lockLater: function () { K.set("~lockOfferSeen", true); K.render(); },
       newsSeen: function (d) { var all = (K.ed.whatsnew || []).map(function (n) { return n.date; }).sort(); K.set("~newsSeen", all[all.length - 1] || d); K.render(); },
       profileSave: function () {
         var n = K.val("pfName"); if (!n) { K.toast(K.t("today.toast_name", "Type a first name, or anything you like to be called.")); return; }

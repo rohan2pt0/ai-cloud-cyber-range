@@ -39,7 +39,9 @@ powershell -ExecutionPolicy Bypass -File install.ps1
 2. It puts the code in `~/securax`, or in `--dir PATH`.
 3. It adds the `securax` shortcut and prints the next command, `./securax up`.
 
-**What it never does:** it never uses sudo, never starts anything and never changes a folder that already exists. On Windows it only checks for WSL and Ubuntu, then runs `install.sh` inside Ubuntu.
+**One command ends with a running estate (since 11 November 2026).** After the code and the shortcut it installs Docker Engine when it is missing (it asks once, from Docker's own signed repository, the same steps as `--server`; `--yes` skips the question), turns HTTPS on (a fresh install has no data to move), starts the estate and opens the Command Center. `--no-start` stops after the shortcut, as before.
+
+**What it never does:** it never changes a folder that already exists, never asks for a password without saying why first, and without a terminal or `--yes` it never escalates at all. On Windows, `install.ps1` sizes WSL's memory, installs WSL and Ubuntu when missing (as Administrator, one restart), then runs `install.sh` inside Ubuntu. No Docker Desktop.
 
 **No network (an air-gapped site, a bank's lab):**
 

@@ -1,56 +1,32 @@
-# SecuRAX on Windows — follow these steps in order (about 15 minutes, once)
+# SecuRAX on Windows — one command (about 10 minutes, mostly downloads)
 
-Everything below is copy-paste. Don't skip a step. If a step prints a message that says **STOP**, do what it says, then paste that step again.
+One command does the setup. If it says **STOP**, do what it says, then run the same command again: it is safe to repeat.
 
-## Step 1 — give SecuRAX enough memory (PowerShell, as Administrator)
-Right-click **Start → Terminal (Admin)** (or "Windows PowerShell (Admin)"), paste, press Enter:
+## Step 1 — one command (PowerShell as Administrator)
+Right-click **Start → Terminal (Admin)**, paste, press Enter. The script is saved to a file first, so you can read it (`notepad install.ps1`):
 ```powershell
-# Reads this PC's memory and gives SecuRAX a safe share of it (Windows keeps the rest). Nothing to edit.
-$gb   = [math]::Round((Get-CimInstance Win32_ComputerSystem).TotalPhysicalMemory / 1GB)
-$mem  = if ($gb -ge 14) { 10 } elseif ($gb -ge 11) { 6 } else { 3 }
-$swap = if ($gb -ge 14) { 6 } else { 8 }
-@"
-[wsl2]
-memory=${mem}GB
-swap=${swap}GB
-"@ | Set-Content -Path "$env:USERPROFILE\.wslconfig" -Encoding ascii
-wsl --shutdown
-Write-Host "This PC has $gb GB. SecuRAX gets ${mem}GB, with ${swap}GB of swap."
+Invoke-WebRequest https://raw.githubusercontent.com/rohan2pt0/ai-cloud-cyber-range/main/install.ps1 -OutFile install.ps1
+powershell -ExecutionPolicy Bypass -File install.ps1
 ```
-(A 16 GB PC gives SecuRAX 10 GB and Windows keeps 6 GB. An 8 GB PC, such as an HP 240 G9 with one 8 GB module, gives it 3 GB: the estate sees how little it has and starts only its core by itself. If it still struggles, `./securax up --safe` runs just the AI gateway and the Command Center, and the always-on work belongs on a server: see [the go-live runbook](docs/securax/130-GO-LIVE-RUNBOOK.md). If you ever have other heavy apps open on a 16 GB PC, lower it to `8GB`.)
+It sizes SecuRAX's memory from your PC, installs Ubuntu (WSL) if it is missing, and then, inside Ubuntu, installs Docker Engine
+(it asks for your Ubuntu password once), turns HTTPS on, starts the estate and opens your Command Center. No Docker Desktop, no settings to click.
 
-## Step 2 — start Docker Desktop and switch on the Ubuntu link
-1. Start menu → **Docker Desktop**. Wait until the bottom-left says **Engine running**.
-2. Gear icon (Settings) → **Resources** → **WSL integration** → turn **ON** the switch next to **Ubuntu** → **Apply & restart**.
+If Windows installs Ubuntu first, it asks to restart: restart, open **Ubuntu** once from the Start menu to pick a username and
+password, then run the same two lines again. It carries on from where it stopped.
 
-## Step 3 — install SecuRAX (inside Ubuntu)
-1. Start menu → type **Ubuntu** → open it (a black window; first time it asks you to create a username/password — pick anything simple, and remember it).
-2. Paste these two lines and press Enter (Ubuntu may ask for your password once; typing is invisible, that's normal). The script is saved to a file first instead of being piped straight into a shell, so you can read it (`less wsl-setup.sh`) before it runs:
+## Step 2 (optional, any time) — free AI keys and the rest
+Everything works on the private local model. For faster answers, and for phones and backups, one step at a time:
 ```bash
-curl -fsSLo wsl-setup.sh https://raw.githubusercontent.com/rohan2pt0/ai-cloud-cyber-range/main/local/scripts/wsl-setup.sh
-bash wsl-setup.sh
+securax finish
 ```
-It downloads SecuRAX into Ubuntu's fast disk, keeps your old keys, starts everything and tells you when it's ready. The first start downloads a few GB — be patient.
 
-## Step 3b — add your free API keys (makes answers instant)
-Still in Ubuntu:
-```bash
-cd ~/securax && ./securax keys
-```
-For each of Gemini, Groq and OpenRouter it opens nothing for you — it prints the sign-up link, you create a free key there, paste it (typing is hidden) and press Enter. Press Enter on an empty line to skip one. It finishes with a **live test** showing which provider answered and how long it took.
-
-## Step 4 — use it
+## Use it
 Your Command Center opens in the browser by itself (or run `./securax open`, which prints the right address: `http://localhost:8088/hub.html`, or `https://hub.securax.localhost/hub.html` once HTTPS is on). Everything is linked from there.
 
-## Step 5 — encrypt every connection (recommended, 3 minutes)
-**First** (once): in the Guiding Map app open **Ops → System health → Export backup** — the app keeps its data per web address, and the secure address starts empty (you import the backup there, or use sync).
-Your browser says "not secure" for `http://localhost…` because it is plain HTTP. Still in Ubuntu:
-```bash
-cd ~/securax && ./securax tls on
-./securax tls trust --apply        # Windows asks you to confirm adding the SecuRAX authority: choose Yes, then close and reopen the browser
-./securax down && ./securax up
-```
-Then use **https://hub.securax.localhost/hub.html** (a name, no port; the old http addresses stop working on purpose). Details and limits: `docs/securax/40-ENCRYPTION-IN-TRANSIT.md`.
+## Installed before 11 November 2026? Turn HTTPS on once
+A new install is on HTTPS already. An older one: first export your Life OS data (**Ops → System health → Export backup**: the
+secure address starts empty), then in Ubuntu run `cd ~/securax && ./securax tls on && ./securax tls trust --apply && ./securax down && ./securax up`,
+open **https://hub.securax.localhost/hub.html** and import the backup there. Details: `docs/securax/40-ENCRYPTION-IN-TRANSIT.md`.
 
 ## Every day after that
 Open **Ubuntu**, then:
@@ -62,7 +38,7 @@ Open **Ubuntu**, then:
 | something is wrong | `cd ~/securax && ./securax doctor` |
 | add / change an API key | `cd ~/securax && ./securax keys` |
 
-Or from PowerShell, in the old Windows folder, the same commands work as `.\securax.cmd up` (it automatically uses the fast Ubuntu copy once Step 3 is done).
+Or from PowerShell, in the old Windows folder, the same commands work as `.\securax.cmd up` (it automatically uses the fast Ubuntu copy once Step 1 is done).
 
 ## If something fails
 Copy **everything** the window printed and paste it to me. Don't try to fix it yourself.
