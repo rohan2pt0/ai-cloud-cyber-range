@@ -4828,7 +4828,8 @@
       sp.className = "gm-ripple";
       sp.style.cssText = "width:" + s + "px;height:" + s + "px;left:" + (e.clientX - r.left - s / 2) + "px;top:" + (e.clientY - r.top - s / 2) + "px";
       t.classList.add("gm-ripple-host"); t.appendChild(sp);
-      sp.onanimationend = function () { sp.remove(); t.classList.remove("gm-ripple-host"); };
+      var done = function () { if (sp.parentNode) sp.remove(); if (!t.querySelector(".gm-ripple")) t.classList.remove("gm-ripple-host"); };
+      sp.onanimationend = done; setTimeout(done, 500);   // a ripple never stays behind, even when the animation does not report its end
     }, { passive: 1 });
   }
   window.gmHaptic = function (kind) {
