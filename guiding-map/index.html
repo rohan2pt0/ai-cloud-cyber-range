@@ -5654,7 +5654,8 @@ window.GM_I18N = {"hi":{"_meta":{"locale":"hi-IN","status":"beta","note":"machin
     h += '<div class="info">' + (due.length ? due.length + " ritual(s) due now (they also show on Today). " : "Nothing due today. ")
       + (broken ? broken + " habit(s) need a recovery rep." : "") + '</div>';
     h += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px"><button class="btn-sm" style="background:var(--cardAlt);color:var(--text);font-weight:700" onclick="gmQuarter()">Quarterly check-in</button>'
-      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmCalendar(\'rhythm\')">Add the rhythm to my calendar</button></div>';
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmCalendar(\'rhythm\')">Add the rhythm to my calendar</button>'
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" role="switch" aria-checked="' + gmHapticsOn() + '" onclick="gmToggleHaptics()">Haptics (a light tap feel): ' + (gmHapticsOn() ? "on" : "off") + '</button></div>';
     var cad = "";
     RITUALS.forEach(function (r) {
       var log = cadenceLog(), done = log[r.id] === r.key(new Date());
@@ -7040,9 +7041,26 @@ window.GM_I18N = {"hi":{"_meta":{"locale":"hi-IN","status":"beta","note":"machin
   // Haptics on the moments that matter only (premium.buttons.haptic_on): a daily-three tick, marking something done, a
   // confirmation. Never under reduced motion or the in-app "still" switch, and nothing where the phone cannot vibrate.
   var HAPTIC = { tap: [8], success: [10, 40, 10], warn: [24] };
+  function gmHapticsOn() { return G("gm_haptics", true) !== false; }
+  window.gmToggleHaptics = function () { S_("gm_haptics", !gmHapticsOn()); renderAll(); };
+  var GM_PRESS = "button,.gm-tap,.tile,[role=button]";
+  if (!window._gmTactile) {
+    window._gmTactile = 1;
+    document.addEventListener("pointerdown", function (e) {
+      var t = e.target.closest && e.target.closest(GM_PRESS);
+      if (!t) return;
+      if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      if (gmHapticsOn()) try { navigator.vibrate(6); } catch (x) {}
+      var r = t.getBoundingClientRect(), s = Math.max(r.width, r.height, 40) * 1.6, sp = document.createElement("span");
+      sp.className = "gm-ripple";
+      sp.style.cssText = "width:" + s + "px;height:" + s + "px;left:" + (e.clientX - r.left - s / 2) + "px;top:" + (e.clientY - r.top - s / 2) + "px";
+      t.classList.add("gm-ripple-host"); t.appendChild(sp);
+      sp.onanimationend = function () { sp.remove(); t.classList.remove("gm-ripple-host"); };
+    }, { passive: 1 });
+  }
   window.gmHaptic = function (kind) {
     try {
-      if (G("gm_still", false) || !navigator.vibrate) return;
+      if (G("gm_still", false) || !gmHapticsOn() || !navigator.vibrate) return;
       if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
       navigator.vibrate(HAPTIC[kind] || HAPTIC.tap);
     } catch (e) { /* a missing motor is never an error */ }
@@ -7143,9 +7161,25 @@ window.GM_I18N = {"hi":{"_meta":{"locale":"hi-IN","status":"beta","note":"machin
       + '</div><div style="font-size:12px;color:var(--muted);margin-top:12px">Life OS ' + esc(ver) + ' · your data stays on your devices</div>'
       + '<button class="btn-sm" style="margin-top:12px;background:none;color:var(--muted)" onclick="gmClose()">Close</button>');
   };
+  function tactileCSS() {
+    var st = document.getElementById("gmTactileCss");
+    if (!st) { st = document.createElement("style"); st.id = "gmTactileCss"; }
+    st.textContent = ":root{--gm-lift:0 2px 0 var(--border),0 3px 8px rgba(0,0,0,.10)}"
+      + ":is(button,.gm-d3 .tile,[role=button]){transition:transform .16s cubic-bezier(.2,.8,.2,1.2),box-shadow .16s;box-shadow:var(--gm-lift)}"
+      + ":is(button,.gm-d3 .tile,[role=button]):active{transform:translateY(2px);box-shadow:0 1px 1px rgba(0,0,0,.14);transition:transform 80ms ease-out}"
+      + ".gm-ripple-host{position:relative;overflow:hidden}"
+      + ".gm-ripple{position:absolute;border-radius:50%;background:currentColor;animation:gm-rip .35s ease-out forwards}"
+      + "@keyframes gm-rip{0%{opacity:.18;transform:scale(0)}to{opacity:0;transform:scale(1)}}"
+      + ".hab-chk:active,input[type=checkbox]:active{animation:gm-detent .18s ease}"
+      + "@keyframes gm-detent{0%{transform:scale(.92)}60%{transform:scale(1.04)}}"
+      + "@media (prefers-reduced-motion:reduce){.gm-ripple{display:none}.hab-chk:active,input[type=checkbox]:active{animation:none}"
+      + ":is(button,.gm-d3 .tile,[role=button]):active{transform:none;box-shadow:none;opacity:.86}}";
+    document.head.appendChild(st);
+  }
   function designFrame() {
     designCSS();
     premiumCSS();
+    tactileCSS();
     if (!document.querySelector("a.skip") && document.getElementById("sections")) {
       var sk = document.createElement("a"); sk.className = "skip"; sk.href = "#sections"; sk.textContent = "Skip to content";
       document.body.insertBefore(sk, document.body.firstChild);
