@@ -152,6 +152,7 @@ nav:
       - "One door (sign in once)": securax/132-ONE-DOOR.md
       - "Threat modelling (STRIDE as text)": securax/133-THREAT-MODELLING.md
       - "Use it now: freeze, harden, live in it": securax/134-USE-IT-NOW.md
+      - "Systems that deliver: one shelf, one loop": securax/135-SYSTEMS-THAT-DELIVER.md
       - "Choose who you serve": securax/116-CHOOSE-YOUR-CUSTOMER.md
   - How-to guides:
       - AI providers and plugins: securax/22-PLUGINS-AND-PROVIDERS.md
