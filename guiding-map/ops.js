@@ -320,7 +320,7 @@
     try { _set0(k, v); } catch (e) {
       // Quota exhausted. Silent failure here would mean the user keeps
       // typing into a form that is no longer saving anything.
-      alert("This device is out of storage, so that change was NOT saved.\n\nOps tab \u2192 System health \u2192 Export backup, then remove old data.");
+      alert("This device is out of storage, so that change was NOT saved.\n\nOps tab \u2192 System health \u2192 Save encrypted backup, then remove old data.");
       throw e;
     }
   }
@@ -1351,7 +1351,7 @@
       return '<div class="cat-t">\u{1F4B8} Where the money goes</div>'
         + '<div class="info">Add your monthly take-home and the four standing outflows to draw the flow. Five numbers, once.</div>'
         + '<div class="road-col">'
-        + '<label class="f-label">Monthly take-home (₹)</label><input inputmode="decimal" value="" onchange="gmLifeSet(\'minc\',this.value)">'
+        + '<label class="f-label">Monthly take-home (₹)</label><input inputmode="decimal" aria-label="Monthly take-home (₹)" value="" onchange="gmLifeSet(\'minc\',this.value)">'
         + '</div>';
     }
     var rupee = function (v) { return "₹" + Number(v || 0).toLocaleString("en-IN"); };
@@ -1403,7 +1403,7 @@
       + '<div class="road-col reveal" style="margin-top:10px">' + meters + '</div>';
     h += '<details class="road-col" style="margin-top:8px"><summary style="cursor:pointer;font-weight:700;font-size:12px">Edit the numbers</summary><div style="margin-top:6px">';
     F.forEach(function (f) {
-      h += '<label class="f-label">' + f[1] + exampleBadge(f[0]) + '</label><input inputmode="decimal" value="' + esc(l[f[0]] || "")
+      h += '<label class="f-label">' + f[1] + exampleBadge(f[0]) + '</label><input inputmode="decimal" aria-label="' + f[1] + '" value="' + esc(l[f[0]] || "")
         + '" onchange="gmLifeSet(\'' + f[0] + '\',this.value)">' + saneWarn(f[0], l[f[0]]);
     });
     return h + '</div></details>';
@@ -3231,10 +3231,10 @@
       + '<a href="' + estateUrl("api", 8080, "/healthz") + '" target="_blank" rel="noopener">Gateway health</a></div></details>';
 
     h += '<div class="info" style="margin-top:12px">Gateway URL (change only if your estate is on another machine/Tailscale): '
-      + '<input id="askGwIn" value="' + esc(askGw()) + '" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid var(--line,#999);border-radius:8px;background:transparent;color:inherit">'
+      + '<input id="askGwIn" aria-label="Estate address" value="' + esc(askGw()) + '" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid var(--line,#999);border-radius:8px;background:transparent;color:inherit">'
       + '<button class="btn btn-s" onclick="gmAskGwSave()" style="margin-top:6px">Save</button>'
       + '<div style="margin-top:8px">Gateway key <span style="color:var(--muted)">(only if sign-in is switched on for your estate; stays on this device)</span>: '
-      + '<input id="askKeyIn" type="password" autocomplete="off" value="' + esc(G("gm_ask_key", "")) + '" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid var(--line,#999);border-radius:8px;background:transparent;color:inherit">'
+      + '<input id="askKeyIn" type="password" autocomplete="off" aria-label="Estate key" value="' + esc(G("gm_ask_key", "")) + '" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid var(--line,#999);border-radius:8px;background:transparent;color:inherit">'
       + '<button class="btn btn-s" onclick="gmAskKeySave()" style="margin-top:6px">Save key</button></div></div>';
     return h + '</div>';
   }
@@ -4607,7 +4607,7 @@
     var today = new Date();
     planItems(c).forEach(function (p) {
       var over = p.due && !p.done && p.due < today;
-      pl += '<div role="button" tabindex="0" onclick="gmCarDone(\'' + p.id + '\')" style="display:flex;gap:9px;align-items:flex-start;cursor:pointer;margin:6px 0;font-size:12.5px;color:var(--text);line-height:1.5"><span class="gm-tap' + (p.done ? " on" : "") + '" style="min-width:26px;min-height:26px;border-radius:8px;font-size:12px">' + (p.done ? "✓" : "") + '</span>'
+      pl += '<div style="display:flex;gap:9px;align-items:flex-start;margin:6px 0;font-size:12.5px;color:var(--text);line-height:1.5"><button type="button" class="gm-tap' + (p.done ? " on" : "") + '" aria-pressed="' + (p.done ? "true" : "false") + '" aria-label="' + esc((p.done ? "Mark not done: " : "Mark done: ") + p.t) + '" style="min-width:26px;min-height:26px;border-radius:8px;font-size:12px;padding:0" onclick="gmCarDone(\'' + p.id + '\')">' + (p.done ? "✓" : "") + '</button>'
         + '<span' + (p.done ? ' style="text-decoration:line-through;opacity:.7"' : '') + '>' + esc(p.t) + (p.due ? ' <span style="color:' + (over ? "var(--red)" : "var(--muted)") + '">· ' + (over ? "overdue " : "by ") + ymd(p.due) + '</span>' : '') + '</span></div>';
     });
     if (datedCount("career")) pl += '<button class="btn-sm" data-haptic="success" style="margin-top:8px;background:var(--cardAlt);color:var(--text)" onclick="gmCalendarDated(\'career\')">Add the plan to my calendar</button>';
