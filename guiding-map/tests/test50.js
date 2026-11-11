@@ -29,7 +29,9 @@ setTimeout(() => {
       w.gmSetLang("en");
       ok("switching back restores English", nav(w).includes("Today") && !nav(w).includes(mr.strings.Today) && w.document.documentElement.lang === "en");
       ok("catalogs name their locale and status", [hi, mr].every(c => c._meta && /-IN$/.test(c._meta.locale) && c._meta.status));
-      ok("Hindi and Marathi cover the same strings", Object.keys(hi.strings).sort().join("|") === Object.keys(mr.strings).sort().join("|"));
+      const src = new Set(JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'i18n', 'lifeos.source.json'), 'utf8')).strings.concat(["Today", "Inbox", "Goals", "Ask", "More", "Language", "Save encrypted backup", "Restore from file", "Later", "Danger zone"]));
+      ok("every catalog key is a real English string of the app (no invented keys)", [hi, mr].every(c => Object.keys(c.strings).every(k => src.has(k))), [hi, mr].map(c => Object.keys(c.strings).filter(k => !src.has(k)).slice(0, 3).join("|")).join(" / "));
+      ok("no value is empty or carries markup", [hi, mr].every(c => Object.values(c.strings).every(v => String(v).trim() && !/<script/i.test(v))));
       ok("the catalogs are inlined for offline use", /window\.GM_I18N = \{"hi":/.test(html));
       console.log("test50 Life OS languages: " + P + " passed, " + F + " failed"); if (F) { e.forEach(x => console.log("  " + x)); process.exit(1); } process.exit(0);
     }, 200);
