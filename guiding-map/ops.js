@@ -440,16 +440,17 @@
   }
   window.gmTouchRows = touchRows;
   function touchHTML() {
-    var rows = touchRows(), h = '<div class="info">Every time your data left a device or came back: when, which device, what, and where to. '
-      + 'It covers every device that syncs. The estate keeps its own tamper-evident log of AI requests: <code>./securax audit verify</code>.</div>';
+    var rows = touchRows(), h = '<div class="info">Each time your data left a device or came back: when, from which device, and where it went. '
+      + 'It covers every device that syncs. Questions sent to AI are also kept in the estate\'s own tamper-proof log.</div>';
     if (!rows.length) return h + '<div style="font-size:12px;color:var(--muted)">Nothing yet: your data has not left this device.</div>';
-    h += '<table style="width:100%;font-size:11.5px;border-collapse:collapse">';
+    h += '<div class="gm-touch">';
     rows.slice(0, 60).forEach(function (e) {
-      var d = new Date(e.t);
-      h += '<tr style="border-bottom:1px solid var(--line,#2a3a4d)"><td style="padding:4px 6px;white-space:nowrap">' + esc(d.toISOString().slice(0, 10) + " " + d.toTimeString().slice(0, 5))
-        + '</td><td style="padding:4px 6px">' + esc(e.d || "") + '</td><td style="padding:4px 6px">' + esc(e.w) + '</td><td style="padding:4px 6px;color:var(--muted)">' + esc(e.p) + '</td></tr>';
+      var d = new Date(e.t), plain = /not encrypted/.test(e.w);
+      h += '<div style="padding:8px 0;border-bottom:1px solid var(--border)"><div style="font-size:13px;font-weight:700;color:' + (plain ? "var(--red)" : "var(--text)") + '">' + esc(e.w) + '</div>'
+        + '<div style="font-size:11.5px;color:var(--muted)">' + esc(d.toLocaleDateString(undefined, { day: "numeric", month: "short" }) + ", " + d.toTimeString().slice(0, 5)) + ' \u00b7 ' + esc(e.d || "") + ' \u2192 ' + esc(e.p) + '</div>'
+        + (plain ? '<div style="font-size:11.5px;color:var(--muted)">A readable copy. Delete it from Downloads (and anywhere it was shared) once you have an encrypted backup.</div>' : '') + '</div>';
     });
-    return h + '</table>';
+    return h + '</div>';
   }
   function wsURL(c) { return String(c.url).replace(/\/+$/, "").replace(/^http/, "ws") + "/ws"; }
   window.gmLiveStop = function () { clearTimeout(wsTimer); if (ws) { try { ws.close(); } catch (e) {} ws = null; } };
@@ -2175,18 +2176,74 @@
     }
     return n * 2; // UTF-16
   }
-  window.gmExportNow = function () {
+  /* Backups are encrypted (owner, 2026-11-11: an export left the whole life in a readable file in Downloads, where any app,
+     a cloud photo sync or a forwarded chat could read it). AES-256-GCM under a key from a backup phrase (PBKDF2-SHA256,
+     310 000 rounds, the sync seal above). The phrase is made once on this device, shown once to keep in a password manager,
+     and kept here so later backups need no typing; it is never inside the file. Restoring on this device needs nothing;
+     on another device, the phrase. Old plain files still restore. Threat model: lifeos-backup. */
+  // device-only: every sync path, the OneDrive copy and every backup skip keys that start with gm_sync_od, so the phrase never leaves
+  var BK_PH = "gm_sync_od_bkphrase", BK_ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  function bkNewPhrase() {
+    var r = crypto.getRandomValues(new Uint8Array(20)), t = "";
+    for (var i = 0; i < 20; i++) t += BK_ABC[r[i] % 32] + (i % 4 === 3 && i < 19 ? "-" : "");
+    return t;                                                          // 20 symbols of 32: 100 bits
+  }
+  function bkNorm(p) { return String(p || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); }
+  window.gmBackupSeal = function (blob, phrase) {
+    if (!(window.crypto && crypto.subtle)) return Promise.reject(new Error("this browser has no encryption here (open the app over https)"));
+    var salt = crypto.getRandomValues(new Uint8Array(16));
+    return odDerive(bkNorm(phrase), salt).then(function (key) { return odSeal(key, blob, salt); })
+      .then(function (env) { var o = JSON.parse(env); o.kind = "securax-life-os-backup"; return JSON.stringify(o); });
+  };
+  window.gmBackupOpen = function (env, phrase) {
+    return odDerive(bkNorm(phrase), unb64(env.salt)).then(function (key) { return odOpen(key, env); });
+  };
+  function bkSave(text, enc) {
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+    a.download = "life-os-backup-" + ymd() + (enc ? "-encrypted" : "") + ".json";
+    a.click();
+    S_("gm_last_export", ymd()); renderAll();
+  }
+  function bkBlob() {
     var blob = {};
     for (var i = 0; i < localStorage.length; i++) {
       var k = localStorage.key(i);
-      if (k.indexOf("gm_ms_tok") !== 0 && k.indexOf("gm_sync_od") !== 0) blob[k] = localStorage.getItem(k);
+      if (k.indexOf("gm_ms_tok") !== 0 && k.indexOf("gm_sync_od") !== 0 && k !== BK_PH) blob[k] = localStorage.getItem(k);
     }
-    gmTouch("Exported everything to a file (not encrypted)", "a file on this device");
-    var a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([JSON.stringify(blob, null, 2)], { type: "application/json" }));
-    a.download = "guiding-map-" + ymd() + ".json";
-    a.click();
-    S_("gm_last_export", ymd()); renderAll();
+    return blob;
+  }
+  window.gmExportNow = function () {
+    var phrase = G(BK_PH, null), first = !G("gm_sync_od_bkshown", null);
+    if (!phrase) { phrase = bkNewPhrase(); S_(BK_PH, phrase); }
+    var blob = bkBlob();
+    gmBackupSeal(blob, phrase).then(function (text) {
+      gmTouch("Saved an encrypted backup", "a file on this device");
+      bkSave(text, true);
+      if (first) S_("gm_sync_od_bkshown", ymd());
+      if (first) gmDlg('<div style="font-weight:800;font-size:15px;margin-bottom:8px">Your backup phrase</div>'
+        + '<div style="font-size:13px;line-height:1.55;margin-bottom:10px">The backup is encrypted. On this device it opens by itself. To open it on a new phone, you need this phrase. '
+        + 'Keep it in your password manager. You see it only now (it is also in Settings, under Backup).</div>'
+        + '<div id="gmBkPh" style="font-family:monospace;font-size:16px;font-weight:800;letter-spacing:1px;padding:10px;border:1px solid var(--border);border-radius:10px;text-align:center;margin-bottom:12px;user-select:all">' + esc(phrase) + '</div>'
+        + '<div style="display:flex;gap:8px"><button class="btn-sm" style="background:var(--gold);color:#0d1f35;font-weight:800;padding:9px 18px" onclick="gmBkCopy()">Copy</button>'
+        + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);padding:9px 14px" onclick="gmClose()">I have saved it</button></div>');
+    }).catch(function (e) { gmToast("No backup saved: " + (e && e.message || e) + ". Nothing readable was written."); });
+  };
+  window.gmBkCopy = function () {
+    var p = G(BK_PH, ""); try { navigator.clipboard.writeText(p).then(function () { gmToast("Copied. Paste it into your password manager."); }); } catch (e) { gmToast(p); }
+  };
+  window.gmBkShow = function () {
+    var p = G(BK_PH, null);
+    if (!p) { gmToast("No backup phrase yet: it is made with your first backup."); return; }
+    gmDlg('<div style="font-weight:800;font-size:15px;margin-bottom:8px">Your backup phrase</div><div style="font-family:monospace;font-size:16px;font-weight:800;padding:10px;border:1px solid var(--border);border-radius:10px;text-align:center;margin-bottom:12px;user-select:all">'
+      + esc(p) + '</div><div style="display:flex;gap:8px"><button class="btn-sm" style="background:var(--gold);color:#0d1f35;font-weight:800;padding:9px 18px" onclick="gmBkCopy()">Copy</button>'
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);padding:9px 14px" onclick="gmClose()">Close</button></div>');
+  };
+  // a plain, readable file only when asked for by name (to move data into another tool), and the log says so
+  window.gmExportPlain = function () {
+    gmConfirm("Save a READABLE copy? Anyone who gets this file can read everything in it. The encrypted backup is the safe choice.", function (y) {
+      if (!y) return; gmTouch("Exported everything to a file (not encrypted)", "a file on this device"); bkSave(JSON.stringify(bkBlob(), null, 2), false);
+    });
   };
   window.gmImportNow = function () {
     var inp = document.createElement("input");
@@ -2194,12 +2251,31 @@
     inp.onchange = function () {
       var f = inp.files[0]; if (!f) return;
       var r = new FileReader();
+      function restore(o) {
+        var n = 0;
+        if (!confirm("Restore " + Object.keys(o).length + " keys from this backup? Anything newer on this device will be overwritten.")) return;
+        Object.keys(o).forEach(function (k) { if (k !== BK_PH) { localStorage.setItem(k, o[k]); n++; } });
+        alert("Restored " + n + " keys."); location.reload();
+      }
       r.onload = function () {
         try {
-          var o = JSON.parse(r.result), n = 0;
-          if (!confirm("Restore " + Object.keys(o).length + " keys from this backup? Anything newer on this device will be overwritten.")) return;
-          Object.keys(o).forEach(function (k) { localStorage.setItem(k, o[k]); n++; });
-          alert("Restored " + n + " keys."); location.reload();
+          var o = JSON.parse(r.result);
+          if (o && o.kind === "securax-life-os-backup") {
+            var mine = G(BK_PH, null), tryOpen = function (p) {
+              return gmBackupOpen(o, p).then(function (blob) {
+                if (!mine) S_(BK_PH, bkNorm(p).replace(/(.{4})(?!$)/g, "$1-"));   // a new device keeps the phrase for its own backups
+                restore(blob);
+              });
+            };
+            var ask = function () {
+              gmPrompt("This backup is encrypted. Type its backup phrase", "XXXX-XXXX-XXXX-XXXX-XXXX", function (p) {
+                if (!p) return; tryOpen(p).catch(function () { alert("That phrase does not open this backup. Check it in your password manager."); });
+              });
+            };
+            if (mine) tryOpen(mine).catch(ask); else ask();
+            return;
+          }
+          restore(o);
         } catch (e) { alert("That file could not be read: " + e.message); }
       };
       r.readAsText(f);
@@ -2295,8 +2371,10 @@
       + '<div class="info">Everything in this app fails quietly by design \u2014 sync retries, pushes debounce, clocks drift. That is fine until the day you need the data. This panel is where quiet failure becomes visible.</div>'
       + '<div class="road-col">' + rows.join("") + '</div>'
       + '<div style="display:flex;gap:8px;margin-top:9px;flex-wrap:wrap">'
-      + '<button class="btn-sm" style="background:var(--gold);color:#0d1f35" onclick="gmExportNow()">Export backup</button>'
+      + '<button class="btn-sm" style="background:var(--gold);color:#0d1f35" onclick="gmExportNow()">Save encrypted backup</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmImportNow()">Restore from file</button>'
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmBkShow()">Backup phrase</button>'
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--muted)" onclick="gmExportPlain()">Readable copy</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmExportCsv()">Export for Excel (CSV)</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmEmergencyExport()">Spouse emergency page</button></div>';
   }
