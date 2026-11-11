@@ -12,8 +12,9 @@
 #   sudo bash install.sh --server    # an always-on Ubuntu server (a small VPS, doc 85): Docker, a firewall that lets in SSH only,
 #                                    #   security updates, swap; SecuRAX for its own user `securax`; started; then `online setup`
 #
-# What it does: checks the tools, puts the code in ~/securax (or $SECURAX_DIR), adds the `securax` shortcut, and prints
-# the next command. It never uses sudo, never starts anything and never changes an existing folder.
+# What it does: checks the tools, puts the code in ~/securax (or $SECURAX_DIR), adds the `securax` shortcut, then finishes the job:
+# Docker Engine if missing (asked once, from Docker's own repository; --yes skips the question), HTTPS on, the estate started and
+# the Command Center opened. --no-start stops after the shortcut (the old behaviour). It never changes an existing folder.
 # --server is the one exception: it is for a fresh server you own, it must run as root, and it says each step as it goes.
 set -euo pipefail
 
@@ -29,7 +30,7 @@ case "$REPO" in *"{{"*|"")
   [ -n "$REPO" ] || die "Which repository? Run:  SECURAX_REPO=owner/repo bash install.sh" ;;
 esac
 DIR="${SECURAX_DIR:-$HOME/securax}"
-MODE=rolling; WANT=""; ARCHIVE=""; RESTORE=""; KEYFILE=""; SERVER=0
+MODE=rolling; WANT=""; ARCHIVE=""; RESTORE=""; KEYFILE=""; SERVER=0; DOCKER_ONLY=0; NOSTART=0; YES=0
 while [ $# -gt 0 ]; do
   case "$1" in
     --stable) MODE=stable ;;
@@ -39,10 +40,55 @@ while [ $# -gt 0 ]; do
     --restore) RESTORE="${2:?--restore needs a backup file (securax-YYYYMMDD-HHMMSS.tar.gz or .gpg)}"; shift ;;
     --keyfile) KEYFILE="${2:?--keyfile needs the key file of an encrypted backup}"; shift ;;
     --server) SERVER=1 ;;
+    --docker) DOCKER_ONLY=1 ;;                 # root only: install Docker Engine for the user who ran sudo (the laptop path calls it)
+    --no-start) NOSTART=1 ;;                   # put the code in place, start nothing (the old behaviour)
+    --yes|-y) YES=1 ;;                         # do not ask before installing Docker
     -h|--help) sed -n '2,15p' "$0"; exit 0 ;;
     *) die "Unknown option: $1   (see: bash install.sh --help)" ;;
   esac; shift
 done
+
+# Docker Engine from Docker's own signed repository. Shared by --server and --docker, so a laptop gets the same audited steps.
+install_docker(){
+  if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then say "  ✔ already installed"
+  else
+    run install -m 0755 -d /etc/apt/keyrings
+    run curl -fsSL "https://download.docker.com/linux/${ID}/gpg" -o /etc/apt/keyrings/docker.asc
+    run chmod a+r /etc/apt/keyrings/docker.asc
+    _deb="deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/${ID} ${VERSION_CODENAME:-stable} stable"
+    if [ "$DRY" = 1 ]; then echo "  [would write] /etc/apt/sources.list.d/docker.list: $_deb"; else echo "$_deb" > /etc/apt/sources.list.d/docker.list; fi
+    run apt-get update -qq
+    # judged by the result, not apt's exit code: without systemd (a container) the package's start-up step fails though Docker is installed
+    run apt-get install -y -qq docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin >/dev/null || true
+    [ "$DRY" = 1 ] || { command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; } \
+      || die "Docker did not install. Run:  apt-get install -y docker-ce docker-compose-plugin   and read the error it prints."
+    say "  ✔ $(docker --version 2>/dev/null || echo docker)"
+  fi
+}
+
+# 0a) --docker: Docker Engine only, for the person who ran sudo (the laptop and WSL path asks for it once, then calls this)
+if [ "$DOCKER_ONLY" = 1 ]; then
+  [ "$(id -u)" = 0 ] || die "--docker installs Docker for this machine, so it runs as root:  sudo bash install.sh --docker"
+  . /etc/os-release 2>/dev/null || true
+  case "${ID:-}" in ubuntu|debian) ;; *) die "Automatic Docker install supports Ubuntu and Debian. This is ${PRETTY_NAME:-unknown}: install Docker yourself, then run  securax up" ;; esac
+  DRY="${SECURAX_SERVER_DRYRUN:-0}"
+  run(){ if [ "$DRY" = 1 ]; then echo "  [would run] $*"; else "$@"; fi; }
+  export DEBIAN_FRONTEND=noninteractive
+  say "Docker Engine, from Docker's own signed repository"
+  run apt-get update -qq
+  run apt-get install -y -qq ca-certificates curl gnupg >/dev/null
+  install_docker
+  _who="${SUDO_USER:-}"
+  getent group docker >/dev/null 2>&1 || run groupadd docker
+  [ -n "$_who" ] && [ "$_who" != root ] && run usermod -aG docker "$_who" && say "  ✔ $_who may run Docker"
+  # WSL often has no systemd: start it the old way, and turn systemd on for next time (it takes effect after a WSL restart)
+  run systemctl enable --now docker >/dev/null 2>&1 || run service docker start >/dev/null 2>&1 || true
+  if grep -qi microsoft /proc/version 2>/dev/null && ! grep -q '^systemd=true' /etc/wsl.conf 2>/dev/null; then
+    if [ "$DRY" = 1 ]; then echo "  [would write] /etc/wsl.conf: [boot] systemd=true"; else printf '[boot]\nsystemd=true\n' >> /etc/wsl.conf; fi
+    say "  ✔ WSL will start Docker by itself after its next restart"
+  fi
+  exit 0
+fi
 
 # 0) --server: make a fresh Ubuntu server ready, then install as its own user and start (doc 85)
 if [ "$SERVER" = 1 ]; then
@@ -64,20 +110,7 @@ if [ "$SERVER" = 1 ]; then
   else say "  ⚠ unknown time zone $_tz (e.g. Asia/Kolkata); the clock stays on $(date +%Z)"; fi
   run systemctl enable --now cron >/dev/null 2>&1 || run service cron start >/dev/null 2>&1 || true
   say "2/6 Docker, from Docker's own signed repository"
-  if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then say "  ✔ already installed"
-  else
-    run install -m 0755 -d /etc/apt/keyrings
-    run curl -fsSL "https://download.docker.com/linux/${ID}/gpg" -o /etc/apt/keyrings/docker.asc
-    run chmod a+r /etc/apt/keyrings/docker.asc
-    _deb="deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.asc] https://download.docker.com/linux/${ID} ${VERSION_CODENAME:-stable} stable"
-    if [ "$DRY" = 1 ]; then echo "  [would write] /etc/apt/sources.list.d/docker.list: $_deb"; else echo "$_deb" > /etc/apt/sources.list.d/docker.list; fi
-    run apt-get update -qq
-    # judged by the result, not apt's exit code: without systemd (a container) the package's start-up step fails though Docker is installed
-    run apt-get install -y -qq docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin >/dev/null || true
-    [ "$DRY" = 1 ] || { command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; } \
-      || die "Docker did not install. Run:  apt-get install -y docker-ce docker-compose-plugin   and read the error it prints."
-    say "  ✔ $(docker --version 2>/dev/null || echo docker)"
-  fi
+  install_docker
   say "3/6 firewall: SSH in (rate-limited), nothing else (the estate is reached only through the outbound tunnel)"
   if [ "$DRY" = 1 ]; then echo "  [would run] ufw default deny incoming; ufw limit OpenSSH; ufw --force enable"
   elif ufw default deny incoming >/dev/null 2>&1 && ufw default allow outgoing >/dev/null 2>&1 && ufw limit OpenSSH >/dev/null 2>&1 && ufw --force enable >/dev/null 2>&1; then
@@ -193,7 +226,31 @@ if [ -n "$RESTORE" ]; then
   say "    cd \"$DIR\" && ./securax restore \"$RESTORE\"${KEYFILE:+ --keyfile \"$KEYFILE\"}"
   exit 0
 fi
+# 4) Finish the job, so ONE command ends with a running estate (owner, 2026-11-11: setup was still tedious).
+#    Docker when missing (asked once; --yes skips the question), HTTPS on (a fresh install has no data to move), start, open.
+_next(){ say ""; say "Next, one command:"; say "  cd \"$DIR\" && ./securax up"; say "It starts the estate, opens the Command Center and tells you what is left to set up (./securax finish)."; }
+if [ "$NOSTART" = 1 ] || [ "$MODE" = offline ]; then _next; exit 0; fi
+if ! { need docker && docker compose version >/dev/null 2>&1; }; then
+  . /etc/os-release 2>/dev/null || true
+  if [ "$OS" = Linux ] && need apt-get && case "${ID:-}" in ubuntu|debian) true ;; *) false ;; esac; then
+    _go="$YES"
+    if [ "$_go" != 1 ] && [ -t 0 ] && [ -r /dev/tty ]; then
+      printf "Docker Engine runs the estate and is not installed. Install it now from Docker's own repository (asks for your password once)? [Y/n] "
+      read -r _a < /dev/tty || _a=n; case "${_a:-y}" in [Yy]*) _go=1 ;; esac
+    fi
+    if [ "$_go" = 1 ]; then sudo SECURAX_REPO="$REPO" bash "$DIR/install.sh" --docker || die "Docker did not install; the messages above say why. Then run:  cd \"$DIR\" && ./securax up"
+    else say "  Docker is needed for the full estate. When ready:  sudo bash \"$DIR/install.sh\" --docker   then  securax up"; _next; exit 0; fi
+  else
+    say "  ⚠ Install Docker for this system (macOS: Docker Desktop or colima), then run:  cd \"$DIR\" && ./securax up"; exit 0
+  fi
+fi
+# a group added a moment ago is not active in this shell yet: run the first start through it
+_dk(){ if docker info >/dev/null 2>&1; then "$@"; elif need sg; then sg docker -c "$(printf '%q ' "$@")"; else "$@"; fi; }
+_dk docker info >/dev/null 2>&1 || { sudo service docker start >/dev/null 2>&1 || true; }
+say "Turning on HTTPS (a fresh install has no data to move), then starting the estate…"
+"$DIR/securax" tls on >/dev/null 2>&1 && say "  ✔ HTTPS on" || say "  ⚠ HTTPS was not turned on; the estate starts on plain http (./securax tls on later)"
+"$DIR/securax" tls trust --apply >/dev/null 2>&1 || true
+_dk "$DIR/securax" up || { say "The estate did not start. Ask it why:  cd \"$DIR\" && ./securax why"; exit 1; }
+"$DIR/securax" open 2>/dev/null || true
 say ""
-say "Next, one command:"
-say "  cd \"$DIR\" && ./securax up"
-say "It starts the estate, opens the Command Center and tells you what is left to set up (./securax finish)."
+say "✔ Done. Your Command Center is open. Everything optional (free AI keys, phones, backups) is one step at a time:  securax finish"

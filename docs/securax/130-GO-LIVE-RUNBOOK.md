@@ -63,10 +63,11 @@ the passphrase in your password manager: without it nobody can read the copy, yo
 This laptop is a **thin client**. It does not need to carry the estate: the always-on work goes on the server (section 3), and it
 opens the hosted apps in a browser. If you still want the estate on it:
 
-1. Update Windows. Install **Docker Desktop** and the **Ubuntu** app from the Microsoft Store.
-2. Follow [the Windows quickstart](../../WINDOWS-QUICKSTART.md) from Step 1. Step 1 now reads the PC's memory and gives SecuRAX a
-   safe share by itself (an 8 GB PC gives it 3 GB). The estate sees how little it has and starts only its core.
-3. In Docker Desktop → Settings → General, turn on **Start Docker Desktop when you sign in**, so the estate comes back after a restart.
+1. Update Windows.
+2. Run the one command in [the Windows quickstart](../../WINDOWS-QUICKSTART.md) (Step 1). It sizes SecuRAX's memory from the PC (an
+   8 GB PC gives it 3 GB, and the estate then starts only its core), installs Ubuntu if missing, installs Docker Engine inside
+   Ubuntu (no Docker Desktop), turns HTTPS on, starts the estate and opens the Command Center.
+3. To have the estate back after a restart, open Ubuntu and type `securax up` (an automatic start at sign-in is queued: `estate-autostart`).
 4. If it still struggles, run only the AI gateway and the Command Center:
 
 ```bash

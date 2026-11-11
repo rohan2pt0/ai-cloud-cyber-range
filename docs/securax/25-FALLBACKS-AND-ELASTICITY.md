@@ -22,7 +22,7 @@ Rows marked ✅ are exercised end-to-end by the sandbox (`python3 sandbox/run.py
 | Image build fails / offline | Retry without rebuild → retry core-only services | 📄 start-up chain in `securax up` |
 | Dirty checkout blocks `git pull` | `./securax update` restores the generated file first | ✅ `update_from_dirty_checkout` |
 | Low disk (<8 GB free) | Warning before pulling images/models | 📄 |
-| Docker not running / WSL integration off | Plain-English fix steps (Windows launcher + `wsl-setup.sh`) | ⚠ (needs real Windows) |
+| Docker not running | Plain-English fix steps; the installer puts Docker Engine inside Ubuntu, so there is no Desktop integration to switch on | ⚠ (needs real Windows) |
 | Windows-drive slowness | Installer puts the repo on WSL's own disk; launcher prefers it | ⚠ |
 | Open WebUI / Command Center / Guiding Map down | Gateway API + `./securax say/ask` CLI still work; dots on the hub show state | ✅ `ui_guiding_map_and_hub` |
 
