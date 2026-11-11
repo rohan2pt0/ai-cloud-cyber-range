@@ -922,9 +922,25 @@
   }
 
   /* ── 18. THE LIFE MAP — age-driven benchmarks for the whole household */
-  function life() { return G("gm_life", {}); }
+  // Ask once (owner, 2026-11-11): the Life Map reads what the profile (setup) already knows when its own field is empty,
+  // and a change to net worth or the emergency fund goes back to the profile. Ages come from birth dates, never typed twice.
+  function profOK() { return typeof P !== "undefined" && P && !P.example; }
+  function yrsSince(d) { var b = d ? new Date(d) : null; return b && !isNaN(b) ? String(Math.floor((Date.now() - b) / 31557600000)) : ""; }
+  function life() {
+    var l = G("gm_life", {}), pr = profOK() ? P : null;
+    if (!pr) return l;
+    var kid = (pr.kids || [])[0], fill = {
+      age: yrsSince(pr.dob), sage: yrsSince(pr.pdob), k1: kid && kid.dob ? yrsSince(kid.dob) : "",
+      inc: pr.net ? String(Math.round((num(pr.net) + num(pr.psal)) * 12 / 1e3) / 100) : "",
+      nw: pr.nw ? String(Math.round(num(pr.nw) / 1e3) / 100) : "", ef: pr.sav ? String(Math.round(num(pr.sav) / 1e3) / 100) : ""
+    };
+    Object.keys(fill).forEach(function (k) { if ((l[k] === undefined || l[k] === "") && fill[k] !== "") l[k] = fill[k]; });
+    return l;
+  }
+  var LIFE_TO_P = { nw: "nw", ef: "sav" };                          // lakh in the Life Map, rupees in the profile
   window.gmLifeSet = function (k, v) {
     var l = life(); l[k] = v; S_("gm_life", l);
+    if (LIFE_TO_P[k] && profOK()) { P[LIFE_TO_P[k]] = Math.round(lakhs(v) * 1e5); store("sovP", P); }
     gmClearExample(k);      // you typed it, so it is yours now
     bustDerived(); renderAll();
   };
@@ -4048,11 +4064,15 @@
     gmSnap("added a child"); P.kids = P.kids || []; P.kids.push({ name: n.trim().slice(0, 40), dob: d }); store("sovP", P); renderAll();
   };
   function kidAddHTML(first) {
-    return '<div class="road-col" style="margin-bottom:12px"><div style="font-weight:800;font-size:13px;margin-bottom:6px">' + (first ? "Add your child" : "Add another child") + '</div>'
-      + '<div class="f-row"><div><label class="f-label">First name</label><input id="gmKidN" type="text"></div><div><label class="f-label">Date of birth</label><input id="gmKidD" type="date"></div></div>'
+    // Children live in the profile (P.kids), the same list Setup edits. No children: one line and a folded form, never an open
+    // empty form that reads as "asked again" (owner, 2026-11-11). With children: "Add another child", folded too.
+    return '<details class="road-col gm-kid-add" style="margin-bottom:12px"><summary style="cursor:pointer;font-weight:800;font-size:13px">'
+      + (first ? 'No children in your profile. <span style="font-weight:500;color:var(--muted)">Add a child</span>' : "Add another child") + '</summary>'
+      + '<div class="f-row" style="margin-top:8px"><div><label class="f-label">First name</label><input id="gmKidN" type="text"></div><div><label class="f-label">Date of birth</label><input id="gmKidD" type="date"></div></div>'
       + '<button class="btn-sm" style="background:var(--gold);color:#0d1f35;font-weight:800;margin-top:8px" onclick="gmKidAdd()">Add</button>'
-      + '<div style="font-size:11px;color:var(--muted);margin-top:6px">The stage plan, health-calendar items and the education-fund schedule appear automatically. Stays on this device.</div></div>';
+      + '<div style="font-size:11px;color:var(--muted);margin-top:6px">Saved in your profile, the same list Setup shows. The stage plan, health-calendar items and the education-fund schedule appear automatically. Stays on this device.</div></details>';
   }
+
 
   /* -- 6b. Each child gets THIS quarter's three actions (tick them) and the monthly SIP that funds their education -- */
   var KID_ACTIONS = [
@@ -4097,10 +4117,21 @@
   // shows up in "Due now". All arithmetic runs on this device from numbers you type or load from your own career file.
   // Nothing personal ships in this file: every default is zero and the ladder is the generic BFSI security ladder.
   var CAR_K = "gm_career";
+  // Ask once (owner, 2026-11-11): these career fields are the same facts the profile (setup, P) holds. The profile is the one
+  // source: Career reads it first and writes an edit back to it, so a fact is typed once and changed in one place.
+  var CAR_FROM_P = { "cfg.birth": "dob", "cfg.fiAge": "ret", "cur.inhand": "net", "cur.gross": "gross",
+                     "house.exp": "exp", "house.ef": "sav", "house.nw": "nw", "house.wife": "psal" };
   function car() {
     var c = G(CAR_K, null) || {};
     ["cur", "house", "cfg", "done", "gaps"].forEach(function (k) { c[k] = c[k] || {}; });
     c.offers = c.offers || [];
+    var pr = profOK() ? P : null;
+    if (pr) Object.keys(CAR_FROM_P).forEach(function (path) {
+      var v = pr[CAR_FROM_P[path]], parts = path.split("."), cur = c[parts[0]][parts[1]];
+      if (cur !== undefined && cur !== "") return;                     // its own value stays; an edit there also updates the profile
+      if (v === undefined || v === null || v === "" || v === 0) return;
+      c[parts[0]][parts[1]] = path === "cfg.birth" ? String(v).slice(0, 7) : v;
+    });
     return c;
   }
   // While a job decision or move plan is live, Career joins the calm tab row; otherwise it waits under More.
@@ -4256,7 +4287,16 @@
 
   /* ---- actions ---- */
   function setPath(o, path, v) { var p = path.split("."), x = o; for (var i = 0; i < p.length - 1; i++) { x[p[i]] = x[p[i]] || {}; x = x[p[i]]; } x[p[p.length - 1]] = v; }
-  window.gmCarSet = function (path, v) { var c = car(); setPath(c, path, v); carPut(c); renderAll(); };
+  window.gmCarSet = function (path, v) {
+    var c = car(); setPath(c, path, v); carPut(c);
+    if (CAR_FROM_P[path] && profOK()) {             // the same fact in the profile, so every screen agrees
+      var k = CAR_FROM_P[path];
+      if (k === "dob") { if (v && String(P.dob || "").slice(0, 7) !== String(v).slice(0, 7)) P.dob = String(v).slice(0, 7) + "-01"; }
+      else P[k] = num(v) || 0;
+      store("sovP", P);
+    }
+    renderAll();
+  };
   window.gmCarOffer = function (i, k, v) { var c = car(); if (!c.offers[i]) return; c.offers[i][k] = v; carPut(c); renderAll(); };
   window.gmCarGate = function (i, k) { var c = car(), o = c.offers[i]; if (!o) return; o.gates = o.gates || {}; var s = o.gates[k] || "?"; o.gates[k] = s === "?" ? "y" : s === "y" ? "n" : "?"; carPut(c); renderAll(); };
   window.gmCarScore = function (i, k, v) { var c = car(), o = c.offers[i]; if (!o) return; o.scores = o.scores || {}; o.scores[k] = o.scores[k] === v ? 0 : v; carPut(c); renderAll(); };
