@@ -4388,7 +4388,7 @@
       proof: ["CISO title held 24+ months", "A security programme with measured results over 2+ years", "An AI-security programme others copy (your edge)"] },
     { r: "Rung 4", role: "CISO of a large bank or a BFSI group (Group CISO)", band: "120-250", by: 52,
       proof: ["Multi-entity scope", "A crisis or inspection handled well, on record", "A successor you built"] },
-    { r: "Rung 5", role: "Work optional: board, advisory, own practice", band: "", by: 55, proof: ["FI corpus reached", "Board-ready reputation"] }];
+    { r: "Rung 5", role: "Work optional: board, advisory, own practice", band: "", by: 55, proof: ["Financial independence corpus reached", "Board-ready reputation"] }];
 
   // The dated plan. d: [anchor, days]. Anchors: notice start (N), last day (L), joining day (J).
   var CAR_PLAN = [
@@ -4532,17 +4532,17 @@
 
     // 1. the numbers that matter
     var walk = cw + cost, tgtCtc = hc * (1 + cfgv(c, "stepPct", 30) / 100);
-    var nums = hd("1 · Your numbers", "Never accept less than the floor. Aim for the target. FI tells you whether the target is enough.");
+    var nums = hd("1 · Your numbers", "Never accept less than the floor. Aim for the target. Financial independence tells you whether the target is enough.");
     if (!cw) nums += '<div style="font-size:12.5px;color:var(--amber)">Fill in today\'s job below (or load your career file) to see your floor.</div>';
     else nums += carRow("Today's real value / month", rs(cw))
       + carRow("Floor: minimum in-hand at a job with no PF, NPS or health cover", rs(walk), "var(--red)")
       + carRow("Honest current CTC (cash, rent, perks; no loan subsidies, no unvested gratuity)", rl(hc))
       + carRow("Target CTC (+" + cfgv(c, "stepPct", 30) + "% on the honest number)", rl(tgtCtc), "var(--green)");
-    if (n.exp) nums += carRow("FI at " + n.fiAge + ": corpus needed (" + cfgv(c, "swr", 3.5) + "% withdrawal, " + cfgv(c, "infl", 6) + "% inflation)", rl(n.corpus))
+    if (n.exp) nums += carRow("Financial independence at " + n.fiAge + ": corpus needed (" + cfgv(c, "swr", 3.5) + "% withdrawal, " + cfgv(c, "infl", 6) + "% inflation)", rl(n.corpus))
       + carRow("SIP needed every month from now (" + cfgv(c, "ret", 10) + "% return)", rs(n.sip))
       + carRow("So your in-hand must be at least (expenses + EMIs + SIP − spouse income)", rs(n.fiInhand), cw && n.fiInhand > walk ? "var(--amber)" : "var(--green)")
-      + (cw && n.fiInhand > walk ? '<div style="font-size:11.5px;color:var(--amber)">FI needs more than the floor, so the floor alone is not enough: use the higher number as your real walk-away.</div>' : '');
-    else nums += '<div style="font-size:12px;color:var(--amber);margin-top:6px">Add household expenses in step 4 to see what FI needs.</div>';
+      + (cw && n.fiInhand > walk ? '<div style="font-size:11.5px;color:var(--amber)">Financial independence needs more than the floor, so the floor alone is not enough: use the higher number as your real walk-away.</div>' : '');
+    else nums += '<div style="font-size:12px;color:var(--amber);margin-top:6px">Add household expenses in step 4 to see what financial independence needs.</div>';
     h += box(nums);
 
     // 2. offers
@@ -4576,11 +4576,11 @@
       + fld("Other yearly benefits you really get (insurance, medical, LFC, leave encashment, incentive)", "cur.otherYr", c.cur.otherYr, "₹/yr")
       + fld("Household essentials incl. rent you will pay", "house.exp", c.house.exp, "₹/mo") + fld("EMIs", "house.emi", c.house.emi, "₹/mo")
       + fld("Spouse take-home", "house.wife", c.house.wife, "₹/mo") + fld("Emergency fund (cash, liquid funds)", "house.ef", c.house.ef, "₹")
-      + fld("Investments towards FI (MF, stocks, NPS, PPF, EPF)", "house.nw", c.house.nw, "₹")
+      + fld("Investments towards financial independence (MF, stocks, NPS, PPF, EPF)", "house.nw", c.house.nw, "₹")
       + '<details style="margin-top:6px"><summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:var(--text)">Dates and assumptions</summary>'
       + fld("Notice period started", "cfg.noticeStart", c.cfg.noticeStart, "YYYY-MM-DD") + fld("Notice length", "cfg.noticeMonths", c.cfg.noticeMonths || 3, "months")
       + fld("Joining date (blank: day after last day)", "cfg.join", c.cfg.join, "YYYY-MM-DD") + fld("Birth month", "cfg.birth", c.cfg.birth, "YYYY-MM")
-      + fld("FI target age", "cfg.fiAge", c.cfg.fiAge || 50, "years") + fld("Inflation", "cfg.infl", c.cfg.infl || 6, "%/yr") + fld("Investment return", "cfg.ret", c.cfg.ret || 10, "%/yr")
+      + fld("Financial independence target age", "cfg.fiAge", c.cfg.fiAge || 50, "years") + fld("Inflation", "cfg.infl", c.cfg.infl || 6, "%/yr") + fld("Investment return", "cfg.ret", c.cfg.ret || 10, "%/yr")
       + fld("Safe withdrawal rate", "cfg.swr", c.cfg.swr || 3.5, "%") + fld("Your own health cover", "cfg.health", c.cfg.health || 3000, "₹/mo") + fld("Term life cover", "cfg.term", c.cfg.term || 1500, "₹/mo")
       + fld("Move rhythm: step", "cfg.stepPct", c.cfg.stepPct || 30, "%") + fld("Move rhythm: every", "cfg.stepMonths", c.cfg.stepMonths || 30, "months") + '</details>';
     h += box(inp);

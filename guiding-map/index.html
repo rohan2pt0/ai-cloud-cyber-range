@@ -394,7 +394,7 @@ Lost? <b style="color:var(--text)">Today</b> is the only tab you need daily — 
   </div>
   <div class="wiz-body">
     <div class="h1">Build Your Life Operating System</div>
-    <div class="desc">Built on the most-validated frameworks on earth: the r/personalfinance Prime Directive, Bogleheads, Atomic Habits, OKRs, the Wheel of Life and commitment-contract science. Your answers personalize all of it.</div>
+    <div class="desc">Built on the most-validated frameworks on earth: the Prime Directive money sequence, index investing, habit science, quarterly goals, the Wheel of Life and commitment-contract science. Your answers personalize all of it.</div>
     <div class="info">All data stays in your browser on this device. Nothing is uploaded anywhere.</div>
     <details class="w-fixed" id="w_fixA" open><summary class="sec-title" id="w_fixA_s">About You</summary>
     <label class="f-label">Full name</label><input type="text" id="w_name" placeholder="Arjun Sharma">
@@ -645,10 +645,10 @@ function primeSteps(E){
    {t:"Step 0 — Positive monthly budget", d:"Spend less than you earn. Your surplus: "+money(E.surplus)+"/mo "+(E.surplus>0?"\u2713":"\u2014 fix this first: the Conscious Spending Plan below shows where."), done:E.surplus>0},
    {t:"Step 1 — Starter emergency fund (1 month)", d:"Target "+money(P.exp)+". You hold "+money(P.sav)+". The buffer that stops new debt.", done:P.sav>=P.exp},
    {t:"Step 2 — Capture free money (EPF/employer match)", d:"Confirm your EPF/NPS or employer match is active and maxed to the match limit — a guaranteed 100% return. Tap to mark confirmed.", done:S.pdMatch, manual:true},
-   {t:"Step 3 — Kill high-interest debt (>10%)", d:hiDebt.length?("Remaining: "+money(hiSum)+" across "+hiDebt.length+" loan(s). Avalanche order is in your Debt KPI."):"No loans above 10% \u2014 clear.", done:hiDebt.length===0},
+   {t:"Step 3 — Kill high-interest debt (>10%)", d:hiDebt.length?("Remaining: "+money(hiSum)+" across "+hiDebt.length+" loan(s). Avalanche order is in your Debt measure."):"No loans above 10% \u2014 clear.", done:hiDebt.length===0},
    {t:"Step 4 — Full emergency fund (6 months)", d:"Target "+money(E.emTarget)+" parked in sweep-in FD + liquid funds (mix \u2248 30% savings / 30% FD / 40% liquid).", done:E.emMonths>=6},
    {t:"Step 5 — Invest 15-20%+ for retirement", d:"Automated SIPs into index funds (Bogleheads three-fund). Your savings rate: "+E.savRate+"% vs "+P.tsav+"% target.", done:E.savRate>=15},
-   {t:"Step 6 — Invest for other goals", d:"Education funds, "+P.dream+" move, FI acceleration. You earn this step by finishing the five above.", done:false}
+   {t:"Step 6 — Invest for other goals", d:"Education funds, "+P.dream+" move, financial independence acceleration. You earn this step by finishing the five above.", done:false}
   ];
 }
 function togglePdMatch(){ S.pdMatch=!S.pdMatch; if(S.pdMatch)S.pts+=10; store("sovS",S); renderAll(); }
@@ -675,7 +675,7 @@ function engine(){
   KPIs = [
    {id:"savings",cat:"fin",principle:"pareto",label:"Savings Rate",unit:"%",base:0,goal:P.tsav,val:savRate,auto:true,pareto:true,
     sysT:"Pay-Yourself-First (Prime Directive Step 5)",
-    sysD:"You save "+savRate+"% ("+money(surplus)+"/mo). Prime Directive floor is 15%; your target "+P.tsav+"% = "+money(P.net*P.tsav/100)+"/mo. Ramit Sethi's Conscious Spending Plan splits take-home: Fixed 50-60% (yours: "+fixedPct+"%), Investments 10%+, Savings 5-10%, Guilt-free 20-35%:",
+    sysD:"You save "+savRate+"% ("+money(surplus)+"/mo). Prime Directive floor is 15%; your target "+P.tsav+"% = "+money(P.net*P.tsav/100)+"/mo. A simple four-number spending plan splits take-home: Fixed 50-60% (yours: "+fixedPct+"%), Investments 10%+, Savings 5-10%, Guilt-free 20-35%:",
     steps:["Open a separate online savings account today, named Freedom Fund — visible money gets spent",
      "Set auto-transfer of "+money(P.net*P.tsav/100)+" for salary day +1, BEFORE spending (automation beats willpower — the #1 YNAB/Bogleheads lesson)",
      "Check your Fixed Costs band: yours is "+fixedPct+"% vs the 50-60% healthy band"+(fixedPct>60?" — OVER: cut the 2 biggest recurring wants this week":" — healthy"),
@@ -718,9 +718,9 @@ function engine(){
      "One rebalance per year in your birthday month back to your "+eq+"/"+(100-eq)+" equity/debt split. Ignore markets otherwise"],
     tip:"<strong>Why this exact design:</strong> no fund-manager risk, no advisor risk, minimal cost, total-market diversification. Simplicity is not the beginner version — it IS the advanced version (Bogle: the majesty of simplicity)."},
 
-   {id:"networth",cat:"fin",principle:"flywheel",label:"FI Progress (25x)",unit:"%",base:0,goal:100,val:fiPct,auto:true,pareto:false,
+   {id:"networth",cat:"fin",principle:"flywheel",label:"Financial independence progress (25x)",unit:"%",base:0,goal:100,val:fiPct,auto:true,pareto:false,
     sysT:"The 25x Rule + Allocation Blueprint",
-    sysD:"FI number = 25x annual expenses = "+money(fiNum)+" (4% rule, ~95% 30-yr success in the Trinity Study). Retiring before ~50? Use the conservative 3.25% rate: "+money(fiNumSafe)+". You are at "+fiPct+"%. Age-"+a+" allocation:",
+    sysD:"Financial independence number = 25x annual expenses = "+money(fiNum)+" (4% rule, ~95% success over 30 years). Retiring before ~50? Use the conservative 3.25% rate: "+money(fiNumSafe)+". You are at "+fiPct+"%. Age-"+a+" allocation:",
     steps:["Equity (index funds): ~"+eq+"% — the 100-minus-age glidepath",
      "Debt (EPF/PPF/FDs/bonds): ~"+(90-eq)+"% — stability + 80C tax shield",
      "Gold: 5-10% via Sovereign Gold Bonds (+2.5%/yr interest over price, zero storage risk)",
@@ -786,7 +786,7 @@ function engine(){
 
    {id:"sleep",cat:"hlt",label:"Sleep Quality",unit:"/10",base:3,goal:9,val:6,auto:false,pareto:true,
     sysT:"The 7-9 Hour Protocol (Walker + Huberman)",
-    sysD:"Sleep multiplies every other KPI. Highest-evidence levers in order:",
+    sysD:"Sleep multiplies every other measure. Highest-evidence levers in order:",
     steps:["Fix WAKE time 7 days/week — the anchor of the circadian clock (bedtime follows automatically)",
      "10 min outdoor morning light within 1 hour of waking (sets melatonin release ~16h later)",
      "Caffeine cutoff 2pm (5-6h half-life: a 4pm chai is 25% active at midnight)",
@@ -833,7 +833,7 @@ function engine(){
     steps:["Interview every 6 months even when happy — keeps market price visible and skills sharp",
      "Brag document: 3 wins with NUMBERS every quarter (saved X, grew Y%)",
      "Switch at month 24-30: ask 35-40%, accept 30%+",
-     "Pair each switch with one certification from the Skills KPI",
+     "Pair each switch with one certification from the Skills measure",
      "At 1.5x: negotiate remote INTO the offer — unlocks geo-arbitrage toward "+P.dream],
     tip:"<strong>The 3x equation:</strong> switch (1.35x) x switch (1.35x) x remote premium \u2248 3x in 4-5 years. Repeatedly proven, fully in your control."},
 
@@ -922,13 +922,13 @@ function engine(){
      "7. Why We Sleep — Walker",
      "8. The Intelligent Investor — Graham (ch. 8 + 20 minimum)",
      "9. Ikigai — Garcia & Miralles",
-     "10. Measure What Matters — Doerr (the OKR system in your OKR tab)",
+     "10. Measure What Matters — Doerr (the quarterly-goal system in this app)",
      "System: 20 pages with morning chai + audiobook 1.5x on commute = 2 books/month free"],
     tip:"<strong>Retention rule:</strong> after each book, write 3 actions into THIS dashboard. No action = entertainment, not education."},
 
    {id:"mindful",cat:"mind",label:"Mindfulness Days/Wk",unit:"days",base:0,goal:7,val:2,auto:false,pareto:false,
-    sysT:"Habit-Stack Protocol (Lally: median 66 days to automatic)",
-    sysD:"Research: habits take a median 66 days (range 18-254) to become automatic — and missing ONE day does not hurt formation. The mechanical system:",
+    sysT:"Habit-stack protocol (about two months to automatic)",
+    sysD:"Habits take a median 66 days (range 18-254) to become automatic — and missing ONE day does not hurt formation. The mechanical system:",
     steps:["HABIT STACK: After I pour morning chai \u2192 I sit 10 min BEFORE the first sip (the chai is the trigger)",
      "Ladder — wk 1-2: box breathing; wk 3-4: breath counting 1-10; month 2: body scan / Yoga Nidra; month 3: open awareness",
      "NEVER MISS TWICE: one miss is an accident, two starts a new (bad) habit — day-after sessions are mandatory even at 2 min",
@@ -1199,7 +1199,7 @@ var INTEGRATIONS=[
  {id:"health",name:"Health Connect / Google Fit / Fitbit",feeds:"exercise, sleep, checkups",note:"Once a week, copy 3 numbers from your health app (active days, average sleep, last check-up). A web app cannot read your phone's health data itself."},
  {id:"bank",name:"Bank balances (or an Account Aggregator app)",feeds:"savings, net worth, expenses",note:"Once a month, copy your balances and last month's spend from your bank or AA app (Sahamati-registered). Nothing connects to your bank from here."},
  {id:"invest",name:"Mutual-fund statement (CAMS / KFintech CAS or MF Central)",feeds:"invest, net worth, passive",note:"Once a month, copy the total value from your consolidated account statement."},
- {id:"books",name:"Goodreads / StoryGraph",feeds:"reading",note:"Copy the number of books finished. Counts toward the reading KPI."}
+ {id:"books",name:"Goodreads / StoryGraph",feeds:"reading",note:"Copy the number of books finished. Counts toward the reading measure."}
 ];
 function intEnabled(id){ return !!(S.integrations && S.integrations[id]); }
 function setInt(id,on){ if(!S.integrations)S.integrations={}; S.integrations[id]=on; store("sovS",S); renderAll(); }
@@ -1223,20 +1223,20 @@ function metricType(k){
   return "KPI";
 }
 var METRIC_STACK=[
- ["North Star","Antifragility Index","The one number everything serves: survive any shock, then gain from it."],
- ["KGI","Key Goal Indicators","The destination per pillar \u2014 lagging outcomes (FI %, Ikigai, Legacy, Income 3\u00D7)."],
- ["KPI","Key Performance Indicators","Where you stand now vs target on each lever."],
- ["KAI","Key Activity Indicators","The leading inputs you control TODAY \u2014 SIP done, workout, pages read, outreach."],
- ["KRI","Key Risk Indicators","Early-warning of fragility \u2014 the Shield checklists (uninsured, single income, no buffer)."],
- ["OKR","Objectives & Key Results","Quarterly focus \u2014 max 3 objectives, measurable results."],
- ["BSC","Balanced Scorecard","Four perspectives kept in balance so no pillar is sacrificed for another."]
+ ["North star","Antifragility index","The one number everything serves: survive any shock, then gain from it."],
+ ["Main goal","Your destination","The lagging outcome per pillar \u2014 financial independence %, Ikigai, legacy, income 3\u00D7."],
+ ["Measure","Where you stand","Performance now vs target on each lever."],
+ ["Activity","What you control today","The leading inputs \u2014 SIP done, workout, pages read, outreach."],
+ ["Risk signal","Early warning","What could hurt you \u2014 the Shield checklists (uninsured, single income, no buffer)."],
+ ["Quarterly goal","This quarter\u2019s focus","Max 3 objectives, each with measurable results."],
+ ["Scorecard","Four perspectives","Kept in balance so no pillar is sacrificed for another."]
 ];
 
 // ============== LIFE STAGE + KIDS ==============
 function lifeStage(a,E){
   var t,b;
   if(a<30){t="Your 20s — The Foundation Decade";b="Maximum risk tolerance, minimum obligations. Skill stacking, savings habit, term insurance NOW (cheapest ever), no lifestyle debt. Compounding from "+a+" beats double the money at 40.";}
-  else if(a<40){t="Your 30s — The Acceleration Decade (you are "+a+")";b="Career switches for 30-50% jumps, emergency fund by "+(a+1)+", insurance locked, education SIPs if kids, "+Math.min(75,100-a)+"% equity. FI target "+money(E.fiNum)+" by "+P.ret+".";}
+  else if(a<40){t="Your 30s — The Acceleration Decade (you are "+a+")";b="Career switches for 30-50% jumps, emergency fund by "+(a+1)+", insurance locked, education SIPs if kids, "+Math.min(75,100-a)+"% equity. Financial independence target "+money(E.fiNum)+" by "+P.ret+".";}
   else if(a<50){t="Your 40s — The Consolidation Decade (you are "+a+")";b="Peak earnings — bank the surplus, not the lifestyle. Debt-free home by 50. Health = financial asset: the quarterly calendar is non-negotiable. Shift equity\u2192debt 5% every 2 years.";}
   else{t="50s+ — The Sovereignty Decade (you are "+a+")";b="Preservation + income conversion. Equity glide to ~"+(100-a)+"%, SWP planning, will FINALIZED, separate healthcare corpus.";}
   return '<div class="stage-t">'+t+'</div><div class="stage-b">'+b+' \u2022 '+E.yrsRet+' years to retirement at '+P.ret+'.</div>';
@@ -1402,7 +1402,7 @@ function goTab(id,filter){ curTab=id; pillarFilter=filter||null; renderAll(); wi
 function cardK(i){
   var k=KPIs[i]; var cp=combinedPct(k); var st=statusOf(cp); var mt=metricType(k);
   return '<div class="kc '+(st==="on"?"":st)+'" onclick="openK('+i+')"><div class="ab"></div>'
-   +'<div class="badges">'+(k.pareto?'<span class="cb cb-p">\u2B50</span>':'')+'<span class="cb" style="background:var(--navy);color:#fff">'+mt+'</span></div>'
+   +'<div class="badges">'+(k.pareto?'<span class="cb cb-p">\u2B50</span>':'')+'<span class="cb" style="background:var(--navy);color:#fff">'+({KGI:"Goal",KAI:"Activity",KPI:"Measure"}[mt]||mt)+'</span></div>'
    +'<div class="kv">'+kVal(k)+'<span class="ku">'+k.unit+'</span></div>'
    +'<div class="kl">'+k.label+'</div>'
    +'<div class="sys-prog">System: '+sysPct(k,"k")+'% done</div>'
@@ -1422,9 +1422,9 @@ function cardR(i){
 
 function renderMap(E){
   var AF=antifragility(E);
-  var bandTxt={fragile:"FRAGILE — a single shock could set you back years. Build the floor first.",
-    robust:"ROBUST — you can absorb most shocks. Now convert resilience into upside.",
-    antifragile:"ANTIFRAGILE — shocks make you stronger. Protect the engine and compound."};
+  var bandTxt={fragile:"Fragile — a single shock could set you back years. Build the floor first.",
+    robust:"Robust — you can absorb most shocks. Now convert resilience into upside.",
+    antifragile:"Antifragile — shocks make you stronger. Protect the engine and compound."};
   var bandCol={fragile:"var(--red)",robust:"var(--amber)",antifragile:"var(--green)"};
   var col=bandCol[AF.band];
   // pillar life-score from KPI completion
@@ -1444,9 +1444,9 @@ function renderMap(E){
   var h='<div class="section active">';
   // NORTH STAR HERO
   h+='<div class="ns-card" style="border-color:'+col+'">'
-    +'<div class="ns-ey">NORTH STAR · ANTIFRAGILITY INDEX</div>'
+    +'<div class="ns-ey">North star · antifragility index</div>'
     +'<div class="ns-row"><div class="ns-score" style="color:'+col+'">'+AF.score+'<span>/100</span></div>'
-    +'<div class="ns-band" style="color:'+col+'">'+AF.band.toUpperCase()+'<div class="ns-bd">'+bandTxt[AF.band]+'</div></div></div>'
+    +'<div class="ns-band" style="color:'+col+'">'+AF.band.charAt(0).toUpperCase()+AF.band.slice(1)+'<div class="ns-bd">'+bandTxt[AF.band]+'</div></div></div>'
     +'<div class="ns-subs">'
     +'<div class="ns-sub"><div class="ns-sl">Redundancy · survive</div><div class="ns-sbar"><div style="width:'+AF.redundancy+'%;background:'+col+'"></div></div><b>'+AF.redundancy+'</b><span>40% weight</span></div>'
     +'<div class="ns-sub"><div class="ns-sl">Optionality · gain from chaos</div><div class="ns-sbar"><div style="width:'+AF.optionality+'%;background:'+col+'"></div></div><b>'+AF.optionality+'</b><span>35% weight</span></div>'
@@ -1460,8 +1460,8 @@ function renderMap(E){
   h+='<div class="cat-t">\u2696 Life Score — seven pillars in balance (finance is just one)</div><div class="afp-wrap">'+pill+'</div>';
   // next moves
   h+='<div class="cat-t">\u26A1 Your two highest-leverage moves right now</div><div class="grid">';
-  if(topKRI) h+='<div class="kc behind" onclick="curTab=\'risk\';renderAll();window.scrollTo(0,0)"><div class="ab"></div><div class="kl">\uD83D\uDEE1 Close your biggest gap (KRI)</div><div class="sys-prog" style="margin-top:6px">'+topKRI.label+' — only '+sysPct(topKRI,"r")+'% covered. Tap to open the Shield.</div></div>';
-  if(pend.length) h+='<div class="kc caution" onclick="curTab=\'today\';renderAll();window.scrollTo(0,0)"><div class="ab"></div><div class="kl">\u2600 Do today (KAI)</div><div class="sys-prog" style="margin-top:6px">'+pend.length+' leading action(s) pending: '+pend.map(function(h){return h.name;}).slice(0,3).join(", ")+'. Tap for Today.</div></div>';
+  if(topKRI) h+='<div class="kc behind" onclick="curTab=\'risk\';renderAll();window.scrollTo(0,0)"><div class="ab"></div><div class="kl">\uD83D\uDEE1 Close your biggest gap (risk signal)</div><div class="sys-prog" style="margin-top:6px">'+topKRI.label+' — only '+sysPct(topKRI,"r")+'% covered. Tap to open the Shield.</div></div>';
+  if(pend.length) h+='<div class="kc caution" onclick="curTab=\'today\';renderAll();window.scrollTo(0,0)"><div class="ab"></div><div class="kl">\u2600 Do today (activity)</div><div class="sys-prog" style="margin-top:6px">'+pend.length+' leading action(s) pending: '+pend.map(function(h){return h.name;}).slice(0,3).join(", ")+'. Tap for Today.</div></div>';
   h+='</div></div>';
   return h;
 }
@@ -1470,12 +1470,12 @@ function renderScore(E){
   // Balanced Scorecard: 4 perspectives mapped to a whole life
   function avgCats(arr){ var ks=KPIs.filter(function(k){return arr.indexOf(k.cat)>=0;}); return ks.length?Math.round(ks.reduce(function(s,k){return s+combinedPct(k);},0)/ks.length):0; }
   var persp=[
-    ["\uD83D\uDCB0 Financial","Wealth, freedom, antifragile capital",["fin"],"KGI: FI progress "+E.fiPct+"% of "+money(E.fiNum)],
-    ["\u2699 Capability / Internal","The body & skills that produce everything",["hlt","car"],"KGI: income 3\u00D7 + VO\u2082max top-quartile"],
-    ["\uD83C\uDF31 Learning & Growth","Compounding knowledge and optionality",["mind","glo"],"KGI: second residency + 2 languages"],
-    ["\uD83E\uDD1D Relationships & Purpose","The people and meaning it's all for",["soc","pur"],"KGI: Ikigai \u2265 9 + legacy secured"]
+    ["\uD83D\uDCB0 Financial","Wealth, freedom, antifragile capital",["fin"],"Main goal: financial independence progress "+E.fiPct+"% of "+money(E.fiNum)],
+    ["\u2699 Capability / Internal","The body & skills that produce everything",["hlt","car"],"Main goal: income 3\u00D7 + VO\u2082max top-quartile"],
+    ["\uD83C\uDF31 Learning & Growth","Compounding knowledge and optionality",["mind","glo"],"Main goal: second residency + 2 languages"],
+    ["\uD83E\uDD1D Relationships & Purpose","The people and meaning it's all for",["soc","pur"],"Main goal: Ikigai \u2265 9 + legacy secured"]
   ];
-  var h='<div class="section active"><div class="info">The Balanced Scorecard keeps four perspectives in balance so you never win money while losing health, relationships, or meaning. Each rolls up from its pillar KPIs.</div><div class="grid">';
+  var h='<div class="section active"><div class="info">The Balanced Scorecard keeps four perspectives in balance so you never win money while losing health, relationships, or meaning. Each rolls up from its pillar measures.</div><div class="grid">';
   persp.forEach(function(p){
     var sc=avgCats(p[2]); var st=sc>=70?"on":sc>=40?"caution":"behind";
     h+='<div class="kc '+(st==="on"?"":st)+'" style="cursor:pointer" onclick="goTab(\'all\',\''+p[2][0]+'\')"><div class="ab"></div><div class="kv">'+sc+'<span class="ku">/100</span></div><div class="kl">'+p[0]+'</div><div class="sys-prog" style="margin-top:4px">'+p[1]+'</div><div class="sys-prog" style="margin-top:6px;color:var(--gold)">'+p[3]+'</div></div>';
@@ -1492,7 +1492,7 @@ function renderPlan(E){
   var h='<div class="section active">';
   // ---- OKR Auto-Suggester ----
   h+='<div class="cat-t">\uD83C\uDFAF Recommended focus — the 3 moves that lift Antifragility fastest</div>';
-  h+='<div class="info">Your weakest lever is <b>'+subName[sug.order[0][0]]+' \u2014 '+sug.order[0][1]+'/100</b>. These objectives target it first. Tap "Adopt" to drop one straight into your OKRs.</div>';
+  h+='<div class="info">Your weakest lever is <b>'+subName[sug.order[0][0]]+' \u2014 '+sug.order[0][1]+'/100</b>. These objectives target it first. Tap "Adopt" to drop one straight into your quarterly goals.</div>';
   h+='<div class="grid">';
   sug.picks.forEach(function(p,i){
     h+='<div class="kc"><div class="ab"></div>'
@@ -1521,7 +1521,7 @@ function renderPlan(E){
    antifragile:{title:"Antifragile \u2192 Compounding",col:"#7be0a0",
      d30:["Stress-test: simulate a 30% income drop \u2014 does the plan hold?","Increase automated investing rate","Deepen one signature strength"],
      d60:["Diversify the engine across geographies/currencies","Formalise estate + values letter","Give forward at scale (time or money)"],
-     d90:["Convert one optionality asset into realised upside","Review and raise OKR ambition","Teach/build something that outlives you"],
+     d90:["Convert one optionality asset into realised upside","Review and raise quarterly-goal ambition","Teach/build something that outlives you"],
      y1:["Multiple antifragile income sources","Full geographic + currency optionality","Antifragility \u2265 80, sustained"]}
   };
   var rd=ROAD[AF.band];
@@ -1538,7 +1538,7 @@ function renderPlan(E){
   var dlt=function(now,was){ if(was==null) return '<span class="muted">\u2014 baseline</span>'; var d=now-was; return '<span style="color:'+(d>=0?"var(--green)":"var(--red)")+'">'+(d>=0?"\u25B2 +":"\u25BC ")+d+'</span>'; };
   h+='<div class="cat-t">\uD83D\uDCC4 Quarterly Antifragility Report <button class="btn-sm" style="margin-left:8px;background:var(--navy);color:#fff" onclick="window.print()">Print / Save PDF</button></div>';
   h+='<div class="info" style="line-height:1.7">'
-    +'<b>North Star:</b> '+AF.score+'/100 ('+AF.band.toUpperCase()+') '+dlt(AF.score,prev&&prev.s)+'<br>'
+    +'<b>North star:</b> '+AF.score+'/100 ('+AF.band.charAt(0).toUpperCase()+AF.band.slice(1)+') '+dlt(AF.score,prev&&prev.s)+'<br>'
     +'<b>Redundancy:</b> '+AF.redundancy+' '+dlt(AF.redundancy,prev&&prev.r)+' &nbsp;|&nbsp; '
     +'<b>Optionality:</b> '+AF.optionality+' '+dlt(AF.optionality,prev&&prev.o)+' &nbsp;|&nbsp; '
     +'<b>Recovery:</b> '+AF.recovery+' '+dlt(AF.recovery,prev&&prev.rc)+'<br>'
@@ -1628,13 +1628,13 @@ function renderToday(){
      +(stk>0?'<div class="hab-streak"><div class="streak-n">'+stk+(stk===1?' day':' days')+'</div></div>':'')
      +'</div>';
   });
-  html+='<details class="info" style="margin-top:12px"><summary style="cursor:pointer;font-weight:600">Why this works</summary><div style="margin-top:8px">Habits take a median 66 days to automate (Lally 2010, range 18-254). One miss never hurts formation — two does. If-then anchors raise success by d=0.65 (Gollwitzer, 94 studies). The floor version keeps the chain alive on your worst day.</div></details>';
+  html+='<details class="info" style="margin-top:12px"><summary style="cursor:pointer;font-weight:600">Why this works</summary><div style="margin-top:8px">Habits take a median 66 days to automate (range 18-254). One miss never hurts formation — two does. If-then anchors raise success by about two-thirds. The floor version keeps the chain alive on your worst day.</div></details>';
   html+='</div>';
   return html;
 }
 
 function renderMoney(E){
-  var html='<div class="section active">'+(window.gmNumbersCard?gmNumbersCard():"")+'<div class="cat-t">\uD83D\uDCB0 Prime Directive Waterfall <span class="pill pill-t">r/personalfinance — most-validated money sequence</span></div>';
+  var html='<div class="section active">'+(window.gmNumbersCard?gmNumbersCard():"")+'<div class="cat-t">\uD83D\uDCB0 Prime Directive Waterfall <span class="pill pill-t">most-validated money sequence</span></div>';
   var steps=primeSteps(E);
   var foundCurrent=false;
   steps.forEach(function(s,i){
@@ -1647,7 +1647,7 @@ function renderMoney(E){
      +'</div>';
   });
   // Conscious Spending Plan
-  html+='<div class="cat-t" style="margin-top:18px">\uD83E\uDDFE Conscious Spending Plan <span class="pill pill-t">Ramit Sethi — 4-number budget</span></div>';
+  html+='<div class="cat-t" style="margin-top:18px">\uD83E\uDDFE Conscious Spending Plan <span class="pill pill-t">a simple four-number budget</span></div>';
   var fixedP=E.fixedPct;
   var investP=Math.round(Math.max(0,E.surplus)/P.net*100);
   function cspBar(label,actual,lo,hi,color){
@@ -1660,7 +1660,7 @@ function renderMoney(E){
    +cspBar("Fixed costs (your expenses)",fixedP,50,60,"#1d4ed8")
    +cspBar("Investments + savings (your surplus)",investP,15,45,"var(--green)")
    +'<div class="csp-band" style="margin-top:6px">Sethi bands: Fixed 50-60% \u00B7 Investments 10%+ \u00B7 Savings 5-10% \u00B7 Guilt-free 20-35%. One number to fix: '
-   +(fixedP>60?"fixed costs are over 60% — attack the 2 biggest recurring bills first.":investP<15?"push investments+savings to 15%+ via the auto-transfer in your Savings KPI.":"your split is inside the healthy bands — automate and maintain.")+'</div></div>';
+   +(fixedP>60?"fixed costs are over 60% — attack the 2 biggest recurring bills first.":investP<15?"push investments+savings to 15%+ via the auto-transfer in your Savings measure.":"your split is inside the healthy bands — automate and maintain.")+'</div></div>';
   html+='</div>';
   return html;
 }
@@ -1704,7 +1704,7 @@ function renderOKR(){
   html+='<button class="btn-add" onclick="addOKR()">+ Add Objective (max 3)</button>';
   if(S.okrDropped.length) html+='<details class="road-col" style="margin-top:8px"><summary style="cursor:pointer;font-size:12.5px;font-weight:700">Dropped on purpose · '+S.okrDropped.length+'</summary><div style="font-size:12px;margin-top:6px">'
     +S.okrDropped.slice().reverse().map(function(d){ return '<div style="margin-bottom:6px"><b>'+okEsc(d.o)+'</b> · '+new Date(d.at).toISOString().slice(0,10)+(d.lesson?'<br><span style="color:var(--muted)">Lesson: '+okEsc(d.lesson)+'</span>':'')+'</div>'; }).join('')+'</div></details>';
-  html+='<div class="info" style="margin-top:6px"><strong>Pre-mortem (Klein, HBR):</strong> before committing to each objective, spend 5 minutes imagining it FAILED at quarter-end — list the 3 most likely causes, then build a step against each into your KPI systems. Prospective hindsight improves cause-identification by ~30%.</div>';
+  html+='<div class="info" style="margin-top:6px"><strong>Pre-mortem (a known method):</strong> before committing to each objective, spend 5 minutes imagining it FAILED at quarter-end — list the 3 most likely causes, then build a step against each into your measure systems. Prospective hindsight improves cause-identification by ~30%.</div>';
   html+='</div>';
   return html;
 }
@@ -1724,8 +1724,8 @@ function renderWheel(){
 }
 
 function renderCommit(){
-  var html='<div class="section active"><div class="cat-t">\uD83E\uDD1D Commitment Contracts <span class="pill pill-t">StickK science: 78% vs 35% success</span></div>';
-  html+='<div class="info">Yale research (Karlan): staking money + naming a referee more than DOUBLES goal completion (78% vs 35% with no stake). Use for goals you have failed before. If you fail, you actually pay the stake — to a cause you dislike works best (loss aversion).</div>';
+  var html='<div class="section active"><div class="cat-t">\uD83E\uDD1D Commitment Contracts <span class="pill pill-t">78% vs 35% success</span></div>';
+  html+='<div class="info">Staking money + naming a referee more than doubles goal completion (78% vs 35% with no stake). Use for goals you have failed before. If you fail, you actually pay the stake — to a cause you dislike works best (loss aversion).</div>';
   html+='<div style="background:var(--card);border-radius:12px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.05);margin-bottom:12px">'
    +'<label class="f-label">Goal (specific + measurable)</label><input type="text" id="c_goal" placeholder="Finish emergency fund to 4 months by Sep 30">'
    +'<div class="f-row"><div><label class="f-label">Stake (amount you forfeit)</label><input type="text" id="c_stake" placeholder="\u20B95,000"></div>'
@@ -1737,11 +1737,11 @@ function renderCommit(){
      +'<div class="cmt-m">Stake: '+c.stake+' \u00B7 Referee: '+(c.ref||"none")+' \u00B7 Deadline: '+c.dl+'</div>';
     if(c.status==="live"){
       var overdue=new Date(c.dl)<new Date();
-      if(overdue) html+='<div class="cmt-m" style="color:var(--red);font-weight:700">DEADLINE PASSED — settle honestly:</div>';
+      if(overdue) html+='<div class="cmt-m" style="color:var(--red);font-weight:700">Deadline passed — settle honestly:</div>';
       html+='<div class="cmt-actions"><button class="btn-sm cmt-win" onclick="commitResult('+i+',true)">\u2713 Succeeded (+100)</button>'
        +'<button class="btn-sm cmt-lose" onclick="commitResult('+i+',false)">\u2717 Failed — pay stake</button></div>';
     } else {
-      html+='<div class="cmt-done '+(c.status==="won"?"s-on":"s-b")+'">'+(c.status==="won"?"\uD83C\uDFC6 WON":"LOST — stake paid")+'</div>';
+      html+='<div class="cmt-done '+(c.status==="won"?"s-on":"s-b")+'">'+(c.status==="won"?"\uD83C\uDFC6 Won":"Lost — stake paid")+'</div>';
     }
     html+='</div>';
   });
@@ -1772,7 +1772,7 @@ function renderAll(){
    '<div class="hs"><div class="n" style="color:'+afCol+'">'+AF.score+'</div><div class="l">Antifragile</div></div>'
    +'<div class="hs"><div class="n">'+tcN+'/'+HABITS.length+'</div><div class="l">Today</div></div>'
    +'<div class="hs"><div class="n">'+onT+'/'+live.length+'</div><div class="l">On Track</div></div>'
-   +'<div class="hs"><div class="n">'+E.fiPct+'%</div><div class="l">To FI</div></div>'
+   +'<div class="hs"><div class="n">'+E.fiPct+'%</div><div class="l">To financial independence</div></div>'
    +'<div class="hs"><div class="n">'+expo+'</div><div class="l">Exposed</div></div>';
   document.getElementById("stageBar").innerHTML=lifeStage(E.a,E);
   var tb="";
@@ -1858,20 +1858,20 @@ function renderInsights(E){
   var tcN=todayChecks().length;
   html+=card(tcN===HABITS.length?"\u2705":"\u2600","Today: "+tcN+"/"+HABITS.length+" habits done",tcN===HABITS.length?"Full board. Every check is a vote for the person you are becoming (Clear).":"The floor versions count. Two minutes keeps the chain alive — perfection is not the system, showing up is.");
   // emergency
-  if(E.emMonths<6) html+=card("\uD83C\uDFE6","Emergency fund: "+(E.mTo===999?"surplus is zero — fix the CSP bands first":E.mTo+" months to done"),"Gap "+money(Math.max(0,E.emTarget-P.sav))+". Park progress in sweep-in FD as it builds.");
+  if(E.emMonths<6) html+=card("\uD83C\uDFE6","Emergency fund: "+(E.mTo===999?"surplus is zero — fix the spending plan bands first":E.mTo+" months to done"),"Gap "+money(Math.max(0,E.emTarget-P.sav))+". Park progress in sweep-in FD as it builds.");
   // avalanche
   if(E.totalDebt>0&&E.av[0]){ var avIsHome=(E.av[0].type||"").toLowerCase().indexOf("home")>=0; html+=card("\uD83D\uDD25", avIsHome?"Debt focus: let-out home loan \u2014 check before prepaying":"Avalanche target: "+E.av[0].type+" @ "+E.av[0].rate+"%", avIsHome?"If this home loan is on a LET-OUT property, its interest is deductible uncapped under \u00A724(b) \u2014 the post-tax effective rate may be far below the sticker rate. Compare that effective rate against your expected investment return before prepaying; direct surplus at the highest-rate debt instead.":"Interest bleed \u2248 "+money(P.loans.reduce(function(s,x){return s+x.remaining*x.rate/100;},0))+"/yr across all loans — killing it is a guaranteed, tax-free return."); }
   // OKR
   if(S.okrs.length){ var avg=S.okrs.reduce(function(s,o,i){return s+okrGrade(i);},0)/S.okrs.length;
-    html+=card("\uD83C\uDFAF","OKR average: "+avg.toFixed(2),avg>0.85?"Consistently above 0.85 — your objectives are too safe. Raise the bar next quarter.":avg<0.4?"Below 0.4 — refocus: cut one objective, halve the KRs.":"In the healthy 0.4-0.85 stretch zone. Grade weekly, adjust monthly."); }
+    html+=card("\uD83C\uDFAF","Quarterly goal average: "+avg.toFixed(2),avg>0.85?"Consistently above 0.85 — your objectives are too safe. Raise the bar next quarter.":avg<0.4?"Below 0.4 — refocus: cut one objective, halve the KRs.":"In the healthy 0.4-0.85 stretch zone. Grade weekly, adjust monthly."); }
   else html+=card("\uD83C\uDFAF","Set one goal for this quarter (optional)","One to three objectives, graded once a week. The Plan tab takes two minutes.");
   // wheel
   if(S.wheel){ var lows=[]; WHEEL_DIMS.forEach(function(w,i){ if(wheelVal(i)<=4) lows.push(w[1]); });
-    if(lows.length) html+=card("\u2638","Wheel low spokes: "+lows.join(", "),"Scores \u22644 are next quarter's OKR candidates. A wheel this uneven does not roll."); }
+    if(lows.length) html+=card("\u2638","Wheel low spokes: "+lows.join(", "),"Scores \u22644 are next quarter's quarterly-goal candidates. A wheel this uneven does not roll."); }
   // pareto
   var worst=null,wp=101;
   KPIs.forEach(function(k){ if(k.pareto&&!isArchived("k",k.id)){var p=combinedPct(k); if(p<wp){wp=p;worst=k;}} });
-  if(worst) html+=card("\u2B50","Highest-leverage next action: "+worst.label,"Lowest completion among 80/20 KPIs ("+wp+"%). Open it, tick ONE box today.");
+  if(worst) html+=card("\u2B50","Highest-leverage next action: "+worst.label,"Lowest completion among 80/20 measures ("+wp+"%). Open it, tick ONE box today.");
   // commitment nudge
   var liveC=S.commits.filter(function(c){return c.status==="live";}).length;
   if(!liveC) html+=card("\uD83E\uDD1D","A stake for a goal you keep missing (optional)","Put something at stake and name a referee. The Commit tab takes a minute.");
@@ -2085,7 +2085,7 @@ function intConfig(id){
   if(!it) return;
   var flds=INT_FIELDS[id]||[];
   var body='<div style="font-weight:800;font-size:15px;margin-bottom:4px">'+it.name+'</div>'
-    +'<div style="font-size:12px;color:var(--muted);margin-bottom:12px">Paste the latest numbers from your app/statement \u2014 they pre-fill the linked KPIs instantly. Manual edits on any KPI card always win afterward.</div>';
+    +'<div style="font-size:12px;color:var(--muted);margin-bottom:12px">Paste the latest numbers from your app/statement \u2014 they pre-fill the linked measures instantly. Manual edits on any measure card always win afterward.</div>';
   for(var j=0;j<flds.length;j++){
     var key=flds[j][0], lbl=flds[j][1];
     var cur=(S.intData&&S.intData[key]!=null)?S.intData[key]:((S.vals&&S.vals[key]!==undefined)?S.vals[key]:'');
@@ -2109,7 +2109,7 @@ function intSave(id){
   if(!S.integrations)S.integrations={};
   S.integrations[id]=true;
   store("sovS",S); gmClose(); renderAll();
-  gmToast(n? ("Connected \u2014 "+n+" KPI"+(n>1?"s":"")+" pre-filled. Tap any card to override.") : "Enabled. Add numbers anytime by tapping the card again.");
+  gmToast(n? ("Connected \u2014 "+n+" measure"+(n>1?"s":"")+" pre-filled. Tap any card to override.") : "Enabled. Add numbers anytime by tapping the card again.");
 }
 function intOff(id){ S.integrations[id]=false; store("sovS",S); gmClose(); renderAll(); gmToast("Disabled \u2014 your values are kept, nothing lost."); }
 </script>
@@ -2136,28 +2136,28 @@ function renderPlaybook(){
 
  /* ---- stage engine: five gates, first unmet gate = your next move ---- */
  var gates=[
-  {s:1,name:"PROTECT",   ok: hiTotal===0 && efMonths!==null && efMonths>=6,
-   why: hiTotal>0 ? "high-interest debt still open ("+M(hiTotal)+" at \u22659%)" : (efMonths===null?"emergency-fund balance not entered yet (Life Map \u2192 EF)":(efMonths<6?"emergency fund at "+efMonths.toFixed(1)+" of 6 months":""))},
-  {s:2,name:"AUTOMATE",  ok: srate!==null && srate>=20,
+  {s:1,name:"Protect",   ok: hiTotal===0 && efMonths!==null && efMonths>=6,
+   why: hiTotal>0 ? "high-interest debt still open ("+M(hiTotal)+" at \u22659%)" : (efMonths===null?"emergency-fund balance not entered yet (Life Map \u2192 emergency fund)":(efMonths<6?"emergency fund at "+efMonths.toFixed(1)+" of 6 months":""))},
+  {s:2,name:"Automate",  ok: srate!==null && srate>=20,
    why: srate===null?"income/expenses not entered yet (Edit Profile)":(srate<20?"savings rate "+srate+"% \u2014 gate is 20%":"")},
-  {s:3,name:"EXPAND",    ok: fin(nw)&&fin(annualExp)&&nw>=1*annualExp,
+  {s:3,name:"Expand",    ok: fin(nw)&&fin(annualExp)&&nw>=1*annualExp,
    why:"investable base below 1\u00d7 annual expenses"},
-  {s:4,name:"SYSTEMIZE", ok: fin(nw)&&fin(annualExp)&&nw>=5*annualExp,
+  {s:4,name:"Systemize", ok: fin(nw)&&fin(annualExp)&&nw>=5*annualExp,
    why:"investable base below 5\u00d7 annual expenses"},
-  {s:5,name:"MULTIPLY",  ok: fin(nw)&&fin(annualExp)&&nw>=25*annualExp,
-   why:"below 25\u00d7 annual expenses (your FIRE number)"}
+  {s:5,name:"Multiply",  ok: fin(nw)&&fin(annualExp)&&nw>=25*annualExp,
+   why:"below 25\u00d7 annual expenses (your work-optional number)"}
  ];
  var cur=1, gateMsg="";
  for(var i=0;i<gates.length;i++){ if(gates[i].ok){cur=Math.min(5,gates[i].s+1);} else { gateMsg=gates[i].why; cur=gates[i].s; break; } }
 
  var x='<div class="section active"><div class="cat-t">\uD83D\uDCD6 The Wealth Playbook <span class="pill pill-t">dynamic \u00B7 computed from your data</span></div>';
- x+='<div class="info" style="background:var(--goldL);color:var(--gold)"><b>HOW TO USE:</b> five stages, strict order. Every number below is computed live from your own profile \u2014 change your data, the plan changes. The 80/20 rule applied throughout: each stage lists only the few moves that carry most of the result.</div>';
+ x+='<div class="info" style="background:var(--goldL);color:var(--gold)"><b>How to use:</b> five stages, strict order. Every number below is computed live from your own profile \u2014 change your data, the plan changes. The 80/20 rule applied throughout: each stage lists only the few moves that carry most of the result.</div>';
 
  /* stage progress bar */
  x+='<div style="display:flex;gap:4px;margin:10px 0 4px">';
  for(var b=1;b<=5;b++){ x+='<div style="flex:1;text-align:center;padding:7px 2px;border-radius:8px;font-size:10px;font-weight:800;letter-spacing:.4px;'+(b<cur?'background:var(--greenBg);color:var(--green)':(b===cur?'background:var(--navy);color:var(--gold);outline:2px solid var(--gold)':'background:var(--cardAlt);color:var(--muted)'))+'">S'+b+'<br>'+gates[b-1].name+'</div>'; }
  x+='</div>';
- if(gateMsg) x+='<div class="info" style="background:var(--amberBg);color:var(--amber)"><b>\u25B6 YOUR NEXT GATE (Stage '+cur+'):</b> '+gateMsg+'. Everything else waits.</div>';
+ if(gateMsg) x+='<div class="info" style="background:var(--amberBg);color:var(--amber)"><b>\u25B6 Your next gate (stage '+cur+'):</b> '+gateMsg+'. Everything else waits.</div>';
 
  /* live numbers strip */
  x+='<div class="road" style="grid-template-columns:repeat(2,1fr)">'
@@ -2167,30 +2167,30 @@ function renderPlaybook(){
   +'<div class="road-col"><div class="road-h">Savings rate</div><div class="road-i">'+(srate!==null?srate+"%":"\u2014")+' now \u00B7 gate 20% \u00B7 every +10% pulls independence years closer</div></div>'
  +'</div>';
 
- x+=sec('S1','PROTECT \u2014 close ruin risk first',
-  h('EMERGENCY FUND \u2014 '+M(efTarget))+'6\u00d7 monthly essentials (3\u00d7 acceptable with two stable incomes). Build in rungs: 1 month \u2192 3 \u2192 6. Park it in thirds: instant-access savings \u00B7 sweep-in FD \u00B7 liquid fund. It has exactly four triggers: job loss, medical, urgent family, income gap >2 months.'
-  +h('KILL HIGH-INTEREST DEBT (\u22659%)')+(hiLoans.length? 'Avalanche order \u2014 highest rate first, minimums on the rest:<br>'+hiLoans.sort(function(a,b){return b.rate-a.rate;}).map(function(l){return '\u2022 '+(l.type||'Loan')+' @ '+l.rate+'% \u2014 '+M(+l.remaining);}).join('<br>') : 'No loans \u22659% on file \u2014 gate clear. Anything below ~9% usually loses to long-run equity returns; do not rush it. Let-out property loans: interest is deductible uncapped under \u00A724(b), so check the post-tax effective rate before any prepayment.')
-  +h('INSURANCE FLOOR (\u2248 a few % of income, caps catastrophic loss)')+'\u2460 Pure term life '+M(coverLo)+'\u2013'+M(coverHi)+' \u2014 never investment-linked \u2461 Health: family floater + a large super top-up (the cheapest cover per rupee) \u2462 Personal accident if you ride daily \u2463 Nominations on every account + a signed will with a guardian clause \u2014 the highest-impact legal page a parent can write.');
+ x+=sec('S1','Protect \u2014 close ruin risk first',
+  h('Emergency fund \u2014 '+M(efTarget))+'6\u00d7 monthly essentials (3\u00d7 acceptable with two stable incomes). Build in rungs: 1 month \u2192 3 \u2192 6. Park it in thirds: instant-access savings \u00B7 sweep-in FD \u00B7 liquid fund. It has exactly four triggers: job loss, medical, urgent family, income gap >2 months.'
+  +h('Kill high-interest debt (\u22659%)')+(hiLoans.length? 'Avalanche order \u2014 highest rate first, minimums on the rest:<br>'+hiLoans.sort(function(a,b){return b.rate-a.rate;}).map(function(l){return '\u2022 '+(l.type||'Loan')+' @ '+l.rate+'% \u2014 '+M(+l.remaining);}).join('<br>') : 'No loans \u22659% on file \u2014 gate clear. Anything below ~9% usually loses to long-run equity returns; do not rush it. Let-out property loans: interest is deductible uncapped under \u00A724(b), so check the post-tax effective rate before any prepayment.')
+  +h('Insurance floor (\u2248 a few % of income, caps catastrophic loss)')+'\u2460 Pure term life '+M(coverLo)+'\u2013'+M(coverHi)+' \u2014 never investment-linked \u2461 Health: family floater + a large super top-up (the cheapest cover per rupee) \u2462 Personal accident if you ride daily \u2463 Nominations on every account + a signed will with a guardian clause \u2014 the highest-impact legal page a parent can write.');
 
- x+=sec('S2','AUTOMATE \u2014 pay yourself first',
-  h('SAVINGS RATE \u2265 20%')+'The 50/30/20 baseline: needs / wants / savings. Your rate: '+(srate!==null?srate+'%':'\u2014 (enter income & expenses)')+'. Automation beats discipline \u2014 SIPs leave the account on salary day +2, before spending starts.'
-  +h('THE DEFAULT PORTFOLIO (evidence, not opinion)')+'Low-cost index core (broad-market fund) + at most one active satellite. Equity share \u2248 110 \u2212 your age, %. Rebalance once a year in a fixed month \u2014 more often only adds tax and error. Direct-growth plans only. No new fund without retiring one.'
-  +h('TAX \u2014 ONE SITTING PER APRIL')+'Run old-vs-new regime for every earner \u00B7 fill employer-matched and pension buckets first (free return) \u00B7 keep rent, loan-interest and deduction paperwork in one folder as it happens, not in March.');
+ x+=sec('S2','Automate \u2014 pay yourself first',
+  h('Savings rate \u2265 20%')+'The 50/30/20 baseline: needs / wants / savings. Your rate: '+(srate!==null?srate+'%':'\u2014 (enter income & expenses)')+'. Automation beats discipline \u2014 SIPs leave the account on salary day +2, before spending starts.'
+  +h('The default portfolio (evidence, not opinion)')+'Low-cost index core (broad-market fund) + at most one active satellite. Equity share \u2248 110 \u2212 your age, %. Rebalance once a year in a fixed month \u2014 more often only adds tax and error. Direct-growth plans only. No new fund without retiring one.'
+  +h('Tax \u2014 one sitting per April')+'Run old-vs-new regime for every earner \u00B7 fill employer-matched and pension buckets first (free return) \u00B7 keep rent, loan-interest and deduction paperwork in one folder as it happens, not in March.');
 
- x+=sec('S3','EXPAND \u2014 side income, the 80/20 way',
-  h('WEEK 1 \u2014 SKILL AUDIT (30 min)')+'List what colleagues and friends already ask your help with \u2014 that list is the market talking. Rank by (people who pay for this) \u00d7 (you enjoy it). Pick ONE.'
-  +h('DAYS 1\u201330 \u2014 VALIDATE BEFORE BUILDING')+'Ten conversations with people who have the problem \u2192 pre-sell a paid pilot. First rupee inside 30 days or change the offer. No website, no logo, no course-buying until money has moved. Salaried? Get outside-work approval per your employment/conduct rules in writing first \u2014 one email protects the main income.'
-  +h('THE LADDER')+'Timebox 5\u20137 hrs/week, calendar-blocked. First \u20B910k/mo proves demand \u2192 \u20B950k/mo proves a business \u2192 then productize: package the service so income detaches from hours. Reinvest 50% of side income into the engine (skills, tools, reach); the rest joins the SIP ladder \u2014 side income that gets spent is a hobby.');
+ x+=sec('S3','Expand \u2014 side income, the 80/20 way',
+  h('Week 1 \u2014 skill audit (30 min)')+'List what colleagues and friends already ask your help with \u2014 that list is the market talking. Rank by (people who pay for this) \u00d7 (you enjoy it). Pick ONE.'
+  +h('Days 1\u201330 \u2014 validate before building')+'Ten conversations with people who have the problem \u2192 pre-sell a paid pilot. First rupee inside 30 days or change the offer. No website, no logo, no course-buying until money has moved. Salaried? Get outside-work approval per your employment/conduct rules in writing first \u2014 one email protects the main income.'
+  +h('The ladder')+'Timebox 5\u20137 hrs/week, calendar-blocked. First \u20B910k/mo proves demand \u2192 \u20B950k/mo proves a business \u2192 then productize: package the service so income detaches from hours. Reinvest 50% of side income into the engine (skills, tools, reach); the rest joins the SIP ladder \u2014 side income that gets spent is a hobby.');
 
- x+=sec('S4','SYSTEMIZE \u2014 owner, not operator',
-  h('WORK ON IT, NOT IN IT')+'Write the SOP while delivering, not after \u00B7 automate the repeatable 80% \u00B7 delegate the first role at ~\u20B950k/mo sustained. Test of a system: it survives your two-week vacation untouched.'
-  +h('SCOREBOARD + KAIZEN')+'Three numbers reviewed weekly (revenue, pipeline, hours-in) \u00B7 one small improvement experiment per month \u2014 compounding process beats sporadic heroics.'
-  +h('HYGIENE')+'Separate bank account from day one \u00B7 simple books monthly \u00B7 check the current GST registration threshold when revenue approaches it \u00B7 price in advance-tax quarters.');
+ x+=sec('S4','Systemize \u2014 owner, not operator',
+  h('Work on it, not in it')+'Write the SOP while delivering, not after \u00B7 automate the repeatable 80% \u00B7 delegate the first role at ~\u20B950k/mo sustained. Test of a system: it survives your two-week vacation untouched.'
+  +h('Scoreboard + kaizen')+'Three numbers reviewed weekly (revenue, pipeline, hours-in) \u00B7 one small improvement experiment per month \u2014 compounding process beats sporadic heroics.'
+  +h('Hygiene')+'Separate bank account from day one \u00B7 simple books monthly \u00B7 check the current GST registration threshold when revenue approaches it \u00B7 price in advance-tax quarters.');
 
- x+=sec('S5','MULTIPLY \u2014 angel, alternatives, AI leverage',
-  h('ENTRY DISCIPLINE')+'Opens only past your FIRE number ('+M(fire)+') \u2014 this is risk capital that can go to zero without touching the family\u2019s plan. Cap the whole sleeve at 5\u201310% of investable assets.'
-  +h('ANGEL / SEED \u2014 THE STATISTICS')+'Returns follow a power law: in a good portfolio 1\u20132 bets return everything, most return ~0. So: 20\u201330 small cheques over 3\u20135 years, never 3 big ones \u00B7 expect 7\u201310 year illiquidity \u00B7 start inside an angel network or syndicate for deal flow and discipline before any solo cheque \u00B7 in India the regulated angel-fund route has a \u20B925L minimum ticket \u2014 verify current SEBI accredited-investor criteria before committing.'
-  +h('AI AS ANALYST, NEVER AUTOPILOT')+'Use AI for screening, filings summaries, scenario stress-tests and your decision journal. Hard rules: human sign-off on every order \u00B7 experiments \u2264 2% of portfolio per position \u00B7 a written 10% drawdown kill-switch \u00B7 the logged decision journal will beat the model \u2014 review it quarterly.');
+ x+=sec('S5','Multiply \u2014 angel, alternatives, AI leverage',
+  h('Entry discipline')+'Opens only past your work-optional number ('+M(fire)+') \u2014 this is risk capital that can go to zero without touching the family\u2019s plan. Cap the whole sleeve at 5\u201310% of investable assets.'
+  +h('Angel / seed \u2014 the statistics')+'Returns follow a power law: in a good portfolio 1\u20132 bets return everything, most return ~0. So: 20\u201330 small cheques over 3\u20135 years, never 3 big ones \u00B7 expect 7\u201310 year illiquidity \u00B7 start inside an angel network or syndicate for deal flow and discipline before any solo cheque \u00B7 in India the regulated angel-fund route has a \u20B925L minimum ticket \u2014 verify current SEBI accredited-investor criteria before committing.'
+  +h('AI as analyst, never autopilot')+'Use AI for screening, filings summaries, scenario stress-tests and your decision journal. Hard rules: human sign-off on every order \u00B7 experiments \u2264 2% of portfolio per position \u00B7 a written 10% drawdown kill-switch \u00B7 the logged decision journal will beat the model \u2014 review it quarterly.');
 
  x+='<div class="info" style="margin-top:6px">Activation: the highlighted gate above is your single next item. Date it this week or it doesn\u2019t exist. Everything below your current stage is maintenance; everything above it is noise \u2014 for now.</div>';
  x+='</div>';
@@ -6603,7 +6603,7 @@ function renderPlaybook(){
       proof: ["CISO title held 24+ months", "A security programme with measured results over 2+ years", "An AI-security programme others copy (your edge)"] },
     { r: "Rung 4", role: "CISO of a large bank or a BFSI group (Group CISO)", band: "120-250", by: 52,
       proof: ["Multi-entity scope", "A crisis or inspection handled well, on record", "A successor you built"] },
-    { r: "Rung 5", role: "Work optional: board, advisory, own practice", band: "", by: 55, proof: ["FI corpus reached", "Board-ready reputation"] }];
+    { r: "Rung 5", role: "Work optional: board, advisory, own practice", band: "", by: 55, proof: ["Financial independence corpus reached", "Board-ready reputation"] }];
 
   // The dated plan. d: [anchor, days]. Anchors: notice start (N), last day (L), joining day (J).
   var CAR_PLAN = [
@@ -6747,17 +6747,17 @@ function renderPlaybook(){
 
     // 1. the numbers that matter
     var walk = cw + cost, tgtCtc = hc * (1 + cfgv(c, "stepPct", 30) / 100);
-    var nums = hd("1 · Your numbers", "Never accept less than the floor. Aim for the target. FI tells you whether the target is enough.");
+    var nums = hd("1 · Your numbers", "Never accept less than the floor. Aim for the target. Financial independence tells you whether the target is enough.");
     if (!cw) nums += '<div style="font-size:12.5px;color:var(--amber)">Fill in today\'s job below (or load your career file) to see your floor.</div>';
     else nums += carRow("Today's real value / month", rs(cw))
       + carRow("Floor: minimum in-hand at a job with no PF, NPS or health cover", rs(walk), "var(--red)")
       + carRow("Honest current CTC (cash, rent, perks; no loan subsidies, no unvested gratuity)", rl(hc))
       + carRow("Target CTC (+" + cfgv(c, "stepPct", 30) + "% on the honest number)", rl(tgtCtc), "var(--green)");
-    if (n.exp) nums += carRow("FI at " + n.fiAge + ": corpus needed (" + cfgv(c, "swr", 3.5) + "% withdrawal, " + cfgv(c, "infl", 6) + "% inflation)", rl(n.corpus))
+    if (n.exp) nums += carRow("Financial independence at " + n.fiAge + ": corpus needed (" + cfgv(c, "swr", 3.5) + "% withdrawal, " + cfgv(c, "infl", 6) + "% inflation)", rl(n.corpus))
       + carRow("SIP needed every month from now (" + cfgv(c, "ret", 10) + "% return)", rs(n.sip))
       + carRow("So your in-hand must be at least (expenses + EMIs + SIP − spouse income)", rs(n.fiInhand), cw && n.fiInhand > walk ? "var(--amber)" : "var(--green)")
-      + (cw && n.fiInhand > walk ? '<div style="font-size:11.5px;color:var(--amber)">FI needs more than the floor, so the floor alone is not enough: use the higher number as your real walk-away.</div>' : '');
-    else nums += '<div style="font-size:12px;color:var(--amber);margin-top:6px">Add household expenses in step 4 to see what FI needs.</div>';
+      + (cw && n.fiInhand > walk ? '<div style="font-size:11.5px;color:var(--amber)">Financial independence needs more than the floor, so the floor alone is not enough: use the higher number as your real walk-away.</div>' : '');
+    else nums += '<div style="font-size:12px;color:var(--amber);margin-top:6px">Add household expenses in step 4 to see what financial independence needs.</div>';
     h += box(nums);
 
     // 2. offers
@@ -6791,11 +6791,11 @@ function renderPlaybook(){
       + fld("Other yearly benefits you really get (insurance, medical, LFC, leave encashment, incentive)", "cur.otherYr", c.cur.otherYr, "₹/yr")
       + fld("Household essentials incl. rent you will pay", "house.exp", c.house.exp, "₹/mo") + fld("EMIs", "house.emi", c.house.emi, "₹/mo")
       + fld("Spouse take-home", "house.wife", c.house.wife, "₹/mo") + fld("Emergency fund (cash, liquid funds)", "house.ef", c.house.ef, "₹")
-      + fld("Investments towards FI (MF, stocks, NPS, PPF, EPF)", "house.nw", c.house.nw, "₹")
+      + fld("Investments towards financial independence (MF, stocks, NPS, PPF, EPF)", "house.nw", c.house.nw, "₹")
       + '<details style="margin-top:6px"><summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:var(--text)">Dates and assumptions</summary>'
       + fld("Notice period started", "cfg.noticeStart", c.cfg.noticeStart, "YYYY-MM-DD") + fld("Notice length", "cfg.noticeMonths", c.cfg.noticeMonths || 3, "months")
       + fld("Joining date (blank: day after last day)", "cfg.join", c.cfg.join, "YYYY-MM-DD") + fld("Birth month", "cfg.birth", c.cfg.birth, "YYYY-MM")
-      + fld("FI target age", "cfg.fiAge", c.cfg.fiAge || 50, "years") + fld("Inflation", "cfg.infl", c.cfg.infl || 6, "%/yr") + fld("Investment return", "cfg.ret", c.cfg.ret || 10, "%/yr")
+      + fld("Financial independence target age", "cfg.fiAge", c.cfg.fiAge || 50, "years") + fld("Inflation", "cfg.infl", c.cfg.infl || 6, "%/yr") + fld("Investment return", "cfg.ret", c.cfg.ret || 10, "%/yr")
       + fld("Safe withdrawal rate", "cfg.swr", c.cfg.swr || 3.5, "%") + fld("Your own health cover", "cfg.health", c.cfg.health || 3000, "₹/mo") + fld("Term life cover", "cfg.term", c.cfg.term || 1500, "₹/mo")
       + fld("Move rhythm: step", "cfg.stepPct", c.cfg.stepPct || 30, "%") + fld("Move rhythm: every", "cfg.stepMonths", c.cfg.stepMonths || 30, "months") + '</details>';
     h += box(inp);
