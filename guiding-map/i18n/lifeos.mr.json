@@ -1,0 +1,19 @@
+{
+ "_meta": {
+  "locale": "mr-IN",
+  "status": "beta",
+  "note": "machine draft; a native professional reviews it before the global launch"
+ },
+ "strings": {
+  "Today": "आज",
+  "Inbox": "इनबॉक्स",
+  "Goals": "उद्दिष्टे",
+  "Ask": "विचारा",
+  "More": "अधिक",
+  "Language": "भाषा",
+  "Save encrypted backup": "एन्क्रिप्टेड बॅकअप जतन करा",
+  "Restore from file": "फाइलमधून परत आणा",
+  "Later": "नंतर",
+  "Danger zone": "धोक्याचे क्षेत्र"
+ }
+}

@@ -131,14 +131,14 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- No squashed text, anywhere
+- The Life OS speaks Hindi and Marathi (beta)
+- Every short code a person sees is now explained in plain words
+- Pillars cards tell the truth about what you have entered
 - Accessible names on the Life OS controls
 - Plain words on the main Life OS tabs
 - 360 audit, round 1: a security hole and four frictions fixed
 - Friction by consequence: the safe choice is one tap, erase is deliberate
-- Today is calm again: one small row per habit, and the science folded away
-- Backups are encrypted by default
-- Ask by how often it changes: fixed facts fold away, changing numbers are one tap away
-- Ask once: the Life OS stops asking for the same facts again
 
 **Release 0.3.0 - 2026-10-22:**
 

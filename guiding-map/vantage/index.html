@@ -50,7 +50,9 @@ input.num { width:96px; flex:none; }
 .chips { display:flex; flex-wrap:wrap; gap:6px; } .chips button { font-size:14px; min-height:44px; padding:6px 12px; }
 .list { list-style:none; margin:0; padding:0; } ol.list { list-style:decimal; padding-left:20px; }
 .list > li { padding:8px 0; border-bottom:1px solid var(--line); } .list > li:last-child { border-bottom:0; }
-.row { display:flex; align-items:center; gap:10px; } .row .grow { flex:1; min-width:0; overflow-wrap:anywhere; }
+.row { display:flex; align-items:center; gap:10px; } .row .grow { flex:1 1 auto; min-width:8ch; overflow-wrap:anywhere; }
+/* a control beside text in a row takes only the room it needs: a 100%-wide select once squeezed the label to one letter a line */
+.row > select, .row > input, .row > button, .row > .btn { width:auto; flex:0 0 auto; max-width:50%; }
 .form { background:var(--bg); border-radius:10px; padding:10px; margin:6px 0; }
 .check { width:44px; height:44px; flex:none; border-radius:50%; padding:0; font-weight:800; }
 .tick.done .check { background:var(--on); color:var(--on-ink); border-color:var(--on); }

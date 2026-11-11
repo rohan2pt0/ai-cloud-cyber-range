@@ -133,7 +133,7 @@ header{background:var(--navy);padding:13px 16px;display:flex;align-items:center;
 .cb-p{background:var(--goldL);color:var(--gold);border:1px solid var(--gold);}
 .kv{font-size:21px;font-weight:800;}
 .ku{font-size:11px;font-weight:500;color:var(--muted);}
-.kl{font-size:9px;text-transform:uppercase;letter-spacing:.6px;color:var(--muted);margin-top:3px;line-height:1.3;}
+.kl{font-size:11.5px;color:var(--muted);margin-top:3px;line-height:1.3;}
 .sys-prog{font-size:9px;color:var(--purple);margin-top:4px;font-weight:600;}
 .sb{display:inline-flex;font-size:8px;font-weight:700;text-transform:uppercase;padding:2px 6px;border-radius:99px;margin-top:5px;}
 .s-on{background:var(--greenBg);color:#14532d;}
@@ -766,7 +766,7 @@ function engine(){
      "LinkedIn + portfolio positioned for remote-first roles, not just local ones",
      "First freelance/remote rupee earned outside your primary employer"],
     tip:"<strong>The real goal:</strong> not quitting your job — making your income geography-agnostic so a move is a choice, never a constraint."},
-   {id:"globalnet",cat:"glo",principle:"geo",label:"Global Network",unit:"ppl",base:0,goal:20,val:0,auto:false,pareto:false,
+   {id:"globalnet",cat:"glo",principle:"geo",label:"Contacts abroad",unit:"ppl",base:0,goal:20,val:0,auto:false,pareto:false,
     sysT:"20-Min Timezone-Split Ritual",
     sysD:"Split weekly outreach across timezones so the network compounds while you sleep:",
     steps:["10 connections in India/APAC timezone","5 connections in Gulf/Europe timezone","5 connections in US timezone",
@@ -847,7 +847,7 @@ function engine(){
      "Continuous: Toastmasters ~"+money(6000)+"/yr — communication multiplies every technical skill"],
     tip:"<strong>Filter:</strong> a cert must appear in job posts you want OR enable a side-income stream. Neither? Skip."},
 
-   {id:"network",cat:"car",principle:"geo",label:"Global Network",unit:"ppl",base:5,goal:50,val:5,auto:false,pareto:false,
+   {id:"network",cat:"car",principle:"geo",label:"Professional network",unit:"ppl",base:5,goal:50,val:5,auto:false,pareto:false,
     sysT:"50 Real Contacts by Timezone",
     sysD:"Target: 20 India + 10 Gulf ("+P.dream+" path) + 10 EU + 10 US. The daily system:",
     steps:["Daily 15 min: 3 LinkedIn requests with a 1-line personal note + 2 real comments",
@@ -1401,12 +1401,23 @@ function goTab(id,filter){ curTab=id; pillarFilter=filter||null; renderAll(); wi
 
 function cardK(i){
   var k=KPIs[i]; var cp=combinedPct(k); var st=statusOf(cp); var mt=metricType(k);
-  return '<div class="kc '+(st==="on"?"":st)+'" onclick="openK('+i+')"><div class="ab"></div>'
-   +'<div class="badges">'+(k.pareto?'<span class="cb cb-p">\u2B50</span>':'')+'<span class="cb" style="background:var(--navy);color:#fff">'+({KGI:"Goal",KAI:"Activity",KPI:"Measure"}[mt]||mt)+'</span></div>'
-   +'<div class="kv">'+kVal(k)+'<span class="ku">'+k.unit+'</span></div>'
+  var units={ppl:"people",str:"streams",mo:"months",x:"\u00D7 today's income",bks:"books",lang:"languages",hrs:"hours",min:"minutes",done:"done"};
+  var unit=units[k.unit]||k.unit;
+  var badges='<div class="badges">'+(k.pareto?'<span class="cb cb-p">\u2B50</span>':'')+'<span class="cb" style="background:var(--navy);color:#fff">'+({KGI:"Goal",KAI:"Activity",KPI:"Measure"}[mt]||mt)+'</span></div>';
+  // A card the person never filled shows a dash, never an invented number (human-first).
+  if(!k.auto && S.vals[k.id]===undefined){
+    return '<div class="kc" onclick="openK('+i+')"><div class="ab"></div>'+badges
+     +'<div class="kv">\u2014<span class="ku">'+unit+'</span></div>'
+     +'<div class="kl">'+k.label+'</div>'
+     +'<div class="sys-prog">Plan steps: '+sysPct(k,"k")+'% ticked</div>'
+     +'<div class="sys-prog" style="color:var(--muted);font-weight:500">Tap to add yours</div>'
+     +'<div class="ptrack"><div class="pfill" style="width:0%"></div></div></div>';
+  }
+  return '<div class="kc '+(st==="on"?"":st)+'" onclick="openK('+i+')"><div class="ab"></div>'+badges
+   +'<div class="kv">'+kVal(k)+'<span class="ku">'+unit+'</span></div>'
    +'<div class="kl">'+k.label+'</div>'
-   +'<div class="sys-prog">System: '+sysPct(k,"k")+'% done</div>'
-   +'<span class="sb '+(st==="on"?"s-on":st==="caution"?"s-c":"s-b")+'">'+(st==="on"?"On Track":st==="caution"?"Building":"Start Here")+'</span>'
+   +'<div class="sys-prog">Plan steps: '+sysPct(k,"k")+'% ticked</div>'
+   +'<span class="sb '+(st==="on"?"s-on":st==="caution"?"s-c":"s-b")+'">'+(st==="on"?"On track":st==="caution"?"Building":"Not started")+'</span>'
    +'<div class="ptrack"><div class="pfill" style="width:'+cp+'%"></div></div></div>';
 }
 function cardR(i){
@@ -1798,7 +1809,7 @@ function renderAll(){
     var catList=pillarFilter?[pillarFilter]:["fin","hlt","car","soc","mind","glo","pur"];
     catList.forEach(function(c){
       var g=""; KPIs.forEach(function(k,i){ if(k.cat===c&&!isArchived("k",k.id)) g+=cardK(i); });
-      if(g) html+='<div class="cat-t">'+catNames[c]+'<span class="pill pill-g">\u2B50 = 80/20</span></div><div class="grid">'+g+'</div>';
+      if(g) html+='<div class="cat-t">'+catNames[c]+'<span class="pill pill-g">\u2B50 = the vital few</span></div><div class="grid">'+g+'</div>';
     });
     html+='</div>';
   }
@@ -2213,6 +2224,7 @@ function renderPlaybook(){
 
 <!-- ops.js INLINED below by build.js. To modify the ops layer: edit ops.js, then run `node build.js`. -->
 <script>
+window.GM_I18N = {"hi":{"_meta":{"locale":"hi-IN","status":"beta","note":"machine draft; a native professional reviews it before the global launch"},"strings":{"Today":"आज","Inbox":"इनबॉक्स","Goals":"लक्ष्य","Ask":"पूछें","More":"और","Language":"भाषा","Save encrypted backup":"एन्क्रिप्टेड बैकअप सहेजें","Restore from file":"फ़ाइल से वापस लाएँ","Later":"बाद में","Danger zone":"ख़तरे का क्षेत्र"}},"mr":{"_meta":{"locale":"mr-IN","status":"beta","note":"machine draft; a native professional reviews it before the global launch"},"strings":{"Today":"आज","Inbox":"इनबॉक्स","Goals":"उद्दिष्टे","Ask":"विचारा","More":"अधिक","Language":"भाषा","Save encrypted backup":"एन्क्रिप्टेड बॅकअप जतन करा","Restore from file":"फाइलमधून परत आणा","Later":"नंतर","Danger zone":"धोक्याचे क्षेत्र"}}};
 /* ═══════════════════════════════════════════════════════════════════
    THE GUIDING MAP — OPS LAYER v4.0
    Adds: PWA install + offline, cadence engine, Never-Miss-Twice
@@ -5079,7 +5091,8 @@ function renderPlaybook(){
   function horizonTag(item) {
     var x = HORIZON[item]; if (!x) return "";
     var c = x[0] === "H1" ? "var(--green)" : x[0] === "H2" ? "var(--gold)" : "var(--amber)";
-    return ' <span title="' + esc(x[1]) + '" style="font-size:9px;font-weight:800;color:' + c + ';border:1px solid ' + c + ';border-radius:4px;padding:0 4px">' + x[0] + '</span>';
+    var label = x[0] === "H1" ? "Now" : x[0] === "H2" ? "1-2 years" : "3-5 years";
+    return ' <span title="' + esc(x[1]) + '" style="font-size:9px;font-weight:800;color:' + c + ';border:1px solid ' + c + ';border-radius:4px;padding:0 4px">' + label + '</span>';
   }
 
   /* ── 48. Which tool for which question ─────────────────────────────
@@ -5266,6 +5279,34 @@ function renderPlaybook(){
     { id: "floor", k: ["2-minute floor", "two-minute floor"], t: "2-minute floor", d: "The smallest version of a habit that still counts as a win (e.g. 2 minutes of movement), so you never break the chain on a bad day." },
     { id: "nmt", k: ["never miss twice", "missed twice"], t: "Never Miss Twice", d: "Missing once is human; the rule is never skip two days running. One miss is a blip, two is the start of a new (bad) habit." },
     { id: "anchor", k: ["implementation intention", "if-then", "anchor"], t: "Implementation intention", d: "A plan shaped “IF situation X, THEN I do Y” (e.g. after morning chai, I meditate). Pre-deciding the trigger makes the habit automatic." },
+    // money terms, India first
+    { id: "nps", k: ["nps", "national pension system"], t: "NPS (National Pension System)", d: "A government-backed retirement account open to any Indian resident. You pay in regularly and it builds a pension pot; part of it can be taken as a lump sum at 60." },
+    { id: "ppf", k: ["ppf", "public provident fund"], t: "PPF (Public Provident Fund)", d: "A safe, government-backed savings account in India with a fixed interest rate and tax benefits. Money stays locked for 15 years, so it suits long-term goals." },
+    { id: "epf", k: ["epf", "pf", "employees' provident fund", "provident fund"], t: "EPF / PF (Employees' Provident Fund)", d: "A retirement savings scheme for salaried employees in India: a slice of each salary, plus an employer match, goes into your PF account. It grows until you retire or leave a job." },
+    { id: "fd", k: ["fd", "fixed deposit", "sweep-in fd", "sweep in fd"], t: "FD (fixed deposit) and sweep-in FD", d: "An FD parks a lump sum with a bank for a set time at a fixed interest rate. A sweep-in FD automatically moves spare cash from your savings account into an FD, and back when you need it." },
+    { id: "pan", k: ["pan", "permanent account number"], t: "PAN (Permanent Account Number)", d: "A ten-character tax ID issued in India. Banks, brokers and employers use it to track your income and taxes." },
+    { id: "emi", k: ["emi", "emis", "equated monthly instalment"], t: "EMI (Equated Monthly Instalment)", d: "The fixed amount you repay each month on a loan. It covers both interest and a slice of the principal, so the loan ends on schedule." },
+    { id: "ca", k: ["ca", "chartered accountant"], t: "CA (Chartered Accountant)", d: "An Indian professional qualified to audit accounts and advise on tax and finance. You hire one for filings, tax planning and clean books." },
+    { id: "ctc", k: ["ctc", "cost to company"], t: "CTC (Cost to Company)", d: "The total an employer spends on you in a year, including salary, bonus, PF and benefits. Your take-home pay is lower than this number." },
+    { id: "mf", k: ["mf", "mutual fund", "mutual funds"], t: "MF (Mutual fund)", d: "A pool of money from many investors, run by a professional manager who buys a basket of shares or bonds. You own units of the pool, not the individual holdings." },
+    { id: "gst", k: ["gst", "goods and services tax"], t: "GST (Goods and Services Tax)", d: "India's single indirect tax added to most goods and services. The price you see usually already includes it." },
+    { id: "cas", k: ["cas", "consolidated account statement"], t: "CAS (Consolidated Account Statement)", d: "One statement that lists all your mutual fund or demat holdings in a single place. It is the quickest way to see everything you own across providers." },
+    { id: "ais", k: ["ais", "form 26as", "annual information statement"], t: "AIS and Form 26AS", d: "Two Indian tax records that show income, tax paid and large transactions reported against your PAN. Check both before filing your return, so nothing is missed." },
+    { id: "cdsl", k: ["cdsl", "nsdl", "depository"], t: "CDSL and NSDL", d: "The two depositories in India that hold shares and other securities electronically. Your demat account sits with one of them, so you hold digital records, not paper certificates." },
+    { id: "psu", k: ["psu", "public sector undertaking", "public sector undertakings"], t: "PSU (Public Sector Undertaking)", d: "A company owned or controlled by the Indian government, such as many banks and energy firms. They often pay steady dividends and carry government backing." },
+    // work and security
+    { id: "ciso", k: ["ciso", "chief information security officer"], t: "CISO (Chief Information Security Officer)", d: "The senior person accountable for an organisation's security: its defences, its risks and how it responds to an attack." },
+    { id: "bfsi", k: ["bfsi", "banking, financial services and insurance"], t: "BFSI (Banking, Financial Services and Insurance)", d: "A shorthand for the finance industry: banks, insurers, lenders and investment firms. It is one of the most heavily regulated sectors." },
+    { id: "opsec", k: ["opsec", "operational security"], t: "OPSEC (Operational security)", d: "The everyday habits that keep private details private: what you share, with whom, and what strangers can infer from it. Small choices add up to a much smaller footprint." },
+    // time, the Stack and the Playbook
+    { id: "quarters", k: ["q1", "q2", "q3", "q4", "quarters", "quarter"], t: "Q1 to Q4 (quarters of the year)", d: "The year split into four three-month blocks. In India's financial year Q1 is April to June, Q2 July to September, Q3 October to December and Q4 January to March." },
+    { id: "stacklayers", k: ["l0", "l1", "l2", "l3", "l4"], t: "Layers 0 to 4 of the Stack", d: "The Stack's five layers, lowest first: L0 identity and safety, L1 trust, L2 flow, L3 compounding, L4 optionality. Finish a lower layer before you start the next." },
+    { id: "stages", k: ["s1", "s2", "s3", "s4", "s5"], t: "S1 to S5 (the Playbook money sequence)", d: "The five stages of the money Playbook, in order: S1 protect, S2 automate, S3 expand, S4 systemize, S5 multiply. S1 protect first; finish a stage before the next." },
+    // health and everyday tech
+    { id: "vo2max", k: ["vo2max", "vo2 max"], t: "VO2max", d: "The most oxygen your body can use during hard exercise. It is one of the strongest predictors of long life, and short hard intervals raise it." },
+    { id: "json", k: ["json"], t: "JSON (a plain data file)", d: "A simple text format that stores data as labelled values, so a program can read and write it. Think of it as a spreadsheet saved as plain text." },
+    { id: "url", k: ["url", "web address"], t: "URL (a web address)", d: "The address you type to open a page or service, like the link to your sync hub. Copy it exactly when you set something up." },
+    { id: "opt", k: ["opt", "optional goal"], t: "OPT (optional goal)", d: "A goal you may adopt if it fits your life, not one you must do. Skipping it costs you nothing today." },
   ];
 
   function escRx(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, function (c) { return "\\" + c; }); }
@@ -5613,7 +5654,8 @@ function renderPlaybook(){
     h += '<div class="info">' + (due.length ? due.length + " ritual(s) due now (they also show on Today). " : "Nothing due today. ")
       + (broken ? broken + " habit(s) need a recovery rep." : "") + '</div>';
     h += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px"><button class="btn-sm" style="background:var(--cardAlt);color:var(--text);font-weight:700" onclick="gmQuarter()">Quarterly check-in</button>'
-      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmCalendar(\'rhythm\')">Add the rhythm to my calendar</button></div>';
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmCalendar(\'rhythm\')">Add the rhythm to my calendar</button>'
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" role="switch" aria-checked="' + gmHapticsOn() + '" onclick="gmToggleHaptics()">Haptics (a light tap feel): ' + (gmHapticsOn() ? "on" : "off") + '</button></div>';
     var cad = "";
     RITUALS.forEach(function (r) {
       var log = cadenceLog(), done = log[r.id] === r.key(new Date());
@@ -5625,7 +5667,7 @@ function renderPlaybook(){
       cad += '</div></details>';
     });
     h += foldHTML("\u{1F4C5} The rhythm", RITUALS.length + " rituals, each shows on Today only when due", cad, false);
-    h += '<div style="margin-top:16px">' + healthHTML() + '</div>';
+    h += (window.gmLangHTML ? gmLangHTML() : '') + '<div style="margin-top:16px">' + healthHTML() + '</div>';
     h += foldHTML("\u{1F3F3} When it goes wrong", inRecovery() ? "recovery mode is ON" : "pause rituals for a bad week", recoveryHTML(), !!inRecovery());
     h += foldHTML("\u{1F517} Connections", "sync, Microsoft 365, phone reminders \u00b7 all optional",
       '<div class="info">None of these is needed to use the app. Sync copies your data to your own estate; Microsoft 365 shows today\u2019s calendar on Today; reminders nudge your phone when something is due.</div>'
@@ -6999,9 +7041,27 @@ function renderPlaybook(){
   // Haptics on the moments that matter only (premium.buttons.haptic_on): a daily-three tick, marking something done, a
   // confirmation. Never under reduced motion or the in-app "still" switch, and nothing where the phone cannot vibrate.
   var HAPTIC = { tap: [8], success: [10, 40, 10], warn: [24] };
+  function gmHapticsOn() { return G("gm_haptics", true) !== false; }
+  window.gmToggleHaptics = function () { S_("gm_haptics", !gmHapticsOn()); renderAll(); };
+  var GM_PRESS = "button,.gm-tap,.tile,[role=button]";
+  if (!window._gmTactile) {
+    window._gmTactile = 1;
+    document.addEventListener("pointerdown", function (e) {
+      var t = e.target.closest && e.target.closest(GM_PRESS);
+      if (!t) return;
+      if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      if (gmHapticsOn()) try { navigator.vibrate(6); } catch (x) {}
+      var r = t.getBoundingClientRect(), s = Math.max(r.width, r.height, 40) * 1.6, sp = document.createElement("span");
+      sp.className = "gm-ripple";
+      sp.style.cssText = "width:" + s + "px;height:" + s + "px;left:" + (e.clientX - r.left - s / 2) + "px;top:" + (e.clientY - r.top - s / 2) + "px";
+      t.classList.add("gm-ripple-host"); t.appendChild(sp);
+      var done = function () { if (sp.parentNode) sp.remove(); if (!t.querySelector(".gm-ripple")) t.classList.remove("gm-ripple-host"); };
+      sp.onanimationend = done; setTimeout(done, 500);   // a ripple never stays behind, even when the animation does not report its end
+    }, { passive: 1 });
+  }
   window.gmHaptic = function (kind) {
     try {
-      if (G("gm_still", false) || !navigator.vibrate) return;
+      if (G("gm_still", false) || !gmHapticsOn() || !navigator.vibrate) return;
       if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
       navigator.vibrate(HAPTIC[kind] || HAPTIC.tap);
     } catch (e) { /* a missing motor is never an error */ }
@@ -7102,9 +7162,25 @@ function renderPlaybook(){
       + '</div><div style="font-size:12px;color:var(--muted);margin-top:12px">Life OS ' + esc(ver) + ' · your data stays on your devices</div>'
       + '<button class="btn-sm" style="margin-top:12px;background:none;color:var(--muted)" onclick="gmClose()">Close</button>');
   };
+  function tactileCSS() {
+    var st = document.getElementById("gmTactileCss");
+    if (!st) { st = document.createElement("style"); st.id = "gmTactileCss"; }
+    st.textContent = ":root{--gm-lift:0 2px 0 var(--border),0 3px 8px rgba(0,0,0,.10)}"
+      + ":is(button,.gm-d3 .tile,[role=button]){transition:transform .16s cubic-bezier(.2,.8,.2,1.2),box-shadow .16s;box-shadow:var(--gm-lift)}"
+      + ":is(button,.gm-d3 .tile,[role=button]):active{transform:translateY(2px);box-shadow:0 1px 1px rgba(0,0,0,.14);transition:transform 80ms ease-out}"
+      + ".gm-ripple-host{position:relative;overflow:hidden}"
+      + ".gm-ripple{position:absolute;border-radius:50%;background:currentColor;animation:gm-rip .35s ease-out forwards}"
+      + "@keyframes gm-rip{0%{opacity:.18;transform:scale(0)}to{opacity:0;transform:scale(1)}}"
+      + ".hab-chk:active,input[type=checkbox]:active{animation:gm-detent .18s ease}"
+      + "@keyframes gm-detent{0%{transform:scale(.92)}60%{transform:scale(1.04)}}"
+      + "@media (prefers-reduced-motion:reduce){.gm-ripple{display:none}.hab-chk:active,input[type=checkbox]:active{animation:none}"
+      + ":is(button,.gm-d3 .tile,[role=button]):active{transform:none;box-shadow:none;opacity:.86}}";
+    document.head.appendChild(st);
+  }
   function designFrame() {
     designCSS();
     premiumCSS();
+    tactileCSS();
     if (!document.querySelector("a.skip") && document.getElementById("sections")) {
       var sk = document.createElement("a"); sk.className = "skip"; sk.href = "#sections"; sk.textContent = "Skip to content";
       document.body.insertBefore(sk, document.body.firstChild);
@@ -7794,6 +7870,73 @@ function renderPlaybook(){
       }, 1500);
     }
   });
+})();
+
+/* ══ Languages for the Life OS (owner, 2026-11-11: the Life OS must be bilingual, like the kit apps) ══
+   The screens are built from English in many places, so the words are swapped after they render: a watcher reads each
+   text and the placeholder, aria-label and title of each element, and replaces an exact match from the catalog of the
+   chosen language (guiding-map/i18n/lifeos.<lang>.json, inlined by build.js as window.GM_I18N, so it works offline).
+   Anything not in the catalog stays in English: never blank, never a key. The device's language is the first default;
+   a choice in Ops wins and is remembered on this device (gm_lang). Numbers, names and the person's own words are never
+   touched, because only exact catalog matches change. Machine drafts are beta until a native professional reviews them. */
+(function () {
+  var CAT = window.GM_I18N || {}, ORIG = "__gmEn", ATTRS = ["placeholder", "aria-label", "title"];
+  var NAMES = { en: "English", hi: "\u0939\u093f\u0902\u0926\u0940", mr: "\u092e\u0930\u093e\u0920\u0940" };
+  function get() { try { return JSON.parse(localStorage.getItem("gm_lang")); } catch (e) { return null; } }
+  function pick() {
+    var saved = get(); if (saved && (saved === "en" || CAT[saved])) return saved;
+    var dev = String((navigator.languages && navigator.languages[0]) || navigator.language || "en").slice(0, 2).toLowerCase();
+    return CAT[dev] ? dev : "en";
+  }
+  var lang = pick(), busy = false, queued = false;
+  function table() { return lang === "en" ? null : ((CAT[lang] || {}).strings || {}); }
+  function swapText(n, T) {
+    var en = n[ORIG] !== undefined ? n[ORIG] : n.textContent, key = en.replace(/\s+/g, " ").trim();
+    if (!key) return;
+    var tr = T && T[key];
+    if (tr) { if (n[ORIG] === undefined) n[ORIG] = en; var want = en.replace(key, tr); if (n.textContent !== want) n.textContent = want; }
+    else if (n[ORIG] !== undefined) { if (n.textContent !== n[ORIG]) n.textContent = n[ORIG]; }
+  }
+  function swapAttrs(el, T) {
+    ATTRS.forEach(function (a) {
+      if (!el.hasAttribute(a)) return;
+      var store = "__gmEn_" + a, en = el[store] !== undefined ? el[store] : el.getAttribute(a), tr = T && T[en.trim()];
+      if (tr) { if (el[store] === undefined) el[store] = en; if (el.getAttribute(a) !== tr) el.setAttribute(a, tr); }
+      else if (el[store] !== undefined && el.getAttribute(a) !== el[store]) el.setAttribute(a, el[store]);
+    });
+  }
+  function run(root) {
+    if (busy) { queued = true; return; }
+    busy = true;
+    try {
+      var T = table(), w = document.createTreeWalker(root || document.body, NodeFilter.SHOW_TEXT), n;
+      while ((n = w.nextNode())) { var p = n.parentElement; if (!p || /^(SCRIPT|STYLE|TEXTAREA)$/.test(p.tagName) || p.isContentEditable) continue; swapText(n, T); }
+      (root || document.body).querySelectorAll("[placeholder],[aria-label],[title]").forEach(function (el) { swapAttrs(el, T); });
+      document.documentElement.lang = lang;
+    } catch (e) {}
+    busy = false;
+    if (queued) { queued = false; setTimeout(function () { run(); }, 0); }
+  }
+  var timer = null;
+  function soon() { clearTimeout(timer); timer = setTimeout(function () { run(); }, 30); }
+  window.gmLang = function () { return lang; };
+  window.gmLangs = function () { var o = { en: { name: NAMES.en, status: "reviewed" } }; Object.keys(CAT).forEach(function (k) { o[k] = { name: NAMES[k] || k, status: (CAT[k]._meta || {}).status || "beta" }; }); return o; };
+  window.gmSetLang = function (l) {
+    if (l !== "en" && !CAT[l]) return;
+    lang = l; try { localStorage.setItem("gm_lang", JSON.stringify(l)); } catch (e) {}
+    try { if (window.renderAll) renderAll(); } catch (e) {}
+    run();
+  };
+  // the language switch, in plain view at the top of Ops: one tap, each name in its own script
+  window.gmLangHTML = function () {
+    var L = gmLangs(), h = '<div class="road-col gm-lang" style="margin-bottom:12px"><div style="font-weight:800;font-size:13px;margin-bottom:6px">Language</div><div style="display:flex;gap:8px;flex-wrap:wrap">';
+    Object.keys(L).forEach(function (k) {
+      h += '<button class="btn-sm" lang="' + k + '" aria-pressed="' + (k === lang) + '" style="background:' + (k === lang ? "var(--navy);color:#fff" : "var(--cardAlt);color:var(--text)") + '" onclick="gmSetLang(\'' + k + '\')">' + L[k].name + '</button>';
+    });
+    return h + '</div>' + (lang !== "en" ? '<div class="muted" style="font-size:11.5px;margin-top:6px">Beta: a machine draft, checked by a person before the global launch. Anything not translated yet stays in English.</div>' : '') + '</div>';
+  };
+  try { new MutationObserver(function () { if (!busy && lang !== "en") soon(); }).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) {}
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { run(); }); else run();
 })();
 
 </script>
