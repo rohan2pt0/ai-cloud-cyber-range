@@ -131,6 +131,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- Backups are encrypted by default
 - Ask by how often it changes: fixed facts fold away, changing numbers are one tap away
 - Ask once: the Life OS stops asking for the same facts again
 - Doc 134, Use it now: a feature freeze, three audit rounds, and a daily routine
@@ -138,7 +139,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - One command sets up a laptop or node, end to end
 - A new core principle, `global-ready`: built for the world, at home in one place
 - multilingual 2c-e: Vantage's goal starters and scorecard in Hindi and Marathi
-- multilingual 2c-d: Vantage's playbooks in Hindi and Marathi
 
 **Release 0.3.0 - 2026-10-22:**
 

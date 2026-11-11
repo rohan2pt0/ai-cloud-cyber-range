@@ -3,7 +3,7 @@
 const { JSDOM } = require("jsdom");
 const fs = require("fs"), path = require("path");
 const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
-const d = new JSDOM(html, { runScripts: "dangerously", url: "https://hub.securax.localhost/" });
+const d = new JSDOM(html, { runScripts: "dangerously", url: "https://hub.securax.localhost/", beforeParse(w) { Object.defineProperty(w, "crypto", { value: require("crypto").webcrypto }); } });
 let pass = 0, fail = 0;
 const ok = (c, m) => { if (c) pass++; else { fail++; console.log("FAIL", m); } };
 setTimeout(() => {
@@ -46,7 +46,9 @@ setTimeout(() => {
   w.URL.createObjectURL = () => "blob:x";
   w.HTMLAnchorElement.prototype.click = function () {};
   w.gmExportNow();
-  ok(w.gmTouchRows().some((r) => /Exported/.test(r.w)), "an export is logged");
-  console.log("test23 strategy habits: " + pass + " passed, " + fail + " failed");
-  process.exit(fail ? 1 : 0);
+  setTimeout(() => {
+    ok(w.gmTouchRows().some((r) => /encrypted backup/.test(r.w)), "an export is logged");
+    console.log("test23 strategy habits: " + pass + " passed, " + fail + " failed");
+    process.exit(fail ? 1 : 0);
+  }, 1500);
 }, 800);

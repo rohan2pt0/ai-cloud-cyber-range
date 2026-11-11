@@ -74,7 +74,10 @@ async function turnOn(w, pass) {
   A.document.createElement = ((orig) => function (t) { const e = orig.call(A.document, t); if (t === "a") e.click = () => {}; return e; })(A.document.createElement);
   A.gmExportNow();
   const text = exported ? await new Promise((r) => { const fr = new A.FileReader(); fr.onload = () => r(fr.result); fr.readAsText(exported); }) : "";
-  ok(text && text.indexOf("gm_test_goal") >= 0 && text.indexOf("gm_sync_odk") < 0, "an export carries the data but never the OneDrive sync key");
+  await new Promise((r) => setTimeout(r, 1500));
+  const text2 = exported ? await new Promise((r) => { const fr = new A.FileReader(); fr.onload = () => r(fr.result); fr.readAsText(exported); }) : "";
+  const opened = text2 ? await A.gmBackupOpen(JSON.parse(text2), JSON.parse(A.localStorage.getItem("gm_sync_od_bkphrase"))) : {};
+  ok(text2 && text2.indexOf("gm_test_goal") < 0 && opened.gm_test_goal && !opened.gm_sync_odk, "an export is encrypted, carries the data and never the OneDrive sync key");
 
   console.log("test22 onedrive sync: " + pass + " passed, " + fail + " failed");
   process.exit(fail ? 1 : 0);
