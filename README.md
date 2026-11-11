@@ -131,6 +131,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- 360 audit, round 1: a security hole and four frictions fixed
 - Friction by consequence: the safe choice is one tap, erase is deliberate
 - Today is calm again: one small row per habit, and the science folded away
 - Backups are encrypted by default
@@ -138,7 +139,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - Ask once: the Life OS stops asking for the same facts again
 - Doc 134, Use it now: a feature freeze, three audit rounds, and a daily routine
 - The apps lock, with the device's own Face ID, fingerprint or Windows Hello (app-lock, kit first)
-- One command sets up a laptop or node, end to end
 
 **Release 0.3.0 - 2026-10-22:**
 

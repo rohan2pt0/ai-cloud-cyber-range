@@ -567,9 +567,10 @@
       window.removeEventListener("message", onMsg);
       var data = ev.data.data, keys = Object.keys(data), mine = 0;
       for (var i = 0; i < localStorage.length; i++) if (/^(gm_|sov)/.test(localStorage.key(i))) mine++;
-      if (mine > 5 && !confirm("This address already has its own data.\n\nReplace it with the " + keys.length + " items from " + from + "?")) return;
+      if (mine > 5 && !confirm("This address already has its own data.\n\nReplace it with the " + keys.length + " items from " + from + "? You can undo this for 30 minutes.")) return;
+      gmSnap("before moving data in from " + from);
       var n = 0;
-      keys.forEach(function (k) { if (typeof data[k] === "string") { localStorage.setItem(k, data[k]); n++; } });
+      keys.forEach(function (k) { if (typeof data[k] === "string" && k.indexOf("gm_undo") !== 0) { localStorage.setItem(k, data[k]); n++; } });
       try { (ev.source || window.opener).postMessage({ type: "gm-move-done", n: n }, from); } catch (e) {}
       if (window.gmToast) gmToast("Moved " + n + " items here. Reloading…");
       setTimeout(function () { location.reload(); }, 900);
@@ -1892,8 +1893,9 @@
         .then(function (o) { return { name: f.name, data: o }; });
     }).then(function (b) {
       var keys = Object.keys(b.data || {});
-      if (!confirm("Restore " + keys.length + " items from " + b.name + "? Anything newer on this device is overwritten.")) return;
-      keys.forEach(function (k) { if (k.indexOf("gm_sync_od") !== 0 && k.indexOf("gm_ms_tok") !== 0) localStorage.setItem(k, b.data[k]); });
+      if (!confirm("Restore " + keys.length + " items from " + b.name + "? Anything newer on this device is overwritten. You can undo this for 30 minutes.")) return;
+      gmSnap("before restoring " + b.name);
+      keys.forEach(function (k) { if (k.indexOf("gm_sync_od") !== 0 && k.indexOf("gm_ms_tok") !== 0 && k.indexOf("gm_undo") !== 0) localStorage.setItem(k, b.data[k]); });
       gmTouch("Restored from " + b.name, "your OneDrive");
       alert("Restored from " + b.name + "."); location.reload();
     }).catch(function (e) { alert("Restore failed: " + e.message + (G("gm_sync_odk", null) ? "" : " (an encrypted backup needs OneDrive sync turned on with the same passphrase first)")); });
@@ -2209,7 +2211,7 @@
     var blob = {};
     for (var i = 0; i < localStorage.length; i++) {
       var k = localStorage.key(i);
-      if (k.indexOf("gm_ms_tok") !== 0 && k.indexOf("gm_sync_od") !== 0 && k !== BK_PH) blob[k] = localStorage.getItem(k);
+      if (k.indexOf("gm_ms_tok") !== 0 && k.indexOf("gm_sync_od") !== 0 && k.indexOf("gm_undo") !== 0) blob[k] = localStorage.getItem(k);
     }
     return blob;
   }
@@ -2270,8 +2272,9 @@
       var r = new FileReader();
       function restore(o) {
         var n = 0;
-        if (!confirm("Restore " + Object.keys(o).length + " keys from this backup? Anything newer on this device will be overwritten.")) return;
-        Object.keys(o).forEach(function (k) { if (k !== BK_PH) { localStorage.setItem(k, o[k]); n++; } });
+        if (!confirm("Restore " + Object.keys(o).length + " items from this backup? Anything newer on this device will be overwritten. You can undo this for 30 minutes.")) return;
+        gmSnap("before restoring a backup file");
+        Object.keys(o).forEach(function (k) { if (k.indexOf("gm_sync_od") !== 0 && k.indexOf("gm_undo") !== 0) { localStorage.setItem(k, o[k]); n++; } });
         alert("Restored " + n + " keys."); location.reload();
       }
       r.onload = function () {
@@ -3221,7 +3224,7 @@
       + '<button class="btn btn-s" onclick="gmIntelGo()" style="margin-top:8px">Find the consensus</button><div id="intelOut" style="margin-top:8px"></div></div></details>';
 
     h += '<details class="road-col" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">⤢ Launch the estate</summary><div style="margin-top:8px" class="info">'
-      + 'With <code>./securax up</code> running: '
+      + 'With the estate running on your laptop (double-click START-HERE): '
       + '<a href="' + estateUrl("chat", 3000) + '" target="_blank" rel="noopener">Unified chat</a> · '
       + '<a href="' + estateUrl("docs", 3001) + '" target="_blank" rel="noopener">Private docs (RAG)</a> · '
       + '<a href="' + estateUrl("flows", 5678) + '" target="_blank" rel="noopener">Automations</a> · '
@@ -3288,7 +3291,7 @@
       })
       .catch(function () {
         done = true;
-        el.innerHTML = askStatusHTML("muted", "AI is off right now — double-click <b>START-HERE</b> (or run <code>./securax up</code>) to turn it on. Everything else on this page works offline.");
+        el.innerHTML = askStatusHTML("muted", "AI is off right now — double-click <b>START-HERE</b> on your laptop to turn it on. Everything else on this page works offline.");
       });
   };
   // An Ask error as an alert (premium.alerts): what happened as the title, why and the next step as the body.
@@ -3336,7 +3339,7 @@
         });
       })
       .then(function (j) { if (!j) return; lastAskQ = q; lastAskA = gmRecoveryGuard((j.choices && j.choices[0].message.content) || JSON.stringify(j)); out.innerHTML = seenLine + '<div class="ask-who">Answered as: ' + esc(askName(askAgent)) + '</div>' + mdLite(lastAskA); document.getElementById("askFb").style.display = "flex"; })
-      .catch(function () { askFail(out, "attention", "AI is off right now", "AI is off right now — double-click START-HERE (or run  ./securax up ) to turn it on, then try again. (Nothing was sent.) If your estate is on another machine, set the gateway URL below."); });
+      .catch(function () { askFail(out, "attention", "AI is off right now", "AI is off right now — double-click START-HERE on your laptop to turn it on, then try again. (Nothing was sent.) If your estate is on another machine, set the gateway URL below."); });
   };
   window.gmAskCopy = function () {
     var m = document.getElementById("askFbMsg");
@@ -3394,7 +3397,7 @@
     h += '<div class="cat-t">\u2699 Ops</div>';
     h += '<div class="info">' + (due.length ? due.length + " ritual(s) due now (they also show on Today). " : "Nothing due today. ")
       + (broken ? broken + " habit(s) need a recovery rep." : "") + '</div>';
-    h += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px"><button class="btn-sm" style="background:var(--gold);color:#0d1f35;font-weight:800" onclick="gmQuarter()">Quarterly check-in</button>'
+    h += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px"><button class="btn-sm" style="background:var(--cardAlt);color:var(--text);font-weight:700" onclick="gmQuarter()">Quarterly check-in</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmCalendar(\'rhythm\')">Add the rhythm to my calendar</button></div>';
     var cad = "";
     RITUALS.forEach(function (r) {
@@ -3421,7 +3424,8 @@
     h += foldHTML("\u{1F4D6} Glossary", "every term in this app", glossHTML(), false);
     h += '<div class="cat-t" style="margin-top:16px">\u{1F4F1} This device</div>'
       + '<div class="info">Installed as an app, this opens offline in one tap and keeps its own copy of your data.</div>'
-      + '<button class="btn btn-p" onclick="gmInstall()">Add to home screen</button>';
+      + ((window.matchMedia && matchMedia("(display-mode: standalone)").matches) ? '<div class="muted" style="font-size:12px">Installed on this device.</div>'
+        : '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmInstall()">Add to home screen</button>');
     h += foldHTML("Danger zone", "erase this device", '<div class="info">Erases every value of this app on this device. Synced copies and backup files are not touched. This cannot be undone.</div>'
       + '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmExportNow()">Save an encrypted backup first</button>'
       + '<button class="btn-sm gm-erase" style="background:transparent;color:var(--red);border:1px solid var(--red)" onclick="gmEraseAsk()">Erase all data on this device</button></div>', false)
@@ -5334,7 +5338,8 @@
     var pp = G("gm_papers", null), rupee = function (v) { return "\u20b9" + Number(v).toLocaleString("en-IN"); };
     var list = pp && pp.checklist ? pp.checklist.map(function (c) { return [c.name, c.why, c.where, c.have]; }) : PAPERS_START.map(function (c) { return c.concat([0]); });
     var inN = list.filter(function (c) { return c[3]; }).length, missing = list.filter(function (c) { return !c[3]; });
-    var h = '<h3>Your papers (' + inN + ' of ' + list.length + ' in)</h3><div class="info">No spreadsheet to fill — your papers are the input. This reading runs on the computer where SecuRAX is installed, not from this screen: save each paper (any format, any name) into the <b>' + esc((pp && pp.folder) || "vault/life/docs") + '/</b> folder on that machine, then run <b>./securax lifeos docs</b> there. Nothing leaves it, and the figures below fill themselves. Uploading straight from a phone or the web is not available yet.</div>';
+    var h = '<h3>Your papers (' + inN + ' of ' + list.length + ' in)</h3><div class="info">No spreadsheet to fill — your papers are the input. They are read on your laptop, never from this screen, and nothing leaves it.</div>'
+      + '<details class="ibnotes"><summary>How, on the laptop</summary><div class="info">Save each paper (any format, any name) in the <b>' + esc((pp && pp.folder) || "vault/life/docs") + '</b> folder, then ask the estate to read them: <b>./securax lifeos docs</b>. The figures below then fill themselves.</div></details>';
     if (missing.length) h += '<div class="ibpapers">' + missing.slice(0, 3).map(function (c) {
       return '<div class="ibrow"><div class="ibt"><b>Next: ' + esc(c[0]) + '</b><div class="ibsub">For ' + esc(c[1]) + '. Get it ' + esc(c[2]) + '.</div></div></div>';
     }).join("") + (missing.length > 3 ? '<details class="ibnotes"><summary>The other ' + (missing.length - 3) + ' to collect</summary>' + missing.slice(3).map(function (c) {
@@ -5568,7 +5573,7 @@
     if (new Date().getDate() <= 7 && last !== mk && !inRecovery()) {
       S_("gm_backup_seen", mk);
       setTimeout(function () {
-        if (confirm("Monthly ritual: export a dated JSON backup now?")) {
+        if (confirm("Monthly ritual: save an encrypted backup now?")) {
           if (window.gmExportBackup) gmExportBackup();
         }
       }, 1500);
