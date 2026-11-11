@@ -1402,7 +1402,7 @@ function goTab(id,filter){ curTab=id; pillarFilter=filter||null; renderAll(); wi
 function cardK(i){
   var k=KPIs[i]; var cp=combinedPct(k); var st=statusOf(cp); var mt=metricType(k);
   return '<div class="kc '+(st==="on"?"":st)+'" onclick="openK('+i+')"><div class="ab"></div>'
-   +'<div class="badges">'+(k.pareto?'<span class="cb cb-p">\u2B50</span>':'')+'<span class="cb" style="background:var(--navy);color:#fff">'+mt+'</span></div>'
+   +'<div class="badges">'+(k.pareto?'<span class="cb cb-p">\u2B50</span>':'')+'<span class="cb" style="background:var(--navy);color:#fff">'+({KGI:"Goal",KAI:"Activity",KPI:"Measure"}[mt]||mt)+'</span></div>'
    +'<div class="kv">'+kVal(k)+'<span class="ku">'+k.unit+'</span></div>'
    +'<div class="kl">'+k.label+'</div>'
    +'<div class="sys-prog">System: '+sysPct(k,"k")+'% done</div>'
