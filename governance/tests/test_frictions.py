@@ -22,3 +22,10 @@ def test_ask_by_frequency_is_core_and_agents_have_it():
     assert princ["ask-by-frequency"]["core"] is True and "asked once" in princ["ask-by-frequency"]["text"]
     agents = (ROOT / "AGENTS.md").read_text("utf-8").split("## 1. Pick the tier")[0]
     assert "(`ask-by-frequency`" in agents and "governance/frictions.json" in agents
+
+
+def test_friction_by_consequence_is_core_and_agents_have_it():
+    princ = {p["id"]: p for p in json.loads((ROOT / "governance" / "principles.json").read_text("utf-8"))["principles"]}
+    assert princ["friction-by-consequence"]["core"] is True and "typed confirmation" in princ["friction-by-consequence"]["text"]
+    agents = (ROOT / "AGENTS.md").read_text("utf-8").split("## 1. Pick the tier")[0]
+    assert "(`friction-by-consequence`" in agents

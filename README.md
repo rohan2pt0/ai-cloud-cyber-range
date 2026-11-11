@@ -131,6 +131,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- Friction by consequence: the safe choice is one tap, erase is deliberate
 - Today is calm again: one small row per habit, and the science folded away
 - Backups are encrypted by default
 - Ask by how often it changes: fixed facts fold away, changing numbers are one tap away
@@ -138,7 +139,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - Doc 134, Use it now: a feature freeze, three audit rounds, and a daily routine
 - The apps lock, with the device's own Face ID, fingerprint or Windows Hello (app-lock, kit first)
 - One command sets up a laptop or node, end to end
-- A new core principle, `global-ready`: built for the world, at home in one place
 
 **Release 0.3.0 - 2026-10-22:**
 

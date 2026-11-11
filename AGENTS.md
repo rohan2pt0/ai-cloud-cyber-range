@@ -74,6 +74,10 @@ The principles behind it:
 
   Every friction a person meets goes into `governance/frictions.json` (where, what, the fix, its state); the open count only goes down.
   `guiding-map/tests/test42.js` holds it on the Life OS.
+- **Friction by consequence (`friction-by-consequence`, owner 2026-11-11):** place each action by what it costs to get wrong, then by
+  how often it is used. Safe and frequent (save a backup, tick a habit): one tap, in plain sight, the default. Rare: folded under one line.
+  Irreversible (erase, overwrite, a readable copy of private data): away from the daily path and the safe buttons, never a primary, says
+  what will be lost, offers the safe step first, and needs a typed confirmation. `guiding-map/tests/test46.js` holds it on the Life OS.
 - **Built for the world, at home in one place (`global-ready`, owner 2026-11-10):** SecuRAX launches for ultra-high-net-worth people
   worldwide, while the owner uses it at home first. So: every visible word goes through the catalog (`K.t` in the kit, its
   overlays for an edition's content); numbers, dates and money through `Intl` with the person's region; CSS uses logical
