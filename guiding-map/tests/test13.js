@@ -18,8 +18,8 @@ setTimeout(()=>{
  // playbook renders dynamically
  const b=go('book');
  ok("playbook renders", b.length>500);
- ok("stage bar present (5 stages)", (b.match(/PROTECT|AUTOMATE|EXPAND|SYSTEMIZE|MULTIPLY/g)||[]).length>=5, '');
- ok("next-gate callout present", b.includes("YOUR NEXT GATE"));
+ ok("stage bar present (5 stages)", (b.match(/Protect|Automate|Expand|Systemize|Multiply/g)||[]).length>=5, '');
+ ok("next-gate callout present", b.includes("Your next gate"));
  ok("live numbers computed from seed (6x expenses EF)", b.includes(w.money(360000)), 'expected '+w.money(360000));
  ok("FIRE number computed (25x annual expenses)", b.includes(w.money(18000000)), 'expected '+w.money(18000000));
  ok("no NaN/Infinity in playbook", !/NaN|Infinity/.test(b));
