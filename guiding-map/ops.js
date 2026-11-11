@@ -955,8 +955,34 @@
   // A "lakh" field typed in rupees (4,00,000 instead of 4) made runway read 274219.5 months on a real phone. Treat > 10,000 as rupees.
   function lakhs(v) { var n = num(v); return n > 10000 ? n / 1e5 : n; }
 
+  // ask-by-frequency: the numbers that change (investments, savings, spending, take-home) in one small card where money is
+  // used, saved straight to the profile, with when they were last updated. No whole form, no second store.
+  var NUMS = [["nw", "Investments / net worth"], ["sav", "Liquid savings"], ["exp", "Monthly spending"], ["net", "Monthly take-home"]];
+  window.gmNumbersCard = function () {
+    if (!profOK()) return "";
+    var days = P.numsAt ? Math.floor((Date.now() - new Date(P.numsAt)) / 864e5) : null;
+    var when = days === null ? "not updated since set-up" : days < 1 ? "updated today" : "updated " + days + (days === 1 ? " day" : " days") + " ago";
+    var h = '<details class="road-col gm-nums"' + (days !== null && days > 31 ? " open" : "") + '><summary style="cursor:pointer;font-weight:800;font-size:13px">My numbers \u00b7 <span style="font-weight:500;color:var(--muted)">'
+      + when + '</span></summary><div class="info" style="margin:6px 0 8px">The numbers that change. Update them here once a month; every screen uses them.</div>';
+    NUMS.forEach(function (f) {
+      h += '<label class="f-label">' + f[1] + ' (' + esc(P.cur || "INR") + ')</label><input inputmode="decimal" value="' + esc(P[f[0]] === undefined ? "" : P[f[0]])
+        + '" onchange="gmNumSet(\'' + f[0] + '\',this.value)">';
+    });
+    return h + '</details>';
+  };
+  window.gmNumSet = function (k, v) {
+    if (!profOK() || !NUMS.some(function (f) { return f[0] === k; })) return;
+    P[k] = num(v) || 0; P.numsAt = new Date().toISOString().slice(0, 10); store("sovP", P);
+    // the same fact kept elsewhere follows, so no screen shows an older number
+    var lm = { nw: "nw", sav: "ef" }[k], l = G("gm_life", {});
+    if (lm && l[lm] !== undefined) { delete l[lm]; S_("gm_life", l); }
+    var c = G(CAR_K, null);
+    if (c) { Object.keys(CAR_FROM_P).forEach(function (path) { if (CAR_FROM_P[path] === k) { var q = path.split("."); if (c[q[0]]) delete c[q[0]][q[1]]; } }); carPut(c); }
+    bustDerived(); renderAll();
+  };
+
   function lifeInputs() {
-    var l = life();
+    var l = life(), raw = G("gm_life", {});
     var F = [
       ["age", "Your age", "36"], ["sage", "Spouse age", "33"],
       ["inc", "Household annual income (\u20b9 lakh)", "23"],
@@ -969,6 +995,12 @@
       + (filled ? ' \u00b7 <span style="font-weight:500;color:var(--muted)">tap to edit</span>' : '') + '</summary>'
       + (filled ? "" : tplBtn("gmTplLife()", "Fill with a worked example, then correct it"));
     F.forEach(function (f) {
+      // an age worked out from a birth date in the profile is shown, not asked (ask-by-frequency: derived, never typed)
+      if (["age", "sage", "k1"].indexOf(f[0]) >= 0 && (raw[f[0]] === undefined || raw[f[0]] === "") && l[f[0]] !== undefined && l[f[0]] !== "") {
+        h += '<div class="f-label" style="margin:10px 0">' + f[1].replace(/ \(.*$|'s age in years.*$/, "") + ': <b style="color:var(--text)">' + esc(l[f[0]])
+          + '</b> <span style="text-transform:none;letter-spacing:0">(from your profile)</span></div>';
+        return;
+      }
       h += '<label class="f-label">' + f[1] + exampleBadge(f[0]) + '</label><input inputmode="decimal" value="' + esc(l[f[0]] === undefined ? "" : l[f[0]])
         + '" placeholder="' + f[2] + '" onchange="gmLifeSet(\'' + f[0] + '\',this.value)">'
         + saneWarn(f[0], l[f[0]]);
@@ -990,7 +1022,7 @@
       + '<div class="info">Benchmarks, not verdicts. Where you are behind, the map gives you the action \u2014 not a score to feel bad about. '
       + 'Starting late is normal and is not disqualifying; the arithmetic simply gets less forgiving, so the response is a higher savings rate, not despair.</div>';
     h += exampleWarn();
-    h += lifeInputs();
+    h += gmNumbersCard() + lifeInputs();
     if (!age || !inc) { h += '<div class="info" style="margin-top:12px">Enter at least your age and household income to generate the map.</div></div>'; return h; }
 
     /* Net worth multiple — the widely used age benchmark, shifted later

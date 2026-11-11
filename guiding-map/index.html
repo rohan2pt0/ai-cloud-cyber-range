@@ -42,6 +42,8 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 .wiz-sub{color:rgba(255,255,255,.45);font-size:10px;letter-spacing:1px;text-transform:uppercase;}
 .wiz-body{padding:22px 18px 40px;max-width:520px;margin:0 auto;}
 .sec-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--gold);margin:22px 0 10px;}
+details.w-fixed>summary{cursor:pointer;}
+details.w-fixed:not([open])>summary{text-transform:none;letter-spacing:0;font-size:13px;font-weight:600;color:var(--text);padding:12px 0;border-bottom:1px solid var(--border);}
 .f-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:5px;display:block;}
 .f-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 input,select,textarea{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:10px;font-family:var(--font-ui);font-size:13px;background:var(--card);color:var(--text);outline:none;margin-bottom:12px;}
@@ -391,13 +393,14 @@ Lost? <b style="color:var(--text)">Today</b> is the only tab you need daily — 
     <div class="h1">Build Your Life Operating System</div>
     <div class="desc">Built on the most-validated frameworks on earth: the r/personalfinance Prime Directive, Bogleheads, Atomic Habits, OKRs, the Wheel of Life and commitment-contract science. Your answers personalize all of it.</div>
     <div class="info">All data stays in your browser on this device. Nothing is uploaded anywhere.</div>
-    <div class="sec-title">About You</div>
+    <details class="w-fixed" id="w_fixA" open><summary class="sec-title" id="w_fixA_s">About You</summary>
     <label class="f-label">Full name</label><input type="text" id="w_name" placeholder="Arjun Sharma">
     <label class="f-label">Date of birth</label><input type="date" id="w_dob">
     <div class="f-row">
       <div><label class="f-label">Country</label><input type="text" id="w_country" placeholder="India"></div>
       <div><label class="f-label">City</label><input type="text" id="w_city" placeholder="Mumbai"></div>
     </div>
+    </details>
     <div class="sec-title">Finances (monthly)</div>
     <label class="f-label">Currency</label>
     <select id="w_cur"><option value="INR">INR</option><option value="USD">USD</option><option value="AED">AED</option><option value="EUR">EUR</option><option value="GBP">GBP</option><option value="SGD">SGD</option></select>
@@ -418,6 +421,7 @@ Lost? <b style="color:var(--text)">Today</b> is the only tab you need daily — 
       <div><label class="f-label">Property 1 rent /mo</label><input type="number" id="w_rent1" placeholder="0"></div>
       <div><label class="f-label">Property 2 rent /mo</label><input type="number" id="w_rent2" placeholder="0"></div>
     </div>
+    <details class="w-fixed" id="w_fixB" open><summary class="sec-title" id="w_fixB_s">Family and vision</summary>
     <div class="sec-title">Family</div>
     <label class="f-label">Partner name (optional)</label><input type="text" id="w_pname" placeholder="Priya">
     <div class="f-row">
@@ -436,8 +440,9 @@ Lost? <b style="color:var(--text)">Today</b> is the only tab you need daily — 
     </div>
     <label class="f-label">Dream country</label><input type="text" id="w_dream" placeholder="UAE / Germany / Portugal">
     <label class="f-label">One-line life goal</label><input type="text" id="w_goal" placeholder="Financial independence by 50">
+    </details>
     <br>
-    <button class="btn btn-p" onclick="buildDash()">Build My Command Center &#8594;</button>
+    <button class="btn btn-p" id="w_go" onclick="buildDash()">Build My Command Center &#8594;</button>
   </div>
 </div>
 
@@ -1614,7 +1619,7 @@ function renderToday(){
 }
 
 function renderMoney(E){
-  var html='<div class="section active"><div class="cat-t">\uD83D\uDCB0 Prime Directive Waterfall <span class="pill pill-t">r/personalfinance — most-validated money sequence</span></div>';
+  var html='<div class="section active">'+(window.gmNumbersCard?gmNumbersCard():"")+'<div class="cat-t">\uD83D\uDCB0 Prime Directive Waterfall <span class="pill pill-t">r/personalfinance — most-validated money sequence</span></div>';
   var steps=primeSteps(E);
   var foundCurrent=false;
   steps.forEach(function(s,i){
@@ -1944,7 +1949,22 @@ function editProfile(){
     loans.length=0; kidsTmp.length=0; document.getElementById("loanList").innerHTML=""; document.getElementById("kidList").innerHTML="";
     (P.loans||[]).forEach(function(l){ addLoan(l); }); (P.kids||[]).forEach(function(k){ addKid(k); });
   }
+  wizFold(!!P);
   window.scrollTo(0,0);
+}
+// ask-by-frequency (owner, 2026-11-11): after the first set-up, the facts that do not change fold under one line that
+// shows them, so updating a number that does change (investments, savings, spending, loans) is not a scroll past them.
+function wizFold(editing){
+  var a=document.getElementById("w_fixA"), b=document.getElementById("w_fixB"); if(!a||!b) return;
+  a.open=b.open=!editing;
+  var bd=P&&P.dob?new Date(P.dob):null, kids=(P&&P.kids||[]).length;
+  document.getElementById("w_fixA_s").textContent=editing
+    ?"About you: "+[P.name, bd&&!isNaN(bd)?"born "+bd.toLocaleDateString(undefined,{day:"numeric",month:"short",year:"numeric"}):"", P.city||P.country].filter(Boolean).join(", ")+" \u00b7 tap to change"
+    :"About You";
+  document.getElementById("w_fixB_s").textContent=editing
+    ?"Family and vision: "+[P.pname?"partner "+P.pname:"", kids?kids+(kids>1?" children":" child"):"", "retire by "+P.ret].filter(Boolean).join(", ")+" \u00b7 tap to change"
+    :"Family and vision";
+  var go=document.getElementById("w_go"); if(go) go.innerHTML=editing?"Save changes &#8594;":"Build My Command Center &#8594;";
 }
 function resetAll(){
   gmConfirm("Erase ALL saved data on this device? This cannot be undone.",function(y){ if(y){ wipe(); location.reload(); } });
@@ -3138,8 +3158,34 @@ function renderPlaybook(){
   // A "lakh" field typed in rupees (4,00,000 instead of 4) made runway read 274219.5 months on a real phone. Treat > 10,000 as rupees.
   function lakhs(v) { var n = num(v); return n > 10000 ? n / 1e5 : n; }
 
+  // ask-by-frequency: the numbers that change (investments, savings, spending, take-home) in one small card where money is
+  // used, saved straight to the profile, with when they were last updated. No whole form, no second store.
+  var NUMS = [["nw", "Investments / net worth"], ["sav", "Liquid savings"], ["exp", "Monthly spending"], ["net", "Monthly take-home"]];
+  window.gmNumbersCard = function () {
+    if (!profOK()) return "";
+    var days = P.numsAt ? Math.floor((Date.now() - new Date(P.numsAt)) / 864e5) : null;
+    var when = days === null ? "not updated since set-up" : days < 1 ? "updated today" : "updated " + days + (days === 1 ? " day" : " days") + " ago";
+    var h = '<details class="road-col gm-nums"' + (days !== null && days > 31 ? " open" : "") + '><summary style="cursor:pointer;font-weight:800;font-size:13px">My numbers \u00b7 <span style="font-weight:500;color:var(--muted)">'
+      + when + '</span></summary><div class="info" style="margin:6px 0 8px">The numbers that change. Update them here once a month; every screen uses them.</div>';
+    NUMS.forEach(function (f) {
+      h += '<label class="f-label">' + f[1] + ' (' + esc(P.cur || "INR") + ')</label><input inputmode="decimal" value="' + esc(P[f[0]] === undefined ? "" : P[f[0]])
+        + '" onchange="gmNumSet(\'' + f[0] + '\',this.value)">';
+    });
+    return h + '</details>';
+  };
+  window.gmNumSet = function (k, v) {
+    if (!profOK() || !NUMS.some(function (f) { return f[0] === k; })) return;
+    P[k] = num(v) || 0; P.numsAt = new Date().toISOString().slice(0, 10); store("sovP", P);
+    // the same fact kept elsewhere follows, so no screen shows an older number
+    var lm = { nw: "nw", sav: "ef" }[k], l = G("gm_life", {});
+    if (lm && l[lm] !== undefined) { delete l[lm]; S_("gm_life", l); }
+    var c = G(CAR_K, null);
+    if (c) { Object.keys(CAR_FROM_P).forEach(function (path) { if (CAR_FROM_P[path] === k) { var q = path.split("."); if (c[q[0]]) delete c[q[0]][q[1]]; } }); carPut(c); }
+    bustDerived(); renderAll();
+  };
+
   function lifeInputs() {
-    var l = life();
+    var l = life(), raw = G("gm_life", {});
     var F = [
       ["age", "Your age", "36"], ["sage", "Spouse age", "33"],
       ["inc", "Household annual income (\u20b9 lakh)", "23"],
@@ -3152,6 +3198,12 @@ function renderPlaybook(){
       + (filled ? ' \u00b7 <span style="font-weight:500;color:var(--muted)">tap to edit</span>' : '') + '</summary>'
       + (filled ? "" : tplBtn("gmTplLife()", "Fill with a worked example, then correct it"));
     F.forEach(function (f) {
+      // an age worked out from a birth date in the profile is shown, not asked (ask-by-frequency: derived, never typed)
+      if (["age", "sage", "k1"].indexOf(f[0]) >= 0 && (raw[f[0]] === undefined || raw[f[0]] === "") && l[f[0]] !== undefined && l[f[0]] !== "") {
+        h += '<div class="f-label" style="margin:10px 0">' + f[1].replace(/ \(.*$|'s age in years.*$/, "") + ': <b style="color:var(--text)">' + esc(l[f[0]])
+          + '</b> <span style="text-transform:none;letter-spacing:0">(from your profile)</span></div>';
+        return;
+      }
       h += '<label class="f-label">' + f[1] + exampleBadge(f[0]) + '</label><input inputmode="decimal" value="' + esc(l[f[0]] === undefined ? "" : l[f[0]])
         + '" placeholder="' + f[2] + '" onchange="gmLifeSet(\'' + f[0] + '\',this.value)">'
         + saneWarn(f[0], l[f[0]]);
@@ -3173,7 +3225,7 @@ function renderPlaybook(){
       + '<div class="info">Benchmarks, not verdicts. Where you are behind, the map gives you the action \u2014 not a score to feel bad about. '
       + 'Starting late is normal and is not disqualifying; the arithmetic simply gets less forgiving, so the response is a higher savings rate, not despair.</div>';
     h += exampleWarn();
-    h += lifeInputs();
+    h += gmNumbersCard() + lifeInputs();
     if (!age || !inc) { h += '<div class="info" style="margin-top:12px">Enter at least your age and household income to generate the map.</div></div>'; return h; }
 
     /* Net worth multiple — the widely used age benchmark, shifted later
