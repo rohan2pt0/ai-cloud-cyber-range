@@ -100,7 +100,7 @@ def main():
         (OUT / "life-os-rhythm.ics").write_text(ics)
         # 4. kids quick add
         pg.evaluate("goTab('kids')"); pg.wait_for_timeout(200)
-        pg.fill("#gmKidN", "Aarav"); pg.fill("#gmKidD", "2021-06-14"); pg.click("button[onclick=\"gmKidAdd()\"]"); pg.wait_for_timeout(300); print("kids", pg.evaluate("JSON.stringify(P.kids)"))
+        pg.click("details.gm-kid-add > summary"); pg.fill("#gmKidN", "Aarav"); pg.fill("#gmKidD", "2021-06-14"); pg.click("button[onclick=\"gmKidAdd()\"]"); pg.wait_for_timeout(300); print("kids", pg.evaluate("JSON.stringify(P.kids)"))
         chk("a child is added from the Kids tab and the plan appears", "Aarav" in pg.inner_text("#sections"), pg.inner_text("#sections")[:150])
         # 5. integrations: honest labels, numbers pasted
         pg.evaluate("goTab('growth')"); pg.wait_for_timeout(200)

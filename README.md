@@ -131,6 +131,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- Ask once: the Life OS stops asking for the same facts again
 - Doc 134, Use it now: a feature freeze, three audit rounds, and a daily routine
 - The apps lock, with the device's own Face ID, fingerprint or Windows Hello (app-lock, kit first)
 - One command sets up a laptop or node, end to end
@@ -138,7 +139,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - multilingual 2c-e: Vantage's goal starters and scorecard in Hindi and Marathi
 - multilingual 2c-d: Vantage's playbooks in Hindi and Marathi
 - multilingual 2c-c: Vantage's registers in Hindi and Marathi
-- multilingual 2c-b: the Rhythm's reviews in Hindi and Marathi
 
 **Release 0.3.0 - 2026-10-22:**
 

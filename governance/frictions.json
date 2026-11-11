@@ -1,0 +1,12 @@
+{
+  "about": "Every friction a person meets in the apps, in our own words: where, what happened, the fix, and its state. Principle ask-by-frequency (owner, 2026-11-11). The number of open items only goes down; governance/tests/test_frictions.py holds the shape.",
+  "frictions": [
+    {"id": "setup-erases-kids-loans", "seen": "2026-11-11", "where": "Life OS, Setup (edit profile)", "friction": "Editing the profile showed no children or loans, and saving erased them, so the Kids tab asked for the child again", "fix": "Setup reloads children and loans when editing (PR 233)", "state": "fixed"},
+    {"id": "career-asks-profile-again", "seen": "2026-11-11", "where": "Life OS, Career", "friction": "Asked again for take-home, gross, spending, savings, investments, birth month and retirement age", "fix": "Reads the profile and writes an edit back (PR 233)", "state": "fixed"},
+    {"id": "lifemap-asks-profile-again", "seen": "2026-11-11", "where": "Life OS, Life Map", "friction": "Asked again for ages, income, net worth and emergency fund", "fix": "Derives ages from birth dates and reads money from the profile (PR 233)", "state": "fixed"},
+    {"id": "kids-empty-form", "seen": "2026-11-11", "where": "Life OS, Kids", "friction": "An empty 'Add your child' form beside the children already saved", "fix": "The add form is folded under 'Add another child' (PR 233)", "state": "fixed"},
+    {"id": "fixed-facts-in-every-edit", "seen": "2026-11-11", "where": "Life OS, Setup (edit profile)", "friction": "Updating one changing number (investments) meant scrolling past name, birth date, city and family every time", "fix": "When editing, the changing money fields come first and the fixed facts fold under one line that shows them", "state": "open", "due": "2026-11-13"},
+    {"id": "no-quick-update", "seen": "2026-11-11", "where": "Life OS", "friction": "No quick way to update the numbers that change (investments, savings, spending, loan balance) without opening the whole set-up", "fix": "A small 'My numbers' card where they are used: the changing fields only, 'updated N days ago', saved to the profile; a monthly calendar cue to refresh them", "state": "open", "due": "2026-11-13"},
+    {"id": "derived-ages-still-typed", "seen": "2026-11-11", "where": "Life OS, Life Map", "friction": "Ages that come from birth dates still show as fields to type", "fix": "Show a derived age as text with 'from your profile', not an input", "state": "open", "due": "2026-11-13"}
+  ]
+}
