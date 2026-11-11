@@ -65,6 +65,15 @@ The principles behind it:
   action in view, chosen for the person by risk (the lowest unfinished layer, else risk × reach ÷ effort); everything else
   folded under "Later (n)" until it is done; "Show only the vital few (80/20)" where a list is long. Never make the person
   choose what to do next. `guiding-map/tests/test39.js` holds it on the Life OS and the kit, `test32.js` on the Command Center.
+- **Ask once, show by how often it changes (`ask-by-frequency`, owner 2026-11-11):** a fact is asked once, in one place (the Life OS
+  profile, the kit's profile), and every screen reads it; never a second form for it. Place each field by how often it changes:
+  - **Fixed** (name, birth date, family, country, retirement age): asked at first set-up, then tucked under one line that shows them.
+  - **Changes** (investments, savings, spending, a loan balance): one tap away where it is used, with "updated N days ago", and
+    invited back on its own rhythm (a monthly cue), never a whole form.
+  - **Derived** (an age, a total): worked out, never asked.
+
+  Every friction a person meets goes into `governance/frictions.json` (where, what, the fix, its state); the open count only goes down.
+  `guiding-map/tests/test42.js` holds it on the Life OS.
 - **Built for the world, at home in one place (`global-ready`, owner 2026-11-10):** SecuRAX launches for ultra-high-net-worth people
   worldwide, while the owner uses it at home first. So: every visible word goes through the catalog (`K.t` in the kit, its
   overlays for an edition's content); numbers, dates and money through `Intl` with the person's region; CSS uses logical
