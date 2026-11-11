@@ -1,5 +1,9 @@
 # 135. Systems that deliver: one shelf, one loop, the vital few methods
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟡 Partly built.** Decided 11 November 2026: PARA as one shelf in every app and one loop; the build follows the freeze, in small slices. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 **Status:** decided 2026-11-11 (owner's ask). Build after the feature freeze (doc 134), in small slices.
 
 The owner asked for PARA and the best methods from great firms, consultancies and failed products, used across SecuRAX
