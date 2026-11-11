@@ -2376,7 +2376,8 @@
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmBkShow()">Backup phrase</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--muted)" onclick="gmExportPlain()">Readable copy</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmExportCsv()">Export for Excel (CSV)</button>'
-      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmEmergencyExport()">Spouse emergency page</button></div>';
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmEmergencyExport()">Spouse emergency page</button>'
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--red)" onclick="resetAll()">Erase all data on this device</button></div>';
   }
 
 

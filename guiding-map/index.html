@@ -152,11 +152,13 @@ header{background:var(--navy);padding:13px 16px;display:flex;align-items:center;
 .hab-chk{width:26px;height:26px;border-radius:8px;border:2px solid var(--border);background:var(--card);cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:15px;margin-top:2px;}
 .hab.done .hab-chk{background:var(--green);border-color:var(--green);color:#fff;}
 .hab-t{font-size:13px;font-weight:700;}
-.hab-anchor{font-size:10px;color:var(--purple);margin-top:2px;line-height:1.5;}
-.hab-min{font-size:10px;color:var(--teal);margin-top:2px;line-height:1.5;}
+.hab-how{margin-top:3px;}
+.hab-how>summary{font-size:10.5px;color:var(--muted);cursor:pointer;}
+.hab-anchor{font-size:10px;color:var(--muted);margin-top:2px;line-height:1.5;}
+.hab-min{font-size:11px;color:var(--muted);margin-top:2px;line-height:1.5;}
+.hab-floor-note{font-size:10.5px;color:var(--muted);margin-top:2px;}
 .hab-streak{margin-left:auto;text-align:right;flex-shrink:0;}
-.streak-n{font-size:16px;font-weight:800;color:var(--amber);}
-.streak-l{font-size:8px;color:var(--muted);text-transform:uppercase;}
+.streak-n{font-size:13px;font-weight:700;color:var(--muted);}
 .week-dots{display:flex;gap:4px;margin-top:6px;}
 .wd{width:14px;height:14px;border-radius:50%;background:#e5e7eb;font-size:7px;display:flex;align-items:center;justify-content:center;color:#999;}
 .wd.hit{background:var(--green);color:#fff;}
@@ -223,6 +225,7 @@ header{background:var(--navy);padding:13px 16px;display:flex;align-items:center;
 .tip-box strong{color:#0a5a52;}
 .m-actions{display:flex;gap:10px;margin-top:16px;}
 .arch-btn{background:var(--green);color:#fff;}
+.gm-insights>summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--text);padding:4px 0 8px;}
 .insight{background:var(--card);border-radius:10px;padding:12px;margin-bottom:8px;display:flex;gap:10px;box-shadow:0 1px 3px rgba(0,0,0,.04);}
 .in-i{font-size:18px;}
 .in-t{font-size:11px;font-weight:700;}
@@ -467,9 +470,8 @@ Lost? <b style="color:var(--text)">Today</b> is the only tab you need daily — 
 <div class="stage-bar" id="stageBar"></div>
 <div class="tabs" id="tabBar"></div>
 <div id="sections"></div>
-<div class="iw"><div class="cat-t">Live Insights</div><div id="insights"></div></div>
-<footer>Saved automatically on this device &middot; <span id="lastSave"></span><br>
-<button class="danger" onclick="resetAll()">Reset all data</button></footer>
+<div class="iw"><div id="insights"></div></div>
+<footer>Saved automatically on this device &middot; <span id="lastSave"></span></footer>
 </div>
 
 <div class="mo" id="mo" onclick="if(event.target===this)closeM()">
@@ -1598,22 +1600,24 @@ function renderGrowth(E){
 function renderToday(){
   var html='<div class="section active">';
   var d=new Date();
-  html+='<div class="today-date">'+d.toLocaleDateString("en-US",{weekday:"long",day:"numeric",month:"long"})+' — daily check-in (5 pts each)</div>';
-  // never-miss-twice: the one recovery card above says it once; each slipped habit gets a quiet "floor today" tag below
+  html+='<div class="today-date">'+d.toLocaleDateString("en-US",{weekday:"long",day:"numeric",month:"long"})+' — daily check-in</div>';
+  // One compact row per habit: the floor is the whole ask, shown once and quietly. The IF-THEN anchor is there
+  // when wanted, folded under How, so the screen stays calm.
   var tc=todayChecks();
   HABITS.forEach(function(h,i){
     var done=tc.indexOf(h.id)>=0;
     var stk=habitStreak(h.id);
     html+='<div class="hab'+(done?" done":"")+'">'
      +'<div class="hab-chk" onclick="tgHabit('+i+')">'+(done?"\u2713":"")+'</div>'
-     +'<div style="flex:1"><div class="hab-t">'+h.icon+' '+h.name+(!done&&missedTwice(h.id)?'<span class="hab-floor">Floor today</span>':'')+'</div>'
-     +'<div class="hab-anchor">\u26A1 '+h.anchor+'</div>'
-     +'<div class="hab-min">\uD83D\uDEDF '+h.min+'</div>'
+     +'<div style="flex:1"><div class="hab-t">'+h.icon+' '+h.name+'</div>'
+     +'<details class="hab-how"><summary>How</summary><div class="hab-anchor">\u26A1 '+h.anchor+'</div></details>'
+     +'<div class="hab-min">'+h.min+'</div>'
+     +(!done&&missedTwice(h.id)?'<div class="hab-floor-note">the floor is enough today</div>':'')
      +'<div class="week-dots">'+weekDots(h.id)+'</div></div>'
-     +'<div class="hab-streak"><div class="streak-n">'+stk+'\uD83D\uDD25</div><div class="streak-l">streak</div></div>'
+     +(stk>0?'<div class="hab-streak"><div class="streak-n">'+stk+(stk===1?' day':' days')+'</div></div>':'')
      +'</div>';
   });
-  html+='<div class="info" style="margin-top:12px"><strong>The science:</strong> habits take a median 66 days to automate (Lally 2010, range 18-254). One miss never hurts formation — two does. If-then anchors raise success by d=0.65 (Gollwitzer, 94 studies). The floor version keeps the chain alive on your worst day.</div>';
+  html+='<details class="info" style="margin-top:12px"><summary style="cursor:pointer;font-weight:600">Why this works</summary><div style="margin-top:8px">Habits take a median 66 days to automate (Lally 2010, range 18-254). One miss never hurts formation — two does. If-then anchors raise success by d=0.65 (Gollwitzer, 94 studies). The floor version keeps the chain alive on your worst day.</div></details>';
   html+='</div>';
   return html;
 }
@@ -1833,8 +1837,8 @@ function renderAll(){
 
 // ============== INSIGHTS ==============
 function renderInsights(E){
-  var html="";
-  function card(i,t,b){return '<div class="insight"><div class="in-i">'+i+'</div><div><div class="in-t">'+t+'</div><div class="in-b">'+b+'</div></div></div>';}
+  var html="", n=0;
+  function card(i,t,b){n++;return '<div class="insight"><div class="in-i">'+i+'</div><div><div class="in-t">'+t+'</div><div class="in-b">'+b+'</div></div></div>';}
   // prime directive position
   var steps=primeSteps(E); var cur=null;
   for(var i=0;i<steps.length;i++){ if(!steps[i].done){cur=steps[i];break;} }
@@ -1849,7 +1853,7 @@ function renderInsights(E){
   // OKR
   if(S.okrs.length){ var avg=S.okrs.reduce(function(s,o,i){return s+okrGrade(i);},0)/S.okrs.length;
     html+=card("\uD83C\uDFAF","OKR average: "+avg.toFixed(2),avg>0.85?"Consistently above 0.85 — your objectives are too safe. Raise the bar next quarter.":avg<0.4?"Below 0.4 — refocus: cut one objective, halve the KRs.":"In the healthy 0.4-0.85 stretch zone. Grade weekly, adjust monthly."); }
-  else html+=card("\uD83C\uDFAF","No OKRs set","Open the OKR tab and set 1-3 quarterly objectives. The discipline of grading 0.0-1.0 weekly is what separates intentions from outcomes.");
+  else html+=card("\uD83C\uDFAF","Set one goal for this quarter (optional)","One to three objectives, graded once a week. The Plan tab takes two minutes.");
   // wheel
   if(S.wheel){ var lows=[]; WHEEL_DIMS.forEach(function(w,i){ if(wheelVal(i)<=4) lows.push(w[1]); });
     if(lows.length) html+=card("\u2638","Wheel low spokes: "+lows.join(", "),"Scores \u22644 are next quarter's OKR candidates. A wheel this uneven does not roll."); }
@@ -1859,9 +1863,8 @@ function renderInsights(E){
   if(worst) html+=card("\u2B50","Highest-leverage next action: "+worst.label,"Lowest completion among 80/20 KPIs ("+wp+"%). Open it, tick ONE box today.");
   // commitment nudge
   var liveC=S.commits.filter(function(c){return c.status==="live";}).length;
-  if(!liveC) html+=card("\uD83E\uDD1D","No live commitment contract","For any goal you have failed twice before: stake + referee = 78% vs 35% success (StickK/Karlan). The Commit tab takes 60 seconds.");
-  html+=card("\uD83C\uDFC6",S.pts+" pts \u00B7 Level "+(Math.floor(S.pts/200)+1)+" "+lvlName(Math.floor(S.pts/200)+1),S.archived.length+" archived \u00B7 next level at "+((Math.floor(S.pts/200)+1)*200)+" pts. Checkbox 10 \u00B7 habit 5 \u00B7 archive 50 \u00B7 contract won 100.");
-  document.getElementById("insights").innerHTML=html;
+  if(!liveC) html+=card("\uD83E\uDD1D","A stake for a goal you keep missing (optional)","Put something at stake and name a referee. The Commit tab takes a minute.");
+  document.getElementById("insights").innerHTML='<details class="gm-insights"><summary>Insights ('+n+')</summary>'+html+'</details>';
 }
 
 // ============== MODAL ==============
@@ -4579,7 +4582,8 @@ function renderPlaybook(){
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmBkShow()">Backup phrase</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--muted)" onclick="gmExportPlain()">Readable copy</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmExportCsv()">Export for Excel (CSV)</button>'
-      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmEmergencyExport()">Spouse emergency page</button></div>';
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmEmergencyExport()">Spouse emergency page</button>'
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--red)" onclick="resetAll()">Erase all data on this device</button></div>';
   }
 
 
