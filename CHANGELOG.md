@@ -8,6 +8,8 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
+### Fixed
+- **No squashed text, anywhere.** Vantage's Wheel showed each area name one letter per line on a phone, because every select in the kit is 100% wide and took the whole row. Kit rows now give a control only the room it needs and keep at least 8 characters for its text; a new `squashed-text` rule in the shared UI rules flags any visible text squeezed to a few letters a line, in every kit app, the Life OS and the site audits (screen-reader-only labels are skipped).
 ### Added
 - **The Life OS speaks Hindi and Marathi (beta).** The kit apps had Hindi and Marathi since 10 Nov but the Life OS, the app used every day, had none. Now a language switch sits at the top of Ops (each name in its own script); the device language is the first default; a choice is remembered on this device. Text is swapped after each screen renders from catalogs in `guiding-map/i18n/` (inlined, so it works offline); anything not yet translated stays in English, never a key. This first slice translates the navigation and key buttons; the daily screens' 653 strings follow from the open models. `test50.js`.
 ### Fixed

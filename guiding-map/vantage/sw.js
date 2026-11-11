@@ -1,6 +1,6 @@
 /* OS kit offline shell for edition vantage: network first, the cached copy when there is no network.
    Its own cache and its own scope (this folder), so it never touches another app's worker on the same address. */
-const CACHE = "osk-vantage-87c5f6fa70e9";
+const CACHE = "osk-vantage-5aee6b14edb4";
 const SHELL = ["./", "./index.html", "./manifest.json", "./icon-192.png", "./icon-512.png"];
 self.addEventListener("install", e => {
   e.waitUntil(caches.open(CACHE).then(c => Promise.all(SHELL.map(u =>

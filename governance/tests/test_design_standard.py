@@ -400,3 +400,13 @@ def test_the_wide_screen_rules_run_in_every_app_audit():
     for f in ("guiding-map/tests/ui_audit.py", "guiding-map/tests/kit_audit.py"):
         src = (ROOT / f).read_text("utf-8")
         assert '"width": 1280' in src and '"line-length", "hover-only"' in src, f
+
+
+def test_squashed_text_is_measured_and_rows_give_text_room():
+    # owner, 2026-11-11: Vantage's Wheel stacked an area name one letter per line (a 100%-wide select in a flex row).
+    # The shared UI rules flag any visible text squeezed to a few letters a line, in every app audit and the site audit;
+    # and the kit's rows give a control only the room it needs.
+    src = (ROOT / "website" / "tests" / "ui_audit.py").read_text("utf-8")
+    assert "['squashed-text'" in src and ".sr, .sr-only" in src, "the audit measures squashed text and skips screen-reader-only labels"
+    css = (ROOT / "guiding-map" / "kit" / "kit.css").read_text("utf-8")
+    assert ".row > select" in css and "min-width:8ch" in css, "a control in a row cannot squeeze its label"

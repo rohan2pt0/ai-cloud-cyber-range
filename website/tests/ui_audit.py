@@ -88,6 +88,18 @@ UI_RULES_JS = r"""() => {
     const per = tops.size ? text.length / tops.size : 0;
     if (tops.size && per > 75) out.push(['line-length', label(e), Math.round(per) + ' chars a line']);
   });
+  // 7b. no squashed text (owner, 2026-11-11: Vantage's Wheel stacked 'Governance and strategy' one letter per line, because a
+  //     100%-wide select in a flex row took all the room): any visible text of 4+ characters must have room for a few letters a line.
+  document.querySelectorAll('label, b, strong, span, a, p, li, div, h1, h2, h3, h4, summary, button').forEach(e => {
+    if (!vis(e) || e.children.length > 2) return;
+    if (e.closest('.sr, .sr-only, .visually-hidden') || getComputedStyle(e).clip !== 'auto' || e.getBoundingClientRect().width <= 2) return;   // screen-reader-only text is meant to be 1px
+    const own = [...e.childNodes].filter(n => n.nodeType === 3).map(n => n.textContent).join('').replace(/\s+/g, ' ').trim();
+    if (own.length < 4) return;
+    const r = e.getBoundingClientRect(), fs = parseFloat(getComputedStyle(e).fontSize) || 14;
+    const rg = document.createRange(); rg.selectNodeContents(e);
+    const lines = new Set([...rg.getClientRects()].filter(x => x.width > 0.5).map(x => Math.round(x.top))).size;
+    if (r.width > 0 && r.width < fs * 2.6 && lines >= 3) out.push(['squashed-text', label(e), Math.round(r.width) + 'px wide, ' + lines + ' lines: "' + own.slice(0, 24) + '"']);
+  });
   // 8. no hover-only controls: what a ':hover' rule reveals must already be visible without a mouse (touch has none)
   const seen = new Set();
   [...document.styleSheets].forEach(sh => { let rules; try { rules = sh.cssRules; } catch (x) { return; }
