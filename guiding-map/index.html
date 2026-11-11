@@ -1969,9 +1969,7 @@ function wizFold(editing){
     :"Family and vision";
   var go=document.getElementById("w_go"); if(go) go.innerHTML=editing?"Save changes &#8594;":"Build My Command Center &#8594;";
 }
-function resetAll(){
-  gmConfirm("Erase ALL saved data on this device? This cannot be undone.",function(y){ if(y){ wipe(); location.reload(); } });
-}
+function resetAll(){ gmEraseAsk(); }   // every erase path needs the typed word (friction by consequence)
 (function(){
   var sp=load("sovP");
   if(sp){ P=sp; var ss=load("sovS"); if(ss)S=ss; migrate(); initDash(); return; }
@@ -4435,6 +4433,23 @@ function renderPlaybook(){
         + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);padding:9px 14px" onclick="gmClose()">I have saved it</button></div>');
     }).catch(function (e) { gmToast("No backup saved: " + (e && e.message || e) + ". Nothing readable was written."); });
   };
+  window.gmEraseAsk = function () {
+    gmDlg('<div style="font-weight:800;font-size:15px;margin-bottom:8px;color:var(--red)">Erase all data on this device?</div>'
+      + '<div style="font-size:13px;line-height:1.55;margin-bottom:10px">Every value of this app on this device goes: goals, inbox, money, career, the backup phrase. Synced copies and backup files are not touched. This cannot be undone.</div>'
+      + '<label class="f-label" for="gmEraseIn">Type ERASE to confirm</label><input type="text" id="gmEraseIn" autocomplete="off" autocapitalize="characters">'
+      + '<div style="display:flex;gap:8px"><button class="btn-sm" id="gmEraseGo" disabled style="background:transparent;color:var(--red);border:1px solid var(--red);font-weight:800;padding:9px 18px">Erase</button>'
+      + '<button class="btn-sm" onclick="gmClose()" style="background:var(--cardAlt);color:var(--text);padding:9px 14px">Keep my data</button></div>');
+    var inp = document.getElementById("gmEraseIn"), go = document.getElementById("gmEraseGo");
+    inp.addEventListener("input", function () { go.disabled = inp.value !== "ERASE"; });
+    go.addEventListener("click", function () {
+      if (inp.value !== "ERASE") return;
+      gmClose();
+      var ks = [];
+      for (var i = 0; i < localStorage.length; i++) { var k = localStorage.key(i); if (/^(gm_|sov)/.test(k)) ks.push(k); }
+      ks.forEach(function (k) { localStorage.removeItem(k); });
+      wipe(); location.reload();
+    });
+  };
   window.gmBkCopy = function () {
     var p = G(BK_PH, ""); try { navigator.clipboard.writeText(p).then(function () { gmToast("Copied. Paste it into your password manager."); }); } catch (e) { gmToast(p); }
   };
@@ -4545,12 +4560,12 @@ function renderPlaybook(){
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmExportNow()">Also export a file</button></div><div id="snapList" class="muted" style="margin-top:6px"></div>');
     else if (!exp) row(false, "No local backup has ever been taken",
       "Sync is convenience; a dated file is your actual insurance. It survives a deleted sync backend, a cleared browser, and a lost device.",
-      '<button class="btn-sm" style="background:var(--gold);color:#0d1f35;margin-top:6px" onclick="gmExportNow()">Export one now</button>');
+      '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);margin-top:6px" onclick="gmExportNow()">Back up now</button>');
     else {
       var days = Math.round((Date.now() - new Date(exp).getTime()) / 86400000);
       row(days > 45 ? false : days > 31 ? null : true, "Last backup " + (days === 0 ? "today" : days + " days ago"),
         days > 31 ? "Older than a month. Take a fresh one." : "Within the monthly rhythm.",
-        '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);margin-top:6px" onclick="gmExportNow()">Export now</button>');
+        '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);margin-top:6px" onclick="gmExportNow()">Back up now</button>');
     }
 
     // Offline shell
@@ -4576,14 +4591,20 @@ function renderPlaybook(){
     return '<div class="cat-t">\u{1FA7A} System health</div>'
       + '<div class="info">Everything in this app fails quietly by design \u2014 sync retries, pushes debounce, clocks drift. That is fine until the day you need the data. This panel is where quiet failure becomes visible.</div>'
       + '<div class="road-col">' + rows.join("") + '</div>'
-      + '<div style="display:flex;gap:8px;margin-top:9px;flex-wrap:wrap">'
+      // friction by consequence: the safe, frequent choice is the one primary; rare ones fold; erase lives in the Danger zone
+      + '<div class="gm-bk-row" style="display:flex;gap:8px;margin-top:9px;flex-wrap:wrap">'
       + '<button class="btn-sm" style="background:var(--gold);color:#0d1f35" onclick="gmExportNow()">Save encrypted backup</button>'
-      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmImportNow()">Restore from file</button>'
-      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmBkShow()">Backup phrase</button>'
-      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--muted)" onclick="gmExportPlain()">Readable copy</button>'
-      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmExportCsv()">Export for Excel (CSV)</button>'
-      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmEmergencyExport()">Spouse emergency page</button>'
-      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--red)" onclick="resetAll()">Erase all data on this device</button></div>';
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmImportNow()">Restore from file</button></div>'
+      + '<details class="road-col gm-more-backup" style="margin-top:10px"><summary style="cursor:pointer;font-weight:700;font-size:12.5px">More backup options</summary>'
+      + bkOpt("gmBkShow()", "Backup phrase", "Opens your encrypted backups on a new phone. Keep it in your password manager.")
+      + bkOpt("gmExportCsv()", "Export for Excel (CSV)", "For a spreadsheet. Readable by anyone who gets the file.")
+      + bkOpt("gmEmergencyExport()", "Spouse emergency page", "One page for your spouse if something happens to you. Readable; keep it somewhere safe.")
+      + bkOpt("gmExportPlain()", "Readable copy", "To move data into another tool. Readable by anyone who gets the file.")
+      + '</details>';
+  }
+  function bkOpt(fn, label, why) {
+    return '<div style="padding:8px 0;border-bottom:1px solid var(--border)"><button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="' + fn + '">' + label + '</button>'
+      + '<div style="font-size:11.5px;color:var(--muted);margin-top:4px">' + why + '</div></div>';
   }
 
 
@@ -5605,6 +5626,10 @@ function renderPlaybook(){
     h += '<div class="cat-t" style="margin-top:16px">\u{1F4F1} This device</div>'
       + '<div class="info">Installed as an app, this opens offline in one tap and keeps its own copy of your data.</div>'
       + '<button class="btn btn-p" onclick="gmInstall()">Add to home screen</button>';
+    h += foldHTML("Danger zone", "erase this device", '<div class="info">Erases every value of this app on this device. Synced copies and backup files are not touched. This cannot be undone.</div>'
+      + '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmExportNow()">Save an encrypted backup first</button>'
+      + '<button class="btn-sm gm-erase" style="background:transparent;color:var(--red);border:1px solid var(--red)" onclick="gmEraseAsk()">Erase all data on this device</button></div>', false)
+      .replace('<details class="road-col"', '<details class="road-col gm-danger"');
     h += '</div>';
     return h;
   }
