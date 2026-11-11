@@ -129,7 +129,8 @@ def main():
         cs = pg.inner_text("#sections")   # visible text only: a hidden section must fail here
         chk("career: floor, target, FI and both offers render", all(x in cs for x in ["Floor", "Target CTC", "corpus"]) and pg.evaluate("[...document.querySelectorAll('#sections input')].filter(i=>i.offsetParent).map(i=>i.value).filter(v=>/Regulator - contract manager|Private - CISO/.test(v)).length") == 2, cs[:200])
         chk("career: the permanent CISO offer passes and is named in the call", "passes every must-have" in cs and "Private - CISO" in cs)
-        chk("career: plan item surfaces in Due now", "CTC breakdown" in pg.evaluate("(goTab('today'), document.getElementById('sections').textContent)"))
+        _due = pg.evaluate("(goTab('today'), document.getElementById('sections').textContent)")
+        chk("career: plan item surfaces in Due now", "CTC" in _due and "breakdown" in _due)
         # 10. every tab in dark and light: errors + contrast
         tabs = pg.evaluate("TABS.map(t=>t[0])")
         pg.evaluate("gmCalmMore()")

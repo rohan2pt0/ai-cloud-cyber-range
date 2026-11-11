@@ -2864,7 +2864,8 @@
   function horizonTag(item) {
     var x = HORIZON[item]; if (!x) return "";
     var c = x[0] === "H1" ? "var(--green)" : x[0] === "H2" ? "var(--gold)" : "var(--amber)";
-    return ' <span title="' + esc(x[1]) + '" style="font-size:9px;font-weight:800;color:' + c + ';border:1px solid ' + c + ';border-radius:4px;padding:0 4px">' + x[0] + '</span>';
+    var label = x[0] === "H1" ? "Now" : x[0] === "H2" ? "1-2 years" : "3-5 years";
+    return ' <span title="' + esc(x[1]) + '" style="font-size:9px;font-weight:800;color:' + c + ';border:1px solid ' + c + ';border-radius:4px;padding:0 4px">' + label + '</span>';
   }
 
   /* ── 48. Which tool for which question ─────────────────────────────
@@ -3051,6 +3052,34 @@
     { id: "floor", k: ["2-minute floor", "two-minute floor"], t: "2-minute floor", d: "The smallest version of a habit that still counts as a win (e.g. 2 minutes of movement), so you never break the chain on a bad day." },
     { id: "nmt", k: ["never miss twice", "missed twice"], t: "Never Miss Twice", d: "Missing once is human; the rule is never skip two days running. One miss is a blip, two is the start of a new (bad) habit." },
     { id: "anchor", k: ["implementation intention", "if-then", "anchor"], t: "Implementation intention", d: "A plan shaped “IF situation X, THEN I do Y” (e.g. after morning chai, I meditate). Pre-deciding the trigger makes the habit automatic." },
+    // money terms, India first
+    { id: "nps", k: ["nps", "national pension system"], t: "NPS (National Pension System)", d: "A government-backed retirement account open to any Indian resident. You pay in regularly and it builds a pension pot; part of it can be taken as a lump sum at 60." },
+    { id: "ppf", k: ["ppf", "public provident fund"], t: "PPF (Public Provident Fund)", d: "A safe, government-backed savings account in India with a fixed interest rate and tax benefits. Money stays locked for 15 years, so it suits long-term goals." },
+    { id: "epf", k: ["epf", "pf", "employees' provident fund", "provident fund"], t: "EPF / PF (Employees' Provident Fund)", d: "A retirement savings scheme for salaried employees in India: a slice of each salary, plus an employer match, goes into your PF account. It grows until you retire or leave a job." },
+    { id: "fd", k: ["fd", "fixed deposit", "sweep-in fd", "sweep in fd"], t: "FD (fixed deposit) and sweep-in FD", d: "An FD parks a lump sum with a bank for a set time at a fixed interest rate. A sweep-in FD automatically moves spare cash from your savings account into an FD, and back when you need it." },
+    { id: "pan", k: ["pan", "permanent account number"], t: "PAN (Permanent Account Number)", d: "A ten-character tax ID issued in India. Banks, brokers and employers use it to track your income and taxes." },
+    { id: "emi", k: ["emi", "emis", "equated monthly instalment"], t: "EMI (Equated Monthly Instalment)", d: "The fixed amount you repay each month on a loan. It covers both interest and a slice of the principal, so the loan ends on schedule." },
+    { id: "ca", k: ["ca", "chartered accountant"], t: "CA (Chartered Accountant)", d: "An Indian professional qualified to audit accounts and advise on tax and finance. You hire one for filings, tax planning and clean books." },
+    { id: "ctc", k: ["ctc", "cost to company"], t: "CTC (Cost to Company)", d: "The total an employer spends on you in a year, including salary, bonus, PF and benefits. Your take-home pay is lower than this number." },
+    { id: "mf", k: ["mf", "mutual fund", "mutual funds"], t: "MF (Mutual fund)", d: "A pool of money from many investors, run by a professional manager who buys a basket of shares or bonds. You own units of the pool, not the individual holdings." },
+    { id: "gst", k: ["gst", "goods and services tax"], t: "GST (Goods and Services Tax)", d: "India's single indirect tax added to most goods and services. The price you see usually already includes it." },
+    { id: "cas", k: ["cas", "consolidated account statement"], t: "CAS (Consolidated Account Statement)", d: "One statement that lists all your mutual fund or demat holdings in a single place. It is the quickest way to see everything you own across providers." },
+    { id: "ais", k: ["ais", "form 26as", "annual information statement"], t: "AIS and Form 26AS", d: "Two Indian tax records that show income, tax paid and large transactions reported against your PAN. Check both before filing your return, so nothing is missed." },
+    { id: "cdsl", k: ["cdsl", "nsdl", "depository"], t: "CDSL and NSDL", d: "The two depositories in India that hold shares and other securities electronically. Your demat account sits with one of them, so you hold digital records, not paper certificates." },
+    { id: "psu", k: ["psu", "public sector undertaking", "public sector undertakings"], t: "PSU (Public Sector Undertaking)", d: "A company owned or controlled by the Indian government, such as many banks and energy firms. They often pay steady dividends and carry government backing." },
+    // work and security
+    { id: "ciso", k: ["ciso", "chief information security officer"], t: "CISO (Chief Information Security Officer)", d: "The senior person accountable for an organisation's security: its defences, its risks and how it responds to an attack." },
+    { id: "bfsi", k: ["bfsi", "banking, financial services and insurance"], t: "BFSI (Banking, Financial Services and Insurance)", d: "A shorthand for the finance industry: banks, insurers, lenders and investment firms. It is one of the most heavily regulated sectors." },
+    { id: "opsec", k: ["opsec", "operational security"], t: "OPSEC (Operational security)", d: "The everyday habits that keep private details private: what you share, with whom, and what strangers can infer from it. Small choices add up to a much smaller footprint." },
+    // time, the Stack and the Playbook
+    { id: "quarters", k: ["q1", "q2", "q3", "q4", "quarters", "quarter"], t: "Q1 to Q4 (quarters of the year)", d: "The year split into four three-month blocks. In India's financial year Q1 is April to June, Q2 July to September, Q3 October to December and Q4 January to March." },
+    { id: "stacklayers", k: ["l0", "l1", "l2", "l3", "l4"], t: "Layers 0 to 4 of the Stack", d: "The Stack's five layers, lowest first: L0 identity and safety, L1 trust, L2 flow, L3 compounding, L4 optionality. Finish a lower layer before you start the next." },
+    { id: "stages", k: ["s1", "s2", "s3", "s4", "s5"], t: "S1 to S5 (the Playbook money sequence)", d: "The five stages of the money Playbook, in order: S1 protect, S2 automate, S3 expand, S4 systemize, S5 multiply. S1 protect first; finish a stage before the next." },
+    // health and everyday tech
+    { id: "vo2max", k: ["vo2max", "vo2 max"], t: "VO2max", d: "The most oxygen your body can use during hard exercise. It is one of the strongest predictors of long life, and short hard intervals raise it." },
+    { id: "json", k: ["json"], t: "JSON (a plain data file)", d: "A simple text format that stores data as labelled values, so a program can read and write it. Think of it as a spreadsheet saved as plain text." },
+    { id: "url", k: ["url", "web address"], t: "URL (a web address)", d: "The address you type to open a page or service, like the link to your sync hub. Copy it exactly when you set something up." },
+    { id: "opt", k: ["opt", "optional goal"], t: "OPT (optional goal)", d: "A goal you may adopt if it fits your life, not one you must do. Skipping it costs you nothing today." },
   ];
 
   function escRx(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, function (c) { return "\\" + c; }); }
@@ -3398,7 +3427,8 @@
     h += '<div class="info">' + (due.length ? due.length + " ritual(s) due now (they also show on Today). " : "Nothing due today. ")
       + (broken ? broken + " habit(s) need a recovery rep." : "") + '</div>';
     h += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px"><button class="btn-sm" style="background:var(--cardAlt);color:var(--text);font-weight:700" onclick="gmQuarter()">Quarterly check-in</button>'
-      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmCalendar(\'rhythm\')">Add the rhythm to my calendar</button></div>';
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmCalendar(\'rhythm\')">Add the rhythm to my calendar</button>'
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" role="switch" aria-checked="' + gmHapticsOn() + '" onclick="gmToggleHaptics()">Haptics (a light tap feel): ' + (gmHapticsOn() ? "on" : "off") + '</button></div>';
     var cad = "";
     RITUALS.forEach(function (r) {
       var log = cadenceLog(), done = log[r.id] === r.key(new Date());
@@ -4784,9 +4814,27 @@
   // Haptics on the moments that matter only (premium.buttons.haptic_on): a daily-three tick, marking something done, a
   // confirmation. Never under reduced motion or the in-app "still" switch, and nothing where the phone cannot vibrate.
   var HAPTIC = { tap: [8], success: [10, 40, 10], warn: [24] };
+  function gmHapticsOn() { return G("gm_haptics", true) !== false; }
+  window.gmToggleHaptics = function () { S_("gm_haptics", !gmHapticsOn()); renderAll(); };
+  var GM_PRESS = "button,.gm-tap,.tile,[role=button]";
+  if (!window._gmTactile) {
+    window._gmTactile = 1;
+    document.addEventListener("pointerdown", function (e) {
+      var t = e.target.closest && e.target.closest(GM_PRESS);
+      if (!t) return;
+      if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      if (gmHapticsOn()) try { navigator.vibrate(6); } catch (x) {}
+      var r = t.getBoundingClientRect(), s = Math.max(r.width, r.height, 40) * 1.6, sp = document.createElement("span");
+      sp.className = "gm-ripple";
+      sp.style.cssText = "width:" + s + "px;height:" + s + "px;left:" + (e.clientX - r.left - s / 2) + "px;top:" + (e.clientY - r.top - s / 2) + "px";
+      t.classList.add("gm-ripple-host"); t.appendChild(sp);
+      var done = function () { if (sp.parentNode) sp.remove(); if (!t.querySelector(".gm-ripple")) t.classList.remove("gm-ripple-host"); };
+      sp.onanimationend = done; setTimeout(done, 500);   // a ripple never stays behind, even when the animation does not report its end
+    }, { passive: 1 });
+  }
   window.gmHaptic = function (kind) {
     try {
-      if (G("gm_still", false) || !navigator.vibrate) return;
+      if (G("gm_still", false) || !gmHapticsOn() || !navigator.vibrate) return;
       if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
       navigator.vibrate(HAPTIC[kind] || HAPTIC.tap);
     } catch (e) { /* a missing motor is never an error */ }
@@ -4887,9 +4935,25 @@
       + '</div><div style="font-size:12px;color:var(--muted);margin-top:12px">Life OS ' + esc(ver) + ' · your data stays on your devices</div>'
       + '<button class="btn-sm" style="margin-top:12px;background:none;color:var(--muted)" onclick="gmClose()">Close</button>');
   };
+  function tactileCSS() {
+    var st = document.getElementById("gmTactileCss");
+    if (!st) { st = document.createElement("style"); st.id = "gmTactileCss"; }
+    st.textContent = ":root{--gm-lift:0 2px 0 var(--border),0 3px 8px rgba(0,0,0,.10)}"
+      + ":is(button,.gm-d3 .tile,[role=button]){transition:transform .16s cubic-bezier(.2,.8,.2,1.2),box-shadow .16s;box-shadow:var(--gm-lift)}"
+      + ":is(button,.gm-d3 .tile,[role=button]):active{transform:translateY(2px);box-shadow:0 1px 1px rgba(0,0,0,.14);transition:transform 80ms ease-out}"
+      + ".gm-ripple-host{position:relative;overflow:hidden}"
+      + ".gm-ripple{position:absolute;border-radius:50%;background:currentColor;animation:gm-rip .35s ease-out forwards}"
+      + "@keyframes gm-rip{0%{opacity:.18;transform:scale(0)}to{opacity:0;transform:scale(1)}}"
+      + ".hab-chk:active,input[type=checkbox]:active{animation:gm-detent .18s ease}"
+      + "@keyframes gm-detent{0%{transform:scale(.92)}60%{transform:scale(1.04)}}"
+      + "@media (prefers-reduced-motion:reduce){.gm-ripple{display:none}.hab-chk:active,input[type=checkbox]:active{animation:none}"
+      + ":is(button,.gm-d3 .tile,[role=button]):active{transform:none;box-shadow:none;opacity:.86}}";
+    document.head.appendChild(st);
+  }
   function designFrame() {
     designCSS();
     premiumCSS();
+    tactileCSS();
     if (!document.querySelector("a.skip") && document.getElementById("sections")) {
       var sk = document.createElement("a"); sk.className = "skip"; sk.href = "#sections"; sk.textContent = "Skip to content";
       document.body.insertBefore(sk, document.body.firstChild);

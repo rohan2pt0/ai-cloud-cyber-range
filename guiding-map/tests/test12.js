@@ -13,7 +13,7 @@ setTimeout(()=>{
  w.gmRapidSet('money','d','Spouse');
  ok("RAPID persists", (JSON.parse(w.localStorage.getItem('gm_rapid'))||{}).money.d==='Spouse','');
  const st=go('stack');
- ok("Three Horizons tags appear on Optionality", st.includes('>H3<')||st.includes('>H2<')||st.includes('>H1<'),'');
+ ok("Three Horizons tags appear on Optionality in plain words", /Now|1-2 years|3-5 years/.test(st) && !/\bH[123]\b/.test(st),'');
  // drift + issue tree
  w.gmTplLife();
  const t={}; const pm=new Date(); pm.setMonth(pm.getMonth()-1);
