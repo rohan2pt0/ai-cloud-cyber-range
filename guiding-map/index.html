@@ -32,6 +32,22 @@ html[data-theme="dark"]{--navy:#0d1f35;--gold:#c9a84c;--goldL:#3a3320;--green:#4
 html[data-theme="dark"] .road-h{color:var(--text);}
 .road-i{font-size:12px;color:var(--text);padding:7px 0;border-bottom:1px dashed var(--border);line-height:1.5;}
 .road-i:last-child{border-bottom:none;}
+.routine-card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;}
+.routine-t{font-size:15px;font-weight:800;color:var(--text);}
+.routine-cue{font-size:12.5px;color:var(--text);margin-top:7px;line-height:1.5;}
+.routine-floor{font-size:11.5px;color:var(--muted);margin-top:5px;line-height:1.5;}
+.routine-streak{font-size:11px;font-weight:700;color:var(--green);margin-top:7px;}
+.routine-missed{font-size:11.5px;color:var(--muted);margin-top:7px;line-height:1.5;}
+.routine-later{margin-bottom:10px;}
+.routine-later>summary{cursor:pointer;font-size:12.5px;font-weight:700;color:var(--text);padding:8px 0;}
+.routine-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:12.5px;color:var(--text);}
+.routine-row:last-child{border-bottom:none;}
+.routine-tick{min-height:44px;min-width:44px;border-radius:10px;border:1px solid var(--border);background:var(--cardAlt);color:var(--green);font-size:15px;font-weight:800;cursor:pointer;font-family:var(--font-ui);}
+.routine-done{margin-top:10px;}
+.routine-done-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:5px 0;font-size:12px;color:var(--muted);}
+.routine-done-row .routine-tick{min-height:36px;min-width:36px;font-size:13px;}
+.routine-done-label{text-decoration:line-through;}
+.routine-win{background:var(--greenBg);color:var(--green);font-weight:600;}
 .theme-btn{position:absolute;top:14px;right:14px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.25);color:#fff;border-radius:8px;padding:6px 10px;font-size:12px;cursor:pointer;z-index:5;}
 *{box-sizing:border-box;margin:0;padding:0;}
 body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size:14px;letter-spacing:-.011em;font-feature-settings:'kern' 1,'liga' 1;-webkit-font-smoothing:antialiased;-moz-osx-font-smoothing:grayscale;text-rendering:optimizeLegibility;}
@@ -1203,16 +1219,120 @@ function interdependency(){
 // ---- Habit-stack recommender: a realistic daily routine covering your KAIs ----
 function habitStack(){
   var blocks=[
-   {kai:"invest",t:"Money 10-min",d:"Confirm SIP/auto-debit fired; log one expense",min:10,when:"Morning"},
-   {kai:"exercise",t:"Move 20-min",d:"Zone-2 walk or strength set (Attia: protect VO\u2082max)",min:20,when:"Morning"},
-   {kai:"reading",t:"Read 15-min",d:"15 pages of a skill/wisdom book",min:15,when:"Commute"},
-   {kai:"mindful",t:"Reset 10-min",d:"Breathwork or journaling \u2014 recovery fuel",min:10,when:"Midday"},
-   {kai:"globalnet",t:"Outreach 10-min",d:"1 value-first message, timezone-staggered",min:10,when:"Work break"},
-   {kai:"family",t:"Connect 30-min",d:"Phone-free family time \u2014 no screens",min:30,when:"Evening"},
-   {kai:"contribution",t:"Give 5-min",d:"One small help forward (alternate days)",min:5,when:"Evening"}
+   {id:"money",kai:"invest",t:"Money 10-min",d:"Confirm SIP/auto-debit fired; log one expense",min:10,when:"Morning",
+    cue:"IF the morning chai is poured THEN I open my SIP app",floor:"Open the app and look at one number. That counts."},
+   {id:"move",kai:"exercise",t:"Move 20-min",d:"Zone-2 walk or strength set (Attia: protect VO\u2082max)",min:20,when:"Morning",
+    cue:"IF it is 7am and the chai is done THEN I put on my workout clothes",floor:"Shoes on and one set of push-ups. That counts."},
+   {id:"read",kai:"reading",t:"Read 15-min",d:"15 pages of a skill/wisdom book",min:15,when:"Commute",
+    cue:"IF I get on the commute THEN I open the book, not the feed",floor:"Read one page. One page makes you a reader."},
+   {id:"reset",kai:"mindful",t:"Reset 10-min",d:"Breathwork or journaling \u2014 recovery fuel",min:10,when:"Midday",
+    cue:"IF it is midday THEN I take three slow breaths before lunch",floor:"Three slow breaths out. That is the reset."},
+   {id:"outreach",kai:"globalnet",t:"Outreach 10-min",d:"1 value-first message, timezone-staggered",min:10,when:"Work break",
+    cue:"IF the work break starts THEN I send one value-first message",floor:"Send one short message. One is enough."},
+   {id:"connect",kai:"family",t:"Connect 30-min",d:"Phone-free family time \u2014 no screens",min:30,when:"Evening",
+    cue:"IF dinner is served THEN every phone goes in the basket by the door",floor:"Ask one real question at the table."},
+   {id:"give",kai:"contribution",t:"Give 5-min",d:"One small help forward (alternate days)",min:5,when:"Evening",
+    cue:"IF the evening comes THEN I do one small help for someone",floor:"One small help counts, however small."}
   ];
   var total=blocks.reduce(function(s,b){return s+b.min;},0);
   return {blocks:blocks,total:total};
+}
+
+// ---- The routine as a loop: one open block, a two-minute floor, a visible streak ----
+var ROUTINE_HABIT={move:"ex",read:"rd",reset:"mf",connect:"fm"};
+function gmRoutineAll(){ var v=load("gm_routine"); return (v&&typeof v==="object"&&!Array.isArray(v))?v:{}; }
+function gmRoutineToday(){ var a=gmRoutineAll()[dKey(new Date())]; return Array.isArray(a)?a:[]; }
+function gmRoutineSave(arr){ var v=gmRoutineAll(); v[dKey(new Date())]=arr; store("gm_routine",v); }
+function gmHabitIndex(id){ for(var i=0;i<HABITS.length;i++){ if(HABITS[i].id===id) return i; } return -1; }
+function gmRoutineDoneOn(id,d){
+  var a=gmRoutineAll()[dKey(d)];
+  if(Array.isArray(a)&&a.indexOf(id)>=0) return true;
+  var hid=ROUTINE_HABIT[id];
+  return hid?(S.daily[dKey(d)]||[]).indexOf(hid)>=0:false;
+}
+function gmRoutineDone(id){ return gmRoutineDoneOn(id,new Date()); }
+function gmRoutineTick(id){
+  var arr=gmRoutineToday().slice();
+  var done=gmRoutineDone(id);
+  var hid=ROUTINE_HABIT[id]; var hi=hid?gmHabitIndex(hid):-1;
+  var p=arr.indexOf(id);
+  if(done){
+    if(p>=0) arr.splice(p,1);
+    gmRoutineSave(arr);
+    if(hi>=0 && todayChecks().indexOf(hid)>=0) tgHabit(hi); else renderAll();
+  } else {
+    if(p<0) arr.push(id);
+    gmRoutineSave(arr);
+    if(hi>=0 && todayChecks().indexOf(hid)<0) tgHabit(hi); else renderAll();
+  }
+}
+function gmRoutineStreak(id){
+  var hid=ROUTINE_HABIT[id];
+  if(hid) return habitStreak(hid);
+  var n=0,d=new Date(),all=gmRoutineAll();
+  if((all[dKey(d)]||[]).indexOf(id)<0) d.setDate(d.getDate()-1);
+  while((all[dKey(d)]||[]).indexOf(id)>=0){ n++; d.setDate(d.getDate()-1); }
+  return n;
+}
+function gmRoutineMissedYesterday(id){
+  var y=new Date(); y.setDate(y.getDate()-1);
+  if(gmRoutineDoneOn(id,y)) return false;
+  for(var i=2;i<=7;i++){ var d=new Date(); d.setDate(d.getDate()-i); if(gmRoutineDoneOn(id,d)) return true; }
+  return false;
+}
+function gmRoutineWindow(w,h,m){
+  if(w==="Morning") return h<11;
+  if(w==="Commute") return h>=8&&h<10;
+  if(w==="Midday") return h===12||h===13||(h===14&&m<30);
+  if(w==="Work break") return (h===14&&m>=30)||h===15||h===16||h===17;
+  if(w==="Evening") return h>=18;
+  return false;
+}
+function gmRoutineOpen(blocks){
+  var now=new Date(),h=now.getHours(),m=now.getMinutes(),i;
+  for(i=0;i<blocks.length;i++){ if(!gmRoutineDone(blocks[i].id)&&gmRoutineWindow(blocks[i].when,h,m)) return blocks[i]; }
+  for(i=0;i<blocks.length;i++){ if(!gmRoutineDone(blocks[i].id)) return blocks[i]; }
+  return null;
+}
+function renderRoutine(){
+  var hs=habitStack(),blocks=hs.blocks;
+  var done=blocks.filter(function(b){return gmRoutineDone(b.id);});
+  var open=gmRoutineOpen(blocks);
+  var doneMin=blocks.reduce(function(s,b){return s+(gmRoutineDone(b.id)?b.min:0);},0);
+  var h='<div class="cat-t">Your daily routine</div>';
+  h+='<div class="info" id="routine-progress">'+done.length+' of '+blocks.length+' done today, '+doneMin+' of '+hs.total+' minutes</div>';
+  if(open){
+    var stk=gmRoutineStreak(open.id);
+    h+='<div class="routine-card">'
+     +'<div class="routine-t">'+open.t+'</div>'
+     +'<div class="routine-cue">\u26A1 '+open.cue+'</div>'
+     +'<div class="routine-floor">'+open.floor+'</div>'
+     +(stk>=2?'<div class="routine-streak">'+stk+' days in a row</div>':'')
+     +'<button class="btn" style="min-height:44px;margin-top:10px;background:var(--gold);color:#0d1f35" data-haptic="success" onclick="gmRoutineTick(\''+open.id+'\')">Done</button>'
+     +(gmRoutineMissedYesterday(open.id)?'<div class="routine-missed">Missed yesterday. Never miss twice: the two-minute floor counts.</div>':'')
+     +'</div>';
+  }
+  var later=blocks.filter(function(b){return !gmRoutineDone(b.id)&&(!open||b.id!==open.id);});
+  if(later.length){
+    h+='<details class="routine-later"><summary>Later ('+later.length+')</summary>';
+    later.forEach(function(b){
+      h+='<div class="routine-row"><span>'+b.t+'</span>'
+       +'<button class="routine-tick" data-haptic="success" data-routine="'+b.id+'" onclick="gmRoutineTick(\''+b.id+'\')" aria-label="Mark '+b.t+' done">\u2713</button></div>';
+    });
+    h+='</details>';
+  }
+  if(done.length){
+    h+='<div class="routine-done">';
+    done.forEach(function(b){
+      h+='<div class="routine-done-row"><span class="routine-done-label">'+b.t+'</span>'
+       +'<button class="routine-tick" onclick="gmRoutineTick(\''+b.id+'\')" aria-label="Undo '+b.t+'">\u2713</button></div>';
+    });
+    h+='</div>';
+  }
+  if(!open && !later.length){
+    h+='<div class="info routine-win">All done today. That is a vote for the person you are becoming.</div>';
+  }
+  return h;
 }
 
 // ============== DORMANT INTEGRATIONS LAYER (off by default; never blocks manual) ==============
@@ -1659,17 +1779,8 @@ function renderGrowth(E){
   var mx=inter[0].lift||1;
   inter.forEach(function(r){ h+='<div class="afp"><div class="afp-l">'+r.label+'</div><div class="afp-bar"><div style="width:'+(r.lift/mx*100)+'%;background:var(--navy)"></div></div><div class="afp-v">+'+r.lift+'</div></div>'; });
   h+='</div><div class="info">Estimated North-Star points gained per +10 points in each pillar. Spend your limited energy top-down: the highest bar is your best ROI right now.</div>';
-  // ---- Habit stack ----
-  var hs=habitStack();
-  h+='<div class="cat-t">\u23F1 Recommended daily routine — covers every leading action in '+hs.total+' min</div>';
-  h+='<div class="road">';
-  ["Morning","Commute","Midday","Work break","Evening"].forEach(function(w){
-    var bl=hs.blocks.filter(function(b){return b.when===w;}); if(!bl.length)return;
-    h+='<div class="road-col" style="border-top:3px solid var(--gold)"><div class="road-h">'+w+'</div>';
-    bl.forEach(function(b){ h+='<div class="road-i"><b>'+b.t+'</b><br><span class="muted" style="font-size:11px">'+b.d+'</span></div>'; });
-    h+='</div>';
-  });
-  h+='</div>';
+  // ---- Daily routine: one open block, the rest folded, done kept as a quiet line ----
+  h+=renderRoutine();
   // ---- Dormant integrations (future) ----
   h+='<div class="cat-t">\uD83D\uDD0C Integrations <span class="pill pill-t">optional \u00B7 off by default</span></div>';
   h+='<div class="info">Optional. These are <b>copy-in boxes, not live connections</b>: a web app on your phone cannot read your bank, health or fund apps (that needs a licensed integration). Once a month, copy a few numbers in; they fill the matching scores. Skip them entirely and nothing breaks.</div>';
