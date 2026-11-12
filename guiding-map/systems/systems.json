@@ -1,165 +1,896 @@
 {
-  "version": 1,
-  "verified": "2026-11-12",
-  "note": "Life systems: one recipe per need. A recipe runs when the facts it needs are true; a life event starts a dated checklist. Facts in this file are general and public; the person's own details stay on their device. Every legal or money fact names its source and the date it was checked; re-check yearly (rhythm 'systems-review').",
-  "facts": [
-    {"id": "partner", "q": "I share life with a partner", "kind": "yesno"},
-    {"id": "kids", "q": "We have children (their birth dates are in the profile)", "kind": "yesno"},
-    {"id": "parents", "q": "My parents or my partner's parents depend on us in some way", "kind": "yesno"},
-    {"id": "parents70", "q": "A parent is 70 or older", "kind": "yesno"},
-    {"id": "parentsAway", "q": "They live in another town", "kind": "yesno"},
-    {"id": "farmland", "q": "We own farmland (inherited or bought)", "kind": "yesno"},
-    {"id": "home", "q": "We run a home of our own (owned or rented)", "kind": "yesno"},
-    {"id": "salaried", "q": "I am salaried", "kind": "yesno"}
-  ],
-  "systems": [
-    {"id": "career-compass", "spoke": "career", "title": "Career that compounds", "when": ["salaried"], "uses": "career",
-     "why": "A role you choose beats a role that happens to you.",
-     "cue": "First Saturday of the quarter, with the quarterly check-in.",
-     "floor": "Write one line: what did I learn this quarter that someone would pay for?",
-     "rhythm": [{"every": "quarter", "t": "Update the Career compass: one skill moved, one person met, one proof of work saved."}]},
-    {"id": "money-date", "spoke": "money", "title": "Money that runs itself", "when": [], "uses": "money",
-     "why": "Automated saving beats willpower; a monthly look catches what automation misses.",
-     "cue": "First Sunday of the month (calendar: Monthly review).",
-     "floor": "Open the Money tab and confirm the auto-debits ran.",
-     "rhythm": [{"every": "month", "t": "Money Date: balances in, one leak plugged, one decision made."}, {"every": "year", "month": 4, "t": "April tax lock-in: choose the regime, plan the year's tax-saving, collect Form 16 and AIS."}]},
-    {"id": "health-base", "spoke": "health", "title": "Health on autopilot", "when": [], "uses": "cal",
-     "why": "Most of health is a few habits and a yearly check, done every time.",
-     "cue": "The daily routine (Move) and the family health calendar.",
-     "floor": "Shoes on and one set. That counts.",
-     "rhythm": [{"every": "year", "t": "Book the yearly blood panel for every adult (calendar: Family health Q1)."}]},
-    {"id": "partner-time", "spoke": "love", "title": "Time together, protected", "when": ["partner"],
-     "why": "A relationship grows in small, regular moments, not in rare grand ones.",
-     "cue": "Every Friday evening, in both calendars.",
-     "floor": "Ten minutes, phones away: one good thing from the week, one thing to look forward to.",
-     "rhythm": [{"every": "week", "t": "Time together, phones away."}, {"every": "month", "t": "One outing for the two of you; take turns choosing."}, {"every": "year", "t": "A money-and-dreams evening: where are we going, what does each of us want next year?"}],
-     "once": [{"t": "Add your anniversary and both birthdays to the profile; the app reminds you 14 days ahead."}, {"t": "Each of you knows where the other's papers, passwords and nominations are (the hit-by-a-bus test)."}]},
-    {"id": "growth-read", "spoke": "growth", "title": "Learning that compounds", "when": [],
-     "why": "Fifteen pages a day is about twenty books a year.",
-     "cue": "The daily routine (Read).",
-     "floor": "One page. You are a reader.",
-     "rhythm": [{"every": "quarter", "t": "Pick next quarter's one book and one skill; drop what you no longer need."}]},
-    {"id": "fun-breaks", "spoke": "fun", "title": "Breaks planned, not hoped for", "when": [], "uses": "breaks",
-     "why": "Holidays that are planned early cost less and actually happen.",
-     "cue": "When the Breaks screen shows a window, and each December when next year's holiday list is out.",
-     "floor": "Open Breaks and look at the best window. Decide yes or later.",
-     "rhythm": [{"every": "quarter", "t": "Pick the next break from Breaks and tap Plan this."}]},
-    {"id": "home-reset", "spoke": "env", "title": "A home that maintains itself", "when": ["home"],
-     "why": "Small regular care prevents big expensive repairs.",
-     "cue": "Last Sunday of the month.",
-     "floor": "Fix or note one thing that annoys you at home.",
-     "rhythm": [{"every": "month", "t": "Thirty-minute home reset: one repair, one clear-out, one bill checked."}, {"every": "year", "month": 5, "t": "Before the monsoon: clean the water tank, check the roof and drains, service the pump."}, {"every": "year", "month": 10, "t": "Service appliances and the gas line; check smoke and gas safety."}]},
-    {"id": "kids-milestones", "spoke": "family", "title": "Children's milestones, never missed", "when": ["kids"], "uses": "kids", "where": "IN",
-     "why": "Most children's paperwork is due at a known age; doing it on time avoids queues and lost benefits.",
-     "cue": "Worked out from each child's birth date.",
-     "floor": "Look at the next milestone and note one paper you need.",
-     "ages": [
-       {"age": 0, "t": "Birth certificate, then Aadhaar (Baal Aadhaar) and a bank account in the child's name.", "who": "Municipal or gram panchayat office; Aadhaar centre"},
-       {"age": 3, "t": "Choose the pre-school; most admissions open in the winter before the June start.", "who": "Schools near home"},
-       {"age": 5, "t": "Aadhaar biometric update is due at 5 (free).", "who": "Aadhaar centre", "src": "uidai"},
-       {"age": 6, "t": "Class 1 admission: check the age cut-off and the admission window, usually from December.", "who": "School"},
-       {"age": 9, "t": "For a daughter: the last year to open a Sukanya Samriddhi account (before 10).", "who": "Post office or bank"},
-       {"age": 15, "t": "Aadhaar biometric update is due again at 15 (free).", "who": "Aadhaar centre", "src": "uidai"},
-       {"age": 16, "t": "Choose the stream with the child: interests, aptitude, and the entrance exams it leads to; note the exam calendars.", "who": "School counsellor"},
-       {"age": 18, "t": "PAN, voter ID, own bank account and a driving licence; move investments held for them as a minor into their name.", "who": "Bank; RTO; election office"}
-     ]},
-    {"id": "parents-care", "spoke": "family", "title": "Parents cared for, from a distance", "when": ["parents"], "where": "IN",
-     "why": "Most crises with ageing parents are a missing paper, a missing contact or a missing cover; each is cheap to fix before it is needed.",
-     "cue": "A weekly call on Sunday, a quarterly check, a yearly visit with a list.",
-     "floor": "Call and ask one question: how are you sleeping, eating and walking?",
-     "rhythm": [
-       {"every": "week", "t": "Sunday call: sleep, food, walking, medicines, money worries."},
-       {"every": "quarter", "t": "Medicines and refills; any new symptom; any paper that needs a signature."},
-       {"every": "year", "month": 11, "t": "If a parent draws a pension: submit the life certificate in November (Jeevan Pramaan, from home or any bank).", "who": "Bank; Jeevan Pramaan app"},
-       {"every": "year", "t": "Yearly check-up: blood panel, blood pressure, sugar, eyes, and the vaccines their doctor advises (flu, pneumonia).", "who": "Family doctor"}
-     ],
-     "once": [
-       {"t": "Health cover. A parent aged 70 or more can get the Ayushman Vay Vandana card: Rs 5 lakh a year of hospital cover, no income limit, made with Aadhaar on the Ayushman app or at beneficiary.nha.gov.in (helpline 14555). Also ask your own employer whether dependent parents are covered, and compare.", "who": "Aaple Sarkar Seva Kendra or Common Service Centre", "src": "pmjay", "when": "parents70"},
-       {"t": "Health cover in Maharashtra: families with a ration card are covered under the state scheme (MJPJAY) together with PM-JAY; check their card at the nearest empanelled hospital's Arogyamitra desk.", "who": "Empanelled hospital (Arogyamitra)", "where": "IN-MH"},
-       {"t": "An emergency card on the fridge and in your phone: medicines and doses, allergies, blood group, doctor, nearest empanelled hospital, two neighbours' numbers, ambulance 108.", "who": "You, on the next visit"},
-       {"t": "A trusted local contact who can reach them in 15 minutes, and their consent to call.", "who": "Neighbour, relative or ASHA worker"},
-       {"t": "Make the house safe from falls: grab bars in the bathroom, non-slip mats, a night light, a phone within reach of the bed.", "who": "Local carpenter or plumber"},
-       {"t": "Papers: Aadhaar linked to a working mobile, a joint bank account or a mandate, nominations on every account, and a simple registered will.", "who": "Bank; a local lawyer for the will"},
-       {"t": "Their savings: the Senior Citizens Savings Scheme (age 60+) at a post office or bank gives a fixed quarterly income; check the current rate before investing.", "who": "Post office or bank"}
-     ],
-     "sources": ["pmjay"]},
-    {"id": "farmland", "spoke": "money", "title": "Farmland: protect first, then make it earn", "when": ["farmland"], "uses": "prop", "where": "IN-MH",
-     "why": "Land is lost through a mutation nobody noticed, a boundary that drifted, or land left unused; it earns through a written lease, trees on the bunds, or a solar lease.",
-     "cue": "A two-minute check on the first Sunday of the month; a walk of the boundary each year.",
-     "floor": "Open Aapli Chawadi for your village and look for any notice on your survey or gat numbers.",
-     "rhythm": [
-       {"every": "month", "t": "Check Aapli Chawadi (echawadi.mahabhumi.gov.in) for any mutation (ferfar) notice on your survey or gat numbers. An objection is filed with the Talathi within 15 days of the notice, so a monthly look is enough.", "who": "Talathi", "src": "chawadi"},
-       {"every": "quarter", "t": "Download the 7/12 and 8A extracts (bhulekh.mahabhumi.gov.in) into your vault; compare holders, area and any loan or charge (boja) with the last copy.", "who": "Talathi", "src": "chawadi"},
-       {"every": "year", "month": 5, "t": "Walk the boundary before the monsoon: dated photos with location of the boundary stones, every tree, well, borewell, pipeline and structure. This is your proof of possession and of what compensation must cover.", "who": "You or a trusted relative"},
-       {"every": "year", "t": "Renew the written lease or sharecrop agreement with whoever farms it; pay the land revenue and keep the receipt.", "who": "Talathi; the farmer"}
-     ],
-     "once": [
-       {"t": "Every holder of the land registers a Farmer ID on the Maharashtra Farmer Registry (mhfr.agristack.gov.in) with Aadhaar and the 7/12. It is free and unlocks PM-KISAN, crop insurance and other farm schemes. If a holder on the 7/12 has passed away, finish the heirship mutation (varas) first.", "who": "Talathi; Common Service Centre", "src": "agristack"},
-       {"t": "Keep your own name on the 7/12. In Maharashtra a non-agriculturist generally needs the Collector's permission to buy farmland, and being a recorded holder is what lets you buy more later.", "who": "Talathi", "src": "mtal"},
-       {"t": "Keep one folder per plot: 7/12 and 8A history, mutation entries, the map (naksha), tax receipts, the lease, photos.", "who": "You"}
-     ],
-     "ladder": [
-       {"t": "1. Keep it in use: a written lease or sharecrop agreement with a local farmer; unused land invites encroachment."},
-       {"t": "2. Trees on the bunds (mango, teak, bamboo): they mark the boundary, give income later, and are counted separately if the land is ever acquired."},
-       {"t": "3. A solar lease under Mukhyamantri Saur Krushi Vahini Yojana 2.0: Rs 1.25 lakh per hectare a year or 6% of the ready reckoner rate, whichever is higher, rising 3% a year. Land near an MSEDCL substation suits best; ask the nearest MSEDCL office or the scheme portal.", "src": "mskvy"},
-       {"t": "4. Commercial use only when a real use exists: the non-agricultural use rules changed in 2026; ask the tehsil office before spending on it."}
-     ],
-     "acquisition": [
-       {"t": "Watch for a notice of intention to acquire under section 3A of the National Highways Act (Gazette and local newspapers). Objections are filed within 21 days of publication; read the date on the notice itself.", "src": "nh3c"},
-       {"t": "Compensation is the market value times a multiplier, plus a 100% solatium, plus interest; trees, wells, borewells and structures are valued separately, so keep the yearly photos. In February 2026 the Bombay High Court held that the central multiplier, not the state's lower one, applies to national highway acquisitions in Maharashtra.", "src": "nhcomp"},
-       {"t": "Gather sale deeds of similar land nearby from the last three years: higher sale prices raise the market value used in the award.", "who": "Sub-registrar office"},
-       {"t": "If the award is too low, apply for arbitration under section 3G(5) within the time the award states; accept the money under protest rather than not at all. Take a land-acquisition lawyer at this point.", "src": "nhcomp"}
-     ],
-     "buy": [
-       {"t": "Buy only when the emergency fund and goals are funded; a second plot is a 10-year decision."},
-       {"t": "Before paying anything: 30 years of title and mutation history, no charge on the 7/12, road access in the record, water, and the zone in the regional plan.", "who": "A local land lawyer"}
-     ],
-     "sources": ["chawadi", "agristack", "mtal", "mskvy", "nh3c", "nhcomp"]}
-  ],
-  "events": [
-    {"id": "job-change", "spoke": "career", "title": "I am changing jobs", "dates": ["Last working day", "Joining day"], "where": "IN",
-     "steps": [
-       {"from": 0, "at": -30, "t": "Health cover: ask HR and the insurer whether your group health cover can move to an individual policy before your last day, so waiting periods carry over. Make sure no family member is uncovered between the two jobs."},
-       {"from": 0, "at": -30, "t": "Staff-rate loans: ask how they change when you leave (rate, repayment, or transfer)."},
-       {"from": 0, "at": -15, "t": "Download every salary slip and your tax papers for this financial year."},
-       {"from": 0, "at": -7, "t": "Apply for leave encashment and gratuity (gratuity after 5 years of continuous service) and note who processes them."},
-       {"from": 0, "at": 0, "t": "Collect the relieving letter, service certificate and no-dues; return assets; save everything to the vault."},
-       {"from": 1, "at": 0, "t": "Update your work calendar in Breaks from this date; every break recomputes."},
-       {"from": 1, "at": 7, "t": "Give the new employer your income from the old one this year (Form 12B) so tax is deducted right; otherwise tax falls due when you file."},
-       {"from": 1, "at": 14, "t": "New nominations: provident fund, pension (NPS keeps the same PRAN), gratuity, group insurance."},
-       {"from": 1, "at": 30, "t": "Move the provident fund to the new employer, and check the old salary account, address and e-mail on every investment."},
-       {"from": 1, "at": 90, "t": "Leave in a new job can build up slowly: check your balance before booking the next break."}
-     ]},
-    {"id": "move-city", "spoke": "env", "title": "We are moving home or city", "dates": ["Moving day"],
-     "steps": [
-       {"from": 0, "at": -45, "t": "Children's school: admission at the new place, transfer certificate from the old one."},
-       {"from": 0, "at": -30, "t": "Rent agreement or sale papers; police verification for a rented home."},
-       {"from": 0, "at": -14, "t": "Transfer or close electricity, gas, internet and water; book the movers with insurance."},
-       {"from": 0, "at": 30, "t": "New address on Aadhaar first, then the bank, insurance, investments, vehicle papers and voter ID."},
-       {"from": 0, "at": 30, "t": "Find the new family doctor, the nearest hospital and two neighbours' numbers."}
-     ]},
-    {"id": "parent-hospital", "spoke": "family", "title": "A parent is unwell or in hospital", "dates": ["Today"], "where": "IN",
-     "steps": [
-       {"from": 0, "at": 0, "t": "Carry the emergency card, Aadhaar, the health card (Ayushman or the insurer's) and the medicine list."},
-       {"from": 0, "at": 0, "t": "Ask the hospital's Arogyamitra or insurance desk for cashless treatment before paying; keep every bill and report."},
-       {"from": 0, "at": 1, "t": "One family member is the point of contact; one message a day to the rest."},
-       {"from": 0, "at": 7, "t": "After discharge: medicines, follow-up date, and who checks on them daily for two weeks."}
-     ]},
-    {"id": "new-baby", "spoke": "family", "title": "A child is born", "dates": ["Birth date"], "where": "IN",
-     "steps": [
-       {"from": 0, "at": 7, "t": "Register the birth (within 21 days) and get the birth certificate.", "who": "Hospital; municipal office"},
-       {"from": 0, "at": 30, "t": "Add the child to your health cover and nominations; start the vaccination card."},
-       {"from": 0, "at": 60, "t": "Baal Aadhaar, then a savings plan in the child's name; add the birth date to the profile so milestones run by themselves."}
-     ]}
-  ],
-  "sources": {
-    "pmjay": {"name": "Ayushman Bharat PM-JAY and the Vay Vandana card (beneficiary.nha.gov.in; helpline 14555)", "checked": "2026-11-12"},
-    "uidai": {"name": "UIDAI: mandatory biometric update at 5 and 15", "checked": "2026-11-12"},
-    "chawadi": {"name": "Mahabhumi: Aapli Chawadi notices and 7/12 extracts; objection to the Talathi within 15 days (Rule 24, 1971 Rules)", "checked": "2026-11-12"},
-    "agristack": {"name": "Maharashtra Farmer Registry, AgriStack (mhfr.agristack.gov.in)", "checked": "2026-11-12"},
-    "mtal": {"name": "Maharashtra Tenancy and Agricultural Lands Act, section 63; amendment of 2026", "checked": "2026-11-12"},
-    "mskvy": {"name": "MSEDCL: Mukhyamantri Saur Krushi Vahini Yojana 2.0, FAQ on lease rent", "checked": "2026-11-12"},
-    "nh3c": {"name": "National Highways Act 1956, sections 3A and 3C (objections within 21 days)", "checked": "2026-11-12"},
-    "nhcomp": {"name": "RFCTLARR Act 2013 First Schedule applied to NH acquisitions; Bombay High Court, February 2026, on the multiplier", "checked": "2026-11-12"}
+ "version": 1,
+ "verified": "2026-11-12",
+ "note": "Life systems: one recipe per need. A recipe runs when the facts it needs are true; a life event starts a dated checklist. Facts in this file are general and public; the person's own details stay on their device. Every legal or money fact names its source and the date it was checked; re-check yearly (rhythm 'systems-review').",
+ "facts": [
+  {
+   "id": "partner",
+   "q": "I share life with a partner",
+   "kind": "yesno"
+  },
+  {
+   "id": "kids",
+   "q": "We have children (their birth dates are in the profile)",
+   "kind": "yesno"
+  },
+  {
+   "id": "parents",
+   "q": "My parents or my partner's parents depend on us in some way",
+   "kind": "yesno"
+  },
+  {
+   "id": "parents70",
+   "q": "A parent is 70 or older",
+   "kind": "yesno"
+  },
+  {
+   "id": "parentsAway",
+   "q": "They live in another town",
+   "kind": "yesno"
+  },
+  {
+   "id": "farmland",
+   "q": "We own farmland (inherited or bought)",
+   "kind": "yesno"
+  },
+  {
+   "id": "home",
+   "q": "We run a home of our own (owned or rented)",
+   "kind": "yesno"
+  },
+  {
+   "id": "salaried",
+   "q": "I am salaried",
+   "kind": "yesno"
+  },
+  {
+   "id": "vehicle",
+   "q": "We own or plan to buy a car or two-wheeler",
+   "kind": "yesno"
+  },
+  {
+   "id": "govtStaff",
+   "q": "One of us works for a government body, a public-sector bank or a similar employer with conduct rules",
+   "kind": "yesno"
   }
+ ],
+ "systems": [
+  {
+   "id": "career-compass",
+   "spoke": "career",
+   "title": "Career that compounds",
+   "when": [
+    "salaried"
+   ],
+   "uses": "career",
+   "why": "A role you choose beats a role that happens to you.",
+   "cue": "First Saturday of the quarter, with the quarterly check-in.",
+   "floor": "Write one line: what did I learn this quarter that someone would pay for?",
+   "rhythm": [
+    {
+     "every": "quarter",
+     "t": "Update the Career compass: one skill moved, one person met, one proof of work saved."
+    }
+   ]
+  },
+  {
+   "id": "money-date",
+   "spoke": "money",
+   "title": "Money that runs itself",
+   "when": [],
+   "uses": "money",
+   "why": "Automated saving beats willpower; a monthly look catches what automation misses.",
+   "cue": "First Sunday of the month (calendar: Monthly review).",
+   "floor": "Open the Money tab and confirm the auto-debits ran.",
+   "rhythm": [
+    {
+     "every": "month",
+     "t": "Money Date: balances in, one leak plugged, one decision made."
+    },
+    {
+     "every": "year",
+     "month": 4,
+     "t": "April tax lock-in: choose the regime, plan the year's tax-saving, collect Form 16 and AIS."
+    }
+   ]
+  },
+  {
+   "id": "health-base",
+   "spoke": "health",
+   "title": "Health on autopilot",
+   "when": [],
+   "uses": "cal",
+   "why": "Most of health is a few habits and a yearly check, done every time.",
+   "cue": "The daily routine (Move) and the family health calendar.",
+   "floor": "Shoes on and one set. That counts.",
+   "rhythm": [
+    {
+     "every": "year",
+     "t": "Book the yearly blood panel for every adult (calendar: Family health Q1)."
+    }
+   ]
+  },
+  {
+   "id": "partner-time",
+   "spoke": "love",
+   "title": "Time together, protected",
+   "when": [
+    "partner"
+   ],
+   "why": "A relationship grows in small, regular moments, not in rare grand ones.",
+   "cue": "Every Friday evening, in both calendars.",
+   "floor": "Ten minutes, phones away: one good thing from the week, one thing to look forward to.",
+   "rhythm": [
+    {
+     "every": "week",
+     "t": "Time together, phones away."
+    },
+    {
+     "every": "month",
+     "t": "One outing for the two of you; take turns choosing."
+    },
+    {
+     "every": "year",
+     "t": "A money-and-dreams evening: where are we going, what does each of us want next year?"
+    }
+   ],
+   "once": [
+    {
+     "t": "Add your anniversary and both birthdays to the profile; the app reminds you 14 days ahead."
+    },
+    {
+     "t": "Each of you knows where the other's papers, passwords and nominations are (the hit-by-a-bus test)."
+    }
+   ]
+  },
+  {
+   "id": "growth-read",
+   "spoke": "growth",
+   "title": "Learning that compounds",
+   "when": [],
+   "why": "Fifteen pages a day is about twenty books a year.",
+   "cue": "The daily routine (Read).",
+   "floor": "One page. You are a reader.",
+   "rhythm": [
+    {
+     "every": "quarter",
+     "t": "Pick next quarter's one book and one skill; drop what you no longer need."
+    }
+   ]
+  },
+  {
+   "id": "fun-breaks",
+   "spoke": "fun",
+   "title": "Breaks planned, not hoped for",
+   "when": [],
+   "uses": "breaks",
+   "why": "Holidays that are planned early cost less and actually happen.",
+   "cue": "When the Breaks screen shows a window, and each December when next year's holiday list is out.",
+   "floor": "Open Breaks and look at the best window. Decide yes or later.",
+   "rhythm": [
+    {
+     "every": "quarter",
+     "t": "Pick the next break from Breaks and tap Plan this."
+    }
+   ]
+  },
+  {
+   "id": "home-reset",
+   "spoke": "env",
+   "title": "A home that maintains itself",
+   "when": [
+    "home"
+   ],
+   "why": "Small regular care prevents big expensive repairs.",
+   "cue": "Last Sunday of the month.",
+   "floor": "Fix or note one thing that annoys you at home.",
+   "rhythm": [
+    {
+     "every": "month",
+     "t": "Thirty-minute home reset: one repair, one clear-out, one bill checked."
+    },
+    {
+     "every": "year",
+     "month": 5,
+     "t": "Before the monsoon: clean the water tank, check the roof and drains, service the pump."
+    },
+    {
+     "every": "year",
+     "month": 10,
+     "t": "Service appliances and the gas line; check smoke and gas safety."
+    }
+   ]
+  },
+  {
+   "id": "kids-milestones",
+   "spoke": "family",
+   "title": "Children's milestones, never missed",
+   "when": [
+    "kids"
+   ],
+   "uses": "kids",
+   "where": "IN",
+   "why": "Most children's paperwork is due at a known age; doing it on time avoids queues and lost benefits.",
+   "cue": "Worked out from each child's birth date.",
+   "floor": "Look at the next milestone and note one paper you need.",
+   "ages": [
+    {
+     "age": 0,
+     "t": "Birth certificate, then Aadhaar (Baal Aadhaar) and a bank account in the child's name.",
+     "who": "Municipal or gram panchayat office; Aadhaar centre"
+    },
+    {
+     "age": 3,
+     "t": "Choose the pre-school; most admissions open in the winter before the June start.",
+     "who": "Schools near home"
+    },
+    {
+     "age": 5,
+     "t": "Aadhaar biometric update is due at 5 (free).",
+     "who": "Aadhaar centre",
+     "src": "uidai"
+    },
+    {
+     "age": 6,
+     "t": "Class 1 admission: check the age cut-off and the admission window, usually from December.",
+     "who": "School"
+    },
+    {
+     "age": 9,
+     "t": "For a daughter: the last year to open a Sukanya Samriddhi account (before 10).",
+     "who": "Post office or bank"
+    },
+    {
+     "age": 15,
+     "t": "Aadhaar biometric update is due again at 15 (free).",
+     "who": "Aadhaar centre",
+     "src": "uidai"
+    },
+    {
+     "age": 16,
+     "t": "Choose the stream with the child: interests, aptitude, and the entrance exams it leads to; note the exam calendars.",
+     "who": "School counsellor"
+    },
+    {
+     "age": 18,
+     "t": "PAN, voter ID, own bank account and a driving licence; move investments held for them as a minor into their name.",
+     "who": "Bank; RTO; election office"
+    }
+   ]
+  },
+  {
+   "id": "parents-care",
+   "spoke": "family",
+   "title": "Parents cared for, from a distance",
+   "when": [
+    "parents"
+   ],
+   "where": "IN",
+   "why": "Most crises with ageing parents are a missing paper, a missing contact or a missing cover; each is cheap to fix before it is needed.",
+   "cue": "A weekly call on Sunday, a quarterly check, a yearly visit with a list.",
+   "floor": "Call and ask one question: how are you sleeping, eating and walking?",
+   "rhythm": [
+    {
+     "every": "week",
+     "t": "Sunday call: sleep, food, walking, medicines, money worries."
+    },
+    {
+     "every": "quarter",
+     "t": "Medicines and refills; any new symptom; any paper that needs a signature."
+    },
+    {
+     "every": "year",
+     "month": 11,
+     "t": "If a parent draws a pension: submit the life certificate in November (Jeevan Pramaan, from home or any bank).",
+     "who": "Bank; Jeevan Pramaan app"
+    },
+    {
+     "every": "year",
+     "t": "Yearly check-up: blood panel, blood pressure, sugar, eyes, and the vaccines their doctor advises (flu, pneumonia).",
+     "who": "Family doctor"
+    }
+   ],
+   "once": [
+    {
+     "t": "Health cover. A parent aged 70 or more can get the Ayushman Vay Vandana card: Rs 5 lakh a year of hospital cover, no income limit, made with Aadhaar on the Ayushman app or at beneficiary.nha.gov.in (helpline 14555). Also ask your own employer whether dependent parents are covered, and compare.",
+     "who": "Aaple Sarkar Seva Kendra or Common Service Centre",
+     "src": "pmjay",
+     "when": "parents70"
+    },
+    {
+     "t": "Health cover in Maharashtra: families with a ration card are covered under the state scheme (MJPJAY) together with PM-JAY; check their card at the nearest empanelled hospital's Arogyamitra desk.",
+     "who": "Empanelled hospital (Arogyamitra)",
+     "where": "IN-MH"
+    },
+    {
+     "t": "An emergency card on the fridge and in your phone: medicines and doses, allergies, blood group, doctor, nearest empanelled hospital, two neighbours' numbers, ambulance 108.",
+     "who": "You, on the next visit"
+    },
+    {
+     "t": "A trusted local contact who can reach them in 15 minutes, and their consent to call.",
+     "who": "Neighbour, relative or ASHA worker"
+    },
+    {
+     "t": "Make the house safe from falls: grab bars in the bathroom, non-slip mats, a night light, a phone within reach of the bed.",
+     "who": "Local carpenter or plumber"
+    },
+    {
+     "t": "Papers: Aadhaar linked to a working mobile, a joint bank account or a mandate, nominations on every account, and a simple registered will.",
+     "who": "Bank; a local lawyer for the will"
+    },
+    {
+     "t": "Their savings: the Senior Citizens Savings Scheme (age 60+) at a post office or bank gives a fixed quarterly income; check the current rate before investing.",
+     "who": "Post office or bank"
+    }
+   ],
+   "sources": [
+    "pmjay"
+   ]
+  },
+  {
+   "id": "farmland",
+   "spoke": "money",
+   "title": "Farmland: protect first, then make it earn",
+   "when": [
+    "farmland"
+   ],
+   "uses": "prop",
+   "where": "IN-MH",
+   "why": "Land is lost through a mutation nobody noticed, a boundary that drifted, or land left unused; it earns through a written lease, trees on the bunds, or a solar lease.",
+   "cue": "A two-minute check on the first Sunday of the month; a walk of the boundary each year.",
+   "floor": "Open Aapli Chawadi for your village and look for any notice on your survey or gat numbers.",
+   "rhythm": [
+    {
+     "every": "month",
+     "t": "Check Aapli Chawadi (echawadi.mahabhumi.gov.in) for any mutation (ferfar) notice on your survey or gat numbers. An objection is filed with the Talathi within 15 days of the notice, so a monthly look is enough.",
+     "who": "Talathi",
+     "src": "chawadi"
+    },
+    {
+     "every": "quarter",
+     "t": "Download the 7/12 and 8A extracts (bhulekh.mahabhumi.gov.in) into your vault; compare holders, area and any loan or charge (boja) with the last copy.",
+     "who": "Talathi",
+     "src": "chawadi"
+    },
+    {
+     "every": "year",
+     "month": 5,
+     "t": "Walk the boundary before the monsoon: dated photos with location of the boundary stones, every tree, well, borewell, pipeline and structure. This is your proof of possession and of what compensation must cover.",
+     "who": "You or a trusted relative"
+    },
+    {
+     "every": "year",
+     "t": "Renew the written lease or sharecrop agreement with whoever farms it; pay the land revenue and keep the receipt.",
+     "who": "Talathi; the farmer"
+    }
+   ],
+   "once": [
+    {
+     "t": "Every holder of the land registers a Farmer ID on the Maharashtra Farmer Registry (mhfr.agristack.gov.in) with Aadhaar and the 7/12. It is free and unlocks PM-KISAN, crop insurance and other farm schemes. If a holder on the 7/12 has passed away, finish the heirship mutation (varas) first.",
+     "who": "Talathi; Common Service Centre",
+     "src": "agristack"
+    },
+    {
+     "t": "Keep your own name on the 7/12. In Maharashtra a non-agriculturist generally needs the Collector's permission to buy farmland, and being a recorded holder is what lets you buy more later.",
+     "who": "Talathi",
+     "src": "mtal"
+    },
+    {
+     "t": "Keep one folder per plot: 7/12 and 8A history, mutation entries, the map (naksha), tax receipts, the lease, photos.",
+     "who": "You"
+    }
+   ],
+   "ladder": [
+    {
+     "t": "1. Keep it in use: a written lease or sharecrop agreement with a local farmer; unused land invites encroachment."
+    },
+    {
+     "t": "2. Trees on the bunds (mango, teak, bamboo): they mark the boundary, give income later, and are counted separately if the land is ever acquired."
+    },
+    {
+     "t": "3. A solar lease under Mukhyamantri Saur Krushi Vahini Yojana 2.0: Rs 1.25 lakh per hectare a year or 6% of the ready reckoner rate, whichever is higher, rising 3% a year. Land near an MSEDCL substation suits best; ask the nearest MSEDCL office or the scheme portal.",
+     "src": "mskvy"
+    },
+    {
+     "t": "4. Commercial use only when a real use exists: the non-agricultural use rules changed in 2026; ask the tehsil office before spending on it."
+    }
+   ],
+   "acquisition": [
+    {
+     "t": "Watch for a notice of intention to acquire under section 3A of the National Highways Act (Gazette and local newspapers). Objections are filed within 21 days of publication; read the date on the notice itself.",
+     "src": "nh3c"
+    },
+    {
+     "t": "Compensation is the market value times a multiplier, plus a 100% solatium, plus interest; trees, wells, borewells and structures are valued separately, so keep the yearly photos. In February 2026 the Bombay High Court held that the central multiplier, not the state's lower one, applies to national highway acquisitions in Maharashtra.",
+     "src": "nhcomp"
+    },
+    {
+     "t": "Gather sale deeds of similar land nearby from the last three years: higher sale prices raise the market value used in the award.",
+     "who": "Sub-registrar office"
+    },
+    {
+     "t": "If the award is too low, apply for arbitration under section 3G(5) within the time the award states; accept the money under protest rather than not at all. Take a land-acquisition lawyer at this point.",
+     "src": "nhcomp"
+    }
+   ],
+   "buy": [
+    {
+     "t": "Buy only when the emergency fund and goals are funded; a second plot is a 10-year decision."
+    },
+    {
+     "t": "Before paying anything: 30 years of title and mutation history, no charge on the 7/12, road access in the record, water, and the zone in the regional plan.",
+     "who": "A local land lawyer"
+    }
+   ],
+   "sources": [
+    "chawadi",
+    "agristack",
+    "mtal",
+    "mskvy",
+    "nh3c",
+    "nhcomp"
+   ]
+  },
+  {
+   "id": "vehicle-shield",
+   "spoke": "money",
+   "title": "Vehicles: legal, insured and serviced without thinking",
+   "when": [
+    "vehicle"
+   ],
+   "where": "IN",
+   "why": "A lapsed insurance, PUC or licence turns a small accident into a large loss; every one of them has a date you can know in advance.",
+   "cue": "Dates worked out from each vehicle's papers; reminders 30 days and 7 days before.",
+   "floor": "Photograph the four papers (RC, insurance, PUC, licence) into the vault once.",
+   "dated": [
+    {
+     "key": "insurance",
+     "t": "Insurance renews: compare at least three insurers directly before renewing; never let it lapse a day (a lapse means a new inspection and losing the no-claim bonus).",
+     "lead": [
+      30,
+      7
+     ]
+    },
+    {
+     "key": "puc",
+     "t": "PUC due. A new vehicle's first PUC is usually valid one year from registration, then six months; read the date printed on yours.",
+     "lead": [
+      7
+     ],
+     "src": "puc"
+    },
+    {
+     "key": "service",
+     "t": "Service due by date or distance, whichever comes first (the owner's manual says which).",
+     "lead": [
+      14
+     ]
+    },
+    {
+     "key": "licence",
+     "t": "Driving licence renewal: from age 40 a medical certificate (Form 1A) is needed; renew on sarathi.parivahan.gov.in up to a year before expiry.",
+     "lead": [
+      60
+     ],
+     "src": "dl"
+    },
+    {
+     "key": "fitness",
+     "t": "Registration renewal for a private vehicle after 15 years.",
+     "lead": [
+      90
+     ]
+    }
+   ],
+   "once": [
+    {
+     "t": "Insurance that matters for a new car: third-party is compulsory for several years at purchase (the term changed in 2026; the dealer must state it); own-damage with zero depreciation for the first five years; engine protection where streets flood; return-to-invoice; roadside assistance. The owner-driver personal accident cover stays compulsory.",
+     "src": "motorins"
+    },
+    {
+     "t": "From 15 December 2026 motor policies come in four layers with a customer option form: read which layers you are buying and drop what you do not need.",
+     "src": "motorins"
+    },
+    {
+     "t": "Buy the policy yourself, not only the dealer's: compare the dealer quote with two insurers directly; it is often cheaper for the same cover."
+    },
+    {
+     "t": "FASTag linked to the right bank account; the vehicle's papers on DigiLocker or mParivahan so a check on the road needs no paper."
+    }
+   ],
+   "sources": [
+    "puc",
+    "dl",
+    "motorins"
+   ]
+  },
+  {
+   "id": "decide-once",
+   "spoke": "growth",
+   "title": "Decide once, buy once, keep it simple",
+   "when": [],
+   "why": "Researching the same question twice wastes the scarcest thing you have: attention. Buying once and well (buy it for life) and owning less ends most clutter.",
+   "cue": "Before any purchase above a set amount, and when a decision's review date comes.",
+   "floor": "Write the decision in one line: what we chose, why, and when to look again.",
+   "rhythm": [
+    {
+     "every": "quarter",
+     "t": "Clear out: one bag out for everything that came in (one in, one out)."
+    }
+   ],
+   "once": [
+    {
+     "t": "The buy-once test before a big purchase: Do we need it this year? Will it last 10 years? Can it be repaired near home, with parts for years? Is there one good model everyone recommends? If not, wait 30 days."
+    },
+    {
+     "t": "Every big decision goes into the Decision log with its reason and a review date, so it is never researched again until that date."
+    }
+   ]
+  },
+  {
+   "id": "conduct-rules",
+   "spoke": "career",
+   "title": "Side ventures that never risk the job",
+   "when": [
+    "govtStaff"
+   ],
+   "where": "IN",
+   "why": "Staff of government bodies and public-sector banks generally may not run a business themselves, and must report a family member's business; a venture set up the right way from day one avoids a career problem later.",
+   "cue": "Before any venture, property for rent, or business in the family's name.",
+   "floor": "Read your employer's conduct rules section on private trade once and note what must be reported.",
+   "once": [
+    {
+     "t": "Before starting a family venture (rent-earning building, hall, farm business): read the employer's conduct rules on private trade and on reporting a family member's business, and send the intimation the rules ask for. Rent from your own property and income from inherited farmland are usually allowed, but check.",
+     "src": "ccs15"
+    },
+    {
+     "t": "Put the business in the name of the family member who runs it, keep its accounts separate, and keep the employee's role to investor or co-owner as the rules allow."
+    }
+   ],
+   "sources": [
+    "ccs15"
+   ]
+  },
+  {
+   "id": "weekly-sort",
+   "spoke": "growth",
+   "title": "Calm in the chaos: capture, sort, one thing",
+   "when": [],
+   "why": "New asks never stop. Calm comes from one inbox, one weekly sort and one next action, not from doing everything at once.",
+   "cue": "Anything new: into the Inbox in one tap. Sunday Pulse: sort it.",
+   "floor": "Capture it and close the app. Deciding can wait for Sunday.",
+   "rhythm": [
+    {
+     "every": "week",
+     "t": "Sunday sort: each Inbox item goes to Shield (protects someone, do first), Project (has an end), Area (ongoing), Someday or Delete. Pick ONE next action per project."
+    }
+   ]
+  }
+ ],
+ "events": [
+  {
+   "id": "job-change",
+   "spoke": "career",
+   "title": "I am changing jobs",
+   "dates": [
+    "Last working day",
+    "Joining day"
+   ],
+   "where": "IN",
+   "steps": [
+    {
+     "from": 0,
+     "at": -30,
+     "t": "Health cover: ask HR and the insurer whether your group health cover can move to an individual policy before your last day, so waiting periods carry over. Make sure no family member is uncovered between the two jobs."
+    },
+    {
+     "from": 0,
+     "at": -30,
+     "t": "Staff-rate loans: ask how they change when you leave (rate, repayment, or transfer)."
+    },
+    {
+     "from": 0,
+     "at": -15,
+     "t": "Download every salary slip and your tax papers for this financial year."
+    },
+    {
+     "from": 0,
+     "at": -7,
+     "t": "Apply for leave encashment and gratuity (gratuity after 5 years of continuous service) and note who processes them."
+    },
+    {
+     "from": 0,
+     "at": 0,
+     "t": "Collect the relieving letter, service certificate and no-dues; return assets; save everything to the vault."
+    },
+    {
+     "from": 1,
+     "at": 0,
+     "t": "Update your work calendar in Breaks from this date; every break recomputes."
+    },
+    {
+     "from": 1,
+     "at": 7,
+     "t": "Give the new employer your income from the old one this year (Form 12B) so tax is deducted right; otherwise tax falls due when you file."
+    },
+    {
+     "from": 1,
+     "at": 14,
+     "t": "New nominations: provident fund, pension (NPS keeps the same PRAN), gratuity, group insurance."
+    },
+    {
+     "from": 1,
+     "at": 30,
+     "t": "Move the provident fund to the new employer, and check the old salary account, address and e-mail on every investment."
+    },
+    {
+     "from": 1,
+     "at": 90,
+     "t": "Leave in a new job can build up slowly: check your balance before booking the next break."
+    }
+   ]
+  },
+  {
+   "id": "move-city",
+   "spoke": "env",
+   "title": "We are moving home or city",
+   "dates": [
+    "Moving day"
+   ],
+   "steps": [
+    {
+     "from": 0,
+     "at": -45,
+     "t": "Children's school: admission at the new place, transfer certificate from the old one."
+    },
+    {
+     "from": 0,
+     "at": -30,
+     "t": "Rent agreement or sale papers; police verification for a rented home."
+    },
+    {
+     "from": 0,
+     "at": -14,
+     "t": "Transfer or close electricity, gas, internet and water; book the movers with insurance."
+    },
+    {
+     "from": 0,
+     "at": 30,
+     "t": "New address on Aadhaar first, then the bank, insurance, investments, vehicle papers and voter ID."
+    },
+    {
+     "from": 0,
+     "at": 30,
+     "t": "Find the new family doctor, the nearest hospital and two neighbours' numbers."
+    }
+   ]
+  },
+  {
+   "id": "parent-hospital",
+   "spoke": "family",
+   "title": "A parent is unwell or in hospital",
+   "dates": [
+    "Today"
+   ],
+   "where": "IN",
+   "steps": [
+    {
+     "from": 0,
+     "at": 0,
+     "t": "Carry the emergency card, Aadhaar, the health card (Ayushman or the insurer's) and the medicine list."
+    },
+    {
+     "from": 0,
+     "at": 0,
+     "t": "Ask the hospital's Arogyamitra or insurance desk for cashless treatment before paying; keep every bill and report."
+    },
+    {
+     "from": 0,
+     "at": 1,
+     "t": "One family member is the point of contact; one message a day to the rest."
+    },
+    {
+     "from": 0,
+     "at": 7,
+     "t": "After discharge: medicines, follow-up date, and who checks on them daily for two weeks."
+    }
+   ]
+  },
+  {
+   "id": "new-baby",
+   "spoke": "family",
+   "title": "A child is born",
+   "dates": [
+    "Birth date"
+   ],
+   "where": "IN",
+   "steps": [
+    {
+     "from": 0,
+     "at": 7,
+     "t": "Register the birth (within 21 days) and get the birth certificate.",
+     "who": "Hospital; municipal office"
+    },
+    {
+     "from": 0,
+     "at": 30,
+     "t": "Add the child to your health cover and nominations; start the vaccination card."
+    },
+    {
+     "from": 0,
+     "at": 60,
+     "t": "Baal Aadhaar, then a savings plan in the child's name; add the birth date to the profile so milestones run by themselves."
+    }
+   ]
+  }
+ ],
+ "sources": {
+  "pmjay": {
+   "name": "Ayushman Bharat PM-JAY and the Vay Vandana card (beneficiary.nha.gov.in; helpline 14555)",
+   "checked": "2026-11-12"
+  },
+  "uidai": {
+   "name": "UIDAI: mandatory biometric update at 5 and 15",
+   "checked": "2026-11-12"
+  },
+  "chawadi": {
+   "name": "Mahabhumi: Aapli Chawadi notices and 7/12 extracts; objection to the Talathi within 15 days (Rule 24, 1971 Rules)",
+   "checked": "2026-11-12"
+  },
+  "agristack": {
+   "name": "Maharashtra Farmer Registry, AgriStack (mhfr.agristack.gov.in)",
+   "checked": "2026-11-12"
+  },
+  "mtal": {
+   "name": "Maharashtra Tenancy and Agricultural Lands Act, section 63; amendment of 2026",
+   "checked": "2026-11-12"
+  },
+  "mskvy": {
+   "name": "MSEDCL: Mukhyamantri Saur Krushi Vahini Yojana 2.0, FAQ on lease rent",
+   "checked": "2026-11-12"
+  },
+  "nh3c": {
+   "name": "National Highways Act 1956, sections 3A and 3C (objections within 21 days)",
+   "checked": "2026-11-12"
+  },
+  "nhcomp": {
+   "name": "RFCTLARR Act 2013 First Schedule applied to NH acquisitions; Bombay High Court, February 2026, on the multiplier",
+   "checked": "2026-11-12"
+  },
+  "puc": {
+   "name": "Maharashtra PUC validity for new vehicles (one year, then six months); a 2026 proposal to relax it for BS6 not yet adopted",
+   "checked": "2026-11-12"
+  },
+  "dl": {
+   "name": "Driving licence validity and Form 1A from age 40 (Parivahan Sarathi); state practice varies",
+   "checked": "2026-11-12"
+  },
+  "motorins": {
+   "name": "IRDAI four-layer motor insurance from 15 Dec 2026; Supreme Court, Aug 2026, on longer compulsory third-party cover for new vehicles",
+   "checked": "2026-11-12"
+  },
+  "ccs15": {
+   "name": "CCS (Conduct) Rules 1964, rule 15 on private trade and reporting a family member's business; bank and autonomous-body staff rules are similar",
+   "checked": "2026-11-12"
+  },
+  "drip": {
+   "name": "PMKSY Per Drop More Crop with the Maharashtra top-up, applied on MahaDBT; rates vary by holding size and district",
+   "checked": "2026-11-12"
+  },
+  "polyhouse": {
+   "name": "MIDH and NHB protected-cultivation norms (about 50% of a capped cost)",
+   "checked": "2026-11-12"
+  }
+ },
+ "projects": [
+  {
+   "id": "first-car",
+   "spoke": "money",
+   "title": "Our first car",
+   "where": "IN",
+   "phases": [
+    {
+     "t": "Decide what it is for: seats, yearly distance, highway trips home, parking, charging at home or work. Four answers choose most of the shortlist."
+    },
+    {
+     "t": "Safety first: shortlist only cars with five stars for adults and children in Bharat NCAP (or Global NCAP for older models), six airbags and ESC."
+    },
+    {
+     "t": "Afford it: at least 20% down payment, a loan of at most 4 years, and EMI plus fuel plus insurance under 10-15% of monthly take-home. The emergency fund stays untouched."
+    },
+    {
+     "t": "Loan: compare a staff vehicle loan from your employer (often cheaper; usually after confirmation in a new job) with a bank's car loan; never the dealer's tie-up without comparing."
+    },
+    {
+     "t": "Total cost for 7 years: price, fuel or charging, insurance, service, tyres, minus resale. The cheapest to own is not always the cheapest to buy."
+    },
+    {
+     "t": "Buy: December and quarter-ends bring the best discounts, but a car bought in December is a year older at resale; register in the new year if the saving is small. Get the on-road price in writing, line by line; refuse extras you did not ask for."
+    },
+    {
+     "t": "Delivery: check the car in daylight (pre-delivery inspection), the manufacturing month on the VIN plate, and all papers."
+    }
+   ]
+  },
+  {
+   "id": "parents-home",
+   "spoke": "family",
+   "title": "A good home for our parents, that also earns",
+   "where": "IN",
+   "phases": [
+    {
+     "t": "Shield now, in weeks not years: move them to a better rented home that is clean, ground floor or with a lift, near a clinic, with a bathroom made safe from falls. This does not wait for the building."
+    },
+    {
+     "t": "Decide the site: a plot inside the village settlement (gaothan) or one with non-agricultural use allowed; farmland generally cannot be built on without conversion. Check road access, water, and title for 30 years."
+    },
+    {
+     "t": "Design for both: shops or an office on the ground floor for rent, the home above, step-free access, a room on the ground floor for later years. Size the shops from what the street needs (a clinic, a medical store, a bank point)."
+    },
+    {
+     "t": "Numbers before building: cost, the loan (a staff housing loan is often cheapest), and the rent the shops will fetch; build only if the rent covers a clear share of the EMI."
+    },
+    {
+     "t": "Rules: building permission from the gram panchayat or the planning authority; the employer's conduct-rules intimation if it earns rent."
+    },
+    {
+     "t": "Build with a fixed-price contract, stage payments, and a local engineer who visits each stage."
+    }
+   ]
+  },
+  {
+   "id": "farm-progress",
+   "spoke": "money",
+   "title": "A farm that runs itself and earns",
+   "where": "IN-MH",
+   "phases": [
+    {
+     "t": "Shield first: the land system above (records, boundary, Farmer ID, a written lease)."
+    },
+    {
+     "t": "Learn from people nearby who already succeed: the district's Krishi Vigyan Kendra, the ICAR research centre for the region's main fruit (pomegranate in Solapur), and the agriculture assistant (Krishi Sahayak). One visit saves a year of mistakes."
+    },
+    {
+     "t": "Water before crops: a soil and water test (Soil Health Card), then drip irrigation with fertigation (the Israel model). Drip has a subsidy through MahaDBT, highest for small farmers and drought-prone districts; apply before buying anything.",
+     "src": "drip"
+    },
+    {
+     "t": "One high-value crop with a buyer, not five crops without one: an orchard on drip (pomegranate, custard apple, guava) suits dry districts; join or form a farmer producer organisation for selling."
+    },
+    {
+     "t": "Protected cultivation only after a season of success: a shade-net before a polyhouse. Both have central horticulture subsidies (around 50% of a capped cost); a polyhouse needs a buyer, skill and daily attention.",
+     "src": "polyhouse"
+    },
+    {
+     "t": "Sensing and help, free first: IMD weather and Meghdoot advice, soil-moisture sensors, the state's crop advisories; add tools only where a person cannot watch daily."
+    },
+    {
+     "t": "Finance: crop loan on a Kisan Credit Card; the Agriculture Infrastructure Fund gives an interest subvention on post-harvest infrastructure through banks; NABARD's district office knows the schemes for the district."
+    }
+   ]
+  },
+  {
+   "id": "community-hall",
+   "spoke": "fun",
+   "title": "A hall or training centre at home town (someday)",
+   "where": "IN",
+   "phases": [
+    {
+     "t": "Someday, not now: it needs land with non-agricultural use, parking, fire safety and large capital. First write the one-page case."
+    },
+    {
+     "t": "Demand test: count the weddings and events in the taluka and how many days a year existing halls are booked; ask hall owners what they earn and what they spend."
+    },
+    {
+     "t": "Make it earn all year: a hall that is a training or skill centre on weekdays and an event space on weekends earns more days than a wedding hall alone."
+    },
+    {
+     "t": "Owner and rules: decide whose name it is in and send any conduct-rules intimation first (see 'Side ventures')."
+    },
+    {
+     "t": "Gate: start only when the parents' home is done, the emergency fund and goals are funded, and the demand test says yes."
+    }
+   ]
+  }
+ ]
 }
