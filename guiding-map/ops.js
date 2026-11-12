@@ -875,6 +875,104 @@
     }
     return null;
   }
+  /* ── 25-minute focus block, on Today only (principle: build-the-system) ─────────────────────────
+     A light block tied to the one open action, used sparingly: the count lives on this device, four a day
+     is the ceiling, and there is nothing to score. The minutes come from the stored start time, so a phone
+     that slept or a page that reloaded still shows the right number. One 15 s interval runs only while a
+     block is running, and it is cleared the moment the block ends (a timer left running keeps tests alive). */
+  var FOCUS_MINS = 25, FOCUS_MAX = 4, _focusTimer = null, _focusDone = null;
+  function focusShow() { return G("gm_focus_show", true) !== false; }
+  function focusLog() { return G("gm_focus_log", {}) || {}; }
+  function focusCount() { return +focusLog()[ymd()] || 0; }
+  function focusRunning() { var f = G("gm_focus", null); return f && f.start ? f : null; }
+  function focusUnesc(s) { return String(s || "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"'); }
+  function focusLeft(f) { return (+f.mins || FOCUS_MINS) * 60000 - (Date.now() - (+f.start || 0)); }
+  function focusArm() { if (!_focusTimer) _focusTimer = setInterval(focusTick, 15000); }
+  function focusDisarm() { if (_focusTimer) { clearInterval(_focusTimer); _focusTimer = null; } }
+  function focusBtnHTML(task) {
+    if (!focusShow() || focusRunning()) return "";
+    if (focusCount() >= FOCUS_MAX) return '<button class="btn-sm" disabled aria-disabled="true" style="margin-top:10px;min-height:44px;background:var(--cardAlt);color:var(--muted)">Enough focus blocks today; work freely</button>';
+    return '<button class="btn-sm" data-haptic="success" style="margin-top:10px;min-height:44px;background:var(--cardAlt);color:var(--text)" data-focus-task="' + esc(task) + '" onclick="gmFocusStart(this.getAttribute(\'data-focus-task\'))">Focus 25 min on this</button>';
+  }
+  function focusPaint() {
+    var old = document.getElementById("gmFocusBar"); if (old) old.parentNode.removeChild(old);
+    if (!focusShow()) return;
+    var f = focusRunning(), el, msg, stop;
+    if (!f && !_focusDone) return;
+    el = document.createElement("div"); el.id = "gmFocusBar";
+    el.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:900;background:var(--card);border-bottom:2px solid var(--gold);padding:8px 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;box-shadow:0 2px 10px rgba(0,0,0,.14)";
+    msg = document.createElement("div");
+    msg.style.cssText = "flex:1;min-width:130px;font-size:12.5px;line-height:1.45;color:var(--text);font-weight:600";
+    if (f) {
+      var mins = Math.max(0, Math.ceil(focusLeft(f) / 60000));
+      msg.textContent = focusUnesc(f.task || "Focus block") + " \u00b7 " + mins + " min left";
+      stop = document.createElement("button"); stop.className = "btn-sm"; stop.textContent = "Stop";
+      stop.style.cssText = "background:var(--cardAlt);color:var(--text);min-height:44px";
+      stop.onclick = function () { window.gmFocusStop(); };
+      el.appendChild(msg); el.appendChild(stop);
+    } else {
+      msg.textContent = "Done. Stand up, water, look far away for 5 minutes." + (_focusDone.task ? " \u00b7 " + focusUnesc(_focusDone.task) : "");
+      var done = document.createElement("button"); done.className = "btn-sm"; done.textContent = "Mark the action done";
+      done.style.cssText = "background:var(--cardAlt);color:var(--text);min-height:44px";
+      done.onclick = function () { window.gmFocusMarkDone(); };
+      el.appendChild(msg); el.appendChild(done);
+      if (focusCount() < FOCUS_MAX) {
+        var again = document.createElement("button"); again.className = "btn-sm"; again.textContent = "Another 25";
+        again.style.cssText = "background:var(--cardAlt);color:var(--text);min-height:44px";
+        again.onclick = function () { window.gmFocusAnother(); };
+        el.appendChild(again);
+      }
+    }
+    document.body.insertBefore(el, document.body.firstChild);
+  }
+  function focusFinish(f) {
+    focusDisarm();
+    var log = focusLog(), k = ymd(); log[k] = (+log[k] || 0) + 1; S_("gm_focus_log", log);
+    try { localStorage.removeItem("gm_focus"); } catch (e) { S_("gm_focus", null); }
+    _focusDone = { task: f.task || "" };
+    focusPaint();
+    try { if (typeof gmToast === "function") gmToast("Done. Stand up, water, look far away for 5 minutes."); } catch (e) {}
+    try { if (navigator.vibrate) navigator.vibrate(200); } catch (e) {}
+    try { renderAll(); } catch (e) {}
+  }
+  function focusTick() {
+    if (!focusShow()) { focusDisarm(); focusPaint(); return; }
+    var f = focusRunning();
+    if (!f) { focusDisarm(); focusPaint(); return; }
+    if (focusLeft(f) <= 0) { focusFinish(f); return; }
+    focusPaint();
+  }
+  window.gmFocusStart = function (task) {
+    if (!focusShow() || focusCount() >= FOCUS_MAX) return;
+    _focusDone = null;
+    S_("gm_focus", { start: Date.now(), mins: FOCUS_MINS, task: focusUnesc(task) });
+    focusArm();
+    focusPaint();
+    try { renderAll(); } catch (e) {}
+  };
+  window.gmFocusStop = function () {
+    focusDisarm();
+    try { localStorage.removeItem("gm_focus"); } catch (e) { S_("gm_focus", null); }
+    _focusDone = null; focusPaint();
+    try { renderAll(); } catch (e) {}
+  };
+  window.gmFocusAnother = function () {
+    var t = (_focusDone && _focusDone.task) || "";
+    if (focusCount() >= FOCUS_MAX) return;
+    window.gmFocusStart(t);
+  };
+  window.gmFocusMarkDone = function () {
+    var t = (_focusDone && _focusDone.task) || "", cands = [];
+    _focusDone = null; focusPaint();
+    try {
+      cands = focusCands();
+      for (var i = 0; i < cands.length; i++) if (focusUnesc(cands[i].text) === t) { (new Function(cands[i].act))(); break; }
+      if (i >= cands.length) { var a = theOneAction(); if (a) gmStackTg(a.layer.id, a.idx); }
+    } catch (e) {}
+    try { renderAll(); } catch (e) {}
+  };
+  window.gmToggleFocusShow = function () { S_("gm_focus_show", !focusShow()); if (!focusShow()) window.gmFocusStop(); else { focusPaint(); } try { gmMenu(); } catch (e) {} try { renderAll(); } catch (e) {} };
+
   function oneActionHTML() {
     var a = theOneAction();
     if (!a) return '<div class="info">Every layer of the stack is complete. Maintenance mode: run the cadence, hold the line.</div>';
@@ -882,7 +980,8 @@
       + '<div style="font-size:10.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--gold);font-weight:800">Your one open action \u00b7 ' + a.layer.id + ' ' + a.layer.name + (a.vital ? ' \u00b7 \u2605 vital few' : '') + '</div>'
       + '<div style="font-size:15px;font-weight:700;line-height:1.5;margin:8px 0 4px;color:var(--text)">' + esc(a.text) + '</div>'
       + '<div style="font-size:11.5px;color:var(--muted);line-height:1.6">Rule 1 says one in-progress action at a time. This is it. Nothing below this layer is finished, so nothing above it is yours to work on yet.</div>'
-      + '<button class="btn btn-p" data-haptic="success" style="margin-top:10px" onclick="gmStackTg(\'' + a.layer.id + '\',' + a.idx + ')">Mark this done</button></div>';
+      + '<button class="btn btn-p" data-haptic="success" style="margin-top:10px" onclick="gmStackTg(\'' + a.layer.id + '\',' + a.idx + ')">Mark this done</button>'
+      + focusBtnHTML(a.text) + '</div>';
   }
   function stackHTML() {
     var h = '<div class="section active">';
@@ -4962,6 +5061,7 @@
       + ((window.matchMedia && matchMedia("(display-mode: standalone)").matches) ? "" : '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();gmInstall()">Install as an app (phone or computer)</button>')
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" role="switch" aria-checked="' + (!G("gm_still", false)) + '" onclick="gmToggleStill()">Motion and haptics: ' + (G("gm_still", false) ? "off" : "on") + '</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" role="switch" aria-checked="' + (!G("gm_smart_off", false)) + '" onclick="gmToggleSmart()">Smart suggestions: ' + (G("gm_smart_off", false) ? "off" : "on") + '</button>'
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" role="switch" aria-checked="' + focusShow() + '" onclick="gmToggleFocusShow()">Show the focus timer: ' + (focusShow() ? "on" : "off") + '</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();gmReport()">Report a problem or idea</button>'
       + '</div><div style="font-size:12px;color:var(--muted);margin-top:12px">Life OS ' + esc(ver) + ' · your data stays on your devices</div>'
       + '<button class="btn-sm" style="margin-top:12px;background:none;color:var(--muted)" onclick="gmClose()">Close</button>');
@@ -5560,7 +5660,8 @@
         + '<div style="font-size:10.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--gold);font-weight:800">Your one open action · chosen by risk</div>'
         + '<div style="font-size:15px;font-weight:700;line-height:1.5;margin:8px 0 4px;color:var(--text)">' + one.text + '</div>'
         + '<div style="font-size:11.5px;color:var(--muted);line-height:1.6">' + one.why + ' Everything else waits below, folded.</div>'
-        + '<button class="btn btn-p" data-haptic="success" style="margin-top:10px" onclick="' + one.act + '">' + one.btn + '</button></div>';
+        + '<button class="btn btn-p" data-haptic="success" style="margin-top:10px" onclick="' + one.act + '">' + one.btn + '</button>'
+        + focusBtnHTML(focusUnesc(one.text)) + '</div>';
     return h + laterHTML(c.slice(1));
   }
 
@@ -5853,6 +5954,7 @@
     try { navRender(); } catch (e) { console.log(e); }
     // Inline help: self-explain every specialised term on whatever screen just rendered.
     try { gmAnnotate(box); } catch (e) { }
+    try { focusTick(); } catch (e) { }
   };
 
   /* ── 11. Boot ───────────────────────────────────────────────────── */

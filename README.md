@@ -137,8 +137,8 @@ This list is generated from [`features.json`](features.json); the Command Center
 - Risk Shield and Pillars open with one calm hero
 - The Wheel of Life never invents a score
 - No squashed text, anywhere
+- A 25-minute focus block on Today, used sparingly
 - Life OS Breaks: the days you are both off, with the fewest leave days
-- The Life OS speaks Hindi and Marathi (beta)
 
 **Release 0.3.0 - 2026-10-22:**
 
