@@ -6531,6 +6531,8 @@ window.GM_I18N = {"hi":{"_meta":{"locale":"hi-IN","status":"beta","note":"machin
       desc: "Choose the tax regime for the year, plan the year's tax-saving investments, collect Form 16 and AIS." },
     { id: "annual", group: "rhythm", v: 1, name: "Annual overhaul", rule: "FREQ=YEARLY;BYMONTH=8;BYDAY=1SA", months: [7], nth: 1, dow: 6, hh: 10, mins: 240,
       desc: "Insurance re-quote, will and nominations, property checks, the hit-by-a-bus test with your partner." },
+    { id: "holiday-list", group: "rhythm", v: 1, name: "Paste next year's holiday list", rule: "FREQ=YEARLY;BYMONTH=12;BYDAY=2SA", months: [11], nth: 2, dow: 6, hh: 10, mins: 15,
+      desc: "Your office's list for next year is usually out by now. Life OS > Breaks > Your work calendars > paste it once; every break recomputes." },
     { id: "family-q1", group: "family", v: 1, name: "Family health Q1: blood work", rule: "FREQ=YEARLY;BYMONTH=4;BYDAY=1MO", months: [3], nth: 1, dow: 1, hh: 9, mins: 30,
       desc: "Book the yearly blood panel for the adults (CBC, fasting lipids, HbA1c, TSH, vitamin D and B12, liver and kidney). Home collection is fine. Track the trend year over year." },
     { id: "family-q2", group: "family", v: 1, name: "Family health Q2: dental and vision", rule: "FREQ=YEARLY;BYMONTH=7;BYDAY=1MO", months: [6], nth: 1, dow: 1, hh: 9, mins: 30,
@@ -8113,7 +8115,10 @@ window.GM_I18N = {"hi":{"_meta":{"locale":"hi-IN","status":"beta","note":"machin
       dates: [["2027-01-01", "New Year's Day"], ["2027-01-14", "Makar Sankranti"], ["2027-02-19", "Shivaji Jayanti"],
         ["2027-03-06", "Maha Shivratri"], ["2027-04-07", "Gudi Padwa / Ugadi"], ["2027-08-17", "Raksha Bandhan"],
         ["2027-09-04", "Ganesh Chaturthi"], ["2027-10-28", "Naraka Chaturdashi"], ["2027-10-30", "Govardhan Puja"],
-        ["2027-10-31", "Bhai Dooj"], ["2027-11-04", "Chhath Puja"], ["2027-12-24", "Christmas Eve"]] }
+        ["2027-10-31", "Bhai Dooj"], ["2027-11-04", "Chhath Puja"], ["2027-12-24", "Christmas Eve"]] },
+    { id: "in-mh-extra", where: "IN", addon: true, name: "Maharashtra additions (provisional until your office's list is pasted)",
+      dates: [["2027-02-19", "Shivaji Jayanti"], ["2027-04-07", "Gudi Padwa"], ["2027-04-14", "Ambedkar Jayanti"],
+        ["2027-05-01", "Maharashtra Day"], ["2027-09-04", "Ganesh Chaturthi"]] }
   ];
   var _holMaps = {};
   function gmHolidayMap(listId) {
@@ -8130,21 +8135,54 @@ window.GM_I18N = {"hi":{"_meta":{"locale":"hi-IN","status":"beta","note":"machin
     var m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/);
     return m ? new Date(+m[1], +m[2] - 1, +m[3]) : new Date();
   }
+  // A person holds periods of work, newest last: a job change is a new period, not a lost setting.
+  // An older single-object entry is read as one period with no dates.
+  function gmPeriods(person) {
+    person = person || {};
+    if (person.periods && person.periods.length) return person.periods;
+    return [{ from: person.from || "", to: person.to || "", off: person.off || "satsun",
+      list: person.list || "in-central", extra: (person.extra || []).slice(), rh: (person.rh || []).slice(), own: (person.own || []).slice() }];
+  }
+  function gmSetPeriods(person, periods) {
+    var out = {}, k;
+    for (k in (person || {})) if (["periods", "off", "list", "extra", "rh", "own", "from", "to"].indexOf(k) < 0) out[k] = person[k];
+    out.periods = periods;
+    return out;
+  }
+  // The period that covers a day; no period (a gap between jobs) means the day is off.
+  function gmPeriodFor(person, day) {
+    var ps = gmPeriods(person), best = null, i, p;
+    for (i = 0; i < ps.length; i++) {
+      p = ps[i];
+      if ((!p.from || day >= p.from) && (!p.to || day <= p.to)) best = p;
+    }
+    return best;
+  }
+  function gmAddPeriodHolidays(p, k, out) {
+    var year = k.slice(0, 4), ownYear = false;
+    (p.own || []).forEach(function (o) { if (o && String(o.d).slice(0, 4) === year) ownYear = true; });
+    if (!ownYear) {
+      var base = gmHolidayMap(p.list === "own" ? "" : p.list || "in-central");
+      if (base[k]) out[k] = base[k];
+      (p.extra || []).forEach(function (id) { var m = gmHolidayMap(id); if (m[k]) out[k] = m[k]; });
+      (p.rh || []).forEach(function (r) { var n = gmHolidayMap("in-central-rh")[r]; if (n) out[k] = n; });
+    }
+    (p.own || []).forEach(function (o) { if (o && o.d === k) out[k] = o.n || "Own holiday"; });
+  }
   // One person's days off in [from, to]: weekly offs, holidays, chosen restricted holidays, own list.
   window.gmDaysOff = function (person, from, to) {
-    person = person || {}; var off = person.off || "satsun", out = {};
+    person = person || {}; var out = {};
     var d = gmYmdToDate(from), end = gmYmdToDate(to);
     for (; d <= end; d.setDate(d.getDate() + 1)) {
-      var w = d.getDay(), dm = d.getDate(), rest = false;
+      var k = ymd(d), p = gmPeriodFor(person, k);
+      if (!p) { out[k] = "Between jobs"; continue; }
+      var off = p.off || "satsun", w = d.getDay(), dm = d.getDate(), rest = false;
       if (off === "sun") rest = w === 0;
       else if (off === "sun24") rest = w === 0 || (w === 6 && (Math.ceil(dm / 7) === 2 || Math.ceil(dm / 7) === 4));
       else rest = w === 0 || w === 6;
-      if (rest) out[ymd(d)] = "Weekly off";
+      if (rest) out[k] = "Weekly off";
+      gmAddPeriodHolidays(p, k, out);
     }
-    function add(map) { for (var k in map) if (k >= from && k <= to) out[k] = map[k]; }
-    add(gmHolidayMap(person.list === "own" ? "" : person.list || "in-central"));
-    (person.rh || []).forEach(function (k) { var n = gmHolidayMap("in-central-rh")[k]; if (n && k >= from && k <= to) out[k] = n; });
-    (person.own || []).forEach(function (p) { if (p && p.d && p.d >= from && p.d <= to) out[p.d] = p.n || "Own holiday"; });
     return out;
   };
   // Windows of 3+ days when BOTH are off, bridging gaps of working days with up to
@@ -8204,11 +8242,8 @@ window.GM_I18N = {"hi":{"_meta":{"locale":"hi-IN","status":"beta","note":"machin
       var extra = n - base;
       if (n < 3 || extra < Math.max(lm.length, lp.length)) return;
       var hols = {};
-      [w.me, w.partner].forEach(function (p) {
-        var map = gmHolidayMap(p.list === "own" ? "" : p.list || "in-central");
-        for (var hk in map) if (hk >= wStart && hk <= wEnd) hols[map[hk]] = true;
-        (p.rh || []).forEach(function (r) { var nm = gmHolidayMap("in-central-rh")[r]; if (nm && r >= wStart && r <= wEnd) hols[nm] = true; });
-        (p.own || []).forEach(function (o) { if (o && o.d >= wStart && o.d <= wEnd && o.n) hols[o.n] = true; });
+      [offMe, offPa].forEach(function (m) {
+        for (var hk in m) if (hk >= wStart && hk <= wEnd && m[hk] !== "Weekly off" && m[hk] !== "Between jobs") hols[m[hk]] = true;
       });
       cands.push({ start: wStart, end: wEnd, days: n, leaveMe: lm, leavePartner: lp, holidays: Object.keys(hols), score: n / Math.max(1, lm.length + lp.length) });
     });
@@ -8236,46 +8271,112 @@ window.GM_I18N = {"hi":{"_meta":{"locale":"hi-IN","status":"beta","note":"machin
     catch (e) { return String(dkey); }
   }
   function gmNextHoliday(from) {
-    var best = null, w = G("gm_work", null) || gmWorkDefault();
-    function scan(map) { for (var k in map) if (k >= from && (!best || k < best.d)) best = { d: k, n: map[k] }; }
-    scan(gmHolidayMap(w.me.list === "own" ? "" : w.me.list || "in-central"));
-    (w.me.own || []).forEach(function (o) { if (o && o.d >= from && (!best || o.d < best.d)) best = { d: o.d, n: o.n || "Own holiday" }; });
+    var w = G("gm_work", null) || gmWorkDefault();
+    var end = gmYmdToDate(from); end.setDate(end.getDate() + 400);
+    var map = gmDaysOff(w.me, from, ymd(end)), best = null;
+    for (var k in map) if (map[k] !== "Weekly off" && map[k] !== "Between jobs" && (!best || k < best.d)) best = { d: k, n: map[k] };
     return best;
   }
-  var gmWorkMsg = "";
-  function gmWorkPersonHTML(who, label, cfg) {
-    var rh = gmHolidayMap("in-central-rh");
-    return '<div style="background:var(--cardAlt);border-radius:10px;padding:10px;margin-bottom:8px">'
-      + '<div style="font-weight:800;font-size:12.5px;margin-bottom:6px">' + label + '</div>'
-      + '<div class="row" style="gap:8px;flex-wrap:wrap"><label style="flex:1;min-width:140px">Weekly off<br><select id="gmw_off_' + who + '" style="max-width:100%">'
-      + '<option value="satsun"' + (cfg.off === "satsun" ? " selected" : "") + '>Saturday and Sunday</option>'
-      + '<option value="sun"' + (cfg.off === "sun" ? " selected" : "") + '>Sunday only</option>'
-      + '<option value="sun24"' + (cfg.off === "sun24" ? " selected" : "") + '>Sunday plus 2nd and 4th Saturday</option></select></label>'
-      + '<label style="flex:1;min-width:140px">Holiday list<br><select id="gmw_list_' + who + '" style="max-width:100%">'
-      + '<option value="in-central"' + (cfg.list !== "own" ? " selected" : "") + '>Central government (India)</option>'
-      + '<option value="own"' + (cfg.list === "own" ? " selected" : "") + ">My office's own list</option></select></label></div>"
+  function gmListName(id) { var l = HOLIDAY_LISTS.filter(function (x) { return x.id === id; })[0]; return l ? l.name : ""; }
+  function gmOffLabel(off) {
+    return off === "sun" ? "Sunday only" : off === "sun24" ? "Bank pattern: Sunday plus 2nd and 4th Saturday" : "Saturday and Sunday";
+  }
+  var gmWorkMsg = "", gmWorkEditing = null;
+  function gmWorkPeriodLine(who, i, p) {
+    var line = "From " + (p.from ? gmWorkFmt(p.from) : "the start") + " \u00b7 " + gmOffLabel(p.off)
+      + " \u00b7 " + (p.list === "own" ? "Your office's list" : gmListName(p.list || "in-central"));
+    var ex = (p.extra || []).map(gmListName).filter(Boolean);
+    if (ex.length) line += " + " + ex.join(" + ");
+    var years = {};
+    (p.own || []).forEach(function (o) { if (o && o.d) years[String(o.d).slice(0, 4)] = true; });
+    var ys = Object.keys(years).sort();
+    if (ys.length) line += " \u00b7 Using your office's list for " + ys.join(", ");
+    return '<div style="display:flex;align-items:center;gap:8px;margin:6px 0">'
+      + '<div style="flex:1;font-size:12.5px;color:var(--text)">' + esc(line) + '</div>'
+      + '<button class="btn" style="padding:4px 10px;font-size:11.5px" onclick="gmWorkEdit(\'' + who + '\',' + i + ')">Edit</button></div>';
+  }
+  function gmWorkPeriodForm(who, i, p) {
+    var sfx = i ? "_" + i : "", rh = gmHolidayMap("in-central-rh");
+    var addons = HOLIDAY_LISTS.filter(function (x) { return x.addon; });
+    return '<div style="background:var(--cardAlt);border-radius:10px;padding:10px;margin:0 0 8px">'
+      + '<div class="row" style="gap:8px;flex-wrap:wrap">'
+      + '<label style="flex:1;min-width:140px">Starts<br><input type="date" id="gmw_from_' + who + sfx + '" value="' + esc(p.from || "") + '" style="max-width:100%"></label>'
+      + '<label style="flex:1;min-width:140px">Ends (blank = still there)<br><input type="date" id="gmw_to_' + who + sfx + '" value="' + esc(p.to || "") + '" style="max-width:100%"></label></div>'
+      + '<div class="row" style="gap:8px;flex-wrap:wrap"><label style="flex:1;min-width:140px">Weekly off<br><select id="gmw_off_' + who + sfx + '" style="max-width:100%">'
+      + '<option value="satsun"' + ((p.off || "satsun") === "satsun" ? " selected" : "") + '>Saturday and Sunday</option>'
+      + '<option value="sun"' + (p.off === "sun" ? " selected" : "") + '>Sunday only</option>'
+      + '<option value="sun24"' + (p.off === "sun24" ? " selected" : "") + '>Bank pattern: Sunday plus 2nd and 4th Saturday</option></select></label>'
+      + '<label style="flex:1;min-width:140px">Holiday list<br><select id="gmw_list_' + who + sfx + '" style="max-width:100%">'
+      + '<option value="in-central"' + (p.list !== "own" ? " selected" : "") + '>Central government (India)</option>'
+      + '<option value="own"' + (p.list === "own" ? " selected" : "") + ">My office's own list</option></select></label></div>"
+      + addons.map(function (x) {
+        var on = (p.extra || []).indexOf(x.id) >= 0;
+        return '<label style="display:block;font-size:12px;margin-top:6px"><input type="checkbox" class="gmw-extra-' + who + '-' + i + '" value="' + x.id + '"'
+          + (on ? " checked" : "") + "> " + esc(x.name) + "</label>";
+      }).join("")
       + '<div style="font-size:11.5px;color:var(--muted);margin:8px 0 4px">Restricted holidays (pick two):</div>'
       + Object.keys(rh).sort().map(function (k) {
-        return '<label style="display:inline-block;margin:0 12px 4px 0;font-size:12px"><input type="checkbox" class="gmw-rh-' + who + '" value="' + k + '"'
-          + (cfg.rh.indexOf(k) >= 0 ? " checked" : "") + "> " + esc(rh[k]) + ", " + gmWorkFmt(k) + "</label>";
+        return '<label style="display:inline-block;margin:0 12px 4px 0;font-size:12px"><input type="checkbox" class="gmw-rh-' + who + '-' + i + '" value="' + k + '"'
+          + ((p.rh || []).indexOf(k) >= 0 ? " checked" : "") + "> " + esc(rh[k]) + ", " + gmWorkFmt(k) + "</label>";
       }).join("")
-      + '<label style="display:block;font-size:12px;margin-top:8px">Your office\u2019s own holidays<br><textarea id="gmw_own_' + who + '" rows="3" '
+      + '<label style="display:block;font-size:12px;margin-top:8px">Your office\u2019s own holidays<br><textarea id="gmw_own_' + who + sfx + '" rows="3" '
       + 'placeholder="Paste your office\u2019s holiday list, one per line: 2027-01-26 Republic Day" '
-      + 'style="width:100%;max-width:100%">' + esc((cfg.own || []).map(function (o) { return o.d + " " + o.n; }).join("\n")) + '</textarea></label>'
+      + 'style="width:100%;max-width:100%">' + esc((p.own || []).map(function (o) { return o.d + " " + o.n; }).join("\n")) + '</textarea></label>'
       + '</div>';
   }
+  function gmWorkPersonHTML(who, label, person) {
+    var ps = gmPeriods(person);
+    return '<div style="background:var(--cardAlt);border-radius:10px;padding:10px;margin-bottom:8px">'
+      + '<div style="font-weight:800;font-size:12.5px;margin-bottom:6px">' + label + '</div>'
+      + ps.map(function (p, i) {
+        var open = gmWorkEditing && gmWorkEditing.who === who && gmWorkEditing.i === i;
+        return gmWorkPeriodLine(who, i, p) + '<div style="display:' + (open ? "block" : "none") + '">' + gmWorkPeriodForm(who, i, p) + '</div>';
+      }).join("")
+      + '<button class="btn" style="margin-top:6px" onclick="gmWorkAdd(\'' + who + '\')">My job changes on a date</button></div>';
+  }
+  window.gmWorkEdit = function (who, i) { gmWorkEditing = { who: who, i: i }; renderAll(); };
+  window.gmWorkAdd = function (who) {
+    who = who === "partner" ? "partner" : "me";
+    var w = G("gm_work", null) || gmWorkDefault(), ps = gmPeriods(w[who]).slice();
+    var last = ps[ps.length - 1] || {};
+    var from = ymd(new Date());
+    if (ps.length && !last.to) {
+      var before = gmYmdToDate(from); before.setDate(before.getDate() - 1);
+      var prev = {}; for (var k in last) prev[k] = last[k];
+      prev.to = ymd(before); ps[ps.length - 1] = prev;
+    }
+    ps.push({ from: from, to: "", off: last.off || "satsun", list: last.list || "in-central",
+      extra: (last.extra || []).slice(), rh: (last.rh || []).slice(), own: [] });
+    w[who] = gmSetPeriods(w[who], ps);
+    S_("gm_work", w); gmWorkEditing = { who: who, i: ps.length - 1 };
+    gmWorkMsg = "Added a period from " + gmWorkFmt(from) + ". Pick its date and save.";
+    renderAll();
+  };
   window.gmWorkSave = function () {
     var w = G("gm_work", null) || gmWorkDefault(), read = 0, bad = 0;
     ["me", "partner"].forEach(function (who) {
-      var el = document.getElementById("gmw_off_" + who); if (el) w[who].off = el.value;
-      el = document.getElementById("gmw_list_" + who); if (el) w[who].list = el.value;
-      w[who].rh = [].slice.call(document.querySelectorAll(".gmw-rh-" + who + ":checked")).map(function (x) { return x.value; }).slice(0, 2);
-      el = document.getElementById("gmw_own_" + who);
-      if (el) { var p = gmParseOwn(el.value); w[who].own = p.list; read += p.list.length; bad += p.bad; }
+      if (!document.getElementById("gmw_off_" + who)) return;
+      var person = w[who] || {}, ps = gmPeriods(person).slice();
+      for (var i = 0; i < ps.length; i++) {
+        var sfx = i ? "_" + i : "", el = document.getElementById("gmw_off_" + who + sfx);
+        if (!el) break;
+        var p = ps[i] || {};
+        p.off = el.value;
+        el = document.getElementById("gmw_list_" + who + sfx); if (el) p.list = el.value;
+        el = document.getElementById("gmw_from_" + who + sfx); if (el) p.from = el.value;
+        el = document.getElementById("gmw_to_" + who + sfx); if (el) p.to = el.value;
+        p.extra = [].slice.call(document.querySelectorAll(".gmw-extra-" + who + "-" + i + ":checked")).map(function (x) { return x.value; });
+        p.rh = [].slice.call(document.querySelectorAll(".gmw-rh-" + who + "-" + i + ":checked")).map(function (x) { return x.value; }).slice(0, 2);
+        el = document.getElementById("gmw_own_" + who + sfx);
+        if (el) { var pr = gmParseOwn(el.value); p.own = pr.list; read += pr.list.length; bad += pr.bad; }
+        ps[i] = p;
+      }
+      w[who] = gmSetPeriods(person, ps);
     });
     var two = document.getElementById("gmw_two"); if (two) w.two = two.checked;
     S_("gm_work", w);
     gmWorkMsg = "Saved: read " + read + " of " + (read + bad) + " pasted line(s); " + bad + " ignored (each needs \u201Cdate name\u201D).";
+    gmWorkEditing = null;
     renderAll();
   };
   window.gmBreaksHow = function () {
