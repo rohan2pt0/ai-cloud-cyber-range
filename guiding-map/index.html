@@ -60,7 +60,7 @@ body{font-family:var(--font-ui);background:var(--bg);color:var(--text);font-size
 .sec-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:1.2px;color:var(--gold);margin:22px 0 10px;}
 details.w-fixed>summary{cursor:pointer;}
 details.w-fixed:not([open])>summary{text-transform:none;letter-spacing:0;font-size:13px;font-weight:600;color:var(--text);padding:12px 0;border-bottom:1px solid var(--border);}
-.f-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.7px;color:var(--muted);margin-bottom:5px;display:block;}
+.f-label{font-size:11px;font-weight:600;color:var(--muted);margin-bottom:5px;display:block;}
 .f-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
 input,select,textarea{width:100%;padding:11px 13px;border:1.5px solid var(--border);border-radius:10px;font-family:var(--font-ui);font-size:13px;background:var(--card);color:var(--text);outline:none;margin-bottom:12px;}
 input:focus,select:focus{border-color:var(--gold);}
@@ -314,7 +314,7 @@ input,textarea,select{
   width:100%;box-sizing:border-box;font-size:16px;padding:11px 12px;border-radius:10px;
   margin:4px 0 10px;font-family:inherit;background:var(--card);color:var(--text);border:1px solid var(--border);
 }
-.f-label{ display:block;font-size:11.5px;font-weight:700;color:var(--muted);margin-top:8px;letter-spacing:.2px; }
+.f-label{ display:block;font-size:11.5px;font-weight:700;color:var(--muted);margin-top:8px; }
 .btn,.btn-p,.btn-s,.btn-sm{ min-height:42px;font-size:13px;border-radius:10px;cursor:pointer; }
 .btn-p{ background:var(--gold);color:#0d1f35;border:0;font-weight:800;padding:11px 16px; }
 .btn-s{ background:var(--cardAlt);color:var(--text);border:1px solid var(--border);font-weight:700;padding:11px 16px; }
@@ -1958,10 +1958,10 @@ function renderCommit(){
    +howHTML('Putting money at stake and naming a referee makes a goal far more likely to happen. Use it for a goal you have missed before. If you miss it, you really pay the stake; to a cause you dislike works best.')
    +'<div class="cat-t">\uD83E\uDD1D Commitment Contracts</div>';
   html+='<div style="background:var(--card);border-radius:12px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.05);margin-bottom:12px">'
-   +'<label class="f-label" style="text-transform:none;letter-spacing:.2px">Goal (specific + measurable)</label><input type="text" id="c_goal" placeholder="Finish emergency fund to 4 months by Sep 30">'
-   +'<div class="f-row"><div><label class="f-label" style="text-transform:none;letter-spacing:.2px">Stake (amount you forfeit)</label><input type="text" id="c_stake" placeholder="\u20B95,000"></div>'
-   +'<div><label class="f-label" style="text-transform:none;letter-spacing:.2px">Deadline (tap to change)</label><input type="date" id="c_dl" aria-label="Deadline" value="'+dlDef+'"></div></div>'
-   +'<label class="f-label" style="text-transform:none;letter-spacing:.2px">Referee (who verifies — partner, friend)</label><input type="text" id="c_ref" placeholder="'+(P&&P.pname?P.pname:"A friend")+'">'
+   +'<label class="f-label">Goal (specific + measurable)</label><input type="text" id="c_goal" placeholder="Finish emergency fund to 4 months by Sep 30">'
+   +'<div class="f-row"><div><label class="f-label">Stake (amount you forfeit)</label><input type="text" id="c_stake" placeholder="\u20B95,000"></div>'
+   +'<div><label class="f-label">Deadline (tap to change)</label><input type="date" id="c_dl" aria-label="Deadline" value="'+dlDef+'"></div></div>'
+   +'<label class="f-label">Referee (who verifies — partner, friend)</label><input type="text" id="c_ref" placeholder="'+(P&&P.pname?P.pname:"A friend")+'">'
    +'<button class="btn btn-p" onclick="addCommit()">Sign Contract</button></div>';
   S.commits.forEach(function(c,i){
     html+='<div class="cmt-card"><div class="cmt-t">'+c.goal+'</div>'
@@ -2062,6 +2062,7 @@ function renderAll(){
       if(d<now) d=new Date(now.getFullYear()+1,month,1), d.setDate(1+((1-d.getDay()+7)%7));
       return d;
     }
+    var calIds=["family-q1","family-q2","family-q3","family-q4"];
     var calLabels=["Blood work","Dental and vision","Children and parents","Closure"];
     var calTicks=checkedArr("k","checkups");
     var calNext=null;
@@ -2074,7 +2075,7 @@ function renderAll(){
     if(calNext){
       var today0=new Date(); today0.setHours(0,0,0,0);
       var calDays=Math.round((calNext.d-today0)/864e5);
-      calHero=heroHTML(calDays," days","Next check-up: "+calLabels[calNext.i],"");
+      calHero=heroHTML(calDays," days","Next check-up: "+(window.gmCalendarName?gmCalendarName(calIds[calNext.i]):calLabels[calNext.i]),"");
     } else {
       calHero=heroHTML("All"," done","Next check-up","");
     }
@@ -5605,7 +5606,7 @@ window.GM_I18N = {"hi":{"_meta":{"locale":"hi-IN","status":"beta","note":"machin
     var h = '<div class="section active">';
     h += heroHTML(GUIDES.length, "how-tos", "Plain steps for every instruction in the map", "");
     h += '<input placeholder="Search guides… (e.g. breathing, band, password)" aria-label="Search guides" oninput="gmGuideFilter(this.value)" '
-      + 'style="width:100%;min-height:44px;margin:0 0 10px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink)">';
+      + 'style="width:100%;min-height:44px;margin:0 0 10px;padding:9px 11px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--ink)">';
     h += '<div class="cat-t">Guides — how to actually do it</div>';
     h += howHTML('Every instruction in the map, explained in plain steps with a visual where it helps — so you act now instead of researching. No internet needed.');
     GUIDES.forEach(function (g) { h += guideCard(g); });
@@ -6659,6 +6660,7 @@ window.GM_I18N = {"hi":{"_meta":{"locale":"hi-IN","status":"beta","note":"machin
       .map(function (e) { var o = Object.assign({}, e); o.start = calFirst(e); o.url = url; return o; });
   }
   window.gmCalendarRegistry = function () { return CALENDAR.map(function (e) { return { id: e.id, group: e.group, v: e.v, retired: e.retired || "" }; }); };
+  window.gmCalendarName = function (id) { var e = CALENDAR.filter(function (x) { return x.id === id; })[0]; return e ? e.name : ""; };
   window.gmCalendarICS = function (group) {
     var now = new Date(), stamp = icsDate(now, now.getHours(), now.getMinutes());
     var title = group === "family" ? "Family health" : group === "rhythm" ? "Life OS rhythm" : "Life OS";

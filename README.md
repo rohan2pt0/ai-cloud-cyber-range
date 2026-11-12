@@ -133,12 +133,12 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 - The Growth daily routine is a loop you run, not a list you read
 - The More sheet uses one hand-drawn line-icon set
+- Health Cal, form labels and the Guides search read calmly
 - The Stack and Guides open with one calm hero
 - Playbook, OKRs, Commit, Health Cal, Kids and Archive open with one calm hero
 - Life Map, Money and Career open with one calm hero
 - "Where the money goes" reads the profile and tells the truth calmly
 - Risk Shield and Pillars open with one calm hero
-- The Wheel of Life never invents a score
 
 **Release 0.3.0 - 2026-10-22:**
 

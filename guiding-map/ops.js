@@ -3110,7 +3110,7 @@
     var h = '<div class="section active">';
     h += heroHTML(GUIDES.length, "how-tos", "Plain steps for every instruction in the map", "");
     h += '<input placeholder="Search guides… (e.g. breathing, band, password)" aria-label="Search guides" oninput="gmGuideFilter(this.value)" '
-      + 'style="width:100%;min-height:44px;margin:0 0 10px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink)">';
+      + 'style="width:100%;min-height:44px;margin:0 0 10px;padding:9px 11px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--ink)">';
     h += '<div class="cat-t">Guides — how to actually do it</div>';
     h += howHTML('Every instruction in the map, explained in plain steps with a visual where it helps — so you act now instead of researching. No internet needed.');
     GUIDES.forEach(function (g) { h += guideCard(g); });
@@ -4164,6 +4164,7 @@
       .map(function (e) { var o = Object.assign({}, e); o.start = calFirst(e); o.url = url; return o; });
   }
   window.gmCalendarRegistry = function () { return CALENDAR.map(function (e) { return { id: e.id, group: e.group, v: e.v, retired: e.retired || "" }; }); };
+  window.gmCalendarName = function (id) { var e = CALENDAR.filter(function (x) { return x.id === id; })[0]; return e ? e.name : ""; };
   window.gmCalendarICS = function (group) {
     var now = new Date(), stamp = icsDate(now, now.getHours(), now.getMinutes());
     var title = group === "family" ? "Family health" : group === "rhythm" ? "Life OS rhythm" : "Life OS";
