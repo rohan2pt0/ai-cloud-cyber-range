@@ -1664,7 +1664,7 @@ function renderGrowth(E){
   h+='<div class="cat-t">\uD83D\uDD17 Pillar leverage — which pillar lifts the North Star most</div>';
   h+='<div class="afp-wrap">';
   var mx=inter[0].lift||1;
-  inter.forEach(function(r){ h+='<div class="afp"><div class="afp-l">'+r.label+'</div><div class="afp-bar"><div style="width:'+(r.lift/mx*100)+'%;background:var(--navy)"></div></div><div class="afp-v">+'+r.lift+'</div></div>'; });
+  inter.forEach(function(r){ h+='<div class="afp"><div class="afp-l">'+r.label+'</div><div class="afp-bar"><div style="width:'+(r.lift/mx*100)+'%;background:linear-gradient(90deg,var(--teal),#1a978a)"></div></div><div class="afp-v">+'+r.lift+'</div></div>'; });
   h+='</div><div class="info">Estimated North-Star points gained per +10 points in each pillar. Spend your limited energy top-down: the highest bar is your best ROI right now.</div>';
   // ---- Habit stack ----
   var hs=habitStack();
