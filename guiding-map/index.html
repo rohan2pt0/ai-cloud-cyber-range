@@ -549,8 +549,8 @@ function load(k){ var r; try{ var s=localStorage.getItem(k); r=s?JSON.parse(s):(
 function wipe(){ try{ localStorage.removeItem("sovP"); localStorage.removeItem("sovS"); localStorage.removeItem("sovStamp"); }catch(e){} MEM={}; }
 
 var P = null;
-var S = { checked:{}, vals:{}, archived:[], pts:0, daily:{}, wheel:null, okrs:[], commits:[], pdMatch:false, wheelBase:null };
-function migrate(){ S.daily=S.daily||{}; S.okrs=S.okrs||[]; S.strengths=S.strengths||[]; S.okrDropped=S.okrDropped||[]; S.okrs.forEach(function(o){ if(!o.at)o.at=Date.now(); }); S.commits=S.commits||[]; S.checked=S.checked||{}; S.vals=S.vals||{}; S.archived=S.archived||[]; S.pts=S.pts||0; if(S.pdMatch===undefined)S.pdMatch=false; S.snaps=S.snaps||[]; S.integrations=S.integrations||{}; S.intData=S.intData||{}; S.intOverride=S.intOverride||{}; if(!S.themeChosen)S.theme=undefined; /* follow the phone until the person picks a theme */ }
+var S = { checked:{}, vals:{}, valsAt:{}, archived:[], pts:0, daily:{}, wheel:null, okrs:[], commits:[], pdMatch:false, wheelBase:null };
+function migrate(){ S.daily=S.daily||{}; S.okrs=S.okrs||[]; S.strengths=S.strengths||[]; S.okrDropped=S.okrDropped||[]; S.okrs.forEach(function(o){ if(!o.at)o.at=Date.now(); }); S.commits=S.commits||[]; S.checked=S.checked||{}; S.vals=S.vals||{}; S.valsAt=S.valsAt||{}; S.archived=S.archived||[]; S.pts=S.pts||0; if(S.pdMatch===undefined)S.pdMatch=false; S.snaps=S.snaps||[]; S.integrations=S.integrations||{}; S.intData=S.intData||{}; S.intOverride=S.intOverride||{}; if(!S.themeChosen)S.theme=undefined; /* follow the phone until the person picks a theme */ }
 // ============== 10 LIFE-CHANGING PRINCIPLES ==============
 var PRINCIPLES = {
   pareto:    "Pareto 80/20 — one of your high-leverage moves: 20% of actions driving 80% of the result.",
@@ -1410,7 +1410,9 @@ function kidStage(k){
 function key(t,id){return t+":"+id;}
 function checkedArr(t,id){return S.checked[key(t,id)]||[];}
 function sysPct(item,t){var c=checkedArr(t,item.id).length;return item.steps.length?Math.round(c/item.steps.length*100):0;}
-function kVal(k){ if(k.auto) return k.val; var v=S.vals[k.id]; return (v===undefined)?k.val:v; }
+// A measure whose goal is exactly its checklist has nothing to type: the boxes count it.
+function countsItself(k){ return !!(k&&k.steps&&k.steps.length&&k.base===0&&k.goal===k.steps.length); }
+function kVal(k){ if(k.auto) return k.val; if(countsItself(k)) return checkedArr("k",k.id).length; var v=S.vals[k.id]; return (v===undefined)?k.val:v; }
 function kPct(k){var r=k.goal-k.base;var d=kVal(k)-k.base;return Math.min(100,Math.max(0,Math.round(d/r*100)));}
 function combinedPct(k){ return Math.round(kPct(k)*0.5 + sysPct(k,"k")*0.5); }
 function statusOf(p){return p>=70?"on":p>=40?"caution":"behind";}
@@ -1422,6 +1424,7 @@ function tg(t,i,si){
   var arr=S.checked[kk]||(S.checked[kk]=[]);
   var pos=arr.indexOf(si);
   if(pos>=0){arr.splice(pos,1);S.pts=Math.max(0,S.pts-10);} else {arr.push(si);S.pts+=10;}
+  if(t==="k"&&countsItself(item)) S.vals[item.id]=arr.length;
   store("sovS",S); stamp(); renderModalBody(); renderAll();
 }
 function archiveItem(){
@@ -1477,10 +1480,7 @@ function addKR(oi){
     store("sovS",S); renderAll();
   });
 }
-function setKR(oi,ki,v){ var k=S.okrs[oi].krs[ki]; k.v=+v; k.at=Date.now(); store("sovS",S);
-  var el=document.getElementById("krv"+oi+"_"+ki); if(el)el.textContent=(+v).toFixed(1);
-  var g=document.getElementById("og"+oi); if(g){var gr=okrGrade(oi);g.textContent=gr.toFixed(2);g.style.color=gr>=0.6&&gr<=0.85?"var(--green)":gr<0.4?"var(--red)":"var(--amber)";}
-}
+function setKR(oi,ki,v){ var k=S.okrs[oi].krs[ki]; k.v=+v; k.at=Date.now(); store("sovS",S); renderAll(); }
 function setKRNow(oi,ki,v){ var k=S.okrs[oi].krs[ki]; if(v===""||isNaN(+v))return; k.c=+v; k.v=krFrac(k); k.at=Date.now(); store("sovS",S); renderAll(); }
 function setOKRStrength(oi,v){ S.okrs[oi].s=v; S.okrs[oi].at=Date.now(); store("sovS",S); }
 function okrGrade(oi){ var k=S.okrs[oi].krs; if(!k.length)return 0; return k.reduce(function(s,x){return s+krFrac(x);},0)/k.length; }
@@ -1912,8 +1912,12 @@ function renderOKR(){
          +'<div style="height:8px;border-radius:4px;background:var(--cardAlt);margin-top:6px"><div class="gm-fill" style="height:8px;border-radius:4px;width:'+Math.round(f*100)+'%"></div></div>'
          +'<div class="kr-v">score: <span id="krv'+oi+'_'+ki+'">'+f.toFixed(1)+'</span> / 1.0</div></div>';
       } else {
-        html+='<input type="range" min="0" max="1" step="0.1" value="'+kr.v+'" oninput="setKR('+oi+','+ki+',this.value)">'
-         +'<div class="kr-v">score: <span id="krv'+oi+'_'+ki+'">'+kr.v.toFixed(1)+'</span> / 1.0</div></div>';
+        var v=+kr.v||0;
+        html+='<div class="chips">'+[["Not started",0],["Started",0.3],["Halfway",0.5],["Nearly",0.8],["Done",1]].map(function(c){
+          var on=Math.abs(v-c[1])<0.05;
+          return '<button type="button" class="chip'+(on?' on':'')+'" aria-pressed="'+(on?'true':'false')+'" onclick="setKR('+oi+','+ki+','+c[1]+')">'+c[0]+'</button>';
+        }).join("")+'</div>'
+         +'<div class="kr-v">score: <span id="krv'+oi+'_'+ki+'">'+v.toFixed(1)+'</span> / 1.0</div></div>';
       }
     });
     html+='<div style="display:flex;gap:8px;margin-top:10px">'
@@ -2177,10 +2181,19 @@ function renderModalBody(){
   var sp=sysPct(item,actType);
   document.getElementById("m_s").textContent=isK?("Now: "+kVal(item)+item.unit+"  \u2192  2030 goal: "+item.goal+item.unit+"  \u00B7  System "+sp+"% complete"):("Coverage = checklist: "+sp+"% \u00B7 "+checkedArr("r",item.id).length+" of "+item.steps.length+" done");
   var sl="";
-  if(isK&&!item.auto){
+  if(isK&&!item.auto&&countsItself(item)){
     sl='<div class="mval" id="mv">'+kVal(item)+item.unit+'</div>'
-     +'<input type="range" min="'+item.base+'" max="'+item.goal+'" step="'+((item.goal-item.base)>20?1:0.5)+'" value="'+kVal(item)+'" oninput="slide(this.value)">'
-     +'<div class="rv"><span>'+item.base+'</span><span>'+item.goal+'</span></div>';
+     +'<div class="rv"><span style="margin:0 auto">Counts itself from the boxes below</span></div>';
+  } else if(isK&&!item.auto){
+    var v=kVal(item), at=S.valsAt&&S.valsAt[item.id], stepped=valStep(item);
+    sl='<div class="mval" id="mv">'+v+item.unit+'</div>'
+     +'<div style="display:flex;align-items:center;gap:8px">'
+     +'<button type="button" class="btn-sm" aria-label="Decrease" style="width:44px;height:44px;padding:0;font-size:20px;line-height:1;background:var(--cardAlt);color:var(--text)" onclick="nudgeVal(-1)">\u2212</button>'
+     +'<input type="number" inputmode="decimal" aria-label="Value" min="'+item.base+'" max="'+item.goal+'" step="'+stepped+'" value="'+v+'" style="flex:1;min-width:0;padding:10px;text-align:center;font-size:18px;font-weight:700;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--text)" onchange="slide(this.value)">'
+     +'<button type="button" class="btn-sm" aria-label="Increase" style="width:44px;height:44px;padding:0;font-size:20px;line-height:1;background:var(--cardAlt);color:var(--text)" onclick="nudgeVal(1)">+</button>'
+     +'</div>'
+     +'<div class="rv"><span>'+item.base+'</span><span>'+item.goal+'</span></div>'
+     +(at?'<div class="rv"><span style="margin:0 auto">Updated '+Math.max(0,Math.floor((Date.now()-at)/864e5))+' days ago</span></div>':'');
   } else if(isK){
     sl='<div class="mval">'+kVal(item)+item.unit+'</div><div class="rv"><span style="margin:0 auto">auto-calculated from your profile</span></div>';
   }
@@ -2202,11 +2215,16 @@ function renderModalBody(){
   else if(nearly){ btn.style.display="block"; btn.textContent="Archive Anyway \uD83C\uDFC6"; }
   else btn.style.display="none";
 }
+function valStep(item){ return (item.goal-item.base)>20?1:0.5; }
+function nudgeVal(dir){
+  var item=KPIs[actIdx]; if(!item) return;
+  var v=Math.max(item.base,Math.min(item.goal,Math.round((kVal(item)+dir*valStep(item))*100)/100));
+  slide(v);
+}
 function slide(v){
   var item=KPIs[actIdx];
-  S.vals[item.id]=+v; store("sovS",S); stamp();
-  document.getElementById("mv").textContent=v+item.unit;
-  renderAll();
+  S.vals[item.id]=+v; S.valsAt[item.id]=Date.now(); store("sovS",S); stamp();
+  renderModalBody(); renderAll();
 }
 
 // ============== INIT ==============
