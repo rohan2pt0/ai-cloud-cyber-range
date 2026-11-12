@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Changed
+- Life OS luxury slice 1: section titles in the editorial serif, calm labels instead of capitals, numbers that line up, and a gentle entrance (cards rise, the hero number counts up) on opening a screen only, never while working and never for reduced motion. `test77.js` holds it.
 - Life OS: checklists celebrate a done step (a soft teal glass row) instead of crossing it out; checklist, tip and common cards get the glass finish in both themes; contrast audit 0 failures.
 - Life OS: a glass look for the big daily surfaces (done tiles of the daily three, the all-done card, large notes), in both themes; contrast audit 0 failures.
 - **The Life OS has no sliders left.** A pillar measure whose goal is its checklist now counts its own ticked boxes; any other measure is a number box between 44px − and + buttons with "Updated N days ago"; and each OKR key result is five plain chips (Not started, Started, Halfway, Nearly, Done). `test75.js` holds it.

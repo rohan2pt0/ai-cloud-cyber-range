@@ -4251,7 +4251,7 @@ window.GM_SYSTEMS = {"version":1,"verified":"2026-11-12","note":"Life systems: o
       h += '<div role="button" tabindex="0" aria-label="' + esc(v.l) + ': ' + esc(v.v) + (st ? " (" + st + ")" : "") + '. Open the tab that changes this."'
         + ' onclick="goTab(\'' + v.t + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();goTab(\'' + v.t + '\');}"' + (st ? ' data-state="' + st + '"' : "") + '>'
         + '<div class="gm-vv" style="font-size:15px;white-space:nowrap;font-weight:600;color:var(--text);line-height:1.15;font-variant-numeric:tabular-nums">' + dot + v.v + '</div>'
-        + '<div style="font-size:9px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);font-weight:600;margin-top:3px;white-space:nowrap">' + v.l + '</div>' + (st === "low" ? '<div style="font-size:10px;font-weight:600;letter-spacing:.04em;color:var(--muted);margin-top:2px">low</div>' : "") + '</div>';
+        + '<div style="font-size:10.5px;color:var(--muted);font-weight:600;margin-top:3px;white-space:nowrap">' + v.l + '</div>' + (st === "low" ? '<div style="font-size:10px;font-weight:600;letter-spacing:.04em;color:var(--muted);margin-top:2px">low</div>' : "") + '</div>';
     });
     return h + '</div>';
   }
@@ -7702,6 +7702,18 @@ window.GM_SYSTEMS = {"version":1,"verified":"2026-11-12","note":"Life systems: o
       + "html[data-theme=dark] .tip-box strong{color:var(--teal)}"
       + "html[data-theme=dark] .tip-box{background:linear-gradient(135deg,rgba(26,151,138,.20),rgba(26,151,138,.06)),var(--card);border-color:rgba(45,212,191,.2);box-shadow:none}"
       + "html[data-theme=dark] #sections .road-col,html[data-theme=dark] #sections .okr-card{background:linear-gradient(180deg,rgba(255,255,255,.045),rgba(255,255,255,.015)),var(--card);border-color:rgba(255,255,255,.07);box-shadow:inset 0 1px 0 rgba(255,255,255,.05)}"
+      // Luxury slice 1 (owner, 2026-11-12): an editorial serif for section titles, calm labels, numbers that line up,
+      // and a gentle entrance on the first render of a screen only. Nothing moves for a person who asks for less motion.
+      + "#sections .cat-t{font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:24px;letter-spacing:-.005em;line-height:1.15;color:var(--text);margin:20px 0 10px}"
+      + ".gm-d3 .t{text-transform:none!important;letter-spacing:0!important;font-weight:600!important;font-size:13px!important}"
+      + ".road-h{text-transform:none;letter-spacing:0}"
+      + ".gm-hero-n,.hs .n,.gm-vv,.mval{font-variant-numeric:tabular-nums lining-nums}"
+      + "@keyframes gmrise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}"
+      + "#sections.gm-first .section.active>*{animation:gmrise .22s cubic-bezier(.2,.8,.2,1) both}"
+      + "#sections.gm-first .section.active>*:nth-child(2){animation-delay:.03s}#sections.gm-first .section.active>*:nth-child(3){animation-delay:.06s}"
+      + "#sections.gm-first .section.active>*:nth-child(4){animation-delay:.09s}#sections.gm-first .section.active>*:nth-child(5){animation-delay:.12s}"
+      + "#sections.gm-first .section.active>*:nth-child(6){animation-delay:.15s}"
+      + "@media (prefers-reduced-motion: reduce){#sections.gm-first .section.active>*{animation:none}}"
       + ".gm-d3 .chk{width:24px;height:24px;border-radius:50%;border:2px solid var(--muted);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900}"
       + ".gm-d3 .tile.on .chk{background:var(--green);border-color:var(--green);color:#fff}"
       + "html[data-theme=dark] .gm-d3 .tile.on .chk{color:#0b111c}"
@@ -9184,11 +9196,33 @@ window.GM_SYSTEMS = {"version":1,"verified":"2026-11-12","note":"Life systems: o
     return out;
   }
   var _drawnTab = null;
+  function gmCalmMotion() { try { return window.matchMedia("(prefers-reduced-motion: reduce)").matches; } catch (e) { return false; } }
+  // The first render of a screen: a soft rise for the cards, and the hero number counts up (600 ms, ease-out).
+  function gmFirstRender() {
+    var box = document.getElementById("sections"); if (!box) return;
+    box.setAttribute("data-first", String(Date.now()));
+    if (gmCalmMotion()) return;
+    box.classList.add("gm-first"); setTimeout(function () { box.classList.remove("gm-first"); }, 450);
+    var el = box.querySelector(".gm-hero-n"); if (!el || !window.requestAnimationFrame) return;
+    var m = String(el.textContent).match(/^(\D*?)(\d[\d,]*(?:\.\d+)?)(\D*)$/); if (!m) return;
+    var target = parseFloat(m[2].replace(/,/g, "")); if (!isFinite(target) || target <= 0) return;
+    var dec = (m[2].split(".")[1] || "").length, commas = m[2].indexOf(",") >= 0, t0 = 0, final = el.textContent;
+    function fmt(v) { var x = v.toFixed(dec); return commas ? Number(x).toLocaleString("en-IN", { minimumFractionDigits: dec, maximumFractionDigits: dec }) : x; }
+    function step(ts) {
+      if (!t0) t0 = ts;
+      var k = Math.min(1, (ts - t0) / 600), e = 1 - Math.pow(1 - k, 3);
+      if (!el.isConnected) return;
+      el.textContent = k < 1 ? m[1] + fmt(target * e) + m[3] : final;
+      if (k < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
   window.renderAll = function () {
     var tab = typeof curTab !== "undefined" ? curTab : "", same = tab === _drawnTab;
     var keys = same ? gmOpenKeys() : [], y = same ? (window.scrollY || 0) : 0;
     _renderKeep.apply(this, arguments);
     _drawnTab = tab;
+    if (!same) { try { gmFirstRender(); } catch (e) {} }
     if (!same || !keys.length && !y) return;   // a new tab starts fresh
     var box = document.getElementById("sections"), seen = {};
     if (box) {
