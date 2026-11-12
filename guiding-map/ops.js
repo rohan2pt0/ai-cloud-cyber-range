@@ -1346,46 +1346,59 @@
 
   /* ── 22. MONEY FLOW — one bar you read in a second, with healthy-band meters ────── */
   function flowHTML() {
-    var l = life(), inc = num(l.minc);
+    var l = life(), pr = profOK() ? P : null;
+    var emis = pr ? (pr.loans || []).reduce(function (a, x) { return a + num(x && x.emi); }, 0) : 0;
+    var inc = num(l.minc), incFromP = false;
+    if (!inc && pr && num(pr.net)) { inc = num(pr.net); incFromP = true; }
     if (!inc) {
       return '<div class="cat-t">\u{1F4B8} Where the money goes</div>'
-        + '<div class="info">Add your monthly take-home and the four standing outflows to draw the flow. Five numbers, once.</div>'
+        + '<div class="info">Add your take-home to see where it goes.</div>'
         + '<div class="road-col">'
         + '<label class="f-label">Monthly take-home (₹)</label><input inputmode="decimal" aria-label="Monthly take-home (₹)" value="" onchange="gmLifeSet(\'minc\',this.value)">'
         + '</div>';
     }
     var rupee = function (v) { return "₹" + Number(v || 0).toLocaleString("en-IN"); };
     var pc = function (v) { return Math.round(v / inc * 100); };
+
+    // Ask once: when the plan is empty, the profile already knows the spending, the loan EMIs and the take-home.
+    var fixed = num(l.fFixed), loan = num(l.fLoan), ef = num(l.fEF), sip = num(l.fSip), fixedFromP = false, saveFromP = false;
+    if (!fixed && pr) { fixed = num(pr.exp) + emis; fixedFromP = true; }
+    var save = ef + sip;
+    if (!ef && !sip && pr) { save = Math.max(0, num(pr.net) - num(pr.exp) - emis); saveFromP = true; }
+    var fromP = function (on) { return on ? ' <span class="flowfrom">from your profile</span>' : ""; };
+
     var parts = [
-      ["Fixed costs", num(l.fFixed), "#475569"],
-      ["Family loans", num(l.fLoan), "#9a3412"],
-      ["Emergency fund", num(l.fEF), "#0f766e"],
-      ["Investing", num(l.fSip), "#15803d"]
+      ["Fixed costs", fixed, "var(--flow1)", fixedFromP],
+      ["Family loan", loan, "var(--flow2)", false],
+      ["Saving & investing", save, "var(--flow3)", saveFromP]
     ];
-    var used = parts.reduce(function (a, b) { return a + b[1]; }, 0);
+    var used = fixed + loan + save;
     var free = Math.max(0, inc - used);
-    parts.push(["Guilt-free", free, "#6d28d9"]);
-    var shown = parts.filter(function (p) { return p[1] > 0; });
+    parts.push(["Guilt-free", free, "var(--flow4)", false]);
+    var barParts = parts.filter(function (p) { return p[1] > 0; });
+    var legendParts = parts.filter(function (p) { return p[1] > 0 || p[0] === "Guilt-free"; });
 
     // The whole take-home as ONE bar, split by share; it wipes in left-to-right.
-    var bar = '<div class="flowbar">' + shown.map(function (p, i) {
+    var bar = '<div class="flowbar">' + barParts.map(function (p, i) {
       return '<div class="flowseg" style="flex:' + p[1] + ';background:' + p[2] + ';animation-delay:' + (0.1 + i * 0.08).toFixed(2) + 's" title="' + esc(p[0]) + ' ' + pc(p[1]) + '%">'
-        + (pc(p[1]) >= 9 ? '<span>' + pc(p[1]) + '%</span>' : '') + '</div>';
+        + (pc(p[1]) >= 12 ? '<span>' + pc(p[1]) + '%</span>' : '') + '</div>';
     }).join("") + '</div>';
-    var legend = shown.map(function (p) {
-      return '<div class="flowrow"><span class="flowdot" style="background:' + p[2] + '"></span><span class="flowname">' + esc(p[0])
+    var legend = legendParts.map(function (p) {
+      return '<div class="flowrow"><span class="flowdot" style="background:' + p[2] + '"></span><span class="flowname">' + esc(p[0]) + fromP(p[3])
         + '</span><span class="flowamt">' + rupee(p[1]) + '</span><span class="flowpc">' + pc(p[1]) + '%</span></div>';
     }).join("");
 
-    var fixPct = pc(num(l.fFixed)), savRate = pc(num(l.fEF) + num(l.fSip)), freePct = pc(free);
-    // A band meter: the healthy range shaded, a bar grows to where you are, green in-band / amber-or-red out.
+    var fixPct = pc(fixed), savRate = pc(save), freePct = pc(free);
+    // A band meter: the healthy range is a soft grey band; your value is a dot; only the status word carries colour.
     function meter(label, val, lo, hi, kind, note) {
       var inBand = kind === "ceiling" ? val <= hi : kind === "floor" ? val >= lo : (val >= lo && val <= hi);
-      var col = inBand ? "var(--green)" : (val < lo ? "var(--amber)" : "var(--red)");
+      var status = inBand ? "In range" : (val < lo ? "Low" : "High");
+      var col = inBand ? "var(--green)" : status === "High" ? "var(--red)" : "var(--amber)";
       var cl = function (p) { return Math.max(0, Math.min(100, p)); };
-      return '<div class="meter"><div class="meter-top"><span>' + label + '</span><b style="color:' + col + '">' + val + '%</b></div>'
+      return '<div class="meter"><div class="meter-top"><span>' + label + '</span>'
+        + '<span class="meter-val">' + val + '% <b class="meter-status" style="color:' + col + '">' + status + '</b></span></div>'
         + '<div class="meter-track"><div class="meter-band" style="left:' + cl(lo) + '%;width:' + (cl(hi) - cl(lo)) + '%"></div>'
-        + '<div class="meter-fill" style="width:' + cl(val) + '%;background:' + col + '"></div></div>'
+        + '<div class="meter-dot" style="left:' + cl(val) + '%"></div></div>'
         + '<div class="meter-note">' + esc(note) + '</div></div>';
     }
     var meters = meter("Fixed costs", fixPct, 50, 60, "ceiling",
@@ -1398,7 +1411,7 @@
     var F = [["fFixed", "Fixed costs — rent, EMIs, bills, groceries (₹)"], ["fLoan", "Family loan repayment (₹)"],
     ["fEF", "To emergency fund (₹)"], ["fSip", "To SIP / investments (₹)"], ["minc", "Monthly take-home (₹)"]];
     var h = '<div class="cat-t">\u{1F4B8} Where the money goes</div>'
-      + '<div class="road-col reveal" style="margin-top:8px"><div class="flowhead">Every ₹100 of your take-home</div>' + bar
+      + '<div class="road-col reveal" style="margin-top:8px"><div class="flowhead">Every ₹100 of your take-home' + fromP(incFromP) + '</div>' + bar
       + '<div class="flowlegend">' + legend + '</div></div>'
       + '<div class="road-col reveal" style="margin-top:10px">' + meters + '</div>';
     h += '<details class="road-col" style="margin-top:8px"><summary style="cursor:pointer;font-weight:700;font-size:12px">Edit the numbers</summary><div style="margin-top:6px">';
@@ -4677,20 +4690,24 @@
       // ui-rules-lint slice 3: on a wide screen, running text keeps a readable measure (at most ~75 characters a line)
       + "@media (min-width:700px){#sections p,#sections li,#sections div:not(:has(div,table,button,svg,canvas,input,select,textarea,img,ul,ol)){max-width:54ch}}"
       + ".cat-t{font-size:17px;letter-spacing:-.01em}"
+      + ":root{--flow1:#00897b;--flow2:#c27d14;--flow3:#3f62d1;--flow4:#d0582d}"
+      + "html[data-theme=dark]{--flow1:#1a978a;--flow2:#c4851c;--flow3:#5577de;--flow4:#d4613a}"
       + ".flowhead{font-size:12px;color:var(--muted);margin-bottom:6px}"
-      + ".flowbar{display:flex;height:36px;border-radius:10px;overflow:hidden;clip-path:inset(0 100% 0 0);animation:gmwipe .8s cubic-bezier(.2,.85,.25,1) .05s forwards}"
-      + ".flowseg{display:flex;align-items:center;justify-content:center;min-width:2px;opacity:0;animation:gmfade .45s ease forwards}"
-      + ".flowseg span{font-size:11px;font-weight:800;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.45)}"
+      + ".flowbar{display:flex;gap:2px;height:36px;border-radius:8px;overflow:hidden;clip-path:inset(0 100% 0 0);animation:gmwipe .8s cubic-bezier(.2,.85,.25,1) .05s forwards}"
+      + ".flowseg{display:flex;align-items:center;justify-content:center;min-width:2px;border-radius:4px;opacity:0;animation:gmfade .45s ease forwards}"
+      + ".flowseg span{font-size:11px;font-weight:800;color:var(--text);background:var(--card);border-radius:4px;padding:0 4px}"
+      + ".flowfrom{font-size:10.5px;font-weight:600;color:var(--muted);white-space:nowrap}"
       + ".flowlegend{margin-top:10px}.flowrow{display:flex;align-items:center;gap:9px;font-size:13px;padding:4px 0;border-top:1px solid var(--border)}"
       + ".flowrow:first-child{border-top:0}.flowdot{width:11px;height:11px;border-radius:3px;flex:0 0 auto}.flowname{flex:1}.flowamt{color:var(--muted)}.flowpc{font-weight:800;width:42px;text-align:right}"
       + ".meter{margin:10px 0}.meter-top{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:4px}"
+      + ".meter-val{font-weight:700}.meter-status{font-weight:800;margin-left:3px}"
       + ".meter-track{position:relative;height:11px;border-radius:7px;background:var(--bg);overflow:hidden}"
-      + ".meter-band{position:absolute;top:0;bottom:0;background:var(--green);opacity:.2}"
-      + ".meter-fill{position:absolute;top:0;bottom:0;left:0;border-radius:7px;transform-origin:left;animation:gmgrowx .75s cubic-bezier(.2,.85,.25,1) .12s both}"
+      + ".meter-band{position:absolute;top:0;bottom:0;background:var(--muted);opacity:.2}"
+      + ".meter-dot{position:absolute;top:50%;width:12px;height:12px;border-radius:50%;background:var(--text);transform:translate(-50%,-50%)}"
       + ".meter-note{font-size:11.5px;color:var(--muted);margin-top:4px;line-height:1.45}"
       + ".reveal{animation:gmrise .5s cubic-bezier(.2,.8,.2,1) both}"
       + "@keyframes gmwipe{to{clip-path:inset(0 0 0 0)}}@keyframes gmfade{to{opacity:1}}@keyframes gmgrowx{from{transform:scaleX(0)}to{transform:scaleX(1)}}@keyframes gmrise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}"
-      + "@media (prefers-reduced-motion:reduce){.flowbar,.flowseg,.meter-fill,.reveal{animation:none!important;clip-path:none!important;opacity:1!important;transform:none!important}}"
+      + "@media (prefers-reduced-motion:reduce){.flowbar,.flowseg,.reveal{animation:none!important;clip-path:none!important;opacity:1!important;transform:none!important}}"
       + ".btn-sm{border-radius:10px;min-height:40px;font-size:13px;font-weight:700;transition:transform .08s ease,filter .15s ease}"
       + ".btn-sm:active{transform:scale(.98)}.btn-sm:hover{filter:brightness(1.05)}"
       + "#gmToast{bottom:calc(84px + env(safe-area-inset-bottom))!important}"
