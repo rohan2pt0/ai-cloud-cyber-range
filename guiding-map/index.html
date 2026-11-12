@@ -188,9 +188,14 @@ header{background:var(--navy);padding:13px 16px;display:flex;align-items:center;
 /* WHEEL */
 .wheel-wrap{background:var(--card);border-radius:12px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.05);margin-bottom:12px;text-align:center;}
 .wheel-sliders{background:var(--card);border-radius:12px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
-.ws-row{margin-bottom:10px;}
+.ws-row{margin-bottom:12px;}
 .ws-l{display:flex;justify-content:space-between;font-size:11px;font-weight:600;margin-bottom:2px;}
-.ws-row input[type=range]{width:100%;accent-color:var(--teal);margin:0;}
+.ws-hint{font-size:10px;color:var(--muted);font-weight:600;margin:3px 0;}
+.ws-taps{display:flex;gap:4px;flex-wrap:wrap;}
+.ws-tap{min-width:28px;height:28px;padding:0 3px;border-radius:8px;border:1px solid var(--border);background:var(--cardAlt);color:var(--text);font-size:11px;font-weight:700;cursor:pointer;}
+.ws-tap.on{background:var(--teal);color:var(--tealBg);border-color:var(--teal);}
+.ws-gap{font-size:10.5px;color:var(--muted);margin-top:3px;}
+.ws-chip{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--tealBg);color:var(--teal);margin-left:3px;}
 /* COMMIT */
 .cmt-card{background:var(--card);border-radius:12px;padding:13px;margin-bottom:9px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
 .cmt-t{font-size:13px;font-weight:700;}
@@ -1348,27 +1353,55 @@ var WHEEL_DIMS=[["career","Career"],["money","Finances"],["health","Health"],["f
 function whl(i,v){
   if(!S.wheel)S.wheel={};
   S.wheel[WHEEL_DIMS[i][0]]=+v;
+  S.wheelAt=new Date().toISOString().slice(0,10);
   if(!S.wheelBase){S.wheelBase=JSON.parse(JSON.stringify(S.wheel));}
   store("sovS",S);
   var el=document.getElementById("wsv"+i); if(el)el.textContent=v;
+  var row=document.getElementById("wrow"+i);
+  if(row)[].forEach.call(row.querySelectorAll(".ws-tap"),function(b){ var on=+b.getAttribute("data-v")===+v; b.classList[on?"add":"remove"]("on"); });
   drawWheel();
 }
-function wheelVal(i){ return (S.wheel&&S.wheel[WHEEL_DIMS[i][0]])||5; }
+function wheelVal(i){ var v=S.wheel&&S.wheel[WHEEL_DIMS[i][0]]; return (v===undefined||v===null)?null:v; }
+var WHEEL_CAT={career:"car",money:"fin",health:"hlt",family:"soc",growth:"mind"};
+function wheelMeasured(k){
+  var cat=WHEEL_CAT[k]; if(!cat)return null;
+  var ks=KPIs.filter(function(x){return x.cat===cat&&!isArchived("k",x.id)&&(S.vals[x.id]!==undefined||x.auto);});
+  if(!ks.length)return null;
+  var avg=ks.reduce(function(s,x){return s+combinedPct(x);},0)/ks.length;
+  return Math.max(1,Math.min(10,Math.round(avg)/10));
+}
+function whlMeasured(){
+  if(!S.wheel)S.wheel={};
+  var n=0;
+  WHEEL_DIMS.forEach(function(w){ if(S.wheel[w[0]]==null){ var m=wheelMeasured(w[0]); if(m!=null){ S.wheel[w[0]]=m; n++; } } });
+  if(n){
+    S.wheelAt=new Date().toISOString().slice(0,10);
+    if(!S.wheelBase){S.wheelBase=JSON.parse(JSON.stringify(S.wheel));}
+    store("sovS",S);
+  }
+  renderAll();
+}
 function drawWheel(){
   var c=document.getElementById("wheelSvg"); if(!c)return;
   var cx=100,cy=100,R=80,n=WHEEL_DIMS.length;
-  var pts="",axes="",labels="";
+  var axes="",labels="",gaps="",segs="",pts=[],scored=0;
   for(var i=0;i<n;i++){
-    var ang=(Math.PI*2*i/n)-Math.PI/2;
-    var r=R*wheelVal(i)/10;
-    pts+=(cx+r*Math.cos(ang)).toFixed(1)+","+(cy+r*Math.sin(ang)).toFixed(1)+" ";
+    var ang=(Math.PI*2*i/n)-Math.PI/2, v=wheelVal(i);
     axes+='<line x1="'+cx+'" y1="'+cy+'" x2="'+(cx+R*Math.cos(ang)).toFixed(1)+'" y2="'+(cy+R*Math.sin(ang)).toFixed(1)+'" stroke="#e5e7eb" stroke-width="1"/>';
+    if(v!=null){ pts[i]=[(cx+R*v/10*Math.cos(ang)),(cy+R*v/10*Math.sin(ang))]; scored++; }
     var lx=cx+(R+11)*Math.cos(ang), ly=cy+(R+11)*Math.sin(ang);
     labels+='<text x="'+lx.toFixed(1)+'" y="'+ly.toFixed(1)+'" font-size="7" fill="#6b7280" text-anchor="middle">'+WHEEL_DIMS[i][1].split(" ")[0]+'</text>';
   }
+  var allScored=(scored===n), poly="";
+  if(allScored){
+    poly='<polygon points="'+pts.map(function(p){return p[0].toFixed(1)+","+p[1].toFixed(1);}).join(" ")+'" fill="rgba(15,118,110,0.25)" stroke="#0f766e" stroke-width="2"/>';
+  } else {
+    if(scored<n) gaps+='<circle cx="'+cx+'" cy="'+cy+'" r="3" fill="none" stroke="#9ca3af" stroke-width="1.5" stroke-dasharray="1.5,1.5"/>';
+    for(var j=0;j<n;j++){ var k2=(j+1)%n; if(pts[j]&&pts[k2]) segs+='<line x1="'+pts[j][0].toFixed(1)+'" y1="'+pts[j][1].toFixed(1)+'" x2="'+pts[k2][0].toFixed(1)+'" y2="'+pts[k2][1].toFixed(1)+'" stroke="#0f766e" stroke-width="2"/>'; }
+  }
   var rings="";
   [0.25,0.5,0.75,1].forEach(function(f){ rings+='<circle cx="'+cx+'" cy="'+cy+'" r="'+(R*f)+'" fill="none" stroke="#eee" stroke-width="1"/>'; });
-  c.innerHTML=rings+axes+'<polygon points="'+pts+'" fill="rgba(15,118,110,0.25)" stroke="#0f766e" stroke-width="2"/>'+labels;
+  c.innerHTML=rings+axes+poly+gaps+segs+labels;
 }
 
 // ============== COMMITMENT CONTRACTS ==============
@@ -1722,13 +1755,23 @@ function renderOKR(){
 
 function renderWheel(){
   var html='<div class="section active"><div class="cat-t">\u2638 Wheel of Life <span class="pill pill-t">Paul J. Meyer — coaching standard since 1960</span></div>';
-  html+='<div class="info">Rate satisfaction 1-10 on each dimension. The shape shows imbalance instantly — your lowest 1-2 spokes are next quarter\u2019s OKR candidates. Re-rate quarterly.</div>';
+  var last=S.wheelAt?Math.floor((Date.now()-new Date(S.wheelAt).getTime())/864e5):null;
+  html+='<div class="info">'+(last==null?"Not scored yet":"Last scored "+last+" days ago")
+   +'<br>Rate how each area feels, 1 to 10. Score it once a quarter; the quarterly check-in reminds you.</div>';
   html+='<div class="wheel-wrap"><svg id="wheelSvg" viewBox="0 0 200 200" width="240" height="240"></svg></div>';
   html+='<div class="wheel-sliders">';
+  var chips="",meas={};
+  WHEEL_DIMS.forEach(function(w){ var m=wheelMeasured(w[0]); if(m!=null){ meas[w[0]]=m; chips+='<span class="ws-chip">'+w[1].split(" ")[0]+' '+m+'/10</span>'; } });
+  html+='<div class="ws-row"><div class="ws-l"><span>Measured from your numbers</span><span>'+chips+'</span></div>'
+   +(chips?'<button class="btn-sm btn-p" onclick="whlMeasured()">Use the measured scores</button>':'<span class="ws-hint">no data yet</span>')+'</div>';
   WHEEL_DIMS.forEach(function(w,i){
-    var v=wheelVal(i);
-    html+='<div class="ws-row"><div class="ws-l"><span>'+w[1]+'</span><span id="wsv'+i+'">'+v+'</span></div>'
-     +'<input type="range" min="1" max="10" step="1" value="'+v+'" aria-label="'+w[1]+', score 1 to 10" oninput="whl('+i+',this.value)"></div>';
+    var v=wheelVal(i), m=meas[w[0]];
+    var taps='<div class="ws-hint">How it feels</div><div class="ws-taps" id="wrow'+i+'">';
+    for(var t=1;t<=10;t++) taps+='<button type="button" class="ws-tap'+(v===t?" on":"")+'" data-v="'+t+'" aria-label="'+w[1]+': feels '+t+' of 10" onclick="whl('+i+','+t+')">'+t+'</button>';
+    taps+='</div>';
+    html+='<div class="ws-row"><div class="ws-l"><span>'+w[1]+'</span><span id="wsv'+i+'">'+(v==null?"\u2014":v)+'</span></div>'+taps;
+    if(v!=null&&m!=null&&Math.abs(v-m)>=3) html+='<div class="ws-gap">'+(v<m?"Feels lower than your numbers":"Feels higher than your numbers")+'</div>';
+    html+='</div>';
   });
   html+='</div></div>';
   return html;
@@ -1877,7 +1920,7 @@ function renderInsights(E){
     html+=card("\uD83C\uDFAF","Quarterly goal average: "+avg.toFixed(2),avg>0.85?"Consistently above 0.85 — your objectives are too safe. Raise the bar next quarter.":avg<0.4?"Below 0.4 — refocus: cut one objective, halve the KRs.":"In the healthy 0.4-0.85 stretch zone. Grade weekly, adjust monthly."); }
   else html+=card("\uD83C\uDFAF","Set one goal for this quarter (optional)","One to three objectives, graded once a week. The Plan tab takes two minutes.");
   // wheel
-  if(S.wheel){ var lows=[]; WHEEL_DIMS.forEach(function(w,i){ if(wheelVal(i)<=4) lows.push(w[1]); });
+  if(S.wheel){ var lows=[]; WHEEL_DIMS.forEach(function(w,i){ var v=wheelVal(i); if(v!=null&&v<=4) lows.push(w[1]); });
     if(lows.length) html+=card("\u2638","Wheel low spokes: "+lows.join(", "),"Scores \u22644 are next quarter's quarterly-goal candidates. A wheel this uneven does not roll."); }
   // pareto
   var worst=null,wp=101;
@@ -6077,7 +6120,7 @@ window.GM_I18N = {"hi":{"_meta":{"locale":"hi-IN","status":"beta","note":"machin
   function quarterDue() { return !quarterDone() && (new Date().getMonth() % 3 === 0 || !(S.okrs || []).length || !S.wheel); }
   function wheelSuggestions() {
     var dims = (typeof WHEEL_DIMS !== "undefined") ? WHEEL_DIMS : [];
-    var ranked = dims.map(function (w, i) { return { k: w[0], label: w[1], v: wheelVal(i) }; }).sort(function (a, b) { return a.v - b.v; });
+    var ranked = dims.map(function (w, i) { return { k: w[0], label: w[1], v: wheelVal(i) }; }).filter(function (r) { return r.v != null; }).sort(function (a, b) { return a.v - b.v; });
     var out = [];
     ranked.slice(0, 3).forEach(function (r) { if (QSUG[r.k]) out.push({ k: r.k, why: r.label + " is " + r.v + "/10", o: QSUG[r.k].o, krs: QSUG[r.k].krs }); });
     if (!out.some(function (x) { return x.k === "money"; })) {
