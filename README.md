@@ -131,6 +131,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- The Stack and Guides open with one calm hero
 - Life Map, Money and Career open with one calm hero
 - "Where the money goes" reads the profile and tells the truth calmly
 - Risk Shield and Pillars open with one calm hero
@@ -138,7 +139,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - No squashed text, anywhere
 - Life OS Breaks: the days you are both off, with the fewest leave days
 - The Life OS speaks Hindi and Marathi (beta)
-- Every short code a person sees is now explained in plain words
 
 **Release 0.3.0 - 2026-10-22:**
 
