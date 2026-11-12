@@ -32,7 +32,7 @@ setTimeout(() => {
   const buttons = Array.from(sheet.querySelectorAll(".sh button"));
   ok(buttons.length === tiles.length + 1, "one tile per other tab, plus All apps");
   tiles.forEach((t, i) => {
-    const b = buttons[i], gi = b && b.firstElementChild;
+    const b = buttons.find((x) => (x.getAttribute("onclick") || "").indexOf("'" + t[0] + "'") >= 0), gi = b && b.firstElementChild;
     ok(!!b && !!gi && gi.classList.contains("gi") && gi.querySelectorAll("svg").length === 1, t[0] + ": one icon above the label");
     ok(!EMOJI.test(b ? b.textContent : ""), t[0] + ": the tile text has no emoji", b && b.textContent);
     ok(!!b && b.textContent.indexOf(t[1]) >= 0, t[0] + ": the plain label stays");
