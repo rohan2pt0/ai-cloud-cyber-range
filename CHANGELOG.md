@@ -8,6 +8,8 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
+### Changed
+- **The More sheet uses one hand-drawn line-icon set.** Every tab now has a 24x24 stroke icon in the same style as the main navigation, shown above its plain label on the More tiles (gold on dark, text on light), so no tile falls back to an emoji. `test63.js` (88 checks).
 ### Fixed
 - **Life Map, Money and Career open with one calm hero.** The Life Map leads with net worth against the age benchmark as a percent ("Of the net-worth benchmark for your age"), Money leads with the current Prime Directive step out of the total ("Your step in the money sequence") and a button to it, and Career leads with the honest monthly package ("Your honest monthly package"). Their explanations fold under "How this works", the "most-validated money sequence" badge is gone, and status is a coloured dot plus a sentence-case word. `test58.js` (21 checks).
 - **"Where the money goes" reads the profile and tells the truth calmly.** When the plan is empty it takes fixed costs (spending plus loan EMIs), saving and take-home from the profile and says "from your profile" in the legend; with no income it shows "Add your take-home to see where it goes" instead of a 100% guilt-free bar. The bar and legend use a validated four-colour palette (fixed, family loan, saving, guilt-free) with 2 px gaps and 4 px rounded ends, labels inside a segment only from 12% wide, and the values stay in the text colour; the three meters show the healthy band as soft grey with the value as a dot and the status as a word ("In range", "Low", "High") in the one status colour, never a filled red track. `test56.js`.
