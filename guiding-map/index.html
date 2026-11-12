@@ -178,6 +178,7 @@ header{background:var(--navy);padding:13px 16px;display:flex;align-items:center;
 .kc.behind .pfill{background:#ef4444;}
 .kc.caution .pfill{background:var(--gold);}
 .kc.riskc .pfill{background:var(--purple);}
+.gm-fill{background:linear-gradient(90deg,var(--teal),#1a978a);border-radius:inherit;}
 /* TODAY tab */
 .today-date{font-size:12px;font-weight:700;color:var(--navy);margin-bottom:10px;}
 .warn{background:var(--redBg);border:1px solid #fca5a5;border-radius:10px;padding:11px 13px;font-size:11px;color:var(--red);line-height:1.6;margin-bottom:11px;font-weight:600;}
@@ -1311,6 +1312,7 @@ function renderRoutine(){
   var doneMin=blocks.reduce(function(s,b){return s+(gmRoutineDone(b.id)?b.min:0);},0);
   var h='<div class="cat-t">Your daily routine</div>';
   h+='<div class="info" id="routine-progress">'+done.length+' of '+blocks.length+' done today, '+doneMin+' of '+hs.total+' minutes</div>';
+  h+='<div style="height:8px;border-radius:4px;background:var(--cardAlt);margin-bottom:14px;overflow:hidden"><div class="gm-fill" id="routine-fill" style="height:8px;border-radius:4px;width:'+Math.round(doneMin/hs.total*100)+'%"></div></div>';
   if(open){
     var stk=gmRoutineStreak(open.id);
     h+='<div class="routine-card">'
@@ -1794,7 +1796,7 @@ function renderGrowth(E){
   h+='<div class="cat-t">\uD83D\uDD17 Pillar leverage — which pillar lifts the North Star most</div>';
   h+='<div class="afp-wrap">';
   var mx=inter[0].lift||1;
-  inter.forEach(function(r){ h+='<div class="afp"><div class="afp-l">'+r.label+'</div><div class="afp-bar"><div style="width:'+(r.lift/mx*100)+'%;background:linear-gradient(90deg,var(--teal),#1a978a)"></div></div><div class="afp-v">+'+r.lift+'</div></div>'; });
+  inter.forEach(function(r){ h+='<div class="afp"><div class="afp-l">'+r.label+'</div><div class="afp-bar"><div class="gm-fill" style="width:'+(r.lift/mx*100)+'%"></div></div><div class="afp-v">+'+r.lift+'</div></div>'; });
   h+='</div><div class="info">Estimated North-Star points gained per +10 points in each pillar. Spend your limited energy top-down: the highest bar is your best ROI right now.</div>';
   // ---- Daily routine: one open block, the rest folded, done kept as a quiet line ----
   h+=renderRoutine();
@@ -1907,7 +1909,7 @@ function renderOKR(){
         html+='<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12px">from '+kr.b+' to '+kr.g
          +' · now <input type="number" step="any" aria-label="Current value" value="'+kr.c+'" style="width:84px" onchange="setKRNow('+oi+','+ki+',this.value)">'
          +' · '+(left===null?'by '+okEsc(kr.due):left>=0?left+' days left':'<span style="color:var(--red)">'+(-left)+' days overdue</span>')+'</div>'
-         +'<div style="height:8px;border-radius:4px;background:var(--cardAlt);margin-top:6px"><div style="height:8px;border-radius:4px;width:'+Math.round(f*100)+'%;background:var(--green)"></div></div>'
+         +'<div style="height:8px;border-radius:4px;background:var(--cardAlt);margin-top:6px"><div class="gm-fill" style="height:8px;border-radius:4px;width:'+Math.round(f*100)+'%"></div></div>'
          +'<div class="kr-v">score: <span id="krv'+oi+'_'+ki+'">'+f.toFixed(1)+'</span> / 1.0</div></div>';
       } else {
         html+='<input type="range" min="0" max="1" step="0.1" value="'+kr.v+'" oninput="setKR('+oi+','+ki+',this.value)">'
