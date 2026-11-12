@@ -5228,6 +5228,42 @@
       + ".kc.behind .ab{background:linear-gradient(90deg,transparent,#7d1426 20%,#c2394f 50%,#7d1426 80%,transparent)!important;height:2px}"
       + ".kc.caution .ab{background:linear-gradient(90deg,transparent,var(--gold) 20%,var(--goldL) 50%,var(--gold) 80%,transparent)!important;height:2px}"
       + ".stk-k{background:linear-gradient(135deg,#d9b65c 0%,#f3e2a6 42%,#d4af37 70%,#e8c96a 100%)!important;color:#1b1406!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 2px 6px rgba(122,90,20,.18)}"
+      // Glass and enamel for the shared parts (owner, 2026-11-12): money bar, More sheet, chips and small buttons.
+      + ".flowbar{gap:3px;border-radius:12px}"
+      + ".flowseg{border-radius:9px;background-image:linear-gradient(180deg,rgba(255,255,255,.30) 0,rgba(255,255,255,.06) 48%,rgba(0,0,0,.14) 100%)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),inset 0 -1px 0 rgba(0,0,0,.18)}"
+      + ".flowseg span{background:rgba(255,255,255,.82);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border-radius:999px;padding:1px 8px;color:#0d1f35;box-shadow:0 1px 3px rgba(0,0,0,.12)}"
+      + "#gmMoreSheet .sh{background:linear-gradient(180deg,rgba(255,255,255,.92),rgba(246,243,238,.88));-webkit-backdrop-filter:blur(18px) saturate(140%);backdrop-filter:blur(18px) saturate(140%);box-shadow:0 -10px 30px rgba(11,31,53,.18)}"
+      + "#gmMoreSheet .sh button{background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,255,255,.6)),var(--cardAlt)!important;border:1px solid rgba(11,31,53,.07)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 4px 12px rgba(11,31,53,.06)!important;border-radius:16px!important}"
+      + "#gmMoreSheet .sh button .gi{color:#8c6b1f}"
+      + "#gmMoreSheet .sh button.on{border:1px solid #c9a84c!important;box-shadow:inset 0 0 0 1px rgba(232,201,106,.55),0 4px 16px rgba(201,168,76,.28)!important}"
+      + "html[data-theme=dark] #gmMoreSheet .sh{background:linear-gradient(180deg,rgba(28,30,36,.94),rgba(18,20,26,.92))}"
+      + "html[data-theme=dark] #gmMoreSheet .sh button{background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.025)),var(--cardAlt)!important;border-color:rgba(255,255,255,.08)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.07)!important}"
+      + "html[data-theme=dark] #gmMoreSheet .sh button .gi{color:#e8c96a}"
+      + "html[data-theme=dark] #gmMoreSheet .sh button.on{border-color:#c9a84c!important;box-shadow:inset 0 0 0 1px rgba(232,201,106,.35),0 4px 16px rgba(201,168,76,.22)!important}"
+      + ".chip{background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,255,255,.55)),var(--cardAlt);border:1px solid rgba(11,31,53,.08);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 2px 6px rgba(11,31,53,.05)}"
+      + ".chip.on{background:linear-gradient(135deg,#e2c46e 0%,#f3e2a6 42%,#ddb94c 70%,#ecd27e 100%)!important;color:#1b1406!important;border-color:transparent!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 3px 10px rgba(122,90,20,.25)!important}"
+      + "html[data-theme=dark] .chip{background:linear-gradient(180deg,rgba(255,255,255,.08),rgba(255,255,255,.03)),var(--cardAlt);border-color:rgba(255,255,255,.08);box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}"
+      + ".btn-sm,.btn-s{box-shadow:inset 0 1px 0 rgba(255,255,255,.45),0 2px 8px rgba(11,31,53,.07)}"
+      + "html[data-theme=dark] .btn-sm,html[data-theme=dark] .btn-s{box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}"
+      // The rings: a track that suits each theme, a gauge sweep on open (staggered), a glow when a ring closes.
+      + ":root{--ring-track:rgba(11,31,53,.08)}html[data-theme=dark]{--ring-track:rgba(255,255,255,.08)}"
+      + ".gm-rings text{font:700 11px var(--font-ui);fill:var(--text)}"
+      + "@keyframes gmsweep2{from{stroke-dashoffset:var(--c)}to{stroke-dashoffset:var(--o)}}"
+      + ".gm-arc{animation:gmsweep2 .9s cubic-bezier(.2,.8,.2,1) both}.gm-a2{animation-delay:.12s}.gm-a3{animation-delay:.24s}"
+      + ".gm-closed{filter:drop-shadow(0 0 3px rgba(232,201,106,.7))}.gm-a2.gm-closed{filter:drop-shadow(0 0 3px rgba(45,212,191,.7))}.gm-a3.gm-closed{filter:drop-shadow(0 0 3px rgba(224,90,112,.7))}"
+      + "@media (prefers-reduced-motion: reduce){.gm-arc{animation:none}}"
+      + ".gm-hero{position:relative;overflow:hidden;isolation:isolate}"
+      + ".gm-hero::after{content:'';position:absolute;top:-60%;bottom:-60%;left:-30%;width:60%;background:linear-gradient(105deg,transparent 0,rgba(255,255,255,.10) 45%,rgba(243,220,143,.10) 52%,transparent 100%);transform:translateX(calc(60% + var(--sx,0) * 60%)) rotate(8deg);transition:transform .25s ease-out;pointer-events:none;z-index:0}"
+      + ".gm-hero>*{position:relative;z-index:1}"
+      + "@media (prefers-reduced-motion: reduce){.gm-hero::after{transform:translateX(60%) rotate(8deg);transition:none}}"
+      // Backlit at night (owner, 2026-11-12, after a backlit keyboard): in the dark theme the icons glow warm gold, a teal light
+      // leaks from under each tile, and the More sheet sits on a soft aurora. Light theme stays clean, like a backlight in daylight.
+      + "html[data-theme=dark] #gmMoreSheet .sh{background:radial-gradient(120% 55% at 15% 0%,rgba(45,212,191,.13),transparent 60%),radial-gradient(90% 55% at 95% 8%,rgba(201,168,76,.12),transparent 58%),radial-gradient(80% 50% at 50% 100%,rgba(85,119,222,.08),transparent 60%),linear-gradient(180deg,rgba(24,26,32,.96),rgba(14,16,22,.95))}"
+      + "html[data-theme=dark] #gmMoreSheet .sh button{box-shadow:inset 0 1px 0 rgba(255,255,255,.07),inset 0 -12px 18px -14px rgba(45,212,191,.55),0 0 0 1px rgba(45,212,191,.08),0 6px 18px rgba(0,0,0,.35)!important}"
+      + "html[data-theme=dark] #gmMoreSheet .sh button .gi svg{filter:drop-shadow(0 0 3px rgba(232,201,106,.75)) drop-shadow(0 0 10px rgba(232,201,106,.30))}"
+      + "html[data-theme=dark] #gmMoreSheet .sh button.on .gi svg{filter:drop-shadow(0 0 4px rgba(243,220,143,.95)) drop-shadow(0 0 14px rgba(232,201,106,.45))}"
+      + "html[data-theme=dark] #gmNav button svg{filter:drop-shadow(0 0 3px rgba(232,201,106,.35))}"
+      + "html[data-theme=dark] #gmNav button.on svg{filter:drop-shadow(0 0 4px rgba(243,220,143,.85)) drop-shadow(0 0 12px rgba(232,201,106,.35))}"
       + ".gm-d3 .chk{width:24px;height:24px;border-radius:50%;border:2px solid var(--muted);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900}"
       + ".gm-d3 .tile.on .chk{background:var(--green);border-color:var(--green);color:#fff}"
       + "html[data-theme=dark] .gm-d3 .tile.on .chk{color:#0b111c}"
@@ -5356,6 +5392,28 @@
       sp.onanimationend = done; setTimeout(done, 500);   // a ripple never stays behind, even when the animation does not report its end
     }, { passive: 1 });
   }
+  // Checkboxes and folds click too (a soft 4 ms detent, like a watch crown), without the ripple a form control cannot hold.
+  if (!window._gmDetent) {
+    window._gmDetent = 1;
+    document.addEventListener("pointerdown", function (e) {
+      var t = e.target.closest && e.target.closest("input[type=checkbox],summary");
+      if (!t || G("gm_still", false) || !gmHapticsOn()) return;
+      if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+      try { navigator.vibrate(4); } catch (x) {}
+    }, { passive: 1 });
+  }
+  // Tilt sheen (after holographic cards and watch dials): on phones that report orientation without a permission prompt,
+  // the light on hero cards shifts as the phone tilts. Off for reduced motion; nothing is asked of the person.
+  if (!window._gmTilt && typeof window.DeviceOrientationEvent !== "undefined" && typeof DeviceOrientationEvent.requestPermission !== "function") {
+    window._gmTilt = 1;
+    var _tq = false, _tx = 0;
+    window.addEventListener("deviceorientation", function (e) {
+      if (e.gamma == null || (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches)) return;
+      _tx = Math.max(-1, Math.min(1, e.gamma / 30));
+      if (_tq) return; _tq = true;
+      requestAnimationFrame(function () { _tq = false; document.documentElement.style.setProperty("--sx", _tx.toFixed(3)); });
+    }, { passive: true });
+  }
   window.gmHaptic = function (kind) {
     try {
       if (G("gm_still", false) || !gmHapticsOn() || !navigator.vibrate) return;
@@ -5379,10 +5437,24 @@
     var n = DAILY3.filter(function (d) { return done.indexOf(d.id) >= 0; }).length;
     var r = 22, c = 2 * Math.PI * r, off = c * (1 - n / 3);
     var date = new Date().toLocaleDateString(undefined, { weekday: "long", day: "numeric", month: "long" });
-    return welcomeBackHTML() + '<div class="gm-greet"><svg class="gm-ring" width="56" height="56" viewBox="0 0 56 56" role="img" aria-label="' + n + ' of 3 done today">'
-      + '<circle cx="28" cy="28" r="' + r + '" fill="none" stroke="var(--border)" stroke-width="6"/>'
-      + '<circle cx="28" cy="28" r="' + r + '" fill="none" stroke="var(--green)" stroke-width="6" stroke-linecap="round" stroke-dasharray="' + c.toFixed(1) + '" stroke-dashoffset="' + off.toFixed(1) + '" transform="rotate(-90 28 28)"/>'
-      + '<text x="28" y="33" text-anchor="middle">' + n + '/3</text></svg>'
+    // Three rings, after the activity rings people close every day (owner, 2026-11-12): the daily three in gold, the Stack in
+    // teal, the Shield in red velvet. Closing a loop is a strong pull; each ring sweeps in on open and glows when closed.
+    var stp = 0, shp = 0;
+    try { var sv = vitals().filter(function (x) { return x.t === "stack"; })[0]; stp = Math.max(0, Math.min(100, parseInt(sv && sv.v, 10) || 0)); } catch (e) {}
+    try { var rs = RISKS.filter(function (x) { return !isArchived("r", x.id); }); shp = rs.length ? Math.round(rs.reduce(function (a, x) { return a + sysPct(x, "r"); }, 0) / rs.length) : 0; } catch (e) {}
+    function ring(rr, pct, grad, cls) {
+      var cc = 2 * Math.PI * rr, of = cc * (1 - pct / 100);
+      return '<circle cx="34" cy="34" r="' + rr + '" fill="none" stroke="var(--ring-track)" stroke-width="5.5"/>'
+        + '<circle class="gm-arc' + (pct >= 100 ? " gm-closed" : "") + ' ' + cls + '" cx="34" cy="34" r="' + rr + '" fill="none" stroke="url(#' + grad + ')" stroke-width="5.5" stroke-linecap="round"'
+        + ' stroke-dasharray="' + cc.toFixed(1) + '" stroke-dashoffset="' + of.toFixed(1) + '" style="--c:' + cc.toFixed(1) + ';--o:' + of.toFixed(1) + '" transform="rotate(-90 34 34)"/>';
+    }
+    return welcomeBackHTML() + '<div class="gm-greet"><svg class="gm-ring gm-rings" width="68" height="68" viewBox="0 0 68 68" role="img" aria-label="'
+      + n + ' of 3 done today; Stack ' + stp + '%; Shield ' + shp + '%">'
+      + '<defs><linearGradient id="gmRgGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f3dc8f"/><stop offset=".5" stop-color="#c9a84c"/><stop offset="1" stop-color="#e8c96a"/></linearGradient>'
+      + '<linearGradient id="gmRgTeal" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5eead4"/><stop offset="1" stop-color="#0f766e"/></linearGradient>'
+      + '<linearGradient id="gmRgVel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e05a70"/><stop offset="1" stop-color="#7d1426"/></linearGradient></defs>'
+      + ring(28, Math.round(n / 3 * 100), "gmRgGold", "gm-a1") + ring(20.5, stp, "gmRgTeal", "gm-a2") + ring(13, shp, "gmRgVel", "gm-a3")
+      + '<text x="34" y="38" text-anchor="middle">' + n + '/3</text></svg>'
       + '<div><h2>' + esc(part + (fn ? ", " + fn : "")) + '</h2><p>' + esc(date) + ' · ' + (n === 3 ? "today is already a win" : n ? (3 - n) + " left for a win today" : "three small things make today a win") + '</p></div></div>';
   }
 
