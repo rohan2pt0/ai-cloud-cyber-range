@@ -5003,7 +5003,12 @@
       + ".gm-d3 .row{display:flex;gap:10px;margin-top:10px}"
       + ".gm-d3 .tile{flex:1;cursor:pointer;text-align:left;background:var(--cardAlt);border:1.5px solid transparent;border-radius:14px;padding:12px;min-height:96px;transition:background .15s,border-color .15s}"
       + ".gm-d3 .tile:focus-visible{outline:2px solid var(--gold);outline-offset:2px}"
-      + ".gm-d3 .tile.on{background:var(--greenBg);border-color:var(--green)}"
+      // Glass for the big daily surfaces (owner, 2026-11-12): a frosted teal-to-gold tint, a light top edge, a soft float.
+      + ".gm-d3 .tile.on{background:linear-gradient(135deg,rgba(26,151,138,.18) 0%,rgba(26,151,138,.07) 55%,rgba(201,169,97,.12) 100%),var(--card);border:1px solid rgba(26,151,138,.30);box-shadow:inset 0 1px 0 rgba(255,255,255,.65),0 8px 22px rgba(11,95,88,.10);-webkit-backdrop-filter:blur(8px) saturate(140%);backdrop-filter:blur(8px) saturate(140%)}"
+      + "html[data-theme=dark] .gm-d3 .tile.on{background:linear-gradient(135deg,rgba(26,151,138,.22) 0%,rgba(26,151,138,.08) 55%,rgba(201,169,97,.10) 100%),var(--card);border-color:rgba(45,212,191,.28);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 8px 22px rgba(0,0,0,.25)}"
+      + ".gm-d3:has(.tile.on + .tile.on + .tile.on),.gm-d3.gm-d3-all{background:radial-gradient(circle at 85% 0%,rgba(26,151,138,.14),transparent 55%),var(--card)}"
+      + "#sections .info{background:linear-gradient(180deg,rgba(255,255,255,.75),rgba(255,255,255,.45)),var(--tealBg);border:1px solid rgba(26,151,138,.14);box-shadow:inset 0 1px 0 rgba(255,255,255,.7)}"
+      + "html[data-theme=dark] #sections .info{background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02)),var(--card);border-color:rgba(255,255,255,.08);box-shadow:none}"
       + ".gm-d3 .chk{width:24px;height:24px;border-radius:50%;border:2px solid var(--muted);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900}"
       + ".gm-d3 .tile.on .chk{background:var(--green);border-color:var(--green);color:#fff}"
       + "html[data-theme=dark] .gm-d3 .tile.on .chk{color:#0b111c}"
