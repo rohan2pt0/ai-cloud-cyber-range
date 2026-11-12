@@ -131,6 +131,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- The Growth daily routine is a loop you run, not a list you read
 - The Stack and Guides open with one calm hero
 - Life Map, Money and Career open with one calm hero
 - "Where the money goes" reads the profile and tells the truth calmly
@@ -138,7 +139,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - The Wheel of Life never invents a score
 - No squashed text, anywhere
 - Life OS Breaks: the days you are both off, with the fewest leave days
-- The Life OS speaks Hindi and Marathi (beta)
 
 **Release 0.3.0 - 2026-10-22:**
 
