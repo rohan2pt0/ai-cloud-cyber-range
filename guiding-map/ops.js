@@ -3354,17 +3354,18 @@
 
   function askHTML() {
     var h = '<div class="section active">';
-    h += '<div class="cat-t">Ask — your local AI + advisor army</div>';
-    h += '<div class="info">Ask plainly — answered by <b>your own model</b> through the guardrail gateway, kept honest (no made-up numbers). Pick an advisor for a first-draft expert opinion, then confirm anything big with a real professional.</div>';
-    h += '<div id="askStatus" class="info" style="margin-top:8px;display:flex;align-items:center;gap:7px"><span style="color:var(--muted)">●</span> Checking if your local AI is ready…</div>';
+    h += '<div class="cat-t">Ask</div>';
+    h += '<div class="info">Your own AI answers; nothing leaves your machines.</div>';
     h += '<div class="chips" style="margin:8px 0"><button class="chip' + (askAgent === "general" ? " on" : "") + '" data-k="general" aria-pressed="' + (askAgent === "general") + '" onclick="gmAskSet(\'general\')">General</button>';
     ADVISORS.forEach(function (a) { h += '<button class="chip' + (askAgent === a.k ? " on" : "") + '" data-k="' + a.k + '" aria-pressed="' + (askAgent === a.k) + '" onclick="gmAskSet(\'' + a.k + '\')">' + esc(a.n) + '</button>'; });
     h += '</div>';
     h += '<textarea id="askQ" onkeydown="if((event.ctrlKey||event.metaKey)&&event.key===\'Enter\'){event.preventDefault();gmAsk();}" placeholder="e.g. Right-size my emergency fund and term cover (Ctrl+Enter to ask)" style="width:100%;min-height:70px;padding:9px 11px;border:1px solid var(--line,#999);border-radius:10px;background:transparent;color:inherit"></textarea>';
-    h += '<div class="row" style="margin-top:8px;display:flex;gap:8px;align-items:center"><button class="btn btn-p" onclick="gmAsk()">Ask</button><span class="info" style="margin:0;padding:4px 8px">🔒 stays on your machine</span></div>';
+    h += '<div class="row" style="margin-top:8px;display:flex;gap:8px;align-items:center"><button class="btn btn-p" onclick="gmAsk()">Ask</button></div>';
     h += '<div id="askOut" class="info ask-md" style="display:none;margin-top:10px"></div>';
     h += '<div id="askFb" class="row" style="display:none;gap:8px;align-items:center;margin-top:8px"><span class="info" style="margin:0;padding:0">Useful?</span><button class="chip" onclick="gmAskFb(\'up\')">👍</button><button class="chip" onclick="gmAskFb(\'down\')">👎</button><button class="chip" onclick="gmAskCopy()">Copy answer</button><span class="info" style="margin:0;padding:0" id="askFbMsg"></span></div>';
+    h += '<div id="askStatus" class="info" style="margin-top:10px;display:flex;align-items:center;gap:7px"><span style="color:var(--muted)">●</span> Checking if your local AI is ready…</div>';
 
+    h += '<details class="road-col" style="margin-top:14px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">More tools (2)</summary>';
     h += '<details class="road-col" style="margin-top:14px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">🛡 Check before you share (on-device footprint scan)</summary><div style="margin-top:8px">'
       + '<div class="info">Paste a bio/profile/message about yourself — scanned on this device for over-shared identifiers. Nothing is sent.</div>'
       + '<textarea id="guardQ" placeholder="Paste text about yourself…" style="width:100%;min-height:60px;padding:9px 11px;border:1px solid var(--line,#999);border-radius:10px;background:transparent;color:inherit"></textarea>'
@@ -3374,8 +3375,9 @@
       + '<div class="info">Paste the top items you collected (Reddit Top/All-time, best-sellers, top videos) — one per line, best first. Get what the crowd agrees on. On-device.</div>'
       + '<textarea id="intelItems" placeholder="e.g.\nPassed CCSP! Pete Zerger videos + LEARNZAPP\nCCSP: Pete Zerger + LEARNZAPP, Sybex for depth" style="width:100%;min-height:60px;padding:9px 11px;border:1px solid var(--line,#999);border-radius:10px;background:transparent;color:inherit"></textarea>'
       + '<input id="intelVocab" placeholder="Names you saw repeating (comma-separated) — optional" style="width:100%;margin-top:6px;padding:9px 11px;border:1px solid var(--line,#999);border-radius:10px;background:transparent;color:inherit">'
-      + '<button class="btn btn-s" onclick="gmIntelGo()" style="margin-top:8px">Find the consensus</button><div id="intelOut" style="margin-top:8px"></div></div></details>';
+      + '<button class="btn btn-s" onclick="gmIntelGo()" style="margin-top:8px">Find the consensus</button><div id="intelOut" style="margin-top:8px"></div></div></details></details>';
 
+    h += '<details class="road-col" id="askConn" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">Connection (set once)</summary>';
     h += '<details class="road-col" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">⤢ Launch the estate</summary><div style="margin-top:8px" class="info">'
       + 'With the estate running on your laptop (double-click START-HERE): '
       + '<a href="' + estateUrl("chat", 3000) + '" target="_blank" rel="noopener">Unified chat</a> · '
@@ -3389,6 +3391,7 @@
       + '<div style="margin-top:8px">Gateway key <span style="color:var(--muted)">(only if sign-in is switched on for your estate; stays on this device)</span>: '
       + '<input id="askKeyIn" type="password" autocomplete="off" aria-label="Estate key" value="' + esc(G("gm_ask_key", "")) + '" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid var(--line,#999);border-radius:8px;background:transparent;color:inherit">'
       + '<button class="btn btn-s" onclick="gmAskKeySave()" style="margin-top:6px">Save key</button></div></div>';
+    h += '</details>';
     return h + '</div>';
   }
   // Switch advisor in place: no re-render, so a half-typed question is never wiped.
@@ -3425,6 +3428,12 @@
   window.gmMdLite = mdLite;
   window.gmAskKeySave = function () { S_("gm_ask_key", (document.getElementById("askKeyIn").value || "").trim()); renderAll(); };
   window.gmAskGwSave = function () { var v = (document.getElementById("askGwIn").value || "").trim(); if (v) S_("gm_ask_gw", v); renderAll(); };
+  // "Set up once" opens the one Connection fold and brings it into view.
+  window.gmAskShowConn = function () {
+    var el = document.getElementById("askConn"); if (!el) return;
+    el.open = true;
+    if (el.scrollIntoView) { try { el.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) { el.scrollIntoView(); } }
+  };
   // Plain-language readiness: the user double-clicks START-HERE and the page tells them,
   // in their own words, whether the AI is on, still warming up, or not running — so an
   // early-opened page is never a silent, confusing dead end. Colours match the status dots.
@@ -3439,12 +3448,12 @@
       .then(function (r) {
         done = true;
         el.innerHTML = r && r.ok
-          ? askStatusHTML("green", "Local AI is <b>ready</b> — ask anything below. Nothing leaves your machine.")
-          : askStatusHTML("amber", "Gateway is up, but the model may still be loading (first run downloads ~1 GB, about 2–5 min). Try your question in a minute.");
+          ? askStatusHTML("green", "Ready: your own AI is on")
+          : askStatusHTML("amber", "Your own AI is starting (first run downloads ~1 GB, about 2–5 min). Try your question in a minute.");
       })
       .catch(function () {
         done = true;
-        el.innerHTML = askStatusHTML("muted", "AI is off right now — double-click <b>START-HERE</b> on your laptop to turn it on. Everything else on this page works offline.");
+        el.innerHTML = askStatusHTML("muted", "Needs your SecuRAX laptop running. <button class=\"gm-link\" style=\"min-height:44px;padding:0 6px\" onclick=\"gmAskShowConn()\">Set up once</button>");
       });
   };
   // An Ask error as an alert (premium.alerts): what happened as the title, why and the next step as the body.
