@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Changed
+- Life OS: checklists celebrate a done step (a soft teal glass row) instead of crossing it out; checklist, tip and common cards get the glass finish in both themes; contrast audit 0 failures.
 - Life OS: a glass look for the big daily surfaces (done tiles of the daily three, the all-done card, large notes), in both themes; contrast audit 0 failures.
 - **The Life OS has no sliders left.** A pillar measure whose goal is its checklist now counts its own ticked boxes; any other measure is a number box between 44px − and + buttons with "Updated N days ago"; and each OKR key result is five plain chips (Not started, Started, Halfway, Nearly, Done). `test75.js` holds it.
 - Life OS: a shared fact ticked once now reads the same in the Stack, the Shield and the NIST CSF self-score (password manager, 2FA, backups tested, incident plan, account alerts, will, term, health and vehicle cover); a manual CSF score wins and its Auto chip restores the derived one. `test74.js` (25 checks).
