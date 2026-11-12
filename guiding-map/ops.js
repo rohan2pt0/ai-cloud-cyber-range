@@ -271,17 +271,72 @@
     ["RS", "Respond", "A written incident plan for lost phone, lost laptop, drained account \u2014 numbers to call, in order, offline."],
     ["RC", "Recover", "Tested restores: your backups actually open, your family can reach your accounts, nothing depends only on you."]
   ];
+
+  /* ── 7b. Shared facts: tick once, see it in the Stack, Shield and CSF ──
+     One state per fact in gm_links. A stored state wins in every linked place,
+     so the latest action (tick or untick) is the one people see. */
+  var LINKS = [
+    { id: "password-manager", label: "Password manager",
+      stack: /password manager/i, shield: { risk: "r_cyber", rx: /Bitwarden/i }, csf: "PR" },
+    { id: "two-factor", label: "Two-factor sign-in",
+      stack: /\b2FA\b/i, shield: { risk: "r_cyber", rx: /2FA via app/i }, csf: "PR" },
+    { id: "backups-tested", label: "Backups tested", csf: "RC" },
+    { id: "incident-plan", label: "Written incident plan", csf: "RS" },
+    { id: "account-alerts", label: "Bank and credit alerts", csf: "DE" },
+    { id: "will", label: "A signed will",
+      stack: /wills with a guardianship/i, shield: { risk: "r_legal", rx: /Signed with 2 non-beneficiary witnesses/i }, csf: "" },
+    { id: "term-cover", label: "Term life cover",
+      stack: /pure term life/i, shield: { risk: "r_life", rx: /pure TERM for the full amount/i }, csf: "" },
+    { id: "health-cover", label: "Health insurance",
+      stack: /health cover:/i, shield: { risk: "r_health", rx: /Floater/i }, csf: "" },
+    { id: "vehicle-cover", label: "Third-party vehicle cover",
+      shield: { risk: "r_vehicle", rx: /Third-party cover valid/i }, csf: "" }
+  ];
+  window.GM_LINKS = LINKS;
+  function gmLinks() { return G("gm_links", {}) || {}; }
+  function factDone(id) { var l = gmLinks()[id]; return !!(l && l.done); }
+  function setFact(id, done, src) {
+    var l = gmLinks(), f = null;
+    l[id] = { done: !!done, src: src, at: new Date().toISOString() }; S_("gm_links", l);
+    LINKS.forEach(function (x) { if (x.id === id) f = x; });
+    if (!f || !f.stack) return;
+    var st = stackState();
+    STACK.forEach(function (L) {
+      L.items.forEach(function (it, i) {
+        if (!rxTest(f.stack, it)) return;
+        st[L.id] = st[L.id] || {}; st[L.id][i] = !!done;
+      });
+    });
+    S_("gm_stack", st);
+  }
+  function rxTest(rx, s) { if (!rx) return false; try { return rx.test(String(s == null ? "" : s)); } catch (e) { return false; } }
+  function csfFacts(code) { return LINKS.filter(function (f) { return f.csf === code; }); }
+  function csfAuto(code) {
+    var fs = csfFacts(code); if (!fs.length) return null;
+    var done = 0; fs.forEach(function (f) { if (factDone(f.id)) done++; });
+    var level = done === 0 ? 0 : done === fs.length ? 5 : (done * 2 >= fs.length ? 4 : 2);
+    return { level: level, done: done, total: fs.length };
+  }
+  function csfManual(sc, k) { return Object.prototype.hasOwnProperty.call(sc, k); }
+  function csfValue(sc, k) {
+    if (csfManual(sc, k)) return sc[k];
+    var a = csfAuto(k); return a ? a.level : 0;
+  }
   function csfHTML() {
     var sc = G("gm_csf", {});
-    var vals = CSF.map(function (c) { return sc[c[0]] || 0; });
+    var vals = CSF.map(function (c) { return csfValue(sc, c[0]); });
     var avg = Math.round(vals.reduce(function (a, b) { return a + b; }, 0) / CSF.length * 20);
     var h = '<div class="cat-t">\u{1F510} NIST CSF 2.0 \u2014 personal self-score <span class="pill pill-g">' + avg + '%</span></div>'
-      + '<div class="info">Six areas of your personal security, from the NIST framework. For each, tap where you are today. Anything not yet "Mostly" is your next security step, and the line under the heading says what to do.</div>';
+      + '<div class="info">Six areas of your personal security, from the NIST framework. For each, tap where you are today, or let the facts you have ticked elsewhere fill it in (marked Auto). Anything not yet "Mostly" is your next security step, and the line under the heading says what to do.</div>';
     CSF.forEach(function (c) {
-      var v = sc[c[0]] || 0;
+      var v = csfValue(sc, c[0]);
+      var auto = csfAuto(c[0]);
+      var isManual = csfManual(sc, c[0]);
       // Four plain choices instead of a bare 0-5 slider (owner, 2026-11-12: a number with no meaning is not a decision).
       var LV = [[0, "Not yet"], [2, "Started"], [4, "Mostly"], [5, "Done and tested"]];
-      h += '<div class="road-col" style="margin-bottom:8px"><div class="road-h">' + c[1]
+      var tag = auto && !isManual ? ' <span style="font-size:10px;color:var(--muted);border:1px solid var(--border);border-radius:8px;padding:1px 6px;margin-left:6px">Auto</span>'
+        : auto && isManual ? ' <button class="chip" style="font-size:10px;min-height:28px;padding:1px 8px;margin-left:6px" onclick="gmCsfAuto(\'' + c[0] + '\')">Auto</button>' : '';
+      h += '<div class="road-col" style="margin-bottom:8px"><div class="road-h">' + c[1] + tag
         + ' <span style="float:right;font-weight:700;color:' + (v >= 4 ? "var(--green)" : v >= 2 ? "var(--amber,#b26a00)" : "var(--muted)") + '">'
         + (LV.filter(function (l) { return l[0] === v; })[0] || [0, v + "/5"])[1] + '</span></div>'
         + '<div class="road-i">' + c[2] + '</div>'
@@ -294,6 +349,9 @@
     return h;
   }
   window.gmCsfSet = function (k, v) { var sc = G("gm_csf", {}); sc[k] = parseInt(v, 10); S_("gm_csf", sc); renderAll(); };
+  window.gmCsfAuto = function (k) {
+    var sc = G("gm_csf", {}); if (csfManual(sc, k)) { delete sc[k]; S_("gm_csf", sc); } renderAll();
+  };
 
   /* ── 8. Sync (per-key merge, dormant until configured) ──────────── */
   // Fixes the old whole-blob upsert, which let the last device to write
@@ -1018,6 +1076,16 @@
       if (!prevDone) h += '<div class="info" style="margin-bottom:8px">Locked by design. Finish ' + STACK[li - 1].id + ' first \u2014 this layer is not safe to stand on until it is.</div>';
       L.items.forEach(function (it, i) {
         if (vOnly && !isVital(L.id, i)) return;
+        var lf = stackFactFor(L.id, i), lk = lf ? gmLinks()[lf.id] : null;
+        if (lk && typeof lk.done === "boolean") {
+          var done = !!lk.done;
+          h += '<div class="road-i" style="cursor:pointer;display:flex;gap:8px;align-items:flex-start;padding:5px 0" onclick="gmStackTg(\'' + L.id + '\',' + i + ')">'
+            + '<span style="color:' + (done ? "var(--green)" : "var(--muted)") + ';font-weight:800">' + (done ? "\u2611" : "\u2610") + '</span>'
+            + '<span style="' + (done ? "opacity:.75" : "") + '">' + (isVital(L.id, i) ? '<span title="vital few" style="color:var(--gold)">\u2605 </span>' : "") + esc(it) + horizonTag(it)
+            + (done ? '<br><span style="color:var(--muted);font-size:10.5px">\u2699 Ticked in ' + esc(lk.src || "Stack") + '</span>' : "")
+            + '</span></div>';
+          return;
+        }
         var auto = autoTicked(L.id, i);
         if (auto && !st[i]) {
           h += '<div class="road-i" style="display:flex;gap:8px;align-items:flex-start;padding:5px 0" title="' + esc(auto) + '">'
@@ -1796,6 +1864,17 @@
       out["L0|4"] = "NIST CSF Protect scored " + csf.PR + "/5.";
       out["L0|5"] = "NIST CSF Protect scored " + csf.PR + "/5.";
     }
+    var lk = gmLinks();
+    LINKS.forEach(function (f) {
+      if (!f.stack) return;
+      var hit = null;
+      STACK.forEach(function (L) {
+        L.items.forEach(function (it, i) { if (!hit && rxTest(f.stack, it)) hit = L.id + "|" + i; });
+      });
+      if (!hit || !lk[f.id]) return;
+      if (lk[f.id].done) out[hit] = "Ticked in " + (lk[f.id].src || "Stack");
+      else delete out[hit];
+    });
     return out;
   }
   var _eCache = null, _eStamp = 0;
@@ -1804,6 +1883,79 @@
     _eCache = stackEvidence(); _eStamp = Date.now(); return _eCache;
   }
   function autoTicked(lid, i) { return stackEvidenceCached()[lid + "|" + i]; }
+
+  /* ── 28b. One fact, every linked place ────────────────────────────
+     The Stack and the Shield keep their own stores, so the link is made
+     here: read a fact where it is stored, write it from either place. */
+  function stackFactFor(lid, i) {
+    var L = null, txt = null;
+    STACK.forEach(function (x) { if (x.id === lid) L = x; });
+    if (!L || L.items[i] == null) return null;
+    txt = L.items[i];
+    for (var j = 0; j < LINKS.length; j++) if (LINKS[j].stack && rxTest(LINKS[j].stack, txt)) return LINKS[j];
+    return null;
+  }
+  function shieldFactFor(riskId, si) {
+    var risk = null, txt = null;
+    (window.RISKS || []).forEach(function (r) { if (r.id === riskId) risk = r; });
+    if (!risk || !risk.steps || risk.steps[si] == null) return null;
+    txt = risk.steps[si];
+    for (var j = 0; j < LINKS.length; j++)
+      if (LINKS[j].shield && LINKS[j].shield.risk === riskId && rxTest(LINKS[j].shield.rx, txt)) return LINKS[j];
+    return null;
+  }
+  var _gmStackTg = window.gmStackTg;
+  window.gmStackTg = function (lid, i) {
+    var f = stackFactFor(lid, i);
+    if (!f) { _gmStackTg(lid, i); return; }
+    var st = stackState(), cur = gmLinks()[f.id], raw = !!(st[lid] || {})[i];
+    var shown = cur && typeof cur.done === "boolean" ? cur.done : raw;
+    st[lid] = st[lid] || {}; st[lid][i] = !shown; S_("gm_stack", st);
+    setFact(f.id, !shown, "Stack");
+    renderAll();
+  };
+  var _gmCheckedArr = window.checkedArr;
+  window.checkedArr = function (t, id) {
+    var arr = _gmCheckedArr(t, id).slice();
+    if (t !== "r") return arr;
+    LINKS.forEach(function (f) {
+      if (!f.shield || f.shield.risk !== id) return;
+      var cur = gmLinks()[f.id], risk = null, idx = -1;
+      if (!cur || typeof cur.done !== "boolean") return;
+      (window.RISKS || []).forEach(function (r) {
+        if (r.id !== id || !r.steps) return;
+        r.steps.forEach(function (s, i) { if (idx < 0 && rxTest(f.shield.rx, s)) idx = i; });
+      });
+      if (idx < 0) return;
+      var pos = arr.indexOf(idx);
+      if (cur.done && pos < 0) arr.push(idx);
+      if (!cur.done && pos >= 0) arr.splice(pos, 1);
+    });
+    return arr;
+  };
+  var _gmTg = window.tg;
+  window.tg = function (t, i, si) {
+    var risk = t === "r" && window.RISKS ? window.RISKS[i] : null;
+    var f = risk ? shieldFactFor(risk.id, si) : null;
+    var modal = window.actType === t && window.actIdx === i;
+    if (!f) {
+      var oldT = window.actType, oldI = window.actIdx;
+      window.actType = t; window.actIdx = i;
+      try { _gmTg(t, i, si); } finally { window.actType = oldT; window.actIdx = oldI; }
+      return;
+    }
+    var Sg = window.S, kk = t + ":" + risk.id;
+    var arr = Sg.checked[kk] || (Sg.checked[kk] = []);
+    var pos = arr.indexOf(si), cur = gmLinks()[f.id];
+    var shown = cur && typeof cur.done === "boolean" ? cur.done : pos >= 0;
+    var next = !shown;
+    if (next && pos < 0) { arr.push(si); Sg.pts += 10; }
+    else if (!next && pos >= 0) { arr.splice(pos, 1); Sg.pts = Math.max(0, Sg.pts - 10); }
+    store("sovS", Sg); stamp();
+    setFact(f.id, next, "Shield");
+    if (modal) { try { renderModalBody(); } catch (e) {} }
+    renderAll();
+  };
 
   /* ── 29. The Derived panel ─────────────────────────────────────── */
   window.gmAdopt = function (field, val) {
@@ -5003,7 +5155,12 @@
       + ".gm-d3 .row{display:flex;gap:10px;margin-top:10px}"
       + ".gm-d3 .tile{flex:1;cursor:pointer;text-align:left;background:var(--cardAlt);border:1.5px solid transparent;border-radius:14px;padding:12px;min-height:96px;transition:background .15s,border-color .15s}"
       + ".gm-d3 .tile:focus-visible{outline:2px solid var(--gold);outline-offset:2px}"
-      + ".gm-d3 .tile.on{background:var(--greenBg);border-color:var(--green)}"
+      // Glass for the big daily surfaces (owner, 2026-11-12): a frosted teal-to-gold tint, a light top edge, a soft float.
+      + ".gm-d3 .tile.on{background:linear-gradient(135deg,rgba(26,151,138,.18) 0%,rgba(26,151,138,.07) 55%,rgba(201,169,97,.12) 100%),var(--card);border:1px solid rgba(26,151,138,.30);box-shadow:inset 0 1px 0 rgba(255,255,255,.65),0 8px 22px rgba(11,95,88,.10);-webkit-backdrop-filter:blur(8px) saturate(140%);backdrop-filter:blur(8px) saturate(140%)}"
+      + "html[data-theme=dark] .gm-d3 .tile.on{background:linear-gradient(135deg,rgba(26,151,138,.22) 0%,rgba(26,151,138,.08) 55%,rgba(201,169,97,.10) 100%),var(--card);border-color:rgba(45,212,191,.28);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 8px 22px rgba(0,0,0,.25)}"
+      + ".gm-d3:has(.tile.on + .tile.on + .tile.on),.gm-d3.gm-d3-all{background:radial-gradient(circle at 85% 0%,rgba(26,151,138,.14),transparent 55%),var(--card)}"
+      + "#sections .info{background:linear-gradient(180deg,rgba(255,255,255,.75),rgba(255,255,255,.45)),var(--tealBg);border:1px solid rgba(26,151,138,.14);box-shadow:inset 0 1px 0 rgba(255,255,255,.7)}"
+      + "html[data-theme=dark] #sections .info{background:linear-gradient(180deg,rgba(255,255,255,.05),rgba(255,255,255,.02)),var(--card);border-color:rgba(255,255,255,.08);box-shadow:none}"
       + ".gm-d3 .chk{width:24px;height:24px;border-radius:50%;border:2px solid var(--muted);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900}"
       + ".gm-d3 .tile.on .chk{background:var(--green);border-color:var(--green);color:#fff}"
       + "html[data-theme=dark] .gm-d3 .tile.on .chk{color:#0b111c}"
