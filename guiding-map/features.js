@@ -935,6 +935,22 @@ window.SECURAX_FEATURES = {
    "shows": "./securax channel",
    "light": "amber",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/86-MANY-NODES-AND-THE-ROAD-TO-SCALE/"
+  },
+  {
+   "id": "life-systems",
+   "group": "Your own tools",
+   "icon": "list-checks",
+   "name": "Life systems, running for you",
+   "what": "Your written recipes for money, family, health, work, learning, fun and one big decision run themselves: facts are asked once (with a Local/Global switch), each system shows its cue, floor, rhythm and one-time steps, and the best next step sits in one open action.",
+   "cmd": "./securax open",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "added": "2026-11-12",
+   "outcome": "The rules you already know run without willpower, and you see the one next step that matters.",
+   "shows": "the Life OS Systems tab, the Wheel of Life, and ./securax progress",
+   "light": "green",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/14-GUIDING-MAP/"
   }
  ]
 };
