@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Fixed
+- **Risk Shield and Pillars open with one calm hero.** Each tab now leads with one hero tile (risks covered out of the total; the share of measures filled in), the explanation folds under "How this works", status is a coloured dot plus a sentence-case word in the normal text colour instead of a tracked-out pill, and no credential badge sits next to these headings. `test57.js` (12 checks).
 - **The Wheel of Life never invents a score.** An area the person has not scored now reads as a gap on its axis (a dotted mark at the centre), not an implied 5 or 0; the eight sliders became one row of ten tap targets per area that stamp when it was last scored; each area shows what it measures from the numbers already in the app (career, money, health, family, growth) with a one-tap "Use the measured scores" for the unscored areas; and where what it feels differs from the numbers by 3 or more, the wheel says so in plain words. `test54.js` (15 checks).
 - **No squashed text, anywhere.** Vantage's Wheel showed each area name one letter per line on a phone, because every select in the kit is 100% wide and took the whole row. Kit rows now give a control only the room it needs and keep at least 8 characters for its text; a new `squashed-text` rule in the shared UI rules flags any visible text squeezed to a few letters a line, in every kit app, the Life OS and the site audits (screen-reader-only labels are skipped).
 ### Added

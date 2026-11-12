@@ -142,6 +142,19 @@ header{background:var(--navy);padding:13px 16px;display:flex;align-items:center;
 .s-on{background:var(--greenBg);color:#14532d;}
 .s-c{background:var(--amberBg);color:var(--amber);}
 .s-b{background:var(--redBg);color:var(--red);}
+/* Shared calm hero tile: one number, one meaning, room for one button. */
+.gm-hero{background-color:#0d1f35;background-image:linear-gradient(155deg,#0a1628,#0f2740,#114052);color:#fff;border-radius:16px;padding:18px;margin-bottom:12px;}
+.gm-hero-n{font-family:var(--font-display);font-weight:800;letter-spacing:-.022em;font-size:44px;line-height:1;}
+.gm-hero-u{font-size:18px;font-weight:600;color:rgba(255,255,255,.8);margin-left:4px;}
+.gm-hero-m{font-size:13px;color:rgba(255,255,255,.8);margin-top:4px;}
+.gm-hero-b{margin-top:12px;}
+/* Shared fold for an explanation: closed until asked. */
+.gm-how{margin-bottom:12px;}
+.gm-how>summary{cursor:pointer;font-size:12px;font-weight:600;color:var(--muted);}
+.gm-how>div{font-size:11.5px;color:var(--muted);line-height:1.6;margin-top:6px;}
+/* Calm status: a small coloured dot and a sentence-case word, in the normal text colour. */
+.gm-status{display:inline-flex;align-items:center;gap:6px;margin-top:6px;font-size:11px;font-weight:600;color:var(--text);}
+.gm-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
 .ptrack{height:5px;background:#e5e7eb;border-radius:99px;margin-top:6px;overflow:hidden;}
 .pfill{height:100%;border-radius:99px;background:var(--green);}
 .kc.behind .pfill{background:#ef4444;}
@@ -1435,6 +1448,22 @@ try{ if(window.matchMedia){ var _tmq=matchMedia("(prefers-color-scheme: dark)");
 var pillarFilter=null;
 function goTab(id,filter){ curTab=id; pillarFilter=filter||null; renderAll(); window.scrollTo(0,0); }
 
+/* The shared calm hero tile: one number, a short unit, one meaning, room for one button. */
+function heroHTML(number, unit, meaning, buttonHTML){
+  return '<div class="gm-hero"><div><span class="gm-hero-n">'+number+'</span>'
+   +(unit?'<span class="gm-hero-u">'+unit+'</span>':'')+'</div>'
+   +'<div class="gm-hero-m">'+meaning+'</div>'
+   +(buttonHTML?'<div class="gm-hero-b">'+buttonHTML+'</div>':'')+'</div>';
+}
+/* An explanation folded away, closed until the person asks for it. */
+function howHTML(html){
+  return '<details class="gm-how"><summary>How this works</summary><div>'+html+'</div></details>';
+}
+/* Calm status: a coloured dot plus a sentence-case word, never a shouted pill. */
+function statusHTML(word, colour){
+  return '<span class="gm-status"><span class="gm-dot" style="background:'+colour+'"></span>'+word+'</span>';
+}
+
 function cardK(i){
   var k=KPIs[i]; var cp=combinedPct(k); var st=statusOf(cp); var mt=metricType(k);
   var units={ppl:"people",str:"streams",mo:"months",x:"\u00D7 today's income",bks:"books",lang:"languages",hrs:"hours",min:"minutes",done:"done"};
@@ -1453,7 +1482,7 @@ function cardK(i){
    +'<div class="kv">'+kVal(k)+'<span class="ku">'+unit+'</span></div>'
    +'<div class="kl">'+k.label+'</div>'
    +'<div class="sys-prog">Plan steps: '+sysPct(k,"k")+'% ticked</div>'
-   +'<span class="sb '+(st==="on"?"s-on":st==="caution"?"s-c":"s-b")+'">'+(st==="on"?"On track":st==="caution"?"Building":"Not started")+'</span>'
+   +statusHTML(st==="on"?"On track":st==="caution"?"Building":"Not started", st==="on"?"var(--green)":st==="caution"?"var(--amber)":"var(--muted)")
    +'<div class="ptrack"><div class="pfill" style="width:'+cp+'%"></div></div></div>';
 }
 function cardR(i){
@@ -1463,7 +1492,7 @@ function cardR(i){
    +'<div class="kv">'+r.icon+' '+p+'<span class="ku">%</span></div>'
    +'<div class="kl">'+r.label+'</div>'
    +'<div class="sys-prog">'+checkedArr("r",r.id).length+' of '+r.steps.length+' done</div>'
-   +'<span class="sb '+(p>=75?"s-on":p>=35?"s-c":"s-b")+'">'+(p>=75?"Covered":p>=35?"Partial":"Exposed")+'</span>'
+   +statusHTML(p>=75?"Covered":p>=35?"Partial":"Exposed", p>=75?"var(--green)":p>=35?"var(--amber)":"var(--red)")
    +'<div class="ptrack"><div class="pfill" style="width:'+p+'%"></div></div></div>';
 }
 
@@ -1850,7 +1879,13 @@ function renderAll(){
   else if(curTab==="growth"){ html=renderGrowth(E); }
   else if(curTab==="today"){ html=renderToday(); }
   else if(curTab==="all"){
-    html='<div class="section active">';
+    var liveK=KPIs.filter(function(k){return !isArchived("k",k.id);});
+    var filledK=liveK.filter(function(k){return k.auto||S.vals[k.id]!==undefined;}).length;
+    var filledPct=liveK.length?Math.round(filledK/liveK.length*100):0;
+    html='<div class="section active">'
+     +heroHTML(filledPct,"%","Measures filled in","")
+     +howHTML('Each pillar holds the measures you chose. A measure counts as filled once you enter its value or tick its plan steps; the vital few (\u2B50) lift the others most.')
+     ;
     if(pillarFilter) html+='<div class="info" style="display:flex;justify-content:space-between;align-items:center">Showing <b>'+(catNames[pillarFilter]||pillarFilter)+'</b> only.<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="pillarFilter=null;renderAll()">Show all pillars</button></div>';
     var catList=pillarFilter?[pillarFilter]:["fin","hlt","car","soc","mind","glo","pur"];
     catList.forEach(function(c){
@@ -1861,7 +1896,12 @@ function renderAll(){
   }
   else if(curTab==="money"){ html=renderMoney(E); }
   else if(curTab==="risk"){
-    html='<div class="section active"><div class="cat-t">\uD83D\uDEE1 Risk Shield — ladder order: health \u2192 term life \u2192 income \u2192 liability</div><div class="grid">';
+    var liveR=RISKS.filter(function(r){return !isArchived("r",r.id);});
+    var coveredR=liveR.filter(function(r){return sysPct(r,"r")>=75;}).length;
+    html='<div class="section active">'
+     +heroHTML(coveredR," / "+liveR.length,"Risks covered","")
+     +howHTML('Cover the ladder in order: health, then term life, then income, then liability. A risk counts as covered once every step on its checklist is ticked.')
+     +'<div class="cat-t">\uD83D\uDEE1 Risk Shield</div><div class="grid">';
     RISKS.forEach(function(r,i){ if(!isArchived("r",r.id)) html+=cardR(i); });
     html+='</div></div>';
   }
