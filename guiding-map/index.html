@@ -76,9 +76,9 @@ header{background:var(--navy);padding:13px 16px;display:flex;align-items:center;
 .hstats{display:flex;margin-top:9px;background:rgba(255,255,255,.07);border-radius:10px;overflow:hidden;}
 /* ---- Life OS additions ---- */
 .ns-card{background-color:#0d1f35;background-image:radial-gradient(circle at top right,var(--ns-glow,rgba(201,168,76,0.18)),rgba(0,0,0,0) 62%),linear-gradient(160deg,#0b1a2e,#0f2f3a);border:2px solid var(--gold);border-radius:16px;padding:18px;margin-bottom:14px;color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);}
-.ns-card.ns-fragile{--ns-glow:rgba(255,155,148,0.18);}
-.ns-card.ns-robust{--ns-glow:rgba(232,201,106,0.18);}
-.ns-card.ns-antifragile{--ns-glow:rgba(123,224,160,0.18);}
+.ns-card.ns-fragile{--ns-glow:rgba(255,155,148,0.12);}
+.ns-card.ns-robust{--ns-glow:rgba(232,201,106,0.12);}
+.ns-card.ns-antifragile{--ns-glow:rgba(123,224,160,0.12);}
 .ns-ey{font-size:12px;letter-spacing:.2px;color:rgba(255,255,255,.72);margin-bottom:6px;}
 .ns-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
 .ns-score{font-family:var(--font-display);font-weight:800;letter-spacing:-.022em;font-size:58px;line-height:1;}
@@ -195,7 +195,7 @@ header{background:var(--navy);padding:13px 16px;display:flex;align-items:center;
 .ws-l{display:flex;justify-content:space-between;font-size:11px;font-weight:600;margin-bottom:2px;}
 .ws-hint{font-size:10px;color:var(--muted);font-weight:600;margin:3px 0;}
 .ws-taps{display:flex;gap:4px;flex-wrap:wrap;}
-.ws-tap{min-width:28px;height:28px;padding:0 3px;border-radius:8px;border:1px solid var(--border);background:var(--cardAlt);color:var(--text);font-size:11px;font-weight:700;cursor:pointer;}
+.ws-tap{flex:0 0 calc(20% - 4px);min-width:44px;height:44px;padding:0 3px;border-radius:8px;border:1px solid var(--border);background:var(--cardAlt);color:var(--text);font-size:11px;font-weight:700;cursor:pointer;}
 .ws-tap.on{background:var(--teal);color:var(--tealBg);border-color:var(--teal);}
 .ws-gap{font-size:10.5px;color:var(--muted);margin-top:3px;}
 .ws-chip{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--tealBg);color:var(--teal);margin-left:3px;}
