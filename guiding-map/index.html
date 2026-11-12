@@ -2783,13 +2783,20 @@ window.GM_SYSTEMS = {"version":1,"verified":"2026-11-12","note":"Life systems: o
     var vals = CSF.map(function (c) { return sc[c[0]] || 0; });
     var avg = Math.round(vals.reduce(function (a, b) { return a + b; }, 0) / CSF.length * 20);
     var h = '<div class="cat-t">\u{1F510} NIST CSF 2.0 \u2014 personal self-score <span class="pill pill-g">' + avg + '%</span></div>'
-      + '<div class="info">The six functions of the 2024 framework, applied to one person instead of an enterprise. Score each 0-5 honestly. Anything below 3 is your next security action, and the sentence under each heading already says exactly what to build \u2014 nothing to look up.</div>';
+      + '<div class="info">Six areas of your personal security, from the NIST framework. For each, tap where you are today. Anything not yet "Mostly" is your next security step, and the line under the heading says what to do.</div>';
     CSF.forEach(function (c) {
       var v = sc[c[0]] || 0;
-      h += '<div class="road-col" style="margin-bottom:8px"><div class="road-h">' + c[0] + ' \u00b7 ' + c[1]
-        + ' <span style="float:right;color:' + (v >= 3 ? "var(--green)" : "var(--red)") + '">' + v + '/5</span></div>'
+      // Four plain choices instead of a bare 0-5 slider (owner, 2026-11-12: a number with no meaning is not a decision).
+      var LV = [[0, "Not yet"], [2, "Started"], [4, "Mostly"], [5, "Done and tested"]];
+      h += '<div class="road-col" style="margin-bottom:8px"><div class="road-h">' + c[1]
+        + ' <span style="float:right;font-weight:700;color:' + (v >= 4 ? "var(--green)" : v >= 2 ? "var(--amber,#b26a00)" : "var(--muted)") + '">'
+        + (LV.filter(function (l) { return l[0] === v; })[0] || [0, v + "/5"])[1] + '</span></div>'
         + '<div class="road-i">' + c[2] + '</div>'
-        + '<input type="range" min="0" max="5" step="1" value="' + v + '" style="margin:8px 0 0" oninput="gmCsfSet(\'' + c[0] + '\',this.value)"></div>';
+        + '<div class="chips" role="group" aria-label="' + c[1] + ': where you are" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px">';
+      LV.forEach(function (l) {
+        h += '<button class="chip' + (v === l[0] ? " on" : "") + '" aria-pressed="' + (v === l[0]) + '" style="min-height:40px" onclick="gmCsfSet(\'' + c[0] + '\',' + l[0] + ')">' + l[1] + '</button>';
+      });
+      h += '</div></div>';
     });
     return h;
   }
@@ -8970,6 +8977,38 @@ window.GM_SYSTEMS = {"version":1,"verified":"2026-11-12","note":"Life systems: o
     // Inline help: self-explain every specialised term on whatever screen just rendered.
     try { gmAnnotate(box); } catch (e) { }
     try { focusTick(); } catch (e) { }
+  };
+  // Keep what the person had open (owner, 2026-11-12): a change redraws the screen, and every section used to snap shut,
+  // so they had to reopen it and find their place again. Remember the open sections and the scroll on the same tab.
+  var _renderKeep = window.renderAll;
+  function gmOpenKeys() {
+    var box = document.getElementById("sections"), seen = {}, out = [];
+    if (!box) return out;
+    var ds = box.querySelectorAll("details");
+    for (var i = 0; i < ds.length; i++) {
+      var s = ds[i].querySelector("summary"), t = s ? s.textContent.replace(/\s+/g, " ").trim().slice(0, 80) : "";
+      seen[t] = (seen[t] || 0) + 1;
+      if (ds[i].open) out.push(t + "#" + seen[t]);
+    }
+    return out;
+  }
+  var _drawnTab = null;
+  window.renderAll = function () {
+    var tab = typeof curTab !== "undefined" ? curTab : "", same = tab === _drawnTab;
+    var keys = same ? gmOpenKeys() : [], y = same ? (window.scrollY || 0) : 0;
+    _renderKeep.apply(this, arguments);
+    _drawnTab = tab;
+    if (!same || !keys.length && !y) return;   // a new tab starts fresh
+    var box = document.getElementById("sections"), seen = {};
+    if (box) {
+      var ds = box.querySelectorAll("details");
+      for (var i = 0; i < ds.length; i++) {
+        var s = ds[i].querySelector("summary"), t = s ? s.textContent.replace(/\s+/g, " ").trim().slice(0, 80) : "";
+        seen[t] = (seen[t] || 0) + 1;
+        if (keys.indexOf(t + "#" + seen[t]) >= 0) ds[i].open = true;
+      }
+    }
+    if (y && Math.abs((window.scrollY || 0) - y) > 2) { try { window.scrollTo(0, y); } catch (e) {} }
   };
 
   /* ── 11. Boot ───────────────────────────────────────────────────── */
