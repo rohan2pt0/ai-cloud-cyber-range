@@ -9,6 +9,8 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Changed
+- Life OS dark theme is backlit: icons in the More sheet and the bottom bar glow warm gold (brightest on the current screen), a soft teal light leaks from under each tile, and the sheet sits on a quiet teal-and-gold aurora.
+- Life OS: glass and enamel for the shared parts: the money split bar is glossy enamel with frosted labels, the More sheet is frosted glass with antique-gold icons and a gold rim on the current screen, chips are frosted with a polished-gold selection, and small buttons carry a glass highlight, in both themes.
 - Life OS: Life Score bars are materials by verdict (red velvet, cognac, emerald) with a light-catching top; the move cards carry velvet and gold hairlines; the instrument-panel labels are soft polished gold; dark-theme bar tracks are smoked glass.
 - Life OS: primary buttons carry a polished-gold rim, and a completed daily-three tile shows a gold coin tick, the earned mark.
 - Life OS: every property number carries a verdict (Strong, Watch or Weak, in colour and in words), losses read with a real minus sign, and gold is now metallic (hero numbers and the monogram ring), not a flat yellow. `test79.js` holds it.
