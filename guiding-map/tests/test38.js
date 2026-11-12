@@ -8,7 +8,7 @@ let pass = 0, fail = 0;
 const ok = (c, m) => { if (c) pass++; else { fail++; console.log("FAIL", m); } };
 // The ids already handed out. Add new ones here when you add an item; NEVER delete one (retire it in the registry instead):
 // a calendar out there still holds an event with that UID.
-const HANDED_OUT = ["quarter", "monthly", "weekly", "tax", "annual", "family-q1", "family-q2", "family-q3", "family-q4"];
+const HANDED_OUT = ["quarter", "monthly", "weekly", "tax", "annual", "holiday-list", "family-q1", "family-q2", "family-q3", "family-q4"];
 const d = new JSDOM(html, { runScripts: "dangerously", url: "https://hub.securax.localhost/index.html", pretendToBeVisual: true,
   beforeParse(w) { w.scrollTo = () => {}; w.URL.createObjectURL = () => "blob:x"; } });
 setTimeout(() => {
@@ -30,7 +30,7 @@ setTimeout(() => {
   ok((fam.match(/BEGIN:VEVENT/g) || []).length === 4 && fam.includes("X-WR-CALNAME:Family health"), "the family preventive calendar is four yearly events");
   ok(fam.includes("RRULE:FREQ=YEARLY;BYMONTH=4;BYDAY=1MO") && fam.includes("RRULE:FREQ=YEARLY;BYMONTH=1;BYDAY=1MO"), "on the first Monday of each quarter");
   ok(!/Akshat|[A-Z][a-z]+ \+ /.test(fam.replace(/Family health|Life OS/g, "")), "no person's name is written into the shared file text");
-  ok(w.gmCalendarICS("rhythm").split("BEGIN:VEVENT").length - 1 === 5, "the rhythm alone is the five rhythm events");
+  ok(w.gmCalendarICS("rhythm").split("BEGIN:VEVENT").length - 1 === 6, "the rhythm alone is the six rhythm events");
   ok(a.split("\r\n").every(l => Buffer.byteLength(l) <= 75), "lines are folded to 75 octets");
   // a retired item stops in every app: UNTIL ends the series, CANCELLED removes it where honoured
   ok(fs.readFileSync(path.join(__dirname, "..", "ops.js"), "utf8").includes(String.raw`.replace(/;/g, "\\;")`), "the text escape writes a backslash before ';'");

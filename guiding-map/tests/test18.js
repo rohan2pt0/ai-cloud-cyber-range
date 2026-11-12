@@ -37,11 +37,11 @@ setTimeout(()=>{
   ok("the OKR guidance says monthly, not weekly", !txt().includes("grade weekly") && txt().includes("once a month"));
   // calendar file
   const ics=w.gmCalendarICS("rhythm");
-  ok("calendar: five repeating events", (ics.match(/BEGIN:VEVENT/g)||[]).length===5 && (ics.match(/RRULE:/g)||[]).length===5);
+  ok("calendar: six repeating events", (ics.match(/BEGIN:VEVENT/g)||[]).length===6 && (ics.match(/RRULE:/g)||[]).length===6);
   ok("calendar: quarterly event on the first Saturday of Jan/Apr/Jul/Oct", ics.includes("RRULE:FREQ=YEARLY;BYMONTH=1,4,7,10;BYDAY=1SA"));
   ok("calendar: monthly review is the After-Action Review trigger", /SUMMARY:Monthly review: money \+ After-Action Review/.test(ics));
   ok("calendar: CRLF and lines folded", ics.includes("\r\n") && ics.split("\r\n").every(l=>Buffer.byteLength(l)<=75));
-  ok("calendar: each event reminds 30 minutes before", (ics.match(/TRIGGER:-PT30M/g)||[]).length===5);
+  ok("calendar: each event reminds 30 minutes before", (ics.match(/TRIGGER:-PT30M/g)||[]).length===6);
   // AAR is a ritual with a moment
   w.goTab("ops");
   ok("the After-Action Review is a monthly ritual in Ops", txt().includes("Monthly After-Action Review"));

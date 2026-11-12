@@ -875,6 +875,104 @@
     }
     return null;
   }
+  /* ── 25-minute focus block, on Today only (principle: build-the-system) ─────────────────────────
+     A light block tied to the one open action, used sparingly: the count lives on this device, four a day
+     is the ceiling, and there is nothing to score. The minutes come from the stored start time, so a phone
+     that slept or a page that reloaded still shows the right number. One 15 s interval runs only while a
+     block is running, and it is cleared the moment the block ends (a timer left running keeps tests alive). */
+  var FOCUS_MINS = 25, FOCUS_MAX = 4, _focusTimer = null, _focusDone = null;
+  function focusShow() { return G("gm_focus_show", true) !== false; }
+  function focusLog() { return G("gm_focus_log", {}) || {}; }
+  function focusCount() { return +focusLog()[ymd()] || 0; }
+  function focusRunning() { var f = G("gm_focus", null); return f && f.start ? f : null; }
+  function focusUnesc(s) { return String(s || "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"'); }
+  function focusLeft(f) { return (+f.mins || FOCUS_MINS) * 60000 - (Date.now() - (+f.start || 0)); }
+  function focusArm() { if (!_focusTimer) _focusTimer = setInterval(focusTick, 15000); }
+  function focusDisarm() { if (_focusTimer) { clearInterval(_focusTimer); _focusTimer = null; } }
+  function focusBtnHTML(task) {
+    if (!focusShow() || focusRunning()) return "";
+    if (focusCount() >= FOCUS_MAX) return '<button class="btn-sm" disabled aria-disabled="true" style="margin-top:10px;min-height:44px;background:var(--cardAlt);color:var(--muted)">Enough focus blocks today; work freely</button>';
+    return '<button class="btn-sm" data-haptic="success" style="margin-top:10px;min-height:44px;background:var(--cardAlt);color:var(--text)" data-focus-task="' + esc(task) + '" onclick="gmFocusStart(this.getAttribute(\'data-focus-task\'))">Focus 25 min on this</button>';
+  }
+  function focusPaint() {
+    var old = document.getElementById("gmFocusBar"); if (old) old.parentNode.removeChild(old);
+    if (!focusShow()) return;
+    var f = focusRunning(), el, msg, stop;
+    if (!f && !_focusDone) return;
+    el = document.createElement("div"); el.id = "gmFocusBar";
+    el.style.cssText = "position:fixed;top:0;left:0;right:0;z-index:900;background:var(--card);border-bottom:2px solid var(--gold);padding:8px 12px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;box-shadow:0 2px 10px rgba(0,0,0,.14)";
+    msg = document.createElement("div");
+    msg.style.cssText = "flex:1;min-width:130px;font-size:12.5px;line-height:1.45;color:var(--text);font-weight:600";
+    if (f) {
+      var mins = Math.max(0, Math.ceil(focusLeft(f) / 60000));
+      msg.textContent = focusUnesc(f.task || "Focus block") + " \u00b7 " + mins + " min left";
+      stop = document.createElement("button"); stop.className = "btn-sm"; stop.textContent = "Stop";
+      stop.style.cssText = "background:var(--cardAlt);color:var(--text);min-height:44px";
+      stop.onclick = function () { window.gmFocusStop(); };
+      el.appendChild(msg); el.appendChild(stop);
+    } else {
+      msg.textContent = "Done. Stand up, water, look far away for 5 minutes." + (_focusDone.task ? " \u00b7 " + focusUnesc(_focusDone.task) : "");
+      var done = document.createElement("button"); done.className = "btn-sm"; done.textContent = "Mark the action done";
+      done.style.cssText = "background:var(--cardAlt);color:var(--text);min-height:44px";
+      done.onclick = function () { window.gmFocusMarkDone(); };
+      el.appendChild(msg); el.appendChild(done);
+      if (focusCount() < FOCUS_MAX) {
+        var again = document.createElement("button"); again.className = "btn-sm"; again.textContent = "Another 25";
+        again.style.cssText = "background:var(--cardAlt);color:var(--text);min-height:44px";
+        again.onclick = function () { window.gmFocusAnother(); };
+        el.appendChild(again);
+      }
+    }
+    document.body.insertBefore(el, document.body.firstChild);
+  }
+  function focusFinish(f) {
+    focusDisarm();
+    var log = focusLog(), k = ymd(); log[k] = (+log[k] || 0) + 1; S_("gm_focus_log", log);
+    try { localStorage.removeItem("gm_focus"); } catch (e) { S_("gm_focus", null); }
+    _focusDone = { task: f.task || "" };
+    focusPaint();
+    try { if (typeof gmToast === "function") gmToast("Done. Stand up, water, look far away for 5 minutes."); } catch (e) {}
+    try { if (navigator.vibrate) navigator.vibrate(200); } catch (e) {}
+    try { renderAll(); } catch (e) {}
+  }
+  function focusTick() {
+    if (!focusShow()) { focusDisarm(); focusPaint(); return; }
+    var f = focusRunning();
+    if (!f) { focusDisarm(); focusPaint(); return; }
+    if (focusLeft(f) <= 0) { focusFinish(f); return; }
+    focusPaint();
+  }
+  window.gmFocusStart = function (task) {
+    if (!focusShow() || focusCount() >= FOCUS_MAX) return;
+    _focusDone = null;
+    S_("gm_focus", { start: Date.now(), mins: FOCUS_MINS, task: focusUnesc(task) });
+    focusArm();
+    focusPaint();
+    try { renderAll(); } catch (e) {}
+  };
+  window.gmFocusStop = function () {
+    focusDisarm();
+    try { localStorage.removeItem("gm_focus"); } catch (e) { S_("gm_focus", null); }
+    _focusDone = null; focusPaint();
+    try { renderAll(); } catch (e) {}
+  };
+  window.gmFocusAnother = function () {
+    var t = (_focusDone && _focusDone.task) || "";
+    if (focusCount() >= FOCUS_MAX) return;
+    window.gmFocusStart(t);
+  };
+  window.gmFocusMarkDone = function () {
+    var t = (_focusDone && _focusDone.task) || "", cands = [];
+    _focusDone = null; focusPaint();
+    try {
+      cands = focusCands();
+      for (var i = 0; i < cands.length; i++) if (focusUnesc(cands[i].text) === t) { (new Function(cands[i].act))(); break; }
+      if (i >= cands.length) { var a = theOneAction(); if (a) gmStackTg(a.layer.id, a.idx); }
+    } catch (e) {}
+    try { renderAll(); } catch (e) {}
+  };
+  window.gmToggleFocusShow = function () { S_("gm_focus_show", !focusShow()); if (!focusShow()) window.gmFocusStop(); else { focusPaint(); } try { gmMenu(); } catch (e) {} try { renderAll(); } catch (e) {} };
+
   function oneActionHTML() {
     var a = theOneAction();
     if (!a) return '<div class="info">Every layer of the stack is complete. Maintenance mode: run the cadence, hold the line.</div>';
@@ -882,7 +980,8 @@
       + '<div style="font-size:10.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--gold);font-weight:800">Your one open action \u00b7 ' + a.layer.id + ' ' + a.layer.name + (a.vital ? ' \u00b7 \u2605 vital few' : '') + '</div>'
       + '<div style="font-size:15px;font-weight:700;line-height:1.5;margin:8px 0 4px;color:var(--text)">' + esc(a.text) + '</div>'
       + '<div style="font-size:11.5px;color:var(--muted);line-height:1.6">Rule 1 says one in-progress action at a time. This is it. Nothing below this layer is finished, so nothing above it is yours to work on yet.</div>'
-      + '<button class="btn btn-p" data-haptic="success" style="margin-top:10px" onclick="gmStackTg(\'' + a.layer.id + '\',' + a.idx + ')">Mark this done</button></div>';
+      + '<button class="btn btn-p" data-haptic="success" style="margin-top:10px" onclick="gmStackTg(\'' + a.layer.id + '\',' + a.idx + ')">Mark this done</button>'
+      + focusBtnHTML(a.text) + '</div>';
   }
   function stackHTML() {
     var h = '<div class="section active">';
@@ -3512,6 +3611,39 @@
   /* ── Phone navigation: four fixed bottom tabs and More (nothing hides off-screen), a header that shrinks to one line
      once you scroll, and the vitals at the top of Today instead of a second bar at the bottom. Wider screens keep the strip. */
   function navIco(d) { return '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">' + d + '</svg>'; }
+  var GM_ICONS = {
+    breaks: '<path d="M4 20c3-6 6-9 8-9s5 3 8 9"/><circle cx="17" cy="6" r="2.5"/><path d="M2 20h20"/>',
+    systems: '<circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M5.6 18.4l2.1-2.1M16.3 7.7l2.1-2.1"/>',
+    deadlines: '<circle cx="12" cy="13" r="8"/><path d="M12 9v4l3 2M9 2h6"/>',
+    today: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/>',
+    inbox: '<path d="M3 13l3-8h12l3 8v6H3z"/><path d="M3 13h5l1 3h6l1-3h5"/>',
+    ask: '<path d="M4 5h16v11H9l-5 4z"/>',
+    guide: '<path d="M12 3v18"/><path d="M6 7h11l2 2-2 2H6z"/><path d="M18 15H7l-2 2 2 2h11z"/>',
+    stack: '<path d="M12 4l8 4-8 4-8-4z"/><path d="M4 12l8 4 8-4"/><path d="M4 16l8 4 8-4"/>',
+    life: '<path d="M12 20s-7-4.5-7-9a4 4 0 017-2 4 4 0 017 2c0 4.5-7 9-7 9z"/>',
+    career: '<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V5h6v2M3 12h18"/>',
+    prop: '<path d="M4 11l8-7 8 7"/><path d="M6 10v10h12V10"/><path d="M10 20v-6h4v6"/>',
+    ops: '<path d="M4 7h10M18 7h2M4 17h2M10 17h10"/><circle cx="16" cy="7" r="2"/><circle cx="8" cy="17" r="2"/>',
+    map: '<path d="M9 4L4 6v14l5-2 6 2 5-2V4l-5 2z"/><path d="M9 4v14M15 6v14"/>',
+    book: '<path d="M12 6c-2-1.5-5-2-8-2v14c3 0 6 .5 8 2 2-1.5 5-2 8-2V4c-3 0-6 .5-8 2z"/><path d="M12 6v14"/>',
+    all: '<path d="M4 20h16"/><path d="M6 20V10M12 20V10M18 20V10"/><path d="M4 10l8-6 8 6"/>',
+    score: '<path d="M4 15a8 8 0 0116 0"/><path d="M12 15l4-4"/><path d="M4 19h16"/>',
+    plan: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M8 10l2 2 4-4M8 16h8"/>',
+    growth: '<path d="M4 19V5M4 19h16"/><path d="M7 15l4-4 3 3 5-6"/><path d="M16 8h3v3"/>',
+    money: '<rect x="3" y="6" width="18" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 9v6M18 9v6"/>',
+    risk: '<path d="M12 3l7 3v5c0 5-3 8-7 10-4-2-7-5-7-10V6z"/><path d="M9 12l2 2 4-4"/>',
+    okr: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>',
+    wheel: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/><path d="M12 4v5M12 15v5M4 12h5M15 12h5M6.3 6.3l3.5 3.5M14.2 14.2l3.5 3.5M17.7 6.3l-3.5 3.5M9.8 14.2l-3.5 3.5"/>',
+    commit: '<circle cx="12" cy="12" r="9"/><path d="M8 12l3 3 5-6"/>',
+    cal: '<rect x="4" y="5" width="16" height="16" rx="2"/><path d="M8 3v4M16 3v4M4 10h16"/>',
+    kids: '<circle cx="9" cy="8" r="3"/><path d="M4 20v-2a5 5 0 0110 0v2"/><circle cx="17" cy="10" r="2"/><path d="M15 20v-1a4 4 0 016 0v1"/>',
+    arch: '<rect x="3" y="4" width="18" height="4" rx="1"/><path d="M5 8v12h14V8"/><path d="M10 12h4"/>'
+  };
+  window.gmIcon = function (id, size) {
+    var d = GM_ICONS[id]; if (!d) return "";
+    var s = size || 18;
+    return '<svg viewBox="0 0 24 24" width="' + s + '" height="' + s + '" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + '</svg>';
+  };
   var NAV_MAIN = [["today", navIco('<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M2 12h2M20 12h2M5 5l1.5 1.5M17.5 17.5L19 19M5 19l1.5-1.5M17.5 6.5L19 5"/>'), "Today"],
     ["inbox", navIco('<path d="M3 13l3-8h12l3 8v6H3z"/><path d="M3 13h5l1 3h6l1-3h5"/>'), "Inbox"],
     ["okr", navIco('<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/>'), "Goals"],
@@ -3537,6 +3669,8 @@
       + "#gmMoreSheet .sh{position:absolute;left:0;right:0;bottom:calc(60px + env(safe-area-inset-bottom));background:var(--card);border-radius:16px 16px 0 0;padding:14px 12px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:70vh;overflow:auto}"
       + "#gmMoreSheet .sh button{background:var(--cardAlt);border:1px solid var(--border);color:var(--text);border-radius:12px;padding:12px 4px;font:inherit;font-size:12px;font-weight:700;min-height:52px;cursor:pointer}"
       + "#gmMoreSheet .sh button.on{border-color:var(--gold);border-width:2px}"
+      + "#gmMoreSheet .sh button .gi{display:flex;justify-content:center;margin-bottom:5px;color:var(--text)}"
+      + "html[data-theme=dark] #gmMoreSheet .sh button .gi{color:var(--gold)}"
       + "#gmVitals.gm-inline{position:static;box-shadow:none;border:0;background:none;padding:0 0 10px}"
       + "body{padding-bottom:76px}"
       + "header{transition:padding .15s ease}"
@@ -3561,7 +3695,9 @@
     var sh = '<div id="gmMoreSheet" class="' + (_navMore ? "on" : "") + '" onclick="if(event.target===this)gmNavMore(false)"><div class="sh" role="menu">';
     TABS.forEach(function (t) {
       if (main.indexOf(t[0]) >= 0) return;
-      sh += '<button role="menuitem" class="' + (curTab === t[0] ? "on" : "") + '" onclick="gmNavGo(\'' + t[0] + '\')">' + t[1] + '</button>';
+      var ic = window.gmIcon(t[0], 20);
+      sh += '<button role="menuitem" class="' + (curTab === t[0] ? "on" : "") + '" onclick="gmNavGo(\'' + t[0] + '\')">'
+        + (ic ? '<span class="gi" aria-hidden="true">' + ic + '</span>' : '') + t[1] + '</button>';
     });
     sh += '<button role="menuitem" onclick="location.href=\'hub.html\'">\u25C6 All apps</button></div></div>';
     document.body.insertAdjacentHTML("beforeend", sh + h);
@@ -4001,6 +4137,8 @@
       desc: "Choose the tax regime for the year, plan the year's tax-saving investments, collect Form 16 and AIS." },
     { id: "annual", group: "rhythm", v: 1, name: "Annual overhaul", rule: "FREQ=YEARLY;BYMONTH=8;BYDAY=1SA", months: [7], nth: 1, dow: 6, hh: 10, mins: 240,
       desc: "Insurance re-quote, will and nominations, property checks, the hit-by-a-bus test with your partner." },
+    { id: "holiday-list", group: "rhythm", v: 1, name: "Paste next year's holiday list", rule: "FREQ=YEARLY;BYMONTH=12;BYDAY=2SA", months: [11], nth: 2, dow: 6, hh: 10, mins: 15,
+      desc: "Your office's list for next year is usually out by now. Life OS > Breaks > Your work calendars > paste it once; every break recomputes." },
     { id: "family-q1", group: "family", v: 1, name: "Family health Q1: blood work", rule: "FREQ=YEARLY;BYMONTH=4;BYDAY=1MO", months: [3], nth: 1, dow: 1, hh: 9, mins: 30,
       desc: "Book the yearly blood panel for the adults (CBC, fasting lipids, HbA1c, TSH, vitamin D and B12, liver and kidney). Home collection is fine. Track the trend year over year." },
     { id: "family-q2", group: "family", v: 1, name: "Family health Q2: dental and vision", rule: "FREQ=YEARLY;BYMONTH=7;BYDAY=1MO", months: [6], nth: 1, dow: 1, hh: 9, mins: 30,
@@ -4062,22 +4200,47 @@
      - an item that is done, or gone from the list, is sent once more as CANCELLED, so apps remove it.
      The ledger is bounded: entries gone for over a year are forgotten (their events are long past). */
   var RENEW_RX = /\b(renew|renewal|premium|expir|lapsed|matur)/i;
+  function commitUid(c, i) { return c.id ? "commit-" + c.id : "commit-" + i + "-" + c.dl; }
   function datedItems(group) {
-    var out = [];
+    var out = [], seen = {};
+    function add(e) { if (!e.uid || seen[e.uid]) return; seen[e.uid] = 1; out.push(e); }
     if (!group || group === "career") {
       var c = car();
       if (c.cfg.noticeStart || c.cfg.join) planItems(c).forEach(function (p) {
-        if (p.due) out.push({ uid: "car-" + p.id, date: ymd(p.due), name: "Career: " + p.t, desc: "Your move plan in the Life OS (Career, step 7). Tick it there when it is done.", done: p.done, group: "career" });
+        if (p.due) add({ uid: "car-" + p.id, date: ymd(p.due), name: "Career: " + p.t, desc: "Your move plan in the Life OS (Career, step 7). Tick it there when it is done.", done: p.done, group: "career" });
       });
     }
     if (!group || group === "renewals") {
       ibAll().forEach(function (x) {
         if (x.kind === "note" || !x.due || !RENEW_RX.test((x.t || "") + " " + (x.next || ""))) return;
-        out.push({ uid: "ib-" + ibSafe(x.id), date: x.due, name: x.t, desc: (x.next ? x.next + "\n" : "") + "From your papers, in the Life OS Inbox. Mark it done there.", done: !!x.done, group: "renewals" });
+        add({ uid: "ib-" + ibSafe(x.id), date: x.due, name: x.t, desc: (x.next ? x.next + "\n" : "") + "From your papers, in the Life OS Inbox. Mark it done there.", done: !!x.done, group: "renewals" });
+      });
+    }
+    if (!group || group === "deadlines") {
+      (S.commits || []).forEach(function (c, i) {
+        if (!c || !c.dl) return;
+        add({ uid: commitUid(c, i), date: c.dl, name: "Commitment: " + (c.goal || ""), desc: "Your commitment contract in the Life OS (Commit). Settle it there when it is done.", done: c.status !== "live", group: "deadlines", source: "Commitment" });
+      });
+      ibAll().forEach(function (x) {
+        if (x.kind === "note" || !x.due || RENEW_RX.test((x.t || "") + " " + (x.next || ""))) return;
+        add({ uid: "ib-" + ibSafe(x.id), date: x.due, name: x.t || x.next, desc: (x.next ? x.next + "\n" : "") + "From your Inbox, in the Life OS. Mark it done there.", done: !!x.done, group: "deadlines", source: "Inbox" });
+      });
+      (S.okrs || []).forEach(function (o, oi) {
+        (o.krs || []).forEach(function (kr, ki) {
+          var when = kr.dueMs ? new Date(kr.dueMs) : (kr.due ? new Date(kr.due) : null);
+          if (!when || isNaN(when.getTime())) return;
+          add({ uid: "okr-" + oi + "-" + ki + "-" + ymd(when), date: ymd(when), name: "Goal: " + (kr.t || o.o || ""), desc: "A quarterly goal in the Life OS (OKRs). Move its key result there.", done: (kr.b === undefined ? +kr.v : (kr.c - kr.b) / (kr.g - kr.b)) >= 1, group: "deadlines", source: "Goal" });
+        });
+        var od = o.due || o.end;
+        if (od) {
+          var ow = new Date(od);
+          if (!isNaN(ow.getTime())) add({ uid: "okr-" + oi + "-goal-" + ymd(ow), date: ymd(ow), name: "Goal: " + (o.o || ""), desc: "A quarterly goal in the Life OS (OKRs).", done: false, group: "deadlines", source: "Goal" });
+        }
       });
     }
     return out;
   }
+  window.datedItems = datedItems; window.gmDatedItems = datedItems;
   function calSig(e) { return e.date + "|" + e.name + "|" + (e.done ? 1 : 0); }
   function datedPlan(group) {
     var led = G("gm_cal_seq", {}), now = datedItems(group), seen = {}, ev = [];
@@ -4121,6 +4284,82 @@
     gmToast("Calendar file saved: " + live + " dated event" + (live === 1 ? "" : "s") + ". Add it to the same calendar each time; a newer file moves or removes these events, it never doubles them.");
   };
   function datedCount(group) { return datedItems(group).filter(function (e) { return !e.done; }).length; }
+  function dlDays(date) {
+    var p = String(date).split("-"), d = new Date(+p[0], (+p[1]) - 1, +p[2]), t = new Date();
+    return Math.round((d - new Date(t.getFullYear(), t.getMonth(), t.getDate())) / 864e5);
+  }
+  function dlChip(n) {
+    if (n === 0) return "today";
+    if (n === 1) return "tomorrow";
+    if (n > 0) return "in " + n + " days";
+    return (-n) + " days late";
+  }
+  function dlSource(e) { return e.source || (e.group === "career" ? "Career" : e.group === "renewals" ? "Papers" : ""); }
+  function dlDone(e) {
+    if (e.group === "career") return "gmCarDone('" + e.uid.slice(4) + "')";
+    if (e.uid.indexOf("ib-") === 0) return "gmInboxDone('" + e.uid.slice(3) + "')";
+    if (e.uid.indexOf("commit-") === 0) {
+      var i = -1; (S.commits || []).forEach(function (c, x) { if (commitUid(c, x) === e.uid) i = x; });
+      return i >= 0 ? "commitResult(" + i + ",true)" : "";
+    }
+    return "";
+  }
+  function dlRow(e, move) {
+    var n = dlDays(e.date), late = n < 0, act = dlDone(e);
+    var h = '<div style="display:flex;align-items:flex-start;gap:9px;margin:9px 0">'
+      + '<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;color:var(--text);line-height:1.45">' + esc(e.name)
+      + ' <span style="display:inline-block;font-size:11px;font-weight:800;border-radius:20px;padding:1px 7px;white-space:nowrap;color:' + (late ? "var(--amber)" : "var(--muted)") + ';background:' + (late ? "var(--amberBg)" : "var(--cardAlt)") + '">' + esc(dlChip(n)) + '</span></div>'
+      + '<div style="font-size:10.5px;letter-spacing:.4px;color:var(--muted);margin-top:2px">' + esc(dlSource(e)) + '</div>';
+    if (move && late) {
+      h += '<div style="font-size:11.5px;color:var(--amber);margin-top:5px">Late. Pick a new date or let it go.</div>'
+        + '<input type="date" value="' + esc(e.date) + '" aria-label="Move ' + esc(e.name) + '" onchange="gmDeadlineMove(\'' + e.uid + '\',this.value)" style="margin-top:5px;max-width:170px">';
+    }
+    h += '</div>';
+    if (act) h += '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);white-space:nowrap" onclick="' + act + '">Done</button>';
+    return h + '</div>';
+  }
+  function deadlinesHTML() {
+    var open = datedItems().filter(function (e) { return !e.done; })
+      .sort(function (p, q) { return p.date < q.date ? -1 : p.date > q.date ? 1 : (p.name < q.name ? -1 : 1); });
+    var h = '<div class="section active">';
+    if (!open.length) h += heroHTML("\u2014", "", "Nothing due. Enjoy it.", "");
+    else h += heroHTML(String(dlDays(open[0].date)), "days", esc(open[0].name) + " \u00b7 " + esc(open[0].date), "");
+    h += '<div style="margin:2px 0 4px"><button class="btn btn-p" data-haptic="success" onclick="gmCalendarDated()">Put all of these in my calendar</button>'
+      + '<div style="font-size:11.5px;color:var(--muted);margin-top:7px">Import into the same calendar each time; changes update the same events.</div></div>';
+    if (!open.length) return h + '</div>';
+    h += '<div class="road-col" style="padding:8px 12px;margin-bottom:10px">';
+    open.slice(0, 3).forEach(function (e) { h += dlRow(e, true); });
+    h += '</div>';
+    var rest = open.slice(3);
+    if (rest.length) {
+      h += '<details class="road-col gm-later"><summary style="cursor:pointer;font-weight:800;font-size:13px">Later (' + rest.length + ')</summary>'
+        + rest.map(function (e) { return dlRow(e, true); }).join("") + '</details>';
+    }
+    return h + '</div>';
+  }
+  window.gmDeadlineMove = function (uid, v) {
+    if (!v) return;
+    var p = String(uid).split("-");
+    if (uid.indexOf("commit-") === 0) {
+      (S.commits || []).forEach(function (c, i) { if (commitUid(c, i) === uid) c.dl = v; });
+      store("sovS", S);
+    } else if (uid.indexOf("ib-") === 0) {
+      var a = ibAll(); a.forEach(function (x) { if ("ib-" + ibSafe(x.id) === uid) x.due = v; }); ibSave(a);
+    } else if (uid.indexOf("car-") === 0) {
+      var c = car(), old = datedItems("career").filter(function (e) { return e.uid === uid; })[0];
+      var delta = old ? dlDays(v) - dlDays(old.date) : 0;
+      if (c.cfg.noticeStart) c.cfg.noticeStart = ymd(addDays(pd(c.cfg.noticeStart), delta));
+      carPut(c);
+    } else if (uid.indexOf("okr-") === 0) {
+      var oi = +p[1], ki = p[2] === "goal" ? -1 : +p[2];
+      if (S.okrs && S.okrs[oi]) {
+        if (ki < 0) { S.okrs[oi].due = v; delete S.okrs[oi].end; }
+        else if (S.okrs[oi].krs && S.okrs[oi].krs[ki]) { S.okrs[oi].krs[ki].due = v; S.okrs[oi].krs[ki].dueMs = Date.parse(v + "T00:00:00"); }
+        store("sovS", S);
+      }
+    }
+    renderAll();
+  };
 
 
   /* ── Pattern interrupt: when the week is heavy, the app subtracts instead of adding ──────────────
@@ -4962,6 +5201,7 @@
       + ((window.matchMedia && matchMedia("(display-mode: standalone)").matches) ? "" : '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();gmInstall()">Install as an app (phone or computer)</button>')
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" role="switch" aria-checked="' + (!G("gm_still", false)) + '" onclick="gmToggleStill()">Motion and haptics: ' + (G("gm_still", false) ? "off" : "on") + '</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" role="switch" aria-checked="' + (!G("gm_smart_off", false)) + '" onclick="gmToggleSmart()">Smart suggestions: ' + (G("gm_smart_off", false) ? "off" : "on") + '</button>'
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" role="switch" aria-checked="' + focusShow() + '" onclick="gmToggleFocusShow()">Show the focus timer: ' + (focusShow() ? "on" : "off") + '</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();gmReport()">Report a problem or idea</button>'
       + '</div><div style="font-size:12px;color:var(--muted);margin-top:12px">Life OS ' + esc(ver) + ' · your data stays on your devices</div>'
       + '<button class="btn-sm" style="margin-top:12px;background:none;color:var(--muted)" onclick="gmClose()">Close</button>');
@@ -5560,7 +5800,8 @@
         + '<div style="font-size:10.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--gold);font-weight:800">Your one open action · chosen by risk</div>'
         + '<div style="font-size:15px;font-weight:700;line-height:1.5;margin:8px 0 4px;color:var(--text)">' + one.text + '</div>'
         + '<div style="font-size:11.5px;color:var(--muted);line-height:1.6">' + one.why + ' Everything else waits below, folded.</div>'
-        + '<button class="btn btn-p" data-haptic="success" style="margin-top:10px" onclick="' + one.act + '">' + one.btn + '</button></div>';
+        + '<button class="btn btn-p" data-haptic="success" style="margin-top:10px" onclick="' + one.act + '">' + one.btn + '</button>'
+        + focusBtnHTML(focusUnesc(one.text)) + '</div>';
     return h + laterHTML(c.slice(1));
   }
 
@@ -5583,7 +5824,10 @@
       dates: [["2027-01-01", "New Year's Day"], ["2027-01-14", "Makar Sankranti"], ["2027-02-19", "Shivaji Jayanti"],
         ["2027-03-06", "Maha Shivratri"], ["2027-04-07", "Gudi Padwa / Ugadi"], ["2027-08-17", "Raksha Bandhan"],
         ["2027-09-04", "Ganesh Chaturthi"], ["2027-10-28", "Naraka Chaturdashi"], ["2027-10-30", "Govardhan Puja"],
-        ["2027-10-31", "Bhai Dooj"], ["2027-11-04", "Chhath Puja"], ["2027-12-24", "Christmas Eve"]] }
+        ["2027-10-31", "Bhai Dooj"], ["2027-11-04", "Chhath Puja"], ["2027-12-24", "Christmas Eve"]] },
+    { id: "in-mh-extra", where: "IN", addon: true, name: "Maharashtra additions (provisional until your office's list is pasted)",
+      dates: [["2027-02-19", "Shivaji Jayanti"], ["2027-04-07", "Gudi Padwa"], ["2027-04-14", "Ambedkar Jayanti"],
+        ["2027-05-01", "Maharashtra Day"], ["2027-09-04", "Ganesh Chaturthi"]] }
   ];
   var _holMaps = {};
   function gmHolidayMap(listId) {
@@ -5600,21 +5844,54 @@
     var m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/);
     return m ? new Date(+m[1], +m[2] - 1, +m[3]) : new Date();
   }
+  // A person holds periods of work, newest last: a job change is a new period, not a lost setting.
+  // An older single-object entry is read as one period with no dates.
+  function gmPeriods(person) {
+    person = person || {};
+    if (person.periods && person.periods.length) return person.periods;
+    return [{ from: person.from || "", to: person.to || "", off: person.off || "satsun",
+      list: person.list || "in-central", extra: (person.extra || []).slice(), rh: (person.rh || []).slice(), own: (person.own || []).slice() }];
+  }
+  function gmSetPeriods(person, periods) {
+    var out = {}, k;
+    for (k in (person || {})) if (["periods", "off", "list", "extra", "rh", "own", "from", "to"].indexOf(k) < 0) out[k] = person[k];
+    out.periods = periods;
+    return out;
+  }
+  // The period that covers a day; no period (a gap between jobs) means the day is off.
+  function gmPeriodFor(person, day) {
+    var ps = gmPeriods(person), best = null, i, p;
+    for (i = 0; i < ps.length; i++) {
+      p = ps[i];
+      if ((!p.from || day >= p.from) && (!p.to || day <= p.to)) best = p;
+    }
+    return best;
+  }
+  function gmAddPeriodHolidays(p, k, out) {
+    var year = k.slice(0, 4), ownYear = false;
+    (p.own || []).forEach(function (o) { if (o && String(o.d).slice(0, 4) === year) ownYear = true; });
+    if (!ownYear) {
+      var base = gmHolidayMap(p.list === "own" ? "" : p.list || "in-central");
+      if (base[k]) out[k] = base[k];
+      (p.extra || []).forEach(function (id) { var m = gmHolidayMap(id); if (m[k]) out[k] = m[k]; });
+      (p.rh || []).forEach(function (r) { var n = gmHolidayMap("in-central-rh")[r]; if (n) out[k] = n; });
+    }
+    (p.own || []).forEach(function (o) { if (o && o.d === k) out[k] = o.n || "Own holiday"; });
+  }
   // One person's days off in [from, to]: weekly offs, holidays, chosen restricted holidays, own list.
   window.gmDaysOff = function (person, from, to) {
-    person = person || {}; var off = person.off || "satsun", out = {};
+    person = person || {}; var out = {};
     var d = gmYmdToDate(from), end = gmYmdToDate(to);
     for (; d <= end; d.setDate(d.getDate() + 1)) {
-      var w = d.getDay(), dm = d.getDate(), rest = false;
+      var k = ymd(d), p = gmPeriodFor(person, k);
+      if (!p) { out[k] = "Between jobs"; continue; }
+      var off = p.off || "satsun", w = d.getDay(), dm = d.getDate(), rest = false;
       if (off === "sun") rest = w === 0;
       else if (off === "sun24") rest = w === 0 || (w === 6 && (Math.ceil(dm / 7) === 2 || Math.ceil(dm / 7) === 4));
       else rest = w === 0 || w === 6;
-      if (rest) out[ymd(d)] = "Weekly off";
+      if (rest) out[k] = "Weekly off";
+      gmAddPeriodHolidays(p, k, out);
     }
-    function add(map) { for (var k in map) if (k >= from && k <= to) out[k] = map[k]; }
-    add(gmHolidayMap(person.list === "own" ? "" : person.list || "in-central"));
-    (person.rh || []).forEach(function (k) { var n = gmHolidayMap("in-central-rh")[k]; if (n && k >= from && k <= to) out[k] = n; });
-    (person.own || []).forEach(function (p) { if (p && p.d && p.d >= from && p.d <= to) out[p.d] = p.n || "Own holiday"; });
     return out;
   };
   // Windows of 3+ days when BOTH are off, bridging gaps of working days with up to
@@ -5674,11 +5951,8 @@
       var extra = n - base;
       if (n < 3 || extra < Math.max(lm.length, lp.length)) return;
       var hols = {};
-      [w.me, w.partner].forEach(function (p) {
-        var map = gmHolidayMap(p.list === "own" ? "" : p.list || "in-central");
-        for (var hk in map) if (hk >= wStart && hk <= wEnd) hols[map[hk]] = true;
-        (p.rh || []).forEach(function (r) { var nm = gmHolidayMap("in-central-rh")[r]; if (nm && r >= wStart && r <= wEnd) hols[nm] = true; });
-        (p.own || []).forEach(function (o) { if (o && o.d >= wStart && o.d <= wEnd && o.n) hols[o.n] = true; });
+      [offMe, offPa].forEach(function (m) {
+        for (var hk in m) if (hk >= wStart && hk <= wEnd && m[hk] !== "Weekly off" && m[hk] !== "Between jobs") hols[m[hk]] = true;
       });
       cands.push({ start: wStart, end: wEnd, days: n, leaveMe: lm, leavePartner: lp, holidays: Object.keys(hols), score: n / Math.max(1, lm.length + lp.length) });
     });
@@ -5706,46 +5980,112 @@
     catch (e) { return String(dkey); }
   }
   function gmNextHoliday(from) {
-    var best = null, w = G("gm_work", null) || gmWorkDefault();
-    function scan(map) { for (var k in map) if (k >= from && (!best || k < best.d)) best = { d: k, n: map[k] }; }
-    scan(gmHolidayMap(w.me.list === "own" ? "" : w.me.list || "in-central"));
-    (w.me.own || []).forEach(function (o) { if (o && o.d >= from && (!best || o.d < best.d)) best = { d: o.d, n: o.n || "Own holiday" }; });
+    var w = G("gm_work", null) || gmWorkDefault();
+    var end = gmYmdToDate(from); end.setDate(end.getDate() + 400);
+    var map = gmDaysOff(w.me, from, ymd(end)), best = null;
+    for (var k in map) if (map[k] !== "Weekly off" && map[k] !== "Between jobs" && (!best || k < best.d)) best = { d: k, n: map[k] };
     return best;
   }
-  var gmWorkMsg = "";
-  function gmWorkPersonHTML(who, label, cfg) {
-    var rh = gmHolidayMap("in-central-rh");
-    return '<div style="background:var(--cardAlt);border-radius:10px;padding:10px;margin-bottom:8px">'
-      + '<div style="font-weight:800;font-size:12.5px;margin-bottom:6px">' + label + '</div>'
-      + '<div class="row" style="gap:8px;flex-wrap:wrap"><label style="flex:1;min-width:140px">Weekly off<br><select id="gmw_off_' + who + '" style="max-width:100%">'
-      + '<option value="satsun"' + (cfg.off === "satsun" ? " selected" : "") + '>Saturday and Sunday</option>'
-      + '<option value="sun"' + (cfg.off === "sun" ? " selected" : "") + '>Sunday only</option>'
-      + '<option value="sun24"' + (cfg.off === "sun24" ? " selected" : "") + '>Sunday plus 2nd and 4th Saturday</option></select></label>'
-      + '<label style="flex:1;min-width:140px">Holiday list<br><select id="gmw_list_' + who + '" style="max-width:100%">'
-      + '<option value="in-central"' + (cfg.list !== "own" ? " selected" : "") + '>Central government (India)</option>'
-      + '<option value="own"' + (cfg.list === "own" ? " selected" : "") + ">My office's own list</option></select></label></div>"
+  function gmListName(id) { var l = HOLIDAY_LISTS.filter(function (x) { return x.id === id; })[0]; return l ? l.name : ""; }
+  function gmOffLabel(off) {
+    return off === "sun" ? "Sunday only" : off === "sun24" ? "Bank pattern: Sunday plus 2nd and 4th Saturday" : "Saturday and Sunday";
+  }
+  var gmWorkMsg = "", gmWorkEditing = null;
+  function gmWorkPeriodLine(who, i, p) {
+    var line = "From " + (p.from ? gmWorkFmt(p.from) : "the start") + " \u00b7 " + gmOffLabel(p.off)
+      + " \u00b7 " + (p.list === "own" ? "Your office's list" : gmListName(p.list || "in-central"));
+    var ex = (p.extra || []).map(gmListName).filter(Boolean);
+    if (ex.length) line += " + " + ex.join(" + ");
+    var years = {};
+    (p.own || []).forEach(function (o) { if (o && o.d) years[String(o.d).slice(0, 4)] = true; });
+    var ys = Object.keys(years).sort();
+    if (ys.length) line += " \u00b7 Using your office's list for " + ys.join(", ");
+    return '<div style="display:flex;align-items:center;gap:8px;margin:6px 0">'
+      + '<div style="flex:1;font-size:12.5px;color:var(--text)">' + esc(line) + '</div>'
+      + '<button class="btn" style="padding:4px 10px;font-size:11.5px" onclick="gmWorkEdit(\'' + who + '\',' + i + ')">Edit</button></div>';
+  }
+  function gmWorkPeriodForm(who, i, p) {
+    var sfx = i ? "_" + i : "", rh = gmHolidayMap("in-central-rh");
+    var addons = HOLIDAY_LISTS.filter(function (x) { return x.addon; });
+    return '<div style="background:var(--cardAlt);border-radius:10px;padding:10px;margin:0 0 8px">'
+      + '<div class="row" style="gap:8px;flex-wrap:wrap">'
+      + '<label style="flex:1;min-width:140px">Starts<br><input type="date" id="gmw_from_' + who + sfx + '" value="' + esc(p.from || "") + '" style="max-width:100%"></label>'
+      + '<label style="flex:1;min-width:140px">Ends (blank = still there)<br><input type="date" id="gmw_to_' + who + sfx + '" value="' + esc(p.to || "") + '" style="max-width:100%"></label></div>'
+      + '<div class="row" style="gap:8px;flex-wrap:wrap"><label style="flex:1;min-width:140px">Weekly off<br><select id="gmw_off_' + who + sfx + '" style="max-width:100%">'
+      + '<option value="satsun"' + ((p.off || "satsun") === "satsun" ? " selected" : "") + '>Saturday and Sunday</option>'
+      + '<option value="sun"' + (p.off === "sun" ? " selected" : "") + '>Sunday only</option>'
+      + '<option value="sun24"' + (p.off === "sun24" ? " selected" : "") + '>Bank pattern: Sunday plus 2nd and 4th Saturday</option></select></label>'
+      + '<label style="flex:1;min-width:140px">Holiday list<br><select id="gmw_list_' + who + sfx + '" style="max-width:100%">'
+      + '<option value="in-central"' + (p.list !== "own" ? " selected" : "") + '>Central government (India)</option>'
+      + '<option value="own"' + (p.list === "own" ? " selected" : "") + ">My office's own list</option></select></label></div>"
+      + addons.map(function (x) {
+        var on = (p.extra || []).indexOf(x.id) >= 0;
+        return '<label style="display:block;font-size:12px;margin-top:6px"><input type="checkbox" class="gmw-extra-' + who + '-' + i + '" value="' + x.id + '"'
+          + (on ? " checked" : "") + "> " + esc(x.name) + "</label>";
+      }).join("")
       + '<div style="font-size:11.5px;color:var(--muted);margin:8px 0 4px">Restricted holidays (pick two):</div>'
       + Object.keys(rh).sort().map(function (k) {
-        return '<label style="display:inline-block;margin:0 12px 4px 0;font-size:12px"><input type="checkbox" class="gmw-rh-' + who + '" value="' + k + '"'
-          + (cfg.rh.indexOf(k) >= 0 ? " checked" : "") + "> " + esc(rh[k]) + ", " + gmWorkFmt(k) + "</label>";
+        return '<label style="display:inline-block;margin:0 12px 4px 0;font-size:12px"><input type="checkbox" class="gmw-rh-' + who + '-' + i + '" value="' + k + '"'
+          + ((p.rh || []).indexOf(k) >= 0 ? " checked" : "") + "> " + esc(rh[k]) + ", " + gmWorkFmt(k) + "</label>";
       }).join("")
-      + '<label style="display:block;font-size:12px;margin-top:8px">Your office\u2019s own holidays<br><textarea id="gmw_own_' + who + '" rows="3" '
+      + '<label style="display:block;font-size:12px;margin-top:8px">Your office\u2019s own holidays<br><textarea id="gmw_own_' + who + sfx + '" rows="3" '
       + 'placeholder="Paste your office\u2019s holiday list, one per line: 2027-01-26 Republic Day" '
-      + 'style="width:100%;max-width:100%">' + esc((cfg.own || []).map(function (o) { return o.d + " " + o.n; }).join("\n")) + '</textarea></label>'
+      + 'style="width:100%;max-width:100%">' + esc((p.own || []).map(function (o) { return o.d + " " + o.n; }).join("\n")) + '</textarea></label>'
       + '</div>';
   }
+  function gmWorkPersonHTML(who, label, person) {
+    var ps = gmPeriods(person);
+    return '<div style="background:var(--cardAlt);border-radius:10px;padding:10px;margin-bottom:8px">'
+      + '<div style="font-weight:800;font-size:12.5px;margin-bottom:6px">' + label + '</div>'
+      + ps.map(function (p, i) {
+        var open = gmWorkEditing && gmWorkEditing.who === who && gmWorkEditing.i === i;
+        return gmWorkPeriodLine(who, i, p) + '<div style="display:' + (open ? "block" : "none") + '">' + gmWorkPeriodForm(who, i, p) + '</div>';
+      }).join("")
+      + '<button class="btn" style="margin-top:6px" onclick="gmWorkAdd(\'' + who + '\')">My job changes on a date</button></div>';
+  }
+  window.gmWorkEdit = function (who, i) { gmWorkEditing = { who: who, i: i }; renderAll(); };
+  window.gmWorkAdd = function (who) {
+    who = who === "partner" ? "partner" : "me";
+    var w = G("gm_work", null) || gmWorkDefault(), ps = gmPeriods(w[who]).slice();
+    var last = ps[ps.length - 1] || {};
+    var from = ymd(new Date());
+    if (ps.length && !last.to) {
+      var before = gmYmdToDate(from); before.setDate(before.getDate() - 1);
+      var prev = {}; for (var k in last) prev[k] = last[k];
+      prev.to = ymd(before); ps[ps.length - 1] = prev;
+    }
+    ps.push({ from: from, to: "", off: last.off || "satsun", list: last.list || "in-central",
+      extra: (last.extra || []).slice(), rh: (last.rh || []).slice(), own: [] });
+    w[who] = gmSetPeriods(w[who], ps);
+    S_("gm_work", w); gmWorkEditing = { who: who, i: ps.length - 1 };
+    gmWorkMsg = "Added a period from " + gmWorkFmt(from) + ". Pick its date and save.";
+    renderAll();
+  };
   window.gmWorkSave = function () {
     var w = G("gm_work", null) || gmWorkDefault(), read = 0, bad = 0;
     ["me", "partner"].forEach(function (who) {
-      var el = document.getElementById("gmw_off_" + who); if (el) w[who].off = el.value;
-      el = document.getElementById("gmw_list_" + who); if (el) w[who].list = el.value;
-      w[who].rh = [].slice.call(document.querySelectorAll(".gmw-rh-" + who + ":checked")).map(function (x) { return x.value; }).slice(0, 2);
-      el = document.getElementById("gmw_own_" + who);
-      if (el) { var p = gmParseOwn(el.value); w[who].own = p.list; read += p.list.length; bad += p.bad; }
+      if (!document.getElementById("gmw_off_" + who)) return;
+      var person = w[who] || {}, ps = gmPeriods(person).slice();
+      for (var i = 0; i < ps.length; i++) {
+        var sfx = i ? "_" + i : "", el = document.getElementById("gmw_off_" + who + sfx);
+        if (!el) break;
+        var p = ps[i] || {};
+        p.off = el.value;
+        el = document.getElementById("gmw_list_" + who + sfx); if (el) p.list = el.value;
+        el = document.getElementById("gmw_from_" + who + sfx); if (el) p.from = el.value;
+        el = document.getElementById("gmw_to_" + who + sfx); if (el) p.to = el.value;
+        p.extra = [].slice.call(document.querySelectorAll(".gmw-extra-" + who + "-" + i + ":checked")).map(function (x) { return x.value; });
+        p.rh = [].slice.call(document.querySelectorAll(".gmw-rh-" + who + "-" + i + ":checked")).map(function (x) { return x.value; }).slice(0, 2);
+        el = document.getElementById("gmw_own_" + who + sfx);
+        if (el) { var pr = gmParseOwn(el.value); p.own = pr.list; read += pr.list.length; bad += pr.bad; }
+        ps[i] = p;
+      }
+      w[who] = gmSetPeriods(person, ps);
     });
     var two = document.getElementById("gmw_two"); if (two) w.two = two.checked;
     S_("gm_work", w);
     gmWorkMsg = "Saved: read " + read + " of " + (read + bad) + " pasted line(s); " + bad + " ignored (each needs \u201Cdate name\u201D).";
+    gmWorkEditing = null;
     renderAll();
   };
   window.gmBreaksHow = function () {
@@ -5804,7 +6144,7 @@
     var today = TABS.filter(function (t) { return t[0] === "today"; });
     var map = TABS.filter(function (t) { return t[0] === "map"; });
     TABS.length = 0;
-    today.concat([["inbox", "Inbox"], ["ask", "Ask"], ["guide", "Guides"], ["stack", "Stack"], ["life", "Life Map"], ["breaks", "Breaks"], ["career", "Career"],
+    today.concat([["inbox", "Inbox"], ["deadlines", "Deadlines"], ["ask", "Ask"], ["guide", "Guides"], ["stack", "Stack"], ["life", "Life Map"], ["breaks", "Breaks"], ["career", "Career"],
       ["prop", "Property"], ["ops", "Ops"]]).concat(map).concat(keep)
       .forEach(function (t) { TABS.push([t[0], t[1].replace(/^[^A-Za-z0-9]+/, "")]); });   // plain words in the tab bar: no emoji
   }
@@ -5830,6 +6170,7 @@
     if (!phone()) document.body.insertAdjacentHTML("beforeend", vitalsHTML());   // on a phone the vitals sit at the top of Today
     if (curTab === "ask") { box.innerHTML = askHTML(); try { gmAskPing(); } catch (e) {} }
     else if (curTab === "guide") { box.innerHTML = guidesHTML(); }
+    else if (curTab === "deadlines") { box.innerHTML = deadlinesHTML(); }
     else if (curTab === "inbox") { box.innerHTML = inboxHTML(); }
     else if (curTab === "ops") { box.innerHTML = opsHTML(); }
     else if (curTab === "stack") { box.innerHTML = stackHTML(); }
@@ -5853,6 +6194,7 @@
     try { navRender(); } catch (e) { console.log(e); }
     // Inline help: self-explain every specialised term on whatever screen just rendered.
     try { gmAnnotate(box); } catch (e) { }
+    try { focusTick(); } catch (e) { }
   };
 
   /* ── 11. Boot ───────────────────────────────────────────────────── */
