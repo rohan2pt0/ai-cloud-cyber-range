@@ -3850,7 +3850,7 @@
   function quarterDue() { return !quarterDone() && (new Date().getMonth() % 3 === 0 || !(S.okrs || []).length || !S.wheel); }
   function wheelSuggestions() {
     var dims = (typeof WHEEL_DIMS !== "undefined") ? WHEEL_DIMS : [];
-    var ranked = dims.map(function (w, i) { return { k: w[0], label: w[1], v: wheelVal(i) }; }).sort(function (a, b) { return a.v - b.v; });
+    var ranked = dims.map(function (w, i) { return { k: w[0], label: w[1], v: wheelVal(i) }; }).filter(function (r) { return r.v != null; }).sort(function (a, b) { return a.v - b.v; });
     var out = [];
     ranked.slice(0, 3).forEach(function (r) { if (QSUG[r.k]) out.push({ k: r.k, why: r.label + " is " + r.v + "/10", o: QSUG[r.k].o, krs: QSUG[r.k].krs }); });
     if (!out.some(function (x) { return x.k === "money"; })) {
