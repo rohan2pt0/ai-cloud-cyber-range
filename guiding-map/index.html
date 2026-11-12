@@ -9236,6 +9236,71 @@ window.GM_SYSTEMS = {"version":1,"verified":"2026-11-12","note":"Life systems: o
     if (y && Math.abs((window.scrollY || 0) - y) > 2) { try { window.scrollTo(0, y); } catch (e) {} }
   };
 
+  /* ── Signature moments (luxury slice 6, owner 2026-11-12): never a wait, never a forced splash.
+     1. Once per install: the gold ring draws itself, the monogram and "Your private estate" appear; a tap enters.
+     2. Every open: the header ring unveils in 0.45 s while the page is already usable.
+     3. Achievement: when the daily three are all done, a gold shimmer crosses the card and the phone pulses once.
+     All of it is off for a person who asks for reduced motion. */
+  function gmSigCss() {
+    if (document.getElementById("gmSigCss")) return;
+    var st = document.createElement("style"); st.id = "gmSigCss";
+    st.textContent = "@keyframes gmring{0%{opacity:.25;transform:scale(.9);box-shadow:0 0 0 0 rgba(201,168,76,0)}60%{box-shadow:0 0 0 7px rgba(201,168,76,.18)}100%{opacity:1;transform:none;box-shadow:0 0 0 0 rgba(201,168,76,0)}}"
+      + ".logo-ring.gm-unveil{animation:gmring .45s cubic-bezier(.2,.8,.2,1) both}"
+      + "#gmIntro{position:fixed;inset:0;z-index:9999;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:18px;background:radial-gradient(circle at 50% 38%,#12304a 0%,#0a1628 45%,#05090f 100%);cursor:pointer;transition:opacity .5s ease}"
+      + "#gmIntro.out{opacity:0;pointer-events:none}"
+      + "#gmIntro svg{width:132px;height:132px;overflow:visible}"
+      + "#gmIntro .r{fill:none;stroke:url(#gmGold);stroke-width:2.2;stroke-linecap:round;stroke-dasharray:283;stroke-dashoffset:283;animation:gmdraw 1.15s cubic-bezier(.65,0,.35,1) .15s forwards}"
+      + "@keyframes gmdraw{to{stroke-dashoffset:0}}"
+      + "#gmIntro .m{font-family:'Instrument Serif',Georgia,serif;font-size:46px;fill:#e8c96a;opacity:0;animation:gmfade .6s ease .85s forwards}"
+      + "#gmIntro .w{font-family:'Instrument Serif',Georgia,serif;font-size:26px;letter-spacing:.01em;color:#f6f3ee;opacity:0;animation:gmfade .7s ease 1.15s forwards}"
+      + "#gmIntro .s{font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:rgba(232,201,106,.75);opacity:0;animation:gmfade .6s ease 1.7s forwards}"
+      + "#gmIntro .sheen{position:absolute;width:132px;height:132px;border-radius:50%;overflow:hidden;pointer-events:none}"
+      + "#gmIntro .sheen::after{content:'';position:absolute;top:-20%;left:-60%;width:40%;height:140%;transform:rotate(25deg);background:linear-gradient(90deg,transparent,rgba(255,255,255,.35),transparent);animation:gmsweep 1s ease 1.25s forwards;opacity:0}"
+      + "@keyframes gmsweep{0%{opacity:1;left:-60%}100%{opacity:0;left:130%}}"
+      + "@keyframes gmfade{to{opacity:1}}"
+      + ".gm-d3.gm-shine{position:relative;overflow:hidden}"
+      + ".gm-d3.gm-shine::after{content:'';position:absolute;top:0;left:-50%;width:40%;height:100%;transform:skewX(-20deg);background:linear-gradient(90deg,transparent,rgba(232,201,106,.32),transparent);animation:gmshine 1.1s ease-out forwards;pointer-events:none}"
+      + "@keyframes gmshine{to{left:130%}}"
+      + "@media (prefers-reduced-motion: reduce){.logo-ring.gm-unveil,.gm-d3.gm-shine::after{animation:none}#gmIntro{display:none}}";
+    document.head.appendChild(st);
+  }
+  function gmIntro() {
+    var nm = (typeof P !== "undefined" && P && !P.example && P.name) ? String(P.name).trim().charAt(0).toUpperCase() : "";
+    var d = document.createElement("div"); d.id = "gmIntro"; d.setAttribute("role", "dialog"); d.setAttribute("aria-label", "Welcome to your private estate. Tap to enter.");
+    d.innerHTML = '<div style="position:relative;width:132px;height:132px"><div class="sheen" style="left:0;top:0"></div><svg viewBox="0 0 100 100" aria-hidden="true"><defs><linearGradient id="gmGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e8c96a"/><stop offset=".5" stop-color="#c9a84c"/><stop offset="1" stop-color="#f3dc8f"/></linearGradient></defs>'
+      + '<circle class="r" cx="50" cy="50" r="45"/><text class="m" x="50" y="50" text-anchor="middle" dominant-baseline="central">' + esc(nm || "◆") + '</text></svg></div>'
+      + '<div class="w">Your private estate</div><div class="s">Tap to enter</div>';
+    function leave() { if (d.classList.contains("out")) return; d.classList.add("out"); setTimeout(function () { if (d.parentNode) d.parentNode.removeChild(d); }, 520); }
+    d.addEventListener("click", leave); setTimeout(leave, 3200);
+    document.body.appendChild(d);
+  }
+  function gmSignature() {
+    gmSigCss();
+    var calm = gmCalmMotion();
+    var robot = false; try { robot = !!navigator.webdriver; } catch (e) {}   // automated tests drive the page; the intro is for people
+    if (!calm && !robot && !G("gm_intro_seen", false)) { S_("gm_intro_seen", true); gmIntro(); return; }
+    var ring = document.querySelector("header .logo-ring, .logo-ring");
+    if (ring && !calm) { ring.classList.add("gm-unveil"); setTimeout(function () { ring.classList.remove("gm-unveil"); }, 600); }
+  }
+  // The daily three just became complete: one gold shimmer and one soft pulse, once per day.
+  var _sigRender = window.renderAll;
+  window.renderAll = function () {
+    _sigRender.apply(this, arguments);
+    try {
+      var card = document.querySelector(".gm-d3"); if (!card) return;
+      var tiles = card.querySelectorAll(".tile"), on = card.querySelectorAll(".tile.on");
+      var day = new Date().toDateString(), done = tiles.length >= 3 && on.length === tiles.length;
+      var was = G("gm_d3_celebrated", "");
+      if (done && was !== day) {
+        S_("gm_d3_celebrated", day);
+        if (!gmCalmMotion()) { card.classList.add("gm-shine"); setTimeout(function () { card.classList.remove("gm-shine"); }, 1200); }
+        if (G("gm_haptics", true) !== false) try { navigator.vibrate && navigator.vibrate([8, 60, 14]); } catch (x) {}
+      }
+    } catch (e) {}
+  };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { try { gmSignature(); } catch (e) {} });
+  else setTimeout(function () { try { gmSignature(); } catch (e) {} }, 0);
+
   /* ── 11. Boot ───────────────────────────────────────────────────── */
   // An installed PWA is resumed far more often than it is loaded. Pulling only
   // on "load" is why one device sat on stale state for days.
