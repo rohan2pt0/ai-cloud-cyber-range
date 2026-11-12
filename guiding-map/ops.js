@@ -5694,7 +5694,7 @@
   };
   // Dates through Intl with the person's locale, never hand-built strings.
   function gmWorkFmt(dkey) {
-    try { return new Intl.DateTimeFormat(undefined, { weekday: "short", day: "numeric", month: "short" }).format(gmYmdToDate(dkey)); }
+    try { return new Intl.DateTimeFormat((typeof P !== "undefined" && P && /india/i.test(P.country || "")) ? "en-IN" : undefined, { weekday: "short", day: "numeric", month: "short" }).format(gmYmdToDate(dkey)); }
     catch (e) { return String(dkey); }
   }
   function gmNextHoliday(from) {
