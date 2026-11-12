@@ -5214,6 +5214,11 @@
       + ".logo-ring{position:relative;border-color:transparent!important}"
       + ".logo-ring::before{content:'';position:absolute;inset:-2px;border-radius:50%;padding:2px;background:var(--gold-metal);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}"
       + ".logo-ring{background-image:var(--gold-metal);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}"
+      // Primary buttons: an ink pill with a polished-gold rim (gradient border), the one gold element on most screens.
+      + ".btn-p,.btn.primary{background:linear-gradient(var(--text),var(--text)) padding-box,var(--gold-metal) border-box!important;border:1.5px solid transparent!important;box-shadow:0 6px 16px rgba(11,31,53,.18),inset 0 1px 0 rgba(255,255,255,.08)!important}"
+      + "html[data-theme=dark] .btn-p,html[data-theme=dark] .btn.primary{box-shadow:0 6px 16px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.12)!important}"
+      // The tick that completes a daily-three tile is set in gold, not plain green: an earned mark.
+      + ".gm-d3 .tile.on .chk{background:var(--gold-metal)!important;border-color:transparent!important;color:#1b1406!important}"
       + ".gm-d3 .chk{width:24px;height:24px;border-radius:50%;border:2px solid var(--muted);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900}"
       + ".gm-d3 .tile.on .chk{background:var(--green);border-color:var(--green);color:#fff}"
       + "html[data-theme=dark] .gm-d3 .tile.on .chk{color:#0b111c}"
