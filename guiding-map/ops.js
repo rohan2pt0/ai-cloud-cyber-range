@@ -5219,6 +5219,15 @@
       + "html[data-theme=dark] .btn-p,html[data-theme=dark] .btn.primary{box-shadow:0 6px 16px rgba(0,0,0,.4),inset 0 1px 0 rgba(255,255,255,.12)!important}"
       // The tick that completes a daily-three tile is set in gold, not plain green: an earned mark.
       + ".gm-d3 .tile.on .chk{background:var(--gold-metal)!important;border-color:transparent!important;color:#1b1406!important}"
+      // Materials for verdict bars (owner, 2026-11-12): red velvet, cognac leather and emerald, each with a light-catching top.
+      + ".gm-mat{height:100%;border-radius:inherit;box-shadow:inset 0 -1px 0 rgba(0,0,0,.28),inset 0 1px 0 rgba(255,255,255,.18)}"
+      + ".gm-mat-r{background:linear-gradient(180deg,rgba(255,255,255,.24) 0,rgba(255,255,255,0) 48%),linear-gradient(90deg,#3d0812 0%,#6e1022 40%,#9e1f37 78%,#c2394f 100%)}"
+      + ".gm-mat-a{background:linear-gradient(180deg,rgba(255,255,255,.24) 0,rgba(255,255,255,0) 48%),linear-gradient(90deg,#4f2c0c 0%,#7f4c16 40%,#b06f24 78%,#d39a45 100%)}"
+      + ".gm-mat-g{background:linear-gradient(180deg,rgba(255,255,255,.22) 0,rgba(255,255,255,0) 48%),linear-gradient(90deg,#05362a 0%,#0a6248 40%,#138a64 78%,#2bb88a 100%)}"
+      + "html[data-theme=dark] .afp-bar,html[data-theme=dark] .ptrack,html[data-theme=dark] .ns-sbar{background:rgba(255,255,255,.08)!important}"
+      + ".kc.behind .ab{background:linear-gradient(90deg,transparent,#7d1426 20%,#c2394f 50%,#7d1426 80%,transparent)!important;height:2px}"
+      + ".kc.caution .ab{background:linear-gradient(90deg,transparent,var(--gold) 20%,var(--goldL) 50%,var(--gold) 80%,transparent)!important;height:2px}"
+      + ".stk-k{background:linear-gradient(135deg,#d9b65c 0%,#f3e2a6 42%,#d4af37 70%,#e8c96a 100%)!important;color:#1b1406!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 2px 6px rgba(122,90,20,.18)}"
       + ".gm-d3 .chk{width:24px;height:24px;border-radius:50%;border:2px solid var(--muted);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900}"
       + ".gm-d3 .tile.on .chk{background:var(--green);border-color:var(--green);color:#fff}"
       + "html[data-theme=dark] .gm-d3 .tile.on .chk{color:#0b111c}"

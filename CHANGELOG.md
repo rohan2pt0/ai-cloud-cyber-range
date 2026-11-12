@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Changed
+- Life OS: Life Score bars are materials by verdict (red velvet, cognac, emerald) with a light-catching top; the move cards carry velvet and gold hairlines; the instrument-panel labels are soft polished gold; dark-theme bar tracks are smoked glass.
 - Life OS: primary buttons carry a polished-gold rim, and a completed daily-three tile shows a gold coin tick, the earned mark.
 - Life OS: every property number carries a verdict (Strong, Watch or Weak, in colour and in words), losses read with a real minus sign, and gold is now metallic (hero numbers and the monogram ring), not a flat yellow. `test79.js` holds it.
 - Life OS luxury slice 2 (colour discipline, after Dieter Rams' 'less, but better'): purple retired for a deep teal ink, Shield cards carry a thin gold hairline instead of a coloured bar, the star badge is a fine gold outline, and cards have more room inside; contrast audit 0 failures.
