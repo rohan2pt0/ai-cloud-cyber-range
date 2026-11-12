@@ -1553,7 +1553,10 @@ function renderScore(E){
     ["\uD83C\uDF31 Learning & Growth","Compounding knowledge and optionality",["mind","glo"],"Main goal: second residency + 2 languages"],
     ["\uD83E\uDD1D Relationships & Purpose","The people and meaning it's all for",["soc","pur"],"Main goal: Ikigai \u2265 9 + legacy secured"]
   ];
-  var h='<div class="section active"><div class="info">The Balanced Scorecard keeps four perspectives in balance so you never win money while losing health, relationships, or meaning. Each rolls up from its pillar measures.</div><div class="grid">';
+  var h='<div class="section active">'
+   +heroHTML(AF.score,"/100","Your overall score across the four perspectives")
+   +howHTML('The Balanced Scorecard keeps four perspectives in balance so you never win money while losing health, relationships, or meaning. Each rolls up from its pillar measures.')
+   +'<div class="grid">';
   persp.forEach(function(p){
     var sc=avgCats(p[2]); var st=sc>=70?"on":sc>=40?"caution":"behind";
     h+='<div class="kc '+(st==="on"?"":st)+'" style="cursor:pointer" onclick="goTab(\'all\',\''+p[2][0]+'\')"><div class="ab"></div><div class="kv">'+sc+'<span class="ku">/100</span></div><div class="kl">'+p[0]+'</div><div class="sys-prog" style="margin-top:4px">'+p[1]+'</div><div class="sys-prog" style="margin-top:6px;color:var(--gold)">'+p[3]+'</div></div>';
@@ -1568,13 +1571,16 @@ function renderPlan(E){
   var bandCol={fragile:"#ff9b94",robust:"#e8c96a",antifragile:"#7be0a0"}[AF.band];
   var subName={redundancy:"Redundancy (survive)",optionality:"Optionality (gain from chaos)",recovery:"Recovery (bounce back)"};
   var h='<div class="section active">';
+  var goalN=(S.okrs||[]).length;
+  var goalBtn=goalN<3?'<button class="btn-sm" style="background:var(--gold);color:#0d1f35" onclick="addOKR()">+ Add a goal for this quarter</button>':'';
+  h+=heroHTML(goalN,"of 3","Goals for this quarter",goalBtn);
   // ---- OKR Auto-Suggester ----
   h+='<div class="cat-t">\uD83C\uDFAF Recommended focus — the 3 moves that lift Antifragility fastest</div>';
-  h+='<div class="info">Your weakest lever is <b>'+subName[sug.order[0][0]]+' \u2014 '+sug.order[0][1]+'/100</b>. These objectives target it first. Tap "Adopt" to drop one straight into your quarterly goals.</div>';
+  h+=howHTML('Your weakest lever is <b>'+subName[sug.order[0][0]]+' \u2014 '+sug.order[0][1]+'/100</b>. These objectives target it first. Tap "Adopt" to drop one straight into your quarterly goals.');
   h+='<div class="grid">';
   sug.picks.forEach(function(p,i){
     h+='<div class="kc"><div class="ab"></div>'
-     +'<div class="badges"><span class="cb" style="background:var(--navy);color:#fff">'+p.sub.slice(0,3).toUpperCase()+'</span></div>'
+     +statusHTML("Optional","var(--muted)")
      +'<div class="kl" style="font-size:13.5px">'+p.t+'</div>'
      +'<div class="sys-prog" style="margin-top:6px"><b>Key result:</b> '+p.kr+'</div>'
      +'<div class="sys-prog" style="margin-top:4px;color:var(--muted)">'+p.why+'</div>'
@@ -1636,6 +1642,7 @@ function adoptOKR(i){
 function renderGrowth(E){
   var fc=forecast(E); var s=snapSeries(); var AF=antifragility(E);
   var h='<div class="section active">';
+  h+=heroHTML(fc.m12,"/100","Where you are heading in 12 months");
   // ---- Forecast ----
   h+='<div class="cat-t">\uD83D\uDCC8 North Star forecast</div>';
   h+='<div class="grid three">'
@@ -1643,7 +1650,7 @@ function renderGrowth(E){
     +'<div class="kc"><div class="ab"></div><div class="kv">'+fc.m6+'</div><div class="kl">In 6 months</div></div>'
     +'<div class="kc"><div class="ab"></div><div class="kv">'+fc.m12+'</div><div class="kl">In 12 months</div></div>'
     +'</div>';
-  h+='<div class="info">Projected at your current trajectory of <b>'+(fc.slope>=0?"+":"")+fc.slope+' pts/month</b>. This is not a promise \u2014 it\u2019s what happens if you keep doing exactly what you\u2019re doing now. Adopt the Plan tab\u2019s focus moves to bend the curve up.</div>';
+  h+=howHTML('Projected at your current trajectory of <b>'+(fc.slope>=0?"+":"")+fc.slope+' pts/month</b>. This is not a promise \u2014 it\u2019s what happens if you keep doing exactly what you\u2019re doing now. Adopt the Plan tab\u2019s focus moves to bend the curve up.');
   // ---- History sparkline ----
   h+='<div class="cat-t">\uD83D\uDD52 History</div>';
   if(s.length<2){ h+='<div class="info" style="background:var(--goldL);color:var(--gold)">History builds itself: each day you open this app, a snapshot is saved. Come back next month to see your trend line here.</div>'; }
