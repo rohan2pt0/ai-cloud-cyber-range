@@ -10,6 +10,7 @@ for the versioning and release policy.
 ## [Unreleased]
 ### Changed
 - **The Growth daily routine is a loop you run, not a list you read.** One open block shows its IF-THEN cue, its two-minute floor and a single Done button; the rest fold under "Later (n)", done blocks become a quiet struck-through line, and when all seven are done the card ends on a small win. Ticks live in `gm_routine` and the four blocks that match a Today habit tick it through the same path, so a streak or a missed yesterday is shown once and kindly. `test62.js` (12 checks).
+- **The More sheet uses one hand-drawn line-icon set.** Every tab now has a 24x24 stroke icon in the same style as the main navigation, shown above its plain label on the More tiles (gold on dark, text on light), so no tile falls back to an emoji. `test63.js` (88 checks).
 ### Fixed
 - Life OS Growth: the Pillar leverage bars were near-black; they now use the teal chart colour in both themes.
 - **The Stack and Guides open with one calm hero.** The Stack leads with the share of the whole stack done as a percent ("Your foundations, built from the bottom up"), with the one open action directly under it and each layer labelled Done, Next or Locked by a coloured dot next to its percent; Guides leads with the number of how-tos and puts the labelled search box directly under the hero. Both explanations fold under "How this works". `test61.js` (12 checks).
