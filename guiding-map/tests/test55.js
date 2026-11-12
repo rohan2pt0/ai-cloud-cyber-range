@@ -5,9 +5,10 @@ let P = 0, F = 0, e = []; const ok = (n, c, d) => { c ? P++ : (F++, e.push(n + (
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const rule = (sel) => { const m = html.match(new RegExp("\\" + sel + "\\{([^}]*)\\}")); return m ? m[1] : ""; };
 const ns = rule(".ns-card");
-ok("the antifragility card has a soft radial glow", /radial-gradient/.test(ns), ns);
-ok("the glow sits over deep navy to midnight teal", /#0b1a2e/.test(ns) && /#0f2f3a/.test(ns), ns);
-ok("the card keeps a 1px inner highlight", /inset[^;]*rgba\(255,255,255,\.06\)/.test(ns), ns);
+const glow = (html.match(/\.ns-card::before\{([^}]*)\}/) || [])[1] || "";
+ok("the antifragility card has a soft radial glow in a corner layer, behind the text", /radial-gradient/.test(glow) && /z-index:-1/.test(glow) && /pointer-events:none/.test(glow), glow);
+ok("the card is a gradient from deep navy to teal over a solid navy fallback", /background-color:#0d1f35/.test(ns) && /linear-gradient\(155deg,#0a1628/.test(ns) && /#114052/.test(ns), ns);
+ok("the card keeps a 1px inner highlight", /inset[^;]*rgba\(255,255,255,\.08\)/.test(ns), ns);
 ok("the card keeps the gold border", /2px solid var\(--gold\)/.test(ns), ns);
 const ey = rule(".ns-ey");
 ok(".ns-ey is sentence case, not tracked-out capitals", !/text-transform\s*:\s*uppercase/.test(ey) && /font-size:12px/.test(ey) && /letter-spacing:\s*(0|\.2px)/.test(ey), ey);

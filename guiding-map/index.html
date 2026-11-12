@@ -75,10 +75,12 @@ header{background:var(--navy);padding:13px 16px;display:flex;align-items:center;
 .gam-pts{font-size:10px;color:rgba(255,255,255,.6);white-space:nowrap;}
 .hstats{display:flex;margin-top:9px;background:rgba(255,255,255,.07);border-radius:10px;overflow:hidden;}
 /* ---- Life OS additions ---- */
-.ns-card{background-color:#0d1f35;background-image:radial-gradient(circle at top right,var(--ns-glow,rgba(201,168,76,0.18)),rgba(0,0,0,0) 62%),linear-gradient(160deg,#0b1a2e,#0f2f3a);border:2px solid var(--gold);border-radius:16px;padding:18px;margin-bottom:14px;color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);}
-.ns-card.ns-fragile{--ns-glow:rgba(255,155,148,0.12);}
-.ns-card.ns-robust{--ns-glow:rgba(232,201,106,0.12);}
-.ns-card.ns-antifragile{--ns-glow:rgba(123,224,160,0.12);}
+.ns-card{position:relative;isolation:isolate;overflow:hidden;background-color:#0d1f35;background-image:linear-gradient(155deg,#0a1628 0%,#0f2740 45%,#114052 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 10px 28px rgba(10,22,40,.28);border:2px solid var(--gold);border-radius:16px;padding:18px;margin-bottom:14px;color:#fff;}
+.ns-card::before{content:"";position:absolute;z-index:-1;inset:-30% -30% auto auto;width:75%;height:90%;border-radius:50%;background:radial-gradient(circle,var(--ns-glow,rgba(201,168,76,.32)),rgba(0,0,0,0) 70%);pointer-events:none;}
+.ns-card::after{content:"";position:absolute;z-index:-1;left:0;right:0;top:0;height:2px;background:linear-gradient(90deg,rgba(201,168,76,0),rgba(232,201,106,.75),rgba(201,168,76,0));pointer-events:none;}
+.ns-card.ns-fragile{--ns-glow:rgba(255,120,110,.40);}
+.ns-card.ns-robust{--ns-glow:rgba(232,201,106,.38);}
+.ns-card.ns-antifragile{--ns-glow:rgba(110,231,160,.36);}
 .ns-ey{font-size:12px;letter-spacing:.2px;color:rgba(255,255,255,.72);margin-bottom:6px;}
 .ns-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
 .ns-score{font-family:var(--font-display);font-weight:800;letter-spacing:-.022em;font-size:58px;line-height:1;}
