@@ -4054,22 +4054,47 @@
      - an item that is done, or gone from the list, is sent once more as CANCELLED, so apps remove it.
      The ledger is bounded: entries gone for over a year are forgotten (their events are long past). */
   var RENEW_RX = /\b(renew|renewal|premium|expir|lapsed|matur)/i;
+  function commitUid(c, i) { return c.id ? "commit-" + c.id : "commit-" + i + "-" + c.dl; }
   function datedItems(group) {
-    var out = [];
+    var out = [], seen = {};
+    function add(e) { if (!e.uid || seen[e.uid]) return; seen[e.uid] = 1; out.push(e); }
     if (!group || group === "career") {
       var c = car();
       if (c.cfg.noticeStart || c.cfg.join) planItems(c).forEach(function (p) {
-        if (p.due) out.push({ uid: "car-" + p.id, date: ymd(p.due), name: "Career: " + p.t, desc: "Your move plan in the Life OS (Career, step 7). Tick it there when it is done.", done: p.done, group: "career" });
+        if (p.due) add({ uid: "car-" + p.id, date: ymd(p.due), name: "Career: " + p.t, desc: "Your move plan in the Life OS (Career, step 7). Tick it there when it is done.", done: p.done, group: "career" });
       });
     }
     if (!group || group === "renewals") {
       ibAll().forEach(function (x) {
         if (x.kind === "note" || !x.due || !RENEW_RX.test((x.t || "") + " " + (x.next || ""))) return;
-        out.push({ uid: "ib-" + ibSafe(x.id), date: x.due, name: x.t, desc: (x.next ? x.next + "\n" : "") + "From your papers, in the Life OS Inbox. Mark it done there.", done: !!x.done, group: "renewals" });
+        add({ uid: "ib-" + ibSafe(x.id), date: x.due, name: x.t, desc: (x.next ? x.next + "\n" : "") + "From your papers, in the Life OS Inbox. Mark it done there.", done: !!x.done, group: "renewals" });
+      });
+    }
+    if (!group || group === "deadlines") {
+      (S.commits || []).forEach(function (c, i) {
+        if (!c || !c.dl) return;
+        add({ uid: commitUid(c, i), date: c.dl, name: "Commitment: " + (c.goal || ""), desc: "Your commitment contract in the Life OS (Commit). Settle it there when it is done.", done: c.status !== "live", group: "deadlines", source: "Commitment" });
+      });
+      ibAll().forEach(function (x) {
+        if (x.kind === "note" || !x.due || RENEW_RX.test((x.t || "") + " " + (x.next || ""))) return;
+        add({ uid: "ib-" + ibSafe(x.id), date: x.due, name: x.t || x.next, desc: (x.next ? x.next + "\n" : "") + "From your Inbox, in the Life OS. Mark it done there.", done: !!x.done, group: "deadlines", source: "Inbox" });
+      });
+      (S.okrs || []).forEach(function (o, oi) {
+        (o.krs || []).forEach(function (kr, ki) {
+          var when = kr.dueMs ? new Date(kr.dueMs) : (kr.due ? new Date(kr.due) : null);
+          if (!when || isNaN(when.getTime())) return;
+          add({ uid: "okr-" + oi + "-" + ki + "-" + ymd(when), date: ymd(when), name: "Goal: " + (kr.t || o.o || ""), desc: "A quarterly goal in the Life OS (OKRs). Move its key result there.", done: (kr.b === undefined ? +kr.v : (kr.c - kr.b) / (kr.g - kr.b)) >= 1, group: "deadlines", source: "Goal" });
+        });
+        var od = o.due || o.end;
+        if (od) {
+          var ow = new Date(od);
+          if (!isNaN(ow.getTime())) add({ uid: "okr-" + oi + "-goal-" + ymd(ow), date: ymd(ow), name: "Goal: " + (o.o || ""), desc: "A quarterly goal in the Life OS (OKRs).", done: false, group: "deadlines", source: "Goal" });
+        }
       });
     }
     return out;
   }
+  window.datedItems = datedItems; window.gmDatedItems = datedItems;
   function calSig(e) { return e.date + "|" + e.name + "|" + (e.done ? 1 : 0); }
   function datedPlan(group) {
     var led = G("gm_cal_seq", {}), now = datedItems(group), seen = {}, ev = [];
@@ -4113,6 +4138,82 @@
     gmToast("Calendar file saved: " + live + " dated event" + (live === 1 ? "" : "s") + ". Add it to the same calendar each time; a newer file moves or removes these events, it never doubles them.");
   };
   function datedCount(group) { return datedItems(group).filter(function (e) { return !e.done; }).length; }
+  function dlDays(date) {
+    var p = String(date).split("-"), d = new Date(+p[0], (+p[1]) - 1, +p[2]), t = new Date();
+    return Math.round((d - new Date(t.getFullYear(), t.getMonth(), t.getDate())) / 864e5);
+  }
+  function dlChip(n) {
+    if (n === 0) return "today";
+    if (n === 1) return "tomorrow";
+    if (n > 0) return "in " + n + " days";
+    return (-n) + " days late";
+  }
+  function dlSource(e) { return e.source || (e.group === "career" ? "Career" : e.group === "renewals" ? "Papers" : ""); }
+  function dlDone(e) {
+    if (e.group === "career") return "gmCarDone('" + e.uid.slice(4) + "')";
+    if (e.uid.indexOf("ib-") === 0) return "gmInboxDone('" + e.uid.slice(3) + "')";
+    if (e.uid.indexOf("commit-") === 0) {
+      var i = -1; (S.commits || []).forEach(function (c, x) { if (commitUid(c, x) === e.uid) i = x; });
+      return i >= 0 ? "commitResult(" + i + ",true)" : "";
+    }
+    return "";
+  }
+  function dlRow(e, move) {
+    var n = dlDays(e.date), late = n < 0, act = dlDone(e);
+    var h = '<div style="display:flex;align-items:flex-start;gap:9px;margin:9px 0">'
+      + '<div style="flex:1;min-width:0"><div style="font-size:13px;font-weight:700;color:var(--text);line-height:1.45">' + esc(e.name)
+      + ' <span style="display:inline-block;font-size:11px;font-weight:800;border-radius:20px;padding:1px 7px;white-space:nowrap;color:' + (late ? "var(--amber)" : "var(--muted)") + ';background:' + (late ? "var(--amberBg)" : "var(--cardAlt)") + '">' + esc(dlChip(n)) + '</span></div>'
+      + '<div style="font-size:10.5px;letter-spacing:.4px;color:var(--muted);margin-top:2px">' + esc(dlSource(e)) + '</div>';
+    if (move && late) {
+      h += '<div style="font-size:11.5px;color:var(--amber);margin-top:5px">Late. Pick a new date or let it go.</div>'
+        + '<input type="date" value="' + esc(e.date) + '" aria-label="Move ' + esc(e.name) + '" onchange="gmDeadlineMove(\'' + e.uid + '\',this.value)" style="margin-top:5px;max-width:170px">';
+    }
+    h += '</div>';
+    if (act) h += '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);white-space:nowrap" onclick="' + act + '">Done</button>';
+    return h + '</div>';
+  }
+  function deadlinesHTML() {
+    var open = datedItems().filter(function (e) { return !e.done; })
+      .sort(function (p, q) { return p.date < q.date ? -1 : p.date > q.date ? 1 : (p.name < q.name ? -1 : 1); });
+    var h = '<div class="section active">';
+    if (!open.length) h += heroHTML("\u2014", "", "Nothing due. Enjoy it.", "");
+    else h += heroHTML(String(dlDays(open[0].date)), "days", esc(open[0].name) + " \u00b7 " + esc(open[0].date), "");
+    h += '<div style="margin:2px 0 4px"><button class="btn btn-p" data-haptic="success" onclick="gmCalendarDated()">Put all of these in my calendar</button>'
+      + '<div style="font-size:11.5px;color:var(--muted);margin-top:7px">Import into the same calendar each time; changes update the same events.</div></div>';
+    if (!open.length) return h + '</div>';
+    h += '<div class="road-col" style="padding:8px 12px;margin-bottom:10px">';
+    open.slice(0, 3).forEach(function (e) { h += dlRow(e, true); });
+    h += '</div>';
+    var rest = open.slice(3);
+    if (rest.length) {
+      h += '<details class="road-col gm-later"><summary style="cursor:pointer;font-weight:800;font-size:13px">Later (' + rest.length + ')</summary>'
+        + rest.map(function (e) { return dlRow(e, true); }).join("") + '</details>';
+    }
+    return h + '</div>';
+  }
+  window.gmDeadlineMove = function (uid, v) {
+    if (!v) return;
+    var p = String(uid).split("-");
+    if (uid.indexOf("commit-") === 0) {
+      (S.commits || []).forEach(function (c, i) { if (commitUid(c, i) === uid) c.dl = v; });
+      store("sovS", S);
+    } else if (uid.indexOf("ib-") === 0) {
+      var a = ibAll(); a.forEach(function (x) { if ("ib-" + ibSafe(x.id) === uid) x.due = v; }); ibSave(a);
+    } else if (uid.indexOf("car-") === 0) {
+      var c = car(), old = datedItems("career").filter(function (e) { return e.uid === uid; })[0];
+      var delta = old ? dlDays(v) - dlDays(old.date) : 0;
+      if (c.cfg.noticeStart) c.cfg.noticeStart = ymd(addDays(pd(c.cfg.noticeStart), delta));
+      carPut(c);
+    } else if (uid.indexOf("okr-") === 0) {
+      var oi = +p[1], ki = p[2] === "goal" ? -1 : +p[2];
+      if (S.okrs && S.okrs[oi]) {
+        if (ki < 0) { S.okrs[oi].due = v; delete S.okrs[oi].end; }
+        else if (S.okrs[oi].krs && S.okrs[oi].krs[ki]) { S.okrs[oi].krs[ki].due = v; S.okrs[oi].krs[ki].dueMs = Date.parse(v + "T00:00:00"); }
+        store("sovS", S);
+      }
+    }
+    renderAll();
+  };
 
 
   /* ── Pattern interrupt: when the week is heavy, the app subtracts instead of adding ──────────────
@@ -5562,7 +5663,7 @@
     var today = TABS.filter(function (t) { return t[0] === "today"; });
     var map = TABS.filter(function (t) { return t[0] === "map"; });
     TABS.length = 0;
-    today.concat([["inbox", "Inbox"], ["ask", "Ask"], ["guide", "Guides"], ["stack", "Stack"], ["life", "Life Map"], ["career", "Career"],
+    today.concat([["inbox", "Inbox"], ["deadlines", "Deadlines"], ["ask", "Ask"], ["guide", "Guides"], ["stack", "Stack"], ["life", "Life Map"], ["career", "Career"],
       ["prop", "Property"], ["ops", "Ops"]]).concat(map).concat(keep)
       .forEach(function (t) { TABS.push([t[0], t[1].replace(/^[^A-Za-z0-9]+/, "")]); });   // plain words in the tab bar: no emoji
   }
@@ -5588,6 +5689,7 @@
     if (!phone()) document.body.insertAdjacentHTML("beforeend", vitalsHTML());   // on a phone the vitals sit at the top of Today
     if (curTab === "ask") { box.innerHTML = askHTML(); try { gmAskPing(); } catch (e) {} }
     else if (curTab === "guide") { box.innerHTML = guidesHTML(); }
+    else if (curTab === "deadlines") { box.innerHTML = deadlinesHTML(); }
     else if (curTab === "inbox") { box.innerHTML = inboxHTML(); }
     else if (curTab === "ops") { box.innerHTML = opsHTML(); }
     else if (curTab === "stack") { box.innerHTML = stackHTML(); }
