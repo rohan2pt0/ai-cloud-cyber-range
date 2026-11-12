@@ -1728,7 +1728,7 @@ function renderMoney(E){
     html+='<div class="pd-step '+cls+'" id="pdStep'+i+'"'+(s.manual?' onclick="togglePdMatch()" style="cursor:pointer"':'')+'>'
      +'<div class="pd-ico">'+(s.done?"\u2713":i)+'</div>'
      +'<div style="flex:1"><div class="pd-t">'+s.t+'</div><div class="pd-b">'+s.d+'</div></div>'
-     +(cls==="current"?'<div class="pd-here" style="background:none;padding:0;top:10px;right:12px">'+statusHTML("You are here","var(--gold)")+'</div>':'')
+     +(cls==="current"?'<div style="margin:-2px 0 6px">'+statusHTML("You are here","var(--gold)")+'</div>':'')
      +'</div>';
   });
   // Conscious Spending Plan
