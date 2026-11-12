@@ -1494,12 +1494,27 @@
           ["Usable set-off this year", "\u20b9" + Math.round(r.setOffUsable).toLocaleString("en-IN"), "Capped at \u20b92L against salary under the old regime; nil under the new."],
           ["Effective interest after tax shield", r.effRate.toFixed(2) + "%", "What the loan actually costs you once the deduction is counted."]
         ];
+        // A verdict for each number (owner, 2026-11-12): strong, watch or weak, by common property-finance rules of thumb.
+        var VERDICT = {
+          "Gross rental yield": r.grossYield >= 4 ? "g" : r.grossYield >= 2.5 ? "a" : "r",
+          "Net rental yield": r.netYield >= 3 ? "g" : r.netYield >= 2 ? "a" : "r",
+          "Price-to-rent": r.priceToRent <= 20 ? "g" : r.priceToRent <= 30 ? "a" : "r",
+          "Rent-to-EMI cover": r.dscr >= 1.2 ? "g" : r.dscr >= 1 ? "a" : "r",
+          "Debt-to-rental-income": r.debtToRent <= 8 ? "g" : r.debtToRent <= 15 ? "a" : "r",
+          "Loan-to-value": r.ltv <= 50 ? "g" : r.ltv <= 75 ? "a" : "r",
+          "Break-even occupancy": r.beOcc <= 70 ? "g" : r.beOcc <= 90 ? "a" : "r",
+          "Monthly cash flow": r.cashflow >= 0 ? "g" : r.cashflow >= -5000 ? "a" : "r"
+        };
+        var WORD = { g: "Strong", a: "Watch", r: "Weak" };
+        rows.forEach(function (x) { if (/^\u20b9-/.test(x[1])) x[1] = "\u2212\u20b9" + x[1].slice(2); });
         h += '<div style="margin-top:12px">';
         rows.forEach(function (x) {
-          h += '<div style="display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid var(--border)">'
+          var vd = VERDICT[x[0]] || "";
+          h += '<div class="gm-metric" style="display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">'
             + '<div style="flex:1"><div style="font-size:12.5px;font-weight:700;color:var(--text)">' + x[0] + '</div>'
             + '<div style="font-size:10.5px;color:var(--muted);line-height:1.4">' + x[2] + '</div></div>'
-            + '<div style="font-size:14px;font-weight:800;color:var(--text);white-space:nowrap">' + x[1] + '</div></div>';
+            + '<div style="text-align:right;white-space:nowrap"><div class="gm-num' + (vd ? " gm-v-" + vd : "") + '"' + (vd ? ' aria-label="' + x[1] + ', ' + WORD[vd] + '"' : "") + '>' + (vd ? '<span class="gm-dot" aria-hidden="true"></span>' : "") + x[1] + '</div>'
+            + (vd ? '<div class="gm-vw gm-v-' + vd + '">' + WORD[vd] + '</div>' : "") + '</div></div>';
         });
         h += '</div><div style="margin-top:10px">';
         v.forEach(function (x) {
@@ -5187,6 +5202,18 @@
       + "#sections.gm-first .section.active>*:nth-child(4){animation-delay:.09s}#sections.gm-first .section.active>*:nth-child(5){animation-delay:.12s}"
       + "#sections.gm-first .section.active>*:nth-child(6){animation-delay:.15s}"
       + "@media (prefers-reduced-motion: reduce){#sections.gm-first .section.active>*{animation:none}}"
+      // Verdict colours: refined, never alarm-red; a word as well as a colour, so it never depends on colour alone.
+      + ".gm-num{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums lining-nums;display:inline-flex;align-items:center;gap:6px;color:var(--text)}"
+      + ".gm-dot{width:7px;height:7px;border-radius:50%;background:currentColor;box-shadow:0 0 0 3px color-mix(in srgb,currentColor 18%,transparent)}"
+      + ".gm-vw{font-size:10px;font-weight:700;letter-spacing:.02em;margin-top:2px}"
+      + ".gm-v-g{color:#0f7a5c}.gm-v-a{color:#a15c00}.gm-v-r{color:#b42318}"
+      + "html[data-theme=dark] .gm-v-g{color:#34d399}html[data-theme=dark] .gm-v-a{color:#fbbf24}html[data-theme=dark] .gm-v-r{color:#fb7185}"
+      // Real gold is metallic: shadow, highlight and depth, like light on a polished curve. Used sparingly.
+      + ":root{--gold-metal:linear-gradient(135deg,#7a5a14 0%,#c9a24a 20%,#f7e7a8 38%,#d4af37 52%,#9c7a26 72%,#ecd27e 90%,#b8902f 100%)}"
+      + ".gm-hero .gm-hero-n{background:var(--gold-metal);-webkit-background-clip:text;background-clip:text;color:#e8c96a;-webkit-text-fill-color:transparent;filter:drop-shadow(0 1px 0 rgba(0,0,0,.25))}"
+      + ".logo-ring{position:relative;border-color:transparent!important}"
+      + ".logo-ring::before{content:'';position:absolute;inset:-2px;border-radius:50%;padding:2px;background:var(--gold-metal);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}"
+      + ".logo-ring{background-image:var(--gold-metal);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent}"
       + ".gm-d3 .chk{width:24px;height:24px;border-radius:50%;border:2px solid var(--muted);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900}"
       + ".gm-d3 .tile.on .chk{background:var(--green);border-color:var(--green);color:#fff}"
       + "html[data-theme=dark] .gm-d3 .tile.on .chk{color:#0b111c}"
