@@ -5,7 +5,7 @@ The method the user already runs by hand — open r/CCSP, filter **Top / All tim
 highest-ranked posts, spot the pattern everyone agrees on (e.g. "Pete Zerger + LEARNZAPP"),
 then act — turned into a repeatable engine for *every* sphere of life. It is the same logic
 behind McKinsey/BCG ("the pattern across hundreds of engagements"), Amazon best-seller +
-BIFL filters, and buying the Honda Activa (most-sold + best resale = refined over many cycles).
+BIFL filters, and buying the most-sold scooter (most-sold + best resale = refined over many cycles).
 
 THE ONE OPERATOR INSIGHT THIS ENCODES — two opposite regimes:
 
