@@ -1020,19 +1020,23 @@
 
   function lifeMapHTML() {
     var l = life(), age = saneNum("age", l.age), inc = num(l.inc), nw = num(l.nw), sage = saneNum("sage", l.sage), k1 = l.k1 === "" || l.k1 === undefined ? null : num(l.k1), page = saneNum("page", l.page);
-    var h = '<div class="section active"><div class="cat-t">\u{1F9ED} Life map</div>'
-      + '<div class="info">Benchmarks, not verdicts. Where you are behind, the map gives you the action \u2014 not a score to feel bad about. '
-      + 'Starting late is normal and is not disqualifying; the arithmetic simply gets less forgiving, so the response is a higher savings rate, not despair.</div>';
+    /* Net worth multiple — the widely used age benchmark, shifted later
+       for Indian earning curves where income peaks in the 40s. */
+    var mult = age < 30 ? 0.5 : age < 35 ? 1 : age < 40 ? 2 : age < 45 ? 3 : age < 50 ? 4.5 : age < 55 ? 6 : age < 60 ? 8 : 10;
+    var nwTarget = (age && inc) ? Math.round(mult * inc) : 0;
+    var nwPct = nwTarget ? Math.round(nw / nwTarget * 100) : 0;
+    var h = '<div class="section active">'
+      + heroHTML(nwTarget ? nwPct : "\u2014", nwTarget ? "%" : "", "Of the net-worth benchmark for your age", "")
+      + '<div class="cat-t">\u{1F9ED} Life map</div>'
+      + howHTML('Benchmarks, not verdicts. Where you are behind, the map gives you the action \u2014 not a score to feel bad about. '
+      + 'Starting late is normal and is not disqualifying; the arithmetic simply gets less forgiving, so the response is a higher savings rate, not despair.');
     h += exampleWarn();
     h += gmNumbersCard() + lifeInputs();
     if (!age || !inc) { h += '<div class="info" style="margin-top:12px">Enter at least your age and household income to generate the map.</div></div>'; return h; }
 
-    /* Net worth multiple — the widely used age benchmark, shifted later
-       for Indian earning curves where income peaks in the 40s. */
-    var mult = age < 30 ? 0.5 : age < 35 ? 1 : age < 40 ? 2 : age < 45 ? 3 : age < 50 ? 4.5 : age < 55 ? 6 : age < 60 ? 8 : 10;
-    var nwTarget = Math.round(mult * inc), b = band(nw, nwTarget);
+    var b = band(nw, nwTarget);
     h += '<div class="cat-t" style="margin-top:16px">You \u00b7 age ' + age + '</div><div class="road-col">'
-      + '<div class="road-h">Net worth <span style="float:right;color:' + b[1] + '">' + b[0] + '</span></div>'
+      + '<div class="road-h">Net worth <span style="float:right;text-transform:none">' + statusHTML(b[0], b[1]) + '</span></div>'
       + '<div class="road-i">Benchmark at ' + age + ': <b>' + mult + '\u00d7</b> annual income = <b>\u20b9' + nwTarget + 'L</b> (excluding the home you live in). You have \u20b9' + nw + 'L.</div>'
       + (nw < nwTarget * 0.6
         ? '<div class="road-i" style="color:var(--red)">Behind the band. The only lever that closes this reliably is the savings rate, not returns. Raise the auto-split by 1% every month that felt comfortable, and route half of every raise before lifestyle absorbs it.</div>'
@@ -4568,8 +4572,10 @@
 
   function careerHTML() {
     var c = car(), n = needs(c), cw = curWealth(c), hc = honestCtc(c), cost = cfgv(c, "health", 3000) + cfgv(c, "term", 1500);
-    var h = '<div class="section active"><div class="sec-t">\u{1F4BC} Career compass</div>'
-      + '<div class="info">Pick the next job on the 20% that decides 80% of the outcome: never go backwards, a rung up, survive the worst case. Everything is computed here, on this device.</div>'
+    var h = '<div class="section active">'
+      + heroHTML(hc ? rs(hc / 12) : "\u2014", hc ? "/mo" : "", "Your honest monthly package", "")
+      + '<div class="sec-t">\u{1F4BC} Career compass</div>'
+      + howHTML('Pick the next job on the 20% that decides 80% of the outcome: never go backwards, a rung up, survive the worst case. Everything is computed here, on this device.')
       + '<div style="display:flex;gap:6px;flex-wrap:wrap;margin:8px 0"><button class="btn-sm" style="background:var(--gold);color:#0d1f35" onclick="gmCarLoad()">Load my career file</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmCarAdd()">+ Add an offer</button></div>';
 
