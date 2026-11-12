@@ -3208,21 +3208,28 @@ window.GM_I18N = {"hi":{"_meta":{"locale":"hi-IN","status":"beta","note":"machin
   }
   function stackHTML() {
     var h = '<div class="section active">';
+    var total = STACK.length ? Math.round(STACK.reduce(function (sum, L) { return sum + layerPct(L); }, 0) / STACK.length) : 0;
+    h += heroHTML(total, "%", "Your foundations, built from the bottom up", "");
+    h += oneActionHTML();
     h += '<div class="cat-t">\u{1F3DB} The stack</div>'
-      + '<div class="info">Five layers. Each one is only allowed to depend on the layers below it, and you only work on the lowest unfinished item in the whole stack. '
-      + 'This is the single most important change in this version: it removes the decision about what to do next, which is where systems like this usually die.</div>';
+      + howHTML('Five layers. Each one is only allowed to depend on the layers below it, and you only work on the lowest unfinished item in the whole stack. '
+      + 'This is the single most important change in this version: it removes the decision about what to do next, which is where systems like this usually die.');
     var vOnly = G("gm_vitalonly", false);
     h += '<div style="display:flex;gap:8px;margin-bottom:12px"><button class="btn-sm" style="flex:1;background:'
       + (vOnly ? "var(--gold);color:#0d1f35" : "var(--cardAlt);color:var(--text)")
       + '" onclick="gmVitalOnly()">' + (vOnly ? "\u2605 Showing the vital few only" : "\u2606 Show only the vital few (80/20)") + '</button></div>';
-    h += oneActionHTML();
+    var nextIdx = -1;
+    for (var ni = 0; ni < STACK.length; ni++) { if (layerPct(STACK[ni]) < 100) { nextIdx = ni; break; } }
     STACK.forEach(function (L, li) {
       var pct = layerPct(L), st = stackState()[L.id] || {};
       var prevDone = li === 0 || layerPct(STACK[li - 1]) === 100;
       var col = pct === 100 ? "var(--green)" : prevDone ? "var(--gold)" : "var(--muted)";
+      var status = pct === 100 ? statusHTML("Done", "var(--green)")
+        : li === nextIdx ? statusHTML("Next", "var(--gold)")
+        : statusHTML("Locked", "var(--muted)");
       h += '<details class="road-col" style="margin-bottom:10px;border-left:4px solid ' + col + '">'
         + '<summary style="cursor:pointer;font-weight:800;font-size:13.5px">' + L.id + ' \u00b7 ' + esc(L.name)
-        + ' <span style="float:right;color:' + col + '">' + pct + '%</span></summary>'
+        + ' <span style="float:right">' + status + ' ' + pct + '%</span></summary>'
         + '<div class="road-i" style="margin:8px 0 10px;font-style:italic">' + esc(L.why) + '</div>';
       if (!prevDone) h += '<div class="info" style="margin-bottom:8px">Locked by design. Finish ' + STACK[li - 1].id + ' first \u2014 this layer is not safe to stand on until it is.</div>';
       L.items.forEach(function (it, i) {
@@ -5324,10 +5331,11 @@ window.GM_I18N = {"hi":{"_meta":{"locale":"hi-IN","status":"beta","note":"machin
 
   function guidesHTML() {
     var h = '<div class="section active">';
+    h += heroHTML(GUIDES.length, "how-tos", "Plain steps for every instruction in the map", "");
+    h += '<input placeholder="Search guides… (e.g. breathing, band, password)" aria-label="Search guides" oninput="gmGuideFilter(this.value)" '
+      + 'style="width:100%;min-height:44px;margin:0 0 10px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink)">';
     h += '<div class="cat-t">Guides — how to actually do it</div>';
-    h += '<div class="info">Every instruction in the map, explained in plain steps with a visual where it helps — so you act now instead of researching. No internet needed.</div>';
-    h += '<input placeholder="Search guides… (e.g. breathing, band, password)" oninput="gmGuideFilter(this.value)" '
-      + 'style="width:100%;margin:10px 0;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink)">';
+    h += howHTML('Every instruction in the map, explained in plain steps with a visual where it helps — so you act now instead of researching. No internet needed.');
     GUIDES.forEach(function (g) { h += guideCard(g); });
     h += '<div class="info" style="margin-top:10px">Missing a how-to you keep searching for? That’s a gap worth filling — note it in the Sunday Pulse and it becomes the next guide.</div>';
     return h + '</div>';
