@@ -7,7 +7,7 @@
 You already run a powerful method by hand: open **r/CCSP**, filter **Top → All time**, read the
 highest-ranked posts, spot what everyone agrees on (*Pete Zerger videos + LEARNZAPP*), and act.
 You do the same with Amazon **best-seller / BIFL / high-rating** filters, with top YouTube
-videos, and you bought the **Honda Activa** because it was *most-sold + best resale* — i.e.
+videos, and people buy the **most-sold scooter** because it is *most-sold + best resale*, i.e.
 refined over many cycles. That is **revealed preference + the wisdom of crowds + the Lindy
 effect** — the same engine McKinsey/BCG sell as "the pattern across hundreds of engagements."
 

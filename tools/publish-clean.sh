@@ -20,7 +20,8 @@ grep -rlI "@rohan2pt0" . | xargs -r sed -i "s#@rohan2pt0#@$ORG/maintainers#g" ||
 grep -rlI "ghcr.io/rohan2pt0" . | xargs -r sed -i "s#ghcr.io/rohan2pt0#ghcr.io/$ORG#g" || true
 grep -rlI "github.com/rohan2pt0" . | xargs -r sed -i "s#github.com/rohan2pt0#github.com/$ORG#g" || true
 # Refuse to publish while anything personal is left.
-if grep -rnIiE "rohan|choudhari|nabard" . ; then echo "✗ personal identifiers remain (listed above); nothing published."; exit 1; fi
+# Names are never listed here: the fingerprint check (./securax privacy) knows them without saying them.
+if grep -rnIi "rohan2pt0" . || ! python3 governance/private_names.py check; then echo "✗ personal identifiers remain (listed above); nothing published."; exit 1; fi
 git init -q -b main
 git -c user.name="$AUTHOR" -c user.email="$MAIL" add -A
 git -c user.name="$AUTHOR" -c user.email="$MAIL" commit -qm "SecuRAX: public release"
