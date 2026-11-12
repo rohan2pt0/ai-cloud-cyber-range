@@ -565,6 +565,55 @@
      "t": "Sunday sort: each Inbox item goes to Shield (protects someone, do first), Project (has an end), Area (ongoing), Someday or Delete. Pick ONE next action per project."
     }
    ]
+  },
+  {
+   "id": "work-shield",
+   "spoke": "career",
+   "title": "A clean record at work, so no story can stick",
+   "when": [
+    "salaried"
+   ],
+   "why": "At work, perception and speed win in the short run; facts and a written record win in the end. A calm person with a clean record is hard to harm.",
+   "cue": "After any important conversation, the same day; a 15-minute look on Friday.",
+   "floor": "One line: what was agreed, by whom, by when. Send it as an e-mail.",
+   "rhythm": [
+    {
+     "every": "week",
+     "t": "Friday, 15 minutes: add this week's wins to your wins log (what you delivered and its effect), save any appreciation as it came, and stop; no rumination."
+    },
+    {
+     "every": "month",
+     "t": "A short factual update of your work to your reporting authority, so your story is told by you, with evidence."
+    },
+    {
+     "every": "year",
+     "t": "Re-read your organisation's conduct, discipline and grievance rules once, before you ever need them."
+    }
+   ],
+   "once": [
+    {
+     "t": "On joining a new employer: get in writing your role, reporting line, probation terms, leave rules, staff-loan eligibility and the criteria for your first review."
+    },
+    {
+     "t": "Confirm in writing: within 24 hours of a verbal instruction, a short e-mail: 'As discussed: 1. ... 2. ... Action: who, what, by when. Please tell me if anything differs.'"
+    },
+    {
+     "t": "Keep only your own communications and work product. Never copy confidential, customer or restricted data to a personal device or personal e-mail, not even on your last day; that alone can become a charge."
+    },
+    {
+     "t": "If a pattern appears (not one bad day, but several instances over weeks), keep a private same-day log of facts only: date, place, people, what was said or done, impact, evidence. Facts, not motives."
+    },
+    {
+     "t": "In the room: answer the substance, not the tone. 'Can you share the specific instance?' 'Let's note this in the minutes.' 'I'll confirm this in writing.' Do not reply in writing while angry; draft, wait an hour, then send."
+    },
+    {
+     "t": "Know the ladder before you need it: the person, then your reporting authority, the next authority, the grievance cell with an acknowledgement number, then ethics or protected-disclosure channels, then a service-law lawyer. Each step with a short, dated, evidence-backed note."
+    },
+    {
+     "t": "Name one service-law lawyer you could call; a short early consultation costs far less than a late scramble."
+    }
+   ],
+   "sources": []
   }
  ],
  "events": [

@@ -118,6 +118,7 @@
   "nodes": { "from": "community", "uses": ["continuity", "tenancy"], "enterprise": "a dedicated node or cell per tenant" },
   "resilience": { "from": "community", "uses": ["continuity"], "enterprise": "single-point-of-failure analysis per tenant" },
   "autopilot": { "from": "community", "uses": ["continuity", "audit"], "enterprise": "nightly drills across tenants" },
-  "channel": { "from": "community", "uses": ["updates", "policy"], "enterprise": "the tenant's administrator chooses stable or beta" }
+  "channel": { "from": "community", "uses": ["updates", "policy"], "enterprise": "the tenant's administrator chooses stable or beta" },
+  "life-systems": { "from": "community", "uses": ["export", "residency"], "enterprise": "a team's shared playbooks, with each system owned by a role and its evidence kept for audit" }
  }
 }

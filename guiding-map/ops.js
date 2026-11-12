@@ -3110,7 +3110,7 @@
     var h = '<div class="section active">';
     h += heroHTML(GUIDES.length, "how-tos", "Plain steps for every instruction in the map", "");
     h += '<input placeholder="Search guides… (e.g. breathing, band, password)" aria-label="Search guides" oninput="gmGuideFilter(this.value)" '
-      + 'style="width:100%;min-height:44px;margin:0 0 10px;padding:9px 11px;border:1px solid var(--line);border-radius:10px;background:var(--panel);color:var(--ink)">';
+      + 'style="width:100%;min-height:44px;margin:0 0 10px;padding:9px 11px;border:1px solid var(--border);border-radius:10px;background:var(--card);color:var(--ink)">';
     h += '<div class="cat-t">Guides — how to actually do it</div>';
     h += howHTML('Every instruction in the map, explained in plain steps with a visual where it helps — so you act now instead of researching. No internet needed.');
     GUIDES.forEach(function (g) { h += guideCard(g); });
@@ -3354,17 +3354,18 @@
 
   function askHTML() {
     var h = '<div class="section active">';
-    h += '<div class="cat-t">Ask — your local AI + advisor army</div>';
-    h += '<div class="info">Ask plainly — answered by <b>your own model</b> through the guardrail gateway, kept honest (no made-up numbers). Pick an advisor for a first-draft expert opinion, then confirm anything big with a real professional.</div>';
-    h += '<div id="askStatus" class="info" style="margin-top:8px;display:flex;align-items:center;gap:7px"><span style="color:var(--muted)">●</span> Checking if your local AI is ready…</div>';
+    h += '<div class="cat-t">Ask</div>';
+    h += '<div class="info">Your own AI answers; nothing leaves your machines.</div>';
     h += '<div class="chips" style="margin:8px 0"><button class="chip' + (askAgent === "general" ? " on" : "") + '" data-k="general" aria-pressed="' + (askAgent === "general") + '" onclick="gmAskSet(\'general\')">General</button>';
     ADVISORS.forEach(function (a) { h += '<button class="chip' + (askAgent === a.k ? " on" : "") + '" data-k="' + a.k + '" aria-pressed="' + (askAgent === a.k) + '" onclick="gmAskSet(\'' + a.k + '\')">' + esc(a.n) + '</button>'; });
     h += '</div>';
     h += '<textarea id="askQ" onkeydown="if((event.ctrlKey||event.metaKey)&&event.key===\'Enter\'){event.preventDefault();gmAsk();}" placeholder="e.g. Right-size my emergency fund and term cover (Ctrl+Enter to ask)" style="width:100%;min-height:70px;padding:9px 11px;border:1px solid var(--line,#999);border-radius:10px;background:transparent;color:inherit"></textarea>';
-    h += '<div class="row" style="margin-top:8px;display:flex;gap:8px;align-items:center"><button class="btn btn-p" onclick="gmAsk()">Ask</button><span class="info" style="margin:0;padding:4px 8px">🔒 stays on your machine</span></div>';
+    h += '<div class="row" style="margin-top:8px;display:flex;gap:8px;align-items:center"><button class="btn btn-p" onclick="gmAsk()">Ask</button></div>';
     h += '<div id="askOut" class="info ask-md" style="display:none;margin-top:10px"></div>';
     h += '<div id="askFb" class="row" style="display:none;gap:8px;align-items:center;margin-top:8px"><span class="info" style="margin:0;padding:0">Useful?</span><button class="chip" onclick="gmAskFb(\'up\')">👍</button><button class="chip" onclick="gmAskFb(\'down\')">👎</button><button class="chip" onclick="gmAskCopy()">Copy answer</button><span class="info" style="margin:0;padding:0" id="askFbMsg"></span></div>';
+    h += '<div id="askStatus" class="info" style="margin-top:10px;display:flex;align-items:center;gap:7px"><span style="color:var(--muted)">●</span> Checking if your local AI is ready…</div>';
 
+    h += '<details class="road-col" style="margin-top:14px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">More tools (2)</summary>';
     h += '<details class="road-col" style="margin-top:14px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">🛡 Check before you share (on-device footprint scan)</summary><div style="margin-top:8px">'
       + '<div class="info">Paste a bio/profile/message about yourself — scanned on this device for over-shared identifiers. Nothing is sent.</div>'
       + '<textarea id="guardQ" placeholder="Paste text about yourself…" style="width:100%;min-height:60px;padding:9px 11px;border:1px solid var(--line,#999);border-radius:10px;background:transparent;color:inherit"></textarea>'
@@ -3374,8 +3375,9 @@
       + '<div class="info">Paste the top items you collected (Reddit Top/All-time, best-sellers, top videos) — one per line, best first. Get what the crowd agrees on. On-device.</div>'
       + '<textarea id="intelItems" placeholder="e.g.\nPassed CCSP! Pete Zerger videos + LEARNZAPP\nCCSP: Pete Zerger + LEARNZAPP, Sybex for depth" style="width:100%;min-height:60px;padding:9px 11px;border:1px solid var(--line,#999);border-radius:10px;background:transparent;color:inherit"></textarea>'
       + '<input id="intelVocab" placeholder="Names you saw repeating (comma-separated) — optional" style="width:100%;margin-top:6px;padding:9px 11px;border:1px solid var(--line,#999);border-radius:10px;background:transparent;color:inherit">'
-      + '<button class="btn btn-s" onclick="gmIntelGo()" style="margin-top:8px">Find the consensus</button><div id="intelOut" style="margin-top:8px"></div></div></details>';
+      + '<button class="btn btn-s" onclick="gmIntelGo()" style="margin-top:8px">Find the consensus</button><div id="intelOut" style="margin-top:8px"></div></div></details></details>';
 
+    h += '<details class="road-col" id="askConn" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">Connection (set once)</summary>';
     h += '<details class="road-col" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">⤢ Launch the estate</summary><div style="margin-top:8px" class="info">'
       + 'With the estate running on your laptop (double-click START-HERE): '
       + '<a href="' + estateUrl("chat", 3000) + '" target="_blank" rel="noopener">Unified chat</a> · '
@@ -3389,6 +3391,7 @@
       + '<div style="margin-top:8px">Gateway key <span style="color:var(--muted)">(only if sign-in is switched on for your estate; stays on this device)</span>: '
       + '<input id="askKeyIn" type="password" autocomplete="off" aria-label="Estate key" value="' + esc(G("gm_ask_key", "")) + '" style="width:100%;margin-top:4px;padding:7px 9px;border:1px solid var(--line,#999);border-radius:8px;background:transparent;color:inherit">'
       + '<button class="btn btn-s" onclick="gmAskKeySave()" style="margin-top:6px">Save key</button></div></div>';
+    h += '</details>';
     return h + '</div>';
   }
   // Switch advisor in place: no re-render, so a half-typed question is never wiped.
@@ -3425,6 +3428,12 @@
   window.gmMdLite = mdLite;
   window.gmAskKeySave = function () { S_("gm_ask_key", (document.getElementById("askKeyIn").value || "").trim()); renderAll(); };
   window.gmAskGwSave = function () { var v = (document.getElementById("askGwIn").value || "").trim(); if (v) S_("gm_ask_gw", v); renderAll(); };
+  // "Set up once" opens the one Connection fold and brings it into view.
+  window.gmAskShowConn = function () {
+    var el = document.getElementById("askConn"); if (!el) return;
+    el.open = true;
+    if (el.scrollIntoView) { try { el.scrollIntoView({ behavior: "smooth", block: "start" }); } catch (e) { el.scrollIntoView(); } }
+  };
   // Plain-language readiness: the user double-clicks START-HERE and the page tells them,
   // in their own words, whether the AI is on, still warming up, or not running — so an
   // early-opened page is never a silent, confusing dead end. Colours match the status dots.
@@ -3439,12 +3448,12 @@
       .then(function (r) {
         done = true;
         el.innerHTML = r && r.ok
-          ? askStatusHTML("green", "Local AI is <b>ready</b> — ask anything below. Nothing leaves your machine.")
-          : askStatusHTML("amber", "Gateway is up, but the model may still be loading (first run downloads ~1 GB, about 2–5 min). Try your question in a minute.");
+          ? askStatusHTML("green", "Ready: your own AI is on")
+          : askStatusHTML("amber", "Your own AI is starting (first run downloads ~1 GB, about 2–5 min). Try your question in a minute.");
       })
       .catch(function () {
         done = true;
-        el.innerHTML = askStatusHTML("muted", "AI is off right now — double-click <b>START-HERE</b> on your laptop to turn it on. Everything else on this page works offline.");
+        el.innerHTML = askStatusHTML("muted", "Needs your SecuRAX laptop running. <button class=\"gm-link\" style=\"min-height:44px;padding:0 6px\" onclick=\"gmAskShowConn()\">Set up once</button>");
       });
   };
   // An Ask error as an alert (premium.alerts): what happened as the title, why and the next step as the body.
@@ -4164,6 +4173,7 @@
       .map(function (e) { var o = Object.assign({}, e); o.start = calFirst(e); o.url = url; return o; });
   }
   window.gmCalendarRegistry = function () { return CALENDAR.map(function (e) { return { id: e.id, group: e.group, v: e.v, retired: e.retired || "" }; }); };
+  window.gmCalendarName = function (id) { var e = CALENDAR.filter(function (x) { return x.id === id; })[0]; return e ? e.name : ""; };
   window.gmCalendarICS = function (group) {
     var now = new Date(), stamp = icsDate(now, now.getHours(), now.getMinutes());
     var title = group === "family" ? "Family health" : group === "rhythm" ? "Life OS rhythm" : "Life OS";
@@ -6138,13 +6148,256 @@
       + '</div>';
   }
 
+  /* ── 49. LIFE SYSTEMS — the recipes, running from a few facts asked once ─── */
+  // Systems live in guiding-map/systems/systems.json (inlined by build.js as window.GM_SYSTEMS, so they work offline).
+  // A system runs when every fact it needs is true; the person answers facts once, and the profile already knows some.
+  function sysData() {
+    var d = (typeof window !== "undefined" && window.GM_SYSTEMS) ? window.GM_SYSTEMS : null;
+    return d && d.systems ? d : { systems: [], facts: [], events: [], projects: [], sources: {} };
+  }
+  function sysLocal() { var r = G("gm_region", null); return r === null || r === undefined || r === "local"; }
+  function sysExplicit(id) { var f = G("gm_facts", {}) || {}; return Object.prototype.hasOwnProperty.call(f, id); }
+  function sysDerived(id) {
+    if (id === "partner") return !!(window.P && P.pdob);
+    if (id === "kids") return !!(window.P && P.kids && P.kids.length);
+    return false;
+  }
+  function sysFactOn(id) { if (sysExplicit(id)) return !!(G("gm_facts", {}) || {})[id]; return sysDerived(id); }
+  function sysFactAnswered(id) { return sysExplicit(id) || sysDerived(id); }
+  function sysItemVisible(it) {
+    if (!it) return false;
+    if (it.when && !sysFactOn(it.when)) return false;
+    if (it.where) {
+      if (!sysLocal()) return false;
+      if (!(it.where === "IN" || it.where.indexOf("IN-") === 0)) return false;
+    }
+    return true;
+  }
+  function sysOrder() { var o = {}; if (typeof WHEEL_DIMS !== "undefined") WHEEL_DIMS.forEach(function (w, i) { o[w[0]] = i; }); return o; }
+  function sysRunning() {
+    var o = sysOrder(), d = sysData();
+    return (d.systems || []).filter(function (s) {
+      return (s.when || []).every(function (id) { return sysFactOn(id); });
+    }).slice().sort(function (a, b) {
+      var oa = o[a.spoke] !== undefined ? o[a.spoke] : 99, ob = o[b.spoke] !== undefined ? o[b.spoke] : 99;
+      return oa - ob;
+    });
+  }
+  function sysDoneMap() { return G("gm_sys_done", {}) || {}; }
+  function sysDoneId(id) { return !!sysDoneMap()[id]; }
+  function sysRank(every) { var r = { week: 0, month: 1, quarter: 2, year: 3 }[every]; return r === undefined ? 4 : r; }
+  function sysDays(every) { return { week: 7, month: 30, quarter: 91, year: 365 }[every] || 30; }
+  function sysDue(it, id) {
+    var d = sysDoneMap()[id];
+    if (!d) return -1e9;
+    var t = new Date(d).getTime();
+    if (isNaN(t)) return -1e9;
+    return Math.round((t + sysDays(it.every) * 864e5 - Date.now()) / 864e5);
+  }
+  function sysEvery(e) { return e ? String(e).charAt(0).toUpperCase() + String(e).slice(1) : "Once"; }
+  function sysNextItem() {
+    var running = sysRunning(), i, j, it;
+    for (i = 0; i < running.length; i++) {
+      var once = running[i].once || [];
+      for (j = 0; j < once.length; j++) {
+        it = once[j];
+        if (sysItemVisible(it) && !sysDoneId(running[i].id + "|o|" + j)) return { s: running[i], it: it, id: running[i].id + "|o|" + j };
+      }
+    }
+    var best = null;
+    running.forEach(function (s) {
+      (s.rhythm || []).forEach(function (rit, ri) {
+        if (!sysItemVisible(rit)) return;
+        var id = s.id + "|r|" + ri, rank = sysRank(rit.every), due = sysDue(rit, id);
+        if (!best || rank < best.rank || (rank === best.rank && due < best.due)) best = { s: s, it: rit, id: id, rank: rank, due: due };
+      });
+    });
+    return best;
+  }
+  function sysTabLabel(id) {
+    if (typeof TABS !== "undefined") for (var i = 0; i < TABS.length; i++) if (TABS[i][0] === id) return TABS[i][1];
+    return id;
+  }
+  function sysSpokeLabel(id) {
+    if (typeof WHEEL_DIMS !== "undefined") for (var i = 0; i < WHEEL_DIMS.length; i++) if (WHEEL_DIMS[i][0] === id) return WHEEL_DIMS[i][1];
+    return id;
+  }
+  function sysSourceIds(s) {
+    var ids = [], seen = {};
+    (s.sources || []).forEach(function (id) { if (!seen[id]) { seen[id] = 1; ids.push(id); } });
+    ["rhythm", "once", "dated", "ladder", "acquisition", "buy"].forEach(function (k) {
+      (s[k] || []).forEach(function (it) { if (it && it.src && !seen[it.src]) { seen[it.src] = 1; ids.push(it.src); } });
+    });
+    return ids;
+  }
+  function sysSourcesHTML(s) {
+    var src = sysData().sources || {}, h = "";
+    sysSourceIds(s).forEach(function (id) {
+      var x = src[id]; if (!x) return;
+      h += "Source: " + esc(x.name) + ", checked " + esc(x.checked) + "<br>";
+    });
+    return h ? '<div style="margin-top:8px;font-size:11px;color:var(--muted)">' + h + '</div>' : "";
+  }
+  function sysListBlock(title, list) {
+    if (!list || !list.length) return "";
+    var h = '<div style="font-size:12px;font-weight:800;margin-top:8px">' + esc(title) + '</div>';
+    list.forEach(function (it) {
+      h += '<div class="road-i" style="padding:4px 0">\u2022 ' + esc(it.t)
+        + (it.who ? ' <span style="color:var(--muted)">Ask: ' + esc(it.who) + '</span>' : "") + '</div>';
+    });
+    return h;
+  }
+  function sysCardHTML(s, openId) {
+    var h = '<details class="road-col" id="gmsys-' + esc(s.id) + '" style="margin-bottom:10px"' + (openId === s.id ? " open" : "") + '>'
+      + '<summary style="cursor:pointer;font-weight:800;font-size:13.5px">' + esc(s.title) + '</summary>'
+      + '<div style="margin-top:8px">';
+    var indiaOnly = false;
+    if (s.where && !sysLocal() && (s.where === "IN" || s.where.indexOf("IN-") === 0)) indiaOnly = true;
+    if (s.why) h += '<div class="info" style="margin-bottom:6px">' + esc(s.why) + '</div>';
+    if (s.cue) h += '<div style="font-size:12.5px"><b>Cue:</b> ' + esc(s.cue) + '</div>';
+    if (s.floor) h += '<div style="font-size:12.5px"><b>Two-minute floor:</b> ' + esc(s.floor) + '</div>';
+    (s.rhythm || []).forEach(function (it) {
+      if (!sysItemVisible(it)) { if (it.where && !sysLocal()) indiaOnly = true; return; }
+      h += '<div class="road-i" style="padding:4px 0">\u2022 <b>' + esc(sysEvery(it.every)) + '</b> \u2014 ' + esc(it.t)
+        + (it.who ? ' <span style="color:var(--muted)">Ask: ' + esc(it.who) + '</span>' : "") + '</div>';
+    });
+    (s.once || []).forEach(function (it, i) {
+      if (!sysItemVisible(it)) { if (it.where && !sysLocal()) indiaOnly = true; return; }
+      var id = s.id + "|o|" + i, done = sysDoneId(id);
+      h += '<div class="road-i" style="cursor:pointer;display:flex;gap:8px;align-items:flex-start;padding:5px 0" onclick="gmSysTick(\'' + esc(id) + '\')">'
+        + '<span style="color:' + (done ? "var(--green)" : "var(--muted)") + ';font-weight:800">' + (done ? "\u2611" : "\u2610") + '</span>'
+        + '<span style="' + (done ? "opacity:.5;text-decoration:line-through" : "") + '">' + esc(it.t)
+        + (it.who ? ' <span style="color:var(--muted)">Ask: ' + esc(it.who) + '</span>' : "") + '</span></div>';
+    });
+    if (s.dated && s.dated.length) {
+      h += '<div style="font-size:12px;font-weight:800;margin-top:8px">Dated</div>';
+      s.dated.forEach(function (it) {
+        h += '<div class="road-i" style="padding:4px 0">\u2022 ' + esc(it.t)
+          + (it.who ? ' <span style="color:var(--muted)">Ask: ' + esc(it.who) + '</span>' : "") + '</div>';
+      });
+    }
+    if (s.id === "farmland") {
+      h += sysListBlock("Make it earn", s.ladder) + sysListBlock("If the land is acquired", s.acquisition) + sysListBlock("Buying land later", s.buy);
+    }
+    if (indiaOnly) h += '<div class="info" style="margin-top:8px">Some steps are for India only</div>';
+    if (s.uses) h += '<div style="margin-top:8px"><button class="btn-sm" onclick="goTab(\'' + esc(s.uses) + '\')">Open ' + esc(sysTabLabel(s.uses)) + '</button></div>';
+    h += sysSourcesHTML(s) + '</div></details>';
+    return h;
+  }
+  function sysProjectCard(p) {
+    var done = G("gm_proj_done", {}) || {}, ticks = done[p.id] || [], first = -1;
+    (p.phases || []).forEach(function (ph, i) { if (first < 0 && ticks.indexOf(i) < 0) first = i; });
+    var h = '<details class="road-col" style="margin-bottom:10px"><summary style="cursor:pointer;font-weight:800;font-size:13.5px">'
+      + esc(p.title) + ' <span style="font-weight:500;color:var(--muted)">\u00b7 ' + esc(sysSpokeLabel(p.spoke)) + '</span></summary>'
+      + '<ol style="margin:8px 0 0;padding-left:20px">';
+    (p.phases || []).forEach(function (ph, i) {
+      var on = ticks.indexOf(i) >= 0;
+      h += '<li style="padding:3px 0;' + (on ? "opacity:.5;text-decoration:line-through" : "") + '">'
+        + '<button class="btn-sm" style="min-height:44px;margin-right:6px" data-haptic="success" onclick="gmProjTg(\'' + esc(p.id) + '\',' + i + ')">' + (on ? "\u2611" : "\u2610") + '</button>'
+        + (i === first ? '<b>Next:</b> ' : "") + esc(ph.t) + '</li>';
+    });
+    h += '</ol></details>';
+    return h;
+  }
+  function sysFactToggle(f) {
+    var fmap = G("gm_facts", {}) || {}, ans = Object.prototype.hasOwnProperty.call(fmap, f.id), on = ans ? !!fmap[f.id] : false;
+    return '<div class="road-i" style="padding:6px 0"><div style="margin-bottom:4px">' + esc(f.q) + '</div>'
+      + '<div style="display:flex;gap:8px">'
+      + '<button class="btn-sm" style="min-height:44px;' + (ans && on ? "background:var(--gold);color:#0d1f35" : "") + '" aria-pressed="' + (ans && on) + '" onclick="gmSysFact(\'' + esc(f.id) + '\',true)">Yes</button>'
+      + '<button class="btn-sm" style="min-height:44px;' + (ans && !on ? "background:var(--gold);color:#0d1f35" : "") + '" aria-pressed="' + (ans && !on) + '" onclick="gmSysFact(\'' + esc(f.id) + '\',false)">No</button>'
+      + '</div></div>';
+  }
+  function sysRegionHTML() {
+    var local = sysLocal();
+    return '<div style="display:flex;gap:8px;margin-top:8px">'
+      + '<button class="btn-sm" style="flex:1;min-height:44px;' + (local ? "background:var(--gold);color:#0d1f35" : "") + '" aria-pressed="' + local + '" onclick="gmSysRegion(\'local\')">Local: India</button>'
+      + '<button class="btn-sm" style="flex:1;min-height:44px;' + (!local ? "background:var(--gold);color:#0d1f35" : "") + '" aria-pressed="' + (!local) + '" onclick="gmSysRegion(\'global\')">Global</button>'
+      + '</div>';
+  }
+  function systemsHTML() {
+    var d = sysData(), facts = d.facts || [], running = sysRunning();
+    var openId = G("gm_sys_open", "");
+    var unanswered = facts.filter(function (f) { return !sysFactAnswered(f.id); });
+    var h = '<div class="section active">';
+    h += heroHTML(running.length, "systems running", "Each one does the remembering for you", '<button class="btn-sm" onclick="gmSysNext()">See the next step</button>');
+    if (unanswered.length) {
+      h += '<details class="road-col" open style="margin-bottom:10px"><summary style="cursor:pointer;font-weight:800;font-size:13.5px">A few questions, once (' + unanswered.length + ')</summary>'
+        + '<div style="margin-top:8px">' + unanswered.map(sysFactToggle).join("") + sysRegionHTML() + '</div></details>';
+    } else {
+      var editable = facts.filter(function (f) { return !sysDerived(f.id) || sysExplicit(f.id); });
+      h += '<details class="road-col" style="margin-bottom:10px"><summary style="cursor:pointer;font-weight:800;font-size:13.5px">Your situation: Edit</summary>'
+        + '<div style="margin-top:8px">' + editable.map(sysFactToggle).join("") + sysRegionHTML() + '</div></details>';
+    }
+    var nx = sysNextItem();
+    h += '<div id="gmSysNext" style="background:var(--card);border-radius:12px;padding:12px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.05)">'
+      + '<div style="font-size:11px;font-weight:800;letter-spacing:.04em;color:var(--muted);text-transform:uppercase">Next</div>';
+    if (nx) {
+      h += '<div style="font-size:13px;margin:4px 0">' + esc(nx.it.t) + '</div>'
+        + (nx.it.who ? '<div style="font-size:12px;color:var(--muted)">Ask: ' + esc(nx.it.who) + '</div>' : "")
+        + '<div style="margin-top:8px"><button class="btn btn-p" data-haptic="success" onclick="gmSysDone(\'' + esc(nx.id) + '\')">Done</button></div>';
+    } else h += '<div class="info">Nothing due right now.</div>';
+    h += '</div>';
+    var order = [], known = {};
+    if (typeof WHEEL_DIMS !== "undefined") WHEEL_DIMS.forEach(function (w) { order.push({ id: w[0], label: w[1] }); });
+    order.forEach(function (g) { known[g.id] = 1; });
+    var extra = running.filter(function (s) { return !known[s.spoke]; });
+    if (extra.length) order.push({ id: "_", label: "More" });
+    order.forEach(function (g) {
+      var list = running.filter(function (s) { return g.id === "_" ? !known[s.spoke] : s.spoke === g.id; });
+      if (!list.length) return;
+      h += '<div class="cat-t">' + esc(g.label) + '</div>';
+      list.forEach(function (s) { h += sysCardHTML(s, openId); });
+    });
+    var projects = d.projects || [];
+    if (projects.length) {
+      h += '<div class="cat-t">Projects</div>';
+      projects.forEach(function (p) { h += sysProjectCard(p); });
+    }
+    h += '</div>';
+    if (openId) { try { localStorage.removeItem("gm_sys_open"); } catch (e) {} }
+    return h;
+  }
+  function sysWheelLines(box) {
+    if (typeof WHEEL_DIMS === "undefined") return;
+    var rows = box.querySelectorAll(".wheel-sliders .ws-row");
+    if (!rows.length) return;
+    var running = sysRunning();
+    WHEEL_DIMS.forEach(function (w) {
+      var list = running.filter(function (s) { return s.spoke === w[0]; });
+      if (!list.length) return;
+      var row = null;
+      for (var i = 0; i < rows.length; i++) {
+        var lab = rows[i].querySelector(".ws-l span");
+        if (lab && lab.textContent === w[1]) { row = rows[i]; break; }
+      }
+      if (!row) return;
+      list.forEach(function (s) {
+        row.insertAdjacentHTML("beforeend", '<div style="padding:6px 0"><a href="#" style="color:var(--gold);font-weight:700;font-size:12px" onclick="gmSysOpen(\'' + esc(s.id) + '\');return false">System: ' + esc(s.title) + '</a></div>');
+      });
+    });
+  }
+  window.gmSysFact = function (id, v) { var f = G("gm_facts", {}) || {}; f[id] = !!v; S_("gm_facts", f); renderAll(); };
+  window.gmSysRegion = function (r) { S_("gm_region", r === "global" ? "global" : "local"); renderAll(); };
+  window.gmSysDone = function (id) { var m = sysDoneMap(); m[id] = ymd(); S_("gm_sys_done", m); renderAll(); };
+  window.gmSysTick = function (id) { var m = sysDoneMap(); if (m[id]) delete m[id]; else m[id] = ymd(); S_("gm_sys_done", m); renderAll(); };
+  window.gmSysOpen = function (id) { S_("gm_sys_open", id); goTab("systems"); };
+  window.gmSysNext = function () {
+    var e = document.getElementById("gmSysNext");
+    if (e && e.scrollIntoView) { try { e.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (x) { e.scrollIntoView(); } }
+  };
+  window.gmProjTg = function (pid, i) {
+    var d = G("gm_proj_done", {}) || {}, a = d[pid] || [], p = a.indexOf(i);
+    if (p >= 0) a.splice(p, 1); else a.push(i);
+    a.sort(function (x, y) { return x - y; }); d[pid] = a; S_("gm_proj_done", d); renderAll();
+  };
+
   /* ── 10. Wire into the existing render loop ─────────────────────── */
   if (typeof TABS !== "undefined") {
     var keep = TABS.filter(function (t) { return ["today", "map"].indexOf(t[0]) < 0; });
     var today = TABS.filter(function (t) { return t[0] === "today"; });
     var map = TABS.filter(function (t) { return t[0] === "map"; });
     TABS.length = 0;
-    today.concat([["inbox", "Inbox"], ["deadlines", "Deadlines"], ["ask", "Ask"], ["guide", "Guides"], ["stack", "Stack"], ["life", "Life Map"], ["breaks", "Breaks"], ["career", "Career"],
+    today.concat([["inbox", "Inbox"], ["deadlines", "Deadlines"], ["ask", "Ask"], ["guide", "Guides"], ["stack", "Stack"], ["systems", "Systems"], ["life", "Life Map"], ["breaks", "Breaks"], ["career", "Career"],
       ["prop", "Property"], ["ops", "Ops"]]).concat(map).concat(keep)
       .forEach(function (t) { TABS.push([t[0], t[1].replace(/^[^A-Za-z0-9]+/, "")]); });   // plain words in the tab bar: no emoji
   }
@@ -6174,6 +6427,7 @@
     else if (curTab === "inbox") { box.innerHTML = inboxHTML(); }
     else if (curTab === "ops") { box.innerHTML = opsHTML(); }
     else if (curTab === "stack") { box.innerHTML = stackHTML(); }
+    else if (curTab === "systems") { box.innerHTML = systemsHTML(); }
     else if (curTab === "life") { box.innerHTML = lifeMapHTML(); }
     else if (curTab === "breaks") { box.innerHTML = breaksHTML(); }
     else if (curTab === "career") { box.innerHTML = careerHTML(); }
@@ -6188,6 +6442,7 @@
       box.insertAdjacentHTML("afterbegin", greetHTML() + exampleWarn() + interruptHTML() + undoBar() + inboxNudgeHTML() + daily3HTML() + msTodayHTML()
         + (inRecovery() ? "" : driftHTML() + resHTML()) + oneActionHTML() + (inRecovery() ? "" : pinnedHTML()));
     }
+    if (curTab === "wheel") { try { sysWheelLines(box); } catch (e) { console.log(e); } }
     try { calmFrame(); } catch (e) { console.log(e); }
     if (phone() && curTab === "today" && !document.getElementById("gmVitals")) box.insertAdjacentHTML("afterbegin", vitalsHTML());
     var vi = document.getElementById("gmVitals"); if (vi && phone()) vi.classList.add("gm-inline");

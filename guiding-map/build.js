@@ -29,7 +29,11 @@ const tail = html.slice(failsafeAt);                  // "<script>\n/* Failsafe 
 const I18N_DIR = require("path").join(__dirname, "i18n"), CATS = {};
 if (fs.existsSync(I18N_DIR)) fs.readdirSync(I18N_DIR).filter(f => /^lifeos\.[a-z]{2}\.json$/.test(f)).sort().forEach(f => { CATS[f.split(".")[1]] = JSON.parse(fs.readFileSync(require("path").join(I18N_DIR, f), "utf8")); });
 const I18N_JS = "window.GM_I18N = " + JSON.stringify(CATS).replace(/<\/(script)/gi, "<\\/$1") + ";\n";
-const built = before + I18N_JS + ops + "\n</script>\n" + tail;
+// Life systems: the recipes (facts, systems, projects, sources) travel with the app as window.GM_SYSTEMS, so they work offline.
+const SYS_FILE = require("path").join(__dirname, "systems", "systems.json");
+const SYSTEMS = fs.existsSync(SYS_FILE) ? JSON.parse(fs.readFileSync(SYS_FILE, "utf8")) : { systems: [], events: [], facts: [], sources: {} };
+const SYS_JS = "window.GM_SYSTEMS = " + JSON.stringify(SYSTEMS).replace(/<\/(script)/gi, "<\\/$1") + ";\n";
+const built = before + I18N_JS + SYS_JS + ops + "\n</script>\n" + tail;
 
 // Stamp the visible version badge from the repo's single source of truth (../VERSION) so the app can
 // never show a version the product doesn't have. (It once said "v13.0.2" — a hardcoded legacy string.)
