@@ -825,6 +825,33 @@
     { id: "mf", label: "Mind", floor: "Three slow breaths, each breath out longer than the breath in." },
     { id: "fm", label: "Family", floor: "One real question, phone in the basket." }
   ];
+  // Golden repairs (owner, 2026-11-12, after kintsugi): the last seven days of the daily three. A kept day is a gold coin;
+  // a missed day you came back from is mended with a gold seam, never shown as failure; a recent miss is an empty ring.
+  // Nothing shows before there is any history, so a new person is never greeted by empty circles.
+  function kintsugiHTML() {
+    if (typeof S === "undefined" || !S.daily || typeof dKey !== "function") return "";
+    var ids = DAILY3.map(function (d) { return d.id; }), days = [], any = false;
+    for (var i = 6; i >= 0; i--) {
+      var dt = new Date(); dt.setDate(dt.getDate() - i);
+      var kept = (S.daily[dKey(dt)] || []).some(function (x) { return ids.indexOf(x) >= 0; });
+      if (kept) any = true;
+      days.push({ d: dt, kept: kept, today: i === 0 });
+    }
+    if (!any) return "";
+    var repaired = 0, h = '<div class="gm-kin" role="img" aria-label="The last seven days">';
+    days.forEach(function (x, i) {
+      var later = days.slice(i + 1).some(function (y) { return y.kept; }), earlier = days.slice(0, i).some(function (y) { return y.kept; });
+      var kind = x.kept ? "kept" : (later && earlier ? "rep" : (x.today ? "now" : "miss"));   // a seam mends a gap between kept days
+      if (kind === "rep") repaired++;
+      var wd = x.d.toLocaleDateString(undefined, { weekday: "narrow" });
+      h += '<div class="kd"><span class="k k-' + kind + '" title="' + (kind === "kept" ? "Kept" : kind === "rep" ? "Repaired in gold" : kind === "now" ? "Today" : "Not yet") + '">'
+        + (kind === "rep" ? '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2 3l4 4-2 3 4 2-1 3" fill="none" stroke="url(#gmKin)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>' : "")
+        + '</span><i>' + esc(wd) + '</i></div>';
+    });
+    h += '<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs><linearGradient id="gmKin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f3dc8f"/><stop offset=".5" stop-color="#c9a84c"/><stop offset="1" stop-color="#e8c96a"/></linearGradient></defs></svg></div>';
+    if (repaired) h += '<div class="foot gm-kin-note">' + (repaired === 1 ? "One missed day, repaired in gold" : repaired + " missed days, repaired in gold") + ' because you came back. The repair is part of the story.</div>';
+    return h;
+  }
   function daily3HTML(calm) {
     var done = (typeof todayChecks === "function") ? todayChecks() : [];
     var rec = inRecovery();
@@ -845,6 +872,7 @@
       + (n === 3 ? "Done. Today is a win regardless of what else happens."
         : n === 0 ? "Do the smallest version. The floor counts as a full win — that is the whole trick."
           : n + " of 3. The floor counts.") + '</div>';
+    h += kintsugiHTML();
     // Calm mode: no strength bars before the first check-in (with no history they read as a scolding). The EMA itself always updates.
     if (!calm || Object.keys((typeof S !== "undefined" && S.daily) || {}).length) h += strengthHTML(); else emaUpdate();
     if (rec) {
@@ -5252,6 +5280,13 @@
       + ".gm-arc{animation:gmsweep2 .9s cubic-bezier(.2,.8,.2,1) both}.gm-a2{animation-delay:.12s}.gm-a3{animation-delay:.24s}"
       + ".gm-closed{filter:drop-shadow(0 0 3px rgba(232,201,106,.7))}.gm-a2.gm-closed{filter:drop-shadow(0 0 3px rgba(45,212,191,.7))}.gm-a3.gm-closed{filter:drop-shadow(0 0 3px rgba(224,90,112,.7))}"
       + "@media (prefers-reduced-motion: reduce){.gm-arc{animation:none}}"
+      + ".gm-kin{display:flex;justify-content:space-between;align-items:flex-start;margin:12px 4px 2px}"
+      + ".gm-kin .kd{display:flex;flex-direction:column;align-items:center;gap:4px}.gm-kin i{font-style:normal;font-size:10px;color:var(--muted);font-weight:600}"
+      + ".gm-kin .k{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center}"
+      + ".gm-kin .k-kept{background:var(--gold-metal);box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 1px 3px rgba(122,90,20,.3)}"
+      + ".gm-kin .k-miss,.gm-kin .k-now{border:1.5px solid var(--ring-track,rgba(11,31,53,.12))}.gm-kin .k-now{border-style:dashed}"
+      + ".gm-kin .k-rep{border:1.5px solid rgba(201,168,76,.35)}.gm-kin .k-rep svg{width:14px;height:14px;filter:drop-shadow(0 0 2px rgba(232,201,106,.6))}"
+      + ".gm-kin-note{font-style:italic}"
       + ".gm-hero{position:relative;overflow:hidden;isolation:isolate}"
       + ".gm-hero::after{content:'';position:absolute;top:-60%;bottom:-60%;left:-30%;width:60%;background:linear-gradient(105deg,transparent 0,rgba(255,255,255,.10) 45%,rgba(243,220,143,.10) 52%,transparent 100%);transform:translateX(calc(60% + var(--sx,0) * 60%)) rotate(8deg);transition:transform .25s ease-out;pointer-events:none;z-index:0}"
       + ".gm-hero>*{position:relative;z-index:1}"
