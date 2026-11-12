@@ -12,12 +12,12 @@ const dom = new JSDOM(fs.readFileSync(path.join(__dirname, '..', 'index.html'), 
     w.confirm = () => false; w.alert = () => {}; w.scrollTo = () => {}; w.fetch = () => Promise.reject(new Error("offline")); } });
 setTimeout(() => {
   const w = dom.window, d = w.document, sec = () => d.getElementById("sections");
-  // Wheel: every slider says which area it scores
+  // Wheel: every tap target says which area and point on the scale it scores
   w.goTab("wheel");
-  const ranges = [...sec().querySelectorAll('input[type="range"]')];
-  ok("Wheel renders its sliders", ranges.length === 8, String(ranges.length));
-  ok("Wheel: every slider has a non-empty aria-label", ranges.length > 0 && ranges.every(i => (i.getAttribute("aria-label") || "").trim()), ranges.map(i => i.getAttribute("aria-label")).join("|"));
-  ok("Wheel: a slider's label names its area and the scale", (ranges[0] && /Career, score 1 to 10/.test(ranges[0].getAttribute("aria-label") || "")), ranges[0] && ranges[0].getAttribute("aria-label"));
+  const taps = [...sec().querySelectorAll("button.ws-tap")];
+  ok("Wheel renders its tap targets (8 areas x 10)", taps.length === 80, String(taps.length));
+  ok("Wheel: every tap target has a non-empty aria-label", taps.length > 0 && taps.every(b => (b.getAttribute("aria-label") || "").trim()), taps.slice(0, 12).map(b => b.getAttribute("aria-label")).join("|"));
+  ok("Wheel: a tap target's label names its area and the scale", (taps[6] && /Career: feels 7 of 10/.test(taps[6].getAttribute("aria-label") || "")), taps[6] && taps[6].getAttribute("aria-label"));
   // Ask: the estate address and key fields have names
   w.goTab("ask");
   const gw = d.getElementById("askGwIn"), key = d.getElementById("askKeyIn");
