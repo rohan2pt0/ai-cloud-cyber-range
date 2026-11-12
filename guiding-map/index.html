@@ -1941,27 +1941,22 @@ function renderWheel(){
 }
 
 function renderCommit(){
-<<<<<<< HEAD
   function hasCheck(d){ return (S.daily[dKey(d)]||[]).length>0; }
   var streak=0, sd=new Date();
   if(!hasCheck(sd)) sd.setDate(sd.getDate()-1);
   while(hasCheck(sd)){ streak++; sd.setDate(sd.getDate()-1); }
-  var heroNum=streak, heroUnit=" days";
+  var heroNum=streak, heroUnit=" days", heroMean="Days in a row you kept your word";
   if(!streak){
     var cut=Date.now()-7*864e5;
     heroNum=S.commits.filter(function(c){ var t=Date.parse(c.dl); return c.status==="won" && !isNaN(t) && t>=cut; }).length;
-    heroUnit=" kept this week";
+    heroUnit=" kept"; heroMean="Commitments kept this week";
   }
-  var html='<div class="section active">'
-   +heroHTML(heroNum,heroUnit,"Days in a row you kept your word","")
-   +howHTML('Staking money + naming a referee more than doubles goal completion (78% vs 35% with no stake). Use for goals you have failed before. If you fail, you actually pay the stake \u2014 to a cause you dislike works best (loss aversion).')
-   +'<div class="cat-t">\uD83E\uDD1D Commitment Contracts</div>';
-=======
   var d90=new Date(); d90.setDate(d90.getDate()+90);
   var dlDef=d90.getFullYear()+"-"+("0"+(d90.getMonth()+1)).slice(-2)+"-"+("0"+d90.getDate()).slice(-2);
-  var html='<div class="section active"><div class="cat-t">\uD83E\uDD1D Commitment Contracts</div>';
-  html+='<div class="info">Putting money at stake and naming a referee makes a goal far more likely to happen. Use it for a goal you have missed before.</div>';
->>>>>>> 1be267ee70e9ce05fe050b8f1cdfc8f2b4022097
+  var html='<div class="section active">'
+   +heroHTML(heroNum,heroUnit,heroMean,"")
+   +howHTML('Putting money at stake and naming a referee makes a goal far more likely to happen. Use it for a goal you have missed before. If you miss it, you really pay the stake; to a cause you dislike works best.')
+   +'<div class="cat-t">\uD83E\uDD1D Commitment Contracts</div>';
   html+='<div style="background:var(--card);border-radius:12px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.05);margin-bottom:12px">'
    +'<label class="f-label" style="text-transform:none;letter-spacing:.2px">Goal (specific + measurable)</label><input type="text" id="c_goal" placeholder="Finish emergency fund to 4 months by Sep 30">'
    +'<div class="f-row"><div><label class="f-label" style="text-transform:none;letter-spacing:.2px">Stake (amount you forfeit)</label><input type="text" id="c_stake" placeholder="\u20B95,000"></div>'
@@ -8644,11 +8639,7 @@ window.GM_I18N = {"hi":{"_meta":{"locale":"hi-IN","status":"beta","note":"machin
     var today = TABS.filter(function (t) { return t[0] === "today"; });
     var map = TABS.filter(function (t) { return t[0] === "map"; });
     TABS.length = 0;
-<<<<<<< HEAD
-    today.concat([["inbox", "Inbox"], ["ask", "Ask"], ["guide", "Guides"], ["stack", "Stack"], ["life", "Life Map"], ["breaks", "Breaks"], ["career", "Career"],
-=======
-    today.concat([["inbox", "Inbox"], ["deadlines", "Deadlines"], ["ask", "Ask"], ["guide", "Guides"], ["stack", "Stack"], ["life", "Life Map"], ["career", "Career"],
->>>>>>> 1be267ee70e9ce05fe050b8f1cdfc8f2b4022097
+    today.concat([["inbox", "Inbox"], ["deadlines", "Deadlines"], ["ask", "Ask"], ["guide", "Guides"], ["stack", "Stack"], ["life", "Life Map"], ["breaks", "Breaks"], ["career", "Career"],
       ["prop", "Property"], ["ops", "Ops"]]).concat(map).concat(keep)
       .forEach(function (t) { TABS.push([t[0], t[1].replace(/^[^A-Za-z0-9]+/, "")]); });   // plain words in the tab bar: no emoji
   }
