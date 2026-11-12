@@ -6169,6 +6169,7 @@ window.GM_SYSTEMS = {"version":1,"verified":"2026-11-12","note":"Life systems: o
   window.gmMoreToday = function (o) { S_("gm_more_today", !!o); };
   window.gmNavMore = function (on) { _navMore = on === undefined ? !_navMore : !!on; navRender(); };
   window.gmNavGo = function (id) { _navMore = false; goTab(id); };
+  window.gmMoreAll = function (o) { S_("gm_more_all", !!o); };
   function navCSS() {
     if (document.getElementById("gmNavCss")) return;
     var st = document.createElement("style"); st.id = "gmNavCss";
@@ -6185,6 +6186,11 @@ window.GM_SYSTEMS = {"version":1,"verified":"2026-11-12","note":"Life systems: o
       + "#gmMoreSheet .sh{position:absolute;left:0;right:0;bottom:calc(60px + env(safe-area-inset-bottom));background:var(--card);border-radius:16px 16px 0 0;padding:14px 12px;display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-height:70vh;overflow:auto}"
       + "#gmMoreSheet .sh button{background:var(--cardAlt);border:1px solid var(--border);color:var(--text);border-radius:12px;padding:12px 4px;font:inherit;font-size:12px;font-weight:700;min-height:52px;cursor:pointer}"
       + "#gmMoreSheet .sh button.on{border-color:var(--gold);border-width:2px}"
+      + "#gmMoreSheet .sh{max-height:calc(100vh - 140px);overflow-y:auto}"
+      + "#gmMoreSheet .gm-more-h{grid-column:1/-1;font-size:12px;font-weight:800;color:var(--muted);margin:0 2px -2px}"
+      + "#gmMoreSheet .gm-more-all{grid-column:1/-1}"
+      + "#gmMoreSheet .gm-more-all summary{cursor:pointer;font-weight:800;font-size:13px;padding:10px 4px;min-height:44px;display:flex;align-items:center}"
+      + "#gmMoreSheet .gm-more-g{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}"
       + "#gmMoreSheet .sh button .gi{display:flex;justify-content:center;margin-bottom:5px;color:var(--text)}"
       + "html[data-theme=dark] #gmMoreSheet .sh button .gi{color:var(--gold)}"
       + "#gmVitals.gm-inline{position:static;box-shadow:none;border:0;background:none;padding:0 0 10px}"
@@ -6209,13 +6215,20 @@ window.GM_SYSTEMS = {"version":1,"verified":"2026-11-12","note":"Life systems: o
     });
     h += '<button class="' + (_navMore || inMore ? "on" : "") + '" onclick="gmNavMore()" aria-expanded="' + _navMore + '"><b aria-hidden="true">' + navIco('<path d="M4 7h16M4 12h16M4 17h16"/>') + '</b>More</button></nav>';
     var sh = '<div id="gmMoreSheet" class="' + (_navMore ? "on" : "") + '" onclick="if(event.target===this)gmNavMore(false)"><div class="sh" role="menu">';
-    TABS.forEach(function (t) {
-      if (main.indexOf(t[0]) >= 0) return;
+    // The vital few first, ordered by risk (Shield, then what is due, then what runs your life); everything else folded.
+    var FIRST = ["risk", "deadlines", "systems", "money", "breaks", "wheel"];
+    function tile(t) {
       var ic = window.gmIcon(t[0], 20);
-      sh += '<button role="menuitem" class="' + (curTab === t[0] ? "on" : "") + '" onclick="gmNavGo(\'' + t[0] + '\')">'
+      return '<button role="menuitem" class="' + (curTab === t[0] ? "on" : "") + '" onclick="gmNavGo(\'' + t[0] + '\')">'
         + (ic ? '<span class="gi" aria-hidden="true">' + ic + '</span>' : '') + t[1] + '</button>';
-    });
-    sh += '<button role="menuitem" onclick="location.href=\'hub.html\'">\u25C6 All apps</button></div></div>';
+    }
+    var rest = TABS.filter(function (t) { return main.indexOf(t[0]) < 0 && FIRST.indexOf(t[0]) < 0; });
+    sh += '<div class="gm-more-h">First</div>';
+    FIRST.forEach(function (id) { TABS.forEach(function (t) { if (t[0] === id && main.indexOf(id) < 0) sh += tile(t); }); });
+    var restOpen = G("gm_more_all", false) || rest.some(function (t) { return t[0] === curTab; });
+    sh += '<details class="gm-more-all"' + (restOpen ? " open" : "") + ' ontoggle="gmMoreAll(this.open)"><summary>Everything else (' + rest.length + ')</summary><div class="gm-more-g">';
+    rest.forEach(function (t) { sh += tile(t); });
+    sh += '<button role="menuitem" onclick="location.href=\'hub.html\'">\u25C6 All apps</button></div></details></div></div>';
     document.body.insertAdjacentHTML("beforeend", sh + h);
   }
   var _compactTick = false;
