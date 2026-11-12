@@ -904,6 +904,21 @@
    "doc": "securax/86-MANY-NODES-AND-THE-ROAD-TO-SCALE.md",
    "outcome": "You try new versions without risking the one that works.",
    "shows": "./securax channel"
+  },
+  {
+   "id": "life-systems",
+   "group": "Your own tools",
+   "icon": "list-checks",
+   "name": "Life systems, running for you",
+   "added": "2026-11-12",
+   "what": "Your written recipes for money, family, health, work, learning, fun and one big decision run themselves: facts are asked once (with a Local/Global switch), each system shows its cue, floor, rhythm and one-time steps, and the best next step sits in one open action.",
+   "open": {
+    "cmd": "./securax open"
+   },
+   "command": "open",
+   "doc": "securax/14-GUIDING-MAP.md",
+   "outcome": "The rules you already know run without willpower, and you see the one next step that matters.",
+   "shows": "the Life OS Systems tab, the Wheel of Life, and ./securax progress"
   }
  ]
 }

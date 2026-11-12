@@ -5798,13 +5798,256 @@
       + '</div>';
   }
 
+  /* ── 49. LIFE SYSTEMS — the recipes, running from a few facts asked once ─── */
+  // Systems live in guiding-map/systems/systems.json (inlined by build.js as window.GM_SYSTEMS, so they work offline).
+  // A system runs when every fact it needs is true; the person answers facts once, and the profile already knows some.
+  function sysData() {
+    var d = (typeof window !== "undefined" && window.GM_SYSTEMS) ? window.GM_SYSTEMS : null;
+    return d && d.systems ? d : { systems: [], facts: [], events: [], projects: [], sources: {} };
+  }
+  function sysLocal() { var r = G("gm_region", null); return r === null || r === undefined || r === "local"; }
+  function sysExplicit(id) { var f = G("gm_facts", {}) || {}; return Object.prototype.hasOwnProperty.call(f, id); }
+  function sysDerived(id) {
+    if (id === "partner") return !!(window.P && P.pdob);
+    if (id === "kids") return !!(window.P && P.kids && P.kids.length);
+    return false;
+  }
+  function sysFactOn(id) { if (sysExplicit(id)) return !!(G("gm_facts", {}) || {})[id]; return sysDerived(id); }
+  function sysFactAnswered(id) { return sysExplicit(id) || sysDerived(id); }
+  function sysItemVisible(it) {
+    if (!it) return false;
+    if (it.when && !sysFactOn(it.when)) return false;
+    if (it.where) {
+      if (!sysLocal()) return false;
+      if (!(it.where === "IN" || it.where.indexOf("IN-") === 0)) return false;
+    }
+    return true;
+  }
+  function sysOrder() { var o = {}; if (typeof WHEEL_DIMS !== "undefined") WHEEL_DIMS.forEach(function (w, i) { o[w[0]] = i; }); return o; }
+  function sysRunning() {
+    var o = sysOrder(), d = sysData();
+    return (d.systems || []).filter(function (s) {
+      return (s.when || []).every(function (id) { return sysFactOn(id); });
+    }).slice().sort(function (a, b) {
+      var oa = o[a.spoke] !== undefined ? o[a.spoke] : 99, ob = o[b.spoke] !== undefined ? o[b.spoke] : 99;
+      return oa - ob;
+    });
+  }
+  function sysDoneMap() { return G("gm_sys_done", {}) || {}; }
+  function sysDoneId(id) { return !!sysDoneMap()[id]; }
+  function sysRank(every) { var r = { week: 0, month: 1, quarter: 2, year: 3 }[every]; return r === undefined ? 4 : r; }
+  function sysDays(every) { return { week: 7, month: 30, quarter: 91, year: 365 }[every] || 30; }
+  function sysDue(it, id) {
+    var d = sysDoneMap()[id];
+    if (!d) return -1e9;
+    var t = new Date(d).getTime();
+    if (isNaN(t)) return -1e9;
+    return Math.round((t + sysDays(it.every) * 864e5 - Date.now()) / 864e5);
+  }
+  function sysEvery(e) { return e ? String(e).charAt(0).toUpperCase() + String(e).slice(1) : "Once"; }
+  function sysNextItem() {
+    var running = sysRunning(), i, j, it;
+    for (i = 0; i < running.length; i++) {
+      var once = running[i].once || [];
+      for (j = 0; j < once.length; j++) {
+        it = once[j];
+        if (sysItemVisible(it) && !sysDoneId(running[i].id + "|o|" + j)) return { s: running[i], it: it, id: running[i].id + "|o|" + j };
+      }
+    }
+    var best = null;
+    running.forEach(function (s) {
+      (s.rhythm || []).forEach(function (rit, ri) {
+        if (!sysItemVisible(rit)) return;
+        var id = s.id + "|r|" + ri, rank = sysRank(rit.every), due = sysDue(rit, id);
+        if (!best || rank < best.rank || (rank === best.rank && due < best.due)) best = { s: s, it: rit, id: id, rank: rank, due: due };
+      });
+    });
+    return best;
+  }
+  function sysTabLabel(id) {
+    if (typeof TABS !== "undefined") for (var i = 0; i < TABS.length; i++) if (TABS[i][0] === id) return TABS[i][1];
+    return id;
+  }
+  function sysSpokeLabel(id) {
+    if (typeof WHEEL_DIMS !== "undefined") for (var i = 0; i < WHEEL_DIMS.length; i++) if (WHEEL_DIMS[i][0] === id) return WHEEL_DIMS[i][1];
+    return id;
+  }
+  function sysSourceIds(s) {
+    var ids = [], seen = {};
+    (s.sources || []).forEach(function (id) { if (!seen[id]) { seen[id] = 1; ids.push(id); } });
+    ["rhythm", "once", "dated", "ladder", "acquisition", "buy"].forEach(function (k) {
+      (s[k] || []).forEach(function (it) { if (it && it.src && !seen[it.src]) { seen[it.src] = 1; ids.push(it.src); } });
+    });
+    return ids;
+  }
+  function sysSourcesHTML(s) {
+    var src = sysData().sources || {}, h = "";
+    sysSourceIds(s).forEach(function (id) {
+      var x = src[id]; if (!x) return;
+      h += "Source: " + esc(x.name) + ", checked " + esc(x.checked) + "<br>";
+    });
+    return h ? '<div style="margin-top:8px;font-size:11px;color:var(--muted)">' + h + '</div>' : "";
+  }
+  function sysListBlock(title, list) {
+    if (!list || !list.length) return "";
+    var h = '<div style="font-size:12px;font-weight:800;margin-top:8px">' + esc(title) + '</div>';
+    list.forEach(function (it) {
+      h += '<div class="road-i" style="padding:4px 0">\u2022 ' + esc(it.t)
+        + (it.who ? ' <span style="color:var(--muted)">Ask: ' + esc(it.who) + '</span>' : "") + '</div>';
+    });
+    return h;
+  }
+  function sysCardHTML(s, openId) {
+    var h = '<details class="road-col" id="gmsys-' + esc(s.id) + '" style="margin-bottom:10px"' + (openId === s.id ? " open" : "") + '>'
+      + '<summary style="cursor:pointer;font-weight:800;font-size:13.5px">' + esc(s.title) + '</summary>'
+      + '<div style="margin-top:8px">';
+    var indiaOnly = false;
+    if (s.where && !sysLocal() && (s.where === "IN" || s.where.indexOf("IN-") === 0)) indiaOnly = true;
+    if (s.why) h += '<div class="info" style="margin-bottom:6px">' + esc(s.why) + '</div>';
+    if (s.cue) h += '<div style="font-size:12.5px"><b>Cue:</b> ' + esc(s.cue) + '</div>';
+    if (s.floor) h += '<div style="font-size:12.5px"><b>Two-minute floor:</b> ' + esc(s.floor) + '</div>';
+    (s.rhythm || []).forEach(function (it) {
+      if (!sysItemVisible(it)) { if (it.where && !sysLocal()) indiaOnly = true; return; }
+      h += '<div class="road-i" style="padding:4px 0">\u2022 <b>' + esc(sysEvery(it.every)) + '</b> \u2014 ' + esc(it.t)
+        + (it.who ? ' <span style="color:var(--muted)">Ask: ' + esc(it.who) + '</span>' : "") + '</div>';
+    });
+    (s.once || []).forEach(function (it, i) {
+      if (!sysItemVisible(it)) { if (it.where && !sysLocal()) indiaOnly = true; return; }
+      var id = s.id + "|o|" + i, done = sysDoneId(id);
+      h += '<div class="road-i" style="cursor:pointer;display:flex;gap:8px;align-items:flex-start;padding:5px 0" onclick="gmSysTick(\'' + esc(id) + '\')">'
+        + '<span style="color:' + (done ? "var(--green)" : "var(--muted)") + ';font-weight:800">' + (done ? "\u2611" : "\u2610") + '</span>'
+        + '<span style="' + (done ? "opacity:.5;text-decoration:line-through" : "") + '">' + esc(it.t)
+        + (it.who ? ' <span style="color:var(--muted)">Ask: ' + esc(it.who) + '</span>' : "") + '</span></div>';
+    });
+    if (s.dated && s.dated.length) {
+      h += '<div style="font-size:12px;font-weight:800;margin-top:8px">Dated</div>';
+      s.dated.forEach(function (it) {
+        h += '<div class="road-i" style="padding:4px 0">\u2022 ' + esc(it.t)
+          + (it.who ? ' <span style="color:var(--muted)">Ask: ' + esc(it.who) + '</span>' : "") + '</div>';
+      });
+    }
+    if (s.id === "farmland") {
+      h += sysListBlock("Make it earn", s.ladder) + sysListBlock("If the land is acquired", s.acquisition) + sysListBlock("Buying land later", s.buy);
+    }
+    if (indiaOnly) h += '<div class="info" style="margin-top:8px">Some steps are for India only</div>';
+    if (s.uses) h += '<div style="margin-top:8px"><button class="btn-sm" onclick="goTab(\'' + esc(s.uses) + '\')">Open ' + esc(sysTabLabel(s.uses)) + '</button></div>';
+    h += sysSourcesHTML(s) + '</div></details>';
+    return h;
+  }
+  function sysProjectCard(p) {
+    var done = G("gm_proj_done", {}) || {}, ticks = done[p.id] || [], first = -1;
+    (p.phases || []).forEach(function (ph, i) { if (first < 0 && ticks.indexOf(i) < 0) first = i; });
+    var h = '<details class="road-col" style="margin-bottom:10px"><summary style="cursor:pointer;font-weight:800;font-size:13.5px">'
+      + esc(p.title) + ' <span style="font-weight:500;color:var(--muted)">\u00b7 ' + esc(sysSpokeLabel(p.spoke)) + '</span></summary>'
+      + '<ol style="margin:8px 0 0;padding-left:20px">';
+    (p.phases || []).forEach(function (ph, i) {
+      var on = ticks.indexOf(i) >= 0;
+      h += '<li style="padding:3px 0;' + (on ? "opacity:.5;text-decoration:line-through" : "") + '">'
+        + '<button class="btn-sm" style="min-height:44px;margin-right:6px" data-haptic="success" onclick="gmProjTg(\'' + esc(p.id) + '\',' + i + ')">' + (on ? "\u2611" : "\u2610") + '</button>'
+        + (i === first ? '<b>Next:</b> ' : "") + esc(ph.t) + '</li>';
+    });
+    h += '</ol></details>';
+    return h;
+  }
+  function sysFactToggle(f) {
+    var fmap = G("gm_facts", {}) || {}, ans = Object.prototype.hasOwnProperty.call(fmap, f.id), on = ans ? !!fmap[f.id] : false;
+    return '<div class="road-i" style="padding:6px 0"><div style="margin-bottom:4px">' + esc(f.q) + '</div>'
+      + '<div style="display:flex;gap:8px">'
+      + '<button class="btn-sm" style="min-height:44px;' + (ans && on ? "background:var(--gold);color:#0d1f35" : "") + '" aria-pressed="' + (ans && on) + '" onclick="gmSysFact(\'' + esc(f.id) + '\',true)">Yes</button>'
+      + '<button class="btn-sm" style="min-height:44px;' + (ans && !on ? "background:var(--gold);color:#0d1f35" : "") + '" aria-pressed="' + (ans && !on) + '" onclick="gmSysFact(\'' + esc(f.id) + '\',false)">No</button>'
+      + '</div></div>';
+  }
+  function sysRegionHTML() {
+    var local = sysLocal();
+    return '<div style="display:flex;gap:8px;margin-top:8px">'
+      + '<button class="btn-sm" style="flex:1;min-height:44px;' + (local ? "background:var(--gold);color:#0d1f35" : "") + '" aria-pressed="' + local + '" onclick="gmSysRegion(\'local\')">Local: India</button>'
+      + '<button class="btn-sm" style="flex:1;min-height:44px;' + (!local ? "background:var(--gold);color:#0d1f35" : "") + '" aria-pressed="' + (!local) + '" onclick="gmSysRegion(\'global\')">Global</button>'
+      + '</div>';
+  }
+  function systemsHTML() {
+    var d = sysData(), facts = d.facts || [], running = sysRunning();
+    var openId = G("gm_sys_open", "");
+    var unanswered = facts.filter(function (f) { return !sysFactAnswered(f.id); });
+    var h = '<div class="section active">';
+    h += heroHTML(running.length, "systems running", "Each one does the remembering for you", '<button class="btn-sm" onclick="gmSysNext()">See the next step</button>');
+    if (unanswered.length) {
+      h += '<details class="road-col" open style="margin-bottom:10px"><summary style="cursor:pointer;font-weight:800;font-size:13.5px">A few questions, once (' + unanswered.length + ')</summary>'
+        + '<div style="margin-top:8px">' + unanswered.map(sysFactToggle).join("") + sysRegionHTML() + '</div></details>';
+    } else {
+      var editable = facts.filter(function (f) { return !sysDerived(f.id) || sysExplicit(f.id); });
+      h += '<details class="road-col" style="margin-bottom:10px"><summary style="cursor:pointer;font-weight:800;font-size:13.5px">Your situation: Edit</summary>'
+        + '<div style="margin-top:8px">' + editable.map(sysFactToggle).join("") + sysRegionHTML() + '</div></details>';
+    }
+    var nx = sysNextItem();
+    h += '<div id="gmSysNext" style="background:var(--card);border-radius:12px;padding:12px;margin-bottom:12px;box-shadow:0 1px 3px rgba(0,0,0,.05)">'
+      + '<div style="font-size:11px;font-weight:800;letter-spacing:.04em;color:var(--muted);text-transform:uppercase">Next</div>';
+    if (nx) {
+      h += '<div style="font-size:13px;margin:4px 0">' + esc(nx.it.t) + '</div>'
+        + (nx.it.who ? '<div style="font-size:12px;color:var(--muted)">Ask: ' + esc(nx.it.who) + '</div>' : "")
+        + '<div style="margin-top:8px"><button class="btn btn-p" data-haptic="success" onclick="gmSysDone(\'' + esc(nx.id) + '\')">Done</button></div>';
+    } else h += '<div class="info">Nothing due right now.</div>';
+    h += '</div>';
+    var order = [], known = {};
+    if (typeof WHEEL_DIMS !== "undefined") WHEEL_DIMS.forEach(function (w) { order.push({ id: w[0], label: w[1] }); });
+    order.forEach(function (g) { known[g.id] = 1; });
+    var extra = running.filter(function (s) { return !known[s.spoke]; });
+    if (extra.length) order.push({ id: "_", label: "More" });
+    order.forEach(function (g) {
+      var list = running.filter(function (s) { return g.id === "_" ? !known[s.spoke] : s.spoke === g.id; });
+      if (!list.length) return;
+      h += '<div class="cat-t">' + esc(g.label) + '</div>';
+      list.forEach(function (s) { h += sysCardHTML(s, openId); });
+    });
+    var projects = d.projects || [];
+    if (projects.length) {
+      h += '<div class="cat-t">Projects</div>';
+      projects.forEach(function (p) { h += sysProjectCard(p); });
+    }
+    h += '</div>';
+    if (openId) { try { localStorage.removeItem("gm_sys_open"); } catch (e) {} }
+    return h;
+  }
+  function sysWheelLines(box) {
+    if (typeof WHEEL_DIMS === "undefined") return;
+    var rows = box.querySelectorAll(".wheel-sliders .ws-row");
+    if (!rows.length) return;
+    var running = sysRunning();
+    WHEEL_DIMS.forEach(function (w) {
+      var list = running.filter(function (s) { return s.spoke === w[0]; });
+      if (!list.length) return;
+      var row = null;
+      for (var i = 0; i < rows.length; i++) {
+        var lab = rows[i].querySelector(".ws-l span");
+        if (lab && lab.textContent === w[1]) { row = rows[i]; break; }
+      }
+      if (!row) return;
+      list.forEach(function (s) {
+        row.insertAdjacentHTML("beforeend", '<div style="padding:6px 0"><a href="#" style="color:var(--gold);font-weight:700;font-size:12px" onclick="gmSysOpen(\'' + esc(s.id) + '\');return false">System: ' + esc(s.title) + '</a></div>');
+      });
+    });
+  }
+  window.gmSysFact = function (id, v) { var f = G("gm_facts", {}) || {}; f[id] = !!v; S_("gm_facts", f); renderAll(); };
+  window.gmSysRegion = function (r) { S_("gm_region", r === "global" ? "global" : "local"); renderAll(); };
+  window.gmSysDone = function (id) { var m = sysDoneMap(); m[id] = ymd(); S_("gm_sys_done", m); renderAll(); };
+  window.gmSysTick = function (id) { var m = sysDoneMap(); if (m[id]) delete m[id]; else m[id] = ymd(); S_("gm_sys_done", m); renderAll(); };
+  window.gmSysOpen = function (id) { S_("gm_sys_open", id); goTab("systems"); };
+  window.gmSysNext = function () {
+    var e = document.getElementById("gmSysNext");
+    if (e && e.scrollIntoView) { try { e.scrollIntoView({ behavior: "smooth", block: "center" }); } catch (x) { e.scrollIntoView(); } }
+  };
+  window.gmProjTg = function (pid, i) {
+    var d = G("gm_proj_done", {}) || {}, a = d[pid] || [], p = a.indexOf(i);
+    if (p >= 0) a.splice(p, 1); else a.push(i);
+    a.sort(function (x, y) { return x - y; }); d[pid] = a; S_("gm_proj_done", d); renderAll();
+  };
+
   /* ── 10. Wire into the existing render loop ─────────────────────── */
   if (typeof TABS !== "undefined") {
     var keep = TABS.filter(function (t) { return ["today", "map"].indexOf(t[0]) < 0; });
     var today = TABS.filter(function (t) { return t[0] === "today"; });
     var map = TABS.filter(function (t) { return t[0] === "map"; });
     TABS.length = 0;
-    today.concat([["inbox", "Inbox"], ["ask", "Ask"], ["guide", "Guides"], ["stack", "Stack"], ["life", "Life Map"], ["breaks", "Breaks"], ["career", "Career"],
+    today.concat([["inbox", "Inbox"], ["ask", "Ask"], ["guide", "Guides"], ["stack", "Stack"], ["systems", "Systems"], ["life", "Life Map"], ["breaks", "Breaks"], ["career", "Career"],
       ["prop", "Property"], ["ops", "Ops"]]).concat(map).concat(keep)
       .forEach(function (t) { TABS.push([t[0], t[1].replace(/^[^A-Za-z0-9]+/, "")]); });   // plain words in the tab bar: no emoji
   }
@@ -5833,6 +6076,7 @@
     else if (curTab === "inbox") { box.innerHTML = inboxHTML(); }
     else if (curTab === "ops") { box.innerHTML = opsHTML(); }
     else if (curTab === "stack") { box.innerHTML = stackHTML(); }
+    else if (curTab === "systems") { box.innerHTML = systemsHTML(); }
     else if (curTab === "life") { box.innerHTML = lifeMapHTML(); }
     else if (curTab === "breaks") { box.innerHTML = breaksHTML(); }
     else if (curTab === "career") { box.innerHTML = careerHTML(); }
@@ -5847,6 +6091,7 @@
       box.insertAdjacentHTML("afterbegin", greetHTML() + exampleWarn() + interruptHTML() + undoBar() + inboxNudgeHTML() + daily3HTML() + msTodayHTML()
         + (inRecovery() ? "" : driftHTML() + resHTML()) + oneActionHTML() + (inRecovery() ? "" : pinnedHTML()));
     }
+    if (curTab === "wheel") { try { sysWheelLines(box); } catch (e) { console.log(e); } }
     try { calmFrame(); } catch (e) { console.log(e); }
     if (phone() && curTab === "today" && !document.getElementById("gmVitals")) box.insertAdjacentHTML("afterbegin", vitalsHTML());
     var vi = document.getElementById("gmVitals"); if (vi && phone()) vi.classList.add("gm-inline");
