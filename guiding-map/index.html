@@ -75,12 +75,15 @@ header{background:var(--navy);padding:13px 16px;display:flex;align-items:center;
 .gam-pts{font-size:10px;color:rgba(255,255,255,.6);white-space:nowrap;}
 .hstats{display:flex;margin-top:9px;background:rgba(255,255,255,.07);border-radius:10px;overflow:hidden;}
 /* ---- Life OS additions ---- */
-.ns-card{background:linear-gradient(140deg,#0d1f35,#15293f);border:2px solid var(--gold);border-radius:16px;padding:18px;margin-bottom:14px;color:#fff;}
-.ns-ey{font-size:10px;letter-spacing:2px;color:rgba(255,255,255,.55);text-transform:uppercase;margin-bottom:6px;}
+.ns-card{background:radial-gradient(circle at top right,var(--ns-glow,color(srgb .788235 .658824 .298039 / .18)),color(srgb 0 0 0 / 0) 62%),linear-gradient(160deg,#0b1a2e,#0f2f3a);border:2px solid var(--gold);border-radius:16px;padding:18px;margin-bottom:14px;color:#fff;box-shadow:inset 0 0 0 1px rgba(255,255,255,.06);}
+.ns-card.ns-fragile{--ns-glow:color(srgb 1 .607843 .580392 / .18);}
+.ns-card.ns-robust{--ns-glow:color(srgb .909804 .788235 .415686 / .18);}
+.ns-card.ns-antifragile{--ns-glow:color(srgb .482353 .878431 .627451 / .18);}
+.ns-ey{font-size:12px;letter-spacing:.2px;color:rgba(255,255,255,.72);margin-bottom:6px;}
 .ns-row{display:flex;align-items:center;gap:16px;flex-wrap:wrap;}
 .ns-score{font-family:var(--font-display);font-weight:800;letter-spacing:-.022em;font-size:58px;line-height:1;}
 .ns-score span{font-size:20px;color:rgba(255,255,255,.72);}
-.ns-band{font-size:14px;font-weight:800;letter-spacing:1px;}
+.ns-band{font-size:14px;font-weight:800;letter-spacing:.2px;}
 .ns-bd{font-size:11.5px;font-weight:400;color:rgba(255,255,255,.7);letter-spacing:0;margin-top:4px;max-width:340px;line-height:1.5;}
 .ns-subs{margin-top:14px;display:grid;gap:9px;}
 .ns-sub{display:grid;grid-template-columns:1fr 34px 70px;align-items:center;gap:8px;}
@@ -115,7 +118,7 @@ header{background:var(--navy);padding:13px 16px;display:flex;align-items:center;
 .tab.active{color:var(--navy);border-bottom-color:var(--gold);}
 .section{padding:13px;display:none;}
 .section.active{display:block;}
-.cat-t{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:1.3px;color:var(--muted);margin:15px 0 9px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
+.cat-t{font-size:13px;font-weight:700;letter-spacing:.2px;color:var(--muted);margin:15px 0 9px;display:flex;gap:6px;align-items:center;flex-wrap:wrap;}
 .cat-t:first-child{margin-top:0;}
 .pill{font-size:8px;font-weight:800;padding:2px 7px;border-radius:99px;}
 .pill-g{background:var(--gold);color:var(--navy);}
@@ -1454,7 +1457,7 @@ function renderMap(E){
   var pend=HABITS.filter(function(h){return todayChecks().indexOf(h.id)<0;});
   var h='<div class="section active">';
   // NORTH STAR HERO
-  h+='<div class="ns-card" style="border-color:'+col+'">'
+  h+='<div class="ns-card ns-'+AF.band+'" style="border-color:'+col+'">'
     +'<div class="ns-ey">North star · antifragility index</div>'
     +'<div class="ns-row"><div class="ns-score" style="color:'+col+'">'+AF.score+'<span>/100</span></div>'
     +'<div class="ns-band" style="color:'+col+'">'+AF.band.charAt(0).toUpperCase()+AF.band.slice(1)+'<div class="ns-bd">'+bandTxt[AF.band]+'</div></div></div>'
