@@ -5556,13 +5556,247 @@
     return h + laterHTML(c.slice(1));
   }
 
+  /* ── 9b. Breaks: the dates both of you are off, with the fewest leave days ── */
+  // One place holds the built-in holiday lists. The person's work calendar is asked once
+  // (localStorage "gm_work") and everything below recomputes from it: change a job here,
+  // and the next Breaks screen already knows. Dates come from the DoPT office memorandum,
+  // cited by reference; offices outside Delhi follow their state committee's list.
+  var HOLIDAY_LISTS = [
+    { id: "in-central", where: "IN", name: "Central government (India), gazetted, Delhi offices",
+      source: "DoPT O.M. 12/2/2023-JCA of 16 July 2026; offices outside Delhi follow their state committee's list",
+      dates: [["2026-11-24", "Guru Nanak's Birthday"], ["2026-12-25", "Christmas Day"], ["2027-01-26", "Republic Day"],
+        ["2027-03-10", "Id-ul-Fitr"], ["2027-03-23", "Holi"], ["2027-03-26", "Good Friday"], ["2027-04-15", "Ram Navami"],
+        ["2027-04-19", "Mahavir Jayanti"], ["2027-05-17", "Id-ul-Zuha"], ["2027-05-20", "Buddha Purnima"], ["2027-06-16", "Muharram"],
+        ["2027-08-15", "Independence Day"], ["2027-08-15", "Milad-un-Nabi"], ["2027-08-25", "Janmashtami"],
+        ["2027-10-02", "Gandhi Jayanti"], ["2027-10-09", "Dussehra"], ["2027-10-29", "Diwali"],
+        ["2027-11-14", "Guru Nanak's Birthday"], ["2027-12-25", "Christmas Day"]] },
+    { id: "in-central-rh", where: "IN", name: "Restricted holidays (each person may pick two)", rh: true,
+      source: "DoPT O.M. 12/2/2023-JCA of 16 July 2026",
+      dates: [["2027-01-01", "New Year's Day"], ["2027-01-14", "Makar Sankranti"], ["2027-02-19", "Shivaji Jayanti"],
+        ["2027-03-06", "Maha Shivratri"], ["2027-04-07", "Gudi Padwa / Ugadi"], ["2027-08-17", "Raksha Bandhan"],
+        ["2027-09-04", "Ganesh Chaturthi"], ["2027-10-28", "Naraka Chaturdashi"], ["2027-10-30", "Govardhan Puja"],
+        ["2027-10-31", "Bhai Dooj"], ["2027-11-04", "Chhath Puja"], ["2027-12-24", "Christmas Eve"]] }
+  ];
+  var _holMaps = {};
+  function gmHolidayMap(listId) {
+    if (_holMaps[listId]) return _holMaps[listId];
+    var m = {}, l = HOLIDAY_LISTS.filter(function (x) { return x.id === listId; })[0];
+    if (l) l.dates.forEach(function (p) { m[p[0]] = p[1]; });
+    _holMaps[listId] = m; return m;
+  }
+  function gmWorkDefault() {
+    return { two: false, me: { off: "satsun", list: "in-central", rh: [], own: [] }, partner: { off: "satsun", list: "in-central", rh: [], own: [] } };
+  }
+  function gmYmdToDate(s) {
+    if (s instanceof Date) return s;
+    var m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/);
+    return m ? new Date(+m[1], +m[2] - 1, +m[3]) : new Date();
+  }
+  // One person's days off in [from, to]: weekly offs, holidays, chosen restricted holidays, own list.
+  window.gmDaysOff = function (person, from, to) {
+    person = person || {}; var off = person.off || "satsun", out = {};
+    var d = gmYmdToDate(from), end = gmYmdToDate(to);
+    for (; d <= end; d.setDate(d.getDate() + 1)) {
+      var w = d.getDay(), dm = d.getDate(), rest = false;
+      if (off === "sun") rest = w === 0;
+      else if (off === "sun24") rest = w === 0 || (w === 6 && (Math.ceil(dm / 7) === 2 || Math.ceil(dm / 7) === 4));
+      else rest = w === 0 || w === 6;
+      if (rest) out[ymd(d)] = "Weekly off";
+    }
+    function add(map) { for (var k in map) if (k >= from && k <= to) out[k] = map[k]; }
+    add(gmHolidayMap(person.list === "own" ? "" : person.list || "in-central"));
+    (person.rh || []).forEach(function (k) { var n = gmHolidayMap("in-central-rh")[k]; if (n && k >= from && k <= to) out[k] = n; });
+    (person.own || []).forEach(function (p) { if (p && p.d && p.d >= from && p.d <= to) out[p.d] = p.n || "Own holiday"; });
+    return out;
+  };
+  // Windows of 3+ days when BOTH are off, bridging gaps of working days with up to
+  // 2 leave days per person. A window stays only if the leave buys at least that many
+  // extra days together. Runs of days off are merged across bridgeable gaps, so one
+  // leave day on Monday 25 Jan 2027 gives the 4-day Republic Day bridge, not five.
+  window.gmBreaks = function (from, days) {
+    var w = G("gm_work", null) || gmWorkDefault();
+    var start = gmYmdToDate(from), end = new Date(start.getTime());
+    end.setDate(end.getDate() + (days || 365) - 1);
+    var toKey = ymd(end), offMe = gmDaysOff(w.me, from, toKey), offPa = gmDaysOff(w.partner, from, toKey);
+    var runs = [], cur = null;
+    for (var d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
+      var k = ymd(d);
+      if (offMe[k] && offPa[k]) { if (!cur) runs.push(cur = { s: k, e: k }); else cur.e = k; }
+      else cur = null;
+    }
+    var cands = [];
+    runs.forEach(function (r, ri) {
+      var lm = [], lp = [], wStart = runs[ri].s, wEnd = runs[ri].e, lastRun = ri;
+      // Shoulders: the window may begin or end on a day only one is off, the other bridging with leave.
+      for (var pd = gmYmdToDate(wStart); ;) {
+        pd.setDate(pd.getDate() - 1);
+        var pk = ymd(pd);
+        if (!(offMe[pk] || offPa[pk])) break;
+        if (!offMe[pk] && lm.length >= 2) break;
+        if (!offPa[pk] && lp.length >= 2) break;
+        if (!offMe[pk]) lm.unshift(pk);
+        if (!offPa[pk]) lp.unshift(pk);
+        wStart = pk;
+      }
+      for (var j = ri + 1; j < runs.length; j++) {
+        var gapMe = [], gapPa = [], gd = gmYmdToDate(wEnd), gEnd = gmYmdToDate(runs[j].s);
+        for (gd.setDate(gd.getDate() + 1); gd < gEnd; gd.setDate(gd.getDate() + 1)) {
+          var gk = ymd(gd);
+          if (!offMe[gk]) gapMe.push(gk);
+          if (!offPa[gk]) gapPa.push(gk);
+        }
+        if (lm.length + gapMe.length > 2 || lp.length + gapPa.length > 2) break;
+        lm = lm.concat(gapMe); lp = lp.concat(gapPa); wEnd = runs[j].e; lastRun = j;
+      }
+      for (var fd = gmYmdToDate(wEnd); ;) {
+        fd.setDate(fd.getDate() + 1);
+        var fk = ymd(fd);
+        if (!(offMe[fk] || offPa[fk])) break;
+        if (!offMe[fk] && lm.length >= 2) break;
+        if (!offPa[fk] && lp.length >= 2) break;
+        if (!offMe[fk]) lm.push(fk);
+        if (!offPa[fk]) lp.push(fk);
+        wEnd = fk;
+      }
+      var n = 0, base = 0;
+      for (var bd = gmYmdToDate(wStart); bd <= gmYmdToDate(wEnd); bd.setDate(bd.getDate() + 1)) {
+        var bk = ymd(bd); n++;
+        if (offMe[bk] && offPa[bk]) base++;
+      }
+      var extra = n - base;
+      if (n < 3 || extra < Math.max(lm.length, lp.length)) return;
+      var hols = {};
+      [w.me, w.partner].forEach(function (p) {
+        var map = gmHolidayMap(p.list === "own" ? "" : p.list || "in-central");
+        for (var hk in map) if (hk >= wStart && hk <= wEnd) hols[map[hk]] = true;
+        (p.rh || []).forEach(function (r) { var nm = gmHolidayMap("in-central-rh")[r]; if (nm && r >= wStart && r <= wEnd) hols[nm] = true; });
+        (p.own || []).forEach(function (o) { if (o && o.d >= wStart && o.d <= wEnd && o.n) hols[o.n] = true; });
+      });
+      cands.push({ start: wStart, end: wEnd, days: n, leaveMe: lm, leavePartner: lp, holidays: Object.keys(hols), score: n / Math.max(1, lm.length + lp.length) });
+    });
+    cands.sort(function (a, b) { return b.score - a.score || (a.start < b.start ? -1 : a.start > b.start ? 1 : 0); });
+    var picked = [];
+    for (var ci = 0; ci < cands.length && picked.length < 6; ci++) {
+      var cw = cands[ci], clash = picked.some(function (p) { return cw.start <= p.end && p.start <= cw.end; });
+      if (!clash) picked.push(cw);
+    }
+    picked.forEach(function (p) { delete p.score; });
+    return picked;
+  };
+  // Pasted lines: "YYYY-MM-DD Name". Bad lines are ignored and counted, never shown raw unescaped.
+  window.gmParseOwn = function (lines) {
+    var list = [], bad = 0;
+    String(lines || "").split(/\n+/).forEach(function (ln) {
+      var m = String(ln).trim().match(/^(\d{4}-\d{2}-\d{2})\s+(.+)$/);
+      if (m) list.push({ d: m[1], n: m[2] }); else if (String(ln).trim()) bad++;
+    });
+    return { list: list, bad: bad };
+  };
+  // Dates through Intl with the person's locale, never hand-built strings.
+  function gmWorkFmt(dkey) {
+    try { return new Intl.DateTimeFormat(undefined, { weekday: "short", day: "numeric", month: "short" }).format(gmYmdToDate(dkey)); }
+    catch (e) { return String(dkey); }
+  }
+  function gmNextHoliday(from) {
+    var best = null, w = G("gm_work", null) || gmWorkDefault();
+    function scan(map) { for (var k in map) if (k >= from && (!best || k < best.d)) best = { d: k, n: map[k] }; }
+    scan(gmHolidayMap(w.me.list === "own" ? "" : w.me.list || "in-central"));
+    (w.me.own || []).forEach(function (o) { if (o && o.d >= from && (!best || o.d < best.d)) best = { d: o.d, n: o.n || "Own holiday" }; });
+    return best;
+  }
+  var gmWorkMsg = "";
+  function gmWorkPersonHTML(who, label, cfg) {
+    var rh = gmHolidayMap("in-central-rh");
+    return '<div style="background:var(--cardAlt);border-radius:10px;padding:10px;margin-bottom:8px">'
+      + '<div style="font-weight:800;font-size:12.5px;margin-bottom:6px">' + label + '</div>'
+      + '<div class="row" style="gap:8px;flex-wrap:wrap"><label style="flex:1;min-width:140px">Weekly off<br><select id="gmw_off_' + who + '" style="max-width:100%">'
+      + '<option value="satsun"' + (cfg.off === "satsun" ? " selected" : "") + '>Saturday and Sunday</option>'
+      + '<option value="sun"' + (cfg.off === "sun" ? " selected" : "") + '>Sunday only</option>'
+      + '<option value="sun24"' + (cfg.off === "sun24" ? " selected" : "") + '>Sunday plus 2nd and 4th Saturday</option></select></label>'
+      + '<label style="flex:1;min-width:140px">Holiday list<br><select id="gmw_list_' + who + '" style="max-width:100%">'
+      + '<option value="in-central"' + (cfg.list !== "own" ? " selected" : "") + '>Central government (India)</option>'
+      + '<option value="own"' + (cfg.list === "own" ? " selected" : "") + ">My office's own list</option></select></label></div>"
+      + '<div style="font-size:11.5px;color:var(--muted);margin:8px 0 4px">Restricted holidays (pick two):</div>'
+      + Object.keys(rh).sort().map(function (k) {
+        return '<label style="display:inline-block;margin:0 12px 4px 0;font-size:12px"><input type="checkbox" class="gmw-rh-' + who + '" value="' + k + '"'
+          + (cfg.rh.indexOf(k) >= 0 ? " checked" : "") + "> " + esc(rh[k]) + ", " + gmWorkFmt(k) + "</label>";
+      }).join("")
+      + '<label style="display:block;font-size:12px;margin-top:8px">Your office\u2019s own holidays<br><textarea id="gmw_own_' + who + '" rows="3" '
+      + 'placeholder="Paste your office\u2019s holiday list, one per line: 2027-01-26 Republic Day" '
+      + 'style="width:100%;max-width:100%">' + esc((cfg.own || []).map(function (o) { return o.d + " " + o.n; }).join("\n")) + '</textarea></label>'
+      + '</div>';
+  }
+  window.gmWorkSave = function () {
+    var w = G("gm_work", null) || gmWorkDefault(), read = 0, bad = 0;
+    ["me", "partner"].forEach(function (who) {
+      var el = document.getElementById("gmw_off_" + who); if (el) w[who].off = el.value;
+      el = document.getElementById("gmw_list_" + who); if (el) w[who].list = el.value;
+      w[who].rh = [].slice.call(document.querySelectorAll(".gmw-rh-" + who + ":checked")).map(function (x) { return x.value; }).slice(0, 2);
+      el = document.getElementById("gmw_own_" + who);
+      if (el) { var p = gmParseOwn(el.value); w[who].own = p.list; read += p.list.length; bad += p.bad; }
+    });
+    var two = document.getElementById("gmw_two"); if (two) w.two = two.checked;
+    S_("gm_work", w);
+    gmWorkMsg = "Saved: read " + read + " of " + (read + bad) + " pasted line(s); " + bad + " ignored (each needs \u201Cdate name\u201D).";
+    renderAll();
+  };
+  window.gmBreaksHow = function () {
+    var how = document.querySelector("#sections details.gm-how");
+    if (how) { how.open = true; how.scrollIntoView({ behavior: "smooth", block: "start" }); }
+  };
+  function breaksLaterHTML(wins) {
+    var rest = wins.slice(1);
+    if (!rest.length) return "";
+    return '<details class="gm-later" style="margin:10px 0 14px"><summary style="cursor:pointer;font-weight:800;font-size:13px">Later (' + rest.length + ') '
+      + '<span style="font-weight:500;color:var(--muted);font-size:11.5px">\u00b7 the next best windows</span></summary>'
+      + rest.map(function (x) {
+        var same = x.leaveMe.length === x.leavePartner.length;
+        return '<div style="font-size:12.5px;color:var(--text);margin:8px 0">' + gmWorkFmt(x.start) + " \u2013 " + gmWorkFmt(x.end)
+          + " \u00b7 " + x.days + " days together \u00b7 leave: " + (same ? x.leaveMe.length + " each" : x.leaveMe.length + " me, " + x.leavePartner.length + " partner")
+          + (x.holidays.length ? " \u00b7 " + esc(x.holidays.join(", ")) : "") + '</div>';
+      }).join("") + '</details>';
+  }
+  function breaksHTML() {
+    var wk = G("gm_work", null), example = !wk;
+    var w = wk || gmWorkDefault();
+    var from = ymd(new Date());
+    var wins = gmBreaks(from, 365);
+    var best = wins[0], hero;
+    if (best) {
+      var lv = Math.max(best.leaveMe.length, best.leavePartner.length);
+      hero = heroHTML(String(best.days), "days off together",
+        gmWorkFmt(best.start) + " to " + gmWorkFmt(best.end) + ", " + (lv ? "for " + lv + " leave day" + (lv === 1 ? "" : "s") + " each" : "no leave needed"),
+        '<button class="btn btn-p" data-haptic="success" onclick="gmBreaksHow()">See how</button>');
+    } else {
+      var nx = gmNextHoliday(from);
+      hero = heroHTML("\u2014", "", "No stretch together in the next 365 days" + (nx ? " \u2014 the next holiday is " + esc(nx.n) + ", " + gmWorkFmt(nx.d) : "")
+        + ". Tell it your work calendars below and it plans again.", "");
+    }
+    var showPartner = w.two || (window.P && P.pdob);
+    var fold = '<details class="road-col gm-work" style="margin:10px 0 14px"><summary style="cursor:pointer;font-weight:800;font-size:13px">Your work calendars '
+      + '<span style="font-weight:500;color:var(--muted);font-size:11.5px">\u00b7 one edit here replans everything below</span></summary>'
+      + '<div style="margin-top:10px">'
+      + (!window.P || !P.pdob ? '<label style="font-size:12.5px"><input type="checkbox" id="gmw_two"' + (w.two ? " checked" : "") + '> Plan for two</label>' : "")
+      + gmWorkPersonHTML("me", "Me", w.me)
+      + (showPartner ? gmWorkPersonHTML("partner", "Partner", w.partner) : "")
+      + '<button class="btn btn-p" data-haptic="success" onclick="gmWorkSave()">Save</button></div></details>';
+    return '<div class="section active">' + hero
+      + howHTML('It walks the next 365 days, marks the days each of you is off \u2014 weekly offs, gazetted holidays, your two restricted holidays and your office\u2019s own list \u2014 and builds the stretches where being off together needs the fewest leave days. '
+        + 'It keeps only windows where the leave buys at least that many extra days together, then ranks them by days together per leave day.')
+      + (example ? '<div style="font-size:12px;color:var(--amber);margin:10px 0 0">Example settings: correct them once</div>' : "")
+      + (gmWorkMsg ? '<div style="font-size:12px;color:var(--green);margin:6px 0 0">' + esc(gmWorkMsg) + '</div>' : "")
+      + fold
+      + breaksLaterHTML(wins)
+      + '</div>';
+  }
+
   /* ── 10. Wire into the existing render loop ─────────────────────── */
   if (typeof TABS !== "undefined") {
     var keep = TABS.filter(function (t) { return ["today", "map"].indexOf(t[0]) < 0; });
     var today = TABS.filter(function (t) { return t[0] === "today"; });
     var map = TABS.filter(function (t) { return t[0] === "map"; });
     TABS.length = 0;
-    today.concat([["inbox", "Inbox"], ["ask", "Ask"], ["guide", "Guides"], ["stack", "Stack"], ["life", "Life Map"], ["career", "Career"],
+    today.concat([["inbox", "Inbox"], ["ask", "Ask"], ["guide", "Guides"], ["stack", "Stack"], ["life", "Life Map"], ["breaks", "Breaks"], ["career", "Career"],
       ["prop", "Property"], ["ops", "Ops"]]).concat(map).concat(keep)
       .forEach(function (t) { TABS.push([t[0], t[1].replace(/^[^A-Za-z0-9]+/, "")]); });   // plain words in the tab bar: no emoji
   }
@@ -5592,6 +5826,7 @@
     else if (curTab === "ops") { box.innerHTML = opsHTML(); }
     else if (curTab === "stack") { box.innerHTML = stackHTML(); }
     else if (curTab === "life") { box.innerHTML = lifeMapHTML(); }
+    else if (curTab === "breaks") { box.innerHTML = breaksHTML(); }
     else if (curTab === "career") { box.innerHTML = careerHTML(); }
     else if (curTab === "prop") { box.innerHTML = propHTML(); }
     else if (curTab === "today" && calmOn()) { box.innerHTML = calmTodayHTML(); }
