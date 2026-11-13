@@ -45,6 +45,8 @@ setTimeout(() => {
     ok(d.querySelectorAll(".csp-zone").length >= 2, "each spending bar shows its healthy band");
     ok(!/#1d4ed8/i.test(d.querySelector(".section.active").innerHTML), "no off-palette blue");
     ok(!!d.getElementById("gmCalmLux"), "the calm-luxury styles are in place");
+    const lux = d.getElementById("gmCalmLux").textContent;
+    ok(/\.ws-taps\{display:grid/.test(lux) && /\.ws-tap:active\{transform:translateY\(3px\)/.test(lux) && /\.ws-tap\.on\{[^}]*#0b5e48/.test(lux), "the Wheel's keys are keycaps that press down, and the chosen one is jade");
   } catch (e) { fail++; console.log("FAIL threw " + e.message); }
   console.log("test87 calm luxury: " + pass + " passed, " + fail + " failed");
   process.exit(fail ? 1 : 0);

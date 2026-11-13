@@ -33,6 +33,14 @@ setTimeout(() => {
       ok(pay.ctc === 20000 * 12 * 20 && pay.tax === 0, "zero local tax stays zero, and no Indian tax is applied abroad");
       const taxed = none.gmOfferPay({ mode: "abroad", lpay: 10000, fx: 10, ltax: 20, lrent: 0, lliving: 0, lallow: 0, health: false });
       ok(taxed.inh === 80000 && taxed.usable < taxed.inh, "local tax is taken off, and health cover you buy yourself is counted");
+      // Tidy, permanent fixes: round checks, no crushed rows, engraved tags, plain guide titles (owner screenshots, 2026-11-13).
+      const lux = none.document.getElementById("gmCalmLux").textContent;
+      ok(/\.gm-tap\.gm-chk\{[^}]*width:44px/.test(lux) && /\.gm-tap\.gm-chk\.on::after/.test(lux), "tick boxes are a small round check inside a 44 px tap area");
+      ok(/\[style\*='display:flex'\] > button\.btn[^{]*\{width:auto/.test(lux), "a button in a row sizes to its content, so text beside it is never crushed");
+      ok(/\.stk-k\{background:transparent!important/.test(lux), "metric labels are engraved tags, not gold slabs");
+      none.goTab("guide");
+      const gt = vis(none.document, none.document.querySelector(".section.active"));
+      ok(!/OPSEC:/.test(gt) && /Pick a password manager/.test(gt) && none.document.querySelector(".guide-card .gm-gt small"), "guides read plainly, with the tag on its own small line");
     } catch (e) { fail++; console.log("FAIL threw " + e.message); }
     console.log("test92 human pass: " + pass + " passed, " + fail + " failed"); process.exit(fail ? 1 : 0); }, 300);
   } catch (e) { fail++; console.log("FAIL threw " + e.message); console.log("test92: " + pass + " passed, " + fail + " failed"); process.exit(1); }

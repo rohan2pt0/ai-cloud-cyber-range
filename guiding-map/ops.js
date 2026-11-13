@@ -3278,7 +3278,7 @@
         "IF YOU CYCLE: pick resistance/speed that produces the right breathing; keep it steady (no sprints/hard hills/stop-start).",
         "BUILD: once 30 min feels comfortable after a couple of sessions, move toward 35–45 min."],
       check: "Weekly shape: Mon strength · Tue Zone 2 · Wed strength · Thu mindfulness · Fri strength · Sat Zone 2 · Sun recovery. (AHA suggests building toward ~150 min/week of moderate activity over time — start with your 2×30 and grow.)" },
-    { id: "pwmgr", icon: "🔐", title: "OPSEC: pick a password manager (unblocks “all passwords”)", tag: "security · do once",
+    { id: "pwmgr", icon: "🔐", title: "Pick a password manager (it unlocks every other step)", tag: "security · do once",
       what: "The community-proven picks (verify current audit status before trusting any tool). Choose one, then import/add passwords over a week — don’t try to do all at once.",
       steps: ["BITWARDEN — best all-round: open-source, independently audited, genuinely unlimited free tier, syncs across all devices. Default choice for most.",
         "KEEPASSXC — most sovereign: the vault is a local file on your device, nothing in anyone’s cloud. You handle sync (put the file on your own estate / Tailscale). Fits SecuRAX’s sovereignty best if you’re comfortable managing a file.",
@@ -3286,7 +3286,7 @@
         "PROTON PASS — if email aliases matter most (hide-my-email): privacy-focused, free tier includes aliases."],
       subs: ["Whichever you pick: set a long, unique master password you can remember (a passphrase of 4–5 random words), turn on 2FA/passkey, and write ONLY where the master password hint lives in your Continuity Vault — never the password itself."],
       check: "Decision rule (your Global-Intelligence method): most-recommended + open-source + audited wins → Bitwarden, or KeePassXC/Vaultwarden if you want it fully on your own hardware." },
-    { id: "recoveryemail", icon: "📧", title: "OPSEC: a dedicated recovery email (the step before the vault)", tag: "security · do once",
+    { id: "recoveryemail", icon: "📧", title: "Set up a separate recovery email (before the password manager)", tag: "security · do once",
       what: "A brand-new email used ONLY to recover your important accounts — never shared, never used to sign up for anything, never posted. It isolates your most valuable accounts from your everyday inbox (which leaks everywhere).",
       steps: ["Create a fresh account at a reputable provider (e.g. a new Gmail, or ProtonMail for extra privacy). Pick a name that isn’t obviously ‘you’.",
         "Give it a long unique password (store it in your new password manager) and turn on 2FA — ideally a passkey or an authenticator app, not SMS.",
@@ -3298,7 +3298,7 @@
 
   function guideCard(g) {
     var h = '<details class="guide-card road-col" style="margin-bottom:10px"><summary style="cursor:pointer;font-weight:800;font-size:13px">'
-      + g.icon + ' ' + esc(g.title) + ' <span style="font-weight:500;color:var(--muted)">· ' + esc(g.tag) + '</span></summary>'
+      + '<span class="gm-glyph" aria-hidden="true"><i>' + g.icon + '</i></span><span class="gm-gt"><b>' + esc(g.title) + '</b><small>' + esc(g.tag) + '</small></span></summary>'
       + '<div style="font-size:12.5px;line-height:1.75;margin-top:8px">'
       + '<div class="info" style="margin-bottom:8px">' + esc(g.what) + '</div>'
       + (g.viz || "");
@@ -4786,7 +4786,7 @@
     list.forEach(function (t, i) {
       var key = k.name + "|" + q + "|" + i, on = !!done[key];
       h += '<div role="button" tabindex="0" onclick="gmKidTick(decodeURIComponent(\'' + encodeURIComponent(key).replace(/'/g, "%27") + '\'))" style="display:flex;gap:9px;align-items:flex-start;cursor:pointer;margin:6px 0;font-size:12.5px;color:var(--text);line-height:1.5">'
-        + '<span class="gm-tap' + (on ? " on" : "") + '" style="min-width:26px;min-height:26px;border-radius:8px;font-size:12px">' + (on ? "✓" : "") + '</span><span' + (on ? ' style="text-decoration:line-through;opacity:.7"' : '') + '>' + esc(t) + '</span></div>';
+        + '<span class="gm-tap gm-chk' + (on ? " on" : "") + '" style="min-width:26px;min-height:26px;border-radius:8px;font-size:12px">' + (on ? "✓" : "") + '</span><span' + (on ? ' style="text-decoration:line-through;opacity:.7"' : '') + '>' + esc(t) + '</span></div>';
     });
     return h + kidFund(ka) + '</div>';
   };
@@ -5162,7 +5162,7 @@
     var gp = hd("6 · CISO-readiness gaps", "Tick what is already true. The rest is the plan for your next role.");
     var gd = 0;
     GAPS.forEach(function (g) { var on = !!c.gaps[g[0]]; if (on) gd++;
-      gp += '<div role="button" tabindex="0" onclick="gmCarGap(\'' + g[0] + '\')" style="display:flex;gap:9px;align-items:flex-start;cursor:pointer;margin:6px 0;font-size:12.5px;color:var(--text);line-height:1.5"><span class="gm-tap' + (on ? " on" : "") + '" style="min-width:26px;min-height:26px;border-radius:8px;font-size:12px">' + (on ? "✓" : "") + '</span><span>' + esc(g[1]) + '</span></div>'; });
+      gp += '<div role="button" tabindex="0" onclick="gmCarGap(\'' + g[0] + '\')" style="display:flex;gap:9px;align-items:flex-start;cursor:pointer;margin:6px 0;font-size:12.5px;color:var(--text);line-height:1.5"><span class="gm-tap gm-chk' + (on ? " on" : "") + '" style="min-width:26px;min-height:26px;border-radius:8px;font-size:12px">' + (on ? "✓" : "") + '</span><span>' + esc(g[1]) + '</span></div>'; });
     h += box(gp + '<div style="font-size:12px;color:var(--muted)">' + gd + ' of ' + GAPS.length + ' in place</div>');
 
     // 7. the plan
@@ -5170,7 +5170,7 @@
     var today = new Date();
     planItems(c).forEach(function (p) {
       var over = p.due && !p.done && p.due < today;
-      pl += '<div style="display:flex;gap:9px;align-items:flex-start;margin:6px 0;font-size:12.5px;color:var(--text);line-height:1.5"><button type="button" class="gm-tap' + (p.done ? " on" : "") + '" aria-pressed="' + (p.done ? "true" : "false") + '" aria-label="' + esc((p.done ? "Mark not done: " : "Mark done: ") + p.t) + '" style="min-width:26px;min-height:26px;border-radius:8px;font-size:12px;padding:0" onclick="gmCarDone(\'' + p.id + '\')">' + (p.done ? "✓" : "") + '</button>'
+      pl += '<div style="display:flex;gap:9px;align-items:flex-start;margin:6px 0;font-size:12.5px;color:var(--text);line-height:1.5"><button type="button" class="gm-tap gm-chk' + (p.done ? " on" : "") + '" aria-pressed="' + (p.done ? "true" : "false") + '" aria-label="' + esc((p.done ? "Mark not done: " : "Mark done: ") + p.t) + '" style="min-width:26px;min-height:26px;border-radius:8px;font-size:12px;padding:0" onclick="gmCarDone(\'' + p.id + '\')">' + (p.done ? "✓" : "") + '</button>'
         + '<span' + (p.done ? ' style="text-decoration:line-through;opacity:.7"' : '') + '>' + esc(p.t) + (p.due ? ' <span style="color:' + (over ? "var(--red)" : "var(--muted)") + '">· ' + (over ? "overdue " : "by ") + ymd(p.due) + '</span>' : '') + '</span></div>';
     });
     if (datedCount("career")) pl += '<button class="btn-sm" data-haptic="success" style="margin-top:8px;background:var(--cardAlt);color:var(--text)" onclick="gmCalendarDated(\'career\')">Add the plan to my calendar</button>';
@@ -6496,7 +6496,7 @@
     if (ys.length) line += " \u00b7 Using your office's list for " + ys.join(", ");
     return '<div style="display:flex;align-items:center;gap:8px;margin:6px 0">'
       + '<div style="flex:1;font-size:12.5px;color:var(--text)">' + esc(line) + '</div>'
-      + '<button class="btn" style="padding:4px 10px;font-size:11.5px" onclick="gmWorkEdit(\'' + who + '\',' + i + ')">Edit</button></div>';
+      + '<button class="gm-quiet" onclick="gmWorkEdit(\'' + who + '\',' + i + ')" aria-label="Edit these dates">Edit</button></div>';
   }
   function gmWorkPeriodForm(who, i, p) {
     var sfx = i ? "_" + i : "", rh = gmHolidayMap("in-central-rh");
@@ -6856,7 +6856,7 @@
       }
       if (!row) return;
       list.forEach(function (s) {
-        row.insertAdjacentHTML("beforeend", '<div style="padding:6px 0"><a href="#" style="color:var(--gold);font-weight:700;font-size:12px" onclick="gmSysOpen(\'' + esc(s.id) + '\');return false">System: ' + esc(s.title) + '</a></div>');
+        row.insertAdjacentHTML("beforeend", '<div style="padding:6px 0"><a href="#" style="color:var(--gold);font-weight:700;font-size:12px" onclick="gmSysOpen(\'' + esc(s.id) + '\');return false">' + esc(s.title) + '</a></div>');
       });
     });
   }
@@ -7381,6 +7381,30 @@
       + ".gm-start{font-size:12px;font-weight:800;letter-spacing:.3px;color:#7a5a14;margin-top:6px}html[data-theme=dark] .gm-start{color:var(--gold)}"
       // The stage chooser: one quiet segmented control instead of five chunky pills.
       + ".gm-qtaps{display:grid;grid-template-columns:1fr;gap:8px}.gm-qtap{min-height:48px;border-radius:14px;border:1px solid var(--border);background:var(--card);color:var(--text);font:inherit;font-size:15px;font-weight:700;text-align:start;padding:10px 14px;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(201,168,76,.25)}.gm-qtap:active{transform:scale(.98)}"
+      // The Wheel's 1-10 keys (owner, 2026-11-13: "jade, gem or glass; buttons must look mechanical"): a recessed tray of real
+      // keycaps that press down when tapped; the chosen score is a polished jade cabochon set in a gold bezel.
+      + "html body .ws-taps{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;padding:7px;border-radius:16px;background:linear-gradient(180deg,#e6dfcf,#f4efe3);box-shadow:inset 0 2px 6px rgba(60,45,20,.28),inset 0 -1px 0 rgba(255,255,255,.8),0 1px 0 rgba(255,255,255,.6)}"
+      + "html body .ws-tap{flex:none;min-width:44px;height:46px;border-radius:12px;border:1px solid rgba(120,95,45,.28);font-size:16px;font-weight:800;color:#2a2418;background:linear-gradient(180deg,#fffdf8 0%,#f3ecdd 55%,#e7dec9 100%);box-shadow:0 3px 0 #c9bb98,0 5px 8px rgba(40,30,10,.16),inset 0 1px 0 #fff;transition:transform .08s ease,box-shadow .08s ease;font-variant-numeric:tabular-nums}"
+      + "html body .ws-tap:active{transform:translateY(3px);box-shadow:0 0 0 #c9bb98,0 1px 2px rgba(40,30,10,.2),inset 0 1px 0 #fff}"
+      + "html body .ws-tap.on{position:relative;color:#f4fffa;border-color:rgba(201,168,76,.85);background-color:#0b5e48;background-image:radial-gradient(circle at 30% 22%,rgba(255,255,255,.6) 0 9%,rgba(255,255,255,0) 26%),linear-gradient(160deg,#1f8f6d 0%,#0b5e48 58%,#063d2e 100%);text-shadow:0 1px 1px rgba(0,0,0,.45);transform:translateY(2px);box-shadow:0 1px 0 #04291f,0 0 0 2px rgba(201,168,76,.55),0 6px 14px rgba(11,94,72,.35),inset 0 2px 3px rgba(255,255,255,.3),inset 0 -4px 7px rgba(0,0,0,.35)}"
+      + "html[data-theme=dark] body .ws-taps{background:linear-gradient(180deg,#0b1222,#121b31);box-shadow:inset 0 2px 7px rgba(0,0,0,.6),0 1px 0 rgba(255,255,255,.05)}"
+      + "html[data-theme=dark] body .ws-tap{color:#ece8dd;border-color:rgba(201,168,76,.28);background:linear-gradient(180deg,#2a3858 0%,#1c2742 60%,#151e35 100%);box-shadow:0 3px 0 #070c18,0 5px 9px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.12)}"
+      + "html[data-theme=dark] body .ws-tap.on{color:#f4fffa;background-color:#0b5e48;background-image:radial-gradient(circle at 30% 22%,rgba(255,255,255,.5) 0 9%,rgba(255,255,255,0) 26%),linear-gradient(160deg,#25a27c 0%,#0b5e48 58%,#053226 100%)}"
+      + "html body .ws-row a[onclick^='gmSysOpen']{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:6px 12px;border-radius:999px;font-size:12.5px;font-weight:700;text-decoration:none;color:var(--text);background:rgba(255,255,255,.55);border:1px solid rgba(201,168,76,.45);box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 1px 3px rgba(0,0,0,.06)}"
+      + "html body .ws-row a[onclick^='gmSysOpen']::before{content:'\\2192';color:#7a5a14}html[data-theme=dark] body .ws-row a[onclick^='gmSysOpen']{background:rgba(255,255,255,.06)}"
+      // Tick boxes (owner, 2026-11-13: "cheap, untidy"): a small round check inside a full 44 px tap area, gold coin when done.
+      + "html body .gm-tap.gm-chk{position:relative;flex:none;width:44px;height:44px;min-width:44px;min-height:44px;padding:0;margin:-10px 0 -10px -10px;border:0;background:transparent;background-image:none;box-shadow:none;color:transparent;font-size:0}"
+      + "html body .gm-tap.gm-chk::before{content:'';position:absolute;inset:10px;border-radius:50%;border:1.8px solid rgba(150,118,48,.65);background:linear-gradient(180deg,#fffdf8,#efe7d6);box-shadow:inset 0 1px 2px rgba(60,45,20,.18)}"
+      + "html body .gm-tap.gm-chk.on::before{border-color:#b8902f;background:linear-gradient(135deg,#e2c46e 0%,#f6e7ad 40%,#d4af37 70%,#ecd27e 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 2px 6px rgba(184,144,47,.35)}"
+      + "html body .gm-tap.gm-chk.on::after{content:'';position:absolute;left:19px;top:14px;width:6px;height:12px;border:solid #1b1406;border-width:0 2.5px 2.5px 0;transform:rotate(42deg)}"
+      + "html[data-theme=dark] body .gm-tap.gm-chk::before{background:linear-gradient(180deg,#1f2a45,#151e35);border-color:rgba(201,168,76,.55)}"
+      // Controls in a row size to their content (LESSONS 2026-11-11): a full-width button beside text crushed it to one word a line.
+      + "html body [style*='display:flex'] > button.btn,html body [style*='display:flex'] > .btn-sm{width:auto;flex:0 0 auto;max-width:60%}"
+      // The metric map's labels: a small engraved tag, not a slab of gold.
+      + "html body .stk-k{background:transparent!important;background-image:none!important;box-shadow:none!important;border:1px solid rgba(201,168,76,.6);color:#7a5a14!important;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:4px 8px;align-self:center;min-height:0}"
+      + "html[data-theme=dark] body .stk-k{color:var(--gold)!important}"
+      + "html body .guide-card>summary{display:flex;align-items:center;gap:10px;min-height:48px}html body .guide-card>summary .gm-glyph{font-size:22px}"
+      + ".gm-gt{display:flex;flex-direction:column;gap:2px;min-width:0}.gm-gt small{font-weight:500;font-size:11.5px;color:var(--muted);letter-spacing:.02em}"
       + "html body .kr .chips{display:flex;flex-wrap:nowrap;gap:2px;padding:3px;border-radius:12px;background:var(--cardAlt);border:1px solid var(--border);width:100%;box-sizing:border-box;overflow-x:auto}"
       + "html body .kr .chips .chip{flex:1 1 auto;background:transparent;background-image:none;border:0;box-shadow:none;color:var(--muted);padding:8px 4px;border-radius:9px;font-weight:600;font-size:12px;white-space:nowrap;text-shadow:none}"
       + "html body .kr .chips .chip.on{background:var(--card);background-image:none;color:var(--text);font-weight:800;box-shadow:0 1px 3px rgba(13,31,53,.14),inset 0 0 0 1px rgba(201,168,76,.6)}"
@@ -7406,7 +7430,7 @@
   window.gmGlyphs = function (root) {
     if (!RX) return 0;
     var n = 0;
-    (root || document).querySelectorAll(".cat-t").forEach(function (el) {
+    (root || document).querySelectorAll(".cat-t, .afp-l").forEach(function (el) {
       var t = el.firstChild;
       if (!t || t.nodeType !== 3 || (el.firstElementChild && el.firstElementChild.className === "gm-glyph" && el.firstChild === el.firstElementChild)) return;
       var m = RX.exec(t.nodeValue);
