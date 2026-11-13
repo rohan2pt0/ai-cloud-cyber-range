@@ -106,3 +106,15 @@ def test_the_build_script_publishes_the_apps_and_git_ignores_the_output():
     assert "website/app/" in ignore and "website/vantage/" in ignore and "website/command/" in ignore, "generated apps must stay out of git"
     docs = (ROOT / ".github" / "workflows" / "docs.yml").read_text("utf-8")
     assert docs.count('"guiding-map/**"') == 2, "a PWA change must republish the site (pull_request and push)"
+
+
+def test_all_apps_is_a_rich_page_with_one_door_and_nothing_from_elsewhere(tmp_path):
+    """Owner, 2026-11-13: the landing page should feel like the rest of the estate: one gold primary action (the door),
+    the apps ready here, the four things on the node, a privacy line, and a way back. Static: no script, no external URL."""
+    _publish(tmp_path)
+    stub = (tmp_path / "app" / "hub.html").read_text("utf-8")
+    assert stub.count('class="cta"') == 1, "exactly one primary action"
+    assert 'href="../vantage/index.html"' in stub and stub.count('class="card node"') == 4
+    assert "<script" not in stub and "http://" not in stub and "https://" not in stub, "nothing loaded from elsewhere"
+    assert "prefers-reduced-motion" in stub and "inset-inline-end" in stub, "calm motion and right-to-left ready"
+    assert (tmp_path / "command" / "serif.woff2").is_file() and (tmp_path / "app" / "icon-192.png").is_file(), "its font and crest are published"

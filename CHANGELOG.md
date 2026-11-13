@@ -9,6 +9,8 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- The hosted All Apps page is now a rich landing: the gold crest, one gold 'Open my Command Center' action, the apps ready here (Life OS, Vantage), the four things on your node, a privacy line and a way back, on a midnight starfield. Static, no script, nothing from elsewhere.
+
 - Life OS calm luxury: section and risk emoji become gold-engraved medallions; a risk not started reads calm with one 'Start here' (health first) instead of a wall of red; the OKR stage chooser is one segmented control, a zero score is muted and Delete is a quiet labelled link away from the safe button; the spending bars draw their healthy band; 'My numbers' is a compact row with an Update cue. Fixed: the same suggested objective could be adopted twice (an untouched copy is merged once).
 
 - Threats in the news: `./securax intel threats` reads open security and news feeds daily, matches headlines to a curated library of 11 threats that target people (honeytrap, digital arrest, cloned voice, SIM swap and more) and ranks them; the Life OS Risk tab shows the top one with its signs and drills. News ranks a threat but can never write a drill.
