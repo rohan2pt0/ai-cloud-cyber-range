@@ -9,6 +9,8 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- Life OS tidy pass: tick boxes in the career plan and every checklist are small round checks (a gold coin when done) instead of large grey slabs; buttons in a row size to their content, so text beside them is never crushed to one word a line (Breaks); 'Edit' is a quiet link; the metric map's labels are engraved tags, not gold slabs; 'Pillar leverage' reads 'Where effort pays most' in plain words; guides drop 'OPSEC:', show a medallion and put the tag on its own line.
+
 - Life OS Wheel of Life: the 1 to 10 keys are real keycaps in a recessed tray that press down when tapped, and the chosen score is a polished jade cabochon in a gold bezel (midnight and gold in dark mode); the links to each life system are slim glass chips instead of large gold text.
 
 - Life OS, a human's-eye pass: the cash question now reads 'Money in your bank accounts and FDs, roughly?'; 'Quarterly Quarter goals' is fixed ('Quarterly Goals') and every screen was scanned for doubled words; answering No hides what cannot apply (the Kids tab, the vehicle checklist); the Inbox opens on one box ('What's on your mind? One line is enough.') with papers and the eight reviews folded to one line each; the Career compass weighs offers abroad (pay in another currency at your rate, local tax, rent and living costs there, allowances) in rupees you can actually use.
