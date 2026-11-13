@@ -96,6 +96,13 @@ The principles behind it:
   Things that happen once on the person's own date (the career plan, renewals from their papers) follow the same contract
   in `gmCalendarDated`: the UID comes from the item's permanent id, the date is its own, a ledger on the device raises
   SEQUENCE when the date or wording changes, and a done or vanished item goes out once more as CANCELLED (`test40.js`).
+- **Reuse first (`reuse-first`, owner 2026-11-13):** every SecuRAX app shares one craft. The shared look lives in ONE file,
+  `guiding-map/shared/lux.css` (keycaps and jade, round checks, the gold crest, the night-sky header, the gold primary, the
+  quiet action), and every app builds it in: the Life OS through `guiding-map/build.js`, every kit edition such as Vantage
+  through `governance/oskit.py`. A new primitive goes there first, then any app uses it; an app adds only its own context and
+  maps its class names in the file's adapter section, never keeping a private copy. The kit's lock, plain English, one open
+  action and the threat-news engine follow the same rule: build once, reuse everywhere. `governance/tests/test_shared_look.py`
+  holds it.
 - **Small wins, shown:** progress you can see keeps people going.
 - **Least effort for the person:** the estate does the remembering, the checking and the reminding.
 - **Start as an amoeba, carry the DNA (`amoeba`):** ship the simplest living thing that helps today — one person, no

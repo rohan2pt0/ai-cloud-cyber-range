@@ -46,7 +46,7 @@
     if (open) {
       h += '<li class="form"><ul class="list">' + (it.checklist || []).map(function (s, i) {
         var on = ck.indexOf(i) >= 0;
-        return '<li class="row tick' + (on ? " done" : "") + '"><button class="check" data-a="cadChk" data-x="' + K.esc(it.id + "|" + i) + '" aria-pressed="' + on + '" aria-label="' + K.esc(K.t("cadence.step_n", "Step {n}", { n: i + 1 })) + '">' + (on ? "✓" : "") + '</button><div class="grow">' + K.esc(s) + "</div></li>";
+        return '<li class="row tick' + (on ? " done" : "") + '"><button class="check sx-check" data-a="cadChk" data-x="' + K.esc(it.id + "|" + i) + '" aria-pressed="' + on + '" aria-label="' + K.esc(K.t("cadence.step_n", "Step {n}", { n: i + 1 })) + '">' + (on ? "✓" : "") + '</button><div class="grow">' + K.esc(s) + "</div></li>";
       }).join("") + "</ul>" + (it.cmd ? '<p class="muted">' + K.esc(K.t("cadence.on_estate", "On the estate: ")) + '<code>' + K.esc(it.cmd) + "</code></p>" : "")
         + '<button class="primary" data-a="cadDone" data-x="' + K.esc(it.id) + '">' + K.esc(K.t("cadence.mark_done", "Mark done for this {n}", { n: it.every })) + "</button></li>";
     }

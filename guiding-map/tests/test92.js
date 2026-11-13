@@ -34,7 +34,7 @@ setTimeout(() => {
       const taxed = none.gmOfferPay({ mode: "abroad", lpay: 10000, fx: 10, ltax: 20, lrent: 0, lliving: 0, lallow: 0, health: false });
       ok(taxed.inh === 80000 && taxed.usable < taxed.inh, "local tax is taken off, and health cover you buy yourself is counted");
       // Tidy, permanent fixes: round checks, no crushed rows, engraved tags, plain guide titles (owner screenshots, 2026-11-13).
-      const lux = none.document.getElementById("gmCalmLux").textContent;
+      const lux = none.document.getElementById("gmCalmLux").textContent + ((none.document.getElementById("sxLux") || {}).textContent || "");   // the app's own styles plus the shared look (reuse-first)
       ok(/\.gm-tap\.gm-chk\{[^}]*width:44px/.test(lux) && /\.gm-tap\.gm-chk\.on::after/.test(lux), "tick boxes are a small round check inside a 44 px tap area");
       ok(/\[style\*='display:flex'\] > button\.btn[^{]*\{width:auto/.test(lux), "a button in a row sizes to its content, so text beside it is never crushed");
       ok(/\.stk-k\{background:transparent!important/.test(lux), "metric labels are engraved tags, not gold slabs");

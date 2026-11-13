@@ -9,6 +9,8 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- Reuse-first: the SecuRAX shared look now lives in one file, guiding-map/shared/lux.css (keycaps and jade, round checks, the gold crest, the night-sky header, the gold primary, the quiet action), built into the Life OS and every kit edition. Vantage gains the night-sky header with a gold crest, a gold main action, a midnight nav with a gold active tab, round checks, and the Programme wheel scored by tapping keys instead of a dropdown. A principle (reuse-first) and governance/tests/test_shared_look.py hold the habit: every app builds the shared file in and none keeps a private copy.
+
 - Life OS privacy lock (Ops, on by choice): opens with the device's own fingerprint, face or Windows Hello, no new password; a one-time recovery code so a changed fingerprint never locks you out (only its hash is kept); locks after 1, 5 or 15 minutes away; the app switcher shows nothing. It guards the screen; the data on the device stays protected by the phone's own lock and encryption, and backups are encrypted (encryption at rest in the Life OS is next).
 
 - Life OS stage cards: a short inline list inside a sentence ('instant-access savings · sweep-in FD · liquid fund') stays a sentence instead of breaking into bullets, and circled ① ② ③ ④ runs become a numbered list.

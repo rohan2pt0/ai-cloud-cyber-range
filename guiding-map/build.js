@@ -38,7 +38,11 @@ const INTEL_FILE = require("path").join(__dirname, "..", "intel", "threat-patter
 const INTEL_LIB = fs.existsSync(INTEL_FILE) ? JSON.parse(fs.readFileSync(INTEL_FILE, "utf8")) : { patterns: [] };
 const INTEL = { version: INTEL_LIB.version || 1, generated: "", heat_days: 30, patterns: INTEL_LIB.patterns.map(p => ({ id: p.id, name: p.name, where: p.where, severity: p.severity, story: p.story, signs: p.signs, drills: p.drills, heat: 0, news: [] })) };
 const INTEL_JS = "window.GM_INTEL = " + JSON.stringify(INTEL).replace(/<\/(script)/gi, "<\\/$1") + ";\n";
-const built = before + I18N_JS + SYS_JS + INTEL_JS + ops + "\n</script>\n" + tail;
+// The SecuRAX shared look (guiding-map/shared/lux.css): ONE source every app builds in (reuse-first). It loads before the
+// app's own styles, so an app adds context on top and never keeps a private copy of a shared primitive.
+const SX_FILE = require("path").join(__dirname, "shared", "lux.css");
+const SX_JS = fs.existsSync(SX_FILE) ? "(function(){try{var s=document.createElement('style');s.id='sxLux';s.textContent=" + JSON.stringify(fs.readFileSync(SX_FILE, "utf8")).replace(/<\/(style|script)/gi, "<\\/$1") + ";document.head.appendChild(s);}catch(e){}})();\n" : "";
+const built = before + SX_JS + I18N_JS + SYS_JS + INTEL_JS + ops + "\n</script>\n" + tail;
 
 // Stamp the visible version badge from the repo's single source of truth (../VERSION) so the app can
 // never show a version the product doesn't have. (It once said "v13.0.2" — a hardcoded legacy string.)

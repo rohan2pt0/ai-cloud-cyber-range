@@ -38,8 +38,9 @@
       h += K.card("", radar(d) + (d.at ? '<p class="muted">' + K.esc(K.t("wheel.last_scored", "Last scored {d}", { d: d.at })) + "</p>" : '<p class="muted">' + K.esc(K.t("wheel.not_scored", "Not scored yet. Be honest: 10 is world class, 5 is \"it works on a good day\".")) + "</p>"));
       h += K.card(K.esc(K.t("wheel.score_each", "Score each area (1-10)")), "<ul class='list'>" + dims().map(function (x) {
         var v = score(d, x.id), opts = "<option value=''>-</option>"; for (var i = 1; i <= 10; i++) opts += "<option" + (i === v ? " selected" : "") + ">" + i + "</option>";
-        return '<li class="row"><div class="grow"><label for="wh_' + K.esc(x.id) + '"><b>' + K.esc(x.label) + "</b></label>" + (x.hint ? '<div class="muted">' + K.esc(x.hint) + "</div>" : "") + "</div>"
-          + '<select id="wh_' + K.esc(x.id) + '" data-c="whSet" data-x="' + K.esc(x.id) + '">' + opts + "</select></li>";
+        return '<li class="row"><div class="grow"><b>' + K.esc(x.label) + "</b>" + (x.hint ? '<div class="muted">' + K.esc(x.hint) + "</div>" : "") + "</div>"
+          + '<div class="sx-keys" role="group" aria-label="' + K.esc(x.label) + '">' + [1,2,3,4,5,6,7,8,9,10].map(function (n) {
+            return '<button type="button" class="sx-key' + (n === v ? " on" : "") + '" aria-pressed="' + (n === v) + '" data-a="whKey" data-x="' + K.esc(x.id + "|" + n) + '">' + n + "</button>"; }).join("") + "</div></li>";
       }).join("") + "</ul>");
       var lo = K.wheelLowest();
       if (lo) h += K.card(K.esc(K.t("wheel.next_goal", "Where to put the next goal")), "<p><b>" + K.esc(lo.dim.label) + "</b>" + K.esc(K.t("wheel.lowest_suffix", " is lowest at {v}/10.", { v: lo.v })) + (lo.dim.lever ? " " + K.esc(lo.dim.lever) : "") + "</p>" + (K.on("goals") ? '<button data-a="go" data-x="goals">' + K.esc(K.t("wheel.set_goal", "Set a goal for it")) + '</button>' : ""));
@@ -53,6 +54,8 @@
       return null;
     },
     acts: {
+      // A tap on a key sets the score (tapping the chosen key again clears it): no dropdown to open (shared keycaps).
+      whKey: function (x) { var p = String(x).split("|"), d = data(); K.acts.whSet(p[0], { value: d.s[p[0]] === +p[1] ? "" : p[1] }); },
       whSet: function (id, el) {
         var d = data(), v = parseInt(el.value, 10); if (isNaN(v)) delete d.s[id]; else d.s[id] = Math.max(1, Math.min(10, v));
         d.at = K.ymd(); d.hist = d.hist || [];
