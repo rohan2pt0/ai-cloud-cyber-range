@@ -9,7 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
-- Life OS easy start: plain English on screen (Three small things today, Your next step, Your money steps, Where your money goes, Protection, Quarter goals and more), with the research names kept underneath and in How this works; the four set-up questions are answered with one tap each (typing stays optional); the make-it-mine card sits first under the greeting; an unknown buffer shows a calm dash instead of 'low'.
+- Life OS easy start: plain English on screen (Three small things today, Your next step, Your money steps, Where your money goes, Protection, Quarter goals and more), with the research names kept underneath and in How this works; the four set-up questions are answered with one tap each (typing stays optional); the next-step card says 'Your next step' instead of layer codes; an unknown buffer shows a calm dash instead of 'low'.
 
 - Life OS speaks Gujarati (ગુજરાતી), beta: the 180 strings people see most, in everyday business Gujarati, with a glossary (one word per idea; SIP, GST, INR kept as said) and a quality gate (real keys only, Gujarati script, numbers and symbols kept). A Gujarati phone opens in Gujarati by itself. New: Listen (🔊) on each screen's top card reads it aloud in the chosen language with the phone's own voice, offline, and only when the phone has that language's voice.
 

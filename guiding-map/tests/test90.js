@@ -17,8 +17,8 @@ setTimeout(() => {
       ok(/Three small things today/.test(t) && !/the floor is enough/.test(t), "the daily three reads in plain English");
       ok(/Your next step/.test(t) && !/Rule 1 says|L0 Identity|open action ·/i.test(t), "the next step has no method jargon");
       const sec = d.querySelector(".section.active"), greet = sec.querySelector(".gm-greet"), strip = sec.querySelector(".gm-setup");
-      ok(greet && strip && (greet.compareDocumentPosition(strip) & 4) && !(strip.compareDocumentPosition(sec.querySelector("#gmVitals") || strip) & 2), "make-it-mine comes first, right under the greeting");
-      ok(/just taps/.test(strip.textContent) && /Make it mine/.test(strip.textContent), "the card promises taps, not typing");
+      ok(greet && strip && (greet.compareDocumentPosition(strip) & 4), "make-it-mine is on Today, after the daily three (value first, then the ask; test41)");
+      ok(/all taps/.test(strip.textContent) && /Make it mine/.test(strip.textContent), "the card promises taps, not typing");
       ok(w.gmPlain && w.gmPlain["Prime Directive Waterfall"] && Object.keys(w.gmPlain).length >= 20, "the plain-English layer covers the method names");
       ok(/Do the smallest version/.test(JSON.stringify(Object.keys(w.gmPlain))), "the plain layer is keyed on the original words (the research text is unchanged underneath)");
       // Gujarati keeps working: its catalog is keyed on the original English, not on the plain layer.

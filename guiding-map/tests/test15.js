@@ -48,12 +48,16 @@ setTimeout(()=>{
    const old={url:"https://old.example/sync",key:"old",user:"me"};
    const r1=boot("#sync="+link,[true,false],old), r2=boot("#sync="+link,[true,true],old);
    const same=boot("#sync="+link,[true],SAME);
-   setTimeout(()=>{
+   // Wait for the event, not a fixed 250 ms: three copies of the app start at once and a busy runner can take longer
+   // (it failed about 1 run in 3). A real failure still fails: after 4 s the same assertions run on whatever happened.
+   const settled=()=>r1.prompts.length>=2 && r2.prompts.length>=2 && JSON.parse(r2.dom.window.localStorage.getItem("gm_sync_cfg")||"{}").key==="tok-abc";
+   const waitFor=(c,f,t0=Date.now())=>{ if(c()||Date.now()-t0>4000) return f(); setTimeout(()=>waitFor(c,f,t0),50); };
+   setTimeout(()=>waitFor(settled,()=>{
    ok("the SAME setup again (./securax go re-opens the link): no question at all", same.prompts.length===0 && same.alerts.length===0, JSON.stringify(same.prompts));
    ok("existing setup: a second confirmation is asked", r1.prompts.length===2 && r1.prompts[1].includes("already syncing"), JSON.stringify(r1.prompts.map(x=>x.slice(0,40))));
    ok("existing setup is kept when the second answer is no", JSON.parse(r1.dom.window.localStorage.getItem("gm_sync_cfg")).key==="old");
    ok("existing setup is replaced only after two yeses", JSON.parse(r2.dom.window.localStorage.getItem("gm_sync_cfg")).key==="tok-abc");
-   },250);
+   }),250);
 
    // 5. automatic server-side backup shows as a green row with a restore path
    const h2=boot("",[true]); const w2=h2.dom.window;
