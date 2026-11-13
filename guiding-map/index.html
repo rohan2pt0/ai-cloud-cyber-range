@@ -7848,7 +7848,7 @@ window.GM_SYSTEMS = {"version":1,"verified":"2026-11-12","note":"Life systems: o
       + ".sw-marble{background:linear-gradient(118deg,transparent 44%,rgba(255,255,255,.10) 45%,transparent 46.5%),linear-gradient(32deg,transparent 62%,rgba(255,255,255,.07) 63%,transparent 64.5%),linear-gradient(78deg,transparent 20%,rgba(255,255,255,.05) 21%,transparent 22%),linear-gradient(155deg,#0b0b0d 0%,#18181c 60%,#222228 100%)}"
       + ".sw-sapphire{background:radial-gradient(circle at 85% 0%,rgba(120,160,255,.30),transparent 55%),linear-gradient(155deg,#061535 0%,#0d2f6b 55%,#163f8f 100%)}"
       + ".sw-carbon{background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,0) 45%),repeating-linear-gradient(45deg,#181818 0 3px,#222 3px 6px),repeating-linear-gradient(-45deg,rgba(0,0,0,.25) 0 3px,transparent 3px 6px)}"
-      + "header{position:sticky;overflow:hidden}#gmSky{position:absolute;inset:0;pointer-events:none;z-index:0}header>*:not(#gmSky){position:relative;z-index:1}"
+      + "header{position:sticky;overflow:hidden}#gmSky,#gmTrail{position:absolute;inset:0;pointer-events:none;z-index:0}header>*:not(#gmSky):not(#gmTrail){position:relative;z-index:1}"
       + ".gm-star{position:absolute;width:2px;height:2px;border-radius:50%;background:#fff;opacity:.55;animation:gmtw 5s ease-in-out infinite}"
       + ".gm-st-risk{width:3px;height:3px;background:#f3dc8f;opacity:.9;box-shadow:0 0 6px 1px rgba(243,220,143,.6)}"
       + ".gm-st-layer{width:2.5px;height:2.5px;background:#bff7ec;opacity:.8;box-shadow:0 0 5px rgba(94,234,212,.5)}"
@@ -7881,8 +7881,16 @@ window.GM_SYSTEMS = {"version":1,"verified":"2026-11-12","note":"Life systems: o
       + ".gm-st-day{width:2.6px;height:2.6px;opacity:.95;box-shadow:0 0 4px 1px rgba(255,255,255,.55)}"
       + ".gm-st-risk{width:3.2px!important;height:3.2px!important;background:#fbe7a6!important;box-shadow:0 0 7px 2px rgba(243,220,143,.7)!important}"
       + ".gm-st-layer{width:3px!important;height:3px!important;background:#d6fbf4!important;box-shadow:0 0 6px 2px rgba(94,234,212,.55)!important}"
-      + "@keyframes gmtw{0%,100%{opacity:var(--lo,.35)}50%{opacity:1}}"
+      + "@keyframes gmtw{0%,100%{opacity:var(--lo,.35);transform:scale(.75)}50%{opacity:1;transform:scale(1.2)}}"
+      // A shooting star: a fine head with a glowing tail, streaking across the upper sky, then gone.
+      + ".gm-comet{position:absolute;top:var(--cy,8%);left:-25%;width:110px;height:1.6px;border-radius:2px;background:linear-gradient(90deg,rgba(255,255,255,0),rgba(214,236,255,.55) 60%,#fff);filter:drop-shadow(0 0 4px rgba(255,255,255,.85));opacity:0;animation:gmcomet 1.5s cubic-bezier(.3,.1,.3,1) forwards}"
+      + "@keyframes gmcomet{0%{opacity:0;transform:translate(0,0) rotate(5deg)}12%{opacity:1}80%{opacity:.9}100%{opacity:0;transform:translate(150vw,22px) rotate(5deg)}}"
+      + "@media (prefers-reduced-motion: reduce){.gm-comet{display:none}}"
       + "#gmSky::before{content:'';position:absolute;inset:0;background:radial-gradient(120% 140% at 50% -20%,rgba(255,255,255,.04),transparent 60%)}"
+      // Stars live only where the header is empty: a band along the top edge and a thin one at the bottom; the line that holds
+      // the monogram, the title and the buttons stays clear (owner, 2026-11-13: stars mixing with the text looked busy).
+      + "#gmSky{-webkit-mask-image:linear-gradient(180deg,#000 0%,#000 16%,transparent 30%,transparent 82%,#000 94%,#000 100%);mask-image:linear-gradient(180deg,#000 0%,#000 16%,transparent 30%,transparent 82%,#000 94%,#000 100%)}"
+      + ".gm-st-field{opacity:.45}.gm-st-field.b{opacity:.65}"
 
       // The final finish at the touch points (owner, 2026-11-13): where hands land most, the rarest finish.
       // Jewel checkboxes: a glass setting, a polished-gold fill and a dark tick when set.
@@ -9553,7 +9561,7 @@ window.GM_SYSTEMS = {"version":1,"verified":"2026-11-12","note":"Life systems: o
     if (!sky) { sky = document.createElement("div"); sky.id = "gmSky"; sky.setAttribute("aria-hidden", "true"); hd.insertBefore(sky, hd.firstChild); }
     sky.setAttribute("data-k", key);
     var h = "";
-    for (var f = 0; f < 70; f++) {   // the fixed field: faint stars at their own pace, the same sky every night
+    for (var f = 0; f < 30; f++) {   // the fixed field: faint stars at their own pace, the same sky every night
       var m = gmHash("field" + f), fx = (m % 1000) / 10, fy = ((m >>> 10) % 1000) / 10;
       h += '<i class="gm-star gm-st-field' + (m % 7 === 0 ? " b" : "") + '" style="left:' + fx.toFixed(1) + '%;top:' + fy.toFixed(1) + '%;--tw:' + (3 + (m >>> 20) % 50 / 10).toFixed(1) + 's;--lo:' + (0.15 + (m >>> 4) % 30 / 100).toFixed(2) + ';animation-delay:-' + ((m >>> 14) % 60 / 10).toFixed(1) + 's"></i>';
     }
@@ -9563,6 +9571,27 @@ window.GM_SYSTEMS = {"version":1,"verified":"2026-11-12","note":"Life systems: o
     });
     sky.innerHTML = h;
     sky.title = "";
+  }
+  // Shooting stars at a natural, irregular pace (every 15 to 30 s), only while the app is on screen and motion is welcome.
+  // Armed only in a real, visible browser: an automated or headless page would be kept alive by the repeating timer.
+  if (!window._gmComets && !navigator.webdriver && !/jsdom|HeadlessChrome/i.test(navigator.userAgent || "")) {
+    window._gmComets = 1;
+    var gmComet = function () {
+      try {
+        var calm = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+        // Comets fly in their own unmasked layer, behind the title and buttons, so the whole streak shows.
+        var hd = document.querySelector("header"), sky = document.getElementById("gmTrail");
+        if (!sky && hd) { sky = document.createElement("div"); sky.id = "gmTrail"; sky.setAttribute("aria-hidden", "true"); hd.insertBefore(sky, hd.firstChild); }
+        if (!calm && sky && !document.hidden) {
+          var c = document.createElement("i"); c.className = "gm-comet";
+          c.style.setProperty("--cy", (4 + Math.random() * 30).toFixed(1) + "%");
+          c.addEventListener("animationend", function () { if (c.parentNode) c.parentNode.removeChild(c); });
+          sky.appendChild(c); setTimeout(function () { if (c.parentNode) c.parentNode.removeChild(c); }, 2500);
+        }
+      } catch (e) {}
+      setTimeout(gmComet, 15000 + Math.random() * 15000);
+    };
+    setTimeout(gmComet, 6000 + Math.random() * 6000);
   }
   // The daily three just became complete: one gold shimmer and one soft pulse, once per day.
   var _sigRender = window.renderAll;
