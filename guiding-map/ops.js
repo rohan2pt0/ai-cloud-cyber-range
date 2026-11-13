@@ -7314,3 +7314,91 @@
   }
   setTimeout(refresh, 2500);
 })();
+
+// ── Calm luxury, everywhere at once (owner, 2026-11-13: "many elements still look cheap") ──
+// The vital few, applied to the shared parts so every screen gains: emoji become engraved gold medallions (one visual
+// language instead of five emoji styles), the stage chooser is one quiet segmented control, an empty state is calm (never a
+// wall of red), destructive actions are quiet and away from the safe ones, and the healthy band is drawn on the bar.
+(function () {
+  try {
+    var st = document.createElement("style");
+    st.id = "gmCalmLux";
+    st.textContent = ""
+      // Medallions: a cream-and-gold coin in light, a midnight coin with a gold rim in dark; the emoji is engraved in gold.
+      + ".gm-glyph{display:inline-grid;place-items:center;width:1.3em;height:1.3em;border-radius:50%;flex:none;vertical-align:-.28em;margin-inline-end:.18em;"
+      + "background:radial-gradient(120% 120% at 30% 25%,#fffaf0 0%,#f4e9cb 55%,#e3d09c 100%);box-shadow:inset 0 0 0 1px rgba(176,138,48,.6),inset 0 -2px 4px rgba(120,90,20,.16),0 1px 2px rgba(13,31,53,.14)}"
+      + ".gm-glyph>i{font-style:normal;font-size:.7em;line-height:1;filter:grayscale(1) sepia(1) saturate(2) hue-rotate(-12deg) brightness(.6) contrast(1.3)}"
+      + "html[data-theme=dark] .gm-glyph{background:radial-gradient(120% 120% at 30% 25%,#2a3a5c 0%,#18233f 60%,#0f1830 100%);box-shadow:inset 0 0 0 1px rgba(201,168,76,.65),0 1px 3px rgba(0,0,0,.4)}"
+      + "html[data-theme=dark] .gm-glyph>i{filter:grayscale(1) sepia(1) saturate(2.2) hue-rotate(-12deg) brightness(1.05) contrast(1.1)}"
+      + ".cat-t .gm-glyph{width:1.15em;height:1.15em}.cat-t .gm-glyph>i{font-size:.62em}"
+      + "html body .cat-t .pill{font-family:var(--font-ui);font-weight:600;letter-spacing:.1px;font-size:11px;line-height:1.3}"
+      // Risk cards: a gold hairline for all; the vital-few mark is a small gold star, not a button; one card says where to begin.
+      + "html body .kc.riskc .ab{background:linear-gradient(90deg,transparent,var(--gold) 20%,#e8c96a 50%,var(--gold) 80%,transparent);height:2px;opacity:.85}"
+      + "html body .kc.riskc .kv{display:flex;align-items:center;gap:6px}html body .kc.riskc .kv .gm-glyph{width:1.25em;height:1.25em;margin:0}"
+      + "html body .cb.cb-p{background:none;border:0;color:var(--gold);font-size:15px;padding:0;line-height:1;text-shadow:0 1px 0 rgba(255,255,255,.4)}"
+      + "html body .kc.riskc .ptrack{height:3px;opacity:.9}html body .kc.riskc .pfill{background:linear-gradient(90deg,#9c7a26,#d4af37 45%,#f7e7a8 70%,#c9a24a)}"
+      + "html body .kc.riskc.gm-start-here{box-shadow:0 0 0 1.5px var(--gold),0 8px 22px rgba(201,168,76,.18)}"
+      + ".gm-start{font-size:12px;font-weight:800;letter-spacing:.3px;color:#7a5a14;margin-top:6px}html[data-theme=dark] .gm-start{color:var(--gold)}"
+      // The stage chooser: one quiet segmented control instead of five chunky pills.
+      + "html body .kr .chips{display:flex;flex-wrap:nowrap;gap:2px;padding:3px;border-radius:12px;background:var(--cardAlt);border:1px solid var(--border);width:100%;box-sizing:border-box;overflow-x:auto}"
+      + "html body .kr .chips .chip{flex:1 1 auto;background:transparent;background-image:none;border:0;box-shadow:none;color:var(--muted);padding:8px 4px;border-radius:9px;font-weight:600;font-size:12px;white-space:nowrap;text-shadow:none}"
+      + "html body .kr .chips .chip.on{background:var(--card);background-image:none;color:var(--text);font-weight:800;box-shadow:0 1px 3px rgba(13,31,53,.14),inset 0 0 0 1px rgba(201,168,76,.6)}"
+      + "html body .okr-grade{font-family:var(--font-display);font-weight:400;font-size:26px;line-height:1}"
+      + ".gm-okr-acts{display:flex;align-items:center;gap:8px;margin-top:12px}"
+      + "html body .gm-btn-ghost{background:transparent;color:var(--text);border:1px solid rgba(201,168,76,.75);box-shadow:none;font-weight:700}"
+      + ".gm-quiet{margin-inline-start:auto;background:none;border:0;color:var(--muted);font:inherit;font-size:12.5px;text-decoration:underline;text-underline-offset:3px;padding:10px 4px;cursor:pointer}"
+      // The spending plan: the healthy band is visible on the bar, so the verdict needs no reading.
+      + "html body .csp-track{height:8px;background:var(--cardAlt);box-shadow:inset 0 1px 2px rgba(13,31,53,.12)}"
+      + "html body button.gm-quiet{background:none;background-image:none;border:0;box-shadow:none;min-height:44px;min-width:44px;width:auto}"
+      + "html body .okr-card select{width:auto;max-width:65%;min-height:0;padding:5px 30px 5px 12px;font-size:12.5px;border-radius:999px;margin-inline-start:6px}"
+      + "html body .kc.riskc .kv .gm-glyph{width:1.45em;height:1.45em}"
+      // My numbers: a compact row with a gold cue, so a folded card never reads as an empty box.
+      + "html body details.gm-nums{padding:4px 14px}html body details.gm-nums>summary{display:flex;align-items:center;gap:4px;min-height:44px}"
+      + "html body details.gm-nums>summary::after{content:'Update \\203A';margin-inline-start:auto;color:#7a5a14;font-weight:800;font-size:12.5px}"
+      + "html[data-theme=dark] body details.gm-nums>summary::after{color:var(--gold)}html body details.gm-nums[open]>summary::after{content:'Done'}"
+      + ".csp-zone{position:absolute;top:0;bottom:0;border-inline:1.5px solid rgba(201,168,76,.9);background:rgba(201,168,76,.14);pointer-events:none}";
+    document.head.appendChild(st);
+  } catch (x) {}
+  // Wrap the leading emoji of every section title in a medallion (after each render; idempotent).
+  var RX;
+  try { RX = new RegExp("^(\\s*)((?:\\p{Extended_Pictographic}|\\p{Regional_Indicator})(?:\\uFE0F|\\u200D\\p{Extended_Pictographic}|[\\u{1F3FB}-\\u{1F3FF}])*)\\s*", "u"); } catch (x) { RX = null; }
+  window.gmGlyphs = function (root) {
+    if (!RX) return 0;
+    var n = 0;
+    (root || document).querySelectorAll(".cat-t").forEach(function (el) {
+      var t = el.firstChild;
+      if (!t || t.nodeType !== 3 || (el.firstElementChild && el.firstElementChild.className === "gm-glyph" && el.firstChild === el.firstElementChild)) return;
+      var m = RX.exec(t.nodeValue);
+      if (!m) return;
+      var g = document.createElement("span"); g.className = "gm-glyph"; g.setAttribute("aria-hidden", "true");
+      var i = document.createElement("i"); i.textContent = m[2]; g.appendChild(i);
+      t.nodeValue = t.nodeValue.slice(m[0].length);
+      el.insertBefore(g, t); n++;
+    });
+    return n;
+  };
+  // One-time repair: an objective adopted twice (identical title and key results, nothing moved) is merged into one.
+  window.gmOkrDedupe = function () {
+    if (!window.S || !Array.isArray(S.okrs)) return 0;
+    var seen = {}, keep = [], gone = 0;
+    S.okrs.forEach(function (o) {
+      var krs = o.krs || [], sig = String(o.o) + "|" + krs.map(function (k) { return k.t; }).join("|");
+      var untouched = krs.every(function (k) { return !(+k.v) && (k.c === undefined || k.c === k.b); });
+      if (seen[sig] && untouched) { gone++; return; }
+      seen[sig] = 1; keep.push(o);
+    });
+    if (gone) { S.okrs = keep; try { store("sovS", S); } catch (x) {} }
+    return gone;
+  };
+  function dedupeOnce() {
+    if (window._gmOkrDd) return; window._gmOkrDd = 1;
+    var d = gmOkrDedupe();
+    if (d && typeof gmToast === "function") setTimeout(function () { gmToast("Merged " + d + " duplicate objective" + (d > 1 ? "s" : "") + " (an exact, untouched copy)."); }, 1200);
+    return d;
+  }
+  var _r = window.renderAll;
+  if (typeof _r === "function") {
+    window.renderAll = function () { try { if (dedupeOnce()) { /* the data changed: render from the repaired list */ } } catch (x) {} var out = _r.apply(this, arguments); try { gmGlyphs(); } catch (x) {} return out; };
+    try { gmGlyphs(); } catch (x) {}
+  }
+})();
