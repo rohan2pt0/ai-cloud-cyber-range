@@ -9,6 +9,8 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- Life OS Career compass: the offer's good-to-have scores use the Wheel's keycaps in a tray (the chosen score in jade), and each must-have shows a small round status mark instead of a large box.
+
 - Life OS: an answered question never vanishes ('Your answers · change any' stays one tap away, current answer shown, so a mistaken tap is undone at once); on a laptop the Wheel's keys stay key-sized, the jade has a polished stone's gloss instead of a painted highlight, and every screen sits in one centred reading column.
 
 - Life OS tidy pass: tick boxes in the career plan and every checklist are small round checks (a gold coin when done) instead of large grey slabs; buttons in a row size to their content, so text beside them is never crushed to one word a line (Breaks); 'Edit' is a quiet link; the metric map's labels are engraved tags, not gold slabs; 'Pillar leverage' reads 'Where effort pays most' in plain words; guides drop 'OPSEC:', show a medallion and put the tag on its own line.
