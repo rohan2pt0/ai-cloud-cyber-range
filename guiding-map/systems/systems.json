@@ -45,7 +45,7 @@
   },
   {
    "id": "business",
-   "q": "I run a business, a startup or a practice of my own (alone or alongside a job)",
+   "q": "I am a founder, business owner or entrepreneur (a startup, a firm, a shop or a practice of my own; alone or alongside a job)",
    "kind": "yesno"
   },
   {

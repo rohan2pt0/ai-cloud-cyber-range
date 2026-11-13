@@ -9,7 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
-- Life OS for founders and business owners: one fact asked once ('I run a business, a startup or a practice of my own') turns on the 80/20 at the right places: the money ladder pays yourself first with a tax reserve and a 12-month buffer for irregular income; a Business continuity card on the Risk Shield (agreements, key-person cover, a second signatory, the two-person payment rule, IP in the company's name); and three systems: cash and runway with a quarterly 80/20 customer review, India tax dates (advance tax 15 Jun/Sep/Dec/Mar, sourced), and the CEO week.
+- Life OS for founders and business owners: one fact asked once ('I am a founder, business owner or entrepreneur'), off until the person answers Yes (a fresh install or a No shows nothing new), turns on the 80/20 at the right places: the money ladder pays yourself first with a tax reserve and a 12-month buffer for irregular income; a Business continuity card on the Risk Shield (agreements, key-person cover, a second signatory, the two-person payment rule, IP in the company's name); and three systems: cash and runway with a quarterly 80/20 customer review, India tax dates (advance tax 15 Jun/Sep/Dec/Mar, sourced), and the CEO week.
 
 - The hosted All Apps page is now a rich landing: the gold crest, one gold 'Open my Command Center' action, the apps ready here (Life OS, Vantage), the four things on your node, a privacy line and a way back, on a midnight starfield. Static, no script, nothing from elsewhere.
 

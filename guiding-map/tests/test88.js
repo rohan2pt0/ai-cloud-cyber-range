@@ -9,7 +9,7 @@ function boot(facts) {
     beforeParse(w) { w.matchMedia = (q) => ({ matches: /max-width/.test(q), media: q, addListener() {}, removeListener() {} }); w.scrollTo = () => {}; w.fetch = () => Promise.reject(new Error("offline"));
       w.localStorage.setItem("gm_intro_seen", "true"); if (facts) w.localStorage.setItem("gm_facts", JSON.stringify(facts)); } }).window;
 }
-const founder = boot({ business: true }), salaried = boot({ salaried: true }), both = boot({ business: true, salaried: true });
+const founder = boot({ business: true }), salaried = boot({ salaried: true }), both = boot({ business: true, salaried: true }), fresh = boot(null), said_no = boot({ business: false });
 setTimeout(() => {
   try {
     const S = founder.GM_SYSTEMS;
@@ -31,6 +31,19 @@ setTimeout(() => {
     const card = founder.RISKS.find(r => r.id === "r_business");
     ok(card && card.steps.length === 6 && /two-person rule/.test(card.steps.join(" ")), "the card carries the vital few, with the two-person payment rule");
     ok(founder.riskFirst() === "r_health", "Start here still begins with health");
+    // Nothing appears until the person says so: a fresh install and an explicit No both see no founder content at all.
+    [["nothing answered", fresh], ["answered No", said_no]].forEach(([label, w]) => {
+      const p = w.primeSteps(w.engine());
+      ok(/EPF/.test(p[2].t) && /6 months/.test(p[4].t) && w.engine().emGoal === 6, label + ": the money ladder is unchanged");
+      w.curTab = "risk"; w.renderAll();
+      ok(![...w.document.querySelectorAll(".kc.riskc .kl")].some(x => /Business/.test(x.textContent)) && !w.RISKS.some(r => r.id === "r_business"), label + ": no Business continuity card");
+      w.goTab("systems");
+      const ids = [...w.document.querySelectorAll('details[id^="gmsys-"]')].map(x => x.id);
+      ok(!ids.some(i => /founder/.test(i)), label + ": no founder systems: " + ids.join(","));
+    });
+    founder.goTab("systems");
+    const fids = [...founder.document.querySelectorAll('details[id^="gmsys-"]')].map(x => x.id);
+    ok(["founder-cash", "founder-tax", "founder-focus"].every(id => fids.indexOf("gmsys-" + id) >= 0), "after Yes, the three founder systems appear: " + fids.join(","));
   } catch (e) { fail++; console.log("FAIL threw " + e.message); }
   console.log("test88 founders: " + pass + " passed, " + fail + " failed");
   process.exit(fail ? 1 : 0);
