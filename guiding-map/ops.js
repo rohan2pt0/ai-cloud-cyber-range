@@ -5065,13 +5065,13 @@
     GATES.forEach(function (g) {
       var s = gateState(o, c, g[0]), t = CAR_ST[s], auto = g[2] === "auto";
       h += '<div ' + (auto ? '' : 'role="button" tabindex="0" onclick="gmCarGate(' + i + ',\'' + g[0] + '\')" ') + 'style="display:flex;gap:9px;align-items:center;margin:5px 0;font-size:12.5px;color:var(--text);' + (auto ? '' : 'cursor:pointer') + '">'
-        + '<span class="gm-tap" style="min-width:30px;min-height:30px;border-radius:9px;color:' + t[1] + ';border-color:' + t[1] + '">' + t[0] + '</span><span>' + esc(g[1]) + (auto ? ' <span style="color:var(--muted)">· auto</span>' : '') + '</span></div>';
+        + '<span class="gm-gate" style="color:' + t[1] + '">' + t[0] + '</span><span>' + esc(g[1]) + (auto ? ' <span style="color:var(--muted)">· auto</span>' : '') + '</span></div>';
     });
     h += '<div style="margin-top:8px;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:800">Good-to-haves (1 poor … 5 great)</div>';
     GOODS.forEach(function (g) {
       var cur = (o.scores || {})[g[0]] || 0, b = "";
-      for (var n = 1; n <= 5; n++) b += '<span class="gm-tap' + (cur === n ? " on" : "") + '" role="button" tabindex="0" style="min-width:30px;min-height:30px;border-radius:9px;font-size:12px" onclick="gmCarScore(' + i + ',\'' + g[0] + '\',' + n + ')">' + n + '</span>';
-      h += '<div style="margin:6px 0;font-size:12.5px;color:var(--text)">' + esc(g[1]) + ' <span style="color:var(--muted)">×' + g[2] + '</span><div style="display:flex;gap:5px;margin-top:3px">' + b + '</div></div>';
+      for (var n = 1; n <= 5; n++) b += '<span class="ws-tap gm-key' + (cur === n ? " on" : "") + '" role="button" tabindex="0" aria-pressed="' + (cur === n) + '" onclick="gmCarScore(' + i + ',\'' + g[0] + '\',' + n + ')">' + n + '</span>';
+      h += '<div style="margin:6px 0;font-size:12.5px;color:var(--text)">' + esc(g[1]) + ' <span style="color:var(--muted)">×' + g[2] + '</span><div class="ws-taps gm-scale">' + b + '</div></div>';
     });
     return box(h, vt[1]);
   }
@@ -7412,6 +7412,9 @@
       + ".gm-gt{display:flex;flex-direction:column;gap:2px;min-width:0}.gm-gt small{font-weight:500;font-size:11.5px;color:var(--muted);letter-spacing:.02em}"
       // On a laptop: one centred reading column, like a well-set book, instead of cards stretched across the whole screen.
       + "@media (min-width:900px){html body #sections{max-width:820px;margin-inline:auto}}"
+      // Offer scores reuse the Wheel's keycaps (one visual language); must-have status is a small round mark, not a box.
+      + "html body .gm-scale{margin-top:6px;max-width:360px}html body .gm-key{display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none}"
+      + ".gm-gate{display:inline-flex;align-items:center;justify-content:center;flex:none;width:28px;height:28px;border-radius:50%;border:1.8px solid currentColor;font-weight:800;font-size:13px;background:var(--card)}"
       + "html body .kr .chips{display:flex;flex-wrap:nowrap;gap:2px;padding:3px;border-radius:12px;background:var(--cardAlt);border:1px solid var(--border);width:100%;box-sizing:border-box;overflow-x:auto}"
       + "html body .kr .chips .chip{flex:1 1 auto;background:transparent;background-image:none;border:0;box-shadow:none;color:var(--muted);padding:8px 4px;border-radius:9px;font-weight:600;font-size:12px;white-space:nowrap;text-shadow:none}"
       + "html body .kr .chips .chip.on{background:var(--card);background-image:none;color:var(--text);font-weight:800;box-shadow:0 1px 3px rgba(13,31,53,.14),inset 0 0 0 1px rgba(201,168,76,.6)}"

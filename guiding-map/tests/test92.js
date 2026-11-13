@@ -42,6 +42,13 @@ setTimeout(() => {
       const gt = vis(none.document, none.document.querySelector(".section.active"));
       ok(/max-width:440px/.test(lux) && !/\.ws-tap\.on\{[^}]*radial-gradient/.test(lux) && /min-width:900px\)\{html body #sections\{max-width:820px/.test(lux), "on a laptop: keys stay key-sized, jade has a stone's gloss (no painted blob), one centred column");
       ok(!/OPSEC:/.test(gt) && /Pick a password manager/.test(gt) && none.document.querySelector(".guide-card .gm-gt small"), "guides read plainly, with the tag on its own small line");
+      // offer scores use the same keycaps as the Wheel; must-have status is a small round mark
+      none.localStorage.setItem("gm_career", JSON.stringify({ offers: [{ name: "Fake option", mode: "salary", ctc: 0, gates: {}, scores: {} }], cfg: {}, cur: {}, house: {}, done: {}, gaps: {} }));
+      none.goTab("career");
+      const keys = none.document.querySelectorAll(".gm-scale .ws-tap.gm-key");
+      ok(keys.length >= 5 && none.document.querySelector(".gm-gate") && !none.document.querySelector('.section.active .gm-tap[style*="min-width:30px"]'), "offer scores are keycaps in a tray and must-haves are small round marks");
+      keys[2].click();
+      ok(none.document.querySelectorAll(".gm-scale .gm-key.on").length === 1, "a tapped score turns jade");
       // a mistaken answer is never lost: answered questions stay one tap away while others wait
       none.localStorage.setItem("gm_facts", JSON.stringify({ partner: true })); none.goTab("systems");
       const ans = none.document.querySelector("details.gm-answers");
