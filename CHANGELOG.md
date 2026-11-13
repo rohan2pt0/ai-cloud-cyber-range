@@ -9,6 +9,8 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- Life OS, a human's-eye pass: the cash question now reads 'Money in your bank accounts and FDs, roughly?'; 'Quarterly Quarter goals' is fixed ('Quarterly Goals') and every screen was scanned for doubled words; answering No hides what cannot apply (the Kids tab, the vehicle checklist); the Inbox opens on one box ('What's on your mind? One line is enough.') with papers and the eight reviews folded to one line each; the Career compass weighs offers abroad (pay in another currency at your rate, local tax, rent and living costs there, allowances) in rupees you can actually use.
+
 - Life OS one question a day: after the four-tap set-up, Today shows one tap-to-answer question chosen by risk (cash on hand first, which turns the buffer into a real number, then the life facts that switch the right systems on). Answering is a small win ('now knows 6 of 12'), 'Not now' waits until tomorrow, 'One more?' is there for anyone enjoying it. Nothing is ever required.
 
 - Life OS easy start: plain English on screen (Three small things today, Your next step, Your money steps, Where your money goes, Protection, Quarter goals and more), with the research names kept underneath and in How this works; the four set-up questions are answered with one tap each (typing stays optional); the next-step card says 'Your next step' instead of layer codes; an unknown buffer shows a calm dash instead of 'low'.

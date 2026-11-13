@@ -1096,6 +1096,8 @@ function engine(){
      "haveibeenpwned.com run on all emails; breached passwords rotated"],
     tip:"<strong>The 80/20 core:</strong> password manager + app 2FA + separate banking email stops ~90% of real account takeovers. Cost: "+money(0)+"."}
   ];
+  // A risk card that cannot apply (the person answered No to its fact) is removed: no vehicle, no vehicle checklist.
+  (function(){ try{ var f=JSON.parse(localStorage.getItem("gm_facts")||"{}"); if(f&&f.vehicle===false) RISKS=RISKS.filter(function(r){ return r.id!=="r_vehicle"; }); }catch(e){} })();
   // Founders and business owners: the business is usually the family's biggest asset and its biggest single point of failure.
   if(gmFact("business")) RISKS.push(
    {id:"r_business",label:"Business continuity",icon:"\uD83C\uDFE2",pareto:true,
@@ -6492,9 +6494,12 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       return '<button role="menuitem" class="' + (curTab === t[0] ? "on" : "") + '" onclick="gmNavGo(\'' + t[0] + '\')">'
         + (ic ? '<span class="gi" aria-hidden="true">' + ic + '</span>' : '') + t[1] + '</button>';
     }
-    var rest = TABS.filter(function (t) { return main.indexOf(t[0]) < 0 && FIRST.indexOf(t[0]) < 0; });
+    // A tab that cannot apply (the person answered No to its fact) is not shown at all: no clutter for a life that is not theirs.
+    var said = G("gm_facts", {}) || {}, NEEDS = { kids: "kids" };
+    function fits(t) { var f = NEEDS[t[0]]; return !(f && said.hasOwnProperty(f) && said[f] === false); }
+    var rest = TABS.filter(function (t) { return main.indexOf(t[0]) < 0 && FIRST.indexOf(t[0]) < 0 && fits(t); });
     sh += '<div class="gm-more-h">First</div>';
-    FIRST.forEach(function (id) { TABS.forEach(function (t) { if (t[0] === id && main.indexOf(id) < 0) sh += tile(t); }); });
+    FIRST.forEach(function (id) { TABS.forEach(function (t) { if (t[0] === id && main.indexOf(id) < 0 && fits(t)) sh += tile(t); }); });
     var restOpen = G("gm_more_all", false) || rest.some(function (t) { return t[0] === curTab; });
     sh += '<details class="gm-more-all"' + (restOpen ? " open" : "") + ' ontoggle="gmMoreAll(this.open)"><summary>Everything else (' + rest.length + ')</summary><div class="gm-more-g">';
     rest.forEach(function (t) { sh += tile(t); });
@@ -7400,6 +7405,17 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   // An offer, in the same units. salary: TDS on salary. fee: professional fee — 50% presumptive (44ADA) only when p44 is
   // ticked, which you should do only after a CA confirms you qualify; otherwise the whole fee is taxed (the safe side).
   function offerPay(o, c) {
+    // Abroad (owner, 2026-11-13: global offers): monthly pay in the local currency, at the rate you enter, minus that country's
+    // income tax, the rent you would pay there and any extra cost of living (schools, a car, help at home), plus monthly
+    // allowances, all turned into rupees a month. Indian tax is not applied: someone resident abroad for most of the year is
+    // usually a non-resident for Indian tax, so foreign salary is not taxed in India (check the year you move with a CA).
+    if (o.mode === "abroad") {
+      var fx = num(o.fx), lp = num(o.lpay), ltax = Math.min(Math.max(num(o.ltax), 0), 60) / 100;
+      var net = lp * (1 - ltax) + num(o.lallow) - num(o.lrent) - num(o.lliving);
+      var inhA = Math.round(net * fx), ownA = o.health ? 0 : cfgv(c, "health", 3000);
+      return { inh: inhA, tax: Math.round(lp * ltax * 12 * fx), usable: inhA - ownA, wealth: inhA - ownA, varYr: 0, ctc: Math.round(lp * 12 * fx), abroad: true,
+               gross: Math.round(lp * fx), costs: Math.round((num(o.lrent) + num(o.lliving)) * fx) };
+    }
     var ctc = num(o.ctc), vr = Math.min(Math.max(num(o.varPct), 0), 60) / 100, fixed = ctc * (1 - vr);
     var basic = fixed * (num(o.basicPct) || 40) / 100, pf = o.pf ? 0.12 * basic : 0, grat = o.grat ? 0.0481 * basic : 0;
     var inh, tax;
@@ -7580,7 +7596,8 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmCarDel(' + i + ')" aria-label="Remove">✕</button></div>'
       + '<div style="margin:8px 0;padding:8px;border-radius:10px;border:1px solid ' + vt[1] + '"><b style="color:' + vt[1] + '">' + vt[0] + '</b><div style="font-size:11.5px;color:var(--text);margin-top:2px">' + esc(vt[2]) + '</div></div>';
     if (p.ctc) {
-      h += carRow("In-hand each month (after tax" + (o.mode === "fee" ? (o.p44 ? ", 44ADA presumptive" : ", whole fee taxed") : "") + ")", rs(p.inh))
+      if (p.abroad) h += carRow("Pay there, in rupees each month (before rent and living costs)", rs(p.gross)) + carRow("…minus rent and extra living costs there", "\u2212" + rs(p.costs));
+      h += carRow((p.abroad ? "Left each month, in rupees, after tax, rent and living costs there" : "In-hand each month (after tax") + (p.abroad ? "" : "") + (o.mode === "fee" ? (o.p44 ? ", 44ADA presumptive" : ", whole fee taxed") : "") + ")", rs(p.inh))
         + (o.health ? "" : carRow("…minus health cover you now buy yourself", "−" + rs(cfgv(c, "health", 3000))))
         + carRow("Real value / month (vs today " + rs(cw) + ")", rs(p.wealth) + (cw ? " (" + (p.wealth >= cw ? "+" : "") + Math.round((p.wealth / cw - 1) * 100) + "%)" : ""), p.wealth >= cw ? "var(--green)" : "var(--red)")
         + (p.varYr ? carRow("Variable, paid yearly (not counted above)", rs(p.varYr)) : "")
@@ -7588,10 +7605,15 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       var a45 = project(o, c, 45), a50 = project(o, c, 50);
       if (a45) h += carRow("If you keep the 30-month rhythm from here: CTC at 45 / 50", rl(a45) + " / " + rl(a50));
     } else h += '<div style="font-size:12px;color:var(--amber);margin:6px 0">Enter the CTC to see in-hand, real value and the projection.</div>';
-    if (cw) { var mc = minCtc(o, c, cw), tc = minCtc(o, c, cw * (1 + cfgv(c, "stepPct", 30) / 100));
+    if (cw && o.mode !== "abroad") { var mc = minCtc(o, c, cw), tc = minCtc(o, c, cw * (1 + cfgv(c, "stepPct", 30) / 100));
       h += carRow("With this pay structure: CTC needed to match today / to beat it by " + cfgv(c, "stepPct", 30) + "%", rl(mc) + " / " + rl(tc), "var(--gold)"); }
     h += '<details style="margin-top:8px"><summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:var(--text)">Numbers for this option</summary>'
-      + offFld(i, "Annual CTC", "ctc", o.ctc, "₹") + offFld(i, "Variable share of CTC", "varPct", o.varPct, "%") + offFld(i, "Basic as share of fixed (drives PF, gratuity)", "basicPct", o.basicPct || 40, "%")
+      + '<div style="display:flex;flex-wrap:wrap;gap:6px;margin:6px 0">' + tog(i, "mode", o.mode === "abroad", "Abroad: paid in another currency", "abroad", "salary") + '</div>'
+      + (o.mode === "abroad"
+        ? offFld(i, "Monthly pay there (in that currency)", "lpay", o.lpay, "") + offFld(i, "Rupees for 1 unit of that currency (check today)", "fx", o.fx, "₹")
+          + offFld(i, "Income tax there", "ltax", o.ltax, "%") + offFld(i, "Rent you would pay there each month (0 if housing is given)", "lrent", o.lrent, "")
+          + offFld(i, "Extra living costs there each month (schools, car, help)", "lliving", o.lliving, "") + offFld(i, "Allowances paid each month (tickets, transport)", "lallow", o.lallow, "")
+        : offFld(i, "Annual CTC", "ctc", o.ctc, "₹") + offFld(i, "Variable share of CTC", "varPct", o.varPct, "%") + offFld(i, "Basic as share of fixed (drives PF, gratuity)", "basicPct", o.basicPct || 40, "%"))
       + offFld(i, "Expected hike at the move after this one", "nextPct", o.nextPct || 30, "%")
       + '<label style="display:block;font-size:12px;margin:6px 0;color:var(--text)">Where this leads in ~30 months<input value="' + esc(o.nextRole || "") + '" onchange="gmCarOffer(' + i + ',\'nextRole\',this.value)" style="display:block;width:100%;margin-top:3px;padding:8px;border-radius:9px;border:1px solid var(--border);background:var(--cardAlt);color:var(--text)"></label>'
       + '<div style="display:flex;flex-wrap:wrap;gap:6px;margin:6px 0">'
@@ -7612,7 +7634,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     return box(h, vt[1]);
   }
   function offFld(i, label, k, v, unit) {
-    return '<label style="display:block;margin:6px 0;font-size:12px;color:var(--text)">' + esc(label) + ' <span style="color:var(--muted)">(' + unit + ')</span><input inputmode="decimal" value="' + esc(v === undefined ? "" : v)
+    return '<label style="display:block;margin:6px 0;font-size:12px;color:var(--text)">' + esc(label) + (unit ? ' <span style="color:var(--muted)">(' + unit + ')</span>' : '') + '<input inputmode="decimal" value="' + esc(v === undefined ? "" : v)
       + '" onchange="gmCarOffer(' + i + ',\'' + k + '\',+this.value||0)" style="display:block;width:100%;margin-top:3px;padding:8px;border-radius:9px;border:1px solid var(--border);background:var(--cardAlt);color:var(--text);font-size:13px"></label>';
   }
   function tog(i, k, on, label, yes, no) {
@@ -8719,13 +8741,14 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     var actions = a.filter(function (x) { return !x.done && x.due; }).sort(function (p, q) { return p.due < q.due ? -1 : 1; });
     var notes = a.filter(function (x) { return x.kind === "note" && !x.done; });
     var ropen = G("gm_review_open", "");
-    var h = '<div class="section active"><h2>Inbox</h2><div class="info">Scan it, or type one line. One tap files it with a date — nothing to fill in. Not now? Tap <b>Later</b>; it comes back in a few days. Nothing nags you.</div>'
-      + '<div class="ibcap"><input id="ibText" placeholder="What is on your mind?" onkeydown="if(event.key===\'Enter\')gmInboxCapture()" aria-label="Capture">'
+    var h = '<div class="section active"><h2>Inbox</h2>'
+      + '<div class="ibcap"><input id="ibText" placeholder="What\u2019s on your mind? One line is enough." onkeydown="if(event.key===\'Enter\')gmInboxCapture()" aria-label="Capture">'
       + '<select id="ibKind" aria-label="Kind">' + Object.keys(IB_KINDS).map(function (k) { return '<option value="' + k + '">' + IB_KINDS[k] + '</option>'; }).join("") + '</select>'
       + '<button class="btn' + (decide.length ? "" : " primary") + '" onclick="gmInboxCapture()">Add</button>'
       + '<button class="btn" id="ibScan" onclick="gmScan()" title="Photograph a document; the text is read on this device and dropped into the box above">📷 Scan a document</button></div>'
       + '<div id="ibRead" class="ibread" aria-live="polite"></div>';
-    h += papersHTML();
+    // A laptop job, folded to one line so the phone Inbox stays a place to drop things (owner, 2026-11-13).
+    h += '<details class="ibnotes ib-fold"><summary>Papers to bring in, later on a laptop</summary>' + papersHTML() + '</details>';
     if (decide.length) {
       h += '<h3>To decide (' + decide.length + ')</h3>';
       // one-open-action: decide one at a time; the rest wait, folded, under Later (n)
@@ -8751,8 +8774,8 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     }
     var rn = datedCount("renewals");
     if (rn) h += '<div class="ibdec"><button class="btn" data-haptic="success" onclick="gmCalendarDated(\'renewals\')">Add ' + rn + ' renewal' + (rn === 1 ? "" : "s") + ' to my calendar</button></div>';
-    h += '<h3>Run a review now</h3><div class="info">Pick a review. Answer each step in your own words; leave a step empty if all is well. Every answer becomes an action due in a week.</div>'
-      + '<div class="ibrev">' + RITUALS.map(function (r) { return '<button class="btn' + (ropen === r.id ? " primary" : "") + '" onclick="gmReviewOpen(\'' + r.id + '\')">' + esc(r.name) + ' · ' + r.mins + ' min</button>'; }).join("") + '</div>';
+    h += '<details class="ibnotes ib-fold"' + (ropen ? " open" : "") + '><summary>Reviews, when you have time (' + RITUALS.length + ')</summary><div class="info">Pick one. Answer each step in a few words; leave it empty if all is well. Each answer becomes an action for next week.</div>'
+      + '<div class="ibrev">' + RITUALS.map(function (r) { return '<button class="btn' + (ropen === r.id ? " primary" : "") + '" onclick="gmReviewOpen(\'' + r.id + '\')">' + esc(r.name) + ' · ' + r.mins + ' min</button>'; }).join("") + '</div></details>';
     var r = RITUALS.filter(function (x) { return x.id === ropen; })[0];
     if (r) {
       h += '<div class="ibreview"><b>' + esc(r.name) + '</b>' + r.steps.map(function (st, i) {
@@ -9728,7 +9751,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     "Prime Directive Waterfall": "Your money steps, in order", "Conscious Spending Plan": "Where your money goes", "Antifragile": "Bounces back stronger",
     "Sovereignty Command Center": "My Life OS", "Sovereignty Command Center · Setup": "My Life OS · Set-up", "Build Your Life Operating System": "Set up your Life OS",
     "Playbook": "Stage plan", "Pillars": "All areas", "Scorecard": "Scores", "Money Map": "Money", "Shield": "Protection", "Risk Shield": "Protection",
-    "Wheel": "Life balance", "Commit": "Promises", "Health Cal": "Check-ups", "OKRs": "Quarter goals", "Growth": "Progress",
+    "Wheel": "Life balance", "Commit": "Promises", "Health Cal": "Check-ups", "OKRs": "Goals", "Growth": "Progress",
     "Generic sequence — where it conflicts with your Playbook stage gates, the Playbook wins.": "General order. Where your stage plan says otherwise, follow the stage plan.",
     "Highest-leverage next action: Investing Consistently": "Best next step: invest a little every month",
     "vital few": "most important", "Exposed": "Not covered"
@@ -10036,7 +10059,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   function S1(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
   function day() { var d = new Date(); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
   function e(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
-  var CASH = { id: "cash", q: "Cash you could use within a week (bank, FD), roughly?", taps: [["Under ₹1 lakh", 0.5], ["₹1–5 lakh", 3], ["₹5–25 lakh", 15], ["₹25 lakh–1 crore", 60], ["Above ₹1 crore", 150]] };
+  var CASH = { id: "cash", q: "Money in your bank accounts and FDs, roughly?", taps: [["Under ₹1 lakh", 0.5], ["₹1–5 lakh", 3], ["₹5–25 lakh", 15], ["₹25 lakh–1 crore", 60], ["Above ₹1 crore", 150]] };
   var ORDER = ["partner", "kids", "parents", "salaried", "business", "home", "vehicle", "parents70", "parentsAway", "govtStaff", "farmland"];
   function facts() { return G1("gm_facts", {}) || {}; }
   function factQ(id) { var f = ((window.GM_SYSTEMS || {}).facts || []).filter(function (x) { return x.id === id; })[0]; return f ? f.q : ""; }
@@ -10084,6 +10107,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     var st = document.createElement("style");
     st.textContent = ".gm-ask{background:var(--card);border:1px solid var(--border);border-inline-start:3px solid var(--gold);border-radius:16px;padding:14px 16px;margin-bottom:16px}"
       + ".gm-ask-k{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:6px}"
+      + "#ibText{font-size:16px;min-height:48px}#ibKind{max-width:120px;font-size:13px;color:var(--muted)}.ib-fold>summary{min-height:44px;display:flex;align-items:center;font-weight:700;font-size:14px;cursor:pointer}"
       + ".gm-ask-q{font-weight:800;font-size:16px;line-height:1.35;margin-bottom:10px}.gm-ask-yn{display:grid;grid-template-columns:1fr 1fr;gap:8px}"
       + ".gm-ask-done{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);padding:6px 16px}";
     document.head.appendChild(st);

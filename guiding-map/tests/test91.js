@@ -13,7 +13,7 @@ setTimeout(() => {
     w.gmQuickSetup(); for (let i = 0; i < 4; i++) d.querySelectorAll(".gm-qtap")[2].click();
     w.renderAll();
     const q1 = ask();
-    ok(q1 && /Cash you could use/.test(q1.textContent) && q1.querySelectorAll(".gm-qtap").length === 5, "the first daily question is the riskiest gap: cash on hand, five taps");
+    ok(q1 && /Money in your bank accounts and FDs/.test(q1.textContent) && q1.querySelectorAll(".gm-qtap").length === 5, "the first daily question is the riskiest gap: cash on hand, five taps");
     ok(q1 && /Not now/.test(q1.textContent), "every question can be put off");
     const before = w.gmAskProgress().known;
     q1.querySelectorAll(".gm-qtap")[2].click();
