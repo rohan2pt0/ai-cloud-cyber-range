@@ -49,6 +49,18 @@ setTimeout(() => {
       ok(keys.length >= 5 && none.document.querySelector(".gm-gate") && !none.document.querySelector('.section.active .gm-tap[style*="min-width:30px"]'), "offer scores are keycaps in a tray and must-haves are small round marks");
       keys[2].click();
       ok(none.document.querySelectorAll(".gm-scale .gm-key.on").length === 1, "a tapped score turns jade");
+      // readable money, guides and stages (owner screenshots, 2026-11-13)
+      none.goTab("life");
+      const met = none.document.querySelector(".meter");
+      ok(met && met.querySelector(".meter-you") && /You \d+%/.test(met.querySelector(".meter-you").textContent) && met.querySelector(".meter-band-l") && met.querySelector(".meter-scale"), "a money meter labels your value, the healthy zone and the scale");
+      ok(/Healthy|Low|High/.test(met.querySelector(".meter-status").textContent), "the status word matches the band");
+      none.goTab("guide");
+      ok(none.document.querySelectorAll(".guide-card .gs-k").length >= 4 && !/• BITWARDEN/.test(vis(none.document, none.document.querySelector(".section.active"))), "guide steps read as a small label and its text, not a shouted line");
+      ok(/--accent:#b8902f/.test(lux) && /--line:var\(--border\)/.test(lux), "the guides' drawings use defined colours (no black bar, a visible box)");
+      none.goTab("book");
+      ok(none.document.querySelectorAll(".pb-list li").length >= 4, "stage cards turn ' · ' runs into short lists");
+      none.goTab("today");
+      ok(none.document.querySelectorAll(".gm-energy .ws-tap.gm-key").length === 5, "energy uses the same keycaps as the Wheel");
       // a mistaken answer is never lost: answered questions stay one tap away while others wait
       none.localStorage.setItem("gm_facts", JSON.stringify({ partner: true })); none.goTab("systems");
       const ans = none.document.querySelector("details.gm-answers");

@@ -9,6 +9,8 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- Life OS readability pass: money meters label your value ('You 56%'), the healthy zone and a 0/50/100% scale, and the status word now matches the band (fixed costs under the band no longer read 'In range' beside a 50-60% note); the take-home bar uses one harmonious palette; guide steps read as a small gold label and plain text instead of shouted capitals; the cardio and breathing drawings were black or blank because they used undefined colours, now fixed; stage cards (S1-S5) turn ' · ' runs into short lists; Today's energy uses the Wheel's keycaps and 'Also today' items are glass chips with a jade tick.
+
 - Life OS Career compass: the offer's good-to-have scores use the Wheel's keycaps in a tray (the chosen score in jade), and each must-have shows a small round status mark instead of a large box.
 
 - Life OS: an answered question never vanishes ('Your answers · change any' stays one tap away, current answer shown, so a mistaken tap is undone at once); on a laptop the Wheel's keys stay key-sized, the jade has a polished stone's gloss instead of a painted highlight, and every screen sits in one centred reading column.
