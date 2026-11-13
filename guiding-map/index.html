@@ -6282,10 +6282,25 @@ window.GM_SYSTEMS = {"version":1,"verified":"2026-11-12","note":"Life systems: o
   };
 
   /* ── 9. The Ops tab ─────────────────────────────────────────────── */
+  /* The Atelier (owner, 2026-11-12, after bespoke coachbuilding): choose the material the estate is finished in. It re-skins
+     the header and the hero cards; every text stays light on dark, so contrast never changes. Stored on this device only. */
+  var MATERIALS = [["classic", "Classic navy"], ["cognac", "Cognac leather"], ["marble", "Nero marble"], ["sapphire", "Midnight sapphire"], ["carbon", "Carbon"]];
+  function gmMat() { var m = G("gm_mat", "classic"); return MATERIALS.some(function (x) { return x[0] === m; }) ? m : "classic"; }
+  function gmApplyMat() { try { document.documentElement.setAttribute("data-mat", gmMat()); } catch (e) {} }
+  window.gmSetMat = function (m) { S_("gm_mat", m); gmApplyMat(); try { if (window.gmHaptic) gmHaptic("tap"); } catch (e) {} renderAll(); };
+  function atelierHTML() {
+    var cur = gmMat(), h = '<div class="gm-atelier"><div class="gm-at-h">Atelier <span>the material your estate is finished in</span></div><div class="gm-at-row" role="radiogroup" aria-label="Material">';
+    MATERIALS.forEach(function (m) {
+      h += '<button class="gm-at' + (m[0] === cur ? " on" : "") + '" role="radio" aria-checked="' + (m[0] === cur) + '" onclick="gmSetMat(\'' + m[0] + '\')"><span class="sw sw-' + m[0] + '" aria-hidden="true"></span>' + m[1] + '</button>';
+    });
+    return h + '</div></div>';
+  }
+  gmApplyMat();
   function opsHTML() {
     var due = dueRituals(), broken = brokenHabits().length;
     var h = '<div class="section active">';
     h += '<div class="cat-t">\u2699 Ops</div>';
+    h += atelierHTML();
     h += '<div class="info">' + (due.length ? due.length + " ritual(s) due now (they also show on Today). " : "Nothing due today. ")
       + (broken ? broken + " habit(s) need a recovery rep." : "") + '</div>';
     h += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px"><button class="btn-sm" style="background:var(--cardAlt);color:var(--text);font-weight:700" onclick="gmQuarter()">Quarterly check-in</button>'
@@ -7814,6 +7829,21 @@ window.GM_SYSTEMS = {"version":1,"verified":"2026-11-12","note":"Life systems: o
       + ".gm-kin .k-miss,.gm-kin .k-now{border:1.5px solid var(--ring-track,rgba(11,31,53,.12))}.gm-kin .k-now{border-style:dashed}"
       + ".gm-kin .k-rep{border:1.5px solid rgba(201,168,76,.35)}.gm-kin .k-rep svg{width:14px;height:14px;filter:drop-shadow(0 0 2px rgba(232,201,106,.6))}"
       + ".gm-kin-note{font-style:italic}"
+      + "html[data-mat=cognac] header{background:#2a160a!important}html[data-mat=cognac] .gm-hero,html[data-mat=cognac] .ns-card{background-color:#2a160a!important;background-image:linear-gradient(155deg,#2a160a 0%,#4a2812 50%,#6b3a17 100%)!important;outline:1px dashed rgba(232,201,106,.38);outline-offset:-7px!important}"
+      + "html[data-mat=marble] header{background:#0c0c0e!important}html[data-mat=marble] .gm-hero,html[data-mat=marble] .ns-card{background-color:#0c0c0e!important;background-image:linear-gradient(118deg,transparent 44%,rgba(255,255,255,.10) 45%,transparent 46.5%),linear-gradient(32deg,transparent 62%,rgba(255,255,255,.07) 63%,transparent 64.5%),linear-gradient(78deg,transparent 20%,rgba(255,255,255,.05) 21%,transparent 22%),linear-gradient(155deg,#0b0b0d 0%,#18181c 60%,#222228 100%)!important;}"
+      + "html[data-mat=sapphire] header{background:#071a3d!important}html[data-mat=sapphire] .gm-hero,html[data-mat=sapphire] .ns-card{background-color:#071a3d!important;background-image:radial-gradient(circle at 85% 0%,rgba(120,160,255,.30),transparent 55%),linear-gradient(155deg,#061535 0%,#0d2f6b 55%,#163f8f 100%)!important;}"
+      + "html[data-mat=carbon] header{background:#141414!important}html[data-mat=carbon] .gm-hero,html[data-mat=carbon] .ns-card{background-color:#141414!important;background-image:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,0) 45%),repeating-linear-gradient(45deg,#181818 0 3px,#222 3px 6px),repeating-linear-gradient(-45deg,rgba(0,0,0,.25) 0 3px,transparent 3px 6px)!important;}"
+      + ".gm-atelier{margin:4px 0 14px}.gm-at-h{font-weight:700;font-size:14px;color:var(--text);margin-bottom:8px}.gm-at-h span{font-weight:500;color:var(--muted);font-size:12px;margin-left:6px}"
+      + ".gm-at-row{display:flex;gap:8px;overflow-x:auto;padding-bottom:4px}"
+      + ".gm-at{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:6px;min-width:82px;min-height:44px;padding:8px 6px;border-radius:14px;border:1px solid rgba(11,31,53,.08);background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,255,255,.6)),var(--cardAlt);color:var(--text);font:600 11px var(--font-ui);cursor:pointer}"
+      + "html[data-theme=dark] .gm-at{background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,.02)),var(--cardAlt);border-color:rgba(255,255,255,.08)}"
+      + ".gm-at.on{border-color:#c9a84c;box-shadow:inset 0 0 0 1px rgba(232,201,106,.5),0 3px 12px rgba(201,168,76,.25)}"
+      + ".gm-at .sw{width:44px;height:28px;border-radius:8px;box-shadow:inset 0 1px 0 rgba(255,255,255,.2)}"
+      + ".sw-classic{background:linear-gradient(155deg,#0a1628,#0f2740,#114052)}"
+      + ".sw-cognac{background:linear-gradient(155deg,#2a160a 0%,#4a2812 50%,#6b3a17 100%)}"
+      + ".sw-marble{background:linear-gradient(118deg,transparent 44%,rgba(255,255,255,.10) 45%,transparent 46.5%),linear-gradient(32deg,transparent 62%,rgba(255,255,255,.07) 63%,transparent 64.5%),linear-gradient(78deg,transparent 20%,rgba(255,255,255,.05) 21%,transparent 22%),linear-gradient(155deg,#0b0b0d 0%,#18181c 60%,#222228 100%)}"
+      + ".sw-sapphire{background:radial-gradient(circle at 85% 0%,rgba(120,160,255,.30),transparent 55%),linear-gradient(155deg,#061535 0%,#0d2f6b 55%,#163f8f 100%)}"
+      + ".sw-carbon{background:linear-gradient(180deg,rgba(255,255,255,.07),rgba(255,255,255,0) 45%),repeating-linear-gradient(45deg,#181818 0 3px,#222 3px 6px),repeating-linear-gradient(-45deg,rgba(0,0,0,.25) 0 3px,transparent 3px 6px)}"
       + "header{position:sticky;overflow:hidden}#gmSky{position:absolute;inset:0;pointer-events:none;z-index:0}header>*:not(#gmSky){position:relative;z-index:1}"
       + ".gm-star{position:absolute;width:2px;height:2px;border-radius:50%;background:#fff;opacity:.55;animation:gmtw 5s ease-in-out infinite}"
       + ".gm-st-risk{width:3px;height:3px;background:#f3dc8f;opacity:.9;box-shadow:0 0 6px 1px rgba(243,220,143,.6)}"
