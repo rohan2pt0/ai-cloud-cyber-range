@@ -5287,6 +5287,12 @@
       + ".gm-kin .k-miss,.gm-kin .k-now{border:1.5px solid var(--ring-track,rgba(11,31,53,.12))}.gm-kin .k-now{border-style:dashed}"
       + ".gm-kin .k-rep{border:1.5px solid rgba(201,168,76,.35)}.gm-kin .k-rep svg{width:14px;height:14px;filter:drop-shadow(0 0 2px rgba(232,201,106,.6))}"
       + ".gm-kin-note{font-style:italic}"
+      + "header{position:sticky;overflow:hidden}#gmSky{position:absolute;inset:0;pointer-events:none;z-index:0}header>*:not(#gmSky){position:relative;z-index:1}"
+      + ".gm-star{position:absolute;width:2px;height:2px;border-radius:50%;background:#fff;opacity:.55;animation:gmtw 5s ease-in-out infinite}"
+      + ".gm-st-risk{width:3px;height:3px;background:#f3dc8f;opacity:.9;box-shadow:0 0 6px 1px rgba(243,220,143,.6)}"
+      + ".gm-st-layer{width:2.5px;height:2.5px;background:#bff7ec;opacity:.8;box-shadow:0 0 5px rgba(94,234,212,.5)}"
+      + "@keyframes gmtw{0%,100%{opacity:.25}50%{opacity:.85}}"
+      + "@media (prefers-reduced-motion: reduce){.gm-star{animation:none}}"
       + ".gm-hero{position:relative;overflow:hidden;isolation:isolate}"
       + ".gm-hero::after{content:'';position:absolute;top:-60%;bottom:-60%;left:-30%;width:60%;background:linear-gradient(105deg,transparent 0,rgba(255,255,255,.10) 45%,rgba(243,220,143,.10) 52%,transparent 100%);transform:translateX(calc(60% + var(--sx,0) * 60%)) rotate(8deg);transition:transform .25s ease-out;pointer-events:none;z-index:0}"
       + ".gm-hero>*{position:relative;z-index:1}"
@@ -6903,10 +6909,40 @@
     var ring = document.querySelector("header .logo-ring, .logo-ring");
     if (ring && !calm) { ring.classList.add("gm-unveil"); setTimeout(function () { ring.classList.remove("gm-unveil"); }, 600); }
   }
+  /* Your constellation (owner, 2026-11-12, after the Rolls-Royce Starlight headliner): the header is a night sky, and each real
+     achievement places a permanent star. Positions come from what was achieved, so the sky is the person's own and grows
+     over the years: a day with all three done, a Shield risk fully covered (a brighter gold star), a Stack layer completed.
+     Decoration only (aria-hidden); a slow twinkle that stops for reduced motion. */
+  function gmStarList() {
+    var out = [], ids = DAILY3.map(function (d) { return d.id; });
+    try { Object.keys((S && S.daily) || {}).forEach(function (k) {
+      var v = S.daily[k] || []; if (ids.every(function (x) { return v.indexOf(x) >= 0; })) out.push({ id: "d" + k, k: "day" });
+    }); } catch (e) {}
+    try { RISKS.forEach(function (r) { if (sysPct(r, "r") >= 100) out.push({ id: "r" + r.id, k: "risk" }); }); } catch (e) {}
+    try { STACK.forEach(function (L) { if (layerPct(L) >= 100) out.push({ id: "s" + L.id, k: "layer" }); }); } catch (e) {}
+    return out.slice(-400);
+  }
+  function gmHash(t) { var h = 2166136261; for (var i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return (h >>> 0); }
+  function gmStars() {
+    var hd = document.querySelector("header"); if (!hd) return;
+    var list = gmStarList(), key = list.length + ":" + (list.length ? list[list.length - 1].id : "");
+    var sky = document.getElementById("gmSky");
+    if (sky && sky.getAttribute("data-k") === key) return;
+    if (!sky) { sky = document.createElement("div"); sky.id = "gmSky"; sky.setAttribute("aria-hidden", "true"); hd.insertBefore(sky, hd.firstChild); }
+    sky.setAttribute("data-k", key);
+    var h = "";
+    list.forEach(function (st) {
+      var n = gmHash(st.id), x = (n % 1000) / 10, y = ((n >>> 10) % 1000) / 10, tw = ((n >>> 20) % 50) / 10;
+      h += '<i class="gm-star gm-st-' + st.k + '" style="left:' + x.toFixed(1) + '%;top:' + y.toFixed(1) + '%;animation-delay:-' + tw.toFixed(1) + 's"></i>';
+    });
+    sky.innerHTML = h;
+    sky.title = "";
+  }
   // The daily three just became complete: one gold shimmer and one soft pulse, once per day.
   var _sigRender = window.renderAll;
   window.renderAll = function () {
     _sigRender.apply(this, arguments);
+    try { gmStars(); } catch (e) {}
     try {
       var card = document.querySelector(".gm-d3"); if (!card) return;
       var tiles = card.querySelectorAll(".tile"), on = card.querySelectorAll(".tile.on");
