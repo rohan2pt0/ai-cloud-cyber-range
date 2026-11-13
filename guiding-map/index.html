@@ -2453,7 +2453,9 @@ function intOff(id){ S.integrations[id]=false; store("sovS",S); gmClose(); rende
 
 <script>
 function renderPlaybook(){
- function sec(n,t,body){ return '<details class="okr-card" style="margin-bottom:10px"><summary style="cursor:pointer;font-weight:800;font-size:13.5px;color:var(--text)">'+n+' \u2014 '+t+'</summary><div style="font-size:12.5px;line-height:1.6;color:var(--text);margin-top:8px">'+body+'</div></details>'; }
+ // A run of clauses joined by " · " reads as a short list, so a stage card scans in seconds (owner, 2026-11-13: "not tidy").
+ function pbList(body){ return String(body).replace(/(<\/div>)([^<]*\u00B7[^<]*)/g,function(m,d,txt){ var it=txt.split(/\s+\u00B7\s+/).map(function(x){return x.trim();}).filter(Boolean); return it.length<2?m:d+'<ul class="pb-list">'+it.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul>'; }); }
+ function sec(n,t,body){ body=pbList(body); return '<details class="okr-card" style="margin-bottom:10px"><summary style="cursor:pointer;font-weight:800;font-size:13.5px;color:var(--text)">'+n+' \u2014 '+t+'</summary><div style="font-size:12.5px;line-height:1.6;color:var(--text);margin-top:8px">'+body+'</div></details>'; }
  function h(t){ return '<div style="font-weight:800;color:var(--gold);margin:8px 0 2px;font-size:11.5px;letter-spacing:.4px">'+t+'</div>'; }
  function fin(v){ return (typeof v==="number") && isFinite(v) && v>0; }
  function M(v){ return fin(v) ? money(Math.round(v)) : "\u2014"; }
@@ -4178,17 +4180,18 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     // A band meter: the healthy range is a soft grey band; your value is a dot; only the status word carries colour.
     function meter(label, val, lo, hi, kind, note) {
       var inBand = kind === "ceiling" ? val <= hi : kind === "floor" ? val >= lo : (val >= lo && val <= hi);
-      var status = inBand ? "In range" : (val < lo ? "Low" : "High");
+      var status = inBand ? "Healthy" : (val < lo ? "Low" : "High");
       var col = inBand ? "var(--green)" : status === "High" ? "var(--red)" : "var(--amber)";
       var cl = function (p) { return Math.max(0, Math.min(100, p)); };
       return '<div class="meter"><div class="meter-top"><span>' + label + '</span>'
         + '<span class="meter-val">' + val + '% <b class="meter-status" style="color:' + col + '">' + status + '</b></span></div>'
-        + '<div class="meter-track"><div class="meter-band" style="left:' + cl(lo) + '%;width:' + (cl(hi) - cl(lo)) + '%"></div>'
-        + '<div class="meter-dot" style="left:' + cl(val) + '%"></div></div>'
+        + '<div class="meter-track"><div class="meter-band" style="left:' + cl(lo) + '%;width:' + (cl(hi) - cl(lo)) + '%"><span class="meter-band-l">healthy ' + lo + '\u2013' + hi + '%</span></div>'
+        + '<div class="meter-dot" style="left:' + cl(val) + '%"><span class="meter-you">You ' + val + '%</span></div></div>'
+        + '<div class="meter-scale" aria-hidden="true"><span>0%</span><span>50%</span><span>100%</span></div>'
         + '<div class="meter-note">' + esc(note) + '</div></div>';
     }
     var meters = meter("Fixed costs", fixPct, 50, 60, "ceiling",
-        fixPct > 60 ? "Above 60% — this quietly caps everything else. The one number to bring down." : "Healthy (band 50–60%); you have room to move.")
+        fixPct > 60 ? "Above 60% — this quietly caps everything else. The one number to bring down." : fixPct < 50 ? "Below 50% — well under the ceiling; plenty of room." : "Within 50–60% — healthy, with room to move.")
       + meter("Saving & investing", savRate, 15, 20, "floor",
         savRate >= 15 ? "At or above 15% — the number that decides when you can stop needing a salary." : "Below 15% — lift the SIP first; it compounds for decades.")
       + meter("Guilt-free", freePct, 20, 35, "range",
@@ -5797,9 +5800,9 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     + '<rect x="130" y="24" width="90" height="12" rx="6" fill="var(--accent)"/>'
     + '<rect x="220" y="24" width="90" height="12" rx="6" fill="var(--q1)" opacity=".5"/>'
     + '<text x="70" y="18" text-anchor="middle" font-size="10" fill="var(--muted)">too easy (can sing)</text>'
-    + '<text x="175" y="18" text-anchor="middle" font-size="10" fill="var(--accent)">Zone 2 (can talk, can’t sing)</text>'
+    + '<text x="175" y="50" text-anchor="middle" font-size="10" font-weight="700" fill="var(--accent)">Zone 2: can talk, can’t sing</text>'
     + '<text x="265" y="18" text-anchor="middle" font-size="10" fill="var(--muted)">too hard (gasping)</text>'
-    + '<text x="175" y="52" text-anchor="middle" font-size="10" fill="var(--muted)">↑ aim for the middle band</text></svg>';
+    + '</svg>';
 
   var GUIDES = [
     { id: "daily3", icon: "☀", title: "The Daily Three: Move, Mind, Family", tag: "daily · 2-min floor",
@@ -5860,9 +5863,14 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       + '<div style="font-size:12.5px;line-height:1.75;margin-top:8px">'
       + '<div class="info" style="margin-bottom:8px">' + esc(g.what) + '</div>'
       + (g.viz || "");
-    g.steps.forEach(function (s) { h += '• ' + esc(s) + '<br>'; });
-    if (g.subs) { h += '<div style="margin-top:8px;font-weight:700">If your gear/setup differs</div>'; g.subs.forEach(function (s) { h += '↳ ' + esc(s) + '<br>'; }); }
-    if (g.check) { h += '<div style="margin-top:8px;color:var(--ok)">✓ ' + esc(g.check) + '</div>'; }
+    function stepHTML(s) {
+      var m = /^([^—:]{2,60}?)\s*(?:—|:)\s+(.+)$/.exec(s);
+      return m && /[A-Z]{2,}/.test(m[1]) ? '<div class="gs"><div class="gs-k">' + esc(m[1]) + '</div><div class="gs-v">' + esc(m[2]) + '</div></div>'
+        : '<div class="gs"><div class="gs-v">' + esc(s) + '</div></div>';
+    }
+    h += '<div class="gs-list">' + g.steps.map(stepHTML).join("") + '</div>';
+    if (g.subs) { h += '<div class="gs-h">If your setup differs</div><div class="gs-list">' + g.subs.map(stepHTML).join("") + '</div>'; }
+    if (g.check) { h += '<div class="gs-check">\u2713 ' + esc(g.check) + '</div>'; }
     return h + '</div></details>';
   }
 
@@ -6643,13 +6651,13 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       h += '<div style="font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:800;margin-bottom:7px">Also today (tap)</div><div style="display:flex;gap:8px;flex-wrap:wrap">';
       rest.forEach(function (r) {
         var on = done.indexOf(r[0].id) >= 0;
-        h += '<button class="gm-tap' + (on ? " on" : "") + '" style="padding:0 12px" onclick="tgHabit(' + r[1] + ')">' + (on ? "✓ " : "") + esc(r[0].icon + " " + r[0].name) + '</button>';
+        h += '<button class="gm-tap gm-also' + (on ? " on" : "") + '" aria-pressed="' + on + '" onclick="tgHabit(' + r[1] + ')"><span class="gm-also-t" aria-hidden="true">' + (on ? "\u2713" : "") + '</span>' + esc(r[0].icon + " " + r[0].name) + '</button>';
       });
       h += '</div>';
     }
-    h += '<div style="font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:800;margin:11px 0 7px">Energy today (optional)</div><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">';
-    for (var n = 1; n <= 5; n++) h += '<button class="gm-tap' + (en === n ? " on" : "") + '" aria-label="energy ' + n + ' of 5" onclick="gmEnergy(' + n + ')">' + n + '</button>';
-    h += '<span style="font-size:11.5px;color:var(--muted);margin-left:4px;cursor:pointer;text-decoration:underline" onclick="gmNote()">' + (note ? "edit note" : "+ note") + '</span></div>'
+    h += '<div style="font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:800;margin:11px 0 7px">Energy today (optional)</div><div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap"><div class="ws-taps gm-scale gm-energy">';
+    for (var n = 1; n <= 5; n++) h += '<button class="ws-tap gm-key' + (en === n ? " on" : "") + '" aria-pressed="' + (en === n) + '" aria-label="energy ' + n + ' of 5" onclick="gmEnergy(' + n + ')">' + n + '</button>';
+    h += '</div><span style="font-size:11.5px;color:var(--muted);margin-left:4px;cursor:pointer;text-decoration:underline" onclick="gmNote()">' + (note ? "edit note" : "+ note") + '</span></div>'
       + (note ? '<div style="font-size:11.5px;color:var(--muted);margin-top:7px;font-style:italic">“' + esc(note) + '”</div>' : '')
       + '</div>';
     return h;
@@ -7768,8 +7776,8 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       // ui-rules-lint slice 3: on a wide screen, running text keeps a readable measure (at most ~75 characters a line)
       + "@media (min-width:700px){#sections p,#sections li,#sections div:not(:has(div,table,button,svg,canvas,input,select,textarea,img,ul,ol)){max-width:54ch}}"
       + ".cat-t{font-size:17px;letter-spacing:-.01em}"
-      + ":root{--flow1:#00897b;--flow2:#c27d14;--flow3:#3f62d1;--flow4:#d0582d}"
-      + "html[data-theme=dark]{--flow1:#1a978a;--flow2:#c4851c;--flow3:#5577de;--flow4:#d4613a}"
+      + ":root{--flow1:#1f5f6b;--flow2:#b8902f;--flow3:#0b6e52;--flow4:#a8603a}"
+      + "html[data-theme=dark]{--flow1:#2f8f98;--flow2:#d4af37;--flow3:#1f9f78;--flow4:#c47a4e}"
       + ".flowhead{font-size:12px;color:var(--muted);margin-bottom:6px}"
       + ".flowbar{display:flex;gap:2px;height:36px;border-radius:8px;overflow:hidden;clip-path:inset(0 100% 0 0);animation:gmwipe .8s cubic-bezier(.2,.85,.25,1) .05s forwards}"
       + ".flowseg{display:flex;align-items:center;justify-content:center;min-width:2px;border-radius:4px;opacity:0;animation:gmfade .45s ease forwards}"
@@ -9973,6 +9981,26 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       // Offer scores reuse the Wheel's keycaps (one visual language); must-have status is a small round mark, not a box.
       + "html body .gm-scale{margin-top:6px;max-width:360px}html body .gm-key{display:flex;align-items:center;justify-content:center;cursor:pointer;user-select:none}"
       + ".gm-gate{display:inline-flex;align-items:center;justify-content:center;flex:none;width:28px;height:28px;border-radius:50%;border:1.8px solid currentColor;font-weight:800;font-size:13px;background:var(--card)}"
+      // The guides' drawings used colour names from another app that the Life OS never defined (they rendered black or not
+      // at all); they now mean the app's own palette.
+      + ":root{--accent:#b8902f;--ok:var(--green);--line:var(--border);--q1:#c2410c}"
+      + ".gs-list{display:flex;flex-direction:column;margin:6px 0}.gs{padding:9px 0;border-top:1px solid var(--border)}.gs:first-child{border-top:0}"
+      + ".gs-k{font-size:10.5px;font-weight:800;letter-spacing:.08em;color:#7a5a14;margin-bottom:2px}html[data-theme=dark] .gs-k{color:var(--gold)}"
+      + ".gs-v{font-size:13.5px;line-height:1.55;color:var(--text)}.gs-h{margin-top:10px;font-weight:800;font-size:13px}"
+      + ".gs-check{margin-top:10px;padding:10px 12px;border-radius:12px;background:rgba(30,122,82,.08);border:1px solid rgba(30,122,82,.25);font-size:13px;line-height:1.5}"
+      // Money meters: the healthy zone and your value are labelled on the track, with a scale beneath.
+      + "html body .meter-track{position:relative;height:10px;border-radius:99px;background:var(--cardAlt);margin:30px 0 4px;overflow:visible}"
+      + "html body .meter-band{position:absolute;top:0;bottom:0;opacity:1;border-radius:99px;background:rgba(30,122,82,.22);border:1px solid rgba(30,122,82,.45)}"
+      + ".meter-band-l{position:absolute;top:13px;left:50%;transform:translateX(-50%);font-size:10.5px;font-weight:800;color:#0f4d33;background:var(--card);padding:0 5px;border-radius:5px;white-space:nowrap}"
+      + "html body .meter-dot{position:absolute;top:50%;width:16px;height:16px;margin-left:-8px;transform:translateY(-50%);border-radius:50%;background:#fff;border:3px solid #b8902f;box-shadow:0 1px 4px rgba(0,0,0,.25)}"
+      + "html[data-theme=dark] .meter-band-l{color:var(--green)}"
+      + ".meter-you{position:absolute;bottom:20px;left:50%;transform:translateX(-50%);font-size:11px;font-weight:800;white-space:nowrap;color:var(--text);background:var(--card);border:1px solid rgba(201,168,76,.6);border-radius:999px;padding:1px 7px}"
+      + ".meter-scale{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin:16px 0 4px}"
+      + "html body .gm-energy{margin-top:0;max-width:300px;flex:1 1 220px}"
+      + "html body .gm-tap.gm-also{gap:8px;padding:0 14px 0 8px;min-height:44px;border-radius:999px;background:var(--card);border:1px solid rgba(201,168,76,.45);color:var(--text);box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 1px 3px rgba(0,0,0,.06)}"
+      + ".gm-also-t{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;border:1.6px solid rgba(150,118,48,.6);font-size:13px;font-weight:900;color:#f4fffa;background:transparent}"
+      + "html body .gm-tap.gm-also.on{background:var(--card);border-color:rgba(11,94,72,.6);color:var(--text)}html body .gm-tap.gm-also.on .gm-also-t{background:linear-gradient(160deg,#1f8f6d,#0b5e48);border-color:#0b5e48}"
+      + ".pb-list{margin:4px 0 8px;padding-inline-start:18px}.pb-list li{margin:3px 0;line-height:1.5}.pb-list li::marker{color:#b8902f}"
       + "html body .kr .chips{display:flex;flex-wrap:nowrap;gap:2px;padding:3px;border-radius:12px;background:var(--cardAlt);border:1px solid var(--border);width:100%;box-sizing:border-box;overflow-x:auto}"
       + "html body .kr .chips .chip{flex:1 1 auto;background:transparent;background-image:none;border:0;box-shadow:none;color:var(--muted);padding:8px 4px;border-radius:9px;font-weight:600;font-size:12px;white-space:nowrap;text-shadow:none}"
       + "html body .kr .chips .chip.on{background:var(--card);background-image:none;color:var(--text);font-weight:800;box-shadow:0 1px 3px rgba(13,31,53,.14),inset 0 0 0 1px rgba(201,168,76,.6)}"

@@ -23,7 +23,7 @@ setTimeout(() => {
   ok("those two numbers are marked 'from your profile'", rows().filter(r => r.from && /Fixed costs|Saving/.test(r.name)).length === 2, JSON.stringify(rows()));
   const g = rows().find(r => /Guilt-free/.test(r.name));
   ok("guilt-free is shown and is not 100%", !!g && !/100%/.test(g.pc), g && JSON.stringify(g));
-  ok("the status words are present, with words not colour alone", /In range/.test(text()) && /Low/.test(text()), text().slice(0, 400));
+  ok("the status words are present, with words not colour alone", /Healthy|In range/.test(text()) && /Low/.test(text()), text().slice(0, 400));
   const flow = sec().querySelector(".flowbar");
   ok("no purple in the flow", !!flow && !/#6d28d9|purple|#7c3aed|#8b5cf6|#a855f7/i.test(flow.outerHTML), flow && flow.outerHTML);
   // no income at all: an empty state, not a 100% guilt-free bar
