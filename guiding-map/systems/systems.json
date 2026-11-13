@@ -44,6 +44,11 @@
    "kind": "yesno"
   },
   {
+   "id": "business",
+   "q": "I am a founder, business owner or entrepreneur (a startup, a firm, a shop or a practice of my own; alone or alongside a job)",
+   "kind": "yesno"
+  },
+  {
    "id": "vehicle",
    "q": "We own or plan to buy a car or two-wheeler",
    "kind": "yesno"
@@ -614,6 +619,111 @@
     }
    ],
    "sources": []
+  },
+  {
+   "id": "founder-cash",
+   "spoke": "money",
+   "title": "Cash, runway and your own pay",
+   "when": [
+    "business"
+   ],
+   "why": "Most small firms that fail run out of cash, not ideas. One number, looked at every week, prevents most surprises: how many months the business can run on the cash it has.",
+   "cue": "Monday morning, 15 minutes, before e-mail.",
+   "floor": "Write one number: months of runway (cash in the bank divided by a month's costs).",
+   "rhythm": [
+    {
+     "every": "week",
+     "t": "Cash in the bank, money owed to you for more than 30 days, and the one invoice to chase today."
+    },
+    {
+     "every": "month",
+     "t": "Close the month: bank reconciled, every invoice sent, your fixed salary paid to yourself, and a set share of receipts moved to the tax-reserve account."
+    },
+    {
+     "every": "quarter",
+     "t": "80/20 review: which 20% of customers and products bring 80% of the profit? Give them more time; raise prices or stop the bottom fifth."
+    }
+   ],
+   "once": [
+    {
+     "t": "Separate business and personal money: the business's own bank account, card and books. Never pay personal bills from the business."
+    },
+    {
+     "t": "Set a fixed monthly salary for yourself and pay it on the same day each month, so the family budget does not ride the business's good and bad months."
+    },
+    {
+     "t": "Open a separate tax-reserve account and move a fixed share of every receipt into it the day it arrives."
+    },
+    {
+     "t": "Keep a business buffer of at least three months of fixed costs, apart from the family's own emergency fund."
+    }
+   ]
+  },
+  {
+   "id": "founder-tax",
+   "spoke": "money",
+   "title": "Taxes and filings, never late",
+   "when": [
+    "business"
+   ],
+   "where": "IN",
+   "why": "Late tax and filings cost interest, penalties and, worse, attention at the worst time. A calendar and one adviser make them a habit, not a scramble.",
+   "cue": "The first working day of each month, with your accountant.",
+   "floor": "Check the next due date and that the money for it is already in the tax-reserve account.",
+   "rhythm": [
+    {
+     "every": "quarter",
+     "t": "Advance tax, if the year's tax after TDS will be 10,000 rupees or more: 15% by 15 June, 45% by 15 September, 75% by 15 December, 100% by 15 March. On the presumptive scheme you may pay it all by 15 March. A missed instalment costs 1% interest a month.",
+     "src": "incometax"
+    },
+    {
+     "every": "month",
+     "t": "GST returns and TDS deposits on the dates your scheme sets (monthly or quarterly); the GST portal shows your own calendar.",
+     "src": "gst"
+    },
+    {
+     "every": "year",
+     "t": "Income tax return, tax audit (if your turnover needs one) and company filings: agree the dates with your accountant in April and put them in the calendar."
+    }
+   ],
+   "once": [
+    {
+     "t": "An accountant on a yearly retainer who gives you a written calendar of every return and payment for the year."
+    },
+    {
+     "t": "A class 3 digital signature and every tax portal login in your password manager, with the accountant's access separate from yours."
+    }
+   ]
+  },
+  {
+   "id": "founder-focus",
+   "spoke": "career",
+   "title": "The CEO week, 80/20",
+   "when": [
+    "business"
+   ],
+   "why": "A founder's time is the scarcest resource in the firm. A short weekly plan keeps it on the few things that move the business, not on whatever is loudest.",
+   "cue": "Sunday evening or Monday morning, 30 minutes.",
+   "floor": "Write the one outcome that would make this week a win.",
+   "rhythm": [
+    {
+     "every": "week",
+     "t": "Top three outcomes, the one number that shows the business is growing (customers, revenue or margin), and one thing to stop or hand over."
+    },
+    {
+     "every": "month",
+     "t": "One hour with yourself: what only you can do? Move one recurring task to a person, a tool or nobody."
+    },
+    {
+     "every": "quarter",
+     "t": "Write a one-page letter to your partners or yourself: what worked, what did not, the bet for next quarter."
+    }
+   ],
+   "once": [
+    {
+     "t": "List everything you do in a normal week; mark what only you can do. Plan to hand over the rest, one item a month."
+    }
+   ]
   }
  ],
  "events": [
@@ -829,6 +939,14 @@
   "polyhouse": {
    "name": "MIDH and NHB protected-cultivation norms (about 50% of a capped cost)",
    "checked": "2026-11-12"
+  },
+  "incometax": {
+   "name": "Income Tax Department, advance tax schedule under the Income-tax Act, 2025 (incometax.gov.in)",
+   "checked": "2026-11-13"
+  },
+  "gst": {
+   "name": "GST portal, return due dates for your registration (gst.gov.in)",
+   "checked": "2026-11-13"
   }
  },
  "projects": [
