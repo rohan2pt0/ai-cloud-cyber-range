@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 ### Changed
+- Life OS final finish at the touch points: jewel checkboxes (glass, a polished-gold fill and a dark tick when set), inlaid text fields with a gold glow in use, gold focus and selection, a frosted midnight confirmation pill with a gold hairline, and a pop-up sheet with a gold handle and edge.
 - Life OS materials feel real: procedural grain for cognac leather, soft veining for Nero marble, a crystalline shimmer for sapphire and a woven carbon; the bottom bar is a tray of the chosen material with gold icons and the current tab lit from within; the sky is a dense starlight field, each star twinkling at its own pace, with achievements brighter and glowing.
 - Life OS dark theme is backlit: icons in the More sheet and the bottom bar glow warm gold (brightest on the current screen), a soft teal light leaks from under each tile, and the sheet sits on a quiet teal-and-gold aurora.
 - Life OS: glass and enamel for the shared parts: the money split bar is glossy enamel with frosted labels, the More sheet is frosted glass with antique-gold icons and a gold rim on the current screen, chips are frosted with a polished-gold selection, and small buttons carry a glass highlight, in both themes.

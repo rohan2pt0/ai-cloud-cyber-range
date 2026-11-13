@@ -5352,6 +5352,26 @@
       + ".gm-st-layer{width:3px!important;height:3px!important;background:#d6fbf4!important;box-shadow:0 0 6px 2px rgba(94,234,212,.55)!important}"
       + "@keyframes gmtw{0%,100%{opacity:var(--lo,.35)}50%{opacity:1}}"
       + "#gmSky::before{content:'';position:absolute;inset:0;background:radial-gradient(120% 140% at 50% -20%,rgba(255,255,255,.04),transparent 60%)}"
+
+      // The final finish at the touch points (owner, 2026-11-13): where hands land most, the rarest finish.
+      // Jewel checkboxes: a glass setting, a polished-gold fill and a dark tick when set.
+      + "input[type=checkbox]{-webkit-appearance:none;appearance:none;width:22px;height:22px;border-radius:7px;flex:0 0 22px;margin:0;cursor:pointer;position:relative;background:linear-gradient(180deg,rgba(255,255,255,.95),rgba(255,255,255,.55)),var(--cardAlt);border:1px solid rgba(11,31,53,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.9),0 1px 3px rgba(11,31,53,.10);transition:background .2s ease,box-shadow .2s ease}"
+      + "html[data-theme=dark] input[type=checkbox]{background:linear-gradient(180deg,rgba(255,255,255,.10),rgba(255,255,255,.03)),var(--cardAlt);border-color:rgba(255,255,255,.18);box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}"
+      + "input[type=checkbox]:checked{background:linear-gradient(135deg,#e2c46e 0%,#f6e7ad 40%,#d4af37 70%,#ecd27e 100%)!important;border-color:#b8902f!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 2px 8px rgba(184,144,47,.35)!important}"
+      + "input[type=checkbox]:checked::after{content:'';position:absolute;left:7px;top:3px;width:6px;height:11px;border:solid #1b1406;border-width:0 2.5px 2.5px 0;transform:rotate(42deg)}"
+      // Inlaid fields: set into the surface like marquetry; a gold glow when in use.
+      + "#sections input:not([type=checkbox]):not([type=radio]):not([type=range]),#sections select,#sections textarea,.modal input:not([type=checkbox]),.modal textarea{box-shadow:inset 0 2px 4px rgba(11,31,53,.07),inset 0 0 0 1px rgba(11,31,53,.06),0 1px 0 rgba(255,255,255,.8)}"
+      + "html[data-theme=dark] #sections input:not([type=checkbox]):not([type=radio]):not([type=range]),html[data-theme=dark] #sections select,html[data-theme=dark] #sections textarea{box-shadow:inset 0 2px 5px rgba(0,0,0,.35),inset 0 0 0 1px rgba(255,255,255,.06)}"
+      + "#sections input:focus,#sections select:focus,#sections textarea:focus,.modal input:focus,.modal textarea:focus{outline:none;border-color:#c9a84c!important;box-shadow:inset 0 2px 4px rgba(11,31,53,.06),0 0 0 3px rgba(201,168,76,.22)!important}"
+      // Gold for focus and selection, so even the smallest signal matches the estate.
+      + ":focus-visible{outline:2px solid #c9a84c;outline-offset:2px}"
+      + "::selection{background:rgba(201,168,76,.35);color:inherit}"
+      + "*{scrollbar-width:thin;scrollbar-color:rgba(201,168,76,.45) transparent}"
+      // The confirmation pill: frosted midnight glass with a gold hairline.
+      + "#gmToast{background:linear-gradient(180deg,rgba(18,30,52,.92),rgba(10,18,34,.94))!important;-webkit-backdrop-filter:blur(14px) saturate(140%);backdrop-filter:blur(14px) saturate(140%);border:1px solid rgba(201,168,76,.55)!important;color:#f3e2a6!important;border-radius:999px!important;padding:12px 20px!important;box-shadow:0 12px 32px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.10)!important;letter-spacing:.01em}"
+      // The pop-up sheet: a jewellery-box lid, with a gold handle and a gold hairline along the top.
+      + ".modal{box-shadow:0 -18px 48px rgba(0,0,0,.28),inset 0 1px 0 rgba(201,168,76,.45)!important}"
+      + ".mdrag{background:linear-gradient(90deg,#b8902f,#f3dc8f,#b8902f)!important;height:4px!important;border-radius:99px!important;opacity:.9}"
       + "@media (prefers-reduced-motion: reduce){.gm-star{animation:none}}"
       + ".gm-hero{position:relative;overflow:hidden;isolation:isolate}"
       + ".gm-hero::after{content:'';position:absolute;top:-60%;bottom:-60%;left:-30%;width:60%;background:linear-gradient(105deg,transparent 0,rgba(255,255,255,.10) 45%,rgba(243,220,143,.10) 52%,transparent 100%);transform:translateX(calc(60% + var(--sx,0) * 60%)) rotate(8deg);transition:transform .25s ease-out;pointer-events:none;z-index:0}"
