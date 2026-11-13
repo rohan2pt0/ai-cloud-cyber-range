@@ -1,0 +1,129 @@
+{
+  "about": "Red-team your life: the curated library of threats that target a person, a family or a household, each with drills to rehearse. News only RANKS a pattern and links evidence; it never writes a drill (a poisoned feed cannot change what you rehearse). Add a pattern here, never in code. 'where' is global or a country code; 'match' is a case-insensitive regex on news titles; 'query' is the news search. A drill is a test case: 'try' the scenario, and it passes if your answer matches 'pass'.",
+  "version": 1,
+  "patterns": [
+    {
+      "id": "honeytrap", "name": "Honeytrap: a relationship built to get secrets or leverage", "where": "global", "severity": 3, "added": "2026-11-13",
+      "story": "Someone warm, attractive or flattering gets close fast, moves you to private chats, and slowly asks about your work, your access or your private life. The goal is secrets, or something to hold over you.",
+      "signs": ["A new contact who is unusually interested in you and your work", "A push to move to a private or disappearing-message app", "Gifts, favours or trips that create a debt, then small asks that grow"],
+      "drills": [
+        {"try": "A charming new contact at a conference asks, over a second dinner, how your organisation decides on a sensitive matter.", "pass": "You keep work out of personal relationships, change the subject, and tell your security team about the approach the same week, as your employer's policy asks."},
+        {"try": "Someone you met recently sends a private photo and asks for one back, or hints they have something compromising.", "pass": "You never send one; if pressured, you stop contact, keep the evidence, and report it (police cyber cell, and your employer if work is mentioned). Leverage dies when it is told early."},
+        {"try": "Write down who in your family would notice if a new person suddenly had a lot of your time and attention.", "pass": "You have one trusted person you tell about new close contacts, and you would tell them before it becomes a secret."}
+      ],
+      "match": "honey ?trap|honeypot.*(spy|scandal)|spy (ring|scandal|affair)|suspected (\\w+ )?spy|seduc\\w+ .*(spy|secrets)|sextortion",
+      "query": "honeytrap OR \"honey trap\" spy"
+    },
+    {
+      "id": "digital-arrest", "name": "Digital arrest: fake police on a video call", "where": "IN", "severity": 3, "added": "2026-11-13",
+      "story": "A caller posing as police, CBI, customs or a regulator says your name is in a crime (a parcel, money laundering), keeps you on video for hours, and makes you 'verify' money by transfer.",
+      "signs": ["An official who calls on WhatsApp or Skype and shows a uniform or an ID card", "Orders not to tell anyone or hang up", "A request to move money to a 'safe' or 'verification' account"],
+      "drills": [
+        {"try": "A video call says a parcel in your name held drugs and you are under digital arrest until you cooperate.", "pass": "You hang up. No agency arrests anyone on a video call or asks for money to clear a name. You call 1930 or report at the national cyber crime portal."},
+        {"try": "Your parent gets this call while you are travelling.", "pass": "They know the family rule: hang up, call you or another family member on a known number, never transfer money during a call."}
+      ],
+      "match": "digital arrest|fake (cbi|ed|police|customs) (officer|call)|impersonat\\w+ (police|cbi|officials)",
+      "query": "\"digital arrest\" scam"
+    },
+    {
+      "id": "voice-clone", "name": "Cloned voice or deepfake video of someone you trust", "where": "global", "severity": 3, "added": "2026-11-13",
+      "story": "A call or video that sounds exactly like your child, parent, boss or banker asks for urgent money or a secret. A few seconds of public audio is enough to clone a voice.",
+      "signs": ["Urgency and a reason you cannot call back", "A new number, a bad line, or 'my phone is broken'", "A request that breaks the person's normal habits"],
+      "drills": [
+        {"try": "Your child's voice cries that they are in trouble and need money sent now to a stranger's account.", "pass": "You ask the family code word, then call them back on their known number. No code word, no money."},
+        {"try": "A video call from your manager asks you to approve an urgent, confidential payment or share a file.", "pass": "You confirm through a second channel you already know (their desk line, an in-person check) before any action, whatever the pressure."},
+        {"try": "Set a family code word today.", "pass": "Every close family member knows one word that is never written in chats or posted anywhere."}
+      ],
+      "match": "deep ?fake|voice clon|ai[- ]generated (voice|video|call)|cloned voice",
+      "query": "deepfake OR \"voice clone\" scam call"
+    },
+    {
+      "id": "sim-swap", "name": "SIM swap: your number moved to a thief's phone", "where": "global", "severity": 3, "added": "2026-11-13",
+      "story": "A thief convinces your mobile operator to move your number to a new SIM, then receives your bank OTPs and resets your accounts.",
+      "signs": ["Your phone suddenly shows no signal or 'emergency calls only'", "Messages from your operator about a SIM change you did not ask for", "Login alerts you did not cause"],
+      "drills": [
+        {"try": "Your phone loses signal at home for no reason, in the middle of the day.", "pass": "You call your operator from another phone within the hour, and freeze your bank's net banking if the SIM was changed."},
+        {"try": "List the accounts where losing your number would let someone in.", "pass": "Your email and banks use an authenticator app or a passkey, not SMS alone, and your operator account has a PIN or port-out lock."}
+      ],
+      "match": "sim[- ]swap|sim swap|port[- ]out fraud|esim (fraud|hijack)",
+      "query": "\"SIM swap\" fraud"
+    },
+    {
+      "id": "investment-scam", "name": "Fake investment groups and trading apps", "where": "global", "severity": 2, "added": "2026-11-13",
+      "story": "A chat group or a new 'mentor' shows big profits, gets you onto an app that shows rising gains, then blocks withdrawals until you pay 'taxes' or 'fees'. Also called pig butchering.",
+      "signs": ["Added to a stock-tips group you never joined", "An app not on the official store, or a site, showing fast gains", "Withdrawals need one more payment"],
+      "drills": [
+        {"try": "A well-known investor's face invites you to a private WhatsApp group with 'guaranteed' IPO allotments.", "pass": "You check the advisor's registration with the regulator (SEBI in India) and invest only through your own broker's app. You leave the group."},
+        {"try": "A relative shows you their gains on a new app and asks you to join.", "pass": "You ask them to withdraw a small amount first; if they cannot, you help them report it the same day."}
+      ],
+      "match": "pig butcher|investment (scam|fraud)|trading app (scam|fraud)|stock (tips|market) (scam|fraud)|crypto (scam|fraud)",
+      "query": "investment scam whatsapp group trading app"
+    },
+    {
+      "id": "ceo-fraud", "name": "Boss or vendor impersonation for a payment", "where": "global", "severity": 2, "added": "2026-11-13",
+      "story": "An e-mail or message that looks like your boss, a supplier or your lawyer changes bank details or asks for an urgent transfer or gift cards.",
+      "signs": ["New bank details for a known payee", "Urgency plus secrecy", "A display name that is right with an address that is slightly wrong"],
+      "drills": [
+        {"try": "Your builder's e-mail says their bank account changed; please pay the next instalment there.", "pass": "You call them on the number you already had, not the one in the e-mail, before paying anything."},
+        {"try": "A message 'from the chairman' asks you to buy gift cards for a client today.", "pass": "You never buy gift cards on a message; you check in person or by a known number."}
+      ],
+      "match": "business email compromise|\\bbec\\b|ceo fraud|invoice fraud|payment diversion|impersonat\\w+ (ceo|executive|boss)",
+      "query": "\"business email compromise\" OR \"CEO fraud\""
+    },
+    {
+      "id": "account-takeover", "name": "Account takeover: phishing, MFA fatigue and stolen sessions", "where": "global", "severity": 2, "added": "2026-11-13",
+      "story": "A convincing login page, a flood of approve prompts, or malware that steals your browser sessions lets someone into your e-mail, cloud or bank without your password.",
+      "signs": ["Approve prompts you did not start", "A login page reached from a link, not typed", "A 'security alert' that wants you to sign in right now"],
+      "drills": [
+        {"try": "Your phone shows ten 'approve sign-in' prompts at midnight.", "pass": "You deny them all, change that account's password from a known device, and switch to number-matching or a passkey."},
+        {"try": "Check: does your main e-mail use a passkey or an authenticator, and do you have recovery codes somewhere safe?", "pass": "Yes to both, and you know where the codes are without searching."}
+      ],
+      "match": "phishing|mfa (fatigue|bombing|bypass)|session (hijack|cookie theft)|infostealer|credential (theft|stuffing)|account takeover",
+      "query": "phishing account takeover passkey"
+    },
+    {
+      "id": "breach-reuse", "name": "A service you use was breached", "where": "global", "severity": 2, "added": "2026-11-13",
+      "story": "A company you trusted loses its customers' data. Leaked e-mails, phone numbers and passwords are then used for targeted scams and logins elsewhere.",
+      "signs": ["A breach in the news for an app, airline, hotel, insurer or retailer you use", "Scam calls that know your details", "Login attempts on other accounts"],
+      "drills": [
+        {"try": "A company you use announces a breach this week.", "pass": "You change that password (and anywhere you reused it), expect scam calls that quote your details, and watch your bank statements for a month."},
+        {"try": "Count how many accounts share one password.", "pass": "None: a password manager gives each account its own."}
+      ],
+      "match": "data breach|data leak|breach exposes|records (leaked|exposed)|hackers? (stole|steal)|ransomware attack on",
+      "query": "data breach customers exposed"
+    },
+    {
+      "id": "kidnap-extortion", "name": "Kidnap, virtual kidnap and extortion of a family", "where": "global", "severity": 3, "added": "2026-11-13",
+      "story": "Wealthy families are watched through social media and staff. Some attacks are real; many are 'virtual': a call claims a loved one is held while they are simply unreachable.",
+      "signs": ["Someone asking staff about routines", "Live location or travel posted publicly", "A ransom call when a family member is out of reach"],
+      "drills": [
+        {"try": "A caller says your child is held and demands money now; the child does not answer the phone.", "pass": "You use the code word, call the school or the friend they are with, and call the police; you keep the caller talking, not paying."},
+        {"try": "Look at what your family posts: could a stranger know where each of you will be tomorrow?", "pass": "No live locations or travel plans are public; posts go up after you leave a place."}
+      ],
+      "match": "kidnap|abduct|extortion (call|racket|threat to)|ransom (call|demand)|virtual kidnapping",
+      "query": "\"virtual kidnapping\" OR kidnap ransom family"
+    },
+    {
+      "id": "insider-staff", "name": "Someone inside the household or office", "where": "global", "severity": 2, "added": "2026-11-13",
+      "story": "A driver, cook, assistant, colleague or contractor with trusted access sells information, steals, or is turned by someone outside.",
+      "signs": ["Staff who know more than their job needs", "Documents, keys or devices left where staff can reach them", "A new hire with no verified background"],
+      "drills": [
+        {"try": "List who has keys, door codes or your phone's PIN at home and at work.", "pass": "Each has only what their job needs; codes change when someone leaves; staff were verified (police verification in India)."},
+        {"try": "A staff member is approached by a stranger offering money for your schedule.", "pass": "They know it is safe and rewarded to tell you, and you have told them so."}
+      ],
+      "match": "insider (threat|trading|leak)|employee (stole|leaked|sold)|domestic help (arrested|stole)|driver (arrested|stole)|trade secrets? (theft|stolen)",
+      "query": "insider leaked secrets employee arrested"
+    },
+    {
+      "id": "parcel-kyc", "name": "Parcel, KYC and bill-due messages", "where": "IN", "severity": 1, "added": "2026-11-13",
+      "story": "A message says your parcel is held, your KYC expires, your power will be cut tonight or your card has reward points; the link installs an app or steals your login.",
+      "signs": ["An SMS or WhatsApp link with a deadline today", "A request to install an APK or a screen-sharing app", "A personal number pretending to be a company"],
+      "drills": [
+        {"try": "An SMS says your electricity will be cut at 9 pm unless you call a number.", "pass": "You check the bill in the provider's own app or site; you never install an app or share your screen from a message."},
+        {"try": "Ask your parents what they would do with a 'KYC expiring' message.", "pass": "They say: ignore it and visit or call the bank on the number on the card."}
+      ],
+      "match": "kyc (fraud|scam|update)|parcel scam|courier scam|electricity bill scam|apk (fraud|scam)|screen[- ]sharing (app|fraud)",
+      "query": "KYC update scam OR courier scam OR electricity bill scam"
+    }
+  ]
+}

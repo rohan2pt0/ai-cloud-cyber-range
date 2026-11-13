@@ -5,6 +5,7 @@
 # The domain is a variable, never code: SITE_DOMAIN in brand.env, or the repository variable SITE_DOMAIN, which wins.
 # Links use the domain only once SITE_LIVE=yes (./securax site live checks it); until then the GitHub Pages address (doc 99).
 # Every build checks that each internal link and image exists; a weekly run also checks the links to other sites.
+# A daily run republishes the site so the Life OS's threats in the news (intel/threatwatch.py) are never more than a day old.
 # Moving to another domain or host (Cloudflare Pages, Netlify, S3) changes that one value; the build is the same.
 name: docs
 on:
@@ -16,6 +17,7 @@ on:
   workflow_dispatch:
   schedule:
     - cron: "17 3 * * 1"   # Mondays: links to other sites go stale on their own
+    - cron: "43 0 * * *"   # daily: the Life OS's threats in the news (intel/threatwatch.py) stay fresh
 permissions:
   contents: read
 # A newer push to the same pull request replaces its older run; a deploy from main is never cancelled.
@@ -37,28 +39,30 @@ jobs:
           SITE_DOMAIN: ${{ vars.SITE_DOMAIN }}
           SITE_LIVE: ${{ vars.SITE_LIVE }}
           CONTACT_EMAIL: ${{ vars.CONTACT_EMAIL }}
+          # Live headlines only where the site is published (main, or the daily run); a PR build packs the drills alone.
+          THREAT_FETCH: ${{ github.event_name != 'pull_request' && '1' || '' }}
         run: |
           [ -n "$SITE_DOMAIN" ] || unset SITE_DOMAIN          # an empty variable means: use brand.env
           [ -n "$SITE_LIVE" ] || unset SITE_LIVE
           [ -n "$CONTACT_EMAIL" ] || unset CONTACT_EMAIL
           bash website/build.sh
       - name: "Links to other sites (weekly report, never blocks)"
-        if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+        if: github.event.schedule == '17 3 * * 1' || github.event_name == 'workflow_dispatch'
         continue-on-error: true
         run: python3 tools/linkcheck.py website --external
       # Enable Pages from the workflow itself, so a deploy never 404s because the Settings -> Pages
       # source was not set (that regressed once: the site built but actions/deploy-pages got a 404
       # "Ensure GitHub Pages has been enabled"). enablement: true is idempotent when it is already on.
       - name: Enable GitHub Pages
-        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (vars.SITE_PAGES == 'true' || vars.DOCS_PAGES == 'true')
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && (vars.SITE_PAGES == 'true' || vars.DOCS_PAGES == 'true')
         uses: actions/configure-pages@v5
         with: { enablement: true }
       - name: Keep the built site for publishing
-        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (vars.SITE_PAGES == 'true' || vars.DOCS_PAGES == 'true')
+        if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && (vars.SITE_PAGES == 'true' || vars.DOCS_PAGES == 'true')
         uses: actions/upload-pages-artifact@v5
         with: { path: website }
   publish:
-    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && (vars.SITE_PAGES == 'true' || vars.DOCS_PAGES == 'true')
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch' || github.event_name == 'schedule') && (vars.SITE_PAGES == 'true' || vars.DOCS_PAGES == 'true')
     needs: build
     runs-on: ubuntu-latest
     permissions: { pages: write, id-token: write }

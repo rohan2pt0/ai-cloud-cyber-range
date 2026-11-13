@@ -951,6 +951,22 @@ window.SECURAX_FEATURES = {
    "shows": "the Life OS Systems tab, the Wheel of Life, and ./securax progress",
    "light": "green",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/14-GUIDING-MAP/"
+  },
+  {
+   "id": "threat-news",
+   "group": "Practise and defend",
+   "icon": "radar",
+   "name": "Threats in the news, rehearsed",
+   "what": "Open-source intelligence for your own life: security newsrooms and news searches are read daily, matched to a curated library of threats that target people (honeytrap, digital arrest, a cloned voice, SIM swap, fake investment groups and more), and ranked by how often each is in the news and how much harm it does. The top one sits in the Life OS with its signs and drills; news can rank a threat but never write a drill.",
+   "cmd": "./securax intel threats",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "added": "2026-11-13",
+   "outcome": "You rehearse this month's real threats before they reach you or your family, without having to follow the news yourself.",
+   "shows": "the Life OS Risk tab (Threats in the news) and ./securax intel threats",
+   "light": "green",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/13-GLOBAL-INTELLIGENCE/"
   }
  ]
 };

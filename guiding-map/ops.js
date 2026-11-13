@@ -7208,3 +7208,197 @@
   try { new MutationObserver(function () { if (!busy && lang !== "en") soon(); }).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) {}
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { run(); }); else run();
 })();
+
+// ── Threats in the news: red-team your life from what is happening in the world (owner, 2026-11-13) ──
+// The drills come from the curated library bundled with the app (window.GM_INTEL, offline). The hosted intel.json, rebuilt
+// daily from open sources by intel/threatwatch.py, only ranks the threats and adds headlines; it can never change a drill.
+// One open action: the top unrehearsed threat is in view; the rest wait under Later (n). A rehearsal counts for 90 days.
+(function () {
+  var KEY = "gm_threat_pack", DONE = "gm_threat_drills", FRESH_DAYS = 90;
+  try {
+    var st = document.createElement("style");
+    st.textContent = ".gm-th-drill{display:flex;gap:10px;align-items:flex-start;font-size:13px;line-height:1.45;padding:8px 0;border-top:1px solid var(--border)}"
+      + ".gm-th-drill input{margin-top:3px;flex:none}.gm-th-news{font-size:12.5px;margin:4px 0;line-height:1.4}.gm-th-news a{color:var(--text);text-decoration:underline;text-decoration-color:var(--gold,#c9a24a);text-underline-offset:3px}"
+      + ".gm-th-top{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px 16px;margin:10px 0;box-shadow:0 1px 0 rgba(255,255,255,.04) inset,0 6px 18px rgba(0,0,0,.08)}"
+      + ".gm-th-row{padding:8px 0;border-top:1px solid var(--border)}.gm-th-row>summary{cursor:pointer;font-size:13px;font-weight:700}.gm-th-row .pill{margin-inline-start:6px}";
+    document.head.appendChild(st);
+  } catch (x) {}
+  function e(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function get(k, d) { try { var v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (x) { return d; } }
+  function put(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (x) {} }
+  function today() { var d = new Date(); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
+  function safeId(s) { return /^[a-z0-9-]{1,40}$/.test(String(s)) ? String(s) : ""; }
+  function safeUrl(u) { return /^https:\/\/[^\s"'<>]+$/.test(String(u || "")) ? String(u) : ""; }
+  // The bundled drills are the truth; a fetched pack contributes only heat, order and headlines for ids the app already knows.
+  function pack() {
+    var base = window.GM_INTEL || { patterns: [] }, live = get(KEY, null), byId = {}, out = [];
+    base.patterns.forEach(function (p) { byId[p.id] = p; });
+    var order = live && live.patterns ? live.patterns.map(function (p) { return p.id; }).filter(function (id) { return byId[id]; }) : [];
+    base.patterns.forEach(function (p) { if (order.indexOf(p.id) < 0) order.push(p.id); });
+    var liveBy = {}; if (live && live.patterns) live.patterns.forEach(function (p) { liveBy[p.id] = p; });
+    order.forEach(function (id) {
+      var p = byId[id], l = liveBy[id] || {};
+      out.push({ id: p.id, name: p.name, where: p.where, severity: p.severity, story: p.story, signs: p.signs, drills: p.drills,
+                 heat: Math.max(0, Math.min(9999, +l.heat || 0)), news: (l.news || []).slice(0, 3) });
+    });
+    return { generated: live && /^\d{4}-\d{2}-\d{2}$/.test(live.generated || "") ? live.generated : "", days: (live && +live.heat_days) || 30, patterns: out };
+  }
+  function done() { return get(DONE, {}); }
+  function fresh(stamp) { return stamp && (Date.parse(today()) - Date.parse(stamp)) / 864e5 < FRESH_DAYS; }
+  function rehearsed(p, d) { return p.drills.every(function (x, i) { return fresh(d[p.id + ":" + i]); }); }
+  window.gmThreatPack = pack;
+  window.gmThreatTick = function (id, i, on) {
+    id = safeId(id); if (!id) return;
+    var d = done(); if (on) d[id + ":" + i] = today(); else delete d[id + ":" + i]; put(DONE, d);
+    var p = pack().patterns.filter(function (x) { return x.id === id; })[0];
+    if (on && p && rehearsed(p, d) && typeof gmToast === "function") gmToast("Rehearsed. One less way to be caught off guard.");
+    if (typeof renderAll === "function") renderAll();
+  };
+  function newsHTML(n) {
+    var u = safeUrl(n.link), t = e(n.title) + (n.outlet ? ' <span class="muted">· ' + e(n.outlet) + "</span>" : "") + (n.date ? ' <span class="muted">· ' + e(n.date) + "</span>" : "");
+    return '<div class="gm-th-news">' + (u ? '<a href="' + e(u) + '" target="_blank" rel="noopener noreferrer">' + t + "</a>" : t) + "</div>";
+  }
+  function drillsHTML(p, d) {
+    return p.drills.map(function (x, i) {
+      var k = p.id + ":" + i, on = fresh(d[k]);
+      return '<label class="gm-th-drill"><input type="checkbox" data-th="' + e(p.id) + '" data-i="' + i + '"' + (on ? " checked" : "")
+        + ' onchange="gmThreatTick(this.getAttribute(\'data-th\'),+this.getAttribute(\'data-i\'),this.checked)"><span><b>Try:</b> ' + e(x["try"])
+        + '<br><span class="muted"><b>Passes if:</b> ' + e(x.pass) + "</span></span></label>";
+    }).join("");
+  }
+  function heatTag(p, days) {
+    return p.heat ? '<span class="pill pill-r">In the news: ' + p.heat + " in " + days + " days</span>" : '<span class="pill pill-g">Evergreen</span>';
+  }
+  window.gmThreatsHTML = function () {
+    var pk = pack(), d = done(), ps = pk.patterns;
+    if (!ps.length) return "";
+    var ok = ps.filter(function (p) { return rehearsed(p, d); }).length;
+    var open = ps.filter(function (p) { return !rehearsed(p, d); }), top = open[0];
+    var h = '<div class="cat-t" id="gmThreats">📡 Threats in the news<span class="pill pill-g">' + ok + " of " + ps.length + " rehearsed</span></div>"
+      + '<div class="info" style="font-size:12.5px">Red-team your life from what is happening now: open sources, read daily, ranked by how often each threat is in the news and how much harm it does. Rehearse the top one; it takes five minutes.'
+      + (pk.generated ? ' <span class="muted">Updated ' + e(pk.generated) + ".</span>" : ' <span class="muted">Offline: the drills are here; headlines arrive when the app is opened online.</span>') + "</div>";
+    if (top) {
+      h += '<div class="card gm-th-top"><div style="display:flex;justify-content:space-between;gap:8px;align-items:baseline;flex-wrap:wrap"><b>' + e(top.name) + "</b>" + heatTag(top, pk.days) + "</div>"
+        + '<p style="font-size:13px;margin:6px 0">' + e(top.story) + "</p>"
+        + (top.news.length ? top.news.slice(0, 2).map(newsHTML).join("") : "")
+        + '<details style="margin:6px 0"><summary style="cursor:pointer;font-size:12.5px">Signs to watch for</summary><ul style="margin:4px 0 0;padding-inline-start:18px;font-size:12.5px">'
+        + top.signs.map(function (s) { return "<li>" + e(s) + "</li>"; }).join("") + "</ul></details>"
+        + drillsHTML(top, d) + "</div>";
+    } else {
+      h += '<div class="card gm-th-top"><b>Every threat rehearsed in the last ' + FRESH_DAYS + " days.</b> New headlines will bring one back when it matters.</div>";
+    }
+    var rest = ps.filter(function (p) { return p !== top; });
+    if (rest.length) {
+      h += '<details class="gm-later"><summary style="cursor:pointer;font-weight:800;font-size:13px">Later (' + rest.length + ")</summary>"
+        + rest.map(function (p) {
+          return '<details class="gm-th-row"><summary>' + (rehearsed(p, d) ? "✔ " : "") + e(p.name) + " " + heatTag(p, pk.days) + "</summary>"
+            + '<p style="font-size:12.5px;margin:6px 0">' + e(p.story) + "</p>" + p.news.slice(0, 2).map(newsHTML).join("") + drillsHTML(p, d) + "</details>";
+        }).join("") + "</details>";
+    }
+    return h;
+  };
+  // Live ranking and headlines from the hosted pack (same origin, http(s) only). A bad or older file is ignored.
+  function refresh() {
+    if (!(window.fetch && location.protocol.indexOf("http") === 0)) return;
+    fetch("intel.json", { cache: "no-store" }).then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+      if (!j || !j.patterns || !/^\d{4}-\d{2}-\d{2}$/.test(j.generated || "")) return;
+      var have = get(KEY, null);
+      if (have && have.generated && have.generated >= j.generated) return;
+      put(KEY, { generated: j.generated, heat_days: j.heat_days, patterns: j.patterns.slice(0, 50).map(function (p) {
+        return { id: safeId(p.id), heat: +p.heat || 0, news: (p.news || []).slice(0, 3).map(function (n) {
+          return { title: String(n.title || "").slice(0, 300), outlet: String(n.outlet || "").slice(0, 80), link: safeUrl(n.link), date: String(n.date || "").slice(0, 10) };
+        }) };
+      }).filter(function (p) { return p.id; }) });
+      if (typeof renderAll === "function" && window.curTab === "risk") renderAll();
+    }).catch(function () {});
+  }
+  setTimeout(refresh, 2500);
+})();
+
+// ── Calm luxury, everywhere at once (owner, 2026-11-13: "many elements still look cheap") ──
+// The vital few, applied to the shared parts so every screen gains: emoji become engraved gold medallions (one visual
+// language instead of five emoji styles), the stage chooser is one quiet segmented control, an empty state is calm (never a
+// wall of red), destructive actions are quiet and away from the safe ones, and the healthy band is drawn on the bar.
+(function () {
+  try {
+    var st = document.createElement("style");
+    st.id = "gmCalmLux";
+    st.textContent = ""
+      // Medallions: a cream-and-gold coin in light, a midnight coin with a gold rim in dark; the emoji is engraved in gold.
+      + ".gm-glyph{display:inline-grid;place-items:center;width:1.3em;height:1.3em;border-radius:50%;flex:none;vertical-align:-.28em;margin-inline-end:.18em;"
+      + "background:radial-gradient(120% 120% at 30% 25%,#fffaf0 0%,#f4e9cb 55%,#e3d09c 100%);box-shadow:inset 0 0 0 1px rgba(176,138,48,.6),inset 0 -2px 4px rgba(120,90,20,.16),0 1px 2px rgba(13,31,53,.14)}"
+      + ".gm-glyph>i{font-style:normal;font-size:.7em;line-height:1;filter:grayscale(1) sepia(1) saturate(2) hue-rotate(-12deg) brightness(.6) contrast(1.3)}"
+      + "html[data-theme=dark] .gm-glyph{background:radial-gradient(120% 120% at 30% 25%,#2a3a5c 0%,#18233f 60%,#0f1830 100%);box-shadow:inset 0 0 0 1px rgba(201,168,76,.65),0 1px 3px rgba(0,0,0,.4)}"
+      + "html[data-theme=dark] .gm-glyph>i{filter:grayscale(1) sepia(1) saturate(2.2) hue-rotate(-12deg) brightness(1.05) contrast(1.1)}"
+      + ".cat-t .gm-glyph{width:1.15em;height:1.15em}.cat-t .gm-glyph>i{font-size:.62em}"
+      + "html body .cat-t .pill{font-family:var(--font-ui);font-weight:600;letter-spacing:.1px;font-size:11px;line-height:1.3}"
+      // Risk cards: a gold hairline for all; the vital-few mark is a small gold star, not a button; one card says where to begin.
+      + "html body .kc.riskc .ab{background:linear-gradient(90deg,transparent,var(--gold) 20%,#e8c96a 50%,var(--gold) 80%,transparent);height:2px;opacity:.85}"
+      + "html body .kc.riskc .kv{display:flex;align-items:center;gap:6px}html body .kc.riskc .kv .gm-glyph{width:1.25em;height:1.25em;margin:0}"
+      + "html body .cb.cb-p{background:none;border:0;color:var(--gold);font-size:15px;padding:0;line-height:1;text-shadow:0 1px 0 rgba(255,255,255,.4)}"
+      + "html body .kc.riskc .ptrack{height:3px;opacity:.9}html body .kc.riskc .pfill{background:linear-gradient(90deg,#9c7a26,#d4af37 45%,#f7e7a8 70%,#c9a24a)}"
+      + "html body .kc.riskc.gm-start-here{box-shadow:0 0 0 1.5px var(--gold),0 8px 22px rgba(201,168,76,.18)}"
+      + ".gm-start{font-size:12px;font-weight:800;letter-spacing:.3px;color:#7a5a14;margin-top:6px}html[data-theme=dark] .gm-start{color:var(--gold)}"
+      // The stage chooser: one quiet segmented control instead of five chunky pills.
+      + "html body .kr .chips{display:flex;flex-wrap:nowrap;gap:2px;padding:3px;border-radius:12px;background:var(--cardAlt);border:1px solid var(--border);width:100%;box-sizing:border-box;overflow-x:auto}"
+      + "html body .kr .chips .chip{flex:1 1 auto;background:transparent;background-image:none;border:0;box-shadow:none;color:var(--muted);padding:8px 4px;border-radius:9px;font-weight:600;font-size:12px;white-space:nowrap;text-shadow:none}"
+      + "html body .kr .chips .chip.on{background:var(--card);background-image:none;color:var(--text);font-weight:800;box-shadow:0 1px 3px rgba(13,31,53,.14),inset 0 0 0 1px rgba(201,168,76,.6)}"
+      + "html body .okr-grade{font-family:var(--font-display);font-weight:400;font-size:26px;line-height:1}"
+      + ".gm-okr-acts{display:flex;align-items:center;gap:8px;margin-top:12px}"
+      + "html body .gm-btn-ghost{background:transparent;color:var(--text);border:1px solid rgba(201,168,76,.75);box-shadow:none;font-weight:700}"
+      + ".gm-quiet{margin-inline-start:auto;background:none;border:0;color:var(--muted);font:inherit;font-size:12.5px;text-decoration:underline;text-underline-offset:3px;padding:10px 4px;cursor:pointer}"
+      // The spending plan: the healthy band is visible on the bar, so the verdict needs no reading.
+      + "html body .csp-track{height:8px;background:var(--cardAlt);box-shadow:inset 0 1px 2px rgba(13,31,53,.12)}"
+      + "html body button.gm-quiet{background:none;background-image:none;border:0;box-shadow:none;min-height:44px;min-width:44px;width:auto}"
+      + "html body .okr-card select{width:auto;max-width:65%;min-height:0;padding:5px 30px 5px 12px;font-size:12.5px;border-radius:999px;margin-inline-start:6px}"
+      + "html body .kc.riskc .kv .gm-glyph{width:1.45em;height:1.45em}"
+      // My numbers: a compact row with a gold cue, so a folded card never reads as an empty box.
+      + "html body details.gm-nums{padding:4px 14px}html body details.gm-nums>summary{display:flex;align-items:center;gap:4px;min-height:44px}"
+      + "html body details.gm-nums>summary::after{content:'Update \\203A';margin-inline-start:auto;color:#7a5a14;font-weight:800;font-size:12.5px}"
+      + "html[data-theme=dark] body details.gm-nums>summary::after{color:var(--gold)}html body details.gm-nums[open]>summary::after{content:'Done'}"
+      + ".csp-zone{position:absolute;top:0;bottom:0;border-inline:1.5px solid rgba(201,168,76,.9);background:rgba(201,168,76,.14);pointer-events:none}";
+    document.head.appendChild(st);
+  } catch (x) {}
+  // Wrap the leading emoji of every section title in a medallion (after each render; idempotent).
+  var RX;
+  try { RX = new RegExp("^(\\s*)((?:\\p{Extended_Pictographic}|\\p{Regional_Indicator})(?:\\uFE0F|\\u200D\\p{Extended_Pictographic}|[\\u{1F3FB}-\\u{1F3FF}])*)\\s*", "u"); } catch (x) { RX = null; }
+  window.gmGlyphs = function (root) {
+    if (!RX) return 0;
+    var n = 0;
+    (root || document).querySelectorAll(".cat-t").forEach(function (el) {
+      var t = el.firstChild;
+      if (!t || t.nodeType !== 3 || (el.firstElementChild && el.firstElementChild.className === "gm-glyph" && el.firstChild === el.firstElementChild)) return;
+      var m = RX.exec(t.nodeValue);
+      if (!m) return;
+      var g = document.createElement("span"); g.className = "gm-glyph"; g.setAttribute("aria-hidden", "true");
+      var i = document.createElement("i"); i.textContent = m[2]; g.appendChild(i);
+      t.nodeValue = t.nodeValue.slice(m[0].length);
+      el.insertBefore(g, t); n++;
+    });
+    return n;
+  };
+  // One-time repair: an objective adopted twice (identical title and key results, nothing moved) is merged into one.
+  window.gmOkrDedupe = function () {
+    if (!window.S || !Array.isArray(S.okrs)) return 0;
+    var seen = {}, keep = [], gone = 0;
+    S.okrs.forEach(function (o) {
+      var krs = o.krs || [], sig = String(o.o) + "|" + krs.map(function (k) { return k.t; }).join("|");
+      var untouched = krs.every(function (k) { return !(+k.v) && (k.c === undefined || k.c === k.b); });
+      if (seen[sig] && untouched) { gone++; return; }
+      seen[sig] = 1; keep.push(o);
+    });
+    if (gone) { S.okrs = keep; try { store("sovS", S); } catch (x) {} }
+    return gone;
+  };
+  function dedupeOnce() {
+    if (window._gmOkrDd) return; window._gmOkrDd = 1;
+    var d = gmOkrDedupe();
+    if (d && typeof gmToast === "function") setTimeout(function () { gmToast("Merged " + d + " duplicate objective" + (d > 1 ? "s" : "") + " (an exact, untouched copy)."); }, 1200);
+    return d;
+  }
+  var _r = window.renderAll;
+  if (typeof _r === "function") {
+    window.renderAll = function () { try { if (dedupeOnce()) { /* the data changed: render from the repaired list */ } } catch (x) {} var out = _r.apply(this, arguments); try { gmGlyphs(); } catch (x) {} return out; };
+    try { gmGlyphs(); } catch (x) {}
+  }
+})();
