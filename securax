@@ -640,6 +640,8 @@ URLS
     C "Antifragility (past failures now defended):"; python3 "$ROOT/learning/antifragile.py" verify
     ;;
   intel)
+    # ./securax intel threats [list|fetch|pack|sources]: red-team your life from the news (OSINT), see intel/threatwatch.py
+    if [ "${2:-}" = threats ]; then shift 2; exec python3 "$ROOT/intel/threatwatch.py" "${@:-list}"; fi
     C "Global Intelligence — the community-proven decision (worked example: CCSP)"
     python3 "$ROOT/intel/global_intel.py" decide "Pass CCSP" \
       --items "$ROOT/intel/examples/ccsp-reddit-top.json" --mode replicate \
@@ -2367,6 +2369,7 @@ REGULATORY & EVIDENCE (any regulator: RBI, SEBI, CERT-In, IRDAI, DPDP, others as
   finish         what is left to set up, with the steps (also on the Command Center)
   postmortem ... blameless postmortem after an outage; tracks the fix-it actions to done
   regwatch ...   new RBI/SEBI circulars: fetch, list, monthly digest (titles + links only)
+  intel threats  red-team your life from the news: live threats (honeytrap, digital arrest, cloned voice...) with drills
   regulated on   ONE switch: sign-in + data residency + strict cockpit (then fine-tune with the two below)
   gateway-auth   who may call the AI gateway          residency ...  which data may be processed where
   phones         phones & tablets over Tailscale (doc 58)

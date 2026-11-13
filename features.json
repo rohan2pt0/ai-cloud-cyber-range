@@ -919,6 +919,21 @@
    "doc": "securax/14-GUIDING-MAP.md",
    "outcome": "The rules you already know run without willpower, and you see the one next step that matters.",
    "shows": "the Life OS Systems tab, the Wheel of Life, and ./securax progress"
+  },
+  {
+   "id": "threat-news",
+   "group": "Practise and defend",
+   "icon": "radar",
+   "name": "Threats in the news, rehearsed",
+   "added": "2026-11-13",
+   "what": "Open-source intelligence for your own life: security newsrooms and news searches are read daily, matched to a curated library of threats that target people (honeytrap, digital arrest, a cloned voice, SIM swap, fake investment groups and more), and ranked by how often each is in the news and how much harm it does. The top one sits in the Life OS with its signs and drills; news can rank a threat but never write a drill.",
+   "open": {
+    "cmd": "./securax intel threats"
+   },
+   "command": "intel",
+   "doc": "securax/13-GLOBAL-INTELLIGENCE.md",
+   "outcome": "You rehearse this month's real threats before they reach you or your family, without having to follow the news yourself.",
+   "shows": "the Life OS Risk tab (Threats in the news) and ./securax intel threats"
   }
  ]
 }

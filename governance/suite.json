@@ -119,6 +119,7 @@
   "resilience": { "from": "community", "uses": ["continuity"], "enterprise": "single-point-of-failure analysis per tenant" },
   "autopilot": { "from": "community", "uses": ["continuity", "audit"], "enterprise": "nightly drills across tenants" },
   "channel": { "from": "community", "uses": ["updates", "policy"], "enterprise": "the tenant's administrator chooses stable or beta" },
-  "life-systems": { "from": "community", "uses": ["export", "residency"], "enterprise": "a team's shared playbooks, with each system owned by a role and its evidence kept for audit" }
+  "life-systems": { "from": "community", "uses": ["export", "residency"], "enterprise": "a team's shared playbooks, with each system owned by a role and its evidence kept for audit" },
+  "threat-news": { "from": "community", "uses": ["updates", "residency"], "enterprise": "an organisation's own sources and patterns (executive protection, insider risk), shared as STIX with its threat-intel platform, per tenant" }
  }
 }

@@ -1,0 +1,17 @@
+{
+  "about": "Open sources for the threat engine (OSINT): security newsrooms read in full, plus one news search per threat pattern and region. Only titles, dates and links are kept, exactly as published; a link off its listed hosts is dropped. Add a source here, never in code.",
+  "feeds": [
+    {"id": "thehackernews", "title": "The Hacker News", "url": "https://feeds.feedburner.com/TheHackersNews", "link_hosts": ["thehackernews.com"]},
+    {"id": "bleepingcomputer", "title": "BleepingComputer", "url": "https://www.bleepingcomputer.com/feed/", "link_hosts": ["bleepingcomputer.com"]},
+    {"id": "krebs", "title": "Krebs on Security", "url": "https://krebsonsecurity.com/feed/", "link_hosts": ["krebsonsecurity.com"]}
+  ],
+  "search": {
+    "title": "Google News search",
+    "url": "https://news.google.com/rss/search?q={q}+when:30d&hl={hl}&gl={gl}&ceid={gl}:{lang}",
+    "link_hosts": ["news.google.com"],
+    "editions": [
+      {"region": "IN", "hl": "en-IN", "gl": "IN", "lang": "en"},
+      {"region": "global", "hl": "en-US", "gl": "US", "lang": "en"}
+    ]
+  }
+}

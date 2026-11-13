@@ -115,6 +115,37 @@ banned, no API key required to work, nothing leaves your machine. Automated pull
 APIs, through the n8n "glue" in [Integrations](07-INTEGRATIONS.md)) are an *optional* convenience
 that feed the same JSON format — never a dependency.
 
+## Threats in the news: red-team your life from the world, not only from what you type
+
+The same engine idea, pointed at safety. Attacks on people change with the news: a honeytrap topples a tech chief, a
+wave of "digital arrest" calls hits Indian cities, a cloned voice talks a firm into a wire transfer. You should not
+have to follow all of it to stay ready.
+
+```bash
+./securax intel threats            # this month's live threats, ranked, each with its drill
+./securax intel threats fetch      # read every source now (kept in vault/threatwatch.json, bounded)
+./securax intel threats sources    # the sources and the 11 patterns
+```
+
+**How it works.**
+
+1. **Open sources** ([intel/threat-feeds.json](../../intel/threat-feeds.json)): security newsrooms, plus one news
+   search per threat and region (India and global). Only titles, dates and links are kept, exactly as published.
+2. **A curated library** ([intel/threat-patterns.json](../../intel/threat-patterns.json)): each threat has a plain
+   story, the signs to watch for, and drills written as test cases ("try" this; it "passes if" you do that).
+3. **Ranking:** heat (headlines in the last 30 days) times harm (1 to 3). The daily site build publishes the pack next
+   to the hosted Life OS, and the Risk tab shows the top unrehearsed threat. The rest wait under Later. A rehearsal
+   counts for 90 days.
+
+**Safe by design.** News can rank a threat and link evidence, but it can never write or change a drill, so a planted
+story cannot change what you rehearse. Fetching happens on the build server, never from your phone: the app reads one
+static file, the same for everyone, and your rehearsals stay on your device. The threat model is `threat-news` in
+[governance/threat-models.json](../../governance/threat-models.json).
+
+**What comes next** (queue `threat-intel-engine`): a drill of the week on Today and in the calendar; more sources
+(CERT-In, FBI IC3, the regulators' caution lists); a local model that explains each headline and fits the drill to your
+profile on the device; then community reports and STIX exchange for teams.
+
 ## Why this is the right kind of "super-intelligence"
 You are not outsourcing judgement — you are **standardising the best collective evidence,
 filtered through your own edge, with the downside pre-planned.** That is exactly how durable

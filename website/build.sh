@@ -13,6 +13,8 @@ export DOCS_SITE_URL="${DOCS_SITE_URL:-${SITE_URL:+${SITE_URL}docs/}}"   # your 
 export DOCS_COPYRIGHT="${PRODUCT_NAME}${BRAND_NAME:+ by $BRAND_NAME} · FSL-1.1-MIT (each release becomes MIT after two years) · no personal data in this repository"
 mkdocs build --strict -d website/docs
 python3 tools/pwa_publish.py website                  # the Life OS and Vantage, hosted off any one machine (doc 130)
+# Threats in the news, next to the hosted Life OS: drills always; live headlines when THREAT_FETCH=1 (the daily build on main).
+python3 intel/threatwatch.py pack ${THREAT_FETCH:+--fetch} --state "${RUNNER_TEMP:-${TMPDIR:-/tmp}}/threatwatch.json" --out website/app/intel.json || echo "threat pack skipped: the app still carries every drill"
 cp guiding-map/fonts/InstrumentSerif-Regular.woff2 website/serif.woff2   # the site's display serif, next to site.css (one copy in the repo)
 python3 tools/linkcheck.py website        # every internal link and image on the built site must exist (doc 99)
 echo "built: website/ (site) + website/docs/ (documentation) for ${SITE_URL:-<no address: set REPO_SLUG or SITE_DOMAIN>}"

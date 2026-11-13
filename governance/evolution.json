@@ -66,6 +66,7 @@
     {"id": "organism", "when": ["teams"], "grows_to": "per-team allowances and metering, tenant isolation, an organisation-governed policy", "rail": "the identity/tenancy/metering/policy platform services the gateway already speaks to", "actuation": "assisted"}
    ],
    "unfavourable": {"lost_node": "answers fall back along the ladder to a local model; no single provider or node is the dependency"}
-  }
+  },
+  "threat-news": {"organism": "a threat-intelligence engine that keeps a person, a family or an organisation rehearsed against what is happening in the world now", "stages": [{"id": "amoeba", "is": "open feeds read daily on the build server, matched to a curated library, one static pack next to the hosted Life OS, rehearsals on the device", "have": true, "actuation": "auto"}, {"id": "colony", "when": ["gateway"], "grows_to": "a local model reads each headline, explains it in plain words and fits the drill to the person's own profile on the device, never sending the profile", "rail": "the pack already carries ids, heat and headlines; the gateway's local model and the device profile are the inputs", "actuation": "assisted"}, {"id": "organism", "when": ["teams"], "grows_to": "community reports ('I saw this scam'), an organisation's own sources and patterns, STIX/TAXII and MISP exchange, per tenant", "rail": "sources and patterns are data files with ids; the pack is a versioned contract", "actuation": "assisted"}], "unfavourable": {"lost_node": "the drills are bundled in the app; with no pack or no network the Life OS still shows every threat and drill, only without headlines"}}
  }
 }

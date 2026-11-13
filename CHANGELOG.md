@@ -9,6 +9,8 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- Threats in the news: `./securax intel threats` reads open security and news feeds daily, matches headlines to a curated library of 11 threats that target people (honeytrap, digital arrest, cloned voice, SIM swap and more) and ranks them; the Life OS Risk tab shows the top one with its signs and drills. News ranks a threat but can never write a drill.
+
 - Life OS sky comes alive: stars breathe as they twinkle, and a shooting star crosses the header every 15 to 30 seconds (paused when the app is hidden, off for reduced motion).
 ### Changed
 - Life OS sky: fewer, finer stars that live only where the header is empty (a band along the top and a thin one at the bottom); the line with the monogram, title and buttons stays clear.

@@ -15,11 +15,11 @@ by a test.
 
 The latest additions, newest first (the Command Center marks each one New for 30 days):
 
+- **2026-11-13** · [Threats in the news, rehearsed](securax/13-GLOBAL-INTELLIGENCE.md): You rehearse this month's real threats before they reach you or your family, without having to follow the news yourself. `./securax intel threats`
 - **2026-11-12** · [Life systems, running for you](securax/14-GUIDING-MAP.md): The rules you already know run without willpower, and you see the one next step that matters. `./securax open`
 - **2026-11-06** · [Crisis coordination](securax/125-CRISIS-COORDINATION.md): A regulator or police requisition stops being a multi-week scramble: you see who owns each record and what is overdue, and hand over a complete pack on time instead of facing a show-cause for missing the deadline. `./securax crisis templates`
 - **2026-11-06** · [Crisis wargame](securax/126-CRISIS-WARGAME.md): Your team practises the coordination that decides a real crisis — every week, in minutes, alone or together — and each run hands back the exact handoffs that slipped and who must drill them, so the gaps close before a real incident finds them. `./securax wargame list`
 - **2026-11-06** · [Threat hunting & post-crisis DFIR](securax/127-THREAT-HUNTING-DFIR.md): After an incident you can collect and triage a suspect host in minutes with no standing infrastructure — in the same pipeline you already run — and the estate hands you a prioritised set of findings and the contain-or-recover actions to approve, instead of a blank screen and a fleet you cannot reach. `./securax hunt packs`
-- **2026-11-06** · [Growth map](securax/128-GROWTH-MAP-AMOEBA.md): You never over-build and never hit a ceiling: the estate runs at exactly the size today needs, tells you in one screen what is ready to grow as you scale, and grows the safe steps itself — so one laptop and a thousand-endpoint fleet are the same system at two stages of the same life, not two products. `./securax evolve`
 
 Each line names what it does, in plain words, and the one command that opens it. The light is the guide's status (what the lights mean is below).
 
@@ -36,6 +36,7 @@ Each line names what it does, in plain words, and the one command that opens it.
 | 🟢 [Purple-team loop](securax/30-PURPLE-TEAM-LOOP.md) | Attack your own AI channel, check that the attack was detected, and keep the evidence. | `./securax purple` |
 | 🟢 [Adversary ledger](securax/30-PURPLE-TEAM-LOOP.md) | Turn every bounty or red-team finding into a purple probe, a lesson and a drill, and prove it stayed closed. | `./securax adversary` |
 | 🟢 [Check software before you trust it](securax/43-INSPECT-THIRD-PARTY-SOFTWARE.md) | Look inside a third-party package or file, in a sandbox, and see what a new version can do that the old one could not. | `./securax inspect` |
+| 🟢 [Threats in the news, rehearsed](securax/13-GLOBAL-INTELLIGENCE.md) | Open-source intelligence for your own life: security newsrooms and news searches are read daily, matched to a curated library of threats that target people (honeytrap, digital arrest, a cloned voice, SIM swap, fake investment groups and more), and ranked by how often each is in the news and how much harm it does. The top one sits in the Life OS with its signs and drills; news can rank a threat but never write a drill. | `./securax intel threats` |
 
 **Comply and govern**
 

@@ -33,7 +33,12 @@ const I18N_JS = "window.GM_I18N = " + JSON.stringify(CATS).replace(/<\/(script)/
 const SYS_FILE = require("path").join(__dirname, "systems", "systems.json");
 const SYSTEMS = fs.existsSync(SYS_FILE) ? JSON.parse(fs.readFileSync(SYS_FILE, "utf8")) : { systems: [], events: [], facts: [], sources: {} };
 const SYS_JS = "window.GM_SYSTEMS = " + JSON.stringify(SYSTEMS).replace(/<\/(script)/gi, "<\\/$1") + ";\n";
-const built = before + I18N_JS + SYS_JS + ops + "\n</script>\n" + tail;
+// Threats in the news: the curated drills travel with the app (offline); the hosted intel.json adds live headlines and ranking.
+const INTEL_FILE = require("path").join(__dirname, "..", "intel", "threat-patterns.json");
+const INTEL_LIB = fs.existsSync(INTEL_FILE) ? JSON.parse(fs.readFileSync(INTEL_FILE, "utf8")) : { patterns: [] };
+const INTEL = { version: INTEL_LIB.version || 1, generated: "", heat_days: 30, patterns: INTEL_LIB.patterns.map(p => ({ id: p.id, name: p.name, where: p.where, severity: p.severity, story: p.story, signs: p.signs, drills: p.drills, heat: 0, news: [] })) };
+const INTEL_JS = "window.GM_INTEL = " + JSON.stringify(INTEL).replace(/<\/(script)/gi, "<\\/$1") + ";\n";
+const built = before + I18N_JS + SYS_JS + INTEL_JS + ops + "\n</script>\n" + tail;
 
 // Stamp the visible version badge from the repo's single source of truth (../VERSION) so the app can
 // never show a version the product doesn't have. (It once said "v13.0.2" — a hardcoded legacy string.)
