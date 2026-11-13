@@ -32,7 +32,7 @@ setTimeout(() => {
       const src = new Set(JSON.parse(fs.readFileSync(path.join(__dirname, '..', 'i18n', 'lifeos.source.json'), 'utf8')).strings.concat(["Today", "Inbox", "Goals", "Ask", "More", "Language", "Save encrypted backup", "Restore from file", "Later", "Danger zone"]));
       ok("every catalog key is a real English string of the app (no invented keys)", [hi, mr].every(c => Object.keys(c.strings).every(k => src.has(k))), [hi, mr].map(c => Object.keys(c.strings).filter(k => !src.has(k)).slice(0, 3).join("|")).join(" / "));
       ok("no value is empty or carries markup", [hi, mr].every(c => Object.values(c.strings).every(v => String(v).trim() && !/<script/i.test(v))));
-      ok("the catalogs are inlined for offline use", /window\.GM_I18N = \{"hi":/.test(html));
+      ok("the catalogs are inlined for offline use", /window\.GM_I18N = \{"/.test(html) && ["hi", "mr", "gu"].every(l => html.includes('"' + l + '":{"_meta":')));
       console.log("test50 Life OS languages: " + P + " passed, " + F + " failed"); if (F) { e.forEach(x => console.log("  " + x)); process.exit(1); } process.exit(0);
     }, 200);
   }, 200);

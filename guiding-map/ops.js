@@ -7151,7 +7151,7 @@
    touched, because only exact catalog matches change. Machine drafts are beta until a native professional reviews them. */
 (function () {
   var CAT = window.GM_I18N || {}, ORIG = "__gmEn", ATTRS = ["placeholder", "aria-label", "title"];
-  var NAMES = { en: "English", hi: "\u0939\u093f\u0902\u0926\u0940", mr: "\u092e\u0930\u093e\u0920\u0940" };
+  var NAMES = { en: "English", hi: "\u0939\u093f\u0902\u0926\u0940", mr: "\u092e\u0930\u093e\u0920\u0940", gu: "\u0a97\u0ac1\u0a9c\u0ab0\u0abe\u0aa4\u0ac0" };
   function get() { try { return JSON.parse(localStorage.getItem("gm_lang")); } catch (e) { return null; } }
   function pick() {
     var saved = get(); if (saved && (saved === "en" || CAT[saved])) return saved;
@@ -7401,4 +7401,53 @@
     window.renderAll = function () { try { if (dedupeOnce()) { /* the data changed: render from the repaired list */ } } catch (x) {} var out = _r.apply(this, arguments); try { gmGlyphs(); } catch (x) {} return out; };
     try { gmGlyphs(); } catch (x) {}
   }
+})();
+
+// ── Listen: the screen read aloud, in the person's language (owner, 2026-11-13: many business owners read little) ──
+// A small speaker on each screen's top card reads its opening with the phone's own voice (offline, nothing leaves the
+// device). It shows only when the phone has a voice for the chosen language, so Gujarati is never read in an English accent.
+(function () {
+  var CODES = { en: "en-IN", hi: "hi-IN", mr: "mr-IN", gu: "gu-IN" }, WORD = { en: "Listen", hi: "\u0938\u0941\u0928\u0947\u0902", mr: "\u0910\u0915\u093e", gu: "\u0ab8\u0abe\u0a82\u0aad\u0ab3\u0acb" };
+  function lang() { try { return window.gmLang ? gmLang() : "en"; } catch (e) { return "en"; } }
+  function voiceFor(l) {
+    try {
+      if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) return null;
+      var want = String(CODES[l] || "en-IN").toLowerCase(), base = want.slice(0, 2), vs = speechSynthesis.getVoices() || [];
+      var norm = function (v) { return String(v.lang || "").replace("_", "-").toLowerCase(); };
+      return vs.filter(function (v) { return norm(v) === want; })[0] || vs.filter(function (v) { return norm(v).slice(0, 2) === base; })[0] || null;
+    } catch (e) { return null; }
+  }
+  window.gmCanSpeak = function (l) { return !!voiceFor(l || lang()); };
+  function textOf(hero) {
+    var out = [], sec = hero.closest(".section") || hero.parentNode, el = hero, n = 0;
+    while (el && n < 4) { if (el.nodeType === 1 && !el.hidden) { var t = (el.innerText || el.textContent || "").replace(/\s+/g, " ").trim(); if (t) out.push(t); } el = el.nextElementSibling; n++; }
+    return out.join(". ").replace(/[\u{1F300}-\u{1FAFF}\u2600-\u27BF]/gu, "").slice(0, 600);
+  }
+  window.gmSay = function (btn) {
+    try {
+      if (speechSynthesis.speaking) { speechSynthesis.cancel(); return; }
+      var hero = btn.closest(".gm-hero, .gm-greet"), l = lang(), v = voiceFor(l);
+      if (!hero || !v) return;
+      var u = new SpeechSynthesisUtterance(textOf(hero)); u.voice = v; u.lang = v.lang; u.rate = 0.92;
+      speechSynthesis.speak(u);
+    } catch (e) {}
+  };
+  window.gmSayButtons = function () {
+    var l = lang(), can = !!voiceFor(l);
+    document.querySelectorAll(".gm-hero, .gm-greet").forEach(function (h) {
+      var b = h.querySelector(":scope > .gm-say");
+      if (!can) { if (b) b.remove(); return; }
+      if (!b) { b = document.createElement("button"); b.type = "button"; b.className = "gm-say"; b.textContent = "\uD83D\uDD0A"; b.setAttribute("onclick", "gmSay(this)"); h.appendChild(b); }
+      b.setAttribute("aria-label", WORD[l] || WORD.en); b.title = WORD[l] || WORD.en;
+    });
+  };
+  try {
+    var st = document.createElement("style");
+    st.textContent = ".gm-hero,.gm-greet{position:relative}.gm-greet{padding-inline-end:52px}html body .gm-hero>.gm-say,html body .gm-greet>.gm-say{position:absolute;top:10px;inset-inline-end:10px;width:44px;height:44px;border-radius:50%;border:1px solid rgba(217,183,90,.6);background:rgba(255,255,255,.08);color:#fff;font-size:18px;line-height:1;cursor:pointer;z-index:2}";
+    document.head.appendChild(st);
+  } catch (e) {}
+  var _r = window.renderAll;
+  if (typeof _r === "function") window.renderAll = function () { var o = _r.apply(this, arguments); try { gmSayButtons(); } catch (e) {} return o; };
+  try { if (window.speechSynthesis && speechSynthesis.addEventListener) speechSynthesis.addEventListener("voiceschanged", function () { try { gmSayButtons(); } catch (e) {} }); } catch (e) {}
+  setTimeout(function () { try { gmSayButtons(); } catch (e) {} }, 800);
 })();
