@@ -2454,7 +2454,15 @@ function intOff(id){ S.integrations[id]=false; store("sovS",S); gmClose(); rende
 <script>
 function renderPlaybook(){
  // A run of clauses joined by " · " reads as a short list, so a stage card scans in seconds (owner, 2026-11-13: "not tidy").
- function pbList(body){ return String(body).replace(/(<\/div>)([^<]*\u00B7[^<]*)/g,function(m,d,txt){ var it=txt.split(/\s+\u00B7\s+/).map(function(x){return x.trim();}).filter(Boolean); return it.length<2?m:d+'<ul class="pb-list">'+it.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul>'; }); }
+ // Only real items become a list: a short inline enumeration inside a sentence ("a · b · c") stays a sentence, and a
+ // run numbered with circled digits (① ② ③) becomes a numbered list (owner, 2026-11-13: S1 split mid-sentence).
+ function pbList(body){
+  body=String(body).replace(/(<\/div>)([^<]*\u2460[^<]*\u2461[^<]*)/g,function(m,d,txt){
+   var it=txt.split(/\s*[\u2460-\u2469]\s*/).map(function(x){return x.trim();}).filter(Boolean);
+   return it.length<2?m:d+'<ol class="pb-list pb-num">'+it.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ol>'; });
+  return body.replace(/(<\/div>)([^<]*\u00B7[^<]*)/g,function(m,d,txt){
+   var it=txt.split(/\s+\u00B7\s+/).map(function(x){return x.trim();}).filter(Boolean);
+   return (it.length<2||it.some(function(x){return x.length<20;}))?m:d+'<ul class="pb-list">'+it.map(function(x){return '<li>'+x+'</li>';}).join('')+'</ul>'; }); }
  function sec(n,t,body){ body=pbList(body); return '<details class="okr-card" style="margin-bottom:10px"><summary style="cursor:pointer;font-weight:800;font-size:13.5px;color:var(--text)">'+n+' \u2014 '+t+'</summary><div style="font-size:12.5px;line-height:1.6;color:var(--text);margin-top:8px">'+body+'</div></details>'; }
  function h(t){ return '<div style="font-weight:800;color:var(--gold);margin:8px 0 2px;font-size:11.5px;letter-spacing:.4px">'+t+'</div>'; }
  function fin(v){ return (typeof v==="number") && isFinite(v) && v>0; }
@@ -10001,6 +10009,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       + ".gm-also-t{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;border:1.6px solid rgba(150,118,48,.6);font-size:13px;font-weight:900;color:#f4fffa;background:transparent}"
       + "html body .gm-tap.gm-also.on{background:var(--card);border-color:rgba(11,94,72,.6);color:var(--text)}html body .gm-tap.gm-also.on .gm-also-t{background:linear-gradient(160deg,#1f8f6d,#0b5e48);border-color:#0b5e48}"
       + ".pb-list{margin:4px 0 8px;padding-inline-start:18px}.pb-list li{margin:3px 0;line-height:1.5}.pb-list li::marker{color:#b8902f}"
+      + ".pb-num{padding-inline-start:22px}.pb-num li::marker{font-weight:800}"
       + "html body .kr .chips{display:flex;flex-wrap:nowrap;gap:2px;padding:3px;border-radius:12px;background:var(--cardAlt);border:1px solid var(--border);width:100%;box-sizing:border-box;overflow-x:auto}"
       + "html body .kr .chips .chip{flex:1 1 auto;background:transparent;background-image:none;border:0;box-shadow:none;color:var(--muted);padding:8px 4px;border-radius:9px;font-weight:600;font-size:12px;white-space:nowrap;text-shadow:none}"
       + "html body .kr .chips .chip.on{background:var(--card);background-image:none;color:var(--text);font-weight:800;box-shadow:0 1px 3px rgba(13,31,53,.14),inset 0 0 0 1px rgba(201,168,76,.6)}"

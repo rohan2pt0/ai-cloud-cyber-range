@@ -59,6 +59,9 @@ setTimeout(() => {
       ok(/--accent:#b8902f/.test(lux) && /--line:var\(--border\)/.test(lux), "the guides' drawings use defined colours (no black bar, a visible box)");
       none.goTab("book");
       ok(none.document.querySelectorAll(".pb-list li").length >= 4, "stage cards turn ' · ' runs into short lists");
+      const lis = [...none.document.querySelectorAll(".pb-list li")].map(x => x.textContent.trim());
+      ok(!lis.some(t => t.length < 20 && !/^\S/.test("x")) && !lis.includes("sweep-in FD"), "a short inline list inside a sentence is never split into broken bullets");
+      ok(none.document.querySelectorAll(".pb-num li").length >= 4, "circled ① ② ③ ④ runs become a numbered list");
       none.goTab("today");
       ok(none.document.querySelectorAll(".gm-energy .ws-tap.gm-key").length === 5, "energy uses the same keycaps as the Wheel");
       // a mistaken answer is never lost: answered questions stay one tap away while others wait
