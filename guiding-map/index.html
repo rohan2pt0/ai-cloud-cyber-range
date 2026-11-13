@@ -6753,7 +6753,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   function calmTodayHTML() {
     var more = dueNowHTML() + (inRecovery() ? "" : driftHTML() + resHTML()) + msTodayHTML() + insightHTML() + estateHTML();
     var open = G("gm_more_today", false) === true;
-    return '<div class="section active">' + greetHTML() + (phone() ? vitalsHTML() : "") + interruptHTML() + undoBar() + checkinHTML() + setupStripHTML() + todayFocusHTML() + winsHTML()
+    return '<div class="section active">' + greetHTML() + (phone() ? vitalsHTML() : "") + interruptHTML() + undoBar() + checkinHTML() + setupStripHTML() + (window.gmAskOneHTML ? gmAskOneHTML() : "") + todayFocusHTML() + winsHTML()
       + (more.replace(/<[^>]*>/g, "").trim() ? '<details class="road-col gm-more-today"' + (open ? " open" : "") + ' ontoggle="gmMoreToday(this.open)">'
         + '<summary style="cursor:pointer;font-weight:800;font-size:13px">More today <span style="font-weight:500;color:var(--muted);font-size:11.5px">\u00b7 what is due, your week, calendar, estate</span></summary>'
         + '<div style="margin-top:10px">' + more + '</div></details>' : "")
@@ -10026,6 +10026,68 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   if (typeof _r === "function") window.renderAll = function () { var o = _r.apply(this, arguments); try { gmSayButtons(); } catch (e) {} return o; };
   try { if (window.speechSynthesis && speechSynthesis.addEventListener) speechSynthesis.addEventListener("voiceschanged", function () { try { gmSayButtons(); } catch (e) {} }); } catch (e) {}
   setTimeout(function () { try { gmSayButtons(); } catch (e) {} }, 800);
+})();
+
+// ── One question a day (owner, 2026-11-13: "never stop them until every detail is filled; get them hooked to fill it in
+// gradually"). Nothing is ever required. Today shows ONE tap-to-answer question, chosen by risk; answering is a small,
+// visible win ("now knows 6 of 13"), "Not now" hides it until tomorrow, and "One more" is there for anyone enjoying it. ──
+(function () {
+  function G1(k, d) { try { var v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } }
+  function S1(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  function day() { var d = new Date(); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
+  function e(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  var CASH = { id: "cash", q: "Cash you could use within a week (bank, FD), roughly?", taps: [["Under ₹1 lakh", 0.5], ["₹1–5 lakh", 3], ["₹5–25 lakh", 15], ["₹25 lakh–1 crore", 60], ["Above ₹1 crore", 150]] };
+  var ORDER = ["partner", "kids", "parents", "salaried", "business", "home", "vehicle", "parents70", "parentsAway", "govtStaff", "farmland"];
+  function facts() { return G1("gm_facts", {}) || {}; }
+  function factQ(id) { var f = ((window.GM_SYSTEMS || {}).facts || []).filter(function (x) { return x.id === id; })[0]; return f ? f.q : ""; }
+  function known(id) {
+    if (id === "cash") { var l = G1("gm_life", {}) || {}; return !!(l.ef && !(G1("gm_examples", {}) || {}).ef) || !!G1("gm_ask_cash", false); }
+    if (Object.prototype.hasOwnProperty.call(facts(), id)) return true;
+    if (id === "partner") return !!(window.P && P.pdob && !P.example);
+    if (id === "kids") return !!(window.P && P.kids && P.kids.length && !P.example);
+    if ((id === "parents70" || id === "parentsAway") && !facts().parents) return true;   // only asked when parents depend on you
+    return false;
+  }
+  function pool() { return ["cash"].concat(ORDER).filter(function (id) { return id === "cash" || factQ(id); }); }
+  function next() { var p = pool(); for (var i = 0; i < p.length; i++) if (!known(p[i])) return p[i]; return null; }
+  window.gmAskProgress = function () { var p = pool(); return { known: p.filter(known).length, total: p.length }; };
+  window.gmAskAnswer = function (id, v) {
+    if (id === "cash") {
+      var l = G1("gm_life", {}) || {}; l.ef = String(v); if (!+l.fFixed && window.P && P.exp) l.fFixed = String(P.exp);
+      S1("gm_life", l); S1("gm_ask_cash", true); try { if (window.gmClearExample) gmClearExample("ef"); } catch (x) {}
+    } else { var f = facts(); f[id] = !!v; S1("gm_facts", f); }
+    S1("gm_ask_day", day());
+    var pr = gmAskProgress();
+    if (typeof gmToast === "function") gmToast("Saved. Your Life OS now knows " + pr.known + " of " + pr.total + " things about your life.");
+    if (typeof renderAll === "function") renderAll();
+  };
+  window.gmAskLater = function () { S1("gm_ask_day", day()); S1("gm_ask_more", false); if (typeof renderAll === "function") renderAll(); };
+  window.gmAskMore = function () { S1("gm_ask_more", true); if (typeof renderAll === "function") renderAll(); };
+  window.gmAskOneHTML = function () {
+    // One ask at a time: while the four-tap set-up is still waiting, that is the ask.
+    if (!G1("gm_quick_done", false)) return "";
+    var id = next(), pr = gmAskProgress();
+    if (!id) return "";
+    var answeredToday = G1("gm_ask_day", "") === day();
+    if (answeredToday && !G1("gm_ask_more", false)) {
+      return '<div class="gm-ask gm-ask-done"><span>✔ Today’s question done · ' + pr.known + ' of ' + pr.total + ' known</span>'
+        + '<button type="button" class="gm-quiet" onclick="gmAskMore()">One more?</button></div>';
+    }
+    var q = id === "cash" ? CASH.q : factQ(id), btns;
+    if (id === "cash") btns = CASH.taps.map(function (t) { return '<button type="button" class="gm-qtap" onclick="gmAskAnswer(\'cash\',' + t[1] + ')">' + e(t[0]) + '</button>'; }).join("");
+    else btns = '<div class="gm-ask-yn"><button type="button" class="gm-qtap" onclick="gmAskAnswer(\'' + id + '\',1)">Yes</button><button type="button" class="gm-qtap" onclick="gmAskAnswer(\'' + id + '\',0)">No</button></div>';
+    return '<div class="gm-ask"><div class="gm-ask-k">One question · makes this app fit you · ' + pr.known + ' of ' + pr.total + ' known</div>'
+      + '<div class="gm-ask-q">' + e(q) + '</div><div class="gm-qtaps">' + btns + '</div>'
+      + '<button type="button" class="gm-quiet" onclick="gmAskLater()">Not now</button></div>';
+  };
+  try {
+    var st = document.createElement("style");
+    st.textContent = ".gm-ask{background:var(--card);border:1px solid var(--border);border-inline-start:3px solid var(--gold);border-radius:16px;padding:14px 16px;margin-bottom:16px}"
+      + ".gm-ask-k{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:6px}"
+      + ".gm-ask-q{font-weight:800;font-size:16px;line-height:1.35;margin-bottom:10px}.gm-ask-yn{display:grid;grid-template-columns:1fr 1fr;gap:8px}"
+      + ".gm-ask-done{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);padding:6px 16px}";
+    document.head.appendChild(st);
+  } catch (x) {}
 })();
 
 </script>

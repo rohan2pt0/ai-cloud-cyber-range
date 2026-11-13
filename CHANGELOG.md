@@ -9,6 +9,8 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- Life OS one question a day: after the four-tap set-up, Today shows one tap-to-answer question chosen by risk (cash on hand first, which turns the buffer into a real number, then the life facts that switch the right systems on). Answering is a small win ('now knows 6 of 12'), 'Not now' waits until tomorrow, 'One more?' is there for anyone enjoying it. Nothing is ever required.
+
 - Life OS easy start: plain English on screen (Three small things today, Your next step, Your money steps, Where your money goes, Protection, Quarter goals and more), with the research names kept underneath and in How this works; the four set-up questions are answered with one tap each (typing stays optional); the next-step card says 'Your next step' instead of layer codes; an unknown buffer shows a calm dash instead of 'low'.
 
 - Life OS speaks Gujarati (ગુજરાતી), beta: the 180 strings people see most, in everyday business Gujarati, with a glossary (one word per idea; SIP, GST, INR kept as said) and a quality gate (real keys only, Gujarati script, numbers and symbols kept). A Gujarati phone opens in Gujarati by itself. New: Listen (🔊) on each screen's top card reads it aloud in the chosen language with the phone's own voice, offline, and only when the phone has that language's voice.
