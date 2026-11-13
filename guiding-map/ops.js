@@ -6856,7 +6856,7 @@
       }
       if (!row) return;
       list.forEach(function (s) {
-        row.insertAdjacentHTML("beforeend", '<div style="padding:6px 0"><a href="#" style="color:var(--gold);font-weight:700;font-size:12px" onclick="gmSysOpen(\'' + esc(s.id) + '\');return false">System: ' + esc(s.title) + '</a></div>');
+        row.insertAdjacentHTML("beforeend", '<div style="padding:6px 0"><a href="#" style="color:var(--gold);font-weight:700;font-size:12px" onclick="gmSysOpen(\'' + esc(s.id) + '\');return false">' + esc(s.title) + '</a></div>');
       });
     });
   }
@@ -7381,6 +7381,17 @@
       + ".gm-start{font-size:12px;font-weight:800;letter-spacing:.3px;color:#7a5a14;margin-top:6px}html[data-theme=dark] .gm-start{color:var(--gold)}"
       // The stage chooser: one quiet segmented control instead of five chunky pills.
       + ".gm-qtaps{display:grid;grid-template-columns:1fr;gap:8px}.gm-qtap{min-height:48px;border-radius:14px;border:1px solid var(--border);background:var(--card);color:var(--text);font:inherit;font-size:15px;font-weight:700;text-align:start;padding:10px 14px;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(201,168,76,.25)}.gm-qtap:active{transform:scale(.98)}"
+      // The Wheel's 1-10 keys (owner, 2026-11-13: "jade, gem or glass; buttons must look mechanical"): a recessed tray of real
+      // keycaps that press down when tapped; the chosen score is a polished jade cabochon set in a gold bezel.
+      + "html body .ws-taps{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;padding:7px;border-radius:16px;background:linear-gradient(180deg,#e6dfcf,#f4efe3);box-shadow:inset 0 2px 6px rgba(60,45,20,.28),inset 0 -1px 0 rgba(255,255,255,.8),0 1px 0 rgba(255,255,255,.6)}"
+      + "html body .ws-tap{flex:none;min-width:44px;height:46px;border-radius:12px;border:1px solid rgba(120,95,45,.28);font-size:16px;font-weight:800;color:#2a2418;background:linear-gradient(180deg,#fffdf8 0%,#f3ecdd 55%,#e7dec9 100%);box-shadow:0 3px 0 #c9bb98,0 5px 8px rgba(40,30,10,.16),inset 0 1px 0 #fff;transition:transform .08s ease,box-shadow .08s ease;font-variant-numeric:tabular-nums}"
+      + "html body .ws-tap:active{transform:translateY(3px);box-shadow:0 0 0 #c9bb98,0 1px 2px rgba(40,30,10,.2),inset 0 1px 0 #fff}"
+      + "html body .ws-tap.on{position:relative;color:#f4fffa;border-color:rgba(201,168,76,.85);background-color:#0b5e48;background-image:radial-gradient(circle at 30% 22%,rgba(255,255,255,.6) 0 9%,rgba(255,255,255,0) 26%),linear-gradient(160deg,#1f8f6d 0%,#0b5e48 58%,#063d2e 100%);text-shadow:0 1px 1px rgba(0,0,0,.45);transform:translateY(2px);box-shadow:0 1px 0 #04291f,0 0 0 2px rgba(201,168,76,.55),0 6px 14px rgba(11,94,72,.35),inset 0 2px 3px rgba(255,255,255,.3),inset 0 -4px 7px rgba(0,0,0,.35)}"
+      + "html[data-theme=dark] body .ws-taps{background:linear-gradient(180deg,#0b1222,#121b31);box-shadow:inset 0 2px 7px rgba(0,0,0,.6),0 1px 0 rgba(255,255,255,.05)}"
+      + "html[data-theme=dark] body .ws-tap{color:#ece8dd;border-color:rgba(201,168,76,.28);background:linear-gradient(180deg,#2a3858 0%,#1c2742 60%,#151e35 100%);box-shadow:0 3px 0 #070c18,0 5px 9px rgba(0,0,0,.45),inset 0 1px 0 rgba(255,255,255,.12)}"
+      + "html[data-theme=dark] body .ws-tap.on{color:#f4fffa;background-color:#0b5e48;background-image:radial-gradient(circle at 30% 22%,rgba(255,255,255,.5) 0 9%,rgba(255,255,255,0) 26%),linear-gradient(160deg,#25a27c 0%,#0b5e48 58%,#053226 100%)}"
+      + "html body .ws-row a[onclick^='gmSysOpen']{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:6px 12px;border-radius:999px;font-size:12.5px;font-weight:700;text-decoration:none;color:var(--text);background:rgba(255,255,255,.55);border:1px solid rgba(201,168,76,.45);box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 1px 3px rgba(0,0,0,.06)}"
+      + "html body .ws-row a[onclick^='gmSysOpen']::before{content:'\\2192';color:#7a5a14}html[data-theme=dark] body .ws-row a[onclick^='gmSysOpen']{background:rgba(255,255,255,.06)}"
       + "html body .kr .chips{display:flex;flex-wrap:nowrap;gap:2px;padding:3px;border-radius:12px;background:var(--cardAlt);border:1px solid var(--border);width:100%;box-sizing:border-box;overflow-x:auto}"
       + "html body .kr .chips .chip{flex:1 1 auto;background:transparent;background-image:none;border:0;box-shadow:none;color:var(--muted);padding:8px 4px;border-radius:9px;font-weight:600;font-size:12px;white-space:nowrap;text-shadow:none}"
       + "html body .kr .chips .chip.on{background:var(--card);background-image:none;color:var(--text);font-weight:800;box-shadow:0 1px 3px rgba(13,31,53,.14),inset 0 0 0 1px rgba(201,168,76,.6)}"
