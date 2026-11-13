@@ -3780,6 +3780,7 @@
     var h = '<div class="section active">';
     h += '<div class="cat-t">\u2699 Ops</div>';
     h += atelierHTML();
+    h += (window.gmLockCardHTML ? gmLockCardHTML() : "");
     h += '<div class="info">' + (due.length ? due.length + " ritual(s) due now (they also show on Today). " : "Nothing due today. ")
       + (broken ? broken + " habit(s) need a recovery rep." : "") + '</div>';
     h += '<div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:6px"><button class="btn-sm" style="background:var(--cardAlt);color:var(--text);font-weight:700" onclick="gmQuarter()">Quarterly check-in</button>'
@@ -7615,4 +7616,135 @@
       + ".gm-ask-done{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);padding:6px 16px}";
     document.head.appendChild(st);
   } catch (x) {}
+})();
+
+
+// ── Privacy lock for the Life OS (queue app-lock, slice 2; threat model "lifeos-lock"; owner 2026-11-11 and 2026-11-13) ──
+// Unlock with the device's own fingerprint, face or Windows Hello (a WebAuthn platform credential made on this device, with
+// user verification required): no new password. A one-time recovery code (PBKDF2, 310,000 rounds, only its hash is kept) means
+// a changed fingerprint never locks a person out of their own life. Away longer than the idle time: locked. Hidden: veiled, so
+// the app switcher shows nothing. Honest scope: this guards the screen; the data on the device is protected by the phone's own
+// encryption and lock, and encryption at rest inside the Life OS is the next slice (queue app-lock).
+(function () {
+  var KEY = "gm_lock", hiddenAt = 0;
+  function rec() { try { return JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { return null; } }
+  function put(r) { try { if (r) localStorage.setItem(KEY, JSON.stringify(r)); else localStorage.removeItem(KEY); } catch (e) {} }
+  function b64(buf) { var s = "", b = new Uint8Array(buf); for (var i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
+  function unb64(t) { t = String(t).replace(/-/g, "+").replace(/_/g, "/"); while (t.length % 4) t += "="; var s = atob(t), b = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) b[i] = s.charCodeAt(i); return b; }
+  function rnd(n) { var a = new Uint8Array(n); crypto.getRandomValues(a); return a; }
+  function codeGen() { var A = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", r = rnd(16), out = ""; for (var i = 0; i < 16; i++) { out += A[r[i] % A.length]; if (i % 4 === 3 && i < 15) out += "-"; } return out; }
+  function norm(c) { return String(c || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); }
+  function hashCode(code, salt) {
+    return crypto.subtle.importKey("raw", new TextEncoder().encode(norm(code)), "PBKDF2", false, ["deriveBits"]).then(function (k) {
+      return crypto.subtle.deriveBits({ name: "PBKDF2", salt: salt, iterations: 310000, hash: "SHA-256" }, k, 256);
+    }).then(b64);
+  }
+  var api = function () { return !!(window.PublicKeyCredential && navigator.credentials && window.crypto && crypto.subtle && /^https?:$/.test(location.protocol)); };
+  window.gmLockSupported = function () {
+    if (!api()) return Promise.resolve(false);
+    try { return PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().catch(function () { return false; }); } catch (e) { return Promise.resolve(false); }
+  };
+  window.gmLockOn = function () { return !!rec(); };
+  var locked = !!rec();
+  window.gmIsLocked = function () { return locked; };
+  function paint() {
+    var el = document.getElementById("gmLock");
+    document.documentElement.classList.toggle("gm-locked", locked);
+    if (!locked) { if (el) el.remove(); return; }
+    if (el) return;
+    el = document.createElement("div"); el.id = "gmLock"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", "Life OS is locked");
+    el.innerHTML = '<div class="gm-lock-card"><div class="gm-lock-ico" aria-hidden="true">🔒</div><h2>Locked</h2>'
+      + '<p>Unlock with this device’s fingerprint, face or Windows Hello.</p>'
+      + '<button type="button" class="gm-lock-go" onclick="gmUnlock()">Unlock</button>'
+      + '<details class="gm-lock-rec"><summary>Use your recovery code</summary><input id="gmLockCode" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX" aria-label="Recovery code">'
+      + '<button type="button" onclick="gmUnlockCode(document.getElementById(\'gmLockCode\').value)">Unlock with code</button></details>'
+      + '<div class="gm-lock-msg" aria-live="polite"></div></div>';
+    document.body.appendChild(el);
+  }
+  function say(t) { var m = document.querySelector("#gmLock .gm-lock-msg"); if (m) m.textContent = t; }
+  function opened() { locked = false; hiddenAt = 0; paint(); try { if (window.renderAll) renderAll(); } catch (e) {} }
+  window.gmUnlock = function () {
+    var r = rec(); if (!r) { opened(); return Promise.resolve(true); }
+    return navigator.credentials.get({ publicKey: { challenge: rnd(32), allowCredentials: [{ type: "public-key", id: unb64(r.id) }], userVerification: "required", timeout: 60000 } })
+      .then(function (c) { if (!c) throw new Error("none"); opened(); return true; })
+      .catch(function () { say("That did not unlock. Try again, or use your recovery code."); return false; });
+  };
+  window.gmUnlockCode = function (code) {
+    var r = rec(); if (!r) { opened(); return Promise.resolve(true); }
+    return hashCode(code, unb64(r.salt)).then(function (h) {
+      if (h !== r.hash) { say("That recovery code does not match."); return false; }
+      opened(); return true;
+    });
+  };
+  window.gmLockNow = function () { if (!rec()) return; locked = true; paint(); };
+  window.gmLockEnable = function () {
+    return gmLockSupported().then(function (ok) {
+      if (!ok) throw new Error("This browser cannot use the device lock.");
+      return navigator.credentials.create({ publicKey: {
+        rp: { name: "Life OS", id: location.hostname }, user: { id: rnd(16), name: "life-os", displayName: "Life OS" }, challenge: rnd(32),
+        pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+        authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "discouraged" }, timeout: 60000 } });
+    }).then(function (cred) {
+      var code = codeGen(), salt = rnd(16);
+      return hashCode(code, salt).then(function (h) {
+        put({ id: b64(cred.rawId), salt: b64(salt), hash: h, idle: 300, at: Date.now() });
+        window._gmLockCode = code; locked = false; if (window.renderAll) renderAll(); return code;
+      });
+    });
+  };
+  window.gmLockStart = function () {
+    gmLockEnable().catch(function (e) {
+      if (typeof gmToast === "function") gmToast(e && e.name === "NotAllowedError" ? "Not turned on. You can try again any time." : (e && e.message) || "The lock could not be turned on.");
+    });
+  };
+  window.gmLockDisable = function () {
+    if (locked) return;
+    if (!confirm("Turn off the privacy lock? Anyone holding this device could then open your Life OS.")) return;
+    put(null); window._gmLockCode = null; if (window.renderAll) renderAll();
+  };
+  window.gmLockIdle = function (sec) { var r = rec(); if (!r) return; r.idle = sec; put(r); if (window.renderAll) renderAll(); };
+  window.gmLockSaved = function () { window._gmLockCode = null; if (window.renderAll) renderAll(); };
+  // The Ops card: on by choice, one tap, plain words.
+  var SUP = null; gmLockSupported().then(function (ok) { SUP = ok; try { if (window.curTab === "ops" && window.renderAll) renderAll(); } catch (e) {} });
+  function e(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  window.gmLockCardHTML = function () {
+    var r = rec(), h = '<div class="road-col gm-lock-set" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px"><span class="gm-glyph" aria-hidden="true"><i>🔒</i></span><b>Privacy lock</b>'
+      + '<span class="pill ' + (r ? "pill-g" : "pill-t") + '" style="margin-inline-start:auto">' + (r ? "On" : "Off") + '</span></div>';
+    if (window._gmLockCode) {
+      return h + '<p style="font-size:13px;margin:8px 0">Your recovery code. If this device’s fingerprint or face ever changes, this code opens your Life OS. Keep it somewhere safe, away from this phone.</p>'
+        + '<div class="gm-lock-code">' + e(window._gmLockCode) + '</div><button class="btn-sm" style="background:var(--gold);color:#0d1f35;margin-top:8px" onclick="gmLockSaved()">I have saved it</button></div>';
+    }
+    if (r) {
+      var idle = r.idle || 300;
+      return h + '<p style="font-size:13px;margin:8px 0">Opens with this device’s fingerprint, face or Windows Hello. Locks when you are away for '
+        + (idle >= 3600 ? "an hour" : Math.round(idle / 60) + " minutes") + '; the app switcher shows nothing.</p>'
+        + '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-sm" onclick="gmLockNow()">Lock now</button>'
+        + [[60, "1 min"], [300, "5 min"], [900, "15 min"]].map(function (o) { return '<button class="btn-sm" aria-pressed="' + (idle === o[0]) + '" style="' + (idle === o[0] ? "background:var(--gold);color:#0d1f35" : "") + '" onclick="gmLockIdle(' + o[0] + ')">' + o[1] + '</button>'; }).join("")
+        + '<button class="gm-quiet" onclick="gmLockDisable()">Turn off…</button></div>'
+        + '<p style="font-size:11.5px;color:var(--muted);margin:8px 0 0">The lock guards the screen. Your data on this device is also protected by the phone’s own lock and encryption, and your backups are encrypted.</p></div>';
+    }
+    if (SUP === false) return h + '<p style="font-size:13px;margin:8px 0">This browser cannot use your fingerprint or face here. Your phone’s own screen lock protects the app; your backups are encrypted.</p></div>';
+    return h + '<p style="font-size:13px;margin:8px 0">Open your Life OS with your fingerprint or face, like your bank app. No new password. It locks when you step away.</p>'
+      + '<button class="btn-sm" style="background:var(--gold);color:#0d1f35;font-weight:800" onclick="gmLockStart()">Turn on the lock</button></div>';
+  };
+  // Away too long: lock. Hidden: veil, so the app switcher and a glance show nothing.
+  document.addEventListener("visibilitychange", function () {
+    var r = rec(); if (!r) return;
+    if (document.hidden) { hiddenAt = Date.now(); document.documentElement.classList.add("gm-veil"); return; }
+    document.documentElement.classList.remove("gm-veil");
+    if (!locked && hiddenAt && Date.now() - hiddenAt > (r.idle || 300) * 1000) { locked = true; paint(); }
+    hiddenAt = 0;
+  });
+  try {
+    var st = document.createElement("style");
+    st.textContent = "html.gm-locked body > *:not(#gmLock){visibility:hidden}html.gm-veil body > *:not(#gmLock){filter:blur(18px)}"
+      + "#gmLock{position:fixed;inset:0;z-index:99999;display:grid;place-items:center;padding:24px;background:radial-gradient(120% 80% at 50% 0%,#1d3557 0%,#0e1f38 50%,#07101f 100%);color:#eef3f8}"
+      + ".gm-lock-card{width:100%;max-width:360px;text-align:center}.gm-lock-ico{font-size:40px;margin-bottom:8px}.gm-lock-card h2{font-family:var(--font-display,serif);font-weight:400;font-size:30px;margin:0 0 6px;color:#f4e7c1}"
+      + ".gm-lock-card p{color:#a9b6cc;font-size:14px;margin:0 0 18px}.gm-lock-go{width:100%;min-height:52px;border-radius:16px;border:0;font-weight:800;font-size:16px;color:#1a1305;cursor:pointer;background:linear-gradient(135deg,#7a5a14 0%,#c9a24a 20%,#f7e7a8 38%,#d4af37 52%,#9c7a26 72%,#ecd27e 90%,#b8902f 100%)}"
+      + ".gm-lock-rec{margin-top:16px;text-align:start}.gm-lock-rec summary{cursor:pointer;color:#d9b75a;min-height:44px;display:flex;align-items:center;justify-content:center}.gm-lock-rec input{width:100%;min-height:48px;font-size:16px;letter-spacing:.1em;text-align:center;margin:6px 0;border-radius:12px}"
+      + ".gm-lock-rec button{width:100%;min-height:46px;border-radius:12px;border:1px solid rgba(217,183,90,.6);background:transparent;color:#eef3f8;font-weight:700}.gm-lock-msg{min-height:20px;margin-top:10px;color:#f0b8a8;font-size:13px}"
+      + ".gm-lock-code{font-family:ui-monospace,Menlo,monospace;font-size:18px;letter-spacing:.12em;text-align:center;padding:12px;border-radius:12px;border:1px dashed rgba(201,168,76,.7);background:var(--cardAlt)}";
+    document.head.appendChild(st);
+  } catch (x) {}
+  if (locked) { if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", paint); else paint(); }
 })();
