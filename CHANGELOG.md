@@ -8,6 +8,8 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
+
+- Life OS sky comes alive: stars breathe as they twinkle, and a shooting star crosses the header every 15 to 30 seconds (paused when the app is hidden, off for reduced motion).
 ### Changed
 - Life OS sky: fewer, finer stars that live only where the header is empty (a band along the top and a thin one at the bottom); the line with the monogram, title and buttons stays clear.
 - Life OS app icon and launch screen: a premium mark (a polished-gold bezel with a fine inner ring, a North Star crowning it, the GM monogram in the editorial serif in gold, on a midnight field of faint stars), rendered from the same gradients as the app; the launch background matches its midnight tone.
