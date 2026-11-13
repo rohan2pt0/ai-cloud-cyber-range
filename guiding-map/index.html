@@ -3626,9 +3626,9 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     var a = theOneAction();
     if (!a) return '<div class="info">Every layer of the stack is complete. Maintenance mode: run the cadence, hold the line.</div>';
     return '<div style="background:var(--card);border:2px solid var(--gold);border-radius:14px;padding:15px;margin-bottom:14px">'
-      + '<div style="font-size:10.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--gold);font-weight:800">Your one open action \u00b7 ' + a.layer.id + ' ' + a.layer.name + (a.vital ? ' \u00b7 \u2605 vital few' : '') + '</div>'
+      + '<div style="font-size:10.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--gold);font-weight:800">Your next step' + (a.vital ? ' \u00b7 \u2605 most important' : '') + '</div>'
       + '<div style="font-size:15px;font-weight:700;line-height:1.5;margin:8px 0 4px;color:var(--text)">' + esc(a.text) + '</div>'
-      + '<div style="font-size:11.5px;color:var(--muted);line-height:1.6">Rule 1 says one in-progress action at a time. This is it. Nothing below this layer is finished, so nothing above it is yours to work on yet.</div>'
+      + '<div style="font-size:11.5px;color:var(--muted);line-height:1.6">One thing at a time: this matters most for you right now. The rest waits below until this is done.</div>'
       + '<button class="btn btn-p" data-haptic="success" style="margin-top:10px" onclick="gmStackTg(\'' + a.layer.id + '\',' + a.idx + ')">Mark this done</button>'
       + focusBtnHTML(a.text) + '</div>';
   }
@@ -4306,7 +4306,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     return [
       { l: "Today", v: d3 + "/3", c: d3 === 3 ? "var(--green)" : d3 ? "var(--amber)" : "var(--red)", t: "today" },
       { l: "Stack", v: stackPct + "%", c: stackPct >= 80 ? "var(--green)" : stackPct >= 40 ? "var(--amber)" : "var(--red)", t: "stack" },
-      { l: "Runway", v: runway ? (runway > 120 ? "120m+" : runway.toFixed(1) + "m") : "\u2014", c: runway >= 6 ? "var(--green)" : runway >= 3 ? "var(--amber)" : "var(--red)", t: "life" },
+      { l: "Runway", v: runway ? (runway > 120 ? "120m+" : runway.toFixed(1) + "m") : "\u2014", c: !runway ? "var(--muted)" : runway >= 6 ? "var(--green)" : runway >= 3 ? "var(--amber)" : "var(--red)", t: "life" },
       { l: "Saving", v: !save ? "\u2014" : saveBad ? "check" : save + "%", c: saveBad ? "var(--amber)" : save >= 20 ? "var(--green)" : save >= 15 ? "var(--amber)" : "var(--red)", t: "life" },
       { l: "Net worth", v: nwPct ? nwPct + "%" : "\u2014", c: nwPct >= 100 ? "var(--green)" : nwPct >= 60 ? "var(--amber)" : "var(--red)", t: "life" }
     ];
@@ -6559,10 +6559,10 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
 
   /* -- 1. setup: four questions, one at a time, written once into BOTH models -- */
   var QUICK = [
-    { k: "age", q: "Your age", unit: "years", ph: "36" },
-    { k: "net", q: "Monthly take-home pay", unit: "₹ a month", ph: "120000" },
-    { k: "exp", q: "Monthly spending, roughly", unit: "₹ a month", ph: "80000" },
-    { k: "nw", q: "Savings + investments today (excluding your home)", unit: "₹ total", ph: "1500000" }
+    { k: "age", q: "How old are you?", unit: "years", ph: "36", taps: [["Under 30", 27], ["30s", 35], ["40s", 45], ["50s", 55], ["60+", 65]] },
+    { k: "net", q: "Money that reaches you each month", unit: "₹ a month", ph: "120000", inr: 1, taps: [["Under ₹50k", 35000], ["₹50k–1 lakh", 75000], ["₹1–2 lakh", 150000], ["₹2–5 lakh", 350000], ["Above ₹5 lakh", 750000]] },
+    { k: "exp", q: "What the home spends each month", unit: "₹ a month", ph: "80000", inr: 1, taps: [["Under ₹30k", 20000], ["₹30–60k", 45000], ["₹60k–1 lakh", 80000], ["₹1–3 lakh", 200000], ["Above ₹3 lakh", 500000]] },
+    { k: "nw", q: "All your savings and investments (not your home)", unit: "₹ total", ph: "1500000", inr: 1, taps: [["Under ₹5 lakh", 250000], ["₹5–25 lakh", 1500000], ["₹25 lakh–1 crore", 6000000], ["₹1–10 crore", 40000000], ["Above ₹10 crore", 150000000]] }
   ];
   function quickApply(ans) {
     var l = life();
@@ -6585,15 +6585,18 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       if (i >= QUICK.length) { gmClose(); quickApply(ans); return; }
       var q = QUICK[i];
       gmDlg('<div style="font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:800">Question ' + (i + 1) + ' of ' + QUICK.length + '</div>'
-        + '<div style="font-weight:800;font-size:16px;margin:6px 0 10px">' + q.q + '</div>'
+        + '<div style="font-weight:800;font-size:17px;margin:6px 0 12px">' + q.q + '</div>'
+        + (q.taps && (!q.inr || !window.P || !P.cur || P.cur === "INR") ? '<div class="gm-qtaps">' + q.taps.map(function (t) { return '<button type="button" class="gm-qtap" data-v="' + t[1] + '">' + t[0] + '</button>'; }).join("") + '</div>'
+          + '<div style="font-size:11.5px;color:var(--muted);margin:10px 0 4px">Tap the closest. Rough is fine; change it any time. Or type the exact number:</div>' : "")
         + '<input id="gmQin" inputmode="decimal" placeholder="' + q.ph + '" style="font-size:18px">'
-        + '<div style="font-size:11px;color:var(--muted);margin:6px 0 12px">' + q.unit + ' · a rough number is fine; you can refine it later</div>'
+        + '<div style="font-size:11px;color:var(--muted);margin:6px 0 12px">' + q.unit + '</div>'
         + '<div style="display:flex;gap:8px"><button class="btn-sm" id="gmQok" style="flex:1;background:var(--gold);color:#0d1f35;font-weight:800;padding:10px">Next</button>'
         + '<button class="btn-sm" id="gmQskip" style="background:var(--cardAlt);color:var(--muted);padding:10px 14px">Skip</button></div>');
       var inp = document.getElementById("gmQin");
       function next(skip) { var v = skip ? 0 : num(inp.value); if (v > 0) ans[q.k] = v; i++; step(); }
       document.getElementById("gmQok").addEventListener("click", function () { next(false); });
       document.getElementById("gmQskip").addEventListener("click", function () { next(true); });
+      [].forEach.call(document.querySelectorAll(".gm-qtap"), function (b) { b.addEventListener("click", function () { inp.value = b.getAttribute("data-v"); next(false); }); });
       inp.addEventListener("keydown", function (e) { if (e.key === "Enter") next(false); });
     }
     step();
@@ -6603,8 +6606,8 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     var example = (window.P && P.example) || exampleCount() > 0;
     if (!example || G("gm_quick_done", false) || G("gm_quick_snooze", "") > ymd()) return "";
     return '<div class="gm-setup" style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:16px;padding:16px;margin-bottom:16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
-      + '<div style="flex:1;min-width:180px;font-size:12px;color:var(--text);line-height:1.5"><b>Example numbers for now.</b> Four quick questions make them yours.</div>'
-      + '<button class="btn-sm gm-action gm-secondary" onclick="gmQuickSetup()">Make them mine</button>'
+      + '<div style="flex:1;min-width:180px;font-size:12px;color:var(--text);line-height:1.5"><b>These are example numbers.</b> Four quick questions, just taps, make this app yours.</div>'
+      + '<button class="btn-sm gm-action gm-secondary" onclick="gmQuickSetup()">Make it mine</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--muted)" onclick="gmQuickLater()">Later</button></div>';
   }
 
@@ -6750,7 +6753,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   function calmTodayHTML() {
     var more = dueNowHTML() + (inRecovery() ? "" : driftHTML() + resHTML()) + msTodayHTML() + insightHTML() + estateHTML();
     var open = G("gm_more_today", false) === true;
-    return '<div class="section active">' + greetHTML() + (phone() ? vitalsHTML() : "") + interruptHTML() + undoBar() + checkinHTML() + setupStripHTML() + todayFocusHTML() + winsHTML()
+    return '<div class="section active">' + greetHTML() + setupStripHTML() + (phone() ? vitalsHTML() : "") + interruptHTML() + undoBar() + checkinHTML() + todayFocusHTML() + winsHTML()
       + (more.replace(/<[^>]*>/g, "").trim() ? '<details class="road-col gm-more-today"' + (open ? " open" : "") + ' ontoggle="gmMoreToday(this.open)">'
         + '<summary style="cursor:pointer;font-weight:800;font-size:13px">More today <span style="font-weight:500;color:var(--muted);font-size:11.5px">\u00b7 what is due, your week, calendar, estate</span></summary>'
         + '<div style="margin-top:10px">' + more + '</div></details>' : "")
@@ -8823,7 +8826,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     if (!one) return oneActionHTML();
     var h = one.stack ? oneActionHTML()
       : '<div class="gm-one" style="background:var(--card);border:2px solid var(--gold);border-radius:14px;padding:15px;margin-bottom:14px">'
-        + '<div style="font-size:10.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--gold);font-weight:800">Your one open action · chosen by risk</div>'
+        + '<div style="font-size:10.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--gold);font-weight:800">Your next step · the biggest risk first</div>'
         + '<div style="font-size:15px;font-weight:700;line-height:1.5;margin:8px 0 4px;color:var(--text)">' + one.text + '</div>'
         + '<div style="font-size:11.5px;color:var(--muted);line-height:1.6">' + one.why + ' Everything else waits below, folded.</div>'
         + '<button class="btn btn-p" data-haptic="success" style="margin-top:10px" onclick="' + one.act + '">' + one.btn + '</button>'
@@ -9715,7 +9718,23 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     return CAT[dev] ? dev : "en";
   }
   var lang = pick(), busy = false, queued = false;
-  function table() { return lang === "en" ? null : ((CAT[lang] || {}).strings || {}); }
+  // Plain English (owner, 2026-11-13: "too many complex jargons"). The research names stay in How this works and the glossary.
+  var PLAIN = {
+    "The daily three · the floor is enough": "Three small things today · tiny counts",
+    "Do the smallest version. The floor counts as a full win — that is the whole trick.": "Do the smallest version. Tiny still counts as a full win.",
+    "The floor versions count. Two minutes keeps the chain alive — perfection is not the system, showing up is.": "Even two minutes counts. Showing up matters more than doing it perfectly.",
+    "Runway": "Buffer", "Runway: — (low). Open the tab that changes this.": "Buffer: — (low). Open the tab that changes this.",
+    "is the only tab you need daily — three tiles and one open action.": "is the only tab you need daily: three small things and your next step.",
+    "Prime Directive Waterfall": "Your money steps, in order", "Conscious Spending Plan": "Where your money goes", "Antifragile": "Bounces back stronger",
+    "Sovereignty Command Center": "My Life OS", "Sovereignty Command Center · Setup": "My Life OS · Set-up", "Build Your Life Operating System": "Set up your Life OS",
+    "Playbook": "Stage plan", "Pillars": "All areas", "Scorecard": "Scores", "Money Map": "Money", "Shield": "Protection", "Risk Shield": "Protection",
+    "Wheel": "Life balance", "Commit": "Promises", "Health Cal": "Check-ups", "OKRs": "Quarter goals", "Growth": "Progress",
+    "Generic sequence — where it conflicts with your Playbook stage gates, the Playbook wins.": "General order. Where your stage plan says otherwise, follow the stage plan.",
+    "Highest-leverage next action: Investing Consistently": "Best next step: invest a little every month",
+    "vital few": "most important", "Exposed": "Not covered"
+  };
+  window.gmPlain = PLAIN;
+  function table() { return lang === "en" ? PLAIN : ((CAT[lang] || {}).strings || {}); }
   function swapText(n, T) {
     var en = n[ORIG] !== undefined ? n[ORIG] : n.textContent, key = en.replace(/\s+/g, " ").trim();
     if (!key) return;
@@ -9761,7 +9780,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     });
     return h + '</div>' + (lang !== "en" ? '<div class="muted" style="font-size:11.5px;margin-top:6px">Beta: a machine draft, checked by a person before the global launch. Anything not translated yet stays in English.</div>' : '') + '</div>';
   };
-  try { new MutationObserver(function () { if (!busy && lang !== "en") soon(); }).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) {}
+  try { new MutationObserver(function () { if (!busy) soon(); }).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) {}
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { run(); }); else run();
 })();
 
@@ -9896,6 +9915,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       + "html body .kc.riskc.gm-start-here{box-shadow:0 0 0 1.5px var(--gold),0 8px 22px rgba(201,168,76,.18)}"
       + ".gm-start{font-size:12px;font-weight:800;letter-spacing:.3px;color:#7a5a14;margin-top:6px}html[data-theme=dark] .gm-start{color:var(--gold)}"
       // The stage chooser: one quiet segmented control instead of five chunky pills.
+      + ".gm-qtaps{display:grid;grid-template-columns:1fr;gap:8px}.gm-qtap{min-height:48px;border-radius:14px;border:1px solid var(--border);background:var(--card);color:var(--text);font:inherit;font-size:15px;font-weight:700;text-align:start;padding:10px 14px;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(201,168,76,.25)}.gm-qtap:active{transform:scale(.98)}"
       + "html body .kr .chips{display:flex;flex-wrap:nowrap;gap:2px;padding:3px;border-radius:12px;background:var(--cardAlt);border:1px solid var(--border);width:100%;box-sizing:border-box;overflow-x:auto}"
       + "html body .kr .chips .chip{flex:1 1 auto;background:transparent;background-image:none;border:0;box-shadow:none;color:var(--muted);padding:8px 4px;border-radius:9px;font-weight:600;font-size:12px;white-space:nowrap;text-shadow:none}"
       + "html body .kr .chips .chip.on{background:var(--card);background-image:none;color:var(--text);font-weight:800;box-shadow:0 1px 3px rgba(13,31,53,.14),inset 0 0 0 1px rgba(201,168,76,.6)}"
