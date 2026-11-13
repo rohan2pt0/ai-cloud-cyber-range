@@ -1070,9 +1070,9 @@
     var a = theOneAction();
     if (!a) return '<div class="info">Every layer of the stack is complete. Maintenance mode: run the cadence, hold the line.</div>';
     return '<div style="background:var(--card);border:2px solid var(--gold);border-radius:14px;padding:15px;margin-bottom:14px">'
-      + '<div style="font-size:10.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--gold);font-weight:800">Your one open action \u00b7 ' + a.layer.id + ' ' + a.layer.name + (a.vital ? ' \u00b7 \u2605 vital few' : '') + '</div>'
+      + '<div style="font-size:10.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--gold);font-weight:800">Your next step' + (a.vital ? ' \u00b7 \u2605 most important' : '') + '</div>'
       + '<div style="font-size:15px;font-weight:700;line-height:1.5;margin:8px 0 4px;color:var(--text)">' + esc(a.text) + '</div>'
-      + '<div style="font-size:11.5px;color:var(--muted);line-height:1.6">Rule 1 says one in-progress action at a time. This is it. Nothing below this layer is finished, so nothing above it is yours to work on yet.</div>'
+      + '<div style="font-size:11.5px;color:var(--muted);line-height:1.6">One thing at a time: this matters most for you right now. The rest waits below until this is done.</div>'
       + '<button class="btn btn-p" data-haptic="success" style="margin-top:10px" onclick="gmStackTg(\'' + a.layer.id + '\',' + a.idx + ')">Mark this done</button>'
       + focusBtnHTML(a.text) + '</div>';
   }
@@ -1750,7 +1750,7 @@
     return [
       { l: "Today", v: d3 + "/3", c: d3 === 3 ? "var(--green)" : d3 ? "var(--amber)" : "var(--red)", t: "today" },
       { l: "Stack", v: stackPct + "%", c: stackPct >= 80 ? "var(--green)" : stackPct >= 40 ? "var(--amber)" : "var(--red)", t: "stack" },
-      { l: "Runway", v: runway ? (runway > 120 ? "120m+" : runway.toFixed(1) + "m") : "\u2014", c: runway >= 6 ? "var(--green)" : runway >= 3 ? "var(--amber)" : "var(--red)", t: "life" },
+      { l: "Runway", v: runway ? (runway > 120 ? "120m+" : runway.toFixed(1) + "m") : "\u2014", c: !runway ? "var(--muted)" : runway >= 6 ? "var(--green)" : runway >= 3 ? "var(--amber)" : "var(--red)", t: "life" },
       { l: "Saving", v: !save ? "\u2014" : saveBad ? "check" : save + "%", c: saveBad ? "var(--amber)" : save >= 20 ? "var(--green)" : save >= 15 ? "var(--amber)" : "var(--red)", t: "life" },
       { l: "Net worth", v: nwPct ? nwPct + "%" : "\u2014", c: nwPct >= 100 ? "var(--green)" : nwPct >= 60 ? "var(--amber)" : "var(--red)", t: "life" }
     ];
@@ -4003,10 +4003,10 @@
 
   /* -- 1. setup: four questions, one at a time, written once into BOTH models -- */
   var QUICK = [
-    { k: "age", q: "Your age", unit: "years", ph: "36" },
-    { k: "net", q: "Monthly take-home pay", unit: "₹ a month", ph: "120000" },
-    { k: "exp", q: "Monthly spending, roughly", unit: "₹ a month", ph: "80000" },
-    { k: "nw", q: "Savings + investments today (excluding your home)", unit: "₹ total", ph: "1500000" }
+    { k: "age", q: "How old are you?", unit: "years", ph: "36", taps: [["Under 30", 27], ["30s", 35], ["40s", 45], ["50s", 55], ["60+", 65]] },
+    { k: "net", q: "Money that reaches you each month", unit: "₹ a month", ph: "120000", inr: 1, taps: [["Under ₹50k", 35000], ["₹50k–1 lakh", 75000], ["₹1–2 lakh", 150000], ["₹2–5 lakh", 350000], ["Above ₹5 lakh", 750000]] },
+    { k: "exp", q: "What the home spends each month", unit: "₹ a month", ph: "80000", inr: 1, taps: [["Under ₹30k", 20000], ["₹30–60k", 45000], ["₹60k–1 lakh", 80000], ["₹1–3 lakh", 200000], ["Above ₹3 lakh", 500000]] },
+    { k: "nw", q: "All your savings and investments (not your home)", unit: "₹ total", ph: "1500000", inr: 1, taps: [["Under ₹5 lakh", 250000], ["₹5–25 lakh", 1500000], ["₹25 lakh–1 crore", 6000000], ["₹1–10 crore", 40000000], ["Above ₹10 crore", 150000000]] }
   ];
   function quickApply(ans) {
     var l = life();
@@ -4029,15 +4029,18 @@
       if (i >= QUICK.length) { gmClose(); quickApply(ans); return; }
       var q = QUICK[i];
       gmDlg('<div style="font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:800">Question ' + (i + 1) + ' of ' + QUICK.length + '</div>'
-        + '<div style="font-weight:800;font-size:16px;margin:6px 0 10px">' + q.q + '</div>'
+        + '<div style="font-weight:800;font-size:17px;margin:6px 0 12px">' + q.q + '</div>'
+        + (q.taps && (!q.inr || !window.P || !P.cur || P.cur === "INR") ? '<div class="gm-qtaps">' + q.taps.map(function (t) { return '<button type="button" class="gm-qtap" data-v="' + t[1] + '">' + t[0] + '</button>'; }).join("") + '</div>'
+          + '<div style="font-size:11.5px;color:var(--muted);margin:10px 0 4px">Tap the closest. Rough is fine; change it any time. Or type the exact number:</div>' : "")
         + '<input id="gmQin" inputmode="decimal" placeholder="' + q.ph + '" style="font-size:18px">'
-        + '<div style="font-size:11px;color:var(--muted);margin:6px 0 12px">' + q.unit + ' · a rough number is fine; you can refine it later</div>'
+        + '<div style="font-size:11px;color:var(--muted);margin:6px 0 12px">' + q.unit + '</div>'
         + '<div style="display:flex;gap:8px"><button class="btn-sm" id="gmQok" style="flex:1;background:var(--gold);color:#0d1f35;font-weight:800;padding:10px">Next</button>'
         + '<button class="btn-sm" id="gmQskip" style="background:var(--cardAlt);color:var(--muted);padding:10px 14px">Skip</button></div>');
       var inp = document.getElementById("gmQin");
       function next(skip) { var v = skip ? 0 : num(inp.value); if (v > 0) ans[q.k] = v; i++; step(); }
       document.getElementById("gmQok").addEventListener("click", function () { next(false); });
       document.getElementById("gmQskip").addEventListener("click", function () { next(true); });
+      [].forEach.call(document.querySelectorAll(".gm-qtap"), function (b) { b.addEventListener("click", function () { inp.value = b.getAttribute("data-v"); next(false); }); });
       inp.addEventListener("keydown", function (e) { if (e.key === "Enter") next(false); });
     }
     step();
@@ -4047,8 +4050,8 @@
     var example = (window.P && P.example) || exampleCount() > 0;
     if (!example || G("gm_quick_done", false) || G("gm_quick_snooze", "") > ymd()) return "";
     return '<div class="gm-setup" style="background:var(--card);border:1px solid var(--border);border-left:3px solid var(--gold);border-radius:16px;padding:16px;margin-bottom:16px;display:flex;gap:8px;align-items:center;flex-wrap:wrap">'
-      + '<div style="flex:1;min-width:180px;font-size:12px;color:var(--text);line-height:1.5"><b>Example numbers for now.</b> Four quick questions make them yours.</div>'
-      + '<button class="btn-sm gm-action gm-secondary" onclick="gmQuickSetup()">Make them mine</button>'
+      + '<div style="flex:1;min-width:180px;font-size:12px;color:var(--text);line-height:1.5"><b>Example numbers.</b> Four quick questions, all taps, make it yours.</div>'
+      + '<button class="btn-sm gm-action gm-secondary" onclick="gmQuickSetup()">Make it mine</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--muted)" onclick="gmQuickLater()">Later</button></div>';
   }
 
@@ -4194,7 +4197,7 @@
   function calmTodayHTML() {
     var more = dueNowHTML() + (inRecovery() ? "" : driftHTML() + resHTML()) + msTodayHTML() + insightHTML() + estateHTML();
     var open = G("gm_more_today", false) === true;
-    return '<div class="section active">' + greetHTML() + (phone() ? vitalsHTML() : "") + interruptHTML() + undoBar() + checkinHTML() + setupStripHTML() + todayFocusHTML() + winsHTML()
+    return '<div class="section active">' + greetHTML() + (phone() ? vitalsHTML() : "") + interruptHTML() + undoBar() + checkinHTML() + setupStripHTML() + (window.gmAskOneHTML ? gmAskOneHTML() : "") + todayFocusHTML() + winsHTML()
       + (more.replace(/<[^>]*>/g, "").trim() ? '<details class="road-col gm-more-today"' + (open ? " open" : "") + ' ontoggle="gmMoreToday(this.open)">'
         + '<summary style="cursor:pointer;font-weight:800;font-size:13px">More today <span style="font-weight:500;color:var(--muted);font-size:11.5px">\u00b7 what is due, your week, calendar, estate</span></summary>'
         + '<div style="margin-top:10px">' + more + '</div></details>' : "")
@@ -6267,7 +6270,7 @@
     if (!one) return oneActionHTML();
     var h = one.stack ? oneActionHTML()
       : '<div class="gm-one" style="background:var(--card);border:2px solid var(--gold);border-radius:14px;padding:15px;margin-bottom:14px">'
-        + '<div style="font-size:10.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--gold);font-weight:800">Your one open action · chosen by risk</div>'
+        + '<div style="font-size:10.5px;letter-spacing:1.3px;text-transform:uppercase;color:var(--gold);font-weight:800">Your next step · the biggest risk first</div>'
         + '<div style="font-size:15px;font-weight:700;line-height:1.5;margin:8px 0 4px;color:var(--text)">' + one.text + '</div>'
         + '<div style="font-size:11.5px;color:var(--muted);line-height:1.6">' + one.why + ' Everything else waits below, folded.</div>'
         + '<button class="btn btn-p" data-haptic="success" style="margin-top:10px" onclick="' + one.act + '">' + one.btn + '</button>'
@@ -7151,7 +7154,7 @@
    touched, because only exact catalog matches change. Machine drafts are beta until a native professional reviews them. */
 (function () {
   var CAT = window.GM_I18N || {}, ORIG = "__gmEn", ATTRS = ["placeholder", "aria-label", "title"];
-  var NAMES = { en: "English", hi: "\u0939\u093f\u0902\u0926\u0940", mr: "\u092e\u0930\u093e\u0920\u0940" };
+  var NAMES = { en: "English", hi: "\u0939\u093f\u0902\u0926\u0940", mr: "\u092e\u0930\u093e\u0920\u0940", gu: "\u0a97\u0ac1\u0a9c\u0ab0\u0abe\u0aa4\u0ac0" };
   function get() { try { return JSON.parse(localStorage.getItem("gm_lang")); } catch (e) { return null; } }
   function pick() {
     var saved = get(); if (saved && (saved === "en" || CAT[saved])) return saved;
@@ -7159,7 +7162,23 @@
     return CAT[dev] ? dev : "en";
   }
   var lang = pick(), busy = false, queued = false;
-  function table() { return lang === "en" ? null : ((CAT[lang] || {}).strings || {}); }
+  // Plain English (owner, 2026-11-13: "too many complex jargons"). The research names stay in How this works and the glossary.
+  var PLAIN = {
+    "The daily three · the floor is enough": "Three small things today · tiny counts",
+    "Do the smallest version. The floor counts as a full win — that is the whole trick.": "Do the smallest version. Tiny still counts as a full win.",
+    "The floor versions count. Two minutes keeps the chain alive — perfection is not the system, showing up is.": "Even two minutes counts. Showing up matters more than doing it perfectly.",
+    "Runway": "Buffer", "Runway: — (low). Open the tab that changes this.": "Buffer: — (low). Open the tab that changes this.",
+    "is the only tab you need daily — three tiles and one open action.": "is the only tab you need daily: three small things and your next step.",
+    "Prime Directive Waterfall": "Your money steps, in order", "Conscious Spending Plan": "Where your money goes", "Antifragile": "Bounces back stronger",
+    "Sovereignty Command Center": "My Life OS", "Sovereignty Command Center · Setup": "My Life OS · Set-up", "Build Your Life Operating System": "Set up your Life OS",
+    "Playbook": "Stage plan", "Pillars": "All areas", "Scorecard": "Scores", "Money Map": "Money", "Shield": "Protection", "Risk Shield": "Protection",
+    "Wheel": "Life balance", "Commit": "Promises", "Health Cal": "Check-ups", "OKRs": "Quarter goals", "Growth": "Progress",
+    "Generic sequence — where it conflicts with your Playbook stage gates, the Playbook wins.": "General order. Where your stage plan says otherwise, follow the stage plan.",
+    "Highest-leverage next action: Investing Consistently": "Best next step: invest a little every month",
+    "vital few": "most important", "Exposed": "Not covered"
+  };
+  window.gmPlain = PLAIN;
+  function table() { return lang === "en" ? PLAIN : ((CAT[lang] || {}).strings || {}); }
   function swapText(n, T) {
     var en = n[ORIG] !== undefined ? n[ORIG] : n.textContent, key = en.replace(/\s+/g, " ").trim();
     if (!key) return;
@@ -7205,7 +7224,7 @@
     });
     return h + '</div>' + (lang !== "en" ? '<div class="muted" style="font-size:11.5px;margin-top:6px">Beta: a machine draft, checked by a person before the global launch. Anything not translated yet stays in English.</div>' : '') + '</div>';
   };
-  try { new MutationObserver(function () { if (!busy && lang !== "en") soon(); }).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) {}
+  try { new MutationObserver(function () { if (!busy) soon(); }).observe(document.documentElement, { childList: true, subtree: true }); } catch (e) {}
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { run(); }); else run();
 })();
 
@@ -7340,6 +7359,7 @@
       + "html body .kc.riskc.gm-start-here{box-shadow:0 0 0 1.5px var(--gold),0 8px 22px rgba(201,168,76,.18)}"
       + ".gm-start{font-size:12px;font-weight:800;letter-spacing:.3px;color:#7a5a14;margin-top:6px}html[data-theme=dark] .gm-start{color:var(--gold)}"
       // The stage chooser: one quiet segmented control instead of five chunky pills.
+      + ".gm-qtaps{display:grid;grid-template-columns:1fr;gap:8px}.gm-qtap{min-height:48px;border-radius:14px;border:1px solid var(--border);background:var(--card);color:var(--text);font:inherit;font-size:15px;font-weight:700;text-align:start;padding:10px 14px;cursor:pointer;box-shadow:inset 0 0 0 1px rgba(201,168,76,.25)}.gm-qtap:active{transform:scale(.98)}"
       + "html body .kr .chips{display:flex;flex-wrap:nowrap;gap:2px;padding:3px;border-radius:12px;background:var(--cardAlt);border:1px solid var(--border);width:100%;box-sizing:border-box;overflow-x:auto}"
       + "html body .kr .chips .chip{flex:1 1 auto;background:transparent;background-image:none;border:0;box-shadow:none;color:var(--muted);padding:8px 4px;border-radius:9px;font-weight:600;font-size:12px;white-space:nowrap;text-shadow:none}"
       + "html body .kr .chips .chip.on{background:var(--card);background-image:none;color:var(--text);font-weight:800;box-shadow:0 1px 3px rgba(13,31,53,.14),inset 0 0 0 1px rgba(201,168,76,.6)}"
@@ -7401,4 +7421,115 @@
     window.renderAll = function () { try { if (dedupeOnce()) { /* the data changed: render from the repaired list */ } } catch (x) {} var out = _r.apply(this, arguments); try { gmGlyphs(); } catch (x) {} return out; };
     try { gmGlyphs(); } catch (x) {}
   }
+})();
+
+// ── Listen: the screen read aloud, in the person's language (owner, 2026-11-13: many business owners read little) ──
+// A small speaker on each screen's top card reads its opening with the phone's own voice (offline, nothing leaves the
+// device). It shows only when the phone has a voice for the chosen language, so Gujarati is never read in an English accent.
+(function () {
+  var CODES = { en: "en-IN", hi: "hi-IN", mr: "mr-IN", gu: "gu-IN" }, WORD = { en: "Listen", hi: "\u0938\u0941\u0928\u0947\u0902", mr: "\u0910\u0915\u093e", gu: "\u0ab8\u0abe\u0a82\u0aad\u0ab3\u0acb" };
+  function lang() { try { return window.gmLang ? gmLang() : "en"; } catch (e) { return "en"; } }
+  function voiceFor(l) {
+    try {
+      if (!window.speechSynthesis || !window.SpeechSynthesisUtterance) return null;
+      var want = String(CODES[l] || "en-IN").toLowerCase(), base = want.slice(0, 2), vs = speechSynthesis.getVoices() || [];
+      var norm = function (v) { return String(v.lang || "").replace("_", "-").toLowerCase(); };
+      return vs.filter(function (v) { return norm(v) === want; })[0] || vs.filter(function (v) { return norm(v).slice(0, 2) === base; })[0] || null;
+    } catch (e) { return null; }
+  }
+  window.gmCanSpeak = function (l) { return !!voiceFor(l || lang()); };
+  function textOf(hero) {
+    var out = [], sec = hero.closest(".section") || hero.parentNode, el = hero, n = 0;
+    while (el && n < 4) { if (el.nodeType === 1 && !el.hidden) { var t = (el.innerText || el.textContent || "").replace(/\s+/g, " ").trim(); if (t) out.push(t); } el = el.nextElementSibling; n++; }
+    return out.join(". ").replace(/[\u{1F300}-\u{1FAFF}\u2600-\u27BF]/gu, "").slice(0, 600);
+  }
+  window.gmSay = function (btn) {
+    try {
+      if (speechSynthesis.speaking) { speechSynthesis.cancel(); return; }
+      var hero = btn.closest(".gm-hero, .gm-greet"), l = lang(), v = voiceFor(l);
+      if (!hero || !v) return;
+      var u = new SpeechSynthesisUtterance(textOf(hero)); u.voice = v; u.lang = v.lang; u.rate = 0.92;
+      speechSynthesis.speak(u);
+    } catch (e) {}
+  };
+  window.gmSayButtons = function () {
+    var l = lang(), can = !!voiceFor(l);
+    document.querySelectorAll(".gm-hero, .gm-greet").forEach(function (h) {
+      var b = h.querySelector(":scope > .gm-say");
+      if (!can) { if (b) b.remove(); return; }
+      if (!b) { b = document.createElement("button"); b.type = "button"; b.className = "gm-say"; b.textContent = "\uD83D\uDD0A"; b.setAttribute("onclick", "gmSay(this)"); h.appendChild(b); }
+      b.setAttribute("aria-label", WORD[l] || WORD.en); b.title = WORD[l] || WORD.en;
+    });
+  };
+  try {
+    var st = document.createElement("style");
+    st.textContent = ".gm-hero,.gm-greet{position:relative}.gm-greet{padding-inline-end:52px}html body .gm-hero>.gm-say,html body .gm-greet>.gm-say{position:absolute;top:10px;inset-inline-end:10px;width:44px;height:44px;border-radius:50%;border:1px solid rgba(217,183,90,.6);background:rgba(255,255,255,.08);color:#fff;font-size:18px;line-height:1;cursor:pointer;z-index:2}";
+    document.head.appendChild(st);
+  } catch (e) {}
+  var _r = window.renderAll;
+  if (typeof _r === "function") window.renderAll = function () { var o = _r.apply(this, arguments); try { gmSayButtons(); } catch (e) {} return o; };
+  try { if (window.speechSynthesis && speechSynthesis.addEventListener) speechSynthesis.addEventListener("voiceschanged", function () { try { gmSayButtons(); } catch (e) {} }); } catch (e) {}
+  setTimeout(function () { try { gmSayButtons(); } catch (e) {} }, 800);
+})();
+
+// ── One question a day (owner, 2026-11-13: "never stop them until every detail is filled; get them hooked to fill it in
+// gradually"). Nothing is ever required. Today shows ONE tap-to-answer question, chosen by risk; answering is a small,
+// visible win ("now knows 6 of 13"), "Not now" hides it until tomorrow, and "One more" is there for anyone enjoying it. ──
+(function () {
+  function G1(k, d) { try { var v = JSON.parse(localStorage.getItem(k)); return v == null ? d : v; } catch (e) { return d; } }
+  function S1(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  function day() { var d = new Date(); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
+  function e(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  var CASH = { id: "cash", q: "Cash you could use within a week (bank, FD), roughly?", taps: [["Under ₹1 lakh", 0.5], ["₹1–5 lakh", 3], ["₹5–25 lakh", 15], ["₹25 lakh–1 crore", 60], ["Above ₹1 crore", 150]] };
+  var ORDER = ["partner", "kids", "parents", "salaried", "business", "home", "vehicle", "parents70", "parentsAway", "govtStaff", "farmland"];
+  function facts() { return G1("gm_facts", {}) || {}; }
+  function factQ(id) { var f = ((window.GM_SYSTEMS || {}).facts || []).filter(function (x) { return x.id === id; })[0]; return f ? f.q : ""; }
+  function known(id) {
+    if (id === "cash") { var l = G1("gm_life", {}) || {}; return !!(l.ef && !(G1("gm_examples", {}) || {}).ef) || !!G1("gm_ask_cash", false); }
+    if (Object.prototype.hasOwnProperty.call(facts(), id)) return true;
+    if (id === "partner") return !!(window.P && P.pdob && !P.example);
+    if (id === "kids") return !!(window.P && P.kids && P.kids.length && !P.example);
+    if ((id === "parents70" || id === "parentsAway") && !facts().parents) return true;   // only asked when parents depend on you
+    return false;
+  }
+  function pool() { return ["cash"].concat(ORDER).filter(function (id) { return id === "cash" || factQ(id); }); }
+  function next() { var p = pool(); for (var i = 0; i < p.length; i++) if (!known(p[i])) return p[i]; return null; }
+  window.gmAskProgress = function () { var p = pool(); return { known: p.filter(known).length, total: p.length }; };
+  window.gmAskAnswer = function (id, v) {
+    if (id === "cash") {
+      var l = G1("gm_life", {}) || {}; l.ef = String(v); if (!+l.fFixed && window.P && P.exp) l.fFixed = String(P.exp);
+      S1("gm_life", l); S1("gm_ask_cash", true); try { if (window.gmClearExample) gmClearExample("ef"); } catch (x) {}
+    } else { var f = facts(); f[id] = !!v; S1("gm_facts", f); }
+    S1("gm_ask_day", day());
+    var pr = gmAskProgress();
+    if (typeof gmToast === "function") gmToast("Saved. Your Life OS now knows " + pr.known + " of " + pr.total + " things about your life.");
+    if (typeof renderAll === "function") renderAll();
+  };
+  window.gmAskLater = function () { S1("gm_ask_day", day()); S1("gm_ask_more", false); if (typeof renderAll === "function") renderAll(); };
+  window.gmAskMore = function () { S1("gm_ask_more", true); if (typeof renderAll === "function") renderAll(); };
+  window.gmAskOneHTML = function () {
+    // One ask at a time: while the four-tap set-up is still waiting, that is the ask.
+    if (!G1("gm_quick_done", false)) return "";
+    var id = next(), pr = gmAskProgress();
+    if (!id) return "";
+    var answeredToday = G1("gm_ask_day", "") === day();
+    if (answeredToday && !G1("gm_ask_more", false)) {
+      return '<div class="gm-ask gm-ask-done"><span>✔ Today’s question done · ' + pr.known + ' of ' + pr.total + ' known</span>'
+        + '<button type="button" class="gm-quiet" onclick="gmAskMore()">One more?</button></div>';
+    }
+    var q = id === "cash" ? CASH.q : factQ(id), btns;
+    if (id === "cash") btns = CASH.taps.map(function (t) { return '<button type="button" class="gm-qtap" onclick="gmAskAnswer(\'cash\',' + t[1] + ')">' + e(t[0]) + '</button>'; }).join("");
+    else btns = '<div class="gm-ask-yn"><button type="button" class="gm-qtap" onclick="gmAskAnswer(\'' + id + '\',1)">Yes</button><button type="button" class="gm-qtap" onclick="gmAskAnswer(\'' + id + '\',0)">No</button></div>';
+    return '<div class="gm-ask"><div class="gm-ask-k">One question · makes this app fit you · ' + pr.known + ' of ' + pr.total + ' known</div>'
+      + '<div class="gm-ask-q">' + e(q) + '</div><div class="gm-qtaps">' + btns + '</div>'
+      + '<button type="button" class="gm-quiet" onclick="gmAskLater()">Not now</button></div>';
+  };
+  try {
+    var st = document.createElement("style");
+    st.textContent = ".gm-ask{background:var(--card);border:1px solid var(--border);border-inline-start:3px solid var(--gold);border-radius:16px;padding:14px 16px;margin-bottom:16px}"
+      + ".gm-ask-k{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:6px}"
+      + ".gm-ask-q{font-weight:800;font-size:16px;line-height:1.35;margin-bottom:10px}.gm-ask-yn{display:grid;grid-template-columns:1fr 1fr;gap:8px}"
+      + ".gm-ask-done{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted);padding:6px 16px}";
+    document.head.appendChild(st);
+  } catch (x) {}
 })();

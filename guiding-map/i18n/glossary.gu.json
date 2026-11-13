@@ -1,0 +1,21 @@
+{
+ "about": "The Gujarati termbase for the Life OS: one word for each idea, everywhere. Register: everyday spoken business Gujarati, as a trader or a founder speaks it, never textbook Sanskritised words. Terms business people already say in English stay as they are (keep), or are written in Gujarati script where that is how they are said. Numbers, rupee amounts, names, brands and currency codes are never translated. Fragments are not translated: a sentence built in parts is queued to become one template (queue i18n-quality).",
+ "keep": ["SIP", "GST", "EMI", "INR", "OKR", "AI", "PAN", "Aadhaar", "UPI", "CA"],
+ "terms": {
+  "Today": "આજે",
+  "Goals": "લક્ષ્યો",
+  "Family": "પરિવાર",
+  "Health": "આરોગ્ય",
+  "Runway": "કેટલા મહિના ચાલે",
+  "emergency fund": "કટોકટી ભંડોળ",
+  "net worth": "કુલ સંપત્તિ",
+  "Net worth": "કુલ સંપત્તિ",
+  "financial independence": "આર્થિક સ્વતંત્રતા",
+  "savings rate": "બચત દર",
+  "Command Center": "કમાન્ડ સેન્ટર",
+  "optional": "મરજિયાત",
+  "Ops": "સંચાલન",
+  "Commit": "વચન",
+  "Plan": "યોજના"
+ }
+}
