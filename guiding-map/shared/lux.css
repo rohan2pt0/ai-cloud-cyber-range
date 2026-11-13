@@ -39,5 +39,24 @@ body > header.sx-sky button{background:rgba(255,255,255,.08);color:#eef3f8;borde
 nav#oskNav{background-color:#0b1628;background-image:linear-gradient(180deg,#0f1d36,#07101f);border-top:1px solid rgba(201,168,76,.35)}
 nav#oskNav button{color:#c9d3e3;background:transparent}
 nav#oskNav button.on{color:#f4e7c1;background:rgba(201,168,76,.14);box-shadow:inset 0 2px 0 #c9a24a}
+/* The More sheet: a gold-edged keyboard rising on glass. Dark: midnight with twinkling stars and a slow gold glint; light: ivory and pearl. */
+#oskMore{background:rgba(3,8,18,.55);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+#oskMore.on .sheet{animation:sxRise .28s cubic-bezier(.2,.8,.2,1)}
+@keyframes sxRise{from{transform:translateY(24px);opacity:.4}to{transform:none;opacity:1}}
+#oskMore .sheet{isolation:isolate;overflow:hidden;gap:10px;padding:22px 14px 84px;border-top:1px solid rgba(201,168,76,.55);border-radius:22px 22px 0 0;box-shadow:0 -12px 40px rgba(0,0,0,.35)}
+#oskMore .sheet::after{content:"";position:absolute;top:8px;left:50%;width:44px;height:4px;margin-left:-22px;border-radius:4px;background:linear-gradient(90deg,#b8902f,#f7e7a8,#b8902f);opacity:.8}
+#oskMore .sheet button{position:relative;overflow:hidden;min-height:58px;border-radius:14px;font-weight:600;letter-spacing:.01em;transition:transform .12s ease,box-shadow .12s ease}
+#oskMore .sheet button::after{content:"";position:absolute;top:0;bottom:0;left:-60%;width:40%;transform:skewX(-20deg);background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,248,220,.38),rgba(255,255,255,0));animation:sxGlint 5.5s ease-in-out infinite;pointer-events:none}
+#oskMore .sheet button:nth-child(odd)::after{animation-delay:.35s}#oskMore .sheet button:nth-child(4n)::after{animation-delay:.7s}
+@keyframes sxGlint{0%,62%{left:-60%}82%,100%{left:130%}}
+#oskMore .sheet button:active{transform:translateY(2px)}
+:root:not([data-theme="light"]) #oskMore .sheet{background-color:#0b1628;background-image:linear-gradient(180deg,#14264a 0%,#0b1628 45%,#060d1a 100%)}
+:root:not([data-theme="light"]) #oskMore .sheet::before{content:"";position:absolute;inset:0;z-index:-1;pointer-events:none;background-image:radial-gradient(circle at 12% 18%,#fff8dc 0 1.6px,transparent 2.4px),radial-gradient(circle at 34% 62%,#e8eefc 0 1.2px,transparent 2.0px),radial-gradient(circle at 58% 4%,#f7e7a8 0 1.8px,transparent 2.6px),radial-gradient(circle at 76% 44%,#fff 0 1.2px,transparent 2.0px),radial-gradient(circle at 88% 92%,#f7e7a8 0 1.6px,transparent 2.4px),radial-gradient(circle at 22% 96%,#e8eefc 0 1.4px,transparent 2.2px),radial-gradient(circle at 47% 36%,#fff8dc 0 1.1px,transparent 1.9px),radial-gradient(circle at 93% 8%,#fff 0 1.5px,transparent 2.3px),radial-gradient(circle at 3% 52%,#f7e7a8 0 1.4px,transparent 2.2px),radial-gradient(circle at 51% 97%,#fff 0 1.7px,transparent 2.5px),radial-gradient(circle at 70% 95%,#f7e7a8 0 1.2px,transparent 2.0px),radial-gradient(circle at 98% 60%,#e8eefc 0 1.3px,transparent 2.1px),radial-gradient(circle at 30% 3%,#fff 0 1.2px,transparent 2.0px),radial-gradient(circle at 8% 93%,#fff8dc 0 1.6px,transparent 2.4px);animation:sxTwinkle 4s ease-in-out infinite alternate}
+@keyframes sxTwinkle{from{opacity:.45}to{opacity:1}}
+:root:not([data-theme="light"]) #oskMore .sheet button{color:#f4e7c1;border:1px solid rgba(217,183,90,.45);background-color:#16274a;background-image:linear-gradient(180deg,#1d3260 0%,#122142 55%,#0c1830 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 -2px 0 rgba(0,0,0,.35),0 4px 12px rgba(0,0,0,.35)}
+:root[data-theme="light"] #oskMore{background:rgba(20,24,34,.35)}
+:root[data-theme="light"] #oskMore .sheet{background-color:#fffdf9;background-image:linear-gradient(180deg,#fffdf9 0%,#f6f0e4 100%)}
+:root[data-theme="light"] #oskMore .sheet button{color:#2a2414;border:1px solid rgba(184,144,47,.45);background-color:#fffaf0;background-image:linear-gradient(180deg,#fffaf0 0%,#f3ead8 100%);box-shadow:inset 0 1px 0 #fff,inset 0 -2px 0 rgba(120,90,20,.12),0 3px 8px rgba(80,60,20,.10)}
+@media (prefers-reduced-motion:reduce){#oskMore .sheet button::after,#oskMore .sheet::before{animation:none}#oskMore .sheet button::after{display:none}#oskMore.on .sheet{animation:none}}
 .row:has(> .sx-keys){flex-wrap:wrap}.row > .sx-keys{flex:1 1 100%;margin-top:8px}
 @media (prefers-reduced-motion:reduce){.sx-key, html body .ws-tap{transition:none}}
