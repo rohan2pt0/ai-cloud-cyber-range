@@ -3808,7 +3808,11 @@
         : '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmInstall()">Add to home screen</button>');
     h += foldHTML("Danger zone", "erase this device", '<div class="info">Erases every value of this app on this device. Synced copies and backup files are not touched. This cannot be undone.</div>'
       + '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmExportNow()">Save an encrypted backup first</button>'
-      + '<button class="btn-sm gm-erase" style="background:transparent;color:var(--red);border:1px solid var(--red)" onclick="gmEraseAsk()">Erase all data on this device</button></div>', false)
+      // A guarded switch (owner, 2026-11-13, after fighter-jet switch guards and Lamborghini's red flip cover): the cover lifts
+      // first, then the switch shows; the typed confirmation still follows. Impossible to press by accident.
+      + '<div class="gm-guard"><button type="button" class="gm-guard-cover" aria-expanded="false" onclick="gmGuardLift(this)">'
+      + '<span class="gm-guard-hinge" aria-hidden="true"></span>Lift the cover to erase</button>'
+      + '<button class="btn-sm gm-erase" style="background:transparent;color:var(--red);border:1px solid var(--red)" onclick="gmEraseAsk()" hidden>Erase all data on this device</button></div></div>', false)
       .replace('<details class="road-col"', '<details class="road-col gm-danger"');
     h += '</div>';
     return h;
@@ -5371,6 +5375,11 @@
       + "#gmToast{background:linear-gradient(180deg,rgba(18,30,52,.92),rgba(10,18,34,.94))!important;-webkit-backdrop-filter:blur(14px) saturate(140%);backdrop-filter:blur(14px) saturate(140%);border:1px solid rgba(201,168,76,.55)!important;color:#f3e2a6!important;border-radius:999px!important;padding:12px 20px!important;box-shadow:0 12px 32px rgba(0,0,0,.35),inset 0 1px 0 rgba(255,255,255,.10)!important;letter-spacing:.01em}"
       // The pop-up sheet: a jewellery-box lid, with a gold handle and a gold hairline along the top.
       + ".modal{box-shadow:0 -18px 48px rgba(0,0,0,.28),inset 0 1px 0 rgba(201,168,76,.45)!important}"
+      + ".gm-guard{position:relative;display:inline-flex;flex-direction:column;gap:8px;perspective:600px}"
+      + ".gm-guard-cover{position:relative;min-height:44px;padding:10px 18px 10px 34px;border-radius:12px;border:1px solid rgba(201,168,76,.55);color:#f6e7ad;font:700 13px var(--font-ui);cursor:pointer;background-color:#6e1022;background-image:linear-gradient(180deg,rgba(255,255,255,.12),rgba(255,255,255,0) 45%),linear-gradient(90deg,#3d0812 0%,#6e1022 45%,#9e1f37 85%,#b42e45 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 6px 16px rgba(61,8,18,.35);transform-origin:50% 0;transition:transform .32s cubic-bezier(.2,.8,.2,1),opacity .32s ease}"
+      + ".gm-guard-hinge{position:absolute;left:12px;top:50%;width:12px;height:12px;margin-top:-6px;border-radius:50%;background:var(--gold-metal);box-shadow:inset 0 1px 0 rgba(255,255,255,.6),0 1px 2px rgba(0,0,0,.4)}"
+      + ".gm-guard.up .gm-guard-cover{transform:rotateX(68deg) translateY(-6px);opacity:.55}"
+      + "@media (prefers-reduced-motion: reduce){.gm-guard-cover{transition:none}}"
       + ".mdrag{background:linear-gradient(90deg,#b8902f,#f3dc8f,#b8902f)!important;height:4px!important;border-radius:99px!important;opacity:.9}"
       + "@media (prefers-reduced-motion: reduce){.gm-star{animation:none}}"
       + ".gm-hero{position:relative;overflow:hidden;isolation:isolate}"
@@ -5535,6 +5544,12 @@
       requestAnimationFrame(function () { _tq = false; document.documentElement.style.setProperty("--sx", _tx.toFixed(3)); });
     }, { passive: true });
   }
+  window.gmGuardLift = function (el) {
+    var box = el.parentNode, sw = box.querySelector(".gm-erase");
+    box.classList.add("up"); el.setAttribute("aria-expanded", "true");
+    try { if (gmHapticsOn() && navigator.vibrate) navigator.vibrate([10, 40, 18]); } catch (x) {}
+    setTimeout(function () { if (sw) { sw.hidden = false; try { sw.focus(); } catch (x) {} } }, 260);
+  };
   window.gmHaptic = function (kind) {
     try {
       if (G("gm_still", false) || !gmHapticsOn() || !navigator.vibrate) return;
