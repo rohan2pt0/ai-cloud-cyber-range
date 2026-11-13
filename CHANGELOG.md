@@ -9,6 +9,8 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- Life OS for founders and business owners: one fact asked once ('I run a business, a startup or a practice of my own') turns on the 80/20 at the right places: the money ladder pays yourself first with a tax reserve and a 12-month buffer for irregular income; a Business continuity card on the Risk Shield (agreements, key-person cover, a second signatory, the two-person payment rule, IP in the company's name); and three systems: cash and runway with a quarterly 80/20 customer review, India tax dates (advance tax 15 Jun/Sep/Dec/Mar, sourced), and the CEO week.
+
 - The hosted All Apps page is now a rich landing: the gold crest, one gold 'Open my Command Center' action, the apps ready here (Life OS, Vantage), the four things on your node, a privacy line and a way back, on a midnight starfield. Static, no script, nothing from elsewhere.
 
 - Life OS calm luxury: section and risk emoji become gold-engraved medallions; a risk not started reads calm with one 'Start here' (health first) instead of a wall of red; the OKR stage chooser is one segmented control, a zero score is muted and Delete is a quiet labelled link away from the safe button; the spending bars draw their healthy band; 'My numbers' is a compact row with an Update cue. Fixed: the same suggested objective could be adopted twice (an untouched copy is merged once).
