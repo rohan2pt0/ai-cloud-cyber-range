@@ -15,7 +15,7 @@
         if (isOpen) {
           body += "<ol class='list'>" + p.steps.map(function (s, i) {
             var on = (t[p.id] || []).indexOf(i) >= 0;
-            return '<li class="row tick' + (on ? " done" : "") + '"><button class="check" data-a="pbTick" data-x="' + K.esc(p.id + "|" + i) + '" aria-pressed="' + on + '" aria-label="' + K.esc(K.t("playbooks.step", "Step {n}", { n: i + 1 })) + '">' + (on ? "✓" : "") + '</button><div class="grow">' + K.esc(s) + "</div></li>";
+            return '<li class="row tick' + (on ? " done" : "") + '"><button class="check sx-check" data-a="pbTick" data-x="' + K.esc(p.id + "|" + i) + '" aria-pressed="' + on + '" aria-label="' + K.esc(K.t("playbooks.step", "Step {n}", { n: i + 1 })) + '">' + (on ? "✓" : "") + '</button><div class="grow">' + K.esc(s) + "</div></li>";
           }).join("") + "</ol>";
           if (p.cmd) body += '<p class="muted">' + K.esc(K.t("playbooks.on_estate", "On the estate: ")) + '<code>' + K.esc(p.cmd) + "</code></p>";
           if (p.template) body += '<p class="muted">' + K.esc(K.t("playbooks.template", "Template: ")) + '<code>' + K.esc(p.template) + "</code></p>";

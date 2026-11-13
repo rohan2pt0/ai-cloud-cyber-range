@@ -249,6 +249,10 @@ def render(e: dict) -> dict[str, bytes]:
     e = resolve(e)
     js = (KIT / "core.js").read_text(encoding="utf-8").rstrip() + "\n" + "\n".join((KIT / "modules" / f"{m}.js").read_text(encoding="utf-8").rstrip() for m in MODULES)
     css = (KIT / "kit.css").read_text(encoding="utf-8")
+    # The SecuRAX shared look (reuse-first): the same file the Life OS builds in, after the kit's own sheet.
+    sx = GM / "shared" / "lux.css"
+    if sx.is_file():
+        css += "\n" + sx.read_text(encoding="utf-8")
     th = e.get("theme") or {}
     if th.get("accent"):
         css += f"\n:root {{ --accent:{th['accent']}; }}"
