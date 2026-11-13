@@ -7883,6 +7883,10 @@ window.GM_SYSTEMS = {"version":1,"verified":"2026-11-12","note":"Life systems: o
       + ".gm-st-layer{width:3px!important;height:3px!important;background:#d6fbf4!important;box-shadow:0 0 6px 2px rgba(94,234,212,.55)!important}"
       + "@keyframes gmtw{0%,100%{opacity:var(--lo,.35)}50%{opacity:1}}"
       + "#gmSky::before{content:'';position:absolute;inset:0;background:radial-gradient(120% 140% at 50% -20%,rgba(255,255,255,.04),transparent 60%)}"
+      // Stars live only where the header is empty: a band along the top edge and a thin one at the bottom; the line that holds
+      // the monogram, the title and the buttons stays clear (owner, 2026-11-13: stars mixing with the text looked busy).
+      + "#gmSky{-webkit-mask-image:linear-gradient(180deg,#000 0%,#000 16%,transparent 30%,transparent 82%,#000 94%,#000 100%);mask-image:linear-gradient(180deg,#000 0%,#000 16%,transparent 30%,transparent 82%,#000 94%,#000 100%)}"
+      + ".gm-st-field{opacity:.45}.gm-st-field.b{opacity:.65}"
 
       // The final finish at the touch points (owner, 2026-11-13): where hands land most, the rarest finish.
       // Jewel checkboxes: a glass setting, a polished-gold fill and a dark tick when set.
@@ -9553,7 +9557,7 @@ window.GM_SYSTEMS = {"version":1,"verified":"2026-11-12","note":"Life systems: o
     if (!sky) { sky = document.createElement("div"); sky.id = "gmSky"; sky.setAttribute("aria-hidden", "true"); hd.insertBefore(sky, hd.firstChild); }
     sky.setAttribute("data-k", key);
     var h = "";
-    for (var f = 0; f < 70; f++) {   // the fixed field: faint stars at their own pace, the same sky every night
+    for (var f = 0; f < 30; f++) {   // the fixed field: faint stars at their own pace, the same sky every night
       var m = gmHash("field" + f), fx = (m % 1000) / 10, fy = ((m >>> 10) % 1000) / 10;
       h += '<i class="gm-star gm-st-field' + (m % 7 === 0 ? " b" : "") + '" style="left:' + fx.toFixed(1) + '%;top:' + fy.toFixed(1) + '%;--tw:' + (3 + (m >>> 20) % 50 / 10).toFixed(1) + 's;--lo:' + (0.15 + (m >>> 4) % 30 / 100).toFixed(2) + ';animation-delay:-' + ((m >>> 14) % 60 / 10).toFixed(1) + 's"></i>';
     }
