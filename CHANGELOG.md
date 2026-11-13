@@ -9,6 +9,8 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- Life OS: an answered question never vanishes ('Your answers · change any' stays one tap away, current answer shown, so a mistaken tap is undone at once); on a laptop the Wheel's keys stay key-sized, the jade has a polished stone's gloss instead of a painted highlight, and every screen sits in one centred reading column.
+
 - Life OS tidy pass: tick boxes in the career plan and every checklist are small round checks (a gold coin when done) instead of large grey slabs; buttons in a row size to their content, so text beside them is never crushed to one word a line (Breaks); 'Edit' is a quiet link; the metric map's labels are engraved tags, not gold slabs; 'Pillar leverage' reads 'Where effort pays most' in plain words; guides drop 'OPSEC:', show a medallion and put the tag on its own line.
 
 - Life OS Wheel of Life: the 1 to 10 keys are real keycaps in a recessed tray that press down when tapped, and the chosen score is a polished jade cabochon in a gold bezel (midnight and gold in dark mode); the links to each life system are slim glass chips instead of large gold text.

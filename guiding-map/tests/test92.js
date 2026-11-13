@@ -40,7 +40,12 @@ setTimeout(() => {
       ok(/\.stk-k\{background:transparent!important/.test(lux), "metric labels are engraved tags, not gold slabs");
       none.goTab("guide");
       const gt = vis(none.document, none.document.querySelector(".section.active"));
+      ok(/max-width:440px/.test(lux) && !/\.ws-tap\.on\{[^}]*radial-gradient/.test(lux) && /min-width:900px\)\{html body #sections\{max-width:820px/.test(lux), "on a laptop: keys stay key-sized, jade has a stone's gloss (no painted blob), one centred column");
       ok(!/OPSEC:/.test(gt) && /Pick a password manager/.test(gt) && none.document.querySelector(".guide-card .gm-gt small"), "guides read plainly, with the tag on its own small line");
+      // a mistaken answer is never lost: answered questions stay one tap away while others wait
+      none.localStorage.setItem("gm_facts", JSON.stringify({ partner: true })); none.goTab("systems");
+      const ans = none.document.querySelector("details.gm-answers");
+      ok(ans && /Your answers \(1\)/.test(ans.textContent) && /partner/i.test(ans.textContent) && ans.querySelector('button[aria-pressed="true"]'), "an answered question stays reachable, its answer shown, while others are still open");
     } catch (e) { fail++; console.log("FAIL threw " + e.message); }
     console.log("test92 human pass: " + pass + " passed, " + fail + " failed"); process.exit(fail ? 1 : 0); }, 300);
   } catch (e) { fail++; console.log("FAIL threw " + e.message); console.log("test92: " + pass + " passed, " + fail + " failed"); process.exit(1); }
