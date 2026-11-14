@@ -1,10 +1,11 @@
+// The full layout (Show everything): these checks read the number bar, which start simple folds away (test98).
 // v18: freeze-ready. The quarterly system is taps (grade -> wheel -> pick goals), the rhythm goes into the calendar as one .ics,
 // Undo can never roll back days, pausing asks first, kids are added and planned in place, and "integrations" say what they really are.
 const fs=require('fs'),{JSDOM}=require('jsdom');
 let P=0,F=0,e=[];const ok=(n,c,d)=>{c?P++:(F++,e.push(n+(d?" :: "+d:"")));};
 function boot(seed){
   const dom=new JSDOM(fs.readFileSync('index.html','utf8'),{runScripts:"dangerously",pretendToBeVisual:true,url:"https://hub.securax.localhost/",
-    beforeParse(w){ if(seed) Object.entries(seed).forEach(([k,v])=>w.localStorage.setItem(k,JSON.stringify(v)));
+    beforeParse(w){ w.localStorage.setItem("gm_simple", "false"); if(seed) Object.entries(seed).forEach(([k,v])=>w.localStorage.setItem(k,JSON.stringify(v)));
       w.confirm=()=>false; w.alert=()=>{}; w.scrollTo=()=>{}; w.fetch=()=>Promise.reject(new Error("offline"));
       w.URL.createObjectURL=()=>"blob:x"; }});
   return dom;

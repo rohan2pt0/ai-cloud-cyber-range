@@ -5230,6 +5230,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       { l: "Net worth", v: nwPct ? nwPct + "%" : "\u2014", c: nwPct >= 100 ? "var(--green)" : nwPct >= 60 ? "var(--amber)" : "var(--red)", t: "life" }
     ];
   }
+  window.gmVitalsHTML = function () { return vitalsHTML(); };   // simpleToday (another scope) folds the numbers
   function vitalsHTML() {
     var h = '<div id="gmVitals">', exampleNums = !!((window.P && P.example) || exampleCount() > 0);
     // Premium calm (design-premium-showcase): numbers stay neutral ink. Progress (Today, Stack) is never 'danger'; a money
@@ -9226,9 +9227,10 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();editProfile()">Edit profile</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();toggleTheme()">Switch to ' + (curTheme() === "dark" ? "light" : "dark") + ' theme</button>'
       + ((window.matchMedia && matchMedia("(display-mode: standalone)").matches) ? "" : '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();gmInstall()">Install as an app (phone or computer)</button>')
+      + '<details class="gm-menu-more"><summary>Settings (3)</summary><div style="display:grid;gap:8px;margin-top:8px">'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" role="switch" aria-checked="' + (!G("gm_still", false)) + '" onclick="gmToggleStill()">Motion and haptics: ' + (G("gm_still", false) ? "off" : "on") + '</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" role="switch" aria-checked="' + (!G("gm_smart_off", false)) + '" onclick="gmToggleSmart()">Smart suggestions: ' + (G("gm_smart_off", false) ? "off" : "on") + '</button>'
-      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" role="switch" aria-checked="' + focusShow() + '" onclick="gmToggleFocusShow()">Show the focus timer: ' + (focusShow() ? "on" : "off") + '</button>'
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" role="switch" aria-checked="' + focusShow() + '" onclick="gmToggleFocusShow()">Show the focus timer: ' + (focusShow() ? "on" : "off") + '</button></div></details>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();gmReport()">Report a problem or idea</button>'
       + '</div><div style="font-size:12px;color:var(--muted);margin-top:12px">Life OS ' + esc(ver) + ' · your data stays on your devices</div>'
       + '<button class="btn-sm" style="margin-top:12px;background:none;color:var(--muted)" onclick="gmClose()">Close</button>');
@@ -10443,7 +10445,8 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     if (!box) return;
     var old = document.getElementById("gmVitals");
     if (old) old.parentNode.removeChild(old);
-    if (!phone()) document.body.insertAdjacentHTML("beforeend", vitalsHTML());   // on a phone the vitals sit at the top of Today
+    var simpleNow = G("gm_simple", true) !== false;   // start simple: the numbers wait under "More for today" (simpleToday)
+    if (!phone() && !simpleNow) document.body.insertAdjacentHTML("beforeend", vitalsHTML());   // on a phone the vitals sit at the top of Today
     if (curTab === "ask") { box.innerHTML = askHTML(); try { gmAskPing(); } catch (e) {} }
     else if (curTab === "guide") { box.innerHTML = guidesHTML(); }
     else if (curTab === "deadlines") { box.innerHTML = deadlinesHTML(); }
@@ -10467,7 +10470,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     }
     if (curTab === "wheel") { try { sysWheelLines(box); } catch (e) { console.log(e); } }
     try { calmFrame(); } catch (e) { console.log(e); }
-    if (phone() && curTab === "today" && !document.getElementById("gmVitals")) box.insertAdjacentHTML("afterbegin", vitalsHTML());
+    if (phone() && !simpleNow && curTab === "today" && !document.getElementById("gmVitals")) box.insertAdjacentHTML("afterbegin", vitalsHTML());
     var vi = document.getElementById("gmVitals"); if (vi && phone()) vi.classList.add("gm-inline");
     try { navRender(); } catch (e) { console.log(e); }
     // Inline help: self-explain every specialised term on whatever screen just rendered.
@@ -11608,11 +11611,16 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     var anchor = d3; while (anchor.parentNode && anchor.parentNode !== s) anchor = anchor.parentNode;
     // A visible reward stays in view (test36: "your estate had your back" is never folded); everything else folds.
     var rest = []; for (var n = anchor.nextElementSibling; n; n = n.nextElementSibling) { if (!/had your back/i.test(n.textContent || "") && !(n.matches(".gm-one") || n.querySelector(".gm-one"))) rest.push(n); }   // the one next step stays too
+    // The five numbers (Today, Stack, Buffer, Saving, Net worth) are folded too: a newcomer sees one card and the check-in.
+    var vit = document.getElementById("gmVitals");
+    if (vit && !s.contains(vit)) vit = null;                                  // a bar elsewhere is not Today's to fold
+    if (!vit && !document.getElementById("gmVitals") && window.gmVitalsHTML) { var tmp = document.createElement("div"); tmp.innerHTML = gmVitalsHTML(); vit = tmp.firstElementChild; }
+    if (vit) { vit.classList.add("gm-inline"); rest.unshift(vit); }
     if (rest.length >= 2) {
       var det = document.createElement("details"); det.className = "gm-simple-more";
       det.innerHTML = "<summary>More for today (" + rest.length + ")</summary>";
       rest.forEach(function (x) { det.appendChild(x); }); s.appendChild(det);
-    }
+    } else if (vit) { s.appendChild(vit); }
     if (!G("gm_start_done", false)) {
       anchor.insertAdjacentHTML("beforebegin", '<div class="kc gm-start" role="region" aria-label="Start here"><b>Start here: three things, that is all</b><ol>'
         + '<li>Each day, tick your three below. Tiny counts.</li>'
