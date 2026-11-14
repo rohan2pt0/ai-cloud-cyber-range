@@ -3909,7 +3909,19 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       // newer wins; on an exact tie the server's rule decides (larger value by code point), so every device converges on the same value
       if (!m[k] || rt > m[k] || (rt === m[k] && cpAfter(String(remote[k]), String(localStorage.getItem(k))))) { _set(k, remote[k]); m[k] = rt || nowSrv(); changed = true; }
     });
-    if (changed) { S_("gm_meta", m); renderAll(); }
+    if (changed) {
+      S_("gm_meta", m);
+      // Goals (sovS) and the profile (sovP) are also held in the app's in-memory S/P, and renderAll snapshots S
+      // back into sovS, so a synced value would otherwise be overwritten by the stale in-memory copy and only
+      // appear after a page reload. Reload them from storage first, so a value that arrived from another device
+      // is seen at once (audit round 1, finding 3).
+      try {
+        if (remote.sovS != null && window.load) { var s = window.load("sovS"); if (s) window.S = s; }
+        if (remote.sovP != null && window.load) { var p = window.load("sovP"); if (p) window.P = p; }
+        if (window.migrate) window.migrate();
+      } catch (e) {}
+      renderAll();
+    }
     return changed;
   }
   var lastPull = 0;

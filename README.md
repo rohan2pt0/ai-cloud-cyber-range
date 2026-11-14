@@ -135,6 +135,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 - "Last backup" tells the truth about where the copy lives
 - A lost phone no longer loses the backups
+- A locked Life OS still syncs
 
 **Release 0.4.0 - 2026-11-14:**
 
