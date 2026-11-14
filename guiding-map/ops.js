@@ -2203,7 +2203,7 @@
     var blob = {};
     for (var i = 0; i < localStorage.length; i++) {
       var k = localStorage.key(i);
-      if (k.indexOf("gm_ms_tok") !== 0 && k.indexOf("gm_sync_cfg") !== 0 && k.indexOf("gm_sync_od") !== 0) blob[k] = localStorage.getItem(k);
+      if (k.indexOf("gm_ms_tok") !== 0 && k.indexOf("gm_sync_cfg") !== 0 && k.indexOf("gm_sync_od") !== 0 && k !== "gm_bk_escrow") blob[k] = localStorage.getItem(k);
     }
     // With OneDrive sync on, backups are sealed with the same key: Microsoft stores ciphertext only.
     var enc = !!G("gm_sync_odk", null), name = "guiding-map-" + ymd() + (enc ? ".enc.json" : ".json");
@@ -2303,7 +2303,7 @@
     var blob = {};
     for (var i = 0; i < localStorage.length; i++) {
       var k = localStorage.key(i);
-      if (k.indexOf("gm_sync") !== 0 && k.indexOf("gm_ms_tok") !== 0) blob[k] = localStorage.getItem(k);
+      if (k.indexOf("gm_sync") !== 0 && k.indexOf("gm_ms_tok") !== 0 && k !== "gm_bk_escrow") blob[k] = localStorage.getItem(k);   // the escrowed phrase goes to the estate only
     }
     return blob;
   }
@@ -2586,6 +2586,14 @@
      on another device, the phrase. Old plain files still restore. Threat model: lifeos-backup. */
   // device-only: every sync path, the OneDrive copy and every backup skip keys that start with gm_sync_od, so the phrase never leaves
   var BK_PH = "gm_sync_od_bkphrase", BK_ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  /* Audit round 1 (owner 2026-11-14: "a lost phone costs nothing but the phone"): a phrase kept only on the lost phone made
+     every encrypted backup unreadable. When the Life OS is paired with the person's own estate, the phrase is also kept
+     there as gm_bk_escrow (the estate already holds the synced data itself, so this adds no exposure), and a newly paired
+     device adopts it, so old backups open on the new phone. It never goes into a backup file or the OneDrive copy. */
+  var BK_ESC = "gm_bk_escrow";
+  function bkAdopt() { var e = G(BK_ESC, null); if (!G(BK_PH, null) && typeof e === "string" && e.replace(/[^A-Z0-9]/gi, "").length >= 8) S_(BK_PH, e); }
+  window.gmBkAdopt = bkAdopt;
+  function bkEscrow(p) { var c = G("gm_sync_cfg", null); if (c && c.url && c.user && p && G(BK_ESC, null) !== p) S_(BK_ESC, p); }
   function bkNewPhrase() {
     var r = crypto.getRandomValues(new Uint8Array(20)), t = "";
     for (var i = 0; i < 20; i++) t += BK_ABC[r[i] % 32] + (i % 4 === 3 && i < 19 ? "-" : "");
@@ -2602,23 +2610,42 @@
     return odDerive(bkNorm(phrase), unb64(env.salt)).then(function (key) { return odOpen(key, env); });
   };
   function bkSave(text, enc) {
-    var a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([text], { type: "application/json" }));
-    a.download = "life-os-backup-" + ymd() + (enc ? "-encrypted" : "") + ".json";
-    a.click();
-    S_("gm_last_export", ymd()); renderAll();
+    var name = "life-os-backup-" + ymd() + (enc ? "-encrypted" : "") + ".json";
+    function download() {
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+      a.download = name;
+      a.click();
+      // a file on a wide screen (a laptop) is already off the phone; a phone download is not
+      if (enc && !(window.matchMedia && window.matchMedia("(max-width: 700px)").matches)) S_("gm_last_offsite", ymd());
+      S_("gm_last_export", ymd()); renderAll();
+    }
+    if (enc && navigator.canShare && typeof File === "function") {
+      try {
+        var file = new File([text], name, { type: "application/json" });
+        if (navigator.canShare({ files: [file] })) {
+          navigator.share({ files: [file], title: "Life OS backup" }).then(function () {
+            S_("gm_last_offsite", ymd()); S_("gm_last_export", ymd()); renderAll();
+          }, download);
+          return;
+        }
+      } catch (e) {}
+    }
+    download();
   }
   function bkBlob() {
     var blob = {};
     for (var i = 0; i < localStorage.length; i++) {
       var k = localStorage.key(i);
-      if (k.indexOf("gm_ms_tok") !== 0 && k.indexOf("gm_sync_od") !== 0 && k.indexOf("gm_undo") !== 0) blob[k] = localStorage.getItem(k);
+      if (k !== BK_ESC && k.indexOf("gm_ms_tok") !== 0 && k.indexOf("gm_sync_od") !== 0 && k.indexOf("gm_undo") !== 0) blob[k] = localStorage.getItem(k);   // a file never carries its own key
     }
     return blob;
   }
   window.gmExportNow = function () {
+    bkAdopt();
     var phrase = G(BK_PH, null), first = !G("gm_sync_od_bkshown", null);
     if (!phrase) { phrase = bkNewPhrase(); S_(BK_PH, phrase); }
+    bkEscrow(phrase);
     var blob = bkBlob();
     gmBackupSeal(blob, phrase).then(function (text) {
       gmTouch("Saved an encrypted backup", "a file on this device");
@@ -2629,7 +2656,10 @@
         + 'Keep it in your password manager. You see it only now (it is also in Settings, under Backup).</div>'
         + '<div id="gmBkPh" style="font-family:monospace;font-size:16px;font-weight:800;letter-spacing:1px;padding:10px;border:1px solid var(--border);border-radius:10px;text-align:center;margin-bottom:12px;user-select:all">' + esc(phrase) + '</div>'
         + '<div style="display:flex;gap:8px"><button class="btn-sm" style="background:var(--gold);color:#0d1f35;font-weight:800;padding:9px 18px" onclick="gmBkCopy()">Copy</button>'
-        + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);padding:9px 14px" onclick="gmClose()">I have saved it</button></div>');
+        + '</div><label class="f-label" for="gmBkLast" style="margin-top:12px;display:block">To be sure it is saved, type its last four characters</label>'
+        + '<div style="display:flex;gap:8px;align-items:center"><input id="gmBkLast" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="4" style="width:7em;font-family:monospace">'
+        + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);padding:9px 14px" onclick="gmBkConfirm()">I have saved it</button></div>'
+        + (G(BK_ESC, null) ? '<div class="muted" style="font-size:12px;margin-top:8px">Your estate keeps a copy too, so a new phone paired with it opens your backups.</div>' : ''));
     }).catch(function (e) { gmToast("No backup saved: " + (e && e.message || e) + ". Nothing readable was written."); });
   };
   window.gmEraseAsk = function () {
@@ -2649,10 +2679,17 @@
       wipe(); location.reload();
     });
   };
+  // "I have saved it" is believed only when the person can type the phrase's last four characters (they saved it somewhere)
+  window.gmBkConfirm = function () {
+    var p = String(G(BK_PH, "")).replace(/[^A-Z0-9]/gi, "").toUpperCase(), t = String((document.getElementById("gmBkLast") || {}).value || "").replace(/[^A-Z0-9]/gi, "").toUpperCase();
+    if (p && t === p.slice(-4)) { S_("gm_bk_confirmed", ymd()); gmClose(); gmToast("Saved and checked. A new phone can open your backups with it."); }
+    else gmToast("That does not match the end of the phrase. Copy it into your password manager, then try again.");
+  };
   window.gmBkCopy = function () {
     var p = G(BK_PH, ""); try { navigator.clipboard.writeText(p).then(function () { gmToast("Copied. Paste it into your password manager."); }); } catch (e) { gmToast(p); }
   };
   window.gmBkShow = function () {
+    bkAdopt();
     var p = G(BK_PH, null);
     if (!p) { gmToast("No backup phrase yet: it is made with your first backup."); return; }
     gmDlg('<div style="font-weight:800;font-size:15px;margin-bottom:8px">Your backup phrase</div><div style="font-family:monospace;font-size:16px;font-weight:800;padding:10px;border:1px solid var(--border);border-radius:10px;text-align:center;margin-bottom:12px;user-select:all">'
@@ -2682,6 +2719,7 @@
         try {
           var o = JSON.parse(r.result);
           if (o && o.kind === "securax-life-os-backup") {
+            bkAdopt();
             var mine = G(BK_PH, null), tryOpen = function (p) {
               return gmBackupOpen(o, p).then(function (blob) {
                 if (!mine) S_(BK_PH, bkNorm(p).replace(/(.{4})(?!$)/g, "$1-"));   // a new device keeps the phrase for its own backups
@@ -2758,13 +2796,29 @@
       "Latest: " + esc(String(snaps.latest)) + ". Nothing for you to do. A downloaded file is still the safest extra copy (it survives a lost estate).",
       '<div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmSnapList()">See / restore a day</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmExportNow()">Also export a file</button></div><div id="snapList" class="muted" style="margin-top:6px"></div>');
-    else if (!exp) row(false, "No local backup has ever been taken",
-      "Sync is convenience; a dated file is your actual insurance. It survives a deleted sync backend, a cleared browser, and a lost device.",
-      '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);margin-top:6px" onclick="gmExportNow()">Back up now</button>');
     else {
-      var days = Math.round((Date.now() - new Date(exp).getTime()) / 86400000);
-      row(days > 45 ? false : days > 31 ? null : true, "Last backup " + (days === 0 ? "today" : days + " days ago"),
-        days > 31 ? "Older than a month. Take a fresh one." : "Within the monthly rhythm.",
+      // safe only when a copy is off this phone: the estate snapshots above, or a OneDrive / shared copy within 31 days
+      function ageOf(v) {   // whole local calendar days since the date (a UTC parse made a backup from this morning read "1 days ago" in India by evening)
+        var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v)); if (!m) return null;
+        var d = new Date(+m[1], +m[2] - 1, +m[3]), n = new Date(); n = new Date(n.getFullYear(), n.getMonth(), n.getDate());
+        return isNaN(d.getTime()) ? null : Math.max(0, Math.round((n - d) / 86400000)); }
+      var offAges = [], odl = G("gm_sync_od_last", null), off = G("gm_last_offsite", null), a;
+      if (odl && (a = ageOf(odl)) !== null) offAges.push(a);
+      if (off && (a = ageOf(off)) !== null) offAges.push(a);
+      // a copy saved on a laptop or desktop (a wide screen) is already off the phone, including ones made before this check
+      if (exp && !(window.matchMedia && window.matchMedia("(max-width: 700px)").matches) && (a = ageOf(exp)) !== null) offAges.push(a);
+      var offDays = offAges.length ? Math.min.apply(null, offAges) : null;
+      if (offDays !== null && offDays <= 31) row(true, "Last backup " + (offDays === 0 ? "today" : offDays === 1 ? "yesterday" : offDays + " days ago"),
+        "A copy is off this phone. Within the monthly rhythm.",
+        '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);margin-top:6px" onclick="gmExportNow()">Back up now</button>');
+      else if (exp) row(null, "Saved on this phone only",
+        "A lost phone takes this copy with it. Save one off the phone: Drive, OneDrive or an e-mail to yourself.",
+        '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);margin-top:6px" onclick="gmExportNow()">Save a copy off this phone</button>');
+      else if (offDays !== null) row(offDays > 45 ? false : null, "Last backup " + offDays + " days ago",
+        "Older than a month. Take a fresh one.",
+        '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);margin-top:6px" onclick="gmExportNow()">Back up now</button>');
+      else row(false, "No local backup has ever been taken",
+        "Sync is convenience; a dated file is your actual insurance. It survives a deleted sync backend, a cleared browser, and a lost device.",
         '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);margin-top:6px" onclick="gmExportNow()">Back up now</button>');
     }
 

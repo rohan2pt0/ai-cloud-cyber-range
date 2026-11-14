@@ -9,6 +9,8 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- **"Last backup" tells the truth about where the copy lives** (audit round 1): a backup shared off the phone (the share sheet) or downloaded on a laptop counts as an off-phone copy; a file in the phone's own Downloads does not, and the Health row says "Saved on this phone only" with one tap to save a copy off the phone (test103).
+- **A lost phone no longer loses the backups** (audit round 1): when the Life OS is paired with your estate, the backup phrase is kept there too, so a new phone opens old backups with no typing; it is never in a backup file or the OneDrive copy; and "I have saved it" now asks for the phrase's last four characters (test102, threat model lifeos-backup).
 ## [0.4.0] - 2026-11-14
 
 - **Every number shows its health** (owner, 2026-11-14: "all KPIs must show the status as per its progress: danger red, medium amber, safe green, in gradient and natural materials; a 0.5m buffer must show red"): each KPI tile wears a soft natural-material gradient (jade, amber resin, ruby ember) with a hairline edge and a word (strong, building, needs care) under its label, so colour is never the only signal; example numbers and a day with nothing ticked yet never raise an alarm. `test101.js` holds it.

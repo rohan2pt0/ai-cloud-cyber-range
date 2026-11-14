@@ -131,6 +131,11 @@ This list is generated from [`features.json`](features.json); the Command Center
 <!-- readme:whats-new:start -->
 ## What's new
 
+**On main, in the next release:**
+
+- "Last backup" tells the truth about where the copy lives
+- A lost phone no longer loses the backups
+
 **Release 0.4.0 - 2026-11-14:**
 
 - Every number shows its health
