@@ -244,15 +244,30 @@ def _script_json(e: dict) -> str:
             .replace("<", "\\u003c").replace("\u2028", "\\u2028").replace("\u2029", "\\u2029"))
 
 
+def _fonts() -> str:
+    """The estate's two faces (guiding-map/fonts, SIL OFL), embedded as data URIs so an edition works offline: the display
+    serif from the design standard and the shared sans."""
+    import base64
+    out = []
+    for fam, f, w in (("Instrument Serif", "InstrumentSerif-Regular.woff2", "400"), ("Jost", "Jost-Variable.woff2", "100 900")):
+        p = GM / "fonts" / f
+        if p.is_file():
+            out.append(f"@font-face{{font-family:'{fam}';font-style:normal;font-weight:{w};font-display:swap;"
+                       f"src:url(data:font/woff2;base64,{base64.b64encode(p.read_bytes()).decode()}) format('woff2')}}")
+    return "/* Instrument Serif and Jost, SIL Open Font License 1.1: guiding-map/fonts */" + "".join(out) + "\n"
+
+
 def render(e: dict) -> dict[str, bytes]:
     """The app's files, in memory: index.html, manifest.json and sw.js."""
     e = resolve(e)
-    js = (KIT / "core.js").read_text(encoding="utf-8").rstrip() + "\n" + "\n".join((KIT / "modules" / f"{m}.js").read_text(encoding="utf-8").rstrip() for m in MODULES)
+    # The shared scripts (shared/*.js: the night sky, touch and light), the same engines the Life OS builds in (reuse-first).
+    shared = "".join(f.read_text(encoding="utf-8").rstrip() + "\n" for f in sorted((GM / "shared").glob("*.js")))
+    js = shared + (KIT / "core.js").read_text(encoding="utf-8").rstrip() + "\n" + "\n".join((KIT / "modules" / f"{m}.js").read_text(encoding="utf-8").rstrip() for m in MODULES)
     css = (KIT / "kit.css").read_text(encoding="utf-8")
     # The SecuRAX shared look (reuse-first): the same file the Life OS builds in, after the kit's own sheet.
     sx = GM / "shared" / "lux.css"
     if sx.is_file():
-        css += "\n" + sx.read_text(encoding="utf-8")
+        css += "\n" + _fonts() + sx.read_text(encoding="utf-8")
     th = e.get("theme") or {}
     if th.get("accent"):
         css += f"\n:root {{ --accent:{th['accent']}; }}"

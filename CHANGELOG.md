@@ -9,6 +9,16 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- Reading measure re-derived for the new text face: paragraphs on wide screens now cap at 49ch, so a line stays under 75 characters whatever the browser's font metrics (the sandbox found 76-78 at 1280 px).
+
+- Principle `every-device`: how it looks and feels is the most important feature, on every device. `guiding-map/tests/device_audit.py` proves it on nine device profiles (iPhone SE to Pro Max, Pixel 7, Galaxy, iPad Mini, iPad Pro sideways, a phone held sideways, a laptop, a large desktop) and runs in the sandbox. Its first run fixed: the lock now lays the seal beside the words on a phone held sideways, grows in proportion on a large screen, hides the empty menu while locked, and the explainer terms have finger-sized targets.
+
+- Lit materials, not pictures (`guiding-map/shared/materials.js`): one physically based renderer lights every precious surface from one studio that turns with the phone. Gold and platinum use their measured reflectance; the diamond is a ray-traced Tolkowsky brilliant (73 facets, refraction, total internal reflection, dispersion) in a platinum collet; the seal is a guilloché sunray dial under domed blue enamel with a gold bezel and padlock; the Vantage menu and More sheet are crushed velvet (Imageworks sheen). Glass refracts at its rim on Chromium. Keys have a skirt, 3 px travel, a tightening shadow and a haptic tick. Without WebGL the CSS look stays.
+
+- Paris-grade type and real materials, shared by every app: the house serif now sets display titles (the lock, Vantage's name, greetings and section titles) and Jost, a Futura-style sans (SIL OFL, embedded, offline), sets all text; the lock is frosted glass over the night sky with a two-metal gold and platinum bezel and a brilliant-cut diamond with fire; polished gold and platinum move their reflections with the phone's tilt; buttons sink and spring back with a ripple of light; the Vantage menu and More sheet gain a midnight velvet nap (`shared/touch.js`, `shared/lux.css`).
+
+- One shared night sky and real gold (`guiding-map/shared/sky.js`, `lux.css`): the Life OS and Vantage lock screens show a natural sky (stars by brightness and colour, each twinkling at its own pace, the Milky Way with dust lanes, a distant spiral galaxy, meteors and a slow comet) behind one gold seal; gold is now polished metal (a bright top, a horizon band, a bevel) everywhere it is used.
+
 - Life OS lock screen: the padlock emoji is replaced by an animated gold seal (a turning gold ring, a breathing glow, a line-drawn gold padlock, twinkling stars, a glint on Unlock); it says Windows Hello only on Windows; reduced motion stops it all.
 
 - Vantage More sheet glitters: midnight glass with twinkling stars, gold-edged keys and a slow gold glint in dark mode, pearl and gold in light; built once in `guiding-map/shared/lux.css` so every app gets it.

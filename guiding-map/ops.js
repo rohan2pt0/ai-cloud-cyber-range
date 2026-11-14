@@ -5215,7 +5215,7 @@
       + ".road-col,.okr-card,.kc{border-radius:16px;box-shadow:var(--shadow)}"
       + ".road-col{padding:14px}.info{border-radius:12px;font-size:13px;line-height:1.55}"
       // ui-rules-lint slice 3: on a wide screen, running text keeps a readable measure (at most ~75 characters a line)
-      + "@media (min-width:700px){#sections p,#sections li,#sections div:not(:has(div,table,button,svg,canvas,input,select,textarea,img,ul,ol)){max-width:54ch}}"
+      + "@media (min-width:700px){#sections p,#sections li,#sections div:not(:has(div,table,button,svg,canvas,input,select,textarea,img,ul,ol)){max-width:49ch}}"
       + ".cat-t{font-size:17px;letter-spacing:-.01em}"
       + ":root{--flow1:#1f5f6b;--flow2:#b8902f;--flow3:#0b6e52;--flow4:#a8603a}"
       + "html[data-theme=dark]{--flow1:#2f8f98;--flow2:#d4af37;--flow3:#1f9f78;--flow4:#c47a4e}"
@@ -5286,7 +5286,7 @@
       + ".gm-v-g{color:#0f7a5c}.gm-v-a{color:#a15c00}.gm-v-r{color:#b42318}"
       + "html[data-theme=dark] .gm-v-g{color:#34d399}html[data-theme=dark] .gm-v-a{color:#fbbf24}html[data-theme=dark] .gm-v-r{color:#fb7185}"
       // Real gold is metallic: shadow, highlight and depth, like light on a polished curve. Used sparingly.
-      + ":root{--gold-metal:linear-gradient(135deg,#7a5a14 0%,#c9a24a 20%,#f7e7a8 38%,#d4af37 52%,#9c7a26 72%,#ecd27e 90%,#b8902f 100%)}"
+      + ":root{--gold-metal:var(--sx-gold-edge,linear-gradient(135deg,#6b4a12 0%,#b88a2e 14%,#f3dc9a 30%,#fff6dc 36%,#d9b25a 48%,#8f6619 62%,#c79a3f 76%,#f1d690 88%,#a77a22 100%))}"
       + ".gm-hero .gm-hero-n{background:var(--gold-metal);-webkit-background-clip:text;background-clip:text;color:#e8c96a;-webkit-text-fill-color:transparent;filter:drop-shadow(0 1px 0 rgba(0,0,0,.25))}"
       + ".logo-ring{position:relative;border-color:transparent!important}"
       + ".logo-ring::before{content:'';position:absolute;inset:-2px;border-radius:50%;padding:2px;background:var(--gold-metal);-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;pointer-events:none}"
@@ -7649,17 +7649,14 @@
     if (!locked) { if (el) el.remove(); return; }
     if (el) return;
     el = document.createElement("div"); el.id = "gmLock"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", "Life OS is locked");
-    el.innerHTML = '<div class="gm-lock-card"><div class="gm-lock-seal" aria-hidden="true"><i class="gm-lock-ring"></i><i class="gm-lock-halo"></i>'
-      + '<svg viewBox="0 0 64 64" width="72" height="72"><defs><linearGradient id="gmLkG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f7e7a8"/><stop offset=".45" stop-color="#d4af37"/><stop offset="1" stop-color="#9c7a26"/></linearGradient></defs>'
-      + '<path class="gm-lock-shk" d="M21 29v-8a11 11 0 0 1 22 0v8" fill="none" stroke="url(#gmLkG)" stroke-width="4" stroke-linecap="round"/>'
-      + '<rect x="14" y="28" width="36" height="26" rx="7" fill="#0d1a30" stroke="url(#gmLkG)" stroke-width="3"/>'
-      + '<circle class="gm-lock-key" cx="32" cy="39" r="3.6" fill="#f7e7a8"/><path class="gm-lock-key" d="M30.6 41h2.8l1 6h-4.8z" fill="#f7e7a8"/></svg></div><h2>Locked</h2>'
-      + '<p>' + (/Windows/.test(navigator.userAgent || "") ? 'Unlock with Windows Hello, your fingerprint or face.' : 'Unlock with your fingerprint or face.') + '</p>'
-      + '<button type="button" class="gm-lock-go" onclick="gmUnlock()">Unlock</button>'
-      + '<details class="gm-lock-rec"><summary>Use your recovery code</summary><input id="gmLockCode" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX" aria-label="Recovery code">'
+    el.innerHTML = '<div class="gm-lock-card sx-glass sx-lock-card">' + (window.SXSky ? SXSky.seal() : '') + '<h2 class="sx-lock-title">Locked</h2>'
+      + '<p class="sx-lock-sub">' + (/Windows/.test(navigator.userAgent || "") ? 'Unlock with Windows Hello, your fingerprint or face.' : 'Unlock with your fingerprint or face.') + '</p>'
+      + '<button type="button" class="gm-lock-go sx-lock-key" onclick="gmUnlock()">Unlock</button>'
+      + '<details class="gm-lock-rec"><summary class="sx-lock-alt">Use your recovery code</summary><input id="gmLockCode" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX" aria-label="Recovery code">'
       + '<button type="button" onclick="gmUnlockCode(document.getElementById(\'gmLockCode\').value)">Unlock with code</button></details>'
       + '<div class="gm-lock-msg" aria-live="polite"></div></div>';
     document.body.appendChild(el);
+    try { if (window.SXSky) SXSky.mount(el, { comet: true }); } catch (e) {}   // the shared night sky; it ends when the lock is removed
   }
   function say(t) { var m = document.querySelector("#gmLock .gm-lock-msg"); if (m) m.textContent = t; }
   function opened() { locked = false; hiddenAt = 0; paint(); try { if (window.renderAll) renderAll(); } catch (e) {} }
@@ -7740,18 +7737,13 @@
     st.textContent = "html.gm-locked body > *:not(#gmLock){visibility:hidden}html.gm-veil body > *:not(#gmLock){filter:blur(18px)}"
       + "#gmLock{position:fixed;inset:0;z-index:99999;display:grid;place-items:center;padding:24px;background:radial-gradient(120% 80% at 50% 0%,#1d3557 0%,#0e1f38 50%,#07101f 100%);color:#eef3f8}"
       + ".gm-lock-card{width:100%;max-width:360px;text-align:center;position:relative}"
-      + "#gmLock{isolation:isolate;overflow:hidden}#gmLock::before{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;background-image:" + [[12,14,1.6],[28,72,1.2],[44,22,1],[63,9,1.7],[81,31,1.2],[91,68,1.5],[8,48,1.1],[72,86,1.4],[36,92,1.2],[55,58,1],[18,30,1.1],[86,12,1.3],[95,90,1],[4,82,1.4]].map(function (p) { return "radial-gradient(circle at " + p[0] + "% " + p[1] + "%,#fff4cf 0 " + p[2] + "px,transparent " + (p[2] + .8) + "px)"; }).join(",") + ";animation:gmLkTw 4.5s ease-in-out infinite alternate}"
-      + ".gm-lock-seal{position:relative;width:132px;height:132px;margin:0 auto 22px;display:grid;place-items:center;border-radius:50%;background:radial-gradient(circle at 38% 30%,#24375e 0%,#0f1d36 62%,#08111f 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),inset 0 -6px 18px rgba(0,0,0,.45),0 18px 40px rgba(0,0,0,.45)}"
-      + ".gm-lock-seal svg{position:relative;z-index:2;filter:drop-shadow(0 2px 6px rgba(212,175,55,.35))}"
-      + ".gm-lock-ring{position:absolute;inset:-5px;border-radius:50%;background:conic-gradient(from 0deg,#7a5a14,#f7e7a8,#c9a24a,#fff4cf,#9c7a26,#ecd27e,#7a5a14);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2px));mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2px));animation:gmLkSpin 9s linear infinite}"
-      + ".gm-lock-halo{position:absolute;inset:-22px;border-radius:50%;z-index:-1;background:radial-gradient(circle,rgba(212,175,55,.32) 0%,rgba(212,175,55,.08) 45%,transparent 70%);animation:gmLkBreath 3.6s ease-in-out infinite}"
-      + ".gm-lock-key{animation:gmLkKey 3.6s ease-in-out infinite}"
-      + ".gm-lock-go{position:relative;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 10px 26px rgba(201,162,74,.28)}.gm-lock-go::after{content:'';position:absolute;top:0;bottom:0;left:-60%;width:38%;transform:skewX(-20deg);background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);animation:gmLkGlint 4.8s ease-in-out infinite}"
-      + "@keyframes gmLkSpin{to{transform:rotate(360deg)}}@keyframes gmLkBreath{0%,100%{opacity:.55;transform:scale(.94)}50%{opacity:1;transform:scale(1.04)}}@keyframes gmLkKey{0%,100%{opacity:.7}50%{opacity:1}}@keyframes gmLkGlint{0%,60%{left:-60%}85%,100%{left:130%}}@keyframes gmLkTw{from{opacity:.4}to{opacity:1}}"
-      + "@media (prefers-reduced-motion:reduce){.gm-lock-ring,.gm-lock-halo,.gm-lock-key,#gmLock::before{animation:none}.gm-lock-go::after{display:none}}"
-      + ".gm-lock-rec summary{list-style:none;font-size:14px;letter-spacing:.02em}.gm-lock-rec summary::-webkit-details-marker{display:none}.gm-lock-rec summary::marker{content:''}#gmLock .gm-lock-rec summary::before{content:none}#gmLock .gm-lock-rec summary{text-decoration:underline;text-decoration-color:rgba(217,183,90,.45);text-underline-offset:5px}.gm-lock-card h2{font-family:var(--font-display,serif);font-weight:400;font-size:30px;margin:0 0 6px;color:#f4e7c1}"
-      + ".gm-lock-card p{color:#a9b6cc;font-size:14px;margin:0 0 18px}.gm-lock-go{width:100%;min-height:52px;border-radius:16px;border:0;font-weight:800;font-size:16px;color:#1a1305;cursor:pointer;background:linear-gradient(135deg,#7a5a14 0%,#c9a24a 20%,#f7e7a8 38%,#d4af37 52%,#9c7a26 72%,#ecd27e 90%,#b8902f 100%)}"
-      + ".gm-lock-rec{margin-top:16px;text-align:start}.gm-lock-rec summary{cursor:pointer;color:#d9b75a;min-height:44px;display:flex;align-items:center;justify-content:center}.gm-lock-rec input{width:100%;min-height:48px;font-size:16px;letter-spacing:.1em;text-align:center;margin:6px 0;border-radius:12px}"
+      + "#gmLock{isolation:isolate;overflow:hidden}.gm-lock-card{z-index:1}"
+      + ".gm-lock-go{position:relative;overflow:hidden;}.gm-lock-go::after{content:'';position:absolute;top:0;bottom:0;left:-60%;width:38%;transform:skewX(-20deg);background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);animation:gmLkGlint 4.8s ease-in-out infinite}"
+      + "@keyframes gmLkGlint{0%,60%{left:-60%}85%,100%{left:130%}}"
+      + "@media (prefers-reduced-motion:reduce){.gm-lock-go::after{display:none}}"
+      + ".gm-lock-rec summary{list-style:none}.gm-lock-rec summary::-webkit-details-marker{display:none}.gm-lock-rec summary::marker{content:''}#gmLock .gm-lock-rec summary::before{content:none}#gmLock .gm-lock-rec summary{text-decoration:underline;text-decoration-color:rgba(223,225,220,.35);text-underline-offset:6px}"
+      + ".gm-lock-go{width:100%;min-height:52px;border-radius:16px;border:0;cursor:pointer;color:#2b1b03;border:1px solid #8a6418;background-color:#e0bb66;background-image:var(--sx-gold-face,linear-gradient(180deg,#fff4d2 0%,#f4dc98 16%,#e0bb66 36%,#bf9038 49%,#b3872f 53%,#c99c45 62%,#e3c06d 80%,#f3d991 92%,#c9a04a 100%));box-shadow:inset 0 1px 0 rgba(255,250,232,.95),inset 0 -1px 0 rgba(96,64,10,.55),inset 0 0 0 1px rgba(255,236,180,.18),0 1px 0 rgba(255,255,255,.06),0 2px 4px rgba(70,46,6,.35),0 10px 24px rgba(0,0,0,.32);text-shadow:0 1px 0 rgba(255,244,214,.6)}"
+      + ".gm-lock-rec{margin-top:16px;text-align:start}.gm-lock-rec summary{cursor:pointer;min-height:44px;display:flex;align-items:center;justify-content:center}.gm-lock-rec input{width:100%;min-height:48px;font-size:16px;letter-spacing:.1em;text-align:center;margin:6px 0;border-radius:12px}"
       + ".gm-lock-rec button{width:100%;min-height:46px;border-radius:12px;border:1px solid rgba(217,183,90,.6);background:transparent;color:#eef3f8;font-weight:700}.gm-lock-msg{min-height:20px;margin-top:10px;color:#f0b8a8;font-size:13px}"
       + ".gm-lock-code{font-family:ui-monospace,Menlo,monospace;font-size:18px;letter-spacing:.12em;text-align:center;padding:12px;border-radius:12px;border:1px dashed rgba(201,168,76,.7);background:var(--cardAlt)}";
     document.head.appendChild(st);
