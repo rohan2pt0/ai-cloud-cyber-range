@@ -8108,7 +8108,7 @@
     var d3 = s.querySelector(".gm-d3"); if (!d3) return;
     var anchor = d3; while (anchor.parentNode && anchor.parentNode !== s) anchor = anchor.parentNode;
     // A visible reward stays in view (test36: "your estate had your back" is never folded); everything else folds.
-    var rest = []; for (var n = anchor.nextElementSibling; n; n = n.nextElementSibling) { if (!/had your back/i.test(n.textContent || "")) rest.push(n); }
+    var rest = []; for (var n = anchor.nextElementSibling; n; n = n.nextElementSibling) { if (!/had your back/i.test(n.textContent || "") && !(n.matches(".gm-one") || n.querySelector(".gm-one"))) rest.push(n); }   // the one next step stays too
     if (rest.length >= 2) {
       var det = document.createElement("details"); det.className = "gm-simple-more";
       det.innerHTML = "<summary>More for today (" + rest.length + ")</summary>";
