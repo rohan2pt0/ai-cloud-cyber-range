@@ -34,3 +34,42 @@
 3. **Done.** Open the Life OS: new bank messages are read by themselves, a short note says how many, and the inbox is cleared.
 
 **What the estate refuses:** any sender that is not a bank id, every one-time code (never stored), digit runs of 12 or more (masked), over 60 messages a minute, and any request without the inbox token. The inbox token cannot read anything.
+
+## Slice 1b, part 3: bank alerts read from your e-mail (owner steps, once)
+
+Banks send the same alerts by e-mail as by SMS. The estate can read them from the mailbox you already sign in to, so nothing
+is installed on the phone. This needs one app registration that you own. It is done once, by the owner as the publisher;
+the people you serve later only tap Accept on Microsoft's consent screen.
+
+**Why these choices** (Microsoft's rules, checked 14 November 2026):
+- Since June 2024 an app must live in a directory (a tenant); a personal account alone can no longer register one.
+- A browser-only (single-page) app's refresh token lasts 24 hours, so the phone cannot keep the connection; the estate does,
+  as a public client (no secret), whose refresh token lasts 90 days and renews while it is used.
+- `Mail.Read` (delegated) is the narrowest permission that can read an alert's text; `Mail.ReadBasic` leaves out the body.
+  Microsoft has no permission for "only these senders", so the estate keeps bank senders and drops everything else.
+
+**The steps (about 15 minutes):**
+1. **Your own tenant.** Never your employer's directory. Make a free Azure account with the Microsoft account you use for
+   SecuRAX (card and phone check; no charge unless you choose to upgrade). It creates a tenant in which you are the
+   administrator. Entra ID Free and app registrations stay free after the trial credit ends.
+2. **Register the app.** In the [Microsoft Entra admin center](https://entra.microsoft.com), switch to that tenant, then
+   *Identity → Applications → App registrations → New registration*:
+   - **Name:** SecuRAX estate;
+   - **Supported account types:** *Accounts in any organizational directory and personal Microsoft accounts* (it cannot be
+     changed later without a new registration);
+   - **Redirect URI:** platform *Public client/native (mobile & desktop)*, value: your hub address (`./securax names` shows it)
+     followed by `/sync/mail/callback`.
+3. **Permissions.** *API permissions → Add → Microsoft Graph → Delegated*: `Mail.Read` and `offline_access` (`openid`,
+   `profile` and `User.Read` are there already). Do not add a client secret or a certificate: the app needs none.
+4. **One value back.** From *Overview*, copy the **Application (client) ID**. It is not a secret. Give it to the estate once
+   when part 3 is built (`./securax mail connect` will ask for it); nothing else is copied anywhere.
+5. **Consent (one tap).** The Life OS will show *Read bank alerts from your e-mail*. You sign in and accept read access;
+   the estate starts reading. **Off switch:** the same card's *Turn off*, which deletes the estate's token; remove the app
+   from your account's consent page too, and it is gone.
+
+**What the estate will do** (built by Claude, threat model first): every 15 minutes it asks Microsoft Graph for new messages
+from known bank senders only, keeps the alert text with the same rules as the SMS inbox (no one-time codes, long digit runs
+masked, 14 days), and never sends, moves or deletes mail.
+
+**Later, for other people:** publisher verification (a Microsoft partner id) removes the "unverified" label on the consent
+screen; a person in an organisation may need their administrator's approval, which the card will say plainly.

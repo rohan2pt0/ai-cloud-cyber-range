@@ -1,9 +1,10 @@
+// The full layout (Show everything): these checks read the number bar, which start simple folds away (test98).
 // test91: one question a day (owner, 2026-11-13: never block a person until every detail is filled; fill it in gradually).
 const fs = require("fs"), path = require("path"); const { JSDOM } = require("jsdom");
 let pass = 0, fail = 0; const ok = (c, m) => { if (c) pass++; else { fail++; console.log("FAIL " + m); } };
 const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
 const w = new JSDOM(html, { runScripts: "dangerously", pretendToBeVisual: true, url: "http://localhost/",
-  beforeParse(w) { w.matchMedia = (q) => ({ matches: /max-width/.test(q), media: q, addListener() {}, removeListener() {} }); w.scrollTo = () => {}; w.fetch = () => Promise.reject(new Error("offline")); w.localStorage.setItem("gm_intro_seen", "true"); } }).window;
+  beforeParse(w) { w.localStorage.setItem("gm_simple", "false"); w.matchMedia = (q) => ({ matches: /max-width/.test(q), media: q, addListener() {}, removeListener() {} }); w.scrollTo = () => {}; w.fetch = () => Promise.reject(new Error("offline")); w.localStorage.setItem("gm_intro_seen", "true"); } }).window;
 setTimeout(() => {
   try {
     const d = w.document, ask = () => d.querySelector(".gm-ask:not(.gm-ask-done)");

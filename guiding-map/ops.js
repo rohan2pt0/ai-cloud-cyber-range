@@ -1775,6 +1775,7 @@
       { l: "Net worth", v: nwPct ? nwPct + "%" : "\u2014", c: nwPct >= 100 ? "var(--green)" : nwPct >= 60 ? "var(--amber)" : "var(--red)", t: "life" }
     ];
   }
+  window.gmVitalsHTML = function () { return vitalsHTML(); };   // simpleToday (another scope) folds the numbers
   function vitalsHTML() {
     var h = '<div id="gmVitals">', exampleNums = !!((window.P && P.example) || exampleCount() > 0);
     // Premium calm (design-premium-showcase): numbers stay neutral ink. Progress (Today, Stack) is never 'danger'; a money
@@ -2415,7 +2416,29 @@
     for (var i = 0; i < raw.length; i++) a[i] = raw.charCodeAt(i);
     return a;
   }
-  window.gmPushOn = function () {
+  window.gmPushOn = function (via) {
+    var sc = G("gm_sync_cfg", null);
+    if (via !== "worker" && sc && sc.url && sc.user) {   // the folded engineer path passes "worker"
+      // zero-setup: the estate makes its own VAPID key and stores the subscription; nothing to paste, no second app.
+      if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+        alert("This browser cannot receive push. On iPhone/iPad the app must be installed to the Home Screen from Safari first."); return;
+      }
+      return Notification.requestPermission().then(function (perm) {
+        if (perm !== "granted") { alert("Notifications were not allowed. Nothing else to do \u2014 the app still nudges you when you open it."); return; }
+        return fetch(sc.url + "/push/key?user=" + encodeURIComponent(sc.user), { headers: syncHeaders(sc), credentials: sc.access ? "include" : "omit" })
+          .then(function (r) { if (!r.ok) throw new Error("refused"); return r.json(); })
+          .then(function (v) {
+            return navigator.serviceWorker.ready.then(function (reg) {
+              return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: u8(v.key) });
+            });
+          }).then(function (sub) {
+            return fetch(sc.url + "/push/subscribe?user=" + encodeURIComponent(sc.user), {
+              method: "POST", headers: syncHeaders(sc), credentials: sc.access ? "include" : "omit",
+              body: JSON.stringify({ subscription: sub.toJSON ? sub.toJSON() : sub, label: "phone" })
+            }).then(function (r) { if (!r.ok) throw new Error("refused"); });
+          }).then(function () { S_("gm_push_on", true); S_("gm_push_via", "estate"); renderAll(); });
+      }).catch(function () { alert("Alerts could not be turned on. Check that your estate is reachable and that notifications are allowed, then try again."); });
+    }
     var w = (document.getElementById("pushUrl") || {}).value;
     if (w) S_("gm_push_cfg", { url: w.trim().replace(/\/+$/, "") });
     var c = pushCfg();
@@ -2437,33 +2460,47 @@
     }).catch(function (e) { alert("Could not enable nudges: " + e.message); });
   };
   window.gmPushOff = function () {
-    var c = pushCfg();
-    navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); })
+    var sc = G("gm_sync_cfg", null), via = G("gm_push_via", "");
+    return navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); })
       .then(function (s) {
         if (!s) return;
         var ep = s.endpoint;
         return s.unsubscribe().then(function () {
+          if (via === "estate" && sc && sc.url && sc.user) {
+            return fetch(sc.url + "/push/subscribe?user=" + encodeURIComponent(sc.user) + "&endpoint=" + encodeURIComponent(ep),
+              { method: "DELETE", headers: syncHeaders(sc), credentials: sc.access ? "include" : "omit" }).catch(function () {});
+          }
+          var c = pushCfg();
           if (c) return fetch(c.url + "/unsubscribe", {
             method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ endpoint: ep })
           });
         });
-      }).then(function () { localStorage.removeItem("gm_push_on"); renderAll(); });
+      }).then(function () { localStorage.removeItem("gm_push_on"); localStorage.removeItem("gm_push_via"); renderAll(); });
   };
   function pushHTML() {
     var on = G("gm_push_on", false), c = pushCfg();
+    var sc = G("gm_sync_cfg", null), via = G("gm_push_via", "");
+    var other = '<div class="info">A web app cannot wake your phone on a schedule; your SecuRAX estate can, through the free ntfy app. '
+      + 'On the estate, run <code>./securax notify setup</code> (it shows the topic to subscribe to on your phone), then '
+      + '<code>./securax routines on checkin-nudge</code> for a nudge at 7am and 7pm.</div>'
+      + '<details style="margin-top:6px"><summary style="cursor:pointer;color:var(--muted);font-size:12px">Already run your own Web Push sender?</summary>'
+      + '<div class="info">Paste its address here and this device subscribes to it. On iPhone/iPad, install the app from Safari first.</div>'
+      + '<label class="f-label">Worker URL</label><input id="pushUrl" placeholder="https://gm-push.yourname.workers.dev" value="' + esc((c && c.url) || "") + '">'
+      + '<button class="btn btn-p" onclick="gmPushOn(\'worker\')">Enable nudges on this device</button></details>';
     var h = '<div class="cat-t">\u{1F514} Nudges</div>';
     if (on) {
-      h += '<div class="info">This device is registered. Two nudges a day, 7am and 7pm IST. '
-        + 'Register each device separately \u2014 the subscription belongs to the install, not to you.</div>'
+      h += '<div class="info">' + (via === "estate"
+        ? "Alerts from your estate reach this device."
+        : "This device is registered. Two nudges a day, 7am and 7pm IST. Register each device separately \u2014 the subscription belongs to the install, not to you.")
+        + '</div>'
         + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmPushOff()">Turn nudges off here</button>';
+    } else if (sc && sc.url && sc.user) {
+      h += '<div class="info">Alerts from your estate, on this device. One tap; nothing to install.</div>'
+        + '<button class="btn btn-p" onclick="gmPushOn()">Allow alerts</button>'
+        + '<details style="margin-top:6px"><summary style="cursor:pointer;color:var(--muted);font-size:12px">Other ways (for engineers)</summary>'
+        + other + '</details>';
     } else {
-      h += '<div class="info">A web app cannot wake your phone on a schedule; your SecuRAX estate can, through the free ntfy app. '
-        + 'On the estate, run <code>./securax notify setup</code> (it shows the topic to subscribe to on your phone), then '
-        + '<code>./securax routines on checkin-nudge</code> for a nudge at 7am and 7pm.</div>'
-        + '<details style="margin-top:6px"><summary style="cursor:pointer;color:var(--muted);font-size:12px">Already run your own Web Push sender?</summary>'
-        + '<div class="info">Paste its address here and this device subscribes to it. On iPhone/iPad, install the app from Safari first.</div>'
-        + '<label class="f-label">Worker URL</label><input id="pushUrl" placeholder="https://gm-push.yourname.workers.dev" value="' + esc((c && c.url) || "") + '">'
-        + '<button class="btn btn-p" onclick="gmPushOn()">Enable nudges on this device</button></details>';
+      h += other;
     }
     return h;
   }
@@ -3934,6 +3971,7 @@
       + "#gmMoreSheet .gm-more-all{grid-column:1/-1}"
       + "#gmMoreSheet .gm-more-all summary{cursor:pointer;font-weight:800;font-size:13px;padding:10px 4px;min-height:44px;display:flex;align-items:center}"
       + "#gmMoreSheet .gm-more-g{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}"
+      + "#gmMoreSheet .sh button .gm-new{display:block;font-size:9px;font-weight:700;color:var(--muted);margin-top:2px}"
       + "#gmMoreSheet .sh button .gi{display:flex;justify-content:center;margin-bottom:5px;color:var(--text)}"
       + "html[data-theme=dark] #gmMoreSheet .sh button .gi{color:var(--gold)}"
       + "#gmVitals.gm-inline{position:static;box-shadow:none;border:0;background:none;padding:0 0 10px}"
@@ -3961,20 +3999,38 @@
     // The vital few first, ordered by risk (Shield, then what is due, then what runs your life); everything else folded.
     // Start simple (owner, 2026-11-14: "terrified to start", "too heavy"): three doors until the person asks for everything.
     var SIMPLE = G("gm_simple", true) !== false;
-    var FIRST = SIMPLE ? ["money", "risk", "wheel"] : ["risk", "deadlines", "systems", "money", "breaks", "wheel"];
-    function tile(t) {
+    var FIRST = SIMPLE ? ["money", "breaks", "wheel"] : ["risk", "deadlines", "systems", "money", "breaks", "wheel"];
+    // One more door each week the app is used (owner, 2026-11-14): start with three, grow gently in this order.
+    var UNLOCK = ["risk", "deadlines", "systems", "guide", "stack"];
+    var firstOpen = G("gm_first_open", "");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(firstOpen)) { firstOpen = ymd(); S_("gm_first_open", firstOpen); }
+    var fp = firstOpen.split("-"), then = new Date(+fp[0], +fp[1] - 1, +fp[2]).getTime(), now = new Date();
+    if (isNaN(then)) { then = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime(); }
+    var days = Math.max(0, Math.round((new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() - then) / 86400000));
+    var weeks = Math.min(UNLOCK.length, Math.floor(days / 7));
+    function tile(t, isNew) {
       var ic = window.gmIcon(t[0], 20);
       return '<button role="menuitem" class="' + (curTab === t[0] ? "on" : "") + '" onclick="gmNavGo(\'' + t[0] + '\')">'
-        + (ic ? '<span class="gi" aria-hidden="true">' + ic + '</span>' : '') + t[1] + '</button>';
+        + (ic ? '<span class="gi" aria-hidden="true">' + ic + '</span>' : '') + t[1] + (isNew ? '<span class="gm-new">new</span>' : '') + '</button>';
     }
     // A tab that cannot apply (the person answered No to its fact) is not shown at all: no clutter for a life that is not theirs.
     var said = G("gm_facts", {}) || {}, NEEDS = { kids: "kids" };
     function fits(t) { var f = NEEDS[t[0]]; return !(f && said.hasOwnProperty(f) && said[f] === false); }
-    var rest = TABS.filter(function (t) { return main.indexOf(t[0]) < 0 && FIRST.indexOf(t[0]) < 0 && fits(t); });
+    var unlocked = [];
+    if (SIMPLE) UNLOCK.slice(0, weeks).forEach(function (id) {
+      if (main.indexOf(id) >= 0 || FIRST.indexOf(id) >= 0) return;
+      TABS.forEach(function (t) { if (t[0] === id && fits(t)) unlocked.push(t); });
+    });
+    var shownIds = FIRST.concat(unlocked.map(function (t) { return t[0]; }));
+    var rest = TABS.filter(function (t) { return main.indexOf(t[0]) < 0 && shownIds.indexOf(t[0]) < 0 && fits(t); });
     sh += '<div class="gm-more-h">First</div>';
     FIRST.forEach(function (id) { TABS.forEach(function (t) { if (t[0] === id && main.indexOf(id) < 0 && fits(t)) sh += tile(t); }); });
+    unlocked.forEach(function (t) {
+      var i = UNLOCK.indexOf(t[0]);
+      sh += tile(t, i >= 0 && days >= (i + 1) * 7 && days < (i + 2) * 7);
+    });
     if (SIMPLE) {
-      sh += '<button role="menuitem" class="gm-show-all" onclick="gmSimple(false)">Show everything (' + (rest.length + 3) + ' more)</button></div></div>';
+      sh += '<button role="menuitem" class="gm-show-all" onclick="gmSimple(false)">Show everything (' + rest.length + ' more)</button></div></div>';
     } else {
       var restOpen = G("gm_more_all", false) || rest.some(function (t) { return t[0] === curTab; });
       sh += '<details class="gm-more-all"' + (restOpen ? " open" : "") + ' ontoggle="gmMoreAll(this.open)"><summary>Everything else (' + rest.length + ')</summary><div class="gm-more-g">';
@@ -5752,9 +5808,10 @@
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();editProfile()">Edit profile</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();toggleTheme()">Switch to ' + (curTheme() === "dark" ? "light" : "dark") + ' theme</button>'
       + ((window.matchMedia && matchMedia("(display-mode: standalone)").matches) ? "" : '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();gmInstall()">Install as an app (phone or computer)</button>')
+      + '<details class="gm-menu-more"><summary>Settings (3)</summary><div style="display:grid;gap:8px;margin-top:8px">'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" role="switch" aria-checked="' + (!G("gm_still", false)) + '" onclick="gmToggleStill()">Motion and haptics: ' + (G("gm_still", false) ? "off" : "on") + '</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" role="switch" aria-checked="' + (!G("gm_smart_off", false)) + '" onclick="gmToggleSmart()">Smart suggestions: ' + (G("gm_smart_off", false) ? "off" : "on") + '</button>'
-      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" role="switch" aria-checked="' + focusShow() + '" onclick="gmToggleFocusShow()">Show the focus timer: ' + (focusShow() ? "on" : "off") + '</button>'
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" role="switch" aria-checked="' + focusShow() + '" onclick="gmToggleFocusShow()">Show the focus timer: ' + (focusShow() ? "on" : "off") + '</button></div></details>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();gmReport()">Report a problem or idea</button>'
       + '</div><div style="font-size:12px;color:var(--muted);margin-top:12px">Life OS ' + esc(ver) + ' · your data stays on your devices</div>'
       + '<button class="btn-sm" style="margin-top:12px;background:none;color:var(--muted)" onclick="gmClose()">Close</button>');
@@ -6969,7 +7026,8 @@
     if (!box) return;
     var old = document.getElementById("gmVitals");
     if (old) old.parentNode.removeChild(old);
-    if (!phone()) document.body.insertAdjacentHTML("beforeend", vitalsHTML());   // on a phone the vitals sit at the top of Today
+    var simpleNow = G("gm_simple", true) !== false;   // start simple: the numbers wait under "More for today" (simpleToday)
+    if (!phone() && !simpleNow) document.body.insertAdjacentHTML("beforeend", vitalsHTML());   // on a phone the vitals sit at the top of Today
     if (curTab === "ask") { box.innerHTML = askHTML(); try { gmAskPing(); } catch (e) {} }
     else if (curTab === "guide") { box.innerHTML = guidesHTML(); }
     else if (curTab === "deadlines") { box.innerHTML = deadlinesHTML(); }
@@ -6993,7 +7051,7 @@
     }
     if (curTab === "wheel") { try { sysWheelLines(box); } catch (e) { console.log(e); } }
     try { calmFrame(); } catch (e) { console.log(e); }
-    if (phone() && curTab === "today" && !document.getElementById("gmVitals")) box.insertAdjacentHTML("afterbegin", vitalsHTML());
+    if (phone() && !simpleNow && curTab === "today" && !document.getElementById("gmVitals")) box.insertAdjacentHTML("afterbegin", vitalsHTML());
     var vi = document.getElementById("gmVitals"); if (vi && phone()) vi.classList.add("gm-inline");
     try { navRender(); } catch (e) { console.log(e); }
     // Inline help: self-explain every specialised term on whatever screen just rendered.
@@ -8134,11 +8192,16 @@
     var anchor = d3; while (anchor.parentNode && anchor.parentNode !== s) anchor = anchor.parentNode;
     // A visible reward stays in view (test36: "your estate had your back" is never folded); everything else folds.
     var rest = []; for (var n = anchor.nextElementSibling; n; n = n.nextElementSibling) { if (!/had your back/i.test(n.textContent || "") && !(n.matches(".gm-one") || n.querySelector(".gm-one"))) rest.push(n); }   // the one next step stays too
+    // The five numbers (Today, Stack, Buffer, Saving, Net worth) are folded too: a newcomer sees one card and the check-in.
+    var vit = document.getElementById("gmVitals");
+    if (vit && !s.contains(vit)) vit = null;                                  // a bar elsewhere is not Today's to fold
+    if (!vit && !document.getElementById("gmVitals") && window.gmVitalsHTML) { var tmp = document.createElement("div"); tmp.innerHTML = gmVitalsHTML(); vit = tmp.firstElementChild; }
+    if (vit) { vit.classList.add("gm-inline"); rest.unshift(vit); }
     if (rest.length >= 2) {
       var det = document.createElement("details"); det.className = "gm-simple-more";
       det.innerHTML = "<summary>More for today (" + rest.length + ")</summary>";
       rest.forEach(function (x) { det.appendChild(x); }); s.appendChild(det);
-    }
+    } else if (vit) { s.appendChild(vit); }
     if (!G("gm_start_done", false)) {
       anchor.insertAdjacentHTML("beforebegin", '<div class="kc gm-start" role="region" aria-label="Start here"><b>Start here: three things, that is all</b><ol>'
         + '<li>Each day, tick your three below. Tiny counts.</li>'

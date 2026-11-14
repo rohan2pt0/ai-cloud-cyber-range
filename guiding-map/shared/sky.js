@@ -101,39 +101,57 @@
        bright at the base where atomic oxygen emits at 557.7 nm (about 100 km up), streaked by vertical rays, fading upward
        into the faint red of oxygen's 630.0 nm line higher up, with a thin violet-blue fringe of nitrogen (427.8 nm) along
        the lower edge. Added as light over the blue night sky, as the eye and the camera see it; it drifts slowly, and is
-       recomputed four times a second into a cached image. */
+       recomputed four times a second into a cached image.
+       Owner 2026-11-14: the first version read as a barcode on a phone. Its columns were drawn at half width with a
+       high-frequency ray pattern, so each became a hard 6-pixel stripe on a 3x screen, and its 12 stacked bands stepped.
+       Now: one column per device pixel (up to 2x), the colour up the curtain is ONE smooth profile (a gradient, so no
+       steps), and the rays are smooth noise a few pixels wide on a curtain that is always partly lit, as in a photograph. */
     var AU = null;
+    function auProfile() {
+      // The curtain's colour from the bottom up, as light (premultiplied by its own strength): a thin nitrogen fringe,
+      // the sharp bright base of oxygen green, a long fade, and oxygen red at the top.
+      var cv = doc.createElement("canvas"); cv.width = 1; cv.height = 256;
+      var g = cv.getContext("2d"), gr = g.createLinearGradient(0, 256, 0, 0);
+      [[0, "rgba(110,60,255,0)"], [.025, "rgba(110,70,255,.22)"], [.06, "rgba(80,255,170,.95)"], [.12, "rgba(70,250,150,.78)"],
+       [.3, "rgba(60,230,140,.42)"], [.52, "rgba(60,200,130,.20)"], [.7, "rgba(170,150,110,.10)"], [.84, "rgba(255,70,60,.09)"],
+       [1, "rgba(255,60,50,0)"]].forEach(function (q) { gr.addColorStop(q[0], q[1]); });
+      g.fillStyle = gr; g.fillRect(0, 0, 1, 256);
+      return cv;
+    }
+    function smooth(x, seed) {                                          // value noise with a smooth (cubic) step, 0..1
+      var i = Math.floor(x), f = x - i, u = f * f * (3 - 2 * f);
+      function h(n) { var s = Math.sin(n * 127.1 + seed * 311.7) * 43758.5453; return s - Math.floor(s); }
+      return h(i) * (1 - u) + h(i + 1) * u;
+    }
     function drawAurora(t) {
-      if (!AU) { AU = { cv: doc.createElement("canvas") }; AU.cx = AU.cv.getContext("2d"); }
-      var aw = Math.ceil(W / 2), ah = Math.ceil(H * .42);
+      if (!AU) { AU = { cv: doc.createElement("canvas"), prof: auProfile() }; AU.cx = AU.cv.getContext("2d"); }
+      var sc = Math.min(D, 2), aw = Math.ceil(W * sc), ah = Math.ceil(H * .42 * sc);
       if (AU.cv.width !== aw || AU.cv.height !== ah) { AU.cv.width = aw; AU.cv.height = ah; AU.at = -1e9; }
       if (still || t - AU.at > 250 || t < AU.at) {
-        AU.at = t; var g = AU.cx, x, k, base, hgt, ray, i, y, f;
+        AU.at = t; var g = AU.cx, x, k, px, base, hgt, ray, f, I;
         g.globalCompositeOperation = "source-over"; g.clearRect(0, 0, aw, ah); g.globalCompositeOperation = "lighter";
         for (var c = 0; c < 2; c++) {                                   // two curtains, one behind the other
-          var amp = ah * (c ? .07 : .1), lift = ah * (c ? .55 : .72), str = c ? .55 : 1;
+          var amp = ah * (c ? .07 : .1), lift = ah * (c ? .62 : .8), str = c ? .5 : .9;
           for (x = 0; x < aw; x++) {
-            k = x / aw;
+            k = x / aw; px = x / sc;                                     // px: CSS pixels, so a ray has the same size on every screen
             base = lift + amp * Math.sin(k * 5.2 + t / 9000 + c * 2) + amp * .5 * Math.sin(k * 13 - t / 6500 + c);
-            ray = .42 + .3 * Math.sin(k * 97 + Math.sin(k * 23 + t / 4000) * 3 + c * 4) + .2 * Math.sin(k * 211 - t / 5200 + c) + .12 * Math.sin(k * 37 + t / 7000);   // irregular rays, as in a real curtain
-            ray = Math.max(0, Math.min(1, ray));
-            f = Math.max(0, Math.sin(Math.PI * Math.min(1, Math.max(0, (k - .04) / .92))));     // fades at both ends
-            hgt = ah * (.32 + .14 * Math.sin(k * 7 + t / 11000 + c)) * (.7 + .3 * ray);
-            var I = str * ray * f;
-            if (I < .02) continue;
-            for (i = 0; i < 12; i++) {                                    // up the curtain: green, then red at the top
-              y = base - hgt * i / 12; var u = i / 11;
-              var a = I * (.3 * Math.pow(1 - u, 1.6) + (i === 0 ? .25 : 0) + (u > .55 ? .07 * (u - .55) * 2 : 0));
-              g.fillStyle = u < .6 ? "rgba(70,255,150," + a.toFixed(3) + ")" : "rgba(255,70,40," + (a * .9).toFixed(3) + ")";
-              g.fillRect(x, y - hgt / 12, 1, hgt / 12 + .5);
-            }
-            g.fillStyle = "rgba(90,40,255," + (I * .07).toFixed(3) + ")"; g.fillRect(x, base, 1, ah * .03);   // the nitrogen fringe
+            // rays: fine (about 5 px) and broad (about 26 px) smooth noise drifting along the curtain, never a hard edge
+            ray = .55 * smooth(px / 5 + t / 2600 + c * 50, 1 + c) + .45 * smooth(px / 26 - t / 5200 + c * 9, 7 + c);
+            ray = Math.pow(ray, 1.6);
+            f = Math.max(0, Math.sin(Math.PI * Math.min(1, Math.max(0, (k - .03) / .94))));     // fades at both ends
+            f *= .35 + .65 * smooth(px / 140 + t / 15000 + c * 3, 13 + c);                       // brighter and fainter stretches
+            I = str * f * (.3 + .7 * ray);
+            if (I < .015) continue;
+            hgt = ah * (.42 + .16 * Math.sin(k * 7 + t / 11000 + c)) * (.75 + .35 * ray);
+            g.globalAlpha = Math.min(1, I);
+            g.drawImage(AU.prof, 0, 0, 1, 256, x, base - hgt, 1.6, hgt * 1.04);
           }
         }
+        g.globalAlpha = 1;
       }
       ctx.save(); ctx.globalCompositeOperation = "lighter";
-      if ("filter" in ctx) ctx.filter = "blur(2.4px)";
-      ctx.drawImage(AU.cv, 0, H - ah, W, ah); ctx.filter = "none"; ctx.restore();
+      if ("filter" in ctx) ctx.filter = "blur(1.2px)";
+      ctx.drawImage(AU.cv, 0, H - ah / sc, W, ah / sc); ctx.filter = "none"; ctx.restore();
     }
     function makeGalaxy() {
       var G = { R0: Math.min(W, H) * (opts.galaxySize || .14), cx: W * (opts.galaxyX || .27), cy: H * (opts.galaxyY || .115),
@@ -155,14 +173,14 @@
         }
       } catch (e) {}
       var R0 = G.R0, h = R0 * .34, rc = R0 * .16, P = 240000;               // rim period, ms
-      var v0 = TAU * R0 / P, k = 1 / Math.tan(18 * Math.PI / 180), rin = R0 * .14;
+      var v0 = TAU * R0 / P, k = 1 / Math.tan(24 * Math.PI / 180), rin = R0 * .2;   // pitch 24 deg: the arms wind about half a turn, as in M51 or M81, not a full ring
       G.om = function (r) { r = Math.max(r, R0 * .02); return v0 * (1 - Math.exp(-r / rc)) / r; };
       G.omp = G.om(R0 * .62);                                              // the pattern turns with the disc at corotation
       G.arm = function (r) { return -k * Math.log(Math.max(r, rin) / rin); };   // trailing arms
       function rdisc() { var r; do { r = -h * Math.log(Math.max(1e-6, R() * R())); } while (r > R0); return r; }
       var i, r;
       for (i = 0; i < 1500; i++) {                                         // the old disc: warm white, everywhere
-        r = rdisc(); G.parts.push({ r: r, t0: R() * TAU, kind: 0, b: .25 + R() * .5, s: .8 + R() * .5 });
+        r = rdisc(); G.parts.push({ r: r, t0: R() * TAU, kind: 0, b: .14 + R() * .3, s: .6 + R() * .4 });   // unresolved, mostly: the smooth disc below carries its light
       }
       for (i = 0; i < 520; i++) {                                          // the bulge: old, golden, nearly solid-body
         r = R0 * .2 * Math.pow(-Math.log(Math.max(1e-6, R())), 1.6) * .5; if (r > R0 * .38) { i--; continue; }
@@ -170,21 +188,21 @@
       }
       // Star formation is clumpy: clusters strung along each arm like beads, with dimmer gaps between them.
       var clumps = [];
-      for (i = 0; i < 80; i++) clumps.push({ r: R0 * (.17 + .78 * Math.pow(R(), .9)), side: i % 2 ? Math.PI : 0, j: gauss(R) * .12, w: .4 + R() * .8 });
+      for (i = 0; i < 80; i++) clumps.push({ r: R0 * (.2 + .62 * Math.pow(R(), 1.25)), side: i % 2 ? Math.PI : 0, j: gauss(R) * .12, w: .4 + R() * .8 });
       for (i = 0; i < 520; i++) {                                          // the arms' own glow: unresolved young light and gas
-        r = R0 * (.15 + .8 * Math.pow(R(), .85));
-        G.parts.push({ r: r, kind: 3, side: R() < .5 ? 0 : Math.PI, j: gauss(R) * .2, b: .035 + R() * .05, s: 3 + R() * 3.5 });
+        r = R0 * (.18 + .6 * Math.pow(R(), 1.3));
+        G.parts.push({ r: r, kind: 3, side: R() < .5 ? 0 : Math.PI, j: gauss(R) * .3, b: .016 + R() * .022, s: 4.5 + R() * 5.5 });
       }
       for (i = 0; i < 1700; i++) {                                         // young stars, born in clusters on the arms
         var cl = clumps[(R() * clumps.length) | 0];
-        if (R() > cl.w) { cl = { r: R0 * (.17 + .78 * R()), side: R() < .5 ? 0 : Math.PI, j: gauss(R) * .22 }; }
-        r = Math.max(R0 * .15, Math.min(R0 * .97, cl.r + gauss(R) * R0 * .035));
+        if (R() > cl.w) { cl = { r: R0 * (.2 + .65 * Math.pow(R(), 1.2)), side: R() < .5 ? 0 : Math.PI, j: gauss(R) * .22 }; }
+        r = Math.max(R0 * .18, Math.min(R0 * .9, cl.r + gauss(R) * R0 * .035));
         G.parts.push({ r: r, kind: 2, side: cl.side, j: cl.j + gauss(R) * .06, age: R(), b: .22 + R() * .42, s: .8 + R() * .8 });
       }
       for (i = 0; i < 620; i++) {                                          // dust on the inner edge of each arm
-        r = R0 * (.16 + .74 * R());
+        r = R0 * (.18 + .5 * R());
         if (R() < .35) { i--; continue; }   // patchy, not a drawn line
-        G.dust.push({ r: r, side: R() < .5 ? 0 : Math.PI, j: gauss(R) * .09 - .19, a: .035 + R() * .07, s: 2.4 + R() * 3.6 });
+        G.dust.push({ r: r, side: R() < .5 ? 0 : Math.PI, j: gauss(R) * .08 - .13, a: .006 + R() * .014, s: 3 + R() * 4 });   // dust dims the light behind it; it is never a black line
       }
       var sz = Math.ceil(R0 * 2.3 * D);
       G.cv = doc.createElement("canvas"); G.cv.width = G.cv.height = sz; G.cx2 = G.cv.getContext("2d");
@@ -192,7 +210,7 @@
       G.base = doc.createElement("canvas"); G.base.width = G.base.height = sz;
       var b = G.base.getContext("2d"), c = sz / 2, sc = D, gr;
       gr = b.createRadialGradient(c, c, 0, c, c, R0 * sc);
-      [[0, .34], [.15, .2], [.35, .1], [.6, .04], [1, 0]].forEach(function (q) { gr.addColorStop(q[0], "rgba(232,222,206," + q[1] + ")"); });
+      [[0, .42], [.15, .26], [.35, .14], [.6, .05], [.85, .012], [1, 0]].forEach(function (q) { gr.addColorStop(q[0], "rgba(232,222,206," + q[1] + ")"); });
       b.fillStyle = gr; b.fillRect(0, 0, sz, sz);
       gr = b.createRadialGradient(c, c, 0, c, c, R0 * .32 * sc);
       [[0, .95], [.08, .7], [.3, .28], [.65, .08], [1, 0]].forEach(function (q) { gr.addColorStop(q[0], "rgba(255,232,190," + q[1] + ")"); });
@@ -216,14 +234,14 @@
         if (p.kind === 3) {                                              // arm glow: moves with the pattern
           th = G.arm(p.r) + p.side + p.j + G.omp * t;
           x = c + Math.cos(th) * p.r * sc; y = c + Math.sin(th) * p.r * sc;
-          g.fillStyle = "rgba(150,180,255," + p.b.toFixed(3) + ")"; g.beginPath(); g.arc(x, y, p.s * sc * .5, 0, TAU); g.fill();
+          g.fillStyle = "rgba(150,180,255," + (p.b * Math.max(0, 1.25 - 1.15 * p.r / G.R0)).toFixed(3) + ")"; g.beginPath(); g.arc(x, y, p.s * sc * .5, 0, TAU); g.fill();
           continue;
         }
         if (p.kind === 2) {
           // A young star: born on the arm (pattern angle then), carried by its own orbit since, fading with age.
           a = (p.age + t / 90000) % 1;
           th = G.arm(p.r) + p.side + p.j + G.omp * (t - a * 90000) + G.om(p.r) * a * 90000;
-          life = Math.exp(-a * 2.3);
+          life = Math.exp(-a * 3.2) * (1.15 - .75 * p.r / G.R0);   // young light fades with age and towards the rim, so the edge never reads as a ring
           x = c + Math.cos(th) * p.r * sc; y = c + Math.sin(th) * p.r * sc;
           if (a < .14 && p.b > .78) { g.fillStyle = "rgba(255,118,168," + (.7 * (1 - a / .14)).toFixed(3) + ")"; g.beginPath(); g.arc(x, y, 1.6 * sc, 0, TAU); g.fill(); }
           g.fillStyle = "rgba(168,196,255," + (p.b * life).toFixed(3) + ")";

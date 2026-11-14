@@ -1,3 +1,4 @@
+// The full layout (Show everything): these checks read the number bar, which start simple folds away (test98).
 // test77: luxury slice 1, typography and motion (owner, 2026-11-12).
 const fs = require("fs"), path = require("path");
 const { JSDOM } = require("jsdom");
@@ -5,7 +6,7 @@ let pass = 0, fail = 0;
 function ok(c, m) { if (c) pass++; else { fail++; console.log("FAIL " + m); } }
 const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
 const dom = new JSDOM(html, { runScripts: "dangerously", url: "http://localhost/", pretendToBeVisual: true,
-  beforeParse(w) { w.matchMedia = (q) => ({ matches: /max-width/.test(q), media: q, addListener() {}, removeListener() {} }); w.scrollTo = () => {}; w.confirm = () => false; w.alert = () => {}; w.fetch = () => Promise.reject(new Error("offline")); } });
+  beforeParse(w) { w.localStorage.setItem("gm_simple", "false"); w.matchMedia = (q) => ({ matches: /max-width/.test(q), media: q, addListener() {}, removeListener() {} }); w.scrollTo = () => {}; w.confirm = () => false; w.alert = () => {}; w.fetch = () => Promise.reject(new Error("offline")); } });
 const w = dom.window, doc = w.document;
 setTimeout(() => {
   try {

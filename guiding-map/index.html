@@ -2649,7 +2649,7 @@ function renderPlaybook(){
     "float fres(float ci,float n1,float n2){float r=(n1-n2)/(n1+n2);r*=r;return r+(1.-r)*pow(1.-ci,5.);}",
     "float chan(vec3 p,vec3 d,vec3 n,float ior,int ch){vec3 dir=refract(d,n,1./ior);float th=1.-fres(clamp(dot(-d,n),0.,1.),1.,ior);float acc=0.;",
     " for(int b=0;b<5;b++){vec3 m;float t=exitT(p+dir*1e-4,dir,m);p+=dir*t;vec3 nm=-m;vec3 od=refract(dir,nm,ior);",
-    "  if(dot(od,od)<1e-4){dir=reflect(dir,nm);continue;}float Fi=fres(clamp(dot(-dir,nm),0.,1.),ior,1.);vec3 e=env(uGem*od,.004);",
+    "  if(dot(od,od)<1e-4){dir=reflect(dir,nm);continue;}float Fi=fres(clamp(dot(-dir,nm),0.,1.),ior,1.);vec3 e=env(uGem*od,.012)+vec3(.05,.052,.058);",
     "  acc+=th*(1.-Fi)*(ch==0?e.r:(ch==1?e.g:e.b));th*=Fi;dir=reflect(dir,nm);}return acc;}",
     "vec4 gem(vec2 q){vec3 o=uGem*vec3(q,3.),d=uGem*vec3(0,0,-1.);vec3 n;float t=enterT(o,d,n);if(t<0.)return vec4(0.);vec3 p=o+d*t;",
     " float F=fres(clamp(dot(-d,n),0.,1.),1.,2.426);vec3 c=F*env(uGem*reflect(d,n),.004);",
@@ -2660,9 +2660,9 @@ function renderPlaybook(){
     "vec4 over(vec4 a,vec4 b){return b+a*(1.-b.a);}",
     "vec4 seal(vec2 px){vec2 P=(px-uRes*.5)/uSeal;float r=length(P);float aa=1.6/uSeal;vec4 o=vec4(0.);",
     " if(r<.905){vec3 N=normalize(vec3(P*.95,1.));float a=atan(P.y,P.x);vec3 T=vec3(-sin(a),cos(a),0.);",
-    "  float rid=sin(a*96.)*.55+sin(a*192.+r*14.)*.15;vec3 Nb=normalize(vec3(P*.06,1.)+T*rid*.30);vec3 un=metal(Nb,F0S,.30);",
+    "  float sp=6.2832*r*uSeal/96.;float rid=sin(a*96.)*.55*smoothstep(1.5,4.,sp)+sin(a*192.+r*14.)*.15*smoothstep(3.,8.,sp);vec3 Nb=normalize(vec3(P*.06,1.)+T*rid*.30);vec3 un=metal(Nb,F0S,.30);",
     "  float cv=max(N.z,.2);vec3 Tr=exp(-vec3(4.4,3.0,1.05)*(.62+.18*r)/cv);float Fc=.04+.96*pow(1.-cv,5.);",
-    "  vec3 c=Fc*env(reflect(vec3(0,0,-1),N),.02)+(1.-Fc)*Tr*un;c*=mix(.30,1.,smoothstep(-.015,.08,padSd(P-vec2(.03,-.045))));",
+    "  vec3 c=Fc*env(reflect(vec3(0,0,-1),N),.07)+(1.-Fc)*Tr*un;c*=mix(.30,1.,smoothstep(-.015,.08,padSd(P-vec2(.03,-.045))));",
     "  o=vec4(c,1.)*smoothstep(.905,.905-aa,r);}",
     " vec2 g;float sd=shk(P,g);if(sd<.04+aa){float q=clamp(sd/.04,0.,1.);vec3 N=normalize(vec3(g*q,sqrt(max(1.-q*q,.03))));o=over(o,vec4(metal(N,F0G,.09),1.)*smoothstep(.04+aa,.04,sd));}",
     " float bd=body(P);if(bd<aa){float bv=.045;float t=clamp(1.+bd/bv,0.,1.);vec2 gb=normalize(vec2(body(P+vec2(.001,0))-body(P-vec2(.001,0)),body(P+vec2(0,.001))-body(P-vec2(0,.001)))+1e-6);",
@@ -2673,7 +2673,7 @@ function renderPlaybook(){
     " o=over(o,ring(r,P,.885,.905,F0P,.12,aa));o=over(o,ring(r,P,.92,1.,F0G,.14,aa));",
     " vec2 gc=vec2(0.,.962);vec2 q=(P-gc)/.135;float rq=length(q);",
     " if(rq<1.36){o=over(o,vec4(0.,0.,0.,.55)*smoothstep(1.36,1.05,length(q-vec2(.12,-.18))));",
-    "  o=over(o,ring(rq,q,1.,1.32,F0P,.10,aa/.135));if(rq<1.02){vec4 gm=gem(q*1.02);o=over(o,vec4(gm.rgb,1.)*smoothstep(1.02,.99,rq));}}",
+    "  o=over(o,ring(rq,q,1.,1.32,F0P,.10,aa/.135));if(rq<1.02){float pq=.5/(uSeal*.135);vec4 gm=(gem(q*1.02+vec2(-pq,-pq))+gem(q*1.02+vec2(pq,-pq))+gem(q*1.02+vec2(-pq,pq))+gem(q*1.02+vec2(pq,pq)))*.25;o=over(o,vec4(gm.rgb,1.)*smoothstep(1.02,.99,rq));}}",
     " return o;}",
     // Velvet: a crushed pile under the same two lights, the Estevez-Kulla sheen lobe; brightest where the pile lies over.
     "vec4 velvet(vec2 px){vec2 p=px/uDpr;float cr=fbm(p*.011);float an=cr*9.42;vec2 gd=vec2(cos(an),sin(an));",
@@ -2742,7 +2742,7 @@ function renderPlaybook(){
     if (!ok || !it.vis) return false;
     var r = it.el.getBoundingClientRect(); if (r.width < 2 || r.height < 2) return false;
     if (it.kind === "velvet" && doc.documentElement.getAttribute("data-theme") === "light" && it.el.matches("#oskMore .sheet")) { it.cx.clearRect(0, 0, it.cv.width, it.cv.height); it.el.classList.remove("sx-mat-on"); return false; }
-    var d = Math.min(2, window.devicePixelRatio || 1) * (it.kind === "velvet" ? 0.75 : 1) * Q;
+    var d = Math.min(it.kind === "seal" ? 3 : 2, window.devicePixelRatio || 1) * (it.kind === "velvet" ? 0.75 : 1) * Q;
     var W = Math.round((r.width + 2 * it.inset) * d), H = Math.round((r.height + 2 * it.inset) * d);
     var f = Math.min(1, MAXPX / Math.max(W, H)); if (f < 1) { d *= f; W = Math.round(W * f); H = Math.round(H * f); }
     if (it.cv.width !== W || it.cv.height !== H) { it.cv.width = W; it.cv.height = H; }
@@ -3103,39 +3103,57 @@ function renderPlaybook(){
        bright at the base where atomic oxygen emits at 557.7 nm (about 100 km up), streaked by vertical rays, fading upward
        into the faint red of oxygen's 630.0 nm line higher up, with a thin violet-blue fringe of nitrogen (427.8 nm) along
        the lower edge. Added as light over the blue night sky, as the eye and the camera see it; it drifts slowly, and is
-       recomputed four times a second into a cached image. */
+       recomputed four times a second into a cached image.
+       Owner 2026-11-14: the first version read as a barcode on a phone. Its columns were drawn at half width with a
+       high-frequency ray pattern, so each became a hard 6-pixel stripe on a 3x screen, and its 12 stacked bands stepped.
+       Now: one column per device pixel (up to 2x), the colour up the curtain is ONE smooth profile (a gradient, so no
+       steps), and the rays are smooth noise a few pixels wide on a curtain that is always partly lit, as in a photograph. */
     var AU = null;
+    function auProfile() {
+      // The curtain's colour from the bottom up, as light (premultiplied by its own strength): a thin nitrogen fringe,
+      // the sharp bright base of oxygen green, a long fade, and oxygen red at the top.
+      var cv = doc.createElement("canvas"); cv.width = 1; cv.height = 256;
+      var g = cv.getContext("2d"), gr = g.createLinearGradient(0, 256, 0, 0);
+      [[0, "rgba(110,60,255,0)"], [.025, "rgba(110,70,255,.22)"], [.06, "rgba(80,255,170,.95)"], [.12, "rgba(70,250,150,.78)"],
+       [.3, "rgba(60,230,140,.42)"], [.52, "rgba(60,200,130,.20)"], [.7, "rgba(170,150,110,.10)"], [.84, "rgba(255,70,60,.09)"],
+       [1, "rgba(255,60,50,0)"]].forEach(function (q) { gr.addColorStop(q[0], q[1]); });
+      g.fillStyle = gr; g.fillRect(0, 0, 1, 256);
+      return cv;
+    }
+    function smooth(x, seed) {                                          // value noise with a smooth (cubic) step, 0..1
+      var i = Math.floor(x), f = x - i, u = f * f * (3 - 2 * f);
+      function h(n) { var s = Math.sin(n * 127.1 + seed * 311.7) * 43758.5453; return s - Math.floor(s); }
+      return h(i) * (1 - u) + h(i + 1) * u;
+    }
     function drawAurora(t) {
-      if (!AU) { AU = { cv: doc.createElement("canvas") }; AU.cx = AU.cv.getContext("2d"); }
-      var aw = Math.ceil(W / 2), ah = Math.ceil(H * .42);
+      if (!AU) { AU = { cv: doc.createElement("canvas"), prof: auProfile() }; AU.cx = AU.cv.getContext("2d"); }
+      var sc = Math.min(D, 2), aw = Math.ceil(W * sc), ah = Math.ceil(H * .42 * sc);
       if (AU.cv.width !== aw || AU.cv.height !== ah) { AU.cv.width = aw; AU.cv.height = ah; AU.at = -1e9; }
       if (still || t - AU.at > 250 || t < AU.at) {
-        AU.at = t; var g = AU.cx, x, k, base, hgt, ray, i, y, f;
+        AU.at = t; var g = AU.cx, x, k, px, base, hgt, ray, f, I;
         g.globalCompositeOperation = "source-over"; g.clearRect(0, 0, aw, ah); g.globalCompositeOperation = "lighter";
         for (var c = 0; c < 2; c++) {                                   // two curtains, one behind the other
-          var amp = ah * (c ? .07 : .1), lift = ah * (c ? .55 : .72), str = c ? .55 : 1;
+          var amp = ah * (c ? .07 : .1), lift = ah * (c ? .62 : .8), str = c ? .5 : .9;
           for (x = 0; x < aw; x++) {
-            k = x / aw;
+            k = x / aw; px = x / sc;                                     // px: CSS pixels, so a ray has the same size on every screen
             base = lift + amp * Math.sin(k * 5.2 + t / 9000 + c * 2) + amp * .5 * Math.sin(k * 13 - t / 6500 + c);
-            ray = .42 + .3 * Math.sin(k * 97 + Math.sin(k * 23 + t / 4000) * 3 + c * 4) + .2 * Math.sin(k * 211 - t / 5200 + c) + .12 * Math.sin(k * 37 + t / 7000);   // irregular rays, as in a real curtain
-            ray = Math.max(0, Math.min(1, ray));
-            f = Math.max(0, Math.sin(Math.PI * Math.min(1, Math.max(0, (k - .04) / .92))));     // fades at both ends
-            hgt = ah * (.32 + .14 * Math.sin(k * 7 + t / 11000 + c)) * (.7 + .3 * ray);
-            var I = str * ray * f;
-            if (I < .02) continue;
-            for (i = 0; i < 12; i++) {                                    // up the curtain: green, then red at the top
-              y = base - hgt * i / 12; var u = i / 11;
-              var a = I * (.3 * Math.pow(1 - u, 1.6) + (i === 0 ? .25 : 0) + (u > .55 ? .07 * (u - .55) * 2 : 0));
-              g.fillStyle = u < .6 ? "rgba(70,255,150," + a.toFixed(3) + ")" : "rgba(255,70,40," + (a * .9).toFixed(3) + ")";
-              g.fillRect(x, y - hgt / 12, 1, hgt / 12 + .5);
-            }
-            g.fillStyle = "rgba(90,40,255," + (I * .07).toFixed(3) + ")"; g.fillRect(x, base, 1, ah * .03);   // the nitrogen fringe
+            // rays: fine (about 5 px) and broad (about 26 px) smooth noise drifting along the curtain, never a hard edge
+            ray = .55 * smooth(px / 5 + t / 2600 + c * 50, 1 + c) + .45 * smooth(px / 26 - t / 5200 + c * 9, 7 + c);
+            ray = Math.pow(ray, 1.6);
+            f = Math.max(0, Math.sin(Math.PI * Math.min(1, Math.max(0, (k - .03) / .94))));     // fades at both ends
+            f *= .35 + .65 * smooth(px / 140 + t / 15000 + c * 3, 13 + c);                       // brighter and fainter stretches
+            I = str * f * (.3 + .7 * ray);
+            if (I < .015) continue;
+            hgt = ah * (.42 + .16 * Math.sin(k * 7 + t / 11000 + c)) * (.75 + .35 * ray);
+            g.globalAlpha = Math.min(1, I);
+            g.drawImage(AU.prof, 0, 0, 1, 256, x, base - hgt, 1.6, hgt * 1.04);
           }
         }
+        g.globalAlpha = 1;
       }
       ctx.save(); ctx.globalCompositeOperation = "lighter";
-      if ("filter" in ctx) ctx.filter = "blur(2.4px)";
-      ctx.drawImage(AU.cv, 0, H - ah, W, ah); ctx.filter = "none"; ctx.restore();
+      if ("filter" in ctx) ctx.filter = "blur(1.2px)";
+      ctx.drawImage(AU.cv, 0, H - ah / sc, W, ah / sc); ctx.filter = "none"; ctx.restore();
     }
     function makeGalaxy() {
       var G = { R0: Math.min(W, H) * (opts.galaxySize || .14), cx: W * (opts.galaxyX || .27), cy: H * (opts.galaxyY || .115),
@@ -3157,14 +3175,14 @@ function renderPlaybook(){
         }
       } catch (e) {}
       var R0 = G.R0, h = R0 * .34, rc = R0 * .16, P = 240000;               // rim period, ms
-      var v0 = TAU * R0 / P, k = 1 / Math.tan(18 * Math.PI / 180), rin = R0 * .14;
+      var v0 = TAU * R0 / P, k = 1 / Math.tan(24 * Math.PI / 180), rin = R0 * .2;   // pitch 24 deg: the arms wind about half a turn, as in M51 or M81, not a full ring
       G.om = function (r) { r = Math.max(r, R0 * .02); return v0 * (1 - Math.exp(-r / rc)) / r; };
       G.omp = G.om(R0 * .62);                                              // the pattern turns with the disc at corotation
       G.arm = function (r) { return -k * Math.log(Math.max(r, rin) / rin); };   // trailing arms
       function rdisc() { var r; do { r = -h * Math.log(Math.max(1e-6, R() * R())); } while (r > R0); return r; }
       var i, r;
       for (i = 0; i < 1500; i++) {                                         // the old disc: warm white, everywhere
-        r = rdisc(); G.parts.push({ r: r, t0: R() * TAU, kind: 0, b: .25 + R() * .5, s: .8 + R() * .5 });
+        r = rdisc(); G.parts.push({ r: r, t0: R() * TAU, kind: 0, b: .14 + R() * .3, s: .6 + R() * .4 });   // unresolved, mostly: the smooth disc below carries its light
       }
       for (i = 0; i < 520; i++) {                                          // the bulge: old, golden, nearly solid-body
         r = R0 * .2 * Math.pow(-Math.log(Math.max(1e-6, R())), 1.6) * .5; if (r > R0 * .38) { i--; continue; }
@@ -3172,21 +3190,21 @@ function renderPlaybook(){
       }
       // Star formation is clumpy: clusters strung along each arm like beads, with dimmer gaps between them.
       var clumps = [];
-      for (i = 0; i < 80; i++) clumps.push({ r: R0 * (.17 + .78 * Math.pow(R(), .9)), side: i % 2 ? Math.PI : 0, j: gauss(R) * .12, w: .4 + R() * .8 });
+      for (i = 0; i < 80; i++) clumps.push({ r: R0 * (.2 + .62 * Math.pow(R(), 1.25)), side: i % 2 ? Math.PI : 0, j: gauss(R) * .12, w: .4 + R() * .8 });
       for (i = 0; i < 520; i++) {                                          // the arms' own glow: unresolved young light and gas
-        r = R0 * (.15 + .8 * Math.pow(R(), .85));
-        G.parts.push({ r: r, kind: 3, side: R() < .5 ? 0 : Math.PI, j: gauss(R) * .2, b: .035 + R() * .05, s: 3 + R() * 3.5 });
+        r = R0 * (.18 + .6 * Math.pow(R(), 1.3));
+        G.parts.push({ r: r, kind: 3, side: R() < .5 ? 0 : Math.PI, j: gauss(R) * .3, b: .016 + R() * .022, s: 4.5 + R() * 5.5 });
       }
       for (i = 0; i < 1700; i++) {                                         // young stars, born in clusters on the arms
         var cl = clumps[(R() * clumps.length) | 0];
-        if (R() > cl.w) { cl = { r: R0 * (.17 + .78 * R()), side: R() < .5 ? 0 : Math.PI, j: gauss(R) * .22 }; }
-        r = Math.max(R0 * .15, Math.min(R0 * .97, cl.r + gauss(R) * R0 * .035));
+        if (R() > cl.w) { cl = { r: R0 * (.2 + .65 * Math.pow(R(), 1.2)), side: R() < .5 ? 0 : Math.PI, j: gauss(R) * .22 }; }
+        r = Math.max(R0 * .18, Math.min(R0 * .9, cl.r + gauss(R) * R0 * .035));
         G.parts.push({ r: r, kind: 2, side: cl.side, j: cl.j + gauss(R) * .06, age: R(), b: .22 + R() * .42, s: .8 + R() * .8 });
       }
       for (i = 0; i < 620; i++) {                                          // dust on the inner edge of each arm
-        r = R0 * (.16 + .74 * R());
+        r = R0 * (.18 + .5 * R());
         if (R() < .35) { i--; continue; }   // patchy, not a drawn line
-        G.dust.push({ r: r, side: R() < .5 ? 0 : Math.PI, j: gauss(R) * .09 - .19, a: .035 + R() * .07, s: 2.4 + R() * 3.6 });
+        G.dust.push({ r: r, side: R() < .5 ? 0 : Math.PI, j: gauss(R) * .08 - .13, a: .006 + R() * .014, s: 3 + R() * 4 });   // dust dims the light behind it; it is never a black line
       }
       var sz = Math.ceil(R0 * 2.3 * D);
       G.cv = doc.createElement("canvas"); G.cv.width = G.cv.height = sz; G.cx2 = G.cv.getContext("2d");
@@ -3194,7 +3212,7 @@ function renderPlaybook(){
       G.base = doc.createElement("canvas"); G.base.width = G.base.height = sz;
       var b = G.base.getContext("2d"), c = sz / 2, sc = D, gr;
       gr = b.createRadialGradient(c, c, 0, c, c, R0 * sc);
-      [[0, .34], [.15, .2], [.35, .1], [.6, .04], [1, 0]].forEach(function (q) { gr.addColorStop(q[0], "rgba(232,222,206," + q[1] + ")"); });
+      [[0, .42], [.15, .26], [.35, .14], [.6, .05], [.85, .012], [1, 0]].forEach(function (q) { gr.addColorStop(q[0], "rgba(232,222,206," + q[1] + ")"); });
       b.fillStyle = gr; b.fillRect(0, 0, sz, sz);
       gr = b.createRadialGradient(c, c, 0, c, c, R0 * .32 * sc);
       [[0, .95], [.08, .7], [.3, .28], [.65, .08], [1, 0]].forEach(function (q) { gr.addColorStop(q[0], "rgba(255,232,190," + q[1] + ")"); });
@@ -3218,14 +3236,14 @@ function renderPlaybook(){
         if (p.kind === 3) {                                              // arm glow: moves with the pattern
           th = G.arm(p.r) + p.side + p.j + G.omp * t;
           x = c + Math.cos(th) * p.r * sc; y = c + Math.sin(th) * p.r * sc;
-          g.fillStyle = "rgba(150,180,255," + p.b.toFixed(3) + ")"; g.beginPath(); g.arc(x, y, p.s * sc * .5, 0, TAU); g.fill();
+          g.fillStyle = "rgba(150,180,255," + (p.b * Math.max(0, 1.25 - 1.15 * p.r / G.R0)).toFixed(3) + ")"; g.beginPath(); g.arc(x, y, p.s * sc * .5, 0, TAU); g.fill();
           continue;
         }
         if (p.kind === 2) {
           // A young star: born on the arm (pattern angle then), carried by its own orbit since, fading with age.
           a = (p.age + t / 90000) % 1;
           th = G.arm(p.r) + p.side + p.j + G.omp * (t - a * 90000) + G.om(p.r) * a * 90000;
-          life = Math.exp(-a * 2.3);
+          life = Math.exp(-a * 3.2) * (1.15 - .75 * p.r / G.R0);   // young light fades with age and towards the rim, so the edge never reads as a ring
           x = c + Math.cos(th) * p.r * sc; y = c + Math.sin(th) * p.r * sc;
           if (a < .14 && p.b > .78) { g.fillStyle = "rgba(255,118,168," + (.7 * (1 - a / .14)).toFixed(3) + ")"; g.beginPath(); g.arc(x, y, 1.6 * sc, 0, TAU); g.fill(); }
           g.fillStyle = "rgba(168,196,255," + (p.b * life).toFixed(3) + ")";
@@ -5212,6 +5230,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       { l: "Net worth", v: nwPct ? nwPct + "%" : "\u2014", c: nwPct >= 100 ? "var(--green)" : nwPct >= 60 ? "var(--amber)" : "var(--red)", t: "life" }
     ];
   }
+  window.gmVitalsHTML = function () { return vitalsHTML(); };   // simpleToday (another scope) folds the numbers
   function vitalsHTML() {
     var h = '<div id="gmVitals">', exampleNums = !!((window.P && P.example) || exampleCount() > 0);
     // Premium calm (design-premium-showcase): numbers stay neutral ink. Progress (Today, Stack) is never 'danger'; a money
@@ -5852,7 +5871,29 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     for (var i = 0; i < raw.length; i++) a[i] = raw.charCodeAt(i);
     return a;
   }
-  window.gmPushOn = function () {
+  window.gmPushOn = function (via) {
+    var sc = G("gm_sync_cfg", null);
+    if (via !== "worker" && sc && sc.url && sc.user) {   // the folded engineer path passes "worker"
+      // zero-setup: the estate makes its own VAPID key and stores the subscription; nothing to paste, no second app.
+      if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+        alert("This browser cannot receive push. On iPhone/iPad the app must be installed to the Home Screen from Safari first."); return;
+      }
+      return Notification.requestPermission().then(function (perm) {
+        if (perm !== "granted") { alert("Notifications were not allowed. Nothing else to do \u2014 the app still nudges you when you open it."); return; }
+        return fetch(sc.url + "/push/key?user=" + encodeURIComponent(sc.user), { headers: syncHeaders(sc), credentials: sc.access ? "include" : "omit" })
+          .then(function (r) { if (!r.ok) throw new Error("refused"); return r.json(); })
+          .then(function (v) {
+            return navigator.serviceWorker.ready.then(function (reg) {
+              return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: u8(v.key) });
+            });
+          }).then(function (sub) {
+            return fetch(sc.url + "/push/subscribe?user=" + encodeURIComponent(sc.user), {
+              method: "POST", headers: syncHeaders(sc), credentials: sc.access ? "include" : "omit",
+              body: JSON.stringify({ subscription: sub.toJSON ? sub.toJSON() : sub, label: "phone" })
+            }).then(function (r) { if (!r.ok) throw new Error("refused"); });
+          }).then(function () { S_("gm_push_on", true); S_("gm_push_via", "estate"); renderAll(); });
+      }).catch(function () { alert("Alerts could not be turned on. Check that your estate is reachable and that notifications are allowed, then try again."); });
+    }
     var w = (document.getElementById("pushUrl") || {}).value;
     if (w) S_("gm_push_cfg", { url: w.trim().replace(/\/+$/, "") });
     var c = pushCfg();
@@ -5874,33 +5915,47 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     }).catch(function (e) { alert("Could not enable nudges: " + e.message); });
   };
   window.gmPushOff = function () {
-    var c = pushCfg();
-    navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); })
+    var sc = G("gm_sync_cfg", null), via = G("gm_push_via", "");
+    return navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); })
       .then(function (s) {
         if (!s) return;
         var ep = s.endpoint;
         return s.unsubscribe().then(function () {
+          if (via === "estate" && sc && sc.url && sc.user) {
+            return fetch(sc.url + "/push/subscribe?user=" + encodeURIComponent(sc.user) + "&endpoint=" + encodeURIComponent(ep),
+              { method: "DELETE", headers: syncHeaders(sc), credentials: sc.access ? "include" : "omit" }).catch(function () {});
+          }
+          var c = pushCfg();
           if (c) return fetch(c.url + "/unsubscribe", {
             method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ endpoint: ep })
           });
         });
-      }).then(function () { localStorage.removeItem("gm_push_on"); renderAll(); });
+      }).then(function () { localStorage.removeItem("gm_push_on"); localStorage.removeItem("gm_push_via"); renderAll(); });
   };
   function pushHTML() {
     var on = G("gm_push_on", false), c = pushCfg();
+    var sc = G("gm_sync_cfg", null), via = G("gm_push_via", "");
+    var other = '<div class="info">A web app cannot wake your phone on a schedule; your SecuRAX estate can, through the free ntfy app. '
+      + 'On the estate, run <code>./securax notify setup</code> (it shows the topic to subscribe to on your phone), then '
+      + '<code>./securax routines on checkin-nudge</code> for a nudge at 7am and 7pm.</div>'
+      + '<details style="margin-top:6px"><summary style="cursor:pointer;color:var(--muted);font-size:12px">Already run your own Web Push sender?</summary>'
+      + '<div class="info">Paste its address here and this device subscribes to it. On iPhone/iPad, install the app from Safari first.</div>'
+      + '<label class="f-label">Worker URL</label><input id="pushUrl" placeholder="https://gm-push.yourname.workers.dev" value="' + esc((c && c.url) || "") + '">'
+      + '<button class="btn btn-p" onclick="gmPushOn(\'worker\')">Enable nudges on this device</button></details>';
     var h = '<div class="cat-t">\u{1F514} Nudges</div>';
     if (on) {
-      h += '<div class="info">This device is registered. Two nudges a day, 7am and 7pm IST. '
-        + 'Register each device separately \u2014 the subscription belongs to the install, not to you.</div>'
+      h += '<div class="info">' + (via === "estate"
+        ? "Alerts from your estate reach this device."
+        : "This device is registered. Two nudges a day, 7am and 7pm IST. Register each device separately \u2014 the subscription belongs to the install, not to you.")
+        + '</div>'
         + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmPushOff()">Turn nudges off here</button>';
+    } else if (sc && sc.url && sc.user) {
+      h += '<div class="info">Alerts from your estate, on this device. One tap; nothing to install.</div>'
+        + '<button class="btn btn-p" onclick="gmPushOn()">Allow alerts</button>'
+        + '<details style="margin-top:6px"><summary style="cursor:pointer;color:var(--muted);font-size:12px">Other ways (for engineers)</summary>'
+        + other + '</details>';
     } else {
-      h += '<div class="info">A web app cannot wake your phone on a schedule; your SecuRAX estate can, through the free ntfy app. '
-        + 'On the estate, run <code>./securax notify setup</code> (it shows the topic to subscribe to on your phone), then '
-        + '<code>./securax routines on checkin-nudge</code> for a nudge at 7am and 7pm.</div>'
-        + '<details style="margin-top:6px"><summary style="cursor:pointer;color:var(--muted);font-size:12px">Already run your own Web Push sender?</summary>'
-        + '<div class="info">Paste its address here and this device subscribes to it. On iPhone/iPad, install the app from Safari first.</div>'
-        + '<label class="f-label">Worker URL</label><input id="pushUrl" placeholder="https://gm-push.yourname.workers.dev" value="' + esc((c && c.url) || "") + '">'
-        + '<button class="btn btn-p" onclick="gmPushOn()">Enable nudges on this device</button></details>';
+      h += other;
     }
     return h;
   }
@@ -7371,6 +7426,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       + "#gmMoreSheet .gm-more-all{grid-column:1/-1}"
       + "#gmMoreSheet .gm-more-all summary{cursor:pointer;font-weight:800;font-size:13px;padding:10px 4px;min-height:44px;display:flex;align-items:center}"
       + "#gmMoreSheet .gm-more-g{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}"
+      + "#gmMoreSheet .sh button .gm-new{display:block;font-size:9px;font-weight:700;color:var(--muted);margin-top:2px}"
       + "#gmMoreSheet .sh button .gi{display:flex;justify-content:center;margin-bottom:5px;color:var(--text)}"
       + "html[data-theme=dark] #gmMoreSheet .sh button .gi{color:var(--gold)}"
       + "#gmVitals.gm-inline{position:static;box-shadow:none;border:0;background:none;padding:0 0 10px}"
@@ -7398,20 +7454,38 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     // The vital few first, ordered by risk (Shield, then what is due, then what runs your life); everything else folded.
     // Start simple (owner, 2026-11-14: "terrified to start", "too heavy"): three doors until the person asks for everything.
     var SIMPLE = G("gm_simple", true) !== false;
-    var FIRST = SIMPLE ? ["money", "risk", "wheel"] : ["risk", "deadlines", "systems", "money", "breaks", "wheel"];
-    function tile(t) {
+    var FIRST = SIMPLE ? ["money", "breaks", "wheel"] : ["risk", "deadlines", "systems", "money", "breaks", "wheel"];
+    // One more door each week the app is used (owner, 2026-11-14): start with three, grow gently in this order.
+    var UNLOCK = ["risk", "deadlines", "systems", "guide", "stack"];
+    var firstOpen = G("gm_first_open", "");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(firstOpen)) { firstOpen = ymd(); S_("gm_first_open", firstOpen); }
+    var fp = firstOpen.split("-"), then = new Date(+fp[0], +fp[1] - 1, +fp[2]).getTime(), now = new Date();
+    if (isNaN(then)) { then = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime(); }
+    var days = Math.max(0, Math.round((new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() - then) / 86400000));
+    var weeks = Math.min(UNLOCK.length, Math.floor(days / 7));
+    function tile(t, isNew) {
       var ic = window.gmIcon(t[0], 20);
       return '<button role="menuitem" class="' + (curTab === t[0] ? "on" : "") + '" onclick="gmNavGo(\'' + t[0] + '\')">'
-        + (ic ? '<span class="gi" aria-hidden="true">' + ic + '</span>' : '') + t[1] + '</button>';
+        + (ic ? '<span class="gi" aria-hidden="true">' + ic + '</span>' : '') + t[1] + (isNew ? '<span class="gm-new">new</span>' : '') + '</button>';
     }
     // A tab that cannot apply (the person answered No to its fact) is not shown at all: no clutter for a life that is not theirs.
     var said = G("gm_facts", {}) || {}, NEEDS = { kids: "kids" };
     function fits(t) { var f = NEEDS[t[0]]; return !(f && said.hasOwnProperty(f) && said[f] === false); }
-    var rest = TABS.filter(function (t) { return main.indexOf(t[0]) < 0 && FIRST.indexOf(t[0]) < 0 && fits(t); });
+    var unlocked = [];
+    if (SIMPLE) UNLOCK.slice(0, weeks).forEach(function (id) {
+      if (main.indexOf(id) >= 0 || FIRST.indexOf(id) >= 0) return;
+      TABS.forEach(function (t) { if (t[0] === id && fits(t)) unlocked.push(t); });
+    });
+    var shownIds = FIRST.concat(unlocked.map(function (t) { return t[0]; }));
+    var rest = TABS.filter(function (t) { return main.indexOf(t[0]) < 0 && shownIds.indexOf(t[0]) < 0 && fits(t); });
     sh += '<div class="gm-more-h">First</div>';
     FIRST.forEach(function (id) { TABS.forEach(function (t) { if (t[0] === id && main.indexOf(id) < 0 && fits(t)) sh += tile(t); }); });
+    unlocked.forEach(function (t) {
+      var i = UNLOCK.indexOf(t[0]);
+      sh += tile(t, i >= 0 && days >= (i + 1) * 7 && days < (i + 2) * 7);
+    });
     if (SIMPLE) {
-      sh += '<button role="menuitem" class="gm-show-all" onclick="gmSimple(false)">Show everything (' + (rest.length + 3) + ' more)</button></div></div>';
+      sh += '<button role="menuitem" class="gm-show-all" onclick="gmSimple(false)">Show everything (' + rest.length + ' more)</button></div></div>';
     } else {
       var restOpen = G("gm_more_all", false) || rest.some(function (t) { return t[0] === curTab; });
       sh += '<details class="gm-more-all"' + (restOpen ? " open" : "") + ' ontoggle="gmMoreAll(this.open)"><summary>Everything else (' + rest.length + ')</summary><div class="gm-more-g">';
@@ -9189,9 +9263,10 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();editProfile()">Edit profile</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();toggleTheme()">Switch to ' + (curTheme() === "dark" ? "light" : "dark") + ' theme</button>'
       + ((window.matchMedia && matchMedia("(display-mode: standalone)").matches) ? "" : '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();gmInstall()">Install as an app (phone or computer)</button>')
+      + '<details class="gm-menu-more"><summary>Settings (3)</summary><div style="display:grid;gap:8px;margin-top:8px">'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" role="switch" aria-checked="' + (!G("gm_still", false)) + '" onclick="gmToggleStill()">Motion and haptics: ' + (G("gm_still", false) ? "off" : "on") + '</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" role="switch" aria-checked="' + (!G("gm_smart_off", false)) + '" onclick="gmToggleSmart()">Smart suggestions: ' + (G("gm_smart_off", false) ? "off" : "on") + '</button>'
-      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" role="switch" aria-checked="' + focusShow() + '" onclick="gmToggleFocusShow()">Show the focus timer: ' + (focusShow() ? "on" : "off") + '</button>'
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" role="switch" aria-checked="' + focusShow() + '" onclick="gmToggleFocusShow()">Show the focus timer: ' + (focusShow() ? "on" : "off") + '</button></div></details>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();gmReport()">Report a problem or idea</button>'
       + '</div><div style="font-size:12px;color:var(--muted);margin-top:12px">Life OS ' + esc(ver) + ' · your data stays on your devices</div>'
       + '<button class="btn-sm" style="margin-top:12px;background:none;color:var(--muted)" onclick="gmClose()">Close</button>');
@@ -10406,7 +10481,8 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     if (!box) return;
     var old = document.getElementById("gmVitals");
     if (old) old.parentNode.removeChild(old);
-    if (!phone()) document.body.insertAdjacentHTML("beforeend", vitalsHTML());   // on a phone the vitals sit at the top of Today
+    var simpleNow = G("gm_simple", true) !== false;   // start simple: the numbers wait under "More for today" (simpleToday)
+    if (!phone() && !simpleNow) document.body.insertAdjacentHTML("beforeend", vitalsHTML());   // on a phone the vitals sit at the top of Today
     if (curTab === "ask") { box.innerHTML = askHTML(); try { gmAskPing(); } catch (e) {} }
     else if (curTab === "guide") { box.innerHTML = guidesHTML(); }
     else if (curTab === "deadlines") { box.innerHTML = deadlinesHTML(); }
@@ -10430,7 +10506,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     }
     if (curTab === "wheel") { try { sysWheelLines(box); } catch (e) { console.log(e); } }
     try { calmFrame(); } catch (e) { console.log(e); }
-    if (phone() && curTab === "today" && !document.getElementById("gmVitals")) box.insertAdjacentHTML("afterbegin", vitalsHTML());
+    if (phone() && !simpleNow && curTab === "today" && !document.getElementById("gmVitals")) box.insertAdjacentHTML("afterbegin", vitalsHTML());
     var vi = document.getElementById("gmVitals"); if (vi && phone()) vi.classList.add("gm-inline");
     try { navRender(); } catch (e) { console.log(e); }
     // Inline help: self-explain every specialised term on whatever screen just rendered.
@@ -11571,11 +11647,16 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     var anchor = d3; while (anchor.parentNode && anchor.parentNode !== s) anchor = anchor.parentNode;
     // A visible reward stays in view (test36: "your estate had your back" is never folded); everything else folds.
     var rest = []; for (var n = anchor.nextElementSibling; n; n = n.nextElementSibling) { if (!/had your back/i.test(n.textContent || "") && !(n.matches(".gm-one") || n.querySelector(".gm-one"))) rest.push(n); }   // the one next step stays too
+    // The five numbers (Today, Stack, Buffer, Saving, Net worth) are folded too: a newcomer sees one card and the check-in.
+    var vit = document.getElementById("gmVitals");
+    if (vit && !s.contains(vit)) vit = null;                                  // a bar elsewhere is not Today's to fold
+    if (!vit && !document.getElementById("gmVitals") && window.gmVitalsHTML) { var tmp = document.createElement("div"); tmp.innerHTML = gmVitalsHTML(); vit = tmp.firstElementChild; }
+    if (vit) { vit.classList.add("gm-inline"); rest.unshift(vit); }
     if (rest.length >= 2) {
       var det = document.createElement("details"); det.className = "gm-simple-more";
       det.innerHTML = "<summary>More for today (" + rest.length + ")</summary>";
       rest.forEach(function (x) { det.appendChild(x); }); s.appendChild(det);
-    }
+    } else if (vit) { s.appendChild(vit); }
     if (!G("gm_start_done", false)) {
       anchor.insertAdjacentHTML("beforebegin", '<div class="kc gm-start" role="region" aria-label="Start here"><b>Start here: three things, that is all</b><ol>'
         + '<li>Each day, tick your three below. Tiny counts.</li>'

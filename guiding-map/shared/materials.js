@@ -76,7 +76,7 @@
     "float fres(float ci,float n1,float n2){float r=(n1-n2)/(n1+n2);r*=r;return r+(1.-r)*pow(1.-ci,5.);}",
     "float chan(vec3 p,vec3 d,vec3 n,float ior,int ch){vec3 dir=refract(d,n,1./ior);float th=1.-fres(clamp(dot(-d,n),0.,1.),1.,ior);float acc=0.;",
     " for(int b=0;b<5;b++){vec3 m;float t=exitT(p+dir*1e-4,dir,m);p+=dir*t;vec3 nm=-m;vec3 od=refract(dir,nm,ior);",
-    "  if(dot(od,od)<1e-4){dir=reflect(dir,nm);continue;}float Fi=fres(clamp(dot(-dir,nm),0.,1.),ior,1.);vec3 e=env(uGem*od,.004);",
+    "  if(dot(od,od)<1e-4){dir=reflect(dir,nm);continue;}float Fi=fres(clamp(dot(-dir,nm),0.,1.),ior,1.);vec3 e=env(uGem*od,.012)+vec3(.05,.052,.058);",
     "  acc+=th*(1.-Fi)*(ch==0?e.r:(ch==1?e.g:e.b));th*=Fi;dir=reflect(dir,nm);}return acc;}",
     "vec4 gem(vec2 q){vec3 o=uGem*vec3(q,3.),d=uGem*vec3(0,0,-1.);vec3 n;float t=enterT(o,d,n);if(t<0.)return vec4(0.);vec3 p=o+d*t;",
     " float F=fres(clamp(dot(-d,n),0.,1.),1.,2.426);vec3 c=F*env(uGem*reflect(d,n),.004);",
@@ -87,9 +87,9 @@
     "vec4 over(vec4 a,vec4 b){return b+a*(1.-b.a);}",
     "vec4 seal(vec2 px){vec2 P=(px-uRes*.5)/uSeal;float r=length(P);float aa=1.6/uSeal;vec4 o=vec4(0.);",
     " if(r<.905){vec3 N=normalize(vec3(P*.95,1.));float a=atan(P.y,P.x);vec3 T=vec3(-sin(a),cos(a),0.);",
-    "  float rid=sin(a*96.)*.55+sin(a*192.+r*14.)*.15;vec3 Nb=normalize(vec3(P*.06,1.)+T*rid*.30);vec3 un=metal(Nb,F0S,.30);",
+    "  float sp=6.2832*r*uSeal/96.;float rid=sin(a*96.)*.55*smoothstep(1.5,4.,sp)+sin(a*192.+r*14.)*.15*smoothstep(3.,8.,sp);vec3 Nb=normalize(vec3(P*.06,1.)+T*rid*.30);vec3 un=metal(Nb,F0S,.30);",
     "  float cv=max(N.z,.2);vec3 Tr=exp(-vec3(4.4,3.0,1.05)*(.62+.18*r)/cv);float Fc=.04+.96*pow(1.-cv,5.);",
-    "  vec3 c=Fc*env(reflect(vec3(0,0,-1),N),.02)+(1.-Fc)*Tr*un;c*=mix(.30,1.,smoothstep(-.015,.08,padSd(P-vec2(.03,-.045))));",
+    "  vec3 c=Fc*env(reflect(vec3(0,0,-1),N),.07)+(1.-Fc)*Tr*un;c*=mix(.30,1.,smoothstep(-.015,.08,padSd(P-vec2(.03,-.045))));",
     "  o=vec4(c,1.)*smoothstep(.905,.905-aa,r);}",
     " vec2 g;float sd=shk(P,g);if(sd<.04+aa){float q=clamp(sd/.04,0.,1.);vec3 N=normalize(vec3(g*q,sqrt(max(1.-q*q,.03))));o=over(o,vec4(metal(N,F0G,.09),1.)*smoothstep(.04+aa,.04,sd));}",
     " float bd=body(P);if(bd<aa){float bv=.045;float t=clamp(1.+bd/bv,0.,1.);vec2 gb=normalize(vec2(body(P+vec2(.001,0))-body(P-vec2(.001,0)),body(P+vec2(0,.001))-body(P-vec2(0,.001)))+1e-6);",
@@ -100,7 +100,7 @@
     " o=over(o,ring(r,P,.885,.905,F0P,.12,aa));o=over(o,ring(r,P,.92,1.,F0G,.14,aa));",
     " vec2 gc=vec2(0.,.962);vec2 q=(P-gc)/.135;float rq=length(q);",
     " if(rq<1.36){o=over(o,vec4(0.,0.,0.,.55)*smoothstep(1.36,1.05,length(q-vec2(.12,-.18))));",
-    "  o=over(o,ring(rq,q,1.,1.32,F0P,.10,aa/.135));if(rq<1.02){vec4 gm=gem(q*1.02);o=over(o,vec4(gm.rgb,1.)*smoothstep(1.02,.99,rq));}}",
+    "  o=over(o,ring(rq,q,1.,1.32,F0P,.10,aa/.135));if(rq<1.02){float pq=.5/(uSeal*.135);vec4 gm=(gem(q*1.02+vec2(-pq,-pq))+gem(q*1.02+vec2(pq,-pq))+gem(q*1.02+vec2(-pq,pq))+gem(q*1.02+vec2(pq,pq)))*.25;o=over(o,vec4(gm.rgb,1.)*smoothstep(1.02,.99,rq));}}",
     " return o;}",
     // Velvet: a crushed pile under the same two lights, the Estevez-Kulla sheen lobe; brightest where the pile lies over.
     "vec4 velvet(vec2 px){vec2 p=px/uDpr;float cr=fbm(p*.011);float an=cr*9.42;vec2 gd=vec2(cos(an),sin(an));",
@@ -169,7 +169,7 @@
     if (!ok || !it.vis) return false;
     var r = it.el.getBoundingClientRect(); if (r.width < 2 || r.height < 2) return false;
     if (it.kind === "velvet" && doc.documentElement.getAttribute("data-theme") === "light" && it.el.matches("#oskMore .sheet")) { it.cx.clearRect(0, 0, it.cv.width, it.cv.height); it.el.classList.remove("sx-mat-on"); return false; }
-    var d = Math.min(2, window.devicePixelRatio || 1) * (it.kind === "velvet" ? 0.75 : 1) * Q;
+    var d = Math.min(it.kind === "seal" ? 3 : 2, window.devicePixelRatio || 1) * (it.kind === "velvet" ? 0.75 : 1) * Q;
     var W = Math.round((r.width + 2 * it.inset) * d), H = Math.round((r.height + 2 * it.inset) * d);
     var f = Math.min(1, MAXPX / Math.max(W, H)); if (f < 1) { d *= f; W = Math.round(W * f); H = Math.round(H * f); }
     if (it.cv.width !== W || it.cv.height !== H) { it.cv.width = W; it.cv.height = H; }
