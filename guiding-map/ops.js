@@ -7461,6 +7461,7 @@
       + "html body .okr-grade{font-family:var(--font-display);font-weight:400;font-size:26px;line-height:1}"
       + ".gm-okr-acts{display:flex;align-items:center;gap:8px;margin-top:12px}"
       + "html body .gm-btn-ghost{background:transparent;color:var(--text);border:1px solid rgba(201,168,76,.75);box-shadow:none;font-weight:700}"
+      + "html body .gm-quiet,html body #sections .gm-quiet{background:none!important;box-shadow:none!important;border:0!important;min-height:44px}"
       + ".gm-quiet{margin-inline-start:auto;background:none;border:0;color:var(--muted);font:inherit;font-size:12.5px;text-decoration:underline;text-underline-offset:3px;padding:10px 4px;cursor:pointer}"
       // The spending plan: the healthy band is visible on the bar, so the verdict needs no reading.
       + "html body .csp-track{height:8px;background:var(--cardAlt);box-shadow:inset 0 1px 2px rgba(13,31,53,.12)}"

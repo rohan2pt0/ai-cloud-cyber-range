@@ -46,7 +46,11 @@ CHECK = """([lock, touch, phone]) => {
   });
   if (touch) document.querySelectorAll('button, [role=button], summary, a[href]').forEach(e => {
     if (!vis(e) || e.closest('.sx-keys,nav#oskNav')) return; const r = e.getBoundingClientRect();
-    if (r.width < 43.5 || r.height < 43.5) out.push('small target ' + Math.round(r.width) + 'x' + Math.round(r.height) + ': ' + name(e));
+    // What a finger hits counts, not the box: an invisible enlarged hit area (a ::after) passes if the points 22 px from
+    // the centre still land on the control.
+    const cx = r.left + r.width / 2, cy = r.top + r.height / 2, hit = (x, y) => { const t = document.elementFromPoint(x, y); return !!t && (t === e || e.contains(t)); };
+    const eff = (r.width >= 43.5 || (hit(cx - 21, cy) && hit(cx + 21, cy))) && (r.height >= 43.5 || (hit(cx, cy - 21) && hit(cx, cy + 21)));
+    if (!eff) out.push('small target ' + Math.round(r.width) + 'x' + Math.round(r.height) + ': ' + name(e));
   });
   if (phone) { const fz = [...document.querySelectorAll('p, li')].filter(e => vis(e) && (e.textContent || '').trim().length > 40).map(e => parseFloat(getComputedStyle(e).fontSize)).sort((a, b) => a - b); const med = fz.length ? fz[fz.length >> 1] : 16; if (med < 14) out.push('body text ' + med + 'px (median of paragraphs)'); }
   if (lock) {
