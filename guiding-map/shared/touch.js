@@ -20,6 +20,9 @@
   doc.addEventListener("pointerdown", function (ev) {
     var b = ev.target && ev.target.closest && ev.target.closest("button,.sx-key,[role=button]");
     if (!b || b.disabled || b.hasAttribute("data-no-ripple")) return;
+    // A key you can feel: one short tick at actuation, as a real switch gives. Off with localStorage "sx:haptics" = "off"
+    // (Settings), and never under reduced motion. Browsers allow it once the person has touched the page.
+    try { if (navigator.vibrate && localStorage.getItem("sx:haptics") !== "off") navigator.vibrate(7); } catch (e) {}
     try {
       var cs = getComputedStyle(b);
       if (cs.position === "static") b.style.position = "relative";
@@ -40,6 +43,7 @@
     var k = 60, c = 2 * Math.sqrt(k);              // stiffness and critical damping: no wobble, no lag
     vx += (k * (tx - x) - c * vx) * dt; vy += (k * (ty - y) - c * vy) * dt; x += vx * dt; y += vy * dt;
     root.style.setProperty("--sx-tx", x.toFixed(3)); root.style.setProperty("--sx-ty", y.toFixed(3));
+    if (window.SXMat) SXMat.light(x, y);                 // the lit materials turn with the same light
     idle += dt;
     if (idle > 4 && (tx || ty)) { tx = 0; ty = 0; }   // the hand is still: the light drifts home
     if (Math.abs(tx - x) + Math.abs(ty - y) + Math.abs(vx) + Math.abs(vy) > .002) raf = requestAnimationFrame(step);

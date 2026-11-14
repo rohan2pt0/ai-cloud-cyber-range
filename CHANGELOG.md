@@ -9,6 +9,8 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- Lit materials, not pictures (`guiding-map/shared/materials.js`): one physically based renderer lights every precious surface from one studio that turns with the phone. Gold and platinum use their measured reflectance; the diamond is a ray-traced Tolkowsky brilliant (73 facets, refraction, total internal reflection, dispersion) in a platinum collet; the seal is a guilloché sunray dial under domed blue enamel with a gold bezel and padlock; the Vantage menu and More sheet are crushed velvet (Imageworks sheen). Glass refracts at its rim on Chromium. Keys have a skirt, 3 px travel, a tightening shadow and a haptic tick. Without WebGL the CSS look stays.
+
 - Paris-grade type and real materials, shared by every app: the house serif now sets display titles (the lock, Vantage's name, greetings and section titles) and Jost, a Futura-style sans (SIL OFL, embedded, offline), sets all text; the lock is frosted glass over the night sky with a two-metal gold and platinum bezel and a brilliant-cut diamond with fire; polished gold and platinum move their reflections with the phone's tilt; buttons sink and spring back with a ripple of light; the Vantage menu and More sheet gain a midnight velvet nap (`shared/touch.js`, `shared/lux.css`).
 
 - One shared night sky and real gold (`guiding-map/shared/sky.js`, `lux.css`): the Life OS and Vantage lock screens show a natural sky (stars by brightness and colour, each twinkling at its own pace, the Milky Way with dust lanes, a distant spiral galaxy, meteors and a slow comet) behind one gold seal; gold is now polished metal (a bright top, a horizon band, a bevel) everywhere it is used.

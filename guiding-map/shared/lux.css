@@ -100,6 +100,24 @@ nav#oskNav button{letter-spacing:.06em;text-transform:uppercase;font-size:11.5px
 .sx-lock-sub{font-weight:300;font-size:15.5px;letter-spacing:.015em;color:#c6cfdd;margin:0 0 22px}
 .sx-lock-key{text-transform:uppercase;letter-spacing:.24em;font-weight:500;font-size:14px}
 .sx-lock-alt{color:#dfe1dc;text-transform:uppercase;letter-spacing:.18em;font-size:11.5px;font-weight:500}
+/* ── Lit materials (shared/materials.js): once a surface is rendered by the physically based renderer, its painted
+   stand-ins step aside; the CSS look stays underneath as the fallback. */
+.sx-seal.sx-mat-on{background:transparent;box-shadow:0 24px 48px rgba(0,0,0,.55),0 0 52px rgba(212,175,55,.12)}
+.sx-seal.sx-mat-on > :not(canvas),.sx-seal.sx-mat-on::before,.sx-seal.sx-mat-on::after{display:none}
+.sx-mat-gold-on::after,.sx-mat-platinum-on::after{display:none}
+.sx-mat-gold-on,.sx-mat-platinum-on{border-color:transparent!important;box-shadow:0 1px 1px rgba(0,0,0,.45),0 3px 6px rgba(40,26,3,.35),0 14px 30px rgba(0,0,0,.38)!important}
+/* Engraved: letters cut into the metal; the groove's lower lip catches the light, its upper wall is in shadow. */
+.sx-mat-gold-on,.sx-mat-platinum-on{color:rgba(44,28,4,.92)!important;text-shadow:0 1px 0 rgba(255,238,196,.55),0 -1px 0 rgba(30,18,2,.35)!important}
+.sx-mat-platinum-on{color:rgba(28,30,34,.9)!important;text-shadow:0 1px 0 rgba(255,255,255,.6),0 -1px 0 rgba(0,0,0,.3)!important}
+/* Glass that refracts (Chromium): the rim bends the sky behind; a bright edge where the light meets it. */
+.sx-glass-on{box-shadow:inset 0 1px 0 rgba(255,255,255,.30),inset 0 -1px 0 rgba(0,0,0,.30),inset 0 0 0 1px rgba(255,255,255,.06),0 2px 4px rgba(0,0,0,.25),0 28px 64px rgba(0,0,0,.45)!important}
+/* A mechanical key: a cap on a skirt; it travels 3 px, and its shadow tightens as it sinks. */
+:root:not([data-theme="light"]) #oskMore .sheet button{box-shadow:inset 0 1px 0 rgba(255,255,255,.14),inset 0 -2px 0 rgba(0,0,0,.35),0 4px 0 #050b17,0 7px 14px rgba(0,0,0,.45)}
+:root[data-theme="light"] #oskMore .sheet button{box-shadow:inset 0 1px 0 #fff,0 4px 0 #b9a170,0 7px 12px rgba(80,60,20,.18)}
+#oskMore .sheet button:active{transform:translateY(3px);transition-duration:.06s}
+:root:not([data-theme="light"]) #oskMore .sheet button:active{box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 1px 0 #050b17,0 2px 4px rgba(0,0,0,.4)}
+:root[data-theme="light"] #oskMore .sheet button:active{box-shadow:inset 0 1px 0 #fff,0 1px 0 #b9a170,0 2px 4px rgba(80,60,20,.18)}
+.sx-mat-gold-on:active,.sx-mat-platinum-on:active{transform:translateY(2px) scale(.99)}
 /* ── Adapters: map each app's own class names onto the shared look (no private copies of the rules above) ── */
 /* Kit editions (Vantage and others): header as the night sky with a gold crest, gold primary, midnight nav with a gold active key. */
 body > header.sx-sky h1, body > header.sx-sky h1 small{color:#eef3f8}

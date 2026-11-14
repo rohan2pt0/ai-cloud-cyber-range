@@ -82,3 +82,22 @@ def test_one_type_pair_and_the_touch_engine_ride_in_every_app():
     css = SX.read_text("utf-8")
     for token in ("--sx-serif:", "--sx-sans:", "--sx-platinum-face:", ".sx-glass{", ".sx-velvet{", ".sx-seal-gem{"):
         assert token in css, token
+
+
+def test_materials_are_lit_from_measured_optics_in_one_shared_renderer():
+    """Gold, platinum, diamond, enamel and velvet are rendered, not painted (owner, 2026-11-14): one physically based
+    renderer in shared/materials.js, built into every app, with the measured constants it claims, and a CSS fallback."""
+    m = (ROOT / "guiding-map" / "shared" / "materials.js").read_text("utf-8")
+    mark = "SecuRAX shared materials"
+    for needle in ("F0G=vec3(.944,.776,.373)", "F0P=vec3(.679,.642,.588)", "2.410,0", "2.426,1", "2.444,2",
+                   "add(34.5,", "add(40.75,", "uP[73]", "refract(", "getShaderPrecisionFormat", "webglcontextlost"):
+        assert needle in m, needle
+    assert mark in (ROOT / "guiding-map" / "index.html").read_text("utf-8"), "the Life OS carries the renderer"
+    spec = importlib.util.spec_from_file_location("oskit_for_mat", ROOT / "governance" / "oskit.py")
+    ok = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(ok)
+    for eid, e in ok.editions(include_templates=False).items():
+        page = ok.render(e)["index.html"].decode("utf-8")
+        assert mark in page and "http://" not in page, f"the {eid} edition carries the renderer, offline"
+    css = SX.read_text("utf-8")
+    assert ".sx-seal.sx-mat-on" in css and ".sx-mat-gold-on" in css, "lit surfaces retire their painted stand-ins"
