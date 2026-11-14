@@ -18,7 +18,13 @@ setTimeout(() => {
   ok(/#tabBar\{display:none!important\}/.test(doc.getElementById("gmNavCss").textContent), "the sideways strip is hidden on a phone");
   const sheet = doc.getElementById("gmMoreSheet");
   const others = w.TABS.filter((t) => ["today", "inbox", "okr", "ask"].indexOf(t[0]) < 0).length;
-  ok(sheet.querySelectorAll("button").length === others + 1, "More lists every other tab, plus All apps");
+  // Start simple (owner, 2026-11-14): three doors and "Show everything" by default; everything, plus All apps and
+  // "Back to simple", once the person asks for it.
+  ok(sheet.querySelectorAll("button").length === 4 && /Show everything/.test(sheet.textContent), "simple: More shows three doors and Show everything");
+  w.gmSimple(false);
+  const all = doc.getElementById("gmMoreSheet");
+  ok(all.querySelectorAll("button").length === others + 2, "everything: More lists every other tab, plus All apps and Back to simple");
+  w.gmSimple(true);
   ok(doc.querySelector("#sections #gmVitals.gm-inline"), "vitals at the top of Today, not a second bottom bar");
   const sec = doc.getElementById("sections").innerHTML;
   const more = doc.querySelector(".gm-more-today");

@@ -1105,14 +1105,17 @@
       + '" onclick="gmVitalOnly()">' + (vOnly ? "\u2605 Showing the vital few only" : "\u2606 Show only the vital few (80/20)") + '</button></div>';
     var nextIdx = -1;
     for (var ni = 0; ni < STACK.length; ni++) { if (layerPct(STACK[ni]) < 100) { nextIdx = ni; break; } }
+    var hiddenLayers = 0;
     STACK.forEach(function (L, li) {
+      // The vital few means the layer you are on, open, and nothing else (owner, 2026-11-14: the switch changed nothing).
+      if (vOnly && nextIdx > -1 && li !== nextIdx) { hiddenLayers++; return; }
       var pct = layerPct(L), st = stackState()[L.id] || {};
       var prevDone = li === 0 || layerPct(STACK[li - 1]) === 100;
       var col = pct === 100 ? "var(--green)" : prevDone ? "var(--gold)" : "var(--muted)";
       var status = pct === 100 ? statusHTML("Done", "var(--green)")
         : li === nextIdx ? statusHTML("Next", "var(--gold)")
         : statusHTML("Locked", "var(--muted)");
-      h += '<details class="road-col" style="margin-bottom:10px;border-left:4px solid ' + col + '">'
+      h += '<details class="road-col"' + (li === nextIdx ? " open" : "") + ' style="margin-bottom:10px;border-left:4px solid ' + col + '">'
         + '<summary style="cursor:pointer;font-weight:800;font-size:13.5px">' + L.id + ' \u00b7 ' + esc(L.name)
         + ' <span style="float:right">' + status + ' ' + pct + '%</span></summary>'
         + '<div class="road-i" style="margin:8px 0 10px;font-style:italic">' + esc(L.why) + '</div>';
@@ -1143,6 +1146,7 @@
       });
       h += '</details>';
     });
+    if (hiddenLayers) h += '<p class="gm-card-note" style="margin:4px 2px 12px">' + hiddenLayers + ' other layer' + (hiddenLayers > 1 ? 's wait' : ' waits') + ' until this one is done. Switch off \u2605 to see ' + (hiddenLayers > 1 ? 'them' : 'it') + '.</p>';
     h += '</div>';
     return h;
   }
@@ -3907,6 +3911,8 @@
   window.gmNavMore = function (on) { _navMore = on === undefined ? !_navMore : !!on; navRender(); };
   window.gmNavGo = function (id) { _navMore = false; goTab(id); };
   window.gmMoreAll = function (o) { S_("gm_more_all", !!o); };
+  // One switch, kept, and reversible from the menu: simple (three doors, a short Today) or everything.
+  window.gmSimple = function (on) { S_("gm_simple", !!on); _navMore = false; renderAll(); if (typeof gmToast === "function") gmToast(on ? "Back to simple: the essentials only." : "Everything is shown. Menu \u2192 More \u2192 Back to simple returns to the essentials."); };
   function navCSS() {
     if (document.getElementById("gmNavCss")) return;
     var st = document.createElement("style"); st.id = "gmNavCss";
@@ -3953,7 +3959,9 @@
     h += '<button class="' + (_navMore || inMore ? "on" : "") + '" onclick="gmNavMore()" aria-expanded="' + _navMore + '"><b aria-hidden="true">' + navIco('<path d="M4 7h16M4 12h16M4 17h16"/>') + '</b>More</button></nav>';
     var sh = '<div id="gmMoreSheet" class="' + (_navMore ? "on" : "") + '" onclick="if(event.target===this)gmNavMore(false)"><div class="sh" role="menu">';
     // The vital few first, ordered by risk (Shield, then what is due, then what runs your life); everything else folded.
-    var FIRST = ["risk", "deadlines", "systems", "money", "breaks", "wheel"];
+    // Start simple (owner, 2026-11-14: "terrified to start", "too heavy"): three doors until the person asks for everything.
+    var SIMPLE = G("gm_simple", true) !== false;
+    var FIRST = SIMPLE ? ["money", "risk", "wheel"] : ["risk", "deadlines", "systems", "money", "breaks", "wheel"];
     function tile(t) {
       var ic = window.gmIcon(t[0], 20);
       return '<button role="menuitem" class="' + (curTab === t[0] ? "on" : "") + '" onclick="gmNavGo(\'' + t[0] + '\')">'
@@ -3965,10 +3973,14 @@
     var rest = TABS.filter(function (t) { return main.indexOf(t[0]) < 0 && FIRST.indexOf(t[0]) < 0 && fits(t); });
     sh += '<div class="gm-more-h">First</div>';
     FIRST.forEach(function (id) { TABS.forEach(function (t) { if (t[0] === id && main.indexOf(id) < 0 && fits(t)) sh += tile(t); }); });
-    var restOpen = G("gm_more_all", false) || rest.some(function (t) { return t[0] === curTab; });
-    sh += '<details class="gm-more-all"' + (restOpen ? " open" : "") + ' ontoggle="gmMoreAll(this.open)"><summary>Everything else (' + rest.length + ')</summary><div class="gm-more-g">';
-    rest.forEach(function (t) { sh += tile(t); });
-    sh += '<button role="menuitem" onclick="location.href=\'hub.html\'">\u25C6 All apps</button></div></details></div></div>';
+    if (SIMPLE) {
+      sh += '<button role="menuitem" class="gm-show-all" onclick="gmSimple(false)">Show everything (' + (rest.length + 3) + ' more)</button></div></div>';
+    } else {
+      var restOpen = G("gm_more_all", false) || rest.some(function (t) { return t[0] === curTab; });
+      sh += '<details class="gm-more-all"' + (restOpen ? " open" : "") + ' ontoggle="gmMoreAll(this.open)"><summary>Everything else (' + rest.length + ')</summary><div class="gm-more-g">';
+      rest.forEach(function (t) { sh += tile(t); });
+      sh += '<button role="menuitem" onclick="location.href=\'hub.html\'">\u25C6 All apps</button><button role="menuitem" onclick="gmSimple(true)">Back to simple</button></div></details></div></div>';
+    }
     document.body.insertAdjacentHTML("beforeend", sh + h);
   }
   var _compactTick = false;
@@ -8084,4 +8096,38 @@
     if (many || (p.debit && p.amount)) { var r = gmSpendRead(text); renderAll(); gmToast(r.spends + " spends and " + r.cards + " new card" + (r.cards === 1 ? "" : "s") + " read from " + r.messages + " messages."); return; }
     _ro(text);
   };
+
+  /* ── Start simple (owner, 2026-11-14): "literally confused where to start", "too heavy" ───────────────────────────────
+     Until the person asks for everything: Today keeps the rings, the three for today and the one next step, and folds the
+     rest under one line; a "Start here" card names the only three things to do; the More menu shows three doors. */
+  var _raS = window.renderAll;
+  window.renderAll = function () { var r = _raS.apply(this, arguments); try { simpleToday(); } catch (e) {} return r; };
+  function simpleToday() {
+    if (G("gm_simple", true) === false || (typeof curTab !== "undefined" && curTab !== "today")) return;
+    var s = document.querySelector("#sections .section.active"); if (!s || s.querySelector(".gm-simple-more")) return;
+    var d3 = s.querySelector(".gm-d3"); if (!d3) return;
+    var anchor = d3; while (anchor.parentNode && anchor.parentNode !== s) anchor = anchor.parentNode;
+    // A visible reward stays in view (test36: "your estate had your back" is never folded); everything else folds.
+    var rest = []; for (var n = anchor.nextElementSibling; n; n = n.nextElementSibling) { if (!/had your back/i.test(n.textContent || "")) rest.push(n); }
+    if (rest.length >= 2) {
+      var det = document.createElement("details"); det.className = "gm-simple-more";
+      det.innerHTML = "<summary>More for today (" + rest.length + ")</summary>";
+      rest.forEach(function (x) { det.appendChild(x); }); s.appendChild(det);
+    }
+    if (!G("gm_start_done", false)) {
+      anchor.insertAdjacentHTML("beforebegin", '<div class="kc gm-start" role="region" aria-label="Start here"><b>Start here: three things, that is all</b><ol>'
+        + '<li>Each day, tick your three below. Tiny counts.</li>'
+        + '<li><button type="button" class="gm-quiet" onclick="goTab(\'money\')">Once, share your bank messages</button>: cards and spending fill in by themselves.</li>'
+        + '<li><button type="button" class="gm-quiet" onclick="goTab(\'okr\')">On Sunday, open Goals</button> for five minutes.</li></ol>'
+        + '<button type="button" class="gm-quiet" onclick="gmStartDone()">Got it, hide this</button></div>');
+    }
+  }
+  window.gmStartDone = function () { S_("gm_start_done", true); renderAll(); };
+  try {
+    var st2 = document.createElement("style");
+    st2.textContent = ".gm-simple-more{margin:6px 0 18px}.gm-simple-more>summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:600;color:var(--muted)}"
+      + ".gm-start{margin:0 0 12px}.gm-start,.gm-start li,.gm-start ol{color:var(--text)!important;font-weight:400!important}.gm-start>b{font-weight:600!important}.gm-start ol{margin:8px 0;padding-inline-start:20px}.gm-start li{margin:6px 0;font-size:15px;line-height:1.45}"
+      + ".gm-show-all{grid-column:1/-1;margin-top:6px;font-weight:600}";
+    document.head.appendChild(st2);
+  } catch (e) {}
 })();
