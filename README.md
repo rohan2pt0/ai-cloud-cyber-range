@@ -138,9 +138,9 @@ This list is generated from [`features.json`](features.json); the Command Center
 - Start simple grows gently
 - Alerts with nothing to install
 - Calm and real
+- [Bank e-mails, nothing to install](docs/securax/137-AUTOMATION.md)
 - [Bank messages arrive by themselves](docs/securax/137-AUTOMATION.md)
 - Start simple
-- Where your money went
 
 **Release 0.3.0 - 2026-10-22:**
 

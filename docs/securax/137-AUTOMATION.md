@@ -1,7 +1,7 @@
 # 137. Numbers that arrive by themselves: the automation plan
 
 <!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
-> **Status: 🟡 Partly built.** Planned 14 November 2026: three routes ranked (SMS forwarder, the monthly CAS, Kite for the rebalance); share or paste is the working fallback today. [What the lights mean](../index.md#the-status-lights)
+> **Status: 🟡 Partly built.** Bank alerts arrive by themselves from the Outlook inbox with one tap (slice 1b) and from an SMS forwarder (owner fallback); Gmail, web push, the monthly CAS and Kite are next. [What the lights mean](../index.md#the-status-lights)
 <!-- status:end -->
 
 **Owner, 2026-11-14:** "I can't depend on copy-pasting SMS; automation is one of the best features, even if it costs some money." Share or paste stays as the fallback ([#279](https://github.com/rohan2pt0/ai-cloud-cyber-range/pull/279), [#280](https://github.com/rohan2pt0/ai-cloud-cyber-range/pull/280)).
@@ -24,7 +24,28 @@
 4. **Nothing irreversible without a tap.** Rebalancing proposes; the person approves each order.
 5. **The fallback always works:** share or paste a message, offline.
 
-## Slice 1 is built: set it up in five minutes
+## Slice 1b is built: bank e-mails, with nothing to install
+
+The zero-setup route. Many banks send the same alert by e-mail as by SMS, so the Life OS reads them from the mailbox the
+person already signs in with. Nothing to install, no token, no address.
+
+1. **Money, then "Read my bank e-mails".** If the Life OS is signed in with Microsoft, the tap asks Microsoft for one more
+   permission, *Mail.Read* (read-only). Allow it once.
+2. **Done.** The last 31 days come in at once; after that, new alerts are read each time the app refreshes from Microsoft
+   (about every 30 minutes while it is open). A short note says how many.
+
+**What it keeps:** only the Inbox, never Junk; only bank sender domains (India today: the `.bank.in` domains and the major
+banks' and card issuers' own); never a message with a one-time code; digit runs of 12 or more masked; at most 50 messages a
+read. Mail goes from Microsoft straight to the device. The message text is not stored, only the spend, card and balance it
+gave. **Off switch:** Ops, Microsoft 365, Disconnect; or remove the app in your Microsoft account's app permissions.
+Threat model `life-os-bank-mail`; test `guiding-map/tests/test97.js`.
+
+**Not yet:** Gmail (Google treats reading mail as a restricted permission: fine for the owner as a test user, a paid
+security assessment before a public launch; the next slice) and pairing by one scan. Web push is built (the Life OS's
+Allow alerts tap). Until a shared Microsoft app
+id ships with the Life OS, signing in still needs a one-time app registration (friction `ms-client-id-paste`).
+
+## Slice 1 (owner fallback): an SMS forwarder, five minutes to set up
 
 1. **On the estate:** in `local/compose/.env`, set `SYNC_INBOX_TOKENS` to a new random token (for example `openssl rand -hex 24`) and `SYNC_INBOX_USER` to your Life OS sync id. Restart: `./securax up`. While the token is empty the door stays shut.
 2. **On the phone:** install the open-source forwarder ([F-Droid or GitHub](https://github.com/bogkonstantin/android_income_sms_gateway_webhook)). Add one rule:
@@ -35,41 +56,36 @@
 
 **What the estate refuses:** any sender that is not a bank id, every one-time code (never stored), digit runs of 12 or more (masked), over 60 messages a minute, and any request without the inbox token. The inbox token cannot read anything.
 
-## Slice 1b, part 3: bank alerts read from your e-mail (owner steps, once)
+## The one registration that ends the client-id paste (owner, once)
 
-Banks send the same alerts by e-mail as by SMS. The estate can read them from the mailbox you already sign in to, so nothing
-is installed on the phone. This needs one app registration that you own. It is done once, by the owner as the publisher;
-the people you serve later only tap Accept on Microsoft's consent screen.
+Slice 1b works today, but signing in with Microsoft still asks for an app's client id (friction `ms-client-id-paste`).
+One registration, owned by the publisher, ends that: its client id ships with the Life OS, and every person after only
+taps Accept on Microsoft's consent screen. The client id is not a secret.
 
 **Why these choices** (Microsoft's rules, checked 14 November 2026):
 - Since June 2024 an app must live in a directory (a tenant); a personal account alone can no longer register one.
-- A browser-only (single-page) app's refresh token lasts 24 hours, so the phone cannot keep the connection; the estate does,
-  as a public client (no secret), whose refresh token lasts 90 days and renews while it is used.
+- The Life OS reads mail on the device, when the person is there, so a single-page app is right: its refresh token
+  lasts 24 hours, and the app asks again in one tap when it lapses. A reader that runs while nobody is there would need
+  the estate to hold the connection instead (a public client, 90 days); that waits until it is needed.
 - `Mail.Read` (delegated) is the narrowest permission that can read an alert's text; `Mail.ReadBasic` leaves out the body.
-  Microsoft has no permission for "only these senders", so the estate keeps bank senders and drops everything else.
+  Microsoft has no permission for "only these senders", so the Life OS keeps bank senders and drops everything else.
 
 **The steps (about 15 minutes):**
-1. **Your own tenant.** Never your employer's directory. Make a free Azure account with the Microsoft account you use for
+1. **Your own tenant.** Never an employer's directory. Make a free Azure account with the Microsoft account you use for
    SecuRAX (card and phone check; no charge unless you choose to upgrade). It creates a tenant in which you are the
    administrator. Entra ID Free and app registrations stay free after the trial credit ends.
 2. **Register the app.** In the [Microsoft Entra admin center](https://entra.microsoft.com), switch to that tenant, then
    *Identity → Applications → App registrations → New registration*:
-   - **Name:** SecuRAX estate;
+   - **Name:** SecuRAX Life OS;
    - **Supported account types:** *Accounts in any organizational directory and personal Microsoft accounts* (it cannot be
      changed later without a new registration);
-   - **Redirect URI:** platform *Public client/native (mobile & desktop)*, value: your hub address (`./securax names` shows it)
-     followed by `/sync/mail/callback`.
-3. **Permissions.** *API permissions → Add → Microsoft Graph → Delegated*: `Mail.Read` and `offline_access` (`openid`,
-   `profile` and `User.Read` are there already). Do not add a client secret or a certificate: the app needs none.
-4. **One value back.** From *Overview*, copy the **Application (client) ID**. It is not a secret. Give it to the estate once
-   when part 3 is built (`./securax mail connect` will ask for it); nothing else is copied anywhere.
-5. **Consent (one tap).** The Life OS will show *Read bank alerts from your e-mail*. You sign in and accept read access;
-   the estate starts reading. **Off switch:** the same card's *Turn off*, which deletes the estate's token; remove the app
-   from your account's consent page too, and it is gone.
-
-**What the estate will do** (built by Claude, threat model first): every 15 minutes it asks Microsoft Graph for new messages
-from known bank senders only, keeps the alert text with the same rules as the SMS inbox (no one-time codes, long digit runs
-masked, 14 days), and never sends, moves or deletes mail.
+   - **Redirect URI:** platform *Single-page application*; add each address the Life OS is opened from, exactly as the
+     browser shows it (the published app and your hub address from `./securax names`).
+3. **Permissions.** *API permissions → Add → Microsoft Graph → Delegated*: `Calendars.Read`, `Tasks.ReadWrite`,
+   `Files.ReadWrite.AppFolder` and `Mail.Read` (the ones the Life OS asks for; `openid`, `profile`, `offline_access` and
+   `User.Read` come with sign-in). No client secret and no certificate: the app needs none.
+4. **One value back.** From *Overview*, copy the **Application (client) ID** and give it to Claude once; it ships as the
+   Life OS's default, and the paste field folds away as a fallback.
 
 **Later, for other people:** publisher verification (a Microsoft partner id) removes the "unverified" label on the consent
 screen; a person in an organisation may need their administrator's approval, which the card will say plainly.
