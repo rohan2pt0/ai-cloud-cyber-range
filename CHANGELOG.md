@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- **Calm and real, the aurora**: the lock's aurora is drawn at the screen's own sharpness with smooth curtains (no bands): oxygen green low, faint oxygen red high, a violet nitrogen fringe.
 - **Calm and real**: the More menu starts with Money, Breaks and Life balance, then adds one more door each week the person has used the app, so a newcomer is never handed the whole estate at once.
 
 - No coloured tap shadow on any button in any SecuRAX app (shared look; a test holds it).

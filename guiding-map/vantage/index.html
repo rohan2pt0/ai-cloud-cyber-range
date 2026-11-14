@@ -825,15 +825,21 @@ nav#oskNav button.on{color:#f4e7c1;background:rgba(201,168,76,.14);box-shadow:in
     var AU = null;
     function drawAurora(t) {
       if (!AU) { AU = { cv: doc.createElement("canvas") }; AU.cx = AU.cv.getContext("2d"); }
-      var aw = Math.ceil(W / 2), ah = Math.ceil(H * .42);
+      // The cache is drawn at device resolution, so it stays crisp behind the blur, and its pixel count is capped
+      // so even a very large screen stays cheap.
+      var aw = Math.ceil(W * D / 2), ah = Math.ceil(H * .42 * D), cap = 1200000;
+      if (aw * ah > cap) {
+        var sc = Math.sqrt(cap / (aw * ah));
+        aw = Math.max(1, Math.floor(aw * sc)); ah = Math.max(1, Math.floor(ah * sc));
+      }
       if (AU.cv.width !== aw || AU.cv.height !== ah) { AU.cv.width = aw; AU.cv.height = ah; AU.at = -1e9; }
       if (still || t - AU.at > 250 || t < AU.at) {
-        AU.at = t; var g = AU.cx, x, k, base, hgt, ray, i, y, f;
+        AU.at = t; var g = AU.cx, x, k, base, hgt, ray, f;
         g.globalCompositeOperation = "source-over"; g.clearRect(0, 0, aw, ah); g.globalCompositeOperation = "lighter";
         for (var c = 0; c < 2; c++) {                                   // two curtains, one behind the other
           var amp = ah * (c ? .07 : .1), lift = ah * (c ? .55 : .72), str = c ? .55 : 1;
-          for (x = 0; x < aw; x++) {
-            k = x / aw;
+          for (x = 0; x < aw; x += 2) {                                 // one 2 device px strip at a time
+            k = (x + 1) / aw;
             base = lift + amp * Math.sin(k * 5.2 + t / 9000 + c * 2) + amp * .5 * Math.sin(k * 13 - t / 6500 + c);
             ray = .42 + .3 * Math.sin(k * 97 + Math.sin(k * 23 + t / 4000) * 3 + c * 4) + .2 * Math.sin(k * 211 - t / 5200 + c) + .12 * Math.sin(k * 37 + t / 7000);   // irregular rays, as in a real curtain
             ray = Math.max(0, Math.min(1, ray));
@@ -841,19 +847,25 @@ nav#oskNav button.on{color:#f4e7c1;background:rgba(201,168,76,.14);box-shadow:in
             hgt = ah * (.32 + .14 * Math.sin(k * 7 + t / 11000 + c)) * (.7 + .3 * ray);
             var I = str * ray * f;
             if (I < .02) continue;
-            for (i = 0; i < 12; i++) {                                    // up the curtain: green, then red at the top
-              y = base - hgt * i / 12; var u = i / 11;
-              var a = I * (.3 * Math.pow(1 - u, 1.6) + (i === 0 ? .25 : 0) + (u > .55 ? .07 * (u - .55) * 2 : 0));
-              g.fillStyle = u < .6 ? "rgba(70,255,150," + a.toFixed(3) + ")" : "rgba(255,70,40," + (a * .9).toFixed(3) + ")";
-              g.fillRect(x, y - hgt / 12, 1, hgt / 12 + .5);
-            }
-            g.fillStyle = "rgba(90,40,255," + (I * .07).toFixed(3) + ")"; g.fillRect(x, base, 1, ah * .03);   // the nitrogen fringe
+            // One smooth vertical gradient per strip, so the curtain has no visible bands: violet nitrogen at the
+            // base, oxygen green bright low and fading upward, faint oxygen red high up.
+            var top = base - hgt, bot = base + ah * .03;
+            var gr = g.createLinearGradient(x, top, x, bot);
+            gr.addColorStop(0, "rgba(255,90,70," + (I * .10).toFixed(3) + ")");      // oxygen red 630.0 nm, faint at the top
+            gr.addColorStop(.18, "rgba(255,110,90," + (I * .05).toFixed(3) + ")");
+            gr.addColorStop(.36, "rgba(120,255,170," + (I * .07).toFixed(3) + ")");
+            gr.addColorStop(.54, "rgba(120,255,170," + (I * .16).toFixed(3) + ")");
+            gr.addColorStop(.72, "rgba(120,255,170," + (I * .29).toFixed(3) + ")");
+            gr.addColorStop(.88, "rgba(120,255,170," + (I * .47).toFixed(3) + ")");  // oxygen green 557.7 nm, bright low
+            gr.addColorStop(.96, "rgba(120,255,170," + (I * .55).toFixed(3) + ")");
+            gr.addColorStop(1, "rgba(90,40,255," + (I * .16).toFixed(3) + ")");       // nitrogen violet 427.8 nm at the base
+            g.fillStyle = gr; g.fillRect(x, top, Math.min(2, aw - x), bot - top);
           }
         }
       }
       ctx.save(); ctx.globalCompositeOperation = "lighter";
-      if ("filter" in ctx) ctx.filter = "blur(2.4px)";
-      ctx.drawImage(AU.cv, 0, H - ah, W, ah); ctx.filter = "none"; ctx.restore();
+      if ("filter" in ctx) ctx.filter = "blur(" + (2.4 * D).toFixed(1) + "px)";
+      ctx.drawImage(AU.cv, 0, H - H * .42, W, H * .42); ctx.filter = "none"; ctx.restore();
     }
     function makeGalaxy() {
       var G = { R0: Math.min(W, H) * (opts.galaxySize || .14), cx: W * (opts.galaxyX || .27), cy: H * (opts.galaxyY || .115),
