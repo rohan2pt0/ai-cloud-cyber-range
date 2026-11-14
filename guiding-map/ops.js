@@ -2203,7 +2203,7 @@
     var blob = {};
     for (var i = 0; i < localStorage.length; i++) {
       var k = localStorage.key(i);
-      if (k.indexOf("gm_ms_tok") !== 0 && k.indexOf("gm_sync_cfg") !== 0 && k.indexOf("gm_sync_od") !== 0) blob[k] = localStorage.getItem(k);
+      if (k.indexOf("gm_ms_tok") !== 0 && k.indexOf("gm_sync_cfg") !== 0 && k.indexOf("gm_sync_od") !== 0 && k !== "gm_bk_escrow") blob[k] = localStorage.getItem(k);
     }
     // With OneDrive sync on, backups are sealed with the same key: Microsoft stores ciphertext only.
     var enc = !!G("gm_sync_odk", null), name = "guiding-map-" + ymd() + (enc ? ".enc.json" : ".json");
@@ -2303,7 +2303,7 @@
     var blob = {};
     for (var i = 0; i < localStorage.length; i++) {
       var k = localStorage.key(i);
-      if (k.indexOf("gm_sync") !== 0 && k.indexOf("gm_ms_tok") !== 0) blob[k] = localStorage.getItem(k);
+      if (k.indexOf("gm_sync") !== 0 && k.indexOf("gm_ms_tok") !== 0 && k !== "gm_bk_escrow") blob[k] = localStorage.getItem(k);   // the escrowed phrase goes to the estate only
     }
     return blob;
   }
@@ -2586,6 +2586,14 @@
      on another device, the phrase. Old plain files still restore. Threat model: lifeos-backup. */
   // device-only: every sync path, the OneDrive copy and every backup skip keys that start with gm_sync_od, so the phrase never leaves
   var BK_PH = "gm_sync_od_bkphrase", BK_ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+  /* Audit round 1 (owner 2026-11-14: "a lost phone costs nothing but the phone"): a phrase kept only on the lost phone made
+     every encrypted backup unreadable. When the Life OS is paired with the person's own estate, the phrase is also kept
+     there as gm_bk_escrow (the estate already holds the synced data itself, so this adds no exposure), and a newly paired
+     device adopts it, so old backups open on the new phone. It never goes into a backup file or the OneDrive copy. */
+  var BK_ESC = "gm_bk_escrow";
+  function bkAdopt() { var e = G(BK_ESC, null); if (!G(BK_PH, null) && typeof e === "string" && e.replace(/[^A-Z0-9]/gi, "").length >= 8) S_(BK_PH, e); }
+  window.gmBkAdopt = bkAdopt;
+  function bkEscrow(p) { var c = G("gm_sync_cfg", null); if (c && c.url && c.user && p && G(BK_ESC, null) !== p) S_(BK_ESC, p); }
   function bkNewPhrase() {
     var r = crypto.getRandomValues(new Uint8Array(20)), t = "";
     for (var i = 0; i < 20; i++) t += BK_ABC[r[i] % 32] + (i % 4 === 3 && i < 19 ? "-" : "");
@@ -2612,13 +2620,15 @@
     var blob = {};
     for (var i = 0; i < localStorage.length; i++) {
       var k = localStorage.key(i);
-      if (k.indexOf("gm_ms_tok") !== 0 && k.indexOf("gm_sync_od") !== 0 && k.indexOf("gm_undo") !== 0) blob[k] = localStorage.getItem(k);
+      if (k !== BK_ESC && k.indexOf("gm_ms_tok") !== 0 && k.indexOf("gm_sync_od") !== 0 && k.indexOf("gm_undo") !== 0) blob[k] = localStorage.getItem(k);   // a file never carries its own key
     }
     return blob;
   }
   window.gmExportNow = function () {
+    bkAdopt();
     var phrase = G(BK_PH, null), first = !G("gm_sync_od_bkshown", null);
     if (!phrase) { phrase = bkNewPhrase(); S_(BK_PH, phrase); }
+    bkEscrow(phrase);
     var blob = bkBlob();
     gmBackupSeal(blob, phrase).then(function (text) {
       gmTouch("Saved an encrypted backup", "a file on this device");
@@ -2629,7 +2639,10 @@
         + 'Keep it in your password manager. You see it only now (it is also in Settings, under Backup).</div>'
         + '<div id="gmBkPh" style="font-family:monospace;font-size:16px;font-weight:800;letter-spacing:1px;padding:10px;border:1px solid var(--border);border-radius:10px;text-align:center;margin-bottom:12px;user-select:all">' + esc(phrase) + '</div>'
         + '<div style="display:flex;gap:8px"><button class="btn-sm" style="background:var(--gold);color:#0d1f35;font-weight:800;padding:9px 18px" onclick="gmBkCopy()">Copy</button>'
-        + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);padding:9px 14px" onclick="gmClose()">I have saved it</button></div>');
+        + '</div><label class="f-label" for="gmBkLast" style="margin-top:12px;display:block">To be sure it is saved, type its last four characters</label>'
+        + '<div style="display:flex;gap:8px;align-items:center"><input id="gmBkLast" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="4" style="width:7em;font-family:monospace">'
+        + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);padding:9px 14px" onclick="gmBkConfirm()">I have saved it</button></div>'
+        + (G(BK_ESC, null) ? '<div class="muted" style="font-size:12px;margin-top:8px">Your estate keeps a copy too, so a new phone paired with it opens your backups.</div>' : ''));
     }).catch(function (e) { gmToast("No backup saved: " + (e && e.message || e) + ". Nothing readable was written."); });
   };
   window.gmEraseAsk = function () {
@@ -2649,10 +2662,17 @@
       wipe(); location.reload();
     });
   };
+  // "I have saved it" is believed only when the person can type the phrase's last four characters (they saved it somewhere)
+  window.gmBkConfirm = function () {
+    var p = String(G(BK_PH, "")).replace(/[^A-Z0-9]/gi, "").toUpperCase(), t = String((document.getElementById("gmBkLast") || {}).value || "").replace(/[^A-Z0-9]/gi, "").toUpperCase();
+    if (p && t === p.slice(-4)) { S_("gm_bk_confirmed", ymd()); gmClose(); gmToast("Saved and checked. A new phone can open your backups with it."); }
+    else gmToast("That does not match the end of the phrase. Copy it into your password manager, then try again.");
+  };
   window.gmBkCopy = function () {
     var p = G(BK_PH, ""); try { navigator.clipboard.writeText(p).then(function () { gmToast("Copied. Paste it into your password manager."); }); } catch (e) { gmToast(p); }
   };
   window.gmBkShow = function () {
+    bkAdopt();
     var p = G(BK_PH, null);
     if (!p) { gmToast("No backup phrase yet: it is made with your first backup."); return; }
     gmDlg('<div style="font-weight:800;font-size:15px;margin-bottom:8px">Your backup phrase</div><div style="font-family:monospace;font-size:16px;font-weight:800;padding:10px;border:1px solid var(--border);border-radius:10px;text-align:center;margin-bottom:12px;user-select:all">'
@@ -2682,6 +2702,7 @@
         try {
           var o = JSON.parse(r.result);
           if (o && o.kind === "securax-life-os-backup") {
+            bkAdopt();
             var mine = G(BK_PH, null), tryOpen = function (p) {
               return gmBackupOpen(o, p).then(function (blob) {
                 if (!mine) S_(BK_PH, bkNorm(p).replace(/(.{4})(?!$)/g, "$1-"));   // a new device keeps the phrase for its own backups
