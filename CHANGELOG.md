@@ -9,6 +9,8 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- The lock's aurora is smooth, not banded: its cached canvas is drawn at device resolution (capped at 1.2 million pixels) and each 2 px strip is one vertical gradient from nitrogen violet at the base through bright oxygen green to faint oxygen red at the top, with the blur scaled to the device (test97).
+
 - No coloured tap shadow on any button in any SecuRAX app (shared look; a test holds it).
 - Secrets are the estate's job: never ask a person to copy or paste a token, key or credential (zero-setup, friction copy-paste-secrets).
 - Principle zero-setup: a person never installs a second app or configures anything; the SMS forwarder and ntfy become folded owner-only fallbacks, web push and e-mail alerts are queued to replace them.
