@@ -41,8 +41,10 @@ const wait = (ms) => new Promise((r) => setTimeout(r, ms));
   ok("a phone download is not an off-phone copy", B.w.localStorage.getItem("gm_last_offsite") === null, B.w.localStorage.getItem("gm_last_offsite"));
 
   // Health tells the truth about where the copy lives
-  const C = boot({ gm_last_export: JSON.stringify(today) }, {}); await wait(1200); C.w.goTab("ops");
+  const C = boot({ gm_last_export: JSON.stringify(today) }, { phone: true }); await wait(1200); C.w.goTab("ops");
   ok("a phone-only backup is called out", /Saved on this phone only/.test(C.w.document.getElementById("sections").textContent));
+  const L = boot({ gm_last_export: JSON.stringify(today) }, {}); await wait(1200); L.w.goTab("ops");
+  ok("a copy saved on a laptop counts as off the phone", !/Saved on this phone only/.test(L.w.document.getElementById("sections").textContent) && /Last backup today/.test(L.w.document.getElementById("sections").textContent));
   const D = boot({ gm_last_export: JSON.stringify(today), gm_last_offsite: JSON.stringify(today) }, {}); await wait(1200); D.w.goTab("ops");
   ok("an off-phone copy clears the warning", !/Saved on this phone only/.test(D.w.document.getElementById("sections").textContent));
 

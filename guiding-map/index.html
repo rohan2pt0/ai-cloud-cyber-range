@@ -6256,12 +6256,17 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmExportNow()">Also export a file</button></div><div id="snapList" class="muted" style="margin-top:6px"></div>');
     else {
       // safe only when a copy is off this phone: the estate snapshots above, or a OneDrive / shared copy within 31 days
-      function ageOf(v) { var d = new Date(String(v).slice(0, 10)); return isNaN(d.getTime()) ? null : Math.round((Date.now() - d.getTime()) / 86400000); }
+      function ageOf(v) {   // whole local calendar days since the date (a UTC parse made a backup from this morning read "1 days ago" in India by evening)
+        var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v)); if (!m) return null;
+        var d = new Date(+m[1], +m[2] - 1, +m[3]), n = new Date(); n = new Date(n.getFullYear(), n.getMonth(), n.getDate());
+        return isNaN(d.getTime()) ? null : Math.max(0, Math.round((n - d) / 86400000)); }
       var offAges = [], odl = G("gm_sync_od_last", null), off = G("gm_last_offsite", null), a;
       if (odl && (a = ageOf(odl)) !== null) offAges.push(a);
       if (off && (a = ageOf(off)) !== null) offAges.push(a);
+      // a copy saved on a laptop or desktop (a wide screen) is already off the phone, including ones made before this check
+      if (exp && !(window.matchMedia && window.matchMedia("(max-width: 700px)").matches) && (a = ageOf(exp)) !== null) offAges.push(a);
       var offDays = offAges.length ? Math.min.apply(null, offAges) : null;
-      if (offDays !== null && offDays <= 31) row(true, "Last backup " + (offDays === 0 ? "today" : offDays + " days ago"),
+      if (offDays !== null && offDays <= 31) row(true, "Last backup " + (offDays === 0 ? "today" : offDays === 1 ? "yesterday" : offDays + " days ago"),
         "A copy is off this phone. Within the monthly rhythm.",
         '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);margin-top:6px" onclick="gmExportNow()">Back up now</button>');
       else if (exp) row(null, "Saved on this phone only",
