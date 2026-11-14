@@ -49,7 +49,7 @@ def _notes(src: pathlib.Path):
 
 
 def _id(*parts: str) -> str:
-    return "keep-" + hashlib.sha1("\x1f".join(parts).encode()).hexdigest()[:16]
+    return "keep-" + hashlib.sha1("\x1f".join(parts).encode(), usedforsecurity=False).hexdigest()[:16]
 
 
 def convert(src: pathlib.Path) -> list[dict]:

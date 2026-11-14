@@ -9,7 +9,22 @@
   "use strict";
 
   /* ── tiny store helpers ─────────────────────────────────────────── */
-  function G(k, d) { try { var s = localStorage.getItem(k); return s ? JSON.parse(s) : d; } catch (e) { return d; } }
+  // Read a stored value of the shape its default promises (robustness audit, 2026-11-14): a value of another type (a
+  // damaged key, a bad backup, a confused sync peer) gives the default instead of a crash, and a stored object missing
+  // fields gets the default's (a field of the wrong type too), so every reader can trust what it gets.
+  function G(k, d) {
+    var v;
+    try { var s = localStorage.getItem(k); if (!s) return d; v = JSON.parse(s); } catch (e) { return d; }
+    if (d === undefined || d === null) return v;
+    if (v === null || typeof v !== typeof d || Array.isArray(v) !== Array.isArray(d)) return d;
+    if (typeof d === "object" && !Array.isArray(d)) {
+      Object.keys(d).forEach(function (f) {
+        if (v[f] === undefined || v[f] === null) v[f] = d[f];
+        else if (d[f] !== null && (typeof v[f] !== typeof d[f] || Array.isArray(v[f]) !== Array.isArray(d[f]))) v[f] = d[f];
+      });
+    }
+    return v;
+  }
   function S_(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
   function ymd(d) { d = d || new Date(); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
   function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
@@ -2900,6 +2915,7 @@
     if (st.ym !== ymNow) { st.ym = ymNow; st.miss = {}; }        // fresh budget monthly
     // Walk each elapsed day since last update using the REAL history in S.daily.
     var d = st.last ? new Date(st.last) : null;
+    if (d && isNaN(d.getTime())) d = null;                      // a damaged date is no date: never walk towards NaN
     if (!d) {                                                    // first run: seed from up to 60 days of REAL history
       d = new Date(); d.setDate(d.getDate() - 60);
       // ...but never before your first check-in: days before you used the app are not misses (they spent the month's
@@ -2909,10 +2925,10 @@
       var f = new Date(first + "T00:00:00"); f.setDate(f.getDate() - 1);
       if (f > d) d = f;
     }
-    var stop = new Date(today);
-    while (true) {
+    var stop = new Date(today), guard = 0;
+    while (guard++ < 800) {                                      // at most ~2 years of days: a bad value can never hang the app
       d.setDate(d.getDate() + 1);
-      if (d >= stop) break;                                      // today itself is still in progress
+      if (!(d < stop)) break;                                    // today itself is still in progress
       var k = (typeof dKey === "function") ? dKey(d) : null;
       var done = (k && S.daily[k]) ? S.daily[k] : [];
       HABITS.forEach(function (h) {
@@ -5324,7 +5340,12 @@
       + "html[data-theme=dark] .btn-sm,html[data-theme=dark] .btn-s{box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}"
       // The rings: a track that suits each theme, a gauge sweep on open (staggered), a glow when a ring closes.
       + ":root{--ring-track:rgba(11,31,53,.08)}html[data-theme=dark]{--ring-track:rgba(255,255,255,.08)}"
-      + ".gm-rings text{font:700 11px var(--font-ui);fill:var(--text)}"
+      + ".gm-rings text{font:600 9px var(--font-ui);fill:var(--text);letter-spacing:.02em}"
+      + "html body svg.gm-rings{background:none!important;border:0!important;box-shadow:none!important;padding:0!important;min-height:0!important}.gm-greet svg.gm-rings{width:80px;height:80px;flex:none;cursor:pointer;border-radius:50%}svg.gm-rings.sx-rings-on circle{visibility:hidden}"
+      + ".gm-rings-info{display:grid;gap:6px;margin:-4px 0 14px}.gm-ri-row{display:flex;align-items:center;gap:12px;width:100%;text-align:start;min-height:52px;padding:8px 12px;border-radius:14px;border:1px solid var(--border);background:var(--card);color:var(--text)}"
+      + ".gm-ri-row span{flex:1;display:grid}.gm-ri-row b{font-weight:600;font-size:14px}.gm-ri-row small{font-size:12.5px;color:var(--muted)}.gm-ri-row em{font-style:normal;font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--text)}"
+      + ".gm-ri-next{border-color:rgba(201,168,76,.7)}.gm-ri-dot{width:14px;height:14px;border-radius:50%;flex:none;box-shadow:0 0 0 3px rgba(0,0,0,.06)}"
+      + ".gm-ri-sunrise{background:conic-gradient(from 180deg,#e2475a,#f59e3b,#fbc94a,#e2475a)}.gm-ri-emerald{background:conic-gradient(from 180deg,#056b4f,#15b47b,#c6f6dd,#056b4f)}.gm-ri-peacock{background:conic-gradient(from 180deg,#1d4ed8,#0f9f8a,#d4af37,#1d4ed8)}"
       + "@keyframes gmsweep2{from{stroke-dashoffset:var(--c)}to{stroke-dashoffset:var(--o)}}"
       + ".gm-arc{animation:gmsweep2 .9s cubic-bezier(.2,.8,.2,1) both}.gm-a2{animation-delay:.12s}.gm-a3{animation-delay:.24s}"
       + ".gm-closed{filter:drop-shadow(0 0 3px rgba(232,201,106,.7))}.gm-a2.gm-closed{filter:drop-shadow(0 0 3px rgba(45,212,191,.7))}.gm-a3.gm-closed{filter:drop-shadow(0 0 3px rgba(224,90,112,.7))}"
@@ -5604,6 +5625,23 @@
   }
   window.gmToggleStill = function () { S_("gm_still", !G("gm_still", false)); premiumCSS(); gmMenu(); };
   window.gmToggleSmart = function () { S_("gm_smart_off", !G("gm_smart_off", false)); gmMenu(); };
+  // The rings explain themselves on a tap: what each one measures, where it stands, and the one place to go next.
+  window.gmRingsInfo = function () {
+    var g = document.querySelector(".gm-greet"); if (!g) return;
+    var old = document.querySelector(".gm-rings-info"); if (old) { old.remove(); return; }
+    var svg = g.querySelector("svg.gm-rings"), d = []; try { d = JSON.parse(svg.getAttribute("data-rings") || "[]"); } catch (e) {}
+    var meaning = { Today: ["Today's three", "the three small things that make today a win", "today"],
+      Stack: ["Your Stack", "how much of your foundation is in place", "stack"],
+      Shield: ["Your Shield", "how well your biggest risks are covered", "risk"] };
+    var low = d.slice().sort(function (a, b) { return a.p - b.p; })[0];
+    var h = '<div class="gm-rings-info" role="region" aria-label="What the rings mean">' + d.map(function (r) {
+      var m = meaning[r.n] || [r.n, "", "today"];
+      return '<button type="button" class="gm-ri-row' + (low && r.n === low.n && r.p < 100 ? " gm-ri-next" : "") + '" onclick="goTab(\'' + m[2] + '\')">'
+        + '<i class="gm-ri-dot gm-ri-' + esc(r.k) + '" aria-hidden="true"></i><span><b>' + esc(m[0]) + ' · ' + (r.p >= 100 ? "closed" : r.p + "%") + '</b><small>' + esc(m[1]) + '</small></span>'
+        + (low && r.n === low.n && r.p < 100 ? '<em>Next</em>' : '') + '</button>';
+    }).join("") + '</div>';
+    g.insertAdjacentHTML("afterend", h);
+  };
   function greetHTML() {
     var hr = new Date().getHours(), part = hr < 5 ? "Still up" : hr < 12 ? "Good morning" : hr < 17 ? "Good afternoon" : "Good evening";
     var fn = ((typeof P !== "undefined" && P.name) || "").trim().split(" ")[0];
@@ -5622,13 +5660,16 @@
         + '<circle class="gm-arc' + (pct >= 100 ? " gm-closed" : "") + ' ' + cls + '" cx="34" cy="34" r="' + rr + '" fill="none" stroke="url(#' + grad + ')" stroke-width="5.5" stroke-linecap="round"'
         + ' stroke-dasharray="' + cc.toFixed(1) + '" stroke-dashoffset="' + of.toFixed(1) + '" style="--c:' + cc.toFixed(1) + ';--o:' + of.toFixed(1) + '" transform="rotate(-90 34 34)"/>';
     }
-    return welcomeBackHTML() + '<div class="gm-greet"><svg class="gm-ring gm-rings" width="68" height="68" viewBox="0 0 68 68" role="img" aria-label="'
-      + n + ' of 3 done today; Stack ' + stp + '%; Shield ' + shp + '%">'
-      + '<defs><linearGradient id="gmRgGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f3dc8f"/><stop offset=".5" stop-color="#c9a84c"/><stop offset="1" stop-color="#e8c96a"/></linearGradient>'
-      + '<linearGradient id="gmRgTeal" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5eead4"/><stop offset="1" stop-color="#0f766e"/></linearGradient>'
-      + '<linearGradient id="gmRgVel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e05a70"/><stop offset="1" stop-color="#7d1426"/></linearGradient></defs>'
+    var rd = JSON.stringify([{ n: "Today", p: Math.round(n / 3 * 100), k: "sunrise" }, { n: "Stack", p: stp, k: "emerald" }, { n: "Shield", p: shp, k: "peacock" }]);
+    return welcomeBackHTML() + '<div class="gm-greet"><svg class="gm-ring gm-rings" width="68" height="68" viewBox="0 0 68 68" role="button" tabindex="0" data-rings=\'' + rd + '\''
+      + ' onclick="gmRingsInfo()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();gmRingsInfo()}" aria-label="'
+      + n + ' of 3 done today; Stack ' + stp + '%; Shield ' + shp + '%. Show what the rings mean">'
+      // The fallback drawing wears the same natural palettes as the lit rings (shared/rings.js): sunrise, emerald, peacock.
+      + '<defs><linearGradient id="gmRgGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e2475a"/><stop offset=".5" stop-color="#f59e3b"/><stop offset="1" stop-color="#fbc94a"/></linearGradient>'
+      + '<linearGradient id="gmRgTeal" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#056b4f"/><stop offset="1" stop-color="#45d49a"/></linearGradient>'
+      + '<linearGradient id="gmRgVel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1d4ed8"/><stop offset=".6" stop-color="#0f9f8a"/><stop offset="1" stop-color="#d4af37"/></linearGradient></defs>'
       + ring(28, Math.round(n / 3 * 100), "gmRgGold", "gm-a1") + ring(20.5, stp, "gmRgTeal", "gm-a2") + ring(13, shp, "gmRgVel", "gm-a3")
-      + '<text x="34" y="38" text-anchor="middle">' + n + '/3</text></svg>'
+      + '<text x="34" y="37.2" text-anchor="middle">' + n + '/3</text></svg>'
       + '<div><h2>' + esc(part + (fn ? ", " + fn : "")) + '</h2><p>' + esc(date) + ' · ' + (n === 3 ? "today is already a win" : n ? (3 - n) + " left for a win today" : "three small things make today a win") + '</p></div></div>';
   }
 
@@ -7445,6 +7486,7 @@
       + "html body .okr-grade{font-family:var(--font-display);font-weight:400;font-size:26px;line-height:1}"
       + ".gm-okr-acts{display:flex;align-items:center;gap:8px;margin-top:12px}"
       + "html body .gm-btn-ghost{background:transparent;color:var(--text);border:1px solid rgba(201,168,76,.75);box-shadow:none;font-weight:700}"
+      + "html body .gm-quiet,html body #sections .gm-quiet{background:none!important;box-shadow:none!important;border:0!important;min-height:44px}"
       + ".gm-quiet{margin-inline-start:auto;background:none;border:0;color:var(--muted);font:inherit;font-size:12.5px;text-decoration:underline;text-underline-offset:3px;padding:10px 4px;cursor:pointer}"
       // The spending plan: the healthy band is visible on the bar, so the verdict needs no reading.
       + "html body .csp-track{height:8px;background:var(--cardAlt);box-shadow:inset 0 1px 2px rgba(13,31,53,.12)}"
@@ -7623,7 +7665,10 @@
 // encryption and lock, and encryption at rest inside the Life OS is the next slice (queue app-lock).
 (function () {
   var KEY = "gm_lock", hiddenAt = 0;
-  function rec() { try { return JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { return null; } }
+  // A lock record is real only if it can be satisfied (a credential and a recovery-code hash): a damaged one must never lock
+  // the person out of their own record for ever (robustness audit, 2026-11-14). Anyone able to damage it could already
+  // read the device's storage, so treating it as "no lock" gives nothing away.
+  function rec() { try { var r = JSON.parse(localStorage.getItem(KEY) || "null"); return r && typeof r === "object" && typeof r.id === "string" && r.id && typeof r.salt === "string" && r.salt && typeof r.hash === "string" && r.hash ? r : null; } catch (e) { return null; } }
   function put(r) { try { if (r) localStorage.setItem(KEY, JSON.stringify(r)); else localStorage.removeItem(KEY); } catch (e) {} }
   function b64(buf) { var s = "", b = new Uint8Array(buf); for (var i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
   function unb64(t) { t = String(t).replace(/-/g, "+").replace(/_/g, "/"); while (t.length % 4) t += "="; var s = atob(t), b = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) b[i] = s.charCodeAt(i); return b; }
@@ -7656,7 +7701,8 @@
       + '<button type="button" onclick="gmUnlockCode(document.getElementById(\'gmLockCode\').value)">Unlock with code</button></details>'
       + '<div class="gm-lock-msg" aria-live="polite"></div></div>';
     document.body.appendChild(el);
-    try { if (window.SXSky) SXSky.mount(el, { comet: true }); } catch (e) {}   // the shared night sky; it ends when the lock is removed
+    try { if (window.SXSky) SXSky.mount(el, { comet: true, aurora: true, avoid: function () { return el.querySelector(".gm-lock-card"); } }); } catch (e) {}   // the shared night sky; it ends when the lock is removed
+    try { var go = el.querySelector(".gm-lock-go"); if (go) go.focus({ preventScroll: true }); } catch (e) {}   // a dialog takes the focus: one Enter opens it
   }
   function say(t) { var m = document.querySelector("#gmLock .gm-lock-msg"); if (m) m.textContent = t; }
   function opened() { locked = false; hiddenAt = 0; paint(); try { if (window.renderAll) renderAll(); } catch (e) {} }

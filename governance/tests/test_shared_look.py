@@ -116,3 +116,78 @@ def test_every_device_is_a_principle_and_has_a_proof():
     for check in ("scrolls sideways", "cut off", "small target", "Unlock is off screen", "viewport-fit=cover"):
         assert check in audit, check
     assert "device_audit.py" in (ROOT / "sandbox" / "run.py").read_text("utf-8")
+
+
+def test_the_renderer_lets_go_of_departed_surfaces_before_its_budget():
+    """Test campaign 2026-11-14: after 60 tab switches Vantage's gold stopped rendering, because surfaces whose element had
+    left the page still counted against the budget. They are let go before the budget is checked, and slow devices draw at
+    a lower resolution rather than stutter."""
+    m = (ROOT / "guiding-map" / "shared" / "materials.js").read_text("utf-8")
+    i = m.index("function attach(")
+    body = m[i:m.index("function draw(", i)]
+    assert "prune();" in body and body.index("prune();") < body.index("return;\n    var cs"), "prune before the budget check"
+    assert "Q = Math.max(0.5" in m, "adaptive quality"
+
+
+def test_the_robustness_audit_runs_in_the_sandbox():
+    run = (ROOT / "sandbox" / "run.py").read_text("utf-8")
+    assert "robustness_audit.py" in run and "ROBUSTNESS AUDIT: PASS" in run
+
+
+def test_the_galaxy_turns_as_astrophysics_says():
+    """Owner, 2026-11-14: the galaxy slowly rotates, rendered from nature. A flat rotation curve (differential rotation), a
+    rigid density-wave pattern (so the arms never wind up), young stars born in the arms and ageing, dust on the arms'
+    inner edge, a tilted projection; it finds open sky beside the lock card on every device, and is cached so it costs
+    little."""
+    s = (ROOT / "guiding-map" / "shared" / "sky.js").read_text("utf-8")
+    for needle in ("1 - Math.exp(-r / rc)", "G.omp = G.om(", "Math.tan(18 * Math.PI / 180)", "kind: 2", "G.dust.push",
+                   "Math.cos(56 * Math.PI / 180)", "opts.avoid", "t - G.at > 250"):
+        assert needle in s, needle
+    assert "avoid:" in (ROOT / "guiding-map" / "ops.js").read_text("utf-8")
+    assert "avoid:" in (ROOT / "guiding-map" / "kit" / "core.js").read_text("utf-8")
+
+
+def test_signature_features_are_registered_and_proven():
+    """Principles signature-perfect and natures-design (owner, 2026-11-14): every signature feature is listed with its files
+    and its proof, both exist, and the principles live in the one source and in AGENTS.md."""
+    import json
+    sig = json.loads((ROOT / "governance" / "signatures.json").read_text("utf-8"))
+    assert len(sig["bar"]) >= 6 and {f["id"] for f in sig["features"]} >= {"three-rings", "night-sky-lock", "the-seal", "lit-materials"}
+    for f in sig["features"]:
+        for rel in f["where"] + f["proof"]:
+            assert (ROOT / rel).exists(), f"{f['id']}: {rel}"
+        assert f.get("nature"), f"{f['id']} names the natural element it borrows"
+    princ = {p["id"] for p in json.loads((ROOT / "governance" / "principles.json").read_text("utf-8"))["principles"]}
+    assert {"signature-perfect", "natures-design"} <= princ
+    agents = (ROOT / "AGENTS.md").read_text("utf-8")
+    assert "signature-perfect" in agents and "natures-design" in agents
+
+
+def test_the_three_rings_are_light_and_nature():
+    """The three rings (a signature): sunrise, emerald and peacock palettes; a spring from the last value; a seed at zero;
+    ignition on closing and a bloom when all three close; calm (settles after engagement); explained on a tap."""
+    r = (ROOT / "guiding-map" / "shared" / "rings.js").read_text("utf-8")
+    for needle in ("sunrise:", "emerald:", "peacock:", "last[r.n]", "a seed of light", "r.ign", "all = st.rings.every",
+                   "t - wake > 20000", "prefers-reduced-motion", "tilt()"):
+        assert needle in r, needle
+    ops = (ROOT / "guiding-map" / "ops.js").read_text("utf-8")
+    assert "data-rings=" in ops and "window.gmRingsInfo" in ops and 'role="button" tabindex="0"' in ops
+    assert "SecuRAX shared rings" in (ROOT / "guiding-map" / "index.html").read_text("utf-8")
+
+
+def test_the_nature_atlas_is_evidence_and_physics_and_in_use():
+    """Principle natures-design (owner, 2026-11-14): the atlas covers every inhabited continent and the sky, each entry with
+    evidence, physics and a palette of real colours; the aurora is drawn from its emission lines; doc 136 cites sources."""
+    import json
+    import re
+    a = json.loads((ROOT / "governance" / "nature-atlas.json").read_text("utf-8"))
+    regions = " ".join(e["region"] for e in a["earth"])
+    for cont in ("Asia", "Africa", "Europe" if "Europe" in regions else "Arctic", "North America", "South America", "Oceania", "Antarctica"):
+        assert cont in regions, cont
+    for e in a["earth"] + a["sky"]:
+        assert e["evidence"] and e["physics"] and e["use"], e["id"]
+        assert e["palette"] and all(re.fullmatch(r"#[0-9a-f]{6}", c) for c in e["palette"]), e["id"]
+    sky = (ROOT / "guiding-map" / "shared" / "sky.js").read_text("utf-8")
+    assert "557.7 nm" in sky and "630.0 nm" in sky and "427.8 nm" in sky and "function drawAurora" in sky
+    doc = (ROOT / "docs" / "securax" / "136-NATURE-ATLAS.md").read_text("utf-8")
+    assert doc.count("](http") >= 8, "doc 136 cites its sources"

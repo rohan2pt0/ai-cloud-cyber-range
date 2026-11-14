@@ -1,0 +1,11 @@
+{
+ "about": "The signature features: what makes SecuRAX recognisable and loved. Principle signature-perfect (owner, 2026-11-14): each is held to perfection in every aspect below, and a test proves it. Add a feature here when it becomes distinctive; never remove one without the owner.",
+ "bar": ["meaning at a glance: useful, not decoration; one tap explains it", "a material true to nature (measured optics, natural palette), used sparingly", "motion from physics (springs, orbits, damping), calm: it settles, it never nags", "every device and both themes, the empty, partial and complete states all finished", "accessible: a label for screen readers, keyboard, reduced motion, contrast", "light on the device: drawn only when it changes, cached, a fallback without the GPU", "a test that holds it"],
+ "features": [
+  {"id": "three-rings", "name": "The three rings", "where": ["guiding-map/shared/rings.js", "guiding-map/ops.js"], "nature": "sunrise, emerald, peacock feather (structural colour)", "proof": ["guiding-map/tests/test80.js", "governance/tests/test_shared_look.py"]},
+  {"id": "night-sky-lock", "name": "The night-sky lock", "where": ["guiding-map/shared/sky.js", "guiding-map/shared/lux.css"], "nature": "stars by magnitude and colour, the Milky Way, a density-wave spiral galaxy, meteors, a comet", "proof": ["guiding-map/tests/test93.js", "guiding-map/tests/robustness_audit.py", "governance/tests/test_shared_look.py"]},
+  {"id": "the-seal", "name": "The gold seal", "where": ["guiding-map/shared/materials.js", "guiding-map/shared/sky.js"], "nature": "guilloche sunray under blue enamel, polished gold, a Tolkowsky brilliant in platinum", "proof": ["governance/tests/test_shared_look.py"]},
+  {"id": "lit-materials", "name": "Lit gold, platinum and velvet", "where": ["guiding-map/shared/materials.js", "guiding-map/shared/touch.js"], "nature": "measured metal reflectance, velvet sheen, light that follows the hand", "proof": ["governance/tests/test_shared_look.py", "guiding-map/tests/device_audit.py"]},
+  {"id": "keycaps", "name": "Jade keycaps", "where": ["guiding-map/shared/lux.css"], "nature": "jade, a mechanical key with travel and a tick", "proof": ["governance/tests/test_shared_look.py"]}
+ ]
+}

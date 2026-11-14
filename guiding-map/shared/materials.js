@@ -23,8 +23,9 @@
   "use strict";
   if (typeof window === "undefined" || window.SXMat) return;
   var doc = document, items = [], gl = null, glc = null, U = {}, ok = null, pending = 0, lastDraw = 0;
-  var LX = 0, LY = 0, MAXPX = 1024, MAXITEMS = 24;
+  var LX = 0, LY = 0, MAXPX = 1024, MAXITEMS = 24, Q = 1;
   var AUTO = { ".sx-seal": "seal", ".gm-lock-go": "gold", "#oskMain button.primary": "gold", ".sx-gold": "gold",
+    ".chip.on": "gold", ".stk-k": "gold", ".gm-d3 .tile.on .chk": "gold", ".gm-kin .k-kept": "gold",
     "nav#oskNav": "velvet", "#oskMore .sheet": "velvet", "[data-sx-mat]": null };
   var MAT = { gold: [0, 0], platinum: [0, 1], seal: [1, 0], velvet: [2, 0] };
 
@@ -58,8 +59,8 @@
     "vec3 tm(vec3 x){x=clamp(x*(2.51*x+.03)/(x*(2.43*x+.59)+.14),0.,1.);return pow(x,vec3(1./2.2));}",
     // A bevelled, very slightly cushioned plate (a polished bar or key). Normals from the shape's distance field.
     "vec4 plate(vec2 px){vec2 p=px-uRes*.5;vec2 b=uHalf;float rd=uRad;float d=sdBox(p,b,rd);float al=clamp(.5-d,0.,1.);if(al<=0.)return vec4(0.);",
-    " float bev=min(b.y*.34,8.*uDpr);vec2 g=vec2(sdBox(p+vec2(1,0),b,rd)-sdBox(p-vec2(1,0),b,rd),sdBox(p+vec2(0,1),b,rd)-sdBox(p-vec2(0,1),b,rd));g=normalize(g+1e-6);",
-    " float t=clamp(1.+d/bev,0.,1.);float an=pow(t,1.5)*1.32;vec2 cu=(p/b*vec2(.05,.22)+vec2(0.,.11))*(1.-t);",
+    " float bev=min(b.y*(b.y<30.*uDpr?.2:.34),(b.y<30.*uDpr?4.:8.)*uDpr);vec2 g=vec2(sdBox(p+vec2(1,0),b,rd)-sdBox(p-vec2(1,0),b,rd),sdBox(p+vec2(0,1),b,rd)-sdBox(p-vec2(0,1),b,rd));g=normalize(g+1e-6);",
+    " float t=clamp(1.+d/bev,0.,1.);float an=pow(t,1.5)*(b.y<30.*uDpr?1.05:1.32);vec2 cu=(p/b*vec2(.05,.22)+vec2(0.,.11))*(1.-t);",
     " vec3 N=normalize(vec3(g*sin(an)+cu,cos(an)));N.xy+=(vec2(vnoise(px*.8),vnoise(px*.8+17.))-.5)*.006;N=normalize(N);",
     " vec3 c=uMat==1?metal(N,F0P,.13):metal(N,F0G,.10);return vec4(c,1.)*al;}",
     // The seal: guilloché enamel dome, a gold padlock casting its shadow, a platinum line, a gold bezel with circular
@@ -148,8 +149,10 @@
     return ok;
   }
 
-  function attach(el, kind) {
-    if (el._sxMat || items.length >= MAXITEMS || !MAT[kind]) return;
+  function attach(el, kind, sel) {
+    if (el._sxMat || !MAT[kind]) return;
+    if (items.length >= MAXITEMS) prune();
+    if (items.length >= MAXITEMS) return;
     var cs = getComputedStyle(el); if (cs.display === "none") return;
     var cv = doc.createElement("canvas"); cv.className = "sx-mat-cv sx-mat-" + kind; cv.setAttribute("aria-hidden", "true");
     var inset = kind === "seal" ? 16 : 0;
@@ -157,7 +160,7 @@
     if (cs.position === "static") el.style.position = "relative";
     el.style.isolation = "isolate";
     el.insertBefore(cv, el.firstChild);
-    var it = { el: el, cv: cv, cx: cv.getContext("2d"), kind: kind, inset: inset, vis: true };
+    var it = { el: el, cv: cv, cx: cv.getContext("2d"), kind: kind, inset: inset, vis: true, sel: sel };
     el._sxMat = it; items.push(it);
     if (io) io.observe(el);
     if (draw(it)) el.classList.add("sx-mat-on", "sx-mat-" + kind + "-on");
@@ -166,7 +169,7 @@
     if (!ok || !it.vis) return false;
     var r = it.el.getBoundingClientRect(); if (r.width < 2 || r.height < 2) return false;
     if (it.kind === "velvet" && doc.documentElement.getAttribute("data-theme") === "light" && it.el.matches("#oskMore .sheet")) { it.cx.clearRect(0, 0, it.cv.width, it.cv.height); it.el.classList.remove("sx-mat-on"); return false; }
-    var d = Math.min(2, window.devicePixelRatio || 1) * (it.kind === "velvet" ? 0.75 : 1);
+    var d = Math.min(2, window.devicePixelRatio || 1) * (it.kind === "velvet" ? 0.75 : 1) * Q;
     var W = Math.round((r.width + 2 * it.inset) * d), H = Math.round((r.height + 2 * it.inset) * d);
     var f = Math.min(1, MAXPX / Math.max(W, H)); if (f < 1) { d *= f; W = Math.round(W * f); H = Math.round(H * f); }
     if (it.cv.width !== W || it.cv.height !== H) { it.cv.width = W; it.cv.height = H; }
@@ -185,10 +188,27 @@
     it.el.classList.add("sx-mat-on", "sx-mat-" + it.kind + "-on");
     return true;
   }
+  // Surfaces whose element has left the page are let go before any budget check, so a screen redrawn many times never
+  // exhausts the budget and silently loses its materials (test campaign 2026-11-14: gone after 60 tab switches).
+  // A surface is let go when its element leaves the page, or stops being what made it gold (a chip that is no longer the
+  // chosen one): its canvas and classes go with it, so the painted look underneath returns.
+  function prune() {
+    items = items.filter(function (it) {
+      var keep = it.el.isConnected && (!it.sel || it.el.matches(it.sel));
+      if (keep) return true;
+      if (io) io.unobserve(it.el);
+      if (it.cv.parentNode) it.cv.parentNode.removeChild(it.cv);
+      it.el.classList.remove("sx-mat-on", "sx-mat-" + it.kind + "-on"); it.el._sxMat = null;
+      return false;
+    });
+  }
   function drawAll() {
-    pending = 0; lastDraw = performance.now();
-    items = items.filter(function (it) { if (it.el.isConnected) return true; if (io) io.unobserve(it.el); return false; });
+    pending = 0; var t0 = performance.now(); lastDraw = t0;
+    prune();
     items.forEach(draw);
+    // Adaptive quality: a slow device draws at a lower resolution rather than stutter; a fast one earns it back.
+    var ms = performance.now() - t0;
+    if (ms > 14 && Q > 0.5) Q = Math.max(0.5, Q - 0.15); else if (ms < 5 && Q < 1) Q = Math.min(1, Q + 0.05);
   }
   function soon() { if (!ok || pending) return; var w = Math.max(0, 33 - (performance.now() - lastDraw)); pending = setTimeout(function () { requestAnimationFrame(drawAll); }, w); }
   var io = window.IntersectionObserver ? new IntersectionObserver(function (es) {
@@ -197,7 +217,7 @@
   function scan(root) {
     if (!init()) return;
     Object.keys(AUTO).forEach(function (sel) {
-      (root || doc).querySelectorAll(sel).forEach(function (el) { attach(el, AUTO[sel] || el.getAttribute("data-sx-mat")); });
+      (root || doc).querySelectorAll(sel).forEach(function (el) { attach(el, AUTO[sel] || el.getAttribute("data-sx-mat"), AUTO[sel] ? sel : null); });
     });
   }
 
@@ -240,8 +260,8 @@
   };
   function boot() {
     scan(doc);
-    var mo = window.MutationObserver ? new MutationObserver(function () { if (!boot.q) boot.q = requestAnimationFrame(function () { boot.q = 0; scan(doc); doc.querySelectorAll(".sx-lock-card, body.osk-locked #oskMain .card.hero").forEach(glass); }); }) : null;
-    if (mo) mo.observe(doc.body, { childList: true, subtree: true });
+    var mo = window.MutationObserver ? new MutationObserver(function () { if (!boot.q) boot.q = requestAnimationFrame(function () { boot.q = 0; prune(); scan(doc); doc.querySelectorAll(".sx-lock-card, body.osk-locked #oskMain .card.hero").forEach(glass); }); }) : null;
+    if (mo) mo.observe(doc.body, { childList: true, subtree: true, attributes: true, attributeFilter: ["class"] });
     doc.querySelectorAll(".sx-lock-card, body.osk-locked #oskMain .card.hero").forEach(glass);
     window.addEventListener("resize", function () { soon(); });
     doc.addEventListener("visibilitychange", function () { if (!doc.hidden) soon(); });

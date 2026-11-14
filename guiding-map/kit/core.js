@@ -27,7 +27,14 @@
     try { localStorage.setItem(PFX + k, s); } catch (e) { MEM[k] = s; }
   }
   function drop(k) { if (CACHE) delete CACHE[k]; try { localStorage.removeItem(PFX + k); } catch (x) { delete MEM[k]; } }
-  K.get = function (k, d) { var s = raw(k); if (s === null) return d; try { return JSON.parse(s); } catch (e) { return d; } };
+  // A stored value of another type than its default (a damaged key, a bad import, a confused peer) gives the default, so no
+  // screen ever trusts a wrong shape (test campaign 2026-11-14: a profile stored as null broke Today).
+  K.get = function (k, d) {
+    var s = raw(k), v; if (s === null) return d;
+    try { v = JSON.parse(s); } catch (e) { return d; }
+    if (d !== undefined && d !== null && (v === null || typeof v !== typeof d || Array.isArray(v) !== Array.isArray(d))) return d;
+    return v;
+  };
   // Every write stamps the key's time (the sync merge rule: newer wins) and keeps the old value for Undo.
   K.set = function (k, v, opt) {
     var old = raw(k), s = JSON.stringify(v);
@@ -328,14 +335,16 @@
     b.classList.toggle("osk-locked", !!on);
     if (on && !sky) {
       sky = document.createElement("div"); sky.id = "oskSky"; sky.setAttribute("aria-hidden", "true"); b.insertBefore(sky, b.firstChild);
-      try { if (window.SXSky) SXSky.mount(sky, { comet: true }); } catch (e) {}
+      try { if (window.SXSky) SXSky.mount(sky, { comet: true, aurora: true, avoid: function () { return document.querySelector("#oskMain .card.hero"); } }); } catch (e) {}
     }
     if (!on && sky) sky.parentNode.removeChild(sky);    // the sky's loop ends by itself once its element has gone
   }
   K.render = function () {
-    night(K.locked);
+    if (!K.locked) night(false);
     if (K.locked) {                                                     // locked: nothing of the person's on screen
       document.getElementById("oskMain").innerHTML = K.lockScreen();
+      night(true);                                                      // after the card exists, so the sky can leave it room
+      try { var go = document.querySelector("#oskMain button.primary"); if (go) go.focus({ preventScroll: true }); } catch (e) {}   // the way in has the focus
       document.getElementById("oskNav").innerHTML = ""; document.getElementById("oskMore").innerHTML = "";
       var w = document.getElementById("oskWho"); if (w) w.textContent = "";
       return;
