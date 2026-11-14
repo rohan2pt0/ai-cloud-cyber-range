@@ -6068,11 +6068,28 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     return odDerive(bkNorm(phrase), unb64(env.salt)).then(function (key) { return odOpen(key, env); });
   };
   function bkSave(text, enc) {
-    var a = document.createElement("a");
-    a.href = URL.createObjectURL(new Blob([text], { type: "application/json" }));
-    a.download = "life-os-backup-" + ymd() + (enc ? "-encrypted" : "") + ".json";
-    a.click();
-    S_("gm_last_export", ymd()); renderAll();
+    var name = "life-os-backup-" + ymd() + (enc ? "-encrypted" : "") + ".json";
+    function download() {
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+      a.download = name;
+      a.click();
+      // a file on a wide screen (a laptop) is already off the phone; a phone download is not
+      if (enc && !(window.matchMedia && window.matchMedia("(max-width: 700px)").matches)) S_("gm_last_offsite", ymd());
+      S_("gm_last_export", ymd()); renderAll();
+    }
+    if (enc && navigator.canShare && typeof File === "function") {
+      try {
+        var file = new File([text], name, { type: "application/json" });
+        if (navigator.canShare({ files: [file] })) {
+          navigator.share({ files: [file], title: "Life OS backup" }).then(function () {
+            S_("gm_last_offsite", ymd()); S_("gm_last_export", ymd()); renderAll();
+          }, download);
+          return;
+        }
+      } catch (e) {}
+    }
+    download();
   }
   function bkBlob() {
     var blob = {};
@@ -6237,13 +6254,24 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       "Latest: " + esc(String(snaps.latest)) + ". Nothing for you to do. A downloaded file is still the safest extra copy (it survives a lost estate).",
       '<div style="margin-top:6px;display:flex;gap:8px;flex-wrap:wrap"><button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmSnapList()">See / restore a day</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmExportNow()">Also export a file</button></div><div id="snapList" class="muted" style="margin-top:6px"></div>');
-    else if (!exp) row(false, "No local backup has ever been taken",
-      "Sync is convenience; a dated file is your actual insurance. It survives a deleted sync backend, a cleared browser, and a lost device.",
-      '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);margin-top:6px" onclick="gmExportNow()">Back up now</button>');
     else {
-      var days = Math.round((Date.now() - new Date(exp).getTime()) / 86400000);
-      row(days > 45 ? false : days > 31 ? null : true, "Last backup " + (days === 0 ? "today" : days + " days ago"),
-        days > 31 ? "Older than a month. Take a fresh one." : "Within the monthly rhythm.",
+      // safe only when a copy is off this phone: the estate snapshots above, or a OneDrive / shared copy within 31 days
+      function ageOf(v) { var d = new Date(String(v).slice(0, 10)); return isNaN(d.getTime()) ? null : Math.round((Date.now() - d.getTime()) / 86400000); }
+      var offAges = [], odl = G("gm_sync_od_last", null), off = G("gm_last_offsite", null), a;
+      if (odl && (a = ageOf(odl)) !== null) offAges.push(a);
+      if (off && (a = ageOf(off)) !== null) offAges.push(a);
+      var offDays = offAges.length ? Math.min.apply(null, offAges) : null;
+      if (offDays !== null && offDays <= 31) row(true, "Last backup " + (offDays === 0 ? "today" : offDays + " days ago"),
+        "A copy is off this phone. Within the monthly rhythm.",
+        '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);margin-top:6px" onclick="gmExportNow()">Back up now</button>');
+      else if (exp) row(null, "Saved on this phone only",
+        "A lost phone takes this copy with it. Save one off the phone: Drive, OneDrive or an e-mail to yourself.",
+        '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);margin-top:6px" onclick="gmExportNow()">Save a copy off this phone</button>');
+      else if (offDays !== null) row(offDays > 45 ? false : null, "Last backup " + offDays + " days ago",
+        "Older than a month. Take a fresh one.",
+        '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);margin-top:6px" onclick="gmExportNow()">Back up now</button>');
+      else row(false, "No local backup has ever been taken",
+        "Sync is convenience; a dated file is your actual insurance. It survives a deleted sync backend, a cleared browser, and a lost device.",
         '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);margin-top:6px" onclick="gmExportNow()">Back up now</button>');
     }
 
