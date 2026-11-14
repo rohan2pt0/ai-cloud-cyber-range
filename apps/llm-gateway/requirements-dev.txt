@@ -1,2 +1,4 @@
 -r requirements.txt
 pytest==9.2.0
+# estate-sync web push (apps/estate-sync/tests/test_push.py): the same pin as apps/estate-sync/requirements.txt
+cryptography==50.0.1
