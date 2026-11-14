@@ -1356,6 +1356,8 @@ def j_gm_full_use(sb: H.Sandbox, c: Checks):
     c.ok(rc == 0, "the audit exits 0", tail(log, 300))
     rc, log = H.sh(["python3", "guiding-map/tests/kit_audit.py", str(out / "kit")], cwd=sb.clone, timeout=600)
     c.ok(rc == 0 and "KIT AUDIT: PASS" in log, "every OS kit app (Vantage) renders every screen, in both themes, with no page error, no contrast failure and no sideways scroll on a phone", tail(log, 400))
+    rc, log = H.sh(["python3", "guiding-map/tests/device_audit.py", str(out / "devices")], cwd=sb.clone, timeout=900)
+    c.ok(rc == 0 and "DEVICE AUDIT: PASS" in log, "every-device: the Life OS and Vantage, open and locked, keep their form on Android and iPhone (SE to Pro Max), iPad both ways, a phone held sideways, a laptop and a large desktop: no sideways scroll, no cut-off word, finger-sized targets, the way in always on screen", tail(log, 600))
 
 
 def _lc(sb: H.Sandbox, *args: str, extra_env: dict | None = None, timeout: int = 900) -> tuple[int, str]:

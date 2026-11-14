@@ -73,7 +73,7 @@ button:active,.sx-key:active,[role=button]:active{transform:scale(.965);transiti
 .sx-glint{position:relative;overflow:hidden}.sx-glint::after{content:"";position:absolute;top:0;bottom:0;left:-60%;width:38%;transform:skewX(-20deg);background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.55),rgba(255,255,255,0));animation:sxGlint 4.8s ease-in-out infinite;pointer-events:none}
 html:has(> body.osk-locked){background:#0b1628}body.osk-locked{background:transparent}
 #oskSky{position:fixed;inset:0;z-index:-1;pointer-events:none;background-color:#0b1628;background-image:radial-gradient(120% 80% at 50% 0%,#1d3557 0%,#0e1f38 50%,#07101f 100%)}
-body.osk-locked #oskMain{isolation:isolate}
+body.osk-locked #oskMain{isolation:isolate}body.osk-locked nav#oskNav{display:none}
 body.osk-locked #oskMain .card.hero{position:relative;max-width:380px;margin:9vh auto 0;text-align:center;color:#eef3f8;border-radius:30px;padding:30px 22px 22px;background-color:rgba(12,22,42,.42);background-image:linear-gradient(160deg,rgba(255,255,255,.12),rgba(255,255,255,.03) 38%,rgba(255,255,255,0) 60%);-webkit-backdrop-filter:blur(16px) saturate(150%);backdrop-filter:blur(16px) saturate(150%);border:1px solid rgba(255,255,255,.11);box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 -1px 0 rgba(0,0,0,.25),0 24px 60px rgba(0,0,0,.40)}
 body.osk-locked #oskMain .card.hero h3{font-family:var(--sx-serif);font-weight:400;font-size:52px;font-size-adjust:none;letter-spacing:.01em;line-height:1;color:#f6ead0;margin:4px 0 10px;text-shadow:0 2px 18px rgba(212,175,55,.18)}
 body.osk-locked #oskMain .card.hero p{font-weight:300;font-size:15.5px;letter-spacing:.015em;color:#c6cfdd}body.osk-locked #oskMain .card.hero label{color:#c6cfdd}
@@ -118,6 +118,26 @@ nav#oskNav button{letter-spacing:.06em;text-transform:uppercase;font-size:11.5px
 :root:not([data-theme="light"]) #oskMore .sheet button:active{box-shadow:inset 0 1px 0 rgba(255,255,255,.08),0 1px 0 #050b17,0 2px 4px rgba(0,0,0,.4)}
 :root[data-theme="light"] #oskMore .sheet button:active{box-shadow:inset 0 1px 0 #fff,0 1px 0 #b9a170,0 2px 4px rgba(80,60,20,.18)}
 .sx-mat-gold-on:active,.sx-mat-platinum-on:active{transform:translateY(2px) scale(.99)}
+/* ── Every device (principle every-device): the lock adapts to the screen, it does not merely shrink. A phone held
+   sideways or any short window lays the seal beside the words, so the way in is always on screen. */
+@media (max-height:560px) and (orientation:landscape){
+  .sx-lock-card,body.osk-locked #oskMain .card.hero{display:grid;grid-template-columns:auto 1fr;column-gap:28px;align-items:center;text-align:start;max-width:620px;padding:18px 24px 14px}
+  .sx-lock-card > .sx-seal,body.osk-locked #oskMain .card.hero > .sx-seal{grid-row:1 / span 5;width:116px;height:116px;margin:0 6px}
+  .sx-lock-card > :not(.sx-seal),body.osk-locked #oskMain .card.hero > :not(.sx-seal){grid-column:2}
+  .sx-lock-title,body.osk-locked #oskMain .card.hero h3{font-size:40px;margin:0 0 6px}
+  .sx-lock-sub,body.osk-locked #oskMain .card.hero p{margin:0 0 12px}
+  body.osk-locked #oskMain .card.hero{margin-top:12px}
+  .gm-lock-rec summary,body.osk-locked #oskMain .card.hero summary{justify-content:flex-start}
+}
+/* A large screen gives the lock the presence of an object on a desk: card, seal and title grow together, in proportion. */
+@media (min-width:1024px) and (min-height:720px){
+  .sx-lock-card,body.osk-locked #oskMain .card.hero{max-width:470px;padding:42px 36px 30px;border-radius:36px}
+  .sx-lock-card > .sx-seal,body.osk-locked #oskMain .card.hero > .sx-seal{width:172px;height:172px;margin-bottom:30px}
+  .sx-lock-title,body.osk-locked #oskMain .card.hero h3{font-size:66px}
+  .sx-lock-sub,body.osk-locked #oskMain .card.hero p{font-size:17px}
+}
+/* A gloss you tap (a term explained) keeps a finger-sized target without moving the line it sits in. */
+.gm-term{padding-block:10px;margin-block:-10px}
 /* ── Adapters: map each app's own class names onto the shared look (no private copies of the rules above) ── */
 /* Kit editions (Vantage and others): header as the night sky with a gold crest, gold primary, midnight nav with a gold active key. */
 body > header.sx-sky h1, body > header.sx-sky h1 small{color:#eef3f8}

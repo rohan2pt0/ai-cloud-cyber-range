@@ -101,3 +101,18 @@ def test_materials_are_lit_from_measured_optics_in_one_shared_renderer():
         assert mark in page and "http://" not in page, f"the {eid} edition carries the renderer, offline"
     css = SX.read_text("utf-8")
     assert ".sx-seal.sx-mat-on" in css and ".sx-mat-gold-on" in css, "lit surfaces retire their painted stand-ins"
+
+
+def test_every_device_is_a_principle_and_has_a_proof():
+    """Every-device (owner, 2026-11-14): the principle lives in the one source, AGENTS.md teaches it, and the device audit
+    that proves it is real and runs in the sandbox on every change."""
+    import json
+    princ = {p["id"]: p for p in json.loads((ROOT / "governance" / "principles.json").read_text("utf-8"))["principles"]}
+    assert "every-device" in princ and princ["every-device"]["core"]
+    assert "every-device" in (ROOT / "AGENTS.md").read_text("utf-8")
+    audit = (ROOT / "guiding-map" / "tests" / "device_audit.py").read_text("utf-8")
+    for d in ("iPhone SE", "iPhone 15 Pro Max", "Pixel 7", "iPad Mini", "iPad Pro 11 landscape", "Pixel 7 landscape", "Desktop 1920"):
+        assert d in audit, d
+    for check in ("scrolls sideways", "cut off", "small target", "Unlock is off screen", "viewport-fit=cover"):
+        assert check in audit, check
+    assert "device_audit.py" in (ROOT / "sandbox" / "run.py").read_text("utf-8")

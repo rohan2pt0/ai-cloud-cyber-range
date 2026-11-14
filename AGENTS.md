@@ -103,6 +103,13 @@ The principles behind it:
   maps its class names in the file's adapter section, never keeping a private copy. The kit's lock, plain English, one open
   action and the threat-news engine follow the same rule: build once, reuse everywhere. `governance/tests/test_shared_look.py`
   holds it.
+- **Stunning on every screen, made for humans (`every-device`, owner 2026-11-14):** how it looks and feels is the most
+  important feature, because the person is human. Every element must look stunning on every device people really hold
+  (Android and iPhone, small and large; iPad upright and sideways; laptops and large monitors) and adapt to each display,
+  not merely shrink: size and shape, pixel density, the notch and home bar, orientation, touch or pointer, motion and theme.
+  It never breaks its form: no sideways scroll, no cut-off word, nothing under the notch, every control finger-sized, the main
+  action always on screen. Prove it with `python3 guiding-map/tests/device_audit.py OUTDIR` (9 device profiles x every key
+  view) and look at the screenshots, not only the score.
 - **Small wins, shown:** progress you can see keeps people going.
 - **Least effort for the person:** the estate does the remembering, the checking and the reminding.
 - **Start as an amoeba, carry the DNA (`amoeba`):** ship the simplest living thing that helps today — one person, no
@@ -250,8 +257,9 @@ written down, are then lost. So:
 1. **Single points of failure.** What stops if one machine, host, account, key or person is gone? (`./securax resilience`; the register in doc 131.)
    Add a second node, active-active where it can be, active-passive where it cannot.
 2. **Friction.** Any login, step or screen a person repeats or needs a manual for? (`one-door`; `governance/identity.json`; fitness `signin-declared`.) Guest first.
-3. **UI and UX.** Both themes, a 390 px screen, keyboard, offline, no page errors, no contrast failures, in a real browser, not only jsdom
-   (`python3 guiding-map/tests/ui_audit.py OUTDIR`).
+3. **UI and UX.** Both themes, every device (`every-device`: phones, iPhone SE to Pro Max, iPad both ways, laptop, desktop), keyboard,
+   offline, no page errors, no contrast failures, in a real browser, not only jsdom (`python3 guiding-map/tests/ui_audit.py OUTDIR`,
+   `python3 guiding-map/tests/device_audit.py OUTDIR`).
 4. **Security and privacy.** A threat model for anything that crosses a trust boundary (`governance/threat-models.json`); the narrowest permission; the origin and the headers of anything hosted (`website/_headers`); no secret or personal data in
    the repository; sensitive data stays on local models.
 5. **Operate.** Can it be seen, recovered and taken away (offboarding)? A test or a drill proves it, not a sentence.
