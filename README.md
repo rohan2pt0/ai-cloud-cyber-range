@@ -3,7 +3,7 @@
 [![License: FSL-1.1-MIT](https://img.shields.io/badge/License-FSL--1.1--MIT-blue.svg)](LICENSING.md)
 [![CI](https://github.com/rohan2pt0/ai-cloud-cyber-range/actions/workflows/devsecops.yml/badge.svg)](https://github.com/rohan2pt0/ai-cloud-cyber-range/actions/workflows/devsecops.yml)
 <!-- readme:badge:start -->
-[![Version](https://img.shields.io/badge/version-0.3.0-blue)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/version-0.4.0-blue)](CHANGELOG.md)
 <!-- readme:badge:end -->
 ![AI red-team defence](https://img.shields.io/badge/red--team%20defence-100%25%2F0%20FP-blue)
 ![Cost to start](https://img.shields.io/badge/cost%20to%20start-%E2%82%B90-success)
@@ -131,7 +131,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 <!-- readme:whats-new:start -->
 ## What's new
 
-**On main, in the next release:**
+**Release 0.4.0 - 2026-11-14:**
 
 - Every number shows its health
 - Alerts with one Allow tap
@@ -141,19 +141,8 @@ This list is generated from [`features.json`](features.json); the Command Center
 - Calm and real
 - [Bank e-mails, nothing to install](docs/securax/137-AUTOMATION.md)
 - [Bank messages arrive by themselves](docs/securax/137-AUTOMATION.md)
-
-**Release 0.3.0 - 2026-10-22:**
-
-- [Life papers, read for you](docs/securax/104-LIFE-PAPERS-READ-FOR-YOU.md)
-- [Nothing asked is lost](docs/securax/103-NOTHING-ASKED-IS-LOST.md)
-- [Releases, small and often](docs/securax/21-VERSIONING-AND-RELEASES.md)
-- [Mutation testing of the safety rails](docs/securax/101-A-SANDBOX-THAT-PROVES-MORE.md)
-- [Mission control](docs/securax/102-MISSION-CONTROL.md)
-- [A sandbox that proves more](docs/securax/101-A-SANDBOX-THAT-PROVES-MORE.md)
-- Security round
-- Roadmap sweep: dated items done today
-- [One look across the estate](docs/securax/100-DESIGN-STANDARD.md)
-- [A calm Command Center](docs/securax/100-DESIGN-STANDARD.md)
+- Start simple
+- Where your money went
 
 Everything, with details: [`CHANGELOG.md`](CHANGELOG.md).
 <!-- readme:whats-new:end -->
