@@ -9,6 +9,8 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- **Calm and real**: the More menu starts with Money, Breaks and Life balance, then adds one more door each week the person has used the app, so a newcomer is never handed the whole estate at once.
+
 - No coloured tap shadow on any button in any SecuRAX app (shared look; a test holds it).
 - Secrets are the estate's job: never ask a person to copy or paste a token, key or credential (zero-setup, friction copy-paste-secrets).
 - Principle zero-setup: a person never installs a second app or configures anything; the SMS forwarder and ntfy become folded owner-only fallbacks, web push and e-mail alerts are queued to replace them.
