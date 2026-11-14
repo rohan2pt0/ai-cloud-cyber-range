@@ -134,13 +134,13 @@ This list is generated from [`features.json`](features.json); the Command Center
 **On main, in the next release:**
 
 - [Bank e-mails, nothing to install](docs/securax/137-AUTOMATION.md)
+- Calm and real, the aurora
 - Calm and real
 - [Bank messages arrive by themselves](docs/securax/137-AUTOMATION.md)
 - Start simple
 - Where your money went
 - The Life OS has no sliders left
 - The Growth daily routine is a loop you run, not a list you read
-- The More sheet uses one hand-drawn line-icon set
 
 **Release 0.3.0 - 2026-10-22:**
 
