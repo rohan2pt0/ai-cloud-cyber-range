@@ -9,6 +9,8 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- Principle zero-setup: a person never installs a second app or configures anything; the SMS forwarder and ntfy become folded owner-only fallbacks, web push and e-mail alerts are queued to replace them.
+
 - **Bank messages arrive by themselves** (doc 137, slice 1): estate-sync gains a write-only SMS inbox (`POST /sync/inbox/sms`) for the phone's open-source SMS forwarder, over Tailscale: its own token that cannot read, pinned to one user, bank senders only, one-time codes never stored, long digit runs masked, 8 KB, 60 a minute, 300 messages for 14 days. The Life OS reads new messages on sync (spends, cards, bills, balances), saves them dated and clears the inbox, so the texts leave the estate too. Threat model `estate-sms-inbox`; 15 server tests and test96. Off until `SYNC_INBOX_TOKENS` is set.
 
 - **Start simple** (owner and a friend: the app felt too heavy to start): on by default, the More menu shows three doors (Money, Protection, Life balance) and Show everything; Today keeps the rings, the three and the one next step, with the rest under More for today; a Start here card names the only three things to do. One switch, kept and reversible. The Stack's Show only the vital few switch now shows only the current layer, open (it changed nothing before). Doc 137: the automation plan (SMS forwarder to the person's estate, the monthly CAS with casparser, Kite Connect Personal for the birthday-month rebalance), researched and ranked.
