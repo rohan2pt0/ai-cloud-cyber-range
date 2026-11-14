@@ -414,6 +414,8 @@ services:
       # service is fail-closed (every sync request gets 503 until you set SYNC_TOKENS in .env),
       # so it is never an open store and never blocks the rest of the stack from coming up.
       SYNC_TOKENS: ${SYNC_TOKENS:-}
+      SYNC_INBOX_TOKENS: ${SYNC_INBOX_TOKENS:-}     # the SMS inbox (doc 137): write-only, off while empty
+      SYNC_INBOX_USER: ${SYNC_INBOX_USER:-}
       SYNC_DB_PATH: /data/estate-sync.db
       # Online (doc 85): a device signed in through Cloudflare Access syncs with no token; the signed token is checked here.
       SYNC_ACCESS_TEAM: ${SYNC_ACCESS_TEAM:-}
