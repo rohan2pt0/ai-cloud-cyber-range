@@ -11377,6 +11377,150 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       + ".gm-assets{list-style:none;padding:0;margin:8px 0}.gm-card-more{margin-top:10px}.gm-reader{margin-bottom:12px}";
     document.head.appendChild(st);
   } catch (e) {}
+
+  /* ── Where the money went, from your messages (owner, 2026-11-14) ─────────────────────────────────────────────────
+     Zero typing: paste or share a month of bank SMS at once (a web app may not read the SMS inbox itself). From them:
+     the cards (bank, last four digits, statement day from bill messages), each spend's category, the few categories
+     that make 80% of the spending, repeat subscriptions, food delivery, money left on the table (a spend on one card
+     when another card you hold pays more back for it), and interest or late fees. One change worth most is shown first.
+     Kept: date, amount, category, a short merchant name and the card's last four digits; at most 400 spends. */
+  var SK = "gm_spend";
+  var BANKS = [["ICICI", /icici/i], ["HDFC", /hdfc/i], ["SBI", /\bsbi\b/i], ["Axis", /\baxis\b/i], ["IDFC FIRST", /idfc/i], ["Bank of Baroda", /\bbob\b|baroda/i],
+    ["Kotak", /kotak/i], ["IndusInd", /indusind/i], ["RBL", /\brbl\b/i], ["Yes Bank", /yes bank/i], ["AU", /\bau small/i], ["Amex", /amex|american express/i]];
+  var PRODUCTS = [["Amazon Pay", /amazon pay/i], ["Swiggy", /swiggy/i], ["Flipkart", /flipkart/i], ["LIC Select", /lic select/i], ["LIC Signature", /lic signature/i], ["Coral", /coral/i], ["Eterna", /eterna/i]];
+  var CATS = [["Food delivery", /swiggy(?! ?instamart)|zomato|eatsure|domino|mcdonald|\bkfc\b|pizza/i], ["Groceries", /instamart|blinkit|zepto|bigbasket|dmart|jiomart/i],
+    ["Amazon", /amazon|amzn/i], ["Flipkart, Myntra", /flipkart|myntra|cleartrip/i], ["Subscriptions", /netflix|hotstar|spotify|prime video|youtube|apple\.com|google play|sonyliv|zee5|jiocinema/i],
+    ["Fuel", /petrol|fuel|hpcl|bpcl|iocl|indian oil|shell/i], ["Travel", /uber|\bola\b|rapido|irctc|makemytrip|goibibo|indigo|air india|redbus/i],
+    ["Insurance", /\blic\b|insurance/i], ["Bills", /electricity|power|airtel|jio|vodafone|broadband|recharge|gas/i]];
+  // What a card built for the shop pays back (checked 14 Nov 2026; the card guide's RULES say the same in words).
+  var BEST = [[/swiggy|instamart/i, /swiggy/i, .10, "HDFC Swiggy"], [/amazon|amzn/i, /amazon pay/i, .05, "Amazon Pay ICICI"], [/flipkart|myntra|cleartrip/i, /flipkart/i, .05, "a Flipkart card"]];
+  function first(list, t) { var h = list.filter(function (x) { return x[1].test(t); })[0]; return h ? h[0] : ""; }
+  function amountOf(t) { AMT.lastIndex = 0; var m = AMT.exec(t); return m ? parseFloat(m[1].replace(/,/g, "")) : null; }
+  function dayOf(t) {
+    var m = t.match(/\b(\d{1,2})[-\/ ](\d{1,2}|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*(?:[-\/ ](\d{2,4}))?/i);
+    if (!m) return null; var mo = isNaN(+m[2]) ? "janfebmaraprmayjunjulaugsepoctnovdec".indexOf(m[2].slice(0, 3).toLowerCase()) / 3 : +m[2] - 1;
+    var y = m[3] ? (+m[3] < 100 ? 2000 + +m[3] : +m[3]) : new Date().getFullYear(), d = new Date(y, mo, +m[1]);
+    return isNaN(d.getTime()) || mo < 0 || mo > 11 ? null : d;
+  }
+  window.gmParseSms = function (t) {
+    t = String(t || "");
+    var l4 = (t.match(/(?:xx+|x{1,}|ending(?: with)?|\*{2,}|card no\.?\s*x*)\s*(\d{4})\b/i) || [])[1] || "";
+    var bill = /(statement|bill)\b.{0,30}\b(generated|for)\b|total\s*(amt|amount)\s*due|min(imum)?\s*(amt|amount)?\s*due/i.test(t);
+    var debit = !bill && /\b(spent|debited|purchase|txn|transaction|paid|used)\b/i.test(t) && !/\b(credited|received|refund|reversal|cashback credited)\b/i.test(t);
+    // The shop comes from "at X" first ("on" usually names the card or the date), then "to X" or "Info: X".
+    var stop = "(?=\\s+(?:on|at|for|via|ref|avl|txn|is|was|using|\\d)\\b|[.,;]|$)", mm = null;
+    ["\\bat\\s+", "\\b(?:to|info:?)\\s+"].some(function (pre) { mm = t.match(new RegExp(pre + "([A-Za-z][A-Za-z0-9 .&'*-]{1,28}?)" + stop, "i")); return !!mm; });
+    var merch = mm ? mm[1].replace(/\s+/g, " ").trim() : "";
+    if (/(^(your|a\/c|account|credit|debit)\b|\bcard\b)/i.test(merch)) merch = "";
+    // The card's product comes only from the words that describe the card, never from the shop.
+    var desc = (t.match(/[A-Za-z ]{0,40}credit card|\bcard\s+[A-Za-z ]{1,24}(?=\s*x{2,}\d)/i) || [""])[0];
+    return { bank: first(BANKS, t), product: first(PRODUCTS, desc), l4: l4, amount: amountOf(t), card: /credit card|\bcard\b/i.test(t) || !!l4,
+      bill: bill, debit: debit, fee: /(late (payment )?fee|finance charges?|interest (charged|of)|overlimit fee)/i.test(t),
+      merchant: merch, cat: first(CATS, merch) || first(CATS, desc ? t.replace(desc, "") : t) || "Other", date: dayOf(t) };   // the shop decides, not the card's name
+  };
+  function splitMsgs(t) {
+    var parts = String(t || "").slice(0, 200000).split(/\n\s*\n/);
+    if (parts.length === 1) parts = parts[0].split(/\n/);
+    return parts.map(function (x) { return x.trim(); }).filter(function (x) { return x.length > 12; });
+  }
+  function spends() { var v = G(SK, []); return v.filter(function (x) { return x && x.a > 0; }); }
+  // Read many messages: cards appear by themselves, spends are kept (deduplicated), and nothing needs typing.
+  window.gmSpendRead = function (text, dry) {
+    var msgs = splitMsgs(text), cs = dry ? [] : cards(), sp = dry ? [] : spends(), seen = {}, added = 0, newCards = 0, fees = 0, bills = 0;
+    sp.forEach(function (x) { seen[x.k] = 1; });
+    msgs.forEach(function (m) {
+      var p = gmParseSms(m);
+      if (p.card && p.bank && p.l4) {
+        var id = p.bank + "-" + p.l4, c = cs.filter(function (x) { return x.key === id; })[0];
+        if (!c) { c = { id: "a" + id, key: id, name: p.bank + (p.product ? " " + p.product : "") + " ••" + p.l4, stmt: 0 }; cs.push(c); newCards++; }
+        if (p.product && c.name.indexOf(p.product) < 0) c.name = p.bank + " " + p.product + " ••" + p.l4;
+        if (p.bill && p.date) { c.stmt = p.date.getDate(); bills++; }
+      }
+      if (p.fee) fees++;
+      if (p.debit && p.amount) {
+        var dt = p.date || new Date(), k = [dt.toISOString().slice(0, 10), p.amount, p.l4, p.merchant].join("|");
+        if (seen[k]) return; seen[k] = 1;
+        sp.push({ k: k, d: dt.toISOString().slice(0, 10), a: p.amount, c: p.cat, m: p.merchant.slice(0, 28), l4: p.l4, bank: p.bank }); added++;
+      }
+    });
+    sp = sp.slice(-400);
+    var res = { messages: msgs.length, spends: added, cards: newCards, bills: bills, fees: fees, list: sp, cardList: cs };
+    if (!dry) { S_(SK, sp); S_(CK, cs.map(function (c) { return { id: c.id, key: c.key, name: c.name, stmt: c.stmt || 0 }; })); }
+    return res;
+  };
+  // The insights: 80/20 categories, subscriptions, food delivery, money left on the table, fees; one change first.
+  window.gmSpendInsights = function (sp, cs, fees) {
+    sp = sp || spends(); cs = cs || cards();
+    var since = new Date(Date.now() - 35 * 864e5).toISOString().slice(0, 10), recent = sp.filter(function (x) { return x.d >= since; });
+    if (recent.length < 3) recent = sp.slice(-60);
+    var total = recent.reduce(function (s, x) { return s + x.a; }, 0), by = {};
+    recent.forEach(function (x) { by[x.c] = (by[x.c] || 0) + x.a; });
+    var cats = Object.keys(by).map(function (k) { return [k, by[k]]; }).sort(function (a, b) { return b[1] - a[1]; }), run = 0, vital = [];
+    cats.forEach(function (c) { if (run < total * .8) { vital.push(c); run += c[1]; } });
+    var subs = {}; recent.filter(function (x) { return x.c === "Subscriptions"; }).forEach(function (x) { subs[x.m || "subscription"] = x.a; });
+    var food = recent.filter(function (x) { return x.c === "Food delivery"; }), foodSum = food.reduce(function (s, x) { return s + x.a; }, 0);
+    var missed = 0, fix = {};
+    recent.forEach(function (x) {
+      BEST.forEach(function (b) {
+        if (!b[0].test(x.m + " " + x.c)) return;
+        var own = cs.filter(function (c) { return b[1].test(c.name); })[0], used = cs.filter(function (c) { return c.key === x.bank + "-" + x.l4; })[0];
+        if (own && (!used || !b[1].test(used.name))) { missed += x.a * b[2]; fix[b[3]] = (fix[b[3]] || 0) + x.a * b[2]; }
+      });
+    });
+    var actions = [];
+    if (fees) actions.push({ v: 1e9, t: "Set autopay for the total due on every card: interest or a late fee was charged, and card interest of 36 to 45% a year outweighs every reward." });
+    if (missed >= 50) { var f = Object.keys(fix).sort(function (a, b) { return fix[b] - fix[a]; })[0]; actions.push({ v: missed, t: "Use " + f + " for those shops: about " + inr(missed) + " a month back that you are leaving on the table." }); }
+    var subSum = Object.keys(subs).reduce(function (s, k) { return s + subs[k]; }, 0);
+    if (subSum) actions.push({ v: subSum * .5, t: "Cancel the subscriptions you did not use this month (" + Object.keys(subs).length + " seen, " + inr(subSum) + " a month)." });
+    if (food.length >= 6) actions.push({ v: foodSum * .3, t: "Food delivery " + food.length + " times (" + inr(foodSum) + "): cooking two of those a week saves about " + inr(foodSum * .3) + " a month." });
+    actions.sort(function (a, b) { return b.v - a.v; });
+    return { total: total, count: recent.length, vital: vital, cats: cats, subs: subs, food: food.length, foodSum: foodSum, missed: missed, fees: fees || 0, actions: actions };
+  };
+  window.gmSpendHTML = function (ins, sample) {
+    ins = ins || (spends().length ? gmSpendInsights() : null);
+    var h = '<div class="cat-t">Where your money went</div><div class="kc gm-spend">';
+    if (!ins) return h + '<p>Paste or share last month’s bank and card messages, all at once. Your cards, where the money went and what to change appear by themselves: nothing to type.</p>'
+      + '<textarea id="gmSpendIn" rows="3" placeholder="Paste many messages at once"></textarea><button type="button" class="btn-sm" onclick="gmSpendIn()">Read them</button> '
+      + '<button type="button" class="gm-quiet" onclick="gmSpendSample()">See it with sample messages</button></div>';
+    if (sample) h += '<p class="gm-card-note">Sample messages for a case study: nothing here is saved.</p>';
+    if (ins.actions.length) h += '<p class="gm-card-now"><b>The one change worth most:</b> ' + esc(ins.actions[0].t) + '</p>';
+    h += '<p>' + inr(ins.total) + ' across ' + ins.count + ' spends. <b>' + ins.vital.length + ' of ' + ins.cats.length + ' categories</b> make 80% of it: '
+      + ins.vital.map(function (c) { return esc(c[0]) + ' ' + inr(c[1]); }).join(", ") + '.</p>';
+    if (ins.actions.length > 1) h += '<details class="gm-card-more"><summary>Later (' + (ins.actions.length - 1) + ')</summary><ol>' + ins.actions.slice(1).map(function (a) { return '<li>' + esc(a.t) + '</li>'; }).join("") + '</ol></details>';
+    h += sample ? '<button type="button" class="btn-sm" onclick="renderAll()">Close the sample</button>' : '<details class="gm-card-more"><summary>Add more messages</summary><textarea id="gmSpendIn" rows="3" placeholder="Paste many messages at once"></textarea><button type="button" class="btn-sm" onclick="gmSpendIn()">Read them</button></details>';
+    return h + '</div>';
+  };
+  window.gmSpendIn = function () {
+    var el = document.getElementById("gmSpendIn"), r = gmSpendRead(el ? el.value : "");
+    renderAll(); gmToast(r.spends + " spends and " + r.cards + " new card" + (r.cards === 1 ? "" : "s") + " read from " + r.messages + " messages.");
+  };
+  // The case study's sample: generic cards (names and statement days only, fake last digits), invented spends.
+  var SAMPLE = ["ICICI Bank Credit Card XX0101 statement generated on 28-10-2026. Total amt due Rs 18,240, due 15-11-2026",
+    "Rs 1,299 spent on Amazon Pay ICICI Bank Credit Card XX0101 at AMAZON on 02-11-2026", "HDFC Bank Swiggy Credit Card XX0202 statement generated on 13-11-2026. Total amount due Rs 9,860",
+    "SBI Card Flipkart XX0303 bill generated on 10-11-2026, total amount due Rs 6,400", "IDFC FIRST LIC Select Credit Card XX0404 statement generated on 19-10-2026. Total due Rs 22,000",
+    "Rs 3,249 spent on HDFC Bank Swiggy Credit Card XX0202 at AMAZON on 03-11-2026", "Rs 2,120 spent on HDFC Bank Swiggy Credit Card XX0202 at AMAZON on 07-11-2026",
+    "Rs 640 spent on ICICI Bank Credit Card XX0101 at SWIGGY on 01-11-2026", "Rs 520 spent on ICICI Bank Credit Card XX0101 at SWIGGY on 02-11-2026",
+    "Rs 710 spent on ICICI Bank Credit Card XX0101 at ZOMATO on 04-11-2026", "Rs 455 spent on ICICI Bank Credit Card XX0101 at SWIGGY on 06-11-2026",
+    "Rs 830 spent on ICICI Bank Credit Card XX0101 at ZOMATO on 08-11-2026", "Rs 590 spent on ICICI Bank Credit Card XX0101 at SWIGGY on 09-11-2026",
+    "Rs 649 spent on SBI Card XX0303 at NETFLIX on 05-11-2026", "Rs 299 spent on SBI Card XX0303 at SPOTIFY on 05-11-2026", "Rs 1,499 spent on SBI Card XX0303 at HOTSTAR on 06-11-2026",
+    "Rs 4,800 spent on SBI Card XX0303 at FLIPKART on 08-11-2026", "Rs 2,900 spent on IDFC FIRST LIC Select Credit Card XX0404 at HPCL on 09-11-2026",
+    "Rs 12,000 spent on IDFC FIRST LIC Select Credit Card XX0404 at LIC on 10-11-2026", "Late payment fee of Rs 750 charged on HDFC Bank Credit Card XX0202"];
+  window.gmSpendSample = function () {
+    var r = gmSpendRead(SAMPLE.join("\n\n"), true), host = document.querySelector(".gm-spend");
+    if (host) host.outerHTML = gmSpendHTML(gmSpendInsights(r.list, r.cardList, r.fees), true).replace(/^<div class="cat-t">[^<]*<\/div>/, "");
+    return r;
+  };
+  if (typeof renderMoney === "function") { var _rm2 = renderMoney; renderMoney = function (E) {
+    var h = _rm2(E), k = h.indexOf('<div class="cat-t">Which card, when</div>');
+    return k > -1 ? h.slice(0, k) + gmSpendHTML() + h.slice(k) : h + gmSpendHTML();
+  }; }
+  // A shared message with spends in it goes to the spend reader as well.
+  var _ro = window.gmReadOpen;
+  window.gmReadOpen = function (text) {
+    var many = splitMsgs(text).length > 1, p = gmParseSms(text);
+    if (many || (p.debit && p.amount)) { var r = gmSpendRead(text); renderAll(); gmToast(r.spends + " spends and " + r.cards + " new card" + (r.cards === 1 ? "" : "s") + " read from " + r.messages + " messages."); return; }
+    _ro(text);
+  };
 })();
 
 </script>
