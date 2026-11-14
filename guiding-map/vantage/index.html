@@ -845,7 +845,9 @@ nav#oskNav button.on{color:#f4e7c1;background:rgba(201,168,76,.14);box-shadow:in
     }
     function drawAurora(t) {
       if (!AU) { AU = { cv: doc.createElement("canvas"), prof: auProfile() }; AU.cx = AU.cv.getContext("2d"); }
-      var sc = Math.min(D, 2), aw = Math.ceil(W * sc), ah = Math.ceil(H * .42 * sc);
+      // One column per device pixel (up to 2x), and at most about 1.2 million pixels, so a large monitor stays cheap (#287).
+      var sc = Math.min(D, 2); if (W * sc * H * .42 * sc > 1200000) sc = Math.sqrt(1200000 / (W * H * .42));
+      var aw = Math.ceil(W * sc), ah = Math.ceil(H * .42 * sc);
       if (AU.cv.width !== aw || AU.cv.height !== ah) { AU.cv.width = aw; AU.cv.height = ah; AU.at = -1e9; }
       if (still || t - AU.at > 250 || t < AU.at) {
         AU.at = t; var g = AU.cx, x, k, px, base, hgt, ray, f, I;
