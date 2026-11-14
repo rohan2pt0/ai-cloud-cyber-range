@@ -133,6 +133,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- Start simple grows gently
 - Alerts with nothing to install
 - Calm and real
 - [Bank messages arrive by themselves](docs/securax/137-AUTOMATION.md)
@@ -140,7 +141,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - Where your money went
 - The Life OS has no sliders left
 - The Growth daily routine is a loop you run, not a list you read
-- The More sheet uses one hand-drawn line-icon set
 
 **Release 0.3.0 - 2026-10-22:**
 

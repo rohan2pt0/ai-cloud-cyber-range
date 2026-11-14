@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- **Start simple grows gently** (owner, 2026-11-14): a new person's More sheet opens Money, Breaks and Life balance; one more door unlocks each week of use (Shield, Deadlines, Systems, Guides, Stack), a just-unlocked door says new, and Show everything counts only what is left. `test97.js` holds it.
 - **Alerts with nothing to install** (zero-setup, slice 1b part 1): estate-sync sends web push itself. It makes its own signing key once, a paired Life OS subscribes with one Allow tap, and `./securax notify` uses it before ntfy, encrypted for each device so the push service cannot read it; only the browsers' own push services are ever contacted (threat model estate-web-push). The Allow button in the Life OS comes next.
 - **Calm and real** (owner's screenshots): the aurora is a soft curtain at the screen's own resolution instead of a barcode of stripes; the galaxy's arms wind half a turn, so it reads as a spiral, not a ring; the seal's enamel lines no longer shimmer at the centre, its glaze shows a soft window, and the diamond is drawn at full density with four rays a pixel and visible fire.
 - No coloured tap shadow on any button in any SecuRAX app (shared look; a test holds it).

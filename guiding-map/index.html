@@ -7389,6 +7389,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       + "#gmMoreSheet .gm-more-all{grid-column:1/-1}"
       + "#gmMoreSheet .gm-more-all summary{cursor:pointer;font-weight:800;font-size:13px;padding:10px 4px;min-height:44px;display:flex;align-items:center}"
       + "#gmMoreSheet .gm-more-g{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}"
+      + "#gmMoreSheet .sh button .gm-new{display:block;font-size:9px;font-weight:700;color:var(--muted);margin-top:2px}"
       + "#gmMoreSheet .sh button .gi{display:flex;justify-content:center;margin-bottom:5px;color:var(--text)}"
       + "html[data-theme=dark] #gmMoreSheet .sh button .gi{color:var(--gold)}"
       + "#gmVitals.gm-inline{position:static;box-shadow:none;border:0;background:none;padding:0 0 10px}"
@@ -7416,20 +7417,38 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     // The vital few first, ordered by risk (Shield, then what is due, then what runs your life); everything else folded.
     // Start simple (owner, 2026-11-14: "terrified to start", "too heavy"): three doors until the person asks for everything.
     var SIMPLE = G("gm_simple", true) !== false;
-    var FIRST = SIMPLE ? ["money", "risk", "wheel"] : ["risk", "deadlines", "systems", "money", "breaks", "wheel"];
-    function tile(t) {
+    var FIRST = SIMPLE ? ["money", "breaks", "wheel"] : ["risk", "deadlines", "systems", "money", "breaks", "wheel"];
+    // One more door each week the app is used (owner, 2026-11-14): start with three, grow gently in this order.
+    var UNLOCK = ["risk", "deadlines", "systems", "guide", "stack"];
+    var firstOpen = G("gm_first_open", "");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(firstOpen)) { firstOpen = ymd(); S_("gm_first_open", firstOpen); }
+    var fp = firstOpen.split("-"), then = new Date(+fp[0], +fp[1] - 1, +fp[2]).getTime(), now = new Date();
+    if (isNaN(then)) { then = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime(); }
+    var days = Math.max(0, Math.round((new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() - then) / 86400000));
+    var weeks = Math.min(UNLOCK.length, Math.floor(days / 7));
+    function tile(t, isNew) {
       var ic = window.gmIcon(t[0], 20);
       return '<button role="menuitem" class="' + (curTab === t[0] ? "on" : "") + '" onclick="gmNavGo(\'' + t[0] + '\')">'
-        + (ic ? '<span class="gi" aria-hidden="true">' + ic + '</span>' : '') + t[1] + '</button>';
+        + (ic ? '<span class="gi" aria-hidden="true">' + ic + '</span>' : '') + t[1] + (isNew ? '<span class="gm-new">new</span>' : '') + '</button>';
     }
     // A tab that cannot apply (the person answered No to its fact) is not shown at all: no clutter for a life that is not theirs.
     var said = G("gm_facts", {}) || {}, NEEDS = { kids: "kids" };
     function fits(t) { var f = NEEDS[t[0]]; return !(f && said.hasOwnProperty(f) && said[f] === false); }
-    var rest = TABS.filter(function (t) { return main.indexOf(t[0]) < 0 && FIRST.indexOf(t[0]) < 0 && fits(t); });
+    var unlocked = [];
+    if (SIMPLE) UNLOCK.slice(0, weeks).forEach(function (id) {
+      if (main.indexOf(id) >= 0 || FIRST.indexOf(id) >= 0) return;
+      TABS.forEach(function (t) { if (t[0] === id && fits(t)) unlocked.push(t); });
+    });
+    var shownIds = FIRST.concat(unlocked.map(function (t) { return t[0]; }));
+    var rest = TABS.filter(function (t) { return main.indexOf(t[0]) < 0 && shownIds.indexOf(t[0]) < 0 && fits(t); });
     sh += '<div class="gm-more-h">First</div>';
     FIRST.forEach(function (id) { TABS.forEach(function (t) { if (t[0] === id && main.indexOf(id) < 0 && fits(t)) sh += tile(t); }); });
+    unlocked.forEach(function (t) {
+      var i = UNLOCK.indexOf(t[0]);
+      sh += tile(t, i >= 0 && days >= (i + 1) * 7 && days < (i + 2) * 7);
+    });
     if (SIMPLE) {
-      sh += '<button role="menuitem" class="gm-show-all" onclick="gmSimple(false)">Show everything (' + (rest.length + 3) + ' more)</button></div></div>';
+      sh += '<button role="menuitem" class="gm-show-all" onclick="gmSimple(false)">Show everything (' + rest.length + ' more)</button></div></div>';
     } else {
       var restOpen = G("gm_more_all", false) || rest.some(function (t) { return t[0] === curTab; });
       sh += '<details class="gm-more-all"' + (restOpen ? " open" : "") + ' ontoggle="gmMoreAll(this.open)"><summary>Everything else (' + rest.length + ')</summary><div class="gm-more-g">';
