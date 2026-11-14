@@ -8,9 +8,10 @@
  "services": {
   "life-os": {
    "name": "Life OS and Vantage", "feature": "guiding-map", "provider": "microsoft", "protocol": "oauth2-pkce",
-   "scopes": ["Files.ReadWrite.AppFolder", "offline_access"],
+   "scopes": ["Files.ReadWrite.AppFolder", "offline_access", "Mail.Read"],
+   "asked_when_used": {"Mail.Read": "only when the person taps Read my bank e-mails on Money; read-only, on the device, bank senders only (threat model life-os-bank-mail)"},
    "guest": "everything: the whole app works on this device with no sign-in",
-   "signed_in": "your data follows you across devices through your own encrypted OneDrive copy",
+   "signed_in": "your data follows you across devices through your own encrypted OneDrive copy; with one more tap, bank alerts in your Outlook inbox fill in spends and cards by themselves",
    "login": "primary", "revoke": "Ops, then disconnect, on each device; or remove the app's access in your Microsoft account", "status": "built"
   },
   "command-center-door": {
