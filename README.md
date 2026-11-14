@@ -133,6 +133,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- Every number shows its health
 - Alerts with one Allow tap
 - One card and the check-in
 - Start simple grows gently
@@ -140,7 +141,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - Calm and real
 - [Bank e-mails, nothing to install](docs/securax/137-AUTOMATION.md)
 - [Bank messages arrive by themselves](docs/securax/137-AUTOMATION.md)
-- Start simple
 
 **Release 0.3.0 - 2026-10-22:**
 
