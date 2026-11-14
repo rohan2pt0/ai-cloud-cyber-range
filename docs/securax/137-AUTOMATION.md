@@ -23,3 +23,14 @@
 3. **A threat model first** for each route (`governance/threat-models.json`); the forwarder crosses the phone-to-estate boundary.
 4. **Nothing irreversible without a tap.** Rebalancing proposes; the person approves each order.
 5. **The fallback always works:** share or paste a message, offline.
+
+## Slice 1 is built: set it up in five minutes
+
+1. **On the estate:** in `local/compose/.env`, set `SYNC_INBOX_TOKENS` to a new random token (for example `openssl rand -hex 24`) and `SYNC_INBOX_USER` to your Life OS sync id. Restart: `./securax up`. While the token is empty the door stays shut.
+2. **On the phone:** install the open-source forwarder ([F-Droid or GitHub](https://github.com/bogkonstantin/android_income_sms_gateway_webhook)). Add one rule:
+   - **Sender:** a pattern for your banks' sender ids, for example `.*-(HDFCBK|ICICIB|SBICRD|AXISBK|IDFCFB|BOBCRD|EPFOHO).*`;
+   - **URL:** `https://<your estate's Tailscale name>/sync/inbox/sms?user=<your sync id>`;
+   - **Header:** `Authorization: Bearer <the inbox token>`; **body:** `{"from":"%from%","text":"%text%"}`.
+3. **Done.** Open the Life OS: new bank messages are read by themselves, a short note says how many, and the inbox is cleared.
+
+**What the estate refuses:** any sender that is not a bank id, every one-time code (never stored), digit runs of 12 or more (masked), over 60 messages a minute, and any request without the inbox token. The inbox token cannot read anything.

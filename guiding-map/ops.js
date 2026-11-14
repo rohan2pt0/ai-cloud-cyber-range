@@ -8097,11 +8097,36 @@
     _ro(text);
   };
 
+  /* ── Messages that arrive by themselves (doc 137; threat model estate-sms-inbox) ──────────────────────────────────────
+     The phone's SMS forwarder posts bank messages to the person's estate; they come down with sync as gm_sms_inbox. Here
+     they are read once (spends, cards, bills, balances), saved with their dates, and the inbox is cleared, so the texts
+     also leave the estate on the next sync. Only an authenticated, bank-sender-only channel saves without a tap. */
+  var _draining = false;
+  function saveAsset(kind, v) {
+    var a = assets(); a[kind] = { v: +v, at: Date.now() }; S_(AK, a);
+    if (kind === "bank" && typeof gmLifeSet === "function") { try { var l = JSON.parse(localStorage.getItem("gm_life") || "{}"); l.ef = (+v / 1e5).toFixed(2); localStorage.setItem("gm_life", JSON.stringify(l)); } catch (e) {} }
+  }
+  window.gmInboxDrain = function () {
+    if (_draining) return 0;
+    var box = G("gm_sms_inbox", []); if (!box.length) return 0;
+    _draining = true;
+    try {
+      var done = G("gm_sms_done", 0), fresh = box.filter(function (x) { return x && typeof x.t === "string" && x.at > done; });
+      if (fresh.length) {
+        var r = gmSpendRead(fresh.map(function (x) { return x.t; }).join("\n\n")), bal = 0;
+        fresh.forEach(function (x) { var m = gmReadMessage(x.t); if (m.amount != null && /^(epf|nps|mf|bank)$/.test(m.kind) && !gmParseSms(x.t).debit) { saveAsset(m.kind, m.amount); bal++; } });
+        S_("gm_sms_done", Math.max.apply(null, fresh.map(function (x) { return x.at; })));
+        if (typeof gmToast === "function") gmToast(fresh.length + " new message" + (fresh.length > 1 ? "s" : "") + " read: " + r.spends + " spend" + (r.spends === 1 ? "" : "s") + (bal ? ", " + bal + " balance" + (bal > 1 ? "s" : "") : "") + ".");
+      }
+      S_("gm_sms_inbox", []);
+      return fresh.length;
+    } finally { _draining = false; }
+  };
   /* ── Start simple (owner, 2026-11-14): "literally confused where to start", "too heavy" ───────────────────────────────
      Until the person asks for everything: Today keeps the rings, the three for today and the one next step, and folds the
      rest under one line; a "Start here" card names the only three things to do; the More menu shows three doors. */
   var _raS = window.renderAll;
-  window.renderAll = function () { var r = _raS.apply(this, arguments); try { simpleToday(); } catch (e) {} return r; };
+  window.renderAll = function () { var r = _raS.apply(this, arguments); try { simpleToday(); } catch (e) {} try { if (!_draining && G("gm_sms_inbox", []).length && gmInboxDrain()) _raS.apply(this, arguments); } catch (e) {} return r; };
   function simpleToday() {
     if (G("gm_simple", true) === false || (typeof curTab !== "undefined" && curTab !== "today")) return;
     var s = document.querySelector("#sections .section.active"); if (!s || s.querySelector(".gm-simple-more")) return;

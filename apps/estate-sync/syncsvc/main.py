@@ -427,6 +427,101 @@ def merge_write(user: str, inc: dict, i_meta: dict, updated_at: str | None) -> t
     return merged, updated_at, snaps
 
 
+
+# ── The SMS inbox (doc 137; threat model estate-sms-inbox) ───────────────────────────────────────────────────────────
+# The phone's SMS forwarder posts each message from the person's bank senders here, over Tailscale. The door is
+# write-only (its own tokens, SYNC_INBOX_TOKENS, which can never read state), pinned to one user (SYNC_INBOX_USER), and
+# keeps the least: only senders shaped like Indian bank sender IDs (VM-HDFCBK), never a one-time code, long digit runs
+# masked, at most SYNC_INBOX_MAX messages for SYNC_INBOX_DAYS days. The Life OS reads them on its next sync and clears them.
+INBOX_KEY = "gm_sms_inbox"
+INBOX_MAX = int(os.environ.get("SYNC_INBOX_MAX", "300"))
+INBOX_DAYS = int(os.environ.get("SYNC_INBOX_DAYS", "14"))
+INBOX_RATE = int(os.environ.get("SYNC_INBOX_PER_MINUTE", "60"))
+_OTP = re.compile(r"\b(otp|one[- ]time (password|pin|code)|verification code|passcode|security code)\b", re.I)
+_LONG_DIGITS = re.compile(r"\d(?:[ -]?\d){11,}")
+_inbox_hits: dict[str, list[float]] = {}
+
+
+def _inbox_tokens() -> set[str]:
+    return {t.strip() for t in os.environ.get("SYNC_INBOX_TOKENS", "").split(",") if t.strip()}
+
+
+def _inbox_senders() -> "re.Pattern[str]":
+    return re.compile(os.environ.get("SYNC_INBOX_SENDERS", r"^[A-Z]{2}-[A-Z0-9]{3,9}(-[A-Z])?$"), re.I)
+
+
+def inbox_append(user: str, item: dict) -> int:
+    """Append one message to the user's inbox key under the same write lock as every state write (no lost appends)."""
+    import json
+    with closing(_db()) as conn:
+        conn.isolation_level = None
+        conn.execute("BEGIN IMMEDIATE")
+        row = conn.execute("SELECT payload, meta FROM state WHERE user_id=?", (user,)).fetchone()
+        stored = json.loads(row[0]) if row else {}
+        s_meta = json.loads(row[1]) if row else {}
+        try:
+            box = json.loads(stored.get(INBOX_KEY) or "[]")
+        except (TypeError, ValueError):
+            box = []
+        if not isinstance(box, list):
+            box = []
+        cutoff = item["at"] - INBOX_DAYS * 86400000
+        box = [x for x in box if isinstance(x, dict) and isinstance(x.get("at"), (int, float)) and x["at"] >= cutoff] + [item]
+        box = box[-INBOX_MAX:]
+        stored[INBOX_KEY] = json.dumps(box)
+        s_meta[INBOX_KEY] = max(item["at"], (s_meta.get(INBOX_KEY) or 0) + 1)
+        updated_at = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+        conn.execute(
+            "INSERT INTO state(user_id, payload, meta, updated_at) VALUES(?,?,?,?) "
+            "ON CONFLICT(user_id) DO UPDATE SET payload=excluded.payload, meta=excluded.meta, updated_at=excluded.updated_at",
+            (user, json.dumps(stored), json.dumps(s_meta), updated_at),
+        )
+        conn.execute("COMMIT")
+    return len(box)
+
+
+@app.post("/sync/inbox/sms")
+async def inbox_sms(request: Request,
+                    user: str = Query(..., min_length=1, max_length=256),
+                    authorization: str | None = Header(default=None)) -> JSONResponse:
+    import json
+    toks = _inbox_tokens()
+    if not toks:
+        raise HTTPException(503, "the SMS inbox is off: set SYNC_INBOX_TOKENS (and SYNC_INBOX_USER) in the estate .env")
+    tok = (authorization or "")[7:].strip() if (authorization or "").lower().startswith("bearer ") else ""
+    if not tok or not any(hmac.compare_digest(tok, t) for t in toks):
+        raise HTTPException(401, "a valid inbox token is required")
+    pinned = os.environ.get("SYNC_INBOX_USER", "").strip()
+    if not pinned or user != pinned:
+        raise HTTPException(403, "this inbox writes only to the user set in SYNC_INBOX_USER")
+    now = time.time()
+    hits = [t for t in _inbox_hits.get(tok, []) if now - t < 60]
+    if len(hits) >= INBOX_RATE:
+        raise HTTPException(429, "too many messages in a minute")
+    _inbox_hits[tok] = hits + [now]
+    raw = await request.body()
+    if len(raw) > 8192:
+        raise HTTPException(413, "a message is at most 8 KB")
+    try:
+        body = json.loads(raw)
+    except ValueError:
+        body = {"text": raw.decode("utf-8", "replace")}
+    if not isinstance(body, dict):
+        raise HTTPException(400, "send JSON {from, text}")
+    sender = str(body.get("from") or body.get("sender") or "").strip()
+    text = str(body.get("text") or body.get("message") or body.get("body") or "").strip()
+    # Accepted but not kept (202): the forwarder must not retry a message we chose to drop.
+    if not text:
+        return JSONResponse({"ok": True, "kept": False, "why": "empty"}, status_code=202)
+    if not sender or not _inbox_senders().match(sender):
+        return JSONResponse({"ok": True, "kept": False, "why": "not a bank sender"}, status_code=202)
+    if _OTP.search(text):
+        return JSONResponse({"ok": True, "kept": False, "why": "one-time codes are never kept"}, status_code=202)
+    item = {"from": sender[:24], "t": _LONG_DIGITS.sub("[number removed]", text)[:1000], "at": int(now * 1000)}
+    n = await asyncio.to_thread(inbox_append, user, item)
+    await _notify(user, time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "sms-inbox")
+    return JSONResponse({"ok": True, "kept": True, "waiting": n})
+
 @app.get("/sync/snapshots")
 def list_snapshots(user: str = Query(..., min_length=1, max_length=256),
                    authorization: str | None = Header(default=None),

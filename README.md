@@ -133,6 +133,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- [Bank messages arrive by themselves](docs/securax/137-AUTOMATION.md)
 - Start simple
 - Where your money went
 - The Life OS has no sliders left
@@ -140,7 +141,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - The More sheet uses one hand-drawn line-icon set
 - Health Cal, form labels and the Guides search read calmly
 - The Stack and Guides open with one calm hero
-- Playbook, OKRs, Commit, Health Cal, Kids and Archive open with one calm hero
 
 **Release 0.3.0 - 2026-10-22:**
 
