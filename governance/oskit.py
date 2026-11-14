@@ -247,7 +247,8 @@ def _script_json(e: dict) -> str:
 def render(e: dict) -> dict[str, bytes]:
     """The app's files, in memory: index.html, manifest.json and sw.js."""
     e = resolve(e)
-    js = (KIT / "core.js").read_text(encoding="utf-8").rstrip() + "\n" + "\n".join((KIT / "modules" / f"{m}.js").read_text(encoding="utf-8").rstrip() for m in MODULES)
+    sky = GM / "shared" / "sky.js"   # the shared night sky (reuse-first): the same engine the Life OS builds in
+    js = (sky.read_text(encoding="utf-8").rstrip() + "\n" if sky.is_file() else "") + (KIT / "core.js").read_text(encoding="utf-8").rstrip() + "\n" + "\n".join((KIT / "modules" / f"{m}.js").read_text(encoding="utf-8").rstrip() for m in MODULES)
     css = (KIT / "kit.css").read_text(encoding="utf-8")
     # The SecuRAX shared look (reuse-first): the same file the Life OS builds in, after the kit's own sheet.
     sx = GM / "shared" / "lux.css"

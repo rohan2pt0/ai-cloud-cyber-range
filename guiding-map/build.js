@@ -42,7 +42,10 @@ const INTEL_JS = "window.GM_INTEL = " + JSON.stringify(INTEL).replace(/<\/(scrip
 // app's own styles, so an app adds context on top and never keeps a private copy of a shared primitive.
 const SX_FILE = require("path").join(__dirname, "shared", "lux.css");
 const SX_JS = fs.existsSync(SX_FILE) ? "(function(){try{var s=document.createElement('style');s.id='sxLux';s.textContent=" + JSON.stringify(fs.readFileSync(SX_FILE, "utf8")).replace(/<\/(style|script)/gi, "<\\/$1") + ";document.head.appendChild(s);}catch(e){}})();\n" : "";
-const built = before + SX_JS + I18N_JS + SYS_JS + INTEL_JS + ops + "\n</script>\n" + tail;
+// The SecuRAX shared night sky (shared/sky.js): the same canvas engine every app mounts behind a full screen (reuse-first).
+const SKY_FILE = require("path").join(__dirname, "shared", "sky.js");
+const SKY_JS = fs.existsSync(SKY_FILE) ? fs.readFileSync(SKY_FILE, "utf8").replace(/<\/(script)/gi, "<\\/$1") + "\n" : "";
+const built = before + SX_JS + SKY_JS + I18N_JS + SYS_JS + INTEL_JS + ops + "\n</script>\n" + tail;
 
 // Stamp the visible version badge from the repo's single source of truth (../VERSION) so the app can
 // never show a version the product doesn't have. (It once said "v13.0.2" — a hardcoded legacy string.)

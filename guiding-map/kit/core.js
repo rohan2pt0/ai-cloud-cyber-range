@@ -172,9 +172,9 @@
   });
   K.lockScreen = function () {
     var rec = lockRec(), enc = rec && rec.mode === "encrypted";
-    return K.card(K.esc(K.t("lock.title", "Locked")),
-      "<p>" + K.esc(K.t("lock.body", "Unlock with this device's Face ID, fingerprint or Windows Hello.")) + "</p>"
-      + '<button class="primary" data-a="unlock">' + K.esc(K.t("lock.unlock", "Unlock")) + "</button>"
+    return K.card("", (window.SXSky ? SXSky.seal() : "") + "<h3>" + K.esc(K.t("lock.title", "Locked")) + "</h3>"
+      + "<p>" + K.esc(K.t("lock.body", "Unlock with this device's Face ID, fingerprint or Windows Hello.")) + "</p>"
+      + '<button class="primary sx-glint" data-a="unlock">' + K.esc(K.t("lock.unlock", "Unlock")) + "</button>"
       + (enc ? '<details><summary>' + K.esc(K.t("lock.use_phrase", "Use your recovery phrase")) + '</summary><label for="lkPhrase">'
         + K.esc(K.t("lock.phrase", "Recovery phrase")) + '</label><input id="lkPhrase" autocomplete="off" autocapitalize="characters" spellcheck="false">'
         + '<button data-a="unlockPhrase">' + K.esc(K.t("lock.unlock", "Unlock")) + "</button></details>" : ""), "hero");
@@ -322,7 +322,18 @@
     return t;
   };
   K.go = function (id) { K.tab = id; try { history.replaceState(null, "", "#" + id); } catch (e) {} K.render(); window.scrollTo(0, 0); };
+  // The lock screen is a night sky (the shared engine in shared/sky.js, the look in shared/lux.css): on while locked, gone on unlock.
+  function night(on) {
+    var b = document.body, sky = document.getElementById("oskSky");
+    b.classList.toggle("osk-locked", !!on);
+    if (on && !sky) {
+      sky = document.createElement("div"); sky.id = "oskSky"; sky.setAttribute("aria-hidden", "true"); b.insertBefore(sky, b.firstChild);
+      try { if (window.SXSky) SXSky.mount(sky, { comet: true }); } catch (e) {}
+    }
+    if (!on && sky) sky.parentNode.removeChild(sky);    // the sky's loop ends by itself once its element has gone
+  }
   K.render = function () {
+    night(K.locked);
     if (K.locked) {                                                     // locked: nothing of the person's on screen
       document.getElementById("oskMain").innerHTML = K.lockScreen();
       document.getElementById("oskNav").innerHTML = ""; document.getElementById("oskMore").innerHTML = "";

@@ -20,7 +20,9 @@ setTimeout(() => {
     ok(Array.from(d.querySelectorAll(".gm-metric .gm-vw")).every((x) => /^(Strong|Watch|Weak)$/.test(x.textContent)), "each verdict also has a word, never colour alone");
     ok(!/₹-/.test(d.getElementById("sections").textContent), "losses read with a real minus sign, not '₹-'");
     const css = Array.from(d.querySelectorAll("style")).map((s) => s.textContent).join("\n");
-    ok(/--gold-metal:linear-gradient\(135deg,#7a5a14/.test(css), "gold is a metallic gradient, not a flat yellow");
+    var gm = (css.match(/--gold-metal:var\(--sx-gold-edge,(linear-gradient\(135deg,[^)]*\))\)/) || [])[1] || "";
+    // Shared real gold (lux.css --sx-gold-edge), with a metallic fallback: many stops, deep shadows as well as highlights.
+    ok(gm && gm.split("%").length > 7 && /#6b4a12|#8f6619/.test(gm) && /#fff6dc/.test(gm), "gold is a metallic gradient, not a flat yellow");
     ok(/\.gm-hero \.gm-hero-n\{background:var\(--gold-metal\)/.test(css), "hero numbers are set in metallic gold");
   } catch (e) { fail++; console.log("FAIL threw " + e.message); }
   console.log("test79 verdicts and metallic gold: " + pass + " passed, " + fail + " failed");

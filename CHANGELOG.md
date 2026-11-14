@@ -9,6 +9,8 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- One shared night sky and real gold (`guiding-map/shared/sky.js`, `lux.css`): the Life OS and Vantage lock screens show a natural sky (stars by brightness and colour, each twinkling at its own pace, the Milky Way with dust lanes, a distant spiral galaxy, meteors and a slow comet) behind one gold seal; gold is now polished metal (a bright top, a horizon band, a bevel) everywhere it is used.
+
 - Life OS lock screen: the padlock emoji is replaced by an animated gold seal (a turning gold ring, a breathing glow, a line-drawn gold padlock, twinkling stars, a glint on Unlock); it says Windows Hello only on Windows; reduced motion stops it all.
 
 - Vantage More sheet glitters: midnight glass with twinkling stars, gold-edged keys and a slow gold glint in dark mode, pearl and gold in light; built once in `guiding-map/shared/lux.css` so every app gets it.
