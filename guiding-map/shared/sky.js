@@ -158,6 +158,8 @@
       if (!alive) return;
       if (!el.isConnected) { stop(); return; }
       if (!t0) t0 = t;
+      // 30 frames a second is plenty for twinkling and a slow comet, and halves the cost on a modest phone.
+      if (!still && last && t - last < 30) { raf = requestAnimationFrame(frame); return; }
       var dt = last ? Math.min(64, t - last) : 16; last = t;
       ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height);
       ctx.drawImage(bg, 0, 0); ctx.setTransform(D, 0, 0, D, 0, 0);

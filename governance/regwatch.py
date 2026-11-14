@@ -48,7 +48,7 @@ def _ua() -> str:
 
 
 UA = _ua()
-_CTRL = re.compile(r"[\x00-\x1f\x7f​-‏‪-‮⁠-⁤﻿]")
+_CTRL = re.compile(r"[\x00-\x1f\x7f\u200b-\u200f\u202a-\u202e\u2060-\u2064\ufeff]")
 
 
 def load_sources(path: pathlib.Path = FEEDS) -> dict:

@@ -23,7 +23,7 @@
   "use strict";
   if (typeof window === "undefined" || window.SXMat) return;
   var doc = document, items = [], gl = null, glc = null, U = {}, ok = null, pending = 0, lastDraw = 0;
-  var LX = 0, LY = 0, MAXPX = 1024, MAXITEMS = 24;
+  var LX = 0, LY = 0, MAXPX = 1024, MAXITEMS = 24, Q = 1;
   var AUTO = { ".sx-seal": "seal", ".gm-lock-go": "gold", "#oskMain button.primary": "gold", ".sx-gold": "gold",
     "nav#oskNav": "velvet", "#oskMore .sheet": "velvet", "[data-sx-mat]": null };
   var MAT = { gold: [0, 0], platinum: [0, 1], seal: [1, 0], velvet: [2, 0] };
@@ -149,7 +149,9 @@
   }
 
   function attach(el, kind) {
-    if (el._sxMat || items.length >= MAXITEMS || !MAT[kind]) return;
+    if (el._sxMat || !MAT[kind]) return;
+    if (items.length >= MAXITEMS) prune();
+    if (items.length >= MAXITEMS) return;
     var cs = getComputedStyle(el); if (cs.display === "none") return;
     var cv = doc.createElement("canvas"); cv.className = "sx-mat-cv sx-mat-" + kind; cv.setAttribute("aria-hidden", "true");
     var inset = kind === "seal" ? 16 : 0;
@@ -166,7 +168,7 @@
     if (!ok || !it.vis) return false;
     var r = it.el.getBoundingClientRect(); if (r.width < 2 || r.height < 2) return false;
     if (it.kind === "velvet" && doc.documentElement.getAttribute("data-theme") === "light" && it.el.matches("#oskMore .sheet")) { it.cx.clearRect(0, 0, it.cv.width, it.cv.height); it.el.classList.remove("sx-mat-on"); return false; }
-    var d = Math.min(2, window.devicePixelRatio || 1) * (it.kind === "velvet" ? 0.75 : 1);
+    var d = Math.min(2, window.devicePixelRatio || 1) * (it.kind === "velvet" ? 0.75 : 1) * Q;
     var W = Math.round((r.width + 2 * it.inset) * d), H = Math.round((r.height + 2 * it.inset) * d);
     var f = Math.min(1, MAXPX / Math.max(W, H)); if (f < 1) { d *= f; W = Math.round(W * f); H = Math.round(H * f); }
     if (it.cv.width !== W || it.cv.height !== H) { it.cv.width = W; it.cv.height = H; }
@@ -185,10 +187,16 @@
     it.el.classList.add("sx-mat-on", "sx-mat-" + it.kind + "-on");
     return true;
   }
+  // Surfaces whose element has left the page are let go before any budget check, so a screen redrawn many times never
+  // exhausts the budget and silently loses its materials (test campaign 2026-11-14: gone after 60 tab switches).
+  function prune() { items = items.filter(function (it) { if (it.el.isConnected) return true; if (io) io.unobserve(it.el); return false; }); }
   function drawAll() {
-    pending = 0; lastDraw = performance.now();
-    items = items.filter(function (it) { if (it.el.isConnected) return true; if (io) io.unobserve(it.el); return false; });
+    pending = 0; var t0 = performance.now(); lastDraw = t0;
+    prune();
     items.forEach(draw);
+    // Adaptive quality: a slow device draws at a lower resolution rather than stutter; a fast one earns it back.
+    var ms = performance.now() - t0;
+    if (ms > 14 && Q > 0.5) Q = Math.max(0.5, Q - 0.15); else if (ms < 5 && Q < 1) Q = Math.min(1, Q + 0.05);
   }
   function soon() { if (!ok || pending) return; var w = Math.max(0, 33 - (performance.now() - lastDraw)); pending = setTimeout(function () { requestAnimationFrame(drawAll); }, w); }
   var io = window.IntersectionObserver ? new IntersectionObserver(function (es) {

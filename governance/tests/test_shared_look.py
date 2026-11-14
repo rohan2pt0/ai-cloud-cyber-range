@@ -116,3 +116,19 @@ def test_every_device_is_a_principle_and_has_a_proof():
     for check in ("scrolls sideways", "cut off", "small target", "Unlock is off screen", "viewport-fit=cover"):
         assert check in audit, check
     assert "device_audit.py" in (ROOT / "sandbox" / "run.py").read_text("utf-8")
+
+
+def test_the_renderer_lets_go_of_departed_surfaces_before_its_budget():
+    """Test campaign 2026-11-14: after 60 tab switches Vantage's gold stopped rendering, because surfaces whose element had
+    left the page still counted against the budget. They are let go before the budget is checked, and slow devices draw at
+    a lower resolution rather than stutter."""
+    m = (ROOT / "guiding-map" / "shared" / "materials.js").read_text("utf-8")
+    i = m.index("function attach(")
+    body = m[i:m.index("function draw(", i)]
+    assert "prune();" in body and body.index("prune();") < body.index("return;\n    var cs"), "prune before the budget check"
+    assert "Q = Math.max(0.5" in m, "adaptive quality"
+
+
+def test_the_robustness_audit_runs_in_the_sandbox():
+    run = (ROOT / "sandbox" / "run.py").read_text("utf-8")
+    assert "robustness_audit.py" in run and "ROBUSTNESS AUDIT: PASS" in run

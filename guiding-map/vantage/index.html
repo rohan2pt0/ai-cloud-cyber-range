@@ -176,7 +176,7 @@ button:active,.sx-key:active,[role=button]:active{transform:scale(.965);transiti
 .sx-glint{position:relative;overflow:hidden}.sx-glint::after{content:"";position:absolute;top:0;bottom:0;left:-60%;width:38%;transform:skewX(-20deg);background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.55),rgba(255,255,255,0));animation:sxGlint 4.8s ease-in-out infinite;pointer-events:none}
 html:has(> body.osk-locked){background:#0b1628}body.osk-locked{background:transparent}
 #oskSky{position:fixed;inset:0;z-index:-1;pointer-events:none;background-color:#0b1628;background-image:radial-gradient(120% 80% at 50% 0%,#1d3557 0%,#0e1f38 50%,#07101f 100%)}
-body.osk-locked #oskMain{isolation:isolate}body.osk-locked nav#oskNav{display:none}
+body.osk-locked #oskMain{isolation:isolate}body.osk-locked nav#oskNav{display:none}body.osk-locked .skip{display:none}
 body.osk-locked #oskMain .card.hero{position:relative;max-width:380px;margin:9vh auto 0;text-align:center;color:#eef3f8;border-radius:30px;padding:30px 22px 22px;background-color:rgba(12,22,42,.42);background-image:linear-gradient(160deg,rgba(255,255,255,.12),rgba(255,255,255,.03) 38%,rgba(255,255,255,0) 60%);-webkit-backdrop-filter:blur(16px) saturate(150%);backdrop-filter:blur(16px) saturate(150%);border:1px solid rgba(255,255,255,.11);box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 -1px 0 rgba(0,0,0,.25),0 24px 60px rgba(0,0,0,.40)}
 body.osk-locked #oskMain .card.hero h3{font-family:var(--sx-serif);font-weight:400;font-size:52px;font-size-adjust:none;letter-spacing:.01em;line-height:1;color:#f6ead0;margin:4px 0 10px;text-shadow:0 2px 18px rgba(212,175,55,.18)}
 body.osk-locked #oskMain .card.hero p{font-weight:300;font-size:15.5px;letter-spacing:.015em;color:#c6cfdd}body.osk-locked #oskMain .card.hero label{color:#c6cfdd}
@@ -310,7 +310,7 @@ nav#oskNav button.on{color:#f4e7c1;background:rgba(201,168,76,.14);box-shadow:in
   "use strict";
   if (typeof window === "undefined" || window.SXMat) return;
   var doc = document, items = [], gl = null, glc = null, U = {}, ok = null, pending = 0, lastDraw = 0;
-  var LX = 0, LY = 0, MAXPX = 1024, MAXITEMS = 24;
+  var LX = 0, LY = 0, MAXPX = 1024, MAXITEMS = 24, Q = 1;
   var AUTO = { ".sx-seal": "seal", ".gm-lock-go": "gold", "#oskMain button.primary": "gold", ".sx-gold": "gold",
     "nav#oskNav": "velvet", "#oskMore .sheet": "velvet", "[data-sx-mat]": null };
   var MAT = { gold: [0, 0], platinum: [0, 1], seal: [1, 0], velvet: [2, 0] };
@@ -436,7 +436,9 @@ nav#oskNav button.on{color:#f4e7c1;background:rgba(201,168,76,.14);box-shadow:in
   }
 
   function attach(el, kind) {
-    if (el._sxMat || items.length >= MAXITEMS || !MAT[kind]) return;
+    if (el._sxMat || !MAT[kind]) return;
+    if (items.length >= MAXITEMS) prune();
+    if (items.length >= MAXITEMS) return;
     var cs = getComputedStyle(el); if (cs.display === "none") return;
     var cv = doc.createElement("canvas"); cv.className = "sx-mat-cv sx-mat-" + kind; cv.setAttribute("aria-hidden", "true");
     var inset = kind === "seal" ? 16 : 0;
@@ -453,7 +455,7 @@ nav#oskNav button.on{color:#f4e7c1;background:rgba(201,168,76,.14);box-shadow:in
     if (!ok || !it.vis) return false;
     var r = it.el.getBoundingClientRect(); if (r.width < 2 || r.height < 2) return false;
     if (it.kind === "velvet" && doc.documentElement.getAttribute("data-theme") === "light" && it.el.matches("#oskMore .sheet")) { it.cx.clearRect(0, 0, it.cv.width, it.cv.height); it.el.classList.remove("sx-mat-on"); return false; }
-    var d = Math.min(2, window.devicePixelRatio || 1) * (it.kind === "velvet" ? 0.75 : 1);
+    var d = Math.min(2, window.devicePixelRatio || 1) * (it.kind === "velvet" ? 0.75 : 1) * Q;
     var W = Math.round((r.width + 2 * it.inset) * d), H = Math.round((r.height + 2 * it.inset) * d);
     var f = Math.min(1, MAXPX / Math.max(W, H)); if (f < 1) { d *= f; W = Math.round(W * f); H = Math.round(H * f); }
     if (it.cv.width !== W || it.cv.height !== H) { it.cv.width = W; it.cv.height = H; }
@@ -472,10 +474,16 @@ nav#oskNav button.on{color:#f4e7c1;background:rgba(201,168,76,.14);box-shadow:in
     it.el.classList.add("sx-mat-on", "sx-mat-" + it.kind + "-on");
     return true;
   }
+  // Surfaces whose element has left the page are let go before any budget check, so a screen redrawn many times never
+  // exhausts the budget and silently loses its materials (test campaign 2026-11-14: gone after 60 tab switches).
+  function prune() { items = items.filter(function (it) { if (it.el.isConnected) return true; if (io) io.unobserve(it.el); return false; }); }
   function drawAll() {
-    pending = 0; lastDraw = performance.now();
-    items = items.filter(function (it) { if (it.el.isConnected) return true; if (io) io.unobserve(it.el); return false; });
+    pending = 0; var t0 = performance.now(); lastDraw = t0;
+    prune();
     items.forEach(draw);
+    // Adaptive quality: a slow device draws at a lower resolution rather than stutter; a fast one earns it back.
+    var ms = performance.now() - t0;
+    if (ms > 14 && Q > 0.5) Q = Math.max(0.5, Q - 0.15); else if (ms < 5 && Q < 1) Q = Math.min(1, Q + 0.05);
   }
   function soon() { if (!ok || pending) return; var w = Math.max(0, 33 - (performance.now() - lastDraw)); pending = setTimeout(function () { requestAnimationFrame(drawAll); }, w); }
   var io = window.IntersectionObserver ? new IntersectionObserver(function (es) {
@@ -697,6 +705,8 @@ nav#oskNav button.on{color:#f4e7c1;background:rgba(201,168,76,.14);box-shadow:in
       if (!alive) return;
       if (!el.isConnected) { stop(); return; }
       if (!t0) t0 = t;
+      // 30 frames a second is plenty for twinkling and a slow comet, and halves the cost on a modest phone.
+      if (!still && last && t - last < 30) { raf = requestAnimationFrame(frame); return; }
       var dt = last ? Math.min(64, t - last) : 16; last = t;
       ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height);
       ctx.drawImage(bg, 0, 0); ctx.setTransform(D, 0, 0, D, 0, 0);
@@ -844,7 +854,14 @@ nav#oskNav button.on{color:#f4e7c1;background:rgba(201,168,76,.14);box-shadow:in
     try { localStorage.setItem(PFX + k, s); } catch (e) { MEM[k] = s; }
   }
   function drop(k) { if (CACHE) delete CACHE[k]; try { localStorage.removeItem(PFX + k); } catch (x) { delete MEM[k]; } }
-  K.get = function (k, d) { var s = raw(k); if (s === null) return d; try { return JSON.parse(s); } catch (e) { return d; } };
+  // A stored value of another type than its default (a damaged key, a bad import, a confused peer) gives the default, so no
+  // screen ever trusts a wrong shape (test campaign 2026-11-14: a profile stored as null broke Today).
+  K.get = function (k, d) {
+    var s = raw(k), v; if (s === null) return d;
+    try { v = JSON.parse(s); } catch (e) { return d; }
+    if (d !== undefined && d !== null && (v === null || typeof v !== typeof d || Array.isArray(v) !== Array.isArray(d))) return d;
+    return v;
+  };
   // Every write stamps the key's time (the sync merge rule: newer wins) and keeps the old value for Undo.
   K.set = function (k, v, opt) {
     var old = raw(k), s = JSON.stringify(v);
@@ -1153,6 +1170,7 @@ nav#oskNav button.on{color:#f4e7c1;background:rgba(201,168,76,.14);box-shadow:in
     night(K.locked);
     if (K.locked) {                                                     // locked: nothing of the person's on screen
       document.getElementById("oskMain").innerHTML = K.lockScreen();
+      try { var go = document.querySelector("#oskMain button.primary"); if (go) go.focus({ preventScroll: true }); } catch (e) {}   // the way in has the focus
       document.getElementById("oskNav").innerHTML = ""; document.getElementById("oskMore").innerHTML = "";
       var w = document.getElementById("oskWho"); if (w) w.textContent = "";
       return;

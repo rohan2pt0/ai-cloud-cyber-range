@@ -9,6 +9,8 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- Test campaign (risk-based, ISTQB): stored XSS (128 attack strings, none ran), storage corruption (65 cases in the Life OS, 20 in Vantage), lock state machine, performance on a 4x-slowed phone, a 60-switch long session, WCAG 2.2 AA with axe-core (0 violations, 8 views), WebGL off, reduced motion, Python SAST (bandit high: 0), and a gateway load test (1,000 concurrent inspections, p95 108 ms). Fixed: a hang from a damaged stored date; 18 crashes from wrong-typed keys (shape guards, gm_quarantine); permanent lockout from a damaged lock record; the audit chain forking under concurrent writers (now locked); Vantage's gold vanishing after long use; focus now starts on Unlock; bidi characters in source escaped; SHA-1 marked non-security. New: `guiding-map/tests/robustness_audit.py` (in the sandbox), `apps/llm-gateway/tests/test_load_audit_chain.py`.
+
 - Reading measure re-derived for the new text face: paragraphs on wide screens now cap at 49ch, so a line stays under 75 characters whatever the browser's font metrics (the sandbox found 76-78 at 1280 px).
 
 - Principle `every-device`: how it looks and feels is the most important feature, on every device. `guiding-map/tests/device_audit.py` proves it on nine device profiles (iPhone SE to Pro Max, Pixel 7, Galaxy, iPad Mini, iPad Pro sideways, a phone held sideways, a laptop, a large desktop) and runs in the sandbox. Its first run fixed: the lock now lays the seal beside the words on a phone held sideways, grows in proportion on a large screen, hides the empty menu while locked, and the explainer terms have finger-sized targets.

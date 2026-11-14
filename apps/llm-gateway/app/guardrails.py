@@ -64,7 +64,7 @@ _COMPILED_INJECTION = [(r, re.compile(p, re.I | re.S), s) for r, p, s in _INJECT
 
 # Unicode "tag" block (U+E0000..U+E007F) is used for ASCII smuggling: invisible to
 # humans, readable by tokenisers. Also zero-width + bidi override characters.
-_INVISIBLE = re.compile("[\U000E0000-\U000E007F​-‏‪-‮⁠-⁤﻿]")
+_INVISIBLE = re.compile("[\U000E0000-\U000E007F\u200b-\u200f\u202a-\u202e\u2060-\u2064\ufeff]")
 _B64_BLOB = re.compile(r"\b[A-Za-z0-9+/]{40,}={0,2}")
 
 

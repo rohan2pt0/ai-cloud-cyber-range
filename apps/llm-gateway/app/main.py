@@ -16,6 +16,7 @@ import os
 import re
 import secrets
 import sys
+import threading
 import time
 import uuid
 from collections import OrderedDict, defaultdict, deque
@@ -160,12 +161,19 @@ def chain_hash(event: dict) -> str:
     return hashlib.sha256(json.dumps(event, sort_keys=True, default=str, separators=(",", ":")).encode()).hexdigest()
 
 
+# One writer at a time (load test 2026-11-14): synchronous endpoints run in a thread pool, and two threads reading the same
+# "prev" forked the chain, so an honest log failed verification. The lock covers the link, the hash and the write, so lines
+# also reach the log in sequence order.
+_CHAIN_LOCK = threading.Lock()
+
+
 def _emit(event: dict) -> None:
     event.setdefault("ts", time.strftime("%Y-%m-%dT%H:%M:%S%z"))
-    _CHAIN["seq"] += 1
-    event["chain"] = {"boot": _CHAIN["boot"], "seq": _CHAIN["seq"], "prev": _CHAIN["prev"]}
-    _CHAIN["prev"] = h = chain_hash(event)
-    audit.info(json.dumps({**event, "h": h}, default=str))
+    with _CHAIN_LOCK:
+        _CHAIN["seq"] += 1
+        event["chain"] = {"boot": _CHAIN["boot"], "seq": _CHAIN["seq"], "prev": _CHAIN["prev"]}
+        _CHAIN["prev"] = h = chain_hash(event)
+        audit.info(json.dumps({**event, "h": h}, default=str))
 
 
 _HTTP: httpx.AsyncClient | None = None

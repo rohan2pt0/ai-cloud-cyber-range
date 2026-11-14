@@ -9,7 +9,22 @@
   "use strict";
 
   /* ── tiny store helpers ─────────────────────────────────────────── */
-  function G(k, d) { try { var s = localStorage.getItem(k); return s ? JSON.parse(s) : d; } catch (e) { return d; } }
+  // Read a stored value of the shape its default promises (robustness audit, 2026-11-14): a value of another type (a
+  // damaged key, a bad backup, a confused sync peer) gives the default instead of a crash, and a stored object missing
+  // fields gets the default's (a field of the wrong type too), so every reader can trust what it gets.
+  function G(k, d) {
+    var v;
+    try { var s = localStorage.getItem(k); if (!s) return d; v = JSON.parse(s); } catch (e) { return d; }
+    if (d === undefined || d === null) return v;
+    if (v === null || typeof v !== typeof d || Array.isArray(v) !== Array.isArray(d)) return d;
+    if (typeof d === "object" && !Array.isArray(d)) {
+      Object.keys(d).forEach(function (f) {
+        if (v[f] === undefined || v[f] === null) v[f] = d[f];
+        else if (d[f] !== null && (typeof v[f] !== typeof d[f] || Array.isArray(v[f]) !== Array.isArray(d[f]))) v[f] = d[f];
+      });
+    }
+    return v;
+  }
   function S_(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
   function ymd(d) { d = d || new Date(); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
   function esc(s) { return String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
@@ -2900,6 +2915,7 @@
     if (st.ym !== ymNow) { st.ym = ymNow; st.miss = {}; }        // fresh budget monthly
     // Walk each elapsed day since last update using the REAL history in S.daily.
     var d = st.last ? new Date(st.last) : null;
+    if (d && isNaN(d.getTime())) d = null;                      // a damaged date is no date: never walk towards NaN
     if (!d) {                                                    // first run: seed from up to 60 days of REAL history
       d = new Date(); d.setDate(d.getDate() - 60);
       // ...but never before your first check-in: days before you used the app are not misses (they spent the month's
@@ -2909,10 +2925,10 @@
       var f = new Date(first + "T00:00:00"); f.setDate(f.getDate() - 1);
       if (f > d) d = f;
     }
-    var stop = new Date(today);
-    while (true) {
+    var stop = new Date(today), guard = 0;
+    while (guard++ < 800) {                                      // at most ~2 years of days: a bad value can never hang the app
       d.setDate(d.getDate() + 1);
-      if (d >= stop) break;                                      // today itself is still in progress
+      if (!(d < stop)) break;                                    // today itself is still in progress
       var k = (typeof dKey === "function") ? dKey(d) : null;
       var done = (k && S.daily[k]) ? S.daily[k] : [];
       HABITS.forEach(function (h) {
@@ -7623,7 +7639,10 @@
 // encryption and lock, and encryption at rest inside the Life OS is the next slice (queue app-lock).
 (function () {
   var KEY = "gm_lock", hiddenAt = 0;
-  function rec() { try { return JSON.parse(localStorage.getItem(KEY) || "null"); } catch (e) { return null; } }
+  // A lock record is real only if it can be satisfied (a credential and a recovery-code hash): a damaged one must never lock
+  // the person out of their own record for ever (robustness audit, 2026-11-14). Anyone able to damage it could already
+  // read the device's storage, so treating it as "no lock" gives nothing away.
+  function rec() { try { var r = JSON.parse(localStorage.getItem(KEY) || "null"); return r && typeof r === "object" && typeof r.id === "string" && r.id && typeof r.salt === "string" && r.salt && typeof r.hash === "string" && r.hash ? r : null; } catch (e) { return null; } }
   function put(r) { try { if (r) localStorage.setItem(KEY, JSON.stringify(r)); else localStorage.removeItem(KEY); } catch (e) {} }
   function b64(buf) { var s = "", b = new Uint8Array(buf); for (var i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
   function unb64(t) { t = String(t).replace(/-/g, "+").replace(/_/g, "/"); while (t.length % 4) t += "="; var s = atob(t), b = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) b[i] = s.charCodeAt(i); return b; }
@@ -7657,6 +7676,7 @@
       + '<div class="gm-lock-msg" aria-live="polite"></div></div>';
     document.body.appendChild(el);
     try { if (window.SXSky) SXSky.mount(el, { comet: true }); } catch (e) {}   // the shared night sky; it ends when the lock is removed
+    try { var go = el.querySelector(".gm-lock-go"); if (go) go.focus({ preventScroll: true }); } catch (e) {}   // a dialog takes the focus: one Enter opens it
   }
   function say(t) { var m = document.querySelector("#gmLock .gm-lock-msg"); if (m) m.textContent = t; }
   function opened() { locked = false; hiddenAt = 0; paint(); try { if (window.renderAll) renderAll(); } catch (e) {} }
