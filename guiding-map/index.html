@@ -7458,7 +7458,11 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     // One more door each week the app is used (owner, 2026-11-14): start with three, grow gently in this order.
     var UNLOCK = ["risk", "deadlines", "systems", "guide", "stack"];
     var firstOpen = G("gm_first_open", "");
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(firstOpen)) { firstOpen = ymd(); S_("gm_first_open", firstOpen); }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(firstOpen)) {   // an earlier build stamped gm_first_seen (ms): keep that person's weeks
+      var seen0 = G("gm_first_seen", 0);
+      firstOpen = (typeof seen0 === "number" && isFinite(seen0) && seen0 > 0 && seen0 <= Date.now()) ? ymd(new Date(seen0)) : ymd();
+      S_("gm_first_open", firstOpen);
+    }
     var fp = firstOpen.split("-"), then = new Date(+fp[0], +fp[1] - 1, +fp[2]).getTime(), now = new Date();
     if (isNaN(then)) { then = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime(); }
     var days = Math.max(0, Math.round((new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() - then) / 86400000));
