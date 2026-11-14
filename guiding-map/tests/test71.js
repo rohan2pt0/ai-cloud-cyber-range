@@ -14,7 +14,14 @@ setTimeout(() => {
     w.gmNavMore(true);
     const simple = doc.getElementById("gmMoreSheet");
     const doors = [...simple.querySelectorAll(".sh button[role=menuitem]")].map((b) => (b.getAttribute("onclick") || "").replace(/.*'(\w+)'.*/, "$1"));
-    ok(doors.slice(0, 3).join() === "money,risk,wheel" && /Show everything/.test(simple.textContent), "simple: the three doors, in risk order, then Show everything: " + doors.join());
+    ok(doors.slice(0, 3).join() === "money,breaks,wheel" && /Show everything/.test(simple.textContent), "simple: the three doors, then Show everything: " + doors.join());
+    // Calm and real (owner, 2026-11-14): one more door each week used; after two weeks the Shield and Deadlines join.
+    w.localStorage.setItem("gm_first_seen", JSON.stringify(Date.now() - 15 * 24 * 60 * 60 * 1000));
+    w.gmSimple(true); w.gmNavMore(true);
+    const grown = doc.getElementById("gmMoreSheet");
+    const grownDoors = [...grown.querySelectorAll(".sh button[role=menuitem]")].map((b) => (b.getAttribute("onclick") || "").replace(/.*'(\w+)'.*/, "$1"));
+    ok(grownDoors.slice(0, 5).join() === "money,breaks,wheel,risk,deadlines" && /Show everything/.test(grown.textContent), "simple, after two weeks: the next doors appear: " + grownDoors.join());
+    w.localStorage.removeItem("gm_first_seen");
     w.gmSimple(false); w.gmNavMore(true);
     const sheet = doc.getElementById("gmMoreSheet");
     const idOf = (b) => ((b.getAttribute("onclick") || "").match(/gmNavGo\('([a-z]+)'\)/) || [])[1];

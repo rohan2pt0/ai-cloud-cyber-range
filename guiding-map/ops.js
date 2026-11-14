@@ -3961,7 +3961,15 @@
     // The vital few first, ordered by risk (Shield, then what is due, then what runs your life); everything else folded.
     // Start simple (owner, 2026-11-14: "terrified to start", "too heavy"): three doors until the person asks for everything.
     var SIMPLE = G("gm_simple", true) !== false;
-    var FIRST = SIMPLE ? ["money", "risk", "wheel"] : ["risk", "deadlines", "systems", "money", "breaks", "wheel"];
+    // Calm and real (owner, 2026-11-14): the first visit is stamped once, and one more door appears each week used. A
+    // missing, damaged or wrong-typed stamp counts as now, so a key that lost its shape never hides a door.
+    var seen = G("gm_first_seen", 0);
+    if (typeof seen !== "number" || !isFinite(seen) || seen <= 0) { seen = Date.now(); S_("gm_first_seen", seen); }
+    var weeks = Math.max(0, Math.floor((Date.now() - seen) / (7 * 24 * 60 * 60 * 1000)));
+    var BASE = ["money", "breaks", "wheel"], UNLOCK = ["risk", "deadlines", "systems", "okr"];
+    var FIRST = SIMPLE
+      ? BASE.concat(UNLOCK.filter(function (id) { return BASE.indexOf(id) < 0 && main.indexOf(id) < 0; }).slice(0, weeks))
+      : ["risk", "deadlines", "systems", "money", "breaks", "wheel"];
     function tile(t) {
       var ic = window.gmIcon(t[0], 20);
       return '<button role="menuitem" class="' + (curTab === t[0] ? "on" : "") + '" onclick="gmNavGo(\'' + t[0] + '\')">'
@@ -3974,7 +3982,7 @@
     sh += '<div class="gm-more-h">First</div>';
     FIRST.forEach(function (id) { TABS.forEach(function (t) { if (t[0] === id && main.indexOf(id) < 0 && fits(t)) sh += tile(t); }); });
     if (SIMPLE) {
-      sh += '<button role="menuitem" class="gm-show-all" onclick="gmSimple(false)">Show everything (' + (rest.length + 3) + ' more)</button></div></div>';
+      sh += '<button role="menuitem" class="gm-show-all" onclick="gmSimple(false)">Show everything (' + rest.length + ' more)</button></div></div>';
     } else {
       var restOpen = G("gm_more_all", false) || rest.some(function (t) { return t[0] === curTab; });
       sh += '<details class="gm-more-all"' + (restOpen ? " open" : "") + ' ontoggle="gmMoreAll(this.open)"><summary>Everything else (' + rest.length + ')</summary><div class="gm-more-g">';
