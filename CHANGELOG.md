@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- **Bank e-mails, nothing to install** (doc 137 slice 1b): one tap on Money reads bank alerts from your Outlook inbox on the device, read-only, bank senders only, never a one-time code; threat model `life-os-bank-mail`, test97.
 - **Calm and real**: the More menu starts with Money, Breaks and Life balance, then adds one more door each week the person has used the app, so a newcomer is never handed the whole estate at once.
 
 - No coloured tap shadow on any button in any SecuRAX app (shared look; a test holds it).
