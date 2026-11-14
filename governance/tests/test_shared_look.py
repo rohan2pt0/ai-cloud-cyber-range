@@ -18,6 +18,14 @@ def test_the_shared_look_is_one_file_with_the_primitives():
         assert re.search(re.escape(p) + r"[\s,{.:]", css), p
 
 
+def test_a_kpis_health_is_a_shared_natural_material():
+    """Owner 2026-11-14: danger red, medium amber, safe green, in gradient and natural materials. The three state
+    primitives live in the one shared file, so every app shows a KPI's health the same way."""
+    css = SX.read_text("utf-8")
+    for p in (".sx-state-good", ".sx-state-watch", ".sx-state-low"):
+        assert re.search(re.escape(p) + r"\s*\{", css), p
+
+
 def test_every_app_builds_the_same_shared_look_in():
     build = (ROOT / "guiding-map" / "build.js").read_text("utf-8")
     assert "shared" in build and "lux.css" in build, "the Life OS build reads the shared file"
@@ -140,9 +148,24 @@ def test_the_galaxy_turns_as_astrophysics_says():
     inner edge, a tilted projection; it finds open sky beside the lock card on every device, and is cached so it costs
     little."""
     s = (ROOT / "guiding-map" / "shared" / "sky.js").read_text("utf-8")
-    for needle in ("1 - Math.exp(-r / rc)", "G.omp = G.om(", "Math.tan(18 * Math.PI / 180)", "kind: 2", "G.dust.push",
+    for needle in ("1 - Math.exp(-r / rc)", "G.omp = G.om(", "kind: 2", "G.dust.push",
                    "Math.cos(56 * Math.PI / 180)", "opts.avoid", "t - G.at > 250"):
         assert needle in s, needle
+    # Owner 2026-11-14 ("looks poorly rendered"): at 18 degrees the arms wound a full turn and read as a ring. The pitch
+    # stays in the range of real grand-design spirals (20-30 degrees), so the arms wind about half a turn.
+    import re
+    pitch = int(re.search(r"k = 1 / Math\.tan\((\d+) \* Math\.PI / 180\)", s).group(1))
+    assert 20 <= pitch <= 30, pitch
+
+
+def test_the_aurora_is_smooth_on_every_screen():
+    """Owner, 2026-11-14: the aurora read as a barcode on a phone. One column per device pixel (up to 2x), one smooth
+    colour profile up the curtain (no stepped bands), rays from smooth noise in CSS pixels (the same size on every screen)."""
+    s = (ROOT / "guiding-map" / "shared" / "sky.js").read_text("utf-8")
+    assert "Math.ceil(W / 2)" not in s                       # the half-width canvas that made 6-pixel stripes
+    assert "aw = Math.ceil(W * sc)" in s and "sc = Math.min(D, 2)" in s
+    assert "function auProfile()" in s and "createLinearGradient" in s
+    assert "function smooth(x, seed)" in s
     assert "avoid:" in (ROOT / "guiding-map" / "ops.js").read_text("utf-8")
     assert "avoid:" in (ROOT / "guiding-map" / "kit" / "core.js").read_text("utf-8")
 

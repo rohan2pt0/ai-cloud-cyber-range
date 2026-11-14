@@ -40,10 +40,14 @@ setTimeout(()=>{
   ok("all "+(w.TABS||[]).length+" tabs render", broke.length===0, broke.join(' | '));
 
   // ---- 4. vitals bar ----
+  // Start simple (calm-and-real, test98): a newcomer sees no number bar; it is the "Show everything" layout.
+  ok("start simple: no vitals bar along the bottom", !w.document.querySelector('body > #gmVitals'));
+  w.gmSimple(false);
   const v=w.document.getElementById('gmVitals');
-  ok("vitals bar exists", !!v);
+  ok("vitals bar exists (everything shown)", !!v);
   if(v){ ok("vitals is a direct child of body (fixed bar, not in flow)", v.parentNode===w.document.body, v.parentNode.tagName);
          ok("vitals has 5 cells", v.children.length===5, String(v.children.length)); }
+  w.gmSimple(true);
 
   // ---- 5. sanity + example marking ----
   w.gmTplLife();

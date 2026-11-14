@@ -246,8 +246,11 @@ def test_the_life_os_today_is_on_the_premium_language_and_follows_the_phone():
     page = (ROOT / "guiding-map" / "index.html").read_text("utf-8")
     assert 'S.theme="dark"' not in page.replace(" ", ""), "no forced dark default: the theme follows the phone"
     assert "prefers-color-scheme: dark" in page and "S.themeChosen=true" in page
-    # red means danger only: progress tiles never take a status colour
-    assert 'var prog = v.t === "today" || v.t === "stack";' in ops and "color:var(--text);line-height:1.15" in ops
+    # owner 2026-11-14: every KPI, progress tiles (Today, Stack) included, shows its status as a natural-material gradient
+    # AND a word, so colour is never the only signal; the old "progress tiles never take a status colour" carve-out is gone.
+    assert 'class="sx-state-' in ops and 'data-state="' in ops and 'if (v.l === "Today") st =' in ops
+    assert "color:var(--text);line-height:1.15" in ops
+    assert 'var prog = v.t === "today" || v.t === "stack";' not in ops
 
 
 def test_the_product_site_is_on_the_premium_language():

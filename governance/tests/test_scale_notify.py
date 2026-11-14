@@ -178,3 +178,37 @@ def test_an_alert_that_cannot_be_sent_is_kept_and_resent_first_next_time(monkeyp
     up["ok"] = True
     assert notify.deliver("back to green") == 0
     assert sent == ["(delayed) disk is full", "back to green"] and notify._dlq_load() == []   # old first, then cleared
+
+
+def test_the_life_os_own_alerts_are_a_channel_once_a_device_allowed_them(monkeypatch, tmp_path):
+    """Zero-setup (owner 2026-11-14): alerts reach the phone through the Life OS's web push, sent from inside estate-sync;
+    nothing to install, no URL or token to paste; off with SECURAX_NOTIFY_PUSH=0."""
+    for k in ("SECURAX_NOTIFY_NTFY", "SECURAX_NOTIFY_WEBHOOK", "SECURAX_NOTIFY_PUSH"):
+        monkeypatch.delenv(k, raising=False)
+    monkeypatch.setattr(notify, "ENV_FILE", tmp_path / ".env")
+    monkeypatch.setattr(notify, "DLQ", tmp_path / "dlq.jsonl", raising=False)
+    calls = []
+
+    class P:
+        def __init__(self, rc, out=""):
+            self.returncode, self.stdout = rc, out
+
+    def run(argv, **kw):
+        calls.append((argv, kw.get("input")))
+        return P(0, "2\n") if argv[-1] == "count" else P(0, '{"sent": 2}')
+    monkeypatch.setattr(notify.subprocess, "run", run)
+    assert notify.channels() == [("push", "estate-sync")]
+    assert notify.deliver("2 things need you", "SecuRAX") == 0
+    sent = [c for c in calls if "send" in c[0]]
+    assert sent and sent[0][1] == "2 things need you" and sent[0][0][:4] == ["docker", "compose", "exec", "-T"]
+    monkeypatch.setenv("SECURAX_NOTIFY_PUSH", "0")
+    assert notify.channels() == []
+
+
+def test_with_no_channel_the_hint_is_one_tap_not_a_config_line(monkeypatch, tmp_path, capsys):
+    for k in ("SECURAX_NOTIFY_NTFY", "SECURAX_NOTIFY_WEBHOOK"):
+        monkeypatch.delenv(k, raising=False)
+    monkeypatch.setattr(notify, "ENV_FILE", tmp_path / ".env")
+    monkeypatch.setattr(notify, "push_devices", lambda: 0)
+    assert notify.deliver("x") == 2
+    assert "tap Allow alerts" in capsys.readouterr().out

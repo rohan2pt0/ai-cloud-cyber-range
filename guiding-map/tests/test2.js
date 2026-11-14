@@ -1,7 +1,8 @@
 const fs=require('fs'),{JSDOM}=require('jsdom');
 let P=0,F=0,e=[]; const ok=(n,c,d)=>{c?P++:(F++,e.push(n+(d?" :: "+d:"")));};
 const dom=new JSDOM(fs.readFileSync('index.html','utf8'),
-  {runScripts:"dangerously",pretendToBeVisual:true,url:"https://guiding-map.example.org/"});
+  {runScripts:"dangerously",pretendToBeVisual:true,url:"https://guiding-map.example.org/",
+   beforeParse(w){ w.localStorage.setItem("gm_simple","false"); }});   // The full layout (Show everything): these checks read the number bar, which start simple folds away (test98).
 const w=dom.window, d=w.document;
 setTimeout(()=>{
  const ids=w.TABS.map(t=>t[0]);
@@ -47,7 +48,7 @@ setTimeout(()=>{
 
  // ---- an impossible age is CLAMPED in the math, not just warned about ----
  // (saneWarn told you 200 was off but the arithmetic still used 200; saneNum caps it so it can't.)
- w.localStorage.clear();
+ w.localStorage.clear(); w.localStorage.setItem('gm_simple','false');
  w.gmLifeSet('age','200'); w.gmLifeSet('inc','23');
  let lifeH=go('life');
  ok("an out-of-range age still shows the range warning", /outside the usual range/.test(lifeH), '');
@@ -56,14 +57,14 @@ setTimeout(()=>{
 
  // ---- an impossible saving rate is flagged, never shown as a nonsense % ----
  // fEF+fSip (70k/mo) over a 10k/mo income computes to 700% — a data slip, not a real rate.
- w.localStorage.clear();
+ w.localStorage.clear(); w.localStorage.setItem('gm_simple','false');
  w.gmLifeSet('minc','10000'); w.gmLifeSet('fEF','50000'); w.gmLifeSet('fSip','20000'); go('life');
  const vh=d.getElementById('gmVitals').innerHTML;
  ok("an impossible saving rate shows 'check', not a nonsense percentage",
     /check/.test(vh) && !/700%/.test(vh), vh.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').slice(0,120));
 
  // ---- sync: an unreachable estate is a calm 'working offline', a real refusal is an alarm ----
- w.localStorage.clear();
+ w.localStorage.clear(); w.localStorage.setItem('gm_simple','false');
  // values are stored the way the app stores them (JSON), so the health screen reads them back.
  w.localStorage.setItem('gm_sync_cfg',JSON.stringify({url:"https://estate.example.org/sync",key:"k",user:"u"}));
  w.localStorage.setItem('gm_sync_last',JSON.stringify('2026-10-01 09:00')); w.localStorage.setItem('gm_sync_fails','5');
@@ -76,7 +77,7 @@ setTimeout(()=>{
     /being refused/.test(go('ops')), '');
 
  // ---- empty states on every tab (fresh storage) ----
- w.localStorage.clear();
+ w.localStorage.clear(); w.localStorage.setItem('gm_simple','false');
  let empties=[];
  ids.forEach(t=>{ try{const s=go(t); if(!s||s.trim().length<10) empties.push(t);}catch(err){empties.push(t+"!"+err.message);} });
  ok("all "+ids.length+" tabs render on empty storage", empties.length===0, empties.join(','));

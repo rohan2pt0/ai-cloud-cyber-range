@@ -1,3 +1,4 @@
+// The full layout (Show everything): these checks read the number bar, which start simple folds away (test98).
 // test90: an easy start (owner, 2026-11-13: "too many jargons", "exhausted to fill in the fields"). Plain English on screen,
 // the research kept underneath (every translation still keyed on the original words), four questions answered by taps,
 // the make-it-mine card first under the greeting, and nothing called "low" that the app does not know.
@@ -5,7 +6,7 @@ const fs = require("fs"), path = require("path"); const { JSDOM } = require("jsd
 let pass = 0, fail = 0; const ok = (c, m) => { if (c) pass++; else { fail++; console.log("FAIL " + m); } };
 const html = fs.readFileSync(path.join(__dirname, "..", "index.html"), "utf8");
 const boot = (lang) => new JSDOM(html, { runScripts: "dangerously", pretendToBeVisual: true, url: "http://localhost/",
-  beforeParse(w) { Object.defineProperty(w.navigator, "languages", { get: () => [lang] }); w.matchMedia = (q) => ({ matches: /max-width/.test(q), media: q, addListener() {}, removeListener() {} });
+  beforeParse(w) { w.localStorage.setItem("gm_simple", "false"); Object.defineProperty(w.navigator, "languages", { get: () => [lang] }); w.matchMedia = (q) => ({ matches: /max-width/.test(q), media: q, addListener() {}, removeListener() {} });
     w.scrollTo = () => {}; w.fetch = () => Promise.reject(new Error("offline")); w.localStorage.setItem("gm_intro_seen", "true"); } }).window;
 const w = boot("en-IN"), g = boot("gu-IN");
 setTimeout(() => {

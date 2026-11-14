@@ -1,9 +1,10 @@
+// The full layout (Show everything): these checks read the number bar, which start simple folds away (test98).
 // v41: human-first review of the first run (queue human-first-review). The first tap comes before any setup ask; example
 // numbers never raise an alarm; the words on Today invite and never command or guilt.
 const fs = require('fs'), path = require('path'), { JSDOM } = require('jsdom');
 let P = 0, F = 0, e = []; const ok = (n, c, d) => { c ? P++ : (F++, e.push(n + (d ? " :: " + d : ""))); };
 const dom = new JSDOM(fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8'), { runScripts: "dangerously", pretendToBeVisual: true, url: "https://hub.securax.localhost/",
-  beforeParse(w) { w.confirm = () => false; w.alert = () => {}; w.scrollTo = () => {}; w.fetch = () => Promise.reject(new Error("offline")); w.innerWidth = 390; } });
+  beforeParse(w) { w.localStorage.setItem("gm_simple", "false"); w.confirm = () => false; w.alert = () => {}; w.scrollTo = () => {}; w.fetch = () => Promise.reject(new Error("offline")); w.innerWidth = 390; } });
 setTimeout(() => {
   const w = dom.window, d = w.document; w.goTab("today");
   const sec = d.getElementById("sections"), html = sec.innerHTML, txt = sec.textContent;

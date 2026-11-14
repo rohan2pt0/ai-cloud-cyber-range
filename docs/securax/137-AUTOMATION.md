@@ -41,7 +41,8 @@ gave. **Off switch:** Ops, Microsoft 365, Disconnect; or remove the app in your 
 Threat model `life-os-bank-mail`; test `guiding-map/tests/test97.js`.
 
 **Not yet:** Gmail (Google treats reading mail as a restricted permission: fine for the owner as a test user, a paid
-security assessment before a public launch; the next slice), web push, and pairing by one scan. Until a shared Microsoft app
+security assessment before a public launch; the next slice) and pairing by one scan. Web push is built (the Life OS's
+Allow alerts tap). Until a shared Microsoft app
 id ships with the Life OS, signing in still needs a one-time app registration (friction `ms-client-id-paste`).
 
 ## Slice 1 (owner fallback): an SMS forwarder, five minutes to set up
@@ -54,3 +55,37 @@ id ships with the Life OS, signing in still needs a one-time app registration (f
 3. **Done.** Open the Life OS: new bank messages are read by themselves, a short note says how many, and the inbox is cleared.
 
 **What the estate refuses:** any sender that is not a bank id, every one-time code (never stored), digit runs of 12 or more (masked), over 60 messages a minute, and any request without the inbox token. The inbox token cannot read anything.
+
+## The one registration that ends the client-id paste (owner, once)
+
+Slice 1b works today, but signing in with Microsoft still asks for an app's client id (friction `ms-client-id-paste`).
+One registration, owned by the publisher, ends that: its client id ships with the Life OS, and every person after only
+taps Accept on Microsoft's consent screen. The client id is not a secret.
+
+**Why these choices** (Microsoft's rules, checked 14 November 2026):
+- Since June 2024 an app must live in a directory (a tenant); a personal account alone can no longer register one.
+- The Life OS reads mail on the device, when the person is there, so a single-page app is right: its refresh token
+  lasts 24 hours, and the app asks again in one tap when it lapses. A reader that runs while nobody is there would need
+  the estate to hold the connection instead (a public client, 90 days); that waits until it is needed.
+- `Mail.Read` (delegated) is the narrowest permission that can read an alert's text; `Mail.ReadBasic` leaves out the body.
+  Microsoft has no permission for "only these senders", so the Life OS keeps bank senders and drops everything else.
+
+**The steps (about 15 minutes):**
+1. **Your own tenant.** Never an employer's directory. Make a free Azure account with the Microsoft account you use for
+   SecuRAX (card and phone check; no charge unless you choose to upgrade). It creates a tenant in which you are the
+   administrator. Entra ID Free and app registrations stay free after the trial credit ends.
+2. **Register the app.** In the [Microsoft Entra admin center](https://entra.microsoft.com), switch to that tenant, then
+   *Identity → Applications → App registrations → New registration*:
+   - **Name:** SecuRAX Life OS;
+   - **Supported account types:** *Accounts in any organizational directory and personal Microsoft accounts* (it cannot be
+     changed later without a new registration);
+   - **Redirect URI:** platform *Single-page application*; add each address the Life OS is opened from, exactly as the
+     browser shows it (the published app and your hub address from `./securax names`).
+3. **Permissions.** *API permissions → Add → Microsoft Graph → Delegated*: `Calendars.Read`, `Tasks.ReadWrite`,
+   `Files.ReadWrite.AppFolder` and `Mail.Read` (the ones the Life OS asks for; `openid`, `profile`, `offline_access` and
+   `User.Read` come with sign-in). No client secret and no certificate: the app needs none.
+4. **One value back.** From *Overview*, copy the **Application (client) ID** and give it to Claude once; it ships as the
+   Life OS's default, and the paste field folds away as a fallback.
+
+**Later, for other people:** publisher verification (a Microsoft partner id) removes the "unverified" label on the consent
+screen; a person in an organisation may need their administrator's approval, which the card will say plainly.
