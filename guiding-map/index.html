@@ -5871,9 +5871,9 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     for (var i = 0; i < raw.length; i++) a[i] = raw.charCodeAt(i);
     return a;
   }
-  window.gmPushOn = function () {
+  window.gmPushOn = function (via) {
     var sc = G("gm_sync_cfg", null);
-    if (sc && sc.url && sc.user) {
+    if (via !== "worker" && sc && sc.url && sc.user) {   // the folded engineer path passes "worker"
       // zero-setup: the estate makes its own VAPID key and stores the subscription; nothing to paste, no second app.
       if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
         alert("This browser cannot receive push. On iPhone/iPad the app must be installed to the Home Screen from Safari first."); return;
@@ -5941,7 +5941,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       + '<details style="margin-top:6px"><summary style="cursor:pointer;color:var(--muted);font-size:12px">Already run your own Web Push sender?</summary>'
       + '<div class="info">Paste its address here and this device subscribes to it. On iPhone/iPad, install the app from Safari first.</div>'
       + '<label class="f-label">Worker URL</label><input id="pushUrl" placeholder="https://gm-push.yourname.workers.dev" value="' + esc((c && c.url) || "") + '">'
-      + '<button class="btn btn-p" onclick="gmPushOn()">Enable nudges on this device</button></details>';
+      + '<button class="btn btn-p" onclick="gmPushOn(\'worker\')">Enable nudges on this device</button></details>';
     var h = '<div class="cat-t">\u{1F514} Nudges</div>';
     if (on) {
       h += '<div class="info">' + (via === "estate"
