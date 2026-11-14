@@ -9,6 +9,8 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-11-14
+
 - **Every number shows its health** (owner, 2026-11-14: "all KPIs must show the status as per its progress: danger red, medium amber, safe green, in gradient and natural materials; a 0.5m buffer must show red"): each KPI tile wears a soft natural-material gradient (jade, amber resin, ruby ember) with a hairline edge and a word (strong, building, needs care) under its label, so colour is never the only signal; example numbers and a day with nothing ticked yet never raise an alarm. `test101.js` holds it.
 - Vantage reads like the Life OS on a laptop: its text measure is 49ch (it was 60ch, about 76 characters a line in the Jost face); the kit audit caught it on the new zero-setup principle.
 - Doc 137: the owner's one-time steps for bank alerts read from e-mail (own free tenant, one public-client app, `Mail.Read` only, one client id back), checked against Microsoft's current rules.
