@@ -136,6 +136,17 @@ body.osk-veil #oskMain, body.osk-veil #oskNav, body.osk-veil #oskMore, body.osk-
 /* A quiet text action for something rare or risky, away from the safe one. */
 .sx-quiet{background:none;border:0;box-shadow:none;color:inherit;opacity:.75;text-decoration:underline;text-underline-offset:3px;min-height:44px;cursor:pointer}
 
+/* Status in natural materials (owner 2026-11-14: danger red, medium amber, safe green, in gradient and natural materials):
+   a soft diagonal gradient and a hairline edge of the same family, so a figure's health reads at a glance without shouting.
+   Safe is jade/emerald, medium is amber resin/honey, danger is ruby/sunset ember. Text keeps var(--text) and passes AA in
+   both themes; colour is never the only signal, the tile carries a word too. */
+.sx-state-good{background-color:#eaf6ef;background-image:linear-gradient(160deg,#eaf6ef,#cfe8da);border:1px solid #5a9e7c}
+.sx-state-watch{background-color:#fbf1dc;background-image:linear-gradient(160deg,#fbf1dc,#f2dcab);border:1px solid #b98a3a}
+.sx-state-low{background-color:#fbe6e1;background-image:linear-gradient(160deg,#fbe6e1,#f2c6bc);border:1px solid #b65a4c}
+html[data-theme=dark] .sx-state-good{background-color:#0f3a2b;background-image:linear-gradient(160deg,#0f3a2b,#15563f);border-color:#3f8f6a}
+html[data-theme=dark] .sx-state-watch{background-color:#3a2a0e;background-image:linear-gradient(160deg,#3a2a0e,#5a3f14);border-color:#a8772a}
+html[data-theme=dark] .sx-state-low{background-color:#3d1517;background-image:linear-gradient(160deg,#3d1517,#5a1f22);border-color:#a8463c}
+
 /* ── Type (owner 2026-11-14: "designers of Paris must approve"): one editorial serif for display, one geometric sans for
    everything else, both embedded so they work offline (guiding-map/fonts, SIL OFL). The sans is sized by its x-height, so a
    switch of face never changes how large text reads; scripts the faces lack (Gujarati, Devanagari) fall back per letter. */

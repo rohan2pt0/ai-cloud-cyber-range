@@ -18,6 +18,14 @@ def test_the_shared_look_is_one_file_with_the_primitives():
         assert re.search(re.escape(p) + r"[\s,{.:]", css), p
 
 
+def test_a_kpis_health_is_a_shared_natural_material():
+    """Owner 2026-11-14: danger red, medium amber, safe green, in gradient and natural materials. The three state
+    primitives live in the one shared file, so every app shows a KPI's health the same way."""
+    css = SX.read_text("utf-8")
+    for p in (".sx-state-good", ".sx-state-watch", ".sx-state-low"):
+        assert re.search(re.escape(p) + r"\s*\{", css), p
+
+
 def test_every_app_builds_the_same_shared_look_in():
     build = (ROOT / "guiding-map" / "build.js").read_text("utf-8")
     assert "shared" in build and "lux.css" in build, "the Life OS build reads the shared file"

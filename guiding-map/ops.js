@@ -1778,17 +1778,25 @@
   window.gmVitalsHTML = function () { return vitalsHTML(); };   // simpleToday (another scope) folds the numbers
   function vitalsHTML() {
     var h = '<div id="gmVitals">', exampleNums = !!((window.P && P.example) || exampleCount() > 0);
-    // Premium calm (design-premium-showcase): numbers stay neutral ink. Progress (Today, Stack) is never 'danger'; a money
-    // figure in its risk band gets a small dot AND a word in its accessible name, so red only ever means danger.
+    // Status in natural materials (owner, 2026-11-14: "all KPIs must show the status as per its progress: danger red, medium
+    // amber, safe green, in gradient and natural materials; a 0.5m buffer must show red"). The owner chose full status colour
+    // on 2026-11-14; colour is never the only signal, so each tile also says its word.
+    var STATE_WORD = { good: "strong", watch: "building", low: "needs care" };
     vitals().forEach(function (v) {
-      var prog = v.t === "today" || v.t === "stack";
-      // human-first: example numbers are not the person's, so they never raise an alarm (no "low" on a made-up net worth)
-      var st = prog || exampleNums ? "" : v.c === "var(--red)" ? "low" : v.c === "var(--amber)" ? "watch" : "";
-      var dot = st ? '<span aria-hidden="true" style="display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle;background:' + v.c + '"></span>' : "";
-      h += '<div role="button" tabindex="0" aria-label="' + esc(v.l) + ': ' + esc(v.v) + (st ? " (" + st + ")" : "") + '. Open the tab that changes this."'
-        + ' onclick="goTab(\'' + v.t + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();goTab(\'' + v.t + '\');}"' + (st ? ' data-state="' + st + '"' : "") + '>'
-        + '<div class="gm-vv" style="font-size:15px;white-space:nowrap;font-weight:600;color:var(--text);line-height:1.15;font-variant-numeric:tabular-nums">' + dot + v.v + '</div>'
-        + '<div style="font-size:10.5px;color:var(--muted);font-weight:600;margin-top:3px;white-space:nowrap">' + v.l + '</div>' + (st === "low" ? '<div style="font-size:10px;font-weight:600;letter-spacing:.04em;color:var(--muted);margin-top:2px">low</div>' : "") + '</div>';
+      var empty = v.v === "\u2014", st = "";
+      if (!exampleNums && !empty) {
+        // human-first: example numbers are not the person's, and Today before any tick is never guilt; an unknown value is a
+        // calm dash, never "low". Today turns from watch (building) to good (strong) only when all three are done.
+        if (v.l === "Today") st = v.v === "3/3" ? "good" : v.v === "0/3" ? "" : "watch";
+        else st = v.c === "var(--green)" ? "good" : v.c === "var(--amber)" ? "watch" : v.c === "var(--red)" ? "low" : "";
+      }
+      var word = st ? STATE_WORD[st] : "";
+      h += '<div role="button" tabindex="0" aria-label="' + esc(v.l) + ': ' + esc(v.v) + (word ? " (" + word + ")" : "") + '. Open the tab that changes this."'
+        + ' onclick="goTab(\'' + v.t + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();goTab(\'' + v.t + '\');}"'
+        + (st ? ' class="sx-state-' + st + '" data-state="' + st + '"' : "") + '>'
+        + '<div class="gm-vv" style="font-size:15px;white-space:nowrap;font-weight:600;color:var(--text);line-height:1.15;font-variant-numeric:tabular-nums">' + v.v + '</div>'
+        + '<div style="font-size:10.5px;color:var(--muted);font-weight:600;margin-top:3px;white-space:nowrap">' + v.l + '</div>'
+        + (word ? '<div style="font-size:10px;font-weight:600;color:var(--text);opacity:.8;margin-top:2px">' + word + '</div>' : "") + '</div>';
     });
     return h + '</div>';
   }
