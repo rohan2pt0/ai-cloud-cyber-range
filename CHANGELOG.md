@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- Vantage reads like the Life OS on a laptop: its text measure is 49ch (it was 60ch, about 76 characters a line in the Jost face); the kit audit caught it on the new zero-setup principle.
 - Doc 137: the owner's one-time steps for bank alerts read from e-mail (own free tenant, one public-client app, `Mail.Read` only, one client id back), checked against Microsoft's current rules.
 - **Alerts with one Allow tap** (zero-setup, slice 1b part 2): a paired Life OS (gm_sync_cfg) turns the Nudges card into one "Allow alerts" tap that uses the estate's own push endpoint — no address to paste, no second app; the ntfy text and the Worker URL fold under "Other ways (for engineers)", and the old card is unchanged without a pairing. `test99.js` holds it.
 - **One card and the check-in** (start simple, calm-and-real part 3): the Menu keeps five items with its three switches under Settings (3); a newcomer's Today shows the Start card and the three, with the five numbers waiting under More for today, and no number bar along the bottom of a wider screen. Show everything brings both back.

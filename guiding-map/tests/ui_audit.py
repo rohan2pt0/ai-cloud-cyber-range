@@ -74,7 +74,9 @@ def main():
         seed(pg); pg.reload(); pg.wait_for_timeout(1000)
         # life map fields a user would type, one in rupees by mistake (the runway bug)
         pg.evaluate("gmLifeSet('fFixed','80000'); gmLifeSet('ef','400000'); gmLifeSet('fSip','30000'); gmLifeSet('fEF','10000')")
-        v = pg.evaluate("[...document.querySelectorAll('#gmVitals > div')].map(d=>d.innerText.replace(/\\n/g,' '))")
+        # the number bar is the "Show everything" layout (start simple folds it away; test98)
+        v = pg.evaluate("gmSimple(false), [...document.querySelectorAll('#gmVitals > div')].map(d=>d.innerText.replace(/\\n/g,' '))")
+        pg.evaluate("gmSimple(true)")
         chk("runway is sane when the emergency fund is typed in rupees", any("5.0m" in x for x in v), v)
         # 2. quarterly check-in: wheel 8 taps -> pick 2 goals
         pg.evaluate("gmQuarter()"); pg.wait_for_timeout(150)
