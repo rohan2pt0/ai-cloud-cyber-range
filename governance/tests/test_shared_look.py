@@ -191,3 +191,10 @@ def test_the_nature_atlas_is_evidence_and_physics_and_in_use():
     assert "557.7 nm" in sky and "630.0 nm" in sky and "427.8 nm" in sky and "function drawAurora" in sky
     doc = (ROOT / "docs" / "securax" / "136-NATURE-ATLAS.md").read_text("utf-8")
     assert doc.count("](http") >= 8, "doc 136 cites its sources"
+
+
+def test_no_tap_highlight_on_any_app():
+    """Owner 2026-11-14: a press must never paint the browser's coloured tap shadow (green on some Android phones)."""
+    import pathlib
+    css = (pathlib.Path(__file__).resolve().parents[2] / "guiding-map" / "shared" / "lux.css").read_text()
+    assert "-webkit-tap-highlight-color:transparent" in css.replace(" ", "")

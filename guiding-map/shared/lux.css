@@ -1,3 +1,4 @@
+*,*::before,*::after{-webkit-tap-highlight-color:transparent}
 /* SecuRAX shared look (reuse-first, owner 2026-11-13): ONE source for the craft every SecuRAX app shares. The Life OS
    (guiding-map/build.js) and every kit edition such as Vantage (governance/oskit.py) build this same file in. A new
    primitive is added HERE, then used by any app; an app never keeps a private copy. Ivory keys and jade read on both a

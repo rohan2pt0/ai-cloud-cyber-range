@@ -121,6 +121,13 @@ The principles behind it:
   geometry (symmetry, the golden ratio, spirals) and motion (springs, orbits, damping) from nature and physics, materials
   rendered from real optics, never imitated. Sparingly: one natural element per surface, for its meaning; never kitsch, never
   at the cost of reading or speed; the least friction and 80/20 everywhere. The beauty serves the person, and rests when they do.
+- **Nothing to install, nothing to configure (`zero-setup`, owner 2026-11-14):** a person never installs a second app, edits a
+  file, copies a token or types an address to get value. Use what they already have: the app itself (web push, the share sheet),
+  one consent tap on an account they already use (`one-door`), or the estate doing it alone. It just works; else one tap; else one
+  scan; never a manual. A terminal, an `.env` line or a third-party app is an owner-engineer fallback only, folded away, and an open
+  entry in `governance/frictions.json` until a zero-setup path replaces it. Count a newcomer's steps to the first win: one is the bar.
+  **Secrets too:** the estate makes every token, key and credential itself, keeps it in one place, and hands it to a device by the
+  pairing scan or the one-door sign-in. Never ask a person to copy, paste or retype a secret, and never the same one in two places.
 - **Small wins, shown:** progress you can see keeps people going.
 - **Least effort for the person:** the estate does the remembering, the checking and the reminding.
 - **Start as an amoeba, carry the DNA (`amoeba`):** ship the simplest living thing that helps today — one person, no
