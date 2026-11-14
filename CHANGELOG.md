@@ -9,6 +9,8 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- Reading measure re-derived for the new text face: paragraphs on wide screens now cap at 49ch, so a line stays under 75 characters whatever the browser's font metrics (the sandbox found 76-78 at 1280 px).
+
 - Principle `every-device`: how it looks and feels is the most important feature, on every device. `guiding-map/tests/device_audit.py` proves it on nine device profiles (iPhone SE to Pro Max, Pixel 7, Galaxy, iPad Mini, iPad Pro sideways, a phone held sideways, a laptop, a large desktop) and runs in the sandbox. Its first run fixed: the lock now lays the seal beside the words on a phone held sideways, grows in proportion on a large screen, hides the empty menu while locked, and the explainer terms have finger-sized targets.
 
 - Lit materials, not pictures (`guiding-map/shared/materials.js`): one physically based renderer lights every precious surface from one studio that turns with the phone. Gold and platinum use their measured reflectance; the diamond is a ray-traced Tolkowsky brilliant (73 facets, refraction, total internal reflection, dispersion) in a platinum collet; the seal is a guilloché sunray dial under domed blue enamel with a gold bezel and padlock; the Vantage menu and More sheet are crushed velvet (Imageworks sheen). Glass refracts at its rim on Chromium. Keys have a skirt, 3 px travel, a tightening shadow and a haptic tick. Without WebGL the CSS look stays.
