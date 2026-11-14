@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- Secrets are the estate's job: never ask a person to copy or paste a token, key or credential (zero-setup, friction copy-paste-secrets).
 - Principle zero-setup: a person never installs a second app or configures anything; the SMS forwarder and ntfy become folded owner-only fallbacks, web push and e-mail alerts are queued to replace them.
 
 - **Bank messages arrive by themselves** (doc 137, slice 1): estate-sync gains a write-only SMS inbox (`POST /sync/inbox/sms`) for the phone's open-source SMS forwarder, over Tailscale: its own token that cannot read, pinned to one user, bank senders only, one-time codes never stored, long digit runs masked, 8 KB, 60 a minute, 300 messages for 14 days. The Life OS reads new messages on sync (spends, cards, bills, balances), saves them dated and clears the inbox, so the texts leave the estate too. Threat model `estate-sms-inbox`; 15 server tests and test96. Off until `SYNC_INBOX_TOKENS` is set.

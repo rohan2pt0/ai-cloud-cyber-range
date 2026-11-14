@@ -126,6 +126,8 @@ The principles behind it:
   one consent tap on an account they already use (`one-door`), or the estate doing it alone. It just works; else one tap; else one
   scan; never a manual. A terminal, an `.env` line or a third-party app is an owner-engineer fallback only, folded away, and an open
   entry in `governance/frictions.json` until a zero-setup path replaces it. Count a newcomer's steps to the first win: one is the bar.
+  **Secrets too:** the estate makes every token, key and credential itself, keeps it in one place, and hands it to a device by the
+  pairing scan or the one-door sign-in. Never ask a person to copy, paste or retype a secret, and never the same one in two places.
 - **Small wins, shown:** progress you can see keeps people going.
 - **Least effort for the person:** the estate does the remembering, the checking and the reminding.
 - **Start as an amoeba, carry the DNA (`amoeba`):** ship the simplest living thing that helps today — one person, no
