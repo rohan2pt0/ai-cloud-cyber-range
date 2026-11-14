@@ -156,4 +156,4 @@ securax/116-CHOOSE-YOUR-CUSTOMER.md: [green, "Built and propagating: choose-your
 securax/134-USE-IT-NOW.md: [green, "In force from 11 November 2026: a feature freeze, three audit rounds and the daily routine."]
 securax/135-SYSTEMS-THAT-DELIVER.md: [amber, "Decided 11 November 2026: PARA as one shelf in every app and one loop; the build follows the freeze, in small slices."]
 securax/136-NATURE-ATLAS.md: [amber, "Started 14 November 2026: the atlas and its evidence are in place; the rings and the lock's aurora use it; the other wonders follow in slices (queue nature-atlas)."]
-securax/137-AUTOMATION.md: [amber, "Planned 14 November 2026: three routes ranked (SMS forwarder, the monthly CAS, Kite for the rebalance); share or paste is the working fallback today."]
+securax/137-AUTOMATION.md: [amber, "Bank alerts arrive by themselves from the Outlook inbox with one tap (slice 1b) and from an SMS forwarder (owner fallback); Gmail, web push, the monthly CAS and Kite are next."]

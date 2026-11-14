@@ -5524,6 +5524,9 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   var MSAUTH = "https://login.microsoftonline.com/common/oauth2/v2.0";
   var SCOPES = "openid profile offline_access Calendars.Read Tasks.ReadWrite Files.ReadWrite.AppFolder";
 
+  // Mail.Read is asked for only when the person taps "Read my bank e-mails" (one-door: a permission when the feature is used).
+  function msMailAsk() { try { return sessionStorage.getItem("gm_ms_mail_ask") === "1"; } catch (e) { return false; } }
+  function msScopes() { return SCOPES + (G("gm_ms_mail", false) === true || msMailAsk() ? " Mail.Read" : ""); }
   function msCfg() { return G("gm_ms_cfg", null); }
   function msTok() { return G("gm_ms_tok", null); }
 
@@ -5538,7 +5541,8 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       .then(function (h) { return { verifier: verifier, challenge: b64url(h) }; });
   }
 
-  window.gmMsConnect = function () {
+  window.gmMsConnect = function (mail) {
+    try { if (mail === true) sessionStorage.setItem("gm_ms_mail_ask", "1"); else sessionStorage.removeItem("gm_ms_mail_ask"); } catch (e) {}
     var id = (document.getElementById("msId") || {}).value;
     if (id) S_("gm_ms_cfg", { id: id.trim() });
     var c = msCfg();
@@ -5547,7 +5551,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       sessionStorage.setItem("gm_pkce", p.verifier);
       var u = MSAUTH + "/authorize?client_id=" + encodeURIComponent(c.id)
         + "&response_type=code&redirect_uri=" + encodeURIComponent(location.origin + location.pathname)
-        + "&response_mode=query&scope=" + encodeURIComponent(SCOPES)
+        + "&response_mode=query&scope=" + encodeURIComponent(msScopes())
         + "&code_challenge=" + p.challenge + "&code_challenge_method=S256";
       location.href = u;
     });
@@ -5558,13 +5562,14 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     if (!c || !v) return Promise.reject(new Error("no pkce verifier"));
     var body = "client_id=" + encodeURIComponent(c.id) + "&grant_type=authorization_code"
       + "&code=" + encodeURIComponent(code) + "&redirect_uri=" + encodeURIComponent(location.origin + location.pathname)
-      + "&code_verifier=" + encodeURIComponent(v) + "&scope=" + encodeURIComponent(SCOPES);
+      + "&code_verifier=" + encodeURIComponent(v) + "&scope=" + encodeURIComponent(msScopes());
     return fetch(MSAUTH + "/token", {
       method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: body
     }).then(function (r) { return r.json(); }).then(function (t) {
       if (t.error) throw new Error(t.error_description || t.error);
       t.expires_at = nowSrv() + (t.expires_in - 120) * 1000;
       S_("gm_ms_tok", t); sessionStorage.removeItem("gm_pkce");
+      if (msMailAsk()) { if (/\bMail\.Read\b/i.test(t.scope || "")) S_("gm_ms_mail", true); sessionStorage.removeItem("gm_ms_mail_ask"); }
       history.replaceState({}, "", location.pathname);
       return t;
     });
@@ -5574,7 +5579,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     if (!t || !c) return Promise.reject(new Error("not connected"));
     if (t.expires_at > nowSrv()) return Promise.resolve(t.access_token);
     var body = "client_id=" + encodeURIComponent(c.id) + "&grant_type=refresh_token"
-      + "&refresh_token=" + encodeURIComponent(t.refresh_token) + "&scope=" + encodeURIComponent(SCOPES);
+      + "&refresh_token=" + encodeURIComponent(t.refresh_token) + "&scope=" + encodeURIComponent(msScopes());
     return fetch(MSAUTH + "/token", {
       method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: body
     }).then(function (r) { return r.json(); }).then(function (n) {
@@ -5584,11 +5589,16 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       S_("gm_ms_tok", n); return n.access_token;
     });
   }
-  function gq(path) {
+  function gq(path, extra) {
     return msToken().then(function (a) {
-      return fetch(GRAPH + path, { headers: { Authorization: "Bearer " + a } });
+      var h = { Authorization: "Bearer " + a }; if (extra) Object.keys(extra).forEach(function (k) { h[k] = extra[k]; });
+      return fetch(GRAPH + path, { headers: h });
     }).then(function (r) { return r.json(); });
   }
+  // The bank-mail reader (further down, threat model life-os-bank-mail) reads Graph through this one door only.
+  window.gmMsGet = function (path, extra) { return gq(path, extra); };
+  window.gmMsSignedIn = function () { return !!msTok(); };
+  window.gmMsMailOn = function () { return !!msTok() && G("gm_ms_mail", false) === true; };
 
   /* --- pull calendar + tasks into a cache the Today tab can render --- */
   window.gmMsPull = function () {
@@ -5612,6 +5622,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
         tasks: (r[1] && r[1].value) ? r[1].value.map(function (x) { return x.title; }) : []
       });
       renderAll();
+      if (typeof window.gmMailPull === "function" && window.gmMsMailOn()) window.gmMailPull().catch(function (e) { console.log("[mail]", e.message); });
     });
   };
 
@@ -5786,7 +5797,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
 
   window.gmMsOff = function () {
     gmSnap("disconnected Microsoft 365");
-    localStorage.removeItem("gm_ms_tok"); localStorage.removeItem("gm_ms_cache"); renderAll();
+    localStorage.removeItem("gm_ms_tok"); localStorage.removeItem("gm_ms_cache"); localStorage.removeItem("gm_ms_mail"); localStorage.removeItem("gm_mail_since"); renderAll();
   };
 
   /* --- the strip that appears on Today --- */
@@ -10631,6 +10642,8 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   window.addEventListener("load", function () {
     try { curTab = "today"; } catch (e) {}
     var qc = new URLSearchParams(location.search).get("code");
+    // A declined Mail.Read consent comes back with no code: forget the ask, so a refresh never requests a scope not granted.
+    if (!qc) { try { sessionStorage.removeItem("gm_ms_mail_ask"); } catch (e) {} }
     if (qc && msCfg()) { msExchange(qc).then(gmMsPull).catch(function (e) { console.log("[ms]", e.message); }); }
     else if (msTok()) {
       var mc = G("gm_ms_cache", null);
@@ -11524,7 +11537,8 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   };
   if (typeof renderMoney === "function") { var _rm2 = renderMoney; renderMoney = function (E) {
     var h = _rm2(E), k = h.indexOf('<div class="cat-t">Which card, when</div>');
-    return k > -1 ? h.slice(0, k) + gmSpendHTML() + h.slice(k) : h + gmSpendHTML();
+    var sp = gmSpendHTML() + (window.gmMailLineHTML ? window.gmMailLineHTML() : "");
+    return k > -1 ? h.slice(0, k) + sp + h.slice(k) : h + sp;
   }; }
   // A shared message with spends in it goes to the spend reader as well.
   var _ro = window.gmReadOpen;
@@ -11559,6 +11573,57 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       return fresh.length;
     } finally { _draining = false; }
   };
+
+  /* ── Bank alerts from the person's own mailbox (doc 137 slice 1b; threat model life-os-bank-mail; zero-setup) ───────────
+     No forwarder, no server, nothing to configure: the Microsoft account they already sign in with, one read-only consent
+     (Mail.Read) asked only when they tap. Mail goes from Microsoft straight to this device. Kept: only the Inbox (never
+     Junk), only bank senders, never a one-time code, digit runs of 12 or more masked, at most 50 a pull, newest since the
+     last pull (the first pull reads the last 31 days). The text goes to the same reader as a shared SMS and is not stored. */
+  var BANK_MAIL = { where: "IN", re: /@([a-z0-9-]+\.)*(bank\.in|hdfcbank\.(net|com)|icicibank\.com|sbi\.co\.in|sbicard\.com|axisbank\.(com|in)|kotak\.com|kotakbank\.com|idfcfirstbank\.com|yesbank\.in|indusind\.com|bankofbaroda\.(com|co\.in)|bobcard\.(com|in|co\.in)|aubank\.in|federalbank\.co\.in|pnb\.co\.in|unionbankofindia\.co\.in|canarabank\.com|rblbank\.com|americanexpress\.com|hsbc\.co\.in|sc\.com|getonecard\.app)$/i };
+  var OTP = /\b(otp|one[\s-]?time\s+(pass(word|code)?|code)|verification\s+code|do not share)\b/i;
+  window.gmBankMailText = function (m) {             // one Graph message -> one plain text for the reader, or null
+    var from = (((m || {}).from || {}).emailAddress || {}).address || "";
+    if (!BANK_MAIL.re.test(String(from).trim())) return null;
+    var body = String(((m.body || {}).content) || m.bodyPreview || "").replace(/\s+/g, " ").trim();
+    var t = (String(m.subject || "") + ". " + body).slice(0, 2000);
+    if (OTP.test(t)) return null;
+    return t.replace(/\d{12,}/g, function (d) { return "XX" + d.slice(-4); });
+  };
+  var _mailBusy = null;
+  window.gmMailPull = function () {
+    if (_mailBusy) return _mailBusy;
+    if (!window.gmMsMailOn || !window.gmMsMailOn()) return Promise.resolve({ read: 0 });
+    var since = G("gm_mail_since", 0); if (typeof since !== "number" || !isFinite(since) || since <= 0) since = Date.now() - 31 * 864e5;
+    var path = "/me/mailFolders/inbox/messages?$select=from,subject,body,receivedDateTime&$top=50&$orderby=receivedDateTime%20desc"
+      + "&$filter=receivedDateTime%20ge%20" + new Date(since).toISOString();
+    _mailBusy = gmMsGet(path, { Prefer: 'outlook.body-content-type="text"' }).then(function (j) {
+      if (!j || !Array.isArray(j.value)) throw new Error((j && j.error && j.error.code) || "no answer from the mailbox");
+      var texts = [], newest = since, bal = 0;
+      j.value.forEach(function (m) { var at = Date.parse(m.receivedDateTime) || 0; if (at > newest) newest = at; var t = gmBankMailText(m); if (t) texts.push(t); });
+      S_("gm_mail_since", newest + 1000); S_("gm_mail_last", Date.now());
+      if (!texts.length) return { read: 0 };
+      var r = gmSpendRead(texts.join("\n\n"));
+      texts.forEach(function (t) { var m = gmReadMessage(t); if (m.amount != null && /^(epf|nps|mf|bank)$/.test(m.kind) && !gmParseSms(t).debit) { saveAsset(m.kind, m.amount); bal++; } });
+      renderAll();
+      if (typeof gmToast === "function") gmToast(texts.length + " bank e-mail" + (texts.length > 1 ? "s" : "") + " read: " + r.spends + " spend" + (r.spends === 1 ? "" : "s") + (bal ? ", " + bal + " balance" + (bal > 1 ? "s" : "") : "") + ".");
+      return { read: texts.length, spends: r.spends };
+    });
+    _mailBusy.then(function () { _mailBusy = null; }, function () { _mailBusy = null; });
+    return _mailBusy;
+  };
+  // One tap from the Money screen. Signed in: ask for Mail.Read once. Already on: read now. Guest: say where the door is.
+  window.gmMailTap = function () {
+    if (window.gmMsMailOn && gmMsMailOn()) return gmMailPull().catch(function (e) { gmToast("Could not read the mailbox: " + e.message + ". Try again later."); });
+    if (window.gmMsSignedIn && gmMsSignedIn()) return gmMsConnect(true);
+    goTab("ops"); gmToast("Sign in with Microsoft first (Ops), then tap Read my bank e-mails again.");
+  };
+  function mailLineHTML() {
+    var on = window.gmMsMailOn && gmMsMailOn(), last = G("gm_mail_last", 0);
+    return '<p class="gm-card-note gm-mail">' + (on
+      ? 'Bank e-mails are read by themselves from your Outlook inbox' + (last ? ' (last ' + new Date(last).toLocaleDateString() + ')' : '') + '. <button type="button" class="gm-quiet" onclick="gmMailTap()">Read now</button>'
+      : '<button type="button" class="gm-quiet" onclick="gmMailTap()">Read my bank e-mails</button> from Outlook: read-only, on this device, bank senders only, never a one-time code.') + '</p>';
+  }
+  window.gmMailLineHTML = mailLineHTML;
   /* ── Start simple (owner, 2026-11-14): "literally confused where to start", "too heavy" ───────────────────────────────
      Until the person asks for everything: Today keeps the rings, the three for today and the one next step, and folds the
      rest under one line; a "Start here" card names the only three things to do; the More menu shows three doors. */
