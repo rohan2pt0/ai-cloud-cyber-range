@@ -9,6 +9,8 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- **Alerts with nothing to install** (zero-setup, slice 1b part 1): estate-sync sends web push itself. It makes its own signing key once, a paired Life OS subscribes with one Allow tap, and `./securax notify` uses it before ntfy, encrypted for each device so the push service cannot read it; only the browsers' own push services are ever contacted (threat model estate-web-push). The Allow button in the Life OS comes next.
+- **Calm and real** (owner's screenshots): the aurora is a soft curtain at the screen's own resolution instead of a barcode of stripes; the galaxy's arms wind half a turn, so it reads as a spiral, not a ring; the seal's enamel lines no longer shimmer at the centre, its glaze shows a soft window, and the diamond is drawn at full density with four rays a pixel and visible fire.
 - No coloured tap shadow on any button in any SecuRAX app (shared look; a test holds it).
 - Secrets are the estate's job: never ask a person to copy or paste a token, key or credential (zero-setup, friction copy-paste-secrets).
 - Principle zero-setup: a person never installs a second app or configures anything; the SMS forwarder and ntfy become folded owner-only fallbacks, web push and e-mail alerts are queued to replace them.

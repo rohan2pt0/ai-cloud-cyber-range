@@ -522,6 +522,45 @@ async def inbox_sms(request: Request,
     await _notify(user, time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), "sms-inbox")
     return JSONResponse({"ok": True, "kept": True, "waiting": n})
 
+# ── Web push (zero-setup, slice 1b): the Life OS's own alerts, one Allow tap, no second app (syncsvc/push.py) ──────────
+@app.get("/sync/push/key")
+def push_key(user: str = Query(..., min_length=1, max_length=256),
+             authorization: str | None = Header(default=None),
+             cf_access_jwt_assertion: str | None = Header(default=None)) -> dict:
+    _auth(authorization, cf_access_jwt_assertion, user)
+    from . import push
+    return {"key": push.public_key()}
+
+
+@app.post("/sync/push/subscribe")
+async def push_subscribe(request: Request,
+                         user: str = Query(..., min_length=1, max_length=256),
+                         authorization: str | None = Header(default=None),
+                         cf_access_jwt_assertion: str | None = Header(default=None)) -> dict:
+    import json
+    _auth(authorization, cf_access_jwt_assertion, user)
+    from . import push
+    raw = await request.body()
+    if len(raw) > 4096:
+        raise HTTPException(413, "a subscription is at most 4 KB")
+    try:
+        body = json.loads(raw)
+        n = await asyncio.to_thread(push.subscribe, user, body.get("subscription", body), str(body.get("label", "")))
+    except (ValueError, AttributeError) as exc:
+        raise HTTPException(400, f"subscription not accepted: {exc}")
+    return {"ok": True, "devices": n}
+
+
+@app.delete("/sync/push/subscribe")
+def push_unsubscribe(user: str = Query(..., min_length=1, max_length=256),
+                     endpoint: str = Query(..., min_length=1, max_length=1024),
+                     authorization: str | None = Header(default=None),
+                     cf_access_jwt_assertion: str | None = Header(default=None)) -> dict:
+    _auth(authorization, cf_access_jwt_assertion, user)
+    from . import push
+    return {"ok": True, "removed": push.unsubscribe(user, endpoint)}
+
+
 @app.get("/sync/snapshots")
 def list_snapshots(user: str = Query(..., min_length=1, max_length=256),
                    authorization: str | None = Header(default=None),

@@ -65,9 +65,36 @@ def webhook() -> str | None:
     return env("SECURAX_NOTIFY_WEBHOOK") or None
 
 
+def _push_cmd(*args: str) -> list[str]:
+    return ["docker", "compose", "exec", "-T", "estate-sync", "python", "-m", "syncsvc.push", *args]
+
+
+def push_devices() -> int:
+    """How many devices allowed the Life OS's own alerts (web push through estate-sync; zero-setup: nothing to install or
+    paste). 0 when the estate is not running or nobody tapped Allow. SECURAX_NOTIFY_PUSH=0 turns the channel off."""
+    if env("SECURAX_NOTIFY_PUSH") == "0":
+        return 0
+    try:
+        p = subprocess.run(_push_cmd("count"), cwd=ROOT / "local" / "compose", text=True, capture_output=True, timeout=20)
+        return int(p.stdout.strip() or 0) if p.returncode == 0 else 0
+    except (OSError, ValueError, subprocess.SubprocessError):
+        return 0
+
+
+def post_push(text: str, title: str = "SecuRAX", timeout: int = 30) -> None:
+    """Send through estate-sync from inside its container: encrypted for each device, no network door, no token."""
+    p = subprocess.run(_push_cmd("send", "--title", title), cwd=ROOT / "local" / "compose", input=text, text=True,
+                       capture_output=True, timeout=timeout)
+    if p.returncode != 0:
+        raise OSError(f"web push answered {p.returncode}")
+
+
 def channels() -> list[tuple[str, str]]:
-    """[(kind, url)] for every configured channel: ntfy (phone push) and/or a chat webhook."""
+    """[(kind, url)] for every configured channel: the Life OS's own alerts (web push, when a device allowed them),
+    ntfy (phone push) and/or a chat webhook."""
     out = []
+    if push_devices() > 0:
+        out.append(("push", "estate-sync"))
     if env("SECURAX_NOTIFY_NTFY"):
         out.append(("ntfy", env("SECURAX_NOTIFY_NTFY")))
     if webhook():
@@ -158,6 +185,9 @@ def _dlq_save(items: list[dict], path: pathlib.Path | None = None) -> None:
 
 
 def _send_one(kind: str, url: str, text: str, title: str, priority: str) -> None:
+    if kind == "push":
+        with_retry(lambda: post_push(text, title))
+        return
     with_retry(lambda: post_ntfy(url, text, title, priority) if kind == "ntfy" else post(url, text))
 
 
@@ -168,11 +198,12 @@ def deliver(text: str, title: str = "SecuRAX", priority: str = "default") -> int
     0 = all sent, 1 = a send failed (kept for later), 2 = nothing configured / refused."""
     chans = channels()
     if not chans:
-        print("not configured: set SECURAX_NOTIFY_NTFY (phone push) or SECURAX_NOTIFY_WEBHOOK (Mattermost/Slack) in local/compose/.env")
+        print("no alerts channel yet: open the Life OS on your phone and tap Allow alerts (nothing to install). "
+              "Engineers can also set SECURAX_NOTIFY_WEBHOOK (Mattermost/Slack) in local/compose/.env")
         return 2
     rc, pending, still = 0, _dlq_load(), []
     for kind, url in chans:
-        bad = url_problem(url)
+        bad = None if kind == "push" else url_problem(url)
         if bad:
             print(f"{kind}: refused: {bad}")
             rc = max(rc, 2)
