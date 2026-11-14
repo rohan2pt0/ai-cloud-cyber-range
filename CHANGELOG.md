@@ -9,6 +9,8 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- Life OS lock screen: the padlock emoji is replaced by an animated gold seal (a turning gold ring, a breathing glow, a line-drawn gold padlock, twinkling stars, a glint on Unlock); it says Windows Hello only on Windows; reduced motion stops it all.
+
 - Vantage More sheet glitters: midnight glass with twinkling stars, gold-edged keys and a slow gold glint in dark mode, pearl and gold in light; built once in `guiding-map/shared/lux.css` so every app gets it.
 
 - Reuse-first: the SecuRAX shared look now lives in one file, guiding-map/shared/lux.css (keycaps and jade, round checks, the gold crest, the night-sky header, the gold primary, the quiet action), built into the Life OS and every kit edition. Vantage gains the night-sky header with a gold crest, a gold main action, a midnight nav with a gold active tab, round checks, and the Programme wheel scored by tapping keys instead of a dropdown. A principle (reuse-first) and governance/tests/test_shared_look.py hold the habit: every app builds the shared file in and none keeps a private copy.

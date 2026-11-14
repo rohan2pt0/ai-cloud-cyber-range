@@ -7649,8 +7649,12 @@
     if (!locked) { if (el) el.remove(); return; }
     if (el) return;
     el = document.createElement("div"); el.id = "gmLock"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", "Life OS is locked");
-    el.innerHTML = '<div class="gm-lock-card"><div class="gm-lock-ico" aria-hidden="true">🔒</div><h2>Locked</h2>'
-      + '<p>Unlock with this device’s fingerprint, face or Windows Hello.</p>'
+    el.innerHTML = '<div class="gm-lock-card"><div class="gm-lock-seal" aria-hidden="true"><i class="gm-lock-ring"></i><i class="gm-lock-halo"></i>'
+      + '<svg viewBox="0 0 64 64" width="72" height="72"><defs><linearGradient id="gmLkG" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f7e7a8"/><stop offset=".45" stop-color="#d4af37"/><stop offset="1" stop-color="#9c7a26"/></linearGradient></defs>'
+      + '<path class="gm-lock-shk" d="M21 29v-8a11 11 0 0 1 22 0v8" fill="none" stroke="url(#gmLkG)" stroke-width="4" stroke-linecap="round"/>'
+      + '<rect x="14" y="28" width="36" height="26" rx="7" fill="#0d1a30" stroke="url(#gmLkG)" stroke-width="3"/>'
+      + '<circle class="gm-lock-key" cx="32" cy="39" r="3.6" fill="#f7e7a8"/><path class="gm-lock-key" d="M30.6 41h2.8l1 6h-4.8z" fill="#f7e7a8"/></svg></div><h2>Locked</h2>'
+      + '<p>' + (/Windows/.test(navigator.userAgent || "") ? 'Unlock with Windows Hello, your fingerprint or face.' : 'Unlock with your fingerprint or face.') + '</p>'
       + '<button type="button" class="gm-lock-go" onclick="gmUnlock()">Unlock</button>'
       + '<details class="gm-lock-rec"><summary>Use your recovery code</summary><input id="gmLockCode" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX" aria-label="Recovery code">'
       + '<button type="button" onclick="gmUnlockCode(document.getElementById(\'gmLockCode\').value)">Unlock with code</button></details>'
@@ -7735,7 +7739,17 @@
     var st = document.createElement("style");
     st.textContent = "html.gm-locked body > *:not(#gmLock){visibility:hidden}html.gm-veil body > *:not(#gmLock){filter:blur(18px)}"
       + "#gmLock{position:fixed;inset:0;z-index:99999;display:grid;place-items:center;padding:24px;background:radial-gradient(120% 80% at 50% 0%,#1d3557 0%,#0e1f38 50%,#07101f 100%);color:#eef3f8}"
-      + ".gm-lock-card{width:100%;max-width:360px;text-align:center}.gm-lock-ico{font-size:40px;margin-bottom:8px}.gm-lock-card h2{font-family:var(--font-display,serif);font-weight:400;font-size:30px;margin:0 0 6px;color:#f4e7c1}"
+      + ".gm-lock-card{width:100%;max-width:360px;text-align:center;position:relative}"
+      + "#gmLock{isolation:isolate;overflow:hidden}#gmLock::before{content:'';position:absolute;inset:0;z-index:-1;pointer-events:none;background-image:" + [[12,14,1.6],[28,72,1.2],[44,22,1],[63,9,1.7],[81,31,1.2],[91,68,1.5],[8,48,1.1],[72,86,1.4],[36,92,1.2],[55,58,1],[18,30,1.1],[86,12,1.3],[95,90,1],[4,82,1.4]].map(function (p) { return "radial-gradient(circle at " + p[0] + "% " + p[1] + "%,#fff4cf 0 " + p[2] + "px,transparent " + (p[2] + .8) + "px)"; }).join(",") + ";animation:gmLkTw 4.5s ease-in-out infinite alternate}"
+      + ".gm-lock-seal{position:relative;width:132px;height:132px;margin:0 auto 22px;display:grid;place-items:center;border-radius:50%;background:radial-gradient(circle at 38% 30%,#24375e 0%,#0f1d36 62%,#08111f 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),inset 0 -6px 18px rgba(0,0,0,.45),0 18px 40px rgba(0,0,0,.45)}"
+      + ".gm-lock-seal svg{position:relative;z-index:2;filter:drop-shadow(0 2px 6px rgba(212,175,55,.35))}"
+      + ".gm-lock-ring{position:absolute;inset:-5px;border-radius:50%;background:conic-gradient(from 0deg,#7a5a14,#f7e7a8,#c9a24a,#fff4cf,#9c7a26,#ecd27e,#7a5a14);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2px));mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2px));animation:gmLkSpin 9s linear infinite}"
+      + ".gm-lock-halo{position:absolute;inset:-22px;border-radius:50%;z-index:-1;background:radial-gradient(circle,rgba(212,175,55,.32) 0%,rgba(212,175,55,.08) 45%,transparent 70%);animation:gmLkBreath 3.6s ease-in-out infinite}"
+      + ".gm-lock-key{animation:gmLkKey 3.6s ease-in-out infinite}"
+      + ".gm-lock-go{position:relative;overflow:hidden;box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 10px 26px rgba(201,162,74,.28)}.gm-lock-go::after{content:'';position:absolute;top:0;bottom:0;left:-60%;width:38%;transform:skewX(-20deg);background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);animation:gmLkGlint 4.8s ease-in-out infinite}"
+      + "@keyframes gmLkSpin{to{transform:rotate(360deg)}}@keyframes gmLkBreath{0%,100%{opacity:.55;transform:scale(.94)}50%{opacity:1;transform:scale(1.04)}}@keyframes gmLkKey{0%,100%{opacity:.7}50%{opacity:1}}@keyframes gmLkGlint{0%,60%{left:-60%}85%,100%{left:130%}}@keyframes gmLkTw{from{opacity:.4}to{opacity:1}}"
+      + "@media (prefers-reduced-motion:reduce){.gm-lock-ring,.gm-lock-halo,.gm-lock-key,#gmLock::before{animation:none}.gm-lock-go::after{display:none}}"
+      + ".gm-lock-rec summary{list-style:none;font-size:14px;letter-spacing:.02em}.gm-lock-rec summary::-webkit-details-marker{display:none}.gm-lock-rec summary::marker{content:''}#gmLock .gm-lock-rec summary::before{content:none}#gmLock .gm-lock-rec summary{text-decoration:underline;text-decoration-color:rgba(217,183,90,.45);text-underline-offset:5px}.gm-lock-card h2{font-family:var(--font-display,serif);font-weight:400;font-size:30px;margin:0 0 6px;color:#f4e7c1}"
       + ".gm-lock-card p{color:#a9b6cc;font-size:14px;margin:0 0 18px}.gm-lock-go{width:100%;min-height:52px;border-radius:16px;border:0;font-weight:800;font-size:16px;color:#1a1305;cursor:pointer;background:linear-gradient(135deg,#7a5a14 0%,#c9a24a 20%,#f7e7a8 38%,#d4af37 52%,#9c7a26 72%,#ecd27e 90%,#b8902f 100%)}"
       + ".gm-lock-rec{margin-top:16px;text-align:start}.gm-lock-rec summary{cursor:pointer;color:#d9b75a;min-height:44px;display:flex;align-items:center;justify-content:center}.gm-lock-rec input{width:100%;min-height:48px;font-size:16px;letter-spacing:.1em;text-align:center;margin:6px 0;border-radius:12px}"
       + ".gm-lock-rec button{width:100%;min-height:46px;border-radius:12px;border:1px solid rgba(217,183,90,.6);background:transparent;color:#eef3f8;font-weight:700}.gm-lock-msg{min-height:20px;margin-top:10px;color:#f0b8a8;font-size:13px}"
