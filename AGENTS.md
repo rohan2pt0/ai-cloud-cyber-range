@@ -110,6 +110,17 @@ The principles behind it:
   It never breaks its form: no sideways scroll, no cut-off word, nothing under the notch, every control finger-sized, the main
   action always on screen. Prove it with `python3 guiding-map/tests/device_audit.py OUTDIR` (9 device profiles x every key
   view) and look at the screenshots, not only the score.
+- **Signature features, perfected (`signature-perfect`, owner 2026-11-14):** the distinctive features (the three rings, the
+  night-sky lock, the seal, the lit materials, the keycaps, and each new one) are what people remember and come back for, so
+  each is perfected in every aspect, not just made to work: meaning at a glance and one tap that explains it; a material true
+  to nature; motion from physics that settles; every device, theme and state (empty, partial, complete) finished; accessible;
+  light on the device; and a test that holds it. They are listed, with that bar, in `governance/signatures.json`.
+- **Designed with nature (`natures-design`, owner 2026-11-14):** people have always revered nature (sunrise and sunset, water,
+  rain, rainbows, the northern lights, fire, emeralds and rare metals, snow, natural symmetry, a peacock's feather, rare birds'
+  colours, many living things in one cohesive whole). Borrow from it so the apps feel priceless, calm and soothing: palettes,
+  geometry (symmetry, the golden ratio, spirals) and motion (springs, orbits, damping) from nature and physics, materials
+  rendered from real optics, never imitated. Sparingly: one natural element per surface, for its meaning; never kitsch, never
+  at the cost of reading or speed; the least friction and 80/20 everywhere. The beauty serves the person, and rests when they do.
 - **Small wins, shown:** progress you can see keeps people going.
 - **Least effort for the person:** the estate does the remembering, the checking and the reminding.
 - **Start as an amoeba, carry the DNA (`amoeba`):** ship the simplest living thing that helps today — one person, no

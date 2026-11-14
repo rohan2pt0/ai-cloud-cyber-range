@@ -5340,7 +5340,12 @@
       + "html[data-theme=dark] .btn-sm,html[data-theme=dark] .btn-s{box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}"
       // The rings: a track that suits each theme, a gauge sweep on open (staggered), a glow when a ring closes.
       + ":root{--ring-track:rgba(11,31,53,.08)}html[data-theme=dark]{--ring-track:rgba(255,255,255,.08)}"
-      + ".gm-rings text{font:700 11px var(--font-ui);fill:var(--text)}"
+      + ".gm-rings text{font:600 9px var(--font-ui);fill:var(--text);letter-spacing:.02em}"
+      + "html body svg.gm-rings{background:none!important;border:0!important;box-shadow:none!important;padding:0!important;min-height:0!important}.gm-greet svg.gm-rings{width:80px;height:80px;flex:none;cursor:pointer;border-radius:50%}svg.gm-rings.sx-rings-on circle{visibility:hidden}"
+      + ".gm-rings-info{display:grid;gap:6px;margin:-4px 0 14px}.gm-ri-row{display:flex;align-items:center;gap:12px;width:100%;text-align:start;min-height:52px;padding:8px 12px;border-radius:14px;border:1px solid var(--border);background:var(--card);color:var(--text)}"
+      + ".gm-ri-row span{flex:1;display:grid}.gm-ri-row b{font-weight:600;font-size:14px}.gm-ri-row small{font-size:12.5px;color:var(--muted)}.gm-ri-row em{font-style:normal;font-size:11.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--text)}"
+      + ".gm-ri-next{border-color:rgba(201,168,76,.7)}.gm-ri-dot{width:14px;height:14px;border-radius:50%;flex:none;box-shadow:0 0 0 3px rgba(0,0,0,.06)}"
+      + ".gm-ri-sunrise{background:conic-gradient(from 180deg,#e2475a,#f59e3b,#fbc94a,#e2475a)}.gm-ri-emerald{background:conic-gradient(from 180deg,#056b4f,#15b47b,#c6f6dd,#056b4f)}.gm-ri-peacock{background:conic-gradient(from 180deg,#1d4ed8,#0f9f8a,#d4af37,#1d4ed8)}"
       + "@keyframes gmsweep2{from{stroke-dashoffset:var(--c)}to{stroke-dashoffset:var(--o)}}"
       + ".gm-arc{animation:gmsweep2 .9s cubic-bezier(.2,.8,.2,1) both}.gm-a2{animation-delay:.12s}.gm-a3{animation-delay:.24s}"
       + ".gm-closed{filter:drop-shadow(0 0 3px rgba(232,201,106,.7))}.gm-a2.gm-closed{filter:drop-shadow(0 0 3px rgba(45,212,191,.7))}.gm-a3.gm-closed{filter:drop-shadow(0 0 3px rgba(224,90,112,.7))}"
@@ -5620,6 +5625,23 @@
   }
   window.gmToggleStill = function () { S_("gm_still", !G("gm_still", false)); premiumCSS(); gmMenu(); };
   window.gmToggleSmart = function () { S_("gm_smart_off", !G("gm_smart_off", false)); gmMenu(); };
+  // The rings explain themselves on a tap: what each one measures, where it stands, and the one place to go next.
+  window.gmRingsInfo = function () {
+    var g = document.querySelector(".gm-greet"); if (!g) return;
+    var old = document.querySelector(".gm-rings-info"); if (old) { old.remove(); return; }
+    var svg = g.querySelector("svg.gm-rings"), d = []; try { d = JSON.parse(svg.getAttribute("data-rings") || "[]"); } catch (e) {}
+    var meaning = { Today: ["Today's three", "the three small things that make today a win", "today"],
+      Stack: ["Your Stack", "how much of your foundation is in place", "stack"],
+      Shield: ["Your Shield", "how well your biggest risks are covered", "risk"] };
+    var low = d.slice().sort(function (a, b) { return a.p - b.p; })[0];
+    var h = '<div class="gm-rings-info" role="region" aria-label="What the rings mean">' + d.map(function (r) {
+      var m = meaning[r.n] || [r.n, "", "today"];
+      return '<button type="button" class="gm-ri-row' + (low && r.n === low.n && r.p < 100 ? " gm-ri-next" : "") + '" onclick="goTab(\'' + m[2] + '\')">'
+        + '<i class="gm-ri-dot gm-ri-' + esc(r.k) + '" aria-hidden="true"></i><span><b>' + esc(m[0]) + ' · ' + (r.p >= 100 ? "closed" : r.p + "%") + '</b><small>' + esc(m[1]) + '</small></span>'
+        + (low && r.n === low.n && r.p < 100 ? '<em>Next</em>' : '') + '</button>';
+    }).join("") + '</div>';
+    g.insertAdjacentHTML("afterend", h);
+  };
   function greetHTML() {
     var hr = new Date().getHours(), part = hr < 5 ? "Still up" : hr < 12 ? "Good morning" : hr < 17 ? "Good afternoon" : "Good evening";
     var fn = ((typeof P !== "undefined" && P.name) || "").trim().split(" ")[0];
@@ -5638,13 +5660,16 @@
         + '<circle class="gm-arc' + (pct >= 100 ? " gm-closed" : "") + ' ' + cls + '" cx="34" cy="34" r="' + rr + '" fill="none" stroke="url(#' + grad + ')" stroke-width="5.5" stroke-linecap="round"'
         + ' stroke-dasharray="' + cc.toFixed(1) + '" stroke-dashoffset="' + of.toFixed(1) + '" style="--c:' + cc.toFixed(1) + ';--o:' + of.toFixed(1) + '" transform="rotate(-90 34 34)"/>';
     }
-    return welcomeBackHTML() + '<div class="gm-greet"><svg class="gm-ring gm-rings" width="68" height="68" viewBox="0 0 68 68" role="img" aria-label="'
-      + n + ' of 3 done today; Stack ' + stp + '%; Shield ' + shp + '%">'
-      + '<defs><linearGradient id="gmRgGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f3dc8f"/><stop offset=".5" stop-color="#c9a84c"/><stop offset="1" stop-color="#e8c96a"/></linearGradient>'
-      + '<linearGradient id="gmRgTeal" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#5eead4"/><stop offset="1" stop-color="#0f766e"/></linearGradient>'
-      + '<linearGradient id="gmRgVel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e05a70"/><stop offset="1" stop-color="#7d1426"/></linearGradient></defs>'
+    var rd = JSON.stringify([{ n: "Today", p: Math.round(n / 3 * 100), k: "sunrise" }, { n: "Stack", p: stp, k: "emerald" }, { n: "Shield", p: shp, k: "peacock" }]);
+    return welcomeBackHTML() + '<div class="gm-greet"><svg class="gm-ring gm-rings" width="68" height="68" viewBox="0 0 68 68" role="button" tabindex="0" data-rings=\'' + rd + '\''
+      + ' onclick="gmRingsInfo()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();gmRingsInfo()}" aria-label="'
+      + n + ' of 3 done today; Stack ' + stp + '%; Shield ' + shp + '%. Show what the rings mean">'
+      // The fallback drawing wears the same natural palettes as the lit rings (shared/rings.js): sunrise, emerald, peacock.
+      + '<defs><linearGradient id="gmRgGold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#e2475a"/><stop offset=".5" stop-color="#f59e3b"/><stop offset="1" stop-color="#fbc94a"/></linearGradient>'
+      + '<linearGradient id="gmRgTeal" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#056b4f"/><stop offset="1" stop-color="#45d49a"/></linearGradient>'
+      + '<linearGradient id="gmRgVel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1d4ed8"/><stop offset=".6" stop-color="#0f9f8a"/><stop offset="1" stop-color="#d4af37"/></linearGradient></defs>'
       + ring(28, Math.round(n / 3 * 100), "gmRgGold", "gm-a1") + ring(20.5, stp, "gmRgTeal", "gm-a2") + ring(13, shp, "gmRgVel", "gm-a3")
-      + '<text x="34" y="38" text-anchor="middle">' + n + '/3</text></svg>'
+      + '<text x="34" y="37.2" text-anchor="middle">' + n + '/3</text></svg>'
       + '<div><h2>' + esc(part + (fn ? ", " + fn : "")) + '</h2><p>' + esc(date) + ' · ' + (n === 3 ? "today is already a win" : n ? (3 - n) + " left for a win today" : "three small things make today a win") + '</p></div></div>';
   }
 

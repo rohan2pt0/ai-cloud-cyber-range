@@ -145,3 +145,31 @@ def test_the_galaxy_turns_as_astrophysics_says():
         assert needle in s, needle
     assert "avoid:" in (ROOT / "guiding-map" / "ops.js").read_text("utf-8")
     assert "avoid:" in (ROOT / "guiding-map" / "kit" / "core.js").read_text("utf-8")
+
+
+def test_signature_features_are_registered_and_proven():
+    """Principles signature-perfect and natures-design (owner, 2026-11-14): every signature feature is listed with its files
+    and its proof, both exist, and the principles live in the one source and in AGENTS.md."""
+    import json
+    sig = json.loads((ROOT / "governance" / "signatures.json").read_text("utf-8"))
+    assert len(sig["bar"]) >= 6 and {f["id"] for f in sig["features"]} >= {"three-rings", "night-sky-lock", "the-seal", "lit-materials"}
+    for f in sig["features"]:
+        for rel in f["where"] + f["proof"]:
+            assert (ROOT / rel).exists(), f"{f['id']}: {rel}"
+        assert f.get("nature"), f"{f['id']} names the natural element it borrows"
+    princ = {p["id"] for p in json.loads((ROOT / "governance" / "principles.json").read_text("utf-8"))["principles"]}
+    assert {"signature-perfect", "natures-design"} <= princ
+    agents = (ROOT / "AGENTS.md").read_text("utf-8")
+    assert "signature-perfect" in agents and "natures-design" in agents
+
+
+def test_the_three_rings_are_light_and_nature():
+    """The three rings (a signature): sunrise, emerald and peacock palettes; a spring from the last value; a seed at zero;
+    ignition on closing and a bloom when all three close; calm (settles after engagement); explained on a tap."""
+    r = (ROOT / "guiding-map" / "shared" / "rings.js").read_text("utf-8")
+    for needle in ("sunrise:", "emerald:", "peacock:", "last[r.n]", "a seed of light", "r.ign", "all = st.rings.every",
+                   "t - wake > 20000", "prefers-reduced-motion", "tilt()"):
+        assert needle in r, needle
+    ops = (ROOT / "guiding-map" / "ops.js").read_text("utf-8")
+    assert "data-rings=" in ops and "window.gmRingsInfo" in ops and 'role="button" tabindex="0"' in ops
+    assert "SecuRAX shared rings" in (ROOT / "guiding-map" / "index.html").read_text("utf-8")

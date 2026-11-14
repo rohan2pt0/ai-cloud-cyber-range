@@ -9,6 +9,8 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- The three rings, perfected (`guiding-map/shared/rings.js`): rings of light in engraved grooves, coloured by nature (a sunrise for today's three, an emerald for the Stack, a peacock feather for the Shield whose colours slide as the phone tilts); they fill on a spring from where they last stood, carry a sun at the tip and a pulse of light, show a seed where to begin at zero, ignite when one closes and bloom like a sunrise when all three do, then rest. A tap explains each ring and marks the one to do next. Two new guiding principles: `signature-perfect` (with `governance/signatures.json`) and `natures-design`.
+
 - Lit gold reaches the Life OS's everyday gold (the chosen key in a scale, engraved tags, the daily checks, kept marks), with a finer bevel and lighter engraving on small pieces; a chip that stops being chosen lets go of its gold. Fixed from the owner's screenshots: an explainer term's tap area painted over the next line (now an invisible hit area); some buttons fell back to the system font (every control now inherits the house type); the quiet Delete button showed as a box.
 
 - The lock's galaxy turns as astrophysics says: a flat rotation curve (the core outpaces the rim, which turns once in about four minutes), arms as a rigid density wave so they never wind up, young blue stars and pink nebulae born in clumps on the arms and ageing downstream, patchy dust lanes, a golden bulge and an exponential disc, tilted 56 degrees. It finds open sky beside the lock card on every device, and is recomputed four times a second into a cached image so it costs little.
