@@ -9,6 +9,8 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- The lock's galaxy turns as astrophysics says: a flat rotation curve (the core outpaces the rim, which turns once in about four minutes), arms as a rigid density wave so they never wind up, young blue stars and pink nebulae born in clumps on the arms and ageing downstream, patchy dust lanes, a golden bulge and an exponential disc, tilted 56 degrees. It finds open sky beside the lock card on every device, and is recomputed four times a second into a cached image so it costs little.
+
 - Test campaign (risk-based, ISTQB): stored XSS (128 attack strings, none ran), storage corruption (65 cases in the Life OS, 20 in Vantage), lock state machine, performance on a 4x-slowed phone, a 60-switch long session, WCAG 2.2 AA with axe-core (0 violations, 8 views), WebGL off, reduced motion, Python SAST (bandit high: 0), and a gateway load test (1,000 concurrent inspections, p95 108 ms). Fixed: a hang from a damaged stored date; 18 crashes from wrong-typed keys (shape guards, gm_quarantine); permanent lockout from a damaged lock record; the audit chain forking under concurrent writers (now locked); Vantage's gold vanishing after long use; focus now starts on Unlock; bidi characters in source escaped; SHA-1 marked non-security. New: `guiding-map/tests/robustness_audit.py` (in the sandbox), `apps/llm-gateway/tests/test_load_audit_chain.py`.
 
 - Reading measure re-derived for the new text face: paragraphs on wide screens now cap at 49ch, so a line stays under 75 characters whatever the browser's font metrics (the sandbox found 76-78 at 1280 px).

@@ -132,3 +132,16 @@ def test_the_renderer_lets_go_of_departed_surfaces_before_its_budget():
 def test_the_robustness_audit_runs_in_the_sandbox():
     run = (ROOT / "sandbox" / "run.py").read_text("utf-8")
     assert "robustness_audit.py" in run and "ROBUSTNESS AUDIT: PASS" in run
+
+
+def test_the_galaxy_turns_as_astrophysics_says():
+    """Owner, 2026-11-14: the galaxy slowly rotates, rendered from nature. A flat rotation curve (differential rotation), a
+    rigid density-wave pattern (so the arms never wind up), young stars born in the arms and ageing, dust on the arms'
+    inner edge, a tilted projection; it finds open sky beside the lock card on every device, and is cached so it costs
+    little."""
+    s = (ROOT / "guiding-map" / "shared" / "sky.js").read_text("utf-8")
+    for needle in ("1 - Math.exp(-r / rc)", "G.omp = G.om(", "Math.tan(18 * Math.PI / 180)", "kind: 2", "G.dust.push",
+                   "Math.cos(56 * Math.PI / 180)", "opts.avoid", "t - G.at > 250"):
+        assert needle in s, needle
+    assert "avoid:" in (ROOT / "guiding-map" / "ops.js").read_text("utf-8")
+    assert "avoid:" in (ROOT / "guiding-map" / "kit" / "core.js").read_text("utf-8")

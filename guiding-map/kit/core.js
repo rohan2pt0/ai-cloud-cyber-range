@@ -335,14 +335,15 @@
     b.classList.toggle("osk-locked", !!on);
     if (on && !sky) {
       sky = document.createElement("div"); sky.id = "oskSky"; sky.setAttribute("aria-hidden", "true"); b.insertBefore(sky, b.firstChild);
-      try { if (window.SXSky) SXSky.mount(sky, { comet: true }); } catch (e) {}
+      try { if (window.SXSky) SXSky.mount(sky, { comet: true, avoid: function () { return document.querySelector("#oskMain .card.hero"); } }); } catch (e) {}
     }
     if (!on && sky) sky.parentNode.removeChild(sky);    // the sky's loop ends by itself once its element has gone
   }
   K.render = function () {
-    night(K.locked);
+    if (!K.locked) night(false);
     if (K.locked) {                                                     // locked: nothing of the person's on screen
       document.getElementById("oskMain").innerHTML = K.lockScreen();
+      night(true);                                                      // after the card exists, so the sky can leave it room
       try { var go = document.querySelector("#oskMain button.primary"); if (go) go.focus({ preventScroll: true }); } catch (e) {}   // the way in has the focus
       document.getElementById("oskNav").innerHTML = ""; document.getElementById("oskMore").innerHTML = "";
       var w = document.getElementById("oskWho"); if (w) w.textContent = "";
