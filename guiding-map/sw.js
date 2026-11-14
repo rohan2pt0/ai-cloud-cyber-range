@@ -67,6 +67,16 @@ self.addEventListener("fetch", e => {
   let url;
   try { url = new URL(req.url); } catch (err) { return; }
   if (url.origin !== location.origin) return; // let fonts/CDN fail silently offline
+  // Shared from another app (Web Share Target): answered here, on the device. The text (a bank SMS, say) is never sent to
+  // the web host: it goes to a local cache entry the app reads once and deletes (threat model lifeos-share-in).
+  if (url.pathname.endsWith("/share-in")) {
+    e.respondWith((async () => {
+      const t = ["st", "sx", "su"].map(k => url.searchParams.get(k)).filter(Boolean).join("\n").slice(0, 20000);
+      const c = await caches.open("gm-share"); await c.put("./shared-text", new Response(t));
+      return Response.redirect(new URL("./index.html#shared", url).href, 303);
+    })());
+    return;
+  }
 
   e.respondWith(
     fetch(new Request(req, { credentials: "same-origin", redirect: "follow", cache: "no-cache" }))   // revalidate: skip the browser's heuristic freshness

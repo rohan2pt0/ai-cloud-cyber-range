@@ -4,6 +4,7 @@
   "description": "Personal operating system: eight pillars, antifragility index, daily habits, risk shield.",
   "start_url": "./index.html",
   "scope": "./",
+  "share_target": { "action": "./share-in", "method": "GET", "params": { "title": "st", "text": "sx", "url": "su" } },
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#0b1a2e",

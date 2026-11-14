@@ -1839,7 +1839,7 @@ function renderGrowth(E){
   h+=renderRoutine();
   // ---- Dormant integrations (future) ----
   h+='<div class="cat-t">\uD83D\uDD0C Integrations <span class="pill pill-t">optional \u00B7 off by default</span></div>';
-  h+='<div class="info">Optional. These are <b>copy-in boxes, not live connections</b>: a web app on your phone cannot read your bank, health or fund apps (that needs a licensed integration). Once a month, copy a few numbers in; they fill the matching scores. Skip them entirely and nothing breaks.</div>';
+  h+=(typeof gmReaderHTML==="function"?gmReaderHTML():'')+'<div class="info">Or type numbers in by hand: these boxes are copy-ins, not live connections.</div>';
   h+='<div class="grid">';
   INTEGRATIONS.forEach(function(it){
     var on=intEnabled(it.id);
@@ -11232,6 +11232,151 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     document.head.appendChild(st);
   } catch (x) {}
   if (locked) { if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", paint); else paint(); }
+})();
+
+/* ── Which card, when; and numbers from a shared message (owner, 2026-11-14; threat model lifeos-share-in) ──────────
+   A friend's feedback: scoring yourself is not reality, and six cards are hard to use well. 80/20:
+   1. The card guide keeps ONLY each card's name and statement day (never a number, CVV or expiry; input with 12 or more
+      digits in a row is refused). From that alone: the card for a big spend today (the one whose statement has just
+      passed gives the most days before you pay, interest-free), one card per category where a card is built for it, and
+      the three habits that matter more than any reward.
+   2. The message reader: share (or paste) an EPFO balance SMS, a bank SMS, a card bill SMS or a fund statement's total;
+      it finds the amount on the device and saves it with one tap, dated, so net worth comes from your statements. */
+(function () {
+  var CK = "gm_cards", AK = "gm_assets", DIGITS = /(?:\d[ -]?){12,}/;
+  // This block has its own scope: the same shape-guarded read as the app's G (a wrong-typed value gives the default).
+  function G(k, d) { var v; try { var s = localStorage.getItem(k); if (!s) return d; v = JSON.parse(s); } catch (e) { return d; } return (v === null || typeof v !== typeof d || Array.isArray(v) !== Array.isArray(d)) ? d : v; }
+  function S_(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  function esc(t) { return String(t).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function cards() { var c = G(CK, []); return c.filter(function (x) { return x && typeof x.name === "string" && x.stmt >= 1 && x.stmt <= 31; }); }
+  // Rewards change often: these were checked on 14 Nov 2026 against issuers and comparison sites (doc 136's method).
+  var RULES = [
+    { re: /amazon/i, cat: "Amazon", why: "5% back with Prime (3% without), paid as Amazon Pay balance" },
+    { re: /swiggy/i, cat: "Swiggy, Instamart", why: "10% back on Swiggy" },
+    { re: /flipkart/i, cat: "Flipkart, Cleartrip, Myntra", why: "the most back on Flipkart's family of shops" },
+    { re: /lic\s*select/i, cat: "LIC premiums", why: "10X points when the premium is paid on licindia.in" },
+    { re: /\blic\b/i, cat: "LIC premiums", why: "points on LIC premiums" },
+    { re: /rupay|coral|eterna/i, cat: "UPI payments", why: "if it is the RuPay version, link it in your UPI app: UPI spends then earn and get the interest-free days" }
+  ];
+  function dim(y, m) { return new Date(y, m + 1, 0).getDate(); }
+  function since(day, now) {
+    var d = new Date(now.getFullYear(), now.getMonth(), Math.min(day, dim(now.getFullYear(), now.getMonth())));
+    if (d > now) { var p = new Date(now.getFullYear(), now.getMonth() - 1, 1); d = new Date(p.getFullYear(), p.getMonth(), Math.min(day, dim(p.getFullYear(), p.getMonth()))); }
+    return Math.floor((now - d) / 864e5);
+  }
+  function freeDays(c, now) { var s = since(c.stmt, now); return s === 0 ? 18 : 30 - s + 18; }   // ~30-day cycle, ~18 days to pay
+  window.gmCardBest = function (now) {
+    now = now || new Date(); var c = cards();
+    return c.map(function (x) { return { card: x, days: freeDays(x, now) }; }).sort(function (a, b) { return b.days - a.days; })[0] || null;
+  };
+  window.gmCardsHTML = function () {
+    var c = cards(), h = '<div class="cat-t">Which card, when</div><div class="kc gm-cards">';
+    var form = '<label class="gm-card-l" for="gmCardsIn">One card a line: its name and statement day</label>'
+      + '<textarea id="gmCardsIn" rows="3" placeholder="HDFC Swiggy, 13&#10;ICICI Amazon Pay, 28"></textarea>'
+      + '<button type="button" class="btn-sm" onclick="gmCardsAdd()">Add</button>'
+      + '<p class="gm-card-note">Only the name and the statement day. Never a card number, CVV or expiry date: no app needs them to help you here.</p>';
+    if (!c.length) return h + '<p>Add your cards once, and the Life OS tells you which one to use, and when.</p>' + form + '</div>';
+    var best = gmCardBest(), picks = [];
+    RULES.forEach(function (r) {
+      var hit = c.filter(function (x) { return r.re.test(x.name); })[0];
+      if (hit && !picks.some(function (p) { return p.cat === r.cat; })) picks.push({ cat: r.cat, card: hit.name, why: r.why });
+    });
+    h += '<p class="gm-card-now"><b>Big spend today:</b> use <b>' + esc(best.card.name) + '</b>, about ' + best.days + ' days before you pay, with no interest.</p>'
+      + '<ul class="gm-card-picks">' + picks.map(function (p) { return '<li><b>' + esc(p.cat) + '</b>: ' + esc(p.card) + '<small>' + esc(p.why) + '</small></li>'; }).join("")
+      + '<li><b>Everything else</b>: the big-spend card of the day</li></ul>'
+      + '<p class="gm-card-note">Rewards change often. Checked 14 November 2026; confirm on your bank’s app.</p>'
+      + '<details class="gm-card-more"><summary>Three habits worth more than any reward</summary><ol>'
+      + '<li>Set autopay for the <b>total</b> due on every card. Card interest of 36 to 45% a year wipes out every reward.</li>'
+      + '<li>Keep each card under 30% of its limit.</li><li>Keep your oldest card open; one small spend every few months keeps it alive.</li></ol></details>'
+      + '<details class="gm-card-more"><summary>Your cards (' + c.length + ') · add or change</summary><ul class="gm-card-list">'
+      + c.map(function (x) { return '<li>' + esc(x.name) + ' · statement on the ' + x.stmt + '<button type="button" class="gm-quiet" onclick="gmCardsDel(\'' + esc(x.id) + '\')">Remove</button></li>'; }).join("")
+      + '</ul>' + form + '</details></div>';
+    return h;
+  };
+  window.gmCardsAdd = function (text) {
+    var el = document.getElementById("gmCardsIn"), t = text != null ? String(text) : (el ? el.value : "");
+    if (DIGITS.test(t)) { gmToast("That looks like a card number. Remove it: the card's name and statement day are all this needs."); return 0; }
+    var c = cards(), n = 0;
+    t.split(/\n+/).forEach(function (line) {
+      var m = line.trim().match(/^(.{2,60}?)[,\s]+(\d{1,2})(?:st|nd|rd|th)?\s*$/i);
+      if (!m) return; var d = +m[2]; if (d < 1 || d > 31) return;
+      c.push({ id: "c" + Date.now().toString(36) + n, name: m[1].replace(/[,\s]+$/, ""), stmt: d }); n++;
+    });
+    if (!n) { gmToast("Write each card as its name, a comma, then its statement day, e.g. HDFC Swiggy, 13"); return 0; }
+    S_(CK, c); renderAll(); gmToast(n + " card" + (n > 1 ? "s" : "") + " added."); return n;
+  };
+  window.gmCardsDel = function (id) { S_(CK, cards().filter(function (x) { return x.id !== id; })); renderAll(); };
+  // The Money view opens with the card guide.
+  // Inside the view's own padded section, so it lines up with everything else on the screen.
+  if (typeof renderMoney === "function") { var _rm = renderMoney; renderMoney = function (E) {
+    // After the hero (the one open action stays first), before the view's first section heading.
+    var h = _rm(E), m = /<div class="section[^"]*"[^>]*>/.exec(h), from = m ? m.index + m[0].length : 0, k = h.indexOf('<div class="cat-t"', from);
+    return k > -1 ? h.slice(0, k) + gmCardsHTML() + h.slice(k) : h + gmCardsHTML();
+  }; }
+
+  // ── The message reader ──
+  var KINDS = [
+    { id: "epf", label: "EPF balance", key: /\b(epfo?|provident fund|uan)\b/i, near: /bal/i },
+    { id: "nps", label: "NPS value", key: /\b(nps|pran)\b/i, near: /(value|holding|balance)/i },
+    { id: "mf", label: "Mutual funds value", key: /(mutual fund|\bcas\b|folio|portfolio|valuation)/i, near: /(value|valuation|worth)/i },
+    { id: "due", label: "Card bill due", key: /(total|min(imum)?)?\s*(amt|amount)\s*(due|payable)|bill (is )?(generated|due)/i, near: /(due|payable)/i },
+    { id: "bank", label: "Bank balance", key: /(avl|avail(able)?|a\/c|acct|account|clear)\b.{0,40}\bbal/i, near: /bal/i }
+  ];
+  var AMT = /(?:₹|rs\.?|inr)\s*([\d,]+(?:\.\d{1,2})?)/gi;
+  window.gmReadMessage = function (text) {
+    var t = String(text || "").slice(0, 20000), out = [];
+    var kind = KINDS.filter(function (k) { return k.key.test(t); })[0];
+    if (!kind) return { kind: null, amount: null };
+    var m, best = null, at = t.search(kind.near); AMT.lastIndex = 0;
+    while ((m = AMT.exec(t))) { var v = parseFloat(m[1].replace(/,/g, "")); if (!isNaN(v)) out.push({ v: v, i: m.index }); }
+    out.forEach(function (o) { var d = Math.abs(o.i - (at < 0 ? 0 : at)); if (!best || d < best.d) best = { v: o.v, d: d }; });
+    return { kind: kind.id, label: kind.label, amount: best ? best.v : null };
+  };
+  function assets() { var a = G(AK, {}); return a && typeof a === "object" && !Array.isArray(a) ? a : {}; }
+  function ago(at) { var d = Math.floor((Date.now() - at) / 864e5); return d <= 0 ? "today" : d === 1 ? "yesterday" : d + " days ago"; }
+  function inr(v) { try { return "₹" + Math.round(v).toLocaleString("en-IN"); } catch (e) { return "₹" + Math.round(v); } }
+  window.gmAssetSave = function (kind, v) {
+    var a = assets(); a[kind] = { v: +v, at: Date.now() }; S_(AK, a);
+    if (kind === "bank" && typeof gmLifeSet === "function") gmLifeSet("ef", (+v / 1e5).toFixed(2));
+    var sum = ["epf", "nps", "mf", "bank"].reduce(function (s, k) { return s + (a[k] ? a[k].v : 0); }, 0) - (a.due ? a.due.v : 0);
+    if (S && sum > 0) { S.intData = S.intData || {}; S.vals = S.vals || {}; S.intData.networth = S.vals.networth = +(sum / 1e5).toFixed(2); store("sovS", S); }
+    if (typeof gmClose === "function") gmClose(); renderAll();
+    gmToast("Saved. Your net worth now comes from your statements.");
+  };
+  window.gmReadOpen = function (text) {
+    var r = gmReadMessage(text), body = '<div style="font-weight:800;font-size:15px;margin-bottom:6px">From your message</div>';
+    if (DIGITS.test(String(text || "").replace(/(?:₹|rs\.?|inr)\s*[\d,]+(?:\.\d+)?/gi, ""))) body += '<p class="gm-card-note">This message holds a long number (an account or card number). Nothing but the amount below is kept.</p>';
+    if (r.amount == null) body += '<p>No balance or amount found. Share a balance or bill message from your bank, EPFO, NPS or fund registrar.</p>';
+    else body += '<p>' + esc(r.label) + ': <b>' + inr(r.amount) + '</b></p><button type="button" class="btn-sm" onclick="gmAssetSave(\'' + r.kind + '\',' + r.amount + ')">Save it</button> ';
+    body += '<button type="button" class="btn-sm" onclick="gmClose()">Not now</button>';
+    gmDlg(body);
+  };
+  window.gmReaderHTML = function () {
+    var a = assets(), rows = [["bank", "Bank"], ["epf", "EPF"], ["nps", "NPS"], ["mf", "Funds"], ["due", "Card bills due"]].filter(function (k) { return a[k[0]]; });
+    return '<div class="kc gm-reader"><b>Numbers from your messages, not guesses</b>'
+      + '<p>Share an EPFO balance SMS, a bank balance SMS, a card bill or a fund statement’s total to the Life OS (Share, then Life OS), or paste it here. It is read on this phone and never leaves it.</p>'
+      + '<textarea id="gmReadIn" rows="2" placeholder="Paste a balance or bill message"></textarea>'
+      + '<button type="button" class="btn-sm" onclick="gmReadOpen(document.getElementById(\'gmReadIn\').value)">Read it</button>'
+      + (rows.length ? '<ul class="gm-assets">' + rows.map(function (k) { return '<li>' + k[1] + ': <b>' + inr(a[k[0]].v) + '</b> <small>updated ' + ago(a[k[0]].at) + '</small></li>'; }).join("") + '</ul>' : '')
+      + '<p class="gm-card-note">EPF by SMS: send EPFOHO, your UAN and ENG to EPFO\u2019s SMS number (on the EPFO member portal) from your registered mobile, then share the reply here.</p></div>';
+  };
+  // A message shared from another app arrives through the service worker, held on the device; read it once, then delete it.
+  try {
+    if (location.hash === "#shared" && window.caches) {
+      caches.open("gm-share").then(function (c) {
+        return c.match("./shared-text").then(function (r) { c.delete("./shared-text"); return r ? r.text() : ""; });
+      }).then(function (t) { try { history.replaceState(null, "", location.pathname); } catch (e) {} if (t) setTimeout(function () { gmReadOpen(t); }, 400); });
+    }
+  } catch (e) {}
+  try {
+    var st = document.createElement("style");
+    st.textContent = ".gm-cards p,.gm-reader p{margin:6px 0}.gm-card-now{font-size:15px}.gm-card-picks{margin:8px 0;padding-inline-start:18px}.gm-card-picks li{margin:6px 0}"
+      + ".gm-card-picks small,.gm-assets small{display:block;color:var(--muted);font-size:12.5px}.gm-card-note{font-size:12.5px;color:var(--muted)}"
+      + ".gm-cards textarea,.gm-reader textarea{width:100%;min-height:64px;margin:6px 0;font:inherit;font-size:15px;border-radius:12px;padding:10px;border:1px solid var(--border);background:var(--card);color:var(--text)}"
+      + ".gm-card-l{display:block;font-size:13px;color:var(--muted);margin-top:8px}.gm-card-list{padding:0;list-style:none}.gm-card-list li{display:flex;align-items:center;justify-content:space-between;gap:8px;min-height:44px}"
+      + ".gm-assets{list-style:none;padding:0;margin:8px 0}.gm-card-more{margin-top:10px}.gm-reader{margin-bottom:12px}";
+    document.head.appendChild(st);
+  } catch (e) {}
 })();
 
 </script>
