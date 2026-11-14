@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- No coloured tap shadow on any button in any SecuRAX app (shared look; a test holds it).
 - Secrets are the estate's job: never ask a person to copy or paste a token, key or credential (zero-setup, friction copy-paste-secrets).
 - Principle zero-setup: a person never installs a second app or configures anything; the SMS forwarder and ntfy become folded owner-only fallbacks, web push and e-mail alerts are queued to replace them.
 
