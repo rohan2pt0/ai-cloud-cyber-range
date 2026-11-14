@@ -15,7 +15,8 @@ setTimeout(() => {
       const t = vis(none.document, none.document.querySelector(".section.active"));
       ok(!/Quarterly Quarter/i.test(t) && /Quarterly Goals/.test(t), "the goals heading reads 'Quarterly Goals', never 'Quarterly Quarter goals'");
       // a No hides what cannot apply; unanswered still shows
-      const more = (w) => { w.gmNavMore && w.gmNavMore(true); return vis(w.document, w.document.getElementById("gmMoreSheet") || w.document.body); };
+      // (on the full menu: start simple shows three doors until the person asks for everything)
+      const more = (w) => { w.gmSimple && w.gmSimple(false); w.gmNavMore && w.gmNavMore(true); return vis(w.document, w.document.getElementById("gmMoreSheet") || w.document.body); };
       ok(/\bKids\b/.test(more(none)), "Kids shows while the question is unanswered");
       ok(!/\bKids\b/.test(more(no)), "Kids is hidden after 'No children'");
       ok(none.RISKS.some(r => r.id === "r_vehicle") && !no.RISKS.some(r => r.id === "r_vehicle"), "the vehicle checklist leaves after 'No vehicle'");

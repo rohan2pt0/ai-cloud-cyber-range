@@ -24,13 +24,17 @@ setTimeout(() => {
   ok(w.gmIcon("not-a-tab") === "", "an unknown id gives no icon");
   ok(/width="20"/.test(w.gmIcon("today", 20)) && /height="20"/.test(w.gmIcon("today", 20)), "the size is honoured");
 
+  // Start simple (owner, 2026-11-14) shows three doors; every tab's icon is checked on the full menu (Show everything).
   w.gmNavMore(true);
+  const simple = doc.getElementById("gmMoreSheet");
+  ok([...simple.querySelectorAll(".sh button[role=menuitem]")].filter((b) => !/Show everything/.test(b.textContent)).every((b) => b.querySelector(".gi svg")), "the three simple doors carry their icons");
+  w.gmSimple(false); w.gmNavMore(true);
   const sheet = doc.getElementById("gmMoreSheet");
   ok(sheet && sheet.classList.contains("on"), "the More sheet opens");
   const main = ["today", "inbox", "okr", "ask"];
   const tiles = w.TABS.filter((t) => main.indexOf(t[0]) < 0);
   const buttons = Array.from(sheet.querySelectorAll(".sh button"));
-  ok(buttons.length === tiles.length + 1, "one tile per other tab, plus All apps");
+  ok(buttons.length === tiles.length + 2, "one tile per other tab, plus All apps and Back to simple");
   tiles.forEach((t, i) => {
     const b = buttons.find((x) => (x.getAttribute("onclick") || "").indexOf("'" + t[0] + "'") >= 0), gi = b && b.firstElementChild;
     ok(!!b && !!gi && gi.classList.contains("gi") && gi.querySelectorAll("svg").length === 1, t[0] + ": one icon above the label");
