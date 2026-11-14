@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- **Alerts with one Allow tap** (zero-setup, slice 1b part 2): a paired Life OS (gm_sync_cfg) turns the Nudges card into one "Allow alerts" tap that uses the estate's own push endpoint — no address to paste, no second app; the ntfy text and the Worker URL fold under "Other ways (for engineers)", and the old card is unchanged without a pairing. `test99.js` holds it.
 - **One card and the check-in** (start simple, calm-and-real part 3): the Menu keeps five items with its three switches under Settings (3); a newcomer's Today shows the Start card and the three, with the five numbers waiting under More for today, and no number bar along the bottom of a wider screen. Show everything brings both back.
 - **Start simple grows gently** (owner, 2026-11-14): a new person's More sheet opens Money, Breaks and Life balance; one more door unlocks each week of use (Shield, Deadlines, Systems, Guides, Stack), a just-unlocked door says new, and Show everything counts only what is left. `test97.js` holds it.
 - **Alerts with nothing to install** (zero-setup, slice 1b part 1): estate-sync sends web push itself. It makes its own signing key once, a paired Life OS subscribes with one Allow tap, and `./securax notify` uses it before ntfy, encrypted for each device so the push service cannot read it; only the browsers' own push services are ever contacted (threat model estate-web-push). The Allow button in the Life OS comes next.

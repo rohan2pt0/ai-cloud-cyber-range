@@ -2417,6 +2417,28 @@
     return a;
   }
   window.gmPushOn = function () {
+    var sc = G("gm_sync_cfg", null);
+    if (sc && sc.url && sc.user) {
+      // zero-setup: the estate makes its own VAPID key and stores the subscription; nothing to paste, no second app.
+      if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
+        alert("This browser cannot receive push. On iPhone/iPad the app must be installed to the Home Screen from Safari first."); return;
+      }
+      return Notification.requestPermission().then(function (perm) {
+        if (perm !== "granted") { alert("Notifications were not allowed. Nothing else to do \u2014 the app still nudges you when you open it."); return; }
+        return fetch(sc.url + "/push/key?user=" + encodeURIComponent(sc.user), { headers: syncHeaders(sc), credentials: sc.access ? "include" : "omit" })
+          .then(function (r) { if (!r.ok) throw new Error("refused"); return r.json(); })
+          .then(function (v) {
+            return navigator.serviceWorker.ready.then(function (reg) {
+              return reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: u8(v.key) });
+            });
+          }).then(function (sub) {
+            return fetch(sc.url + "/push/subscribe?user=" + encodeURIComponent(sc.user), {
+              method: "POST", headers: syncHeaders(sc), credentials: sc.access ? "include" : "omit",
+              body: JSON.stringify({ subscription: sub.toJSON ? sub.toJSON() : sub, label: "phone" })
+            }).then(function (r) { if (!r.ok) throw new Error("refused"); });
+          }).then(function () { S_("gm_push_on", true); S_("gm_push_via", "estate"); renderAll(); });
+      }).catch(function () { alert("Alerts could not be turned on. Check that your estate is reachable and that notifications are allowed, then try again."); });
+    }
     var w = (document.getElementById("pushUrl") || {}).value;
     if (w) S_("gm_push_cfg", { url: w.trim().replace(/\/+$/, "") });
     var c = pushCfg();
@@ -2438,33 +2460,47 @@
     }).catch(function (e) { alert("Could not enable nudges: " + e.message); });
   };
   window.gmPushOff = function () {
-    var c = pushCfg();
-    navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); })
+    var sc = G("gm_sync_cfg", null), via = G("gm_push_via", "");
+    return navigator.serviceWorker.ready.then(function (reg) { return reg.pushManager.getSubscription(); })
       .then(function (s) {
         if (!s) return;
         var ep = s.endpoint;
         return s.unsubscribe().then(function () {
+          if (via === "estate" && sc && sc.url && sc.user) {
+            return fetch(sc.url + "/push/subscribe?user=" + encodeURIComponent(sc.user) + "&endpoint=" + encodeURIComponent(ep),
+              { method: "DELETE", headers: syncHeaders(sc), credentials: sc.access ? "include" : "omit" }).catch(function () {});
+          }
+          var c = pushCfg();
           if (c) return fetch(c.url + "/unsubscribe", {
             method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ endpoint: ep })
           });
         });
-      }).then(function () { localStorage.removeItem("gm_push_on"); renderAll(); });
+      }).then(function () { localStorage.removeItem("gm_push_on"); localStorage.removeItem("gm_push_via"); renderAll(); });
   };
   function pushHTML() {
     var on = G("gm_push_on", false), c = pushCfg();
+    var sc = G("gm_sync_cfg", null), via = G("gm_push_via", "");
+    var other = '<div class="info">A web app cannot wake your phone on a schedule; your SecuRAX estate can, through the free ntfy app. '
+      + 'On the estate, run <code>./securax notify setup</code> (it shows the topic to subscribe to on your phone), then '
+      + '<code>./securax routines on checkin-nudge</code> for a nudge at 7am and 7pm.</div>'
+      + '<details style="margin-top:6px"><summary style="cursor:pointer;color:var(--muted);font-size:12px">Already run your own Web Push sender?</summary>'
+      + '<div class="info">Paste its address here and this device subscribes to it. On iPhone/iPad, install the app from Safari first.</div>'
+      + '<label class="f-label">Worker URL</label><input id="pushUrl" placeholder="https://gm-push.yourname.workers.dev" value="' + esc((c && c.url) || "") + '">'
+      + '<button class="btn btn-p" onclick="gmPushOn()">Enable nudges on this device</button></details>';
     var h = '<div class="cat-t">\u{1F514} Nudges</div>';
     if (on) {
-      h += '<div class="info">This device is registered. Two nudges a day, 7am and 7pm IST. '
-        + 'Register each device separately \u2014 the subscription belongs to the install, not to you.</div>'
+      h += '<div class="info">' + (via === "estate"
+        ? "Alerts from your estate reach this device."
+        : "This device is registered. Two nudges a day, 7am and 7pm IST. Register each device separately \u2014 the subscription belongs to the install, not to you.")
+        + '</div>'
         + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmPushOff()">Turn nudges off here</button>';
+    } else if (sc && sc.url && sc.user) {
+      h += '<div class="info">Alerts from your estate, on this device. One tap; nothing to install.</div>'
+        + '<button class="btn btn-p" onclick="gmPushOn()">Allow alerts</button>'
+        + '<details style="margin-top:6px"><summary style="cursor:pointer;color:var(--muted);font-size:12px">Other ways (for engineers)</summary>'
+        + other + '</details>';
     } else {
-      h += '<div class="info">A web app cannot wake your phone on a schedule; your SecuRAX estate can, through the free ntfy app. '
-        + 'On the estate, run <code>./securax notify setup</code> (it shows the topic to subscribe to on your phone), then '
-        + '<code>./securax routines on checkin-nudge</code> for a nudge at 7am and 7pm.</div>'
-        + '<details style="margin-top:6px"><summary style="cursor:pointer;color:var(--muted);font-size:12px">Already run your own Web Push sender?</summary>'
-        + '<div class="info">Paste its address here and this device subscribes to it. On iPhone/iPad, install the app from Safari first.</div>'
-        + '<label class="f-label">Worker URL</label><input id="pushUrl" placeholder="https://gm-push.yourname.workers.dev" value="' + esc((c && c.url) || "") + '">'
-        + '<button class="btn btn-p" onclick="gmPushOn()">Enable nudges on this device</button></details>';
+      h += other;
     }
     return h;
   }
