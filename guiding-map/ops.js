@@ -7649,10 +7649,10 @@
     if (!locked) { if (el) el.remove(); return; }
     if (el) return;
     el = document.createElement("div"); el.id = "gmLock"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", "Life OS is locked");
-    el.innerHTML = '<div class="gm-lock-card">' + (window.SXSky ? SXSky.seal() : '') + '<h2>Locked</h2>'
-      + '<p>' + (/Windows/.test(navigator.userAgent || "") ? 'Unlock with Windows Hello, your fingerprint or face.' : 'Unlock with your fingerprint or face.') + '</p>'
-      + '<button type="button" class="gm-lock-go" onclick="gmUnlock()">Unlock</button>'
-      + '<details class="gm-lock-rec"><summary>Use your recovery code</summary><input id="gmLockCode" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX" aria-label="Recovery code">'
+    el.innerHTML = '<div class="gm-lock-card sx-glass sx-lock-card">' + (window.SXSky ? SXSky.seal() : '') + '<h2 class="sx-lock-title">Locked</h2>'
+      + '<p class="sx-lock-sub">' + (/Windows/.test(navigator.userAgent || "") ? 'Unlock with Windows Hello, your fingerprint or face.' : 'Unlock with your fingerprint or face.') + '</p>'
+      + '<button type="button" class="gm-lock-go sx-lock-key" onclick="gmUnlock()">Unlock</button>'
+      + '<details class="gm-lock-rec"><summary class="sx-lock-alt">Use your recovery code</summary><input id="gmLockCode" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="XXXX-XXXX-XXXX-XXXX" aria-label="Recovery code">'
       + '<button type="button" onclick="gmUnlockCode(document.getElementById(\'gmLockCode\').value)">Unlock with code</button></details>'
       + '<div class="gm-lock-msg" aria-live="polite"></div></div>';
     document.body.appendChild(el);
@@ -7737,13 +7737,13 @@
     st.textContent = "html.gm-locked body > *:not(#gmLock){visibility:hidden}html.gm-veil body > *:not(#gmLock){filter:blur(18px)}"
       + "#gmLock{position:fixed;inset:0;z-index:99999;display:grid;place-items:center;padding:24px;background:radial-gradient(120% 80% at 50% 0%,#1d3557 0%,#0e1f38 50%,#07101f 100%);color:#eef3f8}"
       + ".gm-lock-card{width:100%;max-width:360px;text-align:center;position:relative}"
-      + "#gmLock{isolation:isolate;overflow:hidden}.gm-lock-card{z-index:1}.gm-lock-card::before{content:'';position:absolute;inset:-60px -40px;z-index:-1;pointer-events:none;background:radial-gradient(closest-side,rgba(7,14,28,.72),rgba(7,14,28,.45) 60%,rgba(7,14,28,0))}"
+      + "#gmLock{isolation:isolate;overflow:hidden}.gm-lock-card{z-index:1}"
       + ".gm-lock-go{position:relative;overflow:hidden;}.gm-lock-go::after{content:'';position:absolute;top:0;bottom:0;left:-60%;width:38%;transform:skewX(-20deg);background:linear-gradient(90deg,transparent,rgba(255,255,255,.55),transparent);animation:gmLkGlint 4.8s ease-in-out infinite}"
       + "@keyframes gmLkGlint{0%,60%{left:-60%}85%,100%{left:130%}}"
       + "@media (prefers-reduced-motion:reduce){.gm-lock-go::after{display:none}}"
-      + ".gm-lock-rec summary{list-style:none;font-size:14px;letter-spacing:.02em}.gm-lock-rec summary::-webkit-details-marker{display:none}.gm-lock-rec summary::marker{content:''}#gmLock .gm-lock-rec summary::before{content:none}#gmLock .gm-lock-rec summary{text-decoration:underline;text-decoration-color:rgba(217,183,90,.45);text-underline-offset:5px}.gm-lock-card h2{font-family:var(--font-display,serif);font-weight:400;font-size:30px;margin:0 0 6px;color:#f4e7c1}"
-      + ".gm-lock-card p{color:#a9b6cc;font-size:14px;margin:0 0 18px}.gm-lock-go{width:100%;min-height:52px;border-radius:16px;border:0;font-weight:800;font-size:16px;cursor:pointer;color:#2b1b03;border:1px solid #8a6418;background-color:#e0bb66;background-image:var(--sx-gold-face,linear-gradient(180deg,#fff4d2 0%,#f4dc98 16%,#e0bb66 36%,#bf9038 49%,#b3872f 53%,#c99c45 62%,#e3c06d 80%,#f3d991 92%,#c9a04a 100%));box-shadow:inset 0 1px 0 rgba(255,250,232,.95),inset 0 -1px 0 rgba(96,64,10,.55),inset 0 0 0 1px rgba(255,236,180,.18),0 1px 0 rgba(255,255,255,.06),0 2px 4px rgba(70,46,6,.35),0 10px 24px rgba(0,0,0,.32);text-shadow:0 1px 0 rgba(255,244,214,.6);font-weight:800}"
-      + ".gm-lock-rec{margin-top:16px;text-align:start}.gm-lock-rec summary{cursor:pointer;color:#d9b75a;min-height:44px;display:flex;align-items:center;justify-content:center}.gm-lock-rec input{width:100%;min-height:48px;font-size:16px;letter-spacing:.1em;text-align:center;margin:6px 0;border-radius:12px}"
+      + ".gm-lock-rec summary{list-style:none}.gm-lock-rec summary::-webkit-details-marker{display:none}.gm-lock-rec summary::marker{content:''}#gmLock .gm-lock-rec summary::before{content:none}#gmLock .gm-lock-rec summary{text-decoration:underline;text-decoration-color:rgba(223,225,220,.35);text-underline-offset:6px}"
+      + ".gm-lock-go{width:100%;min-height:52px;border-radius:16px;border:0;cursor:pointer;color:#2b1b03;border:1px solid #8a6418;background-color:#e0bb66;background-image:var(--sx-gold-face,linear-gradient(180deg,#fff4d2 0%,#f4dc98 16%,#e0bb66 36%,#bf9038 49%,#b3872f 53%,#c99c45 62%,#e3c06d 80%,#f3d991 92%,#c9a04a 100%));box-shadow:inset 0 1px 0 rgba(255,250,232,.95),inset 0 -1px 0 rgba(96,64,10,.55),inset 0 0 0 1px rgba(255,236,180,.18),0 1px 0 rgba(255,255,255,.06),0 2px 4px rgba(70,46,6,.35),0 10px 24px rgba(0,0,0,.32);text-shadow:0 1px 0 rgba(255,244,214,.6)}"
+      + ".gm-lock-rec{margin-top:16px;text-align:start}.gm-lock-rec summary{cursor:pointer;min-height:44px;display:flex;align-items:center;justify-content:center}.gm-lock-rec input{width:100%;min-height:48px;font-size:16px;letter-spacing:.1em;text-align:center;margin:6px 0;border-radius:12px}"
       + ".gm-lock-rec button{width:100%;min-height:46px;border-radius:12px;border:1px solid rgba(217,183,90,.6);background:transparent;color:#eef3f8;font-weight:700}.gm-lock-msg{min-height:20px;margin-top:10px;color:#f0b8a8;font-size:13px}"
       + ".gm-lock-code{font-family:ui-monospace,Menlo,monospace;font-size:18px;letter-spacing:.12em;text-align:center;padding:12px;border-radius:12px;border:1px dashed rgba(201,168,76,.7);background:var(--cardAlt)}";
     document.head.appendChild(st);

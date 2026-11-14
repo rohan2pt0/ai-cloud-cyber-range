@@ -20,3 +20,13 @@ loaded over the network, never a Times fallback.
 The OFL has no Reserved Font Name for this family, so the subset keeps the original family name.
 Georgia is the fallback if the embedded face ever fails; only the printed emergency sheet uses a
 plain system serif on purpose (serif reads better on paper).
+
+## Jost (the shared sans, 2026-11-14)
+
+- **Family:** Jost, variable (weights 100 to 900, upright), Latin subset.
+- **Licence:** SIL Open Font License 1.1, see [`Jost-OFL.txt`](Jost-OFL.txt). Copyright 2020 The Jost Project Authors
+  (<https://github.com/indestructible-type/Jost>), via the Fontsource package `@fontsource-variable/jost` 5.3.0.
+- **Why:** a geometric sans in the Futura tradition, the classic text face of the great luxury houses; it pairs with the
+  editorial serif above (display only). Text is sized by x-height (`font-size-adjust`), so the switch kept every layout.
+- **How it is shipped:** `guiding-map/build.js` (the Life OS) and `governance/oskit.py` (every kit edition) embed
+  `Jost-Variable.woff2` (about 27 KB) as a `data:` URI with the shared look (`shared/lux.css`). Offline, no network.

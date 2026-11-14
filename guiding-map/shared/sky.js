@@ -185,8 +185,24 @@
   }
   // The gold seal for a lock or a hero: a polished turning ring, a breathing glow, a line-drawn padlock with a glowing
   // keyhole. Its look is .sx-seal in shared/lux.css. Decoration only (aria-hidden).
+  // A round brilliant seen from above, as on a watch bezel: the table, star and kite facets in the cold greys and whites a
+  // real diamond throws back, with a spectral flash (its fire) and a sparkle now and then (lux.css .sx-seal-gem).
+  function gem() {
+    var c = 11, R = 10, r = 5.2, pts = [], i, a, h = "";
+    for (i = 0; i < 8; i++) { a = i / 8 * Math.PI * 2 - Math.PI / 8; pts.push([c + Math.cos(a) * R, c + Math.sin(a) * R, c + Math.cos(a) * r, c + Math.sin(a) * r]); }
+    var shades = ["#ffffff", "#c9d3e0", "#eef3fa", "#8e9bb0", "#f7fbff", "#b4c0d2", "#e2e9f4", "#9aa6ba"];
+    for (i = 0; i < 8; i++) {
+      var p = pts[i], q = pts[(i + 1) % 8];
+      h += '<path d="M' + p[0].toFixed(2) + " " + p[1].toFixed(2) + "L" + q[0].toFixed(2) + " " + q[1].toFixed(2) + "L" + q[2].toFixed(2) + " " + q[3].toFixed(2) + "L" + p[2].toFixed(2) + " " + p[3].toFixed(2) + 'Z" fill="' + shades[i] + '"/>';
+    }
+    var tbl = pts.map(function (p) { return p[2].toFixed(2) + " " + p[3].toFixed(2); }).join(" L");
+    h += '<path d="M' + tbl + 'Z" fill="url(#sxGemT)"/>';
+    return '<span class="sx-seal-gem"><svg viewBox="0 0 22 22" width="22" height="22"><defs><linearGradient id="sxGemT" x1="0" y1="0" x2="1" y2="1">'
+      + '<stop offset="0" stop-color="#ffffff"/><stop offset=".5" stop-color="#dfe7f2"/><stop offset="1" stop-color="#aab6c8"/></linearGradient></defs>'
+      + '<circle cx="11" cy="11" r="10.6" fill="none" stroke="url(#sxSealG)" stroke-width="1.2"/>' + h + '</svg><i></i><b></b></span>';
+  }
   function seal() {
-    return '<div class="sx-seal" aria-hidden="true"><i class="sx-seal-ring"></i><i class="sx-seal-halo"></i>'
+    return '<div class="sx-seal" aria-hidden="true"><i class="sx-seal-ring"></i><i class="sx-seal-halo"></i>' + gem()
       + '<svg viewBox="0 0 64 64" width="72" height="72"><defs><linearGradient id="sxSealG" x1="0" y1="0" x2=".35" y2="1">'
       + '<stop offset="0" stop-color="#fff4d2"/><stop offset=".22" stop-color="#ecc979"/><stop offset=".48" stop-color="#a87b26"/><stop offset=".55" stop-color="#8a6118"/>'
       + '<stop offset=".68" stop-color="#d0a24a"/><stop offset=".88" stop-color="#f3d991"/><stop offset="1" stop-color="#a77a22"/></linearGradient></defs>'

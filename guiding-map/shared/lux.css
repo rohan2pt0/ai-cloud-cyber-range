@@ -32,20 +32,74 @@
 /* A quiet text action for something rare or risky, away from the safe one. */
 .sx-quiet{background:none;border:0;box-shadow:none;color:inherit;opacity:.75;text-decoration:underline;text-underline-offset:3px;min-height:44px;cursor:pointer}
 
+/* ── Type (owner 2026-11-14: "designers of Paris must approve"): one editorial serif for display, one geometric sans for
+   everything else, both embedded so they work offline (guiding-map/fonts, SIL OFL). The sans is sized by its x-height, so a
+   switch of face never changes how large text reads; scripts the faces lack (Gujarati, Devanagari) fall back per letter. */
+:root{--sx-serif:'Instrument Serif',Georgia,'Times New Roman',serif;--sx-sans:'Jost',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,system-ui,sans-serif;--font-ui:var(--sx-sans)}
+html body{font-family:var(--sx-sans);font-size-adjust:.5;letter-spacing:.004em;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility;font-feature-settings:'kern' 1,'liga' 1}
+.sx-display{font-family:var(--sx-serif);font-weight:400;font-size-adjust:none;letter-spacing:-.005em;line-height:1.05}
+.sx-eyebrow{font-family:var(--sx-sans);font-size:11.5px;font-weight:500;letter-spacing:.22em;text-transform:uppercase}
+
+/* ── Materials, used sparingly and true to life: platinum (cool, slightly warm white metal), a brilliant-cut diamond,
+   frosted glass, midnight velvet. The light on metal follows the phone: --sx-tx / --sx-ty (-1..1) come from the device's
+   tilt or the pointer (shared/touch.js), so the horizon in polished gold and platinum moves as it would in the hand. */
+:root{--sx-platinum-face:linear-gradient(180deg,#fbfbf9 0%,#ecece8 16%,#d3d4cf 38%,#aeafaa 49%,#a3a49f 53%,#bebfba 62%,#dcddd8 80%,#f2f2ef 92%,#c4c5c0 100%);--sx-platinum-edge:linear-gradient(135deg,#8d8e8a 0%,#d6d7d2 18%,#fbfbf9 34%,#c3c4bf 50%,#8f908b 64%,#e4e5e0 82%,#a9aaa5 100%);--sx-velvet:url("data:image/svg+xml,%3Csvg xmlns='http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .07 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.sx-platinum{color:#1d1f22;border:1px solid #8d8e8a;background-color:#d3d4cf;background-image:var(--sx-platinum-face);background-size:100% 180%;background-position:50% calc(50% + var(--sx-ty,0) * 28%);box-shadow:inset 0 1px 0 #fff,inset 0 -1px 0 rgba(60,60,60,.35),0 6px 16px rgba(0,0,0,.25)}
+.sx-platinum-text{color:#dfe1dc}
+.sx-glass{background-color:rgba(12,22,42,.42);background-image:linear-gradient(160deg,rgba(255,255,255,.12),rgba(255,255,255,.03) 38%,rgba(255,255,255,0) 60%);-webkit-backdrop-filter:blur(16px) saturate(150%);backdrop-filter:blur(16px) saturate(150%);border:1px solid rgba(255,255,255,.11);box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 -1px 0 rgba(0,0,0,.25),0 24px 60px rgba(0,0,0,.40)}
+.sx-velvet{background-image:var(--sx-velvet),radial-gradient(120% 90% at 50% 0%,rgba(255,255,255,.06),rgba(255,255,255,0) 60%)}
+/* Polished gold follows the light. */
+.sx-gold,#oskMain button.primary,.gm-lock-go{background-size:100% 180%;background-position:50% calc(50% + var(--sx-ty,0) * 28%)}
+/* A press is physical: the key sinks fast and springs back; a ripple of light spreads from the finger (shared/touch.js). */
+button,.sx-key,[role=button]{transition:transform .5s cubic-bezier(.34,1.56,.64,1),box-shadow .2s ease,background-color .2s ease}
+button:active,.sx-key:active,[role=button]:active{transform:scale(.965);transition-duration:.07s}
+.sx-ripple-clip{position:absolute;inset:0;overflow:hidden;border-radius:inherit;pointer-events:none;z-index:0}
+.sx-ripple{position:absolute;border-radius:50%;transform:scale(0);opacity:.32;background:radial-gradient(circle,currentColor 0%,currentColor 30%,rgba(255,255,255,0) 70%);animation:sxRipple .65s cubic-bezier(.2,.7,.3,1) forwards}
+@keyframes sxRipple{to{transform:scale(1);opacity:0}}
+/* The diamond on the seal's bezel: a brilliant at twelve o'clock, with fire (spectral glints) now and then. */
+.sx-seal-gem{position:absolute;top:-11px;left:50%;width:22px;height:22px;margin-left:-11px;z-index:3;filter:drop-shadow(0 1px 2px rgba(0,0,0,.6))}
+.sx-seal-gem i{position:absolute;left:50%;top:50%;width:26px;height:26px;margin:-13px 0 0 -13px;border-radius:50%;background:conic-gradient(from 0deg,rgba(255,80,80,0),rgba(255,120,120,.5),rgba(255,230,120,.5),rgba(120,255,170,.5),rgba(110,180,255,.55),rgba(200,120,255,.5),rgba(255,80,80,0));-webkit-mask:radial-gradient(circle,#000 0 20%,transparent 62%);mask:radial-gradient(circle,#000 0 20%,transparent 62%);opacity:0;animation:sxFire 5.2s ease-in-out infinite;mix-blend-mode:screen}
+.sx-seal-gem b{position:absolute;left:50%;top:50%;width:30px;height:30px;margin:-15px 0 0 -15px;background:linear-gradient(90deg,transparent 47%,#fff 50%,transparent 53%),linear-gradient(0deg,transparent 47%,#fff 50%,transparent 53%);opacity:0;transform:scale(.3) rotate(0deg);animation:sxSparkle 5.2s ease-in-out infinite;filter:blur(.3px)}
+@keyframes sxFire{0%,55%,100%{opacity:0;transform:rotate(0)}66%{opacity:.95;transform:rotate(80deg)}80%{opacity:0;transform:rotate(160deg)}}
+@keyframes sxSparkle{0%,58%,100%{opacity:0;transform:scale(.3) rotate(0)}67%{opacity:1;transform:scale(1) rotate(25deg)}78%{opacity:0;transform:scale(.4) rotate(45deg)}}
+/* The bezel is two metals, as a jeweller would set it: gold outside, a platinum line inside. */
+.sx-seal::before{content:"";position:absolute;inset:3px;border-radius:50%;z-index:1;background:var(--sx-platinum-edge);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 1.5px),#000 calc(100% - 1px));mask:radial-gradient(farthest-side,transparent calc(100% - 1.5px),#000 calc(100% - 1px));opacity:.85}
+/* A specular highlight on the seal's dome that moves with the light. */
+.sx-seal::after{content:"";position:absolute;inset:0;border-radius:50%;z-index:1;pointer-events:none;background:radial-gradient(circle at calc(40% + var(--sx-tx,0) * 22%) calc(28% + var(--sx-ty,0) * 22%),rgba(255,255,255,.20),rgba(255,255,255,0) 42%)}
+@media (prefers-reduced-motion:reduce){.sx-ripple,.sx-seal-gem i,.sx-seal-gem b{animation:none;display:none}button,.sx-key,[role=button]{transition:none}}
+
 /* The gold seal (SXSky.seal() in shared/sky.js) and the night lock: one look for every app's lock screen. */
 .sx-seal{position:relative;width:132px;height:132px;margin:0 auto 22px;display:grid;place-items:center;border-radius:50%;background:radial-gradient(circle at 38% 30%,#24375e 0%,#0f1d36 62%,#08111f 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),inset 0 -6px 18px rgba(0,0,0,.45),0 18px 40px rgba(0,0,0,.45)}.sx-seal svg{position:relative;z-index:2;filter:drop-shadow(0 2px 6px rgba(212,175,55,.35))}.sx-seal-ring{position:absolute;inset:-5px;border-radius:50%;background:conic-gradient(from 0deg,#5e400c,#b88a2e 8%,#fff3cf 16%,#d9b25a 24%,#8f6619 36%,#c79a3f 50%,#f6e2a6 62%,#fffaf0 66%,#c9a04a 74%,#7a5512 86%,#5e400c);-webkit-mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2px));mask:radial-gradient(farthest-side,transparent calc(100% - 3px),#000 calc(100% - 2px));animation:sxSpin 9s linear infinite}.sx-seal-halo{position:absolute;inset:-22px;border-radius:50%;z-index:-1;background:radial-gradient(circle,rgba(212,175,55,.32) 0%,rgba(212,175,55,.08) 45%,transparent 70%);animation:sxBreath 3.6s ease-in-out infinite}.sx-seal-key{animation:sxKey 3.6s ease-in-out infinite}@keyframes sxSpin{to{transform:rotate(360deg)}}@keyframes sxBreath{0%,100%{opacity:.55;transform:scale(.94)}50%{opacity:1;transform:scale(1.04)}}@keyframes sxKey{0%,100%{opacity:.7}50%{opacity:1}}
 .sx-glint{position:relative;overflow:hidden}.sx-glint::after{content:"";position:absolute;top:0;bottom:0;left:-60%;width:38%;transform:skewX(-20deg);background:linear-gradient(90deg,rgba(255,255,255,0),rgba(255,255,255,.55),rgba(255,255,255,0));animation:sxGlint 4.8s ease-in-out infinite;pointer-events:none}
 html:has(> body.osk-locked){background:#0b1628}body.osk-locked{background:transparent}
 #oskSky{position:fixed;inset:0;z-index:-1;pointer-events:none;background-color:#0b1628;background-image:radial-gradient(120% 80% at 50% 0%,#1d3557 0%,#0e1f38 50%,#07101f 100%)}
 body.osk-locked #oskMain{isolation:isolate}
-body.osk-locked #oskMain .card.hero{position:relative;max-width:380px;margin:12vh auto 0;background:transparent;border:0;box-shadow:none;text-align:center;color:#eef3f8}
-body.osk-locked #oskMain .card.hero::before{content:"";position:absolute;inset:-50px -30px;z-index:-1;pointer-events:none;background:radial-gradient(closest-side,rgba(7,14,28,.72),rgba(7,14,28,.45) 60%,rgba(7,14,28,0))}
-body.osk-locked #oskMain .card.hero h3{font-size:30px;font-weight:400;color:#f4e7c1;margin:0 0 6px}
-body.osk-locked #oskMain .card.hero p,body.osk-locked #oskMain .card.hero label{color:#b8c4d8}
-body.osk-locked #oskMain .card.hero button.primary{width:100%;min-height:52px;border-radius:16px;font-size:16px}
-body.osk-locked #oskMain .card.hero summary{color:#e2c172;min-height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer}
+body.osk-locked #oskMain .card.hero{position:relative;max-width:380px;margin:9vh auto 0;text-align:center;color:#eef3f8;border-radius:30px;padding:30px 22px 22px;background-color:rgba(12,22,42,.42);background-image:linear-gradient(160deg,rgba(255,255,255,.12),rgba(255,255,255,.03) 38%,rgba(255,255,255,0) 60%);-webkit-backdrop-filter:blur(16px) saturate(150%);backdrop-filter:blur(16px) saturate(150%);border:1px solid rgba(255,255,255,.11);box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 -1px 0 rgba(0,0,0,.25),0 24px 60px rgba(0,0,0,.40)}
+body.osk-locked #oskMain .card.hero h3{font-family:var(--sx-serif);font-weight:400;font-size:52px;font-size-adjust:none;letter-spacing:.01em;line-height:1;color:#f6ead0;margin:4px 0 10px;text-shadow:0 2px 18px rgba(212,175,55,.18)}
+body.osk-locked #oskMain .card.hero p{font-weight:300;font-size:15.5px;letter-spacing:.015em;color:#c6cfdd}body.osk-locked #oskMain .card.hero label{color:#c6cfdd}
+body.osk-locked #oskMain .card.hero button.primary{width:100%;min-height:54px;border-radius:16px;font-size:14px;text-transform:uppercase;letter-spacing:.24em;font-weight:500}
+body.osk-locked #oskMain .card.hero summary{color:#dfe1dc;text-transform:uppercase;letter-spacing:.18em;font-size:11.5px;font-weight:500;list-style:none;min-height:44px;display:flex;align-items:center;justify-content:center;cursor:pointer}
 body.osk-locked #oskMain .card.hero details button{width:100%;margin-top:8px;background:transparent;color:#eef3f8;border:1px solid rgba(217,183,90,.6)}
 @media (prefers-reduced-motion:reduce){.sx-seal-ring,.sx-seal-halo,.sx-seal-key{animation:none}.sx-glint::after{display:none}}
+/* Type and materials in each app's own names. */
+body > header.sx-sky h1{font-family:var(--sx-serif);font-weight:400;font-size:26px;font-size-adjust:none;letter-spacing:0;line-height:1.05}
+body > header.sx-sky h1 small{font-family:var(--sx-sans);font-size:12.5px;letter-spacing:.02em;line-height:1.35;margin-top:4px}
+#oskMain h2{font-family:var(--sx-serif);font-weight:400;font-size:28px;font-size-adjust:none;letter-spacing:-.005em;line-height:1.1}
+#oskMain h3{font-weight:600;letter-spacing:.005em}
+#oskMain .greet{font-family:var(--sx-serif);font-weight:400;font-size:34px;font-size-adjust:none;letter-spacing:-.005em;line-height:1.08}
+#oskMain .north{font-style:normal;font-weight:300;letter-spacing:.01em}
+nav#oskNav{background-image:var(--sx-velvet),linear-gradient(180deg,#0f1d36,#07101f)}
+nav#oskNav button{letter-spacing:.06em;text-transform:uppercase;font-size:11.5px;font-weight:500}
+:root:not([data-theme="light"]) #oskMore .sheet{background-image:var(--sx-velvet),linear-gradient(180deg,#14264a 0%,#0b1628 45%,#060d1a 100%)}
+#oskToast{border-radius:14px;background-color:rgba(12,22,42,.86);color:#eef3f8;-webkit-backdrop-filter:blur(14px) saturate(150%);backdrop-filter:blur(14px) saturate(150%);border:1px solid rgba(255,255,255,.12);box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 18px 40px rgba(0,0,0,.35)}
+#oskToast button{background:rgba(255,255,255,.1);color:#eef3f8;border:1px solid rgba(255,255,255,.2)}
+/* The lock, in every app: frosted glass over the night sky; the title in the serif; the key in polished gold; the quiet
+   way in platinum. */
+.sx-lock-card{max-width:380px;margin-inline:auto;padding:30px 22px 22px;border-radius:30px;text-align:center}
+.sx-lock-title{font-family:var(--sx-serif);font-weight:400;font-size:52px;font-size-adjust:none;letter-spacing:.01em;line-height:1;color:#f6ead0;margin:4px 0 10px;text-shadow:0 2px 18px rgba(212,175,55,.18)}
+.sx-lock-sub{font-weight:300;font-size:15.5px;letter-spacing:.015em;color:#c6cfdd;margin:0 0 22px}
+.sx-lock-key{text-transform:uppercase;letter-spacing:.24em;font-weight:500;font-size:14px}
+.sx-lock-alt{color:#dfe1dc;text-transform:uppercase;letter-spacing:.18em;font-size:11.5px;font-weight:500}
 /* ── Adapters: map each app's own class names onto the shared look (no private copies of the rules above) ── */
 /* Kit editions (Vantage and others): header as the night sky with a gold crest, gold primary, midnight nav with a gold active key. */
 body > header.sx-sky h1, body > header.sx-sky h1 small{color:#eef3f8}
