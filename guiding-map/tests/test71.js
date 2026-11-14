@@ -9,12 +9,12 @@ const dom = new JSDOM(html, { runScripts: "dangerously", url: "http://localhost/
 const w = dom.window, doc = w.document;
 setTimeout(() => {
   try {
-    // Start simple (owner, 2026-11-14): three doors (Money, Protection, Life balance) then Show everything; the full
+    // Start simple (owner, 2026-11-14): three doors (Money, Breaks, Life balance) then Show everything; the full
     // ordering below is checked with everything shown.
     w.gmNavMore(true);
     const simple = doc.getElementById("gmMoreSheet");
     const doors = [...simple.querySelectorAll(".sh button[role=menuitem]")].map((b) => (b.getAttribute("onclick") || "").replace(/.*'(\w+)'.*/, "$1"));
-    ok(doors.slice(0, 3).join() === "money,risk,wheel" && /Show everything/.test(simple.textContent), "simple: the three doors, in risk order, then Show everything: " + doors.join());
+    ok(doors.slice(0, 3).join() === "money,breaks,wheel" && /Show everything/.test(simple.textContent), "simple: the three doors, in risk order, then Show everything: " + doors.join());
     w.gmSimple(false); w.gmNavMore(true);
     const sheet = doc.getElementById("gmMoreSheet");
     const idOf = (b) => ((b.getAttribute("onclick") || "").match(/gmNavGo\('([a-z]+)'\)/) || [])[1];

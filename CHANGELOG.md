@@ -79,6 +79,7 @@ for the versioning and release policy.
 
 - Life OS sky comes alive: stars breathe as they twinkle, and a shooting star crosses the header every 15 to 30 seconds (paused when the app is hidden, off for reduced motion).
 ### Changed
+- **Start simple grows gently** (owner, 2026-11-14): a new person's More sheet opens Money, Breaks and Life balance; one more door unlocks each week of use (Shield, Deadlines, Systems, Guides, Stack), a just-unlocked door says new, and Show everything counts only what is left. `test97.js` holds it.
 - Life OS sky: fewer, finer stars that live only where the header is empty (a band along the top and a thin one at the bottom); the line with the monogram, title and buttons stays clear.
 - Life OS app icon and launch screen: a premium mark (a polished-gold bezel with a fine inner ring, a North Star crowning it, the GM monogram in the editorial serif in gold, on a midnight field of faint stars), rendered from the same gradients as the app; the launch background matches its midnight tone.
 - Life OS final finish at the touch points: jewel checkboxes (glass, a polished-gold fill and a dark tick when set), inlaid text fields with a gold glow in use, gold focus and selection, a frosted midnight confirmation pill with a gold hairline, and a pop-up sheet with a gold handle and edge.
