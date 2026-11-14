@@ -3099,6 +3099,44 @@ function renderPlaybook(){
          downstream with their orbits and fade as they age; dark dust lanes line the inner edge of each arm;
        - an exponential disc of older, warmer stars and a golden central bulge, tilted 56 degrees to the line of sight.
        The disc is drawn face-on in its own layer and then projected, with a soft bloom, as a telescope would see it. */
+    /* The aurora (governance/nature-atlas.json, doc 136), drawn from its physics: curtains of light low over the horizon,
+       bright at the base where atomic oxygen emits at 557.7 nm (about 100 km up), streaked by vertical rays, fading upward
+       into the faint red of oxygen's 630.0 nm line higher up, with a thin violet-blue fringe of nitrogen (427.8 nm) along
+       the lower edge. Added as light over the blue night sky, as the eye and the camera see it; it drifts slowly, and is
+       recomputed four times a second into a cached image. */
+    var AU = null;
+    function drawAurora(t) {
+      if (!AU) { AU = { cv: doc.createElement("canvas") }; AU.cx = AU.cv.getContext("2d"); }
+      var aw = Math.ceil(W / 2), ah = Math.ceil(H * .42);
+      if (AU.cv.width !== aw || AU.cv.height !== ah) { AU.cv.width = aw; AU.cv.height = ah; AU.at = -1e9; }
+      if (still || t - AU.at > 250 || t < AU.at) {
+        AU.at = t; var g = AU.cx, x, k, base, hgt, ray, i, y, f;
+        g.globalCompositeOperation = "source-over"; g.clearRect(0, 0, aw, ah); g.globalCompositeOperation = "lighter";
+        for (var c = 0; c < 2; c++) {                                   // two curtains, one behind the other
+          var amp = ah * (c ? .07 : .1), lift = ah * (c ? .55 : .72), str = c ? .55 : 1;
+          for (x = 0; x < aw; x++) {
+            k = x / aw;
+            base = lift + amp * Math.sin(k * 5.2 + t / 9000 + c * 2) + amp * .5 * Math.sin(k * 13 - t / 6500 + c);
+            ray = .42 + .3 * Math.sin(k * 97 + Math.sin(k * 23 + t / 4000) * 3 + c * 4) + .2 * Math.sin(k * 211 - t / 5200 + c) + .12 * Math.sin(k * 37 + t / 7000);   // irregular rays, as in a real curtain
+            ray = Math.max(0, Math.min(1, ray));
+            f = Math.max(0, Math.sin(Math.PI * Math.min(1, Math.max(0, (k - .04) / .92))));     // fades at both ends
+            hgt = ah * (.32 + .14 * Math.sin(k * 7 + t / 11000 + c)) * (.7 + .3 * ray);
+            var I = str * ray * f;
+            if (I < .02) continue;
+            for (i = 0; i < 12; i++) {                                    // up the curtain: green, then red at the top
+              y = base - hgt * i / 12; var u = i / 11;
+              var a = I * (.3 * Math.pow(1 - u, 1.6) + (i === 0 ? .25 : 0) + (u > .55 ? .07 * (u - .55) * 2 : 0));
+              g.fillStyle = u < .6 ? "rgba(70,255,150," + a.toFixed(3) + ")" : "rgba(255,70,40," + (a * .9).toFixed(3) + ")";
+              g.fillRect(x, y - hgt / 12, 1, hgt / 12 + .5);
+            }
+            g.fillStyle = "rgba(90,40,255," + (I * .07).toFixed(3) + ")"; g.fillRect(x, base, 1, ah * .03);   // the nitrogen fringe
+          }
+        }
+      }
+      ctx.save(); ctx.globalCompositeOperation = "lighter";
+      if ("filter" in ctx) ctx.filter = "blur(2.4px)";
+      ctx.drawImage(AU.cv, 0, H - ah, W, ah); ctx.filter = "none"; ctx.restore();
+    }
     function makeGalaxy() {
       var G = { R0: Math.min(W, H) * (opts.galaxySize || .14), cx: W * (opts.galaxyX || .27), cy: H * (opts.galaxyY || .115),
         inc: Math.cos(56 * Math.PI / 180), pa: -0.42, parts: [], dust: [] };
@@ -3275,6 +3313,7 @@ function renderPlaybook(){
       var dt = last ? Math.min(64, t - last) : 16; last = t;
       ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.clearRect(0, 0, cv.width, cv.height);
       ctx.drawImage(bg, 0, 0); ctx.setTransform(D, 0, 0, D, 0, 0);
+      if (opts.aurora) drawAurora(still ? 52000 : t);
       if (gal) drawGalaxy(still ? 41000 : t);
       for (var i = 0; i < stars.length; i++) star(stars[i], t);
       if (!still) {
@@ -11099,7 +11138,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       + '<button type="button" onclick="gmUnlockCode(document.getElementById(\'gmLockCode\').value)">Unlock with code</button></details>'
       + '<div class="gm-lock-msg" aria-live="polite"></div></div>';
     document.body.appendChild(el);
-    try { if (window.SXSky) SXSky.mount(el, { comet: true, avoid: function () { return el.querySelector(".gm-lock-card"); } }); } catch (e) {}   // the shared night sky; it ends when the lock is removed
+    try { if (window.SXSky) SXSky.mount(el, { comet: true, aurora: true, avoid: function () { return el.querySelector(".gm-lock-card"); } }); } catch (e) {}   // the shared night sky; it ends when the lock is removed
     try { var go = el.querySelector(".gm-lock-go"); if (go) go.focus({ preventScroll: true }); } catch (e) {}   // a dialog takes the focus: one Enter opens it
   }
   function say(t) { var m = document.querySelector("#gmLock .gm-lock-msg"); if (m) m.textContent = t; }

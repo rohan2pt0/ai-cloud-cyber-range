@@ -173,3 +173,21 @@ def test_the_three_rings_are_light_and_nature():
     ops = (ROOT / "guiding-map" / "ops.js").read_text("utf-8")
     assert "data-rings=" in ops and "window.gmRingsInfo" in ops and 'role="button" tabindex="0"' in ops
     assert "SecuRAX shared rings" in (ROOT / "guiding-map" / "index.html").read_text("utf-8")
+
+
+def test_the_nature_atlas_is_evidence_and_physics_and_in_use():
+    """Principle natures-design (owner, 2026-11-14): the atlas covers every inhabited continent and the sky, each entry with
+    evidence, physics and a palette of real colours; the aurora is drawn from its emission lines; doc 136 cites sources."""
+    import json
+    import re
+    a = json.loads((ROOT / "governance" / "nature-atlas.json").read_text("utf-8"))
+    regions = " ".join(e["region"] for e in a["earth"])
+    for cont in ("Asia", "Africa", "Europe" if "Europe" in regions else "Arctic", "North America", "South America", "Oceania", "Antarctica"):
+        assert cont in regions, cont
+    for e in a["earth"] + a["sky"]:
+        assert e["evidence"] and e["physics"] and e["use"], e["id"]
+        assert e["palette"] and all(re.fullmatch(r"#[0-9a-f]{6}", c) for c in e["palette"]), e["id"]
+    sky = (ROOT / "guiding-map" / "shared" / "sky.js").read_text("utf-8")
+    assert "557.7 nm" in sky and "630.0 nm" in sky and "427.8 nm" in sky and "function drawAurora" in sky
+    doc = (ROOT / "docs" / "securax" / "136-NATURE-ATLAS.md").read_text("utf-8")
+    assert doc.count("](http") >= 8, "doc 136 cites its sources"

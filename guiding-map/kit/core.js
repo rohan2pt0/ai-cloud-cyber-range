@@ -335,7 +335,7 @@
     b.classList.toggle("osk-locked", !!on);
     if (on && !sky) {
       sky = document.createElement("div"); sky.id = "oskSky"; sky.setAttribute("aria-hidden", "true"); b.insertBefore(sky, b.firstChild);
-      try { if (window.SXSky) SXSky.mount(sky, { comet: true, avoid: function () { return document.querySelector("#oskMain .card.hero"); } }); } catch (e) {}
+      try { if (window.SXSky) SXSky.mount(sky, { comet: true, aurora: true, avoid: function () { return document.querySelector("#oskMain .card.hero"); } }); } catch (e) {}
     }
     if (!on && sky) sky.parentNode.removeChild(sky);    // the sky's loop ends by itself once its element has gone
   }

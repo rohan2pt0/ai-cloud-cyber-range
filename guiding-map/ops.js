@@ -7701,7 +7701,7 @@
       + '<button type="button" onclick="gmUnlockCode(document.getElementById(\'gmLockCode\').value)">Unlock with code</button></details>'
       + '<div class="gm-lock-msg" aria-live="polite"></div></div>';
     document.body.appendChild(el);
-    try { if (window.SXSky) SXSky.mount(el, { comet: true, avoid: function () { return el.querySelector(".gm-lock-card"); } }); } catch (e) {}   // the shared night sky; it ends when the lock is removed
+    try { if (window.SXSky) SXSky.mount(el, { comet: true, aurora: true, avoid: function () { return el.querySelector(".gm-lock-card"); } }); } catch (e) {}   // the shared night sky; it ends when the lock is removed
     try { var go = el.querySelector(".gm-lock-go"); if (go) go.focus({ preventScroll: true }); } catch (e) {}   // a dialog takes the focus: one Enter opens it
   }
   function say(t) { var m = document.querySelector("#gmLock .gm-lock-msg"); if (m) m.textContent = t; }

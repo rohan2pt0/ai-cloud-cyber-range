@@ -9,6 +9,8 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- The nature atlas (`governance/nature-atlas.json`, doc 136): 16 natural wonders across every continent and 5 from the sky, chosen by evidence (the New7Wonders global vote, the 2025 Wildlife Photographer of the Year, hashtag data) with the physics behind each palette; one source for every app. First use beyond the rings: an aurora low over the lock's horizon, drawn from its emission lines (oxygen 557.7 and 630.0 nm, nitrogen 427.8 nm).
+
 - The three rings, perfected (`guiding-map/shared/rings.js`): rings of light in engraved grooves, coloured by nature (a sunrise for today's three, an emerald for the Stack, a peacock feather for the Shield whose colours slide as the phone tilts); they fill on a spring from where they last stood, carry a sun at the tip and a pulse of light, show a seed where to begin at zero, ignite when one closes and bloom like a sunrise when all three do, then rest. A tap explains each ring and marks the one to do next. Two new guiding principles: `signature-perfect` (with `governance/signatures.json`) and `natures-design`.
 
 - Lit gold reaches the Life OS's everyday gold (the chosen key in a scale, engraved tags, the daily checks, kept marks), with a finer bevel and lighter engraving on small pieces; a chip that stops being chosen lets go of its gold. Fixed from the owner's screenshots: an explainer term's tap area painted over the next line (now an invisible hit area); some buttons fell back to the system font (every control now inherits the house type); the quiet Delete button showed as a box.
