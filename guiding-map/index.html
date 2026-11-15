@@ -8701,6 +8701,17 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     return Math.round(t * (1 + sc) * 1.04);
   }
   window.gmTaxNew = taxNew;
+  // Old regime (under 60), for the yearly comparison: nil to 2.5L, 5% to 5L, 20% to 10L, 30% above; rebate when total income is
+  // at most 5L; the same surcharge and 4% cess. The caller takes off the 50,000 salaried standard deduction and the deductions
+  // the person can really claim (80C, 80D, home-loan interest, HRA). Figures as publicly reported; levers.json carries the review date.
+  function taxOld(ti) {
+    var sl = [[25e4, 0], [5e5, .05], [10e5, .20], [Infinity, .30]], t = 0, lo = 0;
+    for (var i = 0; i < sl.length; i++) { if (ti > lo) t += (Math.min(ti, sl[i][0]) - lo) * sl[i][1]; lo = sl[i][0]; }
+    if (ti <= 5e5) t = 0;
+    var sc = ti > 5e7 ? .37 : ti > 2e7 ? .25 : ti > 1e7 ? .15 : ti > 5e6 ? .10 : 0;
+    return Math.round(t * (1 + sc) * 1.04);
+  }
+  window.gmTaxOld = taxOld;
 
   // Today's job, in cash you can actually use each month (payslip net + rent and cash-like perks the employer pays +
   // what goes into retirement for you). This, not the brochure CTC, is the line you must never fall below.
@@ -12061,6 +12072,36 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     }
     return h + '</div>';
   }
+  // Your own numbers on the tax levers (savings-levers slice 2): the new regime against the old one with the deductions you can
+  // really claim, and, for the same gross, salary against consultancy fees under the presumptive scheme (50% deemed income).
+  function levNum(v) { var n = parseFloat(String(v === undefined || v === null ? "" : v).replace(/[,\s\u20b9]/g, "")); return isFinite(n) ? n : 0; }   // this closure has no num()
+  function levTaxHTML(lv) {
+    var p = window.P, gross = p && !p.example ? levNum(p.gross) * 12 : 0;
+    if (!gross || typeof window.gmTaxNew !== "function") return "";
+    var m = levMap(), ded = levNum((m.tax && m.tax.ded) || 0), fmt = function (n) { return "\u20b9" + Math.round(n).toLocaleString("en-IN"); };
+    var nw = window.gmTaxNew(Math.max(0, gross - 75000));
+    if (lv.id === "tax-regime") {
+      var od = window.gmTaxOld(Math.max(0, gross - 50000 - ded)), diff = Math.abs(nw - od);
+      return '<div class="road-col gm-lev-est" style="margin-top:8px"><div style="font-size:12px;font-weight:800">Your numbers (a yearly gross of ' + fmt(gross) + ')</div>'
+        + '<label class="f-label" style="margin-top:6px">Old-regime deductions you can really claim a year (80C, 80D, home-loan interest, HRA), \u20b9</label>'
+        + '<input inputmode="decimal" value="' + esc(ded || "") + '" onchange="gmLevTaxDed(this.value)" aria-label="Old-regime deductions a year">'
+        + '<div style="font-size:13px;margin-top:6px">New regime: <b>' + fmt(nw) + '</b> \u00b7 old regime: <b>' + fmt(od) + '</b></div>'
+        + '<div style="font-size:13px;margin-top:2px">' + (diff < 1000 ? "About the same either way." : (nw <= od ? "The new regime saves " : "The old regime saves ") + "<b>" + fmt(diff) + "</b> a year.") + '</div>'
+        + '<div style="font-size:11px;color:var(--muted);margin-top:4px">An estimate before surcharge relief and special rates; confirm with your tax filer.</div></div>';
+    }
+    if (lv.id === "presumptive-professional" || lv.id === "employer-nps") {
+      if (lv.id === "employer-nps") return "";
+      var fee = window.gmTaxNew(gross * 0.5);
+      return '<div class="road-col gm-lev-est" style="margin-top:8px"><div style="font-size:12px;font-weight:800">The same ' + fmt(gross) + ' a year</div>'
+        + '<div style="font-size:13px;margin-top:4px">As salary (new regime): <b>' + fmt(nw) + '</b> \u00b7 as consultancy fees, presumptive: <b>' + fmt(fee) + '</b></div>'
+        + '<div style="font-size:11px;color:var(--muted);margin-top:4px">Fees bring no employer PF, gratuity or group cover: budget for your own. An estimate; confirm with a chartered accountant.</div></div>';
+    }
+    return "";
+  }
+  window.gmLevTaxDed = function (v) {
+    var n = window.gmFieldGuard ? window.gmFieldGuard({ min: 0, max: 10000000 }, v).v : levNum(v);
+    var m = levMap(); m.tax = (m.tax && typeof m.tax === "object") ? m.tax : {}; m.tax.ded = n === "" ? 0 : n; S_("gm_levers", m); renderAll();
+  };
   function levMain(lv) {
     var steps = levSteps(lv.id), h = '<div style="font-size:12.5px;margin-top:4px">' + esc(lv.saves) + '</div>'
       + '<div style="font-size:12px;color:var(--muted);margin-top:4px">about ' + esc(lv.effortMin) + ' minutes</div>';
@@ -12078,6 +12119,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
         + '<textarea readonly id="gmLevTpl-' + esc(lv.id) + '" rows="4" style="width:100%;font-size:12px;margin-top:4px">' + esc(lv.template.text) + '</textarea>'
         + '<button type="button" class="btn-sm" style="margin-top:6px;background:var(--cardAlt);color:var(--text)" onclick="gmLevCopy(\'' + esc(lv.id) + '\')">Copy</button>';
     }
+    h += levTaxHTML(lv);
     if (lv.portal) h += '<div style="font-size:12px;margin-top:8px">Official site: ' + esc(lv.portal) + '</div>';
     h += '<div style="font-size:11px;color:var(--muted);margin-top:6px">Verified ' + esc(lv.verified || "") + ' \u00b7 ' + esc(lv.confidence || "") + '</div>';
     return h;
