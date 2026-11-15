@@ -2065,7 +2065,7 @@ function renderOKR(){
   if(!S.okrs.length) html+='<div class="info" style="background:var(--goldL);color:var(--gold)">No objectives yet. A good first one: "Make my money unshakeable", with key results like "emergency fund from 2 to 4 months by 31 Mar" and "savings rate from 12 to 18% by 30 Jun".</div>';
   S.okrs.forEach(function(o,oi){
     var g=okrGrade(oi), idle=okrIdle(o);
-    html+='<div class="okr-card"><span class="okr-grade" id="og'+oi+'" style="color:'+(g===0?"var(--muted)":g>=0.6&&g<=0.85?"var(--green)":g<0.4?"var(--red)":"var(--amber)")+'">'+g.toFixed(2)+'</span>'
+    html+='<div class="okr-card"><span class="okr-grade" id="og'+oi+'" style="color:'+(g===0?"var(--muted)":g>=0.7?"var(--green)":"var(--amber)")+'" title="'+(g===0?"Not started":g>=0.7?"On track: 0.7 and above is a success":"In progress")+'">'+g.toFixed(2)+'</span>'
      +'<div class="okr-o">O'+(oi+1)+': '+okEsc(o.o)+'</div>';
     if(idle>=OKR_IDLE_DAYS) html+='<div class="info okr-idle" style="color:var(--amber);margin:8px 0">No movement for '+Math.floor(idle/7)+' weeks. Decide, so it does not drift: '
       +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><button class="btn-sm" style="background:var(--gold);color:#0d1f35;font-weight:800" onclick="okrRecommit('+oi+')">Recommit</button>'

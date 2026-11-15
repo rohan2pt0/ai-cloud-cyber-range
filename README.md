@@ -133,6 +133,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- Colour means what the words mean
 - Ambient light in dark, and a 360 pass on both themes
 - The Life OS fits the person
 - Persona audit in a real browser
@@ -140,7 +141,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - AI spend in rupees, per provider
 - The Wheel folds what you have rated
 - Impossible numbers are fixed, never saved
-- Money in the same stones
 
 **Release 0.4.0 - 2026-11-14:**
 
