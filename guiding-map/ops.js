@@ -5968,7 +5968,8 @@
   }
   window.gmMineSheet = function () {
     mineCss();
-    var old = document.getElementById("gmMineSheet"); if (old) old.parentNode.removeChild(old);
+    var old = document.getElementById("gmMineSheet"), keep = 0;   // a tap re-draws the sheet: keep the person where they were
+    if (old) { var oc = old.querySelector(".gm-mine-card"); keep = oc ? oc.scrollTop : 0; old.parentNode.removeChild(old); }
     var o = document.createElement("div");
     o.id = "gmMineSheet"; o.setAttribute("role", "dialog"); o.setAttribute("aria-modal", "true"); o.setAttribute("aria-label", "Make it yours");
     o.innerHTML = '<div class="gm-mine-card"><div class="gm-mine-k">Five taps</div><div class="gm-mine-h">Make it yours</div>'
@@ -5978,7 +5979,8 @@
       + '<div class="gm-mine-foot"><button type="button" class="gm-mine-done" onclick="gmMineFinish()">That\u2019s me \u2014 make it fit</button>'
       + '<button type="button" class="gm-mine-skip" onclick="gmMineSkip()">Show me everything</button></div></div>';
     document.body.appendChild(o);
-    var b = o.querySelector("button"); if (b) { try { b.focus(); } catch (e) {} }
+    var card = o.querySelector(".gm-mine-card"); if (card && keep) card.scrollTop = keep;
+    var b = o.querySelector("button"); if (b && !keep) { try { b.focus({ preventScroll: true }); } catch (e) {} }
   };
   window.gmMineChoose = function (key, val) {
     var f = mineFacts();
