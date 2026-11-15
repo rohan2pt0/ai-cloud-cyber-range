@@ -1502,7 +1502,9 @@
   var PROP_RULES = {
     val: { min: 0, max: 100000, lakh: true }, loan: { min: 0, max: 100000, lakh: true },
     rent: { min: 0, max: 10000000 }, emi: { min: 0, max: 10000000 }, out: { min: 0, max: 100000000 },
-    rate: { min: 0, max: 30 }, vac: { min: 0, max: 12, int: true }
+    rate: { min: 0, max: 30 }, vac: { min: 0, max: 12, int: true },
+    rentDay: { min: 1, max: 28, int: true }, maintDay: { min: 1, max: 28, int: true }, months: { min: 1, max: 60, int: true },
+    deposit: { min: 0, max: 100000000 }, maint: { min: 0, max: 10000000 }, start: { date: true }, taxDue: { date: true }
   };
   window.gmPropSet = function (i, k, v) { if (PROP_RULES[k]) v = window.gmFieldGuard(PROP_RULES[k], v).v; var p = props(); p[i][k] = v; S_("gm_props", p); renderAll(); };
 
@@ -1563,11 +1565,98 @@
   }
 
   function fmtL(x) { return "\u20b9" + (Math.round(x / 1000) / 100).toFixed(2) + "L"; }
+  /* ── The landlord desk (owner, 2026-11-15; queue landlord-desk) ──────────────────────────────────────────────────────
+     For each let-out home, what is due next: rent, maintenance, property tax, the renewal two months ahead, registration
+     and the tenant's details for the police. Words and ready messages come from guiding-map/levers/landlord.json
+     (window.GM_LANDLORD). Overdue is a ruby stone, within a week amber; at most three rows, the rest under Later. */
+  function llDuty(id) { var d = (window.GM_LANDLORD && window.GM_LANDLORD.duties) || []; return d.filter(function (x) { return x.id === id; })[0] || null; }
+  function llDay(d) { var x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); return x; }
+  function llIso(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+  function llParse(t) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(t || "")); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; }
+  function llAddMonths(d, n) { var x = new Date(d.getFullYear(), d.getMonth() + n, d.getDate()); return x; }
+  function llNum(v) { var n = parseFloat(String(v === undefined || v === null ? "" : v).replace(/[,\s₹]/g, "")); return isFinite(n) ? n : 0; }
+  function llShow(d) { return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }); }   // 4 Jan 2026, never an ISO string
+  function llBadge(cls, word) { return '<span class="' + cls + '" style="font-size:11.5px;font-weight:700;padding:2px 10px;border-radius:999px;white-space:nowrap;color:' + (cls === "sx-state-watch" ? "#2a1703" : "#fff") + '">' + esc(word) + '</span>'; }
+  function llMH() { var f = G("gm_facts", {}) || {}; return f.state === "MH"; }
+  function llRows(p) {
+    var today = llDay(new Date()), rows = [], ym = llIso(today).slice(0, 7), mon = today.toLocaleString("en-IN", { month: "long" });
+    if (llNum(p.rent) > 0 && llNum(p.rentDay) >= 1 && !(p.paid && p.paid[ym]))
+      rows.push({ id: "rent", t: "Rent for " + mon, d: new Date(today.getFullYear(), today.getMonth(), llNum(p.rentDay)), act: "paid", key: ym, btn: "Rent received" });
+    if (llNum(p.maint) > 0 && llNum(p.maintDay) >= 1 && !(p.mpaid && p.mpaid[ym]))
+      rows.push({ id: "maintenance", t: "Maintenance for " + mon, d: new Date(today.getFullYear(), today.getMonth(), llNum(p.maintDay)), act: "mpaid", key: ym, btn: "Paid" });
+    var tax = llParse(p.taxDue);
+    if (tax) rows.push({ id: "propertyTax", t: "Property tax", d: tax, act: "tax", btn: "Paid (next year diarised)" });
+    var st = llParse(p.start);
+    if (st) {
+      var end = llAddMonths(st, llNum(p.months) || 11);
+      if ((end - today) / 864e5 <= 60) rows.push({ id: "renewal", t: "Agreement ends: renew or take it back", d: end, act: "renew", btn: "Renewed from this date" });
+      if (!p.registered && llMH()) rows.push({ id: "registration", t: "Register the agreement", d: new Date(st.getTime() + 120 * 864e5), act: "registered", btn: "Registered" });
+      if (!p.police) rows.push({ id: "police", t: "Tenant details to the police", d: st, act: "police", btn: "Submitted" });
+    }
+    rows.forEach(function (r) { r.days = Math.round((llDay(r.d) - today) / 864e5); });
+    rows.sort(function (a, b) { return a.days - b.days; });
+    return rows;
+  }
+  function llRowHTML(i, r) {
+    var du = llDuty(r.id) || {}, cls = r.days < 0 ? "sx-state-low" : r.days <= 7 ? "sx-state-watch" : "";
+    var word = r.days < 0 ? "overdue" : r.days === 0 ? "due today" : r.days <= 7 ? "due in " + r.days + " day" + (r.days > 1 ? "s" : "") : "";
+    var tid = "gmLlTpl-" + i + "-" + r.id, more = "";
+    if (du.how || du.template || du.checklist) {
+      more = '<details style="margin-top:4px"><summary style="font-size:12px">How, and a ready message</summary><div style="font-size:12px;margin-top:4px">' + esc(du.how || "") + '</div>'
+        + (du.template ? '<div style="font-size:12px;font-weight:800;margin-top:6px">' + esc(du.template.title) + '</div><textarea readonly id="' + tid + '" rows="4" style="width:100%;font-size:12px">' + esc(du.template.text) + '</textarea>'
+          + '<button type="button" class="btn-sm" style="margin-top:4px;background:var(--cardAlt);color:var(--text)" onclick="gmLlCopy(\'' + tid + '\')">Copy</button>' : "")
+        + (du.checklist ? '<div style="font-size:12px;margin-top:6px"><b>Checklist:</b> ' + esc(du.checklist).split(" | ").join(" · ") + '</div>' : "")
+        + (du.portal ? '<div style="font-size:12px;margin-top:4px">Official site: ' + esc(du.portal) + '</div>' : "") + '</div></details>';
+    }
+    return '<div class="road-i gm-ll-row" data-ll="' + esc(r.id) + '" style="padding:8px 0;border-bottom:1px solid var(--border)">'
+      + '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b style="flex:1;min-width:150px">' + esc(r.t) + '</b>'
+      + '<span style="font-size:12px;color:var(--muted);white-space:nowrap">' + esc(llShow(r.d)) + '</span>'
+      + (word ? llBadge(cls, word) : "") + '</div>'
+      + '<button type="button" class="btn-sm" style="margin-top:6px" onclick="gmLlDone(' + i + ',\'' + r.act + '\',\'' + esc(r.key || "") + '\')">' + esc(r.btn) + '</button>' + more + '</div>';
+  }
+  function landlordHTML(p, i) {
+    var rows = llRows(p), h = '<div class="road-col gm-ll" style="margin:6px 0 12px"><div style="font-weight:800;font-size:13.5px">Next for this home</div>';
+    if (!p.start && !p.rentDay) h += '<div style="font-size:12.5px;color:var(--muted);margin-top:4px">Add the tenant and the dates below; the app then reminds you of every due date.</div>';
+    else if (!rows.length) h += '<div style="font-size:12.5px;color:var(--muted);margin-top:4px">Nothing due: rent, bills and papers are up to date.</div>';
+    rows.slice(0, 3).forEach(function (r) { h += llRowHTML(i, r); });
+    if (rows.length > 3) h += '<details style="margin-top:6px"><summary>Later (' + (rows.length - 3) + ')</summary>' + rows.slice(3).map(function (r) { return llRowHTML(i, r); }).join("") + '</details>';
+    var F = [["tenant", "Tenant's name", "text"], ["rentDay", "Rent due on day (1-28)", "n"], ["start", "Agreement start (YYYY-MM-DD)", "date"], ["months", "Agreement length, months", "n"],
+      ["deposit", "Deposit held (₹)", "n"], ["maint", "Society maintenance (₹ a month)", "n"], ["maintDay", "Maintenance due on day (1-28)", "n"], ["taxDue", "Next property tax due (YYYY-MM-DD)", "date"]];
+    var filled = p.start || p.rentDay;
+    h += '<details style="margin-top:8px"' + (filled ? "" : " open") + '><summary style="font-size:12.5px;font-weight:700">Tenant and dates</summary>';
+    F.forEach(function (f) {
+      var v = p[f[0]] === undefined ? (f[0] === "months" ? "11" : "") : p[f[0]];
+      h += '<label class="f-label">' + f[1] + '</label><input ' + (f[2] === "n" ? 'inputmode="decimal" ' : f[2] === "date" ? 'type="date" ' : "") + 'value="' + esc(v) + '" onchange="gmPropSet(' + i + ',\'' + f[0] + '\',this.value)">';
+    });
+    return h + '</details></div>';
+  }
+  window.gmLlDone = function (i, act, key) {
+    var p = props(), x = p[i]; if (!x) return;
+    var today = llIso(new Date());
+    if (act === "paid" || act === "mpaid") { x[act] = (x[act] && typeof x[act] === "object") ? x[act] : {}; x[act][key] = true; }
+    else if (act === "tax") { var t = llParse(x.taxDue); if (t) x.taxDue = llIso(llAddMonths(t, 12)); }
+    else if (act === "renew") { var st = llParse(x.start); if (st) { x.start = llIso(llAddMonths(st, llNum(x.months) || 11)); x.registered = ""; x.police = ""; } }
+    else if (act === "registered" || act === "police") x[act] = today;
+    S_("gm_props", p); renderAll();
+  };
+  window.gmLlCopy = function (id) {
+    var el = document.getElementById(id), tx = el ? el.value : "";
+    function pick() { if (!el) return; try { el.focus(); el.select(); } catch (e) {} }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(tx).then(function () { if (typeof gmToast === "function") gmToast("Copied."); }, pick); else pick();
+  };
+  function landlordSummary(P) {
+    var let_ = P.filter(function (p) { return (p.use || "letout") === "letout"; }), first = null;
+    if (!let_.length) return "";
+    let_.forEach(function (p) { var r = llRows(p)[0]; if (r && (!first || r.days < first.days)) first = r; });
+    return '<div class="road-col gm-ll-sum" style="margin-bottom:10px;font-size:13px">' + let_.length + " home" + (let_.length > 1 ? "s" : "") + " let"
+      + (first ? " · next: <b>" + esc(first.t) + '</b> <span style="white-space:nowrap">' + esc(llShow(first.d)) + "</span>" + (first.days < 0 ? " " + llBadge("sx-state-low", "overdue") : first.days <= 7 ? " " + llBadge("sx-state-watch", "due soon") : "") : " · nothing due") + '</div>';
+  }
   function propHTML() {
     var P = props();
     var h = '<div class="section active"><div class="cat-t">\u{1F3E0} Property economics</div>'
       + '<div class="info">Seven numbers per flat. Everything else is calculated. '
       + 'The question a let-out property has to answer is not \u201chas the price gone up\u201d \u2014 it is whether the rent, after every cost and after tax, beats what the same money would do sitting in an index fund.</div>';
+    h += landlordSummary(P);
     if (!P.length) h += '<div class="info">Nothing added yet. Start from the worked example and overwrite the numbers \u2014 correcting something wrong is far quicker than filling something blank.</div>'
       + tplBtn("gmTplProp()", "Start from a worked example");
     P.forEach(function (p, i) {
@@ -1588,6 +1677,7 @@
         + '<span style="float:right;color:' + (r.cashflow >= 0 ? "var(--green)" : "var(--amber)") + '">'
         + (r.cashflow >= 0 ? "+" : "") + Math.round(r.cashflow).toLocaleString("en-IN") + "/mo</span></summary>";
       h += '<div style="margin-top:8px">';
+      if ((p.use || "letout") === "letout") h += landlordHTML(p, i);
       F.forEach(function (f) {
         h += '<label class="f-label">' + f[1] + '</label><input ' + (f[0] === "n" ? "" : 'inputmode="decimal"')
           + ' value="' + esc(p[f[0]] || "") + '" placeholder="' + f[2] + '" onchange="gmPropSet(' + i + ',\'' + f[0] + '\',this.value)">';

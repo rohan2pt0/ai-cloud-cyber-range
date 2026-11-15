@@ -133,14 +133,14 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- The landlord desk
+- Tax comparator on the savings levers
 - Savings levers keep themselves current
 - Impossible numbers cannot be saved
 - The first morning and every day, calmer
 - Colour means what the words mean
 - Ambient light in dark, and a 360 pass on both themes
 - The Life OS fits the person
-- Persona audit in a real browser
-- Career step 4 is a short card, not a wall of fields
 
 **Release 0.4.0 - 2026-11-14:**
 
