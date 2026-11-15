@@ -5780,7 +5780,7 @@
         + ".gm-mine-h:focus{outline:none}"
         + "@media (max-width:400px){.gm-greet h2{font-size:26px!important}.gm-greet p{font-size:13px}}"
         // A link inside a sentence reads as part of it (no button padding, no tall line; WCAG 2.5.8 exempts inline targets).
-        + ".gm-start li .gm-inl{color:inherit;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--gold)}"
+        + ".gm-start li .gm-inl{color:inherit;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--gold);padding:11px 0;-webkit-tap-highlight-color:rgba(201,168,76,.18)}"
         // Still means still.
         + "html.gm-still .btn,html.gm-still .btn-sm,html.gm-still .btn-p,html.gm-still .btn-s,html.gm-still .chip,html.gm-still .hdr-btn,html.gm-still .gm-menu-btn{transition:none!important;filter:none!important}"
         + "@media (prefers-reduced-motion:reduce){html[data-theme=dark]:not(.gm-amb-off) .btn-p,html[data-theme=dark]:not(.gm-amb-off) .btn.primary,html[data-theme=dark]:not(.gm-amb-off) .btn-sm[style*='background:var(--gold)'],html[data-theme=dark]:not(.gm-amb-off) .btn-s,html[data-theme=dark]:not(.gm-amb-off) .btn:not(.btn-p):not(.primary),html[data-theme=dark]:not(.gm-amb-off) .btn-sm[style*='background:var(--cardAlt)'],html[data-theme=dark]:not(.gm-amb-off) .btn-sm:not([style*=background]):not(.btn-p),html[data-theme=dark]:not(.gm-amb-off) .gm-secondary,html[data-theme=dark]:not(.gm-amb-off) .chip,html[data-theme=dark]:not(.gm-amb-off) .hdr-btn,html[data-theme=dark]:not(.gm-amb-off) .gm-menu-btn{transition:none!important}html[data-theme=dark]:not(.gm-amb-off) .btn-p:active,html[data-theme=dark]:not(.gm-amb-off) .btn.primary:active,html[data-theme=dark]:not(.gm-amb-off) .btn-sm[style*='background:var(--gold)']:active,html[data-theme=dark]:not(.gm-amb-off) .btn-s:active,html[data-theme=dark]:not(.gm-amb-off) .btn:not(.btn-p):not(.primary):active,html[data-theme=dark]:not(.gm-amb-off) .btn-sm[style*='background:var(--cardAlt)']:active,html[data-theme=dark]:not(.gm-amb-off) .btn-sm:not([style*=background]):not(.btn-p):active,html[data-theme=dark]:not(.gm-amb-off) .gm-secondary:active,html[data-theme=dark]:not(.gm-amb-off) .chip:active,html[data-theme=dark]:not(.gm-amb-off) .hdr-btn:active,html[data-theme=dark]:not(.gm-amb-off) .gm-menu-btn:active{filter:none!important;transform:none!important}}";
@@ -8167,7 +8167,9 @@
       + ".gm-lock-code{font-family:ui-monospace,Menlo,monospace;font-size:18px;letter-spacing:.12em;text-align:center;padding:12px;border-radius:12px;border:1px dashed rgba(201,168,76,.7);background:var(--cardAlt)}";
     document.head.appendChild(st);
   } catch (x) {}
-  if (locked) { if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", paint); else paint(); }
+  // always paint once: when the app is not locked (no record, or a damaged one) this clears the boot veil's gm-locked guess,
+  // which looks only at whether the key exists; a damaged record must never leave the person facing a blank page
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", paint); else paint();
 })();
 
 /* ── Which card, when; and numbers from a shared message (owner, 2026-11-14; threat model lifeos-share-in) ──────────

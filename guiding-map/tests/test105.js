@@ -11,7 +11,13 @@ ok("there is a time-out release", /setTimeout\(function\(\)\{d\.classList\.remov
 ok("the veil hides everything but the lock", /html\.gm-boot body>\*:not\(#gmLock\)/.test(head));
 const dom = new JSDOM(html, { runScripts: "dangerously", pretendToBeVisual: true, url: "https://hub.securax.localhost/",
   beforeParse(w) { w.scrollTo = () => {}; w.fetch = () => Promise.reject(new Error("offline")); } });
+// a damaged lock record ({} with no credential) must never leave the veil's locked guess in place: a blank page is a lock-out
+const dmg = new JSDOM(html, { runScripts: "dangerously", pretendToBeVisual: true, url: "https://hub.securax.localhost/",
+  beforeParse(w) { w.localStorage.setItem("gm_lock", "{}"); w.scrollTo = () => {}; w.fetch = () => Promise.reject(new Error("offline")); } });
 setTimeout(() => {
+  const dd = dmg.window.document;
+  ok("a damaged lock record leaves no hidden page (the locked guess is cleared)", !dd.documentElement.classList.contains("gm-locked") && !dd.getElementById("gmLock"),
+    dd.documentElement.className);
   const d = dom.window.document;
   ok("the veil lifts once the Life OS has drawn its first screen", !d.documentElement.classList.contains("gm-boot"));
   ok("…and the app is there", !!d.querySelector("#sections .section"));
