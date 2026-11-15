@@ -233,6 +233,12 @@ header{background:var(--navy);padding:13px 16px;display:flex;align-items:center;
 .wheel-wrap{background:var(--card);border-radius:12px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.05);margin-bottom:12px;text-align:center;}
 .wheel-sliders{background:var(--card);border-radius:12px;padding:14px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
 .ws-row{margin-bottom:12px;}
+.ws-done summary{display:flex;justify-content:flex-start;gap:10px;align-items:center;min-height:48px;cursor:pointer;list-style:none;font-weight:600}
+.ws-done summary .ws-gem{margin-inline-start:auto}
+.ws-done summary::-webkit-details-marker{display:none}
+.ws-gem{display:inline-block;min-width:3.6em;text-align:center;padding:4px 10px;border-radius:999px;font-weight:700;font-variant-numeric:tabular-nums}
+.ws-gem.sx-state-good,.ws-gem.sx-state-low{color:#fff}
+.ws-gem.sx-state-watch{color:#2a1703}
 .ws-l{display:flex;justify-content:space-between;font-size:11px;font-weight:600;margin-bottom:2px;}
 .ws-hint{font-size:10px;color:var(--muted);font-weight:600;margin:3px 0;}
 .ws-taps{display:flex;gap:4px;flex-wrap:wrap;}
@@ -2018,9 +2024,14 @@ function renderWheel(){
     var taps='<div class="ws-hint">How it feels</div><div class="ws-taps" id="wrow'+i+'">';
     for(var t=1;t<=10;t++) taps+='<button type="button" class="ws-tap'+(v===t?" on":"")+'" data-v="'+t+'" aria-label="'+w[1]+': feels '+t+' of 10" onclick="whl('+i+','+t+')">'+t+'</button>';
     taps+='</div>';
-    html+='<div class="ws-row"><div class="ws-l"><span>'+w[1]+'</span><span id="wsv'+i+'">'+(v==null?"\u2014":v)+'</span></div>'+taps;
-    if(v!=null&&m!=null&&Math.abs(v-m)>=3) html+='<div class="ws-gap">'+(v<m?"Feels lower than your numbers":"Feels higher than your numbers")+'</div>';
-    html+='</div>';
+    var gap=(v!=null&&m!=null&&Math.abs(v-m)>=3)?'<div class="ws-gap">'+(v<m?"Feels lower than your numbers":"Feels higher than your numbers")+'</div>':'';
+    if(v==null){
+      html+='<div class="ws-row"><div class="ws-l"><span>'+w[1]+'</span><span id="wsv'+i+'">\u2014</span></div>'+taps+'</div>';
+    }else{
+      var st=v<=4?"low":v<=6?"watch":"good";
+      html+='<details class="ws-row ws-done"><summary><span>'+w[1]+'</span><span class="ws-gem sx-state-'+st+'">'+v+'/10</span></summary>'
+       +'<div class="ws-l"><span>Your score</span><span id="wsv'+i+'">'+v+'</span></div>'+taps+gap+'</details>';
+    }
   });
   html+='</div></div>';
   return html;
