@@ -11,5 +11,9 @@ def _fresh_rate_limit_and_idempotency(tmp_path, monkeypatch):
     m._IDEM.clear()
     monkeypatch.setattr(baseline, "STATE", tmp_path / "baselines.json")    # never write the real volume from a test
     baseline.reset()
+    from app import spend
+    monkeypatch.setattr(spend, "STATE", tmp_path / "spend.json")
+    spend.reset()
     yield
     baseline.reset()
+    spend.reset()

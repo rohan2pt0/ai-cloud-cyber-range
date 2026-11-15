@@ -26,7 +26,7 @@ import httpx
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
 
-from . import answering, approvals, baseline, budget, careful, guardrails, identity, killswitch, residency
+from . import answering, approvals, baseline, budget, careful, guardrails, identity, killswitch, residency, spend
 from .providers import active_detectors, run_detectors
 
 MODE = os.getenv("GUARDRAIL_MODE", "enforce")  # enforce | monitor
@@ -402,7 +402,30 @@ async def _call_upstream(payload: dict) -> dict:
         headers["traceparent"] = _TP.get()
     r = await _http().post(f"{UPSTREAM.rstrip('/')}/chat/completions", json=payload, headers=headers, timeout=UPSTREAM_TIMEOUT)
     r.raise_for_status()
-    return r.json()
+    data = r.json()
+    # LiteLLM prices each call from its own price list (US dollars); kept under a private key the gateway strips before it
+    # answers (app/spend.py). The gateway always asks for the whole reply, so the header is always there when LiteLLM knows.
+    cost = r.headers.get("x-litellm-response-cost")
+    if isinstance(data, dict) and cost:
+        try:
+            data["_cost_usd"] = float(cost)
+        except ValueError:
+            pass
+    return data
+
+
+async def _spend_providers() -> None:
+    """Learn which provider each model belongs to from LiteLLM's /model/info, at most every 10 minutes. A failure keeps the
+    last map (or none: then a cloud model counts as 'cloud' and still meets a cap)."""
+    if not spend.stale() or UPSTREAM == "mock":
+        return
+    headers = {"Authorization": f"Bearer {UPSTREAM_KEY}"} if UPSTREAM_KEY else {}
+    try:
+        r = await _http().get(f"{UPSTREAM.rstrip('/')}/model/info", headers=headers, timeout=3)
+        r.raise_for_status()
+        spend.learn(r.json())
+    except (httpx.HTTPError, ValueError):
+        spend._providers["at"] = time.time()
 
 
 @app.get("/readyz")
@@ -497,6 +520,13 @@ _IDEM_CTX: ContextVar[str] = ContextVar("idem", default="")
 def _idem_purge(now: float) -> None:
     while _IDEM and (len(_IDEM) > 1000 or now - next(iter(_IDEM.values()))["t"] > IDEM_TTL_S):
         _IDEM.popitem(last=False)
+
+
+@app.get("/v1/spend")
+async def spend_report(request: Request) -> dict:
+    """This month's spend per AI provider in rupees, against each provider's cap (app/spend.py)."""
+    await _authn(request, "metrics")
+    return spend.report()
 
 
 @app.get("/v1/budget")
@@ -640,6 +670,18 @@ async def _chat(request: Request, authorization: str | None) -> JSONResponse:
             "type": "ai_suspended", "req_id": req_id, "stopped_by": stop.get("by"), "since": stop.get("at"),
             "message": f"{what} switched off by a person ({stop.get('reason') or 'no reason given'}). "
                        "A human handles this instead; ask the person who runs this service."}})
+    # Rupee cap per provider (app/spend.py; owner: Rs 1,000 a month each). At the cap, the local model answers instead, said
+    # plainly in a header and the audit log: never a silent failure, never a bill past the line.
+    await _spend_providers()
+    spend_fallback: dict | None = None
+    head = spend.provider_of(str(payload.get("model") or ""), RES.model_zone(str(payload.get("model") or "")) == "local")
+    if spend.over(head):
+        spend_fallback = {"provider": head, "asked": payload.get("model"), "answered_by": spend.fallback_model()}
+        payload["model"] = spend.fallback_model()
+        _metrics["spend_cap_fallback"] += 1
+        _emit({"req_id": req_id, **who, "decision": "spend_cap_fallback", **spend_fallback,
+               "spent_inr": round(spend.spent(head), 2), "cap_inr": spend.cap(head), "category": "LLM10/cost"})
+    cost_inr = [0.0]
     # AI allowance (app/budget.py): daily and monthly tokens per caller, cloud models only by default. Agents use far more
     # tokens than chat, so a runaway loop meets a ceiling a person chose, not the provider's bill.
     over = budget.refusal(principal) if budget.counts(RES.model_zone(payload.get("model") or "")) else None
@@ -790,6 +832,17 @@ async def _chat(request: Request, authorization: str | None) -> JSONResponse:
 
         # The allowance counts EVERY call, careful steps included.
         u = resp.get("usage") if isinstance(resp.get("usage"), dict) else {}
+        # ...and so does the rupee ledger, charged to the provider that really answered (a ladder may have fallen back).
+        served = str(resp.get("model") or body.get("model") or "")
+        prov = spend.provider_of(served, RES.model_zone(str(body.get("model") or "")) == "local")
+        inr, how = spend.price(served, u, resp.pop("_cost_usd", None))
+        if prov in spend.FREE:
+            inr = 0.0
+        cost_inr[0] += inr
+        for tag in spend.charge(prov, inr):            # 80%: warn once a month; 100%: the next calls go to the local model
+            _metrics["spend_" + tag] += 1
+            _emit({"req_id": req_id, **who, "decision": "spend_warning" if tag == "warn" else "spend_cap_reached", "provider": prov,
+                   "spent_inr": round(spend.spent(prov), 2), "cap_inr": spend.cap(prov), "priced_by": how, "category": "LLM10/cost"})
         _usage["tokens_prompt"] += int(u.get("prompt_tokens") or 0)
         _usage["tokens_completion"] += int(u.get("completion_tokens") or 0)
         _usage["tokens_reasoning"] += int((u.get("completion_tokens_details") or {}).get("reasoning_tokens") or 0)   # thinking the model did, inside completion
@@ -887,7 +940,10 @@ async def _chat(request: Request, authorization: str | None) -> JSONResponse:
     resp["guardrails"] = {"req_id": req_id, "decision": decision,
                           "rules": sorted({f.rule for f in in_findings + out_findings})}
     # Customer-facing AI must say it is AI (RBI MRM draft): every answer carries the disclosure, for any client to show.
-    echo = {"traceparent": f"00-{trace_id}-{span_id}-01", "X-Request-ID": req_id, "X-AI-Generated": "true", **budget.headers(principal)}
+    echo = {"traceparent": f"00-{trace_id}-{span_id}-01", "X-Request-ID": req_id, "X-AI-Generated": "true", **budget.headers(principal),
+            "X-AI-Cost-INR": f"{cost_inr[0]:.4f}"}
+    if spend_fallback:
+        echo["X-AI-Spend"] = f"{spend_fallback['provider']}: this month's cap is reached; the local model answered"
     if state:
         echo["X-SecuRAX-Careful"] = state
     if _IDEM_CTX.get():

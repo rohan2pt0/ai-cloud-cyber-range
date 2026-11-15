@@ -84,6 +84,9 @@ services:
       AI_BUDGET_DAY_TOKENS: ${AI_BUDGET_DAY_TOKENS:-2000000}
       AI_BUDGET_MONTH_TOKENS: ${AI_BUDGET_MONTH_TOKENS:-20000000}
       AI_BUDGET_COUNT_LOCAL: ${AI_BUDGET_COUNT_LOCAL:-0}
+      AI_SPEND_CAP_INR: ${AI_SPEND_CAP_INR:-1000}             # rupees a month per paid provider (app/spend.py); at the cap the local model answers
+      AI_INR_PER_USD: ${AI_INR_PER_USD:-95}
+      AI_SPEND_FALLBACK_MODEL: ${AI_SPEND_FALLBACK_MODEL:-bank-assistant-local}
       ANSWER_RULES: ${ANSWER_RULES:-on}
       ANSWER_CONTEXT: "${ANSWER_CONTEXT:-India (amounts in rupees, Indian law and tax)}"
       ANSWER_UTC_OFFSET_MIN: ${ANSWER_UTC_OFFSET_MIN:-330}

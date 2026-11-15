@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- **AI spend in rupees, capped per provider** (spend-guard slice 1): the gateway prices every answered call in rupees (LiteLLM's own price list at AI_INR_PER_USD, default 95), charges it to the provider that really answered, warns once at 80% of the month and, at the cap (default Rs 1,000 a month per provider), has the local model answer instead, saying so in the reply's X-AI-Spend header and the audit log. Each reply carries X-AI-Cost-INR; /v1/spend reports the month.
 - **"Last backup" tells the truth about where the copy lives** (audit round 1): a backup shared off the phone (the share sheet) or downloaded on a laptop counts as an off-phone copy; a file in the phone's own Downloads does not, and the Health row says "Saved on this phone only" with one tap to save a copy off the phone (test103).
 - **A lost phone no longer loses the backups** (audit round 1): when the Life OS is paired with your estate, the backup phrase is kept there too, so a new phone opens old backups with no typing; it is never in a backup file or the OneDrive copy; and "I have saved it" now asks for the phrase's last four characters (test102, threat model lifeos-backup).
 - **A locked Life OS still syncs** (audit round 1, finding 3): a goal written on the laptop lands in storage while the phone sits behind its privacy lock and appears on the Goals tab the moment it is unlocked; a goal or profile that arrives from another device now shows at once instead of only after a reload (test104).

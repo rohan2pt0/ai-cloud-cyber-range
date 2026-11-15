@@ -133,6 +133,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- AI spend in rupees, capped per provider
 - "Last backup" tells the truth about where the copy lives
 - A lost phone no longer loses the backups
 - A locked Life OS still syncs
