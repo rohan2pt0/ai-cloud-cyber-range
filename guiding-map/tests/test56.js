@@ -1,6 +1,6 @@
 // v56: "Where the money goes" starts from the profile when the plan is empty, uses a validated categorical palette,
 // and shows the meters as a healthy band with the value as a dot and a status word, never a filled red track.
-// Fake data only: net 200000, spending 90000, one loan EMI 20000, gm_life left empty.
+// Fake data only: net 200000, spending 90000, one loan EMI 20000 (it still reduces the saving), gm_life left empty.
 const fs = require('fs'), path = require('path'), { JSDOM } = require('jsdom');
 let P = 0, F = 0, e = []; const ok = (n, c, d) => { c ? P++ : (F++, e.push(n + (d ? " :: " + d : ""))); };
 const prof = { name: "Fake", dob: "1990-05-15", country: "India", city: "", cur: "INR", gross: 300000, net: 200000, exp: 90000, sav: 400000,
