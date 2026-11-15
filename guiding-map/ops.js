@@ -8653,8 +8653,57 @@
   // The levers card sits at the top of the Money view, directly below its hero (and before the card guide).
   if (typeof renderMoney === "function") { var _rmLev = renderMoney; renderMoney = function (E) {
     var h = _rmLev(E), m = /<div class="section[^"]*"[^>]*>/.exec(h), from = m ? m.index + m[0].length : 0, k = h.indexOf('<div class="cat-t"', from);
-    return k > -1 ? h.slice(0, k) + gmLeversHTML() + h.slice(k) : h + gmLeversHTML();
+    return k > -1 ? h.slice(0, k) + gmLeversHTML() + gmNeedsHTML() + h.slice(k) : h + gmLeversHTML() + gmNeedsHTML();
   }; }
+
+  /* ── What we must earn (owner 2026-11-15; queue income-needs): the take-home that covers essentials, EMIs and a saving rate,
+     now and in 3, 5 and 10 years at the inflation the person expects; fixed and variable spending from pasted bank messages,
+     with one concrete cut for each of the three largest variable categories. */
+  var NEED_CUTS = { "Food delivery": "Cook twice a week more; cap delivery at Rs 1,500 a week", "Amazon": "A 48-hour wait before any non-essential order",
+    "Flipkart, Myntra": "A 48-hour wait before any non-essential order", "Travel": "Batch trips; metro or bus for short hops",
+    "Fuel": "Club errands into one trip a week", "Groceries": "One planned list a week, bought once" };
+  var NEED_FIXED = ["Bills", "Insurance", "Subscriptions"];
+  function needNum(v) { var n = parseFloat(String(v === undefined || v === null ? "" : v).replace(/[,\s\u20b9]/g, "")); return isFinite(n) ? n : 0; }
+  function needRs(n) { return "Rs " + Math.round(n).toLocaleString("en-IN"); }
+  window.gmNeedsCalc = function () {
+    var p = window.P, cfg = G("gm_needs", {}) || {};
+    if (!p || p.example || !(needNum(p.exp) > 0)) return null;
+    var emis = (p.loans || []).reduce(function (a, l) { return a + needNum(l && l.emi); }, 0);
+    var rate = Math.min(60, Math.max(10, needNum(p.tsav) || 20)), infl = Math.min(15, Math.max(2, needNum(cfg.infl) || 6));
+    var now = Math.round((needNum(p.exp) + emis) / (1 - rate / 100) / 1000) * 1000, cur = needNum(p.net) + needNum(p.psal);
+    var fut = function (y) { return Math.round(now * Math.pow(1 + infl / 100, y) / 1000) * 1000; };
+    var since = new Date(Date.now() - 35 * 864e5).toISOString().slice(0, 10), sp = (G("gm_spend", []) || []).filter(function (x) { return x && x.d >= since && needNum(x.a) > 0; });
+    var split = null;
+    if (sp.length >= 5) {
+      var by = {}; sp.forEach(function (x) { by[x.c || "Other"] = (by[x.c || "Other"] || 0) + needNum(x.a); });
+      var fixed = 0, variable = [];
+      Object.keys(by).forEach(function (k) { if (NEED_FIXED.indexOf(k) >= 0) fixed += by[k]; else variable.push([k, by[k]]); });
+      variable.sort(function (a, b) { return b[1] - a[1]; });
+      split = { fixed: fixed, variable: variable.reduce(function (a, v) { return a + v[1]; }, 0), top: variable.slice(0, 3) };
+    }
+    return { now: now, cur: cur, rate: rate, infl: infl, emis: emis, y3: fut(3), y5: fut(5), y10: fut(10), split: split };
+  };
+  window.gmNeedsInfl = function (v) {
+    var n = window.gmFieldGuard ? window.gmFieldGuard({ min: 2, max: 15 }, v).v : needNum(v);
+    var c = G("gm_needs", {}) || {}; c.infl = n === "" ? 6 : n; S_("gm_needs", c); renderAll();
+  };
+  window.gmNeedsHTML = function () {
+    var r = window.gmNeedsCalc(), h = '<div class="cat-t">What we must earn</div><div class="road-col gm-needs" style="margin-bottom:12px">';
+    if (!r) return h + '<div style="font-size:13px">Add your monthly spending in your profile to see what you must earn. <a href="#" class="gm-inl" onclick="editProfile();return false">Open the profile</a></div></div>';
+    var cls = r.cur >= r.now ? "sx-state-good" : r.cur >= r.now * 0.9 ? "sx-state-watch" : "sx-state-low";
+    var word = r.cur >= r.now ? "on track" : r.cur >= r.now * 0.9 ? "close: short by " + needRs(r.now - r.cur) : "short by " + needRs(r.now - r.cur);
+    h += '<div style="font-size:13.5px">You need <b>' + needRs(r.now) + '</b> a month take-home to cover essentials, EMIs and a ' + r.rate + '% saving.</div>'
+      + '<div style="font-size:13.5px;margin-top:6px">You bring in ' + needRs(r.cur) + ': <span class="' + cls + '" style="font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px;white-space:nowrap;color:' + (cls === "sx-state-watch" ? "#2a1703" : "#fff")
+      + (cls === "sx-state-good" ? ';background-image:radial-gradient(90% 60% at 30% 0%,rgba(255,255,255,.12),rgba(255,255,255,0) 60%),linear-gradient(160deg,#2fae7a 0%,#13704f 55%,#0a4732 100%)' : "") + '">' + esc(word) + '</span></div>'
+      + '<div style="font-size:13px;margin-top:6px">In 3 years ' + needRs(r.y3) + ' · 5 years ' + needRs(r.y5) + ' · 10 years ' + needRs(r.y10) + ', at ' + r.infl + '% inflation.</div>'
+      + '<label class="f-label" style="margin-top:8px">Inflation you expect, % a year</label><input inputmode="decimal" value="' + esc(r.infl) + '" onchange="gmNeedsInfl(this.value)" aria-label="Inflation you expect, percent a year">';
+    if (r.split) {
+      h += '<div style="font-size:13px;margin-top:10px">Fixed ' + needRs(r.split.fixed) + ' · Variable ' + needRs(r.split.variable) + ' a month (from your bank messages)</div>';
+      if (r.split.top.length) h += '<div style="font-size:12.5px;font-weight:800;margin-top:6px">The three biggest variable costs, and one cut each</div><ol style="margin:4px 0 0;padding-left:20px;font-size:12.5px">'
+        + r.split.top.map(function (t) { return '<li>' + esc(t[0]) + ' (' + needRs(t[1]) + '): ' + esc(NEED_CUTS[t[0]] || "Set a monthly cap and review it on Sunday") + '</li>'; }).join("") + '</ol>';
+    } else h += '<div style="font-size:12px;color:var(--muted);margin-top:8px">Paste last month\'s bank messages below to see fixed and variable spending, and where to cut.</div>';
+    return h + '</div>';
+  };
 
   // The Money view opens with the card guide.
   // Inside the view's own padded section, so it lines up with everything else on the screen.
