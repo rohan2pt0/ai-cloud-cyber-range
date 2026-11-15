@@ -1358,6 +1358,8 @@ def j_gm_full_use(sb: H.Sandbox, c: Checks):
     c.ok(rc == 0 and "KIT AUDIT: PASS" in log, "every OS kit app (Vantage) renders every screen, in both themes, with no page error, no contrast failure and no sideways scroll on a phone", tail(log, 400))
     rc, log = H.sh(["python3", "guiding-map/tests/robustness_audit.py", str(out / "robustness")], cwd=sb.clone, timeout=1500)
     c.ok(rc == 0 and "ROBUSTNESS AUDIT: PASS" in log, "robustness: attack text in every stored value runs nowhere and hangs nothing; a damaged or wrong-typed key never crashes a screen; a damaged lock record never locks the person out; while locked, the keyboard stays on the lock and starts on Unlock", tail(log, 600))
+    rc, log = H.sh(["python3", "guiding-map/tests/persona_audit.py", str(out / "personas")], cwd=sb.clone, timeout=900)
+    c.ok(rc == 0 and "PERSONA AUDIT: PASS" in log, "personas (a student founder, a salaried parent, a retired owner, a century typo, an investor, a skipper) make real mistakes and no screen shows NaN, undefined, an impossible age or a negative salary; what cannot apply is not offered; a first win in three taps", tail(log, 600))
     rc, log = H.sh(["python3", "guiding-map/tests/device_audit.py", str(out / "devices")], cwd=sb.clone, timeout=900)
     c.ok(rc == 0 and "DEVICE AUDIT: PASS" in log, "every-device: the Life OS and Vantage, open and locked, keep their form on Android and iPhone (SE to Pro Max), iPad both ways, a phone held sideways, a laptop and a large desktop: no sideways scroll, no cut-off word, finger-sized targets, the way in always on screen", tail(log, 600))
 
@@ -1623,6 +1625,8 @@ def j_ui(sb: H.Sandbox, c: Checks):
         H.shot(page, "command_center")
         page.goto(f"{H.GUIDING_MAP}/")
         page.wait_for_load_state("networkidle")
+        if page.locator("#gmMineSheet .gm-mine-skip").count():                 # a newcomer first sees "Make it yours"; answer it as a person does
+            page.locator("#gmMineSheet .gm-mine-skip").click()
         page.get_by_text(re.compile(r"^\W*ASK\W*$", re.I)).first.click()      # the real Ask tab, as a user clicks it
         page.wait_for_selector("#askQ")
         page.fill("#askQ", "hello")

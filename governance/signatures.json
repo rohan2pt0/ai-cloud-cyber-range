@@ -9,6 +9,7 @@
   {"id": "keycaps", "name": "Jade keycaps", "where": ["guiding-map/shared/lux.css"], "nature": "jade, a mechanical key with travel and a tick", "proof": ["governance/tests/test_shared_look.py"]},
   {"id": "gem-status", "name": "Status in gemstones", "where": ["guiding-map/shared/lux.css", "guiding-map/ops.js"], "nature": "cut emerald, amber with light through it, ruby; a table highlight from above", "proof": ["guiding-map/tests/test101.js", "governance/tests/test_shared_look.py"]},
   {"id": "daily-stones", "name": "The daily three: moonstone to jade, under a dawn line", "where": ["guiding-map/ops.js"], "nature": "moonstone adularescence, polished jade, dawn from night to gold", "proof": ["governance/tests/test_shared_look.py"]},
-  {"id": "north-star-dial", "name": "The North Star dial", "where": ["guiding-map/index.html"], "nature": "the north star, a watch bezel, gemstone arcs", "proof": ["governance/tests/test_shared_look.py"]}
+  {"id": "north-star-dial", "name": "The North Star dial", "where": ["guiding-map/index.html"], "nature": "the north star, a watch bezel, gemstone arcs", "proof": ["governance/tests/test_shared_look.py"]},
+  {"id": "ambient-light", "name": "Ambient light in dark", "where": ["guiding-map/ops.js"], "nature": "a luxury cabin at night: champagne light lines, halos and a pool of light under the chosen tab", "proof": ["guiding-map/tests/test110.js"]}
  ]
 }

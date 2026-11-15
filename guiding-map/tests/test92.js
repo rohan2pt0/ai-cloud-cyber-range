@@ -38,7 +38,7 @@ setTimeout(() => {
       const lux = none.document.getElementById("gmCalmLux").textContent + ((none.document.getElementById("sxLux") || {}).textContent || "");   // the app's own styles plus the shared look (reuse-first)
       ok(/\.gm-tap\.gm-chk\{[^}]*width:44px/.test(lux) && /\.gm-tap\.gm-chk\.on::after/.test(lux), "tick boxes are a small round check inside a 44 px tap area");
       ok(/\[style\*='display:flex'\] > button\.btn[^{]*\{width:auto/.test(lux), "a button in a row sizes to its content, so text beside it is never crushed");
-      ok(/\.stk-k\{background:transparent!important/.test(lux), "metric labels are engraved tags, not gold slabs");
+      ok(/\.stk-k\{background:(transparent|none)!important/.test(lux), "metric labels are engraved eyebrows, not gold slabs");
       none.goTab("guide");
       const gt = vis(none.document, none.document.querySelector(".section.active"));
       ok(/max-width:440px/.test(lux) && !/\.ws-tap\.on\{[^}]*radial-gradient/.test(lux) && /min-width:900px\)\{html body #sections\{max-width:820px/.test(lux), "on a laptop: keys stay key-sized, jade has a stone's gloss (no painted blob), one centred column");

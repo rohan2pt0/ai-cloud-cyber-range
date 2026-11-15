@@ -2869,7 +2869,7 @@
       + '<details class="road-col gm-more-backup" style="margin-top:10px"><summary style="cursor:pointer;font-weight:700;font-size:12.5px">More backup options</summary>'
       + bkOpt("gmBkShow()", "Backup phrase", "Opens your encrypted backups on a new phone. Keep it in your password manager.")
       + bkOpt("gmExportCsv()", "Export for Excel (CSV)", "For a spreadsheet. Readable by anyone who gets the file.")
-      + bkOpt("gmEmergencyExport()", "Spouse emergency page", "One page for your spouse if something happens to you. Readable; keep it somewhere safe.")
+      + (fitsFact("spouse-emergency") ? bkOpt("gmEmergencyExport()", "Spouse emergency page", "One page for your spouse if something happens to you. Readable; keep it somewhere safe.") : "")
       + bkOpt("gmExportPlain()", "Readable copy", "To move data into another tool. Readable by anyone who gets the file.")
       + '</details>';
   }
@@ -3922,6 +3922,15 @@
     return h + '</div></div>';
   }
   gmApplyMat();
+  /* ── Which doors and cards need which fact (one registry) ──────────
+     The first run asks five things; anything that does not apply is not shown. Never a safety item: backup, the lock,
+     Health/Ops, Money and Today stay. */
+  var FITS = { kids: "kids", prop: "home", "spouse-emergency": "partner" };
+  function fitsFact(id) {
+    var f = FITS[id]; if (!f) return true;
+    var said = G("gm_facts", {}) || {};
+    return !(Object.prototype.hasOwnProperty.call(said, f) && said[f] === false);
+  }
   function opsHTML() {
     var due = dueRituals(), broken = brokenHabits().length;
     var h = '<div class="section active">';
@@ -4108,8 +4117,7 @@
         + (ic ? '<span class="gi" aria-hidden="true">' + ic + '</span>' : '') + t[1] + (isNew ? '<span class="gm-new">new</span>' : '') + '</button>';
     }
     // A tab that cannot apply (the person answered No to its fact) is not shown at all: no clutter for a life that is not theirs.
-    var said = G("gm_facts", {}) || {}, NEEDS = { kids: "kids" };
-    function fits(t) { var f = NEEDS[t[0]]; return !(f && said.hasOwnProperty(f) && said[f] === false); }
+    function fits(t) { return fitsFact(t[0]); }
     var unlocked = [];
     if (SIMPLE) UNLOCK.slice(0, weeks).forEach(function (id) {
       if (main.indexOf(id) >= 0 || FIRST.indexOf(id) >= 0) return;
@@ -5169,8 +5177,9 @@
 
   /* ---- actions ---- */
   function setPath(o, path, v) { var p = path.split("."), x = o; for (var i = 0; i < p.length - 1; i++) { x[p[i]] = x[p[i]] || {}; x = x[p[i]]; } x[p[p.length - 1]] = v; }
+  var _carTyped = false;
   window.gmCarSet = function (path, v) {
-    var c = car(); setPath(c, path, v); carPut(c);
+    var c = car(); setPath(c, path, v); carPut(c); _carTyped = true;   // a figure just typed stays in view (the fold opens)
     if (CAR_FROM_P[path] && profOK()) {             // the same fact in the profile, so every screen agrees
       var k = CAR_FROM_P[path];
       if (k === "dob") { if (v && String(P.dob || "").slice(0, 7) !== String(v).slice(0, 7)) P.dob = String(v).slice(0, 7) + "-01"; }
@@ -5317,15 +5326,31 @@
     h += box(wc);
 
     // 4. inputs
-    var inp = hd("4 · Today's job and household", "From your payslip and bank app. Monthly ₹ unless marked.")
-      + fld("Payslip gross (incl. employer NPS)", "cur.gross", c.cur.gross, "₹/mo") + fld("Payslip net (credited)", "cur.inhand", c.cur.inhand, "₹/mo")
-      + fld("Rent the employer pays for you", "cur.rent", c.cur.rent, "₹/mo") + fld("Cash-like perks (fuel, phone, paper)", "cur.perks", c.cur.perks, "₹/mo")
-      + fld("Employer NPS / PF", "cur.empRet", c.cur.empRet, "₹/mo") + fld("Your own NPS / PF deduction", "cur.empDed", c.cur.empDed, "₹/mo")
-      + fld("Other yearly benefits you really get (insurance, medical, LFC, leave encashment, incentive)", "cur.otherYr", c.cur.otherYr, "₹/yr")
-      + fld("Household essentials incl. rent you will pay", "house.exp", c.house.exp, "₹/mo") + fld("EMIs", "house.emi", c.house.emi, "₹/mo")
-      + fld("Spouse take-home", "house.wife", c.house.wife, "₹/mo") + fld("Emergency fund (cash, liquid funds)", "house.ef", c.house.ef, "₹")
-      + fld("Investments towards financial independence (MF, stocks, NPS, PPF, EPF)", "house.nw", c.house.nw, "₹")
-      + '<details style="margin-top:6px"><summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:var(--text)">Dates and assumptions</summary>'
+    var wifeOK = G("gm_facts", {}).partner !== false;
+    var carFields = [
+      ["Payslip gross (incl. employer NPS)", "cur.gross", c.cur.gross, "₹/mo"],
+      ["Payslip net (credited)", "cur.inhand", c.cur.inhand, "₹/mo"],
+      ["Rent the employer pays for you", "cur.rent", c.cur.rent, "₹/mo"],
+      ["Cash-like perks (fuel, phone, paper)", "cur.perks", c.cur.perks, "₹/mo"],
+      ["Employer NPS / PF", "cur.empRet", c.cur.empRet, "₹/mo"],
+      ["Your own NPS / PF deduction", "cur.empDed", c.cur.empDed, "₹/mo"],
+      ["Other yearly benefits you really get (insurance, medical, LFC, leave encashment, incentive)", "cur.otherYr", c.cur.otherYr, "₹/yr"],
+      ["Household essentials incl. rent you will pay", "house.exp", c.house.exp, "₹/mo"],
+      ["EMIs", "house.emi", c.house.emi, "₹/mo"],
+      ["Spouse take-home", "house.wife", c.house.wife, "₹/mo"],
+      ["Emergency fund (cash, liquid funds)", "house.ef", c.house.ef, "₹"],
+      ["Investments towards financial independence (MF, stocks, NPS, PPF, EPF)", "house.nw", c.house.nw, "₹"]
+    ];
+    if (!wifeOK) carFields = carFields.filter(function (f) { return f[1] !== "house.wife"; });
+    var filledF = [], emptyF = [];
+    carFields.forEach(function (f) { var v = f[2]; (v === undefined || v === null || v === "" || v === 0) ? emptyF.push(f) : filledF.push(f); });
+    var frow = function (f) { return fld(f[0], f[1], f[2], f[3]); };
+    var detStyle = ' style="margin-top:6px"', sumStyle = ' style="cursor:pointer;font-size:12.5px;font-weight:700;color:var(--text)"';
+    var inp = hd("4 · Today's job and household", "From your payslip and bank app. Monthly ₹ unless marked.");
+    if (filledF.length) inp += '<details class="car-filled"' + detStyle + (_carTyped ? ' open' : '') + '><summary' + sumStyle + '>Your figures (' + filledF.length + ' filled) · tap to change</summary>' + filledF.map(frow).join("") + '</details>';
+    inp += emptyF.slice(0, 3).map(frow).join("");
+    if (emptyF.length > 3) inp += '<details class="car-more"' + detStyle + '><summary' + sumStyle + '>Add more (' + (emptyF.length - 3) + ')</summary>' + emptyF.slice(3).map(frow).join("") + '</details>';
+    inp += '<details style="margin-top:6px"><summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:var(--text)">Dates and assumptions</summary>'
       + fld("Notice period started", "cfg.noticeStart", c.cfg.noticeStart, "YYYY-MM-DD") + fld("Notice length", "cfg.noticeMonths", c.cfg.noticeMonths || 3, "months")
       + fld("Joining date (blank: day after last day)", "cfg.join", c.cfg.join, "YYYY-MM-DD") + fld("Birth month", "cfg.birth", c.cfg.birth, "YYYY-MM")
       + fld("Financial independence target age", "cfg.fiAge", c.cfg.fiAge || 50, "years") + fld("Inflation", "cfg.infl", c.cfg.infl || 6, "%/yr") + fld("Investment return", "cfg.ret", c.cfg.ret || 10, "%/yr")
@@ -5482,7 +5507,7 @@
       + "html[data-theme=dark] .afp-bar,html[data-theme=dark] .ptrack,html[data-theme=dark] .ns-sbar{background:rgba(255,255,255,.08)!important}"
       + ".kc.behind .ab{background:linear-gradient(90deg,transparent,#7d1426 20%,#c2394f 50%,#7d1426 80%,transparent)!important;height:2px}"
       + ".kc.caution .ab{background:linear-gradient(90deg,transparent,var(--gold) 20%,var(--goldL) 50%,var(--gold) 80%,transparent)!important;height:2px}"
-      + ".stk-k{background:linear-gradient(135deg,#d9b65c 0%,#f3e2a6 42%,#d4af37 70%,#e8c96a 100%)!important;color:#1b1406!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 2px 6px rgba(122,90,20,.18)}"
+      + ".stk-k{background:none!important;color:#7a5a14!important;box-shadow:none!important}"
       // Glass and enamel for the shared parts (owner, 2026-11-12): money bar, More sheet, chips and small buttons.
       + ".flowbar{gap:3px;border-radius:12px}"
       + ".flowseg{border-radius:9px;background-image:linear-gradient(180deg,rgba(255,255,255,.30) 0,rgba(255,255,255,.06) 48%,rgba(0,0,0,.14) 100%)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),inset 0 -1px 0 rgba(0,0,0,.18)}"
@@ -5653,7 +5678,7 @@
         + "html[data-theme=dark]{--edge:#7d7972;--bg:#18181b;--card:#222226;--cardAlt:#2b2b30;--text:#f3efe7;--muted:#aba69d;--border:#38373d;--navy:#1b1a18;--shadow:none}"
         + "body{background:var(--bg)}"
         + "header{background:var(--navy);border-bottom:1px solid rgba(255,255,255,.06)}"
-        + ".hero{background:#1b1a18;border-bottom:1px solid rgba(255,255,255,.06)}.hero h1{font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:24px;letter-spacing:-.005em}.hero p{color:rgba(246,243,238,.72)}"
+        + ".hero{background:linear-gradient(180deg,#0d1a2e,#0b1628);border-bottom:1px solid rgba(201,168,76,.18)}.hero h1{font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:24px;letter-spacing:-.005em}.hero p{color:rgba(246,243,238,.72)}"
         + ".gm-greet h2{font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:32px;line-height:1.1;letter-spacing:-.01em}"
         + ".gm-greet p{font-size:14px;margin-top:6px}"
         + ".gm-d3{border-radius:20px;padding:16px;margin-bottom:16px}"
@@ -5687,7 +5712,7 @@
         // does not zoom; fold headers are full-height targets. Help terms inside a sentence stay inline (WCAG 2.5.8 exempts them).
         + ".btn,.btn-sm,.btn-p,.btn-s,.chip,.gm-tap,.hdr-btn,.gm-menu-btn,button.danger,.danger[role=button],[role=button].danger{min-height:44px!important;min-width:44px!important}"
         + ".chip,.gm-tap,button.danger,.danger[role=button]{display:inline-flex;align-items:center;justify-content:center}"
-        + "#sections summary,#gmOverlay summary{min-height:44px;display:flex;align-items:center;gap:6px;cursor:pointer}"
+        + "#sections summary,#gmOverlay summary{min-height:44px;display:flex;flex-wrap:wrap;align-items:center;gap:2px 6px;cursor:pointer}"
         + "#sections div[role=button],.btn-add{min-height:44px}.gm-term{display:inline!important}"
         + "#sections input:not([type=checkbox]):not([type=radio]):not([type=range]),#sections select,#sections textarea,#gmOverlay input:not([type=checkbox]):not([type=radio]),#gmOverlay select,#gmOverlay textarea{font-size:16px!important}"
         // Alerts (premium.alerts): a tinted card, a thin edge in its colour, a sentence-case title, ink text, one action.
@@ -5717,10 +5742,43 @@
         + "}"
         + "@media (prefers-reduced-transparency:reduce){header{background:#1b1a18;backdrop-filter:none;-webkit-backdrop-filter:none}"
         + "#gmNav,#gmMoreSheet .sh{background:var(--card);backdrop-filter:none;-webkit-backdrop-filter:none}#gmOverlay,#gmMoreSheet.on{backdrop-filter:none;-webkit-backdrop-filter:none}}"
-        + "@media (prefers-reduced-motion:reduce){.gm-d3 .tile{transition:none!important}.gm-d3 .tile:active{transform:none}}";
+         + "@media (prefers-reduced-motion:reduce){.gm-d3 .tile{transition:none!important}.gm-d3 .tile:active{transform:none}}"
+        // A bare small button never shows the browser's grey: it is the quiet outlined action (both themes).
+        + ".btn-sm:not([style*=background]):not(.btn-p){background:transparent!important;color:var(--text)!important;border:1px solid var(--edge)!important;border-radius:999px!important;font-weight:600!important}"
+        // A row of chips that scrolls sideways says so: its far edge fades, and the last chip can scroll clear of the fade.
+        + "@media (max-width:600px){#sections .chips{-webkit-mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 36px),transparent);padding-inline-end:36px;scroll-snap-type:x proximity}#sections .chips>.chip{scroll-snap-align:start}"
+        + "[dir=rtl] #sections .chips{-webkit-mask-image:linear-gradient(270deg,#000 0,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(270deg,#000 0,#000 calc(100% - 36px),transparent)}}"
+        // Dark: the primary is an obsidian control with a champagne rim, never an ivory slab (also with ambient light off).
+        + "html[data-theme=dark] .btn-p,html[data-theme=dark] .btn.primary,html[data-theme=dark] .btn-sm[style*='background:var(--gold)']{background:linear-gradient(180deg,#2c2925,#1c1a18)!important;color:#f3e2b8!important;border:1px solid rgba(233,201,138,.55)!important;box-shadow:inset 0 1px 0 rgba(255,236,200,.28)!important}"
+        // Ambient light: a light line along the top edge and a soft halo on the primary.
+        + "html[data-theme=dark]:not(.gm-amb-off) .btn-p,html[data-theme=dark]:not(.gm-amb-off) .btn.primary,html[data-theme=dark]:not(.gm-amb-off) .btn-sm[style*='background:var(--gold)']{box-shadow:inset 0 1px 0 rgba(255,236,200,.42),0 0 0 1px rgba(233,201,138,.14),0 0 22px rgba(233,201,138,.26),0 6px 18px rgba(0,0,0,.45)!important}"
+        // Quiet controls: a lit hairline.
+        + "html[data-theme=dark]:not(.gm-amb-off) .btn-s,html[data-theme=dark]:not(.gm-amb-off) .btn:not(.btn-p):not(.primary),html[data-theme=dark]:not(.gm-amb-off) .btn-sm[style*='background:var(--cardAlt)'],html[data-theme=dark]:not(.gm-amb-off) .btn-sm:not([style*=background]):not(.btn-p),html[data-theme=dark]:not(.gm-amb-off) .gm-secondary,html[data-theme=dark]:not(.gm-amb-off) .chip:not(.on),html[data-theme=dark]:not(.gm-amb-off) .hdr-btn,html[data-theme=dark]:not(.gm-amb-off) .gm-menu-btn{border-color:rgba(233,201,138,.34)!important;box-shadow:0 0 10px rgba(233,201,138,.07),inset 0 1px 0 rgba(255,255,255,.05)!important}"
+        // A chosen chip in dark: champagne light, not the small gold surface (it read muddy in the dark studio).
+        + "html[data-theme=dark] .chip.on{background:rgba(233,201,138,.16)!important;background-image:none!important;color:#f3e2b8!important;border:1px solid rgba(233,201,138,.62)!important}"
+        + "html[data-theme=dark]:not(.gm-amb-off) .chip.on{box-shadow:0 0 12px rgba(233,201,138,.18),inset 0 1px 0 rgba(255,236,200,.18)!important}"
+        // A press brightens the light and settles.
+        + "html[data-theme=dark]:not(.gm-amb-off) .btn-p,html[data-theme=dark]:not(.gm-amb-off) .btn.primary,html[data-theme=dark]:not(.gm-amb-off) .btn-sm[style*='background:var(--gold)'],html[data-theme=dark]:not(.gm-amb-off) .btn-s,html[data-theme=dark]:not(.gm-amb-off) .btn:not(.btn-p):not(.primary),html[data-theme=dark]:not(.gm-amb-off) .btn-sm[style*='background:var(--cardAlt)'],html[data-theme=dark]:not(.gm-amb-off) .btn-sm:not([style*=background]):not(.btn-p),html[data-theme=dark]:not(.gm-amb-off) .gm-secondary,html[data-theme=dark]:not(.gm-amb-off) .chip,html[data-theme=dark]:not(.gm-amb-off) .hdr-btn,html[data-theme=dark]:not(.gm-amb-off) .gm-menu-btn{transition:box-shadow 180ms ease-out,filter 140ms ease-out,transform 120ms cubic-bezier(.2,.8,.2,1)}"
+        + "html[data-theme=dark]:not(.gm-amb-off) .btn-p:active,html[data-theme=dark]:not(.gm-amb-off) .btn.primary:active,html[data-theme=dark]:not(.gm-amb-off) .btn-sm[style*='background:var(--gold)']:active,html[data-theme=dark]:not(.gm-amb-off) .btn-s:active,html[data-theme=dark]:not(.gm-amb-off) .btn:not(.btn-p):not(.primary):active,html[data-theme=dark]:not(.gm-amb-off) .btn-sm[style*='background:var(--cardAlt)']:active,html[data-theme=dark]:not(.gm-amb-off) .btn-sm:not([style*=background]):not(.btn-p):active,html[data-theme=dark]:not(.gm-amb-off) .gm-secondary:active,html[data-theme=dark]:not(.gm-amb-off) .chip:active,html[data-theme=dark]:not(.gm-amb-off) .hdr-btn:active,html[data-theme=dark]:not(.gm-amb-off) .gm-menu-btn:active{filter:brightness(1.14) drop-shadow(0 0 8px rgba(233,201,138,.35))}"
+        // The keyboard's place is lit.
+        + "html[data-theme=dark] button:focus-visible,html[data-theme=dark] a:focus-visible,html[data-theme=dark] .chip:focus-visible,html[data-theme=dark] input:focus-visible,html[data-theme=dark] select:focus-visible,html[data-theme=dark] textarea:focus-visible,html[data-theme=dark] summary:focus-visible,html[data-theme=dark] [role=button]:focus-visible{outline:2px solid rgba(233,201,138,.85)!important;outline-offset:2px}"
+        // Fields: a faint lit edge that brightens while typing.
+        + "html[data-theme=dark]:not(.gm-amb-off) #sections input:not([type=checkbox]):not([type=radio]):not([type=range]),html[data-theme=dark]:not(.gm-amb-off) #sections select,html[data-theme=dark]:not(.gm-amb-off) #sections textarea,html[data-theme=dark]:not(.gm-amb-off) #gmOverlay input:not([type=checkbox]):not([type=radio]),html[data-theme=dark]:not(.gm-amb-off) #gmOverlay select,html[data-theme=dark]:not(.gm-amb-off) #gmOverlay textarea{border-color:rgba(233,201,138,.22)!important}"
+        + "html[data-theme=dark]:not(.gm-amb-off) #sections input:not([type=checkbox]):not([type=radio]):not([type=range]):focus,html[data-theme=dark]:not(.gm-amb-off) #sections select:focus,html[data-theme=dark]:not(.gm-amb-off) #sections textarea:focus,html[data-theme=dark]:not(.gm-amb-off) #gmOverlay input:not([type=checkbox]):not([type=radio]):focus,html[data-theme=dark]:not(.gm-amb-off) #gmOverlay select:focus,html[data-theme=dark]:not(.gm-amb-off) #gmOverlay textarea:focus{border-color:rgba(233,201,138,.68)!important;box-shadow:0 0 0 3px rgba(233,201,138,.15)!important;outline:none}"
+        // The bottom bar: a light strip along its top edge and a pool of light under the tab you are on.
+        + "html[data-theme=dark]:not(.gm-amb-off) #gmNav::before{content:'';position:absolute;left:6%;right:6%;top:0;height:1px;background:linear-gradient(90deg,rgba(233,201,138,0),rgba(233,201,138,.55),rgba(233,201,138,0));pointer-events:none}"
+        + "html[data-theme=dark]:not(.gm-amb-off) #gmNav button.on{background:radial-gradient(70% 60% at 50% 100%,rgba(233,201,138,.24),rgba(233,201,138,0) 72%)!important;box-shadow:inset 0 2px 0 rgba(233,201,138,.9)!important;color:#f6ead0!important}"
+        + "html[data-theme=dark]:not(.gm-amb-off) #gmNav button.on b{filter:drop-shadow(0 0 6px rgba(233,201,138,.55))}"
+        // A plain small button on a hero card (a fixed navy card) is the hero's own pill: ivory in light, lit obsidian in dark.
+        + ".gm-hero-b .btn-sm:not([style*=background]):not(.btn-p),.gm-hero-b .btn-p,.gm-hero-b .btn.primary,.gm-hero-b .btn-sm[style*='background:var(--gold)']{background:#f6f3ee!important;color:#1b1a18!important;border:1px solid #f6f3ee!important;box-shadow:inset 0 0 0 1px rgba(201,168,76,.75),0 6px 16px rgba(0,0,0,.28)!important}"
+        + "html[data-theme=dark] .gm-hero-b .btn-sm:not([style*=background]):not(.btn-p){background:linear-gradient(180deg,#2c2925,#1c1a18)!important;color:#f3e2b8!important;border-color:rgba(233,201,138,.55)!important}"
+        // Still means still.
+        + "html.gm-still .btn,html.gm-still .btn-sm,html.gm-still .btn-p,html.gm-still .btn-s,html.gm-still .chip,html.gm-still .hdr-btn,html.gm-still .gm-menu-btn{transition:none!important;filter:none!important}"
+        + "@media (prefers-reduced-motion:reduce){html[data-theme=dark]:not(.gm-amb-off) .btn-p,html[data-theme=dark]:not(.gm-amb-off) .btn.primary,html[data-theme=dark]:not(.gm-amb-off) .btn-sm[style*='background:var(--gold)'],html[data-theme=dark]:not(.gm-amb-off) .btn-s,html[data-theme=dark]:not(.gm-amb-off) .btn:not(.btn-p):not(.primary),html[data-theme=dark]:not(.gm-amb-off) .btn-sm[style*='background:var(--cardAlt)'],html[data-theme=dark]:not(.gm-amb-off) .btn-sm:not([style*=background]):not(.btn-p),html[data-theme=dark]:not(.gm-amb-off) .gm-secondary,html[data-theme=dark]:not(.gm-amb-off) .chip,html[data-theme=dark]:not(.gm-amb-off) .hdr-btn,html[data-theme=dark]:not(.gm-amb-off) .gm-menu-btn{transition:none!important}html[data-theme=dark]:not(.gm-amb-off) .btn-p:active,html[data-theme=dark]:not(.gm-amb-off) .btn.primary:active,html[data-theme=dark]:not(.gm-amb-off) .btn-sm[style*='background:var(--gold)']:active,html[data-theme=dark]:not(.gm-amb-off) .btn-s:active,html[data-theme=dark]:not(.gm-amb-off) .btn:not(.btn-p):not(.primary):active,html[data-theme=dark]:not(.gm-amb-off) .btn-sm[style*='background:var(--cardAlt)']:active,html[data-theme=dark]:not(.gm-amb-off) .btn-sm:not([style*=background]):not(.btn-p):active,html[data-theme=dark]:not(.gm-amb-off) .gm-secondary:active,html[data-theme=dark]:not(.gm-amb-off) .chip:active,html[data-theme=dark]:not(.gm-amb-off) .hdr-btn:active,html[data-theme=dark]:not(.gm-amb-off) .gm-menu-btn:active{filter:none!important;transform:none!important}}";
     }
     document.head.appendChild(st);   // (re)append: always the last stylesheet
     document.documentElement.classList.toggle("gm-still", !!G("gm_still", false));
+    document.documentElement.classList.toggle("gm-amb-off", G("gm_ambient", true) === false);
   }
   // Haptics on the moments that matter only (premium.buttons.haptic_on): a daily-three tick, marking something done, a
   // confirmation. Never under reduced motion or the in-app "still" switch, and nothing where the phone cannot vibrate.
@@ -5785,6 +5843,7 @@
       if (h) gmHaptic(h.getAttribute("data-haptic"));
     }, true);
   }
+  window.gmToggleAmbient = function () { S_("gm_ambient", G("gm_ambient", true) === false); premiumCSS(); gmMenu(); };
   window.gmToggleStill = function () { S_("gm_still", !G("gm_still", false)); premiumCSS(); gmMenu(); };
   window.gmToggleSmart = function () { S_("gm_smart_off", !G("gm_smart_off", false)); gmMenu(); };
   // The rings explain themselves on a tap: what each one measures, where it stands, and the one place to go next.
@@ -5894,6 +5953,142 @@
       var tile = d3.querySelector(".tile"); if (tile && typeof tile.focus === "function") { try { tile.focus(); } catch (e) {} }
     }
   };
+  /* ── Make it yours: five taps on the first run ────────────────────
+     A new person answers five things once, in plain words, with no typing. The answers live in gm_facts, so the More
+     sheet and the partner-only cards can fit themselves, and Menu > Your life changes them later. Asked after the lock
+     (never under it) and shown once; "Show me everything" hides nothing and still counts as answered. */
+  var MINE_STAGES = [["student", "Student"], ["salaried", "Salaried"], ["business", "Business owner"],
+    ["independent", "Independent professional"], ["retired", "Retired"]];
+  var MINE_QS = [["partner", "Do you have a partner?"], ["kids", "Any children?"],
+    ["home", "Do you own a home or property?"], ["parents", "Do your parents depend on you?"]];
+  function mineFacts() { var f = G("gm_facts", {}); return (f && typeof f === "object" && !Array.isArray(f)) ? f : {}; }
+  var MINE_STAGE_IDS = MINE_STAGES.map(function (s) { return s[0]; });
+  function mineStagesOf(f) {
+    var v = f && f.stages, out = [];
+    if (Array.isArray(v)) {
+      v.forEach(function (id) { if (MINE_STAGE_IDS.indexOf(id) >= 0 && out.indexOf(id) < 0) out.push(id); });
+    } else if (typeof v === "string" && MINE_STAGE_IDS.indexOf(v) >= 0) out.push(v);
+    else if (f && typeof f.stage === "string" && MINE_STAGE_IDS.indexOf(f.stage) >= 0) out.push(f.stage);
+    return out;
+  }
+  function mineSense(st) {
+    var age = -1;
+    try { if (typeof P !== "undefined" && P && P.dob) age = parseInt(yrsSince(P.dob), 10); } catch (e) {}
+    if (!(age >= 0)) return "";
+    if (st.indexOf("retired") >= 0 && age < 30) return "Retired before 30? Fine if so; tap again to undo if it was a slip.";
+    if (st.indexOf("student") >= 0 && age > 60) return "A student at any age: good.";
+    return "";
+  }
+  function mineCss() {
+    if (document.getElementById("gmMineCss")) return;
+    var st = document.createElement("style"); st.id = "gmMineCss";
+    st.textContent = "#gmMineSheet{position:fixed;inset:0;z-index:9998;display:flex;align-items:flex-end;justify-content:center;background:rgba(5,10,20,.58)}"
+      + "#gmMineSheet .gm-mine-card{background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:20px 20px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));width:100%;max-width:520px;max-height:calc(100vh - 16px);overflow:auto;box-shadow:0 -18px 50px rgba(0,0,0,.35)}"
+      + "@media (min-width:600px){#gmMineSheet{align-items:center;padding:18px}#gmMineSheet .gm-mine-card{border-radius:20px}}"
+      + ".gm-mine-k{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:800}"
+      + ".gm-mine-h{font-size:22px;font-weight:800;line-height:1.15;margin-top:3px}"
+      + ".gm-mine-p{font-size:13px;line-height:1.5;color:var(--muted);margin-top:5px}"
+      + ".gm-mine-q{margin-top:14px}"
+      + ".gm-mine-l{font-weight:800;font-size:14px;margin-bottom:7px}"
+      + ".gm-mine-hint{font-size:12px;line-height:1.45;color:var(--muted);margin-top:6px}"
+      + ".gm-mine-btns{display:flex;flex-wrap:wrap;gap:8px}"
+      + ".gm-mine-btns button{flex:1 1 45%;min-height:48px;border-radius:13px;border:1.5px solid var(--border);background:var(--cardAlt);color:var(--text);font:inherit;font-size:13.5px;font-weight:700;padding:10px 12px;cursor:pointer}"
+      + ".gm-mine-btns.yn{display:grid;grid-template-columns:1fr 1fr}"
+      + ".gm-mine-btns button.on{border-color:#c9a84c;background:var(--gold-metal,var(--gold));color:#1b1406;box-shadow:0 0 0 3px rgba(232,201,106,.18),inset 0 1px 0 rgba(255,255,255,.5)}"
+      + ".gm-mine-btns button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}"
+      + ".gm-mine-foot{display:flex;flex-direction:column;gap:4px;margin-top:18px}"
+      + ".gm-mine-done{min-height:52px;border:0;border-radius:14px;background:var(--gold);color:#0d1f35;font:inherit;font-size:15px;font-weight:800;cursor:pointer;padding:12px}"
+      + ".gm-mine-skip{min-height:44px;background:none;border:0;color:var(--muted);font:inherit;font-size:13px;text-decoration:underline;cursor:pointer;padding:6px}";
+    document.head.appendChild(st);
+  }
+  function mineBtn(key, val, label, on) {
+    return '<button type="button" data-v="' + val + '" aria-pressed="' + (on ? "true" : "false") + '"'
+      + (on ? ' class="on"' : "") + ' onclick="gmMineChoose(\'' + key + '\',\'' + val + '\')">' + label + "</button>";
+  }
+  function mineQHTML(key, label, yn) {
+    var f = mineFacts(), b = "", hint = "";
+    if (key === "stage") {
+      var st = mineStagesOf(f);
+      MINE_STAGES.forEach(function (s) { b += mineBtn("stage", s[0], s[1], st.indexOf(s[0]) >= 0); });
+      hint = '<div class="gm-mine-hint">You can pick more than one.</div>';
+      var sense = mineSense(st);
+      if (sense) hint += '<div class="gm-mine-hint">' + sense + '</div>';
+    } else { b += mineBtn(key, "yes", "Yes", f[key] === true) + mineBtn(key, "no", "No", f[key] === false); }
+    return '<div class="gm-mine-q" data-mine="' + key + '"><div class="gm-mine-l">' + label + '</div>'
+      + '<div class="gm-mine-btns' + (yn ? " yn" : "") + '">' + b + "</div>" + hint + "</div>";
+  }
+  window.gmMineSheet = function () {
+    mineCss();
+    var old = document.getElementById("gmMineSheet"), keep = 0;   // a tap re-draws the sheet: keep the person where they were
+    if (old) { var oc = old.querySelector(".gm-mine-card"); keep = oc ? oc.scrollTop : 0; old.parentNode.removeChild(old); }
+    var o = document.createElement("div");
+    o.id = "gmMineSheet"; o.setAttribute("role", "dialog"); o.setAttribute("aria-modal", "true"); o.setAttribute("aria-label", "Make it yours");
+    o.innerHTML = '<div class="gm-mine-card"><div class="gm-mine-k">Five taps</div><div class="gm-mine-h">Make it yours</div>'
+      + '<div class="gm-mine-p">Answer five things once. The Life OS hides what does not apply and keeps the rest; change it any time in the Menu.</div>'
+      + mineQHTML("stage", "What describes you? Pick all that apply", false)
+      + MINE_QS.map(function (q) { return mineQHTML(q[0], q[1], true); }).join("")
+      + '<div class="gm-mine-foot"><button type="button" class="gm-mine-done" onclick="gmMineFinish()">That\u2019s me \u2014 make it fit</button>'
+      + '<button type="button" class="gm-mine-skip" onclick="gmMineSkip()">Show me everything</button></div></div>';
+    document.body.appendChild(o);
+    var card = o.querySelector(".gm-mine-card"); if (card && keep) card.scrollTop = keep;
+    var b = o.querySelector("button"); if (b && !keep) { try { b.focus({ preventScroll: true }); } catch (e) {} }
+  };
+  window.gmMineChoose = function (key, val) {
+    var f = mineFacts();
+    if (key === "stage") {
+      if (!/^(student|salaried|business|independent|retired)$/.test(String(val))) return;
+      var st = mineStagesOf(f), i = st.indexOf(val);
+      if (i >= 0) st.splice(i, 1); else st.push(val);
+      f.stages = st;
+      if (st.length) f.stage = st[0]; else delete f.stage;
+      f.salaried = st.indexOf("salaried") >= 0;
+      f.business = st.indexOf("business") >= 0;
+    } else if (key === "partner" || key === "kids" || key === "home" || key === "parents") {
+      f[key] = val === "yes";
+    } else return;
+    S_("gm_facts", f);
+    window.gmMineSheet();
+  };
+  window.gmMineFinish = function () {
+    if (!mineStagesOf(mineFacts()).length) {
+      window.gmMineSheet();
+      var o = document.getElementById("gmMineSheet");
+      if (o) {
+        var ask = o.querySelector('[data-mine="stage"]') || o.querySelector(".gm-mine-card");
+        var line = document.createElement("div");
+        line.className = "gm-mine-hint gm-mine-ask";
+        line.textContent = "Pick at least one, or tap Show me everything.";
+        if (ask) ask.appendChild(line);
+      }
+      return;
+    }
+    S_("gm_mine_done", true);
+    var o2 = document.getElementById("gmMineSheet"); if (o2) o2.parentNode.removeChild(o2);
+    if (typeof gmToast === "function") gmToast("Your Life OS now fits you. Change it any time in the Menu.");
+    if (typeof renderAll === "function") renderAll();
+  };
+  window.gmMineSkip = function () {
+    S_("gm_mine_done", true);
+    var o = document.getElementById("gmMineSheet"); if (o) o.parentNode.removeChild(o);
+    if (typeof renderAll === "function") renderAll();
+  };
+  var _mineTried = false;
+  function mineNeeded() {
+    if (_mineTried) return false;
+    if (G("gm_mine_done", false)) return false;
+    return !Object.prototype.hasOwnProperty.call(mineFacts(), "stage");
+  }
+  function mineMaybe() {
+    if (!mineNeeded()) return;
+    if (window.gmIsLocked && window.gmIsLocked()) return;   // after the lock, never under it
+    try { window.gmMineSheet(); _mineTried = true; } catch (e) {}
+  }
+  var _mineRender = window.renderAll;
+  if (typeof _mineRender === "function") window.renderAll = function () {
+    var out = _mineRender.apply(this, arguments);
+    try { mineMaybe(); } catch (e) {}
+    return out;
+  };
   window.gmMenu = function () {
     var ver = (document.getElementById("app_ver") || {}).textContent || "";
     gmDlg('<div style="font-weight:800;font-size:16px;margin-bottom:12px">Menu</div>'
@@ -5902,10 +6097,12 @@
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();editProfile()">Edit profile</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();toggleTheme()">Switch to ' + (curTheme() === "dark" ? "light" : "dark") + ' theme</button>'
       + ((window.matchMedia && matchMedia("(display-mode: standalone)").matches) ? "" : '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();gmInstall()">Install as an app (phone or computer)</button>')
-      + '<details class="gm-menu-more"><summary>Settings (3)</summary><div style="display:grid;gap:8px;margin-top:8px">'
+      + '<details class="gm-menu-more"><summary>Settings (5)</summary><div style="display:grid;gap:8px;margin-top:8px">'
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();gmMineSheet()">Your life: what applies to you</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" role="switch" aria-checked="' + (!G("gm_still", false)) + '" onclick="gmToggleStill()">Motion and haptics: ' + (G("gm_still", false) ? "off" : "on") + '</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" role="switch" aria-checked="' + (!G("gm_smart_off", false)) + '" onclick="gmToggleSmart()">Smart suggestions: ' + (G("gm_smart_off", false) ? "off" : "on") + '</button>'
-      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" role="switch" aria-checked="' + focusShow() + '" onclick="gmToggleFocusShow()">Show the focus timer: ' + (focusShow() ? "on" : "off") + '</button></div></details>'
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" role="switch" aria-checked="' + focusShow() + '" onclick="gmToggleFocusShow()">Show the focus timer: ' + (focusShow() ? "on" : "off") + '</button>'
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" role="switch" aria-checked="' + (G("gm_ambient", true) !== false) + '" onclick="gmToggleAmbient()">Ambient light in dark: ' + (G("gm_ambient", true) === false ? "off" : "on") + '</button></div></details>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();gmReport()">Report a problem or idea</button>'
       + '</div><div style="font-size:12px;color:var(--muted);margin-top:12px">Life OS ' + esc(ver) + ' · your data stays on your devices</div>'
       + '<button class="btn-sm" style="margin-top:12px;background:none;color:var(--muted)" onclick="gmClose()">Close</button>');
@@ -7616,8 +7813,8 @@
       // Controls in a row size to their content (LESSONS 2026-11-11): a full-width button beside text crushed it to one word a line.
       + "html body [style*='display:flex'] > button.btn,html body [style*='display:flex'] > .btn-sm{width:auto;flex:0 0 auto;max-width:60%}"
       // The metric map's labels: a small engraved tag, not a slab of gold.
-      + "html body .stk-k{background:transparent!important;background-image:none!important;box-shadow:none!important;border:1px solid rgba(201,168,76,.6);color:#7a5a14!important;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:4px 8px;align-self:center;min-height:0}"
-      + "html[data-theme=dark] body .stk-k{color:var(--gold)!important}"
+      + "html body .stk-k{background:none!important;background-image:none!important;box-shadow:none!important;border:0!important;color:#7a5a14!important;font-size:11px;letter-spacing:.08em;text-transform:uppercase;border-radius:0;padding:0;margin-bottom:4px;display:block;min-height:0}"
+      + "html[data-theme=dark] body .stk-k{color:#d9bf86!important}"
       + "html body .guide-card>summary{display:flex;align-items:center;gap:10px;min-height:48px}html body .guide-card>summary .gm-glyph{font-size:22px}"
       + ".gm-gt{display:flex;flex-direction:column;gap:2px;min-width:0}.gm-gt small{font-weight:500;font-size:11.5px;color:var(--muted);letter-spacing:.02em}"
       // On a laptop: one centred reading column, like a well-set book, instead of cards stretched across the whole screen.
@@ -8416,4 +8613,10 @@
       + ".gm-show-all{grid-column:1/-1;margin-top:6px;font-weight:600}";
     document.head.appendChild(st2);
   } catch (e) {}
+})();
+// Boot veil off (index.html head): the Life OS has drawn its own first screen, so the page may show. Two frames later,
+// so the first paint the person sees is the finished one.
+(function () {
+  function off() { document.documentElement.classList.remove("gm-boot"); }
+  try { (window.requestAnimationFrame || setTimeout)(function () { (window.requestAnimationFrame || setTimeout)(off); }); } catch (e) { off(); }
 })();
