@@ -52,8 +52,29 @@ def test_the_page_renders_when_the_gateway_reports_allowance_callers(monkeypatch
     monkeypatch.setattr(urllib.request, "urlopen", real)
 
 
-def test_the_page_is_a_dark_cockpit(monkeypatch):
-    # One master lamp, one action up front (the rest under Later), instruments up front, and every detail folded away.
+def test_a_provider_near_its_rupee_cap_lights_a_spend_line(monkeypatch):
+    # The spend line sits next to the allowance lamp: lit only at 80% of a provider's monthly rupee cap.
+    import io
+    import json as _json
+    import urllib.request
+
+    def fake(url, *a, **k):
+        u = url if isinstance(url, str) else url.full_url
+        if u.endswith("/v1/spend"):
+            body = {"month": "2026-11", "inr_per_usd": 95,
+                    "providers": {"gemini": {"inr": 900, "cap_inr": 1000, "share": 0.9},
+                                  "anthropic": {"inr": 100, "cap_inr": 1000, "share": 0.1}}}
+            return io.BytesIO(_json.dumps(body).encode())
+        if u.endswith("/v1/budget"):
+            return io.BytesIO(b'{"warn_at": 0.8, "callers": []}')
+        raise OSError("offline in tests")
+    monkeypatch.setattr(urllib.request, "urlopen", fake)
+    html, _d, _c = cockpit.build(fast=True)
+    assert "AI spend: gemini at 90% of Rs 1,000 this month: ./securax ai spend" in html
+    assert "AI spend: anthropic" not in html
+
+
+def test_the_page_is_a_dark_cockpit(monkeypatch):    # One master lamp, one action up front (the rest under Later), instruments up front, and every detail folded away.
     import re
     import urllib.request
 

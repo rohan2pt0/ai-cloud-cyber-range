@@ -897,7 +897,29 @@ def do_next(items: list[dict]) -> str:
     return out
 
 
-def render(c: Collector, maps: dict, hist: list[dict], ai: str, now: float, target: float) -> tuple[str, dict]:
+def spend_lamps() -> list[tuple[str, int, str]]:
+    """AI spend in rupees: one lamp when a provider is at its 80% line or over; nothing when the gateway is off."""
+    import urllib.request
+    try:
+        with urllib.request.urlopen("http://127.0.0.1:8080/v1/spend", timeout=3) as r:
+            rows = json.loads(r.read()).get("providers") or {}
+    except Exception:  # noqa: BLE001 - the gateway may be off; then there is nothing to show
+        return []
+    over = []
+    for name, row in rows.items():
+        data = row or {}
+        capn, share = float(data.get("cap_inr") or 0), float(data.get("share") or 0)
+        if capn and share >= 0.8:
+            over.append({"name": name, "share": share, "cap": capn})
+    if not over:
+        return []
+    over.sort(key=lambda s: s["share"], reverse=True)
+    return [("warn" if over[0]["share"] >= 1 else "caut", len(over),
+             f"AI spend: {over[0]['name']} at {round(over[0]['share'] * 100)}% of Rs {over[0]['cap']:,.0f} this month: ./securax ai spend")]
+
+
+def render(c: Collector, maps: dict, hist: list[dict], ai: str, now: float, target: float,
+           spend_lamp: list[tuple[str, int, str]] | tuple = ()) -> tuple[str, dict]:
     ms = sorted(c.metrics, key=lambda m: (RAG_ORDER[m["status"]], m["id"]))
     reds = [m for m in ms if m["status"] == "red"]
     ambs = [m for m in ms if m["status"] == "amber"]
@@ -966,6 +988,7 @@ def render(c: Collector, maps: dict, hist: list[dict], ai: str, now: float, targ
              ("ok", sum(1 for m in ms if m["status"] == "green"), "Nominal")] + ([("warn", late, "Risk treatments overdue")] if late else []) \
         + ([("warn", len(stopped_ai), "AI stopped by a person: " + ", ".join(stopped_ai))] if stopped_ai else []) \
         + ([("warn" if max(near) >= 1 else "caut", len(near), "AI allowance used up or near it: ./securax ai budget")] if near else [])\
+        + list(spend_lamp)\
         + ([("caut", f"{share['claude_share']:.0%}", "of this month's commits by Claude (goal 20%): ./securax ai share")] if share else [])\
         + ([("warn" if any(i["verdict"] == "failing" for i in prune_items) else "caut", len(prune_items),
              "Routines to fix or switch off: ./securax routines prune")] if prune_items else [])\
@@ -1122,7 +1145,7 @@ def build(now: float | None = None, ai: bool = False, root_env: dict | None = No
     brief = ""
     if ai:
         brief = ai_brief({"metrics": c.metrics}, env)
-    page, data = render(c, maps, load_hist(), brief, now, conf["target_maturity"])
+    page, data = render(c, maps, load_hist(), brief, now, conf["target_maturity"], spend_lamps())
     return page, data, c
 
 

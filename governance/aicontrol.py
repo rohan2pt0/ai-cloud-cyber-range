@@ -7,6 +7,7 @@
     ./securax ai inventory                      the model inventory: tier, owner, third party, explainability, validation due,
                                                 decommissioned models and how long their records are kept
     ./securax ai budget                         each caller's AI allowance: used today / this month, and what is left
+    ./securax ai spend                          this month's AI spend per provider, in rupees, against each cap
     ./securax ai budget extend --day|--month --tokens N --reason "..." [--caller ID]
                                                 more tokens for today or this month (everyone, or one caller); logged
 
@@ -105,6 +106,11 @@ def _arg(argv: list[str], flag: str, default: str = "") -> str:
     return argv[argv.index(flag) + 1] if flag in argv and argv.index(flag) + 1 < len(argv) else default
 
 
+def _rs(amount) -> str:
+    """Rupees in plain words: no trailing zeros, at most two decimals."""
+    return f"{float(amount):,.2f}".rstrip("0").rstrip(".")
+
+
 def inventory(today: dt.date | None = None, registry: pathlib.Path = REGISTRY, live: list[str] | None = None) -> list[dict]:
     import yaml
 
@@ -140,6 +146,38 @@ def inventory(today: dt.date | None = None, registry: pathlib.Path = REGISTRY, l
     return out
 
 
+def spend() -> int:
+    """Read the gateway's /v1/spend from stdin and print the month's spend per provider, in rupees."""
+    try:                                       # ./securax pipes the gateway's /v1/spend here
+        rep = json.loads(sys.stdin.read() or "{}")
+        provs = rep["providers"]
+        if not isinstance(provs, dict):
+            raise ValueError
+    except (ValueError, KeyError, TypeError):
+        print("The gateway is not running: start it with ./securax up")
+        return 1
+    if not provs:
+        print("No paid AI used this month.")
+        return 0
+    print(f"AI spend in {rep.get('month', '')} (rupees, at Rs {_rs(rep.get('inr_per_usd', 0))} a dollar)")
+    for name in sorted(provs):
+        print(spend_line(name, provs[name]))
+    return 0
+
+
+def spend_line(name: str, row: dict | None) -> str:
+    """One provider's line: rupees spent, its cap, the share, and the next step when it is near or at the cap."""
+    data = row or {}
+    inr, capn = float(data.get("inr") or 0), float(data.get("cap_inr") or 0)
+    share = float(data.get("share") or 0) if capn else 0
+    line = f"  {name}  Rs {_rs(inr)}  of Rs {_rs(capn)}  ({round(share * 100)}%)" if capn else f"  {name}  Rs {_rs(inr)}  (no cap)"
+    if capn and share >= 1:
+        line += "  <- cap reached: the local model answers"
+    elif capn and share >= 0.8:
+        line += "  <- 80%: watch it"
+    return line
+
+
 def main(argv: list[str]) -> int:
     cmd = argv[0] if argv else "status"
     by = os.getenv("SECURAX_OPERATOR") or getpass.getuser()
@@ -167,7 +205,7 @@ def main(argv: list[str]) -> int:
             print("✔ nothing is stopped")
         return 0
     if cmd == "budget":
-        if len(argv) > 1 and argv[1] == "extend":
+        if argv[1:2] == ["extend"]:
             period = "day" if "--day" in argv else "month" if "--month" in argv else ""
             try:
                 tokens = int(_arg(argv, "--tokens", "0").replace(",", "").replace("_", ""))
@@ -195,6 +233,8 @@ def main(argv: list[str]) -> int:
         if not rep["callers"]:
             print("✔ nothing spent yet this month")
         return 0
+    if cmd == "spend":
+        return spend()
     if cmd == "inventory":
         live = None
         if "--live" in argv:                   # ./securax pipes the gateway's /v1/models here
