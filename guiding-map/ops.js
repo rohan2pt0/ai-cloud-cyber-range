@@ -8386,6 +8386,26 @@
       + "#sections .gm-d3 .tile.on .nm,#sections .gm-d3 .tile.on .fl,#sections .gm-d3 .tile.on .fl *{color:#fff!important}"
       + "#sections .gm-d3 .tile.on .fl{opacity:.9}"
       + "#sections .gm-d3 .tile .nm,#sections .gm-d3 .tile .fl{position:relative;z-index:1}"
+      /* Money (owner 2026-11-15: "this does not look good"): the ladder's badges are stones too. A step not started is a
+         moonstone numeral; the step you are on is amber, haloed in gold; a step done is jade with a gold hairline. The budget
+         bars are filled in their state's stone over a gold-marked healthy band. */
+      + "#sections .pd-step{border:1px solid var(--border);border-radius:16px;padding:15px}"
+      + "#sections .pd-step.done{opacity:1;background:linear-gradient(90deg,rgba(31,138,99,.10),rgba(31,138,99,0) 45%),var(--card)}"
+      + "#sections .pd-step.done::before{content:'';position:absolute;left:0;top:12px;bottom:12px;width:3px;border-radius:0 3px 3px 0;background:linear-gradient(#6ee0a8,#13704f)}"
+      + "#sections .pd-step.current{border:1.5px solid #c9a84c;box-shadow:0 0 0 4px rgba(232,201,106,.14),0 10px 26px rgba(120,90,20,.12);"
+      + "background:linear-gradient(135deg,rgba(249,215,122,.12),rgba(249,215,122,0) 55%),var(--card)}"
+      + "#sections .pd-ico{width:36px;height:36px;font-size:15px;color:#3a4052;border:1px solid rgba(150,160,190,.40);"
+      + "background:radial-gradient(130% 110% at 25% 10%,#ffffff 0%,#f3f1ec 40%,#e3e6ef 100%);box-shadow:inset 0 1px 0 #fff,inset 0 -4px 8px rgba(120,130,170,.15),0 2px 6px rgba(40,50,80,.10)}"
+      + "html[data-theme=dark] #sections .pd-ico{color:#ece7dc;border-color:rgba(150,170,220,.25);background:radial-gradient(130% 110% at 25% 10%,#454b5e 0%,#30343f 55%,#24272f 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 2px 8px rgba(0,0,0,.35)}"
+      + "#sections .pd-step.done .pd-ico,html[data-theme=dark] #sections .pd-step.done .pd-ico{color:#fff;border:0;"
+      + "background:radial-gradient(80% 60% at 30% 15%,rgba(255,255,255,.38),rgba(255,255,255,0) 60%),linear-gradient(150deg,#2a9d72 0%,#13704f 60%,#0a4434 100%);"
+      + "box-shadow:0 0 0 1.5px rgba(232,201,106,.9),inset 0 -4px 8px rgba(0,30,20,.35),0 3px 8px rgba(13,85,65,.30)}"
+      + "#sections .pd-step.current .pd-ico,html[data-theme=dark] #sections .pd-step.current .pd-ico{color:#2a1703;border:0;"
+      + "background:radial-gradient(80% 60% at 30% 15%,rgba(255,250,225,.6),rgba(255,255,255,0) 60%),linear-gradient(160deg,#f9d77a 0%,#e6a632 55%,#b8711a 100%);"
+      + "box-shadow:0 0 0 1.5px rgba(232,201,106,.9),0 0 14px rgba(240,181,74,.45)}"
+      + "#sections .csp-track{height:12px;overflow:visible;background:rgba(120,130,160,.16);box-shadow:inset 0 1px 2px rgba(0,0,0,.12)}"
+      + "#sections .csp-fill{border-radius:99px;border:0!important}"
+      + "#sections .csp-zone{position:absolute;top:-3px;bottom:-3px;border-radius:3px;background:rgba(232,201,106,.20);border-left:2px solid #c9a84c;border-right:2px solid #c9a84c;pointer-events:none}"
       + "@media (prefers-reduced-motion:reduce){#sections .gm-d3::before{transition:none}}";
     document.head.appendChild(gemCss);
   } catch (e) {}
