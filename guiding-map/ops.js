@@ -1179,7 +1179,7 @@
       age: yrsSince(pr.dob), sage: yrsSince(pr.pdob), k1: kid && kid.dob ? yrsSince(kid.dob) : "",
       inc: pr.net ? String(Math.round((num(pr.net) + num(pr.psal)) * 12 / 1e3) / 100) : "",
       nw: pr.nw ? String(Math.round(num(pr.nw) / 1e3) / 100) : "", ef: pr.sav ? String(Math.round(num(pr.sav) / 1e3) / 100) : "",
-      minc: pr.net ? String(num(pr.net)) : "", fFixed: pr.exp ? String(num(pr.exp)) : ""
+      minc: pr.net ? String(num(pr.net)) : ""   // fixed costs are not filled here: from the profile they are spending PLUS loan EMIs (flowHTML)
     };
     Object.keys(fill).forEach(function (k) { if ((l[k] === undefined || l[k] === "") && fill[k] !== "") l[k] = fill[k]; });
     return l;
@@ -1733,7 +1733,7 @@
     h += '<details class="road-col" style="margin-top:8px"><summary style="cursor:pointer;font-weight:700;font-size:12px">Edit the numbers</summary><div style="margin-top:6px">';
     var fromPLine = {
       minc: function () { return profOK() && num(P.net) > 0 ? rs(P.net) : ""; },
-      fFixed: function () { return profOK() && num(P.exp) > 0 ? rs(P.exp) : ""; }
+      fFixed: function () { return profOK() && num(P.exp) > 0 ? rs(num(P.exp) + emis) + (emis ? " (spending + loan EMIs)" : "") : ""; }
     };
     F.forEach(function (f) {
       var pt = fromPLine[f[0]] ? fromPLine[f[0]]() : "";

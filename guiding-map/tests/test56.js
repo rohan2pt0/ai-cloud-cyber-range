@@ -18,7 +18,7 @@ setTimeout(() => {
     pc: (r.querySelector(".flowpc") || {}).textContent || "", from: /from your profile/.test(r.textContent)
   }));
   const text = () => sec().textContent;
-  ok("fixed costs come from the profile spending (90000)", rows().some(r => /Fixed costs/.test(r.name) && /90,000/.test(r.amt)), JSON.stringify(rows()));
+  ok("fixed costs come from the profile (spending + loan EMI = 110000)", rows().some(r => /Fixed costs/.test(r.name) && /1,10,000/.test(r.amt)), JSON.stringify(rows()));
   ok("saving comes from the profile (net - spending - EMI = 90000)", rows().some(r => /Saving/.test(r.name) && /90,000/.test(r.amt)), JSON.stringify(rows()));
   ok("those two numbers are marked 'from your profile'", rows().filter(r => r.from && /Fixed costs|Saving/.test(r.name)).length === 2, JSON.stringify(rows()));
   const g = rows().find(r => /Guilt-free/.test(r.name));
