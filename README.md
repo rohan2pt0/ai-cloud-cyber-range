@@ -133,6 +133,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- Before a big moment
 - If one thing failed tomorrow
 - What we must earn
 - The landlord desk
@@ -140,7 +141,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - Savings levers keep themselves current
 - Impossible numbers cannot be saved
 - The first morning and every day, calmer
-- Colour means what the words mean
 
 **Release 0.4.0 - 2026-11-14:**
 

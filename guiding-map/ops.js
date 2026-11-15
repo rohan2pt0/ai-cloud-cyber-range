@@ -8700,6 +8700,45 @@
     return h + '</div>';
   };
 
+  /* ── The expert council, item 2: pre-flight checklists for big moments (pilots, surgeons, lawyers, CFOs, doctors,
+     diplomats). Pick the moment, tick the few checks that prevent the costly mistakes; "Start again" clears it for next time. */
+  var PF_CSS = ".gm-pf-row{display:flex;align-items:flex-start;gap:10px;width:100%;min-height:44px;padding:9px 6px;background:none!important;border:0!important;box-shadow:none!important;text-align:start;color:var(--text)!important;font:inherit;font-size:13px;line-height:1.45;cursor:pointer;border-radius:10px}"
+    + ".gm-pf-chk{flex:0 0 22px;height:22px;border-radius:50%;border:1.5px solid var(--edge);display:inline-flex;align-items:center;justify-content:center;font-size:13px;margin-top:1px}"
+    + ".gm-pf-row.on .gm-pf-chk{background:#13704f;border-color:#5fd3a0;color:#fff}.gm-pf-row.on .gm-pf-t{opacity:.6;text-decoration:line-through}";
+  function pfStyle() { if (!document.getElementById("gmPfCss")) { var st = document.createElement("style"); st.id = "gmPfCss"; st.textContent = PF_CSS; document.head.appendChild(st); } }
+  function pfList() { var d = window.GM_COUNCIL; return d && Array.isArray(d.checklists) ? d.checklists : []; }
+  function pfState() { var m = G("gm_preflight", {}); return m && typeof m === "object" && !Array.isArray(m) ? m : {}; }
+  window.gmPfOpen = function (id) { var m = pfState(); m.open = m.open === id ? "" : id; S_("gm_preflight", m); renderAll(); };
+  window.gmPfTick = function (id, i) {
+    var m = pfState(); m.ticks = (m.ticks && typeof m.ticks === "object") ? m.ticks : {};
+    var t = Array.isArray(m.ticks[id]) ? m.ticks[id] : []; t[i] = !t[i]; m.ticks[id] = t; S_("gm_preflight", m); renderAll();
+  };
+  window.gmPfReset = function (id) { var m = pfState(); if (m.ticks) delete m.ticks[id]; S_("gm_preflight", m); renderAll(); };
+  window.gmPreflightHTML = function () {
+    var list = pfList(); if (!list.length) return "";
+    pfStyle();
+    var m = pfState(), open = list.filter(function (c) { return c.id === m.open; })[0];
+    var h = '<div class="cat-t">Before a big moment</div><div class="road-col gm-pf" style="margin-bottom:12px">'
+      + '<div style="font-size:12.5px;color:var(--muted)">A pilot’s habit: a short checklist before anything you cannot easily undo.</div>'
+      + '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">' + list.map(function (c) {
+        return '<button type="button" class="chip' + (open && open.id === c.id ? " on" : "") + '" aria-pressed="' + (open && open.id === c.id ? "true" : "false") + '" onclick="gmPfOpen(\'' + esc(c.id) + '\')">' + esc(c.moment) + '</button>';
+      }).join("") + '</div>';
+    if (open) {
+      var t = ((m.ticks || {})[open.id]) || [], n = open.items.filter(function (x, i) { return !!t[i]; }).length, all = n === open.items.length;
+      var cls = all ? "sx-state-good" : n ? "sx-state-watch" : "sx-state-low";
+      h += '<div class="gm-pf-open" data-pf="' + esc(open.id) + '" style="margin-top:10px"><div style="font-weight:800;font-size:14px">' + esc(open.moment) + '</div>'
+        + '<div style="font-size:12px;color:var(--muted);margin-top:2px">' + esc(open.examples) + '. ' + esc(open.lens) + '</div>'
+        + '<div style="margin-top:6px"><span class="' + cls + '" style="font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px;white-space:nowrap;color:' + (cls === "sx-state-watch" ? "#2a1703" : "#fff")
+        + (cls === "sx-state-good" ? ';background-image:radial-gradient(90% 60% at 30% 0%,rgba(255,255,255,.12),rgba(255,255,255,0) 60%),linear-gradient(160deg,#2fae7a 0%,#13704f 55%,#0a4732 100%)' : "") + '">' + n + ' of ' + open.items.length + ' checked</span></div>'
+        + '<ol style="list-style:none;margin:6px 0 0;padding:0">' + open.items.map(function (x, i) {
+          var on = !!t[i];
+          return '<li><button type="button" class="gm-pf-row' + (on ? " on" : "") + '" aria-pressed="' + (on ? "true" : "false") + '" onclick="gmPfTick(\'' + esc(open.id) + '\',' + i + ')"><span class="gm-pf-chk" aria-hidden="true">' + (on ? "✓" : "") + '</span><span class="gm-pf-t">' + esc(x) + '</span></button></li>';
+        }).join("") + '</ol>'
+        + (n ? '<button type="button" class="gm-quiet" onclick="gmPfReset(\'' + esc(open.id) + '\')">Start again (for the next time)</button>' : "") + '</div>';
+    }
+    return h + '</div>';
+  };
+
   /* ── What we must earn (owner 2026-11-15; queue income-needs): the take-home that covers essentials, EMIs and a saving rate,
      now and in 3, 5 and 10 years at the inflation the person expects; fixed and variable spending from pasted bank messages,
      with one concrete cut for each of the three largest variable categories. */
