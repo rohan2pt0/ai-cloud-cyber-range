@@ -1,0 +1,33 @@
+{
+ "about": "The landlord desk: what a person who lets out a home must do, when, and the ready messages, for any rented property. Rules are paraphrased from public sources (cited by link), verified on the date shown and re-checked by its review date. Not legal advice. India first ('where'); amounts change, so the app shows where to confirm.",
+ "version": 1,
+ "verified": "2026-11-15",
+ "duties": [
+  {"id": "rent", "title": "Rent received", "every": "month", "dayField": "rentDay", "where": ["IN", "GLOBAL"],
+   "how": "The app looks for a credit near the rent amount in your pasted bank messages around the due day; if none, it asks you to tick it.",
+   "template": {"title": "Kind reminder to the tenant", "text": "Hello [tenant name], a gentle reminder that the rent of Rs [amount] for [month] was due on [date]. If it is already sent, please ignore this and share the reference. Thank you."}},
+  {"id": "maintenance", "title": "Society maintenance paid", "every": "month", "dayField": "maintDay", "where": ["IN"],
+   "how": "Pay by the society's due date to avoid the late charge; keep the receipt for tax (it is part of the property's costs)."},
+  {"id": "propertyTax", "title": "Property tax paid", "every": "year", "dateField": "taxDue", "where": ["IN"],
+   "how": "Pay on the municipal corporation's portal before the due date shown on the bill; many give a rebate for early payment. Keep the receipt."},
+  {"id": "electricity", "title": "Electricity bill", "every": "month", "where": ["IN", "GLOBAL"],
+   "how": "If the tenant pays it, ask for a photo of the paid bill each quarter: an unpaid bill stays with the meter (the property), not the tenant."},
+  {"id": "renewal", "title": "Agreement renewal", "every": "agreement", "offsetDays": -60, "where": ["IN", "GLOBAL"],
+   "how": "Two months before the agreement ends, decide: renew (with the rent revision) or ask for the home back. Most homes are let on an 11-month leave and licence.",
+   "template": {"title": "Renewal note to the tenant", "text": "Hello [tenant name], our agreement for [address] ends on [end date]. I am happy to renew for another [11] months at a revised rent of Rs [new rent] from [start date] (an increase of [x]%, in line with costs). Please let me know by [date] so we can register the new agreement in time. Thank you."}},
+  {"id": "registration", "title": "Agreement registered", "every": "agreement", "where": ["IN-MH"],
+   "how": "In Maharashtra a leave and licence agreement is registered online on the IGR portal (Leave and Licence 2.0) with Aadhaar-based e-sign; stamp duty is 0.25% of the total rent for the period (a refundable deposit adds notional interest), paid on GRAS. Register within four months of signing; an unregistered, unstamped agreement is weak evidence in a dispute. Confirm the registration fee on the portal: sources differ.",
+   "portal": "igrmaharashtra.gov.in",
+   "checklist": "Owner and tenant Aadhaar and PAN | Two witnesses | Property index-II or tax bill | Rent, deposit, start and end dates, lock-in, notice period | Who pays maintenance, electricity and repairs | Inventory of furniture and fittings (for a furnished home, with photos)"},
+  {"id": "police", "title": "Tenant details given to the police", "every": "agreement", "where": ["IN"],
+   "how": "Many city police forces require the owner to submit tenant details (often online) before the tenant moves in. Check with your local police station or its website and keep the acknowledgement with the agreement.",
+   "checklist": "Tenant photo, Aadhaar and permanent address | Previous address | Employer or college | Agreement copy | Your own ID and property proof"},
+  {"id": "deposit", "title": "Deposit and inventory", "every": "agreement", "where": ["IN", "GLOBAL"],
+   "how": "Record the deposit and a dated photo inventory at move-in; at move-out, check against it before returning the deposit."},
+  {"id": "repairs", "title": "Repairs and upkeep", "every": "event", "where": ["IN", "GLOBAL"],
+   "how": "Log each repair (date, what, cost, who fixed it). Before the monsoon, check the terrace, bathroom and window seals for leakage; fix small leaks early, they cost far more later."}
+ ],
+ "rentRevision": {"rule": "At renewal, revise the rent by the higher of last year's inflation and about 5%, within what similar homes nearby let for; a revision above about 10% often costs a good tenant, and a vacant month costs more than the increase.", "verified": "2026-11-15", "review": "2027-11-15"},
+ "sources": ["https://housing.com/news/stamp-duty-registration-laws-rentals-maharashtra", "https://www.basichomeloan.com/blog/home-loans/stamp-duty-and-registration-for-rental-agreement-in-maharashtra"],
+ "review": "2027-05-15"
+}
