@@ -18,6 +18,10 @@ setTimeout(() => {
   ok("a minus amount is clamped to its floor, with a note", r.v === 0 && !!r.note, JSON.stringify(r));
   r = g({ min: 0, max: 10 }, "abc");
   ok("text that is not a number is cleared, with a note", r.v === "" && !!r.note, JSON.stringify(r));
+  r = g({ min: 0, max: 10000000 }, "\u20b918,000");
+  ok("18,000 typed the Indian way (with commas and the rupee sign) is a number, not a mistake", r.v === 18000 && !r.note, JSON.stringify(r));
+  r = g({ min: 0, max: 10000000 }, "Rs. 1,20,000");
+  ok("Rs. 1,20,000 reads as 120000", r.v === 120000 && !r.note, JSON.stringify(r));
   r = g({ min: 0, max: 10 }, "");
   ok("an empty field stays empty and quiet", r.v === "" && !r.note, JSON.stringify(r));
   r = g({ lakh: true, min: 0, max: 100000 }, "7500000");

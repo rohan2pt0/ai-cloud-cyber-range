@@ -5061,7 +5061,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       if (!mm || mo < 1 || mo > 12 || y < 1900 || y > new Date().getFullYear() - 14) return out("", "That date does not look right; please check it.");
       return { v: raw, note: "" };
     }
-    var n = Number(raw), note = "";
+    var n = Number(raw.replace(/[,\s\u20b9]/g, "").replace(/^rs\.?/i, "")), note = "";   // 18,000 and \u20b918,000 are numbers people type
     if (!isFinite(n)) return out("", "That is not a number; please check it.");
     if (rule.lakh && n > 100000) { n = Math.round(n / 1e5 * 100) / 100; note = "That looks like rupees; set to " + n + " lakh."; }
     if (rule.int) n = Math.round(n);
