@@ -133,6 +133,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- Career step 4 is a short card, not a wall of fields
 - AI spend in rupees, per provider
 - The Wheel folds what you have rated
 - Impossible numbers are fixed, never saved
@@ -140,7 +141,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - Health you see at a glance, in gemstones
 - AI spend in rupees, capped per provider
 - "Last backup" tells the truth about where the copy lives
-- A lost phone no longer loses the backups
 
 **Release 0.4.0 - 2026-11-14:**
 

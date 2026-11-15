@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- **Career step 4 is a short card, not a wall of fields** (owner, 2026-11-15): the figures you have already filled fold into one closed "Your figures" line, the first three empty fields stay open for a newcomer and the rest wait under "Add more"; a person with no partner never sees the spouse field (test109).
 - **AI spend in rupees, per provider** (spend-guard slice 2): `./securax ai spend` shows this month's spend per provider against each rupee cap in plain words, and the cockpit lights a line when a provider reaches 80% of its cap.
 - **The Wheel folds what you have rated** (owner, 2026-11-15): a Life OS area you have scored now closes into one line carrying its score as a gemstone (ruby 1-4, amber 5-6, emerald 7-10); tap it to see and change the ten keys. Unrated areas keep their keys in view, so the card is a short list of what is left to rate, not eight trays (test107).
 - **Impossible numbers are fixed, never saved** (owner, 2026-11-15): the one door every profile write passes corrects an impossible age, salary, spending, loan, retirement age, saving target or child's birth date, saves the corrected value and says why in plain words (test108).
