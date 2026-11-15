@@ -1,5 +1,5 @@
-// v98: calm and real, slice 2b (owner, 2026-11-14: "too heavy"; queue calm-and-real part 3). The Menu keeps six items
-// in view (All apps, Edit profile, Your life, the theme, Install, Report) and folds the three switches under Settings (3); in start
+// v98: calm and real, slice 2b (owner, 2026-11-14: "too heavy"; queue calm-and-real part 3). The Menu keeps five items
+// in view (All apps, Edit profile, the theme, Install, Report) and folds the three switches under Settings (3); in start
 // simple, Today shows one card and the check-in: the five numbers wait inside "More for today", on a phone and on a
 // wider screen (no bar along the bottom). Show everything brings both back as they were.
 const fs = require('fs'), path = require('path'), { JSDOM } = require('jsdom');
@@ -17,14 +17,14 @@ function boot(phone, simple) {
 const doms = [boot(true, true), boot(false, true), boot(true, false), boot(false, false)];
 setTimeout(() => {
   const [ps, ws, pf, wf] = doms.map(x => { x.window.goTab("today"); return x.window; });
-  // The Menu: six in view and Close; the switches folded.
+  // The Menu: five in view and Close; the switches folded.
   ps.gmMenu();
   const dlg = [...ps.document.querySelectorAll("button")].filter(b => /Edit profile/.test(b.textContent))[0];
   const box = dlg && dlg.closest("div[style*='grid']");
   const shown = box ? [...box.children].filter(x => x.tagName === "BUTTON").map(b => b.textContent) : [];
-  ok("the Menu shows six items", shown.length === 6 && /All apps/.test(shown[0]) && /Your life/.test(shown[2]) && /Report/.test(shown[5]), shown.join(" | "));
+  ok("the Menu shows five items", shown.length === 5 && /All apps/.test(shown[0]) && /Report/.test(shown[4]), shown.join(" | "));
   const more = box && box.querySelector("details.gm-menu-more");
-  ok("the three switches are folded under a closed Settings (3)", more && !more.open && /Settings \(3\)/.test(more.querySelector("summary").textContent)
+  ok("the three switches and Your life are folded under a closed Settings (4)", more && !more.open && /Settings \(4\)/.test(more.querySelector("summary").textContent) && /Your life/.test(more.textContent)
     && more.querySelectorAll("button[role=switch]").length === 3);
   ok("…with their own handlers", more && /gmToggleStill/.test(more.innerHTML) && /gmToggleSmart/.test(more.innerHTML) && /gmToggleFocusShow/.test(more.innerHTML));
   // Simple Today on a phone: no numbers above the check-in; they are inside More for today, and counted.

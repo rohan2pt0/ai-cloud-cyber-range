@@ -9394,7 +9394,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   var MINE_STAGES = [["student", "Student"], ["salaried", "Salaried"], ["business", "Business owner"],
     ["independent", "Independent professional"], ["retired", "Retired"]];
   var MINE_QS = [["partner", "Do you have a partner?"], ["kids", "Any children?"],
-    ["home", "Do you own or rent a home?"], ["parents", "Do your parents depend on you?"]];
+    ["home", "Do you own a home or property?"], ["parents", "Do your parents depend on you?"]];
   function mineFacts() { var f = G("gm_facts", {}); return (f && typeof f === "object" && !Array.isArray(f)) ? f : {}; }
   function mineCss() {
     if (document.getElementById("gmMineCss")) return;
@@ -9410,7 +9410,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       + ".gm-mine-btns{display:flex;flex-wrap:wrap;gap:8px}"
       + ".gm-mine-btns button{flex:1 1 45%;min-height:48px;border-radius:13px;border:1.5px solid var(--border);background:var(--cardAlt);color:var(--text);font:inherit;font-size:13.5px;font-weight:700;padding:10px 12px;cursor:pointer}"
       + ".gm-mine-btns.yn{display:grid;grid-template-columns:1fr 1fr}"
-      + ".gm-mine-btns button.on{border-color:var(--gold);background:var(--gold);color:#0d1f35}"
+      + ".gm-mine-btns button.on{border-color:#c9a84c;background:var(--gold-metal,var(--gold));color:#1b1406;box-shadow:0 0 0 3px rgba(232,201,106,.18),inset 0 1px 0 rgba(255,255,255,.5)}"
       + ".gm-mine-btns button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}"
       + ".gm-mine-foot{display:flex;flex-direction:column;gap:4px;margin-top:18px}"
       + ".gm-mine-done{min-height:52px;border:0;border-radius:14px;background:var(--gold);color:#0d1f35;font:inherit;font-size:15px;font-weight:800;cursor:pointer;padding:12px}"
@@ -9434,7 +9434,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     var o = document.createElement("div");
     o.id = "gmMineSheet"; o.setAttribute("role", "dialog"); o.setAttribute("aria-modal", "true"); o.setAttribute("aria-label", "Make it yours");
     o.innerHTML = '<div class="gm-mine-card"><div class="gm-mine-k">Five taps</div><div class="gm-mine-h">Make it yours</div>'
-      + '<div class="gm-mine-p">Answer five things once. The Life OS hides what does not apply and keeps the rest; change it any time under Menu \u2192 Your life.</div>'
+      + '<div class="gm-mine-p">Answer five things once. The Life OS hides what does not apply and keeps the rest; change it any time in the Menu.</div>'
       + mineQHTML("stage", "Which best describes you?", false)
       + MINE_QS.map(function (q) { return mineQHTML(q[0], q[1], true); }).join("")
       + '<div class="gm-mine-foot"><button type="button" class="gm-mine-done" onclick="gmMineFinish()">That\u2019s me \u2014 make it fit</button>'
@@ -9458,7 +9458,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   window.gmMineFinish = function () {
     S_("gm_mine_done", true);
     var o = document.getElementById("gmMineSheet"); if (o) o.parentNode.removeChild(o);
-    if (typeof gmToast === "function") gmToast("Your Life OS now fits you. Menu \u2192 Your life changes it.");
+    if (typeof gmToast === "function") gmToast("Your Life OS now fits you. Change it any time in the Menu.");
     if (typeof renderAll === "function") renderAll();
   };
   window.gmMineSkip = function () {
@@ -9489,10 +9489,10 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       + '<div style="display:grid;gap:8px">'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();location.href=\'hub.html\'">◆ All apps</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();editProfile()">Edit profile</button>'
-      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();gmMineSheet()">Your life</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();toggleTheme()">Switch to ' + (curTheme() === "dark" ? "light" : "dark") + ' theme</button>'
       + ((window.matchMedia && matchMedia("(display-mode: standalone)").matches) ? "" : '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();gmInstall()">Install as an app (phone or computer)</button>')
-      + '<details class="gm-menu-more"><summary>Settings (3)</summary><div style="display:grid;gap:8px;margin-top:8px">'
+      + '<details class="gm-menu-more"><summary>Settings (4)</summary><div style="display:grid;gap:8px;margin-top:8px">'
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();gmMineSheet()">Your life: what applies to you</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" role="switch" aria-checked="' + (!G("gm_still", false)) + '" onclick="gmToggleStill()">Motion and haptics: ' + (G("gm_still", false) ? "off" : "on") + '</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" role="switch" aria-checked="' + (!G("gm_smart_off", false)) + '" onclick="gmToggleSmart()">Smart suggestions: ' + (G("gm_smart_off", false) ? "off" : "on") + '</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" role="switch" aria-checked="' + focusShow() + '" onclick="gmToggleFocusShow()">Show the focus timer: ' + (focusShow() ? "on" : "off") + '</button></div></details>'
