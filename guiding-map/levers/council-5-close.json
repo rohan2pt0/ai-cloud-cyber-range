@@ -1,0 +1,43 @@
+{
+ "about": "The expert council, item 5 (queue expert-council): the 15-minute monthly close. A finance chief closes the books every month so that no surprise is older than thirty days, and reports a few numbers, the reason for the biggest change and one decision. Here it is for a household. Paraphrased from common practice; content only, the screen is not built yet. Thresholds are planning rules of thumb, not advice; the person can change each one.",
+ "version": 1,
+ "status": "draft: written 2026-11-15",
+ "drafted": "2026-11-15",
+ "review": "2027-05-15",
+ "loop": {
+  "cue": "The first weekend after the salary or main income arrives (calendar item proposed: council-monthly-close, monthly, 15 minutes).",
+  "smallestStep": "The floor: read the three numbers the app already has and tap Closed. Two minutes.",
+  "reward": "The month is stamped Closed; a row of closed months grows; net worth change shows as one calm number.",
+  "environment": "Numbers arrive by themselves where they can (shared bank and fund messages); the close only asks about what is missing.",
+  "review": "Every third close ends with one extra question: is the close itself still 15 minutes? Drop a step that never changed a decision.",
+  "constraint": "Missing numbers. If a balance is older than 40 days the close asks for that one first and nothing else."
+ },
+ "steps": [
+  {"id": "cash", "minutes": 2, "ask": "What is in the bank accounts today?", "source": "changes: shared bank messages, else one number per account", "output": "cash"},
+  {"id": "in-out", "minutes": 3, "ask": "What came in, and what went out?", "source": "derived from the month's messages; the person corrects, never types the list", "output": "savingRate"},
+  {"id": "variance", "minutes": 3, "ask": "Which one category moved most against its usual level, and was it a one-off?", "source": "derived: this month against the average of the last three", "output": "oneReason"},
+  {"id": "owed", "minutes": 2, "ask": "Is anything owed or due in the next 30 days (card bill, premium, fee, tax, EMI change)?", "source": "the deadlines registry", "output": "dueList"},
+  {"id": "worth", "minutes": 3, "ask": "Investments and loans: any balance older than 40 days?", "source": "changes: statements shared in, else one number each", "output": "netWorthChange"},
+  {"id": "decide", "minutes": 2, "ask": "What is the one decision this month?", "source": "the app proposes one from the signals below", "output": "oneDecision"}
+ ],
+ "signals": [
+  {"id": "saving-rate", "name": "Saving rate", "how": "what was saved and invested, divided by take-home", "watch": "below the person's own target for two months running", "decision": "Raise the automatic transfer on salary day by a small step, or name the one cost to cut."},
+  {"id": "runway", "name": "Months of runway", "how": "cash and liquid funds divided by essential monthly cost", "watch": "under 6 months (under 12 for a business owner or a single earner)", "decision": "Send this month's surplus to the emergency fund before anything else."},
+  {"id": "net-worth-change", "name": "Net worth change", "how": "assets minus loans, against last month and a year ago", "watch": "down for three months for reasons other than markets", "decision": "Find the leak: a loan growing, or spending from savings."},
+  {"id": "fixed-share", "name": "Fixed costs share", "how": "rent or EMIs, fees, insurance and utilities, divided by take-home", "watch": "above about half of take-home", "decision": "One fixed cost to renegotiate, refinance or end this quarter."},
+  {"id": "debt-service", "name": "Loan payments share", "how": "all EMIs divided by take-home", "watch": "above about 40 percent", "decision": "No new loan; prepay the costliest one first."}
+ ],
+ "decisionRule": "Exactly one decision per close, the first signal on watch in the order above; if none is on watch, the decision is: keep going, and move the surplus to the next goal.",
+ "yearEnd": [
+  {"id": "tax", "where": ["IN"], "month": 1, "text": "January to March: check tax-saving investments and the regime choice against the year's real income.", "confirm": "The income-tax department's calculator or your tax adviser"},
+  {"id": "cover", "month": 4, "text": "Once a year: is life and health cover still right for the income, loans and family as they are now?"},
+  {"id": "rebalance", "month": "birthday month", "text": "Once a year: bring investments back to the planned split."},
+  {"id": "subscriptions", "month": 7, "text": "Once a year: list every subscription and standing instruction; end what was not used in 90 days."}
+ ],
+ "report": {"title": "The month in four lines", "lines": ["Saved: {savingRate} of take-home.", "Runway: {runway} months.", "Net worth: {netWorthChange} since last month.", "This month's one decision: {oneDecision}."]},
+ "persona": [
+  {"who": "Salaried couple with a home loan", "first": "saving-rate", "minutes": 15},
+  {"who": "Founder with uneven income", "first": "runway", "note": "Use the average of the last six months as take-home."},
+  {"who": "Retired on pension and interest", "first": "net-worth-change", "note": "Saving rate is replaced by: spending against the planned yearly draw."}
+ ]
+}

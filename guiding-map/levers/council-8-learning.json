@@ -1,0 +1,60 @@
+{
+ "about": "The expert council, item 8, part 3 (queue expert-council): spaced learning. Professors of learning science agree on what makes knowledge last: recall it from memory instead of re-reading it, space the recalls over growing gaps, mix subjects, and explain it to someone else. Most people read once and forget. This is the small system that keeps what a person learns: one thing worth keeping, recalled on a rhythm, for a few minutes a day. Paraphrased from common practice; content only, the screen is not built yet.",
+ "version": 1,
+ "status": "draft: written 2026-11-15",
+ "drafted": "2026-11-15",
+ "review": "2027-05-15",
+ "loop": {
+  "cue": "After reading, a course or a mistake: 'What is the one thing worth keeping?' Each morning: the day's few recalls on Today.",
+  "smallestStep": "One recall: read the question, answer in your head, tap whether you knew it. Under a minute.",
+  "reward": "A card that survives five recalls is marked Kept; the count of things kept this year grows.",
+  "environment": "Capture is one tap from the Inbox and the share sheet; recalls sit beside the morning routine, never in a separate app.",
+  "review": "Monthly: retire cards that no longer matter; turn one kept card into something used (a change at work, a note shared).",
+  "constraint": "Too many cards. One new card a day at most; a daily recall list longer than ten is cut to the ten most overdue."
+ },
+ "principles": [
+  {"id": "retrieval", "text": "Pulling an answer out of memory strengthens it far more than reading it again."},
+  {"id": "spacing", "text": "Recall just as you are about to forget; each success earns a longer gap."},
+  {"id": "interleaving", "text": "Mix subjects in one sitting; it feels harder and lasts longer."},
+  {"id": "elaboration", "text": "Tie the new idea to something you already know, and to a real case of your own."},
+  {"id": "teach-back", "text": "If you cannot explain it simply to someone else, you do not know it yet."},
+  {"id": "use-it", "text": "Knowledge used within a week stays; knowledge only stored fades."}
+ ],
+ "card": {
+  "fields": [
+   {"id": "question", "ask": "A question your future self should be able to answer.", "floor": true},
+   {"id": "answer", "ask": "The answer in your own words, two lines at most.", "floor": true},
+   {"id": "why", "ask": "Why it matters to you: one real situation where you will use it."},
+   {"id": "source", "ask": "Where it came from (a title is enough)."}
+  ],
+  "good": ["One idea per card.", "A question, not a heading.", "Your words, not a copied passage.", "Prefer why and how over what."],
+  "starters": ["What would I do differently next time because of this?", "What is the rule, and when does it not apply?", "How would I explain this to a twelve-year-old?", "What mistake does this prevent?"]
+ },
+ "schedule": {
+  "say": "Gaps in days after each successful recall. A miss goes back to the start, kindly; it is how the method works, not a failure.",
+  "gapsDays": [1, 3, 7, 16, 35, 90],
+  "keptAfter": 5,
+  "onMiss": "restart at 1 day",
+  "onEasy": "skip one gap",
+  "dailyCap": 10,
+  "newPerDay": 1
+ },
+ "rituals": [
+  {"id": "daily-recall", "every": "day", "minutes": 3, "do": "The day's recalls, answer first, then check."},
+  {"id": "weekly-teach", "every": "week", "minutes": 10, "do": "Explain one kept idea to a person, or write it as five plain sentences."},
+  {"id": "monthly-use", "every": "month", "minutes": 15, "do": "Pick one idea and change one thing at work or at home because of it."},
+  {"id": "after-mistake", "every": "when it happens", "minutes": 5, "do": "A mistake becomes a card the same day: what happened, and what to do instead."}
+ ],
+ "plans": [
+  {"id": "book", "name": "A book", "do": "Three cards per book, written after closing it, from memory."},
+  {"id": "course", "name": "A course or certification", "do": "One card per lesson; a practice paper in place of re-reading; the exam date in the calendar and the gaps planned back from it."},
+  {"id": "skill", "name": "A skill (a language, an instrument, a tool)", "do": "Practice at the edge of what you can do, 20 minutes, with feedback; cards only for the rules."},
+  {"id": "work", "name": "Lessons from work", "do": "One card from each review, incident or piece of feedback."},
+  {"id": "child", "name": "Helping a child study", "do": "Ask them to teach you the lesson; quiz on yesterday and last week before today's chapter."}
+ ],
+ "persona": [
+  {"who": "A professional preparing for a certification", "plan": "course", "minutesADay": 15},
+  {"who": "A reader who forgets every book", "plan": "book", "minutesADay": 3},
+  {"who": "A parent of a school child", "plan": "child", "minutesADay": 10}
+ ]
+}

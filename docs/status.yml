@@ -157,3 +157,4 @@ securax/134-USE-IT-NOW.md: [green, "In force from 11 November 2026: a feature fr
 securax/135-SYSTEMS-THAT-DELIVER.md: [amber, "Decided 11 November 2026: PARA as one shelf in every app and one loop; the build follows the freeze, in small slices."]
 securax/136-NATURE-ATLAS.md: [amber, "Started 14 November 2026: the atlas and its evidence are in place; the rings and the lock's aurora use it; the other wonders follow in slices (queue nature-atlas)."]
 securax/137-AUTOMATION.md: [amber, "Bank alerts arrive by themselves from the Outlook inbox with one tap (slice 1b) and from an SMS forwarder (owner fallback); Gmail, web push, the monthly CAS and Kite are next."]
+specs/index.md: [red, "Plans, not builds: one page per open queue item (the outcome, the data, the one-action screen, the test, the growth rail); each becomes green where its slice ships."]

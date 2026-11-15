@@ -1,0 +1,64 @@
+{
+ "about": "The expert council, item 7, part 1 (queue expert-council): people who matter. The best sales leaders and diplomats do not network; they keep a short list of people, stay in touch on a rhythm, and give before they ask. Most people let the ties that matter most fade by accident. This is that system for anyone: a few names, one small touch a day, never a database. Paraphrased from common practice; content only, the screen is not built yet. Names and notes stay on the person's device and are never synced without their choice.",
+ "version": 1,
+ "status": "draft: written 2026-11-15",
+ "drafted": "2026-11-15",
+ "review": "2027-05-15",
+ "loop": {
+  "cue": "One name a day on Today, chosen by the app: the person most overdue for their circle.",
+  "smallestStep": "Send one honest line (a ready opener below) or make a two-minute call, then tap Done.",
+  "reward": "The circle fills in as people are reached; a quiet count of ties kept warm this month.",
+  "environment": "The opener is ready to send through the share sheet; birthdays and anniversaries arrive from the calendar the person already has.",
+  "review": "Once a quarter, five minutes: who moved closer, who drifted, who should join or leave a circle.",
+  "constraint": "The list must stay short. More than about fifty names and the system dies."
+ },
+ "circles": [
+  {"id": "inner", "name": "Inner circle", "size": "about 5", "who": "The people you would call at 2 a.m., and who would call you.", "rhythm": "every week", "form": "a call or time together"},
+  {"id": "close", "name": "Close", "size": "about 15", "who": "Family and friends whose lives you want to be part of.", "rhythm": "every month", "form": "a call, a visit or a real message"},
+  {"id": "mentors", "name": "Mentors and sponsors", "size": "3 to 5", "who": "People a step or two ahead who know your work.", "rhythm": "every quarter", "form": "an update on what you did with their advice, then one question"},
+  {"id": "peers", "name": "Peers and allies", "size": "about 15", "who": "People in your field you learn with and would work with again.", "rhythm": "every quarter", "form": "something useful to them: an article, an introduction, a thank-you"},
+  {"id": "dormant", "name": "Dormant ties", "size": "about 10", "who": "Good people you have lost touch with: old colleagues, teachers, classmates.", "rhythm": "one a month", "form": "a short note with no ask"}
+ ],
+ "asked": {
+  "fixed": ["name", "circle"],
+  "changes": ["last touch (set by the Done tap)", "one line to remember (their child's exam, a surgery, a new job)"],
+  "derived": ["next due date", "overdue order"],
+  "never": ["anything they told you in confidence", "health or money details of another person", "a score or rating of a person"]
+ },
+ "openers": [
+  {"id": "thinking", "for": ["close", "dormant"], "text": "I thought of you today because of {reason}. No need to reply; I hope you are well."},
+  {"id": "thanks", "for": ["mentors", "peers"], "text": "I used what you told me about {topic}, and it worked: {result}. Thank you."},
+  {"id": "useful", "for": ["peers", "mentors"], "text": "This made me think of your work on {topic}: {link}. The part on {point} seemed useful."},
+  {"id": "congrats", "for": ["peers", "close", "dormant"], "text": "I saw the news about {event}. Well deserved; I am glad for you."},
+  {"id": "hard-time", "for": ["inner", "close"], "text": "I heard about {event}. I am here. Shall I call tonight, or would tomorrow be easier?"},
+  {"id": "intro", "for": ["peers"], "text": "You and {name} are working on the same problem from two sides. Would you both like an introduction?"}
+ ],
+ "giveFirst": [
+  "Introduce two people who should know each other (ask both first).",
+  "Pass on a job, a client or a piece of praise in front of others.",
+  "Share something you learned the hard way.",
+  "Show up: the function, the hospital, the difficult day.",
+  "Remember the thing they were worried about, and ask how it went."
+ ],
+ "asking": {
+  "say": "When you do need help, a good ask is small, specific and easy to refuse.",
+  "shape": "What I am trying to do: ... | The one thing I am asking: ... | Why I thought of you: ... | It is fine to say no.",
+  "rule": "Never the first message after years of silence. Warm the tie first, with no ask."
+ },
+ "moments": [
+  {"id": "birthday", "source": "the person's calendar", "do": "A call beats a message; a message beats a group post."},
+  {"id": "loss", "do": "Go or call within a week, and again after a month, when everyone else has stopped."},
+  {"id": "win", "do": "Congratulate the same day."},
+  {"id": "job-change", "do": "Offer one useful thing for the new role."},
+  {"id": "festival", "where": ["IN", "GLOBAL"], "do": "A personal line to the inner and close circles, not a forward."}
+ ],
+ "safety": [
+  "A message asking for money, a code or secrecy from someone on your list is checked by calling them back on the number you already have.",
+  "Agree a family code word for calls that claim an emergency (see queue family-security-programme)."
+ ],
+ "persona": [
+  {"who": "A busy manager who has moved cities", "starts": "dormant: one note a month", "minutesADay": 2},
+  {"who": "A retired person living alone", "starts": "inner and close: one call a day", "minutesADay": 10},
+  {"who": "A student", "starts": "mentors: three names, one update a quarter", "minutesADay": 2}
+ ]
+}

@@ -1,0 +1,47 @@
+{
+ "about": "The expert council, item 8, part 2 (queue expert-council): an energy cycle with recovery weeks. Coaches of endurance athletes do not train hard every day: they alternate stress and recovery by the day, the week and the season, and plan an easier week before the body forces one. Working life has the same shape. This is that cycle for anyone. Paraphrased from common practice; content only, the screen is not built yet. Not medical advice: lasting exhaustion, low mood or poor sleep is a reason to see a doctor.",
+ "version": 1,
+ "status": "draft: written 2026-11-15",
+ "drafted": "2026-11-15",
+ "review": "2027-05-15",
+ "loop": {
+  "cue": "A ten-second check-in each evening (one tap, 1 to 5); the recovery week is in the calendar from the start (calendar item proposed: council-recovery-week).",
+  "smallestStep": "One tap: how was your energy today?",
+  "reward": "A gentle wave of the last weeks; a recovery week taken is marked as kept, like any other commitment.",
+  "environment": "The hardest work is placed in the person's best hours; meetings and errands in the low ones.",
+  "review": "At the end of each cycle: what drained me, what restored me, one thing to change in the next cycle.",
+  "constraint": "Sleep. Nothing else in this file works without it, so it is protected first."
+ },
+ "scales": [
+  {"id": "day", "name": "The day", "rule": "Work in focused blocks of about 60 to 90 minutes, then a real break of 10 to 15: stand, walk, look far, drink water. Not a screen.",
+   "do": ["Find your best two or three hours (most people: mid-morning) and give them to the one hard task.", "A short walk after lunch; daylight in the first hour after waking.", "A fixed time to stop work; a wind-down hour before bed."]},
+  {"id": "week", "name": "The week", "rule": "Hard days and easy days, never seven of the same.",
+   "do": ["Two or three deep-work days, one or two lighter days for meetings and admin.", "One full day with no work and no work messages.", "Movement on most days; two sessions that make you breathe hard, if your doctor agrees."]},
+  {"id": "cycle", "name": "The cycle", "rule": "After five to seven weeks of load, one recovery week: about half the load, no new commitments.",
+   "do": ["In the recovery week: finish, tidy, review, learn; start nothing big.", "Leave earlier, sleep more, see the people who restore you.", "Decide the next cycle's one priority on its last day."]},
+  {"id": "year", "name": "The year", "rule": "Two real breaks of a week or more, booked early, and one season that is deliberately lighter.",
+   "do": ["Book the breaks when the year's holidays are known (see the Breaks planner).", "After any intense period (a launch, an exam, a family crisis), schedule recovery as if it were a deadline."]}
+ ],
+ "checkIn": {"ask": "Energy today?", "scale": ["1 drained", "2 low", "3 steady", "4 good", "5 strong"], "note": "A felt number, shown next to measured ones (sleep hours, movement days) where the app has them; never invented."},
+ "earlyWarnings": [
+  {"id": "low-run", "sign": "Energy at 1 or 2 for five days out of seven.", "do": "Bring the recovery week forward to now."},
+  {"id": "sleep-debt", "sign": "Under about six hours of sleep for three nights running.", "do": "Tonight: the wind-down hour, phone out of the room. Cancel one thing tomorrow."},
+  {"id": "no-off-day", "sign": "No full day off in three weeks.", "do": "Put one in the calendar this week before anything else."},
+  {"id": "joyless", "sign": "Things you usually enjoy feel flat for two weeks.", "do": "Tell someone close, and see a doctor; this is a health sign, not a discipline problem."},
+  {"id": "short-fuse", "sign": "Snapping at people, or small mistakes multiplying.", "do": "Take the next break now, not after the task."}
+ ],
+ "restores": {
+  "say": "Recovery is active. Pick what actually restores you; scrolling rarely does.",
+  "kinds": [{"id": "body", "examples": ["sleep", "a walk outdoors", "stretching", "a swim"]}, {"id": "mind", "examples": ["a book for pleasure", "music", "a hobby with your hands", "quiet"]}, {"id": "people", "examples": ["a meal with someone close", "play with children", "an old friend"]}, {"id": "meaning", "examples": ["prayer or meditation", "time in nature", "helping someone"]}]
+ },
+ "recoveryWeek": {
+  "keep": ["sleep and movement", "the one commitment that cannot move", "time with the inner circle"],
+  "drop": ["new projects", "optional meetings", "late evenings", "big decisions (they wait a week)"],
+  "end": "On the last day, write three lines: what drained me, what restored me, the next cycle's one priority."
+ },
+ "persona": [
+  {"who": "A manager working six days a week", "first": "no-off-day", "cycleWeeks": 6},
+  {"who": "A new parent", "note": "The cycle follows the child; protect one block of sleep and accept a lighter season.", "cycleWeeks": 4},
+  {"who": "A student before exams", "note": "A recovery week after the exams, booked before they start.", "cycleWeeks": 5}
+ ]
+}

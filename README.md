@@ -135,12 +135,12 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 - Early warning signs
 - Before a big moment
+- Specs and the council's next five systems
 - If one thing failed tomorrow
 - What we must earn
 - The landlord desk
 - Tax comparator on the savings levers
 - Savings levers keep themselves current
-- Impossible numbers cannot be saved
 
 **Release 0.4.0 - 2026-11-14:**
 
