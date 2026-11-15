@@ -1,0 +1,75 @@
+{
+ "about": "The expert council, item 4 (queue expert-council): family PACE plans. Soldiers and diplomats never rely on one way of doing a vital thing: they name a Primary, an Alternate, a Contingency and an Emergency way, in advance, and rehearse the switch. Here it is for a household's four lifelines: income, medical care, the home and the phone. Paraphrased from common professional practice; content only, the screen is not built yet. India-specific pointers carry a where tag and say where to confirm. Not legal, medical or financial advice.",
+ "version": 1,
+ "status": "draft: written 2026-11-15; confirm each India pointer against its official source before the screen ships",
+ "drafted": "2026-11-15",
+ "review": "2027-05-15",
+ "rungs": {"P": "Primary: what you use every day.", "A": "Alternate: works nearly as well, ready now.", "C": "Contingency: slower or costlier, but it works.", "E": "Emergency: the last resort that keeps you safe for a few days."},
+ "loop": {
+  "cue": "One plan a week for four weeks, then a 20-minute family drill every six months (calendar item proposed: council-pace-drill).",
+  "smallestStep": "Name the Alternate for one lifeline: one line, two minutes.",
+  "reward": "The plan's four letters light up one by one; a full plan shows as ready.",
+  "environment": "The finished plans print as one wallet card and one page for the emergency file.",
+  "review": "After any job change, move, new phone or new diagnosis, and at the six-month drill.",
+  "constraint": "The Alternate is the rung people skip: a plan with P and E only is not a plan."
+ },
+ "plans": [
+  {"id": "income", "severity": 1, "lens": "Military planner: decide the fallback before you need it, because under stress people freeze.",
+   "question": "If the main income stopped this month, what happens in week 1, month 1 and month 6?",
+   "trigger": "A missed salary or payment, a notice period starting, or sales down by a third for two months.",
+   "rungs": {
+    "P": {"what": "The main job or business income.", "ready": "Know your essential monthly cost (the app works it out)."},
+    "A": {"what": "A second income that already exists: the partner's pay, rent, a retainer or freelance client.", "ready": "Keep one skill, licence or client warm: one piece of paid or visible work every quarter."},
+    "C": {"what": "The emergency fund, then cutting to essentials only.", "ready": "Six months of essential costs in a separate account; a written list of what gets cut first."},
+    "E": {"what": "Cover and credit you arranged in advance, then family help.", "ready": "Term and health cover paid up; an unused credit line; one honest talk with the person you would ask."}
+   },
+   "card": "Essentials per month: ... | Fund lasts: ... months | First three cuts: ... | Who I call about work: ...",
+   "drill": {"every": "6 months", "minutes": 20, "how": "Live one month on the essentials budget, or simply check the fund still covers six months at today's costs."},
+   "when": {}, "effortMin": 40, "confirm": "Your own figures; the single points of failure in council.json (one-earner)"},
+  {"id": "medical", "severity": 1, "lens": "Emergency doctor: the first hour decides most outcomes, and families lose it deciding where to go and how to pay.",
+   "question": "At 2 a.m., who do we call, where do we go, and how is it paid?",
+   "trigger": "Chest pain, breathlessness, a fall, a fit, heavy bleeding, sudden weakness on one side, a child who cannot be woken.",
+   "rungs": {
+    "P": {"what": "The family doctor and the nearest good hospital on your insurer's cashless list.", "ready": "Save both numbers; keep the health card and policy number in the phone's emergency info."},
+    "A": {"what": "A second hospital with an emergency room, in another direction.", "ready": "Check it is on the cashless list too; know the route."},
+    "C": {"what": "Any emergency room, paid by card or a medical cash reserve, claimed back later.", "ready": "A card with a free limit and a small cash reserve; know the insurer's reimbursement steps."},
+    "E": {"what": "The national emergency number and the nearest neighbour who can drive.", "ready": "Emergency number saved by every family member; two neighbours' numbers; a medical card (blood group, allergies, medicines) in each wallet."}
+   },
+   "pointers": [{"where": ["IN"], "text": "112 is the single emergency number; 108 reaches the ambulance service in most states.", "confirm": "Your state's emergency services page"}],
+   "card": "Doctor: ... | Hospital 1: ... | Hospital 2: ... | Policy no. and helpline: ... | Blood group, allergies, medicines: ... | Who decides if I cannot: ...",
+   "drill": {"every": "6 months", "minutes": 15, "how": "Each family member finds the card and says where they would go. Drive the route to hospital 2 once."},
+   "when": {}, "effortMin": 30, "confirm": "Your insurer's cashless hospital list and your doctor"},
+  {"id": "home", "severity": 2, "lens": "Diplomat: always know where you would sleep tonight if you could not go home.",
+   "question": "If the home were unusable tonight (fire, flood, a long power or water cut, a dispute), where do we sleep and what do we take?",
+   "trigger": "An official warning, water entering, smoke, no power or water for more than a day, or any threat to safety at home.",
+   "rungs": {
+    "P": {"what": "The home, with its basics working.", "ready": "Know where the main switch, gas valve and water valve are; a torch and a charged power bank in one known place."},
+    "A": {"what": "A relative's or friend's home nearby, agreed in advance.", "ready": "Ask them now, and offer the same in return."},
+    "C": {"what": "A hotel or serviced flat, paid from the emergency fund.", "ready": "One or two places saved; home insurance that covers alternative accommodation where offered."},
+    "E": {"what": "The public shelter or the family's home town.", "ready": "A go-bag: copies of identity and property papers, medicines for a week, cash, chargers, a spare key."}
+   },
+   "card": "Meet at: ... | Stay with: ... | Go-bag is in: ... | Papers copy is in: ... | Society or landlord: ...",
+   "drill": {"every": "12 months", "minutes": 20, "how": "Before the rainy season: open the go-bag, replace medicines, check the document copies open on a second device."},
+   "when": {}, "effortMin": 45, "confirm": "Your home insurance policy wording"},
+  {"id": "phone", "severity": 2, "lens": "Signals officer: assume the main channel will fail at the worst moment.",
+   "question": "If the phone were lost, stolen or dead, how do we reach each other and our money?",
+   "trigger": "The phone is missing for an hour, the SIM stops working without reason, or an unknown login or payment appears.",
+   "rungs": {
+    "P": {"what": "Your phone, locked, with a passkey or app-based second step.", "ready": "Screen lock on; find-my-device on; backups on."},
+    "A": {"what": "A second device or number already registered with the bank and e-mail.", "ready": "Add it now; print the backup codes for e-mail and the password manager and keep them with the papers."},
+    "C": {"what": "The partner's phone, to block the SIM and payment apps and to sign in with backup codes.", "ready": "The telco's and bank's helplines on the wallet card; each partner knows the other's blocking steps."},
+    "E": {"what": "Family numbers known by heart, and a meeting place.", "ready": "Two numbers memorised by everyone, children included; one agreed place to meet."}
+   },
+   "pointers": [
+    {"where": ["IN"], "text": "A lost or stolen handset can be blocked through the government's Sanchar Saathi service; cyber fraud is reported on the national helpline 1930 and the national cybercrime portal.", "confirm": "The Department of Telecommunications and the national cybercrime portal"}
+   ],
+   "card": "Telco helpline: ... | Bank helpline: ... | Second device: ... | Backup codes are in: ... | Two numbers by heart: ... | Meet at: ...",
+   "drill": {"every": "6 months", "minutes": 15, "how": "Put the phone in a drawer for an evening: sign in to e-mail and the bank from the second device with the backup path."},
+   "when": {}, "effortMin": 30, "confirm": "Your bank, telco and e-mail provider; council.json (one-phone)"}
+ ],
+ "persona": [
+  {"who": "Salaried, partner, two children", "sees": ["income", "medical", "home", "phone"], "first": "income"},
+  {"who": "Retired, living alone", "sees": ["medical", "phone", "home", "income"], "first": "medical"},
+  {"who": "Student away from home", "sees": ["phone", "medical", "home"], "first": "phone"}
+ ]
+}

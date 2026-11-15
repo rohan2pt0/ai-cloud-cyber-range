@@ -1,0 +1,70 @@
+{
+ "about": "The expert council, item 6 (queue expert-council): decide once. Good investors write a decision down before they make it (what they expect, why, and what would prove them wrong), run a pre-mortem, and set a date to review it; psychologists add that the best way to avoid deciding badly when tired is to decide in advance, as a standing rule. Two parts: standing rules that settle recurring choices once, and a journal for the few big ones. Paraphrased from common practice; content only, the screen is not built yet. Not financial or legal advice.",
+ "version": 1,
+ "status": "draft: written 2026-11-15",
+ "drafted": "2026-11-15",
+ "review": "2027-05-15",
+ "loop": {
+  "cue": "A big decision appears (the test below says which), and the review date of an old one arrives in the calendar (dated items through gmCalendarDated).",
+  "smallestStep": "Three lines: what I am deciding, what I expect to happen, and when I will check. Two minutes.",
+  "reward": "At review, the app shows what you expected next to what happened; a decision reviewed counts, whatever the result.",
+  "environment": "The journal opens from the screens where big decisions start (a loan, a job offer, a large purchase, a property).",
+  "review": "Each decision on its own date; once a year, read the year's decisions in one sitting and name one pattern.",
+  "constraint": "Honesty at review: judge the decision by what was known then, not by the outcome alone."
+ },
+ "isItBig": {
+  "say": "Use the journal when any one of these is true; otherwise decide quickly and move on.",
+  "tests": [
+   {"id": "irreversible", "text": "It is hard or costly to undo (a job, a home, a marriage of money, a move, a surgery by choice)."},
+   {"id": "money", "text": "It is more than one month of take-home, or it adds a loan."},
+   {"id": "time", "text": "It commits more than a year of your time or attention."},
+   {"id": "people", "text": "It changes life for someone else in the family."},
+   {"id": "heat", "text": "You feel rushed, flattered, afraid of missing out, or angry."}
+  ]
+ },
+ "entry": [
+  {"id": "decision", "ask": "What exactly am I deciding, in one sentence?", "floor": true},
+  {"id": "options", "ask": "What are at least two other options, including doing nothing?"},
+  {"id": "expect", "ask": "What do I expect to happen, by when, and how sure am I (a percentage)?", "floor": true},
+  {"id": "base-rate", "ask": "How does this usually turn out for people like me? (The outside view.)"},
+  {"id": "premortem", "ask": "It is a year from now and this went badly. What are the three most likely reasons?"},
+  {"id": "guard", "ask": "For the likeliest reason: what can I do now to prevent it, or to limit the loss?"},
+  {"id": "kill", "ask": "What would make me change my mind or stop? Name the sign and the number."},
+  {"id": "state", "ask": "How am I feeling right now: rested, tired, pressed, excited?"},
+  {"id": "review", "ask": "When will I review this?", "floor": true, "default": "90 days for money and work; 12 months for a home or a life change"}
+ ],
+ "biasChecks": [
+  {"id": "sunk-cost", "ask": "If I were starting fresh today, would I still choose this?"},
+  {"id": "social-proof", "ask": "Am I doing this because others are?"},
+  {"id": "anchoring", "ask": "Whose first number am I measuring against, and is it a fair one?"},
+  {"id": "overconfidence", "ask": "What would a careful friend say I am too sure about?"},
+  {"id": "loss-aversion", "ask": "Am I avoiding a small sure loss by risking a large one?"},
+  {"id": "urgency", "ask": "Who gains if I decide today rather than next week?"}
+ ],
+ "reviewQuestions": [
+  "What happened, against what I expected?",
+  "Was the decision good given what I knew, whatever the result? (Good decision and good luck are different things.)",
+  "What did I not know that I could have found out cheaply?",
+  "One rule I will keep from this."
+ ],
+ "standingRules": {
+  "say": "Decide once, in a calm hour, and stop deciding each time. Pick the ones that fit; change any number.",
+  "rules": [
+   {"id": "cooling-off", "area": "money", "rule": "Any unplanned purchase above {amount} waits 48 hours.", "default": {"amount": "one day's take-home"}},
+   {"id": "pay-yourself-first", "area": "money", "rule": "Saving and investing leave the account on salary day, automatically; spending is what remains."},
+   {"id": "no-tips", "area": "investing", "rule": "No investment on a tip or a forwarded message. Anything new is read about for a week and is at most {share} of investments.", "default": {"share": "5 percent"}},
+   {"id": "one-rebalance", "area": "investing", "rule": "The portfolio is looked at for changes once a year, in the birthday month, not when markets move."},
+   {"id": "guarantor", "area": "money", "rule": "I do not stand guarantor or lend more than I can afford to lose, and I say so kindly, once."},
+   {"id": "sleep-on-it", "area": "work", "rule": "No resignation, angry message or big yes on the same day: sleep on it."},
+   {"id": "call-back", "area": "safety", "rule": "Anyone who asks for money, a code or a secret by phone or message is called back on a number I already have. No exceptions for urgency or rank."},
+   {"id": "paper-first", "area": "home", "rule": "No advance, token or signature on a property or agreement before the papers are read by someone who knows them."},
+   {"id": "health-first", "area": "health", "rule": "A check-up due this month is booked before anything optional is."},
+   {"id": "calendar-yes", "area": "time", "rule": "If I would not say yes to it for tomorrow, I do not say yes to it for three months from now."}
+  ]
+ },
+ "persona": [
+  {"who": "A person offered a new job abroad", "path": ["isItBig: irreversible, people", "entry floor (3 lines)", "premortem", "review in 12 months"]},
+  {"who": "A person who buys on impulse", "path": ["standingRules: cooling-off", "no journal needed"]},
+  {"who": "A retired person called by a 'bank officer'", "path": ["standingRules: call-back"]}
+ ]
+}

@@ -1,0 +1,71 @@
+{
+ "about": "The expert council, item 7, part 2 (queue expert-council): a personal brand system. Marketers know that a reputation is what people say about you when you are not in the room, and that it is built by being useful in public, steadily, on a few subjects, with proof. This is not self-promotion: it is making your real work findable, so that offers, clients and trust come to you. Paraphrased from common practice; content only, the screen is not built yet. Everything is optional, and a private life is a valid choice.",
+ "version": 1,
+ "status": "draft: written 2026-11-15",
+ "drafted": "2026-11-15",
+ "review": "2027-05-15",
+ "loop": {
+  "cue": "Friday, ten minutes: add this week's proof (calendar item proposed: council-brand-proof, weekly). One day a week of your choosing: share one useful thing.",
+  "smallestStep": "One line in the proof ledger: what I did and what changed because of it.",
+  "reward": "The ledger grows into a ready list for the appraisal, the CV and the next interview; inbound messages are counted as wins.",
+  "environment": "A draft is offered from the ledger line, so sharing starts from something true and finished, never a blank page.",
+  "review": "Every quarter: are the three subjects still right, and did anyone reach out because of what I shared?",
+  "constraint": "Consistency beats brilliance: one useful thing a week for a year outruns ten in one month."
+ },
+ "position": {
+  "say": "One sentence, filled once and changed rarely.",
+  "template": "I help {who} to {outcome} by {how}.",
+  "examples": [
+   "I help small clinics keep patient records safe without hiring an IT team.",
+   "I help first-time managers run meetings that end with decisions.",
+   "I help families understand their money in one page."
+  ],
+  "test": "Would a colleague recognise you from this sentence, and would a stranger know when to call you?"
+ },
+ "subjects": {
+  "say": "Three subjects, no more: one you are paid for, one you are learning, one you care about.",
+  "slots": [{"id": "craft", "ask": "What do people already come to you for?"}, {"id": "edge", "ask": "What are you learning that few around you know?"}, {"id": "cause", "ask": "What do you care about beyond work?"}]
+ },
+ "proofLedger": {
+  "say": "Proof is what makes a claim believable. One line a week.",
+  "line": "When: ... | What I did: ... | What changed (a number if there is one): ... | Who can vouch: ...",
+  "kinds": ["a result with a number", "a problem solved", "a thing built or written", "a talk or a class given", "someone you helped grow", "a certificate or award", "thanks received in writing"],
+  "careful": "Write results in your own words. Never an employer's or client's confidential figures, names or documents."
+ },
+ "rhythm": [
+  {"id": "weekly-useful", "every": "week", "minutes": 15, "do": "Share one useful thing on one subject: a lesson learned, a short how-to, a good question, or generous credit to someone else's work."},
+  {"id": "weekly-reply", "every": "week", "minutes": 5, "do": "Leave two thoughtful replies on other people's work. Replies build more ties than posts."},
+  {"id": "quarterly-piece", "every": "quarter", "minutes": 120, "do": "One longer piece: an article, a talk, a case study from the ledger."},
+  {"id": "yearly-refresh", "every": "year", "minutes": 45, "do": "Refresh the profile, the photo and the CV from the ledger."}
+ ],
+ "floor": "The floor that still counts: one reply that helps someone. Two minutes.",
+ "assets": [
+  {"id": "profile", "text": "One professional profile that says the position sentence, with a clear photo and the three subjects."},
+  {"id": "cv", "text": "A one-page CV made from the ledger: results, not duties."},
+  {"id": "intro", "text": "A two-line spoken introduction you can say without thinking."},
+  {"id": "portfolio", "text": "Three pieces of proof you can show in a minute (public or cleared to share)."},
+  {"id": "references", "text": "Three people who would speak for you, asked in advance."}
+ ],
+ "neverShare": {
+  "say": "What a security officer would tell you never to publish, because it is used for fraud, impersonation or pressure.",
+  "items": [
+   "Your employer's or clients' confidential work, systems, tools or internal names.",
+   "Travel plans in advance, or that the home is empty.",
+   "Children's school, routine, full names or faces with a location.",
+   "Identity papers, boarding passes, tickets, badges, or anything with a barcode or number.",
+   "Your date of birth with the year, home address, or the answers banks use as security questions.",
+   "Money: salary, holdings, a windfall, a large purchase.",
+   "Anger. Wait a day (see council-6-decide.json, sleep-on-it)."
+  ]
+ },
+ "measure": {
+  "say": "Count what comes to you, not applause.",
+  "counts": ["people who reached out because of something you shared", "invitations to speak, write or advise", "offers and referrals", "a mentor or peer who quoted your work"],
+  "ignore": ["likes", "followers", "views"]
+ },
+ "persona": [
+  {"who": "A salaried specialist who never posts", "starts": "proof ledger only, private, for the appraisal", "public": false},
+  {"who": "A consultant who needs clients", "starts": "position sentence, then weekly-useful", "public": true},
+  {"who": "A person who wants a private life", "starts": "ledger and references; nothing public", "public": false}
+ ]
+}
