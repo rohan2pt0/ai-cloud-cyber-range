@@ -133,6 +133,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- Early warning signs
 - Before a big moment
 - If one thing failed tomorrow
 - What we must earn
@@ -140,7 +141,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - Tax comparator on the savings levers
 - Savings levers keep themselves current
 - Impossible numbers cannot be saved
-- The first morning and every day, calmer
 
 **Release 0.4.0 - 2026-11-14:**
 
