@@ -76,6 +76,7 @@ def main() -> int:
             desc.pop("default_browser_type", None)
             for vname, rel, lock, theme in VIEWS:
                 ctx = b.new_context(**desc)
+                ctx.add_init_script('localStorage.setItem("gm_mine_done", "true")')   # first-run sheet: persona_audit covers it
                 pg = ctx.new_page()
                 errs = []
                 pg.on("pageerror", lambda e, errs=errs: errs.append(str(e)))

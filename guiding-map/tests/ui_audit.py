@@ -63,6 +63,7 @@ def main():
         OUT.mkdir(parents=True, exist_ok=True)
         b = p.chromium.launch(executable_path=exe) if exe else p.chromium.launch()
         ctx = b.new_context(viewport={"width": 412, "height": 900}, accept_downloads=True)
+        ctx.add_init_script('localStorage.setItem("gm_mine_done", "true")')   # "Make it yours" has its own test (persona_audit)
         pg = ctx.new_page()
         pg.on("pageerror", lambda e: report["errors"].append(str(e)))
         pg.on("console", lambda m: m.type == "error" and report["errors"].append("console: " + m.text))
@@ -151,7 +152,7 @@ def main():
         # 11. the FULL Today view (calm mode off) on a day after two misses: the recovery card, the habit list and the stats
         #     band must read in both themes, and a slipped habit is said once (one card), never once per habit.
         pg.evaluate("""() => { localStorage.setItem('gm_calm','false'); const H=HABITS.map(h=>h.id);
-          for(let i=1;i<=2;i++){const d=new Date();d.setDate(d.getDate()-i);S.daily[dKey(d)]=[];} store('sovS',S); }""")
+          for(let i=0;i<=2;i++){const d=new Date();d.setDate(d.getDate()-i);S.daily[dKey(d)]=[];} const d3=new Date();d3.setDate(d3.getDate()-3);S.daily[dKey(d3)]=H.slice(); store('sovS',S); }""")
         for theme in ["dark", "light"]:
             pg.evaluate(f"S.theme='{theme}'; store('sovS',S); applyTheme(); goTab('today')"); pg.wait_for_timeout(200)
             for item in pg.evaluate(CONTRAST_JS):
