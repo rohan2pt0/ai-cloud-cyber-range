@@ -26,11 +26,13 @@ const tap = (w, q, v) => {
 };
 const facts = (w) => JSON.parse(w.localStorage.getItem("gm_facts") || "{}");
 const A = boot(), B = boot(), C = boot(), D = boot({ gm_facts: { stage: "student" }, gm_mine_done: true });
+const Fb = boot({ gm_facts: { stage: "retired" }, gm_mine_done: true }), Gb = boot();
 setTimeout(() => {
   // A: a new person sees one sheet with all five questions, and finishes with Student + four No.
   const wa = A.window, da = wa.document, sheet = () => da.getElementById("gmMineSheet");
   ok("a new person sees Make it yours", !!sheet() && /Make it yours/.test(sheet().textContent) && /Five taps/.test(sheet().textContent), sheet() ? sheet().textContent.slice(0, 120) : "no sheet");
   ok("it asks all five things on one screen", !!sheet() && sheet().querySelectorAll("[data-mine]").length === 5);
+  ok("the role question invites more than one", !!sheet() && /What describes you\? Pick all that apply/.test(sheet().textContent) && /You can pick more than one/.test(sheet().textContent));
   ok("tapping Student works", tap(wa, "stage", "student"));
   ["partner", "kids", "home", "parents"].forEach(k => ok("tapping No for " + k + " works", tap(wa, k, "no")));
   da.querySelector("#gmMineSheet .gm-mine-done").click();
@@ -46,6 +48,41 @@ setTimeout(() => {
   wa.goTab("ops");
   const opsText = (da.getElementById("sections") || {}).textContent || "";
   ok("the partner-only Spouse emergency page is hidden", opsText.indexOf("Spouse emergency page") < 0);
+
+  // E: a person can be more than one thing (owner, 2026-11-15): tapping another role adds it, tapping it again removes it.
+  wa.gmMineSheet();
+  const reopened = () => da.querySelector("#gmMineSheet");
+  const sel = (v) => da.querySelector('#gmMineSheet [data-mine="stage"] [data-v="' + v + '"]');
+  ok("student is still selected when the sheet reopens", !!sel("student") && sel("student").classList.contains("on"));
+  tap(wa, "stage", "business");
+  const fe = facts(wa);
+  ok("student then business keeps both", Array.isArray(fe.stages) && fe.stages.join(",") === "student,business"
+    && fe.business === true && fe.salaried === false && fe.stage === "student", JSON.stringify(fe));
+  ok("both chosen roles show as selected", !!sel("student") && !!sel("business")
+    && sel("student").classList.contains("on") && sel("business").classList.contains("on"));
+  tap(wa, "stage", "student");
+  const fe2 = facts(wa);
+  ok("tapping student again removes it", Array.isArray(fe2.stages) && fe2.stages.join(",") === "business"
+    && fe2.stage === "business" && fe2.business === true, JSON.stringify(fe2));
+  ok("the removed role is no longer selected", !!sel("student") && !sel("student").classList.contains("on"));
+  wa.gmMineSkip();
+  ok("the toggling sheet closes on Show me everything", !reopened());
+
+  // F: old data that only kept a single stage reads as one chosen role.
+  const wf = Fb.window, df = wf.document;
+  wf.gmMineSheet();
+  const ret = df.querySelector('#gmMineSheet [data-mine="stage"] [data-v="retired"]');
+  ok("old data shows Retired selected", !!ret && ret.getAttribute("aria-pressed") === "true"
+    && ret.classList.contains("on"), ret ? ret.getAttribute("aria-pressed") : "missing");
+  wf.gmMineSkip();
+
+  // G: "That's me" with nothing chosen keeps the sheet open and asks gently.
+  const wg = Gb.window, dg = wg.document;
+  dg.querySelector("#gmMineSheet .gm-mine-done").click();
+  ok("That's me with nothing chosen keeps the sheet open", !!dg.getElementById("gmMineSheet"));
+  ok("it asks for at least one", /Pick at least one, or tap Show me everything/.test(
+    (dg.getElementById("gmMineSheet") || {}).textContent || ""));
+  ok("it does not mark the sheet done", JSON.parse(wg.localStorage.getItem("gm_mine_done") || "false") !== true);
 
   // B: Show me everything hides nothing and records only that the sheet was answered.
   const wb = B.window, db = wb.document;

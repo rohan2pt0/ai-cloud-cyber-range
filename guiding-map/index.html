@@ -9412,6 +9412,23 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   var MINE_QS = [["partner", "Do you have a partner?"], ["kids", "Any children?"],
     ["home", "Do you own a home or property?"], ["parents", "Do your parents depend on you?"]];
   function mineFacts() { var f = G("gm_facts", {}); return (f && typeof f === "object" && !Array.isArray(f)) ? f : {}; }
+  var MINE_STAGE_IDS = MINE_STAGES.map(function (s) { return s[0]; });
+  function mineStagesOf(f) {
+    var v = f && f.stages, out = [];
+    if (Array.isArray(v)) {
+      v.forEach(function (id) { if (MINE_STAGE_IDS.indexOf(id) >= 0 && out.indexOf(id) < 0) out.push(id); });
+    } else if (typeof v === "string" && MINE_STAGE_IDS.indexOf(v) >= 0) out.push(v);
+    else if (f && typeof f.stage === "string" && MINE_STAGE_IDS.indexOf(f.stage) >= 0) out.push(f.stage);
+    return out;
+  }
+  function mineSense(st) {
+    var age = -1;
+    try { if (typeof P !== "undefined" && P && P.dob) age = parseInt(yrsSince(P.dob), 10); } catch (e) {}
+    if (!(age >= 0)) return "";
+    if (st.indexOf("retired") >= 0 && age < 30) return "Retired before 30? Fine if so; tap again to undo if it was a slip.";
+    if (st.indexOf("student") >= 0 && age > 60) return "A student at any age: good.";
+    return "";
+  }
   function mineCss() {
     if (document.getElementById("gmMineCss")) return;
     var st = document.createElement("style"); st.id = "gmMineCss";
@@ -9423,6 +9440,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       + ".gm-mine-p{font-size:13px;line-height:1.5;color:var(--muted);margin-top:5px}"
       + ".gm-mine-q{margin-top:14px}"
       + ".gm-mine-l{font-weight:800;font-size:14px;margin-bottom:7px}"
+      + ".gm-mine-hint{font-size:12px;line-height:1.45;color:var(--muted);margin-top:6px}"
       + ".gm-mine-btns{display:flex;flex-wrap:wrap;gap:8px}"
       + ".gm-mine-btns button{flex:1 1 45%;min-height:48px;border-radius:13px;border:1.5px solid var(--border);background:var(--cardAlt);color:var(--text);font:inherit;font-size:13.5px;font-weight:700;padding:10px 12px;cursor:pointer}"
       + ".gm-mine-btns.yn{display:grid;grid-template-columns:1fr 1fr}"
@@ -9438,11 +9456,16 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       + (on ? ' class="on"' : "") + ' onclick="gmMineChoose(\'' + key + '\',\'' + val + '\')">' + label + "</button>";
   }
   function mineQHTML(key, label, yn) {
-    var f = mineFacts(), b = "";
-    if (key === "stage") MINE_STAGES.forEach(function (s) { b += mineBtn("stage", s[0], s[1], f.stage === s[0]); });
-    else { b += mineBtn(key, "yes", "Yes", f[key] === true) + mineBtn(key, "no", "No", f[key] === false); }
+    var f = mineFacts(), b = "", hint = "";
+    if (key === "stage") {
+      var st = mineStagesOf(f);
+      MINE_STAGES.forEach(function (s) { b += mineBtn("stage", s[0], s[1], st.indexOf(s[0]) >= 0); });
+      hint = '<div class="gm-mine-hint">You can pick more than one.</div>';
+      var sense = mineSense(st);
+      if (sense) hint += '<div class="gm-mine-hint">' + sense + '</div>';
+    } else { b += mineBtn(key, "yes", "Yes", f[key] === true) + mineBtn(key, "no", "No", f[key] === false); }
     return '<div class="gm-mine-q" data-mine="' + key + '"><div class="gm-mine-l">' + label + '</div>'
-      + '<div class="gm-mine-btns' + (yn ? " yn" : "") + '">' + b + "</div></div>";
+      + '<div class="gm-mine-btns' + (yn ? " yn" : "") + '">' + b + "</div>" + hint + "</div>";
   }
   window.gmMineSheet = function () {
     mineCss();
@@ -9451,7 +9474,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     o.id = "gmMineSheet"; o.setAttribute("role", "dialog"); o.setAttribute("aria-modal", "true"); o.setAttribute("aria-label", "Make it yours");
     o.innerHTML = '<div class="gm-mine-card"><div class="gm-mine-k">Five taps</div><div class="gm-mine-h">Make it yours</div>'
       + '<div class="gm-mine-p">Answer five things once. The Life OS hides what does not apply and keeps the rest; change it any time in the Menu.</div>'
-      + mineQHTML("stage", "Which best describes you?", false)
+      + mineQHTML("stage", "What describes you? Pick all that apply", false)
       + MINE_QS.map(function (q) { return mineQHTML(q[0], q[1], true); }).join("")
       + '<div class="gm-mine-foot"><button type="button" class="gm-mine-done" onclick="gmMineFinish()">That\u2019s me \u2014 make it fit</button>'
       + '<button type="button" class="gm-mine-skip" onclick="gmMineSkip()">Show me everything</button></div></div>';
@@ -9462,9 +9485,12 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     var f = mineFacts();
     if (key === "stage") {
       if (!/^(student|salaried|business|independent|retired)$/.test(String(val))) return;
-      f.stage = val;
-      f.salaried = val === "salaried";
-      f.business = val === "business";
+      var st = mineStagesOf(f), i = st.indexOf(val);
+      if (i >= 0) st.splice(i, 1); else st.push(val);
+      f.stages = st;
+      if (st.length) f.stage = st[0]; else delete f.stage;
+      f.salaried = st.indexOf("salaried") >= 0;
+      f.business = st.indexOf("business") >= 0;
     } else if (key === "partner" || key === "kids" || key === "home" || key === "parents") {
       f[key] = val === "yes";
     } else return;
@@ -9472,8 +9498,20 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     window.gmMineSheet();
   };
   window.gmMineFinish = function () {
+    if (!mineStagesOf(mineFacts()).length) {
+      window.gmMineSheet();
+      var o = document.getElementById("gmMineSheet");
+      if (o) {
+        var ask = o.querySelector('[data-mine="stage"]') || o.querySelector(".gm-mine-card");
+        var line = document.createElement("div");
+        line.className = "gm-mine-hint gm-mine-ask";
+        line.textContent = "Pick at least one, or tap Show me everything.";
+        if (ask) ask.appendChild(line);
+      }
+      return;
+    }
     S_("gm_mine_done", true);
-    var o = document.getElementById("gmMineSheet"); if (o) o.parentNode.removeChild(o);
+    var o2 = document.getElementById("gmMineSheet"); if (o2) o2.parentNode.removeChild(o2);
     if (typeof gmToast === "function") gmToast("Your Life OS now fits you. Change it any time in the Menu.");
     if (typeof renderAll === "function") renderAll();
   };
