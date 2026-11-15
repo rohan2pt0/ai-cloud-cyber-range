@@ -5039,6 +5039,40 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
      Seven numbers per property. Everything below is derived — no
      spreadsheet, no annual guesswork about whether a flat is actually
      earning its keep. */
+  // One guard for every typed figure (owner, 2026-11-15: "a salary can't be minus… make it almost impossible to
+  // make a mistake"). It clamps to what is possible, turns text back into empty, reads rupees as lakh and dates it
+  // cannot trust as blank, and says in plain words what it changed.
+  window.gmFieldGuard = function (rule, value) {
+    rule = rule || {};
+    var raw = value === null || value === undefined ? "" : String(value).trim();
+    if (raw === "") return { v: "", note: "" };
+    function out(v, note) {
+      if (note && typeof window.gmToast === "function") window.gmToast(note);
+      return { v: v, note: note };
+    }
+    if (rule.date) {
+      var dm = /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw), t = dm ? Date.UTC(+dm[1], +dm[2] - 1, +dm[3]) : NaN, dd = new Date(t);
+      if (!dm || isNaN(t) || dd.getUTCFullYear() !== +dm[1] || dd.getUTCMonth() !== +dm[2] - 1 || dd.getUTCDate() !== +dm[3]
+        || Math.abs(t - Date.now()) > 10 * 31557600000) return out("", "That date does not look right; please check it.");
+      return { v: raw, note: "" };
+    }
+    if (rule.month) {
+      var mm = /^(\d{4})-(\d{2})$/.exec(raw), y = mm ? +mm[1] : 0, mo = mm ? +mm[2] : 0;
+      if (!mm || mo < 1 || mo > 12 || y < 1900 || y > new Date().getFullYear() - 14) return out("", "That date does not look right; please check it.");
+      return { v: raw, note: "" };
+    }
+    var n = Number(raw.replace(/[,\s\u20b9]/g, "").replace(/^rs\.?/i, "")), note = "";   // 18,000 and \u20b918,000 are numbers people type
+    if (!isFinite(n)) return out("", "That is not a number; please check it.");
+    if (rule.lakh && n > 100000) { n = Math.round(n / 1e5 * 100) / 100; note = "That looks like rupees; set to " + n + " lakh."; }
+    if (rule.int) n = Math.round(n);
+    if (rule.min !== undefined && n < rule.min) {
+      n = rule.min;
+      note = rule.min === 0 ? "A minus amount is not possible there; set to 0." : "Below the lowest sensible value; set to " + rule.min + ".";
+    }
+    if (rule.max !== undefined && n > rule.max) { n = rule.max; note = "Above the highest sensible value; set to " + rule.max + ". Check it."; }
+    return out(n, note);
+  };
+
   function props() { return G("gm_props", []); }
   window.gmPropAdd = function () {
     var p = props(); p.push({ n: "Property " + (p.length + 1), use: "letout", val: "", rent: "", loan: "", rate: "", emi: "", out: "", vac: "1" });
@@ -5049,7 +5083,12 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     gmSnap("removed the property \u201c" + ((p[i] && p[i].n) || "untitled") + "\u201d");
     p.splice(i, 1); S_("gm_props", p); renderAll();
   };
-  window.gmPropSet = function (i, k, v) { var p = props(); p[i][k] = v; S_("gm_props", p); renderAll(); };
+  var PROP_RULES = {
+    val: { min: 0, max: 100000, lakh: true }, loan: { min: 0, max: 100000, lakh: true },
+    rent: { min: 0, max: 10000000 }, emi: { min: 0, max: 10000000 }, out: { min: 0, max: 100000000 },
+    rate: { min: 0, max: 30 }, vac: { min: 0, max: 12, int: true }
+  };
+  window.gmPropSet = function (i, k, v) { if (PROP_RULES[k]) v = window.gmFieldGuard(PROP_RULES[k], v).v; var p = props(); p[i][k] = v; S_("gm_props", p); renderAll(); };
 
   function propCalc(p) {
     var val = num(p.val) * 100000,           // \u20b9 lakh -> \u20b9
@@ -8776,7 +8815,21 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   /* ---- actions ---- */
   function setPath(o, path, v) { var p = path.split("."), x = o; for (var i = 0; i < p.length - 1; i++) { x[p[i]] = x[p[i]] || {}; x = x[p[i]]; } x[p[p.length - 1]] = v; }
   var _carTyped = false;
+  function carRule(path) {
+    if (path.indexOf("cur.") === 0) return { min: 0, max: 100000000 };
+    var R = {
+      "house.wife": { min: 0, max: 100000000 }, "house.exp": { min: 0, max: 100000000 }, "house.emi": { min: 0, max: 100000000 },
+      "house.ef": { min: 0, max: 100000000000 }, "house.nw": { min: 0, max: 100000000000 },
+      "cfg.noticeMonths": { min: 0, max: 12 }, "cfg.fiAge": { min: 30, max: 90, int: true },
+      "cfg.infl": { min: 0, max: 20 }, "cfg.ret": { min: 0, max: 30 }, "cfg.swr": { min: 1, max: 10 },
+      "cfg.health": { min: 0, max: 1000000 }, "cfg.term": { min: 0, max: 1000000 },
+      "cfg.stepPct": { min: 0, max: 200 }, "cfg.stepMonths": { min: 6, max: 120, int: true },
+      "cfg.noticeStart": { date: true }, "cfg.join": { date: true }, "cfg.birth": { month: true }
+    };
+    return R[path] || null;
+  }
   window.gmCarSet = function (path, v) {
+    if (carRule(path)) v = window.gmFieldGuard(carRule(path), v).v;
     var c = car(); setPath(c, path, v); carPut(c); _carTyped = true;   // a figure just typed stays in view (the fold opens)
     if (CAR_FROM_P[path] && profOK()) {             // the same fact in the profile, so every screen agrees
       var k = CAR_FROM_P[path];
