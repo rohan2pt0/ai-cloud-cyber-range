@@ -5177,8 +5177,9 @@
 
   /* ---- actions ---- */
   function setPath(o, path, v) { var p = path.split("."), x = o; for (var i = 0; i < p.length - 1; i++) { x[p[i]] = x[p[i]] || {}; x = x[p[i]]; } x[p[p.length - 1]] = v; }
+  var _carTyped = false;
   window.gmCarSet = function (path, v) {
-    var c = car(); setPath(c, path, v); carPut(c);
+    var c = car(); setPath(c, path, v); carPut(c); _carTyped = true;   // a figure just typed stays in view (the fold opens)
     if (CAR_FROM_P[path] && profOK()) {             // the same fact in the profile, so every screen agrees
       var k = CAR_FROM_P[path];
       if (k === "dob") { if (v && String(P.dob || "").slice(0, 7) !== String(v).slice(0, 7)) P.dob = String(v).slice(0, 7) + "-01"; }
@@ -5346,7 +5347,7 @@
     var frow = function (f) { return fld(f[0], f[1], f[2], f[3]); };
     var detStyle = ' style="margin-top:6px"', sumStyle = ' style="cursor:pointer;font-size:12.5px;font-weight:700;color:var(--text)"';
     var inp = hd("4 · Today's job and household", "From your payslip and bank app. Monthly ₹ unless marked.");
-    if (filledF.length) inp += '<details class="car-filled"' + detStyle + '><summary' + sumStyle + '>Your figures (' + filledF.length + ' filled) · tap to change</summary>' + filledF.map(frow).join("") + '</details>';
+    if (filledF.length) inp += '<details class="car-filled"' + detStyle + (_carTyped ? ' open' : '') + '><summary' + sumStyle + '>Your figures (' + filledF.length + ' filled) · tap to change</summary>' + filledF.map(frow).join("") + '</details>';
     inp += emptyF.slice(0, 3).map(frow).join("");
     if (emptyF.length > 3) inp += '<details class="car-more"' + detStyle + '><summary' + sumStyle + '>Add more (' + (emptyF.length - 3) + ')</summary>' + emptyF.slice(3).map(frow).join("") + '</details>';
     inp += '<details style="margin-top:6px"><summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:var(--text)">Dates and assumptions</summary>'
