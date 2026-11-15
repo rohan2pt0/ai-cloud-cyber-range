@@ -14,9 +14,11 @@ setTimeout(() => {
   const w = dom.window, d = w.document, G = k => JSON.parse(w.localStorage.getItem(k) || "null"), sec = () => d.getElementById("sections");
   // Career reads the profile
   w.goTab("career");
-  const vals = [...sec().querySelectorAll("input")].map(i => i.value);
-  ok("Career shows the profile's take-home, gross, spending and investments", ["200000", "300000", "90000", "2500000"].every(v => vals.includes(v)), vals.slice(0, 20).join(","));
-  ok("Career shows the birth month and retirement age from the profile", vals.includes("1990-05") && vals.includes("50"));
+  const lines = () => [...sec().querySelectorAll(".gm-fromp")].map(x => x.textContent).join(" | ");
+  ok("Career shows the profile's take-home, gross, spending and investments as lines, not inputs",
+    ["₹2,00,000", "₹3,00,000", "₹90,000", "₹25,00,000"].every(v => lines().includes(v)), lines());
+  ok("Career shows the birth month and retirement age from the profile",
+    /1990-05/.test(lines()) && /Financial independence target age: 50/.test(lines()), lines());
   // a change in Career goes back to the profile
   w.gmCarSet("cur.inhand", "210000");
   ok("a Career edit updates the profile", G("sovP").net === 210000 && w.eval("P").net === 210000);
@@ -25,7 +27,9 @@ setTimeout(() => {
   w.goTab("life");
   const L = (k) => { const i = [...sec().querySelectorAll("input")].find(x => (x.getAttribute("onchange") || "").includes("gmLifeSet('" + k + "'")); return i ? i.value : "(none)"; };
   ok("Life Map: ages come from the birth dates, child included", (() => { const t = sec().textContent, n = (re) => +((t.match(re) || [])[1] || 0); return n(/Your age: (\d+)/) >= 36 && n(/Spouse age: (\d+)/) >= 34 && n(/First child: (\d+)/) >= 4; })(), sec().textContent.slice(0, 300));
-  ok("Life Map: income, net worth and emergency fund in lakh from the profile", L("inc") === "31.2" && L("nw") === "25" && L("ef") === "4", [L("inc"), L("nw"), L("ef")].join(","));
+  ok("Life Map shows income, net worth and emergency fund as lines from the profile",
+    ["₹31,20,000", "₹25,00,000", "₹4,00,000"].every(v => lines().includes(v)) && ["inc", "nw", "ef"].every(k => L(k) === "(none)"),
+    lines());
   w.gmLifeSet("nw", "30");
   ok("a Life Map net worth edit updates the profile in rupees", G("sovP").nw === 3000000);
   w.goTab("life"); ok("a typed Life Map value wins over the profile", L("nw") === "30" && G("gm_life").nw === "30");

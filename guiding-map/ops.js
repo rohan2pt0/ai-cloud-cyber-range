@@ -1168,6 +1168,9 @@
   // Ask once (owner, 2026-11-11): the Life Map reads what the profile (setup) already knows when its own field is empty,
   // and a change to net worth or the emergency fund goes back to the profile. Ages come from birth dates, never typed twice.
   function profOK() { return typeof P !== "undefined" && P && !P.example; }
+  function fromProfileLine(label, valueText) {
+    return '<div class="f-label gm-fromp" style="margin:10px 0">' + label + ': <b style="color:var(--text)">' + valueText + '</b> <span style="text-transform:none;letter-spacing:0">from your profile · <a href="#" class="gm-inl" onclick="editProfile();return false">change</a></span></div>';
+  }
   function yrsSince(d) { var b = d ? new Date(d) : null; return b && !isNaN(b) ? String(Math.floor((Date.now() - b) / 31557600000)) : ""; }
   function life() {
     var l = G("gm_life", {}), pr = profOK() ? P : null;
@@ -1175,7 +1178,8 @@
     var kid = (pr.kids || [])[0], fill = {
       age: yrsSince(pr.dob), sage: yrsSince(pr.pdob), k1: kid && kid.dob ? yrsSince(kid.dob) : "",
       inc: pr.net ? String(Math.round((num(pr.net) + num(pr.psal)) * 12 / 1e3) / 100) : "",
-      nw: pr.nw ? String(Math.round(num(pr.nw) / 1e3) / 100) : "", ef: pr.sav ? String(Math.round(num(pr.sav) / 1e3) / 100) : ""
+      nw: pr.nw ? String(Math.round(num(pr.nw) / 1e3) / 100) : "", ef: pr.sav ? String(Math.round(num(pr.sav) / 1e3) / 100) : "",
+      minc: pr.net ? String(num(pr.net)) : "", fFixed: pr.exp ? String(num(pr.exp)) : ""
     };
     Object.keys(fill).forEach(function (k) { if ((l[k] === undefined || l[k] === "") && fill[k] !== "") l[k] = fill[k]; });
     return l;
@@ -1242,6 +1246,16 @@
       if (["age", "sage", "k1"].indexOf(f[0]) >= 0 && (raw[f[0]] === undefined || raw[f[0]] === "") && l[f[0]] !== undefined && l[f[0]] !== "") {
         h += '<div class="f-label" style="margin:10px 0">' + f[1].replace(/ \(.*$|'s age in years.*$/, "") + ': <b style="color:var(--text)">' + esc(l[f[0]])
           + '</b> <span style="text-transform:none;letter-spacing:0">(from your profile)</span></div>';
+        return;
+      }
+      var pt = "";
+      if (profOK()) {
+        if (f[0] === "inc") pt = (num(P.net) + num(P.psal)) ? rs((num(P.net) + num(P.psal)) * 12) + " a year" : "";
+        else if (f[0] === "nw") pt = num(P.nw) ? rs(P.nw) : "";
+        else if (f[0] === "ef") pt = num(P.sav) ? rs(P.sav) : "";
+      }
+      if (pt && (raw[f[0]] === undefined || raw[f[0]] === "")) {
+        h += fromProfileLine(f[1].replace(/ \(.*$/, ""), pt);
         return;
       }
       h += '<label class="f-label">' + f[1] + exampleBadge(f[0]) + '</label><input inputmode="decimal" value="' + esc(l[f[0]] === undefined ? "" : l[f[0]])
@@ -1645,10 +1659,11 @@
 
   /* ── 22. MONEY FLOW — one bar you read in a second, with healthy-band meters ────── */
   function flowHTML() {
-    var l = life(), pr = profOK() ? P : null;
+    var l = life(), pr = profOK() ? P : null, raw = G("gm_life", {});
     var emis = pr ? (pr.loans || []).reduce(function (a, x) { return a + num(x && x.emi); }, 0) : 0;
     var inc = num(l.minc), incFromP = false;
     if (!inc && pr && num(pr.net)) { inc = num(pr.net); incFromP = true; }
+    if (pr && num(pr.net) && (raw.minc === undefined || raw.minc === "")) incFromP = true;
     if (!inc) {
       return '<div class="cat-t">\u{1F4B8} Where the money goes</div>'
         + '<div class="info">Add your take-home to see where it goes.</div>'
@@ -1662,6 +1677,7 @@
     // Ask once: when the plan is empty, the profile already knows the spending, the loan EMIs and the take-home.
     var fixed = num(l.fFixed), loan = num(l.fLoan), ef = num(l.fEF), sip = num(l.fSip), fixedFromP = false, saveFromP = false;
     if (!fixed && pr) { fixed = num(pr.exp) + emis; fixedFromP = true; }
+    if (pr && num(pr.exp) && (raw.fFixed === undefined || raw.fFixed === "")) fixedFromP = true;
     var save = ef + sip;
     if (!ef && !sip && pr) { save = Math.max(0, num(pr.net) - num(pr.exp) - emis); saveFromP = true; }
     var fromP = function (on) { return on ? ' <span class="flowfrom">from your profile</span>' : ""; };
@@ -1715,7 +1731,16 @@
       + '<div class="flowlegend">' + legend + '</div></div>'
       + '<div class="road-col reveal" style="margin-top:10px">' + meters + '</div>';
     h += '<details class="road-col" style="margin-top:8px"><summary style="cursor:pointer;font-weight:700;font-size:12px">Edit the numbers</summary><div style="margin-top:6px">';
+    var fromPLine = {
+      minc: function () { return profOK() && num(P.net) > 0 ? rs(P.net) : ""; },
+      fFixed: function () { return profOK() && num(P.exp) > 0 ? rs(P.exp) : ""; }
+    };
     F.forEach(function (f) {
+      var pt = fromPLine[f[0]] ? fromPLine[f[0]]() : "";
+      if (pt && (raw[f[0]] === undefined || raw[f[0]] === "")) {
+        h += fromProfileLine(f[1].split(" — ")[0].replace(/ \(₹\)$/, ""), pt);
+        return;
+      }
       h += '<label class="f-label">' + f[1] + exampleBadge(f[0]) + '</label><input inputmode="decimal" aria-label="' + f[1] + '" value="' + esc(l[f[0]] || "")
         + '" onchange="gmLifeSet(\'' + f[0] + '\',this.value)">' + saneWarn(f[0], l[f[0]]);
     });
@@ -4244,7 +4269,7 @@
     { k: "nw", q: "All your savings and investments (not your home)", unit: "₹ total", ph: "1500000", inr: 1, taps: [["Under ₹5 lakh", 250000], ["₹5–25 lakh", 1500000], ["₹25 lakh–1 crore", 6000000], ["₹1–10 crore", 40000000], ["Above ₹10 crore", 150000000]] }
   ];
   function quickApply(ans) {
-    var l = life();
+    var l = life(), wasExample = window.P && P.example;
     if (ans.age) { l.age = String(ans.age); gmClearExample("age"); }
     if (ans.net) { l.minc = String(ans.net); gmClearExample("minc"); if (window.P) { P.net = ans.net; if (P.example || !P.gross) P.gross = ans.net; } }
     if (ans.exp && window.P) { P.exp = ans.exp; }
@@ -4253,7 +4278,7 @@
     // An invented spouse, child, parent or loan would keep steering YOUR insights. Example-only values go; real ones stay.
     ["sage", "k1", "page", "edu", "fFixed", "fLoan", "fEF", "fSip", "ef"].forEach(function (k) { if (isExample(k)) { delete l[k]; gmClearExample(k); } });
     S_("gm_life", l);
-    if (window.P) { if (P.example) P.loans = []; P.example = false; try { store("sovP", P); } catch (e) {} }
+    if (window.P) { if (wasExample) { P.loans = []; P.sav = 0; } P.example = false; try { store("sovP", P); } catch (e) {} }
     S_("gm_quick_done", true);
     gmSnap("answered the quick setup");
     bustDerived(); renderAll();
@@ -5058,6 +5083,13 @@
   function cfgv(c, k, d) { var v = c.cfg[k]; return v === undefined || v === "" ? d : num(v); }
   function rs(n) { return "₹" + Math.round(num(n)).toLocaleString("en-IN"); }
   function rl(n) { var x = num(n) / 1e5; return "₹" + (x >= 100 ? (x / 100).toFixed(2) + " Cr" : x.toFixed(1) + "L"); }
+  function carProfileText(path, unit) {
+    var k = CAR_FROM_P[path];
+    if (!k || !profOK()) return "";
+    var v = P[k];
+    if (v === undefined || v === null || v === "" || num(v) === 0) return "";
+    return k === "dob" ? String(v).slice(0, 7) : (unit && unit.indexOf("\u20b9") >= 0 ? rs(v) : String(v));
+  }
 
   // New tax regime, FY 2026-27 (unchanged from FY 2025-26 per Budget 2026): nil to 4L, then 5/10/15/20/25/30%; rebate up to
   // 12L with marginal relief; surcharge 10/15/25% above 50L/1Cr/2Cr (no marginal relief here, so it is slightly high near
@@ -5397,7 +5429,8 @@
     if (!wifeOK) carFields = carFields.filter(function (f) { return f[1] !== "house.wife"; });
     var filledF = [], emptyF = [];
     carFields.forEach(function (f) { var v = f[2]; (v === undefined || v === null || v === "" || v === 0) ? emptyF.push(f) : filledF.push(f); });
-    var frow = function (f) { return fld(f[0], f[1], f[2], f[3]); };
+    var frow = function (f) { var pt = carProfileText(f[1], f[3]); return pt ? fromProfileLine(f[0], pt) : fld(f[0], f[1], f[2], f[3]); };
+    var fldP = function (label, path, val, unit) { var pt = carProfileText(path, unit); return pt ? fromProfileLine(label, pt) : fld(label, path, val, unit); };
     var detStyle = ' style="margin-top:6px"', sumStyle = ' style="cursor:pointer;font-size:12.5px;font-weight:700;color:var(--text)"';
     var inp = hd("4 · Today's job and household", "From your payslip and bank app. Monthly ₹ unless marked.");
     if (filledF.length) inp += '<details class="car-filled"' + detStyle + (_carTyped ? ' open' : '') + '><summary' + sumStyle + '>Your figures (' + filledF.length + ' filled) · tap to change</summary>' + filledF.map(frow).join("") + '</details>';
@@ -5405,8 +5438,8 @@
     if (emptyF.length > 3) inp += '<details class="car-more"' + detStyle + '><summary' + sumStyle + '>Add more (' + (emptyF.length - 3) + ')</summary>' + emptyF.slice(3).map(frow).join("") + '</details>';
     inp += '<details style="margin-top:6px"><summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:var(--text)">Dates and assumptions</summary>'
       + fld("Notice period started", "cfg.noticeStart", c.cfg.noticeStart, "YYYY-MM-DD") + fld("Notice length", "cfg.noticeMonths", c.cfg.noticeMonths || 3, "months")
-      + fld("Joining date (blank: day after last day)", "cfg.join", c.cfg.join, "YYYY-MM-DD") + fld("Birth month", "cfg.birth", c.cfg.birth, "YYYY-MM")
-      + fld("Financial independence target age", "cfg.fiAge", c.cfg.fiAge || 50, "years") + fld("Inflation", "cfg.infl", c.cfg.infl || 6, "%/yr") + fld("Investment return", "cfg.ret", c.cfg.ret || 10, "%/yr")
+      + fld("Joining date (blank: day after last day)", "cfg.join", c.cfg.join, "YYYY-MM-DD") + fldP("Birth month", "cfg.birth", c.cfg.birth, "YYYY-MM")
+      + fldP("Financial independence target age", "cfg.fiAge", c.cfg.fiAge || 50, "years") + fld("Inflation", "cfg.infl", c.cfg.infl || 6, "%/yr") + fld("Investment return", "cfg.ret", c.cfg.ret || 10, "%/yr")
       + fld("Safe withdrawal rate", "cfg.swr", c.cfg.swr || 3.5, "%") + fld("Your own health cover", "cfg.health", c.cfg.health || 3000, "₹/mo") + fld("Term life cover", "cfg.term", c.cfg.term || 1500, "₹/mo")
       + fld("Move rhythm: step", "cfg.stepPct", c.cfg.stepPct || 30, "%") + fld("Move rhythm: every", "cfg.stepMonths", c.cfg.stepMonths || 30, "months") + '</details>';
     h += box(inp);
