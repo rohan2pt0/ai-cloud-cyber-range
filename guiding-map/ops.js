@@ -5772,6 +5772,15 @@
         // A plain small button on a hero card (a fixed navy card) is the hero's own pill: ivory in light, lit obsidian in dark.
         + ".gm-hero-b .btn-sm:not([style*=background]):not(.btn-p),.gm-hero-b .btn-p,.gm-hero-b .btn.primary,.gm-hero-b .btn-sm[style*='background:var(--gold)']{background:#f6f3ee!important;color:#1b1a18!important;border:1px solid #f6f3ee!important;box-shadow:inset 0 0 0 1px rgba(201,168,76,.75),0 6px 16px rgba(0,0,0,.28)!important}"
         + "html[data-theme=dark] .gm-hero-b .btn-sm:not([style*=background]):not(.btn-p){background:linear-gradient(180deg,#2c2925,#1c1a18)!important;color:#f3e2b8!important;border-color:rgba(233,201,138,.55)!important}"
+        // Today fits one screen on a phone (owner 2026-11-15, the screen opened every day): each of the daily three is one row,
+        // the check on the left, the name and its floor beside it; about half the height, the same tap area.
+        + "@media (max-width:600px){.gm-d3 .row{gap:8px!important}.gm-d3 .tile{display:grid!important;grid-template-columns:auto 1fr;column-gap:14px;align-items:center;padding:12px 14px!important;min-height:64px}.gm-d3 .tile .chk{grid-row:1/span 2;margin:0!important}.gm-d3 .tile .nm{font-size:16px;line-height:1.25}.gm-d3 .tile .fl{font-size:13.5px!important;line-height:1.4;margin-top:1px}}"
+        // A toast is a calm card, two lines at most, never a cramped pill over what the person is about to tap.
+        + "#gmToast{max-width:min(92vw,440px)!important;width:max-content;border-radius:16px!important;text-align:center;line-height:1.4}"
+        + ".gm-mine-h:focus{outline:none}"
+        + "@media (max-width:400px){.gm-greet h2{font-size:26px!important}.gm-greet p{font-size:13px}}"
+        // A link inside a sentence reads as part of it (no button padding, no tall line; WCAG 2.5.8 exempts inline targets).
+        + ".gm-start li .gm-inl{color:inherit;text-decoration:underline;text-underline-offset:3px;text-decoration-color:var(--gold);padding:11px 0;-webkit-tap-highlight-color:rgba(201,168,76,.18)}"
         // Still means still.
         + "html.gm-still .btn,html.gm-still .btn-sm,html.gm-still .btn-p,html.gm-still .btn-s,html.gm-still .chip,html.gm-still .hdr-btn,html.gm-still .gm-menu-btn{transition:none!important;filter:none!important}"
         + "@media (prefers-reduced-motion:reduce){html[data-theme=dark]:not(.gm-amb-off) .btn-p,html[data-theme=dark]:not(.gm-amb-off) .btn.primary,html[data-theme=dark]:not(.gm-amb-off) .btn-sm[style*='background:var(--gold)'],html[data-theme=dark]:not(.gm-amb-off) .btn-s,html[data-theme=dark]:not(.gm-amb-off) .btn:not(.btn-p):not(.primary),html[data-theme=dark]:not(.gm-amb-off) .btn-sm[style*='background:var(--cardAlt)'],html[data-theme=dark]:not(.gm-amb-off) .btn-sm:not([style*=background]):not(.btn-p),html[data-theme=dark]:not(.gm-amb-off) .gm-secondary,html[data-theme=dark]:not(.gm-amb-off) .chip,html[data-theme=dark]:not(.gm-amb-off) .hdr-btn,html[data-theme=dark]:not(.gm-amb-off) .gm-menu-btn{transition:none!important}html[data-theme=dark]:not(.gm-amb-off) .btn-p:active,html[data-theme=dark]:not(.gm-amb-off) .btn.primary:active,html[data-theme=dark]:not(.gm-amb-off) .btn-sm[style*='background:var(--gold)']:active,html[data-theme=dark]:not(.gm-amb-off) .btn-s:active,html[data-theme=dark]:not(.gm-amb-off) .btn:not(.btn-p):not(.primary):active,html[data-theme=dark]:not(.gm-amb-off) .btn-sm[style*='background:var(--cardAlt)']:active,html[data-theme=dark]:not(.gm-amb-off) .btn-sm:not([style*=background]):not(.btn-p):active,html[data-theme=dark]:not(.gm-amb-off) .gm-secondary:active,html[data-theme=dark]:not(.gm-amb-off) .chip:active,html[data-theme=dark]:not(.gm-amb-off) .hdr-btn:active,html[data-theme=dark]:not(.gm-amb-off) .gm-menu-btn:active{filter:none!important;transform:none!important}}";
@@ -6023,7 +6032,7 @@
     if (old) { var oc = old.querySelector(".gm-mine-card"); keep = oc ? oc.scrollTop : 0; old.parentNode.removeChild(old); }
     var o = document.createElement("div");
     o.id = "gmMineSheet"; o.setAttribute("role", "dialog"); o.setAttribute("aria-modal", "true"); o.setAttribute("aria-label", "Make it yours");
-    o.innerHTML = '<div class="gm-mine-card"><div class="gm-mine-k">Five taps</div><div class="gm-mine-h">Make it yours</div>'
+    o.innerHTML = '<div class="gm-mine-card"><div class="gm-mine-k">Five taps</div><div class="gm-mine-h" tabindex="-1">Make it yours</div>'
       + '<div class="gm-mine-p">Answer five things once. The Life OS hides what does not apply and keeps the rest; change it any time in the Menu.</div>'
       + mineQHTML("stage", "What describes you? Pick all that apply", false)
       + MINE_QS.map(function (q) { return mineQHTML(q[0], q[1], true); }).join("")
@@ -6031,7 +6040,8 @@
       + '<button type="button" class="gm-mine-skip" onclick="gmMineSkip()">Show me everything</button></div></div>';
     document.body.appendChild(o);
     var card = o.querySelector(".gm-mine-card"); if (card && keep) card.scrollTop = keep;
-    var b = o.querySelector("button"); if (b && !keep) { try { b.focus({ preventScroll: true }); } catch (e) {} }
+    // first open only: focus the heading (a screen reader starts inside the sheet), never an answer, so nothing looks chosen
+    var hd = o.querySelector(".gm-mine-h"); if (hd && !old) { try { hd.focus({ preventScroll: true }); } catch (e) {} }
   };
   window.gmMineChoose = function (key, val) {
     var f = mineFacts();
@@ -8157,7 +8167,9 @@
       + ".gm-lock-code{font-family:ui-monospace,Menlo,monospace;font-size:18px;letter-spacing:.12em;text-align:center;padding:12px;border-radius:12px;border:1px dashed rgba(201,168,76,.7);background:var(--cardAlt)}";
     document.head.appendChild(st);
   } catch (x) {}
-  if (locked) { if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", paint); else paint(); }
+  // always paint once: when the app is not locked (no record, or a damaged one) this clears the boot veil's gm-locked guess,
+  // which looks only at whether the key exists; a damaged record must never leave the person facing a blank page
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", paint); else paint();
 })();
 
 /* ── Which card, when; and numbers from a shared message (owner, 2026-11-14; threat model lifeos-share-in) ──────────
@@ -8550,8 +8562,8 @@
     if (!G("gm_start_done", false)) {
       anchor.insertAdjacentHTML("beforebegin", '<div class="kc gm-start" role="region" aria-label="Start here"><b>Start here: three things, that is all</b><ol>'
         + '<li>Each day, tick your three below. Tiny counts.</li>'
-        + '<li><button type="button" class="gm-quiet" onclick="goTab(\'money\')">Once, share your bank messages</button>: cards and spending fill in by themselves.</li>'
-        + '<li><button type="button" class="gm-quiet" onclick="goTab(\'okr\')">On Sunday, open Goals</button> for five minutes.</li></ol>'
+        + '<li><a href="#" class="gm-inl" onclick="goTab(\'money\');return false">Once, share your bank messages</a>: cards and spending fill in by themselves.</li>'
+        + '<li><a href="#" class="gm-inl" onclick="goTab(\'okr\');return false">On Sunday, open Goals</a> for five minutes.</li></ol>'
         + '<button type="button" class="gm-quiet" onclick="gmStartDone()">Got it, hide this</button></div>');
     }
   }
