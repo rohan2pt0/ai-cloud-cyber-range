@@ -1,0 +1,49 @@
+# Scheme watch (queue scheme-watch): the savings levers keep themselves current. On the dates rules usually change (the
+# Union Budget, state budgets, the quarterly small-savings notice, the new tax year) and once a month, fetch each lever's
+# official sources, hash their visible text and, when one changed, open a pull request that labels the lever
+# "check before you act" until a reviewed update lands. Fetched pages are data only (threat model scheme-watch).
+name: scheme-watch
+on:
+  schedule:
+    - cron: "17 4 2 * *"          # monthly, the 2nd, 04:17 UTC
+    - cron: "17 4 3 2 *"          # after the Union Budget (about 1 February)
+    - cron: "17 4 16 3 *"         # after state budgets
+    - cron: "17 4 2 1,4,7,10 *"   # after each quarter's small-savings notice and the new tax year
+  workflow_dispatch:
+
+concurrency:
+  group: scheme-watch
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: "Check the levers"
+        run: python3 governance/levers.py check
+      - name: "Watch their sources"
+        run: python3 governance/levers.py watch --write | tee watch-report.json
+      - name: "Open a pull request when a source changed"
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          if git diff --quiet -- guiding-map/levers/watch.json; then echo "no change"; exit 0; fi
+          changed="$(python3 -c "import json;print(', '.join(json.load(open('watch-report.json'))['changed']) or 'first fingerprints')")"
+          br="scheme-watch/$(date -u +%Y%m%d)"
+          git config user.name "securax-scheme-watch"
+          git config user.email "scheme-watch@users.noreply.github.com"
+          git checkout -b "$br"
+          git add guiding-map/levers/watch.json
+          git commit -m "Scheme watch: sources changed (${changed}); levers labelled check before you act"
+          git push -u origin "$br"
+          gh pr create --base main --head "$br" --title "Scheme watch: ${changed}" \
+            --body "The official sources of these savings levers changed: ${changed}. Until a reviewed update of guiding-map/levers/levers.json lands, the Life OS labels them check before you act. Report: see the workflow run."

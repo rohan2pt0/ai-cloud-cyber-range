@@ -133,6 +133,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- Savings levers keep themselves current
 - Impossible numbers cannot be saved
 - The first morning and every day, calmer
 - Colour means what the words mean
@@ -140,7 +141,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - The Life OS fits the person
 - Persona audit in a real browser
 - Career step 4 is a short card, not a wall of fields
-- AI spend in rupees, per provider
 
 **Release 0.4.0 - 2026-11-14:**
 

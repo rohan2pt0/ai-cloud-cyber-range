@@ -8330,6 +8330,200 @@
     S_(CK, c); renderAll(); gmToast(n + " card" + (n > 1 ? "s" : "") + " added."); return n;
   };
   window.gmCardsDel = function (id) { S_(CK, cards().filter(function (x) { return x.id !== id; })); renderAll(); };
+  /* ── Savings levers: legitimate ways to cut costs and tax, run as a system ──
+     The content lives in guiding-map/levers/levers.json (window.GM_LEVERS, inlined by build.js). Facts are read from what
+     the app already knows (gm_facts, the profile, the Life Map's eldest parent); a missing fact is asked once, on the card,
+     only when a lever needs it. Exactly one lever is open; the rest fold under Later. */
+  var LEV_AREA = { tax: 0, health: 1, energy: 2, spend: 3, transport: 4, income: 5 };
+  var LEV_Q = {
+    state: { q: "Which state do you live in?" },
+    women: { q: "Is there a woman in the household?" },
+    apartment: { q: "Do you live in a flat in a housing society?" },
+    electricity: { q: "Your average monthly electricity bill, Rs" },
+    hufFit: { q: "Is there ancestral property, or are relatives outside your family likely to gift money?" },
+    page: { q: "Age of your eldest parent (or your partner's), in years" }
+  };
+  function levData() {
+    var d = (typeof window !== "undefined" && window.GM_LEVERS) ? window.GM_LEVERS : null;
+    return d && Array.isArray(d.levers) ? d : { levers: [], verified: "" };
+  }
+  function levFacts() {
+    var f = G("gm_facts", {});
+    return (f && typeof f === "object" && !Array.isArray(f)) ? f : {};
+  }
+  function levHas(f, k) { return Object.prototype.hasOwnProperty.call(f, k); }
+  function levById(id) { return levData().levers.filter(function (x) { return x.id === id; })[0] || null; }
+  function levLocal() { var r = G("gm_region", null); return r === null || r === undefined || r === "local"; }
+  function levStages(f) {
+    var v = f && f.stages, out = [];
+    if (Array.isArray(v)) v.forEach(function (x) { if (typeof x === "string" && out.indexOf(x) < 0) out.push(x); });
+    else if (typeof v === "string") out.push(v);
+    else if (f && typeof f.stage === "string") out.push(f.stage);
+    return out;
+  }
+  function levEarns() { var p = (typeof window !== "undefined") ? window.P : null; return !!(p && !p.example && +p.gross > 0); }
+  function levWhereOK(lv) {
+    var w = lv.where || [];
+    if (!w.length) return true;
+    if (w.some(function (x) { return String(x).toUpperCase() === "GLOBAL"; })) return true;
+    var india = w.some(function (x) { return x === "IN" || String(x).indexOf("IN") === 0; });
+    return india ? levLocal() : true;
+  }
+  // A condition that is known, or null when its one fact has not been answered yet.
+  function levKnown(key, f) {
+    if (key === "home") return levHas(f, "home") ? { v: !!f.home } : null;
+    if (key === "apartment") return levHas(f, "apartment") ? { v: !!f.apartment } : null;
+    if (key === "state") return levHas(f, "state") ? { v: f.state } : null;
+    if (key === "women") return levHas(f, "women") ? { v: !!f.women } : null;
+    if (key === "hufFit") return levHas(f, "hufFit") ? { v: !!f.hufFit } : null;
+    if (key === "electricityMin") return levHas(f, "electricity") && isFinite(+f.electricity) ? { v: +f.electricity } : null;
+    if (key === "parentAgeMin") {
+      if (f.parents === false) return { v: 0 };                       // "my parents do not depend on us": no parent levers, no question
+      var pg = G("gm_life", {}).page; return (pg === undefined || pg === null || pg === "") ? null : { v: +pg };
+    }
+    if (key === "earns") return { v: levEarns() };
+    if (key === "salaried") return { v: levStages(f).indexOf("salaried") >= 0 };
+    if (key === "professional") { var st = levStages(f); return { v: st.indexOf("independent") >= 0 || st.indexOf("business") >= 0 }; }
+    return { v: false };
+  }
+  function levEval(lv, f) {
+    var when = lv.when || {}, keys = Object.keys(when), unknown = [];
+    for (var i = 0; i < keys.length; i++) {
+      var key = keys[i], g = levKnown(key, f);
+      if (g === null) { unknown.push(key); continue; }
+      var want = when[key];
+      if (key === "electricityMin" || key === "parentAgeMin") { if (!(g.v >= want)) return { matched: false, missing: null }; }
+      else if (key === "earns" || key === "salaried" || key === "professional") { if (!g.v) return { matched: false, missing: null }; }
+      else if (g.v !== want) return { matched: false, missing: null };
+    }
+    for (var j = 0; j < unknown.length; j++) {
+      var qk = unknown[j] === "electricityMin" ? "electricity" : unknown[j] === "parentAgeMin" ? "page" : unknown[j];
+      if (LEV_Q[qk]) return { matched: false, missing: qk };
+    }
+    return { matched: unknown.length === 0, missing: null };
+  }
+  function levRank(lv) { var r = LEV_AREA[lv.area]; return r === undefined ? 9 : r; }
+  function levSort(a, b) { var d = levRank(a) - levRank(b); return d ? d : (+a.effortMin || 0) - (+b.effortMin || 0); }
+  function levMap() { var m = G("gm_levers", {}); return (m && typeof m === "object" && !Array.isArray(m)) ? m : {}; }
+  function levClosed(id) { var x = levMap()[id]; return !!(x && typeof x === "object" && (x.state === "done" || x.state === "no")); }
+  function levPast(day) { var t = Date.parse(day); if (isNaN(t)) return false; var d = new Date(); d.setHours(0, 0, 0, 0); return t < d.getTime(); }
+  function levSteps(id) { var x = levMap()[id]; return (x && typeof x === "object" && Array.isArray(x.steps)) ? x.steps : []; }
+  window.gmLevStep = function (id, i) {
+    var lv = levById(id); if (!lv || !(i >= 0)) return;
+    var m = levMap(), x = (m[id] && typeof m[id] === "object") ? m[id] : {}, steps = Array.isArray(x.steps) ? x.steps.slice() : [];
+    while (steps.length < (lv.steps || []).length) steps.push(false);
+    steps[i] = !steps[i];
+    x.steps = steps; if (!x.state) x.state = "open";
+    m[id] = x; S_("gm_levers", m); renderAll();
+  };
+  window.gmLevState = function (id, state) {
+    if (!levById(id)) return;
+    var m = levMap(), x = (m[id] && typeof m[id] === "object") ? m[id] : {};
+    if (!Array.isArray(x.steps)) x.steps = levSteps(id).slice();
+    x.state = state === "no" ? "no" : "done";
+    m[id] = x; S_("gm_levers", m); renderAll();
+  };
+  window.gmLevFact = function (key, value) {
+    if (key === "page") {                                             // the parent's age lives in the Life Map (one fact, one place)
+      var a = window.gmFieldGuard ? window.gmFieldGuard({ min: 30, max: 110, int: true }, value).v : parseInt(value, 10);
+      if (a === "" || !(a > 0)) { if (typeof gmToast === "function") gmToast("Write the age in years, like 68."); return; }
+      if (typeof window.gmLifeSet === "function") window.gmLifeSet("page", String(a)); else { var l = G("gm_life", {}); l.page = String(a); S_("gm_life", l); renderAll(); }
+      return;
+    }
+    if (["state", "women", "apartment", "electricity", "hufFit"].indexOf(key) < 0) return;
+    var f = levFacts();
+    if (key === "electricity") {
+      var n = parseFloat(String(value).replace(/[^0-9.]/g, ""));
+      if (!(n > 0)) { if (typeof gmToast === "function") gmToast("Write your average monthly bill in rupees, like 3000."); return; }
+      f[key] = n;
+    } else if (key === "state") f[key] = value === "MH" ? "MH" : "other";
+    else f[key] = !!value;
+    S_("gm_facts", f); renderAll();
+  };
+  window.gmLevCopy = function (id) {
+    var el = document.getElementById("gmLevTpl-" + id), tx = el ? el.value : "";
+    function pick() { if (!el) return; try { el.focus(); el.select(); el.setSelectionRange(0, el.value.length); } catch (e) {} }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(tx).then(function () { if (typeof gmToast === "function") gmToast("Template copied."); }, pick);
+    else pick();
+  };
+  function levQuestionHTML(qk) {
+    var q = LEV_Q[qk], h = '<div class="road-col gm-lev-q" data-lev-q="' + esc(qk) + '" style="margin-bottom:10px">'
+      + '<div style="font-weight:800;font-size:13px">' + esc(q.q) + '</div>';
+    if (qk === "electricity" || qk === "page") {
+      var iid = qk === "page" ? "gmLevPage" : "gmLevElec";
+      h += '<div style="display:flex;gap:8px;margin-top:6px;align-items:center"><input id="' + iid + '" inputmode="decimal" style="flex:1" aria-label="' + esc(q.q) + '">'
+        + '<button type="button" class="btn-sm" onclick="gmLevFact(\'' + qk + '\',document.getElementById(\'' + iid + '\').value)">Save</button></div>';
+    } else if (qk === "state") {
+      h += '<div style="display:flex;gap:8px;margin-top:6px;flex-wrap:wrap"><button type="button" class="btn-sm" onclick="gmLevFact(\'state\',\'MH\')">Maharashtra</button>'
+        + '<button type="button" class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmLevFact(\'state\',\'other\')">Another state</button></div>';
+    } else {
+      h += '<div style="display:flex;gap:8px;margin-top:6px"><button type="button" class="btn-sm" onclick="gmLevFact(\'' + qk + '\',true)">Yes</button>'
+        + '<button type="button" class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmLevFact(\'' + qk + '\',false)">No</button></div>';
+    }
+    return h + '</div>';
+  }
+  function levMain(lv) {
+    var steps = levSteps(lv.id), h = '<div style="font-size:12.5px;margin-top:4px">' + esc(lv.saves) + '</div>'
+      + '<div style="font-size:12px;color:var(--muted);margin-top:4px">about ' + esc(lv.effortMin) + ' minutes</div>';
+    if (lv.review && levPast(lv.review)) h += '<div class="info" style="color:var(--amber);margin:8px 0">Check before you act: last verified ' + esc(lv.verified || "") + '</div>';
+    h += '<ol style="margin:8px 0 0;padding-left:22px">';
+    (lv.steps || []).forEach(function (s, i) {
+      var on = !!steps[i];
+      // one tappable row per step: a small round check and the step beside it (the row is the 44 px target)
+      h += '<li style="list-style:none;margin:0 0 4px -22px"><button type="button" class="gm-lev-step' + (on ? " on" : "") + '" data-lev-step="' + esc(lv.id) + '|' + i + '" aria-pressed="' + (on ? "true" : "false") + '" onclick="gmLevStep(\'' + esc(lv.id) + '\',' + i + ')">'
+        + '<span class="gm-lev-chk" aria-hidden="true">' + (on ? "\u2713" : "") + '</span><span class="gm-lev-t">' + (i + 1) + '. ' + esc(s) + '</span></button></li>';
+    });
+    h += '</ol>';
+    if (lv.template && lv.template.text) {
+      h += '<div style="font-size:12px;font-weight:800;margin-top:8px">' + esc(lv.template.title || "Template") + '</div>'
+        + '<textarea readonly id="gmLevTpl-' + esc(lv.id) + '" rows="4" style="width:100%;font-size:12px;margin-top:4px">' + esc(lv.template.text) + '</textarea>'
+        + '<button type="button" class="btn-sm" style="margin-top:6px;background:var(--cardAlt);color:var(--text)" onclick="gmLevCopy(\'' + esc(lv.id) + '\')">Copy</button>';
+    }
+    if (lv.portal) h += '<div style="font-size:12px;margin-top:8px">Official site: ' + esc(lv.portal) + '</div>';
+    h += '<div style="font-size:11px;color:var(--muted);margin-top:6px">Verified ' + esc(lv.verified || "") + ' \u00b7 ' + esc(lv.confidence || "") + '</div>';
+    return h;
+  }
+  var LEV_CSS = ".gm-lev-step{display:flex;align-items:flex-start;gap:10px;width:100%;min-height:44px;padding:9px 6px;background:none!important;border:0!important;box-shadow:none!important;text-align:start;color:var(--text)!important;font:inherit;font-size:13px;line-height:1.45;cursor:pointer;border-radius:10px}"
+    + ".gm-lev-step:hover{background:var(--cardAlt)!important}.gm-lev-chk{flex:0 0 22px;height:22px;border-radius:50%;border:1.5px solid var(--edge);display:inline-flex;align-items:center;justify-content:center;font-size:13px;margin-top:1px}"
+    + ".gm-lev-step.on .gm-lev-chk{background:#13704f;border-color:#5fd3a0;color:#fff}.gm-lev-step.on .gm-lev-t{opacity:.6;text-decoration:line-through}";
+  function levStyle() {   // once, in the head: a style inside the card would leave with the card on the next redraw
+    if (!document.getElementById("gmLevCss")) { var st = document.createElement("style"); st.id = "gmLevCss"; st.textContent = LEV_CSS; document.head.appendChild(st); }
+    return "";
+  }
+  function levOpenCard(lv) {
+    return levStyle() + '<div class="road-col gm-lever gm-lever-open" data-lever="' + esc(lv.id) + '">'
+      + '<div style="font-weight:800;font-size:14px">' + esc(lv.title) + '</div>' + levMain(lv)
+      + '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">'
+      + '<button type="button" class="btn-sm" data-lev-done="' + esc(lv.id) + '" onclick="gmLevState(\'' + esc(lv.id) + '\',\'done\')">Done</button>'
+      + '<button type="button" class="gm-quiet" onclick="gmLevState(\'' + esc(lv.id) + '\',\'no\')">Not for me</button></div></div>';
+  }
+  function levLaterCard(lv) {
+    return '<details class="road-col gm-lever" data-lever="' + esc(lv.id) + '" style="margin-bottom:10px">'
+      + '<summary style="cursor:pointer;font-weight:800;font-size:13.5px">' + esc(lv.title) + ' <span style="font-weight:500;color:var(--muted)">\u00b7 about ' + esc(lv.effortMin) + ' min</span></summary>'
+      + '<div style="margin-top:8px">' + levMain(lv) + '</div></details>';
+  }
+  window.gmLeversHTML = function () {
+    var d = levData(), f = levFacts(), rows = [];
+    d.levers.forEach(function (lv) { if (levWhereOK(lv)) rows.push({ lv: lv, ev: levEval(lv, f) }); });
+    var matched = rows.filter(function (r) { return r.ev.matched; }).map(function (r) { return r.lv; }).sort(levSort);
+    var visible = matched.filter(function (lv) { return !levClosed(lv.id); });
+    var open = visible[0] || null, later = visible.slice(open ? 1 : 0);
+    var missing = rows.filter(function (r) { return r.ev.missing && !levClosed(r.lv.id); }).sort(function (a, b) { return levSort(a.lv, b.lv); })[0];
+    var h = '<div class="gm-levers" role="region" aria-label="Savings levers">'
+      + '<div class="cat-t" style="margin-top:0">Savings levers</div>'
+      + '<div class="info">' + esc(matched.length + (matched.length === 1 ? " way" : " ways") + " that fit you") + ' \u00b7 verified ' + esc(d.verified || "") + '</div>';
+    if (open) h += levOpenCard(open);
+    else h += '<div class="info">You are through every lever that fits you. Re-check after a life change, or at each lever\u2019s review date.</div>';
+    if (missing) h += levQuestionHTML(missing.ev.missing);
+    if (later.length) h += '<details class="road-col" style="margin-top:8px"><summary style="cursor:pointer;font-weight:800;font-size:13px">Later (' + later.length + ')</summary>' + later.map(levLaterCard).join("") + '</details>';
+    return h + '</div>';
+  };
+  // The levers card sits at the top of the Money view, directly below its hero (and before the card guide).
+  if (typeof renderMoney === "function") { var _rmLev = renderMoney; renderMoney = function (E) {
+    var h = _rmLev(E), m = /<div class="section[^"]*"[^>]*>/.exec(h), from = m ? m.index + m[0].length : 0, k = h.indexOf('<div class="cat-t"', from);
+    return k > -1 ? h.slice(0, k) + gmLeversHTML() + h.slice(k) : h + gmLeversHTML();
+  }; }
+
   // The Money view opens with the card guide.
   // Inside the view's own padded section, so it lines up with everything else on the screen.
   if (typeof renderMoney === "function") { var _rm = renderMoney; renderMoney = function (E) {
