@@ -61,6 +61,17 @@ setTimeout(() => {
   w.gmLevFact("page", "72");
   ok("the age is kept in the Life Map, and parent levers (Ayushman for 70+) now fit", (JSON.parse(w.localStorage.getItem("gm_life") || "{}").page === "72") && /Ayushman/.test(d.body.textContent), w.localStorage.getItem("gm_life"));
 
+  // slice 2: the tax comparator, on the person's own figures (worked by hand: 30 lakh gross, new 4,75,800; old 7,25,400; fees 1,09,200)
+  ok("the tax tables give the hand-worked figures", w.gmTaxNew(1200000) === 0 && w.gmTaxNew(2925000) === 475800 && w.gmTaxOld(2950000) === 725400 && w.gmTaxNew(1500000) === 109200,
+    [w.gmTaxNew(1200000), w.gmTaxNew(2925000), w.gmTaxOld(2950000), w.gmTaxNew(1500000)].join(","));
+  w.localStorage.setItem("gm_levers", "{}");
+  w.localStorage.setItem("gm_facts", JSON.stringify(facts));
+  w.eval("P.gross=250000;P.example=false;store('sovP',P);");
+  w.goTab("money");
+  const est = d.querySelector(".gm-lev-est");
+  ok("the tax-regime lever shows both regimes on the person's own gross and which saves", !!est && /New regime: \u20b94,75,800/.test(est.textContent) && /new regime saves/i.test(est.textContent), est && est.textContent);
+  w.gmLevTaxDed("350000");
+  ok("deductions they can claim move the old-regime figure", /old regime: \u20b96,16,200/.test((d.querySelector(".gm-lev-est") || {}).textContent || ""), (d.querySelector(".gm-lev-est") || {}).textContent);
   console.log("test114 savings levers: " + P + " passed, " + F + " failed");
   if (F) { e.forEach(x => console.log("  " + x)); process.exit(1); }
   process.exit(0);
