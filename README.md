@@ -133,6 +133,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- Ambient light in dark, and a 360 pass on both themes
 - The Life OS fits the person
 - Persona audit in a real browser
 - Career step 4 is a short card, not a wall of fields
@@ -140,7 +141,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - The Wheel folds what you have rated
 - Impossible numbers are fixed, never saved
 - Money in the same stones
-- Health you see at a glance, in gemstones
 
 **Release 0.4.0 - 2026-11-14:**
 

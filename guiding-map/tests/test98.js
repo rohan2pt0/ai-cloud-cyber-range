@@ -24,9 +24,9 @@ setTimeout(() => {
   const shown = box ? [...box.children].filter(x => x.tagName === "BUTTON").map(b => b.textContent) : [];
   ok("the Menu shows five items", shown.length === 5 && /All apps/.test(shown[0]) && /Report/.test(shown[4]), shown.join(" | "));
   const more = box && box.querySelector("details.gm-menu-more");
-  ok("the three switches and Your life are folded under a closed Settings (4)", more && !more.open && /Settings \(4\)/.test(more.querySelector("summary").textContent) && /Your life/.test(more.textContent)
-    && more.querySelectorAll("button[role=switch]").length === 3);
-  ok("…with their own handlers", more && /gmToggleStill/.test(more.innerHTML) && /gmToggleSmart/.test(more.innerHTML) && /gmToggleFocusShow/.test(more.innerHTML));
+  ok("the four switches and Your life are folded under a closed Settings (5)", more && !more.open && /Settings \(5\)/.test(more.querySelector("summary").textContent) && /Your life/.test(more.textContent)
+    && more.querySelectorAll("button[role=switch]").length === 4);
+  ok("…with their own handlers", more && /gmToggleStill/.test(more.innerHTML) && /gmToggleSmart/.test(more.innerHTML) && /gmToggleFocusShow/.test(more.innerHTML) && /gmToggleAmbient/.test(more.innerHTML));
   // Simple Today on a phone: no numbers above the check-in; they are inside More for today, and counted.
   function check(w, label) {
     const d = w.document, sec = d.querySelector("#sections .section.active"), v = d.getElementById("gmVitals");

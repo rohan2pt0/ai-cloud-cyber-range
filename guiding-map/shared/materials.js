@@ -25,7 +25,7 @@
   var doc = document, items = [], gl = null, glc = null, U = {}, ok = null, pending = 0, lastDraw = 0;
   var LX = 0, LY = 0, MAXPX = 1024, MAXITEMS = 24, Q = 1;
   var AUTO = { ".sx-seal": "seal", ".gm-lock-go": "gold", "#oskMain button.primary": "gold", ".sx-gold": "gold",
-    ".chip.on": "gold", ".stk-k": "gold", ".gm-d3 .tile.on .chk": "gold", ".gm-kin .k-kept": "gold",
+    ".chip.on": "gold", ".gm-d3 .tile.on .chk": "gold", ".gm-kin .k-kept": "gold",
     "nav#oskNav": "velvet", "#oskMore .sheet": "velvet", "[data-sx-mat]": null };
   var MAT = { gold: [0, 0], platinum: [0, 1], seal: [1, 0], velvet: [2, 0] };
 
@@ -216,7 +216,9 @@
   }) : null;
   function scan(root) {
     if (!init()) return;
+    var dark = doc.documentElement.getAttribute("data-theme") === "dark";
     Object.keys(AUTO).forEach(function (sel) {
+      if (dark && sel === ".chip.on") return;   // a small chip reads as muddy gold in the dark studio: it takes the ambient light instead
       (root || doc).querySelectorAll(sel).forEach(function (el) { attach(el, AUTO[sel] || el.getAttribute("data-sx-mat"), AUTO[sel] ? sel : null); });
     });
   }

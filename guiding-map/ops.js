@@ -5507,7 +5507,7 @@
       + "html[data-theme=dark] .afp-bar,html[data-theme=dark] .ptrack,html[data-theme=dark] .ns-sbar{background:rgba(255,255,255,.08)!important}"
       + ".kc.behind .ab{background:linear-gradient(90deg,transparent,#7d1426 20%,#c2394f 50%,#7d1426 80%,transparent)!important;height:2px}"
       + ".kc.caution .ab{background:linear-gradient(90deg,transparent,var(--gold) 20%,var(--goldL) 50%,var(--gold) 80%,transparent)!important;height:2px}"
-      + ".stk-k{background:linear-gradient(135deg,#d9b65c 0%,#f3e2a6 42%,#d4af37 70%,#e8c96a 100%)!important;color:#1b1406!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.55),0 2px 6px rgba(122,90,20,.18)}"
+      + ".stk-k{background:none!important;color:#7a5a14!important;box-shadow:none!important}"
       // Glass and enamel for the shared parts (owner, 2026-11-12): money bar, More sheet, chips and small buttons.
       + ".flowbar{gap:3px;border-radius:12px}"
       + ".flowseg{border-radius:9px;background-image:linear-gradient(180deg,rgba(255,255,255,.30) 0,rgba(255,255,255,.06) 48%,rgba(0,0,0,.14) 100%)!important;box-shadow:inset 0 1px 0 rgba(255,255,255,.35),inset 0 -1px 0 rgba(0,0,0,.18)}"
@@ -5678,7 +5678,7 @@
         + "html[data-theme=dark]{--edge:#7d7972;--bg:#18181b;--card:#222226;--cardAlt:#2b2b30;--text:#f3efe7;--muted:#aba69d;--border:#38373d;--navy:#1b1a18;--shadow:none}"
         + "body{background:var(--bg)}"
         + "header{background:var(--navy);border-bottom:1px solid rgba(255,255,255,.06)}"
-        + ".hero{background:#1b1a18;border-bottom:1px solid rgba(255,255,255,.06)}.hero h1{font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:24px;letter-spacing:-.005em}.hero p{color:rgba(246,243,238,.72)}"
+        + ".hero{background:linear-gradient(180deg,#0d1a2e,#0b1628);border-bottom:1px solid rgba(201,168,76,.18)}.hero h1{font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:24px;letter-spacing:-.005em}.hero p{color:rgba(246,243,238,.72)}"
         + ".gm-greet h2{font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:32px;line-height:1.1;letter-spacing:-.01em}"
         + ".gm-greet p{font-size:14px;margin-top:6px}"
         + ".gm-d3{border-radius:20px;padding:16px;margin-bottom:16px}"
@@ -5712,7 +5712,7 @@
         // does not zoom; fold headers are full-height targets. Help terms inside a sentence stay inline (WCAG 2.5.8 exempts them).
         + ".btn,.btn-sm,.btn-p,.btn-s,.chip,.gm-tap,.hdr-btn,.gm-menu-btn,button.danger,.danger[role=button],[role=button].danger{min-height:44px!important;min-width:44px!important}"
         + ".chip,.gm-tap,button.danger,.danger[role=button]{display:inline-flex;align-items:center;justify-content:center}"
-        + "#sections summary,#gmOverlay summary{min-height:44px;display:flex;align-items:center;gap:6px;cursor:pointer}"
+        + "#sections summary,#gmOverlay summary{min-height:44px;display:flex;flex-wrap:wrap;align-items:center;gap:2px 6px;cursor:pointer}"
         + "#sections div[role=button],.btn-add{min-height:44px}.gm-term{display:inline!important}"
         + "#sections input:not([type=checkbox]):not([type=radio]):not([type=range]),#sections select,#sections textarea,#gmOverlay input:not([type=checkbox]):not([type=radio]),#gmOverlay select,#gmOverlay textarea{font-size:16px!important}"
         // Alerts (premium.alerts): a tinted card, a thin edge in its colour, a sentence-case title, ink text, one action.
@@ -5742,10 +5742,43 @@
         + "}"
         + "@media (prefers-reduced-transparency:reduce){header{background:#1b1a18;backdrop-filter:none;-webkit-backdrop-filter:none}"
         + "#gmNav,#gmMoreSheet .sh{background:var(--card);backdrop-filter:none;-webkit-backdrop-filter:none}#gmOverlay,#gmMoreSheet.on{backdrop-filter:none;-webkit-backdrop-filter:none}}"
-        + "@media (prefers-reduced-motion:reduce){.gm-d3 .tile{transition:none!important}.gm-d3 .tile:active{transform:none}}";
+         + "@media (prefers-reduced-motion:reduce){.gm-d3 .tile{transition:none!important}.gm-d3 .tile:active{transform:none}}"
+        // A bare small button never shows the browser's grey: it is the quiet outlined action (both themes).
+        + ".btn-sm:not([style*=background]):not(.btn-p){background:transparent!important;color:var(--text)!important;border:1px solid var(--edge)!important;border-radius:999px!important;font-weight:600!important}"
+        // A row of chips that scrolls sideways says so: its far edge fades, and the last chip can scroll clear of the fade.
+        + "@media (max-width:600px){#sections .chips{-webkit-mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(90deg,#000 0,#000 calc(100% - 36px),transparent);padding-inline-end:36px;scroll-snap-type:x proximity}#sections .chips>.chip{scroll-snap-align:start}"
+        + "[dir=rtl] #sections .chips{-webkit-mask-image:linear-gradient(270deg,#000 0,#000 calc(100% - 36px),transparent);mask-image:linear-gradient(270deg,#000 0,#000 calc(100% - 36px),transparent)}}"
+        // Dark: the primary is an obsidian control with a champagne rim, never an ivory slab (also with ambient light off).
+        + "html[data-theme=dark] .btn-p,html[data-theme=dark] .btn.primary,html[data-theme=dark] .btn-sm[style*='background:var(--gold)']{background:linear-gradient(180deg,#2c2925,#1c1a18)!important;color:#f3e2b8!important;border:1px solid rgba(233,201,138,.55)!important;box-shadow:inset 0 1px 0 rgba(255,236,200,.28)!important}"
+        // Ambient light: a light line along the top edge and a soft halo on the primary.
+        + "html[data-theme=dark]:not(.gm-amb-off) .btn-p,html[data-theme=dark]:not(.gm-amb-off) .btn.primary,html[data-theme=dark]:not(.gm-amb-off) .btn-sm[style*='background:var(--gold)']{box-shadow:inset 0 1px 0 rgba(255,236,200,.42),0 0 0 1px rgba(233,201,138,.14),0 0 22px rgba(233,201,138,.26),0 6px 18px rgba(0,0,0,.45)!important}"
+        // Quiet controls: a lit hairline.
+        + "html[data-theme=dark]:not(.gm-amb-off) .btn-s,html[data-theme=dark]:not(.gm-amb-off) .btn:not(.btn-p):not(.primary),html[data-theme=dark]:not(.gm-amb-off) .btn-sm[style*='background:var(--cardAlt)'],html[data-theme=dark]:not(.gm-amb-off) .btn-sm:not([style*=background]):not(.btn-p),html[data-theme=dark]:not(.gm-amb-off) .gm-secondary,html[data-theme=dark]:not(.gm-amb-off) .chip:not(.on),html[data-theme=dark]:not(.gm-amb-off) .hdr-btn,html[data-theme=dark]:not(.gm-amb-off) .gm-menu-btn{border-color:rgba(233,201,138,.34)!important;box-shadow:0 0 10px rgba(233,201,138,.07),inset 0 1px 0 rgba(255,255,255,.05)!important}"
+        // A chosen chip in dark: champagne light, not the small gold surface (it read muddy in the dark studio).
+        + "html[data-theme=dark] .chip.on{background:rgba(233,201,138,.16)!important;background-image:none!important;color:#f3e2b8!important;border:1px solid rgba(233,201,138,.62)!important}"
+        + "html[data-theme=dark]:not(.gm-amb-off) .chip.on{box-shadow:0 0 12px rgba(233,201,138,.18),inset 0 1px 0 rgba(255,236,200,.18)!important}"
+        // A press brightens the light and settles.
+        + "html[data-theme=dark]:not(.gm-amb-off) .btn-p,html[data-theme=dark]:not(.gm-amb-off) .btn.primary,html[data-theme=dark]:not(.gm-amb-off) .btn-sm[style*='background:var(--gold)'],html[data-theme=dark]:not(.gm-amb-off) .btn-s,html[data-theme=dark]:not(.gm-amb-off) .btn:not(.btn-p):not(.primary),html[data-theme=dark]:not(.gm-amb-off) .btn-sm[style*='background:var(--cardAlt)'],html[data-theme=dark]:not(.gm-amb-off) .btn-sm:not([style*=background]):not(.btn-p),html[data-theme=dark]:not(.gm-amb-off) .gm-secondary,html[data-theme=dark]:not(.gm-amb-off) .chip,html[data-theme=dark]:not(.gm-amb-off) .hdr-btn,html[data-theme=dark]:not(.gm-amb-off) .gm-menu-btn{transition:box-shadow 180ms ease-out,filter 140ms ease-out,transform 120ms cubic-bezier(.2,.8,.2,1)}"
+        + "html[data-theme=dark]:not(.gm-amb-off) .btn-p:active,html[data-theme=dark]:not(.gm-amb-off) .btn.primary:active,html[data-theme=dark]:not(.gm-amb-off) .btn-sm[style*='background:var(--gold)']:active,html[data-theme=dark]:not(.gm-amb-off) .btn-s:active,html[data-theme=dark]:not(.gm-amb-off) .btn:not(.btn-p):not(.primary):active,html[data-theme=dark]:not(.gm-amb-off) .btn-sm[style*='background:var(--cardAlt)']:active,html[data-theme=dark]:not(.gm-amb-off) .btn-sm:not([style*=background]):not(.btn-p):active,html[data-theme=dark]:not(.gm-amb-off) .gm-secondary:active,html[data-theme=dark]:not(.gm-amb-off) .chip:active,html[data-theme=dark]:not(.gm-amb-off) .hdr-btn:active,html[data-theme=dark]:not(.gm-amb-off) .gm-menu-btn:active{filter:brightness(1.14) drop-shadow(0 0 8px rgba(233,201,138,.35))}"
+        // The keyboard's place is lit.
+        + "html[data-theme=dark] button:focus-visible,html[data-theme=dark] a:focus-visible,html[data-theme=dark] .chip:focus-visible,html[data-theme=dark] input:focus-visible,html[data-theme=dark] select:focus-visible,html[data-theme=dark] textarea:focus-visible,html[data-theme=dark] summary:focus-visible,html[data-theme=dark] [role=button]:focus-visible{outline:2px solid rgba(233,201,138,.85)!important;outline-offset:2px}"
+        // Fields: a faint lit edge that brightens while typing.
+        + "html[data-theme=dark]:not(.gm-amb-off) #sections input:not([type=checkbox]):not([type=radio]):not([type=range]),html[data-theme=dark]:not(.gm-amb-off) #sections select,html[data-theme=dark]:not(.gm-amb-off) #sections textarea,html[data-theme=dark]:not(.gm-amb-off) #gmOverlay input:not([type=checkbox]):not([type=radio]),html[data-theme=dark]:not(.gm-amb-off) #gmOverlay select,html[data-theme=dark]:not(.gm-amb-off) #gmOverlay textarea{border-color:rgba(233,201,138,.22)!important}"
+        + "html[data-theme=dark]:not(.gm-amb-off) #sections input:not([type=checkbox]):not([type=radio]):not([type=range]):focus,html[data-theme=dark]:not(.gm-amb-off) #sections select:focus,html[data-theme=dark]:not(.gm-amb-off) #sections textarea:focus,html[data-theme=dark]:not(.gm-amb-off) #gmOverlay input:not([type=checkbox]):not([type=radio]):focus,html[data-theme=dark]:not(.gm-amb-off) #gmOverlay select:focus,html[data-theme=dark]:not(.gm-amb-off) #gmOverlay textarea:focus{border-color:rgba(233,201,138,.68)!important;box-shadow:0 0 0 3px rgba(233,201,138,.15)!important;outline:none}"
+        // The bottom bar: a light strip along its top edge and a pool of light under the tab you are on.
+        + "html[data-theme=dark]:not(.gm-amb-off) #gmNav::before{content:'';position:absolute;left:6%;right:6%;top:0;height:1px;background:linear-gradient(90deg,rgba(233,201,138,0),rgba(233,201,138,.55),rgba(233,201,138,0));pointer-events:none}"
+        + "html[data-theme=dark]:not(.gm-amb-off) #gmNav button.on{background:radial-gradient(70% 60% at 50% 100%,rgba(233,201,138,.24),rgba(233,201,138,0) 72%)!important;box-shadow:inset 0 2px 0 rgba(233,201,138,.9)!important;color:#f6ead0!important}"
+        + "html[data-theme=dark]:not(.gm-amb-off) #gmNav button.on b{filter:drop-shadow(0 0 6px rgba(233,201,138,.55))}"
+        // A plain small button on a hero card (a fixed navy card) is the hero's own pill: ivory in light, lit obsidian in dark.
+        + ".gm-hero-b .btn-sm:not([style*=background]):not(.btn-p),.gm-hero-b .btn-p,.gm-hero-b .btn.primary,.gm-hero-b .btn-sm[style*='background:var(--gold)']{background:#f6f3ee!important;color:#1b1a18!important;border:1px solid #f6f3ee!important;box-shadow:inset 0 0 0 1px rgba(201,168,76,.75),0 6px 16px rgba(0,0,0,.28)!important}"
+        + "html[data-theme=dark] .gm-hero-b .btn-sm:not([style*=background]):not(.btn-p){background:linear-gradient(180deg,#2c2925,#1c1a18)!important;color:#f3e2b8!important;border-color:rgba(233,201,138,.55)!important}"
+        // Still means still.
+        + "html.gm-still .btn,html.gm-still .btn-sm,html.gm-still .btn-p,html.gm-still .btn-s,html.gm-still .chip,html.gm-still .hdr-btn,html.gm-still .gm-menu-btn{transition:none!important;filter:none!important}"
+        + "@media (prefers-reduced-motion:reduce){html[data-theme=dark]:not(.gm-amb-off) .btn-p,html[data-theme=dark]:not(.gm-amb-off) .btn.primary,html[data-theme=dark]:not(.gm-amb-off) .btn-sm[style*='background:var(--gold)'],html[data-theme=dark]:not(.gm-amb-off) .btn-s,html[data-theme=dark]:not(.gm-amb-off) .btn:not(.btn-p):not(.primary),html[data-theme=dark]:not(.gm-amb-off) .btn-sm[style*='background:var(--cardAlt)'],html[data-theme=dark]:not(.gm-amb-off) .btn-sm:not([style*=background]):not(.btn-p),html[data-theme=dark]:not(.gm-amb-off) .gm-secondary,html[data-theme=dark]:not(.gm-amb-off) .chip,html[data-theme=dark]:not(.gm-amb-off) .hdr-btn,html[data-theme=dark]:not(.gm-amb-off) .gm-menu-btn{transition:none!important}html[data-theme=dark]:not(.gm-amb-off) .btn-p:active,html[data-theme=dark]:not(.gm-amb-off) .btn.primary:active,html[data-theme=dark]:not(.gm-amb-off) .btn-sm[style*='background:var(--gold)']:active,html[data-theme=dark]:not(.gm-amb-off) .btn-s:active,html[data-theme=dark]:not(.gm-amb-off) .btn:not(.btn-p):not(.primary):active,html[data-theme=dark]:not(.gm-amb-off) .btn-sm[style*='background:var(--cardAlt)']:active,html[data-theme=dark]:not(.gm-amb-off) .btn-sm:not([style*=background]):not(.btn-p):active,html[data-theme=dark]:not(.gm-amb-off) .gm-secondary:active,html[data-theme=dark]:not(.gm-amb-off) .chip:active,html[data-theme=dark]:not(.gm-amb-off) .hdr-btn:active,html[data-theme=dark]:not(.gm-amb-off) .gm-menu-btn:active{filter:none!important;transform:none!important}}";
     }
     document.head.appendChild(st);   // (re)append: always the last stylesheet
     document.documentElement.classList.toggle("gm-still", !!G("gm_still", false));
+    document.documentElement.classList.toggle("gm-amb-off", G("gm_ambient", true) === false);
   }
   // Haptics on the moments that matter only (premium.buttons.haptic_on): a daily-three tick, marking something done, a
   // confirmation. Never under reduced motion or the in-app "still" switch, and nothing where the phone cannot vibrate.
@@ -5810,6 +5843,7 @@
       if (h) gmHaptic(h.getAttribute("data-haptic"));
     }, true);
   }
+  window.gmToggleAmbient = function () { S_("gm_ambient", G("gm_ambient", true) === false); premiumCSS(); gmMenu(); };
   window.gmToggleStill = function () { S_("gm_still", !G("gm_still", false)); premiumCSS(); gmMenu(); };
   window.gmToggleSmart = function () { S_("gm_smart_off", !G("gm_smart_off", false)); gmMenu(); };
   // The rings explain themselves on a tap: what each one measures, where it stands, and the one place to go next.
@@ -6063,11 +6097,12 @@
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();editProfile()">Edit profile</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();toggleTheme()">Switch to ' + (curTheme() === "dark" ? "light" : "dark") + ' theme</button>'
       + ((window.matchMedia && matchMedia("(display-mode: standalone)").matches) ? "" : '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();gmInstall()">Install as an app (phone or computer)</button>')
-      + '<details class="gm-menu-more"><summary>Settings (4)</summary><div style="display:grid;gap:8px;margin-top:8px">'
+      + '<details class="gm-menu-more"><summary>Settings (5)</summary><div style="display:grid;gap:8px;margin-top:8px">'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();gmMineSheet()">Your life: what applies to you</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" role="switch" aria-checked="' + (!G("gm_still", false)) + '" onclick="gmToggleStill()">Motion and haptics: ' + (G("gm_still", false) ? "off" : "on") + '</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" role="switch" aria-checked="' + (!G("gm_smart_off", false)) + '" onclick="gmToggleSmart()">Smart suggestions: ' + (G("gm_smart_off", false) ? "off" : "on") + '</button>'
-      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" role="switch" aria-checked="' + focusShow() + '" onclick="gmToggleFocusShow()">Show the focus timer: ' + (focusShow() ? "on" : "off") + '</button></div></details>'
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" role="switch" aria-checked="' + focusShow() + '" onclick="gmToggleFocusShow()">Show the focus timer: ' + (focusShow() ? "on" : "off") + '</button>'
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" role="switch" aria-checked="' + (G("gm_ambient", true) !== false) + '" onclick="gmToggleAmbient()">Ambient light in dark: ' + (G("gm_ambient", true) === false ? "off" : "on") + '</button></div></details>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();gmReport()">Report a problem or idea</button>'
       + '</div><div style="font-size:12px;color:var(--muted);margin-top:12px">Life OS ' + esc(ver) + ' · your data stays on your devices</div>'
       + '<button class="btn-sm" style="margin-top:12px;background:none;color:var(--muted)" onclick="gmClose()">Close</button>');
@@ -7778,8 +7813,8 @@
       // Controls in a row size to their content (LESSONS 2026-11-11): a full-width button beside text crushed it to one word a line.
       + "html body [style*='display:flex'] > button.btn,html body [style*='display:flex'] > .btn-sm{width:auto;flex:0 0 auto;max-width:60%}"
       // The metric map's labels: a small engraved tag, not a slab of gold.
-      + "html body .stk-k{background:transparent!important;background-image:none!important;box-shadow:none!important;border:1px solid rgba(201,168,76,.6);color:#7a5a14!important;font-size:10.5px;letter-spacing:.06em;text-transform:uppercase;border-radius:999px;padding:4px 8px;align-self:center;min-height:0}"
-      + "html[data-theme=dark] body .stk-k{color:var(--gold)!important}"
+      + "html body .stk-k{background:none!important;background-image:none!important;box-shadow:none!important;border:0!important;color:#7a5a14!important;font-size:11px;letter-spacing:.08em;text-transform:uppercase;border-radius:0;padding:0;margin-bottom:4px;display:block;min-height:0}"
+      + "html[data-theme=dark] body .stk-k{color:#d9bf86!important}"
       + "html body .guide-card>summary{display:flex;align-items:center;gap:10px;min-height:48px}html body .guide-card>summary .gm-glyph{font-size:22px}"
       + ".gm-gt{display:flex;flex-direction:column;gap:2px;min-width:0}.gm-gt small{font-weight:500;font-size:11.5px;color:var(--muted);letter-spacing:.02em}"
       // On a laptop: one centred reading column, like a well-set book, instead of cards stretched across the whole screen.
