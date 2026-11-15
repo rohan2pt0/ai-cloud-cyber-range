@@ -8700,6 +8700,106 @@
     return h + '</div>';
   };
 
+  /* ── The expert council, item 2: pre-flight checklists for big moments (pilots, surgeons, lawyers, CFOs, doctors,
+     diplomats). Pick the moment, tick the few checks that prevent the costly mistakes; "Start again" clears it for next time. */
+  var PF_CSS = ".gm-pf-row{display:flex;align-items:flex-start;gap:10px;width:100%;min-height:44px;padding:9px 6px;background:none!important;border:0!important;box-shadow:none!important;text-align:start;color:var(--text)!important;font:inherit;font-size:13px;line-height:1.45;cursor:pointer;border-radius:10px}"
+    + ".gm-pf-chk{flex:0 0 22px;height:22px;border-radius:50%;border:1.5px solid var(--edge);display:inline-flex;align-items:center;justify-content:center;font-size:13px;margin-top:1px}"
+    + ".gm-pf-row.on .gm-pf-chk{background:#13704f;border-color:#5fd3a0;color:#fff}.gm-pf-row.on .gm-pf-t{opacity:.6;text-decoration:line-through}";
+  function pfStyle() { if (!document.getElementById("gmPfCss")) { var st = document.createElement("style"); st.id = "gmPfCss"; st.textContent = PF_CSS; document.head.appendChild(st); } }
+  function pfList() { var d = window.GM_COUNCIL; return d && Array.isArray(d.checklists) ? d.checklists : []; }
+  function pfState() { var m = G("gm_preflight", {}); return m && typeof m === "object" && !Array.isArray(m) ? m : {}; }
+  window.gmPfOpen = function (id) { var m = pfState(); m.open = m.open === id ? "" : id; S_("gm_preflight", m); renderAll(); };
+  window.gmPfTick = function (id, i) {
+    var m = pfState(); m.ticks = (m.ticks && typeof m.ticks === "object") ? m.ticks : {};
+    var t = Array.isArray(m.ticks[id]) ? m.ticks[id] : []; t[i] = !t[i]; m.ticks[id] = t; S_("gm_preflight", m); renderAll();
+  };
+  window.gmPfReset = function (id) { var m = pfState(); if (m.ticks) delete m.ticks[id]; S_("gm_preflight", m); renderAll(); };
+  window.gmPreflightHTML = function () {
+    var list = pfList(); if (!list.length) return "";
+    pfStyle();
+    var m = pfState(), open = list.filter(function (c) { return c.id === m.open; })[0];
+    var h = '<div class="cat-t">Before a big moment</div><div class="road-col gm-pf" style="margin-bottom:12px">'
+      + '<div style="font-size:12.5px;color:var(--muted)">A pilot’s habit: a short checklist before anything you cannot easily undo.</div>'
+      + '<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">' + list.map(function (c) {
+        return '<button type="button" class="chip' + (open && open.id === c.id ? " on" : "") + '" aria-pressed="' + (open && open.id === c.id ? "true" : "false") + '" onclick="gmPfOpen(\'' + esc(c.id) + '\')">' + esc(c.moment) + '</button>';
+      }).join("") + '</div>';
+    if (open) {
+      var t = ((m.ticks || {})[open.id]) || [], n = open.items.filter(function (x, i) { return !!t[i]; }).length, all = n === open.items.length;
+      var cls = all ? "sx-state-good" : n ? "sx-state-watch" : "sx-state-low";
+      h += '<div class="gm-pf-open" data-pf="' + esc(open.id) + '" style="margin-top:10px"><div style="font-weight:800;font-size:14px">' + esc(open.moment) + '</div>'
+        + '<div style="font-size:12px;color:var(--muted);margin-top:2px">' + esc(open.examples) + '. ' + esc(open.lens) + '</div>'
+        + '<div style="margin-top:6px"><span class="' + cls + '" style="font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px;white-space:nowrap;color:' + (cls === "sx-state-watch" ? "#2a1703" : "#fff")
+        + (cls === "sx-state-good" ? ';background-image:radial-gradient(90% 60% at 30% 0%,rgba(255,255,255,.12),rgba(255,255,255,0) 60%),linear-gradient(160deg,#2fae7a 0%,#13704f 55%,#0a4732 100%)' : "") + '">' + n + ' of ' + open.items.length + ' checked</span></div>'
+        + '<ol style="list-style:none;margin:6px 0 0;padding:0">' + open.items.map(function (x, i) {
+          var on = !!t[i];
+          return '<li><button type="button" class="gm-pf-row' + (on ? " on" : "") + '" aria-pressed="' + (on ? "true" : "false") + '" onclick="gmPfTick(\'' + esc(open.id) + '\',' + i + ')"><span class="gm-pf-chk" aria-hidden="true">' + (on ? "✓" : "") + '</span><span class="gm-pf-t">' + esc(x) + '</span></button></li>';
+        }).join("") + '</ol>'
+        + (n ? '<button type="button" class="gm-quiet" onclick="gmPfReset(\'' + esc(open.id) + '\')">Start again (for the next time)</button>' : "") + '</div>';
+    }
+    return h + '</div>';
+  };
+
+  /* ── The expert council, item 3: early-warning signs (an intelligence analyst's indicators and warnings, a doctor's vital
+     signs). Five signs from what the app already knows, each with a line where amber and red begin. The Risk tab shows all
+     five; Today shows only the most urgent red one, in one calm line, never a wall of alarms. */
+  function swNum(v) { var n = parseFloat(String(v === undefined || v === null ? "" : v).replace(/[,\s₹]/g, "")); return isFinite(n) ? n : 0; }
+  window.gmSigns = function () {
+    var p = window.P, out = [], real = p && !p.example;
+    if (real) {
+      var emis = (p.loans || []).reduce(function (a, l) { return a + swNum(l && l.emi); }, 0), ess = swNum(p.exp) + emis;
+      if (ess > 0 && swNum(p.sav) >= 0) { var rw = swNum(p.sav) / ess; out.push({ id: "runway", t: "Buffer", v: rw.toFixed(1) + " months", st: rw < 3 ? "low" : rw < 6 ? "watch" : "good",
+        why: "Months the emergency fund covers essentials and EMIs. A doctor would call it your reserve: below 3 months, one shock becomes a crisis.", fix: "Move a fixed amount into the emergency fund on salary day until it reaches 6 months." }); }
+      var net = swNum(p.net) + swNum(p.psal);
+      if (net > 0 && swNum(p.exp) > 0) { var sr = Math.round((net - swNum(p.exp) - emis) / net * 100); out.push({ id: "saving", t: "Saving rate", v: sr + "%", st: sr < 10 ? "low" : sr < 20 ? "watch" : "good",
+        why: "The share of take-home kept. An economist's rule of thumb: under 10% the future is borrowed from.", fix: "Raise the SIP by a small amount each salary day; see What we must earn on Money." }); }
+      var since = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10), sp = (G("gm_spend", []) || []).filter(function (x) { return x && x.d >= since; });
+      if (sp.length >= 5 && swNum(p.exp) > 0) { var tot = sp.reduce(function (a, x) { return a + swNum(x.a); }, 0), r = Math.round(tot / swNum(p.exp) * 100);
+        out.push({ id: "spend", t: "Spending this month", v: r + "% of plan", st: r > 110 ? "low" : r > 100 ? "watch" : "good",
+          why: "A CFO's monthly close: spending against plan, before the month ends.", fix: "Look at the three biggest variable costs in What we must earn, and pause one." }); }
+    }
+    var en = G("gm_energy", {}) || {}, vals = [];
+    for (var i = 0; i < 7; i++) { var d = new Date(); d.setDate(d.getDate() - i); var k = (typeof dKey === "function") ? dKey(d) : d.toISOString().slice(0, 10); if (en[k]) vals.push(swNum(en[k])); }
+    if (vals.length >= 3) { var av = vals.reduce(function (a, x) { return a + x; }, 0) / vals.length; out.push({ id: "energy", t: "Energy, last 7 days", v: av.toFixed(1) + " of 5", st: av < 2.5 ? "low" : av < 3 ? "watch" : "good",
+      why: "A coach's early sign of overload: a falling average comes before illness and bad decisions.", fix: "Protect sleep for three nights and plan one recovery day this week." }); }
+    if (typeof HABITS !== "undefined" && typeof missedTwice === "function") { var slip = HABITS.filter(function (h) { try { return missedTwice(h.id); } catch (e) { return false; } }).length;
+      out.push({ id: "habits", t: "Habits slipping", v: slip ? slip + " missed twice" : "none", st: slip >= 2 ? "low" : slip === 1 ? "watch" : "good",
+        why: "Never miss twice: one miss is life, two is the start of a new habit.", fix: "Do the smallest version of one habit today." }); }
+    return out;
+  };
+  function swBadge(st, txt) {
+    var cls = "sx-state-" + st;
+    return '<span class="' + cls + '" style="font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px;white-space:nowrap;color:' + (st === "watch" ? "#2a1703" : "#fff")
+      + (st === "good" ? ';background-image:radial-gradient(90% 60% at 30% 0%,rgba(255,255,255,.12),rgba(255,255,255,0) 60%),linear-gradient(160deg,#2fae7a 0%,#13704f 55%,#0a4732 100%)' : "") + '">' + esc(txt) + '</span>';
+  }
+  window.gmSignsHTML = function () {
+    var sg = window.gmSigns(); if (!sg.length) return "";
+    var order = { low: 0, watch: 1, good: 2 }; sg.sort(function (a, b) { return order[a.st] - order[b.st]; });
+    return '<div class="cat-t">Early warning signs</div><div class="road-col gm-signs" style="margin-bottom:12px">'
+      + '<div style="font-size:12.5px;color:var(--muted)">Read them like vital signs: red asks for one action this week, amber is a watch, green is fine.</div>'
+      + sg.map(function (x) {
+        return '<div class="gm-sign" data-sign="' + esc(x.id) + '" style="padding:8px 0;border-bottom:1px solid var(--border)"><div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><b style="flex:1;min-width:140px">' + esc(x.t) + '</b>'
+          + swBadge(x.st, x.v) + '</div>' + (x.st !== "good" ? '<div style="font-size:12.5px;margin-top:4px">' + esc(x.fix) + '</div>' : "")
+          + '<div style="font-size:11.5px;color:var(--muted);margin-top:2px">' + esc(x.why) + '</div></div>';
+      }).join("") + '</div>';
+  };
+  window.gmSignSeen = function (v) { S_("gm_sign_seen", String(v || "")); goTab("risk"); };   // S_ lives in this closure, so the link calls this
+  // Today: one calm line for the most urgent red sign, above the daily three, at most once a day until the person taps it.
+  var _swRender = window.renderAll;
+  if (typeof _swRender === "function") window.renderAll = function () {
+    var out = _swRender.apply(this, arguments);
+    try {
+      if (typeof curTab !== "undefined" && curTab === "today" && !document.querySelector(".gm-sign-today")) {
+        var red = (window.gmSigns() || []).filter(function (x) { return x.st === "low"; })[0], seen = G("gm_sign_seen", "");
+        var today = (typeof dKey === "function") ? dKey(new Date()) : new Date().toISOString().slice(0, 10);
+        var d3 = document.querySelector("#sections .gm-d3");
+        if (red && d3 && seen !== today + ":" + red.id) d3.insertAdjacentHTML("beforebegin", '<div class="road-col gm-sign-today" style="margin-bottom:10px;font-size:13px">'
+          + swBadge("low", red.t + ": " + red.v) + ' <span style="margin-inline-start:6px">' + esc(red.fix) + '</span> '
+          + '<a href="#" class="gm-inl" onclick="gmSignSeen(\'' + today + ':' + red.id + '\');return false">See the signs</a></div>');
+      }
+    } catch (e) {}
+    return out;
+  };
+
   /* ── What we must earn (owner 2026-11-15; queue income-needs): the take-home that covers essentials, EMIs and a saving rate,
      now and in 3, 5 and 10 years at the inflation the person expects; fixed and variable spending from pasted bank messages,
      with one concrete cut for each of the three largest variable categories. */
