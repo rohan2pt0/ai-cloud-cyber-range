@@ -41,6 +41,10 @@ const LEV_JS = "window.GM_LEVERS = " + JSON.stringify(LEVERS).replace(/<\/(scrip
 const LL_FILE = require("path").join(__dirname, "levers", "landlord.json");
 const LANDLORD = fs.existsSync(LL_FILE) ? JSON.parse(fs.readFileSync(LL_FILE, "utf8")) : { duties: [] };
 const LL_JS = "window.GM_LANDLORD = " + JSON.stringify(LANDLORD).replace(/<\/(script)/gi, "<\\/$1") + ";\n";
+// The expert council's household systems (window.GM_COUNCIL), offline like the levers.
+const CO_FILE = require("path").join(__dirname, "levers", "council.json");
+const COUNCIL = fs.existsSync(CO_FILE) ? JSON.parse(fs.readFileSync(CO_FILE, "utf8")) : { spof: [] };
+const CO_JS = "window.GM_COUNCIL = " + JSON.stringify(COUNCIL).replace(/<\/(script)/gi, "<\\/$1") + ";\n";
 // Threats in the news: the curated drills travel with the app (offline); the hosted intel.json adds live headlines and ranking.
 const INTEL_FILE = require("path").join(__dirname, "..", "intel", "threat-patterns.json");
 const INTEL_LIB = fs.existsSync(INTEL_FILE) ? JSON.parse(fs.readFileSync(INTEL_FILE, "utf8")) : { patterns: [] };
@@ -56,7 +60,7 @@ const SX_JS = fs.existsSync(SX_FILE) ? "(function(){try{var s=document.createEle
 const SHARED_DIR = require("path").join(__dirname, "shared");
 const SKY_JS = fs.readdirSync(SHARED_DIR).filter(f => f.endsWith(".js")).sort()
   .map(f => fs.readFileSync(require("path").join(SHARED_DIR, f), "utf8").replace(/<\/(script)/gi, "<\\/$1")).join("\n") + "\n";
-const built = before + SX_JS + SKY_JS + I18N_JS + SYS_JS + LEV_JS + LL_JS + INTEL_JS + ops + "\n</script>\n" + tail;
+const built = before + SX_JS + SKY_JS + I18N_JS + SYS_JS + LEV_JS + LL_JS + CO_JS + INTEL_JS + ops + "\n</script>\n" + tail;
 
 // Stamp the visible version badge from the repo's single source of truth (../VERSION) so the app can
 // never show a version the product doesn't have. (It once said "v13.0.2" — a hardcoded legacy string.)
