@@ -157,8 +157,9 @@ def main():
             for item in pg.evaluate(CONTRAST_JS):
                 report["contrast"][f"{theme}:today-full"].append(item)
             chk(f"{theme}: a slipped habit is said once (one recovery card, no per-habit alarm)",
-                pg.evaluate("document.querySelectorAll('.gm-alert.attention').length === 1 && !document.querySelector('#sections .warn')"),
-                pg.evaluate("[document.querySelectorAll('.gm-alert.attention').length, document.querySelectorAll('#sections .warn').length]"))
+                pg.evaluate("[...document.querySelectorAll('.gm-alert.attention')].filter(e => /Recovery day/.test(e.textContent)).length === 1 && !document.querySelector('#sections .warn')"),
+                pg.evaluate("[[...document.querySelectorAll('.gm-alert.attention')].filter(e => /Recovery day/.test(e.textContent)).length, document.querySelectorAll('#sections .warn').length]"))
+        # (only the recovery card counts: on a Sunday the weekly review is due as its own card, which is not a habit alarm)
             pg.screenshot(path=str(OUT / f"{theme}-today-full.png"), full_page=True)
         pg.evaluate("localStorage.setItem('gm_calm','true')")
         # 12. the Command Center (hub.html) against the same UI rules, every fold open, both themes

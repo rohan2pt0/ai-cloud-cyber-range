@@ -882,7 +882,8 @@
   function daily3HTML(calm) {
     var done = (typeof todayChecks === "function") ? todayChecks() : [];
     var rec = inRecovery();
-    var h = '<div class="gm-d3"><div class="t">' + (rec ? "Recovery mode · these three only" : "The daily three · the floor is enough") + '</div><div class="row">';
+    var nOn = DAILY3.filter(function (d) { return done.indexOf(d.id) >= 0; }).length;   // the dawn line fills with each tick
+    var h = '<div class="gm-d3" style="--d3p:' + (nOn / 3).toFixed(3) + '" data-done="' + nOn + '"><div class="t">' + (rec ? "Recovery mode · these three only" : "The daily three · the floor is enough") + '</div><div class="row">';
     DAILY3.forEach(function (d) {
       var idx = -1;
       if (typeof HABITS !== "undefined") HABITS.forEach(function (hb, i) { if (hb.id === d.id) idx = i; });
@@ -1782,27 +1783,31 @@
     return [
       { l: "Today", v: d3 + "/3", c: d3 === 3 ? "var(--green)" : d3 ? "var(--amber)" : "var(--red)", t: "today" },
       { l: "Stack", v: stackPct + "%", c: stackPct >= 80 ? "var(--green)" : stackPct >= 40 ? "var(--amber)" : "var(--red)", t: "stack" },
-      { l: "Runway", v: runway ? (runway > 120 ? "120m+" : runway.toFixed(1) + "m") : "\u2014", c: !runway ? "var(--muted)" : runway >= 6 ? "var(--green)" : runway >= 3 ? "var(--amber)" : "var(--red)", t: "life" },
-      { l: "Saving", v: !save ? "\u2014" : saveBad ? "check" : save + "%", c: saveBad ? "var(--amber)" : save >= 20 ? "var(--green)" : save >= 15 ? "var(--amber)" : "var(--red)", t: "life" },
-      { l: "Net worth", v: nwPct ? nwPct + "%" : "\u2014", c: nwPct >= 100 ? "var(--green)" : nwPct >= 60 ? "var(--amber)" : "var(--red)", t: "life" }
+      { deps: ["fFixed", "ef"], l: "Runway", v: runway ? (runway > 120 ? "120m+" : runway.toFixed(1) + "m") : "\u2014", c: !runway ? "var(--muted)" : runway >= 6 ? "var(--green)" : runway >= 3 ? "var(--amber)" : "var(--red)", t: "life" },
+      { deps: ["minc", "fEF", "fSip"], l: "Saving", v: !save ? "\u2014" : saveBad ? "check" : save + "%", c: saveBad ? "var(--amber)" : save >= 20 ? "var(--green)" : save >= 15 ? "var(--amber)" : "var(--red)", t: "life" },
+      { deps: ["age", "inc", "nw"], l: "Net worth", v: nwPct ? nwPct + "%" : "\u2014", c: nwPct >= 100 ? "var(--green)" : nwPct >= 60 ? "var(--amber)" : "var(--red)", t: "life" }
     ];
   }
   window.gmVitalsHTML = function () { return vitalsHTML(); };   // simpleToday (another scope) folds the numbers
   function vitalsHTML() {
-    var h = '<div id="gmVitals">', exampleNums = !!((window.P && P.example) || exampleCount() > 0);
+    // A tile stays neutral only when ITS OWN figures are still the example ones (owner 2026-11-15: one untouched example field
+    // switched every colour off, so a real 0.5-month buffer never showed red). A whole example profile keeps all neutral.
+    var exAll = !!(window.P && P.example), exF = G("gm_example_fields", {}) || {};
+    var h = '<div id="gmVitals">';
     // Status in natural materials (owner, 2026-11-14: "all KPIs must show the status as per its progress: danger red, medium
     // amber, safe green, in gradient and natural materials; a 0.5m buffer must show red"). The owner chose full status colour
     // on 2026-11-14; colour is never the only signal, so each tile also says its word.
     var STATE_WORD = { good: "strong", watch: "building", low: "needs care" };
     vitals().forEach(function (v) {
       var empty = v.v === "\u2014", st = "";
+      var exampleNums = exAll || (v.deps || []).some(function (k) { return exF[k]; });
       if (!exampleNums && !empty) {
         // human-first: example numbers are not the person's, and Today before any tick is never guilt; an unknown value is a
         // calm dash, never "low". Today turns from watch (building) to good (strong) only when all three are done.
         if (v.l === "Today") st = v.v === "3/3" ? "good" : v.v === "0/3" ? "" : "watch";
         else st = v.c === "var(--green)" ? "good" : v.c === "var(--amber)" ? "watch" : v.c === "var(--red)" ? "low" : "";
       }
-      var word = st ? STATE_WORD[st] : "";
+      var word = st ? STATE_WORD[st] : (exampleNums && !empty && v.deps ? "example" : "");   // say why a tile has no colour
       h += '<div role="button" tabindex="0" aria-label="' + esc(v.l) + ': ' + esc(v.v) + (word ? " (" + word + ")" : "") + '. Open the tab that changes this."'
         + ' onclick="goTab(\'' + v.t + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();goTab(\'' + v.t + '\');}"'
         + (st ? ' class="sx-state-' + st + '" data-state="' + st + '"' : "") + '>'
@@ -8354,6 +8359,56 @@
     }
   }
   window.gmStartDone = function () { S_("gm_start_done", true); renderAll(); };
+  /* ── The daily three in natural materials (owner, 2026-11-15: "an impeccable, elegant design with a realistic finish") ──
+     A habit not yet done is MOONSTONE: pearly, calm, a faint blue adularescence that moves with the light. Done, it turns to
+     JADE, polished, lit from above. A thin DAWN line across the top fills from night to gold as the three are ticked, so the
+     card itself says how the day is going before a word is read. Natural and sparing: one element per surface. */
+  try {
+    var gemCss = document.createElement("style"); gemCss.id = "gmDailyStones";
+    gemCss.textContent = ""
+      + "#sections .gm-d3{position:relative;overflow:hidden}"
+      + "#sections .gm-d3::before{content:'';position:absolute;left:0;top:0;height:3px;width:calc(var(--d3p,0) * 100%);min-width:10%;border-radius:0 3px 3px 0;"
+      + "background:linear-gradient(90deg,#1c2b4d 0%,#7a4a6e 30%,#d9774f 58%,#f0b54a 80%,#f9e6a8 100%);transition:width .9s cubic-bezier(.22,1,.36,1);box-shadow:0 0 12px rgba(240,181,74,.45)}"
+      + "#sections .gm-d3[data-done='3']::before{box-shadow:0 0 18px rgba(249,230,168,.75)}"
+      + "#sections .gm-d3 .tile{position:relative;overflow:hidden;border:1px solid rgba(150,160,190,.32);"
+      + "background:radial-gradient(130% 110% at 18% 0%,#ffffff 0%,#f6f4ef 34%,#ebe8f0 68%,#e2e6ef 100%);"
+      + "box-shadow:inset 0 1px 0 rgba(255,255,255,.95),inset 0 -10px 22px rgba(120,130,170,.10),0 6px 16px rgba(40,50,80,.08)}"
+      + "#sections .gm-d3 .tile::after{content:'';position:absolute;inset:0;pointer-events:none;border-radius:inherit;"
+      + "background:radial-gradient(60% 50% at calc(78% + var(--sx-tx,0) * 14%) calc(18% + var(--sx-ty,0) * 14%),rgba(150,185,255,.30),rgba(150,185,255,0) 70%)}"
+      + "html[data-theme=dark] #sections .gm-d3 .tile{border-color:rgba(150,170,220,.22);background:radial-gradient(130% 110% at 18% 0%,#3d4253 0%,#2d313e 42%,#23262f 100%);"
+      + "box-shadow:inset 0 1px 0 rgba(255,255,255,.10),inset 0 -10px 22px rgba(0,0,0,.25),0 8px 20px rgba(0,0,0,.30)}"
+      + "html[data-theme=dark] #sections .gm-d3 .tile:not(.on) .fl,html[data-theme=dark] #sections .gm-d3 .tile:not(.on) .fl *{color:#d6d1c7!important}"
+      + "html[data-theme=dark] #sections .gm-d3 .tile::after{background:radial-gradient(60% 50% at calc(78% + var(--sx-tx,0) * 14%) calc(18% + var(--sx-ty,0) * 14%),rgba(140,175,255,.20),rgba(140,175,255,0) 70%)}"
+      + "#sections .gm-d3 .tile.on,html[data-theme=dark] #sections .gm-d3 .tile.on{border-color:rgba(120,220,170,.45);"
+      + "background:radial-gradient(90% 70% at 22% 0%,rgba(255,255,255,.32),rgba(255,255,255,0) 55%),linear-gradient(150deg,#2a9d72 0%,#17775a 42%,#0d5541 78%,#0a4434 100%);"
+      + "box-shadow:inset 0 1px 0 rgba(255,255,255,.35),inset 0 -12px 24px rgba(0,30,20,.35),0 8px 22px rgba(13,85,65,.35)}"
+      + "#sections .gm-d3 .tile.on::after{background:radial-gradient(55% 45% at calc(80% + var(--sx-tx,0) * 14%) calc(16% + var(--sx-ty,0) * 14%),rgba(200,255,225,.22),rgba(200,255,225,0) 70%)}"
+      + "#sections .gm-d3 .tile.on .nm,#sections .gm-d3 .tile.on .fl,#sections .gm-d3 .tile.on .fl *{color:#fff!important}"
+      + "#sections .gm-d3 .tile.on .fl{opacity:.9}"
+      + "#sections .gm-d3 .tile .nm,#sections .gm-d3 .tile .fl{position:relative;z-index:1}"
+      /* Money (owner 2026-11-15: "this does not look good"): the ladder's badges are stones too. A step not started is a
+         moonstone numeral; the step you are on is amber, haloed in gold; a step done is jade with a gold hairline. The budget
+         bars are filled in their state's stone over a gold-marked healthy band. */
+      + "#sections .pd-step{border:1px solid var(--border);border-radius:16px;padding:15px}"
+      + "#sections .pd-step.done{opacity:1;background:linear-gradient(90deg,rgba(31,138,99,.10),rgba(31,138,99,0) 45%),var(--card)}"
+      + "#sections .pd-step.done::before{content:'';position:absolute;left:0;top:12px;bottom:12px;width:3px;border-radius:0 3px 3px 0;background:linear-gradient(#6ee0a8,#13704f)}"
+      + "#sections .pd-step.current{border:1.5px solid #c9a84c;box-shadow:0 0 0 4px rgba(232,201,106,.14),0 10px 26px rgba(120,90,20,.12);"
+      + "background:linear-gradient(135deg,rgba(249,215,122,.12),rgba(249,215,122,0) 55%),var(--card)}"
+      + "#sections .pd-ico{width:36px;height:36px;font-size:15px;color:#3a4052;border:1px solid rgba(150,160,190,.40);"
+      + "background:radial-gradient(130% 110% at 25% 10%,#ffffff 0%,#f3f1ec 40%,#e3e6ef 100%);box-shadow:inset 0 1px 0 #fff,inset 0 -4px 8px rgba(120,130,170,.15),0 2px 6px rgba(40,50,80,.10)}"
+      + "html[data-theme=dark] #sections .pd-ico{color:#ece7dc;border-color:rgba(150,170,220,.25);background:radial-gradient(130% 110% at 25% 10%,#454b5e 0%,#30343f 55%,#24272f 100%);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 2px 8px rgba(0,0,0,.35)}"
+      + "#sections .pd-step.done .pd-ico,html[data-theme=dark] #sections .pd-step.done .pd-ico{color:#fff;border:0;"
+      + "background:radial-gradient(80% 60% at 30% 15%,rgba(255,255,255,.38),rgba(255,255,255,0) 60%),linear-gradient(150deg,#2a9d72 0%,#13704f 60%,#0a4434 100%);"
+      + "box-shadow:0 0 0 1.5px rgba(232,201,106,.9),inset 0 -4px 8px rgba(0,30,20,.35),0 3px 8px rgba(13,85,65,.30)}"
+      + "#sections .pd-step.current .pd-ico,html[data-theme=dark] #sections .pd-step.current .pd-ico{color:#2a1703;border:0;"
+      + "background:radial-gradient(80% 60% at 30% 15%,rgba(255,250,225,.6),rgba(255,255,255,0) 60%),linear-gradient(160deg,#f9d77a 0%,#e6a632 55%,#b8711a 100%);"
+      + "box-shadow:0 0 0 1.5px rgba(232,201,106,.9),0 0 14px rgba(240,181,74,.45)}"
+      + "#sections .csp-track{height:12px;overflow:visible;background:rgba(120,130,160,.16);box-shadow:inset 0 1px 2px rgba(0,0,0,.12)}"
+      + "#sections .csp-fill{border-radius:99px;border:0!important}"
+      + "#sections .csp-zone{position:absolute;top:-3px;bottom:-3px;border-radius:3px;background:rgba(232,201,106,.20);border-left:2px solid #c9a84c;border-right:2px solid #c9a84c;pointer-events:none}"
+      + "@media (prefers-reduced-motion:reduce){#sections .gm-d3::before{transition:none}}";
+    document.head.appendChild(gemCss);
+  } catch (e) {}
   try {
     var st2 = document.createElement("style");
     st2.textContent = ".gm-simple-more{margin:6px 0 18px}.gm-simple-more>summary{min-height:44px;display:flex;align-items:center;cursor:pointer;font-weight:600;color:var(--muted)}"
