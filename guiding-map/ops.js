@@ -8522,3 +8522,9 @@
     document.head.appendChild(st2);
   } catch (e) {}
 })();
+// Boot veil off (index.html head): the Life OS has drawn its own first screen, so the page may show. Two frames later,
+// so the first paint the person sees is the finished one.
+(function () {
+  function off() { document.documentElement.classList.remove("gm-boot"); }
+  try { (window.requestAnimationFrame || setTimeout)(function () { (window.requestAnimationFrame || setTimeout)(off); }); } catch (e) { off(); }
+})();

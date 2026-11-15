@@ -2,6 +2,11 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
+<!-- Boot veil (owner 2026-11-15: the app froze on the old legacy screen before the lock showed). Nothing of the page is shown
+     until the Life OS has drawn its own first screen; a locked app is locked from the very first frame. A 4-second release
+     means a script error can never leave a blank page. -->
+<style>html.gm-boot body>*:not(#gmLock),html.gm-locked body>*:not(#gmLock){visibility:hidden}html.gm-boot,html.gm-boot body,html.gm-locked,html.gm-locked body{background:#0b1628}</style>
+<script>(function(){var d=document.documentElement;d.classList.add("gm-boot");try{if(localStorage.getItem("gm_lock"))d.classList.add("gm-locked");}catch(e){}setTimeout(function(){d.classList.remove("gm-boot");},4000);})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>The Guiding Map</title>
 <meta name="theme-color" content="#f6f3ee" media="(prefers-color-scheme: light)">
@@ -12006,6 +12011,12 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       + ".gm-show-all{grid-column:1/-1;margin-top:6px;font-weight:600}";
     document.head.appendChild(st2);
   } catch (e) {}
+})();
+// Boot veil off (index.html head): the Life OS has drawn its own first screen, so the page may show. Two frames later,
+// so the first paint the person sees is the finished one.
+(function () {
+  function off() { document.documentElement.classList.remove("gm-boot"); }
+  try { (window.requestAnimationFrame || setTimeout)(function () { (window.requestAnimationFrame || setTimeout)(off); }); } catch (e) { off(); }
 })();
 
 </script>

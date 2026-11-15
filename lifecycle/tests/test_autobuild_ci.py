@@ -189,3 +189,15 @@ def test_a_provider_error_with_exit_0_is_not_a_healthy_model(tmp_path):
     err = 'Error: {"name": "UnknownError", "data": {"message": "Unexpected server error."}}'
     run = lambda cmd, **k: ci.subprocess.CompletedProcess(cmd, 0, stdout="", stderr=err) if "bad" in cmd[3] else ci.subprocess.CompletedProcess(cmd, 0, stdout="OK")
     assert ci.usable(["gocode-bad", "good"], run=run, cache=tmp_path / "p.json") == ["good"]
+
+
+def test_autobuild_uses_only_the_flat_opencode_go_plan():
+    """Spend guard slice 3 (owner's cap: Rs 1,000 a month per provider): OpenCode Go is a flat monthly plan (about $10,
+    with its own dollar usage limits), so the build loop cannot spend past the cap as long as it calls ONLY the Go
+    endpoint. A second provider or a pay-per-use route (OpenCode Zen) would make spend open-ended: this fails first."""
+    import json
+    spec = importlib.util.spec_from_file_location("abci_go", pathlib.Path(__file__).resolve().parents[1] / "autobuild_ci.py")
+    ci = importlib.util.module_from_spec(spec); spec.loader.exec_module(ci)
+    assert ci.GO_BASE.rstrip("/").endswith("/inference/go/v1")
+    cfg = ci.config()
+    assert list(cfg["provider"]) == ["gocode"] and "zen" not in json.dumps(cfg).lower()
