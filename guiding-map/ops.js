@@ -8693,7 +8693,8 @@
     var cls = r.cur >= r.now ? "sx-state-good" : r.cur >= r.now * 0.9 ? "sx-state-watch" : "sx-state-low";
     var word = r.cur >= r.now ? "on track" : r.cur >= r.now * 0.9 ? "close: short by " + needRs(r.now - r.cur) : "short by " + needRs(r.now - r.cur);
     h += '<div style="font-size:13.5px">You need <b>' + needRs(r.now) + '</b> a month take-home to cover essentials, EMIs and a ' + r.rate + '% saving.</div>'
-      + '<div style="font-size:13.5px;margin-top:6px">You bring in ' + needRs(r.cur) + ': <span class="' + cls + '" style="font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px;white-space:nowrap;color:' + (cls === "sx-state-watch" ? "#2a1703" : "#fff") + '">' + esc(word) + '</span></div>'
+      + '<div style="font-size:13.5px;margin-top:6px">You bring in ' + needRs(r.cur) + ': <span class="' + cls + '" style="font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px;white-space:nowrap;color:' + (cls === "sx-state-watch" ? "#2a1703" : "#fff")
+      + (cls === "sx-state-good" ? ';background-image:radial-gradient(90% 60% at 30% 0%,rgba(255,255,255,.12),rgba(255,255,255,0) 60%),linear-gradient(160deg,#2fae7a 0%,#13704f 55%,#0a4732 100%)' : "") + '">' + esc(word) + '</span></div>'
       + '<div style="font-size:13px;margin-top:6px">In 3 years ' + needRs(r.y3) + ' · 5 years ' + needRs(r.y5) + ' · 10 years ' + needRs(r.y10) + ', at ' + r.infl + '% inflation.</div>'
       + '<label class="f-label" style="margin-top:8px">Inflation you expect, % a year</label><input inputmode="decimal" value="' + esc(r.infl) + '" onchange="gmNeedsInfl(this.value)" aria-label="Inflation you expect, percent a year">';
     if (r.split) {
