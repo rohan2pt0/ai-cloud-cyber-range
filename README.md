@@ -135,12 +135,12 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 - The Life OS fits the person
 - Persona audit in a real browser
+- Career step 4 is a short card, not a wall of fields
 - AI spend in rupees, per provider
 - The Wheel folds what you have rated
 - Impossible numbers are fixed, never saved
 - Money in the same stones
 - Health you see at a glance, in gemstones
-- AI spend in rupees, capped per provider
 
 **Release 0.4.0 - 2026-11-14:**
 

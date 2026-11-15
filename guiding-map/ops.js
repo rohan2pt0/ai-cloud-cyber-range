@@ -5325,15 +5325,31 @@
     h += box(wc);
 
     // 4. inputs
-    var inp = hd("4 · Today's job and household", "From your payslip and bank app. Monthly ₹ unless marked.")
-      + fld("Payslip gross (incl. employer NPS)", "cur.gross", c.cur.gross, "₹/mo") + fld("Payslip net (credited)", "cur.inhand", c.cur.inhand, "₹/mo")
-      + fld("Rent the employer pays for you", "cur.rent", c.cur.rent, "₹/mo") + fld("Cash-like perks (fuel, phone, paper)", "cur.perks", c.cur.perks, "₹/mo")
-      + fld("Employer NPS / PF", "cur.empRet", c.cur.empRet, "₹/mo") + fld("Your own NPS / PF deduction", "cur.empDed", c.cur.empDed, "₹/mo")
-      + fld("Other yearly benefits you really get (insurance, medical, LFC, leave encashment, incentive)", "cur.otherYr", c.cur.otherYr, "₹/yr")
-      + fld("Household essentials incl. rent you will pay", "house.exp", c.house.exp, "₹/mo") + fld("EMIs", "house.emi", c.house.emi, "₹/mo")
-      + fld("Spouse take-home", "house.wife", c.house.wife, "₹/mo") + fld("Emergency fund (cash, liquid funds)", "house.ef", c.house.ef, "₹")
-      + fld("Investments towards financial independence (MF, stocks, NPS, PPF, EPF)", "house.nw", c.house.nw, "₹")
-      + '<details style="margin-top:6px"><summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:var(--text)">Dates and assumptions</summary>'
+    var wifeOK = G("gm_facts", {}).partner !== false;
+    var carFields = [
+      ["Payslip gross (incl. employer NPS)", "cur.gross", c.cur.gross, "₹/mo"],
+      ["Payslip net (credited)", "cur.inhand", c.cur.inhand, "₹/mo"],
+      ["Rent the employer pays for you", "cur.rent", c.cur.rent, "₹/mo"],
+      ["Cash-like perks (fuel, phone, paper)", "cur.perks", c.cur.perks, "₹/mo"],
+      ["Employer NPS / PF", "cur.empRet", c.cur.empRet, "₹/mo"],
+      ["Your own NPS / PF deduction", "cur.empDed", c.cur.empDed, "₹/mo"],
+      ["Other yearly benefits you really get (insurance, medical, LFC, leave encashment, incentive)", "cur.otherYr", c.cur.otherYr, "₹/yr"],
+      ["Household essentials incl. rent you will pay", "house.exp", c.house.exp, "₹/mo"],
+      ["EMIs", "house.emi", c.house.emi, "₹/mo"],
+      ["Spouse take-home", "house.wife", c.house.wife, "₹/mo"],
+      ["Emergency fund (cash, liquid funds)", "house.ef", c.house.ef, "₹"],
+      ["Investments towards financial independence (MF, stocks, NPS, PPF, EPF)", "house.nw", c.house.nw, "₹"]
+    ];
+    if (!wifeOK) carFields = carFields.filter(function (f) { return f[1] !== "house.wife"; });
+    var filledF = [], emptyF = [];
+    carFields.forEach(function (f) { var v = f[2]; (v === undefined || v === null || v === "" || v === 0) ? emptyF.push(f) : filledF.push(f); });
+    var frow = function (f) { return fld(f[0], f[1], f[2], f[3]); };
+    var detStyle = ' style="margin-top:6px"', sumStyle = ' style="cursor:pointer;font-size:12.5px;font-weight:700;color:var(--text)"';
+    var inp = hd("4 · Today's job and household", "From your payslip and bank app. Monthly ₹ unless marked.");
+    if (filledF.length) inp += '<details class="car-filled"' + detStyle + '><summary' + sumStyle + '>Your figures (' + filledF.length + ' filled) · tap to change</summary>' + filledF.map(frow).join("") + '</details>';
+    inp += emptyF.slice(0, 3).map(frow).join("");
+    if (emptyF.length > 3) inp += '<details class="car-more"' + detStyle + '><summary' + sumStyle + '>Add more (' + (emptyF.length - 3) + ')</summary>' + emptyF.slice(3).map(frow).join("") + '</details>';
+    inp += '<details style="margin-top:6px"><summary style="cursor:pointer;font-size:12.5px;font-weight:700;color:var(--text)">Dates and assumptions</summary>'
       + fld("Notice period started", "cfg.noticeStart", c.cfg.noticeStart, "YYYY-MM-DD") + fld("Notice length", "cfg.noticeMonths", c.cfg.noticeMonths || 3, "months")
       + fld("Joining date (blank: day after last day)", "cfg.join", c.cfg.join, "YYYY-MM-DD") + fld("Birth month", "cfg.birth", c.cfg.birth, "YYYY-MM")
       + fld("Financial independence target age", "cfg.fiAge", c.cfg.fiAge || 50, "years") + fld("Inflation", "cfg.infl", c.cfg.infl || 6, "%/yr") + fld("Investment return", "cfg.ret", c.cfg.ret || 10, "%/yr")
