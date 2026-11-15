@@ -6354,7 +6354,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       + '<details class="road-col gm-more-backup" style="margin-top:10px"><summary style="cursor:pointer;font-weight:700;font-size:12.5px">More backup options</summary>'
       + bkOpt("gmBkShow()", "Backup phrase", "Opens your encrypted backups on a new phone. Keep it in your password manager.")
       + bkOpt("gmExportCsv()", "Export for Excel (CSV)", "For a spreadsheet. Readable by anyone who gets the file.")
-      + bkOpt("gmEmergencyExport()", "Spouse emergency page", "One page for your spouse if something happens to you. Readable; keep it somewhere safe.")
+      + (fitsFact("spouse-emergency") ? bkOpt("gmEmergencyExport()", "Spouse emergency page", "One page for your spouse if something happens to you. Readable; keep it somewhere safe.") : "")
       + bkOpt("gmExportPlain()", "Readable copy", "To move data into another tool. Readable by anyone who gets the file.")
       + '</details>';
   }
@@ -7407,6 +7407,15 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     return h + '</div></div>';
   }
   gmApplyMat();
+  /* ── Which doors and cards need which fact (one registry) ──────────
+     The first run asks five things; anything that does not apply is not shown. Never a safety item: backup, the lock,
+     Health/Ops, Money and Today stay. */
+  var FITS = { kids: "kids", prop: "home", "spouse-emergency": "partner" };
+  function fitsFact(id) {
+    var f = FITS[id]; if (!f) return true;
+    var said = G("gm_facts", {}) || {};
+    return !(Object.prototype.hasOwnProperty.call(said, f) && said[f] === false);
+  }
   function opsHTML() {
     var due = dueRituals(), broken = brokenHabits().length;
     var h = '<div class="section active">';
@@ -7593,8 +7602,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
         + (ic ? '<span class="gi" aria-hidden="true">' + ic + '</span>' : '') + t[1] + (isNew ? '<span class="gm-new">new</span>' : '') + '</button>';
     }
     // A tab that cannot apply (the person answered No to its fact) is not shown at all: no clutter for a life that is not theirs.
-    var said = G("gm_facts", {}) || {}, NEEDS = { kids: "kids" };
-    function fits(t) { var f = NEEDS[t[0]]; return !(f && said.hasOwnProperty(f) && said[f] === false); }
+    function fits(t) { return fitsFact(t[0]); }
     var unlocked = [];
     if (SIMPLE) UNLOCK.slice(0, weeks).forEach(function (id) {
       if (main.indexOf(id) >= 0 || FIRST.indexOf(id) >= 0) return;
@@ -9379,12 +9387,109 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       var tile = d3.querySelector(".tile"); if (tile && typeof tile.focus === "function") { try { tile.focus(); } catch (e) {} }
     }
   };
+  /* ── Make it yours: five taps on the first run ────────────────────
+     A new person answers five things once, in plain words, with no typing. The answers live in gm_facts, so the More
+     sheet and the partner-only cards can fit themselves, and Menu > Your life changes them later. Asked after the lock
+     (never under it) and shown once; "Show me everything" hides nothing and still counts as answered. */
+  var MINE_STAGES = [["student", "Student"], ["salaried", "Salaried"], ["business", "Business owner"],
+    ["independent", "Independent professional"], ["retired", "Retired"]];
+  var MINE_QS = [["partner", "Do you have a partner?"], ["kids", "Any children?"],
+    ["home", "Do you own or rent a home?"], ["parents", "Do your parents depend on you?"]];
+  function mineFacts() { var f = G("gm_facts", {}); return (f && typeof f === "object" && !Array.isArray(f)) ? f : {}; }
+  function mineCss() {
+    if (document.getElementById("gmMineCss")) return;
+    var st = document.createElement("style"); st.id = "gmMineCss";
+    st.textContent = "#gmMineSheet{position:fixed;inset:0;z-index:9998;display:flex;align-items:flex-end;justify-content:center;background:rgba(5,10,20,.58)}"
+      + "#gmMineSheet .gm-mine-card{background:var(--card);color:var(--text);border:1px solid var(--border);border-radius:20px 20px 0 0;padding:18px 16px calc(18px + env(safe-area-inset-bottom));width:100%;max-width:520px;max-height:calc(100vh - 16px);overflow:auto;box-shadow:0 -18px 50px rgba(0,0,0,.35)}"
+      + "@media (min-width:600px){#gmMineSheet{align-items:center;padding:18px}#gmMineSheet .gm-mine-card{border-radius:20px}}"
+      + ".gm-mine-k{font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted);font-weight:800}"
+      + ".gm-mine-h{font-size:22px;font-weight:800;line-height:1.15;margin-top:3px}"
+      + ".gm-mine-p{font-size:13px;line-height:1.5;color:var(--muted);margin-top:5px}"
+      + ".gm-mine-q{margin-top:14px}"
+      + ".gm-mine-l{font-weight:800;font-size:14px;margin-bottom:7px}"
+      + ".gm-mine-btns{display:flex;flex-wrap:wrap;gap:8px}"
+      + ".gm-mine-btns button{flex:1 1 45%;min-height:48px;border-radius:13px;border:1.5px solid var(--border);background:var(--cardAlt);color:var(--text);font:inherit;font-size:13.5px;font-weight:700;padding:10px 12px;cursor:pointer}"
+      + ".gm-mine-btns.yn{display:grid;grid-template-columns:1fr 1fr}"
+      + ".gm-mine-btns button.on{border-color:var(--gold);background:var(--gold);color:#0d1f35}"
+      + ".gm-mine-btns button:focus-visible{outline:2px solid var(--gold);outline-offset:2px}"
+      + ".gm-mine-foot{display:flex;flex-direction:column;gap:4px;margin-top:18px}"
+      + ".gm-mine-done{min-height:52px;border:0;border-radius:14px;background:var(--gold);color:#0d1f35;font:inherit;font-size:15px;font-weight:800;cursor:pointer;padding:12px}"
+      + ".gm-mine-skip{min-height:44px;background:none;border:0;color:var(--muted);font:inherit;font-size:13px;text-decoration:underline;cursor:pointer;padding:6px}";
+    document.head.appendChild(st);
+  }
+  function mineBtn(key, val, label, on) {
+    return '<button type="button" data-v="' + val + '" aria-pressed="' + (on ? "true" : "false") + '"'
+      + (on ? ' class="on"' : "") + ' onclick="gmMineChoose(\'' + key + '\',\'' + val + '\')">' + label + "</button>";
+  }
+  function mineQHTML(key, label, yn) {
+    var f = mineFacts(), b = "";
+    if (key === "stage") MINE_STAGES.forEach(function (s) { b += mineBtn("stage", s[0], s[1], f.stage === s[0]); });
+    else { b += mineBtn(key, "yes", "Yes", f[key] === true) + mineBtn(key, "no", "No", f[key] === false); }
+    return '<div class="gm-mine-q" data-mine="' + key + '"><div class="gm-mine-l">' + label + '</div>'
+      + '<div class="gm-mine-btns' + (yn ? " yn" : "") + '">' + b + "</div></div>";
+  }
+  window.gmMineSheet = function () {
+    mineCss();
+    var old = document.getElementById("gmMineSheet"); if (old) old.parentNode.removeChild(old);
+    var o = document.createElement("div");
+    o.id = "gmMineSheet"; o.setAttribute("role", "dialog"); o.setAttribute("aria-modal", "true"); o.setAttribute("aria-label", "Make it yours");
+    o.innerHTML = '<div class="gm-mine-card"><div class="gm-mine-k">Five taps</div><div class="gm-mine-h">Make it yours</div>'
+      + '<div class="gm-mine-p">Answer five things once. The Life OS hides what does not apply and keeps the rest; change it any time under Menu \u2192 Your life.</div>'
+      + mineQHTML("stage", "Which best describes you?", false)
+      + MINE_QS.map(function (q) { return mineQHTML(q[0], q[1], true); }).join("")
+      + '<div class="gm-mine-foot"><button type="button" class="gm-mine-done" onclick="gmMineFinish()">That\u2019s me \u2014 make it fit</button>'
+      + '<button type="button" class="gm-mine-skip" onclick="gmMineSkip()">Show me everything</button></div></div>';
+    document.body.appendChild(o);
+    var b = o.querySelector("button"); if (b) { try { b.focus(); } catch (e) {} }
+  };
+  window.gmMineChoose = function (key, val) {
+    var f = mineFacts();
+    if (key === "stage") {
+      if (!/^(student|salaried|business|independent|retired)$/.test(String(val))) return;
+      f.stage = val;
+      f.salaried = val === "salaried";
+      f.business = val === "business";
+    } else if (key === "partner" || key === "kids" || key === "home" || key === "parents") {
+      f[key] = val === "yes";
+    } else return;
+    S_("gm_facts", f);
+    window.gmMineSheet();
+  };
+  window.gmMineFinish = function () {
+    S_("gm_mine_done", true);
+    var o = document.getElementById("gmMineSheet"); if (o) o.parentNode.removeChild(o);
+    if (typeof gmToast === "function") gmToast("Your Life OS now fits you. Menu \u2192 Your life changes it.");
+    if (typeof renderAll === "function") renderAll();
+  };
+  window.gmMineSkip = function () {
+    S_("gm_mine_done", true);
+    var o = document.getElementById("gmMineSheet"); if (o) o.parentNode.removeChild(o);
+    if (typeof renderAll === "function") renderAll();
+  };
+  var _mineTried = false;
+  function mineNeeded() {
+    if (_mineTried) return false;
+    if (G("gm_mine_done", false)) return false;
+    return !Object.prototype.hasOwnProperty.call(mineFacts(), "stage");
+  }
+  function mineMaybe() {
+    if (!mineNeeded()) return;
+    if (window.gmIsLocked && window.gmIsLocked()) return;   // after the lock, never under it
+    try { window.gmMineSheet(); _mineTried = true; } catch (e) {}
+  }
+  var _mineRender = window.renderAll;
+  if (typeof _mineRender === "function") window.renderAll = function () {
+    var out = _mineRender.apply(this, arguments);
+    try { mineMaybe(); } catch (e) {}
+    return out;
+  };
   window.gmMenu = function () {
     var ver = (document.getElementById("app_ver") || {}).textContent || "";
     gmDlg('<div style="font-weight:800;font-size:16px;margin-bottom:12px">Menu</div>'
       + '<div style="display:grid;gap:8px">'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();location.href=\'hub.html\'">◆ All apps</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();editProfile()">Edit profile</button>'
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();gmMineSheet()">Your life</button>'
       + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();toggleTheme()">Switch to ' + (curTheme() === "dark" ? "light" : "dark") + ' theme</button>'
       + ((window.matchMedia && matchMedia("(display-mode: standalone)").matches) ? "" : '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);text-align:left" onclick="gmClose();gmInstall()">Install as an app (phone or computer)</button>')
       + '<details class="gm-menu-more"><summary>Settings (3)</summary><div style="display:grid;gap:8px;margin-top:8px">'
