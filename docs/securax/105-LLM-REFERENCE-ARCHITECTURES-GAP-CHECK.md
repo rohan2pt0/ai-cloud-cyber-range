@@ -92,7 +92,7 @@ Each item is in `governance/queue.json`, so `./securax backlog` and the daily Ba
 | G13 | Token-exact context management: count with the model's tokenizer, trim the oldest turns, never cut the system context | Silent truncation; LLM10 cost | 2026-12-10 |
 | G14 | The audit chain survives restarts and is anchored daily to the off-site backup (append-only) | Log tampering after a compromise | 2026-11-26 |
 | G15 | Retrieval checks: documents carry an owner and a class, and a person only retrieves what they may read; new documents are scanned before indexing | Data leakage across users; RAG poisoning | 2026-11-19 |
-| G16 | Cost per request in rupees, from a price table, in the allowance and the cockpit | LLM10; spend you can see | 2026-12-10 |
+| G16 | Cost per request in rupees, from a price table, in the allowance and the cockpit | LLM10; spend you can see | 2026-12-10; slice 1 and 2 built 2026-11-15 (gateway rupee cap; ./securax ai spend and the cockpit line) |
 
 ## 5. Out of scope, and why
 
