@@ -133,6 +133,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- What we must earn
 - The landlord desk
 - Tax comparator on the savings levers
 - Savings levers keep themselves current
@@ -140,7 +141,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - The first morning and every day, calmer
 - Colour means what the words mean
 - Ambient light in dark, and a 360 pass on both themes
-- The Life OS fits the person
 
 **Release 0.4.0 - 2026-11-14:**
 
