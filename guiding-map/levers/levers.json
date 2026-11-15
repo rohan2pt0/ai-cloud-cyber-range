@@ -51,7 +51,7 @@
    "saves": "The new regime is the default and, by public reports, gives a rebate that makes total income up to Rs 12 lakh tax-free, with a Rs 75,000 standard deduction for salaried people. The old regime can still win with large deductions (home-loan interest, 80C, 80D, HRA). The wrong choice can cost tens of thousands a year.",
    "estimate": {"kind": "regime"},
    "effortMin": 15,
-   "steps": ["Once a year, before declaring to your employer (or before advance tax), run the comparison on this card.", "Tell your employer (salaried) or your tax filer which regime you choose.", "Keep the proofs for any deduction you claim in the old regime."],
+   "steps": ["Once a year, before declaring to your employer (or before advance tax), compare both regimes with your own figures: the income-tax site's tax calculator or your tax filer does it in minutes.", "Tell your employer (salaried) or your tax filer which regime you choose.", "Keep the proofs for any deduction you claim in the old regime."],
    "portal": "incometax.gov.in",
    "sources": ["https://en.wikipedia.org/wiki/Income-tax_Act,_2025", "https://taxgarden.in/blog/section-87a-rebate-ay-2026-27-eligibility-limit"],
    "verified": "2026-11-15", "review": "2027-02-15", "confidence": "the Income-tax Act 2025 applies from 1 April 2026: confirm the figures on incometax.gov.in each year"},

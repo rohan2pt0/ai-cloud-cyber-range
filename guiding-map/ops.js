@@ -8469,9 +8469,9 @@
     h += '<ol style="margin:8px 0 0;padding-left:22px">';
     (lv.steps || []).forEach(function (s, i) {
       var on = !!steps[i];
-      h += '<li style="padding:3px 0;' + (on ? "opacity:.55;text-decoration:line-through" : "") + '">'
-        + '<button type="button" class="btn-sm" data-lev-step="' + esc(lv.id) + '|' + i + '" aria-pressed="' + (on ? "true" : "false") + '" onclick="gmLevStep(\'' + esc(lv.id) + '\',' + i + ')" style="min-height:44px;margin-right:6px">' + (on ? "\u2611" : "\u2610") + '</button>'
-        + esc(s) + '</li>';
+      // one tappable row per step: a small round check and the step beside it (the row is the 44 px target)
+      h += '<li style="list-style:none;margin:0 0 4px -22px"><button type="button" class="gm-lev-step' + (on ? " on" : "") + '" data-lev-step="' + esc(lv.id) + '|' + i + '" aria-pressed="' + (on ? "true" : "false") + '" onclick="gmLevStep(\'' + esc(lv.id) + '\',' + i + ')">'
+        + '<span class="gm-lev-chk" aria-hidden="true">' + (on ? "\u2713" : "") + '</span><span class="gm-lev-t">' + (i + 1) + '. ' + esc(s) + '</span></button></li>';
     });
     h += '</ol>';
     if (lv.template && lv.template.text) {
@@ -8483,8 +8483,15 @@
     h += '<div style="font-size:11px;color:var(--muted);margin-top:6px">Verified ' + esc(lv.verified || "") + ' \u00b7 ' + esc(lv.confidence || "") + '</div>';
     return h;
   }
+  var LEV_CSS = ".gm-lev-step{display:flex;align-items:flex-start;gap:10px;width:100%;min-height:44px;padding:9px 6px;background:none!important;border:0!important;box-shadow:none!important;text-align:start;color:var(--text)!important;font:inherit;font-size:13px;line-height:1.45;cursor:pointer;border-radius:10px}"
+    + ".gm-lev-step:hover{background:var(--cardAlt)!important}.gm-lev-chk{flex:0 0 22px;height:22px;border-radius:50%;border:1.5px solid var(--edge);display:inline-flex;align-items:center;justify-content:center;font-size:13px;margin-top:1px}"
+    + ".gm-lev-step.on .gm-lev-chk{background:#13704f;border-color:#5fd3a0;color:#fff}.gm-lev-step.on .gm-lev-t{opacity:.6;text-decoration:line-through}";
+  function levStyle() {   // once, in the head: a style inside the card would leave with the card on the next redraw
+    if (!document.getElementById("gmLevCss")) { var st = document.createElement("style"); st.id = "gmLevCss"; st.textContent = LEV_CSS; document.head.appendChild(st); }
+    return "";
+  }
   function levOpenCard(lv) {
-    return '<div class="road-col gm-lever gm-lever-open" data-lever="' + esc(lv.id) + '">'
+    return levStyle() + '<div class="road-col gm-lever gm-lever-open" data-lever="' + esc(lv.id) + '">'
       + '<div style="font-weight:800;font-size:14px">' + esc(lv.title) + '</div>' + levMain(lv)
       + '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">'
       + '<button type="button" class="btn-sm" data-lev-done="' + esc(lv.id) + '" onclick="gmLevState(\'' + esc(lv.id) + '\',\'done\')">Done</button>'
