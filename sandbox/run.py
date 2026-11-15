@@ -1625,6 +1625,8 @@ def j_ui(sb: H.Sandbox, c: Checks):
         H.shot(page, "command_center")
         page.goto(f"{H.GUIDING_MAP}/")
         page.wait_for_load_state("networkidle")
+        if page.locator("#gmMineSheet .gm-mine-skip").count():                 # a newcomer first sees "Make it yours"; answer it as a person does
+            page.locator("#gmMineSheet .gm-mine-skip").click()
         page.get_by_text(re.compile(r"^\W*ASK\W*$", re.I)).first.click()      # the real Ask tab, as a user clicks it
         page.wait_for_selector("#askQ")
         page.fill("#askQ", "hello")
