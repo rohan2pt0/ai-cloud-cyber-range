@@ -133,6 +133,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- If one thing failed tomorrow
 - What we must earn
 - The landlord desk
 - Tax comparator on the savings levers
@@ -140,7 +141,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - Impossible numbers cannot be saved
 - The first morning and every day, calmer
 - Colour means what the words mean
-- Ambient light in dark, and a 360 pass on both themes
 
 **Release 0.4.0 - 2026-11-14:**
 

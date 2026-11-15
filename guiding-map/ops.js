@@ -8656,6 +8656,50 @@
     return k > -1 ? h.slice(0, k) + gmLeversHTML() + gmNeedsHTML() + h.slice(k) : h + gmLeversHTML() + gmNeedsHTML();
   }; }
 
+  /* ── The expert council, item 1 (queue expert-council): the household's single points of failure and its paper hygiene,
+     as risk officers, reliability engineers and lawyers would have every family close them. Content in
+     guiding-map/levers/council.json (window.GM_COUNCIL). One open item at a time, the most severe first; closed items
+     count toward a visible score. */
+  function spofItems() { var d = window.GM_COUNCIL; return d && Array.isArray(d.spof) ? d.spof : []; }
+  function spofState() { var m = G("gm_spof", {}); return m && typeof m === "object" && !Array.isArray(m) ? m : {}; }
+  function spofFits(it) {
+    var f = G("gm_facts", {}) || {}, w = it.when || {}, st = Array.isArray(f.stages) ? f.stages : (f.stage ? [f.stage] : []);
+    if (w.partnerOrKids && f.partner === false && f.kids === false) return false;
+    if (w.salaried && st.length && st.indexOf("salaried") < 0) return false;
+    return true;
+  }
+  window.gmSpofSet = function (id, v) { var m = spofState(); if (v) m[id] = v; else delete m[id]; S_("gm_spof", m); renderAll(); };
+  window.gmSpofHTML = function () {
+    var items = spofItems().filter(spofFits);
+    if (!items.length) return "";
+    var rank = spofItems().map(function (x) { return x.id; });     // within a severity, the council's own order (biggest harm first)
+    items.sort(function (a, b) { return (a.severity - b.severity) || (rank.indexOf(a.id) - rank.indexOf(b.id)); });
+    var st = spofState(), open = items.filter(function (x) { return !st[x.id]; }), closed = items.length - open.length;
+    var cls = closed === items.length ? "sx-state-good" : closed * 2 >= items.length ? "sx-state-watch" : "sx-state-low";
+    var h = '<div class="cat-t">If one thing failed tomorrow</div><div class="road-col gm-spof" style="margin-bottom:12px">'
+      + '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="' + cls + '" style="font-size:12px;font-weight:700;padding:2px 10px;border-radius:999px;white-space:nowrap;color:' + (cls === "sx-state-watch" ? "#2a1703" : "#fff")
+      + (cls === "sx-state-good" ? ';background-image:radial-gradient(90% 60% at 30% 0%,rgba(255,255,255,.12),rgba(255,255,255,0) 60%),linear-gradient(160deg,#2fae7a 0%,#13704f 55%,#0a4732 100%)' : "") + '">' + closed + ' of ' + items.length + ' closed</span>'
+      + '<span style="font-size:12.5px;color:var(--muted)">the gaps that would hurt a family most, closed one at a time</span></div>';
+    if (!open.length) h += '<div style="font-size:13px;margin-top:8px">Every gap is closed. Review them once a year, and after any big change (a new job, a child, a move).</div>';
+    else {
+      var it = open[0];
+      h += '<div class="gm-spof-open" data-spof="' + esc(it.id) + '" style="margin-top:10px"><div style="font-weight:800;font-size:14px">' + esc(it.title) + '</div>'
+        + '<div style="font-size:12px;color:var(--muted);margin-top:3px">' + esc(it.lens) + '</div>'
+        + '<ol style="margin:8px 0 0;padding-left:20px;font-size:13px">' + (it.fix || []).map(function (x) { return '<li style="margin-bottom:4px">' + esc(x) + '</li>'; }).join("") + '</ol>'
+        + '<div style="font-size:12px;color:var(--muted);margin-top:4px">about ' + esc(it.effortMin) + ' minutes · confirm with: ' + esc(it.confirm || "") + '</div>';
+      if (it.template) h += '<div style="font-size:12px;font-weight:800;margin-top:8px">' + esc(it.template.title) + '</div><textarea readonly id="gmSpofTpl" rows="5" style="width:100%;font-size:12px">' + esc(it.template.text.split(" | ").join("\n")) + '</textarea>'
+        + '<button type="button" class="btn-sm" style="margin-top:4px;background:var(--cardAlt);color:var(--text)" onclick="(window.gmLlCopy||function(){})(\'gmSpofTpl\')">Copy</button>';
+      h += '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap"><button type="button" class="btn-sm" onclick="gmSpofSet(\'' + esc(it.id) + '\',\'done\')">Closed</button>'
+        + '<button type="button" class="gm-quiet" onclick="gmSpofSet(\'' + esc(it.id) + '\',\'no\')">Not for us</button></div></div>';
+      if (open.length > 1) h += '<details style="margin-top:8px"><summary>Later (' + (open.length - 1) + ')</summary><ul style="margin:6px 0 0;padding-left:20px;font-size:12.5px">'
+        + open.slice(1).map(function (x) { return '<li>' + esc(x.title) + '</li>'; }).join("") + '</ul></details>';
+    }
+    if (closed) h += '<details style="margin-top:6px"><summary>Closed (' + closed + ')</summary>' + items.filter(function (x) { return st[x.id]; }).map(function (x) {
+      return '<div style="display:flex;gap:8px;align-items:center;font-size:12.5px;padding:4px 0"><span style="flex:1">' + esc(x.title) + '</span><button type="button" class="gm-quiet" onclick="gmSpofSet(\'' + esc(x.id) + '\',\'\')">Reopen</button></div>';
+    }).join("") + '</details>';
+    return h + '</div>';
+  };
+
   /* ── What we must earn (owner 2026-11-15; queue income-needs): the take-home that covers essentials, EMIs and a saving rate,
      now and in 3, 5 and 10 years at the inflation the person expects; fixed and variable spending from pasted bank messages,
      with one concrete cut for each of the three largest variable categories. */
