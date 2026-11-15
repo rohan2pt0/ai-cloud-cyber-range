@@ -547,7 +547,101 @@ function cleanP(p){
   Object.keys(p).forEach(function(k){ p[k]=cleanTxt(p[k]); });
   if(Array.isArray(p.kids)) p.kids.forEach(function(x){ if(x&&typeof x==="object") Object.keys(x).forEach(function(k){ x[k]=cleanTxt(x[k]); }); });
   if(Array.isArray(p.loans)) p.loans.forEach(function(x){ if(x&&typeof x==="object") Object.keys(x).forEach(function(k){ x[k]=cleanTxt(x[k]); }); });
+  guardP(p);
   return p;
+}
+var PROFILE_RULES={
+  birth:{fields:["dob","pdob"],minAge:14,maxAge:110,from:Date.UTC(1900,0,1)},
+  money:{fields:["gross","net","exp","sav","nw","psal","rent1","rent2"],min:0,minNW:-1e9,max:1e10},
+  ret:[35,90],
+  tsav:[0,80],
+  loan:{min:0,rateMax:60,tenureMax:480},
+  kidGapYears:12
+};
+function gmDay(v){
+  if(typeof v!=="string") return null;
+  var m=/^(\d{4})-(\d{2})-(\d{2})$/.exec(v.trim()); if(!m) return null;
+  var y=+m[1], mo=+m[2], da=+m[3];
+  if(mo<1||mo>12||da<1||da>31) return null;
+  var t=Date.UTC(y,mo-1,da), d=new Date(t);
+  if(d.getUTCFullYear()!==y||d.getUTCMonth()!==mo-1||d.getUTCDate()!==da) return null;
+  return t;
+}
+function gmNum(v){
+  if(typeof v==="number") return isFinite(v)?v:null;
+  var s=String(v).trim(); if(!s) return null;
+  var n=Number(s); return isFinite(n)?n:null;
+}
+function guardP(p){
+  var notes=[];
+  if(!p||typeof p!=="object"||Array.isArray(p)) return notes;
+  var today=Date.now(), B=PROFILE_RULES.birth, M=PROFILE_RULES.money;
+  B.fields.forEach(function(k){
+    if(!(k in p)||p[k]===""||p[k]===null||p[k]===undefined) return;
+    var t=gmDay(p[k]), age=t===null?null:Math.floor((today-t)/31557600000);
+    if(t===null||t<B.from||t>today||age<B.minAge||age>B.maxAge){
+      p[k]="";
+      notes.push(t===null?"That birth date is not a valid date; please check it.":"That birth date gives an age of "+age+"; please check it.");
+    }
+  });
+  M.fields.forEach(function(k){
+    if(!(k in p)||p[k]===""||p[k]===null||p[k]===undefined) return;
+    var n=gmNum(p[k]); if(n===null){ p[k]=""; return; }
+    var low=k==="nw"?M.minNW:M.min;
+    if(n<low) n=low;
+    if(n>M.max) n=M.max;
+    p[k]=n;
+  });
+  if(typeof p.gross==="number"&&typeof p.net==="number"&&p.gross>0&&p.net>0&&p.net>p.gross){
+    p.net=p.gross;
+    notes.push("Take-home was more than gross; set to gross. Check your payslip.");
+  }
+  var dob=gmDay(p.dob), age=dob===null?null:Math.floor((today-dob)/31557600000);
+  if(p.ret!==""&&p.ret!==null&&p.ret!==undefined){
+    var r=gmNum(p.ret);
+    if(r===null) p.ret="";
+    else { var lowRet=Math.max(PROFILE_RULES.ret[0],age===null?PROFILE_RULES.ret[0]:age+1); if(r<lowRet)r=lowRet; if(r>PROFILE_RULES.ret[1])r=PROFILE_RULES.ret[1]; p.ret=r; }
+  }
+  if(p.tsav!==""&&p.tsav!==null&&p.tsav!==undefined){
+    var ts=gmNum(p.tsav);
+    if(ts===null) p.tsav=""; else p.tsav=Math.min(PROFILE_RULES.tsav[1],Math.max(PROFILE_RULES.tsav[0],ts));
+  }
+  var gap=PROFILE_RULES.kidGapYears*31557600000;
+  if(Array.isArray(p.kids)) p.kids.forEach(function(k){
+    if(!k||typeof k!=="object"||k.dob===undefined||k.dob===null||k.dob==="") return;
+    var kd=gmDay(k.dob);
+    if(kd===null||kd>today||(dob!==null&&kd<dob+gap)){
+      k.dob="";
+      notes.push("A child's birth date does not fit your birth date; please check it.");
+    }
+  });
+  if(Array.isArray(p.loans)) p.loans.forEach(function(l){
+    if(!l||typeof l!=="object") return;
+    ["remaining","emi"].forEach(function(k){
+      if(l[k]===undefined||l[k]===null||l[k]==="") return;
+      var n=gmNum(l[k]); l[k]=n===null?"":Math.max(PROFILE_RULES.loan.min,n);
+    });
+    if(l.rate!==undefined&&l.rate!==null&&l.rate!==""){
+      var rate=gmNum(l.rate);
+      if(rate===null) l.rate="";
+      else if(rate<0) l.rate=0;
+      else if(rate>PROFILE_RULES.loan.rateMax){ notes.push("Interest rate "+rate+"% looks like a typo; set to 60. Check it."); l.rate=PROFILE_RULES.loan.rateMax; }
+      else l.rate=rate;
+    }
+    if(l.tenure!==undefined&&l.tenure!==null&&l.tenure!==""){
+      var tn=gmNum(l.tenure);
+      l.tenure=tn===null?"":Math.min(PROFILE_RULES.loan.tenureMax,Math.max(PROFILE_RULES.loan.min,tn));
+    }
+  });
+  if(notes.length){
+    window.gmGuardNotes=(Array.isArray(window.gmGuardNotes)?window.gmGuardNotes:[]).concat(notes).slice(-12);
+    if(typeof window.gmToast==="function"){
+      var msg=notes.slice(0,2).join(" ");
+      if(notes.length>2) msg+=" (+"+(notes.length-2)+" more)";
+      window.gmToast(msg);
+    }
+  }
+  return notes;
 }
 function store(k,v){ if(k==="sovP") v=cleanP(v); try{ localStorage.setItem(k, JSON.stringify(v)); }catch(e){ MEM[k]=v; } }
 // A damaged key must never brick a person's record (robustness audit, 2026-11-14): a value of the wrong shape is moved to

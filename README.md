@@ -133,6 +133,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- Impossible numbers are fixed, never saved
 - Money in the same stones
 - Health you see at a glance, in gemstones
 - AI spend in rupees, capped per provider
