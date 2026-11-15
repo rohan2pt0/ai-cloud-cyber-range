@@ -221,3 +221,18 @@ def test_no_tap_highlight_on_any_app():
     import pathlib
     css = (pathlib.Path(__file__).resolve().parents[2] / "guiding-map" / "shared" / "lux.css").read_text()
     assert "-webkit-tap-highlight-color:transparent" in css.replace(" ", "")
+
+
+def test_the_daily_stones_and_the_north_star_dial_hold():
+    """Owner, 2026-11-15: the daily three is moonstone until done and jade when done, under a dawn line that fills with each
+    tick; the North Star is a dial whose arc is cut in its band's gemstone, with the star at its tip and gold ticks at the
+    band lines, and each part's bar is its own stone. The number tiles are cut stones with readable figures."""
+    ops = (ROOT / "guiding-map" / "ops.js").read_text("utf-8")
+    for needle in ("gmDailyStones", "--d3p", "MOONSTONE", "JADE", "DAWN", ".tile.on"):
+        assert needle in ops, needle
+    html = (ROOT / "guiding-map" / "index.html").read_text("utf-8")
+    for needle in ('class="ns-dial"', "tick(45)+tick(70)", "nsGood", "nsWatch", "nsLow", "sx-state-'+gem(v)"):
+        assert needle in html, needle
+    css = (ROOT / "guiding-map" / "shared" / "lux.css").read_text("utf-8")
+    assert ".sx-state-good *,.sx-state-low *{color:#fff!important}" in css and ".sx-state-watch *{color:#2a1703!important}" in css
+    assert "function clamp01(x){ return (typeof x===\"number\"&&isFinite(x))" in html      # a sparse profile never reads NaN/100
