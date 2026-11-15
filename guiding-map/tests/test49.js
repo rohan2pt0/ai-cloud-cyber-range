@@ -30,7 +30,10 @@ setTimeout(() => {
   // Life Map: the monthly take-home field has its visible label as its name
   w.goTab("life");
   const minc = [...sec().querySelectorAll("input")].filter(i => (i.getAttribute("onchange") || "").includes("gmLifeSet('minc'"));
-  ok("Life Map: the monthly take-home field has an aria-label", minc.length > 0 && minc.every(i => (i.getAttribute("aria-label") || "").trim()), minc.map(i => i.getAttribute("aria-label")).join("|"));
+  const mincLine = [...sec().querySelectorAll(".gm-fromp")].find(x => /Monthly take-home/.test(x.textContent));
+  ok("Life Map: with a profile, the take-home is a line with an accessible change link (no unlabelled input)",
+    minc.every(i => (i.getAttribute("aria-label") || "").trim()) && !!mincLine && /change/.test((mincLine.querySelector("a") || {}).textContent || ""),
+    minc.map(i => i.getAttribute("aria-label")).join("|") + " || " + (mincLine ? mincLine.textContent : "no line"));
   // Career: no control nests another control
   w.goTab("career");
   const nested = [...sec().querySelectorAll('[role="button"]')].filter(el => el.querySelector('input, button, [role="button"]'));

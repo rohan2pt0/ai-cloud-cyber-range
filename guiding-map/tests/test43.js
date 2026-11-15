@@ -41,7 +41,8 @@ setTimeout(() => {
   ok("Life Map: the same My numbers card", !!s.querySelector("details.gm-nums"));
   const ageInput = [...s.querySelectorAll("input")].some(i => (i.getAttribute("onchange") || "").includes("gmLifeSet('age'"));
   ok("Life Map: your age is shown from the birth date, not asked", !ageInput && /Your age: \d+/.test(s.textContent) && /from your profile/.test(s.textContent));
-  ok("Life Map: net worth follows the number just saved (27 lakh)", [...s.querySelectorAll("input")].some(i => (i.getAttribute("onchange") || "").includes("gmLifeSet('nw'") && i.value === "27"));
+  ok("Life Map: net worth follows the number just saved (₹27,00,000), shown as a line",
+    /₹27,00,000/.test(s.textContent) && ![...s.querySelectorAll("input")].some(i => (i.getAttribute("onchange") || "").includes("gmLifeSet('nw'")));
   // 5. an example profile shows no card
   w.eval("P.example = true"); w.goTab("money");
   ok("an example profile shows no My numbers card", !sec().querySelector("details.gm-nums"));

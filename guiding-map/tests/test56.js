@@ -1,6 +1,6 @@
 // v56: "Where the money goes" starts from the profile when the plan is empty, uses a validated categorical palette,
 // and shows the meters as a healthy band with the value as a dot and a status word, never a filled red track.
-// Fake data only: net 200000, spending 90000, one loan EMI 20000, gm_life left empty.
+// Fake data only: net 200000, spending 90000, one loan EMI 20000 (it still reduces the saving), gm_life left empty.
 const fs = require('fs'), path = require('path'), { JSDOM } = require('jsdom');
 let P = 0, F = 0, e = []; const ok = (n, c, d) => { c ? P++ : (F++, e.push(n + (d ? " :: " + d : ""))); };
 const prof = { name: "Fake", dob: "1990-05-15", country: "India", city: "", cur: "INR", gross: 300000, net: 200000, exp: 90000, sav: 400000,
@@ -18,7 +18,7 @@ setTimeout(() => {
     pc: (r.querySelector(".flowpc") || {}).textContent || "", from: /from your profile/.test(r.textContent)
   }));
   const text = () => sec().textContent;
-  ok("fixed costs come from the profile (spending + loan EMI = 110000)", rows().some(r => /Fixed costs/.test(r.name) && /1,10,000/.test(r.amt)), JSON.stringify(rows()));
+  ok("fixed costs come from the profile spending (90000)", rows().some(r => /Fixed costs/.test(r.name) && /90,000/.test(r.amt)), JSON.stringify(rows()));
   ok("saving comes from the profile (net - spending - EMI = 90000)", rows().some(r => /Saving/.test(r.name) && /90,000/.test(r.amt)), JSON.stringify(rows()));
   ok("those two numbers are marked 'from your profile'", rows().filter(r => r.from && /Fixed costs|Saving/.test(r.name)).length === 2, JSON.stringify(rows()));
   const g = rows().find(r => /Guilt-free/.test(r.name));
