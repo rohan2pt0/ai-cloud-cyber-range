@@ -9,6 +9,9 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- **A review ledger.** `docs/specs/review-ledger.md` ranks every directory by risk to a person, records what has been reviewed, and
+  holds test-first briefs for what was found. First slice: the Windows path. Website and docs checked against `brand.env` and the tokens.
+
 - **Windows launchers that say what is wrong.** The owner reported the double-click `.bat` files did not work. Causes found by
   review: `securax.cmd` read the list from `wsl -l`, which older Windows prints as UTF-16 (the name came out unusable); it used
   `wsl --cd ~/securax`, a form WSL does not document; it refused every command when Docker was down, even "what is wrong";
