@@ -31,7 +31,7 @@ fi
 if [ -d "$DEST/.git" ]; then
   C "Updating $DEST …"
   git -C "$DEST" diff --quiet -- local/compose/litellm-config.yaml 2>/dev/null || git -C "$DEST" checkout -- local/compose/litellm-config.yaml
-  git -C "$DEST" pull --ff-only || { C "git pull failed. Fix: rm -rf '$DEST' (your keys are copied again from the old folder) and re-run."; exit 1; }
+  git -C "$DEST" pull --ff-only || { C "Could not update $DEST (git pull failed; the message above says why). Nothing was deleted. Next:  cd '$DEST' && ./securax update"; exit 1; }
 else
   C "Downloading SecuRAX to $DEST …"
   git clone --depth 50 "$REPO" "$DEST" || { C "Download failed — check your internet, then re-run."; exit 1; }

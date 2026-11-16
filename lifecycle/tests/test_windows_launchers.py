@@ -109,3 +109,14 @@ def test_the_powershell_installer_logs_and_keeps_the_window_open_on_failure():
     # every way out with a failure goes through Stop-Here; the only bare exits are success and inside Stop-Here itself
     bare = [ln.strip() for ln in ps1.splitlines() if re.search(r"\bexit\b", ln) and "Stop-Here" not in ln and not ln.strip().startswith("#")]
     assert bare == ["exit $code", "exit 0"], bare
+
+
+def test_powershell_scripts_keep_non_ascii_out_of_the_code():
+    """Windows PowerShell 5.1 reads a file with no BOM as the local code page: a UTF-8 dot or dash in a string prints
+    as noise, and some bytes read as a quote and break the parse. Comments are safe; code and strings must be ASCII."""
+    tracked = subprocess.run(["git", "ls-files", "*.ps1"], cwd=ROOT, capture_output=True, text=True).stdout.split()
+    assert "install.ps1" in tracked
+    for name in tracked:
+        for n, ln in enumerate((ROOT / name).read_text(encoding="utf-8").splitlines(), 1):
+            if not ln.lstrip().startswith("#"):
+                assert ln.isascii(), f"{name}:{n}: a non-ASCII character outside a comment"

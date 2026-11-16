@@ -9,6 +9,10 @@ trim_trailing_whitespace = true
 indent_style = space
 indent_size = 4
 
+# Windows batch files are the one exception (.gitattributes says the same): cmd.exe needs CRLF
+[*.{bat,cmd}]
+end_of_line = crlf
+
 [*.{js,json,yml,yaml,html,css,md}]
 indent_size = 2
 
