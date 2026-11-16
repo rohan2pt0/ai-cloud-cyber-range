@@ -401,7 +401,11 @@ case "$cmd" in
     BEHIND="$(git -C "$ROOT" rev-list --count HEAD..origin/main 2>/dev/null || echo 0)"
     if [ "${BEHIND:-0}" -gt 0 ] && [ "$(git -C "$ROOT" rev-parse --abbrev-ref HEAD 2>/dev/null)" = main ]; then
       C "→ $BEHIND update(s) available: updating safely (backup first, automatic rollback)…"
-      "$0" update || { C "✗ The update did not finish; your previous version is running again. Run  ./securax why  and paste the output."; exit 1; }
+      # update exits 3 when it went back to the version that worked, and 1 when it could not: say which, never "running again" for both.
+      "$0" update || { _urc=$?
+        if [ "$_urc" = 3 ]; then C "✗ The new version did not start, so your previous version is running again. Nothing is lost. Run  ./securax go  again tomorrow, or  ./securax why  and paste the output."
+        else C "✗ The update did not finish (the reason is above). Check what is running:  ./securax why"; fi
+        exit 1; }
     else
       "$0" up || { C "✗ Start-up failed (details above). Run  ./securax why  and paste the output."; exit 1; }
     fi
@@ -458,9 +462,14 @@ case "$cmd" in
     [ -n "$TSN" ] && echo "  Phones:       https://$TSN   (Chat: https://$TSN:10000)"
     if [ -n "$LAPLINK" ] && [ "$NOOPEN" = 0 ]; then
       # Opening the laptop link sets sync up in that browser in one click (or does nothing if it is already set up).
-      ( command -v powershell.exe >/dev/null && powershell.exe -NoProfile -Command "Start-Process '$LAPLINK'" >/dev/null 2>&1 ) \
-        || ( command -v xdg-open >/dev/null && xdg-open "$LAPLINK" >/dev/null 2>&1 ) || true
-      echo "  The app just opened in your browser. If it asks 'Turn on cross-device sync?', press OK once."
+      # Say "opened" only when something opened it (a Mac has neither of the first two; a server has none of the three).
+      if ( command -v powershell.exe >/dev/null && powershell.exe -NoProfile -Command "Start-Process '$LAPLINK'" >/dev/null 2>&1 ) \
+        || ( command -v xdg-open >/dev/null && xdg-open "$LAPLINK" >/dev/null 2>&1 ) \
+        || ( command -v open >/dev/null && open "$LAPLINK" >/dev/null 2>&1 ); then
+        echo "  The app just opened in your browser. If it asks 'Turn on cross-device sync?', press OK once."
+      else
+        echo "  No browser could be opened from here. Open the app yourself; to switch sync on in it, run  ./securax sync-link"
+      fi
     fi
     if [ -n "$PHLINK" ] && on ntfy && [ -n "$(ev SECURAX_NOTIFY_NTFY)" ] && [ -t 0 ]; then
       printf '  Send the one-tap phone link to your phone now (it passes through your ntfy alert topic and is not stored there)? [y/N]: '
@@ -2277,7 +2286,18 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
     ENVF="$ROOT/local/compose/.env"; _cur=" $(ev SECURAX_OPTIONAL) "; for _t in $_tok; do _cur="${_cur// $_t / }"; done
     skv "$ENVF" SECURAX_OPTIONAL "$(echo $_cur)"; C "stopped: $_tok"
     ;;
-  down)  ( cd "$ROOT/local/compose" && docker compose --profile ai down ) ; C "stopped." ;;
+  down)
+    # Stop everything SecuRAX started; nothing is deleted. Chats, documents, the password vault and the synced Life OS stay on disk.
+    #   ./securax down
+    # The password manager and the online tunnel have profiles of their own: name them, or they keep running after a "stop".
+    if ( cd "$ROOT/local/compose" && docker compose --profile ai --profile passwords --profile online down ); then
+      C "Stopped. Your data is kept. Start again:  ./securax up"
+    else
+      C "✗ Could not stop everything (Docker's own words are above). Your data is kept."
+      echo "  If Docker is not running, nothing of SecuRAX is running either. Otherwise run  ./securax why  and paste the output."
+      exit 1
+    fi
+    ;;
   studio)
     # ./securax studio [up|open|down|status] — VS Code + the Cline AI coding agent in your browser, on YOUR own models
     # through the gateway (doc 119). Build SecuRAX from a GUI, no Claude, no terminal. Opt-in add-on: NEVER part of `up`,
