@@ -70,7 +70,7 @@ Counts are tracked files (`git ls-files`) on 2026-11-16. Status is one of: **not
 
 | Rank | Area | Directories (tracked files) | Status |
 |---|---|---|---|
-| 1 | Launchers and installers | root files (44), `local/` (43), `tools/windows/` (1) | 14 of 88 reviewed; 8 fixed (#313). See slice 1 |
+| 1 | Launchers and installers | root files (44), `local/` (43), `tools/windows/` (1) | 19 of 88 reviewed; 12 fixed (#313, #316). See slices 1 and 2 |
 | 2 | The Life OS | `guiding-map/` (196) | not reviewed |
 | 3 | The gateway and security | `apps/` (47), `governance/` (230), `policies/` (1), `redteam/` (11), `ai-soc/` (6), `mcp/` (3), `agents/` (12), `intel/` (9) | 1 of 319 reviewed (#313, encoding only) |
 | 4 | Sync and backup | inside `apps/` and `governance/` (review them first within rank 3), `routines/` (10), `sandbox/` (4) | not reviewed |
@@ -98,7 +98,7 @@ Nothing in this slice was run on Windows. Every "fixed" below is held by a stati
 | `WINDOWS-QUICKSTART.md` | reviewed (#313) | Now names the log and the shortcut rule. Brief W5 remains |
 | `tools/windows/free-c-drive.ps1` | reviewed (#313) | Sound and careful (report first, asks before each step). Brief L6 remains |
 | `governance/respond_kit/collect.ps1` | reviewed (#313), encoding only | Two strings held a non-ASCII dot that prints as noise in Windows PowerShell 5.1; fixed. Its logic is not reviewed |
-| `install.sh` | skimmed (#313), not line by line | Checksums on the release path, clear failures, no destructive step seen. It goes back in the next slice for a full read |
+| `install.sh` | skimmed (#313); read line by line in slice 2 | Checksums on the release path, clear failures, no destructive step seen. It goes back in the next slice for a full read |
 
 ### Briefs from slice 1
 
@@ -140,8 +140,68 @@ Test first: fail when any doc tells a person to download a `.bat` or `.cmd` by a
 does). confirm: that GitHub's "Download ZIP" applies the CRLF rule; if it does not, store the batch files as CRLF
 (`-text`) and update the two tests that name the current rule.
 
+### Slice 2 (2026-11-16, PR #316): the installer and the laptop scripts
+
+Nothing in this slice was run against real Docker, a real server or a real install. The fixes are held by
+`lifecycle/tests/test_laptop_scripts.py`, which runs `teardown.sh` with a pretend `docker` and `kind`.
+
+| File | Status | What was found |
+|---|---|---|
+| `local/scripts/teardown.sh` | fixed (#316) | **It deleted every volume** (`down -v`): chats, documents, automations, the synced Life OS state, the password vault and the database, while the README and the getting-started page called it "stop everything". It now keeps the data; `--erase` says what is lost, offers the backup first and needs the typed word |
+| `install.sh` | fixed (#316), read line by line | `--help` stopped three lines early; an offline unpack that failed left a folder that blocked the second try with "already exists"; the last line said the Command Center was open when it had not opened. Briefs M1 to M3, M7 to M9 remain |
+| `local/scripts/bootstrap-laptop.sh` | fixed (#316) | A gateway that never came up was reported as "expected 400, got 000"; the answer went to a fixed name in the shared temp folder; the header named one make of laptop. Briefs M4 and M5 remain |
+| `GETTING-STARTED.md` | fixed (#316) | Sent a newcomer to an "uploaded" file that is not in the repository, twice; named one make of laptop. Briefs M4 and M6 remain |
+| `local/scripts/daily-driver-up.sh` | reviewed (#316) | Works as written. Shows four addresses with ports; an empty container id gives a cryptic error. Brief M4 |
+| `local/scripts/kind-up.sh` | reviewed (#316) | Works as written. The Kyverno chart has no version; a missing tool gives "command not found". Briefs M4 and M5 |
+
+### Briefs from slice 2
+
+**M1. `install.sh --server` can lock the owner out of SSH (strong tier: sign-in).** It switches passwords off when *any*
+account holds a key. A person who signs in as root with a password, on an image where another account holds a key, is
+then shut out, and the comment says this "can never" happen. Test first: in `governance/tests/test_installers.py`, a
+dry run with a pretend home folder where only another account holds a key expects "SSH left as it was". Step: count
+keys only for the account that ran it (`SUDO_USER`, else root).
+
+**M2. `--server` says "SecuRAX is running" when it is not.** With `--restore`, the inner installer leaves quietly when
+Docker is not up, and a second run skips both the restore and the start because the folder exists; the last line is the
+same either way. Test first: a dry-run test expects the closing line to differ when a restore was asked for and did not
+happen. Step: check `securax status` (or the restore's exit code) before the closing line.
+
+**M3. `--stable` and `--version` check nothing (strong tier: supply chain; do it with L5).** L5 said the release path
+checks a checksum. Only `--offline` does: the other two clone a tag, and a tag can be moved. Test first: expect
+`--stable` to compare the cloned commit with one the release publishes. Step: publish the tag's commit in `SHA256SUMS`
+(or sign the tag) and compare after the clone. confirm: which of the two the release workflow can do today.
+
+**M4. The older scripts show ports and name Docker Desktop only.** `daily-driver-up.sh` (4 lines), `bootstrap-laptop.sh`
+(1) and `GETTING-STARTED.md` (5) show an address with a port; `bootstrap-laptop.sh` and `kind-up.sh` do not say which
+tool is missing. Test first: extend `test_laptop_scripts.py` to fail on a port shown to a person in these three files.
+Step: one file per run; use `web_url`, and the two Docker messages from L7.
+
+**M5. Pins two years old, and one missing.** `kind` v0.25.0, `kubectl` v1.31.3 and `helm` v3.16.3 are pinned with
+hashes (good) but old; the Kyverno chart in `kind-up.sh` has no version at all. Test first: `test_burrow_pinning.py`
+expects `--version` on every `helm upgrade --install`. Step: pin Kyverno; then one tool per run, version and hash
+together. confirm: the current versions and their published hashes (needs the network).
+
+**M6. A decision for the owner: sections 1 to 3 of `GETTING-STARTED.md` are the path from before `./securax`.**
+Recommended: keep the one-step start, fold the rest under one line that points to the docs, and change the same five
+lines in the README's quick start. Also `--footprint-file my_public_bio.txt` names a file the person does not have:
+give the command a fallback or an example file. Test first: the page holds no command that names a missing file.
+
+**M7. A second `[boot]` section in `/etc/wsl.conf`.** `--docker` appends `[boot]` and `systemd=true` even when the
+file already has a `[boot]` section. confirm: how WSL reads a repeated section. Test first: a dry run with a pretend
+`wsl.conf` that already has `[boot]` expects one section afterwards.
+
+**M8. `--server` assumes India's clock** (`global-ready`). Low. Step: keep the machine's zone unless `SECURAX_TZ` is
+set or the person's region is known; say which was used.
+
+**M9. Small ones in `install.sh`.** `--help` in a copy taken from git prints the unfilled repository placeholder in the
+first command; `--stable` without `curl` ends with the shell's own words. Test first: `--help` output holds no `{{`.
+
+**M10. Nothing proves the stop on real Docker.** Test first: a sandbox journey that starts the core, writes one row,
+runs `teardown.sh`, starts again and finds the row. Step: the journey only.
+
 ### Next slice (at most 15 files)
 
-`install.sh` (line by line), `GETTING-STARTED.md`, `DEPLOY.md` (the Windows rows), `local/scripts/bootstrap-laptop.sh`,
-`daily-driver-up.sh`, `kind-up.sh`, `teardown.sh`, then the `go`, `up`, `down`, `update` and `why` branches of `securax`
-(count each branch as one file), and `local/compose/docker-compose.yml`.
+`DEPLOY.md` (the Windows rows), the README's quick start, then the `go`, `up`, `down`, `update` and `why` branches of
+`securax` (count each branch as one file), and `local/compose/docker-compose.yml`. Look first at `down` and at every
+other place that passes `-v` or `--volumes` to Docker: slice 2 found one that deleted a person's data.
