@@ -235,4 +235,7 @@ nav:
           - Compliance matrix: compliance-matrix.md
           - Cost controls: cost-controls.md
           - Demo runbook: demo-runbook.md
+  - Plans:
+      - "Built to last (platforms, rename, open core, failures, the road up)": specs/built-to-last.md
+      - "Built to last: the briefs": specs/built-to-last-briefs.md
   - Troubleshooting: troubleshooting.md

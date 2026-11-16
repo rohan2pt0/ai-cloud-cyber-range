@@ -1,5 +1,9 @@
 # Built to last: the briefs
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🔴 Not built yet.** 18 one-step, test-first briefs for the open models, ranked by harm x reach / effort; none is built yet. Each is marked done here as its pull request merges. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 Every gap in [built-to-last.md](built-to-last.md), as one step an open model can finish in 20 minutes. Written
 2026-11-16. Queue item `built-to-last` (due 2027-01-31) points here.
 

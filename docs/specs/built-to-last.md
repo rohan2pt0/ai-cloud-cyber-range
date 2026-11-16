@@ -1,5 +1,9 @@
 # Built to last: one codebase, any name, no single point of failure
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🔴 Not built yet.** A plan, not a build (2026-11-16): one codebase on every platform, a rename driven by brand.env, the open-core split and what protects it, the launch register of single points of failure, and the four stages with targets (the data is in guiding-map/levers/roadmap.json, not yet read by the app). It turns amber as the briefs ship. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 Written 2026-11-16 by a panel of four: a principal architect, a release engineer, an IP lawyer and a site reliability
 engineer. It is a plan, not a build. Every gap named here is one brief in
 [built-to-last-briefs.md](built-to-last-briefs.md); queue item `built-to-last` holds the date.
