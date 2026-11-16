@@ -72,6 +72,7 @@ extra:
 copyright: !ENV [DOCS_COPYRIGHT, "SecuRAX · FSL-1.1-MIT (each release becomes MIT after two years) · no personal data in this repository"]
 nav:
   - Home: index.md
+  - Specs: specs/index.md
   - Get started:
       - Quickstart: get-started/quickstart.md
       - Laptop runbook: get-started/laptop-runbook.md

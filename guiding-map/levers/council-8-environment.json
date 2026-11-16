@@ -1,0 +1,48 @@
+{
+ "about": "The expert council, item 8, part 1 (queue expert-council): environment design. Architects and behavioural scientists agree that people mostly do what their surroundings make easy. So do not rely on willpower: change the room, the phone and the defaults once, and the right thing happens by itself. This file is the household layer (places and defaults); the estate's own catalogue of set-and-forget reversals lives in governance/environment.py and is not repeated here. Paraphrased from common practice; content only, the screen is not built yet. Not medical advice.",
+ "version": 1,
+ "status": "draft: written 2026-11-15",
+ "drafted": "2026-11-15",
+ "review": "2027-05-15",
+ "loop": {
+  "cue": "One change a week, offered on the weekend when there is time to move things (calendar item proposed: council-environment-reset, weekly, 10 minutes).",
+  "smallestStep": "Move one thing: put the wanted thing in sight, or the unwanted thing out of reach.",
+  "reward": "Each change is done once and stays done; the list of changes made is the progress.",
+  "environment": "This system is itself the environment step of every other loop.",
+  "review": "Monthly: which change stuck without effort? Keep those. Which one did you work around? Redesign it, do not try harder.",
+  "constraint": "Other people in the home. Agree shared spaces together; change your own corner first."
+ },
+ "laws": [
+  {"id": "visible", "text": "What you see, you do. Put the cue for a wanted habit where your eyes land."},
+  {"id": "distance", "text": "Every extra step halves the chance. Add steps to what you want less; remove them from what you want more."},
+  {"id": "default", "text": "The option that happens when you do nothing wins. Make the right one the default."},
+  {"id": "one-place-one-job", "text": "A place used for one thing triggers that thing. Keep the bed for sleep and the desk for work."},
+  {"id": "ready-the-night-before", "text": "Tomorrow's first step should need no decision: laid out, charged, packed."}
+ ],
+ "changes": [
+  {"id": "phone-out-of-bedroom", "area": "sleep", "law": "distance", "do": "Charge the phone outside the bedroom; use a simple alarm clock.", "minutes": 5, "undo": "Bring the charger back."},
+  {"id": "dim-evening", "area": "sleep", "law": "default", "do": "Set screens to night mode on a schedule and use a warm, low lamp in the last hour.", "minutes": 5, "undo": "Turn the schedule off."},
+  {"id": "water-in-sight", "area": "health", "law": "visible", "do": "A filled bottle on the desk and the bedside every morning.", "minutes": 2, "undo": "None needed."},
+  {"id": "fruit-front", "area": "health", "law": "visible", "do": "Fruit on the counter at eye level; sweets and fried snacks in an opaque box on a high shelf, or not bought.", "minutes": 10, "undo": "Swap them back."},
+  {"id": "shoes-by-door", "area": "movement", "law": "ready-the-night-before", "do": "Walking shoes and clothes by the door before bed.", "minutes": 2, "undo": "None needed."},
+  {"id": "home-screen", "area": "focus", "law": "distance", "do": "First phone screen: tools only (calendar, notes, maps, this app). Social and news apps off the first screen, signed out, badges off.", "minutes": 10, "undo": "Drag them back."},
+  {"id": "notifications-people-only", "area": "focus", "law": "default", "do": "Allow notifications from people and the calendar only; everything else is read when you choose.", "minutes": 10, "undo": "Re-enable per app."},
+  {"id": "desk-one-task", "area": "focus", "law": "one-place-one-job", "do": "Clear the desk to today's one task before you leave it; close every tab not needed for it.", "minutes": 3, "undo": "None needed."},
+  {"id": "book-on-pillow", "area": "learning", "law": "visible", "do": "The current book on the pillow or by the kettle; the remote in a drawer.", "minutes": 1, "undo": "None needed."},
+  {"id": "auto-transfer", "area": "money", "law": "default", "do": "A standing instruction on salary day moves savings out before you see them.", "minutes": 10, "undo": "Cancel the instruction in the bank app."},
+  {"id": "cards-off-sites", "area": "money", "law": "distance", "do": "Remove saved cards from shopping sites and turn off one-click buying.", "minutes": 10, "undo": "Save the card again."},
+  {"id": "unsubscribe-sales", "area": "money", "law": "distance", "do": "Unsubscribe from sale e-mails and messages for one month and see what you miss.", "minutes": 10, "undo": "Subscribe again."},
+  {"id": "launch-pad", "area": "calm", "law": "ready-the-night-before", "do": "One tray by the door: keys, wallet, badge, medicines, the bag packed.", "minutes": 5, "undo": "None needed."},
+  {"id": "table-no-phones", "area": "family", "law": "one-place-one-job", "do": "A basket for phones at meals, adults first.", "minutes": 2, "undo": "Agree together."},
+  {"id": "medicine-with-brush", "area": "health", "law": "visible", "do": "Daily medicines next to the toothbrush, in a weekly box.", "minutes": 5, "undo": "None needed.", "careful": "Keep medicines out of children's reach."}
+ ],
+ "match": {
+  "say": "The app offers the change for the area the person marked weakest, or the habit they keep missing; never the whole list.",
+  "byArea": {"sleep": ["phone-out-of-bedroom", "dim-evening"], "focus": ["notifications-people-only", "home-screen", "desk-one-task"], "money": ["auto-transfer", "cards-off-sites", "unsubscribe-sales"], "health": ["water-in-sight", "fruit-front", "medicine-with-brush"], "movement": ["shoes-by-door"], "learning": ["book-on-pillow"], "family": ["table-no-phones"], "calm": ["launch-pad"]}
+ },
+ "persona": [
+  {"who": "A person who scrolls late and sleeps badly", "first": "phone-out-of-bedroom"},
+  {"who": "A person who saves nothing", "first": "auto-transfer"},
+  {"who": "An older person who forgets medicines", "first": "medicine-with-brush"}
+ ]
+}
