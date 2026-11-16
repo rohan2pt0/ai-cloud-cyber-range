@@ -140,7 +140,7 @@
    },
    "questions": ["Any medicine running low?", "When was the last check-up, and what did the doctor say?", "Is the health cover in force, and who can use it in an emergency?", "Where are the papers, and who is the nominee on each account?", "Is anything at home becoming hard (stairs, the bathroom, cooking)?", "What would you want us to do if you could not decide for yourself?"],
    "pointers": [
-    {"what": "Free public health cover for people aged 70 and over", "see": "the lever 'ayushman' family in levers.json; do not repeat its rules here", "where": ["IN"]},
+    {"what": "Free public health cover for people aged 70 and over", "see": "the lever 'ayushman-70' in levers.json; do not repeat its rules here", "where": ["IN"]},
     {"what": "A pensioner's yearly life certificate", "where": ["IN"], "confirm": "The month and the ways to submit it were not verified in this round."}
    ]},
 
