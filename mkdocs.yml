@@ -157,6 +157,8 @@ nav:
       - "Systems that deliver: one shelf, one loop": securax/135-SYSTEMS-THAT-DELIVER.md
       - "The nature atlas: design taken from the wonders people revere": securax/136-NATURE-ATLAS.md
       - "Numbers that arrive by themselves: the automation plan": securax/137-AUTOMATION.md
+      - "Experience v3: priceless to look at, effortless to use": specs/experience-v3.md
+      - "Experience v3: the 20 fixes to the Life OS": specs/experience-fixes.md
       - "Choose who you serve": securax/116-CHOOSE-YOUR-CUSTOMER.md
   - How-to guides:
       - AI providers and plugins: securax/22-PLUGINS-AND-PROVIDERS.md
