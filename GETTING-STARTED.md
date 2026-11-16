@@ -1,7 +1,7 @@
 <!--
   SecuRAX — Getting Started.
-  The shortest path from "fresh laptop" to "using it daily". Written for the HP Spectre x360
-  (Windows 11 + Docker Desktop with the WSL2 backend, or any Linux). Everything here is free.
+  The shortest path from "fresh laptop" to "using it daily". Written for a Windows 11 laptop
+  (Docker Desktop with the WSL2 backend) or any Linux. Everything here is free.
 -->
 
 # Getting Started with SecuRAX
@@ -38,7 +38,7 @@ Prerequisite: **Docker Desktop** running (WSL2 backend on Windows).
 ./local/scripts/bootstrap-laptop.sh        # gateway + model router + DB + a self-test
 ./local/scripts/kind-up.sh                  # Kubernetes plane (admission control + runtime detection)
 python3 redteam/run_attacks.py --fail-under 0.9   # adversarial-ML scorecard (should be 100%)
-./local/scripts/teardown.sh                 # stop everything — costs nothing overnight
+./local/scripts/teardown.sh                 # stop everything, keep your data — costs nothing overnight
 ```
 What you now have: a guardrail gateway, a red-team scorecard, an AI-SPM posture report, and a
 board brief — the portfolio for the eight AI-security roles. Demo script: `docs/demo-runbook.md`.
@@ -77,8 +77,8 @@ for the full cadence. **Everything compounds because it is all captured in one b
 
 ## If something breaks
 - `docker` errors → Docker Desktop isn't running; start it, wait for the green whale.
-- Laptop slows while a model answers → use the lighter `local-fast` model; cap WSL2 RAM
-  (see the uploaded SOP) at 10 GB.
+- Laptop slows while a model answers → use the lighter `local-fast` model. On Windows the
+  installer sizes the memory WSL2 may use from your PC (`WINDOWS-QUICKSTART.md`).
 - Open WebUI shows no models → the gateway booted before Ollama:
   `cd local/compose && docker compose --profile ai restart gateway`.
-- Full troubleshooting + security posture notes: the uploaded `SOP-README.md`.
+- Anything else: run `./securax why`. It says what is wrong and the one next step.

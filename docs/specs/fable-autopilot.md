@@ -28,6 +28,9 @@ The prompt to paste (Fable, Medium effort, a new session each time):
   before the last push.
 - **Gates:** `ruff check .`, then `git add -A`, then `python3 -m lifecycle.fitness`. A CHANGELOG line under
   [Unreleased]; `python3 tools/readme_sync.py`. Say what you could not run.
+- **Not twice:** before you start, list the open PRs. If one already did the task marked next (main's copy of this
+  file goes stale until the list merges: task 1 was written three times, PRs #311, #312 and #315), do not redo it.
+  Take the task marked next in the newest copy of this file (the open merge-train PR's branch) and build on that branch.
 - **Budget:** stay under 60% of context. If told "stop", push what you have and open the PR at once.
 - **No merging, no PR subscriptions.**
 
@@ -36,10 +39,10 @@ The prompt to paste (Fable, Medium effort, a new session each time):
 Alternate: after a task-0 run, mark the first content task not done **next**; after a content task, mark task 0 **next**. Exactly one task is **next** at any time.
 
 1. **done (PR #311).** **Life systems, content.** Write `guiding-map/levers/life-systems.json` and `docs/specs/life-systems.md`
-0. **next.** Continue the review ledger: take the next unreviewed slice (at most 15 files), fix the cheap issues, brief
+0. **next (slice 1: PR #313; slice 2: PR #316; take slice 3).** Continue the review ledger: take the next unreviewed slice (at most 15 files), fix the cheap issues, brief
    the rest, update the ledger. (`docs/specs/review-ledger.md`; this task stays open until every row there is reviewed.
    Its one exception to the first rule: cheap fixes outside the Life OS and `apps/` are made, not briefed.)
-2. **Profession packs, archetypes 5 to 10.** Extend `guiding-map/levers/professions.json` (same shape as the first
+2. **done (PR #317).** **Profession packs, archetypes 5 to 10.** Extend `guiding-map/levers/professions.json` (same shape as the first
    four): founders and business owners; investors and finance; aviation, defence and intelligence; volatile short
    careers (athletes, actors, media, authors); research and academia; technical specialists. Verify each licence or
    renewal rule; mark the rest confirm.
