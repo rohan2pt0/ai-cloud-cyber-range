@@ -12,6 +12,20 @@ A person in a licensed or unusual working life never lets a licence, registratio
 
 `guiding-map/levers/professions.json` (about ten archetypes: renewals, risks and cover, income shape, next rung, three systems). The person's archetype comes from the profile (asked once); renewal dates are their own.
 
+### The ten packs (2026-11-16)
+
+`corporate`, `government`, `clinical`, `licensed` (the first four), then `founders`, `finance`, `uniformed` (aviation, defence,
+intelligence), `volatile` (athletes, performers, media, authors), `research` and `technical`.
+
+What a builder must handle in packs 5 to 10:
+
+- **`every` is plain words:** `year`, `quarter`, `event`, or a number of years (`3 years`, `6 to 12 months`). Show it as written;
+  the person's own date drives the calendar entry, never a date worked out from `every`.
+- **`confirm` on a renewal:** show it under the renewal as `Check: …`. It names what is not verified and who to ask.
+- **`where` on a renewal:** a country tag. In Global mode show only renewals with no tag, plus the pack's `global` note.
+- **`verified`, `review`, `sources` on a pack:** show `Checked on` the date; after `review`, say the pack is due a check.
+- **The secrecy rule (`uniformed`):** nothing classified or operational belongs in the app; the pack says so in its risks.
+
 ## Screen (one action)
 
 On Career: `Your working life` shows the next renewal due, with one button, `Add to calendar`. Everything else for the archetype folds under `Later (n)`.
