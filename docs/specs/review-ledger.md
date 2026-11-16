@@ -70,7 +70,7 @@ Counts are tracked files (`git ls-files`) on 2026-11-16. Status is one of: **not
 
 | Rank | Area | Directories (tracked files) | Status |
 |---|---|---|---|
-| 1 | Launchers and installers | root files (44), `local/` (43), `tools/windows/` (1) | 22 of 88 reviewed (`securax`: 5 of its branches); 15 fixed (#313, #316, #PRNUM). See slices 1 to 3 |
+| 1 | Launchers and installers | root files (44), `local/` (43), `tools/windows/` (1) | 22 of 88 reviewed (`securax`: 5 of its branches); 15 fixed (#313, #316, #319). See slices 1 to 3 |
 | 2 | The Life OS | `guiding-map/` (196) | not reviewed |
 | 3 | The gateway and security | `apps/` (47), `governance/` (230), `policies/` (1), `redteam/` (11), `ai-soc/` (6), `mcp/` (3), `agents/` (12), `intel/` (9) | 1 of 319 reviewed (#313, encoding only) |
 | 4 | Sync and backup | inside `apps/` and `governance/` (review them first within rank 3), `routines/` (10), `sandbox/` (4) | not reviewed |
@@ -200,7 +200,7 @@ first command; `--stable` without `curl` ends with the shell's own words. Test f
 **M10. Nothing proves the stop on real Docker.** Test first: a sandbox journey that starts the core, writes one row,
 runs `teardown.sh`, starts again and finds the row. Step: the journey only.
 
-### Slice 3 (2026-11-16, PR #PRNUM): start, stop, update and the compose file
+### Slice 3 (2026-11-16, PR #319): start, stop, update and the compose file
 
 Nothing in this slice was run against real Docker, a real update or Windows. The fixes are held by
 `lifecycle/tests/test_cli_stop_and_go.py`, which runs `./securax down` with a pretend `docker`; the rest is read from
@@ -208,14 +208,14 @@ the text. Each branch of `securax` counts as one file.
 
 | File | Status | What was found |
 |---|---|---|
-| `securax`, `down` | fixed (#PRNUM) | No `-v` anywhere: a stop keeps the data (and no branch of the CLI removes a volume with compose; a test now holds that). But it stopped the `ai` profile only, so **the password manager and the online tunnel kept running after "stop"**; a failure ended with Docker's words alone; "stopped." did not say the data is kept. It now stops all three, says the data is kept and the next step, and fails in plain words. Brief N8 remains |
-| `securax`, `go` | fixed (#PRNUM) | Said "your previous version is running again" for every failed update, also when nothing was running; said "the app just opened" when no opener worked, and a Mac had no opener at all. Both now say what happened. Briefs N6, N7 and N13 remain |
-| `securax`, `up` | reviewed (#PRNUM) | Sound: four fallbacks, keys made by itself, never left with nothing running. The port-clash help is for Windows only; a pasted key shows on screen. Briefs N4 and N5 |
-| `securax`, `update` | reviewed (#PRNUM) | Careful: backup first, health check, goes back by itself, exit 3 for a rollback. Runs new code with no signature check; carries on when the backup failed; drops a person's edit to one file without a word. Briefs N1 to N3 |
-| `securax`, `why` | reviewed (#PRNUM) | Works as written. Names Docker Desktop only (brief N6) |
-| `local/compose/docker-compose.yml` | fixed (#PRNUM), header only | Every published port is on the loopback address by default, the database network has no way out, required passwords have no default. The header named one make of laptop (fixed). Briefs N9 to N11 remain |
-| `DEPLOY.md` (the Windows rows, "Stop, update, back up") | fixed (#PRNUM) | Gave `git pull` as the way to update, which leaves the old code running and takes no backup; it now names the safe update. Brief N12 remains |
-| `README.md`, "Quick start" | reviewed (#PRNUM) | True since #316 (the stop keeps the data). The older step-by-step path is brief M6 |
+| `securax`, `down` | fixed (#319) | No `-v` anywhere: a stop keeps the data (and no branch of the CLI removes a volume with compose; a test now holds that). But it stopped the `ai` profile only, so **the password manager and the online tunnel kept running after "stop"**; a failure ended with Docker's words alone; "stopped." did not say the data is kept. It now stops all three, says the data is kept and the next step, and fails in plain words. Brief N8 remains |
+| `securax`, `go` | fixed (#319) | Said "your previous version is running again" for every failed update, also when nothing was running; said "the app just opened" when no opener worked, and a Mac had no opener at all. Both now say what happened. Briefs N6, N7 and N13 remain |
+| `securax`, `up` | reviewed (#319) | Sound: four fallbacks, keys made by itself, never left with nothing running. The port-clash help is for Windows only; a pasted key shows on screen. Briefs N4 and N5 |
+| `securax`, `update` | reviewed (#319) | Careful: backup first, health check, goes back by itself, exit 3 for a rollback. Runs new code with no signature check; carries on when the backup failed; drops a person's edit to one file without a word. Briefs N1 to N3 |
+| `securax`, `why` | reviewed (#319) | Works as written. Names Docker Desktop only (brief N6) |
+| `local/compose/docker-compose.yml` | fixed (#319), header only | Every published port is on the loopback address by default, the database network has no way out, required passwords have no default. The header named one make of laptop (fixed). Briefs N9 to N11 remain |
+| `DEPLOY.md` (the Windows rows, "Stop, update, back up") | fixed (#319) | Gave `git pull` as the way to update, which leaves the old code running and takes no backup; it now names the safe update. Brief N12 remains |
+| `README.md`, "Quick start" | reviewed (#319) | True since #316 (the stop keeps the data). The older step-by-step path is brief M6 |
 
 ### Briefs from slice 3
 
