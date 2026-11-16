@@ -95,6 +95,9 @@ if [ "$SERVER" = 1 ]; then
   [ "$(id -u)" = 0 ] || die "--server sets up the machine itself, so run it as root:  sudo bash install.sh --server"
   . /etc/os-release 2>/dev/null || true
   case "${ID:-}" in ubuntu|debian) ;; *) die "--server supports Ubuntu (22.04 or 24.04) and Debian. This is ${PRETTY_NAME:-unknown}." ;; esac
+  # checked BEFORE anything is installed, so a typo costs nothing (the laptop path does the same below)
+  [ -z "$RESTORE" ] || [ -f "$RESTORE" ] || die "Backup not found: $RESTORE   (nothing was changed on this server)"
+  [ -z "$KEYFILE" ] || [ -f "$KEYFILE" ] || die "Key file not found: $KEYFILE   (nothing was changed on this server)"
   DRY="${SECURAX_SERVER_DRYRUN:-0}"                       # 1 = say every step, change nothing (the tests use it)
   run(){ if [ "$DRY" = 1 ]; then echo "  [would run] $*"; else "$@"; fi; }
   export DEBIAN_FRONTEND=noninteractive
@@ -112,8 +115,13 @@ if [ "$SERVER" = 1 ]; then
   say "2/6 Docker, from Docker's own signed repository"
   install_docker
   say "3/6 firewall: SSH in (rate-limited), nothing else (the estate is reached only through the outbound tunnel)"
-  if [ "$DRY" = 1 ]; then echo "  [would run] ufw default deny incoming; ufw limit OpenSSH; ufw --force enable"
-  elif ufw default deny incoming >/dev/null 2>&1 && ufw default allow outgoing >/dev/null 2>&1 && ufw limit OpenSSH >/dev/null 2>&1 && ufw --force enable >/dev/null 2>&1; then
+  # SSH may listen on another port than 22 (many providers and owners move it). The firewall must let THAT port in before it
+  # is switched on, or the owner is locked out of their own server. So: ask sshd which ports it uses, and allow each.
+  _sshp="$(sshd -T 2>/dev/null | awk '$1=="port"{print $2}' | sort -u | tr '\n' ' ' || true)"
+  _ufw_ssh(){ local p; ufw limit OpenSSH >/dev/null 2>&1 || return 1
+    for p in $_sshp; do [ "$p" = 22 ] || ufw limit "$p/tcp" >/dev/null 2>&1 || return 1; done; }
+  if [ "$DRY" = 1 ]; then echo "  [would run] ufw default deny incoming; ufw limit OpenSSH (and every port SSH listens on: ${_sshp:-22}); ufw --force enable"
+  elif ufw default deny incoming >/dev/null 2>&1 && ufw default allow outgoing >/dev/null 2>&1 && _ufw_ssh && ufw --force enable >/dev/null 2>&1; then
     say "  ✔ on (more than 6 SSH attempts in 30 seconds from one address are refused)"
   else say "  ⚠ the firewall could not be switched on here (a container?). Every SecuRAX port listens on 127.0.0.1 only, so nothing is exposed either way."; fi
   # SSH is the one door left open to the internet, and many VPS images ship it accepting passwords, root included: it is then
@@ -193,13 +201,16 @@ need docker || say "  ⚠ Docker is not installed yet. The CLI and the Life OS w
 # 2) The code
 case "$MODE" in
   rolling)
-    git clone --quiet "https://github.com/$REPO.git" "$DIR" ;;
+    git clone --quiet "https://github.com/$REPO.git" "$DIR" \
+      || die "Could not download SecuRAX from github.com/$REPO (git says why, above). Nothing was installed. Check the network, then run this again." ;;
   stable)
     if [ -z "$WANT" ]; then   # the newest release: GitHub redirects /releases/latest to /releases/tag/<tag>, no API token needed
-      WANT="$(curl -fsSIL -o /dev/null -w '%{url_effective}' "https://github.com/$REPO/releases/latest" | sed -n 's#.*/tag/##p')"
+      # `|| true`: with no network (or no curl) the pipe fails, and under pipefail that ended the installer before the plain reason below
+      WANT="$(curl -fsSIL -o /dev/null -w '%{url_effective}' "https://github.com/$REPO/releases/latest" 2>/dev/null | sed -n 's#.*/tag/##p' || true)"
       [ -n "$WANT" ] || die "Could not find the newest release (no network, or no release yet). Try the rolling channel:  bash install.sh"
     fi
-    git clone --quiet --branch "$WANT" "https://github.com/$REPO.git" "$DIR" ;;
+    git clone --quiet --branch "$WANT" "https://github.com/$REPO.git" "$DIR" \
+      || die "Could not download the release $WANT from github.com/$REPO (git says why, above). Nothing was installed. Check the tag and the network, then run this again." ;;
   offline)
     [ -f "$ARCHIVE" ] || die "Not found: $ARCHIVE"
     SUMS="$(dirname "$ARCHIVE")/SHA256SUMS"
@@ -251,6 +262,6 @@ say "Turning on HTTPS (a fresh install has no data to move), then starting the e
 "$DIR/securax" tls on >/dev/null 2>&1 && say "  ✔ HTTPS on" || say "  ⚠ HTTPS was not turned on; the estate starts on plain http (./securax tls on later)"
 "$DIR/securax" tls trust --apply >/dev/null 2>&1 || true
 _dk "$DIR/securax" up || { say "The estate did not start. Ask it why:  cd \"$DIR\" && ./securax why"; exit 1; }
-"$DIR/securax" open 2>/dev/null || true
 say ""
-say "✔ Done. Your Command Center is open. Everything optional (free AI keys, phones, backups) is one step at a time:  securax finish"
+if "$DIR/securax" open 2>/dev/null; then say "✔ Done. Your Command Center is open. Everything optional (free AI keys, phones, backups) is one step at a time:  securax finish"
+else say "✔ Done. The estate is running. Open the Command Center with:  securax open   (everything optional is one step at a time:  securax finish)"; fi

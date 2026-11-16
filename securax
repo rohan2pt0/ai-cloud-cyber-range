@@ -315,7 +315,14 @@ case "$cmd" in
       if clash; then
         PORT="$(grep -oiE "(TCP |bind for )?[0-9.]*:[0-9]+" "$UPLOG" | grep -oE "[0-9]+$" | head -1)"
         C "✗ Port ${PORT:-?} on this computer is already used by another program (or an old copy of SecuRAX)."
-        echo "  Find it: open Windows PowerShell from the Start menu (not this Ubuntu window) and run:  netstat -ano | findstr :${PORT:-8088}   (last number = PID; Task Manager > Details shows the name)."
+        # the way to find the program differs by system: say the one that works HERE
+        if grep -qiE 'microsoft|wsl' /proc/version 2>/dev/null; then
+          echo "  Find it: open Windows PowerShell from the Start menu (not this Ubuntu window) and run:  netstat -ano | findstr :${PORT:-8088}   (last number = PID; Task Manager > Details shows the name)."
+        elif [ "$(uname -s)" = Darwin ]; then
+          echo "  Find it:  lsof -nP -iTCP:${PORT:-8088} -sTCP:LISTEN   (the first column names the program)."
+        else
+          echo "  Find it:  sudo ss -ltnp | grep ':${PORT:-8088} '   (the last column names the program)."
+        fi
         echo "  Stop it (or restart the computer), then run  ./securax go  again."
         exit 1
       fi
@@ -1921,7 +1928,7 @@ g=json.load(sys.stdin).get("approved",{}); print(f"✔ approved {g.get(\"tool\",
         # DNS can't resolve the host — almost always LOCAL (WSL after a wsl --shutdown, a VPN, corporate DNS), not GitHub.
         C "Could not resolve github.com — this is DNS on THIS machine, not GitHub being down. Nothing changed; the estate keeps running. Details: $(printf '%s' "$_PULL" | tail -1)"
         if grep -qiE 'microsoft|wsl' /proc/version 2>/dev/null; then
-          C "  WSL DNS fix:  printf '[network]\\ngenerateResolvConf=false\\n' | sudo tee /etc/wsl.conf ; sudo rm -f /etc/resolv.conf ; printf 'nameserver 1.1.1.1\\nnameserver 8.8.8.8\\n' | sudo tee /etc/resolv.conf   then (in Windows)  wsl --shutdown  and reopen (doc 121)."
+          C "  WSL DNS fix:  printf '[network]\\ngenerateResolvConf=false\\n' | sudo tee -a /etc/wsl.conf ; sudo rm -f /etc/resolv.conf ; printf 'nameserver 1.1.1.1\\nnameserver 8.8.8.8\\n' | sudo tee /etc/resolv.conf   then (in Windows)  wsl --shutdown  and reopen (doc 121)."
         else
           C "  Check DNS/VPN here:  getent hosts github.com   — then retry. If GitHub really is down: ./securax continuity show github-down (the mirror + the code bundle in your backups)."
         fi
