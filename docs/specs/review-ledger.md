@@ -70,7 +70,7 @@ Counts are tracked files (`git ls-files`) on 2026-11-16. Status is one of: **not
 
 | Rank | Area | Directories (tracked files) | Status |
 |---|---|---|---|
-| 1 | Launchers and installers | root files (44), `local/` (43), `tools/windows/` (1) | 14 of 88 reviewed; 8 fixed (#313). See slice 1 |
+| 1 | Launchers and installers | root files (44), `local/` (43), `tools/windows/` (1) | Slice 1: 14 of 88 reviewed, 8 fixed (#313). Slice 4 adds 11 more, 5 fixed (#321; `securax` counts one per branch). Slices 2 and 3 wait in open PRs #316 and #319 and carry their own counts |
 | 2 | The Life OS | `guiding-map/` (196) | not reviewed |
 | 3 | The gateway and security | `apps/` (47), `governance/` (230), `policies/` (1), `redteam/` (11), `ai-soc/` (6), `mcp/` (3), `agents/` (12), `intel/` (9) | 1 of 319 reviewed (#313, encoding only) |
 | 4 | Sync and backup | inside `apps/` and `governance/` (review them first within rank 3), `routines/` (10), `sandbox/` (4) | not reviewed |
@@ -140,8 +140,99 @@ Test first: fail when any doc tells a person to download a `.bat` or `.cmd` by a
 does). confirm: that GitHub's "Download ZIP" applies the CRLF rule; if it does not, store the batch files as CRLF
 (`-text`) and update the two tests that name the current rule.
 
+### Slices 2 and 3 (open PRs #316 and #319, not on main yet)
+
+The installer and the laptop scripts (#316), then `up`, `go`, `down`, `update`, `why` and the main compose file (#319).
+Their tables and briefs (M1 to M10, N1 to N13) are in those PRs. Slice 4 below was started from main and does not
+repeat them; when all three merge, keep every table.
+
+### Slice 4 (2026-11-16, PR #321): stop one part, back up, restore, first set-up
+
+Nothing in this slice was run against real Docker, a real backup or a real restore. The fixes are held by
+`lifecycle/tests/test_cli_restore_and_stop.py`, which runs a copy of the CLI in a scratch folder with a pretend
+`docker`; the rest is read from the text. Each branch of `securax` counts as one file.
+
+| File | Status | What was found |
+|---|---|---|
+| `securax`, `stop` | fixed (#321) | **`./securax stop docs` stopped nothing and said "stopped".** It always named a TLS sidecar; without internal TLS no file defines one, compose then refuses the whole line, and the error was thrown away. It now names a sidecar only when one exists, says when the stop failed (and keeps the add-on remembered), and a good stop says the data is kept and how to start it again. Brief P11 remains |
+| `securax`, `start` | fixed (#321), one line | With internal TLS on, `start passwords` named a sidecar the password manager does not have, so it could not start. Fixed with the same check. Sign-ups stay open until a second command is run: brief P6 |
+| `securax`, `restore` | fixed (#321), in part | Checks first, changes later, keeps the old `.env` and the old vault aside: good. But it **emptied each volume while a part outside the `ai` profile could still be running on it**; it took volume names from file names inside the backup and put them into a shell line; and a backup could write anywhere in the code folder, then be run. It now stops whoever holds a volume before it empties it, and refuses odd names and anything outside `vault/` before anything is changed. No way back for the volumes, and no proof of who made an unencrypted backup: briefs P1 to P3 |
+| `securax`, `backup` | fixed (#321), in part | Careful: verified, refuses to write plain when encryption was asked for, suspect copies kept apart, only encrypted copies leave the machine. The file with the keys was readable by other accounts until the closing `chmod` (now private from the first byte), and the last line printed `restore <file>` (now `restore latest`). Briefs P4 and P10 |
+| `securax`, `setup` | fixed (#321), one line | With no `openssl`, the sync token and three passwords were made from the clock, which can be guessed; they now come from the system's random source, as `up` already did. The wizard itself is the older path: brief P5 |
+| `securax`, `doctor` | reviewed (#321) | The real chat test and the true error are the best part of it. With Docker unreachable it says so, then prints eight more lines that all read "down" and waits up to four minutes on the chat test. Brief P7 |
+| `local/compose/.env.example` | reviewed (#321) | No real secret in it. The header still says "copy and fill in"; three lines carry a comment after the `=`; India is the default for everyone. Brief P8 |
+| `local/compose/tls.yml` | reviewed (#321) | Sound: one HTTPS port, the phone ports on the loopback address only, the CA key never enters a container, the edge image pinned by digest |
+| `local/compose/tls-internal.yml` | reviewed (#321) | Sound in design (every listener on loopback, trust files hold the public CAs too). The sidecar image has no digest; the password manager has no sidecar. Brief P9 |
+| `local/compose/tls-move.yml` | reviewed (#321) | Five lines, right as it is: the old address answers on this machine only |
+| `local/compose/full-stack.yml` | reviewed (#321) | Opt-in, loopback only, passwords have no default. Two images with no digest, one of them old. Brief P9 |
+
+### Briefs from slice 4
+
+**P1. A restore that fails half way has no way back (strong tier: recovery).** Each volume is emptied, then refilled. If
+the second one fails (a full disk, Docker stopping), the first holds the backup's data, the rest hold today's, the old
+`.env` is still in place, and the estate is down. Test first: with a pretend `docker` whose `run` fails on the second
+volume, expect the last line to name a safety copy taken before anything was emptied and the one command that puts it
+back. Step: take `./securax backup` into a file marked `pre-restore` first, as `update` does before it changes anything;
+if that backup fails, stop there unless `--no-safety-copy` is given.
+
+**P2. Nothing proves who made an unencrypted backup (strong tier: supply chain).** The checksums travel inside the same
+file, so they show damage, not tampering. Slice 4 closed the worst door (a file outside `vault/`). Still open: the
+`.env` in the backup replaces the live one (it can point the estate at another server), and the secrets and records
+archives unpack into `~/.securax` with no list of what may be in them. Test first: a pretend backup whose
+`sprout-secrets.tgz` holds a file outside `sprout/`; expect a refusal before anything is changed. Step: the same member
+check for `sprout-secrets.tgz` (only `sprout/`), `records.tgz` (only the three record files) and `tls-ca.tgz`; then say
+plainly, before the question, when the file is not encrypted and was not taken on this machine.
+confirm: GNU tar refuses a member that writes through a link placed earlier in the same archive (it is the default; no test here holds it).
+
+**P3. Replacing everything takes one "y" (`friction-by-consequence`).** The question does not say which backup (its
+date), how old it is, or what goes: everything written since. Test first: the question names the backup's date and
+asks for a typed word, and anything else leaves everything as it is. Step: read the date from `MANIFEST`; ask for the
+word `RESTORE`; `--yes` stays for the routines.
+
+**P4. Databases are copied as files while they run** (confirm). A Postgres folder copied under writes may not open
+again; the drill opens the copy, but nobody has checked that it opens the Postgres ones. Test first: a sandbox journey
+that backs up while a writer runs, restores, and reads the last committed row. Step: for a Postgres volume, a dump from
+inside the container rides along and the restore prefers it.
+
+**P5. A decision for the owner: `./securax setup` is from before `./securax go`** (the same family as M6 and N12). It
+asks for a key to be pasted and shows it (brief N4), opens every published port to the whole Wi-Fi on one "y" over
+plain HTTP, prints an address with a placeholder and a port, tells the person to install a third-party app, and says to
+paste the sync token into the app (`zero-setup`: the pairing scan does this). `up` suggests it and `DEPLOY.md` leads
+with it. Test first: no line `setup` prints holds `<`, a port, or the word "paste". Step: `setup` becomes a pointer to
+`./securax go` and `./securax phones`; the phone question moves behind the HTTPS switch.
+
+**P6. The password manager takes new accounts until a second command is run (strong tier: sign-in).** `start passwords`
+ends on "create your account, then run `passwords lock`". Until then anyone who can reach the page can make an account.
+Test first: after the first account exists, a second sign-up is refused without any command. Step: the estate closes
+sign-ups by itself once one account exists, and says so. Small, same branch: `start all` does not start it although the
+usage line reads as if it did, and `stop passwords` leaves `PASSWORDS_ENABLED=1` (confirm: what reads it).
+
+**P7. `doctor` with Docker down.** It should stop after the first finding with the one next step (`one-open-action`),
+not print "down" for each part and run a chat test that cannot pass. The Windows advice names Docker Desktop only (L7).
+Test first: with a pretend `docker` whose `info` fails, expect at most five lines, no "Testing", and exit 1.
+
+**P8. `.env.example`.** (a) The header and the sync lines tell a person to copy the file, fill it in and make tokens by
+hand; `go` does all three. Step: the header says "you never need to edit this". (b) `XAI_API_KEY`, `PERPLEXITYAI_API_KEY`
+and `AZURE_API_BASE` carry a comment after the `=`; the CLI's own reader returns that comment as the value. confirm:
+whether any reader then treats the provider as set. Test first: no line in the file has text after `=` that starts with
+spaces and `#`. (c) `ANSWER_CONTEXT`, the clock offset, the rupee cap and the cloud region are India for everyone
+(`global-ready`). Step: `go` sets them from the region; the file's defaults assume no country. (d) confirm: `up` replaces
+the public default of `LITELLM_MASTER_KEY` and the canary on first start, as it does the passwords.
+
+**P9. Images with no digest in the overlays (do it with N9).** The internal-TLS sidecar (`nginx:1.31-alpine`), and in
+`full-stack.yml` the database and the team chat; the team chat's version line is old (confirm: still supported).
+`./securax full up` prints an address with a port. Test first: the pin test that covers the main compose file also
+reads every overlay.
+
+**P10. Small ones in `backup`.** `backup offsite` with a letter instead of a number ends on a shell error; a failed
+checksum write is ignored and only shows at restore; the ransomware alert sends the machine's name to the webhook; a
+restore unpacks the whole backup under `/tmp`, which may be memory on some machines. One test each, first.
+
+**P11. Nothing proves the stop on real Docker.** Test first: a sandbox journey that runs `start flows`, then
+`stop flows`, and reads from Docker that the container is no longer running; then the same with internal TLS on.
+
 ### Next slice (at most 15 files)
 
-`install.sh` (line by line), `GETTING-STARTED.md`, `DEPLOY.md` (the Windows rows), `local/scripts/bootstrap-laptop.sh`,
-`daily-driver-up.sh`, `kind-up.sh`, `teardown.sh`, then the `go`, `up`, `down`, `update` and `why` branches of `securax`
-(count each branch as one file), and `local/compose/docker-compose.yml`.
+After slices 2 to 4, rank 1 still holds: the `status`, `open`, `protect`, `passwords`, `phones`, `tls`, `full` and
+`studio` branches of `securax` (each counts as one file; `protect` and `passwords` hold secrets, so read those first),
+`local/compose/stage-sprout.yml`, `design.yml` and `local/compose/litellm-config.yaml`.

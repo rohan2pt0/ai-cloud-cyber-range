@@ -20,6 +20,8 @@ skv(){ f="$1"; k="$2"; v="$3"; if grep -q "^$k=" "$f" 2>/dev/null; then
 tls_on(){ case "$(sed -n 's/^COMPOSE_FILE=//p' "$ROOT/local/compose/.env" 2>/dev/null | head -1)" in *tls.yml*) return 0;; *) return 1;; esac; }
 # Internal TLS (./securax tls internal on): the gateway listens on loopback inside its container, so the CLI reaches it over HTTPS through the edge
 # (https://localhost) and verifies it against the estate's CA; Python tools get the combined trust file. Otherwise: the plain loopback port, as before.
+# has_sidecar SERVICE: does the internal-TLS overlay define SERVICE-tls? Naming one it does not makes compose do nothing at all.
+has_sidecar(){ grep -q "^  $1-tls:" "$ROOT/local/compose/tls-internal.yml" 2>/dev/null; }
 internal_on(){ tls_on && [ "$(sed -n 's/^TLS_INTERNAL=//p' "$ROOT/local/compose/.env" 2>/dev/null | head -1)" = 1 ]; }
 tls_home(){ printf '%s' "${SECURAX_TLS_DIR:-$HOME/.securax/tls}"; }
 gw_url(){ if internal_on; then printf 'https://localhost'; else printf 'http://localhost:8080'; fi; }
@@ -525,12 +527,12 @@ URLS
     read -r MD < /dev/tty || MD="n"
     case "$MD" in [Yy]*) setkv BIND_HOST "0.0.0.0"; C "  ✔ Other devices on your Wi-Fi can now reach it (browse to http://<this-laptop-IP>:8088). For secure access anywhere, install Tailscale and set BIND_HOST to its 100.x IP.";; esac
     if ! grep -q "^SYNC_TOKENS=..*" "$ENVF" 2>/dev/null || grep -q "^SYNC_TOKENS=$" "$ENVF"; then
-      TOK="$( (command -v openssl >/dev/null && openssl rand -hex 24) || date +%s%N | sha256sum | cut -c1-48 )"
+      TOK="$( (command -v openssl >/dev/null && openssl rand -hex 24) || head -c 24 /dev/urandom | od -An -tx1 | tr -d ' \n' )"
       setkv SYNC_TOKENS "$TOK"; C "  ✔ Generated a cross-device sync token (paste it in the app: Ops → Cross-device sync)."
     fi
     # strong random passwords for the bundled services (only if still placeholders)
     for P in POSTGRES_PASSWORD GRAFANA_PASSWORD MM_DB_PASSWORD; do
-      if grep -q "^$P=change-me" "$ENVF"; then setkv "$P" "$( (command -v openssl >/dev/null && openssl rand -hex 16) || date +%s%N | sha256sum | cut -c1-32 )"; fi
+      if grep -q "^$P=change-me" "$ENVF"; then setkv "$P" "$( (command -v openssl >/dev/null && openssl rand -hex 16) || head -c 16 /dev/urandom | od -An -tx1 | tr -d ' \n' )"; fi
     done
     C "Setup complete. Start everything with:  ./securax up"
     ;;
@@ -1702,6 +1704,7 @@ g=json.load(sys.stdin).get("approved",{}); print(f"✔ approved {g.get(\"tool\",
     # Models are NOT included (large, re-downloadable). Copy the file to a 2nd disk + a cloud drive for 3-2-1.
     #   ./securax backup [DIR]        default DIR = ./backups or $SECURAX_BACKUP_DIR   (keeps the newest $BACKUP_KEEP, default 7)
     #   ./securax backup --passphrase  encrypt with a passphrase you type; or set SECURAX_BACKUP_KEYFILE (./securax crypto keygen) to encrypt every backup, unattended
+    umask 077                                          # the backup holds your keys: its folder and file are yours only from the first byte
     DESTARG=""; FORCE_PROMPT=0; for _a in "${@:2}"; do case "$_a" in --passphrase) FORCE_PROMPT=1 ;; *) DESTARG="$_a" ;; esac; done
     DEST="${DESTARG:-$(ev SECURAX_BACKUP_DIR "$ROOT/backups")}"; mkdir -p "$DEST"; TS="$(date +%Y%m%d-%H%M%S)"; OUTF="$DEST/securax-$TS.tar.gz"
     # Ransomware guard (doc 88): when the data looks encrypted, this backup is still written (it may be evidence) but named
@@ -1763,7 +1766,7 @@ g=json.load(sys.stdin).get("approved",{}); print(f"✔ approved {g.get(\"tool\",
     # Keep the newest BACKUP_KEEP, plus one per week for 4 weeks and one per month for 3 months: a week of silent damage can
     # never rotate the last clean copy out (doc 88).
     python3 "$ROOT/governance/ransomguard.py" prune "$DEST" --keep "$(ev BACKUP_KEEP 7)" || true
-    if [ "$ENCRYPT" = 1 ]; then C "✔ Backup saved, ENCRYPTED (AES-256) & verified: $OUTF ($(du -h "$OUTF" | cut -f1)). Restore needs the same key file / passphrase: ./securax restore <file>"
+    if [ "$ENCRYPT" = 1 ]; then C "✔ Backup saved, ENCRYPTED (AES-256) & verified: $OUTF ($(du -h "$OUTF" | cut -f1)). Restore needs the same key file / passphrase:  ./securax restore latest"
     else C "✔ Backup saved & verified: $OUTF ($(du -h "$OUTF" | cut -f1)) — contains your API keys, NOT encrypted; keep it private. To encrypt every backup from now on:  ./securax protect  (one guided step)"; fi
     OFF="$(ev SECURAX_OFFSITE_DIR)"
     if [ -n "$OFF" ] && [ "$ENCRYPT" = 1 ]; then
@@ -1774,7 +1777,7 @@ g=json.load(sys.stdin).get("approved",{}); print(f"✔ approved {g.get(\"tool\",
     elif [ -n "$OFF" ]; then C "⚠ Off-site copy skipped: only ENCRYPTED backups leave this machine.  ./securax protect  (one guided step)"; fi
     ;;
   restore)
-    # ./securax restore FILE [--yes] — replaces current data with the backup (current .env is kept as .env.pre-restore).
+    # ./securax restore latest | BACKUP-FILE [--yes] — replaces current data with the backup (current .env is kept as .env.pre-restore).
     # ./securax restore latest — the newest backup that is NOT suspect (local folder first, then the off-site one).
     F="${2:-}"
     if [ "$F" = latest ]; then
@@ -1799,10 +1802,26 @@ g=json.load(sys.stdin).get("approved",{}); print(f"✔ approved {g.get(\"tool\",
     STG="$(mktemp -d)"
     tar xzf "$F" -C "$STG" || { C "Could not unpack the backup."; exit 1; }
     ( cd "$STG" && sha256sum -c SHA256SUMS >/dev/null 2>&1 ) || { C "Backup checksum mismatch — file is damaged. Nothing was changed."; exit 1; }
+    # A volume's name comes from a file name inside the backup and goes into a shell line below: accept plain volume
+    # names only, and check every one BEFORE anything is stopped or emptied.
+    for T in "$STG"/vol-*.tgz; do
+      [ -f "$T" ] || continue; V="$(basename "$T" .tgz)"; V="${V#vol-}"
+      case "$V" in ""|[!A-Za-z0-9]*|*[!A-Za-z0-9_.-]*) C "This file names a data volume that ./securax backup would never write, so it is not restored. Nothing was changed."; exit 1 ;; esac
+    done
+    # The private registers unpack into the code folder: a file that holds anything outside vault/ could replace the code this
+    # command runs next, so it is refused (./securax backup writes vault/ and nothing else).
+    if [ -f "$STG/vault.tgz" ] && tar tzf "$STG/vault.tgz" 2>/dev/null | grep -qvE '^vault(/|$)'; then
+      C "This file would write outside your private folder (vault/), which ./securax backup never does, so it is not restored. Nothing was changed."; exit 1
+    fi
     IMG="vulnbank/llm-gateway:dev"; docker image inspect "$IMG" >/dev/null 2>&1 || IMG="alpine"
     "$0" down >/dev/null 2>&1 || true
     for T in "$STG"/vol-*.tgz; do
       [ -f "$T" ] || continue; V="$(basename "$T" .tgz)"; V="${V#vol-}"
+      # Never empty a volume under a running part (the stop above does not reach every add-on): stop whoever holds it first.
+      _busy="$(docker ps -q --filter "volume=$V" 2>/dev/null || true)"
+      if [ -n "$_busy" ] && ! docker stop $_busy >/dev/null 2>&1; then
+        C "A running part still holds $V and would not stop, so that volume was left as it is (the ones marked ✔ above are restored). Stop everything with  ./securax down  and run the same restore again."; exit 1
+      fi
       docker volume create "$V" >/dev/null
       docker run --rm --user 0 --entrypoint sh -v "$V":/v -v "$STG":/in "$IMG" -c "find /v -mindepth 1 -delete; tar xzf /in/vol-$V.tgz -C /v" \
         || { C "Restore of $V failed — run ./securax restore again (data volumes may be partly restored)."; exit 1; }
@@ -2254,7 +2273,7 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
       all) _svc="anythingllm n8n"; _need="about 3 GB" ;; *) C "usage: ./securax start docs | flows | passwords | all   (Private Docs = AnythingLLM; flows = n8n automation; passwords = Vaultwarden)"; exit 2 ;; esac
     case "${2:-}" in docs) _tok="docs" ;; flows|n8n) _tok="flows" ;; passwords) _tok="passwords" ;; *) _tok="docs flows" ;; esac
     if [ "${2:-}" = passwords ]; then skv "$ROOT/local/compose/.env" PASSWORDS_URL "$(web_url pass 8222 "" | sed 's#/$##')"; fi
-    _list="$_svc"; if tls_on; then python3 "$ROOT/governance/tls.py" render >/dev/null 2>&1 || true; internal_on && for _s in $_svc; do _list="$_list ${_s}-tls"; done; fi
+    _list="$_svc"; if tls_on; then python3 "$ROOT/governance/tls.py" render >/dev/null 2>&1 || true; internal_on && for _s in $_svc; do if has_sidecar "$_s"; then _list="$_list ${_s}-tls"; fi; done; fi
     C "Starting: $_svc  (needs $_need of memory; the first start of Private Docs takes a minute or two)"
     ( cd "$ROOT/local/compose" && docker compose --profile ai up -d $_list ) || { C "Could not start it. Run  ./securax doctor  and paste the output."; exit 1; }
     ENVF="$ROOT/local/compose/.env"; _cur=" $(ev SECURAX_OPTIONAL) "; for _t in $_tok; do case "$_cur" in *" $_t "*) ;; *) _cur="$_cur$_t " ;; esac; done
@@ -2273,9 +2292,13 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
     case "${2:-}" in docs) _svc="anythingllm"; _tok="docs" ;; flows|n8n) _svc="n8n"; _tok="flows" ;; passwords) _svc="vaultwarden"; _tok="passwords" ;;
       all) _svc="anythingllm n8n"; _tok="docs flows" ;;
       *) C "usage: ./securax stop docs | flows | passwords | all   (to stop everything: ./securax down)"; exit 2 ;; esac
-    ( cd "$ROOT/local/compose" && docker compose --profile ai stop $_svc $(for _s in $_svc; do echo "${_s}-tls"; done) 2>/dev/null ) || true
+    # The TLS sidecars exist only with internal TLS on. Naming one that no compose file defines makes compose stop NOTHING.
+    _list="$_svc"; if internal_on; then for _s in $_svc; do if has_sidecar "$_s"; then _list="$_list ${_s}-tls"; fi; done; fi
+    if ! ( cd "$ROOT/local/compose" && docker compose --profile ai stop $_list ); then
+      C "Could not stop: $_tok (Docker's own words are above). It may still be running; its data is kept. See why:  ./securax why"; exit 1
+    fi
     ENVF="$ROOT/local/compose/.env"; _cur=" $(ev SECURAX_OPTIONAL) "; for _t in $_tok; do _cur="${_cur// $_t / }"; done
-    skv "$ENVF" SECURAX_OPTIONAL "$(echo $_cur)"; C "stopped: $_tok"
+    skv "$ENVF" SECURAX_OPTIONAL "$(echo $_cur)"; C "Stopped: $_tok. Its data is kept. Start it again:  ./securax start ${2}"
     ;;
   down)  ( cd "$ROOT/local/compose" && docker compose --profile ai down ) ; C "stopped." ;;
   studio)
