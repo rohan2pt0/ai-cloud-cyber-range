@@ -1570,6 +1570,7 @@
      and the tenant's details for the police. Words and ready messages come from guiding-map/levers/landlord.json
      (window.GM_LANDLORD). Overdue is a ruby stone, within a week amber; at most three rows, the rest under Later. */
   function llDuty(id) { var d = (window.GM_LANDLORD && window.GM_LANDLORD.duties) || []; return d.filter(function (x) { return x.id === id; })[0] || null; }
+  function llWord(k) { var w = (window.GM_LANDLORD && window.GM_LANDLORD.words) || {}; return w[k] || ""; }
   function llDay(d) { var x = new Date(d.getFullYear(), d.getMonth(), d.getDate()); return x; }
   function llIso(d) { return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
   function llParse(t) { var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(t || "")); return m ? new Date(+m[1], +m[2] - 1, +m[3]) : null; }
@@ -1616,6 +1617,8 @@
   }
   function landlordHTML(p, i) {
     var rows = llRows(p), h = '<div class="road-col gm-ll" style="margin:6px 0 12px"><div style="font-weight:800;font-size:13.5px">Next for this home</div>';
+    var hint = llWord("rentHint");
+    if (hint && !llNum(p.rent)) h += '<div style="font-size:12.5px;color:var(--muted);margin-top:4px"><a href="#" class="gm-inl" data-rent-hint onclick="gmPropRentFocus(' + i + ');return false">' + esc(hint) + '</a></div>';
     if (!p.start && !p.rentDay) h += '<div style="font-size:12.5px;color:var(--muted);margin-top:4px">Add the tenant and the dates below; the app then reminds you of every due date.</div>';
     else if (!rows.length) h += '<div style="font-size:12.5px;color:var(--muted);margin-top:4px">Nothing due: rent, bills and papers are up to date.</div>';
     rows.slice(0, 3).forEach(function (r) { h += llRowHTML(i, r); });
@@ -1638,6 +1641,10 @@
     else if (act === "renew") { var st = llParse(x.start); if (st) { x.start = llIso(llAddMonths(st, llNum(x.months) || 11)); x.registered = ""; x.police = ""; } }
     else if (act === "registered" || act === "police") x[act] = today;
     S_("gm_props", p); renderAll();
+  };
+  window.gmPropRentFocus = function (i) {
+    var el = document.getElementById("gmPropRent-" + i); if (!el) return;
+    try { el.focus(); if (el.scrollIntoView) el.scrollIntoView({ block: "center" }); } catch (e) {}
   };
   window.gmLlCopy = function (id) {
     var el = document.getElementById(id), tx = el ? el.value : "";
@@ -1680,6 +1687,7 @@
       if ((p.use || "letout") === "letout") h += landlordHTML(p, i);
       F.forEach(function (f) {
         h += '<label class="f-label">' + f[1] + '</label><input ' + (f[0] === "n" ? "" : 'inputmode="decimal"')
+          + (f[0] === "rent" ? ' id="gmPropRent-' + i + '"' : '')
           + ' value="' + esc(p[f[0]] || "") + '" placeholder="' + f[2] + '" onchange="gmPropSet(' + i + ',\'' + f[0] + '\',this.value)">';
       });
       if (num(p.val) && num(p.rent)) {

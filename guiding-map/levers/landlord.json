@@ -2,6 +2,7 @@
  "about": "The landlord desk: what a person who lets out a home must do, when, and the ready messages, for any rented property. Rules are paraphrased from public sources (cited by link), verified on the date shown and re-checked by its review date. Not legal advice. India first ('where'); amounts change, so the app shows where to confirm.",
  "version": 1,
  "verified": "2026-11-15",
+ "words": {"rentHint": "Add the monthly rent to track it"},
  "duties": [
   {"id": "rent", "title": "Rent received", "every": "month", "dayField": "rentDay", "where": ["IN", "GLOBAL"],
    "how": "The app looks for a credit near the rent amount in your pasted bank messages around the due day; if none, it asks you to tick it.",

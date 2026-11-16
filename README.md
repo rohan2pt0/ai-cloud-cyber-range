@@ -133,6 +133,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- A let-out home with no rent says so, once
 - Delegated work finishes again, and briefs are one step, test first
 - Early warning signs
 - Before a big moment
@@ -140,7 +141,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - What we must earn
 - The landlord desk
 - Tax comparator on the savings levers
-- Savings levers keep themselves current
 
 **Release 0.4.0 - 2026-11-14:**
 
