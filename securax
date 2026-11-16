@@ -20,6 +20,8 @@ skv(){ f="$1"; k="$2"; v="$3"; if grep -q "^$k=" "$f" 2>/dev/null; then
 tls_on(){ case "$(sed -n 's/^COMPOSE_FILE=//p' "$ROOT/local/compose/.env" 2>/dev/null | head -1)" in *tls.yml*) return 0;; *) return 1;; esac; }
 # Internal TLS (./securax tls internal on): the gateway listens on loopback inside its container, so the CLI reaches it over HTTPS through the edge
 # (https://localhost) and verifies it against the estate's CA; Python tools get the combined trust file. Otherwise: the plain loopback port, as before.
+# has_sidecar SERVICE: does the internal-TLS overlay define SERVICE-tls? Naming one it does not makes compose do nothing at all.
+has_sidecar(){ grep -q "^  $1-tls:" "$ROOT/local/compose/tls-internal.yml" 2>/dev/null; }
 internal_on(){ tls_on && [ "$(sed -n 's/^TLS_INTERNAL=//p' "$ROOT/local/compose/.env" 2>/dev/null | head -1)" = 1 ]; }
 tls_home(){ printf '%s' "${SECURAX_TLS_DIR:-$HOME/.securax/tls}"; }
 gw_url(){ if internal_on; then printf 'https://localhost'; else printf 'http://localhost:8080'; fi; }
@@ -1806,6 +1808,11 @@ g=json.load(sys.stdin).get("approved",{}); print(f"✔ approved {g.get(\"tool\",
       [ -f "$T" ] || continue; V="$(basename "$T" .tgz)"; V="${V#vol-}"
       case "$V" in ""|[!A-Za-z0-9]*|*[!A-Za-z0-9_.-]*) C "This file names a data volume that ./securax backup would never write, so it is not restored. Nothing was changed."; exit 1 ;; esac
     done
+    # The private registers unpack into the code folder: a file that holds anything outside vault/ could replace the code this
+    # command runs next, so it is refused (./securax backup writes vault/ and nothing else).
+    if [ -f "$STG/vault.tgz" ] && tar tzf "$STG/vault.tgz" 2>/dev/null | grep -qvE '^vault(/|$)'; then
+      C "This file would write outside your private folder (vault/), which ./securax backup never does, so it is not restored. Nothing was changed."; exit 1
+    fi
     IMG="vulnbank/llm-gateway:dev"; docker image inspect "$IMG" >/dev/null 2>&1 || IMG="alpine"
     "$0" down >/dev/null 2>&1 || true
     for T in "$STG"/vol-*.tgz; do
@@ -2266,7 +2273,7 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
       all) _svc="anythingllm n8n"; _need="about 3 GB" ;; *) C "usage: ./securax start docs | flows | passwords | all   (Private Docs = AnythingLLM; flows = n8n automation; passwords = Vaultwarden)"; exit 2 ;; esac
     case "${2:-}" in docs) _tok="docs" ;; flows|n8n) _tok="flows" ;; passwords) _tok="passwords" ;; *) _tok="docs flows" ;; esac
     if [ "${2:-}" = passwords ]; then skv "$ROOT/local/compose/.env" PASSWORDS_URL "$(web_url pass 8222 "" | sed 's#/$##')"; fi
-    _list="$_svc"; if tls_on; then python3 "$ROOT/governance/tls.py" render >/dev/null 2>&1 || true; internal_on && for _s in $_svc; do _list="$_list ${_s}-tls"; done; fi
+    _list="$_svc"; if tls_on; then python3 "$ROOT/governance/tls.py" render >/dev/null 2>&1 || true; internal_on && for _s in $_svc; do if has_sidecar "$_s"; then _list="$_list ${_s}-tls"; fi; done; fi
     C "Starting: $_svc  (needs $_need of memory; the first start of Private Docs takes a minute or two)"
     ( cd "$ROOT/local/compose" && docker compose --profile ai up -d $_list ) || { C "Could not start it. Run  ./securax doctor  and paste the output."; exit 1; }
     ENVF="$ROOT/local/compose/.env"; _cur=" $(ev SECURAX_OPTIONAL) "; for _t in $_tok; do case "$_cur" in *" $_t "*) ;; *) _cur="$_cur$_t " ;; esac; done
@@ -2286,7 +2293,7 @@ print(" ".join(p.get("env",[]))); print(p.get("get_key","")); print(p.get("note"
       all) _svc="anythingllm n8n"; _tok="docs flows" ;;
       *) C "usage: ./securax stop docs | flows | passwords | all   (to stop everything: ./securax down)"; exit 2 ;; esac
     # The TLS sidecars exist only with internal TLS on. Naming one that no compose file defines makes compose stop NOTHING.
-    _list="$_svc"; if internal_on; then for _s in $_svc; do _list="$_list ${_s}-tls"; done; fi
+    _list="$_svc"; if internal_on; then for _s in $_svc; do if has_sidecar "$_s"; then _list="$_list ${_s}-tls"; fi; done; fi
     if ! ( cd "$ROOT/local/compose" && docker compose --profile ai stop $_list ); then
       C "Could not stop: $_tok (Docker's own words are above). It may still be running; its data is kept. See why:  ./securax why"; exit 1
     fi

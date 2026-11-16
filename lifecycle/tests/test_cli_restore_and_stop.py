@@ -36,6 +36,7 @@ def _estate(tmp_path, env_text=""):
     home = tmp_path / "estate"
     (home / "local" / "compose").mkdir(parents=True)
     shutil.copy(CLI, home / "securax")
+    shutil.copy(ROOT / "local" / "compose" / "tls-internal.yml", home / "local" / "compose" / "tls-internal.yml")
     (home / "local" / "compose" / ".env").write_text(env_text)
     bindir = tmp_path / "bin"
     bindir.mkdir()
@@ -62,9 +63,21 @@ def _branch(name):
     return text[start.start(): start.end() + end.end()]
 
 
-def _backup_file(tmp_path, volume_names):
+def _tgz(member_names):
+    blob = io.BytesIO()
+    with tarfile.open(fileobj=blob, mode="w:gz") as tar:
+        for name in member_names:
+            info = tarfile.TarInfo(name)
+            info.size = 2
+            tar.addfile(info, io.BytesIO(b"x\n"))
+    return blob.getvalue()
+
+
+def _backup_file(tmp_path, volume_names, vault_members=None):
     """A pretend backup: one small archive per volume name, and the checksums `restore` asks for."""
     inner = {}
+    if vault_members:
+        inner["vault.tgz"] = _tgz(vault_members)
     for name in volume_names:
         blob = io.BytesIO()
         with tarfile.open(fileobj=blob, mode="w:gz"):
@@ -98,6 +111,15 @@ def test_stop_names_the_sidecar_when_internal_tls_is_on(tmp_path):
     assert "stop anythingllm anythingllm-tls" in log
 
 
+def test_stop_never_names_a_sidecar_the_overlay_does_not_define(tmp_path):
+    """The password manager has no sidecar: with internal TLS on, naming one stopped (and started) nothing."""
+    home, bindir, calls = _estate(tmp_path, "COMPOSE_FILE=docker-compose.yml:tls.yml:tls-internal.yml\nTLS_INTERNAL=1\n")
+    done, log = _run(home, bindir, calls, "stop", "passwords")
+    assert done.returncode == 0, done.stdout + done.stderr
+    assert "stop vaultwarden" in log and "vaultwarden-tls" not in log
+    assert 'has_sidecar "$_s"' in _branch("start"), "`start` must ask the same question before it names a sidecar"
+
+
 def test_stop_says_the_data_is_kept_and_forgets_the_add_on(tmp_path):
     home, bindir, calls = _estate(tmp_path, "SECURAX_OPTIONAL=docs flows\n")
     done, _ = _run(home, bindir, calls, "stop", "docs")
@@ -127,6 +149,18 @@ def test_restore_refuses_a_volume_name_it_cannot_trust(tmp_path):
     assert "Nothing was changed" in done.stdout
     assert "docker run" not in log, "a volume was emptied before every name in the backup was checked"
     assert " down" not in log, "the estate was stopped for a backup that was then refused"
+
+
+def test_restore_refuses_a_file_that_would_write_into_the_code_folder(tmp_path):
+    """The private registers unpack next to the code; a member outside vault/ could replace the CLI itself."""
+    home, bindir, calls = _estate(tmp_path)
+    bad = _backup_file(tmp_path, ["fine_data"], vault_members=["vault/ok.json", "securax"])
+    before = (home / "securax").read_bytes()
+    done, log = _run(home, bindir, calls, "restore", str(bad), "--yes")
+    assert done.returncode == 1
+    assert "Nothing was changed" in done.stdout
+    assert "docker run" not in log and " down" not in log
+    assert (home / "securax").read_bytes() == before
 
 
 def test_restore_never_empties_a_volume_a_running_part_still_holds(tmp_path):
