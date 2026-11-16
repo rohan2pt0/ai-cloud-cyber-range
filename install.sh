@@ -43,7 +43,7 @@ while [ $# -gt 0 ]; do
     --docker) DOCKER_ONLY=1 ;;                 # root only: install Docker Engine for the user who ran sudo (the laptop path calls it)
     --no-start) NOSTART=1 ;;                   # put the code in place, start nothing (the old behaviour)
     --yes|-y) YES=1 ;;                         # do not ask before installing Docker
-    -h|--help) sed -n '2,15p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,18p' "$0"; exit 0 ;;
     *) die "Unknown option: $1   (see: bash install.sh --help)" ;;
   esac; shift
 done
@@ -66,6 +66,14 @@ install_docker(){
   fi
 }
 
+# Turn systemd on in a WSL configuration file, so Docker starts by itself after the next WSL restart. It leaves a choice the
+# person already made (any systemd= line) alone, and adds to an existing [boot] section rather than writing a second one.
+wsl_systemd(){ # wsl_systemd FILE -> 0 when it changed the file
+  grep -qE '^[[:space:]]*systemd[[:space:]]*=' "$1" 2>/dev/null && return 1
+  if grep -q '^\[boot\]' "$1" 2>/dev/null; then sed -i '/^\[boot\]/a systemd=true' "$1"
+  else printf '\n[boot]\nsystemd=true\n' >> "$1"; fi
+}
+
 # 0a) --docker: Docker Engine only, for the person who ran sudo (the laptop and WSL path asks for it once, then calls this)
 if [ "$DOCKER_ONLY" = 1 ]; then
   [ "$(id -u)" = 0 ] || die "--docker installs Docker for this machine, so it runs as root:  sudo bash install.sh --docker"
@@ -83,9 +91,9 @@ if [ "$DOCKER_ONLY" = 1 ]; then
   [ -n "$_who" ] && [ "$_who" != root ] && run usermod -aG docker "$_who" && say "  ✔ $_who may run Docker"
   # WSL often has no systemd: start it the old way, and turn systemd on for next time (it takes effect after a WSL restart)
   run systemctl enable --now docker >/dev/null 2>&1 || run service docker start >/dev/null 2>&1 || true
-  if grep -qi microsoft /proc/version 2>/dev/null && ! grep -q '^systemd=true' /etc/wsl.conf 2>/dev/null; then
-    if [ "$DRY" = 1 ]; then echo "  [would write] /etc/wsl.conf: [boot] systemd=true"; else printf '[boot]\nsystemd=true\n' >> /etc/wsl.conf; fi
-    say "  ✔ WSL will start Docker by itself after its next restart"
+  if grep -qi microsoft /proc/version 2>/dev/null; then
+    if [ "$DRY" = 1 ]; then echo "  [would write] /etc/wsl.conf: [boot] systemd=true"
+    elif wsl_systemd /etc/wsl.conf; then say "  ✔ WSL will start Docker by itself after its next restart"; fi
   fi
   exit 0
 fi
@@ -93,6 +101,11 @@ fi
 # 0) --server: make a fresh Ubuntu server ready, then install as its own user and start (doc 85)
 if [ "$SERVER" = 1 ]; then
   [ "$(id -u)" = 0 ] || die "--server sets up the machine itself, so run it as root:  sudo bash install.sh --server"
+  # Check what can be checked BEFORE the machine is changed: step 6 runs this file again as the new user, and a typo costs nothing here.
+  [ -f "${BASH_SOURCE[0]:-$0}" ] || die "--server needs the installer saved as a file (it runs itself again as the securax user). Download it, then:  sudo bash install.sh --server"
+  [ "$MODE" != offline ] || die "--server installs from the network, so --offline cannot be used with it."
+  [ -z "$RESTORE" ] || [ -f "$RESTORE" ] || die "Backup not found: $RESTORE"
+  [ -z "$KEYFILE" ] || [ -f "$KEYFILE" ] || die "Key file not found: $KEYFILE"
   . /etc/os-release 2>/dev/null || true
   case "${ID:-}" in ubuntu|debian) ;; *) die "--server supports Ubuntu (22.04 or 24.04) and Debian. This is ${PRETTY_NAME:-unknown}." ;; esac
   DRY="${SECURAX_SERVER_DRYRUN:-0}"                       # 1 = say every step, change nothing (the tests use it)
@@ -251,6 +264,7 @@ say "Turning on HTTPS (a fresh install has no data to move), then starting the e
 "$DIR/securax" tls on >/dev/null 2>&1 && say "  ✔ HTTPS on" || say "  ⚠ HTTPS was not turned on; the estate starts on plain http (./securax tls on later)"
 "$DIR/securax" tls trust --apply >/dev/null 2>&1 || true
 _dk "$DIR/securax" up || { say "The estate did not start. Ask it why:  cd \"$DIR\" && ./securax why"; exit 1; }
-"$DIR/securax" open 2>/dev/null || true
 say ""
-say "✔ Done. Your Command Center is open. Everything optional (free AI keys, phones, backups) is one step at a time:  securax finish"
+if "$DIR/securax" open 2>/dev/null; then say "✔ Done. Your Command Center is open."
+else say "✔ Done. The estate is running. Open your Command Center with:  cd \"$DIR\" && ./securax open"; fi
+say "Everything optional (free AI keys, phones, backups) is one step at a time:  securax finish"

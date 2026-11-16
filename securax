@@ -139,6 +139,9 @@ online_guard(){
   return 0
 }
 # preflight — find the common blockers BEFORE they turn into cryptic errors.
+# rand_hex N — N random bytes as hex. python3, else openssl, else the kernel, so a machine without python3 still gets a strong key.
+# Prints nothing when every source fails: the caller must check the length and never write a short key.
+rand_hex(){ python3 -c "import secrets; print(secrets.token_hex($1))" 2>/dev/null || openssl rand -hex "$1" 2>/dev/null || { head -c "$1" /dev/urandom 2>/dev/null | od -An -tx1 | tr -d ' \n'; }; }
 preflight(){
   docker info >/dev/null 2>&1 || {
     if grep -qi microsoft /proc/version 2>/dev/null || [ "$(uname -s)" = Darwin ]; then
@@ -214,23 +217,31 @@ case "$cmd" in
     # every service reads it from .env on start (Chat's config is not persisted, ENABLE_PERSISTENT_CONFIG=false).
     # the placeholder, an empty value, or the public development key (it is in this public repository) are all replaced (doc 87)
     if case "$(ev LITELLM_MASTER_KEY)" in ""|sk-range-change-me|sk-range-dev) true ;; *) false ;; esac; then
-      skv "$ENVF" LITELLM_MASTER_KEY "sk-$(python3 -c 'import secrets; print(secrets.token_hex(24))')" && C "  ✔ replaced the placeholder gateway key with a strong random one (kept in .env)"
+      _rk="$(rand_hex 24 || true)"
+      # without python3 this used to write the key "sk-" and call it strong (review slice 2): never write a short key
+      [ "${#_rk}" -ge 48 ] || { C "✗ Could not make a random gateway key on this machine (no python3, openssl or /dev/urandom). Install python3, then run  ./securax up  again."; exit 1; }
+      skv "$ENVF" LITELLM_MASTER_KEY "sk-$_rk" && C "  ✔ replaced the placeholder gateway key with a strong random one (kept in .env)"
     fi
     # Cross-device sync token: an empty or placeholder value ("change-me…" from older templates) is replaced once with a
     # strong random one. A known placeholder would let anyone who can reach the sync service read and write your data.
     case "$(ev SYNC_TOKENS)" in ""|*change-me*|*changeme*)
-      skv "$ENVF" SYNC_TOKENS "$(python3 -c 'import secrets; print(secrets.token_hex(24))')" && C "  ✔ generated a strong cross-device sync token (show it with: grep '^SYNC_TOKENS=' local/compose/.env)";;
+      _rk="$(rand_hex 24 || true)"
+      [ "${#_rk}" -ge 48 ] || { C "✗ Could not make a random sync token on this machine (no python3, openssl or /dev/urandom). Install python3, then run  ./securax up  again."; exit 1; }
+      skv "$ENVF" SYNC_TOKENS "$_rk" && C "  ✔ generated a strong cross-device sync token (show it with: grep '^SYNC_TOKENS=' \"$ENVF\")";;
     esac
     # Chat's sign-in key, made once and kept (doc 53): without it every update signs you out of Chat.
     if [ -z "$(ev WEBUI_SECRET_KEY)" ]; then
-      skv "$ENVF" WEBUI_SECRET_KEY "$( (command -v openssl >/dev/null && openssl rand -hex 32) || head -c 32 /dev/urandom | od -An -tx1 | tr -d ' \n')"
+      _rk="$(rand_hex 32 || true)"; if [ "${#_rk}" -ge 64 ]; then skv "$ENVF" WEBUI_SECRET_KEY "$_rk"; fi
     fi
     # One-step setup: if there's no Gemini key yet and we're in a real terminal, offer to
     # paste one right here for INSTANT answers (Enter to skip = private local model). No
     # hunting for .env. Sensitive data stays local either way.
     if ! grep -q "^GEMINI_API_KEY=..*" "$ENVF" 2>/dev/null && [ -t 0 ]; then
       printf '\nFor INSTANT answers, paste a FREE Google AI Studio key (https://aistudio.google.com/apikey)\n  [or press Enter to use the slower private local model]: '
-      read -r GK < /dev/tty || GK=""
+      # -s: a key is a secret, so it is not shown on the screen (or left in the scroll-back) as it is pasted
+      read -rs GK < /dev/tty || GK=""; printf '\n'
+      GK="$(printf '%s' "$GK" | tr -d '\r\t ')"                     # a paste from Windows can carry a stray return or space
+      if [ -z "$GK" ]; then C "  No key entered: the private local model answers. Add one any time:  ./securax setup"; fi
       if [ -n "$GK" ]; then
         if grep -q "^GEMINI_API_KEY=" "$ENVF"; then
           tmp="$(mktemp)"; awk -v v="$GK" 'BEGIN{FS="="} $1=="GEMINI_API_KEY"{print "GEMINI_API_KEY="v; next} {print}' "$ENVF" > "$tmp" && mv "$tmp" "$ENVF"
@@ -315,7 +326,13 @@ case "$cmd" in
       if clash; then
         PORT="$(grep -oiE "(TCP |bind for )?[0-9.]*:[0-9]+" "$UPLOG" | grep -oE "[0-9]+$" | head -1)"
         C "✗ Port ${PORT:-?} on this computer is already used by another program (or an old copy of SecuRAX)."
-        echo "  Find it: open Windows PowerShell from the Start menu (not this Ubuntu window) and run:  netstat -ano | findstr :${PORT:-8088}   (last number = PID; Task Manager > Details shows the name)."
+        if grep -qi microsoft /proc/version 2>/dev/null; then
+          echo "  Find it: open Windows PowerShell from the Start menu (not this Ubuntu window) and run:  netstat -ano | findstr :${PORT:-8088}   (last number = PID; Task Manager > Details shows the name)."
+        elif [ "$(uname -s)" = Darwin ]; then
+          echo "  Find it:  lsof -nP -iTCP:${PORT:-8088} -sTCP:LISTEN   (the first column is its name, the second its PID)."
+        else
+          echo "  Find it:  sudo ss -ltnp | grep :${PORT:-8088}   (its name and PID are at the end of the line)."
+        fi
         echo "  Stop it (or restart the computer), then run  ./securax go  again."
         exit 1
       fi
@@ -1921,7 +1938,7 @@ g=json.load(sys.stdin).get("approved",{}); print(f"✔ approved {g.get(\"tool\",
         # DNS can't resolve the host — almost always LOCAL (WSL after a wsl --shutdown, a VPN, corporate DNS), not GitHub.
         C "Could not resolve github.com — this is DNS on THIS machine, not GitHub being down. Nothing changed; the estate keeps running. Details: $(printf '%s' "$_PULL" | tail -1)"
         if grep -qiE 'microsoft|wsl' /proc/version 2>/dev/null; then
-          C "  WSL DNS fix:  printf '[network]\\ngenerateResolvConf=false\\n' | sudo tee /etc/wsl.conf ; sudo rm -f /etc/resolv.conf ; printf 'nameserver 1.1.1.1\\nnameserver 8.8.8.8\\n' | sudo tee /etc/resolv.conf   then (in Windows)  wsl --shutdown  and reopen (doc 121)."
+          C "  WSL DNS fix:  printf '\\n[network]\\ngenerateResolvConf=false\\n' | sudo tee -a /etc/wsl.conf ; sudo rm -f /etc/resolv.conf ; printf 'nameserver 1.1.1.1\\nnameserver 8.8.8.8\\n' | sudo tee /etc/resolv.conf   then (in Windows)  wsl --shutdown  and reopen (doc 121)."
         else
           C "  Check DNS/VPN here:  getent hosts github.com   — then retry. If GitHub really is down: ./securax continuity show github-down (the mirror + the code bundle in your backups)."
         fi

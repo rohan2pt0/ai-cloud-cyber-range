@@ -71,7 +71,7 @@ left on C: with `wsl -l -v`.
 `/etc/resolv.conf` pointing at a nameserver that no longer answers. Inside Ubuntu, test with `getent hosts github.com`;
 if it fails, pin a working resolver:
 ```bash
-printf '[network]\ngenerateResolvConf = false\n' | sudo tee /etc/wsl.conf
+printf '\n[network]\ngenerateResolvConf = false\n' | sudo tee -a /etc/wsl.conf   # -a adds to the file: it may hold your systemd setting
 sudo rm -f /etc/resolv.conf
 printf 'nameserver 1.1.1.1\nnameserver 8.8.8.8\n' | sudo tee /etc/resolv.conf
 ```

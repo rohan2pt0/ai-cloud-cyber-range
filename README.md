@@ -133,6 +133,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- `teardown.sh` no longer deletes your data, and four more review fixes (review ledger, slice 2)
 - Delegated work finishes again, and briefs are one step, test first
 - Release readiness: go/no-go gates for the public launch and the paid edition
 - Experience v3, the spec
@@ -140,7 +141,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - Life systems, the content
 - A review ledger
 - Windows launchers that say what is wrong
-- Early warning signs
 
 **Release 0.4.0 - 2026-11-14:**
 
@@ -208,7 +208,7 @@ load-tested beyond its measured budgets, and not independently audited. The full
 WITH_AI=1 ./local/scripts/bootstrap-laptop.sh # also pull local models + Llama Guard
 ./local/scripts/kind-up.sh                    # Kubernetes plane (Kyverno + NetPol + Falco)
 python3 redteam/run_attacks.py --fail-under 0.9   # adversarial-ML scorecard
-./local/scripts/teardown.sh                   # stop everything (costs nothing overnight)
+./local/scripts/teardown.sh                   # stop everything; your data is kept (--erase deletes it, after asking)
 ```
 
 ## What's inside
