@@ -133,6 +133,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- Delegated work finishes again, and briefs are one step, test first
 - Early warning signs
 - Before a big moment
 - Specs and the council's next five systems
