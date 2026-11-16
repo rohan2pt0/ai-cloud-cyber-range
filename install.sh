@@ -43,7 +43,7 @@ while [ $# -gt 0 ]; do
     --docker) DOCKER_ONLY=1 ;;                 # root only: install Docker Engine for the user who ran sudo (the laptop path calls it)
     --no-start) NOSTART=1 ;;                   # put the code in place, start nothing (the old behaviour)
     --yes|-y) YES=1 ;;                         # do not ask before installing Docker
-    -h|--help) sed -n '2,15p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,18p' "$0"; exit 0 ;;
     *) die "Unknown option: $1   (see: bash install.sh --help)" ;;
   esac; shift
 done
@@ -208,7 +208,9 @@ case "$MODE" in
     ( cd "$(dirname "$ARCHIVE")" && grep " $(basename "$ARCHIVE")\$" SHA256SUMS | $H -c - >/dev/null ) \
       || die "Checksum mismatch: $ARCHIVE is not the file the release published. Do not use it."
     say "  ✔ checksum matches the release"
-    mkdir -p "$DIR" && tar -xzf "$ARCHIVE" -C "$DIR" --strip-components=1
+    # $DIR did not exist a moment ago (checked above), so a half-unpacked copy is ours to remove: a second try then starts clean
+    mkdir -p "$DIR" && tar -xzf "$ARCHIVE" -C "$DIR" --strip-components=1 \
+      || { rm -rf -- "$DIR"; die "The archive did not unpack (a full disk, or a damaged file). Nothing was left in $DIR: free some room and run this again."; }
     say "  (an offline copy has no git history, so ./securax update cannot pull: install a newer archive the same way)" ;;
 esac
 chmod +x "$DIR/securax"
@@ -251,6 +253,7 @@ say "Turning on HTTPS (a fresh install has no data to move), then starting the e
 "$DIR/securax" tls on >/dev/null 2>&1 && say "  ✔ HTTPS on" || say "  ⚠ HTTPS was not turned on; the estate starts on plain http (./securax tls on later)"
 "$DIR/securax" tls trust --apply >/dev/null 2>&1 || true
 _dk "$DIR/securax" up || { say "The estate did not start. Ask it why:  cd \"$DIR\" && ./securax why"; exit 1; }
-"$DIR/securax" open 2>/dev/null || true
+# say it is open only when it is: over SSH or with no browser, name the one command that opens it
+if "$DIR/securax" open 2>/dev/null; then _open="Your Command Center is open."; else _open="Open your Command Center with:  securax open"; fi
 say ""
-say "✔ Done. Your Command Center is open. Everything optional (free AI keys, phones, backups) is one step at a time:  securax finish"
+say "✔ Done. $_open Everything optional (free AI keys, phones, backups) is one step at a time:  securax finish"
