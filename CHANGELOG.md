@@ -9,6 +9,16 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- **A review ledger.** `docs/specs/review-ledger.md` ranks every directory by risk to a person, records what has been reviewed, and
+  holds test-first briefs for what was found. First slice: the Windows path. Website and docs checked against `brand.env` and the tokens.
+
+- **Windows launchers that say what is wrong.** The owner reported the double-click `.bat` files did not work. Causes found by
+  review: `securax.cmd` read the list from `wsl -l`, which older Windows prints as UTF-16 (the name came out unusable); it used
+  `wsl --cd ~/securax`, a form WSL does not document; it refused every command when Docker was down, even "what is wrong";
+  it told Docker-Engine-in-Ubuntu users to start Docker Desktop; and a launcher opened from a ZIP or copied to the Desktop failed
+  with no plain reason. Now every launcher prints its steps, writes `%LOCALAPPDATA%\SecuRAX\last-run.log`, and on a failure shows the
+  one next step and waits. `install.ps1` does the same. `lifecycle/tests/test_windows_launchers.py` holds it (static: not run on Windows).
+
 - **Early warning signs** (owner, 2026-11-15; queue expert-council, item 3): five signs read like vital signs, each with the line where amber and red begin and one action: the buffer in months, the saving rate, spending against plan, energy over 7 days, habits slipping. Risk shows all five, red first; Today shows only the most urgent red one, in one calm line that rests once seen (test119).
 - **Before a big moment** (owner, 2026-11-15; queue expert-council, item 2): on Risk, a pilot's and a surgeon's habit for anyone: a short checklist before signing an agreement, accepting a job offer, buying a home, a planned hospital admission, a big purchase or travel abroad, each with the expert's reason; tick the checks, N of M checked as a gemstone, start again next time (test118).
 - **If one thing failed tomorrow** (owner, 2026-11-15; queue expert-council, item 1): on Risk, the household's single points of failure and its paper hygiene, as risk officers, reliability engineers and lawyers would have every family close them: cover if the main income stops, a family emergency file (template), nominees on every account, a second bank, a lost phone, health cover that outlives the job, a will, medical wishes, a document vault. The most severe gap first, one at a time, a visible N of M closed as a gemstone, Closed / Not for us / Reopen (content in `guiding-map/levers/council.json`; test117).

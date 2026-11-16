@@ -235,4 +235,7 @@ nav:
           - Compliance matrix: compliance-matrix.md
           - Cost controls: cost-controls.md
           - Demo runbook: demo-runbook.md
+  - Specs and reviews:
+      - Review ledger: specs/review-ledger.md
+      - Fable autopilot: specs/fable-autopilot.md
   - Troubleshooting: troubleshooting.md
