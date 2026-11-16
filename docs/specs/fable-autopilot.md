@@ -29,13 +29,13 @@ The prompt to paste (Fable, Medium effort, a new session each time):
 
 ## Tasks, in order (highest value per token first)
 
-1. **next.** **Life systems, content.** Write `guiding-map/levers/life-systems.json` and `docs/specs/life-systems.md`
+1. **done (PR #315).** **Life systems, content.** Write `guiding-map/levers/life-systems.json` and `docs/specs/life-systems.md`
    (max 4 pages). Cover health (check-ups by age and sex, with rough costs and where to get them; vaccinations; the
    family health calendar), family (children's milestones, parents' care, the partner's weekly time), career (the
    ladder, offers, renewals), learning (one skill a quarter), home (a monthly reset, seasonal maintenance). Each one is
    a loop (cue, smallest step, visible reward, environment, review, its one constraint) with persona cases (the
    distracted, the ADHD, the novice, the expert). Add 6 briefs to `docs/specs/life-systems-briefs.md`.
-2. **Profession packs, archetypes 5 to 10.** Extend `guiding-map/levers/professions.json` (same shape as the first
+2. **next.** **Profession packs, archetypes 5 to 10.** Extend `guiding-map/levers/professions.json` (same shape as the first
    four): founders and business owners; investors and finance; aviation, defence and intelligence; volatile short
    careers (athletes, actors, media, authors); research and academia; technical specialists. Verify each licence or
    renewal rule; mark the rest confirm.
