@@ -135,8 +135,10 @@ opens, and the **Ask** tab shows a live *"AI is ready / warming up / off"* statu
 ---
 
 ## 5. Stop, update, back up
-- **Stop (free RAM):** Windows → `STOP-Windows.bat`; Mac/Linux → `./securax down`
-- **Update to the latest:** `git pull` then start again (Docker reuses what hasn't changed).
+- **Stop (free RAM; your data is kept):** Windows → `STOP-Windows.bat`; Mac/Linux → `./securax down`
+- **Update to the latest:** Windows → `UPDATE-Windows.bat`; Mac/Linux → `./securax update`. It backs up first, checks
+  that the new version starts, and goes back to the one that worked if it does not. (A plain `git pull` changes the
+  files only: the running containers keep the old code.)
 - **Your data:** the Guiding Map stores everything in your browser (localStorage) on this device.
   Make a backup any time from **Ops → System health → Export backup** (a dated JSON file). That
   export is your real version history and the safety net behind everything.

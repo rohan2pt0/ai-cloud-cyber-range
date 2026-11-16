@@ -39,14 +39,14 @@ The prompt to paste (Fable, Medium effort, a new session each time):
 Alternate: after a task-0 run, mark the first content task not done **next**; after a content task, mark task 0 **next**. Exactly one task is **next** at any time.
 
 1. **done (PR #311).** **Life systems, content.** Write `guiding-map/levers/life-systems.json` and `docs/specs/life-systems.md`
-0. **next (slice 1: PR #313; slice 2: PR #316; take slice 3).** Continue the review ledger: take the next unreviewed slice (at most 15 files), fix the cheap issues, brief
+0. **open (slice 1: PR #313; slice 2: PR #316; slice 3: PR #319; take slice 4 after the next content task).** Continue the review ledger: take the next unreviewed slice (at most 15 files), fix the cheap issues, brief
    the rest, update the ledger. (`docs/specs/review-ledger.md`; this task stays open until every row there is reviewed.
    Its one exception to the first rule: cheap fixes outside the Life OS and `apps/` are made, not briefed.)
-2. **done (PR #317).** **Profession packs, archetypes 5 to 10.** Extend `guiding-map/levers/professions.json` (same shape as the first
+2. **done (PR #317; #318 is a repeat of it: keep one, close the other).** **Profession packs, archetypes 5 to 10.** Extend `guiding-map/levers/professions.json` (same shape as the first
    four): founders and business owners; investors and finance; aviation, defence and intelligence; volatile short
    careers (athletes, actors, media, authors); research and academia; technical specialists. Verify each licence or
    renewal rule; mark the rest confirm.
-3. **More savings levers.** Extend `guiding-map/levers/levers.json`: the 10 largest states' own schemes (energy,
+3. **next.** **More savings levers.** Extend `guiding-map/levers/levers.json`: the 10 largest states' own schemes (energy,
    transport, health, education, women, seniors), scholarships, insurance cost cuts, energy tariffs, and a Global set
    (no country assumed). Same fields as the existing levers; cite every source.
 4. **Growth templates for income.** `guiding-map/levers/growth.json` and `docs/specs/growth.md`: a personal-brand
