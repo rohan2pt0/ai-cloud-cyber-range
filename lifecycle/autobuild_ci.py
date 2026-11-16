@@ -5,6 +5,7 @@
     python3 lifecycle/autobuild_ci.py agent          one attempt: the model the route calls for, the brief, the last failure;
                                                      the next model in the chain if one is out of allowance
     python3 lifecycle/autobuild_ci.py slug           a branch-safe name for $TASK
+    python3 lifecycle/autobuild_ci.py check          is $TASK a brief one model can finish alone? (small, test-first, no slow audit)
     python3 lifecycle/autobuild_ci.py summary RC     the run's summary for the GitHub page
 
 The models come from plugins/catalog.json (the same chains the estate uses), limited to OpenCode Go, so one repository secret
@@ -80,10 +81,25 @@ def prompt(env: dict, strong: bool = True) -> str:
            "Work directly: no subagents (each one is a whole extra model session, and this task is small). Read only what you need.")
     # The gates that decide, named, so the model runs them itself before it stops. Not naming diffcheck cost a whole failed
     # attempt per task (2026-11-10: the model reported "all green" from pytest and fitness, then diffcheck blocked it).
-    gates = (" Before you stop, run the same gates that will judge you, and fix everything they report: ./securax verify ;"
-             " python3 lifecycle/diffcheck.py ; python3 lifecycle/forge.py gate --base HEAD .")
+    # The order matters as much as the names. `./securax verify` is the slow one (the full pytest and the whole Life OS suite,
+    # about 10 minutes, silent), so the model is told to run it ONCE, last, into a file: run early or twice it used up the
+    # model's time, and on 2026-11-15 its silence was read as a hung model (see `watched`). Each command is on its own line,
+    # with no sentence full stop after it: the model once ran the full stop as an argument.
+    gates = ("\n\nTest first, then the gates, in this order:\n"
+             "1. Write the one test the brief names and see it fail. Change the code until that ONE test passes. While you work, "
+             "run only that test (seconds), never a whole suite.\n"
+             "2. Then the fast gates, and fix what they report:\n"
+             "   ruff check .\n"
+             "   git add -A\n"
+             "   python3 lifecycle/diffcheck.py\n"
+             "   python3 lifecycle/forge.py gate --base HEAD\n"
+             "3. Last, ONCE, the slow gate. It is silent for about 10 minutes and already holds the full pytest and the full Life OS "
+             "npm test, so do not run those separately:\n"
+             "   ./securax verify > /tmp/verify.log 2>&1; echo rc=$?; tail -n 40 /tmp/verify.log\n"
+             "Do not run a browser audit (ui_audit, device_audit, kit_audit, persona_audit, robustness_audit) or the sandbox, and "
+             "do not install anything: the reviewer runs those after you.")
     return text + ("\n\nWork in this checkout. Follow AGENTS.md and BUILD-CONTRACT.md. " + how + gates +
-                   " Do not commit, push, skip a test or weaken a rail: the gates run after you.")
+                   "\nDo not commit, push, skip a test or weaken a rail: the gates run after you.")
 
 
 PROBE_CACHE = pathlib.Path.home() / ".cache" / "securax" / "go-models.json"
@@ -129,14 +145,32 @@ def usable(models: list[str], run=subprocess.run, cache: pathlib.Path = PROBE_CA
 
 
 STALL_S = 6 * 60      # no output for this long = the model hangs (it printed nothing in 25 min twice on 2026-11-10)
+TOOL_S = 20 * 60      # one command of the model's own may stay silent this long (the Life OS suite alone takes 7 minutes, verify 10)
+OUT_OF_TIME = 123     # the model was working but used its time; 124 means it hung (silent, and running nothing)
 
 
-def watched(cmd: list[str], budget: int, stall: int = STALL_S, cwd: str = str(ROOT)) -> int:
+def _busy(pid: int, run=subprocess.run) -> bool:
+    """Is the model running a command of its own right now? OpenCode prints a command only when it ENDS, so a model
+    waiting for `npm test` or `./securax verify` is silent for minutes while it works. Its commands are child processes
+    of the agent; a model waiting for the provider has none. Unsure (no `ps`) means no: the old, stricter rule."""
+    try:
+        out = run(["ps", "-eo", "pid=,ppid="], capture_output=True, text=True, timeout=10).stdout
+    except (OSError, subprocess.SubprocessError):
+        return False
+    return any(line.split()[1:2] == [str(pid)] for line in out.splitlines())
+
+
+def watched(cmd: list[str], budget: int, stall: int = STALL_S, cwd: str = str(ROOT), tool: int = TOOL_S) -> int:
     """Run a model, passing its output through, and stop it early when it goes SILENT: a working model prints its
     reads, edits and commands as it goes; one that prints nothing for `stall` seconds is hung, and waiting the whole
-    budget for it cost 25 minutes per task. Returns the exit code, 124 on budget or stall (stall also prints why)."""
+    budget for it cost 25 minutes per task. Silence while the model runs a command of its own is work, not a hang
+    (on 2026-11-15 the Life OS suite passed 6 minutes and every delegated task was stopped mid-test): that is allowed
+    `tool` seconds. Returns the exit code, 124 when it hung, 123 (OUT_OF_TIME) when it was working but used its time."""
     import selectors
-    p = subprocess.Popen(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    import signal
+    # its own process group, so that stopping the model also stops the command it started (an orphaned test run would
+    # keep writing into the checkout while the next model works in it)
+    p = subprocess.Popen(cmd, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, start_new_session=True)
     sel = selectors.DefaultSelector()
     sel.register(p.stdout, selectors.EVENT_READ)
     start = last = time.time()
@@ -150,12 +184,23 @@ def watched(cmd: list[str], budget: int, stall: int = STALL_S, cwd: str = str(RO
                 sys.stdout.flush()
                 last = time.time()
             now = time.time()
-            if now - last > stall or now - start > budget:
-                why = "went silent for %d min" % (stall // 60) if now - last > stall else "used its %d min" % (budget // 60)
-                print(f"autobuild_ci: stopping the model: it {why}", file=sys.stderr)
+            quiet = now - last
+            working = quiet > stall and _busy(p.pid)          # asked only once the quiet limit has passed
+            if now - start > budget:
+                why, rc = "used its %d min" % (budget // 60), OUT_OF_TIME
+            elif working and quiet > tool:
+                why, rc = "ran one command for %d min with no output" % (tool // 60), OUT_OF_TIME
+            elif quiet > stall and not working:
+                why, rc = "went silent for %d min and was running no command" % (stall // 60), 124
+            else:
+                continue
+            print(f"autobuild_ci: stopping the model: it {why}", file=sys.stderr)
+            try:
+                os.killpg(p.pid, signal.SIGKILL)
+            except OSError:
                 p.kill()
-                p.wait(timeout=30)
-                return 124
+            p.wait(timeout=30)
+            return rc
         return p.wait(timeout=60)
     finally:
         sel.close()
@@ -182,13 +227,15 @@ def agent(env: dict | None = None, run=subprocess.run) -> int:
     if env.get("AUTOBUILD_PROBE", "1") != "0":
         models = usable(models, run)
     text = prompt(env, strong)
-    budget = int(env.get("AUTOBUILD_MODEL_MINUTES", "25")) * 60     # a hung model call must not hold the whole run
+    # a model call must not hold the whole run; 40 min leaves room for the one slow gate (about 10) after the work itself
+    budget = int(env.get("AUTOBUILD_MODEL_MINUTES", "40")) * 60
     rc = 1
     for m in models:
         cmd = ["opencode", "run", "--model", f"{PROVIDER}/{m}", text]
         if run is subprocess.run:                              # the real thing: watch for a silent (hung) model
-            rc = watched(cmd, budget, int(env.get("AUTOBUILD_STALL_MINUTES", "6")) * 60)
-            if rc == 124:
+            rc = watched(cmd, budget, int(env.get("AUTOBUILD_STALL_MINUTES", "6")) * 60,
+                         tool=int(env.get("AUTOBUILD_TOOL_MINUTES", "20")) * 60)
+            if rc == 124:                                      # only a real hang: a model that used its time is not a bad model
                 _mark_hung(m)
         else:                                                  # tests inject their own runner
             try:
@@ -198,13 +245,40 @@ def agent(env: dict | None = None, run=subprocess.run) -> int:
         if rc == 0:
             break
         print(f"autobuild_ci: {m} did not finish (exit {rc}); trying the next model in the chain", file=sys.stderr)
-        if rc == 124 and "ran out of time" not in text:
+        if rc in (124, OUT_OF_TIME) and "ran out of time" not in text:
             # Hand over, do not restart: the timed-out model's edits are still in this checkout. Without this note the next
             # model began blind, judged the task done and stopped, and the run went "green" with no change (2026-11-10).
             text += ("\n\nA previous model ran out of time on this task. Its unfinished changes are in this checkout: run "
                      "git status and git diff FIRST, keep what is right, and finish the task from there. Do not start over.")
     run(["git", "add", "-A"], cwd=str(ROOT))      # new files must be staged, or the impact-map check cannot see them
     return 0                                     # the gates decide, not the agent's exit code
+
+
+BRIEF_MAX = 1500      # characters: "3 to 8 lines". Longer briefs kept the model reading and planning past its time
+BRIEF_FILES = 4       # more files than this is more than one step: send it as slices
+SLOW = ("ui_audit", "device_audit", "kit_audit", "persona_audit", "robustness_audit", "sandbox/run.py", "verify --full")
+_PATH = re.compile(r"(?<![\w./-])(?:[\w.-]+/)+[\w.-]+\.[a-z]{1,5}\b|(?<![\w./-])(?:securax|[\w-]+\.(?:py|js|json|sh|css|html|md|yml))\b")
+PAPERWORK = ("CHANGELOG.md", "README.md", "LESSONS.md", "tools/readme_sync.py", "tools/features_sync.py", "docs/sync_status.py",
+             "governance/queue.json", "guiding-map/build.js", "build.js", "guiding-map/package.json", "package.json")
+
+
+def brief_problems(task: str) -> list[str]:
+    """Why one model could not finish this brief alone, in plain words; empty when it can. A brief is one step: short,
+    with the ONE test that proves it named first, at most four files, and no check that takes minutes in a browser.
+    The template is .claude/skills/delegate/GOLDEN-BRIEF.md."""
+    out = []
+    if len(task) > BRIEF_MAX:
+        out.append(f"it is {len(task)} characters (the limit is {BRIEF_MAX}): cut it into slices of one step each")
+    if not re.search(r"\btest\w*\.(?:py|js)\b", task):
+        out.append("it names no test file: say which new or existing test must fail before and pass after (Test: path/test_x.py)")
+    slow = [w for w in SLOW if w in task]
+    if slow:
+        out.append("it asks for a slow check (" + ", ".join(slow) + "): the reviewer runs those; put their findings in the brief instead")
+    files = {m.group(0) for m in _PATH.finditer(task)}
+    files = {f for f in files if f not in PAPERWORK and not re.search(r"(^|/)test\w*\.(?:py|js)$", f)}
+    if len(files) > BRIEF_FILES:
+        out.append(f"it names {len(files)} files to change (the limit is {BRIEF_FILES}): one slice per step, in order")
+    return out
 
 
 def slug(task: str) -> str:
@@ -230,6 +304,11 @@ def main(argv: list[str]) -> int:
     if cmd == "slug":
         print(slug(os.environ.get("TASK", "")))
         return 0
+    if cmd == "check":
+        bad = brief_problems(os.environ.get("TASK", ""))
+        for b in bad:
+            print("- " + b)
+        return 1 if bad else 0
     if cmd == "summary":
         print(summary(int(argv[1]) if len(argv) > 1 else 1))
         return 0

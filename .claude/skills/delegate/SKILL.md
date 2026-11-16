@@ -18,20 +18,30 @@ the hand-off for them, in a few cheap tool calls, and spend Claude's allowance o
 
 ## 2. Hand it over: four paths, so no one of them is a single point of failure
 
-Write the task as one self-contained brief of 3 to 8 lines. The model cannot see this chat. Include:
-- the outcome, in the owner's words;
-- the files to touch;
-- the test or check that proves it;
-- the paperwork it needs (CHANGELOG line, queue item to close, `features_sync`, and so on);
-- the queue id, if there is one.
+Write the task as one self-contained brief from the template in `GOLDEN-BRIEF.md` (next to this file): six lines, at most
+1,500 characters. The model cannot see this chat. Every brief has:
+- the outcome, in the owner's words, and the queue id;
+- **the test first:** the test file's name, why it fails now, and the two or three things it asserts;
+- the files and the function to change (at most four files; `grep -n` for them yourself), and what not to touch;
+- the helper or pattern to reuse;
+- the paperwork (CHANGELOG line, `readme_sync`, `features_sync`, and so on);
+- what is out of scope.
+
+Check it before you send it: `TASK="$(cat brief.txt)" python3 lifecycle/autobuild_ci.py check` prints nothing when the brief is
+fit. Path B runs the same check and refuses an unfit brief in a second (`CANNOT-START`), instead of failing after an hour.
 
 **Never put a slow check in a brief.** The browser audits (`ui_audit.py`, `kit_audit.py`, `website/tests/ui_audit.py`) take 5 to 15
-minutes each and the model has 25. Claude runs them on the green branch before merge, and CI runs the sandbox. When a fix
+minutes each and the model has 40 for everything. Claude runs them on the green branch before merge, and CI runs the sandbox. When a fix
 needs an audit's findings, run the audit first and put the exact list of breaks in the brief.
 
-**Size it for one attempt.** An open model takes 20 to 40 minutes per attempt, and longer when it uses its planner and test-writer agents.
-A brief that touches more than about four files, or has more than three steps, goes out as slices of one step each, in order.
-Each slice is told "work directly; skip the planner and test-writer agents". For path B, start each slice with Bash `timeout: 7200000`, the maximum.
+**One step per brief.** A model gets about 40 minutes per attempt, and the one slow gate at the end (`./securax verify`: the full
+pytest and the whole Life OS suite) takes about 10 of them. A task with more than one outcome, more than four files or more than one
+test goes out as slices of one step each, in order; a later slice builds on the branch of the one before it
+(`DELEGATE_BASE=origin/<branch>`). For path B, start each slice with Bash `timeout: 7200000`, the maximum.
+
+**Silence is not a hang.** OpenCode prints a command only when it ends, so a model is silent for minutes while the tests run.
+The watchdog stops a model only when it is silent for 6 minutes AND running no command of its own (the log then says
+`was running no command`). If the log says `used its 40 min`, the brief was too big: slice it, do not retry it.
 
 Then take the first path that works. Each later path catches the failure of the one before it.
 - **A. GitHub Actions** (survives this session ending). Use `mcp__github__actions_run_trigger` with `method: run_workflow`,
@@ -44,7 +54,10 @@ Then take the first path that works. Each later path catches the failure of the 
     (display name "OpenCode Go key", type bearer). The owner pastes the key once into the secure form; you never see it.
     Then run B again.
   - If the owner declines the form, go to C.
-- **C. Claude does it** the normal way. Tell the owner in one line that this round cost Claude allowance, and why.
+- **C. Claude does it**, the cheapest way that works. First hand the SAME golden brief to a Sonnet subagent (the Agent tool with
+  `model: sonnet` and `isolation: worktree`): a brief an open model can finish alone, Sonnet can too, and it costs far less
+  than this session writing the code. Review its diff as in step 3. Write the code by hand only when Sonnet also fails or the
+  work is strong tier. Tell the owner in one line that this round cost Claude allowance, and why.
 - **D. On the owner's laptop:** `./securax autobuild "BRIEF"` on local models, offline. Name it only when A to C are all unavailable.
 
 Tell the owner, in two lines, what went where and what you will check.

@@ -26,8 +26,8 @@ STOP = set("""a an and are as at be by can do does for from has have how i in in
 up use was we what when with without you your add fix new change update make sure please should would could also all any each every""".split())
 # what "done" means, by the kind of file the task touches (AGENTS.md section 3)
 CHECKS = [
-    (r"^guiding-map/(ops\.js|index\.html|hub\.html|sw\.js)", "Life OS: `cd guiding-map && node build.js && npm test` (every file must pass), then "
-     "`python3 guiding-map/tests/ui_audit.py OUT` (0 page errors, 0 contrast failures, both themes)"),
+    (r"^guiding-map/(ops\.js|index\.html|hub\.html|sw\.js)", "Life OS: while you work, `cd guiding-map && node build.js && node tests/YOUR_TEST.js` "
+     "(seconds). The full `npm test` takes 7 minutes and runs inside `./securax verify`: once, at the end. The browser audits are the reviewer's"),
     (r"^securax$", "CLI: `bash -n securax`; a new command gets a line in `./securax help`; never end a branch or loop with a bare `[ … ] &&`"),
     (r"^apps/llm-gateway/", "Gateway: `python3 -m pytest -q apps/llm-gateway`; never weaken a rail"),
     (r"^apps/estate-sync/", "Sync: `python3 -m pytest -q apps/estate-sync` (auth stays fail-closed; the merge stays commutative)"),
@@ -36,7 +36,7 @@ CHECKS = [
     (r"^local/compose/", "Compose: `docker compose -f local/compose/docker-compose.yml config -q`; pin every image to a version"),
     (r"^\.github/workflows/", "Workflows: `python3 -m pytest -q lifecycle/tests/test_workflows_parse.py` (an invalid workflow runs nothing and looks green)"),
 ]
-ALWAYS = ["`ruff check .` and `python3 -m pytest -q` (or `./securax verify`, what CI enforces)",
+ALWAYS = ["`ruff check .` now; `./securax verify` once, last, into a file (it holds the full pytest; about 10 minutes, silent)",
           "`git add -A`, then `python3 -m lifecycle.fitness` (untracked files are invisible to it)",
           "a line in CHANGELOG.md under [Unreleased]; `python3 tools/readme_sync.py`",
           "re-read your own diff as a reviewer before you call it done"]
