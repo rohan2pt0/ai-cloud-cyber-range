@@ -1,0 +1,311 @@
+{
+ "about": "Life systems (queue life-systems): the parts of life that are not money, each as a loop that runs without willpower: a cue, the smallest step that still counts, a reward shown at once, a change to the surroundings, a regular review, and the one constraint that limits the whole loop. Each loop says how it bends for four kinds of people (the distracted, the person with ADHD, the novice, the expert). Facts are paraphrased from official and public sources (cited by link, never copied) and verified on the date shown; a fact that could not be confirmed from an official source carries a 'confirm' line and must be shown as 'check before you act'. India first ('where'); a Global note says what to do where no country is assumed. Content only: the screen is not built yet (briefs in docs/specs/life-systems-briefs.md). Not medical, legal or tax advice: a doctor decides what a person's own body needs.",
+ "version": 1,
+ "status": "draft: written 2026-11-16",
+ "verified": "2026-11-16",
+ "review": "2027-05-16",
+ "personas": [
+  {"id": "distracted", "name": "The distracted", "need": "Too many things compete; the loop must find them, not wait to be remembered.", "rule": "One cue on a screen they already open, one tap, nothing to read. A missed day is recalled once, kindly, then the loop moves the cue rather than repeating it."},
+  {"id": "adhd", "name": "The person with ADHD", "need": "Time is 'now' or 'not now'; a far date does not pull, and shame after a miss ends the habit.", "rule": "The step is visible and immediate (do it in this screen, now), the reward comes at once, the booking is made by the estate where it can, and there is never a streak to lose: the count is 'times done', which only goes up."},
+  {"id": "novice", "name": "The novice", "need": "Does not know what a good schedule looks like and fears getting it wrong.", "rule": "A filled-in default they correct (example dates from their age), plain words, why each item matters in one line, and the floor is enough."},
+  {"id": "expert", "name": "The expert", "need": "Already has a routine; wants no hand-holding and the detail on demand.", "rule": "Import or tick what already exists in one pass, show the sources and the full table one tap down, and let them change every interval."}
+ ],
+ "systems": [
+  {"id": "health-checkups", "area": "health", "where": ["IN", "GLOBAL"], "title": "Check-ups that book themselves",
+   "outcome": "The few screenings that find trouble early are done on time, for every adult in the family, without anyone remembering.",
+   "loop": {
+    "cue": "The birthday month: one calendar item per adult a year (calendar item proposed: health-checkup-yearly), made from birth dates the profile already holds.",
+    "smallestStep": "One tap: 'Book my check-up' opens the nearest option (the free government centre or the lab the family used last) with the list for that age and sex ready to show.",
+    "reward": "The Health ring closes for the year, and 'last checked' shows a date instead of 'never'.",
+    "environment": "Reports are saved to Life Papers the moment they are shared to the app, so the next doctor sees the trend; the next date is set when this one is ticked.",
+    "review": "Once a year, in the birthday month: what changed since the last report, and one thing to ask the doctor.",
+    "constraint": "Booking. People agree to the check-up and never make the call: so the loop ends on a booked slot, not on a reminder."
+   },
+   "personas": {
+    "distracted": "The cue rides on the birthday card they already see; the tap books, it does not explain.",
+    "adhd": "Offer a slot within the next seven days and a walk-in option today; a far date is not a plan.",
+    "novice": "Show the three or four tests for their age in plain words, and say that the floor (blood pressure and sugar) already counts.",
+    "expert": "One pass to enter the dates of their last tests; the table and its sources are one tap down."
+   },
+   "schedule": [
+    {"who": "Every adult aged 30 and over", "what": "Blood pressure", "every": "1 year", "where": ["IN"], "basis": "National programme for non-communicable diseases (NP-NCD), population-based screening"},
+    {"who": "Every adult aged 30 and over", "what": "Blood sugar", "every": "1 year", "where": ["IN"], "basis": "NP-NCD population-based screening"},
+    {"who": "Every adult aged 30 to 65", "what": "Mouth check for oral cancer", "every": "5 years", "where": ["IN"], "basis": "NP-NCD population-based screening"},
+    {"who": "Women aged 30 to 65", "what": "Breast examination by a health worker", "every": "5 years", "where": ["IN"], "basis": "NP-NCD population-based screening"},
+    {"who": "Women aged 30 to 65", "what": "Cervical screening (visual inspection with acetic acid, at the primary health centre)", "every": "5 years", "where": ["IN"], "basis": "NP-NCD population-based screening"},
+    {"who": "Every adult aged 18 and over", "what": "Blood pressure", "every": "as the doctor advises", "where": ["GLOBAL"], "basis": "US Preventive Services Task Force (USPSTF), grade A"},
+    {"who": "Adults aged 35 to 70 who are overweight", "what": "Blood sugar (prediabetes and type 2 diabetes)", "every": "as the doctor advises", "where": ["GLOBAL"], "basis": "USPSTF, grade B"},
+    {"who": "Adults aged 45 to 75", "what": "Colorectal cancer screening", "every": "by the method chosen", "where": ["GLOBAL"], "basis": "USPSTF, grade B from 45, grade A from 50"},
+    {"who": "Women aged 40 to 74", "what": "Mammogram", "every": "2 years", "where": ["GLOBAL"], "basis": "USPSTF, 2024 update"}
+   ],
+   "facts": [
+    {"t": "In India the screenings in the schedule are free at government centres (Ayushman Arogya Mandirs and primary health centres) for adults aged 30 and over.", "where": ["IN"], "sources": ["https://www.mohfw.gov.in/sites/default/files/NP-NCD%20Operational%20Guidelines_0.pdf", "https://aam.mohfw.gov.in/download/document/829bf86e304132dfae9962855c57dcd8.pdf"], "confirm": "The yearly and five-yearly intervals come from a ministry training module for health workers, not the operational guideline's own table: confirm at your health centre."},
+    {"t": "A private lab's basic package costs roughly Rs 500 to Rs 2,000 and a wider one roughly Rs 1,500 to Rs 5,000; hospital 'executive' packages cost more.", "where": ["IN"], "sources": ["https://www.secondmedic.com/blog/full-body-checkup-price-in-india-packages-compared", "https://mydiagnostics.in/blogs/health-checks-1/how-much-does-a-full-body-checkup-cost-in-india"], "confirm": "Indicative only, from labs' own pages (a commercial interest); prices differ by city and lab. Ask the lab for today's price and whether it is NABL-accredited."},
+    {"t": "Up to Rs 5,000 a year spent on preventive health check-ups for self, spouse, dependent children or parents can be deducted, inside the health-insurance deduction's overall limit, under the old tax regime.", "where": ["IN"], "sources": ["https://www.incometaxindia.gov.in/w/section-80d-60", "https://cleartax.in/s/section-126-income-tax-act-2025"], "confirm": "Section 80D of the 1961 Act; secondary sources say section 126 of the Income-tax Act, 2025 carries it from 1 April 2026, but no official text was found and the limits quoted disagree. Confirm on the income-tax site or with a tax adviser before claiming."},
+    {"t": "The Global rows are United States recommendations, used here only as a well-documented example; the US task force was reconstituted in 2026 and several recommendations (cervical screening among them) are being revised.", "where": ["GLOBAL"], "sources": ["https://www.uspreventiveservicestaskforce.org/", "https://www.cdph.ca.gov/Programs/CID/DCDC/Pages/publichealth4all/USPSTF-recommendations.aspx"], "confirm": "Follow your own country's national screening programme; the ages here were read from secondary summaries."}
+   ],
+   "template": {"kind": "message", "title": "What to ask at the check-up", "text": "I am [age]. My last check-up was [date / never]. In my family: [diabetes / heart disease / cancer / none known]. Which tests do I need this year, which can wait, and when should I come next?"},
+   "confirm": "A doctor, for what your own age, sex, family history and habits call for."},
+
+  {"id": "health-vaccines", "area": "health", "where": ["IN", "GLOBAL"], "title": "Vaccinations for every age, kept on one card",
+   "outcome": "Children's doses are never late, and the adults' few boosters (the ones most families forget) are done.",
+   "loop": {
+    "cue": "For a child: each due date from the birth date, in the calendar. For adults: the first week of the flu season, one item for the whole household (calendar item proposed: health-flu-yearly).",
+    "smallestStep": "One tap: 'Done today' on the dose that is due, with a photo of the card if they wish.",
+    "reward": "The child's card fills in; the family row shows 'all up to date'.",
+    "environment": "The paper card is photographed once into Life Papers, so a lost card or a school form is never a crisis.",
+    "review": "Each birthday: is anything due this year for this person?",
+    "constraint": "Not knowing what is due. The loop works out the dates; the person only confirms them."
+   },
+   "personas": {
+    "distracted": "The due dose shows on the child's card on Today; nothing else about vaccines is shown until one is due.",
+    "adhd": "Pair it with a fixed errand already in the week; 'done today' is one tap at the clinic, not a form at home.",
+    "novice": "One line on why each dose matters, and where the free one is given.",
+    "expert": "Enter past doses in one pass; choose the schedule they follow (the national one or their paediatrician's)."
+   },
+   "facts": [
+    {"t": "In India children's routine vaccines are free at government centres under the Universal Immunisation Programme, and doses are recorded on the U-WIN platform.", "where": ["IN"], "sources": ["https://www.gavi.org/vaccineswork/india-home-25-worlds-cervical-cancer-victims-launches-nationwide-hpv-vaccination"], "confirm": "The dose-by-dose national schedule was not confirmed from an official page in this pass: take the dates from the child's own card or the health centre, not from this file."},
+    {"t": "Since February 2026 the national programme gives girls aged 14 one free dose of the HPV vaccine, which protects against cervical cancer.", "where": ["IN"], "sources": ["https://www.gavi.org/vaccineswork/india-home-25-worlds-cervical-cancer-victims-launches-nationwide-hpv-vaccination", "https://www.newsonair.gov.in/pm-modi-to-launch-nationwide-hpv-vaccination-programme-for-14-year-old-girls-from-ajmer-tomorrow"]},
+    {"t": "For adults, Indian physicians' 2024 consensus guidance commonly summarised as: a flu vaccine every year; a tetanus and diphtheria booster every 10 years; a shingles vaccine (two doses) from age 50; a pneumococcal vaccine from 65, or earlier for those at higher risk.", "where": ["IN"], "sources": ["https://medicaldialogues.in/vaccines/perspective/harmonizing-adult-vaccination-guidelines-in-india-need-of-the-hour-prof-dr-agam-vora-129651", "https://www.orfonline.org/research/investing-in-lifelong-health-adult-vaccines-in-india-s-public-health-agenda"], "confirm": "Read from secondary summaries, which are not fully consistent; adult vaccines are mostly paid for privately in India. Your doctor decides which apply to you."},
+    {"t": "Outside India, follow the national immunisation schedule of the country you live in; a travel clinic advises on vaccines for a trip.", "where": ["GLOBAL"], "sources": [], "confirm": "Your national health service's schedule."}
+   ],
+   "confirm": "The child's vaccination card and your doctor."},
+
+  {"id": "health-family-calendar", "area": "health", "where": ["IN", "GLOBAL"], "title": "The family health calendar",
+   "outcome": "One calm view of the year for the whole household: who is due for what, and who is taking them.",
+   "loop": {
+    "cue": "The first Sunday of each month, on the screen the family already opens (calendar item proposed: health-family-month).",
+    "smallestStep": "One tap on the single item that is due soonest: book it, or mark it done.",
+    "reward": "The month reads 'nothing due' and the family row turns calm.",
+    "environment": "Every dated item (a check-up, a dose, an eye or dental visit, a prescription refill, a policy renewal) comes from the other loops; nothing is typed twice.",
+    "review": "Each quarter in the check-in: anything slipped twice gets a different cue or a different owner.",
+    "constraint": "One owner per item. An item that 'the family' owns is done by nobody: each one names a person."
+   },
+   "personas": {
+    "distracted": "Only the soonest item is shown; the rest fold under 'Later (n)'.",
+    "adhd": "The item carries its own next action (a number to call, a slot to tap), so there is nothing to plan first.",
+    "novice": "The year arrives filled in from the family's ages; they correct it rather than build it.",
+    "expert": "Add their own items (a specialist review, a physiotherapy block) with any interval."
+   },
+   "defaults": [
+    {"what": "Dental check", "every": "6 to 12 months", "confirm": "A common rule of thumb; your dentist sets the interval."},
+    {"what": "Eye test", "every": "1 to 2 years, yearly with diabetes or after 60", "confirm": "A common rule of thumb; your eye doctor sets the interval."},
+    {"what": "Repeat prescriptions", "every": "a week before they run out", "confirm": "From the person's own prescription."},
+    {"what": "Health policy renewal", "every": "1 year, cue 30 days before", "confirm": "From the policy's own date in Life Papers."}
+   ],
+   "facts": [],
+   "confirm": "Each person's own doctor, dentist and policy papers."},
+
+  {"id": "family-children", "area": "family", "where": ["IN", "GLOBAL"], "title": "A child's milestones, seen coming",
+   "outcome": "The dated things a child's life needs (papers, admissions, savings, health) arrive as one next step a year ahead, never as a scramble.",
+   "loop": {
+    "cue": "The child's birthday month, from the birth date the profile holds (calendar item proposed: family-child-year).",
+    "smallestStep": "One tap on this year's single milestone: start it, or mark it done.",
+    "reward": "The child's timeline shows the year ticked, and what is next with its date.",
+    "environment": "Each milestone carries its papers list, drawn from Life Papers, so the form can be filled in one sitting.",
+    "review": "Each birthday: this year's milestone, and one thing the child wants to learn or try.",
+    "constraint": "Lead time. Admissions and papers have windows that close: the cue is set a full year, then a month, ahead."
+   },
+   "personas": {
+    "distracted": "One milestone a year is shown, not the whole childhood.",
+    "adhd": "The step is the first physical action (photograph the birth certificate now), not 'plan the admission'.",
+    "novice": "The timeline is filled in from the birth date with plain reasons; they correct it.",
+    "expert": "Add their own milestones (an entrance exam, a passport, a sports trial) and set the lead time."
+   },
+   "milestones": [
+    {"age": "0", "what": "Birth certificate; name added to the family's health cover; the vaccination card started", "where": ["IN", "GLOBAL"]},
+    {"age": "0 to 9", "what": "For a girl, a Sukanya Samriddhi account can be opened until she completes 10", "where": ["IN"]},
+    {"age": "5", "what": "Aadhaar: the first mandatory biometric update", "where": ["IN"]},
+    {"age": "about 6", "what": "Entry to Class 1: check the state's cut-off date a year ahead", "where": ["IN"]},
+    {"age": "14", "what": "For a girl, the free HPV vaccine dose", "where": ["IN"]},
+    {"age": "15", "what": "Aadhaar: the second mandatory biometric update", "where": ["IN"]},
+    {"age": "18", "what": "Their own bank account, tax number, voter registration and a will-ready list of who to call", "where": ["IN", "GLOBAL"]}
+   ],
+   "facts": [
+    {"t": "A child's Aadhaar biometrics (fingerprints, iris, photo) must be updated at age 5 and again at 15.", "where": ["IN"], "sources": ["https://uidai.gov.in/images/UIDAI_Waives_Charges_for_Aadhaar_Biometric_Updates_for_Children_Aged_715.pdf", "https://en.vikaspedia.in/viewcontent/aadhaar/my-aadhaar/aadhaar-biometric-updates-for-children?lgn=en"], "confirm": "A fee waiver for ages 5 to 17 ran for a year from 1 October 2025; whether it was extended beyond 30 September 2026 could not be confirmed. Check the fee at the Aadhaar centre."},
+    {"t": "A Sukanya Samriddhi account can be opened by a parent or guardian for a girl who has not completed 10 years; deposits from Rs 250 to Rs 1.5 lakh a year; the interest rate is reviewed every quarter.", "where": ["IN"], "sources": ["https://www.bankbazaar.com/saving-schemes/sukanya-samriddhi-yojana-account.html", "https://www.businesstoday.in/amp/personal-finance/investment/story/sukanya-samriddhi-premature-withdrawal-when-and-how-much-corpus-you-can-access-527187-2026-04-24"], "confirm": "Secondary sources; confirm at the post office or bank. The Savings levers card holds the money side."},
+    {"t": "The age for entry to Class 1 is set by each state and school board.", "where": ["IN"], "sources": [], "confirm": "Not verified in this pass: check the state education department's notice and the school's own cut-off date."}
+   ],
+   "confirm": "The school, the Aadhaar centre and the bank or post office."},
+
+  {"id": "family-parents", "area": "family", "where": ["IN", "GLOBAL"], "title": "Parents' care, shared and calm",
+   "outcome": "Ageing parents are covered, checked and called, and the brothers and sisters know who does what before a crisis decides it.",
+   "loop": {
+    "cue": "A fixed call slot each week, and one 'parents' month' a year for papers and cover (calendar items proposed: family-parents-call, family-parents-year).",
+    "smallestStep": "The call itself, with one question that matters: 'What was hard this week?'",
+    "reward": "'Called this week' ticks; the yearly list shows cover, check-up and papers as three calm lines.",
+    "environment": "One shared sheet for the siblings: doctors, medicines, policies, bank and where the papers are; an emergency card on the parents' fridge and phone.",
+    "review": "Once a year, with the siblings: what changed in health, money and safety at home, and who owns each item next year.",
+    "constraint": "Agreement between siblings. Unspoken assumptions about who pays and who goes are the bottleneck: the loop names one owner per item."
+   },
+   "personas": {
+    "distracted": "The call is a calendar event with the number in it; one tap dials.",
+    "adhd": "Call during a fixed daily moment (the commute home), never 'sometime this week'.",
+    "novice": "Starts from three lines only: health cover, a yearly check-up, where the papers are.",
+    "expert": "Adds powers of attorney, nominee checks and a care budget; exports the shared sheet."
+   },
+   "facts": [
+    {"t": "Every Indian aged 70 or over, whatever the income, can get the Ayushman Vay Vandana card: hospital cover of up to Rs 5 lakh a year. Enrolment is by Aadhaar e-KYC in the Ayushman app, on the national beneficiary portal or at a Common Service Centre; the helpline is 14555.", "where": ["IN"], "sources": ["https://en.vikaspedia.in/social-welfare/senior-citizens-welfare/ab-pmjay-senior-citizen-scheme", "https://beneficiary.nha.gov.in", "https://www.businesstoday.in/personal-finance/insurance/story/govt-rolls-out-ayushman-bharat-cards-for-70-seniors-with-rs-5-lakh-free-treatment-heres-how-to-apply-477945-2025-05-27"], "confirm": "Those already under a government health scheme (CGHS, ECHS and the like) choose one or the other; check which hospitals near the parents accept the card."},
+    {"t": "Elderline, 14567, is the national toll-free helpline for senior citizens (information, guidance, emotional support and help in cases of abuse), 8 am to 8 pm, every day.", "where": ["IN"], "sources": ["https://tatatrusts.org/media/events/Indias-first-national-helpline-for-seniors-a-tata-trusts-powered-initiative", "https://www.businesstoday.in/latest/trends/story/govt-launches-pan-india-helpline-for-senior-citizens-307852-2021-09-28"], "confirm": "Hours may differ by state."},
+    {"t": "Outside India, the equivalents are the national health service's cover for older people, a registered power of attorney, and the local helpline for older people.", "where": ["GLOBAL"], "sources": [], "confirm": "Your country's health service and a local lawyer."}
+   ],
+   "template": {"kind": "message", "title": "To brothers and sisters, once a year", "text": "Can we take 30 minutes this month for our parents' yearly review? Three things: their health cover and check-ups, the money for the year, and who does what if one of them is unwell. I will bring the list of doctors, medicines and papers. Which evening suits you?"},
+   "confirm": "The parents' own wishes first; then the scheme portal and the family doctor."},
+
+  {"id": "family-partner", "area": "family", "where": ["IN", "GLOBAL"], "title": "The partner's weekly time",
+   "outcome": "The most important relationship gets protected time every week, before work takes it.",
+   "loop": {
+    "cue": "The same slot every week, in both calendars (calendar item proposed: family-partner-week).",
+    "smallestStep": "Twenty minutes with phones away. The floor that still counts: ten minutes and one question, 'What would make next week easier for you?'",
+    "reward": "'Our time, kept' ticks for the week; the count of weeks kept only goes up.",
+    "environment": "Phones charge outside the room for that slot; the week's logistics (money, children, parents) have their own ten minutes, so they do not eat this time.",
+    "review": "Each quarter: one thing to do more of, one to stop, one to try.",
+    "constraint": "Protected time. If the slot moves whenever work asks, there is no loop: it is treated like a meeting with the most senior person they know."
+   },
+   "personas": {
+    "distracted": "The slot is in the calendar with an alert on both phones; nothing to decide on the day.",
+    "adhd": "Attach it to something that already happens (after the children's bedtime on a fixed day); a walk works better than sitting.",
+    "novice": "Three ready questions are offered; they need bring nothing.",
+    "expert": "Adds a monthly longer block and a yearly day away; keeps their own format."
+   },
+   "facts": [],
+   "confirm": "Nothing to verify: this one is yours to shape. A counsellor helps when talking has become hard."},
+
+  {"id": "career-ladder", "area": "career", "where": ["IN", "GLOBAL"], "title": "The ladder, climbed on purpose",
+   "outcome": "The person knows the next rung, what proves they are ready for it, and moves towards it every quarter, in or out of the current employer.",
+   "loop": {
+    "cue": "The last Friday of each quarter (calendar item proposed: career-quarter).",
+    "smallestStep": "Write one line: the result you delivered this quarter, with its number.",
+    "reward": "The results list grows by one; the next rung shows what is still missing.",
+    "environment": "The results list lives where the CV is built, so the CV is always current; one person in the network is messaged each quarter from a ready draft.",
+    "review": "Once a year: is the next rung in sight here, or is it time to move?",
+    "constraint": "Evidence. Promotions and offers go to results that are written down and known: the loop captures them while they are fresh."
+   },
+   "personas": {
+    "distracted": "One line, one field; the app asks on the screen they already open on a Friday.",
+    "adhd": "Speak the line instead of typing it; the estate turns it into the CV entry.",
+    "novice": "Shows the rungs for their kind of work (from the profession packs) and an example line.",
+    "expert": "Tracks the board-level proof: scope, people, money owned; plans the next two moves."
+   },
+   "facts": [],
+   "uses": "guiding-map/levers/professions.json: each pack's 'ladder'",
+   "confirm": "Your employer's own levels and a mentor one rung above you."},
+
+  {"id": "career-offers", "area": "career", "where": ["IN", "GLOBAL"], "title": "Offers, weighed calmly",
+   "outcome": "An offer is judged on the whole of life (money, growth, people, health, family), not on the headline number or the pressure of a deadline.",
+   "loop": {
+    "cue": "An offer arrives: the person taps 'I have an offer' (no schedule; this loop waits to be called).",
+    "smallestStep": "Enter two numbers (fixed pay now, fixed pay offered); everything else has a default.",
+    "reward": "A one-page comparison with a clear lean and the three questions still to ask.",
+    "environment": "The 'Before a big moment' checklist opens with it; a reply asking for the offer in writing, and for time, is ready to send.",
+    "review": "Ninety days after joining: did what was promised hold? The answer improves the next comparison.",
+    "constraint": "Time pressure. A rushed yes is the costly mistake: the first ready message buys 48 hours."
+   },
+   "personas": {
+    "distracted": "Two numbers and a lean; the rest is optional.",
+    "adhd": "The excitement of the new is discounted on purpose: the comparison shows what the current role still offers, and asks them to sleep on it once.",
+    "novice": "Explains each part of pay in one line (fixed, variable, stock, notice, joining date).",
+    "expert": "Adds stock vesting, clawbacks, non-compete terms and tax across countries."
+   },
+   "checklist": ["The offer in writing, with fixed and variable pay shown apart", "The notice period on both sides, and any bond or clawback", "Health cover: who is covered, from which day", "The manager: one conversation with someone who has worked for them", "What happens to unvested stock or a pending bonus where you are now", "Conduct rules: whether side work, writing or board seats need permission"],
+   "template": {"kind": "message", "title": "Asking for time, politely", "text": "Thank you for the offer; I am glad to have it. Could you send the full terms in writing? I would like until [day] to read them properly and come back with any questions."},
+   "facts": [],
+   "confirm": "The written offer and your current contract; an employment lawyer for a bond or a non-compete."},
+
+  {"id": "career-renewals", "area": "career", "where": ["IN", "GLOBAL"], "title": "Renewals that never lapse",
+   "outcome": "No licence, certificate, passport or membership the person's work depends on ever expires by surprise.",
+   "loop": {
+    "cue": "Each paper's own expiry date, read from Life Papers: a cue a year ahead, then 90 days, then 30 (dated items, by the gmCalendarDated contract).",
+    "smallestStep": "One tap: 'Start the renewal' opens the official site with the papers list beside it.",
+    "reward": "The paper shows its new expiry date; 'nothing expires in the next 12 months' is the calm state.",
+    "environment": "Scans of each paper sit with it, so the renewal form is filled in one sitting.",
+    "review": "Once a year: any new licence or certificate to add, any to let go?",
+    "constraint": "The expiry date itself. Nothing works until each paper's date is in the estate: the first step is a photograph of each one."
+   },
+   "personas": {
+    "distracted": "Only the paper that expires soonest is shown.",
+    "adhd": "The cue comes with the first action already done (the form link open, the scans attached).",
+    "novice": "A starter list for their kind of work from the profession packs; they tick what they hold.",
+    "expert": "Continuing-education hours tracked against each licence; renewals across countries."
+   },
+   "facts": [
+    {"t": "An adult's Indian passport is valid for 10 years, and a re-issue can be applied for up to about a year before it expires.", "where": ["IN"], "sources": ["https://www.passportindia.gov.in", "https://www.nivabupa.com/travel-insurance-articles/renew-passport-before-expiry-in-india-rules-timeline.html"], "confirm": "Read from secondary sources; a minor's passport is shorter and the sources disagree on the detail. Confirm on the Passport Seva site."},
+    {"t": "Many countries refuse entry on a passport with less than six months left, so the 'expiry' that matters for travel is earlier than the printed one.", "where": ["IN", "GLOBAL"], "sources": [], "confirm": "The destination country's own entry rules, before booking."},
+    {"t": "A driving licence's validity and renewal window depend on the holder's age.", "where": ["IN"], "sources": [], "confirm": "Not verified in this pass: read the expiry date on the licence and renew on the transport department's site."}
+   ],
+   "uses": "guiding-map/levers/professions.json: each pack's 'renewals'",
+   "confirm": "The issuing body of each paper."},
+
+  {"id": "learning-skill-quarter", "area": "learning", "where": ["IN", "GLOBAL"], "title": "One skill a quarter",
+   "outcome": "Four real skills a year, each proven by something made, instead of a dozen courses half-watched.",
+   "loop": {
+    "cue": "The same 25 minutes on set days, tied to something that already happens (the first coffee, the commute) (calendar item proposed: learning-block).",
+    "smallestStep": "Ten minutes of practice on today's one exercise. Practice, not watching.",
+    "reward": "A bar of sessions for the quarter; at the end, the thing made (a page, a model, a talk, a repair) is added to the results list.",
+    "environment": "The material opens on the page where they stopped; the phone is in another room for the block; one skill only until the quarter ends.",
+    "review": "The last week of the quarter: show what was made to one person, then choose the next skill.",
+    "constraint": "Choosing. Starting three things is how none is finished: the loop allows one, and parks the rest on a 'next' list."
+   },
+   "personas": {
+    "distracted": "One exercise is shown, never the syllabus.",
+    "adhd": "Short blocks, a body-double (learn alongside someone, in person or on a call), and a project they care about rather than a course; novelty is allowed inside the skill, not between skills.",
+    "novice": "Three suggested skills for their work and stage, each with a free starting point and the thing to make.",
+    "expert": "Deliberate practice at the edge of the skill: teach it, publish it, or be assessed by someone better."
+   },
+   "facts": [
+    {"t": "Free and low-cost courses exist for almost every skill (university platforms, public libraries, a government's own learning portal); the cost of learning is time and attention, rarely money.", "where": ["IN", "GLOBAL"], "sources": [], "confirm": "No course is named here: none was verified in this pass."}
+   ],
+   "confirm": "A person who already has the skill: ask what they would practise first."},
+
+  {"id": "home-monthly-reset", "area": "home", "where": ["IN", "GLOBAL"], "title": "The monthly home reset",
+   "outcome": "The home never drifts: bills paid, small repairs done, papers filed, in under an hour a month.",
+   "loop": {
+    "cue": "The first Saturday of the month (calendar item proposed: home-reset-month).",
+    "smallestStep": "A five-minute walk through the home with the phone: photograph anything broken, leaking or about to run out.",
+    "reward": "'Reset done' ticks; open repairs show as a short list that shrinks.",
+    "environment": "One box for paper that arrives; one list of trusted trades (plumber, electrician, carpenter) with numbers; bills on auto-pay with a check, not paid by memory.",
+    "review": "Each quarter: which repair came back, and what would stop it for good?",
+    "constraint": "Starting. An hour feels like a lot, five minutes does not: the walk is the whole commitment, and most months it carries on by itself."
+   },
+   "personas": {
+    "distracted": "The cue is one notification with one button: 'Start the five-minute walk'.",
+    "adhd": "A timer and music; photographs instead of a written list; one repair booked on the spot counts as a full reset.",
+    "novice": "A ready list of what to look at, room by room.",
+    "expert": "Adds meter readings, a spend line per month and a sinking fund for the big repairs."
+   },
+   "checklist": ["Bills: anything unpaid or unusual this month", "Water: taps, tank, any damp patch on a wall or ceiling", "Power: a tripping switch, a warm plug, a flickering light", "Safety: gas tube, smoke alarm or extinguisher where there is one, the first-aid box", "Paper: the box emptied, anything dated photographed into Life Papers", "Running out: filters, bulbs, medicines, cylinders"],
+   "facts": [],
+   "confirm": "Your housing society's or landlord's rules for repairs."},
+
+  {"id": "home-seasonal", "area": "home", "where": ["IN", "GLOBAL"], "title": "Seasonal maintenance, before the season",
+   "outcome": "The roof is checked before the rain and the cooling before the heat, so the season brings no emergency and no peak-season prices.",
+   "loop": {
+    "cue": "Four dates a year, each about six weeks before its season (calendar items proposed: home-season-summer, home-season-monsoon, home-season-festive, home-season-winter).",
+    "smallestStep": "One tap: send the ready message to the one trade this season needs.",
+    "reward": "The season shows 'ready'; last year's date and cost sit beside it.",
+    "environment": "The trusted-trades list from the monthly reset; last year's quote, so this year's is judged in a second.",
+    "review": "After each season: what failed anyway, and what to do earlier next year.",
+    "constraint": "Lead time. In the week the rain starts every plumber is busy: the cue is early on purpose."
+   },
+   "personas": {
+    "distracted": "One message to send per season; nothing else.",
+    "adhd": "The message is already written and the contact already chosen; the tap is the whole task.",
+    "novice": "Says what each season's job is for and roughly what a fair visit includes.",
+    "expert": "Their own seasons and assets (a second home, a vehicle, a generator, a garden)."
+   },
+   "seasons": [
+    {"id": "summer", "where": ["IN"], "month": 2, "do": ["Service the air conditioners and coolers", "Check the water storage and the pump", "Check fans and the wiring that carries the heavy load"]},
+    {"id": "monsoon", "where": ["IN"], "month": 4, "do": ["Roof, terrace and window seals; clear the drains and gutters", "Look at last year's damp patches before the rain does", "Earthing and outdoor wiring checked; valuables and papers off the floor"]},
+    {"id": "festive", "where": ["IN"], "month": 9, "do": ["Deep clean and declutter; give away what was not used this year", "Paint or repair after the rain has dried out", "Check the home's insurance and the photographs of valuables"]},
+    {"id": "winter", "where": ["IN"], "month": 11, "do": ["Water heaters serviced and their safety valves checked", "Heaters and their plugs checked before first use", "Water tank cleaned"]},
+    {"id": "global", "where": ["GLOBAL"], "do": ["Before the hot season: cooling serviced", "Before the wet or storm season: roof, gutters and drains", "Before the cold season: heating serviced, pipes protected, alarms tested", "Once a year: the home's insurance checked against what the home now holds"]}
+   ],
+   "facts": [
+    {"t": "A cooking-gas cylinder is retested for fitness 10 years after it is made and every five years after that; the due date is marked on the cylinder, and one past its date can be refused at delivery.", "where": ["IN"], "sources": ["https://en.vikaspedia.in/viewcontent/energy/energy-access/all-about-lpg-connection/safety-standards-of-lpg-cylinders?lgn=en"], "confirm": "The retest is the oil company's duty, not the household's: the household only checks the marking."},
+    {"t": "The gas tube between cylinder and stove wears out: replace it by the date printed on it, or at once if it is cracked or loose, and have the installation checked about every two years.", "where": ["IN"], "sources": ["https://pmuy.gov.in/docs/Consumer_Guidance.pdf"], "confirm": "Sources disagree on the tube's life (from one to five years, by its type): ask your distributor and read the date on the tube."},
+    {"t": "The months given for India are a general pattern; the right month depends on the region's own seasons.", "where": ["IN"], "sources": [], "confirm": "Set each cue about six weeks before the season where you live."}
+   ],
+   "template": {"kind": "message", "title": "Booking the seasonal visit", "text": "Hello, I would like to book the [air-conditioner service / roof and drain check / water-heater service] before the season starts. Is [date] possible? Please tell me what the visit includes and the price. Last year it was done on [date]."},
+   "confirm": "Your housing society, your gas distributor and the maker's manual for each appliance."}
+ ]
+}
