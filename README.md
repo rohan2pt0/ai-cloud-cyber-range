@@ -133,6 +133,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- Stop really stops, and says your data is kept
 - Profession packs: all ten working lives
 - Stopping never deletes your data
 - Delegated work finishes again, and briefs are one step, test first
@@ -140,7 +141,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - Experience v3, the spec
 - Built to last
 - Life systems, the content
-- A review ledger
 
 **Release 0.4.0 - 2026-11-14:**
 

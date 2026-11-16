@@ -1,4 +1,4 @@
-# VulnBank AI Range - local plane (runs on the HP Spectre x360, ~6-8 GB RAM).
+# SecuRAX - the local plane (runs on one laptop, about 6-8 GB of memory).
 # Brings up: guardrail gateway -> LiteLLM router -> Ollama (local SLM) with a full
 # DevSecOps + observability side-car so the range looks like a real enterprise estate.
 #

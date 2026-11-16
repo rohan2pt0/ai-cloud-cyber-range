@@ -70,7 +70,7 @@ Counts are tracked files (`git ls-files`) on 2026-11-16. Status is one of: **not
 
 | Rank | Area | Directories (tracked files) | Status |
 |---|---|---|---|
-| 1 | Launchers and installers | root files (44), `local/` (43), `tools/windows/` (1) | 19 of 88 reviewed; 12 fixed (#313, #316). See slices 1 and 2 |
+| 1 | Launchers and installers | root files (44), `local/` (43), `tools/windows/` (1) | 22 of 88 reviewed (`securax`: 5 of its branches); 15 fixed (#313, #316, #PRNUM). See slices 1 to 3 |
 | 2 | The Life OS | `guiding-map/` (196) | not reviewed |
 | 3 | The gateway and security | `apps/` (47), `governance/` (230), `policies/` (1), `redteam/` (11), `ai-soc/` (6), `mcp/` (3), `agents/` (12), `intel/` (9) | 1 of 319 reviewed (#313, encoding only) |
 | 4 | Sync and backup | inside `apps/` and `governance/` (review them first within rank 3), `routines/` (10), `sandbox/` (4) | not reviewed |
@@ -200,8 +200,96 @@ first command; `--stable` without `curl` ends with the shell's own words. Test f
 **M10. Nothing proves the stop on real Docker.** Test first: a sandbox journey that starts the core, writes one row,
 runs `teardown.sh`, starts again and finds the row. Step: the journey only.
 
+### Slice 3 (2026-11-16, PR #PRNUM): start, stop, update and the compose file
+
+Nothing in this slice was run against real Docker, a real update or Windows. The fixes are held by
+`lifecycle/tests/test_cli_stop_and_go.py`, which runs `./securax down` with a pretend `docker`; the rest is read from
+the text. Each branch of `securax` counts as one file.
+
+| File | Status | What was found |
+|---|---|---|
+| `securax`, `down` | fixed (#PRNUM) | No `-v` anywhere: a stop keeps the data (and no branch of the CLI removes a volume with compose; a test now holds that). But it stopped the `ai` profile only, so **the password manager and the online tunnel kept running after "stop"**; a failure ended with Docker's words alone; "stopped." did not say the data is kept. It now stops all three, says the data is kept and the next step, and fails in plain words. Brief N8 remains |
+| `securax`, `go` | fixed (#PRNUM) | Said "your previous version is running again" for every failed update, also when nothing was running; said "the app just opened" when no opener worked, and a Mac had no opener at all. Both now say what happened. Briefs N6, N7 and N13 remain |
+| `securax`, `up` | reviewed (#PRNUM) | Sound: four fallbacks, keys made by itself, never left with nothing running. The port-clash help is for Windows only; a pasted key shows on screen. Briefs N4 and N5 |
+| `securax`, `update` | reviewed (#PRNUM) | Careful: backup first, health check, goes back by itself, exit 3 for a rollback. Runs new code with no signature check; carries on when the backup failed; drops a person's edit to one file without a word. Briefs N1 to N3 |
+| `securax`, `why` | reviewed (#PRNUM) | Works as written. Names Docker Desktop only (brief N6) |
+| `local/compose/docker-compose.yml` | fixed (#PRNUM), header only | Every published port is on the loopback address by default, the database network has no way out, required passwords have no default. The header named one make of laptop (fixed). Briefs N9 to N11 remain |
+| `DEPLOY.md` (the Windows rows, "Stop, update, back up") | fixed (#PRNUM) | Gave `git pull` as the way to update, which leaves the old code running and takes no backup; it now names the safe update. Brief N12 remains |
+| `README.md`, "Quick start" | reviewed (#PRNUM) | True since #316 (the stop keeps the data). The older step-by-step path is brief M6 |
+
+### Briefs from slice 3
+
+**N1. An update runs new code that nobody checked the signature of (strong tier: supply chain; do it with L5 and M3).**
+The beta channel pulls `main`; the stable channel takes the newest `v*.*.*` tag, and a tag can be moved. `go` starts an
+update by itself whenever it is behind. Test first: in `governance/tests/`, a temp repository with an unsigned newer tag
+expects "release not verified, nothing changed" on the stable channel. Step: verify the tag (or compare its commit with
+the one the release publishes) before `git checkout`. confirm: which of the two the release workflow can do today.
+
+**N2. "Your data is untouched" is not always true after a rollback.** When the backup fails, `update` carries on. A newer
+image of a service that keeps data (chat, the database, automation, the password manager, private documents) can change
+its stored data on first start, and the older image may not open it after the rollback. Test first: with a pretend `git`
+and a failed backup, an update whose compose file moves the image of a data-keeping service is held with `--auto` and
+asks first without it. Step: compare the image lines of those services between the two commits before `down`.
+confirm: which of the five really migrate on start, and whether each can go back.
+
+**N3. `update` discards a person's edit to `litellm-config.yaml` without saying so** (the same habit as L4). Test first: a
+temp repository with that file edited expects the edit saved beside it and one line that says so. Step: copy, then
+restore. `DEPLOY.md` tells people to run the same `git checkout --` by hand: change that line with it.
+
+**N4. `up` asks for a key in the terminal, and it shows as it is pasted** (`zero-setup`: secrets are never pasted). A
+decision for the owner first: hide the typing (`read -s`, which looks frozen to a novice), or move the ask to the
+Command Center, where the key panel already is. Recommended: the second; it is part of the open friction
+`copy-paste-secrets` in `governance/frictions.json`. Test first: `test_one_command_setup.py` expects no `read` of a key in `up` without `-s`.
+
+**N5. The port-clash help in `up` is for Windows only.** A person on a Mac or Linux is told to open Windows PowerShell
+and run `netstat`. It also names the default domain, not `SECURAX_DOMAIN`. Test first: run the branch with a pretend
+`docker` that prints "port is already allocated" and a pretend `uname` that says Darwin; expect `lsof`, not PowerShell.
+Step: one helper that picks the line by system (`/proc/version` holds "microsoft" on WSL).
+
+**N6. `why` belongs in L7.** It too says "start Docker Desktop" when Docker Engine runs inside Ubuntu, and `go` says
+"not reachable from Ubuntu" on every system. L7 names four places; there are six. Step: the same shared helper.
+
+**N7. `go` can send the phone link through the alert topic (strong tier: secrets).** The link holds the sync token. The
+comment above it says the token "is never sent to a server"; this path sends it through one, after a yes (default no),
+and trusts that server to honour "do not store". Test first: `governance/tests/` expects a `threat-models.json` entry
+for this flow, or expects the offer gone. Recommended: remove the offer once the pairing scan covers phones
+(`zero-setup`, "Secrets too"); until then add the threat-model line and correct the comment.
+
+**N8. What `down` still leaves, and no proof on real Docker.** Studio and the `security` profile (the log store, the
+dashboards) keep running after a stop. A decision for the owner: Studio has its own stop and says "your estate is
+untouched", so the recommended answer is to say "Studio is still running" in the closing line rather than stop it.
+Test first: add to the M10 journey that after `down` no container of the password manager or the tunnel is left.
+confirm: every supported Docker Compose accepts several `--profile` flags on `down`.
+
+**N9. Two versions of one scanner, and four images with no digest.** The compose file runs Trivy 0.76.2; `./securax
+scan` runs 0.58.1. Ollama, Postgres, Loki and Trivy carry a tag only, and the Postgres tag moves with every minor
+release. Test first: `local/compose/tests/test_container_hardening.py` expects a digest on every `image:` line that is
+not built here, and one Trivy version across the repository. Step: one image per run. confirm: the digests (needs the
+network), and that the newer Trivy reads the current ignore file.
+
+**N10. Chat and the dashboards both publish port 3000.** Starting the `ai` and `security` profiles together fails with
+a port clash. The comment block at the top still describes profiles as they were ("Llama Guard", "SIEM-lite"). Test
+first: `test_compose_sanity.py` fails when two services publish one host port. Step: move the dashboards to a free
+port, through `web_url`, and rewrite the three comment lines.
+
+**N11. The scanner container is given the Docker socket (strong tier).** `:ro` on a socket does not make Docker's API
+read-only: a process that can reach it can start a container with the whole disk. It is in the `security` profile only
+and runs when asked. Test first: `governance/tests/` expects a threat-model entry that names this and its review date.
+Step: write the entry (accepted with a reason and a date), or scan saved images instead of the socket.
+
+**N12. `DEPLOY.md` sections 1 to 5 are from before `./securax go`.** The Windows step in the first box says to edit
+`.env` although the first start asks; ten lines show an address with a port (with W5 and M4); "your data lives in the
+browser" is from before sync and backup; "pin a version" gives `git checkout` where `./securax channel stable` and
+`./securax rollback` exist. Decide it with M6. Test first: `lifecycle/tests/test_doc_recipes.py` fails on `git pull` or
+`git checkout` given as the way to update or pin in a root page. confirm: on Windows, does the first double-click
+reach the key question (is it a real terminal there)?
+
+**N13. Small ones in `go`.** A first regulator-watch fetch that fails says nothing (neither done nor to fix), and the
+line names two Indian regulators for everyone (`global-ready`: a `where`). Test first: with a pretend `regwatch` that
+fails, expect one line under "Needs one action each".
+
 ### Next slice (at most 15 files)
 
-`DEPLOY.md` (the Windows rows), the README's quick start, then the `go`, `up`, `down`, `update` and `why` branches of
-`securax` (count each branch as one file), and `local/compose/docker-compose.yml`. Look first at `down` and at every
-other place that passes `-v` or `--volumes` to Docker: slice 2 found one that deleted a person's data.
+Still in rank 1: the `doctor`, `start`, `stop`, `setup`, `backup` and `restore` branches of `securax` (each counts as
+one file; `restore` empties a volume before it refills it, so read that one first), `local/compose/.env.example`,
+and the other compose files (`tls.yml`, `tls-internal.yml`, `tls-move.yml`, `full-stack.yml`).
