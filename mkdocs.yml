@@ -242,4 +242,7 @@ nav:
   - Plans:
       - "Built to last (platforms, rename, open core, failures, the road up)": specs/built-to-last.md
       - "Built to last: the briefs": specs/built-to-last-briefs.md
+  - Specs and reviews:
+      - Review ledger: specs/review-ledger.md
+      - Fable autopilot: specs/fable-autopilot.md
   - Troubleshooting: troubleshooting.md

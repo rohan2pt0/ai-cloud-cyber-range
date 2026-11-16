@@ -31,7 +31,7 @@ function Csv($name, [scriptblock]$block) {
 }
 $admin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 if (-not $admin) { Say "!! Not running as Administrator: some items will be incomplete. Right-click PowerShell > Run as administrator, then run this again." }
-Say "SecuRAX collector · case $Case · host $HostName · started $([DateTime]::UtcNow.ToString('o'))"
+Say "SecuRAX collector - case $Case - host $HostName - started $([DateTime]::UtcNow.ToString('o'))"
 Say "Writing to $Out"
 
 # 1. memory first
@@ -114,5 +114,5 @@ $lines = Get-ChildItem -Path $Out -Recurse -File | Where-Object { $_.Name -notin
 $man = (Get-FileHash -Algorithm SHA256 (Join-Path $Out "MANIFEST.sha256")).Hash.ToLower()
 @{case=$Case; host=$HostName; os=(Get-CimInstance Win32_OperatingSystem).Caption; collected_by="$env:USERDOMAIN\$env:USERNAME"; started_utc=$Stamp;
   finished_utc=[DateTime]::UtcNow.ToString("yyyyMMddTHHmmssZ"); collector="securax collect.ps1"; manifest_sha256=$man} | ConvertTo-Json | Set-Content -Encoding UTF8 (Join-Path $Out "collector.json")
-Write-Host "Done. Files: $($lines.Count) · folder: $Out"
+Write-Host "Done. Files: $($lines.Count) - folder: $Out"
 Write-Host "Next: write the time and your name on the custody form, safely eject the USB, and do NOT switch this machine off."

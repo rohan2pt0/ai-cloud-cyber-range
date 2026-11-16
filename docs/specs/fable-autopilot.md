@@ -31,6 +31,10 @@ The prompt to paste (Fable, Medium effort, a new session each time):
 
 1. **next.** **Life systems, content.** Write `guiding-map/levers/life-systems.json` and `docs/specs/life-systems.md`
 1. **done (PR #311).** **Life systems, content.** Write `guiding-map/levers/life-systems.json` and `docs/specs/life-systems.md`
+0. **next.** Continue the review ledger: take the next unreviewed slice (at most 15 files), fix the cheap issues, brief
+   the rest, update the ledger. (`docs/specs/review-ledger.md`; this task stays open until every row there is reviewed.
+   Its one exception to the first rule: cheap fixes outside the Life OS and `apps/` are made, not briefed.)
+1. **Life systems, content.** Write `guiding-map/levers/life-systems.json` and `docs/specs/life-systems.md`
    (max 4 pages). Cover health (check-ups by age and sex, with rough costs and where to get them; vaccinations; the
    family health calendar), family (children's milestones, parents' care, the partner's weekly time), career (the
    ladder, offers, renewals), learning (one skill a quarter), home (a monthly reset, seasonal maintenance). Each one is
