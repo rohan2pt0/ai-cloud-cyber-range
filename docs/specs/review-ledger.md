@@ -70,7 +70,7 @@ Counts are tracked files (`git ls-files`) on 2026-11-16. Status is one of: **not
 
 | Rank | Area | Directories (tracked files) | Status |
 |---|---|---|---|
-| 1 | Launchers and installers | root files (44), `local/` (43), `tools/windows/` (1) | 19 of 88 reviewed; 8 fixed (#313), 5 fixed (#PRNUM). See slices 1 and 2 |
+| 1 | Launchers and installers | root files (44), `local/` (43), `tools/windows/` (1) | 19 of 88 reviewed; 8 fixed (#313), 5 fixed (#320). See slices 1 and 2 |
 | 2 | The Life OS | `guiding-map/` (196) | not reviewed |
 | 3 | The gateway and security | `apps/` (47), `governance/` (230), `policies/` (1), `redteam/` (11), `ai-soc/` (6), `mcp/` (3), `agents/` (12), `intel/` (9) | 1 of 319 reviewed (#313, encoding only) |
 | 4 | Sync and backup | inside `apps/` and `governance/` (review them first within rank 3), `routines/` (10), `sandbox/` (4) | not reviewed |
@@ -140,26 +140,26 @@ Test first: fail when any doc tells a person to download a `.bat` or `.cmd` by a
 does). confirm: that GitHub's "Download ZIP" applies the CRLF rule; if it does not, store the batch files as CRLF
 (`-text`) and update the two tests that name the current rule.
 
-### Slice 2 (2026-11-16, PR #PRNUM): the installer, the laptop scripts and the daily commands
+### Slice 2 (2026-11-16, PR #320): the installer, the laptop scripts and the daily commands
 
 Nothing in this slice was run against Docker, a kind cluster, WSL or macOS. `teardown.sh` is held by a test that runs it
 with stand-in tools; every other "fixed" is held by a static test (`local/compose/tests/test_laptop_scripts.py`).
 
 | File | Status | What was found |
 |---|---|---|
-| `local/scripts/teardown.sh` | fixed (#PRNUM) | It deleted every data volume, every time, with no question, while three docs called it "stop everything". Now it stops and keeps the data; `--erase` says what is lost, offers the backup first and needs a typed word |
-| `install.sh` | fixed (#PRNUM) | With no network, `--stable` ended with no message (a failed lookup under `pipefail`); `--help` cut the header mid-sentence. Briefs M1 to M4 remain |
-| `securax`, `up` | fixed (#PRNUM) | A pasted AI key was shown on the screen and stayed in the scrollback (also in `setup`). Briefs M5, M6 remain |
-| `securax`, `update` | fixed (#PRNUM) | Its DNS advice replaced `/etc/wsl.conf`, wiping the line `install.sh --docker` writes to start Docker (doc 121 said the same). Briefs M7, M8 remain |
-| `securax`, `go` | fixed (#PRNUM) | Said "the app just opened" when nothing had opened it (macOS has no `xdg-open`). L7 covers its Docker message |
-| `local/scripts/kind-up.sh` | fixed (#PRNUM) | The admission check passed on ANY refusal (no cluster, no namespace), a false green; a fixed name in `/tmp`. Brief M9 remains |
-| `local/scripts/bootstrap-laptop.sh` | reviewed (#PRNUM) | Fixed: a gateway that never came up read as "expected 400, got 000"; a fixed name in `/tmp`; "install Docker Desktop" as the only path. Hashes are pinned and checked before install: sound. Briefs M9, M10 remain |
-| `local/scripts/daily-driver-up.sh` | reviewed (#PRNUM) | Starts compose directly, so it skips what `./securax up` does (strong keys, HTTPS names, fallbacks) and prints four port addresses. Brief M10 |
-| `GETTING-STARTED.md` | reviewed (#PRNUM) | Fixed: two pointers to a file that was never in the repository; a device model. Brief M11 remains |
-| `DEPLOY.md` (Windows rows) | reviewed (#PRNUM) | Nothing changed. Brief M11 |
-| `securax`, `why` | reviewed (#PRNUM) | Sound: read-only, bounded output. Brief M12; L7 covers its Docker messages |
-| `securax`, `down` | reviewed (#PRNUM) | One line, one profile. Brief M13 |
-| `local/compose/docker-compose.yml` | reviewed (#PRNUM): ports, pins, limits, volumes, mounts | Every port is on loopback by default; hardening flags are on. The environment blocks are not read line by line: they go in the next slice. Briefs M14 to M16 |
+| `local/scripts/teardown.sh` | fixed (#320) | It deleted every data volume, every time, with no question, while three docs called it "stop everything". Now it stops and keeps the data; `--erase` says what is lost, offers the backup first and needs a typed word |
+| `install.sh` | fixed (#320) | With no network, `--stable` ended with no message (a failed lookup under `pipefail`); `--help` cut the header mid-sentence. Briefs M1 to M4 remain |
+| `securax`, `up` | fixed (#320) | A pasted AI key was shown on the screen and stayed in the scrollback (also in `setup`). Briefs M5, M6 remain |
+| `securax`, `update` | fixed (#320) | Its DNS advice replaced `/etc/wsl.conf`, wiping the line `install.sh --docker` writes to start Docker (doc 121 said the same). Briefs M7, M8 remain |
+| `securax`, `go` | fixed (#320) | Said "the app just opened" when nothing had opened it (macOS has no `xdg-open`). L7 covers its Docker message |
+| `local/scripts/kind-up.sh` | fixed (#320) | The admission check passed on ANY refusal (no cluster, no namespace), a false green; a fixed name in `/tmp`. Brief M9 remains |
+| `local/scripts/bootstrap-laptop.sh` | reviewed (#320) | Fixed: a gateway that never came up read as "expected 400, got 000"; a fixed name in `/tmp`; "install Docker Desktop" as the only path. Hashes are pinned and checked before install: sound. Briefs M9, M10 remain |
+| `local/scripts/daily-driver-up.sh` | reviewed (#320) | Starts compose directly, so it skips what `./securax up` does (strong keys, HTTPS names, fallbacks) and prints four port addresses. Brief M10 |
+| `GETTING-STARTED.md` | reviewed (#320) | Fixed: two pointers to a file that was never in the repository; a device model. Brief M11 remains |
+| `DEPLOY.md` (Windows rows) | reviewed (#320) | Nothing changed. Brief M11 |
+| `securax`, `why` | reviewed (#320) | Sound: read-only, bounded output. Brief M12; L7 covers its Docker messages |
+| `securax`, `down` | reviewed (#320) | One line, one profile. Brief M13 |
+| `local/compose/docker-compose.yml` | reviewed (#320): ports, pins, limits, volumes, mounts | Every port is on loopback by default; hardening flags are on. The environment blocks are not read line by line: they go in the next slice. Briefs M14 to M16 |
 
 ### Briefs from slice 2
 
