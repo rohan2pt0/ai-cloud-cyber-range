@@ -70,7 +70,7 @@ Counts are tracked files (`git ls-files`) on 2026-11-16. Status is one of: **not
 
 | Rank | Area | Directories (tracked files) | Status |
 |---|---|---|---|
-| 1 | Launchers and installers | root files (44), `local/` (43), `tools/windows/` (1) | 14 of 88 reviewed; 8 fixed (#313). See slice 1 |
+| 1 | Launchers and installers | root files (44), `local/` (43), `tools/windows/` (1) | 19 of 88 reviewed; 8 fixed (#313), 5 fixed (#PRNUM). See slices 1 and 2 |
 | 2 | The Life OS | `guiding-map/` (196) | not reviewed |
 | 3 | The gateway and security | `apps/` (47), `governance/` (230), `policies/` (1), `redteam/` (11), `ai-soc/` (6), `mcp/` (3), `agents/` (12), `intel/` (9) | 1 of 319 reviewed (#313, encoding only) |
 | 4 | Sync and backup | inside `apps/` and `governance/` (review them first within rank 3), `routines/` (10), `sandbox/` (4) | not reviewed |
@@ -122,8 +122,8 @@ Engine is inside Ubuntu, and it silently throws away a person's edit to `litellm
 Test first: in `local/compose/tests/`, assert the script says which set-up it found and never runs `git checkout --` on
 a changed file without saying so. Step: reuse the two messages `securax.cmd` now prints.
 
-**L5. `install.ps1` runs `install.sh` from `main` with no checksum (strong tier: supply chain).** The release path
-inside `install.sh` checks a checksum; the first hop does not. Test first: `governance/tests/test_installers.py` expects
+**L5. `install.ps1` runs `install.sh` from `main` with no checksum (strong tier: supply chain).** Only `--offline`
+inside `install.sh` checks a checksum (slice 2 corrected this: `--stable` clones a tag and checks nothing, see M2); the first hop does not. Test first: `governance/tests/test_installers.py` expects
 `-Stable` to fetch from the release and compare a published hash. Step: do that for `-Stable` and `-Version`; leave the
 rolling channel as it is, and say so in the script's first lines. Needs a threat-model line (`governance/threat-models.json`).
 
@@ -132,7 +132,7 @@ it is interrupted (`friction-by-consequence`). Test first: a static test expects
 `wsl --manage ... --move`, and a line that names a backup first. Step: one `Read-Host` and one message.
 
 **L7. `securax` itself tells Docker-Engine-in-Ubuntu users to start Docker Desktop** (four messages in `up`, `go`,
-`doctor` and `start`). Test first: a sandbox-free unit test that runs each branch with a fake `docker` that fails and a
+`doctor` and `start`, and slice 2 found two more in `why`; `go` says it on macOS and Linux too). Test first: a sandbox-free unit test that runs each branch with a fake `docker` that fails and a
 fake `dockerd` on the path, and expects "sudo service docker start". Step: one shared helper, used by the four places.
 
 **L8. A batch file fetched "raw" from GitHub arrives with LF endings** (the stored copy is LF; only a checkout converts).
@@ -140,8 +140,106 @@ Test first: fail when any doc tells a person to download a `.bat` or `.cmd` by a
 does). confirm: that GitHub's "Download ZIP" applies the CRLF rule; if it does not, store the batch files as CRLF
 (`-text`) and update the two tests that name the current rule.
 
+### Slice 2 (2026-11-16, PR #PRNUM): the installer, the laptop scripts and the daily commands
+
+Nothing in this slice was run against Docker, a kind cluster, WSL or macOS. `teardown.sh` is held by a test that runs it
+with stand-in tools; every other "fixed" is held by a static test (`local/compose/tests/test_laptop_scripts.py`).
+
+| File | Status | What was found |
+|---|---|---|
+| `local/scripts/teardown.sh` | fixed (#PRNUM) | It deleted every data volume, every time, with no question, while three docs called it "stop everything". Now it stops and keeps the data; `--erase` says what is lost, offers the backup first and needs a typed word |
+| `install.sh` | fixed (#PRNUM) | With no network, `--stable` ended with no message (a failed lookup under `pipefail`); `--help` cut the header mid-sentence. Briefs M1 to M4 remain |
+| `securax`, `up` | fixed (#PRNUM) | A pasted AI key was shown on the screen and stayed in the scrollback (also in `setup`). Briefs M5, M6 remain |
+| `securax`, `update` | fixed (#PRNUM) | Its DNS advice replaced `/etc/wsl.conf`, wiping the line `install.sh --docker` writes to start Docker (doc 121 said the same). Briefs M7, M8 remain |
+| `securax`, `go` | fixed (#PRNUM) | Said "the app just opened" when nothing had opened it (macOS has no `xdg-open`). L7 covers its Docker message |
+| `local/scripts/kind-up.sh` | fixed (#PRNUM) | The admission check passed on ANY refusal (no cluster, no namespace), a false green; a fixed name in `/tmp`. Brief M9 remains |
+| `local/scripts/bootstrap-laptop.sh` | reviewed (#PRNUM) | Fixed: a gateway that never came up read as "expected 400, got 000"; a fixed name in `/tmp`; "install Docker Desktop" as the only path. Hashes are pinned and checked before install: sound. Briefs M9, M10 remain |
+| `local/scripts/daily-driver-up.sh` | reviewed (#PRNUM) | Starts compose directly, so it skips what `./securax up` does (strong keys, HTTPS names, fallbacks) and prints four port addresses. Brief M10 |
+| `GETTING-STARTED.md` | reviewed (#PRNUM) | Fixed: two pointers to a file that was never in the repository; a device model. Brief M11 remains |
+| `DEPLOY.md` (Windows rows) | reviewed (#PRNUM) | Nothing changed. Brief M11 |
+| `securax`, `why` | reviewed (#PRNUM) | Sound: read-only, bounded output. Brief M12; L7 covers its Docker messages |
+| `securax`, `down` | reviewed (#PRNUM) | One line, one profile. Brief M13 |
+| `local/compose/docker-compose.yml` | reviewed (#PRNUM): ports, pins, limits, volumes, mounts | Every port is on loopback by default; hardening flags are on. The environment blocks are not read line by line: they go in the next slice. Briefs M14 to M16 |
+
+### Briefs from slice 2
+
+**M1. `install.sh --server` can lock the owner out of SSH (strong tier: sign-in).** It turns password login off when
+ANY account on the server holds a key, not when the person running it does. Test first: in
+`governance/tests/test_installers.py`, a dry run with a key only under another account's home must print "SSH left as
+it was". Step: count keys only for root and `$SUDO_USER`. confirm: which account a provider's image puts its key under.
+
+**M2. `--stable` and the stable update channel trust a tag with no check (strong tier: supply chain).** Both
+`install.sh` and `securax update` check out the newest `v*` tag as fetched; a moved or forged tag is run as it is.
+Test first: expect a refusal when the tag's commit is not the one the release's published `SHA256SUMS` names.
+Step: one shared check, used by both. Needs a line in `governance/threat-models.json`. Do it with L5.
+
+**M3. `--server --restore` leaves the backup and its key file side by side** in the service account's home, for good.
+Test first: a dry run must print a step that removes both copies after the restore. Step: two `rm` lines and one `say`.
+
+**M4. `--server --restore` on a server that already has SecuRAX does nothing and still says "ready".** Test first: a dry
+run with the folder present and `--restore` must stop with one next step (`./securax restore FILE`). Step: one `die`.
+
+**M5. A port clash tells Linux and macOS users to open Windows PowerShell.** Test first: with a stand-in `docker` that
+prints "port is already allocated", `up` outside WSL must not print "PowerShell". Step: pick the hint by system
+(`ss -ltnp` on Linux, `lsof -i` on macOS). Do it with L7: one helper for "which system is this".
+
+**M6. `up` still asks a person to paste a key** (`zero-setup`). Not a model's task: add it to
+`governance/frictions.json` as open, with the one-tap consent path as the fix.
+
+**M7. `update` throws away a hand edit to `litellm-config.yaml` without a word** (the same finding as L4, in a second
+place). Test first: a temp repository with that file edited; `update` must say it set the edit aside and where.
+Step: copy it to `litellm-config.yaml.yours` before the checkout, and say so.
+
+**M8. "Your data is untouched" is not proven when an update moves an image forward.** A newer chat or database image
+can change its stored data on start; the code then rolls back but the data does not. Test first: `update` without
+`--auto` must stop, not continue, when the safety backup fails on a running estate. Step: replace "continuing" with
+one next step. confirm: which pinned images change their data on a version step (the chat app does, by its notes).
+
+**M9. The Kubernetes tools are two years old and one is not pinned.** `bootstrap-laptop.sh` pins kind, kubectl and helm
+at late-2024 builds; `kind-up.sh` installs the admission controller's chart at whatever is newest. Test first: fail when
+`kind-up.sh` has a `helm upgrade --install` with no `--version`. Step: pin the chart; raise the three tools and their
+hashes together. confirm: the known flaws fixed since in helm (look them up; do not write them from memory).
+
+**M10. Two ways to start, and the older one is the unsafe one.** `bootstrap-laptop.sh` and `daily-driver-up.sh` start
+compose themselves and print port addresses that a default install (HTTPS names on) no longer serves. Test first: fail
+when a script under `local/scripts/` prints `localhost:` followed by a port. Step: make `daily-driver-up.sh` three
+lines that call `./securax up` and `./securax open`; keep `bootstrap-laptop.sh` for the range demo and have it print
+`./securax status` for addresses. On macOS it would install Linux tools: stop there with a plain line instead.
+
+**M11. The two root guides give addresses a fresh install no longer answers on.** `install.sh` now turns the HTTPS
+names on, yet `GETTING-STARTED.md` (4 places) and `DEPLOY.md` (about 12) say `localhost` and a port, name Docker
+Desktop as the only way, call the folder by the repository's name where the installer uses `~/securax`, and tell a
+Windows person to edit `.env` by hand. Test first: extend the fitness check `no-raw-addresses` to the root `.md`
+files. Step: one guide per run; say "run `./securax open`" and let it print the address. Finish W5 with it.
+
+**M12. `why` prints raw logs and invites a paste into a chat.** A log line can hold a key or a person's text.
+Test first: feed `why` a stand-in log holding a plainly fake key (low entropy) and expect it masked. Step: pass the
+lines through the masking the gateway's audit already uses. confirm: that a shared masking helper exists to reuse.
+
+**M13. `down` may leave the password manager, the online tunnel and the studio running.** It names one profile; those
+three are in others. Test first: a static test expects `down` to cover every profile `up` and `start` can start.
+Step: `--profile "*"`. confirm: on the pinned compose version, whether `down` with one profile stops the others.
+
+**M14. The monitoring profile cannot start beside Chat: both publish port 3000.** Test first: in
+`test_compose_sanity.py`, fail when two services publish the same host port. Step: give the dashboard its own port.
+
+**M15. Five services have no memory limit** (the router, the database, the log store, the dashboard, the scanner), so
+one of them can take the laptop down with it. Test first: `test_container_hardening.py` expects a limit on every
+service. Step: add one each, sized from `docker stats` on a running estate (a person runs that once).
+
+**M16. The scanner is handed Docker's control socket** (read-only on a socket does not limit what can be asked of it),
+and four images are pinned by tag only (the local model, the database, the log store, the scanner). Strong tier.
+Test first: fitness `threat-modelled` expects a model that names the socket. Step: write the model; accept with a
+review date or put a socket proxy in front. Pin the four by digest in the same change.
+
+**M17. A device model is named in eight more files** (`docs/architecture.md`, docs 00, 05, 10 and 28,
+`portal/explainer.html`, `personal-rnd/self_opsec.py`). The three in this slice now say "a 16 GB laptop".
+Test first: fail on the model's name anywhere tracked (keep the name out of the test: hash it, as the privacy list does).
+Step: one file per run.
+
 ### Next slice (at most 15 files)
 
-`install.sh` (line by line), `GETTING-STARTED.md`, `DEPLOY.md` (the Windows rows), `local/scripts/bootstrap-laptop.sh`,
-`daily-driver-up.sh`, `kind-up.sh`, `teardown.sh`, then the `go`, `up`, `down`, `update` and `why` branches of `securax`
-(count each branch as one file), and `local/compose/docker-compose.yml`.
+The environment blocks of `local/compose/docker-compose.yml`, `local/compose/.env.example`, `tls-internal.yml`,
+`tls-move.yml`, `guiding-map.conf`, `gen_litellm_config.py`, `litellm-config.yaml`, `model_discovery.py`, then the
+`doctor`, `start`, `setup`, `backup`, `restore` and `protect` branches of `securax` (count each branch as one file),
+and `README.md`.
