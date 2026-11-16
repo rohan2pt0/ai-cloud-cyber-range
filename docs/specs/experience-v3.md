@@ -1,5 +1,9 @@
 # Experience v3: priceless to look at, effortless to use
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🔴 Not built yet.** A spec, not a build (2026-11-16): the premium look and how the Life OS works for distracted, ADHD, novice and expert minds; it turns amber as the fixes ship. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 **Status:** proposal, 2026-11-16. **Tokens:** `governance/design-v3.json`. **The work:** [the 20 fixes](experience-fixes.md).
 **Builds on:** doc 100 (the design standard), doc 136 (the nature atlas), `governance/design.json`, `guiding-map/shared/lux.css`.
 

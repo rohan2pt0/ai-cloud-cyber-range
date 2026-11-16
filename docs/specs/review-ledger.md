@@ -1,5 +1,9 @@
 # Review ledger
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟡 Partly built.** Every directory ranked by risk with its review state; reviewed one slice per session. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 Every file in the repository gets a senior review, a slice at a time, over several sessions. Each session takes the next
 unreviewed slice (at most 15 files), fixes what is cheap, and writes the rest as briefs: one step each, test first, small
 enough for an open model to finish in 20 minutes. Nothing here is "done" because it was read: a row is **fixed** only when

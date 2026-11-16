@@ -1,5 +1,9 @@
 # Experience v3: the 20 fixes to the Life OS
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🔴 Not built yet.** The 20 ranked experience fixes as one-step briefs; none built yet. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 **Status:** ready to build, 2026-11-16. **Spec:** [experience-v3.md](experience-v3.md). **Tokens:** `governance/design-v3.json`.
 **Queue:** `experience-v3` in `governance/queue.json`.
 
