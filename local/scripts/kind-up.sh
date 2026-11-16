@@ -24,9 +24,13 @@ kubectl apply -f policies/kyverno-policies.yaml
 kubectl -n ai rollout status deploy/llm-gateway --timeout=120s
 
 log "Negative test: an insecure pod (root, :latest) must be REJECTED by Kyverno"
-if kubectl -n ai run bad --image=nginx:latest --restart=Never --dry-run=server 2>/tmp/kyverno.err; then
+ERR="$(mktemp)"; trap 'rm -f "$ERR"' EXIT
+if kubectl -n ai run bad --image=nginx:latest --restart=Never --dry-run=server 2>"$ERR"; then
   echo "  FAIL - insecure pod was admitted"; exit 1
+elif grep -qiE 'kyverno|admission webhook' "$ERR"; then
+  log "  PASS - admission denied:"; sed 's/^/    /' "$ERR" | head -4
 else
-  log "  PASS - admission denied:"; sed 's/^/    /' /tmp/kyverno.err | head -4
+  # refused, but not by the admission policy (no cluster, no namespace, no network): that proves nothing
+  echo "  FAIL - the pod was refused for another reason, so the policy was not tested:"; sed 's/^/    /' "$ERR" | head -4; exit 1
 fi
 log "K8s plane ready. Gateway NodePort -> http://localhost:8081  (8081 avoids the compose gateway on 8080)"

@@ -208,7 +208,7 @@ load-tested beyond its measured budgets, and not independently audited. The full
 WITH_AI=1 ./local/scripts/bootstrap-laptop.sh # also pull local models + Llama Guard
 ./local/scripts/kind-up.sh                    # Kubernetes plane (Kyverno + NetPol + Falco)
 python3 redteam/run_attacks.py --fail-under 0.9   # adversarial-ML scorecard
-./local/scripts/teardown.sh                   # stop everything (costs nothing overnight)
+./local/scripts/teardown.sh                   # stop everything, keep your data (--erase deletes it, after a typed word)
 ```
 
 ## What's inside

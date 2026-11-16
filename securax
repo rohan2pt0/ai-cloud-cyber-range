@@ -230,7 +230,7 @@ case "$cmd" in
     # hunting for .env. Sensitive data stays local either way.
     if ! grep -q "^GEMINI_API_KEY=..*" "$ENVF" 2>/dev/null && [ -t 0 ]; then
       printf '\nFor INSTANT answers, paste a FREE Google AI Studio key (https://aistudio.google.com/apikey)\n  [or press Enter to use the slower private local model]: '
-      read -r GK < /dev/tty || GK=""
+      read -rs GK < /dev/tty || GK=""; echo   # -s: a key is never shown on the screen or left in the scrollback
       if [ -n "$GK" ]; then
         if grep -q "^GEMINI_API_KEY=" "$ENVF"; then
           tmp="$(mktemp)"; awk -v v="$GK" 'BEGIN{FS="="} $1=="GEMINI_API_KEY"{print "GEMINI_API_KEY="v; next} {print}' "$ENVF" > "$tmp" && mv "$tmp" "$ENVF"
@@ -459,8 +459,10 @@ case "$cmd" in
     if [ -n "$LAPLINK" ] && [ "$NOOPEN" = 0 ]; then
       # Opening the laptop link sets sync up in that browser in one click (or does nothing if it is already set up).
       ( command -v powershell.exe >/dev/null && powershell.exe -NoProfile -Command "Start-Process '$LAPLINK'" >/dev/null 2>&1 ) \
-        || ( command -v xdg-open >/dev/null && xdg-open "$LAPLINK" >/dev/null 2>&1 ) || true
-      echo "  The app just opened in your browser. If it asks 'Turn on cross-device sync?', press OK once."
+        || ( command -v xdg-open >/dev/null && xdg-open "$LAPLINK" >/dev/null 2>&1 ) \
+        || ( [ "$(uname -s)" = Darwin ] && open "$LAPLINK" >/dev/null 2>&1 ) \
+        && echo "  The app just opened in your browser. If it asks 'Turn on cross-device sync?', press OK once." \
+        || echo "  Open the app yourself:  ./securax open"   # say it opened only when something opened it
     fi
     if [ -n "$PHLINK" ] && on ntfy && [ -n "$(ev SECURAX_NOTIFY_NTFY)" ] && [ -t 0 ]; then
       printf '  Send the one-tap phone link to your phone now (it passes through your ntfy alert topic and is not stored there)? [y/N]: '
@@ -519,7 +521,7 @@ URLS
       else printf '%s=%s\n' "$k" "$v" >> "$ENVF"; fi; }
     C "SecuRAX setup — a few questions, then you're done."
     printf "1) Paste a FREE Google AI Studio key for fast answers (https://aistudio.google.com/apikey)\n   [Enter to skip and use the private local model]: "
-    read -r GK < /dev/tty || GK=""
+    read -rs GK < /dev/tty || GK=""; echo   # -s: a key is never shown on the screen
     [ -n "$GK" ] && setkv GEMINI_API_KEY "$GK" && C "  ✔ Gemini key saved — answers will be fast."
     printf "2) Use SecuRAX on your phone/iPad too? [y/N]: "
     read -r MD < /dev/tty || MD="n"
@@ -1921,7 +1923,7 @@ g=json.load(sys.stdin).get("approved",{}); print(f"✔ approved {g.get(\"tool\",
         # DNS can't resolve the host — almost always LOCAL (WSL after a wsl --shutdown, a VPN, corporate DNS), not GitHub.
         C "Could not resolve github.com — this is DNS on THIS machine, not GitHub being down. Nothing changed; the estate keeps running. Details: $(printf '%s' "$_PULL" | tail -1)"
         if grep -qiE 'microsoft|wsl' /proc/version 2>/dev/null; then
-          C "  WSL DNS fix:  printf '[network]\\ngenerateResolvConf=false\\n' | sudo tee /etc/wsl.conf ; sudo rm -f /etc/resolv.conf ; printf 'nameserver 1.1.1.1\\nnameserver 8.8.8.8\\n' | sudo tee /etc/resolv.conf   then (in Windows)  wsl --shutdown  and reopen (doc 121)."
+          C "  WSL DNS fix:  printf '[network]\\ngenerateResolvConf=false\\n' | sudo tee -a /etc/wsl.conf ; sudo rm -f /etc/resolv.conf ; printf 'nameserver 1.1.1.1\\nnameserver 8.8.8.8\\n' | sudo tee /etc/resolv.conf   then (in Windows)  wsl --shutdown  and reopen (doc 121)."
         else
           C "  Check DNS/VPN here:  getent hosts github.com   — then retry. If GitHub really is down: ./securax continuity show github-down (the mirror + the code bundle in your backups)."
         fi
