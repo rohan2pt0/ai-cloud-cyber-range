@@ -26,20 +26,23 @@ The prompt to paste (Fable, Medium effort, a new session each time):
   [Unreleased]; `python3 tools/readme_sync.py`. Say what you could not run.
 - **Budget:** stay under 60% of context. If told "stop", push what you have and open the PR at once.
 - **No merging, no PR subscriptions.**
+- **Never repeat a task (added 2026-11-16, after task 1 was done three times).** Main's copy of this file is stale until a PR
+  merges. Before you start, list the open PRs and read this file on the newest autopilot branch (`git show`). A task that
+  already has an open PR is done: take the first one that has none.
 
 ## Tasks, in order (highest value per token first)
 
-1. **next.** **Life systems, content.** Write `guiding-map/levers/life-systems.json` and `docs/specs/life-systems.md`
+1. **done (PR #311; #312 and #315 are repeats of it: keep one, close two).** **Life systems, content.** Write `guiding-map/levers/life-systems.json` and `docs/specs/life-systems.md`
    (max 4 pages). Cover health (check-ups by age and sex, with rough costs and where to get them; vaccinations; the
    family health calendar), family (children's milestones, parents' care, the partner's weekly time), career (the
    ladder, offers, renewals), learning (one skill a quarter), home (a monthly reset, seasonal maintenance). Each one is
    a loop (cue, smallest step, visible reward, environment, review, its one constraint) with persona cases (the
    distracted, the ADHD, the novice, the expert). Add 6 briefs to `docs/specs/life-systems-briefs.md`.
-2. **Profession packs, archetypes 5 to 10.** Extend `guiding-map/levers/professions.json` (same shape as the first
+2. **done (PR #318).** **Profession packs, archetypes 5 to 10.** Extend `guiding-map/levers/professions.json` (same shape as the first
    four): founders and business owners; investors and finance; aviation, defence and intelligence; volatile short
    careers (athletes, actors, media, authors); research and academia; technical specialists. Verify each licence or
    renewal rule; mark the rest confirm.
-3. **More savings levers.** Extend `guiding-map/levers/levers.json`: the 10 largest states' own schemes (energy,
+3. **next.** **More savings levers.** Extend `guiding-map/levers/levers.json`: the 10 largest states' own schemes (energy,
    transport, health, education, women, seniors), scholarships, insurance cost cuts, energy tariffs, and a Global set
    (no country assumed). Same fields as the existing levers; cite every source.
 4. **Growth templates for income.** `guiding-map/levers/growth.json` and `docs/specs/growth.md`: a personal-brand
