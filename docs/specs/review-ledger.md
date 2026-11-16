@@ -70,7 +70,7 @@ Counts are tracked files (`git ls-files`) on 2026-11-16. Status is one of: **not
 
 | Rank | Area | Directories (tracked files) | Status |
 |---|---|---|---|
-| 1 | Launchers and installers | root files (44), `local/` (43), `tools/windows/` (1) | Slice 1: 14 of 88 reviewed, 8 fixed (#313). Slice 4 adds 11 more, 5 fixed (#320; `securax` counts one per branch). Slices 2 and 3 wait in open PRs #316 and #319 and carry their own counts |
+| 1 | Launchers and installers | root files (44), `local/` (43), `tools/windows/` (1) | Slice 1: 14 of 88 reviewed, 8 fixed (#313). Slice 4 adds 11 more, 5 fixed (#321; `securax` counts one per branch). Slices 2 and 3 wait in open PRs #316 and #319 and carry their own counts |
 | 2 | The Life OS | `guiding-map/` (196) | not reviewed |
 | 3 | The gateway and security | `apps/` (47), `governance/` (230), `policies/` (1), `redteam/` (11), `ai-soc/` (6), `mcp/` (3), `agents/` (12), `intel/` (9) | 1 of 319 reviewed (#313, encoding only) |
 | 4 | Sync and backup | inside `apps/` and `governance/` (review them first within rank 3), `routines/` (10), `sandbox/` (4) | not reviewed |
@@ -146,7 +146,7 @@ The installer and the laptop scripts (#316), then `up`, `go`, `down`, `update`, 
 Their tables and briefs (M1 to M10, N1 to N13) are in those PRs. Slice 4 below was started from main and does not
 repeat them; when all three merge, keep every table.
 
-### Slice 4 (2026-11-16, PR #320): stop one part, back up, restore, first set-up
+### Slice 4 (2026-11-16, PR #321): stop one part, back up, restore, first set-up
 
 Nothing in this slice was run against real Docker, a real backup or a real restore. The fixes are held by
 `lifecycle/tests/test_cli_restore_and_stop.py`, which runs a copy of the CLI in a scratch folder with a pretend
@@ -154,17 +154,17 @@ Nothing in this slice was run against real Docker, a real backup or a real resto
 
 | File | Status | What was found |
 |---|---|---|
-| `securax`, `stop` | fixed (#320) | **`./securax stop docs` stopped nothing and said "stopped".** It always named a TLS sidecar; without internal TLS no file defines one, compose then refuses the whole line, and the error was thrown away. It now names a sidecar only when one exists, says when the stop failed (and keeps the add-on remembered), and a good stop says the data is kept and how to start it again. Brief P11 remains |
-| `securax`, `start` | fixed (#320), one line | With internal TLS on, `start passwords` named a sidecar the password manager does not have, so it could not start. Fixed with the same check. Sign-ups stay open until a second command is run: brief P6 |
-| `securax`, `restore` | fixed (#320), in part | Checks first, changes later, keeps the old `.env` and the old vault aside: good. But it **emptied each volume while a part outside the `ai` profile could still be running on it**; it took volume names from file names inside the backup and put them into a shell line; and a backup could write anywhere in the code folder, then be run. It now stops whoever holds a volume before it empties it, and refuses odd names and anything outside `vault/` before anything is changed. No way back for the volumes, and no proof of who made an unencrypted backup: briefs P1 to P3 |
-| `securax`, `backup` | fixed (#320), in part | Careful: verified, refuses to write plain when encryption was asked for, suspect copies kept apart, only encrypted copies leave the machine. The file with the keys was readable by other accounts until the closing `chmod` (now private from the first byte), and the last line printed `restore <file>` (now `restore latest`). Briefs P4 and P10 |
-| `securax`, `setup` | fixed (#320), one line | With no `openssl`, the sync token and three passwords were made from the clock, which can be guessed; they now come from the system's random source, as `up` already did. The wizard itself is the older path: brief P5 |
-| `securax`, `doctor` | reviewed (#320) | The real chat test and the true error are the best part of it. With Docker unreachable it says so, then prints eight more lines that all read "down" and waits up to four minutes on the chat test. Brief P7 |
-| `local/compose/.env.example` | reviewed (#320) | No real secret in it. The header still says "copy and fill in"; three lines carry a comment after the `=`; India is the default for everyone. Brief P8 |
-| `local/compose/tls.yml` | reviewed (#320) | Sound: one HTTPS port, the phone ports on the loopback address only, the CA key never enters a container, the edge image pinned by digest |
-| `local/compose/tls-internal.yml` | reviewed (#320) | Sound in design (every listener on loopback, trust files hold the public CAs too). The sidecar image has no digest; the password manager has no sidecar. Brief P9 |
-| `local/compose/tls-move.yml` | reviewed (#320) | Five lines, right as it is: the old address answers on this machine only |
-| `local/compose/full-stack.yml` | reviewed (#320) | Opt-in, loopback only, passwords have no default. Two images with no digest, one of them old. Brief P9 |
+| `securax`, `stop` | fixed (#321) | **`./securax stop docs` stopped nothing and said "stopped".** It always named a TLS sidecar; without internal TLS no file defines one, compose then refuses the whole line, and the error was thrown away. It now names a sidecar only when one exists, says when the stop failed (and keeps the add-on remembered), and a good stop says the data is kept and how to start it again. Brief P11 remains |
+| `securax`, `start` | fixed (#321), one line | With internal TLS on, `start passwords` named a sidecar the password manager does not have, so it could not start. Fixed with the same check. Sign-ups stay open until a second command is run: brief P6 |
+| `securax`, `restore` | fixed (#321), in part | Checks first, changes later, keeps the old `.env` and the old vault aside: good. But it **emptied each volume while a part outside the `ai` profile could still be running on it**; it took volume names from file names inside the backup and put them into a shell line; and a backup could write anywhere in the code folder, then be run. It now stops whoever holds a volume before it empties it, and refuses odd names and anything outside `vault/` before anything is changed. No way back for the volumes, and no proof of who made an unencrypted backup: briefs P1 to P3 |
+| `securax`, `backup` | fixed (#321), in part | Careful: verified, refuses to write plain when encryption was asked for, suspect copies kept apart, only encrypted copies leave the machine. The file with the keys was readable by other accounts until the closing `chmod` (now private from the first byte), and the last line printed `restore <file>` (now `restore latest`). Briefs P4 and P10 |
+| `securax`, `setup` | fixed (#321), one line | With no `openssl`, the sync token and three passwords were made from the clock, which can be guessed; they now come from the system's random source, as `up` already did. The wizard itself is the older path: brief P5 |
+| `securax`, `doctor` | reviewed (#321) | The real chat test and the true error are the best part of it. With Docker unreachable it says so, then prints eight more lines that all read "down" and waits up to four minutes on the chat test. Brief P7 |
+| `local/compose/.env.example` | reviewed (#321) | No real secret in it. The header still says "copy and fill in"; three lines carry a comment after the `=`; India is the default for everyone. Brief P8 |
+| `local/compose/tls.yml` | reviewed (#321) | Sound: one HTTPS port, the phone ports on the loopback address only, the CA key never enters a container, the edge image pinned by digest |
+| `local/compose/tls-internal.yml` | reviewed (#321) | Sound in design (every listener on loopback, trust files hold the public CAs too). The sidecar image has no digest; the password manager has no sidecar. Brief P9 |
+| `local/compose/tls-move.yml` | reviewed (#321) | Five lines, right as it is: the old address answers on this machine only |
+| `local/compose/full-stack.yml` | reviewed (#321) | Opt-in, loopback only, passwords have no default. Two images with no digest, one of them old. Brief P9 |
 
 ### Briefs from slice 4
 
