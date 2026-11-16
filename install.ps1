@@ -10,14 +10,31 @@
 # Docker Engine there (no Docker Desktop), turns HTTPS on, starts the estate and opens the Command Center.
 param([switch]$Stable, [string]$Version = "")
 $ErrorActionPreference = "Stop"
+
+# A log of this run, and a window that never closes on an error before it can be read.
+$LogDir = if ($env:LOCALAPPDATA) { Join-Path $env:LOCALAPPDATA "SecuRAX" } else { Join-Path $env:TEMP "SecuRAX" }
+$Log = Join-Path $LogDir "last-run.log"
+try { New-Item -ItemType Directory -Force -Path $LogDir | Out-Null; "SecuRAX installer log. Started $(Get-Date -Format s)" | Set-Content -Path $Log -Encoding ascii } catch { $Log = $null }
+function Note($t) { if ($Log) { try { Add-Content -Path $Log -Value $t -Encoding ascii } catch {} } }
+function Stop-Here($why, $next, [int]$code = 1) {
+  Write-Host ""
+  Write-Host "  $why" -ForegroundColor Red
+  Write-Host "  Next step:  $next" -ForegroundColor Yellow
+  if ($Log) { Write-Host "  A log of this run:  $Log" }
+  Note "FAILED: $why"; Note "Next step: $next"
+  # started by a double-click or "Run with PowerShell": keep the window open until the person has read it
+  if ([Environment]::UserInteractive -and -not [Console]::IsInputRedirected) { Read-Host "  Press Enter to close" | Out-Null }
+  exit $code
+}
+trap { Stop-Here "The installer stopped: $($_.Exception.Message)" "copy this window's text into the chat, or run the same command again." }
 $Repo = if ($env:SECURAX_REPO) { $env:SECURAX_REPO } else { "{{REPO_SLUG}}" }
 if ($Repo -like "*{{*") {
   $brand = Join-Path $PSScriptRoot "brand.env"
   if (Test-Path $brand) { $Repo = ((Get-Content $brand | Where-Object { $_ -like "REPO_SLUG=*" }) -replace "^REPO_SLUG=", "") | Select-Object -First 1 }
-  if (-not $Repo -or $Repo -like "*{{*") { Write-Host "Which repository? Set it first:  `$env:SECURAX_REPO='owner/repo'" -ForegroundColor Red; exit 1 }
+  if (-not $Repo -or $Repo -like "*{{*") { Stop-Here "This copy of the installer does not know where SecuRAX lives (brand.env is not next to it)." "download install.ps1 from the Releases page, or run it from inside the SecuRAX folder." }
 }
 
-function Say($t) { Write-Host $t -ForegroundColor Cyan }
+function Say($t) { Write-Host $t -ForegroundColor Cyan; Note $t }
 
 $admin = ([Security.Principal.WindowsPrincipal][Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
 
@@ -35,10 +52,13 @@ if (-not (Test-Path $wslcfg)) {
 $env:WSL_UTF8 = "1"
 $distro = $null
 if (Get-Command wsl -ErrorAction SilentlyContinue) {
-  $distro = (wsl -l -q 2>$null) | ForEach-Object { $_.Trim() } | Where-Object { $_ -and $_ -notlike "docker-desktop*" } | Select-Object -First 1
+  # older Windows prints this list as UTF-16 whatever WSL_UTF8 says: drop the NUL characters before reading a name
+  $distro = (wsl -l -q 2>$null) | ForEach-Object { ($_ -replace "`0", "").Trim() } | Where-Object { $_ -and $_ -notlike "docker-desktop*" } | Select-Object -First 1
 }
+# with no distribution, "wsl -l -q" prints a sentence, not a name: only trust a name that really starts
+if ($distro) { wsl -d $distro -e true 2>$null | Out-Null; if ($LASTEXITCODE -ne 0) { Note "Not a working distribution: $distro"; $distro = $null } }
 if (-not $distro) {
-  if (-not $admin) { Say "Ubuntu (WSL) is needed. Run this same command again in PowerShell as Administrator (right-click Start > Terminal (Admin))."; exit 1 }
+  if (-not $admin) { Stop-Here "Ubuntu (WSL) is needed, and installing it needs an Administrator window." "right-click Start, choose Terminal (Admin) or PowerShell (Admin), and run this same command again." }
   Say "Installing Ubuntu (WSL). Windows may ask to restart: do, then open Ubuntu once from the Start menu to pick a username,"
   Say "and run this same command again. It carries on from where it stopped."
   wsl --install -d Ubuntu
@@ -49,6 +69,6 @@ $opt = if ($Version) { "--version $Version" } elseif ($Stable) { "--stable" } el
 # install.sh from main: it has no version-specific logic, and main exists before the first release is tagged
 $cmd = "cd ~ && curl -fsSLO https://raw.githubusercontent.com/$Repo/main/install.sh && SECURAX_REPO=$Repo bash install.sh $opt"
 wsl -d $distro -e bash -lc $cmd
-if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+if ($LASTEXITCODE -ne 0) { Stop-Here "The install inside $distro stopped (code $LASTEXITCODE). The message above says why." "fix what it names and run this same command again: it carries on from where it stopped." $LASTEXITCODE }
 Say ""
 Say "Done. Docker Engine runs inside $distro (no Docker Desktop needed). Daily: open Ubuntu and type  securax up"

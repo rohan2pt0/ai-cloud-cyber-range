@@ -43,6 +43,23 @@ Good-faith security research that respects this policy, avoids privacy violation
 disruption, and does not exfiltrate data beyond what is needed to prove a finding will not be
 pursued or reported by us.
 
+## A fake copy, or misuse
+SecuRAX holds things people care about, so copies that only look like it will appear.
+
+- **Where the real one lives:** this repository, its Releases page, and the site and apps this repository's own
+  workflows publish. Nothing else is SecuRAX: not an app-store listing we have not announced here, not a download
+  link in a message, not a person offering to "set it up" for you.
+- **How to check a copy:** every release file is listed in `SHA256SUMS` and carries a signed attestation of where it
+  was built. `gh attestation verify FILE --repo OWNER/REPO` (with this repository's name) must pass; the steps are in
+  [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AND-RELEASES.md).
+- **What we never do:** ask for your password, backup phrase, bank details or a one-time code, by mail, phone or chat;
+  give investment tips; or take money outside the published price.
+- **Report a fake copy or misuse** (a look-alike site or app, someone selling "SecuRAX advice", the testing tools
+  pointed at systems their user does not own, a feature set up on another person's phone or mailbox without their
+  knowledge): use the private report link above, or the contact address in `brand.env`. We answer within 3 business days.
+
+The testing tools (red team, the range, the hunt packs) are for systems you own or are authorised in writing to test.
+
 ## Where to look
 The threat model, data-classification rules and control mapping live in
 [`docs/securax/`](docs/securax/) (see `04-COMPLIANCE-MAP.md` and `17-ENTERPRISE-ARCHITECTURE.md`).

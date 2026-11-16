@@ -1,0 +1,169 @@
+{
+ "about": "Experience v3 as data (docs/specs/experience-v3.md, 2026-11-16). A proposal: governance/design.json stays the live source that tests read until each group below is adopted by a fix in docs/specs/experience-fixes.md. v3 keeps every colour pair that design.json already measures and adds what v2 lacked: natural materials with one meaning each, light by time of day, spring motion, sound (off by default), attention budgets, the behaviour rules and the floors a test can hold.",
+ "status": "proposal",
+ "extends": "governance/design.json",
+ "adoption": "One group at a time, by a brief in docs/specs/experience-fixes.md. A group is live when a test reads it from this file; until then it is a target, not a claim.",
+
+ "colour": {
+  "about": "Neutrals unchanged from design.json (obsidian and ivory, AA in both themes). The four state colours below are new text-safe tokens: each is at least 6:1 on --bg, --card and --raise in its theme (measured 2026-11-16; the adopting test must measure again).",
+  "light": {"--bg": "#f6f3ee", "--card": "#fffdf9", "--raise": "#fffefb", "--ink": "#1b1a18", "--mut": "#5f5b54", "--line": "#e3ddd2", "--edge": "#857e72", "--accent": "#7a5a12", "--leaf": "#b8901f", "--action": "#1b1a18", "--on-action": "#f6f3ee", "--red": "#a8261b", "--amber": "#7d5300", "--green": "#1f6b3a",
+   "--jade": "#1d5a52", "--dawn": "#8a4a1c", "--rest": "#46586b", "--focus": "#1c4a74"},
+  "dark": {"--bg": "#18181b", "--card": "#222226", "--raise": "#2b2b30", "--ink": "#f3efe7", "--mut": "#aba69d", "--line": "#38373d", "--edge": "#7d7972", "--accent": "#e2c172", "--leaf": "#e2c172", "--action": "#f3efe7", "--on-action": "#18181b", "--red": "#f2958b", "--amber": "#e6b85c", "--green": "#7fcf98",
+   "--jade": "#7fd8c8", "--dawn": "#f0b98a", "--rest": "#a9b8c9", "--focus": "#a9d4ff"},
+  "meaning": {
+   "--leaf": "the one primary action or mark on a screen; never text on a light surface",
+   "--jade": "done, kept, healthy",
+   "--dawn": "today, a beginning, the next small step",
+   "--rest": "paused, rested, snoozed: a chosen stop, never a failure",
+   "--amber": "late or needs attention: one action offered",
+   "--red": "real danger only: a scam, data loss, a security block. Never a missed habit, a late step or a low score",
+   "--focus": "the keyboard focus ring and a running focus timer"
+  },
+  "never": ["#000000 as a page background", "red for a missed day or a late item", "colour as the only carrier of a state: every state has a word or a shape too", "more than one gold element in view"]
+ },
+
+ "materials": {
+  "about": "Each material is taken from nature (governance/nature-atlas.json) and has ONE meaning. One natural element per surface. Every material has a flat fallback that carries the same meaning without the GPU, under forced colours and under reduced transparency.",
+  "per_surface_max": 1,
+  "set": {
+   "gold-leaf": {"means": "the one action", "from": "polished gold: bright top, warm core, dark foot", "fallback": "solid --action with a 1px --leaf rim"},
+   "jade": {"means": "done", "from": "polished nephrite, light held under the surface", "fallback": "--jade text with a tick"},
+   "moonstone": {"means": "not yet, waiting", "from": "adularescence: a soft blue-white sheen that moves with the light", "fallback": "an empty ring in --edge"},
+   "kintsugi": {"means": "a miss you came back from", "from": "a gold seam through a mended bowl", "fallback": "a ring with one --leaf line across it and the word 'mended'"},
+   "amber-resin": {"means": "needs attention", "from": "light through resin", "fallback": "--amber text with the half-moon icon"},
+   "ruby": {"means": "real danger", "from": "a cut ruby, table highlight from above", "fallback": "--red text with the warning icon"},
+   "night-sky": {"means": "private, locked, at rest", "from": "stars by magnitude and colour", "fallback": "solid --bg"},
+   "still-water": {"means": "paused on purpose", "from": "a lake with no wind", "fallback": "--rest text with the pause icon"}
+  },
+  "glass": {"use": "floating layers only (bars, sheets, dialogs)", "max_layers": 3, "alpha": 0.92, "fallback_alpha": 0.97, "blur_px": 24}
+ },
+
+ "light": {
+  "about": "One light source, from above, the same on every surface. In dark the screen is a cabin at night: light comes from the controls, not the page. The time of day changes one accent line only, never contrast or layout.",
+  "source": "above, 12 o'clock",
+  "time_of_day": {
+   "dawn": {"hours": [5, 11], "line": "linear-gradient(90deg,#3f1846,#b8901f)", "greeting": "Good morning"},
+   "day": {"hours": [11, 17], "line": "linear-gradient(90deg,#b8901f,#f0cd6a)", "greeting": "Good afternoon"},
+   "dusk": {"hours": [17, 22], "line": "linear-gradient(90deg,#b8901f,#8a4a1c)", "greeting": "Good evening"},
+   "night": {"hours": [22, 5], "line": "linear-gradient(90deg,#1c4a74,#3f1846)", "greeting": "Still up", "rule": "after 22:00 nothing new is asked; the screen offers the floor and rest"}
+  },
+  "shadow_light_theme": "0 1px 1px rgba(27,26,24,.04),0 8px 24px rgba(27,26,24,.06)",
+  "shadow_dark_theme": "none: lighter surfaces, not shadows"
+ },
+
+ "motion": {
+  "about": "Motion confirms a change the person made, then settles. Nothing moves by itself for more than a moment; decoration rests when the person does.",
+  "press_ms": 120, "fast_ms": 150, "base_ms": 200, "slow_ms": 250, "max_ms": 400,
+  "ease": "cubic-bezier(.2,.8,.2,1)",
+  "spring": {"about": "for a tick, a ring closing, a sheet arriving", "stiffness": 260, "damping": 24, "mass": 1, "max_overshoot": 0.04, "settles_within_ms": 400},
+  "ambient": {"about": "stars, sheen, a glint", "max_running_in_view": 6, "rests_after_idle_s": 20, "paused_when": ["the page is hidden", "reduced motion", "the in-app still switch", "battery saver where it can be read"]},
+  "never": ["motion that loops while the person reads", "parallax on scroll", "a flash more than three times a second", "motion as the only signal of a change"],
+  "reduced": "prefers-reduced-motion or the still switch: no ambient motion, changes cross-fade in 150 ms or cut"
+ },
+
+ "sound": {
+  "about": "Off by default, for everyone, always. A rail only: no sound ships until the person turns it on in Settings. When on: at most one soft, short tone for a kept day; never for a miss, a reminder or an error.",
+  "default": "off",
+  "opt_in_only": true,
+  "when_on": {"events": ["the third tick of the day"], "max_ms": 400, "max_db_below_system": 12, "source": "generated in the browser (no audio file to fetch)", "respects": ["silent mode", "reduced motion", "the still switch"]},
+  "never": ["on first run", "autoplay", "for a miss, a reminder, an error or a streak at risk", "speech unless the person taps Listen"]
+ },
+
+ "haptics": {
+  "about": "One gate for every vibration: the haptics switch, reduced motion and the still switch all silence it.",
+  "tap": [8], "success": [10, 40, 10], "warn": [24],
+  "max_ms": 60,
+  "on": ["a daily-three tick", "marking something done", "a confirmation"],
+  "never": ["every tap", "scrolling", "typing", "a reminder", "a call that bypasses the gate"]
+ },
+
+ "type": {
+  "display": "'Instrument Serif',Georgia,'Times New Roman',serif",
+  "scale_px": [13, 15, 17, 21, 28, 36, 48],
+  "floor_px": {"text": 13, "caption_and_label": 12, "input": 16},
+  "body_line_height": 1.5,
+  "measure_ch": [45, 75],
+  "numbers": "tabular-nums on figures only",
+  "never": ["text under 12 px", "capitals for more than three words", "an exclamation mark", "justified text"]
+ },
+
+ "space": {"scale_px": [4, 8, 16, 24, 32, 48], "radius_px": {"card": 20, "control": 12, "pill": 999}, "ratio": 1.618, "ratio_use": "hero proportions and the size step between a title and its body"},
+
+ "targets": {"min_px": 44, "comfortable_px": 48, "gap_px": 8, "inline_term": "an invisible 44 px hit area that does not move the line", "main_action": "always on screen without scrolling at 320 x 568 and up"},
+
+ "attention": {
+  "about": "The budget a screen may spend before the person acts. Built for a tired, distracted or ADHD mind; it serves everyone.",
+  "primary_actions_in_view": 1,
+  "notices_above_the_action": 1,
+  "rest_folded_as": "Later (n)",
+  "words_before_the_first_action": 40,
+  "choices_at_once": 3,
+  "first_action_top_px_at_390x844": 420,
+  "first_run_questions_before_value": 0,
+  "time_to_useful_ms": 1000,
+  "steps_to_first_win": 1,
+  "interruptions": "none while a focus timer runs or a field has focus"
+ },
+
+ "behaviour": {
+  "about": "The rules that keep nudges honest. Each one is a test, not a tone.",
+  "defaults": ["the safe, small choice is pre-selected", "every default can be changed in one tap and says so", "nothing is switched on that costs money, shares data or sends a message"],
+  "streak": {
+   "measure": "habit strength (a weighted average over about 20 days), shown as kept days; never a counter that resets to zero",
+   "miss": "one miss changes nothing visible but an empty ring; two in a row offers the two-minute floor",
+   "return": "a miss you came back from is mended in gold (kintsugi) and stays in the story",
+   "rest": "a rest day is chosen in one tap, drawn as still water, and never counts as a miss",
+   "budget_misses_per_habit_per_month": 2,
+   "words_never": ["broke", "broken", "failed", "lost your streak", "streak at risk", "don't break", "you missed", "behind", "lazy"],
+   "words_instead": ["kept", "mended", "rested", "the floor counts", "welcome back"]
+  },
+  "loss_framing": {
+   "allowed_when": ["the loss is real and already happening", "the number comes from the person's own data, never from example data", "it is said once per cause, with the one step that stops it", "the person can dismiss it for at least 30 days"],
+   "examples_allowed": ["Twelve days of changes live only on this phone. Save a copy.", "A late fee was charged last month. Set autopay for the total due."],
+   "never": ["a countdown that is not a real deadline", "a loss invented to drive a visit", "a loss shown from example numbers", "shame for something the person did not do"]
+  },
+  "dark_patterns_never": ["confirmshaming", "fake urgency or scarcity", "a pre-ticked box that shares or spends", "a hidden or smaller 'no'", "nagging after a no (ask again only after 30 days)", "making leaving, exporting or erasing harder than joining", "guilt in a notification", "an endless feed", "a reward that is random on purpose"],
+  "ask_again_after_no_days": 30,
+  "notifications": {"default": "off until the person asks", "max_per_day": 1, "quiet_hours": [21, 8], "wording": "an invitation and one action; never a count of misses"}
+ },
+
+ "feedback": {
+  "about": "Every action answers in under 100 ms, in three channels at most: sight, a polite announcement, and (if on) one haptic.",
+  "answer_within_ms": 100,
+  "announce": "one polite live region for the whole app; a tick says the item and the count ('Move done. 1 of 3.')",
+  "focus": "stays on the thing the person just used after any redraw",
+  "errors": "what happened, why, the one next step; in the page, never a browser alert",
+  "undo": "offered for 30 minutes on anything that changes data; irreversible actions need a typed word and offer the safe step first"
+ },
+
+ "accessibility": {
+  "standard": "WCAG 2.2 AA",
+  "contrast_text": 4.5, "contrast_large_text_and_ui": 3,
+  "focus_ring": {"width_px": 2, "offset_px": 2, "colour": "var(--focus)", "contrast": 3},
+  "structure": ["one main landmark", "one h1 per view", "a skip link", "every dialog has a name, takes focus, closes on Escape and gives focus back"],
+  "names": "every control and field has an accessible name; every click target is a button or a link",
+  "zoom": "text to 200% and reflow at 320 px with no loss and no sideways scroll",
+  "honours": ["prefers-reduced-motion", "prefers-contrast", "prefers-reduced-transparency", "forced-colors", "prefers-color-scheme"]
+ },
+
+ "performance": {"first_useful_ms": 1000, "tap_to_paint_ms": 100, "ambient_cpu": "none while idle 20 s or hidden", "works": "offline, from the first visit"},
+
+ "measured_2026_11_16": {
+  "about": "The Life OS at 390 x 844, dark, a real browser. The baseline the fixes are ranked against. Re-measure before closing the queue item.",
+  "live_regions_on_today": 0,
+  "focus_after_a_tick": "document body",
+  "escape_key_handlers": 0,
+  "main_landmark": false,
+  "tabs_without_a_heading": 24,
+  "tabs": 26,
+  "ambient_animations_running_on_today": 30,
+  "browser_alert_calls": 25,
+  "browser_confirm_calls": 10,
+  "today_full_view": {"first_action_top_px": 690, "notices_above_the_action": 4, "text_nodes_under_12px": 27, "text_nodes": 63, "controls_without_a_name": 5},
+  "all_tab_text_nodes_under_12px": "157 of 191",
+  "property_fields_without_a_name": "16 of 16",
+  "first_run_questions_before_value": 5,
+  "first_contentful_paint_ms": 316,
+  "page_errors": 0
+ }
+}

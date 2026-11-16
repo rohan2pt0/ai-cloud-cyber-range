@@ -13,6 +13,7 @@ So each promise is a check with a budget (lifecycle/fitness.json) that fails the
                    with a reason in lifecycle/fitness-baseline.json)
   commands-documented   every `./securax <command>` appears in the docs (RATCHET: known gaps listed, new ones fail)
   config-clean          no brand value (brand.env) or hosting vendor is hardwired in code; both config files are valid
+  release-gates         the launch gates (governance/release-gates.json) are probes that exist or dated attests; none fails unrecorded
 
     ./securax fitness [--json]          ./securax fitness --update-baseline   (a deliberate, reviewed act)
 Standard library only (plus the gateway's own deps for the app-level checks).
@@ -656,13 +657,29 @@ def check_private_names() -> dict:
             "note": "no private name appears in any tracked file" if not found else "reword: " + ", ".join(found[:3])}
 
 
+def check_release_gates() -> dict:
+    """The launch gates stay honest (doc release-readiness): every gate is a probe that exists or an owner's attest; a probe that fails is
+    recorded on purpose (since when, the fix, a live queue item, a due date); a gate that was GO cannot quietly go NO-GO; and a record
+    left on a gate that now passes must be removed. The launch verdict itself is `./securax release ready`, not this check."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("release_gates", ROOT / "governance" / "release_gates.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    reg = mod.load()
+    rows = mod.judge(reg)
+    probs = mod.problems(reg, rows)
+    left = sum(r["state"] != "go" for r in rows)
+    return {"name": "release-gates", "value": len(probs), "budget": 0, "unit": "problems", "ok": not probs,
+            "note": "; ".join(probs)[:200] if probs else f"{len(rows)} launch gates, {len(rows) - left} pass, {left} recorded with a fix and a date"}
+
+
 def run_all(only_fast: bool = False) -> list[dict]:
     c, base = cfg()["budgets"], baseline()
     res = [check_rails_latency(c["rails_worst_case_ms"]), check_rails_memory(c["rails_import_rss_mb"]), check_runtime_deps(c["gateway_runtime_deps"])]
     if not only_fast:
         res += check_gateway(c["gateway_cold_start_s"], c["gateway_rss_mb"])
         res += check_first_block(c["first_block_s"], c["block_latency_p95_ms"])
-    res += [check_supply_chain(base), check_commands_documented(base), check_ccsp_map(), check_regulatory_maps(), check_impact_map(), check_claims(), check_config_clean(), check_readme_current(), check_private_names(), check_commands_in_help(), check_features_current(), check_continuity_declared(), check_spof_ratchet(c.get("spof_accepted_baseline", 1)), check_resilience_grounded(), check_outcomes_declared(), check_enterprise_declared(), check_evolution_declared(c.get("evolution_declared_baseline", 4)), check_signin_declared(c.get("separate_logins_baseline", 4)), check_threat_modelled(c.get("threat_models_baseline", 2)), check_no_raw_addresses()]
+    res += [check_supply_chain(base), check_commands_documented(base), check_ccsp_map(), check_regulatory_maps(), check_impact_map(), check_claims(), check_config_clean(), check_readme_current(), check_private_names(), check_commands_in_help(), check_features_current(), check_continuity_declared(), check_spof_ratchet(c.get("spof_accepted_baseline", 1)), check_resilience_grounded(), check_outcomes_declared(), check_enterprise_declared(), check_evolution_declared(c.get("evolution_declared_baseline", 4)), check_signin_declared(c.get("separate_logins_baseline", 4)), check_threat_modelled(c.get("threat_models_baseline", 2)), check_release_gates(), check_no_raw_addresses()]
     return res
 
 

@@ -201,3 +201,113 @@ def test_autobuild_uses_only_the_flat_opencode_go_plan():
     assert ci.GO_BASE.rstrip("/").endswith("/inference/go/v1")
     cfg = ci.config()
     assert list(cfg["provider"]) == ["gocode"] and "zen" not in json.dumps(cfg).lower()
+
+
+def test_a_model_running_its_own_command_in_silence_is_working_not_hung(tmp_path):
+    # 2026-11-15: the Life OS suite passed 6 minutes; OpenCode prints a command only when it ends, so every delegated
+    # task was stopped mid-test as "silent". A child process means the model is working.
+    import sys as _s
+    child = "import subprocess,sys\nsubprocess.run([sys.executable,'-c','import time; time.sleep(6)'])\nprint('done', flush=True)"
+    assert ci.watched([_s.executable, "-c", child], budget=60, stall=2, cwd=str(tmp_path)) == 0
+
+
+def test_a_command_that_never_ends_is_stopped_with_its_children_and_the_model_is_not_blamed(tmp_path):
+    import os as _o
+    import sys as _s
+    import time as _t
+    pidf = tmp_path / "pid"
+    child = ("import subprocess,sys\np=subprocess.Popen([sys.executable,'-c','import time; time.sleep(60)'])\n"
+             f"open({str(pidf)!r},'w').write(str(p.pid))\np.wait()")
+    t0 = _t.time()
+    rc = ci.watched([_s.executable, "-c", child], budget=60, stall=2, cwd=str(tmp_path), tool=4)
+    assert rc == ci.OUT_OF_TIME != 124 and _t.time() - t0 < 30
+    _t.sleep(0.5)
+    orphan = int(pidf.read_text())
+    try:
+        _o.kill(orphan, 0)
+        stat = pathlib.Path(f"/proc/{orphan}/stat")
+        alive = not stat.exists() or stat.read_text().split()[2] != "Z"
+    except OSError:
+        alive = False
+    assert not alive, "the model's command outlived the model and would write into the next model's checkout"
+
+
+def test_only_a_real_hang_marks_a_model_unusable(monkeypatch, tmp_path):
+    marked = []
+    monkeypatch.setattr(ci, "_mark_hung", marked.append)
+    monkeypatch.setattr(ci, "tier", lambda task: "local")
+    monkeypatch.setattr(ci, "chain", lambda name: ["one", "two"])
+    codes, limits = iter([ci.OUT_OF_TIME, 124]), []
+
+    def watched(cmd, budget, stall, tool=0):
+        limits.append((budget, stall, tool))
+        return next(codes)
+    monkeypatch.setattr(ci, "watched", watched)
+
+    def run(cmd, **kw):                                  # stands in for the real runner, so the watchdog path is taken
+        return subprocess.CompletedProcess(cmd, 0)       # and the closing git add does not touch this checkout
+    monkeypatch.setattr(ci.subprocess, "run", run)
+    ci.agent({"AUTOBUILD_TASK": "a small thing", "AUTOBUILD_PROBE": "0"}, run=run)
+    assert marked == ["two"]
+    # 40 minutes for the work and the one slow gate; 6 silent minutes with no command; 20 for one command of its own
+    assert limits == [(2400, 360, 1200)] * 2 and (ci.STALL_S, ci.TOOL_S) == (360, 1200)
+    codes = iter([0])
+    ci.agent({"AUTOBUILD_TASK": "x", "AUTOBUILD_PROBE": "0", "AUTOBUILD_MODEL_MINUTES": "3", "AUTOBUILD_STALL_MINUTES": "1",
+              "AUTOBUILD_TOOL_MINUTES": "2"}, run=run)
+    assert limits[-1] == (180, 60, 120)
+
+
+def test_a_command_of_its_own_is_a_child_process_and_no_ps_means_not_busy():
+    seen = {}
+
+    def ps(cmd, **kw):
+        seen.update(kw, cmd=cmd)
+        return subprocess.CompletedProcess(cmd, 0, stdout="    1     0\n   10     1\n   11    10\n  110    12\n")
+    assert ci._busy(10, ps) and ci._busy(1, ps)
+    assert not ci._busy(11, ps) and not ci._busy(110, ps)          # a pid is not a parent; 11 is not 110
+    assert seen["cmd"] == ["ps", "-eo", "pid=,ppid="] and seen["timeout"] == 10 and seen["text"]
+
+    def none(cmd, **kw):
+        raise FileNotFoundError("ps")
+    assert ci._busy(10, none) is False
+
+
+def test_the_slow_gate_comes_last_and_once_and_no_command_ends_in_a_full_stop():
+    p = ci.prompt({"AUTOBUILD_TASK": "a small thing"}, strong=False)
+    assert p.index("see it fail") < p.index("python3 lifecycle/diffcheck.py") < p.index("./securax verify")
+    assert "ONCE" in p and "Do not run a browser audit" in p and "do not install anything" in p
+    assert "gate --base HEAD\n" in p and "HEAD ." not in p      # the model once ran the sentence's full stop as an argument
+
+
+GOOD = ("Life OS Property tab: a let-out home with no rent shows one calm line. Test first: add guiding-map/tests/test121.js; it "
+        "fails now because no such line exists. Change: guiding-map/ops.js. Paperwork: CHANGELOG.md; python3 tools/readme_sync.py.")
+
+
+def test_a_brief_is_one_step_with_its_test_named_and_no_slow_audit():
+    assert ci.brief_problems(GOOD) == []
+    assert any("names no test" in x for x in ci.brief_problems("Life OS: make the Property tab calmer. Change guiding-map/ops.js."))
+    assert any("slow check" in x for x in ci.brief_problems(GOOD + " Then run python3 guiding-map/tests/ui_audit.py OUT."))
+    assert any("characters" in x for x in ci.brief_problems(GOOD + " and also" * 200))
+    many = GOOD + " Also change governance/a.py, lifecycle/b.py, securax, docs/c.md and website/d.html."
+    assert any("files to change" in x for x in ci.brief_problems(many))
+
+
+def test_the_golden_brief_passes_its_own_check_and_the_hand_off_refuses_an_unfit_one():
+    gold = (ROOT / ".claude" / "skills" / "delegate" / "GOLDEN-BRIEF.md").read_text("utf-8")
+    example = gold.split("## A filled example")[1].split("```")[1].strip()
+    assert ci.brief_problems(example) == [], ci.brief_problems(example)
+    skill = (ROOT / ".claude" / "skills" / "delegate" / "SKILL.md").read_text("utf-8")
+    assert "GOLDEN-BRIEF.md" in skill and "autobuild_ci.py check" in skill and "model: sonnet" in skill
+    here = (ROOT / "lifecycle" / "delegate_here.sh").read_text("utf-8")
+    assert "autobuild_ci.py check" in here and "CANNOT-START the brief" in here and "DELEGATE_FORCE" in here
+    assert here.index("autobuild_ci.py check") < here.index("git worktree add"), "refuse before anything is built"
+    # the check itself is run for real; the hand-off script is NOT (under the mutation gate a broken check let this test
+    # start a real delegation of a dummy task, 2026-11-16)
+    import os as _o
+    import sys as _s
+    r = subprocess.run([_s.executable, str(ROOT / "lifecycle" / "autobuild_ci.py"), "check"], capture_output=True, text=True,
+                       env={**_o.environ, "TASK": "make it nicer"})
+    assert r.returncode == 1 and "names no test" in r.stdout
+    ok = subprocess.run([_s.executable, str(ROOT / "lifecycle" / "autobuild_ci.py"), "check"], capture_output=True, text=True,
+                        env={**_o.environ, "TASK": example})
+    assert ok.returncode == 0 and ok.stdout == ""

@@ -1228,6 +1228,11 @@ EOF2
     ;;
   release)
     # ./securax release [plan|cut|notes X.Y.Z] — the next release from the changelog (plan, the default), or cut it (doc 21).
+    # ./securax release ready [--all|--launch paid|--json] — the go/no-go gates for the public launch and the paid edition.
+    if [ "${2:-}" = "ready" ]; then
+      _rc=0; python3 "$ROOT/governance/release_gates.py" "${@:3}" || _rc=$?
+      exit "$_rc"
+    fi
     python3 "$ROOT/tools/release.py" "${@:2}"
     ;;
   progress)
@@ -2409,6 +2414,7 @@ BUILD & KEEP IT HEALTHY
   proofs         the claims the docs make that no journey proves yet, ranked, with the journey that could prove each
   backlog        everything started or promised and not finished: deferred asks, late promises, waiting PRs
   release        the next release, worked out from the changelog; `release cut` prepares it (merging its PR publishes)
+                 `release ready`: the go/no-go gates for the public launch and the paid edition, and what blocks each
   chaos          chaos experiments: break one real thing, check the estate heals in time (plan only; --run breaks things)
   mission        mission control: the board, the Go/No-Go poll before an update, the flight rules, and the AI crew (RACI)
   autopilot      what the estate learned from its own failures, which drills it ran by itself, what it foresees running out

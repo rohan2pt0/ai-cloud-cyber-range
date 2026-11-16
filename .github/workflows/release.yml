@@ -51,6 +51,10 @@ jobs:
         run: ruff check .
       - name: Tests
         run: python -m pytest -q
+      # A 1.0.0 or later tag is the public launch: it needs every public-launch gate GO (docs/securax/release-readiness.md).
+      # A 0.x tag prints the verdict and goes on.
+      - name: "Launch gates"
+        run: python3 governance/release_gates.py --for-tag "$TAG"
 
   release:
     needs: verify

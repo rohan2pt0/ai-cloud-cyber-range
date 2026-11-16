@@ -1,0 +1,61 @@
+{
+ "about": "From scratch to the top (docs/specs/built-to-last.md, section 5; queue built-to-last): four stages, each with one question, and one North Star target per life area and stage. Targets are planning rules in common use, paraphrased, verified on the date shown and re-checked by the review date. A country can change a number, so each target says where to confirm and carries a 'where' tag. Not financial, medical or legal advice. Not yet read by the app: briefs B16 and B17 wire it in.",
+ "version": 1,
+ "verified": "2026-11-16",
+ "review": "2027-05-16",
+ "rule": "A person has a stage per area: the highest stage whose targets, and all earlier ones, are met. The overall stage is the lowest of the five, because the weakest area is the constraint. Show one next target, for the weakest area.",
+ "stages": [
+  {"id": "survive", "order": 1, "title": "Survive", "question": "Could one bad month break us?", "usual": "the first 6 months"},
+  {"id": "stabilise", "order": 2, "title": "Stabilise", "question": "Is the floor solid enough to stop worrying?", "usual": "6 months to 2 years"},
+  {"id": "grow", "order": 3, "title": "Grow", "question": "Is each year clearly better than the last?", "usual": "2 to 7 years"},
+  {"id": "compound", "order": 4, "title": "Compound", "question": "Does it now grow without my effort?", "usual": "7 years and on"}
+ ],
+ "areas": ["money", "health", "career", "family", "learning"],
+ "targets": [
+  {"id": "money-survive-buffer", "area": "money", "stage": "survive", "title": "1 month of essential costs in the bank", "measure": "bufferMonths", "atLeast": 1, "where": ["IN", "GLOBAL"], "confirm": "Your own bank statements"},
+  {"id": "money-survive-debt", "area": "money", "stage": "survive", "title": "No new high-interest debt", "measure": "newHighInterestDebt", "atMost": 0, "where": ["IN", "GLOBAL"], "confirm": "Your card and loan statements; high interest here means a card balance carried over or an unsecured loan"},
+  {"id": "money-survive-cover", "area": "money", "stage": "survive", "title": "Health cover in force for everyone at home", "measure": "healthCover", "is": true, "where": ["IN", "GLOBAL"], "confirm": "Your policy papers or your employer's benefits page"},
+  {"id": "money-stabilise-buffer", "area": "money", "stage": "stabilise", "title": "6 months of essential costs set aside", "measure": "bufferMonths", "atLeast": 6, "where": ["IN", "GLOBAL"], "confirm": "A common planning range is 3 to 6 months; more if income is uneven"},
+  {"id": "money-stabilise-debt", "area": "money", "stage": "stabilise", "title": "High-interest debt at zero", "measure": "highInterestDebt", "atMost": 0, "where": ["IN", "GLOBAL"], "confirm": "Your card and loan statements"},
+  {"id": "money-stabilise-saving", "area": "money", "stage": "stabilise", "title": "Saving 20% of take-home pay", "measure": "savingRatePct", "atLeast": 20, "where": ["IN", "GLOBAL"], "confirm": "A common budgeting rule (50/30/20); your own numbers decide"},
+  {"id": "money-stabilise-life", "area": "money", "stage": "stabilise", "title": "Life cover where someone depends on your income", "measure": "termCoverTimesIncome", "atLeast": 10, "when": {"partnerOrKids": true}, "where": ["IN", "GLOBAL"], "confirm": "A common planning rule is 10 to 15 times yearly income plus loans; compare on insurers' own sites"},
+  {"id": "money-grow-saving", "area": "money", "stage": "grow", "title": "Saving 30% of take-home pay", "measure": "savingRatePct", "atLeast": 30, "where": ["IN", "GLOBAL"], "confirm": "Your own numbers; a stretch target, not a rule"},
+  {"id": "money-grow-invested", "area": "money", "stage": "grow", "title": "Investments worth 5 to 10 years of costs", "measure": "investedYearsOfCosts", "atLeast": 5, "where": ["IN", "GLOBAL"], "confirm": "Your statements; count only what is invested for the long term"},
+  {"id": "money-compound-invested", "area": "money", "stage": "compound", "title": "Investments worth 25 to 33 years of costs", "measure": "investedYearsOfCosts", "atLeast": 25, "where": ["GLOBAL"], "confirm": "From the 4% withdrawal rule of thumb; it was derived from United States market history, so check it for your country with a registered adviser"},
+  {"id": "money-compound-invested-in", "area": "money", "stage": "compound", "title": "Investments worth 30 to 33 years of costs", "measure": "investedYearsOfCosts", "atLeast": 30, "where": ["IN"], "confirm": "A more careful multiple often used where inflation runs higher; check with a SEBI-registered investment adviser"},
+
+  {"id": "health-survive-sleep", "area": "health", "stage": "survive", "title": "7 hours of sleep on 5 nights a week", "measure": "sleepNights7h", "atLeast": 5, "where": ["IN", "GLOBAL"], "confirm": "Public sleep guidance for adults is 7 hours or more a night; your doctor if sleep is poor"},
+  {"id": "health-survive-move", "area": "health", "stage": "survive", "title": "150 minutes of movement a week", "measure": "activeMinutesWeek", "atLeast": 150, "where": ["IN", "GLOBAL"], "confirm": "World Health Organization guidance for adults: 150 to 300 minutes of moderate activity a week"},
+  {"id": "health-survive-baseline", "area": "health", "stage": "survive", "title": "One baseline check-up done", "measure": "checkupMonthsAgo", "atMost": 12, "where": ["IN", "GLOBAL"], "confirm": "Your doctor decides which tests fit your age and history"},
+  {"id": "health-stabilise-move", "area": "health", "stage": "stabilise", "title": "150 to 300 minutes a week, plus strength work on 2 days", "measure": "strengthDaysWeek", "atLeast": 2, "where": ["IN", "GLOBAL"], "confirm": "World Health Organization guidance for adults"},
+  {"id": "health-stabilise-yearly", "area": "health", "stage": "stabilise", "title": "A check-up every year, and your key numbers known", "measure": "keyNumbersKnown", "is": true, "where": ["IN", "GLOBAL"], "confirm": "Your doctor names the numbers that matter for you (often blood pressure, blood sugar, cholesterol, waist)"},
+  {"id": "health-grow-range", "area": "health", "stage": "grow", "title": "Every key number in its healthy range for 3 years running", "measure": "yearsInRange", "atLeast": 3, "where": ["IN", "GLOBAL"], "confirm": "Your doctor sets the range for you"},
+  {"id": "health-compound-held", "area": "health", "stage": "compound", "title": "The same numbers held for 10 years, with a recovery week each quarter", "measure": "yearsInRange", "atLeast": 10, "where": ["IN", "GLOBAL"], "confirm": "Your doctor"},
+
+  {"id": "career-survive-steady", "area": "career", "stage": "survive", "title": "Income steady for 3 months", "measure": "steadyIncomeMonths", "atLeast": 3, "where": ["IN", "GLOBAL"], "confirm": "Your own bank statements"},
+  {"id": "career-survive-page", "area": "career", "stage": "survive", "title": "One page that says what you are good at", "measure": "profilePage", "is": true, "where": ["IN", "GLOBAL"], "confirm": "Your own records"},
+  {"id": "career-stabilise-skill", "area": "career", "stage": "stabilise", "title": "One skill others pay for, proven by a result", "measure": "provenSkills", "atLeast": 1, "where": ["IN", "GLOBAL"], "confirm": "A result someone else can name"},
+  {"id": "career-stabilise-market", "area": "career", "stage": "stabilise", "title": "Pay at the market rate for your work", "measure": "payAtMarket", "is": true, "where": ["IN", "GLOBAL"], "confirm": "Two published salary surveys for your role and city, or three peers"},
+  {"id": "career-grow-sources", "area": "career", "stage": "grow", "title": "Income from 2 sources", "measure": "incomeSources", "atLeast": 2, "where": ["IN", "GLOBAL"], "confirm": "Your own records; check your employment contract before taking outside work"},
+  {"id": "career-grow-known", "area": "career", "stage": "grow", "title": "Known for one thing in your field", "measure": "knownFor", "is": true, "where": ["IN", "GLOBAL"], "confirm": "People outside your team ask you about it"},
+  {"id": "career-compound-choice", "area": "career", "stage": "compound", "title": "Work chosen for meaning, and 2 people you have raised up", "measure": "peopleRaised", "atLeast": 2, "where": ["IN", "GLOBAL"], "confirm": "Your own judgement"},
+
+  {"id": "family-survive-know", "area": "family", "stage": "survive", "title": "Everyone knows who to call and where the papers are", "measure": "emergencyFile", "is": true, "where": ["IN", "GLOBAL"], "confirm": "Your own records; the family emergency file in the council data"},
+  {"id": "family-survive-nominees", "area": "family", "stage": "survive", "title": "A nominee named on every account and policy", "measure": "nomineesNamed", "is": true, "where": ["IN"], "confirm": "Each bank, fund house and insurer"},
+  {"id": "family-stabilise-will", "area": "family", "stage": "stabilise", "title": "A signed will", "measure": "willSigned", "is": true, "where": ["IN", "GLOBAL"], "confirm": "A lawyer for anything beyond a simple estate; rules differ by country and faith"},
+  {"id": "family-stabilise-time", "area": "family", "stage": "stabilise", "title": "3 unhurried hours together each week", "measure": "familyHoursWeek", "atLeast": 3, "where": ["IN", "GLOBAL"], "confirm": "Your own calendar"},
+  {"id": "family-grow-review", "area": "family", "stage": "grow", "title": "A yearly family review, and one shared goal reached each year", "measure": "familyReviewsYear", "atLeast": 1, "where": ["IN", "GLOBAL"], "confirm": "Your own records"},
+  {"id": "family-compound-succession", "area": "family", "stage": "compound", "title": "A succession plan reviewed every year, with the next generation running part of it", "measure": "successionReviewMonthsAgo", "atMost": 12, "where": ["IN", "GLOBAL"], "confirm": "A lawyer and a tax professional in each country where the family holds assets"},
+
+  {"id": "learning-survive-habit", "area": "learning", "stage": "survive", "title": "20 minutes on 5 days a week", "measure": "learningDaysWeek", "atLeast": 5, "where": ["IN", "GLOBAL"], "confirm": "Your own ticks"},
+  {"id": "learning-stabilise-finish", "area": "learning", "stage": "stabilise", "title": "One course or book finished each quarter, and used", "measure": "finishedPerQuarter", "atLeast": 1, "where": ["IN", "GLOBAL"], "confirm": "Your own records"},
+  {"id": "learning-grow-skill", "area": "learning", "stage": "grow", "title": "One hard skill a year, shown in public work", "measure": "hardSkillsYear", "atLeast": 1, "where": ["IN", "GLOBAL"], "confirm": "Work someone else can see"},
+  {"id": "learning-compound-teach", "area": "learning", "stage": "compound", "title": "You teach it, and your notes outlive the week", "measure": "teaches", "is": true, "where": ["IN", "GLOBAL"], "confirm": "Your own judgement"}
+ ],
+ "sources": [
+  {"what": "Physical activity guidance for adults", "who": "World Health Organization", "note": "150 to 300 minutes of moderate activity a week, and muscle strengthening on 2 or more days"},
+  {"what": "Sleep guidance for adults", "who": "Public health and sleep-medicine bodies", "note": "7 hours or more a night"},
+  {"what": "The 4% withdrawal rule of thumb", "who": "Retirement research on United States market history", "note": "The source of the 25 times multiple; a rule of thumb, not a promise, and weaker outside the market it was drawn from"},
+  {"what": "Emergency fund, saving rate and life cover multiples", "who": "Common financial-planning practice", "note": "Ranges in general use; a registered adviser confirms them for one person"}
+ ]
+}

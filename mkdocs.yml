@@ -149,6 +149,7 @@ nav:
       - "Growth map (amoeba principle)": securax/128-GROWTH-MAP-AMOEBA.md
       - "Hunt fleet (mass deployment)": securax/129-HUNT-FLEET.md
       - "Go-live runbook (new laptop, server, AI)": securax/130-GO-LIVE-RUNBOOK.md
+      - "Release readiness: the go/no-go gates for the public launch and the paid edition": securax/release-readiness.md
       - "No single point of failure (the door)": securax/131-NO-SINGLE-POINT-OF-FAILURE.md
       - "One door (sign in once)": securax/132-ONE-DOOR.md
       - "Threat modelling (STRIDE as text)": securax/133-THREAT-MODELLING.md
@@ -156,6 +157,8 @@ nav:
       - "Systems that deliver: one shelf, one loop": securax/135-SYSTEMS-THAT-DELIVER.md
       - "The nature atlas: design taken from the wonders people revere": securax/136-NATURE-ATLAS.md
       - "Numbers that arrive by themselves: the automation plan": securax/137-AUTOMATION.md
+      - "Experience v3: priceless to look at, effortless to use": specs/experience-v3.md
+      - "Experience v3: the 20 fixes to the Life OS": specs/experience-fixes.md
       - "Choose who you serve": securax/116-CHOOSE-YOUR-CUSTOMER.md
   - How-to guides:
       - AI providers and plugins: securax/22-PLUGINS-AND-PROVIDERS.md
@@ -236,4 +239,10 @@ nav:
           - Compliance matrix: compliance-matrix.md
           - Cost controls: cost-controls.md
           - Demo runbook: demo-runbook.md
+  - Plans:
+      - "Built to last (platforms, rename, open core, failures, the road up)": specs/built-to-last.md
+      - "Built to last: the briefs": specs/built-to-last-briefs.md
+  - Specs and reviews:
+      - Review ledger: specs/review-ledger.md
+      - Fable autopilot: specs/fable-autopilot.md
   - Troubleshooting: troubleshooting.md
