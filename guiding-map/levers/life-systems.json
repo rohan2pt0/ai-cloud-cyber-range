@@ -280,7 +280,7 @@
   {"id": "home-seasonal", "area": "home", "where": ["IN", "GLOBAL"], "title": "Seasonal maintenance, before the season",
    "outcome": "The roof is checked before the rain and the cooling before the heat, so the season brings no emergency and no peak-season prices.",
    "loop": {
-    "cue": "Four dates a year, each about six weeks before its season (calendar items proposed: home-season-summer, home-season-monsoon, home-season-festive, home-season-winter).",
+    "cue": "Four dates a year, each about six weeks before its season (calendar item proposed: home-season, one item with four dates a year).",
     "smallestStep": "One tap: send the ready message to the one trade this season needs.",
     "reward": "The season shows 'ready'; last year's date and cost sit beside it.",
     "environment": "The trusted-trades list from the monthly reset; last year's quote, so this year's is judged in a second.",

@@ -63,16 +63,13 @@ The content is in `guiding-map/levers/life-systems.json`; the plan is in [life-s
 
 **Outcome:** every repeating cue has "Add to calendar" beside it, from the one registry.
 
-1. Test: `CALENDAR` holds these eleven new ids, each with a fixed start date, an `rrule` and `v: 1`:
+1. Test: `CALENDAR` holds these eleven new ids, each with a fixed start date, a `rule` and `v: 1`:
    `health-checkup-yearly`, `health-flu-yearly`, `health-family-month`, `family-child-year`, `family-parents-call`,
    `family-parents-year`, `family-partner-week`, `career-quarter`, `learning-block`, `home-reset-month`,
    `home-season` (one item, four dates a year). Add the ids to the list in `test38.js`.
 2. Add the eleven entries to `CALENDAR` in `ops.js`, in the same shape as the existing entries. Wording comes from
    each loop's `loop.cue`, shortened to one line.
 3. The Systems card shows "Add to calendar" for the loop in view.
-
-**Note for the navigator:** the data file proposes four seasonal ids; this brief folds them into one (`home-season`)
-because an id is permanent. Change the data file's wording in the same PR as a review fix.
 
 **Done when:** the new test and `test38.js` pass. An id, once merged, is never deleted or renamed.
 
