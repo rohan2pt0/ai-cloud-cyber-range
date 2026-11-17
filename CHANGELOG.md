@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- **A mission line above the quarter's objectives** (owner, 2026-11-17; queue why-chain, slice 1): the Goals tab opens with one line saying why the goals matter, so each is read against it. A guest sees an example marked as one; Edit opens one input; saving keeps it on this device; an empty save brings the example back (test123).
 - **Install by pasting one sentence into the AI you already use** (owner, 2026-11-17; queue ai-install, slice 1 of 2): the site publishes `install.txt`, written for the AI agent a person already uses. It stops and hands over the deploy guide's three steps when it cannot run shell commands, asks the person before installing Docker, names only the real commands (`git clone`, `./securax go`, `./securax doctor`, `./securax why`) and never asks for a key or password. The homepage hero shows that sentence in a box with a Copy button, and the site build fills in its address.
 - Owner's material of 2026-11-17 (LifeOS, ten posts, six screenshots) triaged in `docs/specs/cues-2026-11-17.md`; six new queue items with dates.
 - **A calls journal on the Plan tab** (owner, 2026-11-17; queue calls-journal, slice 1): log a call ("I expect X by date") at 60, 70, 80 or 90% confidence; when the date comes, one tap says Yes or No, and the card shows how often you were right at each level ("At 80% you were right 3 of 4"). At most 200 calls are kept, oldest answered first to go (test121).
