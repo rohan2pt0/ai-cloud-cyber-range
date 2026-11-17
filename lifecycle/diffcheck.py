@@ -95,8 +95,20 @@ def collect(base: str, root: pathlib.Path = ROOT) -> tuple[dict[str, Change], in
     return changes, churn
 
 
-def evaluate(changes: dict[str, Change], ws_churn: int = 0) -> list[dict]:
+LIFEOS_TEST = re.compile(r"^guiding-map/tests/(test\w*|kit\d+)\.js$")
+
+
+def lifeos_suite(root: pathlib.Path = ROOT) -> str:
+    """The Life OS suite as npm runs it (guiding-map/package.json, scripts.test); empty when it cannot be read."""
+    try:
+        return str(json.loads((root / "guiding-map" / "package.json").read_text("utf-8")).get("scripts", {}).get("test", ""))
+    except (OSError, ValueError):
+        return ""
+
+
+def evaluate(changes: dict[str, Change], ws_churn: int = 0, root: pathlib.Path = ROOT) -> list[dict]:
     res: list[dict] = []
+    suite: str | None = None
 
     def add(level: str, rule: str, path: str, why: str, fix: str) -> None:
         res.append({"level": level, "rule": rule, "file": path, "why": why, "fix": fix})
@@ -115,6 +127,14 @@ def evaluate(changes: dict[str, Change], ws_churn: int = 0) -> list[dict]:
             lost = sum(1 for ln in c.removed if ASSERT.search(ln)) - sum(1 for ln in c.added if ASSERT.search(ln))
             if lost >= 2:
                 add("BLOCK", "assertions-weakened", path, f"{lost} more assertions removed than added", "keep the assertions; fix the code under test")
+        # A Life OS test that npm never runs proves nothing: a build once came back GREEN with its own new test failing,
+        # because the test was never added to the suite list (2026-11-17, test130).
+        m = LIFEOS_TEST.match(path)
+        if m and c.added and (root / path).is_file():
+            suite = lifeos_suite(root) if suite is None else suite
+            if not re.search(r"(?<![\w-])" + re.escape(m.group(1)) + r"(?![\w-])", suite):
+                add("BLOCK", "test-not-run", path, f"{m.group(1)} is not in the Life OS suite (guiding-map/package.json scripts.test), so no gate runs it",
+                    f"add {m.group(1)} to the test list in guiding-map/package.json")
         if "guardrails" in path or "providers" in path:
             gone = sum(1 for ln in c.removed if RAIL_ENTRY.match(ln)) - sum(1 for ln in c.added if RAIL_ENTRY.match(ln))
             if gone > 0:

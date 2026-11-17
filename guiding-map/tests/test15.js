@@ -1,6 +1,8 @@
 // v15: one-link sync setup (safe by construction) and automatic server-side backup status.
 const fs=require('fs'),{JSDOM}=require('jsdom');
 let P=0,F=0,e=[];const ok=(n,c,d)=>{c?P++:(F++,e.push(n+(d?" :: "+d:"")));};
+let oldChecked=false;
+const finish=()=>{ if(!oldChecked){ setTimeout(finish,50); return; } console.log("PASS",P,"  FAIL",F); if(F){console.log(e.join("\n"));process.exit(1);} process.exit(0); };
 const b64=o=>Buffer.from(JSON.stringify(o)).toString('base64').replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
 function boot(hash, confirms, seed){
   const prompts=[],alerts=[];let i=0;
@@ -19,10 +21,14 @@ setTimeout(()=>{
   ok("the fragment is removed from the address bar immediately", w.location.hash==="");
   // a device paired before 2026-10-22 was given sync.<domain>, another origin it may not call: it is moved to the hub's own /sync
   const old=boot("",[true],{url:"https://sync.securax.localhost/sync",key:"tok-old",user:"me"});
-  setTimeout(()=>{
-   const oc=JSON.parse(old.dom.window.localStorage.getItem("gm_sync_cfg")||"null");
-   ok("an old cross-origin sync address is moved to the same origin, token kept", oc&&oc.url==="https://hub.securax.localhost/sync"&&oc.key==="tok-old", JSON.stringify(oc));
-  },400);
+  // Wait for the migration, not a fixed 400 ms: under load the app can take longer (it failed about 1 run in 3).
+  // A real failure still fails: after 4 s the same assertion runs on whatever happened.
+  const oldCfg=()=>JSON.parse(old.dom.window.localStorage.getItem("gm_sync_cfg")||"null");
+  const oldOk=oc=>oc&&oc.url==="https://hub.securax.localhost/sync"&&oc.key==="tok-old";
+  const checkOld=(t0=Date.now())=>{ const oc=oldCfg();
+    if(!oldOk(oc)&&Date.now()-t0<4000) return setTimeout(()=>checkOld(t0),50);
+    ok("an old cross-origin sync address is moved to the same origin, token kept", oldOk(oc), JSON.stringify(oc)); oldChecked=true; };
+  checkOld();
   ok("the destination host is shown before saving", t.prompts.length>=1 && t.prompts[0].includes("hub.securax.localhost"), t.prompts[0]);
 
   // 2. declined link changes nothing
@@ -70,7 +76,7 @@ setTimeout(()=>{
     ok("automatic backup row appears", txt.includes("Backed up automatically")&&txt.includes("12 daily snapshots"), txt.slice(0,80));
     ok("restore path is offered", txt.includes("gmSnapList()")&&txt.includes('id="snapList"'));
     ok("'never backed up' is not shown while snapshots exist", !txt.includes("No local backup has ever been taken"));
-    console.log("PASS",P,"  FAIL",F); if(F){console.log(e.join("\n"));process.exit(1);} process.exit(0);
+    finish();
    },700);
   },300);
  },300);

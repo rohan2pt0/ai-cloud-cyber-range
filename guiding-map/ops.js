@@ -4222,6 +4222,8 @@
       + "#gmMoreSheet .sh{max-height:calc(100vh - 140px);overflow-y:auto}"
       + "#gmMoreSheet .gm-more-h{grid-column:1/-1;font-size:12px;font-weight:800;color:var(--muted);margin:0 2px -2px}"
       + "#gmMoreSheet .gm-more-all{grid-column:1/-1}"
+      + "#gmMoreSheet .gm-more-rest{grid-column:1/-1}"
+      + "#gmMoreSheet .gm-more-rest summary{cursor:pointer;font-weight:800;font-size:12.5px;padding:10px 4px;min-height:44px;display:flex;align-items:center;color:var(--muted)}"
       + "#gmMoreSheet .gm-more-all summary{cursor:pointer;font-weight:800;font-size:13px;padding:10px 4px;min-height:44px;display:flex;align-items:center}"
       + "#gmMoreSheet .gm-more-g{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}"
       + "#gmMoreSheet .sh button .gm-new{display:block;font-size:9px;font-weight:700;color:var(--muted);margin-top:2px}"
@@ -4265,10 +4267,33 @@
     if (isNaN(then)) { then = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime(); }
     var days = Math.max(0, Math.round((new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() - then) / 86400000));
     var weeks = Math.min(UNLOCK.length, Math.floor(days / 7));
+    // A resting door wakes by itself when the person's own data says it is needed (queue friction-meter, slice 3): a child's
+    // birthday in the next 7 days wakes Kids; tax season (January to March, in India, the same region switch the savings
+    // levers use) wakes Money. It says why in the small badge, and using it keeps it awake.
+    function birthdaySoon(dob) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(String(dob || ""))) return false;
+      var p = String(dob).split("-"), m = +p[1] - 1, dd = +p[2];
+      if (!(m >= 0 && m < 12 && dd >= 1 && dd <= 31)) return false;
+      var t0 = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      for (var y = now.getFullYear(); y <= now.getFullYear() + 1; y++) {
+        var b = new Date(y, m, dd).getTime(), diff = Math.round((b - t0) / 86400000);
+        if (diff >= 0 && diff <= 7) return true;
+      }
+      return false;
+    }
+    function wakeNote(id) {
+      if (id === "kids") {
+        var ks = (window.P && Array.isArray(window.P.kids)) ? window.P.kids : [];
+        for (var i = 0; i < ks.length; i++) if (birthdaySoon(ks[i] && ks[i].dob)) return "Birthday soon";
+      }
+      if (id === "money" && sysLocal() && now.getMonth() >= 0 && now.getMonth() <= 2) return "Tax season";
+      return "";
+    }
     function tile(t, isNew) {
-      var ic = window.gmIcon(t[0], 20);
-      return '<button role="menuitem" class="' + (curTab === t[0] ? "on" : "") + '" onclick="gmNavGo(\'' + t[0] + '\')">'
-        + (ic ? '<span class="gi" aria-hidden="true">' + ic + '</span>' : '') + t[1] + (isNew ? '<span class="gm-new">new</span>' : '') + '</button>';
+      var ic = window.gmIcon(t[0], 20), why = wakeNote(t[0]);
+      return '<button role="menuitem" data-tab="' + t[0] + '" class="' + (curTab === t[0] ? "on" : "") + '" onclick="gmNavGo(\'' + t[0] + '\')">'
+        + (ic ? '<span class="gi" aria-hidden="true">' + ic + '</span>' : '') + t[1] + (isNew ? '<span class="gm-new">new</span>' : '')
+        + (why ? '<span class="gm-new">' + why + '</span>' : '') + '</button>';
     }
     // A tab that cannot apply (the person answered No to its fact) is not shown at all: no clutter for a life that is not theirs.
     function fits(t) { return fitsFact(t[0]); }
@@ -4289,8 +4314,40 @@
       sh += '<button role="menuitem" class="gm-show-all" onclick="gmSimple(false)">Show everything (' + rest.length + ' more)</button></div></div>';
     } else {
       var restOpen = G("gm_more_all", false) || rest.some(function (t) { return t[0] === curTab; });
+      // Doors the person uses come first; a door not opened for 45 days, or never used, rests at the end by itself
+      // (queue friction-meter). A new app has not had 45 days to learn from, so nothing rests yet, and a safety door
+      // (Shield, deadlines) never rests. One use brings a door straight back out.
+      var use = (typeof window.gmUsage === "function") ? window.gmUsage() : {};
+      var NEVER_RESTS = ["risk", "deadlines"];
+      function useOf(t) { var u = use["tab:" + t[0]]; return (u && typeof u.l === "string") ? u : { l: "", d: [] }; }
+      function agoDays(l) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(l)) return Infinity;
+        var p = l.split("-"), t0 = new Date(+p[0], +p[1] - 1, +p[2]).getTime();
+        if (isNaN(t0)) return Infinity;
+        return (new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() - t0) / 86400000;
+      }
+      var learned = agoDays(G("gm_use_since", "")), active = [], resting = [];
+      if (!isFinite(learned)) learned = 0;
+      rest.forEach(function (t) {
+        var u = useOf(t);
+        if (learned >= 45 && NEVER_RESTS.indexOf(t[0]) < 0 && agoDays(u.l) > 45 && !wakeNote(t[0])) resting.push(t); else active.push(t);
+      });
+      // By habit, but stable: the order is worked out once a week and kept, so doors never jump under the thumb; a door new
+      // to the list this week goes after the known ones.
+      var wk = (function () { var d = new Date(now.getFullYear(), now.getMonth(), now.getDate()); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return ymd(d); })();
+      var frozen = G("gm_more_order", {}), known = (frozen && frozen.w === wk && Array.isArray(frozen.o)) ? frozen.o : null;
+      var byUse = function (a, b) { var ua = useOf(a), ub = useOf(b); return (ub.d.length - ua.d.length) || (ua.l < ub.l ? 1 : ua.l > ub.l ? -1 : 0); };
+      if (known) active.sort(function (a, b) { var ia = known.indexOf(a[0]), ib = known.indexOf(b[0]); return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib) || byUse(a, b); });
+      else { active.sort(byUse); S_("gm_more_order", { w: wk, o: active.map(function (t) { return t[0]; }) }); }
+      resting.sort(function (a, b) { var ua = useOf(a), ub = useOf(b); return ua.l < ub.l ? 1 : ua.l > ub.l ? -1 : 0; });
       sh += '<details class="gm-more-all"' + (restOpen ? " open" : "") + ' ontoggle="gmMoreAll(this.open)"><summary>Everything else (' + rest.length + ')</summary><div class="gm-more-g">';
-      rest.forEach(function (t) { sh += tile(t); });
+      active.forEach(function (t) { sh += tile(t); });
+      if (resting.length) {
+        var restTabOpen = resting.some(function (t) { return t[0] === curTab; });
+        sh += '<details class="gm-more-rest"' + (restTabOpen ? " open" : "") + '><summary>Resting (' + resting.length + ')</summary><div class="gm-more-g">';
+        resting.forEach(function (t) { sh += tile(t); });
+        sh += '</div></details>';
+      }
       sh += '<button role="menuitem" onclick="location.href=\'hub.html\'">\u25C6 All apps</button><button role="menuitem" onclick="gmSimple(true)">Back to simple</button></div></details></div></div>';
     }
     document.body.insertAdjacentHTML("beforeend", sh + h);
@@ -4711,6 +4768,7 @@
   function icsDate(d, hh, mm) { function z(n) { return (n < 10 ? "0" : "") + n; } return d.getFullYear() + z(d.getMonth() + 1) + z(d.getDate()) + "T" + z(hh) + z(mm) + "00"; }
   function icsText(t) { return String(t).replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n"); }
   function icsFold(line) { var out = [], s = line; while (s.length > 74) { out.push(s.slice(0, 74)); s = " " + s.slice(74); } out.push(s); return out.join("\r\n"); }
+  window.gmIcs = { date: icsDate, text: icsText, fold: icsFold };
   /* The calendar contract (principle `in-the-calendar`): every recurring step lives in ONE registry, and the calendar file is
      made from it so that a later version never conflicts with an earlier one.
      - Each item keeps its UID for ever (securax-gm-<id>@local). Never reuse an id for a new meaning; rename the item instead.
@@ -9355,6 +9413,25 @@
     var h = _rmCalls(E), m = /<div class="section[^"]*"[^>]*>/.exec(h), from = m ? m.index + m[0].length : 0, k = h.indexOf('<div class="cat-t"', from);
     return k > -1 ? h.slice(0, k) + gmCallsHTML() + h.slice(k) : h.replace(/<\/div>\s*$/, gmCallsHTML() + '</div>');
   }; }
+  // Today: a call whose date has come sits as one calm line above the daily three, judged in one tap where the person
+  // already looks. The Plan tab keeps the full journal, the score and the calls still to come.
+  var _callRender = window.renderAll;
+  if (typeof _callRender === "function") window.renderAll = function () {
+    var out = _callRender.apply(this, arguments);
+    try {
+      if (typeof curTab !== "undefined" && curTab === "today" && !document.querySelector(".gm-call-today")) {
+        var due = callsLoad().filter(callDue).sort(function (x, y) { return String(x.date).localeCompare(String(y.date)); })[0];
+        var d3 = document.querySelector("#sections .gm-d3");
+        if (due && d3) d3.insertAdjacentHTML("beforebegin", '<div class="road-col gm-call-today" style="margin-bottom:10px;font-size:13px">'
+          + '<b>' + esc(due.text) + '</b> <span style="color:var(--muted)">\u00b7 ' + esc(due.conf) + '% confident \u00b7 did it happen?</span>'
+          + ' <span style="display:inline-flex;gap:6px;margin-inline-start:6px">'
+          + '<button type="button" class="btn-sm" data-call-yes="' + esc(due.id) + '" onclick="gmCallSet(\'' + esc(due.id) + '\',\'yes\')">Yes</button>'
+          + '<button type="button" class="btn-sm" style="background:var(--cardAlt);color:var(--text)" data-call-no="' + esc(due.id) + '" onclick="gmCallSet(\'' + esc(due.id) + '\',\'no\')">No</button></span>'
+          + ' <a href="#" class="gm-inl" style="margin-inline-start:6px" onclick="goTab(\'plan\');return false">All calls</a></div>');
+      }
+    } catch (e) {}
+    return out;
+  };
 })();
 /* ── The mission line (queue why-chain, slice 1): one line above the quarter's objectives, so every goal is read
    against why it matters. A guest sees an example marked as one; Edit opens one input; saving keeps it on this device;
@@ -9395,10 +9472,516 @@
     var h = _rmMission(E), m = /<div class="section[^"]*"[^>]*>/.exec(h), from = m ? m.index + m[0].length : 0, k = h.indexOf('<div class="cat-t"', from);
     return k > -1 ? h.slice(0, k) + gmMissionHTML() + h.slice(k) : h.replace(/<\/div>\s*$/, gmMissionHTML() + '</div>');
   }; }
+
+  /* ── The renewals desk (queue renewals-desk): things that expire, so nothing lapses by surprise. The templates live in
+     guiding-map/levers/renewals.json (window.GM_RENEWALS, inlined by build.js). Pick one, type its date once; the one inside
+     its lead days with the highest lapse is the one action, the rest fold under Later, and Renewed rolls the date forward
+     (a once-only item, every 0, is marked done). */
+  var RENEW_MAX = 200;
+  function renewData() {
+    var d = (typeof window !== "undefined" && window.GM_RENEWALS) ? window.GM_RENEWALS : null;
+    return d && Array.isArray(d.renewals) ? d : { renewals: [], verified: "" };
+  }
+  function renewTpl(id) {
+    var a = renewData().renewals;
+    for (var i = 0; i < a.length; i++) if (a[i] && a[i].id === id) return a[i];
+    return null;
+  }
+  function renewItems() {
+    var a = G("gm_renewals", []), out = [];
+    if (!Array.isArray(a)) return out;
+    a.forEach(function (x) {
+      if (!x || typeof x !== "object" || !renewTpl(x.id) || typeof x.date !== "string") return;
+      if (isNaN(Date.parse(x.date))) return;
+      // Several of one kind (two cars' PUC, the parents' health policy): each item has its own uid and an optional label.
+      var uid = (typeof x.uid === "string" && /^[\w-]{1,60}$/.test(x.uid)) ? x.uid : x.id;
+      var label = typeof x.label === "string" ? x.label.replace(/[<>"'`]/g, "").trim().slice(0, 40) : "";
+      out.push({ uid: uid, id: x.id, label: label, date: x.date, done: x.done === true });
+    });
+    return out;
+  }
+  function renewToday() { var n = new Date(); return Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate()); }
+  function renewLeft(day) { return Math.round((Date.parse(day) - renewToday()) / 864e5); }
+  function renewAddMonths(day, n) {
+    var t = Date.parse(day); if (isNaN(t)) return day;
+    var d = new Date(t), y = d.getUTCFullYear(), m = d.getUTCMonth() + n, dayN = d.getUTCDate();
+    var last = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+    return new Date(Date.UTC(y, m, Math.min(dayN, last))).toISOString().slice(0, 10);
+  }
+  function renewRows() {
+    var rows = renewItems().filter(function (x) { return !x.done; }).map(function (x) {
+      var t = renewTpl(x.id);
+      return { uid: x.uid, id: x.id, label: x.label, date: x.date, tpl: t, days: renewLeft(x.date) };
+    });
+    rows.sort(function (a, b) { return (+b.tpl.lapse || 0) - (+a.tpl.lapse || 0) || a.days - b.days; });
+    var inside = rows.filter(function (r) { return r.days <= (+r.tpl.lead || 0); });
+    // Only an item inside its warning days is an action; when nothing is, the desk says so calmly (no early Renewed button).
+    var open = inside[0] || null, next = rows.slice().sort(function (a, b) { return a.days - b.days; })[0] || null;
+    return { open: open, next: next, later: rows.filter(function (r) { return r !== open; }) };
+  }
+  function renewDay(day) {
+    try { return new Date(day + "T00:00:00").toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }); } catch (e) { return day; }
+  }
+  function renewName(r) { return r.tpl.title + (r.label ? " \u00b7 " + r.label : ""); }
+  function renewMain(r) {
+    var t = r.tpl;
+    var h = '<div style="font-weight:800;font-size:14px">' + esc(renewName(r)) + '</div>'
+      + '<div style="font-size:12px;color:var(--muted);margin-top:3px">Due ' + esc(renewDay(r.date)) + ' \u00b7 '
+      + (r.days < 0 ? Math.abs(r.days) + ' day' + (Math.abs(r.days) === 1 ? '' : 's') + ' ago' : r.days + ' day' + (r.days === 1 ? '' : 's') + ' left') + '</div>';
+    if (t.cost) h += '<div style="font-size:12.5px;margin-top:6px">' + esc(t.cost) + '</div>';
+    if (t.cpe) h += '<div style="font-size:12px;color:var(--muted);margin-top:3px">' + esc(t.cpe.total) + ' credits in ' + esc(t.cpe.years) + ' years (about ' + esc(t.cpe.perYear) + ' a year). ' + esc(t.cpe.note || '') + '</div>';
+    h += '<ol style="margin:8px 0 0;padding-left:20px;font-size:13px">' + (t.steps || []).map(function (s) { return '<li style="margin-bottom:4px">' + esc(s) + '</li>'; }).join("") + '</ol>';
+    if (t.portal) h += '<div style="font-size:12px;margin-top:8px">Official site: ' + esc(t.portal) + '</div>';
+    if (t.check) h += '<div class="info" style="font-size:12px;margin-top:6px">Check: ' + esc(t.check) + '</div>';
+    if (t.dateHint) h += '<div style="font-size:11px;color:var(--muted);margin-top:4px">The date to use: ' + esc(t.dateHint) + '</div>';
+    return h;
+  }
+  function renewOpenCard(r) {
+    return '<div class="road-col gm-renew-open" data-renew-open="' + esc(r.uid) + '" style="margin-bottom:12px">' + renewMain(r)
+      + '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">'
+      + '<button type="button" class="btn-sm" data-renew-done="' + esc(r.uid) + '" onclick="gmRenewed(\'' + esc(r.uid) + '\')">Renewed</button></div></div>';
+  }
+  function renewLaterCard(r) {
+    return '<details class="road-col gm-renew-item" style="margin-bottom:8px"><summary style="cursor:pointer;font-weight:800;font-size:13px">' + esc(renewName(r))
+      + ' <span style="font-weight:500;color:var(--muted)">\u00b7 due ' + esc(renewDay(r.date)) + '</span></summary><div style="margin-top:8px">' + renewMain(r)
+      + '<div style="margin-top:10px"><button type="button" class="btn-sm" data-renew-done="' + esc(r.uid) + '" onclick="gmRenewed(\'' + esc(r.uid) + '\')">Renewed</button></div></div></details>';
+  }
+  function renewFormHTML(openNow) {
+    var opts = renewData().renewals.map(function (t) { return '<option value="' + esc(t.id) + '">' + esc(t.title) + '</option>'; }).join("");
+    return '<details class="road-col gm-renew-add" style="margin-top:10px"' + (openNow ? " open" : "") + '>'
+      + '<summary style="cursor:pointer;font-weight:800;font-size:13px">Add something that expires</summary>'
+      + '<label class="f-label" for="gmRenewPick" style="margin-top:8px">What expires?</label>'
+      + '<select id="gmRenewPick">' + opts + '</select>'
+      + '<label class="f-label" for="gmRenewLabel">Which one? (optional: Car, Bike, Parents)</label>'
+      + '<input id="gmRenewLabel" maxlength="40" placeholder="Leave empty if you have only one">'
+      + '<label class="f-label" for="gmRenewDate">Its date (type it once)</label>'
+      + '<input id="gmRenewDate" type="date">'
+      + '<div style="margin-top:8px"><button type="button" class="btn-sm" data-renew-add="1" onclick="gmRenewAdd()">Add this renewal</button></div></details>';
+  }
+  window.gmRenewAdd = function () {
+    var sel = document.getElementById("gmRenewPick"), inp = document.getElementById("gmRenewDate");
+    var id = sel ? String(sel.value || "") : "", day = inp ? String(inp.value || "").trim() : "";
+    var t = renewTpl(id);
+    if (!t) { if (typeof gmToast === "function") gmToast("Pick what expires first."); return; }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || isNaN(Date.parse(day))) { if (typeof gmToast === "function") gmToast("Type its date, like 2026-12-01."); return; }
+    var lb = document.getElementById("gmRenewLabel"), label = lb ? String(lb.value || "").replace(/[<>"'`]/g, "").trim().slice(0, 40) : "";
+    var uid = id + (label ? "-" + label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") : "");
+    var a = renewItems(), at = -1;
+    a.forEach(function (x, i) { if (x.uid === uid) at = i; });
+    var rec = { uid: uid, id: id, label: label, date: day };
+    if (at >= 0) a[at] = rec;
+    else { if (a.length >= RENEW_MAX) { if (typeof gmToast === "function") gmToast("That is enough renewals for now (" + RENEW_MAX + ")."); return; } a.push(rec); }
+    S_("gm_renewals", a); renderAll();
+    if (typeof gmToast === "function") gmToast("Added: " + t.title + (label ? " \u00b7 " + label : ""));
+  };
+  window.gmRenewed = function (uid) {
+    var a = renewItems(), at = -1;
+    a.forEach(function (x, i) { if (x.uid === uid) at = i; });
+    if (at < 0) return;
+    var t = renewTpl(a[at].id); if (!t) return;
+    if (+t.every > 0) { a[at].date = renewAddMonths(a[at].date, +t.every); delete a[at].done; }
+    else a[at].done = true;
+    S_("gm_renewals", a); renderAll();
+    if (typeof gmToast === "function") gmToast(+t.every > 0 ? "Renewed: the next date is " + renewDay(a[at].date) + "." : "Done: " + t.title + ".");
+  };
+  window.gmRenewalsHTML = function () {
+    var d = renewData();
+    if (!d.renewals.length) return "";
+    var rows = renewRows(), doneCount = renewItems().filter(function (x) { return x.done; }).length;
+    var h = '<div class="gm-renewals" role="region" aria-label="Renewals">'
+      + '<div class="cat-t" style="margin-top:0">Renewals</div>'
+      + '<div class="info">Pick what expires and type its date once. The estate warns you inside each item\u2019s lead days, and Renewed rolls the date forward.</div>';
+    if (!rows.open && rows.next) h += '<div class="info gm-renew-calm">All current. Next: <b>' + esc(renewName(rows.next)) + '</b> on ' + esc(renewDay(rows.next.date)) + '.</div>';
+    else if (!rows.open) h += '<div class="info">Nothing is due yet. Add something that expires \u2014 your first one \u2014 and it will warn you in time.</div>';
+    else h += renewOpenCard(rows.open);
+    if (rows.later.length) h += '<details class="road-col gm-renew-later" style="margin-top:8px"><summary style="cursor:pointer;font-weight:800;font-size:13px">Later (' + rows.later.length + ')</summary>' + rows.later.map(renewLaterCard).join("") + '</details>';
+    h += renewFormHTML(!renewItems().length);
+    if (doneCount) h += '<details class="road-col" style="margin-top:8px"><summary style="cursor:pointer;font-weight:800;font-size:13px">Renewed (' + doneCount + ')</summary><div style="font-size:12.5px;color:var(--muted);margin-top:6px">Once-only items are kept here after you renew them, with no date to chase.</div></details>';
+    return h + '</div>';
+  };
 })();
 // Boot veil off (index.html head): the Life OS has drawn its own first screen, so the page may show. Two frames later,
 // so the first paint the person sees is the finished one.
 (function () {
   function off() { document.documentElement.classList.remove("gm-boot"); }
   try { (window.requestAnimationFrame || setTimeout)(function () { (window.requestAnimationFrame || setTimeout)(off); }); } catch (e) { off(); }
+})();
+
+// A step that asks for names or a note gets its own place to do it, right under the step (owner, 2026-11-17):
+// "write the 5 names" becomes 5 inputs that tick the step when full; "after each call: note..." becomes one note line
+// with dated notes, the last 3 shown. Everything is kept in gm_stepdo, keyed by system and step, so a restored or
+// synced file brings the work with it. At most 12 inputs and 50 notes for any one step.
+(function () {
+  if (typeof window.renderModalBody !== "function") return;
+  var KEY = "gm_stepdo", MAX_IN = 12, MAX_NOTES = 50;
+  function readAll() {
+    try {
+      var v = window.gmG ? window.gmG(KEY, {}) : JSON.parse(localStorage.getItem(KEY) || "{}");
+      return v && typeof v === "object" && !Array.isArray(v) ? v : {};
+    } catch (e) { return {}; }
+  }
+  function saveAll(v) { try { if (window.gmS) window.gmS(KEY, v); else localStorage.setItem(KEY, JSON.stringify(v)); } catch (e) {} }
+  function esc(t) { return String(t).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function today() { var d = new Date(); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
+  function listOf(v) { return Array.isArray(v) ? v : []; }
+  // A note or log step asks for one line; a write or list step that names a number asks for that many.
+  function kindOf(text) {
+    var t = String(text || "");
+    // "note" or "log" as an instruction ("note 1 thing", "Log reps"), not as a noun ("a 1-line personal note").
+    if (/\b(?:note|log)\s+(?:\d|one\b|it\b|the\b|each\b|down\b|reps\b|what\b|your\b|how\b)/i.test(t)) return { note: true };
+    // The number must count things ("the 5 names", "3 wins"), never a year or an amount ("by 2030", "Rs 500").
+    if (/\b(?:write|list|name)\b/i.test(t)) {
+      var m = /(?:^|[^\d.,])\b([1-9]|1[0-2])\s+(?:\w+\s+)?(names?|people|friends|things|items|wins|goals|ideas|questions|habits|books|places|skills|contacts|lessons|values|strengths)\b/i.exec(t);
+      if (m) return { n: Math.min(parseInt(m[1], 10), MAX_IN), what: m[2].toLowerCase() };
+    }
+    return null;
+  }
+  function tick(step) { var cb = step && step.querySelector('input[type="checkbox"]'); if (cb && !cb.checked) cb.click(); }
+  function nextSaturday() {
+    var d = new Date(), add = ((6 - d.getDay()) + 7) % 7;
+    if (add === 0) add = 7;
+    d.setDate(d.getDate() + add);
+    return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2);
+  }
+  // A one-off act ("Open…", "Buy…", "Book…", "Set up…", "Sign up…") read at night is easy to lose: one tap puts it in
+  // the Inbox on the coming Saturday, where Today and the calendar bring it back. A list or note step already has its
+  // own doer, so it gets no reminder.
+  // Most steps do not start with a verb ("Nominee on every account"), so a step is one-off when it is not recurring and
+  // not a rule; a reminder is only an offer, so a rare false match costs nothing.
+  var RECURS = /\b(?:every|daily|weekly|monthly|annual(?:ly)?|yearly|quarterly|each (?:day|week|month|year|morning|evening)|(?:mon|tues|wednes|thurs|fri|satur|sun)days?|\d+x\s*\/\s*(?:day|week|month))\b/i;
+  var RULE = /^\s*(?:never|no|don'?t|do not|avoid|accept|always|remember|rule)\b/i;
+  function oneOff(text) { var t = String(text || ""); return t.trim().length > 8 && !RECURS.test(t) && !RULE.test(t); }
+  function niceDay(d) { try { return new Date(d + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }); } catch (e) { return d; } }
+
+  function namesDoer(step, key, n, what) {
+    var arr = listOf(readAll()[key]).slice(0, n);
+    var box = document.createElement("div");
+    box.className = "road-col step-do";
+    var lbl = document.createElement("div");
+    lbl.className = "f-label"; lbl.textContent = "Write them here: your " + n + " " + (what || "items");
+    box.appendChild(lbl);
+    for (var i = 0; i < n; i++) (function (ix) {
+      var inp = document.createElement("input");
+      inp.type = "text"; inp.value = arr[ix] == null ? "" : String(arr[ix]);
+      inp.setAttribute("aria-label", (what || "item").replace(/s$/, "") + " " + (ix + 1));
+      inp.addEventListener("input", function () {
+        var all = readAll(), cur = listOf(all[key]).slice(0, n);
+        while (cur.length < n) cur.push("");
+        cur[ix] = inp.value; all[key] = cur; saveAll(all);
+        var filled = 0;
+        for (var j = 0; j < n; j++) if (String(cur[j] || "").trim()) filled++;
+        if (filled === n) tick(step);
+      });
+      box.appendChild(inp);
+    })(i);
+    return box;
+  }
+
+  function noteDoer(step, key) {
+    var notes = listOf(readAll()[key]).filter(function (x) { return x && typeof x === "object"; }).slice(-MAX_NOTES);
+    var box = document.createElement("div");
+    box.className = "road-col step-do";
+    var lbl = document.createElement("div");
+    lbl.className = "f-label"; lbl.textContent = "Note it here (dated, the last three shown)";
+    box.appendChild(lbl);
+    var inp = document.createElement("input");
+    inp.type = "text"; inp.setAttribute("aria-label", "Your note");
+    inp.placeholder = "One line";
+    box.appendChild(inp);
+    var add = document.createElement("button");
+    add.type = "button"; add.className = "btn-sm"; add.setAttribute("data-stepdo-add", "1");
+    add.textContent = "Add note";
+    add.addEventListener("click", function () {
+      var t = String(inp.value || "").trim(); if (!t) return;
+      var all = readAll();
+      var cur = listOf(all[key]).filter(function (x) { return x && typeof x === "object"; }).slice(-(MAX_NOTES - 1));
+      cur.push({ d: today(), t: t }); all[key] = cur; saveAll(all);
+      try { window.renderModalBody(); } catch (e) {}
+    });
+    box.appendChild(add);
+    if (notes.length) {
+      var list = document.createElement("div");
+      list.className = "step-notes";
+      list.innerHTML = notes.slice(-3).map(function (x) {
+        return '<div class="step-note"><span class="f-label" style="display:inline">' + esc(x.d) + '</span> ' + esc(x.t) + '</div>';
+      }).join("");
+      box.appendChild(list);
+    }
+    return box;
+  }
+
+  function reminderDoer(key, text) {
+    var rec = readAll()[key], due = rec && !Array.isArray(rec) && typeof rec === "object" ? String(rec.remind || "") : "";
+    var box = document.createElement("div");
+    box.className = "road-col step-do";
+    var add = document.createElement("button");
+    add.type = "button"; add.className = "btn-sm"; add.setAttribute("data-stepdo-remind", "1");
+    add.textContent = due ? "Reminder set for " + niceDay(due) : "Remind me Saturday";
+    add.setAttribute("aria-label", add.textContent + ": " + text);
+    add.addEventListener("click", function () {
+      var all = readAll(), cur = all[key];
+      if (cur && !Array.isArray(cur) && typeof cur === "object" && cur.remind) return;
+      var d = nextSaturday();
+      all[key] = { remind: d }; saveAll(all);
+      try { if (typeof window.gmInboxAdd === "function") window.gmInboxAdd(text, "action", { due: d, from: "step:" + key }); } catch (e) {}
+      add.textContent = "Reminder set for " + niceDay(d);
+      add.setAttribute("aria-label", add.textContent + ": " + text);
+    });
+    box.appendChild(add);
+    return box;
+  }
+
+  // A recurring step ("Every Wednesday 8:30pm", "Monthly on the 1st Sunday", "Daily") reads its own words: one tap puts
+  // the series in the calendar, so the system runs from the calendar, not memory. The UID never changes, the start date
+  // is fixed at the first export, and SEQUENCE rises only when the rule or the words change (the calendar contract).
+  var DOW = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
+  var DOW_NAME = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 };
+  var NTH = { "1st": 1, first: 1, "2nd": 2, second: 2, "3rd": 3, third: 3, "4th": 4, fourth: 4, last: -1 };
+  function dayNo(word) { return DOW_NAME[String(word).toLowerCase() + "day"]; }
+  function recurOf(text) {
+    var t = String(text || ""), m, hh = 9, mm = 0;
+    var tm = /\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i.exec(t);
+    if (tm) { hh = parseInt(tm[1], 10) % 12; if (/pm/i.test(tm[3])) hh += 12; mm = tm[2] ? parseInt(tm[2], 10) : 0; }
+    m = /\bevery\s+(sun|mon|tues|wednes|thurs|fri|satur)day\b/i.exec(t);
+    if (m) { var wd = dayNo(m[1]); return wd == null ? null : { rule: "FREQ=WEEKLY;BYDAY=" + DOW[wd], dow: wd, nth: 0, hh: hh, mm: mm }; }
+    if (/^\s*daily\b/i.test(t) || /\b(?:every|each)\s+day\b/i.test(t)) return { rule: "FREQ=DAILY", dow: -1, nth: 0, hh: hh, mm: mm };
+    m = /\b(1st|first|2nd|second|3rd|third|4th|fourth|last)\s+(sun|mon|tues|wednes|thurs|fri|satur)day\b/i.exec(t);
+    if (m && /\b(?:monthly|every month)\b/i.test(t)) {
+      var nd = dayNo(m[2]), nth = NTH[m[1].toLowerCase()] || 1;
+      if (nd == null) return null;
+      return { rule: "FREQ=MONTHLY;BYDAY=" + nth + DOW[nd], dow: nd, nth: nth, hh: hh, mm: mm };
+    }
+    // How the steps are really written: "Sunday 90-min meal prep", "Weekly: ...", "5 min/day", "Monthly staples run",
+    // "Quarterly video call", "every 6 months", "Annual audit". A rhythm with no day starts on a calm default.
+    m = /^\W*(sun|mon|tues|wednes|thurs|fri|satur)day\b/i.exec(t) || /\b(?:on|each)\s+(sun|mon|tues|wednes|thurs|fri|satur)days?\b/i.exec(t);
+    if (m) { var wd2 = dayNo(m[1]); if (wd2 != null) return { rule: "FREQ=WEEKLY;BYDAY=" + DOW[wd2], dow: wd2, nth: 0, hh: hh, mm: mm }; }
+    if (/\b(?:min|mins|minutes|x)\s*\/\s*day\b|\bper day\b|\bevery morning\b|\bevery evening\b/i.test(t)) return { rule: "FREQ=DAILY", dow: -1, nth: 0, hh: hh, mm: mm };
+    if (/^\W*weekly\b|\bevery week\b|\bonce a week\b/i.test(t)) return { rule: "FREQ=WEEKLY;BYDAY=SU", dow: 0, nth: 0, hh: hh, mm: mm };
+    m = /\bevery\s+(\d{1,2})\s+months?\b|\b(\d{1,2})-monthly\b/i.exec(t);
+    if (m) { var iv = parseInt(m[1] || m[2], 10); if (iv >= 1 && iv <= 24) return { rule: "FREQ=MONTHLY;INTERVAL=" + iv + ";BYMONTHDAY=1", dow: -2, nth: 0, hh: hh, mm: mm }; }
+    if (/\bquarterly\b|\bevery quarter\b/i.test(t)) return { rule: "FREQ=MONTHLY;INTERVAL=3;BYMONTHDAY=1", dow: -2, nth: 0, hh: hh, mm: mm };
+    if (/^\W*monthly\b|\bevery month\b|\bonce a month\b/i.test(t)) return { rule: "FREQ=MONTHLY;BYMONTHDAY=1", dow: -2, nth: 0, hh: hh, mm: mm };
+    if (/^\W*annual\b|\bannually\b|\byearly\b|\bonce a year\b/i.test(t)) return { rule: "FREQ=YEARLY", dow: -2, nth: 0, hh: hh, mm: mm };
+    if (/\b2x\s*\/\s*month\b|\btwice a month\b|\bfortnightly\b/i.test(t)) return { rule: "FREQ=WEEKLY;INTERVAL=2;BYDAY=SU", dow: 0, nth: 0, hh: hh, mm: mm };
+    m = /\bevery\s+(\d{1,3})(?:\s*-\s*\d{1,3})?\s+days?\b/i.exec(t);
+    if (m) { var dv = parseInt(m[1], 10); if (dv >= 2 && dv <= 366) return { rule: "FREQ=DAILY;INTERVAL=" + dv, dow: -1, nth: 0, hh: hh, mm: mm }; }
+    if (/\bmonthly\b/i.test(t)) return { rule: "FREQ=MONTHLY;BYMONTHDAY=1", dow: -2, nth: 0, hh: hh, mm: mm };
+    if (/\bdaily\b/i.test(t)) return { rule: "FREQ=DAILY", dow: -1, nth: 0, hh: hh, mm: mm };
+    return null;
+  }
+  function ymdOf(d) { return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
+  function stepStart(r) {
+    var d = new Date(); d.setHours(0, 0, 0, 0);
+    if (r.dow === -2) { var f = new Date(d.getFullYear(), d.getMonth() + 1, 1); return f; }   // a monthly, quarterly or yearly rhythm: the 1st of next month
+    if (r.dow < 0) return d;
+    for (var add = 0; add < 400; add++) {
+      var t = new Date(d); t.setDate(d.getDate() + add);
+      if (t.getDay() !== r.dow) continue;
+      if (r.nth > 0 && Math.ceil(t.getDate() / 7) !== r.nth) continue;
+      if (r.nth < 0) { var nx = new Date(t); nx.setDate(t.getDate() + 7); if (nx.getMonth() === t.getMonth()) continue; }
+      if (add === 0 && new Date().getHours() >= r.hh) continue;
+      return t;
+    }
+    return d;
+  }
+  // Steps keep their own ledger (gm_step_cal): the dated-items export treats any entry it does not know in gm_cal_seq as
+  // gone and would send a CANCELLED for a repeating step the person still wants.
+  function stepLedger() {
+    var led;
+    try { led = window.gmG ? window.gmG("gm_step_cal", {}) : JSON.parse(localStorage.getItem("gm_step_cal") || "{}"); } catch (e) { led = {}; }
+    return led && typeof led === "object" && !Array.isArray(led) ? led : {};
+  }
+  function stepPlan(itemId, idx, text) {
+    var r = recurOf(text); if (!r) return null;
+    var key = "securax-sys-" + itemId + "-" + idx, led = stepLedger(), prev = led[key];
+    var sig = r.rule + "|" + String(text).trim(), d, hh, mm, v, pv;
+    if (prev && typeof prev === "object" && /^\d{4}-\d{2}-\d{2}$/.test(String(prev.d || ""))) {
+      d = String(prev.d); hh = typeof prev.hh === "number" ? prev.hh : r.hh; mm = typeof prev.mm === "number" ? prev.mm : r.mm;
+      pv = parseInt(prev.v, 10); if (!(pv > 0)) pv = 1;
+      v = prev.s === sig ? pv : pv + 1;
+    } else { d = ymdOf(stepStart(r)); hh = r.hh; mm = r.mm; v = 1; }
+    return { key: key, uid: key, date: d, hh: hh, mm: mm, v: v, sig: sig, rule: r.rule, text: String(text).trim() };
+  }
+  function fromYmd(s) { var p = String(s).split("-"); return new Date(+p[0], (+p[1]) - 1, +p[2]); }
+  window.gmStepICS = function (itemId, idx, text) {
+    var p = stepPlan(itemId, idx, text); if (!p || !window.gmIcs) return "";
+    var I = window.gmIcs, s = fromYmd(p.date), e = new Date(s);
+    s.setHours(p.hh, p.mm, 0, 0); e.setHours(p.hh, p.mm + 30, 0, 0);
+    var now = new Date();
+    var L = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//SecuRAX//Life OS calendar//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
+      "X-WR-CALNAME:Life OS system", "BEGIN:VEVENT", "UID:" + p.uid + "@local", "SEQUENCE:" + p.v,
+      "DTSTAMP:" + I.date(now, now.getHours(), now.getMinutes()), "DTSTART:" + I.date(s, p.hh, p.mm),
+      "DTEND:" + I.date(e, e.getHours(), e.getMinutes()), "RRULE:" + p.rule, "STATUS:CONFIRMED",
+      I.fold("SUMMARY:" + I.text(p.text)), "BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:" + I.text(p.text), "TRIGGER:-PT30M",
+      "END:VALARM", "END:VEVENT", "END:VCALENDAR"];
+    return L.join("\r\n") + "\r\n";
+  };
+  window.gmStepCalendar = function (itemId, idx, text) {
+    var p = stepPlan(itemId, idx, text); if (!p) return;
+    var ics = window.gmStepICS(itemId, idx, text), led = stepLedger();
+    led[p.key] = { d: p.date, hh: p.hh, mm: p.mm, s: p.sig, v: p.v };
+    try { if (window.gmS) window.gmS("gm_step_cal", led); else localStorage.setItem("gm_step_cal", JSON.stringify(led)); } catch (e) {}
+    try {
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([ics], { type: "text/calendar" }));
+      a.download = "life-os-step.ics"; document.body.appendChild(a); a.click(); a.remove();
+    } catch (e) {}
+    try { if (typeof window.gmToast === "function") window.gmToast("Calendar file saved: one repeating step. Add it to the same calendar each time; a newer file updates it, it never doubles."); } catch (e) {}
+  };
+  function calendarDoer(itemId, idx, text) {
+    var box = document.createElement("div");
+    box.className = "road-col step-do";
+    var add = document.createElement("button");
+    add.type = "button"; add.className = "btn-sm"; add.setAttribute("data-stepdo-cal", "1");
+    add.textContent = "Add to calendar";
+    add.setAttribute("aria-label", add.textContent + ": " + text);
+    add.addEventListener("click", function () { window.gmStepCalendar(itemId, idx, text); });
+    box.appendChild(add);
+    return box;
+  }
+
+  function decorate() {
+    var host = document.getElementById("m_sys"); if (!host) return;
+    var item = window.actType === "k" ? (window.KPIs || [])[window.actIdx] : (window.RISKS || [])[window.actIdx];
+    if (!item || !item.id) return;
+    var steps = host.getElementsByClassName("step");
+    for (var i = 0; i < steps.length; i++) {
+      var step = steps[i], textNode = step.querySelector(".step-t");
+      var text = (textNode ? textNode.textContent : step.textContent) || "";
+      var k = kindOf(text), box = null, boxes = [];
+      if (k) box = k.note ? noteDoer(step, item.id + ":" + i) : namesDoer(step, item.id + ":" + i, k.n, k.what);
+      else if (oneOff(text) && !(step.querySelector('input[type="checkbox"]') || {}).checked) box = reminderDoer(item.id + ":" + i, text.trim());
+      if (box) boxes.push(box);
+      if (recurOf(text)) boxes.push(calendarDoer(item.id, i, text.trim()));
+      if (!boxes.length) continue;
+      var after = step;
+      boxes.forEach(function (b) { after.parentNode.insertBefore(b, after.nextSibling); after = b; });
+    }
+  }
+
+  var orig = window.renderModalBody;
+  window.renderModalBody = function () {
+    orig.apply(this, arguments);
+    try { decorate(); } catch (e) {}
+  };
+
+  // The Wednesday call (queue step-doers, slice 4): on Wednesday one calm line above the daily three names tonight's
+  // call — the friend from the 5 names called longest ago (never called counts as oldest), with the last note that
+  // mentions them. Called keeps the date in gm_stepdo under friends:calls, so the next render names the next friend.
+  function friendCalls() {
+    var v = readAll()["friends:calls"];
+    return v && typeof v === "object" && !Array.isArray(v) ? v : {};
+  }
+  function lastNote(name) {
+    var hit = "";
+    listOf(readAll()["friends:2"]).forEach(function (n) {
+      if (n && typeof n === "object" && typeof n.t === "string" && n.t.toLowerCase().indexOf(name.toLowerCase()) >= 0) hit = n.t;
+    });
+    return hit;
+  }
+  function friendLine() {
+    if (new Date().getDay() !== 3) return "";
+    var names = listOf(readAll()["friends:0"]).map(function (x) { return String(x == null ? "" : x).trim(); })
+      .filter(function (x) { return x; }).slice(0, 5);
+    if (!names.length) return "";
+    var calls = friendCalls(), tdy = today();
+    // One call a week: once tonight's call is made, the line is a small win until next Wednesday, never a second name.
+    var doneTonight = names.filter(function (x) { return calls[x] === tdy; })[0];
+    if (doneTonight) return '<div class="road-col gm-friend-today" style="margin-bottom:10px;font-size:13px">\u2713 Called <b>' + esc(doneTonight) + '</b> tonight. Next Wednesday, the next friend.</div>';
+    var pick = names[0], pickDate = typeof calls[pick] === "string" ? calls[pick] : "";
+    for (var i = 1; i < names.length; i++) {
+      var d = typeof calls[names[i]] === "string" ? calls[names[i]] : "";
+      if (d < pickDate) { pick = names[i]; pickDate = d; }
+    }
+    var note = lastNote(pick);
+    return '<div class="road-col gm-friend-today" style="margin-bottom:10px;font-size:13px">'
+      + '<b>Tonight: call ' + esc(pick) + '</b>'
+      + (note ? ' <span style="color:var(--muted)">\u00b7 last note: ' + esc(note) + '</span>' : "")
+      + ' <button type="button" class="btn-sm" data-friend-called="' + esc(pick) + '" style="margin-inline-start:6px">Called</button></div>';
+  }
+  var _friendRender = window.renderAll;
+  if (typeof _friendRender === "function") window.renderAll = function () {
+    var out = _friendRender.apply(this, arguments);
+    try {
+      if (typeof curTab !== "undefined" && curTab === "today" && !document.querySelector(".gm-friend-today")) {
+        var d3 = document.querySelector("#sections .gm-d3"), h = friendLine();
+        if (h && d3) {
+          d3.insertAdjacentHTML("beforebegin", h);
+          var btn = document.querySelector(".gm-friend-today [data-friend-called]");
+          if (btn) btn.addEventListener("click", function () {
+            var name = btn.getAttribute("data-friend-called"), all = readAll(), calls = friendCalls();
+            calls[name] = today(); all["friends:calls"] = calls; saveAll(all);
+            try { if (typeof window.renderAll === "function") window.renderAll(); } catch (e) {}
+          });
+        }
+      }
+    } catch (e) {}
+    return out;
+  };
+
+})();
+// Usage is learned in its own block, so nothing else's early exit can switch it off.
+(function () {
+  /* ── How use is learned (queue friction-meter): which feature was used on which day, counted on the device only and
+     never sent. A short id is recorded once a day, so later a rarely used thing can rest with no task for the person.
+     gm_use holds id -> { l: last used day, d: the days it was used } (at most 30 days each, at most 300 ids). */
+  var G = window.gmG, S_ = window.gmS;
+  function ymd(d) { d = d || new Date(); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
+  var GM_USE_IDS = 300, GM_USE_DAYS = 30, GM_USE_RE = /^[A-Za-z0-9:-]{1,40}$/;
+  // The day learning began: resting counts from here, never from the first open, so an existing person's doors do not
+  // all rest the day this ships just because nothing was recorded before.
+  try { var _since = G("gm_use_since", ""); if (!/^\d{4}-\d{2}-\d{2}$/.test(_since)) S_("gm_use_since", ymd()); } catch (e) {}
+  // The map as stored, cleaned: a damaged key or entry is dropped and a wrong shape gives an empty map, never a crash.
+  window.gmUsage = function () {
+    var raw = G("gm_use", {}), out = {};
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+    Object.keys(raw).forEach(function (id) {
+      if (!GM_USE_RE.test(id)) return;
+      var e = raw[id];
+      if (!e || typeof e !== "object" || Array.isArray(e)) return;
+      var days = Array.isArray(e.d) ? e.d.filter(function (x) { return typeof x === "string"; }) : [];
+      var seen = {};
+      days = days.filter(function (x) { if (seen[x]) return false; seen[x] = 1; return true; }).sort();
+      if (days.length > GM_USE_DAYS) days = days.slice(-GM_USE_DAYS);
+      out[id] = { l: typeof e.l === "string" ? e.l : "", d: days };
+    });
+    return out;
+  };
+  window.gmUse = function (id) {
+    if (typeof id !== "string" || !GM_USE_RE.test(id)) return;
+    var today = ymd(), map = window.gmUsage(), e = map[id] || { l: today, d: [] };
+    // Re-insert at the end so the key order is recency, and the oldest keys are the ones dropped when the map is full.
+    delete map[id];
+    e.l = today;
+    if (e.d.indexOf(today) < 0) e.d.push(today);
+    e.d.sort();
+    if (e.d.length > GM_USE_DAYS) e.d = e.d.slice(-GM_USE_DAYS);
+    map[id] = e;
+    var ids = Object.keys(map);
+    while (ids.length > GM_USE_IDS) delete map[ids.shift()];
+    S_("gm_use", map);
+    return map;
+  };
+
+  // Opening a tab or a system, and any control that names its feature, is a use. The original still does its work.
+  if (typeof window.goTab === "function") { var _gmGoTab = window.goTab; window.goTab = function (id) {
+    try { if (typeof id === "string") window.gmUse("tab:" + id); } catch (e) {}
+    return _gmGoTab.apply(this, arguments);
+  }; }
+  if (typeof window.openK === "function") { var _gmOpenK = window.openK; window.openK = function (i) {
+    try { var k = (window.KPIs || [])[i]; if (k && k.id) window.gmUse("sys:" + k.id); } catch (e) {}
+    return _gmOpenK.apply(this, arguments);
+  }; }
+  if (typeof window.openR === "function") { var _gmOpenR = window.openR; window.openR = function (i) {
+    try { var r = (window.RISKS || [])[i]; if (r && r.id) window.gmUse("risk:" + r.id); } catch (e) {}
+    return _gmOpenR.apply(this, arguments);
+  }; }
+  document.addEventListener("click", function (ev) {
+    try {
+      for (var el = ev.target; el && el !== document; el = el.parentNode) {
+        var f = el.getAttribute && el.getAttribute("data-feat");
+        if (f) { window.gmUse(f); break; }
+      }
+    } catch (e) {}
+  }, true);
 })();

@@ -873,6 +873,11 @@ $(python3 "$ROOT/lifecycle/forge.py" brief "$FB")"
           python3 "$ROOT/lifecycle/lessons.py" add --area autobuild "$_T: first attempt failed on ${_WHY:-the gate}; fixed on attempt $i" >/dev/null 2>&1 || true
         fi
         git -C "$ROOT" add -A
+        # An attempt that changed nothing proves nothing: never call it GREEN (2026-11-17: a stalled model's empty run
+        # printed GREEN before RED). It counts as a failed attempt and the loop goes on.
+        if git -C "$ROOT" diff --cached --quiet && [ -z "$(git -C "$ROOT" log --oneline "$ORIG..HEAD" 2>/dev/null)" ]; then
+          C "  ✘ attempt $i made no change: not green"; printf 'The previous attempt made no change at all. Make the change the task asks for.\n' > "$FB"; i=$((i+1)); continue
+        fi
         if git -C "$ROOT" diff --cached --quiet; then C "Agent made no changes — nothing to commit."; else
           # works on a machine with no git identity configured (fresh WSL, CI): fall back to a neutral author
           git -C "$ROOT" -c user.name="$(git -C "$ROOT" config user.name || echo 'SecuRAX autobuild')" \

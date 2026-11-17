@@ -134,14 +134,14 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
-- A mission line above the quarter's objectives
-- Install by pasting one sentence into the AI you already use
-- A calls journal on the Plan tab
-- Delegated work finishes again, and briefs are one step, test first
-- Release readiness: go/no-go gates for the public launch and the paid edition
-- Experience v3, the spec
-- Built to last
-- Life systems, the content
+- A resting door wakes when you need it
+- The delegation gate cannot be fooled by a test that never runs
+- The Wednesday call runs itself on Today
+- Doors rest by themselves
+- A recurring step lives in the calendar
+- Three friends use the Life OS on a phone
+- A home page that fits a phone, slice 3
+- A home page that fits a phone, slice 2
 
 **Release 0.4.0 - 2026-11-14:**
 

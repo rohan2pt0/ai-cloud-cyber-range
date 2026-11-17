@@ -105,3 +105,27 @@ def test_whitespace_only_churn_is_noticed_on_existing_files(repo):
     git(repo, "commit", "-q", "-m", "more")
     c.write_text("".join(f"x{i} = {i}\n" for i in range(12)))          # pure reformat of 12 lines
     assert "whitespace-churn" in rules(repo, strict=True)
+
+
+def _lifeos(repo, listed):
+    """A repository with a Life OS suite list, then a new test file added (test999), listed or not."""
+    (repo / "guiding-map/tests").mkdir(parents=True, exist_ok=True)
+    (repo / "guiding-map/package.json").write_text('{"scripts": {"test": "for t in test test2 test99; do node tests/$t.js || exit 1; done"}}\n')
+    git(repo, "add", "-A")
+    git(repo, "commit", "-q", "-m", "suite")
+    if listed:
+        (repo / "guiding-map/package.json").write_text('{"scripts": {"test": "for t in test test2 test99 test999; do node tests/$t.js || exit 1; done"}}\n')
+    (repo / "guiding-map/tests/test999.js").write_text("console.log('test999: 1 passed, 0 failed');\n")
+    changes, ws = dc.collect("HEAD", repo)
+    return [r for r in dc.evaluate(changes, ws, root=repo) if r["rule"] == "test-not-run"]
+
+
+def test_a_new_lifeos_test_left_out_of_the_suite_is_blocked(repo):
+    found = _lifeos(repo, listed=False)
+    assert len(found) == 1 and found[0]["level"] == "BLOCK" and found[0]["file"] == "guiding-map/tests/test999.js"
+    assert "test999" in found[0]["fix"]
+
+
+def test_a_new_lifeos_test_in_the_suite_passes(repo):
+    # test99 in the list must not count as test999 (whole-name match)
+    assert _lifeos(repo, listed=True) == []

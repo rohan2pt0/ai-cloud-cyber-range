@@ -2238,6 +2238,7 @@ function renderAll(){
     html='<div class="section active">'
      +heroHTML(coveredR," / "+liveR.length,"Risks covered","")
      +howHTML('Cover the ladder in order: health, then term life, then income, then liability. A risk counts as covered once every step on its checklist is ticked.')
+     +(typeof window.gmRenewalsHTML==="function"?window.gmRenewalsHTML():"")
      +(typeof window.gmSpofHTML==="function"?window.gmSpofHTML():"")
      +(typeof window.gmPreflightHTML==="function"?window.gmPreflightHTML():"")
      +(typeof window.gmSignsHTML==="function"?window.gmSignsHTML():"")
@@ -3601,6 +3602,7 @@ window.GM_SYSTEMS = {"version":1,"verified":"2026-11-12","note":"Life systems: o
 window.GM_LEVERS = {"about":"Savings levers: legitimate ways to cut a household's costs and tax, each with who it fits, what it saves, the real-world steps, a ready template and where to verify it. Content is paraphrased from official and public sources (cited by link, never copied), verified on the date shown and re-checked by its review date; a lever past its review date is shown as 'check before you act'. Not tax or legal advice: amounts and rules change every year. India first ('where'); a Global edition hides what does not apply.","version":1,"verified":"2026-11-15","levers":[{"id":"rooftop-solar","area":"energy","where":["IN"],"title":"Rooftop solar with the central subsidy","when":{"home":true,"electricityMin":1500},"saves":"Most of the electricity bill for 25 years, after a central subsidy of Rs 30,000 per kW for the first 2 kW and Rs 18,000 for the third (capped at Rs 78,000). Some states add their own.","estimate":{"kind":"solar","subsidyCap":78000},"effortMin":120,"steps":["Find your consumer number and sanctioned load on the electricity bill.","Size it: about 1 kW for every 120 units a month you use.","Register on the national portal (pmsuryaghar.gov.in) with the consumer number and apply.","Pick a vendor registered on the portal; get two quotes in writing.","Your electricity company checks feasibility; then install.","Ask for the net meter and the inspection.","Upload the commissioning report and a cancelled cheque; the subsidy comes to your bank (DBT)."],"template":{"kind":"message","title":"Quote request to a registered vendor","text":"Hello, I have applied under PM Surya Ghar (consumer no. [number]). My average use is [units] units a month and my roof is about [sq ft] sq ft, [shade-free / partly shaded]. Please quote for a [size] kW grid-tied system with net metering: panel and inverter make and warranty, total price, what the subsidy covers, timeline and the after-sales contact. Thank you."},"portal":"pmsuryaghar.gov.in","sources":["https://pmsuryaghar.gov.in","https://www.businesstoday.in/india/story/high-power-bills-burning-pockets-claim-up-to-rs78000-under-pm-surya-ghar-scheme-545483-2026-07-28"],"verified":"2026-11-15","review":"2027-05-15","confidence":"official portal; amounts from public reports"},{"id":"society-solar","area":"energy","where":["IN"],"title":"Solar on the society roof for common areas","when":{"home":true,"apartment":true},"saves":"Lower common-area electricity and so lower maintenance; the subsidy for housing societies is Rs 18,000 per kW for common facilities (including EV charging), up to 500 kW.","effortMin":60,"steps":["Get last year's common-area electricity bills from the society office.","Raise it at the next managing committee meeting with the template below.","Apply through the national portal as a group housing society.","Follow the same vendor, net meter and DBT steps."],"template":{"kind":"message","title":"Note to the managing committee","text":"Dear committee, our common-area electricity cost was about Rs [amount] last year. Under PM Surya Ghar, societies get Rs 18,000 per kW for common facilities. A [size] kW system could cut most of that bill and our maintenance. I propose we get two quotes from portal-registered vendors and decide at the next meeting. I am happy to coordinate."},"portal":"pmsuryaghar.gov.in","sources":["https://pmsuryaghar.gov.in","https://www.angelone.in/news/government-schemes/pm-surya-ghar-yojana-crosses-26-lakh-installations-how-to-get-up-to-78-000-subsidy-on-rooftop-solar"],"verified":"2026-11-15","review":"2027-05-15","confidence":"official portal; amounts from public reports"},{"id":"msrtc-women","area":"transport","where":["IN-MH"],"title":"Half fare for women on state buses","when":{"state":"MH","women":true},"saves":"50% of the fare on Maharashtra state transport (MSRTC) buses for every woman in the household.","effortMin":30,"steps":["Each woman carries Aadhaar when she travels.","Get the transport mobility (NCMC) card where it is now asked for at the counter or depot: reports say it is required for concessions.","Use MSRTC for regular intercity trips instead of private buses or cabs."],"portal":"msrtc.maharashtra.gov.in","sources":["https://www.freepressjournal.in/pune/nanded-over-150-crore-women-benefit-from-mahila-samman-scheme-in-msrtc-buses","https://swarajyamag.com/news-brief/msrtc-delays-ncmc-card-requirement-for-women-until-1st-january-following-registration-issues"],"verified":"2026-11-15","review":"2027-02-15","confidence":"public reports; the card rule is recent: check at the depot"},{"id":"msrtc-senior","area":"transport","where":["IN-MH"],"title":"Bus concessions for parents over 65","when":{"state":"MH","parentAgeMin":65},"saves":"Reports describe 50% off MSRTC fares from about 65 and free travel after 75; the exact age bands differ between reports.","effortMin":30,"steps":["Confirm the current age bands at the depot or on the MSRTC site.","Carry Aadhaar as age proof; get the mobility (NCMC) card if asked.","Book their regular trips on MSRTC."],"portal":"msrtc.maharashtra.gov.in","sources":["https://swarajyamag.com/news-brief/msrtc-delays-ncmc-card-requirement-for-women-until-1st-january-following-registration-issues","https://www.freepressjournal.in/amp/mumbai/maharashtra-msrtc-faces-3-crore-daily-loss-due-to-bus-fare-concessions-transport-minister-pratap-sarnaik-rules-out-new-discounts"],"verified":"2026-11-15","review":"2027-02-15","confidence":"age bands differ between reports: confirm before relying on it"},{"id":"ayushman-70","area":"health","where":["IN"],"title":"Ayushman health cover for parents aged 70 and over","when":{"parentAgeMin":70},"saves":"Hospital cover of up to Rs 5 lakh a year for every person aged 70 or more, whatever the family's income, under Ayushman Bharat (the Vay Vandana card). It can avoid or top up a costly senior health policy.","effortMin":20,"steps":["Check the parent's age in Aadhaar (the scheme reads it from there).","Install the Ayushman app or open beneficiary.nha.gov.in; or visit a Common Service Centre.","Do the Aadhaar e-KYC with the mobile number linked to Aadhaar.","Download the card and keep it with their health papers.","If they already have CGHS or ECHS, compare and choose one: the rules let you keep only one."],"portal":"beneficiary.nha.gov.in","sources":["https://www.business-standard.com/health/ayushman-vay-vandana-health-cover-10-lakh-senior-citizens-delhi-125042800781_1.html","https://www.businesstoday.in/personal-finance/insurance/story/govt-rolls-out-ayushman-bharat-cards-for-70-seniors-with-rs-5-lakh-free-treatment-heres-how-to-apply-477945-2025-05-27"],"verified":"2026-11-15","review":"2027-05-15","confidence":"government scheme; cover amount from public reports"},{"id":"tax-regime","area":"tax","where":["IN"],"title":"Pick the cheaper tax regime, every year","when":{"earns":true},"saves":"The new regime is the default and, by public reports, gives a rebate that makes total income up to Rs 12 lakh tax-free, with a Rs 75,000 standard deduction for salaried people. The old regime can still win with large deductions (home-loan interest, 80C, 80D, HRA). The wrong choice can cost tens of thousands a year.","estimate":{"kind":"regime"},"effortMin":15,"steps":["Once a year, before declaring to your employer (or before advance tax), compare both regimes with your own figures: the income-tax site's tax calculator or your tax filer does it in minutes.","Tell your employer (salaried) or your tax filer which regime you choose.","Keep the proofs for any deduction you claim in the old regime."],"portal":"incometax.gov.in","sources":["https://en.wikipedia.org/wiki/Income-tax_Act,_2025","https://taxgarden.in/blog/section-87a-rebate-ay-2026-27-eligibility-limit"],"verified":"2026-11-15","review":"2027-02-15","confidence":"the Income-tax Act 2025 applies from 1 April 2026: confirm the figures on incometax.gov.in each year"},{"id":"employer-nps","area":"tax","where":["IN"],"title":"Ask your employer to pay part of your salary into NPS","when":{"salaried":true},"saves":"An employer's NPS contribution (up to 14% of basic plus DA) is not taxed in the new regime, so the same cost to the employer leaves you more after tax, and it compounds for retirement.","effortMin":20,"steps":["Ask HR whether the company offers employer NPS (corporate NPS) and at what share of basic.","Send the request below before the next salary cycle.","Check the next payslip shows the employer NPS line."],"template":{"kind":"email","title":"Request to HR","text":"Dear HR, I would like part of my cost-to-company paid as an employer contribution to NPS (corporate model), up to the share of basic the policy allows. Please let me know the form and from which month it can start. Thank you."},"portal":"npstrust.org.in","sources":["https://www.axismaxlife.com/blog/tax-savings/new-tax-regime-fy-2025-26"],"verified":"2026-11-15","review":"2027-02-15","confidence":"confirm the share and the section number under the 2025 Act"},{"id":"presumptive-professional","area":"tax","where":["IN"],"title":"Consultant or professional: presumptive tax","when":{"professional":true},"saves":"A professional or consultant with receipts up to Rs 75 lakh (when no more than 5% is in cash; else Rs 50 lakh) may declare 50% of receipts as income and keep no books. For the same gross, this is often far less tax than a salary, but there is no employer PF, gratuity or group cover, so budget for those yourself.","estimate":{"kind":"consultant"},"effortMin":30,"steps":["Take fees by bank transfer, not cash, to stay inside the higher limit.","Fees usually arrive after 10% TDS: check it in your AIS/26AS each quarter.","Under the presumptive scheme, pay advance tax in one go by 15 March.","If receipts cross the GST threshold for services (Rs 20 lakh in most states), register for GST.","Buy your own health and term cover, and set up your own retirement saving (NPS or PPF), since no employer does it now."],"template":{"kind":"checklist","title":"Before you sign a consultancy contract","text":"Fee per month and how it is paid (bank only) | TDS rate and when the certificate is issued | GST: who pays it, and is the client exempt | Notice period both ways | Leave and travel rules | What happens to the fee if the project stops | Your own health and term cover in place before day one"},"portal":"incometax.gov.in","sources":["https://taxguru.in/income-tax/analysis-presumptive-taxation-section-58-income-tax-act-2025.html","https://cleartax.in/s/section-44ada"],"verified":"2026-11-15","review":"2027-02-15","confidence":"section 58 of the 2025 Act per public commentary: confirm with a chartered accountant"},{"id":"huf","area":"tax","where":["IN"],"title":"A Hindu Undivided Family (HUF), only when it fits","when":{"hufFit":true},"saves":"An HUF is a separate taxpayer with its own PAN and its own basic exemption, so income from ancestral property, or from gifts by relatives outside the HUF, can be taxed there instead of on your slab.","effortMin":180,"steps":["Check the fit first: it helps only with ancestral property or gifts from relatives who are not members; your own salary or fees cannot be moved into it.","Draft the HUF deed (Karta and members), get its PAN, open its own bank account.","Keep its money strictly separate: a member's own money put in without consideration is taxed back on that member (clubbing).","File its own return every year, signed by the Karta.","Know the exit cost: dividing an HUF later takes a formal partition."],"portal":"incometax.gov.in","sources":["https://www.basunivesh.com/huf-tax-benefits-how-hindu-undivided-family-saves-tax/","https://www.taxaj.com/learn/huf-formation-registration-india/"],"verified":"2026-11-15","review":"2027-02-15","confidence":"sources differ on whether the rebate applies to an HUF: confirm with a chartered accountant before forming one"},{"id":"recurring-leaks","area":"spend","where":["IN","GLOBAL"],"title":"Cut the recurring leaks","when":{},"saves":"Subscriptions, add-on insurance on cards, unused memberships and auto-renewals: typically a few thousand rupees a month in most households, found from your own bank messages.","estimate":{"kind":"recurring"},"effortMin":20,"steps":["Paste last month's bank and card messages in Money (the app finds every repeat payment).","For each one, keep, downgrade or cancel: decide once.","Cancel in the app or on the site that charges it, then delete the saved card there.","Next month, the app checks that the charge stopped."],"sources":[],"verified":"2026-11-15","review":"2027-11-15","confidence":"your own data"},{"id":"senior-savings","area":"income","where":["IN"],"title":"A safe, regular income for parents over 60","when":{"parentAgeMin":60},"saves":"The Senior Citizens' Savings Scheme at a post office or bank pays a government-backed rate every quarter, usually above a fixed deposit; the rate is reset each quarter.","effortMin":60,"steps":["Check this quarter's rate on India Post or your bank's site.","Open it at the post office or bank with the parent's KYC.","Choose quarterly payout into their savings account.","Diary the maturity date (the app adds it to your calendar)."],"portal":"indiapost.gov.in","sources":["https://www.indiapost.gov.in"],"verified":"2026-11-15","review":"2027-02-15","confidence":"rate changes every quarter: check before opening"}]};
 window.GM_LANDLORD = {"about":"The landlord desk: what a person who lets out a home must do, when, and the ready messages, for any rented property. Rules are paraphrased from public sources (cited by link), verified on the date shown and re-checked by its review date. Not legal advice. India first ('where'); amounts change, so the app shows where to confirm.","version":1,"verified":"2026-11-15","duties":[{"id":"rent","title":"Rent received","every":"month","dayField":"rentDay","where":["IN","GLOBAL"],"how":"The app looks for a credit near the rent amount in your pasted bank messages around the due day; if none, it asks you to tick it.","template":{"title":"Kind reminder to the tenant","text":"Hello [tenant name], a gentle reminder that the rent of Rs [amount] for [month] was due on [date]. If it is already sent, please ignore this and share the reference. Thank you."}},{"id":"maintenance","title":"Society maintenance paid","every":"month","dayField":"maintDay","where":["IN"],"how":"Pay by the society's due date to avoid the late charge; keep the receipt for tax (it is part of the property's costs)."},{"id":"propertyTax","title":"Property tax paid","every":"year","dateField":"taxDue","where":["IN"],"how":"Pay on the municipal corporation's portal before the due date shown on the bill; many give a rebate for early payment. Keep the receipt."},{"id":"electricity","title":"Electricity bill","every":"month","where":["IN","GLOBAL"],"how":"If the tenant pays it, ask for a photo of the paid bill each quarter: an unpaid bill stays with the meter (the property), not the tenant."},{"id":"renewal","title":"Agreement renewal","every":"agreement","offsetDays":-60,"where":["IN","GLOBAL"],"how":"Two months before the agreement ends, decide: renew (with the rent revision) or ask for the home back. Most homes are let on an 11-month leave and licence.","template":{"title":"Renewal note to the tenant","text":"Hello [tenant name], our agreement for [address] ends on [end date]. I am happy to renew for another [11] months at a revised rent of Rs [new rent] from [start date] (an increase of [x]%, in line with costs). Please let me know by [date] so we can register the new agreement in time. Thank you."}},{"id":"registration","title":"Agreement registered","every":"agreement","where":["IN-MH"],"how":"In Maharashtra a leave and licence agreement is registered online on the IGR portal (Leave and Licence 2.0) with Aadhaar-based e-sign; stamp duty is 0.25% of the total rent for the period (a refundable deposit adds notional interest), paid on GRAS. Register within four months of signing; an unregistered, unstamped agreement is weak evidence in a dispute. Confirm the registration fee on the portal: sources differ.","portal":"igrmaharashtra.gov.in","checklist":"Owner and tenant Aadhaar and PAN | Two witnesses | Property index-II or tax bill | Rent, deposit, start and end dates, lock-in, notice period | Who pays maintenance, electricity and repairs | Inventory of furniture and fittings (for a furnished home, with photos)"},{"id":"police","title":"Tenant details given to the police","every":"agreement","where":["IN"],"how":"Many city police forces require the owner to submit tenant details (often online) before the tenant moves in. Check with your local police station or its website and keep the acknowledgement with the agreement.","checklist":"Tenant photo, Aadhaar and permanent address | Previous address | Employer or college | Agreement copy | Your own ID and property proof"},{"id":"deposit","title":"Deposit and inventory","every":"agreement","where":["IN","GLOBAL"],"how":"Record the deposit and a dated photo inventory at move-in; at move-out, check against it before returning the deposit."},{"id":"repairs","title":"Repairs and upkeep","every":"event","where":["IN","GLOBAL"],"how":"Log each repair (date, what, cost, who fixed it). Before the monsoon, check the terrace, bathroom and window seals for leakage; fix small leaks early, they cost far more later."}],"rentRevision":{"rule":"At renewal, revise the rent by the higher of last year's inflation and about 5%, within what similar homes nearby let for; a revision above about 10% often costs a good tenant, and a vacant month costs more than the increase.","verified":"2026-11-15","review":"2027-11-15"},"sources":["https://housing.com/news/stamp-duty-registration-laws-rentals-maharashtra","https://www.basichomeloan.com/blog/home-loans/stamp-duty-and-registration-for-rental-agreement-in-maharashtra"],"review":"2027-05-15"};
 window.GM_COUNCIL = {"about":"The expert council (queue expert-council): what the best professionals would make every household do, as small systems anyone can run. Item 1: single points of failure (risk officers, supply-chain and reliability engineers) and paper hygiene (lawyers). Paraphrased from common professional practice, verified on the date shown; rules differ by bank, insurer and state, so each item says where to confirm. Not legal or financial advice.","version":1,"verified":"2026-11-15","review":"2027-05-15","spof":[{"id":"one-earner","severity":1,"lens":"Risk officer: one income with no cover is the household's largest single point of failure.","title":"If the main earner's income stopped, would the family be covered?","fix":["Buy pure term life cover; a common planning rule is about 10 to 15 times the yearly income, plus the loans outstanding.","Name the spouse or a parent as nominee on the policy.","Keep the emergency fund at six months of essential costs."],"when":{"partnerOrKids":true},"effortMin":60,"confirm":"Compare term plans on the insurers' own sites or IRDAI-registered aggregators"},{"id":"one-keyholder","severity":1,"lens":"Reliability engineer: knowledge held by one person is a single point of failure.","title":"If you were unreachable tomorrow, could your family find the money and the papers?","fix":["Write one family emergency file: banks, investments, insurance, loans, the doctor, where the papers are, who to call (the template below).","Store it encrypted and give one trusted person access; a password manager's emergency-access feature does this well.","Review it every six months."],"template":{"title":"Family emergency file","text":"Banks and accounts (bank, branch, account type, nominee): ... | Investments (where held, how to reach the statement): ... | Insurance (insurer, policy no., nominee, agent's number): ... | Loans (lender, EMI date): ... | Property papers (where kept): ... | Doctor and medicines: ... | Who to call first: ... | Where the will is: ..."},"when":{},"effortMin":45,"confirm":"Your own records"},{"id":"no-nominee","severity":1,"lens":"Lawyer: an account with no nominee can take the family months of paperwork to reach.","title":"Does every account, deposit, demat, fund, EPF and policy have a nominee?","fix":["List every account and investment from your bank apps and the CAS statement.","Add or update the nominee in each app or branch; many banks now allow more than one nominee with a share each.","Keep a screenshot of each confirmation in the emergency file."],"when":{},"effortMin":60,"confirm":"Each bank, depository participant, fund house and the EPFO member portal"},{"id":"one-bank","severity":2,"lens":"Supply-chain engineer: one supplier is one point of failure.","title":"If one bank account were frozen or hacked, could you still pay for a month?","fix":["Keep a second bank account with one month of essential costs.","Make the household account joint (either or survivor) where it fits.","Keep a small cash reserve at home for a few days."],"when":{},"effortMin":40,"confirm":"Your bank"},{"id":"one-phone","severity":2,"lens":"Security engineer: every one-time password on one phone is a single point of failure.","title":"If your phone were lost today, could you still get into your bank and email?","fix":["Save the backup codes for email and the password manager, printed and kept with the papers.","Register a second number or device where the bank allows it.","Know the steps to block the SIM and the UPI apps: the bank's and the telco's helpline numbers in the emergency file."],"when":{},"effortMin":30,"confirm":"Your email provider, bank and telco"},{"id":"group-only-health","severity":2,"lens":"Actuary: health cover tied to a job ends with the job, when you may need it most.","title":"Is there health cover that stays if the job ends?","fix":["Buy a personal family floater, or a super top-up over the group policy (usually much cheaper).","Buy it while healthy: waiting periods start from the day it begins.","Add parents' cover separately (and Ayushman for those over 70)."],"when":{"salaried":true},"effortMin":60,"confirm":"Insurers' own sites"},{"id":"will","severity":2,"lens":"Lawyer: without a will, the law decides who inherits, and families wait.","title":"Is there a will?","fix":["Write a simple will: who gets what, an executor, a guardian for minor children.","Sign it before two witnesses who are not beneficiaries; registering it is optional but helps.","Tell the executor where it is; note it in the emergency file. Review after any big life event."],"when":{},"effortMin":120,"confirm":"A lawyer for anything beyond a simple estate"},{"id":"medical-directive","severity":3,"lens":"Doctor: in an emergency, the family decides faster when your wishes are written down.","title":"Does your family know your medical wishes, and who decides if you cannot?","fix":["Write down your wishes and name one person to decide for you (India recognises advance medical directives).","Keep a medical card: blood group, allergies, medicines, conditions, doctor's number, in the wallet and the phone's emergency info.","Share it with the person you named."],"when":{},"effortMin":30,"confirm":"Your doctor"},{"id":"document-vault","severity":3,"lens":"Lawyer and records manager: a paper you cannot find is a paper you do not have.","title":"Are the important papers in one place, with a safe digital copy?","fix":["One folder: identity, property, insurance, investments, loans, education, vehicle.","Scan each into an encrypted folder; use DigiLocker for the government documents it issues.","Note in the emergency file where both are."],"when":{},"effortMin":90,"confirm":"Your own records"}],"checklists":[{"id":"agreement","moment":"Signing an agreement","examples":"a rent or leave-and-licence agreement, a consultancy or vendor contract","lens":"Pilots and surgeons run a checklist before every high-stakes step; lawyers read the exit before the entry.","items":["Read it all, including the last page: what ends it, the notice period and any lock-in.","Money terms in writing: amount, due date, deposit and when exactly it comes back.","Who pays for what: maintenance, repairs, electricity, taxes, damage.","For a home: register it and pay the stamp duty (in Maharashtra online, within four months).","Every page initialled, two witnesses where needed, a signed copy for each side.","For a furnished home: a dated photo inventory signed by both."]},{"id":"job-offer","moment":"Accepting a job offer","examples":"an employment offer or a consultancy engagement","lens":"CFOs and HR leaders read the cost-to-company line by line; lawyers read the clauses that bind after you leave.","items":["The pay break-up: fixed, variable (and how it is earned), PF, gratuity, any joining bonus and its clawback.","Notice period both ways, and any bond or non-compete.","Health cover from day one, for whom, and what happens to the current one.","For consultancy: TDS, GST, and that fees come by bank (the presumptive-tax limit).","The relieving and experience letter from the current employer, before the last day."]},{"id":"home","moment":"Buying a home","examples":"a flat, a plot or a house","lens":"Real estate lawyers and bankers check the title before the price; engineers check the building before the view.","items":["A lawyer's title search covering decades, and the encumbrance certificate.","For a new project: the RERA registration, the approved plan and the completion or occupancy certificate.","The society's no-objection and its dues paid up to date.","The full cost: stamp duty, registration, GST if under construction, brokerage, interiors, moving.","Every payment by bank, against receipts; the possession date and the delay penalty in the agreement.","The loan sanction in hand before the token amount."]},{"id":"hospital","moment":"A planned hospital admission","examples":"a surgery or a planned procedure","lens":"Doctors and insurers know the claim is settled at admission, not at discharge.","items":["Cashless pre-authorisation from the insurer or TPA before the date.","The room-rent limit in your policy: a costlier room can cut the whole claim proportionately.","A written estimate; for major surgery, a second opinion.","A list of medicines, allergies and conditions; the policy card and ID with you.","Collect the discharge summary, every bill and every report before you leave."]},{"id":"purchase","moment":"A big purchase","examples":"anything above a month's take-home: a car, appliances, gadgets, furniture","lens":"Economists count the total cost and the opportunity cost; behavioural scientists know a wait kills most regret.","items":["Wait 48 hours before paying.","Three quotes, and the total cost of owning it for its life (running, service, insurance, resale).","Warranty, service and the return policy, in writing.","Pay by card or bank for protection; read a no-cost EMI's processing fee and interest.","Check it still fits the month: the saving and the emergency fund come first."]},{"id":"abroad","moment":"Travel abroad","examples":"work or holiday travel","lens":"Diplomats and defence officers plan for the lost passport, not the good day.","items":["A passport valid for at least six months beyond the return date, and the visa.","Travel insurance with medical cover for the whole trip.","A forex card or a card with low foreign fees; tell your bank the dates.","Copies of the passport, visa, insurance and tickets in the vault and with one person at home.","The embassy and the insurer's emergency numbers saved offline; roaming or an eSIM ready."]}]};
+window.GM_RENEWALS = {"about":"Renewals desk (queue renewals-desk): templates for things that expire, so a person picks one, types its date once, and the estate warns, puts it in the calendar and rolls it forward when it is renewed. Each item: every (months between renewals, 0 = once), lead (days of warning), lapse (1 annoying, 2 a fine or a re-application, 3 lost cover, money or a credential), the steps, where to do it, and check (what to confirm on the official page, because sources disagree or a rule may change). cpe: credits needed per cycle. Paraphrased from public sources; never copied.","version":1,"verified":"2026-11-17","renewals":[{"id":"isc2-amf","kind":"credential","where":[],"title":"ISC2 annual fee (CISSP, CCSP and other ISC2 certifications)","every":12,"lead":30,"lapse":3,"dateHint":"your certification anniversary, on the ISC2 member dashboard","cost":"About US$135 a year. One fee covers all your ISC2 certifications.","steps":["Open the ISC2 member dashboard and note the due date shown there.","Pay the annual fee before that date.","Keep the receipt with your papers."],"portal":"isc2.org, member dashboard","confidence":"high","check":"The amount on your dashboard is the one that counts."},{"id":"isc2-cpe","kind":"credential","where":[],"title":"CISSP CPE cycle (120 in three years)","every":36,"lead":120,"lapse":3,"dateHint":"the end of your three-year cycle, on the ISC2 member dashboard","cost":"Free to report. Many CPE activities are free (webinars, reading, teaching, writing).","cpe":{"total":120,"years":3,"perYear":40,"note":"At least 90 of the 120 in Group A (security domains). 40 a year is the recommended pace."},"steps":["Log each activity the week you do it, with a line of proof.","Aim for about 10 a quarter.","Submit them on the dashboard; keep the proof for three years in case of an audit."],"portal":"isc2.org, member dashboard, CPE","confidence":"high","check":"CCSP's cycle may differ from 2026; read your own requirement on the dashboard."},{"id":"isaca-amf","kind":"credential","where":[],"title":"ISACA annual maintenance fee (CISM, CISA, CRISC)","every":12,"lead":45,"lapse":3,"fixed":"01-01","cost":"US$45 a year for ISACA members, US$85 for non-members; the invoice comes in the third quarter.","steps":["Pay the invoice before 1 January.","Report at least 20 CPE hours for the year in the same visit."],"portal":"isaca.org, MyISACA, certifications","confidence":"high","check":"ISACA's CPE policy changes from 1 January 2027: read it before planning the next cycle."},{"id":"isaca-cpe","kind":"credential","where":[],"title":"CISM CPE cycle (120 in three years, 20 each year)","every":36,"lead":120,"lapse":3,"dateHint":"the end of your three-year reporting period, in MyISACA","cost":"Free to report.","cpe":{"total":120,"years":3,"perYear":20,"note":"At least 20 reported every year, 120 across the period. The same activity can often count for ISC2 and EC-Council too."},"steps":["Log each activity once; it counts towards every certification it is relevant to.","Report the year's hours before 31 December."],"portal":"isaca.org, MyISACA, CPE","confidence":"medium","check":"Confirm the yearly minimum on ISACA's page."},{"id":"ec-council","kind":"credential","where":[],"title":"EC-Council membership and ECE credits (CEH)","every":12,"lead":30,"lapse":3,"dateHint":"your certification anniversary, in the EC-Council member portal","cost":"About US$80 a year; 120 ECE credits every three years.","cpe":{"total":120,"years":3,"perYear":40,"note":"ECE credits; activities logged for ISC2 or ISACA often count here too."},"steps":["Pay the annual fee in the member portal.","Upload the year's ECE credits from your log."],"portal":"EC-Council member portal (Aspen)","confidence":"medium","check":"The fee is not on EC-Council's public page; read it in the portal."},{"id":"exam-voucher","kind":"credential","where":[],"title":"Exam voucher: book the exam before it expires","every":0,"lead":90,"lapse":3,"dateHint":"the voucher's expiry, shown in your account with the exam body","cost":"The voucher's full price is lost if it expires.","steps":["Find the voucher's expiry date in your account.","Pick an exam date at least three weeks before it, and book the test centre or online slot today.","Block study time in the calendar, working back from the exam."],"portal":"the exam body's account, then its test provider","confidence":"medium","check":"Expiry dates are usually not extended; confirm with the exam body."},{"id":"puc","kind":"vehicle","where":["IN"],"title":"Pollution under control (PUC) certificate","every":12,"lead":15,"lapse":2,"dateHint":"the expiry printed on the certificate","cost":"A small fee at an authorised centre; a fine without it, and some cities refuse fuel.","steps":["Drive to an authorised PUC centre (most fuel stations have one).","Check the details on the Parivahan site after the test."],"portal":"Parivahan (puc.parivahan.gov.in)","confidence":"medium","check":"Twelve months for BS-IV and BS-VI vehicles today; a 2026 draft proposes three years for BS-VI cars under six years old. Confirm before relying on it."},{"id":"motor-insurance","kind":"cover","where":["IN"],"title":"Vehicle insurance","every":12,"lead":30,"lapse":3,"dateHint":"the policy's end date","cost":"Driving without valid third-party cover is an offence; a gap can cost the no-claim bonus and needs an inspection.","steps":["Compare the renewal quote with two others a month ahead.","Renew before the end date; do not count on a grace period.","Save the new policy in your papers."],"portal":"your insurer, or an aggregator","confidence":"medium","check":"Read your policy's own wording for any grace period."},{"id":"health-insurance","kind":"cover","where":["IN"],"title":"Health insurance","every":12,"lead":30,"lapse":3,"dateHint":"the policy's end date","cost":"If it lapses, waiting periods for existing illnesses can start again. A claim during the grace days may not be covered.","steps":["Check the sum insured still fits the family; raise it at renewal if not.","Pay before the end date (annual policies have a 30-day grace period, but cover in the gap is not assured).","Update the nominee and members if the family changed."],"portal":"your insurer","confidence":"high","check":"The grace period and cover in it are in your policy wording."},{"id":"life-premium","kind":"cover","where":[],"title":"Life or term insurance premium","every":12,"lead":30,"lapse":3,"dateHint":"the premium due date on the policy","cost":"A lapsed policy can need medical tests to revive, or cannot be revived at all.","steps":["Set the premium on auto-debit if you can.","Pay before the due date.","Check the nominee is current."],"portal":"your insurer","confidence":"high","check":"The grace period depends on the payment mode; it is in your policy."},{"id":"driving-licence","kind":"identity","where":["IN"],"title":"Driving licence","every":0,"lead":90,"lapse":2,"dateHint":"the 'valid till' date on the licence","cost":"Driving on an expired licence is an offence; a long lapse can mean a fresh test.","steps":["Apply on the Sarathi portal before the date.","Over 40, add a medical certificate (Form 1A).","Book the slot if your state asks for a visit."],"portal":"Sarathi (sarathi.parivahan.gov.in)","confidence":"medium","check":"The validity rules by age differ between sources and a change was proposed; trust the date on your licence."},{"id":"passport","kind":"identity","where":[],"title":"Passport","every":0,"lead":270,"lapse":2,"dateHint":"the expiry date on the passport","cost":"Many countries refuse entry with less than six months left, so the real deadline is earlier than the date.","steps":["Renew when about nine months are left.","Book the appointment on the passport portal.","Update visas and travel bookings with the new number."],"portal":"the passport portal of your country","confidence":"high","check":"Check the destination's own entry rule before any trip."}]};
 window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"honeytrap","name":"Honeytrap: a relationship built to get secrets or leverage","where":"global","severity":3,"story":"Someone warm, attractive or flattering gets close fast, moves you to private chats, and slowly asks about your work, your access or your private life. The goal is secrets, or something to hold over you.","signs":["A new contact who is unusually interested in you and your work","A push to move to a private or disappearing-message app","Gifts, favours or trips that create a debt, then small asks that grow"],"drills":[{"try":"A charming new contact at a conference asks, over a second dinner, how your organisation decides on a sensitive matter.","pass":"You keep work out of personal relationships, change the subject, and tell your security team about the approach the same week, as your employer's policy asks."},{"try":"Someone you met recently sends a private photo and asks for one back, or hints they have something compromising.","pass":"You never send one; if pressured, you stop contact, keep the evidence, and report it (police cyber cell, and your employer if work is mentioned). Leverage dies when it is told early."},{"try":"Write down who in your family would notice if a new person suddenly had a lot of your time and attention.","pass":"You have one trusted person you tell about new close contacts, and you would tell them before it becomes a secret."}],"heat":0,"news":[]},{"id":"digital-arrest","name":"Digital arrest: fake police on a video call","where":"IN","severity":3,"story":"A caller posing as police, CBI, customs or a regulator says your name is in a crime (a parcel, money laundering), keeps you on video for hours, and makes you 'verify' money by transfer.","signs":["An official who calls on WhatsApp or Skype and shows a uniform or an ID card","Orders not to tell anyone or hang up","A request to move money to a 'safe' or 'verification' account"],"drills":[{"try":"A video call says a parcel in your name held drugs and you are under digital arrest until you cooperate.","pass":"You hang up. No agency arrests anyone on a video call or asks for money to clear a name. You call 1930 or report at the national cyber crime portal."},{"try":"Your parent gets this call while you are travelling.","pass":"They know the family rule: hang up, call you or another family member on a known number, never transfer money during a call."}],"heat":0,"news":[]},{"id":"voice-clone","name":"Cloned voice or deepfake video of someone you trust","where":"global","severity":3,"story":"A call or video that sounds exactly like your child, parent, boss or banker asks for urgent money or a secret. A few seconds of public audio is enough to clone a voice.","signs":["Urgency and a reason you cannot call back","A new number, a bad line, or 'my phone is broken'","A request that breaks the person's normal habits"],"drills":[{"try":"Your child's voice cries that they are in trouble and need money sent now to a stranger's account.","pass":"You ask the family code word, then call them back on their known number. No code word, no money."},{"try":"A video call from your manager asks you to approve an urgent, confidential payment or share a file.","pass":"You confirm through a second channel you already know (their desk line, an in-person check) before any action, whatever the pressure."},{"try":"Set a family code word today.","pass":"Every close family member knows one word that is never written in chats or posted anywhere."}],"heat":0,"news":[]},{"id":"sim-swap","name":"SIM swap: your number moved to a thief's phone","where":"global","severity":3,"story":"A thief convinces your mobile operator to move your number to a new SIM, then receives your bank OTPs and resets your accounts.","signs":["Your phone suddenly shows no signal or 'emergency calls only'","Messages from your operator about a SIM change you did not ask for","Login alerts you did not cause"],"drills":[{"try":"Your phone loses signal at home for no reason, in the middle of the day.","pass":"You call your operator from another phone within the hour, and freeze your bank's net banking if the SIM was changed."},{"try":"List the accounts where losing your number would let someone in.","pass":"Your email and banks use an authenticator app or a passkey, not SMS alone, and your operator account has a PIN or port-out lock."}],"heat":0,"news":[]},{"id":"investment-scam","name":"Fake investment groups and trading apps","where":"global","severity":2,"story":"A chat group or a new 'mentor' shows big profits, gets you onto an app that shows rising gains, then blocks withdrawals until you pay 'taxes' or 'fees'. Also called pig butchering.","signs":["Added to a stock-tips group you never joined","An app not on the official store, or a site, showing fast gains","Withdrawals need one more payment"],"drills":[{"try":"A well-known investor's face invites you to a private WhatsApp group with 'guaranteed' IPO allotments.","pass":"You check the advisor's registration with the regulator (SEBI in India) and invest only through your own broker's app. You leave the group."},{"try":"A relative shows you their gains on a new app and asks you to join.","pass":"You ask them to withdraw a small amount first; if they cannot, you help them report it the same day."}],"heat":0,"news":[]},{"id":"ceo-fraud","name":"Boss or vendor impersonation for a payment","where":"global","severity":2,"story":"An e-mail or message that looks like your boss, a supplier or your lawyer changes bank details or asks for an urgent transfer or gift cards.","signs":["New bank details for a known payee","Urgency plus secrecy","A display name that is right with an address that is slightly wrong"],"drills":[{"try":"Your builder's e-mail says their bank account changed; please pay the next instalment there.","pass":"You call them on the number you already had, not the one in the e-mail, before paying anything."},{"try":"A message 'from the chairman' asks you to buy gift cards for a client today.","pass":"You never buy gift cards on a message; you check in person or by a known number."}],"heat":0,"news":[]},{"id":"account-takeover","name":"Account takeover: phishing, MFA fatigue and stolen sessions","where":"global","severity":2,"story":"A convincing login page, a flood of approve prompts, or malware that steals your browser sessions lets someone into your e-mail, cloud or bank without your password.","signs":["Approve prompts you did not start","A login page reached from a link, not typed","A 'security alert' that wants you to sign in right now"],"drills":[{"try":"Your phone shows ten 'approve sign-in' prompts at midnight.","pass":"You deny them all, change that account's password from a known device, and switch to number-matching or a passkey."},{"try":"Check: does your main e-mail use a passkey or an authenticator, and do you have recovery codes somewhere safe?","pass":"Yes to both, and you know where the codes are without searching."}],"heat":0,"news":[]},{"id":"breach-reuse","name":"A service you use was breached","where":"global","severity":2,"story":"A company you trusted loses its customers' data. Leaked e-mails, phone numbers and passwords are then used for targeted scams and logins elsewhere.","signs":["A breach in the news for an app, airline, hotel, insurer or retailer you use","Scam calls that know your details","Login attempts on other accounts"],"drills":[{"try":"A company you use announces a breach this week.","pass":"You change that password (and anywhere you reused it), expect scam calls that quote your details, and watch your bank statements for a month."},{"try":"Count how many accounts share one password.","pass":"None: a password manager gives each account its own."}],"heat":0,"news":[]},{"id":"kidnap-extortion","name":"Kidnap, virtual kidnap and extortion of a family","where":"global","severity":3,"story":"Wealthy families are watched through social media and staff. Some attacks are real; many are 'virtual': a call claims a loved one is held while they are simply unreachable.","signs":["Someone asking staff about routines","Live location or travel posted publicly","A ransom call when a family member is out of reach"],"drills":[{"try":"A caller says your child is held and demands money now; the child does not answer the phone.","pass":"You use the code word, call the school or the friend they are with, and call the police; you keep the caller talking, not paying."},{"try":"Look at what your family posts: could a stranger know where each of you will be tomorrow?","pass":"No live locations or travel plans are public; posts go up after you leave a place."}],"heat":0,"news":[]},{"id":"insider-staff","name":"Someone inside the household or office","where":"global","severity":2,"story":"A driver, cook, assistant, colleague or contractor with trusted access sells information, steals, or is turned by someone outside.","signs":["Staff who know more than their job needs","Documents, keys or devices left where staff can reach them","A new hire with no verified background"],"drills":[{"try":"List who has keys, door codes or your phone's PIN at home and at work.","pass":"Each has only what their job needs; codes change when someone leaves; staff were verified (police verification in India)."},{"try":"A staff member is approached by a stranger offering money for your schedule.","pass":"They know it is safe and rewarded to tell you, and you have told them so."}],"heat":0,"news":[]},{"id":"parcel-kyc","name":"Parcel, KYC and bill-due messages","where":"IN","severity":1,"story":"A message says your parcel is held, your KYC expires, your power will be cut tonight or your card has reward points; the link installs an app or steals your login.","signs":["An SMS or WhatsApp link with a deadline today","A request to install an APK or a screen-sharing app","A personal number pretending to be a company"],"drills":[{"try":"An SMS says your electricity will be cut at 9 pm unless you call a number.","pass":"You check the bill in the provider's own app or site; you never install an app or share your screen from a message."},{"try":"Ask your parents what they would do with a 'KYC expiring' message.","pass":"They say: ignore it and visit or call the bank on the number on the card."}],"heat":0,"news":[]}]};
 /* ═══════════════════════════════════════════════════════════════════
    THE GUIDING MAP — OPS LAYER v4.0
@@ -7826,6 +7828,8 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       + "#gmMoreSheet .sh{max-height:calc(100vh - 140px);overflow-y:auto}"
       + "#gmMoreSheet .gm-more-h{grid-column:1/-1;font-size:12px;font-weight:800;color:var(--muted);margin:0 2px -2px}"
       + "#gmMoreSheet .gm-more-all{grid-column:1/-1}"
+      + "#gmMoreSheet .gm-more-rest{grid-column:1/-1}"
+      + "#gmMoreSheet .gm-more-rest summary{cursor:pointer;font-weight:800;font-size:12.5px;padding:10px 4px;min-height:44px;display:flex;align-items:center;color:var(--muted)}"
       + "#gmMoreSheet .gm-more-all summary{cursor:pointer;font-weight:800;font-size:13px;padding:10px 4px;min-height:44px;display:flex;align-items:center}"
       + "#gmMoreSheet .gm-more-g{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}"
       + "#gmMoreSheet .sh button .gm-new{display:block;font-size:9px;font-weight:700;color:var(--muted);margin-top:2px}"
@@ -7869,10 +7873,33 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     if (isNaN(then)) { then = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime(); }
     var days = Math.max(0, Math.round((new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() - then) / 86400000));
     var weeks = Math.min(UNLOCK.length, Math.floor(days / 7));
+    // A resting door wakes by itself when the person's own data says it is needed (queue friction-meter, slice 3): a child's
+    // birthday in the next 7 days wakes Kids; tax season (January to March, in India, the same region switch the savings
+    // levers use) wakes Money. It says why in the small badge, and using it keeps it awake.
+    function birthdaySoon(dob) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(String(dob || ""))) return false;
+      var p = String(dob).split("-"), m = +p[1] - 1, dd = +p[2];
+      if (!(m >= 0 && m < 12 && dd >= 1 && dd <= 31)) return false;
+      var t0 = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      for (var y = now.getFullYear(); y <= now.getFullYear() + 1; y++) {
+        var b = new Date(y, m, dd).getTime(), diff = Math.round((b - t0) / 86400000);
+        if (diff >= 0 && diff <= 7) return true;
+      }
+      return false;
+    }
+    function wakeNote(id) {
+      if (id === "kids") {
+        var ks = (window.P && Array.isArray(window.P.kids)) ? window.P.kids : [];
+        for (var i = 0; i < ks.length; i++) if (birthdaySoon(ks[i] && ks[i].dob)) return "Birthday soon";
+      }
+      if (id === "money" && sysLocal() && now.getMonth() >= 0 && now.getMonth() <= 2) return "Tax season";
+      return "";
+    }
     function tile(t, isNew) {
-      var ic = window.gmIcon(t[0], 20);
-      return '<button role="menuitem" class="' + (curTab === t[0] ? "on" : "") + '" onclick="gmNavGo(\'' + t[0] + '\')">'
-        + (ic ? '<span class="gi" aria-hidden="true">' + ic + '</span>' : '') + t[1] + (isNew ? '<span class="gm-new">new</span>' : '') + '</button>';
+      var ic = window.gmIcon(t[0], 20), why = wakeNote(t[0]);
+      return '<button role="menuitem" data-tab="' + t[0] + '" class="' + (curTab === t[0] ? "on" : "") + '" onclick="gmNavGo(\'' + t[0] + '\')">'
+        + (ic ? '<span class="gi" aria-hidden="true">' + ic + '</span>' : '') + t[1] + (isNew ? '<span class="gm-new">new</span>' : '')
+        + (why ? '<span class="gm-new">' + why + '</span>' : '') + '</button>';
     }
     // A tab that cannot apply (the person answered No to its fact) is not shown at all: no clutter for a life that is not theirs.
     function fits(t) { return fitsFact(t[0]); }
@@ -7893,8 +7920,40 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       sh += '<button role="menuitem" class="gm-show-all" onclick="gmSimple(false)">Show everything (' + rest.length + ' more)</button></div></div>';
     } else {
       var restOpen = G("gm_more_all", false) || rest.some(function (t) { return t[0] === curTab; });
+      // Doors the person uses come first; a door not opened for 45 days, or never used, rests at the end by itself
+      // (queue friction-meter). A new app has not had 45 days to learn from, so nothing rests yet, and a safety door
+      // (Shield, deadlines) never rests. One use brings a door straight back out.
+      var use = (typeof window.gmUsage === "function") ? window.gmUsage() : {};
+      var NEVER_RESTS = ["risk", "deadlines"];
+      function useOf(t) { var u = use["tab:" + t[0]]; return (u && typeof u.l === "string") ? u : { l: "", d: [] }; }
+      function agoDays(l) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(l)) return Infinity;
+        var p = l.split("-"), t0 = new Date(+p[0], +p[1] - 1, +p[2]).getTime();
+        if (isNaN(t0)) return Infinity;
+        return (new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() - t0) / 86400000;
+      }
+      var learned = agoDays(G("gm_use_since", "")), active = [], resting = [];
+      if (!isFinite(learned)) learned = 0;
+      rest.forEach(function (t) {
+        var u = useOf(t);
+        if (learned >= 45 && NEVER_RESTS.indexOf(t[0]) < 0 && agoDays(u.l) > 45 && !wakeNote(t[0])) resting.push(t); else active.push(t);
+      });
+      // By habit, but stable: the order is worked out once a week and kept, so doors never jump under the thumb; a door new
+      // to the list this week goes after the known ones.
+      var wk = (function () { var d = new Date(now.getFullYear(), now.getMonth(), now.getDate()); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return ymd(d); })();
+      var frozen = G("gm_more_order", {}), known = (frozen && frozen.w === wk && Array.isArray(frozen.o)) ? frozen.o : null;
+      var byUse = function (a, b) { var ua = useOf(a), ub = useOf(b); return (ub.d.length - ua.d.length) || (ua.l < ub.l ? 1 : ua.l > ub.l ? -1 : 0); };
+      if (known) active.sort(function (a, b) { var ia = known.indexOf(a[0]), ib = known.indexOf(b[0]); return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib) || byUse(a, b); });
+      else { active.sort(byUse); S_("gm_more_order", { w: wk, o: active.map(function (t) { return t[0]; }) }); }
+      resting.sort(function (a, b) { var ua = useOf(a), ub = useOf(b); return ua.l < ub.l ? 1 : ua.l > ub.l ? -1 : 0; });
       sh += '<details class="gm-more-all"' + (restOpen ? " open" : "") + ' ontoggle="gmMoreAll(this.open)"><summary>Everything else (' + rest.length + ')</summary><div class="gm-more-g">';
-      rest.forEach(function (t) { sh += tile(t); });
+      active.forEach(function (t) { sh += tile(t); });
+      if (resting.length) {
+        var restTabOpen = resting.some(function (t) { return t[0] === curTab; });
+        sh += '<details class="gm-more-rest"' + (restTabOpen ? " open" : "") + '><summary>Resting (' + resting.length + ')</summary><div class="gm-more-g">';
+        resting.forEach(function (t) { sh += tile(t); });
+        sh += '</div></details>';
+      }
       sh += '<button role="menuitem" onclick="location.href=\'hub.html\'">\u25C6 All apps</button><button role="menuitem" onclick="gmSimple(true)">Back to simple</button></div></details></div></div>';
     }
     document.body.insertAdjacentHTML("beforeend", sh + h);
@@ -8315,6 +8374,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   function icsDate(d, hh, mm) { function z(n) { return (n < 10 ? "0" : "") + n; } return d.getFullYear() + z(d.getMonth() + 1) + z(d.getDate()) + "T" + z(hh) + z(mm) + "00"; }
   function icsText(t) { return String(t).replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n"); }
   function icsFold(line) { var out = [], s = line; while (s.length > 74) { out.push(s.slice(0, 74)); s = " " + s.slice(74); } out.push(s); return out.join("\r\n"); }
+  window.gmIcs = { date: icsDate, text: icsText, fold: icsFold };
   /* The calendar contract (principle `in-the-calendar`): every recurring step lives in ONE registry, and the calendar file is
      made from it so that a later version never conflicts with an earlier one.
      - Each item keeps its UID for ever (securax-gm-<id>@local). Never reuse an id for a new meaning; rename the item instead.
@@ -12959,6 +13019,25 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     var h = _rmCalls(E), m = /<div class="section[^"]*"[^>]*>/.exec(h), from = m ? m.index + m[0].length : 0, k = h.indexOf('<div class="cat-t"', from);
     return k > -1 ? h.slice(0, k) + gmCallsHTML() + h.slice(k) : h.replace(/<\/div>\s*$/, gmCallsHTML() + '</div>');
   }; }
+  // Today: a call whose date has come sits as one calm line above the daily three, judged in one tap where the person
+  // already looks. The Plan tab keeps the full journal, the score and the calls still to come.
+  var _callRender = window.renderAll;
+  if (typeof _callRender === "function") window.renderAll = function () {
+    var out = _callRender.apply(this, arguments);
+    try {
+      if (typeof curTab !== "undefined" && curTab === "today" && !document.querySelector(".gm-call-today")) {
+        var due = callsLoad().filter(callDue).sort(function (x, y) { return String(x.date).localeCompare(String(y.date)); })[0];
+        var d3 = document.querySelector("#sections .gm-d3");
+        if (due && d3) d3.insertAdjacentHTML("beforebegin", '<div class="road-col gm-call-today" style="margin-bottom:10px;font-size:13px">'
+          + '<b>' + esc(due.text) + '</b> <span style="color:var(--muted)">\u00b7 ' + esc(due.conf) + '% confident \u00b7 did it happen?</span>'
+          + ' <span style="display:inline-flex;gap:6px;margin-inline-start:6px">'
+          + '<button type="button" class="btn-sm" data-call-yes="' + esc(due.id) + '" onclick="gmCallSet(\'' + esc(due.id) + '\',\'yes\')">Yes</button>'
+          + '<button type="button" class="btn-sm" style="background:var(--cardAlt);color:var(--text)" data-call-no="' + esc(due.id) + '" onclick="gmCallSet(\'' + esc(due.id) + '\',\'no\')">No</button></span>'
+          + ' <a href="#" class="gm-inl" style="margin-inline-start:6px" onclick="goTab(\'plan\');return false">All calls</a></div>');
+      }
+    } catch (e) {}
+    return out;
+  };
 })();
 /* ── The mission line (queue why-chain, slice 1): one line above the quarter's objectives, so every goal is read
    against why it matters. A guest sees an example marked as one; Edit opens one input; saving keeps it on this device;
@@ -12999,12 +13078,518 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     var h = _rmMission(E), m = /<div class="section[^"]*"[^>]*>/.exec(h), from = m ? m.index + m[0].length : 0, k = h.indexOf('<div class="cat-t"', from);
     return k > -1 ? h.slice(0, k) + gmMissionHTML() + h.slice(k) : h.replace(/<\/div>\s*$/, gmMissionHTML() + '</div>');
   }; }
+
+  /* ── The renewals desk (queue renewals-desk): things that expire, so nothing lapses by surprise. The templates live in
+     guiding-map/levers/renewals.json (window.GM_RENEWALS, inlined by build.js). Pick one, type its date once; the one inside
+     its lead days with the highest lapse is the one action, the rest fold under Later, and Renewed rolls the date forward
+     (a once-only item, every 0, is marked done). */
+  var RENEW_MAX = 200;
+  function renewData() {
+    var d = (typeof window !== "undefined" && window.GM_RENEWALS) ? window.GM_RENEWALS : null;
+    return d && Array.isArray(d.renewals) ? d : { renewals: [], verified: "" };
+  }
+  function renewTpl(id) {
+    var a = renewData().renewals;
+    for (var i = 0; i < a.length; i++) if (a[i] && a[i].id === id) return a[i];
+    return null;
+  }
+  function renewItems() {
+    var a = G("gm_renewals", []), out = [];
+    if (!Array.isArray(a)) return out;
+    a.forEach(function (x) {
+      if (!x || typeof x !== "object" || !renewTpl(x.id) || typeof x.date !== "string") return;
+      if (isNaN(Date.parse(x.date))) return;
+      // Several of one kind (two cars' PUC, the parents' health policy): each item has its own uid and an optional label.
+      var uid = (typeof x.uid === "string" && /^[\w-]{1,60}$/.test(x.uid)) ? x.uid : x.id;
+      var label = typeof x.label === "string" ? x.label.replace(/[<>"'`]/g, "").trim().slice(0, 40) : "";
+      out.push({ uid: uid, id: x.id, label: label, date: x.date, done: x.done === true });
+    });
+    return out;
+  }
+  function renewToday() { var n = new Date(); return Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate()); }
+  function renewLeft(day) { return Math.round((Date.parse(day) - renewToday()) / 864e5); }
+  function renewAddMonths(day, n) {
+    var t = Date.parse(day); if (isNaN(t)) return day;
+    var d = new Date(t), y = d.getUTCFullYear(), m = d.getUTCMonth() + n, dayN = d.getUTCDate();
+    var last = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+    return new Date(Date.UTC(y, m, Math.min(dayN, last))).toISOString().slice(0, 10);
+  }
+  function renewRows() {
+    var rows = renewItems().filter(function (x) { return !x.done; }).map(function (x) {
+      var t = renewTpl(x.id);
+      return { uid: x.uid, id: x.id, label: x.label, date: x.date, tpl: t, days: renewLeft(x.date) };
+    });
+    rows.sort(function (a, b) { return (+b.tpl.lapse || 0) - (+a.tpl.lapse || 0) || a.days - b.days; });
+    var inside = rows.filter(function (r) { return r.days <= (+r.tpl.lead || 0); });
+    // Only an item inside its warning days is an action; when nothing is, the desk says so calmly (no early Renewed button).
+    var open = inside[0] || null, next = rows.slice().sort(function (a, b) { return a.days - b.days; })[0] || null;
+    return { open: open, next: next, later: rows.filter(function (r) { return r !== open; }) };
+  }
+  function renewDay(day) {
+    try { return new Date(day + "T00:00:00").toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }); } catch (e) { return day; }
+  }
+  function renewName(r) { return r.tpl.title + (r.label ? " \u00b7 " + r.label : ""); }
+  function renewMain(r) {
+    var t = r.tpl;
+    var h = '<div style="font-weight:800;font-size:14px">' + esc(renewName(r)) + '</div>'
+      + '<div style="font-size:12px;color:var(--muted);margin-top:3px">Due ' + esc(renewDay(r.date)) + ' \u00b7 '
+      + (r.days < 0 ? Math.abs(r.days) + ' day' + (Math.abs(r.days) === 1 ? '' : 's') + ' ago' : r.days + ' day' + (r.days === 1 ? '' : 's') + ' left') + '</div>';
+    if (t.cost) h += '<div style="font-size:12.5px;margin-top:6px">' + esc(t.cost) + '</div>';
+    if (t.cpe) h += '<div style="font-size:12px;color:var(--muted);margin-top:3px">' + esc(t.cpe.total) + ' credits in ' + esc(t.cpe.years) + ' years (about ' + esc(t.cpe.perYear) + ' a year). ' + esc(t.cpe.note || '') + '</div>';
+    h += '<ol style="margin:8px 0 0;padding-left:20px;font-size:13px">' + (t.steps || []).map(function (s) { return '<li style="margin-bottom:4px">' + esc(s) + '</li>'; }).join("") + '</ol>';
+    if (t.portal) h += '<div style="font-size:12px;margin-top:8px">Official site: ' + esc(t.portal) + '</div>';
+    if (t.check) h += '<div class="info" style="font-size:12px;margin-top:6px">Check: ' + esc(t.check) + '</div>';
+    if (t.dateHint) h += '<div style="font-size:11px;color:var(--muted);margin-top:4px">The date to use: ' + esc(t.dateHint) + '</div>';
+    return h;
+  }
+  function renewOpenCard(r) {
+    return '<div class="road-col gm-renew-open" data-renew-open="' + esc(r.uid) + '" style="margin-bottom:12px">' + renewMain(r)
+      + '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">'
+      + '<button type="button" class="btn-sm" data-renew-done="' + esc(r.uid) + '" onclick="gmRenewed(\'' + esc(r.uid) + '\')">Renewed</button></div></div>';
+  }
+  function renewLaterCard(r) {
+    return '<details class="road-col gm-renew-item" style="margin-bottom:8px"><summary style="cursor:pointer;font-weight:800;font-size:13px">' + esc(renewName(r))
+      + ' <span style="font-weight:500;color:var(--muted)">\u00b7 due ' + esc(renewDay(r.date)) + '</span></summary><div style="margin-top:8px">' + renewMain(r)
+      + '<div style="margin-top:10px"><button type="button" class="btn-sm" data-renew-done="' + esc(r.uid) + '" onclick="gmRenewed(\'' + esc(r.uid) + '\')">Renewed</button></div></div></details>';
+  }
+  function renewFormHTML(openNow) {
+    var opts = renewData().renewals.map(function (t) { return '<option value="' + esc(t.id) + '">' + esc(t.title) + '</option>'; }).join("");
+    return '<details class="road-col gm-renew-add" style="margin-top:10px"' + (openNow ? " open" : "") + '>'
+      + '<summary style="cursor:pointer;font-weight:800;font-size:13px">Add something that expires</summary>'
+      + '<label class="f-label" for="gmRenewPick" style="margin-top:8px">What expires?</label>'
+      + '<select id="gmRenewPick">' + opts + '</select>'
+      + '<label class="f-label" for="gmRenewLabel">Which one? (optional: Car, Bike, Parents)</label>'
+      + '<input id="gmRenewLabel" maxlength="40" placeholder="Leave empty if you have only one">'
+      + '<label class="f-label" for="gmRenewDate">Its date (type it once)</label>'
+      + '<input id="gmRenewDate" type="date">'
+      + '<div style="margin-top:8px"><button type="button" class="btn-sm" data-renew-add="1" onclick="gmRenewAdd()">Add this renewal</button></div></details>';
+  }
+  window.gmRenewAdd = function () {
+    var sel = document.getElementById("gmRenewPick"), inp = document.getElementById("gmRenewDate");
+    var id = sel ? String(sel.value || "") : "", day = inp ? String(inp.value || "").trim() : "";
+    var t = renewTpl(id);
+    if (!t) { if (typeof gmToast === "function") gmToast("Pick what expires first."); return; }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || isNaN(Date.parse(day))) { if (typeof gmToast === "function") gmToast("Type its date, like 2026-12-01."); return; }
+    var lb = document.getElementById("gmRenewLabel"), label = lb ? String(lb.value || "").replace(/[<>"'`]/g, "").trim().slice(0, 40) : "";
+    var uid = id + (label ? "-" + label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") : "");
+    var a = renewItems(), at = -1;
+    a.forEach(function (x, i) { if (x.uid === uid) at = i; });
+    var rec = { uid: uid, id: id, label: label, date: day };
+    if (at >= 0) a[at] = rec;
+    else { if (a.length >= RENEW_MAX) { if (typeof gmToast === "function") gmToast("That is enough renewals for now (" + RENEW_MAX + ")."); return; } a.push(rec); }
+    S_("gm_renewals", a); renderAll();
+    if (typeof gmToast === "function") gmToast("Added: " + t.title + (label ? " \u00b7 " + label : ""));
+  };
+  window.gmRenewed = function (uid) {
+    var a = renewItems(), at = -1;
+    a.forEach(function (x, i) { if (x.uid === uid) at = i; });
+    if (at < 0) return;
+    var t = renewTpl(a[at].id); if (!t) return;
+    if (+t.every > 0) { a[at].date = renewAddMonths(a[at].date, +t.every); delete a[at].done; }
+    else a[at].done = true;
+    S_("gm_renewals", a); renderAll();
+    if (typeof gmToast === "function") gmToast(+t.every > 0 ? "Renewed: the next date is " + renewDay(a[at].date) + "." : "Done: " + t.title + ".");
+  };
+  window.gmRenewalsHTML = function () {
+    var d = renewData();
+    if (!d.renewals.length) return "";
+    var rows = renewRows(), doneCount = renewItems().filter(function (x) { return x.done; }).length;
+    var h = '<div class="gm-renewals" role="region" aria-label="Renewals">'
+      + '<div class="cat-t" style="margin-top:0">Renewals</div>'
+      + '<div class="info">Pick what expires and type its date once. The estate warns you inside each item\u2019s lead days, and Renewed rolls the date forward.</div>';
+    if (!rows.open && rows.next) h += '<div class="info gm-renew-calm">All current. Next: <b>' + esc(renewName(rows.next)) + '</b> on ' + esc(renewDay(rows.next.date)) + '.</div>';
+    else if (!rows.open) h += '<div class="info">Nothing is due yet. Add something that expires \u2014 your first one \u2014 and it will warn you in time.</div>';
+    else h += renewOpenCard(rows.open);
+    if (rows.later.length) h += '<details class="road-col gm-renew-later" style="margin-top:8px"><summary style="cursor:pointer;font-weight:800;font-size:13px">Later (' + rows.later.length + ')</summary>' + rows.later.map(renewLaterCard).join("") + '</details>';
+    h += renewFormHTML(!renewItems().length);
+    if (doneCount) h += '<details class="road-col" style="margin-top:8px"><summary style="cursor:pointer;font-weight:800;font-size:13px">Renewed (' + doneCount + ')</summary><div style="font-size:12.5px;color:var(--muted);margin-top:6px">Once-only items are kept here after you renew them, with no date to chase.</div></details>';
+    return h + '</div>';
+  };
 })();
 // Boot veil off (index.html head): the Life OS has drawn its own first screen, so the page may show. Two frames later,
 // so the first paint the person sees is the finished one.
 (function () {
   function off() { document.documentElement.classList.remove("gm-boot"); }
   try { (window.requestAnimationFrame || setTimeout)(function () { (window.requestAnimationFrame || setTimeout)(off); }); } catch (e) { off(); }
+})();
+
+// A step that asks for names or a note gets its own place to do it, right under the step (owner, 2026-11-17):
+// "write the 5 names" becomes 5 inputs that tick the step when full; "after each call: note..." becomes one note line
+// with dated notes, the last 3 shown. Everything is kept in gm_stepdo, keyed by system and step, so a restored or
+// synced file brings the work with it. At most 12 inputs and 50 notes for any one step.
+(function () {
+  if (typeof window.renderModalBody !== "function") return;
+  var KEY = "gm_stepdo", MAX_IN = 12, MAX_NOTES = 50;
+  function readAll() {
+    try {
+      var v = window.gmG ? window.gmG(KEY, {}) : JSON.parse(localStorage.getItem(KEY) || "{}");
+      return v && typeof v === "object" && !Array.isArray(v) ? v : {};
+    } catch (e) { return {}; }
+  }
+  function saveAll(v) { try { if (window.gmS) window.gmS(KEY, v); else localStorage.setItem(KEY, JSON.stringify(v)); } catch (e) {} }
+  function esc(t) { return String(t).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function today() { var d = new Date(); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
+  function listOf(v) { return Array.isArray(v) ? v : []; }
+  // A note or log step asks for one line; a write or list step that names a number asks for that many.
+  function kindOf(text) {
+    var t = String(text || "");
+    // "note" or "log" as an instruction ("note 1 thing", "Log reps"), not as a noun ("a 1-line personal note").
+    if (/\b(?:note|log)\s+(?:\d|one\b|it\b|the\b|each\b|down\b|reps\b|what\b|your\b|how\b)/i.test(t)) return { note: true };
+    // The number must count things ("the 5 names", "3 wins"), never a year or an amount ("by 2030", "Rs 500").
+    if (/\b(?:write|list|name)\b/i.test(t)) {
+      var m = /(?:^|[^\d.,])\b([1-9]|1[0-2])\s+(?:\w+\s+)?(names?|people|friends|things|items|wins|goals|ideas|questions|habits|books|places|skills|contacts|lessons|values|strengths)\b/i.exec(t);
+      if (m) return { n: Math.min(parseInt(m[1], 10), MAX_IN), what: m[2].toLowerCase() };
+    }
+    return null;
+  }
+  function tick(step) { var cb = step && step.querySelector('input[type="checkbox"]'); if (cb && !cb.checked) cb.click(); }
+  function nextSaturday() {
+    var d = new Date(), add = ((6 - d.getDay()) + 7) % 7;
+    if (add === 0) add = 7;
+    d.setDate(d.getDate() + add);
+    return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2);
+  }
+  // A one-off act ("Open…", "Buy…", "Book…", "Set up…", "Sign up…") read at night is easy to lose: one tap puts it in
+  // the Inbox on the coming Saturday, where Today and the calendar bring it back. A list or note step already has its
+  // own doer, so it gets no reminder.
+  // Most steps do not start with a verb ("Nominee on every account"), so a step is one-off when it is not recurring and
+  // not a rule; a reminder is only an offer, so a rare false match costs nothing.
+  var RECURS = /\b(?:every|daily|weekly|monthly|annual(?:ly)?|yearly|quarterly|each (?:day|week|month|year|morning|evening)|(?:mon|tues|wednes|thurs|fri|satur|sun)days?|\d+x\s*\/\s*(?:day|week|month))\b/i;
+  var RULE = /^\s*(?:never|no|don'?t|do not|avoid|accept|always|remember|rule)\b/i;
+  function oneOff(text) { var t = String(text || ""); return t.trim().length > 8 && !RECURS.test(t) && !RULE.test(t); }
+  function niceDay(d) { try { return new Date(d + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }); } catch (e) { return d; } }
+
+  function namesDoer(step, key, n, what) {
+    var arr = listOf(readAll()[key]).slice(0, n);
+    var box = document.createElement("div");
+    box.className = "road-col step-do";
+    var lbl = document.createElement("div");
+    lbl.className = "f-label"; lbl.textContent = "Write them here: your " + n + " " + (what || "items");
+    box.appendChild(lbl);
+    for (var i = 0; i < n; i++) (function (ix) {
+      var inp = document.createElement("input");
+      inp.type = "text"; inp.value = arr[ix] == null ? "" : String(arr[ix]);
+      inp.setAttribute("aria-label", (what || "item").replace(/s$/, "") + " " + (ix + 1));
+      inp.addEventListener("input", function () {
+        var all = readAll(), cur = listOf(all[key]).slice(0, n);
+        while (cur.length < n) cur.push("");
+        cur[ix] = inp.value; all[key] = cur; saveAll(all);
+        var filled = 0;
+        for (var j = 0; j < n; j++) if (String(cur[j] || "").trim()) filled++;
+        if (filled === n) tick(step);
+      });
+      box.appendChild(inp);
+    })(i);
+    return box;
+  }
+
+  function noteDoer(step, key) {
+    var notes = listOf(readAll()[key]).filter(function (x) { return x && typeof x === "object"; }).slice(-MAX_NOTES);
+    var box = document.createElement("div");
+    box.className = "road-col step-do";
+    var lbl = document.createElement("div");
+    lbl.className = "f-label"; lbl.textContent = "Note it here (dated, the last three shown)";
+    box.appendChild(lbl);
+    var inp = document.createElement("input");
+    inp.type = "text"; inp.setAttribute("aria-label", "Your note");
+    inp.placeholder = "One line";
+    box.appendChild(inp);
+    var add = document.createElement("button");
+    add.type = "button"; add.className = "btn-sm"; add.setAttribute("data-stepdo-add", "1");
+    add.textContent = "Add note";
+    add.addEventListener("click", function () {
+      var t = String(inp.value || "").trim(); if (!t) return;
+      var all = readAll();
+      var cur = listOf(all[key]).filter(function (x) { return x && typeof x === "object"; }).slice(-(MAX_NOTES - 1));
+      cur.push({ d: today(), t: t }); all[key] = cur; saveAll(all);
+      try { window.renderModalBody(); } catch (e) {}
+    });
+    box.appendChild(add);
+    if (notes.length) {
+      var list = document.createElement("div");
+      list.className = "step-notes";
+      list.innerHTML = notes.slice(-3).map(function (x) {
+        return '<div class="step-note"><span class="f-label" style="display:inline">' + esc(x.d) + '</span> ' + esc(x.t) + '</div>';
+      }).join("");
+      box.appendChild(list);
+    }
+    return box;
+  }
+
+  function reminderDoer(key, text) {
+    var rec = readAll()[key], due = rec && !Array.isArray(rec) && typeof rec === "object" ? String(rec.remind || "") : "";
+    var box = document.createElement("div");
+    box.className = "road-col step-do";
+    var add = document.createElement("button");
+    add.type = "button"; add.className = "btn-sm"; add.setAttribute("data-stepdo-remind", "1");
+    add.textContent = due ? "Reminder set for " + niceDay(due) : "Remind me Saturday";
+    add.setAttribute("aria-label", add.textContent + ": " + text);
+    add.addEventListener("click", function () {
+      var all = readAll(), cur = all[key];
+      if (cur && !Array.isArray(cur) && typeof cur === "object" && cur.remind) return;
+      var d = nextSaturday();
+      all[key] = { remind: d }; saveAll(all);
+      try { if (typeof window.gmInboxAdd === "function") window.gmInboxAdd(text, "action", { due: d, from: "step:" + key }); } catch (e) {}
+      add.textContent = "Reminder set for " + niceDay(d);
+      add.setAttribute("aria-label", add.textContent + ": " + text);
+    });
+    box.appendChild(add);
+    return box;
+  }
+
+  // A recurring step ("Every Wednesday 8:30pm", "Monthly on the 1st Sunday", "Daily") reads its own words: one tap puts
+  // the series in the calendar, so the system runs from the calendar, not memory. The UID never changes, the start date
+  // is fixed at the first export, and SEQUENCE rises only when the rule or the words change (the calendar contract).
+  var DOW = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
+  var DOW_NAME = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 };
+  var NTH = { "1st": 1, first: 1, "2nd": 2, second: 2, "3rd": 3, third: 3, "4th": 4, fourth: 4, last: -1 };
+  function dayNo(word) { return DOW_NAME[String(word).toLowerCase() + "day"]; }
+  function recurOf(text) {
+    var t = String(text || ""), m, hh = 9, mm = 0;
+    var tm = /\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i.exec(t);
+    if (tm) { hh = parseInt(tm[1], 10) % 12; if (/pm/i.test(tm[3])) hh += 12; mm = tm[2] ? parseInt(tm[2], 10) : 0; }
+    m = /\bevery\s+(sun|mon|tues|wednes|thurs|fri|satur)day\b/i.exec(t);
+    if (m) { var wd = dayNo(m[1]); return wd == null ? null : { rule: "FREQ=WEEKLY;BYDAY=" + DOW[wd], dow: wd, nth: 0, hh: hh, mm: mm }; }
+    if (/^\s*daily\b/i.test(t) || /\b(?:every|each)\s+day\b/i.test(t)) return { rule: "FREQ=DAILY", dow: -1, nth: 0, hh: hh, mm: mm };
+    m = /\b(1st|first|2nd|second|3rd|third|4th|fourth|last)\s+(sun|mon|tues|wednes|thurs|fri|satur)day\b/i.exec(t);
+    if (m && /\b(?:monthly|every month)\b/i.test(t)) {
+      var nd = dayNo(m[2]), nth = NTH[m[1].toLowerCase()] || 1;
+      if (nd == null) return null;
+      return { rule: "FREQ=MONTHLY;BYDAY=" + nth + DOW[nd], dow: nd, nth: nth, hh: hh, mm: mm };
+    }
+    // How the steps are really written: "Sunday 90-min meal prep", "Weekly: ...", "5 min/day", "Monthly staples run",
+    // "Quarterly video call", "every 6 months", "Annual audit". A rhythm with no day starts on a calm default.
+    m = /^\W*(sun|mon|tues|wednes|thurs|fri|satur)day\b/i.exec(t) || /\b(?:on|each)\s+(sun|mon|tues|wednes|thurs|fri|satur)days?\b/i.exec(t);
+    if (m) { var wd2 = dayNo(m[1]); if (wd2 != null) return { rule: "FREQ=WEEKLY;BYDAY=" + DOW[wd2], dow: wd2, nth: 0, hh: hh, mm: mm }; }
+    if (/\b(?:min|mins|minutes|x)\s*\/\s*day\b|\bper day\b|\bevery morning\b|\bevery evening\b/i.test(t)) return { rule: "FREQ=DAILY", dow: -1, nth: 0, hh: hh, mm: mm };
+    if (/^\W*weekly\b|\bevery week\b|\bonce a week\b/i.test(t)) return { rule: "FREQ=WEEKLY;BYDAY=SU", dow: 0, nth: 0, hh: hh, mm: mm };
+    m = /\bevery\s+(\d{1,2})\s+months?\b|\b(\d{1,2})-monthly\b/i.exec(t);
+    if (m) { var iv = parseInt(m[1] || m[2], 10); if (iv >= 1 && iv <= 24) return { rule: "FREQ=MONTHLY;INTERVAL=" + iv + ";BYMONTHDAY=1", dow: -2, nth: 0, hh: hh, mm: mm }; }
+    if (/\bquarterly\b|\bevery quarter\b/i.test(t)) return { rule: "FREQ=MONTHLY;INTERVAL=3;BYMONTHDAY=1", dow: -2, nth: 0, hh: hh, mm: mm };
+    if (/^\W*monthly\b|\bevery month\b|\bonce a month\b/i.test(t)) return { rule: "FREQ=MONTHLY;BYMONTHDAY=1", dow: -2, nth: 0, hh: hh, mm: mm };
+    if (/^\W*annual\b|\bannually\b|\byearly\b|\bonce a year\b/i.test(t)) return { rule: "FREQ=YEARLY", dow: -2, nth: 0, hh: hh, mm: mm };
+    if (/\b2x\s*\/\s*month\b|\btwice a month\b|\bfortnightly\b/i.test(t)) return { rule: "FREQ=WEEKLY;INTERVAL=2;BYDAY=SU", dow: 0, nth: 0, hh: hh, mm: mm };
+    m = /\bevery\s+(\d{1,3})(?:\s*-\s*\d{1,3})?\s+days?\b/i.exec(t);
+    if (m) { var dv = parseInt(m[1], 10); if (dv >= 2 && dv <= 366) return { rule: "FREQ=DAILY;INTERVAL=" + dv, dow: -1, nth: 0, hh: hh, mm: mm }; }
+    if (/\bmonthly\b/i.test(t)) return { rule: "FREQ=MONTHLY;BYMONTHDAY=1", dow: -2, nth: 0, hh: hh, mm: mm };
+    if (/\bdaily\b/i.test(t)) return { rule: "FREQ=DAILY", dow: -1, nth: 0, hh: hh, mm: mm };
+    return null;
+  }
+  function ymdOf(d) { return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
+  function stepStart(r) {
+    var d = new Date(); d.setHours(0, 0, 0, 0);
+    if (r.dow === -2) { var f = new Date(d.getFullYear(), d.getMonth() + 1, 1); return f; }   // a monthly, quarterly or yearly rhythm: the 1st of next month
+    if (r.dow < 0) return d;
+    for (var add = 0; add < 400; add++) {
+      var t = new Date(d); t.setDate(d.getDate() + add);
+      if (t.getDay() !== r.dow) continue;
+      if (r.nth > 0 && Math.ceil(t.getDate() / 7) !== r.nth) continue;
+      if (r.nth < 0) { var nx = new Date(t); nx.setDate(t.getDate() + 7); if (nx.getMonth() === t.getMonth()) continue; }
+      if (add === 0 && new Date().getHours() >= r.hh) continue;
+      return t;
+    }
+    return d;
+  }
+  // Steps keep their own ledger (gm_step_cal): the dated-items export treats any entry it does not know in gm_cal_seq as
+  // gone and would send a CANCELLED for a repeating step the person still wants.
+  function stepLedger() {
+    var led;
+    try { led = window.gmG ? window.gmG("gm_step_cal", {}) : JSON.parse(localStorage.getItem("gm_step_cal") || "{}"); } catch (e) { led = {}; }
+    return led && typeof led === "object" && !Array.isArray(led) ? led : {};
+  }
+  function stepPlan(itemId, idx, text) {
+    var r = recurOf(text); if (!r) return null;
+    var key = "securax-sys-" + itemId + "-" + idx, led = stepLedger(), prev = led[key];
+    var sig = r.rule + "|" + String(text).trim(), d, hh, mm, v, pv;
+    if (prev && typeof prev === "object" && /^\d{4}-\d{2}-\d{2}$/.test(String(prev.d || ""))) {
+      d = String(prev.d); hh = typeof prev.hh === "number" ? prev.hh : r.hh; mm = typeof prev.mm === "number" ? prev.mm : r.mm;
+      pv = parseInt(prev.v, 10); if (!(pv > 0)) pv = 1;
+      v = prev.s === sig ? pv : pv + 1;
+    } else { d = ymdOf(stepStart(r)); hh = r.hh; mm = r.mm; v = 1; }
+    return { key: key, uid: key, date: d, hh: hh, mm: mm, v: v, sig: sig, rule: r.rule, text: String(text).trim() };
+  }
+  function fromYmd(s) { var p = String(s).split("-"); return new Date(+p[0], (+p[1]) - 1, +p[2]); }
+  window.gmStepICS = function (itemId, idx, text) {
+    var p = stepPlan(itemId, idx, text); if (!p || !window.gmIcs) return "";
+    var I = window.gmIcs, s = fromYmd(p.date), e = new Date(s);
+    s.setHours(p.hh, p.mm, 0, 0); e.setHours(p.hh, p.mm + 30, 0, 0);
+    var now = new Date();
+    var L = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//SecuRAX//Life OS calendar//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
+      "X-WR-CALNAME:Life OS system", "BEGIN:VEVENT", "UID:" + p.uid + "@local", "SEQUENCE:" + p.v,
+      "DTSTAMP:" + I.date(now, now.getHours(), now.getMinutes()), "DTSTART:" + I.date(s, p.hh, p.mm),
+      "DTEND:" + I.date(e, e.getHours(), e.getMinutes()), "RRULE:" + p.rule, "STATUS:CONFIRMED",
+      I.fold("SUMMARY:" + I.text(p.text)), "BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:" + I.text(p.text), "TRIGGER:-PT30M",
+      "END:VALARM", "END:VEVENT", "END:VCALENDAR"];
+    return L.join("\r\n") + "\r\n";
+  };
+  window.gmStepCalendar = function (itemId, idx, text) {
+    var p = stepPlan(itemId, idx, text); if (!p) return;
+    var ics = window.gmStepICS(itemId, idx, text), led = stepLedger();
+    led[p.key] = { d: p.date, hh: p.hh, mm: p.mm, s: p.sig, v: p.v };
+    try { if (window.gmS) window.gmS("gm_step_cal", led); else localStorage.setItem("gm_step_cal", JSON.stringify(led)); } catch (e) {}
+    try {
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([ics], { type: "text/calendar" }));
+      a.download = "life-os-step.ics"; document.body.appendChild(a); a.click(); a.remove();
+    } catch (e) {}
+    try { if (typeof window.gmToast === "function") window.gmToast("Calendar file saved: one repeating step. Add it to the same calendar each time; a newer file updates it, it never doubles."); } catch (e) {}
+  };
+  function calendarDoer(itemId, idx, text) {
+    var box = document.createElement("div");
+    box.className = "road-col step-do";
+    var add = document.createElement("button");
+    add.type = "button"; add.className = "btn-sm"; add.setAttribute("data-stepdo-cal", "1");
+    add.textContent = "Add to calendar";
+    add.setAttribute("aria-label", add.textContent + ": " + text);
+    add.addEventListener("click", function () { window.gmStepCalendar(itemId, idx, text); });
+    box.appendChild(add);
+    return box;
+  }
+
+  function decorate() {
+    var host = document.getElementById("m_sys"); if (!host) return;
+    var item = window.actType === "k" ? (window.KPIs || [])[window.actIdx] : (window.RISKS || [])[window.actIdx];
+    if (!item || !item.id) return;
+    var steps = host.getElementsByClassName("step");
+    for (var i = 0; i < steps.length; i++) {
+      var step = steps[i], textNode = step.querySelector(".step-t");
+      var text = (textNode ? textNode.textContent : step.textContent) || "";
+      var k = kindOf(text), box = null, boxes = [];
+      if (k) box = k.note ? noteDoer(step, item.id + ":" + i) : namesDoer(step, item.id + ":" + i, k.n, k.what);
+      else if (oneOff(text) && !(step.querySelector('input[type="checkbox"]') || {}).checked) box = reminderDoer(item.id + ":" + i, text.trim());
+      if (box) boxes.push(box);
+      if (recurOf(text)) boxes.push(calendarDoer(item.id, i, text.trim()));
+      if (!boxes.length) continue;
+      var after = step;
+      boxes.forEach(function (b) { after.parentNode.insertBefore(b, after.nextSibling); after = b; });
+    }
+  }
+
+  var orig = window.renderModalBody;
+  window.renderModalBody = function () {
+    orig.apply(this, arguments);
+    try { decorate(); } catch (e) {}
+  };
+
+  // The Wednesday call (queue step-doers, slice 4): on Wednesday one calm line above the daily three names tonight's
+  // call — the friend from the 5 names called longest ago (never called counts as oldest), with the last note that
+  // mentions them. Called keeps the date in gm_stepdo under friends:calls, so the next render names the next friend.
+  function friendCalls() {
+    var v = readAll()["friends:calls"];
+    return v && typeof v === "object" && !Array.isArray(v) ? v : {};
+  }
+  function lastNote(name) {
+    var hit = "";
+    listOf(readAll()["friends:2"]).forEach(function (n) {
+      if (n && typeof n === "object" && typeof n.t === "string" && n.t.toLowerCase().indexOf(name.toLowerCase()) >= 0) hit = n.t;
+    });
+    return hit;
+  }
+  function friendLine() {
+    if (new Date().getDay() !== 3) return "";
+    var names = listOf(readAll()["friends:0"]).map(function (x) { return String(x == null ? "" : x).trim(); })
+      .filter(function (x) { return x; }).slice(0, 5);
+    if (!names.length) return "";
+    var calls = friendCalls(), tdy = today();
+    // One call a week: once tonight's call is made, the line is a small win until next Wednesday, never a second name.
+    var doneTonight = names.filter(function (x) { return calls[x] === tdy; })[0];
+    if (doneTonight) return '<div class="road-col gm-friend-today" style="margin-bottom:10px;font-size:13px">\u2713 Called <b>' + esc(doneTonight) + '</b> tonight. Next Wednesday, the next friend.</div>';
+    var pick = names[0], pickDate = typeof calls[pick] === "string" ? calls[pick] : "";
+    for (var i = 1; i < names.length; i++) {
+      var d = typeof calls[names[i]] === "string" ? calls[names[i]] : "";
+      if (d < pickDate) { pick = names[i]; pickDate = d; }
+    }
+    var note = lastNote(pick);
+    return '<div class="road-col gm-friend-today" style="margin-bottom:10px;font-size:13px">'
+      + '<b>Tonight: call ' + esc(pick) + '</b>'
+      + (note ? ' <span style="color:var(--muted)">\u00b7 last note: ' + esc(note) + '</span>' : "")
+      + ' <button type="button" class="btn-sm" data-friend-called="' + esc(pick) + '" style="margin-inline-start:6px">Called</button></div>';
+  }
+  var _friendRender = window.renderAll;
+  if (typeof _friendRender === "function") window.renderAll = function () {
+    var out = _friendRender.apply(this, arguments);
+    try {
+      if (typeof curTab !== "undefined" && curTab === "today" && !document.querySelector(".gm-friend-today")) {
+        var d3 = document.querySelector("#sections .gm-d3"), h = friendLine();
+        if (h && d3) {
+          d3.insertAdjacentHTML("beforebegin", h);
+          var btn = document.querySelector(".gm-friend-today [data-friend-called]");
+          if (btn) btn.addEventListener("click", function () {
+            var name = btn.getAttribute("data-friend-called"), all = readAll(), calls = friendCalls();
+            calls[name] = today(); all["friends:calls"] = calls; saveAll(all);
+            try { if (typeof window.renderAll === "function") window.renderAll(); } catch (e) {}
+          });
+        }
+      }
+    } catch (e) {}
+    return out;
+  };
+
+})();
+// Usage is learned in its own block, so nothing else's early exit can switch it off.
+(function () {
+  /* ── How use is learned (queue friction-meter): which feature was used on which day, counted on the device only and
+     never sent. A short id is recorded once a day, so later a rarely used thing can rest with no task for the person.
+     gm_use holds id -> { l: last used day, d: the days it was used } (at most 30 days each, at most 300 ids). */
+  var G = window.gmG, S_ = window.gmS;
+  function ymd(d) { d = d || new Date(); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
+  var GM_USE_IDS = 300, GM_USE_DAYS = 30, GM_USE_RE = /^[A-Za-z0-9:-]{1,40}$/;
+  // The day learning began: resting counts from here, never from the first open, so an existing person's doors do not
+  // all rest the day this ships just because nothing was recorded before.
+  try { var _since = G("gm_use_since", ""); if (!/^\d{4}-\d{2}-\d{2}$/.test(_since)) S_("gm_use_since", ymd()); } catch (e) {}
+  // The map as stored, cleaned: a damaged key or entry is dropped and a wrong shape gives an empty map, never a crash.
+  window.gmUsage = function () {
+    var raw = G("gm_use", {}), out = {};
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+    Object.keys(raw).forEach(function (id) {
+      if (!GM_USE_RE.test(id)) return;
+      var e = raw[id];
+      if (!e || typeof e !== "object" || Array.isArray(e)) return;
+      var days = Array.isArray(e.d) ? e.d.filter(function (x) { return typeof x === "string"; }) : [];
+      var seen = {};
+      days = days.filter(function (x) { if (seen[x]) return false; seen[x] = 1; return true; }).sort();
+      if (days.length > GM_USE_DAYS) days = days.slice(-GM_USE_DAYS);
+      out[id] = { l: typeof e.l === "string" ? e.l : "", d: days };
+    });
+    return out;
+  };
+  window.gmUse = function (id) {
+    if (typeof id !== "string" || !GM_USE_RE.test(id)) return;
+    var today = ymd(), map = window.gmUsage(), e = map[id] || { l: today, d: [] };
+    // Re-insert at the end so the key order is recency, and the oldest keys are the ones dropped when the map is full.
+    delete map[id];
+    e.l = today;
+    if (e.d.indexOf(today) < 0) e.d.push(today);
+    e.d.sort();
+    if (e.d.length > GM_USE_DAYS) e.d = e.d.slice(-GM_USE_DAYS);
+    map[id] = e;
+    var ids = Object.keys(map);
+    while (ids.length > GM_USE_IDS) delete map[ids.shift()];
+    S_("gm_use", map);
+    return map;
+  };
+
+  // Opening a tab or a system, and any control that names its feature, is a use. The original still does its work.
+  if (typeof window.goTab === "function") { var _gmGoTab = window.goTab; window.goTab = function (id) {
+    try { if (typeof id === "string") window.gmUse("tab:" + id); } catch (e) {}
+    return _gmGoTab.apply(this, arguments);
+  }; }
+  if (typeof window.openK === "function") { var _gmOpenK = window.openK; window.openK = function (i) {
+    try { var k = (window.KPIs || [])[i]; if (k && k.id) window.gmUse("sys:" + k.id); } catch (e) {}
+    return _gmOpenK.apply(this, arguments);
+  }; }
+  if (typeof window.openR === "function") { var _gmOpenR = window.openR; window.openR = function (i) {
+    try { var r = (window.RISKS || [])[i]; if (r && r.id) window.gmUse("risk:" + r.id); } catch (e) {}
+    return _gmOpenR.apply(this, arguments);
+  }; }
+  document.addEventListener("click", function (ev) {
+    try {
+      for (var el = ev.target; el && el !== document; el = el.parentNode) {
+        var f = el.getAttribute && el.getAttribute("data-feat");
+        if (f) { window.gmUse(f); break; }
+      }
+    } catch (e) {}
+  }, true);
 })();
 
 </script>
