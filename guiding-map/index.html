@@ -1623,6 +1623,8 @@ function addKR(oi){
 function setKR(oi,ki,v){ var k=S.okrs[oi].krs[ki]; k.v=+v; k.at=Date.now(); store("sovS",S); renderAll(); }
 function setKRNow(oi,ki,v){ var k=S.okrs[oi].krs[ki]; if(v===""||isNaN(+v))return; k.c=+v; k.v=krFrac(k); k.at=Date.now(); store("sovS",S); renderAll(); }
 function setOKRStrength(oi,v){ S.okrs[oi].s=v; S.okrs[oi].at=Date.now(); store("sovS",S); }
+var OKR_RISKS=["Timebox slipping","No weekly review","An unclear first step"];
+function okrPremortem(oi){ var o=S.okrs[oi]; if(!o)return; o.risks=Array.isArray(o.risks)?o.risks:[]; OKR_RISKS.forEach(function(r){ if(o.risks.indexOf(r)<0)o.risks.push(r); }); o.at=Date.now(); store("sovS",S); renderAll(); }
 function okrGrade(oi){ var k=S.okrs[oi].krs; if(!k.length)return 0; return k.reduce(function(s,x){return s+krFrac(x);},0)/k.length; }
 function delOKR(oi){ gmConfirm("Delete this objective?",function(y){ if(y){ S.okrs.splice(oi,1); store("sovS",S); renderAll(); } }); }
 function okrRecommit(oi){ var o=S.okrs[oi]; o.at=Date.now(); o.recommits=(o.recommits||0)+1; store("sovS",S); gmToast("Recommitted. Make one key result move this week."); renderAll(); }
@@ -2071,8 +2073,7 @@ function renderOKR(){
       +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><button class="btn-sm" style="background:var(--gold);color:#0d1f35;font-weight:800" onclick="okrRecommit('+oi+')">Recommit</button>'
       +'<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="okrRescope('+oi+')">Re-scope</button>'
       +'<button class="btn-sm" style="background:var(--redBg);color:var(--red)" onclick="okrDrop('+oi+')">Drop, keep the lesson</button></div></div>';
-    if(S.strengths.length) html+='<div style="font-size:12px;color:var(--muted);margin:4px 0">Builds on: <select aria-label="Strength this objective builds on" onchange="setOKRStrength('+oi+',this.value)">'
-      +S.strengths.map(function(x){ return '<option'+(x===o.s?' selected':'')+'>'+okEsc(x)+'</option>'; }).join('')+'</select></div>';
+    if(o.s) html+='<div style="font-size:12px;color:var(--muted);margin:4px 0">Builds on: '+okEsc(o.s)+'</div>';
     o.krs.forEach(function(kr,ki){
       html+='<div class="kr"><div class="kr-t">KR'+(ki+1)+': '+okEsc(kr.t)+'</div>';
       if(kr.b!==undefined){
@@ -2093,12 +2094,15 @@ function renderOKR(){
     });
     html+='<div class="gm-okr-acts">'
      +'<button class="btn-sm gm-btn-ghost" onclick="addKR('+oi+')">+ Key result</button>'
-     +'<button class="gm-quiet" onclick="delOKR('+oi+')" aria-label="Delete this objective">Delete\u2026</button></div></div>';
+     +'<button class="gm-quiet" onclick="delOKR('+oi+')" aria-label="Delete this objective">Delete\u2026</button></div>';
+    html+='<div class="gm-premortem" style="margin-top:8px"><details><summary style="cursor:pointer;font-size:12.5px;font-weight:700">What could stop this?</summary>'
+     +'<div class="info" style="margin-top:6px"><strong>Pre-mortem (a known method):</strong> imagine it FAILED at quarter-end: list the 3 most likely causes, then build a step against each. Prospective hindsight improves cause-identification by ~30%.</div></details>'
+     +(Array.isArray(o.risks)&&o.risks.length?'<div class="gm-risks" style="font-size:12px;margin-top:6px">'+o.risks.map(function(r){ return '<div>'+okEsc(r)+'</div>'; }).join('')+'</div>':'')
+     +'<button class="btn-sm" data-premortem="1" style="margin-top:6px;background:var(--cardAlt);color:var(--text)" onclick="okrPremortem('+oi+')">Add 3 likely risks</button></div></div>';
   });
   html+='<button class="btn-add" onclick="addOKR()">+ Add Objective (max 3)</button>';
   if(S.okrDropped.length) html+='<details class="road-col" style="margin-top:8px"><summary style="cursor:pointer;font-size:12.5px;font-weight:700">Dropped on purpose · '+S.okrDropped.length+'</summary><div style="font-size:12px;margin-top:6px">'
     +S.okrDropped.slice().reverse().map(function(d){ return '<div style="margin-bottom:6px"><b>'+okEsc(d.o)+'</b> · '+new Date(d.at).toISOString().slice(0,10)+(d.lesson?'<br><span style="color:var(--muted)">Lesson: '+okEsc(d.lesson)+'</span>':'')+'</div>'; }).join('')+'</div></details>';
-  html+='<div class="info" style="margin-top:6px"><strong>Pre-mortem (a known method):</strong> before committing to each objective, spend 5 minutes imagining it FAILED at quarter-end — list the 3 most likely causes, then build a step against each into your measure systems. Prospective hindsight improves cause-identification by ~30%.</div>';
   html+='</div>';
   return html;
 }
