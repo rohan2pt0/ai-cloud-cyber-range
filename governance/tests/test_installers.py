@@ -101,3 +101,20 @@ def test_docker_mode_is_root_only_and_installs_from_dockers_own_repository_for_t
     assert "usermod -aG docker fakeuser" in out
     src = (ROOT / "install.sh").read_text()
     assert src.count("install_docker") == 3                            # one definition, used by --server and --docker
+
+
+def test_stable_with_no_network_says_why_and_the_next_step(tmp_path):
+    fake = tmp_path / "fakebin"
+    fake.mkdir()
+    (fake / "curl").write_text("#!/bin/sh\nexit 6\n")                 # curl's own code for "could not resolve host"
+    (fake / "curl").chmod(0o755)
+    r = _sh("--stable", "--dir", str(tmp_path / "s"), home=tmp_path,
+            env_extra={"PATH": f"{fake}:/usr/bin:/bin", "SECURAX_REPO": "example/none"})
+    assert r.returncode != 0 and not (tmp_path / "s").exists()
+    assert "Could not find the newest release" in r.stderr and "bash install.sh" in r.stderr
+
+
+def test_help_prints_the_whole_header_not_half_a_sentence(tmp_path):
+    r = _sh("--help", home=tmp_path)
+    assert r.returncode == 0
+    assert "--server is the one exception" in r.stdout and "set -euo pipefail" not in r.stdout

@@ -1,6 +1,6 @@
 <!--
   SecuRAX — Getting Started.
-  The shortest path from "fresh laptop" to "using it daily". Written for the HP Spectre x360
+  The shortest path from "fresh laptop" to "using it daily". Written for a laptop
   (Windows 11 + Docker Desktop with the WSL2 backend, or any Linux). Everything here is free.
 -->
 
@@ -38,7 +38,7 @@ Prerequisite: **Docker Desktop** running (WSL2 backend on Windows).
 ./local/scripts/bootstrap-laptop.sh        # gateway + model router + DB + a self-test
 ./local/scripts/kind-up.sh                  # Kubernetes plane (admission control + runtime detection)
 python3 redteam/run_attacks.py --fail-under 0.9   # adversarial-ML scorecard (should be 100%)
-./local/scripts/teardown.sh                 # stop everything — costs nothing overnight
+./local/scripts/teardown.sh                 # stop everything; your data is kept — costs nothing overnight
 ```
 What you now have: a guardrail gateway, a red-team scorecard, an AI-SPM posture report, and a
 board brief — the portfolio for the eight AI-security roles. Demo script: `docs/demo-runbook.md`.
@@ -65,7 +65,7 @@ Stop and free RAM any time: `cd local/compose && docker compose --profile ai dow
 
 ## 3. The human layer (Pillar 4) — self-OPSEC, finance, life-OS
 ```bash
-python3 personal-rnd/self_opsec.py --footprint-file my_public_bio.txt   # what you over-share
+python3 personal-rnd/self_opsec.py --footprint-file README.md           # what a text over-shares (try it on this file, then on your own public bio)
 python3 personal-rnd/fin_freedom.py --expense 150000 --corpus 2500000 --invest 200000  # FIRE plan
 python3 personal-rnd/lifeos.py --review                                  # weekly-review template
 ```
@@ -77,8 +77,8 @@ for the full cadence. **Everything compounds because it is all captured in one b
 
 ## If something breaks
 - `docker` errors → Docker Desktop isn't running; start it, wait for the green whale.
-- Laptop slows while a model answers → use the lighter `local-fast` model; cap WSL2 RAM
-  (see the uploaded SOP) at 10 GB.
+- Laptop slows while a model answers → use the lighter `local-fast` model; `./securax profile`
+  sizes the estate to this machine and says how to cap WSL2 memory.
 - Open WebUI shows no models → the gateway booted before Ollama:
   `cd local/compose && docker compose --profile ai restart gateway`.
-- Full troubleshooting + security posture notes: the uploaded `SOP-README.md`.
+- Anything else → `./securax why` says what stopped and why, in plain words; `DEPLOY.md` has the full troubleshooting table.

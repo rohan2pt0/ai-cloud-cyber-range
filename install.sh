@@ -43,7 +43,7 @@ while [ $# -gt 0 ]; do
     --docker) DOCKER_ONLY=1 ;;                 # root only: install Docker Engine for the user who ran sudo (the laptop path calls it)
     --no-start) NOSTART=1 ;;                   # put the code in place, start nothing (the old behaviour)
     --yes|-y) YES=1 ;;                         # do not ask before installing Docker
-    -h|--help) sed -n '2,15p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,18p' "$0"; exit 0 ;;
     *) die "Unknown option: $1   (see: bash install.sh --help)" ;;
   esac; shift
 done
@@ -196,7 +196,7 @@ case "$MODE" in
     git clone --quiet "https://github.com/$REPO.git" "$DIR" ;;
   stable)
     if [ -z "$WANT" ]; then   # the newest release: GitHub redirects /releases/latest to /releases/tag/<tag>, no API token needed
-      WANT="$(curl -fsSIL -o /dev/null -w '%{url_effective}' "https://github.com/$REPO/releases/latest" | sed -n 's#.*/tag/##p')"
+      WANT="$(curl -fsSIL -o /dev/null -w '%{url_effective}' "https://github.com/$REPO/releases/latest" | sed -n 's#.*/tag/##p' || true)"   # || true: no network must reach the message below
       [ -n "$WANT" ] || die "Could not find the newest release (no network, or no release yet). Try the rolling channel:  bash install.sh"
     fi
     git clone --quiet --branch "$WANT" "https://github.com/$REPO.git" "$DIR" ;;

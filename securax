@@ -1958,6 +1958,11 @@ g=json.load(sys.stdin).get("approved",{}); print(f"✔ approved {g.get(\"tool\",
       tell "Overnight update failed and the estate is down. Run ./securax go on the laptop; your data and backup are intact."
       exit 1
     fi
+    if [ "$PREV" = "$NEW" ]; then      # nothing was pulled, so there is no earlier version to go back to: say that, not "local changes"
+      C "⚠ There was nothing new to pull, and the estate did not start healthy. Ask it why:  ./securax why"
+      tell "The estate did not start healthy after a restart. Run ./securax go on the laptop."
+      exit 1
+    fi
     C "⚠ The estate did not start healthy after the update, and an automatic rollback was not safe (you have uncommitted local changes). Run  ./securax doctor ."
     tell "Overnight update did not start healthy. Run ./securax go on the laptop."
     exit 1
