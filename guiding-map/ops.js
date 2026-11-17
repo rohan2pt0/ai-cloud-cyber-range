@@ -4711,6 +4711,7 @@
   function icsDate(d, hh, mm) { function z(n) { return (n < 10 ? "0" : "") + n; } return d.getFullYear() + z(d.getMonth() + 1) + z(d.getDate()) + "T" + z(hh) + z(mm) + "00"; }
   function icsText(t) { return String(t).replace(/\\/g, "\\\\").replace(/;/g, "\\;").replace(/,/g, "\\,").replace(/\n/g, "\\n"); }
   function icsFold(line) { var out = [], s = line; while (s.length > 74) { out.push(s.slice(0, 74)); s = " " + s.slice(74); } out.push(s); return out.join("\r\n"); }
+  window.gmIcs = { date: icsDate, text: icsText, fold: icsFold };
   /* The calendar contract (principle `in-the-calendar`): every recurring step lives in ONE registry, and the calendar file is
      made from it so that a later version never conflicts with an earlier one.
      - Each item keeps its UID for ever (securax-gm-<id>@local). Never reuse an id for a new meaning; rename the item instead.
@@ -9673,6 +9674,96 @@
     return box;
   }
 
+  // A recurring step ("Every Wednesday 8:30pm", "Monthly on the 1st Sunday", "Daily") reads its own words: one tap puts
+  // the series in the calendar, so the system runs from the calendar, not memory. The UID never changes, the start date
+  // is fixed at the first export, and SEQUENCE rises only when the rule or the words change (the calendar contract).
+  var DOW = ["SU", "MO", "TU", "WE", "TH", "FR", "SA"];
+  var DOW_NAME = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 };
+  var NTH = { "1st": 1, first: 1, "2nd": 2, second: 2, "3rd": 3, third: 3, "4th": 4, fourth: 4, last: -1 };
+  function dayNo(word) { return DOW_NAME[String(word).toLowerCase() + "day"]; }
+  function recurOf(text) {
+    var t = String(text || ""), m, hh = 9, mm = 0;
+    var tm = /\b(\d{1,2})(?::(\d{2}))?\s*(am|pm)\b/i.exec(t);
+    if (tm) { hh = parseInt(tm[1], 10) % 12; if (/pm/i.test(tm[3])) hh += 12; mm = tm[2] ? parseInt(tm[2], 10) : 0; }
+    m = /\bevery\s+(sun|mon|tues|wednes|thurs|fri|satur)day\b/i.exec(t);
+    if (m) { var wd = dayNo(m[1]); return wd == null ? null : { rule: "FREQ=WEEKLY;BYDAY=" + DOW[wd], dow: wd, nth: 0, hh: hh, mm: mm }; }
+    if (/^\s*daily\b/i.test(t) || /\b(?:every|each)\s+day\b/i.test(t)) return { rule: "FREQ=DAILY", dow: -1, nth: 0, hh: hh, mm: mm };
+    m = /\b(1st|first|2nd|second|3rd|third|4th|fourth|last)\s+(sun|mon|tues|wednes|thurs|fri|satur)day\b/i.exec(t);
+    if (m && /\b(?:monthly|every month)\b/i.test(t)) {
+      var nd = dayNo(m[2]), nth = NTH[m[1].toLowerCase()] || 1;
+      if (nd == null) return null;
+      return { rule: "FREQ=MONTHLY;BYDAY=" + nth + DOW[nd], dow: nd, nth: nth, hh: hh, mm: mm };
+    }
+    return null;
+  }
+  function ymdOf(d) { return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
+  function stepStart(r) {
+    var d = new Date(); d.setHours(0, 0, 0, 0);
+    if (r.dow < 0) return d;
+    for (var add = 0; add < 400; add++) {
+      var t = new Date(d); t.setDate(d.getDate() + add);
+      if (t.getDay() !== r.dow) continue;
+      if (r.nth > 0 && Math.ceil(t.getDate() / 7) !== r.nth) continue;
+      if (r.nth < 0) { var nx = new Date(t); nx.setDate(t.getDate() + 7); if (nx.getMonth() === t.getMonth()) continue; }
+      if (add === 0 && new Date().getHours() >= r.hh) continue;
+      return t;
+    }
+    return d;
+  }
+  function stepLedger() {
+    var led;
+    try { led = window.gmG ? window.gmG("gm_cal_seq", {}) : JSON.parse(localStorage.getItem("gm_cal_seq") || "{}"); } catch (e) { led = {}; }
+    return led && typeof led === "object" && !Array.isArray(led) ? led : {};
+  }
+  function stepPlan(itemId, idx, text) {
+    var r = recurOf(text); if (!r) return null;
+    var key = "securax-sys-" + itemId + "-" + idx, led = stepLedger(), prev = led[key];
+    var sig = r.rule + "|" + String(text).trim(), d, hh, mm, v, pv;
+    if (prev && typeof prev === "object" && /^\d{4}-\d{2}-\d{2}$/.test(String(prev.d || ""))) {
+      d = String(prev.d); hh = typeof prev.hh === "number" ? prev.hh : r.hh; mm = typeof prev.mm === "number" ? prev.mm : r.mm;
+      pv = parseInt(prev.v, 10); if (!(pv > 0)) pv = 1;
+      v = prev.s === sig ? pv : pv + 1;
+    } else { d = ymdOf(stepStart(r)); hh = r.hh; mm = r.mm; v = 1; }
+    return { key: key, uid: key, date: d, hh: hh, mm: mm, v: v, sig: sig, rule: r.rule, text: String(text).trim() };
+  }
+  function fromYmd(s) { var p = String(s).split("-"); return new Date(+p[0], (+p[1]) - 1, +p[2]); }
+  window.gmStepICS = function (itemId, idx, text) {
+    var p = stepPlan(itemId, idx, text); if (!p || !window.gmIcs) return "";
+    var I = window.gmIcs, s = fromYmd(p.date), e = new Date(s);
+    s.setHours(p.hh, p.mm, 0, 0); e.setHours(p.hh, p.mm + 30, 0, 0);
+    var now = new Date();
+    var L = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//SecuRAX//Life OS calendar//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
+      "X-WR-CALNAME:Life OS system", "BEGIN:VEVENT", "UID:" + p.uid + "@local", "SEQUENCE:" + p.v,
+      "DTSTAMP:" + I.date(now, now.getHours(), now.getMinutes()), "DTSTART:" + I.date(s, p.hh, p.mm),
+      "DTEND:" + I.date(e, e.getHours(), e.getMinutes()), "RRULE:" + p.rule, "STATUS:CONFIRMED",
+      I.fold("SUMMARY:" + I.text(p.text)), "BEGIN:VALARM", "ACTION:DISPLAY", "DESCRIPTION:" + I.text(p.text), "TRIGGER:-PT30M",
+      "END:VALARM", "END:VEVENT", "END:VCALENDAR"];
+    return L.join("\r\n") + "\r\n";
+  };
+  window.gmStepCalendar = function (itemId, idx, text) {
+    var p = stepPlan(itemId, idx, text); if (!p) return;
+    var ics = window.gmStepICS(itemId, idx, text), led = stepLedger();
+    led[p.key] = { d: p.date, hh: p.hh, mm: p.mm, s: p.sig, v: p.v };
+    try { if (window.gmS) window.gmS("gm_cal_seq", led); else localStorage.setItem("gm_cal_seq", JSON.stringify(led)); } catch (e) {}
+    try {
+      var a = document.createElement("a");
+      a.href = URL.createObjectURL(new Blob([ics], { type: "text/calendar" }));
+      a.download = "life-os-step.ics"; document.body.appendChild(a); a.click(); a.remove();
+    } catch (e) {}
+    try { if (typeof window.gmToast === "function") window.gmToast("Calendar file saved: one repeating step. Add it to the same calendar each time; a newer file updates it, it never doubles."); } catch (e) {}
+  };
+  function calendarDoer(itemId, idx, text) {
+    var box = document.createElement("div");
+    box.className = "road-col step-do";
+    var add = document.createElement("button");
+    add.type = "button"; add.className = "btn-sm"; add.setAttribute("data-stepdo-cal", "1");
+    add.textContent = "Add to calendar";
+    add.setAttribute("aria-label", add.textContent + ": " + text);
+    add.addEventListener("click", function () { window.gmStepCalendar(itemId, idx, text); });
+    box.appendChild(add);
+    return box;
+  }
+
   function decorate() {
     var host = document.getElementById("m_sys"); if (!host) return;
     var item = window.actType === "k" ? (window.KPIs || [])[window.actIdx] : (window.RISKS || [])[window.actIdx];
@@ -9681,12 +9772,14 @@
     for (var i = 0; i < steps.length; i++) {
       var step = steps[i], textNode = step.querySelector(".step-t");
       var text = (textNode ? textNode.textContent : step.textContent) || "";
-      var k = kindOf(text), box;
+      var k = kindOf(text), box = null, boxes = [];
       if (k) box = k.note ? noteDoer(step, item.id + ":" + i) : namesDoer(step, item.id + ":" + i, k.n, k.what);
       else if (oneOff(text) && !(step.querySelector('input[type="checkbox"]') || {}).checked) box = reminderDoer(item.id + ":" + i, text.trim());
-      else continue;
-      if (step.nextSibling) step.parentNode.insertBefore(box, step.nextSibling);
-      else step.parentNode.appendChild(box);
+      if (box) boxes.push(box);
+      if (recurOf(text)) boxes.push(calendarDoer(item.id, i, text.trim()));
+      if (!boxes.length) continue;
+      var after = step;
+      boxes.forEach(function (b) { after.parentNode.insertBefore(b, after.nextSibling); after = b; });
     }
   }
 
