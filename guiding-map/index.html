@@ -13026,6 +13026,114 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   try { (window.requestAnimationFrame || setTimeout)(function () { (window.requestAnimationFrame || setTimeout)(off); }); } catch (e) { off(); }
 })();
 
+// A step that asks for names or a note gets its own place to do it, right under the step (owner, 2026-11-17):
+// "write the 5 names" becomes 5 inputs that tick the step when full; "after each call: note..." becomes one note line
+// with dated notes, the last 3 shown. Everything is kept in gm_stepdo, keyed by system and step, so a restored or
+// synced file brings the work with it. At most 12 inputs and 50 notes for any one step.
+(function () {
+  if (typeof window.renderModalBody !== "function") return;
+  var KEY = "gm_stepdo", MAX_IN = 12, MAX_NOTES = 50;
+  function readAll() {
+    try {
+      var v = window.gmG ? window.gmG(KEY, {}) : JSON.parse(localStorage.getItem(KEY) || "{}");
+      return v && typeof v === "object" && !Array.isArray(v) ? v : {};
+    } catch (e) { return {}; }
+  }
+  function saveAll(v) { try { if (window.gmS) window.gmS(KEY, v); else localStorage.setItem(KEY, JSON.stringify(v)); } catch (e) {} }
+  function esc(t) { return String(t).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function today() { var d = new Date(); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
+  function listOf(v) { return Array.isArray(v) ? v : []; }
+  // A note or log step asks for one line; a write or list step that names a number asks for that many.
+  function kindOf(text) {
+    var t = String(text || "");
+    if (/\b(?:note|log)\b/i.test(t)) return { note: true };
+    if (/\b(?:write|list)\b/i.test(t)) {
+      var m = /(\d{1,2})/.exec(t), n = m ? parseInt(m[1], 10) : 0;
+      if (n >= 1) return { n: Math.min(n, MAX_IN) };
+    }
+    return null;
+  }
+  function tick(step) { var cb = step && step.querySelector('input[type="checkbox"]'); if (cb && !cb.checked) cb.click(); }
+
+  function namesDoer(step, key, n) {
+    var arr = listOf(readAll()[key]).slice(0, n);
+    var box = document.createElement("div");
+    box.className = "road-col step-do";
+    var lbl = document.createElement("div");
+    lbl.className = "f-label"; lbl.textContent = "Your " + n + " names";
+    box.appendChild(lbl);
+    for (var i = 0; i < n; i++) (function (ix) {
+      var inp = document.createElement("input");
+      inp.type = "text"; inp.value = arr[ix] == null ? "" : String(arr[ix]);
+      inp.setAttribute("aria-label", "Name " + (ix + 1));
+      inp.addEventListener("input", function () {
+        var all = readAll(), cur = listOf(all[key]).slice(0, n);
+        while (cur.length < n) cur.push("");
+        cur[ix] = inp.value; all[key] = cur; saveAll(all);
+        var filled = 0;
+        for (var j = 0; j < n; j++) if (String(cur[j] || "").trim()) filled++;
+        if (filled === n) tick(step);
+      });
+      box.appendChild(inp);
+    })(i);
+    return box;
+  }
+
+  function noteDoer(step, key) {
+    var notes = listOf(readAll()[key]).filter(function (x) { return x && typeof x === "object"; }).slice(-MAX_NOTES);
+    var box = document.createElement("div");
+    box.className = "road-col step-do";
+    var lbl = document.createElement("div");
+    lbl.className = "f-label"; lbl.textContent = "Add a note after this call";
+    box.appendChild(lbl);
+    var inp = document.createElement("input");
+    inp.type = "text"; inp.setAttribute("aria-label", "Note after this call");
+    inp.placeholder = "One thing from their life";
+    box.appendChild(inp);
+    var add = document.createElement("button");
+    add.type = "button"; add.className = "btn-sm"; add.setAttribute("data-stepdo-add", "1");
+    add.textContent = "Add note";
+    add.addEventListener("click", function () {
+      var t = String(inp.value || "").trim(); if (!t) return;
+      var all = readAll();
+      var cur = listOf(all[key]).filter(function (x) { return x && typeof x === "object"; }).slice(-(MAX_NOTES - 1));
+      cur.push({ d: today(), t: t }); all[key] = cur; saveAll(all);
+      try { window.renderModalBody(); } catch (e) {}
+    });
+    box.appendChild(add);
+    if (notes.length) {
+      var list = document.createElement("div");
+      list.className = "step-notes";
+      list.innerHTML = notes.slice(-3).map(function (x) {
+        return '<div class="step-note"><span class="f-label" style="display:inline">' + esc(x.d) + '</span> ' + esc(x.t) + '</div>';
+      }).join("");
+      box.appendChild(list);
+    }
+    return box;
+  }
+
+  function decorate() {
+    var host = document.getElementById("m_sys"); if (!host) return;
+    var item = window.actType === "k" ? (window.KPIs || [])[window.actIdx] : (window.RISKS || [])[window.actIdx];
+    if (!item || !item.id) return;
+    var steps = host.getElementsByClassName("step");
+    for (var i = 0; i < steps.length; i++) {
+      var step = steps[i], textNode = step.querySelector(".step-t");
+      var k = kindOf(textNode ? textNode.textContent : step.textContent);
+      if (!k) continue;
+      var box = k.note ? noteDoer(step, item.id + ":" + i) : namesDoer(step, item.id + ":" + i, k.n);
+      if (step.nextSibling) step.parentNode.insertBefore(box, step.nextSibling);
+      else step.parentNode.appendChild(box);
+    }
+  }
+
+  var orig = window.renderModalBody;
+  window.renderModalBody = function () {
+    orig.apply(this, arguments);
+    try { decorate(); } catch (e) {}
+  };
+})();
+
 </script>
 <script>
 /* Failsafe: if the ops layer ever fails to boot, say so loudly instead of silently degrading. */
