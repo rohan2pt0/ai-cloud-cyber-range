@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- **Install by pasting one sentence into the AI you already use** (owner, 2026-11-17; queue ai-install, slice 1 of 2): the site publishes `install.txt`, written for the AI agent a person already uses. It stops and hands over the deploy guide's three steps when it cannot run shell commands, asks the person before installing Docker, names only the real commands (`git clone`, `./securax go`, `./securax doctor`, `./securax why`) and never asks for a key or password. The homepage hero shows that sentence in a box with a Copy button, and the site build fills in its address.
 - Owner's material of 2026-11-17 (LifeOS, ten posts, six screenshots) triaged in `docs/specs/cues-2026-11-17.md`; six new queue items with dates.
 - **A calls journal on the Plan tab** (owner, 2026-11-17; queue calls-journal, slice 1): log a call ("I expect X by date") at 60, 70, 80 or 90% confidence; when the date comes, one tap says Yes or No, and the card shows how often you were right at each level ("At 80% you were right 3 of 4"). At most 200 calls are kept, oldest answered first to go (test121).
 - Specs: calls-journal, ai-context-card (with its STRIDE threat model) and why-chain, three cues taken 80/20 from LifeOS/TELOS.
