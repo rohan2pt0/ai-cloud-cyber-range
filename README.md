@@ -134,6 +134,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- A home page that fits a phone
 - A mission line above the quarter's objectives
 - Install by pasting one sentence into the AI you already use
 - A due call on Today
@@ -141,7 +142,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - Delegated work finishes again, and briefs are one step, test first
 - Release readiness: go/no-go gates for the public launch and the paid edition
 - Experience v3, the spec
-- Built to last
 
 **Release 0.4.0 - 2026-11-14:**
 
