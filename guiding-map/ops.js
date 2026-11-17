@@ -9355,6 +9355,25 @@
     var h = _rmCalls(E), m = /<div class="section[^"]*"[^>]*>/.exec(h), from = m ? m.index + m[0].length : 0, k = h.indexOf('<div class="cat-t"', from);
     return k > -1 ? h.slice(0, k) + gmCallsHTML() + h.slice(k) : h.replace(/<\/div>\s*$/, gmCallsHTML() + '</div>');
   }; }
+  // Today: a call whose date has come sits as one calm line above the daily three, judged in one tap where the person
+  // already looks. The Plan tab keeps the full journal, the score and the calls still to come.
+  var _callRender = window.renderAll;
+  if (typeof _callRender === "function") window.renderAll = function () {
+    var out = _callRender.apply(this, arguments);
+    try {
+      if (typeof curTab !== "undefined" && curTab === "today" && !document.querySelector(".gm-call-today")) {
+        var due = callsLoad().filter(callDue).sort(function (x, y) { return String(x.date).localeCompare(String(y.date)); })[0];
+        var d3 = document.querySelector("#sections .gm-d3");
+        if (due && d3) d3.insertAdjacentHTML("beforebegin", '<div class="road-col gm-call-today" style="margin-bottom:10px;font-size:13px">'
+          + '<b>' + esc(due.text) + '</b> <span style="color:var(--muted)">\u00b7 ' + esc(due.conf) + '% confident \u00b7 did it happen?</span>'
+          + ' <span style="display:inline-flex;gap:6px;margin-inline-start:6px">'
+          + '<button type="button" class="btn-sm" data-call-yes="' + esc(due.id) + '" onclick="gmCallSet(\'' + esc(due.id) + '\',\'yes\')">Yes</button>'
+          + '<button type="button" class="btn-sm" style="background:var(--cardAlt);color:var(--text)" data-call-no="' + esc(due.id) + '" onclick="gmCallSet(\'' + esc(due.id) + '\',\'no\')">No</button></span>'
+          + ' <a href="#" class="gm-inl" style="margin-inline-start:6px" onclick="goTab(\'plan\');return false">All calls</a></div>');
+      }
+    } catch (e) {}
+    return out;
+  };
 })();
 /* ── The mission line (queue why-chain, slice 1): one line above the quarter's objectives, so every goal is read
    against why it matters. A guest sees an example marked as one; Edit opens one input; saving keeps it on this device;
