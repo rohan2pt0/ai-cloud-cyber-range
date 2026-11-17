@@ -142,7 +142,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - Release readiness: go/no-go gates for the public launch and the paid edition
 - Experience v3, the spec
 - Built to last
-- Life systems, the content
 
 **Release 0.4.0 - 2026-11-14:**
 
