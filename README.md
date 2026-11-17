@@ -134,6 +134,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- A resting door wakes when you need it
 - The delegation gate cannot be fooled by a test that never runs
 - The Wednesday call runs itself on Today
 - Doors rest by themselves
@@ -141,7 +142,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - Three friends use the Life OS on a phone
 - A home page that fits a phone, slice 3
 - A home page that fits a phone, slice 2
-- A one-off step can wait for Saturday
 
 **Release 0.4.0 - 2026-11-14:**
 

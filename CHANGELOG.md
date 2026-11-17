@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- **A resting door wakes when you need it** (queue friction-meter, slice 3): in More, a resting door comes back by itself when the person's own data says it matters, and says why: Kids for a child's birthday in the next 7 days (Birthday soon), Money through tax season from January to March in India (Tax season). Outside those windows a door rests as before, and using it keeps it awake (test132).
 - **The delegation gate cannot be fooled by a test that never runs** (queue delegate-new-tests): diffcheck blocks a new Life OS test left out of the npm suite list, and an autobuild attempt that changed nothing counts as failed instead of printing GREEN. Written by hand (strong tier: the gate).
 - **The Wednesday call runs itself on Today** (owner, 2026-11-17; queue step-doers, slice 4 of 4): on a Wednesday one calm line above the daily three names tonight's call, the friend from the 5 names called longest ago (never called counts as oldest), with the last note that mentions them. Called keeps today's date in `gm_stepdo` under `friends:calls`, and the next render names the next friend; on any other day, or with no names, there is no line (test131).
 - **Doors rest by themselves** (queue friction-meter, slice 2): in More, the doors you use come first (the order is set once a week, so nothing jumps), and a door unused for 45 days rests under Resting (n); Shield and deadlines never rest, and one use brings a door back (test130).

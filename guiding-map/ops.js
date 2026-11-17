@@ -4267,10 +4267,33 @@
     if (isNaN(then)) { then = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime(); }
     var days = Math.max(0, Math.round((new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() - then) / 86400000));
     var weeks = Math.min(UNLOCK.length, Math.floor(days / 7));
+    // A resting door wakes by itself when the person's own data says it is needed (queue friction-meter, slice 3): a child's
+    // birthday in the next 7 days wakes Kids; tax season (January to March, in India, the same region switch the savings
+    // levers use) wakes Money. It says why in the small badge, and using it keeps it awake.
+    function birthdaySoon(dob) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(String(dob || ""))) return false;
+      var p = String(dob).split("-"), m = +p[1] - 1, dd = +p[2];
+      if (!(m >= 0 && m < 12 && dd >= 1 && dd <= 31)) return false;
+      var t0 = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+      for (var y = now.getFullYear(); y <= now.getFullYear() + 1; y++) {
+        var b = new Date(y, m, dd).getTime(), diff = Math.round((b - t0) / 86400000);
+        if (diff >= 0 && diff <= 7) return true;
+      }
+      return false;
+    }
+    function wakeNote(id) {
+      if (id === "kids") {
+        var ks = (window.P && Array.isArray(window.P.kids)) ? window.P.kids : [];
+        for (var i = 0; i < ks.length; i++) if (birthdaySoon(ks[i] && ks[i].dob)) return "Birthday soon";
+      }
+      if (id === "money" && sysLocal() && now.getMonth() >= 0 && now.getMonth() <= 2) return "Tax season";
+      return "";
+    }
     function tile(t, isNew) {
-      var ic = window.gmIcon(t[0], 20);
+      var ic = window.gmIcon(t[0], 20), why = wakeNote(t[0]);
       return '<button role="menuitem" data-tab="' + t[0] + '" class="' + (curTab === t[0] ? "on" : "") + '" onclick="gmNavGo(\'' + t[0] + '\')">'
-        + (ic ? '<span class="gi" aria-hidden="true">' + ic + '</span>' : '') + t[1] + (isNew ? '<span class="gm-new">new</span>' : '') + '</button>';
+        + (ic ? '<span class="gi" aria-hidden="true">' + ic + '</span>' : '') + t[1] + (isNew ? '<span class="gm-new">new</span>' : '')
+        + (why ? '<span class="gm-new">' + why + '</span>' : '') + '</button>';
     }
     // A tab that cannot apply (the person answered No to its fact) is not shown at all: no clutter for a life that is not theirs.
     function fits(t) { return fitsFact(t[0]); }
@@ -4307,7 +4330,7 @@
       if (!isFinite(learned)) learned = 0;
       rest.forEach(function (t) {
         var u = useOf(t);
-        if (learned >= 45 && NEVER_RESTS.indexOf(t[0]) < 0 && agoDays(u.l) > 45) resting.push(t); else active.push(t);
+        if (learned >= 45 && NEVER_RESTS.indexOf(t[0]) < 0 && agoDays(u.l) > 45 && !wakeNote(t[0])) resting.push(t); else active.push(t);
       });
       // By habit, but stable: the order is worked out once a week and kept, so doors never jump under the thumb; a door new
       // to the list this week goes after the known ones.
