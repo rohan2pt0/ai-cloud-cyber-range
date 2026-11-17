@@ -135,13 +135,13 @@ This list is generated from [`features.json`](features.json); the Command Center
 **On main, in the next release:**
 
 - A home page that fits a phone, slice 2
+- A one-off step can wait for Saturday
 - A home page that fits a phone
 - A place to do the step, right under it
 - A mission line above the quarter's objectives
 - A renewals desk on the Risk tab
 - Install by pasting one sentence into the AI you already use
 - A due call on Today
-- A calls journal on the Plan tab
 
 **Release 0.4.0 - 2026-11-14:**
 

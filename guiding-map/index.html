@@ -13185,6 +13185,21 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     return null;
   }
   function tick(step) { var cb = step && step.querySelector('input[type="checkbox"]'); if (cb && !cb.checked) cb.click(); }
+  function nextSaturday() {
+    var d = new Date(), add = ((6 - d.getDay()) + 7) % 7;
+    if (add === 0) add = 7;
+    d.setDate(d.getDate() + add);
+    return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2);
+  }
+  // A one-off act ("Open…", "Buy…", "Book…", "Set up…", "Sign up…") read at night is easy to lose: one tap puts it in
+  // the Inbox on the coming Saturday, where Today and the calendar bring it back. A list or note step already has its
+  // own doer, so it gets no reminder.
+  // Most steps do not start with a verb ("Nominee on every account"), so a step is one-off when it is not recurring and
+  // not a rule; a reminder is only an offer, so a rare false match costs nothing.
+  var RECURS = /\b(?:every|daily|weekly|monthly|annual(?:ly)?|yearly|quarterly|each (?:day|week|month|year|morning|evening)|(?:mon|tues|wednes|thurs|fri|satur|sun)days?|\d+x\s*\/\s*(?:day|week|month))\b/i;
+  var RULE = /^\s*(?:never|no|don'?t|do not|avoid|accept|always|remember|rule)\b/i;
+  function oneOff(text) { var t = String(text || ""); return t.trim().length > 8 && !RECURS.test(t) && !RULE.test(t); }
+  function niceDay(d) { try { return new Date(d + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }); } catch (e) { return d; } }
 
   function namesDoer(step, key, n, what) {
     var arr = listOf(readAll()[key]).slice(0, n);
@@ -13243,6 +13258,27 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     return box;
   }
 
+  function reminderDoer(key, text) {
+    var rec = readAll()[key], due = rec && !Array.isArray(rec) && typeof rec === "object" ? String(rec.remind || "") : "";
+    var box = document.createElement("div");
+    box.className = "road-col step-do";
+    var add = document.createElement("button");
+    add.type = "button"; add.className = "btn-sm"; add.setAttribute("data-stepdo-remind", "1");
+    add.textContent = due ? "Reminder set for " + niceDay(due) : "Remind me Saturday";
+    add.setAttribute("aria-label", add.textContent + ": " + text);
+    add.addEventListener("click", function () {
+      var all = readAll(), cur = all[key];
+      if (cur && !Array.isArray(cur) && typeof cur === "object" && cur.remind) return;
+      var d = nextSaturday();
+      all[key] = { remind: d }; saveAll(all);
+      try { if (typeof window.gmInboxAdd === "function") window.gmInboxAdd(text, "action", { due: d, from: "step:" + key }); } catch (e) {}
+      add.textContent = "Reminder set for " + niceDay(d);
+      add.setAttribute("aria-label", add.textContent + ": " + text);
+    });
+    box.appendChild(add);
+    return box;
+  }
+
   function decorate() {
     var host = document.getElementById("m_sys"); if (!host) return;
     var item = window.actType === "k" ? (window.KPIs || [])[window.actIdx] : (window.RISKS || [])[window.actIdx];
@@ -13250,9 +13286,11 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     var steps = host.getElementsByClassName("step");
     for (var i = 0; i < steps.length; i++) {
       var step = steps[i], textNode = step.querySelector(".step-t");
-      var k = kindOf(textNode ? textNode.textContent : step.textContent);
-      if (!k) continue;
-      var box = k.note ? noteDoer(step, item.id + ":" + i) : namesDoer(step, item.id + ":" + i, k.n, k.what);
+      var text = (textNode ? textNode.textContent : step.textContent) || "";
+      var k = kindOf(text), box;
+      if (k) box = k.note ? noteDoer(step, item.id + ":" + i) : namesDoer(step, item.id + ":" + i, k.n, k.what);
+      else if (oneOff(text) && !(step.querySelector('input[type="checkbox"]') || {}).checked) box = reminderDoer(item.id + ":" + i, text.trim());
+      else continue;
       if (step.nextSibling) step.parentNode.insertBefore(box, step.nextSibling);
       else step.parentNode.appendChild(box);
     }
