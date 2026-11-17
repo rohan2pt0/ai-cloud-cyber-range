@@ -7909,15 +7909,19 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
         if (isNaN(t0)) return Infinity;
         return (new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() - t0) / 86400000;
       }
-      var active = [], resting = [];
+      var learned = agoDays(G("gm_use_since", "")), active = [], resting = [];
+      if (!isFinite(learned)) learned = 0;
       rest.forEach(function (t) {
         var u = useOf(t);
-        if (days >= 45 && NEVER_RESTS.indexOf(t[0]) < 0 && agoDays(u.l) > 45) resting.push(t); else active.push(t);
+        if (learned >= 45 && NEVER_RESTS.indexOf(t[0]) < 0 && agoDays(u.l) > 45) resting.push(t); else active.push(t);
       });
-      active.sort(function (a, b) {
-        var ua = useOf(a), ub = useOf(b);
-        return (ub.d.length - ua.d.length) || (ua.l < ub.l ? 1 : ua.l > ub.l ? -1 : 0);
-      });
+      // By habit, but stable: the order is worked out once a week and kept, so doors never jump under the thumb; a door new
+      // to the list this week goes after the known ones.
+      var wk = (function () { var d = new Date(now.getFullYear(), now.getMonth(), now.getDate()); d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return ymd(d); })();
+      var frozen = G("gm_more_order", {}), known = (frozen && frozen.w === wk && Array.isArray(frozen.o)) ? frozen.o : null;
+      var byUse = function (a, b) { var ua = useOf(a), ub = useOf(b); return (ub.d.length - ua.d.length) || (ua.l < ub.l ? 1 : ua.l > ub.l ? -1 : 0); };
+      if (known) active.sort(function (a, b) { var ia = known.indexOf(a[0]), ib = known.indexOf(b[0]); return (ia < 0 ? 999 : ia) - (ib < 0 ? 999 : ib) || byUse(a, b); });
+      else { active.sort(byUse); S_("gm_more_order", { w: wk, o: active.map(function (t) { return t[0]; }) }); }
       resting.sort(function (a, b) { var ua = useOf(a), ub = useOf(b); return ua.l < ub.l ? 1 : ua.l > ub.l ? -1 : 0; });
       sh += '<details class="gm-more-all"' + (restOpen ? " open" : "") + ' ontoggle="gmMoreAll(this.open)"><summary>Everything else (' + rest.length + ')</summary><div class="gm-more-g">';
       active.forEach(function (t) { sh += tile(t); });
@@ -13341,6 +13345,9 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   var G = window.gmG, S_ = window.gmS;
   function ymd(d) { d = d || new Date(); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
   var GM_USE_IDS = 300, GM_USE_DAYS = 30, GM_USE_RE = /^[A-Za-z0-9:-]{1,40}$/;
+  // The day learning began: resting counts from here, never from the first open, so an existing person's doors do not
+  // all rest the day this ships just because nothing was recorded before.
+  try { var _since = G("gm_use_since", ""); if (!/^\d{4}-\d{2}-\d{2}$/.test(_since)) S_("gm_use_since", ymd()); } catch (e) {}
   // The map as stored, cleaned: a damaged key or entry is dropped and a wrong shape gives an empty map, never a crash.
   window.gmUsage = function () {
     var raw = G("gm_use", {}), out = {};

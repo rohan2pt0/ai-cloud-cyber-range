@@ -18,7 +18,7 @@ const dom = new JSDOM(fs.readFileSync(path.join(__dirname, '..', 'index.html'), 
   beforeParse(w) {
     w.localStorage.setItem("sovP", JSON.stringify(prof));
     w.localStorage.setItem("gm_simple", "false"); w.localStorage.setItem("gm_mine_done", "true");
-    w.localStorage.setItem("gm_first_open", ago(90)); w.localStorage.setItem("gm_use", JSON.stringify(use));
+    w.localStorage.setItem("gm_first_open", JSON.stringify(ago(90))); w.localStorage.setItem("gm_use_since", JSON.stringify(ago(90))); w.localStorage.setItem("gm_use", JSON.stringify(use));
     w.matchMedia = (q) => ({ matches: false, media: q, addListener() {}, removeListener() {}, addEventListener() {}, removeEventListener() {} });
     w.confirm = () => false; w.alert = () => {}; w.scrollTo = () => {}; w.fetch = () => Promise.reject(new Error("offline"));
   } });
@@ -36,7 +36,7 @@ setTimeout(() => {
   ok("with five recent days kids comes before arch in Everything else", a.indexOf("kids") > -1 && a.indexOf("arch") > -1 && a.indexOf("kids") < a.indexOf("arch"), a.join(","));
   ok("a tab last used over 45 days ago sits under Resting", restingIds().indexOf("book") > -1, restingIds().join(","));
   ok("a tab never used sits under Resting", restingIds().indexOf("cal") > -1, restingIds().join(","));
-  ok("Resting names its count", !!resting() && /Resting \(2\)/.test(resting().querySelector("summary").textContent), resting() ? resting().querySelector("summary").textContent : "no Resting");
+  ok("Resting names its count", !!resting() && resting().querySelector("summary").textContent.indexOf("Resting (" + restingIds().length + ")") === 0, resting() ? resting().querySelector("summary").textContent : "no Resting");
   ok("risk and deadlines never rest", restingIds().indexOf("risk") < 0 && restingIds().indexOf("deadlines") < 0, restingIds().join(","));
 
   w.goTab("book");
@@ -44,11 +44,15 @@ setTimeout(() => {
   a = activeIds();
   ok("a resting door opened comes straight back out of Resting", a.indexOf("book") > -1 && restingIds().indexOf("book") < 0, "active " + a.join(",") + " resting " + restingIds().join(","));
 
-  w.localStorage.setItem("gm_first_open", ago(10));
+  w.localStorage.setItem("gm_first_open", JSON.stringify(ago(10))); w.localStorage.setItem("gm_use_since", JSON.stringify(ago(10)));
   w.gmNavMore(false); w.gmNavMore(true);
   ok("nothing rests while the app is newer than 45 days", !resting(), resting() ? restingIds().join(",") : "none");
   ok("the unused door is shown, not hidden, in that grace period", activeIds().indexOf("cal") > -1, activeIds().join(","));
 
+  // An existing person whose usage starts being learned today: nothing rests on day one, however old the app is.
+  w.localStorage.setItem("gm_first_open", JSON.stringify(ago(300))); w.localStorage.setItem("gm_use_since", JSON.stringify(ago(0)));
+  w.localStorage.removeItem("gm_more_order"); w.gmNavMore(true);
+  ok("learning that began today rests nothing, however old the app", !resting(), resting() ? resting().textContent.slice(0, 80) : "");
   console.log("test130 More menu rest: " + P + " passed, " + F + " failed");
   if (F) { e.forEach(x => console.log("  " + x)); process.exit(1); }
   process.exit(0);
