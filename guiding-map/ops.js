@@ -9984,4 +9984,109 @@
       }
     } catch (e) {}
   }, true);
+
+  /* ── Friction noticed on the device (queue friction-meter, slice 4): a sheet closed with no tick or input (an
+     abandon), three taps on one spot within a second (a rage), and the same two tabs switched four times within ten
+     seconds (a bounce). gm_friction_seen holds id -> how often, at most 200 ids, newest kept. Nothing is sent. */
+  var GM_FR_KEYS = 200;
+  window.gmFrictionSeen = function () {
+    var raw = G("gm_friction_seen", {}), out = {};
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+    Object.keys(raw).forEach(function (id) {
+      if (!GM_USE_RE.test(id)) return;
+      var n = raw[id];
+      if (typeof n !== "number" || !isFinite(n) || n < 1) return;
+      out[id] = Math.floor(n);
+    });
+    return out;
+  };
+  window.gmFriction = function (id) {
+    if (typeof id !== "string" || !GM_USE_RE.test(id)) return;
+    var map = window.gmFrictionSeen(), n = map[id] || 0;
+    // Re-insert at the end so the key order is recency, and the oldest keys are the ones dropped when the map is full.
+    delete map[id];
+    map[id] = n + 1;
+    var ids = Object.keys(map);
+    while (ids.length > GM_FR_KEYS) delete map[ids.shift()];
+    S_("gm_friction_seen", map);
+    return map;
+  };
+  // The highest counts first, ties by id so the answer is steady; the monthly card will name the top three.
+  window.gmFrictionTop = function (n) {
+    n = Math.floor(+n);
+    if (!(n > 0)) n = 3;
+    var map = window.gmFrictionSeen();
+    return Object.keys(map).map(function (id) { return { id: id, n: map[id] }; })
+      .sort(function (a, b) { return b.n - a.n || (a.id < b.id ? -1 : 1); }).slice(0, n);
+  };
+
+  // An opened sheet that closes with no tick or input is an abandon; the sheet's own controls settle the doubt.
+  var _gmFrOpen = null, _gmFrTouched = false;
+  if (typeof window.openK === "function") { var _gmFrOpenK = window.openK; window.openK = function (i) {
+    try { var k = (window.KPIs || [])[i]; _gmFrOpen = k && k.id ? "sys:" + k.id : null; _gmFrTouched = false; } catch (e) { _gmFrOpen = null; }
+    return _gmFrOpenK.apply(this, arguments);
+  }; }
+  if (typeof window.openR === "function") { var _gmFrOpenR = window.openR; window.openR = function (i) {
+    try { var r = (window.RISKS || [])[i]; _gmFrOpen = r && r.id ? "risk:" + r.id : null; _gmFrTouched = false; } catch (e) { _gmFrOpen = null; }
+    return _gmFrOpenR.apply(this, arguments);
+  }; }
+  function gmFrTouch(ev) {
+    try { for (var el = ev.target; el && el !== document; el = el.parentNode) { if (el.id === "mo") { _gmFrTouched = true; break; } } } catch (e) {}
+  }
+  document.addEventListener("input", gmFrTouch, true);
+  document.addEventListener("change", gmFrTouch, true);
+  if (typeof window.closeM === "function") { var _gmFrCloseM = window.closeM; window.closeM = function () {
+    try { if (_gmFrOpen && !_gmFrTouched) window.gmFriction(_gmFrOpen); } catch (e) {}
+    _gmFrOpen = null; _gmFrTouched = false;
+    return _gmFrCloseM.apply(this, arguments);
+  }; }
+
+  // Three taps on one spot within a second is a rage; the spot is its data-feat, else the tab it opens.
+  function gmFrSpot(el) {
+    var tab = null;
+    for (var n = el; n && n !== document; n = n.parentNode) {
+      if (!n.getAttribute) continue;
+      var f = n.getAttribute("data-feat");
+      if (f) return f;
+      if (!tab) {
+        var t = n.getAttribute("data-tab"), oc = n.getAttribute("onclick") || "";
+        var m = oc.match(/(?:goTab|gmNavGo)\(['"]([A-Za-z0-9:-]+)['"]/);
+        if (t) tab = "tab:" + t; else if (m) tab = "tab:" + m[1];
+      }
+    }
+    return tab;
+  }
+  var _gmFrTaps = [];
+  document.addEventListener("click", function (ev) {
+    try {
+      var id = gmFrSpot(ev.target), t = Date.now();
+      if (!id) return;
+      _gmFrTaps = _gmFrTaps.filter(function (x) { return t - x.t <= 1000; });
+      _gmFrTaps.push({ id: id, t: t });
+      if (_gmFrTaps.filter(function (x) { return x.id === id; }).length >= 3) {
+        window.gmFriction(id);
+        _gmFrTaps = _gmFrTaps.filter(function (x) { return x.id !== id; });
+      }
+    } catch (e) {}
+  }, true);
+
+  // Switching between the same two tabs four times within ten seconds is a bounce.
+  var _gmFrTabs = [];
+  if (typeof window.goTab === "function") { var _gmFrGoTab = window.goTab; window.goTab = function (id) {
+    try {
+      if (typeof id === "string" && GM_USE_RE.test(id)) {
+        var t = Date.now(), now = _gmFrTabs.filter(function (x) { return t - x.t <= 10000; });
+        now.push({ id: id, t: t });
+        _gmFrTabs = now;
+        if (now.length >= 4) {
+          var a = now[now.length - 4].id, b = now[now.length - 3].id, c = now[now.length - 2].id, e2 = now[now.length - 1].id;
+          if (a === c && b === e2 && a !== b) {
+            window.gmFriction("tab:" + [a, b].sort().join("-"));
+            _gmFrTabs = [];
+          }
+        }
+      }
+    } catch (e) {}
+    return _gmFrGoTab.apply(this, arguments);
+  }; }
 })();

@@ -36,6 +36,7 @@ def test_without_chromium_the_command_says_skip(monkeypatch, tmp_path, capsys):
 
 
 def test_without_playwright_the_command_says_skip(monkeypatch, tmp_path, capsys):
+    monkeypatch.setattr(su, "chromium_path", lambda: "/bin/true")
     monkeypatch.setattr(su, "has_playwright", lambda: False)
     monkeypatch.setattr("sys.argv", ["synthetic_users.py", str(tmp_path / "out")])
     assert su.main() == 0
