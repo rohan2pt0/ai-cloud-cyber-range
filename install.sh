@@ -43,7 +43,7 @@ while [ $# -gt 0 ]; do
     --docker) DOCKER_ONLY=1 ;;                 # root only: install Docker Engine for the user who ran sudo (the laptop path calls it)
     --no-start) NOSTART=1 ;;                   # put the code in place, start nothing (the old behaviour)
     --yes|-y) YES=1 ;;                         # do not ask before installing Docker
-    -h|--help) sed -n '2,15p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,18p' "$0"; exit 0 ;;
     *) die "Unknown option: $1   (see: bash install.sh --help)" ;;
   esac; shift
 done
@@ -93,6 +93,10 @@ fi
 # 0) --server: make a fresh Ubuntu server ready, then install as its own user and start (doc 85)
 if [ "$SERVER" = 1 ]; then
   [ "$(id -u)" = 0 ] || die "--server sets up the machine itself, so run it as root:  sudo bash install.sh --server"
+  # checked BEFORE the machine is changed, so a typo costs nothing (the laptop path does the same below)
+  [ "$MODE" != offline ] || die "--server installs from the network, so it cannot be used with --offline. Leave one of them out."
+  [ -z "$RESTORE" ] || [ -f "$RESTORE" ] || die "Backup not found: $RESTORE"
+  [ -z "$KEYFILE" ] || [ -f "$KEYFILE" ] || die "Key file not found: $KEYFILE"
   . /etc/os-release 2>/dev/null || true
   case "${ID:-}" in ubuntu|debian) ;; *) die "--server supports Ubuntu (22.04 or 24.04) and Debian. This is ${PRETTY_NAME:-unknown}." ;; esac
   DRY="${SECURAX_SERVER_DRYRUN:-0}"                       # 1 = say every step, change nothing (the tests use it)

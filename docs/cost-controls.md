@@ -34,7 +34,7 @@ Sources: [AWS Free Tier 2026](https://aws.amazon.com/free), [GCP pricing](https:
    - Azure `consumption_budget_subscription` with action-group email at 50/90/100%.
 3. **`enable_paid` flag** gates every billable resource (GuardDuty, Security Hub, Defender CSPM, Cloud Run, Content Safety S0). Default off ⇒ free SKUs only.
 4. **OPA policy** (`policies/opa/terraform.rego`) **fails CI if a plan has no budget** — you cannot deploy a cloud slice without a ceiling.
-5. **`teardown.sh`** destroys the local plane; `terraform destroy` removes cloud resources after each drill.
+5. **`teardown.sh`** stops the local plane (your data is kept; `--erase-data` deletes it after a typed word); `terraform destroy` removes cloud resources after each drill.
 
 ## Suggested monthly operating pattern (≈₹0–₹2,000)
 - 90% of practice: laptop only (₹0).

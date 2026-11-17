@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# One-shot bootstrap for the HP Spectre x360 (Windows 11 + WSL2 Ubuntu, or native Linux).
+# One-shot bootstrap for a laptop (Windows 11 + WSL2 Ubuntu, or native Linux).
 # Installs the toolchain, brings up the local plane, loads a small local model, and
 # runs a smoke test. Idempotent: safe to re-run. Costs nothing (all local).
 set -euo pipefail
