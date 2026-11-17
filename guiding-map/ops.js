@@ -4658,6 +4658,24 @@
     fun: { o: "Make room for joy", krs: ["One hobby session every week (12)", "One weekend fully offline"] },
     env: { o: "Fix my surroundings", krs: ["Declutter one room completely", "Close the 3 home repairs I keep postponing"] }
   };
+  function krWords(s) { return String(s || "").toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter(function (w) { return w.length > 2; }); }
+  window.gmKRSuggest = function (objectiveText) {
+    var words = krWords(objectiveText);
+    var ranked = Object.keys(QSUG).map(function (k) {
+      var x = QSUG[k], hay = (k + " " + x.o + " " + x.krs.join(" ")).toLowerCase(), score = 0;
+      words.forEach(function (w) { if (hay.indexOf(w) >= 0) score++; });
+      return { k: k, score: score };
+    }).sort(function (a, b) { return b.score - a.score; });
+    var out = [];
+    ranked.forEach(function (r) {
+      if (!r.score) return;
+      QSUG[r.k].krs.forEach(function (t) { if (out.indexOf(t) < 0 && out.length < 3) out.push(t); });
+    });
+    ["One measurable result this quarter", "The habit kept on 60 of 90 days", "The first small step finished"].forEach(function (t) {
+      if (out.length < 3 && out.indexOf(t) < 0) out.push(t);
+    });
+    return out.slice(0, 3);
+  };
   var GRADES = [[0, "Not started"], [0.25, "A little"], [0.5, "Half"], [0.75, "Most of it"], [1, "Done"]];
   function qKeyNow() { var d = new Date(); return d.getFullYear() + "-Q" + (Math.floor(d.getMonth() / 3) + 1); }
   function quarterDone() { return !!G("gm_quarter_done", {})[qKeyNow()]; }
