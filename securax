@@ -1921,7 +1921,7 @@ g=json.load(sys.stdin).get("approved",{}); print(f"✔ approved {g.get(\"tool\",
         # DNS can't resolve the host — almost always LOCAL (WSL after a wsl --shutdown, a VPN, corporate DNS), not GitHub.
         C "Could not resolve github.com — this is DNS on THIS machine, not GitHub being down. Nothing changed; the estate keeps running. Details: $(printf '%s' "$_PULL" | tail -1)"
         if grep -qiE 'microsoft|wsl' /proc/version 2>/dev/null; then
-          C "  WSL DNS fix:  printf '[network]\\ngenerateResolvConf=false\\n' | sudo tee /etc/wsl.conf ; sudo rm -f /etc/resolv.conf ; printf 'nameserver 1.1.1.1\\nnameserver 8.8.8.8\\n' | sudo tee /etc/resolv.conf   then (in Windows)  wsl --shutdown  and reopen (doc 121)."
+          C "  WSL DNS fix:  printf '[network]\\ngenerateResolvConf=false\\n' | sudo tee -a /etc/wsl.conf ; sudo rm -f /etc/resolv.conf ; printf 'nameserver 1.1.1.1\\nnameserver 8.8.8.8\\n' | sudo tee /etc/resolv.conf   then (in Windows)  wsl --shutdown  and reopen (doc 121)."
         else
           C "  Check DNS/VPN here:  getent hosts github.com   — then retry. If GitHub really is down: ./securax continuity show github-down (the mirror + the code bundle in your backups)."
         fi
