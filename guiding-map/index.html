@@ -13467,7 +13467,11 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     var names = listOf(readAll()["friends:0"]).map(function (x) { return String(x == null ? "" : x).trim(); })
       .filter(function (x) { return x; }).slice(0, 5);
     if (!names.length) return "";
-    var calls = friendCalls(), pick = names[0], pickDate = typeof calls[pick] === "string" ? calls[pick] : "";
+    var calls = friendCalls(), tdy = today();
+    // One call a week: once tonight's call is made, the line is a small win until next Wednesday, never a second name.
+    var doneTonight = names.filter(function (x) { return calls[x] === tdy; })[0];
+    if (doneTonight) return '<div class="road-col gm-friend-today" style="margin-bottom:10px;font-size:13px">\u2713 Called <b>' + esc(doneTonight) + '</b> tonight. Next Wednesday, the next friend.</div>';
+    var pick = names[0], pickDate = typeof calls[pick] === "string" ? calls[pick] : "";
     for (var i = 1; i < names.length; i++) {
       var d = typeof calls[names[i]] === "string" ? calls[names[i]] : "";
       if (d < pickDate) { pick = names[i]; pickDate = d; }

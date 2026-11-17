@@ -37,8 +37,14 @@ setTimeout(() => {
   ok("Called records today for that friend", !!calls && calls.Amit === "2026-11-18", JSON.stringify(calls));
   w.goTab("today");
   line = d.querySelector(".gm-friend-today");
-  ok("the next render names the other friend", !!line && /Neha/.test(line.textContent) && !/Amit/.test(line.textContent),
-    line ? line.textContent.slice(0, 180) : "no line");
+  ok("after Called, the line is a small win, never a second name the same night", !!line && /Called/.test(line.textContent) && /Amit/.test(line.textContent) && !/Neha/.test(line.textContent),
+    line ? line.textContent : "no line");
+  nowMs = new Date(2026, 10, 25, 20, 0, 0).getTime();   // the next Wednesday
+  w.goTab("today");
+  line = d.querySelector(".gm-friend-today");
+  ok("next Wednesday names the other friend", !!line && /Neha/.test(line.textContent) && !/Amit/.test(line.textContent),
+    line ? line.textContent : "no line");
+  nowMs = new Date(2026, 10, 18, 20, 0, 0).getTime();
 
   nowMs = new Date(2026, 10, 19, 20, 0, 0).getTime();   // Thursday
   w.goTab("today");

@@ -142,7 +142,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - A home page that fits a phone, slice 2
 - A one-off step can wait for Saturday
 - The Life OS learns which features are used, on the device only
-- A home page that fits a phone
 
 **Release 0.4.0 - 2026-11-14:**
 
