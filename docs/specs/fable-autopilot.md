@@ -36,10 +36,10 @@ The prompt to paste (Fable, Medium effort, a new session each time):
 Alternate: after a task-0 run, mark the first content task not done **next**; after a content task, mark task 0 **next**. Exactly one task is **next** at any time.
 
 1. **done (PR #311).** **Life systems, content.** Write `guiding-map/levers/life-systems.json` and `docs/specs/life-systems.md`
-0. **next.** Continue the review ledger: take the next unreviewed slice (at most 15 files), fix the cheap issues, brief
+0. **open (slice 2: PR #325).** Continue the review ledger: take the next unreviewed slice (at most 15 files), fix the cheap issues, brief
    the rest, update the ledger. (`docs/specs/review-ledger.md`; this task stays open until every row there is reviewed.
    Its one exception to the first rule: cheap fixes outside the Life OS and `apps/` are made, not briefed.)
-2. **Profession packs, archetypes 5 to 10.** Extend `guiding-map/levers/professions.json` (same shape as the first
+2. **next.** **Profession packs, archetypes 5 to 10.** Extend `guiding-map/levers/professions.json` (same shape as the first
    four): founders and business owners; investors and finance; aviation, defence and intelligence; volatile short
    careers (athletes, actors, media, authors); research and academia; technical specialists. Verify each licence or
    renewal rule; mark the rest confirm.

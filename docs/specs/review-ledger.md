@@ -70,7 +70,7 @@ Counts are tracked files (`git ls-files`) on 2026-11-16. Status is one of: **not
 
 | Rank | Area | Directories (tracked files) | Status |
 |---|---|---|---|
-| 1 | Launchers and installers | root files (44), `local/` (43), `tools/windows/` (1) | 14 of 88 reviewed; 8 fixed (#313). See slice 1 |
+| 1 | Launchers and installers | root files (44), `local/` (43), `tools/windows/` (1) | 20 of 88 reviewed, and parts of `securax` and `DEPLOY.md`; 12 fixed (#313, #325). See slices 1 and 2 |
 | 2 | The Life OS | `guiding-map/` (196) | not reviewed |
 | 3 | The gateway and security | `apps/` (47), `governance/` (230), `policies/` (1), `redteam/` (11), `ai-soc/` (6), `mcp/` (3), `agents/` (12), `intel/` (9) | 1 of 319 reviewed (#313, encoding only) |
 | 4 | Sync and backup | inside `apps/` and `governance/` (review them first within rank 3), `routines/` (10), `sandbox/` (4) | not reviewed |
@@ -98,7 +98,7 @@ Nothing in this slice was run on Windows. Every "fixed" below is held by a stati
 | `WINDOWS-QUICKSTART.md` | reviewed (#313) | Now names the log and the shortcut rule. Brief W5 remains |
 | `tools/windows/free-c-drive.ps1` | reviewed (#313) | Sound and careful (report first, asks before each step). Brief L6 remains |
 | `governance/respond_kit/collect.ps1` | reviewed (#313), encoding only | Two strings held a non-ASCII dot that prints as noise in Windows PowerShell 5.1; fixed. Its logic is not reviewed |
-| `install.sh` | skimmed (#313), not line by line | Checksums on the release path, clear failures, no destructive step seen. It goes back in the next slice for a full read |
+| `install.sh` | skimmed (#313), not line by line | Checksums on the release path, clear failures, no destructive step seen. Read in full in slice 2 |
 
 ### Briefs from slice 1
 
@@ -140,8 +140,105 @@ Test first: fail when any doc tells a person to download a `.bat` or `.cmd` by a
 does). confirm: that GitHub's "Download ZIP" applies the CRLF rule; if it does not, store the batch files as CRLF
 (`-text`) and update the two tests that name the current rule.
 
+### Slice 2 (2026-11-17, PR #325): the first start, the stop and the update
+
+Nothing in this slice ran against real Docker, a real cluster, a real server or Windows. Each "fixed" is held by a test
+that runs the script with stand-ins for `docker`, `kind`, `kubectl`, `helm` and `curl` first on the path
+(`local/compose/tests/test_local_scripts.py`, `governance/tests/test_installers.py`).
+
+| File | Status | What was found |
+|---|---|---|
+| `local/scripts/teardown.sh` | fixed (#325) | It ran `down -v`, which deletes every data volume (chats, documents, workflows, synced data, models), while the guide called it "stop everything". Now it stops and keeps the data; `--erase` deletes after a typed word and names the backup first |
+| `install.sh` | fixed (#325) | Read line by line. `--stable` with no network ended silently with curl's exit code; `--help` stopped mid-sentence. Briefs S1, S2, S3 and L5 remain |
+| `local/scripts/bootstrap-laptop.sh` | fixed (#325) | A gateway that never started read as "FAIL - expected 400, got 000", a failed guardrail; the answer file sat at a fixed path in `/tmp`. Downloads are pinned and hash-checked: sound. Brief S4 remains |
+| `local/scripts/kind-up.sh` | fixed (#325) | Any refusal of the insecure pod (no cluster, no network) counted as a pass. Now only an admission denial does. Brief S5 remains |
+| `local/scripts/daily-driver-up.sh` | reviewed (#325) | Nothing destructive. It shares brief S4 |
+| `GETTING-STARTED.md` | reviewed (#325) | Fixed: two pointers to files a person does not have, a placeholder file name, and a device model. Brief S6 remains |
+| `local/compose/docker-compose.yml` | reviewed (#325) | Every published port is on loopback unless the person opens it; the gateway, the sync service and the tunnel are read-only with no capabilities. Never rename `name:`: the data volumes carry it. Briefs S7 and S8 remain |
+| `securax`: `update` | fixed (#325), this branch only | It blamed "uncommitted local changes" when nothing new was pulled and the estate did not start. Back-up first and rollback are sound. Briefs S9 and S10 remain |
+| `securax`: `up` | reviewed (#325), this branch only | Placeholder keys are replaced, the fallbacks are layered, a failed helper never stops the start. Briefs S8, S11 and L7 remain |
+| `securax`: `go` | reviewed (#325), this branch only | Checks first, acts only when something is missing. Briefs S12 and L7 remain |
+| `securax`: `down` | reviewed (#325), this branch only | One line. Brief S9 remains |
+| `securax`: `why` | reviewed (#325), this branch only | Works with Docker off; an unknown log gets no invented reason. Its two messages belong to brief L7 |
+| `DEPLOY.md` | reviewed (#325), the Windows rows only | They match the launchers as fixed in #313. Line 18 tells a Windows person to edit a file by hand (`zero-setup`): it joins brief S11. The addresses with ports join brief S6 |
+
+### Briefs from slice 2
+
+**S1. `install.sh --server` switches SSH passwords off when any account has a key.** It counts keys in every home folder.
+A key left in another account (a provider's default user) is enough, and a person who signs in as root with a password is
+then locked out of SSH. Strong tier. Test first: in `governance/tests/test_installers.py`, with `SECURAX_SERVER_DRYRUN=1`
+and a fake home that holds a key for a third account only, expect "SSH still accepts passwords". Step: count the keys of
+root and of the person who ran `sudo` (`SUDO_USER`) only.
+
+**S2. `install.sh --server` ignores `--offline` and `--dir` without saying so.** Test first: `--server --offline FILE`
+(dry run) exits non-zero and names the flag it cannot honour. Step: one `die` before step 1 of the server path.
+
+**S3. `install.sh --docker` on WSL appends a second `[boot]` section to `/etc/wsl.conf`** when the file already has one
+with another key, and its check misses `systemd = true` written with spaces. Test first: a dry run against a fake
+`wsl.conf` that already holds `[boot]` prints one edit, not an append. Step: add the key under the section that exists.
+confirm: how WSL reads a section named twice (not verified).
+
+**S4. Two start paths, two sets of secrets.** `bootstrap-laptop.sh` and `daily-driver-up.sh` copy `.env.example` and start
+the estate with the placeholder gateway key that is public in this repository; `./securax up` replaces it. They also print
+addresses with ports, and say "Docker Desktop" to a person who runs Docker Engine in Ubuntu. A decision for the owner,
+recommended: both scripts hand the start to `./securax up` (bootstrap keeps its tool installs and its smoke test).
+Test first: in `test_local_scripts.py`, run each with a fake `docker` and expect no `docker compose ... up` of their own.
+Step: one script per run.
+
+**S5. `kind-up.sh` installs whatever Kyverno chart is newest, and its first line promises Falco, which it never installs.**
+Test first: the `helm upgrade --install` line carries `--version`; the header names only what the script installs.
+Step: pin the chart; drop the word (the README line says Falco too). confirm: the chart version to pin (not verified here).
+
+**S6. The root guides show addresses with ports** (`GETTING-STARTED.md`: 4 lines; `DEPLOY.md`: 9), the same class as W5.
+Step: one file per run; say "`./securax open` prints the right address" once and name the pages, not the ports.
+`GETTING-STARTED.md` also teaches the older script path first: after S4, lead with `./securax up` only.
+
+**S7. Two services publish the same port.** Grafana (profile `security`) and Chat (profile `ai`) both take 3000 on this
+machine, so the two profiles cannot run together, and `bootstrap-laptop.sh` ends by naming 3000 as Grafana.
+Test first: in `local/compose/tests/test_compose_sanity.py`, fail when two services in `docker-compose.yml` publish the
+same host port. Step: move Grafana to a free port and update the two lines that name it.
+
+**S8. A database that nothing uses starts on every `up`.** The `postgres` service is on a network no other service joins
+(the overlays bring their own), and it starts with the placeholder password unless `setup` was run. It is unreachable, so
+the risk is small; the cost is memory and a part to patch. Test first: fail when a service in the default profiles shares
+no network with another service. Step: move it to a profile of its own. confirm: that no overlay or script reaches it by
+name (`full-stack.yml` and `stage-sprout.yml` define their own).
+
+**S9. `./securax down` says "stopped." while other parts keep running.** It stops the `ai` profile only. Compose leaves
+services in other profiles running ([Docker's profiles page](https://docs.docker.com/compose/how-tos/profiles/);
+[compose issue 11793](https://github.com/docker/compose/issues/11793)), so the password manager, the online tunnel,
+Studio and the `security` profile stay up, and `update` never recreates the ones `up` does not restart. A decision for
+the owner, recommended: `down` stops everything and says so; `down --keep passwords` for the person who wants the vault
+up. Test first: a `test_cli_friction.py` case with a fake `docker` expects every profile in the call, or a line naming
+what was left running. `teardown.sh` has the same gap. Not run against real Docker here.
+
+**S10. A failed update is tried again every night.** After a rollback the checkout is behind main again, so the next
+`update --auto` pulls the same version, stops the estate, fails and rolls back. The Go/No-Go poll softens it but does not
+know this commit failed here. Test first: in a temp repository, a second `--auto` after a recorded failure of the same
+commit exits 0 without `down`. Step: write the failed commit to a small state file; skip it until main moves past it.
+The same branch also throws away a person's edit to `litellm-config.yaml` without a word (the L4 finding): say so first.
+
+**S11. `up` asks for a Gemini key on every start, for ever.** A person who pressed Enter (the private local model) is
+asked again each time, and one more tip line follows. Pasting a secret is also the open friction `copy-paste-secrets`.
+Test first: `test_cli_friction.py` expects the question at most once (a `GEMINI_ASKED` line in `.env`, as `NAMES_ASKED`
+does for names). Step: three lines in `up`. The port-clash message in `up` also tells every person to open Windows
+PowerShell; say it only on WSL.
+
+**S12. `go` publishes the estate to the person's Tailscale devices by itself** when Tailscale is signed in, under a first
+line that says "Nothing you already set up is changed". It also offers to send the one-tap phone link, which carries the
+sync token, through the alert topic on a third-party server (asked, default no). Strong tier; a decision for the owner.
+Recommended: ask once before the first publish, as `up` does for names. Test first: with a fake `tailscale` that reports
+nothing published and no terminal, `go` publishes nothing and prints the one command. Check that
+`governance/threat-models.json` covers the link through the alert topic.
+
+**S13. A device model in six more files** (`docs/architecture.md`, docs 00, 05, 10 and 28, `portal/explainer.html`,
+`personal-rnd/self_opsec.py`). The repository is public and the model says whose machine it is. Step: "a 16 GB laptop",
+one file per run. Slice 2 removed it from the three files it read.
+
 ### Next slice (at most 15 files)
 
-`install.sh` (line by line), `GETTING-STARTED.md`, `DEPLOY.md` (the Windows rows), `local/scripts/bootstrap-laptop.sh`,
-`daily-driver-up.sh`, `kind-up.sh`, `teardown.sh`, then the `go`, `up`, `down`, `update` and `why` branches of `securax`
-(count each branch as one file), and `local/compose/docker-compose.yml`.
+The rest of rank 1, largest risk first: `DEPLOY.md` (the whole file), `README.md` (the hand-written parts),
+`local/compose/.env.example`, `local/compose/guiding-map.conf`, `local/compose/gen_litellm_config.py`,
+`local/compose/model_discovery.py`, `local/compose/full-stack.yml`, `local/compose/stage-sprout.yml`, the TLS overlay
+files in `local/compose/`, then the `doctor`, `setup`, `start`, `backup` and `restore` branches of `securax` (count each
+branch as one file).
