@@ -154,3 +154,4 @@ Sorted by due date, soonest first.
 | [why-chain](why-chain.md) | 2026-12-15 | Every goal traces up to one mission; work with no reason is folded away. |
 | [cues-2026-11-17](cues-2026-11-17.md) | 2026-11-17 | The owner's material (LifeOS, ten posts, six screenshots) read and triaged: seven cues taken, the rest already here or skipped. |
 | [renewals-desk](renewals-desk.md) | 2026-12-12 | Nothing lapses by surprise: certifications, CPEs, insurance, PUC, licence, typed once and rolled forward. |
+| [friction-meter](friction-meter.md) | 2026-12-15 | Friction measured in four numbers that only go down; one tap to report it; features earn their place by use. |
