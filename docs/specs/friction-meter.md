@@ -8,7 +8,7 @@ purpose. Friction the owner meets in real use should be easy to report, and shou
 
 ## Outcome for the person
 
-They report a hard moment in one tap, wherever it happens, and later see it fixed. Each screen keeps one obvious action, however many
+They never have to report anything: the app notices what is hard and what goes unused, and the hard parts come back fixed. Each screen keeps one obvious action, however many
 features the estate gains. The things they use rise to the top by themselves, and the things they never use fold away without being deleted.
 
 ## Measure: four numbers, each held by a check that only lets them go down
@@ -21,40 +21,44 @@ features the estate gains. The things they use rise to the top by themselves, an
 3. **Dead ends.** These are steps that ask the person to act with no place to act (`step-doers` found 248 such steps). Counted from the data, the count only goes down.
 4. **Open frictions.** The register `governance/frictions.json` holds these. The count only goes down, and each entry has a date.
 
-## Sense: what real use shows, measured on the device and never sent anywhere
+## Sense: automatic, on the device, nothing for the person to do (owner 2026-11-17: "don't add one more task for me")
 
-- **One-tap report:** "Something was hard here" in the More menu saves the screen, the sheet that was open, the time and an
-  optional line (typed or dictated). It is kept on the device and carried to the estate by the person's own sync. It never goes into this public repository as text.
-  The navigator turns it into a written entry in the register.
-- **Quiet signals, counts only:**
-  - a sheet opened and closed with no action (abandonment);
-  - three taps on the same spot within a second (rage tap);
-  - switching back and forth between two tabs within ten seconds (searching);
-  - a feature not opened in sixty days.
-  These signals only feed the review below. They never become a nudge.
-
-## Act: the bloat guard (features earn their place)
-
-- **New features arrive folded.** They earn a place on the first screen by use: opened on three different days in two weeks.
-- **Unused features sink.** After sixty days unused, a feature moves one level deeper. It is never removed, and search and More always find it.
-- **Positions stay stable.** A door moves at most once a week, and only during the weekly review, so muscle memory is not broken.
-- **Ranking:** frequency × severity (steps, abandonment) × consequence. Hard gates (security, recoverability, regulation) are never folded.
+- **Usage ledger.** It records each tab, system sheet and card (`data-feat`) the person opens, and on which days. It keeps up to 30 days per feature and 300 features.
+  It stays on the device, carried only by the person's own sync and backups.
+- **Friction detected, not reported.** These are counted on the device:
+  - a sheet opened and closed with no action;
+  - three taps on one spot within a second;
+  - switching back and forth between two tabs within ten seconds;
+  - one field retyped three times;
+  - a search with no result;
+  - an error caught on a screen.
+  A monthly review card names the top three. The navigator reads the same counts in the estate's copy and fixes them. Nobody is asked to file anything.
+- **Resting.** A feature unused for 45 days (and not new in its first 14 days) folds into "Resting (n)" at the bottom of More.
+  It comes back at once when it is used, searched for or woken. Pinned and never resting: Today, the lock, backups, a red risk, and anything due.
+- **Woken by need (just in time).** A resting feature wakes by itself when the person's own data says it is needed:
+  - a renewal inside its warning days wakes Renewals;
+  - a birthday in the next 7 days wakes the friendships system;
+  - January to March wakes the tax levers (India);
+  - a trip date wakes the passport;
+  - salary day wakes the money date.
+- **Order by habit (frecency).** More doors and "Later" lists are ranked by how often and how recently they are used. They move at most once a week, so muscle memory holds.
+- **Defaults learned.** The option chosen most often becomes the preselected one (a call's confidence, a renewal template).
 
 ## The loop (build-the-system)
 
-- **Cue:** the friction button in the moment, and the monthly review.
-- **Smallest step:** one tap.
+- **Cue:** none needed; the app senses use and friction by itself.
+- **Smallest step:** zero; nothing to do.
 - **Reward:** "Fixed: what you reported on 17 Nov", shown in What's new.
 - **Feedback:** the four numbers in `./securax progress`.
-- **Constraint:** the owner's time to report. That is why it is one tap.
+- **Constraint:** the owner's attention. That is why nothing is asked of them.
 
 ## Slices
 
-1. The one-tap report and the list of reports in Ops (test126).
-2. The quiet signals, counted on the device, with a monthly review card that names the top three.
-3. The journey audit: steps to done for the ten journeys, a ratchet in CI.
-4. Choice load per screen: a budget check in jsdom on every tab.
-5. Promotion by use and sinking by disuse in the More menu, at the weekly review.
+1. The usage ledger (`gm_use`, test128).
+2. Resting in More: frecency order, rest after 45 days, pinned exemptions, and one-tap return.
+3. Woken by need: renewals, birthdays, tax season, trips, salary day.
+4. Friction detected: the six signals counted on the device, and a monthly top-three card.
+5. Steps to done and choice load as CI ratchets (the journey audit and a per-screen budget).
 
 ## Evolution rail (amoeba to enterprise)
 
