@@ -9650,13 +9650,29 @@
   // not a rule; a reminder is only an offer, so a rare false match costs nothing.
   var RECURS = /\b(?:every|daily|weekly|monthly|annual(?:ly)?|yearly|quarterly|each (?:day|week|month|year|morning|evening)|(?:mon|tues|wednes|thurs|fri|satur|sun)days?|\d+x\s*\/\s*(?:day|week|month))\b/i;
   var RULE = /^\s*(?:never|no|don'?t|do not|avoid|accept|always|remember|rule)\b/i;
-  function oneOff(text) { var t = String(text || ""); return t.trim().length > 8 && !RECURS.test(t) && !RULE.test(t); }
+  // Owner 2026-11-17 (screenshot): most steps are states to check ("At least 30% of your week...") or reflections, not
+  // errands; a Saturday reminder on them is wrong and noisy. Only a step that starts with an action verb gets one.
+  var ACT = /^\W*(?:open|buy|book|set\s*up|sign\s*up|call|visit|apply|schedule|enable|automate|register|download|install|get|ask|compare|fill|create|link|update|switch|cancel|renew|file|claim|submit|order|join|nominate|close|print|scan|share|send)\b/i;
+  function oneOff(text) { var t = String(text || ""); return ACT.test(t) && !RECURS.test(t) && !RULE.test(t); }
+  // A step with a blank to fill ("My work matters because ___") gets a field right there; filling it ticks the step.
+  function blankOf(text) { return /_{3,}/.test(String(text || "")); }
+  function blankDoer(step, key) {
+    var box = document.createElement("div"); box.className = "step-do";
+    var cur = readAll()[key], inp = document.createElement("input");
+    inp.type = "text"; inp.maxLength = 160; inp.value = typeof cur === "string" ? cur : "";
+    inp.placeholder = "Fill the blank here"; inp.setAttribute("aria-label", "Fill the blank");
+    inp.addEventListener("change", function () {
+      var all = readAll(), v = String(inp.value || "").trim().slice(0, 160); all[key] = v; saveAll(all);
+      if (v) tick(step);
+    });
+    box.appendChild(inp); return box;
+  }
   function niceDay(d) { try { return new Date(d + "T00:00:00").toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }); } catch (e) { return d; } }
 
   function namesDoer(step, key, n, what) {
     var arr = listOf(readAll()[key]).slice(0, n);
     var box = document.createElement("div");
-    box.className = "road-col step-do";
+    box.className = "step-do";
     var lbl = document.createElement("div");
     lbl.className = "f-label"; lbl.textContent = "Write them here: your " + n + " " + (what || "items");
     box.appendChild(lbl);
@@ -9680,7 +9696,7 @@
   function noteDoer(step, key) {
     var notes = listOf(readAll()[key]).filter(function (x) { return x && typeof x === "object"; }).slice(-MAX_NOTES);
     var box = document.createElement("div");
-    box.className = "road-col step-do";
+    box.className = "step-do";
     var lbl = document.createElement("div");
     lbl.className = "f-label"; lbl.textContent = "Note it here (dated, the last three shown)";
     box.appendChild(lbl);
@@ -9713,10 +9729,10 @@
   function reminderDoer(key, text) {
     var rec = readAll()[key], due = rec && !Array.isArray(rec) && typeof rec === "object" ? String(rec.remind || "") : "";
     var box = document.createElement("div");
-    box.className = "road-col step-do";
+    box.className = "step-do";
     var add = document.createElement("button");
-    add.type = "button"; add.className = "btn-sm"; add.setAttribute("data-stepdo-remind", "1");
-    add.textContent = due ? "Reminder set for " + niceDay(due) : "Remind me Saturday";
+    add.type = "button"; add.className = "gm-inl step-link"; add.setAttribute("data-stepdo-remind", "1");
+    add.textContent = due ? "\u2713 Reminder set for " + niceDay(due) : "Remind me Saturday";
     add.setAttribute("aria-label", add.textContent + ": " + text);
     add.addEventListener("click", function () {
       var all = readAll(), cur = all[key];
@@ -9830,9 +9846,9 @@
   };
   function calendarDoer(itemId, idx, text) {
     var box = document.createElement("div");
-    box.className = "road-col step-do";
+    box.className = "step-do";
     var add = document.createElement("button");
-    add.type = "button"; add.className = "btn-sm"; add.setAttribute("data-stepdo-cal", "1");
+    add.type = "button"; add.className = "gm-inl step-link"; add.setAttribute("data-stepdo-cal", "1");
     add.textContent = "Add to calendar";
     add.setAttribute("aria-label", add.textContent + ": " + text);
     add.addEventListener("click", function () { window.gmStepCalendar(itemId, idx, text); });
@@ -9842,6 +9858,13 @@
 
   function decorate() {
     var host = document.getElementById("m_sys"); if (!host) return;
+    if (!document.getElementById("gmStepDoCss")) {                 // a doer sits quietly under its step, never as a card
+      var st = document.createElement("style"); st.id = "gmStepDoCss";
+      st.textContent = "#m_sys .step-do{margin:-4px 0 12px 44px;padding:0;background:none;border:0;box-shadow:none}"
+        + "#m_sys .step-do input{width:100%;margin:4px 0}"
+        + "#m_sys .step-link{display:inline-block;background:none;border:0;padding:6px 0;min-height:32px;font-size:13px;font-weight:600;color:var(--gold);cursor:pointer;text-decoration:underline;text-underline-offset:3px;margin-inline-end:16px}";
+      document.head.appendChild(st);
+    }
     var item = window.actType === "k" ? (window.KPIs || [])[window.actIdx] : (window.RISKS || [])[window.actIdx];
     if (!item || !item.id) return;
     var steps = host.getElementsByClassName("step");
@@ -9850,6 +9873,7 @@
       var text = (textNode ? textNode.textContent : step.textContent) || "";
       var k = kindOf(text), box = null, boxes = [];
       if (k) box = k.note ? noteDoer(step, item.id + ":" + i) : namesDoer(step, item.id + ":" + i, k.n, k.what);
+      else if (blankOf(text)) box = blankDoer(step, item.id + ":" + i + ":blank");
       else if (oneOff(text) && !(step.querySelector('input[type="checkbox"]') || {}).checked) box = reminderDoer(item.id + ":" + i, text.trim());
       if (box) boxes.push(box);
       if (recurOf(text)) boxes.push(calendarDoer(item.id, i, text.trim()));
