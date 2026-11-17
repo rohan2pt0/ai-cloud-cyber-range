@@ -9414,6 +9414,133 @@
     var h = _rmMission(E), m = /<div class="section[^"]*"[^>]*>/.exec(h), from = m ? m.index + m[0].length : 0, k = h.indexOf('<div class="cat-t"', from);
     return k > -1 ? h.slice(0, k) + gmMissionHTML() + h.slice(k) : h.replace(/<\/div>\s*$/, gmMissionHTML() + '</div>');
   }; }
+
+  /* ── The renewals desk (queue renewals-desk): things that expire, so nothing lapses by surprise. The templates live in
+     guiding-map/levers/renewals.json (window.GM_RENEWALS, inlined by build.js). Pick one, type its date once; the one inside
+     its lead days with the highest lapse is the one action, the rest fold under Later, and Renewed rolls the date forward
+     (a once-only item, every 0, is marked done). */
+  var RENEW_MAX = 200;
+  function renewData() {
+    var d = (typeof window !== "undefined" && window.GM_RENEWALS) ? window.GM_RENEWALS : null;
+    return d && Array.isArray(d.renewals) ? d : { renewals: [], verified: "" };
+  }
+  function renewTpl(id) {
+    var a = renewData().renewals;
+    for (var i = 0; i < a.length; i++) if (a[i] && a[i].id === id) return a[i];
+    return null;
+  }
+  function renewItems() {
+    var a = G("gm_renewals", []), out = [];
+    if (!Array.isArray(a)) return out;
+    a.forEach(function (x) {
+      if (!x || typeof x !== "object" || !renewTpl(x.id) || typeof x.date !== "string") return;
+      if (isNaN(Date.parse(x.date))) return;
+      // Several of one kind (two cars' PUC, the parents' health policy): each item has its own uid and an optional label.
+      var uid = (typeof x.uid === "string" && /^[\w-]{1,60}$/.test(x.uid)) ? x.uid : x.id;
+      var label = typeof x.label === "string" ? x.label.replace(/[<>"'`]/g, "").trim().slice(0, 40) : "";
+      out.push({ uid: uid, id: x.id, label: label, date: x.date, done: x.done === true });
+    });
+    return out;
+  }
+  function renewToday() { var n = new Date(); return Date.UTC(n.getUTCFullYear(), n.getUTCMonth(), n.getUTCDate()); }
+  function renewLeft(day) { return Math.round((Date.parse(day) - renewToday()) / 864e5); }
+  function renewAddMonths(day, n) {
+    var t = Date.parse(day); if (isNaN(t)) return day;
+    var d = new Date(t), y = d.getUTCFullYear(), m = d.getUTCMonth() + n, dayN = d.getUTCDate();
+    var last = new Date(Date.UTC(y, m + 1, 0)).getUTCDate();
+    return new Date(Date.UTC(y, m, Math.min(dayN, last))).toISOString().slice(0, 10);
+  }
+  function renewRows() {
+    var rows = renewItems().filter(function (x) { return !x.done; }).map(function (x) {
+      var t = renewTpl(x.id);
+      return { uid: x.uid, id: x.id, label: x.label, date: x.date, tpl: t, days: renewLeft(x.date) };
+    });
+    rows.sort(function (a, b) { return (+b.tpl.lapse || 0) - (+a.tpl.lapse || 0) || a.days - b.days; });
+    var inside = rows.filter(function (r) { return r.days <= (+r.tpl.lead || 0); });
+    // Only an item inside its warning days is an action; when nothing is, the desk says so calmly (no early Renewed button).
+    var open = inside[0] || null, next = rows.slice().sort(function (a, b) { return a.days - b.days; })[0] || null;
+    return { open: open, next: next, later: rows.filter(function (r) { return r !== open; }) };
+  }
+  function renewDay(day) {
+    try { return new Date(day + "T00:00:00").toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }); } catch (e) { return day; }
+  }
+  function renewName(r) { return r.tpl.title + (r.label ? " \u00b7 " + r.label : ""); }
+  function renewMain(r) {
+    var t = r.tpl;
+    var h = '<div style="font-weight:800;font-size:14px">' + esc(renewName(r)) + '</div>'
+      + '<div style="font-size:12px;color:var(--muted);margin-top:3px">Due ' + esc(renewDay(r.date)) + ' \u00b7 '
+      + (r.days < 0 ? Math.abs(r.days) + ' day' + (Math.abs(r.days) === 1 ? '' : 's') + ' ago' : r.days + ' day' + (r.days === 1 ? '' : 's') + ' left') + '</div>';
+    if (t.cost) h += '<div style="font-size:12.5px;margin-top:6px">' + esc(t.cost) + '</div>';
+    if (t.cpe) h += '<div style="font-size:12px;color:var(--muted);margin-top:3px">' + esc(t.cpe.total) + ' credits in ' + esc(t.cpe.years) + ' years (about ' + esc(t.cpe.perYear) + ' a year). ' + esc(t.cpe.note || '') + '</div>';
+    h += '<ol style="margin:8px 0 0;padding-left:20px;font-size:13px">' + (t.steps || []).map(function (s) { return '<li style="margin-bottom:4px">' + esc(s) + '</li>'; }).join("") + '</ol>';
+    if (t.portal) h += '<div style="font-size:12px;margin-top:8px">Official site: ' + esc(t.portal) + '</div>';
+    if (t.check) h += '<div class="info" style="font-size:12px;margin-top:6px">Check: ' + esc(t.check) + '</div>';
+    if (t.dateHint) h += '<div style="font-size:11px;color:var(--muted);margin-top:4px">The date to use: ' + esc(t.dateHint) + '</div>';
+    return h;
+  }
+  function renewOpenCard(r) {
+    return '<div class="road-col gm-renew-open" data-renew-open="' + esc(r.uid) + '" style="margin-bottom:12px">' + renewMain(r)
+      + '<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">'
+      + '<button type="button" class="btn-sm" data-renew-done="' + esc(r.uid) + '" onclick="gmRenewed(\'' + esc(r.uid) + '\')">Renewed</button></div></div>';
+  }
+  function renewLaterCard(r) {
+    return '<details class="road-col gm-renew-item" style="margin-bottom:8px"><summary style="cursor:pointer;font-weight:800;font-size:13px">' + esc(renewName(r))
+      + ' <span style="font-weight:500;color:var(--muted)">\u00b7 due ' + esc(renewDay(r.date)) + '</span></summary><div style="margin-top:8px">' + renewMain(r)
+      + '<div style="margin-top:10px"><button type="button" class="btn-sm" data-renew-done="' + esc(r.uid) + '" onclick="gmRenewed(\'' + esc(r.uid) + '\')">Renewed</button></div></div></details>';
+  }
+  function renewFormHTML(openNow) {
+    var opts = renewData().renewals.map(function (t) { return '<option value="' + esc(t.id) + '">' + esc(t.title) + '</option>'; }).join("");
+    return '<details class="road-col gm-renew-add" style="margin-top:10px"' + (openNow ? " open" : "") + '>'
+      + '<summary style="cursor:pointer;font-weight:800;font-size:13px">Add something that expires</summary>'
+      + '<label class="f-label" for="gmRenewPick" style="margin-top:8px">What expires?</label>'
+      + '<select id="gmRenewPick">' + opts + '</select>'
+      + '<label class="f-label" for="gmRenewLabel">Which one? (optional: Car, Bike, Parents)</label>'
+      + '<input id="gmRenewLabel" maxlength="40" placeholder="Leave empty if you have only one">'
+      + '<label class="f-label" for="gmRenewDate">Its date (type it once)</label>'
+      + '<input id="gmRenewDate" type="date">'
+      + '<div style="margin-top:8px"><button type="button" class="btn-sm" data-renew-add="1" onclick="gmRenewAdd()">Add this renewal</button></div></details>';
+  }
+  window.gmRenewAdd = function () {
+    var sel = document.getElementById("gmRenewPick"), inp = document.getElementById("gmRenewDate");
+    var id = sel ? String(sel.value || "") : "", day = inp ? String(inp.value || "").trim() : "";
+    var t = renewTpl(id);
+    if (!t) { if (typeof gmToast === "function") gmToast("Pick what expires first."); return; }
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(day) || isNaN(Date.parse(day))) { if (typeof gmToast === "function") gmToast("Type its date, like 2026-12-01."); return; }
+    var lb = document.getElementById("gmRenewLabel"), label = lb ? String(lb.value || "").replace(/[<>"'`]/g, "").trim().slice(0, 40) : "";
+    var uid = id + (label ? "-" + label.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") : "");
+    var a = renewItems(), at = -1;
+    a.forEach(function (x, i) { if (x.uid === uid) at = i; });
+    var rec = { uid: uid, id: id, label: label, date: day };
+    if (at >= 0) a[at] = rec;
+    else { if (a.length >= RENEW_MAX) { if (typeof gmToast === "function") gmToast("That is enough renewals for now (" + RENEW_MAX + ")."); return; } a.push(rec); }
+    S_("gm_renewals", a); renderAll();
+    if (typeof gmToast === "function") gmToast("Added: " + t.title + (label ? " \u00b7 " + label : ""));
+  };
+  window.gmRenewed = function (uid) {
+    var a = renewItems(), at = -1;
+    a.forEach(function (x, i) { if (x.uid === uid) at = i; });
+    if (at < 0) return;
+    var t = renewTpl(a[at].id); if (!t) return;
+    if (+t.every > 0) { a[at].date = renewAddMonths(a[at].date, +t.every); delete a[at].done; }
+    else a[at].done = true;
+    S_("gm_renewals", a); renderAll();
+    if (typeof gmToast === "function") gmToast(+t.every > 0 ? "Renewed: the next date is " + renewDay(a[at].date) + "." : "Done: " + t.title + ".");
+  };
+  window.gmRenewalsHTML = function () {
+    var d = renewData();
+    if (!d.renewals.length) return "";
+    var rows = renewRows(), doneCount = renewItems().filter(function (x) { return x.done; }).length;
+    var h = '<div class="gm-renewals" role="region" aria-label="Renewals">'
+      + '<div class="cat-t" style="margin-top:0">Renewals</div>'
+      + '<div class="info">Pick what expires and type its date once. The estate warns you inside each item\u2019s lead days, and Renewed rolls the date forward.</div>';
+    if (!rows.open && rows.next) h += '<div class="info gm-renew-calm">All current. Next: <b>' + esc(renewName(rows.next)) + '</b> on ' + esc(renewDay(rows.next.date)) + '.</div>';
+    else if (!rows.open) h += '<div class="info">Nothing is due yet. Add something that expires \u2014 your first one \u2014 and it will warn you in time.</div>';
+    else h += renewOpenCard(rows.open);
+    if (rows.later.length) h += '<details class="road-col gm-renew-later" style="margin-top:8px"><summary style="cursor:pointer;font-weight:800;font-size:13px">Later (' + rows.later.length + ')</summary>' + rows.later.map(renewLaterCard).join("") + '</details>';
+    h += renewFormHTML(!renewItems().length);
+    if (doneCount) h += '<details class="road-col" style="margin-top:8px"><summary style="cursor:pointer;font-weight:800;font-size:13px">Renewed (' + doneCount + ')</summary><div style="font-size:12.5px;color:var(--muted);margin-top:6px">Once-only items are kept here after you renew them, with no date to chase.</div></details>';
+    return h + '</div>';
+  };
 })();
 // Boot veil off (index.html head): the Life OS has drawn its own first screen, so the page may show. Two frames later,
 // so the first paint the person sees is the finished one.
