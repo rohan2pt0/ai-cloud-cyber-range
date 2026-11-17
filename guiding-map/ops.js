@@ -9230,6 +9230,126 @@
       + ".gm-show-all{grid-column:1/-1;margin-top:6px;font-weight:600}";
     document.head.appendChild(st2);
   } catch (e) {}
+  /* ── Calls journal (queue calls-journal, slice 1): a call is one sentence with a confidence and a date, judged in one
+     tap when the date comes, so the person can see how good their judgement is. At most 200 calls, oldest answered first
+     to go. The card sits at the top of the Plan view, after its hero. */
+  var CALL_CONFS = [60, 70, 80, 90];
+  function callYmd(d) { d = d || new Date(); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
+  function callsLoad() {
+    var a = G("gm_calls", []), out = [];
+    if (!Array.isArray(a)) return out;
+    a.forEach(function (c) {
+      if (!c || typeof c !== "object" || typeof c.text !== "string" || !c.text.trim() || typeof c.date !== "string") return;
+      var conf = +c.conf; if (CALL_CONFS.indexOf(conf) < 0) return;
+      out.push({ id: typeof c.id === "string" ? c.id : "c" + out.length, text: c.text, conf: conf, date: c.date,
+        outcome: c.outcome === "yes" || c.outcome === "no" ? c.outcome : null, ts: +c.ts || 0 });
+    });
+    return out;
+  }
+  function callDue(c) { return !c.outcome && c.date <= callYmd(); }
+  function callStore(a) {
+    if (a.length > 200) {                                            // drop the oldest answered calls first, then the oldest
+      a.sort(function (x, y) { return (+x.ts || 0) - (+y.ts || 0); });
+      while (a.length > 200) {
+        var at = -1;
+        for (var i = 0; i < a.length; i++) if (a[i].outcome) { at = i; break; }
+        a.splice(at < 0 ? 0 : at, 1);
+      }
+    }
+    S_("gm_calls", a);
+  }
+  window.gmCallConf = function (btn) {
+    var v = btn && btn.getAttribute("data-call-conf"), box = btn && btn.parentNode;
+    if (!v || !box) return;
+    var chips = box.querySelectorAll("[data-call-conf]");
+    for (var i = 0; i < chips.length; i++) {
+      var on = chips[i] === btn;
+      chips[i].setAttribute("aria-pressed", on ? "true" : "false");
+      chips[i].className = "btn-sm gm-call-chip" + (on ? " on" : "");
+    }
+    var hidden = document.getElementById("gmCallConf"); if (hidden) hidden.value = v;
+  };
+  window.gmCallAdd = function () {
+    var t = document.getElementById("gmCallText"), dt = document.getElementById("gmCallDate"), cf = document.getElementById("gmCallConf");
+    var text = t ? String(t.value || "").trim() : "", date = dt ? String(dt.value || "").trim() : "", conf = cf ? parseInt(cf.value, 10) : 70;
+    if (!text) { if (typeof gmToast === "function") gmToast("Write what you expect, in one line."); if (t) t.focus(); return; }
+    if (!date || isNaN(new Date(date + "T00:00:00").getTime())) { if (typeof gmToast === "function") gmToast("Pick the date you will judge it by."); return; }
+    if (CALL_CONFS.indexOf(conf) < 0) conf = 70;
+    var a = callsLoad();
+    a.push({ id: "c" + Date.now() + Math.random().toString(36).slice(2, 6), text: text.slice(0, 200), conf: conf, date: date, outcome: null, ts: Date.now() });
+    callStore(a); renderAll();
+  };
+  window.gmCallSet = function (id, outcome) {
+    if (outcome !== "yes" && outcome !== "no") return;
+    var a = callsLoad(), hit = false;
+    a.forEach(function (c) { if (c.id === id) { c.outcome = outcome; c.ts = c.ts || Date.now(); hit = true; } });
+    if (hit) { callStore(a); renderAll(); }
+  };
+  function callsStyle() {
+    if (!document.getElementById("gmCallsCss")) {
+      var st = document.createElement("style"); st.id = "gmCallsCss";
+      st.textContent = ".gm-call-chip{display:inline-block;min-width:56px;background:var(--cardAlt);color:var(--text)}"
+        + ".gm-call-chip.on{background:var(--gold);color:#0d1f35;border-color:var(--gold)}";
+      document.head.appendChild(st);
+    }
+    return "";
+  }
+  function callItemHTML(c) {
+    var due = callDue(c), judged = !!c.outcome;
+    var h = '<div class="road-col gm-call" data-call="' + esc(c.id) + '" style="margin-bottom:8px' + (due ? ";border-left:3px solid var(--gold)" : "") + '">'
+      + '<div style="font-weight:700;font-size:13px">' + esc(c.text) + '</div>'
+      + '<div style="font-size:12px;color:var(--muted);margin-top:2px">' + esc(c.conf) + '% confident \u00b7 by ' + esc(c.date)
+      + (judged ? " \u00b7 " + (c.outcome === "yes" ? "it happened" : "it did not") : due ? " \u00b7 did it happen?" : "") + '</div>';
+    if (due) h += '<div style="display:flex;gap:8px;margin-top:8px">'
+      + '<button type="button" class="btn-sm" data-call-yes="' + esc(c.id) + '" onclick="gmCallSet(\'' + esc(c.id) + '\',\'yes\')">Yes</button>'
+      + '<button type="button" class="btn-sm" style="background:var(--cardAlt);color:var(--text)" data-call-no="' + esc(c.id) + '" onclick="gmCallSet(\'' + esc(c.id) + '\',\'no\')">No</button></div>';
+    return h + '</div>';
+  }
+  function callScoreHTML(a) {
+    var done = a.filter(function (c) { return !!c.outcome; }), lines = [];
+    CALL_CONFS.forEach(function (conf) {
+      var g = done.filter(function (c) { return c.conf === conf; });
+      if (!g.length) return;
+      var yes = g.filter(function (c) { return c.outcome === "yes"; }).length;
+      lines.push("At " + conf + "% you were right " + yes + " of " + g.length);
+    });
+    return lines.length ? '<div class="info gm-call-score" style="margin:8px 0">' + lines.map(esc).join(" \u00b7 ") + '</div>' : "";
+  }
+  window.gmCallsHTML = function () {
+    var a = callsLoad(), due = [], future = [], done = [];
+    a.forEach(function (c) {
+      if (c.outcome) done.push(c);
+      else if (callDue(c)) due.push(c);
+      else future.push(c);
+    });
+    due.sort(function (x, y) { return String(x.date).localeCompare(String(y.date)); });
+    future.sort(function (x, y) { return String(x.date).localeCompare(String(y.date)); });
+    var shown = due.concat(future.slice(0, 3)), later = future.slice(3);
+    var def = new Date(); def.setDate(def.getDate() + 90);
+    var h = callsStyle() + '<div class="gm-calls" role="region" aria-label="Calls journal">'
+      + '<div class="cat-t" style="margin-top:0">Your calls</div>'
+      + '<div class="info">A call is one sentence: \u201cI expect X by this date\u201d, with how sure you are. When the date comes, one tap says whether it happened, so you can see how good your judgement is.</div>';
+    if (!a.length) h += '<div class="info" style="margin:8px 0">No calls yet. Try the first one: \u201cI expect a new client by 31 March\u201d at 70% \u2014 one tap will judge it when the date comes.</div>';
+    h += '<div class="road-col" style="margin-top:8px">'
+      + '<label class="f-label" for="gmCallText">I expect\u2026</label>'
+      + '<input id="gmCallText" maxlength="200" placeholder="a new client" aria-label="What you expect">'
+      + '<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap" role="group" aria-label="How confident">'
+      + CALL_CONFS.map(function (v) { return '<button type="button" class="btn-sm gm-call-chip' + (v === 70 ? " on" : "") + '" data-call-conf="' + v + '" aria-pressed="' + (v === 70 ? "true" : "false") + '" onclick="gmCallConf(this)">' + v + '%</button>'; }).join("")
+      + '</div><input type="hidden" id="gmCallConf" value="70">'
+      + '<label class="f-label" style="margin-top:8px" for="gmCallDate">Judge it by</label>'
+      + '<input type="date" id="gmCallDate" value="' + callYmd(def) + '" aria-label="Judge it by">'
+      + '<div style="margin-top:8px"><button type="button" class="btn-sm" data-call-add="1" onclick="gmCallAdd()">Add this call</button></div></div>';
+    if (shown.length) h += '<div style="margin-top:12px">' + shown.map(callItemHTML).join("") + '</div>';
+    if (later.length) h += '<details class="road-col" style="margin-top:8px"><summary style="cursor:pointer;font-weight:800;font-size:13px">Later (' + later.length + ')</summary>' + later.map(callItemHTML).join("") + '</details>';
+    h += callScoreHTML(a);
+    if (done.length) h += '<details class="road-col" style="margin-top:8px"><summary style="cursor:pointer;font-weight:800;font-size:13px">Answered (' + done.length + ')</summary>' + done.map(callItemHTML).join("") + '</details>';
+    return h + '</div>';
+  };
+  // The calls card sits at the top of the Plan view, directly below its hero (and before the focus moves).
+  if (typeof renderPlan === "function") { var _rmCalls = renderPlan; renderPlan = function (E) {
+    var h = _rmCalls(E), m = /<div class="section[^"]*"[^>]*>/.exec(h), from = m ? m.index + m[0].length : 0, k = h.indexOf('<div class="cat-t"', from);
+    return k > -1 ? h.slice(0, k) + gmCallsHTML() + h.slice(k) : h.replace(/<\/div>\s*$/, gmCallsHTML() + '</div>');
+  }; }
 })();
 // Boot veil off (index.html head): the Life OS has drawn its own first screen, so the page may show. Two frames later,
 // so the first paint the person sees is the finished one.
