@@ -70,7 +70,7 @@ Counts are tracked files (`git ls-files`) on 2026-11-16. Status is one of: **not
 
 | Rank | Area | Directories (tracked files) | Status |
 |---|---|---|---|
-| 1 | Launchers and installers | root files (44), `local/` (43), `tools/windows/` (1) | 14 of 88 reviewed; 8 fixed (#313). See slice 1 |
+| 1 | Launchers and installers | root files (44), `local/` (43), `tools/windows/` (1) | 20 of 88 reviewed; 9 fixed (8 in #313, 1 in #326). Part read: `securax` (5 branches), `DEPLOY.md` (Windows rows). See slices 1 and 2 |
 | 2 | The Life OS | `guiding-map/` (196) | not reviewed |
 | 3 | The gateway and security | `apps/` (47), `governance/` (230), `policies/` (1), `redteam/` (11), `ai-soc/` (6), `mcp/` (3), `agents/` (12), `intel/` (9) | 1 of 319 reviewed (#313, encoding only) |
 | 4 | Sync and backup | inside `apps/` and `governance/` (review them first within rank 3), `routines/` (10), `sandbox/` (4) | not reviewed |
@@ -140,8 +140,134 @@ Test first: fail when any doc tells a person to download a `.bat` or `.cmd` by a
 does). confirm: that GitHub's "Download ZIP" applies the CRLF rule; if it does not, store the batch files as CRLF
 (`-text`) and update the two tests that name the current rule.
 
+### Slice 2 (2026-11-17, PR #326): the first start, on every system
+
+Nothing in this slice was run against a real Docker, a real server or Windows. "Fixed" is held by a test with stand-in
+programs; "reviewed" means read line by line, with what was found written as a brief below.
+
+| File | Status | What was found |
+|---|---|---|
+| `local/scripts/teardown.sh` | fixed (#326) | It erased every Docker volume (chats, private documents, workflows, the password vault, synced Life OS data) while the README and the guide call it "stop everything". It now stops and keeps the data; `--wipe` erases after a typed word |
+| `install.sh` | reviewed (#326) | Fixed: `--server` used `sudo` without installing it; `--help` cut the summary short and showed a raw placeholder. Briefs S6, S11 to S14 remain |
+| `GETTING-STARTED.md` | reviewed (#326) | Fixed: two pointers to files that exist nowhere. Brief S16 remains (two start paths, ports, an example file nobody has) |
+| `DEPLOY.md` | Windows rows only (#326) | Docker Desktop is the only path named; two folder names for one folder; a key typed into a file by hand. Brief S16. The rest goes in a later slice |
+| `local/scripts/bootstrap-laptop.sh` | reviewed (#326) | Sound: every download is checked against a pinned hash before it is installed. Brief S15 remains |
+| `local/scripts/daily-driver-up.sh` | reviewed (#326) | It starts the estate without the steps `securax up` takes first (the service key stays the public development one). Brief S15 |
+| `local/scripts/kind-up.sh` | reviewed (#326) | Says it brings up Falco; nothing installs it. The Kyverno chart has no version. Brief S15 |
+| `local/compose/docker-compose.yml` | reviewed (#326) | Sound on the whole: loopback by default, no new privileges everywhere, the database on a closed network, the scanner holds the Docker socket for seconds only. Brief S10 remains |
+| `securax`, `up` | reviewed (#326) | Fixed, no test yet: the "show your sync token" hint only worked from the code folder; a closed terminal at the names question ended the start silently. Briefs S8, S9 remain |
+| `securax`, `go` | reviewed (#326) | Briefs S1, S2 (what leaves the machine without a clear question) and S8 |
+| `securax`, `update` | reviewed (#326) | Careful: backup first, health check, rollback by itself. Briefs S3 to S6 remain |
+| `securax`, `down` | reviewed (#326) | One line. Brief S7: it may leave the password manager, the tunnel and Studio running |
+| `securax`, `why` | reviewed (#326) | Brief S8 (wrong advice outside Windows) and S9 (asks for raw logs to be pasted) |
+
+### Briefs from slice 2
+
+Ranked by risk to a person. **Strong** marks a brief for the strong tier (secrets, sign-in, update logic).
+
+**S1. The phone link carries the sync token through the alert topic (strong).** `go` offers to send the one-tap phone
+link as a notification. The link holds the token that reads and writes all of a person's synced data, and the alert
+service is a third party; the default answer is No, but the question says it "is not stored there" and nothing more.
+Test first: in `local/compose/tests/`, fail when `securax` passes the output of `synclink.py` to `curl`. Step: send a
+pairing code that works once and expires in ten minutes, or show the QR on the laptop screen (`zero-setup`: the pairing
+scan). Needs a line in `governance/threat-models.json`.
+Verified: an ntfy server keeps messages for 12 hours by default ([ntfy: configuration](https://docs.ntfy.sh/config/)).
+confirm: the `Cache: no` header keeps one message out of that store while connected subscribers still get it (read in
+a mirror of the ntfy docs, not on the official page); and that on the public server anyone who knows a topic's name
+can subscribe to it.
+
+**S2. `go` publishes the app and Chat to the whole tailnet without a question.** It then prints "your devices only".
+That holds for a tailnet of one person; on a shared tailnet every member's device can reach it, because a new tailnet
+allows all devices to reach each other until its policy says otherwise
+([Tailscale: Serve](https://tailscale.com/docs/reference/examples/serve), [policy samples](https://tailscale.com/kb/1192/acl-samples)).
+Test first: with a stand-in `tailscale`, `go` asks once (answer kept in `.env`) before `serve --bg`, and the line it
+prints says "every device on your tailnet". Step: one question, one changed sentence.
+
+**S3. The stable channel takes a release candidate for the newest release (strong).** `update` picks the highest tag
+that matches `v*.*.*`. Checked with git here: `v1.0.0-rc1` sorts above `v1.0.0`, so a stable machine would move to the
+candidate and then never to the release. No candidate tag exists today, so nobody is affected yet.
+Test first: in `lifecycle/tests/`, a temporary repository with tags `v0.9.0`, `v1.0.0-rc1` and `v1.0.0`; the tag
+expression copied from `securax` must print `v1.0.0`. Step: keep only tags of exactly three numbers, and end the
+lookup with `|| true` (an empty match must not end `update`).
+
+**S4. `update` throws away a person's edit to `litellm-config.yaml` without a word** (the same as L4). Test first: a
+stand-in `git` records calls; expect a copy named `litellm-config.yours.yaml` and one printed line before the
+`checkout --`. Step: three lines.
+
+**S5. When neither the new nor the old version starts, `update` says the backup is "intact" and does not name it.**
+A rollback returns the code, not data a new version has already changed. Test first: the last message holds the
+backup's file name and the words `securax restore`. Step: keep the name `backup` printed, and reuse it in the two
+last messages. Drop "your data is untouched" from the rollback line; say "your data is in the backup above".
+
+**S6. A copy installed with `--offline` can never be updated.** `update` says "download the latest ZIP"; `install.sh`
+refuses a folder that exists; the keys live in that folder's `.env`. Test first: in `governance/tests/test_installers.py`,
+`--offline` onto an existing offline copy checks the checksum, replaces the code and keeps `local/compose/.env` and
+`vault/` byte for byte. Step: an `--upgrade` path for offline copies only; `update` names it.
+
+**S7. `down` names one profile.** Compose stops only the profiles it is given, plus services with none
+([Docker: profiles](https://docs.docker.com/compose/profiles/)), so the password manager, the online tunnel and Studio
+keep running after "stopped." Test first: with a stand-in `docker`, `./securax down` names every profile the compose
+file defines and ends with "start again: securax up". Step: read the profiles from the file, not a list.
+confirm: on the Compose version the estate ships with, by running it once in the sandbox.
+
+**S8. Advice for Windows shown on every system** (L7, wider). `why` (two messages), the port-clash message in `up`
+("open Windows PowerShell") and the Tailscale line in `go` assume Docker Desktop on Windows. Step: the helper L7 adds,
+used in these four places too; the test from L7 gains four cases.
+
+**S9. `why` ends with "copy everything above into the chat".** The lines above are raw container logs, which can hold
+a key, an address or a prompt. Test first: `governance/why.py` gains `redact()`; a test feeds it a fake low-entropy
+key, an address built at run time and a bearer line, and expects none in the output. Step: `securax why` prints the
+log through it. The same test covers the key typed at `up`: it is shown on screen as typed today; read it unseen.
+
+**S10. The compose file.** One brief per line, each with a test in `local/compose/tests/test_compose_sanity.py`:
+(a) Chat and Grafana both publish port 3000, so the `ai` and `security` profiles cannot run together, and
+`bootstrap-laptop.sh` calls 3000 Grafana while every guide calls it Chat: move Grafana, fail on a repeated host port.
+(b) Studio mounts the whole repository, so an AI agent inside a third-party editor can read `local/compose/.env`
+(every key) and `vault/`: already in the queue as `studio-harden`; add the test that fails while the mount is `../..`.
+(c) The comment says Studio is "bound to loopback only"; `BIND_HOST` moves it with the rest. One word.
+(d) The password manager starts with sign-ups open and follows `BIND_HOST` too. Test first: `start passwords` on an
+opened estate refuses, or closes sign-ups first. confirm: what "sign-ups close after your account" does today.
+(e) Four images carry a tag and no digest (`ollama`, `postgres`, `loki`, `trivy`). `digest-pins.json` leaves them
+out on purpose: it lists what another device or the internet can reach. The scanner is the exception worth adding: it
+is the one third-party image that holds the Docker socket. Step: one entry in `digest-pins.json`, one digest.
+
+**S11. `install.sh --docker` adds a second `[boot]` section to `/etc/wsl.conf`** when one is there already.
+Test first: a dry run with `SECURAX_WSL_CONF` pointing at a file that has `[boot]`; expect one section afterwards.
+Step: add the key under the section that exists. confirm: how WSL reads a repeated section.
+
+**S12. `--server` turns password sign-in off when any account has a key (strong).** The comment says "this can never
+lock you out"; a key the hosting provider put under another account is not a key the person holds for the account
+they use. Test first: a dry run where only another account has a key; expect "SSH left as it was" and the
+`ssh-copy-id` line. Step: count keys for the account that ran `sudo` (or root), nobody else.
+
+**S13. `--stable` and `--version` take a tag from git with no second check (strong; joins L5).** Only `--offline`
+compares a checksum. One brief for both first hops: `install.ps1` and this. `go` and the nightly update follow `main`,
+so what runs on a person's machine rests on one code-host account: confirm it is in the register in doc 131.
+
+**S14. The first start may ask for a group password.** When Docker is installed but the person is not in the `docker`
+group, `install.sh` runs the start through `sg docker`, which asks for a password nobody has. Test first: stand-in
+`sg`, `id` and a failing `docker info`; expect the one line "sudo usermod -aG docker $USER, then open a new terminal"
+and no call to `sg`. Step: check membership first.
+
+**S15. The three older scripts.** (a) `bootstrap-laptop.sh` and `kind-up.sh` write to fixed names in `/tmp`: use
+`mktemp`. (b) `bootstrap-laptop.sh` waits 60 seconds for the gateway and goes on without a word when it never
+answers: say so and name `./securax why`. (c) `kind-up.sh`: give the Kyverno chart a version, as the three tools
+beside it have a pinned hash; and either apply `local/k8s/policies/falco-rules.yaml` or drop Falco from the first
+line and from the README. (d) `daily-driver-up.sh` should call `./securax up` instead of repeating a part of it.
+Test first, one for all four: a static test in `local/compose/tests/` on the script texts.
+
+**S16. Two guides, two ways to start.** `GETTING-STARTED.md` and `DEPLOY.md` give Docker Desktop as the only way on
+Windows (the installer's own path is Docker Engine inside Ubuntu), use two names for the folder, show eleven addresses
+with a port (`names, not ports`), name an example file nobody has (`my_public_bio.txt`) and tell a Windows person to
+type a key into `.env`. Test first: extend the docs recipe test to these two files: no `localhost:` outside a fenced
+fallback, one folder name, every file named exists. Step: cut `GETTING-STARTED.md` to one screen (install, start,
+the one next step) and link the rest. For the owner, not a model: a laptop's make and model is named in eight files
+of a public repository; say "a 16 GB laptop with no graphics card" if that should go.
+
 ### Next slice (at most 15 files)
 
-`install.sh` (line by line), `GETTING-STARTED.md`, `DEPLOY.md` (the Windows rows), `local/scripts/bootstrap-laptop.sh`,
-`daily-driver-up.sh`, `kind-up.sh`, `teardown.sh`, then the `go`, `up`, `down`, `update` and `why` branches of `securax`
-(count each branch as one file), and `local/compose/docker-compose.yml`.
+Finish rank 1's most used parts: `DEPLOY.md` (the rest), `README.md` (the hand-written parts), `SECURITY.md`,
+`local/compose/.env.example`, `local/compose/guiding-map.conf`, `local/compose/tls.yml` and `tls-internal.yml`, then
+the `doctor`, `start`, `open`, `backup`, `restore`, `protect` and `setup` branches of `securax` (count each branch as
+one file), and `local/compose/gen_litellm_config.py`. If a file named here does not exist, take the next file in
+`git ls-files local/compose` instead and say so.
