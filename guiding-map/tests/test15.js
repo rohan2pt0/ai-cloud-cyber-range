@@ -19,10 +19,12 @@ setTimeout(()=>{
   ok("the fragment is removed from the address bar immediately", w.location.hash==="");
   // a device paired before 2026-10-22 was given sync.<domain>, another origin it may not call: it is moved to the hub's own /sync
   const old=boot("",[true],{url:"https://sync.securax.localhost/sync",key:"tok-old",user:"me"});
-  setTimeout(()=>{
-   const oc=JSON.parse(old.dom.window.localStorage.getItem("gm_sync_cfg")||"null");
-   ok("an old cross-origin sync address is moved to the same origin, token kept", oc&&oc.url==="https://hub.securax.localhost/sync"&&oc.key==="tok-old", JSON.stringify(oc));
-  },400);
+  let oldChecked=false;
+  // Wait for the migration, not a fixed 400 ms: on a busy runner the page's load event can take over a second (it did).
+  const oldCfg=()=>{ try{ return JSON.parse(old.dom.window.localStorage.getItem("gm_sync_cfg")||"null"); }catch(x){ return null; } };
+  const oldMoved=()=>{ const o=oldCfg(); return !!(o&&o.url==="https://hub.securax.localhost/sync"&&o.key==="tok-old"); };
+  const waitOld=(t0=Date.now())=>{ if(oldMoved()||Date.now()-t0>8000){ const oc=oldCfg(); ok("an old cross-origin sync address is moved to the same origin, token kept", oc&&oc.url==="https://hub.securax.localhost/sync"&&oc.key==="tok-old", JSON.stringify(oc)); oldChecked=true; return; } setTimeout(()=>waitOld(t0),50); };
+  waitOld();
   ok("the destination host is shown before saving", t.prompts.length>=1 && t.prompts[0].includes("hub.securax.localhost"), t.prompts[0]);
 
   // 2. declined link changes nothing
@@ -61,7 +63,8 @@ setTimeout(()=>{
 
    // 5. automatic server-side backup shows as a green row with a restore path
    const h2=boot("",[true]); const w2=h2.dom.window;
-   setTimeout(()=>{
+   // Report only after the old-address check above has run (it waits for the page), so no assertion is skipped.
+   const finish=()=>{
     w2.localStorage.setItem("gm_sync_cfg",JSON.stringify({url:"https://hub.securax.localhost/sync",key:"k",user:"me"}));
     w2.localStorage.setItem("gm_sync_snaps",JSON.stringify({n:12,latest:"2026-10-14"}));
     const ids=w2.TABS.map(x=>x[0]);const oi=ids.indexOf('ops');
@@ -71,7 +74,8 @@ setTimeout(()=>{
     ok("restore path is offered", txt.includes("gmSnapList()")&&txt.includes('id="snapList"'));
     ok("'never backed up' is not shown while snapshots exist", !txt.includes("No local backup has ever been taken"));
     console.log("PASS",P,"  FAIL",F); if(F){console.log(e.join("\n"));process.exit(1);} process.exit(0);
-   },700);
+   };
+   setTimeout(()=>{ const wait=(t0)=>{ if(oldChecked||Date.now()-t0>8000) return finish(); setTimeout(()=>wait(t0),50); }; wait(Date.now()); },700);
   },300);
  },300);
 },400);

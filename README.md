@@ -134,6 +134,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- A renewals desk on the Risk tab
 - Install by pasting one sentence into the AI you already use
 - A calls journal on the Plan tab
 - Delegated work finishes again, and briefs are one step, test first
@@ -141,7 +142,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - Experience v3, the spec
 - Built to last
 - Life systems, the content
-- A review ledger
 
 **Release 0.4.0 - 2026-11-14:**
 
