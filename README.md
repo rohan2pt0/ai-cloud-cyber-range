@@ -134,6 +134,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- The delegation gate cannot be fooled by a test that never runs
 - The Wednesday call runs itself on Today
 - Doors rest by themselves
 - A recurring step lives in the calendar
@@ -141,7 +142,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - A home page that fits a phone, slice 3
 - A home page that fits a phone, slice 2
 - A one-off step can wait for Saturday
-- The Life OS learns which features are used, on the device only
 
 **Release 0.4.0 - 2026-11-14:**
 

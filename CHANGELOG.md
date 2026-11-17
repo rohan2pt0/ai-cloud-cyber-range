@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- **The delegation gate cannot be fooled by a test that never runs** (queue delegate-new-tests): diffcheck blocks a new Life OS test left out of the npm suite list, and an autobuild attempt that changed nothing counts as failed instead of printing GREEN. Written by hand (strong tier: the gate).
 - **The Wednesday call runs itself on Today** (owner, 2026-11-17; queue step-doers, slice 4 of 4): on a Wednesday one calm line above the daily three names tonight's call, the friend from the 5 names called longest ago (never called counts as oldest), with the last note that mentions them. Called keeps today's date in `gm_stepdo` under `friends:calls`, and the next render names the next friend; on any other day, or with no names, there is no line (test131).
 - **Doors rest by themselves** (queue friction-meter, slice 2): in More, the doors you use come first (the order is set once a week, so nothing jumps), and a door unused for 45 days rests under Resting (n); Shield and deadlines never rest, and one use brings a door back (test130).
 - **A recurring step lives in the calendar** (owner, 2026-11-17; queue step-doers, slice 3 of 4): a step that says "Every Wednesday 8:30pm", "Monthly on the 1st Sunday" or "Daily" reads its own words and shows Add to calendar under it. One tap saves the series, keeping its permanent UID, its first start date and a SEQUENCE that rises only when the rule or the words change, so a later export updates the same event instead of doubling it (test129).

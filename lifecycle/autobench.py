@@ -207,7 +207,7 @@ def attempt_loop(task: dict, wd: pathlib.Path, pdir: pathlib.Path, agent, model:
 def grade(task: dict, wd: pathlib.Path, loop: dict, use_forge: bool, sandbox: str) -> dict:
     for f in (f for f in task["files"] if f.startswith("test_")):                   # grade against the ORIGINAL visible tests, whatever the model did to them
         (wd / f).write_text(task["files"][f], "utf-8")
-    dc = diffcheck.evaluate(*diffcheck.collect("HEAD", wd))
+    dc = diffcheck.evaluate(*diffcheck.collect("HEAD", wd), root=wd)
     dc_blocks = sorted({r["rule"] for r in dc if r["level"] == "BLOCK"})
     # Only the forge COMPLEXITY budget is applied to a model's solution. Fail-to-pass and mutation judge the TESTS, and here the tests are given
     # (thin visible ones), so they would blame the task, not the model.
