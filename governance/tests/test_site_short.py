@@ -64,3 +64,63 @@ def test_each_product_keeps_its_face_and_folds_what_and_for_under_more():
         assert body.count("<details") == 1 and re.search(r"<summary>\s*More\s*</summary>", body), p["id"]
         fold = body[body.index("<details"):body.index("</details>")]
         assert fs.E(p["what"]) in fold and f'<b>For:</b> {fs.E(p["for"])}' in fold, p["id"]
+
+
+def _media_body(css: str, width: int):
+    """The body of the first @media (max-width: <width>px) block, by matching braces."""
+    match = re.search(r"@media\s*\(\s*max-width\s*:\s*" + str(width) + r"px\s*\)\s*\{", css)
+    if not match:
+        return None
+    depth, i = 1, match.end()
+    while i < len(css) and depth:
+        if css[i] == "{":
+            depth += 1
+        elif css[i] == "}":
+            depth -= 1
+        i += 1
+    return css[match.end():i - 1]
+
+
+def _rules(css: str):
+    """(selectors, declarations) for each rule in a style block body."""
+    for selector, body in re.findall(r"([^{}]+)\{([^{}]*)\}", css):
+        yield [s.strip() for s in selector.split(",")], body
+
+
+def _decls(body: str):
+    out = {}
+    for part in body.split(";"):
+        if ":" in part:
+            prop, value = part.split(":", 1)
+            out[prop.strip().lower()] = " ".join(value.split()).lower()
+    return out
+
+
+def test_on_a_phone_the_products_are_one_sideways_row():
+    page = (ROOT / "website" / "index.html").read_text("utf-8")
+    css = between(page, "<style>", "</style>")
+
+    block = _media_body(css, 640)
+    assert block is not None, "a max-width 640px media query should hold the phone layout"
+    rules = list(_rules(block))
+
+    row = next((_decls(body) for sels, body in rules if any(sel == ".prods" for sel in sels)), None)
+    assert row is not None, "the phone rule should give .prods a row"
+    assert row.get("display") == "flex", row
+    assert row.get("overflow-x") == "auto", row
+    assert row.get("scroll-snap-type") == "x mandatory", row
+
+    card = next((_decls(body) for sels, body in rules if any(" ".join(sel.split()) == ".prods .prod" for sel in sels)), None)
+    assert card is not None, "the phone rule should size each .prods .prod card"
+    flex = card.get("flex", "")
+    basis = card.get("flex-basis", "")
+    parsed = flex.split()[2] if len(flex.split()) == 3 else basis
+    assert parsed.endswith("%"), card
+    assert 80 <= float(parsed[:-1]) <= 90, "a card should be near 85% wide, with a peek of the next"
+    assert card.get("scroll-snap-align") == "start", card
+
+    products = between(page, "<!-- products:start -->", "<!-- products:end -->")
+    assert products.count('<article class="card prod"') == 8, "all eight products stay on the page"
+
+    for value in re.findall(r"(?<![-a-z])width\s*:\s*(\d+(?:\.\d+)?)vw", page, re.I):
+        assert float(value) <= 100, f"the body must not scroll sideways (width:{value}vw)"
