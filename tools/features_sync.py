@@ -158,7 +158,9 @@ def products_html(data: dict) -> str:
             f'    <article class="card prod" id="p-{E(p["id"])}">\n'
             f'      <img src="img/products/{E(p["id"])}.png" alt="{E(p["shot"]["alt"])}" loading="lazy" width="1280" height="800">\n'
             f'      <span class="kicker">{E(p["kicker"])}</span><h3>{E(p["name"])}</h3><p class="tag">{E(p["tagline"])}</p>\n'
-            f'      <p>{E(p["what"])}</p><p class="for"><b>For:</b> {E(p["for"])}</p>\n'
+            f'      <details class="more"><summary>More</summary>\n'
+            f'        <p>{E(p["what"])}</p><p class="for"><b>For:</b> {E(p["for"])}</p>\n'
+            f'      </details>\n'
             f'      <p class="price">{E(p["price"])}</p><span class="light {cls}">{label}</span>\n    </article>')
     return ('<section id="products">\n  <div class="wrap center">\n    <span class="kicker">Products</span>\n'
             f"    <h2>{len(cards)} products, one estate.</h2>\n"
@@ -209,18 +211,20 @@ def block_html(data: dict) -> str:
         _, cls, label = LIGHT[li.get(f["doc"], "amber")]
         return f'    <div class="card"><h3>{E(f["name"])}</h3><p>{E(f["what"])}</p><span class="light {cls}">{label}</span></div>'
 
-    cards = [card(f) for f in data["features"] if f.get("highlight")]
-    # A generated "Recently shipped" strip, newest first, so a feature appears on the site the day it is added — no page is
-    # ever hand-updated to show what is new (the old curated strip above missed everything not flagged `highlight`).
-    recent = [card(f) for f in latest(data, 3) if not f.get("highlight")]
-    recent_block = ("" if not recent else
-                    '  <div class="wrap center">\n    <span class="kicker">Recently shipped</span>\n'
-                    '    <p class="sub">The newest of what the estate does, straight from the one list of features.</p>\n'
-                    '  </div>\n  <div class="wrap grid3">\n' + "\n".join(recent) + "\n  </div>\n")
+    # The six newest stay open, so a phone meets the estate in a screen or two; every other feature rides in one fold, so
+    # nothing is deleted and nothing needs a script (website-v2). `latest` is a fixed count, so the page does not drift.
+    top = latest(data, 6)
+    top_ids = {f["id"] for f in top}
+    cards = [card(f) for f in top]
+    rest = [card(f) for f in data["features"] if f["id"] not in top_ids]
+    fold = ("" if not rest else
+            '  <details class="more">\n'
+            f'    <summary>All {len(data["features"])} things SecuRAX does</summary>\n'
+            '    <div class="wrap grid3">\n' + "\n".join(rest) + "\n    </div>\n  </details>\n")
     return ('<section class="alt" id="estate">\n  <div class="wrap center">\n    <span class="kicker">The whole estate</span>\n'
             "    <h2>More than a gateway.</h2>\n"
             f'    <p class="sub">The gateway is one of <!-- fact:features -->{len(data["features"])}<!-- /fact --> things SecuRAX does. These are the ones people use most.</p>\n'
-            '  </div>\n  <div class="wrap grid3">\n' + "\n".join(cards) + "\n  </div>\n" + recent_block + "</section>")
+            '  </div>\n  <div class="wrap grid3">\n' + "\n".join(cards) + "\n  </div>\n" + fold + "</section>")
 
 
 def block_personal(data: dict, new: int = 3) -> str:
