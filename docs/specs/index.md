@@ -152,3 +152,4 @@ Sorted by due date, soonest first.
 | [calls-journal](calls-journal.md) | 2026-11-24 | A person learns how good their judgement really is, by area, without a spreadsheet. |
 | [ai-context-card](ai-context-card.md) | 2026-12-08 | The estate's AI answers as if it knows the person, without them re-explaining. |
 | [why-chain](why-chain.md) | 2026-12-15 | Every goal traces up to one mission; work with no reason is folded away. |
+| [cues-2026-11-17](cues-2026-11-17.md) | 2026-11-17 | The owner's material (LifeOS, ten posts, six screenshots) read and triaged: seven cues taken, the rest already here or skipped. |
