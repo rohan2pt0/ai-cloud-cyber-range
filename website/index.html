@@ -217,6 +217,11 @@ footer a:hover{color:#fff}
         <a class="btn btn-gold" href="mailto:{{CONTACT_EMAIL}}?subject=SecuRAX%20Shield%20design%20partner">Become a design partner</a>
         <a class="btn btn-ghost" href="assess/">Take the 2-minute AI-risk check</a>
       </div>
+      <div class="term" style="margin-top:24px;max-width:600px">
+        <div class="h">Install with the AI you already use</div>
+        <textarea id="install-prompt" readonly rows="2" aria-label="Install prompt to paste into your AI agent" style="width:100%;background:transparent;border:0;color:#fff;font:inherit;resize:none;padding:0">Read {{SITE_URL}}install.txt and install SecuRAX for me</textarea>
+        <button class="btn btn-gold" id="copy-install" type="button" style="margin-top:14px;font-size:14px;padding:10px 18px">Copy</button>
+      </div>
       <p class="micro">One OpenAI-compatible endpoint · runs on your own hardware · India-grade PII detection · evidence mapped to RBI, SEBI CSCRF and NIST AI 600-1</p>
     </div>
     <div class="hero-demo" aria-label="Real guardrail output">
@@ -297,7 +302,7 @@ footer a:hover{color:#fff}
   <div class="wrap center">
     <span class="kicker">The whole estate</span>
     <h2>More than a gateway.</h2>
-    <p class="sub">The gateway is one of <!-- fact:features -->60<!-- /fact --> things SecuRAX does. These are the ones people use most.</p>
+    <p class="sub">The gateway is one of <!-- fact:features -->61<!-- /fact --> things SecuRAX does. These are the ones people use most.</p>
   </div>
   <div class="wrap grid3">
     <div class="card"><h3>The one next step</h3><p>Lost or unsure? One command reads where you are and tells you the single next thing to do, in plain words — no list, no jargon.</p><span class="light l-a">Partly built</span></div>
@@ -321,9 +326,9 @@ footer a:hover{color:#fff}
     <p class="sub">The newest of what the estate does, straight from the one list of features.</p>
   </div>
   <div class="wrap grid3">
+    <div class="card"><h3>Calls journal</h3><p>Write a call in one line (&quot;I expect a new client by 31 March&quot;) at 60, 70, 80 or 90% confidence. When its date comes, one tap says whether it happened, and the Plan tab shows how often you were right at each confidence. The idea comes from the predictions in the TELOS personal context file. It stays on your device.</p><span class="light l-a">Partly built</span></div>
     <div class="card"><h3>Threats in the news, rehearsed</h3><p>Open-source intelligence for your own life: security newsrooms and news searches are read daily, matched to a curated library of threats that target people (honeytrap, digital arrest, a cloned voice, SIM swap, fake investment groups and more), and ranked by how often each is in the news and how much harm it does. The top one sits in the Life OS with its signs and drills; news can rank a threat but never write a drill.</p><span class="light l-g">Built and proven</span></div>
     <div class="card"><h3>Life systems, running for you</h3><p>Your written recipes for money, family, health, work, learning, fun and one big decision run themselves: facts are asked once (with a Local/Global switch), each system shows its cue, floor, rhythm and one-time steps, and the best next step sits in one open action.</p><span class="light l-g">Built and proven</span></div>
-    <div class="card"><h3>Crisis coordination</h3><p>Coordinate a multi-agency cyber crisis and hit every agency deadline. When a regulator, a sectoral CERT or the police send a requisition — each with a short deadline and each item needing a specific record from a specific team — open it from a ready template, and every item is already assigned to its owning team. Track what is done, pending and overdue against the clock, generate the response pack (a register plus a filled cover letter) to hand over, and keep the ready documents for the moments that stall a real response: a forensic-tool policy-exception form, a chain-of-custody form, a forensic-collection SOP and a duty roster. The templates are generic data — add your own agencies, items and documents. It takes the tedious coordination off you: one command stands the whole crisis up, another names the single most urgent action, the estate auto-prepares every item it can source itself and chases the owning teams for the rest from one node (no duplicate nudges, no single point of failure), and ready crisis-communication drafts keep every channel on the same message. AI drafts; anything that leaves the building stays behind a human approval. Pairs with the regulator clock (incident) and the response checklist (playbook).</p><span class="light l-g">Built and proven</span></div>
   </div>
 </section>
 <!-- features:end -->
@@ -505,5 +510,23 @@ footer a:hover{color:#fff}
     <div class="fine"><span>© 2026 {{BRAND_NAME}}. SecuRAX: source available, free to use (FSL-1.1-MIT).</span><span>Made in India.</span></div>
   </div>
 </footer>
+<script>
+(function () {
+  var button = document.getElementById("copy-install"), prompt = document.getElementById("install-prompt");
+  if (!button || !prompt) return;
+  button.addEventListener("click", function () {
+    var text = prompt.value;
+    function done() { button.textContent = "Copied"; }
+    // When the clipboard is refused (some in-app browsers), copy the selected text the older way, or say what to do.
+    function fallback() {
+      prompt.focus(); prompt.select();
+      var ok = false; try { ok = document.execCommand("copy"); } catch (e) { ok = false; }
+      button.textContent = ok ? "Copied" : "Selected: press copy";
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, fallback);
+    else fallback();
+  });
+})();
+</script>
 </body>
 </html>

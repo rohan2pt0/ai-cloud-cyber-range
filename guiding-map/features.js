@@ -953,6 +953,22 @@ window.SECURAX_FEATURES = {
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/14-GUIDING-MAP/"
   },
   {
+   "id": "calls-journal",
+   "group": "Your own tools",
+   "icon": "target",
+   "name": "Calls journal",
+   "what": "Write a call in one line (\"I expect a new client by 31 March\") at 60, 70, 80 or 90% confidence. When its date comes, one tap says whether it happened, and the Plan tab shows how often you were right at each confidence. The idea comes from the predictions in the TELOS personal context file. It stays on your device.",
+   "cmd": "./securax open",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "added": "2026-11-17",
+   "outcome": "You learn how good your judgement really is, so you trust it where it is good and check it where it is not.",
+   "shows": "the Life OS Plan tab",
+   "light": "amber",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/specs/calls-journal/"
+  },
+  {
    "id": "threat-news",
    "group": "Practise and defend",
    "icon": "radar",
