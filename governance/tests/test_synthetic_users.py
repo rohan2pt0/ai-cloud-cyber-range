@@ -40,7 +40,8 @@ def test_without_playwright_the_command_says_skip(monkeypatch, tmp_path, capsys)
     monkeypatch.setattr("sys.argv", ["synthetic_users.py", str(tmp_path / "out")])
     assert su.main() == 0
     out = capsys.readouterr().out
-    assert "SYNTHETIC USERS: SKIP" in out and "playwright" in out
+    # Either honest reason may come first (no Playwright package, or no Chromium for it); both name Playwright.
+    assert "SYNTHETIC USERS: SKIP" in out and "playwright" in out.lower()
 
 
 def test_success_is_false_while_the_text_to_avoid_is_still_visible(monkeypatch):
