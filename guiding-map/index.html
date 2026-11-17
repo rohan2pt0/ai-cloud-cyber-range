@@ -7828,6 +7828,8 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       + "#gmMoreSheet .sh{max-height:calc(100vh - 140px);overflow-y:auto}"
       + "#gmMoreSheet .gm-more-h{grid-column:1/-1;font-size:12px;font-weight:800;color:var(--muted);margin:0 2px -2px}"
       + "#gmMoreSheet .gm-more-all{grid-column:1/-1}"
+      + "#gmMoreSheet .gm-more-rest{grid-column:1/-1}"
+      + "#gmMoreSheet .gm-more-rest summary{cursor:pointer;font-weight:800;font-size:12.5px;padding:10px 4px;min-height:44px;display:flex;align-items:center;color:var(--muted)}"
       + "#gmMoreSheet .gm-more-all summary{cursor:pointer;font-weight:800;font-size:13px;padding:10px 4px;min-height:44px;display:flex;align-items:center}"
       + "#gmMoreSheet .gm-more-g{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}"
       + "#gmMoreSheet .sh button .gm-new{display:block;font-size:9px;font-weight:700;color:var(--muted);margin-top:2px}"
@@ -7873,7 +7875,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     var weeks = Math.min(UNLOCK.length, Math.floor(days / 7));
     function tile(t, isNew) {
       var ic = window.gmIcon(t[0], 20);
-      return '<button role="menuitem" class="' + (curTab === t[0] ? "on" : "") + '" onclick="gmNavGo(\'' + t[0] + '\')">'
+      return '<button role="menuitem" data-tab="' + t[0] + '" class="' + (curTab === t[0] ? "on" : "") + '" onclick="gmNavGo(\'' + t[0] + '\')">'
         + (ic ? '<span class="gi" aria-hidden="true">' + ic + '</span>' : '') + t[1] + (isNew ? '<span class="gm-new">new</span>' : '') + '</button>';
     }
     // A tab that cannot apply (the person answered No to its fact) is not shown at all: no clutter for a life that is not theirs.
@@ -7895,8 +7897,36 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       sh += '<button role="menuitem" class="gm-show-all" onclick="gmSimple(false)">Show everything (' + rest.length + ' more)</button></div></div>';
     } else {
       var restOpen = G("gm_more_all", false) || rest.some(function (t) { return t[0] === curTab; });
+      // Doors the person uses come first; a door not opened for 45 days, or never used, rests at the end by itself
+      // (queue friction-meter). A new app has not had 45 days to learn from, so nothing rests yet, and a safety door
+      // (Shield, deadlines) never rests. One use brings a door straight back out.
+      var use = (typeof window.gmUsage === "function") ? window.gmUsage() : {};
+      var NEVER_RESTS = ["risk", "deadlines"];
+      function useOf(t) { var u = use["tab:" + t[0]]; return (u && typeof u.l === "string") ? u : { l: "", d: [] }; }
+      function agoDays(l) {
+        if (!/^\d{4}-\d{2}-\d{2}$/.test(l)) return Infinity;
+        var p = l.split("-"), t0 = new Date(+p[0], +p[1] - 1, +p[2]).getTime();
+        if (isNaN(t0)) return Infinity;
+        return (new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() - t0) / 86400000;
+      }
+      var active = [], resting = [];
+      rest.forEach(function (t) {
+        var u = useOf(t);
+        if (days >= 45 && NEVER_RESTS.indexOf(t[0]) < 0 && agoDays(u.l) > 45) resting.push(t); else active.push(t);
+      });
+      active.sort(function (a, b) {
+        var ua = useOf(a), ub = useOf(b);
+        return (ub.d.length - ua.d.length) || (ua.l < ub.l ? 1 : ua.l > ub.l ? -1 : 0);
+      });
+      resting.sort(function (a, b) { var ua = useOf(a), ub = useOf(b); return ua.l < ub.l ? 1 : ua.l > ub.l ? -1 : 0; });
       sh += '<details class="gm-more-all"' + (restOpen ? " open" : "") + ' ontoggle="gmMoreAll(this.open)"><summary>Everything else (' + rest.length + ')</summary><div class="gm-more-g">';
-      rest.forEach(function (t) { sh += tile(t); });
+      active.forEach(function (t) { sh += tile(t); });
+      if (resting.length) {
+        var restTabOpen = resting.some(function (t) { return t[0] === curTab; });
+        sh += '<details class="gm-more-rest"' + (restTabOpen ? " open" : "") + '><summary>Resting (' + resting.length + ')</summary><div class="gm-more-g">';
+        resting.forEach(function (t) { sh += tile(t); });
+        sh += '</div></details>';
+      }
       sh += '<button role="menuitem" onclick="location.href=\'hub.html\'">\u25C6 All apps</button><button role="menuitem" onclick="gmSimple(true)">Back to simple</button></div></details></div></div>';
     }
     document.body.insertAdjacentHTML("beforeend", sh + h);
