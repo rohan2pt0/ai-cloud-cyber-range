@@ -9842,6 +9842,56 @@
     try { decorate(); } catch (e) {}
   };
 
+  // The Wednesday call (queue step-doers, slice 4): on Wednesday one calm line above the daily three names tonight's
+  // call — the friend from the 5 names called longest ago (never called counts as oldest), with the last note that
+  // mentions them. Called keeps the date in gm_stepdo under friends:calls, so the next render names the next friend.
+  function friendCalls() {
+    var v = readAll()["friends:calls"];
+    return v && typeof v === "object" && !Array.isArray(v) ? v : {};
+  }
+  function lastNote(name) {
+    var hit = "";
+    listOf(readAll()["friends:2"]).forEach(function (n) {
+      if (n && typeof n === "object" && typeof n.t === "string" && n.t.toLowerCase().indexOf(name.toLowerCase()) >= 0) hit = n.t;
+    });
+    return hit;
+  }
+  function friendLine() {
+    if (new Date().getDay() !== 3) return "";
+    var names = listOf(readAll()["friends:0"]).map(function (x) { return String(x == null ? "" : x).trim(); })
+      .filter(function (x) { return x; }).slice(0, 5);
+    if (!names.length) return "";
+    var calls = friendCalls(), pick = names[0], pickDate = typeof calls[pick] === "string" ? calls[pick] : "";
+    for (var i = 1; i < names.length; i++) {
+      var d = typeof calls[names[i]] === "string" ? calls[names[i]] : "";
+      if (d < pickDate) { pick = names[i]; pickDate = d; }
+    }
+    var note = lastNote(pick);
+    return '<div class="road-col gm-friend-today" style="margin-bottom:10px;font-size:13px">'
+      + '<b>Tonight: call ' + esc(pick) + '</b>'
+      + (note ? ' <span style="color:var(--muted)">\u00b7 last note: ' + esc(note) + '</span>' : "")
+      + ' <button type="button" class="btn-sm" data-friend-called="' + esc(pick) + '" style="margin-inline-start:6px">Called</button></div>';
+  }
+  var _friendRender = window.renderAll;
+  if (typeof _friendRender === "function") window.renderAll = function () {
+    var out = _friendRender.apply(this, arguments);
+    try {
+      if (typeof curTab !== "undefined" && curTab === "today" && !document.querySelector(".gm-friend-today")) {
+        var d3 = document.querySelector("#sections .gm-d3"), h = friendLine();
+        if (h && d3) {
+          d3.insertAdjacentHTML("beforebegin", h);
+          var btn = document.querySelector(".gm-friend-today [data-friend-called]");
+          if (btn) btn.addEventListener("click", function () {
+            var name = btn.getAttribute("data-friend-called"), all = readAll(), calls = friendCalls();
+            calls[name] = today(); all["friends:calls"] = calls; saveAll(all);
+            try { if (typeof window.renderAll === "function") window.renderAll(); } catch (e) {}
+          });
+        }
+      }
+    } catch (e) {}
+    return out;
+  };
+
 })();
 // Usage is learned in its own block, so nothing else's early exit can switch it off.
 (function () {

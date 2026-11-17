@@ -134,6 +134,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- The Wednesday call runs itself on Today
 - Doors rest by themselves
 - A recurring step lives in the calendar
 - Three friends use the Life OS on a phone
