@@ -13263,6 +13263,66 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     orig.apply(this, arguments);
     try { decorate(); } catch (e) {}
   };
+
+  /* ── How use is learned (queue friction-meter): which feature was used on which day, counted on the device only and
+     never sent. A short id is recorded once a day, so later a rarely used thing can rest with no task for the person.
+     gm_use holds id -> { l: last used day, d: the days it was used } (at most 30 days each, at most 300 ids). */
+  var G = window.gmG, S_ = window.gmS;
+  function ymd(d) { d = d || new Date(); return d.getFullYear() + "-" + ("0" + (d.getMonth() + 1)).slice(-2) + "-" + ("0" + d.getDate()).slice(-2); }
+  var GM_USE_IDS = 300, GM_USE_DAYS = 30, GM_USE_RE = /^[A-Za-z0-9:-]{1,40}$/;
+  // The map as stored, cleaned: a damaged key or entry is dropped and a wrong shape gives an empty map, never a crash.
+  window.gmUsage = function () {
+    var raw = G("gm_use", {}), out = {};
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+    Object.keys(raw).forEach(function (id) {
+      if (!GM_USE_RE.test(id)) return;
+      var e = raw[id];
+      if (!e || typeof e !== "object" || Array.isArray(e)) return;
+      var days = Array.isArray(e.d) ? e.d.filter(function (x) { return typeof x === "string"; }) : [];
+      var seen = {};
+      days = days.filter(function (x) { if (seen[x]) return false; seen[x] = 1; return true; }).sort();
+      if (days.length > GM_USE_DAYS) days = days.slice(-GM_USE_DAYS);
+      out[id] = { l: typeof e.l === "string" ? e.l : "", d: days };
+    });
+    return out;
+  };
+  window.gmUse = function (id) {
+    if (typeof id !== "string" || !GM_USE_RE.test(id)) return;
+    var today = ymd(), map = window.gmUsage(), e = map[id] || { l: today, d: [] };
+    // Re-insert at the end so the key order is recency, and the oldest keys are the ones dropped when the map is full.
+    delete map[id];
+    e.l = today;
+    if (e.d.indexOf(today) < 0) e.d.push(today);
+    e.d.sort();
+    if (e.d.length > GM_USE_DAYS) e.d = e.d.slice(-GM_USE_DAYS);
+    map[id] = e;
+    var ids = Object.keys(map);
+    while (ids.length > GM_USE_IDS) delete map[ids.shift()];
+    S_("gm_use", map);
+    return map;
+  };
+
+  // Opening a tab or a system, and any control that names its feature, is a use. The original still does its work.
+  if (typeof window.goTab === "function") { var _gmGoTab = window.goTab; window.goTab = function (id) {
+    try { if (typeof id === "string") window.gmUse("tab:" + id); } catch (e) {}
+    return _gmGoTab.apply(this, arguments);
+  }; }
+  if (typeof window.openK === "function") { var _gmOpenK = window.openK; window.openK = function (i) {
+    try { var k = (window.KPIs || [])[i]; if (k && k.id) window.gmUse("sys:" + k.id); } catch (e) {}
+    return _gmOpenK.apply(this, arguments);
+  }; }
+  if (typeof window.openR === "function") { var _gmOpenR = window.openR; window.openR = function (i) {
+    try { var r = (window.RISKS || [])[i]; if (r && r.id) window.gmUse("risk:" + r.id); } catch (e) {}
+    return _gmOpenR.apply(this, arguments);
+  }; }
+  document.addEventListener("click", function (ev) {
+    try {
+      for (var el = ev.target; el && el !== document; el = el.parentNode) {
+        var f = el.getAttribute && el.getAttribute("data-feat");
+        if (f) { window.gmUse(f); break; }
+      }
+    } catch (e) {}
+  }, true);
 })();
 
 </script>
