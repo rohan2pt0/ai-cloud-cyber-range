@@ -135,13 +135,13 @@ This list is generated from [`features.json`](features.json); the Command Center
 **On main, in the next release:**
 
 - Doors rest by themselves
+- A recurring step lives in the calendar
 - A home page that fits a phone, slice 3
 - A home page that fits a phone, slice 2
 - A one-off step can wait for Saturday
 - The Life OS learns which features are used, on the device only
 - A home page that fits a phone
 - A place to do the step, right under it
-- A mission line above the quarter's objectives
 
 **Release 0.4.0 - 2026-11-14:**
 

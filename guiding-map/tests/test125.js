@@ -1,6 +1,7 @@
 // v125: a step that asks you to write names or note something gets its own place to do it, right under the step
 // (queue step-doers, slice 1). Deep Friendships: 5 name inputs tick the step when full; the after-call step keeps
-// dated notes and lists the last 3; a step with neither pattern stays a plain checkbox.
+// dated notes and lists the last 3; a step with neither pattern gets no name or note inputs (a recurring one may still
+// add its calendar, slice 3).
 const fs = require('fs'), path = require('path'), { JSDOM } = require('jsdom');
 let P = 0, F = 0, e = []; const ok = (n, c, d) => { c ? P++ : (F++, e.push(n + (d ? " :: " + d : ""))); };
 const prof = { name: "Fake", dob: "1985-04-10", country: "India", cur: "INR", gross: 200000, net: 150000, exp: 80000,
@@ -52,13 +53,13 @@ setTimeout(() => {
     && !/Talked about his new job/.test(box.textContent), box ? box.textContent.slice(0, 220) : "no doer");
 
   const wed = stepBy(/Every Wednesday/);
-  ok("a step with neither pattern shows nothing new", !!wed && inputsOf(wed).length === 0 && !doerOf(wed),
-    wed ? (inputsOf(wed).length + " inputs, doer=" + !!doerOf(wed)) : "no step");
+  ok("a step with neither pattern shows no name or note inputs", !!wed && inputsOf(wed).length === 0 && !addOf(wed),
+    wed ? (inputsOf(wed).length + " inputs") : "no step");
 
   // A noun is not an instruction: "a 1-line personal note" in a LinkedIn step gets no note line.
   const li = w.KPIs.findIndex((k) => k.id === "network");
   if (li >= 0) { w.openK(li); const lstep = stepBy(/LinkedIn requests/);
-    ok("a step that only mentions a note as a noun stays a plain checkbox", !!lstep && !doerOf(lstep), lstep ? "has a doer" : "step not found"); }
+    ok("a step that only mentions a note as a noun gets no note line", !!lstep && inputsOf(lstep).length === 0 && !addOf(lstep), lstep ? "has note inputs" : "step not found"); }
   console.log("test125 step doers: " + P + " passed, " + F + " failed");
   if (F) { e.forEach((x) => console.log("  " + x)); process.exit(1); }
   process.exit(0);
