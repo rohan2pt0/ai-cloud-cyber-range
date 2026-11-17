@@ -217,6 +217,11 @@ footer a:hover{color:#fff}
         <a class="btn btn-gold" href="mailto:{{CONTACT_EMAIL}}?subject=SecuRAX%20Shield%20design%20partner">Become a design partner</a>
         <a class="btn btn-ghost" href="assess/">Take the 2-minute AI-risk check</a>
       </div>
+      <div class="term" style="margin-top:24px;max-width:600px">
+        <div class="h">Install with the AI you already use</div>
+        <textarea id="install-prompt" readonly rows="2" aria-label="Install prompt to paste into your AI agent" style="width:100%;background:transparent;border:0;color:#fff;font:inherit;resize:none;padding:0">Read {{SITE_URL}}/install.txt and install SecuRAX for me</textarea>
+        <button class="btn btn-gold" id="copy-install" type="button" style="margin-top:14px;font-size:14px;padding:10px 18px">Copy</button>
+      </div>
       <p class="micro">One OpenAI-compatible endpoint · runs on your own hardware · India-grade PII detection · evidence mapped to RBI, SEBI CSCRF and NIST AI 600-1</p>
     </div>
     <div class="hero-demo" aria-label="Real guardrail output">
@@ -505,5 +510,17 @@ footer a:hover{color:#fff}
     <div class="fine"><span>© 2026 {{BRAND_NAME}}. SecuRAX: source available, free to use (FSL-1.1-MIT).</span><span>Made in India.</span></div>
   </div>
 </footer>
+<script>
+(function () {
+  var button = document.getElementById("copy-install"), prompt = document.getElementById("install-prompt");
+  if (!button || !prompt) return;
+  button.addEventListener("click", function () {
+    var text = prompt.value;
+    function done() { button.textContent = "Copied"; }
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(text).then(done, function () { prompt.select(); });
+    else { prompt.select(); try { document.execCommand("copy"); done(); } catch (e) {} }
+  });
+})();
+</script>
 </body>
 </html>

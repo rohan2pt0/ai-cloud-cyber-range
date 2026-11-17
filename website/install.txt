@@ -1,0 +1,40 @@
+For the AI agent doing the install: read this whole file, then install SecuRAX for the person on their computer.
+
+This file lives at {{SITE_URL}}install.txt. The person has asked you to do the install, so do the steps below yourself
+where you can run commands, and report what happened in plain words.
+
+## 1. The gate: can you run shell commands?
+
+If you cannot run shell commands on the person's computer, stop here. Do not guess and do not summarise a download page.
+Give the person these three steps from the deploy guide (`docs/securax/114-GO-LIVE-TODAY.md`) instead:
+
+1. Put the code in place: `git clone https://github.com/{{REPO_SLUG}}`
+2. Start it; it ends with the one next step: `./securax go`
+3. Check that it answers and says what is healthy: `./securax doctor`
+
+Nothing is installed until they say go.
+
+## 2. Docker
+
+SecuRAX runs as containers, so it needs Docker. If Docker is missing, ask the person before you install Docker. It
+changes their machine, so their yes comes first; if they say no, stop and tell them what Docker is for.
+
+## 3. Install and start
+
+Clone the code into a folder the person chooses, then from inside that folder run these, in order:
+
+```bash
+git clone https://github.com/{{REPO_SLUG}}
+./securax go
+./securax doctor
+```
+
+`./securax go` starts the estate, keeps what is already set up, and ends with one screen: what works and the one fix if
+something does not. `./securax doctor` runs a real chat through the gateway and reports health and resources.
+
+## 4. When something fails
+
+Run `./securax why` and show the person its output. It says what stopped and why, in plain words. Fix what it names and
+run `./securax doctor` again.
+
+No key, token or password is needed at any point. Never ask the person for one, and never put one in a file or a message.
