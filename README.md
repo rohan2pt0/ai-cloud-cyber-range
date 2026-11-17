@@ -135,13 +135,13 @@ This list is generated from [`features.json`](features.json); the Command Center
 **On main, in the next release:**
 
 - Install by pasting one sentence into the AI you already use
+- A due call on Today
 - A calls journal on the Plan tab
 - Delegated work finishes again, and briefs are one step, test first
 - Release readiness: go/no-go gates for the public launch and the paid edition
 - Experience v3, the spec
 - Built to last
 - Life systems, the content
-- A review ledger
 
 **Release 0.4.0 - 2026-11-14:**
 
