@@ -43,7 +43,7 @@ while [ $# -gt 0 ]; do
     --docker) DOCKER_ONLY=1 ;;                 # root only: install Docker Engine for the user who ran sudo (the laptop path calls it)
     --no-start) NOSTART=1 ;;                   # put the code in place, start nothing (the old behaviour)
     --yes|-y) YES=1 ;;                         # do not ask before installing Docker
-    -h|--help) sed -n '2,15p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,18p' "$0" | sed "s#{{REPO""_SLUG}}#$REPO#"; exit 0 ;;   # the name filled in: a person never sees a placeholder
     *) die "Unknown option: $1   (see: bash install.sh --help)" ;;
   esac; shift
 done
@@ -101,7 +101,7 @@ if [ "$SERVER" = 1 ]; then
   say "SecuRAX server setup · ${PRETTY_NAME:-Linux} · $(nproc 2>/dev/null || echo ?) CPU · $(awk '/MemTotal/{printf "%.0f GB", $2/1048576}' /proc/meminfo 2>/dev/null)"
   say "1/6 system packages and security updates"
   run apt-get update -qq
-  run apt-get install -y -qq ca-certificates curl git python3 ufw unattended-upgrades openssh-client gnupg cron tzdata >/dev/null
+  run apt-get install -y -qq ca-certificates curl git python3 sudo ufw unattended-upgrades openssh-client gnupg cron tzdata >/dev/null   # sudo: a Debian set up with a root password has none, and step 6 needs it
   run dpkg-reconfigure -f noninteractive unattended-upgrades >/dev/null 2>&1 || true
   # Routines fire by this machine's clock, and a new server is on UTC: "Sunday 8pm" would come at 1:30 am in India. SECURAX_TZ changes it.
   _tz="${SECURAX_TZ:-Asia/Kolkata}"

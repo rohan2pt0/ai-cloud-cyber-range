@@ -101,3 +101,17 @@ def test_docker_mode_is_root_only_and_installs_from_dockers_own_repository_for_t
     assert "usermod -aG docker fakeuser" in out
     src = (ROOT / "install.sh").read_text()
     assert src.count("install_docker") == 3                            # one definition, used by --server and --docker
+
+
+def test_help_shows_every_line_of_the_summary_and_never_a_placeholder(tmp_path):
+    r = _sh("--help", home=tmp_path, env_extra={"SECURAX_REPO": "owner/repo"})
+    assert r.returncode == 0 and "{{" not in r.stdout
+    assert "github.com/owner/repo/releases" in r.stdout and "--server is the one exception" in r.stdout
+
+
+def test_the_server_path_installs_sudo_before_it_uses_it():
+    text = (ROOT / "install.sh").read_text()
+    packages = next(ln for ln in text.splitlines() if "unattended-upgrades openssh-client" in ln)
+    assert " sudo " in packages.split("#")[0]                             # a Debian with a root password ships without it
+    assert text.index(packages) < text.index("sudo -iu securax")
+

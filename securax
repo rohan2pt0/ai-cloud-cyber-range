@@ -219,7 +219,7 @@ case "$cmd" in
     # Cross-device sync token: an empty or placeholder value ("change-me…" from older templates) is replaced once with a
     # strong random one. A known placeholder would let anyone who can reach the sync service read and write your data.
     case "$(ev SYNC_TOKENS)" in ""|*change-me*|*changeme*)
-      skv "$ENVF" SYNC_TOKENS "$(python3 -c 'import secrets; print(secrets.token_hex(24))')" && C "  ✔ generated a strong cross-device sync token (show it with: grep '^SYNC_TOKENS=' local/compose/.env)";;
+      skv "$ENVF" SYNC_TOKENS "$(python3 -c 'import secrets; print(secrets.token_hex(24))')" && C "  ✔ generated a strong cross-device sync token (show it with: grep '^SYNC_TOKENS=' \"$ENVF\")";;
     esac
     # Chat's sign-in key, made once and kept (doc 53): without it every update signs you out of Chat.
     if [ -z "$(ev WEBUI_SECRET_KEY)" ]; then
@@ -284,7 +284,7 @@ case "$cmd" in
     # Names, not ports (doc 99): asked once, in a terminal, default yes. Scripts and the nightly update are never asked.
     if ! tls_on && [ -z "$(ev NAMES_ASKED)" ] && [ -t 0 ] && [ "$(ev SECURAX_NAMES)" != off ]; then
       C "Use names like https://$(ev SECURAX_DOMAIN securax.localhost | sed 's/^/hub./') instead of http://localhost:8088? Your data moves over in one click. [Y/n]"   # addr-ok: the question names it
-      read -r _nm; case "$_nm" in n|N|no) skv "$ENVF" NAMES_ASKED 1; C "  Kept localhost addresses. Switch any time:  ./securax names" ;;
+      read -r _nm || _nm=""; case "$_nm" in n|N|no) skv "$ENVF" NAMES_ASKED 1; C "  Kept localhost addresses. Switch any time:  ./securax names" ;;
         *) names_on || C "  Names could not start (see above); localhost addresses keep working. Try again:  ./securax names" ;; esac
     fi
     # For 30 days after the switch the old address answers on this machine only, so the Life OS can hand its data over.

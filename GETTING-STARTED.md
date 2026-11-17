@@ -38,7 +38,7 @@ Prerequisite: **Docker Desktop** running (WSL2 backend on Windows).
 ./local/scripts/bootstrap-laptop.sh        # gateway + model router + DB + a self-test
 ./local/scripts/kind-up.sh                  # Kubernetes plane (admission control + runtime detection)
 python3 redteam/run_attacks.py --fail-under 0.9   # adversarial-ML scorecard (should be 100%)
-./local/scripts/teardown.sh                 # stop everything — costs nothing overnight
+./local/scripts/teardown.sh                 # stop everything — costs nothing overnight; your data is kept
 ```
 What you now have: a guardrail gateway, a red-team scorecard, an AI-SPM posture report, and a
 board brief — the portfolio for the eight AI-security roles. Demo script: `docs/demo-runbook.md`.
@@ -77,8 +77,8 @@ for the full cadence. **Everything compounds because it is all captured in one b
 
 ## If something breaks
 - `docker` errors → Docker Desktop isn't running; start it, wait for the green whale.
-- Laptop slows while a model answers → use the lighter `local-fast` model; cap WSL2 RAM
-  (see the uploaded SOP) at 10 GB.
+- Laptop slows while a model answers → use the lighter `local-fast` model; `./securax profile`
+  sizes the estate to your machine and says how to cap WSL2 memory.
 - Open WebUI shows no models → the gateway booted before Ollama:
   `cd local/compose && docker compose --profile ai restart gateway`.
-- Full troubleshooting + security posture notes: the uploaded `SOP-README.md`.
+- Anything else: `./securax why` says what stopped and why, in plain words; `./securax doctor` checks the rest.
