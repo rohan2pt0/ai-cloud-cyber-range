@@ -16,6 +16,26 @@ def between(text: str, start: str, end: str) -> str:
     return text[text.index(start) + len(start):text.index(end)]
 
 
+def test_capabilities_show_three_strongest_then_fold_the_rest():
+    page = (ROOT / "website" / "index.html").read_text("utf-8")
+    start = page.index('<section id="capabilities">')
+    block = page[start:page.index("</section>", start)]
+    assert "<details" in block, "the seven weaker capabilities should be folded, not all open"
+    open_cards = block[:block.index("<details")].count('<div class="card">')
+    assert open_cards == 3, "the three strongest capabilities stay open before the fold"
+    titles = re.findall(r"<h3>(.*?)</h3>", block, re.S)
+    assert titles[:3] == ["Prompt-attack rails", "India-grade PII redaction", "Data residency routing"], titles[:3]
+    assert block.count("<details") == 1, "the other seven ride in one fold"
+    summary = re.search(r"<summary>(.*?)</summary>", block, re.S).group(1).strip()
+    assert summary == "See all 10"
+    all_titles = ["Prompt-attack rails", "India-grade PII redaction", "Data residency routing",
+                  "Audit trail and evidence", "Multi-model failover", "Agent and tool-call guard",
+                  "Identity and roles", "SIEM integration", "Admin console", "GDPR and EU AI Act maps"]
+    assert len(titles) == len(all_titles) == 10, titles
+    for title in all_titles:
+        assert title in titles, title
+
+
 def test_the_estate_is_six_cards_then_one_fold_with_everything_else():
     page = (ROOT / "website" / "index.html").read_text("utf-8")
     block = between(page, "<!-- features:start -->", "<!-- features:end -->")
