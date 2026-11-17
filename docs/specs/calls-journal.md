@@ -1,5 +1,9 @@
 # Spec: calls-journal
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟡 Partly built.** Slice 1 shipped (2026-11-17): the calls journal on the Plan tab, one tap to judge a call, calibration per confidence (test121). Next: calendar entries for each call, and a folded list of calls I got wrong with the lesson. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 Queue item `calls-journal` in `governance/queue.json` · due 2026-11-24 · added 2026-11-17.
 
 **The ask:** Take the best of LifeOS/TELOS and similar projects, 80/20, into the Life OS. First pick: a calls journal.
