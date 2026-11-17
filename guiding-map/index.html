@@ -7486,11 +7486,17 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       + '<textarea id="guardQ" placeholder="Paste text about yourself…" style="width:100%;min-height:60px;padding:9px 11px;border:1px solid var(--line,#999);border-radius:10px;background:transparent;color:inherit"></textarea>'
       + '<button class="btn btn-s" onclick="gmGuardScan()" style="margin-top:8px">Scan locally</button><div id="guardOut" style="margin-top:8px"></div></div></details>';
 
-    h += '<details class="road-col" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">◈ Decide the community-proven way (Intel)</summary><div style="margin-top:8px">'
+    h += '<details class="road-col" id="askIntelCard" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">◈ Decide the community-proven way (Intel)</summary><div style="margin-top:8px">'
+      + '<div class="info">One question is enough. Your own AI gathers and weighs what the community agrees on when your estate is on; otherwise the question waits in your Inbox.</div>'
+      + '<input id="intelQuestion" aria-label="What do you want to decide?" placeholder="What do you want to decide?" style="width:100%;padding:9px 11px;border:1px solid var(--line,#999);border-radius:10px;background:transparent;color:inherit">'
+      + '<button class="btn btn-s" data-intel-ask onclick="gmIntelAsk()" style="margin-top:8px">Find the community-proven answer</button>'
+      + '<div id="intelAskOut" style="margin-top:8px"></div>'
+      + '<details class="gm-intel-own" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">I have my own list</summary><div style="margin-top:8px">'
       + '<div class="info">Paste the top items you collected (Reddit Top/All-time, best-sellers, top videos) — one per line, best first. Get what the crowd agrees on. On-device.</div>'
       + '<textarea id="intelItems" placeholder="e.g.\nPassed CCSP! Pete Zerger videos + LEARNZAPP\nCCSP: Pete Zerger + LEARNZAPP, Sybex for depth" style="width:100%;min-height:60px;padding:9px 11px;border:1px solid var(--line,#999);border-radius:10px;background:transparent;color:inherit"></textarea>'
       + '<input id="intelVocab" placeholder="Names you saw repeating (comma-separated) — optional" style="width:100%;margin-top:6px;padding:9px 11px;border:1px solid var(--line,#999);border-radius:10px;background:transparent;color:inherit">'
-      + '<button class="btn btn-s" onclick="gmIntelGo()" style="margin-top:8px">Find the consensus</button><div id="intelOut" style="margin-top:8px"></div></div></details></details>';
+      + '<button class="btn btn-s" onclick="gmIntelGo()" style="margin-top:8px">Find the consensus</button><div id="intelOut" style="margin-top:8px"></div></div></details>'
+      + '</div></details></details>';
 
     h += '<details class="road-col" id="askConn" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">Connection (set once)</summary>';
     h += '<details class="road-col" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">⤢ Launch the estate</summary><div style="margin-top:8px" class="info">'
@@ -7643,6 +7649,15 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       : '<div class="info"><b>✓ Clean.</b> No high-risk identifiers found in this sample.</div>';
   };
   function sigW(score, rank, age, mode) { var pop = Math.log10(Math.max(score, 0) + 10), rw = 1 / (1 + 0.15 * Math.max(rank - 1, 0)); if (mode === "edge") { var f = Math.exp(-Math.max(age, 0) / 180); return pop * rw * (0.3 + 0.7 * f); } return pop * rw * (1 + Math.min(Math.max(age, 0) / 365, 5) * 0.1); }
+  // One question, no list to collect. The estate's AI gathers the consensus when it is on; until then the question
+  // waits in the Inbox as an action, so asking never dead-ends and nothing typed is lost.
+  window.gmIntelAsk = function () {
+    var q = (document.getElementById("intelQuestion").value || "").trim();
+    var out = document.getElementById("intelAskOut");
+    if (!q) { out.innerHTML = '<div class="info">Type the decision you want to make first.</div>'; return; }
+    gmInboxAdd(q, "action", { from: "ask-intel", next: "Answer the question when the estate is on" });
+    out.innerHTML = '<div class="info"><b>Saved.</b> It will be answered when your estate is on.</div>';
+  };
   window.gmIntelGo = function () {
     var lines = (document.getElementById("intelItems").value || "").split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
     var vocab = (document.getElementById("intelVocab").value || "").split(",").map(function (s) { return s.trim(); }).filter(Boolean);
