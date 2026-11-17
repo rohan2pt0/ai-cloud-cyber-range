@@ -1,0 +1,93 @@
+{
+  "about": "Three friends of the estate, each with a goal in their own words. Fake data only. The runner reads this file; nothing here is private.",
+  "seed": {
+    "gm_mine_done": true,
+    "gm_simple": false,
+    "gm_more_all": true,
+    "gm_calls": [
+      {
+        "id": "call-due-1",
+        "text": "A friend calls back about the trip",
+        "conf": 70,
+        "date": "2020-01-01",
+        "outcome": null,
+        "ts": 1
+      }
+    ]
+  },
+  "goals": [
+    {
+      "id": "friend-names",
+      "friend": "Maya, 34, keeps meaning to write down the people she would call in a hospital night",
+      "words": "Write the 5 friends' names on the Deep Friendships plan",
+      "start_tab": "All areas",
+      "max_steps": 15,
+      "inputs": [
+        [
+          "name 1",
+          "Asha"
+        ],
+        [
+          "name 2",
+          "Bela"
+        ],
+        [
+          "name 3",
+          "Chitra"
+        ],
+        [
+          "name 4",
+          "Dia"
+        ],
+        [
+          "name 5",
+          "Esha"
+        ]
+      ],
+      "success": {
+        "all_filled": [
+          "name 1",
+          "name 2",
+          "name 3",
+          "name 4",
+          "name 5"
+        ]
+      }
+    },
+    {
+      "id": "isc2-fee",
+      "friend": "Ravi, 41, cannot remember when his ISC2 annual fee falls due",
+      "words": "Add the ISC2 annual fee with a date on the Renewals desk",
+      "start_tab": "Protection",
+      "max_steps": 15,
+      "select": {
+        "label": "What expires?",
+        "option": "ISC2 annual fee"
+      },
+      "inputs": [
+        [
+          "Its date (type it once)",
+          "@today+7"
+        ]
+      ],
+      "success": {
+        "visible_all": [
+          "ISC2 annual fee"
+        ],
+        "buttons": [
+          "Renewed"
+        ]
+      }
+    },
+    {
+      "id": "due-call",
+      "friend": "Noor, 29, asked a friend to call her back and wants to close the loop",
+      "words": "Answer the call that is due: did it happen? Yes",
+      "start_tab": "Today",
+      "max_steps": 15,
+      "success": {
+        "absent": "did it happen?"
+      }
+    }
+  ]
+}
