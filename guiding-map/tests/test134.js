@@ -38,6 +38,7 @@ setTimeout(() => {
 
   const pick = c1.filter(x => /Emergency fund up by one month/.test(x.textContent))[0];
   if (pick) pick.click();
+  ok("the dialog closes after the tap", !overlay(), "dialog still open");
   const krs = w.S.okrs[0].krs;
   ok("one tap adds the key result with its text", krs.length === 1 && krs[0].t === "Emergency fund up by one month of expenses", JSON.stringify(krs));
   ok("and it carries the quarter-end date", !!krs[0].dueMs && new Date(krs[0].dueMs).toDateString() === qEnd.toDateString(),

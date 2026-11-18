@@ -3881,9 +3881,9 @@
       + '<button class="btn btn-s" onclick="gmGuardScan()" style="margin-top:8px">Scan locally</button><div id="guardOut" style="margin-top:8px"></div></div></details>';
 
     h += '<details class="road-col" id="askIntelCard" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">◈ Decide the community-proven way (Intel)</summary><div style="margin-top:8px">'
-      + '<div class="info">One question is enough. Your own AI gathers and weighs what the community agrees on when your estate is on; otherwise the question waits in your Inbox.</div>'
+      + '<div class="info">One question is enough. It waits in your Inbox as a decision to make, so nothing you type is lost.</div>'
       + '<input id="intelQuestion" aria-label="What do you want to decide?" placeholder="What do you want to decide?" style="width:100%;padding:9px 11px;border:1px solid var(--line,#999);border-radius:10px;background:transparent;color:inherit">'
-      + '<button class="btn btn-s" data-intel-ask onclick="gmIntelAsk()" style="margin-top:8px">Find the community-proven answer</button>'
+      + '<button class="btn btn-s" data-intel-ask onclick="gmIntelAsk()" style="margin-top:8px">Keep this question</button>'
       + '<div id="intelAskOut" style="margin-top:8px"></div>'
       + '<details class="gm-intel-own" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">I have my own list</summary><div style="margin-top:8px">'
       + '<div class="info">Paste the top items you collected (Reddit Top/All-time, best-sellers, top videos) — one per line, best first. Get what the crowd agrees on. On-device.</div>'
@@ -4049,8 +4049,8 @@
     var q = (document.getElementById("intelQuestion").value || "").trim();
     var out = document.getElementById("intelAskOut");
     if (!q) { out.innerHTML = '<div class="info">Type the decision you want to make first.</div>'; return; }
-    gmInboxAdd(q, "action", { from: "ask-intel", next: "Answer the question when the estate is on" });
-    out.innerHTML = '<div class="info"><b>Saved.</b> It will be answered when your estate is on.</div>';
+    gmInboxAdd(q, "action", { from: "ask-intel", next: "Decide it, or paste a community list under I have my own list" });
+    out.innerHTML = '<div class="info"><b>Saved in your Inbox</b> as a decision to make.</div>';
   };
   window.gmIntelGo = function () {
     var lines = (document.getElementById("intelItems").value || "").split("\n").map(function (s) { return s.trim(); }).filter(Boolean);

@@ -41,7 +41,7 @@ setTimeout(() => {
   ok("with the estate AI off, the question waits in the Inbox as an action",
     it.t === "Which cloud certification should I do next?" && it.kind === "action", JSON.stringify(inbox()));
   const said = d.getElementById("intelAskOut");
-  ok("and the card says it will be answered when the estate is on", !!said && /answered when your estate is on/i.test(said.textContent),
+  ok("and the card says where the question waits", !!said && /Saved in your Inbox/i.test(said.textContent),
     said ? said.textContent : "nothing said");
 
   if (own) {
