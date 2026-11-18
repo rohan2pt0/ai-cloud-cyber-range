@@ -4645,9 +4645,9 @@
     var days = ages.length ? Math.min.apply(null, ages) : gmBkAgeDays(G("gm_first_open", ""));
     if (days === null || days < 8) return "";
     return '<div class="gm-unsaved" style="background:var(--amberBg);border:1px solid var(--amber);border-radius:10px;padding:10px 12px;margin-bottom:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">'
-      + '<div style="flex:1;font-size:11.5px;color:var(--text);line-height:1.5">' + days + ' days of changes live only on this phone.</div>'
-      + '<button type="button" class="btn-sm" style="background:var(--amber);color:#1a1200;font-weight:800;white-space:nowrap" onclick="gmExportNow()">Save a copy</button>'
-      + '<button type="button" class="btn-sm" aria-label="dismiss" style="background:transparent;color:var(--muted);font-size:16px;padding:4px 8px" onclick="gmUnsavedDismiss()">\u00d7</button></div>';
+      + '<div style="flex:1;font-size:13px;color:var(--text);line-height:1.5">' + days + ' days of changes live only on this phone.</div>'
+      + '<button type="button" class="btn-sm" style="background:var(--gold);color:#0d1f35;font-weight:800;white-space:nowrap" onclick="gmExportNow()">Save a copy</button>'
+      + '<button type="button" class="btn-sm" aria-label="Hide this for 30 days" style="background:transparent;color:var(--muted);font-size:16px;min-width:44px;min-height:44px;padding:4px 8px" onclick="gmUnsavedDismiss()">\u00d7</button></div>';
   }
   window.gmUnsavedDismiss = function () { S_("gm_unsaved_dismiss", ymd()); renderAll(); };
   function calmTabs() {
