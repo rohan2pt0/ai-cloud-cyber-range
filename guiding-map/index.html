@@ -7208,17 +7208,25 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
         "FAMILY — one real connection: a proper conversation, a call to parents, phone away at a meal. Floor: one undistracted 2-min talk."],
       check: "Did I do the floor on each? Yes = streak holds. Perfection is not required; showing up is." },
     { id: "strength", icon: "💪", title: "Mon/Wed/Fri — 30-min strength (band, no handles needed)", tag: "strength · 3×/week",
-      what: "Five exercises, ~5 min each, 45–60s rest between sets. You have a Decathlon loop band — no handle attachment is needed; the substitutions below use the loop directly.",
-      steps: ["1) PUSH-UPS — 3 sets × max reps. Hands shoulder-width, body straight, lower chest toward floor, push up. On knees is fine to start.",
-        "2) BAND ROWS — 3×12. No handles? Loop the band around a sturdy pole or the hinge side of a closed door at waist height (or stand on the middle of the band and hold the two loop ends). Hinge at hips, pull toward your waist, squeeze shoulder blades.",
-        "3) SQUATS — 3×15. Feet shoulder-width, chest up, push hips back, knees track over toes, go as low as comfortable.",
-        "4) BAND PRESS — 3×12. Stand on the band (or anchor it behind you at chest height), hold the loop at chest, press forward until arms straight, control back. Core tight, don’t arch.",
-        "5) PLANK — 3×45s. Forearms on floor, body in a straight line, squeeze core/glutes, breathe normally."],
-      figs: ["pushup", "row", "squat", "press", "plank"],
-      subs: ["Loop band digs into hands: wrap the ends around a rolled towel or your wrists.",
-        "No anchor point: standing on the band works for rows and presses.",
-        "Too hard: fewer reps with good form beats more reps with bad form."],
-      check: "Flow: Push-ups → Rows → Squats → Press → Plank. ~30 min total. Recovery day between sessions." },
+      what: "Five exercises, ~5 min each, 45–60s rest between sets. You have a Decathlon loop band — no handle attachment is needed; every move has an easier version using the loop directly.",
+      ex: [
+        { n: 1, name: "Push-ups", dose: "3 sets × 12", fig: "pushup",
+          how: ["Hands shoulder-width, body straight from head to heels.", "Lower your chest toward the floor, then push back up.", "On your knees is fine to start; keep the same slow control."],
+          easier: "Hands on a chair or kitchen counter, or drop to your knees." },
+        { n: 2, name: "Band rows", dose: "3 sets × 12", fig: "row",
+          how: ["Sit tall with the band around your feet.", "Hinge at the hips and pull the band to your waist.", "Squeeze your shoulder blades at the end of each pull."],
+          easier: "Loop the band around a pole or door hinge at waist height instead." },
+        { n: 3, name: "Squats", dose: "3 sets × 15", fig: "squat",
+          how: ["Feet shoulder-width, chest up.", "Push your hips back and bend the knees.", "Knees track over toes; go as low as comfortable.", "Loop the band above the knees to keep them tracking."],
+          easier: "Sit back to a chair behind you, then stand up again." },
+        { n: 4, name: "Band press", dose: "3 sets × 12", fig: "press",
+          how: ["Stand on the band, or anchor it behind you at chest height.", "Hold the loop at your chest.", "Press forward until your arms are straight, then control back.", "Keep your core tight and do not arch."],
+          easier: "Use a lighter band, or press one arm at a time." },
+        { n: 5, name: "Plank", dose: "3 × 45 s", fig: "plank",
+          how: ["Forearms on the floor, elbows under your shoulders.", "Body in one straight line from head to heels.", "Squeeze your core and glutes, and breathe normally."],
+          easier: "Drop to your knees, or put your forearms on a low step." }
+      ],
+      check: "A recovery day between sessions. The floor is one round of any three moves — that still counts." },
     { id: "breathing", icon: "🧘", title: "Box breathing + the 3-month calm ladder", tag: "mind · build up",
       what: "Start with box breathing (weeks 1–2), then climb the ladder. The animation below is all you need — no video.",
       viz: BOX_SVG,
@@ -7268,8 +7276,25 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
         + (fig ? '<div class="gs-fig">' + gmFigure(fig) + '</div>' : '')
         + '<div class="gs-body">' + body + '</div></div>';
     }
-    h += '<div class="gs-list">' + g.steps.map(function (s, i) { return stepHTML(s, g.figs && g.figs[i]); }).join("") + '</div>';
-    if (g.subs) { h += '<div class="gs-h">If your setup differs</div><div class="gs-list">' + g.subs.map(function (s) { return stepHTML(s); }).join("") + '</div>'; }
+    if (g.ex) {
+      // A one-page workout card: the glance line, then one card per move, then the order to run them.
+      h += '<div class="gs-meta">5 exercises · 3 rounds · rest 45–60 s · about 25 min</div>'
+        + '<div class="gs-list gs-cards">' + g.ex.map(function (x) {
+          return '<div class="gs gs-card">'
+            + '<div class="gs-fig">' + gmFigure(x.fig) + '</div>'
+            + '<div class="gs-body gs-v">'
+            + '<div class="gs-head"><span class="gs-num">' + x.n + '</span><span class="gs-name">' + esc(x.name) + '</span>'
+            + '<span class="gs-dose">' + esc(x.dose) + '</span></div>'
+            + '<div class="gs-h">How to do</div>'
+            + '<ul class="gs-how">' + x.how.map(function (b) { return '<li>' + esc(b) + '</li>'; }).join("") + '</ul>'
+            + '<div class="gs-easier"><b>Easier:</b> ' + esc(x.easier) + '</div></div></div>';
+        }).join("") + '</div>'
+        + '<div class="gs-flow">' + g.ex.map(function (x) { return '<span class="gs-fn">' + x.n + '</span>'; }).join(' \u2192 ')
+        + ' <b class="gs-repeat">Repeat \u00d73</b></div>';
+    } else {
+      h += '<div class="gs-list">' + g.steps.map(function (s, i) { return stepHTML(s, g.figs && g.figs[i]); }).join("") + '</div>';
+      if (g.subs) { h += '<div class="gs-h">If your setup differs</div><div class="gs-list">' + g.subs.map(function (s) { return stepHTML(s); }).join("") + '</div>'; }
+    }
     if (g.check) { h += '<div class="gs-check">\u2713 ' + esc(g.check) + '</div>'; }
     return h + '</div></details>';
   }
@@ -11744,6 +11769,24 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       + ".gs-v{font-size:13.5px;line-height:1.55;color:var(--text)}.gs-h{margin-top:10px;font-weight:800;font-size:13px}"
       + ".gs.gs-with-fig{display:flex;align-items:flex-start;gap:12px}.gs-fig{flex:0 0 auto}.gs-body{flex:1;min-width:0}"
       + ".gs-check{margin-top:10px;padding:10px 12px;border-radius:12px;background:rgba(30,122,82,.08);border:1px solid rgba(30,122,82,.25);font-size:13px;line-height:1.5}"
+      // The strength guide as a one-page workout card: a glance line above, cards that stack on a phone and wrap in a
+      // row from 900 px, a gold number badge and dose chip, then the order strip below.
+      + ".gs-meta{font-size:12px;font-weight:800;letter-spacing:.02em;color:#7a5a14;background:rgba(201,168,76,.12);border:1px solid rgba(201,168,76,.35);border-radius:10px;padding:7px 10px;margin:2px 0 8px}"
+      + "html[data-theme=dark] .gs-meta{color:var(--gold)}"
+      + ".gs-cards{display:grid;grid-template-columns:1fr;gap:10px;margin:8px 0}"
+      + ".gs-cards .gs{padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--card)}"
+      + ".gs-card .gs-fig{max-width:120px;margin-bottom:6px}"
+      + ".gs-head{display:flex;align-items:center;flex-wrap:wrap;gap:8px}"
+      + ".gs-num{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--gold);color:#1b1406;font-weight:900;font-size:13px;flex:none}"
+      + ".gs-name{font-weight:800;font-size:14px;color:var(--text)}"
+      + ".gs-dose{margin-inline-start:auto;font-size:11.5px;font-weight:800;color:#7a5a14;background:rgba(201,168,76,.14);border:1px solid rgba(201,168,76,.4);border-radius:999px;padding:2px 8px;white-space:nowrap}"
+      + "html[data-theme=dark] .gs-dose{color:var(--gold)}"
+      + ".gs-how{margin:2px 0 0;padding-inline-start:17px}.gs-how li{margin:2px 0;line-height:1.45;font-size:13px}.gs-how li::marker{color:#b8902f}"
+      + ".gs-easier{margin-top:8px;font-size:12.5px;line-height:1.45;color:var(--muted)}.gs-easier b{color:var(--text)}"
+      + ".gs-flow{display:flex;align-items:center;flex-wrap:wrap;gap:6px;margin-top:10px;font-weight:800;font-size:13px}"
+      + ".gs-fn{display:inline-grid;place-items:center;width:24px;height:24px;border-radius:50%;border:1.5px solid rgba(201,168,76,.6);color:var(--text)}"
+      + ".gs-repeat{margin-inline-start:6px;color:#7a5a14}html[data-theme=dark] .gs-repeat{color:var(--gold)}"
+      + "@media (min-width:900px){.gs-cards{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}}"
       // Money meters: the healthy zone and your value are labelled on the track, with a scale beneath.
       + "html body .meter-track{position:relative;height:10px;border-radius:99px;background:var(--cardAlt);margin:30px 0 4px;overflow:visible}"
       + "html body .meter-band{position:absolute;top:0;bottom:0;opacity:1;border-radius:99px;background:rgba(30,122,82,.22);border:1px solid rgba(30,122,82,.45)}"
