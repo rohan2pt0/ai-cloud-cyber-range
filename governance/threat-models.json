@@ -257,6 +257,42 @@
      "evidence": "guiding-map/tests/kit6.js"
     },
     {
+     "id": "pk-t1",
+     "stride": "T",
+     "element": "app",
+     "threat": "A personal-pack link or file made by someone else injects markup or a javascript: link into the Life OS, or swaps the person's pack.",
+     "status": "mitigated",
+     "mitigation": "a pack is data: its shape is checked and bounded (ids, lengths, at most 40 items and 12 steps), every string is escaped on output, a link must be https, and installing or replacing a pack asks first",
+     "evidence": "guiding-map/tests/test143.js"
+    },
+    {
+     "id": "pk-i1",
+     "stride": "I",
+     "element": "app",
+     "threat": "A person's private pack (their own plans) leaks into the public repository or the published app.",
+     "status": "mitigated",
+     "mitigation": "the public app ships only the empty slot; a pack lives on the device (gm_pack) and travels only by the person's own sync or their own link; no pack content is ever committed",
+     "evidence": "guiding-map/tests/test143.js"
+    },
+    {
+     "id": "ss-i1",
+     "stride": "I",
+     "element": "sync",
+     "threat": "The Add another device link carries the sync token or the OneDrive data key; sent to the wrong person or left in a chat, it lets them read the synced data.",
+     "status": "accepted",
+     "reason": "The secret travels in the #fragment, which no server receives; the app removes it from the address bar on open; the share text says it is for the person's own device only. Slice 2 of seamless-sync replaces it with a passkey-derived key and a short-lived QR, so no long-lived secret is ever handed over.",
+     "review": "2026-12-16"
+    },
+    {
+     "id": "ss-s1",
+     "stride": "S",
+     "element": "sync",
+     "threat": "A link made by someone else pairs this device to their estate or swaps in their OneDrive key, so new data goes where they can read it.",
+     "status": "mitigated",
+     "mitigation": "every link that changes sync asks first, names the estate's host, says to continue only for a link the person made on their own device, and asks again before replacing an existing key",
+     "evidence": "guiding-map/tests/test142.js"
+    },
+    {
      "id": "kl-t2",
      "stride": "T",
      "element": "lock-record",

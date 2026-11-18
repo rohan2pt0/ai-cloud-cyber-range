@@ -101,3 +101,34 @@ def test_docker_mode_is_root_only_and_installs_from_dockers_own_repository_for_t
     assert "usermod -aG docker fakeuser" in out
     src = (ROOT / "install.sh").read_text()
     assert src.count("install_docker") == 3                            # one definition, used by --server and --docker
+
+
+def test_stable_says_why_when_the_newest_release_cannot_be_found(tmp_path):
+    """A failed curl inside $(…) used to end the script under set -e before the plain reason was printed."""
+    fake = tmp_path / "bin"
+    fake.mkdir()
+    (fake / "curl").write_text("#!/bin/sh\nexit 6\n")
+    (fake / "curl").chmod(0o755)
+    env = {"PATH": f"{fake}:/usr/bin:/bin:/usr/local/bin", "HOME": str(tmp_path), "SECURAX_REPO": "example/none"}
+    run = subprocess.run(["bash", str(ROOT / "install.sh"), "--stable", "--dir", str(tmp_path / "x")], capture_output=True,
+                         text=True, env=env, timeout=60)
+    assert run.returncode != 0 and "Could not find the newest release" in run.stderr, run.stderr
+    assert not (tmp_path / "x").exists()
+
+
+def test_help_names_every_option_a_person_can_pass():
+    out = subprocess.run(["bash", str(ROOT / "install.sh"), "--help"], capture_output=True, text=True, timeout=30).stdout
+    for option in ("--stable", "--offline", "--restore", "--server", "--yes", "--no-start"):
+        assert option in out, option
+
+
+def test_server_checks_the_backup_before_it_changes_the_machine():
+    text = (ROOT / "install.sh").read_text()
+    server = text[text.index('if [ "$SERVER" = 1 ]; then'):]
+    assert server.index('die "Backup not found: $RESTORE"') < server.index("1/6 system packages")
+    assert server.index('die "Key file not found: $KEYFILE"') < server.index("1/6 system packages")
+
+
+def test_a_failed_download_ends_with_a_plain_reason():
+    text = (ROOT / "install.sh").read_text()
+    assert text.count("|| die \"Could not download") == 2, "both git clone lines say why they failed"

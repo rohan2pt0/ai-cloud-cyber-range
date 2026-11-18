@@ -566,6 +566,31 @@
   // One-link setup: `./securax sync-link` prints  <hub address>/#sync=<base64url JSON {url,key,user}>.  Opening it on a phone sets sync up in one
   // tap. The data after # never leaves the browser (it is not sent to any server); we remove it from the address bar straight away, we
   // always show WHERE the data will go before saving, and an existing setup is never replaced without a second, explicit yes.
+  function jsonB64url(o) { return btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
+  // Seamless sync, slice 1 (owner 2026-11-18: "one more key to copy-paste, every day"): a device that syncs hands the pairing to
+  // the person's next device through the phone's own share sheet (AirDrop, Nearby Share, a note to self). Opening the link there
+  // runs gmSyncLinkImport, so nothing is typed. The link carries the device token in the #fragment, which no server ever receives.
+  window.gmSyncLink = function () {
+    var c = cfg(), o = {}, odk = G("gm_sync_odk", null), ms = G("gm_ms_cfg", null);
+    if (c && !c.access && c.url && c.key) { o.url = c.url; o.key = c.key; o.user = c.user || "me"; }
+    // OneDrive: the data key itself, so the next device never asks for the passphrase; it only signs in to Microsoft (one door)
+    if (G("gm_sync_od", null) && odk && odk.k && odk.salt) { o.od = { k: odk.k, salt: odk.salt }; if (ms && ms.id) o.ms = ms.id; }
+    if (!o.url && !o.od) return "";
+    return location.origin + location.pathname + "#sync=" + jsonB64url(o);
+  };
+  window.gmSyncShare = function () {
+    var link = window.gmSyncLink(); if (!link) return Promise.resolve(false);
+    var done = function (how) { if (window.gmToast) gmToast(how); return true; };
+    if (navigator.share) {
+      return navigator.share({ title: "Open my Life OS", text: "Open this on my own device to sync it. Not for anyone else.", url: link })
+        .then(function () { return done("Sent. Open it on the other device: sync turns on there."); })
+        .catch(function () { return false; });
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(link).then(function () { return done("Link copied. Open it on your other device: sync turns on there."); }, function () { return false; });
+    }
+    return Promise.resolve(false);
+  };
   function b64urlJson(t) { t = String(t).replace(/-/g, "+").replace(/_/g, "/"); while (t.length % 4) t += "="; return JSON.parse(decodeURIComponent(escape(atob(t)))); }
   window.gmSyncLinkImport = function () {
     var h = String(location.hash || ""), m = /^#sync=([A-Za-z0-9_-]+)$/.exec(h);
@@ -573,7 +598,21 @@
     try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
     try {
       var o = b64urlJson(m[1]);
-      if (!o || typeof o.url !== "string" || !/^https?:\/\//.test(o.url) || typeof o.key !== "string" || !o.key || o.key.length > 300) throw new Error("not a sync link");
+      if (!o || typeof o !== "object") throw new Error("not a sync link");
+      var B64 = /^[A-Za-z0-9+\/=]{8,200}$/;
+      if (o.od && !(typeof o.od.k === "string" && B64.test(o.od.k) && typeof o.od.salt === "string" && B64.test(o.od.salt))) throw new Error("not a sync link");
+      if (o.ms && !(typeof o.ms === "string" && /^[A-Za-z0-9-]{8,64}$/.test(o.ms))) throw new Error("not a sync link");
+      if (o.od) {   // OneDrive hand-over: keep the data key and the app id; sync starts once this device signs in to Microsoft
+        var curK = G("gm_sync_odk", null);
+        if (!(curK && curK.k === o.od.k && curK.salt === o.od.salt)) {
+          if (!confirm("Turn on OneDrive sync from this link?\n\nOnly continue if you made this link yourself, on your own device.")) return true;
+          if (curK && !confirm("This device already has a OneDrive sync key. Replace it with the one in this link?")) return true;
+        }
+        S_("gm_sync_odk", { k: o.od.k, salt: o.od.salt }); S_("gm_sync_od", { on: 1, since: ymd() });
+        if (o.ms && !G("gm_ms_cfg", null)) S_("gm_ms_cfg", { id: o.ms });
+        if (!o.url) { gmTouch("OneDrive sync handed over", "sign in to Microsoft once"); setTimeout(function () { if (window.renderAll) renderAll(); }, 50); return true; }
+      }
+      if (typeof o.url !== "string" || !/^https?:\/\//.test(o.url) || typeof o.key !== "string" || !o.key || o.key.length > 300) throw new Error("not a sync link");
       var user = String(o.user || "me").slice(0, 256), host = new URL(o.url).host, cur = cfg();
       // `./securax go` opens this link on every run: a device already set up exactly like this needs no question at all.
       if (cur && String(cur.url).replace(/\/+$/, "") === o.url.replace(/\/+$/, "") && cur.key === o.key && cur.user === user) { setTimeout(function () { gmSyncInit(true); }, 50); return true; }
@@ -692,14 +731,18 @@
   };
   window.gmSnapRestore = function (day) {
     var c = cfg(); if (!c || !/^\d{4}-\d{2}-\d{2}$/.test(day)) return;
-    fetch(snapBase() + "/" + day + "?user=" + encodeURIComponent(c.user), { headers: syncHeaders(c) })
+    return fetch(snapBase() + "/" + day + "?user=" + encodeURIComponent(c.user), { headers: syncHeaders(c) })
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
       .then(function (b) {
         var keys = Object.keys(b.payload || {});
-        if (!keys.length || !confirm("Restore the estate's snapshot of " + day + " (" + keys.length + " items)? Everything on this device is replaced; you can undo this once from Ops.")) return;
-        gmSnap("before restoring the " + day + " snapshot");
-        keys.forEach(function (k) { if (k.indexOf("gm_sync") !== 0 && k.indexOf("gm_undo") !== 0) _set0(k, b.payload[k]); });
-        location.reload();
+        if (!keys.length) return;
+        return gmTypedConfirm("RESTORE", "Restore the estate's snapshot of " + esc(day) + "? This replaces " + keys.length + " item" + (keys.length === 1 ? "" : "s") + " on this device. You can undo this once from Ops.", function () { gmExportNow(); })
+          .then(function (ok) {
+            if (!ok) return;
+            gmSnap("before restoring the " + day + " snapshot");
+            keys.forEach(function (k) { if (k.indexOf("gm_sync") !== 0 && k.indexOf("gm_undo") !== 0) _set0(k, b.payload[k]); });
+            location.reload();
+          });
       }).catch(function (e) { alert("Could not restore that snapshot: " + e.message); });
   };
   window.gmSyncSave = function () {
@@ -721,15 +764,18 @@
       h += '<div class="info">Sync is on for <b>' + esc(c.user) + '</b>' + (c.access ? ' (paired by your sign-in' + (c.email ? ' as ' + esc(c.email) : '') + ')' : '') + '. Last push: ' + esc(last || "not yet") + '. '
         + 'Edits merge per field by timestamp, so the phone and the laptop no longer overwrite each other. '
         + 'Your data stays on your own SecuRAX gateway \u2014 no third party.</div>'
+        + (c.access ? '<div class="info">Another device: open <b>' + esc(location.host) + '</b> there and sign in. It pairs itself.</div>'
+          : '<button class="btn btn-p" data-sync-share onclick="gmSyncShare()">Add another device</button>'
+            + '<div class="f-label" style="text-transform:none;letter-spacing:0;margin:6px 0 10px">Sends a link to your own phone, iPad or laptop (AirDrop, Nearby Share or a note to yourself). Opening it there turns sync on: nothing to type. It holds your sync key, so send it to no one else.</div>')
         + '<button class="btn btn-s" onclick="gmSyncOff()">Turn sync off</button>';
     } else {
-      h += '<div class="info">Optional. Without it, each device keeps its own copy and you move data with Export/Import. '
-        + 'With it, all devices stay live \u2014 synced through <b>your own SecuRAX estate</b> (not a cloud SaaS), reached privately over Tailscale. '
-        + 'Setup is in docs/securax/14-GUIDING-MAP.md.</div>'
+      h += '<div class="info">Your devices stay in step through <b>your own SecuRAX estate</b>, not a cloud service. '
+        + 'To add this device: on a device that already syncs, open this card and tap <b>Add another device</b>. Nothing to type here.</div>'
+        + '<details class="gm-sync-hand" style="margin-top:8px"><summary style="cursor:pointer;font-size:12.5px;color:var(--muted)">Set it up by hand</summary>'
         + '<label class="f-label">Estate sync URL</label><input id="syUrl" value="' + (TS_ORIGIN || SECURE_ORIGIN ? location.origin + "/sync" : "") + '" placeholder="' + (SECURE_ORIGIN ? location.origin + "/sync" : "http://securax.your-tailnet.ts.net:8089/sync") + '">'
         + '<label class="f-label">Device token</label><input id="syKey" placeholder="your estate sync token">'
         + '<label class="f-label">Your row id (anything, same on every device)</label><input id="syUser" placeholder="me">'
-        + '<button class="btn btn-p" onclick="gmSyncSave()">Turn sync on</button>';
+        + '<button class="btn btn-s" onclick="gmSyncSave()">Turn sync on</button></details>';
     }
     return h;
   }
@@ -852,6 +898,37 @@
     { id: "mf", label: "Mind", floor: "Three slow breaths, each breath out longer than the breath in." },
     { id: "fm", label: "Family", floor: "One real question, phone in the basket." }
   ];
+  // A tick is announced (owner, 2026-11-18): a screen reader hears what just changed. ONE hidden live region, outside
+  // #sections so a redraw never removes it. The name gmSay is already the Listen button, so the announcer is gmAnnounce.
+  function gmSayEl() {
+    var el = document.getElementById("gmSay");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "gmSay"; el.className = "gm-sr";
+      el.setAttribute("role", "status"); el.setAttribute("aria-live", "polite");
+      (document.body || document.documentElement).appendChild(el);
+    }
+    return el;
+  }
+  window.gmAnnounce = function (text) { gmSayEl().textContent = String(text == null ? "" : text); };
+  try { gmSayEl(); } catch (e) {}
+  var _gmTgHabit = window.tgHabit;
+  if (typeof _gmTgHabit === "function" && !_gmTgHabit.gmAnnounced) {
+    var gmTgHabit = function (i) {
+      var hb = typeof HABITS !== "undefined" ? HABITS[i] : null;
+      var out = _gmTgHabit.apply(this, arguments);
+      try {
+        if (hb) {
+          var done = typeof todayChecks === "function" ? todayChecks() : [];
+          var n = DAILY3.filter(function (d) { return done.indexOf(d.id) >= 0; }).length;
+          window.gmAnnounce(hb.name + (done.indexOf(hb.id) >= 0 ? " done. " : " not done. ") + n + " of 3 today.");
+        }
+      } catch (e) {}
+      return out;
+    };
+    gmTgHabit.gmAnnounced = true;
+    window.tgHabit = gmTgHabit;
+  }
   // Golden repairs (owner, 2026-11-12, after kintsugi): the last seven days of the daily three. A kept day is a gold coin;
   // a missed day you came back from is mended with a gold seam, never shown as failure; a recent miss is an empty ring.
   // Nothing shows before there is any history, so a new person is never greeted by empty circles.
@@ -2580,6 +2657,7 @@
         h += '<div class="info" style="margin-top:10px"><b>\u2601\ufe0f Syncing through OneDrive</b> \u2014 your devices stay in step over the internet, laptop on or off. Encrypted on this device; Microsoft sees ciphertext only. '
           + (odl ? 'Last sync ' + esc(odl) + '.' : 'Not synced yet.') + (odf ? ' <b style="color:var(--red)">' + odf + ' failed attempt(s): ' + esc(G("gm_sync_od_err", "")) + '</b>' : '') + '</div>'
           + '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-sm" style="background:var(--gold);color:#0d1f35" onclick="gmOdSync().then(renderAll)">Sync now</button>'
+          + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" data-sync-share onclick="gmSyncShare()">Add another device</button>'
           + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmOdSyncOff()">Stop OneDrive sync on this device</button></div>';
       } else {
         h += '<div class="info" style="margin-top:10px"><b>Sync my devices through OneDrive</b> (recommended): phone, laptop and tablet stay in step over the internet even when the laptop is OFF. '
@@ -2832,6 +2910,31 @@
         + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);padding:9px 14px" onclick="gmBkConfirm()">I have saved it</button></div>'
         + (G(BK_ESC, null) ? '<div class="muted" style="font-size:12px;margin-top:8px">Your estate keeps a copy too, so a new phone paired with it opens your backups.</div>' : ''));
     }).catch(function (e) { gmToast("No backup saved: " + (e && e.message || e) + ". Nothing readable was written."); });
+  };
+  // Anything as final as erase asks for a typed word, built once from the erase dialog's pattern. It resolves true only
+  // when the word is typed, and its primary is the safe step (save a copy first), never the irreversible one.
+  window.gmTypedConfirm = function (word, message, safeStep) {
+    word = String(word || "RESTORE").toUpperCase();
+    return new Promise(function (resolve) {
+      gmDlg('<div style="font-weight:800;font-size:15px;margin-bottom:8px">Please confirm</div>'
+        + '<div style="font-size:13px;line-height:1.55;margin-bottom:10px">' + message + '</div>'
+        + (typeof safeStep === "function" ? '<button class="btn-sm btn-p" id="gmTypeSafe" style="background:var(--gold);color:#0d1f35;font-weight:800;padding:9px 18px;margin-bottom:10px">Save a copy first</button>' : '')
+        + '<label class="f-label" for="gmTypeIn">Type ' + esc(word) + ' to confirm</label><input type="text" id="gmTypeIn" autocomplete="off" autocapitalize="characters">'
+        + '<div style="display:flex;gap:8px"><button class="btn-sm" id="gmTypeGo" disabled style="background:transparent;color:var(--red);border:1px solid var(--red);font-weight:800;padding:9px 18px">Continue</button>'
+        + '<button class="btn-sm" id="gmTypeCancel" style="background:var(--cardAlt);color:var(--text);padding:9px 14px">Cancel</button></div>');
+      var inp = document.getElementById("gmTypeIn"), go = document.getElementById("gmTypeGo");
+      inp.addEventListener("input", function () { go.disabled = inp.value.trim() !== word; });
+      go.addEventListener("click", function () {
+        if (inp.value.trim() !== word) return;
+        gmClose(); resolve(true);
+      });
+      document.getElementById("gmTypeCancel").addEventListener("click", function () { gmClose(); resolve(false); });
+      var safe = document.getElementById("gmTypeSafe");
+      if (safe) safe.addEventListener("click", function () {
+        try { safeStep(); } catch (e) {}
+        gmToast("A copy is saved. Type " + word + " below to continue, or Cancel.");
+      });
+    });
   };
   window.gmEraseAsk = function () {
     gmDlg('<div style="font-weight:800;font-size:15px;margin-bottom:8px;color:var(--red)">Erase all data on this device?</div>'
@@ -3525,7 +3628,7 @@
      watch a video, or draw it yourself. Plain steps, equipment substitutes for
      what you actually own, and a self-check. (Systems you can act on, not look up.) */
   var BOX_SVG =
-    '<svg viewBox="0 0 220 180" width="100%" style="max-width:300px;display:block;margin:6px auto">'
+    '<svg viewBox="0 0 220 180" width="100%" style="max-width:360px;display:block;margin:6px auto">'
     + '<rect x="60" y="20" width="100" height="100" rx="8" fill="none" stroke="var(--accent)" stroke-width="3"/>'
     + '<text x="110" y="14" text-anchor="middle" font-size="11" fill="var(--muted)">Inhale 4s →</text>'
     + '<text x="168" y="74" font-size="11" fill="var(--muted)">↓ Hold 4s</text>'
@@ -3656,12 +3759,64 @@
       check: "If someone compromises your everyday email, your recovery paths still stand because they point at an address the attacker has never seen." },
   ];
 
+  /* Box breathing, full screen (owner, 2026-11-18): the inline square is small, so the breathing guide opens the whole
+     screen with one square, the word and the count — easy to follow on a phone or an iPad. Under reduced motion the
+     square stays still. The 1-second timer runs only in a real browser; tests drive gmBreathe.step() themselves. */
+  function gmBreathe() {
+    var old = document.getElementById("gmBreathe");
+    if (old) old.parentNode.removeChild(old);
+    if (gmBreathe.timer) { clearInterval(gmBreathe.timer); gmBreathe.timer = null; }
+    if (!document.getElementById("gmBreatheCss")) {
+      var st = document.createElement("style"); st.id = "gmBreatheCss";
+      st.textContent = "#gmBreathe{position:fixed;inset:0;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;background:var(--bg);color:var(--text);padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom))}"
+        + "#gmBreathe .gm-breathe-square{width:min(78vw,62vh);height:min(78vw,62vh);border:2px solid var(--gold);border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;transition:transform 1s cubic-bezier(.2,.8,.2,1);will-change:transform}"
+        + "#gmBreathe .gm-breathe-word{font-size:32px;font-weight:800;letter-spacing:.01em;color:var(--text)}"
+        + "#gmBreathe .gm-breathe-count{font-size:56px;font-weight:800;line-height:1;color:var(--gold)}"
+        + "#gmBreathe .gm-breathe-done{margin-top:8px;min-height:48px;padding:12px 28px;border-radius:12px;border:1px solid var(--gold);background:var(--card);color:var(--text);font-size:16px;font-weight:700;cursor:pointer}"
+        + "@media (prefers-reduced-motion:reduce){#gmBreathe .gm-breathe-square{transition:none!important;transform:none!important}}";
+      (document.head || document.documentElement).appendChild(st);
+    }
+    var o = document.createElement("div");
+    o.id = "gmBreathe"; o.setAttribute("role", "dialog"); o.setAttribute("aria-modal", "true");
+    o.setAttribute("aria-label", "Box breathing");
+    o.innerHTML = '<div class="gm-breathe-square"><div class="gm-breathe-word">Inhale</div>'
+      + '<div class="gm-breathe-count">4</div></div><button type="button" class="gm-breathe-done">Done</button>';
+    document.body.appendChild(o);
+    var PH = ["Inhale", "Hold", "Exhale", "Hold"], phase = 0, count = 4;
+    var sq = o.querySelector(".gm-breathe-square"), wd = o.querySelector(".gm-breathe-word"), cd = o.querySelector(".gm-breathe-count");
+    function paint() {
+      wd.textContent = PH[phase]; cd.textContent = count;
+      var calm = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (calm) return;
+      var sc = phase === 0 ? 0.86 + (4 - count) * 0.045 : phase === 2 ? 1 - (4 - count) * 0.045 : (phase === 1 ? 1 : 0.86);
+      sq.style.transform = "scale(" + sc + ")";
+    }
+    function step() {
+      if (count > 1) count--;
+      else { phase = (phase + 1) % 4; count = 4; }
+      paint();
+    }
+    function close() {
+      if (gmBreathe.timer) { clearInterval(gmBreathe.timer); gmBreathe.timer = null; }
+      document.removeEventListener("keydown", key, true);
+      var el = document.getElementById("gmBreathe"); if (el) el.parentNode.removeChild(el);
+    }
+    function key(ev) { if (ev.key === "Escape") close(); }
+    gmBreathe.timer = null; gmBreathe.step = step; gmBreathe.close = close;
+    document.addEventListener("keydown", key, true);
+    o.querySelector(".gm-breathe-done").addEventListener("click", close);
+    paint();
+    if (!/jsdom/i.test(navigator.userAgent || "") && !navigator.webdriver) gmBreathe.timer = setInterval(step, 1000);
+  }
+  window.gmBreathe = gmBreathe;
+
   function guideCard(g) {
     var h = '<details class="guide-card road-col" style="margin-bottom:10px"><summary style="cursor:pointer;font-weight:800;font-size:13px">'
       + '<span class="gm-glyph" aria-hidden="true"><i>' + g.icon + '</i></span><span class="gm-gt"><b>' + esc(g.title) + '</b><small>' + esc(g.tag) + '</small></span></summary>'
       + '<div style="font-size:12.5px;line-height:1.75;margin-top:8px">'
       + '<div class="info" style="margin-bottom:8px">' + esc(g.what) + '</div>'
-      + (g.viz || "");
+      + (g.viz || "")
+      + (g.id === "breathing" ? '<button type="button" class="btn btn-p" style="margin:8px 0" onclick="gmBreathe()">Start breathing</button>' : "");
     function stepHTML(s, fig) {
       var m = /^([^—:]{2,60}?)\s*(?:—|:)\s+(.+)$/.exec(s);
       var body = m && /[A-Z]{2,}/.test(m[1]) ? '<div class="gs-k">' + esc(m[1]) + '</div><div class="gs-v">' + esc(m[2]) + '</div>'
@@ -3958,11 +4113,17 @@
       + '<textarea id="guardQ" placeholder="Paste text about yourself…" style="width:100%;min-height:60px;padding:9px 11px;border:1px solid var(--line,#999);border-radius:10px;background:transparent;color:inherit"></textarea>'
       + '<button class="btn btn-s" onclick="gmGuardScan()" style="margin-top:8px">Scan locally</button><div id="guardOut" style="margin-top:8px"></div></div></details>';
 
-    h += '<details class="road-col" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">◈ Decide the community-proven way (Intel)</summary><div style="margin-top:8px">'
+    h += '<details class="road-col" id="askIntelCard" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">◈ Decide the community-proven way (Intel)</summary><div style="margin-top:8px">'
+      + '<div class="info">One question is enough. It waits in your Inbox as a decision to make, so nothing you type is lost.</div>'
+      + '<input id="intelQuestion" aria-label="What do you want to decide?" placeholder="What do you want to decide?" style="width:100%;padding:9px 11px;border:1px solid var(--line,#999);border-radius:10px;background:transparent;color:inherit">'
+      + '<button class="btn btn-s" data-intel-ask onclick="gmIntelAsk()" style="margin-top:8px">Keep this question</button>'
+      + '<div id="intelAskOut" style="margin-top:8px"></div>'
+      + '<details class="gm-intel-own" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">I have my own list</summary><div style="margin-top:8px">'
       + '<div class="info">Paste the top items you collected (Reddit Top/All-time, best-sellers, top videos) — one per line, best first. Get what the crowd agrees on. On-device.</div>'
       + '<textarea id="intelItems" placeholder="e.g.\nPassed CCSP! Pete Zerger videos + LEARNZAPP\nCCSP: Pete Zerger + LEARNZAPP, Sybex for depth" style="width:100%;min-height:60px;padding:9px 11px;border:1px solid var(--line,#999);border-radius:10px;background:transparent;color:inherit"></textarea>'
       + '<input id="intelVocab" placeholder="Names you saw repeating (comma-separated) — optional" style="width:100%;margin-top:6px;padding:9px 11px;border:1px solid var(--line,#999);border-radius:10px;background:transparent;color:inherit">'
-      + '<button class="btn btn-s" onclick="gmIntelGo()" style="margin-top:8px">Find the consensus</button><div id="intelOut" style="margin-top:8px"></div></div></details></details>';
+      + '<button class="btn btn-s" onclick="gmIntelGo()" style="margin-top:8px">Find the consensus</button><div id="intelOut" style="margin-top:8px"></div></div></details>'
+      + '</div></details></details>';
 
     h += '<details class="road-col" id="askConn" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">Connection (set once)</summary>';
     h += '<details class="road-col" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">⤢ Launch the estate</summary><div style="margin-top:8px" class="info">'
@@ -4115,6 +4276,15 @@
       : '<div class="info"><b>✓ Clean.</b> No high-risk identifiers found in this sample.</div>';
   };
   function sigW(score, rank, age, mode) { var pop = Math.log10(Math.max(score, 0) + 10), rw = 1 / (1 + 0.15 * Math.max(rank - 1, 0)); if (mode === "edge") { var f = Math.exp(-Math.max(age, 0) / 180); return pop * rw * (0.3 + 0.7 * f); } return pop * rw * (1 + Math.min(Math.max(age, 0) / 365, 5) * 0.1); }
+  // One question, no list to collect. The estate's AI gathers the consensus when it is on; until then the question
+  // waits in the Inbox as an action, so asking never dead-ends and nothing typed is lost.
+  window.gmIntelAsk = function () {
+    var q = (document.getElementById("intelQuestion").value || "").trim();
+    var out = document.getElementById("intelAskOut");
+    if (!q) { out.innerHTML = '<div class="info">Type the decision you want to make first.</div>'; return; }
+    gmInboxAdd(q, "action", { from: "ask-intel", next: "Decide it, or paste a community list under I have my own list" });
+    out.innerHTML = '<div class="info"><b>Saved in your Inbox</b> as a decision to make.</div>';
+  };
   window.gmIntelGo = function () {
     var lines = (document.getElementById("intelItems").value || "").split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
     var vocab = (document.getElementById("intelVocab").value || "").split(",").map(function (s) { return s.trim(); }).filter(Boolean);
@@ -4276,7 +4446,18 @@
   var _navMore = false;
   function phone() { try { return window.matchMedia("(max-width: 700px)").matches; } catch (e) { return false; } }
   window.gmMoreToday = function (o) { S_("gm_more_today", !!o); };
-  window.gmNavMore = function (on) { _navMore = on === undefined ? !_navMore : !!on; navRender(); };
+  window.gmNavMore = function (on) {
+    var was = _navMore;
+    _navMore = on === undefined ? !_navMore : !!on;
+    navRender();
+    if (_navMore) {
+      var first = document.querySelector("#gmMoreSheet .sh button");
+      if (first && first.focus) first.focus();
+    } else if (was) {
+      var back = document.querySelector('#gmNav button[aria-expanded]');
+      if (back && back.focus) back.focus();
+    }
+  };
   window.gmNavGo = function (id) { _navMore = false; goTab(id); };
   window.gmMoreAll = function (o) { S_("gm_more_all", !!o); };
   // One switch, kept, and reversible from the menu: simple (three doors, a short Today) or everything.
@@ -4328,7 +4509,7 @@
       h += '<button class="' + (curTab === n[0] && !_navMore ? "on" : "") + '" onclick="gmNavGo(\'' + n[0] + '\')"' + (curTab === n[0] ? ' aria-current="page"' : "") + '><b aria-hidden="true">' + n[1] + '</b>' + n[2] + '</button>';
     });
     h += '<button class="' + (_navMore || inMore ? "on" : "") + '" onclick="gmNavMore()" aria-expanded="' + _navMore + '"><b aria-hidden="true">' + navIco('<path d="M4 7h16M4 12h16M4 17h16"/>') + '</b>More</button></nav>';
-    var sh = '<div id="gmMoreSheet" class="' + (_navMore ? "on" : "") + '" onclick="if(event.target===this)gmNavMore(false)"><div class="sh" role="menu">';
+    var sh = '<div id="gmMoreSheet" class="' + (_navMore ? "on" : "") + '" role="dialog" aria-modal="true" aria-label="More" onclick="if(event.target===this)gmNavMore(false)"><div class="sh" role="menu">';
     // The vital few first, ordered by risk (Shield, then what is due, then what runs your life); everything else folded.
     // Start simple (owner, 2026-11-14: "terrified to start", "too heavy"): three doors until the person asks for everything.
     var SIMPLE = G("gm_simple", true) !== false;
@@ -4688,6 +4869,31 @@
         + '<div style="margin-top:10px">' + more + '</div></details>' : "")
       + '<div style="text-align:center;margin:6px 0 4px"><span style="font-size:11.5px;color:var(--muted);cursor:pointer;text-decoration:underline" onclick="gmCalm(false)">Show everything (all tabs, all cards)</span></div></div>';
   }
+  /* ── Unsaved days, said honestly on Today (queue experience-v3, fix 1): the age of the last backup belongs on the
+     screen a person opens every day, not only inside Ops. Real data only: example numbers are nobody's to lose. Amber,
+     never red; one line, one action, and a dismiss that rests for 30 days. Reads the same dates Ops reads. ── */
+  function gmBkAgeDays(v) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v || "")); if (!m) return null;
+    var d = new Date(+m[1], +m[2] - 1, +m[3]), n = new Date();
+    n = new Date(n.getFullYear(), n.getMonth(), n.getDate());
+    return isNaN(d.getTime()) ? null : Math.max(0, Math.round((n - d) / 86400000));
+  }
+  function gmUnsavedLine() {
+    if (!profOK()) return "";
+    var quiet = gmBkAgeDays(G("gm_unsaved_dismiss", ""));
+    if (quiet !== null && quiet < 30) return "";
+    var ages = [];
+    ["gm_last_export", "gm_last_offsite", "gm_sync_od_last"].forEach(function (k) {
+      var a = gmBkAgeDays(G(k, null)); if (a !== null) ages.push(a);
+    });
+    var days = ages.length ? Math.min.apply(null, ages) : gmBkAgeDays(G("gm_first_open", ""));
+    if (days === null || days < 8) return "";
+    return '<div class="gm-unsaved" style="background:var(--amberBg);border:1px solid var(--amber);border-radius:10px;padding:10px 12px;margin-bottom:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">'
+      + '<div style="flex:1;font-size:13px;color:var(--text);line-height:1.5">' + days + ' days of changes live only on this phone.</div>'
+      + '<button type="button" class="btn-sm" style="background:var(--gold);color:#0d1f35;font-weight:800;white-space:nowrap" onclick="gmExportNow()">Save a copy</button>'
+      + '<button type="button" class="btn-sm" aria-label="Hide this for 30 days" style="background:transparent;color:var(--muted);font-size:16px;min-width:44px;min-height:44px;padding:4px 8px" onclick="gmUnsavedDismiss()">\u00d7</button></div>';
+  }
+  window.gmUnsavedDismiss = function () { S_("gm_unsaved_dismiss", ymd()); renderAll(); };
   function calmTabs() {
     var bar = document.getElementById("tabBar");
     if (!bar || typeof TABS === "undefined") return;
@@ -4735,6 +4941,24 @@
     growth: { o: "Learn one hard thing properly", krs: ["Read 3 books to the end", "Finish one course or module end to end"] },
     fun: { o: "Make room for joy", krs: ["One hobby session every week (12)", "One weekend fully offline"] },
     env: { o: "Fix my surroundings", krs: ["Declutter one room completely", "Close the 3 home repairs I keep postponing"] }
+  };
+  function krWords(s) { return String(s || "").toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter(function (w) { return w.length > 2; }); }
+  window.gmKRSuggest = function (objectiveText) {
+    var words = krWords(objectiveText);
+    var ranked = Object.keys(QSUG).map(function (k) {
+      var x = QSUG[k], hay = (k + " " + x.o + " " + x.krs.join(" ")).toLowerCase(), score = 0;
+      words.forEach(function (w) { if (hay.indexOf(w) >= 0) score++; });
+      return { k: k, score: score };
+    }).sort(function (a, b) { return b.score - a.score; });
+    var out = [];
+    ranked.forEach(function (r) {
+      if (!r.score) return;
+      QSUG[r.k].krs.forEach(function (t) { if (out.indexOf(t) < 0 && out.length < 3) out.push(t); });
+    });
+    ["One measurable result this quarter", "The habit kept on 60 of 90 days", "The first small step finished"].forEach(function (t) {
+      if (out.length < 3 && out.indexOf(t) < 0) out.push(t);
+    });
+    return out.slice(0, 3);
   };
   var GRADES = [[0, "Not started"], [0.25, "A little"], [0.5, "Half"], [0.75, "Most of it"], [1, "Done"]];
   function qKeyNow() { var d = new Date(); return d.getFullYear() + "-Q" + (Math.floor(d.getMonth() / 3) + 1); }
@@ -4878,7 +5102,9 @@
     { id: "family-q3", group: "family", v: 1, name: "Family health Q3: children and parents", rule: "FREQ=YEARLY;BYMONTH=10;BYDAY=1MO", months: [9], nth: 1, dow: 1, hh: 9, mins: 30,
       desc: "Children: annual paediatric visit, vaccination check, growth. Parents: blood pressure and diabetes panel, and the checks their doctor advises." },
     { id: "family-q4", group: "family", v: 1, name: "Family health Q4: closure", rule: "FREQ=YEARLY;BYMONTH=1;BYDAY=1MO", months: [0], nth: 1, dow: 1, hh: 9, mins: 30,
-      desc: "Second dental visit for adults, close every value flagged in Q1, the age-based screenings to discuss with your doctor, and one shared family-health folder." }
+      desc: "Second dental visit for adults, close every value flagged in Q1, the age-based screenings to discuss with your doctor, and one shared family-health folder." },
+    { id: "bip-weekly", group: "bip", v: 1, name: "Build in public: this week's episode", rule: "FREQ=WEEKLY;BYDAY=SA", months: null, nth: 0, dow: 6, hh: 10, mins: 60,
+      desc: "Record 10 minutes, cut one 60-second Short, post it with one lesson, then log the link in Life OS > Playbook > S3." }
   ];
   function calFirst(e) {                                        // the first occurrence on or after the fixed epoch: stable for ever
     for (var add = 0; add < 400; add++) {
@@ -4899,7 +5125,7 @@
   window.gmCalendarName = function (id) { var e = CALENDAR.filter(function (x) { return x.id === id; })[0]; return e ? e.name : ""; };
   window.gmCalendarICS = function (group) {
     var now = new Date(), stamp = icsDate(now, now.getHours(), now.getMinutes());
-    var title = group === "family" ? "Family health" : group === "rhythm" ? "Life OS rhythm" : "Life OS";
+    var title = group === "family" ? "Family health" : group === "rhythm" ? "Life OS rhythm" : group === "bip" ? "Build in public" : "Life OS";
     var L = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//SecuRAX//Life OS calendar//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "X-WR-CALNAME:" + title];
     rhythmEvents(group).forEach(function (e) {
       var end = new Date(e.start); end.setHours(e.hh, e.mins, 0, 0);
@@ -4918,10 +5144,78 @@
     try {
       var a = document.createElement("a");
       a.href = URL.createObjectURL(new Blob([ics], { type: "text/calendar" }));
-      a.download = (group === "family" ? "family-health" : "life-os-rhythm") + ".ics"; document.body.appendChild(a); a.click(); a.remove();
+      a.download = (group === "family" ? "family-health" : group === "bip" ? "build-in-public" : "life-os-rhythm") + ".ics"; document.body.appendChild(a); a.click(); a.remove();
     } catch (e) {}
     S_("gm_cal_exported" + (group ? "_" + group : ""), ymd());
     gmToast("Calendar file saved: " + n + " repeating events. Open it and add them to the same calendar each time; a newer file updates these events, it never doubles them.");
+  };
+
+  /* ── Build in public (queue build-in-public, slice 1) ───────────────
+     The smallest weekly system that makes a side income visible: one topic, four one-tap steps, one link, one streak.
+     Stored in gm_bip as { "<monday ymd>": { steps: [bool x4], link: "", topic: "" } }. The topic defaults to the newest
+     done Inbox action, so the week starts from real work instead of a blank page. */
+  var BIP_STEPS = ["Record 10 min", "Cut one 60-second Short", "Post it with one lesson", "Log the link"];
+  function bipWeek(d) {
+    d = d ? new Date(d) : new Date();
+    d.setHours(12, 0, 0, 0);
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    return ymd(d);
+  }
+  function bipAll() { var v = G("gm_bip", {}); return v && typeof v === "object" && !Array.isArray(v) ? v : {}; }
+  function bipData(w) {
+    if (!w || typeof w !== "object" || Array.isArray(w)) w = {};
+    var steps = Array.isArray(w.steps) ? w.steps.slice(0, BIP_STEPS.length).map(function (x) { return !!x; }) : [];
+    while (steps.length < BIP_STEPS.length) steps.push(false);
+    return { steps: steps, link: typeof w.link === "string" ? w.link : "", topic: typeof w.topic === "string" ? w.topic : "" };
+  }
+  function bipDone(w) { return bipData(w).steps.every(Boolean); }
+  function bipEpisodes() {
+    var all = bipAll();
+    return Object.keys(all).filter(function (k) { return bipDone(all[k]); }).length;
+  }
+  function bipDefaultTopic() {
+    var a = ibAll().filter(function (x) { return x && x.done && x.kind !== "note" && String(x.t || "").trim(); });
+    a.sort(function (p, q) { return (Number(q.created) || 0) - (Number(p.created) || 0); });
+    return a.length ? String(a[0].t).trim() : "What I built or learned this week";
+  }
+  function bipSaveWeek(w) {
+    var all = bipAll(); all[bipWeek()] = w; S_("gm_bip", all); renderAll();
+  }
+  window.gmBipTopic = function (v) {
+    var w = bipData(bipAll()[bipWeek()]);
+    w.topic = String(v == null ? "" : v).slice(0, 200).trim();
+    bipSaveWeek(w);
+  };
+  window.gmBipStep = function (i, on) {
+    i = +i; if (!(i >= 0 && i < BIP_STEPS.length)) return;
+    var w = bipData(bipAll()[bipWeek()]);
+    w.steps[i] = !!on;
+    bipSaveWeek(w);
+  };
+  window.gmBipLink = function (v) {
+    var w = bipData(bipAll()[bipWeek()]);
+    w.link = String(v == null ? "" : v).trim().slice(0, 500);
+    if (w.link) w.steps[BIP_STEPS.length - 1] = true;
+    bipSaveWeek(w);
+  };
+  window.bipCardHTML = function () {
+    var w = bipData(bipAll()[bipWeek()]), n = bipEpisodes();
+    var h = '<div class="info gm-bip">'
+      + '<div style="font-weight:800;font-size:13px">Build in public \u00b7 this week\'s episode</div>'
+      + '<label class="f-label" for="gmBipTopic">This week\'s topic</label>'
+      + '<input id="gmBipTopic" type="text" value="' + esc(w.topic || bipDefaultTopic()) + '" placeholder="What I built or learned this week" onchange="gmBipTopic(this.value)">'
+      + '<div style="margin-top:6px">';
+    BIP_STEPS.forEach(function (s, i) {
+      h += '<label style="display:flex;gap:8px;align-items:center;padding:5px 0;cursor:pointer">'
+        + '<input type="checkbox" data-bip="' + i + '"' + (w.steps[i] ? ' checked' : '') + ' onchange="gmBipStep(' + i + ',this.checked)">'
+        + '<span>' + esc(s) + '</span></label>';
+    });
+    return h + '</div>'
+      + '<label class="f-label" for="gmBipLink">Episode link</label>'
+      + '<input id="gmBipLink" type="text" value="' + esc(w.link) + '" placeholder="Paste the link once it is posted" onchange="gmBipLink(this.value)"> '
+      + '<div style="margin-top:8px;font-weight:700">' + n + ' episode' + (n === 1 ? "" : "s") + ' published</div> '
+      + '<div style="margin-top:8px"><button class="btn-sm" type="button" onclick="gmCalendar(\'bip\')">Add to calendar</button></div>'
+      + '</div>';
   };
 
   /* ── Dated items in the calendar (queue calendar-everywhere): the career plan's dates and the papers' renewals.
@@ -4941,6 +5235,11 @@
       var c = car();
       if (c.cfg.noticeStart || c.cfg.join) planItems(c).forEach(function (p) {
         if (p.due) add({ uid: "car-" + p.id, date: ymd(p.due), name: "Career: " + p.t, desc: "Your move plan in the Life OS (Career, step 7). Tick it there when it is done.", done: p.done, group: "career" });
+      });
+    }
+    if (!group || group === "pack") {
+      var pk = packGet(); if (pk) pk.items.forEach(function (it) {
+        if (it.due) add({ uid: "pack-" + it.id, date: it.due, name: it.title, desc: (it.steps[packNext(it)] || it.steps[0]) + "\nFrom your pack in the Life OS (Career).", done: packNext(it) < 0, group: "pack" });
       });
     }
     if (!group || group === "renewals") {
@@ -4990,7 +5289,7 @@
   window.gmCalendarDatedICS = function (group) {
     var now = new Date(), stamp = icsDate(now, now.getHours(), now.getMinutes());
     var L = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//SecuRAX//Life OS calendar//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
-      "X-WR-CALNAME:" + (group === "career" ? "Career plan" : group === "renewals" ? "Renewals" : "Life OS dates")];
+      "X-WR-CALNAME:" + (group === "career" ? "Career plan" : group === "renewals" ? "Renewals" : group === "pack" ? "My pack" : "Life OS dates")];
     datedPlan(group).forEach(function (x) {
       var d = String(x.e.date).replace(/-/g, "").slice(0, 8), nd = new Date(x.e.date + "T00:00:00"); nd.setDate(nd.getDate() + 1);
       L.push("BEGIN:VEVENT", "UID:" + x.k + "@local", "SEQUENCE:" + x.v, "DTSTAMP:" + stamp, "DTSTART;VALUE=DATE:" + d, "DTEND;VALUE=DATE:" + ymd(nd).replace(/-/g, ""),
@@ -5600,9 +5899,120 @@
     return '<span role="button" tabindex="0" class="gm-tap' + (on ? " on" : "") + '" style="min-height:32px;padding:0 10px;font-size:11.5px;font-weight:700" onclick="gmCarOffer(' + i + ',\'' + k + '\',' + val + ')">' + (on ? "✓ " : "") + esc(label) + '</span>';
   }
 
+
+  /* ── Personal packs (owner 2026-11-18): systems that are one person's own, never shipped in the public app ──────────
+     The public Life OS carries only this slot. A pack is JSON kept on the device (gm_pack) and carried to the person's
+     other devices by their own sync. It installs from a #pack= link (the fragment never reaches a server) or a file,
+     always after one question, and one switch removes it. Pack text is data: every string is escaped on output, a link
+     must be https, and the shape is checked and bounded before anything is kept. */
+  var PACK_MAX = { items: 40, steps: 12, text: 400 };
+  function packStr(s, n) { return typeof s === "string" ? s.slice(0, n || PACK_MAX.text) : ""; }
+  window.gmPackClean = function (o) {
+    if (!o || typeof o !== "object" || Array.isArray(o) || !Array.isArray(o.items)) throw new Error("not a Life OS pack");
+    var seen = {}, items = [];
+    o.items.slice(0, PACK_MAX.items).forEach(function (x) {
+      if (!x || typeof x !== "object") return;
+      var id = packStr(x.id, 40);
+      if (!/^[a-z0-9-]{2,40}$/.test(id) || seen[id]) return;
+      seen[id] = 1;
+      var due = /^\d{4}-\d{2}-\d{2}$/.test(String(x.due || "")) ? x.due : "";
+      var url = /^https:\/\/[^\s"'<>]+$/.test(String(x.url || "")) ? packStr(x.url, 300) : "";
+      var steps = (Array.isArray(x.steps) ? x.steps : []).slice(0, PACK_MAX.steps).map(function (s) { return packStr(s); }).filter(Boolean);
+      var every = x.every === "weekly" || x.every === "monthly" ? x.every : "";
+      if (!packStr(x.title, 120) || !steps.length) return;
+      items.push({ id: id, title: packStr(x.title, 120), why: packStr(x.why), steps: steps, due: due, every: every, url: url });
+    });
+    if (!items.length) throw new Error("the pack has no usable items");
+    return { v: 1, name: packStr(o.name, 60) || "My pack", items: items };
+  };
+  function packGet() { try { var p = G("gm_pack", null); return p && Array.isArray(p.items) ? window.gmPackClean(p) : null; } catch (e) { return null; } }
+  function packDone() { var d = G("gm_pack_done", {}); return d && typeof d === "object" && !Array.isArray(d) ? d : {}; }
+  function packPeriod(it) {           // a recurring item starts over each week or month; a dated one keeps its ticks
+    var d = new Date();
+    if (it.every === "weekly") { d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return ":" + ymd(d); }
+    if (it.every === "monthly") return ":" + ymd(d).slice(0, 7);
+    return "";
+  }
+  function packTicks(it) { var d = packDone()[it.id + packPeriod(it)]; return Array.isArray(d) ? d : []; }
+  function packNext(it) { var t = packTicks(it); for (var i = 0; i < it.steps.length; i++) if (!t[i]) return i; return -1; }
+  window.gmPackInstall = function (o, quiet) {
+    var clean = window.gmPackClean(o), cur = packGet();
+    if (!quiet && !confirm("Add the pack \"" + clean.name + "\" (" + clean.items.length + " systems) to this device?\n\nOnly continue if you made this pack yourself.")) return false;
+    if (cur && cur.name !== clean.name && !quiet && !confirm("This replaces your pack \"" + cur.name + "\". Continue?")) return false;
+    S_("gm_pack", clean);
+    if (window.gmToast) gmToast("Pack added: " + clean.name);
+    return true;
+  };
+  window.gmPackRemove = function () {
+    if (!confirm("Remove your pack from this device? Your ticks stay, so adding it again picks up where you were.")) return;
+    localStorage.removeItem("gm_pack"); renderAll();
+  };
+  window.gmPackTick = function (id, i) {
+    var p = packGet(); if (!p) return;
+    var it = p.items.filter(function (x) { return x.id === id; })[0]; if (!it) return;
+    var all = packDone(), k = id + packPeriod(it), t = Array.isArray(all[k]) ? all[k] : [];
+    t[i] = !t[i]; all[k] = t;
+    var ks = Object.keys(all); if (ks.length > 400) ks.slice(0, ks.length - 400).forEach(function (x) { delete all[x]; });
+    S_("gm_pack_done", all); renderAll();
+  };
+  window.gmPackLinkImport = function () {
+    var m = /^#pack=([A-Za-z0-9_-]+)$/.exec(String(location.hash || ""));
+    if (!m) return false;
+    try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+    try { if (window.gmPackInstall(b64urlJson(m[1]))) setTimeout(function () { if (window.renderAll) renderAll(); }, 50); }
+    catch (e) { alert("That pack link could not be read: " + e.message); }
+    return true;
+  };
+  window.gmPackFile = function (input) {
+    var f = input && input.files && input.files[0]; if (!f) return;
+    if (f.size > 64000) { alert("That file is too large for a pack."); return; }
+    var r = new FileReader();
+    r.onload = function () { try { if (window.gmPackInstall(JSON.parse(String(r.result)))) renderAll(); } catch (e) { alert("That file is not a Life OS pack: " + e.message); } };
+    r.readAsText(f);
+  };
+  function packOrder(p) {             // the one open action: anything due within two weeks, then the recurring ones, then the rest
+    var today = ymd(new Date(Date.now() + 14 * 864e5));
+    return p.items.map(function (it, n) { return { it: it, n: n, next: packNext(it) }; })
+      .sort(function (a, b) {
+        var da = a.it.due || (a.it.every ? today : "9999"), db = b.it.due || (b.it.every ? today : "9999");
+        return da < db ? -1 : da > db ? 1 : a.n - b.n;
+      });
+  }
+  function packItemHTML(x, open) {
+    var it = x.it, t = packTicks(it), steps = it.steps.map(function (s, i) {
+      return '<div class="gs" style="display:flex;gap:10px;align-items:flex-start;margin:6px 0">'
+        + '<button type="button" class="hab-chk" aria-pressed="' + (t[i] ? "true" : "false") + '" aria-label="' + esc(s) + '" onclick="gmPackTick(\'' + it.id + '\',' + i + ')">' + (t[i] ? "✓" : "") + '</button>'
+        + '<div class="gs-v" style="' + (t[i] ? "opacity:.6;text-decoration:line-through" : "") + '">' + esc(s) + '</div></div>';
+    }).join("");
+    var dueTxt = it.due ? new Date(it.due + "T00:00:00").toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "";
+    var meta = (it.due ? "by " + esc(dueTxt) : it.every === "weekly" ? "every week" : it.every === "monthly" ? "every month" : "")
+      + (it.url ? ' · <a href="' + esc(it.url) + '" target="_blank" rel="noopener noreferrer">official page</a>' : "");
+    return '<div class="road-col" data-pack-item="' + it.id + '" style="margin:8px 0">'
+      + '<div style="font-weight:800">' + esc(it.title) + '</div>'
+      + (meta ? '<div class="f-label" style="text-transform:none;letter-spacing:0;margin:2px 0 6px">' + meta + '</div>' : "")
+      + (open && it.why ? '<div class="info" style="margin-bottom:6px">' + esc(it.why) + '</div>' : "")
+      + steps + '</div>';
+  }
+  window.gmPackHTML = function () {
+    var p = packGet();
+    if (!p) return "";
+    var order = packOrder(p), live = order.filter(function (x) { return x.next >= 0; }), done = order.length - live.length;
+    var h = '<div class="road-col gm-pack" style="margin-bottom:14px"><div class="cat-t">✦ ' + esc(p.name) + ' <span class="pill pill-g">yours only</span></div>'
+      + '<div class="f-label" style="text-transform:none;letter-spacing:0;margin:2px 0 8px">' + live.length + ' systems running · ' + done + ' done this round</div>';
+    if (live.length) {
+      h += packItemHTML(live[0], true);
+      if (live.length > 1) h += '<details style="margin-top:8px"><summary style="cursor:pointer;font-weight:700">Later (' + (live.length - 1) + ')</summary>'
+        + live.slice(1).map(function (x) { return packItemHTML(x, false); }).join("") + '</details>';
+    } else h += '<div class="info">Every system in your pack is done for now. Well done.</div>';
+    if (p.items.some(function (it) { return it.due; })) h += '<button class="btn-sm" style="margin-top:8px" onclick="gmCalendarDated(\'pack\')">Add the dates to my calendar</button>';
+    h += '<details style="margin-top:8px"><summary style="cursor:pointer;font-size:12.5px;color:var(--muted)">Pack settings</summary>'
+      + '<button class="btn-sm" style="margin-top:6px" onclick="gmPackRemove()">Remove this pack</button></details></div>';
+    return h;
+  };
   function careerHTML() {
     var c = car(), n = needs(c), cw = curWealth(c), hc = honestCtc(c), cost = cfgv(c, "health", 3000) + cfgv(c, "term", 1500);
     var h = '<div class="section active">'
+      + window.gmPackHTML()
       + heroHTML(hc ? rs(hc / 12) : "\u2014", hc ? "/mo" : "", "Your honest monthly package", "")
       + '<div class="sec-t">\u{1F4BC} Career compass</div>'
       + howHTML('Pick the next job on the 20% that decides 80% of the outcome: never go backwards, a rung up, survive the worst case. Everything is computed here, on this device.')
@@ -5704,7 +6114,7 @@
     planItems(c).forEach(function (p) {
       var over = p.due && !p.done && p.due < today;
       pl += '<div style="display:flex;gap:9px;align-items:flex-start;margin:6px 0;font-size:12.5px;color:var(--text);line-height:1.5"><button type="button" class="gm-tap gm-chk' + (p.done ? " on" : "") + '" aria-pressed="' + (p.done ? "true" : "false") + '" aria-label="' + esc((p.done ? "Mark not done: " : "Mark done: ") + p.t) + '" style="min-width:26px;min-height:26px;border-radius:8px;font-size:12px;padding:0" onclick="gmCarDone(\'' + p.id + '\')">' + (p.done ? "✓" : "") + '</button>'
-        + '<span' + (p.done ? ' style="text-decoration:line-through;opacity:.7"' : '') + '>' + esc(p.t) + (p.due ? ' <span style="color:' + (over ? "var(--red)" : "var(--muted)") + '">· ' + (over ? "overdue " : "by ") + ymd(p.due) + '</span>' : '') + '</span></div>';
+        + '<span' + (p.done ? ' style="text-decoration:line-through;opacity:.7"' : '') + '>' + esc(p.t) + (p.due ? ' <span style="color:' + (over ? "var(--amber)" : "var(--muted)") + '">· ' + (over ? "late " : "by ") + ymd(p.due) + '</span>' : '') + '</span></div>';
     });
     if (datedCount("career")) pl += '<button class="btn-sm" data-haptic="success" style="margin-top:8px;background:var(--cardAlt);color:var(--text)" onclick="gmCalendarDated(\'career\')">Add the plan to my calendar</button>';
     h += box(pl);
@@ -5717,7 +6127,7 @@
     var due = careerDue(7).slice(0, 2); if (!due.length) return "";
     return due.map(function (p) {
       var over = p.due < new Date();
-      return '<div style="display:flex;align-items:center;gap:8px;margin:7px 0"><div style="flex:1;font-size:12.5px;color:var(--text)">\u{1F4BC} <b>' + esc(p.t) + '</b> <span style="color:' + (over ? "var(--red)" : "var(--muted)") + '">· ' + (over ? "overdue since " : "by ") + ymd(p.due) + '</span></div>'
+      return '<div style="display:flex;align-items:center;gap:8px;margin:7px 0"><div style="flex:1;font-size:12.5px;color:var(--text)">\u{1F4BC} <b>' + esc(p.t) + '</b> <span style="color:' + (over ? "var(--amber)" : "var(--muted)") + '">· ' + (over ? "late " : "by ") + ymd(p.due) + '</span></div>'
         + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="goTab(\'career\')">Open</button>'
         + '<button class="btn-sm" style="background:var(--gold);color:#0d1f35" onclick="gmCarDone(\'' + p.id + '\')">Done</button></div>';
     }).join("");
@@ -5911,6 +6321,7 @@
       + "#gmNav button.on svg{color:#f3dc8f;filter:drop-shadow(0 0 4px rgba(243,220,143,.85)) drop-shadow(0 0 12px rgba(232,201,106,.4))}"
       // Starlight: a dense field of faint fixed stars, each twinkling at its own pace; achievements are brighter and glow.
       + ".gm-star{background:#fff;border-radius:50%;animation:gmtw var(--tw,5s) ease-in-out infinite}"
+      + "html.gm-rest .gm-star{animation-play-state:paused}"
       + ".gm-st-field{width:1.4px;height:1.4px;opacity:.55}.gm-st-field.b{width:2px;height:2px;opacity:.75}"
       + ".gm-st-day{width:2.6px;height:2.6px;opacity:.95;box-shadow:0 0 4px 1px rgba(255,255,255,.55)}"
       + ".gm-st-risk{width:3.2px!important;height:3.2px!important;background:#fbe7a6!important;box-shadow:0 0 7px 2px rgba(243,220,143,.7)!important}"
@@ -6459,9 +6870,15 @@
     designCSS();
     premiumCSS();
     tactileCSS();
-    if (!document.querySelector("a.skip") && document.getElementById("sections")) {
-      var sk = document.createElement("a"); sk.className = "skip"; sk.href = "#sections"; sk.textContent = "Skip to content";
-      document.body.insertBefore(sk, document.body.firstChild);
+    var secs = document.getElementById("sections"), main = document.querySelector('[role="main"]');
+    if (secs && !main) {
+      main = document.createElement("div"); main.id = "gm-main"; main.setAttribute("role", "main"); main.setAttribute("tabindex", "-1");
+      secs.parentNode.insertBefore(main, secs); main.appendChild(secs);
+    }
+    if (secs) {
+      var sk = document.querySelector("a.skip");
+      if (!sk) { sk = document.createElement("a"); sk.className = "skip"; sk.textContent = "Skip to content"; document.body.insertBefore(sk, document.body.firstChild); }
+      if (main && main.id) sk.href = "#" + main.id;
     }
     var hdr = document.querySelector("#dash header");
     if (hdr && !hdr.querySelector(".gm-menu-btn")) {
@@ -7673,6 +8090,7 @@
       box.insertAdjacentHTML("afterbegin", greetHTML() + exampleWarn() + interruptHTML() + undoBar() + inboxNudgeHTML() + daily3HTML() + msTodayHTML()
         + (inRecovery() ? "" : driftHTML() + resHTML()) + oneActionHTML() + (inRecovery() ? "" : pinnedHTML()));
     }
+    if (curTab === "today") { var unsaved = gmUnsavedLine(); if (unsaved) box.insertAdjacentHTML("afterbegin", unsaved); }
     if (curTab === "wheel") { try { sysWheelLines(box); } catch (e) { console.log(e); } }
     try { calmFrame(); } catch (e) { console.log(e); }
     if (phone() && !simpleNow && curTab === "today" && !document.getElementById("gmVitals")) box.insertAdjacentHTML("afterbegin", vitalsHTML());
@@ -7816,6 +8234,31 @@
     sky.innerHTML = h;
     sky.title = "";
   }
+  // The stars rest (experience-fixes 5): the twinkle stops while the page is hidden and after 20 s without a touch,
+  // key or scroll, and wakes on the first one. The idle timer is armed only in a real, visible browser, so an
+  // automated page is never kept alive by it.
+  var gmRestLive = !navigator.webdriver && !/jsdom|HeadlessChrome/i.test(navigator.userAgent || "");
+  var gmRestTimer = 0;
+  function gmRest(on) {
+    if (on) document.documentElement.classList.add("gm-rest");
+    else document.documentElement.classList.remove("gm-rest");
+  }
+  window.gmRestNow = function () { gmRest(true); };
+  function gmRestWake() {
+    gmRest(false);
+    if (!gmRestLive) return;
+    if (gmRestTimer) clearTimeout(gmRestTimer);
+    gmRestTimer = setTimeout(function () { if (!document.hidden) gmRest(true); }, 20000);
+  }
+  if (gmRestLive) {
+    document.addEventListener("visibilitychange", function () { if (document.hidden) gmRest(true); else gmRestWake(); });
+    ["pointerdown", "keydown"].forEach(function (ev) { document.addEventListener(ev, gmRestWake, { passive: true }); });
+    window.addEventListener("scroll", gmRestWake, { passive: true });
+    gmRestWake();
+  } else {
+    document.addEventListener("visibilitychange", function () { gmRest(document.hidden); });
+    ["pointerdown", "keydown"].forEach(function (ev) { document.addEventListener(ev, gmRestWake, { passive: true }); });
+  }
   // Shooting stars at a natural, irregular pace (every 15 to 30 s), only while the app is on screen and motion is welcome.
   // Armed only in a real, visible browser: an automated or headless page would be kept alive by the repeating timer.
   if (!window._gmComets && !navigator.webdriver && !/jsdom|HeadlessChrome/i.test(navigator.userAgent || "")) {
@@ -7890,7 +8333,7 @@
     }
     // Auto-fill example properties on first visit so the Property tab is explorable
     try { var pr = G("gm_props", null); if ((!pr || !pr.length) && window.P && window.P.example) { if (window.gmTplProp) gmTplProp(); } } catch (e) {}
-    gmSyncLinkImport();
+    gmSyncLinkImport(); gmPackLinkImport();
     gmMoveInit();
     gmSyncInit();
     gmAccessPair();
@@ -7949,6 +8392,7 @@
   };
   window.gmPlain = PLAIN;
   function table() { return lang === "en" ? PLAIN : ((CAT[lang] || {}).strings || {}); }
+  window.gmT = function (s) { var T = lang === "en" ? null : table(); return (T && T[s]) || s; };
   function swapText(n, T) {
     var en = n[ORIG] !== undefined ? n[ORIG] : n.textContent, key = en.replace(/\s+/g, " ").trim();
     if (!key) return;
@@ -10097,6 +10541,18 @@
     try { var r = (window.RISKS || [])[i]; if (r && r.id) window.gmUse("risk:" + r.id); } catch (e) {}
     return _gmOpenR.apply(this, arguments);
   }; }
+  // Escape closes the top-most open layer through its own close path (queue experience-v3, fix 2): the dialog overlay,
+  // then the "Make it yours" sheet, then the More sheet. A locked Life OS keeps its one door: Escape does nothing.
+  document.addEventListener("keydown", function (ev) {
+    if (ev.key !== "Escape") return;
+    try {
+      if (window.gmIsLocked && window.gmIsLocked()) return;
+      if (document.getElementById("gmOverlay")) { if (typeof window.gmClose === "function") window.gmClose(); return; }
+      if (document.getElementById("gmMineSheet")) { if (typeof window.gmMineSkip === "function") window.gmMineSkip(); return; }
+      var sheet = document.getElementById("gmMoreSheet");
+      if (sheet && sheet.classList.contains("on") && typeof window.gmNavMore === "function") window.gmNavMore(false);
+    } catch (e) {}
+  });
   document.addEventListener("click", function (ev) {
     try {
       for (var el = ev.target; el && el !== document; el = el.parentNode) {
@@ -10105,4 +10561,109 @@
       }
     } catch (e) {}
   }, true);
+
+  /* ── Friction noticed on the device (queue friction-meter, slice 4): a sheet closed with no tick or input (an
+     abandon), three taps on one spot within a second (a rage), and the same two tabs switched four times within ten
+     seconds (a bounce). gm_friction_seen holds id -> how often, at most 200 ids, newest kept. Nothing is sent. */
+  var GM_FR_KEYS = 200;
+  window.gmFrictionSeen = function () {
+    var raw = G("gm_friction_seen", {}), out = {};
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+    Object.keys(raw).forEach(function (id) {
+      if (!GM_USE_RE.test(id)) return;
+      var n = raw[id];
+      if (typeof n !== "number" || !isFinite(n) || n < 1) return;
+      out[id] = Math.floor(n);
+    });
+    return out;
+  };
+  window.gmFriction = function (id) {
+    if (typeof id !== "string" || !GM_USE_RE.test(id)) return;
+    var map = window.gmFrictionSeen(), n = map[id] || 0;
+    // Re-insert at the end so the key order is recency, and the oldest keys are the ones dropped when the map is full.
+    delete map[id];
+    map[id] = n + 1;
+    var ids = Object.keys(map);
+    while (ids.length > GM_FR_KEYS) delete map[ids.shift()];
+    S_("gm_friction_seen", map);
+    return map;
+  };
+  // The highest counts first, ties by id so the answer is steady; the monthly card will name the top three.
+  window.gmFrictionTop = function (n) {
+    n = Math.floor(+n);
+    if (!(n > 0)) n = 3;
+    var map = window.gmFrictionSeen();
+    return Object.keys(map).map(function (id) { return { id: id, n: map[id] }; })
+      .sort(function (a, b) { return b.n - a.n || (a.id < b.id ? -1 : 1); }).slice(0, n);
+  };
+
+  // An opened sheet that closes with no tick or input is an abandon; the sheet's own controls settle the doubt.
+  var _gmFrOpen = null, _gmFrTouched = false;
+  if (typeof window.openK === "function") { var _gmFrOpenK = window.openK; window.openK = function (i) {
+    try { var k = (window.KPIs || [])[i]; _gmFrOpen = k && k.id ? "sys:" + k.id : null; _gmFrTouched = false; } catch (e) { _gmFrOpen = null; }
+    return _gmFrOpenK.apply(this, arguments);
+  }; }
+  if (typeof window.openR === "function") { var _gmFrOpenR = window.openR; window.openR = function (i) {
+    try { var r = (window.RISKS || [])[i]; _gmFrOpen = r && r.id ? "risk:" + r.id : null; _gmFrTouched = false; } catch (e) { _gmFrOpen = null; }
+    return _gmFrOpenR.apply(this, arguments);
+  }; }
+  function gmFrTouch(ev) {
+    try { for (var el = ev.target; el && el !== document; el = el.parentNode) { if (el.id === "mo") { _gmFrTouched = true; break; } } } catch (e) {}
+  }
+  document.addEventListener("input", gmFrTouch, true);
+  document.addEventListener("change", gmFrTouch, true);
+  if (typeof window.closeM === "function") { var _gmFrCloseM = window.closeM; window.closeM = function () {
+    try { if (_gmFrOpen && !_gmFrTouched) window.gmFriction(_gmFrOpen); } catch (e) {}
+    _gmFrOpen = null; _gmFrTouched = false;
+    return _gmFrCloseM.apply(this, arguments);
+  }; }
+
+  // Three taps on one spot within a second is a rage; the spot is its data-feat, else the tab it opens.
+  function gmFrSpot(el) {
+    var tab = null;
+    for (var n = el; n && n !== document; n = n.parentNode) {
+      if (!n.getAttribute) continue;
+      var f = n.getAttribute("data-feat");
+      if (f) return f;
+      if (!tab) {
+        var t = n.getAttribute("data-tab"), oc = n.getAttribute("onclick") || "";
+        var m = oc.match(/(?:goTab|gmNavGo)\(['"]([A-Za-z0-9:-]+)['"]/);
+        if (t) tab = "tab:" + t; else if (m) tab = "tab:" + m[1];
+      }
+    }
+    return tab;
+  }
+  var _gmFrTaps = [];
+  document.addEventListener("click", function (ev) {
+    try {
+      var id = gmFrSpot(ev.target), t = Date.now();
+      if (!id) return;
+      _gmFrTaps = _gmFrTaps.filter(function (x) { return t - x.t <= 1000; });
+      _gmFrTaps.push({ id: id, t: t });
+      if (_gmFrTaps.filter(function (x) { return x.id === id; }).length >= 3) {
+        window.gmFriction(id);
+        _gmFrTaps = _gmFrTaps.filter(function (x) { return x.id !== id; });
+      }
+    } catch (e) {}
+  }, true);
+
+  // Switching between the same two tabs four times within ten seconds is a bounce.
+  var _gmFrTabs = [];
+  if (typeof window.goTab === "function") { var _gmFrGoTab = window.goTab; window.goTab = function (id) {
+    try {
+      if (typeof id === "string" && GM_USE_RE.test(id)) {
+        var t = Date.now(), now = _gmFrTabs.filter(function (x) { return t - x.t <= 10000; });
+        now.push({ id: id, t: t });
+        _gmFrTabs = now;
+        if (now.length >= 4) {
+          var a = now[now.length - 4].id, b = now[now.length - 3].id, c = now[now.length - 2].id, e2 = now[now.length - 1].id;
+          if (a === c && b === e2 && a !== b) {
+            window.gmFriction("tab:" + [a, b].sort().join("-"));
+            _gmFrTabs = [];
+          }
+        }
+      }
+    } catch (e) {}
+    return _gmFrGoTab.apply(this, arguments);
+  }; }
 })();

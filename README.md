@@ -136,12 +136,12 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 - The strength guide reads like a one-page workout card
 - Each strength move shows how it is done
-- System sheets, calmer and correct
-- A resting door wakes when you need it
-- The delegation gate cannot be fooled by a test that never runs
-- The Wednesday call runs itself on Today
-- Doors rest by themselves
-- A recurring step lives in the calendar
+- Personal packs
+- Add another device, nothing to type
+- IP first, then paper, then episode
+- Box breathing fills the screen
+- The More sheet is a dialog
+- Build in public, one small step a week
 
 **Release 0.4.0 - 2026-11-14:**
 
