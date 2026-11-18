@@ -4323,14 +4323,18 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   };
   window.gmSnapRestore = function (day) {
     var c = cfg(); if (!c || !/^\d{4}-\d{2}-\d{2}$/.test(day)) return;
-    fetch(snapBase() + "/" + day + "?user=" + encodeURIComponent(c.user), { headers: syncHeaders(c) })
+    return fetch(snapBase() + "/" + day + "?user=" + encodeURIComponent(c.user), { headers: syncHeaders(c) })
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
       .then(function (b) {
         var keys = Object.keys(b.payload || {});
-        if (!keys.length || !confirm("Restore the estate's snapshot of " + day + " (" + keys.length + " items)? Everything on this device is replaced; you can undo this once from Ops.")) return;
-        gmSnap("before restoring the " + day + " snapshot");
-        keys.forEach(function (k) { if (k.indexOf("gm_sync") !== 0 && k.indexOf("gm_undo") !== 0) _set0(k, b.payload[k]); });
-        location.reload();
+        if (!keys.length) return;
+        return gmTypedConfirm("RESTORE", "Restore the estate's snapshot of " + esc(day) + "? This replaces " + keys.length + " item" + (keys.length === 1 ? "" : "s") + " on this device. Everything on this device is replaced; you can undo this once from Ops.", function () { gmExportNow(); })
+          .then(function (ok) {
+            if (!ok) return;
+            gmSnap("before restoring the " + day + " snapshot");
+            keys.forEach(function (k) { if (k.indexOf("gm_sync") !== 0 && k.indexOf("gm_undo") !== 0) _set0(k, b.payload[k]); });
+            location.reload();
+          });
       }).catch(function (e) { alert("Could not restore that snapshot: " + e.message); });
   };
   window.gmSyncSave = function () {
@@ -6463,6 +6467,31 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
         + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);padding:9px 14px" onclick="gmBkConfirm()">I have saved it</button></div>'
         + (G(BK_ESC, null) ? '<div class="muted" style="font-size:12px;margin-top:8px">Your estate keeps a copy too, so a new phone paired with it opens your backups.</div>' : ''));
     }).catch(function (e) { gmToast("No backup saved: " + (e && e.message || e) + ". Nothing readable was written."); });
+  };
+  // Anything as final as erase asks for a typed word, built once from the erase dialog's pattern. It resolves true only
+  // when the word is typed, and its primary is the safe step (save a copy first), never the irreversible one.
+  window.gmTypedConfirm = function (word, message, safeStep) {
+    word = String(word || "RESTORE").toUpperCase();
+    return new Promise(function (resolve) {
+      gmDlg('<div style="font-weight:800;font-size:15px;margin-bottom:8px">Please confirm</div>'
+        + '<div style="font-size:13px;line-height:1.55;margin-bottom:10px">' + message + '</div>'
+        + (typeof safeStep === "function" ? '<button class="btn-sm btn-p" id="gmTypeSafe" style="background:var(--gold);color:#0d1f35;font-weight:800;padding:9px 18px;margin-bottom:10px">Save a copy first</button>' : '')
+        + '<label class="f-label" for="gmTypeIn">Type ' + esc(word) + ' to confirm</label><input type="text" id="gmTypeIn" autocomplete="off" autocapitalize="characters">'
+        + '<div style="display:flex;gap:8px"><button class="btn-sm" id="gmTypeGo" disabled style="background:transparent;color:var(--red);border:1px solid var(--red);font-weight:800;padding:9px 18px">Continue</button>'
+        + '<button class="btn-sm" id="gmTypeCancel" style="background:var(--cardAlt);color:var(--text);padding:9px 14px">Cancel</button></div>');
+      var inp = document.getElementById("gmTypeIn"), go = document.getElementById("gmTypeGo");
+      inp.addEventListener("input", function () { go.disabled = inp.value.trim() !== word; });
+      go.addEventListener("click", function () {
+        if (inp.value.trim() !== word) return;
+        gmClose(); resolve(true);
+      });
+      document.getElementById("gmTypeCancel").addEventListener("click", function () { gmClose(); resolve(false); });
+      var safe = document.getElementById("gmTypeSafe");
+      if (safe) safe.addEventListener("click", function () {
+        try { safeStep(); } catch (e) {}
+        gmToast("A copy is saved. Type " + word + " below to continue, or Cancel.");
+      });
+    });
   };
   window.gmEraseAsk = function () {
     gmDlg('<div style="font-weight:800;font-size:15px;margin-bottom:8px;color:var(--red)">Erase all data on this device?</div>'
