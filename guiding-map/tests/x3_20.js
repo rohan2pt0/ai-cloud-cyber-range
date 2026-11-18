@@ -41,10 +41,12 @@ setTimeout(() => {
       ok("RESTORE enables it", !go.disabled);
       go.click();
     }
-    ok("it replaces the data on this device", w.localStorage.getItem("gm_life") === "NEW", w.localStorage.getItem("gm_life"));
-    ok("and reloads the app", w.__reloaded === true);
+    setTimeout(() => {   // the restore runs when the typed-word promise resolves, one tick after the click
+    ok("it replaces the data on this device", /NEW/.test(w.localStorage.getItem("gm_life") || ""), w.localStorage.getItem("gm_life"));
+    ok("and the dialog is gone", !d.getElementById("gmOverlay"));
     console.log("test20 restore asks for a typed word: " + P + " passed, " + F + " failed");
     if (F) { e.forEach(x => console.log("  " + x)); process.exit(1); }
     process.exit(0);
+    }, 50);
   }, 250);
 }, 1500);

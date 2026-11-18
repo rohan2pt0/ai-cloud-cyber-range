@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- **Restore asks for a typed word** (queue experience-v3, fix 20): restoring the estate's snapshot no longer hides behind a browser confirm. An in-page dialog says how many items will be replaced, offers "Save a copy first" as its primary, and goes on only when RESTORE is typed, the same care as erase (x3_20).
 - **Unsaved days, said honestly on Today** (owner, 2026-11-18; queue experience-v3, fix 1 of 20): with real data and no backup for 8 days or more, Today shows one amber line ("N days of changes live only on this phone") with one "Save a copy" button that calls the existing backup action, and a dismiss that rests for 30 days. Example data never gets the line (test x3_01).
 - **Escape closes the top layer** (owner 2026-11-18; queue experience-v3, fix 2 of 20): one keydown listener closes the dialog overlay, the "Make it yours" sheet or the More sheet, whichever is on top, through its own close path; with nothing open it does nothing, and a locked Life OS keeps its one door (x3_02).
 - **Late is amber, never red** (owner 2026-11-18; queue experience-v3, fix 9 of 20): a career plan step past its date now says "late" in amber instead of "overdue" in red, so a mind that avoids what shames it stays. Red is kept for real danger (test x3_09).

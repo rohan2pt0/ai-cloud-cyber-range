@@ -697,7 +697,7 @@
       .then(function (b) {
         var keys = Object.keys(b.payload || {});
         if (!keys.length) return;
-        return gmTypedConfirm("RESTORE", "Restore the estate's snapshot of " + esc(day) + "? This replaces " + keys.length + " item" + (keys.length === 1 ? "" : "s") + " on this device. Everything on this device is replaced; you can undo this once from Ops.", function () { gmExportNow(); })
+        return gmTypedConfirm("RESTORE", "Restore the estate's snapshot of " + esc(day) + "? This replaces " + keys.length + " item" + (keys.length === 1 ? "" : "s") + " on this device. You can undo this once from Ops.", function () { gmExportNow(); })
           .then(function (ok) {
             if (!ok) return;
             gmSnap("before restoring the " + day + " snapshot");

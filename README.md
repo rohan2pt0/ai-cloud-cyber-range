@@ -134,6 +134,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- Restore asks for a typed word
 - Unsaved days, said honestly on Today
 - Escape closes the top layer
 - Late is amber, never red
@@ -141,7 +142,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - A key result is one tap, not a typing lesson
 - Deciding the community-proven way starts from one question
 - Friction is noticed by itself on the device
-- A resting door wakes when you need it
 
 **Release 0.4.0 - 2026-11-14:**
 
