@@ -2028,7 +2028,7 @@ function renderToday(){
     var done=tc.indexOf(h.id)>=0;
     var stk=habitStreak(h.id);
     html+='<div class="hab'+(done?" done":"")+'">'
-     +'<button type="button" class="hab-chk" aria-pressed="'+(done?"true":"false")+'" aria-label="'+h.name+'" onclick="tgHabit('+i+')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();tgHabit('+i+')}">'+(done?"\u2713":"")+'</button>'
+     +'<button type="button" class="hab-chk" aria-pressed="'+(done?"true":"false")+'" aria-label="'+okEsc(h.name)+'" onclick="tgHabit('+i+')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();tgHabit('+i+')}">'+(done?"\u2713":"")+'</button>'
      +'<div style="flex:1"><div class="hab-t">'+h.icon+' '+h.name+'</div>'
      +'<details class="hab-how"><summary>How</summary><div class="hab-anchor">\u26A1 '+h.anchor+'</div></details>'
      +'<div class="hab-min">'+h.min+'</div>'
