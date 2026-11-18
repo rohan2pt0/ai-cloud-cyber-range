@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- **Personal packs** (owner 2026-11-18): the public Life OS carries an empty slot; a person's own systems (their pack) install from a #pack= link or a file after one question, live only on their devices, and show on Career as one open action with the rest under Later (n), ticks that start over each week or month for recurring systems, and dated items in the calendar with permanent ids. Pack text is data: checked, bounded and escaped (test143).
 - **Add another device, nothing to type** (owner 2026-11-18; queue seamless-sync, slice 1): a device that syncs shows one button, Add another device, which sends a pairing link to your own phone, iPad or laptop through the share sheet; opening it there turns sync on, and for OneDrive it carries the encryption key too, so the next device only signs in to Microsoft and never asks for the passphrase. The address, token and row-id boxes fold under Set it up by hand. Any link asks before it changes sync (test142).
 - Specs: recognition-pipeline (owner 2026-11-18: fellowships, awards, papers and a book from one body of work, by a weekly flagship block and a calendar of windows), slices queued.
 - **IP first, then paper, then episode** (owner 2026-11-18; queue ip-and-papers): one private invention note per new mechanism, written before its first public commit (India has almost no grace period for an inventor's own disclosure), becomes the provisional filing, the paper and the build-in-public episode; spec, template and the rule for every builder.

@@ -134,6 +134,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- Personal packs
 - Add another device, nothing to type
 - IP first, then paper, then episode
 - Box breathing fills the screen
@@ -141,7 +142,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - Build in public, one small step a week
 - Restore asks for a typed word
 - Unsaved days, said honestly on Today
-- Escape closes the top layer
 
 **Release 0.4.0 - 2026-11-14:**
 
