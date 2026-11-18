@@ -164,6 +164,7 @@ specs/built-to-last-briefs.md: [red, "18 one-step, test-first briefs for the ope
 specs/calls-journal.md: [amber, "Slice 1 shipped (2026-11-17): the calls journal on the Plan tab, one tap to judge a call, calibration per confidence (test121). Next: calendar entries for each call, and a folded list of calls I got wrong with the lesson."]
 specs/cues-2026-11-17.md: [amber, "Triage done 2026-11-17: seven cues queued with dates (ai-install, website-v2, shadow-ai-egress, agent-skill-scan, staged-update, old-device-hygiene, plus the TELOS three). ai-install slice 1 is with the open models."]
 specs/experience-v3.md: [red, "A spec, not a build (2026-11-16): the premium look and how the Life OS works for distracted, ADHD, novice and expert minds; it turns amber as the fixes ship."]
-specs/experience-fixes.md: [red, "The 20 ranked experience fixes as one-step briefs; none built yet."]
+specs/experience-fixes.md: [amber, "8 of the 20 fixes are built and merged (1, 2, 3, 4, 9, 10, 15, 20); the rest are queued in order."]
+specs/seamless-sync.md: [red, "Spec and threat-model outline only: sign in once, sync with no key to paste."]
 specs/fable-autopilot.md: [amber, "The one prompt pasted into each Fable session and its task list (one task marked next)."]
 specs/review-ledger.md: [amber, "Every directory ranked by risk with its review state; reviewed one slice per session."]

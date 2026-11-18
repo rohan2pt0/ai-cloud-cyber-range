@@ -692,14 +692,18 @@
   };
   window.gmSnapRestore = function (day) {
     var c = cfg(); if (!c || !/^\d{4}-\d{2}-\d{2}$/.test(day)) return;
-    fetch(snapBase() + "/" + day + "?user=" + encodeURIComponent(c.user), { headers: syncHeaders(c) })
+    return fetch(snapBase() + "/" + day + "?user=" + encodeURIComponent(c.user), { headers: syncHeaders(c) })
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
       .then(function (b) {
         var keys = Object.keys(b.payload || {});
-        if (!keys.length || !confirm("Restore the estate's snapshot of " + day + " (" + keys.length + " items)? Everything on this device is replaced; you can undo this once from Ops.")) return;
-        gmSnap("before restoring the " + day + " snapshot");
-        keys.forEach(function (k) { if (k.indexOf("gm_sync") !== 0 && k.indexOf("gm_undo") !== 0) _set0(k, b.payload[k]); });
-        location.reload();
+        if (!keys.length) return;
+        return gmTypedConfirm("RESTORE", "Restore the estate's snapshot of " + esc(day) + "? This replaces " + keys.length + " item" + (keys.length === 1 ? "" : "s") + " on this device. You can undo this once from Ops.", function () { gmExportNow(); })
+          .then(function (ok) {
+            if (!ok) return;
+            gmSnap("before restoring the " + day + " snapshot");
+            keys.forEach(function (k) { if (k.indexOf("gm_sync") !== 0 && k.indexOf("gm_undo") !== 0) _set0(k, b.payload[k]); });
+            location.reload();
+          });
       }).catch(function (e) { alert("Could not restore that snapshot: " + e.message); });
   };
   window.gmSyncSave = function () {
@@ -852,6 +856,37 @@
     { id: "mf", label: "Mind", floor: "Three slow breaths, each breath out longer than the breath in." },
     { id: "fm", label: "Family", floor: "One real question, phone in the basket." }
   ];
+  // A tick is announced (owner, 2026-11-18): a screen reader hears what just changed. ONE hidden live region, outside
+  // #sections so a redraw never removes it. The name gmSay is already the Listen button, so the announcer is gmAnnounce.
+  function gmSayEl() {
+    var el = document.getElementById("gmSay");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "gmSay"; el.className = "gm-sr";
+      el.setAttribute("role", "status"); el.setAttribute("aria-live", "polite");
+      (document.body || document.documentElement).appendChild(el);
+    }
+    return el;
+  }
+  window.gmAnnounce = function (text) { gmSayEl().textContent = String(text == null ? "" : text); };
+  try { gmSayEl(); } catch (e) {}
+  var _gmTgHabit = window.tgHabit;
+  if (typeof _gmTgHabit === "function" && !_gmTgHabit.gmAnnounced) {
+    var gmTgHabit = function (i) {
+      var hb = typeof HABITS !== "undefined" ? HABITS[i] : null;
+      var out = _gmTgHabit.apply(this, arguments);
+      try {
+        if (hb) {
+          var done = typeof todayChecks === "function" ? todayChecks() : [];
+          var n = DAILY3.filter(function (d) { return done.indexOf(d.id) >= 0; }).length;
+          window.gmAnnounce(hb.name + (done.indexOf(hb.id) >= 0 ? " done. " : " not done. ") + n + " of 3 today.");
+        }
+      } catch (e) {}
+      return out;
+    };
+    gmTgHabit.gmAnnounced = true;
+    window.tgHabit = gmTgHabit;
+  }
   // Golden repairs (owner, 2026-11-12, after kintsugi): the last seven days of the daily three. A kept day is a gold coin;
   // a missed day you came back from is mended with a gold seam, never shown as failure; a recent miss is an empty ring.
   // Nothing shows before there is any history, so a new person is never greeted by empty circles.
@@ -2833,6 +2868,31 @@
         + (G(BK_ESC, null) ? '<div class="muted" style="font-size:12px;margin-top:8px">Your estate keeps a copy too, so a new phone paired with it opens your backups.</div>' : ''));
     }).catch(function (e) { gmToast("No backup saved: " + (e && e.message || e) + ". Nothing readable was written."); });
   };
+  // Anything as final as erase asks for a typed word, built once from the erase dialog's pattern. It resolves true only
+  // when the word is typed, and its primary is the safe step (save a copy first), never the irreversible one.
+  window.gmTypedConfirm = function (word, message, safeStep) {
+    word = String(word || "RESTORE").toUpperCase();
+    return new Promise(function (resolve) {
+      gmDlg('<div style="font-weight:800;font-size:15px;margin-bottom:8px">Please confirm</div>'
+        + '<div style="font-size:13px;line-height:1.55;margin-bottom:10px">' + message + '</div>'
+        + (typeof safeStep === "function" ? '<button class="btn-sm btn-p" id="gmTypeSafe" style="background:var(--gold);color:#0d1f35;font-weight:800;padding:9px 18px;margin-bottom:10px">Save a copy first</button>' : '')
+        + '<label class="f-label" for="gmTypeIn">Type ' + esc(word) + ' to confirm</label><input type="text" id="gmTypeIn" autocomplete="off" autocapitalize="characters">'
+        + '<div style="display:flex;gap:8px"><button class="btn-sm" id="gmTypeGo" disabled style="background:transparent;color:var(--red);border:1px solid var(--red);font-weight:800;padding:9px 18px">Continue</button>'
+        + '<button class="btn-sm" id="gmTypeCancel" style="background:var(--cardAlt);color:var(--text);padding:9px 14px">Cancel</button></div>');
+      var inp = document.getElementById("gmTypeIn"), go = document.getElementById("gmTypeGo");
+      inp.addEventListener("input", function () { go.disabled = inp.value.trim() !== word; });
+      go.addEventListener("click", function () {
+        if (inp.value.trim() !== word) return;
+        gmClose(); resolve(true);
+      });
+      document.getElementById("gmTypeCancel").addEventListener("click", function () { gmClose(); resolve(false); });
+      var safe = document.getElementById("gmTypeSafe");
+      if (safe) safe.addEventListener("click", function () {
+        try { safeStep(); } catch (e) {}
+        gmToast("A copy is saved. Type " + word + " below to continue, or Cancel.");
+      });
+    });
+  };
   window.gmEraseAsk = function () {
     gmDlg('<div style="font-weight:800;font-size:15px;margin-bottom:8px;color:var(--red)">Erase all data on this device?</div>'
       + '<div style="font-size:13px;line-height:1.55;margin-bottom:10px">Every value of this app on this device goes: goals, inbox, money, career, the backup phrase. Synced copies and backup files are not touched. This cannot be undone.</div>'
@@ -4677,6 +4737,31 @@
         + '<div style="margin-top:10px">' + more + '</div></details>' : "")
       + '<div style="text-align:center;margin:6px 0 4px"><span style="font-size:11.5px;color:var(--muted);cursor:pointer;text-decoration:underline" onclick="gmCalm(false)">Show everything (all tabs, all cards)</span></div></div>';
   }
+  /* ── Unsaved days, said honestly on Today (queue experience-v3, fix 1): the age of the last backup belongs on the
+     screen a person opens every day, not only inside Ops. Real data only: example numbers are nobody's to lose. Amber,
+     never red; one line, one action, and a dismiss that rests for 30 days. Reads the same dates Ops reads. ── */
+  function gmBkAgeDays(v) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v || "")); if (!m) return null;
+    var d = new Date(+m[1], +m[2] - 1, +m[3]), n = new Date();
+    n = new Date(n.getFullYear(), n.getMonth(), n.getDate());
+    return isNaN(d.getTime()) ? null : Math.max(0, Math.round((n - d) / 86400000));
+  }
+  function gmUnsavedLine() {
+    if (!profOK()) return "";
+    var quiet = gmBkAgeDays(G("gm_unsaved_dismiss", ""));
+    if (quiet !== null && quiet < 30) return "";
+    var ages = [];
+    ["gm_last_export", "gm_last_offsite", "gm_sync_od_last"].forEach(function (k) {
+      var a = gmBkAgeDays(G(k, null)); if (a !== null) ages.push(a);
+    });
+    var days = ages.length ? Math.min.apply(null, ages) : gmBkAgeDays(G("gm_first_open", ""));
+    if (days === null || days < 8) return "";
+    return '<div class="gm-unsaved" style="background:var(--amberBg);border:1px solid var(--amber);border-radius:10px;padding:10px 12px;margin-bottom:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">'
+      + '<div style="flex:1;font-size:13px;color:var(--text);line-height:1.5">' + days + ' days of changes live only on this phone.</div>'
+      + '<button type="button" class="btn-sm" style="background:var(--gold);color:#0d1f35;font-weight:800;white-space:nowrap" onclick="gmExportNow()">Save a copy</button>'
+      + '<button type="button" class="btn-sm" aria-label="Hide this for 30 days" style="background:transparent;color:var(--muted);font-size:16px;min-width:44px;min-height:44px;padding:4px 8px" onclick="gmUnsavedDismiss()">\u00d7</button></div>';
+  }
+  window.gmUnsavedDismiss = function () { S_("gm_unsaved_dismiss", ymd()); renderAll(); };
   function calmTabs() {
     var bar = document.getElementById("tabBar");
     if (!bar || typeof TABS === "undefined") return;
@@ -5711,7 +5796,7 @@
     planItems(c).forEach(function (p) {
       var over = p.due && !p.done && p.due < today;
       pl += '<div style="display:flex;gap:9px;align-items:flex-start;margin:6px 0;font-size:12.5px;color:var(--text);line-height:1.5"><button type="button" class="gm-tap gm-chk' + (p.done ? " on" : "") + '" aria-pressed="' + (p.done ? "true" : "false") + '" aria-label="' + esc((p.done ? "Mark not done: " : "Mark done: ") + p.t) + '" style="min-width:26px;min-height:26px;border-radius:8px;font-size:12px;padding:0" onclick="gmCarDone(\'' + p.id + '\')">' + (p.done ? "✓" : "") + '</button>'
-        + '<span' + (p.done ? ' style="text-decoration:line-through;opacity:.7"' : '') + '>' + esc(p.t) + (p.due ? ' <span style="color:' + (over ? "var(--red)" : "var(--muted)") + '">· ' + (over ? "overdue " : "by ") + ymd(p.due) + '</span>' : '') + '</span></div>';
+        + '<span' + (p.done ? ' style="text-decoration:line-through;opacity:.7"' : '') + '>' + esc(p.t) + (p.due ? ' <span style="color:' + (over ? "var(--amber)" : "var(--muted)") + '">· ' + (over ? "late " : "by ") + ymd(p.due) + '</span>' : '') + '</span></div>';
     });
     if (datedCount("career")) pl += '<button class="btn-sm" data-haptic="success" style="margin-top:8px;background:var(--cardAlt);color:var(--text)" onclick="gmCalendarDated(\'career\')">Add the plan to my calendar</button>';
     h += box(pl);
@@ -5724,7 +5809,7 @@
     var due = careerDue(7).slice(0, 2); if (!due.length) return "";
     return due.map(function (p) {
       var over = p.due < new Date();
-      return '<div style="display:flex;align-items:center;gap:8px;margin:7px 0"><div style="flex:1;font-size:12.5px;color:var(--text)">\u{1F4BC} <b>' + esc(p.t) + '</b> <span style="color:' + (over ? "var(--red)" : "var(--muted)") + '">· ' + (over ? "overdue since " : "by ") + ymd(p.due) + '</span></div>'
+      return '<div style="display:flex;align-items:center;gap:8px;margin:7px 0"><div style="flex:1;font-size:12.5px;color:var(--text)">\u{1F4BC} <b>' + esc(p.t) + '</b> <span style="color:' + (over ? "var(--amber)" : "var(--muted)") + '">· ' + (over ? "late " : "by ") + ymd(p.due) + '</span></div>'
         + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="goTab(\'career\')">Open</button>'
         + '<button class="btn-sm" style="background:var(--gold);color:#0d1f35" onclick="gmCarDone(\'' + p.id + '\')">Done</button></div>';
     }).join("");
@@ -6466,9 +6551,15 @@
     designCSS();
     premiumCSS();
     tactileCSS();
-    if (!document.querySelector("a.skip") && document.getElementById("sections")) {
-      var sk = document.createElement("a"); sk.className = "skip"; sk.href = "#sections"; sk.textContent = "Skip to content";
-      document.body.insertBefore(sk, document.body.firstChild);
+    var secs = document.getElementById("sections"), main = document.querySelector('[role="main"]');
+    if (secs && !main) {
+      main = document.createElement("div"); main.id = "gm-main"; main.setAttribute("role", "main"); main.setAttribute("tabindex", "-1");
+      secs.parentNode.insertBefore(main, secs); main.appendChild(secs);
+    }
+    if (secs) {
+      var sk = document.querySelector("a.skip");
+      if (!sk) { sk = document.createElement("a"); sk.className = "skip"; sk.textContent = "Skip to content"; document.body.insertBefore(sk, document.body.firstChild); }
+      if (main && main.id) sk.href = "#" + main.id;
     }
     var hdr = document.querySelector("#dash header");
     if (hdr && !hdr.querySelector(".gm-menu-btn")) {
@@ -7680,6 +7771,7 @@
       box.insertAdjacentHTML("afterbegin", greetHTML() + exampleWarn() + interruptHTML() + undoBar() + inboxNudgeHTML() + daily3HTML() + msTodayHTML()
         + (inRecovery() ? "" : driftHTML() + resHTML()) + oneActionHTML() + (inRecovery() ? "" : pinnedHTML()));
     }
+    if (curTab === "today") { var unsaved = gmUnsavedLine(); if (unsaved) box.insertAdjacentHTML("afterbegin", unsaved); }
     if (curTab === "wheel") { try { sysWheelLines(box); } catch (e) { console.log(e); } }
     try { calmFrame(); } catch (e) { console.log(e); }
     if (phone() && !simpleNow && curTab === "today" && !document.getElementById("gmVitals")) box.insertAdjacentHTML("afterbegin", vitalsHTML());
@@ -7956,6 +8048,7 @@
   };
   window.gmPlain = PLAIN;
   function table() { return lang === "en" ? PLAIN : ((CAT[lang] || {}).strings || {}); }
+  window.gmT = function (s) { var T = lang === "en" ? null : table(); return (T && T[s]) || s; };
   function swapText(n, T) {
     var en = n[ORIG] !== undefined ? n[ORIG] : n.textContent, key = en.replace(/\s+/g, " ").trim();
     if (!key) return;
@@ -10085,6 +10178,18 @@
     try { var r = (window.RISKS || [])[i]; if (r && r.id) window.gmUse("risk:" + r.id); } catch (e) {}
     return _gmOpenR.apply(this, arguments);
   }; }
+  // Escape closes the top-most open layer through its own close path (queue experience-v3, fix 2): the dialog overlay,
+  // then the "Make it yours" sheet, then the More sheet. A locked Life OS keeps its one door: Escape does nothing.
+  document.addEventListener("keydown", function (ev) {
+    if (ev.key !== "Escape") return;
+    try {
+      if (window.gmIsLocked && window.gmIsLocked()) return;
+      if (document.getElementById("gmOverlay")) { if (typeof window.gmClose === "function") window.gmClose(); return; }
+      if (document.getElementById("gmMineSheet")) { if (typeof window.gmMineSkip === "function") window.gmMineSkip(); return; }
+      var sheet = document.getElementById("gmMoreSheet");
+      if (sheet && sheet.classList.contains("on") && typeof window.gmNavMore === "function") window.gmNavMore(false);
+    } catch (e) {}
+  });
   document.addEventListener("click", function (ev) {
     try {
       for (var el = ev.target; el && el !== document; el = el.parentNode) {
