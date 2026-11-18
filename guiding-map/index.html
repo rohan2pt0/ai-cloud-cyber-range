@@ -13690,6 +13690,18 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     try { var r = (window.RISKS || [])[i]; if (r && r.id) window.gmUse("risk:" + r.id); } catch (e) {}
     return _gmOpenR.apply(this, arguments);
   }; }
+  // Escape closes the top-most open layer through its own close path (queue experience-v3, fix 2): the dialog overlay,
+  // then the "Make it yours" sheet, then the More sheet. A locked Life OS keeps its one door: Escape does nothing.
+  document.addEventListener("keydown", function (ev) {
+    if (ev.key !== "Escape") return;
+    try {
+      if (window.gmIsLocked && window.gmIsLocked()) return;
+      if (document.getElementById("gmOverlay")) { if (typeof window.gmClose === "function") window.gmClose(); return; }
+      if (document.getElementById("gmMineSheet")) { if (typeof window.gmMineSkip === "function") window.gmMineSkip(); return; }
+      var sheet = document.getElementById("gmMoreSheet");
+      if (sheet && sheet.classList.contains("on") && typeof window.gmNavMore === "function") window.gmNavMore(false);
+    } catch (e) {}
+  });
   document.addEventListener("click", function (ev) {
     try {
       for (var el = ev.target; el && el !== document; el = el.parentNode) {

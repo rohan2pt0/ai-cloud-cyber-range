@@ -135,13 +135,13 @@ This list is generated from [`features.json`](features.json); the Command Center
 **On main, in the next release:**
 
 - Unsaved days, said honestly on Today
+- Escape closes the top layer
 - System sheets, calmer and correct
 - A key result is one tap, not a typing lesson
 - Deciding the community-proven way starts from one question
 - Friction is noticed by itself on the device
 - A resting door wakes when you need it
 - The delegation gate cannot be fooled by a test that never runs
-- The Wednesday call runs itself on Today
 
 **Release 0.4.0 - 2026-11-14:**
 
