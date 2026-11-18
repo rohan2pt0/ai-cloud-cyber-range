@@ -9,6 +9,8 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- Specs: recognition-pipeline (owner 2026-11-18: fellowships, awards, papers and a book from one body of work, by a weekly flagship block and a calendar of windows), slices queued.
+- **IP first, then paper, then episode** (owner 2026-11-18; queue ip-and-papers): one private invention note per new mechanism, written before its first public commit (India has almost no grace period for an inventor's own disclosure), becomes the provisional filing, the paper and the build-in-public episode; spec, template and the rule for every builder.
 - **Box breathing fills the screen** (owner 2026-11-18; queue visual-guides, slice 1 of 3): the breathing guide's Start breathing opens one full-screen pacer, sized for a phone or an iPad, with the word and the count and a Done button (Escape also closes it). Under reduced motion the square keeps still and only the word and count change; the guide keeps its inline square (test137).
 - Specs: seamless-sync (owner 2026-11-18: sign in once and every device has the Life OS, no key to paste; a synced passkey gives the key, the person's own drive carries the data), with the threat model to fill before any code.
 - **Restore asks for a typed word** (queue experience-v3, fix 20): restoring the estate's snapshot no longer hides behind a browser confirm. An in-page dialog says how many items will be replaced, offers "Save a copy first" as its primary, and goes on only when RESTORE is typed, the same care as erase (x3_20).
