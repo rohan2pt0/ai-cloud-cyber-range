@@ -95,7 +95,7 @@ def collect(base: str, root: pathlib.Path = ROOT) -> tuple[dict[str, Change], in
     return changes, churn
 
 
-LIFEOS_TEST = re.compile(r"^guiding-map/tests/(test\w*|kit\d+)\.js$")
+LIFEOS_TEST = re.compile(r"^guiding-map/tests/(test\w*|kit\d+|[a-z]+\d*_\d+)\.js$")   # test130, kit3, x3_20 (a spec's own series)
 
 
 def lifeos_suite(root: pathlib.Path = ROOT) -> str:
