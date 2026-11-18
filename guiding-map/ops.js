@@ -852,6 +852,37 @@
     { id: "mf", label: "Mind", floor: "Three slow breaths, each breath out longer than the breath in." },
     { id: "fm", label: "Family", floor: "One real question, phone in the basket." }
   ];
+  // A tick is announced (owner, 2026-11-18): a screen reader hears what just changed. ONE hidden live region, outside
+  // #sections so a redraw never removes it. The name gmSay is already the Listen button, so the announcer is gmAnnounce.
+  function gmSayEl() {
+    var el = document.getElementById("gmSay");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "gmSay"; el.className = "gm-sr";
+      el.setAttribute("role", "status"); el.setAttribute("aria-live", "polite");
+      (document.body || document.documentElement).appendChild(el);
+    }
+    return el;
+  }
+  window.gmAnnounce = function (text) { gmSayEl().textContent = String(text == null ? "" : text); };
+  try { gmSayEl(); } catch (e) {}
+  var _gmTgHabit = window.tgHabit;
+  if (typeof _gmTgHabit === "function" && !_gmTgHabit.gmAnnounced) {
+    var gmTgHabit = function (i) {
+      var hb = typeof HABITS !== "undefined" ? HABITS[i] : null;
+      var out = _gmTgHabit.apply(this, arguments);
+      try {
+        if (hb) {
+          var done = typeof todayChecks === "function" ? todayChecks() : [];
+          var n = DAILY3.filter(function (d) { return done.indexOf(d.id) >= 0; }).length;
+          window.gmAnnounce(hb.name + (done.indexOf(hb.id) >= 0 ? " done. " : " not done. ") + n + " of 3 today.");
+        }
+      } catch (e) {}
+      return out;
+    };
+    gmTgHabit.gmAnnounced = true;
+    window.tgHabit = gmTgHabit;
+  }
   // Golden repairs (owner, 2026-11-12, after kintsugi): the last seven days of the daily three. A kept day is a gold coin;
   // a missed day you came back from is mended with a gold seam, never shown as failure; a recent miss is an empty ring.
   // Nothing shows before there is any history, so a new person is never greeted by empty circles.
