@@ -147,6 +147,10 @@ risk × reach ÷ effort. Ask first only for what is irreversible, costs money, t
 published beyond the repository.
 **Find the frictions yourself (owner, 2026-11-18):** do not ask the owner where something hurts. Read the app's own signals
 (`gm_friction_seen`, `governance/frictions.json`, the screens a newcomer would meet) and fix the worst first; ask only when he says so.
+**IP first, then paper, then episode (`ip-first`, owner 2026-11-18):** the repository is public, and in India an inventor's own
+publication before filing can destroy a patent. Before the first public commit of a mechanism you believe is new, write the
+private invention note (`docs/templates/invention-note.md`, kept in `vault/ip/`) and mark the queue item `"ip": "candidate"`;
+the owner decides file, publish or know-how. The same note becomes the paper and the build-in-public episode (`docs/specs/ip-and-papers.md`).
 
 Every feature in `features.json` carries its `outcome` (what gets better) and `shows` (where the person sees it); fitness
 `outcomes-declared` fails one that does not.

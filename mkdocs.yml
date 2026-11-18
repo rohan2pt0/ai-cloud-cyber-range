@@ -160,6 +160,8 @@ nav:
       - "Experience v3: priceless to look at, effortless to use": specs/experience-v3.md
       - "Experience v3: the 20 fixes to the Life OS": specs/experience-fixes.md
       - "Seamless sync: sign in once, every device": specs/seamless-sync.md
+      - "IP and papers: one write-up, three outputs": specs/ip-and-papers.md
+      - "Recognition pipeline: fellowships, awards, papers, a book": specs/recognition-pipeline.md
       - "Calls journal: how good is my judgement?": specs/calls-journal.md
       - "Choose who you serve": securax/116-CHOOSE-YOUR-CUSTOMER.md
   - How-to guides:
