@@ -8,7 +8,7 @@ let pass = 0, fail = 0;
 const ok = (c, m) => { if (c) pass++; else { fail++; console.log("FAIL", m); } };
 // The ids already handed out. Add new ones here when you add an item; NEVER delete one (retire it in the registry instead):
 // a calendar out there still holds an event with that UID.
-const HANDED_OUT = ["quarter", "monthly", "weekly", "tax", "annual", "holiday-list", "family-q1", "family-q2", "family-q3", "family-q4"];
+const HANDED_OUT = ["quarter", "monthly", "weekly", "tax", "annual", "holiday-list", "family-q1", "family-q2", "family-q3", "family-q4", "bip-weekly"];
 const d = new JSDOM(html, { runScripts: "dangerously", url: "https://hub.securax.localhost/index.html", pretendToBeVisual: true,
   beforeParse(w) { w.scrollTo = () => {}; w.URL.createObjectURL = () => "blob:x"; } });
 setTimeout(() => {

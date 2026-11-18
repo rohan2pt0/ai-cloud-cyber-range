@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- **Build in public, one small step a week** (owner, 2026-11-18; queue build-in-public, slice 1 of 3): Playbook > S3 now leads with one card, "Build in public · this week's episode": one editable topic (prefilled from the newest done Inbox action), four one-tap steps kept in `gm_bip`, an episode link, and a streak line of episodes published; the old S3 guidance folds under one closed "Why this works", and Add to calendar saves a permanent Saturday 10:00 item (`bip-weekly`) (test141).
 - Specs: seamless-sync (owner 2026-11-18: sign in once and every device has the Life OS, no key to paste; a synced passkey gives the key, the person's own drive carries the data), with the threat model to fill before any code.
 - **Restore asks for a typed word** (queue experience-v3, fix 20): restoring the estate's snapshot no longer hides behind a browser confirm. An in-page dialog says how many items will be replaced, offers "Save a copy first" as its primary, and goes on only when RESTORE is typed, the same care as erase (x3_20).
 - **Unsaved days, said honestly on Today** (owner, 2026-11-18; queue experience-v3, fix 1 of 20): with real data and no backup for 8 days or more, Today shows one amber line ("N days of changes live only on this phone") with one "Save a copy" button that calls the existing backup action, and a dismiss that rests for 30 days. Example data never gets the line (test x3_01).

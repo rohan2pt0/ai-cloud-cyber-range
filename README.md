@@ -134,6 +134,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- Build in public, one small step a week
 - Restore asks for a typed word
 - Unsaved days, said honestly on Today
 - Escape closes the top layer
@@ -141,7 +142,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - The browser tab names the view
 - A screen reader can jump to the content
 - The habit check is a named button
-- A tick is announced
 
 **Release 0.4.0 - 2026-11-14:**
 
