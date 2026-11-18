@@ -5626,7 +5626,7 @@
     planItems(c).forEach(function (p) {
       var over = p.due && !p.done && p.due < today;
       pl += '<div style="display:flex;gap:9px;align-items:flex-start;margin:6px 0;font-size:12.5px;color:var(--text);line-height:1.5"><button type="button" class="gm-tap gm-chk' + (p.done ? " on" : "") + '" aria-pressed="' + (p.done ? "true" : "false") + '" aria-label="' + esc((p.done ? "Mark not done: " : "Mark done: ") + p.t) + '" style="min-width:26px;min-height:26px;border-radius:8px;font-size:12px;padding:0" onclick="gmCarDone(\'' + p.id + '\')">' + (p.done ? "✓" : "") + '</button>'
-        + '<span' + (p.done ? ' style="text-decoration:line-through;opacity:.7"' : '') + '>' + esc(p.t) + (p.due ? ' <span style="color:' + (over ? "var(--red)" : "var(--muted)") + '">· ' + (over ? "overdue " : "by ") + ymd(p.due) + '</span>' : '') + '</span></div>';
+        + '<span' + (p.done ? ' style="text-decoration:line-through;opacity:.7"' : '') + '>' + esc(p.t) + (p.due ? ' <span style="color:' + (over ? "var(--amber)" : "var(--muted)") + '">· ' + (over ? "late " : "by ") + ymd(p.due) + '</span>' : '') + '</span></div>';
     });
     if (datedCount("career")) pl += '<button class="btn-sm" data-haptic="success" style="margin-top:8px;background:var(--cardAlt);color:var(--text)" onclick="gmCalendarDated(\'career\')">Add the plan to my calendar</button>';
     h += box(pl);
@@ -5639,7 +5639,7 @@
     var due = careerDue(7).slice(0, 2); if (!due.length) return "";
     return due.map(function (p) {
       var over = p.due < new Date();
-      return '<div style="display:flex;align-items:center;gap:8px;margin:7px 0"><div style="flex:1;font-size:12.5px;color:var(--text)">\u{1F4BC} <b>' + esc(p.t) + '</b> <span style="color:' + (over ? "var(--red)" : "var(--muted)") + '">· ' + (over ? "overdue since " : "by ") + ymd(p.due) + '</span></div>'
+      return '<div style="display:flex;align-items:center;gap:8px;margin:7px 0"><div style="flex:1;font-size:12.5px;color:var(--text)">\u{1F4BC} <b>' + esc(p.t) + '</b> <span style="color:' + (over ? "var(--amber)" : "var(--muted)") + '">· ' + (over ? "late " : "by ") + ymd(p.due) + '</span></div>'
         + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="goTab(\'career\')">Open</button>'
         + '<button class="btn-sm" style="background:var(--gold);color:#0d1f35" onclick="gmCarDone(\'' + p.id + '\')">Done</button></div>';
     }).join("");
