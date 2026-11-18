@@ -1,7 +1,7 @@
 <!--
   SecuRAX — Getting Started.
-  The shortest path from "fresh laptop" to "using it daily". Written for the HP Spectre x360
-  (Windows 11 + Docker Desktop with the WSL2 backend, or any Linux). Everything here is free.
+  The shortest path from "fresh laptop" to "using it daily". Written for a Windows 11 laptop
+  (WSL2 with Docker) or any Linux or Mac. Everything here is free.
 -->
 
 # Getting Started with SecuRAX
@@ -12,13 +12,14 @@
 **Mac / Linux:** run **`./securax up`**.
 
 That is the whole thing. It brings the estate up, **opens your home screen immediately**
-(`http://localhost:8088`), and downloads the local AI model in the background (first run only,
+(`./securax open` shows it again), and downloads the local AI model in the background (first run only,
 ~2–5 min). You do **not** wait for it and you do **not** need to read anything else: the home
 screen's **Ask** tab shows a live *"AI is ready / still warming up / off"* status in plain
 words, and the planner, playbook and life-OS work the instant the page opens. To stop and free
 memory later: `STOP-Windows.bat` (or `./securax down`).
 
-*Prerequisite: Docker Desktop running (the green whale in the system tray; WSL2 backend on Windows).*
+*Prerequisite: Docker running (Docker Desktop's green whale, or Docker Engine inside Ubuntu). If it is not, the
+start command says so and names the one next step.*
 
 ---
 
@@ -38,7 +39,7 @@ Prerequisite: **Docker Desktop** running (WSL2 backend on Windows).
 ./local/scripts/bootstrap-laptop.sh        # gateway + model router + DB + a self-test
 ./local/scripts/kind-up.sh                  # Kubernetes plane (admission control + runtime detection)
 python3 redteam/run_attacks.py --fail-under 0.9   # adversarial-ML scorecard (should be 100%)
-./local/scripts/teardown.sh                 # stop everything — costs nothing overnight
+./local/scripts/teardown.sh                 # stop everything, keep your data (costs nothing overnight)
 ```
 What you now have: a guardrail gateway, a red-team scorecard, an AI-SPM posture report, and a
 board brief — the portfolio for the eight AI-security roles. Demo script: `docs/demo-runbook.md`.
@@ -76,9 +77,12 @@ Morning: open Open WebUI, let n8n's morning brief run. Evening: 10-minute shutdo
 for the full cadence. **Everything compounds because it is all captured in one base.**
 
 ## If something breaks
-- `docker` errors → Docker Desktop isn't running; start it, wait for the green whale.
-- Laptop slows while a model answers → use the lighter `local-fast` model; cap WSL2 RAM
-  (see the uploaded SOP) at 10 GB.
+- Anything not working → `./securax why` (Windows: double-click `WHATS-WRONG-Windows.bat`). It says what stopped,
+  why, and the one next step.
+- `docker` errors → Docker isn't running. Docker Desktop: start it and wait for the green whale. Docker Engine
+  inside Ubuntu: `sudo service docker start`.
+- Laptop slows while a model answers → use the lighter `local-fast` model, and run
+  `./securax profile`: it sizes the estate to this machine and says how to cap WSL2's memory.
 - Open WebUI shows no models → the gateway booted before Ollama:
   `cd local/compose && docker compose --profile ai restart gateway`.
-- Full troubleshooting + security posture notes: the uploaded `SOP-README.md`.
+- More fixes, symptom by symptom: the troubleshooting table in `DEPLOY.md`.

@@ -3880,11 +3880,17 @@
       + '<textarea id="guardQ" placeholder="Paste text about yourself…" style="width:100%;min-height:60px;padding:9px 11px;border:1px solid var(--line,#999);border-radius:10px;background:transparent;color:inherit"></textarea>'
       + '<button class="btn btn-s" onclick="gmGuardScan()" style="margin-top:8px">Scan locally</button><div id="guardOut" style="margin-top:8px"></div></div></details>';
 
-    h += '<details class="road-col" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">◈ Decide the community-proven way (Intel)</summary><div style="margin-top:8px">'
+    h += '<details class="road-col" id="askIntelCard" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">◈ Decide the community-proven way (Intel)</summary><div style="margin-top:8px">'
+      + '<div class="info">One question is enough. It waits in your Inbox as a decision to make, so nothing you type is lost.</div>'
+      + '<input id="intelQuestion" aria-label="What do you want to decide?" placeholder="What do you want to decide?" style="width:100%;padding:9px 11px;border:1px solid var(--line,#999);border-radius:10px;background:transparent;color:inherit">'
+      + '<button class="btn btn-s" data-intel-ask onclick="gmIntelAsk()" style="margin-top:8px">Keep this question</button>'
+      + '<div id="intelAskOut" style="margin-top:8px"></div>'
+      + '<details class="gm-intel-own" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">I have my own list</summary><div style="margin-top:8px">'
       + '<div class="info">Paste the top items you collected (Reddit Top/All-time, best-sellers, top videos) — one per line, best first. Get what the crowd agrees on. On-device.</div>'
       + '<textarea id="intelItems" placeholder="e.g.\nPassed CCSP! Pete Zerger videos + LEARNZAPP\nCCSP: Pete Zerger + LEARNZAPP, Sybex for depth" style="width:100%;min-height:60px;padding:9px 11px;border:1px solid var(--line,#999);border-radius:10px;background:transparent;color:inherit"></textarea>'
       + '<input id="intelVocab" placeholder="Names you saw repeating (comma-separated) — optional" style="width:100%;margin-top:6px;padding:9px 11px;border:1px solid var(--line,#999);border-radius:10px;background:transparent;color:inherit">'
-      + '<button class="btn btn-s" onclick="gmIntelGo()" style="margin-top:8px">Find the consensus</button><div id="intelOut" style="margin-top:8px"></div></div></details></details>';
+      + '<button class="btn btn-s" onclick="gmIntelGo()" style="margin-top:8px">Find the consensus</button><div id="intelOut" style="margin-top:8px"></div></div></details>'
+      + '</div></details></details>';
 
     h += '<details class="road-col" id="askConn" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">Connection (set once)</summary>';
     h += '<details class="road-col" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">⤢ Launch the estate</summary><div style="margin-top:8px" class="info">'
@@ -4037,6 +4043,15 @@
       : '<div class="info"><b>✓ Clean.</b> No high-risk identifiers found in this sample.</div>';
   };
   function sigW(score, rank, age, mode) { var pop = Math.log10(Math.max(score, 0) + 10), rw = 1 / (1 + 0.15 * Math.max(rank - 1, 0)); if (mode === "edge") { var f = Math.exp(-Math.max(age, 0) / 180); return pop * rw * (0.3 + 0.7 * f); } return pop * rw * (1 + Math.min(Math.max(age, 0) / 365, 5) * 0.1); }
+  // One question, no list to collect. The estate's AI gathers the consensus when it is on; until then the question
+  // waits in the Inbox as an action, so asking never dead-ends and nothing typed is lost.
+  window.gmIntelAsk = function () {
+    var q = (document.getElementById("intelQuestion").value || "").trim();
+    var out = document.getElementById("intelAskOut");
+    if (!q) { out.innerHTML = '<div class="info">Type the decision you want to make first.</div>'; return; }
+    gmInboxAdd(q, "action", { from: "ask-intel", next: "Decide it, or paste a community list under I have my own list" });
+    out.innerHTML = '<div class="info"><b>Saved in your Inbox</b> as a decision to make.</div>';
+  };
   window.gmIntelGo = function () {
     var lines = (document.getElementById("intelItems").value || "").split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
     var vocab = (document.getElementById("intelVocab").value || "").split(",").map(function (s) { return s.trim(); }).filter(Boolean);
@@ -4657,6 +4672,24 @@
     growth: { o: "Learn one hard thing properly", krs: ["Read 3 books to the end", "Finish one course or module end to end"] },
     fun: { o: "Make room for joy", krs: ["One hobby session every week (12)", "One weekend fully offline"] },
     env: { o: "Fix my surroundings", krs: ["Declutter one room completely", "Close the 3 home repairs I keep postponing"] }
+  };
+  function krWords(s) { return String(s || "").toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter(function (w) { return w.length > 2; }); }
+  window.gmKRSuggest = function (objectiveText) {
+    var words = krWords(objectiveText);
+    var ranked = Object.keys(QSUG).map(function (k) {
+      var x = QSUG[k], hay = (k + " " + x.o + " " + x.krs.join(" ")).toLowerCase(), score = 0;
+      words.forEach(function (w) { if (hay.indexOf(w) >= 0) score++; });
+      return { k: k, score: score };
+    }).sort(function (a, b) { return b.score - a.score; });
+    var out = [];
+    ranked.forEach(function (r) {
+      if (!r.score) return;
+      QSUG[r.k].krs.forEach(function (t) { if (out.indexOf(t) < 0 && out.length < 3) out.push(t); });
+    });
+    ["One measurable result this quarter", "The habit kept on 60 of 90 days", "The first small step finished"].forEach(function (t) {
+      if (out.length < 3 && out.indexOf(t) < 0) out.push(t);
+    });
+    return out.slice(0, 3);
   };
   var GRADES = [[0, "Not started"], [0.25, "A little"], [0.5, "Half"], [0.75, "Most of it"], [1, "Done"]];
   function qKeyNow() { var d = new Date(); return d.getFullYear() + "-Q" + (Math.floor(d.getMonth() / 3) + 1); }
@@ -10008,4 +10041,109 @@
       }
     } catch (e) {}
   }, true);
+
+  /* ── Friction noticed on the device (queue friction-meter, slice 4): a sheet closed with no tick or input (an
+     abandon), three taps on one spot within a second (a rage), and the same two tabs switched four times within ten
+     seconds (a bounce). gm_friction_seen holds id -> how often, at most 200 ids, newest kept. Nothing is sent. */
+  var GM_FR_KEYS = 200;
+  window.gmFrictionSeen = function () {
+    var raw = G("gm_friction_seen", {}), out = {};
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+    Object.keys(raw).forEach(function (id) {
+      if (!GM_USE_RE.test(id)) return;
+      var n = raw[id];
+      if (typeof n !== "number" || !isFinite(n) || n < 1) return;
+      out[id] = Math.floor(n);
+    });
+    return out;
+  };
+  window.gmFriction = function (id) {
+    if (typeof id !== "string" || !GM_USE_RE.test(id)) return;
+    var map = window.gmFrictionSeen(), n = map[id] || 0;
+    // Re-insert at the end so the key order is recency, and the oldest keys are the ones dropped when the map is full.
+    delete map[id];
+    map[id] = n + 1;
+    var ids = Object.keys(map);
+    while (ids.length > GM_FR_KEYS) delete map[ids.shift()];
+    S_("gm_friction_seen", map);
+    return map;
+  };
+  // The highest counts first, ties by id so the answer is steady; the monthly card will name the top three.
+  window.gmFrictionTop = function (n) {
+    n = Math.floor(+n);
+    if (!(n > 0)) n = 3;
+    var map = window.gmFrictionSeen();
+    return Object.keys(map).map(function (id) { return { id: id, n: map[id] }; })
+      .sort(function (a, b) { return b.n - a.n || (a.id < b.id ? -1 : 1); }).slice(0, n);
+  };
+
+  // An opened sheet that closes with no tick or input is an abandon; the sheet's own controls settle the doubt.
+  var _gmFrOpen = null, _gmFrTouched = false;
+  if (typeof window.openK === "function") { var _gmFrOpenK = window.openK; window.openK = function (i) {
+    try { var k = (window.KPIs || [])[i]; _gmFrOpen = k && k.id ? "sys:" + k.id : null; _gmFrTouched = false; } catch (e) { _gmFrOpen = null; }
+    return _gmFrOpenK.apply(this, arguments);
+  }; }
+  if (typeof window.openR === "function") { var _gmFrOpenR = window.openR; window.openR = function (i) {
+    try { var r = (window.RISKS || [])[i]; _gmFrOpen = r && r.id ? "risk:" + r.id : null; _gmFrTouched = false; } catch (e) { _gmFrOpen = null; }
+    return _gmFrOpenR.apply(this, arguments);
+  }; }
+  function gmFrTouch(ev) {
+    try { for (var el = ev.target; el && el !== document; el = el.parentNode) { if (el.id === "mo") { _gmFrTouched = true; break; } } } catch (e) {}
+  }
+  document.addEventListener("input", gmFrTouch, true);
+  document.addEventListener("change", gmFrTouch, true);
+  if (typeof window.closeM === "function") { var _gmFrCloseM = window.closeM; window.closeM = function () {
+    try { if (_gmFrOpen && !_gmFrTouched) window.gmFriction(_gmFrOpen); } catch (e) {}
+    _gmFrOpen = null; _gmFrTouched = false;
+    return _gmFrCloseM.apply(this, arguments);
+  }; }
+
+  // Three taps on one spot within a second is a rage; the spot is its data-feat, else the tab it opens.
+  function gmFrSpot(el) {
+    var tab = null;
+    for (var n = el; n && n !== document; n = n.parentNode) {
+      if (!n.getAttribute) continue;
+      var f = n.getAttribute("data-feat");
+      if (f) return f;
+      if (!tab) {
+        var t = n.getAttribute("data-tab"), oc = n.getAttribute("onclick") || "";
+        var m = oc.match(/(?:goTab|gmNavGo)\(['"]([A-Za-z0-9:-]+)['"]/);
+        if (t) tab = "tab:" + t; else if (m) tab = "tab:" + m[1];
+      }
+    }
+    return tab;
+  }
+  var _gmFrTaps = [];
+  document.addEventListener("click", function (ev) {
+    try {
+      var id = gmFrSpot(ev.target), t = Date.now();
+      if (!id) return;
+      _gmFrTaps = _gmFrTaps.filter(function (x) { return t - x.t <= 1000; });
+      _gmFrTaps.push({ id: id, t: t });
+      if (_gmFrTaps.filter(function (x) { return x.id === id; }).length >= 3) {
+        window.gmFriction(id);
+        _gmFrTaps = _gmFrTaps.filter(function (x) { return x.id !== id; });
+      }
+    } catch (e) {}
+  }, true);
+
+  // Switching between the same two tabs four times within ten seconds is a bounce.
+  var _gmFrTabs = [];
+  if (typeof window.goTab === "function") { var _gmFrGoTab = window.goTab; window.goTab = function (id) {
+    try {
+      if (typeof id === "string" && GM_USE_RE.test(id)) {
+        var t = Date.now(), now = _gmFrTabs.filter(function (x) { return t - x.t <= 10000; });
+        now.push({ id: id, t: t });
+        _gmFrTabs = now;
+        if (now.length >= 4) {
+          var a = now[now.length - 4].id, b = now[now.length - 3].id, c = now[now.length - 2].id, e2 = now[now.length - 1].id;
+          if (a === c && b === e2 && a !== b) {
+            window.gmFriction("tab:" + [a, b].sort().join("-"));
+            _gmFrTabs = [];
+          }
+        }
+      }
+    } catch (e) {}
+    return _gmFrGoTab.apply(this, arguments);
+  }; }
 })();
