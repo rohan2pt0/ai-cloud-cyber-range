@@ -3545,6 +3545,55 @@
     + '<text x="265" y="18" text-anchor="middle" font-size="10" fill="var(--muted)">too hard (gasping)</text>'
     + '</svg>';
 
+  /* ── 48b-1. Strength figures — a small moving stick figure for each move ────
+     Side view in a 120×90 box, floor at y=84. Each move has a start and an end
+     pose, cross-faded over 3 s; the band (row, press) runs in gold from its
+     anchor to the hand. Reduced motion rests on the end pose. */
+  var POSES = {
+    pushup: { label: "Push-up: lower the chest toward the floor, then press back up", anchor: null,
+      start: { head: [74, 50], neck: [62, 54], hip: [42, 60], knee: [28, 70], foot: [18, 82], elbow: [72, 68], hand: [70, 82] },
+      end:   { head: [74, 62], neck: [62, 66], hip: [42, 66], knee: [28, 72], foot: [18, 82], elbow: [82, 74], hand: [70, 82] } },
+    row: { label: "Band row: pull the band from arms straight to your waist", anchor: [114, 46],
+      start: { head: [74, 30], neck: [66, 36], hip: [54, 54], knee: [54, 70], foot: [54, 82], elbow: [80, 40], hand: [98, 46] },
+      end:   { head: [74, 30], neck: [66, 36], hip: [54, 54], knee: [54, 70], foot: [54, 82], elbow: [68, 50], hand: [60, 50] } },
+    squat: { label: "Squat: push the hips back and bend the knees, then stand", anchor: null,
+      start: { head: [58, 18], neck: [58, 30], hip: [58, 50], knee: [58, 68], foot: [58, 84], elbow: [66, 44], hand: [72, 42] },
+      end:   { head: [50, 36], neck: [54, 46], hip: [44, 62], knee: [62, 68], foot: [58, 84], elbow: [64, 52], hand: [72, 50] } },
+    press: { label: "Band press: press the band forward until the arms are straight", anchor: [58, 84],
+      start: { head: [60, 20], neck: [60, 30], hip: [58, 50], knee: [58, 68], foot: [58, 84], elbow: [68, 42], hand: [76, 38] },
+      end:   { head: [60, 20], neck: [60, 30], hip: [58, 50], knee: [58, 68], foot: [58, 84], elbow: [80, 38], hand: [96, 36] } },
+    plank: { label: "Plank: forearms on the floor, body in one straight line", anchor: null,
+      start: { head: [86, 54], neck: [74, 58], hip: [48, 64], knee: [26, 72], foot: [10, 80], elbow: [72, 74], hand: [60, 80] },
+      end:   { head: [86, 50], neck: [74, 54], hip: [48, 58], knee: [26, 68], foot: [10, 78], elbow: [72, 70], hand: [60, 78] } }
+  };
+
+  function gmFigLine(a, b, color, w) {
+    return '<line x1="' + a[0] + '" y1="' + a[1] + '" x2="' + b[0] + '" y2="' + b[1]
+      + '" stroke="' + color + '" stroke-width="' + w + '" stroke-linecap="round"/>';
+  }
+  function gmFigPose(p, tag, anchor, animValues) {
+    var t = "var(--text)", h = '<g class="gm-pose gm-pose-' + tag + '" data-pose="' + tag + '"';
+    if (animValues) h += ' opacity="' + (/^0/.test(animValues) ? "0" : "1") + '"';
+    h += '>';
+    if (animValues) h += '<animate attributeName="opacity" values="' + animValues + '" keyTimes="0;0.4;0.5;0.9;1" dur="3s" repeatCount="indefinite"/>';
+    if (anchor) h += '<line class="gm-band" data-role="band" x1="' + anchor[0] + '" y1="' + anchor[1]
+      + '" x2="' + p.hand[0] + '" y2="' + p.hand[1] + '" stroke="var(--gold)" stroke-width="2.4" stroke-linecap="round"/>';
+    h += gmFigLine(p.neck, p.hip, t, 2.6) + gmFigLine(p.hip, p.knee, t, 2.6) + gmFigLine(p.knee, p.foot, t, 2.6)
+      + gmFigLine(p.neck, p.elbow, t, 2.6) + gmFigLine(p.elbow, p.hand, t, 2.6) + gmFigLine(p.neck, p.head, t, 2.6)
+      + '<circle cx="' + p.head[0] + '" cy="' + p.head[1] + '" r="6.4" fill="none" stroke="' + t + '" stroke-width="2.4"/>';
+    return h + '</g>';
+  }
+  window.gmFigure = function (id) {
+    var P = POSES[id]; if (!P) return "";
+    var reduce = false;
+    try { reduce = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); } catch (e) {}
+    var h = '<svg class="gm-fig" role="img" aria-label="' + esc(P.label) + '" viewBox="0 0 120 90" width="140" height="105" style="max-width:140px;width:100%;display:block">'
+      + '<line x1="4" y1="84" x2="116" y2="84" stroke="var(--border)" stroke-width="1.5" stroke-linecap="round"/>';
+    if (reduce) h += gmFigPose(P.end, "end", P.anchor, "");
+    else h += gmFigPose(P.start, "start", P.anchor, "1;1;0;0;1") + gmFigPose(P.end, "end", P.anchor, "0;0;1;1;0");
+    return h + '</svg>';
+  };
+
   var GUIDES = [
     { id: "daily3", icon: "☀", title: "The Daily Three: Move, Mind, Family", tag: "daily · 2-min floor",
       what: "The three daily floors. Each has a 2-minute floor — the smallest version that still counts as a win, so you never miss twice.",
@@ -3559,6 +3608,7 @@
         "3) SQUATS — 3×15. Feet shoulder-width, chest up, push hips back, knees track over toes, go as low as comfortable.",
         "4) BAND PRESS — 3×12. Stand on the band (or anchor it behind you at chest height), hold the loop at chest, press forward until arms straight, control back. Core tight, don’t arch.",
         "5) PLANK — 3×45s. Forearms on floor, body in a straight line, squeeze core/glutes, breathe normally."],
+      figs: ["pushup", "row", "squat", "press", "plank"],
       subs: ["Loop band digs into hands: wrap the ends around a rolled towel or your wrists.",
         "No anchor point: standing on the band works for rows and presses.",
         "Too hard: fewer reps with good form beats more reps with bad form."],
@@ -3604,13 +3654,16 @@
       + '<div style="font-size:12.5px;line-height:1.75;margin-top:8px">'
       + '<div class="info" style="margin-bottom:8px">' + esc(g.what) + '</div>'
       + (g.viz || "");
-    function stepHTML(s) {
+    function stepHTML(s, fig) {
       var m = /^([^—:]{2,60}?)\s*(?:—|:)\s+(.+)$/.exec(s);
-      return m && /[A-Z]{2,}/.test(m[1]) ? '<div class="gs"><div class="gs-k">' + esc(m[1]) + '</div><div class="gs-v">' + esc(m[2]) + '</div></div>'
-        : '<div class="gs"><div class="gs-v">' + esc(s) + '</div></div>';
+      var body = m && /[A-Z]{2,}/.test(m[1]) ? '<div class="gs-k">' + esc(m[1]) + '</div><div class="gs-v">' + esc(m[2]) + '</div>'
+        : '<div class="gs-v">' + esc(s) + '</div>';
+      return '<div class="gs' + (fig ? ' gs-with-fig' : '') + '">'
+        + (fig ? '<div class="gs-fig">' + gmFigure(fig) + '</div>' : '')
+        + '<div class="gs-body">' + body + '</div></div>';
     }
-    h += '<div class="gs-list">' + g.steps.map(stepHTML).join("") + '</div>';
-    if (g.subs) { h += '<div class="gs-h">If your setup differs</div><div class="gs-list">' + g.subs.map(stepHTML).join("") + '</div>'; }
+    h += '<div class="gs-list">' + g.steps.map(function (s, i) { return stepHTML(s, g.figs && g.figs[i]); }).join("") + '</div>';
+    if (g.subs) { h += '<div class="gs-h">If your setup differs</div><div class="gs-list">' + g.subs.map(function (s) { return stepHTML(s); }).join("") + '</div>'; }
     if (g.check) { h += '<div class="gs-check">\u2713 ' + esc(g.check) + '</div>'; }
     return h + '</div></details>';
   }
@@ -8083,6 +8136,7 @@
       + ".gs-list{display:flex;flex-direction:column;margin:6px 0}.gs{padding:9px 0;border-top:1px solid var(--border)}.gs:first-child{border-top:0}"
       + ".gs-k{font-size:10.5px;font-weight:800;letter-spacing:.08em;color:#7a5a14;margin-bottom:2px}html[data-theme=dark] .gs-k{color:var(--gold)}"
       + ".gs-v{font-size:13.5px;line-height:1.55;color:var(--text)}.gs-h{margin-top:10px;font-weight:800;font-size:13px}"
+      + ".gs.gs-with-fig{display:flex;align-items:flex-start;gap:12px}.gs-fig{flex:0 0 auto}.gs-body{flex:1;min-width:0}"
       + ".gs-check{margin-top:10px;padding:10px 12px;border-radius:12px;background:rgba(30,122,82,.08);border:1px solid rgba(30,122,82,.25);font-size:13px;line-height:1.5}"
       // Money meters: the healthy zone and your value are labelled on the track, with a scale beneath.
       + "html body .meter-track{position:relative;height:10px;border-radius:99px;background:var(--cardAlt);margin:30px 0 4px;overflow:visible}"
