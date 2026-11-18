@@ -6381,9 +6381,15 @@
     designCSS();
     premiumCSS();
     tactileCSS();
-    if (!document.querySelector("a.skip") && document.getElementById("sections")) {
-      var sk = document.createElement("a"); sk.className = "skip"; sk.href = "#sections"; sk.textContent = "Skip to content";
-      document.body.insertBefore(sk, document.body.firstChild);
+    var secs = document.getElementById("sections"), main = document.querySelector('[role="main"]');
+    if (secs && !main) {
+      main = document.createElement("div"); main.id = "gm-main"; main.setAttribute("role", "main"); main.setAttribute("tabindex", "-1");
+      secs.parentNode.insertBefore(main, secs); main.appendChild(secs);
+    }
+    if (secs) {
+      var sk = document.querySelector("a.skip");
+      if (!sk) { sk = document.createElement("a"); sk.className = "skip"; sk.textContent = "Skip to content"; document.body.insertBefore(sk, document.body.firstChild); }
+      if (main && main.id) sk.href = "#" + main.id;
     }
     var hdr = document.querySelector("#dash header");
     if (hdr && !hdr.querySelector(".gm-menu-btn")) {

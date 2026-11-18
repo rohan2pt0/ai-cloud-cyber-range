@@ -134,6 +134,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- A screen reader can jump to the content
 - System sheets, calmer and correct
 - A resting door wakes when you need it
 - The delegation gate cannot be fooled by a test that never runs
@@ -141,7 +142,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - Doors rest by themselves
 - A recurring step lives in the calendar
 - Three friends use the Life OS on a phone
-- A home page that fits a phone, slice 3
 
 **Release 0.4.0 - 2026-11-14:**
 
