@@ -145,6 +145,8 @@ The principles behind it:
 chose and why in one line, and act: merge a PR the owner approved once every check is green, and pick the order of the queue by
 risk × reach ÷ effort. Ask first only for what is irreversible, costs money, touches the owner's devices or accounts, or is
 published beyond the repository.
+**Find the frictions yourself (owner, 2026-11-18):** do not ask the owner where something hurts. Read the app's own signals
+(`gm_friction_seen`, `governance/frictions.json`, the screens a newcomer would meet) and fix the worst first; ask only when he says so.
 **IP first, then paper, then episode (`ip-first`, owner 2026-11-18):** the repository is public, and in India an inventor's own
 publication before filing can destroy a patent. Before the first public commit of a mechanism you believe is new, write the
 private invention note (`docs/templates/invention-note.md`, kept in `vault/ip/`) and mark the queue item `"ip": "candidate"`;
