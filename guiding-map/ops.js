@@ -7959,6 +7959,7 @@
   };
   window.gmPlain = PLAIN;
   function table() { return lang === "en" ? PLAIN : ((CAT[lang] || {}).strings || {}); }
+  window.gmT = function (s) { var T = lang === "en" ? null : table(); return (T && T[s]) || s; };
   function swapText(n, T) {
     var en = n[ORIG] !== undefined ? n[ORIG] : n.textContent, key = en.replace(/\s+/g, " ").trim();
     if (!key) return;

@@ -1745,7 +1745,12 @@ function applyTheme(){ var t=curTheme(); document.documentElement.setAttribute("
 function toggleTheme(){ S.theme=(curTheme()==="dark")?"light":"dark"; S.themeChosen=true; store("sovS",S); applyTheme(); }
 try{ if(window.matchMedia){ var _tmq=matchMedia("(prefers-color-scheme: dark)"); var _tf=function(){ if(S.theme!=="dark"&&S.theme!=="light") applyTheme(); }; if(_tmq.addEventListener) _tmq.addEventListener("change",_tf); else if(_tmq.addListener) _tmq.addListener(_tf); } }catch(e){}
 var pillarFilter=null;
-function goTab(id,filter){ curTab=id; pillarFilter=filter||null; renderAll(); window.scrollTo(0,0); }
+function goTab(id,filter){ curTab=id; pillarFilter=filter||null; renderAll(); window.scrollTo(0,0);
+  var lab=id, say=window.gmT||function(s){return s;};
+  if(typeof TABS!=="undefined")for(var i=0;i<TABS.length;i++)if(TABS[i][0]===id){ lab=TABS[i][1]; break; }
+  lab=String(lab==null?"":lab).replace(/^[^A-Za-z0-9]+/,"")||"Life OS";
+  document.title=say(lab)+" · "+say("Life OS");
+}
 
 /* The shared calm hero tile: one number, a short unit, one meaning, room for one button. */
 function heroHTML(number, unit, meaning, buttonHTML){
@@ -11590,6 +11595,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   };
   window.gmPlain = PLAIN;
   function table() { return lang === "en" ? PLAIN : ((CAT[lang] || {}).strings || {}); }
+  window.gmT = function (s) { var T = lang === "en" ? null : table(); return (T && T[s]) || s; };
   function swapText(n, T) {
     var en = n[ORIG] !== undefined ? n[ORIG] : n.textContent, key = en.replace(/\s+/g, " ").trim();
     if (!key) return;

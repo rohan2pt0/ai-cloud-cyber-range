@@ -138,10 +138,10 @@ This list is generated from [`features.json`](features.json); the Command Center
 - Unsaved days, said honestly on Today
 - Escape closes the top layer
 - Late is amber, never red
+- The browser tab names the view
 - System sheets, calmer and correct
 - A key result is one tap, not a typing lesson
 - Deciding the community-proven way starts from one question
-- Friction is noticed by itself on the device
 
 **Release 0.4.0 - 2026-11-14:**
 
