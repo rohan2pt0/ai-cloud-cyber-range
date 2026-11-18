@@ -9693,6 +9693,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       + "#gmNav button.on svg{color:#f3dc8f;filter:drop-shadow(0 0 4px rgba(243,220,143,.85)) drop-shadow(0 0 12px rgba(232,201,106,.4))}"
       // Starlight: a dense field of faint fixed stars, each twinkling at its own pace; achievements are brighter and glow.
       + ".gm-star{background:#fff;border-radius:50%;animation:gmtw var(--tw,5s) ease-in-out infinite}"
+      + "html.gm-rest .gm-star{animation-play-state:paused}"
       + ".gm-st-field{width:1.4px;height:1.4px;opacity:.55}.gm-st-field.b{width:2px;height:2px;opacity:.75}"
       + ".gm-st-day{width:2.6px;height:2.6px;opacity:.95;box-shadow:0 0 4px 1px rgba(255,255,255,.55)}"
       + ".gm-st-risk{width:3.2px!important;height:3.2px!important;background:#fbe7a6!important;box-shadow:0 0 7px 2px rgba(243,220,143,.7)!important}"
@@ -11604,6 +11605,31 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     });
     sky.innerHTML = h;
     sky.title = "";
+  }
+  // The stars rest (experience-fixes 5): the twinkle stops while the page is hidden and after 20 s without a touch,
+  // key or scroll, and wakes on the first one. The idle timer is armed only in a real, visible browser, so an
+  // automated page is never kept alive by it.
+  var gmRestLive = !navigator.webdriver && !/jsdom|HeadlessChrome/i.test(navigator.userAgent || "");
+  var gmRestTimer = 0;
+  function gmRest(on) {
+    if (on) document.documentElement.classList.add("gm-rest");
+    else document.documentElement.classList.remove("gm-rest");
+  }
+  window.gmRestNow = function () { gmRest(true); };
+  function gmRestWake() {
+    gmRest(false);
+    if (!gmRestLive) return;
+    if (gmRestTimer) clearTimeout(gmRestTimer);
+    gmRestTimer = setTimeout(function () { if (!document.hidden) gmRest(true); }, 20000);
+  }
+  if (gmRestLive) {
+    document.addEventListener("visibilitychange", function () { if (document.hidden) gmRest(true); else gmRestWake(); });
+    ["pointerdown", "keydown"].forEach(function (ev) { document.addEventListener(ev, gmRestWake, { passive: true }); });
+    window.addEventListener("scroll", gmRestWake, { passive: true });
+    gmRestWake();
+  } else {
+    document.addEventListener("visibilitychange", function () { gmRest(document.hidden); });
+    ["pointerdown", "keydown"].forEach(function (ev) { document.addEventListener(ev, gmRestWake, { passive: true }); });
   }
   // Shooting stars at a natural, irregular pace (every 15 to 30 s), only while the app is on screen and motion is welcome.
   // Armed only in a real, visible browser: an automated or headless page would be kept alive by the repeating timer.
