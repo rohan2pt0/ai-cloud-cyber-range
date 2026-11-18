@@ -13,7 +13,10 @@ setTimeout(()=>{
 
  // fresh seed carries example flag + banner
  ok("neutral seed is marked example", w.P && w.P.example===true, JSON.stringify(w.P&&w.P.name));
- ok("example banner injected", !!d.getElementById('gmExBan'));
+ // the example notice now lives on Today (full view) as the one notice before the daily three (x3_14), no longer above the header
+ try{w.gmCalm(false);}catch(x){} go('today');
+ ok("example notice shown on Today", !!d.getElementById('gmExBan') && !d.querySelector('#dash > #gmExBan'));
+ try{w.gmCalm(true);}catch(x){}
 
  // playbook renders dynamically
  const b=go('book');
