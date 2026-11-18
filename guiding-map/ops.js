@@ -3585,7 +3585,7 @@
      watch a video, or draw it yourself. Plain steps, equipment substitutes for
      what you actually own, and a self-check. (Systems you can act on, not look up.) */
   var BOX_SVG =
-    '<svg viewBox="0 0 220 180" width="100%" style="max-width:300px;display:block;margin:6px auto">'
+    '<svg viewBox="0 0 220 180" width="100%" style="max-width:360px;display:block;margin:6px auto">'
     + '<rect x="60" y="20" width="100" height="100" rx="8" fill="none" stroke="var(--accent)" stroke-width="3"/>'
     + '<text x="110" y="14" text-anchor="middle" font-size="11" fill="var(--muted)">Inhale 4s →</text>'
     + '<text x="168" y="74" font-size="11" fill="var(--muted)">↓ Hold 4s</text>'
@@ -3658,12 +3658,64 @@
       check: "If someone compromises your everyday email, your recovery paths still stand because they point at an address the attacker has never seen." },
   ];
 
+  /* Box breathing, full screen (owner, 2026-11-18): the inline square is small, so the breathing guide opens the whole
+     screen with one square, the word and the count — easy to follow on a phone or an iPad. Under reduced motion the
+     square stays still. The 1-second timer runs only in a real browser; tests drive gmBreathe.step() themselves. */
+  function gmBreathe() {
+    var old = document.getElementById("gmBreathe");
+    if (old) old.parentNode.removeChild(old);
+    if (gmBreathe.timer) { clearInterval(gmBreathe.timer); gmBreathe.timer = null; }
+    if (!document.getElementById("gmBreatheCss")) {
+      var st = document.createElement("style"); st.id = "gmBreatheCss";
+      st.textContent = "#gmBreathe{position:fixed;inset:0;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;background:var(--bg);color:var(--text);padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom))}"
+        + "#gmBreathe .gm-breathe-square{width:min(78vw,62vh);height:min(78vw,62vh);border:2px solid var(--gold);border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;transition:transform 1s cubic-bezier(.2,.8,.2,1);will-change:transform}"
+        + "#gmBreathe .gm-breathe-word{font-size:32px;font-weight:800;letter-spacing:.01em;color:var(--text)}"
+        + "#gmBreathe .gm-breathe-count{font-size:56px;font-weight:800;line-height:1;color:var(--gold)}"
+        + "#gmBreathe .gm-breathe-done{margin-top:8px;min-height:48px;padding:12px 28px;border-radius:12px;border:1px solid var(--gold);background:var(--card);color:var(--text);font-size:16px;font-weight:700;cursor:pointer}"
+        + "@media (prefers-reduced-motion:reduce){#gmBreathe .gm-breathe-square{transition:none!important;transform:none!important}}";
+      (document.head || document.documentElement).appendChild(st);
+    }
+    var o = document.createElement("div");
+    o.id = "gmBreathe"; o.setAttribute("role", "dialog"); o.setAttribute("aria-modal", "true");
+    o.setAttribute("aria-label", "Box breathing");
+    o.innerHTML = '<div class="gm-breathe-square"><div class="gm-breathe-word">Inhale</div>'
+      + '<div class="gm-breathe-count">4</div></div><button type="button" class="gm-breathe-done">Done</button>';
+    document.body.appendChild(o);
+    var PH = ["Inhale", "Hold", "Exhale", "Hold"], phase = 0, count = 4;
+    var sq = o.querySelector(".gm-breathe-square"), wd = o.querySelector(".gm-breathe-word"), cd = o.querySelector(".gm-breathe-count");
+    function paint() {
+      wd.textContent = PH[phase]; cd.textContent = count;
+      var calm = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (calm) return;
+      var sc = phase === 0 ? 0.86 + (4 - count) * 0.045 : phase === 2 ? 1 - (4 - count) * 0.045 : (phase === 1 ? 1 : 0.86);
+      sq.style.transform = "scale(" + sc + ")";
+    }
+    function step() {
+      if (count > 1) count--;
+      else { phase = (phase + 1) % 4; count = 4; }
+      paint();
+    }
+    function close() {
+      if (gmBreathe.timer) { clearInterval(gmBreathe.timer); gmBreathe.timer = null; }
+      document.removeEventListener("keydown", key, true);
+      var el = document.getElementById("gmBreathe"); if (el) el.parentNode.removeChild(el);
+    }
+    function key(ev) { if (ev.key === "Escape") close(); }
+    gmBreathe.timer = null; gmBreathe.step = step; gmBreathe.close = close;
+    document.addEventListener("keydown", key, true);
+    o.querySelector(".gm-breathe-done").addEventListener("click", close);
+    paint();
+    if (!/jsdom/i.test(navigator.userAgent || "") && !navigator.webdriver) gmBreathe.timer = setInterval(step, 1000);
+  }
+  window.gmBreathe = gmBreathe;
+
   function guideCard(g) {
     var h = '<details class="guide-card road-col" style="margin-bottom:10px"><summary style="cursor:pointer;font-weight:800;font-size:13px">'
       + '<span class="gm-glyph" aria-hidden="true"><i>' + g.icon + '</i></span><span class="gm-gt"><b>' + esc(g.title) + '</b><small>' + esc(g.tag) + '</small></span></summary>'
       + '<div style="font-size:12.5px;line-height:1.75;margin-top:8px">'
       + '<div class="info" style="margin-bottom:8px">' + esc(g.what) + '</div>'
-      + (g.viz || "");
+      + (g.viz || "")
+      + (g.id === "breathing" ? '<button type="button" class="btn btn-p" style="margin:8px 0" onclick="gmBreathe()">Start breathing</button>' : "");
     function stepHTML(s) {
       var m = /^([^—:]{2,60}?)\s*(?:—|:)\s+(.+)$/.exec(s);
       return m && /[A-Z]{2,}/.test(m[1]) ? '<div class="gs"><div class="gs-k">' + esc(m[1]) + '</div><div class="gs-v">' + esc(m[2]) + '</div></div>'
