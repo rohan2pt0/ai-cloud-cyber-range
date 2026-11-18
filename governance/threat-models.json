@@ -293,6 +293,15 @@
      "evidence": "guiding-map/tests/test142.js"
     },
     {
+     "id": "ss-d1",
+     "stride": "D",
+     "element": "sync",
+     "threat": "The silent Microsoft renewal loops (redirect after redirect) or fires while the person is typing, so the app cannot be used or input is lost.",
+     "status": "mitigated",
+     "mitigation": "at most one silent renewal in 6 hours, never while the page is hidden or the person is typing, never under automation; when Microsoft cannot finish it silently, one calm Sign in line replaces any retry",
+     "evidence": "guiding-map/tests/test144.js"
+    },
+    {
      "id": "kl-t2",
      "stride": "T",
      "element": "lock-record",
