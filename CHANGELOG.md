@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- **Personal packs** (owner 2026-11-18): the public Life OS carries an empty slot; a person's own systems (their pack) install from a #pack= link or a file after one question, live only on their devices, and show on Career as one open action with the rest under Later (n), ticks that start over each week or month for recurring systems, and dated items in the calendar with permanent ids. Pack text is data: checked, bounded and escaped (test143).
 - **Box breathing fills the screen** (owner 2026-11-18; queue visual-guides, slice 1 of 3): the breathing guide's Start breathing opens one full-screen pacer, sized for a phone or an iPad, with the word and the count and a Done button (Escape also closes it). Under reduced motion the square keeps still and only the word and count change; the guide keeps its inline square (test137).
 - Specs: seamless-sync (owner 2026-11-18: sign in once and every device has the Life OS, no key to paste; a synced passkey gives the key, the person's own drive carries the data), with the threat model to fill before any code.
 - **Restore asks for a typed word** (queue experience-v3, fix 20): restoring the estate's snapshot no longer hides behind a browser confirm. An in-page dialog says how many items will be replaced, offers "Save a copy first" as its primary, and goes on only when RESTORE is typed, the same care as erase (x3_20).

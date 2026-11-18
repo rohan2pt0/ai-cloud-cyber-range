@@ -8671,6 +8671,11 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
         if (p.due) add({ uid: "car-" + p.id, date: ymd(p.due), name: "Career: " + p.t, desc: "Your move plan in the Life OS (Career, step 7). Tick it there when it is done.", done: p.done, group: "career" });
       });
     }
+    if (!group || group === "pack") {
+      var pk = packGet(); if (pk) pk.items.forEach(function (it) {
+        if (it.due) add({ uid: "pack-" + it.id, date: it.due, name: it.title, desc: (it.steps[packNext(it)] || it.steps[0]) + "\nFrom your pack in the Life OS (Career).", done: packNext(it) < 0, group: "pack" });
+      });
+    }
     if (!group || group === "renewals") {
       ibAll().forEach(function (x) {
         if (x.kind === "note" || !x.due || !RENEW_RX.test((x.t || "") + " " + (x.next || ""))) return;
@@ -8718,7 +8723,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   window.gmCalendarDatedICS = function (group) {
     var now = new Date(), stamp = icsDate(now, now.getHours(), now.getMinutes());
     var L = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//SecuRAX//Life OS calendar//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH",
-      "X-WR-CALNAME:" + (group === "career" ? "Career plan" : group === "renewals" ? "Renewals" : "Life OS dates")];
+      "X-WR-CALNAME:" + (group === "career" ? "Career plan" : group === "renewals" ? "Renewals" : group === "pack" ? "My pack" : "Life OS dates")];
     datedPlan(group).forEach(function (x) {
       var d = String(x.e.date).replace(/-/g, "").slice(0, 8), nd = new Date(x.e.date + "T00:00:00"); nd.setDate(nd.getDate() + 1);
       L.push("BEGIN:VEVENT", "UID:" + x.k + "@local", "SEQUENCE:" + x.v, "DTSTAMP:" + stamp, "DTSTART;VALUE=DATE:" + d, "DTEND;VALUE=DATE:" + ymd(nd).replace(/-/g, ""),
@@ -9328,9 +9333,120 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     return '<span role="button" tabindex="0" class="gm-tap' + (on ? " on" : "") + '" style="min-height:32px;padding:0 10px;font-size:11.5px;font-weight:700" onclick="gmCarOffer(' + i + ',\'' + k + '\',' + val + ')">' + (on ? "✓ " : "") + esc(label) + '</span>';
   }
 
+
+  /* ── Personal packs (owner 2026-11-18): systems that are one person's own, never shipped in the public app ──────────
+     The public Life OS carries only this slot. A pack is JSON kept on the device (gm_pack) and carried to the person's
+     other devices by their own sync. It installs from a #pack= link (the fragment never reaches a server) or a file,
+     always after one question, and one switch removes it. Pack text is data: every string is escaped on output, a link
+     must be https, and the shape is checked and bounded before anything is kept. */
+  var PACK_MAX = { items: 40, steps: 12, text: 400 };
+  function packStr(s, n) { return typeof s === "string" ? s.slice(0, n || PACK_MAX.text) : ""; }
+  window.gmPackClean = function (o) {
+    if (!o || typeof o !== "object" || Array.isArray(o) || !Array.isArray(o.items)) throw new Error("not a Life OS pack");
+    var seen = {}, items = [];
+    o.items.slice(0, PACK_MAX.items).forEach(function (x) {
+      if (!x || typeof x !== "object") return;
+      var id = packStr(x.id, 40);
+      if (!/^[a-z0-9-]{2,40}$/.test(id) || seen[id]) return;
+      seen[id] = 1;
+      var due = /^\d{4}-\d{2}-\d{2}$/.test(String(x.due || "")) ? x.due : "";
+      var url = /^https:\/\/[^\s"'<>]+$/.test(String(x.url || "")) ? packStr(x.url, 300) : "";
+      var steps = (Array.isArray(x.steps) ? x.steps : []).slice(0, PACK_MAX.steps).map(function (s) { return packStr(s); }).filter(Boolean);
+      var every = x.every === "weekly" || x.every === "monthly" ? x.every : "";
+      if (!packStr(x.title, 120) || !steps.length) return;
+      items.push({ id: id, title: packStr(x.title, 120), why: packStr(x.why), steps: steps, due: due, every: every, url: url });
+    });
+    if (!items.length) throw new Error("the pack has no usable items");
+    return { v: 1, name: packStr(o.name, 60) || "My pack", items: items };
+  };
+  function packGet() { try { var p = G("gm_pack", null); return p && Array.isArray(p.items) ? window.gmPackClean(p) : null; } catch (e) { return null; } }
+  function packDone() { var d = G("gm_pack_done", {}); return d && typeof d === "object" && !Array.isArray(d) ? d : {}; }
+  function packPeriod(it) {           // a recurring item starts over each week or month; a dated one keeps its ticks
+    var d = new Date();
+    if (it.every === "weekly") { d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); return ":" + ymd(d); }
+    if (it.every === "monthly") return ":" + ymd(d).slice(0, 7);
+    return "";
+  }
+  function packTicks(it) { var d = packDone()[it.id + packPeriod(it)]; return Array.isArray(d) ? d : []; }
+  function packNext(it) { var t = packTicks(it); for (var i = 0; i < it.steps.length; i++) if (!t[i]) return i; return -1; }
+  window.gmPackInstall = function (o, quiet) {
+    var clean = window.gmPackClean(o), cur = packGet();
+    if (!quiet && !confirm("Add the pack \"" + clean.name + "\" (" + clean.items.length + " systems) to this device?\n\nOnly continue if you made this pack yourself.")) return false;
+    if (cur && cur.name !== clean.name && !quiet && !confirm("This replaces your pack \"" + cur.name + "\". Continue?")) return false;
+    S_("gm_pack", clean);
+    if (window.gmToast) gmToast("Pack added: " + clean.name);
+    return true;
+  };
+  window.gmPackRemove = function () {
+    if (!confirm("Remove your pack from this device? Your ticks stay, so adding it again picks up where you were.")) return;
+    localStorage.removeItem("gm_pack"); renderAll();
+  };
+  window.gmPackTick = function (id, i) {
+    var p = packGet(); if (!p) return;
+    var it = p.items.filter(function (x) { return x.id === id; })[0]; if (!it) return;
+    var all = packDone(), k = id + packPeriod(it), t = Array.isArray(all[k]) ? all[k] : [];
+    t[i] = !t[i]; all[k] = t;
+    var ks = Object.keys(all); if (ks.length > 400) ks.slice(0, ks.length - 400).forEach(function (x) { delete all[x]; });
+    S_("gm_pack_done", all); renderAll();
+  };
+  window.gmPackLinkImport = function () {
+    var m = /^#pack=([A-Za-z0-9_-]+)$/.exec(String(location.hash || ""));
+    if (!m) return false;
+    try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
+    try { if (window.gmPackInstall(b64urlJson(m[1]))) setTimeout(function () { if (window.renderAll) renderAll(); }, 50); }
+    catch (e) { alert("That pack link could not be read: " + e.message); }
+    return true;
+  };
+  window.gmPackFile = function (input) {
+    var f = input && input.files && input.files[0]; if (!f) return;
+    if (f.size > 64000) { alert("That file is too large for a pack."); return; }
+    var r = new FileReader();
+    r.onload = function () { try { if (window.gmPackInstall(JSON.parse(String(r.result)))) renderAll(); } catch (e) { alert("That file is not a Life OS pack: " + e.message); } };
+    r.readAsText(f);
+  };
+  function packOrder(p) {             // the one open action: anything due within two weeks, then the recurring ones, then the rest
+    var today = ymd(new Date(Date.now() + 14 * 864e5));
+    return p.items.map(function (it, n) { return { it: it, n: n, next: packNext(it) }; })
+      .sort(function (a, b) {
+        var da = a.it.due || (a.it.every ? today : "9999"), db = b.it.due || (b.it.every ? today : "9999");
+        return da < db ? -1 : da > db ? 1 : a.n - b.n;
+      });
+  }
+  function packItemHTML(x, open) {
+    var it = x.it, t = packTicks(it), steps = it.steps.map(function (s, i) {
+      return '<div class="gs" style="display:flex;gap:10px;align-items:flex-start;margin:6px 0">'
+        + '<button type="button" class="hab-chk" aria-pressed="' + (t[i] ? "true" : "false") + '" aria-label="' + esc(s) + '" onclick="gmPackTick(\'' + it.id + '\',' + i + ')">' + (t[i] ? "✓" : "") + '</button>'
+        + '<div class="gs-v" style="' + (t[i] ? "opacity:.6;text-decoration:line-through" : "") + '">' + esc(s) + '</div></div>';
+    }).join("");
+    var dueTxt = it.due ? new Date(it.due + "T00:00:00").toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" }) : "";
+    var meta = (it.due ? "by " + esc(dueTxt) : it.every === "weekly" ? "every week" : it.every === "monthly" ? "every month" : "")
+      + (it.url ? ' · <a href="' + esc(it.url) + '" target="_blank" rel="noopener noreferrer">official page</a>' : "");
+    return '<div class="road-col" data-pack-item="' + it.id + '" style="margin:8px 0">'
+      + '<div style="font-weight:800">' + esc(it.title) + '</div>'
+      + (meta ? '<div class="f-label" style="text-transform:none;letter-spacing:0;margin:2px 0 6px">' + meta + '</div>' : "")
+      + (open && it.why ? '<div class="info" style="margin-bottom:6px">' + esc(it.why) + '</div>' : "")
+      + steps + '</div>';
+  }
+  window.gmPackHTML = function () {
+    var p = packGet();
+    if (!p) return "";
+    var order = packOrder(p), live = order.filter(function (x) { return x.next >= 0; }), done = order.length - live.length;
+    var h = '<div class="road-col gm-pack" style="margin-bottom:14px"><div class="cat-t">✦ ' + esc(p.name) + ' <span class="pill pill-g">yours only</span></div>'
+      + '<div class="f-label" style="text-transform:none;letter-spacing:0;margin:2px 0 8px">' + live.length + ' systems running · ' + done + ' done this round</div>';
+    if (live.length) {
+      h += packItemHTML(live[0], true);
+      if (live.length > 1) h += '<details style="margin-top:8px"><summary style="cursor:pointer;font-weight:700">Later (' + (live.length - 1) + ')</summary>'
+        + live.slice(1).map(function (x) { return packItemHTML(x, false); }).join("") + '</details>';
+    } else h += '<div class="info">Every system in your pack is done for now. Well done.</div>';
+    if (p.items.some(function (it) { return it.due; })) h += '<button class="btn-sm" style="margin-top:8px" onclick="gmCalendarDated(\'pack\')">Add the dates to my calendar</button>';
+    h += '<details style="margin-top:8px"><summary style="cursor:pointer;font-size:12.5px;color:var(--muted)">Pack settings</summary>'
+      + '<button class="btn-sm" style="margin-top:6px" onclick="gmPackRemove()">Remove this pack</button></details></div>';
+    return h;
+  };
   function careerHTML() {
     var c = car(), n = needs(c), cw = curWealth(c), hc = honestCtc(c), cost = cfgv(c, "health", 3000) + cfgv(c, "term", 1500);
     var h = '<div class="section active">'
+      + window.gmPackHTML()
       + heroHTML(hc ? rs(hc / 12) : "\u2014", hc ? "/mo" : "", "Your honest monthly package", "")
       + '<div class="sec-t">\u{1F4BC} Career compass</div>'
       + howHTML('Pick the next job on the 20% that decides 80% of the outcome: never go backwards, a rung up, survive the worst case. Everything is computed here, on this device.')
@@ -11625,7 +11741,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     }
     // Auto-fill example properties on first visit so the Property tab is explorable
     try { var pr = G("gm_props", null); if ((!pr || !pr.length) && window.P && window.P.example) { if (window.gmTplProp) gmTplProp(); } } catch (e) {}
-    gmSyncLinkImport();
+    gmSyncLinkImport(); gmPackLinkImport();
     gmMoveInit();
     gmSyncInit();
     gmAccessPair();
