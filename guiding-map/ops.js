@@ -4995,6 +4995,36 @@
     n = new Date(n.getFullYear(), n.getMonth(), n.getDate());
     return isNaN(d.getTime()) ? null : Math.max(0, Math.round((n - d) / 86400000));
   }
+  // Today's first screen is calm (owner 2026-11-18, x3_14): the header first, the greeting, AT MOST ONE notice, then the daily three.
+  // Every notice is wrapped by tdNote with a rank (1 danger, 2 example numbers, then the rest); tdFold keeps the top one above the
+  // three and folds the others, with the help line and the decade card, under ONE closed "Later (n)" after the three.
+  function tdNote(rank, html) { return html ? '<div class="gm-notice" data-r="' + rank + '">' + html + '</div>' : ""; }
+  function tdExampleLine() {
+    return '<div id="gmExBan" style="background:var(--amberBg);border:1px solid var(--amber);border-radius:10px;padding:10px 12px;margin-bottom:10px;display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap">'
+      + '<div style="flex:1 1 200px;font-size:13px;color:var(--text);line-height:1.5"><b>Example numbers for now.</b> Enter yours in two minutes.</div>'
+      + '<button type="button" class="btn-sm" style="background:var(--navy);color:var(--gold);font-weight:800;white-space:nowrap" onclick="editProfile()">Enter my details</button></div>';
+  }
+  function tdFold(box) {
+    var d3 = box.querySelector(".gm-d3"); if (!d3) return;
+    var all = [].slice.call(box.querySelectorAll(":scope > .gm-notice"));
+    all.forEach(function (n, i) { n.setAttribute("data-i", String(i)); });
+    all.sort(function (a, b) { return (+a.getAttribute("data-r") - +b.getAttribute("data-r")) || (+a.getAttribute("data-i") - +b.getAttribute("data-i")); });
+    all.forEach(function (n) { n.parentNode.removeChild(n); });
+    var rest = all.slice(1);
+    if (all.length) d3.parentNode.insertBefore(all[0], d3);
+    var sb = document.getElementById("stageBar"), parts = rest.map(function (n) { return n.outerHTML; });
+    if (all.length) {
+      parts.push('<div class="gm-notice" data-r="8" style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:11px 14px;margin:8px 0;font-size:12px;color:var(--muted);line-height:1.6">'
+        + 'Lost? <b style="color:var(--text)">Today</b> is the only tab you need daily — three tiles and one open action. '
+        + '<b style="color:var(--text)">Ops → System health</b> tells you whether your data is backed up and syncing, and holds Export and Restore. '
+        + '<b style="color:var(--text)">Ops → Glossary</b> defines every term in this app.</div>');
+      if (sb && sb.textContent.trim()) { parts.push('<div class="gm-notice stage-bar" data-r="9" style="margin:8px 0;border-radius:12px">' + sb.innerHTML + '</div>'); sb.innerHTML = ""; }
+    }
+    if (!parts.length) return;
+    var det = document.createElement("details"); det.className = "gm-later";
+    det.innerHTML = '<summary style="cursor:pointer;min-height:44px;padding:0 6px;display:flex;align-items:center;font-size:13px;font-weight:700;color:var(--muted)">Later (' + parts.length + ')</summary>' + parts.join("");
+    d3.parentNode.insertBefore(det, d3.nextSibling);
+  }
   function gmUnsavedLine() {
     if (!profOK()) return "";
     var quiet = gmBkAgeDays(G("gm_unsaved_dismiss", ""));
@@ -8204,15 +8234,16 @@
       if (sec) { var inf = sec.querySelector(".info"); if (!P.kids.length && inf) inf.outerHTML = kidAddHTML(true); else if (P.kids.length) sec.insertAdjacentHTML("beforeend", kidAddHTML(false)); }
     }
     else if (curTab === "today") {
-      box.insertAdjacentHTML("afterbegin", greetHTML() + exampleWarn() + interruptHTML() + undoBar() + inboxNudgeHTML() + daily3HTML() + msTodayHTML()
+      box.insertAdjacentHTML("afterbegin", greetHTML() + tdNote(2, P && P.example ? tdExampleLine() : exampleWarn()) + tdNote(1, interruptHTML()) + tdNote(3, undoBar()) + tdNote(6, inboxNudgeHTML()) + daily3HTML() + msTodayHTML()
         + (inRecovery() ? "" : driftHTML() + resHTML()) + oneActionHTML() + (inRecovery() ? "" : pinnedHTML()));
     }
-    if (curTab === "today") { var unsaved = gmUnsavedLine(); if (unsaved) box.insertAdjacentHTML("afterbegin", unsaved); }
+    if (curTab === "today") { var unsaved = gmUnsavedLine(); if (unsaved) box.insertAdjacentHTML("afterbegin", tdNote(4, unsaved)); }
     if (curTab === "today" && G("gm_ms_needs_signin", false) === true && G("gm_ms_cfg", null)) {
-      box.insertAdjacentHTML("afterbegin", '<div class="gm-ms-again" style="border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">'
+      box.insertAdjacentHTML("afterbegin", tdNote(5, '<div class="gm-ms-again" style="border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">'
         + '<div style="flex:1;font-size:13px;line-height:1.5">Microsoft asks you to sign in once more, so your devices stay in step.</div>'
-        + '<button type="button" class="btn-sm" style="background:var(--gold);color:#0d1f35;font-weight:800" onclick="gmMsConnect()">Sign in</button></div>');
+        + '<button type="button" class="btn-sm" style="background:var(--gold);color:#0d1f35;font-weight:800" onclick="gmMsConnect()">Sign in</button></div>'));
     }
+    if (curTab === "today" && !calmOn()) { try { tdFold(box); } catch (e) { console.log(e); } }
     if (curTab === "wheel") { try { sysWheelLines(box); } catch (e) { console.log(e); } }
     try { calmFrame(); } catch (e) { console.log(e); }
     if (phone() && !simpleNow && curTab === "today" && !document.getElementById("gmVitals")) box.insertAdjacentHTML("afterbegin", vitalsHTML());
