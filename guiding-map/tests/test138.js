@@ -21,11 +21,10 @@ setTimeout(() => {
       ok(id + " is one svg", svgs.length === 1, svgs.length + " svg");
       if (!svg) return;
       ok(id + " is a picture for a screen reader", svg.getAttribute("role") === "img" && (svg.getAttribute("aria-label") || "").length > 3, svg.getAttribute("role") + " / " + svg.getAttribute("aria-label"));
-      ok(id + " has a start and an end pose", svg.querySelectorAll("[data-pose]").length === 2, svg.querySelectorAll("[data-pose]").length + " poses");
-      const an = svg.querySelector("animate");
-      ok(id + " moves between the poses over about 3 s", !!an && /^3(\.\d+)?s$/.test(an.getAttribute("dur") || ""), an && an.getAttribute("dur"));
-      const width = parseFloat(svg.getAttribute("width")) || parseFloat((svg.getAttribute("style") || "").replace(/.*max-width:(\d+)px.*/, "$1"));
-      ok(id + " is at most 140 px wide", width > 0 && width <= 140, width + " px");
+      ok(id + " has a start and an end frame", svg.querySelectorAll("g.gm-fig-frame").length === 2, svg.querySelectorAll("g.gm-fig-frame").length + " frames");
+      ok(id + " does not animate (v140)", svg.querySelectorAll("animate").length === 0);
+      const width = parseFloat((svg.getAttribute("style") || "").replace(/.*max-width:(\d+)px.*/, "$1")) || parseFloat((svg.getAttribute("style") || "").replace(/.*max-width:(\d+)px.*/, "$1"));
+      ok(id + " is at most 260 px wide", width > 0 && width <= 260, width + " px");
     });
     ["row", "press"].forEach(id => {
       const box = show(w, w.gmFigure(id));
@@ -33,13 +32,6 @@ setTimeout(() => {
       ok(id + " draws the band in gold from an anchor to a hand", !!band && /var\(--gold\)/.test(band.getAttribute("stroke") || "") && band.hasAttribute("x1") && band.hasAttribute("x2"), band && band.getAttribute("stroke"));
     });
     ok("an unknown move draws nothing", w.gmFigure("no-such-move") === "", JSON.stringify(w.gmFigure("no-such-move")));
-    const mm = w.matchMedia;
-    w.matchMedia = (q) => ({ matches: /prefers-reduced-motion/.test(q), media: q, addListener() {}, removeListener() {} });
-    const rest = show(w, w.gmFigure("squat"));
-    w.matchMedia = mm;
-    ok("reduced motion rests on the end pose, with no animation",
-      rest.querySelectorAll("[data-pose='end']").length === 1 && rest.querySelectorAll("[data-pose]").length === 1 && rest.querySelectorAll("animate").length === 0,
-      rest.querySelectorAll("[data-pose]").length + " poses / " + rest.querySelectorAll("animate").length + " animations");
   }
   w.goTab("guide");
   const card = [...d.querySelectorAll(".guide-card")].find(c => /30-min strength/.test(c.textContent));

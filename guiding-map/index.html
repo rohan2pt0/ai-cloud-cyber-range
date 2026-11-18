@@ -7287,53 +7287,70 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     + '<text x="265" y="18" text-anchor="middle" font-size="10" fill="var(--muted)">too hard (gasping)</text>'
     + '</svg>';
 
-  /* ── 48b-1. Strength figures — a small moving stick figure for each move ────
-     Side view in a 120×90 box, floor at y=84. Each move has a start and an end
-     pose, cross-faded over 3 s; the band (row, press) runs in gold from its
-     anchor to the hand. Reduced motion rests on the end pose. */
+  /* ── 48b-1. Strength figures — a printed workout card: Start, an arrow, End ────
+     Side view, one body built from joint ANGLES by one forward-kinematics function (gmPoseJoints), so every limb keeps
+     its true length in every pose. Angles are in degrees on the screen (0 = right, 90 = down, -90 = up). Each pose is
+     {hip:[x,y] (the one root point), torso, head, uA (upper arm), fA (forearm), th (thigh), sh (shin)}. Nothing moves:
+     two still frames read faster than a morph. Floor at y=91; a body at rest touches y=88. */
+  var BODY = { torso: 30, neck: 4, uArm: 14, fArm: 13, thigh: 18, shin: 18, head: 6 };
   var POSES = {
-    pushup: { label: "Push-up: lower the chest toward the floor, then press back up", anchor: null,
-      start: { head: [74, 50], neck: [62, 54], hip: [42, 60], knee: [28, 70], foot: [18, 82], elbow: [72, 68], hand: [70, 82] },
-      end:   { head: [74, 62], neck: [62, 66], hip: [42, 66], knee: [28, 72], foot: [18, 82], elbow: [82, 74], hand: [70, 82] } },
-    row: { label: "Band row: pull the band from arms straight to your waist", anchor: [114, 46],
-      start: { head: [74, 30], neck: [66, 36], hip: [54, 54], knee: [54, 70], foot: [54, 82], elbow: [80, 40], hand: [98, 46] },
-      end:   { head: [74, 30], neck: [66, 36], hip: [54, 54], knee: [54, 70], foot: [54, 82], elbow: [68, 50], hand: [60, 50] } },
-    squat: { label: "Squat: push the hips back and bend the knees, then stand", anchor: null,
-      start: { head: [58, 18], neck: [58, 30], hip: [58, 50], knee: [58, 68], foot: [58, 84], elbow: [66, 44], hand: [72, 42] },
-      end:   { head: [50, 36], neck: [54, 46], hip: [44, 62], knee: [62, 68], foot: [58, 84], elbow: [64, 52], hand: [72, 50] } },
-    press: { label: "Band press: press the band forward until the arms are straight", anchor: [58, 84],
-      start: { head: [60, 20], neck: [60, 30], hip: [58, 50], knee: [58, 68], foot: [58, 84], elbow: [68, 42], hand: [76, 38] },
-      end:   { head: [60, 20], neck: [60, 30], hip: [58, 50], knee: [58, 68], foot: [58, 84], elbow: [80, 38], hand: [96, 36] } },
-    plank: { label: "Plank: forearms on the floor, body in one straight line", anchor: null,
-      start: { head: [86, 54], neck: [74, 58], hip: [48, 64], knee: [26, 72], foot: [10, 80], elbow: [72, 74], hand: [60, 80] },
-      end:   { head: [86, 50], neck: [74, 54], hip: [48, 58], knee: [26, 68], foot: [10, 78], elbow: [72, 70], hand: [60, 78] } }
+    pushup: { label: "Push-up: arms straight to start, then lower the chest toward the floor, body in one line", anchor: null,
+      start: { hip: [43, 73], torso: -24, head: -20, uA: 90, fA: 90, th: 156, sh: 156 },
+      end:   { hip: [45, 79], torso: -14, head: -14, uA: 165, fA: 70, th: 166, sh: 166 } },
+    row: { label: "Band row: sit with legs straight and the band round your feet, then pull your hands to your waist", band: "feet",
+      start: { hip: [28, 88], torso: -82, head: -84, uA: 22, fA: 22, th: 0, sh: 0 },
+      end:   { hip: [28, 88], torso: -100, head: -98, uA: 105, fA: -5, th: 0, sh: 0 } },
+    squat: { label: "Squat: stand tall with the band above the knees, then push the hips back and bend the knees", loop: true,
+      start: { hip: [50, 52], torso: -90, head: -90, uA: 0, fA: 0, th: 90, sh: 90 },
+      end:   { hip: [38, 68], torso: -62, head: -72, uA: 0, fA: 0, th: 10, sh: 110 } },
+    press: { label: "Band press: stand with the band anchored behind your back at chest height, then press your hands straight forward", anchor: [8, 27],
+      start: { hip: [40, 52], torso: -90, head: -90, uA: 70, fA: -60, th: 90, sh: 90 },
+      end:   { hip: [40, 52], torso: -90, head: -90, uA: 0, fA: 0, th: 90, sh: 90 } },
+    plank: { label: "Plank: forearms on the floor, shoulders, hips and heels in one straight line", anchor: null,
+      start: { hip: [45, 80.5], torso: -12, head: -12, uA: 90, fA: 0, th: 168, sh: 168 },
+      end:   { hip: [45, 80.5], torso: -12, head: -12, uA: 90, fA: 0, th: 168, sh: 168 } }
   };
 
-  function gmFigLine(a, b, color, w) {
-    return '<line x1="' + a[0] + '" y1="' + a[1] + '" x2="' + b[0] + '" y2="' + b[1]
+  function gmPolar(p, ang, len) {
+    var r = ang * Math.PI / 180;
+    return [p[0] + len * Math.cos(r), p[1] + len * Math.sin(r)];
+  }
+  // The one forward-kinematics function: angles in, joint positions out.
+  function gmPoseJoints(q) {
+    var sh = gmPolar(q.hip, q.torso, BODY.torso), kn = gmPolar(q.hip, q.th, BODY.thigh);
+    var neckEnd = gmPolar(sh, q.head, BODY.neck), el = gmPolar(sh, q.uA, BODY.uArm);
+    return { hip: q.hip, shoulder: sh, neckEnd: neckEnd, head: gmPolar(neckEnd, q.head, BODY.head), elbow: el,
+      hand: gmPolar(el, q.fA, BODY.fArm), knee: kn, ankle: gmPolar(kn, q.sh, BODY.shin) };
+  }
+  window.gmPoseJoints = gmPoseJoints; window.gmPoses = POSES; window.gmBody = BODY;
+  function gmFigN(n) { return String(Math.round(n * 100) / 100); }
+  function gmFigLine(part, a, b, w, color, cls) {
+    return '<line class="' + (cls || "gm-limb") + '" data-part="' + part + '" x1="' + gmFigN(a[0]) + '" y1="' + gmFigN(a[1]) + '" x2="' + gmFigN(b[0]) + '" y2="' + gmFigN(b[1])
       + '" stroke="' + color + '" stroke-width="' + w + '" stroke-linecap="round"/>';
   }
-  function gmFigPose(p, tag, anchor, animValues) {
-    var t = "var(--text)", h = '<g class="gm-pose gm-pose-' + tag + '" data-pose="' + tag + '"';
-    if (animValues) h += ' opacity="' + (/^0/.test(animValues) ? "0" : "1") + '"';
-    h += '>';
-    if (animValues) h += '<animate attributeName="opacity" values="' + animValues + '" keyTimes="0;0.4;0.5;0.9;1" dur="3s" repeatCount="indefinite"/>';
-    if (anchor) h += '<line class="gm-band" data-role="band" x1="' + anchor[0] + '" y1="' + anchor[1]
-      + '" x2="' + p.hand[0] + '" y2="' + p.hand[1] + '" stroke="var(--gold)" stroke-width="2.4" stroke-linecap="round"/>';
-    h += gmFigLine(p.neck, p.hip, t, 2.6) + gmFigLine(p.hip, p.knee, t, 2.6) + gmFigLine(p.knee, p.foot, t, 2.6)
-      + gmFigLine(p.neck, p.elbow, t, 2.6) + gmFigLine(p.elbow, p.hand, t, 2.6) + gmFigLine(p.neck, p.head, t, 2.6)
-      + '<circle cx="' + p.head[0] + '" cy="' + p.head[1] + '" r="6.4" fill="none" stroke="' + t + '" stroke-width="2.4"/>';
-    return h + '</g>';
+  function gmFigFrame(P, q, tag, dx) {
+    var t = "var(--text)", j = gmPoseJoints(q), h = '<g class="gm-fig-frame" data-frame="' + tag + '" transform="translate(' + dx + ' 0)">';
+    h += '<line class="gm-floor" x1="0" y1="91" x2="100" y2="91" stroke="var(--border)" stroke-width="1.5" stroke-linecap="round"/>';
+    if (P.anchor) h += '<line class="gm-band" data-role="band" x1="' + P.anchor[0] + '" y1="' + P.anchor[1] + '" x2="' + gmFigN(j.hand[0]) + '" y2="' + gmFigN(j.hand[1])
+      + '" stroke="var(--gold)" stroke-width="4" stroke-linecap="round"/><circle class="gm-anchor" cx="' + P.anchor[0] + '" cy="' + P.anchor[1] + '" r="3.2" fill="var(--gold)"/>';
+    if (P.band === "feet") h += '<line class="gm-band" data-role="band" x1="' + gmFigN(j.ankle[0]) + '" y1="' + gmFigN(j.ankle[1]) + '" x2="' + gmFigN(j.hand[0]) + '" y2="' + gmFigN(j.hand[1])
+      + '" stroke="var(--gold)" stroke-width="4" stroke-linecap="round"/>';
+    h += gmFigLine("shin", j.knee, j.ankle, 6, t) + gmFigLine("thigh", j.hip, j.knee, 6.5, t)
+      + gmFigLine("torso", j.hip, j.shoulder, 7.5, t) + gmFigLine("neck", j.shoulder, j.neckEnd, 5, t)
+      + '<circle class="gm-head" cx="' + gmFigN(j.head[0]) + '" cy="' + gmFigN(j.head[1]) + '" r="' + BODY.head + '" fill="' + t + '"/>'
+      + gmFigLine("uarm", j.shoulder, j.elbow, 5.5, t) + gmFigLine("farm", j.elbow, j.hand, 5.5, t);
+    if (P.loop) {
+      var c = gmPolar(j.hip, q.th, BODY.thigh * 0.82), n = q.th + 90, a = gmPolar(c, n, 5.5), b = gmPolar(c, n, -5.5);
+      h += gmFigLine("loop", a, b, 4, "var(--gold)", "gm-loop");
+    }
+    return h + '<text x="50" y="102" text-anchor="middle" font-size="10" font-weight="700" fill="var(--text)">' + (tag === "start" ? "Start" : "End") + '</text></g>';
   }
   window.gmFigure = function (id) {
     var P = POSES[id]; if (!P) return "";
-    var reduce = false;
-    try { reduce = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); } catch (e) {}
-    var h = '<svg class="gm-fig" role="img" aria-label="' + esc(P.label) + '" viewBox="0 0 120 90" width="140" height="105" style="max-width:140px;width:100%;display:block">'
-      + '<line x1="4" y1="84" x2="116" y2="84" stroke="var(--border)" stroke-width="1.5" stroke-linecap="round"/>';
-    if (reduce) h += gmFigPose(P.end, "end", P.anchor, "");
-    else h += gmFigPose(P.start, "start", P.anchor, "1;1;0;0;1") + gmFigPose(P.end, "end", P.anchor, "0;0;1;1;0");
-    return h + '</svg>';
+    return '<svg class="gm-fig" role="img" aria-label="' + esc(P.label) + '" viewBox="0 0 240 104" width="240" height="104" style="max-width:240px;width:100%;height:auto;display:block">'
+      + gmFigFrame(P, P.start, "start", 4)
+      + '<g class="gm-arrow" fill="none" stroke="var(--muted)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path class="gm-arrow-shaft" d="M109 50H131"/><path d="M125 44l6 6-6 6"/></g>'
+      + gmFigFrame(P, P.end, "end", 136) + '</svg>';
   };
 
   var GUIDES = [
@@ -12252,7 +12269,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       + "html[data-theme=dark] .gs-meta{color:var(--gold)}"
       + ".gs-cards{display:grid;grid-template-columns:1fr;gap:10px;margin:8px 0}"
       + ".gs-cards .gs{padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--card)}"
-      + ".gs-card .gs-fig{max-width:120px;margin-bottom:6px}"
+      + ".gs-card .gs-fig{max-width:240px;margin-bottom:6px}"
       + ".gs-head{display:flex;align-items:center;flex-wrap:wrap;gap:8px}"
       + ".gs-num{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--gold);color:#1b1406;font-weight:900;font-size:13px;flex:none}"
       + ".gs-name{font-weight:800;font-size:14px;color:var(--text)}"
