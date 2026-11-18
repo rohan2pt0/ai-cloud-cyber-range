@@ -30,16 +30,19 @@ The prompt to paste (Fable, Medium effort, a new session each time):
   [Unreleased]; `python3 tools/readme_sync.py`. Say what you could not run.
 - **Budget:** stay under 60% of context. If told "stop", push what you have and open the PR at once.
 - **No merging, no PR subscriptions.**
+- **Look before you start (added 2026-11-17, PR #327):** this file moves only when a PR merges, so the same prompt pasted
+  before a merge repeats the same task (slice 2 of the ledger was done eight times). First list the open pull requests. A
+  task that an open PR already covers is taken: do not redo it; take the next task that is not taken, and say so.
 
 ## Tasks, in order (highest value per token first)
 
 Alternate: after a task-0 run, mark the first content task not done **next**; after a content task, mark task 0 **next**. Exactly one task is **next** at any time.
 
 1. **done (PR #311).** **Life systems, content.** Write `guiding-map/levers/life-systems.json` and `docs/specs/life-systems.md`
-0. **next.** Continue the review ledger: take the next unreviewed slice (at most 15 files), fix the cheap issues, brief
+0. **slice 2 done (PR #327); stays open.** Continue the review ledger: take the next unreviewed slice (at most 15 files), fix the cheap issues, brief
    the rest, update the ledger. (`docs/specs/review-ledger.md`; this task stays open until every row there is reviewed.
    Its one exception to the first rule: cheap fixes outside the Life OS and `apps/` are made, not briefed.)
-2. **Profession packs, archetypes 5 to 10.** Extend `guiding-map/levers/professions.json` (same shape as the first
+2. **next.** **Profession packs, archetypes 5 to 10.** Extend `guiding-map/levers/professions.json` (same shape as the first
    four): founders and business owners; investors and finance; aviation, defence and intelligence; volatile short
    careers (athletes, actors, media, authors); research and academia; technical specialists. Verify each licence or
    renewal rule; mark the rest confirm.

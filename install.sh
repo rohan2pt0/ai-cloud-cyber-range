@@ -43,7 +43,7 @@ while [ $# -gt 0 ]; do
     --docker) DOCKER_ONLY=1 ;;                 # root only: install Docker Engine for the user who ran sudo (the laptop path calls it)
     --no-start) NOSTART=1 ;;                   # put the code in place, start nothing (the old behaviour)
     --yes|-y) YES=1 ;;                         # do not ask before installing Docker
-    -h|--help) sed -n '2,15p' "$0"; exit 0 ;;
+    -h|--help) sed -n '2,18p' "$0"; exit 0 ;;
     *) die "Unknown option: $1   (see: bash install.sh --help)" ;;
   esac; shift
 done
@@ -93,6 +93,9 @@ fi
 # 0) --server: make a fresh Ubuntu server ready, then install as its own user and start (doc 85)
 if [ "$SERVER" = 1 ]; then
   [ "$(id -u)" = 0 ] || die "--server sets up the machine itself, so run it as root:  sudo bash install.sh --server"
+  # check the backup and its key BEFORE the machine is changed, so a typo costs nothing (the laptop path does the same below)
+  [ -z "$RESTORE" ] || [ -f "$RESTORE" ] || die "Backup not found: $RESTORE"
+  [ -z "$KEYFILE" ] || [ -f "$KEYFILE" ] || die "Key file not found: $KEYFILE"
   . /etc/os-release 2>/dev/null || true
   case "${ID:-}" in ubuntu|debian) ;; *) die "--server supports Ubuntu (22.04 or 24.04) and Debian. This is ${PRETTY_NAME:-unknown}." ;; esac
   DRY="${SECURAX_SERVER_DRYRUN:-0}"                       # 1 = say every step, change nothing (the tests use it)
@@ -193,13 +196,15 @@ need docker || say "  ⚠ Docker is not installed yet. The CLI and the Life OS w
 # 2) The code
 case "$MODE" in
   rolling)
-    git clone --quiet "https://github.com/$REPO.git" "$DIR" ;;
+    git clone --quiet "https://github.com/$REPO.git" "$DIR" \
+      || die "Could not download the code from github.com/$REPO (git's own message is above). Check the network and the name, then run this again." ;;
   stable)
     if [ -z "$WANT" ]; then   # the newest release: GitHub redirects /releases/latest to /releases/tag/<tag>, no API token needed
-      WANT="$(curl -fsSIL -o /dev/null -w '%{url_effective}' "https://github.com/$REPO/releases/latest" | sed -n 's#.*/tag/##p')"
+      WANT="$(curl -fsSIL -o /dev/null -w '%{url_effective}' "https://github.com/$REPO/releases/latest" 2>/dev/null | sed -n 's#.*/tag/##p' || true)"   # || true: a failed curl must reach the plain reason below, not end the script here
       [ -n "$WANT" ] || die "Could not find the newest release (no network, or no release yet). Try the rolling channel:  bash install.sh"
     fi
-    git clone --quiet --branch "$WANT" "https://github.com/$REPO.git" "$DIR" ;;
+    git clone --quiet --branch "$WANT" "https://github.com/$REPO.git" "$DIR" \
+      || die "Could not download the release $WANT from github.com/$REPO (git's own message is above). Check the network and the tag, then run this again." ;;
   offline)
     [ -f "$ARCHIVE" ] || die "Not found: $ARCHIVE"
     SUMS="$(dirname "$ARCHIVE")/SHA256SUMS"

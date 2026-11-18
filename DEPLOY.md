@@ -15,7 +15,7 @@ done.** No account, no cloud bill, nothing leaves your machine.
 2. Get the code:   git clone https://github.com/rohan2pt0/ai-cloud-cyber-range.git
                    cd ai-cloud-cyber-range
 3. (Mac/Linux/WSL) ./securax setup     # 30-sec wizard: paste a free Gemini key, say yes to phone access
-   (Windows)       put GEMINI_API_KEY=... in local\compose\.env  (optional, for instant answers)
+   (Windows)       .\securax.cmd setup    # the same wizard, from PowerShell (optional, for instant answers)
 4. Start it:       Windows → double-click START-HERE-Windows.bat
                    Mac/Linux → ./securax up
 5. Your Command Center opens automatically — ONE page that links every app.
@@ -150,7 +150,7 @@ opens, and the **Ask** tab shows a live *"AI is ready / warming up / off"* statu
 | **`START-HERE-Windows.bat: command not found`** | You're in WSL/a Linux terminal. Use `./securax up` there (the `.bat` is only for double-clicking in Windows File Explorer). |
 | **Chat shows "Model not selected" / no models; or an app shows an OLD version after a `git pull`** | The containers weren't recreated — a pull only updates files, not running containers. Run `./securax down && ./securax up` (WSL/Mac/Linux). The Guiding Map tab then self-updates; if an app page is still stale, press **Ctrl+Shift+R** once. |
 | **"model qwen2.5:1.5b not found" (Private Docs / local chat)** | The local model is still downloading (first run, ~1 GB). Wait for it, or add a free Gemini key (`./securax up` asks for one) so Chat works instantly while it finishes. |
-| `docker` / "cannot connect" errors | Docker Desktop isn't running — start it, wait for the green whale, retry. |
+| `docker` / "cannot connect" errors | Docker isn't running. Docker Desktop: start it, wait for the green whale, retry. Docker Engine inside Ubuntu: `sudo service docker start`, retry. |
 | "port is already allocated" | Another app uses 8088/8080/3000/5678 — stop it, or change the port in `local/compose/docker-compose.yml`. |
 | **"model not found" / chat shows no model** | Add a free Gemini key (`./securax setup`) for instant cloud answers, OR let the local model finish downloading. The gateway now exposes `/v1/models` so Open WebUI/AnythingLLM list a model to pick. |
 | **Chat says "Oops! There was an error"** | Run **`./securax doctor`** — it tests the real ladder and prints who answered or the *actual* error. (Earlier builds never passed provider keys into the router container, so paid providers always failed; fixed and now enforced by a test — `git pull`, then `./securax down && ./securax up`.) Meanwhile pick **`bank-assistant`** (free ladder, ends at local). |

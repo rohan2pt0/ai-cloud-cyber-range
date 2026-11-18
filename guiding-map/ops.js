@@ -692,14 +692,18 @@
   };
   window.gmSnapRestore = function (day) {
     var c = cfg(); if (!c || !/^\d{4}-\d{2}-\d{2}$/.test(day)) return;
-    fetch(snapBase() + "/" + day + "?user=" + encodeURIComponent(c.user), { headers: syncHeaders(c) })
+    return fetch(snapBase() + "/" + day + "?user=" + encodeURIComponent(c.user), { headers: syncHeaders(c) })
       .then(function (r) { if (!r.ok) throw new Error("HTTP " + r.status); return r.json(); })
       .then(function (b) {
         var keys = Object.keys(b.payload || {});
-        if (!keys.length || !confirm("Restore the estate's snapshot of " + day + " (" + keys.length + " items)? Everything on this device is replaced; you can undo this once from Ops.")) return;
-        gmSnap("before restoring the " + day + " snapshot");
-        keys.forEach(function (k) { if (k.indexOf("gm_sync") !== 0 && k.indexOf("gm_undo") !== 0) _set0(k, b.payload[k]); });
-        location.reload();
+        if (!keys.length) return;
+        return gmTypedConfirm("RESTORE", "Restore the estate's snapshot of " + esc(day) + "? This replaces " + keys.length + " item" + (keys.length === 1 ? "" : "s") + " on this device. You can undo this once from Ops.", function () { gmExportNow(); })
+          .then(function (ok) {
+            if (!ok) return;
+            gmSnap("before restoring the " + day + " snapshot");
+            keys.forEach(function (k) { if (k.indexOf("gm_sync") !== 0 && k.indexOf("gm_undo") !== 0) _set0(k, b.payload[k]); });
+            location.reload();
+          });
       }).catch(function (e) { alert("Could not restore that snapshot: " + e.message); });
   };
   window.gmSyncSave = function () {
@@ -852,6 +856,37 @@
     { id: "mf", label: "Mind", floor: "Three slow breaths, each breath out longer than the breath in." },
     { id: "fm", label: "Family", floor: "One real question, phone in the basket." }
   ];
+  // A tick is announced (owner, 2026-11-18): a screen reader hears what just changed. ONE hidden live region, outside
+  // #sections so a redraw never removes it. The name gmSay is already the Listen button, so the announcer is gmAnnounce.
+  function gmSayEl() {
+    var el = document.getElementById("gmSay");
+    if (!el) {
+      el = document.createElement("div");
+      el.id = "gmSay"; el.className = "gm-sr";
+      el.setAttribute("role", "status"); el.setAttribute("aria-live", "polite");
+      (document.body || document.documentElement).appendChild(el);
+    }
+    return el;
+  }
+  window.gmAnnounce = function (text) { gmSayEl().textContent = String(text == null ? "" : text); };
+  try { gmSayEl(); } catch (e) {}
+  var _gmTgHabit = window.tgHabit;
+  if (typeof _gmTgHabit === "function" && !_gmTgHabit.gmAnnounced) {
+    var gmTgHabit = function (i) {
+      var hb = typeof HABITS !== "undefined" ? HABITS[i] : null;
+      var out = _gmTgHabit.apply(this, arguments);
+      try {
+        if (hb) {
+          var done = typeof todayChecks === "function" ? todayChecks() : [];
+          var n = DAILY3.filter(function (d) { return done.indexOf(d.id) >= 0; }).length;
+          window.gmAnnounce(hb.name + (done.indexOf(hb.id) >= 0 ? " done. " : " not done. ") + n + " of 3 today.");
+        }
+      } catch (e) {}
+      return out;
+    };
+    gmTgHabit.gmAnnounced = true;
+    window.tgHabit = gmTgHabit;
+  }
   // Golden repairs (owner, 2026-11-12, after kintsugi): the last seven days of the daily three. A kept day is a gold coin;
   // a missed day you came back from is mended with a gold seam, never shown as failure; a recent miss is an empty ring.
   // Nothing shows before there is any history, so a new person is never greeted by empty circles.
@@ -2833,6 +2868,31 @@
         + (G(BK_ESC, null) ? '<div class="muted" style="font-size:12px;margin-top:8px">Your estate keeps a copy too, so a new phone paired with it opens your backups.</div>' : ''));
     }).catch(function (e) { gmToast("No backup saved: " + (e && e.message || e) + ". Nothing readable was written."); });
   };
+  // Anything as final as erase asks for a typed word, built once from the erase dialog's pattern. It resolves true only
+  // when the word is typed, and its primary is the safe step (save a copy first), never the irreversible one.
+  window.gmTypedConfirm = function (word, message, safeStep) {
+    word = String(word || "RESTORE").toUpperCase();
+    return new Promise(function (resolve) {
+      gmDlg('<div style="font-weight:800;font-size:15px;margin-bottom:8px">Please confirm</div>'
+        + '<div style="font-size:13px;line-height:1.55;margin-bottom:10px">' + message + '</div>'
+        + (typeof safeStep === "function" ? '<button class="btn-sm btn-p" id="gmTypeSafe" style="background:var(--gold);color:#0d1f35;font-weight:800;padding:9px 18px;margin-bottom:10px">Save a copy first</button>' : '')
+        + '<label class="f-label" for="gmTypeIn">Type ' + esc(word) + ' to confirm</label><input type="text" id="gmTypeIn" autocomplete="off" autocapitalize="characters">'
+        + '<div style="display:flex;gap:8px"><button class="btn-sm" id="gmTypeGo" disabled style="background:transparent;color:var(--red);border:1px solid var(--red);font-weight:800;padding:9px 18px">Continue</button>'
+        + '<button class="btn-sm" id="gmTypeCancel" style="background:var(--cardAlt);color:var(--text);padding:9px 14px">Cancel</button></div>');
+      var inp = document.getElementById("gmTypeIn"), go = document.getElementById("gmTypeGo");
+      inp.addEventListener("input", function () { go.disabled = inp.value.trim() !== word; });
+      go.addEventListener("click", function () {
+        if (inp.value.trim() !== word) return;
+        gmClose(); resolve(true);
+      });
+      document.getElementById("gmTypeCancel").addEventListener("click", function () { gmClose(); resolve(false); });
+      var safe = document.getElementById("gmTypeSafe");
+      if (safe) safe.addEventListener("click", function () {
+        try { safeStep(); } catch (e) {}
+        gmToast("A copy is saved. Type " + word + " below to continue, or Cancel.");
+      });
+    });
+  };
   window.gmEraseAsk = function () {
     gmDlg('<div style="font-weight:800;font-size:15px;margin-bottom:8px;color:var(--red)">Erase all data on this device?</div>'
       + '<div style="font-size:13px;line-height:1.55;margin-bottom:10px">Every value of this app on this device goes: goals, inbox, money, career, the backup phrase. Synced copies and backup files are not touched. This cannot be undone.</div>'
@@ -3880,11 +3940,17 @@
       + '<textarea id="guardQ" placeholder="Paste text about yourself…" style="width:100%;min-height:60px;padding:9px 11px;border:1px solid var(--line,#999);border-radius:10px;background:transparent;color:inherit"></textarea>'
       + '<button class="btn btn-s" onclick="gmGuardScan()" style="margin-top:8px">Scan locally</button><div id="guardOut" style="margin-top:8px"></div></div></details>';
 
-    h += '<details class="road-col" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">◈ Decide the community-proven way (Intel)</summary><div style="margin-top:8px">'
+    h += '<details class="road-col" id="askIntelCard" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">◈ Decide the community-proven way (Intel)</summary><div style="margin-top:8px">'
+      + '<div class="info">One question is enough. It waits in your Inbox as a decision to make, so nothing you type is lost.</div>'
+      + '<input id="intelQuestion" aria-label="What do you want to decide?" placeholder="What do you want to decide?" style="width:100%;padding:9px 11px;border:1px solid var(--line,#999);border-radius:10px;background:transparent;color:inherit">'
+      + '<button class="btn btn-s" data-intel-ask onclick="gmIntelAsk()" style="margin-top:8px">Keep this question</button>'
+      + '<div id="intelAskOut" style="margin-top:8px"></div>'
+      + '<details class="gm-intel-own" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">I have my own list</summary><div style="margin-top:8px">'
       + '<div class="info">Paste the top items you collected (Reddit Top/All-time, best-sellers, top videos) — one per line, best first. Get what the crowd agrees on. On-device.</div>'
       + '<textarea id="intelItems" placeholder="e.g.\nPassed CCSP! Pete Zerger videos + LEARNZAPP\nCCSP: Pete Zerger + LEARNZAPP, Sybex for depth" style="width:100%;min-height:60px;padding:9px 11px;border:1px solid var(--line,#999);border-radius:10px;background:transparent;color:inherit"></textarea>'
       + '<input id="intelVocab" placeholder="Names you saw repeating (comma-separated) — optional" style="width:100%;margin-top:6px;padding:9px 11px;border:1px solid var(--line,#999);border-radius:10px;background:transparent;color:inherit">'
-      + '<button class="btn btn-s" onclick="gmIntelGo()" style="margin-top:8px">Find the consensus</button><div id="intelOut" style="margin-top:8px"></div></div></details></details>';
+      + '<button class="btn btn-s" onclick="gmIntelGo()" style="margin-top:8px">Find the consensus</button><div id="intelOut" style="margin-top:8px"></div></div></details>'
+      + '</div></details></details>';
 
     h += '<details class="road-col" id="askConn" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">Connection (set once)</summary>';
     h += '<details class="road-col" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:12.5px">⤢ Launch the estate</summary><div style="margin-top:8px" class="info">'
@@ -4037,6 +4103,15 @@
       : '<div class="info"><b>✓ Clean.</b> No high-risk identifiers found in this sample.</div>';
   };
   function sigW(score, rank, age, mode) { var pop = Math.log10(Math.max(score, 0) + 10), rw = 1 / (1 + 0.15 * Math.max(rank - 1, 0)); if (mode === "edge") { var f = Math.exp(-Math.max(age, 0) / 180); return pop * rw * (0.3 + 0.7 * f); } return pop * rw * (1 + Math.min(Math.max(age, 0) / 365, 5) * 0.1); }
+  // One question, no list to collect. The estate's AI gathers the consensus when it is on; until then the question
+  // waits in the Inbox as an action, so asking never dead-ends and nothing typed is lost.
+  window.gmIntelAsk = function () {
+    var q = (document.getElementById("intelQuestion").value || "").trim();
+    var out = document.getElementById("intelAskOut");
+    if (!q) { out.innerHTML = '<div class="info">Type the decision you want to make first.</div>'; return; }
+    gmInboxAdd(q, "action", { from: "ask-intel", next: "Decide it, or paste a community list under I have my own list" });
+    out.innerHTML = '<div class="info"><b>Saved in your Inbox</b> as a decision to make.</div>';
+  };
   window.gmIntelGo = function () {
     var lines = (document.getElementById("intelItems").value || "").split("\n").map(function (s) { return s.trim(); }).filter(Boolean);
     var vocab = (document.getElementById("intelVocab").value || "").split(",").map(function (s) { return s.trim(); }).filter(Boolean);
@@ -4621,6 +4696,31 @@
         + '<div style="margin-top:10px">' + more + '</div></details>' : "")
       + '<div style="text-align:center;margin:6px 0 4px"><span style="font-size:11.5px;color:var(--muted);cursor:pointer;text-decoration:underline" onclick="gmCalm(false)">Show everything (all tabs, all cards)</span></div></div>';
   }
+  /* ── Unsaved days, said honestly on Today (queue experience-v3, fix 1): the age of the last backup belongs on the
+     screen a person opens every day, not only inside Ops. Real data only: example numbers are nobody's to lose. Amber,
+     never red; one line, one action, and a dismiss that rests for 30 days. Reads the same dates Ops reads. ── */
+  function gmBkAgeDays(v) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v || "")); if (!m) return null;
+    var d = new Date(+m[1], +m[2] - 1, +m[3]), n = new Date();
+    n = new Date(n.getFullYear(), n.getMonth(), n.getDate());
+    return isNaN(d.getTime()) ? null : Math.max(0, Math.round((n - d) / 86400000));
+  }
+  function gmUnsavedLine() {
+    if (!profOK()) return "";
+    var quiet = gmBkAgeDays(G("gm_unsaved_dismiss", ""));
+    if (quiet !== null && quiet < 30) return "";
+    var ages = [];
+    ["gm_last_export", "gm_last_offsite", "gm_sync_od_last"].forEach(function (k) {
+      var a = gmBkAgeDays(G(k, null)); if (a !== null) ages.push(a);
+    });
+    var days = ages.length ? Math.min.apply(null, ages) : gmBkAgeDays(G("gm_first_open", ""));
+    if (days === null || days < 8) return "";
+    return '<div class="gm-unsaved" style="background:var(--amberBg);border:1px solid var(--amber);border-radius:10px;padding:10px 12px;margin-bottom:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">'
+      + '<div style="flex:1;font-size:13px;color:var(--text);line-height:1.5">' + days + ' days of changes live only on this phone.</div>'
+      + '<button type="button" class="btn-sm" style="background:var(--gold);color:#0d1f35;font-weight:800;white-space:nowrap" onclick="gmExportNow()">Save a copy</button>'
+      + '<button type="button" class="btn-sm" aria-label="Hide this for 30 days" style="background:transparent;color:var(--muted);font-size:16px;min-width:44px;min-height:44px;padding:4px 8px" onclick="gmUnsavedDismiss()">\u00d7</button></div>';
+  }
+  window.gmUnsavedDismiss = function () { S_("gm_unsaved_dismiss", ymd()); renderAll(); };
   function calmTabs() {
     var bar = document.getElementById("tabBar");
     if (!bar || typeof TABS === "undefined") return;
@@ -4668,6 +4768,24 @@
     growth: { o: "Learn one hard thing properly", krs: ["Read 3 books to the end", "Finish one course or module end to end"] },
     fun: { o: "Make room for joy", krs: ["One hobby session every week (12)", "One weekend fully offline"] },
     env: { o: "Fix my surroundings", krs: ["Declutter one room completely", "Close the 3 home repairs I keep postponing"] }
+  };
+  function krWords(s) { return String(s || "").toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter(function (w) { return w.length > 2; }); }
+  window.gmKRSuggest = function (objectiveText) {
+    var words = krWords(objectiveText);
+    var ranked = Object.keys(QSUG).map(function (k) {
+      var x = QSUG[k], hay = (k + " " + x.o + " " + x.krs.join(" ")).toLowerCase(), score = 0;
+      words.forEach(function (w) { if (hay.indexOf(w) >= 0) score++; });
+      return { k: k, score: score };
+    }).sort(function (a, b) { return b.score - a.score; });
+    var out = [];
+    ranked.forEach(function (r) {
+      if (!r.score) return;
+      QSUG[r.k].krs.forEach(function (t) { if (out.indexOf(t) < 0 && out.length < 3) out.push(t); });
+    });
+    ["One measurable result this quarter", "The habit kept on 60 of 90 days", "The first small step finished"].forEach(function (t) {
+      if (out.length < 3 && out.indexOf(t) < 0) out.push(t);
+    });
+    return out.slice(0, 3);
   };
   var GRADES = [[0, "Not started"], [0.25, "A little"], [0.5, "Half"], [0.75, "Most of it"], [1, "Done"]];
   function qKeyNow() { var d = new Date(); return d.getFullYear() + "-Q" + (Math.floor(d.getMonth() / 3) + 1); }
@@ -5637,7 +5755,7 @@
     planItems(c).forEach(function (p) {
       var over = p.due && !p.done && p.due < today;
       pl += '<div style="display:flex;gap:9px;align-items:flex-start;margin:6px 0;font-size:12.5px;color:var(--text);line-height:1.5"><button type="button" class="gm-tap gm-chk' + (p.done ? " on" : "") + '" aria-pressed="' + (p.done ? "true" : "false") + '" aria-label="' + esc((p.done ? "Mark not done: " : "Mark done: ") + p.t) + '" style="min-width:26px;min-height:26px;border-radius:8px;font-size:12px;padding:0" onclick="gmCarDone(\'' + p.id + '\')">' + (p.done ? "✓" : "") + '</button>'
-        + '<span' + (p.done ? ' style="text-decoration:line-through;opacity:.7"' : '') + '>' + esc(p.t) + (p.due ? ' <span style="color:' + (over ? "var(--red)" : "var(--muted)") + '">· ' + (over ? "overdue " : "by ") + ymd(p.due) + '</span>' : '') + '</span></div>';
+        + '<span' + (p.done ? ' style="text-decoration:line-through;opacity:.7"' : '') + '>' + esc(p.t) + (p.due ? ' <span style="color:' + (over ? "var(--amber)" : "var(--muted)") + '">· ' + (over ? "late " : "by ") + ymd(p.due) + '</span>' : '') + '</span></div>';
     });
     if (datedCount("career")) pl += '<button class="btn-sm" data-haptic="success" style="margin-top:8px;background:var(--cardAlt);color:var(--text)" onclick="gmCalendarDated(\'career\')">Add the plan to my calendar</button>';
     h += box(pl);
@@ -5650,7 +5768,7 @@
     var due = careerDue(7).slice(0, 2); if (!due.length) return "";
     return due.map(function (p) {
       var over = p.due < new Date();
-      return '<div style="display:flex;align-items:center;gap:8px;margin:7px 0"><div style="flex:1;font-size:12.5px;color:var(--text)">\u{1F4BC} <b>' + esc(p.t) + '</b> <span style="color:' + (over ? "var(--red)" : "var(--muted)") + '">· ' + (over ? "overdue since " : "by ") + ymd(p.due) + '</span></div>'
+      return '<div style="display:flex;align-items:center;gap:8px;margin:7px 0"><div style="flex:1;font-size:12.5px;color:var(--text)">\u{1F4BC} <b>' + esc(p.t) + '</b> <span style="color:' + (over ? "var(--amber)" : "var(--muted)") + '">· ' + (over ? "late " : "by ") + ymd(p.due) + '</span></div>'
         + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="goTab(\'career\')">Open</button>'
         + '<button class="btn-sm" style="background:var(--gold);color:#0d1f35" onclick="gmCarDone(\'' + p.id + '\')">Done</button></div>';
     }).join("");
@@ -6392,9 +6510,15 @@
     designCSS();
     premiumCSS();
     tactileCSS();
-    if (!document.querySelector("a.skip") && document.getElementById("sections")) {
-      var sk = document.createElement("a"); sk.className = "skip"; sk.href = "#sections"; sk.textContent = "Skip to content";
-      document.body.insertBefore(sk, document.body.firstChild);
+    var secs = document.getElementById("sections"), main = document.querySelector('[role="main"]');
+    if (secs && !main) {
+      main = document.createElement("div"); main.id = "gm-main"; main.setAttribute("role", "main"); main.setAttribute("tabindex", "-1");
+      secs.parentNode.insertBefore(main, secs); main.appendChild(secs);
+    }
+    if (secs) {
+      var sk = document.querySelector("a.skip");
+      if (!sk) { sk = document.createElement("a"); sk.className = "skip"; sk.textContent = "Skip to content"; document.body.insertBefore(sk, document.body.firstChild); }
+      if (main && main.id) sk.href = "#" + main.id;
     }
     var hdr = document.querySelector("#dash header");
     if (hdr && !hdr.querySelector(".gm-menu-btn")) {
@@ -7606,6 +7730,7 @@
       box.insertAdjacentHTML("afterbegin", greetHTML() + exampleWarn() + interruptHTML() + undoBar() + inboxNudgeHTML() + daily3HTML() + msTodayHTML()
         + (inRecovery() ? "" : driftHTML() + resHTML()) + oneActionHTML() + (inRecovery() ? "" : pinnedHTML()));
     }
+    if (curTab === "today") { var unsaved = gmUnsavedLine(); if (unsaved) box.insertAdjacentHTML("afterbegin", unsaved); }
     if (curTab === "wheel") { try { sysWheelLines(box); } catch (e) { console.log(e); } }
     try { calmFrame(); } catch (e) { console.log(e); }
     if (phone() && !simpleNow && curTab === "today" && !document.getElementById("gmVitals")) box.insertAdjacentHTML("afterbegin", vitalsHTML());
@@ -7882,6 +8007,7 @@
   };
   window.gmPlain = PLAIN;
   function table() { return lang === "en" ? PLAIN : ((CAT[lang] || {}).strings || {}); }
+  window.gmT = function (s) { var T = lang === "en" ? null : table(); return (T && T[s]) || s; };
   function swapText(n, T) {
     var en = n[ORIG] !== undefined ? n[ORIG] : n.textContent, key = en.replace(/\s+/g, " ").trim();
     if (!key) return;
@@ -10011,6 +10137,18 @@
     try { var r = (window.RISKS || [])[i]; if (r && r.id) window.gmUse("risk:" + r.id); } catch (e) {}
     return _gmOpenR.apply(this, arguments);
   }; }
+  // Escape closes the top-most open layer through its own close path (queue experience-v3, fix 2): the dialog overlay,
+  // then the "Make it yours" sheet, then the More sheet. A locked Life OS keeps its one door: Escape does nothing.
+  document.addEventListener("keydown", function (ev) {
+    if (ev.key !== "Escape") return;
+    try {
+      if (window.gmIsLocked && window.gmIsLocked()) return;
+      if (document.getElementById("gmOverlay")) { if (typeof window.gmClose === "function") window.gmClose(); return; }
+      if (document.getElementById("gmMineSheet")) { if (typeof window.gmMineSkip === "function") window.gmMineSkip(); return; }
+      var sheet = document.getElementById("gmMoreSheet");
+      if (sheet && sheet.classList.contains("on") && typeof window.gmNavMore === "function") window.gmNavMore(false);
+    } catch (e) {}
+  });
   document.addEventListener("click", function (ev) {
     try {
       for (var el = ev.target; el && el !== document; el = el.parentNode) {
@@ -10019,4 +10157,109 @@
       }
     } catch (e) {}
   }, true);
+
+  /* ── Friction noticed on the device (queue friction-meter, slice 4): a sheet closed with no tick or input (an
+     abandon), three taps on one spot within a second (a rage), and the same two tabs switched four times within ten
+     seconds (a bounce). gm_friction_seen holds id -> how often, at most 200 ids, newest kept. Nothing is sent. */
+  var GM_FR_KEYS = 200;
+  window.gmFrictionSeen = function () {
+    var raw = G("gm_friction_seen", {}), out = {};
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) return out;
+    Object.keys(raw).forEach(function (id) {
+      if (!GM_USE_RE.test(id)) return;
+      var n = raw[id];
+      if (typeof n !== "number" || !isFinite(n) || n < 1) return;
+      out[id] = Math.floor(n);
+    });
+    return out;
+  };
+  window.gmFriction = function (id) {
+    if (typeof id !== "string" || !GM_USE_RE.test(id)) return;
+    var map = window.gmFrictionSeen(), n = map[id] || 0;
+    // Re-insert at the end so the key order is recency, and the oldest keys are the ones dropped when the map is full.
+    delete map[id];
+    map[id] = n + 1;
+    var ids = Object.keys(map);
+    while (ids.length > GM_FR_KEYS) delete map[ids.shift()];
+    S_("gm_friction_seen", map);
+    return map;
+  };
+  // The highest counts first, ties by id so the answer is steady; the monthly card will name the top three.
+  window.gmFrictionTop = function (n) {
+    n = Math.floor(+n);
+    if (!(n > 0)) n = 3;
+    var map = window.gmFrictionSeen();
+    return Object.keys(map).map(function (id) { return { id: id, n: map[id] }; })
+      .sort(function (a, b) { return b.n - a.n || (a.id < b.id ? -1 : 1); }).slice(0, n);
+  };
+
+  // An opened sheet that closes with no tick or input is an abandon; the sheet's own controls settle the doubt.
+  var _gmFrOpen = null, _gmFrTouched = false;
+  if (typeof window.openK === "function") { var _gmFrOpenK = window.openK; window.openK = function (i) {
+    try { var k = (window.KPIs || [])[i]; _gmFrOpen = k && k.id ? "sys:" + k.id : null; _gmFrTouched = false; } catch (e) { _gmFrOpen = null; }
+    return _gmFrOpenK.apply(this, arguments);
+  }; }
+  if (typeof window.openR === "function") { var _gmFrOpenR = window.openR; window.openR = function (i) {
+    try { var r = (window.RISKS || [])[i]; _gmFrOpen = r && r.id ? "risk:" + r.id : null; _gmFrTouched = false; } catch (e) { _gmFrOpen = null; }
+    return _gmFrOpenR.apply(this, arguments);
+  }; }
+  function gmFrTouch(ev) {
+    try { for (var el = ev.target; el && el !== document; el = el.parentNode) { if (el.id === "mo") { _gmFrTouched = true; break; } } } catch (e) {}
+  }
+  document.addEventListener("input", gmFrTouch, true);
+  document.addEventListener("change", gmFrTouch, true);
+  if (typeof window.closeM === "function") { var _gmFrCloseM = window.closeM; window.closeM = function () {
+    try { if (_gmFrOpen && !_gmFrTouched) window.gmFriction(_gmFrOpen); } catch (e) {}
+    _gmFrOpen = null; _gmFrTouched = false;
+    return _gmFrCloseM.apply(this, arguments);
+  }; }
+
+  // Three taps on one spot within a second is a rage; the spot is its data-feat, else the tab it opens.
+  function gmFrSpot(el) {
+    var tab = null;
+    for (var n = el; n && n !== document; n = n.parentNode) {
+      if (!n.getAttribute) continue;
+      var f = n.getAttribute("data-feat");
+      if (f) return f;
+      if (!tab) {
+        var t = n.getAttribute("data-tab"), oc = n.getAttribute("onclick") || "";
+        var m = oc.match(/(?:goTab|gmNavGo)\(['"]([A-Za-z0-9:-]+)['"]/);
+        if (t) tab = "tab:" + t; else if (m) tab = "tab:" + m[1];
+      }
+    }
+    return tab;
+  }
+  var _gmFrTaps = [];
+  document.addEventListener("click", function (ev) {
+    try {
+      var id = gmFrSpot(ev.target), t = Date.now();
+      if (!id) return;
+      _gmFrTaps = _gmFrTaps.filter(function (x) { return t - x.t <= 1000; });
+      _gmFrTaps.push({ id: id, t: t });
+      if (_gmFrTaps.filter(function (x) { return x.id === id; }).length >= 3) {
+        window.gmFriction(id);
+        _gmFrTaps = _gmFrTaps.filter(function (x) { return x.id !== id; });
+      }
+    } catch (e) {}
+  }, true);
+
+  // Switching between the same two tabs four times within ten seconds is a bounce.
+  var _gmFrTabs = [];
+  if (typeof window.goTab === "function") { var _gmFrGoTab = window.goTab; window.goTab = function (id) {
+    try {
+      if (typeof id === "string" && GM_USE_RE.test(id)) {
+        var t = Date.now(), now = _gmFrTabs.filter(function (x) { return t - x.t <= 10000; });
+        now.push({ id: id, t: t });
+        _gmFrTabs = now;
+        if (now.length >= 4) {
+          var a = now[now.length - 4].id, b = now[now.length - 3].id, c = now[now.length - 2].id, e2 = now[now.length - 1].id;
+          if (a === c && b === e2 && a !== b) {
+            window.gmFriction("tab:" + [a, b].sort().join("-"));
+            _gmFrTabs = [];
+          }
+        }
+      }
+    } catch (e) {}
+    return _gmFrGoTab.apply(this, arguments);
+  }; }
 })();

@@ -135,13 +135,13 @@ This list is generated from [`features.json`](features.json); the Command Center
 **On main, in the next release:**
 
 - The More sheet is a dialog
-- System sheets, calmer and correct
-- A resting door wakes when you need it
-- The delegation gate cannot be fooled by a test that never runs
-- The Wednesday call runs itself on Today
-- Doors rest by themselves
-- A recurring step lives in the calendar
-- Three friends use the Life OS on a phone
+- Restore asks for a typed word
+- Unsaved days, said honestly on Today
+- Escape closes the top layer
+- Late is amber, never red
+- The browser tab names the view
+- A screen reader can jump to the content
+- The habit check is a named button
 
 **Release 0.4.0 - 2026-11-14:**
 

@@ -129,3 +129,15 @@ def test_a_new_lifeos_test_left_out_of_the_suite_is_blocked(repo):
 def test_a_new_lifeos_test_in_the_suite_passes(repo):
     # test99 in the list must not count as test999 (whole-name match)
     assert _lifeos(repo, listed=True) == []
+
+
+def test_a_spec_series_test_left_out_of_the_suite_is_blocked(repo):
+    # x3_20 (experience-v3) came back GREEN on 2026-11-18 with its own test failing: the rule knew only test*.js names
+    (repo / "guiding-map/tests").mkdir(parents=True, exist_ok=True)
+    (repo / "guiding-map/package.json").write_text('{"scripts": {"test": "for t in test x3_01; do node tests/$t.js || exit 1; done"}}\n')
+    git(repo, "add", "-A")
+    git(repo, "commit", "-q", "-m", "suite")
+    (repo / "guiding-map/tests/x3_20.js").write_text("console.log('x3_20: 1 passed, 0 failed');\n")
+    changes, ws = dc.collect("HEAD", repo)
+    found = [r for r in dc.evaluate(changes, ws, root=repo) if r["rule"] == "test-not-run"]
+    assert len(found) == 1 and found[0]["level"] == "BLOCK" and "x3_20" in found[0]["fix"]
