@@ -1593,6 +1593,19 @@ def j_wizard(sb: H.Sandbox, c: Checks):
     c.ok("looks like a command" in out, "typing a command at the provider prompt gets a helpful hint")
 
 
+def _goto_once_more(page, url, **kw):
+    """page.goto, retried ONCE and only on ERR_NETWORK_CHANGED: a transient Chromium network re-config on the first
+    navigation of a fresh browser (phone_device 2026-10-27, ui_guiding_map_and_hub 2026-11-18). Any other error is real."""
+    for _attempt in range(2):
+        try:
+            return page.goto(url, **kw)
+        except Exception as e:  # noqa: BLE001
+            if "ERR_NETWORK_CHANGED" in str(e) and _attempt == 0:
+                time.sleep(2)
+                continue
+            raise
+
+
 @journey("ui_guiding_map_and_hub", "In a real browser: the home screen, version badge, Command Center and the Ask box.")
 def j_ui(sb: H.Sandbox, c: Checks):
     if not _start(sb, c, GEMINI_API_KEY=KEYS["GEMINI_API_KEY"]):
@@ -1602,7 +1615,7 @@ def j_ui(sb: H.Sandbox, c: Checks):
         page = b.page()
         errors = []
         page.on("pageerror", lambda e: errors.append(str(e)))
-        page.goto(f"{H.GUIDING_MAP}/")
+        _goto_once_more(page, f"{H.GUIDING_MAP}/")
         page.wait_for_load_state("networkidle")
         commit = H.sh(["git", "rev-parse", "--short", "HEAD"], cwd=sb.clone)[1].strip()
         page.wait_for_function("document.getElementById('app_ver').textContent.indexOf('·') > 0", timeout=15000)

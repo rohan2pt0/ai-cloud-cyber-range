@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- **Watch an exercise move** (owner 2026-11-18; queue visual-guides): each strength card has a quiet "▶ Watch" button that plays the move as one figure, built from the joint angles so every limb keeps its length, at a real tempo with a rep count (the plank counts seconds and breathes). One card plays at a time; it rests off screen, when the page is hidden and under reduced motion (test146).
 - **Life OS Today, a calm first screen** (experience fix 14): the app header is first on the page, then the greeting and ring, at most one notice (danger first, then one merged "Example numbers for now" line with one button), then the daily three; the help line, the decade card and any other notice fold under one closed "Later (n)" (x3_14).
 - **No daily Microsoft sign-in** (owner 2026-11-18; queue seamless-sync, slice 3): Microsoft gives a browser app 24 hours of refresh, fixed. A passing Microsoft error no longer deletes the sign-in; a real expiry renews by itself with a quiet full-page round trip (prompt=none, the account remembered, at most once in 6 hours, never while typing), and only when Microsoft truly needs you does one calm Sign in line appear on Today (test144).
 - **Exercise figures read like a printed workout card** (owner 2026-11-18; queue visual-guides): each strength move now draws a real body in a still Start frame, an arrow, then an End frame, built from joint angles so every limb keeps its true length; the figures no longer morph, and the band and squat loop are gold.

@@ -3722,7 +3722,7 @@
     return '<line class="' + (cls || "gm-limb") + '" data-part="' + part + '" x1="' + gmFigN(a[0]) + '" y1="' + gmFigN(a[1]) + '" x2="' + gmFigN(b[0]) + '" y2="' + gmFigN(b[1])
       + '" stroke="' + color + '" stroke-width="' + w + '" stroke-linecap="round"/>';
   }
-  function gmFigFrame(P, q, tag, dx) {
+  function gmFigFrame(P, q, tag, dx, counter) {
     var t = "var(--text)", j = gmPoseJoints(q), h = '<g class="gm-fig-frame" data-frame="' + tag + '" transform="translate(' + dx + ' 0)">';
     h += '<line class="gm-floor" x1="0" y1="91" x2="100" y2="91" stroke="var(--border)" stroke-width="1.5" stroke-linecap="round"/>';
     if (P.anchor) h += '<line class="gm-band" data-role="band" x1="' + P.anchor[0] + '" y1="' + P.anchor[1] + '" x2="' + gmFigN(j.hand[0]) + '" y2="' + gmFigN(j.hand[1])
@@ -3737,15 +3737,81 @@
       var c = gmPolar(j.hip, q.th, BODY.thigh * 0.82), n = q.th + 90, a = gmPolar(c, n, 5.5), b = gmPolar(c, n, -5.5);
       h += gmFigLine("loop", a, b, 4, "var(--gold)", "gm-loop");
     }
-    return h + '<text x="50" y="102" text-anchor="middle" font-size="10" font-weight="700" fill="var(--text)">' + (tag === "start" ? "Start" : "End") + '</text></g>';
+    return h + '<text' + (tag === "play" ? ' class="gm-count"' : '') + ' x="50" y="102" text-anchor="middle" font-size="10" font-weight="700" fill="var(--text)">'
+      + (tag === "play" ? esc(counter || "") : tag === "start" ? "Start" : "End") + '</text></g>';
+  }
+  function gmFigSvg(P) {
+    return '<svg class="gm-fig" role="img" aria-label="' + esc(P.label) + '" viewBox="0 0 240 104" width="240" height="104" style="max-width:240px;width:100%;height:auto;display:block">';
   }
   window.gmFigure = function (id) {
     var P = POSES[id]; if (!P) return "";
-    return '<svg class="gm-fig" role="img" aria-label="' + esc(P.label) + '" viewBox="0 0 240 104" width="240" height="104" style="max-width:240px;width:100%;height:auto;display:block">'
+    return gmFigSvg(P)
       + gmFigFrame(P, P.start, "start", 4)
       + '<g class="gm-arrow" fill="none" stroke="var(--muted)" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path class="gm-arrow-shaft" d="M109 50H131"/><path d="M125 44l6 6-6 6"/></g>'
       + gmFigFrame(P, P.end, "end", 136) + '</svg>';
   };
+
+
+  /* ── 48b-2. Watch: the same body, moving. One figure plays the movement by interpolating the joint ANGLES between the
+     Start and End poses (never the points), so every limb keeps its length in every frame. Tempo per move (seconds):
+     down = Start to End, up = back, hold = a short settle at each end; ease-in-out, no bounce. reps/secs match the
+     dose on the card. gmFigureFrame(id, t) is pure (the loop and the tests both call it); the loop runs only in a real
+     browser, only while the card is on screen and the page is visible, and not at all under reduced motion. */
+  var TEMPO = {
+    pushup: { down: 2, up: 1, hold: 0.3, reps: 12 }, row: { down: 1, up: 2, hold: 0.3, reps: 12 },
+    squat: { down: 2, up: 1, hold: 0.3, reps: 15 }, press: { down: 1, up: 2, hold: 0.3, reps: 12 },
+    plank: { down: 1, up: 1, hold: 0, secs: 45 }
+  };
+  window.gmTempo = TEMPO;
+  function gmFigEase(x) { x = x < 0 ? 0 : x > 1 ? 1 : x; return x * x * x * (x * (6 * x - 15) + 10); }
+  function gmFigLerpPose(a, b, u) {
+    var q = { hip: [a.hip[0] + (b.hip[0] - a.hip[0]) * u, a.hip[1] + (b.hip[1] - a.hip[1]) * u] };
+    ["torso", "head", "uA", "fA", "th", "sh"].forEach(function (k) { q[k] = a[k] + (b[k] - a[k]) * u; });
+    return q;
+  }
+  window.gmFigureFrame = function (id, t) {
+    var P = POSES[id], T = TEMPO[id]; if (!P || !T) return "";
+    t = t > 0 ? t : 0;
+    var period = T.down + T.up + 2 * T.hold, p = t % period, u, q, label;
+    if (p < T.down) u = gmFigEase(p / T.down);
+    else if (p < T.down + T.hold) u = 1;
+    else if (p < T.down + T.hold + T.up) u = 1 - gmFigEase((p - T.down - T.hold) / T.up);
+    else u = 0;
+    if (T.secs) {
+      u = 0; label = (T.secs - Math.floor(t % T.secs)) + " s";
+    } else label = "rep " + ((Math.floor(t / period) % T.reps) + 1) + " / " + T.reps;
+    q = gmFigLerpPose(P.start, P.end, u);
+    if (T.secs) q.hip = [q.hip[0], q.hip[1] - 1.2 * (0.5 - 0.5 * Math.cos(t * Math.PI / 2))];   // a slow breath, 4 s round
+    return gmFigSvg(P) + gmFigFrame(P, q, "play", 70, label) + '</svg>';
+  };
+  var gmWatchNow = null;
+  function gmWatchStop() {
+    var s = gmWatchNow; if (!s) return; gmWatchNow = null;
+    if (s.raf) cancelAnimationFrame(s.raf);
+    if (s.io) s.io.disconnect();
+    if (s.vis) document.removeEventListener("visibilitychange", s.vis);
+    s.stage.innerHTML = s.pair; s.btn.setAttribute("aria-pressed", "false"); s.btn.textContent = "▶ Watch";
+  }
+  window.gmWatchStop = gmWatchStop;
+  window.gmWatch = function (btn) {
+    var was = gmWatchNow && gmWatchNow.btn === btn; gmWatchStop(); if (was) return;
+    var id = btn.getAttribute("data-fig"), stage = btn.parentNode && btn.parentNode.querySelector(".gm-stage");
+    if (!stage || !TEMPO[id]) return;
+    var s = gmWatchNow = { btn: btn, stage: stage, pair: stage.innerHTML, id: id };
+    btn.setAttribute("aria-pressed", "true"); btn.textContent = "■ Stop"; stage.innerHTML = gmFigureFrame(id, 0);
+    if (navigator.webdriver || /jsdom/i.test(navigator.userAgent || "")) return;   // automated pages get the still first frame; tests call gmFigureFrame
+    s.vis = function () { if (document.hidden) gmWatchStop(); }; document.addEventListener("visibilitychange", s.vis);
+    if (window.IntersectionObserver) { s.io = new IntersectionObserver(function (en) { if (en.length && !en[en.length - 1].isIntersecting) gmWatchStop(); }); s.io.observe(stage); }
+    var t0 = null;
+    var tick = function (now) {
+      if (gmWatchNow !== s) return;
+      if (t0 === null) t0 = now;
+      stage.innerHTML = gmFigureFrame(id, (now - t0) / 1000);
+      s.raf = requestAnimationFrame(tick);
+    };
+    s.raf = requestAnimationFrame(tick);
+  };
+  function gmWatchAllowed() { try { return !(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches); } catch (e) { return true; } }
 
   var GUIDES = [
     { id: "daily3", icon: "☀", title: "The Daily Three: Move, Mind, Family", tag: "daily · 2-min floor",
@@ -3880,7 +3946,8 @@
       h += '<div class="gs-meta">5 exercises · 3 rounds · rest 45–60 s · about 25 min</div>'
         + '<div class="gs-list gs-cards">' + g.ex.map(function (x) {
           return '<div class="gs gs-card">'
-            + '<div class="gs-fig">' + gmFigure(x.fig) + '</div>'
+            + '<div class="gs-fig"><div class="gm-stage">' + gmFigure(x.fig) + '</div>'
+            + (gmWatchAllowed() && TEMPO[x.fig] ? '<button type="button" class="gm-watch" aria-pressed="false" data-fig="' + esc(x.fig) + '" onclick="gmWatch(this)">\u25b6 Watch</button>' : '') + '</div>'
             + '<div class="gs-body gs-v">'
             + '<div class="gs-head"><span class="gs-num">' + x.n + '</span><span class="gs-name">' + esc(x.name) + '</span>'
             + '<span class="gs-dose">' + esc(x.dose) + '</span></div>'
@@ -8705,6 +8772,9 @@
       + ".gs-cards{display:grid;grid-template-columns:1fr;gap:10px;margin:8px 0}"
       + ".gs-cards .gs{padding:12px;border:1px solid var(--border);border-radius:14px;background:var(--card)}"
       + ".gs-card .gs-fig{max-width:240px;margin-bottom:6px}"
+      + ".gm-watch{display:block;margin:4px auto 0;min-height:44px;padding:0 16px;border:1px solid var(--border);border-radius:999px;background:transparent;color:var(--muted);font:inherit;font-size:12.5px;font-weight:700;cursor:pointer}"
+      + ".gm-watch:hover{color:var(--text)}.gm-watch[aria-pressed=true]{color:var(--text);border-color:rgba(201,168,76,.6)}.gm-watch:focus-visible{outline:2px solid var(--gold);outline-offset:2px}"
+      + "@media (prefers-reduced-motion:reduce){.gm-watch{display:none}}"
       + ".gs-head{display:flex;align-items:center;flex-wrap:wrap;gap:8px}"
       + ".gs-num{display:inline-grid;place-items:center;width:26px;height:26px;border-radius:50%;background:var(--gold);color:#1b1406;font-weight:900;font-size:13px;flex:none}"
       + ".gs-name{font-weight:800;font-size:14px;color:var(--text)}"
