@@ -275,6 +275,24 @@
      "evidence": "guiding-map/tests/test143.js"
     },
     {
+     "id": "ss-i1",
+     "stride": "I",
+     "element": "sync",
+     "threat": "The Add another device link carries the sync token or the OneDrive data key; sent to the wrong person or left in a chat, it lets them read the synced data.",
+     "status": "accepted",
+     "reason": "The secret travels in the #fragment, which no server receives; the app removes it from the address bar on open; the share text says it is for the person's own device only. Slice 2 of seamless-sync replaces it with a passkey-derived key and a short-lived QR, so no long-lived secret is ever handed over.",
+     "review": "2026-12-16"
+    },
+    {
+     "id": "ss-s1",
+     "stride": "S",
+     "element": "sync",
+     "threat": "A link made by someone else pairs this device to their estate or swaps in their OneDrive key, so new data goes where they can read it.",
+     "status": "mitigated",
+     "mitigation": "every link that changes sync asks first, names the estate's host, says to continue only for a link the person made on their own device, and asks again before replacing an existing key",
+     "evidence": "guiding-map/tests/test142.js"
+    },
+    {
      "id": "kl-t2",
      "stride": "T",
      "element": "lock-record",

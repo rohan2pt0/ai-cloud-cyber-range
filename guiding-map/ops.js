@@ -566,6 +566,31 @@
   // One-link setup: `./securax sync-link` prints  <hub address>/#sync=<base64url JSON {url,key,user}>.  Opening it on a phone sets sync up in one
   // tap. The data after # never leaves the browser (it is not sent to any server); we remove it from the address bar straight away, we
   // always show WHERE the data will go before saving, and an existing setup is never replaced without a second, explicit yes.
+  function jsonB64url(o) { return btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
+  // Seamless sync, slice 1 (owner 2026-11-18: "one more key to copy-paste, every day"): a device that syncs hands the pairing to
+  // the person's next device through the phone's own share sheet (AirDrop, Nearby Share, a note to self). Opening the link there
+  // runs gmSyncLinkImport, so nothing is typed. The link carries the device token in the #fragment, which no server ever receives.
+  window.gmSyncLink = function () {
+    var c = cfg(), o = {}, odk = G("gm_sync_odk", null), ms = G("gm_ms_cfg", null);
+    if (c && !c.access && c.url && c.key) { o.url = c.url; o.key = c.key; o.user = c.user || "me"; }
+    // OneDrive: the data key itself, so the next device never asks for the passphrase; it only signs in to Microsoft (one door)
+    if (G("gm_sync_od", null) && odk && odk.k && odk.salt) { o.od = { k: odk.k, salt: odk.salt }; if (ms && ms.id) o.ms = ms.id; }
+    if (!o.url && !o.od) return "";
+    return location.origin + location.pathname + "#sync=" + jsonB64url(o);
+  };
+  window.gmSyncShare = function () {
+    var link = window.gmSyncLink(); if (!link) return Promise.resolve(false);
+    var done = function (how) { if (window.gmToast) gmToast(how); return true; };
+    if (navigator.share) {
+      return navigator.share({ title: "Open my Life OS", text: "Open this on my own device to sync it. Not for anyone else.", url: link })
+        .then(function () { return done("Sent. Open it on the other device: sync turns on there."); })
+        .catch(function () { return false; });
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(link).then(function () { return done("Link copied. Open it on your other device: sync turns on there."); }, function () { return false; });
+    }
+    return Promise.resolve(false);
+  };
   function b64urlJson(t) { t = String(t).replace(/-/g, "+").replace(/_/g, "/"); while (t.length % 4) t += "="; return JSON.parse(decodeURIComponent(escape(atob(t)))); }
   window.gmSyncLinkImport = function () {
     var h = String(location.hash || ""), m = /^#sync=([A-Za-z0-9_-]+)$/.exec(h);
@@ -573,7 +598,21 @@
     try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
     try {
       var o = b64urlJson(m[1]);
-      if (!o || typeof o.url !== "string" || !/^https?:\/\//.test(o.url) || typeof o.key !== "string" || !o.key || o.key.length > 300) throw new Error("not a sync link");
+      if (!o || typeof o !== "object") throw new Error("not a sync link");
+      var B64 = /^[A-Za-z0-9+\/=]{8,200}$/;
+      if (o.od && !(typeof o.od.k === "string" && B64.test(o.od.k) && typeof o.od.salt === "string" && B64.test(o.od.salt))) throw new Error("not a sync link");
+      if (o.ms && !(typeof o.ms === "string" && /^[A-Za-z0-9-]{8,64}$/.test(o.ms))) throw new Error("not a sync link");
+      if (o.od) {   // OneDrive hand-over: keep the data key and the app id; sync starts once this device signs in to Microsoft
+        var curK = G("gm_sync_odk", null);
+        if (!(curK && curK.k === o.od.k && curK.salt === o.od.salt)) {
+          if (!confirm("Turn on OneDrive sync from this link?\n\nOnly continue if you made this link yourself, on your own device.")) return true;
+          if (curK && !confirm("This device already has a OneDrive sync key. Replace it with the one in this link?")) return true;
+        }
+        S_("gm_sync_odk", { k: o.od.k, salt: o.od.salt }); S_("gm_sync_od", { on: 1, since: ymd() });
+        if (o.ms && !G("gm_ms_cfg", null)) S_("gm_ms_cfg", { id: o.ms });
+        if (!o.url) { gmTouch("OneDrive sync handed over", "sign in to Microsoft once"); setTimeout(function () { if (window.renderAll) renderAll(); }, 50); return true; }
+      }
+      if (typeof o.url !== "string" || !/^https?:\/\//.test(o.url) || typeof o.key !== "string" || !o.key || o.key.length > 300) throw new Error("not a sync link");
       var user = String(o.user || "me").slice(0, 256), host = new URL(o.url).host, cur = cfg();
       // `./securax go` opens this link on every run: a device already set up exactly like this needs no question at all.
       if (cur && String(cur.url).replace(/\/+$/, "") === o.url.replace(/\/+$/, "") && cur.key === o.key && cur.user === user) { setTimeout(function () { gmSyncInit(true); }, 50); return true; }
@@ -725,15 +764,18 @@
       h += '<div class="info">Sync is on for <b>' + esc(c.user) + '</b>' + (c.access ? ' (paired by your sign-in' + (c.email ? ' as ' + esc(c.email) : '') + ')' : '') + '. Last push: ' + esc(last || "not yet") + '. '
         + 'Edits merge per field by timestamp, so the phone and the laptop no longer overwrite each other. '
         + 'Your data stays on your own SecuRAX gateway \u2014 no third party.</div>'
+        + (c.access ? '<div class="info">Another device: open <b>' + esc(location.host) + '</b> there and sign in. It pairs itself.</div>'
+          : '<button class="btn btn-p" data-sync-share onclick="gmSyncShare()">Add another device</button>'
+            + '<div class="f-label" style="text-transform:none;letter-spacing:0;margin:6px 0 10px">Sends a link to your own phone, iPad or laptop (AirDrop, Nearby Share or a note to yourself). Opening it there turns sync on: nothing to type. It holds your sync key, so send it to no one else.</div>')
         + '<button class="btn btn-s" onclick="gmSyncOff()">Turn sync off</button>';
     } else {
-      h += '<div class="info">Optional. Without it, each device keeps its own copy and you move data with Export/Import. '
-        + 'With it, all devices stay live \u2014 synced through <b>your own SecuRAX estate</b> (not a cloud SaaS), reached privately over Tailscale. '
-        + 'Setup is in docs/securax/14-GUIDING-MAP.md.</div>'
+      h += '<div class="info">Your devices stay in step through <b>your own SecuRAX estate</b>, not a cloud service. '
+        + 'To add this device: on a device that already syncs, open this card and tap <b>Add another device</b>. Nothing to type here.</div>'
+        + '<details class="gm-sync-hand" style="margin-top:8px"><summary style="cursor:pointer;font-size:12.5px;color:var(--muted)">Set it up by hand</summary>'
         + '<label class="f-label">Estate sync URL</label><input id="syUrl" value="' + (TS_ORIGIN || SECURE_ORIGIN ? location.origin + "/sync" : "") + '" placeholder="' + (SECURE_ORIGIN ? location.origin + "/sync" : "http://securax.your-tailnet.ts.net:8089/sync") + '">'
         + '<label class="f-label">Device token</label><input id="syKey" placeholder="your estate sync token">'
         + '<label class="f-label">Your row id (anything, same on every device)</label><input id="syUser" placeholder="me">'
-        + '<button class="btn btn-p" onclick="gmSyncSave()">Turn sync on</button>';
+        + '<button class="btn btn-s" onclick="gmSyncSave()">Turn sync on</button></details>';
     }
     return h;
   }
@@ -2615,6 +2657,7 @@
         h += '<div class="info" style="margin-top:10px"><b>\u2601\ufe0f Syncing through OneDrive</b> \u2014 your devices stay in step over the internet, laptop on or off. Encrypted on this device; Microsoft sees ciphertext only. '
           + (odl ? 'Last sync ' + esc(odl) + '.' : 'Not synced yet.') + (odf ? ' <b style="color:var(--red)">' + odf + ' failed attempt(s): ' + esc(G("gm_sync_od_err", "")) + '</b>' : '') + '</div>'
           + '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-sm" style="background:var(--gold);color:#0d1f35" onclick="gmOdSync().then(renderAll)">Sync now</button>'
+          + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" data-sync-share onclick="gmSyncShare()">Add another device</button>'
           + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmOdSyncOff()">Stop OneDrive sync on this device</button></div>';
       } else {
         h += '<div class="info" style="margin-top:10px"><b>Sync my devices through OneDrive</b> (recommended): phone, laptop and tablet stay in step over the internet even when the laptop is OFF. '
@@ -4325,7 +4368,18 @@
   var _navMore = false;
   function phone() { try { return window.matchMedia("(max-width: 700px)").matches; } catch (e) { return false; } }
   window.gmMoreToday = function (o) { S_("gm_more_today", !!o); };
-  window.gmNavMore = function (on) { _navMore = on === undefined ? !_navMore : !!on; navRender(); };
+  window.gmNavMore = function (on) {
+    var was = _navMore;
+    _navMore = on === undefined ? !_navMore : !!on;
+    navRender();
+    if (_navMore) {
+      var first = document.querySelector("#gmMoreSheet .sh button");
+      if (first && first.focus) first.focus();
+    } else if (was) {
+      var back = document.querySelector('#gmNav button[aria-expanded]');
+      if (back && back.focus) back.focus();
+    }
+  };
   window.gmNavGo = function (id) { _navMore = false; goTab(id); };
   window.gmMoreAll = function (o) { S_("gm_more_all", !!o); };
   // One switch, kept, and reversible from the menu: simple (three doors, a short Today) or everything.
@@ -4377,7 +4431,7 @@
       h += '<button class="' + (curTab === n[0] && !_navMore ? "on" : "") + '" onclick="gmNavGo(\'' + n[0] + '\')"' + (curTab === n[0] ? ' aria-current="page"' : "") + '><b aria-hidden="true">' + n[1] + '</b>' + n[2] + '</button>';
     });
     h += '<button class="' + (_navMore || inMore ? "on" : "") + '" onclick="gmNavMore()" aria-expanded="' + _navMore + '"><b aria-hidden="true">' + navIco('<path d="M4 7h16M4 12h16M4 17h16"/>') + '</b>More</button></nav>';
-    var sh = '<div id="gmMoreSheet" class="' + (_navMore ? "on" : "") + '" onclick="if(event.target===this)gmNavMore(false)"><div class="sh" role="menu">';
+    var sh = '<div id="gmMoreSheet" class="' + (_navMore ? "on" : "") + '" role="dialog" aria-modal="true" aria-label="More" onclick="if(event.target===this)gmNavMore(false)"><div class="sh" role="menu">';
     // The vital few first, ordered by risk (Shield, then what is due, then what runs your life); everything else folded.
     // Start simple (owner, 2026-11-14: "terrified to start", "too heavy"): three doors until the person asks for everything.
     var SIMPLE = G("gm_simple", true) !== false;
@@ -4970,7 +5024,9 @@
     { id: "family-q3", group: "family", v: 1, name: "Family health Q3: children and parents", rule: "FREQ=YEARLY;BYMONTH=10;BYDAY=1MO", months: [9], nth: 1, dow: 1, hh: 9, mins: 30,
       desc: "Children: annual paediatric visit, vaccination check, growth. Parents: blood pressure and diabetes panel, and the checks their doctor advises." },
     { id: "family-q4", group: "family", v: 1, name: "Family health Q4: closure", rule: "FREQ=YEARLY;BYMONTH=1;BYDAY=1MO", months: [0], nth: 1, dow: 1, hh: 9, mins: 30,
-      desc: "Second dental visit for adults, close every value flagged in Q1, the age-based screenings to discuss with your doctor, and one shared family-health folder." }
+      desc: "Second dental visit for adults, close every value flagged in Q1, the age-based screenings to discuss with your doctor, and one shared family-health folder." },
+    { id: "bip-weekly", group: "bip", v: 1, name: "Build in public: this week's episode", rule: "FREQ=WEEKLY;BYDAY=SA", months: null, nth: 0, dow: 6, hh: 10, mins: 60,
+      desc: "Record 10 minutes, cut one 60-second Short, post it with one lesson, then log the link in Life OS > Playbook > S3." }
   ];
   function calFirst(e) {                                        // the first occurrence on or after the fixed epoch: stable for ever
     for (var add = 0; add < 400; add++) {
@@ -4991,7 +5047,7 @@
   window.gmCalendarName = function (id) { var e = CALENDAR.filter(function (x) { return x.id === id; })[0]; return e ? e.name : ""; };
   window.gmCalendarICS = function (group) {
     var now = new Date(), stamp = icsDate(now, now.getHours(), now.getMinutes());
-    var title = group === "family" ? "Family health" : group === "rhythm" ? "Life OS rhythm" : "Life OS";
+    var title = group === "family" ? "Family health" : group === "rhythm" ? "Life OS rhythm" : group === "bip" ? "Build in public" : "Life OS";
     var L = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//SecuRAX//Life OS calendar//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "X-WR-CALNAME:" + title];
     rhythmEvents(group).forEach(function (e) {
       var end = new Date(e.start); end.setHours(e.hh, e.mins, 0, 0);
@@ -5010,10 +5066,78 @@
     try {
       var a = document.createElement("a");
       a.href = URL.createObjectURL(new Blob([ics], { type: "text/calendar" }));
-      a.download = (group === "family" ? "family-health" : "life-os-rhythm") + ".ics"; document.body.appendChild(a); a.click(); a.remove();
+      a.download = (group === "family" ? "family-health" : group === "bip" ? "build-in-public" : "life-os-rhythm") + ".ics"; document.body.appendChild(a); a.click(); a.remove();
     } catch (e) {}
     S_("gm_cal_exported" + (group ? "_" + group : ""), ymd());
     gmToast("Calendar file saved: " + n + " repeating events. Open it and add them to the same calendar each time; a newer file updates these events, it never doubles them.");
+  };
+
+  /* ── Build in public (queue build-in-public, slice 1) ───────────────
+     The smallest weekly system that makes a side income visible: one topic, four one-tap steps, one link, one streak.
+     Stored in gm_bip as { "<monday ymd>": { steps: [bool x4], link: "", topic: "" } }. The topic defaults to the newest
+     done Inbox action, so the week starts from real work instead of a blank page. */
+  var BIP_STEPS = ["Record 10 min", "Cut one 60-second Short", "Post it with one lesson", "Log the link"];
+  function bipWeek(d) {
+    d = d ? new Date(d) : new Date();
+    d.setHours(12, 0, 0, 0);
+    d.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+    return ymd(d);
+  }
+  function bipAll() { var v = G("gm_bip", {}); return v && typeof v === "object" && !Array.isArray(v) ? v : {}; }
+  function bipData(w) {
+    if (!w || typeof w !== "object" || Array.isArray(w)) w = {};
+    var steps = Array.isArray(w.steps) ? w.steps.slice(0, BIP_STEPS.length).map(function (x) { return !!x; }) : [];
+    while (steps.length < BIP_STEPS.length) steps.push(false);
+    return { steps: steps, link: typeof w.link === "string" ? w.link : "", topic: typeof w.topic === "string" ? w.topic : "" };
+  }
+  function bipDone(w) { return bipData(w).steps.every(Boolean); }
+  function bipEpisodes() {
+    var all = bipAll();
+    return Object.keys(all).filter(function (k) { return bipDone(all[k]); }).length;
+  }
+  function bipDefaultTopic() {
+    var a = ibAll().filter(function (x) { return x && x.done && x.kind !== "note" && String(x.t || "").trim(); });
+    a.sort(function (p, q) { return (Number(q.created) || 0) - (Number(p.created) || 0); });
+    return a.length ? String(a[0].t).trim() : "What I built or learned this week";
+  }
+  function bipSaveWeek(w) {
+    var all = bipAll(); all[bipWeek()] = w; S_("gm_bip", all); renderAll();
+  }
+  window.gmBipTopic = function (v) {
+    var w = bipData(bipAll()[bipWeek()]);
+    w.topic = String(v == null ? "" : v).slice(0, 200).trim();
+    bipSaveWeek(w);
+  };
+  window.gmBipStep = function (i, on) {
+    i = +i; if (!(i >= 0 && i < BIP_STEPS.length)) return;
+    var w = bipData(bipAll()[bipWeek()]);
+    w.steps[i] = !!on;
+    bipSaveWeek(w);
+  };
+  window.gmBipLink = function (v) {
+    var w = bipData(bipAll()[bipWeek()]);
+    w.link = String(v == null ? "" : v).trim().slice(0, 500);
+    if (w.link) w.steps[BIP_STEPS.length - 1] = true;
+    bipSaveWeek(w);
+  };
+  window.bipCardHTML = function () {
+    var w = bipData(bipAll()[bipWeek()]), n = bipEpisodes();
+    var h = '<div class="info gm-bip">'
+      + '<div style="font-weight:800;font-size:13px">Build in public \u00b7 this week\'s episode</div>'
+      + '<label class="f-label" for="gmBipTopic">This week\'s topic</label>'
+      + '<input id="gmBipTopic" type="text" value="' + esc(w.topic || bipDefaultTopic()) + '" placeholder="What I built or learned this week" onchange="gmBipTopic(this.value)">'
+      + '<div style="margin-top:6px">';
+    BIP_STEPS.forEach(function (s, i) {
+      h += '<label style="display:flex;gap:8px;align-items:center;padding:5px 0;cursor:pointer">'
+        + '<input type="checkbox" data-bip="' + i + '"' + (w.steps[i] ? ' checked' : '') + ' onchange="gmBipStep(' + i + ',this.checked)">'
+        + '<span>' + esc(s) + '</span></label>';
+    });
+    return h + '</div>'
+      + '<label class="f-label" for="gmBipLink">Episode link</label>'
+      + '<input id="gmBipLink" type="text" value="' + esc(w.link) + '" placeholder="Paste the link once it is posted" onchange="gmBipLink(this.value)"> '
+      + '<div style="margin-top:8px;font-weight:700">' + n + ' episode' + (n === 1 ? "" : "s") + ' published</div> '
+      + '<div style="margin-top:8px"><button class="btn-sm" type="button" onclick="gmCalendar(\'bip\')">Add to calendar</button></div>'
+      + '</div>';
   };
 
   /* ── Dated items in the calendar (queue calendar-everywhere): the career plan's dates and the papers' renewals.
@@ -6119,6 +6243,7 @@
       + "#gmNav button.on svg{color:#f3dc8f;filter:drop-shadow(0 0 4px rgba(243,220,143,.85)) drop-shadow(0 0 12px rgba(232,201,106,.4))}"
       // Starlight: a dense field of faint fixed stars, each twinkling at its own pace; achievements are brighter and glow.
       + ".gm-star{background:#fff;border-radius:50%;animation:gmtw var(--tw,5s) ease-in-out infinite}"
+      + "html.gm-rest .gm-star{animation-play-state:paused}"
       + ".gm-st-field{width:1.4px;height:1.4px;opacity:.55}.gm-st-field.b{width:2px;height:2px;opacity:.75}"
       + ".gm-st-day{width:2.6px;height:2.6px;opacity:.95;box-shadow:0 0 4px 1px rgba(255,255,255,.55)}"
       + ".gm-st-risk{width:3.2px!important;height:3.2px!important;background:#fbe7a6!important;box-shadow:0 0 7px 2px rgba(243,220,143,.7)!important}"
@@ -8030,6 +8155,31 @@
     });
     sky.innerHTML = h;
     sky.title = "";
+  }
+  // The stars rest (experience-fixes 5): the twinkle stops while the page is hidden and after 20 s without a touch,
+  // key or scroll, and wakes on the first one. The idle timer is armed only in a real, visible browser, so an
+  // automated page is never kept alive by it.
+  var gmRestLive = !navigator.webdriver && !/jsdom|HeadlessChrome/i.test(navigator.userAgent || "");
+  var gmRestTimer = 0;
+  function gmRest(on) {
+    if (on) document.documentElement.classList.add("gm-rest");
+    else document.documentElement.classList.remove("gm-rest");
+  }
+  window.gmRestNow = function () { gmRest(true); };
+  function gmRestWake() {
+    gmRest(false);
+    if (!gmRestLive) return;
+    if (gmRestTimer) clearTimeout(gmRestTimer);
+    gmRestTimer = setTimeout(function () { if (!document.hidden) gmRest(true); }, 20000);
+  }
+  if (gmRestLive) {
+    document.addEventListener("visibilitychange", function () { if (document.hidden) gmRest(true); else gmRestWake(); });
+    ["pointerdown", "keydown"].forEach(function (ev) { document.addEventListener(ev, gmRestWake, { passive: true }); });
+    window.addEventListener("scroll", gmRestWake, { passive: true });
+    gmRestWake();
+  } else {
+    document.addEventListener("visibilitychange", function () { gmRest(document.hidden); });
+    ["pointerdown", "keydown"].forEach(function (ev) { document.addEventListener(ev, gmRestWake, { passive: true }); });
   }
   // Shooting stars at a natural, irregular pace (every 15 to 30 s), only while the app is on screen and motion is welcome.
   // Armed only in a real, visible browser: an automated or headless page would be kept alive by the repeating timer.
