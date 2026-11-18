@@ -4368,7 +4368,18 @@
   var _navMore = false;
   function phone() { try { return window.matchMedia("(max-width: 700px)").matches; } catch (e) { return false; } }
   window.gmMoreToday = function (o) { S_("gm_more_today", !!o); };
-  window.gmNavMore = function (on) { _navMore = on === undefined ? !_navMore : !!on; navRender(); };
+  window.gmNavMore = function (on) {
+    var was = _navMore;
+    _navMore = on === undefined ? !_navMore : !!on;
+    navRender();
+    if (_navMore) {
+      var first = document.querySelector("#gmMoreSheet .sh button");
+      if (first && first.focus) first.focus();
+    } else if (was) {
+      var back = document.querySelector('#gmNav button[aria-expanded]');
+      if (back && back.focus) back.focus();
+    }
+  };
   window.gmNavGo = function (id) { _navMore = false; goTab(id); };
   window.gmMoreAll = function (o) { S_("gm_more_all", !!o); };
   // One switch, kept, and reversible from the menu: simple (three doors, a short Today) or everything.
@@ -4420,7 +4431,7 @@
       h += '<button class="' + (curTab === n[0] && !_navMore ? "on" : "") + '" onclick="gmNavGo(\'' + n[0] + '\')"' + (curTab === n[0] ? ' aria-current="page"' : "") + '><b aria-hidden="true">' + n[1] + '</b>' + n[2] + '</button>';
     });
     h += '<button class="' + (_navMore || inMore ? "on" : "") + '" onclick="gmNavMore()" aria-expanded="' + _navMore + '"><b aria-hidden="true">' + navIco('<path d="M4 7h16M4 12h16M4 17h16"/>') + '</b>More</button></nav>';
-    var sh = '<div id="gmMoreSheet" class="' + (_navMore ? "on" : "") + '" onclick="if(event.target===this)gmNavMore(false)"><div class="sh" role="menu">';
+    var sh = '<div id="gmMoreSheet" class="' + (_navMore ? "on" : "") + '" role="dialog" aria-modal="true" aria-label="More" onclick="if(event.target===this)gmNavMore(false)"><div class="sh" role="menu">';
     // The vital few first, ordered by risk (Shield, then what is due, then what runs your life); everything else folded.
     // Start simple (owner, 2026-11-14: "terrified to start", "too heavy"): three doors until the person asks for everything.
     var SIMPLE = G("gm_simple", true) !== false;
