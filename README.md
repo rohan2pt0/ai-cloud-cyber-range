@@ -136,12 +136,12 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 - Watch an exercise move
 - An empty build can no longer pass as green
+- The open-model plan lasts the month
 - Life OS Today, a calm first screen
 - No daily Microsoft sign-in
 - Exercise figures read like a printed workout card
 - The strength guide reads like a one-page workout card
 - Each strength move shows how it is done
-- Personal packs
 
 **Release 0.4.0 - 2026-11-14:**
 
