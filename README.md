@@ -141,7 +141,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 - The browser tab names the view
 - A screen reader can jump to the content
 - The habit check is a named button
-- System sheets, calmer and correct
+- A tick is announced
 
 **Release 0.4.0 - 2026-11-14:**
 
