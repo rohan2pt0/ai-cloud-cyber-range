@@ -2377,6 +2377,30 @@
     });
   };
 
+  // Silent renewal (seamless-sync, slice 3). A top-level redirect is first-party for Microsoft, so Safari's blocking of
+  // third-party cookies does not stop it (a hidden frame would fail). With a live Microsoft session the person sees a
+  // brief flash and types nothing; only when Microsoft truly needs them does one calm Sign in line appear.
+  window.gmMsSilent = function (force) {
+    var c = msCfg(), last = +G("gm_ms_silent_at", 0) || 0;
+    if (!c || !c.id || typeof location === "undefined" || !/^https?:$/.test(location.protocol)) return false;
+    if (!force && (Date.now() - last < 6 * 3600e3 || G("gm_ms_needs_signin", false) === true)) return false;
+    if (typeof document !== "undefined" && (document.visibilityState === "hidden" || (function () { try { return typeof isTyping === "function" && isTyping(); } catch (e) { return false; } })())) return false;
+    if (typeof navigator !== "undefined" && navigator.webdriver) return false;
+    S_("gm_ms_silent_at", Date.now());
+    pkce().then(function (p) {
+      sessionStorage.setItem("gm_pkce", p.verifier); sessionStorage.setItem("gm_ms_silent", "1");
+      var hint = G("gm_ms_hint", "");
+      location.href = MSAUTH + "/authorize?client_id=" + encodeURIComponent(c.id)
+        + "&response_type=code&redirect_uri=" + encodeURIComponent(location.origin + location.pathname)
+        + "&response_mode=query&scope=" + encodeURIComponent(msScopes()) + "&prompt=none"
+        + (hint ? "&login_hint=" + encodeURIComponent(hint) : "")
+        + "&code_challenge=" + p.challenge + "&code_challenge_method=S256";
+    }).catch(function () {});
+    return true;
+  };
+  function msHintFrom(idt) {   // the account's sign-in name, from the id token's payload, so the next renewal picks the right account
+    try { var o = JSON.parse(atob(String(idt).split(".")[1].replace(/-/g, "+").replace(/_/g, "/"))); return String(o.preferred_username || o.email || "").slice(0, 200); } catch (e) { return ""; }
+  }
   function msExchange(code) {
     var c = msCfg(), v = sessionStorage.getItem("gm_pkce");
     if (!c || !v) return Promise.reject(new Error("no pkce verifier"));
@@ -2388,7 +2412,9 @@
     }).then(function (r) { return r.json(); }).then(function (t) {
       if (t.error) throw new Error(t.error_description || t.error);
       t.expires_at = nowSrv() + (t.expires_in - 120) * 1000;
-      S_("gm_ms_tok", t); sessionStorage.removeItem("gm_pkce");
+      S_("gm_ms_tok", t); sessionStorage.removeItem("gm_pkce"); sessionStorage.removeItem("gm_ms_silent");
+      var hint = msHintFrom(t.id_token); if (hint) S_("gm_ms_hint", hint);
+      localStorage.removeItem("gm_ms_needs_signin");
       if (msMailAsk()) { if (/\bMail\.Read\b/i.test(t.scope || "")) S_("gm_ms_mail", true); sessionStorage.removeItem("gm_ms_mail_ask"); }
       history.replaceState({}, "", location.pathname);
       return t;
@@ -2397,18 +2423,25 @@
   function msToken() {
     var t = msTok(), c = msCfg();
     if (!t || !c) return Promise.reject(new Error("not connected"));
-    if (t.expires_at > nowSrv()) return Promise.resolve(t.access_token);
+    if (t.expires_at > nowSrv() && !t.stale) return Promise.resolve(t.access_token);
+    if (t.stale) { gmMsSilent(); return Promise.reject(new Error("re-auth needed")); }
     var body = "client_id=" + encodeURIComponent(c.id) + "&grant_type=refresh_token"
       + "&refresh_token=" + encodeURIComponent(t.refresh_token) + "&scope=" + encodeURIComponent(msScopes());
     return fetch(MSAUTH + "/token", {
       method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: body
     }).then(function (r) { return r.json(); }).then(function (n) {
-      if (n.error) { localStorage.removeItem("gm_ms_tok"); throw new Error("re-auth needed"); }
+      if (n.error) {
+        // Microsoft gives a browser app 24 hours of refresh, fixed (it cannot be extended). Only an answer that really
+        // asks for a sign-in renews it, quietly; a passing error (server busy, network) keeps the sign-in and retries later.
+        if (/^(invalid_grant|interaction_required|login_required|consent_required)$/.test(n.error)) { t.stale = 1; S_("gm_ms_tok", t); gmMsSilent(); throw new Error("re-auth needed"); }
+        throw new Error("Microsoft is busy (" + n.error + "); trying again later");
+      }
       n.expires_at = nowSrv() + (n.expires_in - 120) * 1000;
       if (!n.refresh_token) n.refresh_token = t.refresh_token;
       S_("gm_ms_tok", n); return n.access_token;
     });
   }
+  window.gmMsToken = function () { return msToken(); };
   function gq(path, extra) {
     return msToken().then(function (a) {
       var h = { Authorization: "Bearer " + a }; if (extra) Object.keys(extra).forEach(function (k) { h[k] = extra[k]; });
@@ -8108,6 +8141,11 @@
         + (inRecovery() ? "" : driftHTML() + resHTML()) + oneActionHTML() + (inRecovery() ? "" : pinnedHTML()));
     }
     if (curTab === "today") { var unsaved = gmUnsavedLine(); if (unsaved) box.insertAdjacentHTML("afterbegin", unsaved); }
+    if (curTab === "today" && G("gm_ms_needs_signin", false) === true && G("gm_ms_cfg", null)) {
+      box.insertAdjacentHTML("afterbegin", '<div class="gm-ms-again" style="border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">'
+        + '<div style="flex:1;font-size:13px;line-height:1.5">Microsoft asks you to sign in once more, so your devices stay in step.</div>'
+        + '<button type="button" class="btn-sm" style="background:var(--gold);color:#0d1f35;font-weight:800" onclick="gmMsConnect()">Sign in</button></div>');
+    }
     if (curTab === "wheel") { try { sysWheelLines(box); } catch (e) { console.log(e); } }
     try { calmFrame(); } catch (e) { console.log(e); }
     if (phone() && !simpleNow && curTab === "today" && !document.getElementById("gmVitals")) box.insertAdjacentHTML("afterbegin", vitalsHTML());
@@ -8321,7 +8359,7 @@
   // An installed PWA is resumed far more often than it is loaded. Pulling only
   // on "load" is why one device sat on stale state for days.
   document.addEventListener("visibilitychange", function () {
-    if (document.visibilityState === "visible") { gmSyncInit(); gmOdSync(); }
+    if (document.visibilityState === "visible") { gmSyncInit(); gmOdSync(); var mt = msTok(); if (mt && (mt.stale || mt.expires_at <= nowSrv())) msToken().catch(function () {}); }
   });
   window.addEventListener("online", function () { gmSyncInit(); gmOdSync(); });
   gmOdTick();
@@ -8338,6 +8376,11 @@
     var qc = new URLSearchParams(location.search).get("code");
     // A declined Mail.Read consent comes back with no code: forget the ask, so a refresh never requests a scope not granted.
     if (!qc) { try { sessionStorage.removeItem("gm_ms_mail_ask"); } catch (e) {} }
+    var qe = new URLSearchParams(location.search).get("error");
+    if (qe && sessionStorage.getItem("gm_ms_silent")) {
+      sessionStorage.removeItem("gm_ms_silent"); S_("gm_ms_needs_signin", true);
+      try { history.replaceState({}, "", location.pathname); } catch (e) {}
+    }
     if (qc && msCfg()) { msExchange(qc).then(gmMsPull).catch(function (e) { console.log("[ms]", e.message); }); }
     else if (msTok()) {
       var mc = G("gm_ms_cache", null);
