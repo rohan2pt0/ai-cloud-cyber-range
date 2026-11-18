@@ -51,7 +51,9 @@ def default_base(root: pathlib.Path | None = None) -> str:
 def change(base: str, root: pathlib.Path | None = None) -> tuple[str, list[str]]:
     """(the unified diff against base, including new untracked files; the paths it touches)."""
     root = root or ROOT
-    diff = git("diff", base, root=root)
+    # generated files only repeat what their source already shows (guiding-map/index.html is built from ops.js): sending
+    # them doubles every review's cost for nothing (2026-11-18: the open-model plan's monthly cap went in one day)
+    diff = git("diff", base, "--", ".", ":(exclude)guiding-map/index.html", ":(exclude)README.md", root=root)
     new = [f for f in git("ls-files", "--others", "--exclude-standard", root=root).splitlines() if f]
     for f in new:
         try:

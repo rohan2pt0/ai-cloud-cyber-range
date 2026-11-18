@@ -867,16 +867,19 @@ $(python3 "$ROOT/lifecycle/forge.py" brief "$FB")"
       fi
       # The gate = the repo's own checks AND `diffcheck` (the contract's hard rules enforced on the diff: no skipped tests, no weakened rails, no fake green)
       if ( cd "$ROOT" && bash -c "${AUTOBUILD_VERIFY:-\"$0\" verify}" && python3 lifecycle/diffcheck.py --base "$ORIG" && python3 lifecycle/forge.py gate --base "$ORIG" ) > "$FB.new" 2>&1; then
+        git -C "$ROOT" add -A
+        # An attempt that changed nothing proves nothing: never call it GREEN (2026-11-17: a stalled model's empty run
+        # printed GREEN before RED). LESSONS.md does not count as work: the loop itself writes a lesson, and on
+        # 2026-11-18 two empty runs went green on that one line (#346, #351). So check BEFORE the lesson is written.
+        if git -C "$ROOT" diff --cached --quiet -- . ':(exclude)LESSONS.md' && [ -z "$(git -C "$ROOT" log --oneline "$ORIG..HEAD" -- . ':(exclude)LESSONS.md' 2>/dev/null)" ]; then
+          git -C "$ROOT" reset -q -- LESSONS.md 2>/dev/null || true; git -C "$ROOT" checkout -q -- LESSONS.md 2>/dev/null || true
+          C "  ✘ attempt $i made no change: not green"; printf 'The previous attempt made no change at all. Make the change the task asks for.\n' > "$FB"; i=$((i+1)); continue
+        fi
         if [ "$i" -gt 1 ] && [ -s "$FB" ]; then                 # it went red, then green: keep what the red taught, for the next agent
           _WHY="$(python3 "$ROOT/lifecycle/forge.py" brief "$FB" 2>/dev/null | grep -v '^[[:space:]]*$' | head -1)"
           _T="$(printf '%s' "$TASK" | head -1 | cut -c1-70)"   # the task's title, never the whole brief (it once pasted 20 lines into LESSONS.md)
           python3 "$ROOT/lifecycle/lessons.py" add --area autobuild "$_T: first attempt failed on ${_WHY:-the gate}; fixed on attempt $i" >/dev/null 2>&1 || true
-        fi
-        git -C "$ROOT" add -A
-        # An attempt that changed nothing proves nothing: never call it GREEN (2026-11-17: a stalled model's empty run
-        # printed GREEN before RED). It counts as a failed attempt and the loop goes on.
-        if git -C "$ROOT" diff --cached --quiet && [ -z "$(git -C "$ROOT" log --oneline "$ORIG..HEAD" 2>/dev/null)" ]; then
-          C "  ✘ attempt $i made no change: not green"; printf 'The previous attempt made no change at all. Make the change the task asks for.\n' > "$FB"; i=$((i+1)); continue
+          git -C "$ROOT" add -A
         fi
         if git -C "$ROOT" diff --cached --quiet; then C "Agent made no changes — nothing to commit."; else
           # works on a machine with no git identity configured (fresh WSL, CI): fall back to a neutral author
