@@ -137,11 +137,11 @@ This list is generated from [`features.json`](features.json); the Command Center
 - System sheets, calmer and correct
 - A key result is one tap, not a typing lesson
 - Deciding the community-proven way starts from one question
+- Friction is noticed by itself on the device
 - A resting door wakes when you need it
 - The delegation gate cannot be fooled by a test that never runs
 - The Wednesday call runs itself on Today
 - Doors rest by themselves
-- A recurring step lives in the calendar
 
 **Release 0.4.0 - 2026-11-14:**
 
