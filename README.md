@@ -135,13 +135,13 @@ This list is generated from [`features.json`](features.json); the Command Center
 **On main, in the next release:**
 
 - Watch an exercise move
+- An empty build can no longer pass as green
 - Life OS Today, a calm first screen
 - No daily Microsoft sign-in
 - Exercise figures read like a printed workout card
 - The strength guide reads like a one-page workout card
 - Each strength move shows how it is done
 - Personal packs
-- Add another device, nothing to type
 
 **Release 0.4.0 - 2026-11-14:**
 
