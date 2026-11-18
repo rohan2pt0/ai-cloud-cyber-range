@@ -8216,6 +8216,31 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
         + '<div style="margin-top:10px">' + more + '</div></details>' : "")
       + '<div style="text-align:center;margin:6px 0 4px"><span style="font-size:11.5px;color:var(--muted);cursor:pointer;text-decoration:underline" onclick="gmCalm(false)">Show everything (all tabs, all cards)</span></div></div>';
   }
+  /* ── Unsaved days, said honestly on Today (queue experience-v3, fix 1): the age of the last backup belongs on the
+     screen a person opens every day, not only inside Ops. Real data only: example numbers are nobody's to lose. Amber,
+     never red; one line, one action, and a dismiss that rests for 30 days. Reads the same dates Ops reads. ── */
+  function gmBkAgeDays(v) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})/.exec(String(v || "")); if (!m) return null;
+    var d = new Date(+m[1], +m[2] - 1, +m[3]), n = new Date();
+    n = new Date(n.getFullYear(), n.getMonth(), n.getDate());
+    return isNaN(d.getTime()) ? null : Math.max(0, Math.round((n - d) / 86400000));
+  }
+  function gmUnsavedLine() {
+    if (!profOK()) return "";
+    var quiet = gmBkAgeDays(G("gm_unsaved_dismiss", ""));
+    if (quiet !== null && quiet < 30) return "";
+    var ages = [];
+    ["gm_last_export", "gm_last_offsite", "gm_sync_od_last"].forEach(function (k) {
+      var a = gmBkAgeDays(G(k, null)); if (a !== null) ages.push(a);
+    });
+    var days = ages.length ? Math.min.apply(null, ages) : gmBkAgeDays(G("gm_first_open", ""));
+    if (days === null || days < 8) return "";
+    return '<div class="gm-unsaved" style="background:var(--amberBg);border:1px solid var(--amber);border-radius:10px;padding:10px 12px;margin-bottom:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap">'
+      + '<div style="flex:1;font-size:11.5px;color:var(--text);line-height:1.5">' + days + ' days of changes live only on this phone.</div>'
+      + '<button type="button" class="btn-sm" style="background:var(--amber);color:#1a1200;font-weight:800;white-space:nowrap" onclick="gmExportNow()">Save a copy</button>'
+      + '<button type="button" class="btn-sm" aria-label="dismiss" style="background:transparent;color:var(--muted);font-size:16px;padding:4px 8px" onclick="gmUnsavedDismiss()">\u00d7</button></div>';
+  }
+  window.gmUnsavedDismiss = function () { S_("gm_unsaved_dismiss", ymd()); renderAll(); };
   function calmTabs() {
     var bar = document.getElementById("tabBar");
     if (!bar || typeof TABS === "undefined") return;
@@ -11201,6 +11226,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       box.insertAdjacentHTML("afterbegin", greetHTML() + exampleWarn() + interruptHTML() + undoBar() + inboxNudgeHTML() + daily3HTML() + msTodayHTML()
         + (inRecovery() ? "" : driftHTML() + resHTML()) + oneActionHTML() + (inRecovery() ? "" : pinnedHTML()));
     }
+    if (curTab === "today") { var unsaved = gmUnsavedLine(); if (unsaved) box.insertAdjacentHTML("afterbegin", unsaved); }
     if (curTab === "wheel") { try { sysWheelLines(box); } catch (e) { console.log(e); } }
     try { calmFrame(); } catch (e) { console.log(e); }
     if (phone() && !simpleNow && curTab === "today" && !document.getElementById("gmVitals")) box.insertAdjacentHTML("afterbegin", vitalsHTML());

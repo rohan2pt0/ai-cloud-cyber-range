@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- **Unsaved days, said honestly on Today** (owner, 2026-11-18; queue experience-v3, fix 1 of 20): with real data and no backup for 8 days or more, Today shows one amber line ("N days of changes live only on this phone") with one "Save a copy" button that calls the existing backup action, and a dismiss that rests for 30 days. Example data never gets the line (test x3_01).
 - **System sheets, calmer and correct** (owner 2026-11-17, screenshot: most reminders were wrong and the sheets messy): Remind me Saturday only under the 9 steps that are real errands (an action verb first), never under a state to check; a step with a blank ("My work matters because ___") gets a field to fill; each action is a quiet link under its step, no card. Fixed by hand: it was the reviewer's own widening that made it wrong.
 - **A resting door wakes when you need it** (queue friction-meter, slice 3): in More, a resting door comes back by itself when the person's own data says it matters, and says why: Kids for a child's birthday in the next 7 days (Birthday soon), Money through tax season from January to March in India (Tax season). Outside those windows a door rests as before, and using it keeps it awake (test132).
 - **The delegation gate cannot be fooled by a test that never runs** (queue delegate-new-tests): diffcheck blocks a new Life OS test left out of the npm suite list, and an autobuild attempt that changed nothing counts as failed instead of printing GREEN. Written by hand (strong tier: the gate).
