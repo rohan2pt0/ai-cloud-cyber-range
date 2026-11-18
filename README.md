@@ -140,8 +140,8 @@ This list is generated from [`features.json`](features.json); the Command Center
 - Late is amber, never red
 - The browser tab names the view
 - A screen reader can jump to the content
+- The habit check is a named button
 - System sheets, calmer and correct
-- A key result is one tap, not a typing lesson
 
 **Release 0.4.0 - 2026-11-14:**
 
