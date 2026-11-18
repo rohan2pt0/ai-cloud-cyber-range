@@ -4202,6 +4202,31 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   // One-link setup: `./securax sync-link` prints  <hub address>/#sync=<base64url JSON {url,key,user}>.  Opening it on a phone sets sync up in one
   // tap. The data after # never leaves the browser (it is not sent to any server); we remove it from the address bar straight away, we
   // always show WHERE the data will go before saving, and an existing setup is never replaced without a second, explicit yes.
+  function jsonB64url(o) { return btoa(unescape(encodeURIComponent(JSON.stringify(o)))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
+  // Seamless sync, slice 1 (owner 2026-11-18: "one more key to copy-paste, every day"): a device that syncs hands the pairing to
+  // the person's next device through the phone's own share sheet (AirDrop, Nearby Share, a note to self). Opening the link there
+  // runs gmSyncLinkImport, so nothing is typed. The link carries the device token in the #fragment, which no server ever receives.
+  window.gmSyncLink = function () {
+    var c = cfg(), o = {}, odk = G("gm_sync_odk", null), ms = G("gm_ms_cfg", null);
+    if (c && !c.access && c.url && c.key) { o.url = c.url; o.key = c.key; o.user = c.user || "me"; }
+    // OneDrive: the data key itself, so the next device never asks for the passphrase; it only signs in to Microsoft (one door)
+    if (G("gm_sync_od", null) && odk && odk.k && odk.salt) { o.od = { k: odk.k, salt: odk.salt }; if (ms && ms.id) o.ms = ms.id; }
+    if (!o.url && !o.od) return "";
+    return location.origin + location.pathname + "#sync=" + jsonB64url(o);
+  };
+  window.gmSyncShare = function () {
+    var link = window.gmSyncLink(); if (!link) return Promise.resolve(false);
+    var done = function (how) { if (window.gmToast) gmToast(how); return true; };
+    if (navigator.share) {
+      return navigator.share({ title: "Open my Life OS", text: "Open this on my own device to sync it. Not for anyone else.", url: link })
+        .then(function () { return done("Sent. Open it on the other device: sync turns on there."); })
+        .catch(function () { return false; });
+    }
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(link).then(function () { return done("Link copied. Open it on your other device: sync turns on there."); }, function () { return false; });
+    }
+    return Promise.resolve(false);
+  };
   function b64urlJson(t) { t = String(t).replace(/-/g, "+").replace(/_/g, "/"); while (t.length % 4) t += "="; return JSON.parse(decodeURIComponent(escape(atob(t)))); }
   window.gmSyncLinkImport = function () {
     var h = String(location.hash || ""), m = /^#sync=([A-Za-z0-9_-]+)$/.exec(h);
@@ -4209,7 +4234,21 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
     try {
       var o = b64urlJson(m[1]);
-      if (!o || typeof o.url !== "string" || !/^https?:\/\//.test(o.url) || typeof o.key !== "string" || !o.key || o.key.length > 300) throw new Error("not a sync link");
+      if (!o || typeof o !== "object") throw new Error("not a sync link");
+      var B64 = /^[A-Za-z0-9+\/=]{8,200}$/;
+      if (o.od && !(typeof o.od.k === "string" && B64.test(o.od.k) && typeof o.od.salt === "string" && B64.test(o.od.salt))) throw new Error("not a sync link");
+      if (o.ms && !(typeof o.ms === "string" && /^[A-Za-z0-9-]{8,64}$/.test(o.ms))) throw new Error("not a sync link");
+      if (o.od) {   // OneDrive hand-over: keep the data key and the app id; sync starts once this device signs in to Microsoft
+        var curK = G("gm_sync_odk", null);
+        if (!(curK && curK.k === o.od.k && curK.salt === o.od.salt)) {
+          if (!confirm("Turn on OneDrive sync from this link?\n\nOnly continue if you made this link yourself, on your own device.")) return true;
+          if (curK && !confirm("This device already has a OneDrive sync key. Replace it with the one in this link?")) return true;
+        }
+        S_("gm_sync_odk", { k: o.od.k, salt: o.od.salt }); S_("gm_sync_od", { on: 1, since: ymd() });
+        if (o.ms && !G("gm_ms_cfg", null)) S_("gm_ms_cfg", { id: o.ms });
+        if (!o.url) { gmTouch("OneDrive sync handed over", "sign in to Microsoft once"); setTimeout(function () { if (window.renderAll) renderAll(); }, 50); return true; }
+      }
+      if (typeof o.url !== "string" || !/^https?:\/\//.test(o.url) || typeof o.key !== "string" || !o.key || o.key.length > 300) throw new Error("not a sync link");
       var user = String(o.user || "me").slice(0, 256), host = new URL(o.url).host, cur = cfg();
       // `./securax go` opens this link on every run: a device already set up exactly like this needs no question at all.
       if (cur && String(cur.url).replace(/\/+$/, "") === o.url.replace(/\/+$/, "") && cur.key === o.key && cur.user === user) { setTimeout(function () { gmSyncInit(true); }, 50); return true; }
@@ -4361,15 +4400,18 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       h += '<div class="info">Sync is on for <b>' + esc(c.user) + '</b>' + (c.access ? ' (paired by your sign-in' + (c.email ? ' as ' + esc(c.email) : '') + ')' : '') + '. Last push: ' + esc(last || "not yet") + '. '
         + 'Edits merge per field by timestamp, so the phone and the laptop no longer overwrite each other. '
         + 'Your data stays on your own SecuRAX gateway \u2014 no third party.</div>'
+        + (c.access ? '<div class="info">Another device: open <b>' + esc(location.host) + '</b> there and sign in. It pairs itself.</div>'
+          : '<button class="btn btn-p" data-sync-share onclick="gmSyncShare()">Add another device</button>'
+            + '<div class="f-label" style="text-transform:none;letter-spacing:0;margin:6px 0 10px">Sends a link to your own phone, iPad or laptop (AirDrop, Nearby Share or a note to yourself). Opening it there turns sync on: nothing to type. It holds your sync key, so send it to no one else.</div>')
         + '<button class="btn btn-s" onclick="gmSyncOff()">Turn sync off</button>';
     } else {
-      h += '<div class="info">Optional. Without it, each device keeps its own copy and you move data with Export/Import. '
-        + 'With it, all devices stay live \u2014 synced through <b>your own SecuRAX estate</b> (not a cloud SaaS), reached privately over Tailscale. '
-        + 'Setup is in docs/securax/14-GUIDING-MAP.md.</div>'
+      h += '<div class="info">Your devices stay in step through <b>your own SecuRAX estate</b>, not a cloud service. '
+        + 'To add this device: on a device that already syncs, open this card and tap <b>Add another device</b>. Nothing to type here.</div>'
+        + '<details class="gm-sync-hand" style="margin-top:8px"><summary style="cursor:pointer;font-size:12.5px;color:var(--muted)">Set it up by hand</summary>'
         + '<label class="f-label">Estate sync URL</label><input id="syUrl" value="' + (TS_ORIGIN || SECURE_ORIGIN ? location.origin + "/sync" : "") + '" placeholder="' + (SECURE_ORIGIN ? location.origin + "/sync" : "http://securax.your-tailnet.ts.net:8089/sync") + '">'
         + '<label class="f-label">Device token</label><input id="syKey" placeholder="your estate sync token">'
         + '<label class="f-label">Your row id (anything, same on every device)</label><input id="syUser" placeholder="me">'
-        + '<button class="btn btn-p" onclick="gmSyncSave()">Turn sync on</button>';
+        + '<button class="btn btn-s" onclick="gmSyncSave()">Turn sync on</button></details>';
     }
     return h;
   }
@@ -6251,6 +6293,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
         h += '<div class="info" style="margin-top:10px"><b>\u2601\ufe0f Syncing through OneDrive</b> \u2014 your devices stay in step over the internet, laptop on or off. Encrypted on this device; Microsoft sees ciphertext only. '
           + (odl ? 'Last sync ' + esc(odl) + '.' : 'Not synced yet.') + (odf ? ' <b style="color:var(--red)">' + odf + ' failed attempt(s): ' + esc(G("gm_sync_od_err", "")) + '</b>' : '') + '</div>'
           + '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-sm" style="background:var(--gold);color:#0d1f35" onclick="gmOdSync().then(renderAll)">Sync now</button>'
+          + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" data-sync-share onclick="gmSyncShare()">Add another device</button>'
           + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmOdSyncOff()">Stop OneDrive sync on this device</button></div>';
       } else {
         h += '<div class="info" style="margin-top:10px"><b>Sync my devices through OneDrive</b> (recommended): phone, laptop and tablet stay in step over the internet even when the laptop is OFF. '

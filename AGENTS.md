@@ -145,6 +145,8 @@ The principles behind it:
 chose and why in one line, and act: merge a PR the owner approved once every check is green, and pick the order of the queue by
 risk × reach ÷ effort. Ask first only for what is irreversible, costs money, touches the owner's devices or accounts, or is
 published beyond the repository.
+**Find the frictions yourself (owner, 2026-11-18):** do not ask the owner where something hurts. Read the app's own signals
+(`gm_friction_seen`, `governance/frictions.json`, the screens a newcomer would meet) and fix the worst first; ask only when he says so.
 
 Every feature in `features.json` carries its `outcome` (what gets better) and `shows` (where the person sees it); fitness
 `outcomes-declared` fails one that does not.
