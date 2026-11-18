@@ -137,11 +137,11 @@ This list is generated from [`features.json`](features.json); the Command Center
 - Add another device, nothing to type
 - Box breathing fills the screen
 - The More sheet is a dialog
+- Build in public, one small step a week
 - Restore asks for a typed word
 - Unsaved days, said honestly on Today
 - Escape closes the top layer
 - Late is amber, never red
-- The browser tab names the view
 
 **Release 0.4.0 - 2026-11-14:**
 
