@@ -151,6 +151,11 @@ header{background:var(--navy);padding:13px 16px;display:flex;align-items:center;
 .pill{font-size:8px;font-weight:800;padding:2px 7px;border-radius:99px;}
 .pill-g{background:var(--gold);color:var(--navy);}
 .pill-r{background:#dc2626;color:#fff;}
+.gm-rag{display:inline-flex;align-items:center;gap:5px;padding:1px 8px;border-radius:999px;font-weight:600;color:var(--text);white-space:nowrap;}
+.gm-rag::before{content:"";width:7px;height:7px;border-radius:50%;flex:none;}
+.gm-rag-good{background:rgba(22,163,74,.14);} .gm-rag-good::before{background:#16a34a;}
+.gm-rag-watch{background:rgba(217,119,6,.16);} .gm-rag-watch::before{background:#d97706;}
+.gm-rag-low{background:rgba(220,38,38,.14);} .gm-rag-low::before{background:#dc2626;}
 .pill-t{background:var(--teal);color:#fff;}
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:9px;}
 .kc{background:var(--card);border-radius:12px;padding:15px 14px 13px;box-shadow:0 1px 3px rgba(0,0,0,.06);position:relative;overflow:hidden;cursor:pointer;}
@@ -769,6 +774,13 @@ function gmBalRead(prev){
   return {earners:two?2:1, mine:mine, partner:par, balAt:any?(same?prev.balAt:Date.now()):0};
 }
 function gmTermYears(o){ return o.net>0?o.term/(o.net*12):0; }
+// Red, amber, green on the numbers that need a decision (owner 2026-11-19: "visual cues whether it's progress or needs my
+// attention"). A colour is never the only signal: each chip also carries its word. An unknown value stays a calm dash.
+function gmAgeOf(d){ var b=d?new Date(d):null; return b&&!isNaN(b)?Math.floor((Date.now()-b)/31557600000):0; }
+function gmRetMult(age){ return !age?2:age<30?0.5:age<35?1:age<40?2:age<45?3:age<50?4.5:age<55?6:age<60?8:10; }
+function gmRetYears(o){ var pot=(o.epf||0)+(o.nps||0)+(o.ppf||0); return o.net>0&&pot>0?pot/(o.net*12):0; }
+function gmRag(st,text){ var w={good:"strong",watch:"building",low:"needs care"}[st];
+  return '<span class="gm-rag gm-rag-'+st+'" data-state="'+st+'" title="'+w+'" aria-label="'+text+', '+w+'">'+text+'</span>'; }
 // one plain line, chosen by risk: thin term cover for an earner the home depends on, else someone with no retirement pot
 function gmTwoInsight(p){
   var two=gmEarners(p)===2, ppl=[{n:"You",o:gmMine(p),pro:true}];
@@ -798,9 +810,17 @@ function gmTwoOfYouHTML(){
    +'<th style="'+td+'text-align:start;font-weight:600;width:34%"></th><th style="'+td+'text-align:end">You</th><th style="'+td+'text-align:end">'+nm+'</th><th style="'+td+'text-align:end">Household</th></tr></thead><tbody>';
   rows.forEach(function(r){ var k=r[1];
     h+='<tr><td style="'+td+'color:var(--muted)">'+r[0]+'</td><td style="'+td+'text-align:end">'+cell(a[k])+'</td><td style="'+td+'text-align:end">'+cell(b[k])+'</td><td style="'+td+'text-align:end;font-weight:600">'+cell(a[k]+b[k])+'</td></tr>'; });
-  var yr=function(o){ return o.net>0&&o.term>0?gmTermYears(o).toFixed(1)+" yrs":"—"; };
+  // term cover: 10+ years of that person's income keeps the home going; under 6 is a real gap
+  var yr=function(o){ if(!(o.net>0&&o.term>0)) return "—"; var y=gmTermYears(o); return gmRag(y>=10?"good":y>=6?"watch":"low",y.toFixed(1)+" yrs"); };
+  // retirement pot (EPF + NPS + PPF) in years of that person's income, against the band for their age
+  var ry=function(o,dob){ var y=gmRetYears(o); if(!y) return "—"; var m=gmRetMult(gmAgeOf(dob)); return gmRag(y>=m?"good":y>=m*0.5?"watch":"low",y.toFixed(1)+" yrs"); };
+  // health cover for the home: ₹10L or more is the floor most planners use for a family in a metro
+  var hh=(a.health||0)+(b.health||0), hc=hh>0?gmRag(hh>=1000000?"good":hh>=500000?"watch":"low",money(hh)):gmRag("low","none");
   h+='<tr><td style="'+td+'color:var(--muted)">Term cover, years of that person’s income</td><td style="'+td+'text-align:end">'+yr(a)+'</td><td style="'+td+'text-align:end">'+yr(b)+'</td><td style="'+td+'text-align:end">—</td></tr>'
+   +'<tr><td style="'+td+'color:var(--muted)">Retirement (EPF + NPS + PPF), years of income</td><td style="'+td+'text-align:end">'+ry(a,P.dob)+'</td><td style="'+td+'text-align:end">'+ry(b,P.pdob)+'</td><td style="'+td+'text-align:end">—</td></tr>'
+   +'<tr><td style="'+td+'color:var(--muted)">Health cover for the home</td><td style="'+td+'"></td><td style="'+td+'"></td><td style="'+td+'text-align:end">'+hc+'</td></tr>'
    +'</tbody></table>'
+   +'<div class="gm-rag-key" style="margin-top:8px;font-size:11.5px;color:var(--muted)">'+gmRag("good","strong")+' '+gmRag("watch","building")+' '+gmRag("low","needs care")+'</div>'
    +'<div style="margin-top:10px;font-size:13px">'+gmTwoInsight(P)+'</div>'
    +'<button class="btn-sm" style="margin-top:8px" onclick="editProfile()">Update balances</button></div>';
   return h;
