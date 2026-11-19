@@ -742,7 +742,7 @@ function gmMine(p){ p=p||{}; var q=(p.mine&&typeof p.mine==="object")?p.mine:{},
 function gmPartner(p){ p=p||{}; var q=(p.partner&&typeof p.partner==="object")?p.partner:{}, o={gross:+q.gross||0,net:+q.net||+p.psal||0}; GM_BALALL.forEach(function(k){o[k]=+q[k]||0;}); return o; }
 function gmHouseholdIncome(p){ p=p||{}; return (+p.net||0)+(gmEarners(p)===2?gmPartner(p).net:0); }
 function gmBalSum(o){ return GM_BAL.reduce(function(a,k){return a+(+o[k]||0);},0); }
-function gmHouseholdInvest(p){ p=p||{}; var t=gmBalSum(gmMine(p))+(gmEarners(p)===2?gmBalSum(gmPartner(p)):0); return t>0?t:(+p.nw||0); }
+function gmHouseholdInvest(p){ p=p||{}; var t=gmBalSum(gmMine(p))+(gmEarners(p)===2?gmBalSum(gmPartner(p)):0); return Math.max(t,(+p.nw||0)); }   // the larger: a typed net worth may hold more than these balances
 function gmEarnersSwitch(){
   var two=document.getElementById("w_earners").value==="2";
   ["w_pmoney","w_pbal"].forEach(function(id){ var e=document.getElementById(id); if(e) e.style.display=two?(id==="w_pmoney"?"grid":"block"):"none"; });
@@ -822,7 +822,8 @@ function buildDash(){
     dream: gv("w_dream")||"UAE", goal: gv("w_goal")||"Financial independence"
   };
   P.example=false;
-  if(gmBalSum(two.mine)+gmBalSum(two.partner)>0) P.nw=gmBalSum(two.mine)+gmBalSum(two.partner);   // derived, never asked twice
+  // Balances fill net worth only when the person left it blank: a figure they typed (it may hold gold, property or more) is never lost.
+  if(gmBalSum(two.mine)+gmBalSum(two.partner)>0 && !String(gv("w_nw")||"").trim()) P.nw=gmBalSum(two.mine)+gmBalSum(two.partner);
   store("sovP",P);
   var saved=load("sovS"); if(saved){S=saved;} migrate(); store("sovS",S);
   initDash();

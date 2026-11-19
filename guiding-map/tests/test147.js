@@ -74,7 +74,12 @@ setTimeout(() => {
   ok("save: psal follows partner net", sp.psal === 110000 && sp.partner.net === 110000, sp.psal);
   ok("save: earners 2 and mine saved", sp.earners === 2 && sp.mine.epf === 1100000);
   ok("save: balAt stamped", sp.balAt > 0);
-  ok("save: nw is the sum of both persons", sp.nw === 1100000 + 200000 + 300000 + 500000 + 100000 + 400000 + 200000 + 50000, sp.nw);
+  const typed = +W.document.getElementById("w_nw").value;
+  ok("save: a net worth the person typed is never overwritten by the balances", typed > 0 && sp.nw === typed, sp.nw + " vs " + typed);
+  W.document.getElementById("w_nw").value = ""; W.buildDash();
+  const sp2 = JSON.parse(W.localStorage.getItem("sovP"));
+  ok("save: a blank net worth is filled from both persons' balances", sp2.nw === 1100000 + 200000 + 300000 + 500000 + 100000 + 400000 + 200000 + 50000, sp2.nw);
+  W.editProfile();
   W.editProfile();
   ok("fold label now says updated today", /updated today/.test(W.document.getElementById("w_bal_s").textContent));
   W.document.getElementById("w_earners").value = "1"; W.buildDash();
