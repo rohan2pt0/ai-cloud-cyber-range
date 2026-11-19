@@ -1401,28 +1401,50 @@
   }
   function scWork() {
     var w = window.P && P.work && typeof P.work === "object" ? P.work : {}, p = window.P && P.pwork && typeof P.pwork === "object" ? P.pwork : {};
-    return { me: w.kind === "contract" ? "contract" : "salaried", partner: p.kind === "contract" ? "contract" : "salaried" };
+    var ok = function (k) { return k === "contract" || k === "permanent" ? k : "salaried"; };
+    return { me: ok(w.kind), partner: ok(p.kind), meSet: !!w.kind, partnerSet: !!p.kind };
   }
+  var WORK_KINDS = { salaried: "Salaried (private)", contract: "Contract", permanent: "Permanent (govt / PSU)" };
   window.gmWorkSet = function (who, kind) {
     if (!window.P) return;
     var k = who === "partner" ? "pwork" : "work";
-    P[k] = { kind: kind === "contract" ? "contract" : "salaried", from: kind === "contract" ? "2027-01-01" : "" };
+    kind = WORK_KINDS[kind] ? kind : "salaried";
+    P[k] = { kind: kind, from: "2027-01-01" };
     if (profOK()) store("sovP", P);
     renderAll();
+    // say what changed, so a tap never looks like nothing happened (owner 2026-11-19)
+    var rw = window.gmRunway && gmRunway();
+    if (typeof gmToast === "function") gmToast("Saved: " + WORK_KINDS[kind] + ". " + (rw ? "The aim is now " + rw.target + " months of cover." : "Add your fixed bills to see your cover."));
   };
+  function workHTML() {
+    var w = scWork(), two = scEarners() === 2, nm = (typeof ownNames === "function") ? ownNames() : { me: "You", partner: "Partner" };
+    var first = function (n) { return esc(String(n || "").trim().split(" ")[0] || n); };
+    var wb = function (who, cur, set) { return Object.keys(WORK_KINDS).map(function (k) { var on = set && cur === k;
+      return '<button type="button" class="btn-sm" aria-pressed="' + on + '" style="margin:3px 4px 0 0;' + (on ? "background:var(--gold);color:#0d1f35" : "background:var(--cardAlt);color:var(--text)") + '" onclick="gmWorkSet(\'' + who + '\',\'' + k + '\')">' + WORK_KINDS[k] + '</button>'; }).join(""); };
+    var row = function (who, label, cur, set) { return '<div style="margin-top:6px"><span style="color:var(--muted)">' + label + '</span><div>' + wb(who, cur, set) + '</div></div>'; };
+    var rows = row("me", first(nm.me) + "’s work from 1 Jan 2027", w.me, w.meSet) + (two ? row("partner", first(nm.partner) + "’s work from 1 Jan 2027", w.partner, w.partnerSet) : "");
+    var done = w.meSet && (!two || w.partnerSet);
+    var line = first(nm.me) + ": " + WORK_KINDS[w.me] + (two ? " · " + first(nm.partner) + ": " + WORK_KINDS[w.partner] : "");
+    return done ? '<details class="gm-work" style="margin-top:8px;font-size:12.5px"><summary style="cursor:pointer">Work from 1 Jan 2027: <b>' + line + '</b> · change</summary>' + rows + '</details>'
+      : '<div class="gm-work" style="margin-top:10px;font-size:12.5px;font-weight:600">What sets the aim: your work from 1 Jan 2027' + rows + '</div>';
+  }
   window.gmRunway = function () {
     var r = gmRealSpend(); if (!r || !(r.total > 0) || !window.P) return null;
-    var w = scWork(), contract = w.me === "contract" || (scEarners() === 2 && w.partner === "contract"), target = contract ? 12 : 6;
-    var liquid = num(P.sav) + (typeof gmMine === "function" ? gmMine(P).fd + gmPartner(P).fd : 0), months = liquid / r.total;
+    var w = scWork(), two = scEarners() === 2, contract = w.me === "contract" || (two && w.partner === "contract"), target = contract ? 12 : 6;
+    // a permanent (government or PSU) income keeps coming if the other pay stops, so savings only cover the rest
+    var secure = (w.me === "permanent" ? num(P.net) : 0) + (two && w.partner === "permanent" && typeof gmPartner === "function" ? num(gmPartner(P).net) : 0);
+    var gapM = Math.max(0, r.total - secure);
+    var liquid = num(P.sav) + (typeof gmMine === "function" ? gmMine(P).fd + gmPartner(P).fd : 0), months = gapM > 0 ? liquid / gapM : 999;
     var st = months >= target ? "good" : months >= target / 2 ? "watch" : "low";
-    var out = { months: months, target: target, state: st, contract: contract, liquid: liquid, real: r, insight: "" };
+    var out = { months: months, target: target, state: st, contract: contract, liquid: liquid, real: r, insight: "", secure: secure, gapM: gapM };
+    if (gapM <= 0) { out.insight = "The permanent pay alone covers what the home spends. Savings are a second line, not the first."; return out; }
     if (months >= target) { out.insight = "You are at or past " + target + " months of cover. Keep the month-end check-in going and this stays true."; return out; }
-    var gap = Math.max(0, target * r.total - liquid), wants = fixedList().filter(function (x) { return x.kind === "want" && monthlyOf(x) > 0; })
+    var gap = Math.max(0, target * gapM - liquid), wants = fixedList().filter(function (x) { return x.kind === "want" && monthlyOf(x) > 0; })
       .sort(function (a, b) { return monthlyOf(b) - monthlyOf(a); });
-    var add = function (cut) { return r.total - cut > 0 ? liquid / (r.total - cut) - months : 0; };
+    var add = function (cut) { return gapM - cut > 0 ? liquid / (gapM - cut) - months : 0; };
     var s = "You are " + rs(gap) + " short of " + target + " months of cover.";
     // a small gain reads in days, never "0.0 months" (review 2026-11-19)
-    var span = function (m) { return m >= 1 ? m.toFixed(1) + " months" : Math.max(1, Math.round(m * 30)) + (Math.round(m * 30) === 1 ? " day" : " days"); };
+    var span = function (m) { return m >= 1 ? m.toFixed(1) + " months" : (function (d) { return d + (d === 1 ? " day" : " days"); })(Math.max(1, Math.round(m * 30))); };
     if (wants[0]) s += " Pausing " + esc(wants[0].name) + " adds " + span(add(monthlyOf(wants[0]))) + ", then a";
     else s += " A";
     s += " 10% cut in variable spend adds " + span(add(r.variable * 0.1)) + ".";
@@ -1462,6 +1484,8 @@
     else if (k === "who") x.who = { me: 1, partner: 1, joint: 1 }[v] ? v : "joint";
     else x.kind = v === "want" ? "want" : "need";
     S_("gm_fixed", l); spendSync(); bustDerived(); renderAll();
+    // every change says it landed (owner 2026-11-19: "I don't know whether what I enter is getting saved")
+    if (typeof gmToast === "function") gmToast("Saved: " + x.name + (num(x.amt) ? " · " + rs(monthlyOf(x)) + " a month" : "") + (k === "kind" ? (x.kind === "want" ? " · could pause" : " · must pay") : ""));
   };
   window.gmFixedDel = function (id) { S_("gm_fixed", fixedList().filter(function (y) { return y.id !== id; })); spendSync(); bustDerived(); renderAll(); };
   (function spendStyle() {
@@ -1472,20 +1496,25 @@
       + ".gm-rs input,.gm-rs select{min-width:0;box-sizing:border-box}.gm-fx{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}"
       + ".gm-fx b{flex:1 1 100%;font-size:13px}.gm-fx input{flex:1 1 110px;max-inline-size:150px}.gm-fx select{flex:0 1 auto;inline-size:auto}.gm-fx button{inline-size:auto;margin:0}"
       + ".gm-fx-sug{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.gm-fx-sug button{inline-size:auto;margin:0;min-block-size:36px}"
+      + ".gm-fx .gm-fx-m{flex:0 0 auto;margin-inline-start:auto;font-size:12px;color:var(--muted);font-weight:600}.gm-fx .gm-fx-t{flex:1 1 auto;font-size:13px;font-weight:700}"
+      + ".gm-seg{display:inline-flex;border:1px solid var(--border);border-radius:999px;overflow:hidden}.gm-seg button{border:0;border-radius:0;background:transparent;color:var(--text);padding:6px 12px;min-block-size:36px;font-weight:600;box-shadow:none}"
+      + ".gm-seg button[aria-pressed=true]{background:var(--gold);color:#0d1f35}.gm-fx-h{flex:1 1 100%;display:flex;align-items:baseline;gap:8px}.gm-fx button.gm-fx-del{background:none!important;border:0!important;box-shadow:none!important;color:var(--muted);text-decoration:underline;font-size:12px;padding:6px 4px;min-block-size:36px;margin-inline-start:auto}"
       + ".gm-ck{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-top:8px}.gm-ck label{flex:1 1 140px}.gm-ck input{inline-size:100%}";
     var st = document.createElement("style"); st.textContent = css; document.head.appendChild(st);
   })();
-  function fxPeople() { var n = scNames(), o = [["me", n.me]]; if (scEarners() === 2) o.push(["partner", n.partner]); o.push(["joint", "Joint"]); return o; }
+  function fxPeople() { var n = scNames(), f = function (x) { return String(x || "").trim().split(" ")[0] || x; }, o = [["me", f(n.me)]]; if (scEarners() === 2) o.push(["partner", f(n.partner)]); o.push(["joint", "Both of us"]); return o; }
   function fxRow(x) {
     var sel = function (k, opts, cur) { return '<select aria-label="' + k + '" onchange="gmFixedSet(\'' + x.id + '\',\'' + k + '\',this.value)">'
       + opts.map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === cur ? " selected" : "") + ">" + esc(o[1]) + "</option>"; }).join("") + "</select>"; };
     var who = x.who === "partner" && scEarners() !== 2 ? "joint" : x.who;
-    return '<div class="gm-fx"><b>' + esc(x.name) + '</b><input inputmode="decimal" aria-label="Amount" placeholder="₹ amount" value="' + (num(x.amt) ? esc(x.amt) : "")
+    var seg = function (k, label) { var on = (x.kind === "want" ? "want" : "need") === k;
+      return '<button type="button" aria-pressed="' + on + '" onclick="gmFixedSet(\'' + x.id + '\',\'kind\',\'' + k + '\')">' + label + '</button>'; };
+    return '<div class="gm-fx"><div class="gm-fx-h"><span class="gm-fx-t">' + esc(x.name) + '</span><span class="gm-fx-m">' + (num(x.amt) ? rs(monthlyOf(x)) + "/month" : "add amount") + '</span></div>'
+      + '<input inputmode="decimal" aria-label="Amount for ' + esc(x.name) + '" placeholder="₹ amount" value="' + (num(x.amt) ? esc(x.amt) : "")
       + '" onchange="gmFixedSet(\'' + x.id + '\',\'amt\',this.value)">'
       + sel("every", [["month", "a month"], ["quarter", "a quarter"], ["year", "a year"]], x.every) + sel("who", fxPeople(), who)
-      + '<button type="button" class="btn-sm" style="background:var(--cardAlt);color:var(--text)" aria-pressed="' + (x.kind === "want") + '" onclick="gmFixedSet(\'' + x.id + '\',\'kind\',\'' + (x.kind === "want" ? "need" : "want") + '\')">'
-      + (x.kind === "want" ? "Want" : "Need") + '</button>'
-      + '<button type="button" class="btn-sm" style="background:var(--cardAlt);color:var(--text)" aria-label="Remove ' + esc(x.name) + '" onclick="gmFixedDel(\'' + x.id + '\')">×</button></div>';
+      + '<span class="gm-seg" role="group" aria-label="Must pay, or could pause">' + seg("need", "Must pay") + seg("want", "Could pause") + '</span>'
+      + '<button type="button" class="gm-fx-del" aria-label="Remove ' + esc(x.name) + '" onclick="gmFixedDel(\'' + x.id + '\')">Remove</button></div>';
   }
   window.gmSpendCard = function () {
     if (!window.P) return "";
@@ -1501,8 +1530,8 @@
     } else h += '<div class="gm-rs-h">List your fixed bills once and add your balance below. Your real spend shows itself.</div>';
     if (rw) {
       h += '<div style="margin-top:10px;font-size:13px">Cover for ' + rw.target + ' months or more is the aim' + (rw.contract ? ' on contract work' : '') + ': '
-        + gmRag(rw.state, rw.months.toFixed(1) + " months") + '<div class="gm-tgt" style="font-size:10.5px;color:var(--muted);margin-top:3px;line-height:1.3">aim ' + rw.target + '+ months · ' + rs(rw.target * rw.real.total)
-        + ' · savings and FDs ' + rs(rw.liquid) + ' ÷ ' + rs(rw.real.total) + ' a month</div><div style="margin-top:6px">' + rw.insight + '</div></div>';
+        + gmRag(rw.state, rw.gapM > 0 ? (rw.months > 120 ? "120+ months" : rw.months.toFixed(1) + " months") : "covered") + '<div class="gm-tgt" style="font-size:10.5px;color:var(--muted);margin-top:3px;line-height:1.3">aim ' + rw.target + '+ months · ' + rs(rw.target * rw.gapM)
+        + ' · savings and FDs ' + rs(rw.liquid) + ' ÷ ' + rs(rw.gapM) + ' a month' + (rw.secure > 0 ? ' (spend ' + rs(rw.real.total) + ' less the permanent pay ' + rs(rw.secure) + ')' : '') + '</div><div style="margin-top:6px">' + rw.insight + '</div>' + workHTML() + '</div>';
     }
     // the system: one number per earner, on the 1st
     if (!all[now]) {
@@ -1524,6 +1553,7 @@
     // fixed bills, listed once, folded
     var list = fixedList(), have = {}; list.forEach(function (x) { have[x.name] = 1; });
     h += '<details class="road-col" style="margin-top:12px"><summary style="cursor:pointer;font-weight:800;font-size:13px">Fixed bills · ' + rs(ft.total) + ' a month, ' + rs(ft.total * 12) + ' a year</summary>'
+      + '<div style="font-size:12px;color:var(--muted);margin:6px 0 2px">Each change saves on this device at once. <b style="color:var(--text)">Must pay</b>: a bill you cannot skip. <b style="color:var(--text)">Could pause</b>: one you could stop for a few months if money got tight; the cover line uses these first.</div>'
       + '<div class="info" style="margin:6px 0">List each bill once. A yearly bill is spread over twelve months for you. Loan EMIs and your let-out homes’ maintenance are read from what you already told us.</div>';
     list.forEach(function (x) { h += fxRow(x); });
     fixedKnown().forEach(function (x) { h += '<div class="gm-rs-row"><span>' + esc(x.name) + ' <span style="color:var(--muted)">(already known)</span></span><span>' + rs(x.amt) + '</span></div>'; });
@@ -1532,10 +1562,7 @@
       + '<div class="gm-ck"><label class="f-label">Something else<input id="gmFxOwn" type="text" placeholder="e.g. Gym"></label><button type="button" class="btn-sm" onclick="gmFixedAdd(-1)">Add</button></div>';
     if (ft.total > 0) h += '<div class="gm-rs-key" style="margin-top:8px"><span>' + esc(nm.me) + ' <b>' + rs(ft.me) + '</b></span>' + (two ? '<span>' + esc(nm.partner) + ' <b>' + rs(ft.partner) + '</b></span>' : '') + '<span>Joint <b>' + rs(ft.joint) + '</b></span></div>';
     h += '</details>';
-    var w = scWork(), wb = function (who, cur) { return ["salaried", "contract"].map(function (k) {
-      return '<button type="button" class="btn-sm" aria-pressed="' + (cur === k) + '" style="' + (cur === k ? "" : "background:var(--cardAlt);color:var(--text)") + '" onclick="gmWorkSet(\'' + who + '\',\'' + k + '\')">' + (k === "contract" ? "Contract" : "Salaried") + '</button> '; }).join(""); };
-    h += '<div style="margin-top:12px;font-size:12.5px"><span style="color:var(--muted)">From 1 Jan 2027 ' + (two ? esc(nm.me) + "’s" : "my") + ' work is:</span> ' + wb("me", w.me)
-      + (two ? '<div style="margin-top:6px"><span style="color:var(--muted)">From 1 Jan 2027 ' + esc(nm.partner) + '’s work is:</span> ' + wb("partner", w.partner) + '</div>' : '') + '</div>';
+    if (!gmRunway()) h += workHTML();   // no runway yet: the choice still has a home
     return h + '</div>';
   };
 
