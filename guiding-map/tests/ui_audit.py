@@ -74,7 +74,8 @@ def main():
             pg.fill("#gmQin", v); pg.click("#gmQok"); pg.wait_for_timeout(120)
         seed(pg); pg.reload(); pg.wait_for_timeout(1000)
         # life map fields a user would type, one in rupees by mistake (the runway bug)
-        pg.evaluate("gmLifeSet('fFixed','80000'); gmLifeSet('ef','400000'); gmLifeSet('fSip','30000'); gmLifeSet('fEF','10000')")
+        # spending is asked once, in My numbers (2026-11-19); the plan's own fields stay where they are
+        pg.evaluate("gmNumSet('exp','80000'); gmLifeSet('ef','400000'); gmLifeSet('fSip','30000'); gmLifeSet('fEF','10000')")
         # the number bar is the "Show everything" layout (start simple folds it away; test98)
         v = pg.evaluate("gmSimple(false), [...document.querySelectorAll('#gmVitals > div')].map(d=>d.innerText.replace(/\\n/g,' '))")
         pg.evaluate("gmSimple(true)")
