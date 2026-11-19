@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- **Numbers asked once, Buffer that shows** (owner 2026-11-19, screenshots): the Buffer tile showed a dash because it read only a typed fixed cost, while the plan card already showed spending + EMIs from the profile; it now uses that same figure. A number typed in any card (Life map, plan, My numbers) stamps "updated today", and take-home typed in the plan becomes the profile's take-home (test149).
 - **A pack link really installs your pack** (owner 2026-11-19: "it didn't install"): the link asked with a browser dialog, which an in-app browser (a chat or mail app) can answer "no" unseen, and then the Career tab, where the pack lives, was folded under More. Now the link opens Career with an "Add my pack" card, one tap installs it, and Career stays in view while a pack is there (test143).
 - **Watch an exercise move** (owner 2026-11-18; queue visual-guides): each strength card has a quiet "▶ Watch" button that plays the move as one figure, built from the joint angles so every limb keeps its length, at a real tempo with a rep count (the plank counts seconds and breathes). One card plays at a time; it rests off screen, when the page is hidden and under reduced motion (test146).
 - **An empty build can no longer pass as green**: autobuild checked for "no change" after writing its own lesson line, so two open-model runs that did nothing came back GREEN; the check now ignores LESSONS.md and runs first (lifecycle/tests/test_autobuild_no_empty_green.py).
