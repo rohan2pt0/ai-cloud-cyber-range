@@ -20,8 +20,17 @@ const plain = new JSDOM(html, { runScripts: "dangerously", pretendToBeVisual: tr
   beforeParse(w) { w.localStorage.setItem("gm_mine_done", "true"); w.fetch = () => Promise.reject(new Error("offline")); w.scrollTo = () => {}; } });
 setTimeout(() => {
   const w = dom.window, d = w.document, ls = w.localStorage;
+  ok("the link installs nothing until the person says yes", !ls.getItem("gm_pack") && !!ls.getItem("gm_pack_offer"));
+  ok("the link opens Career", w.eval("curTab") === "career", w.eval("curTab"));
+  w.goTab("today");
+  const ctab = [...d.querySelectorAll("#tabBar > *")].filter(t => /Career/.test(t.textContent))[0];
+  ok("with a pack waiting, Career stays in the tab bar (not folded under More)", !!ctab && ctab.style.display !== "none", ctab && ctab.style.display);
+  w.goTab("career");
+  const add = d.querySelector("[data-pack-accept]");
+  ok("Career asks with an Add my pack button, not a browser dialog an in-app browser can swallow", !!add && asked === 0 && /Test pack/.test(add.closest(".gm-pack-offer").textContent));
+  add && add.click();
   const stored = JSON.parse(ls.getItem("gm_pack") || "null");
-  ok("the link installs the pack after one question", asked === 1 && !!stored && stored.name === "Test pack", asked + " " + JSON.stringify(stored && stored.name));
+  ok("one tap installs the pack and clears the offer", !!stored && stored.name === "Test pack" && !ls.getItem("gm_pack_offer"), JSON.stringify(stored && stored.name));
   ok("the link leaves the address bar", !/#pack=/.test(w.location.href));
   ok("bad ids and items without steps are dropped", !!stored && stored.items.length === 4 && !stored.items.some(x => x.id === "BAD ID" || x.id === "no-steps"));
   ok("a javascript: link is not kept", !!stored && stored.items.filter(x => x.id === "bad-one")[0].url === "");
