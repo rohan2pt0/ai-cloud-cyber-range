@@ -5750,7 +5750,7 @@
     return c;
   }
   // While a job decision or move plan is live, Career joins the calm tab row; otherwise it waits under More.
-  function careerActive() { var c = G(CAR_K, null); return !!(c && ((c.offers && c.offers.length) || (c.cfg && (c.cfg.noticeStart || c.cfg.join)))); }
+  function careerActive() { var c = G(CAR_K, null); if (G("gm_pack", null) || G("gm_pack_offer", null)) return true; return !!(c && ((c.offers && c.offers.length) || (c.cfg && (c.cfg.noticeStart || c.cfg.join)))); }
   function carPut(c) { c.at = Date.now(); S_(CAR_K, c); }
   function cfgv(c, k, d) { var v = c.cfg[k]; return v === undefined || v === "" ? d : num(v); }
   function rs(n) { return "₹" + Math.round(num(n)).toLocaleString("en-IN"); }
@@ -6106,10 +6106,29 @@
     var m = /^#pack=([A-Za-z0-9_-]+)$/.exec(String(location.hash || ""));
     if (!m) return false;
     try { history.replaceState(null, "", location.pathname + location.search); } catch (e) {}
-    try { if (window.gmPackInstall(b64urlJson(m[1]))) setTimeout(function () { if (window.renderAll) renderAll(); }, 50); }
+    // The question is a card on Career, not confirm(): an in-app browser (a chat or mail app) can answer confirm()
+    // "no" without showing it, and then nothing happened at all (owner, 2026-11-19: "it didn't install").
+    try { S_("gm_pack_offer", window.gmPackClean(b64urlJson(m[1]))); setTimeout(function () { if (window.goTab) goTab("career"); else if (window.renderAll) renderAll(); }, 50); }
     catch (e) { alert("That pack link could not be read: " + e.message); }
     return true;
   };
+  window.gmPackAccept = function () {
+    var o = G("gm_pack_offer", null); if (!o) return;
+    var ok = false; try { ok = window.gmPackInstall(o, true); } catch (e) { alert("That pack could not be added: " + e.message); }
+    if (ok) localStorage.removeItem("gm_pack_offer");
+    renderAll();
+  };
+  window.gmPackDecline = function () { localStorage.removeItem("gm_pack_offer"); renderAll(); };
+  function packOfferHTML() {
+    var o = null; try { o = G("gm_pack_offer", null); o = o && Array.isArray(o.items) ? window.gmPackClean(o) : null; } catch (e) { o = null; }
+    if (!o) return "";
+    var cur = packGet();
+    return '<div class="road-col gm-pack-offer" style="margin-bottom:14px"><div class="cat-t">✦ Add your pack?</div>'
+      + '<div style="margin:4px 0 10px">"' + esc(o.name) + '": ' + o.items.length + ' systems, kept on this device only. Add it only if you made it yourself.'
+      + (cur ? ' It replaces "' + esc(cur.name) + '"; your ticks stay.' : '') + '</div>'
+      + '<button class="btn btn-p" data-pack-accept onclick="gmPackAccept()">Add my pack</button> '
+      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmPackDecline()">Not now</button></div>';
+  }
   window.gmPackFile = function (input) {
     var f = input && input.files && input.files[0]; if (!f) return;
     if (f.size > 64000) { alert("That file is too large for a pack."); return; }
@@ -6141,10 +6160,10 @@
       + steps + '</div>';
   }
   window.gmPackHTML = function () {
-    var p = packGet();
-    if (!p) return "";
+    var offer = packOfferHTML(), p = packGet();
+    if (!p) return offer;
     var order = packOrder(p), live = order.filter(function (x) { return x.next >= 0; }), done = order.length - live.length;
-    var h = '<div class="road-col gm-pack" style="margin-bottom:14px"><div class="cat-t">✦ ' + esc(p.name) + ' <span class="pill pill-g">yours only</span></div>'
+    var h = offer + '<div class="road-col gm-pack" style="margin-bottom:14px"><div class="cat-t">✦ ' + esc(p.name) + ' <span class="pill pill-g">yours only</span></div>'
       + '<div class="f-label" style="text-transform:none;letter-spacing:0;margin:2px 0 8px">' + live.length + ' systems running · ' + done + ' done this round</div>';
     if (live.length) {
       h += packItemHTML(live[0], true);

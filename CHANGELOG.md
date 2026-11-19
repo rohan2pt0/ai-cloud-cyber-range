@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- **A pack link really installs your pack** (owner 2026-11-19: "it didn't install"): the link asked with a browser dialog, which an in-app browser (a chat or mail app) can answer "no" unseen, and then the Career tab, where the pack lives, was folded under More. Now the link opens Career with an "Add my pack" card, one tap installs it, and Career stays in view while a pack is there (test143).
 - **Watch an exercise move** (owner 2026-11-18; queue visual-guides): each strength card has a quiet "▶ Watch" button that plays the move as one figure, built from the joint angles so every limb keeps its length, at a real tempo with a rep count (the plank counts seconds and breathes). One card plays at a time; it rests off screen, when the page is hidden and under reduced motion (test146).
 - **An empty build can no longer pass as green**: autobuild checked for "no change" after writing its own lesson line, so two open-model runs that did nothing came back GREEN; the check now ignores LESSONS.md and runs first (lifecycle/tests/test_autobuild_no_empty_green.py).
 - **The open-model plan lasts the month**: one day of delegation used the whole monthly cap (874 requests, 50.7M tokens). Builders no longer open the generated index.html and read large files by line ranges; the AI review leaves generated files out and runs once per PR, not on every push (lifecycle/tests/test_token_diet.py).
