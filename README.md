@@ -134,6 +134,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- Numbers asked once, Buffer that shows
 - Two earners in the Life OS
 - A pack link really installs your pack
 - Whose name is the property in
@@ -141,7 +142,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - An empty build can no longer pass as green
 - The open-model plan lasts the month
 - Life OS Today, a calm first screen
-- No daily Microsoft sign-in
 
 **Release 0.4.0 - 2026-11-14:**
 

@@ -4982,10 +4982,20 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     Object.keys(fill).forEach(function (k) { if ((l[k] === undefined || l[k] === "") && fill[k] !== "") l[k] = fill[k]; });
     return l;
   }
+  // Fixed costs, asked once (owner 2026-11-19: the Buffer tile showed a dash while the plan card showed ₹1,36,000): what the
+  // person typed in the plan, else the profile's monthly spending plus loan EMIs, the same figure the plan card shows.
+  function lifeFixed(l) {
+    var f = num(l && l.fFixed); if (f) return f;
+    if (!profOK() || P.example) return 0;
+    return num(P.exp) + (P.loans || []).reduce(function (a, x) { return a + num(x && x.emi); }, 0);
+  }
   var LIFE_TO_P = { nw: "nw", ef: "sav" };                          // lakh in the Life Map, rupees in the profile
   window.gmLifeSet = function (k, v) {
     var l = life(); l[k] = v; S_("gm_life", l);
-    if (LIFE_TO_P[k] && profOK()) { P[LIFE_TO_P[k]] = Math.round(lakhs(v) * 1e5); store("sovP", P); }
+    if (LIFE_TO_P[k] && profOK()) { P[LIFE_TO_P[k]] = Math.round(lakhs(v) * 1e5); P.numsAt = new Date().toISOString().slice(0, 10); store("sovP", P); }
+    // take-home typed in the plan is the profile's take-home: one fact, one place (owner 2026-11-19: "filling numbers again and again")
+    else if (k === "minc" && profOK() && num(v) > 0) { P.net = num(v); P.numsAt = new Date().toISOString().slice(0, 10); store("sovP", P); }
+    else if ({ fFixed: 1, fEF: 1, fSip: 1, inc: 1 }[k] && profOK()) { P.numsAt = new Date().toISOString().slice(0, 10); store("sovP", P); }
     gmClearExample(k);      // you typed it, so it is yours now
     bustDerived(); renderAll();
   };
@@ -5019,7 +5029,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     if (!profOK() || !NUMS.some(function (f) { return f[0] === k; })) return;
     P[k] = num(v) || 0; P.numsAt = new Date().toISOString().slice(0, 10); store("sovP", P);
     // the same fact kept elsewhere follows, so no screen shows an older number
-    var lm = { nw: "nw", sav: "ef" }[k], l = G("gm_life", {});
+    var lm = { nw: "nw", sav: "ef", net: "minc" }[k], l = G("gm_life", {});
     if (lm && l[lm] !== undefined) { delete l[lm]; S_("gm_life", l); }
     var c = G(CAR_K, null);
     if (c) { Object.keys(CAR_FROM_P).forEach(function (path) { if (CAR_FROM_P[path] === k) { var q = path.split("."); if (c[q[0]]) delete c[q[0]][q[1]]; } }); carPut(c); }
@@ -5784,7 +5794,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     STACK.forEach(function (L) { L.items.forEach(function (_, i) { tot++; if ((stackState()[L.id] || {})[i]) hit++; }); });
     var stackPct = tot ? Math.round(hit / tot * 100) : 0;
 
-    var fixed = num(l.fFixed), ef = lakhs(l.ef) * 100000;
+    var fixed = lifeFixed(l), ef = lakhs(l.ef) * 100000;
     var runway = fixed ? ef / fixed : 0;
 
     var inc = num(l.minc), save = inc ? Math.round((num(l.fEF) + num(l.fSip)) / inc * 100) : 0;
@@ -5942,7 +5952,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     }
 
     // --- runway and savings rate, the two that gate Stack items ---
-    var fixed = num(l.fFixed), ef = num(l.ef) * 100000, minc = num(l.minc);
+    var fixed = lifeFixed(l), ef = num(l.ef) * 100000, minc = num(l.minc);
     if (fixed && ef) d.runway = { v: (ef / fixed).toFixed(1), u: "months", label: "Emergency runway", src: "Emergency fund ÷ monthly fixed costs" };
     if (minc) d.savRate = { v: Math.round((num(l.fEF) + num(l.fSip)) / minc * 100), u: "%", label: "Savings rate", src: "(to emergency fund + to SIP) ÷ take-home" };
 
