@@ -136,12 +136,12 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 - Two earners in the Life OS
 - A pack link really installs your pack
+- Whose name is the property in
 - Watch an exercise move
 - An empty build can no longer pass as green
 - The open-model plan lasts the month
 - Life OS Today, a calm first screen
 - No daily Microsoft sign-in
-- Exercise figures read like a printed workout card
 
 **Release 0.4.0 - 2026-11-14:**
 

@@ -1568,7 +1568,7 @@
 
   function props() { return G("gm_props", []); }
   window.gmPropAdd = function () {
-    var p = props(); p.push({ n: "Property " + (p.length + 1), use: "letout", val: "", rent: "", loan: "", rate: "", emi: "", out: "", vac: "1" });
+    var p = props(); p.push({ n: "Property " + (p.length + 1), use: "letout", val: "", rent: "", loan: "", rate: "", emi: "", out: "", vac: "1", owner: "me" });
     S_("gm_props", p); renderAll();
   };
   window.gmPropDel = function (i) {
@@ -1581,7 +1581,7 @@
     rent: { min: 0, max: 10000000 }, emi: { min: 0, max: 10000000 }, out: { min: 0, max: 100000000 },
     rate: { min: 0, max: 30 }, vac: { min: 0, max: 12, int: true },
     rentDay: { min: 1, max: 28, int: true }, maintDay: { min: 1, max: 28, int: true }, months: { min: 1, max: 60, int: true },
-    deposit: { min: 0, max: 100000000 }, maint: { min: 0, max: 10000000 }, start: { date: true }, taxDue: { date: true }
+    share: { min: 1, max: 99, int: true }, deposit: { min: 0, max: 100000000 }, maint: { min: 0, max: 10000000 }, start: { date: true }, taxDue: { date: true }
   };
   window.gmPropSet = function (i, k, v) { if (PROP_RULES[k]) v = window.gmFieldGuard(PROP_RULES[k], v).v; var p = props(); p[i][k] = v; S_("gm_props", p); renderAll(); };
 
@@ -1691,6 +1691,74 @@
       + (word ? llBadge(cls, word) : "") + '</div>'
       + '<button type="button" class="btn-sm" style="margin-top:6px" onclick="gmLlDone(' + i + ',\'' + r.act + '\',\'' + esc(r.key || "") + '\')">' + esc(r.btn) + '</button>' + more + '</div>';
   }
+  /* ── Whose name is the property in (two-earners-2): owner, share, borrower; derived papers and rent split ── */
+  function ownKind(p) { var o = p && p.owner; return o === "partner" || o === "joint" ? o : "me"; }
+  function ownMyShare(p) {
+    var o = ownKind(p);
+    if (o === "me") return 100;
+    if (o === "partner") return 0;
+    var s = (p.share === undefined || p.share === null || String(p.share).trim() === "") ? 50 : num(p.share);
+    return Math.min(99, Math.max(1, s));
+  }
+  function ownNames() {
+    var pr = (typeof window !== "undefined" && window.P) || {};
+    var a = String(pr.name || "").trim().split(" ")[0], b = String(pr.pname || "").trim().split(" ")[0];
+    return { me: a || "You", partner: b || "Partner" };
+  }
+  window.gmRentByPerson = function () {
+    var me = 0, partner = 0;
+    props().forEach(function (p) {
+      if ((p.use || "letout") !== "letout") return;
+      var rent = num(p.rent), s = ownMyShare(p);
+      me += rent * s / 100; partner += rent - rent * s / 100;
+    });
+    return { me: me, partner: partner };
+  };
+  function ownBtns(i, key, cur, opts) {
+    return '<div style="display:flex;gap:6px;margin-bottom:8px">' + opts.map(function (o) {
+      var on = cur === o[0];
+      return '<button type="button" class="btn-sm" aria-pressed="' + on + '" style="flex:1;background:' + (on ? "var(--gold);color:#0d1f35" : "var(--cardAlt);color:var(--text)")
+        + '" onclick="gmPropSet(' + i + ',\'' + key + '\',\'' + o[0] + '\')">' + esc(o[1]) + '</button>';
+    }).join("") + '</div>';
+  }
+  function ownerHTML(p, i) {
+    var nm = ownNames(), o = ownKind(p), b = p.borrower === "partner" || p.borrower === "joint" ? p.borrower : "me";
+    var opts = [["me", nm.me], ["partner", nm.partner], ["joint", "Both"]];
+    var h = '<label class="f-label">On whose name is it?</label>' + ownBtns(i, "owner", o, opts);
+    if (o === "joint") {
+      var s = ownMyShare(p);
+      h += '<label class="f-label">' + (nm.me === "You" ? "Your" : esc(nm.me) + "’s") + ' share (%)</label><input inputmode="decimal" value="' + s + '" onchange="gmPropSet(' + i + ',\'share\',this.value)">'
+        + '<div style="font-size:12px;color:var(--muted);margin:4px 0 8px">' + esc(nm.partner) + ': ' + (100 - s) + '%</div>';
+    }
+    if (num(p.loan) > 0) h += '<label class="f-label">Who pays the home loan?</label>' + ownBtns(i, "borrower", b, opts);
+    return h;
+  }
+  function papersLines(p) {
+    var nm = ownNames(), o = ownKind(p), s = ownMyShare(p), rent = num(p.rent), L = [];
+    var owners = o === "joint" ? esc(nm.me) + " and " + esc(nm.partner) : o === "partner" ? esc(nm.partner) : esc(nm.me);
+    var tag = ' <span class="gm-ca-tag" style="font-size:11px;color:var(--muted);white-space:nowrap">confirm with your CA</span>';
+    L.push(o === "joint" ? "The rent agreement names every owner on the title (" + owners + ") as the landlord (licensor), and every owner signs."
+      : "The rent agreement names " + owners + " as the landlord (licensor), and " + owners + " signs. It must match the name on the title papers.");
+    L.push("The rent goes into the bank account of the owner" + (o === "joint" ? ", or in shares (" + esc(nm.me) + " " + s + "%, " + esc(nm.partner) + " " + (100 - s) + "%)" : "") + ". "
+      + (o === "joint" ? "Each owner shows their own share of the rent in their own tax return." : owners + " shows the rent in their own tax return.") + tag);
+    if (rent > 50000) L.push("The monthly rent is above ₹50,000. If the tenant is an individual, the tenant must deduct TDS (2%) and needs " + (o === "joint" ? "each owner’s" : "the owner’s") + " PAN." + tag);
+    if (num(p.loan) > 0) {
+      var b = p.borrower === "partner" || p.borrower === "joint" ? p.borrower : "me";
+      var who = b === "joint" ? esc(nm.me) + " and " + esc(nm.partner) : b === "partner" ? esc(nm.partner) : esc(nm.me);
+      L.push("Home-loan interest: each owner who is also a borrower can claim their share (here: " + who + "), under the old tax regime. For a let-out home, interest is set against the rent in both regimes." + tag);
+    }
+    L.push("If one partner paid for a share registered in the other’s name, the rent from that share can be taxed in the payer’s hands (clubbing; see the Glossary)." + tag);
+    var gr = G("gm_region", null);
+    if (gr === null || gr === undefined || gr === "local") L.push('<span data-where="IN">In Maharashtra, a leave and licence agreement must be registered.</span>');
+    return L;
+  }
+  function papersCardHTML(p) {
+    var L = papersLines(p);
+    var li = function (t) { return '<div style="font-size:12.5px;line-height:1.55;padding:5px 0;border-top:1px solid var(--border)">' + t + '</div>'; };
+    var h = '<div class="road-col gm-papers" style="margin:6px 0 12px"><div style="font-weight:800;font-size:13.5px">Papers for this home: who does what</div>' + li(L[0]);
+    if (L.length > 1) h += '<details style="margin-top:4px"><summary>Later (' + (L.length - 1) + ')</summary>' + L.slice(1).map(li).join("") + '</details>';
+    return h + '</div>';
+  }
   function landlordHTML(p, i) {
     var rows = llRows(p), h = '<div class="road-col gm-ll" style="margin:6px 0 12px"><div style="font-weight:800;font-size:13.5px">Next for this home</div>';
     if (!p.start && !p.rentDay) h += '<div style="font-size:12.5px;color:var(--muted);margin-top:4px">Add the tenant and the dates below; the app then reminds you of every due date.</div>';
@@ -1754,7 +1822,8 @@
         + '<span style="float:right;color:' + (r.cashflow >= 0 ? "var(--green)" : "var(--amber)") + '">'
         + (r.cashflow >= 0 ? "+" : "") + Math.round(r.cashflow).toLocaleString("en-IN") + "/mo</span></summary>";
       h += '<div style="margin-top:8px">';
-      if ((p.use || "letout") === "letout") h += landlordHTML(p, i);
+      h += ownerHTML(p, i);
+      if ((p.use || "letout") === "letout") h += papersCardHTML(p) + landlordHTML(p, i);
       F.forEach(function (f) {
         h += '<label class="f-label">' + f[1] + '</label><input ' + (f[0] === "n" ? "" : 'inputmode="decimal"')
           + ' value="' + esc(p[f[0]] || "") + '" placeholder="' + f[2] + '" onchange="gmPropSet(' + i + ',\'' + f[0] + '\',this.value)">';
@@ -2056,7 +2125,8 @@
      to-correct, and clearly labelled as an example. */
   window.gmTplProp = function () {
     var p = props();
-    p.push({ n: "Example \u2014 rename me", use: "letout", val: "75", rent: "18000", loan: "32", rate: "7.25", emi: "26000", out: "48000", vac: "1" });
+    p.push({ n: "Example \u2014 rename me", use: "letout", val: "75", rent: "18000", loan: "32", rate: "7.25", emi: "26000", out: "48000", vac: "1", owner: "joint", share: "50", borrower: "joint" });
+    p.push({ n: "Example \u2014 second flat", use: "letout", val: "45", rent: "12000", loan: "", rate: "", emi: "", out: "24000", vac: "1", owner: "partner" });
     S_("gm_props", p); renderAll();
   };
   window.gmTplLife = function () {
