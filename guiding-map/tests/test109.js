@@ -29,10 +29,10 @@ setTimeout(() => {
 
   w.localStorage.setItem("gm_facts", JSON.stringify({ partner: false }));
   w.goTab("career");
-  ok("no partner leaves the spouse field out", !sec().querySelector('input[onchange*="house.wife"]'), "spouse input present");
+  ok("no partner leaves the spouse field out", !sec().querySelector('input[onchange*="house.partner"]'), "spouse input present");
   w.localStorage.setItem("gm_facts", JSON.stringify({ partner: true }));
   w.goTab("career");
-  ok("a partner keeps the spouse field", !!sec().querySelector('input[onchange*="house.wife"]'), "spouse input missing");
+  ok("a partner keeps the spouse field", !!sec().querySelector('input[onchange*="house.partner"]'), "spouse input missing");
 
   console.log("test109 career step 4 folded: " + P + " passed, " + F + " failed");
   if (F) { e.forEach(x => console.log("  " + x)); process.exit(1); }
