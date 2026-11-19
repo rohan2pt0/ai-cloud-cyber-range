@@ -77,7 +77,11 @@ def main():
         # spending is asked once, in My numbers (2026-11-19); the plan's own fields stay where they are
         pg.evaluate("gmNumSet('exp','80000'); gmLifeSet('ef','400000'); gmLifeSet('fSip','30000'); gmLifeSet('fEF','10000')")
         # the number bar is the "Show everything" layout (start simple folds it away; test98)
-        v = pg.evaluate("gmSimple(false), [...document.querySelectorAll('#gmVitals > div')].map(d=>d.innerText.replace(/\\n/g,' '))")
+        # wait for the tile itself, not a fixed pause: a slow CI runner once read it before the re-render (2026-11-19)
+        pg.evaluate("gmSimple(false)")
+        try: pg.wait_for_function("[...document.querySelectorAll('#gmVitals > div')].some(d=>/\\d\\.\\dm/.test(d.innerText))", timeout=8000)
+        except Exception: pass
+        v = pg.evaluate("[...document.querySelectorAll('#gmVitals > div')].map(d=>d.innerText.replace(/\\n/g,' '))")
         pg.evaluate("gmSimple(true)")
         chk("runway is sane when the emergency fund is typed in rupees", any("5.0m" in x for x in v), v)
         # 2. quarterly check-in: wheel 8 taps -> pick 2 goals
