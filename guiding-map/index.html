@@ -795,6 +795,9 @@ function gmTwoInsight(p){
       : low.n+(low.pro?" have":" has")+" no term cover yet, and the home depends on that income. Ten years of income is the aim.";
   }
   var none=ppl.filter(function(x){return !(x.o.epf>0||x.o.nps>0||x.o.ppf>0);})[0];
+  var behind=ppl.filter(function(x){ var d=x.pro?p.dob:p.pdob, m=gmRetMult(gmAgeOf(d)); return x.o.net>0&&gmRetYears(x.o)>0&&gmRetYears(x.o)<m; })[0];
+  if(!none&&behind){ var bd=behind.pro?p.dob:p.pdob, bm=gmRetMult(gmAgeOf(bd)), gap=behind.o.net*12*bm-((behind.o.epf||0)+(behind.o.nps||0)+(behind.o.ppf||0));
+    return (behind.pro?"Your":behind.n+"’s")+" retirement savings are "+money(gap)+" short of the aim for "+(behind.pro?"your":"their")+" age. Raising the monthly NPS or PPF amount closes it; a raise is the easiest moment."; }
   if(none) return none.n+(none.pro?" have":" has")+" no EPF, NPS or PPF yet. Even a small monthly start builds a retirement floor of "+(none.pro?"your":"their")+" own.";
   return "Both of you have cover and a retirement pot of your own. Keep the balances fresh.";
 }
@@ -814,19 +817,20 @@ function gmTwoOfYouHTML(){
   // each value carries its own target, worked out for that person (owner 2026-11-19: "show the target range, dynamic for each")
   var tgt=function(t){ return '<div class="gm-tgt" style="font-size:10.5px;color:var(--muted);margin-top:3px;line-height:1.3">'+t+'</div>'; };
   var yr=function(o){ if(!(o.net>0)) return "—"; var aim=o.net*12*10;
-    if(!(o.term>0)) return gmRag("low","none")+tgt("aim 10+ yrs · "+money(aim));
-    var y=gmTermYears(o); return gmRag(y>=10?"good":y>=6?"watch":"low",y.toFixed(1)+" yrs")+tgt("aim 10+ yrs · "+money(aim)); };
+    if(!(o.term>0)) return gmRag("low","none")+tgt("have ₹0<br>need "+money(aim));
+    var y=gmTermYears(o); return gmRag(y>=10?"good":y>=6?"watch":"low",y.toFixed(1)+" yrs")+tgt("have "+money(o.term)+"<br>need "+money(aim)); };
   // retirement pot (EPF + NPS + PPF) in years of that person's income, against the band for their age
-  var ry=function(o,dob){ if(!(o.net>0)) return "—"; var age=gmAgeOf(dob), m=gmRetMult(age), aim=o.net*12*m, y=gmRetYears(o);
-    var t=tgt("aim "+m+"+ yrs"+(age?" at "+age:"")+" · "+money(aim));
+  var ry=function(o,dob){ if(!(o.net>0)) return "—"; var age=gmAgeOf(dob), m=gmRetMult(age), aim=o.net*12*m, y=gmRetYears(o), pot=(o.epf||0)+(o.nps||0)+(o.ppf||0);
+    var t=tgt("have "+money(pot)+"<br>need "+money(aim)+(age?" by "+age:""));
     return y?gmRag(y>=m?"good":y>=m*0.5?"watch":"low",y.toFixed(1)+" yrs")+t:"—"+t; };
   // health cover for the home: ₹10L or more is the floor most planners use for a family in a metro
   // health cover for the home, sized to the people in it: ₹5L a person, never under ₹10L (a planner's rule of thumb for a metro)
   var heads=2+((P.kids||[]).filter(function(k){return k&&k.name;}).length), hAim=Math.max(1000000,heads*500000);
-  var hh=(a.health||0)+(b.health||0), hc=(hh>0?gmRag(hh>=hAim?"good":hh>=hAim*0.5?"watch":"low",money(hh)):gmRag("low","none"))+tgt("aim "+money(hAim)+"+ for "+heads);
-  h+='<tr><td style="'+td+'color:var(--muted)">Term cover, years of that person’s income</td><td style="'+td+'text-align:end">'+yr(a)+'</td><td style="'+td+'text-align:end">'+yr(b)+'</td><td style="'+td+'text-align:end">—</td></tr>'
-   +'<tr><td style="'+td+'color:var(--muted)">Retirement (EPF + NPS + PPF), years of income</td><td style="'+td+'text-align:end">'+ry(a,P.dob)+'</td><td style="'+td+'text-align:end">'+ry(b,P.pdob)+'</td><td style="'+td+'text-align:end">—</td></tr>'
-   +'<tr><td style="'+td+'color:var(--muted)">Health cover for the home</td><td style="'+td+'"></td><td style="'+td+'"></td><td style="'+td+'text-align:end">'+hc+'</td></tr>'
+  var hh=(a.health||0)+(b.health||0), hc=(hh>0?gmRag(hh>=hAim?"good":hh>=hAim*0.5?"watch":"low",money(hh)):gmRag("low","none"))+tgt("have "+money(hh)+"<br>need "+money(hAim)+" for "+heads+" people");
+  var why=function(t){ return '<div style="font-size:10.5px;line-height:1.35;margin-top:3px;opacity:.85">'+t+'</div>'; };
+  h+='<tr><td style="'+td+'color:var(--muted)">Term cover, years of that person’s income'+why("If this person dies, the payout should replace 10 years of their take-home.")+'</td><td style="'+td+'text-align:end">'+yr(a)+'</td><td style="'+td+'text-align:end">'+yr(b)+'</td><td style="'+td+'text-align:end">—</td></tr>'
+   +'<tr><td style="'+td+'color:var(--muted)">Retirement (EPF + NPS + PPF), years of income'+why("Savings locked for retirement, counted in years of take-home. The aim rises with age: 1 year by 30, 2 by 35, 3 by 40, up to 10 by 60.")+'</td><td style="'+td+'text-align:end">'+ry(a,P.dob)+'</td><td style="'+td+'text-align:end">'+ry(b,P.pdob)+'</td><td style="'+td+'text-align:end">—</td></tr>'
+   +'<tr><td style="'+td+'color:var(--muted)">Health cover for the home'+why("Hospital cover for everyone at home: about ₹5L a person, never under ₹10L.")+'</td><td style="'+td+'"></td><td style="'+td+'"></td><td style="'+td+'text-align:end">'+hc+'</td></tr>'
    +'</tbody></table>'
    +'<div class="gm-rag-key" style="margin-top:8px;font-size:11.5px;color:var(--muted)">'+gmRag("good","strong")+' '+gmRag("watch","building")+' '+gmRag("low","needs care")+'</div>'
    +'<div style="margin-top:10px;font-size:13px">'+gmTwoInsight(P)+'</div>'
