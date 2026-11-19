@@ -32,7 +32,7 @@ setTimeout(() => {
   s = onchange();
   ok("Career asks no second time for the in-hand salary", !s.includes("gmCarSet('cur.inhand'"), s);
   ok("Career asks no second time for household essentials", !s.includes("gmCarSet('house.exp'"), s);
-  ok("Career asks no second time for the spouse's take-home", !s.includes("gmCarSet('house.wife'"), s);
+  ok("Career asks no second time for the spouse's take-home", !s.includes("gmCarSet('house.partner'"), s);
 
   w.P.example = true;
   w.goTab("life");
