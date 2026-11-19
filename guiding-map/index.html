@@ -469,6 +469,20 @@ html[data-theme="light"] [style*="background:var(--green);color:#fff"]{color:#ff
       <div><label class="f-label">Liquid savings now</label><input type="number" id="w_sav" placeholder="200000"></div>
     </div>
     <label class="f-label">Total investments / net worth</label><input type="number" id="w_nw" placeholder="500000">
+    <details id="w_bal" class="w-fixed"><summary class="sec-title" id="w_bal_s">Balances (not added yet)</summary>
+      <div class="f-label" style="margin-top:6px">You</div>
+      <div class="f-row"><div><label class="f-label">EPF balance</label><input type="number" inputmode="decimal" id="w_m_epf" placeholder="0"></div><div><label class="f-label">NPS</label><input type="number" inputmode="decimal" id="w_m_nps" placeholder="0"></div></div>
+      <div class="f-row"><div><label class="f-label">PPF</label><input type="number" inputmode="decimal" id="w_m_ppf" placeholder="0"></div><div><label class="f-label">Mutual funds and stocks</label><input type="number" inputmode="decimal" id="w_m_mf" placeholder="0"></div></div>
+      <div class="f-row"><div><label class="f-label">FDs and savings</label><input type="number" inputmode="decimal" id="w_m_fd" placeholder="0"></div><div><label class="f-label">Term cover</label><input type="number" inputmode="decimal" id="w_m_term" placeholder="0"></div></div>
+      <div class="f-row"><div><label class="f-label">Health cover</label><input type="number" inputmode="decimal" id="w_m_health" placeholder="0"></div></div>
+      <div id="w_pbal" style="display:none"><div class="f-label" style="margin-top:10px">Partner</div>
+      <div class="f-row"><div><label class="f-label">EPF balance</label><input type="number" inputmode="decimal" id="w_p_epf" placeholder="0"></div><div><label class="f-label">NPS</label><input type="number" inputmode="decimal" id="w_p_nps" placeholder="0"></div></div>
+      <div class="f-row"><div><label class="f-label">PPF</label><input type="number" inputmode="decimal" id="w_p_ppf" placeholder="0"></div><div><label class="f-label">Mutual funds and stocks</label><input type="number" inputmode="decimal" id="w_p_mf" placeholder="0"></div></div>
+      <div class="f-row"><div><label class="f-label">FDs and savings</label><input type="number" inputmode="decimal" id="w_p_fd" placeholder="0"></div><div><label class="f-label">Term cover</label><input type="number" inputmode="decimal" id="w_p_term" placeholder="0"></div></div>
+      <div class="f-row"><div><label class="f-label">Health cover</label><input type="number" inputmode="decimal" id="w_p_health" placeholder="0"></div></div>
+      </div>
+      <div class="f-label" style="font-weight:500">Worked out for you: if you fill these in, your total investments above is their sum.</div>
+    </details>
     <div class="sec-title">Loans &amp; Debts (for avalanche plan)</div>
     <div id="loanList"></div>
     <button class="btn-add" onclick="addLoan()">+ Add a loan / debt</button>
@@ -482,7 +496,11 @@ html[data-theme="light"] [style*="background:var(--green);color:#fff"]{color:#ff
     <label class="f-label">Partner name (optional)</label><input type="text" id="w_pname" placeholder="Priya">
     <div class="f-row">
       <div><label class="f-label">Partner DOB</label><input type="date" id="w_pdob"></div>
-      <div><label class="f-label">Partner net /mo</label><input type="number" id="w_psal" placeholder="0"></div>
+      <div><label class="f-label">Who earns in this home?</label><select id="w_earners" onchange="gmEarnersSwitch()"><option value="1">Just me</option><option value="2">Both of us</option></select></div>
+    </div>
+    <div id="w_pmoney" class="f-row" style="display:none">
+      <div><label class="f-label">Partner gross /mo</label><input type="number" inputmode="decimal" id="w_p_gross" placeholder="0"></div>
+      <div><label class="f-label">Partner net /mo</label><input type="number" inputmode="decimal" id="w_psal" placeholder="0"></div>
     </div>
     <label class="f-label">Parents in health calendar?</label>
     <select id="w_parents"><option value="yes">Yes — include parents</option><option value="no">No</option></select>
@@ -716,14 +734,87 @@ function money(n){ if(!n&&n!==0)return"0"; var c=P?P.cur:"INR";
   if(n>=1e6)return(n/1e6).toFixed(1)+"M"; if(n>=1e3)return(n/1e3).toFixed(0)+"K"; return String(Math.round(n)); }
 function dKey(d){ var p=function(x){return x<10?"0"+x:""+x;}; return d.getFullYear()+"-"+p(d.getMonth()+1)+"-"+p(d.getDate()); }
 
+
+// ===== two earners (owner 2026-11-19): each person holds their own pay, balances and cover; the household is derived, never asked =====
+var GM_BAL=["epf","nps","ppf","mf","fd"], GM_BALALL=["epf","nps","ppf","mf","fd","term","health"];
+function gmEarners(p){ p=p||{}; return p.earners===2?2:p.earners===1?1:(+p.psal>0?2:1); }
+function gmMine(p){ p=p||{}; var q=(p.mine&&typeof p.mine==="object")?p.mine:{}, o={gross:+p.gross||0,net:+p.net||0}; GM_BALALL.forEach(function(k){o[k]=+q[k]||0;}); return o; }
+function gmPartner(p){ p=p||{}; var q=(p.partner&&typeof p.partner==="object")?p.partner:{}, o={gross:+q.gross||0,net:+q.net||+p.psal||0}; GM_BALALL.forEach(function(k){o[k]=+q[k]||0;}); return o; }
+function gmHouseholdIncome(p){ p=p||{}; return (+p.net||0)+(gmEarners(p)===2?gmPartner(p).net:0); }
+function gmBalSum(o){ return GM_BAL.reduce(function(a,k){return a+(+o[k]||0);},0); }
+function gmHouseholdInvest(p){ p=p||{}; var t=gmBalSum(gmMine(p))+(gmEarners(p)===2?gmBalSum(gmPartner(p)):0); return t>0?t:(+p.nw||0); }
+function gmEarnersSwitch(){
+  var two=document.getElementById("w_earners").value==="2";
+  ["w_pmoney","w_pbal"].forEach(function(id){ var e=document.getElementById(id); if(e) e.style.display=two?(id==="w_pmoney"?"grid":"block"):"none"; });
+}
+function gmBalLabel(p){
+  var at=p&&+p.balAt; if(!at) return "Balances (not added yet)";
+  var d=Math.max(0,Math.floor((Date.now()-at)/864e5));
+  return "Balances (updated "+(d===0?"today":d===1?"1 day ago":d+" days ago")+")";
+}
+function gmBalFill(p){
+  var m=gmMine(p), q=gmPartner(p), v=function(n){return n?n:"";};
+  GM_BALALL.forEach(function(k){ document.getElementById("w_m_"+k).value=v(m[k]); document.getElementById("w_p_"+k).value=v(q[k]); });
+  document.getElementById("w_p_gross").value=v(q.gross); document.getElementById("w_psal").value=v(q.net);
+  document.getElementById("w_earners").value=String(gmEarners(p)); gmEarnersSwitch();
+  document.getElementById("w_bal_s").textContent=gmBalLabel(p);
+}
+function gmBalRead(prev){
+  var two=gv("w_earners")==="2", mine={}, par={gross:+gv("w_p_gross")||0,net:+gv("w_psal")||0};
+  GM_BALALL.forEach(function(k){ mine[k]=+gv("w_m_"+k)||0; par[k]=+gv("w_p_"+k)||0; });
+  if(!two){ par={gross:0,net:0}; GM_BALALL.forEach(function(k){par[k]=0;}); }
+  var sig=function(a,b){ return JSON.stringify([a,b].map(function(o){return GM_BALALL.map(function(k){return o[k];});})); };
+  var any=GM_BALALL.some(function(k){return mine[k]||par[k];});
+  var same=prev&&prev.balAt&&sig(gmMine(prev),gmPartner(prev))===sig(mine,par);
+  return {earners:two?2:1, mine:mine, partner:par, balAt:any?(same?prev.balAt:Date.now()):0};
+}
+function gmTermYears(o){ return o.net>0?o.term/(o.net*12):0; }
+// one plain line, chosen by risk: thin term cover for an earner the home depends on, else someone with no retirement pot
+function gmTwoInsight(p){
+  var two=gmEarners(p)===2, ppl=[{n:"You",o:gmMine(p),pro:true}];
+  if(two) ppl.push({n:(p.pname||"Partner"),o:gmPartner(p),pro:false});
+  var any=ppl.some(function(x){return gmBalSum(x.o)>0||x.o.term>0||x.o.health>0;});
+  if(!any) return "Add each person’s balances and cover once, and this shows where the home is thin.";
+  var low=ppl.filter(function(x){return x.o.net>0&&gmTermYears(x.o)<10;}).sort(function(a,b){return gmTermYears(a.o)-gmTermYears(b.o);})[0];
+  if(low){
+    var y=gmTermYears(low.o);
+    return low.o.term>0
+      ? low.n+(low.pro?" have":" has")+" term cover worth "+y.toFixed(1)+" years of income. Ten or more keeps the home going if that pay stops."
+      : low.n+(low.pro?" have":" has")+" no term cover yet, and the home depends on that income. Ten years of income is the aim.";
+  }
+  var none=ppl.filter(function(x){return !(x.o.epf>0||x.o.nps>0||x.o.ppf>0);})[0];
+  if(none) return none.n+(none.pro?" have":" has")+" no EPF, NPS or PPF yet. Even a small monthly start builds a retirement floor of "+(none.pro?"your":"their")+" own.";
+  return "Both of you have cover and a retirement pot of your own. Keep the balances fresh.";
+}
+function gmTwoOfYouHTML(){
+  if(!window.P||gmEarners(P)!==2) return "";
+  var a=gmMine(P), b=gmPartner(P), nm=P.pname?String(P.pname).replace(/[&<>"]/g,""):"Partner";
+  var cell=function(n){ return n>0?money(n):"—"; };
+  var rows=[["Gross per month","gross"],["Net per month","net"],["EPF","epf"],["NPS","nps"],["PPF","ppf"],["Mutual funds and stocks","mf"],["FDs and savings","fd"],["Term cover","term"],["Health cover","health"]];
+  var td='padding:6px 4px;border-bottom:1px solid var(--border);';
+  var h='<div class="cat-t" style="margin-top:18px">Two of you'+(P.example?' <span class="pill pill-t">example numbers</span>':'')+'</div>'
+   +'<div class="gm-two" style="background:var(--card);border-radius:12px;padding:12px 14px;box-shadow:0 1px 3px rgba(0,0,0,.05)">'
+   +'<table style="width:100%;border-collapse:collapse;table-layout:fixed;font-size:12.5px"><thead><tr>'
+   +'<th style="'+td+'text-align:start;font-weight:600;width:34%"></th><th style="'+td+'text-align:end">You</th><th style="'+td+'text-align:end">'+nm+'</th><th style="'+td+'text-align:end">Household</th></tr></thead><tbody>';
+  rows.forEach(function(r){ var k=r[1];
+    h+='<tr><td style="'+td+'color:var(--muted)">'+r[0]+'</td><td style="'+td+'text-align:end">'+cell(a[k])+'</td><td style="'+td+'text-align:end">'+cell(b[k])+'</td><td style="'+td+'text-align:end;font-weight:600">'+cell(a[k]+b[k])+'</td></tr>'; });
+  var yr=function(o){ return o.net>0&&o.term>0?gmTermYears(o).toFixed(1)+" yrs":"—"; };
+  h+='<tr><td style="'+td+'color:var(--muted)">Term cover, years of that person’s income</td><td style="'+td+'text-align:end">'+yr(a)+'</td><td style="'+td+'text-align:end">'+yr(b)+'</td><td style="'+td+'text-align:end">—</td></tr>'
+   +'</tbody></table>'
+   +'<div style="margin-top:10px;font-size:13px">'+gmTwoInsight(P)+'</div>'
+   +'<button class="btn-sm" style="margin-top:8px" onclick="editProfile()">Update balances</button></div>';
+  return h;
+}
+
 function buildDash(){
+  var prevP=(typeof P!=="undefined")?P:null, two=gmBalRead(prevP);
   P = {
     name: gv("w_name")||"My", dob: gv("w_dob"), country: gv("w_country")||"India", city: gv("w_city")||"",
     cur: gv("w_cur")||"INR",
     gross:+gv("w_gross")||100000, net:+gv("w_net")||80000, exp:+gv("w_exp")||60000,
     sav:+gv("w_sav")||100000, nw:+gv("w_nw")||200000,
     rent1:+gv("w_rent1")||0, rent2:+gv("w_rent2")||0,
-    pname: gv("w_pname")||"", pdob: gv("w_pdob")||"", psal:+gv("w_psal")||0,
+    pname: gv("w_pname")||"", pdob: gv("w_pdob")||"", psal:two.earners===2?two.partner.net:0, earners:two.earners, mine:two.mine, partner:two.partner, balAt:two.balAt,
     parents: gv("w_parents")==="yes",
     kids: kidsTmp.filter(function(k){return k&&k.name;}),
     loans: loans.filter(function(l){return l&&l.remaining>0;}),
@@ -731,6 +822,7 @@ function buildDash(){
     dream: gv("w_dream")||"UAE", goal: gv("w_goal")||"Financial independence"
   };
   P.example=false;
+  if(gmBalSum(two.mine)+gmBalSum(two.partner)>0) P.nw=gmBalSum(two.mine)+gmBalSum(two.partner);   // derived, never asked twice
   store("sovP",P);
   var saved=load("sovS"); if(saved){S=saved;} migrate(); store("sovS",S);
   initDash();
@@ -2047,7 +2139,8 @@ function renderMoney(E){
   var html='<div class="section active">'+heroHTML(stepNo,"of "+steps.length,"Your step in the money sequence",stepBtn)
    +'<div class="cat-t">\uD83D\uDCB0 Prime Directive Waterfall</div>'
    +howHTML('The Prime Directive is a sequence: the earliest unfinished step is the one to work on. Later steps pay off only after it is done.')
-   +(window.gmNumbersCard?gmNumbersCard():"");
+   +(window.gmNumbersCard?gmNumbersCard():"")
+   +gmTwoOfYouHTML();
   var foundCurrent=false;
   steps.forEach(function(s,i){
     var cls=s.done?"done":(!foundCurrent?"current":"");
@@ -2458,7 +2551,7 @@ function editProfile(){
     document.getElementById("w_sav").value=P.sav;document.getElementById("w_nw").value=P.nw;
     document.getElementById("w_rent1").value=P.rent1||"";document.getElementById("w_rent2").value=P.rent2||"";
     document.getElementById("w_pname").value=P.pname;document.getElementById("w_pdob").value=P.pdob||"";
-    document.getElementById("w_psal").value=P.psal||"";document.getElementById("w_parents").value=P.parents?"yes":"no";
+    gmBalFill(P);document.getElementById("w_parents").value=P.parents?"yes":"no";
     document.getElementById("w_ret").value=P.ret;document.getElementById("w_tsav").value=P.tsav;
     document.getElementById("w_dream").value=P.dream;document.getElementById("w_goal").value=P.goal;
     // the lists come back as saved: one row per child and per loan, never an empty row (owner, 2026-11-11)
@@ -2493,7 +2586,9 @@ function resetAll(){ gmEraseAsk(); }   // every erase path needs the typed word 
     name:"", dob:"", country:"India", city:"", cur:"INR",
     gross:100000, net:95000, exp:60000, sav:35000, nw:1500000,
     rent1:0, rent2:0,
-    pname:"", pdob:"", psal:0, parents:false,
+    pname:"", pdob:"", psal:62000, parents:false,
+    earners:2, mine:{epf:300000,nps:100000,ppf:150000,mf:250000,fd:100000,term:15000000,health:1000000},
+    partner:{gross:80000,net:62000,epf:200000,nps:60000,ppf:80000,mf:120000,fd:140000,term:5000000,health:500000},
     kids:[],
     loans:[{type:"Home Loan", remaining:3000000, rate:8.5, emi:26000, tenure:240}],
     ret:60, tsav:30,
@@ -4879,7 +4974,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     if (!pr) return l;
     var kid = (pr.kids || [])[0], fill = {
       age: yrsSince(pr.dob), sage: yrsSince(pr.pdob), k1: kid && kid.dob ? yrsSince(kid.dob) : "",
-      inc: pr.net ? String(Math.round((num(pr.net) + num(pr.psal)) * 12 / 1e3) / 100) : "",
+      inc: pr.net ? String(Math.round(gmHouseholdIncome(pr) * 12 / 1e3) / 100) : "",
       nw: pr.nw ? String(Math.round(num(pr.nw) / 1e3) / 100) : "", ef: pr.sav ? String(Math.round(num(pr.sav) / 1e3) / 100) : "",
       minc: pr.net ? String(num(pr.net)) : ""   // fixed costs are not filled here: from the profile they are spending PLUS loan EMIs (flowHTML)
     };
@@ -4952,7 +5047,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       }
       var pt = "";
       if (profOK()) {
-        if (f[0] === "inc") pt = (num(P.net) + num(P.psal)) ? rs((num(P.net) + num(P.psal)) * 12) + " a year" : "";
+        if (f[0] === "inc") pt = gmHouseholdIncome(P) ? rs(gmHouseholdIncome(P) * 12) + " a year" : "";
         else if (f[0] === "nw") pt = num(P.nw) ? rs(P.nw) : "";
         else if (f[0] === "ef") pt = num(P.sav) ? rs(P.sav) : "";
       }
@@ -9360,11 +9455,12 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   // Ask once (owner, 2026-11-11): these career fields are the same facts the profile (setup, P) holds. The profile is the one
   // source: Career reads it first and writes an edit back to it, so a fact is typed once and changed in one place.
   var CAR_FROM_P = { "cfg.birth": "dob", "cfg.fiAge": "ret", "cur.inhand": "net", "cur.gross": "gross",
-                     "house.exp": "exp", "house.ef": "sav", "house.nw": "nw", "house.wife": "psal" };
+                     "house.exp": "exp", "house.ef": "sav", "house.nw": "nw", "house.partner": "psal" };
   function car() {
     var c = G(CAR_K, null) || {};
     ["cur", "house", "cfg", "done", "gaps"].forEach(function (k) { c[k] = c[k] || {}; });
     c.offers = c.offers || [];
+    if (c.house.partner === undefined && c.house.wife !== undefined) c.house.partner = c.house.wife;   // the old gendered key is still read
     var pr = profOK() ? P : null;
     if (pr) Object.keys(CAR_FROM_P).forEach(function (path) {
       var v = pr[CAR_FROM_P[path]], parts = path.split("."), cur = c[parts[0]][parts[1]];
@@ -9457,13 +9553,13 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
 
   // What the household needs from you each month, the runway if your pay stops, and the SIP that reaches FI on time.
   function needs(c) {
-    var h = c.house, exp = num(h.exp) || (window.P && !P.example ? num(P.exp) : 0), emi = num(h.emi), wife = num(h.wife);
-    var ef = num(h.ef), nw = num(h.nw), gap = Math.max(exp + emi - wife, 0);
+    var h = c.house, exp = num(h.exp) || (window.P && !P.example ? num(P.exp) : 0), emi = num(h.emi), partner = num(h.partner) || num(h.wife);
+    var ef = num(h.ef), nw = num(h.nw), gap = Math.max(exp + emi - partner, 0);
     var age = ageNow(c), fiAge = cfgv(c, "fiAge", 50), yrs = Math.max(fiAge - age, 1), infl = cfgv(c, "infl", 6) / 100, ret = cfgv(c, "ret", 10) / 100;
     var swr = cfgv(c, "swr", 3.5) / 100, corpus = exp * 12 * Math.pow(1 + infl, yrs) / swr, m = yrs * 12, rm = ret / 12;
     var fvNow = nw * Math.pow(1 + ret, yrs), sip = Math.max((corpus - fvNow) * rm / (Math.pow(1 + rm, m) - 1), 0);
-    return { exp: exp, emi: emi, wife: wife, ef: ef, nw: nw, gap: gap, runway: gap > 0 ? ef / gap : (ef > 0 ? 99 : 0),
-      corpus: corpus, sip: sip, yrs: yrs, fiAge: fiAge, age: age, fiInhand: Math.max(exp + emi + sip - wife, 0) };
+    return { exp: exp, emi: emi, partner: partner, ef: ef, nw: nw, gap: gap, runway: gap > 0 ? ef / gap : (ef > 0 ? 99 : 0),
+      corpus: corpus, sip: sip, yrs: yrs, fiAge: fiAge, age: age, fiInhand: Math.max(exp + emi + sip - partner, 0) };
   }
 
   /* gates: the 20% that decides 80% of the outcome. Any ✗ rejects the offer; any ? means "not decidable yet". */
@@ -9560,7 +9656,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   function carRule(path) {
     if (path.indexOf("cur.") === 0) return { min: 0, max: 100000000 };
     var R = {
-      "house.wife": { min: 0, max: 100000000 }, "house.exp": { min: 0, max: 100000000 }, "house.emi": { min: 0, max: 100000000 },
+      "house.partner": { min: 0, max: 100000000 }, "house.exp": { min: 0, max: 100000000 }, "house.emi": { min: 0, max: 100000000 },
       "house.ef": { min: 0, max: 100000000000 }, "house.nw": { min: 0, max: 100000000000 },
       "cfg.noticeMonths": { min: 0, max: 12 }, "cfg.fiAge": { min: 30, max: 90, int: true },
       "cfg.infl": { min: 0, max: 20 }, "cfg.ret": { min: 0, max: 30 }, "cfg.swr": { min: 1, max: 10 },
@@ -9830,7 +9926,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     h += box(wc);
 
     // 4. inputs
-    var wifeOK = G("gm_facts", {}).partner !== false;
+    var partnerOK = G("gm_facts", {}).partner !== false;
     var carFields = [
       ["Payslip gross (incl. employer NPS)", "cur.gross", c.cur.gross, "₹/mo"],
       ["Payslip net (credited)", "cur.inhand", c.cur.inhand, "₹/mo"],
@@ -9841,11 +9937,11 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       ["Other yearly benefits you really get (insurance, medical, LFC, leave encashment, incentive)", "cur.otherYr", c.cur.otherYr, "₹/yr"],
       ["Household essentials incl. rent you will pay", "house.exp", c.house.exp, "₹/mo"],
       ["EMIs", "house.emi", c.house.emi, "₹/mo"],
-      ["Spouse take-home", "house.wife", c.house.wife, "₹/mo"],
+      ["Partner take-home", "house.partner", c.house.partner, "₹/mo"],
       ["Emergency fund (cash, liquid funds)", "house.ef", c.house.ef, "₹"],
       ["Investments towards financial independence (MF, stocks, NPS, PPF, EPF)", "house.nw", c.house.nw, "₹"]
     ];
-    if (!wifeOK) carFields = carFields.filter(function (f) { return f[1] !== "house.wife"; });
+    if (!partnerOK) carFields = carFields.filter(function (f) { return f[1] !== "house.partner"; });
     var filledF = [], emptyF = [];
     carFields.forEach(function (f) { var v = f[2]; (v === undefined || v === null || v === "" || v === 0) ? emptyF.push(f) : filledF.push(f); });
     var frow = function (f) { var pt = carProfileText(f[1], f[3]); return pt ? fromProfileLine(f[0], pt) : fld(f[0], f[1], f[2], f[3]); };
@@ -13134,7 +13230,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       var emis = (p.loans || []).reduce(function (a, l) { return a + swNum(l && l.emi); }, 0), ess = swNum(p.exp) + emis;
       if (ess > 0 && swNum(p.sav) >= 0) { var rw = swNum(p.sav) / ess; out.push({ id: "runway", t: "Buffer", v: rw.toFixed(1) + " months", st: rw < 3 ? "low" : rw < 6 ? "watch" : "good",
         why: "Months the emergency fund covers essentials and EMIs. A doctor would call it your reserve: below 3 months, one shock becomes a crisis.", fix: "Move a fixed amount into the emergency fund on salary day until it reaches 6 months." }); }
-      var net = swNum(p.net) + swNum(p.psal);
+      var net = swNum(gmHouseholdIncome(p));
       if (net > 0 && swNum(p.exp) > 0) { var sr = Math.round((net - swNum(p.exp) - emis) / net * 100); out.push({ id: "saving", t: "Saving rate", v: sr + "%", st: sr < 10 ? "low" : sr < 20 ? "watch" : "good",
         why: "The share of take-home kept. An economist's rule of thumb: under 10% the future is borrowed from.", fix: "Raise the SIP by a small amount each salary day; see What we must earn on Money." }); }
       var since = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10), sp = (G("gm_spend", []) || []).filter(function (x) { return x && x.d >= since; });
@@ -13199,7 +13295,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     if (!p || p.example || !(needNum(p.exp) > 0)) return null;
     var emis = (p.loans || []).reduce(function (a, l) { return a + needNum(l && l.emi); }, 0);
     var rate = Math.min(60, Math.max(10, needNum(p.tsav) || 20)), infl = Math.min(15, Math.max(2, needNum(cfg.infl) || 6));
-    var now = Math.round((needNum(p.exp) + emis) / (1 - rate / 100) / 1000) * 1000, cur = needNum(p.net) + needNum(p.psal);
+    var now = Math.round((needNum(p.exp) + emis) / (1 - rate / 100) / 1000) * 1000, cur = needNum(gmHouseholdIncome(p));
     var fut = function (y) { return Math.round(now * Math.pow(1 + infl / 100, y) / 1000) * 1000; };
     var since = new Date(Date.now() - 35 * 864e5).toISOString().slice(0, 10), sp = (G("gm_spend", []) || []).filter(function (x) { return x && x.d >= since && needNum(x.a) > 0; });
     var split = null;

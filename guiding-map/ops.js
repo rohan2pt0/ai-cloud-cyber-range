@@ -1254,7 +1254,7 @@
     if (!pr) return l;
     var kid = (pr.kids || [])[0], fill = {
       age: yrsSince(pr.dob), sage: yrsSince(pr.pdob), k1: kid && kid.dob ? yrsSince(kid.dob) : "",
-      inc: pr.net ? String(Math.round((num(pr.net) + num(pr.psal)) * 12 / 1e3) / 100) : "",
+      inc: pr.net ? String(Math.round(gmHouseholdIncome(pr) * 12 / 1e3) / 100) : "",
       nw: pr.nw ? String(Math.round(num(pr.nw) / 1e3) / 100) : "", ef: pr.sav ? String(Math.round(num(pr.sav) / 1e3) / 100) : "",
       minc: pr.net ? String(num(pr.net)) : ""   // fixed costs are not filled here: from the profile they are spending PLUS loan EMIs (flowHTML)
     };
@@ -1327,7 +1327,7 @@
       }
       var pt = "";
       if (profOK()) {
-        if (f[0] === "inc") pt = (num(P.net) + num(P.psal)) ? rs((num(P.net) + num(P.psal)) * 12) + " a year" : "";
+        if (f[0] === "inc") pt = gmHouseholdIncome(P) ? rs(gmHouseholdIncome(P) * 12) + " a year" : "";
         else if (f[0] === "nw") pt = num(P.nw) ? rs(P.nw) : "";
         else if (f[0] === "ef") pt = num(P.sav) ? rs(P.sav) : "";
       }
@@ -5735,11 +5735,12 @@
   // Ask once (owner, 2026-11-11): these career fields are the same facts the profile (setup, P) holds. The profile is the one
   // source: Career reads it first and writes an edit back to it, so a fact is typed once and changed in one place.
   var CAR_FROM_P = { "cfg.birth": "dob", "cfg.fiAge": "ret", "cur.inhand": "net", "cur.gross": "gross",
-                     "house.exp": "exp", "house.ef": "sav", "house.nw": "nw", "house.wife": "psal" };
+                     "house.exp": "exp", "house.ef": "sav", "house.nw": "nw", "house.partner": "psal" };
   function car() {
     var c = G(CAR_K, null) || {};
     ["cur", "house", "cfg", "done", "gaps"].forEach(function (k) { c[k] = c[k] || {}; });
     c.offers = c.offers || [];
+    if (c.house.partner === undefined && c.house.wife !== undefined) c.house.partner = c.house.wife;   // the old gendered key is still read
     var pr = profOK() ? P : null;
     if (pr) Object.keys(CAR_FROM_P).forEach(function (path) {
       var v = pr[CAR_FROM_P[path]], parts = path.split("."), cur = c[parts[0]][parts[1]];
@@ -5832,13 +5833,13 @@
 
   // What the household needs from you each month, the runway if your pay stops, and the SIP that reaches FI on time.
   function needs(c) {
-    var h = c.house, exp = num(h.exp) || (window.P && !P.example ? num(P.exp) : 0), emi = num(h.emi), wife = num(h.wife);
-    var ef = num(h.ef), nw = num(h.nw), gap = Math.max(exp + emi - wife, 0);
+    var h = c.house, exp = num(h.exp) || (window.P && !P.example ? num(P.exp) : 0), emi = num(h.emi), partner = num(h.partner) || num(h.wife);
+    var ef = num(h.ef), nw = num(h.nw), gap = Math.max(exp + emi - partner, 0);
     var age = ageNow(c), fiAge = cfgv(c, "fiAge", 50), yrs = Math.max(fiAge - age, 1), infl = cfgv(c, "infl", 6) / 100, ret = cfgv(c, "ret", 10) / 100;
     var swr = cfgv(c, "swr", 3.5) / 100, corpus = exp * 12 * Math.pow(1 + infl, yrs) / swr, m = yrs * 12, rm = ret / 12;
     var fvNow = nw * Math.pow(1 + ret, yrs), sip = Math.max((corpus - fvNow) * rm / (Math.pow(1 + rm, m) - 1), 0);
-    return { exp: exp, emi: emi, wife: wife, ef: ef, nw: nw, gap: gap, runway: gap > 0 ? ef / gap : (ef > 0 ? 99 : 0),
-      corpus: corpus, sip: sip, yrs: yrs, fiAge: fiAge, age: age, fiInhand: Math.max(exp + emi + sip - wife, 0) };
+    return { exp: exp, emi: emi, partner: partner, ef: ef, nw: nw, gap: gap, runway: gap > 0 ? ef / gap : (ef > 0 ? 99 : 0),
+      corpus: corpus, sip: sip, yrs: yrs, fiAge: fiAge, age: age, fiInhand: Math.max(exp + emi + sip - partner, 0) };
   }
 
   /* gates: the 20% that decides 80% of the outcome. Any ✗ rejects the offer; any ? means "not decidable yet". */
@@ -5935,7 +5936,7 @@
   function carRule(path) {
     if (path.indexOf("cur.") === 0) return { min: 0, max: 100000000 };
     var R = {
-      "house.wife": { min: 0, max: 100000000 }, "house.exp": { min: 0, max: 100000000 }, "house.emi": { min: 0, max: 100000000 },
+      "house.partner": { min: 0, max: 100000000 }, "house.exp": { min: 0, max: 100000000 }, "house.emi": { min: 0, max: 100000000 },
       "house.ef": { min: 0, max: 100000000000 }, "house.nw": { min: 0, max: 100000000000 },
       "cfg.noticeMonths": { min: 0, max: 12 }, "cfg.fiAge": { min: 30, max: 90, int: true },
       "cfg.infl": { min: 0, max: 20 }, "cfg.ret": { min: 0, max: 30 }, "cfg.swr": { min: 1, max: 10 },
@@ -6205,7 +6206,7 @@
     h += box(wc);
 
     // 4. inputs
-    var wifeOK = G("gm_facts", {}).partner !== false;
+    var partnerOK = G("gm_facts", {}).partner !== false;
     var carFields = [
       ["Payslip gross (incl. employer NPS)", "cur.gross", c.cur.gross, "₹/mo"],
       ["Payslip net (credited)", "cur.inhand", c.cur.inhand, "₹/mo"],
@@ -6216,11 +6217,11 @@
       ["Other yearly benefits you really get (insurance, medical, LFC, leave encashment, incentive)", "cur.otherYr", c.cur.otherYr, "₹/yr"],
       ["Household essentials incl. rent you will pay", "house.exp", c.house.exp, "₹/mo"],
       ["EMIs", "house.emi", c.house.emi, "₹/mo"],
-      ["Spouse take-home", "house.wife", c.house.wife, "₹/mo"],
+      ["Partner take-home", "house.partner", c.house.partner, "₹/mo"],
       ["Emergency fund (cash, liquid funds)", "house.ef", c.house.ef, "₹"],
       ["Investments towards financial independence (MF, stocks, NPS, PPF, EPF)", "house.nw", c.house.nw, "₹"]
     ];
-    if (!wifeOK) carFields = carFields.filter(function (f) { return f[1] !== "house.wife"; });
+    if (!partnerOK) carFields = carFields.filter(function (f) { return f[1] !== "house.partner"; });
     var filledF = [], emptyF = [];
     carFields.forEach(function (f) { var v = f[2]; (v === undefined || v === null || v === "" || v === 0) ? emptyF.push(f) : filledF.push(f); });
     var frow = function (f) { var pt = carProfileText(f[1], f[3]); return pt ? fromProfileLine(f[0], pt) : fld(f[0], f[1], f[2], f[3]); };
@@ -9509,7 +9510,7 @@
       var emis = (p.loans || []).reduce(function (a, l) { return a + swNum(l && l.emi); }, 0), ess = swNum(p.exp) + emis;
       if (ess > 0 && swNum(p.sav) >= 0) { var rw = swNum(p.sav) / ess; out.push({ id: "runway", t: "Buffer", v: rw.toFixed(1) + " months", st: rw < 3 ? "low" : rw < 6 ? "watch" : "good",
         why: "Months the emergency fund covers essentials and EMIs. A doctor would call it your reserve: below 3 months, one shock becomes a crisis.", fix: "Move a fixed amount into the emergency fund on salary day until it reaches 6 months." }); }
-      var net = swNum(p.net) + swNum(p.psal);
+      var net = swNum(gmHouseholdIncome(p));
       if (net > 0 && swNum(p.exp) > 0) { var sr = Math.round((net - swNum(p.exp) - emis) / net * 100); out.push({ id: "saving", t: "Saving rate", v: sr + "%", st: sr < 10 ? "low" : sr < 20 ? "watch" : "good",
         why: "The share of take-home kept. An economist's rule of thumb: under 10% the future is borrowed from.", fix: "Raise the SIP by a small amount each salary day; see What we must earn on Money." }); }
       var since = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10), sp = (G("gm_spend", []) || []).filter(function (x) { return x && x.d >= since; });
@@ -9574,7 +9575,7 @@
     if (!p || p.example || !(needNum(p.exp) > 0)) return null;
     var emis = (p.loans || []).reduce(function (a, l) { return a + needNum(l && l.emi); }, 0);
     var rate = Math.min(60, Math.max(10, needNum(p.tsav) || 20)), infl = Math.min(15, Math.max(2, needNum(cfg.infl) || 6));
-    var now = Math.round((needNum(p.exp) + emis) / (1 - rate / 100) / 1000) * 1000, cur = needNum(p.net) + needNum(p.psal);
+    var now = Math.round((needNum(p.exp) + emis) / (1 - rate / 100) / 1000) * 1000, cur = needNum(gmHouseholdIncome(p));
     var fut = function (y) { return Math.round(now * Math.pow(1 + infl / 100, y) / 1000) * 1000; };
     var since = new Date(Date.now() - 35 * 864e5).toISOString().slice(0, 10), sp = (G("gm_spend", []) || []).filter(function (x) { return x && x.d >= since && needNum(x.a) > 0; });
     var split = null;
