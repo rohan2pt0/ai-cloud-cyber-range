@@ -134,6 +134,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- Your real monthly spend, with no receipts
 - Two of you shows red, amber and green
 - Each number asked in one place
 - Numbers asked once, Buffer that shows
@@ -141,7 +142,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - A pack link really installs your pack
 - Whose name is the property in
 - Watch an exercise move
-- An empty build can no longer pass as green
 
 **Release 0.4.0 - 2026-11-14:**
 

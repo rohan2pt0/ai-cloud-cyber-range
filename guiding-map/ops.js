@@ -1273,6 +1273,7 @@
   // Fixed costs, asked once (owner 2026-11-19: the Buffer tile showed a dash while the plan card showed ₹1,36,000): what the
   // person typed in the plan, else the profile's monthly spending plus loan EMIs, the same figure the plan card shows.
   function lifeFixed(l) {
+    var real = realExists(); if (real) return real.total;   // once a month-end check-in exists, the real figure (fixed + average variable)
     var fromP = profOK() && num(P.exp) ? num(P.exp) + (P.loans || []).reduce(function (a, x) { return a + num(x && x.emi); }, 0) : 0;
     return fromP || num(l && l.fFixed);   // the profile's figure wins; a typed one counts only when the profile has none
   }
@@ -1307,6 +1308,10 @@
     var h = '<details class="road-col gm-nums"' + (days !== null && days > 31 ? " open" : "") + '><summary style="cursor:pointer;font-weight:800;font-size:13px">My numbers \u00b7 <span style="font-weight:500;color:var(--muted)">'
       + when + '</span></summary><div class="info" style="margin:6px 0 8px">The numbers that change. Update them here once a month; every screen uses them.</div>';
     NUMS.forEach(function (f) {
+      if (f[0] === "exp" && realExists()) {   // derived from the check-ins: shown, never asked again
+        h += '<div class="f-label gm-fromp" style="margin:10px 0">Monthly spending: <b style="color:var(--text)">' + rs(realExists().total) + '</b> <span style="text-transform:none;letter-spacing:0">from your month-end check-ins</span></div>';
+        return;
+      }
       h += '<label class="f-label">' + f[1] + ' (' + esc(P.cur || "INR") + ')</label><input inputmode="decimal" value="' + esc(P[f[0]] === undefined ? "" : P[f[0]])
         + '" onchange="gmNumSet(\'' + f[0] + '\',this.value)">';
     });
@@ -1321,6 +1326,215 @@
     var c = G(CAR_K, null);
     if (c) { Object.keys(CAR_FROM_P).forEach(function (path) { if (CAR_FROM_P[path] === k) { var q = path.split("."); if (c[q[0]]) delete c[q[0]][q[1]]; } }); carPut(c); }
     bustDerived(); renderAll();
+  };
+
+  /* ── Your real monthly spend, without tracking a single purchase (owner 2026-11-19) ─────────────────────────────────
+     Fixed bills are listed once (gm_fixed). Variable spend is DERIVED each month from one balance per earner (gm_spendcheck;
+     gm_spend is the SMS reader's own list): money in - money saved - fixed - the rise in the balance. The "balance method":
+     the truth, with no receipts. */
+  var FIXED_SUG = [["Rent", "month", "need"], ["School or day-care fees", "month", "need"], ["Domestic help", "month", "need"], ["Society maintenance", "month", "need"],
+    ["Electricity", "month", "need"], ["Mobile and internet", "month", "need"], ["OTT and app subscriptions", "month", "want"], ["Fuel or transport", "month", "need"],
+    ["Groceries (base)", "month", "need"], ["Term insurance", "year", "need"], ["Health insurance", "year", "need"], ["Vehicle insurance", "year", "need"],
+    ["School annual fees", "year", "need"], ["Property tax", "year", "need"]];
+  var EVERY_DIV = { month: 1, quarter: 3, year: 12 }, SC_K = "gm_spendcheck", SC_CAP = 36;
+  function fixedList() { return G("gm_fixed", []).filter(function (x) { return x && typeof x === "object" && typeof x.id === "string" && x.id; }); }
+  function monthlyOf(x) { return Math.max(0, num(x.amt)) / (EVERY_DIV[x.every] || 1); }
+  function scEarners() { return typeof gmEarners === "function" && window.P ? gmEarners(P) : 1; }
+  function scNames() { return { me: window.P && P.name && P.name !== "My" ? String(P.name) : "You", partner: window.P && P.pname ? String(P.pname) : "Partner" }; }
+  // Loan EMIs and a let-out home's maintenance are already known: shown as read-only lines, never asked again.
+  function fixedKnown() {
+    var out = [];
+    (window.P && P.loans || []).forEach(function (x, i) { if (x && num(x.emi) > 0) out.push({ name: (x.name || "Loan " + (i + 1)) + " EMI", amt: num(x.emi) }); });
+    props().forEach(function (p, i) { if (p && num(p.maint) > 0) out.push({ name: "Maintenance, " + (p.name || p.tenant || "property " + (i + 1)), amt: num(p.maint) }); });
+    return out;
+  }
+  function fixedTotals() {
+    var t = { list: 0, known: 0, me: 0, partner: 0, joint: 0 };
+    fixedList().forEach(function (x) { var m = monthlyOf(x); t.list += m; t[x.who === "me" || x.who === "partner" ? x.who : "joint"] += m; });
+    fixedKnown().forEach(function (x) { t.known += x.amt; t.joint += x.amt; });
+    t.total = t.list + t.known; return t;
+  }
+  function scAll() {
+    var v = G(SC_K, {}), o = {};
+    if (!v || typeof v !== "object" || Array.isArray(v)) return o;
+    Object.keys(v).sort().forEach(function (k) { var e = v[k]; if (/^\d{4}-\d{2}$/.test(k) && e && typeof e === "object" && (num(e.me) > 0 || num(e.partner) > 0)) o[k] = e; });
+    return o;
+  }
+  function scIdx(k) { return +k.slice(0, 4) * 12 + (+k.slice(5, 7) - 1); }
+  function scMonth(k, back) { var d = new Date(+k.slice(0, 4), +k.slice(5, 7) - 1 - (back || 0), 1); return d.toLocaleDateString("en-IN", { month: "short" }); }
+  function scIncome() { return (typeof gmHouseholdIncome === "function" ? gmHouseholdIncome(P) : num(P.net)) + num(P.rent1) + num(P.rent2); }
+  function scSaved() { var l = G("gm_life", {}); return num(l.fSip) + num(l.fEF); }
+  function scBal(e) { return Math.max(0, num(e.me)) + Math.max(0, num(e.partner)); }
+  // One row per check-in after the first: what went out beyond the fixed bills, per month between the two balances.
+  function scSeries() {
+    if (!window.P) return [];
+    var all = scAll(), ks = Object.keys(all), out = [], inc = scIncome(), sv = scSaved(), fx = fixedTotals().total;
+    for (var i = 1; i < ks.length; i++) {
+      var a = all[ks[i - 1]], b = all[ks[i]], n = scIdx(ks[i]) - scIdx(ks[i - 1]);
+      if (n < 1) continue;
+      var hasM = b.vs !== undefined && b.vs !== "" && num(b.vs) >= 0;
+      var v = hasM ? num(b.vs) : Math.max(0, (inc - sv - fx) - (scBal(b) - scBal(a)) / n);
+      out.push({ key: ks[i], month: scMonth(ks[i], 1), v: Math.round(v), f: Math.round(fx), msgs: hasM });
+    }
+    return out;
+  }
+  // The one figure every screen reads: fixed + the average of the last three variable months. Before a second check-in, the profile's
+  // monthly spending stands in for the variable part and is labelled an estimate.
+  window.gmRealSpend = function () {
+    if (!window.P) return null;
+    var s = scSeries(), ft = fixedTotals(), last = s.slice(-3);
+    if (last.length) {
+      var av = Math.round(last.reduce(function (a, x) { return a + x.v; }, 0) / last.length);
+      return { fixed: Math.round(ft.total), variable: av, total: Math.round(ft.total) + av, est: false, months: last.length };
+    }
+    var emi = (P.loans || []).reduce(function (a, x) { return a + num(x && x.emi); }, 0), base = num(P.exp) + emi;
+    if (!(base > 0) && !(ft.total > 0)) return null;
+    var vv = Math.max(0, Math.round(base - ft.total));
+    return { fixed: Math.round(ft.total), variable: vv, total: Math.round(ft.total) + vv, est: true, months: 0 };
+  };
+  function realExists() { var r = profOK() ? gmRealSpend() : null; return r && !r.est ? r : null; }
+  // The profile stays the one source: once real spend exists it is written back, so every screen that reads it agrees.
+  function spendSync() {
+    var r = realExists(); if (!r) return;
+    var emi = (P.loans || []).reduce(function (a, x) { return a + num(x && x.emi); }, 0);
+    P.exp = Math.max(0, r.total - emi); P.expFrom = "checkin"; store("sovP", P);
+  }
+  function scWork() {
+    var w = window.P && P.work && typeof P.work === "object" ? P.work : {}, p = window.P && P.pwork && typeof P.pwork === "object" ? P.pwork : {};
+    return { me: w.kind === "contract" ? "contract" : "salaried", partner: p.kind === "contract" ? "contract" : "salaried" };
+  }
+  window.gmWorkSet = function (who, kind) {
+    if (!window.P) return;
+    var k = who === "partner" ? "pwork" : "work";
+    P[k] = { kind: kind === "contract" ? "contract" : "salaried", from: kind === "contract" ? "2027-01-01" : "" };
+    if (profOK()) store("sovP", P);
+    renderAll();
+  };
+  window.gmRunway = function () {
+    var r = gmRealSpend(); if (!r || !(r.total > 0) || !window.P) return null;
+    var w = scWork(), contract = w.me === "contract" || (scEarners() === 2 && w.partner === "contract"), target = contract ? 12 : 6;
+    var liquid = num(P.sav) + (typeof gmMine === "function" ? gmMine(P).fd + gmPartner(P).fd : 0), months = liquid / r.total;
+    var st = months >= target ? "good" : months >= target / 2 ? "watch" : "low";
+    var out = { months: months, target: target, state: st, contract: contract, liquid: liquid, real: r, insight: "" };
+    if (months >= target) { out.insight = "You are at or past " + target + " months of cover. Keep the month-end check-in going and this stays true."; return out; }
+    var gap = Math.max(0, target * r.total - liquid), wants = fixedList().filter(function (x) { return x.kind === "want" && monthlyOf(x) > 0; })
+      .sort(function (a, b) { return monthlyOf(b) - monthlyOf(a); });
+    var add = function (cut) { return r.total - cut > 0 ? liquid / (r.total - cut) - months : 0; };
+    var s = "You are " + rs(gap) + " short of " + target + " months of cover.";
+    if (wants[0]) s += " Pausing " + esc(wants[0].name) + " adds " + add(monthlyOf(wants[0])).toFixed(1) + " months, then a";
+    else s += " A";
+    s += " 10% cut in variable spend adds " + add(r.variable * 0.1).toFixed(1) + " months.";
+    out.insight = s; return out;
+  };
+  function spendDue() {
+    if (!profOK()) return 0;
+    var all = scAll(), now = ymd().slice(0, 7);
+    if (all[now]) return 0;
+    return new Date().getDate() <= 7 ? 90 : Object.keys(all).length ? 45 : 0;
+  }
+  window.gmSpendDue = spendDue;
+  window.gmCheckinSave = function (msgs) {
+    var me = num((document.getElementById("gmCkMe") || {}).value), pt = num((document.getElementById("gmCkPt") || {}).value);
+    if (!(me > 0) && !(pt > 0)) { if (typeof gmToast === "function") gmToast("Type the balance first. Rough is fine."); return; }
+    var all = scAll(), now = ymd().slice(0, 7), e = { me: Math.max(0, me), partner: Math.max(0, pt), at: ymd() };
+    if (msgs !== undefined && num(msgs) > 0) e.vs = Math.round(num(msgs));
+    all[now] = e;
+    var ks = Object.keys(all).sort(); while (ks.length > SC_CAP) delete all[ks.shift()];
+    S_(SC_K, all); spendSync(); bustDerived(); renderAll();
+    var s = scSeries(), l = s[s.length - 1];
+    if (typeof gmToast === "function") gmToast(l ? "Saved. Last month, about " + rs(l.v) + " went on things beyond your fixed bills." : "Saved. After next month’s check-in you see your real spend.");
+  };
+  window.gmCheckinSaveForm = function () { var c = document.getElementById("gmCkMsg"); gmCheckinSave(c && c.checked ? c.value : undefined); };
+  window.gmFixedAdd = function (i) {
+    var s = FIXED_SUG[+i], name = s ? s[0] : String((document.getElementById("gmFxOwn") || {}).value || "").trim().slice(0, 60);
+    if (!name) return;
+    var l = fixedList(); if (l.length >= 60) return;
+    l.push({ id: "f" + Date.now().toString(36) + Math.floor(Math.random() * 1e4).toString(36), name: name, amt: 0, every: s ? s[1] : "month", who: "joint", kind: s ? s[2] : "need" });
+    S_("gm_fixed", l); bustDerived(); renderAll();
+  };
+  window.gmFixedSet = function (id, k, v) {
+    var l = fixedList(), x = l.filter(function (y) { return y.id === id; })[0];
+    if (!x || ["amt", "every", "who", "kind"].indexOf(k) < 0) return;
+    if (k === "amt") x.amt = Math.max(0, Math.min(1e9, num(v)));
+    else if (k === "every") x.every = EVERY_DIV[v] ? v : "month";
+    else if (k === "who") x.who = { me: 1, partner: 1, joint: 1 }[v] ? v : "joint";
+    else x.kind = v === "want" ? "want" : "need";
+    S_("gm_fixed", l); spendSync(); bustDerived(); renderAll();
+  };
+  window.gmFixedDel = function (id) { S_("gm_fixed", fixedList().filter(function (y) { return y.id !== id; })); spendSync(); bustDerived(); renderAll(); };
+  (function spendStyle() {
+    var css = ".gm-rs{background:var(--card);border-radius:12px;padding:12px 14px;margin:0 0 14px;box-shadow:0 1px 3px rgba(0,0,0,.05)}.gm-rs .gm-rs-h{font-size:15px;font-weight:700;line-height:1.5}"
+      + ".gm-rs-bar{display:flex;height:12px;border-radius:6px;overflow:hidden;margin:8px 0 4px;background:var(--cardAlt,var(--border))}.gm-rs-bar i{display:block;min-width:0}"
+      + ".gm-rs-key{display:flex;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--muted)}.gm-rs-key b{color:var(--text)}"
+      + ".gm-rs-row{display:flex;gap:8px;align-items:center;justify-content:space-between;font-size:12.5px;padding:4px 0;border-bottom:1px solid var(--border)}"
+      + ".gm-rs input,.gm-rs select{min-width:0;box-sizing:border-box}.gm-fx{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}"
+      + ".gm-fx b{flex:1 1 100%;font-size:13px}.gm-fx input{flex:1 1 110px;max-inline-size:150px}.gm-fx select{flex:0 1 auto;inline-size:auto}.gm-fx button{inline-size:auto;margin:0}"
+      + ".gm-fx-sug{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.gm-fx-sug button{inline-size:auto;margin:0;min-block-size:36px}"
+      + ".gm-ck{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-top:8px}.gm-ck label{flex:1 1 140px}.gm-ck input{inline-size:100%}";
+    var st = document.createElement("style"); st.textContent = css; document.head.appendChild(st);
+  })();
+  function fxPeople() { var n = scNames(), o = [["me", n.me]]; if (scEarners() === 2) o.push(["partner", n.partner]); o.push(["joint", "Joint"]); return o; }
+  function fxRow(x) {
+    var sel = function (k, opts, cur) { return '<select aria-label="' + k + '" onchange="gmFixedSet(\'' + x.id + '\',\'' + k + '\',this.value)">'
+      + opts.map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === cur ? " selected" : "") + ">" + esc(o[1]) + "</option>"; }).join("") + "</select>"; };
+    var who = x.who === "partner" && scEarners() !== 2 ? "joint" : x.who;
+    return '<div class="gm-fx"><b>' + esc(x.name) + '</b><input inputmode="decimal" aria-label="Amount" placeholder="₹ amount" value="' + (num(x.amt) ? esc(x.amt) : "")
+      + '" onchange="gmFixedSet(\'' + x.id + '\',\'amt\',this.value)">'
+      + sel("every", [["month", "a month"], ["quarter", "a quarter"], ["year", "a year"]], x.every) + sel("who", fxPeople(), who)
+      + '<button type="button" class="btn-sm" style="background:var(--cardAlt);color:var(--text)" aria-pressed="' + (x.kind === "want") + '" onclick="gmFixedSet(\'' + x.id + '\',\'kind\',\'' + (x.kind === "want" ? "need" : "want") + '\')">'
+      + (x.kind === "want" ? "Want" : "Need") + '</button>'
+      + '<button type="button" class="btn-sm" style="background:var(--cardAlt);color:var(--text)" aria-label="Remove ' + esc(x.name) + '" onclick="gmFixedDel(\'' + x.id + '\')">×</button></div>';
+  }
+  window.gmSpendCard = function () {
+    if (!window.P) return "";
+    var r = gmRealSpend(), rw = gmRunway(), ft = fixedTotals(), all = scAll(), ks = Object.keys(all), now = ymd().slice(0, 7), nm = scNames(), two = scEarners() === 2;
+    var h = '<div class="cat-t" style="margin-top:18px">What you really spend' + (P.example ? ' <span class="pill pill-t">example numbers</span>' : '') + '</div><div class="gm-rs">';
+    if (r) {
+      h += '<div class="gm-rs-h">Your real monthly spend: ' + rs(r.total) + ' <span style="font-weight:500;color:var(--muted)">(fixed ' + rs(r.fixed) + ' + variable ' + rs(r.variable) + ')</span>'
+        + (r.est ? ' <span class="pill pill-t">estimate</span>' : '') + '</div>';
+      var fp = r.total > 0 ? Math.round(r.fixed / r.total * 100) : 0;
+      h += '<div class="gm-rs-bar" role="img" aria-label="Fixed ' + fp + ' percent, variable ' + (100 - fp) + ' percent"><i style="width:' + fp + '%;background:var(--gold)"></i><i style="width:' + (100 - fp) + '%;background:var(--green)"></i></div>'
+        + '<div class="gm-rs-key"><span><b>' + fp + '%</b> fixed bills</span><span><b>' + (100 - fp) + '%</b> variable, the rest</span></div>';
+      if (r.est) h += '<div style="font-size:12.5px;color:var(--muted);margin-top:6px">After next month’s check-in you see your real spend. Until then the variable part is your profile’s spending less the fixed bills.</div>';
+    } else h += '<div class="gm-rs-h">List your fixed bills once and add your balance below. Your real spend shows itself.</div>';
+    if (rw) {
+      h += '<div style="margin-top:10px;font-size:13px">Cover for ' + rw.target + ' months or more is the aim' + (rw.contract ? ' on contract work' : '') + ': '
+        + gmRag(rw.state, rw.months.toFixed(1) + " months") + '<div class="gm-tgt" style="font-size:10.5px;color:var(--muted);margin-top:3px;line-height:1.3">aim ' + rw.target + '+ months · ' + rs(rw.target * rw.real.total)
+        + ' · savings and FDs ' + rs(rw.liquid) + ' ÷ ' + rs(rw.real.total) + ' a month</div><div style="margin-top:6px">' + rw.insight + '</div></div>';
+    }
+    // the system: one number per earner, on the 1st
+    if (!all[now]) {
+      var ins = null; try { ins = (G("gm_spend", []) || []).length >= 3 && window.gmSpendInsights ? gmSpendInsights() : null; } catch (e) {}
+      h += '<div style="margin-top:12px;font-weight:700;font-size:13.5px">Month-end check-in · 2 minutes</div>'
+        + '<div class="gm-ck"><label class="f-label">Balance in ' + (two ? esc(nm.me) + "’s" : "your") + ' main account(s) today<input id="gmCkMe" inputmode="decimal" placeholder="₹ rough is fine"></label>'
+        + (two ? '<label class="f-label">Balance in ' + esc(nm.partner) + '’s main account(s) today<input id="gmCkPt" inputmode="decimal" placeholder="₹ rough is fine"></label>' : '') + '</div>'
+        + (ins && ins.total > 0 ? '<label style="display:flex;gap:8px;align-items:center;margin-top:8px;font-size:12.5px"><input type="checkbox" id="gmCkMsg" value="' + Math.round(ins.total) + '">Your messages show ' + rs(ins.total) + ' going out: use it as the variable figure</label>' : '')
+        + '<button class="btn btn-p" type="button" data-haptic="success" style="margin-top:10px" onclick="gmCheckinSaveForm()">Save this month</button>'
+        + '<div style="font-size:11.5px;color:var(--muted);margin-top:6px">Variable spend is what is left after money in, money saved, fixed bills and the rise in your balance. No receipts.</div>';
+    } else h += '<div style="margin-top:12px;font-size:12.5px;color:var(--muted)">Month-end check-in done on ' + esc(all[now].at || now) + '. Next one on the 1st.</div>';
+    h += '<div style="margin-top:8px"><button class="btn-sm" type="button" style="background:var(--cardAlt);color:var(--text)" onclick="gmCalendar(\'money\')">Add to calendar</button></div>';
+    var s = scSeries().slice(-3);
+    if (s.length) {
+      h += '<div style="margin-top:10px;font-size:12px;color:var(--muted)">Last ' + s.length + ' month' + (s.length === 1 ? "" : "s") + ' of variable spend</div>';
+      s.slice().reverse().forEach(function (x) { h += '<div class="gm-rs-row"><span>' + esc(x.month) + '</span><span>fixed ' + rs(x.f) + ' + variable ' + rs(x.v) + (x.msgs ? ' (messages)' : '') + '</span></div>'; });
+      h += '<div class="gm-rs-row"><b>Average variable</b><b>' + rs(Math.round(s.reduce(function (a, x) { return a + x.v; }, 0) / s.length)) + '</b></div>';
+    } else if (ks.length) h += '<div style="margin-top:8px;font-size:12.5px;color:var(--muted)">First balance saved. After next month’s check-in you see your real spend.</div>';
+    // fixed bills, listed once, folded
+    var list = fixedList(), have = {}; list.forEach(function (x) { have[x.name] = 1; });
+    h += '<details class="road-col" style="margin-top:12px"><summary style="cursor:pointer;font-weight:800;font-size:13px">Fixed bills · ' + rs(ft.total) + ' a month, ' + rs(ft.total * 12) + ' a year</summary>'
+      + '<div class="info" style="margin:6px 0">List each bill once. A yearly bill is spread over twelve months for you. Loan EMIs and your let-out homes’ maintenance are read from what you already told us.</div>';
+    list.forEach(function (x) { h += fxRow(x); });
+    fixedKnown().forEach(function (x) { h += '<div class="gm-rs-row"><span>' + esc(x.name) + ' <span style="color:var(--muted)">(already known)</span></span><span>' + rs(x.amt) + '</span></div>'; });
+    var sug = FIXED_SUG.map(function (x, i) { return have[x[0]] ? "" : '<button type="button" class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmFixedAdd(' + i + ')">+ ' + esc(x[0]) + '</button>'; }).join("");
+    h += (sug ? '<div style="font-size:12px;color:var(--muted);margin-top:8px">Tap to add, then type the amount</div><div class="gm-fx-sug">' + sug + '</div>' : '')
+      + '<div class="gm-ck"><label class="f-label">Something else<input id="gmFxOwn" type="text" placeholder="e.g. Gym"></label><button type="button" class="btn-sm" onclick="gmFixedAdd(-1)">Add</button></div>';
+    if (ft.total > 0) h += '<div class="gm-rs-key" style="margin-top:8px"><span>' + esc(nm.me) + ' <b>' + rs(ft.me) + '</b></span>' + (two ? '<span>' + esc(nm.partner) + ' <b>' + rs(ft.partner) + '</b></span>' : '') + '<span>Joint <b>' + rs(ft.joint) + '</b></span></div>';
+    h += '</details>';
+    var w = scWork(), wb = function (who, cur) { return ["salaried", "contract"].map(function (k) {
+      return '<button type="button" class="btn-sm" aria-pressed="' + (cur === k) + '" style="' + (cur === k ? "" : "background:var(--cardAlt);color:var(--text)") + '" onclick="gmWorkSet(\'' + who + '\',\'' + k + '\')">' + (k === "contract" ? "Contract" : "Salaried") + '</button> '; }).join(""); };
+    h += '<div style="margin-top:12px;font-size:12.5px"><span style="color:var(--muted)">From 1 Jan 2027 ' + (two ? esc(nm.me) + "’s" : "my") + ' work is:</span> ' + wb("me", w.me)
+      + (two ? '<div style="margin-top:6px"><span style="color:var(--muted)">From 1 Jan 2027 ' + esc(nm.partner) + '’s work is:</span> ' + wb("partner", w.partner) + '</div>' : '') + '</div>';
+    return h + '</div>';
   };
 
   function lifeInputs() {
@@ -5344,10 +5558,13 @@
       desc: "Children: annual paediatric visit, vaccination check, growth. Parents: blood pressure and diabetes panel, and the checks their doctor advises." },
     { id: "family-q4", group: "family", v: 1, name: "Family health Q4: closure", rule: "FREQ=YEARLY;BYMONTH=1;BYDAY=1MO", months: [0], nth: 1, dow: 1, hh: 9, mins: 30,
       desc: "Second dental visit for adults, close every value flagged in Q1, the age-based screenings to discuss with your doctor, and one shared family-health folder." },
+    { id: "spend-monthly", group: "money", v: 1, name: "Month-end check-in: your real spend", rule: "FREQ=MONTHLY;BYMONTHDAY=1", start: "2026-12-01", months: null, nth: 0, dow: 2, hh: 9, mins: 10,
+      desc: "Open the Life OS > Money > What you really spend: type the balance in your main account(s), one number each. The Life OS works out what you really spent." },
     { id: "bip-weekly", group: "bip", v: 1, name: "Build in public: this week's episode", rule: "FREQ=WEEKLY;BYDAY=SA", months: null, nth: 0, dow: 6, hh: 10, mins: 60,
       desc: "Record 10 minutes, cut one 60-second Short, post it with one lesson, then log the link in Life OS > Playbook > S3." }
   ];
-  function calFirst(e) {                                        // the first occurrence on or after the fixed epoch: stable for ever
+  function calFirst(e) {
+    if (e.start) { var sp = e.start.split("-"); return new Date(+sp[0], +sp[1] - 1, +sp[2]); }   // a fixed first date, never moved                                        // the first occurrence on or after the fixed epoch: stable for ever
     for (var add = 0; add < 400; add++) {
       var t = new Date(CAL_EPOCH); t.setDate(CAL_EPOCH.getDate() + add);
       if (t.getDay() !== e.dow) continue;
@@ -5366,7 +5583,7 @@
   window.gmCalendarName = function (id) { var e = CALENDAR.filter(function (x) { return x.id === id; })[0]; return e ? e.name : ""; };
   window.gmCalendarICS = function (group) {
     var now = new Date(), stamp = icsDate(now, now.getHours(), now.getMinutes());
-    var title = group === "family" ? "Family health" : group === "rhythm" ? "Life OS rhythm" : group === "bip" ? "Build in public" : "Life OS";
+    var title = group === "family" ? "Family health" : group === "rhythm" ? "Life OS rhythm" : group === "bip" ? "Build in public" : group === "money" ? "Month-end check-in" : "Life OS";
     var L = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//SecuRAX//Life OS calendar//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "X-WR-CALNAME:" + title];
     rhythmEvents(group).forEach(function (e) {
       var end = new Date(e.start); end.setHours(e.hh, e.mins, 0, 0);
@@ -5385,7 +5602,7 @@
     try {
       var a = document.createElement("a");
       a.href = URL.createObjectURL(new Blob([ics], { type: "text/calendar" }));
-      a.download = (group === "family" ? "family-health" : group === "bip" ? "build-in-public" : "life-os-rhythm") + ".ics"; document.body.appendChild(a); a.click(); a.remove();
+      a.download = (group === "family" ? "family-health" : group === "bip" ? "build-in-public" : group === "money" ? "month-end-check-in" : "life-os-rhythm") + ".ics"; document.body.appendChild(a); a.click(); a.remove();
     } catch (e) {}
     S_("gm_cal_exported" + (group ? "_" + group : ""), ymd());
     gmToast("Calendar file saved: " + n + " repeating events. Open it and add them to the same calendar each time; a newer file updates these events, it never doubles them.");
@@ -7687,6 +7904,8 @@
       });
     var a = theOneAction();
     if (a) c.push({ id: "stack", score: (STACK_RISK[a.layer.id] || 40) + (a.vital ? 4 : 0), stack: true, text: esc(a.text), why: a.layer.id + " " + esc(a.layer.name) + ": the lowest unfinished layer of your stack.", btn: "Mark this done", act: "gmStackTg('" + a.layer.id + "'," + a.idx + ")" });
+    var sd = spendDue();
+    if (sd) c.push({ id: "spend-checkin", score: sd, text: "Month-end check-in \u00b7 one balance each, 2 minutes", why: "Shows what you really spend, with no receipts.", btn: "Open", act: "gmNavGo('money')" });
     dueRituals().forEach(function (r) {
       c.push({ id: "rit-" + r.id, score: 50, text: esc(r.name) + " · " + r.mins + " min", why: "Due now. Open it under More today for the steps.", btn: "Done", act: "gmRitualDone('" + r.id + "')" });
     });
