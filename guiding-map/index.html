@@ -5352,7 +5352,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     var h = '<label class="f-label">On whose name is it?</label>' + ownBtns(i, "owner", o, opts);
     if (o === "joint") {
       var s = ownMyShare(p);
-      h += '<label class="f-label">' + esc(nm.me) + '’s share (%)</label><input inputmode="decimal" value="' + s + '" onchange="gmPropSet(' + i + ',\'share\',this.value)">'
+      h += '<label class="f-label">' + (nm.me === "You" ? "Your" : esc(nm.me) + "’s") + ' share (%)</label><input inputmode="decimal" value="' + s + '" onchange="gmPropSet(' + i + ',\'share\',this.value)">'
         + '<div style="font-size:12px;color:var(--muted);margin:4px 0 8px">' + esc(nm.partner) + ': ' + (100 - s) + '%</div>';
     }
     if (num(p.loan) > 0) h += '<label class="f-label">Who pays the home loan?</label>' + ownBtns(i, "borrower", b, opts);

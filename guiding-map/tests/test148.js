@@ -43,6 +43,7 @@ setTimeout(() => {
   ok("no section number", !/\b194\b|24\(b\)|\b80C\b|section \d/i.test(pt));
   ok("no wife or husband", !/\b(wife|husband)\b/i.test(t));
   ok("CA tag present", /confirm with your CA/.test(pt));
+  ok("no broken possessive such as You\u2019s", !/You[\u2019']s\b/.test(t));
   w.close();
   done();
 }, 1500);
