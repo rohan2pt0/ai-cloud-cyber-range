@@ -134,6 +134,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- Fixed bills say what they mean and that they saved
 - Work from 1 Jan 2027, with a permanent option and in the right place
 - Two of you says plainly what each target means
 - Your real monthly spend, with no receipts
@@ -141,7 +142,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - Each number asked in one place
 - Numbers asked once, Buffer that shows
 - Two earners in the Life OS
-- A pack link really installs your pack
 
 **Release 0.4.0 - 2026-11-14:**
 

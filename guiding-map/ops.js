@@ -1484,6 +1484,8 @@
     else if (k === "who") x.who = { me: 1, partner: 1, joint: 1 }[v] ? v : "joint";
     else x.kind = v === "want" ? "want" : "need";
     S_("gm_fixed", l); spendSync(); bustDerived(); renderAll();
+    // every change says it landed (owner 2026-11-19: "I don't know whether what I enter is getting saved")
+    if (typeof gmToast === "function") gmToast("Saved: " + x.name + (num(x.amt) ? " · " + rs(monthlyOf(x)) + " a month" : "") + (k === "kind" ? (x.kind === "want" ? " · could pause" : " · must pay") : ""));
   };
   window.gmFixedDel = function (id) { S_("gm_fixed", fixedList().filter(function (y) { return y.id !== id; })); spendSync(); bustDerived(); renderAll(); };
   (function spendStyle() {
@@ -1494,20 +1496,25 @@
       + ".gm-rs input,.gm-rs select{min-width:0;box-sizing:border-box}.gm-fx{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:8px 0;border-bottom:1px solid var(--border)}"
       + ".gm-fx b{flex:1 1 100%;font-size:13px}.gm-fx input{flex:1 1 110px;max-inline-size:150px}.gm-fx select{flex:0 1 auto;inline-size:auto}.gm-fx button{inline-size:auto;margin:0}"
       + ".gm-fx-sug{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.gm-fx-sug button{inline-size:auto;margin:0;min-block-size:36px}"
+      + ".gm-fx .gm-fx-m{flex:0 0 auto;margin-inline-start:auto;font-size:12px;color:var(--muted);font-weight:600}.gm-fx .gm-fx-t{flex:1 1 auto;font-size:13px;font-weight:700}"
+      + ".gm-seg{display:inline-flex;border:1px solid var(--border);border-radius:999px;overflow:hidden}.gm-seg button{border:0;border-radius:0;background:transparent;color:var(--text);padding:6px 12px;min-block-size:36px;font-weight:600;box-shadow:none}"
+      + ".gm-seg button[aria-pressed=true]{background:var(--gold);color:#0d1f35}.gm-fx-h{flex:1 1 100%;display:flex;align-items:baseline;gap:8px}.gm-fx button.gm-fx-del{background:none!important;border:0!important;box-shadow:none!important;color:var(--muted);text-decoration:underline;font-size:12px;padding:6px 4px;min-block-size:36px;margin-inline-start:auto}"
       + ".gm-ck{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-end;margin-top:8px}.gm-ck label{flex:1 1 140px}.gm-ck input{inline-size:100%}";
     var st = document.createElement("style"); st.textContent = css; document.head.appendChild(st);
   })();
-  function fxPeople() { var n = scNames(), o = [["me", n.me]]; if (scEarners() === 2) o.push(["partner", n.partner]); o.push(["joint", "Joint"]); return o; }
+  function fxPeople() { var n = scNames(), f = function (x) { return String(x || "").trim().split(" ")[0] || x; }, o = [["me", f(n.me)]]; if (scEarners() === 2) o.push(["partner", f(n.partner)]); o.push(["joint", "Both of us"]); return o; }
   function fxRow(x) {
     var sel = function (k, opts, cur) { return '<select aria-label="' + k + '" onchange="gmFixedSet(\'' + x.id + '\',\'' + k + '\',this.value)">'
       + opts.map(function (o) { return '<option value="' + o[0] + '"' + (o[0] === cur ? " selected" : "") + ">" + esc(o[1]) + "</option>"; }).join("") + "</select>"; };
     var who = x.who === "partner" && scEarners() !== 2 ? "joint" : x.who;
-    return '<div class="gm-fx"><b>' + esc(x.name) + '</b><input inputmode="decimal" aria-label="Amount" placeholder="₹ amount" value="' + (num(x.amt) ? esc(x.amt) : "")
+    var seg = function (k, label) { var on = (x.kind === "want" ? "want" : "need") === k;
+      return '<button type="button" aria-pressed="' + on + '" onclick="gmFixedSet(\'' + x.id + '\',\'kind\',\'' + k + '\')">' + label + '</button>'; };
+    return '<div class="gm-fx"><div class="gm-fx-h"><span class="gm-fx-t">' + esc(x.name) + '</span><span class="gm-fx-m">' + (num(x.amt) ? rs(monthlyOf(x)) + "/month" : "add amount") + '</span></div>'
+      + '<input inputmode="decimal" aria-label="Amount for ' + esc(x.name) + '" placeholder="₹ amount" value="' + (num(x.amt) ? esc(x.amt) : "")
       + '" onchange="gmFixedSet(\'' + x.id + '\',\'amt\',this.value)">'
       + sel("every", [["month", "a month"], ["quarter", "a quarter"], ["year", "a year"]], x.every) + sel("who", fxPeople(), who)
-      + '<button type="button" class="btn-sm" style="background:var(--cardAlt);color:var(--text)" aria-pressed="' + (x.kind === "want") + '" onclick="gmFixedSet(\'' + x.id + '\',\'kind\',\'' + (x.kind === "want" ? "need" : "want") + '\')">'
-      + (x.kind === "want" ? "Want" : "Need") + '</button>'
-      + '<button type="button" class="btn-sm" style="background:var(--cardAlt);color:var(--text)" aria-label="Remove ' + esc(x.name) + '" onclick="gmFixedDel(\'' + x.id + '\')">×</button></div>';
+      + '<span class="gm-seg" role="group" aria-label="Must pay, or could pause">' + seg("need", "Must pay") + seg("want", "Could pause") + '</span>'
+      + '<button type="button" class="gm-fx-del" aria-label="Remove ' + esc(x.name) + '" onclick="gmFixedDel(\'' + x.id + '\')">Remove</button></div>';
   }
   window.gmSpendCard = function () {
     if (!window.P) return "";
@@ -1546,6 +1553,7 @@
     // fixed bills, listed once, folded
     var list = fixedList(), have = {}; list.forEach(function (x) { have[x.name] = 1; });
     h += '<details class="road-col" style="margin-top:12px"><summary style="cursor:pointer;font-weight:800;font-size:13px">Fixed bills · ' + rs(ft.total) + ' a month, ' + rs(ft.total * 12) + ' a year</summary>'
+      + '<div style="font-size:12px;color:var(--muted);margin:6px 0 2px">Each change saves on this device at once. <b style="color:var(--text)">Must pay</b>: a bill you cannot skip. <b style="color:var(--text)">Could pause</b>: one you could stop for a few months if money got tight; the cover line uses these first.</div>'
       + '<div class="info" style="margin:6px 0">List each bill once. A yearly bill is spread over twelve months for you. Loan EMIs and your let-out homes’ maintenance are read from what you already told us.</div>';
     list.forEach(function (x) { h += fxRow(x); });
     fixedKnown().forEach(function (x) { h += '<div class="gm-rs-row"><span>' + esc(x.name) + ' <span style="color:var(--muted)">(already known)</span></span><span>' + rs(x.amt) + '</span></div>'; });

@@ -54,6 +54,17 @@ setTimeout(() => {
   ok("either earner on contract makes the target 12", w.gmRunway().target === 12);
   w.gmWorkSet("partner", "salaried");
   ok("back to salaried: 6", w.gmRunway().target === 6);
+  // owner 2026-11-19: "what is Need; I don't know whether what I enter is saved; the buttons don't look proper"
+  { let said = ""; w.gmToast = (t) => { said = t; };
+    const fx = JSON.parse(w.localStorage.getItem("gm_fixed") || "[]")[0];
+    if (fx) { w.gmFixedSet(fx.id, "kind", "want");
+      ok("a change says it was saved, with the monthly amount", /^Saved: /.test(said) && /could pause/.test(said), said); }
+    w.goTab("money"); w.renderAll();
+    const row = w.document.querySelector(".gm-fx");
+    ok("each bill offers Must pay or Could pause, the chosen one marked", !!row && /Must pay/.test(row.textContent) && /Could pause/.test(row.textContent) && !!row.querySelector('.gm-seg [aria-pressed="true"]'));
+    ok("each bill shows what it costs a month", !!row && /\/month|add amount/.test(row.textContent));
+    ok("the list says that changes save at once", /saves on this device at once/.test(w.document.body.textContent));
+    if (fx) w.gmFixedSet(fx.id, "kind", fx.kind || "need"); }
   // owner 2026-11-19: "only my work will be contract; Nisha's is central govt permanent; after clicking nothing much happens; placement is wrong"
   w.gmWorkSet("me", "contract"); w.gmWorkSet("partner", "permanent"); w.goTab("money"); w.renderAll();
   const rp = w.gmRunway();
