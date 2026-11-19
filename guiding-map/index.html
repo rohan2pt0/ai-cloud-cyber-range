@@ -5171,9 +5171,11 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       .sort(function (a, b) { return monthlyOf(b) - monthlyOf(a); });
     var add = function (cut) { return r.total - cut > 0 ? liquid / (r.total - cut) - months : 0; };
     var s = "You are " + rs(gap) + " short of " + target + " months of cover.";
-    if (wants[0]) s += " Pausing " + esc(wants[0].name) + " adds " + add(monthlyOf(wants[0])).toFixed(1) + " months, then a";
+    // a small gain reads in days, never "0.0 months" (review 2026-11-19)
+    var span = function (m) { return m >= 1 ? m.toFixed(1) + " months" : Math.max(1, Math.round(m * 30)) + (Math.round(m * 30) === 1 ? " day" : " days"); };
+    if (wants[0]) s += " Pausing " + esc(wants[0].name) + " adds " + span(add(monthlyOf(wants[0]))) + ", then a";
     else s += " A";
-    s += " 10% cut in variable spend adds " + add(r.variable * 0.1).toFixed(1) + " months.";
+    s += " 10% cut in variable spend adds " + span(add(r.variable * 0.1)) + ".";
     out.insight = s; return out;
   };
   function spendDue() {

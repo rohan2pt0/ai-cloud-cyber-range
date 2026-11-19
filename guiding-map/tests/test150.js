@@ -56,7 +56,7 @@ setTimeout(() => {
   ok("back to salaried: 6", w.gmRunway().target === 6);
   // insight names the biggest want and what pausing it adds: 9,00,000/1,78,000 - 4.74 = 0.3
   w.gmWorkSet("me", "contract"); rw = w.gmRunway();
-  ok("the insight names the biggest want and its months", /Pausing OTT and app subscriptions adds 0\.3 months/.test(rw.insight) && /10% cut in variable spend adds/.test(rw.insight), rw.insight);
+  ok("the insight names the biggest want and its gain, a small one in days (never 0.0 months)", /Pausing OTT and app subscriptions adds 10 days/.test(rw.insight) && /10% cut in variable spend adds \d/.test(rw.insight) && !/0\.0 months/.test(rw.insight), rw.insight);
   // Buffer tile: 6,00,000 / 1,90,000 = 3.2m (not the profile's 60,000 + 20,000 EMI = 7.5m)
   w.goTab("today"); w.renderAll();
   const tile = [...d.querySelectorAll("#gmVitals > div")].find(t => /Buffer|Runway/.test(t.textContent));
