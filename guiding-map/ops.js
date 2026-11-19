@@ -1245,9 +1245,15 @@
   // Ask once (owner, 2026-11-11): the Life Map reads what the profile (setup) already knows when its own field is empty,
   // and a change to net worth or the emergency fund goes back to the profile. Ages come from birth dates, never typed twice.
   function profOK() { return typeof P !== "undefined" && P && !P.example; }
-  function fromProfileLine(label, valueText) {
-    return '<div class="f-label gm-fromp" style="margin:10px 0">' + label + ': <b style="color:var(--text)">' + valueText + '</b> <span style="text-transform:none;letter-spacing:0">from your profile · <a href="#" class="gm-inl" onclick="editProfile();return false">change</a></span></div>';
+  function fromProfileLine(label, valueText, money) {
+    return '<div class="f-label gm-fromp" style="margin:10px 0">' + label + ': <b style="color:var(--text)">' + valueText + '</b> <span style="text-transform:none;letter-spacing:0">'
+      + (money ? 'from My numbers · <a href="#" class="gm-inl" onclick="gmOpenNums();return false">change</a>' : 'from your profile · <a href="#" class="gm-inl" onclick="editProfile();return false">change</a>') + '</span></div>';
   }
+  // One place to change a money number: open My numbers where it is, never a second form.
+  window.gmOpenNums = function () {
+    var go = function () { var d = document.querySelector("details.gm-nums"); if (d) { d.open = true; d.scrollIntoView({ block: "start" }); var i = d.querySelector("input"); if (i) i.focus(); } else editProfile(); };
+    if (document.querySelector("details.gm-nums")) go(); else { goTab("life"); setTimeout(go, 60); }
+  };
   function yrsSince(d) { var b = d ? new Date(d) : null; return b && !isNaN(b) ? String(Math.floor((Date.now() - b) / 31557600000)) : ""; }
   function life() {
     var l = G("gm_life", {}), pr = profOK() ? P : null;
@@ -1255,18 +1261,20 @@
     var kid = (pr.kids || [])[0], fill = {
       age: yrsSince(pr.dob), sage: yrsSince(pr.pdob), k1: kid && kid.dob ? yrsSince(kid.dob) : "",
       inc: pr.net ? String(Math.round(gmHouseholdIncome(pr) * 12 / 1e3) / 100) : "",
-      nw: pr.nw ? String(Math.round(num(pr.nw) / 1e3) / 100) : "", ef: pr.sav ? String(Math.round(num(pr.sav) / 1e3) / 100) : "",
+      nw: (typeof gmHouseholdInvest === "function" ? gmHouseholdInvest(pr) : num(pr.nw)) ? String(Math.round((typeof gmHouseholdInvest === "function" ? gmHouseholdInvest(pr) : num(pr.nw)) / 1e3) / 100) : "",
+      ef: pr.sav ? String(Math.round(num(pr.sav) / 1e3) / 100) : "",
       minc: pr.net ? String(num(pr.net)) : ""   // fixed costs are not filled here: from the profile they are spending PLUS loan EMIs (flowHTML)
     };
-    Object.keys(fill).forEach(function (k) { if ((l[k] === undefined || l[k] === "") && fill[k] !== "") l[k] = fill[k]; });
+    // Asked once (owner 2026-11-19: "this is really confusing"): a fact the profile holds is the profile's, everywhere. An older
+    // copy typed into the Life map or the plan no longer competes with it; it is shown as one line with a way to change it.
+    Object.keys(fill).forEach(function (k) { if (fill[k] !== "") l[k] = fill[k]; });
     return l;
   }
   // Fixed costs, asked once (owner 2026-11-19: the Buffer tile showed a dash while the plan card showed ₹1,36,000): what the
   // person typed in the plan, else the profile's monthly spending plus loan EMIs, the same figure the plan card shows.
   function lifeFixed(l) {
-    var f = num(l && l.fFixed); if (f) return f;
-    if (!profOK() || P.example) return 0;
-    return num(P.exp) + (P.loans || []).reduce(function (a, x) { return a + num(x && x.emi); }, 0);
+    var fromP = profOK() && num(P.exp) ? num(P.exp) + (P.loans || []).reduce(function (a, x) { return a + num(x && x.emi); }, 0) : 0;
+    return fromP || num(l && l.fFixed);   // the profile's figure wins; a typed one counts only when the profile has none
   }
   var LIFE_TO_P = { nw: "nw", ef: "sav" };                          // lakh in the Life Map, rupees in the profile
   window.gmLifeSet = function (k, v) {
@@ -1318,7 +1326,7 @@
   function lifeInputs() {
     var l = life(), raw = G("gm_life", {});
     var F = [
-      ["age", "Your age", "36"], ["sage", "Spouse age", "33"],
+      ["age", "Your age", "36"], ["sage", "Partner\u2019s age", "33"],
       ["inc", "Household annual income (\u20b9 lakh)", "23"],
       ["nw", "Net worth excl. own home (\u20b9 lakh)", "12"],
       ["k1", "First child's age in years (0 if infant, blank if none)", "1"],
@@ -1330,7 +1338,13 @@
       + (filled ? "" : tplBtn("gmTplLife()", "Fill with a worked example, then correct it"));
     F.forEach(function (f) {
       // an age worked out from a birth date in the profile is shown, not asked (ask-by-frequency: derived, never typed)
-      if (["age", "sage", "k1"].indexOf(f[0]) >= 0 && (raw[f[0]] === undefined || raw[f[0]] === "") && l[f[0]] !== undefined && l[f[0]] !== "") {
+      // a birth date the profile does not have yet is added there, once, never typed here as an age
+      if (["age", "sage", "k1"].indexOf(f[0]) >= 0 && profOK() && (l[f[0]] === undefined || l[f[0]] === "")) {
+        h += '<div class="f-label gm-fromp" style="margin:10px 0">' + f[1].replace(/ \(.*$|'s age in years.*$/, "") + ': <span style="text-transform:none;letter-spacing:0">'
+          + (f[0] === "k1" ? "none in your profile" : "not in your profile yet") + ' · <a href="#" class="gm-inl" onclick="editProfile();return false">add</a></span></div>';
+        return;
+      }
+      if (["age", "sage", "k1"].indexOf(f[0]) >= 0 && profOK() && l[f[0]] !== undefined && l[f[0]] !== "") {
         h += '<div class="f-label" style="margin:10px 0">' + f[1].replace(/ \(.*$|'s age in years.*$/, "") + ': <b style="color:var(--text)">' + esc(l[f[0]])
           + '</b> <span style="text-transform:none;letter-spacing:0">(from your profile)</span></div>';
         return;
@@ -1338,11 +1352,11 @@
       var pt = "";
       if (profOK()) {
         if (f[0] === "inc") pt = gmHouseholdIncome(P) ? rs(gmHouseholdIncome(P) * 12) + " a year" : "";
-        else if (f[0] === "nw") pt = num(P.nw) ? rs(P.nw) : "";
+        else if (f[0] === "nw") pt = gmHouseholdInvest(P) ? rs(gmHouseholdInvest(P)) : "";
         else if (f[0] === "ef") pt = num(P.sav) ? rs(P.sav) : "";
       }
-      if (pt && (raw[f[0]] === undefined || raw[f[0]] === "")) {
-        h += fromProfileLine(f[1].replace(/ \(.*$/, ""), pt);
+      if (pt) {
+        h += fromProfileLine(f[1].replace(/ \(.*$/, ""), pt, f[0] !== "inc");
         return;
       }
       h += '<label class="f-label">' + f[1] + exampleBadge(f[0]) + '</label><input inputmode="decimal" value="' + esc(l[f[0]] === undefined ? "" : l[f[0]])
@@ -1922,7 +1936,7 @@
 
     // Ask once: when the plan is empty, the profile already knows the spending, the loan EMIs and the take-home.
     var fixed = num(l.fFixed), loan = num(l.fLoan), ef = num(l.fEF), sip = num(l.fSip), fixedFromP = false, saveFromP = false;
-    if (!fixed && pr) { fixed = num(pr.exp) + emis; fixedFromP = true; }
+    if (pr && (num(pr.exp) || !fixed)) { fixed = num(pr.exp) + emis; fixedFromP = true; }   // asked once: the profile's spending + EMIs
     if (pr && num(pr.exp) && (raw.fFixed === undefined || raw.fFixed === "")) fixedFromP = true;
     var save = ef + sip;
     if (!ef && !sip && pr) { save = Math.max(0, num(pr.net) - num(pr.exp) - emis); saveFromP = true; }
@@ -1983,8 +1997,8 @@
     };
     F.forEach(function (f) {
       var pt = fromPLine[f[0]] ? fromPLine[f[0]]() : "";
-      if (pt && (raw[f[0]] === undefined || raw[f[0]] === "")) {
-        h += fromProfileLine(f[1].split(" — ")[0].replace(/ \(₹\)$/, ""), pt);
+      if (pt) {
+        h += fromProfileLine(f[1].split(" — ")[0].replace(/ \(₹\)$/, ""), pt, true);
         return;
       }
       h += '<label class="f-label">' + f[1] + exampleBadge(f[0]) + '</label><input inputmode="decimal" aria-label="' + f[1] + '" value="' + esc(l[f[0]] || "")

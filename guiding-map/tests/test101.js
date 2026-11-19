@@ -7,9 +7,11 @@ let P = 0, F = 0, e = []; const ok = (n, c, d) => { c ? P++ : (F++, e.push(n + (
 const prof = { name: "Fake", dob: "1990-05-15", country: "India", cur: "INR", gross: 300000, net: 200000, exp: 90000, sav: 400000,
   nw: 2500000, kids: [], loans: [], ret: 50, tsav: 20, example: false };
 function boot(life, exFields) {
+  // asked once (2026-11-19): the buffer comes from the profile (savings ÷ spending + EMIs), so each case sets it there
+  const pr = Object.assign({}, prof, { exp: 100000, sav: Math.round(parseFloat((life && life.ef) || "4") * 100000) });
   return new JSDOM(fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8'), { runScripts: "dangerously", pretendToBeVisual: true, url: "https://hub.securax.localhost/",
     beforeParse(w) {
-      w.localStorage.setItem("sovP", JSON.stringify(prof));
+      w.localStorage.setItem("sovP", JSON.stringify(pr));
       w.localStorage.setItem("gm_simple", "false");
       if (life) w.localStorage.setItem("gm_life", JSON.stringify(life));
       if (exFields) w.localStorage.setItem("gm_example_fields", JSON.stringify(exFields));

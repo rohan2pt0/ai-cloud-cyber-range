@@ -26,13 +26,14 @@ setTimeout(() => {
   // the Life Map reads the profile too
   w.goTab("life");
   const L = (k) => { const i = [...sec().querySelectorAll("input")].find(x => (x.getAttribute("onchange") || "").includes("gmLifeSet('" + k + "'")); return i ? i.value : "(none)"; };
-  ok("Life Map: ages come from the birth dates, child included", (() => { const t = sec().textContent, n = (re) => +((t.match(re) || [])[1] || 0); return n(/Your age: (\d+)/) >= 36 && n(/Spouse age: (\d+)/) >= 34 && n(/First child: (\d+)/) >= 4; })(), sec().textContent.slice(0, 300));
+  ok("Life Map: ages come from the birth dates, child included", (() => { const t = sec().textContent, n = (re) => +((t.match(re) || [])[1] || 0); return n(/Your age: (\d+)/) >= 36 && n(/Partner’s age: (\d+)/) >= 34 && n(/First child: (\d+)/) >= 4; })(), sec().textContent.slice(0, 300));
   ok("Life Map shows income, net worth and emergency fund as lines from the profile",
     ["₹31,20,000", "₹25,00,000", "₹4,00,000"].every(v => lines().includes(v)) && ["inc", "nw", "ef"].every(k => L(k) === "(none)"),
     lines());
   w.gmLifeSet("nw", "30");
   ok("a Life Map net worth edit updates the profile in rupees", G("sovP").nw === 3000000);
-  w.goTab("life"); ok("a typed Life Map value wins over the profile", L("nw") === "30" && G("gm_life").nw === "30");
+  // asked once (owner 2026-11-19): the edit lands in the profile, and the Life Map shows it as a line, never a second input
+  w.goTab("life"); ok("after an edit, the Life Map shows the profile's new net worth as a line, not a second input", L("nw") === "(none)" && lines().includes("₹30,00,000"), lines());
   // editing the profile keeps the children and loans (it used to erase them)
   w.editProfile();
   ok("Setup edit shows the child and the loan already there", d.querySelectorAll("#kidList input")[0].value === "FakeKid" && d.querySelectorAll("#loanList input")[0].value === "1000000");
