@@ -5151,28 +5151,50 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   }
   function scWork() {
     var w = window.P && P.work && typeof P.work === "object" ? P.work : {}, p = window.P && P.pwork && typeof P.pwork === "object" ? P.pwork : {};
-    return { me: w.kind === "contract" ? "contract" : "salaried", partner: p.kind === "contract" ? "contract" : "salaried" };
+    var ok = function (k) { return k === "contract" || k === "permanent" ? k : "salaried"; };
+    return { me: ok(w.kind), partner: ok(p.kind), meSet: !!w.kind, partnerSet: !!p.kind };
   }
+  var WORK_KINDS = { salaried: "Salaried (private)", contract: "Contract", permanent: "Permanent (govt / PSU)" };
   window.gmWorkSet = function (who, kind) {
     if (!window.P) return;
     var k = who === "partner" ? "pwork" : "work";
-    P[k] = { kind: kind === "contract" ? "contract" : "salaried", from: kind === "contract" ? "2027-01-01" : "" };
+    kind = WORK_KINDS[kind] ? kind : "salaried";
+    P[k] = { kind: kind, from: "2027-01-01" };
     if (profOK()) store("sovP", P);
     renderAll();
+    // say what changed, so a tap never looks like nothing happened (owner 2026-11-19)
+    var rw = window.gmRunway && gmRunway();
+    if (typeof gmToast === "function") gmToast("Saved: " + WORK_KINDS[kind] + ". " + (rw ? "The aim is now " + rw.target + " months of cover." : "Add your fixed bills to see your cover."));
   };
+  function workHTML() {
+    var w = scWork(), two = scEarners() === 2, nm = (typeof ownNames === "function") ? ownNames() : { me: "You", partner: "Partner" };
+    var first = function (n) { return esc(String(n || "").trim().split(" ")[0] || n); };
+    var wb = function (who, cur, set) { return Object.keys(WORK_KINDS).map(function (k) { var on = set && cur === k;
+      return '<button type="button" class="btn-sm" aria-pressed="' + on + '" style="margin:3px 4px 0 0;' + (on ? "background:var(--gold);color:#0d1f35" : "background:var(--cardAlt);color:var(--text)") + '" onclick="gmWorkSet(\'' + who + '\',\'' + k + '\')">' + WORK_KINDS[k] + '</button>'; }).join(""); };
+    var row = function (who, label, cur, set) { return '<div style="margin-top:6px"><span style="color:var(--muted)">' + label + '</span><div>' + wb(who, cur, set) + '</div></div>'; };
+    var rows = row("me", first(nm.me) + "’s work from 1 Jan 2027", w.me, w.meSet) + (two ? row("partner", first(nm.partner) + "’s work from 1 Jan 2027", w.partner, w.partnerSet) : "");
+    var done = w.meSet && (!two || w.partnerSet);
+    var line = first(nm.me) + ": " + WORK_KINDS[w.me] + (two ? " · " + first(nm.partner) + ": " + WORK_KINDS[w.partner] : "");
+    return done ? '<details class="gm-work" style="margin-top:8px;font-size:12.5px"><summary style="cursor:pointer">Work from 1 Jan 2027: <b>' + line + '</b> · change</summary>' + rows + '</details>'
+      : '<div class="gm-work" style="margin-top:10px;font-size:12.5px;font-weight:600">What sets the aim: your work from 1 Jan 2027' + rows + '</div>';
+  }
   window.gmRunway = function () {
     var r = gmRealSpend(); if (!r || !(r.total > 0) || !window.P) return null;
-    var w = scWork(), contract = w.me === "contract" || (scEarners() === 2 && w.partner === "contract"), target = contract ? 12 : 6;
-    var liquid = num(P.sav) + (typeof gmMine === "function" ? gmMine(P).fd + gmPartner(P).fd : 0), months = liquid / r.total;
+    var w = scWork(), two = scEarners() === 2, contract = w.me === "contract" || (two && w.partner === "contract"), target = contract ? 12 : 6;
+    // a permanent (government or PSU) income keeps coming if the other pay stops, so savings only cover the rest
+    var secure = (w.me === "permanent" ? num(P.net) : 0) + (two && w.partner === "permanent" && typeof gmPartner === "function" ? num(gmPartner(P).net) : 0);
+    var gapM = Math.max(0, r.total - secure);
+    var liquid = num(P.sav) + (typeof gmMine === "function" ? gmMine(P).fd + gmPartner(P).fd : 0), months = gapM > 0 ? liquid / gapM : 999;
     var st = months >= target ? "good" : months >= target / 2 ? "watch" : "low";
-    var out = { months: months, target: target, state: st, contract: contract, liquid: liquid, real: r, insight: "" };
+    var out = { months: months, target: target, state: st, contract: contract, liquid: liquid, real: r, insight: "", secure: secure, gapM: gapM };
+    if (gapM <= 0) { out.insight = "The permanent pay alone covers what the home spends. Savings are a second line, not the first."; return out; }
     if (months >= target) { out.insight = "You are at or past " + target + " months of cover. Keep the month-end check-in going and this stays true."; return out; }
-    var gap = Math.max(0, target * r.total - liquid), wants = fixedList().filter(function (x) { return x.kind === "want" && monthlyOf(x) > 0; })
+    var gap = Math.max(0, target * gapM - liquid), wants = fixedList().filter(function (x) { return x.kind === "want" && monthlyOf(x) > 0; })
       .sort(function (a, b) { return monthlyOf(b) - monthlyOf(a); });
-    var add = function (cut) { return r.total - cut > 0 ? liquid / (r.total - cut) - months : 0; };
+    var add = function (cut) { return gapM - cut > 0 ? liquid / (gapM - cut) - months : 0; };
     var s = "You are " + rs(gap) + " short of " + target + " months of cover.";
     // a small gain reads in days, never "0.0 months" (review 2026-11-19)
-    var span = function (m) { return m >= 1 ? m.toFixed(1) + " months" : Math.max(1, Math.round(m * 30)) + (Math.round(m * 30) === 1 ? " day" : " days"); };
+    var span = function (m) { return m >= 1 ? m.toFixed(1) + " months" : (function (d) { return d + (d === 1 ? " day" : " days"); })(Math.max(1, Math.round(m * 30))); };
     if (wants[0]) s += " Pausing " + esc(wants[0].name) + " adds " + span(add(monthlyOf(wants[0]))) + ", then a";
     else s += " A";
     s += " 10% cut in variable spend adds " + span(add(r.variable * 0.1)) + ".";
@@ -5251,8 +5273,8 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     } else h += '<div class="gm-rs-h">List your fixed bills once and add your balance below. Your real spend shows itself.</div>';
     if (rw) {
       h += '<div style="margin-top:10px;font-size:13px">Cover for ' + rw.target + ' months or more is the aim' + (rw.contract ? ' on contract work' : '') + ': '
-        + gmRag(rw.state, rw.months.toFixed(1) + " months") + '<div class="gm-tgt" style="font-size:10.5px;color:var(--muted);margin-top:3px;line-height:1.3">aim ' + rw.target + '+ months · ' + rs(rw.target * rw.real.total)
-        + ' · savings and FDs ' + rs(rw.liquid) + ' ÷ ' + rs(rw.real.total) + ' a month</div><div style="margin-top:6px">' + rw.insight + '</div></div>';
+        + gmRag(rw.state, rw.gapM > 0 ? (rw.months > 120 ? "120+ months" : rw.months.toFixed(1) + " months") : "covered") + '<div class="gm-tgt" style="font-size:10.5px;color:var(--muted);margin-top:3px;line-height:1.3">aim ' + rw.target + '+ months · ' + rs(rw.target * rw.gapM)
+        + ' · savings and FDs ' + rs(rw.liquid) + ' ÷ ' + rs(rw.gapM) + ' a month' + (rw.secure > 0 ? ' (spend ' + rs(rw.real.total) + ' less the permanent pay ' + rs(rw.secure) + ')' : '') + '</div><div style="margin-top:6px">' + rw.insight + '</div>' + workHTML() + '</div>';
     }
     // the system: one number per earner, on the 1st
     if (!all[now]) {
@@ -5282,10 +5304,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       + '<div class="gm-ck"><label class="f-label">Something else<input id="gmFxOwn" type="text" placeholder="e.g. Gym"></label><button type="button" class="btn-sm" onclick="gmFixedAdd(-1)">Add</button></div>';
     if (ft.total > 0) h += '<div class="gm-rs-key" style="margin-top:8px"><span>' + esc(nm.me) + ' <b>' + rs(ft.me) + '</b></span>' + (two ? '<span>' + esc(nm.partner) + ' <b>' + rs(ft.partner) + '</b></span>' : '') + '<span>Joint <b>' + rs(ft.joint) + '</b></span></div>';
     h += '</details>';
-    var w = scWork(), wb = function (who, cur) { return ["salaried", "contract"].map(function (k) {
-      return '<button type="button" class="btn-sm" aria-pressed="' + (cur === k) + '" style="' + (cur === k ? "" : "background:var(--cardAlt);color:var(--text)") + '" onclick="gmWorkSet(\'' + who + '\',\'' + k + '\')">' + (k === "contract" ? "Contract" : "Salaried") + '</button> '; }).join(""); };
-    h += '<div style="margin-top:12px;font-size:12.5px"><span style="color:var(--muted)">From 1 Jan 2027 ' + (two ? esc(nm.me) + "’s" : "my") + ' work is:</span> ' + wb("me", w.me)
-      + (two ? '<div style="margin-top:6px"><span style="color:var(--muted)">From 1 Jan 2027 ' + esc(nm.partner) + '’s work is:</span> ' + wb("partner", w.partner) + '</div>' : '') + '</div>';
+    if (!gmRunway()) h += workHTML();   // no runway yet: the choice still has a home
     return h + '</div>';
   };
 

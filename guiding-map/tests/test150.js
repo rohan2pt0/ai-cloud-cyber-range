@@ -54,6 +54,17 @@ setTimeout(() => {
   ok("either earner on contract makes the target 12", w.gmRunway().target === 12);
   w.gmWorkSet("partner", "salaried");
   ok("back to salaried: 6", w.gmRunway().target === 6);
+  // owner 2026-11-19: "only my work will be contract; Nisha's is central govt permanent; after clicking nothing much happens; placement is wrong"
+  w.gmWorkSet("me", "contract"); w.gmWorkSet("partner", "permanent"); w.goTab("money"); w.renderAll();
+  const rp = w.gmRunway();
+  ok("a permanent (govt / PSU) partner's pay is counted as secure: savings cover only the rest", rp.secure > 0 && Math.abs(rp.gapM - Math.max(0, rp.real.total - rp.secure)) < 1, JSON.stringify({ s: rp.secure, g: rp.gapM }));
+  ok("contract still sets the aim to 12 months", rp.target === 12);
+  const card = w.document.querySelector(".gm-rs"), work = card && card.querySelector(".gm-work");
+  ok("the work choice sits with the cover it changes (inside the card, after the aim)", !!work && card.innerHTML.indexOf("is the aim") < card.innerHTML.indexOf("gm-work"));
+  ok("once both are chosen it folds to one line naming both", !!work && work.tagName === "DETAILS" && /Contract/.test(work.querySelector("summary").textContent) && /Permanent \(govt \/ PSU\)/.test(work.querySelector("summary").textContent), work && work.outerHTML.slice(0, 200));
+  const pressed = work ? [...work.querySelectorAll('button[aria-pressed="true"]')].map(b => b.textContent) : [];
+  ok("the chosen option is marked, so a tap visibly lands", pressed.includes("Contract") && pressed.includes("Permanent (govt / PSU)"), pressed.join("|"));
+  w.gmWorkSet("me", "salaried"); w.gmWorkSet("partner", "salaried");
   // insight names the biggest want and what pausing it adds: 9,00,000/1,78,000 - 4.74 = 0.3
   w.gmWorkSet("me", "contract"); rw = w.gmRunway();
   ok("the insight names the biggest want and its gain, a small one in days (never 0.0 months)", /Pausing OTT and app subscriptions adds 10 days/.test(rw.insight) && /10% cut in variable spend adds \d/.test(rw.insight) && !/0\.0 months/.test(rw.insight), rw.insight);

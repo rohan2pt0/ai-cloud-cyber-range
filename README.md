@@ -134,6 +134,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- Work from 1 Jan 2027, with a permanent option and in the right place
 - Your real monthly spend, with no receipts
 - Two of you shows red, amber and green
 - Each number asked in one place
@@ -141,7 +142,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - Two earners in the Life OS
 - A pack link really installs your pack
 - Whose name is the property in
-- Watch an exercise move
 
 **Release 0.4.0 - 2026-11-14:**
 
