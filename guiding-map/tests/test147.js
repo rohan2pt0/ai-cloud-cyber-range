@@ -31,6 +31,13 @@ setTimeout(() => {
   W.goTab("money");
   const T = W.document.querySelector(".gm-two table");
   ok("table exists", !!T);
+  // red, amber, green with a word (owner 2026-11-19: "visual cues whether it's progress or needs my attention")
+  const rag = T ? [...T.querySelectorAll(".gm-rag")].map(x => x.dataset.state + ":" + x.textContent.trim()) : [];
+  ok("term cover: 12.5 years is strong, 3.3 years needs care", rag.includes("good:12.5 yrs") && rag.includes("low:3.3 yrs"), rag.join(" "));
+  ok("retirement pot below half the band for the age needs care", rag.includes("low:0.6 yrs"), rag.join(" "));
+  ok("household health cover of 15 lakh is strong", rag.some(x => /^good:₹15/.test(x)), rag.join(" "));
+  ok("every chip carries its word, never colour alone", T && [...T.querySelectorAll(".gm-rag")].every(x => /strong|building|needs care/.test(x.getAttribute("aria-label") || "")));
+  ok("a key explains the three colours", !!W.document.querySelector(".gm-rag-key"));
   const heads = T ? [...T.querySelectorAll("thead th")].map(x => x.textContent.trim()) : [];
   ok("columns: label, You, Sam, Household", heads.join("|") === "|You|Sam|Household", heads.join("|"));
   const cells = l => { const r = T && [...T.querySelectorAll("tbody tr")].find(r => r.cells[0].textContent.replace(/\?/g, "").trim() === l); return r ? [...r.cells].slice(1).map(c => c.textContent.trim()) : []; };
@@ -38,8 +45,13 @@ setTimeout(() => {
   ok("EPF row sums", cells("EPF").join(",") === "₹10.0L,₹4.0L,₹14.0L", cells("EPF").join(",")+"/"+cells("EPF").length);
   ok("NPS: empty cell reads as a dash", cells("NPS")[1] === "—" && cells("NPS")[2] === "₹2.0L", cells("NPS").join(","));
   const ty = cells("Term cover, years of that person’s income");
-  ok("term years row", ty.slice(0, 2).join(",") === "12.5 yrs,3.3 yrs", ty.join(","));
-  ok("nine money rows plus the derived row", !!T && T.querySelectorAll("tbody tr").length === 10);
+  ok("term years row", ty.slice(0, 2).map(x => x.replace(/aim.*$/, "")).join(",") === "12.5 yrs,3.3 yrs", ty.join(","));
+  // each value shows its own target, worked out for that person (owner 2026-11-19)
+  const tg = T ? [...T.querySelectorAll(".gm-tgt")].map(x => x.textContent) : [];
+  ok("term cover target is 10 years of that person's own income", tg.includes("aim 10+ yrs · ₹2.40Cr") && tg.includes("aim 10+ yrs · ₹1.20Cr"), tg.join(" | "));
+  ok("retirement target follows the age band (36: 2 years of income)", tg.some(t => /^aim 2\+ yrs at 3\d · ₹48\.0L$/.test(t)), tg.join(" | "));
+  ok("health target is sized to the household, never under 10 lakh", tg.some(t => /^aim ₹10\.0L\+ for 2$/.test(t)), tg.join(" | "));
+  ok("nine money rows plus three derived rows (term years, retirement years, health for the home)", !!T && T.querySelectorAll("tbody tr").length === 12, T && T.querySelectorAll("tbody tr").length);
   const ins = W.document.querySelector(".gm-two").textContent;
   ok("insight names Sam's thin term cover", /Sam has term cover worth 3\.3 years/.test(ins), ins.slice(-220));
   const t2 = Object.assign({}, two, { partner: Object.assign({}, two.partner, { term: 0 }) });

@@ -25,9 +25,18 @@ setTimeout(() => {
   w.gmNumSet("net", "170000");
   const l = JSON.parse(w.localStorage.getItem("gm_life") || "{}");
   ok("changing take-home in My numbers clears the plan's older copy", l.minc === undefined || l.minc === "170000", l.minc);
-  w.gmLifeSet("fFixed", "100000"); w.renderAll();
+  // asked once (owner 2026-11-19: "remove the repeated fields, this is really confusing")
+  w.localStorage.setItem("gm_life", JSON.stringify({ fFixed: "100000", minc: "90000", nw: "3", ef: "1", inc: "9", age: "20" }));   // old typed copies
+  w.renderAll();
   const t2 = [...d.querySelectorAll("#gmVitals > div")].find(t => /Buffer|Runway/.test(t.textContent));
-  ok("a typed fixed cost still wins", !!t2 && /5\.0m/.test(t2.textContent), t2 && t2.textContent);
+  ok("an old typed fixed cost no longer competes with the profile", !!t2 && /3\.7m/.test(t2.textContent), t2 && t2.textContent);
+  w.goTab("life"); w.renderAll();
+  const sec = d.querySelector("#sections .section.active") || d.body;
+  const inputs = [...sec.querySelectorAll("input")].filter(i => /gmLifeSet\('(minc|fFixed|nw|ef|inc|age|sage|k1)'/.test(i.getAttribute("onchange") || ""));
+  ok("Your numbers and Edit the numbers ask none of the profile's facts again", inputs.length === 0, inputs.map(i => i.getAttribute("onchange")).join(" | "));
+  ok("each shows as one line with a change link to My numbers", sec.querySelectorAll(".gm-fromp [onclick*=gmOpenNums]").length >= 3, sec.querySelectorAll(".gm-fromp").length);
+  ok("My numbers is the one card with inputs for them", !!sec.querySelector("details.gm-nums input"));
+  ok("no Spouse wording", !/Spouse age/.test(sec.textContent));
   console.log("test149 numbers once: " + P + " passed, " + F + " failed"); e.forEach(x => console.log("  " + x));
   process.exit(F ? 1 : 0);
 }, 1500);
