@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- Life OS: every property verdict now says what it is aiming at ("aim 4% or more" under "Strong"), and the value column wraps instead of forcing one line, so nothing is cut off on a phone.
 - Life OS: a 0 typed in a property or gold field stays visible as 0 instead of turning back into the grey "e.g." hint (it was saved, but looked unsaved).
 - Life OS: gold jewellery counts in net worth (22K grams x rate, less 10%); "What you own, by kind" shows each kind's share with one line on concentration; a property can be "Ours, empty"; saving the profile form no longer drops work kinds or gold.
 - Life OS: a home you rent can be marked "We rent it (not ours)" and leaves every figure; a "Check this entry" card catches the slips that bend the numbers (a property with no value, the worked example left in, a loan with no months left, a home loan with no flat, an empty partner pay, spending below the bills); placeholders read "e.g." so they never look filled in.
