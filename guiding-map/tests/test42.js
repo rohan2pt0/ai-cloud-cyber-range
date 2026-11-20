@@ -27,8 +27,9 @@ setTimeout(() => {
   w.goTab("life");
   const L = (k) => { const i = [...sec().querySelectorAll("input")].find(x => (x.getAttribute("onchange") || "").includes("gmLifeSet('" + k + "'")); return i ? i.value : "(none)"; };
   ok("Life Map: ages come from the birth dates, child included", (() => { const t = sec().textContent, n = (re) => +((t.match(re) || [])[1] || 0); return n(/Your age: (\d+)/) >= 36 && n(/Partner’s age: (\d+)/) >= 34 && n(/First child: (\d+)/) >= 4; })(), sec().textContent.slice(0, 300));
+  // income is both pays before tax now (owner 2026-11-20: research-checked base)
   ok("Life Map shows income, net worth and emergency fund as lines from the profile",
-    ["₹42,00,000", "₹25,00,000", "₹4,00,000"]  // income is both pays before tax now (owner 2026-11-20: research-checked base).every(v => lines().includes(v)) && ["inc", "nw", "ef"].every(k => L(k) === "(none)"),
+    ["₹42,00,000", "₹25,00,000", "₹4,00,000"].every(v => lines().includes(v)) && ["inc", "nw", "ef"].every(k => L(k) === "(none)"),
     lines());
   w.gmLifeSet("nw", "30");
   ok("a Life Map net worth edit updates the profile in rupees", G("sovP").nw === 3000000);
