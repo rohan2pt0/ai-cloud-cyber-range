@@ -23,6 +23,8 @@ fi
 command -v opencode >/dev/null 2>&1 || npm install -g -s opencode-ai@1.19.0 >/dev/null 2>&1 || {
   echo "CANNOT-START opencode could not be installed (npm blocked?)"; exit 2; }
 export OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY:-placeholder-the-proxy-adds-the-real-key}"
+# AUTOBUILD_PROVIDER=openrouter sends the build to OpenRouter instead (its key: OPENROUTER_API_KEY, or the proxy adds it)
+export OPENROUTER_API_KEY="${OPENROUTER_API_KEY:-placeholder-the-proxy-adds-the-real-key}"
 # the gates need what CI installs first (the gateway's packages, ruff); without them a correct change fails on an import
 python3 -c "import fastapi, httpx, ruff" >/dev/null 2>&1 || python3 -m pip install -q -r "$ROOT/apps/llm-gateway/requirements-dev.txt" pyyaml ruff >/dev/null 2>&1 || {
   echo "CANNOT-START the gate's Python packages could not be installed"; exit 2; }

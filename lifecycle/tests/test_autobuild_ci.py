@@ -311,3 +311,22 @@ def test_the_golden_brief_passes_its_own_check_and_the_hand_off_refuses_an_unfit
     ok = subprocess.run([_s.executable, str(ROOT / "lifecycle" / "autobuild_ci.py"), "check"], capture_output=True, text=True,
                         env={**_o.environ, "TASK": example})
     assert ok.returncode == 0 and ok.stdout == ""
+
+
+def test_openrouter_is_a_second_provider(monkeypatch):
+    """Owner 2026-11-20: one plan's cap must not stop all building; AUTOBUILD_PROVIDER=openrouter uses the second provider."""
+    import importlib.util
+    import pathlib
+    spec = importlib.util.spec_from_file_location("abci_or", pathlib.Path(__file__).resolve().parent.parent / "autobuild_ci.py")
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    monkeypatch.delenv("AUTOBUILD_PROVIDER", raising=False)
+    assert m.provider_id() == "gocode" and m.config()["provider"]["gocode"]["options"]["baseURL"] == m.GO_BASE
+    monkeypatch.setenv("AUTOBUILD_PROVIDER", "openrouter")
+    monkeypatch.delenv("OPENROUTER_MODELS", raising=False)
+    c = m.config()
+    assert m.provider_id() == "openrouter" and c["enabled_providers"] == ["openrouter"]
+    assert c["provider"]["openrouter"]["options"] == {"baseURL": "https://openrouter.ai/api/v1", "apiKey": "{env:OPENROUTER_API_KEY}"}
+    assert m.chain("builder") == m.OR_MODELS and c["model"] == "openrouter/" + m.OR_MODELS[0]
+    monkeypatch.setenv("OPENROUTER_MODELS", "a/one, b/two")
+    assert m.chain("strong") == ["a/one", "b/two"]

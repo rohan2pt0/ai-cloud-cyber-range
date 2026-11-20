@@ -26,11 +26,28 @@ ROOT = pathlib.Path(__file__).resolve().parent.parent
 CATALOG = ROOT / "plugins" / "catalog.json"
 GO_BASE = "https://opencode.ai/inference/go/v1"
 PROVIDER = "gocode"
+# A second provider (owner 2026-11-20: "I already shared the OpenRouter key, why don't you use it"): AUTOBUILD_PROVIDER=openrouter
+# sends the builds to OpenRouter, so one plan's cap never stops all building. The key is OPENROUTER_API_KEY, or in a cloud
+# session the network secret the proxy adds. Cheapest capable coder first, a free model as the fall-back.
+OR_BASE = "https://openrouter.ai/api/v1"
+OR_PROVIDER = "openrouter"
+OR_MODELS = ["deepseek/deepseek-v4.1-flash", "google/gemma-4-31b-it:free"]
+
+
+def on_openrouter(env: dict | None = None) -> bool:
+    return (os.environ if env is None else env).get("AUTOBUILD_PROVIDER", "").lower() == "openrouter"
+
+
+def provider_id(env: dict | None = None) -> str:
+    return OR_PROVIDER if on_openrouter(env) else PROVIDER
 INSTRUCTIONS = ["AGENTS.md", "BUILD-CONTRACT.md", "LESSONS.md"]
 
 
 def chain(name: str, catalog: pathlib.Path = CATALOG) -> list[str]:
-    """The model names of one coding chain ('builder' or 'strong'), in order, OpenCode Go only."""
+    """The model names of one coding chain ('builder' or 'strong'), in order, OpenCode Go only (or OpenRouter's, when chosen)."""
+    if on_openrouter():
+        extra = [m.strip() for m in os.environ.get("OPENROUTER_MODELS", "").split(",") if m.strip()]
+        return extra or list(OR_MODELS)
     d = json.loads(catalog.read_text("utf-8"))
     by = {p["id"]: p for p in d["providers"]}
     out = []
@@ -45,19 +62,25 @@ def chain(name: str, catalog: pathlib.Path = CATALOG) -> list[str]:
 def config(catalog: pathlib.Path = CATALOG) -> dict:
     models = {m: {"name": m, "limit": {"context": 128000, "output": 16384}} for m in chain("strong", catalog) + chain("builder", catalog)}
     first = chain("builder", catalog)[0]
+    pid = provider_id()
+    if pid == OR_PROVIDER:
+        prov = {"npm": "@ai-sdk/openai-compatible", "name": "OpenRouter",
+                "options": {"baseURL": OR_BASE, "apiKey": "{env:OPENROUTER_API_KEY}"}, "models": models}
+    else:
+        prov = {"npm": "@ai-sdk/openai-compatible", "name": "OpenCode Go",
+                "options": {"baseURL": GO_BASE, "apiKey": "{env:OPENCODE_GO_API_KEY}"}, "models": models}
     return {
         "$schema": "https://opencode.ai/config.json",
         "autoupdate": False,
         "share": "disabled",
-        "enabled_providers": [PROVIDER],
-        "model": f"{PROVIDER}/{first}",
-        "small_model": f"{PROVIDER}/{first}",
+        "enabled_providers": [pid],
+        "model": f"{pid}/{first}",
+        "small_model": f"{pid}/{first}",
         # the runner is thrown away after the job and holds no write token, so the agent may edit and run commands without asking;
         # it may not fetch web pages, so nothing it reads from the internet can steer it
         "permission": {"edit": "allow", "bash": "allow", "webfetch": "deny"},
         "instructions": [str(ROOT / n) for n in INSTRUCTIONS],
-        "provider": {PROVIDER: {"npm": "@ai-sdk/openai-compatible", "name": "OpenCode Go",
-                                "options": {"baseURL": GO_BASE, "apiKey": "{env:OPENCODE_GO_API_KEY}"}, "models": models}},
+        "provider": {pid: prov},
     }
 
 
@@ -125,7 +148,7 @@ def usable(models: list[str], run=subprocess.run, cache: pathlib.Path = PROBE_CA
         ttl = HUNG_TTL_S if hit and hit.get("why") else PROBE_TTL_S      # a hang may have been the provider: look again soon
         if not hit or now - hit.get("at", 0) > ttl:
             try:
-                r = run(["opencode", "run", "--model", f"{PROVIDER}/{m}", "Reply with the single word OK."], cwd=str(ROOT),
+                r = run(["opencode", "run", "--model", f"{provider_id()}/{m}", "Reply with the single word OK."], cwd=str(ROOT),
                         timeout=60, capture_output=True, text=True)
                 said = (getattr(r, "stdout", "") or "") + (getattr(r, "stderr", "") or "")
                 # opencode exits 0 even on a provider error ("Error: UnknownError ... Unexpected server error", 2026-11-10),
@@ -234,7 +257,7 @@ def agent(env: dict | None = None, run=subprocess.run) -> int:
     budget = int(env.get("AUTOBUILD_MODEL_MINUTES", "40")) * 60
     rc = 1
     for m in models:
-        cmd = ["opencode", "run", "--model", f"{PROVIDER}/{m}", text]
+        cmd = ["opencode", "run", "--model", f"{provider_id(env)}/{m}", text]
         if run is subprocess.run:                              # the real thing: watch for a silent (hung) model
             rc = watched(cmd, budget, int(env.get("AUTOBUILD_STALL_MINUTES", "6")) * 60,
                          tool=int(env.get("AUTOBUILD_TOOL_MINUTES", "20")) * 60)
