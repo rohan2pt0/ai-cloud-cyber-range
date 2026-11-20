@@ -200,7 +200,76 @@ data security, and the Australian Signals Directorate-led guide on careful adopt
 - **Sensitive data stays local.** Any model sits behind the gateway rails, and no evaluation result ever loosens a permission.
 - **Every slice ships with a test, and with its threat model when it crosses a trust boundary.**
 
-## 4. Not tested yet
+## 4. Wider research, checked 2026-11-20
+
+### 4.1 Prompt injection: limit what an agent can do after it reads untrusted input
+
+- **Two published patterns (2025):**
+  - **Capability-based security:** a planner model sees only the trusted request and writes the plan. A second model reads the
+    untrusted data but has **no tools**. Policies are checked when a step runs.
+  - **A set of six design patterns:** they include the same split (plan first, then execute; one model with tools and one
+    quarantined model).
+- **Result:** the capability approach solved **77%** of tasks on a public agent benchmark with provable security, against
+  **84%** undefended.
+- **Status:** practitioners report no mainstream agent harness has adopted these patterns yet.
+- **The "lethal trifecta":** an agent with private data, untrusted content and a way to send data out can be made to leak.
+  Remove one of the three.
+- **In SecuRAX:**
+  - An agent that reads untrusted content (mail, web, documents, alerts) gets no outbound tool in the same step.
+  - Plan-then-execute for the gateway's agents.
+  - Policies enforced at run time by the gateway rails.
+  - It joins the privilege contract (section 2, item 5) and earns a threat-model entry.
+
+### 4.2 Routing and cascades: the numbers, and the trap
+
+- **Reported results:**
+  - A learned router (published 2025) cut cost by **over 85%** on a chat benchmark while keeping about **95%** of the strong
+    model's quality, sending only **14%** of queries to it.
+  - Cascade methods report **50–98%** savings on benchmarks.
+  - 2026 work sets escalation thresholds with **conformal prediction** (a calibrated guarantee, not a guess). Another
+    reports **74%** cost savings using the model's own internal state as the routing signal.
+- **The trap (2026):** when a router's headroom is measured with an LLM judge, part of what looks like a model difference is
+  the judge's own bias. Pair the judge with outcomes that can be checked.
+- **Two consequences for SecuRAX:**
+  - Ground our router and judges on **tests passing, CI green and the PR merged** (our gold labels), not on a judge alone.
+  - Re-evaluate the router **every month**, because models and prices drift.
+
+## 5. The watch list: where the money goes
+
+Funding is a signal, and the numbers do not lie. Reported 2026 rounds (from news reports; check the primary source before
+quoting any of them):
+
+| Company | Round (reported) | What it bets on |
+|---|---|---|
+| Prime Intellect | $130M Series A; chipmakers' and hardware makers' venture arms took part; about $1B valuation, about $100M annual run rate | Enterprise-owned RL and post-training, environments |
+| River AI | $1.1B, led by General Catalyst | Enterprises owning their models; RL and LoRA fine-tuning through an API |
+| Ineffable Intelligence | $1.1B seed at about $5.1B valuation | Reinforcement learning without pre-training |
+| Deep Cogito | $43M Series A | Post-training for self-improving models |
+| Bespoke Labs | $40M | Building RL environments for post-training |
+| AfterQuery | $30M at about $300M valuation | Training data |
+| Applied Compute | Unicorn, by the owner's source | Post-training platform, judges, routers, research agent |
+
+**The pattern:** money is flowing to post-training, **RL environments** and enterprises owning their models.
+
+**The 80/20 insight for SecuRAX:**
+- **The opportunity:** a cyber range with realistic, scored tasks *is* an RL environment, for security agents. With a scorer
+  (the journeys and scanners already exist), the range could become an environment others train and evaluate agents in.
+  That is the business angle and the paper angle at once.
+- **Prior art:** the general idea is already public, in open cyber RL environments such as CyberBattleSim and CybORG.
+- **Before any public commit:** anything specific we invent on top of it (scoring, tasks, the trust tests) goes into a private
+  invention note first (`ip-first`).
+
+## 6. Keep watching, without spending the owner's attention
+
+- **What:** a monthly **AI radar**, built on the threat-news engine the kit already has, reading public feeds:
+  - arXiv keywords: agent security, prompt injection, routing, LLM judges, post-training;
+  - the engineering blogs of the companies above;
+  - funding news.
+- **Output:** each month, one short note with the three items that would change a SecuRAX decision, or "nothing changes" if
+  none.
+- **Cost:** it runs on the estate, never on the owner's Claude quota.
+
+## 7. Not tested yet
 
 None of this is built. The numbers above are the publisher's, on their workloads. Each slice must reproduce its own number on
 ours before it is trusted.
