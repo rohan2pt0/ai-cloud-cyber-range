@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- Life OS: a home you rent can be marked "We rent it (not ours)" and leaves every figure; a "Check this entry" card catches the slips that bend the numbers (a property with no value, the worked example left in, a loan with no months left, a home loan with no flat, an empty partner pay, spending below the bills); placeholders read "e.g." so they never look filled in.
 - Life OS: one money model. Income (both pays plus rent coming in), spend, saving rate, buffer, net worth and term cover are worked out once and every screen shows the same figures; a loan with 3 months or fewer left is no longer planned as a lasting bill, and a Rent bill beside rent coming in is asked about once.
 - **No single point of failure for the builders** (owner 2026-11-20): OpenCode Go first, then OpenRouter automatically when Go fails, hangs or is out of allowance (DeepSeek v4.1 Flash, then a free Gemma model; OPENROUTER_MODELS overrides; AUTOBUILD_PROVIDER=openrouter puts it first). Every model is probed before the work; OpenRouter spend is capped by the key's own credit limit; the model still cannot fetch the web.
 - **Model factory spec** (owner 2026-11-20): judges calibrated at 2% false positives, one-call decision graders, two-stage triage, failure clustering, a cost router with published escalation signals, a repository index for builders, secure open-weight deployment, each mapped to its place in SecuRAX and ordered 80/20 (docs/specs/model-factory.md).

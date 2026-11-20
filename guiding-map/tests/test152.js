@@ -46,5 +46,18 @@ setTimeout(() => {
   ls.setItem("gm_props", JSON.stringify([{ n: "Fake flat", use: "letout", val: "80", rent: "30000", loan: "", vac: "1" }]));
   const M2 = w.gmMoney();
   ok("a let-out flat's value counts and its home loan is subtracted", M2.loans.letVal === 8000000 && M2.loans.homeCounted === 5000000 && M2.netWorth === 1700000 + 500000 + 3000000 - 80000, M2.netWorth);
+  // a home the family rents is not theirs (owner 2026-11-20): marked so, it leaves every figure
+  ls.setItem("gm_props", JSON.stringify([{ n: "Fake flat", use: "letout", val: "80", rent: "30000", vac: "1" }, { n: "Fake rented home", use: "letout", val: "", rent: "", emi: "30000", owner: "me" }]));
+  const c1 = w.gmDataChecks();
+  ok("a property with no value is asked about first: is it yours?", /Is <b>Fake rented home<\/b> yours/.test(c1[0].t) && /'use','rented'/.test(c1[0].b[0][1]), c1[0] && c1[0].t);
+  w.gmPropSet(1, "use", "rented");
+  const M3 = w.gmMoney();
+  ok("marked rented, it leaves net worth and rent", M3.loans.letVal === 8000000 && M3.rent === 30000 && !w.gmDataChecks().some(x => /Fake rented/.test(x.t)));
+  w.goTab("prop"); w.renderAll();
+  const pt = (d.querySelector("#sections") || d.body).textContent;
+  ok("the rented home says so instead of a cash flow", /we rent it/.test(pt) && /Not yours, so it is left out/.test(pt));
+  ok("placeholders never look like a filled value", /placeholder="e\.g\. 75"/.test((d.querySelector("#sections") || d.body).innerHTML));
+  prof.loans[0].tenure = 0; ls.setItem("sovP", JSON.stringify(prof)); w.P = JSON.parse(ls.getItem("sovP"));
+  ok("a loan with no months left is asked about", w.gmDataChecks().some(x => /months are left on <b>Home Loan/.test(x.t)));
   console.log("PASS " + P + " FAIL " + F); e.forEach(x => console.log("  FAIL: " + x)); process.exit(F ? 1 : 0);
 }, 400);

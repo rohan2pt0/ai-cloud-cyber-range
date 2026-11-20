@@ -1346,7 +1346,7 @@
   function fixedKnown() {
     var out = [];
     (window.P && P.loans || []).forEach(function (x, i) { if (x && num(x.emi) > 0) out.push({ name: (x.name || "Loan " + (i + 1)) + " EMI", amt: num(x.emi), ending: loanEnding(x) ? num(x.tenure) : 0 }); });
-    props().forEach(function (p, i) { if (p && num(p.maint) > 0) out.push({ name: "Maintenance, " + (p.name || p.tenant || "property " + (i + 1)), amt: num(p.maint) }); });
+    ownedProps().forEach(function (p, i) { if (p && num(p.maint) > 0) out.push({ name: "Maintenance, " + (p.name || p.tenant || "property " + (i + 1)), amt: num(p.maint) }); });
     return out;
   }
   function loanEnding(x) { var t = num(x && x.tenure); return t > 0 && t <= 3; }
@@ -1372,7 +1372,7 @@
   // Rent from let-out homes: the property list when it holds rents, else the profile's two rent fields; never both. Planning
   // counts it less one empty month a year (or the vacancy typed for that home), because tenants change.
   function rentIn() {
-    var ps = (typeof props === "function" ? props() : []).filter(function (p) { return p && p.use !== "self" && num(p.rent) > 0; });
+    var ps = ownedProps().filter(function (p) { return p && p.use !== "self" && num(p.rent) > 0; });
     if (ps.length) return ps.reduce(function (a, p) { var v = p.vac === undefined || p.vac === "" ? 1 : Math.min(12, Math.max(0, num(p.vac)));
       a.gross += num(p.rent); a.plan += num(p.rent) * (12 - v) / 12; return a; }, { gross: 0, plan: 0 });
     var g = window.P ? num(P.rent1) + num(P.rent2) : 0; return { gross: g, plan: g * 11 / 12 };
@@ -1478,7 +1478,7 @@
     var home = 0, other = 0;
     (window.P && P.loans || []).forEach(function (x) { if (!x) return; var r = Math.max(0, num(x.remaining)); if (/home/i.test(String(x.type || ""))) home += r; else other += r; });
     var letVal = 0, selfLoan = 0, propDebt = 0, letKnown = false;
-    (typeof props === "function" ? props() : []).forEach(function (p) { if (!p || !num(p.val)) return; propDebt += num(p.loan) * 1e5;
+    ownedProps().forEach(function (p) { if (!p || !num(p.val)) return; propDebt += num(p.loan) * 1e5;
       if (p.use === "self") selfLoan += num(p.loan) * 1e5; else { letVal += num(p.val) * 1e5; letKnown = true; } });
     var homeDebt = Math.max(home, propDebt), all = homeDebt + other;
     // net worth = what you own at today's value less what you owe (owner 2026-11-20: the home loan is on a let-out flat, and the
@@ -1502,6 +1502,36 @@
   };
   // term cover one person needs: 10 years of their own take-home, plus the loans if they hold them (the first earner by default)
   // 10x yearly pay before tax (Indian planners say 10 to 15x) + the loans the person holds; take-home only if gross is unknown
+  /* Slips a person makes without noticing, that quietly bend every money screen (owner 2026-11-20: "identify such mistakes a
+     user can make inadvertently"). Each check names the slip in plain words and gives one tap to fix it. One shows at a time
+     (one open action); the rest wait under "Later". The worst first: a figure counted that is not theirs, then a figure missing. */
+  window.gmDataChecks = function () {
+    if (!profOK()) return [];
+    var out = [], all = props(), L = loansLeft();
+    all.forEach(function (p, i) {
+      if (!p || p.use === "rented") return;
+      var nm = esc(p.n || "Property " + (i + 1));
+      if (/^example/i.test(String(p.n || ""))) { out.push({ w: 100, t: "<b>" + nm + "</b> is still the worked example, and its numbers count as yours.", b: [["Remove it", "gmPropDel(" + i + ")"]] }); return; }
+      if (!num(p.val)) out.push({ w: 90, t: "Is <b>" + nm + "</b> yours? It has no value, so net worth cannot count it. If you rent it, say so and it is left out.",
+        b: [["We rent it", "gmPropSet(" + i + ",'use','rented')"], ["Type its value", "goTab('prop')"]] });
+      else if (p.use !== "self" && !num(p.rent)) out.push({ w: 50, t: "<b>" + nm + "</b> is let out but has no rent typed, so rent coming in is missing.", b: [["Type the rent", "goTab('prop')"]] });
+    });
+    (window.P && P.loans || []).forEach(function (x, i) {
+      if (x && num(x.emi) > 0 && !num(x.tenure)) out.push({ w: 70, t: "How many months are left on <b>" + esc(x.type || "loan " + (i + 1)) + "</b>? Without it, the app cannot tell when its EMI stops.", b: [["Add months left", "editProfile()"]] });
+      if (x && num(x.emi) > 0 && !num(x.remaining)) out.push({ w: 60, t: "<b>" + esc(x.type || "Loan " + (i + 1)) + "</b> has an EMI but no amount left to repay, so net worth leaves it out.", b: [["Add the amount", "editProfile()"]] });
+    });
+    if (L.needVal) out.push({ w: 80, t: "You have a home loan, but no owned flat with a value. Add the flat it bought in Property (with its value), so the loan and the flat count together.", b: [["Open Property", "goTab('prop')"]] });
+    if (typeof gmEarners === "function" && gmEarners(P) === 2 && !(gmPartner(P).net > 0)) out.push({ w: 75, t: "Two earners, but your partner’s take-home is empty, so income reads low.", b: [["Add it", "editProfile()"]] });
+    if (num(P.exp) > 0 && fixedTotals().list > num(P.exp) * 1.05) out.push({ w: 40, t: "Monthly spending (" + rs(P.exp) + ") is less than your fixed bills alone (" + rs(fixedTotals().list) + "). Spending should not count loan EMIs, but it does include the bills.", b: [["Fix spending", "gmOpenNums()"]] });
+    return out.sort(function (a, b) { return b.w - a.w; });
+  };
+  window.gmDataChecksHTML = function () {
+    var c = gmDataChecks(); if (!c.length) return "";
+    var one = function (x) { return '<div style="font-size:13px;line-height:1.5">' + x.t + '</div><div style="margin-top:6px">' + x.b.map(function (b) {
+      return '<button type="button" class="btn-sm" style="margin:0 6px 4px 0" onclick="' + b[1] + '">' + b[0] + '</button>'; }).join("") + '</div>'; };
+    return '<div class="road-col gm-checks" style="margin:10px 0;border-inline-start:4px solid var(--amber)"><div style="font-weight:800;font-size:13.5px;margin-bottom:4px">Check this entry</div>' + one(c[0])
+      + (c.length > 1 ? '<details style="margin-top:6px"><summary>Later (' + (c.length - 1) + ')</summary>' + c.slice(1).map(function (x) { return '<div style="padding:8px 0;border-top:1px solid var(--border)">' + one(x) + '</div>'; }).join("") + '</details>' : "") + '</div>';
+  };
   window.gmTermNeed = function (pay, withLoans) { return Math.max(0, num(pay)) * 120 + (withLoans ? loansLeft().all : 0); };
   function spendDue() {
     if (!profOK()) return 0;
@@ -1697,7 +1727,7 @@
       + howHTML('Benchmarks, not verdicts. Where you are behind, the map gives you the action \u2014 not a score to feel bad about. '
       + 'Starting late is normal and is not disqualifying; the arithmetic simply gets less forgiving, so the response is a higher savings rate, not despair.');
     h += exampleWarn();
-    h += gmNumbersCard() + lifeInputs();
+    h += gmDataChecksHTML() + gmNumbersCard() + lifeInputs();
     if (!age || !inc) { h += '<div class="info" style="margin-top:12px">Enter at least your age and household income to generate the map.</div></div>'; return h; }
 
     var b = band(nw, nwTarget);
@@ -1902,6 +1932,9 @@
   };
 
   function props() { return G("gm_props", []); }
+  // A home the family rents is not theirs (owner 2026-11-20: the rented flat was entered as owned). It stays listed, so the
+  // person sees where it went, and every figure (net worth, rent, loans, property costs) reads only the homes they own.
+  function ownedProps() { return props().filter(function (p) { return p && p.use !== "rented"; }); }
   window.gmPropAdd = function () {
     var p = props(); p.push({ n: "Property " + (p.length + 1), use: "letout", val: "", rent: "", loan: "", rate: "", emi: "", out: "", vac: "1", owner: "me" });
     S_("gm_props", p); renderAll();
@@ -2142,9 +2175,9 @@
     P.forEach(function (p, i) {
       var r = propCalc(p), v = verdict(r, p);
       h += '<label class="f-label">How is this property used?</label><div style="display:flex;gap:6px;margin-bottom:8px">'
-        + [["letout", "Let out to a tenant"], ["self", "We live in it"]].map(function (o) {
+        + [["letout", "Let out to a tenant"], ["self", "We own it and live in it"], ["rented", "We rent it (not ours)"]].map(function (o) {
           var on = (p.use || "letout") === o[0];
-          return '<button class="btn-sm" style="flex:1;background:' + (on ? "var(--gold);color:#0d1f35" : "var(--cardAlt);color:var(--text)")
+          return '<button class="btn-sm" aria-pressed="' + on + '" style="flex:1;background:' + (on ? "var(--gold);color:#0d1f35" : "var(--cardAlt);color:var(--text)")
             + '" onclick="gmPropSet(' + i + ',\'use\',\'' + o[0] + '\')">' + o[1] + '</button>';
         }).join("") + '</div>';
       var F = [["n", "Name", "Rental flat A"], ["val", "Current market value (\u20b9 lakh)", "75"],
@@ -2154,14 +2187,21 @@
       ["vac", "Vacant months per year (realistic, not hoped-for)", "1"]];
       h += '<details class="road-col" style="margin-bottom:12px" ' + (i === 0 ? "open" : "") + '>'
         + '<summary style="cursor:pointer;font-weight:800;font-size:13.5px">' + esc(p.n || "Property")
-        + '<span style="float:right;color:' + (r.cashflow >= 0 ? "var(--green)" : "var(--amber)") + '">'
-        + (r.cashflow >= 0 ? "+" : "") + Math.round(r.cashflow).toLocaleString("en-IN") + "/mo</span></summary>";
+        + (p.use === "rented" ? '<span style="float:right;color:var(--muted);font-weight:600">we rent it</span></summary>'
+        : '<span style="float:right;color:' + (r.cashflow >= 0 ? "var(--green)" : "var(--amber)") + '">'
+        + (r.cashflow >= 0 ? "+" : "") + Math.round(r.cashflow).toLocaleString("en-IN") + "/mo</span></summary>");
       h += '<div style="margin-top:8px">';
+      if (p.use === "rented") {
+        h += '<div class="info" style="margin:4px 0 8px">Not yours, so it is left out of net worth, rent coming in and loans. The rent you pay for it belongs in your fixed bills (Money tab), once.</div>'
+          + '<label class="f-label">Name</label><input value="' + esc(p.n || "") + '" onchange="gmPropSet(' + i + ',\'n\',this.value)">'
+          + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);margin-top:8px" onclick="gmPropDel(' + i + ')">Remove this property</button></div></details>';
+        return;
+      }
       h += ownerHTML(p, i);
       if ((p.use || "letout") === "letout") h += papersCardHTML(p) + landlordHTML(p, i);
       F.forEach(function (f) {
         h += '<label class="f-label">' + f[1] + '</label><input ' + (f[0] === "n" ? "" : 'inputmode="decimal"')
-          + ' value="' + esc(p[f[0]] || "") + '" placeholder="' + f[2] + '" onchange="gmPropSet(' + i + ',\'' + f[0] + '\',this.value)">';
+          + ' value="' + esc(p[f[0]] || "") + '" placeholder="e.g. ' + f[2] + '" onchange="gmPropSet(' + i + ',\'' + f[0] + '\',this.value)">';
       });
       if (num(p.val) && num(p.rent)) {
         var rows = [
@@ -2522,7 +2562,7 @@
     // item plus once per layer \u2014 about sixty full recomputations, each
     // looping every property. Visible jank on a phone.
     if (_dCache && Date.now() - _dStamp < 400) return _dCache;
-    var l = life(), P = props(), d = {};
+    var l = life(), P = ownedProps(), d = {};
 
     // --- from the Property tab ---
     var eq = 0, selfEq = 0, debt = 0, rent = 0, emi = 0, outgo = 0, anyProp = false;
