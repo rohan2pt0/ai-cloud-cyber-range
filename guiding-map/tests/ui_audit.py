@@ -83,7 +83,9 @@ def main():
         except Exception: pass
         v = pg.evaluate("[...document.querySelectorAll('#gmVitals > div')].map(d=>d.innerText.replace(/\\n/g,' '))")
         pg.evaluate("gmSimple(true)")
-        chk("runway is sane when the emergency fund is typed in rupees", any("5.0m" in x for x in v), v)
+        # the tile shows the one buffer every screen shows (gmRunway, owner 2026-11-20), and a rupee slip never reads as years
+        rw = pg.evaluate("(function(r){return r&&r.gapM>0?r.months.toFixed(1)+'m':''})(window.gmRunway&&gmRunway())")
+        chk("runway is sane when the emergency fund is typed in rupees", bool(rw) and 0 < float(rw[:-1]) < 120 and any(rw in x for x in v), [rw, v])
         # 2. quarterly check-in: wheel 8 taps -> pick 2 goals
         pg.evaluate("gmQuarter()"); pg.wait_for_timeout(150)
         for score in [6, 4, 5, 7, 6, 5, 3, 6]:
