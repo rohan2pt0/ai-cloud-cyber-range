@@ -1,4 +1,4 @@
-// test153: every property verdict shows its target, and no value is cut off on a phone (owner 2026-11-22).
+// test153: every property verdict shows its target, and no value is cut off on a phone (owner 2026-11-20).
 const fs = require('fs'), path = require('path'), { JSDOM } = require('jsdom');
 let P = 0, F = 0, e = []; const ok = (n, c, d) => { c ? P++ : (F++, e.push(n + (d !== undefined ? " :: " + d : ""))); };
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
