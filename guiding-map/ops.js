@@ -2263,6 +2263,17 @@
           "Monthly cash flow": r.cashflow >= 0 ? "g" : r.cashflow >= -5000 ? "a" : "r"
         };
         var WORD = { g: "Strong", a: "Watch", r: "Weak" };
+        // The target behind each verdict (owner, 2026-11-22): the word alone says nothing about what "strong" means.
+        var AIM = {
+          "Gross rental yield": "aim 4% or more",
+          "Net rental yield": "aim 3% or more",
+          "Price-to-rent": "aim 20 yrs or less",
+          "Rent-to-EMI cover": "aim 1.2x or more",
+          "Debt-to-rental-income": "aim 8 yrs or less",
+          "Loan-to-value": "aim 50% or less",
+          "Break-even occupancy": "aim 70% or less",
+          "Monthly cash flow": "aim \u20b90 or more"
+        };
         rows.forEach(function (x) { if (/^\u20b9-/.test(x[1])) x[1] = "\u2212\u20b9" + x[1].slice(2); });
         h += '<div style="margin-top:12px">';
         rows.forEach(function (x) {
@@ -2270,8 +2281,9 @@
           h += '<div class="gm-metric" style="display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">'
             + '<div style="flex:1"><div style="font-size:12.5px;font-weight:700;color:var(--text)">' + x[0] + '</div>'
             + '<div style="font-size:10.5px;color:var(--muted);line-height:1.4">' + x[2] + '</div></div>'
-            + '<div style="text-align:right;white-space:nowrap"><div class="gm-num' + (vd ? " gm-v-" + vd : "") + '"' + (vd ? ' aria-label="' + x[1] + ', ' + WORD[vd] + '"' : "") + '>' + (vd ? '<span class="gm-dot" aria-hidden="true"></span>' : "") + x[1] + '</div>'
-            + (vd ? '<div class="gm-vw gm-v-' + vd + '">' + WORD[vd] + '</div>' : "") + '</div></div>';
+            + '<div style="text-align:right;max-width:48%;overflow-wrap:anywhere"><div class="gm-num' + (vd ? " gm-v-" + vd : "") + '"' + (vd ? ' aria-label="' + x[1] + ', ' + WORD[vd] + '"' : "") + '>' + (vd ? '<span class="gm-dot" aria-hidden="true"></span>' : "") + x[1] + '</div>'
+            + (vd ? '<div class="gm-vw gm-v-' + vd + '">' + WORD[vd] + '</div>' : "")
+            + (vd && AIM[x[0]] ? '<div class="gm-tgt" style="font-size:10.5px;color:var(--muted);margin-top:3px;line-height:1.3">' + AIM[x[0]] + '</div>' : "") + '</div></div>';
         });
         h += '</div><div style="margin-top:10px">';
         v.forEach(function (x) {
