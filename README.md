@@ -134,7 +134,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
-- A second provider for the builders
+- No single point of failure for the builders
 - Model factory spec
 - Fixed bills say what they mean and that they saved
 - Work from 1 Jan 2027, with a permanent option and in the right place
