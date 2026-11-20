@@ -66,5 +66,10 @@ setTimeout(() => {
   const mix = w.gmMixHTML();
   ok("the mix shows each kind with its share", /What you own, by kind/.test(mix) && /Gold<\/span><span><b>\d+%<\/b>/.test(mix) && /Homes you own/.test(mix), mix.slice(0, 300));
   ok("saving the profile form keeps gold and work kinds", (() => { w.editProfile(); w.buildDash(); const q = JSON.parse(ls.getItem("sovP")); return q.gold && q.gold.grams === 100 && q.work && q.work.kind === "contract"; })());
+  // a typed 0 shows as 0, never the "e.g." hint again (owner 2026-11-20)
+  w.gmPropSet(0, "loan", "0"); w.gmGoldSet("grams", "0"); w.goTab("prop"); w.renderAll();
+  const loanIn = [...d.querySelectorAll("input")].find(x => /gmPropSet\(0,'loan'/.test(x.getAttribute("onchange") || ""));
+  ok("a 0 typed in a property field stays visible as 0", !!loanIn && loanIn.value === "0", loanIn && loanIn.value);
+  ok("a 0 typed for gold stays visible as 0", /value="0" placeholder="e\.g\. 50"/.test(w.gmNumbersCard()));
   console.log("PASS " + P + " FAIL " + F); e.forEach(x => console.log("  FAIL: " + x)); process.exit(F ? 1 : 0);
 }, 400);

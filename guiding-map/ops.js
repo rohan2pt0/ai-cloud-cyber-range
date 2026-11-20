@@ -1317,8 +1317,8 @@
         + '" onchange="gmNumSet(\'' + f[0] + '\',this.value)">';
     });
     var g = P.gold && typeof P.gold === "object" ? P.gold : {}, gd = g.at ? Math.floor((Date.now() - new Date(g.at)) / 864e5) : null;
-    h += '<label class="f-label">Gold jewellery you own (grams, 22K)</label><input inputmode="decimal" value="' + esc(g.grams || "") + '" placeholder="e.g. 50" onchange="gmGoldSet(\'grams\',this.value)">'
-      + '<label class="f-label">22K gold rate per gram (' + (gd === null ? "not set" : gd < 1 ? "updated today" : "updated " + gd + (gd === 1 ? " day" : " days") + " ago") + ')</label><input inputmode="decimal" value="' + esc(g.rate || "") + '" placeholder="e.g. 13000" onchange="gmGoldSet(\'rate\',this.value)">'
+    h += '<label class="f-label">Gold jewellery you own (grams, 22K)</label><input inputmode="decimal" value="' + esc(keep0(g.grams)) + '" placeholder="e.g. 50" onchange="gmGoldSet(\'grams\',this.value)">'
+      + '<label class="f-label">22K gold rate per gram (' + (gd === null ? "not set" : gd < 1 ? "updated today" : "updated " + gd + (gd === 1 ? " day" : " days") + " ago") + ')</label><input inputmode="decimal" value="' + esc(keep0(g.rate)) + '" placeholder="e.g. 13000" onchange="gmGoldSet(\'rate\',this.value)">'
       + '<div style="font-size:12px;color:var(--muted);margin-top:4px">Counted in net worth at what a jeweller would pay (less 10%), not in the money you invest.</div>';
     return h + '</details>';
   };
@@ -1963,6 +1963,8 @@
   };
 
   function props() { return G("gm_props", []); }
+  // A typed 0 is a real answer: show it, never the "e.g." hint again (owner 2026-11-20: a 0 looked unsaved)
+  function keep0(x) { return x === undefined || x === null ? "" : x; }
   // A home the family rents is not theirs (owner 2026-11-20: the rented flat was entered as owned). It stays listed, so the
   // person sees where it went, and every figure (net worth, rent, loans, property costs) reads only the homes they own.
   function ownedProps() { return props().filter(function (p) { return p && p.use !== "rented"; }); }
@@ -2232,7 +2234,7 @@
       if ((p.use || "letout") === "letout") h += papersCardHTML(p) + landlordHTML(p, i);
       F.forEach(function (f) {
         h += '<label class="f-label">' + f[1] + '</label><input ' + (f[0] === "n" ? "" : 'inputmode="decimal"')
-          + ' value="' + esc(p[f[0]] || "") + '" placeholder="e.g. ' + f[2] + '" onchange="gmPropSet(' + i + ',\'' + f[0] + '\',this.value)">';
+          + ' value="' + esc(keep0(p[f[0]])) + '" placeholder="e.g. ' + f[2] + '" onchange="gmPropSet(' + i + ',\'' + f[0] + '\',this.value)">';
       });
       if (num(p.val) && num(p.rent)) {
         var rows = [
