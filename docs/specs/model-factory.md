@@ -1,5 +1,9 @@
 # Model factory: judges, routers, monitors and open weights, done the tested way
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🔴 Not built yet.** Spec only: judges, routers, monitors and open weights, with the published settings, mapped to SecuRAX and ordered 80/20. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 **Owner, 2026-11-20.** The owner shared a set of published results from a post-training company (judges, decision graders, a
 cost router, failure clustering, a research agent, secure open-weight deployment) and asked that every approach that adds real
 value be built into the SecuRAX estate, with the settings that make it work. This spec keeps those settings, says where each
