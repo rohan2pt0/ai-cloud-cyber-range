@@ -59,5 +59,12 @@ setTimeout(() => {
   ok("placeholders never look like a filled value", /placeholder="e\.g\. 75"/.test((d.querySelector("#sections") || d.body).innerHTML));
   prof.loans[0].tenure = 0; ls.setItem("sovP", JSON.stringify(prof)); w.P = JSON.parse(ls.getItem("sovP"));
   ok("a loan with no months left is asked about", w.gmDataChecks().some(x => /months are left on <b>Home Loan/.test(x.t)));
+  // gold counts in net worth at 22K melt value less 10%; the mix shows each kind's share (owner 2026-11-20)
+  w.gmGoldSet("grams", "100"); w.gmGoldSet("rate", "10000");
+  const M4 = w.gmMoney();
+  ok("gold counts at grams x rate less 10%", M4.gold === 900000 && M4.netWorth === M3.netWorth + 900000, M4.netWorth - M3.netWorth);
+  const mix = w.gmMixHTML();
+  ok("the mix shows each kind with its share", /What you own, by kind/.test(mix) && /Gold<\/span><span><b>\d+%<\/b>/.test(mix) && /Homes you own/.test(mix), mix.slice(0, 300));
+  ok("saving the profile form keeps gold and work kinds", (() => { w.editProfile(); w.buildDash(); const q = JSON.parse(ls.getItem("sovP")); return q.gold && q.gold.grams === 100 && q.work && q.work.kind === "contract"; })());
   console.log("PASS " + P + " FAIL " + F); e.forEach(x => console.log("  FAIL: " + x)); process.exit(F ? 1 : 0);
 }, 400);

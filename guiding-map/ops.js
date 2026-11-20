@@ -1316,7 +1316,31 @@
       h += '<label class="f-label">' + f[1] + ' (' + esc(P.cur || "INR") + ')</label><input inputmode="decimal" value="' + esc(P[f[0]] === undefined ? "" : P[f[0]])
         + '" onchange="gmNumSet(\'' + f[0] + '\',this.value)">';
     });
+    var g = P.gold && typeof P.gold === "object" ? P.gold : {}, gd = g.at ? Math.floor((Date.now() - new Date(g.at)) / 864e5) : null;
+    h += '<label class="f-label">Gold jewellery you own (grams, 22K)</label><input inputmode="decimal" value="' + esc(g.grams || "") + '" placeholder="e.g. 50" onchange="gmGoldSet(\'grams\',this.value)">'
+      + '<label class="f-label">22K gold rate per gram (' + (gd === null ? "not set" : gd < 1 ? "updated today" : "updated " + gd + (gd === 1 ? " day" : " days") + " ago") + ')</label><input inputmode="decimal" value="' + esc(g.rate || "") + '" placeholder="e.g. 13000" onchange="gmGoldSet(\'rate\',this.value)">'
+      + '<div style="font-size:12px;color:var(--muted);margin-top:4px">Counted in net worth at what a jeweller would pay (less 10%), not in the money you invest.</div>';
     return h + '</details>';
+  };
+  window.gmGoldSet = function (k, v) {
+    if (!profOK()) return;
+    var g = P.gold && typeof P.gold === "object" ? P.gold : {}; g[k] = Math.max(0, num(v)) || 0; if (k === "rate") g.at = new Date().toISOString().slice(0, 10);
+    P.gold = g; P.numsAt = new Date().toISOString().slice(0, 10); store("sovP", P); bustDerived(); renderAll();
+  };
+  // What you own, by kind: one bar, each share in words, and the one thing that matters (owner 2026-11-20)
+  window.gmMixHTML = function () {
+    var M = profOK() ? gmMoney() : null; if (!M || !M.mix.length) return "";
+    var tot = M.mix.reduce(function (a, x) { return a + x[1]; }, 0); if (!(tot > 0)) return "";
+    var C = ["#8a6d1f", "#1f6f5c", "#2e5c8a", "#6b7280", "#c9a84c"], pct = function (v) { return Math.round(v / tot * 100); };
+    var top = M.mix.slice().sort(function (a, b) { return b[1] - a[1]; })[0], tp = pct(top[1]);
+    var gp = M.gold ? pct(M.gold) : 0, say = tp > 60 ? "<b>" + tp + "% sits in " + top[0].toLowerCase() + ".</b> " + (top[0] === "Homes you own" ? "A flat cannot be sold in a hurry, so let new money go to funds until no one kind is over 60%." : "Spread new money to the others until no one kind is over 60%.")
+      : gp > 15 ? "Gold is " + gp + "%: planners keep it to 5 to 10%. Let new money go elsewhere." : "No one kind is over 60%. Keep new money flowing to funds.";
+    return '<div class="road-col gm-mix" style="margin:10px 0"><div style="font-weight:800;font-size:13.5px">What you own, by kind · ' + rs(tot) + '</div>'
+      + '<div role="img" aria-label="' + M.mix.map(function (x) { return x[0] + " " + pct(x[1]) + " percent"; }).join(", ") + '" style="display:flex;height:14px;border-radius:7px;overflow:hidden;margin:8px 0">'
+      + M.mix.map(function (x, i) { return '<i style="width:' + Math.max(1, x[1] / tot * 100) + '%;background:' + C[["Homes you own", "Retirement (EPF, NPS, PPF)", "Funds and stocks", "Cash and FDs", "Gold"].indexOf(x[0])] + '"></i>'; }).join("") + '</div>'
+      + M.mix.map(function (x) { return '<div style="display:flex;justify-content:space-between;font-size:12.5px;padding:2px 0"><span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;margin-inline-end:6px;background:' + C[["Homes you own", "Retirement (EPF, NPS, PPF)", "Funds and stocks", "Cash and FDs", "Gold"].indexOf(x[0])] + '"></i>' + x[0] + '</span><span><b>' + pct(x[1]) + '%</b> · ' + rs(x[1]) + '</span></div>'; }).join("")
+      + '<div style="font-size:12.5px;margin-top:6px;' + (tp > 60 || gp > 15 ? "border-inline-start:3px solid var(--amber);padding-inline-start:8px" : "") + '">' + say + '</div>'
+      + '<div style="font-size:11.5px;color:var(--muted);margin-top:4px">What you own before loans. Net worth (after loans): ' + rs(M.netWorth) + '.</div></div>';
   };
   window.gmNumSet = function (k, v) {
     if (!profOK() || !NUMS.some(function (f) { return f[0] === k; })) return;
@@ -1493,11 +1517,18 @@
     var two = typeof gmEarners === "function" && gmEarners(P) === 2, grossPay = (num(P.gross) || num(P.net)) + (two ? (gmPartner(P).gross || gmPartner(P).net) : 0);
     var r = gmRealSpend(), spend = r ? r.total : 0, rw = gmRunway(), L = loansLeft();
     var invest = typeof gmHouseholdInvest === "function" ? gmHouseholdInvest(P) : num(P.nw);
-    var netWorth = invest + Math.max(0, num(P.sav)) + L.propEq - L.other;
+    // gold jewellery counts in net worth at what a jeweller would pay (22K melt value less 10%), never in the money you invest
+    // or the retirement pot, because a family rarely sells it (owner 2026-11-20)
+    var g = P.gold && typeof P.gold === "object" ? P.gold : {}, gold = Math.round(Math.max(0, num(g.grams)) * Math.max(0, num(g.rate)) * 0.9);
+    var netWorth = invest + Math.max(0, num(P.sav)) + L.propEq - L.other + gold;
+    var two2 = typeof gmEarners === "function" && gmEarners(P) === 2, a = typeof gmMine === "function" ? gmMine(P) : {}, b = two2 ? gmPartner(P) : {};
+    var sum = function (k) { return (num(a[k]) || 0) + (num(b[k]) || 0); }, ret = sum("epf") + sum("nps") + sum("ppf"), funds = sum("mf"), cash = Math.max(0, num(P.sav)) + sum("fd");
+    var mix = [["Homes you own", L.letVal], ["Retirement (EPF, NPS, PPF)", ret], ["Funds and stocks", funds + Math.max(0, invest - ret - funds - sum("fd"))], ["Cash and FDs", cash], ["Gold", gold]]
+      .filter(function (x) { return x[1] > 0; });
     return {
       salary: salary, rent: rent.gross, rentPlan: Math.round(rent.plan), income: income, grossPay: grossPay, spend: spend, fixed: r ? r.fixed : 0, ending: r ? r.ending || 0 : 0,
       left: income - spend, save: income > 0 && spend > 0 ? Math.round((income - spend) / income * 100) : null,
-      buffer: rw, invest: invest, netWorth: netWorth, loans: L
+      buffer: rw, invest: invest, netWorth: netWorth, loans: L, gold: gold, mix: mix
     };
   };
   // term cover one person needs: 10 years of their own take-home, plus the loans if they hold them (the first earner by default)
@@ -1514,7 +1545,7 @@
       if (/^example/i.test(String(p.n || ""))) { out.push({ w: 100, t: "<b>" + nm + "</b> is still the worked example, and its numbers count as yours.", b: [["Remove it", "gmPropDel(" + i + ")"]] }); return; }
       if (!num(p.val)) out.push({ w: 90, t: "Is <b>" + nm + "</b> yours? It has no value, so net worth cannot count it. If you rent it, say so and it is left out.",
         b: [["We rent it", "gmPropSet(" + i + ",'use','rented')"], ["Type its value", "goTab('prop')"]] });
-      else if (p.use !== "self" && !num(p.rent)) out.push({ w: 50, t: "<b>" + nm + "</b> is let out but has no rent typed, so rent coming in is missing.", b: [["Type the rent", "goTab('prop')"]] });
+      else if (p.use !== "self" && p.use !== "empty" && !num(p.rent)) out.push({ w: 50, t: "<b>" + nm + "</b> is let out but has no rent typed, so rent coming in is missing.", b: [["Type the rent", "goTab('prop')"]] });
     });
     (window.P && P.loans || []).forEach(function (x, i) {
       if (x && num(x.emi) > 0 && !num(x.tenure)) out.push({ w: 70, t: "How many months are left on <b>" + esc(x.type || "loan " + (i + 1)) + "</b>? Without it, the app cannot tell when its EMI stops.", b: [["Add months left", "editProfile()"]] });
@@ -1691,7 +1722,7 @@
         var M = gmMoney();   // the one money model: the same figures as Today and the budget
         if (f[0] === "inc") pt = M.grossPay ? rs(M.grossPay * 12) + " a year, both pays before tax" : "";
         else if (f[0] === "nw") pt = M.invest ? rs(M.netWorth) + " (investments " + rs(M.invest) + " + savings " + rs(Math.max(0, num(P.sav)))
-          + (M.loans.letVal ? " + let-out homes " + rs(M.loans.letVal) : "") + (M.loans.homeCounted ? " − home loan " + rs(M.loans.homeCounted) : "") + (M.loans.other ? " − other loans " + rs(M.loans.other) : "")
+          + (M.loans.letVal ? " + homes " + rs(M.loans.letVal) : "") + (M.gold ? " + gold " + rs(M.gold) : "") + (M.loans.homeCounted ? " − home loan " + rs(M.loans.homeCounted) : "") + (M.loans.other ? " − other loans " + rs(M.loans.other) : "")
           + (M.loans.needVal ? "; add your let-out flat’s value in Property to count it and its home loan" : "") + ")" : "";
         else if (f[0] === "ef") pt = num(P.sav) ? rs(P.sav) : "";
       }
@@ -1727,7 +1758,7 @@
       + howHTML('Benchmarks, not verdicts. Where you are behind, the map gives you the action \u2014 not a score to feel bad about. '
       + 'Starting late is normal and is not disqualifying; the arithmetic simply gets less forgiving, so the response is a higher savings rate, not despair.');
     h += exampleWarn();
-    h += gmDataChecksHTML() + gmNumbersCard() + lifeInputs();
+    h += gmDataChecksHTML() + gmMixHTML() + gmNumbersCard() + lifeInputs();
     if (!age || !inc) { h += '<div class="info" style="margin-top:12px">Enter at least your age and household income to generate the map.</div></div>'; return h; }
 
     var b = band(nw, nwTarget);
@@ -2175,7 +2206,7 @@
     P.forEach(function (p, i) {
       var r = propCalc(p), v = verdict(r, p);
       h += '<label class="f-label">How is this property used?</label><div style="display:flex;gap:6px;margin-bottom:8px">'
-        + [["letout", "Let out to a tenant"], ["self", "We own it and live in it"], ["rented", "We rent it (not ours)"]].map(function (o) {
+        + [["letout", "Let out to a tenant"], ["empty", "Ours, empty"], ["self", "We own it and live in it"], ["rented", "We rent it (not ours)"]].map(function (o) {
           var on = (p.use || "letout") === o[0];
           return '<button class="btn-sm" aria-pressed="' + on + '" style="flex:1;background:' + (on ? "var(--gold);color:#0d1f35" : "var(--cardAlt);color:var(--text)")
             + '" onclick="gmPropSet(' + i + ',\'use\',\'' + o[0] + '\')">' + o[1] + '</button>';
