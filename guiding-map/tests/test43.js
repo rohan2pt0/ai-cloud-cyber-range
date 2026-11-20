@@ -28,7 +28,7 @@ setTimeout(() => {
   // 3. My numbers on Money: the changing facts only, saved to the profile, with when
   w.goTab("money");
   const card = sec().querySelector("details.gm-nums");
-  ok("Money: a 'My numbers' card with the four changing numbers", card && card.querySelectorAll("input").length === 4 && /not updated since set-up/.test(card.textContent));
+  ok("Money: a 'My numbers' card with the four changing numbers", card && card.querySelectorAll("input").length === 6 /* four changing numbers + gold grams and rate (owner 2026-11-20) */ && /not updated since set-up/.test(card.textContent));
   w.gmNumSet("nw", "2700000");
   ok("a number saved there updates the profile and stamps the day", G("sovP").nw === 2700000 && G("sovP").numsAt === new Date().toISOString().slice(0, 10));
   w.goTab("money");

@@ -17,7 +17,8 @@ WF = ROOT / ".github" / "workflows" / "autobuild.yml"
 
 def test_the_config_reaches_only_opencode_go_and_cannot_fetch_the_web():
     cfg = ci.config()
-    assert cfg["enabled_providers"] == ["gocode"] and cfg["permission"]["webfetch"] == "deny"
+    # two providers, never one (no single point of failure, owner 2026-11-20); still no web for the model
+    assert cfg["enabled_providers"] == ["gocode", "openrouter"] and cfg["permission"]["webfetch"] == "deny"
     assert cfg["provider"]["gocode"]["options"]["baseURL"] == ci.GO_BASE
     assert "{env:OPENCODE_GO_API_KEY}" == cfg["provider"]["gocode"]["options"]["apiKey"]
     assert ci.chain("strong")[0] == "deepseek-v4-pro" and ci.chain("builder")[0] == "deepseek-v4.1-flash"
@@ -200,7 +201,12 @@ def test_autobuild_uses_only_the_flat_opencode_go_plan():
     ci = importlib.util.module_from_spec(spec); spec.loader.exec_module(ci)
     assert ci.GO_BASE.rstrip("/").endswith("/inference/go/v1")
     cfg = ci.config()
-    assert list(cfg["provider"]) == ["gocode"] and "zen" not in json.dumps(cfg).lower()
+    # 2026-11-20: OpenRouter is the second provider, used only after Go fails; its spend is capped by the key's own credit
+    # limit (a prepaid key, about $10, inside the owner's cap). Nothing else, and never a pay-per-use Go route (Zen).
+    assert list(cfg["provider"]) == ["gocode", "openrouter"] and "zen" not in json.dumps(cfg).lower()
+    assert cfg["provider"]["openrouter"]["options"]["baseURL"] == "https://openrouter.ai/api/v1"
+    lad = ci.ladder("builder", {})
+    assert lad[0].startswith("gocode/") and lad[-1].startswith("openrouter/")   # the flat plan is always spent first
 
 
 def test_a_model_running_its_own_command_in_silence_is_working_not_hung(tmp_path):
@@ -236,7 +242,7 @@ def test_only_a_real_hang_marks_a_model_unusable(monkeypatch, tmp_path):
     marked = []
     monkeypatch.setattr(ci, "_mark_hung", marked.append)
     monkeypatch.setattr(ci, "tier", lambda task: "local")
-    monkeypatch.setattr(ci, "chain", lambda name: ["one", "two"])
+    monkeypatch.setattr(ci, "ladder", lambda name, env=None: ["one", "two"])
     codes, limits = iter([ci.OUT_OF_TIME, 124]), []
 
     def watched(cmd, budget, stall, tool=0):
@@ -311,3 +317,35 @@ def test_the_golden_brief_passes_its_own_check_and_the_hand_off_refuses_an_unfit
     ok = subprocess.run([_s.executable, str(ROOT / "lifecycle" / "autobuild_ci.py"), "check"], capture_output=True, text=True,
                         env={**_o.environ, "TASK": example})
     assert ok.returncode == 0 and ok.stdout == ""
+
+
+def test_openrouter_takes_over_when_opencode_go_fails(monkeypatch):
+    """Owner 2026-11-20: no single point of failure. OpenCode Go first, then OpenRouter automatically; a forced choice puts
+    OpenRouter first; OPENROUTER_MODELS overrides its models."""
+    import importlib.util
+    import pathlib
+    spec = importlib.util.spec_from_file_location("abci_or", pathlib.Path(__file__).resolve().parent.parent / "autobuild_ci.py")
+    m = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(m)
+    lad = m.ladder("builder", {})
+    go = [x for x in lad if x.startswith("gocode/")]
+    orr = [x for x in lad if x.startswith("openrouter/")]
+    assert go and orr and lad == go + orr and orr == ["openrouter/" + x for x in m.OR_MODELS]
+    lad2 = m.ladder("builder", {"AUTOBUILD_PROVIDER": "openrouter"})
+    assert lad2[0].startswith("openrouter/") and lad2[-1].startswith("gocode/")
+    assert m.or_chain({"OPENROUTER_MODELS": "a/one, b/two"}) == ["a/one", "b/two"]
+    c = m.config()
+    assert c["provider"]["openrouter"]["options"]["apiKey"] == "{env:OPENROUTER_API_KEY}"
+    # a failed Go model hands over to the OpenRouter one in the same attempt
+    calls = []
+
+    def run(cmd, **kw):
+        import subprocess as sp
+        if cmd and cmd[0] != "opencode":                 # the closing git step: nothing to record
+            return sp.CompletedProcess(cmd, 0)
+        calls.append(cmd[3])
+        return sp.CompletedProcess(cmd, 0 if cmd[3].startswith("openrouter/") else 1)
+    monkeypatch.setattr(m, "tier", lambda task: "local")
+    monkeypatch.setattr(m, "ladder", lambda name, env=None: ["gocode/x", "openrouter/y"])
+    m.agent({"AUTOBUILD_TASK": "t", "AUTOBUILD_PROBE": "0"}, run=run)
+    assert calls[:2] == ["gocode/x", "openrouter/y"]

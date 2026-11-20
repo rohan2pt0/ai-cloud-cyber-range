@@ -43,7 +43,8 @@ setTimeout(() => {
   ok("last months and their average are shown", /Average variable/.test(txt) && /Last 1 month/.test(txt));
   // runway: 9,00,000 / 1,90,000 = 4.7 months
   let rw = w.gmRunway();
-  ok("runway uses savings plus both FDs over real spend", rw && Math.abs(rw.months - 900000 / 190000) < 1e-9, rw && rw.months);
+  // rent coming in keeps coming if a pay stops (owner 2026-11-20): 10,000 less one empty month a year
+  ok("runway uses savings plus both FDs over real spend less the rent that keeps coming", rw && Math.abs(rw.months - 900000 / (190000 - Math.round(10000 * 11 / 12))) < 1e-9, rw && rw.months);
   ok("salaried target is 6 months, amber at 4.7", rw.target === 6 && rw.state === "watch" && !!sec.querySelector(".gm-rag-watch"), rw.state);
   w.gmWorkSet("me", "contract"); w.renderAll();
   rw = w.gmRunway();
@@ -78,11 +79,11 @@ setTimeout(() => {
   w.gmWorkSet("me", "salaried"); w.gmWorkSet("partner", "salaried");
   // insight names the biggest want and what pausing it adds: 9,00,000/1,78,000 - 4.74 = 0.3
   w.gmWorkSet("me", "contract"); rw = w.gmRunway();
-  ok("the insight names the biggest want and its gain, a small one in days (never 0.0 months)", /Pausing OTT and app subscriptions adds 10 days/.test(rw.insight) && /10% cut in variable spend adds \d/.test(rw.insight) && !/0\.0 months/.test(rw.insight), rw.insight);
-  // Buffer tile: 6,00,000 / 1,90,000 = 3.2m (not the profile's 60,000 + 20,000 EMI = 7.5m)
+  ok("the insight names the biggest want and its gain, a small one in days (never 0.0 months)", /Pausing OTT and app subscriptions adds 11 days/.test(rw.insight) && /10% cut in variable spend adds \d/.test(rw.insight) && !/0\.0 months/.test(rw.insight), rw.insight);
+  // Buffer tile = the runway everywhere (owner 2026-11-20): 9,00,000 savings and FDs / (1,90,000 - 9,167 rent) = 5.0m
   w.goTab("today"); w.renderAll();
   const tile = [...d.querySelectorAll("#gmVitals > div")].find(t => /Buffer|Runway/.test(t.textContent));
-  ok("the Buffer tile uses the real spend", !!tile && /3\.2m/.test(tile.textContent), tile && tile.textContent);
+  ok("the Buffer tile uses the real spend", !!tile && /5\.0m/.test(tile.textContent), tile && tile.textContent);
   // My numbers: spending becomes a derived line
   const nums = w.gmNumbersCard();
   ok("My numbers shows spending as a line from the check-ins, not an input", /Monthly spending: <b[^>]*>₹1,90,000<\/b>[^]*from your month-end check-ins/.test(nums) && !/gmNumSet\('exp'/.test(nums), nums.slice(0, 400));

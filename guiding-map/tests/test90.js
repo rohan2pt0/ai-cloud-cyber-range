@@ -32,7 +32,7 @@ setTimeout(() => {
       ok(JSON.parse(w.localStorage.getItem("gm_quick_done")) === true, "four taps complete the set-up");
       w.renderAll();
       const buf = [...d.querySelectorAll("#gmVitals > div")].find(x => /Buffer|Runway/.test(x.textContent));
-      ok(buf && !/low/.test(buf.getAttribute("aria-label") || "") && /—/.test(buf.textContent), "an unknown buffer is a calm dash, never 'low'");
+      ok(buf && !/low/.test(buf.getAttribute("aria-label") || "") && /—/.test(buf.textContent), (buf ? buf.textContent + " | " + JSON.stringify(w.gmRunway && w.gmRunway()) + " | " : "") + "an unknown buffer is a calm dash, never 'low'");
     } catch (e) { fail++; console.log("FAIL threw " + e.message); }
     console.log("test90 easy start: " + pass + " passed, " + fail + " failed"); process.exit(fail ? 1 : 0);
     }, 300);
