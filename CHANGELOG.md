@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- **Interview demo in one click** (owner 2026-11-20): a GitHub Codespace starts the cyber range portal with a played exercise of dummy data (`python3 -m exercise.demo`) and prints the red-team scorecard; Python only, no Docker, no model.
 - **Model factory spec** (owner 2026-11-20): judges calibrated at 2% false positives, one-call decision graders, two-stage triage, failure clustering, a cost router with published escalation signals, a repository index for builders, secure open-weight deployment, each mapped to its place in SecuRAX and ordered 80/20 (docs/specs/model-factory.md).
 - **Fixed bills say what they mean and that they saved** (owner 2026-11-19: "what is Need; I do not know whether it is saved; the buttons do not look proper"): each bill shows its cost a month, a "Must pay / Could pause" choice with the chosen one marked, a quiet Remove link, first names, and a "Saved" message after every change (test150).
 - **Work from 1 Jan 2027, with a permanent option and in the right place** (owner 2026-11-19: "only my work is contract; my partner's is central government permanent; tapping did nothing visible; wrong place"): three choices (Salaried, Contract, Permanent govt/PSU), the chosen one in gold with a message saying what changed, placed under the cover it sets and folded to one line once chosen. A permanent pay keeps coming if the other stops, so savings now cover only the spend it does not (test150).

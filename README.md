@@ -134,6 +134,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- Interview demo in one click
 - Model factory spec
 - Fixed bills say what they mean and that they saved
 - Work from 1 Jan 2027, with a permanent option and in the right place
@@ -141,7 +142,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - Your real monthly spend, with no receipts
 - Two of you shows red, amber and green
 - Each number asked in one place
-- Numbers asked once, Buffer that shows
 
 **Release 0.4.0 - 2026-11-14:**
 

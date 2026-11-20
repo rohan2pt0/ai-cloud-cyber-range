@@ -255,7 +255,8 @@
   },
   "exercise": {
    "paths": [
-    "exercise/**"
+    "exercise/**",
+    ".devcontainer/**"
    ],
    "guarded_by": [
     "exercise_lite_range",
