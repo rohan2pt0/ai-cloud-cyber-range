@@ -23,7 +23,9 @@ setTimeout(() => {
   ok("saving rate = (income - spend) / income", M.save === 39, M.save);
   ok("buffer: savings over spend less the pay that stays and the rent", Math.abs(M.buffer.months - 500000 / 42500) < 1e-9 && M.buffer.target === 12 && M.buffer.state === "watch", M.buffer.months);
   ok("net worth = investments + savings - loans other than the home loan", M.invest === 1700000 && M.netWorth === 2120000, M.netWorth);
-  ok("term need = 10 years of take-home + loans for the first earner", w.gmTermNeed(120000, true) === 14400000 + 5080000 && w.gmTermNeed(50000, false) === 6000000);
+  ok("term need = 10 years of pay before tax + loans for the first earner", w.gmTermNeed(180000, true) === 21600000 + 5080000 && w.gmTermNeed(50000, false) === 6000000);
+  ok("the age ladder is Fidelity's, smooth: 1x at 30, 2.4x at 37, 4.5x at 45, 10x at 67", w.gmRetMult(30) === 1 && w.gmRetMult(37) === 2.4 && w.gmRetMult(45) === 4.5 && w.gmRetMult(67) === 10, [w.gmRetMult(30), w.gmRetMult(37)].join());
+  ok("a home loan with no flat value is left out with the flat, and asked for", M.loans.needVal === true && M.loans.homeCounted === 0);
   w.renderAll();
   const tiles = d.getElementById("gmVitals") ? d.getElementById("gmVitals").textContent : w.gmVitalsHTML();
   ok("the Saving tile shows the same 39%", /39%\s*Saving/.test(tiles.replace(/<[^>]+>/g, " ")), tiles.slice(0, 200));
@@ -38,7 +40,11 @@ setTimeout(() => {
   ok("rent that comes in is not also a bill", w.gmRealSpend().fixed === 40000 && !/gm-rentq/.test(w.gmSpendCard()) && ls.getItem("gm_rent_q") === '"in"', w.gmRealSpend().fixed);
   w.goTab("life"); w.renderAll();
   const life = (d.querySelector("#sections") || d.body).textContent;
-  ok("the Life map shows income with rent and the same net worth", /₹23,70,000 a year/.test(life) && /₹21,20,000 \(investments/.test(life), life.slice(life.indexOf("Household annual"), life.indexOf("Household annual") + 160));
-  ok("the Life map term line uses the same rule", /term cover\??\s*should be ₹1,94,80,000/.test(life), life.slice(life.indexOf("term cover"), life.indexOf("term cover") + 200));
+  ok("the Life map shows income with rent and the same net worth", /₹27,60,000 a year, both pays before tax/.test(life) && /₹21,20,000 \(investments/.test(life), life.slice(life.indexOf("Household annual"), life.indexOf("Household annual") + 160));
+  ok("the Life map term line uses the same rule", /term cover\??\s*should be ₹2,66,80,000/.test(life), life.slice(life.indexOf("term cover"), life.indexOf("term cover") + 200));
+  // the family lives on rent and the home loan bought the let-out flat: its value counts, and so does its loan
+  ls.setItem("gm_props", JSON.stringify([{ n: "Fake flat", use: "letout", val: "80", rent: "30000", loan: "", vac: "1" }]));
+  const M2 = w.gmMoney();
+  ok("a let-out flat's value counts and its home loan is subtracted", M2.loans.letVal === 8000000 && M2.loans.homeCounted === 5000000 && M2.netWorth === 1700000 + 500000 + 3000000 - 80000, M2.netWorth);
   console.log("PASS " + P + " FAIL " + F); e.forEach(x => console.log("  FAIL: " + x)); process.exit(F ? 1 : 0);
 }, 400);

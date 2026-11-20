@@ -1260,7 +1260,7 @@
     if (!pr) return l;
     var kid = (pr.kids || [])[0], fill = {
       age: yrsSince(pr.dob), sage: yrsSince(pr.pdob), k1: kid && kid.dob ? yrsSince(kid.dob) : "",
-      inc: pr.net ? String(Math.round(gmMoney().income * 12 / 1e3) / 100) : "",   // both pays + rent coming in
+      inc: pr.net ? String(Math.round(gmMoney().grossPay * 12 / 1e3) / 100) : "",   // both pays before tax: the benchmark's base
       nw: (function (m) { return m && (m.invest || m.netWorth) ? String(Math.round(m.netWorth / 1e3) / 100) : ""; })(gmMoney()),
       ef: pr.sav ? String(Math.round(num(pr.sav) / 1e3) / 100) : "",
       minc: pr.net ? String(num(pr.net)) : ""   // fixed costs are not filled here: from the profile they are spending PLUS loan EMIs (flowHTML)
@@ -1477,24 +1477,32 @@
   function loansLeft() {
     var home = 0, other = 0;
     (window.P && P.loans || []).forEach(function (x) { if (!x) return; var r = Math.max(0, num(x.remaining)); if (/home/i.test(String(x.type || ""))) home += r; else other += r; });
-    var propDebt = 0, propEq = 0;
-    (typeof props === "function" ? props() : []).forEach(function (p) { if (!p || !num(p.val)) return; propDebt += num(p.loan) * 1e5; if (p.use !== "self") propEq += (num(p.val) - num(p.loan)) * 1e5; });
-    return { home: home, other: other, all: Math.max(home, propDebt) + other, propEq: propEq };
+    var letVal = 0, selfLoan = 0, propDebt = 0, letKnown = false;
+    (typeof props === "function" ? props() : []).forEach(function (p) { if (!p || !num(p.val)) return; propDebt += num(p.loan) * 1e5;
+      if (p.use === "self") selfLoan += num(p.loan) * 1e5; else { letVal += num(p.val) * 1e5; letKnown = true; } });
+    var homeDebt = Math.max(home, propDebt), all = homeDebt + other;
+    // net worth = what you own at today's value less what you owe (owner 2026-11-20: the home loan is on a let-out flat, and the
+    // family lives on rent). Only the home you live in and its own loan are left out. A home loan whose flat has no value typed
+    // yet is left out with it, and the card asks for the value, so a loan is never counted without the flat it bought.
+    var counted = letKnown ? Math.max(0, homeDebt - selfLoan) : 0;
+    return { home: home, other: other, all: all, propEq: letVal - counted, letVal: letVal, homeCounted: counted, needVal: home > 0 && !letKnown };
   }
   window.gmMoney = function () {
     if (!window.P) return null;
     var salary = typeof gmHouseholdIncome === "function" ? gmHouseholdIncome(P) : num(P.net), rent = rentIn(), income = salary + Math.round(rent.plan);
+    var two = typeof gmEarners === "function" && gmEarners(P) === 2, grossPay = (num(P.gross) || num(P.net)) + (two ? (gmPartner(P).gross || gmPartner(P).net) : 0);
     var r = gmRealSpend(), spend = r ? r.total : 0, rw = gmRunway(), L = loansLeft();
     var invest = typeof gmHouseholdInvest === "function" ? gmHouseholdInvest(P) : num(P.nw);
     var netWorth = invest + Math.max(0, num(P.sav)) + L.propEq - L.other;
     return {
-      salary: salary, rent: rent.gross, rentPlan: Math.round(rent.plan), income: income, spend: spend, fixed: r ? r.fixed : 0, ending: r ? r.ending || 0 : 0,
+      salary: salary, rent: rent.gross, rentPlan: Math.round(rent.plan), income: income, grossPay: grossPay, spend: spend, fixed: r ? r.fixed : 0, ending: r ? r.ending || 0 : 0,
       left: income - spend, save: income > 0 && spend > 0 ? Math.round((income - spend) / income * 100) : null,
       buffer: rw, invest: invest, netWorth: netWorth, loans: L
     };
   };
   // term cover one person needs: 10 years of their own take-home, plus the loans if they hold them (the first earner by default)
-  window.gmTermNeed = function (net, withLoans) { return Math.max(0, num(net)) * 120 + (withLoans ? loansLeft().all : 0); };
+  // 10x yearly pay before tax (Indian planners say 10 to 15x) + the loans the person holds; take-home only if gross is unknown
+  window.gmTermNeed = function (pay, withLoans) { return Math.max(0, num(pay)) * 120 + (withLoans ? loansLeft().all : 0); };
   function spendDue() {
     if (!profOK()) return 0;
     var all = scAll(), now = ymd().slice(0, 7);
@@ -1651,9 +1659,10 @@
       var pt = "";
       if (profOK()) {
         var M = gmMoney();   // the one money model: the same figures as Today and the budget
-        if (f[0] === "inc") pt = M.income ? rs(M.income * 12) + " a year (" + rs(M.salary) + " pay" + (M.rentPlan ? " + " + rs(M.rentPlan) + " rent" : "") + " a month)" : "";
+        if (f[0] === "inc") pt = M.grossPay ? rs(M.grossPay * 12) + " a year, both pays before tax" : "";
         else if (f[0] === "nw") pt = M.invest ? rs(M.netWorth) + " (investments " + rs(M.invest) + " + savings " + rs(Math.max(0, num(P.sav)))
-          + (M.loans.propEq ? " + let-out homes " + rs(M.loans.propEq) : "") + (M.loans.other ? " − loans " + rs(M.loans.other) : "") + "; the home loan and the home you live in are both left out)" : "";
+          + (M.loans.letVal ? " + let-out homes " + rs(M.loans.letVal) : "") + (M.loans.homeCounted ? " − home loan " + rs(M.loans.homeCounted) : "") + (M.loans.other ? " − other loans " + rs(M.loans.other) : "")
+          + (M.loans.needVal ? "; add your let-out flat’s value in Property to count it and its home loan" : "") + ")" : "";
         else if (f[0] === "ef") pt = num(P.sav) ? rs(P.sav) : "";
       }
       if (pt) {
@@ -1679,7 +1688,7 @@
     var l = life(), age = saneNum("age", l.age), inc = num(l.inc), nw = num(l.nw), sage = saneNum("sage", l.sage), k1 = l.k1 === "" || l.k1 === undefined ? null : num(l.k1), page = saneNum("page", l.page);
     /* Net worth multiple — the widely used age benchmark, shifted later
        for Indian earning curves where income peaks in the 40s. */
-    var mult = age < 30 ? 0.5 : age < 35 ? 1 : age < 40 ? 2 : age < 45 ? 3 : age < 50 ? 4.5 : age < 55 ? 6 : age < 60 ? 8 : 10;
+    var mult = typeof gmRetMult === "function" ? gmRetMult(age) : 2;   // one ladder, smooth by age (Fidelity)
     var nwTarget = (age && inc) ? Math.round(mult * inc) : 0;
     var nwPct = nwTarget ? Math.round(nw / nwTarget * 100) : 0;
     var h = '<div class="section active">'
@@ -1698,7 +1707,7 @@
       + (nw < nwTarget * 0.6
         ? '<div class="road-i" style="color:var(--red)">Behind the band. The only lever that closes this reliably is the savings rate, not returns. Raise the auto-split by 1% every month that felt comfortable, and route half of every raise before lifestyle absorbs it.</div>'
         : '<div class="road-i" style="color:var(--green)">Inside the band. Hold the savings rate and let time do the rest.</div>')
-      + (profOK() && num(P.net) ? '<div class="road-i">Your term cover should be <b>' + rs(gmTermNeed(P.net, true)) + '</b>: 10 years of your take-home plus the ' + rs(loansLeft().all) + ' of loans still to repay. You have ' + rs(typeof gmMine === "function" ? gmMine(P).term : 0) + '.</div>'
+      + (profOK() && num(P.net) ? '<div class="road-i">Your term cover should be <b>' + rs(gmTermNeed(num(P.gross) || num(P.net), true)) + '</b>: 10 years of your pay before tax (planners say 10 to 15) plus the ' + rs(loansLeft().all) + ' of loans still to repay. You have ' + rs(typeof gmMine === "function" ? gmMine(P).term : 0) + '.</div>'
         : '<div class="road-i">Term cover should be <b>\u20b9' + Math.round(inc * 11) + 'L</b> minimum \u2014 11\u00d7 income \u2014 plus every outstanding loan on top.</div>')
       + '<div class="road-i">By 40 the four things that should exist: full six-month buffer, term + health cover in force, a registered will, and an investment that runs without you touching it.</div>'
       + '</div>';
@@ -2403,7 +2412,7 @@
     var saveBad = save < -100 || save > 100;
 
     var age = saneNum("age", l.age), ainc = Math.min(500, Math.max(0, lakhs(l.inc))), nw = Math.max(-500, Math.min(5000, lakhs(l.nw)));
-    var mult = age < 30 ? 0.5 : age < 35 ? 1 : age < 40 ? 2 : age < 45 ? 3 : age < 50 ? 4.5 : age < 55 ? 6 : age < 60 ? 8 : 10;
+    var mult = typeof gmRetMult === "function" ? gmRetMult(age) : 2;   // one ladder, smooth by age (Fidelity)
     var nwPct = (ainc && age) ? Math.round(nw / (mult * ainc) * 100) : 0;
 
     return [
@@ -2547,9 +2556,9 @@
       // one rule everywhere (owner 2026-11-20): 10 years of each earner's take-home, plus the loans still to repay
       var WP = window.P;   // P here is the property list; the profile is window.P
       if (profOK() && num(WP.net)) {
-        var two = typeof gmEarners === "function" && gmEarners(WP) === 2, pn = two ? gmPartner(WP).net : 0;
-        d.termNeed = { v: Math.round((gmTermNeed(WP.net, true) + gmTermNeed(pn, false)) / 1e5), u: "L", label: "Term cover you actually need",
-          src: "10 years of each earner’s take-home + ₹" + Math.round(loansLeft().all / 1e5) + "L of loans still to repay" };
+        var two = typeof gmEarners === "function" && gmEarners(WP) === 2, pn = two ? (gmPartner(WP).gross || gmPartner(WP).net) : 0;
+        d.termNeed = { v: Math.round((gmTermNeed(num(WP.gross) || num(WP.net), true) + gmTermNeed(pn, false)) / 1e5), u: "L", label: "Term cover you actually need",
+          src: "10 years of each earner’s pay before tax + ₹" + Math.round(loansLeft().all / 1e5) + "L of loans still to repay" };
       }
     }
 
