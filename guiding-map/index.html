@@ -6207,7 +6207,8 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     // Buffer and saving rate come from the one money model, the same figures every other screen shows (owner 2026-11-20)
     var M = profOK() ? gmMoney() : null, rw = M && M.buffer;
     var fixed = lifeFixed(l), ef = lakhs(l.ef) * 100000;
-    var runway = rw ? (rw.gapM > 0 ? Math.max(0.05, rw.months) : 999) : (fixed ? ef / fixed : 0), rwAim = rw ? rw.target : 6;
+    // no savings typed yet is unknown, a calm dash, never "0.0 months" (test90)
+    var runway = rw && rw.liquid > 0 ? (rw.gapM > 0 ? rw.months : 999) : (fixed ? ef / fixed : 0), rwAim = rw ? rw.target : 6;
 
     var inc = num(l.minc), save = inc ? Math.round((num(l.fEF) + num(l.fSip)) / inc * 100) : 0;
     if (M && M.save !== null) save = M.save;
@@ -9019,7 +9020,8 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     // An invented spouse, child, parent or loan would keep steering YOUR insights. Example-only values go; real ones stay.
     ["sage", "k1", "page", "edu", "fFixed", "fLoan", "fEF", "fSip", "ef"].forEach(function (k) { if (isExample(k)) { delete l[k]; gmClearExample(k); } });
     S_("gm_life", l);
-    if (window.P) { if (wasExample) { P.loans = []; P.sav = 0; } P.example = false; try { store("sovP", P); } catch (e) {} }
+    // every invented money figure goes with the example: its rent, balances and second earner would count as yours (owner 2026-11-20)
+    if (window.P) { if (wasExample) { P.loans = []; P.sav = 0; P.rent1 = 0; P.rent2 = 0; P.mine = {}; P.partner = {}; P.psal = 0; P.earners = 1; } P.example = false; try { store("sovP", P); } catch (e) {} }
     S_("gm_quick_done", true);
     gmSnap("answered the quick setup");
     bustDerived(); renderAll();
