@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- Life OS: one money model. Income (both pays plus rent coming in), spend, saving rate, buffer, net worth and term cover are worked out once and every screen shows the same figures; a loan with 3 months or fewer left is no longer planned as a lasting bill, and a Rent bill beside rent coming in is asked about once.
 - **No single point of failure for the builders** (owner 2026-11-20): OpenCode Go first, then OpenRouter automatically when Go fails, hangs or is out of allowance (DeepSeek v4.1 Flash, then a free Gemma model; OPENROUTER_MODELS overrides; AUTOBUILD_PROVIDER=openrouter puts it first). Every model is probed before the work; OpenRouter spend is capped by the key's own credit limit; the model still cannot fetch the web.
 - **Model factory spec** (owner 2026-11-20): judges calibrated at 2% false positives, one-call decision graders, two-stage triage, failure clustering, a cost router with published escalation signals, a repository index for builders, secure open-weight deployment, each mapped to its place in SecuRAX and ordered 80/20 (docs/specs/model-factory.md).
 - **Fixed bills say what they mean and that they saved** (owner 2026-11-19: "what is Need; I do not know whether it is saved; the buttons do not look proper"): each bill shows its cost a month, a "Must pay / Could pause" choice with the chosen one marked, a quiet Remove link, first names, and a "Saved" message after every change (test150).
