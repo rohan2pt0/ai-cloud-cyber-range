@@ -8107,7 +8107,10 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
         + "#gmBreathe .gm-breathe-square{width:min(78vw,62vh);height:min(78vw,62vh);border:2px solid var(--gold);border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;transition:transform 1s cubic-bezier(.2,.8,.2,1);will-change:transform}"
         + "#gmBreathe .gm-breathe-word{font-size:32px;font-weight:800;letter-spacing:.01em;color:var(--text)}"
         + "#gmBreathe .gm-breathe-count{font-size:56px;font-weight:800;line-height:1;color:var(--gold)}"
-        + "#gmBreathe .gm-breathe-done{margin-top:8px;min-height:48px;padding:12px 28px;border-radius:12px;border:1px solid var(--gold);background:var(--card);color:var(--text);font-size:16px;font-weight:700;cursor:pointer}"
+        + "#gmBreathe .gm-breathe-btns{display:flex;gap:12px;align-items:center;margin-top:8px}"
+        + "#gmBreathe .gm-breathe-sound{min-height:48px;padding:12px 22px;border-radius:12px;border:1px solid var(--gold);background:var(--card);color:var(--text);font-size:16px;font-weight:700;cursor:pointer}"
+        + "#gmBreathe .gm-breathe-sound[aria-pressed=true]{background:var(--gold);color:var(--bg)}"
+        + "#gmBreathe .gm-breathe-done{min-height:48px;padding:12px 28px;border-radius:12px;border:1px solid var(--gold);background:var(--card);color:var(--text);font-size:16px;font-weight:700;cursor:pointer}"
         + "@media (prefers-reduced-motion:reduce){#gmBreathe .gm-breathe-square{transition:none!important;transform:none!important}}";
       (document.head || document.documentElement).appendChild(st);
     }
@@ -8115,12 +8118,46 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     o.id = "gmBreathe"; o.setAttribute("role", "dialog"); o.setAttribute("aria-modal", "true");
     o.setAttribute("aria-label", "Box breathing");
     o.innerHTML = '<div class="gm-breathe-square"><div class="gm-breathe-word">Inhale</div>'
-      + '<div class="gm-breathe-count">4</div></div><button type="button" class="gm-breathe-done">Done</button>';
+      + '<div class="gm-breathe-count">4</div></div><div class="gm-breathe-btns">'
+      + '<button type="button" class="gm-breathe-sound" aria-pressed="false">Sound</button>'
+      + '<button type="button" class="gm-breathe-done">Done</button></div>';
     document.body.appendChild(o);
     var PH = ["Inhale", "Hold", "Exhale", "Hold"], phase = 0, count = 4;
     var sq = o.querySelector(".gm-breathe-square"), wd = o.querySelector(".gm-breathe-word"), cd = o.querySelector(".gm-breathe-count");
+    var sbtn = o.querySelector(".gm-breathe-sound"), AC = window.AudioContext || window.webkitAudioContext;
+    var soundOn = false;
+    try { soundOn = localStorage.getItem("gm_breath_sound") === "1"; } catch (e) {}
+    var ac = null, noise = null, filt = null, gnode = null;
+    /* A soft breath sound, no audio file (owner, 2026-11-20): filtered noise whose volume follows the phase — rising
+       over the inhale, silence on each hold, falling over the exhale. Nothing happens where Web Audio is absent. */
+    function startSound() {
+      if (!AC || ac) return;
+      ac = new AC();
+      var len = Math.floor(ac.sampleRate * 2), buf = ac.createBuffer(1, len, ac.sampleRate), ch = buf.getChannelData(0);
+      for (var i = 0; i < len; i++) ch[i] = Math.random() * 2 - 1;
+      noise = ac.createBufferSource(); noise.buffer = buf; noise.loop = true;
+      filt = ac.createBiquadFilter(); filt.type = "lowpass"; filt.frequency.value = 700;
+      gnode = ac.createGain(); gnode.gain.value = 0;
+      noise.connect(filt); filt.connect(gnode); gnode.connect(ac.destination);
+      try { noise.start(); } catch (e) {}
+      if (ac.resume) { try { ac.resume(); } catch (e) {} }
+      gmBreathe.audio = { ctx: ac, gain: gnode };
+    }
+    function stopSound() {
+      if (gnode) { try { gnode.gain.value = 0; } catch (e) {} }
+      if (noise) { try { noise.stop(); } catch (e) {} try { noise.disconnect(); } catch (e) {} }
+      if (ac && ac.close) { try { ac.close(); } catch (e) {} }
+      ac = null; noise = null; filt = null; gnode = null; gmBreathe.audio = null;
+    }
+    function applySound() {
+      if (!gnode || !soundOn) return;
+      var g = gnode.gain;
+      var v = phase === 0 ? 0.06 + (4 - count) * 0.05 : phase === 2 ? 0.06 + (count - 1) * 0.05 : 0;
+      if (g.setTargetAtTime) g.setTargetAtTime(v, ac.currentTime || 0, 0.25); else g.value = v;
+    }
     function paint() {
       wd.textContent = PH[phase]; cd.textContent = count;
+      if (soundOn) applySound();
       var calm = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
       if (calm) return;
       var sc = phase === 0 ? 0.86 + (4 - count) * 0.045 : phase === 2 ? 1 - (4 - count) * 0.045 : (phase === 1 ? 1 : 0.86);
@@ -8133,13 +8170,25 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     }
     function close() {
       if (gmBreathe.timer) { clearInterval(gmBreathe.timer); gmBreathe.timer = null; }
+      stopSound();
       document.removeEventListener("keydown", key, true);
+      document.removeEventListener("visibilitychange", vis);
       var el = document.getElementById("gmBreathe"); if (el) el.parentNode.removeChild(el);
     }
     function key(ev) { if (ev.key === "Escape") close(); }
-    gmBreathe.timer = null; gmBreathe.step = step; gmBreathe.close = close;
+    function vis() { if (document.hidden) stopSound(); else if (soundOn) { startSound(); applySound(); } }
+    gmBreathe.timer = null; gmBreathe.step = step; gmBreathe.close = close; gmBreathe.audio = null;
+    sbtn.addEventListener("click", function () {
+      soundOn = !soundOn;
+      try { localStorage.setItem("gm_breath_sound", soundOn ? "1" : "0"); } catch (e) {}
+      sbtn.setAttribute("aria-pressed", soundOn ? "true" : "false");
+      if (soundOn) { startSound(); applySound(); } else stopSound();
+    });
+    sbtn.setAttribute("aria-pressed", soundOn ? "true" : "false");
     document.addEventListener("keydown", key, true);
+    document.addEventListener("visibilitychange", vis);
     o.querySelector(".gm-breathe-done").addEventListener("click", close);
+    if (soundOn) startSound();
     paint();
     if (!/jsdom/i.test(navigator.userAgent || "") && !navigator.webdriver) gmBreathe.timer = setInterval(step, 1000);
   }
