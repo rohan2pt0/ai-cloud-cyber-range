@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- Life OS: each property shows only the three measures with the worst verdict, so the ones that need a look are in view; the rest fold under "Later (n)" (test154).
 - Life OS: every property verdict now shows the target behind it ("aim 4% or more", "aim 20 yrs or less"), and a metric value wraps instead of being cut off on a phone.
 - Life OS: a 0 typed in a property or gold field stays visible as 0 instead of turning back into the grey "e.g." hint (it was saved, but looked unsaved).
 - Life OS: gold jewellery counts in net worth (22K grams x rate, less 10%); "What you own, by kind" shows each kind's share with one line on concentration; a property can be "Ours, empty"; saving the profile form no longer drops work kinds or gold.
