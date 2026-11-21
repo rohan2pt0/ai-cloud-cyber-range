@@ -2275,17 +2275,30 @@
           "Monthly cash flow": "aim \u20b90 or more"
         };
         rows.forEach(function (x) { if (/^\u20b9-/.test(x[1])) x[1] = "\u2212\u20b9" + x[1].slice(2); });
-        h += '<div style="margin-top:12px">';
-        rows.forEach(function (x) {
+        // One open action (owner, 2026-11-21): the three measures with the worst verdict stay in view, the rest fold.
+        var vOrder = { r: 0, a: 1, g: 2 };
+        rows = rows.map(function (x, i) { return { x: x, i: i }; }).sort(function (p, q) {
+          var pk = vOrder[VERDICT[p.x[0]]], qk = vOrder[VERDICT[q.x[0]]];
+          return (pk === undefined ? 3 : pk) - (qk === undefined ? 3 : qk) || p.i - q.i;
+        }).map(function (o) { return o.x; });
+        var metricRow = function (x) {
           var vd = VERDICT[x[0]] || "";
-          h += '<div class="gm-metric" style="display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">'
+          return '<div class="gm-metric" style="display:flex;justify-content:space-between;gap:10px;padding:9px 0;border-bottom:1px solid var(--border)">'
             + '<div style="flex:1"><div style="font-size:12.5px;font-weight:700;color:var(--text)">' + x[0] + '</div>'
             + '<div style="font-size:10.5px;color:var(--muted);line-height:1.4">' + x[2] + '</div></div>'
             + '<div style="text-align:right;max-width:48%;overflow-wrap:anywhere"><div class="gm-num' + (vd ? " gm-v-" + vd : "") + '"' + (vd ? ' aria-label="' + x[1] + ', ' + WORD[vd] + '"' : "") + '>' + (vd ? '<span class="gm-dot" aria-hidden="true"></span>' : "") + x[1] + '</div>'
             + (vd ? '<div class="gm-vw gm-v-' + vd + '">' + WORD[vd] + '</div>' : "")
             + (vd && AIM[x[0]] ? '<div class="gm-tgt" style="font-size:10.5px;color:var(--muted);margin-top:3px;line-height:1.3">' + AIM[x[0]] + '</div>' : "") + '</div></div>';
-        });
-        h += '</div><div style="margin-top:10px">';
+        };
+        h += '<div style="margin-top:12px">';
+        rows.slice(0, 3).forEach(function (x) { h += metricRow(x); });
+        h += '</div>';
+        if (rows.length > 3) {
+          h += '<details class="gm-later"><summary style="cursor:pointer;font-weight:800;font-size:13px">Later (' + (rows.length - 3) + ')</summary><div>';
+          rows.slice(3).forEach(function (x) { h += metricRow(x); });
+          h += '</div></details>';
+        }
+        h += '<div style="margin-top:10px">';
         v.forEach(function (x) {
           h += '<div style="border-left:3px solid ' + x[1] + ';padding:6px 0 6px 9px;margin-bottom:7px">'
             + '<div style="font-size:12.5px;font-weight:800;color:' + x[1] + '">' + x[0] + '</div>'
