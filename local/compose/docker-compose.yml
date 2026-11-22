@@ -372,7 +372,7 @@ services:
   # the gateway (OpenAI-compatible) at http://gateway:8080/v1 — zero Claude tokens. Hardening (non-root, scoped mount,
   # auth, a sandbox journey) is queued (doc 119); this is the usable first version.
   studio:
-    image: codercom/code-server:4.145.2@sha256:09565f9e07f5624554e295e8bab0e2fec4a7c533eb3cff459ed6596a4d3d7c1c
+    image: codercom/code-server:4.145.2-39@sha256:f1598017dc620b44b27cd2517ba8be0de9e95a2275b97163eb3484364cde5785
     security_opt: ["no-new-privileges:true"]   # no privilege gain through setuid programs (doc 87)
     mem_limit: 2g
     cpus: 2.0
