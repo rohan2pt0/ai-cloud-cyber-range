@@ -134,6 +134,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- Immersive and real
 - No single point of failure for the builders
 - Model factory spec
 - Fixed bills say what they mean and that they saved
@@ -141,7 +142,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - Two of you says plainly what each target means
 - Your real monthly spend, with no receipts
 - Two of you shows red, amber and green
-- Each number asked in one place
 
 **Release 0.4.0 - 2026-11-14:**
 

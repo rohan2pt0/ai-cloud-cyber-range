@@ -110,6 +110,7 @@ The principles behind it:
   It never breaks its form: no sideways scroll, no cut-off word, nothing under the notch, every control finger-sized, the main
   action always on screen. Prove it with `python3 guiding-map/tests/device_audit.py OUTDIR` (9 device profiles x every key
   view) and look at the screenshots, not only the score.
+- **Immersive and real (`immersive-real`, owner 2026-11-22):** make every surface feel like a living world true to life, the craft the best open-world game studios use: the person's own data is the world; actions have visible consequences across screens; time passes (bills fall due, leases end, seasons turn); drills and scenarios play out with real stakes, timing and an after-action review. Realism means faithful to the real rules and thresholds, never invented drama. Calm by default, reduced motion respected, nothing addictive, no fake urgency, and no copying of any game's names, art or story.
 - **Signature features, perfected (`signature-perfect`, owner 2026-11-14):** the distinctive features (the three rings, the
   night-sky lock, the seal, the lit materials, the keycaps, and each new one) are what people remember and come back for, so
   each is perfected in every aspect, not just made to work: meaning at a glance and one tap that explains it; a material true

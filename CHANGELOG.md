@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- **Immersive and real** (owner 2026-11-22): a new guiding principle; every surface should feel like a living world true to life (your own data is the world, choices have visible consequences, time passes, drills play out with real stakes), calm, with no fake urgency or copying. The pasted Life OS blueprint is diagnosed against the estate and queued as four slices (`lifeos-blueprint`).
 - Life OS: each property shows only the three measures with the worst verdict, so the ones that need a look are in view; the rest fold under "Later (n)" (test154).
 - Life OS: every property verdict now shows the target behind it ("aim 4% or more", "aim 20 yrs or less"), and a metric value wraps instead of being cut off on a phone.
 - Life OS: a 0 typed in a property or gold field stays visible as 0 instead of turning back into the grey "e.g." hint (it was saved, but looked unsaved).
