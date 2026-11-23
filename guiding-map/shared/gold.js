@@ -65,48 +65,49 @@ function fres(c, i) { var m = Math.pow(1 - c, 5); return F0[i] + (1 - F0[i]) * m
   }
 
   /* ---- the hallmark: "999.9" as a small height map, so it can be embossed in the normal ---- */
-  var HM = null, HW = 150, HH = 60;
-  function hallmark() {
-    if (HM) return HM;
-    HM = new Float32Array(HW * HH);
+  var HMS = {}, HM = null, HW = 300, HH = 90;
+  function hallmark(text) {   // text: the clean "999.9"; otherwise a small rectangular stamp recess
+    var key = text ? "t" : "r"; if (HMS[key]) { HM = HMS[key]; return HM; }
+    HM = HMS[key] = new Float32Array(HW * HH);
     try {
       var c = doc.createElement("canvas"); c.width = HW; c.height = HH; var x = c.getContext("2d"); if (!x) return HM;
       x.fillStyle = "#000"; x.fillRect(0, 0, HW, HH); x.fillStyle = "#fff"; x.textAlign = "center"; x.textBaseline = "middle";
-      x.font = "bold 30px Georgia, 'Times New Roman', serif"; x.fillText("999.9", HW / 2, HH / 2 + 1);
-      x.fillRect(HW * .2, HH * .12, HW * .6, 1.5); x.fillRect(HW * .2, HH * .88 - 1.5, HW * .6, 1.5);
+      if (text) { x.font = "bold 62px Helvetica, Arial, sans-serif"; x.fillText("999.9", HW / 2, HH / 2 + 3); }
+      else x.fillRect(HW * .3, HH * .3, HW * .4, HH * .4);
       var d = x.getImageData(0, 0, HW, HH).data, i, j, t = new Float32Array(HW * HH);
       for (i = 0; i < HW * HH; i++) t[i] = d[i * 4] / 255;
-      for (var p = 0; p < 2; p++) { for (j = 1; j < HH - 1; j++) for (i = 1; i < HW - 1; i++) { var q = j * HW + i; HM[q] = (t[q] * 4 + t[q - 1] + t[q + 1] + t[q - HW] + t[q + HW]) / 8; } t.set(HM); }
+      for (var p = 0; p < 3; p++) { for (j = 1; j < HH - 1; j++) for (i = 1; i < HW - 1; i++) { var q = j * HW + i; HM[q] = (t[q] * 4 + t[q - 1] + t[q + 1] + t[q - HW] + t[q + HW]) / 8; } t.set(HM); }
     } catch (e) {}
     return HM;
   }
   function hgrad(u, v) {   // gradient of the hallmark height at u,v in 0..1
-    var i = clamp(Math.round(u * (HW - 1)), 1, HW - 2), j = clamp(Math.round(v * (HH - 1)), 1, HH - 2), q = j * HW + i;
-    return [(HM[q + 1] - HM[q - 1]) * .5, (HM[q + HW] - HM[q - HW]) * .5];
+    var i = clamp(Math.round(u * (HW - 1)), 2, HW - 3), j = clamp(Math.round(v * (HH - 1)), 2, HH - 3), q = j * HW + i;
+    return [(HM[q + 2] - HM[q - 2]) * .25, (HM[q + 2 * HW] - HM[q - 2 * HW]) * .25];
   }
 
   /* ---- the geometry of one stack ---- */
   function build(have, want, dpr) {
     var per = 4; while (per < 8 && per * (per + 1) / 2 < want) per++;
     var rows = 0, cap = 0; while (cap < want && rows < per) { cap += per - rows; rows++; }   // the pyramid holds 36
-    var bw = Math.min(70, Math.floor(300 / per)), pitch = bw + 4, D = bw * .46, Hh = bw * .25, ix = bw * .075, iz = D * .13, PAD = 10;
+    var bw = Math.min(70, Math.floor(300 / per)), pitch = bw + 6, D = bw * .46, Hh = bw * .25, ix = bw * .12, iz = D * .17, PAD = 10, mg = (D - 2 * iz) * .24;
     var Lt = bw - 2 * ix, Dt = D - 2 * iz;
     var idxOf = function (r, c) { var n = 0; for (var k = 0; k < r; k++) n += per - k; return n + c; };
     var proj = function (x, y, z) { return [x, -(y * CE - z * SE)]; };
     var ox = PAD + bw / 2, minY = 1e9, bars = [], i;
     for (i = 0; i < want; i++) {
       var r = 0, c = i; while (c >= per - r) { c -= per - r; r++; }
-      var cx = ox + r * pitch / 2 + c * pitch, yb = r * Hh * 0.98;
-      bars.push({ i: i, r: r, c: c, cx: cx, yb: yb, ghost: i >= have });
-      minY = Math.min(minY, proj(cx, yb + Hh, -Dt / 2)[1]);
+      var cx = ox + r * pitch / 2 + c * pitch, yb = r * Hh, zc = r * -(iz + mg);   // each row rests ON the row below: its front edge on their top faces, set back
+      bars.push({ i: i, r: r, c: c, cx: cx, yb: yb, zc: zc, ghost: i >= have });
+      minY = Math.min(minY, proj(cx, yb + Hh, zc - Dt / 2)[1]);
     }
-    var W = per * pitch + 2 * PAD, refH = Math.round(Hh * CE * .9), top = 8 - minY, baseY = top + proj(0, 0, D / 2)[1];
+    var W = per * pitch + 2 * PAD + rows * 0, refH = Math.round(Hh * CE * .9), top = 8 - minY, baseY = top + proj(0, 0, D / 2)[1];
     var H = Math.ceil(baseY + refH + 8);
-    var g = { per: per, rows: rows, bw: bw, W: Math.ceil(W), H: H, dpr: dpr, bars: bars, refH: refH, baseY: baseY, oy: top, D: D, Hh: Hh, L: bw, Lt: Lt, Dt: Dt, ix: ix, iz: iz, faces: [], idxOf: idxOf };
+    var textOk = Lt >= 28 && Dt * SE * .62 >= 7;   // a clean hallmark only where it is big enough to read
+    var g = { text: textOk, per: per, rows: rows, bw: bw, W: Math.ceil(W), H: H, dpr: dpr, bars: bars, refH: refH, baseY: baseY, oy: top, D: D, Hh: Hh, L: bw, Lt: Lt, Dt: Dt, ix: ix, iz: iz, faces: [], idxOf: idxOf };
     var P = function (x, y, z) { var p = proj(x, y, z); return [p[0], p[1] + top]; };
     bars.forEach(function (b) {
       var x0 = b.cx - bw / 2, x1 = b.cx + bw / 2, t0 = b.cx - Lt / 2, t1 = b.cx + Lt / 2, y0 = b.yb, y1 = b.yb + Hh;
-      var fz = D / 2, bz = -D / 2, tf = Dt / 2, tb = -Dt / 2;
+      var fz = b.zc + D / 2, bz = b.zc - D / 2, tf = b.zc + Dt / 2, tb = b.zc - Dt / 2;
       var nF = norm([0, iz, Hh]), nT = [0, 1, 0], nL = norm([-Hh, ix, 0]), nR = norm([Hh, ix, 0]), nB = norm([0, iz, -Hh]);
       b.q = { front: [P(x0, y0, fz), P(x1, y0, fz), P(t1, y1, tf), P(t0, y1, tf)], top: [P(t0, y1, tf), P(t1, y1, tf), P(t1, y1, tb), P(t0, y1, tb)] };   // outlines, for the ghosts
       if (b.ghost) return;
@@ -123,7 +124,7 @@ function fres(c, i) { var m = Math.pow(1 - c, 5); return F0[i] + (1 - F0[i]) * m
 
   /* Per face and per device pixel: coverage, the reflected direction, the Fresnel colour, occlusion. Built once. */
   function cacheFace(g, f) {
-    var dpr = g.dpr, Wd = Math.ceil(g.W * dpr), Hd = Math.ceil(g.H * dpr), pts = f.pts, n = f.n, b = f.bar, hm = f.type === "top" ? hallmark() : null;
+    var dpr = g.dpr, Wd = Math.ceil(g.W * dpr), Hd = Math.ceil(g.H * dpr), pts = f.pts, n = f.n, b = f.bar, hm = f.type === "top" ? hallmark(g.text) : null;
     var minx = 1e9, maxx = -1e9, miny = 1e9, maxy = -1e9, i, area = 0;
     for (i = 0; i < 4; i++) { var A = pts[i], B = pts[(i + 1) % 4]; minx = Math.min(minx, A[0]); maxx = Math.max(maxx, A[0]); miny = Math.min(miny, A[1]); maxy = Math.max(maxy, A[1]); area += A[0] * B[1] - B[0] * A[1]; }
     var sgn = area > 0 ? 1 : -1, x0 = Math.max(0, Math.floor((minx - 1) * dpr)), x1 = Math.min(Wd - 1, Math.ceil((maxx + 1) * dpr)), y0 = Math.max(0, Math.floor((miny - 1) * dpr)), y1 = Math.min(Hd - 1, Math.ceil((maxy + 1) * dpr));
@@ -145,15 +146,15 @@ function fres(c, i) { var m = Math.pow(1 - c, 5); return F0[i] + (1 - F0[i]) * m
         fx = clamp((px - b.cx) / (g.L / 2), -1, 1); fy = clamp((Py - b.yb) / Hh, 0, 1);
         nx += fx * .10 + nse; ny += (fy - .5) * .34 + nse * .6; ao = .74 + .26 * sstep(0, .4, fy); gain = .75;
       } else if (f.type === "top") {
-        tx = clamp((px - b.cx) / (g.Lt / 2), -1, 1); tz = clamp(Pz / (g.Dt / 2), -1, 1);
+        tx = clamp((px - b.cx) / (g.Lt / 2), -1, 1); tz = clamp((Pz - b.zc) / (g.Dt / 2), -1, 1);
         nx += -tx * .13 + nse; nz += -tz * .17 + nse * .6; gain = 1;
-        if (hm) { var gr = hgrad((tx + 1) / 2, (tz + 1) / 2); nx -= gr[0] * .9; nz -= gr[1] * .9; }
+        if (hm) { var gr = hgrad((tx + 1) / 2, (tz + 1) / 2); nx -= gr[0] * 1.6; nz -= gr[1] * 1.6; }
         for (var u = 0; u < f.up.length; u++) {   // the bar resting above shades the top face in front of it
-          var ub = f.up[u], dx = Math.max(0, Math.abs(px - ub.cx) - g.L / 2), dz = Pz - D / 2 * .98;
+          var ub = f.up[u], dx = Math.max(0, Math.abs(px - ub.cx) - g.L / 2), dz = Pz - (ub.zc + D / 2);
           if (dz > -1) ao *= 1 - .62 * Math.exp(-Math.max(0, dz) / (D * .16)) * Math.exp(-dx / (g.L * .09));
         }
       } else {
-        var sy = clamp((Py - b.yb) / Hh, 0, 1); ny += (sy - .5) * .2 + nse; ao = .42 + .3 * sstep(0, 1, sy); gain = .5;
+        var sy = clamp((Py - b.yb) / Hh, 0, 1); ny += (sy - .5) * .2 + nse; ao = .62 + .3 * sstep(0, 1, sy); gain = .5;
       }
       var adjn = f.adj[em];
       if (adjn && dmin < bev) {   // the polished chamfer: the normal turns half way to the neighbour face
