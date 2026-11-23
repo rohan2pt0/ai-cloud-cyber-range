@@ -62,7 +62,7 @@
         + '<path d="M' + (x + 3) + ' ' + (y + dy + 3) + ' h' + (bw - 6) + '" stroke="#fff6dc" stroke-opacity=".7" stroke-width="1"/>';
     };
     for (var i = 0; i < want; i++) g += bar(i, i >= have);
-    return '<svg class="sx-bars" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + have + ' gold bars of ' + (label || "one unit") + ', ' + (want - have) + ' more to the aim">'
+    return '<svg class="sx-bars" data-have="' + have + '" data-want="' + want + '" data-label="' + String(label || "").replace(/[<>&"]/g, "") + '" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + have + ' gold bars of ' + (label || "one unit") + ', ' + (want - have) + ' more to the aim">'
       + '<defs><linearGradient id="' + id + 'f" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff1c4"/><stop offset=".22" stop-color="#e9c873"/><stop offset=".5" stop-color="#b88a2e"/><stop offset=".62" stop-color="#a97c25"/><stop offset=".85" stop-color="#e0bb66"/><stop offset="1" stop-color="#c9a04a"/></linearGradient>'
       + '<linearGradient id="' + id + 't" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#f3dc9a"/><stop offset=".45" stop-color="#fff6dc"/><stop offset="1" stop-color="#d9b25a"/></linearGradient></defs>'
       + '<ellipse cx="' + (W / 2) + '" cy="' + (H - 6) + '" rx="' + (W / 2 - 4) + '" ry="4" fill="#000" opacity=".15"/>' + g + '</svg>';
