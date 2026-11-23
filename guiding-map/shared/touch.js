@@ -13,7 +13,7 @@
   var doc = document, root = doc.documentElement;
   var calm = !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
   var auto = !!navigator.webdriver || /jsdom/i.test(navigator.userAgent || "");
-  window.SXTouch = { on: !calm && !auto, light: { x: 0, y: 0 } };   // light: where the metal's light is now, -1..1 each way
+  window.SXTouch = { on: !calm && !auto, light: { x: 0, y: 0 } };   // light: where the light is now (-1..1 each way), read by the gold and the water
   if (calm || auto) return;
 
   // Ripple: in a clip layer of its own, so the button's overflow and focus ring are never touched.

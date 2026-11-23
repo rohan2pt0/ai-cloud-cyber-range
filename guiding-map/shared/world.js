@@ -73,7 +73,10 @@
     f = Math.max(0.04, Math.min(1, f || 0));
     var id = uid("sxv"), W = 150, H = 170, top = 26, bot = 156, lvl = bot - (bot - top - 6) * f, al = top + 6;
     var water = state === "good" ? ["#5fd3c0", "#127a75", "#0a4a52"] : state === "watch" ? ["#9fd6c6", "#3e8f7a", "#5a5a2a"] : ["#c9a98a", "#8a5a3c", "#5a3020"];
-    return '<svg class="sx-vessel" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + (label || "") + '">'
+    var q = function (t) { return String(t == null ? "" : t).replace(/[<>&"]/g, ""); };
+    // A wrapper SXWater upgrades to a living canvas where a 2D context exists; the SVG inside stays as the fallback.
+    return '<span class="sx-water" data-f="' + f.toFixed(3) + '" data-state="' + q(state) + '" data-aim="' + q(aim) + '" role="img" aria-label="' + q(label) + '" style="display:inline-block;position:relative;flex:none;width:' + W + 'px;height:' + H + 'px;line-height:0;vertical-align:top">'
+      + '<svg class="sx-vessel" width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="' + (label || "") + '">'
       + '<defs><clipPath id="' + id + 'c"><path d="M30 22 Q30 16 36 16 H114 Q120 16 120 22 V150 Q120 160 110 160 H40 Q30 160 30 150 Z"/></clipPath>'
       + '<linearGradient id="' + id + 'w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + water[0] + '" stop-opacity=".95"/><stop offset=".45" stop-color="' + water[1] + '"/><stop offset="1" stop-color="' + water[2] + '"/></linearGradient>'
       + '<linearGradient id="' + id + 'g" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".12" stop-color="#fff" stop-opacity=".08"/><stop offset=".8" stop-color="#fff" stop-opacity="0"/><stop offset=".93" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff" stop-opacity=".05"/></linearGradient>'
@@ -87,7 +90,7 @@
       + '<text x="124" y="' + (al + 4) + '" font-size="10" fill="currentColor" opacity=".75">' + String(aim || "").replace(/[<>&"]/g, "") + '</text>'
       + '<path d="M30 22 Q30 16 36 16 H114 Q120 16 120 22 V150 Q120 160 110 160 H40 Q30 160 30 150 Z" fill="url(#' + id + 'g)" stroke="rgba(170,190,200,.85)" stroke-width="2"/>'
       + '<path d="M38 26 V140" stroke="#fff" stroke-opacity=".45" stroke-width="3" stroke-linecap="round"/>'
-      + '<ellipse cx="75" cy="16" rx="45" ry="3.5" fill="none" stroke="rgba(170,190,200,.9)" stroke-width="1.5"/></svg>';
+      + '<ellipse cx="75" cy="16" rx="45" ry="3.5" fill="none" stroke="rgba(170,190,200,.9)" stroke-width="1.5"/></svg></span>';
   }
 
   /* ---- tree rings: rates = one number per period (0..60 counts), oldest first; the last ring is edged in gold ---- */
