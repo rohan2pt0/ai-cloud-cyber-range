@@ -2073,6 +2073,57 @@
   function llShow(d) { return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }); }   // 4 Jan 2026, never an ISO string
   function llBadge(cls, word) { return '<span class="' + cls + '" style="font-size:11.5px;font-weight:700;padding:2px 10px;border-radius:999px;white-space:nowrap;color:' + (cls === "sx-state-watch" ? "#2a1703" : "#fff") + '">' + esc(word) + '</span>'; }
   function llMH() { var f = G("gm_facts", {}) || {}; return f.state === "MH"; }
+  /* Coming up in your world (immersive-real, owner 2026-11-23): the next real events, worked out from what the person already
+     told us, with nothing to type: birthdays of the people at home, a loan's last EMI, a let-out home's rent, tax, renewal and
+     papers, and the month-end check-in. Each carries a moon that waxes as the day comes near (full on the day): a cue from
+     nature, not a timer. The three nearest show; the rest wait under Later. */
+  window.gmComingUp = function () {
+    if (!window.P || P.example) return [];
+    var now = new Date(), t0 = new Date(now.getFullYear(), now.getMonth(), now.getDate()), out = [];
+    var days = function (d) { return Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - t0) / 864e5); };
+    var first = function (n) { return esc(String(n || "").trim().split(" ")[0] || n); };
+    var bday = function (dob, who, own) {
+      var b = dob ? new Date(dob) : null; if (!b || isNaN(b)) return;
+      var nx = new Date(t0.getFullYear(), b.getMonth(), b.getDate()); if (nx < t0) nx = new Date(t0.getFullYear() + 1, b.getMonth(), b.getDate());
+      var age = nx.getFullYear() - b.getFullYear();
+      out.push({ d: nx, kind: "birthday", t: own ? "Your birthday" : who + " turns " + age, s: own ? "A year to look back on, and one to plan." : "A call, a note or a small plan. Decide this week." });
+    };
+    bday(P.dob, "", true);
+    if (P.pname && P.pdob) bday(P.pdob, first(P.pname));
+    (P.kids || []).forEach(function (k) { if (k && k.name) bday(k.dob, first(k.name)); });
+    (P.loans || []).forEach(function (x, i) {
+      var m = num(x && x.tenure); if (!(m > 0 && m <= 6) || !num(x.emi)) return;
+      var d = new Date(t0.getFullYear(), t0.getMonth() + m, t0.getDate());
+      out.push({ d: d, kind: "loan", t: esc(x.type || "Loan " + (i + 1)) + ": last EMI", s: rs(num(x.emi)) + " a month frees up after it. Decide now where it goes." });
+    });
+    props().forEach(function (p) {
+      if (!p || (p.use || "letout") !== "letout") return;
+      llRows(p).forEach(function (r) { out.push({ d: r.d, kind: "home", t: esc(p.n || "Your flat") + ": " + esc(r.t), s: "Mark it done on the Property tab." }); });
+    });
+    out.push({ d: new Date(t0.getFullYear(), t0.getMonth() + 1, 1), kind: "checkin", t: "Month-end money check-in", s: "One balance each. Two minutes." });
+    return out.map(function (x) { x.days = days(x.d); return x; }).filter(function (x) { return x.days <= 45; })
+      .sort(function (a, b) { return a.days - b.days; });
+  };
+  window.gmComingUpHTML = function () {
+    var L = window.gmComingUp ? gmComingUp() : []; if (!L.length) return "";
+    var moon = function (n) {     // a moon that waxes as the day comes near; full on the day, a red ring when late
+      var f = n <= 0 ? 1 : Math.max(0.08, 1 - n / 14), r = 13, id = "gmMoon" + Math.random().toString(36).slice(2, 7);
+      return '<svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true" class="gm-moon"><defs><clipPath id="' + id + '"><circle cx="17" cy="17" r="' + r + '"/></clipPath></defs>'
+        + '<circle cx="17" cy="17" r="' + r + '" fill="#e8c96a"/><circle cx="' + (17 + 2 * r * f) + '" cy="17" r="' + r + '" fill="#132a47" clip-path="url(#' + id + ')"/>'
+        + '<circle cx="17" cy="17" r="' + (r + 1.5) + '" fill="none" stroke="' + (n < 0 ? "#c0392b" : "rgba(201,168,76,.55)") + '" stroke-width="' + (n < 0 ? 2.5 : 1) + '"/></svg>';
+    };
+    var when = function (n) { return n < 0 ? (-n) + (n === -1 ? " day late" : " days late") : n === 0 ? "today" : n === 1 ? "tomorrow" : "in " + n + " days"; };
+    var date = function (d) { return d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }); };
+    var row = function (x) {
+      var st = x.days < 0 || x.days <= 3 ? "low" : x.days <= 14 ? "watch" : "good";
+      return '<div class="gm-cu-row" role="listitem" aria-label="' + x.t.replace(/<[^>]+>/g, "") + ', ' + when(x.days) + '">' + moon(x.days)
+        + '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:14px">' + x.t + '</div><div style="font-size:12.5px;color:var(--muted)">' + x.s + '</div></div>'
+        + '<div class="gm-cu-when gm-cu-' + st + '">' + when(x.days) + '<small>' + date(x.d) + '</small></div></div>';
+    };
+    return '<div class="road-col gm-cu" style="margin:10px 0"><div style="font-weight:800;font-size:13.5px;margin-bottom:4px">Coming up in your world</div><div role="list">'
+      + L.slice(0, 3).map(row).join("") + '</div>'
+      + (L.length > 3 ? '<details style="margin-top:4px"><summary style="cursor:pointer;font-size:12.5px">Later (' + (L.length - 3) + ')</summary><div role="list">' + L.slice(3).map(row).join("") + '</div></details>' : "") + '</div>';
+  };
   function llRows(p) {
     var today = llDay(new Date()), rows = [], ym = llIso(today).slice(0, 7), mon = today.toLocaleString("en-IN", { month: "long" });
     if (llNum(p.rent) > 0 && llNum(p.rentDay) >= 1 && !(p.paid && p.paid[ym]))
@@ -5509,7 +5560,7 @@
   function calmTodayHTML() {
     var more = dueNowHTML() + (inRecovery() ? "" : driftHTML() + resHTML()) + msTodayHTML() + insightHTML() + estateHTML();
     var open = G("gm_more_today", false) === true;
-    return '<div class="section active">' + greetHTML() + (phone() ? vitalsHTML() : "") + interruptHTML() + undoBar() + checkinHTML() + setupStripHTML() + (window.gmAskOneHTML ? gmAskOneHTML() : "") + todayFocusHTML() + winsHTML()
+    return '<div class="section active">' + greetHTML() + (phone() ? vitalsHTML() : "") + interruptHTML() + undoBar() + checkinHTML() + setupStripHTML() + (window.gmAskOneHTML ? gmAskOneHTML() : "") + todayFocusHTML() + (window.gmComingUpHTML ? gmComingUpHTML() : "") + winsHTML()
       + (more.replace(/<[^>]*>/g, "").trim() ? '<details class="road-col gm-more-today"' + (open ? " open" : "") + ' ontoggle="gmMoreToday(this.open)">'
         + '<summary style="cursor:pointer;font-weight:800;font-size:13px">More today <span style="font-weight:500;color:var(--muted);font-size:11.5px">\u00b7 what is due, your week, calendar, estate</span></summary>'
         + '<div style="margin-top:10px">' + more + '</div></details>' : "")
