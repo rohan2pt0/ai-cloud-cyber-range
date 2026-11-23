@@ -72,3 +72,50 @@ jobs:
     steps:
       - id: deploy
         uses: actions/deploy-pages@v4
+  # A second home for the site and the apps, so GitHub Pages is not the one place they live (doc 131). Dormant: with no
+  # CLOUDFLARE_API_TOKEN secret it prints one line and succeeds. It rebuilds with the same command as the build job.
+  mirror:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    permissions: { contents: read }
+    env:
+      CF_TOKEN_SET: ${{ secrets.CLOUDFLARE_API_TOKEN != '' && 'yes' || 'no' }}
+    steps:
+      - id: gate
+        name: "Is a second host switched on"
+        run: |
+          if [ "$CF_TOKEN_SET" = "yes" ]; then
+            echo "on=yes" >> "$GITHUB_OUTPUT"
+          else
+            echo "No second host yet: add the CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets"
+            echo "on=no" >> "$GITHUB_OUTPUT"
+          fi
+      - name: "Check out the code"
+        if: steps.gate.outputs.on == 'yes'
+        uses: actions/checkout@v7
+      - name: "Set up Python"
+        if: steps.gate.outputs.on == 'yes'
+        uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - name: "Build the product site and the docs (same as the build job)"
+        if: steps.gate.outputs.on == 'yes'
+        env:
+          SITE_DOMAIN: ${{ vars.SITE_DOMAIN }}
+          SITE_LIVE: ${{ vars.SITE_LIVE }}
+          CONTACT_EMAIL: ${{ vars.CONTACT_EMAIL }}
+          THREAT_FETCH: "1"
+        run: |
+          [ -n "$SITE_DOMAIN" ] || unset SITE_DOMAIN
+          [ -n "$SITE_LIVE" ] || unset SITE_LIVE
+          [ -n "$CONTACT_EMAIL" ] || unset CONTACT_EMAIL
+          bash website/build.sh
+      - name: "Deploy the built site to Cloudflare Pages"
+        if: steps.gate.outputs.on == 'yes'
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          set -a; . ./brand.env; set +a
+          npx --yes wrangler@4.158.0 pages deploy website --project-name "$CF_PAGES_PROJECT" --branch main
