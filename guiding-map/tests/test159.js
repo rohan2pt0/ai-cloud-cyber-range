@@ -15,7 +15,8 @@ setTimeout(() => {
   ok("the shared world is built into the app", !!X && typeof X.flag === "function");
   ok("every object has one meaning, a use and an avoid", X && X.CATALOG.length === 5 && X.CATALOG.every(c => c.id && c.means && c.use && c.avoid && typeof X[c.id] === "function"));
   // the cloth: physics, not a loop
-  const C = X.cloth, run = (kmh) => { const s = C.make(); for (let i = 0; i < 300; i++) C.step(s, kmh, 1 / 60); return s; };
+  const C = X.cloth, run = (kmh) => { const s = C.make(); s.t = 0;   // a fixed gust phase, so a lull at one moment cannot decide it
+    for (let i = 0; i < 300; i++) C.step(s, kmh, 1 / 60); return s; };
   const fly = (s) => s.p.filter((p, i) => i % C.cols === C.cols - 1);
   const mx = (s) => fly(s).reduce((a, p) => a + p.x, 0) / C.rows, my = (s) => fly(s).reduce((a, p) => a + p.y, 0) / C.rows;
   const avg = (kmh) => { const s = run(kmh); let x = 0, y = 0; for (let i = 0; i < 240; i++) { C.step(s, kmh, 1 / 60); x += mx(s); y += my(s); } return { s, x: x / 240, y: y / 240 }; };

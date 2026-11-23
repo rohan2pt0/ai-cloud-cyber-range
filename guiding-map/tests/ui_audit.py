@@ -79,7 +79,8 @@ def main():
         # the number bar is the "Show everything" layout (start simple folds it away; test98)
         # wait for the tile itself, not a fixed pause: a slow CI runner once read it before the re-render (2026-11-19)
         pg.evaluate("gmSimple(false)")
-        try: pg.wait_for_function("[...document.querySelectorAll('#gmVitals > div')].some(d=>/\\d\\.\\dm/.test(d.innerText))", timeout=8000)
+        # wait for the tile to show THIS buffer, not just any number: the example's figure once satisfied "any" (2026-11-23)
+        try: pg.wait_for_function("(function(r){var w=r&&r.gapM>0?r.months.toFixed(1)+'m':'';return !!w&&[...document.querySelectorAll('#gmVitals > div')].some(function(d){return d.innerText.indexOf(w)>=0;});})(window.gmRunway&&gmRunway())", timeout=8000)
         except Exception: pass
         v = pg.evaluate("[...document.querySelectorAll('#gmVitals > div')].map(d=>d.innerText.replace(/\\n/g,' '))")
         pg.evaluate("gmSimple(true)")
