@@ -1346,9 +1346,12 @@
      reflection below and bevelled edges. */
   window.gmGoldBars = function (nw, target) {
     nw = Math.max(0, nw || 0); target = Math.max(0, target || 0);
-    var unit = Math.max(nw, target) / 1e6 > 36 ? 1e7 : 1e6, have = Math.round(nw / unit), want = Math.max(have, Math.round(target / unit));
+    // the unit steps up (₹10 lakh, ₹1 crore, ₹10 crore, ₹100 crore) so the pyramid always fits its 36 places; a ₹90 crore
+    // investor once made the row loop below run for ever and froze the page (persona audit, 2026-11-23)
+    var unit = 1e6, big = Math.max(nw, target); while (unit < 1e9 && big / unit > 36) unit *= 10;
+    var have = Math.min(36, Math.round(nw / unit)), want = Math.min(36, Math.max(have, Math.round(target / unit)));
     if (!want) return "";
-    var lab = unit === 1e7 ? "₹1 crore" : "₹10 lakh";
+    var lab = { 1e6: "₹10 lakh", 1e7: "₹1 crore", 1e8: "₹10 crore", 1e9: "₹100 crore" }[unit];
     return '<div class="gm-bars" style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin:8px 0">'
       + SXWorld.goldBars(have, want, lab)
       + '<div style="font-size:12.5px;color:var(--muted);min-width:120px">Each bar is ' + lab + '.<br><b style="color:var(--text)">' + have + ' in the vault</b>' + (want > have ? ', ' + (want - have) + ' outlined to the benchmark for your age.' : '. You are at or past the benchmark for your age.') + '</div></div>';

@@ -1257,9 +1257,9 @@ nav#oskNav button.on{color:#f4e7c1;background:rgba(201,168,76,.14);box-shadow:in
 
   /* ---- gold bars: have solid ingots, want - have outlined ghosts, in a pyramid; label names one bar ---- */
   function goldBars(have, want, label) {
-    have = Math.max(0, Math.round(have || 0)); want = Math.max(have, Math.round(want || 0)); if (!want) return "";
+    have = Math.min(36, Math.max(0, Math.round(have || 0))); want = Math.min(36, Math.max(have, Math.round(want || 0))); if (!want) return "";   // the pyramid holds 36
     var per = 4; while (per < 8 && per * (per + 1) / 2 < want) per++;
-    var bw = 42, bh = 16, dx = 6, dy = 7, rows = 0, cap = 0; while (cap < want) { cap += per - rows; rows++; }
+    var bw = 42, bh = 16, dx = 6, dy = 7, rows = 0, cap = 0; while (cap < want && rows < per) { cap += per - rows; rows++; }
     var W = per * (bw + 4) + 12, H = rows * (bh + dy) + 20, id = uid("sxg"), g = "";
     var bar = function (i, ghost) {
       var r = 0, c = i; while (c >= per - r) { c -= per - r; r++; }
