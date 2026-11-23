@@ -44,6 +44,19 @@ def seed(pg):
       const e={},n={}; for(let i=0;i<14;i++){ const d=new Date(); d.setDate(d.getDate()-i); e[dKey(d)]=1+Math.floor(Math.random()*5); }
       n[dKey(new Date(Date.now()-86400000))]='slept late, skipped reading; good walk with family';
       localStorage.setItem('gm_energy',JSON.stringify(e)); localStorage.setItem('gm_notes',JSON.stringify(n)); }""")
+def reload_keeping_storage(pg, tries=4):
+    """Reload the page and keep what it stored. Chromium on a file:// page sometimes (about 1 reload in 8) hands the reloaded
+    page an EMPTY localStorage, even on a blank page with no app code in it; the app then seeds its example profile, and the
+    check that follows reads the example's tiles (2026-11-23). It is the engine's race, not the app's (60 reloads of a two-line
+    page lose ~5; over http none), so the test puts its own storage back and reloads once more, and says so if it never holds."""
+    snap = pg.evaluate("JSON.stringify(Object.fromEntries(Object.keys(localStorage).map(k => [k, localStorage.getItem(k)])))")
+    for _ in range(tries):
+        pg.reload()
+        # a lost store is not "no sovP": the reloaded page seeds its own example one, so look for every key we had
+        if pg.evaluate("(snap) => Object.keys(JSON.parse(snap)).every(k => localStorage.getItem(k) !== null)", snap):
+            return True
+        pg.evaluate("(snap) => { const o = JSON.parse(snap); localStorage.clear(); Object.keys(o).forEach(k => localStorage.setItem(k, o[k])); }", snap)
+    return False
 def _ui_rules_js() -> str:
     """The owner's UI rules, measured in a real browser (ui-rules-lint): the one copy lives in website/tests/ui_audit.py,
     loaded by path (that file imports nothing from here)."""
@@ -72,14 +85,15 @@ def main():
         pg.evaluate("gmQuickSetup()")
         for v in ["37", "220000", "120000", "4500000"]:
             pg.fill("#gmQin", v); pg.click("#gmQok"); pg.wait_for_timeout(120)
-        seed(pg); pg.reload(); pg.wait_for_timeout(1000)
+        seed(pg); chk("the reloaded page keeps what the person stored", reload_keeping_storage(pg)); pg.wait_for_timeout(1000)
         # life map fields a user would type, one in rupees by mistake (the runway bug)
         # spending is asked once, in My numbers (2026-11-19); the plan's own fields stay where they are
         pg.evaluate("gmNumSet('exp','80000'); gmLifeSet('ef','400000'); gmLifeSet('fSip','30000'); gmLifeSet('fEF','10000')")
         # the number bar is the "Show everything" layout (start simple folds it away; test98)
         # wait for the tile itself, not a fixed pause: a slow CI runner once read it before the re-render (2026-11-19)
         pg.evaluate("gmSimple(false)")
-        try: pg.wait_for_function("[...document.querySelectorAll('#gmVitals > div')].some(d=>/\\d\\.\\dm/.test(d.innerText))", timeout=8000)
+        # wait for the tile to show THIS buffer, not just any number: the example's figure once satisfied "any" (2026-11-23)
+        try: pg.wait_for_function("(function(r){var w=r&&r.gapM>0?r.months.toFixed(1)+'m':'';return !!w&&[...document.querySelectorAll('#gmVitals > div')].some(function(d){return d.innerText.indexOf(w)>=0;});})(window.gmRunway&&gmRunway())", timeout=8000)
         except Exception: pass
         v = pg.evaluate("[...document.querySelectorAll('#gmVitals > div')].map(d=>d.innerText.replace(/\\n/g,' '))")
         pg.evaluate("gmSimple(true)")

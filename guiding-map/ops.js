@@ -2245,6 +2245,7 @@
     rentDay: { min: 1, max: 28, int: true }, maintDay: { min: 1, max: 28, int: true }, months: { min: 1, max: 60, int: true },
     share: { min: 1, max: 99, int: true }, deposit: { min: 0, max: 100000000 }, maint: { min: 0, max: 10000000 }, start: { date: true }, taxDue: { date: true }
   };
+  window.gmPropCalc = function (p) { return propCalc(p); };
   window.gmPropSet = function (i, k, v) { if (PROP_RULES[k]) v = window.gmFieldGuard(PROP_RULES[k], v).v; var rb = window.gmRippleSnap ? gmRippleSnap() : null; var p = props(); p[i][k] = v; S_("gm_props", p); bustDerived(); renderAll(); if (window.gmRippleSay) gmRippleSay(rb, "Saved."); };
 
   function propCalc(p) {
@@ -2253,13 +2254,25 @@
       loan = num(p.loan) * 100000,
       rate = num(p.rate) / 100,
       emi = num(p.emi),
+      emiFrom = "",
       out = num(p.out),                      // \u20b9/yr: society + property tax + repairs
       vacM = Math.min(12, Math.max(0, num(p.vac)));  // clamp: 13 made annual rent negative
+    // The home loan is entered once, under Loans (owner 2026-11-23): a let-out flat with no EMI of its own takes it when the loan
+    // is this flat's (it has a loan figure) or the flat is the only let-out home with a value. Same loan logic as loansLeft().
+    if (!emi && (p.use || "letout") === "letout") {
+      var owned = ownedProps().filter(function (q) { return q && (q.use || "letout") === "letout" && num(q.val); });
+      if (num(p.loan) > 0 || (owned.length === 1 && num(p.val) > 0)) {
+        var le = 0, lr = 0;
+        (window.P && P.loans || []).forEach(function (x) { if (x && /home/i.test(String(x.type || ""))) { le += Math.max(0, num(x.emi)); lr += Math.max(0, num(x.remaining)); } });
+        if (le > 0) { emi = le; emiFrom = "loans"; if (!loan && lr > 0) loan = lr; }
+      }
+    }
     var grossAnnual = rent * 12;
     var effAnnual = rent * (12 - vacM);
     var netAnnual = effAnnual - out;
     var interest = loan * rate;              // approx first-year interest
     var r = {
+      emiFrom: emiFrom,
       grossYield: val ? grossAnnual / val * 100 : 0,
       netYield: val ? netAnnual / val * 100 : 0,
       priceToRent: grossAnnual ? val / grossAnnual : 0,
@@ -2289,7 +2302,7 @@
       "Net yield under 2.5% means the flat is a leveraged bet on price appreciation, not an income asset. That is a legitimate position \u2014 but hold it deliberately, not by accident."]);
     else if (r.netYield >= 3.5) out.push(["Yield is healthy for India", "var(--green)",
       "Indian residential net yields cluster around 2\u20133%. Above 3.5% is genuinely good."]);
-    if (r.dscr && r.dscr < 1) out.push(["Rent does not cover the EMI", "var(--amber)",
+    if (r.dscr && r.dscr < 1 && (r.emiFrom || num(p.emi))) out.push(["Rent does not cover the EMI", "var(--amber)",
       "Every month you are topping up from salary. That is fine while the shortfall is small and the interest is tax-shielded \u2014 dangerous the moment income stops."]);
     if (r.beOcc > 100) out.push(["Break-even occupancy above 100%", "var(--red)",
       "Even fully let, the property does not pay for itself. Raise the rent to market, cut the outgo, or plan an exit."]);
@@ -2573,11 +2586,12 @@
           + ' value="' + esc(keep0(p[f[0]])) + '" placeholder="e.g. ' + f[2] + '" onchange="gmPropSet(' + i + ',\'' + f[0] + '\',this.value)">';
       });
       if (num(p.val) && num(p.rent)) {
+        var noEmi = !num(p.emi) && !r.emiFrom, owes = noEmi && (num(p.loan) > 0 || (window.P && P.loans || []).some(function (x) { return x && /home/i.test(String(x.type || "")) && num(x.remaining) > 0; }));
         var rows = [
           ["Gross rental yield", r.grossYield.toFixed(2) + "%", "Annual rent \u00f7 market value. India typically 2\u20133%."],
           ["Net rental yield", r.netYield.toFixed(2) + "%", "After outgo and realistic vacancy. This is the number that matters."],
           ["Price-to-rent", r.priceToRent.toFixed(0) + " yrs", "Years of gross rent to equal the price. Above 30 favours renting over owning."],
-          ["Rent-to-EMI cover", r.dscr.toFixed(2) + "\u00d7", "Also called DSCR. Above 1.0 the tenant covers the EMI; below 1.0 you top it up from salary every month."],
+          ["Rent-to-EMI cover", owes ? "EMI not entered" : noEmi ? "No loan" : r.dscr.toFixed(2) + "\u00d7", owes ? "A loan is entered but not its EMI: add the EMI under Loans to see if the rent covers it." : noEmi ? "No loan on this flat: the rent is all yours." : "Also called DSCR. Above 1.0 the tenant covers the EMI; below 1.0 you top it up from salary every month." + (r.emiFrom === "loans" ? " EMI taken from your Loans." : "")],
           ["Debt-to-rental-income", r.debtToRent.toFixed(1) + " yrs", "Outstanding loan \u00f7 annual rent."],
           ["Loan-to-value", r.ltv.toFixed(0) + "%", "Leverage remaining on the asset."],
           ["Break-even occupancy", r.beOcc.toFixed(0) + "%", "Share of the year that must be let just to stand still."],
@@ -2592,7 +2606,7 @@
           "Gross rental yield": r.grossYield >= 4 ? "g" : r.grossYield >= 2.5 ? "a" : "r",
           "Net rental yield": r.netYield >= 3 ? "g" : r.netYield >= 2 ? "a" : "r",
           "Price-to-rent": r.priceToRent <= 20 ? "g" : r.priceToRent <= 30 ? "a" : "r",
-          "Rent-to-EMI cover": r.dscr >= 1.2 ? "g" : r.dscr >= 1 ? "a" : "r",
+          "Rent-to-EMI cover": owes ? "a" : noEmi ? "g" : r.dscr >= 1.2 ? "g" : r.dscr >= 1 ? "a" : "r",
           "Debt-to-rental-income": r.debtToRent <= 8 ? "g" : r.debtToRent <= 15 ? "a" : "r",
           "Loan-to-value": r.ltv <= 50 ? "g" : r.ltv <= 75 ? "a" : "r",
           "Break-even occupancy": r.beOcc <= 70 ? "g" : r.beOcc <= 90 ? "a" : "r",
