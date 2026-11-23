@@ -5457,6 +5457,45 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     bustDerived(); renderAll();
     if (typeof gmToast === "function") gmToast(ans === "in" ? "Removed. The rent counts once, as money coming in." : "Kept as a bill you pay.");
   };
+  /* Us (owner 2026-11-23): closeness and intimacy are part of physical and mental health, so the Life OS treats them as wellbeing,
+     plainly and privately, never hidden and never explicit. Off until the person turns it on; then one weekly check-in of three taps
+     (close, calm, time together), a pair of stars whose light follows how close the two of you felt, one kind suggestion when
+     closeness dips two weeks running, and plain health basics. It stays on the person's own devices (their sync and encrypted backups), behind the app's lock, kept 104 weeks. */
+  var US_K = "gm_us", US_CAP = 104;
+  function usWeek(d) { d = d || new Date(); var m = new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 6) % 7)); return m.getFullYear() + "-" + String(m.getMonth() + 1).padStart(2, "0") + "-" + String(m.getDate()).padStart(2, "0"); }
+  window.gmUsOn = function (on) { var u = G(US_K, {}) || {}; u.on = !!on; S_(US_K, u); renderAll(); };
+  window.gmUsSet = function (k, v) {
+    var u = G(US_K, {}) || {}, w = usWeek(); u.weeks = u.weeks && typeof u.weeks === "object" ? u.weeks : {};
+    var e = u.weeks[w] || {}; e[k] = Math.max(1, Math.min(5, +v || 0)); u.weeks[w] = e;
+    var ks = Object.keys(u.weeks).sort(); while (ks.length > US_CAP) delete u.weeks[ks.shift()];
+    S_(US_K, u); renderAll();
+  };
+  window.gmUsHTML = function () {
+    var u = G(US_K, {}) || {};
+    if (!u.on) return '<div class="road-col gm-us" style="margin-top:10px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">'
+      + '<div><b>Us</b> <span style="color:var(--muted);font-size:12.5px">· a private weekly check-in for the two of you. Off until you turn it on.</span></div>'
+      + '<button type="button" class="btn-sm" onclick="gmUsOn(true)">Turn on</button></div>';
+    var weeks = u.weeks && typeof u.weeks === "object" ? u.weeks : {}, w = usWeek(), cur = weeks[w] || {}, ks = Object.keys(weeks).sort();
+    var tap = function (k, label) {
+      return '<div style="margin-top:8px"><div style="font-size:12.5px;color:var(--muted)">' + label + '</div><div role="group" aria-label="' + label + '" style="display:flex;gap:6px;margin-top:4px">'
+        + [1, 2, 3, 4, 5].map(function (n) { var on = cur[k] === n; return '<button type="button" class="btn-sm" aria-pressed="' + on + '" style="min-width:40px;' + (on ? "background:var(--gold);color:#0d1f35" : "") + '" onclick="gmUsSet(\'' + k + '\',' + n + ')">' + n + '</button>'; }).join("") + '</div></div>';
+    };
+    var close = ks.slice(-6).map(function (k) { return weeks[k].close || 0; }).filter(Boolean), avg = close.length ? close.reduce(function (a, b) { return a + b; }, 0) / close.length : 3;
+    var dip = ks.length >= 2 && ks.slice(-2).every(function (k) { return (weeks[k].close || 5) <= 2; });
+    var glow = 0.25 + avg / 5 * 0.75, gap = 26 - avg * 3;     // closer weeks: brighter stars, nearer each other
+    var stars = '<svg width="96" height="64" viewBox="0 0 96 64" aria-hidden="true" style="flex-shrink:0"><defs><radialGradient id="gmUsS"><stop offset="0" stop-color="#fff8e1"/><stop offset=".35" stop-color="#f3d991" stop-opacity=".9"/><stop offset="1" stop-color="#f3d991" stop-opacity="0"/></radialGradient></defs>'
+      + '<rect width="96" height="64" rx="12" fill="#0d1a30"/><circle cx="20" cy="14" r=".8" fill="#fff" opacity=".6"/><circle cx="78" cy="50" r=".7" fill="#fff" opacity=".5"/><circle cx="70" cy="12" r=".6" fill="#fff" opacity=".5"/>'
+      + '<circle cx="' + (48 - gap) + '" cy="32" r="14" fill="url(#gmUsS)" opacity="' + glow.toFixed(2) + '"/><circle cx="' + (48 + gap) + '" cy="32" r="14" fill="url(#gmUsS)" opacity="' + glow.toFixed(2) + '"/>'
+      + '<circle cx="' + (48 - gap) + '" cy="32" r="2.6" fill="#fffbe9"/><circle cx="' + (48 + gap) + '" cy="32" r="2.6" fill="#fffbe9"/></svg>';
+    return '<div class="road-col gm-us" style="margin-top:10px"><div style="display:flex;gap:12px;align-items:center">' + stars
+      + '<div><div style="font-weight:800">Us · this week</div><div style="font-size:12.5px;color:var(--muted)">Two stars that draw closer and brighter as the weeks feel closer. Three taps, once a week. Kept only on your own devices, behind the lock.</div></div></div>'
+      + tap("close", "How close did we feel?") + tap("calm", "How calm was home?") + tap("time", "Time just for us")
+      + (dip ? '<div style="margin-top:10px;font-size:13px;border-inline-start:3px solid var(--gold);padding-inline-start:8px">Two quieter weeks. One small thing tends to help most: twenty minutes, phones away, asking about each other\'s day, and touch that asks for nothing. Small daily moments of turning towards each other matter more than grand gestures.</div>' : "")
+      + '<details style="margin-top:10px"><summary style="cursor:pointer;font-size:12.5px">Health basics</summary><div style="font-size:12.5px;line-height:1.55;margin-top:6px">'
+      + 'A healthy sex life is part of physical and mental health, and it changes with stress, sleep, illness, medicines and age; all of these are normal to talk about with a doctor. '
+      + 'Ask your doctor at the yearly check-up which sexual-health screenings suit your age. Talk openly with each other about wants and limits; consent is ongoing, for both of you.</div></details>'
+      + '<div style="margin-top:8px"><a href="#" class="gm-inl" onclick="gmUsOn(false);return false" style="font-size:12px">Turn Us off</a> <span style="font-size:11.5px;color:var(--muted)">(your check-ins stay on your own devices)</span></div></div>';
+  };
   /* Saving as tree rings (immersive-real, natures-design, owner 2026-11-23): a cross-section of a trunk, the way a forester reads
      a tree's good and lean years. One ring per month from the month-end check-ins (oldest at the heart); a ring's width is that
      month's saving rate, so a thick ring is a month that saved well. The outer ring is this month, edged in gold. With no history
@@ -5660,7 +5699,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
         + '<div class="road-i">Her own emergency access: a bank account she alone controls, plus emergency access to the password manager.</div>'
         + '<div class="road-i">Her own retirement instrument \u2014 PPF or NPS \u2014 running in her name, not merged into yours.</div>'
         + '<div class="road-i">She can run the annual review without you. If not, that is the highest-value gap in this entire system.</div>'
-        + '</div>';
+        + '</div>' + gmUsHTML();
     }
 
     /* Children */

@@ -134,6 +134,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- Us
 - Saving as tree rings
 - Net worth as gold bars
 - Real materials for the numbers
@@ -141,7 +142,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - Life OS, immersive and real
 - Supervised AI investigation console
 - Immersive and real
-- No single point of failure for the builders
 
 **Release 0.4.0 - 2026-11-14:**
 
