@@ -1223,7 +1223,8 @@ nav#oskNav button.on{color:#f4e7c1;background:rgba(201,168,76,.14);box-shadow:in
   if (typeof window === "undefined" || window.SXWater) return;
   var N = 48, DT = 1 / 60, C = 0.3, K = 0.008, DAMP = 0.985, MAXLEAN = 8;
   var VW = 150, VH = 170, IX0 = 35, IX1 = 115, FLOOR = 152, AIMY = 32, DEPTH1 = FLOOR - AIMY;
-  var PALETTE = { good: ["#5fd3c0", "#127a75", "#0a4a52"], watch: ["#9fd6c6", "#3e8f7a", "#5a5a2a"], low: ["#c9a98a", "#8a5a3c", "#5a3020"] };
+  var TEAL = [[128, 232, 214], [42, 170, 160], [22, 128, 134]];
+  var PALETTE = { good: TEAL, watch: TEAL.map(function (c) { return mix(c, [238, 190, 100], 0.15); }), low: TEAL.map(function (c) { return mix(c, [214, 138, 98], 0.3); }) };
 
   /* ---- physics (pure: no DOM, no animation frame; the tests drive it directly) ---- */
   function depth(f) { return Math.max(4, DEPTH1 * Math.max(0.04, Math.min(1, f || 0))); }
@@ -1279,15 +1280,14 @@ nav#oskNav button.on{color:#f4e7c1;background:rgba(201,168,76,.14);box-shadow:in
   function hex2rgb(h) { var n = parseInt(h.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255]; }
   function mix(a, b, t) { return [Math.round(a[0] + (b[0] - a[0]) * t), Math.round(a[1] + (b[1] - a[1]) * t), Math.round(a[2] + (b[2] - a[2]) * t)]; }
 
-  // What is behind the glass: pinstripes and a table edge. Drawn straight in the air, and shifted and stretched through the water.
-  function makeBackdrop(S, dark, lamp) {
+  // What the glass itself has behind the water: the faint vertical highlights of its back wall. They bend through the water.
+  function makeBackdrop(S, dark) {
     var cv = document.createElement("canvas"), c; cv.width = Math.ceil(VW * S); cv.height = Math.ceil(VH * S); c = cv.getContext("2d"); if (!c) return null;
     c.setTransform(S, 0, 0, S, 0, 0);
-    var ink = dark ? "255,255,255" : "20,40,60", x;
-    for (x = 30; x < 125; x += 7) { c.fillStyle = rgba(ink, x % 14 === 2 ? 0.2 : 0.12); c.fillRect(x, 0, 2.6, 125); }
-    c.fillStyle = rgba(ink, 0.22); c.fillRect(0, 125, VW, 1.4);
-    c.fillStyle = rgba(ink, 0.06); c.fillRect(0, 126.4, VW, VH);
-    if (lamp) { c.fillStyle = rgba(dark ? "255,220,160" : "255,200,120", dark ? 0.2 : 0.3); c.beginPath(); c.arc(100, 70, 9, 0, 7); c.fill(); }   // a warm lamp behind, seen only through the water
+    [[47, 7, 0.5], [97, 5, 0.38], [72, 3, 0.22]].forEach(function (b) {
+      var g = c.createLinearGradient(b[0] - b[1], 0, b[0] + b[1], 0); g.addColorStop(0, "rgba(255,255,255,0)"); g.addColorStop(0.5, "rgba(255,255,255," + b[2] + ")"); g.addColorStop(1, "rgba(255,255,255,0)");
+      c.fillStyle = g; c.fillRect(b[0] - b[1], 20, b[1] * 2, 132);
+    });
     return cv;
   }
 
@@ -1300,7 +1300,7 @@ nav#oskNav button.on{color:#f4e7c1;background:rgba(201,168,76,.14);box-shadow:in
     var c = v.ctx, S = v.S, s = v.s, d = s.depth, dark = v.dark, W = PALETTE[v.state] || PALETTE.low, i, k, p, x, y, g, pts = [];
     c.setTransform(S, 0, 0, S, 0, 0); c.clearRect(0, 0, VW, VH); c.lineJoin = "round"; c.lineCap = "round";
     var lx = (window.SXTouch && SXTouch.light ? SXTouch.light.x : 0) || 0;
-    var w0 = hex2rgb(W[0]), w1 = hex2rgb(W[1]), w2 = hex2rgb(W[2]);
+    var w0 = W[0], w1 = W[1], w2 = W[2];
     for (i = 0; i < s.n; i++) pts.push(surfaceY(v, i, t));
     var top = FLOOR - d;
 
@@ -1313,7 +1313,6 @@ nav#oskNav button.on{color:#f4e7c1;background:rgba(201,168,76,.14);box-shadow:in
     // inside the glass
     c.save(); c.beginPath(); innerPath(c); c.clip();
     c.fillStyle = dark ? "rgba(190,215,230,.07)" : "rgba(200,225,235,.12)"; c.fillRect(0, 0, VW, VH);
-    if (v.air) { c.globalAlpha = 0.22; c.drawImage(v.air, 0, 0, v.air.width, v.air.height, 0, 0, VW, VH); c.globalAlpha = 1; }
 
     // the water body
     c.save(); c.beginPath(); c.moveTo(IX0 - 1, pts[0].y);
@@ -1324,33 +1323,37 @@ nav#oskNav button.on{color:#f4e7c1;background:rgba(201,168,76,.14);box-shadow:in
     c.fillStyle = g; c.fillRect(IX0 - 2, top - 14, IX1 - IX0 + 4, d + 30);
     // refraction: the backdrop, magnified and rippled by the surface, seen through the water
     if (v.back) {
-      c.globalCompositeOperation = dark ? "screen" : "soft-light"; c.globalAlpha = dark ? 0.55 : 0.95;
+      c.globalCompositeOperation = "lighter"; c.globalAlpha = dark ? 0.7 : 0.8;
       var sw = v.back.width, sh = v.back.height, st = 1.5, ym, col, off, mag = 1.10, sl;
       for (y = top - 4; y < FLOOR; y += st) {
         ym = y - top; col = Math.max(0, Math.min(s.n - 1, Math.round((75 - IX0) / (IX1 - IX0) * (s.n - 1))));
         sl = (s.h[Math.min(s.n - 1, col + 1)] - s.h[Math.max(0, col - 1)]) * 0.5;
         off = Math.sin(y * 0.11 + t * 1.1) * 0.55 + Math.sin(y * 0.05 - t * 0.6) * 1.0 + sl * 3 - 3.2;
-        c.drawImage(v.back, 0, y * S, sw, st * S, 75 - 75 * mag + off, y, VW * mag, st + 0.3);
+        c.drawImage(v.back, 0, y * S, sw, st * S, 75 - 75 * mag + off, y, VW * mag, st);
       }
       c.globalAlpha = 1; c.globalCompositeOperation = "source-over";
     }
     // water absorbs toward the walls and the floor, and glows just under the surface
-    g = c.createLinearGradient(IX0, 0, IX1, 0); g.addColorStop(0, "rgba(0,25,35,.30)"); g.addColorStop(0.16, "rgba(0,25,35,0)"); g.addColorStop(0.84, "rgba(0,25,35,0)"); g.addColorStop(1, "rgba(0,25,35,.26)");
+    g = c.createLinearGradient(IX0, 0, IX1, 0); g.addColorStop(0, "rgba(0,40,50,.16)"); g.addColorStop(0.16, "rgba(0,25,35,0)"); g.addColorStop(0.84, "rgba(0,25,35,0)"); g.addColorStop(1, "rgba(0,40,50,.14)");
     c.fillStyle = g; c.fillRect(IX0, top - 14, IX1 - IX0, d + 30);
     g = c.createLinearGradient(0, top, 0, top + 20); g.addColorStop(0, "rgba(255,255,255,.30)"); g.addColorStop(1, "rgba(255,255,255,0)");
     c.fillStyle = g; c.fillRect(IX0, top - 6, IX1 - IX0, 26);
+    c.beginPath(); for (i = 0; i < s.n; i++) { if (i) c.lineTo(pts[i].x, pts[i].y + 4); else c.moveTo(pts[i].x, pts[i].y + 4); }
+    c.strokeStyle = "rgba(255,255,255,.2)"; c.lineWidth = 4; c.stroke();   // the sheen: a brighter band just under the surface
+    c.beginPath(); c.moveTo(IX0, AIMY + 1.6 + Math.sin(t) * 0.4); c.lineTo(IX1, AIMY + 1.6 + Math.sin(t + 2) * 0.4); c.strokeStyle = "rgba(201,168,76,.75)"; c.lineWidth = 1.5; c.setLineDash([4, 3]); c.stroke(); c.setLineDash([]);
     // caustics: bright, slowly crawling networks of light on the floor, bent by the waves
     if (d > 12) {
-      var cb = Math.min(34, d - 3), cw = 50, ch = 22, cell = 80 / cw, id, px, val, aa, hw, fy, cx, cy, q;
+      var cb = Math.min(42, d - 3), cw = 110, ch = 52, cell = 80 / cw, id, px, v1, v2, aa, hw, fy, cx, cy, q;
       if (!v.cau) { v.cau = document.createElement("canvas"); v.cau.width = cw; v.cau.height = ch; v.cauCtx = v.cau.getContext("2d"); v.cauData = v.cauCtx.createImageData(cw, ch); }
       id = v.cauData; px = id.data;
       for (cy = 0; cy < ch; cy++) {
         fy = cy / (ch - 1); y = fy * cb;
         for (cx = 0; cx < cw; cx++) {
-          x = cx * cell; hw = (s.h[Math.round(cx / (cw - 1) * (s.n - 1))] - d) * 0.9;
-          val = (Math.sin(x * 0.31 + t * 0.55 + hw + Math.sin(y * 0.37 - t * 0.4) * 1.3) + Math.sin(y * 0.29 + x * 0.17 - t * 0.5) + Math.sin(x * 0.13 - y * 0.23 + t * 0.35 + hw * 0.5)) / 3;
-          aa = Math.max(0, (val - 0.3) / 0.7); q = (cy * cw + cx) * 4;
-          px[q] = 235; px[q + 1] = 255; px[q + 2] = 248; px[q + 3] = Math.round(255 * Math.pow(aa, 1.6) * 0.62 * (0.2 + 0.8 * fy));
+          x = cx * cell; hw = (s.h[Math.round(cx / (cw - 1) * (s.n - 1))] - d) * 0.8;
+          v1 = Math.sin(x * 0.27 + t * 0.32 + hw + Math.sin(y * 0.21 - t * 0.25) * 1.4) + Math.sin(y * 0.33 + x * 0.11 - t * 0.3);
+          v2 = Math.sin(x * 0.19 - y * 0.25 + t * 0.27 - hw * 0.6) + Math.sin(x * 0.14 + y * 0.2 + t * 0.2 + Math.sin(x * 0.1 + t * 0.15) * 1.2);
+          aa = Math.max(Math.pow(Math.max(0, 1 - Math.abs(v1) / 0.3), 2), Math.pow(Math.max(0, 1 - Math.abs(v2) / 0.3), 2)); q = (cy * cw + cx) * 4;
+          px[q] = 240; px[q + 1] = 255; px[q + 2] = 250; px[q + 3] = Math.round(255 * aa * 0.55 * (0.3 + 0.7 * fy));
         }
       }
       v.cauCtx.putImageData(id, 0, 0);
@@ -1372,6 +1375,8 @@ nav#oskNav button.on{color:#f4e7c1;background:rgba(201,168,76,.14);box-shadow:in
     c.closePath(); g = c.createLinearGradient(0, top - 4, 0, top + 1); g.addColorStop(0, rgba(mix(w0, [255, 255, 255], 0.55).join(","), 0.5)); g.addColorStop(1, rgba(mix(w0, [255, 255, 255], 0.3).join(","), 0.5)); c.fillStyle = g; c.fill();
     c.beginPath(); for (i = 0; i < s.n; i++) { if (i) c.lineTo(pts[i].x, pts[i].y + 1.3); else c.moveTo(pts[i].x, pts[i].y + 1.3); }
     c.strokeStyle = "rgba(0,40,50,.28)"; c.lineWidth = 1.6; c.stroke();
+    c.beginPath(); for (i = 0; i < s.n; i++) { if (i) c.lineTo(pts[i].x, pts[i].y - 5.6); else c.moveTo(pts[i].x, pts[i].y - 5.6); }
+    c.strokeStyle = dark ? "rgba(0,0,0,.2)" : "rgba(0,50,60,.08)"; c.lineWidth = 2.6; c.stroke();   // a darker band just above the surface
     g = c.createLinearGradient(IX0, 0, IX1, 0); g.addColorStop(0, "rgba(255,255,255,1)"); g.addColorStop(0.2, "rgba(255,255,255,.78)"); g.addColorStop(0.8, "rgba(255,255,255,.78)"); g.addColorStop(1, "rgba(255,255,255,1)");
     c.beginPath(); for (i = 0; i < s.n; i++) { if (i) c.lineTo(pts[i].x, pts[i].y); else c.moveTo(pts[i].x, pts[i].y); }
     c.strokeStyle = g; c.lineWidth = 1.5; c.stroke();
@@ -1424,7 +1429,7 @@ nav#oskNav button.on{color:#f4e7c1;background:rgba(201,168,76,.14);box-shadow:in
     try {
       var cs = getComputedStyle(v.el), m = /rgba?\((\d+)[ ,]+(\d+)[ ,]+(\d+)/.exec(cs.color) || [0, 20, 20, 20], lum = (+m[1] * 299 + +m[2] * 587 + +m[3] * 114) / 1000;
       var dk = lum > 140; v.ink = cs.color || "#222"; v.font = cs.fontFamily || "sans-serif";
-      if (dk !== v.dark || !v.back) { v.dark = dk; v.back = makeBackdrop(v.S, dk, true); v.air = makeBackdrop(v.S, dk, false); }
+      if (dk !== v.dark || !v.back) { v.dark = dk; v.back = makeBackdrop(v.S, dk); }
     } catch (e) { v.ink = v.ink || "#222"; v.font = v.font || "sans-serif"; }
   }
   function visible(v) { return !vis || vis.get(v.el) !== false; }
@@ -1454,12 +1459,12 @@ nav#oskNav button.on{color:#f4e7c1;background:rgba(201,168,76,.14);box-shadow:in
     var cv, ctx; try { cv = document.createElement("canvas"); ctx = cv.getContext && cv.getContext("2d"); } catch (e) { ctx = null; }
     if (!ctx) return null;   // no 2D canvas: the SVG stays
     var S = Math.min(2, window.devicePixelRatio || 1), s = make(depth(f));
-    cv.width = Math.ceil(VW * S); cv.height = Math.ceil(VH * S); cv.setAttribute("aria-hidden", "true");
+    cv.width = Math.ceil(VW * S); cv.height = Math.ceil(VH * S); 
     cv.style.cssText = "position:absolute;left:0;top:0;width:" + VW + "px;height:" + VH + "px;touch-action:pan-y;cursor:pointer";
     var v = { el: el, ctx: ctx, S: S, s: s, state: state || "low", aim: String(aim || "").replace(/[<>&"]/g, ""), bub: [], clock: 0, nextBreath: 1.5, sinceDraw: 0, n: 0, tiltSeen: 0, dark: null, back: null, ink: "#222", font: "sans-serif" };
     for (var k = 0; k < 6; k++) v.bub.push({ x: IX0 + 8 + Math.random() * (IX1 - IX0 - 16), y: FLOOR - Math.random() * s.depth, r: 0.8 + Math.random() * 1.1, sp: 7 + Math.random() * 6, ph: Math.random() * 6 });
     if (label && !el.getAttribute("aria-label")) el.setAttribute("aria-label", label);
-    el.setAttribute("role", "img"); el.setAttribute("data-sxw", "1");
+    var words = el.getAttribute("aria-label") || ""; cv.setAttribute("role", "img"); cv.setAttribute("aria-label", words); el.removeAttribute("role"); el.setAttribute("data-sxw", "1");
     var svg = el.querySelector("svg"); if (svg) svg.style.display = "none";
     el.appendChild(cv); readTheme(v); render(v, 0);
     var col = function (e) { var r = cv.getBoundingClientRect(); return Math.max(0, Math.min(N - 1, ((e.clientX - r.left) / (r.width || VW) * VW - IX0) / (IX1 - IX0) * (N - 1))); };
