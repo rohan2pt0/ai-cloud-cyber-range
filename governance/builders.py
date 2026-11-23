@@ -24,7 +24,7 @@ MAX_SAMPLES = 60
 FIX = {"gocode": "turn on Go Extra Usage, or wait for the monthly reset",
        "openrouter": "buy OpenRouter credit",
        "gemini": "check the Google AI Studio key or its free quota"}
-NO_KEY = ("placeholder", "401", "no key")
+NO_KEY = ("placeholder", "401", "no key", "api key not valid", "api_key_invalid", "invalid api key", "no auth credentials")
 
 
 def default_state() -> pathlib.Path:

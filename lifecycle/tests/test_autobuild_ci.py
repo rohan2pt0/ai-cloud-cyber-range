@@ -408,6 +408,9 @@ def test_gemini_is_the_third_builder_account_and_its_quota_is_read_with_a_real_s
     state["gem"] = lambda b: '{"error":{"code":503,"message":"high demand"}}' if b["model"] == ci.GEMINI_MODELS[0] else '{"choices":[{"message":{"content":"OK"}}]}'
     b = ci.allowance({}, http=fake)
     assert b["gemini"]["ok"] and [x["model"] for x in seen] == ci.GEMINI_MODELS[:2]
+    seen.clear()                 # the free quota is per model: a 429 on the first model hands over to the next, not "out"
+    state["gem"] = lambda b: '{"error":{"code":429,"status":"RESOURCE_EXHAUSTED"}}' if b["model"] == ci.GEMINI_MODELS[0] else '{"choices":[{}]}'
+    assert ci.allowance({}, http=fake)["gemini"]["ok"] and len(seen) == 2
     state["gem"] = '{"error":{"code":503,"message":"high demand"}}'
     c = ci.allowance({}, http=fake)
     assert not c["gemini"]["ok"] and c["gocode"]["ok"]

@@ -328,17 +328,16 @@ def _gemini_allowance(env: dict, http) -> dict:
     """Ask Gemini with a REAL-sized request (synthetic filler, never repository content): a free-tier quota is per request size.
     Each model is tried in turn; a 503 'high demand' moves to the next model and is not out of allowance."""
     filler = "Synthetic filler for a size check, not real content. " * 80
-    last = "no answer"
+    last, quota = "no answer", False
     for m in gemini_chain(env):
         ans = http(GEMINI_BASE + "/chat/completions", env,
                    {"model": m, "max_tokens": 8, "messages": [{"role": "user", "content": filler + "\nReply OK"}]},
                    {"Authorization": "Bearer " + env.get("GEMINI_API_KEY", "placeholder")})
-        if out_of_allowance(ans):
-            return {"ok": False, "why": (re.search(r'"message":\s*"([^"]{0,160})', ans) or [None, ans[:160]])[1]}
         if '"choices"' in ans:
             return {"ok": True, "why": f"{m} answers"}
         last = (re.search(r'"message":\s*"([^"]{0,160})', ans) or [None, ans[:160]])[1]
-    return {"ok": False, "why": "no Gemini model answered: " + last}
+        quota = quota or out_of_allowance(ans)     # the free quota is per model: one model's 429 is not the provider's
+    return {"ok": False, "why": ("every Gemini model is over its free quota: " if quota else "no Gemini model answered: ") + last}
 
 
 def agent(env: dict | None = None, run=subprocess.run) -> int:

@@ -87,3 +87,12 @@ def test_last_line_missing_or_damaged(tmp_path):
     assert builders.last_line(tmp_path / "none.json") is None
     (tmp_path / "bad.json").write_text("{")
     assert builders.last_line(tmp_path / "bad.json") is None
+
+
+def test_a_gemini_key_that_is_missing_here_reads_as_no_key_not_red(tmp_path):
+    """On GitHub without the secret Gemini answers 'API key not valid' (400, not 401): that is no key here, never a red line."""
+    st = tmp_path / "b.json"
+    ans = {"gemini": {"ok": False, "why": "no Gemini model answered: API key not valid. Please pass a valid API key."}}
+    builders.check(ans, st, 1_000_000.0)
+    line = builders.check(ans, st, 1_000_000.0 + 3 * 86400)
+    assert "not checked here (no key)" in line and not line.startswith("RED")
