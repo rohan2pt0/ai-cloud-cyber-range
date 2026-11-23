@@ -6626,12 +6626,12 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
           + ' value="' + esc(keep0(p[f[0]])) + '" placeholder="e.g. ' + f[2] + '" onchange="gmPropSet(' + i + ',\'' + f[0] + '\',this.value)">';
       });
       if (num(p.val) && num(p.rent)) {
-        var noEmi = !num(p.emi) && !r.emiFrom;
+        var noEmi = !num(p.emi) && !r.emiFrom, owes = noEmi && (num(p.loan) > 0 || (window.P && P.loans || []).some(function (x) { return x && /home/i.test(String(x.type || "")) && num(x.remaining) > 0; }));
         var rows = [
           ["Gross rental yield", r.grossYield.toFixed(2) + "%", "Annual rent \u00f7 market value. India typically 2\u20133%."],
           ["Net rental yield", r.netYield.toFixed(2) + "%", "After outgo and realistic vacancy. This is the number that matters."],
           ["Price-to-rent", r.priceToRent.toFixed(0) + " yrs", "Years of gross rent to equal the price. Above 30 favours renting over owning."],
-          ["Rent-to-EMI cover", noEmi ? "No loan" : r.dscr.toFixed(2) + "\u00d7", noEmi ? "No loan on this flat: the rent is all yours." : "Also called DSCR. Above 1.0 the tenant covers the EMI; below 1.0 you top it up from salary every month." + (r.emiFrom === "loans" ? " EMI taken from your Loans." : "")],
+          ["Rent-to-EMI cover", owes ? "EMI not entered" : noEmi ? "No loan" : r.dscr.toFixed(2) + "\u00d7", owes ? "A loan is entered but not its EMI: add the EMI under Loans to see if the rent covers it." : noEmi ? "No loan on this flat: the rent is all yours." : "Also called DSCR. Above 1.0 the tenant covers the EMI; below 1.0 you top it up from salary every month." + (r.emiFrom === "loans" ? " EMI taken from your Loans." : "")],
           ["Debt-to-rental-income", r.debtToRent.toFixed(1) + " yrs", "Outstanding loan \u00f7 annual rent."],
           ["Loan-to-value", r.ltv.toFixed(0) + "%", "Leverage remaining on the asset."],
           ["Break-even occupancy", r.beOcc.toFixed(0) + "%", "Share of the year that must be let just to stand still."],
@@ -6646,7 +6646,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
           "Gross rental yield": r.grossYield >= 4 ? "g" : r.grossYield >= 2.5 ? "a" : "r",
           "Net rental yield": r.netYield >= 3 ? "g" : r.netYield >= 2 ? "a" : "r",
           "Price-to-rent": r.priceToRent <= 20 ? "g" : r.priceToRent <= 30 ? "a" : "r",
-          "Rent-to-EMI cover": noEmi ? "g" : r.dscr >= 1.2 ? "g" : r.dscr >= 1 ? "a" : "r",
+          "Rent-to-EMI cover": owes ? "a" : noEmi ? "g" : r.dscr >= 1.2 ? "g" : r.dscr >= 1 ? "a" : "r",
           "Debt-to-rental-income": r.debtToRent <= 8 ? "g" : r.debtToRent <= 15 ? "a" : "r",
           "Loan-to-value": r.ltv <= 50 ? "g" : r.ltv <= 75 ? "a" : "r",
           "Break-even occupancy": r.beOcc <= 70 ? "g" : r.beOcc <= 90 ? "a" : "r",
