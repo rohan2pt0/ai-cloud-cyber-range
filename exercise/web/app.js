@@ -18,6 +18,7 @@ const VIEWS = [
   ["Situational awareness", [["targets", "Target checks status", "all"], ["awareness", "Team awareness", "bw"], ["news", "News injects", "all"]]],
   ["Tasks", [["missions", "Mission board", "bw"]]],
   ["Learning", [["frameworks", "Framework coverage", "bw"], ["tracks", "Learning paths", "bw"], ["progress", "Players and badges", "bw"]]],
+  ["AI investigation", [["investigation", "Supervised investigation", "w"]]],
   ["Operations", [["creds", "Staff password changes", "bw"], ["restore", "Restore from backup", "b"], ["attack", "Report an attack", "rw"], ["attacks", "Attack reports", "rw"]]],
 ];
 
@@ -248,6 +249,62 @@ const VIEW = {
       el("p", {}, `What this exercise threw at the team, what the team detected and which defences it applied, mapped to MITRE ATT&CK ${c.versions.attack}, D3FEND and ATLAS ${c.versions.atlas}. Each identifier opens MITRE's own page: read it after every exercise.`),
       el("p", {}, `${c.counts.met} met · ${c.counts.detected} detected · ${c.counts.applied} defences applied`),
       ["attack", "d3fend", "atlas"].map(section));
+  },
+  async investigation() {
+    // A supervised AI investigation, drawn as a mission-control console (owner 2026-11-23: real, visual, immersive).
+    const d = await api("/api/investigation");
+    const NS = "http://www.w3.org/2000/svg";
+    const sv = (tag, attrs, ...kids) => { const e = document.createElementNS(NS, tag); for (const [k, v] of Object.entries(attrs || {})) e.setAttribute(k, v); for (const k of kids) e.append(k instanceof Node ? k : document.createTextNode(String(k))); return e; };
+    const node = (x, y, w, h, title, sub, cls) => sv("g", { class: "ix-node " + cls },
+      sv("rect", { x, y, width: w, height: h, rx: 10 }), sv("text", { x: x + w / 2, y: y + 22, "text-anchor": "middle", class: "ix-t" }, title),
+      sv("text", { x: x + w / 2, y: y + 40, "text-anchor": "middle", class: "ix-s" }, sub));
+    const m = d.map;
+    const map = sv("svg", { viewBox: "0 0 760 300", role: "img", class: "ix-map",
+      "aria-label": `${m.analyst} directs ${m.agent}; ${m.gate} lets it reach ${m.target} only; ${m.blocked} was refused; both sides log to ${m.logs}` },
+      sv("path", { d: "M170 70 H240", class: "ix-link" }), sv("path", { d: "M420 70 H470", class: "ix-link ix-live" }), sv("path", { d: "M590 70 H610", class: "ix-link ix-live" }),
+      sv("path", { d: "M530 100 V175 H560", class: "ix-link ix-deny" }),
+      sv("path", { d: "M330 105 V240 H420", class: "ix-link ix-log" }), sv("path", { d: "M725 105 V240 H560", class: "ix-link ix-log" }),
+      node(10, 40, 160, 60, "Analyst", m.analyst, "ix-person"), node(240, 30, 180, 75, "Agent machine", "sandboxed · non-admin", "ix-agent"),
+      node(470, 40, 120, 60, "Gate", "allowlist + firewall", "ix-gate"), node(610, 40, 145, 65, "Target", m.target, "ix-target"),
+      node(560, 150, 130, 50, "Refused", m.blocked, "ix-blocked"), node(420, 215, 140, 50, "Evidence", "logs the agent can't edit", "ix-logs"),
+      sv("text", { x: 536, y: 168, class: "ix-x" }, "✕"),
+      sv("circle", { r: 5, class: "ix-packet" }, sv("animateMotion", { dur: "2.4s", repeatCount: "indefinite", path: "M420 70 H610" })));
+    const light = (ok) => el("span", { class: "dot " + (ok ? "ok" : "no"), "aria-hidden": "true" });
+    const sc = d.scope, kinds = { ok: "", finding: "ix-finding", blocked: "ix-blocked-row", pause: "ix-pause" };
+    const phases = [...new Set(d.requests.map((r) => r.phase))];
+    const rc = d.reconcile;
+    const big = (n, label, cls) => el("div", { class: "ix-big " + (cls || "") }, el("b", {}, String(n)), el("span", {}, label));
+    return card("Supervised AI investigation",
+      el("div", { class: "ix-hud" },
+        el("div", {}, el("span", { class: "ix-label" }, "Window (UTC)"), el("b", {}, `${sc.window.start} – ${sc.window.end}`)),
+        el("div", {}, el("span", { class: "ix-label" }, "Target"), el("b", {}, sc.target)),
+        el("div", {}, el("span", { class: "ix-label" }, "Status"), el("b", { class: "bad" }, "Stopped · 1 high finding")),
+        el("div", {}, el("span", { class: "ix-label" }, "Limits"), el("b", {}, `${d.limits.rate_per_s}/s · ≤${d.limits.attempts_per_phase} per phase · ≤${d.limits.minutes_per_phase} min · no redirects`))),
+      el("div", { class: "ix-mapwrap" }, map),
+      el("p", { class: "muted" }, sc.question),
+      el("div", { class: "ix-grid" },
+        el("section", { class: "card" }, el("h2", {}, "Scope, signed before the run"),
+          el("p", {}, el("b", {}, "Identity: "), sc.identity),
+          el("p", {}, el("b", {}, "Allowed: "), sc.permitted.join(" · ")),
+          el("p", {}, el("b", {}, "Never: "), sc.excluded.join(" · ")),
+          el("p", {}, el("b", {}, "Stop if: "), sc.stop_if),
+          el("p", { class: "muted" }, `Authorised by ${sc.authorised_by}. Data: ${sc.data}.`)),
+        el("section", { class: "card" }, el("h2", {}, `Control stack · ${d.controls.filter((c) => c.state === "pass").length} of ${d.controls.length} holding`),
+          d.controls.map((c) => el("div", { class: "ix-ctl" }, light(c.state === "pass"), el("span", { class: "ix-layer" }, c.layer), el("span", {}, c.name, el("small", { class: "muted" }, " — " + c.proof)))))),
+      el("section", { class: "card" }, el("h2", {}, `Preflight · ${d.preflight.filter((p) => p.ok).length} of ${d.preflight.length} passed`),
+        el("div", { class: "ix-pre" }, d.preflight.map((p) => el("div", { class: "ix-prei " + (p.ok ? "ok" : "no") }, light(p.ok), el("span", {}, p.check), el("small", { class: "muted" }, `${p.at} · expected ${p.expect}, got ${p.got}`))))),
+      el("section", { class: "card" }, el("h2", {}, "Run, request by request"),
+        el("div", { class: "ix-phases" }, phases.map((ph, i) => el("span", { class: "ix-phase" }, `${i + 1}. ${ph}`))),
+        table(["UTC", "Phase", "Request", "Status", "What it showed"], d.requests.map((r) =>
+          el("tr", { class: kinds[r.kind] || "" }, el("td", {}, r.at), el("td", {}, r.phase), el("td", { class: "ix-path" }, r.path), el("td", {}, String(r.status)), el("td", {}, r.marker))))),
+      el("div", { class: "ix-grid" },
+        el("section", { class: "card ix-findcard" }, el("h2", {}, "Finding"), el("p", {}, el("span", { class: "pill bad" }, d.finding.severity), " ", d.finding.title),
+          el("p", {}, el("b", {}, "Evidence: "), d.finding.evidence), el("p", {}, el("b", {}, "MITRE: "), d.finding.mitre.join(", ")), el("p", {}, el("b", {}, "Fix: "), d.finding.fix)),
+        el("section", { class: "card" }, el("h2", {}, "Reconciled against the target's own log"),
+          el("div", { class: "ix-bigs" }, big(rc.agent_requests, "agent requests"), big(rc.target_log_matches, "found in target log", "good"), big(rc.gaps, "gaps", rc.gaps ? "bad" : "good"), big(rc.blocked_never_reached_target, "blocked, never reached it", "warn")))),
+      el("div", { class: "ix-grid" },
+        el("section", { class: "card" }, el("h2", {}, "Timeline"), el("ol", { class: "ix-events" }, d.events.map((e) => el("li", { class: "ix-ev-" + e.kind }, el("b", {}, e.at), " ", e.what)))),
+        el("section", { class: "card" }, el("h2", {}, "End of run"), d.end.map((e) => el("div", { class: "ix-ctl" }, light(e.ok), el("span", {}, e.check))))));
   },
   async tracks() {
     const ts = await api("/api/tracks");

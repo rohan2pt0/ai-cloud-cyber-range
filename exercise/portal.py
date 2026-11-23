@@ -20,7 +20,7 @@ import time
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
-from . import engine, frameworks, progress
+from . import engine, frameworks, investigation, progress
 
 WEB = pathlib.Path(__file__).resolve().parent / "web"
 STATIC = {"/": ("app.html", "text/html; charset=utf-8"), "/app.js": ("app.js", "text/javascript; charset=utf-8"),
@@ -172,6 +172,9 @@ def make_handler(game: engine.Game):
                     return {"players": progress.players(game, team), "me": who.get("player")}
                 if path == "/api/tracks":
                     return progress.tracks(game, team)
+                if path == "/api/investigation":
+                    self._need(who, "white")
+                    return investigation.build(game, team)
                 if path == "/api/attacks":
                     self._need(who, "white")
                     return game.attacks(team)
