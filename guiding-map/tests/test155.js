@@ -35,6 +35,9 @@ setTimeout(() => {
   ok("gold bars: filled for what you have, outlined to the benchmark", (gb.match(/fill="url\(#sxg\w+f\)"/g) || []).length === 3 && (gb.match(/stroke-dasharray="3 3"/g) || []).length === 6 && /3 outlined to the benchmark/.test(gb), gb.slice(0, 160));
   ok("a big stack switches to ₹1 crore bars", /Each bar is ₹1 crore/.test(w.gmGoldBars(150000000, 0)));
   ok("nothing to draw, nothing shown", w.gmGoldBars(0, 0) === "");
+  const t0 = Date.now(), huge = w.gmGoldBars(9e8, 6.5e8);   // a ₹90 crore investor once froze the page (persona audit)
+  ok("a very large fortune steps the unit up, fits the pyramid and returns at once", /Each bar is ₹10 crore/.test(huge) && Date.now() - t0 < 200 && (huge.match(/<path d="M[^"]*v16/g) || []).length <= 36, huge.slice(0, 120));
+  ok("even an absurd value cannot hang the page", /Each bar is ₹100 crore/.test(w.gmGoldBars(1e13, 0)));
   // saving as tree rings: one ring a month from the check-ins, the outer gold ring is this month; a young tree says when it grows
   const tr = w.gmTreeRings();
   ok("a young tree before any check-in history", /young tree/.test(tr) && /saved this month/.test(tr), tr.slice(0, 120));

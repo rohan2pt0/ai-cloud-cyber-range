@@ -5386,9 +5386,12 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
      reflection below and bevelled edges. */
   window.gmGoldBars = function (nw, target) {
     nw = Math.max(0, nw || 0); target = Math.max(0, target || 0);
-    var unit = Math.max(nw, target) / 1e6 > 36 ? 1e7 : 1e6, have = Math.round(nw / unit), want = Math.max(have, Math.round(target / unit));
+    // the unit steps up (₹10 lakh, ₹1 crore, ₹10 crore, ₹100 crore) so the pyramid always fits its 36 places; a ₹90 crore
+    // investor once made the row loop below run for ever and froze the page (persona audit, 2026-11-23)
+    var unit = 1e6, big = Math.max(nw, target); while (unit < 1e9 && big / unit > 36) unit *= 10;
+    var have = Math.min(36, Math.round(nw / unit)), want = Math.min(36, Math.max(have, Math.round(target / unit)));
     if (!want) return "";
-    var lab = unit === 1e7 ? "₹1 crore" : "₹10 lakh";
+    var lab = { 1e6: "₹10 lakh", 1e7: "₹1 crore", 1e8: "₹10 crore", 1e9: "₹100 crore" }[unit];
     return '<div class="gm-bars" style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin:8px 0">'
       + SXWorld.goldBars(have, want, lab)
       + '<div style="font-size:12.5px;color:var(--muted);min-width:120px">Each bar is ' + lab + '.<br><b style="color:var(--text)">' + have + ' in the vault</b>' + (want > have ? ', ' + (want - have) + ' outlined to the benchmark for your age.' : '. You are at or past the benchmark for your age.') + '</div></div>';
@@ -5779,6 +5782,64 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       + '<div style="font-weight:800;margin-top:8px">Welcome back. ' + days + ' sunrises while you were away.</div>'
       + '<div style="font-size:13px;color:var(--muted);margin-top:2px">' + (lines.length ? lines.join(" · ") : "Nothing changed in your numbers. The world waited.") + '</div>'
       + '<button type="button" class="btn-sm" style="margin-top:8px" onclick="gmSeenOk()">Got it</button></div>';
+  };
+
+  /* Last month, in review (immersive-real, owner 2026-11-23): in the first seven days of a month the app writes last month's
+     after-action review from what it already holds (days the daily three were kept, the saving rate from the month-end check-in,
+     goals that moved) and offers three small changes for this month. One tap picks one, it goes to the inbox with a due date,
+     and the card folds. "Got it" folds it too. Kept by month in gm_aar_seen; it never shows after the 7th and never nags. */
+  var AAR_K = "gm_aar_seen";
+  function aarKey(d) { return d.getFullYear() + "-" + (d.getMonth() < 9 ? "0" : "") + (d.getMonth() + 1); }
+  window.gmMonthAAR = function (now) {
+    now = now || new Date();
+    var first = new Date(now.getFullYear(), now.getMonth() - 1, 1), end = new Date(now.getFullYear(), now.getMonth(), 1), lk = aarKey(first);
+    var days = Math.round((end - first) / 864e5), went = [], slipped = [], kept = 0, hasDaily = false;
+    if (typeof S !== "undefined" && S.daily && typeof DAILY3 !== "undefined") {
+      var ids = DAILY3.map(function (x) { return x.id; });
+      for (var i = 0; i < days; i++) {
+        var rows = S.daily[dKey(new Date(first.getFullYear(), first.getMonth(), 1 + i))] || [];
+        if (rows.length) hasDaily = true;
+        if (rows.some(function (x) { return ids.indexOf(x) >= 0; })) kept++;
+      }
+    }
+    if (hasDaily) (kept * 2 >= days ? went : slipped).push("The daily three were kept on " + kept + " of " + days + " days");
+    var M = profOK() ? gmMoney() : null, row = null;
+    scSeries().forEach(function (x) { if (x.key === lk) row = x; });
+    if (row && M && M.income > 0) {
+      var r = Math.round((M.income - row.f - row.v) / M.income * 100);
+      (r >= 20 ? went : slipped).push("You saved " + r + "% of your income");
+    }
+    var moved = 0, total = (typeof S !== "undefined" && S.okrs) ? S.okrs.length : 0;
+    if (total) {
+      S.okrs.forEach(function (o, oi) { if ((o.krs || []).some(function (k) { return k.at >= +first && k.at < +end; }) && okrGrade(oi) > 0) moved++; });
+      (moved ? went : slipped).push(moved ? moved + " of " + total + (total === 1 ? " goal moved" : " goals moved") : "No goal moved");
+    }
+    var choices = ["Keep the daily three on most days", "Put saving first, before spending", "Move one goal a small step"];
+    if (slipped.length && /daily three/.test(slipped[0])) choices.unshift(choices.splice(0, 1)[0]);
+    else if (slipped.length && /saved/.test(slipped[0])) choices.unshift(choices.splice(1, 1)[0]);
+    else if (slipped.length && /goal/.test(slipped[0])) choices.unshift(choices.splice(2, 1)[0]);
+    return { month: aarKey(now), last: lk, went: went, slipped: slipped, choices: choices };
+  };
+  function aarSeenSet(v) { var a = gmMonthAAR(), s = G(AAR_K, {}); if (!s || typeof s !== "object" || Array.isArray(s)) s = {}; s[a.month] = v; S_(AAR_K, s); }
+  window.gmMonthAARPick = function (i) {
+    var a = gmMonthAAR(), t = a.choices[+i]; if (!t) return;
+    var due = new Date(); due.setDate(due.getDate() + 7);
+    gmInboxAdd("This month: " + t, "action", { due: dKey(due), from: "aar" });
+    aarSeenSet("picked"); renderAll();
+  };
+  window.gmMonthAARSeen = function () { aarSeenSet("seen"); renderAll(); };
+  window.gmMonthAARHTML = function () {
+    if (!profOK() || new Date().getDate() > 7) return "";
+    var a = gmMonthAAR(), s = G(AAR_K, {});
+    if (s && typeof s === "object" && s[a.month]) return "";
+    if (!a.went.length && !a.slipped.length) return "";
+    var li = function (x) { return '<li>' + esc(x) + '</li>'; };
+    return '<div class="road-col gm-away gm-aar" style="margin:10px 0"><div style="font-weight:800">Last month, in review</div>'
+      + (a.went.length ? '<div style="font-size:12.5px;color:var(--muted);margin-top:6px">What went well</div><ul style="margin:2px 0 0;padding-inline-start:18px">' + a.went.map(li).join("") + '</ul>' : "")
+      + (a.slipped.length ? '<div style="font-size:12.5px;color:var(--muted);margin-top:6px">Room to grow</div><ul style="margin:2px 0 0;padding-inline-start:18px">' + a.slipped.map(li).join("") + '</ul>' : "")
+      + '<div style="font-size:12.5px;color:var(--muted);margin-top:8px">If you like, pick one change for this month:</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">'
+      + a.choices.map(function (c, i) { return '<button type="button" class="btn-sm gm-aar-pick" onclick="gmMonthAARPick(' + i + ')">' + esc(c) + '</button>'; }).join("") + '</div>'
+      + '<button type="button" class="btn-sm gm-aar-ok" style="margin-top:8px" onclick="gmMonthAARSeen()">Got it</button></div>';
   };
 
   /* Your own wind on the summit flag (immersive-real, owner 2026-11-23): with one tap of consent the app asks the device for a rough
@@ -9807,7 +9868,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   function calmTodayHTML() {
     var more = dueNowHTML() + (inRecovery() ? "" : driftHTML() + resHTML()) + msTodayHTML() + insightHTML() + estateHTML();
     var open = G("gm_more_today", false) === true;
-    return '<div class="section active">' + greetHTML() + (phone() ? vitalsHTML() : "") + interruptHTML() + undoBar() + checkinHTML() + setupStripHTML() + (window.gmAskOneHTML ? gmAskOneHTML() : "") + (window.gmAwayHTML ? gmAwayHTML() : "") + todayFocusHTML() + (window.gmComingUpHTML ? gmComingUpHTML() : "") + (window.gmUsTodayHTML ? gmUsTodayHTML() : "") + winsHTML() + (window.gmWhatIfHTML ? gmWhatIfHTML() : "")
+    return '<div class="section active">' + greetHTML() + (phone() ? vitalsHTML() : "") + interruptHTML() + undoBar() + checkinHTML() + setupStripHTML() + (window.gmAskOneHTML ? gmAskOneHTML() : "") + (window.gmAwayHTML ? gmAwayHTML() : "") + (window.gmMonthAARHTML ? gmMonthAARHTML() : "") + todayFocusHTML() + (window.gmComingUpHTML ? gmComingUpHTML() : "") + (window.gmUsTodayHTML ? gmUsTodayHTML() : "") + winsHTML() + (window.gmWhatIfHTML ? gmWhatIfHTML() : "")
       + (more.replace(/<[^>]*>/g, "").trim() ? '<details class="road-col gm-more-today"' + (open ? " open" : "") + ' ontoggle="gmMoreToday(this.open)">'
         + '<summary style="cursor:pointer;font-weight:800;font-size:13px">More today <span style="font-weight:500;color:var(--muted);font-size:11.5px">\u00b7 what is due, your week, calendar, estate</span></summary>'
         + '<div style="margin-top:10px">' + more + '</div></details>' : "")
