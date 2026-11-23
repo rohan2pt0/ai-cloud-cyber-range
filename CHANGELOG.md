@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- **Goals as a path up a mountain** (owner 2026-11-23): each goal card shows a mountain with a switchback trail; you are the glowing climber at the goal's score, each key result is a camp lit at 0.7, the summit flag flies at 1.0, and far ridges fade in the haze. Nothing to enter.
 - **Us on Today, one tap** (owner 2026-11-23: visible now, no friction): with a partner in the profile, Today asks once a week "How close did you feel?" with three big choices; one tap folds it to the two stars and one line. On by default, one line to turn it off.
 - **Us** (owner 2026-11-23): closeness and intimacy treated as part of physical and mental health, plainly and privately. On the Life map next to your partner, off until you turn it on: three taps a week (close, calm, time together), two stars that draw closer and brighter as the weeks feel closer, one kind suggestion after two quieter weeks, and folded health basics. Never explicit; kept on your own devices behind the lock.
 - **Saving as tree rings** (owner 2026-11-23): on the Money tab, a cross-section of a trunk with one ring a month from the month-end check-ins; a thick ring is a month you saved well, the gold ring is this month.

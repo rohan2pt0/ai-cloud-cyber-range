@@ -1789,6 +1789,33 @@ function addKRValue(oi,t,quarterEnd){
 function setKR(oi,ki,v){ var k=S.okrs[oi].krs[ki]; k.v=+v; k.at=Date.now(); store("sovS",S); renderAll(); }
 function setKRNow(oi,ki,v){ var k=S.okrs[oi].krs[ki]; if(v===""||isNaN(+v))return; k.c=+v; k.v=krFrac(k); k.at=Date.now(); store("sovS",S); renderAll(); }
 function setOKRStrength(oi,v){ S.okrs[oi].s=v; S.okrs[oi].at=Date.now(); store("sovS",S); }
+// Each goal as a path up a mountain (immersive-real, owner 2026-11-23): the grade is how far up the switchback trail you are; each key
+// result is a camp on the way (lit once it reaches 0.7, the OKR bar for success); the summit flag flies at 1.0. Far ridges fade in the
+// haze the way real air does, the snow line sits under the peak, and the climbed part of the trail glows gold. Nothing to enter.
+function gmMountain(grade, krs){
+  var W=320,H=150,id="mt"+Math.random().toString(36).slice(2,7), g=Math.max(0,Math.min(1,grade||0));
+  var pts=[[40,138],[120,128],[78,112],[168,100],[118,84],[196,72],[150,56],[198,40],[176,28]];   // a switchback trail to the peak at (176,22)
+  var L=[0],tot=0; for(var i=1;i<pts.length;i++){ tot+=Math.hypot(pts[i][0]-pts[i-1][0],pts[i][1]-pts[i-1][1]); L.push(tot); }
+  var at=function(f){ var d=f*tot; for(var i=1;i<pts.length;i++){ if(L[i]>=d){ var t=(d-L[i-1])/(L[i]-L[i-1]||1); return [pts[i-1][0]+(pts[i][0]-pts[i-1][0])*t, pts[i-1][1]+(pts[i][1]-pts[i-1][1])*t]; } } return pts[pts.length-1]; };
+  var poly=function(f){ var d=f*tot, out=[pts[0]]; for(var i=1;i<pts.length;i++){ if(L[i]<=d) out.push(pts[i]); else { out.push(at(f)); break; } } return out.map(function(p){return p[0].toFixed(1)+","+p[1].toFixed(1);}).join(" "); };
+  var me=at(g), camps="";
+  (krs||[]).forEach(function(k,i){ var f=(i+1)/((krs.length||1)+1), c=at(f), lit=krFrac(k)>=0.7;
+    camps+='<path d="M'+(c[0]-5)+' '+(c[1]+1)+' L'+c[0]+' '+(c[1]-6)+' L'+(c[0]+5)+' '+(c[1]+1)+' Z" fill="'+(lit?"#f3d991":"#d8d2c4")+'" stroke="'+(lit?"#a87c22":"#8a8478")+'" stroke-width=".8"/>'; });
+  return '<svg class="gm-mtn" width="100%" viewBox="0 0 '+W+' '+H+'" role="img" aria-label="Goal climb: '+Math.round(g*100)+' percent of the way up, '+(krs||[]).filter(function(k){return krFrac(k)>=0.7;}).length+' of '+(krs||[]).length+' camps reached" style="display:block;max-width:420px;margin:6px 0 4px;border-radius:12px">'
+   +'<defs><linearGradient id="'+id+'s" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#1c3a63"/><stop offset=".7" stop-color="#5d7fa6"/><stop offset="1" stop-color="#e9c99a"/></linearGradient>'
+   +'<linearGradient id="'+id+'m" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#55606e"/><stop offset="1" stop-color="#2c333c"/></linearGradient></defs>'
+   +'<rect width="'+W+'" height="'+H+'" fill="url(#'+id+'s)"/>'
+   +'<path d="M0 118 L48 82 L92 104 L140 70 L250 96 L300 74 L320 86 V150 H0Z" fill="#8ea3bd" opacity=".55"/>'                // a far ridge in the haze
+   +'<path d="M0 150 L20 140 L176 22 L250 92 L286 80 L320 104 V150Z" fill="url(#'+id+'m)"/>'                               // the mountain
+   +'<path d="M176 22 L158 38 L166 36 L172 44 L180 36 L190 42 L194 36 Z" fill="#f4f1ea"/>'                                  // the snow cap
+   +'<path d="M176 22 L250 92 L232 90 Z" fill="#000" opacity=".18"/>'                                                       // the shaded face
+   +'<polyline points="'+poly(1)+'" fill="none" stroke="#e9e2d3" stroke-opacity=".55" stroke-width="1.6" stroke-dasharray="3 3"/>'
+   +'<polyline points="'+poly(g)+'" fill="none" stroke="#f3d991" stroke-width="2.6" stroke-linecap="round"/>'
+   +camps
+   +'<line x1="176" y1="22" x2="176" y2="8" stroke="#e9e2d3" stroke-width="1.2"/><path d="M176 8 L190 12 L176 16Z" fill="'+(g>=1?"#e0bb66":"rgba(233,226,211,.35)")+'"/>'
+   +'<circle cx="'+me[0].toFixed(1)+'" cy="'+me[1].toFixed(1)+'" r="7" fill="#f3d991" opacity=".35"/><circle cx="'+me[0].toFixed(1)+'" cy="'+me[1].toFixed(1)+'" r="3.6" fill="#fff8e1" stroke="#a87c22" stroke-width="1"/>'
+   +'</svg>';
+}
 function okrGrade(oi){ var k=S.okrs[oi].krs; if(!k.length)return 0; return k.reduce(function(s,x){return s+krFrac(x);},0)/k.length; }
 function delOKR(oi){ gmConfirm("Delete this objective?",function(y){ if(y){ S.okrs.splice(oi,1); store("sovS",S); renderAll(); } }); }
 function okrRecommit(oi){ var o=S.okrs[oi]; o.at=Date.now(); o.recommits=(o.recommits||0)+1; store("sovS",S); gmToast("Recommitted. Make one key result move this week."); renderAll(); }
@@ -2240,7 +2267,7 @@ function renderOKR(){
   S.okrs.forEach(function(o,oi){
     var g=okrGrade(oi), idle=okrIdle(o);
     html+='<div class="okr-card"><span class="okr-grade" id="og'+oi+'" style="color:'+(g===0?"var(--muted)":g>=0.7?"var(--green)":"var(--amber)")+'" title="'+(g===0?"Not started":g>=0.7?"On track: 0.7 and above is a success":"In progress")+'">'+g.toFixed(2)+'</span>'
-     +'<div class="okr-o">O'+(oi+1)+': '+okEsc(o.o)+'</div>';
+     +'<div class="okr-o">O'+(oi+1)+': '+okEsc(o.o)+'</div>'+gmMountain(g,o.krs);
     if(idle>=OKR_IDLE_DAYS) html+='<div class="info okr-idle" style="color:var(--amber);margin:8px 0">No movement for '+Math.floor(idle/7)+' weeks. Decide, so it does not drift: '
       +'<div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px"><button class="btn-sm" style="background:var(--gold);color:#0d1f35;font-weight:800" onclick="okrRecommit('+oi+')">Recommit</button>'
       +'<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="okrRescope('+oi+')">Re-scope</button>'
