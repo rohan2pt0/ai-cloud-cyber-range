@@ -8,6 +8,7 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
+- Delegation: a new builder rung on the laptop, `./securax autobuild "task" --codex`, builds through OpenAI's Codex CLI and the owner's existing ChatGPT plan (no extra cost, no shared account). It says plainly when Codex is not installed or signed in, or when the plan's usage limit is reached, so the next rung takes over.
 - Delegation: an early warning before a builder provider runs out of money. The daily backlog issue and `./securax progress` carry one plain line (amber when one is out or its credit will run out within a week, RED with the one fix after a day); a provider with no key reads "not checked here".
 - Hosting: no single point of failure for the site. A dormant `mirror` job in docs.yml publishes the same built site to a second static host (Cloudflare Pages) once the owner adds the CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID secrets; until then it prints one line and does nothing. New dependency: wrangler, pinned to 4.158.0 and fetched only in CI, only when the owner turns it on, because GitHub Pages must not be the one place the site and apps live.
 - Life OS: in the first seven days of a month, Today shows "Last month, in review", written from what the app already holds (days the daily three were kept, the saving rate, goals that moved), with three small changes to pick from; one tap adds the choice to the inbox with a due date.
