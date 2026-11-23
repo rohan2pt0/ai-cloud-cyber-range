@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- **Us on Today, one tap** (owner 2026-11-23: visible now, no friction): with a partner in the profile, Today asks once a week "How close did you feel?" with three big choices; one tap folds it to the two stars and one line. On by default, one line to turn it off.
 - **Us** (owner 2026-11-23): closeness and intimacy treated as part of physical and mental health, plainly and privately. On the Life map next to your partner, off until you turn it on: three taps a week (close, calm, time together), two stars that draw closer and brighter as the weeks feel closer, one kind suggestion after two quieter weeks, and folded health basics. Never explicit; kept on your own devices behind the lock.
 - **Saving as tree rings** (owner 2026-11-23): on the Money tab, a cross-section of a trunk with one ring a month from the month-end check-ins; a thick ring is a month you saved well, the gold ring is this month.
 - **Net worth as gold bars** (owner 2026-11-23): on the Life map, net worth is a pyramid of polished gold ingots, one per ₹10 lakh (₹1 crore for a big stack), with outlined bars up to the benchmark for your age.

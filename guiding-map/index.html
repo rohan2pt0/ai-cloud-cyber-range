@@ -5470,10 +5470,30 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     var ks = Object.keys(u.weeks).sort(); while (ks.length > US_CAP) delete u.weeks[ks.shift()];
     S_(US_K, u); renderAll();
   };
+  function usStars(avg, w, h) {
+    var glow = 0.25 + avg / 5 * 0.75, gap = (26 - avg * 3) * w / 96, cy = h / 2;
+    return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" aria-hidden="true" style="flex-shrink:0"><defs><radialGradient id="gmUsS"><stop offset="0" stop-color="#fff8e1"/><stop offset=".35" stop-color="#f3d991" stop-opacity=".9"/><stop offset="1" stop-color="#f3d991" stop-opacity="0"/></radialGradient></defs>'
+      + '<rect width="' + w + '" height="' + h + '" rx="12" fill="#0d1a30"/><circle cx="' + (w * .2) + '" cy="' + (h * .22) + '" r=".8" fill="#fff" opacity=".6"/><circle cx="' + (w * .8) + '" cy="' + (h * .78) + '" r=".7" fill="#fff" opacity=".5"/>'
+      + '<circle cx="' + (w / 2 - gap) + '" cy="' + cy + '" r="' + (h * .22) + '" fill="url(#gmUsS)" opacity="' + glow.toFixed(2) + '"/><circle cx="' + (w / 2 + gap) + '" cy="' + cy + '" r="' + (h * .22) + '" fill="url(#gmUsS)" opacity="' + glow.toFixed(2) + '"/>'
+      + '<circle cx="' + (w / 2 - gap) + '" cy="' + cy + '" r="2.4" fill="#fffbe9"/><circle cx="' + (w / 2 + gap) + '" cy="' + cy + '" r="2.4" fill="#fffbe9"/></svg>';
+  }
+  function usAvg(weeks) { var ks = Object.keys(weeks).sort(), c = ks.slice(-6).map(function (k) { return weeks[k].close || 0; }).filter(Boolean); return c.length ? c.reduce(function (a, b) { return a + b; }, 0) / c.length : 3; }
+  // Today: one question a week, three big choices, one tap; answered, it folds to the stars and one line (owner 2026-11-23: visible, no friction)
+  window.gmUsTodayHTML = function () {
+    if (!window.P || P.example || !(P.pname || (typeof gmEarners === "function" && gmEarners(P) === 2))) return "";
+    var u = G(US_K, {}) || {}; if (u.on === false) return "";
+    var weeks = u.weeks && typeof u.weeks === "object" ? u.weeks : {}, cur = weeks[usWeek()] || {}, nm = esc(String(P.pname || "your partner").split(" ")[0]);
+    if (cur.close) return '<div class="road-col gm-us-today" style="display:flex;align-items:center;gap:12px;margin:10px 0">' + usStars(usAvg(weeks), 72, 44)
+      + '<div style="font-size:13px"><b>You and ' + nm + '</b><br><span style="color:var(--muted)">' + (cur.close >= 5 ? "Close this week. The stars are near." : cur.close >= 3 ? "Steady this week." : "A quieter week. Twenty minutes, phones away, tonight?") + '</span></div></div>';
+    var b = function (v, word) { return '<button type="button" class="btn-sm" style="flex:1;min-height:48px;font-size:14px" onclick="gmUsSet(\'close\',' + v + ')">' + word + '</button>'; };
+    return '<div class="road-col gm-us-today" style="margin:10px 0"><div style="display:flex;align-items:center;gap:12px">' + usStars(usAvg(weeks), 72, 44)
+      + '<div style="font-size:13.5px"><b>You and ' + nm + ', this week</b><br><span style="color:var(--muted)">How close did you feel? One tap, private.</span></div></div>'
+      + '<div style="display:flex;gap:8px;margin-top:10px">' + b(2, "Distant") + b(3, "Okay") + b(5, "Close") + '</div></div>';
+  };
   window.gmUsHTML = function () {
     var u = G(US_K, {}) || {};
-    if (!u.on) return '<div class="road-col gm-us" style="margin-top:10px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">'
-      + '<div><b>Us</b> <span style="color:var(--muted);font-size:12.5px">· a private weekly check-in for the two of you. Off until you turn it on.</span></div>'
+    if (u.on === false) return '<div class="road-col gm-us" style="margin-top:10px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">'
+      + '<div><b>Us</b> <span style="color:var(--muted);font-size:12.5px">· a private weekly check-in for the two of you. Turned off.</span></div>'
       + '<button type="button" class="btn-sm" onclick="gmUsOn(true)">Turn on</button></div>';
     var weeks = u.weeks && typeof u.weeks === "object" ? u.weeks : {}, w = usWeek(), cur = weeks[w] || {}, ks = Object.keys(weeks).sort();
     var tap = function (k, label) {
@@ -9472,7 +9492,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   function calmTodayHTML() {
     var more = dueNowHTML() + (inRecovery() ? "" : driftHTML() + resHTML()) + msTodayHTML() + insightHTML() + estateHTML();
     var open = G("gm_more_today", false) === true;
-    return '<div class="section active">' + greetHTML() + (phone() ? vitalsHTML() : "") + interruptHTML() + undoBar() + checkinHTML() + setupStripHTML() + (window.gmAskOneHTML ? gmAskOneHTML() : "") + todayFocusHTML() + (window.gmComingUpHTML ? gmComingUpHTML() : "") + winsHTML()
+    return '<div class="section active">' + greetHTML() + (phone() ? vitalsHTML() : "") + interruptHTML() + undoBar() + checkinHTML() + setupStripHTML() + (window.gmAskOneHTML ? gmAskOneHTML() : "") + todayFocusHTML() + (window.gmComingUpHTML ? gmComingUpHTML() : "") + (window.gmUsTodayHTML ? gmUsTodayHTML() : "") + winsHTML()
       + (more.replace(/<[^>]*>/g, "").trim() ? '<details class="road-col gm-more-today"' + (open ? " open" : "") + ' ontoggle="gmMoreToday(this.open)">'
         + '<summary style="cursor:pointer;font-weight:800;font-size:13px">More today <span style="font-weight:500;color:var(--muted);font-size:11.5px">\u00b7 what is due, your week, calendar, estate</span></summary>'
         + '<div style="margin-top:10px">' + more + '</div></details>' : "")

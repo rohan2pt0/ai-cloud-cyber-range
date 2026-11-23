@@ -12,18 +12,26 @@ const dom = new JSDOM(html, { runScripts: "dangerously", pretendToBeVisual: true
 setTimeout(() => {
   const w = dom.window, d = w.document, ls = w.localStorage;
   w.goTab("life"); w.renderAll();
+  // on by default when there is a partner (owner 2026-11-23: visible now, no friction); Today asks one question with one tap
+  w.goTab("today"); w.renderAll();
+  let ut = d.querySelector(".gm-us-today");
+  ok("Today asks one question with three big choices", !!ut && ut.querySelectorAll("button").length === 3 && /How close did you feel/.test(ut.textContent), ut && ut.textContent);
+  ut.querySelectorAll("button")[2].click(); ut = d.querySelector(".gm-us-today");
+  ok("one tap answers it and the card folds to the stars", !!ut && !ut.querySelector("button") && /Close this week/.test(ut.textContent), ut && ut.textContent);
+  w.goTab("life"); w.renderAll();
   let c = d.querySelector(".gm-us");
-  ok("off by default: one line and a Turn on button, no questions", !!c && /Turn on/.test(c.textContent) && !c.querySelector("[role=group]"), c && c.textContent);
-  w.gmUsOn(true); c = d.querySelector(".gm-us");
   ok("on: three one-tap scales", c && c.querySelectorAll("[role=group]").length === 3);
   w.gmUsSet("close", 4);
   const u = JSON.parse(ls.getItem("gm_us"));
-  ok("a tap is stored under this week", u.on === true && Object.values(u.weeks)[0].close === 4);
+  ok("a tap is stored under this week", Object.values(u.weeks)[0].close === 4);
   ok("no dip line after one good week", !/Two quieter weeks/.test(d.querySelector(".gm-us").textContent));
   u.weeks = { "2026-01-05": { close: 2 }, "2026-01-12": { close: 1 } }; ls.setItem("gm_us", JSON.stringify(u)); w.renderAll();
   ok("two quieter weeks: one kind suggestion", /Two quieter weeks/.test(d.querySelector(".gm-us").textContent));
   ok("health basics are folded, plain and non-explicit", !!d.querySelector(".gm-us details") && /talk about with a doctor/.test(d.querySelector(".gm-us details").textContent));
   w.gmUsOn(false);
+  w.goTab("today"); w.renderAll();
+  ok("turned off, Today no longer asks", !d.querySelector(".gm-us-today"));
+  w.goTab("life"); w.renderAll();
   ok("turning off hides it and keeps the check-ins", /Turn on/.test(d.querySelector(".gm-us").textContent) && JSON.parse(ls.getItem("gm_us")).weeks["2026-01-12"].close === 1);
   console.log("test156 us: " + P + " passed, " + F + " failed"); e.forEach(x => console.log("  " + x)); process.exit(F ? 1 : 0);
 }, 400);
