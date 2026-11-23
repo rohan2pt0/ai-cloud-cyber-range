@@ -1346,10 +1346,13 @@
      reflection below and bevelled edges. */
   window.gmGoldBars = function (nw, target) {
     nw = Math.max(0, nw || 0); target = Math.max(0, target || 0);
-    var unit = Math.max(nw, target) / 1e6 > 36 ? 1e7 : 1e6, have = Math.round(nw / unit), want = Math.max(have, Math.round(target / unit));
+    // the unit steps up (₹10 lakh, ₹1 crore, ₹10 crore, ₹100 crore) so the pyramid always fits its 36 places; a ₹90 crore
+    // investor once made the row loop below run for ever and froze the page (persona audit, 2026-11-23)
+    var unit = 1e6, big = Math.max(nw, target); while (unit < 1e9 && big / unit > 36) unit *= 10;
+    var have = Math.min(36, Math.round(nw / unit)), want = Math.min(36, Math.max(have, Math.round(target / unit)));
     if (!want) return "";
     var per = 4; while (per < 8 && per * (per + 1) / 2 < want) per++;   // a pyramid: the bottom row holds per, each row above one fewer
-    var bw = 42, bh = 16, dx = 6, dy = 7, rows = 0, cap = 0; while (cap < want) { cap += per - rows; rows++; }
+    var bw = 42, bh = 16, dx = 6, dy = 7, rows = 0, cap = 0; while (cap < want && rows < per) { cap += per - rows; rows++; }
     var W = per * (bw + 4) + 12, H = rows * (bh + dy) + 20, id = "gb" + Math.random().toString(36).slice(2, 7);
     var bar = function (i, ghost) {
       var r = 0, c = i; while (c >= per - r) { c -= per - r; r++; }
@@ -1361,7 +1364,7 @@
     };
     var g = "";
     for (var i = 0; i < want; i++) g += bar(i, i >= have);
-    var lab = unit === 1e7 ? "₹1 crore" : "₹10 lakh";
+    var lab = { 1e6: "₹10 lakh", 1e7: "₹1 crore", 1e8: "₹10 crore", 1e9: "₹100 crore" }[unit];
     return '<div class="gm-bars" style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin:8px 0">'
       + '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Net worth: ' + have + ' gold bars of ' + lab + ', ' + Math.max(0, want - have) + ' more to the benchmark for your age">'
       + '<defs><linearGradient id="' + id + 'f" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff1c4"/><stop offset=".22" stop-color="#e9c873"/><stop offset=".5" stop-color="#b88a2e"/><stop offset=".62" stop-color="#a97c25"/><stop offset=".85" stop-color="#e0bb66"/><stop offset="1" stop-color="#c9a04a"/></linearGradient>'
