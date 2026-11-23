@@ -16,7 +16,7 @@ setTimeout(() => {
   const m = d.querySelector(".okr-card .gm-mtn");
   ok("each goal card shows its mountain", !!m, (d.querySelector("#sections") || d.body).textContent.slice(0, 160));
   ok("the climber is placed at the grade and the camps are counted", m && /Goal climb: 80 percent of the way up, 1 of 2 camps reached/.test(m.getAttribute("aria-label")), m && m.getAttribute("aria-label"));
-  ok("summit flag flies only at 1.0", /fill="#e0bb66"/.test(w.gmMountain(1, [])) && !/fill="#e0bb66"/.test(w.gmMountain(0.5, [])));
+  ok("the summit flag turns gold only at 1.0", /data-gold="1"/.test(w.gmMountain(1, [])) && !/data-gold="1"/.test(w.gmMountain(0.5, [])));
   ok("nothing to enter on the mountain", m && !m.querySelector("input, button"));
   console.log("test157 mountain: " + P + " passed, " + F + " failed"); e.forEach(x => console.log("  " + x)); process.exit(F ? 1 : 0);
 }, 400);

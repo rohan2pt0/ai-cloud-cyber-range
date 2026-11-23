@@ -19,10 +19,10 @@ setTimeout(() => {
   ok("one tap folds it, and it does not come back today", !d.querySelector(".gm-away"));
   // the wind: never fetched without consent; a stored reading drives the flag; a hostile answer cannot inject HTML
   ok("no wind request without the person's tap", fetched === 0, fetched);
-  ok("without consent the flag waves in a default breeze", /<animate attributeName="d" dur="2\.16s"/.test(w.gmFlag(0, 0, false)));
+  ok("without consent the cloth flies in a default breeze", /class="sx-cloth" data-gold="0" data-kmh="8"/.test(w.gmFlag(0, 0, false)));
   ls.setItem("gm_wind", JSON.stringify({ ok: true, speed: 30, dir: 90, at: Date.now() }));
   const f = w.gmFlag(0, 0, true);
-  ok("a stored strong east wind quickens the flag and points it west", /dur="0\.93s"/.test(f) && /scale\(-0\.55 0\.55\)/.test(f), f.slice(0, 200));
+  ok("a stored strong east wind drives the cloth and points it west", /data-kmh="30"/.test(f) && /scale\(-0\.55 0\.55\)/.test(f), f.slice(0, 200));
   ok("the line says whose wind it is and offers Stop", /30 km\/h from E/.test(w.gmWindLine()) && /Stop/.test(w.gmWindLine()));
   ls.setItem("gm_wind", JSON.stringify({ ok: true, speed: "<img src=x onerror=alert(1)>", dir: 90 }));
   ok("a hostile stored value is not used", w.gmWind() === null && !/onerror/.test(w.gmFlag(0, 0, false)));

@@ -10,6 +10,7 @@
   {"id": "gem-status", "name": "Status in gemstones", "where": ["guiding-map/shared/lux.css", "guiding-map/ops.js"], "nature": "cut emerald, amber with light through it, ruby; a table highlight from above", "proof": ["guiding-map/tests/test101.js", "governance/tests/test_shared_look.py"]},
   {"id": "daily-stones", "name": "The daily three: moonstone to jade, under a dawn line", "where": ["guiding-map/ops.js"], "nature": "moonstone adularescence, polished jade, dawn from night to gold", "proof": ["governance/tests/test_shared_look.py"]},
   {"id": "north-star-dial", "name": "The North Star dial", "where": ["guiding-map/index.html"], "nature": "the north star, a watch bezel, gemstone arcs", "proof": ["governance/tests/test_shared_look.py"]},
-  {"id": "ambient-light", "name": "Ambient light in dark", "where": ["guiding-map/ops.js"], "nature": "a luxury cabin at night: champagne light lines, halos and a pool of light under the chosen tab", "proof": ["guiding-map/tests/test110.js"]}
+  {"id": "ambient-light", "name": "Ambient light in dark", "where": ["guiding-map/ops.js"], "nature": "a luxury cabin at night: champagne light lines, halos and a pool of light under the chosen tab", "proof": ["guiding-map/tests/test110.js"]},
+  {"id": "living-world", "name": "The living world: moon, gold bars, water, tree rings and a cloth flag", "where": ["guiding-map/shared/world.js", "guiding-map/ops.js"], "nature": "the waxing moon, polished gold, water in glass, a tree's growth rings, cloth in the real local wind (Verlet mass-spring physics)", "proof": ["guiding-map/tests/test159.js", "guiding-map/tests/test155.js", "guiding-map/tests/test158.js"]}
  ]
 }
