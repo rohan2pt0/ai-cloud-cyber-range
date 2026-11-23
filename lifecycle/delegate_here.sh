@@ -2,6 +2,7 @@
 # The open models build a task inside THIS machine (a Claude cloud session or a laptop), the same loop as autobuild.yml:
 # OpenCode Go models -> the estate's gates -> retry -> a commit only when green. It is the second path, so a missing GitHub
 # secret or a busy Actions queue never stops the work (the third is Claude itself, the fourth ./securax autobuild on local models).
+# Exit 3 (ALL-OUT): no open-model provider can pay right now; the caller sends the brief to path C at once.
 #   bash lifecycle/delegate_here.sh "task in plain words" [tries]
 # The key: OPENCODE_GO_API_KEY from the environment, or, in a Claude cloud session, a network secret saved once for
 # opencode.ai (the proxy puts it on each request, so a placeholder is enough here and the key never touches the disk).
@@ -25,6 +26,13 @@ command -v opencode >/dev/null 2>&1 || npm install -g -s opencode-ai@1.19.0 >/de
 export OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY:-placeholder-the-proxy-adds-the-real-key}"
 # AUTOBUILD_PROVIDER=openrouter sends the build to OpenRouter instead (its key: OPENROUTER_API_KEY, or the proxy adds it)
 export OPENROUTER_API_KEY="${OPENROUTER_API_KEY:-placeholder-the-proxy-adds-the-real-key}"
+# No single point of failure, for money too (owner 2026-11-23): ask each provider once whether it can pay for a real build. When
+# none can, stop in seconds with exit 3 (ALL-OUT) so the caller hands the same brief to path C (a cheaper Claude model), instead
+# of four builds retrying a capped plan for 20 minutes each.
+if ! paid="$(python3 lifecycle/autobuild_ci.py allowance 2>&1)"; then
+  echo "ALL-OUT every open-model provider is out of allowance:"; echo "$paid"
+  echo "Hand this same brief to path C (a Sonnet subagent), as .claude/skills/delegate/SKILL.md says."; exit 3
+fi
 # the gates need what CI installs first (the gateway's packages, ruff); without them a correct change fails on an import
 python3 -c "import fastapi, httpx, ruff" >/dev/null 2>&1 || python3 -m pip install -q -r "$ROOT/apps/llm-gateway/requirements-dev.txt" pyyaml ruff >/dev/null 2>&1 || {
   echo "CANNOT-START the gate's Python packages could not be installed"; exit 2; }

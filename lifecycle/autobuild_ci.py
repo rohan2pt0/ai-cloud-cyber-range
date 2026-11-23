@@ -257,11 +257,61 @@ def _mark_hung(model: str, cache: pathlib.Path = PROBE_CACHE) -> None:
         pass
 
 
+# No single point of failure, for money too (owner 2026-11-23): on one day OpenCode Go reached its monthly cap and the OpenRouter
+# account held no credit (only a key cap), so every rung was out and four builds died after 20 minutes of retries. Ask each
+# provider once, before any work, whether it can pay for a real answer; a provider that cannot is skipped in seconds, and when
+# none can, the caller hands the brief to the next path (a cheaper Claude model, path C) instead of retrying.
+OUT_OF_ALLOWANCE = re.compile(r"GoUsageLimitError|usage limit reached|requires more credits|can only afford|insufficient (credit|balance|quota)|\b402\b|quota exceeded", re.I)
+ALL_OUT = 3
+
+
+def out_of_allowance(text: str) -> bool:
+    """A provider's answer that means it cannot pay for the work (a cap, no credit), not that the model is bad."""
+    return bool(OUT_OF_ALLOWANCE.search(text or ""))
+
+
+def _http(url: str, env: dict, body: dict | None = None, headers: dict | None = None) -> str:
+    import ssl
+    import urllib.request
+    ca = env.get("SSL_CERT_FILE") or env.get("REQUESTS_CA_BUNDLE")
+    ctx = ssl.create_default_context(cafile=ca) if ca and os.path.exists(ca) else ssl.create_default_context()
+    req = urllib.request.Request(url, data=json.dumps(body).encode() if body else None, headers={"Content-Type": "application/json", "User-Agent": "securax-autobuild/1", **(headers or {})})
+    try:
+        with urllib.request.urlopen(req, timeout=30, context=ctx) as r:
+            return r.read().decode("utf-8", "replace")
+    except Exception as e:                                    # an HTTP error still carries the provider's reason in its body
+        try:
+            return e.read().decode("utf-8", "replace")      # type: ignore[attr-defined]
+        except Exception:
+            return f"unreachable: {e}"
+
+
+def allowance(env: dict | None = None, http=_http) -> dict:
+    """Whether each open-model provider can pay for a real build right now: {provider: {"ok": bool, "why": str}}."""
+    env = dict(os.environ if env is None else env)
+    out = {}
+    go = http(GO_BASE + "/chat/completions", env, {"model": chain("builder")[0] if chain("builder") else "deepseek-v4.1-flash", "max_tokens": 8,
+              "messages": [{"role": "user", "content": "Reply OK"}]},
+              {"Authorization": "Bearer " + env.get("OPENCODE_GO_API_KEY", "placeholder"), "x-opencode-session": "allowance-check"})
+    out[PROVIDER] = {"ok": '"choices"' in go and not out_of_allowance(go), "why": (re.search(r'"message":"([^"]{0,160})', go) or [None, go[:160]])[1]}
+    cr = http(OR_BASE + "/credits", env, None, {"Authorization": "Bearer " + env.get("OPENROUTER_API_KEY", "placeholder")})
+    try:
+        d = json.loads(cr)["data"]
+        left = float(d.get("total_credits") or 0) - float(d.get("total_usage") or 0)
+        out[OR_PROVIDER] = {"ok": left >= 0.5, "why": f"credit left: ${left:.2f}" + ("" if left >= 0.5 else " (buy credit, or only free models answer)")}
+    except (ValueError, KeyError, TypeError):
+        out[OR_PROVIDER] = {"ok": False, "why": "no answer about credit: " + cr[:120]}
+    return out
+
+
 def agent(env: dict | None = None, run=subprocess.run) -> int:
     env = dict(os.environ if env is None else env)
     strong = tier(env.get("AUTOBUILD_TASK", "")) == "strong"
     models = ladder("strong" if strong else "builder", env)
     if env.get("AUTOBUILD_PROBE", "1") != "0":
+        if run is subprocess.run:                               # skip a provider that cannot pay, in seconds, not attempts
+            paid = allowance(env)
+            models = [m for m in models if paid.get(m.split("/", 1)[0], {"ok": True})["ok"]] or models
         models = usable(models, run)
     text = prompt(env, strong)
     # a model call must not hold the whole run; 40 min leaves room for the one slow gate (about 10) after the work itself
@@ -338,6 +388,11 @@ def main(argv: list[str]) -> int:
         return 0
     if cmd == "agent":
         return agent()
+    if cmd == "allowance":
+        a = allowance()
+        for k, v in a.items():
+            print(f"{k}: {'OK' if v['ok'] else 'OUT'}  {v['why']}")
+        return 0 if any(v["ok"] for v in a.values()) else ALL_OUT
     if cmd == "slug":
         print(slug(os.environ.get("TASK", "")))
         return 0

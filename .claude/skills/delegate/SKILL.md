@@ -43,6 +43,12 @@ test goes out as slices of one step each, in order; a later slice builds on the 
 The watchdog stops a model only when it is silent for 6 minutes AND running no command of its own (the log then says
 `was running no command`). If the log says `used its 40 min`, the brief was too big: slice it, do not retry it.
 
+**Before a batch, ask who can pay (one command, two seconds):** `python3 lifecycle/autobuild_ci.py allowance`. It asks OpenCode Go and
+OpenRouter whether they can pay for a real build. Exit 3 (ALL-OUT) means none can: send every brief straight to path C, because paths A
+and B use the same two providers. Never write the code in this main session because the open models are out: that is the most expensive
+path there is (2026-11-23: Go's monthly cap and an OpenRouter account with no credit stopped four builds, and the main session built
+them by hand at Opus cost while path C sat unused).
+
 Then take the first path that works. Each later path catches the failure of the one before it.
 - **A. GitHub Actions** (survives this session ending). Use `mcp__github__actions_run_trigger` with `method: run_workflow`,
   `workflow_id: autobuild.yml`, `ref: main`, `inputs: {"task": BRIEF, "tries": "3"}`. After about 2 minutes, list the run once.
@@ -54,6 +60,7 @@ Then take the first path that works. Each later path catches the failure of the 
     (display name "OpenCode Go key", type bearer). The owner pastes the key once into the secure form; you never see it.
     Then run B again.
   - If the owner declines the form, go to C.
+  - If it exits 3 (`ALL-OUT ... out of allowance`), go to C at once with the same brief. Do not retry A or B: they share the providers.
 - **C. Claude does it**, the cheapest way that works. First hand the SAME golden brief to a Sonnet subagent (the Agent tool with
   `model: sonnet` and `isolation: worktree`): a brief an open model can finish alone, Sonnet can too, and it costs far less
   than this session writing the code. Review its diff as in step 3. Write the code by hand only when Sonnet also fails or the
