@@ -33,6 +33,21 @@ jobs:
         run: |
           python3 governance/backlog.py --markdown > body.md
           cat body.md >> "$GITHUB_STEP_SUMMARY"
+      - name: "Restore the builder money history"
+        uses: actions/cache@v4
+        with:
+          path: .builders
+          key: builders-${{ github.run_id }}
+          restore-keys: builders-
+      - name: "Check the builders can pay"
+        env:
+          OPENCODE_GO_API_KEY: ${{ secrets.OPENCODE_GO_API_KEY }}
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          SECURAX_BUILDERS_STATE: .builders/builders.json
+        run: |
+          printf '\n' >> body.md
+          python3 governance/builders.py --line >> body.md
       - name: "Write it into the one Backlog issue"
         env:
           GH_TOKEN: ${{ github.token }}

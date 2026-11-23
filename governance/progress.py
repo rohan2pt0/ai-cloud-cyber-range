@@ -189,6 +189,18 @@ def delivery_line(cwd: pathlib.Path | None = None) -> str | None:
     return f"Delivery: {ships:g} {unit} a week, {round(d['change_fail_rate'] * 100)}% needed a fix (last 4 weeks)"
 
 
+def builders_line() -> str | None:
+    """The saved builder-money line (governance/builders.py), read only and offline; None when there is none."""
+    try:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("builders", ROOT / "governance" / "builders.py")
+        b = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(b)
+        return b.last_line()
+    except Exception:  # noqa: BLE001 (never break the report)
+        return None
+
+
 def new_features(now: float, days: int = 30) -> list[dict]:
     """What arrived in the estate lately (features.json "added"), newest first, so a person hears about it and uses it."""
     try:
@@ -229,6 +241,9 @@ def report(p: dict, say=print) -> None:
     d = delivery_line()
     if d:
         say("\n" + d)
+    b = builders_line()
+    if b:
+        say(b)
     if p.get("new"):
         say("\nNew in the estate (the last 30 days): try one")
         for f in p["new"][:5]:
