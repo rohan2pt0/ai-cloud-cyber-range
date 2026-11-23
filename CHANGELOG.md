@@ -8,6 +8,7 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
+- Life OS: people who matter beyond home are added once (name, day, month; no year) and their birthdays come up by themselves; the greeting names the season and a festival within three days (Local: India; Global: temperate seasons); Today has a folded "What if…" that shows, with one tap and nothing saved, what spending ₹10,000 less, a 10% raise or an empty flat for six months does to the buffer, the saving rate and net worth in a year.
 - Life OS: one shared engine for the real-world objects (guiding-map/shared/world.js, SXWorld): the moon, gold bars, water in glass, tree rings and the flag, each with a fixed meaning any screen or app can reuse. The summit flag is now real cloth (Verlet mass-spring physics in the person's own wind, lit faces, one shared 30 fps loop that runs only while on screen; still under reduced motion).
 - Life OS: "While you were away" card after 3+ days (sunrises missed, what moved, next event, one tap); the summit flag waves in your real local wind after one consent tap (Open-Meteo, location rounded to ~10 km, cached offline, default breeze otherwise); the crest catches a slow glint. Threat model wind-flag.
 

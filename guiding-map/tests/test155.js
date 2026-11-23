@@ -24,7 +24,7 @@ setTimeout(() => {
   ok("Today shows the card", !!c, (d.querySelector("#sections") || d.body).textContent.slice(0, 200));
   ok("three in view, the rest under Later", c && c.querySelectorAll(":scope > div[role=list] > .gm-cu-row").length === 3 && /Later \(\d+\)/.test(c.textContent));
   ok("each row has a moon and a when", c && c.querySelectorAll(".gm-moon").length === L.length && /in 6 days/.test(c.textContent));
-  ok("nothing to type", c && !c.querySelector("input, textarea, select"));
+  ok("nothing to type, except the one folded line to add someone who matters", c && [...c.querySelectorAll("input, textarea, select")].every(x => x.closest("details.gm-ppl")) && !c.querySelector("details.gm-ppl[open]"));
   // the buffer as water in a glass vessel: the level is the months, a gold line is the aim; still for reduced motion
   w.gmWorkSet("me", "contract"); w.goTab("money"); w.renderAll();
   const v = d.querySelector(".gm-vessel svg");

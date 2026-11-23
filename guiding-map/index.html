@@ -3853,9 +3853,9 @@ function renderPlaybook(){
 
   /* ---- gold bars: have solid ingots, want - have outlined ghosts, in a pyramid; label names one bar ---- */
   function goldBars(have, want, label) {
-    have = Math.max(0, Math.round(have || 0)); want = Math.max(have, Math.round(want || 0)); if (!want) return "";
+    have = Math.min(36, Math.max(0, Math.round(have || 0))); want = Math.min(36, Math.max(have, Math.round(want || 0))); if (!want) return "";   // the pyramid holds 36
     var per = 4; while (per < 8 && per * (per + 1) / 2 < want) per++;
-    var bw = 42, bh = 16, dx = 6, dy = 7, rows = 0, cap = 0; while (cap < want) { cap += per - rows; rows++; }
+    var bw = 42, bh = 16, dx = 6, dy = 7, rows = 0, cap = 0; while (cap < want && rows < per) { cap += per - rows; rows++; }
     var W = per * (bw + 4) + 12, H = rows * (bh + dy) + 20, id = uid("sxg"), g = "";
     var bar = function (i, ghost) {
       var r = 0, c = i; while (c >= per - r) { c -= per - r; r++; }
@@ -5601,6 +5601,35 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       buffer: rw, invest: invest, netWorth: netWorth, loans: L, gold: gold, mix: mix
     };
   };
+  /* What if (owner 2026-11-23): what a choice would do before it is made, from the same money model, with one tap and nothing
+     saved: the buffer in months, the saving rate and net worth a year from now (no growth assumed). */
+  window.gmWhatIf = function (k) {
+    var M = window.P ? gmMoney() : null; if (!M || !(M.income > 0)) return null;
+    var rw = M.buffer, liquid = rw ? rw.liquid : Math.max(0, num(P.sav)), gap = rw ? rw.gapM : M.spend;
+    var calc = function (inc, sp, g, lost) { return { months: g > 0 ? liquid / g : 999, save: inc > 0 ? Math.round((inc - sp) / inc * 100) : 0, nw12: Math.round(M.netWorth + 12 * (inc - sp) - (lost || 0)) }; };
+    var b = calc(M.income, M.spend, gap), a = k === "spend10k" ? calc(M.income, Math.max(0, M.spend - 10000), gap - 10000)
+      : k === "raise10" ? calc(M.income + Math.round(M.salary * 0.1), M.spend, gap)
+      : k === "rentgap6" ? (function () { var x = calc(M.income - M.rentPlan / 2, M.spend, gap + M.rentPlan, 0); x.nw12 = Math.round(M.netWorth + 12 * (M.income - M.spend) - 6 * M.rentPlan); return x; })() : null;
+    return a ? { before: b, after: a } : null;
+  };
+  var WHATIF = [["spend10k", "Spend ₹10,000 less a month"], ["raise10", "A 10% raise"], ["rentgap6", "The flat empty for 6 months"]];
+  window.gmWhatIfShow = function (k) {
+    var box = document.getElementById("gmWiOut"), r = gmWhatIf(k); if (!box || !r) return;
+    var mo = function (v) { return v >= 120 ? "120+" : v.toFixed(1); };
+    var row = function (lab, b, a, f) { var up = a > b, same = Math.abs(a - b) < 1e-9, cls = same ? "" : up ? "sx-state-good" : "sx-state-low";
+      return '<div style="display:flex;justify-content:space-between;gap:8px;padding:4px 0;font-size:13px"><span>' + lab + '</span><span>' + f(b) + ' → <b class="' + cls + '" style="padding:0 6px;border-radius:6px">' + f(a) + (same ? "" : up ? " ▲" : " ▼") + '</b></span></div>'; };
+    box.innerHTML = row("Buffer", r.before.months, r.after.months, function (v) { return mo(v) + " months"; })
+      + row("Saving rate", r.before.save, r.after.save, function (v) { return v + "%"; })
+      + row("Net worth in 12 months", r.before.nw12, r.after.nw12, rs)
+      + '<div style="font-size:11.5px;color:var(--muted)">Nothing was changed. Growth on investments is left out.</div>';
+    [].forEach.call(document.querySelectorAll(".gm-wi-chip"), function (c) { c.setAttribute("aria-pressed", c.getAttribute("data-k") === k ? "true" : "false"); });
+  };
+  window.gmWhatIfHTML = function () {
+    if (!window.P || P.example || !gmWhatIf("raise10")) return "";
+    return '<details class="road-col gm-wi" style="margin:10px 0"><summary style="cursor:pointer;font-weight:800;font-size:13.5px">What if…</summary><div style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0">'
+      + WHATIF.filter(function (x) { return x[0] !== "rentgap6" || gmMoney().rentPlan > 0; }).map(function (x) { return '<button type="button" class="btn-sm gm-wi-chip" data-k="' + x[0] + '" aria-pressed="false" onclick="gmWhatIfShow(\'' + x[0] + '\')">' + x[1] + '</button>'; }).join("")
+      + '</div><div id="gmWiOut" aria-live="polite"></div></details>';
+  };
   // term cover one person needs: 10 years of their own take-home, plus the loans if they hold them (the first earner by default)
   // 10x yearly pay before tax (Indian planners say 10 to 15x) + the loans the person holds; take-home only if gross is unknown
   /* Slips a person makes without noticing, that quietly bend every money screen (owner 2026-11-20: "identify such mistakes a
@@ -6271,6 +6300,31 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
      told us, with nothing to type: birthdays of the people at home, a loan's last EMI, a let-out home's rent, tax, renewal and
      papers, and the month-end check-in. Each carries a moon that waxes as the day comes near (full on the day): a cue from
      nature, not a timer. The three nearest show; the rest wait under Later. */
+  /* The people who matter beyond home (owner 2026-11-23): asked once, a name and a birth day and month (never the year), kept on
+     this device only; their birthdays then come up by themselves. At most 40. */
+  window.gmPeople = function () { var a = G("gm_people", []); return Array.isArray(a) ? a.filter(function (x) { return x && typeof x.n === "string" && x.n && x.m >= 1 && x.m <= 12 && x.d >= 1 && x.d <= 31; }) : []; };
+  window.gmPeopleAdd = function (n, m, d) {
+    n = String(n || "").trim().slice(0, 40); m = Math.round(+m); d = Math.round(+d);
+    if (!n || !(m >= 1 && m <= 12) || !(d >= 1 && d <= new Date(2024, m, 0).getDate())) return false;
+    var a = gmPeople(); if (a.length >= 40) return false; a.push({ n: n, m: m, d: d }); S_("gm_people", a); return true;
+  };
+  window.gmPeopleDel = function (i) { var a = gmPeople(); a.splice(i, 1); S_("gm_people", a); if (typeof renderAll === "function") renderAll(); };
+  window.gmPeopleSave = function () {
+    var v = function (id) { var e = document.getElementById(id); return e ? e.value : ""; };
+    if (gmPeopleAdd(v("gmPplN"), v("gmPplM"), v("gmPplD"))) { if (window.gmToast) gmToast("Saved. Their birthday will come up here."); renderAll(); }
+    else if (window.gmToast) gmToast("A name and a real day, please.");
+  };
+  function gmPeopleFormHTML() {
+    var mo = "", dy = "";
+    for (var m = 1; m <= 12; m++) mo += '<option value="' + m + '">' + new Date(2024, m - 1, 1).toLocaleDateString(undefined, { month: "short" }) + '</option>';
+    for (var d = 1; d <= 31; d++) dy += '<option value="' + d + '">' + d + '</option>';
+    var list = gmPeople().map(function (x, i) { return '<span style="white-space:nowrap">' + esc(x.n) + ' <a href="#" class="gm-inl" aria-label="Remove ' + esc(x.n) + '" onclick="gmPeopleDel(' + i + ');return false">×</a></span>'; }).join(" · ");
+    return '<details class="gm-ppl" style="margin-top:6px"><summary class="gm-inl" style="cursor:pointer;font-size:12.5px">+ Someone who matters</summary>'
+      + '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px"><input id="gmPplN" aria-label="Name" placeholder="Name" maxlength="40" style="flex:1 1 140px;min-width:0">'
+      + '<select id="gmPplD" aria-label="Day">' + dy + '</select><select id="gmPplM" aria-label="Month">' + mo + '</select>'
+      + '<button type="button" class="btn-sm" onclick="gmPeopleSave()">Save</button></div>'
+      + (list ? '<div style="font-size:12px;color:var(--muted);margin-top:6px">' + list + '</div>' : '') + '</details>';
+  }
   window.gmComingUp = function () {
     if (!window.P || P.example) return [];
     var now = new Date(), t0 = new Date(now.getFullYear(), now.getMonth(), now.getDate()), out = [];
@@ -6285,6 +6339,10 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     bday(P.dob, "", true);
     if (P.pname && P.pdob) bday(P.pdob, first(P.pname));
     (P.kids || []).forEach(function (k) { if (k && k.name) bday(k.dob, first(k.name)); });
+    gmPeople().forEach(function (x) {   // people who matter beyond home: no year asked, so no age said
+      var nx = new Date(t0.getFullYear(), x.m - 1, x.d); if (nx < t0) nx = new Date(t0.getFullYear() + 1, x.m - 1, x.d);
+      out.push({ d: nx, kind: "birthday", t: first(x.n) + "'s birthday", s: "A call or a note. One minute." });
+    });
     (P.loans || []).forEach(function (x, i) {
       var m = num(x && x.tenure); if (!(m > 0 && m <= 6) || !num(x.emi)) return;
       var d = new Date(t0.getFullYear(), t0.getMonth() + m, t0.getDate());
@@ -6299,7 +6357,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       .sort(function (a, b) { return a.days - b.days; });
   };
   window.gmComingUpHTML = function () {
-    var L = window.gmComingUp ? gmComingUp() : []; if (!L.length) return "";
+    var L = window.gmComingUp ? gmComingUp() : []; if (!window.P || P.example) return "";
     var moon = function (n) { return SXWorld.moon(n); };   // the shared moon (shared/world.js): waxes as the day comes near
     var when = function (n) { return n < 0 ? (-n) + (n === -1 ? " day late" : " days late") : n === 0 ? "today" : n === 1 ? "tomorrow" : "in " + n + " days"; };
     var date = function (d) { return d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }); };
@@ -6311,7 +6369,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     };
     return '<div class="road-col gm-cu" style="margin:10px 0"><div style="font-weight:800;font-size:13.5px;margin-bottom:4px">Coming up in your world</div><div role="list">'
       + L.slice(0, 3).map(row).join("") + '</div>'
-      + (L.length > 3 ? '<details style="margin-top:4px"><summary style="cursor:pointer;font-size:12.5px">Later (' + (L.length - 3) + ')</summary><div role="list">' + L.slice(3).map(row).join("") + '</div></details>' : "") + '</div>';
+      + (L.length > 3 ? '<details style="margin-top:4px"><summary style="cursor:pointer;font-size:12.5px">Later (' + (L.length - 3) + ')</summary><div role="list">' + L.slice(3).map(row).join("") + '</div></details>' : "") + gmPeopleFormHTML() + '</div>';
   };
   function llRows(p) {
     var today = llDay(new Date()), rows = [], ym = llIso(today).slice(0, 7), mon = today.toLocaleString("en-IN", { month: "long" });
@@ -9749,7 +9807,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   function calmTodayHTML() {
     var more = dueNowHTML() + (inRecovery() ? "" : driftHTML() + resHTML()) + msTodayHTML() + insightHTML() + estateHTML();
     var open = G("gm_more_today", false) === true;
-    return '<div class="section active">' + greetHTML() + (phone() ? vitalsHTML() : "") + interruptHTML() + undoBar() + checkinHTML() + setupStripHTML() + (window.gmAskOneHTML ? gmAskOneHTML() : "") + (window.gmAwayHTML ? gmAwayHTML() : "") + todayFocusHTML() + (window.gmComingUpHTML ? gmComingUpHTML() : "") + (window.gmUsTodayHTML ? gmUsTodayHTML() : "") + winsHTML()
+    return '<div class="section active">' + greetHTML() + (phone() ? vitalsHTML() : "") + interruptHTML() + undoBar() + checkinHTML() + setupStripHTML() + (window.gmAskOneHTML ? gmAskOneHTML() : "") + (window.gmAwayHTML ? gmAwayHTML() : "") + todayFocusHTML() + (window.gmComingUpHTML ? gmComingUpHTML() : "") + (window.gmUsTodayHTML ? gmUsTodayHTML() : "") + winsHTML() + (window.gmWhatIfHTML ? gmWhatIfHTML() : "")
       + (more.replace(/<[^>]*>/g, "").trim() ? '<details class="road-col gm-more-today"' + (open ? " open" : "") + ' ontoggle="gmMoreToday(this.open)">'
         + '<summary style="cursor:pointer;font-weight:800;font-size:13px">More today <span style="font-weight:500;color:var(--muted);font-size:11.5px">\u00b7 what is due, your week, calendar, estate</span></summary>'
         + '<div style="margin-top:10px">' + more + '</div></details>' : "")
@@ -11545,6 +11603,19 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     }).join("") + '</div>';
     g.insertAdjacentHTML("afterend", h);
   };
+  /* The season and a festival near (owner 2026-11-23): India's seasons and the gazetted and restricted holidays when the region is
+     Local, the four temperate seasons (northern) when Global; a festival is named from three days before. Nothing to enter. */
+  window.gmSeasonLine = function (now) {
+    now = now || new Date(); var m = now.getMonth(), r = G("gm_region", null), local = r === null || r === undefined || r === "local";
+    var season = m === 11 || m <= 1 ? "Winter" : local ? (m <= 4 ? "Summer" : m <= 8 ? "Monsoon" : "Post-monsoon") : (m <= 4 ? "Spring" : m <= 7 ? "Summer" : "Autumn");
+    var t0 = new Date(now.getFullYear(), now.getMonth(), now.getDate()), best = null;
+    if (local) (window.gmHolidayLists || []).forEach(function (l) {
+      if (l.where !== "IN") return;
+      (l.dates || []).forEach(function (x) { var p = String(x[0]).split("-"), d = Math.round((new Date(+p[0], +p[1] - 1, +p[2]) - t0) / 864e5);
+        if (d >= 0 && d <= 3 && (!best || d < best.d)) best = { d: d, n: x[1] }; });
+    });
+    return season + (best ? " · " + best.n + (best.d === 0 ? " today" : best.d === 1 ? " tomorrow" : " in " + best.d + " days") : "");
+  };
   function greetHTML() {
     var hr = new Date().getHours(), part = hr < 5 ? "Still up" : hr < 12 ? "Good morning" : hr < 17 ? "Good afternoon" : "Good evening";
     var fn = ((typeof P !== "undefined" && P.name) || "").trim().split(" ")[0];
@@ -11573,7 +11644,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       + '<linearGradient id="gmRgVel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1d4ed8"/><stop offset=".6" stop-color="#0f9f8a"/><stop offset="1" stop-color="#d4af37"/></linearGradient></defs>'
       + ring(28, Math.round(n / 3 * 100), "gmRgGold", "gm-a1") + ring(20.5, stp, "gmRgTeal", "gm-a2") + ring(13, shp, "gmRgVel", "gm-a3")
       + '<text x="34" y="37.2" text-anchor="middle">' + n + '/3</text></svg>'
-      + '<div><h2>' + esc(part + (fn ? ", " + fn : "")) + '</h2><p>' + esc(date) + ' · ' + (n === 3 ? "today is already a win" : n ? (3 - n) + " left for a win today" : "three small things make today a win") + '</p></div></div>';
+      + '<div><h2>' + esc(part + (fn ? ", " + fn : "")) + '</h2><p>' + esc(date) + ' · ' + (n === 3 ? "today is already a win" : n ? (3 - n) + " left for a win today" : "three small things make today a win") + '</p><p class="gm-season" style="font-size:12px;opacity:.8;margin:2px 0 0">' + esc(window.gmSeasonLine ? gmSeasonLine() : "") + '</p></div></div>';
   }
 
   /* ── Welcome back: the return is the hardest moment, so reward it ──────────────────────────────────────
@@ -12403,7 +12474,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   // (localStorage "gm_work") and everything below recomputes from it: change a job here,
   // and the next Breaks screen already knows. Dates come from the DoPT office memorandum,
   // cited by reference; offices outside Delhi follow their state committee's list.
-  var HOLIDAY_LISTS = [
+  var HOLIDAY_LISTS = window.gmHolidayLists = [
     { id: "in-central", where: "IN", name: "Central government (India), gazetted, Delhi offices",
       source: "DoPT O.M. 12/2/2023-JCA of 16 July 2026; offices outside Delhi follow their state committee's list",
       dates: [["2026-11-24", "Guru Nanak's Birthday"], ["2026-12-25", "Christmas Day"], ["2027-01-26", "Republic Day"],
