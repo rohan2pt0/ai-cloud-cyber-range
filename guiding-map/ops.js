@@ -1682,6 +1682,34 @@
     bustDerived(); renderAll();
     if (typeof gmToast === "function") gmToast(ans === "in" ? "Removed. The rent counts once, as money coming in." : "Kept as a bill you pay.");
   };
+  /* Saving as tree rings (immersive-real, natures-design, owner 2026-11-23): a cross-section of a trunk, the way a forester reads
+     a tree's good and lean years. One ring per month from the month-end check-ins (oldest at the heart); a ring's width is that
+     month's saving rate, so a thick ring is a month that saved well. The outer ring is this month, edged in gold. With no history
+     yet, a young trunk shows today's rate and says when the first true ring appears. */
+  window.gmTreeRings = function () {
+    var M = profOK() ? gmMoney() : null; if (!M || !(M.income > 0)) return "";
+    var hist = scSeries().map(function (x) { return { m: x.month, r: Math.round((M.income - x.f - x.v) / M.income * 100) }; }).slice(-24);
+    var rings = hist.concat([{ m: "now", r: M.save === null ? 0 : M.save }]);
+    var id = "tr" + Math.random().toString(36).slice(2, 7), cx = 80, cy = 80, rad = 6, paths = "";
+    var wob = function (r, k) { var pts = []; for (var a = 0; a < 360; a += 12) { var t = a * Math.PI / 180, rr = r + Math.sin(t * 3 + k) * 0.9 + Math.cos(t * 5 + k * 1.7) * 0.6; pts.push((cx + rr * Math.cos(t)).toFixed(1) + " " + (cy + rr * Math.sin(t)).toFixed(1)); } return "M" + pts.join(" L") + " Z"; };
+    var scale = 62 / Math.max(rings.reduce(function (a, x) { return a + 1 + Math.max(0, Math.min(60, x.r)) / 3; }, 0), 30);
+    rings.forEach(function (x, i) {
+      var wdt = (1 + Math.max(0, Math.min(60, x.r)) / 3) * scale; rad += wdt;   // a lean month is a hairline, a strong one a broad band
+      var last = i === rings.length - 1;
+      paths = '<path d="' + wob(rad, i) + '" fill="' + (i % 2 ? "#d9b98a" : "#e6caa0") + '" stroke="' + (last ? "#c9a84c" : "#9a6f42") + '" stroke-width="' + (last ? 2.2 : 0.9) + '" stroke-opacity="' + (last ? 1 : 0.7) + '"/>' + paths;
+    });
+    var bark = '<path d="' + wob(rad + 7, 9) + '" fill="#5a3a22"/><path d="' + wob(rad + 3.5, 4) + '" fill="#7a5130"/>';
+    var crack = '<path d="M' + cx + ' ' + cy + ' L' + (cx + rad * 0.85) + ' ' + (cy - rad * 0.35) + '" stroke="#8a5d36" stroke-opacity=".35" stroke-width="1"/>';
+    var now = rings[rings.length - 1].r, good = rings.filter(function (x) { return x.r >= 20; }).length;
+    return '<div class="gm-tree" style="display:flex;align-items:center;gap:14px;margin:10px 0">'
+      + '<svg width="160" height="160" viewBox="0 0 160 160" role="img" aria-label="Saving as tree rings: ' + rings.length + ' rings, this month ' + now + ' percent">'
+      + '<defs><radialGradient id="' + id + '" cx=".45" cy=".42" r=".7"><stop offset="0" stop-color="#fff" stop-opacity=".25"/><stop offset="1" stop-color="#000" stop-opacity=".12"/></radialGradient></defs>'
+      + '<ellipse cx="80" cy="150" rx="62" ry="6" fill="#000" opacity=".14"/>' + bark + paths
+      + '<circle cx="' + cx + '" cy="' + cy + '" r="3" fill="#8a5d36"/>' + crack + '<circle cx="' + cx + '" cy="' + cy + '" r="' + (rad + 7) + '" fill="url(#' + id + ')"/></svg>'
+      + '<div><div style="font-size:26px;font-weight:800;line-height:1">' + now + '%<span style="font-size:13px;font-weight:600"> saved this month</span></div>'
+      + '<div style="font-size:12.5px;color:var(--muted);margin-top:4px">' + (hist.length ? rings.length + ' rings, one a month. ' + good + ' thick (20% or more).' : 'A young tree: your first true ring grows after the next month-end check-in.')
+      + '<br>A thick ring is a month you saved well; the gold ring is this month.</div></div></div>';
+  };
   /* The buffer as water in a glass vessel (immersive-real, natures-design, owner 2026-11-23): water is safety; the level is the
      months your savings last, the etched line is the aim. Light refracts through the glass, the surface moves gently (still when
      the person asks for less motion), and the water's colour tells the state: deep teal when safe, amber-tinted when building,
@@ -1729,6 +1757,7 @@
     } else h += '<div class="gm-rs-h">List your fixed bills once and add your balance below. Your real spend shows itself.</div>';
     if (rw) {
       h += gmVessel(rw.gapM > 0 ? rw.months : rw.target, rw.target, rw.state);
+      h += gmTreeRings();
       h += '<div style="margin-top:10px;font-size:13px">Cover for ' + rw.target + ' months or more is the aim' + (rw.contract ? ' on contract work' : '') + ': '
         + gmRag(rw.state, rw.gapM > 0 ? (rw.months > 120 ? "120+ months" : rw.months.toFixed(1) + " months") : "covered") + '<div class="gm-tgt" style="font-size:10.5px;color:var(--muted);margin-top:3px;line-height:1.3">aim ' + rw.target + '+ months · ' + rs(rw.target * rw.gapM)
         + ' · savings and FDs ' + rs(rw.liquid) + ' ÷ ' + rs(rw.gapM) + ' a month' + (rw.secure > 0 ? ' (spend ' + rs(rw.real.total) + ' less ' + rs(rw.secure) + ' that keeps coming: the permanent pay and the rent)' : '') + '</div><div style="margin-top:6px">' + rw.insight + '</div>' + workHTML() + '</div>';

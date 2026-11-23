@@ -35,5 +35,9 @@ setTimeout(() => {
   ok("gold bars: filled for what you have, outlined to the benchmark", (gb.match(/fill="url\(#gb\w+f\)"/g) || []).length === 3 && (gb.match(/stroke-dasharray="3 3"/g) || []).length === 6 && /3 more to the benchmark/.test(gb), gb.slice(0, 160));
   ok("a big stack switches to ₹1 crore bars", /Each bar is ₹1 crore/.test(w.gmGoldBars(150000000, 0)));
   ok("nothing to draw, nothing shown", w.gmGoldBars(0, 0) === "");
+  // saving as tree rings: one ring a month from the check-ins, the outer gold ring is this month; a young tree says when it grows
+  const tr = w.gmTreeRings();
+  ok("a young tree before any check-in history", /young tree/.test(tr) && /saved this month/.test(tr), tr.slice(0, 120));
+  ok("the tree is an image with words", /role="img" aria-label="Saving as tree rings: 1 rings/.test(tr));
   console.log("test155 coming up: " + P + " passed, " + F + " failed"); e.forEach(x => console.log("  " + x)); process.exit(F ? 1 : 0);
 }, 400);
