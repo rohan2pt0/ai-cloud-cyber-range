@@ -67,7 +67,7 @@ def check(answers: dict, state_path, now: float) -> str:
     day = int(now // DAY)
     parts, red = [], False
     for name, a in answers.items():
-        why = str(a.get("why", ""))
+        why = re.sub(r"\s*(?:at\s+)?https?://\S+", "", str(a.get("why", ""))).strip()   # the line is public: no account links or ids
         nokey = (not a.get("ok")) and any(k in why.lower() for k in NO_KEY)
         left = _credit(why)
         if left is not None:

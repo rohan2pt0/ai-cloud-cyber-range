@@ -96,3 +96,10 @@ def test_a_gemini_key_that_is_missing_here_reads_as_no_key_not_red(tmp_path):
     builders.check(ans, st, 1_000_000.0)
     line = builders.check(ans, st, 1_000_000.0 + 3 * 86400)
     assert "not checked here (no key)" in line and not line.startswith("RED")
+
+
+def test_the_public_line_carries_no_account_link(tmp_path):
+    """The backlog issue is public: a provider's reason that holds a console link with an account id must lose the link."""
+    ans = {"gocode": {"ok": False, "why": "usage limit reached. Turn on Extra Usage at https://example.invalid/console/org_fake-fake"}}
+    line = builders.check(ans, tmp_path / "b.json", 1_000_000.0)
+    assert "http" not in line and "org_fake" not in line and "usage limit reached" in line
