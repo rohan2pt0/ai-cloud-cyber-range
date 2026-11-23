@@ -134,6 +134,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- Goals as a path up a mountain
 - Us on Today, one tap
 - Us
 - Saving as tree rings
@@ -141,7 +142,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - Real materials for the numbers
 - Coming up in your world
 - Life OS, immersive and real
-- Supervised AI investigation console
 
 **Release 0.4.0 - 2026-11-14:**
 

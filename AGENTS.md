@@ -102,7 +102,9 @@ The principles behind it:
   through `governance/oskit.py`. A new primitive goes there first, then any app uses it; an app adds only its own context and
   maps its class names in the file's adapter section, never keeping a private copy. The kit's lock, plain English, one open
   action and the threat-news engine follow the same rule: build once, reuse everywhere. `governance/tests/test_shared_look.py`
-  holds it.
+  holds it. The real-world objects (the moon, gold bars, water in glass, tree rings, the cloth flag) live in ONE engine,
+  `guiding-map/shared/world.js` (`SXWorld`), each with a fixed meaning in its `CATALOG`: use one per card, for that meaning only
+  (`test159.js`).
 - **Stunning on every screen, made for humans (`every-device`, owner 2026-11-14):** how it looks and feels is the most
   important feature, because the person is human. Every element must look stunning on every device people really hold
   (Android and iPhone, small and large; iPad upright and sideways; laptops and large monitors) and adapt to each display,

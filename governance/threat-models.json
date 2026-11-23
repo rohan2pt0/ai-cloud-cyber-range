@@ -10,6 +10,21 @@
   "E": "Elevation of privilege"
  },
  "models": {
+  "wind-flag": {
+    "name": "The Life OS summit flag flying in the person's local wind",
+    "scope": "With one tap of consent, the app reads a rough device location once and asks Open-Meteo for the current wind there; the reading is kept on the device.",
+    "boundaries": ["the person's browser (this device)", "the internet to Open-Meteo"],
+    "elements": [{"id": "app-page", "kind": "process"}, {"id": "wind-store", "kind": "store"}, {"id": "open-meteo", "kind": "external"}],
+    "flows": [{"from": "app-page", "to": "open-meteo", "data": "latitude and longitude rounded to one decimal (about 10 km); no cookie, no referrer, no account", "crosses": "the internet to Open-Meteo"}],
+    "threats": [
+      {"id": "wf-s1", "stride": "S", "element": "open-meteo", "threat": "A look-alike service answers instead of Open-Meteo.", "status": "mitigated", "mitigation": "the request goes to one fixed HTTPS address; the browser checks the certificate", "evidence": "guiding-map/ops.js"},
+      {"id": "wf-t1", "stride": "T", "element": "wind-store", "threat": "A wrong or hostile answer is stored and drawn.", "status": "mitigated", "mitigation": "only two numbers are kept, each range-checked (speed 0-150, direction 0-359); nothing from the answer is ever written as HTML", "evidence": "guiding-map/tests/test158.js"},
+      {"id": "wf-r1", "stride": "R", "element": "app-page", "threat": "The person cannot tell that a request was made.", "status": "mitigated", "mitigation": "it starts only after the person taps to allow it, the line under the mountain says the wind is theirs and offers Stop", "evidence": "guiding-map/tests/test158.js"},
+      {"id": "wf-i1", "stride": "I", "element": "open-meteo", "threat": "The service learns where the person is.", "status": "accepted", "reason": "only a rounded location (about 10 km) is sent, at most every 3 hours, with no identifier; the person opts in and Stop forgets the place", "review": "2027-05-23"},
+      {"id": "wf-d1", "stride": "D", "element": "open-meteo", "threat": "The service is down or slow and the app waits.", "status": "mitigated", "mitigation": "the call runs in the background after the page is drawn; offline or failed, the last reading or a soft default breeze is used", "evidence": "guiding-map/ops.js"},
+      {"id": "wf-e1", "stride": "E", "element": "app-page", "threat": "The location permission is used for something else.", "status": "not-applicable", "reason": "the position is read once, rounded and used only for this one request; no other code reads it"}
+    ]
+  },
   "command-door": {
    "name": "The hosted Command Center door and each node's /_door.json",
    "scope": "A static page that lists a person's machines and asks each whether it is up; the one path each node answers itself.",

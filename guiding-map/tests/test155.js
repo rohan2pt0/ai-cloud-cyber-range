@@ -24,7 +24,7 @@ setTimeout(() => {
   ok("Today shows the card", !!c, (d.querySelector("#sections") || d.body).textContent.slice(0, 200));
   ok("three in view, the rest under Later", c && c.querySelectorAll(":scope > div[role=list] > .gm-cu-row").length === 3 && /Later \(\d+\)/.test(c.textContent));
   ok("each row has a moon and a when", c && c.querySelectorAll(".gm-moon").length === L.length && /in 6 days/.test(c.textContent));
-  ok("nothing to type", c && !c.querySelector("input, textarea, select"));
+  ok("nothing to type, except the one folded line to add someone who matters", c && [...c.querySelectorAll("input, textarea, select")].every(x => x.closest("details.gm-ppl")) && !c.querySelector("details.gm-ppl[open]"));
   // the buffer as water in a glass vessel: the level is the months, a gold line is the aim; still for reduced motion
   w.gmWorkSet("me", "contract"); w.goTab("money"); w.renderAll();
   const v = d.querySelector(".gm-vessel svg");
@@ -32,7 +32,7 @@ setTimeout(() => {
   ok("the wave rests when less motion is asked for", /prefers-reduced-motion: reduce\)\{\.gm-wave\{animation:none\}/.test(html));
   // net worth as gold bars: one per ₹10 lakh, ghost bars to the age benchmark, a bigger unit for a big stack
   const gb = w.gmGoldBars(2500000, 6000000);
-  ok("gold bars: filled for what you have, outlined to the benchmark", (gb.match(/fill="url\(#gb\w+f\)"/g) || []).length === 3 && (gb.match(/stroke-dasharray="3 3"/g) || []).length === 6 && /3 more to the benchmark/.test(gb), gb.slice(0, 160));
+  ok("gold bars: filled for what you have, outlined to the benchmark", (gb.match(/fill="url\(#sxg\w+f\)"/g) || []).length === 3 && (gb.match(/stroke-dasharray="3 3"/g) || []).length === 6 && /3 outlined to the benchmark/.test(gb), gb.slice(0, 160));
   ok("a big stack switches to ₹1 crore bars", /Each bar is ₹1 crore/.test(w.gmGoldBars(150000000, 0)));
   ok("nothing to draw, nothing shown", w.gmGoldBars(0, 0) === "");
   const t0 = Date.now(), huge = w.gmGoldBars(9e8, 6.5e8);   // a ₹90 crore investor once froze the page (persona audit)

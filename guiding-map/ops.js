@@ -1351,25 +1351,9 @@
     var unit = 1e6, big = Math.max(nw, target); while (unit < 1e9 && big / unit > 36) unit *= 10;
     var have = Math.min(36, Math.round(nw / unit)), want = Math.min(36, Math.max(have, Math.round(target / unit)));
     if (!want) return "";
-    var per = 4; while (per < 8 && per * (per + 1) / 2 < want) per++;   // a pyramid: the bottom row holds per, each row above one fewer
-    var bw = 42, bh = 16, dx = 6, dy = 7, rows = 0, cap = 0; while (cap < want && rows < per) { cap += per - rows; rows++; }
-    var W = per * (bw + 4) + 12, H = rows * (bh + dy) + 20, id = "gb" + Math.random().toString(36).slice(2, 7);
-    var bar = function (i, ghost) {
-      var r = 0, c = i; while (c >= per - r) { c -= per - r; r++; }
-      var x = 6 + r * (bw + 4) / 2 + c * (bw + 4), y = H - 10 - (r + 1) * (bh + dy) + dy;
-      var front = 'M' + x + ' ' + (y + dy) + ' h' + bw + ' v' + bh + ' h-' + bw + ' Z', top = 'M' + x + ' ' + (y + dy) + ' l' + dx + ' -' + dy + ' h' + (bw - 2 * dx) + ' l' + dx + ' ' + dy + ' Z';
-      if (ghost) return '<path d="' + front + '" fill="none" stroke="#c9a84c" stroke-opacity=".55" stroke-dasharray="3 3"/><path d="' + top + '" fill="none" stroke="#c9a84c" stroke-opacity=".4" stroke-dasharray="3 3"/>';
-      return '<path d="' + front + '" fill="url(#' + id + 'f)" stroke="#8f6619" stroke-width=".8"/><path d="' + top + '" fill="url(#' + id + 't)" stroke="#a87c22" stroke-width=".6"/>'
-        + '<path d="M' + (x + 3) + ' ' + (y + dy + 3) + ' h' + (bw - 6) + '" stroke="#fff6dc" stroke-opacity=".7" stroke-width="1"/>';
-    };
-    var g = "";
-    for (var i = 0; i < want; i++) g += bar(i, i >= have);
     var lab = { 1e6: "₹10 lakh", 1e7: "₹1 crore", 1e8: "₹10 crore", 1e9: "₹100 crore" }[unit];
     return '<div class="gm-bars" style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin:8px 0">'
-      + '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Net worth: ' + have + ' gold bars of ' + lab + ', ' + Math.max(0, want - have) + ' more to the benchmark for your age">'
-      + '<defs><linearGradient id="' + id + 'f" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff1c4"/><stop offset=".22" stop-color="#e9c873"/><stop offset=".5" stop-color="#b88a2e"/><stop offset=".62" stop-color="#a97c25"/><stop offset=".85" stop-color="#e0bb66"/><stop offset="1" stop-color="#c9a04a"/></linearGradient>'
-      + '<linearGradient id="' + id + 't" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#f3dc9a"/><stop offset=".45" stop-color="#fff6dc"/><stop offset="1" stop-color="#d9b25a"/></linearGradient></defs>'
-      + '<ellipse cx="' + (W / 2) + '" cy="' + (H - 6) + '" rx="' + (W / 2 - 4) + '" ry="4" fill="#000" opacity=".15"/>' + g + '</svg>'
+      + SXWorld.goldBars(have, want, lab)
       + '<div style="font-size:12.5px;color:var(--muted);min-width:120px">Each bar is ' + lab + '.<br><b style="color:var(--text)">' + have + ' in the vault</b>' + (want > have ? ', ' + (want - have) + ' outlined to the benchmark for your age.' : '. You are at or past the benchmark for your age.') + '</div></div>';
   };
   // What you own, by kind: one bar, each share in words, and the one thing that matters (owner 2026-11-20)
@@ -1580,6 +1564,35 @@
       buffer: rw, invest: invest, netWorth: netWorth, loans: L, gold: gold, mix: mix
     };
   };
+  /* What if (owner 2026-11-23): what a choice would do before it is made, from the same money model, with one tap and nothing
+     saved: the buffer in months, the saving rate and net worth a year from now (no growth assumed). */
+  window.gmWhatIf = function (k) {
+    var M = window.P ? gmMoney() : null; if (!M || !(M.income > 0)) return null;
+    var rw = M.buffer, liquid = rw ? rw.liquid : Math.max(0, num(P.sav)), gap = rw ? rw.gapM : M.spend;
+    var calc = function (inc, sp, g, lost) { return { months: g > 0 ? liquid / g : 999, save: inc > 0 ? Math.round((inc - sp) / inc * 100) : 0, nw12: Math.round(M.netWorth + 12 * (inc - sp) - (lost || 0)) }; };
+    var b = calc(M.income, M.spend, gap), a = k === "spend10k" ? calc(M.income, Math.max(0, M.spend - 10000), gap - 10000)
+      : k === "raise10" ? calc(M.income + Math.round(M.salary * 0.1), M.spend, gap)
+      : k === "rentgap6" ? (function () { var x = calc(M.income - M.rentPlan / 2, M.spend, gap + M.rentPlan, 0); x.nw12 = Math.round(M.netWorth + 12 * (M.income - M.spend) - 6 * M.rentPlan); return x; })() : null;
+    return a ? { before: b, after: a } : null;
+  };
+  var WHATIF = [["spend10k", "Spend ₹10,000 less a month"], ["raise10", "A 10% raise"], ["rentgap6", "The flat empty for 6 months"]];
+  window.gmWhatIfShow = function (k) {
+    var box = document.getElementById("gmWiOut"), r = gmWhatIf(k); if (!box || !r) return;
+    var mo = function (v) { return v >= 120 ? "120+" : v.toFixed(1); };
+    var row = function (lab, b, a, f) { var up = a > b, same = Math.abs(a - b) < 1e-9, cls = same ? "" : up ? "sx-state-good" : "sx-state-low";
+      return '<div style="display:flex;justify-content:space-between;gap:8px;padding:4px 0;font-size:13px"><span>' + lab + '</span><span>' + f(b) + ' → <b class="' + cls + '" style="padding:0 6px;border-radius:6px">' + f(a) + (same ? "" : up ? " ▲" : " ▼") + '</b></span></div>'; };
+    box.innerHTML = row("Buffer", r.before.months, r.after.months, function (v) { return mo(v) + " months"; })
+      + row("Saving rate", r.before.save, r.after.save, function (v) { return v + "%"; })
+      + row("Net worth in 12 months", r.before.nw12, r.after.nw12, rs)
+      + '<div style="font-size:11.5px;color:var(--muted)">Nothing was changed. Growth on investments is left out.</div>';
+    [].forEach.call(document.querySelectorAll(".gm-wi-chip"), function (c) { c.setAttribute("aria-pressed", c.getAttribute("data-k") === k ? "true" : "false"); });
+  };
+  window.gmWhatIfHTML = function () {
+    if (!window.P || P.example || !gmWhatIf("raise10")) return "";
+    return '<details class="road-col gm-wi" style="margin:10px 0"><summary style="cursor:pointer;font-weight:800;font-size:13.5px">What if…</summary><div style="display:flex;flex-wrap:wrap;gap:6px;margin:8px 0">'
+      + WHATIF.filter(function (x) { return x[0] !== "rentgap6" || gmMoney().rentPlan > 0; }).map(function (x) { return '<button type="button" class="btn-sm gm-wi-chip" data-k="' + x[0] + '" aria-pressed="false" onclick="gmWhatIfShow(\'' + x[0] + '\')">' + x[1] + '</button>'; }).join("")
+      + '</div><div id="gmWiOut" aria-live="polite"></div></details>';
+  };
   // term cover one person needs: 10 years of their own take-home, plus the loans if they hold them (the first earner by default)
   // 10x yearly pay before tax (Indian planners say 10 to 15x) + the loans the person holds; take-home only if gross is unknown
   /* Slips a person makes without noticing, that quietly bend every money screen (owner 2026-11-20: "identify such mistakes a
@@ -1706,6 +1719,115 @@
       + '<circle cx="' + (w / 2 - gap) + '" cy="' + cy + '" r="2.4" fill="#fffbe9"/><circle cx="' + (w / 2 + gap) + '" cy="' + cy + '" r="2.4" fill="#fffbe9"/></svg>';
   }
   function usAvg(weeks) { var ks = Object.keys(weeks).sort(), c = ks.slice(-6).map(function (k) { return weeks[k].close || 0; }).filter(Boolean); return c.length ? c.reduce(function (a, b) { return a + b; }, 0) / c.length : 3; }
+  /* While you were away (immersive-real, owner 2026-11-23): the world kept running. When the person comes back after three days or
+     more, Today opens with one calm card: the sunrises they missed, drawn as small suns along an arc, and what moved in their money
+     while they were gone. One tap ("Got it") and it folds. A shorter gap simply refreshes the snapshot, so it never nags. */
+  var SEEN_K = "gm_seen";
+  function seenSnap() { var m = profOK() ? gmMoney() : null; return { at: Date.now(), n: m ? m.netWorth : 0, b: m && m.buffer && m.buffer.gapM > 0 ? +m.buffer.months.toFixed(1) : null }; }
+  window.gmSeenOk = function () { S_(SEEN_K, seenSnap()); renderAll(); };
+  window.gmAwayHTML = function () {
+    if (!profOK()) return "";
+    var o = G(SEEN_K, null);
+    if (!o || typeof o !== "object" || !(+o.at > 0)) { S_(SEEN_K, seenSnap()); return ""; }
+    var days = Math.floor((Date.now() - o.at) / 864e5);
+    if (days < 3) { if (days >= 1) S_(SEEN_K, seenSnap()); return ""; }
+    var now = seenSnap(), lines = [], n = Math.min(days, 14);
+    if (Math.abs(now.n - (+o.n || 0)) >= 1) lines.push("Net worth " + (now.n > o.n ? "+" : "−") + rs(Math.abs(now.n - o.n)));
+    if (o.b !== null && now.b !== null && now.b !== o.b) lines.push("Buffer " + o.b + " → " + now.b + " months");
+    var cu = window.gmComingUp ? gmComingUp()[0] : null;
+    if (cu) lines.push("Next: " + cu.t.replace(/<[^>]+>/g, "") + (cu.days <= 0 ? " (today)" : " in " + cu.days + (cu.days === 1 ? " day" : " days")));
+    var suns = ""; for (var i = 0; i < n; i++) { var t = n === 1 ? 0.5 : i / (n - 1), x = 14 + t * 252, y = 46 - Math.sin(t * Math.PI) * 30; suns += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="4.2" fill="#f3c86a"/><circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="8" fill="#f3c86a" opacity=".22"/>'; }
+    return '<div class="road-col gm-away" style="margin:10px 0">'
+      + '<svg viewBox="0 0 280 56" width="100%" style="max-width:420px;display:block" role="img" aria-label="' + days + ' sunrises since you were last here"><rect width="280" height="56" rx="10" fill="#132a47"/><path d="M0 50 H280" stroke="#e9c99a" stroke-opacity=".35"/>' + suns + '</svg>'
+      + '<div style="font-weight:800;margin-top:8px">Welcome back. ' + days + ' sunrises while you were away.</div>'
+      + '<div style="font-size:13px;color:var(--muted);margin-top:2px">' + (lines.length ? lines.join(" · ") : "Nothing changed in your numbers. The world waited.") + '</div>'
+      + '<button type="button" class="btn-sm" style="margin-top:8px" onclick="gmSeenOk()">Got it</button></div>';
+  };
+
+  /* Last month, in review (immersive-real, owner 2026-11-23): in the first seven days of a month the app writes last month's
+     after-action review from what it already holds (days the daily three were kept, the saving rate from the month-end check-in,
+     goals that moved) and offers three small changes for this month. One tap picks one, it goes to the inbox with a due date,
+     and the card folds. "Got it" folds it too. Kept by month in gm_aar_seen; it never shows after the 7th and never nags. */
+  var AAR_K = "gm_aar_seen";
+  function aarKey(d) { return d.getFullYear() + "-" + (d.getMonth() < 9 ? "0" : "") + (d.getMonth() + 1); }
+  window.gmMonthAAR = function (now) {
+    now = now || new Date();
+    var first = new Date(now.getFullYear(), now.getMonth() - 1, 1), end = new Date(now.getFullYear(), now.getMonth(), 1), lk = aarKey(first);
+    var days = Math.round((end - first) / 864e5), went = [], slipped = [], kept = 0, hasDaily = false;
+    if (typeof S !== "undefined" && S.daily && typeof DAILY3 !== "undefined") {
+      var ids = DAILY3.map(function (x) { return x.id; });
+      for (var i = 0; i < days; i++) {
+        var rows = S.daily[dKey(new Date(first.getFullYear(), first.getMonth(), 1 + i))] || [];
+        if (rows.length) hasDaily = true;
+        if (rows.some(function (x) { return ids.indexOf(x) >= 0; })) kept++;
+      }
+    }
+    if (hasDaily) (kept * 2 >= days ? went : slipped).push("The daily three were kept on " + kept + " of " + days + " days");
+    var M = profOK() ? gmMoney() : null, row = null;
+    scSeries().forEach(function (x) { if (x.key === lk) row = x; });
+    if (row && M && M.income > 0) {
+      var r = Math.round((M.income - row.f - row.v) / M.income * 100);
+      (r >= 20 ? went : slipped).push("You saved " + r + "% of your income");
+    }
+    var moved = 0, total = (typeof S !== "undefined" && S.okrs) ? S.okrs.length : 0;
+    if (total) {
+      S.okrs.forEach(function (o, oi) { if ((o.krs || []).some(function (k) { return k.at >= +first && k.at < +end; }) && okrGrade(oi) > 0) moved++; });
+      (moved ? went : slipped).push(moved ? moved + " of " + total + (total === 1 ? " goal moved" : " goals moved") : "No goal moved");
+    }
+    var choices = ["Keep the daily three on most days", "Put saving first, before spending", "Move one goal a small step"];
+    if (slipped.length && /daily three/.test(slipped[0])) choices.unshift(choices.splice(0, 1)[0]);
+    else if (slipped.length && /saved/.test(slipped[0])) choices.unshift(choices.splice(1, 1)[0]);
+    else if (slipped.length && /goal/.test(slipped[0])) choices.unshift(choices.splice(2, 1)[0]);
+    return { month: aarKey(now), last: lk, went: went, slipped: slipped, choices: choices };
+  };
+  function aarSeenSet(v) { var a = gmMonthAAR(), s = G(AAR_K, {}); if (!s || typeof s !== "object" || Array.isArray(s)) s = {}; s[a.month] = v; S_(AAR_K, s); }
+  window.gmMonthAARPick = function (i) {
+    var a = gmMonthAAR(), t = a.choices[+i]; if (!t) return;
+    var due = new Date(); due.setDate(due.getDate() + 7);
+    gmInboxAdd("This month: " + t, "action", { due: dKey(due), from: "aar" });
+    aarSeenSet("picked"); renderAll();
+  };
+  window.gmMonthAARSeen = function () { aarSeenSet("seen"); renderAll(); };
+  window.gmMonthAARHTML = function () {
+    if (!profOK() || new Date().getDate() > 7) return "";
+    var a = gmMonthAAR(), s = G(AAR_K, {});
+    if (s && typeof s === "object" && s[a.month]) return "";
+    if (!a.went.length && !a.slipped.length) return "";
+    var li = function (x) { return '<li>' + esc(x) + '</li>'; };
+    return '<div class="road-col gm-away gm-aar" style="margin:10px 0"><div style="font-weight:800">Last month, in review</div>'
+      + (a.went.length ? '<div style="font-size:12.5px;color:var(--muted);margin-top:6px">What went well</div><ul style="margin:2px 0 0;padding-inline-start:18px">' + a.went.map(li).join("") + '</ul>' : "")
+      + (a.slipped.length ? '<div style="font-size:12.5px;color:var(--muted);margin-top:6px">Room to grow</div><ul style="margin:2px 0 0;padding-inline-start:18px">' + a.slipped.map(li).join("") + '</ul>' : "")
+      + '<div style="font-size:12.5px;color:var(--muted);margin-top:8px">If you like, pick one change for this month:</div><div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px">'
+      + a.choices.map(function (c, i) { return '<button type="button" class="btn-sm gm-aar-pick" onclick="gmMonthAARPick(' + i + ')">' + esc(c) + '</button>'; }).join("") + '</div>'
+      + '<button type="button" class="btn-sm gm-aar-ok" style="margin-top:8px" onclick="gmMonthAARSeen()">Got it</button></div>';
+  };
+
+  /* Your own wind on the summit flag (immersive-real, owner 2026-11-23): with one tap of consent the app asks the device for a rough
+     location once (rounded to about 10 km), reads the current wind there from Open-Meteo (no account, no key), and keeps it on this
+     device. The flag then flies with that speed and direction; it refreshes at most every 3 hours when online, otherwise uses the
+     last reading, and with none it waves in a soft default breeze. Nothing else leaves the device; turning it off forgets the place. */
+  var WIND_K = "gm_wind";
+  window.gmWind = function () { var w = G(WIND_K, null); return w && typeof w === "object" && w.ok && isFinite(+w.speed) ? w : null; };
+  if (window.SXWorld) SXWorld.windSource = window.gmWind;   // the shared cloth flies in the person's own wind
+  window.gmWindFetch = function (force) {
+    var w = G(WIND_K, null); if (!w || !w.ok || !navigator.onLine || !window.fetch) return;
+    if (!force && w.at && Date.now() - w.at < 3 * 3600e3) return;
+    var go = function (lat, lon) {
+      fetch("https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon + "&current=wind_speed_10m,wind_direction_10m", { credentials: "omit", referrerPolicy: "no-referrer" })
+        .then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+          var c = j && j.current; if (!c || !isFinite(+c.wind_speed_10m)) return;
+          var v = G(WIND_K, {}) || {}; v.speed = Math.max(0, Math.min(150, +c.wind_speed_10m)); v.dir = ((+c.wind_direction_10m % 360) + 360) % 360; v.at = Date.now(); S_(WIND_K, v); renderAll();
+        }).catch(function () {});
+    };
+    if (isFinite(+w.lat) && isFinite(+w.lon)) return go(w.lat, w.lon);
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      var v = G(WIND_K, {}) || {}; v.lat = Math.round(pos.coords.latitude * 10) / 10; v.lon = Math.round(pos.coords.longitude * 10) / 10; S_(WIND_K, v); go(v.lat, v.lon);
+    }, function () {}, { maximumAge: 864e5, timeout: 10000, enableHighAccuracy: false });
+  };
+  window.gmWindOn = function (on) { if (on) { S_(WIND_K, { ok: true }); gmWindFetch(true); } else S_(WIND_K, { ok: false }); renderAll(); };
+  try { setTimeout(function () { if (window.gmWindFetch) gmWindFetch(false); }, 1500); } catch (e) {}
+
   // Today: one question a week, three big choices, one tap; answered, it folds to the stars and one line (owner 2026-11-23: visible, no friction)
   window.gmUsTodayHTML = function () {
     if (!window.P || P.example || !(P.pname || (typeof gmEarners === "function" && gmEarners(P) === 2))) return "";
@@ -1752,22 +1874,9 @@
     var M = profOK() ? gmMoney() : null; if (!M || !(M.income > 0)) return "";
     var hist = scSeries().map(function (x) { return { m: x.month, r: Math.round((M.income - x.f - x.v) / M.income * 100) }; }).slice(-24);
     var rings = hist.concat([{ m: "now", r: M.save === null ? 0 : M.save }]);
-    var id = "tr" + Math.random().toString(36).slice(2, 7), cx = 80, cy = 80, rad = 6, paths = "";
-    var wob = function (r, k) { var pts = []; for (var a = 0; a < 360; a += 12) { var t = a * Math.PI / 180, rr = r + Math.sin(t * 3 + k) * 0.9 + Math.cos(t * 5 + k * 1.7) * 0.6; pts.push((cx + rr * Math.cos(t)).toFixed(1) + " " + (cy + rr * Math.sin(t)).toFixed(1)); } return "M" + pts.join(" L") + " Z"; };
-    var scale = 62 / Math.max(rings.reduce(function (a, x) { return a + 1 + Math.max(0, Math.min(60, x.r)) / 3; }, 0), 30);
-    rings.forEach(function (x, i) {
-      var wdt = (1 + Math.max(0, Math.min(60, x.r)) / 3) * scale; rad += wdt;   // a lean month is a hairline, a strong one a broad band
-      var last = i === rings.length - 1;
-      paths = '<path d="' + wob(rad, i) + '" fill="' + (i % 2 ? "#d9b98a" : "#e6caa0") + '" stroke="' + (last ? "#c9a84c" : "#9a6f42") + '" stroke-width="' + (last ? 2.2 : 0.9) + '" stroke-opacity="' + (last ? 1 : 0.7) + '"/>' + paths;
-    });
-    var bark = '<path d="' + wob(rad + 7, 9) + '" fill="#5a3a22"/><path d="' + wob(rad + 3.5, 4) + '" fill="#7a5130"/>';
-    var crack = '<path d="M' + cx + ' ' + cy + ' L' + (cx + rad * 0.85) + ' ' + (cy - rad * 0.35) + '" stroke="#8a5d36" stroke-opacity=".35" stroke-width="1"/>';
     var now = rings[rings.length - 1].r, good = rings.filter(function (x) { return x.r >= 20; }).length;
     return '<div class="gm-tree" style="display:flex;align-items:center;gap:14px;margin:10px 0">'
-      + '<svg width="160" height="160" viewBox="0 0 160 160" role="img" aria-label="Saving as tree rings: ' + rings.length + ' rings, this month ' + now + ' percent">'
-      + '<defs><radialGradient id="' + id + '" cx=".45" cy=".42" r=".7"><stop offset="0" stop-color="#fff" stop-opacity=".25"/><stop offset="1" stop-color="#000" stop-opacity=".12"/></radialGradient></defs>'
-      + '<ellipse cx="80" cy="150" rx="62" ry="6" fill="#000" opacity=".14"/>' + bark + paths
-      + '<circle cx="' + cx + '" cy="' + cy + '" r="3" fill="#8a5d36"/>' + crack + '<circle cx="' + cx + '" cy="' + cy + '" r="' + (rad + 7) + '" fill="url(#' + id + ')"/></svg>'
+      + SXWorld.treeRings(rings.map(function (x) { return x.r; }), 'Saving as tree rings: ' + rings.length + ' rings, this month ' + now + ' percent')
       + '<div><div style="font-size:26px;font-weight:800;line-height:1">' + now + '%<span style="font-size:13px;font-weight:600"> saved this month</span></div>'
       + '<div style="font-size:12.5px;color:var(--muted);margin-top:4px">' + (hist.length ? rings.length + ' rings, one a month. ' + good + ' thick (20% or more).' : 'A young tree: your first true ring grows after the next month-end check-in.')
       + '<br>A thick ring is a month you saved well; the gold ring is this month.</div></div></div>';
@@ -1777,26 +1886,9 @@
      the person asks for less motion), and the water's colour tells the state: deep teal when safe, amber-tinted when building,
      a shallow rust when low. One figure, read at a glance, from a material people have trusted since before writing. */
   window.gmVessel = function (months, target, state) {
-    var f = Math.max(0.04, Math.min(1, months / (target || 6))), id = "gv" + Math.random().toString(36).slice(2, 7);
-    var W = 150, H = 170, top = 26, bot = 156, lvl = bot - (bot - top - 6) * f, aim = top + 6;
-    var water = state === "good" ? ["#5fd3c0", "#127a75", "#0a4a52"] : state === "watch" ? ["#9fd6c6", "#3e8f7a", "#5a5a2a"] : ["#c9a98a", "#8a5a3c", "#5a3020"];
     var txt = months > 120 ? "120+" : months.toFixed(1);
     return '<div class="gm-vessel" style="display:flex;align-items:center;gap:14px;margin:10px 0 2px">'
-      + '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Buffer: ' + txt + ' months of ' + target + ' aimed for">'
-      + '<defs><clipPath id="' + id + 'c"><path d="M30 22 Q30 16 36 16 H114 Q120 16 120 22 V150 Q120 160 110 160 H40 Q30 160 30 150 Z"/></clipPath>'
-      + '<linearGradient id="' + id + 'w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + water[0] + '" stop-opacity=".95"/><stop offset=".45" stop-color="' + water[1] + '"/><stop offset="1" stop-color="' + water[2] + '"/></linearGradient>'
-      + '<linearGradient id="' + id + 'g" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".12" stop-color="#fff" stop-opacity=".08"/><stop offset=".8" stop-color="#fff" stop-opacity="0"/><stop offset=".93" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff" stop-opacity=".05"/></linearGradient>'
-      + '<radialGradient id="' + id + 'k" cx=".5" cy=".2" r=".8"><stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>'
-      + '<ellipse cx="75" cy="163" rx="50" ry="5" fill="#000" opacity=".18"/>'
-      + '<g clip-path="url(#' + id + 'c)"><rect x="0" y="0" width="' + W + '" height="' + H + '" fill="rgba(200,225,235,.10)"/>'
-      + '<g class="gm-wave"><path d="M-60 ' + lvl + ' q15 -5 30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 V170 H-60 Z" fill="url(#' + id + 'w)"/>'
-      + '<path d="M-60 ' + lvl + ' q15 -5 30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.2"/></g>'
-      + '<rect x="30" y="' + lvl + '" width="90" height="' + (170 - lvl) + '" fill="url(#' + id + 'k)"/></g>'
-      + '<line x1="30" y1="' + aim + '" x2="120" y2="' + aim + '" stroke="#c9a84c" stroke-width="1.5" stroke-dasharray="4 3"/>'
-      + '<text x="124" y="' + (aim + 4) + '" font-size="10" fill="currentColor" opacity=".75">' + target + 'm</text>'
-      + '<path d="M30 22 Q30 16 36 16 H114 Q120 16 120 22 V150 Q120 160 110 160 H40 Q30 160 30 150 Z" fill="url(#' + id + 'g)" stroke="rgba(170,190,200,.85)" stroke-width="2"/>'
-      + '<path d="M38 26 V140" stroke="#fff" stroke-opacity=".45" stroke-width="3" stroke-linecap="round"/>'
-      + '<ellipse cx="75" cy="16" rx="45" ry="3.5" fill="none" stroke="rgba(170,190,200,.9)" stroke-width="1.5"/></svg>'
+      + SXWorld.vessel(months / (target || 6), state, target + 'm', 'Buffer: ' + txt + ' months of ' + target + ' aimed for')
       + '<div><div style="font-size:30px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums">' + txt + '<span style="font-size:14px;font-weight:600"> months</span></div>'
       + '<div style="font-size:12.5px;color:var(--muted);margin-top:4px">of cover in the tank<br>the gold line is your ' + target + '-month aim</div></div></div>';
   };
@@ -2229,6 +2321,31 @@
      told us, with nothing to type: birthdays of the people at home, a loan's last EMI, a let-out home's rent, tax, renewal and
      papers, and the month-end check-in. Each carries a moon that waxes as the day comes near (full on the day): a cue from
      nature, not a timer. The three nearest show; the rest wait under Later. */
+  /* The people who matter beyond home (owner 2026-11-23): asked once, a name and a birth day and month (never the year), kept on
+     this device only; their birthdays then come up by themselves. At most 40. */
+  window.gmPeople = function () { var a = G("gm_people", []); return Array.isArray(a) ? a.filter(function (x) { return x && typeof x.n === "string" && x.n && x.m >= 1 && x.m <= 12 && x.d >= 1 && x.d <= 31; }) : []; };
+  window.gmPeopleAdd = function (n, m, d) {
+    n = String(n || "").trim().slice(0, 40); m = Math.round(+m); d = Math.round(+d);
+    if (!n || !(m >= 1 && m <= 12) || !(d >= 1 && d <= new Date(2024, m, 0).getDate())) return false;
+    var a = gmPeople(); if (a.length >= 40) return false; a.push({ n: n, m: m, d: d }); S_("gm_people", a); return true;
+  };
+  window.gmPeopleDel = function (i) { var a = gmPeople(); a.splice(i, 1); S_("gm_people", a); if (typeof renderAll === "function") renderAll(); };
+  window.gmPeopleSave = function () {
+    var v = function (id) { var e = document.getElementById(id); return e ? e.value : ""; };
+    if (gmPeopleAdd(v("gmPplN"), v("gmPplM"), v("gmPplD"))) { if (window.gmToast) gmToast("Saved. Their birthday will come up here."); renderAll(); }
+    else if (window.gmToast) gmToast("A name and a real day, please.");
+  };
+  function gmPeopleFormHTML() {
+    var mo = "", dy = "";
+    for (var m = 1; m <= 12; m++) mo += '<option value="' + m + '">' + new Date(2024, m - 1, 1).toLocaleDateString(undefined, { month: "short" }) + '</option>';
+    for (var d = 1; d <= 31; d++) dy += '<option value="' + d + '">' + d + '</option>';
+    var list = gmPeople().map(function (x, i) { return '<span style="white-space:nowrap">' + esc(x.n) + ' <a href="#" class="gm-inl" aria-label="Remove ' + esc(x.n) + '" onclick="gmPeopleDel(' + i + ');return false">×</a></span>'; }).join(" · ");
+    return '<details class="gm-ppl" style="margin-top:6px"><summary class="gm-inl" style="cursor:pointer;font-size:12.5px">+ Someone who matters</summary>'
+      + '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:6px"><input id="gmPplN" aria-label="Name" placeholder="Name" maxlength="40" style="flex:1 1 140px;min-width:0">'
+      + '<select id="gmPplD" aria-label="Day">' + dy + '</select><select id="gmPplM" aria-label="Month">' + mo + '</select>'
+      + '<button type="button" class="btn-sm" onclick="gmPeopleSave()">Save</button></div>'
+      + (list ? '<div style="font-size:12px;color:var(--muted);margin-top:6px">' + list + '</div>' : '') + '</details>';
+  }
   window.gmComingUp = function () {
     if (!window.P || P.example) return [];
     var now = new Date(), t0 = new Date(now.getFullYear(), now.getMonth(), now.getDate()), out = [];
@@ -2243,6 +2360,10 @@
     bday(P.dob, "", true);
     if (P.pname && P.pdob) bday(P.pdob, first(P.pname));
     (P.kids || []).forEach(function (k) { if (k && k.name) bday(k.dob, first(k.name)); });
+    gmPeople().forEach(function (x) {   // people who matter beyond home: no year asked, so no age said
+      var nx = new Date(t0.getFullYear(), x.m - 1, x.d); if (nx < t0) nx = new Date(t0.getFullYear() + 1, x.m - 1, x.d);
+      out.push({ d: nx, kind: "birthday", t: first(x.n) + "'s birthday", s: "A call or a note. One minute." });
+    });
     (P.loans || []).forEach(function (x, i) {
       var m = num(x && x.tenure); if (!(m > 0 && m <= 6) || !num(x.emi)) return;
       var d = new Date(t0.getFullYear(), t0.getMonth() + m, t0.getDate());
@@ -2257,21 +2378,8 @@
       .sort(function (a, b) { return a.days - b.days; });
   };
   window.gmComingUpHTML = function () {
-    var L = window.gmComingUp ? gmComingUp() : []; if (!L.length) return "";
-    var moon = function (n) {     // a moon that waxes as the day comes near; full on the day, a red ring when late
-      var f = n <= 0 ? 1 : Math.max(0.08, 1 - n / 14), r = 14, id = "gmMoon" + Math.random().toString(36).slice(2, 7);
-      // a real moon: a lit face with maria and craters, earthshine on the dark side, a soft terminator, a glow when it is full
-      return '<svg width="38" height="38" viewBox="0 0 38 38" aria-hidden="true" class="gm-moon"><defs><clipPath id="' + id + '"><circle cx="19" cy="19" r="' + r + '"/></clipPath>'
-        + '<radialGradient id="' + id + 'f" cx=".38" cy=".35" r=".75"><stop offset="0" stop-color="#fbf7ea"/><stop offset=".6" stop-color="#e7e0cc"/><stop offset="1" stop-color="#b9b19c"/></radialGradient>'
-        + '<radialGradient id="' + id + 'h" r=".5"><stop offset=".7" stop-color="#f6efd2" stop-opacity=".55"/><stop offset="1" stop-color="#f6efd2" stop-opacity="0"/></radialGradient>'
-        + '<filter id="' + id + 'b" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.1"/></filter></defs>'
-        + (f > 0.95 ? '<circle cx="19" cy="19" r="' + (r + 5) + '" fill="url(#' + id + 'h)"/>' : '')
-        + '<g clip-path="url(#' + id + ')"><circle cx="19" cy="19" r="' + r + '" fill="url(#' + id + 'f)"/>'
-        + '<circle cx="14" cy="14" r="4" fill="#9c9583" opacity=".35"/><circle cx="23" cy="21" r="3.2" fill="#9c9583" opacity=".3"/><circle cx="15.5" cy="24" r="2.2" fill="#8d8673" opacity=".35"/>'
-        + '<circle cx="24" cy="12.5" r="1.4" fill="#8d8673" opacity=".45"/><circle cx="11" cy="20" r="1.1" fill="#8d8673" opacity=".45"/>'
-        + '<circle cx="' + (19 + 2 * r * f) + '" cy="19" r="' + (r + 0.5) + '" fill="#0d1a2e" fill-opacity=".9" filter="url(#' + id + 'b)"/></g>'
-        + '<circle cx="19" cy="19" r="' + (r + 1.5) + '" fill="none" stroke="' + (n < 0 ? "#c0392b" : "rgba(160,150,120,.35)") + '" stroke-width="' + (n < 0 ? 2.5 : 1) + '"/></svg>';
-    };
+    var L = window.gmComingUp ? gmComingUp() : []; if (!window.P || P.example) return "";
+    var moon = function (n) { return SXWorld.moon(n); };   // the shared moon (shared/world.js): waxes as the day comes near
     var when = function (n) { return n < 0 ? (-n) + (n === -1 ? " day late" : " days late") : n === 0 ? "today" : n === 1 ? "tomorrow" : "in " + n + " days"; };
     var date = function (d) { return d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }); };
     var row = function (x) {
@@ -2282,7 +2390,7 @@
     };
     return '<div class="road-col gm-cu" style="margin:10px 0"><div style="font-weight:800;font-size:13.5px;margin-bottom:4px">Coming up in your world</div><div role="list">'
       + L.slice(0, 3).map(row).join("") + '</div>'
-      + (L.length > 3 ? '<details style="margin-top:4px"><summary style="cursor:pointer;font-size:12.5px">Later (' + (L.length - 3) + ')</summary><div role="list">' + L.slice(3).map(row).join("") + '</div></details>' : "") + '</div>';
+      + (L.length > 3 ? '<details style="margin-top:4px"><summary style="cursor:pointer;font-size:12.5px">Later (' + (L.length - 3) + ')</summary><div role="list">' + L.slice(3).map(row).join("") + '</div></details>' : "") + gmPeopleFormHTML() + '</div>';
   };
   function llRows(p) {
     var today = llDay(new Date()), rows = [], ym = llIso(today).slice(0, 7), mon = today.toLocaleString("en-IN", { month: "long" });
@@ -5720,7 +5828,7 @@
   function calmTodayHTML() {
     var more = dueNowHTML() + (inRecovery() ? "" : driftHTML() + resHTML()) + msTodayHTML() + insightHTML() + estateHTML();
     var open = G("gm_more_today", false) === true;
-    return '<div class="section active">' + greetHTML() + (phone() ? vitalsHTML() : "") + interruptHTML() + undoBar() + checkinHTML() + setupStripHTML() + (window.gmAskOneHTML ? gmAskOneHTML() : "") + todayFocusHTML() + (window.gmComingUpHTML ? gmComingUpHTML() : "") + (window.gmUsTodayHTML ? gmUsTodayHTML() : "") + winsHTML()
+    return '<div class="section active">' + greetHTML() + (phone() ? vitalsHTML() : "") + interruptHTML() + undoBar() + checkinHTML() + setupStripHTML() + (window.gmAskOneHTML ? gmAskOneHTML() : "") + (window.gmAwayHTML ? gmAwayHTML() : "") + (window.gmMonthAARHTML ? gmMonthAARHTML() : "") + todayFocusHTML() + (window.gmComingUpHTML ? gmComingUpHTML() : "") + (window.gmUsTodayHTML ? gmUsTodayHTML() : "") + winsHTML() + (window.gmWhatIfHTML ? gmWhatIfHTML() : "")
       + (more.replace(/<[^>]*>/g, "").trim() ? '<details class="road-col gm-more-today"' + (open ? " open" : "") + ' ontoggle="gmMoreToday(this.open)">'
         + '<summary style="cursor:pointer;font-weight:800;font-size:13px">More today <span style="font-weight:500;color:var(--muted);font-size:11.5px">\u00b7 what is due, your week, calendar, estate</span></summary>'
         + '<div style="margin-top:10px">' + more + '</div></details>' : "")
@@ -7516,6 +7624,19 @@
     }).join("") + '</div>';
     g.insertAdjacentHTML("afterend", h);
   };
+  /* The season and a festival near (owner 2026-11-23): India's seasons and the gazetted and restricted holidays when the region is
+     Local, the four temperate seasons (northern) when Global; a festival is named from three days before. Nothing to enter. */
+  window.gmSeasonLine = function (now) {
+    now = now || new Date(); var m = now.getMonth(), r = G("gm_region", null), local = r === null || r === undefined || r === "local";
+    var season = m === 11 || m <= 1 ? "Winter" : local ? (m <= 4 ? "Summer" : m <= 8 ? "Monsoon" : "Post-monsoon") : (m <= 4 ? "Spring" : m <= 7 ? "Summer" : "Autumn");
+    var t0 = new Date(now.getFullYear(), now.getMonth(), now.getDate()), best = null;
+    if (local) (window.gmHolidayLists || []).forEach(function (l) {
+      if (l.where !== "IN") return;
+      (l.dates || []).forEach(function (x) { var p = String(x[0]).split("-"), d = Math.round((new Date(+p[0], +p[1] - 1, +p[2]) - t0) / 864e5);
+        if (d >= 0 && d <= 3 && (!best || d < best.d)) best = { d: d, n: x[1] }; });
+    });
+    return season + (best ? " · " + best.n + (best.d === 0 ? " today" : best.d === 1 ? " tomorrow" : " in " + best.d + " days") : "");
+  };
   function greetHTML() {
     var hr = new Date().getHours(), part = hr < 5 ? "Still up" : hr < 12 ? "Good morning" : hr < 17 ? "Good afternoon" : "Good evening";
     var fn = ((typeof P !== "undefined" && P.name) || "").trim().split(" ")[0];
@@ -7544,7 +7665,7 @@
       + '<linearGradient id="gmRgVel" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1d4ed8"/><stop offset=".6" stop-color="#0f9f8a"/><stop offset="1" stop-color="#d4af37"/></linearGradient></defs>'
       + ring(28, Math.round(n / 3 * 100), "gmRgGold", "gm-a1") + ring(20.5, stp, "gmRgTeal", "gm-a2") + ring(13, shp, "gmRgVel", "gm-a3")
       + '<text x="34" y="37.2" text-anchor="middle">' + n + '/3</text></svg>'
-      + '<div><h2>' + esc(part + (fn ? ", " + fn : "")) + '</h2><p>' + esc(date) + ' · ' + (n === 3 ? "today is already a win" : n ? (3 - n) + " left for a win today" : "three small things make today a win") + '</p></div></div>';
+      + '<div><h2>' + esc(part + (fn ? ", " + fn : "")) + '</h2><p>' + esc(date) + ' · ' + (n === 3 ? "today is already a win" : n ? (3 - n) + " left for a win today" : "three small things make today a win") + '</p><p class="gm-season" style="font-size:12px;opacity:.8;margin:2px 0 0">' + esc(window.gmSeasonLine ? gmSeasonLine() : "") + '</p></div></div>';
   }
 
   /* ── Welcome back: the return is the hardest moment, so reward it ──────────────────────────────────────
@@ -8374,7 +8495,7 @@
   // (localStorage "gm_work") and everything below recomputes from it: change a job here,
   // and the next Breaks screen already knows. Dates come from the DoPT office memorandum,
   // cited by reference; offices outside Delhi follow their state committee's list.
-  var HOLIDAY_LISTS = [
+  var HOLIDAY_LISTS = window.gmHolidayLists = [
     { id: "in-central", where: "IN", name: "Central government (India), gazetted, Delhi offices",
       source: "DoPT O.M. 12/2/2023-JCA of 16 July 2026; offices outside Delhi follow their state committee's list",
       dates: [["2026-11-24", "Guru Nanak's Birthday"], ["2026-12-25", "Christmas Day"], ["2027-01-26", "Republic Day"],

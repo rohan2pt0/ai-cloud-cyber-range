@@ -349,3 +349,28 @@ def test_openrouter_takes_over_when_opencode_go_fails(monkeypatch):
     monkeypatch.setattr(m, "ladder", lambda name, env=None: ["gocode/x", "openrouter/y"])
     m.agent({"AUTOBUILD_TASK": "t", "AUTOBUILD_PROBE": "0"}, run=run)
     assert calls[:2] == ["gocode/x", "openrouter/y"]
+
+
+def test_a_provider_that_cannot_pay_is_seen_before_any_work():
+    """No single point of failure, for money too (owner 2026-11-23): a capped plan and an account with no credit are both read as
+    out of allowance from their own answers, in one call each, never as a bad model; a working answer is OK."""
+    capped = '{"type":"error","error":{"type":"GoUsageLimitError","message":"OpenCode Go usage limit reached (monthly, resets in 14d)"}}'
+    assert ci.out_of_allowance(capped)
+    assert ci.out_of_allowance("This request requires more credits, or fewer max_tokens. You requested up to 16384 tokens, but can only afford 285.")
+    assert not ci.out_of_allowance('{"choices":[{"message":{"content":"OK"}}]}')
+    answers = {"/chat/completions": capped, "/credits": '{"data":{"total_credits":0,"total_usage":0.2}}'}
+    fake = lambda url, env, body=None, headers=None: next(v for k, v in answers.items() if url.endswith(k))  # noqa: E731
+    a = ci.allowance({}, http=fake)
+    assert not a[ci.PROVIDER]["ok"] and "usage limit" in a[ci.PROVIDER]["why"]
+    assert not a[ci.OR_PROVIDER]["ok"] and "$-0.20" in a[ci.OR_PROVIDER]["why"]
+    answers.update({"/chat/completions": '{"choices":[{"message":{"content":"OK"}}]}', "/credits": '{"data":{"total_credits":10,"total_usage":1}}'})
+    b = ci.allowance({}, http=fake)
+    assert b[ci.PROVIDER]["ok"] and b[ci.OR_PROVIDER]["ok"]
+
+
+def test_when_none_can_pay_the_handoff_stops_in_seconds_and_names_path_c():
+    sh = (ROOT / "lifecycle" / "delegate_here.sh").read_text("utf-8")
+    skill = (ROOT / ".claude" / "skills" / "delegate" / "SKILL.md").read_text("utf-8")
+    assert sh.index("autobuild_ci.py allowance") < sh.index("bash ./securax autobuild \"$TASK\""), "ask who can pay before any build starts"
+    assert "exit 3" in sh and "path C" in sh
+    assert "ALL-OUT" in skill and "go to C at once" in skill
