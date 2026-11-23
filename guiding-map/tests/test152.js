@@ -71,5 +71,12 @@ setTimeout(() => {
   const loanIn = [...d.querySelectorAll("input")].find(x => /gmPropSet\(0,'loan'/.test(x.getAttribute("onchange") || ""));
   ok("a 0 typed in a property field stays visible as 0", !!loanIn && loanIn.value === "0", loanIn && loanIn.value);
   ok("a 0 typed for gold stays visible as 0", /value="0" placeholder="e\.g\. 50"/.test(w.gmNumbersCard()));
+  // consequences you can see (immersive-real): a money change says what moved
+  { let said = ""; const keep = w.gmToast; w.gmToast = (t) => { said = t; };
+    w.gmGoldSet("rate", "12000"); w.gmGoldSet("grams", "50");
+    ok("a money change tells the person what moved", /^Saved\. .*Net worth \+₹5,40,000/.test(said), said);
+    said = ""; w.gmGoldSet("grams", "50");
+    ok("nothing moved, nothing said", said === "", said); w.gmToast = keep; }
+  ok("the sky follows the time of day", /^(dawn|day|dusk|night)$/.test(d.documentElement.getAttribute("data-daypart") || ""), d.documentElement.getAttribute("data-daypart"));
   console.log("PASS " + P + " FAIL " + F); e.forEach(x => console.log("  FAIL: " + x)); process.exit(F ? 1 : 0);
 }, 400);

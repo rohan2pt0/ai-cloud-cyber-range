@@ -1322,10 +1322,23 @@
       + '<div style="font-size:12px;color:var(--muted);margin-top:4px">Counted in net worth at what a jeweller would pay (less 10%), not in the money you invest.</div>';
     return h + '</details>';
   };
+  /* Consequences you can see (immersive-real, owner 2026-11-23): a change to a money fact ripples through the one money
+     model, and the person is told at once what moved: the buffer, the saving rate, net worth. Only what changed is said. */
+  function rippleSnap() { try { var m = profOK() ? gmMoney() : null; return m ? { b: m.buffer && m.buffer.gapM > 0 && m.buffer.liquid > 0 ? m.buffer.months : null, s: m.save, n: m.netWorth } : null; } catch (e) { return null; } }
+  function rippleSay(before, lead) {
+    var a = rippleSnap(); if (!before || !a) return;
+    var out = [], f = function (v) { return v > 120 ? "120+" : v.toFixed(1); };
+    if (before.b !== null && a.b !== null && Math.abs(a.b - before.b) >= 0.05) out.push("Buffer " + f(before.b) + " \u2192 " + f(a.b) + " months");
+    if (before.s !== null && a.s !== null && a.s !== before.s) out.push("Saving " + before.s + "% \u2192 " + a.s + "%");
+    if (Math.abs(a.n - before.n) >= 1) out.push("Net worth " + (a.n > before.n ? "+" : "\u2212") + rs(Math.abs(a.n - before.n)));
+    if (out.length && typeof window.gmToast === "function") window.gmToast((lead ? lead + " " : "") + out.join(" \u00b7 "));
+  }
+  window.gmRippleSnap = rippleSnap; window.gmRippleSay = rippleSay;
   window.gmGoldSet = function (k, v) {
     if (!profOK()) return;
+    var rb = rippleSnap();   // before the change: g below is the same object as P.gold
     var g = P.gold && typeof P.gold === "object" ? P.gold : {}; g[k] = Math.max(0, num(v)) || 0; if (k === "rate") g.at = new Date().toISOString().slice(0, 10);
-    P.gold = g; P.numsAt = new Date().toISOString().slice(0, 10); store("sovP", P); bustDerived(); renderAll();
+    P.gold = g; P.numsAt = new Date().toISOString().slice(0, 10); store("sovP", P); bustDerived(); renderAll(); rippleSay(rb, "Saved.");
   };
   // What you own, by kind: one bar, each share in words, and the one thing that matters (owner 2026-11-20)
   window.gmMixHTML = function () {
@@ -1344,13 +1357,14 @@
   };
   window.gmNumSet = function (k, v) {
     if (!profOK() || !NUMS.some(function (f) { return f[0] === k; })) return;
+    var rb = rippleSnap();
     P[k] = num(v) || 0; P.numsAt = new Date().toISOString().slice(0, 10); store("sovP", P);
     // the same fact kept elsewhere follows, so no screen shows an older number
     var lm = { nw: "nw", sav: "ef", net: "minc" }[k], l = G("gm_life", {});
     if (lm && l[lm] !== undefined) { delete l[lm]; S_("gm_life", l); }
     var c = G(CAR_K, null);
     if (c) { Object.keys(CAR_FROM_P).forEach(function (path) { if (CAR_FROM_P[path] === k) { var q = path.split("."); if (c[q[0]]) delete c[q[0]][q[1]]; } }); carPut(c); }
-    bustDerived(); renderAll();
+    bustDerived(); renderAll(); rippleSay(rb, "Saved.");
   };
 
   /* ── Your real monthly spend, without tracking a single purchase (owner 2026-11-19) ─────────────────────────────────
@@ -1963,6 +1977,9 @@
   };
 
   function props() { return G("gm_props", []); }
+  // A living sky (immersive-real): the header follows the real time of day, set on load and whenever the app comes back.
+  function gmDaypart() { var h = new Date().getHours(); document.documentElement.setAttribute("data-daypart", h >= 5 && h < 8 ? "dawn" : h >= 8 && h < 17 ? "day" : h >= 17 && h < 20 ? "dusk" : "night"); }
+  try { gmDaypart(); document.addEventListener("visibilitychange", function () { if (!document.hidden) gmDaypart(); }); } catch (e) {}
   // A typed 0 is a real answer: show it, never the "e.g." hint again (owner 2026-11-20: a 0 looked unsaved)
   function keep0(x) { return x === undefined || x === null ? "" : x; }
   // A home the family rents is not theirs (owner 2026-11-20: the rented flat was entered as owned). It stays listed, so the
@@ -1984,7 +2001,7 @@
     rentDay: { min: 1, max: 28, int: true }, maintDay: { min: 1, max: 28, int: true }, months: { min: 1, max: 60, int: true },
     share: { min: 1, max: 99, int: true }, deposit: { min: 0, max: 100000000 }, maint: { min: 0, max: 10000000 }, start: { date: true }, taxDue: { date: true }
   };
-  window.gmPropSet = function (i, k, v) { if (PROP_RULES[k]) v = window.gmFieldGuard(PROP_RULES[k], v).v; var p = props(); p[i][k] = v; S_("gm_props", p); renderAll(); };
+  window.gmPropSet = function (i, k, v) { if (PROP_RULES[k]) v = window.gmFieldGuard(PROP_RULES[k], v).v; var rb = window.gmRippleSnap ? gmRippleSnap() : null; var p = props(); p[i][k] = v; S_("gm_props", p); bustDerived(); renderAll(); if (window.gmRippleSay) gmRippleSay(rb, "Saved."); };
 
   function propCalc(p) {
     var val = num(p.val) * 100000,           // \u20b9 lakh -> \u20b9
