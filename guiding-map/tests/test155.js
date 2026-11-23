@@ -30,5 +30,10 @@ setTimeout(() => {
   const v = d.querySelector(".gm-vessel svg");
   ok("the buffer is drawn as a vessel with its aim line", !!v && /Buffer: [\d.]+ months of 12 aimed for/.test(v.getAttribute("aria-label")) && /12m/.test(v.textContent), v && v.getAttribute("aria-label"));
   ok("the wave rests when less motion is asked for", /prefers-reduced-motion: reduce\)\{\.gm-wave\{animation:none\}/.test(html));
+  // net worth as gold bars: one per ₹10 lakh, ghost bars to the age benchmark, a bigger unit for a big stack
+  const gb = w.gmGoldBars(2500000, 6000000);
+  ok("gold bars: filled for what you have, outlined to the benchmark", (gb.match(/fill="url\(#gb\w+f\)"/g) || []).length === 3 && (gb.match(/stroke-dasharray="3 3"/g) || []).length === 6 && /3 more to the benchmark/.test(gb), gb.slice(0, 160));
+  ok("a big stack switches to ₹1 crore bars", /Each bar is ₹1 crore/.test(w.gmGoldBars(150000000, 0)));
+  ok("nothing to draw, nothing shown", w.gmGoldBars(0, 0) === "");
   console.log("test155 coming up: " + P + " passed, " + F + " failed"); e.forEach(x => console.log("  " + x)); process.exit(F ? 1 : 0);
 }, 400);

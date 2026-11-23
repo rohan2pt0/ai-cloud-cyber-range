@@ -134,6 +134,7 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
+- Net worth as gold bars
 - Real materials for the numbers
 - Coming up in your world
 - Life OS, immersive and real
@@ -141,7 +142,6 @@ This list is generated from [`features.json`](features.json); the Command Center
 - Immersive and real
 - No single point of failure for the builders
 - Model factory spec
-- Fixed bills say what they mean and that they saved
 
 **Release 0.4.0 - 2026-11-14:**
 

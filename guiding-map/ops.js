@@ -1340,6 +1340,35 @@
     var g = P.gold && typeof P.gold === "object" ? P.gold : {}; g[k] = Math.max(0, num(v)) || 0; if (k === "rate") g.at = new Date().toISOString().slice(0, 10);
     P.gold = g; P.numsAt = new Date().toISOString().slice(0, 10); store("sovP", P); bustDerived(); renderAll(); rippleSay(rb, "Saved.");
   };
+  /* Net worth as gold bars (immersive-real, owner 2026-11-23): one ingot per ₹10 lakh (per ₹1 crore once the stack would pass 36),
+     stacked like a vault shelf, with outlined ghost bars up to the benchmark for the person's age, so the distance left is seen,
+     not read. The metal is drawn the way polished gold behaves: a bright top face, a darker band across the front, a warm
+     reflection below and bevelled edges. */
+  window.gmGoldBars = function (nw, target) {
+    nw = Math.max(0, nw || 0); target = Math.max(0, target || 0);
+    var unit = Math.max(nw, target) / 1e6 > 36 ? 1e7 : 1e6, have = Math.round(nw / unit), want = Math.max(have, Math.round(target / unit));
+    if (!want) return "";
+    var per = 4; while (per < 8 && per * (per + 1) / 2 < want) per++;   // a pyramid: the bottom row holds per, each row above one fewer
+    var bw = 42, bh = 16, dx = 6, dy = 7, rows = 0, cap = 0; while (cap < want) { cap += per - rows; rows++; }
+    var W = per * (bw + 4) + 12, H = rows * (bh + dy) + 20, id = "gb" + Math.random().toString(36).slice(2, 7);
+    var bar = function (i, ghost) {
+      var r = 0, c = i; while (c >= per - r) { c -= per - r; r++; }
+      var x = 6 + r * (bw + 4) / 2 + c * (bw + 4), y = H - 10 - (r + 1) * (bh + dy) + dy;
+      var front = 'M' + x + ' ' + (y + dy) + ' h' + bw + ' v' + bh + ' h-' + bw + ' Z', top = 'M' + x + ' ' + (y + dy) + ' l' + dx + ' -' + dy + ' h' + (bw - 2 * dx) + ' l' + dx + ' ' + dy + ' Z';
+      if (ghost) return '<path d="' + front + '" fill="none" stroke="#c9a84c" stroke-opacity=".55" stroke-dasharray="3 3"/><path d="' + top + '" fill="none" stroke="#c9a84c" stroke-opacity=".4" stroke-dasharray="3 3"/>';
+      return '<path d="' + front + '" fill="url(#' + id + 'f)" stroke="#8f6619" stroke-width=".8"/><path d="' + top + '" fill="url(#' + id + 't)" stroke="#a87c22" stroke-width=".6"/>'
+        + '<path d="M' + (x + 3) + ' ' + (y + dy + 3) + ' h' + (bw - 6) + '" stroke="#fff6dc" stroke-opacity=".7" stroke-width="1"/>';
+    };
+    var g = "";
+    for (var i = 0; i < want; i++) g += bar(i, i >= have);
+    var lab = unit === 1e7 ? "₹1 crore" : "₹10 lakh";
+    return '<div class="gm-bars" style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin:8px 0">'
+      + '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Net worth: ' + have + ' gold bars of ' + lab + ', ' + Math.max(0, want - have) + ' more to the benchmark for your age">'
+      + '<defs><linearGradient id="' + id + 'f" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff1c4"/><stop offset=".22" stop-color="#e9c873"/><stop offset=".5" stop-color="#b88a2e"/><stop offset=".62" stop-color="#a97c25"/><stop offset=".85" stop-color="#e0bb66"/><stop offset="1" stop-color="#c9a04a"/></linearGradient>'
+      + '<linearGradient id="' + id + 't" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#f3dc9a"/><stop offset=".45" stop-color="#fff6dc"/><stop offset="1" stop-color="#d9b25a"/></linearGradient></defs>'
+      + '<ellipse cx="' + (W / 2) + '" cy="' + (H - 6) + '" rx="' + (W / 2 - 4) + '" ry="4" fill="#000" opacity=".15"/>' + g + '</svg>'
+      + '<div style="font-size:12.5px;color:var(--muted);min-width:120px">Each bar is ' + lab + '.<br><b style="color:var(--text)">' + have + ' in the vault</b>' + (want > have ? ', ' + (want - have) + ' outlined to the benchmark for your age.' : '. You are at or past the benchmark for your age.') + '</div></div>';
+  };
   // What you own, by kind: one bar, each share in words, and the one thing that matters (owner 2026-11-20)
   window.gmMixHTML = function () {
     var M = profOK() ? gmMoney() : null; if (!M || !M.mix.length) return "";
@@ -1348,7 +1377,10 @@
     var top = M.mix.slice().sort(function (a, b) { return b[1] - a[1]; })[0], tp = pct(top[1]);
     var gp = M.gold ? pct(M.gold) : 0, say = tp > 60 ? "<b>" + tp + "% sits in " + top[0].toLowerCase() + ".</b> " + (top[0] === "Homes you own" ? "A flat cannot be sold in a hurry, so let new money go to funds until no one kind is over 60%." : "Spread new money to the others until no one kind is over 60%.")
       : gp > 15 ? "Gold is " + gp + "%: planners keep it to 5 to 10%. Let new money go elsewhere." : "No one kind is over 60%. Keep new money flowing to funds.";
-    return '<div class="road-col gm-mix" style="margin:10px 0"><div style="font-weight:800;font-size:13.5px">What you own, by kind · ' + rs(tot) + '</div>'
+    var ageNow = window.P && P.dob ? Math.floor((Date.now() - new Date(P.dob)) / 31557600000) : 0;
+    var bench = ageNow && typeof gmRetMult === "function" ? gmRetMult(ageNow) * M.grossPay * 12 : 0;
+    return '<div class="road-col gm-mix" style="margin:10px 0"><div style="font-weight:800;font-size:13.5px">Net worth · ' + rs(M.netWorth) + '</div>' + gmGoldBars(M.netWorth, bench)
+      + '<div style="font-weight:800;font-size:13.5px;margin-top:10px">What you own, by kind · ' + rs(tot) + '</div>'
       + '<div role="img" aria-label="' + M.mix.map(function (x) { return x[0] + " " + pct(x[1]) + " percent"; }).join(", ") + '" style="display:flex;height:14px;border-radius:7px;overflow:hidden;margin:8px 0">'
       + M.mix.map(function (x, i) { return '<i style="width:' + Math.max(1, x[1] / tot * 100) + '%;background:' + C[["Homes you own", "Retirement (EPF, NPS, PPF)", "Funds and stocks", "Cash and FDs", "Gold"].indexOf(x[0])] + '"></i>'; }).join("") + '</div>'
       + M.mix.map(function (x) { return '<div style="display:flex;justify-content:space-between;font-size:12.5px;padding:2px 0"><span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;margin-inline-end:6px;background:' + C[["Homes you own", "Retirement (EPF, NPS, PPF)", "Funds and stocks", "Cash and FDs", "Gold"].indexOf(x[0])] + '"></i>' + x[0] + '</span><span><b>' + pct(x[1]) + '%</b> · ' + rs(x[1]) + '</span></div>'; }).join("")
