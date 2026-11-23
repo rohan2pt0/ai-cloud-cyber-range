@@ -52,7 +52,7 @@ machine only when it says the exact sentence. It carries no cookie and no data, 
 
 | Layer | Was | Now | Still one? | Next |
 |---|---|---|---|---|
-| **Command Center page** | Served by one machine | Hosted with the site; each device keeps a copy; the door finds a live machine | The static host (GitHub Pages). A device that has opened it once still has its copy | A second static host, dated in the queue |
+| **Command Center page** | Served by one machine | Hosted with the site; each device keeps a copy; the door finds a live machine | The static host (GitHub Pages). A device that has opened it once still has its copy | A second static host: the mirror job in docs.yml, live once the two Cloudflare secrets are set |
 | **Life OS and Vantage** | One laptop | Hosted, on-device copy, your encrypted OneDrive copy, and node-to-node sync | No | — |
 | **Gateway (the AI front)** | One machine | Stateless: any node answers (active-active) | No, once you have two nodes | — |
 | **Chat history** | One node's database | Per node | **Yes**: a conversation lives on the node it started on | A shared database with a standby (doc 86) |
