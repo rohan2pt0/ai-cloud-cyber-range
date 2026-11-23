@@ -26,7 +26,7 @@ _s.loader.exec_module(_gm)
 CONTRAST_JS, EXE = _gm.CONTRAST_JS, _gm.exe
 OUT = pathlib.Path(sys.argv[1]) if len(sys.argv) > 1 else pathlib.Path(tempfile.gettempdir()) / "exercise-ui-audit"
 VIEWS = {"blue": ["overview", "rules", "plan", "scorelog", "timeline", "incident", "sitrep", "myreports", "targets", "awareness", "news", "missions", "frameworks", "tracks", "progress", "creds", "restore"],
-         "white": ["overview", "rules", "plan", "scorelog", "timeline", "judge-incident", "judge-sitrep", "judge-task", "control", "targets", "awareness", "news", "missions",
+         "white": ["overview", "rules", "plan", "scorelog", "timeline", "judge-incident", "judge-sitrep", "judge-task", "control", "investigation", "targets", "awareness", "news", "missions",
                    "frameworks", "tracks", "progress", "creds", "attack", "attacks"],
          "red": ["overview", "rules", "targets", "news", "attack", "attacks"]}
 

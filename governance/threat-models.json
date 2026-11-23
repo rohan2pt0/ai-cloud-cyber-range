@@ -95,8 +95,8 @@
      "element": "site-host",
      "threat": "The host, or the account that publishes to it, is compromised and serves altered page code.",
      "status": "accepted",
-     "reason": "The page holds no keys and sends only credential-free requests, so the damage is a wrong machine address; the account is protected and the apps move to a host that applies headers.",
-     "review": "2026-11-20"
+     "reason": "The page holds no keys and sends only credential-free requests, so the damage is a wrong machine address; the account is protected and the apps move to a host that applies headers. Re-accepted by the owner on 2026-11-23 for one month: the apps still share the Pages origin until the own-domain step; the page holds no keys.",
+     "review": "2026-12-20"
     },
     {
      "id": "cd-r1",
@@ -121,8 +121,8 @@
      "element": "device-list",
      "threat": "Another site on the same browser origin reads the list from storage.",
      "status": "accepted",
-     "reason": "The list holds addresses only (no keys or passwords), and the shared origin is removed by hosting the apps on an origin of their own.",
-     "review": "2026-11-20"
+     "reason": "The list holds addresses only (no keys or passwords), and the shared origin is removed by hosting the apps on an origin of their own. Re-accepted by the owner on 2026-11-23 for one month: the apps still share the Pages origin until the own-domain step; the page holds no keys.",
+     "review": "2026-12-20"
     },
     {
      "id": "cd-d1",
@@ -435,8 +435,8 @@
      "element": "device-store",
      "threat": "Other sites on the same browser origin, and a host that sends no security headers, expose the stored data to framing and storage reads.",
      "status": "accepted",
-     "reason": "GitHub Pages ignores the header file and shares one origin per account; header rules are written and an origin of its own is dated.",
-     "review": "2026-11-20",
+     "reason": "GitHub Pages ignores the header file and shares one origin per account; header rules are written and an origin of its own is dated. Re-accepted by the owner on 2026-11-23 for one month: the apps still share the Pages origin until the own-domain step; the page holds no keys.",
+     "review": "2026-12-20",
      "evidence": "website/_headers"
     },
     {
@@ -454,8 +454,8 @@
      "element": "app-page",
      "threat": "Script injected into the single-file app reads the data and the sign-in tokens.",
      "status": "accepted",
-     "reason": "The app carries inline code, so a strict script policy is not yet possible; framing and plugins are forbidden and the app's own origin plus a nonce policy are dated.",
-     "review": "2026-11-20",
+     "reason": "The app carries inline code, so a strict script policy is not yet possible; framing and plugins are forbidden and the app's own origin plus a nonce policy are dated. Re-accepted by the owner on 2026-11-23 for one month: the apps still share the Pages origin until the own-domain step; the page holds no keys.",
+     "review": "2026-12-20",
      "evidence": "website/_headers"
     }, {"id": "ha-t2", "stride": "T", "element": "site-host", "threat": "The install page (install.txt) is read and obeyed by the person's own AI agent, so a tampered page, or text injected while it installs, could steer that agent to run other commands, clone a fork or send data away.", "status": "mitigated", "mitigation": "the page is served only from this repository's site; it tells the agent to run only its own commands, clone only this repository by name (never a fork or mirror), never ask for a key, and to stop and tell the person when anything asks for more; Docker is installed only after the person says yes", "evidence": "website/tests/test_install_prompt.py"}
    ]

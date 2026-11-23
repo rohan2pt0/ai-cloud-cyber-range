@@ -134,14 +134,14 @@ This list is generated from [`features.json`](features.json); the Command Center
 
 **On main, in the next release:**
 
-- No single point of failure for the builders
-- Model factory spec
-- Fixed bills say what they mean and that they saved
-- Work from 1 Jan 2027, with a permanent option and in the right place
-- Two of you says plainly what each target means
-- Your real monthly spend, with no receipts
-- Two of you shows red, amber and green
-- Each number asked in one place
+- Us on Today, one tap
+- Us
+- Saving as tree rings
+- Net worth as gold bars
+- Real materials for the numbers
+- Coming up in your world
+- Life OS, immersive and real
+- Supervised AI investigation console
 
 **Release 0.4.0 - 2026-11-14:**
 

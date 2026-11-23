@@ -1322,10 +1322,55 @@
       + '<div style="font-size:12px;color:var(--muted);margin-top:4px">Counted in net worth at what a jeweller would pay (less 10%), not in the money you invest.</div>';
     return h + '</details>';
   };
+  /* Consequences you can see (immersive-real, owner 2026-11-23): a change to a money fact ripples through the one money
+     model, and the person is told at once what moved: the buffer, the saving rate, net worth. Only what changed is said. */
+  function rippleSnap() { try { var m = profOK() ? gmMoney() : null; return m ? { b: m.buffer && m.buffer.gapM > 0 && m.buffer.liquid > 0 ? m.buffer.months : null, s: m.save, n: m.netWorth } : null; } catch (e) { return null; } }
+  function rippleSay(before, lead) {
+    var a = rippleSnap(); if (!before || !a) return;
+    var out = [], f = function (v) { return v > 120 ? "120+" : v.toFixed(1); };
+    if (before.b !== null && a.b !== null && Math.abs(a.b - before.b) >= 0.05) out.push("Buffer " + f(before.b) + " \u2192 " + f(a.b) + " months");
+    if (before.s !== null && a.s !== null && a.s !== before.s) out.push("Saving " + before.s + "% \u2192 " + a.s + "%");
+    if (Math.abs(a.n - before.n) >= 1) out.push("Net worth " + (a.n > before.n ? "+" : "\u2212") + rs(Math.abs(a.n - before.n)));
+    if (out.length && typeof window.gmToast === "function") window.gmToast((lead ? lead + " " : "") + out.join(" \u00b7 "));
+  }
+  window.gmRippleSnap = rippleSnap; window.gmRippleSay = rippleSay;
   window.gmGoldSet = function (k, v) {
     if (!profOK()) return;
+    var rb = rippleSnap();   // before the change: g below is the same object as P.gold
     var g = P.gold && typeof P.gold === "object" ? P.gold : {}; g[k] = Math.max(0, num(v)) || 0; if (k === "rate") g.at = new Date().toISOString().slice(0, 10);
-    P.gold = g; P.numsAt = new Date().toISOString().slice(0, 10); store("sovP", P); bustDerived(); renderAll();
+    P.gold = g; P.numsAt = new Date().toISOString().slice(0, 10); store("sovP", P); bustDerived(); renderAll(); rippleSay(rb, "Saved.");
+  };
+  /* Net worth as gold bars (immersive-real, owner 2026-11-23): one ingot per ₹10 lakh (per ₹1 crore once the stack would pass 36),
+     stacked like a vault shelf, with outlined ghost bars up to the benchmark for the person's age, so the distance left is seen,
+     not read. The metal is drawn the way polished gold behaves: a bright top face, a darker band across the front, a warm
+     reflection below and bevelled edges. */
+  window.gmGoldBars = function (nw, target) {
+    nw = Math.max(0, nw || 0); target = Math.max(0, target || 0);
+    // the unit steps up (₹10 lakh, ₹1 crore, ₹10 crore, ₹100 crore) so the pyramid always fits its 36 places; a ₹90 crore
+    // investor once made the row loop below run for ever and froze the page (persona audit, 2026-11-23)
+    var unit = 1e6, big = Math.max(nw, target); while (unit < 1e9 && big / unit > 36) unit *= 10;
+    var have = Math.min(36, Math.round(nw / unit)), want = Math.min(36, Math.max(have, Math.round(target / unit)));
+    if (!want) return "";
+    var per = 4; while (per < 8 && per * (per + 1) / 2 < want) per++;   // a pyramid: the bottom row holds per, each row above one fewer
+    var bw = 42, bh = 16, dx = 6, dy = 7, rows = 0, cap = 0; while (cap < want && rows < per) { cap += per - rows; rows++; }
+    var W = per * (bw + 4) + 12, H = rows * (bh + dy) + 20, id = "gb" + Math.random().toString(36).slice(2, 7);
+    var bar = function (i, ghost) {
+      var r = 0, c = i; while (c >= per - r) { c -= per - r; r++; }
+      var x = 6 + r * (bw + 4) / 2 + c * (bw + 4), y = H - 10 - (r + 1) * (bh + dy) + dy;
+      var front = 'M' + x + ' ' + (y + dy) + ' h' + bw + ' v' + bh + ' h-' + bw + ' Z', top = 'M' + x + ' ' + (y + dy) + ' l' + dx + ' -' + dy + ' h' + (bw - 2 * dx) + ' l' + dx + ' ' + dy + ' Z';
+      if (ghost) return '<path d="' + front + '" fill="none" stroke="#c9a84c" stroke-opacity=".55" stroke-dasharray="3 3"/><path d="' + top + '" fill="none" stroke="#c9a84c" stroke-opacity=".4" stroke-dasharray="3 3"/>';
+      return '<path d="' + front + '" fill="url(#' + id + 'f)" stroke="#8f6619" stroke-width=".8"/><path d="' + top + '" fill="url(#' + id + 't)" stroke="#a87c22" stroke-width=".6"/>'
+        + '<path d="M' + (x + 3) + ' ' + (y + dy + 3) + ' h' + (bw - 6) + '" stroke="#fff6dc" stroke-opacity=".7" stroke-width="1"/>';
+    };
+    var g = "";
+    for (var i = 0; i < want; i++) g += bar(i, i >= have);
+    var lab = { 1e6: "₹10 lakh", 1e7: "₹1 crore", 1e8: "₹10 crore", 1e9: "₹100 crore" }[unit];
+    return '<div class="gm-bars" style="display:flex;align-items:flex-end;gap:12px;flex-wrap:wrap;margin:8px 0">'
+      + '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Net worth: ' + have + ' gold bars of ' + lab + ', ' + Math.max(0, want - have) + ' more to the benchmark for your age">'
+      + '<defs><linearGradient id="' + id + 'f" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#fff1c4"/><stop offset=".22" stop-color="#e9c873"/><stop offset=".5" stop-color="#b88a2e"/><stop offset=".62" stop-color="#a97c25"/><stop offset=".85" stop-color="#e0bb66"/><stop offset="1" stop-color="#c9a04a"/></linearGradient>'
+      + '<linearGradient id="' + id + 't" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#f3dc9a"/><stop offset=".45" stop-color="#fff6dc"/><stop offset="1" stop-color="#d9b25a"/></linearGradient></defs>'
+      + '<ellipse cx="' + (W / 2) + '" cy="' + (H - 6) + '" rx="' + (W / 2 - 4) + '" ry="4" fill="#000" opacity=".15"/>' + g + '</svg>'
+      + '<div style="font-size:12.5px;color:var(--muted);min-width:120px">Each bar is ' + lab + '.<br><b style="color:var(--text)">' + have + ' in the vault</b>' + (want > have ? ', ' + (want - have) + ' outlined to the benchmark for your age.' : '. You are at or past the benchmark for your age.') + '</div></div>';
   };
   // What you own, by kind: one bar, each share in words, and the one thing that matters (owner 2026-11-20)
   window.gmMixHTML = function () {
@@ -1335,7 +1380,10 @@
     var top = M.mix.slice().sort(function (a, b) { return b[1] - a[1]; })[0], tp = pct(top[1]);
     var gp = M.gold ? pct(M.gold) : 0, say = tp > 60 ? "<b>" + tp + "% sits in " + top[0].toLowerCase() + ".</b> " + (top[0] === "Homes you own" ? "A flat cannot be sold in a hurry, so let new money go to funds until no one kind is over 60%." : "Spread new money to the others until no one kind is over 60%.")
       : gp > 15 ? "Gold is " + gp + "%: planners keep it to 5 to 10%. Let new money go elsewhere." : "No one kind is over 60%. Keep new money flowing to funds.";
-    return '<div class="road-col gm-mix" style="margin:10px 0"><div style="font-weight:800;font-size:13.5px">What you own, by kind · ' + rs(tot) + '</div>'
+    var ageNow = window.P && P.dob ? Math.floor((Date.now() - new Date(P.dob)) / 31557600000) : 0;
+    var bench = ageNow && typeof gmRetMult === "function" ? gmRetMult(ageNow) * M.grossPay * 12 : 0;
+    return '<div class="road-col gm-mix" style="margin:10px 0"><div style="font-weight:800;font-size:13.5px">Net worth · ' + rs(M.netWorth) + '</div>' + gmGoldBars(M.netWorth, bench)
+      + '<div style="font-weight:800;font-size:13.5px;margin-top:10px">What you own, by kind · ' + rs(tot) + '</div>'
       + '<div role="img" aria-label="' + M.mix.map(function (x) { return x[0] + " " + pct(x[1]) + " percent"; }).join(", ") + '" style="display:flex;height:14px;border-radius:7px;overflow:hidden;margin:8px 0">'
       + M.mix.map(function (x, i) { return '<i style="width:' + Math.max(1, x[1] / tot * 100) + '%;background:' + C[["Homes you own", "Retirement (EPF, NPS, PPF)", "Funds and stocks", "Cash and FDs", "Gold"].indexOf(x[0])] + '"></i>'; }).join("") + '</div>'
       + M.mix.map(function (x) { return '<div style="display:flex;justify-content:space-between;font-size:12.5px;padding:2px 0"><span><i style="display:inline-block;width:9px;height:9px;border-radius:2px;margin-inline-end:6px;background:' + C[["Homes you own", "Retirement (EPF, NPS, PPF)", "Funds and stocks", "Cash and FDs", "Gold"].indexOf(x[0])] + '"></i>' + x[0] + '</span><span><b>' + pct(x[1]) + '%</b> · ' + rs(x[1]) + '</span></div>'; }).join("")
@@ -1344,13 +1392,14 @@
   };
   window.gmNumSet = function (k, v) {
     if (!profOK() || !NUMS.some(function (f) { return f[0] === k; })) return;
+    var rb = rippleSnap();
     P[k] = num(v) || 0; P.numsAt = new Date().toISOString().slice(0, 10); store("sovP", P);
     // the same fact kept elsewhere follows, so no screen shows an older number
     var lm = { nw: "nw", sav: "ef", net: "minc" }[k], l = G("gm_life", {});
     if (lm && l[lm] !== undefined) { delete l[lm]; S_("gm_life", l); }
     var c = G(CAR_K, null);
     if (c) { Object.keys(CAR_FROM_P).forEach(function (path) { if (CAR_FROM_P[path] === k) { var q = path.split("."); if (c[q[0]]) delete c[q[0]][q[1]]; } }); carPut(c); }
-    bustDerived(); renderAll();
+    bustDerived(); renderAll(); rippleSay(rb, "Saved.");
   };
 
   /* ── Your real monthly spend, without tracking a single purchase (owner 2026-11-19) ─────────────────────────────────
@@ -1636,6 +1685,121 @@
     bustDerived(); renderAll();
     if (typeof gmToast === "function") gmToast(ans === "in" ? "Removed. The rent counts once, as money coming in." : "Kept as a bill you pay.");
   };
+  /* Us (owner 2026-11-23): closeness and intimacy are part of physical and mental health, so the Life OS treats them as wellbeing,
+     plainly and privately, never hidden and never explicit. Off until the person turns it on; then one weekly check-in of three taps
+     (close, calm, time together), a pair of stars whose light follows how close the two of you felt, one kind suggestion when
+     closeness dips two weeks running, and plain health basics. It stays on the person's own devices (their sync and encrypted backups), behind the app's lock, kept 104 weeks. */
+  var US_K = "gm_us", US_CAP = 104;
+  function usWeek(d) { d = d || new Date(); var m = new Date(d.getFullYear(), d.getMonth(), d.getDate() - ((d.getDay() + 6) % 7)); return m.getFullYear() + "-" + String(m.getMonth() + 1).padStart(2, "0") + "-" + String(m.getDate()).padStart(2, "0"); }
+  window.gmUsOn = function (on) { var u = G(US_K, {}) || {}; u.on = !!on; S_(US_K, u); renderAll(); };
+  window.gmUsSet = function (k, v) {
+    var u = G(US_K, {}) || {}, w = usWeek(); u.weeks = u.weeks && typeof u.weeks === "object" ? u.weeks : {};
+    var e = u.weeks[w] || {}; e[k] = Math.max(1, Math.min(5, +v || 0)); u.weeks[w] = e;
+    var ks = Object.keys(u.weeks).sort(); while (ks.length > US_CAP) delete u.weeks[ks.shift()];
+    S_(US_K, u); renderAll();
+  };
+  function usStars(avg, w, h) {
+    var glow = 0.25 + avg / 5 * 0.75, gap = (26 - avg * 3) * w / 96, cy = h / 2;
+    return '<svg width="' + w + '" height="' + h + '" viewBox="0 0 ' + w + ' ' + h + '" aria-hidden="true" style="flex-shrink:0"><defs><radialGradient id="gmUsS"><stop offset="0" stop-color="#fff8e1"/><stop offset=".35" stop-color="#f3d991" stop-opacity=".9"/><stop offset="1" stop-color="#f3d991" stop-opacity="0"/></radialGradient></defs>'
+      + '<rect width="' + w + '" height="' + h + '" rx="12" fill="#0d1a30"/><circle cx="' + (w * .2) + '" cy="' + (h * .22) + '" r=".8" fill="#fff" opacity=".6"/><circle cx="' + (w * .8) + '" cy="' + (h * .78) + '" r=".7" fill="#fff" opacity=".5"/>'
+      + '<circle cx="' + (w / 2 - gap) + '" cy="' + cy + '" r="' + (h * .22) + '" fill="url(#gmUsS)" opacity="' + glow.toFixed(2) + '"/><circle cx="' + (w / 2 + gap) + '" cy="' + cy + '" r="' + (h * .22) + '" fill="url(#gmUsS)" opacity="' + glow.toFixed(2) + '"/>'
+      + '<circle cx="' + (w / 2 - gap) + '" cy="' + cy + '" r="2.4" fill="#fffbe9"/><circle cx="' + (w / 2 + gap) + '" cy="' + cy + '" r="2.4" fill="#fffbe9"/></svg>';
+  }
+  function usAvg(weeks) { var ks = Object.keys(weeks).sort(), c = ks.slice(-6).map(function (k) { return weeks[k].close || 0; }).filter(Boolean); return c.length ? c.reduce(function (a, b) { return a + b; }, 0) / c.length : 3; }
+  // Today: one question a week, three big choices, one tap; answered, it folds to the stars and one line (owner 2026-11-23: visible, no friction)
+  window.gmUsTodayHTML = function () {
+    if (!window.P || P.example || !(P.pname || (typeof gmEarners === "function" && gmEarners(P) === 2))) return "";
+    var u = G(US_K, {}) || {}; if (u.on === false) return "";
+    var weeks = u.weeks && typeof u.weeks === "object" ? u.weeks : {}, cur = weeks[usWeek()] || {}, nm = esc(String(P.pname || "your partner").split(" ")[0]);
+    if (cur.close) return '<div class="road-col gm-us-today" style="display:flex;align-items:center;gap:12px;margin:10px 0">' + usStars(usAvg(weeks), 72, 44)
+      + '<div style="font-size:13px"><b>You and ' + nm + '</b><br><span style="color:var(--muted)">' + (cur.close >= 5 ? "Close this week. The stars are near." : cur.close >= 3 ? "Steady this week." : "A quieter week. Twenty minutes, phones away, tonight?") + '</span></div></div>';
+    var b = function (v, word) { return '<button type="button" class="btn-sm" style="flex:1;min-height:48px;font-size:14px" onclick="gmUsSet(\'close\',' + v + ')">' + word + '</button>'; };
+    return '<div class="road-col gm-us-today" style="margin:10px 0"><div style="display:flex;align-items:center;gap:12px">' + usStars(usAvg(weeks), 72, 44)
+      + '<div style="font-size:13.5px"><b>You and ' + nm + ', this week</b><br><span style="color:var(--muted)">How close did you feel? One tap, private.</span></div></div>'
+      + '<div style="display:flex;gap:8px;margin-top:10px">' + b(2, "Distant") + b(3, "Okay") + b(5, "Close") + '</div></div>';
+  };
+  window.gmUsHTML = function () {
+    var u = G(US_K, {}) || {};
+    if (u.on === false) return '<div class="road-col gm-us" style="margin-top:10px;display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap">'
+      + '<div><b>Us</b> <span style="color:var(--muted);font-size:12.5px">· a private weekly check-in for the two of you. Turned off.</span></div>'
+      + '<button type="button" class="btn-sm" onclick="gmUsOn(true)">Turn on</button></div>';
+    var weeks = u.weeks && typeof u.weeks === "object" ? u.weeks : {}, w = usWeek(), cur = weeks[w] || {}, ks = Object.keys(weeks).sort();
+    var tap = function (k, label) {
+      return '<div style="margin-top:8px"><div style="font-size:12.5px;color:var(--muted)">' + label + '</div><div role="group" aria-label="' + label + '" style="display:flex;gap:6px;margin-top:4px">'
+        + [1, 2, 3, 4, 5].map(function (n) { var on = cur[k] === n; return '<button type="button" class="btn-sm" aria-pressed="' + on + '" style="min-width:40px;' + (on ? "background:var(--gold);color:#0d1f35" : "") + '" onclick="gmUsSet(\'' + k + '\',' + n + ')">' + n + '</button>'; }).join("") + '</div></div>';
+    };
+    var close = ks.slice(-6).map(function (k) { return weeks[k].close || 0; }).filter(Boolean), avg = close.length ? close.reduce(function (a, b) { return a + b; }, 0) / close.length : 3;
+    var dip = ks.length >= 2 && ks.slice(-2).every(function (k) { return (weeks[k].close || 5) <= 2; });
+    var glow = 0.25 + avg / 5 * 0.75, gap = 26 - avg * 3;     // closer weeks: brighter stars, nearer each other
+    var stars = '<svg width="96" height="64" viewBox="0 0 96 64" aria-hidden="true" style="flex-shrink:0"><defs><radialGradient id="gmUsS"><stop offset="0" stop-color="#fff8e1"/><stop offset=".35" stop-color="#f3d991" stop-opacity=".9"/><stop offset="1" stop-color="#f3d991" stop-opacity="0"/></radialGradient></defs>'
+      + '<rect width="96" height="64" rx="12" fill="#0d1a30"/><circle cx="20" cy="14" r=".8" fill="#fff" opacity=".6"/><circle cx="78" cy="50" r=".7" fill="#fff" opacity=".5"/><circle cx="70" cy="12" r=".6" fill="#fff" opacity=".5"/>'
+      + '<circle cx="' + (48 - gap) + '" cy="32" r="14" fill="url(#gmUsS)" opacity="' + glow.toFixed(2) + '"/><circle cx="' + (48 + gap) + '" cy="32" r="14" fill="url(#gmUsS)" opacity="' + glow.toFixed(2) + '"/>'
+      + '<circle cx="' + (48 - gap) + '" cy="32" r="2.6" fill="#fffbe9"/><circle cx="' + (48 + gap) + '" cy="32" r="2.6" fill="#fffbe9"/></svg>';
+    return '<div class="road-col gm-us" style="margin-top:10px"><div style="display:flex;gap:12px;align-items:center">' + stars
+      + '<div><div style="font-weight:800">Us · this week</div><div style="font-size:12.5px;color:var(--muted)">Two stars that draw closer and brighter as the weeks feel closer. Three taps, once a week. Kept only on your own devices, behind the lock.</div></div></div>'
+      + tap("close", "How close did we feel?") + tap("calm", "How calm was home?") + tap("time", "Time just for us")
+      + (dip ? '<div style="margin-top:10px;font-size:13px;border-inline-start:3px solid var(--gold);padding-inline-start:8px">Two quieter weeks. One small thing tends to help most: twenty minutes, phones away, asking about each other\'s day, and touch that asks for nothing. Small daily moments of turning towards each other matter more than grand gestures.</div>' : "")
+      + '<details style="margin-top:10px"><summary style="cursor:pointer;font-size:12.5px">Health basics</summary><div style="font-size:12.5px;line-height:1.55;margin-top:6px">'
+      + 'A healthy sex life is part of physical and mental health, and it changes with stress, sleep, illness, medicines and age; all of these are normal to talk about with a doctor. '
+      + 'Ask your doctor at the yearly check-up which sexual-health screenings suit your age. Talk openly with each other about wants and limits; consent is ongoing, for both of you.</div></details>'
+      + '<div style="margin-top:8px"><a href="#" class="gm-inl" onclick="gmUsOn(false);return false" style="font-size:12px">Turn Us off</a> <span style="font-size:11.5px;color:var(--muted)">(your check-ins stay on your own devices)</span></div></div>';
+  };
+  /* Saving as tree rings (immersive-real, natures-design, owner 2026-11-23): a cross-section of a trunk, the way a forester reads
+     a tree's good and lean years. One ring per month from the month-end check-ins (oldest at the heart); a ring's width is that
+     month's saving rate, so a thick ring is a month that saved well. The outer ring is this month, edged in gold. With no history
+     yet, a young trunk shows today's rate and says when the first true ring appears. */
+  window.gmTreeRings = function () {
+    var M = profOK() ? gmMoney() : null; if (!M || !(M.income > 0)) return "";
+    var hist = scSeries().map(function (x) { return { m: x.month, r: Math.round((M.income - x.f - x.v) / M.income * 100) }; }).slice(-24);
+    var rings = hist.concat([{ m: "now", r: M.save === null ? 0 : M.save }]);
+    var id = "tr" + Math.random().toString(36).slice(2, 7), cx = 80, cy = 80, rad = 6, paths = "";
+    var wob = function (r, k) { var pts = []; for (var a = 0; a < 360; a += 12) { var t = a * Math.PI / 180, rr = r + Math.sin(t * 3 + k) * 0.9 + Math.cos(t * 5 + k * 1.7) * 0.6; pts.push((cx + rr * Math.cos(t)).toFixed(1) + " " + (cy + rr * Math.sin(t)).toFixed(1)); } return "M" + pts.join(" L") + " Z"; };
+    var scale = 62 / Math.max(rings.reduce(function (a, x) { return a + 1 + Math.max(0, Math.min(60, x.r)) / 3; }, 0), 30);
+    rings.forEach(function (x, i) {
+      var wdt = (1 + Math.max(0, Math.min(60, x.r)) / 3) * scale; rad += wdt;   // a lean month is a hairline, a strong one a broad band
+      var last = i === rings.length - 1;
+      paths = '<path d="' + wob(rad, i) + '" fill="' + (i % 2 ? "#d9b98a" : "#e6caa0") + '" stroke="' + (last ? "#c9a84c" : "#9a6f42") + '" stroke-width="' + (last ? 2.2 : 0.9) + '" stroke-opacity="' + (last ? 1 : 0.7) + '"/>' + paths;
+    });
+    var bark = '<path d="' + wob(rad + 7, 9) + '" fill="#5a3a22"/><path d="' + wob(rad + 3.5, 4) + '" fill="#7a5130"/>';
+    var crack = '<path d="M' + cx + ' ' + cy + ' L' + (cx + rad * 0.85) + ' ' + (cy - rad * 0.35) + '" stroke="#8a5d36" stroke-opacity=".35" stroke-width="1"/>';
+    var now = rings[rings.length - 1].r, good = rings.filter(function (x) { return x.r >= 20; }).length;
+    return '<div class="gm-tree" style="display:flex;align-items:center;gap:14px;margin:10px 0">'
+      + '<svg width="160" height="160" viewBox="0 0 160 160" role="img" aria-label="Saving as tree rings: ' + rings.length + ' rings, this month ' + now + ' percent">'
+      + '<defs><radialGradient id="' + id + '" cx=".45" cy=".42" r=".7"><stop offset="0" stop-color="#fff" stop-opacity=".25"/><stop offset="1" stop-color="#000" stop-opacity=".12"/></radialGradient></defs>'
+      + '<ellipse cx="80" cy="150" rx="62" ry="6" fill="#000" opacity=".14"/>' + bark + paths
+      + '<circle cx="' + cx + '" cy="' + cy + '" r="3" fill="#8a5d36"/>' + crack + '<circle cx="' + cx + '" cy="' + cy + '" r="' + (rad + 7) + '" fill="url(#' + id + ')"/></svg>'
+      + '<div><div style="font-size:26px;font-weight:800;line-height:1">' + now + '%<span style="font-size:13px;font-weight:600"> saved this month</span></div>'
+      + '<div style="font-size:12.5px;color:var(--muted);margin-top:4px">' + (hist.length ? rings.length + ' rings, one a month. ' + good + ' thick (20% or more).' : 'A young tree: your first true ring grows after the next month-end check-in.')
+      + '<br>A thick ring is a month you saved well; the gold ring is this month.</div></div></div>';
+  };
+  /* The buffer as water in a glass vessel (immersive-real, natures-design, owner 2026-11-23): water is safety; the level is the
+     months your savings last, the etched line is the aim. Light refracts through the glass, the surface moves gently (still when
+     the person asks for less motion), and the water's colour tells the state: deep teal when safe, amber-tinted when building,
+     a shallow rust when low. One figure, read at a glance, from a material people have trusted since before writing. */
+  window.gmVessel = function (months, target, state) {
+    var f = Math.max(0.04, Math.min(1, months / (target || 6))), id = "gv" + Math.random().toString(36).slice(2, 7);
+    var W = 150, H = 170, top = 26, bot = 156, lvl = bot - (bot - top - 6) * f, aim = top + 6;
+    var water = state === "good" ? ["#5fd3c0", "#127a75", "#0a4a52"] : state === "watch" ? ["#9fd6c6", "#3e8f7a", "#5a5a2a"] : ["#c9a98a", "#8a5a3c", "#5a3020"];
+    var txt = months > 120 ? "120+" : months.toFixed(1);
+    return '<div class="gm-vessel" style="display:flex;align-items:center;gap:14px;margin:10px 0 2px">'
+      + '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Buffer: ' + txt + ' months of ' + target + ' aimed for">'
+      + '<defs><clipPath id="' + id + 'c"><path d="M30 22 Q30 16 36 16 H114 Q120 16 120 22 V150 Q120 160 110 160 H40 Q30 160 30 150 Z"/></clipPath>'
+      + '<linearGradient id="' + id + 'w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + water[0] + '" stop-opacity=".95"/><stop offset=".45" stop-color="' + water[1] + '"/><stop offset="1" stop-color="' + water[2] + '"/></linearGradient>'
+      + '<linearGradient id="' + id + 'g" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".12" stop-color="#fff" stop-opacity=".08"/><stop offset=".8" stop-color="#fff" stop-opacity="0"/><stop offset=".93" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff" stop-opacity=".05"/></linearGradient>'
+      + '<radialGradient id="' + id + 'k" cx=".5" cy=".2" r=".8"><stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>'
+      + '<ellipse cx="75" cy="163" rx="50" ry="5" fill="#000" opacity=".18"/>'
+      + '<g clip-path="url(#' + id + 'c)"><rect x="0" y="0" width="' + W + '" height="' + H + '" fill="rgba(200,225,235,.10)"/>'
+      + '<g class="gm-wave"><path d="M-60 ' + lvl + ' q15 -5 30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 V170 H-60 Z" fill="url(#' + id + 'w)"/>'
+      + '<path d="M-60 ' + lvl + ' q15 -5 30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.2"/></g>'
+      + '<rect x="30" y="' + lvl + '" width="90" height="' + (170 - lvl) + '" fill="url(#' + id + 'k)"/></g>'
+      + '<line x1="30" y1="' + aim + '" x2="120" y2="' + aim + '" stroke="#c9a84c" stroke-width="1.5" stroke-dasharray="4 3"/>'
+      + '<text x="124" y="' + (aim + 4) + '" font-size="10" fill="currentColor" opacity=".75">' + target + 'm</text>'
+      + '<path d="M30 22 Q30 16 36 16 H114 Q120 16 120 22 V150 Q120 160 110 160 H40 Q30 160 30 150 Z" fill="url(#' + id + 'g)" stroke="rgba(170,190,200,.85)" stroke-width="2"/>'
+      + '<path d="M38 26 V140" stroke="#fff" stroke-opacity=".45" stroke-width="3" stroke-linecap="round"/>'
+      + '<ellipse cx="75" cy="16" rx="45" ry="3.5" fill="none" stroke="rgba(170,190,200,.9)" stroke-width="1.5"/></svg>'
+      + '<div><div style="font-size:30px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums">' + txt + '<span style="font-size:14px;font-weight:600"> months</span></div>'
+      + '<div style="font-size:12.5px;color:var(--muted);margin-top:4px">of cover in the tank<br>the gold line is your ' + target + '-month aim</div></div></div>';
+  };
   window.gmSpendCard = function () {
     if (!window.P) return "";
     var r = gmRealSpend(), rw = gmRunway(), ft = fixedTotals(), all = scAll(), ks = Object.keys(all), now = ymd().slice(0, 7), nm = scNames(), two = scEarners() === 2;
@@ -1654,6 +1818,8 @@
       if (r.est) h += '<div style="font-size:12.5px;color:var(--muted);margin-top:6px">After next month’s check-in you see your real spend. Until then the variable part is your profile’s spending less the fixed bills.</div>';
     } else h += '<div class="gm-rs-h">List your fixed bills once and add your balance below. Your real spend shows itself.</div>';
     if (rw) {
+      h += gmVessel(rw.gapM > 0 ? rw.months : rw.target, rw.target, rw.state);
+      h += gmTreeRings();
       h += '<div style="margin-top:10px;font-size:13px">Cover for ' + rw.target + ' months or more is the aim' + (rw.contract ? ' on contract work' : '') + ': '
         + gmRag(rw.state, rw.gapM > 0 ? (rw.months > 120 ? "120+ months" : rw.months.toFixed(1) + " months") : "covered") + '<div class="gm-tgt" style="font-size:10.5px;color:var(--muted);margin-top:3px;line-height:1.3">aim ' + rw.target + '+ months · ' + rs(rw.target * rw.gapM)
         + ' · savings and FDs ' + rs(rw.liquid) + ' ÷ ' + rs(rw.gapM) + ' a month' + (rw.secure > 0 ? ' (spend ' + rs(rw.real.total) + ' less ' + rs(rw.secure) + ' that keeps coming: the permanent pay and the rent)' : '') + '</div><div style="margin-top:6px">' + rw.insight + '</div>' + workHTML() + '</div>';
@@ -1781,7 +1947,7 @@
         + '<div class="road-i">Her own emergency access: a bank account she alone controls, plus emergency access to the password manager.</div>'
         + '<div class="road-i">Her own retirement instrument \u2014 PPF or NPS \u2014 running in her name, not merged into yours.</div>'
         + '<div class="road-i">She can run the annual review without you. If not, that is the highest-value gap in this entire system.</div>'
-        + '</div>';
+        + '</div>' + gmUsHTML();
     }
 
     /* Children */
@@ -1963,6 +2129,9 @@
   };
 
   function props() { return G("gm_props", []); }
+  // A living sky (immersive-real): the header follows the real time of day, set on load and whenever the app comes back.
+  function gmDaypart() { var h = new Date().getHours(); document.documentElement.setAttribute("data-daypart", h >= 5 && h < 8 ? "dawn" : h >= 8 && h < 17 ? "day" : h >= 17 && h < 20 ? "dusk" : "night"); }
+  try { gmDaypart(); document.addEventListener("visibilitychange", function () { if (!document.hidden) gmDaypart(); }); } catch (e) {}
   // A typed 0 is a real answer: show it, never the "e.g." hint again (owner 2026-11-20: a 0 looked unsaved)
   function keep0(x) { return x === undefined || x === null ? "" : x; }
   // A home the family rents is not theirs (owner 2026-11-20: the rented flat was entered as owned). It stays listed, so the
@@ -1984,7 +2153,7 @@
     rentDay: { min: 1, max: 28, int: true }, maintDay: { min: 1, max: 28, int: true }, months: { min: 1, max: 60, int: true },
     share: { min: 1, max: 99, int: true }, deposit: { min: 0, max: 100000000 }, maint: { min: 0, max: 10000000 }, start: { date: true }, taxDue: { date: true }
   };
-  window.gmPropSet = function (i, k, v) { if (PROP_RULES[k]) v = window.gmFieldGuard(PROP_RULES[k], v).v; var p = props(); p[i][k] = v; S_("gm_props", p); renderAll(); };
+  window.gmPropSet = function (i, k, v) { if (PROP_RULES[k]) v = window.gmFieldGuard(PROP_RULES[k], v).v; var rb = window.gmRippleSnap ? gmRippleSnap() : null; var p = props(); p[i][k] = v; S_("gm_props", p); bustDerived(); renderAll(); if (window.gmRippleSay) gmRippleSay(rb, "Saved."); };
 
   function propCalc(p) {
     var val = num(p.val) * 100000,           // \u20b9 lakh -> \u20b9
@@ -2056,6 +2225,65 @@
   function llShow(d) { return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }); }   // 4 Jan 2026, never an ISO string
   function llBadge(cls, word) { return '<span class="' + cls + '" style="font-size:11.5px;font-weight:700;padding:2px 10px;border-radius:999px;white-space:nowrap;color:' + (cls === "sx-state-watch" ? "#2a1703" : "#fff") + '">' + esc(word) + '</span>'; }
   function llMH() { var f = G("gm_facts", {}) || {}; return f.state === "MH"; }
+  /* Coming up in your world (immersive-real, owner 2026-11-23): the next real events, worked out from what the person already
+     told us, with nothing to type: birthdays of the people at home, a loan's last EMI, a let-out home's rent, tax, renewal and
+     papers, and the month-end check-in. Each carries a moon that waxes as the day comes near (full on the day): a cue from
+     nature, not a timer. The three nearest show; the rest wait under Later. */
+  window.gmComingUp = function () {
+    if (!window.P || P.example) return [];
+    var now = new Date(), t0 = new Date(now.getFullYear(), now.getMonth(), now.getDate()), out = [];
+    var days = function (d) { return Math.round((new Date(d.getFullYear(), d.getMonth(), d.getDate()) - t0) / 864e5); };
+    var first = function (n) { return esc(String(n || "").trim().split(" ")[0] || n); };
+    var bday = function (dob, who, own) {
+      var b = dob ? new Date(dob) : null; if (!b || isNaN(b)) return;
+      var nx = new Date(t0.getFullYear(), b.getMonth(), b.getDate()); if (nx < t0) nx = new Date(t0.getFullYear() + 1, b.getMonth(), b.getDate());
+      var age = nx.getFullYear() - b.getFullYear();
+      out.push({ d: nx, kind: "birthday", t: own ? "Your birthday" : who + " turns " + age, s: own ? "A year to look back on, and one to plan." : "A call, a note or a small plan. Decide this week." });
+    };
+    bday(P.dob, "", true);
+    if (P.pname && P.pdob) bday(P.pdob, first(P.pname));
+    (P.kids || []).forEach(function (k) { if (k && k.name) bday(k.dob, first(k.name)); });
+    (P.loans || []).forEach(function (x, i) {
+      var m = num(x && x.tenure); if (!(m > 0 && m <= 6) || !num(x.emi)) return;
+      var d = new Date(t0.getFullYear(), t0.getMonth() + m, t0.getDate());
+      out.push({ d: d, kind: "loan", t: esc(x.type || "Loan " + (i + 1)) + ": last EMI", s: rs(num(x.emi)) + " a month frees up after it. Decide now where it goes." });
+    });
+    props().forEach(function (p) {
+      if (!p || (p.use || "letout") !== "letout") return;
+      llRows(p).forEach(function (r) { out.push({ d: r.d, kind: "home", t: esc(p.n || "Your flat") + ": " + esc(r.t), s: "Mark it done on the Property tab." }); });
+    });
+    out.push({ d: new Date(t0.getFullYear(), t0.getMonth() + 1, 1), kind: "checkin", t: "Month-end money check-in", s: "One balance each. Two minutes." });
+    return out.map(function (x) { x.days = days(x.d); return x; }).filter(function (x) { return x.days <= 45; })
+      .sort(function (a, b) { return a.days - b.days; });
+  };
+  window.gmComingUpHTML = function () {
+    var L = window.gmComingUp ? gmComingUp() : []; if (!L.length) return "";
+    var moon = function (n) {     // a moon that waxes as the day comes near; full on the day, a red ring when late
+      var f = n <= 0 ? 1 : Math.max(0.08, 1 - n / 14), r = 14, id = "gmMoon" + Math.random().toString(36).slice(2, 7);
+      // a real moon: a lit face with maria and craters, earthshine on the dark side, a soft terminator, a glow when it is full
+      return '<svg width="38" height="38" viewBox="0 0 38 38" aria-hidden="true" class="gm-moon"><defs><clipPath id="' + id + '"><circle cx="19" cy="19" r="' + r + '"/></clipPath>'
+        + '<radialGradient id="' + id + 'f" cx=".38" cy=".35" r=".75"><stop offset="0" stop-color="#fbf7ea"/><stop offset=".6" stop-color="#e7e0cc"/><stop offset="1" stop-color="#b9b19c"/></radialGradient>'
+        + '<radialGradient id="' + id + 'h" r=".5"><stop offset=".7" stop-color="#f6efd2" stop-opacity=".55"/><stop offset="1" stop-color="#f6efd2" stop-opacity="0"/></radialGradient>'
+        + '<filter id="' + id + 'b" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.1"/></filter></defs>'
+        + (f > 0.95 ? '<circle cx="19" cy="19" r="' + (r + 5) + '" fill="url(#' + id + 'h)"/>' : '')
+        + '<g clip-path="url(#' + id + ')"><circle cx="19" cy="19" r="' + r + '" fill="url(#' + id + 'f)"/>'
+        + '<circle cx="14" cy="14" r="4" fill="#9c9583" opacity=".35"/><circle cx="23" cy="21" r="3.2" fill="#9c9583" opacity=".3"/><circle cx="15.5" cy="24" r="2.2" fill="#8d8673" opacity=".35"/>'
+        + '<circle cx="24" cy="12.5" r="1.4" fill="#8d8673" opacity=".45"/><circle cx="11" cy="20" r="1.1" fill="#8d8673" opacity=".45"/>'
+        + '<circle cx="' + (19 + 2 * r * f) + '" cy="19" r="' + (r + 0.5) + '" fill="#0d1a2e" fill-opacity=".9" filter="url(#' + id + 'b)"/></g>'
+        + '<circle cx="19" cy="19" r="' + (r + 1.5) + '" fill="none" stroke="' + (n < 0 ? "#c0392b" : "rgba(160,150,120,.35)") + '" stroke-width="' + (n < 0 ? 2.5 : 1) + '"/></svg>';
+    };
+    var when = function (n) { return n < 0 ? (-n) + (n === -1 ? " day late" : " days late") : n === 0 ? "today" : n === 1 ? "tomorrow" : "in " + n + " days"; };
+    var date = function (d) { return d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }); };
+    var row = function (x) {
+      var st = x.days < 0 || x.days <= 3 ? "low" : x.days <= 14 ? "watch" : "good";
+      return '<div class="gm-cu-row" role="listitem" aria-label="' + x.t.replace(/<[^>]+>/g, "") + ', ' + when(x.days) + '">' + moon(x.days)
+        + '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:14px">' + x.t + '</div><div style="font-size:12.5px;color:var(--muted)">' + x.s + '</div></div>'
+        + '<div class="gm-cu-when gm-cu-' + st + '">' + when(x.days) + '<small>' + date(x.d) + '</small></div></div>';
+    };
+    return '<div class="road-col gm-cu" style="margin:10px 0"><div style="font-weight:800;font-size:13.5px;margin-bottom:4px">Coming up in your world</div><div role="list">'
+      + L.slice(0, 3).map(row).join("") + '</div>'
+      + (L.length > 3 ? '<details style="margin-top:4px"><summary style="cursor:pointer;font-size:12.5px">Later (' + (L.length - 3) + ')</summary><div role="list">' + L.slice(3).map(row).join("") + '</div></details>' : "") + '</div>';
+  };
   function llRows(p) {
     var today = llDay(new Date()), rows = [], ym = llIso(today).slice(0, 7), mon = today.toLocaleString("en-IN", { month: "long" });
     if (llNum(p.rent) > 0 && llNum(p.rentDay) >= 1 && !(p.paid && p.paid[ym]))
@@ -5492,7 +5720,7 @@
   function calmTodayHTML() {
     var more = dueNowHTML() + (inRecovery() ? "" : driftHTML() + resHTML()) + msTodayHTML() + insightHTML() + estateHTML();
     var open = G("gm_more_today", false) === true;
-    return '<div class="section active">' + greetHTML() + (phone() ? vitalsHTML() : "") + interruptHTML() + undoBar() + checkinHTML() + setupStripHTML() + (window.gmAskOneHTML ? gmAskOneHTML() : "") + todayFocusHTML() + winsHTML()
+    return '<div class="section active">' + greetHTML() + (phone() ? vitalsHTML() : "") + interruptHTML() + undoBar() + checkinHTML() + setupStripHTML() + (window.gmAskOneHTML ? gmAskOneHTML() : "") + todayFocusHTML() + (window.gmComingUpHTML ? gmComingUpHTML() : "") + (window.gmUsTodayHTML ? gmUsTodayHTML() : "") + winsHTML()
       + (more.replace(/<[^>]*>/g, "").trim() ? '<details class="road-col gm-more-today"' + (open ? " open" : "") + ' ontoggle="gmMoreToday(this.open)">'
         + '<summary style="cursor:pointer;font-weight:800;font-size:13px">More today <span style="font-weight:500;color:var(--muted);font-size:11.5px">\u00b7 what is due, your week, calendar, estate</span></summary>'
         + '<div style="margin-top:10px">' + more + '</div></details>' : "")
