@@ -35,6 +35,12 @@ html[data-daypart="day"] .sx-sky::before{opacity:0}
 html[data-daypart="dawn"] .sx-sky::before,html[data-daypart="dusk"] .sx-sky::before{opacity:.35}
 @media (prefers-reduced-motion: reduce){:is(.sx-sky,header)::after{transition:none}}
 
+/* The crest catches the light (immersive-real, owner 2026-11-23): a slow gold glint crosses the seal every 14 seconds, the way
+   polished metal flashes as you turn it; nothing moves when the person asks for less motion. */
+.sx-crest,header .mark{position:relative;overflow:hidden}
+.sx-crest::after,header .mark::after{content:"";position:absolute;inset:-40%;background:linear-gradient(115deg,transparent 40%,rgba(255,246,220,.55) 50%,transparent 60%);transform:translateX(-120%);animation:sxGlint 14s ease-in-out infinite}
+@keyframes sxGlint{0%,82%{transform:translateX(-120%)}92%,100%{transform:translateX(120%)}}
+@media (prefers-reduced-motion: reduce){.sx-crest::after,header .mark::after{animation:none;display:none}}
 /* The one primary action: polished gold. */
 /* Real gold (owner 2026-11-14: "make the gold more realistic"): polished metal mirrors its surroundings, so a face has a bright top,
    a darker horizon band through the middle and a warm reflection below, with a bevel on its edges; an edge or a ring is the

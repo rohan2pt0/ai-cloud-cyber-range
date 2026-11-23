@@ -1703,6 +1703,56 @@
       + '<circle cx="' + (w / 2 - gap) + '" cy="' + cy + '" r="2.4" fill="#fffbe9"/><circle cx="' + (w / 2 + gap) + '" cy="' + cy + '" r="2.4" fill="#fffbe9"/></svg>';
   }
   function usAvg(weeks) { var ks = Object.keys(weeks).sort(), c = ks.slice(-6).map(function (k) { return weeks[k].close || 0; }).filter(Boolean); return c.length ? c.reduce(function (a, b) { return a + b; }, 0) / c.length : 3; }
+  /* While you were away (immersive-real, owner 2026-11-23): the world kept running. When the person comes back after three days or
+     more, Today opens with one calm card: the sunrises they missed, drawn as small suns along an arc, and what moved in their money
+     while they were gone. One tap ("Got it") and it folds. A shorter gap simply refreshes the snapshot, so it never nags. */
+  var SEEN_K = "gm_seen";
+  function seenSnap() { var m = profOK() ? gmMoney() : null; return { at: Date.now(), n: m ? m.netWorth : 0, b: m && m.buffer && m.buffer.gapM > 0 ? +m.buffer.months.toFixed(1) : null }; }
+  window.gmSeenOk = function () { S_(SEEN_K, seenSnap()); renderAll(); };
+  window.gmAwayHTML = function () {
+    if (!profOK()) return "";
+    var o = G(SEEN_K, null);
+    if (!o || typeof o !== "object" || !(+o.at > 0)) { S_(SEEN_K, seenSnap()); return ""; }
+    var days = Math.floor((Date.now() - o.at) / 864e5);
+    if (days < 3) { if (days >= 1) S_(SEEN_K, seenSnap()); return ""; }
+    var now = seenSnap(), lines = [], n = Math.min(days, 14);
+    if (Math.abs(now.n - (+o.n || 0)) >= 1) lines.push("Net worth " + (now.n > o.n ? "+" : "−") + rs(Math.abs(now.n - o.n)));
+    if (o.b !== null && now.b !== null && now.b !== o.b) lines.push("Buffer " + o.b + " → " + now.b + " months");
+    var cu = window.gmComingUp ? gmComingUp()[0] : null;
+    if (cu) lines.push("Next: " + cu.t.replace(/<[^>]+>/g, "") + (cu.days <= 0 ? " (today)" : " in " + cu.days + (cu.days === 1 ? " day" : " days")));
+    var suns = ""; for (var i = 0; i < n; i++) { var t = n === 1 ? 0.5 : i / (n - 1), x = 14 + t * 252, y = 46 - Math.sin(t * Math.PI) * 30; suns += '<circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="4.2" fill="#f3c86a"/><circle cx="' + x.toFixed(1) + '" cy="' + y.toFixed(1) + '" r="8" fill="#f3c86a" opacity=".22"/>'; }
+    return '<div class="road-col gm-away" style="margin:10px 0">'
+      + '<svg viewBox="0 0 280 56" width="100%" style="max-width:420px;display:block" role="img" aria-label="' + days + ' sunrises since you were last here"><rect width="280" height="56" rx="10" fill="#132a47"/><path d="M0 50 H280" stroke="#e9c99a" stroke-opacity=".35"/>' + suns + '</svg>'
+      + '<div style="font-weight:800;margin-top:8px">Welcome back. ' + days + ' sunrises while you were away.</div>'
+      + '<div style="font-size:13px;color:var(--muted);margin-top:2px">' + (lines.length ? lines.join(" · ") : "Nothing changed in your numbers. The world waited.") + '</div>'
+      + '<button type="button" class="btn-sm" style="margin-top:8px" onclick="gmSeenOk()">Got it</button></div>';
+  };
+
+  /* Your own wind on the summit flag (immersive-real, owner 2026-11-23): with one tap of consent the app asks the device for a rough
+     location once (rounded to about 10 km), reads the current wind there from Open-Meteo (no account, no key), and keeps it on this
+     device. The flag then flies with that speed and direction; it refreshes at most every 3 hours when online, otherwise uses the
+     last reading, and with none it waves in a soft default breeze. Nothing else leaves the device; turning it off forgets the place. */
+  var WIND_K = "gm_wind";
+  window.gmWind = function () { var w = G(WIND_K, null); return w && typeof w === "object" && w.ok && isFinite(+w.speed) ? w : null; };
+  window.gmWindFetch = function (force) {
+    var w = G(WIND_K, null); if (!w || !w.ok || !navigator.onLine || !window.fetch) return;
+    if (!force && w.at && Date.now() - w.at < 3 * 3600e3) return;
+    var go = function (lat, lon) {
+      fetch("https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon + "&current=wind_speed_10m,wind_direction_10m", { credentials: "omit", referrerPolicy: "no-referrer" })
+        .then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
+          var c = j && j.current; if (!c || !isFinite(+c.wind_speed_10m)) return;
+          var v = G(WIND_K, {}) || {}; v.speed = Math.max(0, Math.min(150, +c.wind_speed_10m)); v.dir = ((+c.wind_direction_10m % 360) + 360) % 360; v.at = Date.now(); S_(WIND_K, v); renderAll();
+        }).catch(function () {});
+    };
+    if (isFinite(+w.lat) && isFinite(+w.lon)) return go(w.lat, w.lon);
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      var v = G(WIND_K, {}) || {}; v.lat = Math.round(pos.coords.latitude * 10) / 10; v.lon = Math.round(pos.coords.longitude * 10) / 10; S_(WIND_K, v); go(v.lat, v.lon);
+    }, function () {}, { maximumAge: 864e5, timeout: 10000, enableHighAccuracy: false });
+  };
+  window.gmWindOn = function (on) { if (on) { S_(WIND_K, { ok: true }); gmWindFetch(true); } else S_(WIND_K, { ok: false }); renderAll(); };
+  try { setTimeout(function () { if (window.gmWindFetch) gmWindFetch(false); }, 1500); } catch (e) {}
+
   // Today: one question a week, three big choices, one tap; answered, it folds to the stars and one line (owner 2026-11-23: visible, no friction)
   window.gmUsTodayHTML = function () {
     if (!window.P || P.example || !(P.pname || (typeof gmEarners === "function" && gmEarners(P) === 2))) return "";
@@ -5717,7 +5767,7 @@
   function calmTodayHTML() {
     var more = dueNowHTML() + (inRecovery() ? "" : driftHTML() + resHTML()) + msTodayHTML() + insightHTML() + estateHTML();
     var open = G("gm_more_today", false) === true;
-    return '<div class="section active">' + greetHTML() + (phone() ? vitalsHTML() : "") + interruptHTML() + undoBar() + checkinHTML() + setupStripHTML() + (window.gmAskOneHTML ? gmAskOneHTML() : "") + todayFocusHTML() + (window.gmComingUpHTML ? gmComingUpHTML() : "") + (window.gmUsTodayHTML ? gmUsTodayHTML() : "") + winsHTML()
+    return '<div class="section active">' + greetHTML() + (phone() ? vitalsHTML() : "") + interruptHTML() + undoBar() + checkinHTML() + setupStripHTML() + (window.gmAskOneHTML ? gmAskOneHTML() : "") + (window.gmAwayHTML ? gmAwayHTML() : "") + todayFocusHTML() + (window.gmComingUpHTML ? gmComingUpHTML() : "") + (window.gmUsTodayHTML ? gmUsTodayHTML() : "") + winsHTML()
       + (more.replace(/<[^>]*>/g, "").trim() ? '<details class="road-col gm-more-today"' + (open ? " open" : "") + ' ontoggle="gmMoreToday(this.open)">'
         + '<summary style="cursor:pointer;font-weight:800;font-size:13px">More today <span style="font-weight:500;color:var(--muted);font-size:11.5px">\u00b7 what is due, your week, calendar, estate</span></summary>'
         + '<div style="margin-top:10px">' + more + '</div></details>' : "")

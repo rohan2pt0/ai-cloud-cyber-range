@@ -8,6 +8,7 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
+- Life OS: "While you were away" card after 3+ days (sunrises missed, what moved, next event, one tap); the summit flag waves in your real local wind after one consent tap (Open-Meteo, location rounded to ~10 km, cached offline, default breeze otherwise); the crest catches a slow glint. Threat model wind-flag.
 
 - **Goals as a path up a mountain** (owner 2026-11-23): each goal card shows a mountain with a switchback trail; you are the glowing climber at the goal's score, each key result is a camp lit at 0.7, the summit flag flies at 1.0, and far ridges fade in the haze. Nothing to enter.
 - **Us on Today, one tap** (owner 2026-11-23: visible now, no friction): with a partner in the profile, Today asks once a week "How close did you feel?" with three big choices; one tap folds it to the two stars and one line. On by default, one line to turn it off.
