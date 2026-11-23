@@ -18,7 +18,7 @@ WF = ROOT / ".github" / "workflows" / "autobuild.yml"
 def test_the_config_reaches_only_opencode_go_and_cannot_fetch_the_web():
     cfg = ci.config()
     # two providers, never one (no single point of failure, owner 2026-11-20); still no web for the model
-    assert cfg["enabled_providers"] == ["gocode", "openrouter"] and cfg["permission"]["webfetch"] == "deny"
+    assert cfg["enabled_providers"] == ["gocode", "openrouter", "gemini"] and cfg["permission"]["webfetch"] == "deny"
     assert cfg["provider"]["gocode"]["options"]["baseURL"] == ci.GO_BASE
     assert "{env:OPENCODE_GO_API_KEY}" == cfg["provider"]["gocode"]["options"]["apiKey"]
     assert ci.chain("strong")[0] == "deepseek-v4-pro" and ci.chain("builder")[0] == "deepseek-v4.1-flash"
@@ -203,7 +203,7 @@ def test_autobuild_uses_only_the_flat_opencode_go_plan():
     cfg = ci.config()
     # 2026-11-20: OpenRouter is the second provider, used only after Go fails; its spend is capped by the key's own credit
     # limit (a prepaid key, about $10, inside the owner's cap). Nothing else, and never a pay-per-use Go route (Zen).
-    assert list(cfg["provider"]) == ["gocode", "openrouter"] and "zen" not in json.dumps(cfg).lower()
+    assert list(cfg["provider"]) == ["gocode", "openrouter", "gemini"] and "zen" not in json.dumps(cfg).lower()
     assert cfg["provider"]["openrouter"]["options"]["baseURL"] == "https://openrouter.ai/api/v1"
     lad = ci.ladder("builder", {})
     assert lad[0].startswith("gocode/") and lad[-1].startswith("openrouter/")   # the flat plan is always spent first
@@ -330,7 +330,7 @@ def test_openrouter_takes_over_when_opencode_go_fails(monkeypatch):
     lad = m.ladder("builder", {})
     go = [x for x in lad if x.startswith("gocode/")]
     orr = [x for x in lad if x.startswith("openrouter/")]
-    assert go and orr and lad == go + orr and orr == ["openrouter/" + x for x in m.OR_MODELS]
+    assert go and orr and sorted(lad) == sorted(go + orr + [x for x in lad if x.startswith("gemini/")]) and orr == ["openrouter/" + x for x in m.OR_MODELS]
     lad2 = m.ladder("builder", {"AUTOBUILD_PROVIDER": "openrouter"})
     assert lad2[0].startswith("openrouter/") and lad2[-1].startswith("gocode/")
     assert m.or_chain({"OPENROUTER_MODELS": "a/one, b/two"}) == ["a/one", "b/two"]
@@ -374,3 +374,40 @@ def test_when_none_can_pay_the_handoff_stops_in_seconds_and_names_path_c():
     assert sh.index("autobuild_ci.py allowance") < sh.index("bash ./securax autobuild \"$TASK\""), "ask who can pay before any build starts"
     assert "exit 3" in sh and "path C" in sh
     assert "ALL-OUT" in skill and "go to C at once" in skill
+
+
+def test_gemini_is_the_third_builder_account_and_its_quota_is_read_with_a_real_sized_request():
+    """Owner 2026-11-23 (builder-no-money-spof, slice 1): a third provider on its own budget. Order: Go, OpenRouter paid, Gemini,
+    OpenRouter free. Fake answers only: no network, no money."""
+    lad = ci.ladder("builder", {})
+    pre = [m.split("/", 1)[0] for m in lad]
+    assert pre[0] == "gocode" and pre[-1] == "openrouter" and lad[-1].endswith(":free")
+    assert pre.index("openrouter") < pre.index("gemini") < len(pre) - 1
+    assert [m for m in lad if m.startswith("gemini/")] == ["gemini/" + x for x in ci.GEMINI_MODELS]
+    assert ci.ladder("builder", {"GEMINI_MODELS": "a, b"})[-3:-1] == ["gemini/a", "gemini/b"]
+    cfg = ci.config()
+    g = cfg["provider"]["gemini"]
+    assert "gemini" in cfg["enabled_providers"] and g["npm"] == "@ai-sdk/openai-compatible"
+    assert g["options"] == {"baseURL": "https://generativelanguage.googleapis.com/v1beta/openai", "apiKey": "{env:GEMINI_API_KEY}"}
+    assert ci.out_of_allowance("You exceeded your current quota, please check your plan") and ci.out_of_allowance('{"status":"RESOURCE_EXHAUSTED"}')
+    seen = []
+    state = {"gem": '{"error":{"code":429,"message":"You exceeded your current quota","status":"RESOURCE_EXHAUSTED"}}'}
+
+    def fake(url, env, body=None, headers=None):
+        if url.endswith("/credits"):
+            return '{"data":{"total_credits":10,"total_usage":1}}'
+        if url.startswith(ci.GEMINI_BASE):
+            assert url == ci.GEMINI_BASE + "/chat/completions"
+            seen.append(body)
+            return state["gem"](body) if callable(state["gem"]) else state["gem"]
+        return '{"choices":[{}]}'
+    a = ci.allowance({}, http=fake)
+    assert not a["gemini"]["ok"] and "quota" in a["gemini"]["why"]
+    assert len(seen[0]["messages"][0]["content"]) >= 4000
+    seen.clear()
+    state["gem"] = lambda b: '{"error":{"code":503,"message":"high demand"}}' if b["model"] == ci.GEMINI_MODELS[0] else '{"choices":[{"message":{"content":"OK"}}]}'
+    b = ci.allowance({}, http=fake)
+    assert b["gemini"]["ok"] and [x["model"] for x in seen] == ci.GEMINI_MODELS[:2]
+    state["gem"] = '{"error":{"code":503,"message":"high demand"}}'
+    c = ci.allowance({}, http=fake)
+    assert not c["gemini"]["ok"] and c["gocode"]["ok"]
