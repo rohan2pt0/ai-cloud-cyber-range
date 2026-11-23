@@ -25,5 +25,10 @@ setTimeout(() => {
   ok("three in view, the rest under Later", c && c.querySelectorAll(":scope > div[role=list] > .gm-cu-row").length === 3 && /Later \(\d+\)/.test(c.textContent));
   ok("each row has a moon and a when", c && c.querySelectorAll(".gm-moon").length === L.length && /in 6 days/.test(c.textContent));
   ok("nothing to type", c && !c.querySelector("input, textarea, select"));
+  // the buffer as water in a glass vessel: the level is the months, a gold line is the aim; still for reduced motion
+  w.gmWorkSet("me", "contract"); w.goTab("money"); w.renderAll();
+  const v = d.querySelector(".gm-vessel svg");
+  ok("the buffer is drawn as a vessel with its aim line", !!v && /Buffer: [\d.]+ months of 12 aimed for/.test(v.getAttribute("aria-label")) && /12m/.test(v.textContent), v && v.getAttribute("aria-label"));
+  ok("the wave rests when less motion is asked for", /prefers-reduced-motion: reduce\)\{\.gm-wave\{animation:none\}/.test(html));
   console.log("test155 coming up: " + P + " passed, " + F + " failed"); e.forEach(x => console.log("  " + x)); process.exit(F ? 1 : 0);
 }, 400);

@@ -9,6 +9,7 @@ for the versioning and release policy.
 
 ## [Unreleased]
 
+- **Real materials for the numbers** (owner 2026-11-23): your buffer is water in a glass vessel that fills toward a gold aim line, with a gently moving surface (still for reduced motion); Coming up's moons are real moons, with maria, craters, a soft terminator and a glow when full.
 - **Coming up in your world** (owner 2026-11-23): Today shows the next real events from what you already told the app, with nothing to type: birthdays of the people at home, a loan's last EMI and what it frees up, a let-out flat's rent, tax, renewal and papers, and the month-end check-in. Each has a moon that waxes as the day nears; three in view, the rest under Later.
 - **Life OS, immersive and real** (owner 2026-11-23): a money change now says at once what it moved ("Saved. Buffer 6.2 → 7.1 months · Net worth +₹5,40,000"), and the header sky follows the real time of day (dawn, day, dusk, night; stars only in the dark) in the Life OS and Vantage.
 - **Supervised AI investigation console** (owner 2026-11-23): exercise control sees a whole supervised AI investigation as a mission-control page in the range portal: the scope signed before the run, a live map (agent, gate, target, a refused host, evidence), ten controls, a five-check preflight, every request with its phase and UTC time, the pause when the agent reached outside scope, the finding, the reconciliation against the target's own log and the end-of-run checks. Synthetic data; exercise control only.

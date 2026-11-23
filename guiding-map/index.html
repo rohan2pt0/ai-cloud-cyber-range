@@ -244,6 +244,8 @@ header{background:var(--navy);padding:13px 16px;display:flex;align-items:center;
 .ws-done summary::-webkit-details-marker{display:none}
 .ws-gem{display:inline-block;min-width:3.6em;text-align:center;padding:4px 10px;border-radius:999px;font-weight:700;font-variant-numeric:tabular-nums}
 .ws-gem.sx-state-good,.ws-gem.sx-state-low{color:#fff}
+.gm-wave{animation:gmWave 6s ease-in-out infinite alternate}@keyframes gmWave{from{transform:translateX(0)}to{transform:translateX(30px)}}
+@media (prefers-reduced-motion: reduce){.gm-wave{animation:none}}
 .gm-cu-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-top:1px solid var(--border)}.gm-cu-row:first-child{border-top:0}
 .gm-cu-when{min-width:74px;text-align:center;border-radius:12px;padding:5px 6px;font-weight:800;font-size:12.5px;line-height:1.2}.gm-cu-when small{display:block;font-weight:600;font-size:10.5px;opacity:.85}
 .gm-cu-low{background:#fbe1de;color:#8f1d16}.gm-cu-watch{background:#fbefd5;color:#6b4300}.gm-cu-good{background:#e3f3ea;color:#145c33}
@@ -5423,6 +5425,34 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     bustDerived(); renderAll();
     if (typeof gmToast === "function") gmToast(ans === "in" ? "Removed. The rent counts once, as money coming in." : "Kept as a bill you pay.");
   };
+  /* The buffer as water in a glass vessel (immersive-real, natures-design, owner 2026-11-23): water is safety; the level is the
+     months your savings last, the etched line is the aim. Light refracts through the glass, the surface moves gently (still when
+     the person asks for less motion), and the water's colour tells the state: deep teal when safe, amber-tinted when building,
+     a shallow rust when low. One figure, read at a glance, from a material people have trusted since before writing. */
+  window.gmVessel = function (months, target, state) {
+    var f = Math.max(0.04, Math.min(1, months / (target || 6))), id = "gv" + Math.random().toString(36).slice(2, 7);
+    var W = 150, H = 170, top = 26, bot = 156, lvl = bot - (bot - top - 6) * f, aim = top + 6;
+    var water = state === "good" ? ["#5fd3c0", "#127a75", "#0a4a52"] : state === "watch" ? ["#9fd6c6", "#3e8f7a", "#5a5a2a"] : ["#c9a98a", "#8a5a3c", "#5a3020"];
+    var txt = months > 120 ? "120+" : months.toFixed(1);
+    return '<div class="gm-vessel" style="display:flex;align-items:center;gap:14px;margin:10px 0 2px">'
+      + '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="Buffer: ' + txt + ' months of ' + target + ' aimed for">'
+      + '<defs><clipPath id="' + id + 'c"><path d="M30 22 Q30 16 36 16 H114 Q120 16 120 22 V150 Q120 160 110 160 H40 Q30 160 30 150 Z"/></clipPath>'
+      + '<linearGradient id="' + id + 'w" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="' + water[0] + '" stop-opacity=".95"/><stop offset=".45" stop-color="' + water[1] + '"/><stop offset="1" stop-color="' + water[2] + '"/></linearGradient>'
+      + '<linearGradient id="' + id + 'g" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset=".12" stop-color="#fff" stop-opacity=".08"/><stop offset=".8" stop-color="#fff" stop-opacity="0"/><stop offset=".93" stop-color="#fff" stop-opacity=".22"/><stop offset="1" stop-color="#fff" stop-opacity=".05"/></linearGradient>'
+      + '<radialGradient id="' + id + 'k" cx=".5" cy=".2" r=".8"><stop offset="0" stop-color="#fff" stop-opacity=".35"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient></defs>'
+      + '<ellipse cx="75" cy="163" rx="50" ry="5" fill="#000" opacity=".18"/>'
+      + '<g clip-path="url(#' + id + 'c)"><rect x="0" y="0" width="' + W + '" height="' + H + '" fill="rgba(200,225,235,.10)"/>'
+      + '<g class="gm-wave"><path d="M-60 ' + lvl + ' q15 -5 30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 V170 H-60 Z" fill="url(#' + id + 'w)"/>'
+      + '<path d="M-60 ' + lvl + ' q15 -5 30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0 t30 0" fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.2"/></g>'
+      + '<rect x="30" y="' + lvl + '" width="90" height="' + (170 - lvl) + '" fill="url(#' + id + 'k)"/></g>'
+      + '<line x1="30" y1="' + aim + '" x2="120" y2="' + aim + '" stroke="#c9a84c" stroke-width="1.5" stroke-dasharray="4 3"/>'
+      + '<text x="124" y="' + (aim + 4) + '" font-size="10" fill="currentColor" opacity=".75">' + target + 'm</text>'
+      + '<path d="M30 22 Q30 16 36 16 H114 Q120 16 120 22 V150 Q120 160 110 160 H40 Q30 160 30 150 Z" fill="url(#' + id + 'g)" stroke="rgba(170,190,200,.85)" stroke-width="2"/>'
+      + '<path d="M38 26 V140" stroke="#fff" stroke-opacity=".45" stroke-width="3" stroke-linecap="round"/>'
+      + '<ellipse cx="75" cy="16" rx="45" ry="3.5" fill="none" stroke="rgba(170,190,200,.9)" stroke-width="1.5"/></svg>'
+      + '<div><div style="font-size:30px;font-weight:800;line-height:1;font-variant-numeric:tabular-nums">' + txt + '<span style="font-size:14px;font-weight:600"> months</span></div>'
+      + '<div style="font-size:12.5px;color:var(--muted);margin-top:4px">of cover in the tank<br>the gold line is your ' + target + '-month aim</div></div></div>';
+  };
   window.gmSpendCard = function () {
     if (!window.P) return "";
     var r = gmRealSpend(), rw = gmRunway(), ft = fixedTotals(), all = scAll(), ks = Object.keys(all), now = ymd().slice(0, 7), nm = scNames(), two = scEarners() === 2;
@@ -5441,6 +5471,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       if (r.est) h += '<div style="font-size:12.5px;color:var(--muted);margin-top:6px">After next month’s check-in you see your real spend. Until then the variable part is your profile’s spending less the fixed bills.</div>';
     } else h += '<div class="gm-rs-h">List your fixed bills once and add your balance below. Your real spend shows itself.</div>';
     if (rw) {
+      h += gmVessel(rw.gapM > 0 ? rw.months : rw.target, rw.target, rw.state);
       h += '<div style="margin-top:10px;font-size:13px">Cover for ' + rw.target + ' months or more is the aim' + (rw.contract ? ' on contract work' : '') + ': '
         + gmRag(rw.state, rw.gapM > 0 ? (rw.months > 120 ? "120+ months" : rw.months.toFixed(1) + " months") : "covered") + '<div class="gm-tgt" style="font-size:10.5px;color:var(--muted);margin-top:3px;line-height:1.3">aim ' + rw.target + '+ months · ' + rs(rw.target * rw.gapM)
         + ' · savings and FDs ' + rs(rw.liquid) + ' ÷ ' + rs(rw.gapM) + ' a month' + (rw.secure > 0 ? ' (spend ' + rs(rw.real.total) + ' less ' + rs(rw.secure) + ' that keeps coming: the permanent pay and the rent)' : '') + '</div><div style="margin-top:6px">' + rw.insight + '</div>' + workHTML() + '</div>';
@@ -5880,10 +5911,18 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   window.gmComingUpHTML = function () {
     var L = window.gmComingUp ? gmComingUp() : []; if (!L.length) return "";
     var moon = function (n) {     // a moon that waxes as the day comes near; full on the day, a red ring when late
-      var f = n <= 0 ? 1 : Math.max(0.08, 1 - n / 14), r = 13, id = "gmMoon" + Math.random().toString(36).slice(2, 7);
-      return '<svg width="34" height="34" viewBox="0 0 34 34" aria-hidden="true" class="gm-moon"><defs><clipPath id="' + id + '"><circle cx="17" cy="17" r="' + r + '"/></clipPath></defs>'
-        + '<circle cx="17" cy="17" r="' + r + '" fill="#e8c96a"/><circle cx="' + (17 + 2 * r * f) + '" cy="17" r="' + r + '" fill="#132a47" clip-path="url(#' + id + ')"/>'
-        + '<circle cx="17" cy="17" r="' + (r + 1.5) + '" fill="none" stroke="' + (n < 0 ? "#c0392b" : "rgba(201,168,76,.55)") + '" stroke-width="' + (n < 0 ? 2.5 : 1) + '"/></svg>';
+      var f = n <= 0 ? 1 : Math.max(0.08, 1 - n / 14), r = 14, id = "gmMoon" + Math.random().toString(36).slice(2, 7);
+      // a real moon: a lit face with maria and craters, earthshine on the dark side, a soft terminator, a glow when it is full
+      return '<svg width="38" height="38" viewBox="0 0 38 38" aria-hidden="true" class="gm-moon"><defs><clipPath id="' + id + '"><circle cx="19" cy="19" r="' + r + '"/></clipPath>'
+        + '<radialGradient id="' + id + 'f" cx=".38" cy=".35" r=".75"><stop offset="0" stop-color="#fbf7ea"/><stop offset=".6" stop-color="#e7e0cc"/><stop offset="1" stop-color="#b9b19c"/></radialGradient>'
+        + '<radialGradient id="' + id + 'h" r=".5"><stop offset=".7" stop-color="#f6efd2" stop-opacity=".55"/><stop offset="1" stop-color="#f6efd2" stop-opacity="0"/></radialGradient>'
+        + '<filter id="' + id + 'b" x="-20%" y="-20%" width="140%" height="140%"><feGaussianBlur stdDeviation="1.1"/></filter></defs>'
+        + (f > 0.95 ? '<circle cx="19" cy="19" r="' + (r + 5) + '" fill="url(#' + id + 'h)"/>' : '')
+        + '<g clip-path="url(#' + id + ')"><circle cx="19" cy="19" r="' + r + '" fill="url(#' + id + 'f)"/>'
+        + '<circle cx="14" cy="14" r="4" fill="#9c9583" opacity=".35"/><circle cx="23" cy="21" r="3.2" fill="#9c9583" opacity=".3"/><circle cx="15.5" cy="24" r="2.2" fill="#8d8673" opacity=".35"/>'
+        + '<circle cx="24" cy="12.5" r="1.4" fill="#8d8673" opacity=".45"/><circle cx="11" cy="20" r="1.1" fill="#8d8673" opacity=".45"/>'
+        + '<circle cx="' + (19 + 2 * r * f) + '" cy="19" r="' + (r + 0.5) + '" fill="#0d1a2e" fill-opacity=".9" filter="url(#' + id + 'b)"/></g>'
+        + '<circle cx="19" cy="19" r="' + (r + 1.5) + '" fill="none" stroke="' + (n < 0 ? "#c0392b" : "rgba(160,150,120,.35)") + '" stroke-width="' + (n < 0 ? 2.5 : 1) + '"/></svg>';
     };
     var when = function (n) { return n < 0 ? (-n) + (n === -1 ? " day late" : " days late") : n === 0 ? "today" : n === 1 ? "tomorrow" : "in " + n + " days"; };
     var date = function (d) { return d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }); };
