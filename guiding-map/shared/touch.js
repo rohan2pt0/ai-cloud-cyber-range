@@ -13,7 +13,7 @@
   var doc = document, root = doc.documentElement;
   var calm = !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
   var auto = !!navigator.webdriver || /jsdom/i.test(navigator.userAgent || "");
-  window.SXTouch = { on: !calm && !auto };
+  window.SXTouch = { on: !calm && !auto, light: { x: 0, y: 0 } };   // light: the tilt (-1..1), read by the water
   if (calm || auto) return;
 
   // Ripple: in a clip layer of its own, so the button's overflow and focus ring are never touched.
@@ -43,6 +43,7 @@
     var k = 60, c = 2 * Math.sqrt(k);              // stiffness and critical damping: no wobble, no lag
     vx += (k * (tx - x) - c * vx) * dt; vy += (k * (ty - y) - c * vy) * dt; x += vx * dt; y += vy * dt;
     root.style.setProperty("--sx-tx", x.toFixed(3)); root.style.setProperty("--sx-ty", y.toFixed(3));
+    SXTouch.light.x = x; SXTouch.light.y = y;
     if (window.SXMat) SXMat.light(x, y);                 // the lit materials turn with the same light
     idle += dt;
     if (idle > 4 && (tx || ty)) { tx = 0; ty = 0; }   // the hand is still: the light drifts home
