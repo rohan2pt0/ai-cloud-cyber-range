@@ -1,7 +1,7 @@
 """Install by pasting one sentence into the AI agent you already use (queue ai-install): install.txt is written for the
 agent that does the install, stops and hands the person the deploy guide's steps when it cannot run shell commands, asks
 before installing Docker, names only the real commands and never asks for a key or password; the site build fills its
-address, and the homepage hero shows the sentence with a Copy button."""
+address, and the homepage's first step (How it works) shows the sentence with a Copy button."""
 import pathlib
 import re
 
@@ -47,15 +47,20 @@ def test_the_site_build_fills_the_address_in_the_install_file_too():
     assert "install.txt" in BUILD.read_text("utf-8")
 
 
-def test_the_homepage_hero_shows_the_sentence_in_a_box_with_a_copy_button():
+def test_the_homepage_shows_the_sentence_in_a_box_with_a_copy_button_as_step_one():
+    # website-v2: the hero keeps one promise and one action; the sentence moved to step 1 of How it works, still one tap to copy.
     page = HERO.read_text("utf-8")
     # SITE_URL ends with a slash (website/build.sh builds "${SITE_URL}docs/"), so no second one here.
     assert "Read {{SITE_URL}}install.txt and install SecuRAX for me" in page
-    start = page.index('<section class="hero">')
-    hero = page[start:page.index("</section>", start)]
-    assert re.search(r'class="term"', hero)
-    assert re.search(r"<button[^>]*>\s*Copy\s*</button>", hero, re.I)
-    assert "navigator.clipboard" in page and ".select()" in page
+    start = page.index('<section id="how">')
+    how = page[start:page.index("</section>", start)]
+    first = how[how.index("<li>"):how.index("</li>")]
+    assert re.search(r'class="term"', first) and "install-prompt" in first
+    assert re.search(r"<button[^>]*>\s*Copy\s*</button>", first, re.I)
+    # the copy code is a file of the site's own (its policy runs no inline script)
+    assert '<script src="home.js"' in page
+    script = (ROOT / "website" / "home.js").read_text("utf-8")
+    assert "navigator.clipboard" in script and ".select()" in script
 
 
 def test_the_commands_work_exactly_as_printed_on_a_fresh_machine():
