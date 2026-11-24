@@ -235,3 +235,13 @@ nav#oskNav button.on{color:#f4e7c1;background:rgba(201,168,76,.14);box-shadow:in
 .sx-sea.sx-sea-on .sx-sea-snd:not([hidden]){display:inline-flex;align-items:center;position:absolute;inset-inline-start:10px;bottom:10px;z-index:1;min-height:44px;padding:0 14px;border-radius:22px;border:1px solid rgba(246,241,228,.35);background:rgba(8,16,30,.4);color:#f6f1e4;font:600 13px var(--sx-sans);cursor:pointer;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
 .sx-sea-snd[aria-pressed="true"]{border-color:rgba(240,214,150,.8);color:#f7e6b8}
 .sx-sea-snd:focus-visible{outline:2px solid #f0d696;outline-offset:2px}
+/* The sea full screen (the breathing guide): the same engine, filling its parent. A modifier, not a second sea. */
+.sx-sea.sx-sea-full,.sx-sea.sx-sea-on.sx-sea-full{position:absolute;inset:0;max-width:none;margin:0;aspect-ratio:auto;border-radius:0;box-shadow:none;background:#0d1a2e;overflow:hidden}
+.sx-sea-full .sx-sea-fb{position:absolute;inset:0;background:linear-gradient(#10203a 0,#1a2d4d 38%,#0e1a2e 38%,#060d1a 100%)}
+:root[data-theme="light"] .sx-sea-full .sx-sea-fb{background:linear-gradient(#e7a98c 0,#f1c9a5 38%,#26405f 38%,#0d1a2e 100%)}
+/* A small segmented control (a few exclusive choices, one tap each) for use over a dark or photographic ground. */
+.sx-seg{display:inline-flex;border:1px solid rgba(246,241,228,.4);border-radius:14px;overflow:hidden;background:rgba(8,16,30,.62);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px)}
+.sx-seg button{min-height:44px;min-width:44px;padding:0 14px;border:0;border-inline-start:1px solid rgba(246,241,228,.25);background:transparent;color:#f6f1e4;font:600 14px var(--sx-sans);cursor:pointer}
+.sx-seg button:first-child{border-inline-start:0}
+.sx-seg button[aria-checked="true"]{background:#f0d696;color:#1a1408}
+.sx-seg button:focus-visible{outline:2px solid #f0d696;outline-offset:-3px}
