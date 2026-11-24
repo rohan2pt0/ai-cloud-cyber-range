@@ -4325,7 +4325,7 @@ function fres(c, i) { var m = Math.pow(1 - c, 5); return F0[i] + (1 - F0[i]) * m
    draws its numbers with: ONE engine here, any screen in any app uses it, never a private copy.
 
    Each object carries a fixed meaning (CATALOG), so a person learns it once and reads it everywhere:
-     moon       time coming near: waxes as a date approaches, full on the day, a red ring when late
+     moon       time coming near: waxes as a date approaches, full on the day, an amber ring when late (never red: a slip is named once, kindly)
      goldBars   wealth held against an aim: one ingot per unit, outlined ghosts up to the aim
      vessel     a buffer that lasts: water in glass, the level is how long it lasts, the etched line the aim
      treeRings  a habit's history: one ring per period, a ring's width is how well that period went
@@ -4353,7 +4353,7 @@ function fres(c, i) { var m = Math.pow(1 - c, 5); return F0[i] + (1 - F0[i]) * m
     { id: "sea", means: "calm and the breath: the swell rises as you breathe in, holds, falls as you breathe out", use: "breathing, rest, a pause", avoid: "money, alarms, warnings" }
   ];
 
-  /* ---- the moon: f = how full (0..1); late draws a red ring ---- */
+  /* ---- the moon: f = how full (0..1); late draws an amber ring ---- */
   function moon(daysAway, horizon) {
     var n = daysAway, f = n <= 0 ? 1 : Math.max(0.08, 1 - n / (horizon || 14)), r = 14, id = uid("sxm");
     return '<svg width="38" height="38" viewBox="0 0 38 38" aria-hidden="true" class="gm-moon sx-moon"><defs><clipPath id="' + id + '"><circle cx="19" cy="19" r="' + r + '"/></clipPath>'
@@ -4365,7 +4365,7 @@ function fres(c, i) { var m = Math.pow(1 - c, 5); return F0[i] + (1 - F0[i]) * m
       + '<circle cx="14" cy="14" r="4" fill="#9c9583" opacity=".35"/><circle cx="23" cy="21" r="3.2" fill="#9c9583" opacity=".3"/><circle cx="15.5" cy="24" r="2.2" fill="#8d8673" opacity=".35"/>'
       + '<circle cx="24" cy="12.5" r="1.4" fill="#8d8673" opacity=".45"/><circle cx="11" cy="20" r="1.1" fill="#8d8673" opacity=".45"/>'
       + '<circle cx="' + (19 + 2 * r * f) + '" cy="19" r="' + (r + 0.5) + '" fill="#0d1a2e" fill-opacity=".9" filter="url(#' + id + 'b)"/></g>'
-      + '<circle cx="19" cy="19" r="' + (r + 1.5) + '" fill="none" stroke="' + (n < 0 ? "#c0392b" : "rgba(160,150,120,.35)") + '" stroke-width="' + (n < 0 ? 2.5 : 1) + '"/></svg>';
+      + '<circle cx="19" cy="19" r="' + (r + 1.5) + '" fill="none" stroke="' + (n < 0 ? "#c98a1b" : "rgba(160,150,120,.35)") + '" stroke-width="' + (n < 0 ? 2.5 : 1) + '"/></svg>';
   }
 
   /* ---- gold bars: have solid ingots, want - have outlined ghosts, in a pyramid; label names one bar ---- */
