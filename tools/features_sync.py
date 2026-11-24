@@ -15,7 +15,8 @@ From products.json (what SecuRAX sells: each product, its price and its screensh
   * website/index.html           the "Products" section, with each product's real screenshot    <!-- products:start --> ... <!-- products:end -->
   * docs/securax/106-...md       the catalogue and price table in doc 106                         (same markers)
 A product's light is the weakest light of its features, so no page claims more than the code proves.
-From the code itself it writes the FACTS (how many tests, journeys, mapped frameworks, docs) wherever a page shows one as
+From the code itself it writes the FACTS (how many tests, journeys, mapped frameworks, docs; the red-team score from
+redteam/results.json and the refusal budget from lifecycle/fitness.json) wherever a page shows one as
 <!-- fact:NAME -->123<!-- /fact -->, in the README, the website, the docs and the portal pages.
 Each feature's status light comes from its guide's light in docs/status.yml; its docs link from REPO_SLUG in brand.env.
 It also refuses a feature whose command, guide or nav entry does not exist. Standard library only.
@@ -89,9 +90,13 @@ def facts() -> dict[str, str]:
     journeys = len(re.findall(r"^@journey\(", (ROOT / "sandbox" / "run.py").read_text("utf-8"), re.M))
     maps = re.search(r"^MAPS = \{(.*?)\}", (ROOT / "governance" / "regmap.py").read_text("utf-8"), re.M | re.S)
     docs = [f for f in files if re.match(r"docs/securax/\d\d-.*\.md$", f)]
+    # the red-team scorecard (redteam/run_attacks.py writes it) and the refusal budget fitness holds (block-latency-p95)
+    red = json.loads((ROOT / "redteam" / "results.json").read_text("utf-8"))
+    budget = json.loads((ROOT / "lifecycle" / "fitness.json").read_text("utf-8"))["budgets"]["block_latency_p95_ms"]
     # tests rounded down to the nearest 50 ("750+"), so adding one test does not make every page stale
     return {"tests": f"{tests // 50 * 50}+", "journeys": str(journeys), "frameworks": str(len(re.findall(r'"[\w-]+":\s*"regmap-', maps.group(1))) if maps else 0),
-            "docs": str(len(docs)), "features": str(len(load()["features"]))}
+            "docs": str(len(docs)), "features": str(len(load()["features"])),
+            "attacks": f"{red['defended']} of {red['total_attacks']}", "refuse_ms": str(budget)}
 
 
 def problems(data: dict | None = None) -> list[str]:
