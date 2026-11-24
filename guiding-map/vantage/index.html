@@ -145,6 +145,7 @@ html[data-daypart="dawn"] .sx-sky::before,html[data-daypart="dusk"] .sx-sky::bef
 html[data-daypart] :is(.sx-sky,header).sx-live::after,.sx-live.sx-sky::before{content:none}
 .sx-sky-line{position:absolute;inset-inline-start:10px;bottom:8px;z-index:3;max-width:calc(100% - 20px);font-size:12.5px;line-height:1.35;font-weight:500;padding:5px 11px;border-radius:12px;background:rgba(6,10,20,.8);color:#f6f8fb;pointer-events:none;opacity:0;transform:translateY(4px);transition:opacity .3s ease,transform .3s ease}
 .sx-sky-line.on{opacity:1;transform:none}
+.sx-sky-cap{position:absolute;top:calc(100% + 12px);inset-inline:0;margin-inline:auto;width:max-content;max-width:100%;font-size:12px;line-height:1.35;font-weight:400;letter-spacing:.02em;color:#dfe4ec;padding:4px 11px;border-radius:999px;background:rgba(6,10,20,.42);pointer-events:none;text-align:center}
 @media (prefers-reduced-motion: reduce){.sx-sky-line{transition:none;transform:none}}
 
 /* The crest catches the light (immersive-real, owner 2026-11-23): a slow gold glint crosses the seal every 14 seconds, the way
@@ -2914,7 +2915,8 @@ function fres(c, i) { var m = Math.pow(1 - c, 5); return F0[i] + (1 - F0[i]) * m
     var S = { el: el, cv: cv, ctx: ctx, face: face, art: face === "art", lock: !!cfg.lock, cap: clamp(parseFloat(el.getAttribute("data-sx-cap")) || CAP, .05, CAP), nightOpts: cfg.night || null, night: null,
       W: 0, H: 0, D: 1, vis: true, az0: null, a0: 0, geoAz: null, geoA0: 0, skyAt: 0, lo: null, cl: null, rain: [], seed: Math.random() * 1000 };
     S.stop = function () { var i = SURF.indexOf(S); if (i >= 0) SURF.splice(i, 1); if (S.night) S.night.stop(); if (S.io) S.io.disconnect(); if (S.ro) S.ro.disconnect();
-      if (cv.parentNode) cv.parentNode.removeChild(cv); el.classList.remove("sx-live"); el.__sxLive = null; };
+      if (cv.parentNode) cv.parentNode.removeChild(cv); if (S.capEl && S.capEl.parentNode) S.capEl.parentNode.removeChild(S.capEl);
+      el.classList.remove("sx-live"); el.__sxLive = null; };
     el.__sxLive = S; SURF.push(S);
     try { if (window.IntersectionObserver) { S.io = new IntersectionObserver(function (es) { S.vis = es[es.length - 1].isIntersecting; if (S.vis) kick(); }); S.io.observe(el); } } catch (e) {}
     try { if (window.ResizeObserver) { S.ro = new ResizeObserver(function () { S.W = -1; if (isStill()) paint(S, Date.now(), true); }); S.ro.observe(el); } } catch (e) {}
@@ -2927,6 +2929,7 @@ function fres(c, i) { var m = Math.pow(1 - c, 5); return F0[i] + (1 - F0[i]) * m
     S.W = W; S.H = H; S.D = D; S.cv.width = Math.round(W * D); S.cv.height = Math.round(H * D);
     var cell = Math.max(4, Math.sqrt(W * H / 22000)); S.gw = Math.max(2, Math.ceil(W / cell)); S.gh = Math.max(2, Math.ceil(H / cell));
     S.hfov = S.lock ? 100 : 110; S.vfov = clamp(S.hfov * H / W, 12, 84);
+    S.cs = S.lock ? 150 : 48;                                  // the cloud field's scale: the lock sees the layer overhead, so finer
     var doc = S.el.ownerDocument;
     S.lo = doc.createElement("canvas"); S.lo.width = S.gw; S.lo.height = S.gh; S.lx = S.lo.getContext("2d"); S.limg = S.lx.createImageData(S.gw, S.gh);
     S.cl = doc.createElement("canvas"); S.cl.width = S.gw; S.cl.height = S.gh; S.cx = S.cl.getContext("2d"); S.cimg = S.cx.createImageData(S.gw, S.gh);
@@ -2936,27 +2939,94 @@ function fres(c, i) { var m = Math.pow(1 - c, 5); return F0[i] + (1 - F0[i]) * m
   }
   function facing(S, st) {                                  // the direction this surface looks: the sun, away from it, or the moon
     var h = st.sun.alt, m = st.moon;
+    if (S.lock && h > -1.2) return lockView(S, st);           // the lock by day looks at the sun itself (lockView)
     // by day a high sun is above the view, so the window looks across it, where the sky is bluest (90 deg from the sun);
     // as the sun nears the horizon the window turns to face it (and the hero, away from it: the Earth's shadow, the Belt of Venus)
     if (h > -10) return [n360(st.sun.az + (S.face === "anti" ? 180 : 90 * sstep(8, 20, h))), 0];
     if (m.alt > 2) return [m.az, Math.max(0, m.alt + (S.lock ? .14 : .3) * S.vfov - S.vfov)];   // the lock's card fills the middle   // at night the view lifts to keep the moon in it
     return [st.place.lat >= 0 ? 180 : 0, 0];
   }
+  /* The lock by day (owner 2026-11-24: "Live sky is gone from lock screen"). The lock looked 90 deg away from the sun and held
+     every pixel under the text ceiling, so a clear afternoon read as a flat blue-grey gradient. Now the lock's card carries
+     its own dark glass, so the sky keeps its full physical brightness and colour everywhere except a soft scrim right behind
+     the card (scrimWeight), and the view turns to the sun: its true altitude and azimuth, placed in the free band below the
+     card (above it when there is no room below), a little off centre, at the golden section. */
+  var SCRIM_PAD = 14, SCRIM_FEATHER = 64;
+  function scrimWeight(x, y, r) {                           // 1 behind the card (and its caption), 0 in the open sky, a soft edge
+    if (!r) return 1;
+    var dx = Math.max(r.l - SCRIM_PAD - x, 0, x - r.r - SCRIM_PAD), dy = Math.max(r.t - SCRIM_PAD - y, 0, y - r.b - SCRIM_PAD);
+    return sstep(SCRIM_FEATHER, 0, Math.sqrt(dx * dx + dy * dy));
+  }
+  function lockView(S, st) {
+    var s = st.sun, r = S.card || { l: S.W * .1, r: S.W * .9, t: S.H * .25, b: S.H * .75 }, edge = SCRIM_PAD + SCRIM_FEATHER * .55;
+    var top = [0, r.t - edge], bot = [r.b + edge, S.H], below = bot[1] - bot[0] >= 56 || bot[1] - bot[0] >= top[1] - top[0];
+    var am = s.ha < 0, side = am ? [0, r.l - edge] : [r.r + edge, S.W];
+    if (side[1] - side[0] >= 140 && Math.max(bot[1] - bot[0], top[1] - top[0]) < 150) {   // a wide screen: beside the card, horizon at the bottom
+      return [n360(s.az - ((side[0] + side[1]) / 2 / S.W - .5) * S.hfov), Math.max(-2, s.alt - S.vfov * .6)];
+    }
+    var band = below ? bot : top, fy = clamp((band[0] + band[1]) / 2 / S.H, .02, .98), a0 = s.alt - S.vfov * (1 - fy);
+    if (below) a0 = Math.max(a0, -2);                         // keep the horizon near the bottom edge: a low sun sits lower, never behind the card
+    var fx = s.ha < 0 ? .382 : .618;                          // morning sun left of centre, afternoon right (it moves that way)
+    return [n360(s.az - (fx - .5) * S.hfov), a0];
+  }
+  function cardRect(S) {                                    // the card and its caption, in the surface's own pixels
+    var av = S.nightOpts && S.nightOpts.avoid, el = null;
+    try { el = typeof av === "function" ? av() : av; } catch (e) {}
+    if (!el || !el.getBoundingClientRect) return null;
+    var b = S.el.getBoundingClientRect(), c = el.getBoundingClientRect(), r = { l: c.left - b.left, r: c.right - b.left, t: c.top - b.top, b: c.bottom - b.top };
+    var cap = el.querySelector && el.querySelector(".sx-sky-cap");
+    if (cap && cap.textContent) { var k = cap.getBoundingClientRect(); r.l = Math.min(r.l, k.left - b.left); r.r = Math.max(r.r, k.right - b.left); r.b = Math.max(r.b, k.bottom - b.top); }
+    return r.r - r.l > 4 && r.b - r.t > 4 ? r : null;
+  }
+  function scrimMask(S) {                                   // the scrim weight per sky cell, and the same as an image (for the sun's glare)
+    var n = S.gw * S.gh, m = S.mask = new Float32Array(n), doc = S.el.ownerDocument, i = 0, mx = null;
+    if (!S.noImg) { S.mc2 = doc.createElement("canvas"); S.mc2.width = S.gw; S.mc2.height = S.gh; mx = S.mc2.getContext("2d"); }   // noImg: a test, the weights alone
+    var img = mx ? mx.createImageData(S.gw, S.gh) : { data: new Uint8ClampedArray(n * 4) }, d = img.data;
+    for (var y = 0; y < S.gh; y++) for (var x = 0; x < S.gw; x++, i++) {
+      m[i] = scrimWeight((x + .5) / S.gw * S.W, (y + .5) / S.gh * S.H, S.card);
+      d[i * 4 + 3] = Math.round(m[i] * 255);
+    }
+    if (mx) mx.putImageData(img, 0, 0);
+  }
+  // The lock by day is seen as the eye sees a clear sky, not as the model's raw (famously pale) tristimulus: a little more
+  // exposure and colour, the same at every pixel, so the sky's own gradients (deep blue overhead, white haze low down) stay true.
+  function grade(c, k) {
+    var l = .2126 * c[0] + .7152 * c[1] + .0722 * c[2], sa = 1 + .45 * k * (c[2] > c[0] ? 1 : .1), ex = 1 + .25 * k;   // the blue, not the sunset's gold
+    c[0] = Math.max(0, (l + (c[0] - l) * sa) * ex); c[1] = Math.max(0, (l + (c[1] - l) * sa) * ex); c[2] = Math.max(0, (l + (c[2] - l) * sa) * ex);
+    return c;
+  }
+  // Light past what a screen can show rolls off as film does: the hue holds, and the brightest glow turns toward white
+  // (a clipped channel would turn a golden sun's sky into flat lemon yellow).
+  function shoulder(c) {
+    var mx = Math.max(c[0], c[1], c[2]); if (mx <= .8) return c;
+    var f = .8 + .2 * (1 - Math.exp(-(mx - .8) / .2)), wh = sstep(1, 4, mx) * .6, k = f / mx * (1 - wh), add = f * wh;
+    c[0] = c[0] * k + add; c[1] = c[1] * k + add; c[2] = c[2] * k + add;
+    return c;
+  }
+  function scrimmed(c, w, cap) {                            // the ceiling, by the scrim's weight: full behind the card, none in the open
+    if (w <= 0) return c;
+    var r = c[0], g = c[1], b = c[2]; capped(c, cap);
+    if (w < 1) { c[0] = r + (c[0] - r) * w; c[1] = g + (c[1] - g) * w; c[2] = b + (c[2] - b) * w; }
+    return c;
+  }
+  // Where the sun sits in a surface's view, in its own pixels (the lock keeps it out from behind the card).
+  function sunInView(S, st) { var p = toScreen(S, st.sun.alt, st.sun.az); return { x: p[0], y: p[1], inView: p[0] >= 0 && p[0] <= S.W && p[1] >= 0 && p[1] <= S.H }; }
   function geometry(S) {                                    // each cell's direction, and where its line of sight meets the cloud layer
     var i = 0, gw = S.gw, gh = S.gh, a0 = S.a0, a1 = S.a0 + S.vfov;
     for (var y = 0; y < gh; y++) for (var x = 0; x < gw; x++, i++) {
       var az = S.az0 + ((x + .5) / gw - .5) * S.hfov, alt = a1 - (y + .5) / gh * (a1 - a0);
       if (alt > 90) { alt = 180 - alt; az += 180; }            // a view tipped past the zenith looks down the other side
       var r = 1 / Math.tan(Math.max(alt, 1.2) * RAD);
-      r = Math.min(r, 30); S.alt[i] = alt; S.az[i] = az; S.u[i] = r * Math.sin(az * RAD) * 48; S.v[i] = -r * Math.cos(az * RAD) * 48;
+      r = Math.min(r, 30); S.alt[i] = alt; S.az[i] = az; S.u[i] = r * Math.sin(az * RAD) * S.cs; S.v[i] = -r * Math.cos(az * RAD) * S.cs;
     }
     S.geoAz = S.az0; S.geoA0 = S.a0;
   }
   function skyGrid(S, L) {
-    var n = S.gw * S.gh, c = [0, 0, 0], cap = S.art ? 1 : S.cap, d = S.limg.data;
+    var n = S.gw * S.gh, c = [0, 0, 0], cap = S.art ? 1 : S.cap, d = S.limg.data, m = S.lock && S.mask ? S.mask : null;   // the lock: a scrim, not a ceiling
+    var gk = S.lock ? sstep(-3, 5, L.h) : 0;
     for (var i = 0; i < n; i++) {
-      skyAt(S.alt[i], S.az[i], L, c); S.sky[i * 3] = c[0]; S.sky[i * 3 + 1] = c[1]; S.sky[i * 3 + 2] = c[2];
-      capped(c, cap);
+      skyAt(S.alt[i], S.az[i], L, c); if (gk > 0) grade(c, gk); if (m) shoulder(c); S.sky[i * 3] = c[0]; S.sky[i * 3 + 1] = c[1]; S.sky[i * 3 + 2] = c[2];
+      if (m) scrimmed(c, m[i], cap); else capped(c, cap);
       var dz = ((i * 2654435761) >>> 0) / 4294967296 - .5;      // a whisper of dither against banding in the dark blues
       d[i * 4] = enc(c[0]) + dz; d[i * 4 + 1] = enc(c[1]) + dz; d[i * 4 + 2] = enc(c[2]) + dz; d[i * 4 + 3] = 255;
     }
@@ -2973,11 +3043,17 @@ function fres(c, i) { var m = Math.pow(1 - c, 5); return F0[i] + (1 - F0[i]) * m
     }
     SHADEKEY = key; return (SHADE = out);
   }
-  function cloudLayer(S, st, L, t) {
-    var w = st.w, d = S.cimg.data, n = S.gw * S.gh, f = cloudField(), cap = S.art ? 1 : S.cap;
+  // What the weather puts in the sky. No reading (no consent yet, or a stale one): no clouds and no haze, never invented ones.
+  function cloudPlan(w, T) {
+    if (!w || !w.real) return { cover: 0, fog: 0, draw: false };
     var cover = w.kind === "rain" || w.kind === "storm" ? Math.max(w.cloud, 85) : w.kind === "drizzle" || w.kind === "snow" ? Math.max(w.cloud, 70) : w.cloud;
-    var fog = w.kind === "fog" ? .72 : w.kind === "rain" || w.kind === "storm" ? .3 : w.kind === "drizzle" || w.kind === "snow" ? .2 : .04 + (st.T - 3) * .03;
-    if (cover <= 0 && fog < .05) return false;
+    var fog = w.kind === "fog" ? .72 : w.kind === "rain" || w.kind === "storm" ? .3 : w.kind === "drizzle" || w.kind === "snow" ? .2 : .04 + (T - 3) * .03;
+    return { cover: cover, fog: fog, draw: cover > 0 || fog >= .05 };
+  }
+  function cloudLayer(S, st, L, t) {
+    var w = st.w, d = S.cimg.data, n = S.gw * S.gh, f = cloudField(), cap = S.art ? 1 : S.cap, m = S.lock && S.mask ? S.mask : null;
+    var plan = cloudPlan(w, st.T), cover = plan.cover, fog = plan.fog;
+    if (!plan.draw) return false;
     var th = cloudThreshold(cover), sh = shadeFor(L.saz), wet = w.kind === "rain" || w.kind === "storm" ? .42 : w.kind === "drizzle" || w.kind === "snow" ? .62 : 1;
     // sunlight on the clouds: they stand higher than we do, so they keep the sun a little after it has set (pink undersides at dusk)
     var hc = L.h + 2.2, sI = sstep(-3, 5, hc), sc = sunColour(Math.max(hc, -.5), st.T), sl = lum(sc) || 1e-6, Ys = L.Yd * (hc >= 0 ? 1 : Math.exp(hc / 3)) * 2.3 * sI * wet;
@@ -2986,7 +3062,7 @@ function fres(c, i) { var m = Math.pow(1 - c, 5); return F0[i] + (1 - F0[i]) * m
     var nr = .0055 * L.city + .016 * L.mb, ng = .0045 * L.city + .017 * L.mb, nb = .0036 * L.city + .02 * L.mb;   // night: the city's glow underneath, moonlight
     var fogL = L.Yd * L.dim * 1.5 + .006 * L.city + .02 * L.mb, fr = fogL * .93, fgc = fogL * .96, fb = fogL;
     // drift: the field moves where the wind blows (from dir toward dir + 180), about three times the ground speed aloft
-    var sp = w.speed * 3 / 2 / 3600 * 48, td = t / 1000, ox = -Math.sin((w.dir + 180) * RAD) * sp * td, oy = Math.cos((w.dir + 180) * RAD) * sp * td;
+    var sp = w.speed * 3 / 2 / 3600 * S.cs, td = t / 1000, ox = -Math.sin((w.dir + 180) * RAD) * sp * td, oy = Math.cos((w.dir + 180) * RAD) * sp * td;
     var c = [0, 0, 0];
     for (var i = 0; i < n; i++) {
       var a = 0, cr = 0, cg = 0, cb = 0;
@@ -2996,18 +3072,21 @@ function fres(c, i) { var m = Math.pow(1 - c, 5); return F0[i] + (1 - F0[i]) * m
         var i00 = y0 * CN + x0, i10 = y0 * CN + x1, i01 = y1 * CN + x0, i11 = y1 * CN + x1;
         var D = (f[i00] * (1 - tx) + f[i10] * tx) * (1 - ty) + (f[i01] * (1 - tx) + f[i11] * tx) * ty;
         var Sh = (sh[i00] * (1 - tx) + sh[i10] * tx) * (1 - ty) + (sh[i01] * (1 - tx) + sh[i11] * tx) * ty;
-        var alt = S.alt[i], far = sstep(14, 1, alt);
-        a = sstep(th - .03, th + .12, D); a = a + (cover / 100 * .9 - a) * far * .8;    // far away the layer blurs into a band
+        var alt = S.alt[i], far = S.lock ? sstep(22, 2, alt) : sstep(14, 1, alt);
+        if (S.lock) { D += (th + .06 - D) * far; Sh += (1 - Sh) * far; }             // too far to resolve: an even band, not noise
+        a = sstep(th - .03, th + .12, D); a = a + (cover / 100 * .9 - a) * far * (S.lock ? .95 : .8);    // far away the layer blurs into a band
         var thick = 1 - .38 * sstep(th + .08, th + .45, D);                            // thick cores are darker underneath
+        // silver linings: thin cloud near the sun scatters its light forward (Mie), so edges toward the sun glow
+        var sil = sI > .01 ? 1 + Math.exp(-sep(alt, S.az[i], Math.max(L.h, 0), L.saz) / .32) * (.8 + 3.4 * (1 - sstep(th, th + .2, D))) : 1;
         var j = i * 3;
-        cr = (lr * Sh + zen[0] * am) * thick + nr; cg = (lg * Sh + zen[1] * am) * thick + ng; cb = (lb * Sh + zen[2] * am) * thick + nb;
+        cr = (lr * Sh * sil + zen[0] * am) * thick + nr; cg = (lg * Sh * sil + zen[1] * am) * thick + ng; cb = (lb * Sh * sil + zen[2] * am) * thick + nb;
         if (wet < 1) { var gy = (cr + cg + cb) / 3; cr = cr + (gy - cr) * .6; cg = cg + (gy - cg) * .6; cb = cb + (gy - cb) * .6; }
         cr += (S.sky[j] - cr) * far * .5; cg += (S.sky[j + 1] - cg) * far * .5; cb += (S.sky[j + 2] - cb) * far * .5;   // aerial perspective
       }
       var af = fog * (.55 + .45 * sstep(40, 0, S.alt[i])), A = af + a * (1 - af);
       if (A < .003) { d[i * 4 + 3] = 0; continue; }
       c[0] = (fr * af + cr * a * (1 - af)) / A; c[1] = (fgc * af + cg * a * (1 - af)) / A; c[2] = (fb * af + cb * a * (1 - af)) / A;
-      capped(c, cap);
+      if (m) scrimmed(shoulder(c), m[i], cap); else capped(c, cap);
       d[i * 4] = enc(c[0]); d[i * 4 + 1] = enc(c[1]); d[i * 4 + 2] = enc(c[2]); d[i * 4 + 3] = Math.round(A * 255);
     }
     S.cx.putImageData(S.cimg, 0, 0);
@@ -3024,6 +3103,61 @@ function fres(c, i) { var m = Math.pow(1 - c, 5); return F0[i] + (1 - F0[i]) * m
     c.fillStyle = gl; c.beginPath(); c.arc(x, y, R * 14, 0, TAU); c.fill();
     c.fillStyle = "rgba(" + Math.min(255, col[0] + 30) + "," + Math.min(255, col[1] + 40) + "," + Math.min(255, col[2] + 60) + "," + (S.art ? 1 : .9) + ")";
     c.beginPath(); c.arc(x, y, R, 0, TAU); c.fill();
+  }
+  // The lock's sun by day: the disc, the eye's bloom and the bright aureole of forward-scattered light around it, added as
+  // light (so it whitens the sky as a camera does), reddened and dimmed by its path through the air, never behind the card.
+  function drawSunGlare(S, st, L) {
+    var h = st.sun.alt; if (h < -1.2) return;
+    var p = toScreen(S, h, st.sun.az), x = p[0], y = p[1], unit = Math.min(S.W, S.H);
+    if (!isFinite(x) || !isFinite(y)) return;
+    if (x < -unit * .5 || x > S.W + unit * .5 || y < -unit * .5 || y > S.H + unit * .5) return;
+    if (!S.gc) { S.gc = S.el.ownerDocument.createElement("canvas"); S.gx = S.gc.getContext("2d"); }
+    if (S.gc.width !== S.cv.width || S.gc.height !== S.cv.height) { S.gc.width = S.cv.width; S.gc.height = S.cv.height; }
+    var g = S.gx, sc = L.scN, mx = Math.max(sc[0], sc[1], sc[2]), col = [Math.round(255 * sc[0] / mx), Math.round(255 * sc[1] / mx), Math.round(255 * sc[2] / mx)] + "";
+    var k = Math.pow(clamp(lum(L.sc), 0, 1), .3) * sstep(-1.2, 1.2, h), wet = st.w.real && st.w.kind !== "clear" ? .45 : 1;
+    function glow(r, stops) {
+      var gr = g.createRadialGradient(x, y, 0, x, y, r);
+      stops.forEach(function (q) { gr.addColorStop(q[0], "rgba(" + (q[2] || col) + "," + clamp(q[1] * k * wet, 0, 1).toFixed(3) + ")"); });
+      g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill();
+    }
+    g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = "source-over"; g.clearRect(0, 0, S.gc.width, S.gc.height);
+    g.setTransform(S.D, 0, 0, S.D, 0, 0); g.globalCompositeOperation = "lighter";
+    var soft = [Math.round(sc[0] / mx * 180 + 75), Math.round(sc[1] / mx * 180 + 75), Math.round(sc[2] / mx * 180 + 75)] + "";
+    glow(unit * .42, [[0, .2, soft], [.06, .12, soft], [.2, .045, soft], [.45, .012, soft], [1, 0, soft]]);   // aureole
+    glow(Math.max(12, unit * .045), [[0, .9, "255,253,246"], [.25, .55, "255,250,236"], [.6, .12], [1, 0]]);   // bloom
+    var R = Math.max(5, .267 / S.hfov * S.W);
+    glow(R * 1.25, [[0, 1, "255,255,252"], [.72, 1, "255,254,246"], [1, 0]]);                                     // the disc, soft-edged
+    if (S.mc2) {                                                // none of it behind the card: the scrim takes it out
+      g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = "destination-out"; g.imageSmoothingEnabled = true;
+      g.drawImage(S.mc2, 0, 0, S.gc.width, S.gc.height);
+    }
+    g.globalCompositeOperation = "source-over";
+    var c = S.ctx; c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalCompositeOperation = "lighter"; c.drawImage(S.gc, 0, 0); c.restore();
+  }
+  // The caption under the lock's card: a quiet sign that this is the person's own sky, right now. The place is a city (the time
+  // zone's, or the nearest to the rounded place) or whole degrees, never more precise.
+  var NAMES = { "Asia/Kolkata": "Mumbai", "Asia/Calcutta": "Mumbai", "Asia/Qatar": "Doha", "UTC": "" };
+  function cityOf(z) { return z in NAMES ? NAMES[z] : z.split("/").pop().replace(/_/g, " "); }
+  function placeName(p) {
+    if (!p || p.src === "none") return "";
+    var zs = Object.keys(ZONES), best = "", bd = 1e9;
+    if (p.src === "zone") { for (var i = 0; i < zs.length; i++) if (ZONES[zs[i]][0] === p.lat && ZONES[zs[i]][1] === p.lon) return cityOf(zs[i]); return ""; }
+    zs.forEach(function (z) {
+      var c = ZONES[z], d = Math.pow(c[0] - p.lat, 2) + Math.pow((c[1] - p.lon) * Math.cos(p.lat * RAD), 2);
+      if (cityOf(z) && d < bd) { bd = d; best = cityOf(z); }
+    });
+    if (best && Math.sqrt(bd) <= .75) return best;            // within about 80 km of a known city: that city
+    var la = Math.round(p.lat), lo = Math.round(p.lon);       // else whole degrees (about 100 km), never the rounded place itself
+    return Math.abs(la) + "°" + (la < 0 ? "S" : "N") + " " + Math.abs(lo) + "°" + (lo < 0 ? "W" : "E");
+  }
+  function caption(st) {
+    var t = API.t || function (s) { return s; }, s = st.sun, w = st.w, m = st.moon, where = placeName(st.place), parts = [];
+    parts.push(where ? t("Your sky over") + " " + where : t("Your sky now"));
+    var sa = Math.round(s.alt);
+    if (s.alt > -6) parts.push(t("sun") + " " + (sa < 0 ? "\u2212" : "") + Math.abs(sa) + "°");
+    else parts.push(m.alt > 0 ? t(/moon$/.test(m.phase) ? m.phase : m.phase + " moon") : t("night"));
+    parts.push(!w.real ? t("no cloud reading yet") : w.kind === "fog" ? t("fog") : Math.round(w.cloud) + "% " + t("cloud"));
+    return parts.join(" · ");
   }
   function drawMoon(S, st, L) {
     var m = st.moon; if (m.alt < -1) return;
@@ -3071,7 +3205,19 @@ function fres(c, i) { var m = Math.pow(1 - c, 5); return F0[i] + (1 - F0[i]) * m
   function paint(S, ms, force) {
     if (!S.el.isConnected) { S.stop(); return; }
     if (S.W < 0 || force) layout(S);
-    var still = isStill(), st = stateNow(ms), L = look(st), c = S.ctx, fa = facing(S, st);
+    var still = isStill(), st = stateNow(ms), L = look(st), c = S.ctx;
+    if (S.lock) {                                              // the caption, then the card's place (the scrim and the free bands)
+      if (force || !S.capAt || ms - S.capAt > 5000 || ms < S.capAt) {
+        S.capAt = ms; var av = null; try { av = S.nightOpts && typeof S.nightOpts.avoid === "function" ? S.nightOpts.avoid() : null; } catch (e) {}
+        if (av && !S.capEl) { S.capEl = av.ownerDocument.createElement("div"); S.capEl.className = "sx-sky-cap"; av.appendChild(S.capEl); }
+        if (S.capEl) { var line = caption(st); if (S.capEl.textContent !== line) S.capEl.textContent = line; }
+      }
+      if (force || !S.cardAt || Math.abs(ms - S.cardAt) > 1000 || !S.mask || S.mask.length !== S.gw * S.gh) {
+        S.cardAt = ms; var cr = cardRect(S), ck = cr ? [cr.l, cr.t, cr.r, cr.b].map(Math.round).join() : "";
+        if (ck !== S.cardKey || !S.mask || S.mask.length !== S.gw * S.gh) { S.cardKey = ck; S.card = cr; scrimMask(S); S.skyAt = 0; }
+      }
+    }
+    var fa = facing(S, st);
     if (S.az0 === null || still || force) { S.az0 = fa[0]; S.a0 = fa[1]; }
     else { S.az0 = n360(S.az0 + adiff(fa[0], S.az0) * .02); S.a0 += (fa[1] - S.a0) * .02; }   // turn slowly toward a new subject
     if (S.geoAz === null || Math.abs(adiff(S.az0, S.geoAz)) > .25 || Math.abs(S.a0 - S.geoA0) > .25) { geometry(S); S.skyAt = 0; }
@@ -3086,7 +3232,8 @@ function fres(c, i) { var m = Math.pow(1 - c, 5); return F0[i] + (1 - F0[i]) * m
       drawNight(S, st, ms, still);
     } else S.nv = null;
     c.setTransform(S.D, 0, 0, S.D, 0, 0);
-    drawMoon(S, st, L); drawSun(S, st, L);
+    drawMoon(S, st, L);
+    if (S.lock) drawSunGlare(S, st, L); else drawSun(S, st, L);
     c.setTransform(1, 0, 0, 1, 0, 0);
     if (cloudLayer(S, st, L, still ? 0 : ms)) c.drawImage(S.cl, 0, 0, S.cv.width, S.cv.height);
     c.setTransform(S.D, 0, 0, S.D, 0, 0);
@@ -3151,6 +3298,17 @@ function fres(c, i) { var m = Math.pow(1 - c, 5); return F0[i] + (1 - F0[i]) * m
   API.daypart = daypart; API.weatherKind = weatherKind; API.cloudThreshold = cloudThreshold; API.cloudShare = cloudShare;
   API.skyColour = function (alt, az, ms) { var c = skyAt(alt, az, look(solve(ms || Date.now())), [0, 0, 0]); return [enc(c[0]), enc(c[1]), enc(c[2])]; };
   API.capped = function (rgb, cap) { return capped(rgb.slice(), cap || CAP); }; API.CAP = CAP;
+  API.cloudPlan = cloudPlan; API.caption = caption; API.placeName = placeName; API.scrimWeight = scrimWeight;
+  // The lock's view at one moment, without a canvas (tests): where the sun falls, the scrim, and the sky's pixels as drawn.
+  API.lockFrame = function (ms, W, H, card) {
+    var cell = Math.max(4, Math.sqrt(W * H / 22000)), gw = Math.max(2, Math.ceil(W / cell)), gh = Math.max(2, Math.ceil(H / cell)), n = gw * gh;
+    var S = { lock: true, art: false, cap: CAP, W: W, H: H, D: 1, hfov: 100, vfov: clamp(100 * H / W, 12, 84), cs: 150, gw: gw, gh: gh, card: card, noImg: true,
+      el: { ownerDocument: document }, alt: new Float32Array(n), az: new Float32Array(n), u: new Float32Array(n), v: new Float32Array(n), sky: new Float32Array(n * 3),
+      limg: { data: new Uint8ClampedArray(n * 4) }, lx: { putImageData: function () {} } };
+    var st = solve(ms), L = look(st), fa = facing(S, st); S.az0 = fa[0]; S.a0 = fa[1];
+    geometry(S); scrimMask(S); skyGrid(S, L);
+    return { az0: S.az0, a0: S.a0, vfov: S.vfov, sun: sunInView(S, st), gw: gw, gh: gh, mask: S.mask, px: S.limg.data, state: st, caption: caption(st) };
+  };
   API.sunColour = sunColour; API.preetham = preetham; API.mountLive = liveMount;
   if (typeof document !== "undefined") { if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot); else setTimeout(boot, 0); }
 
@@ -3476,7 +3634,8 @@ function fres(c, i) { var m = Math.pow(1 - c, 5); return F0[i] + (1 - F0[i]) * m
 
    Cost: one shared animation frame, only while a vessel is on screen and the page is visible; 60 frames a second while
    the water moves, 15 while only a bubble moves, none when all is still. Reduced motion, an automated browser and jsdom
-   get one still frame. No WebGL or no high precision: the 2D canvas below; no 2D canvas: the SVG SXWorld drew. */
+   get one still frame. No WebGL, no high precision, a lost context or a GPU too slow even at half resolution: the painted
+   2D water below (the same camera); no 2D canvas: the SVG SXWorld drew. A long press on the glass says which drew it, and why. */
 (function () {
   "use strict";
   if (typeof window === "undefined" || window.SXWater) return;
@@ -3713,57 +3872,106 @@ function fres(c, i) { var m = Math.pow(1 - c, 5); return F0[i] + (1 - F0[i]) * m
     ].join("\n");
   }
 
-  // One context for every vessel. The program compiles in the background where the browser can (KHR_parallel_shader_compile):
-  // until it is ready the 2D water shows, so a slow driver never freezes the page.
-  var GL = { ok: null, gl: null, cv: null, U: {}, Q: 1, pr: null, ext: null, tex: null, ht: false, g: { lvl: 0, ms: [] } };
-  // The speed guard (pure: the tests drive it). Every traced frame is timed; when the median of the last 8 is over 12 ms
-  // the water drops to half resolution, and if it is still over 12 ms it becomes the 2D water for the rest of the session.
-  // A shader not ready within 1.5 s also means half resolution. Levels: 0 full, 1 half, 2 the 2D water.
-  var GUARD_MS = 12, GUARD_N = 8, GUARD_KEY = "sx_water_2d";
-  function guard(g, ms) {
+  // One context for every vessel. The 2D water shows first, always; the traced water replaces it once its program is ready.
+  // With KHR_parallel_shader_compile the driver compiles in the background and we poll; without it (many Android phones)
+  // the compile waits for an idle moment after the first paint (requestIdleCallback, else a short timeout). A real mobile
+  // GPU compiles in tens of milliseconds, so a missing extension never means the 2D water for good.
+  var GL = { ok: null, gl: null, cv: null, U: {}, Q: 1, pr: null, ext: null, tex: null, ht: false, why: "", gpu: "", g: { lvl: 0, ms: [] } };
+  // The speed guard (pure: the tests drive it). Only frames that animate are timed (a calm glass is drawn once and costs
+  // nothing). When the median of the last 8 animating frames is over 20 ms the water drops to half resolution; only if it
+  // stays over 45 ms at half resolution does it become the 2D water. A shader not ready within 1.5 s (with the parallel
+  // compile) also means half resolution. Levels: 0 full, 1 half, 2 the 2D water.
+  var GUARD_HALF = 20, GUARD_2D = 45, GUARD_N = 8, GUARD_KEY = "sx_water_2d", WATER_REV = "2";
+  function median(a) { var m = a.slice().sort(function (x, y) { return x - y; }), h = m.length >> 1; return m.length % 2 ? m[h] : (m[h - 1] + m[h]) / 2; }
+  function guard(g, ms, anim) {
     if (g.lvl >= 2) return 2;
+    if (anim === false) return g.lvl;   // a still frame says nothing about the speed of the water
     g.ms.push(ms); if (g.ms.length > GUARD_N) g.ms.shift();
-    if (g.ms.length === GUARD_N) { var m = g.ms.slice().sort(function (a, b) { return a - b; }); if ((m[3] + m[4]) / 2 > GUARD_MS) { g.lvl++; g.ms = []; } }
+    if (g.ms.length === GUARD_N) {
+      var m = median(g.ms);
+      if (g.lvl === 0 && m > GUARD_HALF) { g.lvl = 1; g.ms = []; }
+      else if (g.lvl === 1 && m > GUARD_2D) { g.lvl = 2; g.why = why2d("slow", Math.round(m)); g.ms = []; }
+    }
     return g.lvl;
   }
   function guardLate(g) { if (g.lvl < 1) { g.lvl = 1; g.ms = []; } return g.lvl; }
+  // Why the 2D water shows, in words a person can read (pure).
+  function why2d(code, detail) {
+    var t = { nogl: "this browser gave no WebGL", precision: "the GPU has no high-precision floats for the tracer", link: "the traced shader did not compile",
+      lost: "the GPU context was lost", slow: "the traced water was too slow", off: "the lit materials are switched off", studio: "the studio light did not load" }[code] || String(code || "unknown");
+    if (code === "slow" && detail != null) t += " (" + detail + " ms a frame at half resolution)";
+    else if (detail) t += " (" + String(detail).slice(0, 80) + ")";
+    return t;
+  }
+  // The one line the long-press shows (pure): what drew the water and, when known, the GPU.
+  function drawnLine(st) {
+    var t = st.ok === true ? "Drawn with: traced water (" + (st.lvl >= 1 ? "half" : "full") + ")"
+      : st.ok === "pending" ? "Drawn with: 2D while the traced water compiles" : "Drawn with: 2D because " + (st.why || "the tracer has not started");
+    return st.gpu ? t + ". GPU: " + st.gpu : t;
+  }
+  // The session remembers a fall to 2D with its reason and the version that decided it; a new version tries again (pure).
+  function storedWhy(raw, ver) {
+    if (!raw) return null;
+    try { var o = JSON.parse(raw); return o && o.v === ver && o.why ? String(o.why) : null; } catch (e) { return null; }
+  }
+  function waterVer() { var b = document.getElementById("app_ver"); return WATER_REV + "|" + (b ? b.textContent.trim() : ""); }
   function noGuard() { return !!window.SXWaterNoGuard; }   // for the proof screenshots on a machine without a GPU
+  function idle(f) { if (window.requestIdleCallback) requestIdleCallback(f, { timeout: 1200 }); else setTimeout(f, 120); }
+  function redrawAll() { all = all.filter(function (x) { return x.el.isConnected; }); all.forEach(function (x) { render(x); }); }
+  function fall(why, keep) {   // the 2D water from now on (for the session when keep), and why
+    GL.ok = false; GL.why = why;
+    if (keep && !noGuard()) { try { sessionStorage.setItem(GUARD_KEY, JSON.stringify({ v: waterVer(), why: why })); } catch (e) {} }
+    if (window.console && console.warn) console.warn("SXWater: the 2D water, because " + why);
+    redrawAll(); return false;
+  }
   function guardApply() {
     if (noGuard()) return;
     GL.Q = GL.g.lvl >= 1 ? 0.5 : 1;
-    if (GL.g.lvl >= 2) {
-      try { sessionStorage.setItem(GUARD_KEY, "1"); } catch (e) {}
-      GL.ok = false; all.forEach(function (x) { if (x.el.isConnected) render(x); });
-    }
+    if (GL.g.lvl >= 2) fall(GL.g.why || why2d("slow"), true);
+  }
+  function gpuName(gl) {
+    try { var dbg = gl.getExtension("WEBGL_debug_renderer_info"); return String(gl.getParameter(dbg ? dbg.UNMASKED_RENDERER_WEBGL : gl.RENDERER) || "").slice(0, 90); } catch (e) { return ""; }
   }
   function glInit() {
     if (GL.ok !== null) return GL.ok !== false;
     GL.ok = false;
     try {
-      if (!window.SXMat || !SXMat.STUDIO || document.documentElement.hasAttribute("data-sx-mat-off")) return false;
-      try { if (sessionStorage.getItem(GUARD_KEY) === "1" && !noGuard()) return false; } catch (e) {}
+      if (window.SXWaterForce2D) { GL.why = String(window.SXWaterForce2D); return false; }
+      if (document.documentElement.hasAttribute("data-sx-mat-off")) { GL.why = why2d("off"); return false; }
+      if (!window.SXMat || !SXMat.STUDIO) { GL.why = why2d("studio"); return false; }
+      var raw = null; try { raw = sessionStorage.getItem(GUARD_KEY); } catch (e) {}
+      var was = storedWhy(raw, waterVer());
+      if (was && !noGuard()) { GL.why = was; return false; }
+      if (raw && !was) { try { sessionStorage.removeItem(GUARD_KEY); } catch (e) {} }   // an older version decided it: try again
       var cv = document.createElement("canvas"); cv.width = 300; cv.height = 340;
       var gl = cv.getContext("webgl", { alpha: true, premultipliedAlpha: true, antialias: false, preserveDrawingBuffer: false });
-      if (!gl) return false;
+      if (!gl) { GL.why = why2d("nogl"); return false; }
+      GL.gpu = gpuName(gl);
       var hp = gl.getShaderPrecisionFormat(gl.FRAGMENT_SHADER, gl.HIGH_FLOAT);
-      if (!hp || hp.precision < 16) return false;
+      if (!hp || hp.precision < 16) { GL.why = why2d("precision"); return false; }
       GL.ht = !!gl.getExtension("OES_texture_float");
-      var sh = function (t, src) { var o = gl.createShader(t); gl.shaderSource(o, src); gl.compileShader(o); return o; };
-      var pr = gl.createProgram(); gl.attachShader(pr, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, fsSource(SXMat.STUDIO, GL.ht))); gl.linkProgram(pr);
-      GL.gl = gl; GL.cv = cv; GL.pr = pr; GL.ext = gl.getExtension("KHR_parallel_shader_compile"); GL.ok = "pending";
-      cv.addEventListener("webglcontextlost", function (e) { e.preventDefault(); GL.ok = false; });
-      // The compile never blocks the page: only with the parallel-compile extension; without it, the 2D water stays.
-      if (!GL.ext && !noGuard()) { GL.ok = false; return false; }
-      setTimeout(function () { if (GL.ok === "pending" && !noGuard()) guardLate(GL.g); GL.Q = GL.g.lvl >= 1 ? 0.5 : 1; }, 1500);
-      if (GL.ext) { var poll = function () { if (GL.ok !== "pending") return; if (gl.getProgramParameter(pr, GL.ext.COMPLETION_STATUS_KHR)) glReady(); else setTimeout(poll, 60); }; setTimeout(poll, 30); }
-      else glReady();
-    } catch (e) { GL.ok = false; if (window.console && console.warn) console.warn("SXWater: the water falls back to 2D", e && e.message); }
+      GL.gl = gl; GL.cv = cv; GL.ext = gl.getExtension("KHR_parallel_shader_compile"); GL.ok = "pending";
+      cv.addEventListener("webglcontextlost", function (e) { e.preventDefault(); fall(why2d("lost"), false); });
+      cv.addEventListener("webglcontextrestored", function () { GL.ok = null; GL.U = {}; GL.pr = null; GL.tex = null; glInit(); });
+      if (GL.ext) {
+        glCompile();
+        setTimeout(function () { if (GL.ok === "pending" && !noGuard()) guardLate(GL.g); GL.Q = GL.g.lvl >= 1 ? 0.5 : 1; }, 1500);
+        var poll = function () { if (GL.ok !== "pending") return; if (gl.getProgramParameter(GL.pr, GL.ext.COMPLETION_STATUS_KHR)) glReady(); else setTimeout(poll, 60); };
+        setTimeout(poll, 30);
+      } else idle(function () { if (GL.ok !== "pending") return; glCompile(); glReady(); });   // after the first paint, never blocking it
+    } catch (e) { fall(why2d("link", e && e.message), false); }
     return GL.ok !== false;
+  }
+  function glCompile() {
+    var gl = GL.gl, sh = function (t, src) { var o = gl.createShader(t); gl.shaderSource(o, src); gl.compileShader(o); return o; };
+    var pr = gl.createProgram(); gl.attachShader(pr, sh(gl.VERTEX_SHADER, VS)); gl.attachShader(pr, sh(gl.FRAGMENT_SHADER, fsSource(SXMat.STUDIO, GL.ht))); gl.linkProgram(pr);
+    GL.pr = pr;
   }
   function glReady() {
     var gl = GL.gl, pr = GL.pr;
     try {
-      if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) throw new Error(gl.getProgramInfoLog(pr) || "link");
+      if (gl.isContextLost()) return;
+      if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) { fall(why2d("link", gl.getProgramInfoLog(pr) || "link"), true); return; }
       gl.useProgram(pr);
       var bf = gl.createBuffer(); gl.bindBuffer(gl.ARRAY_BUFFER, bf); gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
       var a = gl.getAttribLocation(pr, "a"); gl.enableVertexAttribArray(a); gl.vertexAttribPointer(a, 2, gl.FLOAT, false, 0, 0);
@@ -3774,16 +3982,32 @@ function fres(c, i) { var m = Math.pow(1 - c, 5); return F0[i] + (1 - F0[i]) * m
         gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE); gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
         gl.uniform1i(GL.U.uH, 0);
       }
-      GL.ok = true;
-      all = all.filter(function (x) { return x.el.isConnected; }); all.forEach(function (x) { render(x); });
-    } catch (e) { GL.ok = false; if (window.console && console.warn) console.warn("SXWater: the water falls back to 2D", e && e.message); }
+      GL.ok = true; GL.why = "";
+      all.forEach(function (x) { x.gl = true; }); redrawAll();
+    } catch (e) { fall(why2d("link", e && e.message), true); }
+  }
+  // What drew the water, for the long-press on the glass (and the proof screenshots).
+  function drawn() {
+    if (!GL.gpu) { try { var c2 = document.createElement("canvas").getContext("webgl"); if (c2) { GL.gpu = gpuName(c2); var lc = c2.getExtension("WEBGL_lose_context"); if (lc) lc.loseContext(); } } catch (e) {} }
+    return drawnLine({ ok: GL.ok, lvl: GL.g.lvl, why: GL.why, gpu: GL.gpu });
+  }
+  function explain(v) {
+    var el = v.el, tip = el.querySelector(".sxw-why");
+    if (!tip) {
+      tip = document.createElement("div"); tip.className = "sxw-why"; tip.setAttribute("role", "status");
+      tip.style.cssText = "position:absolute;left:0;top:100%;z-index:3;margin-top:4px;width:max-content;max-width:min(300px,80vw);padding:6px 10px;border-radius:10px;"
+        + "font:12px/1.35 " + v.font + ";color:#f4f1e8;background:rgba(14,18,28,.94);box-shadow:0 4px 14px rgba(0,0,0,.25);cursor:pointer";
+      tip.addEventListener("click", function () { tip.remove(); });
+      el.appendChild(tip);
+    }
+    tip.textContent = drawn(); clearTimeout(tip._t); tip._t = setTimeout(function () { if (tip.isConnected) tip.remove(); }, 9000);
   }
   var HT = new Float32Array(128 * 4);
   function lin(c) { c /= 255; return c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4); }
   function rot(ax, ay) { var cx = Math.cos(ax), sx = Math.sin(ax), cy = Math.cos(ay), sy = Math.sin(ay); return new Float32Array([cy, sx * sy, -cx * sy, 0, cx, sx, sy, -sx * cy, cx * cy]); }
   // The state tints the light through the water 15% of the way to amber (watch) or rust (low): never murky.
   var TINT = { good: [1, 1, 1], watch: [1, 1 - 0.15 * 0.25, 1 - 0.15 * 0.65], low: [1 - 0.15 * 0.15, 1 - 0.15 * 0.55, 1 - 0.15 * 0.7] };
-  function glRender(v, bands) {
+  function glRender(v, bands, anim) {
     if (bands && !v.lastS) bands = null;
     var gl = GL.gl, U = GL.U, s = v.s, S = bands ? v.lastS : v.S * GL.Q, W = Math.round(VW * S), H = Math.round(VH * S), t0 = performance.now(), i, A = new Float32Array(24), B = new Float32Array(32), amp = 0, mf = 0;
     if (GL.cv.width < W || GL.cv.height < H) { GL.cv.width = Math.max(GL.cv.width, W); GL.cv.height = Math.max(GL.cv.height, H); }
@@ -3824,75 +4048,157 @@ function fres(c, i) { var m = Math.pow(1 - c, 5); return F0[i] + (1 - F0[i]) * m
       gl.clear(gl.COLOR_BUFFER_BIT); gl.drawArrays(gl.TRIANGLES, 0, 3); gl.disable(gl.SCISSOR_TEST);
       c.clearRect(0, y0, W, bh); c.drawImage(GL.cv, 0, GL.cv.height - H + y0, W, bh, 0, y0, W, bh);
     }
-    if (bands) { v.ms = performance.now() - t0; SXWater.msBand = v.ms; if (!noGuard()) { guard(GL.g, v.ms); guardApply(); } return; }
+    if (bands) { v.ms = performance.now() - t0; SXWater.msBand = v.ms; if (!noGuard()) { guard(GL.g, v.ms, !!anim); guardApply(); } return; }
     v.lastS = S;
     var lp = project([RO, BT + DEPTH1, 0]);
     c.setTransform(S, 0, 0, S, 0, 0); c.fillStyle = v.ink; c.globalAlpha = 0.78; c.font = "10px " + v.font; c.textBaseline = "alphabetic"; c.fillText(v.aim, lp[0] + 6, lp[1] + 3.5); c.globalAlpha = 1;
     var ms = performance.now() - t0; v.ms = ms; SXWater.ms = ms;
-    if (!noGuard()) { guard(GL.g, ms); guardApply(); }
+    if (!noGuard()) { guard(GL.g, ms, !!anim); guardApply(); }
   }
 
-  /* ---- the 2D fallback (no WebGL or no high precision) ---- */
-  var VW = 150, VH = 170, IX0 = 35, IX1 = 115, FLOOR = 152, AIMY = 32;
-  var TEAL = [[128, 232, 214], [42, 170, 160], [22, 128, 134]];
-  var PALETTE = { good: TEAL, watch: TEAL.map(function (c) { return mix(c, [238, 190, 100], 0.15); }), low: TEAL.map(function (c) { return mix(c, [214, 138, 98], 0.3); }) };
+  /* ---- the 2D water (no WebGL, a lost context, too slow a GPU, or while the tracer compiles) ----
+     The same camera as the tracer (project), so the glass, the level, the aim and the label sit where the traced frame puts
+     them. It is painted, not traced, but painted from the same physics: a thick soda-lime wall with its refraction bands, a
+     bright lip, the surface ellipse seen from above with its meniscus, absorption deepening with depth, the light the
+     water focuses on the floor and the table, the glass's shadow from the studio's key light, and the real bubbles. */
+  var VW = 150, VH = 170;
+  // pale clear aqua, as the tracer shows a glass of water: [top, middle, deep]; the state tints it at most 10%
+  var AQUA = { light: [[214, 240, 238], [186, 229, 228], [146, 207, 210]], dark: [[132, 178, 182], [94, 146, 154], [60, 112, 124]] };
+  function aqua(dark, state) {
+    var p = AQUA[dark ? "dark" : "light"], to = state === "watch" ? [238, 190, 100] : state === "low" ? [214, 138, 98] : null;
+    return to ? p.map(function (c) { return mix(c, to, state === "watch" ? 0.07 : 0.1); }) : p;
+  }
   function still() {
     try { if (window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches) return true; } catch (e) {}
     return !!navigator.webdriver || /jsdom/i.test(navigator.userAgent || "");
   }
   var vessels = [], all = [], raf = 0, last = 0, io = null, vis = null;
 
-  function glassPath(c) {
-    c.moveTo(30, 22); c.quadraticCurveTo(30, 16, 36, 16); c.lineTo(114, 16); c.quadraticCurveTo(120, 16, 120, 22);
-    c.lineTo(120, 150); c.quadraticCurveTo(120, 160, 110, 160); c.lineTo(40, 160); c.quadraticCurveTo(30, 160, 30, 150); c.closePath();
-  }
-  function innerPath(c) {
-    c.moveTo(IX0, 17); c.lineTo(IX0, FLOOR - 6); c.quadraticCurveTo(IX0, FLOOR, IX0 + 6, FLOOR); c.lineTo(IX1 - 6, FLOOR);
-    c.quadraticCurveTo(IX1, FLOOR, IX1, FLOOR - 6); c.lineTo(IX1, 17); c.closePath();
-  }
   function rgba(rgb, a) { return "rgba(" + rgb + "," + a + ")"; }
   function mix(a, b, t) { return [Math.round(a[0] + (b[0] - a[0]) * t), Math.round(a[1] + (b[1] - a[1]) * t), Math.round(a[2] + (b[2] - a[2]) * t)]; }
+  // the ellipse a circle of radius r at height y makes on screen (centre, half-width, half-height)
+  function ell(y, r) { var c = project([0, y, 0]), f = project([0, y, r]), b = project([0, y, -r]); return { x: c[0], y: (f[1] + b[1]) / 2, rx: project([r, y, 0])[0] - c[0], ry: (f[1] - b[1]) / 2 }; }
+  function silhouette(c, top, bot) {   // the glass seen whole: the far side of the lip, the walls, the near side of the base
+    c.ellipse(top.x, top.y, top.rx, top.ry, 0, Math.PI, 2 * Math.PI); c.lineTo(bot.x + bot.rx, bot.y);
+    c.ellipse(bot.x, bot.y, bot.rx, bot.ry, 0, 0, Math.PI); c.closePath();
+  }
+  function glow(c, x, y, rx, ry, rgb, a) {   // a soft elliptical light or shade
+    c.save(); c.translate(x, y); c.scale(1, ry / rx);
+    var g = c.createRadialGradient(0, 0, 0, 0, 0, rx); g.addColorStop(0, rgba(rgb, a)); g.addColorStop(0.55, rgba(rgb, a * 0.45)); g.addColorStop(1, rgba(rgb, 0));
+    c.fillStyle = g; c.beginPath(); c.arc(0, 0, rx, 0, 7); c.fill(); c.restore();
+  }
 
   function render2d(v) {
-    v.ms = 0; var c = v.ctx, S = v.S, s = v.s, d = s.depth, dark = v.dark, W = PALETTE[v.state] || PALETTE.low, i, k, p, x, g, pts = [];
+    v.ms = 0; var c = v.ctx, S = v.S, s = v.s, d = s.depth, dark = !!v.dark, A = aqua(dark, v.state), i, k, g, x, z, p, q;
     if (v.cv.width !== Math.ceil(VW * S)) { v.cv.width = Math.ceil(VW * S); v.cv.height = Math.ceil(VH * S); }
     c.setTransform(S, 0, 0, S, 0, 0); c.clearRect(0, 0, VW, VH); c.lineJoin = "round"; c.lineCap = "round";
-    var w0 = W[0], w1 = W[1], w2 = W[2];
-    for (i = 0; i < s.n; i++) { x = IX0 + (IX1 - IX0) * i / (s.n - 1); pts.push({ x: x, y: FLOOR - s.h[i] - Math.min(2.4 * Math.exp(-(x - IX0) / 3.4) + 2.4 * Math.exp(-(IX1 - x) / 3.4), d * 0.3) }); }
-    var top = FLOOR - d;
-    c.fillStyle = "rgba(0,0,0,.10)"; c.beginPath(); c.ellipse(75, 164, 58, 7, 0, 0, 7); c.fill();
-    c.fillStyle = "rgba(0,0,0,.20)"; c.beginPath(); c.ellipse(75, 162.5, 46, 4.2, 0, 0, 7); c.fill();
-    c.save(); c.beginPath(); innerPath(c); c.clip();
-    c.fillStyle = dark ? "rgba(190,215,230,.07)" : "rgba(200,225,235,.12)"; c.fillRect(0, 0, VW, VH);
-    c.save(); c.beginPath(); c.moveTo(IX0 - 1, pts[0].y);
-    for (i = 0; i < s.n; i++) c.lineTo(pts[i].x, pts[i].y);
-    c.lineTo(IX1 + 1, pts[s.n - 1].y); c.lineTo(IX1 + 1, VH); c.lineTo(IX0 - 1, VH); c.closePath(); c.clip();
-    g = c.createLinearGradient(0, top - 4, 0, FLOOR);
-    g.addColorStop(0, rgba(w0.join(","), 0.94)); g.addColorStop(0.4, rgba(w1.join(","), 0.97)); g.addColorStop(1, rgba(w2.join(","), 1));
-    c.fillStyle = g; c.fillRect(IX0 - 2, top - 14, IX1 - IX0 + 4, d + 30);
-    g = c.createLinearGradient(0, top, 0, top + 20); g.addColorStop(0, "rgba(255,255,255,.30)"); g.addColorStop(1, "rgba(255,255,255,0)");
-    c.fillStyle = g; c.fillRect(IX0, top - 6, IX1 - IX0, 26);
-    if (d > 22) for (k = 0; k < v.bub.length; k++) {
-      p = v.bub[k]; var by = FLOOR - (p.y - BT), bx = 75 + p.x * 0.95; if (by < top + 2 || by > FLOOR) continue;
-      c.beginPath(); c.arc(bx, by, Math.max(0.6, p.r * 1.4), 0, 7); c.strokeStyle = "rgba(255,255,255,.6)"; c.lineWidth = 0.55; c.stroke();
+    var top = ell(HG, RO), topIn = ell(HG, RI), bot = ell(0, RO), floor = ell(BT, RI), lev = BT + d - menVol() / (Math.PI * RI * RI);
+    var ink = dark ? "0,0,0" : "40,52,58", lite = dark ? "236,246,248" : "255,255,255", wa = A.map(function (x) { return x.join(","); });
+
+    // 1. the table: the glass's soft shadow falls back and to the right, away from the studio's key light (upper left)
+    for (k = 12; k >= 0; k--) { var hh = k * 3.2; p = project([hh, 0, -0.45 * hh]); glow(c, p[0], p[1], bot.rx * (1 + k * 0.02), bot.ry * (1.15 + k * 0.03), ink, (dark ? 0.16 : 0.1) * (1 - k / 14)); }
+    glow(c, bot.x + 2, bot.y + 1, bot.rx + 4, bot.ry + 3, ink, dark ? 0.55 : 0.3);   // the contact shadow under the base
+    // the light the water column focuses on the table (a cylinder lens, focal length n R / (2 (n - 1)) from the axis)
+    var fl = 1.333 * RI / (2 * 0.333), fp = project([0.91 * fl * 0.72, 0, -0.41 * fl * 0.72]), lit = Math.min(1, d / 60);
+    glow(c, fp[0], fp[1], 10, 3.4, wa[1], (dark ? 0.5 : 0.7) * lit); glow(c, fp[0] - 1, fp[1], 5, 1.3, lite, (dark ? 0.55 : 0.9) * lit);
+
+    // 2. inside the glass: the far wall and the empty glass above the water
+    c.save(); c.beginPath(); silhouette(c, top, bot); c.clip();
+    c.fillStyle = dark ? "rgba(196,214,220,.08)" : "rgba(214,232,236,.16)"; c.fillRect(0, 0, VW, VH);
+    c.beginPath(); c.ellipse(top.x, top.y, topIn.rx, topIn.ry, 0, Math.PI, 2 * Math.PI); c.strokeStyle = rgba(lite, dark ? 0.25 : 0.7); c.lineWidth = 0.8; c.stroke();
+
+    // 3. the water: the near side down to the floor, then the surface seen from slightly above
+    var n = s.n, cl = [], cb = [], sf = [], sb = [];
+    for (i = 0; i < n; i++) {
+      x = -RI + (i + 0.5) * L / n; z = Math.sqrt(Math.max(0, RI * RI - x * x)); var hy = lev + (s.h[i] - d);
+      cl.push(project([x, hy + MEN, z])); cb.push(project([x, hy + MEN, -z])); sf.push(project([x, hy, z * 0.86])); sb.push(project([x, hy, -z * 0.86]));
+    }
+    var eL = project([-RI, lev + (s.h[0] - d) + MEN, 0]), eR = project([RI, lev + (s.h[n - 1] - d) + MEN, 0]), fL = project([-RI, BT, 0]), fR = project([RI, BT, 0]);
+    c.save(); c.beginPath(); c.moveTo(eL[0], eL[1]); c.lineTo(fL[0], fL[1]); c.ellipse(floor.x, floor.y, floor.rx, floor.ry, 0, Math.PI, 0, true); c.lineTo(eR[0], eR[1]);
+    for (i = n - 1; i >= 0; i--) c.lineTo(cl[i][0], cl[i][1]);
+    c.closePath(); c.clip();
+    var yT = eL[1], yB = floor.y + floor.ry;
+    g = c.createLinearGradient(0, yT, 0, yB); g.addColorStop(0, rgba(wa[0], 0.9)); g.addColorStop(0.35, rgba(wa[1], 0.93)); g.addColorStop(1, rgba(wa[2], 0.97));
+    c.fillStyle = g; c.fillRect(0, yT - 2, VW, yB - yT + 4);
+    // the round column bends the light: darker, deeper bands near the walls (the long path and total internal reflection), clearer in the middle
+    g = c.createLinearGradient(fL[0], 0, fR[0], 0);
+    g.addColorStop(0, rgba(wa[2], 0.85)); g.addColorStop(0.07, rgba(wa[2], 0.35)); g.addColorStop(0.16, rgba(lite, dark ? 0.06 : 0.22)); g.addColorStop(0.5, rgba(lite, 0));
+    g.addColorStop(0.8, rgba(wa[2], 0.12)); g.addColorStop(0.93, rgba(wa[2], 0.45)); g.addColorStop(1, rgba(wa[2], 0.9));
+    c.fillStyle = g; c.fillRect(0, yT - 2, VW, yB - yT + 4);
+    // the floor seen through the water: the meniscus focuses a bright ring near the wall, the waves a net of caustic light
+    c.beginPath(); c.ellipse(floor.x, floor.y, floor.rx - 4, floor.ry - 1.2, 0, 0, 7); c.strokeStyle = rgba(lite, dark ? 0.12 : 0.22); c.lineWidth = 2.4; c.stroke();
+    glow(c, floor.x - 6, floor.y + 1, floor.rx * 0.6, floor.ry * 0.7, lite, dark ? 0.16 : 0.32);
+    for (i = 1; i < n - 1; i++) {
+      var cu = -(s.h[i - 1] - 2 * s.h[i] + s.h[i + 1]); if (cu <= 0.004) continue;   // a crest is a lens: it focuses light below it
+      x = -RI + (i + 0.5) * L / n; z = Math.sqrt(Math.max(0, RI * RI - x * x)) * 0.9; p = project([x, BT, -z]); q = project([x, BT, z]);
+      c.beginPath(); c.moveTo(p[0], p[1]); c.quadraticCurveTo(p[0] + 1.5, (p[1] + q[1]) / 2, q[0], q[1]); c.strokeStyle = rgba(lite, Math.min(0.55, cu * 9)); c.lineWidth = 1.1; c.stroke();
+    }
+    // the bubbles: tiny spheres whose skin is a mirror past the critical angle (a bright ring with a dark edge)
+    for (k = 0; k < v.bub.length; k++) {
+      var b = v.bub[k]; if (b.y > lev + 2 || d < 6) continue;
+      p = project([b.x, b.y, b.z]); var br = Math.max(0.75, b.r * 1.7), back = b.z < 0 ? 0.55 : 1;
+      c.beginPath(); c.arc(p[0], p[1], br, 0, 7); c.fillStyle = rgba(lite, 0.18 * back); c.fill(); c.strokeStyle = rgba(lite, 0.9 * back); c.lineWidth = 0.55; c.stroke();
+      c.beginPath(); c.arc(p[0], p[1], br + 0.45, 0.2, 2.6); c.strokeStyle = rgba(wa[2], 0.7 * back); c.lineWidth = 0.4; c.stroke();
+      c.beginPath(); c.arc(p[0] - br * 0.35, p[1] - br * 0.35, br * 0.28, 0, 7); c.fillStyle = rgba(lite, 0.95 * back); c.fill();
     }
     c.restore();
-    c.beginPath(); for (i = 0; i < s.n; i++) { if (i) c.lineTo(pts[i].x, pts[i].y); else c.moveTo(pts[i].x, pts[i].y); }
-    c.strokeStyle = "rgba(255,255,255,.85)"; c.lineWidth = 1.5; c.stroke();
+    // the surface: it mirrors the bright studio at a grazing angle (Fresnel), so the far half is brighter; a soft box highlight
+    c.save(); c.beginPath(); c.moveTo(cl[0][0], cl[0][1]);
+    for (i = 0; i < n; i++) c.lineTo(cl[i][0], cl[i][1]);
+    for (i = n - 1; i >= 0; i--) c.lineTo(cb[i][0], cb[i][1]);
+    c.closePath(); c.clip();
+    var mid = (cl[n >> 1][1] + cb[n >> 1][1]) / 2;
+    g = c.createLinearGradient(0, cb[n >> 1][1], 0, cl[n >> 1][1]);
+    g.addColorStop(0, rgba(lite, dark ? 0.55 : 0.85)); g.addColorStop(0.45, rgba(wa[0], 0.9)); g.addColorStop(1, rgba(wa[1], 0.95));
+    c.fillStyle = g; c.fillRect(0, cb[n >> 1][1] - 8, VW, cl[n >> 1][1] - cb[n >> 1][1] + 16);
+    glow(c, top.x - top.rx * 0.38, mid - 1, top.rx * 0.34, Math.max(1.2, (cl[n >> 1][1] - cb[n >> 1][1]) * 0.22), lite, dark ? 0.6 : 0.9);
     c.restore();
-    c.save(); c.beginPath(); c.moveTo(30, AIMY); c.lineTo(120, AIMY); c.strokeStyle = "#c9a84c"; c.lineWidth = 1.5; c.setLineDash([4, 3]); c.stroke(); c.restore();
-    c.save(); c.beginPath(); glassPath(c); innerPath(c);
-    g = c.createLinearGradient(30, 0, 120, 0);
-    g.addColorStop(0, "rgba(205,235,240,.55)"); g.addColorStop(0.1, "rgba(205,235,240,.30)"); g.addColorStop(0.5, "rgba(205,235,240,.20)"); g.addColorStop(0.9, "rgba(205,235,240,.30)"); g.addColorStop(1, "rgba(205,235,240,.50)");
-    c.fillStyle = g; c.fill("evenodd"); c.restore();
-    g = c.createLinearGradient(0, 22, 0, 148); g.addColorStop(0, "rgba(255,255,255,0)"); g.addColorStop(0.15, "rgba(255,255,255,.85)"); g.addColorStop(0.8, "rgba(255,255,255,.7)"); g.addColorStop(1, "rgba(255,255,255,0)");
-    c.beginPath(); c.moveTo(32.6, 22); c.lineTo(32.6, 148); c.strokeStyle = g; c.lineWidth = 2.4; c.stroke();
-    c.beginPath(); glassPath(c); c.strokeStyle = "rgba(160,185,198,.9)"; c.lineWidth = 1.3; c.stroke();
-    c.beginPath(); c.ellipse(75, 16, 45, 3.5, 0, 0, 2 * Math.PI); c.strokeStyle = "rgba(190,210,220,.9)"; c.lineWidth = 1.3; c.stroke();
-    c.fillStyle = v.ink; c.globalAlpha = 0.78; c.font = "10px " + v.font; c.textBaseline = "alphabetic"; c.fillText(v.aim, 124, AIMY + 4); c.globalAlpha = 1;
+    // the meniscus: water curls up the wall over its capillary length, so the near rim of the surface is a bright line over a dark one
+    c.beginPath(); for (i = 0; i < n; i++) { if (i) c.lineTo(sf[i][0], sf[i][1]); else c.moveTo(sf[i][0], sf[i][1]); }
+    c.strokeStyle = rgba(wa[2], dark ? 0.9 : 0.75); c.lineWidth = 0.9; c.stroke();
+    c.beginPath(); for (i = 0; i < n; i++) { if (i) c.lineTo(cl[i][0], cl[i][1]); else c.moveTo(cl[i][0], cl[i][1]); }
+    c.strokeStyle = rgba(lite, 0.95); c.lineWidth = 1.1; c.stroke();
+    c.beginPath(); for (i = 0; i < n; i++) { if (i) c.lineTo(cb[i][0], cb[i][1]); else c.moveTo(cb[i][0], cb[i][1]); }
+    c.strokeStyle = rgba(lite, dark ? 0.35 : 0.6); c.lineWidth = 0.7; c.stroke();
+    c.restore();
+
+    // 4. the thick base: soda-lime with the faint green of its iron, a bright refracted edge at the bottom, a dark seam at the floor
+    c.save(); c.beginPath(); c.moveTo(fL[0] - 2.6, fL[1]); c.lineTo(bot.x - bot.rx, bot.y); c.ellipse(bot.x, bot.y, bot.rx, bot.ry, 0, Math.PI, 0, true);
+    c.lineTo(fR[0] + 2.6, fR[1]); c.ellipse(floor.x, floor.y, floor.rx + 2.6, floor.ry + 0.4, 0, 0, Math.PI); c.closePath();
+    g = c.createLinearGradient(0, floor.y, 0, bot.y + bot.ry);
+    g.addColorStop(0, dark ? "rgba(150,190,186,.34)" : "rgba(196,228,222,.62)"); g.addColorStop(0.6, dark ? "rgba(120,160,158,.30)" : "rgba(176,214,210,.55)"); g.addColorStop(1, dark ? "rgba(200,230,228,.42)" : "rgba(222,242,240,.75)");
+    c.fillStyle = g; c.fill(); c.restore();
+    c.beginPath(); c.ellipse(floor.x, floor.y, floor.rx + 1, floor.ry + 0.3, 0, 0.05, Math.PI - 0.05); c.strokeStyle = rgba(ink, dark ? 0.5 : 0.22); c.lineWidth = 0.9; c.stroke();
+    q = ell(2.2, RO - 1.2); c.beginPath(); c.ellipse(q.x, q.y, q.rx, q.ry, 0, 0.15, Math.PI - 0.15); c.strokeStyle = rgba(lite, dark ? 0.75 : 0.95); c.lineWidth = 1.2; c.stroke();
+
+    // 5. the walls: a dark outer edge, a bright line where the wall turns, the soft box's two reflections, a darker inner edge
+    c.save(); c.beginPath(); silhouette(c, top, bot); c.clip();
+    var wallBand = function (x0, w, a) { g = c.createLinearGradient(x0, 0, x0 + w, 0); g.addColorStop(0, rgba(lite, 0)); g.addColorStop(0.5, rgba(lite, a)); g.addColorStop(1, rgba(lite, 0)); c.fillStyle = g; c.fillRect(x0, top.y, w, bot.y - top.y + 2); };
+    wallBand(top.x - top.rx * 0.8, 8, dark ? 0.75 : 0.95); wallBand(top.x - top.rx * 0.78, 3, dark ? 0.7 : 0.9); wallBand(top.x - top.rx * 0.58, 2.4, dark ? 0.3 : 0.45); wallBand(top.x + top.rx * 0.7, 5, dark ? 0.6 : 0.85);
+    g = c.createLinearGradient(top.x - top.rx, 0, top.x + top.rx, 0);
+    g.addColorStop(0, rgba(dark ? "170,196,200" : "120,150,156", 0.55)); g.addColorStop(0.03, rgba(lite, dark ? 0.55 : 0.8)); g.addColorStop(0.055, rgba(dark ? "120,150,156" : "150,178,182", 0.35)); g.addColorStop(0.075, rgba(lite, 0));
+    g.addColorStop(0.925, rgba(lite, 0)); g.addColorStop(0.945, rgba(dark ? "120,150,156" : "150,178,182", 0.3)); g.addColorStop(0.97, rgba(lite, dark ? 0.4 : 0.6)); g.addColorStop(1, rgba(dark ? "170,196,200" : "120,150,156", 0.55));
+    c.fillStyle = g; c.fillRect(0, 0, VW, VH);
+    c.restore();
+    c.beginPath(); silhouette(c, top, bot); c.strokeStyle = dark ? "rgba(180,204,210,.55)" : "rgba(120,148,156,.6)"; c.lineWidth = 0.7; c.stroke();
+
+    // 6. the aim, etched round the glass in gold (the far side faint), and the lip: a ring of glass with a bright near edge
+    var ai = ell(BT + DEPTH1, RO + 0.2);
+    c.save(); c.setLineDash([3.2, 2.4]); c.lineWidth = 1.3;
+    c.beginPath(); c.ellipse(ai.x, ai.y, ai.rx, ai.ry, 0, Math.PI, 2 * Math.PI); c.strokeStyle = "rgba(201,168,76,.45)"; c.stroke();
+    c.beginPath(); c.ellipse(ai.x, ai.y, ai.rx, ai.ry, 0, 0, Math.PI); c.strokeStyle = "#c9a84c"; c.stroke(); c.restore();
+    c.beginPath(); c.ellipse(top.x, top.y, top.rx, top.ry, 0, 0, 7); c.ellipse(topIn.x, topIn.y, topIn.rx, topIn.ry, 0, 0, 7);
+    c.fillStyle = dark ? "rgba(200,226,228,.28)" : "rgba(206,232,232,.6)"; c.fill("evenodd");
+    c.beginPath(); c.ellipse(top.x, top.y, top.rx, top.ry, 0, 0.08, Math.PI - 0.08); c.strokeStyle = rgba(lite, 0.95); c.lineWidth = 1.15; c.stroke();
+    c.beginPath(); c.ellipse(top.x, top.y, top.rx, top.ry, 0, Math.PI, 2 * Math.PI); c.strokeStyle = dark ? "rgba(190,214,220,.6)" : "rgba(130,158,166,.55)"; c.lineWidth = 0.7; c.stroke();
+    c.beginPath(); c.ellipse(topIn.x, topIn.y, topIn.rx, topIn.ry, 0, 0.1, Math.PI - 0.1); c.strokeStyle = dark ? "rgba(120,150,156,.6)" : "rgba(130,158,166,.5)"; c.lineWidth = 0.6; c.stroke();
+    glow(c, top.x - top.rx * 0.55, top.y + top.ry * 0.8, 6, 1.4, lite, 1);
+
+    var lp = project([RO, BT + DEPTH1, 0]);
+    c.fillStyle = v.ink; c.globalAlpha = 0.78; c.font = "10px " + v.font; c.textBaseline = "alphabetic"; c.fillText(v.aim, lp[0] + 6, lp[1] + 3.5); c.globalAlpha = 1;
   }
-  function render(v, bands) {
-    if (v.gl && GL.ok === true) { try { glRender(v, bands); return; } catch (e) { v.gl = false; if (window.console && console.warn) console.warn("SXWater:", e && e.message); } }
+  function render(v, bands, anim) {
+    if (v.gl && GL.ok === true) { try { glRender(v, bands, anim); return; } catch (e) { v.gl = false; if (window.console && console.warn) console.warn("SXWater:", e && e.message); } }
     render2d(v);
   }
 
@@ -3938,7 +4244,7 @@ function fres(c, i) { var m = Math.pow(1 - c, 5); return F0[i] + (1 - F0[i]) * m
       v.tiltSeen = lx; v.sinceDraw = 0;
       var bb = bubbleBand(v), full = turned || ++v.n % 90 === 1;   // the light turned (or now and then): the whole picture
       if (v.n % 90 === 1) readTheme(v);
-      render(v, full ? null : (calm ? [] : waterBands(v)).concat(bb ? [bb] : []));
+      render(v, full ? null : (calm ? [] : waterBands(v)).concat(bb ? [bb] : []), true);   // an animating frame: the guard times it
     }
     if (any && !document.hidden) raf = requestAnimationFrame(frame);
   }
@@ -3979,6 +4285,12 @@ function fres(c, i) { var m = Math.pow(1 - c, 5); return F0[i] + (1 - F0[i]) * m
       var dx = e.clientX - lastX; lastX = e.clientX; splash(s, col(e), Math.min(0.8, Math.abs(dx) * 0.06 + 0.1)); loopStart();
     }, { passive: true });
     cv.addEventListener("pointerup", function () { lastX = null; }, { passive: true });
+    // A long press (or the context menu a long press opens on Android) says what drew the water, and on which GPU.
+    var hold = 0, hx = 0, hy = 0, unhold = function () { clearTimeout(hold); hold = 0; };
+    cv.addEventListener("pointerdown", function (e) { hx = e.clientX; hy = e.clientY; unhold(); hold = setTimeout(function () { hold = 0; explain(v); }, 550); }, { passive: true });
+    cv.addEventListener("pointermove", function (e) { if (hold && Math.abs(e.clientX - hx) + Math.abs(e.clientY - hy) > 10) unhold(); }, { passive: true });
+    ["pointerup", "pointercancel", "pointerleave"].forEach(function (t) { cv.addEventListener(t, unhold, { passive: true }); });
+    cv.addEventListener("contextmenu", function (e) { e.preventDefault(); unhold(); explain(v); });
     if (still()) return v;   // one still frame, no loop
     vessels.push(v);
     if (io) io.observe(el);
@@ -3992,7 +4304,8 @@ function fres(c, i) { var m = Math.pow(1 - c, 5); return F0[i] + (1 - F0[i]) * m
   }
 
   window.SXWater = { make: make, depth: depth, step: step, splash: splash, energy: energy, mean: mean, vessel: vessel, scan: scan,
-    guard: guard, guardLate: guardLate, GUARD_MS: GUARD_MS, GUARD_N: GUARD_N, GUARD_KEY: GUARD_KEY,
+    guard: guard, guardLate: guardLate, GUARD_HALF: GUARD_HALF, GUARD_2D: GUARD_2D, GUARD_N: GUARD_N, GUARD_KEY: GUARD_KEY,
+    why2d: why2d, drawnLine: drawnLine, storedWhy: storedWhy, median: median, drawn: function () { return drawn(); }, ell: ell,
     omega: omega, kSlosh: kOf(1), slosh: slosh, stokes: stokes, rise: rise, eta: eta, project: project, render: render,
     LC: LC, MEN: MEN, G: G, MU: MU, NW: 1.333, NG: 1.52, RO: RO, RI: RI, ms: 0, vessels: function () { return vessels; } };
 
