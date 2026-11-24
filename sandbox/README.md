@@ -10,6 +10,7 @@ python3 sandbox/run.py -j fresh_install     # one journey
 python3 sandbox/run.py --no-retry           # never re-run a journey (default: a journey whose failures are ALL infrastructure — Docker daemon, network — is re-run once and flagged, doc 44)
 python3 sandbox/run.py --list
 python3 sandbox/run.py --keep               # leave the stack running to poke at it
+python3 sandbox/run.py --shard 2/5          # one shard of five, balanced by sandbox/timings.json (CI runs the five in parallel)
 ```
 
 Needs Docker + compose, Python 3.11+, `pip install pyyaml playwright && playwright install chromium`, `openssl`.
