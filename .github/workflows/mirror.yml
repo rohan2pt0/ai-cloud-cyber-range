@@ -1,0 +1,44 @@
+# The always-on second home for the code (queue gitlab-mirror, doc 131): every push to main, and once a day, copies ALL
+# branches and tags to a private GitLab project. The laptop's `./securax continuity mirror` is the fallback, not this.
+# Needs the secret GITLAB_MIRROR_TOKEN (a GitLab personal access token with only write_repository, expiring in a year)
+# and GITLAB_MIRROR_PATH (a secret or a repository variable, for example user/securax). Without both: one line, success.
+name: mirror
+on:
+  push:
+    branches: [main]
+  schedule:
+    - cron: "37 2 * * *"
+  workflow_dispatch:
+permissions:
+  contents: read
+# Two runs never push at once; a waiting run is never thrown away mid-push.
+concurrency:
+  group: gitlab-mirror
+  cancel-in-progress: false
+jobs:
+  mirror:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with: { fetch-depth: 0 }
+      - name: Push all branches and tags to GitLab
+        env:
+          TOKEN: ${{ secrets.GITLAB_MIRROR_TOKEN }}
+          MIRROR_PATH: ${{ secrets.GITLAB_MIRROR_PATH || vars.GITLAB_MIRROR_PATH }}
+        run: |
+          if [ -z "$TOKEN" ] || [ -z "$MIRROR_PATH" ]; then
+            echo "no GitLab token or path: code mirror skipped"
+            exit 0
+          fi
+          echo "::add-mask::$TOKEN"
+          # checkout fetched one branch: fetch every branch, so refs/remotes/origin/* is complete
+          git fetch --no-tags origin '+refs/heads/*:refs/remotes/origin/*'
+          git fetch --tags origin
+          git remote set-head origin --delete || true
+          # --prune removes branches deleted on GitHub. The URL is never printed; git's own output is scrubbed.
+          set +e
+          git push --prune "https://oauth2:${TOKEN}@gitlab.com/${MIRROR_PATH}.git" \
+            'refs/remotes/origin/*:refs/heads/*' 'refs/tags/*:refs/tags/*' 2>&1 | sed "s#${TOKEN}#***#g"
+          rc=${PIPESTATUS[0]}
+          if [ "$rc" != 0 ]; then echo "mirror push failed (exit $rc)"; exit 1; fi
+          echo "mirrored all branches and tags"
