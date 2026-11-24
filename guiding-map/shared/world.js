@@ -7,6 +7,7 @@
      vessel     a buffer that lasts: water in glass, the level is how long it lasts, the etched line the aim
      treeRings  a habit's history: one ring per period, a ring's width is how well that period went
      flag       a goal reached: real cloth on a pole, moved by the person's own wind
+     sea        calm and the breath: a live sea (shared/sea.js) whose swell follows the box breath
    Use one object per card, for its meaning only; the number it shows is always also given in words (screen readers, and
    anyone who prefers words). The canvas sky and lit metals live in sky.js and materials.js; this file holds the light ones
    (SVG, no WebGL) so they are safe on any phone.
@@ -25,7 +26,8 @@
     { id: "goldBars", means: "wealth held against an aim", use: "net worth, a corpus, savings against a benchmark", avoid: "spending, debts" },
     { id: "vessel", means: "a buffer and how long it lasts", use: "emergency fund, runway, cover in months", avoid: "growth over time" },
     { id: "treeRings", means: "a habit's history, period by period", use: "saving rate by month, streaks, years of practice", avoid: "a single number" },
-    { id: "flag", means: "a goal reached, flying in your own wind", use: "a goal or key result at 100%, a summit", avoid: "warnings, progress below the goal" }
+    { id: "flag", means: "a goal reached, flying in your own wind", use: "a goal or key result at 100%, a summit", avoid: "warnings, progress below the goal" },
+    { id: "sea", means: "calm and the breath: the swell rises as you breathe in, holds, falls as you breathe out", use: "breathing, rest, a pause", avoid: "money, alarms, warnings" }
   ];
 
   /* ---- the moon: f = how full (0..1); late draws a red ring ---- */
@@ -132,6 +134,8 @@
       + '<rect x="0.3" y="-0.2" width="1.2" height="19.9" rx=".5" fill="#d8d0bd"/></g></g>';
   }
 
-  window.SXWorld = { CATALOG: CATALOG, moon: moon, goldBars: goldBars, vessel: vessel, treeRings: treeRings, flag: flag,
+  // The sea is drawn by shared/sea.js (WebGL, then 2D, then the SVG pacer it holds); this is its one door.
+  function sea(el, opts) { return window.SXSea && el ? window.SXSea.mount(el, opts) : null; }
+  window.SXWorld = { CATALOG: CATALOG, moon: moon, goldBars: goldBars, vessel: vessel, treeRings: treeRings, flag: flag, sea: sea,
     cloth: C || null, windSource: null, start: function () { if (C) C.start(); } };
 })();
