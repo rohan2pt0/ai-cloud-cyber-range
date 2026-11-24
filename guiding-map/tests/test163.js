@@ -52,7 +52,7 @@ setTimeout(() => {
   ok("half resolution that is fast enough stays there", feed(G(), Array(8).fill(20).concat(Array(24).fill(8))) === 1);
   ok("a shader not ready in 1.5 s means half resolution, never back to full", (() => { const g = G(); W.guardLate(g); return g.lvl === 1 && feed(g, Array(8).fill(5)) === 1; })());
   ok("the 2D water is final", (() => { const g = { lvl: 2, ms: [] }; return feed(g, Array(16).fill(1)) === 2; })());
-  ok("the compile never blocks: parallel compile only, else the 2D water; a 1.5 s watch", (() => { const t = fs.readFileSync(path.join(__dirname, '..', 'shared', 'water.js'), 'utf8'); return /KHR_parallel_shader_compile/.test(t) && /if \(!GL\.ext\) \{ GL\.ok = false; return false; \}/.test(t) && /1500\)/.test(t); })());
+  ok("the compile never blocks: parallel compile only, else the 2D water; a 1.5 s watch", (() => { const t = fs.readFileSync(path.join(__dirname, '..', 'shared', 'water.js'), 'utf8'); return /KHR_parallel_shader_compile/.test(t) && /if \(!GL\.ext && !noGuard\(\)\) \{ GL\.ok = false; return false; \}/.test(t) && /1500\)/.test(t); })());
   // no loop, no canvas in tests: the SVG with its words remains
   const r0 = rafs; W.scan(w.document); W.step(W.make(d), 1 / 60, 0);
   ok("no animation frame is requested by the water in tests", rafs === r0, rafs - r0);

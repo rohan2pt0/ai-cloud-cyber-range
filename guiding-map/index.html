@@ -4344,9 +4344,10 @@ function fres(c, i) { var m = Math.pow(1 - c, 5); return F0[i] + (1 - F0[i]) * m
       " float edge=smoothstep(RI-sp,RO,b)*(1.-smoothstep(RO,RO+sp,b));vec3 dl=vec3(.88-.55*edge);",
       " return mix(vec3(1.),mix(dl,wl,wet),inG)*ao;}",
       // what a ray sees once it has left the glass: the table (the page), the backdrop behind, or the room of the studio
-      "vec3 glow(vec3 q){float hy=max(uLev*.55,30.);return uGlow*exp(-q.x*q.x/9000.)*(.35+exp(-(q.y-hy)*(q.y-hy)/(2.*(hy*.7+25.)*(hy*.7+25.))));}",
+      "vec3 glow(vec3 q){return uGlow*exp(-q.x*q.x/9000.)*smoothstep(uLev+5.,uLev-40.,q.y);}",   // the soft box's pool on the sweep, below the water line
+      "vec3 glowT(vec3 q){return uGlow*.8*exp(-q.x*q.x/9000.)*smoothstep(-20.,-60.,q.z);}",   // and on the table behind the glass
       "void scene(vec3 p,vec3 d,out vec3 cb,out vec3 cs){cs=vec3(0.);cb=vec3(0.);float w=0.;",
-      " bool tb=false;if(d.y<-1e-4){vec3 q=p+d*(-p.y/d.y);if(q.z>-ZB){tb=true;w=smoothstep(520.,300.,length(q.xz));cb=uBg*(.62+.38*keyLight(q))*w;}}",
+      " bool tb=false;if(d.y<-1e-4){vec3 q=p+d*(-p.y/d.y);if(q.z>-ZB){tb=true;w=smoothstep(520.,300.,length(q.xz));cb=(uBg*(.62+.38*keyLight(q))+glowT(q))*w;}}",
       " if(!tb&&d.z<0.){vec3 q=p+d*((-ZB-p.z)/d.z);w=smoothstep(.02,-.3,d.z)*smoothstep(500.,260.,abs(q.x));cb=(uBg*(1.02+.05*clamp((q.y-90.)/120.,-1.,1.))+glow(q))*w;}",
       " float rim=smoothstep(-.1,-.4,d.z)*(smoothstep(.09,.0,abs(abs(d.x)-.42))*smoothstep(.75,.2,abs(d.y)));",
       " cs=env(d,.02)*(1.-w)+vec3(.9,.95,1.)*1.6*rim+uBg*.25*(1.-w)*(1.-uDark);}",
@@ -4446,7 +4447,7 @@ function fres(c, i) { var m = Math.pow(1 - c, 5); return F0[i] + (1 - F0[i]) * m
       GL.gl = gl; GL.cv = cv; GL.pr = pr; GL.ext = gl.getExtension("KHR_parallel_shader_compile"); GL.ok = "pending";
       cv.addEventListener("webglcontextlost", function (e) { e.preventDefault(); GL.ok = false; });
       // The compile never blocks the page: only with the parallel-compile extension; without it, the 2D water stays.
-      if (!GL.ext) { GL.ok = false; return false; }
+      if (!GL.ext && !noGuard()) { GL.ok = false; return false; }
       setTimeout(function () { if (GL.ok === "pending" && !noGuard()) guardLate(GL.g); GL.Q = GL.g.lvl >= 1 ? 0.5 : 1; }, 1500);
       if (GL.ext) { var poll = function () { if (GL.ok !== "pending") return; if (gl.getProgramParameter(pr, GL.ext.COMPLETION_STATUS_KHR)) glReady(); else setTimeout(poll, 60); }; setTimeout(poll, 30); }
       else glReady();
@@ -4504,9 +4505,9 @@ function fres(c, i) { var m = Math.pow(1 - c, 5); return F0[i] + (1 - F0[i]) * m
     gl.uniform1f(U.uLev, BT + s.depth - menVol() / (Math.PI * RI * RI)); gl.uniform1f(U.uMf, mf); gl.uniform1f(U.uAmp, amp);
     gl.uniform3fv(U.uBg, v.bg); gl.uniform3fv(U.uTn, tn); gl.uniform3fv(U.uL, nrm(Lw)); gl.uniform3fv(U.uInk, ink);
     gl.uniform1f(U.uAim, BT + DEPTH1); gl.uniform1f(U.uDark, v.dark ? 1 : 0);
-    // On a dark page a warm soft box behind and above the glass lights the backdrop that only the glass sees (the page
+    // On a dark page a soft box (daylight white) behind and above the glass lights the backdrop that only the glass sees (the page
     // around it is untouched), so light passes through the water and it reads as aqua, as in a dark-studio product shot.
-    gl.uniform3f(U.uGlow, v.dark ? 0.30 : 0, v.dark ? 0.26 : 0, v.dark ? 0.20 : 0);
+    gl.uniform3f(U.uGlow, v.dark ? 0.27 : 0, v.dark ? 0.30 : 0, v.dark ? 0.31 : 0);
     var c = v.ctx, k, y0, bh, list = bands || [[0, VH]];
     c.setTransform(1, 0, 0, 1, 0, 0); gl.clearColor(0, 0, 0, 0);
     // Only the rows that can change are traced again (the surface and what is seen through it, the floor's caustics, a
