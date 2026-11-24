@@ -62,6 +62,34 @@ setTimeout(() => {
   // 7. one line says what the sky is doing
   const line = X.describe(X.solve(t("2026-11-23T18:10:00+05:30")));
   ok("one tap says it in words: sun, cloud, moon, and the next sunrise or sunset", /^Your sky now: sun \d+° (above|below) the horizon/.test(line) && /moon/.test(line) && /(cloud|clear)/.test(line), line);
+  // 7b. the lock by day (owner 2026-11-24: "Live sky is gone from lock screen"): the full sky, the sun in view, a scrim only behind the card
+  X.placeSource = () => ({ lat: 19, lon: 72.8 });
+  const card = { l: 24, r: 366, t: 196, b: 683 }, lumPx = (px, i) => .2126 * lin(px[i]) + .7152 * lin(px[i + 1]) + .0722 * lin(px[i + 2]);
+  let open = 0, behind = 0, sunOk = [];
+  for (const hm of ["07:00", "11:00", "15:59", "17:45"]) {
+    const f = X.lockFrame(t("2026-11-24T" + hm + ":00+05:30"), 390, 844, card);
+    for (let i = 0; i < f.gw * f.gh; i++) { const l = lumPx(f.px, i * 4); if (f.mask[i] === 0) open = Math.max(open, l); else if (f.mask[i] >= .999) behind = Math.max(behind, l); }
+    const s = f.sun; sunOk.push(hm + (s.inView && (s.y > card.b || s.y < card.t) ? " in view" : " MISSING " + JSON.stringify(s)));
+  }
+  ok("the lock by day applies no global ceiling: the open sky is far brighter than the text ceiling", open > .3 && open > 2 * X.CAP, open.toFixed(3));
+  ok("behind the card the scrim still holds every pixel under the ceiling (white text stays AA)", behind <= X.CAP + .005, behind.toFixed(3));
+  ok("the sun is in the lock's view by day, never behind the card", sunOk.every(x => / in view$/.test(x)), sunOk.join("; "));
+  ok("the scrim is soft and local: full behind the card, none in the open sky", X.scrimWeight(195, 400, card) === 1 && X.scrimWeight(195, 20, card) === 0 && X.scrimWeight(195, card.b + 30, card) > 0 && X.scrimWeight(195, card.b + 30, card) < 1);
+  const night = X.lockFrame(t("2026-11-24T22:00:00+05:30"), 390, 844, card);
+  ok("the night lock keeps its own sky (south or the moon, the horizon at the bottom)", night.a0 >= 0 && night.sun.inView === false);
+  ok("no clouds are drawn when cloud_cover is unknown (no consent yet): a clear sky, never invented clouds", X.weatherSource() === null && X.cloudPlan(X.solve(Date.now()).w, 3).draw === false
+    && X.cloudPlan({ real: true, cloud: 40, kind: "clear" }, 3.4).draw === true && X.cloudPlan({ real: false, cloud: 70, kind: "rain" }, 5).draw === false);
+  // the caption: a city, or whole degrees; never the rounded place itself
+  X.placeSource = () => ({ lat: 19.07, lon: 72.88 });
+  const c1 = X.caption(X.solve(t("2026-11-24T15:59:00+05:30")));
+  X.placeSource = () => ({ lat: 23.34, lon: 80.123 });
+  const c2 = X.caption(X.solve(t("2026-11-24T15:59:00+05:30")));
+  X.placeSource = () => null;
+  const c3 = X.caption(X.solve(t("2026-11-24T15:59:00+05:30")));
+  ok("the caption names the city near the person's place, the sun and the cloud reading", /^Your sky over Mumbai · sun \d+° · no cloud reading yet$/.test(c1), c1);
+  ok("the caption names no place more precise than a city: whole degrees away from a known city, never decimals", c2 === c2.replace(/\d+\.\d+/g, "") && /Your sky over 23°N 80°E/.test(c2) && !/\d+\.\d/.test(c1 + c3), c2 + " | " + c3);
+  ok("the time zone's city when no place is shared (Asia/Kolkata reads as Mumbai)", X.placeName({ lat: 19, lon: 72.8, src: "zone" }) === "Mumbai" && X.placeName({ lat: 0, lon: 0, src: "zone" }) === "" && X.placeName({ lat: 0, lon: 0, src: "none" }) === "");
+  ok("the lock carries the caption style in the shared look", /\.sx-sky-cap\{[^}]*position:absolute/.test(html));
   X.placeSource = () => ({ lat: 19, lon: 72.8 });
   ok("the daypart follows the real sun", X.daypart(t("2026-11-23T13:00:00+05:30")) === "day" && X.daypart(t("2026-11-23T23:30:00+05:30")) === "night");
   X.placeSource = ps;

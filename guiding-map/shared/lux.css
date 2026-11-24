@@ -42,6 +42,7 @@ html[data-daypart="dawn"] .sx-sky::before,html[data-daypart="dusk"] .sx-sky::bef
 html[data-daypart] :is(.sx-sky,header).sx-live::after,.sx-live.sx-sky::before{content:none}
 .sx-sky-line{position:absolute;inset-inline-start:10px;bottom:8px;z-index:3;max-width:calc(100% - 20px);font-size:12.5px;line-height:1.35;font-weight:500;padding:5px 11px;border-radius:12px;background:rgba(6,10,20,.8);color:#f6f8fb;pointer-events:none;opacity:0;transform:translateY(4px);transition:opacity .3s ease,transform .3s ease}
 .sx-sky-line.on{opacity:1;transform:none}
+.sx-sky-cap{position:absolute;top:calc(100% + 12px);inset-inline:0;margin-inline:auto;width:max-content;max-width:100%;font-size:12px;line-height:1.35;font-weight:400;letter-spacing:.02em;color:#dfe4ec;padding:4px 11px;border-radius:999px;background:rgba(6,10,20,.42);pointer-events:none;text-align:center}
 @media (prefers-reduced-motion: reduce){.sx-sky-line{transition:none;transform:none}}
 
 /* The crest catches the light (immersive-real, owner 2026-11-23): a slow gold glint crosses the seal every 14 seconds, the way
