@@ -40,8 +40,8 @@ jobs:
     strategy:
       fail-fast: false    # a red shard must not hide what the others found
       matrix:
-        shard: [1, 2, 3, 4]
-        total: [4]
+        shard: [1, 2, 3, 4, 5]
+        total: [5]
     steps:
       - uses: actions/checkout@v7
         with: { fetch-depth: 0 }          # the stale-update journey needs history
