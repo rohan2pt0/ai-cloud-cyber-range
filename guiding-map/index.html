@@ -6,7 +6,7 @@
      until the Life OS has drawn its own first screen; a locked app is locked from the very first frame. A 4-second release
      means a script error can never leave a blank page. -->
 <style>html.gm-boot body>*:not(#gmLock),html.gm-locked body>*:not(#gmLock){visibility:hidden}html.gm-boot,html.gm-boot body,html.gm-locked,html.gm-locked body{background:#0b1628}</style>
-<script>(function(){var d=document.documentElement;d.classList.add("gm-boot");try{if(localStorage.getItem("gm_lock"))d.classList.add("gm-locked");}catch(e){}setTimeout(function(){d.classList.remove("gm-boot");},4000);})();</script>
+<script>(function(){var d=document.documentElement;d.classList.add("gm-boot");try{var lk=localStorage.getItem("gm_lock");if(lk&&lk.indexOf('"off":true')<0)d.classList.add("gm-locked");}catch(e){}setTimeout(function(){d.classList.remove("gm-boot");},4000);})();</script>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>The Guiding Map</title>
 <meta name="theme-color" content="#f6f3ee" media="(prefers-color-scheme: light)">
@@ -16681,7 +16681,10 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   // A lock record is real only if it can be satisfied (a credential and a recovery-code hash): a damaged one must never lock
   // the person out of their own record for ever (robustness audit, 2026-11-14). Anyone able to damage it could already
   // read the device's storage, so treating it as "no lock" gives nothing away.
-  function rec() { try { var r = JSON.parse(localStorage.getItem(KEY) || "null"); return r && typeof r === "object" && typeof r.id === "string" && r.id && typeof r.salt === "string" && r.salt && typeof r.hash === "string" && r.hash ? r : null; } catch (e) { return null; } }
+  function stored() { try { var r = JSON.parse(localStorage.getItem(KEY) || "null"); return r && typeof r === "object" && typeof r.id === "string" && r.id && typeof r.salt === "string" && r.salt && typeof r.hash === "string" && r.hash ? r : null; } catch (e) { return null; } }
+  // Off keeps the record (owner, 2026-11-24): the recovery code's salted hash and the credential id stay, marked off, so turning
+  // the lock back on reuses the code the person already saved (threat lk-i2). Only the app's Erase removes them.
+  function rec() { var r = stored(); return r && !r.off ? r : null; }
   function put(r) { try { if (r) localStorage.setItem(KEY, JSON.stringify(r)); else localStorage.removeItem(KEY); } catch (e) {} }
   function b64(buf) { var s = "", b = new Uint8Array(buf); for (var i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
   function unb64(t) { t = String(t).replace(/-/g, "+").replace(/_/g, "/"); while (t.length % 4) t += "="; var s = atob(t), b = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) b[i] = s.charCodeAt(i); return b; }
@@ -16733,32 +16736,84 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     });
   };
   window.gmLockNow = function () { if (!rec()) return; locked = true; paint(); };
+  function makeCred() {
+    return navigator.credentials.create({ publicKey: {
+      rp: { name: "Life OS", id: location.hostname }, user: { id: rnd(16), name: "life-os", displayName: "Life OS" }, challenge: rnd(32),
+      pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+      authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "discouraged" }, timeout: 60000 } });
+  }
+  function getCred(r) { return navigator.credentials.get({ publicKey: { challenge: rnd(32), allowCredentials: [{ type: "public-key", id: unb64(r.id) }], userVerification: "required", timeout: 60000 } }).then(function (c) { if (!c) throw new Error("none"); return c; }); }
+  // The person is present: the device's fingerprint or face (a fresh random challenge each time), else the recovery code.
+  // Turning the lock off and making a new code both need it, so a phone left unlocked cannot quietly drop the lock (lk-e2).
+  function present(r, why) {
+    return getCred(r).then(function () { return true; }, function () {
+      var c = null; try { c = window.prompt("Your fingerprint or face did not confirm. Type your recovery code to " + why + "."); } catch (x) {}
+      if (!c) return false;
+      return hashCode(c, unb64(r.salt)).then(function (h) { return h === r.hash; });
+    });
+  }
+  function done(t) { if (typeof gmToast === "function") gmToast(t); if (window.renderAll) renderAll(); }
   window.gmLockEnable = function () {
+    var kept = stored();
     return gmLockSupported().then(function (ok) {
       if (!ok) throw new Error("This browser cannot use the device lock.");
-      return navigator.credentials.create({ publicKey: {
-        rp: { name: "Life OS", id: location.hostname }, user: { id: rnd(16), name: "life-os", displayName: "Life OS" }, challenge: rnd(32),
-        pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
-        authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "discouraged" }, timeout: 60000 } });
-    }).then(function (cred) {
+      if (!kept) return makeCred().then(function (c) { return b64(c.rawId); });
+      // Back on: one touch proves the person is here; if this device's passkeys were reset, a new one is made. The code stays.
+      return getCred(kept).then(function () { return kept.id; }, function () { return makeCred().then(function (c) { return b64(c.rawId); }); });
+    }).then(function (id) {
+      if (kept) {
+        kept.id = id; delete kept.off; kept.at = Date.now(); put(kept);
+        window._gmLockCode = null; window._gmLockBack = true; locked = false; if (window.renderAll) renderAll(); return null;
+      }
       var code = codeGen(), salt = rnd(16);
       return hashCode(code, salt).then(function (h) {
-        put({ id: b64(cred.rawId), salt: b64(salt), hash: h, idle: 300, at: Date.now() });
-        window._gmLockCode = code; locked = false; if (window.renderAll) renderAll(); return code;
+        put({ id: id, salt: b64(salt), hash: h, idle: 300, at: Date.now() });
+        window._gmLockCode = code; window._gmLockBack = false; locked = false; if (window.renderAll) renderAll(); return code;
       });
     });
   };
   window.gmLockStart = function () {
-    gmLockEnable().catch(function (e) {
+    return gmLockEnable().catch(function (e) {
       if (typeof gmToast === "function") gmToast(e && e.name === "NotAllowedError" ? "Not turned on. You can try again any time." : (e && e.message) || "The lock could not be turned on.");
     });
   };
   window.gmLockDisable = function () {
-    if (locked) return;
-    if (!confirm("Turn off the privacy lock? Anyone holding this device could then open your Life OS.")) return;
-    put(null); window._gmLockCode = null; if (window.renderAll) renderAll();
+    var r = rec(); if (locked || !r) return Promise.resolve(false);
+    if (!confirm("Turn off the privacy lock? Anyone holding this device could then open your Life OS. Your recovery code stays the same if you turn it back on.")) return Promise.resolve(false);
+    return present(r, "turn the lock off").then(function (yes) {
+      if (!yes) { done("Not turned off: it needs your fingerprint, face or recovery code."); return false; }
+      r.off = true; put(r); window._gmLockCode = null; window._gmLockBack = false;
+      done("The lock is off. Turn it back on any time: your recovery code stays the same."); return true;
+    });
   };
-  window.gmLockIdle = function (sec) { var r = rec(); if (!r) return; r.idle = sec; put(r); if (window.renderAll) renderAll(); };
+  // A new recovery code: irreversible for the old one, so it is folded away, offers keeping the code first, needs the words
+  // typed and the person present (friction-by-consequence; threat lk-t2).
+  window.gmLockNewAsk = function () {
+    if (locked || !rec() || typeof gmDlg !== "function") return;
+    gmDlg('<div style="font-weight:800;font-size:15px;margin-bottom:8px">Make a new recovery code?</div>'
+      + '<div style="font-size:13px;line-height:1.55;margin-bottom:10px">Still have the code you saved? Keep it: there is nothing to do. A new code makes the old one stop working, for good, and you will need to save the new one.</div>'
+      + '<button class="btn-sm" onclick="gmClose()" style="background:var(--gold);color:#0d1f35;font-weight:800;padding:9px 18px;margin-bottom:12px">Keep my current code</button>'
+      + '<label class="f-label" for="gmLockNewIn">Type NEW CODE to confirm</label><input type="text" id="gmLockNewIn" autocomplete="off" autocapitalize="characters" spellcheck="false">'
+      + '<button class="btn-sm" id="gmLockNewGo" disabled style="background:transparent;color:var(--text);border:1px solid var(--muted);padding:9px 14px">Make a new code</button>');
+    var inp = document.getElementById("gmLockNewIn"), go = document.getElementById("gmLockNewGo");
+    if (!inp || !go) return;
+    inp.addEventListener("input", function () { go.disabled = inp.value.trim().toUpperCase() !== "NEW CODE"; });
+    go.addEventListener("click", function () { var t = inp.value; if (typeof gmClose === "function") gmClose(); gmLockNewCode(t); });
+  };
+  window.gmLockNewCode = function (typed) {
+    var r = rec();
+    if (locked || !r) return Promise.resolve(null);
+    if (String(typed || "").trim().toUpperCase() !== "NEW CODE") { done("Nothing changed: your current code still works."); return Promise.resolve(null); }
+    return present(r, "make a new code").then(function (yes) {
+      if (!yes) { done("Nothing changed: it needs your fingerprint, face or current code."); return null; }
+      var code = codeGen(), salt = rnd(16);
+      return hashCode(code, salt).then(function (h) {
+        r.salt = b64(salt); r.hash = h; r.at = Date.now(); put(r);
+        window._gmLockCode = code; window._gmLockBack = false; if (window.renderAll) renderAll(); return code;
+      });
+    });
+  };
+  window.gmLockIdle = function (sec) { var r = rec(); if (!r) return; window._gmLockBack = false; r.idle = sec; put(r); if (window.renderAll) renderAll(); };
   window.gmLockSaved = function () { window._gmLockCode = null; if (window.renderAll) renderAll(); };
   // The Ops card: on by choice, one tap, plain words.
   var SUP = null; gmLockSupported().then(function (ok) { SUP = ok; try { if (window.curTab === "ops" && window.renderAll) renderAll(); } catch (e) {} });
@@ -16772,14 +16827,18 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     }
     if (r) {
       var idle = r.idle || 300;
-      return h + '<p style="font-size:13px;margin:8px 0">Opens with this device’s fingerprint, face or Windows Hello. Locks when you are away for '
+      return h + (window._gmLockBack ? '<p class="gm-lock-back" style="font-size:13px;margin:8px 0;font-weight:700">Back on. Your recovery code is the same one you saved before.</p>' : '')
+        + '<p style="font-size:13px;margin:8px 0">Opens with this device’s fingerprint, face or Windows Hello. Locks when you are away for '
         + (idle >= 3600 ? "an hour" : Math.round(idle / 60) + " minutes") + '; the app switcher shows nothing.</p>'
         + '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-sm" onclick="gmLockNow()">Lock now</button>'
         + [[60, "1 min"], [300, "5 min"], [900, "15 min"]].map(function (o) { return '<button class="btn-sm" aria-pressed="' + (idle === o[0]) + '" style="' + (idle === o[0] ? "background:var(--gold);color:#0d1f35" : "") + '" onclick="gmLockIdle(' + o[0] + ')">' + o[1] + '</button>'; }).join("")
         + '<button class="gm-quiet" onclick="gmLockDisable()">Turn off…</button></div>'
+        + '<button class="gm-quiet gm-lock-new" onclick="gmLockNewAsk()">Make a new recovery code…</button>'
         + '<p style="font-size:11.5px;color:var(--muted);margin:8px 0 0">The lock guards the screen. Your data on this device is also protected by the phone’s own lock and encryption, and your backups are encrypted.</p></div>';
     }
     if (SUP === false) return h + '<p style="font-size:13px;margin:8px 0">This browser cannot use your fingerprint or face here. Your phone’s own screen lock protects the app; your backups are encrypted.</p></div>';
+    if (stored()) return h + '<p style="font-size:13px;margin:8px 0">Off. Turn it back on with one touch of your fingerprint or face. Your recovery code stays the same one you saved.</p>'
+      + '<button class="btn-sm" style="background:var(--gold);color:#0d1f35;font-weight:800" onclick="gmLockStart()">Turn the lock back on</button></div>';
     return h + '<p style="font-size:13px;margin:8px 0">Open your Life OS with your fingerprint or face, like your bank app. No new password. It locks when you step away.</p>'
       + '<button class="btn-sm" style="background:var(--gold);color:#0d1f35;font-weight:800" onclick="gmLockStart()">Turn on the lock</button></div>';
   };
