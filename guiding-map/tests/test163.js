@@ -43,6 +43,16 @@ setTimeout(() => {
   ok("the meniscus curls up over water's capillary length, about 2.7 mm", Math.abs(W.LC - 2.73) < 0.03 && W.MEN > 2 && W.MEN < 4, W.LC);
   const wsrc0 = fs.readFileSync(path.join(__dirname, '..', 'shared', 'water.js'), 'utf8');
   ok("the tracer uses measured optics: water 1.333, soda-lime 1.52, pure water's absorption, the gold's studio, ACES", /NW=1\.333/.test(wsrc0) && /NG=1\.52/.test(wsrc0) && /vec3\(\.45,\.06,\.01\)/.test(wsrc0) && /SXMat\.STUDIO/.test(wsrc0) && /aces\(/.test(wsrc0) && !!w.SXMat && /vec3 env\(/.test(w.SXMat.STUDIO));
+  // the speed guard: the median of the last 8 frames over 12 ms halves the resolution, then gives up for the 2D water
+  const G = () => ({ lvl: 0, ms: [] }), feed = (g, list) => { list.forEach(m => W.guard(g, m)); return g.lvl; };
+  ok("fast frames keep full resolution", feed(G(), Array(40).fill(6)) === 0);
+  ok("a few slow frames do not trip it (it reads the median of 8)", feed(G(), [6, 6, 30, 6, 6, 40, 6, 6, 6, 50, 6, 6]) === 0);
+  ok("8 slow frames drop to half resolution", feed(G(), Array(8).fill(20)) === 1);
+  ok("still slow at half: the 2D water for the session", feed(G(), Array(16).fill(20)) === 2 && W.GUARD_KEY === "sx_water_2d" && /sessionStorage\.setItem\(GUARD_KEY/.test(fs.readFileSync(path.join(__dirname, '..', 'shared', 'water.js'), 'utf8')));
+  ok("half resolution that is fast enough stays there", feed(G(), Array(8).fill(20).concat(Array(24).fill(8))) === 1);
+  ok("a shader not ready in 1.5 s means half resolution, never back to full", (() => { const g = G(); W.guardLate(g); return g.lvl === 1 && feed(g, Array(8).fill(5)) === 1; })());
+  ok("the 2D water is final", (() => { const g = { lvl: 2, ms: [] }; return feed(g, Array(16).fill(1)) === 2; })());
+  ok("the compile never blocks: parallel compile only, else the 2D water; a 1.5 s watch", (() => { const t = fs.readFileSync(path.join(__dirname, '..', 'shared', 'water.js'), 'utf8'); return /KHR_parallel_shader_compile/.test(t) && /if \(!GL\.ext\) \{ GL\.ok = false; return false; \}/.test(t) && /1500\)/.test(t); })());
   // no loop, no canvas in tests: the SVG with its words remains
   const r0 = rafs; W.scan(w.document); W.step(W.make(d), 1 / 60, 0);
   ok("no animation frame is requested by the water in tests", rafs === r0, rafs - r0);
