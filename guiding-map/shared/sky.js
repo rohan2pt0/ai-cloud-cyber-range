@@ -4,7 +4,8 @@
      at its own pace; the brightest wear a soft glow and fine diffraction spikes;
    - the Milky Way: a curved band of glowing dust with a warm core, cool edges, dark lanes and thousands of faint stars;
    - one distant spiral galaxy, small and faint, as the eye sees one on a dark night;
-   - meteors at an irregular pace, and now and then a slow comet with a glowing coma and a long soft tail.
+   - meteors at the real rate of tonight's sky, and a comet only while a real one is bright enough to see.
+   The live sky (below) draws the real night: catalogue stars, planets, the Milky Way, showers and comets (renderNight).
    Decoration only: the canvas is aria-hidden and ignores pointers. Reduced motion, an automated browser or a hidden page
    gets one still frame and no timer; the loop ends by itself when its element leaves the page.
    Use: SXSky.mount(element) -> { stop() }. The element should be positioned and carry its own dark background colour. */
@@ -17,6 +18,9 @@
   var TEMPS = [[170, 196, 255], [204, 220, 255], [248, 247, 255], [255, 244, 222], [255, 222, 180], [255, 196, 150]];
   function tint(r) { var x = r(); return TEMPS[x < .12 ? 0 : x < .3 ? 1 : x < .62 ? 2 : x < .82 ? 3 : x < .94 ? 4 : 5]; }
 
+  // The decorative sky keeps to the real sky's pace: meteors at tonight's real rate, a comet only while a real one is bright.
+  function meteorGap() { var hr = 6; try { hr = API.meteorsNow(); } catch (e) {} return -Math.log(1 - Math.random()) * 3.6e6 / Math.max(.3, hr * .4); }
+  function realComet() { try { return cometsAt(Date.now()).length > 0; } catch (e) { return false; } }
   function mount(el, opts) {
     opts = opts || {};
     // The live sky (below): the lock asks for the person's real sky; the stars, galaxy and meteors become its night layer.
@@ -33,7 +37,7 @@
     var calm = !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
     var still = calm || navigator.webdriver || /jsdom/i.test(navigator.userAgent || "");
     var W = 0, H = 0, D = 1, stars = [], bg = null, gal = null, meteors = [], comet = null, alive = true, raf = 0, last = 0;
-    var nextMeteor = 3000 + Math.random() * 5000, nextComet = 9000 + Math.random() * 20000, t0 = 0;
+    var nextMeteor = meteorGap(), nextComet = 9000 + Math.random() * 20000, t0 = 0;
     var R = rng(opts.seed || 20261114);
 
     function layout() {
@@ -343,8 +347,8 @@
       if (gal) drawGalaxy(still ? 41000 : t);
       for (var i = 0; i < stars.length; i++) star(stars[i], t);
       if (!still) {
-        nextMeteor -= dt; if (nextMeteor <= 0) { spawnMeteor(); nextMeteor = 6000 + Math.random() * 9000; }
-        nextComet -= dt; if (!comet && nextComet <= 0) { spawnComet(); nextComet = 90000 + Math.random() * 60000; }
+        nextMeteor -= dt; if (nextMeteor <= 0) { spawnMeteor(); nextMeteor = meteorGap(); }
+        nextComet -= dt; if (!comet && nextComet <= 0) { if (realComet()) spawnComet(); nextComet = 90000 + Math.random() * 60000; }
         meteors = meteors.filter(function (m) { m.life += dt; if (m.life < m.max) { drawMeteor(m); return true; } return false; });
         if (comet) { comet.life += dt; if (comet.life < comet.max) drawComet(comet); else comet = null; }
       } else if (comet) drawComet(comet);
@@ -357,7 +361,7 @@
       if (cv.parentNode) cv.parentNode.removeChild(cv);
     }
     layout();
-    if (opts.comet) { spawnComet(); comet.life = comet.max * .3; }   // a hero screen may open with the comet already in the sky
+    if (opts.comet && realComet()) { spawnComet(); comet.life = comet.max * .3; }   // a comet only while a real one is bright
     if (opts.offscreen) return { cv: cv, resize: layout, stop: function () { alive = false; },
       paint: function (t) { var dt = last ? Math.min(150, Math.max(0, t - last)) : 16; last = t; draw(still ? 0 : t, dt); } };
     if (still) frame(0); else raf = requestAnimationFrame(frame);
@@ -591,7 +595,7 @@
     parts.push(s.alt >= -.833 ? t("sun") + " " + a + "° " + t("above the horizon") : t("sun") + " " + a + "° " + t("below the horizon")
       + (st.band === "night" ? "" : " (" + t(st.band + " twilight") + ")"));
     parts.push(w.real ? (w.kind === "fog" ? t("fog") : Math.round(w.cloud) + "% " + t("cloud") + (w.kind === "clear" ? "" : ", " + t(w.kind))) : t("no weather reading, drawn clear"));
-    parts.push(t(m.phase + " moon") + (m.alt > 0 ? "" : " " + t("(not up)")));
+    parts.push(t(/moon$/.test(m.phase) ? m.phase : m.phase + " moon") + (m.alt > 0 ? "" : " " + t("(not up)")));
     var line = t("Your sky now") + ": " + parts.join(", ");
     if (st.ev && st.ev.inMin <= 180) line += " · " + t(st.ev.kind) + " " + t("in") + " " + (st.ev.inMin < 60 ? st.ev.inMin + " min" : Math.floor(st.ev.inMin / 60) + " h " + (st.ev.inMin % 60) + " min");
     return line;
@@ -601,8 +605,368 @@
     return h < -12 ? "night" : h < 6 ? (am ? "dawn" : "dusk") : "day";
   }
 
+  /* ── The real night sky (owner 2026-11-24: "the stars the person would see if they looked up right now") ──────────────
+     Faithful, never invented. Sources, all public:
+     - stars: the Yale Bright Star Catalogue, 5th revised edition (Hoffleit & Warren 1991, public domain), every star to V 5.3
+       (shared/stars.js), precessed from J2000 to the date (Meeus, Astronomical Algorithms, ch. 21), placed by local sidereal
+       time from the IAU 1982 GMST formula (Meeus 12.4);
+     - a star's light: flux = 10^(-0.4 m), shown through the eye's power-law response (Stevens, brightness ~ flux^0.42); its
+       colour from B-V by Ballesteros (2012) to temperature, then the Planckian locus (Kim et al. 2002) to sRGB;
+     - the air: Kasten-Young (1989) air mass; extinction 0.25 mag per air mass in V and 0.15 more in B (a humid low site),
+       which dims and reddens a low star; scintillation grows as air mass^1.75 (Young 1967), so stars twinkle near the
+       horizon and planets (discs, not points) stay steady;
+     - what can be seen: a limiting magnitude from the real twilight, the moon's phase and height and the cloud cover; an
+       unknown site is taken as a dark suburb (6.0) because the app does not know the person's light pollution;
+     - the Milky Way: a smooth model of the light along the real galactic plane (IAU 1958 pole, J2000), brightest toward the
+       centre in Sagittarius, with the Great Rift, the Coalsack, the bright star clouds, the Magellanic Clouds and M31;
+     - planets: JPL's approximate Keplerian elements, table 1, 1800-2050 (Standish), brightness from the Astronomical
+       Almanac's phase laws (Explanatory Supplement 1992), with Saturn's ring tilt;
+     - meteors: the IMO working list of meteor showers (peak by solar longitude, ZHR, radiant, speed, population index);
+       the seen rate is ZHR x sin(radiant height) / r^(6.5 - limiting magnitude), as the IMO defines it, plus the sporadic
+       background (about 8 an hour, more before dawn);
+     - comets: only real ones, from their published orbits (MPC elements), drawn only when brighter than magnitude 5. */
+  var B64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_", CAT = null;
+  function b64(s, i, n) { var v = 0; for (var k = 0; k < n; k++) v = v * 64 + B64.indexOf(s.charAt(i + k)); return v; }
+  function gmst(ms) {                                        // Greenwich mean sidereal time, degrees (Meeus 12.4)
+    var d = julian(ms) - 2451545, T = d / 36525;
+    return n360(280.46061837 + 360.98564736629 * d + .000387933 * T * T - T * T * T / 38710000);
+  }
+  function precess(ra, dec, T) {                             // J2000 -> the date, T Julian centuries (Meeus 21.2-21.4)
+    var z0 = (2306.2181 * T + .30188 * T * T + .017998 * T * T * T) / 3600, z = (2306.2181 * T + 1.09468 * T * T + .018203 * T * T * T) / 3600;
+    var th = (2004.3109 * T - .42665 * T * T - .041833 * T * T * T) / 3600, cd = Math.cos(dec * RAD), sd = Math.sin(dec * RAD), a = (ra + z0) * RAD;
+    var A = cd * Math.sin(a), B = Math.cos(th * RAD) * cd * Math.cos(a) - Math.sin(th * RAD) * sd, C = Math.sin(th * RAD) * cd * Math.cos(a) + Math.cos(th * RAD) * sd;
+    return [n360(Math.atan2(A, B) / RAD + z), Math.asin(clamp(C, -1, 1)) / RAD];
+  }
+  function catalogue(ms) {                                   // decoded once, precessed once a year
+    var S = window.SXStars; if (!S) return null;
+    var yr = new Date(ms).getUTCFullYear();
+    if (CAT && CAT.yr === yr) return CAT;
+    var n = S.n, T = (Date.UTC(yr, 6, 1) - 946728000000) / 3155760e6, c = { yr: yr, n: n, ra: new Float32Array(n), dec: new Float32Array(n), m: new Float32Array(n), bv: new Float32Array(n) };
+    for (var i = 0; i < n; i++) {
+      var v = b64(S.d, i * 7, 7), b = v % 128; v = Math.floor(v / 128);
+      var mm = v % 256; v = Math.floor(v / 256);
+      var d = v % 8192, a = Math.floor(v / 8192), p = precess(a / 16384 * 360, d / 8191 * 180 - 90, T);
+      c.ra[i] = p[0]; c.dec[i] = p[1]; c.m[i] = mm / 30 - 2; c.bv[i] = b / 50 - .5;
+    }
+    c.cons = (S.c || []).map(function (k) { var L = []; for (var j = 0; j < k[2].length; j += 4) L.push([b64(k[2], j, 2), b64(k[2], j + 2, 2)]); return { ab: k[0], name: k[1], L: L }; });
+    CAT = c; return c;
+  }
+  function starAltAz(ra, dec, ms, lat, lon) {                // apparent altitude (with refraction) and azimuth
+    var h = horizontal(dec, n360(gmst(ms) + lon - ra), lat); h.alt += refraction(h.alt); return h;
+  }
+  function toEquatorial(alt, az, lst, lat) {                 // the inverse: a direction in the sky -> RA, Dec of the date
+    var sa = Math.sin(alt * RAD), ca = Math.cos(alt * RAD), sl = Math.sin(lat * RAD), cl = Math.cos(lat * RAD), z = az * RAD;
+    var dec = Math.asin(clamp(sl * sa + cl * ca * Math.cos(z), -1, 1)), ha = Math.atan2(-Math.sin(z) * ca, cl * sa - sl * ca * Math.cos(z));
+    return [n360(lst - ha / RAD), dec / RAD];
+  }
+  function galactic(ra, dec) {                               // J2000 equatorial -> galactic l, b (degrees)
+    var ag = 192.85948 * RAD, dg = 27.12825 * RAD, d = dec * RAD, x = ra * RAD - ag;
+    var sb = Math.sin(d) * Math.sin(dg) + Math.cos(d) * Math.cos(dg) * Math.cos(x);
+    var l = 122.93192 - Math.atan2(Math.cos(d) * Math.sin(x), Math.sin(d) * Math.cos(dg) - Math.cos(d) * Math.sin(dg) * Math.cos(x)) / RAD;
+    return [n360(l), Math.asin(clamp(sb, -1, 1)) / RAD];
+  }
+  // B-V -> temperature (Ballesteros 2012) -> the Planckian locus (Kim et al. 2002) -> linear sRGB, normalised, a quarter toward
+  // white as the dark-adapted eye sees star colour (the rods see none).
+  var BVC = {};
+  function bvRGB(bv) {
+    var key = Math.round(clamp(bv, -.4, 2) * 50); if (BVC[key]) return BVC[key];
+    bv = key / 50;
+    var T = clamp(4600 * (1 / (.92 * bv + 1.7) + 1 / (.92 * bv + .62)), 1700, 25000), t3 = T * T * T, x, y;
+    x = T <= 4000 ? -.2661239e9 / t3 - .2343589e6 / (T * T) + .8776956e3 / T + .17991 : -3.0258469e9 / t3 + 2.1070379e6 / (T * T) + .2226347e3 / T + .24039;
+    y = T <= 2222 ? -1.1063814 * x * x * x - 1.3481102 * x * x + 2.18555832 * x - .20219683
+      : T <= 4000 ? -.9549476 * x * x * x - 1.37418593 * x * x + 2.09137015 * x - .16748867 : 3.081758 * x * x * x - 5.8733867 * x * x + 3.75112997 * x - .37001483;
+    var X = x / y, Z = (1 - x - y) / y, c = [3.2406 * X - 1.5372 - .4986 * Z, -.9689 * X + 1.8758 + .0415 * Z, .0557 * X - .204 + 1.057 * Z];
+    var mx = Math.max(c[0], c[1], c[2]);
+    var out = c.map(function (v) { v = Math.max(0, v / mx) * .75 + .25; return Math.round(255 * (v <= .0031308 ? 12.92 * v : 1.055 * Math.pow(v, 1 / 2.4) - .055)); });
+    out.T = Math.round(T); BVC[key] = out; return out;
+  }
+  // The planets: JPL approximate Keplerian elements, table 1 (valid 1800-2050): a, e, I, L, long. perihelion, node, and rates per century.
+  var PLANETS = [
+    ["Mercury", [.38709927, .00000037], [.20563593, .00001906], [7.00497902, -.00594749], [252.2503235, 149472.67411175], [77.45779628, .16047689], [48.33076593, -.12534081], .93],
+    ["Venus", [.72333566, .0000039], [.00677672, -.00004107], [3.39467605, -.0007889], [181.9790995, 58517.81538729], [131.60246718, .00268329], [76.67984255, -.27769418], .82],
+    ["Earth", [1.00000261, .00000562], [.01671123, -.00004392], [-.00001531, -.01294668], [100.46457166, 35999.37244981], [102.93768193, .32327364], [0, 0], 0],
+    ["Mars", [1.52371034, .00001847], [.0933941, .00007882], [1.84969142, -.00813131], [-4.55343205, 19140.30268499], [-23.94362959, .44441088], [49.55953891, -.29257343], 1.36],
+    ["Jupiter", [5.202887, -.00011607], [.04838624, -.00013253], [1.30439695, -.00183714], [34.39644051, 3034.74612775], [14.72847983, .21252668], [100.47390909, .20469106], .83],
+    ["Saturn", [9.53667594, -.0012506], [.05386179, -.00050991], [2.48599187, .00193609], [49.95424423, 1222.49362201], [92.59887831, -.41897216], [113.66242448, -.28867794], 1.04]];
+  var EPS = 23.43928 * RAD;
+  function kepler(M, e) {                                    // eccentric anomaly, radians, for any e < 1 (Danby's start, Newton)
+    M = Math.atan2(Math.sin(M), Math.cos(M));
+    var E = M + .85 * e * (Math.sin(M) < 0 ? -1 : 1);
+    for (var k = 0; k < 40; k++) { var dE = (E - e * Math.sin(E) - M) / (1 - e * Math.cos(E)); E -= dE; if (Math.abs(dE) < 1e-10) break; }
+    return E;
+  }
+  function orbitXYZ(a, e, I, w, node, E) {                   // heliocentric ecliptic J2000 from the elements (degrees), AU
+    var xp = a * (Math.cos(E) - e), yp = a * Math.sqrt(1 - e * e) * Math.sin(E), cw = Math.cos(w * RAD), sw = Math.sin(w * RAD), cO = Math.cos(node * RAD), sO = Math.sin(node * RAD), cI = Math.cos(I * RAD), sI = Math.sin(I * RAD);
+    return [(cw * cO - sw * sO * cI) * xp + (-sw * cO - cw * sO * cI) * yp, (cw * sO + sw * cO * cI) * xp + (-sw * sO + cw * cO * cI) * yp, sw * sI * xp + cw * sI * yp];
+  }
+  function helio(p, T) {
+    var el = function (k) { return p[k][0] + p[k][1] * T; }, a = el(1), e = el(2), I = el(3), L = el(4), wb = el(5), O = el(6);
+    return orbitXYZ(a, e, I, wb - O, O, kepler((L - wb) * RAD, e));
+  }
+  function geo(v, E) {                                        // heliocentric ecliptic -> geocentric equatorial J2000: RA, Dec, distance
+    var x = v[0] - E[0], y = v[1] - E[1], z = v[2] - E[2], ye = y * Math.cos(EPS) - z * Math.sin(EPS), ze = y * Math.sin(EPS) + z * Math.cos(EPS), d = Math.sqrt(x * x + y * y + z * z);
+    return { ra: n360(Math.atan2(ye, x) / RAD), dec: Math.asin(ze / d) / RAD, delta: d, vec: [x / d, ye / d, ze / d] };
+  }
+  function planetsAt(ms) {
+    var T = (julian(ms) - 2451545) / 36525, E = helio(PLANETS[2], T), R = Math.sqrt(E[0] * E[0] + E[1] * E[1] + E[2] * E[2]), out = [];
+    PLANETS.forEach(function (p) {
+      if (p[0] === "Earth") return;
+      var v = helio(p, T), r = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]), g = geo(v, E), D = g.delta;
+      var i = Math.acos(clamp((r * r + D * D - R * R) / (2 * r * D), -1, 1)) / RAD, l5 = 5 * Math.log10(r * D), m;
+      if (p[0] === "Mercury") m = -.42 + l5 + .038 * i - .000273 * i * i + .000002 * i * i * i;
+      else if (p[0] === "Venus") m = -4.4 + l5 + .0009 * i + .000239 * i * i - .00000065 * i * i * i;
+      else if (p[0] === "Mars") m = -1.52 + l5 + .016 * i;
+      else if (p[0] === "Jupiter") m = -9.4 + l5 + .005 * i;
+      else {                                                  // Saturn and its rings, by the tilt seen from Earth (pole RA 40.59, Dec 83.54)
+        var pa = 40.589 * RAD, pd = 83.537 * RAD, sB = Math.abs(-(Math.cos(pd) * Math.cos(pa) * g.vec[0] + Math.cos(pd) * Math.sin(pa) * g.vec[1] + Math.sin(pd) * g.vec[2]));
+        m = -8.88 + l5 + .044 * i - 2.6 * sB + 1.25 * sB * sB;
+      }
+      out.push({ name: p[0], ra: g.ra, dec: g.dec, r: r, delta: D, phase: i, mag: m, bv: p[7] });
+    });
+    return out;
+  }
+  // Comets: real ones only, from their published orbital elements (perihelion q AU, e, i, arg. of perihelion, node, perihelion
+  // time, and the magnitude law H + 5 log delta + 2.5 n log r). Neither is bright now, so none is drawn: the sky never lies.
+  // Add a new bright comet here from the MPC's elements when one comes.
+  var COMETS = [
+    { name: "1P/Halley", q: .5871, e: .96714, i: 162.26, w: 111.33, node: 58.42, T: Date.UTC(1986, 1, 9, 11), H: 5.5, n: 4 },
+    { name: "C/2020 F3 (NEOWISE)", q: .29462, e: .99918, i: 128.94, w: 37.28, node: 61.01, T: Date.UTC(2020, 6, 3, 16), H: 6.5, n: 4 }];
+  function cometsAt(ms, list) {
+    var T = (julian(ms) - 2451545) / 36525, E = helio(PLANETS[2], T), out = [];
+    (list || API.comets).forEach(function (c) {
+      var a = c.q / (1 - c.e), days = (ms - c.T) / 864e5, M = .9856076686 / Math.pow(a, 1.5) * days * RAD;
+      var v = orbitXYZ(a, c.e, c.i, c.w, c.node, kepler(M, c.e)), r = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]), g = geo(v, E);
+      var m = c.H + 5 * Math.log10(g.delta) + 2.5 * c.n * Math.log10(r);
+      if (m < 5) out.push({ name: c.name, ra: g.ra, dec: g.dec, mag: m, r: r });
+    });
+    return out;
+  }
+  // Meteor showers: the IMO working list (peak solar longitude J2000, ZHR, radiant RA/Dec, speed km/s, population index r,
+  // how fast activity falls away from the peak, B per degree before and after, and the activity window in degrees).
+  var SHOWERS = [
+    { id: "QUA", name: "Quadrantids", lam: 283.15, zhr: 80, ra: 230, dec: 49, v: 41, r: 2.1, B: [2, 2], span: 8 },
+    { id: "LYR", name: "Lyrids", lam: 32.32, zhr: 18, ra: 271, dec: 34, v: 49, r: 2.1, B: [.3, .3], span: 8 },
+    { id: "ETA", name: "Eta Aquariids", lam: 45.5, zhr: 50, ra: 338, dec: -1, v: 66, r: 2.4, B: [.08, .08], span: 25 },
+    { id: "PER", name: "Perseids", lam: 140, zhr: 100, ra: 48, dec: 58, v: 59, r: 2.2, B: [.2, .4], span: 25 },
+    { id: "ORI", name: "Orionids", lam: 208, zhr: 20, ra: 95, dec: 16, v: 66, r: 2.5, B: [.12, .12], span: 20 },
+    { id: "LEO", name: "Leonids", lam: 235.27, zhr: 15, ra: 152, dec: 22, v: 71, r: 2.5, B: [.39, .39], span: 12 },
+    { id: "GEM", name: "Geminids", lam: 262.2, zhr: 150, ra: 112, dec: 33, v: 35, r: 2.6, B: [.39, .81], span: 10 },
+    { id: "URS", name: "Ursids", lam: 270.7, zhr: 10, ra: 217, dec: 76, v: 33, r: 3, B: [.6, .6], span: 6 }];
+  function zhrNow(sh, lam) { var d = adiff(lam, sh.lam); return Math.abs(d) > sh.span ? 0 : sh.zhr * Math.pow(10, -sh.B[d < 0 ? 0 : 1] * Math.abs(d)); }
+  // The rate a person would see, per hour, over the whole sky: each active shower and the sporadic background.
+  function meteorRate(ms, lat, lon, lm) {
+    var s = sunAt(ms, lat, lon), out = { total: 0, showers: [] };
+    if (s.alt > -6) return out;
+    var lst = gmst(ms) + lon, solar = n360(s.ha + 180) / 15, diurnal = 1 + .4 * Math.cos((solar - 6) / 24 * TAU);
+    var spo = 8 * diurnal * Math.pow(3, lm - 6.5);
+    out.sporadic = spo; out.total = spo;
+    SHOWERS.forEach(function (sh) {
+      var z = zhrNow(sh, s.lam); if (z <= 0) return;
+      var h = horizontal(sh.dec, n360(lst - sh.ra), lat);
+      var hr = h.alt > 0 ? z * Math.sin(h.alt * RAD) * Math.pow(sh.r, lm - 6.5) : 0;
+      out.showers.push({ sh: sh, zhr: z, hr: hr, alt: h.alt, az: h.az }); out.total += hr;
+    });
+    return out;
+  }
+  // What can be seen: the faintest magnitude, from the twilight, the moon and the cloud (a dark suburb when nothing is known).
+  var LM0 = 6;
+  function limitMag(st) {
+    var h = st.sun.alt, tw = h >= 0 ? -5 : h > -18 ? -5 + (LM0 + 5) * Math.pow((-h) / 18, .6) : LM0;
+    var m = st.moon, mb = m.alt > 0 ? Math.pow(m.illum, 1.5) * Math.sin(Math.min(m.alt, 60) * RAD) / Math.sin(60 * RAD) : 0;
+    return Math.min(LM0, tw) - 1.7 * mb - 1.5 * (st.w.cloud || 0) / 100;
+  }
+  function airmassOf(alt) { return airmass(Math.max(alt, 0)); }
+  function seen(m, alt) { return m + .25 * (airmassOf(alt) - 1); }
+  function glowOf(mObs, lm) { return .3 * Math.pow(Math.pow(10, -.4 * (mObs - lm)), .42); }   // flux over the threshold, as the eye sees it
+  var COMPASS = ["north", "north-east", "east", "south-east", "south", "south-west", "west", "north-west"];
+  function compass(az) { return COMPASS[Math.round(n360(az) / 45) % 8]; }
+  // The whole night at one moment, for a place: what is up and how bright.
+  function nightAt(ms, lat, lon, st) {
+    var c = catalogue(ms), lm = limitMag(st), lst = n360(gmst(ms) + lon), pl = planetsAt(ms).map(function (p) {
+      var h = starAltAz(p.ra, p.dec, ms, lat, lon); p.alt = h.alt; p.az = h.az; p.ha = adiff(lst, p.ra); return p; });
+    var co = cometsAt(ms).map(function (p) { var h = starAltAz(p.ra, p.dec, ms, lat, lon); p.alt = h.alt; p.az = h.az; return p; });
+    return { ms: ms, lat: lat, lon: lon, lst: lst, lm: lm, cat: c, planets: pl, comets: co, rate: meteorRate(ms, lat, lon, lm) };
+  }
+  function nightLine(st, ms) {
+    var t = API.t || function (s) { return s; }, p = st.place, N = nightAt(ms, p.lat, p.lon, st), parts = [];
+    var up = N.planets.filter(function (q) { return q.alt > 1 && seen(q.mag, q.alt) < N.lm; }).sort(function (a, b) { return a.mag - b.mag; })[0];
+    if (up) parts.push(t(up.name) + " " + (up.alt < 25 ? t(up.ha < 0 ? "rising in the" : "setting in the") : t("high in the")) + " " + t(compass(up.az)));
+    var lam = st.sun.lam !== undefined ? st.sun.lam : sunAt(ms, p.lat, p.lon).lam, best = null;
+    SHOWERS.forEach(function (sh) { var d = adiff(sh.lam, lam); if (d > -1.2 && d < 7.5 && (!best || Math.abs(d) < Math.abs(best.d))) best = { sh: sh, d: d }; });
+    if (best) { var n = Math.round(best.d); parts.push(t(best.sh.name) + " " + (n <= 0 ? t("peak tonight") : n === 1 ? t("peak tomorrow night") : t("peak in") + " " + n + " " + t("nights"))); }
+    N.comets.forEach(function (c) { if (c.alt > 0) parts.push(t("comet") + " " + c.name + " " + t("in the") + " " + t(compass(c.az))); });
+    return parts.join(" · ");
+  }
+  // The Milky Way's light at a galactic l, b: a disc thicker and brighter toward the centre, the bulge, the star clouds, the
+  // dark Great Rift and Coalsack, the Magellanic Clouds and M31. Relative units, 0 to about 1.
+  function gq(l, b, l0, b0, sl, sb) { var dl = adiff(l, l0) / sl, db = (b - b0) / sb; return Math.exp(-.5 * (dl * dl + db * db)); }
+  function hash2(x, y) { var s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453; return s - Math.floor(s); }
+  function vnoise(x, y) {
+    var xi = Math.floor(x), yi = Math.floor(y), fx = x - xi, fy = y - yi; fx = fx * fx * (3 - 2 * fx); fy = fy * fy * (3 - 2 * fy);
+    var a = hash2(xi, yi), b = hash2(xi + 1, yi), c = hash2(xi, yi + 1), d = hash2(xi + 1, yi + 1);
+    return a + (b - a) * fx + (c - a) * fy + (a - b - c + d) * fx * fy;
+  }
+  function milkyWay(l, b) {
+    var lr = adiff(l, 0), al = Math.abs(lr), w = 4.5 + 4 * Math.exp(-al * al / 2500);
+    var I = (Math.exp(-.5 * b * b / (w * w)) + .3 * Math.exp(-.5 * b * b / 144)) * (.3 + .7 * Math.exp(-al * al / 3600));
+    I += .55 * gq(l, b, 0, -3, 10, 7) + .35 * gq(l, b, 27, -2, 4, 3) + .45 * gq(l, b, 2, -4.5, 4, 3.5) + .3 * gq(l, b, 78, 1.5, 7, 4)
+      + .35 * gq(l, b, 287, -1, 6, 3) + .25 * gq(l, b, 330, -1, 10, 3);
+    if (lr > -12 && lr < 88) {                                // the Great Rift, from Cygnus down through Aquila to Ophiuchus
+      var b0 = 1 + .045 * (80 - lr), wd = 1.6 + .03 * (80 - lr), edge = sstep(-12, -2, lr) * (1 - sstep(80, 88, lr));
+      I *= 1 - .62 * edge * Math.exp(-.5 * Math.pow((b - b0) / wd, 2));
+    }
+    I *= 1 - .7 * gq(l, b, 301.5, -.8, 2.6, 2.6);             // the Coalsack
+    I *= .7 + .6 * vnoise(l * .22, b * .5) * (.6 + .4 * vnoise(l * .9 + 7, b * 1.8));   // the mottled star clouds, fixed to the sky
+    return I + .45 * gq(l, b, 280.5, -32.9, 3.5, 2.6) + .3 * gq(l, b, 302.8, -44.3, 1.8, 1.3) + .22 * gq(l, b, 121.2, -21.6, 1.3, .6);
+  }
+  // The night layer of one surface, rendered once a minute (stars move a quarter of a degree a minute) to its own canvas:
+  // the Milky Way and every faint star; the bright stars, planets and constellation lines are kept as screen points so the
+  // 10 fps loop can make them twinkle. Between renders the view's small turns are a shift (the projection is linear).
+  function renderNight(S, st, ms) {
+    var p = st.place, N = nightAt(ms, p.lat, p.lon, st), W = S.W, H = S.H, D = S.D, doc = S.el.ownerDocument;
+    if (!S.nc) { S.nc = doc.createElement("canvas"); S.nx = S.nc.getContext("2d"); }
+    S.nc.width = Math.round(W * D); S.nc.height = Math.round(H * D);
+    var g = S.nx, lm = N.lm, bright = [], pts = {}, top = S.a0 + S.vfov;
+    g.setTransform(1, 0, 0, 1, 0, 0); g.clearRect(0, 0, S.nc.width, S.nc.height);
+    // the Milky Way, on a coarse grid of the view, smoothed up
+    var mwv = sstep(4.6, 6.2, lm);
+    if (mwv > .01) {
+      var cs = 5, mw = Math.max(2, Math.ceil(W / cs)), mh = Math.max(2, Math.ceil(H / cs));
+      if (!S.mc || S.mc.width !== mw || S.mc.height !== mh) { S.mc = doc.createElement("canvas"); S.mc.width = mw; S.mc.height = mh; S.mx = S.mc.getContext("2d"); S.mimg = S.mx.createImageData(mw, mh); }
+      var dat = S.mimg.data, k = 0;
+      for (var y = 0; y < mh; y++) for (var x = 0; x < mw; x++, k += 4) {
+        var az = S.az0 + ((x + .5) / mw - .5) * S.hfov, alt = top - (y + .5) / mh * S.vfov;
+        if (alt > 90) { alt = 180 - alt; az += 180; }
+        var eq = toEquatorial(Math.max(alt, 0), az, N.lst, p.lat), gb = galactic(eq[0], eq[1]), I = milkyWay(gb[0], gb[1]);
+        var ext = Math.pow(10, -.4 * .25 * (airmassOf(alt) - 1)) * sstep(0, 6, alt), core = Math.exp(-Math.pow(adiff(gb[0], 0) / 70, 2));
+        var a = clamp(I * .3 * mwv * ext, 0, .5);
+        dat[k] = 200 + 50 * core; dat[k + 1] = 208 + 28 * core; dat[k + 2] = 232 - 22 * core; dat[k + 3] = Math.round(255 * a);
+      }
+      S.mx.putImageData(S.mimg, 0, 0);
+      g.imageSmoothingEnabled = true; if ("imageSmoothingQuality" in g) g.imageSmoothingQuality = "high";
+      g.drawImage(S.mc, 0, 0, S.nc.width, S.nc.height);
+    }
+    g.setTransform(D, 0, 0, D, 0, 0);
+    function place2(alt, az) {                                // a point in this view, or null (a view past the zenith sees both sides)
+      var q = toScreen(S, alt, az);
+      if (q[0] > -12 && q[0] < W + 12 && q[1] > -12 && q[1] < H + 12) return q;
+      if (top > 90) { q = toScreen(S, 180 - alt, az + 180); if (q[0] > -12 && q[0] < W + 12 && q[1] > -12 && q[1] < H + 12) return q; }
+      return null;
+    }
+    var c = N.cat, need = {}, nf = 0;
+    if (c) {
+      c.cons.forEach(function (k) { k.L.forEach(function (e) { need[e[0]] = need[e[1]] = 1; }); });
+      for (var i = 0; i < c.n; i++) {
+        var h = horizontal(c.dec[i], n360(N.lst - c.ra[i]), p.lat); h.alt += refraction(h.alt); if (h.alt < -.5) continue;
+        var q = place2(h.alt, h.az); if (!q) continue;
+        if (need[i]) pts[i] = q;
+        var X = airmassOf(h.alt), mo = c.m[i] + .25 * (X - 1), gl = glowOf(mo, lm) * sstep(lm + .15, lm - .85, mo);
+        if (gl < .02) continue;
+        var col = bvRGB(c.bv[i] + .15 * (X - 1)), sig = Math.min(.55, .05 * Math.pow(X, 1.75));
+        if (gl > .9) { bright.push({ x: q[0], y: q[1], g: gl, c: col, s: sig, f: 1.3 + (i * 7919 % 100) / 40, p: i * 2.39 }); continue; }
+        nf++; g.fillStyle = "rgba(" + col[0] + "," + col[1] + "," + col[2] + "," + Math.min(1, gl * 1.5).toFixed(3) + ")";
+        g.beginPath(); g.arc(q[0], q[1], .6 + gl * .6, 0, TAU); g.fill();
+      }
+    }
+    var planets = [];
+    N.planets.forEach(function (pl) {
+      if (pl.alt < -.5) return; var q = place2(pl.alt, pl.az); if (!q) return;
+      var mo = seen(pl.mag, pl.alt), gl = glowOf(mo, lm) * sstep(lm + .15, lm - .85, mo); if (gl < .02) return;
+      planets.push({ x: q[0], y: q[1], g: gl, c: bvRGB(pl.bv + .15 * (airmassOf(pl.alt) - 1)), name: pl.name });
+    });
+    var comets = [];
+    N.comets.forEach(function (cm) {
+      if (cm.alt < 0) return; var q = place2(cm.alt, cm.az); if (!q) return;
+      var sq = toScreen(S, st.sun.alt, st.sun.az), dx = q[0] - sq[0], dy = q[1] - sq[1], n = Math.hypot(dx, dy) || 1;
+      comets.push({ x: q[0], y: q[1], ux: dx / n, uy: dy / n, g: glowOf(seen(cm.mag, cm.alt), lm), len: clamp((5 - cm.mag) * 2.5, 1.5, 20) / S.hfov * W });
+    });
+    var rad = N.rate.showers.map(function (o) { return { hr: o.hr, sh: o.sh, alt: o.alt, az: o.az, q: toScreen(S, o.alt, o.az) }; });
+    S.nv = { at: Math.floor(ms / 6e4), az0: S.az0, a0: S.a0, W: W, H: H, lm: lm, faint: nf, bright: bright, planets: planets, comets: comets, pts: pts, cons: c ? c.cons : [], rate: N.rate, rad: rad };
+  }
+  var METF = 0;
+  function drawNight(S, st, ms, still) {
+    var nv = S.nv, c = S.ctx, now = performance.now();
+    var dx = -S.W * adiff(S.az0, nv.az0) / S.hfov, dy = S.H * (S.a0 - nv.a0) / S.vfov;
+    c.setTransform(1, 0, 0, 1, 0, 0); c.drawImage(S.nc, dx * S.D, dy * S.D);
+    c.setTransform(S.D, 0, 0, S.D, dx * S.D, dy * S.D);
+    var t = still ? 0 : now / 1000;
+    nv.bright.forEach(function (s) {                          // scintillation: steady overhead, restless low down
+      var tw = still ? 1 : 1 + s.s * (.6 * Math.sin(t * s.f * 6.1 + s.p) + .4 * Math.sin(t * s.f * 10.7 + s.p * 3)), gl = Math.max(.05, s.g * tw);
+      dot(c, s.x, s.y, gl, s.c);
+    });
+    nv.planets.forEach(function (s) { dot(c, s.x, s.y, s.g, s.c); });   // a disc: no twinkle
+    nv.comets.forEach(function (k) { comet(c, k); });
+    if (!still) meteors(S, nv, ms);
+    c.setTransform(S.D, 0, 0, S.D, 0, 0);
+  }
+  function dot(c, x, y, gl, col) {
+    var rgb = col[0] + "," + col[1] + "," + col[2];
+    if (gl > 1.6) {                                          // the eye's own glare round a bright point
+      var R = 3 + Math.min(gl, 8) * 1.7, gr = c.createRadialGradient(x, y, 0, x, y, R);
+      gr.addColorStop(0, "rgba(" + rgb + "," + Math.min(.35, gl * .07).toFixed(3) + ")"); gr.addColorStop(1, "rgba(" + rgb + ",0)");
+      c.fillStyle = gr; c.beginPath(); c.arc(x, y, R, 0, TAU); c.fill();
+    }
+    c.fillStyle = "rgba(" + rgb + "," + Math.min(1, gl).toFixed(3) + ")";
+    c.beginPath(); c.arc(x, y, .6 + Math.min(1.6, Math.sqrt(Math.max(0, gl - .6)) * .8), 0, TAU); c.fill();
+  }
+  function comet(c, k) {
+    var tx = k.x + k.ux * k.len, ty = k.y + k.uy * k.len, gr = c.createLinearGradient(k.x, k.y, tx, ty), a = Math.min(.6, k.g * .5);
+    gr.addColorStop(0, "rgba(235,240,250," + a.toFixed(3) + ")"); gr.addColorStop(1, "rgba(200,215,240,0)");
+    c.strokeStyle = gr; c.lineCap = "round"; c.lineWidth = 2.2; c.beginPath(); c.moveTo(k.x, k.y); c.lineTo(tx, ty); c.stroke();
+    dot(c, k.x, k.y, Math.min(1.2, k.g), [220, 240, 230]);
+  }
+  // Meteors: a Poisson stream at the real rate for this part of the sky, each streaking away from its shower's radiant.
+  function meteors(S, nv, ms) {
+    var dt = S.mlast ? clamp(ms - S.mlast, 0, 400) : 0; S.mlast = ms;
+    var frac = Math.min(1, S.hfov * S.vfov / 20626), lam = nv.rate.total * frac / 3.6e6 * dt;
+    S.met = S.met || [];
+    if (lam > 0 && Math.random() < 1 - Math.exp(-lam)) {
+      var pick = Math.random() * nv.rate.total, src = null;
+      nv.rad.forEach(function (o) { if (!src && (pick -= o.hr) < 0) src = o; });
+      var x = Math.random() * S.W, y = Math.random() * S.H * .8, alt = S.a0 + S.vfov - y / S.H * S.vfov, az = S.az0 + (x / S.W - .5) * S.hfov;
+      if (alt > 8) {
+        var ux, uy, len, v, r = src ? src.sh.r : 3, mag = nv.lm + Math.log(1 - Math.random()) / Math.log(r);
+        if (src) { var ddx = x - src.q[0], ddy = y - src.q[1], n = Math.hypot(ddx, ddy) || 1; ux = ddx / n; uy = ddy / n; v = src.sh.v;
+          len = (4 + Math.random() * 12) * Math.sin(Math.min(90, sep(alt, az, src.alt, src.az) / RAD) * RAD); }
+        else { var an = Math.random() * TAU; ux = Math.cos(an); uy = Math.sin(an); v = 25 + Math.random() * 45; len = 4 + Math.random() * 12; }
+        var px = len / S.hfov * S.W;
+        S.met.push({ x: x, y: y, ux: ux, uy: uy, px: px, life: 0, max: clamp(28 / v, .25, 1.1) * (.7 + .6 * Math.random()) * 1000, g: Math.min(1.4, glowOf(mag, nv.lm)) });
+        METF++;
+      }
+    }
+    var c = S.ctx;
+    S.met = S.met.filter(function (m) {
+      m.life += dt; if (m.life > m.max) return false;
+      var k = m.life / m.max, a = Math.min(1, m.g) * (k < .2 ? k / .2 : 1 - (k - .2) / .8), hx = m.x + m.ux * m.px * k, hy = m.y + m.uy * m.px * k, tl = Math.min(m.px * k, m.px * .45);
+      var gr = c.createLinearGradient(hx, hy, hx - m.ux * tl, hy - m.uy * tl);
+      gr.addColorStop(0, "rgba(255,252,240," + a.toFixed(3) + ")"); gr.addColorStop(1, "rgba(200,220,255,0)");
+      c.strokeStyle = gr; c.lineWidth = 1.2; c.lineCap = "round"; c.beginPath(); c.moveTo(hx, hy); c.lineTo(hx - m.ux * tl, hy - m.uy * tl); c.stroke();
+      return true;
+    });
+  }
+  // One tap on the night sky: thin lines and names fade in for six seconds.
+  function drawCons(S, ms) {
+    var nv = S.nv; if (!nv || !S.consAt) return;
+    var e = performance.now() - S.consAt; if (e > 6000) { S.consAt = 0; return; }
+    var a = isStill() ? 1 : Math.min(1, e / 600, (6000 - e) / 900), c = S.ctx, t = API.t || function (s) { return s; };
+    var dx = -S.W * adiff(S.az0, nv.az0) / S.hfov, dy = S.H * (S.a0 - nv.a0) / S.vfov;
+    c.save(); c.setTransform(S.D, 0, 0, S.D, dx * S.D, dy * S.D);
+    c.strokeStyle = "rgba(170,195,235," + (.42 * a).toFixed(3) + ")"; c.lineWidth = .8;
+    c.fillStyle = "rgba(205,220,245," + (.8 * a).toFixed(3) + ")"; c.font = "500 11px system-ui, sans-serif"; c.textAlign = "center";
+    nv.cons.forEach(function (k) {
+      var sx = 0, sy = 0, n = 0;
+      c.beginPath();
+      k.L.forEach(function (e2) {
+        var p = nv.pts[e2[0]], q = nv.pts[e2[1]]; if (!p || !q || Math.abs(p[0] - q[0]) > S.W * .6) return;
+        c.moveTo(p[0], p[1]); c.lineTo(q[0], q[1]); sx += p[0] + q[0]; sy += p[1] + q[1]; n += 2;
+      });
+      c.stroke();
+      if (n >= 2) c.fillText(t(k.name), sx / n, sy / n + 14);
+    });
+    c.restore();
+  }
   // ── The renderer: one engine, one 10-frames-a-second loop, every surface a canvas of its own ──
-  var SURF = [], ST0 = null, ST1 = null, LOOP = 0, LAST = 0, FT = [], SCAN = 0, MO = null;
+  var SURF = [], ST0 = null, ST1 = null, LOOP = 0, LAST = 0, FT = [], SCAN = 0, MO = null, NR = 0;
   function isStill() {
     var calm = !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
     return calm || !!navigator.webdriver || /jsdom/i.test(navigator.userAgent || "");
@@ -644,13 +1008,7 @@
     S.cl = doc.createElement("canvas"); S.cl.width = S.gw; S.cl.height = S.gh; S.cx = S.cl.getContext("2d"); S.cimg = S.cx.createImageData(S.gw, S.gh);
     var n = S.gw * S.gh; S.alt = new Float32Array(n); S.az = new Float32Array(n); S.u = new Float32Array(n); S.v = new Float32Array(n); S.sky = new Float32Array(n * 3);
     S.geoAz = null; S.skyAt = 0;
-    if (S.nightOpts || !S.art) {
-      if (S.night) S.night.stop();
-      var o = {}, k; for (k in (S.nightOpts || {})) o[k] = S.nightOpts[k];
-      o.offscreen = true; o.live = false; if (!S.nightOpts) { o.galaxy = false; o.density = .8; }
-      if (o.aurora) o.aurora = Math.abs(place().lat) >= 55;     // the aurora only where it really shows
-      S.night = mount(S.el, o);
-    }
+    S.real = !!(S.nightOpts || !S.art); S.nv = null;           // the real night sky (renderNight), not invented stars
   }
   function facing(S, st) {                                  // the direction this surface looks: the sun, away from it, or the moon
     var h = st.sun.alt, m = st.moon;
@@ -796,12 +1154,19 @@
     if (force || !S.skyAt || ms - S.skyAt > 5000 || ms < S.skyAt) { skyGrid(S, L); S.skyAt = ms; }
     c.setTransform(1, 0, 0, 1, 0, 0); c.imageSmoothingEnabled = true; if ("imageSmoothingQuality" in c) c.imageSmoothingQuality = "high";
     c.drawImage(S.lo, 0, 0, S.cv.width, S.cv.height);
-    if (S.night && L.stars > .01) { c.globalAlpha = L.stars; S.night.paint(still ? 0 : performance.now()); c.drawImage(S.night.cv, 0, 0, S.cv.width, S.cv.height); c.globalAlpha = 1; }
+    if (S.real && st.sun.alt < 1 && window.SXStars) {
+      var mk = Math.floor(ms / 6e4), nv = S.nv;
+      if (force || !nv || nv.at !== mk || nv.W !== S.W || nv.H !== S.H || Math.abs(adiff(S.az0, nv.az0)) > 4 || Math.abs(S.a0 - nv.a0) > 4) {
+        var r0 = performance.now(); renderNight(S, st, ms); NR = performance.now() - r0;
+      }
+      drawNight(S, st, ms, still);
+    } else S.nv = null;
     c.setTransform(S.D, 0, 0, S.D, 0, 0);
     drawMoon(S, st, L); drawSun(S, st, L);
     c.setTransform(1, 0, 0, 1, 0, 0);
     if (cloudLayer(S, st, L, still ? 0 : ms)) c.drawImage(S.cl, 0, 0, S.cv.width, S.cv.height);
     c.setTransform(S.D, 0, 0, S.D, 0, 0);
+    if (S.consAt && S.nv) drawCons(S, ms);
     drawPrecip(S, st, still ? 0 : ms);
     S.state = st;
   }
@@ -830,7 +1195,7 @@
     if (isStill() && !navigator.webdriver) setInterval(function () { SURF.forEach(function (S) { if (S.vis) paint(S, Date.now(), true); }); }, 6e4);
     // one tap on the sky (not on a control) says what it is doing
     document.addEventListener("click", function (e) {
-      var t = e.target, s = t && t.closest && t.closest("[data-sx-sky]"); if (!s || !s.__sxLive) return;
+      var t = e.target, s = t && t.closest && t.closest("[data-sx-sky],.sx-live"); if (!s || !s.__sxLive) return;
       var it = t.closest("a,button,input,select,textarea,label,summary,details,[onclick],[role=button],[tabindex]");
       if (it && it !== s && s.contains(it)) return;
       API.tell(s);
@@ -838,7 +1203,12 @@
   }
   API.tell = function (s) {
     var S = s && s.__sxLive; if (!S) return "";
-    var line = describe(solve(Date.now())), el = s.querySelector(":scope > .sx-sky-line");
+    var now = Date.now(), st = solve(now), line = describe(st), el = s.querySelector(":scope > .sx-sky-line"), nl = "";
+    if (st.sun.alt < 0) { try { nl = nightLine(st, now); } catch (e) {} if (nl) line += " · " + nl; }
+    if (S.real && st.sun.alt < -4) {                         // the constellations fade in for six seconds
+      S.consAt = performance.now();
+      if (isStill()) { paint(S, now, true); clearTimeout(S.consT); S.consT = setTimeout(function () { S.consAt = 0; paint(S, Date.now(), true); }, 6000); }
+    }
     if (!el) { el = s.ownerDocument.createElement("div"); el.className = "sx-sky-line"; el.setAttribute("role", "status"); s.appendChild(el); }
     el.textContent = line; el.classList.add("on"); clearTimeout(el.__t); el.__t = setTimeout(function () { el.classList.remove("on"); }, 6000);
     return line;
@@ -846,8 +1216,13 @@
   API.stats = function () {
     var a = FT.length ? FT.reduce(function (x, y) { return x + y; }, 0) / FT.length : 0, st = ST0 || solve(Date.now());
     return { surfaces: SURF.length, frameMs: Math.round(a * 100) / 100, frames: FT.length, sunAlt: Math.round(st.sun.alt * 10) / 10, band: st.band, cloud: st.w.cloud,
-      kind: st.w.kind, moon: st.moon.phase, place: st.place.src };
+      kind: st.w.kind, moon: st.moon.phase, place: st.place.src, nightRenderMs: Math.round(NR * 100) / 100, meteorsSeen: METF,
+      limitMag: Math.round(limitMag(st) * 10) / 10, meteorsPerHour: Math.round(API.meteorsNow() * 10) / 10 };
   };
+  API.gmst = gmst; API.precess = precess; API.catalogue = catalogue; API.starAltAz = starAltAz; API.galactic = galactic; API.milkyWay = milkyWay;
+  API.bvRGB = bvRGB; API.planets = planetsAt; API.comets = COMETS; API.cometsAt = cometsAt; API.showers = SHOWERS; API.meteorRate = meteorRate;
+  API.limitMag = limitMag; API.nightLine = nightLine; API.nightAt = nightAt;
+  API.meteorsNow = function () { var ms = Date.now(), st = solve(ms); return meteorRate(ms, st.place.lat, st.place.lon, limitMag(st)).total; };
   API.sun = sunAt; API.moon = moonAt; API.band = band; API.place = place; API.zones = ZONES; API.solve = solve; API.describe = describe;
   API.daypart = daypart; API.weatherKind = weatherKind; API.cloudThreshold = cloudThreshold; API.cloudShare = cloudShare;
   API.skyColour = function (alt, az, ms) { var c = skyAt(alt, az, look(solve(ms || Date.now())), [0, 0, 0]); return [enc(c[0]), enc(c[1]), enc(c[2])]; };

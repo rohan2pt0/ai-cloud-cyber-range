@@ -9335,24 +9335,28 @@
     document.addEventListener("visibilitychange", function () { gmRest(document.hidden); });
     ["pointerdown", "keydown"].forEach(function (ev) { document.addEventListener(ev, gmRestWake, { passive: true }); });
   }
-  // Shooting stars at a natural, irregular pace (every 15 to 30 s), only while the app is on screen and motion is welcome.
+  // Shooting stars at the real sky's pace (shared/sky.js: tonight's shower and sporadic rate for the person's place, none by day),
+  // only while the app is on screen and motion is welcome. The header sees about a seventh of the sky.
   // Armed only in a real, visible browser: an automated or headless page would be kept alive by the repeating timer.
   if (!window._gmComets && !navigator.webdriver && !/jsdom|HeadlessChrome/i.test(navigator.userAgent || "")) {
     window._gmComets = 1;
-    var gmComet = function () {
+    var gmCometArmed = false, gmComet = function () {
       try {
         var calm = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
         // Comets fly in their own unmasked layer, behind the title and buttons, so the whole streak shows.
         var hd = document.querySelector("header"), sky = document.getElementById("gmTrail");
         if (!sky && hd) { sky = document.createElement("div"); sky.id = "gmTrail"; sky.setAttribute("aria-hidden", "true"); hd.insertBefore(sky, hd.firstChild); }
-        if (!calm && sky && !document.hidden) {
+        var hr = window.SXSky && SXSky.meteorsNow ? SXSky.meteorsNow() : 0;
+        if (gmCometArmed && !calm && sky && !document.hidden && hr > 0) {
           var c = document.createElement("i"); c.className = "gm-comet";
           c.style.setProperty("--cy", (4 + Math.random() * 30).toFixed(1) + "%");
           c.addEventListener("animationend", function () { if (c.parentNode) c.parentNode.removeChild(c); });
           sky.appendChild(c); setTimeout(function () { if (c.parentNode) c.parentNode.removeChild(c); }, 2500);
         }
       } catch (e) {}
-      setTimeout(gmComet, 15000 + Math.random() * 15000);
+      gmCometArmed = true;                 // the first call only sets the clock: a streak comes at a random moment, as in the sky
+      var rate = 0; try { rate = window.SXSky && SXSky.meteorsNow ? SXSky.meteorsNow() : 0; } catch (e) {}
+      setTimeout(gmComet, rate > 0 ? Math.max(4000, -Math.log(1 - Math.random()) * 3.6e6 / (rate * .15)) : 600000);
     };
     setTimeout(gmComet, 6000 + Math.random() * 6000);
   }
