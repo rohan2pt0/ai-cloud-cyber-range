@@ -48,6 +48,7 @@ jobs:
       TASK: ${{ github.event_name == 'workflow_dispatch' && inputs.task || format('{0}\n\n{1}', github.event.issue.title, github.event.issue.body) }}
       TRIES: ${{ inputs.tries || '3' }}
       OPENCODE_GO_API_KEY: ${{ secrets.OPENCODE_GO_API_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
     steps:
       - uses: actions/checkout@v7
         with: { fetch-depth: 0, persist-credentials: false }
@@ -57,7 +58,7 @@ jobs:
         with: { node-version: "22" }
       - name: "Install the gates and the open-model agent"
         run: |
-          [ -n "$OPENCODE_GO_API_KEY" ] || { echo "::error::Add the repository secret OPENCODE_GO_API_KEY (doc 83, section 4)."; exit 1; }
+          [ -n "$OPENCODE_GO_API_KEY$OPENROUTER_API_KEY" ] || { echo "::error::Add the repository secret OPENCODE_GO_API_KEY or OPENROUTER_API_KEY (doc 83, section 4): either builds, both is no single point of failure."; exit 1; }
           pip install -r apps/llm-gateway/requirements-dev.txt pyyaml ruff
           npm install -g opencode-ai@1.19.0
       - name: "Build it: open models, then the estate's gates"
