@@ -20,7 +20,8 @@ def _output(result) -> str:
 
 
 def _rate_limited(result) -> bool:
-    return getattr(result, "returncode", 0) == 403 and "rate limit" in _output(result).lower()
+    # gh exits 1 (not 403) on an HTTP 403; the answer it prints names the rate limit, so read the words, not the code
+    return getattr(result, "returncode", 0) != 0 and "rate limit" in _output(result).lower()
 
 
 def search(query: str, kind: str = "code", run=subprocess.run, sleep=time.sleep, wait: int = 60) -> str:
