@@ -990,7 +990,8 @@
     var S = { el: el, cv: cv, ctx: ctx, face: face, art: face === "art", lock: !!cfg.lock, cap: clamp(parseFloat(el.getAttribute("data-sx-cap")) || CAP, .05, CAP), nightOpts: cfg.night || null, night: null,
       W: 0, H: 0, D: 1, vis: true, az0: null, a0: 0, geoAz: null, geoA0: 0, skyAt: 0, lo: null, cl: null, rain: [], seed: Math.random() * 1000 };
     S.stop = function () { var i = SURF.indexOf(S); if (i >= 0) SURF.splice(i, 1); if (S.night) S.night.stop(); if (S.io) S.io.disconnect(); if (S.ro) S.ro.disconnect();
-      if (cv.parentNode) cv.parentNode.removeChild(cv); el.classList.remove("sx-live"); el.__sxLive = null; };
+      if (cv.parentNode) cv.parentNode.removeChild(cv); if (S.capEl && S.capEl.parentNode) S.capEl.parentNode.removeChild(S.capEl);
+      el.classList.remove("sx-live"); el.__sxLive = null; };
     el.__sxLive = S; SURF.push(S);
     try { if (window.IntersectionObserver) { S.io = new IntersectionObserver(function (es) { S.vis = es[es.length - 1].isIntersecting; if (S.vis) kick(); }); S.io.observe(el); } } catch (e) {}
     try { if (window.ResizeObserver) { S.ro = new ResizeObserver(function () { S.W = -1; if (isStill()) paint(S, Date.now(), true); }); S.ro.observe(el); } } catch (e) {}
@@ -1003,6 +1004,7 @@
     S.W = W; S.H = H; S.D = D; S.cv.width = Math.round(W * D); S.cv.height = Math.round(H * D);
     var cell = Math.max(4, Math.sqrt(W * H / 22000)); S.gw = Math.max(2, Math.ceil(W / cell)); S.gh = Math.max(2, Math.ceil(H / cell));
     S.hfov = S.lock ? 100 : 110; S.vfov = clamp(S.hfov * H / W, 12, 84);
+    S.cs = S.lock ? 150 : 48;                                  // the cloud field's scale: the lock sees the layer overhead, so finer
     var doc = S.el.ownerDocument;
     S.lo = doc.createElement("canvas"); S.lo.width = S.gw; S.lo.height = S.gh; S.lx = S.lo.getContext("2d"); S.limg = S.lx.createImageData(S.gw, S.gh);
     S.cl = doc.createElement("canvas"); S.cl.width = S.gw; S.cl.height = S.gh; S.cx = S.cl.getContext("2d"); S.cimg = S.cx.createImageData(S.gw, S.gh);
@@ -1012,27 +1014,94 @@
   }
   function facing(S, st) {                                  // the direction this surface looks: the sun, away from it, or the moon
     var h = st.sun.alt, m = st.moon;
+    if (S.lock && h > -1.2) return lockView(S, st);           // the lock by day looks at the sun itself (lockView)
     // by day a high sun is above the view, so the window looks across it, where the sky is bluest (90 deg from the sun);
     // as the sun nears the horizon the window turns to face it (and the hero, away from it: the Earth's shadow, the Belt of Venus)
     if (h > -10) return [n360(st.sun.az + (S.face === "anti" ? 180 : 90 * sstep(8, 20, h))), 0];
     if (m.alt > 2) return [m.az, Math.max(0, m.alt + (S.lock ? .14 : .3) * S.vfov - S.vfov)];   // the lock's card fills the middle   // at night the view lifts to keep the moon in it
     return [st.place.lat >= 0 ? 180 : 0, 0];
   }
+  /* The lock by day (owner 2026-11-24: "Live sky is gone from lock screen"). The lock looked 90 deg away from the sun and held
+     every pixel under the text ceiling, so a clear afternoon read as a flat blue-grey gradient. Now the lock's card carries
+     its own dark glass, so the sky keeps its full physical brightness and colour everywhere except a soft scrim right behind
+     the card (scrimWeight), and the view turns to the sun: its true altitude and azimuth, placed in the free band below the
+     card (above it when there is no room below), a little off centre, at the golden section. */
+  var SCRIM_PAD = 14, SCRIM_FEATHER = 64;
+  function scrimWeight(x, y, r) {                           // 1 behind the card (and its caption), 0 in the open sky, a soft edge
+    if (!r) return 1;
+    var dx = Math.max(r.l - SCRIM_PAD - x, 0, x - r.r - SCRIM_PAD), dy = Math.max(r.t - SCRIM_PAD - y, 0, y - r.b - SCRIM_PAD);
+    return sstep(SCRIM_FEATHER, 0, Math.sqrt(dx * dx + dy * dy));
+  }
+  function lockView(S, st) {
+    var s = st.sun, r = S.card || { l: S.W * .1, r: S.W * .9, t: S.H * .25, b: S.H * .75 }, edge = SCRIM_PAD + SCRIM_FEATHER * .55;
+    var top = [0, r.t - edge], bot = [r.b + edge, S.H], below = bot[1] - bot[0] >= 56 || bot[1] - bot[0] >= top[1] - top[0];
+    var am = s.ha < 0, side = am ? [0, r.l - edge] : [r.r + edge, S.W];
+    if (side[1] - side[0] >= 140 && Math.max(bot[1] - bot[0], top[1] - top[0]) < 150) {   // a wide screen: beside the card, horizon at the bottom
+      return [n360(s.az - ((side[0] + side[1]) / 2 / S.W - .5) * S.hfov), Math.max(-2, s.alt - S.vfov * .6)];
+    }
+    var band = below ? bot : top, fy = clamp((band[0] + band[1]) / 2 / S.H, .02, .98), a0 = s.alt - S.vfov * (1 - fy);
+    if (below) a0 = Math.max(a0, -2);                         // keep the horizon near the bottom edge: a low sun sits lower, never behind the card
+    var fx = s.ha < 0 ? .382 : .618;                          // morning sun left of centre, afternoon right (it moves that way)
+    return [n360(s.az - (fx - .5) * S.hfov), a0];
+  }
+  function cardRect(S) {                                    // the card and its caption, in the surface's own pixels
+    var av = S.nightOpts && S.nightOpts.avoid, el = null;
+    try { el = typeof av === "function" ? av() : av; } catch (e) {}
+    if (!el || !el.getBoundingClientRect) return null;
+    var b = S.el.getBoundingClientRect(), c = el.getBoundingClientRect(), r = { l: c.left - b.left, r: c.right - b.left, t: c.top - b.top, b: c.bottom - b.top };
+    var cap = el.querySelector && el.querySelector(".sx-sky-cap");
+    if (cap && cap.textContent) { var k = cap.getBoundingClientRect(); r.l = Math.min(r.l, k.left - b.left); r.r = Math.max(r.r, k.right - b.left); r.b = Math.max(r.b, k.bottom - b.top); }
+    return r.r - r.l > 4 && r.b - r.t > 4 ? r : null;
+  }
+  function scrimMask(S) {                                   // the scrim weight per sky cell, and the same as an image (for the sun's glare)
+    var n = S.gw * S.gh, m = S.mask = new Float32Array(n), doc = S.el.ownerDocument, i = 0, mx = null;
+    if (!S.noImg) { S.mc2 = doc.createElement("canvas"); S.mc2.width = S.gw; S.mc2.height = S.gh; mx = S.mc2.getContext("2d"); }   // noImg: a test, the weights alone
+    var img = mx ? mx.createImageData(S.gw, S.gh) : { data: new Uint8ClampedArray(n * 4) }, d = img.data;
+    for (var y = 0; y < S.gh; y++) for (var x = 0; x < S.gw; x++, i++) {
+      m[i] = scrimWeight((x + .5) / S.gw * S.W, (y + .5) / S.gh * S.H, S.card);
+      d[i * 4 + 3] = Math.round(m[i] * 255);
+    }
+    if (mx) mx.putImageData(img, 0, 0);
+  }
+  // The lock by day is seen as the eye sees a clear sky, not as the model's raw (famously pale) tristimulus: a little more
+  // exposure and colour, the same at every pixel, so the sky's own gradients (deep blue overhead, white haze low down) stay true.
+  function grade(c, k) {
+    var l = .2126 * c[0] + .7152 * c[1] + .0722 * c[2], sa = 1 + .45 * k * (c[2] > c[0] ? 1 : .1), ex = 1 + .25 * k;   // the blue, not the sunset's gold
+    c[0] = Math.max(0, (l + (c[0] - l) * sa) * ex); c[1] = Math.max(0, (l + (c[1] - l) * sa) * ex); c[2] = Math.max(0, (l + (c[2] - l) * sa) * ex);
+    return c;
+  }
+  // Light past what a screen can show rolls off as film does: the hue holds, and the brightest glow turns toward white
+  // (a clipped channel would turn a golden sun's sky into flat lemon yellow).
+  function shoulder(c) {
+    var mx = Math.max(c[0], c[1], c[2]); if (mx <= .8) return c;
+    var f = .8 + .2 * (1 - Math.exp(-(mx - .8) / .2)), wh = sstep(1, 4, mx) * .6, k = f / mx * (1 - wh), add = f * wh;
+    c[0] = c[0] * k + add; c[1] = c[1] * k + add; c[2] = c[2] * k + add;
+    return c;
+  }
+  function scrimmed(c, w, cap) {                            // the ceiling, by the scrim's weight: full behind the card, none in the open
+    if (w <= 0) return c;
+    var r = c[0], g = c[1], b = c[2]; capped(c, cap);
+    if (w < 1) { c[0] = r + (c[0] - r) * w; c[1] = g + (c[1] - g) * w; c[2] = b + (c[2] - b) * w; }
+    return c;
+  }
+  // Where the sun sits in a surface's view, in its own pixels (the lock keeps it out from behind the card).
+  function sunInView(S, st) { var p = toScreen(S, st.sun.alt, st.sun.az); return { x: p[0], y: p[1], inView: p[0] >= 0 && p[0] <= S.W && p[1] >= 0 && p[1] <= S.H }; }
   function geometry(S) {                                    // each cell's direction, and where its line of sight meets the cloud layer
     var i = 0, gw = S.gw, gh = S.gh, a0 = S.a0, a1 = S.a0 + S.vfov;
     for (var y = 0; y < gh; y++) for (var x = 0; x < gw; x++, i++) {
       var az = S.az0 + ((x + .5) / gw - .5) * S.hfov, alt = a1 - (y + .5) / gh * (a1 - a0);
       if (alt > 90) { alt = 180 - alt; az += 180; }            // a view tipped past the zenith looks down the other side
       var r = 1 / Math.tan(Math.max(alt, 1.2) * RAD);
-      r = Math.min(r, 30); S.alt[i] = alt; S.az[i] = az; S.u[i] = r * Math.sin(az * RAD) * 48; S.v[i] = -r * Math.cos(az * RAD) * 48;
+      r = Math.min(r, 30); S.alt[i] = alt; S.az[i] = az; S.u[i] = r * Math.sin(az * RAD) * S.cs; S.v[i] = -r * Math.cos(az * RAD) * S.cs;
     }
     S.geoAz = S.az0; S.geoA0 = S.a0;
   }
   function skyGrid(S, L) {
-    var n = S.gw * S.gh, c = [0, 0, 0], cap = S.art ? 1 : S.cap, d = S.limg.data;
+    var n = S.gw * S.gh, c = [0, 0, 0], cap = S.art ? 1 : S.cap, d = S.limg.data, m = S.lock && S.mask ? S.mask : null;   // the lock: a scrim, not a ceiling
+    var gk = S.lock ? sstep(-3, 5, L.h) : 0;
     for (var i = 0; i < n; i++) {
-      skyAt(S.alt[i], S.az[i], L, c); S.sky[i * 3] = c[0]; S.sky[i * 3 + 1] = c[1]; S.sky[i * 3 + 2] = c[2];
-      capped(c, cap);
+      skyAt(S.alt[i], S.az[i], L, c); if (gk > 0) grade(c, gk); if (m) shoulder(c); S.sky[i * 3] = c[0]; S.sky[i * 3 + 1] = c[1]; S.sky[i * 3 + 2] = c[2];
+      if (m) scrimmed(c, m[i], cap); else capped(c, cap);
       var dz = ((i * 2654435761) >>> 0) / 4294967296 - .5;      // a whisper of dither against banding in the dark blues
       d[i * 4] = enc(c[0]) + dz; d[i * 4 + 1] = enc(c[1]) + dz; d[i * 4 + 2] = enc(c[2]) + dz; d[i * 4 + 3] = 255;
     }
@@ -1049,11 +1118,17 @@
     }
     SHADEKEY = key; return (SHADE = out);
   }
-  function cloudLayer(S, st, L, t) {
-    var w = st.w, d = S.cimg.data, n = S.gw * S.gh, f = cloudField(), cap = S.art ? 1 : S.cap;
+  // What the weather puts in the sky. No reading (no consent yet, or a stale one): no clouds and no haze, never invented ones.
+  function cloudPlan(w, T) {
+    if (!w || !w.real) return { cover: 0, fog: 0, draw: false };
     var cover = w.kind === "rain" || w.kind === "storm" ? Math.max(w.cloud, 85) : w.kind === "drizzle" || w.kind === "snow" ? Math.max(w.cloud, 70) : w.cloud;
-    var fog = w.kind === "fog" ? .72 : w.kind === "rain" || w.kind === "storm" ? .3 : w.kind === "drizzle" || w.kind === "snow" ? .2 : .04 + (st.T - 3) * .03;
-    if (cover <= 0 && fog < .05) return false;
+    var fog = w.kind === "fog" ? .72 : w.kind === "rain" || w.kind === "storm" ? .3 : w.kind === "drizzle" || w.kind === "snow" ? .2 : .04 + (T - 3) * .03;
+    return { cover: cover, fog: fog, draw: cover > 0 || fog >= .05 };
+  }
+  function cloudLayer(S, st, L, t) {
+    var w = st.w, d = S.cimg.data, n = S.gw * S.gh, f = cloudField(), cap = S.art ? 1 : S.cap, m = S.lock && S.mask ? S.mask : null;
+    var plan = cloudPlan(w, st.T), cover = plan.cover, fog = plan.fog;
+    if (!plan.draw) return false;
     var th = cloudThreshold(cover), sh = shadeFor(L.saz), wet = w.kind === "rain" || w.kind === "storm" ? .42 : w.kind === "drizzle" || w.kind === "snow" ? .62 : 1;
     // sunlight on the clouds: they stand higher than we do, so they keep the sun a little after it has set (pink undersides at dusk)
     var hc = L.h + 2.2, sI = sstep(-3, 5, hc), sc = sunColour(Math.max(hc, -.5), st.T), sl = lum(sc) || 1e-6, Ys = L.Yd * (hc >= 0 ? 1 : Math.exp(hc / 3)) * 2.3 * sI * wet;
@@ -1062,7 +1137,7 @@
     var nr = .0055 * L.city + .016 * L.mb, ng = .0045 * L.city + .017 * L.mb, nb = .0036 * L.city + .02 * L.mb;   // night: the city's glow underneath, moonlight
     var fogL = L.Yd * L.dim * 1.5 + .006 * L.city + .02 * L.mb, fr = fogL * .93, fgc = fogL * .96, fb = fogL;
     // drift: the field moves where the wind blows (from dir toward dir + 180), about three times the ground speed aloft
-    var sp = w.speed * 3 / 2 / 3600 * 48, td = t / 1000, ox = -Math.sin((w.dir + 180) * RAD) * sp * td, oy = Math.cos((w.dir + 180) * RAD) * sp * td;
+    var sp = w.speed * 3 / 2 / 3600 * S.cs, td = t / 1000, ox = -Math.sin((w.dir + 180) * RAD) * sp * td, oy = Math.cos((w.dir + 180) * RAD) * sp * td;
     var c = [0, 0, 0];
     for (var i = 0; i < n; i++) {
       var a = 0, cr = 0, cg = 0, cb = 0;
@@ -1072,18 +1147,21 @@
         var i00 = y0 * CN + x0, i10 = y0 * CN + x1, i01 = y1 * CN + x0, i11 = y1 * CN + x1;
         var D = (f[i00] * (1 - tx) + f[i10] * tx) * (1 - ty) + (f[i01] * (1 - tx) + f[i11] * tx) * ty;
         var Sh = (sh[i00] * (1 - tx) + sh[i10] * tx) * (1 - ty) + (sh[i01] * (1 - tx) + sh[i11] * tx) * ty;
-        var alt = S.alt[i], far = sstep(14, 1, alt);
-        a = sstep(th - .03, th + .12, D); a = a + (cover / 100 * .9 - a) * far * .8;    // far away the layer blurs into a band
+        var alt = S.alt[i], far = S.lock ? sstep(22, 2, alt) : sstep(14, 1, alt);
+        if (S.lock) { D += (th + .06 - D) * far; Sh += (1 - Sh) * far; }             // too far to resolve: an even band, not noise
+        a = sstep(th - .03, th + .12, D); a = a + (cover / 100 * .9 - a) * far * (S.lock ? .95 : .8);    // far away the layer blurs into a band
         var thick = 1 - .38 * sstep(th + .08, th + .45, D);                            // thick cores are darker underneath
+        // silver linings: thin cloud near the sun scatters its light forward (Mie), so edges toward the sun glow
+        var sil = sI > .01 ? 1 + Math.exp(-sep(alt, S.az[i], Math.max(L.h, 0), L.saz) / .32) * (.8 + 3.4 * (1 - sstep(th, th + .2, D))) : 1;
         var j = i * 3;
-        cr = (lr * Sh + zen[0] * am) * thick + nr; cg = (lg * Sh + zen[1] * am) * thick + ng; cb = (lb * Sh + zen[2] * am) * thick + nb;
+        cr = (lr * Sh * sil + zen[0] * am) * thick + nr; cg = (lg * Sh * sil + zen[1] * am) * thick + ng; cb = (lb * Sh * sil + zen[2] * am) * thick + nb;
         if (wet < 1) { var gy = (cr + cg + cb) / 3; cr = cr + (gy - cr) * .6; cg = cg + (gy - cg) * .6; cb = cb + (gy - cb) * .6; }
         cr += (S.sky[j] - cr) * far * .5; cg += (S.sky[j + 1] - cg) * far * .5; cb += (S.sky[j + 2] - cb) * far * .5;   // aerial perspective
       }
       var af = fog * (.55 + .45 * sstep(40, 0, S.alt[i])), A = af + a * (1 - af);
       if (A < .003) { d[i * 4 + 3] = 0; continue; }
       c[0] = (fr * af + cr * a * (1 - af)) / A; c[1] = (fgc * af + cg * a * (1 - af)) / A; c[2] = (fb * af + cb * a * (1 - af)) / A;
-      capped(c, cap);
+      if (m) scrimmed(shoulder(c), m[i], cap); else capped(c, cap);
       d[i * 4] = enc(c[0]); d[i * 4 + 1] = enc(c[1]); d[i * 4 + 2] = enc(c[2]); d[i * 4 + 3] = Math.round(A * 255);
     }
     S.cx.putImageData(S.cimg, 0, 0);
@@ -1100,6 +1178,61 @@
     c.fillStyle = gl; c.beginPath(); c.arc(x, y, R * 14, 0, TAU); c.fill();
     c.fillStyle = "rgba(" + Math.min(255, col[0] + 30) + "," + Math.min(255, col[1] + 40) + "," + Math.min(255, col[2] + 60) + "," + (S.art ? 1 : .9) + ")";
     c.beginPath(); c.arc(x, y, R, 0, TAU); c.fill();
+  }
+  // The lock's sun by day: the disc, the eye's bloom and the bright aureole of forward-scattered light around it, added as
+  // light (so it whitens the sky as a camera does), reddened and dimmed by its path through the air, never behind the card.
+  function drawSunGlare(S, st, L) {
+    var h = st.sun.alt; if (h < -1.2) return;
+    var p = toScreen(S, h, st.sun.az), x = p[0], y = p[1], unit = Math.min(S.W, S.H);
+    if (!isFinite(x) || !isFinite(y)) return;
+    if (x < -unit * .5 || x > S.W + unit * .5 || y < -unit * .5 || y > S.H + unit * .5) return;
+    if (!S.gc) { S.gc = S.el.ownerDocument.createElement("canvas"); S.gx = S.gc.getContext("2d"); }
+    if (S.gc.width !== S.cv.width || S.gc.height !== S.cv.height) { S.gc.width = S.cv.width; S.gc.height = S.cv.height; }
+    var g = S.gx, sc = L.scN, mx = Math.max(sc[0], sc[1], sc[2]), col = [Math.round(255 * sc[0] / mx), Math.round(255 * sc[1] / mx), Math.round(255 * sc[2] / mx)] + "";
+    var k = Math.pow(clamp(lum(L.sc), 0, 1), .3) * sstep(-1.2, 1.2, h), wet = st.w.real && st.w.kind !== "clear" ? .45 : 1;
+    function glow(r, stops) {
+      var gr = g.createRadialGradient(x, y, 0, x, y, r);
+      stops.forEach(function (q) { gr.addColorStop(q[0], "rgba(" + (q[2] || col) + "," + clamp(q[1] * k * wet, 0, 1).toFixed(3) + ")"); });
+      g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, TAU); g.fill();
+    }
+    g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = "source-over"; g.clearRect(0, 0, S.gc.width, S.gc.height);
+    g.setTransform(S.D, 0, 0, S.D, 0, 0); g.globalCompositeOperation = "lighter";
+    var soft = [Math.round(sc[0] / mx * 180 + 75), Math.round(sc[1] / mx * 180 + 75), Math.round(sc[2] / mx * 180 + 75)] + "";
+    glow(unit * .42, [[0, .2, soft], [.06, .12, soft], [.2, .045, soft], [.45, .012, soft], [1, 0, soft]]);   // aureole
+    glow(Math.max(12, unit * .045), [[0, .9, "255,253,246"], [.25, .55, "255,250,236"], [.6, .12], [1, 0]]);   // bloom
+    var R = Math.max(5, .267 / S.hfov * S.W);
+    glow(R * 1.25, [[0, 1, "255,255,252"], [.72, 1, "255,254,246"], [1, 0]]);                                     // the disc, soft-edged
+    if (S.mc2) {                                                // none of it behind the card: the scrim takes it out
+      g.setTransform(1, 0, 0, 1, 0, 0); g.globalCompositeOperation = "destination-out"; g.imageSmoothingEnabled = true;
+      g.drawImage(S.mc2, 0, 0, S.gc.width, S.gc.height);
+    }
+    g.globalCompositeOperation = "source-over";
+    var c = S.ctx; c.save(); c.setTransform(1, 0, 0, 1, 0, 0); c.globalCompositeOperation = "lighter"; c.drawImage(S.gc, 0, 0); c.restore();
+  }
+  // The caption under the lock's card: a quiet sign that this is the person's own sky, right now. The place is a city (the time
+  // zone's, or the nearest to the rounded place) or whole degrees, never more precise.
+  var NAMES = { "Asia/Kolkata": "Mumbai", "Asia/Calcutta": "Mumbai", "Asia/Qatar": "Doha", "UTC": "" };
+  function cityOf(z) { return z in NAMES ? NAMES[z] : z.split("/").pop().replace(/_/g, " "); }
+  function placeName(p) {
+    if (!p || p.src === "none") return "";
+    var zs = Object.keys(ZONES), best = "", bd = 1e9;
+    if (p.src === "zone") { for (var i = 0; i < zs.length; i++) if (ZONES[zs[i]][0] === p.lat && ZONES[zs[i]][1] === p.lon) return cityOf(zs[i]); return ""; }
+    zs.forEach(function (z) {
+      var c = ZONES[z], d = Math.pow(c[0] - p.lat, 2) + Math.pow((c[1] - p.lon) * Math.cos(p.lat * RAD), 2);
+      if (cityOf(z) && d < bd) { bd = d; best = cityOf(z); }
+    });
+    if (best && Math.sqrt(bd) <= .75) return best;            // within about 80 km of a known city: that city
+    var la = Math.round(p.lat), lo = Math.round(p.lon);       // else whole degrees (about 100 km), never the rounded place itself
+    return Math.abs(la) + "°" + (la < 0 ? "S" : "N") + " " + Math.abs(lo) + "°" + (lo < 0 ? "W" : "E");
+  }
+  function caption(st) {
+    var t = API.t || function (s) { return s; }, s = st.sun, w = st.w, m = st.moon, where = placeName(st.place), parts = [];
+    parts.push(where ? t("Your sky over") + " " + where : t("Your sky now"));
+    var sa = Math.round(s.alt);
+    if (s.alt > -6) parts.push(t("sun") + " " + (sa < 0 ? "\u2212" : "") + Math.abs(sa) + "°");
+    else parts.push(m.alt > 0 ? t(/moon$/.test(m.phase) ? m.phase : m.phase + " moon") : t("night"));
+    parts.push(!w.real ? t("no cloud reading yet") : w.kind === "fog" ? t("fog") : Math.round(w.cloud) + "% " + t("cloud"));
+    return parts.join(" · ");
   }
   function drawMoon(S, st, L) {
     var m = st.moon; if (m.alt < -1) return;
@@ -1147,7 +1280,19 @@
   function paint(S, ms, force) {
     if (!S.el.isConnected) { S.stop(); return; }
     if (S.W < 0 || force) layout(S);
-    var still = isStill(), st = stateNow(ms), L = look(st), c = S.ctx, fa = facing(S, st);
+    var still = isStill(), st = stateNow(ms), L = look(st), c = S.ctx;
+    if (S.lock) {                                              // the caption, then the card's place (the scrim and the free bands)
+      if (force || !S.capAt || ms - S.capAt > 5000 || ms < S.capAt) {
+        S.capAt = ms; var av = null; try { av = S.nightOpts && typeof S.nightOpts.avoid === "function" ? S.nightOpts.avoid() : null; } catch (e) {}
+        if (av && !S.capEl) { S.capEl = av.ownerDocument.createElement("div"); S.capEl.className = "sx-sky-cap"; av.appendChild(S.capEl); }
+        if (S.capEl) { var line = caption(st); if (S.capEl.textContent !== line) S.capEl.textContent = line; }
+      }
+      if (force || !S.cardAt || Math.abs(ms - S.cardAt) > 1000 || !S.mask || S.mask.length !== S.gw * S.gh) {
+        S.cardAt = ms; var cr = cardRect(S), ck = cr ? [cr.l, cr.t, cr.r, cr.b].map(Math.round).join() : "";
+        if (ck !== S.cardKey || !S.mask || S.mask.length !== S.gw * S.gh) { S.cardKey = ck; S.card = cr; scrimMask(S); S.skyAt = 0; }
+      }
+    }
+    var fa = facing(S, st);
     if (S.az0 === null || still || force) { S.az0 = fa[0]; S.a0 = fa[1]; }
     else { S.az0 = n360(S.az0 + adiff(fa[0], S.az0) * .02); S.a0 += (fa[1] - S.a0) * .02; }   // turn slowly toward a new subject
     if (S.geoAz === null || Math.abs(adiff(S.az0, S.geoAz)) > .25 || Math.abs(S.a0 - S.geoA0) > .25) { geometry(S); S.skyAt = 0; }
@@ -1162,7 +1307,8 @@
       drawNight(S, st, ms, still);
     } else S.nv = null;
     c.setTransform(S.D, 0, 0, S.D, 0, 0);
-    drawMoon(S, st, L); drawSun(S, st, L);
+    drawMoon(S, st, L);
+    if (S.lock) drawSunGlare(S, st, L); else drawSun(S, st, L);
     c.setTransform(1, 0, 0, 1, 0, 0);
     if (cloudLayer(S, st, L, still ? 0 : ms)) c.drawImage(S.cl, 0, 0, S.cv.width, S.cv.height);
     c.setTransform(S.D, 0, 0, S.D, 0, 0);
@@ -1227,6 +1373,17 @@
   API.daypart = daypart; API.weatherKind = weatherKind; API.cloudThreshold = cloudThreshold; API.cloudShare = cloudShare;
   API.skyColour = function (alt, az, ms) { var c = skyAt(alt, az, look(solve(ms || Date.now())), [0, 0, 0]); return [enc(c[0]), enc(c[1]), enc(c[2])]; };
   API.capped = function (rgb, cap) { return capped(rgb.slice(), cap || CAP); }; API.CAP = CAP;
+  API.cloudPlan = cloudPlan; API.caption = caption; API.placeName = placeName; API.scrimWeight = scrimWeight;
+  // The lock's view at one moment, without a canvas (tests): where the sun falls, the scrim, and the sky's pixels as drawn.
+  API.lockFrame = function (ms, W, H, card) {
+    var cell = Math.max(4, Math.sqrt(W * H / 22000)), gw = Math.max(2, Math.ceil(W / cell)), gh = Math.max(2, Math.ceil(H / cell)), n = gw * gh;
+    var S = { lock: true, art: false, cap: CAP, W: W, H: H, D: 1, hfov: 100, vfov: clamp(100 * H / W, 12, 84), cs: 150, gw: gw, gh: gh, card: card, noImg: true,
+      el: { ownerDocument: document }, alt: new Float32Array(n), az: new Float32Array(n), u: new Float32Array(n), v: new Float32Array(n), sky: new Float32Array(n * 3),
+      limg: { data: new Uint8ClampedArray(n * 4) }, lx: { putImageData: function () {} } };
+    var st = solve(ms), L = look(st), fa = facing(S, st); S.az0 = fa[0]; S.a0 = fa[1];
+    geometry(S); scrimMask(S); skyGrid(S, L);
+    return { az0: S.az0, a0: S.a0, vfov: S.vfov, sun: sunInView(S, st), gw: gw, gh: gh, mask: S.mask, px: S.limg.data, state: st, caption: caption(st) };
+  };
   API.sunColour = sunColour; API.preetham = preetham; API.mountLive = liveMount;
   if (typeof document !== "undefined") { if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot); else setTimeout(boot, 0); }
 
