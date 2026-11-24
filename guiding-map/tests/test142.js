@@ -9,7 +9,8 @@ function boot(cfg, shared) {
     beforeParse(w) {
       w.localStorage.setItem("gm_mine_done", "true");
       if (cfg) w.localStorage.setItem("gm_sync_cfg", JSON.stringify(cfg));
-      w.fetch = () => Promise.reject(new Error("offline"));
+      // the hub answers its door probe (/_door.json), so the estate sync is offered here (move-phone: never on a page with no estate)
+      w.fetch = (u) => /\/_door\.json$/.test(String(u)) ? Promise.resolve({ ok: true, json: () => Promise.resolve({ ok: true, service: "securax-command-center" }) }) : Promise.reject(new Error("offline"));
       w.scrollTo = () => {}; w.alert = () => {}; w.confirm = () => true;
       if (shared) Object.defineProperty(w.navigator, "share", { value: (o) => { shared.push(o); return Promise.resolve(); }, configurable: true });
     } });
