@@ -8,6 +8,7 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
+- CI: the Cloudflare Pages project is created by its own step (wrangler-action passes `|| true` to wrangler as arguments, so the first deploy found no project).
 - Queue re-plan (owner-approved 2026-11-24, `docs/specs/queue-plan-2026-11.md`): 33 duplicate asks merged into their oldest survivor, every open ask scored (`rre` = risk x reach / effort), 28 hard gates pinned first (no single point of failure, security, legal), a Now list of 58 dated at about 8 slices a day, and the other 117 moved to a `horizon` (2027-Q1, 2027-Q2, later); asks only the owner can finish carry `needs: owner`.
 - CI: the sandbox runs in five parallel shards (`sandbox/run.py --shard i/N`, balanced longest-first by the CI times in `sandbox/timings.json`), so its wall-clock drops from ~68 min to ~15. Every journey still runs, in exactly one shard (lifecycle/tests/test_sandbox_shards.py); each shard brings up its own estate; the one `sandbox` check fails unless every shard passed, and each shard uploads its own log and screenshots.
 - CI: the scheduled open-model builds (autobuild.yml) take OPENROUTER_API_KEY as well as OPENCODE_GO_API_KEY, and run with either, so one provider's monthly cap no longer stops them.
