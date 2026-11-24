@@ -4521,16 +4521,29 @@
      with a simple visual where it helps, so you never leave the app to search,
      watch a video, or draw it yourself. Plain steps, equipment substitutes for
      what you actually own, and a self-check. (Systems you can act on, not look up.) */
+  /* The pacer is a live sea (shared/sea.js, SXSea): its long swell rises with the in-breath, holds, falls with the out-breath
+     and holds. The dot on a square stays inside as the last fallback (no canvas at all, and the tests' DOM). */
   var BOX_SVG =
-    '<svg viewBox="0 0 220 180" width="100%" style="max-width:360px;display:block;margin:6px auto">'
+    '<div class="sx-sea" data-sx-sea role="group" aria-label="Box breathing with the sea: breathe in for 4 seconds as the swell rises, hold for 4, breathe out for 4 as it falls, hold for 4">'
+    + '<div class="sx-sea-fb">'
+    + '<svg viewBox="0 0 220 180" width="100%" style="max-width:360px;display:block;margin:6px auto">'
     + '<rect x="60" y="20" width="100" height="100" rx="8" fill="none" stroke="var(--accent)" stroke-width="3"/>'
-    + '<text x="110" y="14" text-anchor="middle" font-size="11" fill="var(--muted)">Inhale 4s →</text>'
+    + '<text x="110" y="14" text-anchor="middle" font-size="11" fill="var(--muted)">Breathe in 4s →</text>'
     + '<text x="168" y="74" font-size="11" fill="var(--muted)">↓ Hold 4s</text>'
-    + '<text x="110" y="138" text-anchor="middle" font-size="11" fill="var(--muted)">← Exhale 4s</text>'
+    + '<text x="110" y="138" text-anchor="middle" font-size="11" fill="var(--muted)">← Breathe out 4s</text>'
     + '<text x="12" y="74" font-size="11" fill="var(--muted)">Hold 4s ↑</text>'
     + '<circle r="7" fill="var(--accent)"><animateMotion dur="16s" repeatCount="indefinite" '
     + 'path="M60,20 L160,20 L160,120 L60,120 Z" keyPoints="0;0.25;0.5;0.75;1" keyTimes="0;0.25;0.5;0.75;1" calcMode="linear"/></circle>'
-    + '</svg><div class="info" style="text-align:center">One lap = one full breath (16s). Follow the dot: in, hold, out, hold. Do 5–10 minutes.</div>';
+    + '</svg></div>'
+    + '<div class="sx-sea-say"><b class="sx-sea-word">Breathe in</b><span class="sx-sea-n">4</span></div>'
+    + '<i class="sx-sea-level" aria-hidden="true"></i>'
+    + '<button type="button" class="sx-sea-snd" aria-pressed="false" hidden>Sea sound</button>'
+    + '</div><div class="info" style="text-align:center">One swell = one full breath (16s). Breathe with the sea: in as it rises, hold, out as it falls, hold. Do 5–10 minutes.</div>';
+  // The sea wakes when its guide opens (a closed guide or a hidden page keeps it asleep; SXSea also stops off screen).
+  document.addEventListener("toggle", function (ev) {
+    var d = ev.target, s = d && d.open && d.querySelector && d.querySelector("[data-sx-sea]");
+    if (s && window.SXSea) window.SXSea.mount(s);
+  }, true);
   var Z2_SVG =
     '<svg viewBox="0 0 320 60" width="100%" style="max-width:320px;display:block;margin:6px auto">'
     + '<rect x="10" y="24" width="300" height="12" rx="6" fill="var(--line)"/>'
@@ -4704,7 +4717,7 @@
     { id: "breathing", icon: "🧘", title: "Box breathing + the 3-month calm ladder", tag: "mind · build up",
       what: "Start with box breathing (weeks 1–2), then climb the ladder. The animation below is all you need — no video.",
       viz: BOX_SVG,
-      steps: ["WEEKS 1–2 — Box breathing: inhale 4s, hold 4s, exhale 4s, hold 4s. Follow the dot above. 5–10 min.",
+      steps: ["WEEKS 1–2 — Box breathing: inhale 4s, hold 4s, exhale 4s, hold 4s. Breathe with the sea above. 5–10 min.",
         "WEEKS 3–4 — Breath counting: inhale, mentally say “1”; exhale, “2”; up to 10, then restart. Mind wanders? Gently return to 1. 10 min.",
         "MONTH 2 — Body scan / Yoga Nidra: lie down, move attention slowly from toes to head, notice sensations without judgement. 10–20 min.",
         "MONTH 3 — Open awareness: sit, let sounds/thoughts/sensations come and go without controlling them. Just observe. 10–15 min."],

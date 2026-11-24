@@ -13,7 +13,7 @@ const dom = new JSDOM(html, { runScripts: "dangerously", pretendToBeVisual: true
 setTimeout(() => {
   const w = dom.window, X = w.SXWorld;
   ok("the shared world is built into the app", !!X && typeof X.flag === "function");
-  ok("every object has one meaning, a use and an avoid", X && X.CATALOG.length === 5 && X.CATALOG.every(c => c.id && c.means && c.use && c.avoid && typeof X[c.id] === "function"));
+  ok("every object has one meaning, a use and an avoid", X && X.CATALOG.length === 6 && X.CATALOG.every(c => c.id && c.means && c.use && c.avoid && typeof X[c.id] === "function"));
   // the cloth: physics, not a loop
   const C = X.cloth, run = (kmh) => { const s = C.make(); s.t = 0;   // a fixed gust phase, so a lull at one moment cannot decide it
     for (let i = 0; i < 300; i++) C.step(s, kmh, 1 / 60); return s; };
