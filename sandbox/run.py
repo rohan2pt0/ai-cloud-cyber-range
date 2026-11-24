@@ -5,6 +5,7 @@
   python3 sandbox/run.py --list
   python3 sandbox/run.py -j fresh_install,key_wiring_and_failover
   python3 sandbox/run.py --keep          # leave the stack running afterwards (poke it by hand)
+  python3 sandbox/run.py --shard 2/4     # only this shard's share (CI runs the shards in parallel; see sandbox/timings.json)
 
 Needs: Docker (with compose), Python 3.11+, PyYAML, openssl; Playwright + Chromium for browser journeys
 (`pip install playwright && playwright install chromium`).  See sandbox/README.md.
@@ -2481,6 +2482,54 @@ def run_journey_healing(fn, sb, name: str, allow_retry: bool):
     return c, t0, True
 
 
+# ─────────────── shards: the same journeys, split so parallel CI jobs finish together ───────────────
+TIMINGS = pathlib.Path(__file__).resolve().parent / "timings.json"
+DEFAULT_SECONDS = 60          # the weight of a journey the timings file does not know yet
+# The journeys that pull the local model, in the order the cache should be saved from (CI saves the model cache from ONE shard).
+MODEL_JOURNEYS = ("local_model_answers", "incident_stale_llama_guard", "key_wiring_and_failover", "machine_alone")
+
+
+def load_timings(path: pathlib.Path = TIMINGS) -> tuple[dict, list]:
+    """({journey: seconds}, [[journeys pinned to one shard], ...]); empty when the file is missing or damaged (shards still partition)."""
+    try:
+        d = json.loads(path.read_text(encoding="utf-8"))
+        return {k: float(v) for k, v in d.get("seconds", {}).items()}, [list(g) for g in d.get("groups", [])]
+    except (OSError, ValueError, TypeError, AttributeError):
+        return {}, []
+
+
+def parse_shard(spec: str) -> tuple[int, int]:
+    m = re.fullmatch(r"\s*(\d+)\s*/\s*(\d+)\s*", spec or "")
+    if not m or not 1 <= int(m.group(1)) <= int(m.group(2)):
+        raise ValueError(f"--shard wants i/N with 1 <= i <= N, got {spec!r}")
+    return int(m.group(1)), int(m.group(2))
+
+
+def shard_plan(names: list[str], n: int, seconds: dict, groups: list | tuple = ()) -> list[list[str]]:
+    """Split names into n shards: every name in exactly one shard, each shard in the names' own order.
+    Longest-first greedy on the known seconds (a group counts as one unit and stays on one shard); then each
+    unknown journey goes to the lightest shard. Deterministic: ties go to the lower shard and the earlier name."""
+    if n < 1:
+        raise ValueError("n must be at least 1")
+    order = {x: k for k, x in enumerate(dict.fromkeys(names))}
+    units, taken = [], set()
+    for g in groups:
+        members = [x for x in dict.fromkeys(g) if x in order and x not in taken]
+        if members:
+            units.append(members)
+            taken.update(members)
+    units += [[x] for x in order if x not in taken]
+    weight = lambda u: sum(seconds.get(x, DEFAULT_SECONDS) for x in u)  # noqa: E731
+    known = sorted((u for u in units if any(x in seconds for x in u)), key=lambda u: (-weight(u), min(order[x] for x in u)))
+    unknown = sorted((u for u in units if not any(x in seconds for x in u)), key=lambda u: min(order[x] for x in u))
+    shards, loads = [[] for _ in range(n)], [0.0] * n
+    for u in known + unknown:
+        i = min(range(n), key=lambda k: (loads[k], k))
+        shards[i] += u
+        loads[i] += weight(u)
+    return [sorted(s, key=order.__getitem__) for s in shards]
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("-j", "--journey", default="", help="comma-separated journey names (default: all)")
@@ -2489,6 +2538,8 @@ def main() -> int:
     ap.add_argument("--no-clone", action="store_true", help="reuse the previous fresh clone")
     ap.add_argument("--skip-slow", action="store_true")
     ap.add_argument("--no-retry", action="store_true", help="do not re-run a journey whose failures are all infrastructure (daemon/network)")
+    ap.add_argument("--shard", default="", help="i/N: run only shard i of N (balanced by sandbox/timings.json); every journey is in exactly one shard")
+    ap.add_argument("--plan", action="store_true", help="print the journeys this run would do (JSON) and exit; with --shard, for CI")
     args = ap.parse_args()
     if args.list:
         for n, (_, doc, slow) in JOURNEYS.items():
@@ -2498,6 +2549,20 @@ def main() -> int:
     unknown = [w for w in wanted if w not in JOURNEYS]
     if unknown:
         print("unknown journey(s):", ", ".join(unknown)); return 2
+    selected = wanted
+    if args.shard:
+        try:
+            i, n = parse_shard(args.shard)
+        except ValueError as e:
+            print(e); return 2
+        wanted = shard_plan(selected, n, *load_timings())[i - 1]
+        print(f"shard {i}/{n}: {len(wanted)} of {len(selected)} journeys", file=sys.stderr)
+    if args.plan:
+        first_model = next((x for x in MODEL_JOURNEYS if x in selected), None)
+        print(json.dumps({"journeys": ",".join(wanted), "saves_models": first_model in wanted}))
+        return 0
+    if not wanted:
+        print("nothing to run in this shard"); return 0
 
     sb = H.Sandbox()
     print(f"SecuRAX sandbox — product v{sb.version}, tested from a clean copy of the working tree")
