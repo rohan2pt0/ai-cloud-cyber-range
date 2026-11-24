@@ -18,7 +18,7 @@ def between(text: str, start: str, end: str) -> str:
 
 def test_capabilities_show_three_strongest_then_fold_the_rest():
     page = (ROOT / "website" / "index.html").read_text("utf-8")
-    start = page.index('<section id="capabilities">')
+    start = re.search(r'<section[^>]*\bid="capabilities"', page).start()   # website-v2 gave it the alternate background
     block = page[start:page.index("</section>", start)]
     assert "<details" in block, "the seven weaker capabilities should be folded, not all open"
     open_cards = block[:block.index("<details")].count('<div class="card">')
@@ -47,6 +47,21 @@ def test_the_estate_is_six_cards_then_one_fold_with_everything_else():
     summary = re.search(r"<summary>(.*?)</summary>", block, re.S).group(1).strip()
     assert summary == f"All {len(data['features'])} things SecuRAX does"
     assert block.count('<div class="card">') == len(data["features"]), "every feature is still shown, only folded"
+
+
+def test_the_home_page_keeps_the_vital_few_open_and_folds_everything_else_once():
+    # website-v2: hero, proof, how, capabilities and editions stay open; the estate, the products, Readiness and the FAQ
+    # ride in one "See every capability (n)" fold, and the proof strip shows only counted facts.
+    page = (ROOT / "website" / "index.html").read_text("utf-8")
+    fold = page[page.index('<details class="everything"'):page.index('<section class="closing"')]
+    for inside in ("<!-- features:start -->", "<!-- products:start -->", 'id="readiness"', 'class="faq"'):
+        assert inside in fold, inside
+    assert re.search(r"<summary><span>See every capability \(<!-- fact:features -->\d+<!-- /fact -->\)</span></summary>", fold)
+    proof = page[page.index('<div class="proof"'):page.index('<section id="how">')]
+    assert [m for m in re.findall(r"<!-- fact:(\w+) -->", proof)] == ["attacks", "refuse_ms", "tests", "frameworks"]
+    hero = page[page.index('<section class="hero'):page.index("</section>", page.index('<section class="hero'))]
+    assert hero.count('class="btn') == 1, "one primary action in the first screen"
+    assert not re.search(r"\d{10}|PAN [A-Z]{5}\d{4}[A-Z]|install\.txt", hero), "no sample personal data and no raw install address up top"
 
 
 def test_each_product_keeps_its_face_and_folds_what_and_for_under_more():

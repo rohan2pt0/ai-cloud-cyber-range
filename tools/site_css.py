@@ -83,8 +83,9 @@ DARK_RULES = ("@media (prefers-color-scheme:dark){"
               "html .models ul{color:var(--text)}"
               "html .btn-line{border-color:var(--ink);color:var(--ink)}"
               "html .offer{background:linear-gradient(160deg,#2b2620,var(--card))}}\n"
-              # Both themes: an obsidian hero with a faint warm glow (the old blue glow failed AA under the gold eyebrow).
-              "html .hero{background:radial-gradient(900px 520px at 80% 0,#3a352c 0,transparent 62%),"
+              # Both themes: an obsidian hero with a faint warm glow (the old blue glow failed AA under the gold eyebrow). A hero
+              # drawn as the night sky (class sx-sky, the home page) takes its look from the shared lux.css instead.
+              "html .hero:not(.sx-sky){background:radial-gradient(900px 520px at 80% 0,#3a352c 0,transparent 62%),"
               "linear-gradient(165deg,var(--navy) 0,var(--navy2) 100%)}"
               "html .micro{color:#d8d2c6}\n")
 
