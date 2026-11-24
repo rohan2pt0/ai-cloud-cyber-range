@@ -4050,6 +4050,159 @@ function fres(c, i) { var m = Math.pow(1 - c, 5); return F0[i] + (1 - F0[i]) * m
   if (doc.readyState === "loading") doc.addEventListener("DOMContentLoaded", boot); else setTimeout(boot, 0);
 })();
 
+/* SXQR: a small QR code encoder, built into every SecuRAX app (reuse-first). No dependency and no network: a pairing code is
+   drawn on the device that made it, never sent to a QR web service. Byte mode, error correction M, versions 1 to 10 (up to
+   213 bytes), the mask chosen by the standard's penalty rules (ISO/IEC 18004). Used by "Move to another phone" (threat model
+   move-phone); a later pairing scan reuses it. SXQR.matrix(text) gives rows of true (dark) and false; SXQR.svg(text, label)
+   gives a crisp, accessible SVG with the quiet zone. */
+(function (root) {
+  "use strict";
+  var ECC_M = [0, 10, 16, 26, 18, 24, 16, 18, 22, 22, 26], BLOCKS_M = [0, 1, 1, 1, 2, 2, 4, 4, 4, 5, 5];
+  function gmul(x, y) { var z = 0; for (var i = 7; i >= 0; i--) { z = (z << 1) ^ ((z >>> 7) * 0x11d); z ^= ((y >>> i) & 1) * x; } return z & 0xff; }
+  function rsDivisor(deg) {
+    var r = []; for (var i = 0; i < deg - 1; i++) r.push(0); r.push(1);
+    var root = 1;
+    for (var k = 0; k < deg; k++) {
+      for (var j = 0; j < r.length; j++) { r[j] = gmul(r[j], root); if (j + 1 < r.length) r[j] ^= r[j + 1]; }
+      root = gmul(root, 2);
+    }
+    return r;
+  }
+  function rsRemainder(data, div) {
+    var r = div.map(function () { return 0; });
+    data.forEach(function (b) { var f = b ^ r.shift(); r.push(0); div.forEach(function (c, i) { r[i] ^= gmul(c, f); }); });
+    return r;
+  }
+  function rawModules(v) {
+    var n = (16 * v + 128) * v + 64;
+    if (v >= 2) { var a = Math.floor(v / 7) + 2; n -= (25 * a - 10) * a - 55; if (v >= 7) n -= 36; }
+    return n;
+  }
+  function dataCodewords(v) { return Math.floor(rawModules(v) / 8) - ECC_M[v] * BLOCKS_M[v]; }
+  function alignPos(v) {
+    if (v === 1) return [];
+    var n = Math.floor(v / 7) + 2, size = v * 4 + 17, step = Math.ceil((v * 4 + 4) / (n * 2 - 2)) * 2, out = [6];
+    for (var p = size - 7; out.length < n; p -= step) out.splice(1, 0, p);
+    return out;
+  }
+  function utf8(s) { var u = unescape(encodeURIComponent(String(s))), b = []; for (var i = 0; i < u.length; i++) b.push(u.charCodeAt(i)); return b; }
+
+  function matrix(text) {
+    var bytes = utf8(text), v = 1;
+    while (v <= 10 && 4 + (v < 10 ? 8 : 16) + bytes.length * 8 > dataCodewords(v) * 8) v++;
+    if (v > 10) throw new Error("too long for a QR code here");
+    var size = v * 4 + 17, cap = dataCodewords(v) * 8, bits = [];
+    function put(val, len) { for (var i = len - 1; i >= 0; i--) bits.push((val >>> i) & 1); }
+    put(4, 4); put(bytes.length, v < 10 ? 8 : 16); bytes.forEach(function (b) { put(b, 8); });
+    put(0, Math.min(4, cap - bits.length)); while (bits.length % 8) bits.push(0);
+    for (var pad = 0xec; bits.length < cap; pad ^= 0xec ^ 0x11) put(pad, 8);
+    var data = []; for (var i = 0; i < bits.length; i += 8) { var x = 0; for (var j = 0; j < 8; j++) x = (x << 1) | bits[i + j]; data.push(x); }
+    // error correction, split into blocks and interleaved
+    var nb = BLOCKS_M[v], el = ECC_M[v], raw = Math.floor(rawModules(v) / 8), nShort = nb - raw % nb, shortLen = Math.floor(raw / nb);
+    var div = rsDivisor(el), blocks = [], k = 0;
+    for (var b = 0; b < nb; b++) {
+      var d = data.slice(k, k + shortLen - el + (b < nShort ? 0 : 1)); k += d.length;
+      var e = rsRemainder(d, div); if (b < nShort) d.push(0); blocks.push(d.concat(e));
+    }
+    var cw = [];
+    for (var c = 0; c < blocks[0].length; c++) for (var q = 0; q < nb; q++) if (c !== shortLen - el || q >= nShort) cw.push(blocks[q][c]);
+    // function patterns
+    var M = [], F = [];
+    for (var y = 0; y < size; y++) { M.push([]); F.push([]); for (var x2 = 0; x2 < size; x2++) { M[y].push(false); F[y].push(false); } }
+    function set(x, y, dark) { M[y][x] = !!dark; F[y][x] = true; }
+    for (var t = 0; t < size; t++) { set(6, t, t % 2 === 0); set(t, 6, t % 2 === 0); }
+    [[3, 3], [size - 4, 3], [3, size - 4]].forEach(function (p) {
+      for (var dy = -4; dy <= 4; dy++) for (var dx = -4; dx <= 4; dx++) {
+        var dist = Math.max(Math.abs(dx), Math.abs(dy)), xx = p[0] + dx, yy = p[1] + dy;
+        if (xx >= 0 && xx < size && yy >= 0 && yy < size) set(xx, yy, dist !== 2 && dist !== 4);
+      }
+    });
+    var ap = alignPos(v), last = ap.length - 1;
+    ap.forEach(function (ay, i) {
+      ap.forEach(function (ax, j) {
+        if ((i === 0 && j === 0) || (i === 0 && j === last) || (i === last && j === 0)) return;
+        for (var dy = -2; dy <= 2; dy++) for (var dx = -2; dx <= 2; dx++) set(ax + dx, ay + dy, Math.max(Math.abs(dx), Math.abs(dy)) !== 1);
+      });
+    });
+    function format(mask) {
+      var d = (0 << 3) | mask, r = d;                     // error correction M is 00
+      for (var i = 0; i < 10; i++) r = (r << 1) ^ ((r >>> 9) * 0x537);
+      var f = ((d << 10) | r) ^ 0x5412, g = function (i) { return (f >>> i) & 1; };
+      for (var a = 0; a <= 5; a++) set(8, a, g(a));
+      set(8, 7, g(6)); set(8, 8, g(7)); set(7, 8, g(8));
+      for (var a2 = 9; a2 < 15; a2++) set(14 - a2, 8, g(a2));
+      for (var a3 = 0; a3 < 8; a3++) set(size - 1 - a3, 8, g(a3));
+      for (var a4 = 8; a4 < 15; a4++) set(8, size - 15 + a4, g(a4));
+      set(8, size - 8, 1);
+    }
+    format(0);
+    if (v >= 7) {
+      var r7 = v; for (var i7 = 0; i7 < 12; i7++) r7 = (r7 << 1) ^ ((r7 >>> 11) * 0x1f25);
+      var vb = (v << 12) | r7;
+      for (var i8 = 0; i8 < 18; i8++) { var bit = (vb >>> i8) & 1, aa = size - 11 + i8 % 3, bb = Math.floor(i8 / 3); set(aa, bb, bit); set(bb, aa, bit); }
+    }
+    // the data, in the zigzag order
+    var n = 0;
+    for (var right = size - 1; right >= 1; right -= 2) {
+      if (right === 6) right = 5;
+      for (var vert = 0; vert < size; vert++) for (var jj = 0; jj < 2; jj++) {
+        var xx3 = right - jj, up = ((right + 1) & 2) === 0, yy3 = up ? size - 1 - vert : vert;
+        if (!F[yy3][xx3] && n < cw.length * 8) { M[yy3][xx3] = ((cw[n >>> 3] >>> (7 - (n & 7))) & 1) === 1; n++; }
+      }
+    }
+    function flip(mask) {
+      for (var y = 0; y < size; y++) for (var x = 0; x < size; x++) {
+        var inv;
+        switch (mask) {
+          case 0: inv = (x + y) % 2 === 0; break;
+          case 1: inv = y % 2 === 0; break;
+          case 2: inv = x % 3 === 0; break;
+          case 3: inv = (x + y) % 3 === 0; break;
+          case 4: inv = (Math.floor(x / 3) + Math.floor(y / 2)) % 2 === 0; break;
+          case 5: inv = (x * y) % 2 + (x * y) % 3 === 0; break;
+          case 6: inv = ((x * y) % 2 + (x * y) % 3) % 2 === 0; break;
+          default: inv = ((x + y) % 2 + (x * y) % 3) % 2 === 0;
+        }
+        if (inv && !F[y][x]) M[y][x] = !M[y][x];
+      }
+    }
+    function penalty() {
+      var p = 0, dark = 0, y, x;
+      function lines(get) {
+        for (var a = 0; a < size; a++) {
+          var run = 1, s = "";
+          for (var b = 0; b < size; b++) {
+            var m = get(a, b); s += m ? "1" : "0";
+            if (b > 0) { if (m === get(a, b - 1)) { run++; if (run === 5) p += 3; else if (run > 5) p++; } else run = 1; }
+          }
+          s = "0000" + s + "0000";                        // a finder-like run (1:1:3:1:1 beside four light modules)
+          var pat = /10111010000|00001011101/g, mt; while ((mt = pat.exec(s))) { p += 40; pat.lastIndex = mt.index + 1; }
+        }
+      }
+      lines(function (a, b) { return M[a][b]; });
+      lines(function (a, b) { return M[b][a]; });
+      for (y = 0; y < size - 1; y++) for (x = 0; x < size - 1; x++) { var c = M[y][x]; if (c === M[y][x + 1] && c === M[y + 1][x] && c === M[y + 1][x + 1]) p += 3; }
+      for (y = 0; y < size; y++) for (x = 0; x < size; x++) if (M[y][x]) dark++;
+      p += Math.floor(Math.abs(dark * 20 - size * size * 10) / (size * size)) * 10;
+      return p;
+    }
+    var best = 0, bestP = Infinity;
+    for (var mk = 0; mk < 8; mk++) { flip(mk); format(mk); var pp = penalty(); if (pp < bestP) { bestP = pp; best = mk; } flip(mk); }
+    flip(best); format(best);
+    return M;
+  }
+
+  // An SVG with a 4-module quiet zone, dark on a white card in either theme (a code must keep its contrast to scan).
+  function svg(text, label) {
+    var m = matrix(text), n = m.length, q = 4, d = "";
+    for (var y = 0; y < n; y++) for (var x = 0; x < n; x++) if (m[y][x]) d += "M" + (x + q) + " " + (y + q) + "h1v1h-1z";
+    var w = n + 2 * q, lab = String(label || "QR code").replace(/[<>&"]/g, "");
+    return '<svg viewBox="0 0 ' + w + " " + w + '" role="img" aria-label="' + lab + '" shape-rendering="crispEdges" style="display:block;width:100%;height:auto;background:#fff;border-radius:8px">'
+      + '<rect width="' + w + '" height="' + w + '" fill="#fff"/><path fill="#000" d="' + d + '"/></svg>';
+  }
+  root.SXQR = { matrix: matrix, svg: svg };
+})(typeof window !== "undefined" ? window : this);
+
 /* SecuRAX shared rings (a signature feature; principles signature-perfect and natures-design, owner 2026-11-14).
    Three rings a person closes every day, made of light and nature rather than flat lines:
    - each ring is a glowing tube of light in an engraved groove, coloured along its length by a natural palette:
@@ -7508,14 +7661,18 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
           : '<button class="btn btn-p" data-sync-share onclick="gmSyncShare()">Add another device</button>'
             + '<div class="f-label" style="text-transform:none;letter-spacing:0;margin:6px 0 10px">Sends a link to your own phone, iPad or laptop (AirDrop, Nearby Share or a note to yourself). Opening it there turns sync on: nothing to type. It holds your sync key, so send it to no one else.</div>')
         + '<button class="btn btn-s" onclick="gmSyncOff()">Turn sync off</button>';
-    } else {
-      h += '<div class="info">Your devices stay in step through <b>your own SecuRAX estate</b>, not a cloud service. '
+    } else if (estateUp) {
+      // only where this page's own address answered as a SecuRAX estate (gmEstateProbe): the address is then real, never invented
+      h += moveHTML() + '<div class="info">This page comes from <b>your own SecuRAX estate</b>, so your devices can also stay in step through it, not a cloud service. '
         + 'To add this device: on a device that already syncs, open this card and tap <b>Add another device</b>. Nothing to type here.</div>'
-        + '<details class="gm-sync-hand" style="margin-top:8px"><summary style="cursor:pointer;font-size:12.5px;color:var(--muted)">Set it up by hand</summary>'
-        + '<label class="f-label">Estate sync URL</label><input id="syUrl" value="' + (TS_ORIGIN || SECURE_ORIGIN ? location.origin + "/sync" : "") + '" placeholder="' + (SECURE_ORIGIN ? location.origin + "/sync" : "http://securax.your-tailnet.ts.net:8089/sync") + '">'
+        + '<details class="gm-sync-hand" style="margin-top:8px"><summary style="cursor:pointer;font-size:12.5px;color:var(--muted)">Set it up by hand (for the estate\u2019s engineer)</summary>'
+        + '<label class="f-label">Estate sync URL</label><input id="syUrl" value="' + esc(location.origin + "/sync") + '">'
         + '<label class="f-label">Device token</label><input id="syKey" placeholder="your estate sync token">'
         + '<label class="f-label">Your row id (anything, same on every device)</label><input id="syUser" placeholder="me">'
         + '<button class="btn btn-s" onclick="gmSyncSave()">Turn sync on</button></details>';
+    } else {
+      // no estate answers here (a Pages copy, a file, a laptop that is off): the move works anyway, and no form asks for an address
+      h += moveHTML();
     }
     return h;
   }
@@ -10510,10 +10667,11 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   function bkAdopt() { var e = G(BK_ESC, null); if (!G(BK_PH, null) && typeof e === "string" && e.replace(/[^A-Z0-9]/gi, "").length >= 8) S_(BK_PH, e); }
   window.gmBkAdopt = bkAdopt;
   function bkEscrow(p) { var c = G("gm_sync_cfg", null); if (c && c.url && c.user && p && G(BK_ESC, null) !== p) S_(BK_ESC, p); }
-  function bkNewPhrase() {
-    var r = crypto.getRandomValues(new Uint8Array(20)), t = "";
-    for (var i = 0; i < 20; i++) t += BK_ABC[r[i] % 32] + (i % 4 === 3 && i < 19 ? "-" : "");
-    return t;                                                          // 20 symbols of 32: 100 bits
+  function bkNewPhrase(n) {
+    n = n || 20;
+    var r = crypto.getRandomValues(new Uint8Array(n)), t = "";
+    for (var i = 0; i < n; i++) t += BK_ABC[r[i] % 32] + (i % 4 === 3 && i < n - 1 ? "-" : "");
+    return t;                                                          // 5 bits a symbol (32 divides 256, so no bias): 20 symbols, 100 bits
   }
   function bkNorm(p) { return String(p || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); }
   window.gmBackupSeal = function (blob, phrase) {
@@ -10527,27 +10685,15 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   };
   function bkSave(text, enc) {
     var name = "life-os-backup-" + ymd() + (enc ? "-encrypted" : "") + ".json";
-    function download() {
-      var a = document.createElement("a");
-      a.href = URL.createObjectURL(new Blob([text], { type: "application/json" }));
-      a.download = name;
-      a.click();
-      // a file on a wide screen (a laptop) is already off the phone; a phone download is not
-      if (enc && !(window.matchMedia && window.matchMedia("(max-width: 700px)").matches)) S_("gm_last_offsite", ymd());
+    function saved(how) {
+      // a shared file, or a file on a wide screen (a laptop), is already off the phone; a phone download is not
+      if (enc && (how === "shared" || !(window.matchMedia && window.matchMedia("(max-width: 700px)").matches))) S_("gm_last_offsite", ymd());
       S_("gm_last_export", ymd()); renderAll();
     }
-    if (enc && navigator.canShare && typeof File === "function") {
-      try {
-        var file = new File([text], name, { type: "application/json" });
-        if (navigator.canShare({ files: [file] })) {
-          navigator.share({ files: [file], title: "Life OS backup" }).then(function () {
-            S_("gm_last_offsite", ymd()); S_("gm_last_export", ymd()); renderAll();
-          }, download);
-          return;
-        }
-      } catch (e) {}
-    }
-    download();
+    if (enc) { shareFile(text, name, "Life OS backup").then(saved); return; }   // a readable copy never goes to the share sheet
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+    a.download = name; a.click(); saved("saved");
   }
   function bkBlob() {
     var blob = {};
@@ -10683,6 +10829,194 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     inp.click();
   };
 
+  /* ═══ Move to another phone: no server, nothing to type (owner 2026-11-24; threat model move-phone) ═══
+     The Pages copy of the Life OS has no estate to sync with, and the old card asked for an address, a token and a row id.
+     Now: on the old phone, one tap seals everything with the backup's own sealing (AES-256-GCM, the key from PBKDF2-SHA256
+     x310,000 with a fresh salt) under a fresh one-time code of 80 random bits, and the file leaves by the share sheet. The code
+     never travels with the file: the old phone shows it as a QR code and as four short groups. On the new phone, "Bring my life
+     here" opens the file and scans the code once; the data is checked (kind, version, age, shape) and merged by the ONE per-key
+     rule (mergeRemote). The code is never written to storage: it lives only in the open dialog. */
+  var MV_KIND = "securax-life-os-move", MV_MAXAGE = 48 * 3600 * 1000, MV_QR = "SXMOVE1:";
+  var MV_SKIP = /^(gm_sync|gm_ms_tok|gm_undo|gm_lock|gm_move|gm_bk_escrow)/;   // device-only: keys, locks, undo, this feature's own ledger
+  var mvText = null, mvName = "";
+  function mvKeyOk(k) { return typeof k === "string" && /^[A-Za-z0-9_:.\-]{1,160}$/.test(k) && !/^(__proto__|constructor|prototype)$/.test(k); }
+  function mvCode(s) { var t = bkNorm(String(s || "").replace(/^SXMOVE1:/i, "")); return /^[A-HJ-NP-Z2-9]{16}$/.test(t) ? t : ""; }
+  // the share sheet (Nearby Share, WhatsApp to yourself, Drive, e-mail), else a download: one helper for the backup and the move
+  function shareFile(text, name, title) {
+    return new Promise(function (resolve) {
+      function download() {
+        var a = document.createElement("a");
+        a.href = URL.createObjectURL(new Blob([text], { type: "application/json" })); a.download = name; a.click();
+        resolve("saved");
+      }
+      if (navigator.canShare && typeof File === "function") {
+        try {
+          var file = new File([text], name, { type: "application/json" });
+          if (navigator.canShare({ files: [file] })) { navigator.share({ files: [file], title: title }).then(function () { resolve("shared"); }, download); return; }
+        } catch (e) {}
+      }
+      download();
+    });
+  }
+  // -> Promise<{ text, code }>: the sealed file and its one-time code (the caller shows the code; nothing stores it)
+  window.gmMoveMake = function () {
+    if (!(window.crypto && crypto.subtle)) return Promise.reject(new Error("this browser has no encryption here (open the app over https)"));
+    var all = bkBlob(), m = meta(), data = {}, mt = {}, code = bkNewPhrase(16).replace(/-/g, "");
+    Object.keys(all).forEach(function (k) { if (!MV_SKIP.test(k) && mvKeyOk(k)) { data[k] = all[k]; if (typeof m[k] === "number") mt[k] = m[k]; } });
+    var id = Array.prototype.map.call(crypto.getRandomValues(new Uint8Array(12)), function (b) { return ("0" + b.toString(16)).slice(-2); }).join("");
+    var inner = { kind: MV_KIND, v: 1, id: id, made: Date.now(), from: devName(), data: data, meta: mt };
+    var salt = crypto.getRandomValues(new Uint8Array(16));
+    return odDerive(code, salt).then(function (key) { return odSeal(key, inner, salt); }).then(function (env) {
+      var o = JSON.parse(env); o.kind = MV_KIND; return { text: JSON.stringify(o), code: code };
+    });
+  };
+  // A file is a move file only if its outer shape is exact; then the code must open it (GCM checks every byte), and what comes out
+  // must be a move of version 1, fresh, never brought here before, with plain string values under safe key names.
+  window.gmMoveOpen = function (text, codeIn) {
+    var code = mvCode(codeIn), env;
+    try { env = typeof text === "string" && text.length < 30e6 ? JSON.parse(text) : null; } catch (e) { env = null; }
+    var B64 = /^[A-Za-z0-9+\/]+={0,2}$/;
+    if (!env || typeof env !== "object" || Array.isArray(env) || env.kind !== MV_KIND || env.v !== 1
+        || typeof env.salt !== "string" || env.salt.length > 40 || !B64.test(env.salt) || typeof env.iv !== "string" || env.iv.length > 40 || !B64.test(env.iv)
+        || typeof env.ct !== "string" || !B64.test(env.ct)) return Promise.reject(new Error("This is not a move file from the Life OS. Nothing was changed."));
+    if (!code) return Promise.reject(new Error("That code is not complete: it is four groups of four letters and digits."));
+    return odDerive(code, unb64(env.salt)).then(function (key) { return odOpen(key, env); })
+      .catch(function () { throw new Error("That code does not open this file. Use the code on the phone that made it."); })
+      .then(function (o) {
+        if (!o || typeof o !== "object" || Array.isArray(o) || o.kind !== MV_KIND || o.v !== 1 || typeof o.id !== "string" || !/^[0-9a-f]{24}$/.test(o.id)
+            || typeof o.made !== "number" || !o.data || typeof o.data !== "object" || Array.isArray(o.data) || !o.meta || typeof o.meta !== "object" || Array.isArray(o.meta))
+          throw new Error("This move file is not in a shape this version knows. Nothing was changed.");
+        var now = Date.now();
+        if (o.made > now + 10 * 60 * 1000) throw new Error("This move file says it was made in the future. Nothing was changed.");
+        if (now - o.made > MV_MAXAGE) throw new Error("This move file is more than two days old. Make a fresh one on the old phone.");
+        if ((G("gm_move_seen", []) || []).indexOf(o.id) >= 0) throw new Error("This move file was already brought here. Make a fresh one to move again.");
+        var data = Object.create(null), mt = Object.create(null), bad = 0;
+        Object.keys(o.data).forEach(function (k) {
+          if (!mvKeyOk(k) || MV_SKIP.test(k) || typeof o.data[k] !== "string" || o.data[k].length > 5e6) { bad++; return; }
+          data[k] = o.data[k]; var t = o.meta[k]; if (typeof t === "number" && isFinite(t) && t > 0 && t <= now + 10 * 60 * 1000) mt[k] = t;
+        });
+        if (bad) throw new Error("This move file holds " + bad + " item(s) that are not Life OS data. Nothing was changed.");
+        return { id: o.id, made: o.made, from: String(o.from || "your other phone").slice(0, 40), data: data, meta: mt };
+      });
+  };
+  // A phone that holds only the example data takes the moved life as it is; otherwise the ONE merge rule applies, and every newer
+  // item on this phone is kept and counted, never silently replaced.
+  window.gmMoveApply = function (mv) {
+    var m = meta(), keys = Object.keys(mv.data), fresh = !window.P || !!window.P.example || !localStorage.getItem("sovP"), kept = 0;
+    gmSnap("before bringing your life from another phone");
+    if (fresh) { keys.forEach(function (k) { delete m[k]; }); S_("gm_meta", m); }
+    else keys.forEach(function (k) { var cur = localStorage.getItem(k); if (cur !== null && cur !== mv.data[k] && (m[k] || 0) > (mv.meta[k] || 0)) kept++; });
+    var data = {}, mt = {}; keys.forEach(function (k) { data[k] = mv.data[k]; if (mv.meta[k]) mt[k] = mv.meta[k]; });
+    var before = G("gm_sync_anomaly", null), changed = mergeRemote(data, mt);
+    if (G("gm_sync_anomaly", null) !== before) return { ok: false, kept: kept, n: keys.length, why: "This phone holds much more than the file, so nothing was merged (a wrong or partial file). Your data here is unchanged." };
+    // a kit edition on this address (osk:) syncs its own keys, so the merge skips them; a move brings only those this phone lacks
+    keys.forEach(function (k) { if (k.indexOf("osk:") === 0 && localStorage.getItem(k) === null) _set(k, mv.data[k]); });
+    S_("gm_move_seen", (G("gm_move_seen", []) || []).concat([mv.id]).slice(-50));
+    gmTouch("Brought your life from another phone", mv.from);
+    return { ok: true, changed: changed, kept: kept, n: keys.length, fresh: fresh };
+  };
+  // Old phone: step 1 (Move) seals and shows the code; step 2 is Share.
+  window.gmMoveOut = function () {
+    gmToast("Sealing your life for the move…");
+    return gmMoveMake().then(function (r) {
+      mvText = r.text; mvName = "life-os-move-" + ymd() + ".json";
+      var c = r.code, groups = c.replace(/(.{4})(?!$)/g, "$1-");
+      gmTouch("Sealed a move to another phone", "a file you share");
+      gmDlg('<div class="gm-mv" role="group" aria-label="Move to another phone">'
+        + '<div style="font-weight:800;font-size:15px;margin-bottom:6px">Move to another phone</div>'
+        + '<div style="font-size:13px;line-height:1.5;margin-bottom:10px">Your life is sealed in one file. Send it to yourself, then on the new phone open the Life OS, tap <b>Bring my life here</b> and scan this code.</div>'
+        + '<button class="btn btn-p" id="gmMvShare" style="width:100%;margin-bottom:10px" onclick="gmMoveShare()">Share the file</button>'
+        + '<div class="gm-mv-qr" style="max-width:180px;margin:0 auto 6px">' + (window.SXQR ? SXQR.svg(MV_QR + c, "The one-time code for this move, as a QR code") : "") + '</div>'
+        + '<div style="font-size:12px;color:var(--muted);text-align:center">No camera there? Type this instead:</div>'
+        + '<div class="gm-mv-code" style="font-family:monospace;font-size:17px;font-weight:800;letter-spacing:1px;text-align:center;margin:2px 0 8px">' + esc(groups) + '</div>'
+        + '<div style="font-size:11.5px;color:var(--muted);line-height:1.5;margin-bottom:10px">The file opens only with this code, and the code never leaves this screen. Show it only to your own new phone. The file stops working after two days.</div>'
+        + '<button class="btn btn-s" style="width:100%" onclick="gmMoveDone()">Done</button></div>');
+    }).catch(function (e) { gmToast("Nothing was sealed: " + (e && e.message || e)); });
+  };
+  window.gmMoveShare = function () {
+    if (!mvText) return Promise.resolve(false);
+    return shareFile(mvText, mvName, "My Life OS, for my new phone").then(function (how) {
+      gmToast(how === "shared" ? "Sent. Now scan the code from the new phone." : "Saved on this phone. Send it to the new one, then scan the code.");
+      return how;
+    });
+  };
+  window.gmMoveDone = function () { mvText = null; gmClose(); };
+  // New phone: step 3 (Open the file), then step 4 (Scan the code, or type it)
+  window.gmMoveIn = function () {
+    var inp = document.createElement("input");
+    inp.type = "file"; inp.accept = ".json,application/json";
+    inp.onchange = function () {
+      var f = inp.files && inp.files[0]; if (!f) return;
+      if (f.size > 30e6) { gmToast("That file is too large to be a move file. Nothing was changed."); return; }
+      var rd = new FileReader();
+      rd.onload = function () { gmMoveAsk(String(rd.result)); };
+      rd.readAsText(f);
+    };
+    inp.click();
+  };
+  window.gmMoveAsk = function (text) {
+    var env = null; try { env = JSON.parse(text); } catch (e) {}
+    if (!env || env.kind !== MV_KIND) { gmToast("This is not a move file from the Life OS. Nothing was changed."); return false; }
+    mvText = text;
+    var cam = typeof window.BarcodeDetector === "function";
+    gmDlg('<div class="gm-mv-in"><div style="font-weight:800;font-size:15px;margin-bottom:6px">Bring my life here</div>'
+      + '<div style="font-size:13px;line-height:1.5;margin-bottom:10px">' + (cam ? 'Scan the code your old phone shows.' : 'Type the code your old phone shows.') + '</div>'
+      + (cam ? '<button class="btn btn-p" style="width:100%;margin-bottom:10px" onclick="gmMoveScan()">Scan the code</button>' : '')
+      + '<label class="f-label" for="gmMvCode">' + (cam ? 'Or type the four groups' : 'The four groups') + '</label>'
+      + '<input id="gmMvCode" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="24" placeholder="XXXX-XXXX-XXXX-XXXX" style="font-family:monospace">'
+      + '<div style="display:flex;gap:8px"><button class="btn ' + (cam ? 'btn-s' : 'btn-p') + '" onclick="gmMoveCode(document.getElementById(\'gmMvCode\').value)">Bring it here</button>'
+      + '<button class="btn btn-s" onclick="gmMoveDone()">Cancel</button></div></div>');
+    return true;
+  };
+  // the camera is the phone's own (one photo of the code, read here by the browser's barcode reader): no video stream, no extra permission
+  window.gmMoveScan = function () {
+    var inp = document.createElement("input");
+    inp.type = "file"; inp.accept = "image/*"; inp.setAttribute("capture", "environment");
+    inp.onchange = function () {
+      var f = inp.files && inp.files[0]; if (!f) return;
+      var det; try { det = new BarcodeDetector({ formats: ["qr_code"] }); } catch (e) { gmToast("This phone cannot read codes: type the four groups instead."); return; }
+      createImageBitmap(f).then(function (img) { return det.detect(img); }).then(function (found) {
+        var hit = (found || []).map(function (x) { return String(x.rawValue || ""); }).filter(function (v) { return v.indexOf(MV_QR) === 0; })[0];
+        if (!hit) { gmToast("No move code in that photo. Try again, a little closer, or type the four groups."); return; }
+        gmMoveCode(hit);
+      }).catch(function () { gmToast("That photo could not be read. Type the four groups instead."); });
+    };
+    inp.click();
+  };
+  window.gmMoveCode = function (code) {
+    if (!mvText) return Promise.resolve(false);
+    return gmMoveOpen(mvText, code).then(function (mv) {
+      var r = gmMoveApply(mv);
+      mvText = null; gmClose();
+      if (!r.ok) { gmToast(r.why); return r; }
+      gmToast("Your life is here: " + r.n + " items from " + mv.from + (r.kept ? ". " + r.kept + " newer item(s) on this phone were kept" : "") + ". Undo is in Settings for 30 minutes.");
+      if (window.renderAll) renderAll();
+      return r;
+    }).catch(function (e) { gmToast(e && e.message || String(e)); return false; });
+  };
+  function moveHTML() {
+    var fresh = !window.P || !!window.P.example;
+    return '<div class="gm-move" style="margin-bottom:12px"><div class="info">Moving to a new phone? Nothing to set up and nothing to type: '
+      + 'the old phone seals your life into one file and shows a code; the new phone opens the file and scans the code. No server sees it.</div>'
+      + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
+      + '<button class="btn ' + (fresh ? 'btn-s' : 'btn-p') + '" data-move-out onclick="gmMoveOut()">Move to another phone</button>'
+      + '<button class="btn ' + (fresh ? 'btn-p' : 'btn-s') + '" data-move-in onclick="gmMoveIn()">Bring my life here</button></div></div>';
+  }
+  // The estate sync is offered only when an estate answers on this page's own address: the door path the hub's web server serves,
+  // readable here, saying exactly who it is (a 404, a Pages site or an error page never passes). Nothing is invented.
+  var estateUp = false;
+  window.gmEstateProbe = function () {
+    if (!/^https?:$/.test(location.protocol) || typeof fetch === "undefined") return Promise.resolve(false);
+    return fetch(location.origin + "/_door.json", { cache: "no-store", credentials: "omit" })
+      .then(function (r) { return r && r.ok ? r.json() : null; })
+      .then(function (j) {
+        var up = !!(j && j.ok === true && j.service === "securax-command-center");
+        if (up !== estateUp) { estateUp = up; if (window.renderAll) renderAll(); }
+        return up;
+      }).catch(function () { return false; });
+  };
+  window.gmEstateUp = function () { return estateUp; };
+
   function healthHTML() {
     var rows = [], c = cfg(), last = G("gm_sync_last", null), exp = G("gm_last_export", null);
     var bytes = storageBytes(), kb = Math.round(bytes / 1024);
@@ -10698,7 +11032,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
 
     // Sync
     if (!c) row(null, "Cross-device sync is off",
-      "This device keeps its own copy. Use Export below before switching devices, or turn sync on.");
+      "This device keeps its own copy. Moving to a new phone: Connections \u2192 Move to another phone (one file and one scan, no server).");
     else if (!last) row(false, "Sync configured but nothing has been pushed yet",
       "Change any value to trigger the first push. If this stays empty, check the estate gateway is up and reachable (Tailscale) and the browser console for a 4xx from the sync endpoint.");
     else {
@@ -12121,7 +12455,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     h += foldHTML("\u{1F4C5} The rhythm", RITUALS.length + " rituals, each shows on Today only when due", cad, false);
     h += (window.gmLangHTML ? gmLangHTML() : '') + '<div style="margin-top:16px">' + healthHTML() + '</div>';
     h += foldHTML("\u{1F3F3} When it goes wrong", inRecovery() ? "recovery mode is ON" : "pause rituals for a bad week", recoveryHTML(), !!inRecovery());
-    h += foldHTML("\u{1F517} Connections", "sync, Microsoft 365, phone reminders \u00b7 all optional",
+    h += foldHTML("\u{1F517} Connections", "move to another phone, sync, Microsoft 365, phone reminders \u00b7 all optional",
       '<div class="info">None of these is needed to use the app. Sync copies your data to your own estate; Microsoft 365 shows today\u2019s calendar on Today; reminders nudge your phone when something is due.</div>'
       + syncHTML() + '<div style="margin-top:12px">' + msHTML() + '</div><div style="margin-top:12px">' + pushHTML() + '</div>', false);
     h += foldHTML("\u{1F441} Who touched my data", touchRows().length ? "last: " + esc(touchRows()[0].w) : "nothing has left this device", touchHTML(), false);
@@ -16185,6 +16519,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     try { var pr = G("gm_props", null); if ((!pr || !pr.length) && window.P && window.P.example) { if (window.gmTplProp) gmTplProp(); } } catch (e) {}
     gmSyncLinkImport(); gmPackLinkImport();
     gmMoveInit();
+    gmEstateProbe();
     gmSyncInit();
     gmAccessPair();
     gmOdSync();
