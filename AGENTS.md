@@ -222,7 +222,7 @@ Before merging anything the router calls strong, get a second look: `./securax r
 2. A PWA change: `node build.js`, then `npm test` in `guiding-map/`, then `python3 guiding-map/tests/ui_audit.py OUTDIR`. It must report 0 page errors and 0 contrast failures, in both themes.
 3. `git add -A`, **then** `python3 -m lifecycle.fitness`: untracked files are invisible to the impact-map check.
 4. The paperwork that rides with every change:
-   - **CHANGELOG:** a line under `[Unreleased]`.
+   - **CHANGELOG:** a line under `[Unreleased]`. A change may add `changes/<branch>.md` (one line, no bullet) instead of editing `CHANGELOG.md`; `python3 tools/changelog_fold.py` folds it in.
    - **Status lights:** edit `docs/status.yml`, then run `python3 docs/sync_status.py`.
    - **Docs nav:** a new doc goes in `mkdocs.yml` nav.
    - **README:** `python3 tools/readme_sync.py`.
