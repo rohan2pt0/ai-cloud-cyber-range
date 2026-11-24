@@ -1603,7 +1603,7 @@
     var out = [], all = props(), L = loansLeft();
     all.forEach(function (p, i) {
       if (!p || p.use === "rented") return;
-      var nm = esc(p.n || "Property " + (i + 1));
+      var nm = esc(gmTidyName(p.n) || "Property " + (i + 1));
       if (/^example/i.test(String(p.n || ""))) { out.push({ w: 100, t: "<b>" + nm + "</b> is still the worked example, and its numbers count as yours.", b: [["Remove it", "gmPropDel(" + i + ")"]] }); return; }
       if (!num(p.val)) out.push({ w: 90, t: "Is <b>" + nm + "</b> yours? It has no value, so net worth cannot count it. If you rent it, say so and it is left out.",
         b: [["We rent it", "gmPropSet(" + i + ",'use','rented')"], ["Type its value", "goTab('prop')"]] });
@@ -2352,6 +2352,14 @@
   function llNum(v) { var n = parseFloat(String(v === undefined || v === null ? "" : v).replace(/[,\s₹]/g, "")); return isFinite(n) ? n : 0; }
   function llShow(d) { return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }); }   // 4 Jan 2026, never an ISO string
   function llBadge(cls, word) { return '<span class="' + cls + '" style="font-size:11.5px;font-weight:700;padding:2px 10px;border-radius:999px;white-space:nowrap;color:' + (cls === "sx-state-watch" ? "#2a1703" : "#fff") + '">' + esc(word) + '</span>'; }
+  /* A stored name tidied for showing, never for saving (owner, 2026-11-24): "101_SunriseCHS_Testville" reads "101 Sunrise CHS, Testville".
+     Underscores become spaces, a lower-to-upper join gets a space, runs of spaces collapse, and the last part after two or more
+     separators reads as the place. The stored value is never changed. */
+  window.gmTidyName = function (n) {
+    var parts = String(n === undefined || n === null ? "" : n).split("_").map(function (x) { return x.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/\s+/g, " ").trim(); }).filter(Boolean);
+    if (parts.length >= 3) { var place = parts.pop(); return parts.join(" ") + ", " + place; }
+    return parts.join(" ");
+  };
   function llMH() { var f = G("gm_facts", {}) || {}; return f.state === "MH"; }
   /* Coming up in your world (immersive-real, owner 2026-11-23): the next real events, worked out from what the person already
      told us, with nothing to type: birthdays of the people at home, a loan's last EMI, a let-out home's rent, tax, renewal and
@@ -2405,9 +2413,9 @@
       var d = new Date(t0.getFullYear(), t0.getMonth() + m, t0.getDate());
       out.push({ d: d, kind: "loan", t: esc(x.type || "Loan " + (i + 1)) + ": last EMI", s: rs(num(x.emi)) + " a month frees up after it. Decide now where it goes." });
     });
-    props().forEach(function (p) {
+    props().forEach(function (p, pi) {
       if (!p || (p.use || "letout") !== "letout") return;
-      llRows(p).forEach(function (r) { out.push({ d: r.d, kind: "home", t: esc(p.n || "Your flat") + ": " + esc(r.t), s: "Mark it done on the Property tab." }); });
+      llRows(p).forEach(function (r) { out.push({ d: r.d, kind: "home", t: esc(gmTidyName(p.n) || "Your flat") + ": " + esc(r.t), s: "", pi: pi, id: r.id, act: r.act, key: r.key || "", btn: r.btn }); });
     });
     out.push({ d: new Date(t0.getFullYear(), t0.getMonth() + 1, 1), kind: "checkin", t: "Month-end money check-in", s: "One balance each. Two minutes." });
     return out.map(function (x) { x.days = days(x.d); return x; }).filter(function (x) { return x.days <= 45; })
@@ -2416,17 +2424,21 @@
   window.gmComingUpHTML = function () {
     var L = window.gmComingUp ? gmComingUp() : []; if (!window.P || P.example) return "";
     var moon = function (n) { return SXWorld.moon(n); };   // the shared moon (shared/world.js): waxes as the day comes near
-    var when = function (n) { return n < 0 ? (-n) + (n === -1 ? " day late" : " days late") : n === 0 ? "today" : n === 1 ? "tomorrow" : "in " + n + " days"; };
+    // a slip is named once and kindly: "Still open", never a count of days late
+    var when = function (n) { return n < 0 ? "Still open" : n === 0 ? "today" : n === 1 ? "tomorrow" : "in " + n + " days"; };
     var date = function (d) { return d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }); };
-    var row = function (x) {
-      var st = x.days < 0 || x.days <= 3 ? "low" : x.days <= 14 ? "watch" : "good";
+    var done = function (x, cls, txt) { return '<button type="button" class="' + cls + '" onclick="gmLlDone(' + x.pi + ',\'' + x.act + '\',\'' + esc(x.key) + '\')">' + txt + '</button>'; };
+    var row = function (x, inView) {
+      var st = x.days < 0 ? "watch" : x.days <= 3 ? "low" : x.days <= 14 ? "watch" : "good";
+      var small = x.days < 0 ? "since " + date(x.d) : date(x.d), paper = x.id === "police" || x.id === "registration";
+      var act = inView && x.act ? '<div class="gm-cu-act">' + done(x, "btn-sm gm-cu-done", esc(x.btn || "Done")) + (paper ? done(x, "gm-cu-already", "Already done") : "") + '</div>' : "";
       return '<div class="gm-cu-row" role="listitem" aria-label="' + x.t.replace(/<[^>]+>/g, "") + ', ' + when(x.days) + '">' + moon(x.days)
-        + '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:14px">' + x.t + '</div><div style="font-size:12.5px;color:var(--muted)">' + x.s + '</div></div>'
-        + '<div class="gm-cu-when gm-cu-' + st + '">' + when(x.days) + '<small>' + date(x.d) + '</small></div></div>';
+        + '<div style="flex:1;min-width:0"><div class="gm-cu-t" style="font-weight:700;font-size:14px;overflow-wrap:anywhere">' + x.t + '</div>' + (x.s ? '<div style="font-size:12.5px;color:var(--muted);overflow-wrap:anywhere">' + x.s + '</div>' : "") + act + '</div>'
+        + '<div class="gm-cu-when gm-cu-' + st + '">' + when(x.days) + '<small>' + small + '</small></div></div>';
     };
     return '<div class="road-col gm-cu" style="margin:10px 0"><div style="font-weight:800;font-size:13.5px;margin-bottom:4px">Coming up in your world</div><div role="list">'
-      + L.slice(0, 3).map(row).join("") + '</div>'
-      + (L.length > 3 ? '<details style="margin-top:4px"><summary style="cursor:pointer;font-size:12.5px">Later (' + (L.length - 3) + ')</summary><div role="list">' + L.slice(3).map(row).join("") + '</div></details>' : "") + gmPeopleFormHTML() + '</div>';
+      + L.slice(0, 1).map(function (x) { return row(x, true); }).join("") + '</div>'
+      + (L.length > 1 ? '<details style="margin-top:4px"><summary style="cursor:pointer;font-size:12.5px">Later (' + (L.length - 1) + ')</summary><div role="list">' + L.slice(1).map(function (x) { return row(x, false); }).join("") + '</div></details>' : "") + gmPeopleFormHTML() + '</div>';
   };
   function llRows(p) {
     var today = llDay(new Date()), rows = [], ym = llIso(today).slice(0, 7), mon = today.toLocaleString("en-IN", { month: "long" });
@@ -2551,11 +2563,13 @@
   window.gmLlDone = function (i, act, key) {
     var p = props(), x = p[i]; if (!x) return;
     var today = llIso(new Date());
+    try { if (typeof gmSnap === "function") gmSnap("marked a home paper done"); } catch (e) {}   // one tap, so one Undo
     if (act === "paid" || act === "mpaid") { x[act] = (x[act] && typeof x[act] === "object") ? x[act] : {}; x[act][key] = true; }
     else if (act === "tax") { var t = llParse(x.taxDue); if (t) x.taxDue = llIso(llAddMonths(t, 12)); }
     else if (act === "renew") { var st = llParse(x.start); if (st) { x.start = llIso(llAddMonths(st, llNum(x.months) || 11)); x.registered = ""; x.police = ""; } }
     else if (act === "registered" || act === "police") x[act] = today;
     S_("gm_props", p); renderAll();
+    if (typeof gmToast === "function") gmToast("Done" + (x.n ? ": " + gmTidyName(x.n) : "") + ". You can undo this from Today.");
   };
   window.gmLlCopy = function (id) {
     var el = document.getElementById(id), tx = el ? el.value : "";
@@ -2593,7 +2607,7 @@
       ["out", "Annual outgo \u2014 society + property tax + repairs (\u20b9)", "48000"],
       ["vac", "Vacant months per year (realistic, not hoped-for)", "1"]];
       h += '<details class="road-col" style="margin-bottom:12px" ' + (i === 0 ? "open" : "") + '>'
-        + '<summary style="cursor:pointer;font-weight:800;font-size:13.5px">' + esc(p.n || "Property")
+        + '<summary style="cursor:pointer;font-weight:800;font-size:13.5px;overflow-wrap:anywhere">' + esc(gmTidyName(p.n) || "Property")
         + (p.use === "rented" ? '<span style="float:right;color:var(--muted);font-weight:600">we rent it</span></summary>'
         : '<span style="float:right;color:' + (r.cashflow >= 0 ? "var(--green)" : "var(--amber)") + '">'
         + (r.cashflow >= 0 ? "+" : "") + Math.round(r.cashflow).toLocaleString("en-IN") + "/mo</span></summary>");
@@ -4374,7 +4388,7 @@
     if (num(l.ef)) rows.push("<li>Emergency fund: about \u20b9" + l.ef + " lakh \u2014 bank + sweep-in FD + liquid fund</li>");
     rows.push("<li>Password manager emergency access is the key to everything digital \u2014 it was set up for you; check your own email for the invitation</li>");
     rows.push("</ul><h3>Property</h3><ul>");
-    P.forEach(function (p) { if (p.n) rows.push("<li>" + p.n + (p.use === "self" ? " (home)" : " (let out)") + (num(p.loan) ? " \u2014 loan outstanding \u2248\u20b9" + p.loan + "L" : "") + "</li>"); });
+    P.forEach(function (p) { if (p.n) rows.push("<li>" + esc(gmTidyName(p.n)) + (p.use === "self" ? " (home)" : " (let out)") + (num(p.loan) ? " \u2014 loan outstanding \u2248\u20b9" + p.loan + "L" : "") + "</li>"); });
     var rp = G("gm_rapid", {}), rl = [];
     RAPID_D.forEach(function (x) { var v = rp[x[0]] || {}; if (v.d) rl.push("<li><b>" + x[1] + ":</b> " + v.d + " decides" + (v.r ? ", after asking " + v.r : "") + "</li>"); });
     if (rl.length) rows.push("</ul><h3>Who decides what</h3><ul>" + rl.join(""));

@@ -248,7 +248,7 @@ header{background:var(--navy);padding:13px 16px;display:flex;align-items:center;
 @media (prefers-reduced-motion: reduce){.gm-wave{animation:none}}
 .gm-cu-row{display:flex;align-items:center;gap:12px;padding:9px 0;border-top:1px solid var(--border)}.gm-cu-row:first-child{border-top:0}
 .gm-cu-when{min-width:74px;text-align:center;border-radius:12px;padding:5px 6px;font-weight:800;font-size:12.5px;line-height:1.2}.gm-cu-when small{display:block;font-weight:600;font-size:10.5px;opacity:.85}
-.gm-cu-low{background:#fbe1de;color:#8f1d16}.gm-cu-watch{background:#fbefd5;color:#6b4300}.gm-cu-good{background:#e3f3ea;color:#145c33}
+.gm-cu-low{background:#fbe1de;color:#8f1d16}.gm-cu-watch{background:#fbefd5;color:#6b4300}.gm-cu-good{background:#e3f3ea;color:#145c33}@media (max-width:480px){.gm-cu-row{flex-wrap:wrap;row-gap:4px}.gm-cu-row>div:nth-child(2){flex:1 1 calc(100% - 52px)!important}.gm-cu-when{margin-inline-start:50px;text-align:start;min-width:0;padding:4px 10px;display:flex;gap:8px;align-items:baseline}.gm-cu-when small{display:inline}}.gm-cu-act{display:flex;flex-wrap:wrap;gap:6px 14px;align-items:center;margin-top:6px}.gm-cu-done{background:var(--cardAlt);color:var(--text);min-height:44px}.gm-cu-already{background:none!important;box-shadow:none!important;border:0!important;border-radius:0!important;padding:10px 4px;min-height:44px;cursor:pointer;text-decoration:underline;color:var(--muted);font:inherit;font-size:12.5px}
 :root[data-theme="dark"] .gm-cu-low{background:#3a1715;color:#ffb4ab}:root[data-theme="dark"] .gm-cu-watch{background:#3a2a0c;color:#ffd48a}:root[data-theme="dark"] .gm-cu-good{background:#0f2e1e;color:#9be3b5}
 #gmVitals>div.sx-state-good{background-image:radial-gradient(90% 60% at 30% 0%,rgba(255,255,255,.12),rgba(255,255,255,0) 60%),linear-gradient(160deg,#2fae7a 0%,#13704f 55%,#0a4732 100%)} /* a green tile's small white words keep 4.5:1 (2026-11-20) */
 .ws-gem.sx-state-good{background-image:radial-gradient(90% 60% at 30% 0%,rgba(255,255,255,.12),rgba(255,255,255,0) 60%),linear-gradient(160deg,#2fae7a 0%,#13704f 55%,#0a4732 100%)} /* small text: a softer highlight keeps white figures above 4.5:1 */
@@ -6905,7 +6905,7 @@ function fres(c, i) { var m = Math.pow(1 - c, 5); return F0[i] + (1 - F0[i]) * m
    draws its numbers with: ONE engine here, any screen in any app uses it, never a private copy.
 
    Each object carries a fixed meaning (CATALOG), so a person learns it once and reads it everywhere:
-     moon       time coming near: waxes as a date approaches, full on the day, a red ring when late
+     moon       time coming near: waxes as a date approaches, full on the day, an amber ring when late (never red: a slip is named once, kindly)
      goldBars   wealth held against an aim: one ingot per unit, outlined ghosts up to the aim
      vessel     a buffer that lasts: water in glass, the level is how long it lasts, the etched line the aim
      treeRings  a habit's history: one ring per period, a ring's width is how well that period went
@@ -6933,7 +6933,7 @@ function fres(c, i) { var m = Math.pow(1 - c, 5); return F0[i] + (1 - F0[i]) * m
     { id: "sea", means: "calm and the breath: the swell rises as you breathe in, holds, falls as you breathe out", use: "breathing, rest, a pause", avoid: "money, alarms, warnings" }
   ];
 
-  /* ---- the moon: f = how full (0..1); late draws a red ring ---- */
+  /* ---- the moon: f = how full (0..1); late draws an amber ring ---- */
   function moon(daysAway, horizon) {
     var n = daysAway, f = n <= 0 ? 1 : Math.max(0.08, 1 - n / (horizon || 14)), r = 14, id = uid("sxm");
     return '<svg width="38" height="38" viewBox="0 0 38 38" aria-hidden="true" class="gm-moon sx-moon"><defs><clipPath id="' + id + '"><circle cx="19" cy="19" r="' + r + '"/></clipPath>'
@@ -6945,7 +6945,7 @@ function fres(c, i) { var m = Math.pow(1 - c, 5); return F0[i] + (1 - F0[i]) * m
       + '<circle cx="14" cy="14" r="4" fill="#9c9583" opacity=".35"/><circle cx="23" cy="21" r="3.2" fill="#9c9583" opacity=".3"/><circle cx="15.5" cy="24" r="2.2" fill="#8d8673" opacity=".35"/>'
       + '<circle cx="24" cy="12.5" r="1.4" fill="#8d8673" opacity=".45"/><circle cx="11" cy="20" r="1.1" fill="#8d8673" opacity=".45"/>'
       + '<circle cx="' + (19 + 2 * r * f) + '" cy="19" r="' + (r + 0.5) + '" fill="#0d1a2e" fill-opacity=".9" filter="url(#' + id + 'b)"/></g>'
-      + '<circle cx="19" cy="19" r="' + (r + 1.5) + '" fill="none" stroke="' + (n < 0 ? "#c0392b" : "rgba(160,150,120,.35)") + '" stroke-width="' + (n < 0 ? 2.5 : 1) + '"/></svg>';
+      + '<circle cx="19" cy="19" r="' + (r + 1.5) + '" fill="none" stroke="' + (n < 0 ? "#c98a1b" : "rgba(160,150,120,.35)") + '" stroke-width="' + (n < 0 ? 2.5 : 1) + '"/></svg>';
   }
 
   /* ---- gold bars: have solid ingots, want - have outlined ghosts, in a pyramid; label names one bar ---- */
@@ -8655,7 +8655,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     var out = [], all = props(), L = loansLeft();
     all.forEach(function (p, i) {
       if (!p || p.use === "rented") return;
-      var nm = esc(p.n || "Property " + (i + 1));
+      var nm = esc(gmTidyName(p.n) || "Property " + (i + 1));
       if (/^example/i.test(String(p.n || ""))) { out.push({ w: 100, t: "<b>" + nm + "</b> is still the worked example, and its numbers count as yours.", b: [["Remove it", "gmPropDel(" + i + ")"]] }); return; }
       if (!num(p.val)) out.push({ w: 90, t: "Is <b>" + nm + "</b> yours? It has no value, so net worth cannot count it. If you rent it, say so and it is left out.",
         b: [["We rent it", "gmPropSet(" + i + ",'use','rented')"], ["Type its value", "goTab('prop')"]] });
@@ -9404,6 +9404,14 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   function llNum(v) { var n = parseFloat(String(v === undefined || v === null ? "" : v).replace(/[,\s₹]/g, "")); return isFinite(n) ? n : 0; }
   function llShow(d) { return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }); }   // 4 Jan 2026, never an ISO string
   function llBadge(cls, word) { return '<span class="' + cls + '" style="font-size:11.5px;font-weight:700;padding:2px 10px;border-radius:999px;white-space:nowrap;color:' + (cls === "sx-state-watch" ? "#2a1703" : "#fff") + '">' + esc(word) + '</span>'; }
+  /* A stored name tidied for showing, never for saving (owner, 2026-11-24): "101_SunriseCHS_Testville" reads "101 Sunrise CHS, Testville".
+     Underscores become spaces, a lower-to-upper join gets a space, runs of spaces collapse, and the last part after two or more
+     separators reads as the place. The stored value is never changed. */
+  window.gmTidyName = function (n) {
+    var parts = String(n === undefined || n === null ? "" : n).split("_").map(function (x) { return x.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/\s+/g, " ").trim(); }).filter(Boolean);
+    if (parts.length >= 3) { var place = parts.pop(); return parts.join(" ") + ", " + place; }
+    return parts.join(" ");
+  };
   function llMH() { var f = G("gm_facts", {}) || {}; return f.state === "MH"; }
   /* Coming up in your world (immersive-real, owner 2026-11-23): the next real events, worked out from what the person already
      told us, with nothing to type: birthdays of the people at home, a loan's last EMI, a let-out home's rent, tax, renewal and
@@ -9457,9 +9465,9 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       var d = new Date(t0.getFullYear(), t0.getMonth() + m, t0.getDate());
       out.push({ d: d, kind: "loan", t: esc(x.type || "Loan " + (i + 1)) + ": last EMI", s: rs(num(x.emi)) + " a month frees up after it. Decide now where it goes." });
     });
-    props().forEach(function (p) {
+    props().forEach(function (p, pi) {
       if (!p || (p.use || "letout") !== "letout") return;
-      llRows(p).forEach(function (r) { out.push({ d: r.d, kind: "home", t: esc(p.n || "Your flat") + ": " + esc(r.t), s: "Mark it done on the Property tab." }); });
+      llRows(p).forEach(function (r) { out.push({ d: r.d, kind: "home", t: esc(gmTidyName(p.n) || "Your flat") + ": " + esc(r.t), s: "", pi: pi, id: r.id, act: r.act, key: r.key || "", btn: r.btn }); });
     });
     out.push({ d: new Date(t0.getFullYear(), t0.getMonth() + 1, 1), kind: "checkin", t: "Month-end money check-in", s: "One balance each. Two minutes." });
     return out.map(function (x) { x.days = days(x.d); return x; }).filter(function (x) { return x.days <= 45; })
@@ -9468,17 +9476,21 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   window.gmComingUpHTML = function () {
     var L = window.gmComingUp ? gmComingUp() : []; if (!window.P || P.example) return "";
     var moon = function (n) { return SXWorld.moon(n); };   // the shared moon (shared/world.js): waxes as the day comes near
-    var when = function (n) { return n < 0 ? (-n) + (n === -1 ? " day late" : " days late") : n === 0 ? "today" : n === 1 ? "tomorrow" : "in " + n + " days"; };
+    // a slip is named once and kindly: "Still open", never a count of days late
+    var when = function (n) { return n < 0 ? "Still open" : n === 0 ? "today" : n === 1 ? "tomorrow" : "in " + n + " days"; };
     var date = function (d) { return d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }); };
-    var row = function (x) {
-      var st = x.days < 0 || x.days <= 3 ? "low" : x.days <= 14 ? "watch" : "good";
+    var done = function (x, cls, txt) { return '<button type="button" class="' + cls + '" onclick="gmLlDone(' + x.pi + ',\'' + x.act + '\',\'' + esc(x.key) + '\')">' + txt + '</button>'; };
+    var row = function (x, inView) {
+      var st = x.days < 0 ? "watch" : x.days <= 3 ? "low" : x.days <= 14 ? "watch" : "good";
+      var small = x.days < 0 ? "since " + date(x.d) : date(x.d), paper = x.id === "police" || x.id === "registration";
+      var act = inView && x.act ? '<div class="gm-cu-act">' + done(x, "btn-sm gm-cu-done", esc(x.btn || "Done")) + (paper ? done(x, "gm-cu-already", "Already done") : "") + '</div>' : "";
       return '<div class="gm-cu-row" role="listitem" aria-label="' + x.t.replace(/<[^>]+>/g, "") + ', ' + when(x.days) + '">' + moon(x.days)
-        + '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:14px">' + x.t + '</div><div style="font-size:12.5px;color:var(--muted)">' + x.s + '</div></div>'
-        + '<div class="gm-cu-when gm-cu-' + st + '">' + when(x.days) + '<small>' + date(x.d) + '</small></div></div>';
+        + '<div style="flex:1;min-width:0"><div class="gm-cu-t" style="font-weight:700;font-size:14px;overflow-wrap:anywhere">' + x.t + '</div>' + (x.s ? '<div style="font-size:12.5px;color:var(--muted);overflow-wrap:anywhere">' + x.s + '</div>' : "") + act + '</div>'
+        + '<div class="gm-cu-when gm-cu-' + st + '">' + when(x.days) + '<small>' + small + '</small></div></div>';
     };
     return '<div class="road-col gm-cu" style="margin:10px 0"><div style="font-weight:800;font-size:13.5px;margin-bottom:4px">Coming up in your world</div><div role="list">'
-      + L.slice(0, 3).map(row).join("") + '</div>'
-      + (L.length > 3 ? '<details style="margin-top:4px"><summary style="cursor:pointer;font-size:12.5px">Later (' + (L.length - 3) + ')</summary><div role="list">' + L.slice(3).map(row).join("") + '</div></details>' : "") + gmPeopleFormHTML() + '</div>';
+      + L.slice(0, 1).map(function (x) { return row(x, true); }).join("") + '</div>'
+      + (L.length > 1 ? '<details style="margin-top:4px"><summary style="cursor:pointer;font-size:12.5px">Later (' + (L.length - 1) + ')</summary><div role="list">' + L.slice(1).map(function (x) { return row(x, false); }).join("") + '</div></details>' : "") + gmPeopleFormHTML() + '</div>';
   };
   function llRows(p) {
     var today = llDay(new Date()), rows = [], ym = llIso(today).slice(0, 7), mon = today.toLocaleString("en-IN", { month: "long" });
@@ -9603,11 +9615,13 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   window.gmLlDone = function (i, act, key) {
     var p = props(), x = p[i]; if (!x) return;
     var today = llIso(new Date());
+    try { if (typeof gmSnap === "function") gmSnap("marked a home paper done"); } catch (e) {}   // one tap, so one Undo
     if (act === "paid" || act === "mpaid") { x[act] = (x[act] && typeof x[act] === "object") ? x[act] : {}; x[act][key] = true; }
     else if (act === "tax") { var t = llParse(x.taxDue); if (t) x.taxDue = llIso(llAddMonths(t, 12)); }
     else if (act === "renew") { var st = llParse(x.start); if (st) { x.start = llIso(llAddMonths(st, llNum(x.months) || 11)); x.registered = ""; x.police = ""; } }
     else if (act === "registered" || act === "police") x[act] = today;
     S_("gm_props", p); renderAll();
+    if (typeof gmToast === "function") gmToast("Done" + (x.n ? ": " + gmTidyName(x.n) : "") + ". You can undo this from Today.");
   };
   window.gmLlCopy = function (id) {
     var el = document.getElementById(id), tx = el ? el.value : "";
@@ -9645,7 +9659,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       ["out", "Annual outgo \u2014 society + property tax + repairs (\u20b9)", "48000"],
       ["vac", "Vacant months per year (realistic, not hoped-for)", "1"]];
       h += '<details class="road-col" style="margin-bottom:12px" ' + (i === 0 ? "open" : "") + '>'
-        + '<summary style="cursor:pointer;font-weight:800;font-size:13.5px">' + esc(p.n || "Property")
+        + '<summary style="cursor:pointer;font-weight:800;font-size:13.5px;overflow-wrap:anywhere">' + esc(gmTidyName(p.n) || "Property")
         + (p.use === "rented" ? '<span style="float:right;color:var(--muted);font-weight:600">we rent it</span></summary>'
         : '<span style="float:right;color:' + (r.cashflow >= 0 ? "var(--green)" : "var(--amber)") + '">'
         + (r.cashflow >= 0 ? "+" : "") + Math.round(r.cashflow).toLocaleString("en-IN") + "/mo</span></summary>");
@@ -11426,7 +11440,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     if (num(l.ef)) rows.push("<li>Emergency fund: about \u20b9" + l.ef + " lakh \u2014 bank + sweep-in FD + liquid fund</li>");
     rows.push("<li>Password manager emergency access is the key to everything digital \u2014 it was set up for you; check your own email for the invitation</li>");
     rows.push("</ul><h3>Property</h3><ul>");
-    P.forEach(function (p) { if (p.n) rows.push("<li>" + p.n + (p.use === "self" ? " (home)" : " (let out)") + (num(p.loan) ? " \u2014 loan outstanding \u2248\u20b9" + p.loan + "L" : "") + "</li>"); });
+    P.forEach(function (p) { if (p.n) rows.push("<li>" + esc(gmTidyName(p.n)) + (p.use === "self" ? " (home)" : " (let out)") + (num(p.loan) ? " \u2014 loan outstanding \u2248\u20b9" + p.loan + "L" : "") + "</li>"); });
     var rp = G("gm_rapid", {}), rl = [];
     RAPID_D.forEach(function (x) { var v = rp[x[0]] || {}; if (v.d) rl.push("<li><b>" + x[1] + ":</b> " + v.d + " decides" + (v.r ? ", after asking " + v.r : "") + "</li>"); });
     if (rl.length) rows.push("</ul><h3>Who decides what</h3><ul>" + rl.join(""));
