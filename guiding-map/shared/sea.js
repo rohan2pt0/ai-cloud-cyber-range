@@ -17,7 +17,11 @@
    - Cost: ONE WebGL context (released on stop), 30 frames a second, only while the pacer is open, on screen and the
      page visible. Reduced motion: a still sea, only the words and a small level line move. jsdom: no canvas, no timer,
      the SVG pacer stays. An automated browser: one still frame. No WebGL: a 2D canvas sea; no canvas: the SVG.
-   - Sound (off by default, one tap): WebAudio filtered noise, louder and brighter as the swell rises. No files, no network.
+   - Sound (off by default, one tap): ONE WebAudio graph for sea and breath, SXSea.sound(mode), mode "sea" or "both". The sea is
+     filtered noise, louder and brighter as the swell rises. The breath is a soft synthesised breath (filtered noise through two
+     formants): it rises in pitch and volume on the in-breath, rests almost silent on the hold, and falls longer and softer on the
+     out-breath. Its envelope is the pure function SXSea.breathEnv(t). No files, no network; it starts only after a tap and fades
+     in and out over half a second. The card and the full-screen guide (gmBreathe in ops.js) both use it.
    Use: SXSea.mount(element) -> { stop(), mode }. The element holds .sx-sea-word, .sx-sea-n, .sx-sea-level, .sx-sea-snd. */
 (function () {
   "use strict";
@@ -154,11 +158,12 @@
       if (word && b.word !== st.lastWord) { word.textContent = b.word; st.lastWord = b.word; }
       if (num && num.textContent !== String(b.count)) num.textContent = b.count;
       if (lvl) lvl.style.transform = "translateY(" + (-b.b * 38).toFixed(1) + "px)";
-      if (st.audio) st.audio.set(b.b);
+      if (st.audio) st.audio.set(b.b, t);
       return b;
     }
     if (isJsdom()) { sayWords(0); stats.mode = "svg"; return handle; }   // no canvas in a test DOM: the SVG pacer stays, no timer
 
+    var oldCv = el.querySelector(".sx-sea-cv"); if (oldCv) oldCv.parentNode.removeChild(oldCv);   // a remount never stacks canvases
     var cv = doc.createElement("canvas"); cv.className = "sx-sea-cv"; cv.setAttribute("aria-hidden", "true");
     el.insertBefore(cv, el.firstChild); st.cv = cv;
     initGL();
@@ -258,7 +263,7 @@
       snd.hidden = false;
       snd.onclick = function () {
         if (st.audio) { st.audio.off(); st.audio = null; snd.setAttribute("aria-pressed", "false"); return; }
-        st.audio = sound(); if (st.audio) { snd.setAttribute("aria-pressed", "true"); st.audio.set(breath(now()).b); }
+        st.audio = sound("sea"); if (st.audio) { snd.setAttribute("aria-pressed", "true"); st.audio.set(breath(now()).b, now()); }
       };
     }
     if (!still) {
@@ -269,24 +274,64 @@
     return handle;
   }
 
-  // The sea's sound: brown-ish noise through a low-pass that opens, and a gain that swells, with the breath. One tap off.
-  function sound() {
+  /* The breath's own voice, as a pure function of time in the 16 s box (t seconds). g is the gain (0..0.16), f the pitch and
+     brightness (0 low .. 1 high). In-breath: rises over 3.6 s to its peak, then drops to near silence for the hold. Hold: near
+     silence. Out-breath: starts at once, softer (peak 0.10), and falls over 5.5 s, so it runs on into the last hold:
+     longer and softer than the in-breath. The last hold is near silence. */
+  var IN_PEAK = 0.16, EX_PEAK = 0.10, REST = 0.004, EX_LEN = 5.5;
+  function breathEnv(t) {
+    var c = ((t % BREATH) + BREATH) % BREATH, g, f;
+    if (c < 4) {
+      f = ease(c / 4);
+      g = c < 3.6 ? REST + (IN_PEAK - REST) * ease(c / 3.6) : REST + (IN_PEAK - REST) * (1 - ease((c - 3.6) / 0.4));
+    } else if (c < 8) { g = REST; f = 1; }
+    else {
+      var u = Math.min(1, (c - 8) / EX_LEN);
+      f = 0.6 * (1 - ease(u));
+      g = REST + (EX_PEAK - REST) * (1 - ease(u)) * ease(Math.min(1, (c - 8) / 0.3));
+    }
+    return { g: g, f: f };
+  }
+  // The one sound graph: sea noise + breath voice -> master (fades 0.5 s). mode "sea" or "both"; set(b, t) follows the breath;
+  // off() fades out and closes. Created only from a tap (the caller's job); returns null where Web Audio is absent.
+  function sound(mode) {
     try {
       var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null;
-      var ac = new AC(), len = ac.sampleRate * 4, buf = ac.createBuffer(1, len, ac.sampleRate), d = buf.getChannelData(0), v = 0, i;
+      var ac = new AC(), sr = ac.sampleRate, len = sr * 4, buf = ac.createBuffer(1, len, sr), d = buf.getChannelData(0), v = 0, i;
       for (i = 0; i < len; i++) { v = (v + 0.02 * (Math.random() * 2 - 1)) / 1.02; d[i] = v * 3.5; }
+      var wb = ac.createBuffer(1, sr * 2, sr), wd = wb.getChannelData(0);
+      for (i = 0; i < wd.length; i++) wd[i] = Math.random() * 2 - 1;
+      var master = ac.createGain(), T0 = ac.currentTime; master.gain.setValueAtTime(0, T0); master.gain.linearRampToValueAtTime(1, T0 + 0.5);
+      master.connect(ac.destination);
       var src = ac.createBufferSource(); src.buffer = buf; src.loop = true;
       var lp = ac.createBiquadFilter(); lp.type = "lowpass"; lp.frequency.value = 300; lp.Q.value = 0.4;
-      var gn = ac.createGain(); gn.gain.value = 0;
-      src.connect(lp); lp.connect(gn); gn.connect(ac.destination); src.start();
+      var sg = ac.createGain(); sg.gain.value = 0; src.connect(lp); lp.connect(sg); sg.connect(master); src.start();
+      var wn = ac.createBufferSource(); wn.buffer = wb; wn.loop = true;
+      var b1 = ac.createBiquadFilter(), b2 = ac.createBiquadFilter(), g2 = ac.createGain(), bg = ac.createGain();
+      b1.type = "bandpass"; b1.Q.value = 1.6; b1.frequency.value = 450; b2.type = "bandpass"; b2.Q.value = 3; b2.frequency.value = 1400; g2.gain.value = 0.45; bg.gain.value = 0;
+      wn.connect(b1); wn.connect(b2); b1.connect(bg); b2.connect(g2); g2.connect(bg); bg.connect(master); wn.start();
+      var m = mode === "both" ? "both" : "sea", done = false;
       return {
-        set: function (b) { var t = ac.currentTime; lp.frequency.setTargetAtTime(260 + 900 * b, t, 0.4); gn.gain.setTargetAtTime(0.05 + 0.16 * b, t, 0.4); },
-        off: function () { try { gn.gain.setTargetAtTime(0, ac.currentTime, 0.2); setTimeout(function () { try { src.stop(); ac.close(); } catch (e) {} }, 600); } catch (e) {} }
+        ctx: ac,
+        mode: function (x) { m = x === "both" ? "both" : "sea"; },
+        set: function (b, t) {
+          if (done) return; var T = ac.currentTime;
+          lp.frequency.setTargetAtTime(260 + 900 * b, T, 0.4); sg.gain.setTargetAtTime(0.05 + 0.16 * b, T, 0.4);
+          var e = breathEnv(t == null ? 0 : t);
+          b1.frequency.setTargetAtTime(450 + 450 * e.f, T, 0.12); b2.frequency.setTargetAtTime(1400 + 900 * e.f, T, 0.12);
+          bg.gain.setTargetAtTime(m === "both" ? e.g * 3 : 0, T, 0.1);
+        },
+        resume: function () { try { if (ac.resume) ac.resume(); } catch (e) {} },
+        off: function () {
+          if (done) return; done = true;
+          try { var T = ac.currentTime; master.gain.cancelScheduledValues(T); master.gain.setValueAtTime(master.gain.value, T); master.gain.linearRampToValueAtTime(0, T + 0.5); } catch (e) {}
+          setTimeout(function () { try { src.stop(); wn.stop(); ac.close(); } catch (e) {} }, 600);
+        }
       };
     } catch (e) { return null; }
   }
 
-  var api = window.SXSea = { clock: null, coxMunk: coxMunk, slopeVar: slopeVar, mount: mount, stats: stats, G: G, BREATH: BREATH, WIND: WIND, EYE: EYE, SWELL_A: SWELL_A, SWELL_K: SWELL_K, LAMBDA: LAMBDA,
+  var api = window.SXSea = { clock: null, sound: sound, breathEnv: breathEnv, coxMunk: coxMunk, slopeVar: slopeVar, mount: mount, stats: stats, G: G, BREATH: BREATH, WIND: WIND, EYE: EYE, SWELL_A: SWELL_A, SWELL_K: SWELL_K, LAMBDA: LAMBDA,
     pm: pm, hsPM: hsPM, peak: peak, spectrum: spectrum, hsOf: hsOf, phaseSpeed: phaseSpeed, kOf: kOf, breath: breath,
     swellPhase: swellPhase, swellAt: swellAt, heightAt: heightAt, jacobian: jacobian, current: function () { return cur && cur.handle; } };
 })();

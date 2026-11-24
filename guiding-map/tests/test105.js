@@ -6,7 +6,7 @@ let P = 0, F = 0, e = []; const ok = (n, c, d) => { c ? P++ : (F++, e.push(n + (
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
 const head = html.slice(0, html.indexOf('</head>'));
 ok("the veil is set in the head, before any app code", /classList\.add\("gm-boot"\)/.test(head) && head.indexOf('gm-boot') < head.indexOf('<script src') + 1e9);
-ok("a stored lock locks the page from the first frame", /getItem\("gm_lock"\)\)d\.classList\.add\("gm-locked"\)/.test(head));
+ok("a stored lock locks the page from the first frame, unless it is marked off (off keeps the code, 2026-11-24)", /lk=localStorage\.getItem\("gm_lock"\);if\(lk&&lk\.indexOf\('"off":true'\)<0\)d\.classList\.add\("gm-locked"\)/.test(head));
 ok("there is a time-out release", /setTimeout\(function\(\)\{d\.classList\.remove\("gm-boot"\);\},4000\)/.test(head));
 ok("the veil hides everything but the lock", /html\.gm-boot body>\*:not\(#gmLock\)/.test(head));
 const dom = new JSDOM(html, { runScripts: "dangerously", pretendToBeVisual: true, url: "https://hub.securax.localhost/",

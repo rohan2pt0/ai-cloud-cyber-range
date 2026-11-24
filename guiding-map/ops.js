@@ -768,14 +768,18 @@
           : '<button class="btn btn-p" data-sync-share onclick="gmSyncShare()">Add another device</button>'
             + '<div class="f-label" style="text-transform:none;letter-spacing:0;margin:6px 0 10px">Sends a link to your own phone, iPad or laptop (AirDrop, Nearby Share or a note to yourself). Opening it there turns sync on: nothing to type. It holds your sync key, so send it to no one else.</div>')
         + '<button class="btn btn-s" onclick="gmSyncOff()">Turn sync off</button>';
-    } else {
-      h += '<div class="info">Your devices stay in step through <b>your own SecuRAX estate</b>, not a cloud service. '
+    } else if (estateUp) {
+      // only where this page's own address answered as a SecuRAX estate (gmEstateProbe): the address is then real, never invented
+      h += moveHTML() + '<div class="info">This page comes from <b>your own SecuRAX estate</b>, so your devices can also stay in step through it, not a cloud service. '
         + 'To add this device: on a device that already syncs, open this card and tap <b>Add another device</b>. Nothing to type here.</div>'
-        + '<details class="gm-sync-hand" style="margin-top:8px"><summary style="cursor:pointer;font-size:12.5px;color:var(--muted)">Set it up by hand</summary>'
-        + '<label class="f-label">Estate sync URL</label><input id="syUrl" value="' + (TS_ORIGIN || SECURE_ORIGIN ? location.origin + "/sync" : "") + '" placeholder="' + (SECURE_ORIGIN ? location.origin + "/sync" : "http://securax.your-tailnet.ts.net:8089/sync") + '">'
+        + '<details class="gm-sync-hand" style="margin-top:8px"><summary style="cursor:pointer;font-size:12.5px;color:var(--muted)">Set it up by hand (for the estate\u2019s engineer)</summary>'
+        + '<label class="f-label">Estate sync URL</label><input id="syUrl" value="' + esc(location.origin + "/sync") + '">'
         + '<label class="f-label">Device token</label><input id="syKey" placeholder="your estate sync token">'
         + '<label class="f-label">Your row id (anything, same on every device)</label><input id="syUser" placeholder="me">'
         + '<button class="btn btn-s" onclick="gmSyncSave()">Turn sync on</button></details>';
+    } else {
+      // no estate answers here (a Pages copy, a file, a laptop that is off): the move works anyway, and no form asks for an address
+      h += moveHTML();
     }
     return h;
   }
@@ -1603,7 +1607,7 @@
     var out = [], all = props(), L = loansLeft();
     all.forEach(function (p, i) {
       if (!p || p.use === "rented") return;
-      var nm = esc(p.n || "Property " + (i + 1));
+      var nm = esc(gmTidyName(p.n) || "Property " + (i + 1));
       if (/^example/i.test(String(p.n || ""))) { out.push({ w: 100, t: "<b>" + nm + "</b> is still the worked example, and its numbers count as yours.", b: [["Remove it", "gmPropDel(" + i + ")"]] }); return; }
       if (!num(p.val)) out.push({ w: 90, t: "Is <b>" + nm + "</b> yours? It has no value, so net worth cannot count it. If you rent it, say so and it is left out.",
         b: [["We rent it", "gmPropSet(" + i + ",'use','rented')"], ["Type its value", "goTab('prop')"]] });
@@ -2352,6 +2356,14 @@
   function llNum(v) { var n = parseFloat(String(v === undefined || v === null ? "" : v).replace(/[,\s₹]/g, "")); return isFinite(n) ? n : 0; }
   function llShow(d) { return d.toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" }); }   // 4 Jan 2026, never an ISO string
   function llBadge(cls, word) { return '<span class="' + cls + '" style="font-size:11.5px;font-weight:700;padding:2px 10px;border-radius:999px;white-space:nowrap;color:' + (cls === "sx-state-watch" ? "#2a1703" : "#fff") + '">' + esc(word) + '</span>'; }
+  /* A stored name tidied for showing, never for saving (owner, 2026-11-24): "101_SunriseCHS_Testville" reads "101 Sunrise CHS, Testville".
+     Underscores become spaces, a lower-to-upper join gets a space, runs of spaces collapse, and the last part after two or more
+     separators reads as the place. The stored value is never changed. */
+  window.gmTidyName = function (n) {
+    var parts = String(n === undefined || n === null ? "" : n).split("_").map(function (x) { return x.replace(/([a-z])([A-Z])/g, "$1 $2").replace(/\s+/g, " ").trim(); }).filter(Boolean);
+    if (parts.length >= 3) { var place = parts.pop(); return parts.join(" ") + ", " + place; }
+    return parts.join(" ");
+  };
   function llMH() { var f = G("gm_facts", {}) || {}; return f.state === "MH"; }
   /* Coming up in your world (immersive-real, owner 2026-11-23): the next real events, worked out from what the person already
      told us, with nothing to type: birthdays of the people at home, a loan's last EMI, a let-out home's rent, tax, renewal and
@@ -2405,9 +2417,9 @@
       var d = new Date(t0.getFullYear(), t0.getMonth() + m, t0.getDate());
       out.push({ d: d, kind: "loan", t: esc(x.type || "Loan " + (i + 1)) + ": last EMI", s: rs(num(x.emi)) + " a month frees up after it. Decide now where it goes." });
     });
-    props().forEach(function (p) {
+    props().forEach(function (p, pi) {
       if (!p || (p.use || "letout") !== "letout") return;
-      llRows(p).forEach(function (r) { out.push({ d: r.d, kind: "home", t: esc(p.n || "Your flat") + ": " + esc(r.t), s: "Mark it done on the Property tab." }); });
+      llRows(p).forEach(function (r) { out.push({ d: r.d, kind: "home", t: esc(gmTidyName(p.n) || "Your flat") + ": " + esc(r.t), s: "", pi: pi, id: r.id, act: r.act, key: r.key || "", btn: r.btn }); });
     });
     out.push({ d: new Date(t0.getFullYear(), t0.getMonth() + 1, 1), kind: "checkin", t: "Month-end money check-in", s: "One balance each. Two minutes." });
     return out.map(function (x) { x.days = days(x.d); return x; }).filter(function (x) { return x.days <= 45; })
@@ -2416,17 +2428,21 @@
   window.gmComingUpHTML = function () {
     var L = window.gmComingUp ? gmComingUp() : []; if (!window.P || P.example) return "";
     var moon = function (n) { return SXWorld.moon(n); };   // the shared moon (shared/world.js): waxes as the day comes near
-    var when = function (n) { return n < 0 ? (-n) + (n === -1 ? " day late" : " days late") : n === 0 ? "today" : n === 1 ? "tomorrow" : "in " + n + " days"; };
+    // a slip is named once and kindly: "Still open", never a count of days late
+    var when = function (n) { return n < 0 ? "Still open" : n === 0 ? "today" : n === 1 ? "tomorrow" : "in " + n + " days"; };
     var date = function (d) { return d.toLocaleDateString(undefined, { weekday: "short", day: "numeric", month: "short" }); };
-    var row = function (x) {
-      var st = x.days < 0 || x.days <= 3 ? "low" : x.days <= 14 ? "watch" : "good";
+    var done = function (x, cls, txt) { return '<button type="button" class="' + cls + '" onclick="gmLlDone(' + x.pi + ',\'' + x.act + '\',\'' + esc(x.key) + '\')">' + txt + '</button>'; };
+    var row = function (x, inView) {
+      var st = x.days < 0 ? "watch" : x.days <= 3 ? "low" : x.days <= 14 ? "watch" : "good";
+      var small = x.days < 0 ? "since " + date(x.d) : date(x.d), paper = x.id === "police" || x.id === "registration";
+      var act = inView && x.act ? '<div class="gm-cu-act">' + done(x, "btn-sm gm-cu-done", esc(x.btn || "Done")) + (paper ? done(x, "gm-cu-already", "Already done") : "") + '</div>' : "";
       return '<div class="gm-cu-row" role="listitem" aria-label="' + x.t.replace(/<[^>]+>/g, "") + ', ' + when(x.days) + '">' + moon(x.days)
-        + '<div style="flex:1;min-width:0"><div style="font-weight:700;font-size:14px">' + x.t + '</div><div style="font-size:12.5px;color:var(--muted)">' + x.s + '</div></div>'
-        + '<div class="gm-cu-when gm-cu-' + st + '">' + when(x.days) + '<small>' + date(x.d) + '</small></div></div>';
+        + '<div style="flex:1;min-width:0"><div class="gm-cu-t" style="font-weight:700;font-size:14px;overflow-wrap:anywhere">' + x.t + '</div>' + (x.s ? '<div style="font-size:12.5px;color:var(--muted);overflow-wrap:anywhere">' + x.s + '</div>' : "") + act + '</div>'
+        + '<div class="gm-cu-when gm-cu-' + st + '">' + when(x.days) + '<small>' + small + '</small></div></div>';
     };
     return '<div class="road-col gm-cu" style="margin:10px 0"><div style="font-weight:800;font-size:13.5px;margin-bottom:4px">Coming up in your world</div><div role="list">'
-      + L.slice(0, 3).map(row).join("") + '</div>'
-      + (L.length > 3 ? '<details style="margin-top:4px"><summary style="cursor:pointer;font-size:12.5px">Later (' + (L.length - 3) + ')</summary><div role="list">' + L.slice(3).map(row).join("") + '</div></details>' : "") + gmPeopleFormHTML() + '</div>';
+      + L.slice(0, 1).map(function (x) { return row(x, true); }).join("") + '</div>'
+      + (L.length > 1 ? '<details style="margin-top:4px"><summary style="cursor:pointer;font-size:12.5px">Later (' + (L.length - 1) + ')</summary><div role="list">' + L.slice(1).map(function (x) { return row(x, false); }).join("") + '</div></details>' : "") + gmPeopleFormHTML() + '</div>';
   };
   function llRows(p) {
     var today = llDay(new Date()), rows = [], ym = llIso(today).slice(0, 7), mon = today.toLocaleString("en-IN", { month: "long" });
@@ -2551,11 +2567,13 @@
   window.gmLlDone = function (i, act, key) {
     var p = props(), x = p[i]; if (!x) return;
     var today = llIso(new Date());
+    try { if (typeof gmSnap === "function") gmSnap("marked a home paper done"); } catch (e) {}   // one tap, so one Undo
     if (act === "paid" || act === "mpaid") { x[act] = (x[act] && typeof x[act] === "object") ? x[act] : {}; x[act][key] = true; }
     else if (act === "tax") { var t = llParse(x.taxDue); if (t) x.taxDue = llIso(llAddMonths(t, 12)); }
     else if (act === "renew") { var st = llParse(x.start); if (st) { x.start = llIso(llAddMonths(st, llNum(x.months) || 11)); x.registered = ""; x.police = ""; } }
     else if (act === "registered" || act === "police") x[act] = today;
     S_("gm_props", p); renderAll();
+    if (typeof gmToast === "function") gmToast("Done" + (x.n ? ": " + gmTidyName(x.n) : "") + ". You can undo this from Today.");
   };
   window.gmLlCopy = function (id) {
     var el = document.getElementById(id), tx = el ? el.value : "";
@@ -2593,7 +2611,7 @@
       ["out", "Annual outgo \u2014 society + property tax + repairs (\u20b9)", "48000"],
       ["vac", "Vacant months per year (realistic, not hoped-for)", "1"]];
       h += '<details class="road-col" style="margin-bottom:12px" ' + (i === 0 ? "open" : "") + '>'
-        + '<summary style="cursor:pointer;font-weight:800;font-size:13.5px">' + esc(p.n || "Property")
+        + '<summary style="cursor:pointer;font-weight:800;font-size:13.5px;overflow-wrap:anywhere">' + esc(gmTidyName(p.n) || "Property")
         + (p.use === "rented" ? '<span style="float:right;color:var(--muted);font-weight:600">we rent it</span></summary>'
         : '<span style="float:right;color:' + (r.cashflow >= 0 ? "var(--green)" : "var(--amber)") + '">'
         + (r.cashflow >= 0 ? "+" : "") + Math.round(r.cashflow).toLocaleString("en-IN") + "/mo</span></summary>");
@@ -3770,10 +3788,11 @@
   function bkAdopt() { var e = G(BK_ESC, null); if (!G(BK_PH, null) && typeof e === "string" && e.replace(/[^A-Z0-9]/gi, "").length >= 8) S_(BK_PH, e); }
   window.gmBkAdopt = bkAdopt;
   function bkEscrow(p) { var c = G("gm_sync_cfg", null); if (c && c.url && c.user && p && G(BK_ESC, null) !== p) S_(BK_ESC, p); }
-  function bkNewPhrase() {
-    var r = crypto.getRandomValues(new Uint8Array(20)), t = "";
-    for (var i = 0; i < 20; i++) t += BK_ABC[r[i] % 32] + (i % 4 === 3 && i < 19 ? "-" : "");
-    return t;                                                          // 20 symbols of 32: 100 bits
+  function bkNewPhrase(n) {
+    n = n || 20;
+    var r = crypto.getRandomValues(new Uint8Array(n)), t = "";
+    for (var i = 0; i < n; i++) t += BK_ABC[r[i] % 32] + (i % 4 === 3 && i < n - 1 ? "-" : "");
+    return t;                                                          // 5 bits a symbol (32 divides 256, so no bias): 20 symbols, 100 bits
   }
   function bkNorm(p) { return String(p || "").toUpperCase().replace(/[^A-Z0-9]/g, ""); }
   window.gmBackupSeal = function (blob, phrase) {
@@ -3787,27 +3806,15 @@
   };
   function bkSave(text, enc) {
     var name = "life-os-backup-" + ymd() + (enc ? "-encrypted" : "") + ".json";
-    function download() {
-      var a = document.createElement("a");
-      a.href = URL.createObjectURL(new Blob([text], { type: "application/json" }));
-      a.download = name;
-      a.click();
-      // a file on a wide screen (a laptop) is already off the phone; a phone download is not
-      if (enc && !(window.matchMedia && window.matchMedia("(max-width: 700px)").matches)) S_("gm_last_offsite", ymd());
+    function saved(how) {
+      // a shared file, or a file on a wide screen (a laptop), is already off the phone; a phone download is not
+      if (enc && (how === "shared" || !(window.matchMedia && window.matchMedia("(max-width: 700px)").matches))) S_("gm_last_offsite", ymd());
       S_("gm_last_export", ymd()); renderAll();
     }
-    if (enc && navigator.canShare && typeof File === "function") {
-      try {
-        var file = new File([text], name, { type: "application/json" });
-        if (navigator.canShare({ files: [file] })) {
-          navigator.share({ files: [file], title: "Life OS backup" }).then(function () {
-            S_("gm_last_offsite", ymd()); S_("gm_last_export", ymd()); renderAll();
-          }, download);
-          return;
-        }
-      } catch (e) {}
-    }
-    download();
+    if (enc) { shareFile(text, name, "Life OS backup").then(saved); return; }   // a readable copy never goes to the share sheet
+    var a = document.createElement("a");
+    a.href = URL.createObjectURL(new Blob([text], { type: "application/json" }));
+    a.download = name; a.click(); saved("saved");
   }
   function bkBlob() {
     var blob = {};
@@ -3943,6 +3950,194 @@
     inp.click();
   };
 
+  /* ═══ Move to another phone: no server, nothing to type (owner 2026-11-24; threat model move-phone) ═══
+     The Pages copy of the Life OS has no estate to sync with, and the old card asked for an address, a token and a row id.
+     Now: on the old phone, one tap seals everything with the backup's own sealing (AES-256-GCM, the key from PBKDF2-SHA256
+     x310,000 with a fresh salt) under a fresh one-time code of 80 random bits, and the file leaves by the share sheet. The code
+     never travels with the file: the old phone shows it as a QR code and as four short groups. On the new phone, "Bring my life
+     here" opens the file and scans the code once; the data is checked (kind, version, age, shape) and merged by the ONE per-key
+     rule (mergeRemote). The code is never written to storage: it lives only in the open dialog. */
+  var MV_KIND = "securax-life-os-move", MV_MAXAGE = 48 * 3600 * 1000, MV_QR = "SXMOVE1:";
+  var MV_SKIP = /^(gm_sync|gm_ms_tok|gm_undo|gm_lock|gm_move|gm_bk_escrow)/;   // device-only: keys, locks, undo, this feature's own ledger
+  var mvText = null, mvName = "";
+  function mvKeyOk(k) { return typeof k === "string" && /^[A-Za-z0-9_:.\-]{1,160}$/.test(k) && !/^(__proto__|constructor|prototype)$/.test(k); }
+  function mvCode(s) { var t = bkNorm(String(s || "").replace(/^SXMOVE1:/i, "")); return /^[A-HJ-NP-Z2-9]{16}$/.test(t) ? t : ""; }
+  // the share sheet (Nearby Share, WhatsApp to yourself, Drive, e-mail), else a download: one helper for the backup and the move
+  function shareFile(text, name, title) {
+    return new Promise(function (resolve) {
+      function download() {
+        var a = document.createElement("a");
+        a.href = URL.createObjectURL(new Blob([text], { type: "application/json" })); a.download = name; a.click();
+        resolve("saved");
+      }
+      if (navigator.canShare && typeof File === "function") {
+        try {
+          var file = new File([text], name, { type: "application/json" });
+          if (navigator.canShare({ files: [file] })) { navigator.share({ files: [file], title: title }).then(function () { resolve("shared"); }, download); return; }
+        } catch (e) {}
+      }
+      download();
+    });
+  }
+  // -> Promise<{ text, code }>: the sealed file and its one-time code (the caller shows the code; nothing stores it)
+  window.gmMoveMake = function () {
+    if (!(window.crypto && crypto.subtle)) return Promise.reject(new Error("this browser has no encryption here (open the app over https)"));
+    var all = bkBlob(), m = meta(), data = {}, mt = {}, code = bkNewPhrase(16).replace(/-/g, "");
+    Object.keys(all).forEach(function (k) { if (!MV_SKIP.test(k) && mvKeyOk(k)) { data[k] = all[k]; if (typeof m[k] === "number") mt[k] = m[k]; } });
+    var id = Array.prototype.map.call(crypto.getRandomValues(new Uint8Array(12)), function (b) { return ("0" + b.toString(16)).slice(-2); }).join("");
+    var inner = { kind: MV_KIND, v: 1, id: id, made: Date.now(), from: devName(), data: data, meta: mt };
+    var salt = crypto.getRandomValues(new Uint8Array(16));
+    return odDerive(code, salt).then(function (key) { return odSeal(key, inner, salt); }).then(function (env) {
+      var o = JSON.parse(env); o.kind = MV_KIND; return { text: JSON.stringify(o), code: code };
+    });
+  };
+  // A file is a move file only if its outer shape is exact; then the code must open it (GCM checks every byte), and what comes out
+  // must be a move of version 1, fresh, never brought here before, with plain string values under safe key names.
+  window.gmMoveOpen = function (text, codeIn) {
+    var code = mvCode(codeIn), env;
+    try { env = typeof text === "string" && text.length < 30e6 ? JSON.parse(text) : null; } catch (e) { env = null; }
+    var B64 = /^[A-Za-z0-9+\/]+={0,2}$/;
+    if (!env || typeof env !== "object" || Array.isArray(env) || env.kind !== MV_KIND || env.v !== 1
+        || typeof env.salt !== "string" || env.salt.length > 40 || !B64.test(env.salt) || typeof env.iv !== "string" || env.iv.length > 40 || !B64.test(env.iv)
+        || typeof env.ct !== "string" || !B64.test(env.ct)) return Promise.reject(new Error("This is not a move file from the Life OS. Nothing was changed."));
+    if (!code) return Promise.reject(new Error("That code is not complete: it is four groups of four letters and digits."));
+    return odDerive(code, unb64(env.salt)).then(function (key) { return odOpen(key, env); })
+      .catch(function () { throw new Error("That code does not open this file. Use the code on the phone that made it."); })
+      .then(function (o) {
+        if (!o || typeof o !== "object" || Array.isArray(o) || o.kind !== MV_KIND || o.v !== 1 || typeof o.id !== "string" || !/^[0-9a-f]{24}$/.test(o.id)
+            || typeof o.made !== "number" || !o.data || typeof o.data !== "object" || Array.isArray(o.data) || !o.meta || typeof o.meta !== "object" || Array.isArray(o.meta))
+          throw new Error("This move file is not in a shape this version knows. Nothing was changed.");
+        var now = Date.now();
+        if (o.made > now + 10 * 60 * 1000) throw new Error("This move file says it was made in the future. Nothing was changed.");
+        if (now - o.made > MV_MAXAGE) throw new Error("This move file is more than two days old. Make a fresh one on the old phone.");
+        if ((G("gm_move_seen", []) || []).indexOf(o.id) >= 0) throw new Error("This move file was already brought here. Make a fresh one to move again.");
+        var data = Object.create(null), mt = Object.create(null), bad = 0;
+        Object.keys(o.data).forEach(function (k) {
+          if (!mvKeyOk(k) || MV_SKIP.test(k) || typeof o.data[k] !== "string" || o.data[k].length > 5e6) { bad++; return; }
+          data[k] = o.data[k]; var t = o.meta[k]; if (typeof t === "number" && isFinite(t) && t > 0 && t <= now + 10 * 60 * 1000) mt[k] = t;
+        });
+        if (bad) throw new Error("This move file holds " + bad + " item(s) that are not Life OS data. Nothing was changed.");
+        return { id: o.id, made: o.made, from: String(o.from || "your other phone").slice(0, 40), data: data, meta: mt };
+      });
+  };
+  // A phone that holds only the example data takes the moved life as it is; otherwise the ONE merge rule applies, and every newer
+  // item on this phone is kept and counted, never silently replaced.
+  window.gmMoveApply = function (mv) {
+    var m = meta(), keys = Object.keys(mv.data), fresh = !window.P || !!window.P.example || !localStorage.getItem("sovP"), kept = 0;
+    gmSnap("before bringing your life from another phone");
+    if (fresh) { keys.forEach(function (k) { delete m[k]; }); S_("gm_meta", m); }
+    else keys.forEach(function (k) { var cur = localStorage.getItem(k); if (cur !== null && cur !== mv.data[k] && (m[k] || 0) > (mv.meta[k] || 0)) kept++; });
+    var data = {}, mt = {}; keys.forEach(function (k) { data[k] = mv.data[k]; if (mv.meta[k]) mt[k] = mv.meta[k]; });
+    var before = G("gm_sync_anomaly", null), changed = mergeRemote(data, mt);
+    if (G("gm_sync_anomaly", null) !== before) return { ok: false, kept: kept, n: keys.length, why: "This phone holds much more than the file, so nothing was merged (a wrong or partial file). Your data here is unchanged." };
+    // a kit edition on this address (osk:) syncs its own keys, so the merge skips them; a move brings only those this phone lacks
+    keys.forEach(function (k) { if (k.indexOf("osk:") === 0 && localStorage.getItem(k) === null) _set(k, mv.data[k]); });
+    S_("gm_move_seen", (G("gm_move_seen", []) || []).concat([mv.id]).slice(-50));
+    gmTouch("Brought your life from another phone", mv.from);
+    return { ok: true, changed: changed, kept: kept, n: keys.length, fresh: fresh };
+  };
+  // Old phone: step 1 (Move) seals and shows the code; step 2 is Share.
+  window.gmMoveOut = function () {
+    gmToast("Sealing your life for the move…");
+    return gmMoveMake().then(function (r) {
+      mvText = r.text; mvName = "life-os-move-" + ymd() + ".json";
+      var c = r.code, groups = c.replace(/(.{4})(?!$)/g, "$1-");
+      gmTouch("Sealed a move to another phone", "a file you share");
+      gmDlg('<div class="gm-mv" role="group" aria-label="Move to another phone">'
+        + '<div style="font-weight:800;font-size:15px;margin-bottom:6px">Move to another phone</div>'
+        + '<div style="font-size:13px;line-height:1.5;margin-bottom:10px">Your life is sealed in one file. Send it to yourself, then on the new phone open the Life OS, tap <b>Bring my life here</b> and scan this code.</div>'
+        + '<button class="btn btn-p" id="gmMvShare" style="width:100%;margin-bottom:10px" onclick="gmMoveShare()">Share the file</button>'
+        + '<div class="gm-mv-qr" style="max-width:180px;margin:0 auto 6px">' + (window.SXQR ? SXQR.svg(MV_QR + c, "The one-time code for this move, as a QR code") : "") + '</div>'
+        + '<div style="font-size:12px;color:var(--muted);text-align:center">No camera there? Type this instead:</div>'
+        + '<div class="gm-mv-code" style="font-family:monospace;font-size:17px;font-weight:800;letter-spacing:1px;text-align:center;margin:2px 0 8px">' + esc(groups) + '</div>'
+        + '<div style="font-size:11.5px;color:var(--muted);line-height:1.5;margin-bottom:10px">The file opens only with this code, and the code never leaves this screen. Show it only to your own new phone. The file stops working after two days.</div>'
+        + '<button class="btn btn-s" style="width:100%" onclick="gmMoveDone()">Done</button></div>');
+    }).catch(function (e) { gmToast("Nothing was sealed: " + (e && e.message || e)); });
+  };
+  window.gmMoveShare = function () {
+    if (!mvText) return Promise.resolve(false);
+    return shareFile(mvText, mvName, "My Life OS, for my new phone").then(function (how) {
+      gmToast(how === "shared" ? "Sent. Now scan the code from the new phone." : "Saved on this phone. Send it to the new one, then scan the code.");
+      return how;
+    });
+  };
+  window.gmMoveDone = function () { mvText = null; gmClose(); };
+  // New phone: step 3 (Open the file), then step 4 (Scan the code, or type it)
+  window.gmMoveIn = function () {
+    var inp = document.createElement("input");
+    inp.type = "file"; inp.accept = ".json,application/json";
+    inp.onchange = function () {
+      var f = inp.files && inp.files[0]; if (!f) return;
+      if (f.size > 30e6) { gmToast("That file is too large to be a move file. Nothing was changed."); return; }
+      var rd = new FileReader();
+      rd.onload = function () { gmMoveAsk(String(rd.result)); };
+      rd.readAsText(f);
+    };
+    inp.click();
+  };
+  window.gmMoveAsk = function (text) {
+    var env = null; try { env = JSON.parse(text); } catch (e) {}
+    if (!env || env.kind !== MV_KIND) { gmToast("This is not a move file from the Life OS. Nothing was changed."); return false; }
+    mvText = text;
+    var cam = typeof window.BarcodeDetector === "function";
+    gmDlg('<div class="gm-mv-in"><div style="font-weight:800;font-size:15px;margin-bottom:6px">Bring my life here</div>'
+      + '<div style="font-size:13px;line-height:1.5;margin-bottom:10px">' + (cam ? 'Scan the code your old phone shows.' : 'Type the code your old phone shows.') + '</div>'
+      + (cam ? '<button class="btn btn-p" style="width:100%;margin-bottom:10px" onclick="gmMoveScan()">Scan the code</button>' : '')
+      + '<label class="f-label" for="gmMvCode">' + (cam ? 'Or type the four groups' : 'The four groups') + '</label>'
+      + '<input id="gmMvCode" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="24" placeholder="XXXX-XXXX-XXXX-XXXX" style="font-family:monospace">'
+      + '<div style="display:flex;gap:8px"><button class="btn ' + (cam ? 'btn-s' : 'btn-p') + '" onclick="gmMoveCode(document.getElementById(\'gmMvCode\').value)">Bring it here</button>'
+      + '<button class="btn btn-s" onclick="gmMoveDone()">Cancel</button></div></div>');
+    return true;
+  };
+  // the camera is the phone's own (one photo of the code, read here by the browser's barcode reader): no video stream, no extra permission
+  window.gmMoveScan = function () {
+    var inp = document.createElement("input");
+    inp.type = "file"; inp.accept = "image/*"; inp.setAttribute("capture", "environment");
+    inp.onchange = function () {
+      var f = inp.files && inp.files[0]; if (!f) return;
+      var det; try { det = new BarcodeDetector({ formats: ["qr_code"] }); } catch (e) { gmToast("This phone cannot read codes: type the four groups instead."); return; }
+      createImageBitmap(f).then(function (img) { return det.detect(img); }).then(function (found) {
+        var hit = (found || []).map(function (x) { return String(x.rawValue || ""); }).filter(function (v) { return v.indexOf(MV_QR) === 0; })[0];
+        if (!hit) { gmToast("No move code in that photo. Try again, a little closer, or type the four groups."); return; }
+        gmMoveCode(hit);
+      }).catch(function () { gmToast("That photo could not be read. Type the four groups instead."); });
+    };
+    inp.click();
+  };
+  window.gmMoveCode = function (code) {
+    if (!mvText) return Promise.resolve(false);
+    return gmMoveOpen(mvText, code).then(function (mv) {
+      var r = gmMoveApply(mv);
+      mvText = null; gmClose();
+      if (!r.ok) { gmToast(r.why); return r; }
+      gmToast("Your life is here: " + r.n + " items from " + mv.from + (r.kept ? ". " + r.kept + " newer item(s) on this phone were kept" : "") + ". Undo is in Settings for 30 minutes.");
+      if (window.renderAll) renderAll();
+      return r;
+    }).catch(function (e) { gmToast(e && e.message || String(e)); return false; });
+  };
+  function moveHTML() {
+    var fresh = !window.P || !!window.P.example;
+    return '<div class="gm-move" style="margin-bottom:12px"><div class="info">Moving to a new phone? Nothing to set up and nothing to type: '
+      + 'the old phone seals your life into one file and shows a code; the new phone opens the file and scans the code. No server sees it.</div>'
+      + '<div style="display:flex;gap:8px;flex-wrap:wrap">'
+      + '<button class="btn ' + (fresh ? 'btn-s' : 'btn-p') + '" data-move-out onclick="gmMoveOut()">Move to another phone</button>'
+      + '<button class="btn ' + (fresh ? 'btn-p' : 'btn-s') + '" data-move-in onclick="gmMoveIn()">Bring my life here</button></div></div>';
+  }
+  // The estate sync is offered only when an estate answers on this page's own address: the door path the hub's web server serves,
+  // readable here, saying exactly who it is (a 404, a Pages site or an error page never passes). Nothing is invented.
+  var estateUp = false;
+  window.gmEstateProbe = function () {
+    if (!/^https?:$/.test(location.protocol) || typeof fetch === "undefined") return Promise.resolve(false);
+    return fetch(location.origin + "/_door.json", { cache: "no-store", credentials: "omit" })
+      .then(function (r) { return r && r.ok ? r.json() : null; })
+      .then(function (j) {
+        var up = !!(j && j.ok === true && j.service === "securax-command-center");
+        if (up !== estateUp) { estateUp = up; if (window.renderAll) renderAll(); }
+        return up;
+      }).catch(function () { return false; });
+  };
+  window.gmEstateUp = function () { return estateUp; };
+
   function healthHTML() {
     var rows = [], c = cfg(), last = G("gm_sync_last", null), exp = G("gm_last_export", null);
     var bytes = storageBytes(), kb = Math.round(bytes / 1024);
@@ -3958,7 +4153,7 @@
 
     // Sync
     if (!c) row(null, "Cross-device sync is off",
-      "This device keeps its own copy. Use Export below before switching devices, or turn sync on.");
+      "This device keeps its own copy. Moving to a new phone: Connections \u2192 Move to another phone (one file and one scan, no server).");
     else if (!last) row(false, "Sync configured but nothing has been pushed yet",
       "Change any value to trigger the first push. If this stays empty, check the estate gateway is up and reachable (Tailscale) and the browser console for a 4xx from the sync endpoint.");
     else {
@@ -4374,7 +4569,7 @@
     if (num(l.ef)) rows.push("<li>Emergency fund: about \u20b9" + l.ef + " lakh \u2014 bank + sweep-in FD + liquid fund</li>");
     rows.push("<li>Password manager emergency access is the key to everything digital \u2014 it was set up for you; check your own email for the invitation</li>");
     rows.push("</ul><h3>Property</h3><ul>");
-    P.forEach(function (p) { if (p.n) rows.push("<li>" + p.n + (p.use === "self" ? " (home)" : " (let out)") + (num(p.loan) ? " \u2014 loan outstanding \u2248\u20b9" + p.loan + "L" : "") + "</li>"); });
+    P.forEach(function (p) { if (p.n) rows.push("<li>" + esc(gmTidyName(p.n)) + (p.use === "self" ? " (home)" : " (let out)") + (num(p.loan) ? " \u2014 loan outstanding \u2248\u20b9" + p.loan + "L" : "") + "</li>"); });
     var rp = G("gm_rapid", {}), rl = [];
     RAPID_D.forEach(function (x) { var v = rp[x[0]] || {}; if (v.d) rl.push("<li><b>" + x[1] + ":</b> " + v.d + " decides" + (v.r ? ", after asking " + v.r : "") + "</li>"); });
     if (rl.length) rows.push("</ul><h3>Who decides what</h3><ul>" + rl.join(""));
@@ -4784,29 +4979,76 @@
 
   /* Box breathing, full screen (owner, 2026-11-18): the inline square is small, so the breathing guide opens the whole
      screen with one square, the word and the count — easy to follow on a phone or an iPad. Under reduced motion the
-     square stays still. The 1-second timer runs only in a real browser; tests drive gmBreathe.step() themselves. */
+     square stays still. The 1-second timer runs only in a real browser; tests drive gmBreathe.step() themselves.
+     The live sea (shared/sea.js, SXSea) fills the screen behind it, its swell driven by THIS guide's own phase (SXSea.clock),
+     so the water rises on Inhale, holds, falls on Exhale and holds, in step with the words and the count (owner, 2026-11-24).
+     Sound is one segmented choice, Off / Sea / Sea + breath, from the one shared graph (SXSea.sound): off by default,
+     remembered (gm_breathe_sound), started only by a tap, faded over half a second, stopped by Done or a hidden page.
+     The sea runs only while this overlay is open. Reduced motion: a still sea; words, count and sound still work. */
   function gmBreathe() {
     var old = document.getElementById("gmBreathe");
+    if (old && gmBreathe.close) gmBreathe.close();
+    old = document.getElementById("gmBreathe");
     if (old) old.parentNode.removeChild(old);
     if (gmBreathe.timer) { clearInterval(gmBreathe.timer); gmBreathe.timer = null; }
     if (!document.getElementById("gmBreatheCss")) {
       var st = document.createElement("style"); st.id = "gmBreatheCss";
-      st.textContent = "#gmBreathe{position:fixed;inset:0;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;background:var(--bg);color:var(--text);padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom))}"
-        + "#gmBreathe .gm-breathe-square{width:min(78vw,62vh);height:min(78vw,62vh);border:2px solid var(--gold);border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;transition:transform 1s cubic-bezier(.2,.8,.2,1);will-change:transform}"
-        + "#gmBreathe .gm-breathe-word{font-size:32px;font-weight:800;letter-spacing:.01em;color:var(--text)}"
-        + "#gmBreathe .gm-breathe-count{font-size:56px;font-weight:800;line-height:1;color:var(--gold)}"
-        + "#gmBreathe .gm-breathe-done{margin-top:8px;min-height:48px;padding:12px 28px;border-radius:12px;border:1px solid var(--gold);background:var(--card);color:var(--text);font-size:16px;font-weight:700;cursor:pointer}"
+      st.textContent = "#gmBreathe{position:fixed;inset:0;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;background:#0d1a2e;color:#f6f1e4;padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom))}"
+        + "#gmBreathe .gm-breathe-square{position:relative;z-index:1;width:min(78vw,62vh);height:min(78vw,62vh);max-height:52vh;border:1.5px solid #f0d696;border-radius:20px;background:radial-gradient(closest-side,rgba(6,12,24,.66),rgba(6,12,24,.4));box-shadow:0 0 28px rgba(240,214,150,.18);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;transition:transform 1s cubic-bezier(.2,.8,.2,1);will-change:transform}"
+        + "#gmBreathe .gm-breathe-word{font-size:32px;font-weight:800;letter-spacing:.01em;color:#f6f1e4;text-shadow:0 1px 14px rgba(4,8,18,.7),0 0 2px rgba(4,8,18,.6)}"
+        + "#gmBreathe .gm-breathe-count{font-size:56px;font-weight:800;line-height:1;color:#f0d696;text-shadow:0 1px 14px rgba(4,8,18,.7)}"
+        + "#gmBreathe .gm-breathe-snd{position:relative;z-index:1;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px;color:#f6f1e4;font-size:14px;font-weight:700;text-shadow:0 1px 8px rgba(4,8,18,.7)}"
+        + "#gmBreathe .gm-breathe-done{position:relative;z-index:1;margin-top:4px;min-height:48px;padding:12px 28px;border-radius:12px;border:1px solid #f0d696;background:rgba(8,16,30,.62);color:#f6f1e4;font-size:16px;font-weight:700;cursor:pointer}"
+        + "#gmBreathe .gm-breathe-done:focus-visible{outline:2px solid #f0d696;outline-offset:2px}"
+        + "@media (max-height:520px){#gmBreathe{gap:10px}#gmBreathe .gm-breathe-square{max-height:46vh}}"
         + "@media (prefers-reduced-motion:reduce){#gmBreathe .gm-breathe-square{transition:none!important;transform:none!important}}";
       (document.head || document.documentElement).appendChild(st);
     }
     var o = document.createElement("div");
     o.id = "gmBreathe"; o.setAttribute("role", "dialog"); o.setAttribute("aria-modal", "true");
     o.setAttribute("aria-label", "Box breathing");
-    o.innerHTML = '<div class="gm-breathe-square"><div class="gm-breathe-word">Inhale</div>'
-      + '<div class="gm-breathe-count">4</div></div><button type="button" class="gm-breathe-done">Done</button>';
+    var MODES = ["off", "sea", "both"], LABEL = { off: "Off", sea: "Sea", both: "Sea + breath" };
+    var mode = "off";
+    try { var sv = localStorage.getItem("gm_breathe_sound"); if (MODES.indexOf(sv) >= 0) mode = sv; } catch (e) {}
+    o.innerHTML = '<div class="sx-sea sx-sea-full" data-sx-sea aria-hidden="true"><div class="sx-sea-fb"></div></div>'
+      + '<div class="gm-breathe-square"><div class="gm-breathe-word">Inhale</div>'
+      + '<div class="gm-breathe-count">4</div></div>'
+      + '<div class="gm-breathe-snd" role="radiogroup" aria-label="Sound"><span id="gmBreatheSndL">Sound</span><span class="sx-seg">'
+      + MODES.map(function (m) { return '<button type="button" role="radio" data-snd="' + m + '" aria-checked="' + (m === mode) + '">' + LABEL[m] + '</button>'; }).join("")
+      + '</span></div><button type="button" class="gm-breathe-done">Done</button>';
     document.body.appendChild(o);
     var PH = ["Inhale", "Hold", "Exhale", "Hold"], phase = 0, count = 4;
     var sq = o.querySelector(".gm-breathe-square"), wd = o.querySelector(".gm-breathe-word"), cd = o.querySelector(".gm-breathe-count");
+    var driven = /jsdom/i.test(navigator.userAgent || "") || !!navigator.webdriver;   // a test DOM or a driver: no timers, no loops
+    var lastStep = performance.now(), live = false, S = window.SXSea;
+    // the guide's own time in the 16 s box: the phase and the count, plus the part of the second that has passed
+    function clock() { return phase * 4 + (4 - count) + (live ? Math.min(0.999, (performance.now() - lastStep) / 1000) : 0); }
+    var prevClock = S ? S.clock : null, sea = null;
+    if (S) { S.clock = clock; try { sea = S.mount(o.querySelector("[data-sx-sea]")); } catch (e) { sea = null; } }
+
+    var snd = null, sndIv = 0;
+    function sndTick() { if (snd && S) { var t = clock(); snd.set(S.breath(t).b, t); } }
+    function sndStop() {
+      if (sndIv) { clearInterval(sndIv); sndIv = 0; }
+      if (snd) { try { snd.off(); } catch (e) {} snd = null; }
+      gmBreathe.audio = null;
+    }
+    // Starts or retunes the sound for the chosen mode. Callers: a tap, or an open that a tap itself caused. Never at load.
+    function sndApply() {
+      if (mode === "off" || !S || document.hidden) { sndStop(); return; }
+      if (!snd) { snd = S.sound ? S.sound(mode) : null; if (!snd) return; snd.resume(); gmBreathe.audio = snd; }
+      else snd.mode(mode);
+      sndTick();
+      if (!sndIv && !driven) sndIv = setInterval(sndTick, 150);
+    }
+    function pick(m) {
+      mode = m;
+      try { localStorage.setItem("gm_breathe_sound", m); } catch (e) {}
+      [].forEach.call(o.querySelectorAll("[data-snd]"), function (b) { b.setAttribute("aria-checked", b.getAttribute("data-snd") === m ? "true" : "false"); });
+      sndApply();
+    }
+    [].forEach.call(o.querySelectorAll("[data-snd]"), function (b) { b.addEventListener("click", function () { pick(b.getAttribute("data-snd")); }); });
+
     function paint() {
       wd.textContent = PH[phase]; cd.textContent = count;
       var calm = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -4817,19 +5059,35 @@
     function step() {
       if (count > 1) count--;
       else { phase = (phase + 1) % 4; count = 4; }
+      lastStep = performance.now();
       paint();
     }
     function close() {
       if (gmBreathe.timer) { clearInterval(gmBreathe.timer); gmBreathe.timer = null; }
+      sndStop();
+      live = false;
+      if (sea && sea.stop) { try { sea.stop(); } catch (e) {} }
+      if (S) S.clock = prevClock;
       document.removeEventListener("keydown", key, true);
-      var el = document.getElementById("gmBreathe"); if (el) el.parentNode.removeChild(el);
+      document.removeEventListener("visibilitychange", vis);
+      var el = document.getElementById("gmBreathe"); if (el && el === o) el.parentNode.removeChild(el);
+      gmBreathe.close = null;
+      // a card's sea that this guide put to sleep wakes again
+      try { var card = document.querySelector("details[open] [data-sx-sea]"); if (card && S && !driven) S.mount(card); } catch (e) {}
     }
     function key(ev) { if (ev.key === "Escape") close(); }
-    gmBreathe.timer = null; gmBreathe.step = step; gmBreathe.close = close;
+    function vis() {
+      if (document.hidden) sndStop();
+      else if (mode !== "off" && navigator.userActivation && navigator.userActivation.hasBeenActive) sndApply();
+    }
+    gmBreathe.timer = null; gmBreathe.step = step; gmBreathe.close = close; gmBreathe.audio = null; gmBreathe.clock = clock; gmBreathe.sound = sndTick;
     document.addEventListener("keydown", key, true);
+    document.addEventListener("visibilitychange", vis);
     o.querySelector(".gm-breathe-done").addEventListener("click", close);
     paint();
-    if (!/jsdom/i.test(navigator.userAgent || "") && !navigator.webdriver) gmBreathe.timer = setInterval(step, 1000);
+    if (!driven) { live = true; lastStep = performance.now(); gmBreathe.timer = setInterval(step, 1000); }
+    // The Start button's own tap is still fresh: a remembered choice may sound at once; otherwise it waits for a tap on the control.
+    if (mode !== "off" && navigator.userActivation && navigator.userActivation.isActive) sndApply();
   }
   window.gmBreathe = gmBreathe;
 
@@ -5381,7 +5639,7 @@
     h += foldHTML("\u{1F4C5} The rhythm", RITUALS.length + " rituals, each shows on Today only when due", cad, false);
     h += (window.gmLangHTML ? gmLangHTML() : '') + '<div style="margin-top:16px">' + healthHTML() + '</div>';
     h += foldHTML("\u{1F3F3} When it goes wrong", inRecovery() ? "recovery mode is ON" : "pause rituals for a bad week", recoveryHTML(), !!inRecovery());
-    h += foldHTML("\u{1F517} Connections", "sync, Microsoft 365, phone reminders \u00b7 all optional",
+    h += foldHTML("\u{1F517} Connections", "move to another phone, sync, Microsoft 365, phone reminders \u00b7 all optional",
       '<div class="info">None of these is needed to use the app. Sync copies your data to your own estate; Microsoft 365 shows today\u2019s calendar on Today; reminders nudge your phone when something is due.</div>'
       + syncHTML() + '<div style="margin-top:12px">' + msHTML() + '</div><div style="margin-top:12px">' + pushHTML() + '</div>', false);
     h += foldHTML("\u{1F441} Who touched my data", touchRows().length ? "last: " + esc(touchRows()[0].w) : "nothing has left this device", touchHTML(), false);
@@ -9445,6 +9703,7 @@
     try { var pr = G("gm_props", null); if ((!pr || !pr.length) && window.P && window.P.example) { if (window.gmTplProp) gmTplProp(); } } catch (e) {}
     gmSyncLinkImport(); gmPackLinkImport();
     gmMoveInit();
+    gmEstateProbe();
     gmSyncInit();
     gmAccessPair();
     gmOdSync();
@@ -9941,7 +10200,10 @@
   // A lock record is real only if it can be satisfied (a credential and a recovery-code hash): a damaged one must never lock
   // the person out of their own record for ever (robustness audit, 2026-11-14). Anyone able to damage it could already
   // read the device's storage, so treating it as "no lock" gives nothing away.
-  function rec() { try { var r = JSON.parse(localStorage.getItem(KEY) || "null"); return r && typeof r === "object" && typeof r.id === "string" && r.id && typeof r.salt === "string" && r.salt && typeof r.hash === "string" && r.hash ? r : null; } catch (e) { return null; } }
+  function stored() { try { var r = JSON.parse(localStorage.getItem(KEY) || "null"); return r && typeof r === "object" && typeof r.id === "string" && r.id && typeof r.salt === "string" && r.salt && typeof r.hash === "string" && r.hash ? r : null; } catch (e) { return null; } }
+  // Off keeps the record (owner, 2026-11-24): the recovery code's salted hash and the credential id stay, marked off, so turning
+  // the lock back on reuses the code the person already saved (threat lk-i2). Only the app's Erase removes them.
+  function rec() { var r = stored(); return r && !r.off ? r : null; }
   function put(r) { try { if (r) localStorage.setItem(KEY, JSON.stringify(r)); else localStorage.removeItem(KEY); } catch (e) {} }
   function b64(buf) { var s = "", b = new Uint8Array(buf); for (var i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
   function unb64(t) { t = String(t).replace(/-/g, "+").replace(/_/g, "/"); while (t.length % 4) t += "="; var s = atob(t), b = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) b[i] = s.charCodeAt(i); return b; }
@@ -9993,32 +10255,84 @@
     });
   };
   window.gmLockNow = function () { if (!rec()) return; locked = true; paint(); };
+  function makeCred() {
+    return navigator.credentials.create({ publicKey: {
+      rp: { name: "Life OS", id: location.hostname }, user: { id: rnd(16), name: "life-os", displayName: "Life OS" }, challenge: rnd(32),
+      pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
+      authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "discouraged" }, timeout: 60000 } });
+  }
+  function getCred(r) { return navigator.credentials.get({ publicKey: { challenge: rnd(32), allowCredentials: [{ type: "public-key", id: unb64(r.id) }], userVerification: "required", timeout: 60000 } }).then(function (c) { if (!c) throw new Error("none"); return c; }); }
+  // The person is present: the device's fingerprint or face (a fresh random challenge each time), else the recovery code.
+  // Turning the lock off and making a new code both need it, so a phone left unlocked cannot quietly drop the lock (lk-e2).
+  function present(r, why) {
+    return getCred(r).then(function () { return true; }, function () {
+      var c = null; try { c = window.prompt("Your fingerprint or face did not confirm. Type your recovery code to " + why + "."); } catch (x) {}
+      if (!c) return false;
+      return hashCode(c, unb64(r.salt)).then(function (h) { return h === r.hash; });
+    });
+  }
+  function done(t) { if (typeof gmToast === "function") gmToast(t); if (window.renderAll) renderAll(); }
   window.gmLockEnable = function () {
+    var kept = stored();
     return gmLockSupported().then(function (ok) {
       if (!ok) throw new Error("This browser cannot use the device lock.");
-      return navigator.credentials.create({ publicKey: {
-        rp: { name: "Life OS", id: location.hostname }, user: { id: rnd(16), name: "life-os", displayName: "Life OS" }, challenge: rnd(32),
-        pubKeyCredParams: [{ type: "public-key", alg: -7 }, { type: "public-key", alg: -257 }],
-        authenticatorSelection: { authenticatorAttachment: "platform", userVerification: "required", residentKey: "discouraged" }, timeout: 60000 } });
-    }).then(function (cred) {
+      if (!kept) return makeCred().then(function (c) { return b64(c.rawId); });
+      // Back on: one touch proves the person is here; if this device's passkeys were reset, a new one is made. The code stays.
+      return getCred(kept).then(function () { return kept.id; }, function () { return makeCred().then(function (c) { return b64(c.rawId); }); });
+    }).then(function (id) {
+      if (kept) {
+        kept.id = id; delete kept.off; kept.at = Date.now(); put(kept);
+        window._gmLockCode = null; window._gmLockBack = true; locked = false; if (window.renderAll) renderAll(); return null;
+      }
       var code = codeGen(), salt = rnd(16);
       return hashCode(code, salt).then(function (h) {
-        put({ id: b64(cred.rawId), salt: b64(salt), hash: h, idle: 300, at: Date.now() });
-        window._gmLockCode = code; locked = false; if (window.renderAll) renderAll(); return code;
+        put({ id: id, salt: b64(salt), hash: h, idle: 300, at: Date.now() });
+        window._gmLockCode = code; window._gmLockBack = false; locked = false; if (window.renderAll) renderAll(); return code;
       });
     });
   };
   window.gmLockStart = function () {
-    gmLockEnable().catch(function (e) {
+    return gmLockEnable().catch(function (e) {
       if (typeof gmToast === "function") gmToast(e && e.name === "NotAllowedError" ? "Not turned on. You can try again any time." : (e && e.message) || "The lock could not be turned on.");
     });
   };
   window.gmLockDisable = function () {
-    if (locked) return;
-    if (!confirm("Turn off the privacy lock? Anyone holding this device could then open your Life OS.")) return;
-    put(null); window._gmLockCode = null; if (window.renderAll) renderAll();
+    var r = rec(); if (locked || !r) return Promise.resolve(false);
+    if (!confirm("Turn off the privacy lock? Anyone holding this device could then open your Life OS. Your recovery code stays the same if you turn it back on.")) return Promise.resolve(false);
+    return present(r, "turn the lock off").then(function (yes) {
+      if (!yes) { done("Not turned off: it needs your fingerprint, face or recovery code."); return false; }
+      r.off = true; put(r); window._gmLockCode = null; window._gmLockBack = false;
+      done("The lock is off. Turn it back on any time: your recovery code stays the same."); return true;
+    });
   };
-  window.gmLockIdle = function (sec) { var r = rec(); if (!r) return; r.idle = sec; put(r); if (window.renderAll) renderAll(); };
+  // A new recovery code: irreversible for the old one, so it is folded away, offers keeping the code first, needs the words
+  // typed and the person present (friction-by-consequence; threat lk-t2).
+  window.gmLockNewAsk = function () {
+    if (locked || !rec() || typeof gmDlg !== "function") return;
+    gmDlg('<div style="font-weight:800;font-size:15px;margin-bottom:8px">Make a new recovery code?</div>'
+      + '<div style="font-size:13px;line-height:1.55;margin-bottom:10px">Still have the code you saved? Keep it: there is nothing to do. A new code makes the old one stop working, for good, and you will need to save the new one.</div>'
+      + '<button class="btn-sm" onclick="gmClose()" style="background:var(--gold);color:#0d1f35;font-weight:800;padding:9px 18px;margin-bottom:12px">Keep my current code</button>'
+      + '<label class="f-label" for="gmLockNewIn">Type NEW CODE to confirm</label><input type="text" id="gmLockNewIn" autocomplete="off" autocapitalize="characters" spellcheck="false">'
+      + '<button class="btn-sm" id="gmLockNewGo" disabled style="background:transparent;color:var(--text);border:1px solid var(--muted);padding:9px 14px">Make a new code</button>');
+    var inp = document.getElementById("gmLockNewIn"), go = document.getElementById("gmLockNewGo");
+    if (!inp || !go) return;
+    inp.addEventListener("input", function () { go.disabled = inp.value.trim().toUpperCase() !== "NEW CODE"; });
+    go.addEventListener("click", function () { var t = inp.value; if (typeof gmClose === "function") gmClose(); gmLockNewCode(t); });
+  };
+  window.gmLockNewCode = function (typed) {
+    var r = rec();
+    if (locked || !r) return Promise.resolve(null);
+    if (String(typed || "").trim().toUpperCase() !== "NEW CODE") { done("Nothing changed: your current code still works."); return Promise.resolve(null); }
+    return present(r, "make a new code").then(function (yes) {
+      if (!yes) { done("Nothing changed: it needs your fingerprint, face or current code."); return null; }
+      var code = codeGen(), salt = rnd(16);
+      return hashCode(code, salt).then(function (h) {
+        r.salt = b64(salt); r.hash = h; r.at = Date.now(); put(r);
+        window._gmLockCode = code; window._gmLockBack = false; if (window.renderAll) renderAll(); return code;
+      });
+    });
+  };
+  window.gmLockIdle = function (sec) { var r = rec(); if (!r) return; window._gmLockBack = false; r.idle = sec; put(r); if (window.renderAll) renderAll(); };
   window.gmLockSaved = function () { window._gmLockCode = null; if (window.renderAll) renderAll(); };
   // The Ops card: on by choice, one tap, plain words.
   var SUP = null; gmLockSupported().then(function (ok) { SUP = ok; try { if (window.curTab === "ops" && window.renderAll) renderAll(); } catch (e) {} });
@@ -10032,14 +10346,18 @@
     }
     if (r) {
       var idle = r.idle || 300;
-      return h + '<p style="font-size:13px;margin:8px 0">Opens with this device’s fingerprint, face or Windows Hello. Locks when you are away for '
+      return h + (window._gmLockBack ? '<p class="gm-lock-back" style="font-size:13px;margin:8px 0;font-weight:700">Back on. Your recovery code is the same one you saved before.</p>' : '')
+        + '<p style="font-size:13px;margin:8px 0">Opens with this device’s fingerprint, face or Windows Hello. Locks when you are away for '
         + (idle >= 3600 ? "an hour" : Math.round(idle / 60) + " minutes") + '; the app switcher shows nothing.</p>'
         + '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-sm" onclick="gmLockNow()">Lock now</button>'
         + [[60, "1 min"], [300, "5 min"], [900, "15 min"]].map(function (o) { return '<button class="btn-sm" aria-pressed="' + (idle === o[0]) + '" style="' + (idle === o[0] ? "background:var(--gold);color:#0d1f35" : "") + '" onclick="gmLockIdle(' + o[0] + ')">' + o[1] + '</button>'; }).join("")
         + '<button class="gm-quiet" onclick="gmLockDisable()">Turn off…</button></div>'
+        + '<button class="gm-quiet gm-lock-new" onclick="gmLockNewAsk()">Make a new recovery code…</button>'
         + '<p style="font-size:11.5px;color:var(--muted);margin:8px 0 0">The lock guards the screen. Your data on this device is also protected by the phone’s own lock and encryption, and your backups are encrypted.</p></div>';
     }
     if (SUP === false) return h + '<p style="font-size:13px;margin:8px 0">This browser cannot use your fingerprint or face here. Your phone’s own screen lock protects the app; your backups are encrypted.</p></div>';
+    if (stored()) return h + '<p style="font-size:13px;margin:8px 0">Off. Turn it back on with one touch of your fingerprint or face. Your recovery code stays the same one you saved.</p>'
+      + '<button class="btn-sm" style="background:var(--gold);color:#0d1f35;font-weight:800" onclick="gmLockStart()">Turn the lock back on</button></div>';
     return h + '<p style="font-size:13px;margin:8px 0">Open your Life OS with your fingerprint or face, like your bank app. No new password. It locks when you step away.</p>'
       + '<button class="btn-sm" style="background:var(--gold);color:#0d1f35;font-weight:800" onclick="gmLockStart()">Turn on the lock</button></div>';
   };

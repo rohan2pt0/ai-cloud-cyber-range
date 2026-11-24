@@ -1,5 +1,9 @@
 # Queue plan, 2026-11
 
+<!-- status:start (from docs/status.yml; edit that file, then run docs/sync_status.py) -->
+> **Status: 🟢 Built.** The re-planned queue (2026-11-24): its Now list, gates and Later counts come from governance/queue.json, which tests and fitness hold. [What the lights mean](../index.md#the-status-lights)
+<!-- status:end -->
+
 The owner approved a re-plan of `governance/queue.json` on 2026-11-24. Dates had been set one at a time and never checked against what the builders can merge (about 8 to 10 changes a day). Now every open ask has a score, a place and a date that fits.
 
 **How it works.** Score = risk x reach / effort, each 1 to 5, stored as `rre`. Hard gates (no single point of failure, security, recoverability, legal before launch) come first whatever the score (`gate`). Builders get 8 slices of work a day (effort + 1 slices per item). Asks only the owner can finish carry `needs: owner`, with a soft date. Everything else has a `horizon` and `due` set to that period's last day.
