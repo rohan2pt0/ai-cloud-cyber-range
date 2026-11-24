@@ -50,8 +50,11 @@ def _gc(now: float | None = None) -> None:
             _pending.pop(i, None)
 
 
-def record_pending(tool: str, args, conversation: str = "", now: float | None = None) -> str:
-    """Note that this exact tool call is waiting for a human. Idempotent: the same (tool, args) reuses its pending id."""
+def record_pending(tool: str, args, conversation: str = "", now: float | None = None, reasons: list[str] | None = None,
+                   preview: str | None = None) -> str:
+    """Note that this exact tool call is waiting for a human. Idempotent: the same (tool, args) reuses its pending id.
+    `reasons` (the decision gate's, app/gate.py) say why a person is asked; `preview` replaces the raw arguments in the list
+    (the action pipeline passes them after the PII rails redact them)."""
     now = now or time.time()
     _gc(now)
     h = args_hash(tool, args)
@@ -59,9 +62,10 @@ def record_pending(tool: str, args, conversation: str = "", now: float | None = 
         if p["args_hash"] == h:
             return p["id"]
     pid = "ap_" + secrets.token_hex(5)
-    preview = args if isinstance(args, str) else json.dumps(args, default=str)
+    if preview is None:
+        preview = args if isinstance(args, str) else json.dumps(args, default=str)
     _pending[pid] = {"id": pid, "tool": str(tool), "args_hash": h, "args_preview": preview[:400],
-                     "created": now, "conversation": conversation}
+                     "created": now, "conversation": conversation, "reasons": list(reasons or [])[:10]}
     return pid
 
 

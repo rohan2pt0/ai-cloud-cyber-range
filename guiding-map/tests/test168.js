@@ -64,7 +64,7 @@ setTimeout(async () => {
     const code = shown.replace(/-/g, "");
     ok("the dialog shows the code as a QR and as four groups", !!(dlg && dlg.querySelector(".gm-mv-qr svg[role=img] path")) && /^[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}-[A-Z2-9]{4}$/.test(shown), shown);
     const m = wa.SXQR.matrix("SXMOVE1:" + code);
-    ok("the QR is a version 2 symbol with its three finder patterns", m.length === 25 && m[0][0] && m[0][6] && m[6][0] && !m[1][1] && m[0][24] && m[24][0] && !m[24][24 - 7]);
+    ok("the QR is a version 2 symbol with its three finder patterns", m.length === 25 && m[0][0] && m[0][6] && m[6][0] && !m[1][1] && m[0][24] && m[24][0] && !m[0][7] && !m[7][0] && !m[0][17] && !m[17][0] && m[2][2] && m[2][22] && m[22][2] && [8, 9, 10, 11, 12, 13, 14, 15, 16].every(i => m[6][i] === (i % 2 === 0)));
     const how = await wa.gmMoveShare();
     const f = shared[0] && shared[0].files && shared[0].files[0];
     ok("Share hands the sealed file to the share sheet", how === "shared" && !!f && /^life-os-move-\d{4}-\d{2}-\d{2}\.json$/.test(f.name), f && f.name);
