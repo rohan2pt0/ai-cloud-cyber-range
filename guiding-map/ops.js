@@ -2549,8 +2549,10 @@
   function propHTML() {
     var P = props();
     var h = '<div class="section active"><div class="cat-t">\u{1F3E0} Property economics</div>'
-      + '<div class="info">Seven numbers per flat. Everything else is calculated. '
-      + 'The question a let-out property has to answer is not \u201chas the price gone up\u201d \u2014 it is whether the rent, after every cost and after tax, beats what the same money would do sitting in an index fund.</div>';
+      // kaizen-1: the outcome in one line, the reasoning one tap away (no wall of text above the fold)
+      + '<div class="gm-prop-lede" style="font-size:13.5px;margin:0 0 8px">Does the rent beat an index fund? Seven numbers per flat answer it.</div>'
+      + '<details class="gm-why" style="margin:0 0 10px"><summary style="cursor:pointer;font-size:12.5px;color:var(--muted)">Why this question?</summary><div class="info" style="margin-top:6px">Seven numbers per flat. Everything else is calculated. '
+      + 'The question a let-out property has to answer is not \u201chas the price gone up\u201d \u2014 it is whether the rent, after every cost and after tax, beats what the same money would do sitting in an index fund.</div></details>';
     h += landlordSummary(P);
     if (!P.length) h += '<div class="info">Nothing added yet. Start from the worked example and overwrite the numbers \u2014 correcting something wrong is far quicker than filling something blank.</div>'
       + tplBtn("gmTplProp()", "Start from a worked example");
@@ -2579,10 +2581,14 @@
           + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);margin-top:8px" onclick="gmPropDel(' + i + ')">Remove this property</button></div></details>';
         return;
       }
+      // kaizen-1, number first: once the value and the rent are in, the verdict leads and the eight inputs fold under one line
+      var filledP = !!(num(p.val) && num(p.rent)), hTop = h, inputs = "";
+      h = "";
       h += ownerHTML(p, i);
       if ((p.use || "letout") === "letout") h += papersCardHTML(p) + landlordHTML(p, i);
+      var hMid = h; h = "";
       F.forEach(function (f) {
-        h += '<label class="f-label">' + f[1] + '</label><input ' + (f[0] === "n" ? "" : 'inputmode="decimal"')
+        inputs += '<label class="f-label">' + f[1] + '</label><input ' + (f[0] === "n" ? "" : 'inputmode="decimal"')
           + ' value="' + esc(keep0(p[f[0]])) + '" placeholder="e.g. ' + f[2] + '" onchange="gmPropSet(' + i + ',\'' + f[0] + '\',this.value)">';
       });
       if (num(p.val) && num(p.rent)) {
@@ -2656,16 +2662,18 @@
         });
         h += '</div>';
       }
+      h = filledP ? hTop + h + hMid + '<details class="road-col gm-prop-nums" style="margin-top:10px"><summary style="cursor:pointer;font-weight:800;font-size:13px">The numbers (' + F.length + ') <span style="font-weight:500;color:var(--muted)">\u00b7 tap to edit</span></summary>' + inputs + '</details>'
+        : hTop + hMid + inputs + h;
       h += '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text);margin-top:8px" onclick="gmPropDel(' + i + ')">Remove this property</button>';
       h += '</div></details>';
     });
     h += '<button class="btn btn-p" onclick="gmPropAdd()">Add a property</button>';
-    h += '<div class="cat-t" style="margin-top:18px">\u{1F4CC} The correction worth knowing</div>'
+    h += '<details class="gm-why" style="margin-top:18px"><summary class="cat-t" style="cursor:pointer">\u{1F4CC} The correction worth knowing <span style="font-size:12px;font-weight:500;color:var(--muted)">\u00b7 the salary set-off is capped at \u20b92 lakh</span></summary>'
       + '<div class="info">Your playbook records the let-out interest deduction as \u201cuncapped, therefore effective rate ~5%\u201d. Half of that is right. '
       + 'The <b>deduction</b> is uncapped for a let-out property \u2014 but the resulting <b>loss you can set off against salary</b> is capped at \u20b92 lakh a year under section 71(3A), '
       + 'with the excess carried forward eight years and usable only against future house-property income. Under the new regime that inter-head set-off is nil. '
       + 'So the effective-rate maths above holds only while your annual loss stays under \u20b92L and you remain in the old regime. '
-      + 'The calculator now shows you the moment you cross that line. Worth putting to your CA alongside the clubbing question.</div>';
+      + 'The calculator now shows you the moment you cross that line. Worth putting to your CA alongside the clubbing question.</div></details>';
     h += '<div class="cat-t" style="margin-top:14px">Annual rent discipline</div><div class="road-col">'
       + '<div class="road-i">Benchmark against three live listings for a comparable flat, every August. Rent that never rises is a slow, silent pay cut.</div>'
       + '<div class="road-i">A written 11-month agreement, registered, with a clear escalation clause. Verbal comfort is not a contract.</div>'
@@ -2889,9 +2897,11 @@
         // human-first: example numbers are not the person's, and Today before any tick is never guilt; an unknown value is a
         // calm dash, never "low". Today turns from watch (building) to good (strong) only when all three are done.
         if (v.l === "Today") st = v.v === "3/3" ? "good" : v.v === "0/3" ? "" : "watch";
+        // kaizen-1: a foundation stack nobody has started is an invitation, not an alarm (no red for 'not begun')
+        else if (v.l === "Stack" && v.v === "0%") st = "";
         else st = v.c === "var(--green)" ? "good" : v.c === "var(--amber)" ? "watch" : v.c === "var(--red)" ? "low" : "";
       }
-      var word = st ? STATE_WORD[st] : (exampleNums && !empty && v.deps ? "example" : "");   // say why a tile has no colour
+      var word = st ? STATE_WORD[st] : (exampleNums && !empty && v.deps ? "example" : v.l === "Stack" && v.v === "0%" && !exampleNums ? "start" : "");   // say why a tile has no colour
       h += '<div role="button" tabindex="0" aria-label="' + esc(v.l) + ': ' + esc(v.v) + (word ? " (" + word + ")" : "") + '. Open the tab that changes this."'
         + ' onclick="goTab(\'' + v.t + '\')" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();goTab(\'' + v.t + '\');}"'
         + (st ? ' class="sx-state-' + st + '" data-state="' + st + '"' : "") + '>'
@@ -5842,7 +5852,7 @@
   function calmTodayHTML() {
     var more = dueNowHTML() + (inRecovery() ? "" : driftHTML() + resHTML()) + msTodayHTML() + insightHTML() + estateHTML();
     var open = G("gm_more_today", false) === true;
-    return '<div class="section active">' + greetHTML() + (phone() ? vitalsHTML() : "") + interruptHTML() + undoBar() + checkinHTML() + setupStripHTML() + (window.gmAskOneHTML ? gmAskOneHTML() : "") + (window.gmAwayHTML ? gmAwayHTML() : "") + (window.gmMonthAARHTML ? gmMonthAARHTML() : "") + todayFocusHTML() + (window.gmComingUpHTML ? gmComingUpHTML() : "") + (window.gmUsTodayHTML ? gmUsTodayHTML() : "") + winsHTML() + (window.gmWhatIfHTML ? gmWhatIfHTML() : "")
+    return '<div class="section active">' + greetHTML() + (phone() ? vitalsHTML() : "") + interruptHTML() + undoBar() + checkinHTML() + setupStripHTML() + (window.gmAwayHTML ? gmAwayHTML() : "") + (window.gmMonthAARHTML ? gmMonthAARHTML() : "") + todayFocusHTML() + (window.gmAskOneHTML ? gmAskOneHTML() : "") + (window.gmComingUpHTML ? gmComingUpHTML() : "") + (window.gmUsTodayHTML ? gmUsTodayHTML() : "") + winsHTML() + (window.gmWhatIfHTML ? gmWhatIfHTML() : "")
       + (more.replace(/<[^>]*>/g, "").trim() ? '<details class="road-col gm-more-today"' + (open ? " open" : "") + ' ontoggle="gmMoreToday(this.open)">'
         + '<summary style="cursor:pointer;font-weight:800;font-size:13px">More today <span style="font-weight:500;color:var(--muted);font-size:11.5px">\u00b7 what is due, your week, calendar, estate</span></summary>'
         + '<div style="margin-top:10px">' + more + '</div></details>' : "")
@@ -6055,12 +6065,14 @@
   };
   function quarterCardHTML(tab) {
     var due = quarterDue(), n = (S.okrs || []).length;
-    return '<div style="background:var(--card);border:2px solid var(--gold);border-radius:14px;padding:13px;margin:12px 13px 0">'
+    // kaizen-1: a gold frame only while the check-in is due; once done it is a calm line. The calendar is a quiet link, not a third button.
+    return '<div class="gm-qcard" style="background:var(--card);border:' + (due ? "2px solid var(--gold)" : "1px solid var(--border)") + ';border-radius:14px;padding:13px;margin:12px 13px 0">'
       + '<div style="font-weight:800;font-size:13.5px;color:var(--text)">' + (due ? "\u23f1 Quarterly check-in is due" : "\u2713 Quarterly check-in done for " + qKeyNow()) + '</div>'
-      + '<div style="font-size:12px;color:var(--muted);line-height:1.55;margin:5px 0 9px">About 5 minutes, all taps: grade last quarter, rate the 8 areas of life, pick up to 3 goals from your lowest scores.</div>'
-      + '<div style="display:flex;gap:8px;flex-wrap:wrap"><button class="btn-sm" style="background:var(--gold);color:#0d1f35;font-weight:800" onclick="gmQuarter()">' + (due ? "Start" : "Redo") + '</button>'
+      + (due ? '<div style="font-size:12px;color:var(--muted);line-height:1.55;margin:5px 0 9px">About 5 minutes, all taps: grade last quarter, rate the 8 areas of life, pick up to 3 goals from your lowest scores.</div>' : '<div style="height:8px"></div>')
+      + '<div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">' + (due ? '<button class="btn-sm" style="background:var(--gold);color:#0d1f35;font-weight:800" onclick="gmQuarter()">Start</button>' : '')
       + (n && tab === "okr" ? '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmQuarter({gradeOnly:true})">Update progress (taps)</button>' : '')
-      + '<button class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmCalendar(\'rhythm\')">Add rhythm to calendar</button></div></div>';
+      + (due ? '' : '<a href="#" class="gm-inl" style="font-size:12.5px" onclick="gmQuarter();return false">Redo</a>')
+      + '<a href="#" class="gm-inl" style="font-size:12.5px" onclick="gmCalendar(\'rhythm\');return false">Add to calendar</a></div></div>';
   }
 
   /* -- 2. The rhythm in your calendar: one .ics, recurring, with what to do written in each event -- */
@@ -9826,7 +9838,8 @@
   function facts() { return G1("gm_facts", {}) || {}; }
   function factQ(id) { var f = ((window.GM_SYSTEMS || {}).facts || []).filter(function (x) { return x.id === id; })[0]; return f ? f.q : ""; }
   function known(id) {
-    if (id === "cash") { var l = G1("gm_life", {}) || {}; return !!(l.ef && !(G1("gm_examples", {}) || {}).ef) || !!G1("gm_ask_cash", false); }
+    // ask once (kaizen-1): savings typed in the profile already answer "how much cash", so the question is not asked again
+    if (id === "cash") { var l = G1("gm_life", {}) || {}; return !!(l.ef && !(G1("gm_examples", {}) || {}).ef) || !!G1("gm_ask_cash", false) || !!(window.P && !P.example && +P.sav > 0); }
     if (Object.prototype.hasOwnProperty.call(facts(), id)) return true;
     if (id === "partner") return !!(window.P && P.pdob && !P.example);
     if (id === "kids") return !!(window.P && P.kids && P.kids.length && !P.example);
@@ -10060,7 +10073,9 @@
       + '<textarea id="gmCardsIn" rows="3" placeholder="HDFC Swiggy, 13&#10;ICICI Amazon Pay, 28"></textarea>'
       + '<button type="button" class="btn-sm" onclick="gmCardsAdd()">Add</button>'
       + '<p class="gm-card-note">Only the name and the statement day. Never a card number, CVV or expiry date: no app needs them to help you here.</p>';
-    if (!c.length) return h + '<p>Add your cards once, and the Life OS tells you which one to use, and when.</p>' + form + '</div>';
+    // kaizen-1: before any card is known this is one line and one tap, not a form on the money page (pasted bank messages
+    // add cards by themselves, so typing them is the rarer path)
+    if (!c.length) return h + '<details class="gm-card-more gm-card-add"><summary>Add your cards once <span style="font-weight:500;color:var(--muted)">\u00b7 the Life OS then says which one to use, and when</span></summary>' + form + '</details></div>';
     var best = gmCardBest(), picks = [];
     RULES.forEach(function (r) {
       var hit = c.filter(function (x) { return r.re.test(x.name); })[0];
@@ -10254,7 +10269,10 @@
     var m = levMap(); m.tax = (m.tax && typeof m.tax === "object") ? m.tax : {}; m.tax.ded = n === "" ? 0 : n; S_("gm_levers", m); renderAll();
   };
   function levMain(lv) {
-    var steps = levSteps(lv.id), h = '<div style="font-size:12.5px;margin-top:4px">' + esc(lv.saves) + '</div>'
+    // kaizen-1: the first sentence says what it saves; the rest of a long explanation is one tap away ("Why?")
+    var sv = String(lv.saves || ""), cut = sv.length > 140 ? sv.indexOf(". ") : -1;
+    var steps = levSteps(lv.id), h = '<div style="font-size:12.5px;margin-top:4px">' + (cut > 0 ? esc(sv.slice(0, cut + 1))
+      + ' <details class="gm-why" style="display:inline"><summary style="display:inline;cursor:pointer;color:var(--muted)">Why?</summary> ' + esc(sv.slice(cut + 2)) + '</details>' : esc(sv)) + '</div>'
       + '<div style="font-size:12px;color:var(--muted);margin-top:4px">about ' + esc(lv.effortMin) + ' minutes</div>';
     if (lv.review && levPast(lv.review)) h += '<div class="info" style="color:var(--amber);margin:8px 0">Check before you act: last verified ' + esc(lv.verified || "") + '</div>';
     h += '<ol style="margin:8px 0 0;padding-left:22px">';
@@ -10407,10 +10425,14 @@
     var p = window.P, out = [], real = p && !p.example;
     if (real) {
       var emis = (p.loans || []).reduce(function (a, l) { return a + swNum(l && l.emi); }, 0), ess = swNum(p.exp) + emis;
-      if (ess > 0 && swNum(p.sav) >= 0) { var rw = swNum(p.sav) / ess; out.push({ id: "runway", t: "Buffer", v: rw.toFixed(1) + " months", st: rw < 3 ? "low" : rw < 6 ? "watch" : "good",
+      // one money model (kaizen-1): the buffer and the saving rate are the figures the Buffer and Saving tiles show, never a
+      // second sum (a red "2.5 months" line sat under a "3.5m" tile). The profile's own sum stays the fallback.
+      var M = typeof window.gmMoney === "function" ? window.gmMoney() : null;
+      var mb = M && M.buffer && M.buffer.liquid > 0 && M.buffer.gapM > 0 ? M.buffer.months : null, ms = M && M.save !== null && M.save >= -100 && M.save <= 100 ? M.save : null;
+      if (mb !== null || (ess > 0 && swNum(p.sav) >= 0)) { var rw = mb !== null ? mb : swNum(p.sav) / ess; out.push({ id: "runway", t: "Buffer", v: rw.toFixed(1) + " months", st: rw < 3 ? "low" : rw < 6 ? "watch" : "good",
         why: "Months the emergency fund covers essentials and EMIs. A doctor would call it your reserve: below 3 months, one shock becomes a crisis.", fix: "Move a fixed amount into the emergency fund on salary day until it reaches 6 months." }); }
       var net = swNum(gmHouseholdIncome(p));
-      if (net > 0 && swNum(p.exp) > 0) { var sr = Math.round((net - swNum(p.exp) - emis) / net * 100); out.push({ id: "saving", t: "Saving rate", v: sr + "%", st: sr < 10 ? "low" : sr < 20 ? "watch" : "good",
+      if (ms !== null || (net > 0 && swNum(p.exp) > 0)) { var sr = ms !== null ? ms : Math.round((net - swNum(p.exp) - emis) / net * 100); out.push({ id: "saving", t: "Saving rate", v: sr + "%", st: sr < 10 ? "low" : sr < 20 ? "watch" : "good",
         why: "The share of take-home kept. An economist's rule of thumb: under 10% the future is borrowed from.", fix: "Raise the SIP by a small amount each salary day; see What we must earn on Money." }); }
       var since = new Date(Date.now() - 30 * 864e5).toISOString().slice(0, 10), sp = (G("gm_spend", []) || []).filter(function (x) { return x && x.d >= since; });
       if (sp.length >= 5 && swNum(p.exp) > 0) { var tot = sp.reduce(function (a, x) { return a + swNum(x.a); }, 0), r = Math.round(tot / swNum(p.exp) * 100);
@@ -10468,7 +10490,7 @@
     "Fuel": "Club errands into one trip a week", "Groceries": "One planned list a week, bought once" };
   var NEED_FIXED = ["Bills", "Insurance", "Subscriptions"];
   function needNum(v) { var n = parseFloat(String(v === undefined || v === null ? "" : v).replace(/[,\s\u20b9]/g, "")); return isFinite(n) ? n : 0; }
-  function needRs(n) { return "Rs " + Math.round(n).toLocaleString("en-IN"); }
+  function needRs(n) { return "\u20b9" + Math.round(n).toLocaleString("en-IN"); }
   window.gmNeedsCalc = function () {
     var p = window.P, cfg = G("gm_needs", {}) || {};
     if (!p || p.example || !(needNum(p.exp) > 0)) return null;
