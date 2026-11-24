@@ -34,6 +34,15 @@ html[data-daypart="dusk"] :is(.sx-sky,header)::after{background:radial-gradient(
 html[data-daypart="day"] .sx-sky::before{opacity:0}
 html[data-daypart="dawn"] .sx-sky::before,html[data-daypart="dusk"] .sx-sky::before{opacity:.35}
 @media (prefers-reduced-motion: reduce){:is(.sx-sky,header)::after{transition:none}}
+/* The live sky (shared/sky.js, owner 2026-11-23): any surface with data-sx-sky shows the person's real sky now. Its canvas sits
+   under the surface's own content (z-index -1 in an isolated stack), so nothing above it moves; the surface keeps a dark colour
+   underneath for the moment before the first frame and for a test DOM. The fixed tint above gives way once the sky is live. */
+:where([data-sx-sky],.sx-live){position:relative}[data-sx-sky],.sx-live{isolation:isolate}
+.sx-live>canvas.sx-live-cv{position:absolute!important;inset:0;z-index:-1!important;pointer-events:none;border-radius:inherit}
+html[data-daypart] :is(.sx-sky,header).sx-live::after,.sx-live.sx-sky::before{content:none}
+.sx-sky-line{position:absolute;inset-inline-start:10px;bottom:8px;z-index:3;max-width:calc(100% - 20px);font-size:12.5px;line-height:1.35;font-weight:500;padding:5px 11px;border-radius:12px;background:rgba(6,10,20,.8);color:#f6f8fb;pointer-events:none;opacity:0;transform:translateY(4px);transition:opacity .3s ease,transform .3s ease}
+.sx-sky-line.on{opacity:1;transform:none}
+@media (prefers-reduced-motion: reduce){.sx-sky-line{transition:none;transform:none}}
 
 /* The crest catches the light (immersive-real, owner 2026-11-23): a slow gold glint crosses the seal every 14 seconds, the way
    polished metal flashes as you turn it; nothing moves when the person asks for less motion. */

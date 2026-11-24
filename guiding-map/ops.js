@@ -1809,14 +1809,24 @@
   var WIND_K = "gm_wind";
   window.gmWind = function () { var w = G(WIND_K, null); return w && typeof w === "object" && w.ok && isFinite(+w.speed) ? w : null; };
   if (window.SXWorld) SXWorld.windSource = window.gmWind;   // the shared cloth flies in the person's own wind
+  // The live sky (shared/sky.js) reads the same consented reading: its clouds and weather, and the rounded place (0.1 deg).
+  // Without consent there is no reading and no place; the sky then uses the time zone's city and draws a clear sky.
+  if (window.SXSky) {
+    SXSky.weatherSource = function () { var w = window.gmWind ? gmWind() : null; return w && isFinite(+w.cloud) ? { cloud: +w.cloud, code: +w.code || 0, isDay: w.isDay, at: w.at, speed: +w.speed, dir: +w.dir } : null; };
+    SXSky.placeSource = function () { var w = G(WIND_K, null); return w && w.ok && isFinite(+w.lat) && isFinite(+w.lon) ? { lat: +w.lat, lon: +w.lon } : null; };
+    SXSky.t = function (s) { return window.gmT ? gmT(s) : s; };
+  }
   window.gmWindFetch = function (force) {
     var w = G(WIND_K, null); if (!w || !w.ok || !navigator.onLine || !window.fetch) return;
-    if (!force && w.at && Date.now() - w.at < 3 * 3600e3) return;
+    if (!force && w.at && Date.now() - w.at < 3600e3) return;   // hourly: the clouds change faster than the wind
     var go = function (lat, lon) {
-      fetch("https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon + "&current=wind_speed_10m,wind_direction_10m", { credentials: "omit", referrerPolicy: "no-referrer" })
+      fetch("https://api.open-meteo.com/v1/forecast?latitude=" + lat + "&longitude=" + lon + "&current=wind_speed_10m,wind_direction_10m,cloud_cover,weather_code,is_day", { credentials: "omit", referrerPolicy: "no-referrer" })
         .then(function (r) { return r.ok ? r.json() : null; }).then(function (j) {
           var c = j && j.current; if (!c || !isFinite(+c.wind_speed_10m)) return;
-          var v = G(WIND_K, {}) || {}; v.speed = Math.max(0, Math.min(150, +c.wind_speed_10m)); v.dir = ((+c.wind_direction_10m % 360) + 360) % 360; v.at = Date.now(); S_(WIND_K, v); renderAll();
+          var v = G(WIND_K, {}) || {}; v.speed = Math.max(0, Math.min(150, +c.wind_speed_10m)); v.dir = ((+c.wind_direction_10m % 360) + 360) % 360;
+          // the same reading carries the sky's weather (live sky, shared/sky.js): cloud cover, the WMO weather code, day or night
+          if (isFinite(+c.cloud_cover)) v.cloud = Math.max(0, Math.min(100, +c.cloud_cover)); if (isFinite(+c.weather_code)) v.code = +c.weather_code | 0; if (c.is_day !== undefined) v.isDay = +c.is_day ? 1 : 0;
+          v.at = Date.now(); S_(WIND_K, v); renderAll();
         }).catch(function () {});
     };
     if (isFinite(+w.lat) && isFinite(+w.lon)) return go(w.lat, w.lon);
@@ -2222,8 +2232,21 @@
 
   function props() { return G("gm_props", []); }
   // A living sky (immersive-real): the header follows the real time of day, set on load and whenever the app comes back.
-  function gmDaypart() { var h = new Date().getHours(); document.documentElement.setAttribute("data-daypart", h >= 5 && h < 8 ? "dawn" : h >= 8 && h < 17 ? "day" : h >= 17 && h < 20 ? "dusk" : "night"); }
+  // From the real sun when the shared sky can work it out (dawn and dusk are the sun within 12 deg below to 6 deg above), else the clock.
+  function gmDaypart() { var h = new Date().getHours(), p = null; try { p = window.SXSky && SXSky.daypart ? SXSky.daypart() : null; } catch (e) {}
+    document.documentElement.setAttribute("data-daypart", p || (h >= 5 && h < 8 ? "dawn" : h >= 8 && h < 17 ? "day" : h >= 17 && h < 20 ? "dusk" : "night")); }
   try { gmDaypart(); document.addEventListener("visibilitychange", function () { if (!document.hidden) gmDaypart(); }); } catch (e) {}
+  // The live sky's surfaces in the Life OS (shared/sky.js): the greeting becomes a window on the sky, words in white on it in both
+  // themes (the sky holds its brightness under the white text, so AA holds); the goal mountain stands in front of the real sky
+  // (its own painted sky gives way); the materials that are not a sky (cognac, marble, carbon) keep their look.
+  try { var sxs = document.createElement("style"); sxs.id = "gmLiveSky";
+    sxs.textContent = "html body .gm-greet[data-sx-sky]{padding:16px;padding-inline-end:52px;border-radius:18px;background-color:#0d1a30;overflow:hidden;box-shadow:0 10px 26px rgba(4,10,24,.22)}"
+      + "html body .gm-greet[data-sx-sky]{--ring-track:rgba(255,255,255,.1)}html body .gm-greet[data-sx-sky] .gm-rings text{fill:#fff}html body .gm-greet[data-sx-sky] h2{color:#fff!important}html body .gm-greet[data-sx-sky] p{color:#f1f4f8!important;opacity:1!important}"
+      + "html body .gm-greet[data-sx-sky] :is(h2,p),.gm-hero.sx-live :is(.gm-hero-m,.gm-hero-u){text-shadow:0 1px 2px rgba(0,0,0,.4)}.gm-hero.sx-live :is(.gm-hero-m,.gm-hero-u){color:#f3f6fa}"
+      + ".gm-mtn-sky{width:100%;max-width:420px;box-sizing:border-box;margin:6px 0 4px;border-radius:12px;overflow:hidden;background:#1c3a63}.gm-mtn-sky>svg.gm-mtn{margin:0!important;border-radius:0!important}"
+      + ".gm-mtn-sky.sx-live>svg.gm-mtn>rect:first-of-type{opacity:0}"
+      + "html[data-mat=cognac] .sx-live-cv,html[data-mat=marble] .sx-live-cv,html[data-mat=carbon] .sx-live-cv{display:none}";
+    document.head.appendChild(sxs); } catch (e) {}
   // A typed 0 is a real answer: show it, never the "e.g." hint again (owner 2026-11-20: a 0 looked unsaved)
   function keep0(x) { return x === undefined || x === null ? "" : x; }
   // A home the family rents is not theirs (owner 2026-11-20: the rented flat was entered as owned). It stays listed, so the
@@ -7670,7 +7693,7 @@
         + ' stroke-dasharray="' + cc.toFixed(1) + '" stroke-dashoffset="' + of.toFixed(1) + '" style="--c:' + cc.toFixed(1) + ';--o:' + of.toFixed(1) + '" transform="rotate(-90 34 34)"/>';
     }
     var rd = JSON.stringify([{ n: "Today", p: Math.round(n / 3 * 100), k: "sunrise" }, { n: "Stack", p: stp, k: "emerald" }, { n: "Shield", p: shp, k: "peacock" }]);
-    return welcomeBackHTML() + '<div class="gm-greet"><svg class="gm-ring gm-rings" width="68" height="68" viewBox="0 0 68 68" role="button" tabindex="0" data-rings=\'' + rd + '\''
+    return welcomeBackHTML() + '<div class="gm-greet" data-sx-sky><svg class="gm-ring gm-rings" width="68" height="68" viewBox="0 0 68 68" role="button" tabindex="0" data-rings=\'' + rd + '\''
       + ' onclick="gmRingsInfo()" onkeydown="if(event.key===\'Enter\'||event.key===\' \'){event.preventDefault();gmRingsInfo()}" aria-label="'
       + n + ' of 3 done today; Stack ' + stp + '%; Shield ' + shp + '%. Show what the rings mean">'
       // The fallback drawing wears the same natural palettes as the lit rings (shared/rings.js): sunrise, emerald, peacock.
@@ -9312,24 +9335,28 @@
     document.addEventListener("visibilitychange", function () { gmRest(document.hidden); });
     ["pointerdown", "keydown"].forEach(function (ev) { document.addEventListener(ev, gmRestWake, { passive: true }); });
   }
-  // Shooting stars at a natural, irregular pace (every 15 to 30 s), only while the app is on screen and motion is welcome.
+  // Shooting stars at the real sky's pace (shared/sky.js: tonight's shower and sporadic rate for the person's place, none by day),
+  // only while the app is on screen and motion is welcome. The header sees about a seventh of the sky.
   // Armed only in a real, visible browser: an automated or headless page would be kept alive by the repeating timer.
   if (!window._gmComets && !navigator.webdriver && !/jsdom|HeadlessChrome/i.test(navigator.userAgent || "")) {
     window._gmComets = 1;
-    var gmComet = function () {
+    var gmCometArmed = false, gmComet = function () {
       try {
         var calm = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
         // Comets fly in their own unmasked layer, behind the title and buttons, so the whole streak shows.
         var hd = document.querySelector("header"), sky = document.getElementById("gmTrail");
         if (!sky && hd) { sky = document.createElement("div"); sky.id = "gmTrail"; sky.setAttribute("aria-hidden", "true"); hd.insertBefore(sky, hd.firstChild); }
-        if (!calm && sky && !document.hidden) {
+        var hr = window.SXSky && SXSky.meteorsNow ? SXSky.meteorsNow() : 0;
+        if (gmCometArmed && !calm && sky && !document.hidden && hr > 0) {
           var c = document.createElement("i"); c.className = "gm-comet";
           c.style.setProperty("--cy", (4 + Math.random() * 30).toFixed(1) + "%");
           c.addEventListener("animationend", function () { if (c.parentNode) c.parentNode.removeChild(c); });
           sky.appendChild(c); setTimeout(function () { if (c.parentNode) c.parentNode.removeChild(c); }, 2500);
         }
       } catch (e) {}
-      setTimeout(gmComet, 15000 + Math.random() * 15000);
+      gmCometArmed = true;                 // the first call only sets the clock: a streak comes at a random moment, as in the sky
+      var rate = 0; try { rate = window.SXSky && SXSky.meteorsNow ? SXSky.meteorsNow() : 0; } catch (e) {}
+      setTimeout(gmComet, rate > 0 ? Math.max(4000, -Math.log(1 - Math.random()) * 3.6e6 / (rate * .15)) : 600000);
     };
     setTimeout(gmComet, 6000 + Math.random() * 6000);
   }
@@ -9921,7 +9948,7 @@
       + '<button type="button" onclick="gmUnlockCode(document.getElementById(\'gmLockCode\').value)">Unlock with code</button></details>'
       + '<div class="gm-lock-msg" aria-live="polite"></div></div>';
     document.body.appendChild(el);
-    try { if (window.SXSky) SXSky.mount(el, { comet: true, aurora: true, avoid: function () { return el.querySelector(".gm-lock-card"); } }); } catch (e) {}   // the shared night sky; it ends when the lock is removed
+    try { if (window.SXSky) SXSky.mount(el, { live: true, comet: true, aurora: true, avoid: function () { return el.querySelector(".gm-lock-card"); } }); } catch (e) {}   // the shared night sky; it ends when the lock is removed
     try { var go = el.querySelector(".gm-lock-go"); if (go) go.focus({ preventScroll: true }); } catch (e) {}   // a dialog takes the focus: one Enter opens it
   }
   function say(t) { var m = document.querySelector("#gmLock .gm-lock-msg"); if (m) m.textContent = t; }

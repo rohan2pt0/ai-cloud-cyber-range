@@ -61,7 +61,7 @@
     st.cv.width = Math.round((b.width + 2 * pad) * d); st.cv.height = Math.round((b.height + 2 * pad) * d);
   }
   function draw(st, t) {
-    var c = st.ctx, d = st.d, W = st.cv.width / d, cx = W / 2, cy = W / 2, s = st.w / 68, dark = doc.documentElement.getAttribute("data-theme") === "dark" || (doc.documentElement.getAttribute("data-theme") !== "light" && window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches);
+    var c = st.ctx, d = st.d, W = st.cv.width / d, cx = W / 2, cy = W / 2, s = st.w / 68, dark = !!(st.svg.closest && st.svg.closest("[data-sx-sky]")) || doc.documentElement.getAttribute("data-theme") === "dark" || (doc.documentElement.getAttribute("data-theme") !== "light" && window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches);
     c.setTransform(d, 0, 0, d, 0, 0); c.clearRect(0, 0, W, W);
     var radii = [28, 20.5, 13], lw = 5.6 * s, shift = tilt() * .12, all = st.rings.every(function (r) { return r.v >= 99.5; });
     if (all) {                                             // three closed: a soft sunrise behind them, breathing
