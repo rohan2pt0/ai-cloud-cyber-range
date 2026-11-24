@@ -17446,7 +17446,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
 // the app switcher shows nothing. Honest scope: this guards the screen; the data on the device is protected by the phone's own
 // encryption and lock, and encryption at rest inside the Life OS is the next slice (queue app-lock).
 (function () {
-  var KEY = "gm_lock", hiddenAt = 0;
+  var KEY = "gm_lock", SCENE_KEY = "gm_lock_scene", hiddenAt = 0, seaHandle = null;
   // A lock record is real only if it can be satisfied (a credential and a recovery-code hash): a damaged one must never lock
   // the person out of their own record for ever (robustness audit, 2026-11-14). Anyone able to damage it could already
   // read the device's storage, so treating it as "no lock" gives nothing away.
@@ -17455,6 +17455,17 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   // the lock back on reuses the code the person already saved (threat lk-i2). Only the app's Erase removes them.
   function rec() { var r = stored(); return r && !r.off ? r : null; }
   function put(r) { try { if (r) localStorage.setItem(KEY, JSON.stringify(r)); else localStorage.removeItem(KEY); } catch (e) {} }
+  // The lock's Scene choice (owner, 2026-11-24): Sky (default) or Sea, one tap, remembered. A damaged or missing value reads
+  // as Sky, so a bad write never leaves the person without a scene.
+  function scene() { try { return localStorage.getItem(SCENE_KEY) === "sea" ? "sea" : "sky"; } catch (e) { return "sky"; } }
+  window.gmLockScene = function (s) { try { localStorage.setItem(SCENE_KEY, s === "sea" ? "sea" : "sky"); } catch (e) {} if (window.renderAll) renderAll(); };
+  function sceneHTML() {
+    var sc = scene();
+    return '<div style="display:flex;align-items:center;gap:10px;margin-top:10px"><span style="font-size:13px;color:var(--muted)">Scene</span><span class="sx-seg" role="radiogroup" aria-label="Scene">'
+      + '<button type="button" role="radio" data-scene="sky" aria-checked="' + (sc === "sky") + '" onclick="gmLockScene(\'sky\')">Sky</button>'
+      + '<button type="button" role="radio" data-scene="sea" aria-checked="' + (sc === "sea") + '" onclick="gmLockScene(\'sea\')">Sea</button>'
+      + '</span></div>';
+  }
   function b64(buf) { var s = "", b = new Uint8Array(buf); for (var i = 0; i < b.length; i++) s += String.fromCharCode(b[i]); return btoa(s).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, ""); }
   function unb64(t) { t = String(t).replace(/-/g, "+").replace(/_/g, "/"); while (t.length % 4) t += "="; var s = atob(t), b = new Uint8Array(s.length); for (var i = 0; i < s.length; i++) b[i] = s.charCodeAt(i); return b; }
   function rnd(n) { var a = new Uint8Array(n); crypto.getRandomValues(a); return a; }
@@ -17476,7 +17487,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   function paint() {
     var el = document.getElementById("gmLock");
     document.documentElement.classList.toggle("gm-locked", locked);
-    if (!locked) { if (el) el.remove(); return; }
+    if (!locked) { if (seaHandle) { try { seaHandle.stop(); } catch (e) {} seaHandle = null; } if (el) el.remove(); return; }
     if (el) return;
     el = document.createElement("div"); el.id = "gmLock"; el.setAttribute("role", "dialog"); el.setAttribute("aria-modal", "true"); el.setAttribute("aria-label", "Life OS is locked");
     el.innerHTML = '<div class="gm-lock-card sx-glass sx-lock-card">' + (window.SXSky ? SXSky.seal() : '') + '<h2 class="sx-lock-title">Locked</h2>'
@@ -17486,7 +17497,10 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       + '<button type="button" onclick="gmUnlockCode(document.getElementById(\'gmLockCode\').value)">Unlock with code</button></details>'
       + '<div class="gm-lock-msg" aria-live="polite"></div></div>';
     document.body.appendChild(el);
-    try { if (window.SXSky) SXSky.mount(el, { live: true, comet: true, aurora: true, avoid: function () { return el.querySelector(".gm-lock-card"); } }); } catch (e) {}   // the shared night sky; it ends when the lock is removed
+    // The chosen scene: the shared sea, or the shared sky as before. Either ends when the lock is removed; the sea also stops
+    // when the lock opens. If the sea engine is missing, the sky is the safe fallback.
+    if (scene() === "sea" && window.SXSea) { try { seaHandle = SXSea.mount(el); } catch (e) { seaHandle = null; } }
+    if (!seaHandle) { try { if (window.SXSky) SXSky.mount(el, { live: true, comet: true, aurora: true, avoid: function () { return el.querySelector(".gm-lock-card"); } }); } catch (e) {} }
     try { var go = el.querySelector(".gm-lock-go"); if (go) go.focus({ preventScroll: true }); } catch (e) {}   // a dialog takes the focus: one Enter opens it
   }
   function say(t) { var m = document.querySelector("#gmLock .gm-lock-msg"); if (m) m.textContent = t; }
@@ -17589,7 +17603,8 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   function e(s) { return String(s == null ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
   window.gmLockCardHTML = function () {
     var r = rec(), h = '<div class="road-col gm-lock-set" style="margin-bottom:12px"><div style="display:flex;align-items:center;gap:10px"><span class="gm-glyph" aria-hidden="true"><i>🔒</i></span><b>Privacy lock</b>'
-      + '<span class="pill ' + (r ? "pill-g" : "pill-t") + '" style="margin-inline-start:auto">' + (r ? "On" : "Off") + '</span></div>';
+      + '<span class="pill ' + (r ? "pill-g" : "pill-t") + '" style="margin-inline-start:auto">' + (r ? "On" : "Off") + '</span></div>'
+      + sceneHTML();
     if (window._gmLockCode) {
       return h + '<p style="font-size:13px;margin:8px 0">Your recovery code. If this device’s fingerprint or face ever changes, this code opens your Life OS. Keep it somewhere safe, away from this phone.</p>'
         + '<div class="gm-lock-code">' + e(window._gmLockCode) + '</div><button class="btn-sm" style="background:var(--gold);color:#0d1f35;margin-top:8px" onclick="gmLockSaved()">I have saved it</button></div>';
