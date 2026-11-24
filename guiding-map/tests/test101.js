@@ -44,7 +44,11 @@ setTimeout(() => {
   const money = tiles(ex).filter(x => /^(Buffer|Runway|Saving|Net worth):/.test(x.getAttribute("aria-label") || ""));
   ok("example figures raise no status on the money tiles they feed", money.length === 3 && money.every(x => !/sx-state/.test(x.className) && /example/.test(x.textContent)), money.map(x => x.className + ":" + x.textContent).join(" | "));
   const stack = tiles(ex).find(x => /^Stack:/.test(x.getAttribute("aria-label") || ""));
-  ok("the person's own Stack still shows its health", !!stack && /sx-state-/.test(stack.className));
+  // kaizen-1: a stack nobody has started is a calm "start" tile (no red for not begun); once one item is ticked it shows its health
+  ok("an unstarted Stack is calm and says start", !!stack && (!/^Stack: 0%/.test(stack.getAttribute("aria-label")) || (!/sx-state/.test(stack.className) && /start/.test(stack.textContent))), stack && stack.className + ":" + stack.textContent);
+  ex.localStorage.setItem("gm_stack", JSON.stringify({ L0: { 0: true } })); ex.renderAll();
+  const stack2 = tiles(ex).find(x => /^Stack:/.test(x.getAttribute("aria-label") || ""));
+  ok("the person's own Stack still shows its health", !!stack2 && /sx-state-/.test(stack2.className), stack2 && stack2.className + ":" + stack2.getAttribute("aria-label"));
   console.log("test101 number tiles in natural materials: " + P + " passed, " + F + " failed");
   if (F) { e.forEach(x => console.log("  " + x)); process.exit(1); }
   process.exit(0);
