@@ -28,23 +28,43 @@ concurrency:
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 jobs:
-  sandbox:
+  # The journeys run in parallel shards (2026-11-24): one runner did all of them in ~68 min and held every merge. Each shard
+  # brings up its own fresh clone and estate (every journey starts the estate itself, so none depends on another) and runs its
+  # share, balanced longest-first by sandbox/timings.json (`sandbox/run.py --shard i/N`). Every journey runs in exactly one
+  # shard (lifecycle/tests/test_sandbox_shards.py). The `sandbox` job below is the one check to read: it fails unless every
+  # shard passed.
+  shard:
+    name: sandbox (${{ matrix.shard }}/${{ matrix.total }})
     runs-on: ubuntu-latest
-    timeout-minutes: 75   # the journey suite takes ~45-55 min since the device and robustness audits joined (2026-11-14); 60 left no headroom
+    timeout-minutes: 45   # the heaviest shard takes ~17 min of journeys (guiding_map_full_use alone ~13); 45 leaves room for a slow registry
+    strategy:
+      fail-fast: false    # a red shard must not hide what the others found
+      matrix:
+        shard: [1, 2, 3, 4]
+        total: [4]
     steps:
       - uses: actions/checkout@v7
         with: { fetch-depth: 0 }          # the stale-update journey needs history
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
-      - name: Pick the journeys this change needs
+      - name: Pick the journeys this change needs, then this shard's share
         id: pick
         run: |
           if [ "${{ github.event_name }}" = pull_request ]; then
             J="$(python3 lifecycle/impact.py --base "origin/${{ github.base_ref }}" --journeys)"
           elif [ -n "${{ github.event.inputs.journeys }}" ]; then J="${{ github.event.inputs.journeys }}"
           else J=ALL; fi
-          echo "journeys=$J" >> "$GITHUB_OUTPUT"
-          echo "Journeys: ${J:-none (no journey guards these files; unit tests and fitness still ran)}" >> "$GITHUB_STEP_SUMMARY"
+          MINE=""; SAVES=false
+          if [ -n "$J" ]; then
+            if [ "$J" = ALL ]; then PLAN="$(python3 sandbox/run.py --shard "${{ matrix.shard }}/${{ matrix.total }}" --plan)"
+            else PLAN="$(python3 sandbox/run.py -j "$J" --shard "${{ matrix.shard }}/${{ matrix.total }}" --plan)"; fi
+            MINE="$(printf '%s' "$PLAN" | python3 -c 'import json,sys; print(json.load(sys.stdin)["journeys"])')"
+            SAVES="$(printf '%s' "$PLAN" | python3 -c 'import json,sys; print(str(json.load(sys.stdin)["saves_models"]).lower())')"
+          fi
+          echo "journeys=$MINE" >> "$GITHUB_OUTPUT"
+          echo "saves_models=$SAVES" >> "$GITHUB_OUTPUT"
+          echo "Journeys for the change: ${J:-none (no journey guards these files; unit tests and fitness still ran)}" >> "$GITHUB_STEP_SUMMARY"
+          echo "This shard (${{ matrix.shard }}/${{ matrix.total }}): ${MINE:-none}" >> "$GITHUB_STEP_SUMMARY"
       - if: steps.pick.outputs.journeys != ''
         uses: hashicorp/setup-terraform@v4          # the lifecycle_cloud_is_safe journey exercises the engine -> terraform wiring (plans only)
         with: { terraform_version: "1.9.8", terraform_wrapper: false }
@@ -61,6 +81,7 @@ jobs:
           timeout 5 getent hosts archive.ubuntu.com >/dev/null && timeout 300 sudo apt-get install -y --no-install-recommends libnss3-tools || echo "::warning::certutil not installed (mirror down); the phone journey will say so"   # certutil: the phone journey trusts the estate CA as a person does
       # The pulled models (about 1.5 GB) are kept between runs: a slow registry once took 950 s instead of 42 s and pushed the
       # suite past its 60-minute limit. The key follows the image and model pins, so a changed model is pulled fresh.
+      # Every shard restores them; only the shard that runs the first model-pulling journey saves them (one writer per key).
       - name: Restore the pulled local models
         id: models
         if: steps.pick.outputs.journeys != ''
@@ -69,26 +90,28 @@ jobs:
           path: ~/securax-model-cache
           key: ollama-${{ hashFiles('local/compose/docker-compose.yml', 'sandbox/harness.py', 'securax') }}
           restore-keys: ollama-
-      - name: Run the user journeys against the real stack
+      - name: Run this shard's user journeys against the real stack
         if: steps.pick.outputs.journeys != ''
         run: |
+          set -o pipefail
           export SECURAX_SANDBOX_MODEL_CACHE="$HOME/securax-model-cache"
-          J="${{ steps.pick.outputs.journeys }}"
-          if [ "$J" = ALL ]; then python3 -u sandbox/run.py; else python3 -u sandbox/run.py -j "$J"; fi   # -u: each journey shows as it finishes
+          mkdir -p sandbox/out
+          python3 -u sandbox/run.py -j "${{ steps.pick.outputs.journeys }}" 2>&1 | tee sandbox/out/console.log   # -u: each journey shows as it finishes
       - name: Save the pulled local models for the next run
-        if: always() && steps.pick.outputs.journeys != '' && steps.models.outputs.cache-hit != 'true'
+        if: always() && steps.pick.outputs.saves_models == 'true' && steps.models.outputs.cache-hit != 'true'
         run: sudo chown -R "$(id -u):$(id -g)" ~/securax-model-cache 2>/dev/null || true   # the container wrote them as root
-      - if: always() && steps.pick.outputs.journeys != '' && steps.models.outputs.cache-hit != 'true'
+      - if: always() && steps.pick.outputs.saves_models == 'true' && steps.models.outputs.cache-hit != 'true'
         uses: actions/cache/save@v4
         with:
           path: ~/securax-model-cache
           key: ollama-${{ hashFiles('local/compose/docker-compose.yml', 'sandbox/harness.py', 'securax') }}
-      - name: Upload screenshots + results (so a failure can be SEEN)
+      - name: Upload this shard's log, screenshots and results (so a failure can be SEEN)
         if: always()
         uses: actions/upload-artifact@v7
         with:
-          name: sandbox-report
+          name: sandbox-report-${{ matrix.shard }}-of-${{ matrix.total }}
           path: |
+            sandbox/out/console.log
             sandbox/out/results.json
             sandbox/out/shots/
           if-no-files-found: ignore
@@ -96,6 +119,21 @@ jobs:
         if: failure()
         run: |
           cd /tmp/securax-sandbox/clone/local/compose 2>/dev/null && docker compose --profile ai logs --no-color --tail 80 || true
+
+  # The one check to read (and to require, if branch protection ever names one): green only when EVERY shard succeeded.
+  # A failed, cancelled or skipped shard makes it red; it runs even when a shard failed, so it never reads as merely skipped.
+  sandbox:
+    name: sandbox
+    needs: shard
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Every shard must have passed
+        run: |
+          echo "shards: ${{ needs.shard.result }}"
+          if [ "${{ needs.shard.result }}" = success ]; then echo "every journey passed in its shard"; exit 0; fi
+          echo "::error::a sandbox shard did not pass (${{ needs.shard.result }}); open the red 'sandbox (i/N)' job and its sandbox-report artifact"
+          exit 1
 
   # The estate's own alarm (doc 92): when the NIGHTLY run on main goes red, one issue says which journeys failed, with the
   # run's link; a later red night adds a comment to the same issue instead of a new one; a green night closes it.
@@ -120,6 +158,6 @@ jobs:
             [ -z "$N" ] || gh issue close "$N" -R "$GITHUB_REPOSITORY" -c "Green again: $RUN"
             exit 0
           fi
-          B="The nightly run of every journey on main ended: $RESULT. Run and screenshots: $RUN (artifact sandbox-report). Find the root cause, add a lesson, fix and prove it with the journey."
+          B="The nightly run of every journey on main ended: $RESULT. Run and screenshots: $RUN (artifacts sandbox-report-*). Find the root cause, add a lesson, fix and prove it with the journey."
           if [ -n "$N" ]; then gh issue comment "$N" -R "$GITHUB_REPOSITORY" -b "Still red: $RUN"
           else gh issue create -R "$GITHUB_REPOSITORY" -t "$T" -b "$B"; fi
