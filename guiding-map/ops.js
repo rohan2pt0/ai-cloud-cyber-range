@@ -4979,29 +4979,76 @@
 
   /* Box breathing, full screen (owner, 2026-11-18): the inline square is small, so the breathing guide opens the whole
      screen with one square, the word and the count — easy to follow on a phone or an iPad. Under reduced motion the
-     square stays still. The 1-second timer runs only in a real browser; tests drive gmBreathe.step() themselves. */
+     square stays still. The 1-second timer runs only in a real browser; tests drive gmBreathe.step() themselves.
+     The live sea (shared/sea.js, SXSea) fills the screen behind it, its swell driven by THIS guide's own phase (SXSea.clock),
+     so the water rises on Inhale, holds, falls on Exhale and holds, in step with the words and the count (owner, 2026-11-24).
+     Sound is one segmented choice, Off / Sea / Sea + breath, from the one shared graph (SXSea.sound): off by default,
+     remembered (gm_breathe_sound), started only by a tap, faded over half a second, stopped by Done or a hidden page.
+     The sea runs only while this overlay is open. Reduced motion: a still sea; words, count and sound still work. */
   function gmBreathe() {
     var old = document.getElementById("gmBreathe");
+    if (old && gmBreathe.close) gmBreathe.close();
+    old = document.getElementById("gmBreathe");
     if (old) old.parentNode.removeChild(old);
     if (gmBreathe.timer) { clearInterval(gmBreathe.timer); gmBreathe.timer = null; }
     if (!document.getElementById("gmBreatheCss")) {
       var st = document.createElement("style"); st.id = "gmBreatheCss";
-      st.textContent = "#gmBreathe{position:fixed;inset:0;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:24px;background:var(--bg);color:var(--text);padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom))}"
-        + "#gmBreathe .gm-breathe-square{width:min(78vw,62vh);height:min(78vw,62vh);border:2px solid var(--gold);border-radius:20px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;transition:transform 1s cubic-bezier(.2,.8,.2,1);will-change:transform}"
-        + "#gmBreathe .gm-breathe-word{font-size:32px;font-weight:800;letter-spacing:.01em;color:var(--text)}"
-        + "#gmBreathe .gm-breathe-count{font-size:56px;font-weight:800;line-height:1;color:var(--gold)}"
-        + "#gmBreathe .gm-breathe-done{margin-top:8px;min-height:48px;padding:12px 28px;border-radius:12px;border:1px solid var(--gold);background:var(--card);color:var(--text);font-size:16px;font-weight:700;cursor:pointer}"
+      st.textContent = "#gmBreathe{position:fixed;inset:0;z-index:10000;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:20px;background:#0d1a2e;color:#f6f1e4;padding:calc(16px + env(safe-area-inset-top)) 16px calc(16px + env(safe-area-inset-bottom))}"
+        + "#gmBreathe .gm-breathe-square{position:relative;z-index:1;width:min(78vw,62vh);height:min(78vw,62vh);max-height:52vh;border:1.5px solid #f0d696;border-radius:20px;background:radial-gradient(closest-side,rgba(6,12,24,.66),rgba(6,12,24,.4));box-shadow:0 0 28px rgba(240,214,150,.18);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;transition:transform 1s cubic-bezier(.2,.8,.2,1);will-change:transform}"
+        + "#gmBreathe .gm-breathe-word{font-size:32px;font-weight:800;letter-spacing:.01em;color:#f6f1e4;text-shadow:0 1px 14px rgba(4,8,18,.7),0 0 2px rgba(4,8,18,.6)}"
+        + "#gmBreathe .gm-breathe-count{font-size:56px;font-weight:800;line-height:1;color:#f0d696;text-shadow:0 1px 14px rgba(4,8,18,.7)}"
+        + "#gmBreathe .gm-breathe-snd{position:relative;z-index:1;display:flex;flex-wrap:wrap;align-items:center;justify-content:center;gap:10px;color:#f6f1e4;font-size:14px;font-weight:700;text-shadow:0 1px 8px rgba(4,8,18,.7)}"
+        + "#gmBreathe .gm-breathe-done{position:relative;z-index:1;margin-top:4px;min-height:48px;padding:12px 28px;border-radius:12px;border:1px solid #f0d696;background:rgba(8,16,30,.62);color:#f6f1e4;font-size:16px;font-weight:700;cursor:pointer}"
+        + "#gmBreathe .gm-breathe-done:focus-visible{outline:2px solid #f0d696;outline-offset:2px}"
+        + "@media (max-height:520px){#gmBreathe{gap:10px}#gmBreathe .gm-breathe-square{max-height:46vh}}"
         + "@media (prefers-reduced-motion:reduce){#gmBreathe .gm-breathe-square{transition:none!important;transform:none!important}}";
       (document.head || document.documentElement).appendChild(st);
     }
     var o = document.createElement("div");
     o.id = "gmBreathe"; o.setAttribute("role", "dialog"); o.setAttribute("aria-modal", "true");
     o.setAttribute("aria-label", "Box breathing");
-    o.innerHTML = '<div class="gm-breathe-square"><div class="gm-breathe-word">Inhale</div>'
-      + '<div class="gm-breathe-count">4</div></div><button type="button" class="gm-breathe-done">Done</button>';
+    var MODES = ["off", "sea", "both"], LABEL = { off: "Off", sea: "Sea", both: "Sea + breath" };
+    var mode = "off";
+    try { var sv = localStorage.getItem("gm_breathe_sound"); if (MODES.indexOf(sv) >= 0) mode = sv; } catch (e) {}
+    o.innerHTML = '<div class="sx-sea sx-sea-full" data-sx-sea aria-hidden="true"><div class="sx-sea-fb"></div></div>'
+      + '<div class="gm-breathe-square"><div class="gm-breathe-word">Inhale</div>'
+      + '<div class="gm-breathe-count">4</div></div>'
+      + '<div class="gm-breathe-snd" role="radiogroup" aria-label="Sound"><span id="gmBreatheSndL">Sound</span><span class="sx-seg">'
+      + MODES.map(function (m) { return '<button type="button" role="radio" data-snd="' + m + '" aria-checked="' + (m === mode) + '">' + LABEL[m] + '</button>'; }).join("")
+      + '</span></div><button type="button" class="gm-breathe-done">Done</button>';
     document.body.appendChild(o);
     var PH = ["Inhale", "Hold", "Exhale", "Hold"], phase = 0, count = 4;
     var sq = o.querySelector(".gm-breathe-square"), wd = o.querySelector(".gm-breathe-word"), cd = o.querySelector(".gm-breathe-count");
+    var driven = /jsdom/i.test(navigator.userAgent || "") || !!navigator.webdriver;   // a test DOM or a driver: no timers, no loops
+    var lastStep = performance.now(), live = false, S = window.SXSea;
+    // the guide's own time in the 16 s box: the phase and the count, plus the part of the second that has passed
+    function clock() { return phase * 4 + (4 - count) + (live ? Math.min(0.999, (performance.now() - lastStep) / 1000) : 0); }
+    var prevClock = S ? S.clock : null, sea = null;
+    if (S) { S.clock = clock; try { sea = S.mount(o.querySelector("[data-sx-sea]")); } catch (e) { sea = null; } }
+
+    var snd = null, sndIv = 0;
+    function sndTick() { if (snd && S) { var t = clock(); snd.set(S.breath(t).b, t); } }
+    function sndStop() {
+      if (sndIv) { clearInterval(sndIv); sndIv = 0; }
+      if (snd) { try { snd.off(); } catch (e) {} snd = null; }
+      gmBreathe.audio = null;
+    }
+    // Starts or retunes the sound for the chosen mode. Callers: a tap, or an open that a tap itself caused. Never at load.
+    function sndApply() {
+      if (mode === "off" || !S || document.hidden) { sndStop(); return; }
+      if (!snd) { snd = S.sound ? S.sound(mode) : null; if (!snd) return; snd.resume(); gmBreathe.audio = snd; }
+      else snd.mode(mode);
+      sndTick();
+      if (!sndIv && !driven) sndIv = setInterval(sndTick, 150);
+    }
+    function pick(m) {
+      mode = m;
+      try { localStorage.setItem("gm_breathe_sound", m); } catch (e) {}
+      [].forEach.call(o.querySelectorAll("[data-snd]"), function (b) { b.setAttribute("aria-checked", b.getAttribute("data-snd") === m ? "true" : "false"); });
+      sndApply();
+    }
+    [].forEach.call(o.querySelectorAll("[data-snd]"), function (b) { b.addEventListener("click", function () { pick(b.getAttribute("data-snd")); }); });
+
     function paint() {
       wd.textContent = PH[phase]; cd.textContent = count;
       var calm = window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -5012,19 +5059,35 @@
     function step() {
       if (count > 1) count--;
       else { phase = (phase + 1) % 4; count = 4; }
+      lastStep = performance.now();
       paint();
     }
     function close() {
       if (gmBreathe.timer) { clearInterval(gmBreathe.timer); gmBreathe.timer = null; }
+      sndStop();
+      live = false;
+      if (sea && sea.stop) { try { sea.stop(); } catch (e) {} }
+      if (S) S.clock = prevClock;
       document.removeEventListener("keydown", key, true);
-      var el = document.getElementById("gmBreathe"); if (el) el.parentNode.removeChild(el);
+      document.removeEventListener("visibilitychange", vis);
+      var el = document.getElementById("gmBreathe"); if (el && el === o) el.parentNode.removeChild(el);
+      gmBreathe.close = null;
+      // a card's sea that this guide put to sleep wakes again
+      try { var card = document.querySelector("details[open] [data-sx-sea]"); if (card && S && !driven) S.mount(card); } catch (e) {}
     }
     function key(ev) { if (ev.key === "Escape") close(); }
-    gmBreathe.timer = null; gmBreathe.step = step; gmBreathe.close = close;
+    function vis() {
+      if (document.hidden) sndStop();
+      else if (mode !== "off" && navigator.userActivation && navigator.userActivation.hasBeenActive) sndApply();
+    }
+    gmBreathe.timer = null; gmBreathe.step = step; gmBreathe.close = close; gmBreathe.audio = null; gmBreathe.clock = clock; gmBreathe.sound = sndTick;
     document.addEventListener("keydown", key, true);
+    document.addEventListener("visibilitychange", vis);
     o.querySelector(".gm-breathe-done").addEventListener("click", close);
     paint();
-    if (!/jsdom/i.test(navigator.userAgent || "") && !navigator.webdriver) gmBreathe.timer = setInterval(step, 1000);
+    if (!driven) { live = true; lastStep = performance.now(); gmBreathe.timer = setInterval(step, 1000); }
+    // The Start button's own tap is still fresh: a remembered choice may sound at once; otherwise it waits for a tap on the control.
+    if (mode !== "off" && navigator.userActivation && navigator.userActivation.isActive) sndApply();
   }
   window.gmBreathe = gmBreathe;
 
