@@ -26,7 +26,19 @@ import httpx
 from fastapi import FastAPI, Header, HTTPException, Request
 from fastapi.responses import JSONResponse, PlainTextResponse, StreamingResponse
 
-from . import answering, approvals, baseline, budget, careful, guardrails, identity, killswitch, residency, spend
+from . import (
+    actions,
+    answering,
+    approvals,
+    baseline,
+    budget,
+    careful,
+    guardrails,
+    identity,
+    killswitch,
+    residency,
+    spend,
+)
 from .providers import active_detectors, run_detectors
 
 MODE = os.getenv("GUARDRAIL_MODE", "enforce")  # enforce | monitor
@@ -343,6 +355,11 @@ async def metrics(request: Request) -> str:
     lines += [f'guardrail_request_latency_ms_bucket{{le="+Inf"}} {cum + _LAT_HIST[-1]}',
               f"guardrail_request_latency_ms_sum {_usage['latency_ms_sum']:.0f}", f"guardrail_request_latency_ms_count {cum + _LAT_HIST[-1]}",
               "# TYPE guardrail_inflight gauge", f"guardrail_inflight {_INFLIGHT}"]
+    st = actions.stats()            # the rejection pipeline (app/actions.py): proposals, outcomes, rejections by stage
+    lines += ["# TYPE guardrail_actions_total counter"]
+    lines += [f'guardrail_actions_total{{outcome="{k}"}} {st[k]}'
+              for k in ("proposals", "rejected", "asked", "executed", "replayed", "undone", "failed")]
+    lines += [f'guardrail_action_rejections_total{{stage="{s}"}} {n}' for s, n in st["rejected_by_stage"].items()]
     return "\n".join(lines) + "\n"
 
 
@@ -583,6 +600,59 @@ async def approvals_grant(pid: str, request: Request) -> dict:
            "args_hash": granted["args_hash"][:16], "by": by, "category": "LLM06",
            "client_ip": request.client.host if request.client else "unknown"})
     return {"approved": granted}
+
+
+# The deterministic backbone (app/gate.py, app/actions.py): every write an AI proposes passes ONE pipeline (schema, types, the
+# decision gate and policy, an idempotency key, the audit chain) before it touches stored state. The AI proposes, code decides.
+@app.post("/v1/actions/propose")
+async def actions_propose(request: Request) -> JSONResponse:
+    """Propose one action. 200 executed (with its undo window), 202 waiting for a person (an approval with the gate's reasons),
+    422 rejected (stage, code, field: regenerate or escalate; nothing was written), 409 the write itself failed."""
+    ident = await _authn(request, "chat")
+    ip = request.client.host if request.client else "unknown"
+    principal = hashlib.sha256(f"{ident.subject or ip}".encode()).hexdigest()[:12]
+    if _rate_limited(principal):
+        _metrics["rate_limited"] += 1
+        _emit({"decision": "rate_limited", "endpoint": "actions", "principal": principal, "category": "LLM10"})
+        raise HTTPException(429, "rate limit exceeded", headers={"Retry-After": "60"})
+    try:
+        proposal = await request.json()
+    except ValueError:
+        proposal = None
+    out = actions.submit(proposal, emit=_emit, principal=principal)
+    _metrics[f"action_{out['status']}"] += 1
+    code = {"executed": 200, "ask": 202, "rejected": 422, "failed": 409}[out["status"]]
+    return JSONResponse(status_code=code, content=out)
+
+
+@app.get("/v1/actions")
+async def actions_list(request: Request) -> dict:
+    """The action ledger, newest first: what ran, why, and until when it can be undone (no payload values, a redacted preview)."""
+    ident = await _authn(request, "metrics")
+    _operator(ident, request)
+    return {"actions": actions.ledger()}
+
+
+@app.post("/v1/actions/{aid}/undo")
+async def actions_undo(aid: str, request: Request) -> dict:
+    """A person takes back an action inside its undo window. Operator-only; audited."""
+    ident = await _authn(request, "metrics")
+    _operator(ident, request)
+    by = ident.subject if ident.method != "none" else "loopback-operator"
+    try:
+        return actions.undo(aid, emit=_emit, by=by)
+    except KeyError:
+        raise HTTPException(404, detail={"error": {"type": "not_found", "code": "no_such_action",
+                                                   "message": f"no action '{aid}'"}}) from None
+    except ValueError as e:
+        raise HTTPException(409, detail={"error": {"type": "conflict", "code": "cannot_undo", "message": str(e)}}) from None
+
+
+@app.get("/v1/actions/stats")
+async def actions_stats(request: Request) -> dict:
+    """Counts since start: proposals, rejections by stage, asks, executions, undos; the rejection rate and the model share."""
+    await _authn(request, "metrics")
+    return actions.stats()
 
 
 def _note_behaviour(principal: str, model: str, ident: identity.Identity, req_id: str, who: dict) -> None:

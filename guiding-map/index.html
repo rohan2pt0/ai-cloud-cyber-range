@@ -5235,7 +5235,7 @@ function fres(c, i) { var m = Math.pow(1 - c, 5); return F0[i] + (1 - F0[i]) * m
   function cometsAt(ms, list) {
     var T = (julian(ms) - 2451545) / 36525, E = helio(PLANETS[2], T), out = [];
     (list || API.comets).forEach(function (c) {
-      var a = c.q / (1 - c.e), days = (ms - c.T) / 864e5, M = .9856076686 / Math.pow(a, 1.5) * days * RAD;
+      var a = c.q / (1 - c.e), days = (ms - c.T) / 864e5, M = (360 / 365.2568983) / Math.pow(a, 1.5) * days * RAD;
       var v = orbitXYZ(a, c.e, c.i, c.w, c.node, kepler(M, c.e)), r = Math.sqrt(v[0] * v[0] + v[1] * v[1] + v[2] * v[2]), g = geo(v, E);
       var m = c.H + 5 * Math.log10(g.delta) + 2.5 * c.n * Math.log10(r);
       if (m < 5) out.push({ name: c.name, ra: g.ra, dec: g.dec, mag: m, r: r });
