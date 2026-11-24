@@ -29,16 +29,8 @@
     "nav#oskNav": "velvet", "#oskMore .sheet": "velvet", "[data-sx-mat]": null };
   var MAT = { gold: [0, 0], platinum: [0, 1], seal: [1, 0], velvet: [2, 0] };
 
-  var VS = "attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}";
-  var FS = [
-    "precision highp float;",
-    "uniform vec2 uRes;uniform float uDpr;uniform int uShape;uniform int uMat;uniform vec2 uHalf;uniform float uRad;uniform float uSeal;",
-    "uniform mat3 uRot;uniform mat3 uGem;uniform vec4 uP[73];",
-    "#define PI 3.14159265",
-    "const vec3 F0G=vec3(.944,.776,.373);const vec3 F0P=vec3(.679,.642,.588);const vec3 F0S=vec3(.962,.949,.922);",
-    "float hash(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}",
-    "float vnoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y);}",
-    "float fbm(vec2 p){float s=0.,a=.5;for(int i=0;i<4;i++){s+=a*vnoise(p);p*=2.03;a*=.5;}return s;}",
+  // The studio as its own source, so every lit thing on the page (the water in glass too, shared/water.js) uses the same lights.
+  var STUDIO = [
     "float box(vec3 d,vec3 ax,vec2 hs,float sf){float k=dot(d,ax);if(k<=0.)return 0.;vec3 p=d/k;vec3 r=normalize(cross(vec3(0,1,0),ax));vec3 u=cross(ax,r);",
     " vec2 q=abs(vec2(dot(p,r),dot(p,u)));vec2 e=smoothstep(hs+sf,hs-sf,q);return e.x*e.y;}",
     "float spot(vec3 d,vec3 ax,float rd,float sf){return smoothstep(rd+sf,rd-sf*.5,acos(clamp(dot(d,ax),-1.,1.)));}",
@@ -53,7 +45,19 @@
     " c+=vec3(.82,.88,1.)*3.*e*box(d,normalize(vec3(.74,.16,.65)),vec2(.07,.55),s);",
     " c+=vec3(1.,.98,.95)*38.*e*spot(d,normalize(vec3(.26,.78,.57)),.03,s*.6);",
     " c+=vec3(.95,.97,1.)*24.*e*spot(d,normalize(vec3(-.66,.28,.70)),.022,s*.6);",
-    " return c;}",
+    " return c;}"
+  ].join("\n");
+  var VS = "attribute vec2 a;void main(){gl_Position=vec4(a,0.,1.);}";
+  var FS = [
+    "precision highp float;",
+    "uniform vec2 uRes;uniform float uDpr;uniform int uShape;uniform int uMat;uniform vec2 uHalf;uniform float uRad;uniform float uSeal;",
+    "uniform mat3 uRot;uniform mat3 uGem;uniform vec4 uP[73];",
+    "#define PI 3.14159265",
+    "const vec3 F0G=vec3(.944,.776,.373);const vec3 F0P=vec3(.679,.642,.588);const vec3 F0S=vec3(.962,.949,.922);",
+    "float hash(vec2 p){p=fract(p*vec2(123.34,456.21));p+=dot(p,p+45.32);return fract(p.x*p.y);}",
+    "float vnoise(vec2 p){vec2 i=floor(p),f=fract(p);f=f*f*(3.-2.*f);return mix(mix(hash(i),hash(i+vec2(1,0)),f.x),mix(hash(i+vec2(0,1)),hash(i+vec2(1,1)),f.x),f.y);}",
+    "float fbm(vec2 p){float s=0.,a=.5;for(int i=0;i<4;i++){s+=a*vnoise(p);p*=2.03;a*=.5;}return s;}",
+    STUDIO,
     "vec3 metal(vec3 N,vec3 F0,float ro){float c=clamp(N.z,0.,1.);vec3 F=F0+(1.-F0)*pow(1.-c,5.);return F*env(reflect(vec3(0,0,-1),N),ro);}",
     "float sdBox(vec2 p,vec2 b,float r){vec2 q=abs(p)-b+r;return length(max(q,0.))+min(max(q.x,q.y),0.)-r;}",
     "vec3 tm(vec3 x){x=clamp(x*(2.51*x+.03)/(x*(2.43*x+.59)+.14),0.,1.);return pow(x,vec3(1./2.2));}",
@@ -258,7 +262,8 @@
   window.SXMat = {
     light: function (x, y) { LX = x; LY = y; soon(); },
     scan: scan, glass: glass, refresh: function () { soon(); },
-    ready: function () { return init(); }
+    ready: function () { return init(); },
+    STUDIO: STUDIO   // the studio GLSL (env(d, roughness), turned by uniform mat3 uRot), for any other renderer on the page
   };
   function boot() {
     scan(doc);

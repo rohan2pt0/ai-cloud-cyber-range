@@ -18,12 +18,12 @@ setTimeout(() => {
   ok("10 years at 6% = 2,24,000", r && r.y10 === 224000, r && r.y10);
   ok("the card shows on Money, on track (emerald) with 1,50,000 coming in", !!card() && !!card().querySelector(".sx-state-good") && /on track/.test(card().textContent), card() && card().textContent);
   w.eval("P.net=120000;store('sovP',P);"); w.goTab("money");
-  ok("with 1,20,000 coming in it is close: short by Rs 5,000 (amber)", /short by Rs 5,000/.test(card().textContent) && !!card().querySelector(".sx-state-watch"), card().textContent);
+  ok("with 1,20,000 coming in it is close: short by ₹5,000 (amber)", /short by ₹5,000/.test(card().textContent) && !!card().querySelector(".sx-state-watch"), card().textContent);
   const day = new Date(Date.now() - 3 * 864e5).toISOString().slice(0, 10);
   const sp = [["Food delivery", 8000], ["Bills", 3000], ["Travel", 4000], ["Amazon", 2000], ["Insurance", 1500], ["Groceries", 6000]].map(x => ({ d: day, a: x[1], c: x[0], m: "fake" }));
   w.localStorage.setItem("gm_spend", JSON.stringify(sp)); w.goTab("money");
-  ok("fixed and variable from the bank messages: Fixed Rs 4,500 · Variable Rs 20,000", /Fixed Rs 4,500/.test(card().textContent) && /Variable Rs 20,000/.test(card().textContent), card().textContent);
-  ok("the largest variable cost carries one concrete cut", /Food delivery \(Rs 8,000\): Cook twice a week more/.test(card().textContent));
+  ok("fixed and variable from the bank messages: Fixed ₹4,500 · Variable ₹20,000", /Fixed ₹4,500/.test(card().textContent) && /Variable ₹20,000/.test(card().textContent), card().textContent);
+  ok("the largest variable cost carries one concrete cut", /Food delivery \(₹8,000\): Cook twice a week more/.test(card().textContent));
   w.gmNeedsInfl("40");
   ok("an impossible inflation figure is kept to 15%", JSON.parse(w.localStorage.getItem("gm_needs")).infl === 15);
   w.eval("P.example=true;");  w.goTab("money");

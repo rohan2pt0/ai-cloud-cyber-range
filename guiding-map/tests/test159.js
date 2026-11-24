@@ -13,7 +13,7 @@ const dom = new JSDOM(html, { runScripts: "dangerously", pretendToBeVisual: true
 setTimeout(() => {
   const w = dom.window, X = w.SXWorld;
   ok("the shared world is built into the app", !!X && typeof X.flag === "function");
-  ok("every object has one meaning, a use and an avoid", X && X.CATALOG.length === 5 && X.CATALOG.every(c => c.id && c.means && c.use && c.avoid && typeof X[c.id] === "function"));
+  ok("every object has one meaning, a use and an avoid", X && X.CATALOG.length === 6 && X.CATALOG.every(c => c.id && c.means && c.use && c.avoid && typeof X[c.id] === "function"));
   // the cloth: physics in real units (shared/cloth.js), not a loop. Every check runs the same seeded flag, so it is repeatable.
   const C = X.cloth, Ph = C.PHYS;
   ok("a real flag: 0.9 x 0.6 m of 110 g/m2 polyester as at least 24 x 16 nodes, in real air and gravity",

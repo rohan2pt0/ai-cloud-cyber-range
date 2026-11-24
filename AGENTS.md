@@ -113,6 +113,14 @@ The principles behind it:
   action always on screen. Prove it with `python3 guiding-map/tests/device_audit.py OUTDIR` (9 device profiles x every key
   view) and look at the screenshots, not only the score.
 - **Immersive and real (`immersive-real`, owner 2026-11-22):** make every surface feel like a living world true to life, the craft the best open-world game studios use: the person's own data is the world; actions have visible consequences across screens; time passes (bills fall due, leases end, seasons turn); drills and scenarios play out with real stakes, timing and an after-action review. Realism means faithful to the real rules and thresholds, never invented drama. Calm by default, reduced motion respected, nothing addictive, no fake urgency, and no copying of any game's names, art or story.
+- **Trust is the product, sovereign by design (`trust-is-the-product`, owner 2026-11-24):** people want a personal AI that runs their life, but trust,
+  not intelligence, is the ceiling. 80% boring, auditable code and 20% AI: code decides, AI only proposes, no AI in the authorisation path.
+  Every AI output passes the rejection pipeline (schema, types, policy, idempotency, audit) before it touches the person's data; count the
+  rejections. Oversight is risk-adaptive: reversible and low-stakes runs with an undo; irreversible, external or sensitive asks first;
+  ambiguous does nothing and asks with a default. Memory is the person's: local-first, partitioned, read only through a scoped, expiring
+  consent token, fully exportable. Every feature passes the **continuity test**: it works if our servers vanish, everything can be taken away,
+  every part (model, cloud, device) can be replaced, and its privacy fits in one breath. Models are swappable; the orchestration, consent and
+  evaluation layer is the asset. Build first for the privacy-literate person who will check these promises. Queue `deterministic-backbone`.
 - **Signature features, perfected (`signature-perfect`, owner 2026-11-14):** the distinctive features (the three rings, the
   night-sky lock, the seal, the lit materials, the keycaps, and each new one) are what people remember and come back for, so
   each is perfected in every aspect, not just made to work: meaning at a glance and one tap that explains it; a material true
