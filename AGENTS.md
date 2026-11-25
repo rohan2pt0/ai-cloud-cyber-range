@@ -42,6 +42,7 @@ The principles behind it:
   3. **Every day:** progress they can see; end each visit on a small win; recall a slip once and kindly, then help.
   4. **Never against them:** invite, never command (pressure makes people resist: "Mandatory" loses, "the floor is enough" wins);
      give them the choice and the off switch; no guilt, no fake urgency, no hidden costs, no dark patterns.
+- **Plain words first, depth on request (`plain-first`, owner 2026-11-25):** what a person sees by default is everyday language, one number in rupees, time or a count they feel, and one fix; ratios, formulas, sources and theory sit one tap away under How we worked this out (or the glossary); never jargon or a bare ratio on the default view. `guiding-map/tests/test176.js` holds the count of jargon terms per tab and it only goes down.
 - **Every issue has a path (`every-issue-has-a-path`, owner 2026-11-25):** every issue, KPI or KRI the estate flags shows its 2-3 most
   effective fixes, computed by code from the person's own numbers, ranked by impact ÷ effort, with conditions, sources and one action;
   never a red number alone. One engine: `REMEDIES` and `gmRemedies(issueId, ctx)` in `guiding-map/ops.js` (pure; no AI). `test172.js` holds it.
