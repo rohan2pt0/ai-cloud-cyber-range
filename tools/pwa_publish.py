@@ -60,6 +60,17 @@ def _copy(src_dir: pathlib.Path, dst: pathlib.Path, files: list[str], dirs: list
     return missing
 
 
+def _repo_slug() -> str:
+    """The GitHub owner/name from brand.env (the one place brand values live); the stub is written after the site's placeholders are filled."""
+    try:
+        for line in (ROOT / "brand.env").read_text("utf-8").splitlines():
+            if line.startswith("REPO_SLUG="):
+                return line.split("=", 1)[1].strip().strip('"')
+    except OSError:
+        pass
+    return ""
+
+
 # The app's "All Apps" button opens the Command Center (hub.html), which only exists on a SecuRAX node. A static host has no node,
 # so it gets this honest landing page instead of a dead link.
 HUB_STUB = """<!doctype html>
@@ -99,6 +110,11 @@ h2::after{content:"";flex:1;height:1px;background:linear-gradient(90deg,var(--ha
 .card .med,.med{display:grid;place-items:center;width:38px;height:38px;border-radius:50%;
  background:radial-gradient(120% 120% at 30% 25%,#2a3a5c,#16213b 60%,#0e172c);box-shadow:inset 0 0 0 1px rgba(217,183,90,.7)}
 .med svg{width:19px;height:19px;stroke:var(--gold);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.links{display:grid;gap:.5rem}
+.lk{display:flex;align-items:center;justify-content:space-between;gap:.8rem;min-height:52px;padding:.7rem .95rem;border-radius:14px;text-decoration:none;color:var(--ink);background:var(--glass);border:1px solid var(--glassB)}
+.lk b{display:block;font-size:.92rem}.lk small{display:block;color:var(--mute);font-size:.76rem;line-height:1.35}
+.lk i{flex:none;font-style:normal;color:var(--gold)}
+.lk:active{transform:scale(.99)}
 .safe{display:flex;gap:.7rem;align-items:flex-start;margin-top:1.6rem;padding:.9rem 1rem;border-radius:16px;border:1px solid var(--glassB);background:rgba(0,0,0,.18);font-size:.84rem;color:var(--mute)}
 .safe svg{flex:none;width:20px;height:20px;stroke:var(--gold);fill:none;stroke-width:1.6;margin-top:.1rem}
 .back{display:flex;align-items:center;justify-content:center;min-height:48px;margin-top:1.2rem;color:var(--ink);text-decoration:none;font-weight:700;border-radius:14px;border:1px solid var(--hair)}
@@ -128,6 +144,18 @@ a:focus-visible{outline:2px solid var(--gold);outline-offset:3px}
 <a class="card node" href="../command/index.html"><span class="med"><svg viewBox="0 0 24 24"><path d="M3 12h4l3-7 4 14 3-7h4"/></svg></span><b>Keep it running</b><span>Health, backups and recovery</span></a>
 </div>
 
+<h2>Public pages</h2>
+<div class="links">
+<a class="lk" href="../docs/"><span><b>Documentation</b><small>Guides, runbooks and every doc</small></span><i aria-hidden="true">&rarr;</i></a>
+<a class="lk" href="../explainer/"><span><b>Visual tour</b><small>SecuRAX explained in pictures</small></span><i aria-hidden="true">&rarr;</i></a>
+<a class="lk" href="../"><span><b>Product site</b><small>What SecuRAX is, for companies</small></span><i aria-hidden="true">&rarr;</i></a>
+<a class="lk" href="../personal/"><span><b>For individuals</b><small>The Life OS, free for one person</small></span><i aria-hidden="true">&rarr;</i></a>
+<a class="lk" href="../nbfc/"><span><b>Readiness</b><small>Where you stand on a regulation, with proof</small></span><i aria-hidden="true">&rarr;</i></a>
+<a class="lk" href="../assess/"><span><b>AI-risk check</b><small>Ten questions, two minutes</small></span><i aria-hidden="true">&rarr;</i></a>
+<a class="lk" href="../install.txt"><span><b>Install prompt</b><small>Paste it into your AI agent to install</small></span><i aria-hidden="true">&rarr;</i></a>
+<a class="lk" href="https://github.com/@@REPO@@" rel="noopener"><span><b>Source on GitHub</b><small>The code and the release notes</small></span><i aria-hidden="true">&rarr;</i></a>
+</div>
+
 <p class="safe"><svg viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><span>Your Life OS data stays on this device, and in your own encrypted sync copy if you turned it on. Nothing here signs you in or tracks you.</span></p>
 <a class="back" href="index.html">&larr;&nbsp; Back to the Life OS</a>
 </main></body></html>
@@ -152,7 +180,7 @@ def publish(out: pathlib.Path) -> dict:
         result["command"].append("serif.woff2")
     for sub in ("app", "vantage", "command"):
         (out / sub / "build.json").write_text(json.dumps(info, indent=1) + "\n", "utf-8")
-    (out / "app" / "hub.html").write_text(HUB_STUB, "utf-8")
+    (out / "app" / "hub.html").write_text(HUB_STUB.replace("@@REPO@@", _repo_slug()), "utf-8")
     return result
 
 
