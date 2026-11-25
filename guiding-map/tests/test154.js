@@ -1,4 +1,4 @@
-// test154: per property, only the three worst measures stay in view; the rest fold under "Later" (owner 2026-11-21).
+// test154: per property, only the worst problem stays in view (one plain card); the rest fold under "Later" (owner 2026-11-21, plain-first 2026-11-25).
 const fs = require('fs'), path = require('path'), { JSDOM } = require('jsdom');
 let P = 0, F = 0, e = []; const ok = (n, c, d) => { c ? P++ : (F++, e.push(n + (d !== undefined ? " :: " + d : ""))); };
 const html = fs.readFileSync(path.join(__dirname, '..', 'index.html'), 'utf8');
@@ -18,13 +18,15 @@ setTimeout(() => {
   const all = [...box.querySelectorAll(".gm-metric")];
   const rankOf = m => { const n = m.querySelector(".gm-num"); const c = n ? n.className : ""; return /gm-v-r/.test(c) ? 0 : /gm-v-a/.test(c) ? 1 : /gm-v-g/.test(c) ? 2 : 3; };
   const shown = all.filter(m => !m.closest("details.gm-later"));
-  ok("exactly three measures stay in view", shown.length === 3, shown.length);
-  ok("the worst verdicts come first (r, then a, then g, then none)", all.map(rankOf).every((r, i, a) => i === 0 || a[i-1] <= r), all.map(rankOf).join(","));
-  const rA = all.filter(m => rankOf(m) <= 1).length;
-  ok("the shown rows are r or a while three such rows exist", rA < 3 || shown.every(m => rankOf(m) <= 1), "r/a=" + rA + " shown=" + shown.map(rankOf).join(","));
+  // plain-first (2026-11-25): the first problem is in view as ONE plain card; its measures sit in its fold, the rest under Later
+  const inView = [...box.querySelectorAll(".gm-pf")].filter(c => !c.closest("details.gm-later"));
+  ok("exactly one problem stays in view, and no bare measure row", inView.length === 1 && shown.every(m => m.closest("details")), inView.length + " cards, " + shown.length + " bare rows")
+  ;
+  ok("the worst problem comes first", inView[0] && inView[0].getAttribute("data-issue") === "dscr-low", inView[0] && inView[0].getAttribute("data-issue"));
   const det = box.querySelector("details.gm-later");
   const folded = all.filter(m => m.closest("details.gm-later"));
   ok("the rest fold under a Later summary", det && det.querySelector("summary") && det.querySelector("summary").textContent.trim().indexOf("Later (") === 0, det ? det.querySelector("summary").textContent : "none");
-  ok("the summary counts the folded rows", det && det.querySelector("summary").textContent.trim() === "Later (" + folded.length + ")", det ? det.querySelector("summary").textContent : "none");
+  const kids = det ? [...det.querySelectorAll(":scope > div > .gm-pf, :scope > div > .gm-metric")].length : -1;
+  ok("the summary counts the folded cards and rows", det && det.querySelector("summary").textContent.trim() === "Later (" + kids + ")", det ? det.querySelector("summary").textContent + " vs " + kids : "none");
   console.log("PASS " + P + " FAIL " + F); e.forEach(x => console.log("  FAIL: " + x)); process.exit(F ? 1 : 0);
 }, 400);
