@@ -38,7 +38,7 @@ BLOCKS = {ROOT / "website" / "index.html": "html", ROOT / "docs" / "index.md": "
 PERSONAL_GROUP = "Your own tools"  # the group the personal app sells; the rest of the estate is one link away
 PRODUCTS = ROOT / "products.json"
 PRODUCT_BLOCKS = {ROOT / "website" / "index.html": "html", ROOT / "docs" / "securax" / "106-WHO-SECURAX-IS-FOR.md": "docs"}
-FACT_FILES = ["README.md", "website/index.html", "portal/explainer.html", "docs/**/*.md"]
+FACT_FILES = ["README.md", "website/index.html", "website/*/index.html", "portal/explainer.html", "docs/**/*.md"]
 LIGHT = {"green": ("🟢", "l-g", "Built and proven"), "amber": ("🟡", "l-a", "Partly built"), "red": ("🔴", "l-r", "Not built yet")}
 E = html.escape
 
@@ -244,11 +244,15 @@ def block_personal(data: dict, new: int = 3) -> str:
         return (f'    <div class="card">{tag}<h3>{E(f["name"])}</h3><p>{E(f["outcome"])}</p>'
                 f'<code>{E(f["open"]["cmd"])}</code><br><span class="light {cls}">{label}</span></div>')
 
+    cards = [card(i, f) for i, f in enumerate(mine)]
+    shown = 3   # the newest three stay open; the rest ride in one fold, so a phone is not met with a wall of cards
+    fold = (f'  <details class="more"><summary>See all {len(mine)}</summary>\n  <div class="wrap grid3">\n' + "\n".join(cards[shown:])
+            + "\n  </div></details>\n") if len(cards) > shown else ""
     return ('<section id="tools">\n  <div class="wrap center">\n    <span class="kicker">Your own tools</span>\n'
             "    <h2>What it does for you today.</h2>\n"
-            f'    <p class="sub">{len(mine)} tools for one person, newest first, each with the one command that opens it. They are part of the '
+            f'    <p class="sub">{len(mine)} tools for one person, newest first. They are part of the '
             f'<a href="../#estate"><!-- fact:features -->{len(data["features"])}<!-- /fact --> things SecuRAX does</a>.</p>\n'
-            '  </div>\n  <div class="wrap grid3">\n' + "\n".join(card(i, f) for i, f in enumerate(mine)) + "\n  </div>\n</section>")
+            '  </div>\n  <div class="wrap grid3">\n' + "\n".join(cards[:shown]) + "\n  </div>\n" + fold + "</section>")
 
 
 def _table(data: dict, link) -> str:
