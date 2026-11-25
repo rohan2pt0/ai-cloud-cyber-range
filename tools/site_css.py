@@ -25,16 +25,29 @@ OUT = ROOT / "website" / "site.css"
 # status colours (--green, --amber, --red), lifted so a light on the dark navy card #111e33 passes WCAG AA.
 LIGHT = {"--navy": "#1b1a18", "--navy2": "#2a2825", "--ink": "#1b1a18", "--text": "#3a3732", "--muted": "#5f5b54",
          "--line": "#e3ddd2", "--bg": "#f6f3ee", "--card": "#fffdf9", "--gold": "#e2c172", "--gold2": "#7a5a12", "--edge": "#857e72",
-         "--green": "#1f6b3a", "--amber": "#7d5300", "--red": "#a8261b", "--radius": "20px"}
+         "--green": "#1f6b3a", "--amber": "#7d5300", "--red": "#a8261b", "--radius": "20px",
+         # website-premium: the night the hero, the proof strip and the closing share (the sky's own colours, near-black navy),
+         # champagne from the lit gold (F0 0.944, 0.776, 0.373 under a soft box), jade from the keycaps, and ivory depth.
+         "--night": "#070c18", "--night2": "#0c1427", "--night3": "#13203b", "--on-night": "#eef1f6", "--on-night-mut": "#aeb8ca",
+         "--champagne": "#e8d29b", "--jade": "#0d6a51", "--ivory2": "#efe9df", "--hair": "rgba(27,26,24,.09)",
+         "--lift": "0 1px 2px rgba(27,26,24,.05),0 14px 36px -14px rgba(27,26,24,.18)"}
 DARK = {**LIGHT, "--bg": "#18181b", "--card": "#222226", "--ink": "#f3efe7", "--text": "#d9d4ca", "--muted": "#aba69d",
-        "--line": "#38373d", "--edge": "#7d7972", "--gold2": "#e2c172", "--green": "#7fcf98", "--amber": "#e6b85c", "--red": "#f2958b"}
+        "--line": "#38373d", "--edge": "#7d7972", "--gold2": "#e2c172", "--green": "#7fcf98", "--amber": "#e6b85c", "--red": "#f2958b",
+        "--jade": "#7fd3b3", "--ivory2": "#1d1d21", "--hair": "rgba(255,255,255,.07)",
+        "--lift": "0 1px 0 rgba(255,255,255,.04) inset,0 18px 40px -18px rgba(0,0,0,.6)"}
+
+
+# The text face: Jost, the same file the Life OS embeds (guiding-map/fonts, SIL OFL 1.1), copied next to this stylesheet by
+# website/build.sh as sans.woff2 (the site's policy allows same-origin fonts). One variable file covers every weight.
+SANS_FACE = ("@font-face{font-family:'Jost';font-style:normal;font-weight:100 900;font-display:swap;"
+             "src:url(sans.woff2) format('woff2')}\n")
 
 
 def render() -> str:
     spec = importlib.util.spec_from_file_location("securax_site_design", ROOT / "governance" / "design.py")
     design = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(design)
-    return design.font_face("serif.woff2") + design.css(LIGHT, DARK) + PREMIUM_RULES + _glass_rules() + DARK_RULES
+    return design.font_face("serif.woff2") + SANS_FACE + design.css(LIGHT, DARK) + PREMIUM_RULES + _glass_rules() + DARK_RULES
 
 
 # The premium look (design-premium-showcase): headings in the self-hosted serif (website/build.sh copies the one font file

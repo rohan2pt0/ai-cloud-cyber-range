@@ -349,6 +349,17 @@ nav#oskNav button.on{color:#f4e7c1;background:rgba(201,168,76,.14);box-shadow:in
 .sx-seg button[aria-checked="true"]{background:#f0d696;color:#1a1408}
 .sx-seg button:focus-visible{outline:2px solid #f0d696;outline-offset:-3px}
 
+/* The phone frame (website-premium, owner 2026-11-25): a real screen of the app in a frame drawn in CSS, never a stock picture.
+   A titanium band with light on its edge, black glass, the island, and the screenshot under the glass, so the product site (and
+   any app that shows itself) presents the real thing. Use: <div class="sx-phone"><img src="..." alt="..."></div>. */
+.sx-phone{position:relative;flex:none;aspect-ratio:390/844;padding:3.4%;border-radius:15.5%/7.2%;background:linear-gradient(145deg,#5b6068 0%,#25282d 22%,#121418 50%,#2b2e34 78%,#6a6f78 100%);box-shadow:inset 0 0 0 1px rgba(255,255,255,.18),inset 0 0 0 2.5px rgba(0,0,0,.6),0 2px 4px rgba(0,0,0,.35),0 30px 60px -18px rgba(0,0,0,.6),0 60px 120px -40px rgba(4,8,20,.65)}
+.sx-phone::before{content:"";position:absolute;z-index:2;top:4.9%;left:50%;width:29%;height:3.5%;margin-left:-14.5%;border-radius:999px;background:#05060a;box-shadow:inset 0 0 0 1px rgba(255,255,255,.04)}
+.sx-phone::after{content:"";position:absolute;z-index:3;inset:3.4%;border-radius:12.5%/5.8%;pointer-events:none;background:linear-gradient(118deg,rgba(255,255,255,.10) 0%,rgba(255,255,255,.03) 28%,rgba(255,255,255,0) 42%)}
+.sx-phone img{display:block;width:100%;height:100%;object-fit:cover;object-position:top;padding-block-start:11%;border-radius:12.5%/5.8%;background:#0a1122}
+/* A check drawn as a fine line in the house jade or gold, never an emoji or a heavy tick: mask:var(--sx-tick) over any colour. */
+:root{--sx-tick:url("data:image/svg+xml,%3Csvg xmlns='http%3A//www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Ccircle cx='8' cy='8' r='7.2' fill='none' stroke='%23000' stroke-width='1.1'/%3E%3Cpath d='M4.9 8.3 7 10.3 11.2 5.9' fill='none' stroke='%23000' stroke-width='1.3' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E")}
+.sx-tick{display:inline-block;flex:none;width:16px;height:16px;background:currentColor;-webkit-mask:var(--sx-tick) center/contain no-repeat;mask:var(--sx-tick) center/contain no-repeat}
+
 </style>
 </head>
 <body>

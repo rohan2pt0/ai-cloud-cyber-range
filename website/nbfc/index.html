@@ -24,7 +24,8 @@
 .offer{background:var(--card);border:2px solid var(--gold2);border-radius:var(--radius);padding:32px;display:grid;grid-template-columns:1.3fr 1fr;gap:32px;align-items:center}
 .offer .sub{margin-block-end:16px}
 .offer ul{list-style:none;display:grid;gap:8px}
-.offer li::before{content:"✓  ";color:var(--green);font-weight:800}
+.offer li{display:flex;gap:12px;align-items:baseline}
+.offer li::before{content:"";flex:none;width:16px;height:16px;background:var(--jade);-webkit-mask:var(--sx-tick) center/contain no-repeat;mask:var(--sx-tick) center/contain no-repeat;transform:translateY(3px)}
 .offer .side{display:grid;gap:8px;justify-items:start}
 @media (max-width:960px){.offer{grid-template-columns:1fr}}
 @media (max-width:600px){.offer{padding:24px}.offer .sub{display:none}}
@@ -41,7 +42,6 @@
       <li><a href="#how">How it works</a></li>
       <li><a href="#today">What it does today</a></li>
       <li><a href="#pricing">Design partners</a></li>
-      <li><a href="../">All of SecuRAX</a></li>
     </ul>
     <details class="menu"><summary aria-label="Menu">Menu</summary><ul>
       <li><a href="#problem">The problem</a></li>

@@ -30,3 +30,5 @@ plain system serif on purpose (serif reads better on paper).
   editorial serif above (display only). Text is sized by x-height (`font-size-adjust`), so the switch kept every layout.
 - **How it is shipped:** `guiding-map/build.js` (the Life OS) and `governance/oskit.py` (every kit edition) embed
   `Jost-Variable.woff2` (about 27 KB) as a `data:` URI with the shared look (`shared/lux.css`). Offline, no network.
+  The product site (`website/`) links the same file as `sans.woff2`, copied in by `website/build.sh` next to `site.css`
+  (the site's policy allows same-origin fonts, not `data:` ones); the same OFL applies.
