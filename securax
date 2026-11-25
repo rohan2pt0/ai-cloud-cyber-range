@@ -834,13 +834,15 @@ URLS
     # Unattended build loop — the 90% tier of "build SecuRAX with SecuRAX": agent -> `verify` gate -> retry with the
     # failure fed back -> commit ONLY when green. After N red attempts it discards the work and writes an escalation
     # brief for the (rare) frontier-model hand-off. Never touches your current branch; never pushes unless AUTOBUILD_PUSH=1.
-    #   ./securax autobuild "add a /metrics endpoint to the gateway with a test" [--tries 3]
+    #   ./securax autobuild "add a /metrics endpoint to the gateway with a test" [--tries 3] [--codex]
     # Agent: default is `./securax build` (Aider through the gateway). Override with AUTOBUILD_AGENT="<shell command>"
     # (it sees AUTOBUILD_TASK, AUTOBUILD_FEEDBACK = file with the last failure, AUTOBUILD_ATTEMPT).
     # Gate: default `./securax verify`; override with AUTOBUILD_VERIFY="<shell command>" (exit 0 = green).
-    shift; TASK=""; TRIES=3; FORCE=0
-    while [ $# -gt 0 ]; do case "$1" in --tries) TRIES="${2:-3}"; shift 2;; --force) FORCE=1; shift;; *) TASK="$TASK${TASK:+ }$1"; shift;; esac; done
-    [ -n "$TASK" ] || { echo 'usage: ./securax autobuild "what to build" [--tries N] [--force]'; exit 1; }
+    shift; TASK=""; TRIES=3; FORCE=0; CODEX=0
+    while [ $# -gt 0 ]; do case "$1" in --tries) TRIES="${2:-3}"; shift 2;; --force) FORCE=1; shift;; --codex) CODEX=1; shift;; *) TASK="$TASK${TASK:+ }$1"; shift;; esac; done
+    [ -n "$TASK" ] || { echo 'usage: ./securax autobuild "what to build" [--tries N] [--force] [--codex]'; exit 1; }
+    # --codex: build with OpenAI's Codex CLI on this laptop, through your own ChatGPT plan (one-time: install Codex, then codex login).
+    if [ "$CODEX" = 1 ] && [ -z "${AUTOBUILD_AGENT:-}" ]; then AUTOBUILD_AGENT="python3 $ROOT/lifecycle/codex_agent.py"; fi
     # Route first: hard work (security, sync, regulator mapping, many areas) is built with the STRONG chain (the strongest open models),
     # through the very same gates. Only when no strong model is set up does it stop and write a brief instead (doc 83).
     _RT="$(python3 "$ROOT/lifecycle/route.py" "$TASK" --json 2>/dev/null || true)"
@@ -2404,7 +2406,7 @@ REGULATORY & EVIDENCE (any regulator: RBI, SEBI, CERT-In, IRDAI, DPDP, others as
 
 BUILD & KEEP IT HEALTHY
   opencode       the terminal coding agent on open models, every call through the gateway (doc 83)
-  build / autobuild / escalate "task"   build with the open or local models     route "task"   which builder a task goes to, and why
+  build / autobuild / escalate "task"   build with the open or local models (autobuild --codex: your ChatGPT plan, via Codex)     route "task"   which builder a task goes to, and why
   review         a second look at your change from the strongest open models, before you merge
   verify         run every check                      fitness / gameday   measured promises; real failure drills
   impact         what a change can affect             diffcheck / forge / autobench   catch cheating; prove the tests test; measure models

@@ -52,10 +52,11 @@ machine only when it says the exact sentence. It carries no cookie and no data, 
 
 | Layer | Was | Now | Still one? | Next |
 |---|---|---|---|---|
-| **Command Center page** | Served by one machine | Hosted with the site; each device keeps a copy; the door finds a live machine | The static host (GitHub Pages). A device that has opened it once still has its copy | A second static host, dated in the queue |
+| **Command Center page** | Served by one machine | Hosted with the site; each device keeps a copy; the door finds a live machine | The static host (GitHub Pages). A device that has opened it once still has its copy | A second static host: the Cloudflare Pages steps in docs.yml, live once the two Cloudflare secrets are set |
 | **Life OS and Vantage** | One laptop | Hosted, on-device copy, your encrypted OneDrive copy, and node-to-node sync | No | — |
 | **Gateway (the AI front)** | One machine | Stateless: any node answers (active-active) | No, once you have two nodes | — |
 | **Chat history** | One node's database | Per node | **Yes**: a conversation lives on the node it started on | A shared database with a standby (doc 86) |
+| **The builders (who writes the code)** | One open-model plan (OpenCode Go) | A ladder on separate accounts and budgets: OpenCode Go, OpenRouter paid, Google AI Studio free (Gemini), OpenRouter free, a Sonnet then Haiku subagent, GitHub Actions, the laptop's local models; `autobuild_ci.py allowance` asks each with a real-sized request and the next one takes over by itself | Path A (GitHub Actions) has only the Go key until the OpenRouter and Gemini secrets are added | Repository secrets, dated in the queue (`builder-actions-secrets`) |
 | **AI models** | One provider | A ladder of free and local providers; the local model is the floor | No | — |
 | **The way in** | One tunnel | Cloudflare tunnel **and** Tailscale, independent of each other | No | — |
 | **Passwords** | One vault | One vault on the always-on machine; the apps keep an offline copy | **Yes, accepted** (review 2027-01-31) | A standby |

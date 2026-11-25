@@ -32,6 +32,11 @@ PROVIDER = "gocode"
 OR_BASE = "https://openrouter.ai/api/v1"
 OR_PROVIDER = "openrouter"
 OR_MODELS = ["deepseek/deepseek-v4.1-flash", "google/gemma-4-31b-it:free"]
+# A third provider on its own account and budget (owner 2026-11-23, queue builder-no-money-spof): Google AI Studio (Gemini),
+# through its OpenAI-compatible endpoint. The key is GEMINI_API_KEY; GEMINI_MODELS (comma list) overrides the models.
+GEMINI_BASE = "https://generativelanguage.googleapis.com/v1beta/openai"
+GEMINI_PROVIDER = "gemini"
+GEMINI_MODELS = ["gemini-3.8-flash", "gemini-3.7-flash", "gemini-3.6-flash", "gemini-3.5-flash", "gemini-3.1-flash-lite"]
 
 
 def on_openrouter(env: dict | None = None) -> bool:
@@ -62,25 +67,37 @@ def or_chain(env: dict | None = None) -> list[str]:
     return extra or list(OR_MODELS)
 
 
+def gemini_chain(env: dict | None = None) -> list[str]:
+    """Gemini's coding models, newest first (GEMINI_MODELS overrides)."""
+    extra = [m.strip() for m in (os.environ if env is None else env).get("GEMINI_MODELS", "").split(",") if m.strip()]
+    return extra or list(GEMINI_MODELS)
+
+
 def ladder(name: str, env: dict | None = None, catalog: pathlib.Path = CATALOG) -> list[str]:
     """Every model the builder may use, as provider/model, in order. No single point of failure (owner 2026-11-20): OpenCode Go
-    first, then OpenRouter, automatically, when Go fails, hangs or is out of allowance; AUTOBUILD_PROVIDER=openrouter puts
+    first, then OpenRouter (paid), then Gemini, then OpenRouter's free model, automatically, when Go fails, hangs or is out of allowance; AUTOBUILD_PROVIDER=openrouter puts
     OpenRouter first. Each model is probed before the real work, so a dead provider costs a minute, not an attempt."""
     go = [f"{PROVIDER}/{m}" for m in chain(name, catalog)]
     orr = [f"{OR_PROVIDER}/{m}" for m in or_chain(env)]
-    return orr + go if on_openrouter(env) else go + orr
+    gem = [f"{GEMINI_PROVIDER}/{m}" for m in gemini_chain(env)]
+    if on_openrouter(env):
+        return orr + gem + go
+    paid = [m for m in orr if not m.endswith(":free")]
+    free = [m for m in orr if m.endswith(":free")]
+    return go + paid + gem + free         # a free model last: it is the slowest to answer and the first to be rate limited
 
 
 def config(catalog: pathlib.Path = CATALOG) -> dict:
     models = {m: {"name": m, "limit": {"context": 128000, "output": 16384}} for m in chain("strong", catalog) + chain("builder", catalog)}
     pid = provider_id()
     or_models = {m: {"name": m, "limit": {"context": 128000, "output": 16384}} for m in or_chain()}
+    gem_models = {m: {"name": m, "limit": {"context": 128000, "output": 16384}} for m in gemini_chain()}
     first = (or_chain() if pid == OR_PROVIDER else chain("builder", catalog))[0]
     return {
         "$schema": "https://opencode.ai/config.json",
         "autoupdate": False,
         "share": "disabled",
-        "enabled_providers": [PROVIDER, OR_PROVIDER],      # both, always: the second takes over when the first fails
+        "enabled_providers": [PROVIDER, OR_PROVIDER, GEMINI_PROVIDER],   # all, always: the next takes over when one fails
         "model": f"{pid}/{first}",
         "small_model": f"{pid}/{first}",
         # the runner is thrown away after the job and holds no write token, so the agent may edit and run commands without asking;
@@ -91,7 +108,9 @@ def config(catalog: pathlib.Path = CATALOG) -> dict:
             PROVIDER: {"npm": "@ai-sdk/openai-compatible", "name": "OpenCode Go",
                        "options": {"baseURL": GO_BASE, "apiKey": "{env:OPENCODE_GO_API_KEY}"}, "models": models},
             OR_PROVIDER: {"npm": "@ai-sdk/openai-compatible", "name": "OpenRouter",
-                          "options": {"baseURL": OR_BASE, "apiKey": "{env:OPENROUTER_API_KEY}"}, "models": or_models}},
+                          "options": {"baseURL": OR_BASE, "apiKey": "{env:OPENROUTER_API_KEY}"}, "models": or_models},
+            GEMINI_PROVIDER: {"npm": "@ai-sdk/openai-compatible", "name": "Google AI Studio (Gemini)",
+                              "options": {"baseURL": GEMINI_BASE, "apiKey": "{env:GEMINI_API_KEY}"}, "models": gem_models}},
     }
 
 
@@ -159,7 +178,7 @@ def usable(models: list[str], run=subprocess.run, cache: pathlib.Path = PROBE_CA
         ttl = HUNG_TTL_S if hit and hit.get("why") else PROBE_TTL_S      # a hang may have been the provider: look again soon
         if not hit or now - hit.get("at", 0) > ttl:
             try:
-                r = run(["opencode", "run", "--model", m if "/" in m and m.split("/", 1)[0] in (PROVIDER, OR_PROVIDER) else f"{PROVIDER}/{m}", "Reply with the single word OK."], cwd=str(ROOT),
+                r = run(["opencode", "run", "--model", m if "/" in m and m.split("/", 1)[0] in (PROVIDER, OR_PROVIDER, GEMINI_PROVIDER) else f"{PROVIDER}/{m}", "Reply with the single word OK."], cwd=str(ROOT),
                         timeout=60, capture_output=True, text=True)
                 said = (getattr(r, "stdout", "") or "") + (getattr(r, "stderr", "") or "")
                 # opencode exits 0 even on a provider error ("Error: UnknownError ... Unexpected server error", 2026-11-10),
@@ -261,7 +280,7 @@ def _mark_hung(model: str, cache: pathlib.Path = PROBE_CACHE) -> None:
 # account held no credit (only a key cap), so every rung was out and four builds died after 20 minutes of retries. Ask each
 # provider once, before any work, whether it can pay for a real answer; a provider that cannot is skipped in seconds, and when
 # none can, the caller hands the brief to the next path (a cheaper Claude model, path C) instead of retrying.
-OUT_OF_ALLOWANCE = re.compile(r"GoUsageLimitError|usage limit reached|requires more credits|can only afford|insufficient (credit|balance|quota)|\b402\b|quota exceeded", re.I)
+OUT_OF_ALLOWANCE = re.compile(r"GoUsageLimitError|usage limit reached|requires more credits|can only afford|insufficient (credit|balance|quota)|\b402\b|quota exceeded|exceeded your current quota|RESOURCE_EXHAUSTED", re.I)
 ALL_OUT = 3
 
 
@@ -301,7 +320,24 @@ def allowance(env: dict | None = None, http=_http) -> dict:
         out[OR_PROVIDER] = {"ok": left >= 0.5, "why": f"credit left: ${left:.2f}" + ("" if left >= 0.5 else " (buy credit, or only free models answer)")}
     except (ValueError, KeyError, TypeError):
         out[OR_PROVIDER] = {"ok": False, "why": "no answer about credit: " + cr[:120]}
+    out[GEMINI_PROVIDER] = _gemini_allowance(env, http)
     return out
+
+
+def _gemini_allowance(env: dict, http) -> dict:
+    """Ask Gemini with a REAL-sized request (synthetic filler, never repository content): a free-tier quota is per request size.
+    Each model is tried in turn; a 503 'high demand' moves to the next model and is not out of allowance."""
+    filler = "Synthetic filler for a size check, not real content. " * 80
+    last, quota = "no answer", False
+    for m in gemini_chain(env):
+        ans = http(GEMINI_BASE + "/chat/completions", env,
+                   {"model": m, "max_tokens": 8, "messages": [{"role": "user", "content": filler + "\nReply OK"}]},
+                   {"Authorization": "Bearer " + env.get("GEMINI_API_KEY", "placeholder")})
+        if '"choices"' in ans:
+            return {"ok": True, "why": f"{m} answers"}
+        last = (re.search(r'"message":\s*"([^"]{0,160})', ans) or [None, ans[:160]])[1]
+        quota = quota or out_of_allowance(ans)     # the free quota is per model: one model's 429 is not the provider's
+    return {"ok": False, "why": ("every Gemini model is over its free quota: " if quota else "no Gemini model answered: ") + last}
 
 
 def agent(env: dict | None = None, run=subprocess.run) -> int:

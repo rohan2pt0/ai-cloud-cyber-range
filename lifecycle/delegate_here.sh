@@ -26,6 +26,8 @@ command -v opencode >/dev/null 2>&1 || npm install -g -s opencode-ai@1.19.0 >/de
 export OPENCODE_GO_API_KEY="${OPENCODE_GO_API_KEY:-placeholder-the-proxy-adds-the-real-key}"
 # AUTOBUILD_PROVIDER=openrouter sends the build to OpenRouter instead (its key: OPENROUTER_API_KEY, or the proxy adds it)
 export OPENROUTER_API_KEY="${OPENROUTER_API_KEY:-placeholder-the-proxy-adds-the-real-key}"
+# the third provider, Google AI Studio (Gemini, free, its own account): GEMINI_API_KEY, or the proxy adds it
+export GEMINI_API_KEY="${GEMINI_API_KEY:-placeholder-the-proxy-adds-the-real-key}"
 # No single point of failure, for money too (owner 2026-11-23): ask each provider once whether it can pay for a real build. When
 # none can, stop in seconds with exit 3 (ALL-OUT) so the caller hands the same brief to path C (a cheaper Claude model), instead
 # of four builds retrying a capped plan for 20 minutes each.
