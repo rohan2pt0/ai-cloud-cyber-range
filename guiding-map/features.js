@@ -983,6 +983,22 @@ window.SECURAX_FEATURES = {
    "shows": "the Life OS Risk tab (Threats in the news) and ./securax intel threats",
    "light": "green",
    "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/13-GLOBAL-INTELLIGENCE/"
+  },
+  {
+   "id": "money-health",
+   "group": "Your own tools",
+   "icon": "scale",
+   "name": "Money health, with a path for each finding",
+   "what": "One card on the Life OS Money tab reviews your policies, cash, debt, fund costs and asset mix in one look. Pure code on your own numbers finds thin life or health cover, policies that buy little cover for a large premium (such as a post-office endowment), overlapping health covers, idle cash, costly debt and regular-plan funds, and shows each finding's fixes, riskiest first, with the rupees a year freed and the cover gained. It never suggests surrendering a policy before new term cover is in force. Your mix is checked against a transparent glide path once a quarter, inside a 5/25 band, at most twice a year. Education, not advice; nothing leaves the device and no AI is called.",
+   "cmd": "./securax open",
+   "path": "",
+   "port": 0,
+   "service": false,
+   "added": "2026-11-25",
+   "outcome": "Money that leaks into poor policies and idle cash goes to the cover and goals your family needs, and the mix stays right without constant tinkering.",
+   "shows": "the Life OS Money tab (Money health) and a quarterly review in your calendar",
+   "light": "green",
+   "guide": "https://rohan2pt0.github.io/ai-cloud-cyber-range/securax/14-GUIDING-MAP/"
   }
  ]
 };

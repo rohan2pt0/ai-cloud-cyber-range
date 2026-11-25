@@ -1,0 +1,1 @@
+Life OS Money: a Money health card finds thin cover, costly policies (such as a post-office endowment), overlapping health covers, idle cash, costly debt, regular-plan funds and a drifted mix, and shows each fix through the one REMEDIES engine, with term cover always in force before any surrender (every-issue-has-a-path, slice 2).

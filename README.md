@@ -34,11 +34,11 @@ even offline. Your data stays on your device.
 
 The latest additions, newest first (the Command Center marks each one New for 30 days):
 
+- **2026-11-25** · [Money health, with a path for each finding](docs/securax/14-GUIDING-MAP.md): Money that leaks into poor policies and idle cash goes to the cover and goals your family needs, and the mix stays right without constant tinkering. `./securax open`
 - **2026-11-17** · [Calls journal](docs/specs/calls-journal.md): You learn how good your judgement really is, so you trust it where it is good and check it where it is not. `./securax open`
 - **2026-11-13** · [Threats in the news, rehearsed](docs/securax/13-GLOBAL-INTELLIGENCE.md): You rehearse this month's real threats before they reach you or your family, without having to follow the news yourself. `./securax intel threats`
 - **2026-11-12** · [Life systems, running for you](docs/securax/14-GUIDING-MAP.md): The rules you already know run without willpower, and you see the one next step that matters. `./securax open`
 - **2026-11-06** · [Crisis coordination](docs/securax/125-CRISIS-COORDINATION.md): A regulator or police requisition stops being a multi-week scramble: you see who owns each record and what is overdue, and hand over a complete pack on time instead of facing a show-cause for missing the deadline. `./securax crisis templates`
-- **2026-11-06** · [Crisis wargame](docs/securax/126-CRISIS-WARGAME.md): Your team practises the coordination that decides a real crisis — every week, in minutes, alone or together — and each run hands back the exact handoffs that slipped and who must drill them, so the gaps close before a real incident finds them. `./securax wargame list`
 
 **Practise and defend**
 
@@ -125,6 +125,7 @@ The latest additions, newest first (the Command Center marks each one New for 30
 | 🟡 [SecuRAX on every device](docs/securax/85-USE-SECURAX-ANYWHERE.md) | Your own address on any phone, tablet or computer: sign in with Google and everything is there, synced, with the laptop off. One command sets it up. | `./securax online setup` |
 | 🟢 [Life systems, running for you](docs/securax/14-GUIDING-MAP.md) | Your written recipes for money, family, health, work, learning, fun and one big decision run themselves: facts are asked once (with a Local/Global switch), each system shows its cue, floor, rhythm and one-time steps, and the best next step sits in one open action. | `./securax open` |
 | 🟡 [Calls journal](docs/specs/calls-journal.md) | Write a call in one line ("I expect a new client by 31 March") at 60, 70, 80 or 90% confidence. When its date comes, one tap says whether it happened, and the Plan tab shows how often you were right at each confidence. The idea comes from the predictions in the TELOS personal context file. It stays on your device. | `./securax open` |
+| 🟢 [Money health, with a path for each finding](docs/securax/14-GUIDING-MAP.md) | One card on the Life OS Money tab reviews your policies, cash, debt, fund costs and asset mix in one look. Pure code on your own numbers finds thin life or health cover, policies that buy little cover for a large premium (such as a post-office endowment), overlapping health covers, idle cash, costly debt and regular-plan funds, and shows each finding's fixes, riskiest first, with the rupees a year freed and the cover gained. It never suggests surrendering a policy before new term cover is in force. Your mix is checked against a transparent glide path once a quarter, inside a 5/25 band, at most twice a year. Education, not advice; nothing leaves the device and no AI is called. | `./securax open` |
 
 This list is generated from [`features.json`](features.json); the Command Center, the website and the docs home page show the same one.
 <!-- features:end -->

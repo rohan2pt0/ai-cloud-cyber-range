@@ -9823,7 +9823,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     if (brief) return '<div class="gm-fix-item gm-fix-best" data-rem="' + esc(x.id) + '"><div style="font-size:13.5px;font-weight:800;color:var(--text);overflow-wrap:anywhere">' + esc(x.title) + '</div>'
       + (remLine(c, x) ? '<div class="gm-fix-n" style="font-size:12.5px;font-weight:700;color:var(--text);margin-top:2px">' + esc(remLine(c, x)) + '</div>' : "")
       + '<div style="font-size:11.5px;color:var(--muted);margin-top:2px">The same step as above: one action moves both numbers.</div></div>';
-    var tid = "gmFix-" + c.pi + "-" + R.issue + "-" + x.id, im = x.impact || {}, line = remLine(c, x);
+    var tid = "gmFix-" + (c.key || c.pi) + "-" + R.issue + "-" + x.id, im = x.impact || {}, line = remLine(c, x);
     var h = '<div class="gm-fix-item' + (best ? " gm-fix-best" : "") + '" data-rem="' + esc(x.id) + '" style="' + (best ? "" : "padding:7px 0;border-top:1px solid var(--border)") + '">'
       + '<div style="font-size:' + (best ? "13.5" : "12.5") + 'px;font-weight:800;color:var(--text);overflow-wrap:anywhere">' + esc(x.title) + '</div>'
       + (line ? '<div class="gm-fix-n" style="font-size:12.5px;font-weight:700;color:var(--text);margin-top:2px;overflow-wrap:anywhere">' + esc(line) + '</div>' : "")
@@ -9831,7 +9831,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       + '<div style="font-size:11.5px;color:var(--muted);margin-top:2px">' + esc(x.effort + " · " + x.time + " · risk " + x.risk + (x.reversible ? "" : " · hard to undo")) + '</div>'
       + (x.preNote ? '<div style="font-size:11.5px;color:var(--text);margin-top:2px">' + esc(x.preNote) + '</div>' : "");
     if (x.assumes && x.assumes.length) h += '<div style="font-size:11.5px;color:var(--muted);margin-top:2px">Assumes ' + x.assumes.map(function (a) {
-      return a[0] ? '<a href="#" class="gm-fix-ask" style="font-size:11.5px;color:var(--text);text-decoration:underline" onclick="gmRemAsk(' + c.pi + ',\'' + a[0] + '\');return false">' + esc(a[1]) + '</a>' : esc(a[1]);
+      return a[0] ? '<a href="#" class="gm-fix-ask" style="font-size:11.5px;color:var(--text);text-decoration:underline" onclick="' + (c.askFn ? c.askFn + '(\'' + a[0] + '\')' : 'gmRemAsk(' + c.pi + ',\'' + a[0] + '\')') + ';return false">' + esc(a[1]) + '</a>' : esc(a[1]);
     }).join(", ") + '. Tap to change.</div>';
     if (x.doIt && x.doIt.kind === "copy") h += '<div style="margin-top:6px"><button type="button" class="btn-sm" onclick="gmLlCopy(\'' + tid + '\')">' + esc(x.doIt.label) + '</button></div>'
       + '<details style="margin-top:4px"><summary style="font-size:12px;cursor:pointer">See the message</summary><textarea readonly id="' + tid + '" rows="5" aria-label="' + esc(x.doIt.label) + '" style="width:100%;font-size:12px">' + esc(x.doIt.text) + '</textarea></details>';
@@ -9844,7 +9844,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     R = R || gmRemedies(issueId, c);
     if (!R.fixes.length && !R.notes.length && !R.guards.length && !R.warns.length) return "";
     var lead = R.fixes.filter(function (x) { return !x.foldOnly; })[0] || R.fixes[0], rest = R.fixes.filter(function (x) { return x !== lead; });
-    var h = '<div class="gm-fix" data-issue="' + esc(issueId) + '" id="gmFix-' + c.pi + '-' + esc(issueId) + '" role="group" aria-label="How to fix it" style="margin:6px 0 2px;padding:9px 10px;border:1px solid var(--border);border-radius:12px;background:var(--cardAlt)">'
+    var h = '<div class="gm-fix" data-issue="' + esc(issueId) + '" id="gmFix-' + esc(c.key || c.pi) + '-' + esc(issueId) + '" role="group" aria-label="How to fix it" style="margin:6px 0 2px;padding:9px 10px;border:1px solid var(--border);border-radius:12px;background:var(--cardAlt)">'
       + '<div style="font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--muted);margin-bottom:4px">How to fix it</div>';
     R.warns.forEach(function (w) { h += '<div class="gm-fix-warn" style="font-size:12px;line-height:1.5;border-inline-start:3px solid var(--amber);padding-inline-start:8px;margin:2px 0 6px;color:var(--text)">' + esc(w) + '</div>'; });
     if (lead) { h += remFixHTML(c, R, lead, true, !!(led && led[lead.id])); if (led) led[lead.id] = 1; }
@@ -9873,6 +9873,468 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       + '<label class="f-label">Your tax regime this year (all your homes)</label><div data-rk="regime" style="display:flex;gap:6px;margin-bottom:8px">'
       + btn(reg === "old", "gmRemRegime('old')", "Old") + btn(reg === "new", "gmRemRegime('new')", "New") + '</div></div>';
   }
+  /* ── Money health (every-issue-has-a-path, slice 2; owner 2026-11-25) ──────────────────────────────────────────────
+     One bird's-eye review that finds where money leaks or protection is thin, and moves it where it is needed. Code decides,
+     by pure functions on the person's own numbers: gmMhScan (the anomalies), gmMhEndow (continue, paid-up or surrender),
+     gmMhTarget and gmMhMacro (the strategic mix, a glide path and a tilt of at most 5 points), gmMhDrift (the 5/25 band),
+     gmMhCadence (a quarterly review, at most two actions a year) and gmMhWaterfall (where freed money goes, in order). The fixes
+     go through the one REMEDIES engine above. Facts are asked once (gm_mhealth, on this device only); no network call and no AI.
+     Education, not advice: every figure says how it was worked out, and the person decides. */
+  var MH_K = "gm_mhealth";
+  var MH_TYPES = { term: ["Term", ""], endow: ["Endowment or money-back", ""], whole: ["Whole life", ""], pli: ["PLI or RPLI (post office)", "IN"],
+    ulip: ["ULIP", ""], health: ["Health (base)", ""], topup: ["Top-up or super top-up", ""] };
+  var MH_SAVINGS = { endow: 1, whole: 1, pli: 1 };            // traditional plans: cover bundled with a savings part that earns little
+  var MH_LIFE = { term: 1, endow: 1, whole: 1, pli: 1, ulip: 1 };
+  var MH_WHO = [["me", "You"], ["partner", "Partner"], ["family", "Family floater"], ["kids", "Children"], ["parents", "Parents"]];
+  var MH_MEMBERS = { me: ["me"], partner: ["partner"], kids: ["kids"], family: ["me", "partner", "kids"], parents: ["parents"] };
+  // Editable rough figures, each said where it is used. Term: cover per ₹1,000 of yearly premium for a healthy non-smoker buying
+  // online, by age band (₹1 crore for about ₹9,500 a year at 25, ₹14,000 at 35, ₹30,000 at 45, ₹70,000 at 55). Super top-up: the
+  // yearly premium per ₹10 lakh above a base cover, by the eldest adult's age. Get real quotes before acting on either.
+  var MH_BENCH = { irr: 5, infl: 6, alt: 7, sav: 3, drag: 0.75, tier: 1 };
+  function mhCpkFor(age) { return age < 30 ? 1000000 : age < 40 ? 700000 : age < 50 ? 330000 : 140000; }
+  function mhStuFor(age) { return age < 35 ? 1000 : age < 45 ? 1500 : age < 55 ? 2800 : 6000; }
+  function mhClamp(v, lo, hi) { v = +v; return isFinite(v) ? Math.min(hi, Math.max(lo, v)) : lo; }
+  function mhN(v, lo, hi) { var n = num(v === undefined || v === null ? "" : v); return mhClamp(n, lo === undefined ? 0 : lo, hi === undefined ? 1e12 : hi); }
+  function mhSet(v) { return v !== undefined && v !== null && String(v).trim() !== ""; }
+  function mhState() {
+    var s = G(MH_K, { policies: [], funds: [], macro: {}, alloc: {}, bench: {} });
+    var obj = function (o) { return o && typeof o === "object" && !Array.isArray(o) ? o : {}; };
+    s.policies = (Array.isArray(s.policies) ? s.policies : []).filter(function (p) { return p && typeof p === "object" && MH_TYPES[p.type]; });
+    s.funds = (Array.isArray(s.funds) ? s.funds : []).filter(function (f) { return f && typeof f === "object"; });
+    s.macro = obj(s.macro); s.alloc = obj(s.alloc); s.bench = obj(s.bench);
+    s.alloc.reviews = (Array.isArray(s.alloc.reviews) ? s.alloc.reviews : []).filter(function (d) { return typeof d === "string" && llParse(d); });
+    s.alloc.acts = (Array.isArray(s.alloc.acts) ? s.alloc.acts : []).filter(function (d) { return typeof d === "string" && llParse(d); });
+    return s;
+  }
+  function mhPut(s) { S_(MH_K, s); }
+  function mhYears(fromIso, now) { var d = llParse(fromIso); return d ? Math.max(0, (now - d) / 31557600000) : 0; }
+  function mhRs(n) { return remRs({}, Math.max(0, n)); }
+  function mhShort(n) { n = Math.max(0, Math.round(n)); return n >= 1e7 ? "₹" + (n / 1e7).toFixed(2) + " crore" : n >= 1e5 ? "₹" + (n / 1e5).toFixed(1) + " lakh" : mhRs(n); }
+
+  // The strategic mix: equity share of investments, from age, horizon, dependants and how steady the income is.
+  window.gmMhTarget = function (c) {
+    var age = mhN(c.age, 0, 110); if (!(age >= 18)) return null;
+    var hz = mhN(c.horizon, 0, 80), deps = mhN(c.deps, 0, 20);
+    var strat = function (a, h) {
+      var base = 100 - a, dep = -Math.min(10, 2.5 * deps), work = c.work === "permanent" ? 5 : c.work === "contract" ? -10 : 0, hzA = h < 10 && h >= 5 ? -10 : 0;
+      var v = mhClamp(base + dep + work + hzA, 20, 80); if (h < 5) v = Math.min(v, 30);
+      return { v: Math.round(v), base: base, dep: dep, work: work, hz: h < 5 ? "capped at 30% (under 5 years)" : hzA ? "−10 (5 to 10 years)" : "0" };
+    };
+    var s = strat(age, hz), own = mhSet(c.override), v = own ? Math.round(mhClamp(num(c.override), 0, 100)) : s.v;
+    var tilt = mhClamp(c.tilt || 0, -5, 5), eff = Math.round(mhClamp(v + tilt, 0, 100));
+    var glide = [0, 5, 10, 15].map(function (k) { return { age: age + k, equity: own ? v : strat(age + k, Math.max(0, hz - k)).v }; });
+    var how = own ? "Your own target: " + v + "% equity." : "100 − age " + age + " = " + s.base + "; dependants " + (s.dep ? "−" + Math.abs(s.dep) : "0") + "; income " + (s.work > 0 ? "+" : s.work < 0 ? "−" : "") + Math.abs(s.work)
+      + " (" + (c.work || "salaried") + "); horizon " + Math.round(hz) + " years: " + s.hz + "; kept between 20% and 80% = " + s.v + "% equity.";
+    return { strategic: v, tilt: tilt, target: eff, own: own, glide: glide, how: how + (tilt ? " Tactical tilt " + (tilt > 0 ? "+" : "−") + Math.abs(tilt) + " = " + eff + "%." : "") };
+  };
+  // A personal monetary policy committee: the repo rate and CPI inflation, typed once a quarter, move only the debt duration
+  // and a tilt of at most 5 points. A high real rate makes debt pay, so equity leans down; a negative one leans it up.
+  window.gmMhMacro = function (m) {
+    m = m || {}; var repo = num(m.repo), cpi = num(m.cpi);
+    if (!(repo > 0) || !(cpi > 0) || repo > 25 || cpi > 30) return { set: false, tilt: 0, real: null, duration: "" };
+    var real = repo - cpi, tilt = Math.round(mhClamp((1 - real) * 2.5, -5, 5)) || 0;
+    var duration = real >= 1.5 ? "medium to long (5 to 10 years): a high real rate is worth locking in"
+      : real >= 0 ? "short to medium (1 to 4 years)" : "short (under 3 years) or floating: inflation is above the policy rate";
+    return { set: true, repo: repo, cpi: cpi, real: real, tilt: tilt, duration: duration,
+      how: "Real rate = repo " + repo + "% − CPI " + cpi + "% = " + (real < 0 ? "−" : "") + Math.abs(real).toFixed(2) + "%. Tilt = (1 − real rate) × 2.5, kept within ±5 points = " + (tilt > 0 ? "+" : tilt < 0 ? "−" : "") + Math.abs(tilt) + "." };
+  };
+  // The 5/25 band: act only when the mix is more than 5 points away, or more than 25% of the target away, whichever comes first.
+  window.gmMhDrift = function (actual, target) {
+    var a = mhClamp(actual, 0, 100), t = mhClamp(target, 0, 100), d = a - t, rel = t > 0 ? Math.abs(d) / t : (Math.abs(d) > 0 ? 1 : 0);
+    return { drift: d, rel: rel, breach: Math.abs(d) > 5 || rel > 0.25 };
+  };
+  // Checked once a quarter; acted on at most twice in any 12 months. Inside the band, nothing is said.
+  window.gmMhCadence = function (alloc, todayIso) {
+    var t = llParse(todayIso) || llDay(new Date()), q = function (d) { return d.getFullYear() * 4 + Math.floor(d.getMonth() / 3); };
+    var rev = ((alloc && alloc.reviews) || []).map(llParse).filter(Boolean), acts = ((alloc && alloc.acts) || []).map(llParse).filter(Boolean)
+      .filter(function (d) { return d <= t && (t - d) < 365 * 86400000; }).sort(function (a, b) { return a - b; });
+    var reviewed = rev.some(function (d) { return q(d) === q(t); }), canAct = acts.length < 2;
+    var next = canAct ? "" : llIso(new Date(acts[acts.length - 2].getTime() + 365 * 86400000));
+    return { reviewed: reviewed, due: !reviewed, acts: acts.length, canAct: canAct, nextAct: next };
+  };
+  // Where freed money goes, in this order: the buffer, term cover, health cover, costly debt, then goals.
+  window.gmMhWaterfall = function (amount, c) {
+    var left = mhN(amount), out = [];
+    [["buffer", "Emergency fund to " + (c.bufTarget || 6) + " months", c.bufGap], ["term", "Term cover for the gap (the first year's premium)", c.termGapPrem],
+      ["health", "Health cover: a super top-up (the first year's premium)", c.healthGapPrem], ["debt", "Costly debt, the highest rate first", c.costlyDebt]]
+      .forEach(function (x) { var take = Math.min(left, mhN(x[2])); if (take > 0) { out.push({ k: x[0], label: x[1], amt: take }); left -= take; } });
+    if (left > 0) out.push({ k: "goals", label: "Your goals and investments", amt: left });
+    return out;
+  };
+  // Continue, make paid-up or surrender, valued at maturity on the person's own values. Never invented: a value not given is null.
+  window.gmMhEndow = function (p, c, now) {
+    now = now || llDay(new Date());
+    var prem = mhN(p.prem), term = mhN(p.term, 0, 100), ppt = mhN(p.ppt, 0, 100) || term, el = mhYears(p.start, now);
+    var n = Math.max(0, term - el), paid = Math.min(ppt, Math.ceil(el - 1e-9)), m = Math.max(0, ppt - paid), wait = Math.max(0, paid - el);
+    var r = mhN(c.irr, 0, 30) / 100, a = mhN(c.alt, 0, 30) / 100, sv = mhSet(p.sv) ? mhN(p.sv) : null, pu = mhSet(p.pu) ? mhN(p.pu) : null, mv = mhSet(p.mv) ? mhN(p.mv) : null;
+    var prems = function (rate) { var s = 0; for (var k = 0; k < m && k < 100; k++) s += prem * Math.pow(1 + rate, Math.max(0, n - (wait + k))); return s; };
+    var cont = mv !== null ? mv : sv !== null ? sv * Math.pow(1 + r, n) + prems(r) : null;
+    var up = pu !== null ? pu + prems(a) : null, sur = sv !== null ? sv * Math.pow(1 + a, n) + prems(a) : null;
+    return { years: n, premsLeft: m, prem: prem, cont: cont, paidUp: up, surrender: sur, contFrom: mv !== null ? "maturity" : "estimate",
+      real: ((1 + r) / (1 + mhN(c.infl, 0, 30) / 100) - 1) * 100, cpk: prem > 0 ? mhN(p.sa) / prem * 1000 : 0, maturesIn: Math.round(n) };
+  };
+
+  // The person's own numbers, read once (ask-by-frequency): the profile, the money model and the facts in gm_mhealth.
+  function mhCtx(sIn) {
+    var s = sIn || mhState(), b = s.bench, M = null; try { M = profOK() ? gmMoney() : null; } catch (e) {}
+    var PP = window.P || {}, age = gmAgeOf(PP.dob), two = gmEarners(PP) === 2, partner = two || !!PP.pname;
+    var kids = (PP.kids || []).filter(function (k) { return k && k.name; }).length, a = gmMine(PP), pt = two ? gmPartner(PP) : {};
+    var gr = G("gm_region", null), local = gr === null || gr === undefined || gr === "local";
+    var bv = function (k) { return mhSet(b[k]) ? num(b[k]) : MH_BENCH[k]; };
+    var rw = M && M.buffer ? M.buffer : null, spend = M && M.spend > 0 ? M.spend : num(PP.exp);
+    var gapM = rw ? rw.gapM : spend, liquid = rw ? rw.liquid : Math.max(0, num(PP.sav)) + num(a.fd) + num(pt.fd), target = rw ? rw.target : 6;
+    var bufNeed = target * gapM, idle = gapM > 0 ? Math.max(0, liquid - bufNeed) : 0;
+    var pay = num(PP.gross) || num(PP.net), need = pay > 0 ? gmTermNeed(pay, true) + (two ? gmTermNeed(num(pt.gross) || num(pt.net), false) : 0) : 0;
+    var pol = s.policies, inForce = function (p) { return p.st !== "applied"; };
+    var lifeRows = pol.filter(function (p) { return MH_LIFE[p.type] && inForce(p); });
+    var lifeHave = lifeRows.length ? lifeRows.reduce(function (t, p) { return t + mhN(p.sa); }, 0) : num(a.term) + num(pt.term);
+    var termIn = pol.filter(function (p) { return p.type === "term" && inForce(p); }).reduce(function (t, p) { return t + mhN(p.sa); }, 0);
+    var hRows = pol.filter(function (p) { return (p.type === "health" || p.type === "topup") && !p.emp && p.who !== "parents"; });
+    var hHave = hRows.length ? hRows.reduce(function (t, p) { return t + mhN(p.sa); }, 0) : num(a.health) + num(pt.health);
+    var heads = 1 + (partner ? 1 : 0) + kids, tier = mhClamp(Math.round(bv("tier")), 1, 3);
+    var floor = mhSet(b.floor) ? mhN(b.floor) : Math.max(tier === 1 ? 1000000 : 500000, heads * 500000 * (tier === 1 ? 1 : tier === 2 ? 0.75 : 0.5));
+    var cpk = mhSet(b.cpk) ? mhN(b.cpk, 1) : mhCpkFor(age || 35), stu = mhSet(b.stu) ? mhN(b.stu) : mhStuFor(age || 35);
+    var alt = bv("alt"), lifeGap = Math.max(0, need - lifeHave), hGap = Math.max(0, floor - hHave);
+    var stuAmt = hGap > 0 ? Math.ceil(hGap / 500000) * 500000 : 0;
+    var loans = (PP.loans || []).filter(function (x) { return x && !/home/i.test(String(x.type || "")) && num(x.remaining) > 0 && num(x.rate) > alt; })
+      .map(function (x) { return { type: String(x.type || "Loan"), bal: num(x.remaining), rate: mhClamp(num(x.rate), 0, 60), emi: num(x.emi) }; })
+      .sort(function (x, y) { return y.rate - x.rate; });
+    // the mix: funds and stocks plus half of NPS are equity; EPF, PPF, half of NPS and cash above the buffer are debt
+    var sum = function (k) { return num(a[k]) + num(pt[k]); }, invest = M ? M.invest : 0, ret = sum("epf") + sum("nps") + sum("ppf");
+    var eq = sum("mf") + Math.max(0, invest - ret - sum("mf") - sum("fd")) + sum("nps") / 2, debt = sum("epf") + sum("ppf") + sum("nps") / 2 + idle;
+    var macro = gmMhMacro(s.macro), w = scWork(), deps = kids + (partner && !two ? 1 : 0);
+    var retAge = mhN(PP.ret, 0, 100) || 60;
+    return { local: local, age: age, horizon: Math.max(0, retAge - age), deps: deps, work: w.me, heads: heads, tier: tier,
+      need: need, lifeHave: lifeHave, lifeGap: lifeGap, termIn: termIn, hHave: hHave, floor: floor, hGap: hGap, stuAmt: stuAmt, cpk: cpk, stu: stu,
+      termGapPrem: lifeGap / cpk * 1000, healthGapPrem: stuAmt / 1000000 * stu, costlyDebt: loans.reduce(function (t, x) { return t + x.bal; }, 0), loans: loans,
+      liquid: liquid, gapM: gapM, bufTarget: target, bufNeed: bufNeed, bufGap: Math.max(0, bufNeed - liquid), buffer: gapM > 0 ? liquid / gapM : null, idle: idle,
+      savBal: Math.max(0, num(PP.sav)), surplus: M && isFinite(M.left) ? Math.max(0, M.left) : 0,
+      irr: bv("irr"), infl: bv("infl"), alt: alt, savRate: bv("sav"), drag: bv("drag"), eq: eq, debt: debt, macro: macro,
+      override: s.alloc.target, alloc: s.alloc, policies: pol, funds: s.funds, today: llIso(llDay(new Date())),
+      benchSet: { irr: mhSet(b.irr), infl: mhSet(b.infl), alt: mhSet(b.alt), cpk: mhSet(b.cpk), stu: mhSet(b.stu), drag: mhSet(b.drag), tier: mhSet(b.tier), floor: mhSet(b.floor) },
+      loc: "en-IN", cur: PP.cur || "INR", askFn: "gmMhAsk" };
+  }
+  window.gmMhCtx = function () { return mhCtx(); };
+
+  // The scan: pure. Each finding names its issue (a REMEDIES id), the rupees a year it frees, the cover it adds and why.
+  window.gmMhScan = function (c) {
+    var out = [], add = function (o) { if (o.where && c.local === false) return; o.freedYear = isFinite(o.freedYear) ? Math.max(0, o.freedYear) : 0;
+      o.coverGain = isFinite(o.coverGain) ? Math.max(0, o.coverGain) : 0; out.push(o); };
+    if (c.need > 0 && c.lifeGap > c.need * 0.1)
+      add({ issue: "life-cover-gap", tier: 1, where: "", title: "Life cover is " + mhShort(c.lifeGap) + " short", coverGain: c.lifeGap, freedYear: 0,
+        line: "You have " + mhShort(c.lifeHave) + " of life cover; your family would need about " + mhShort(c.need) + ". Term cover closes it for about " + mhShort(c.termGapPrem) + " a year.",
+        ctx: { gap: c.lifeGap, prem: c.termGapPrem } });
+    if (c.hGap > 0)
+      add({ issue: "health-below-floor", tier: 1, where: "IN", title: "Health cover is under the floor for " + c.heads + (c.heads === 1 ? " person" : " people"), coverGain: c.stuAmt, freedYear: 0,
+        line: "Your own health cover is " + mhShort(c.hHave) + "; a sensible floor for your family and city is " + mhShort(c.floor) + ". A super top-up is the cheap way up.", ctx: {} });
+    c.policies.forEach(function (p, i) {
+      if (p.st === "applied") return;
+      var pli = p.type === "pli";
+      if (MH_SAVINGS[p.type] && mhN(p.prem) > 0) {
+        var e = gmMhEndow(p, c);
+        if (e.real < 1 || e.cpk < c.cpk / 10)
+          add({ issue: "endow-low-return", tier: 2, where: pli ? "IN" : "", pi: i, title: (pli ? "Postal Life Insurance" : MH_TYPES[p.type][0]) + ": little cover for a large premium",
+            freedYear: mhN(p.prem), coverGain: 0,
+            line: mhRs(e.cpk) + " of cover per ₹1,000 of premium; term buys about " + mhRs(c.cpk) + ". At a typical " + c.irr + "% return it earns about " + (e.real < 0 ? "−" : "") + Math.abs(e.real).toFixed(1) + "% a year after " + c.infl + "% inflation.",
+            ctx: { p: p, e: e } });
+      }
+      if (p.type === "ulip" && mhN(p.prem) > 0 && mhN(p.sa) / mhN(p.prem) * 1000 < c.cpk / 10)
+        add({ issue: "ulip-cover", tier: 2, where: "", pi: i, title: "ULIP: little cover for a large premium", freedYear: 0, coverGain: 0,
+          line: mhRs(mhN(p.sa) / mhN(p.prem) * 1000) + " of cover per ₹1,000 of premium; term buys about " + mhRs(c.cpk) + ".", ctx: { p: p } });
+    });
+    // two personal base health policies that cover the same person: keep the older (its waiting periods are served), fold the newer into a super top-up
+    var hb = c.policies.map(function (p, i) { return { p: p, i: i }; }).filter(function (x) { return x.p.type === "health" && !x.p.emp && x.p.st !== "applied"; });
+    var seen = {};
+    hb.forEach(function (x, j) { hb.slice(j + 1).forEach(function (y) {
+      var mx = MH_MEMBERS[x.p.who] || ["me"], my = MH_MEMBERS[y.p.who] || ["me"]; if (!mx.some(function (m) { return my.indexOf(m) > -1; })) return;
+      var older = (llParse(x.p.start) || 0) <= (llParse(y.p.start) || 0) ? x : y, newer = older === x ? y : x; if (seen[newer.i]) return; seen[newer.i] = 1;
+      var stuCost = mhN(newer.p.sa) / 1000000 * c.stu;
+      add({ issue: "health-overlap", tier: 2, where: "", pi: newer.i, title: "Two health policies cover the same people", freedYear: mhN(newer.p.prem) - stuCost, coverGain: 0,
+        line: "Policies " + (older.i + 1) + " and " + (newer.i + 1) + " overlap. Keeping both buys the same first rupees of cover twice.", ctx: { older: older, newer: newer, stuCost: stuCost } });
+    }); });
+    if (c.idle > Math.max(c.gapM, 1)) {
+      var inSav = Math.min(c.idle, c.savBal);
+      add({ issue: "cash-idle", tier: 2, where: "", title: mhShort(c.idle) + " of cash is above your " + c.bufTarget + "-month buffer", freedYear: inSav * Math.max(0, c.alt - c.savRate) / 100, coverGain: 0,
+        line: "Money above the buffer earns little in a savings account. Let it flow down the plan below.", ctx: { inSav: inSav } });
+    }
+    c.loans.forEach(function (L) {
+      add({ issue: "debt-costly", tier: 2, where: "", title: L.type + " at " + L.rate + "% costs more than your money earns", freedYear: L.bal * (L.rate - c.alt) / 100, coverGain: 0,
+        line: mhRs(L.bal) + " at " + L.rate + "%, against about " + c.alt + "% your money could earn: about " + mhRs(L.bal * (L.rate - c.alt) / 100) + " a year more than it earns.", ctx: { L: L } });
+    });
+    var reg = c.funds.filter(function (f) { return f.plan === "regular" && mhN(f.value) > 0; }), regV = reg.reduce(function (t, f) { return t + mhN(f.value); }, 0);
+    if (regV > 0)
+      add({ issue: "fund-regular", tier: 2, where: "IN", title: reg.length + " fund" + (reg.length === 1 ? " is" : "s are") + " in the regular plan", freedYear: regV * c.drag / 100, coverGain: 0,
+        line: mhRs(regV) + " in regular plans pays about " + c.drag + "% a year more in costs than the direct plan of the same fund.", ctx: { regV: regV, funds: reg } });
+    var al = gmMhAlloc(c);
+    if (al && al.breach && al.cad.due && al.cad.canAct)
+      add({ issue: "alloc-drift", tier: 3, where: "", title: "Your mix is " + Math.abs(Math.round(al.drift)) + " points " + (al.drift > 0 ? "above" : "below") + " its equity target", freedYear: 0, coverGain: 0, moveLine: mhShort(al.move) + " to move back to the target, new money first",
+        line: "Equity is " + Math.round(al.actual) + "% against a target of " + al.t.target + "% (the band is 5 points, or 25% of the target).", ctx: { al: al } });
+    return out.sort(function (x, y) { return x.tier - y.tier || y.freedYear - x.freedYear || y.coverGain - x.coverGain; });
+  };
+  // The mix today against its target, the band and the cadence, and how much would move.
+  window.gmMhAlloc = function (c) {
+    var tot = mhN(c.eq) + mhN(c.debt); if (!(tot > 0)) return null;
+    var t = gmMhTarget({ age: c.age, horizon: c.horizon, deps: c.deps, work: c.work, override: c.override, tilt: c.macro ? c.macro.tilt : 0 }); if (!t) return null;
+    var actual = mhN(c.eq) / tot * 100, d = gmMhDrift(actual, t.target), move = Math.abs(d.drift) / 100 * tot;
+    var months = c.surplus > 0 ? move / c.surplus : Infinity, fromNew = Math.min(move, 6 * mhN(c.surplus)), sw = Math.max(0, move - fromNew);
+    return { actual: actual, t: t, drift: d.drift, rel: d.rel, breach: d.breach, cad: gmMhCadence(c.alloc, c.today), total: tot, move: move, months: months, fromNew: fromNew, switchAmt: sw };
+  };
+
+  // The fixes, in the one REMEDIES engine (no copy): each impact is a pure function of the finding's context.
+  var mhTaxNote = '<span data-where="IN">Tax: ending a life policy in its first two years (five for a ULIP) can add back the deductions you claimed for it, and a payout can be taxable when the premium was high against the sum assured. Cited by topic: check your policy terms and ask your CA.</span>';
+  var mhWhere = "Where to find this: your insurer's app or online account (policy status), the latest premium receipt or bonus statement, or a call to the branch; for PLI, the post office or its customer portal. Ask for today's surrender value and the paid-up value.";
+  function mhHead(fy, cg) { var a = fy > 0 ? mhRs(fy) + " a year freed" : "", b = cg > 0 ? "cover +" + mhShort(cg) : ""; return a && b ? a + " · " + b : a || b; }
+  function mhGuard(c) {
+    var req = c.need > 0 ? c.need : mhN(c.p && c.p.sa);
+    return c.termIn >= req ? "" : "Do not make it paid-up or surrender it yet: first get term cover of " + mhShort(req) + " issued and in force (now " + mhShort(c.termIn) + "), then mark it in force under Your policies. Stopping first leaves the family with less cover, and a new policy needs fresh medical checks: if your health changes, you may not get cover at all.";
+  }
+  var mhTermQuote = function (c) { return "Term cover: what to ask for in a quote\n\n- Cover: " + mhRs(c.gap || c.need) + "\n- Until age 60 to 65 (when the loans and the children's costs are done)\n- Pure term: no return of premium, no investment part\n- Declare every illness and habit honestly; it decides whether a claim is paid\n- Compare the insurer's claim settlement record over three years\n- Nominee named; a copy of the policy where the family can find it"; };
+  Object.assign(REM_LIB, {
+    "term-buy": { title: function (c) { return "Buy term cover of " + mhShort(c.gap) + ""; }, effort: "one form", time: "this month", risk: "low", reversible: true, where: "", hard: true,
+      source: "The term-cover need in this app: 10 years of pay before tax plus the loans (planners say 10 to 15 years); the premium is your editable rough figure of cover per ₹1,000.",
+      preconditions: function (c) { return c.gap > 0; },
+      impact: function (c) { return { rupeesPerMonth: null, freedYear: 0, coverGain: c.gap, headline: "Cover +" + mhShort(c.gap) + " for about " + mhRs(c.prem) + " a year",
+        note: "Pure term: the cheapest way to protect the people who depend on your income.", how: "Gap = need " + mhRs(c.need) + " − cover " + mhRs(c.lifeHave) + ". Premium ≈ gap ÷ " + mhRs(c.cpk) + " × ₹1,000." }; },
+      assumes: function (c) { return c.benchSet.cpk ? [] : [["cpk", mhRs(c.cpk) + " of term cover per ₹1,000 at your age"]]; },
+      doIt: function (c) { return { kind: "copy", label: "Copy what to ask for", text: mhTermQuote(c) }; } },
+    "term-first": { title: function (c) { return "First, put term cover of " + mhShort(c.need > 0 ? c.need : mhN(c.p.sa)) + " in force"; }, effort: "one form", time: "this month", risk: "low", reversible: true, where: "", hard: true,
+      source: "Insurance underwriting: a new policy is priced and accepted on your health on the day you apply, so the old cover stays until the new one is issued.",
+      preconditions: function (c) { return !!c.p && !!mhGuard(c); },
+      impact: function (c) { var g = Math.max(0, (c.need > 0 ? c.need : mhN(c.p.sa)) - c.termIn);
+        return { rupeesPerMonth: null, freedYear: 0, coverGain: g, headline: "Cover +" + mhShort(g) + " for about " + mhRs(g / c.cpk * 1000) + " a year",
+          note: "Then this policy's choices open: keep it, make it paid-up, or surrender it.", how: "Needed in term cover = " + mhRs(c.need > 0 ? c.need : mhN(c.p.sa)) + "; in force now " + mhRs(c.termIn) + "." }; },
+      assumes: function (c) { return c.benchSet.cpk ? [] : [["cpk", mhRs(c.cpk) + " of term cover per ₹1,000 at your age"]]; },
+      doIt: function (c) { return { kind: "copy", label: "Copy what to ask for", text: mhTermQuote(Object.assign({}, c, { gap: Math.max(0, (c.need > 0 ? c.need : mhN(c.p.sa)) - c.termIn) })) }; } },
+    "endow-paidup": { title: "Make it paid-up: stop the premiums, keep a reduced cover", effort: "one form", time: "at the next premium date", risk: "medium: the reduced sum is paid only at maturity", reversible: false, where: "",
+      source: "Traditional life policies: after the minimum premiums, stopping turns the policy paid-up, with a reduced sum assured payable at maturity (the insurer quotes it).",
+      preconditions: function (c) { if (!c.e || !c.p) return false; return c.e.premsLeft > 0 ? (c.e.paidUp === null ? "unknown" : true) : false; },
+      preNote: function () { return "Add the paid-up value under Your policies. " + mhWhere; },
+      guard: function (c) { return mhGuard(c); },
+      impact: function (c) { var e = c.e, gain = e.paidUp !== null && e.cont !== null ? e.paidUp - e.cont : null;
+        return { rupeesPerMonth: gain !== null && gain > 0 && e.years > 0 ? gain / (e.years * 12) : null, freedYear: e.prem, coverGain: 0,
+          headline: mhHead(e.prem, 0) + (gain !== null ? " · " + (gain >= 0 ? mhRs(gain) + " more" : mhRs(-gain) + " less") + " than continuing, at maturity" : ""),
+          note: "Paid-up value " + (c.p.pu ? mhRs(c.p.pu) : "not given") + " at maturity, plus the premiums you stop, invested at " + c.alt + "% for " + e.maturesIn + " years. The cover falls to the paid-up value.",
+          how: "Paid-up = PU + Σ premium × (1 + " + c.alt + "%)^(years each would grow). Continue = " + (e.contFrom === "maturity" ? "the maturity value you gave" : "SV × (1 + " + c.irr + "%)^" + e.maturesIn + " + Σ premium × (1 + " + c.irr + "%)^(years each would grow), an estimate") + ". Your term premium is the same in every option, so it is left out." }; },
+      notes: function (c) { return c.local ? [mhTaxNote] : []; },
+      assumes: function (c) { var a = []; if (!c.benchSet.alt) a.push(["alt", c.alt + "% on money you invest instead"]); if (!c.benchSet.irr && c.e.contFrom !== "maturity") a.push(["irr", c.irr + "% a year inside the policy"]); return a; },
+      doIt: function (c) { return { kind: "copy", label: "Copy a letter to the insurer", text: "Dear Sir or Madam,\n\nPolicy number: (your policy number)\n\nPlease tell me the paid-up value of this policy if I stop paying premiums now, the date it would be paid, and any bonus that stays attached. Please also send today's surrender value.\n\nThank you." }; } },
+    "endow-surrender": { title: "Surrender it and invest the value and the premiums", effort: "one form", time: "after the term cover is in force", risk: "high: hard to undo, and the cover ends", reversible: false, where: "",
+      source: "Traditional life policies: the surrender value the insurer quotes, compared at maturity with continuing.",
+      preconditions: function (c) { if (!c.e || !c.p) return false; return c.e.surrender === null ? "unknown" : true; },
+      preNote: function () { return "Add today's surrender value under Your policies. " + mhWhere; },
+      guard: function (c) { return mhGuard(c); },
+      impact: function (c) { var e = c.e, gain = e.surrender !== null && e.cont !== null ? e.surrender - e.cont : null;
+        return { rupeesPerMonth: gain !== null && gain > 0 && e.years > 0 ? gain / (e.years * 12) : null, freedYear: e.prem, coverGain: 0,
+          headline: mhHead(e.prem, 0) + (gain !== null ? " · " + (gain >= 0 ? mhRs(gain) + " more" : mhRs(-gain) + " less") + " than continuing, at maturity" : ""),
+          note: "Surrender value " + (c.p.sv ? mhRs(c.p.sv) : "not given") + " now, then the plan below. The cover ends, so the term cover must already be in force.",
+          how: "Surrender = SV × (1 + " + c.alt + "%)^" + e.maturesIn + " + Σ premium × (1 + " + c.alt + "%)^(years each would grow), against continuing as for paid-up." }; },
+      notes: function (c) { return c.local ? [mhTaxNote] : []; },
+      assumes: function (c) { return c.benchSet.alt ? [] : [["alt", c.alt + "% on money you invest instead"]]; },
+      doIt: function (c) { return { kind: "copy", label: "Copy a letter to the insurer", text: "Dear Sir or Madam,\n\nPolicy number: (your policy number)\n\nPlease send me today's surrender value of this policy, the paid-up value if I stop paying, and the documents you need for either. I have not decided yet.\n\nThank you." }; } },
+    "endow-continue": { title: "Keep paying to maturity", effort: "one call", time: "no change", risk: "low", reversible: true, where: "",
+      source: "The policy's own maturity value or, when not given, an estimate at a typical return.",
+      preconditions: function (c) { return !!c.e; },
+      impact: function (c) { var e = c.e; return { rupeesPerMonth: null, freedYear: 0, coverGain: 0,
+        headline: e.cont !== null ? "About " + mhRs(e.cont) + " at maturity in " + e.maturesIn + " years" + (e.contFrom === "maturity" ? "" : " (an estimate)") : "Add the surrender or maturity value to compare",
+        note: "Worth it when the paid-up and surrender values are poor, or the policy is near maturity.", how: "Continue = " + (e.contFrom === "maturity" ? "the maturity value you gave" : "SV × (1 + " + c.irr + "%)^years + Σ premium × (1 + " + c.irr + "%)^years") + "." }; },
+      assumes: function (c) { return c.benchSet.irr || c.e.contFrom === "maturity" ? [] : [["irr", c.irr + "% a year inside the policy"]]; } },
+    "ulip-review": { title: "After the 5-year lock-in, compare its charges with a low-cost fund", effort: "one call", time: "after the lock-in", risk: "low", reversible: true, where: "",
+      source: "ULIPs carry premium-allocation, policy-administration, mortality and fund charges; the insurer's annual statement lists them.",
+      preconditions: function (c) { return !!c.p; },
+      impact: function () { return { rupeesPerMonth: null, freedYear: 0, coverGain: 0, note: "Read the charges in the annual statement before deciding. Put the life cover on term first.", how: "No number is assumed." }; } },
+    "health-merge": { title: "At the newer policy's renewal, keep the older one and add a super top-up", effort: "at renewal", time: "at its renewal", risk: "low, if the super top-up is issued first", reversible: false, where: "",
+      source: "Health insurance practice: the older policy has served its waiting periods; a super top-up adds cover above a deductible for less.",
+      preconditions: function (c) { return !!(c.newer && c.newer.p); },
+      impact: function (c) { var fy = mhN(c.newer.p.prem) - c.stuCost;
+        return { rupeesPerMonth: fy > 0 ? fy / 12 : null, freedYear: fy, coverGain: 0, headline: mhHead(fy, 0) + ", the same cover kept",
+          note: "Do not let the newer policy lapse until the super top-up is issued. If it has the better terms (no room-rent cap, restoration), keep it and port the older one into it instead.",
+          how: "Freed = the newer premium " + mhRs(c.newer.p.prem) + " − a super top-up of " + mhRs(c.newer.p.sa) + " at about " + mhRs(c.stu) + " per ₹10 lakh = " + mhRs(c.stuCost) + "." }; },
+      assumes: function (c) { return c.benchSet.stu ? [] : [["stu", mhRs(c.stu) + " a year per ₹10 lakh of super top-up"]]; },
+      doIt: function () { return { kind: "copy", label: "Copy what to ask for", text: "Super top-up: what to ask for in a quote\n\n- Cover above a deductible equal to your base cover\n- No room-rent cap and no disease-wise sub-limits\n- Pre-existing illness waiting period: as short as offered\n- Issued before the policy you drop is allowed to lapse" }; } },
+    "health-stu": { title: function (c) { return "Add a super top-up of " + mhShort(c.stuAmt); }, effort: "one form", time: "this month", risk: "low", reversible: true, where: "IN", hard: true,
+      source: "A floor of ₹5 lakh a person and at least ₹10 lakh for a family in a metro (a planner's rule of thumb, lower in smaller cities); a super top-up pays above a deductible.",
+      preconditions: function (c) { return c.stuAmt > 0; },
+      impact: function (c) { var p = c.healthGapPrem; return { rupeesPerMonth: null, freedYear: 0, coverGain: c.stuAmt, headline: "Cover +" + mhShort(c.stuAmt) + " for about " + mhRs(p) + " a year",
+        note: "Set its deductible at your base cover, so it starts where the base ends.", how: "Floor = max(₹10 lakh, people × ₹5 lakh) in a metro (× 0.75 or 0.5 in smaller cities) = " + mhRs(c.floor) + "; you have " + mhRs(c.hHave) + "; rounded up to ₹5 lakh steps." }; },
+      assumes: function (c) { var a = []; if (!c.benchSet.tier && !c.benchSet.floor) a.push(["tier", "a metro city"]); if (!c.benchSet.stu) a.push(["stu", mhRs(c.stu) + " a year per ₹10 lakh"]); return a; },
+      doIt: function () { return { kind: "copy", label: "Copy what to ask for", text: "Super top-up: what to ask for in a quote\n\n- Cover above a deductible equal to your base cover\n- No room-rent cap and no disease-wise sub-limits\n- Pre-existing illness waiting period: as short as offered\n- The whole family on one floater" }; } },
+    "cash-waterfall": { title: function (c) { return "Move " + mhShort(c.idle) + " down the plan"; }, effort: "one form", time: "this week", risk: "low", reversible: true, where: "",
+      source: "The order this app uses for any freed money: buffer, term cover, health cover, costly debt, then goals.",
+      preconditions: function (c) { return c.idle > 0; },
+      impact: function (c) { var w = gmMhWaterfall(c.idle, c), fy = c.inSav * Math.max(0, c.alt - c.savRate) / 100;
+        return { rupeesPerMonth: fy > 0 ? fy / 12 : null, freedYear: fy, coverGain: 0, headline: mhHead(fy, 0) + " in better returns",
+          note: w.map(function (x) { return x.label + ": " + mhRs(x.amt); }).join(" · "), how: "Above the buffer = savings and FDs " + mhRs(c.liquid) + " − " + c.bufTarget + " × " + mhRs(c.gapM) + ". Gain ≈ the part in savings × (" + c.alt + "% − " + c.savRate + "%)." }; },
+      assumes: function (c) { return c.benchSet.alt ? [] : [["alt", c.alt + "% on money you invest instead"]]; } },
+    "debt-avalanche": { title: function (c) { return "Prepay the " + c.L.type.toLowerCase() + " first"; }, effort: "one form", time: "from the next EMI", risk: "low", reversible: false, where: "",
+      source: "The avalanche method: repay the highest rate first; a rupee repaid saves the loan's full rate, with no tax and no risk.",
+      preconditions: function (c) { if (!c.L) return false; return c.idle > 0 || c.freed > 0 ? true : "unknown"; },
+      preNote: function () { return "No cash above the buffer yet: money freed by the other fixes comes here once the buffer and cover are done."; },
+      guard: function (c) { return c.buffer !== null && c.buffer < 6 ? "Do not prepay from your buffer: it holds " + c.buffer.toFixed(1) + " months, under the 6 to keep first." : ""; },
+      impact: function (c) { var A = Math.min(c.L.bal, c.idle > 0 ? c.idle : c.L.bal), fy = A * c.L.rate / 100;
+        return { rupeesPerMonth: fy / 12, freedYear: fy, coverGain: 0, headline: mhHead(fy, 0) + " of interest", note: "Ask the lender to keep the EMI and shorten the loan.",
+          how: "Interest saved a year ≈ amount repaid " + mhRs(A) + " × " + c.L.rate + "%." }; },
+      doIt: function (c) { return { kind: "copy", label: "Copy a message to the lender", text: "Dear Sir or Madam,\n\nI would like to make a part-prepayment on my " + c.L.type.toLowerCase() + ". Please confirm any charge and send the revised schedule, keeping the EMI the same and shortening the tenure.\n\nThank you." }; } },
+    "fund-direct": { title: "Start new SIPs in the direct plan; move the old units once their gains are long-term", effort: "one form", time: "from the next SIP", risk: "low: the same fund, a lower cost", reversible: true, where: "IN",
+      source: "SEBI requires every fund to offer a direct plan, with no distributor commission and so a lower expense ratio (2013 onwards). Moving units is a sale: capital-gains tax and any exit load apply.",
+      preconditions: function (c) { return c.regV > 0; },
+      impact: function (c) { var fy = c.regV * c.drag / 100;
+        return { rupeesPerMonth: fy / 12, freedYear: fy, coverGain: 0, headline: mhHead(fy, 0) + " in costs",
+          note: "The regular plan pays a distributor for advice. If you value that advice, a fee-only SEBI-registered adviser is the open alternative.",
+          how: "Drag = value in regular plans " + mhRs(c.regV) + " × " + c.drag + "% (the usual gap in expense ratio; your statement shows the real one)." }; },
+      notes: function () { return ['<span data-where="IN">Where to find this: your consolidated account statement (CAMS or KFintech) shows "Direct" or "Regular" in each scheme name.</span>']; },
+      assumes: function (c) { return c.benchSet.drag ? [] : [["drag", c.drag + "% a year of extra cost"]]; } },
+    "alloc-newmoney": { title: function (c) { return "Send new money to " + (c.al.drift > 0 ? "debt" : "equity") + (isFinite(c.al.months) ? " for " + remMo(Math.ceil(Math.min(6, c.al.months))) : ""); }, effort: "one form", time: "from this month", risk: "low", reversible: true, where: "",
+      source: "Rebalancing practice: new money first, because it moves the mix with no sale, no tax and no exit load; the 5/25 band decides when to act.",
+      preconditions: function (c) { return !!c.al && c.surplus > 0; },
+      impact: function (c) { var al = c.al; return { rupeesPerMonth: null, freedYear: 0, coverGain: 0, headline: "Moves " + mhRs(al.fromNew) + " of " + mhRs(al.move) + " with no sale",
+        note: "Equity " + Math.round(al.actual) + "% → target " + al.t.target + "%.", how: "Move = |" + Math.round(al.actual) + "% − " + al.t.target + "%| × " + mhRs(al.total) + ". New money = up to 6 months of your surplus " + mhRs(c.surplus) + "." }; },
+      doIt: function () { return { kind: "call", label: "Reviewed: plan noted", js: "gmMhReview(0)" }; } },
+    "alloc-switch": { title: function (c) { return "Switch " + mhShort(c.al.switchAmt || c.al.move) + " from " + (c.al.drift > 0 ? "equity to debt" : "debt to equity"); }, effort: "one form", time: "at this review", risk: "medium: a sale has tax and exit-load costs", reversible: true, where: "",
+      source: "Rebalancing practice, done at most twice a year; sell the units with the lowest tax and no exit load first.",
+      preconditions: function (c) { return !!c.al && (c.al.switchAmt > 0 || !(c.surplus > 0)); },
+      impact: function (c) { return { rupeesPerMonth: null, freedYear: 0, coverGain: 0, headline: "Brings the mix back to " + c.al.t.target + "% equity", note: "Only what new money cannot move in six months.", how: "Switch = move − 6 × surplus." }; },
+      notes: function (c) { return c.local ? ['<span data-where="IN">Tax: sell units held over 12 months first; long-term gains on equity funds are taxed above a yearly exempt amount, short-term gains at a higher rate, and many equity funds charge about 1% to exit within a year. Cited by topic: check the current rules.</span>'] : []; },
+      doIt: function () { return { kind: "call", label: "I rebalanced", js: "gmMhReview(1)" }; } }
+  });
+  [["life-cover-gap", ["term-buy"]], ["endow-low-return", ["term-first", "endow-paidup", "endow-surrender", "endow-continue"]], ["ulip-cover", ["term-first", "ulip-review"]],
+    ["health-overlap", ["health-merge"]], ["health-below-floor", ["health-stu"]], ["cash-idle", ["cash-waterfall"]], ["debt-costly", ["debt-avalanche"]],
+    ["fund-regular", ["fund-direct"]], ["alloc-drift", ["alloc-newmoney", "alloc-switch"]]].forEach(function (x) { if (x[1].length) REMEDIES[x[0]] = x[1].map(function (id) { return Object.assign({ id: id }, REM_LIB[id]); }); });
+
+  // ── The card ──
+  function mhFixCtx(c, f, k) { return Object.assign({}, c, f.ctx || {}, { key: "mh" + k, freed: 0 }); }
+  function mhItemHTML(c, f, k, open) {
+    var cc = mhFixCtx(c, f, k), R = gmRemedies(f.issue, cc), lead = R.fixes[0], fy = lead && lead.impact ? lead.impact.freedYear || f.freedYear : f.freedYear, cg = f.coverGain;
+    var num_ = mhHead(fy, cg) || f.moveLine || "";
+    return '<div class="gm-mh-item" data-issue="' + esc(f.issue) + '"' + (f.where ? ' data-where="' + esc(f.where) + '"' : "") + ' style="' + (open ? "" : "padding:8px 0;border-top:1px solid var(--border)") + '">'
+      + '<div style="font-weight:800;font-size:' + (open ? "14" : "13") + 'px;overflow-wrap:anywhere">' + esc(f.title) + '</div>'
+      + (num_ ? '<div class="gm-mh-n" style="font-size:12.5px;font-weight:700;margin-top:2px">' + esc(num_) + '</div>' : "")
+      + '<div style="font-size:12.5px;line-height:1.5;margin-top:2px">' + esc(f.line) + '</div>'
+      + (open ? remBlockHTML(f.issue, cc, R) : '<details style="margin-top:4px"><summary style="font-size:12px;cursor:pointer">How to fix it</summary>' + remBlockHTML(f.issue, cc, R) + '</details>') + '</div>';
+  }
+  function mhRowHTML(p, i, local) {
+    var t = MH_TYPES[p.type], isLife = MH_SAVINGS[p.type] || p.type === "ulip", f = function (k, lab, ph, help) {
+      return '<label class="f-label">' + lab + '</label><input ' + (k === "start" ? 'type="date"' : 'inputmode="decimal"') + ' data-mk="p' + i + k + '" value="' + esc(keep0(p[k])) + '" placeholder="' + ph + '" onchange="gmMhSetP(' + i + ',\'' + k + '\',this.value)">' + (help ? '<div style="font-size:11px;color:var(--muted)">' + help + '</div>' : "");
+    };
+    var who = '<label class="f-label">Who it covers</label><select onchange="gmMhSetP(' + i + ',\'who\',this.value)">' + MH_WHO.map(function (w) { return '<option value="' + w[0] + '"' + ((p.who || "me") === w[0] ? " selected" : "") + '>' + w[1] + '</option>'; }).join("") + '</select>';
+    var h = '<details class="gm-mh-row" style="padding:6px 0;border-top:1px solid var(--border)"><summary style="cursor:pointer;font-size:12.5px"><b>' + (i + 1) + '. ' + esc(t[0]) + '</b> · ' + esc(mhShort(mhN(p.sa))) + ' · ' + esc(mhRs(mhN(p.prem))) + ' a year'
+      + (p.ex ? ' <span class="pill pill-t">example</span>' : "") + (p.st === "applied" ? ' · applied' : "") + '</summary>'
+      + who + f("sa", p.type === "health" || p.type === "topup" ? "Sum insured (₹)" : "Sum assured (₹)", "5,00,000") + f("prem", "Yearly premium (₹)", "24,000")
+      + f("start", "Start date", "2019-04-01");
+    if (MH_LIFE[p.type]) h += f("term", "Policy term (years)", "20") + (p.type === "term" ? "" : f("ppt", "Premium-paying term (years)", "same as the term"));
+    if (isLife) h += f("sv", "Surrender value today (₹)", "ask the insurer", "Where to find this: the insurer's app or policy status, or the branch.") + f("pu", "Paid-up value (₹)", "ask the insurer") + f("mv", "Maturity value, if the bond shows one (₹)", "optional");
+    if (p.type === "term") h += '<label style="display:flex;gap:8px;align-items:center;font-size:12.5px;margin-top:6px"><input type="checkbox" ' + (p.st === "applied" ? "" : "checked") + ' onchange="gmMhSetP(' + i + ',\'st\',this.checked?\'\':\'applied\')">Issued and in force</label>';
+    if (p.type === "health") h += '<label style="display:flex;gap:8px;align-items:center;font-size:12.5px;margin-top:6px"><input type="checkbox" ' + (p.emp ? "checked" : "") + ' onchange="gmMhSetP(' + i + ',\'emp\',this.checked?1:\'\')">From my employer (it ends with the job)</label>';
+    return h + '<button type="button" class="btn-sm" style="margin-top:6px;background:var(--cardAlt);color:var(--text)" onclick="gmMhDel(\'policies\',' + i + ')">Remove</button></details>';
+  }
+  function mhFundHTML(fd, i) {
+    var pb = function (v, lab) { return '<button type="button" class="btn-sm" aria-pressed="' + (fd.plan === v) + '" style="flex:1;background:' + (fd.plan === v ? "var(--gold);color:#0d1f35" : "var(--cardAlt);color:var(--text)") + '" onclick="gmMhSetF(' + i + ',\'plan\',\'' + v + '\')">' + lab + '</button>'; };
+    return '<div class="gm-mh-fund" style="padding:6px 0;border-top:1px solid var(--border)"><label class="f-label">Fund name</label><input value="' + esc(keep0(fd.name)) + '" onchange="gmMhSetF(' + i + ',\'name\',this.value)">'
+      + '<label class="f-label">Value today (₹)</label><input inputmode="decimal" value="' + esc(keep0(fd.value)) + '" onchange="gmMhSetF(' + i + ',\'value\',this.value)">'
+      + '<div style="display:flex;gap:6px;margin-top:6px">' + pb("direct", "Direct") + pb("regular", "Regular") + '</div>'
+      + '<button type="button" class="btn-sm" style="margin-top:6px;background:var(--cardAlt);color:var(--text)" onclick="gmMhDel(\'funds\',' + i + ')">Remove</button></div>';
+  }
+  function mhAllocHTML(c) {
+    var al = gmMhAlloc(c), m = c.macro;
+    var h = '<details class="gm-mh-alloc" style="margin-top:8px"><summary style="cursor:pointer;font-size:12.5px;font-weight:700">Your mix and its target'
+      + (al ? ' · equity ' + Math.round(al.actual) + '% · target ' + al.t.target + '%' : "") + '</summary><div style="font-size:12px;line-height:1.5;margin-top:4px">';
+    if (!al) h += 'Add your investments in Money (funds, EPF, PPF, NPS) and your date of birth, and the mix and its target show here.';
+    else {
+      h += '<div>' + esc(al.t.how) + '</div><div style="margin-top:4px">Glide path: ' + al.t.glide.map(function (g) { return "age " + g.age + ": " + g.equity + "%"; }).join(" · ") + '.</div>'
+        + '<div style="margin-top:4px">' + (al.breach ? (al.cad.canAct ? (al.cad.due ? "Outside the band: the fix is in the list above." : "Outside the band, and reviewed this quarter. Next look at the next quarterly review.")
+          : "Outside the band, but you have acted twice in 12 months. The next action waits until " + remDate(c, al.cad.nextAct) + ".") : "Inside the band (5 points, or 25% of the target): nothing to do.") + '</div>'
+        + '<div style="margin-top:4px;color:var(--muted)">Equity = funds and stocks + half of NPS. Debt = EPF + PPF + half of NPS + cash above your buffer. Homes and gold are left out.</div>';
+    }
+    var mf = function (k, lab, ph) { return '<label class="f-label">' + lab + '</label><input inputmode="decimal" data-mk="' + k + '" value="' + esc(keep0(mhState().macro[k])) + '" placeholder="' + ph + '" onchange="gmMhMacroSet(\'' + k + '\',this.value)">'; };
+    var at = mhState().macro.at, ago = at && llParse(at) ? Math.round((llDay(new Date()) - llParse(at)) / 86400000) : null;
+    h += '<div style="margin-top:8px;font-weight:700">Your monetary policy committee · once a quarter</div>'
+      + '<div style="color:var(--muted)">' + (ago !== null ? "Updated " + ago + (ago === 1 ? " day" : " days") + " ago. " : "") + 'Type the latest published figures (the RBI repo rate and CPI inflation); they are kept on this device.</div>'
+      + mf("repo", "Repo rate (%)", "the RBI's latest") + mf("cpi", "CPI inflation, year on year (%)", "the latest release")
+      + (m.set ? '<div style="margin-top:4px">' + esc(m.how) + ' Debt duration: ' + esc(m.duration) + '.</div>' : "")
+      + '<label class="f-label">Your own equity target (%), if you prefer one</label><input inputmode="decimal" data-mk="target" value="' + esc(keep0(c.override)) + '" placeholder="worked out for you" onchange="gmMhAllocSet(this.value)">';
+    return h + '</div></details>';
+  }
+  function mhBenchHTML(c) {
+    var s = mhState().bench, f = function (k, lab, ph) { return '<label class="f-label">' + lab + '</label><input inputmode="decimal" data-mk="' + k + '" value="' + esc(keep0(s[k])) + '" placeholder="' + ph + '" onchange="gmMhBench(\'' + k + '\',this.value)">'; };
+    var tb = function (v, lab) { var on = Math.round(c.tier) === v && c.benchSet.tier; return '<button type="button" class="btn-sm" aria-pressed="' + on + '" style="flex:1;background:' + (on ? "var(--gold);color:#0d1f35" : "var(--cardAlt);color:var(--text)") + '" onclick="gmMhBench(\'tier\',' + v + ')">' + lab + '</button>'; };
+    return '<details class="gm-mh-bench" style="margin-top:8px"><summary style="cursor:pointer;font-size:12.5px;font-weight:700">Assumptions · each has a default you can change</summary>'
+      + (c.local ? '<label class="f-label">Your city</label><div data-mk="tier" style="display:flex;gap:6px">' + tb(1, "Metro") + tb(2, "Tier 2") + tb(3, "Smaller") + '</div>' : "")
+      + f("irr", "Typical return inside an endowment or PLI policy (%)", "5 (planners see 4 to 6)") + f("infl", "Long-run inflation (%)", "6") + f("alt", "What freed money could earn (%)", "7")
+      + f("cpk", "Term cover per ₹1,000 of premium at your age (₹)", mhRs(mhCpkFor(c.age || 35))) + f("stu", "Super top-up premium per ₹10 lakh (₹ a year)", mhRs(mhStuFor(c.age || 35)))
+      + f("drag", "Extra yearly cost of a regular plan (%)", "0.75") + f("floor", "Your own health-cover floor (₹)", mhRs(c.floor)) + '</details>';
+  }
+  window.gmMoneyHealthHTML = function () {
+    if (!profOK()) return "";
+    var c = mhCtx(), list = gmMhScan(c), s = mhState();
+    // money a guard still holds back (an endowment while term cover is short) is not counted as freed yet
+    var fy = list.reduce(function (t, f) { return t + (f.issue === "endow-low-return" && c.lifeGap > 0 ? 0 : f.freedYear); }, 0), cg = list.reduce(function (t, f) { return t + f.coverGain; }, 0);
+    var h = '<div class="cat-t gm-mh-t" style="margin-top:16px">Money health</div><div class="road-col gm-mh" style="margin:6px 0 12px">'
+      + '<div style="font-size:12.5px;color:var(--muted);margin-bottom:6px">' + (list.length ? list.length + (list.length === 1 ? " thing" : " things") + " to look at, the riskiest first" + (fy > 0 || cg > 0 ? " · " + esc(mhHead(fy, cg)) : "") : "Nothing flagged. Your cover, cash, debt and mix are in shape; the quarterly review keeps them so.") + '</div>';
+    if (list.length) {
+      h += mhItemHTML(c, list[0], 0, true);
+      if (list.length > 1) h += '<details class="gm-mh-later" style="margin-top:8px"><summary style="cursor:pointer;font-size:12.5px;font-weight:700">Later (' + (list.length - 1) + ')</summary>'
+        + list.slice(1).map(function (f, k) { return mhItemHTML(c, f, k + 1, false); }).join("") + '</details>';
+    }
+    var w = c.surplus > 0 || fy > 0 ? gmMhWaterfall(fy, c) : [];
+    if (w.length) h += '<div class="gm-mh-flow" style="font-size:12px;line-height:1.5;margin-top:8px"><b>Where freed money goes, in order:</b> ' + w.map(function (x) { return esc(x.label) + " " + esc(mhRs(x.amt)); }).join(" → ") + '</div>';
+    h += mhAllocHTML(c);
+    var types = Object.keys(MH_TYPES).filter(function (k) { return !MH_TYPES[k][1] || c.local; });
+    h += '<details class="gm-mh-reg" style="margin-top:8px"' + (s.policies.length ? "" : " open") + '><summary style="cursor:pointer;font-size:12.5px;font-weight:700">Your policies (' + s.policies.length + ') and funds (' + s.funds.length + ')' + (s.policies.length ? " · change" : "") + '</summary>'
+      + (s.policies.length ? "" : '<div style="font-size:12px;color:var(--muted);margin-top:4px">Add each life and health policy once: tap its kind, then correct the example numbers.</div>')
+      + s.policies.map(function (p, i) { return mhRowHTML(p, i, c.local); }).join("")
+      + '<div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:6px">' + types.map(function (k) { return '<button type="button" class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmMhAdd(\'' + k + '\')">+ ' + esc(MH_TYPES[k][0]) + '</button>'; }).join("") + '</div>'
+      + (c.local ? '<div style="font-size:12.5px;font-weight:700;margin-top:10px">Mutual funds: direct or regular?</div>' + s.funds.map(mhFundHTML).join("")
+        + '<button type="button" class="btn-sm" style="margin-top:6px;background:var(--cardAlt);color:var(--text)" onclick="gmMhAddFund()">+ A fund</button>' : "") + '</details>';
+    h += mhBenchHTML(c)
+      + '<div style="display:flex;flex-wrap:wrap;gap:6px;align-items:center;margin-top:10px"><button type="button" class="btn-sm" style="background:var(--cardAlt);color:var(--text)" onclick="gmCalendar(\'mhealth\')">Add the quarterly review to calendar</button></div>'
+      + '<div class="gm-mh-edu" style="font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:8px">Education, not advice: your decision. These are general rules worked out on your own numbers by code, with no AI; for a recommendation on a product, ask a SEBI-registered investment adviser. Everything stays on this device.</div>';
+    return h + '</div>';
+  };
+  // Writes: each one saves, re-renders and says what changed.
+  var MH_EX = { term: { sa: 10000000, prem: 14000, term: 25, who: "me" }, endow: { sa: 500000, prem: 30000, term: 20, ppt: 20, who: "me" }, whole: { sa: 500000, prem: 25000, term: 40, ppt: 20, who: "me" },
+    pli: { sa: 500000, prem: 24000, term: 20, ppt: 20, who: "me" }, ulip: { sa: 500000, prem: 50000, term: 10, ppt: 5, who: "me" }, health: { sa: 500000, prem: 18000, who: "family" }, topup: { sa: 2500000, prem: 4000, who: "family" } };
+  function mhSave(s, msg) { mhPut(s); if (typeof renderAll === "function") renderAll(); if (msg && typeof gmToast === "function") gmToast(msg); }
+  window.gmMhAdd = function (type) {
+    if (!MH_TYPES[type]) return; var s = mhState(), y = new Date().getFullYear();
+    s.policies.push(Object.assign({ type: type, start: (y - 3) + "-04-01", ex: 1 }, MH_EX[type], type === "term" ? { st: "applied" } : {}));
+    mhSave(s, "Added an example " + MH_TYPES[type][0].toLowerCase() + " policy. Open it under Your policies and correct the numbers.");
+  };
+  window.gmMhSetP = function (i, k, v) {
+    var s = mhState(), p = s.policies[i]; if (!p || ["who", "sa", "prem", "start", "term", "ppt", "sv", "pu", "mv", "st", "emp"].indexOf(k) < 0) return;
+    if (k === "who") p.who = MH_MEMBERS[v] ? v : "me"; else if (k === "start") p.start = llParse(v) ? llIso(llParse(v)) : ""; else if (k === "st") p.st = v === "applied" ? "applied" : "";
+    else if (k === "emp") p.emp = v ? 1 : ""; else p[k] = mhSet(v) ? mhN(v, 0, 1e11) : "";
+    delete p.ex; mhSave(s, "Saved.");
+  };
+  window.gmMhDel = function (kind, i) { var s = mhState(); if (!Array.isArray(s[kind]) || !s[kind][i]) return; s[kind].splice(i, 1); mhSave(s, "Removed."); };
+  window.gmMhAddFund = function () { var s = mhState(); s.funds.push({ name: "", value: "", plan: "" }); mhSave(s, ""); };
+  window.gmMhSetF = function (i, k, v) {
+    var s = mhState(), f = s.funds[i]; if (!f || ["name", "value", "plan"].indexOf(k) < 0) return;
+    f[k] = k === "plan" ? (v === "direct" || v === "regular" ? v : "") : k === "value" ? (mhSet(v) ? mhN(v, 0, 1e11) : "") : String(v).slice(0, 80); mhSave(s, "Saved.");
+  };
+  window.gmMhBench = function (k, v) {
+    if (["irr", "infl", "alt", "sav", "drag", "cpk", "stu", "floor", "tier"].indexOf(k) < 0) return;
+    var s = mhState(), lim = { irr: 30, infl: 30, alt: 30, sav: 30, drag: 5, tier: 3 }[k] || 1e11; s.bench[k] = mhSet(v) ? mhN(v, 0, lim) : ""; mhSave(s, "Saved: the review is worked out again.");
+  };
+  window.gmMhMacroSet = function (k, v) {
+    if (k !== "repo" && k !== "cpi") return; var s = mhState(); s.macro[k] = mhSet(v) ? mhN(v, 0, 30) : ""; s.macro.at = llIso(llDay(new Date())); mhSave(s, "Saved for this quarter.");
+  };
+  window.gmMhAllocSet = function (v) { var s = mhState(); s.alloc.target = mhSet(v) ? mhN(v, 0, 100) : ""; mhSave(s, "Saved: your own target."); };
+  window.gmMhReview = function (acted) {
+    var s = mhState(), t = llIso(llDay(new Date())); s.alloc.reviews.push(t); if (acted) s.alloc.acts.push(t);
+    s.alloc.reviews = s.alloc.reviews.slice(-12); s.alloc.acts = s.alloc.acts.slice(-12);
+    mhSave(s, acted ? "Recorded. The next rebalance waits for the band and the cadence." : "Reviewed for this quarter. Nothing more until the next review.");
+  };
+  window.gmMhAsk = function (k) {
+    var box = document.querySelector(".gm-mh-bench"); if (k === "target") box = document.querySelector(".gm-mh-alloc"); if (!box) return;
+    box.open = true; var el = box.querySelector('[data-mk="' + k + '"]'); if (!el) return;
+    try { el.scrollIntoView({ block: "center" }); } catch (e) {}
+    var t = el.matches && el.matches("input") ? el : el.querySelector("button, input"); if (t) try { t.focus(); } catch (e) {}
+  };
+  // The Money tab shows it, after the numbers and the checks, before the waterfall's steps.
+  if (typeof renderMoney === "function") { var _rmMh = renderMoney; renderMoney = function (E) {
+    var h = _rmMh(E), k = h.indexOf('<div class="pd-step'), card = gmMoneyHealthHTML();
+    return k > -1 ? h.slice(0, k) + card + h.slice(k) : h + card;
+  }; }
+
   // Which issue a weak measure belongs to, so a red number never stands alone
   var REM_KPI = { "Rent-to-EMI cover": "dscr-low", "Monthly cash flow": "dscr-low", "Break-even occupancy": "beocc-high", "Debt-to-rental-income": "debt-heavy",
     "Loan-to-value": "debt-heavy", "Net rental yield": "yield-thin", "Gross rental yield": "yield-thin", "Price-to-rent": "yield-thin" };
@@ -13969,6 +14431,8 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       desc: "Second dental visit for adults, close every value flagged in Q1, the age-based screenings to discuss with your doctor, and one shared family-health folder." },
     { id: "spend-monthly", group: "money", v: 1, name: "Month-end check-in: your real spend", rule: "FREQ=MONTHLY;BYMONTHDAY=1", start: "2026-12-01", months: null, nth: 0, dow: 2, hh: 9, mins: 10,
       desc: "Open the Life OS > Money > What you really spend: type the balance in your main account(s), one number each. The Life OS works out what you really spent." },
+    { id: "money-health", group: "mhealth", v: 1, name: "Money health review (quarterly)", rule: "FREQ=YEARLY;BYMONTH=1,4,7,10;BYDAY=3SA", months: [0, 3, 6, 9], nth: 3, dow: 6, hh: 11, mins: 30,
+      desc: "Open the Life OS > Money > Money health: type this quarter's repo rate and CPI inflation, check the mix against its band, and close the top fix. Inside the band, nothing to do." },
     { id: "bip-weekly", group: "bip", v: 1, name: "Build in public: this week's episode", rule: "FREQ=WEEKLY;BYDAY=SA", months: null, nth: 0, dow: 6, hh: 10, mins: 60,
       desc: "Record 10 minutes, cut one 60-second Short, post it with one lesson, then log the link in Life OS > Playbook > S3." }
   ];
@@ -13992,7 +14456,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   window.gmCalendarName = function (id) { var e = CALENDAR.filter(function (x) { return x.id === id; })[0]; return e ? e.name : ""; };
   window.gmCalendarICS = function (group) {
     var now = new Date(), stamp = icsDate(now, now.getHours(), now.getMinutes());
-    var title = group === "family" ? "Family health" : group === "rhythm" ? "Life OS rhythm" : group === "bip" ? "Build in public" : group === "money" ? "Month-end check-in" : "Life OS";
+    var title = group === "family" ? "Family health" : group === "rhythm" ? "Life OS rhythm" : group === "bip" ? "Build in public" : group === "money" ? "Month-end check-in" : group === "mhealth" ? "Money health review" : "Life OS";
     var L = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//SecuRAX//Life OS calendar//EN", "CALSCALE:GREGORIAN", "METHOD:PUBLISH", "X-WR-CALNAME:" + title];
     rhythmEvents(group).forEach(function (e) {
       var end = new Date(e.start); end.setHours(e.hh, e.mins, 0, 0);
@@ -14011,7 +14475,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     try {
       var a = document.createElement("a");
       a.href = URL.createObjectURL(new Blob([ics], { type: "text/calendar" }));
-      a.download = (group === "family" ? "family-health" : group === "bip" ? "build-in-public" : group === "money" ? "month-end-check-in" : "life-os-rhythm") + ".ics"; document.body.appendChild(a); a.click(); a.remove();
+      a.download = (group === "family" ? "family-health" : group === "bip" ? "build-in-public" : group === "money" ? "month-end-check-in" : group === "mhealth" ? "money-health-review" : "life-os-rhythm") + ".ics"; document.body.appendChild(a); a.click(); a.remove();
     } catch (e) {}
     S_("gm_cal_exported" + (group ? "_" + group : ""), ymd());
     gmToast("Calendar file saved: " + n + " repeating events. Open it and add them to the same calendar each time; a newer file updates these events, it never doubles them.");
