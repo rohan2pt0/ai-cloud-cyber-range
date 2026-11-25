@@ -1,4 +1,4 @@
-// test180: Ready for the big waves (queue horizon-waves, slice 1; owner 2026-11-25). Under Money health, four world
+// test180: Ready for the big waves (queue horizon-waves, slice 1; owner 2026-11-25). Under Money health, the money
 // waves are checked against the person's own numbers: ready, partly ready or not ready yet, one plain line why, and only
 // the fixes whose issue the Money health scan actually flags. Pure: no network, no AI, no storage write.
 const fs = require('fs'), path = require('path'), { JSDOM } = require('jsdom');
@@ -26,7 +26,7 @@ setTimeout(() => {
 
   // 1. four waves, each with a plain status and one line why
   const W = w.gmWaves(c);
-  ok("gmWaves gives the four waves in order", Array.isArray(W) && W.length === 4 && W.map(x => x.id).join() === "slowdown,prices-rates,trade-shocks,health-weather", W && W.map(x => x.id).join());
+  ok("gmWaves gives the six waves in order", Array.isArray(W) && W.length === 6 && W.map(x => x.id).join() === "slowdown,prices-rates,trade-shocks,health-weather,scams,ai-work", W && W.map(x => x.id).join());
   ok("each wave has a name, a status and a plain line why", W.every(x => typeof x.name === "string" && x.name && ["ready", "partly", "not"].indexOf(x.status) > -1 && typeof x.why === "string" && x.why.length > 10));
   ok("the same numbers give the same answer twice", JSON.stringify(w.gmWaves(c)) === JSON.stringify(W));
   const f0 = fetches;
@@ -67,7 +67,7 @@ setTimeout(() => {
   try {
     w.localStorage.setItem("gm_mhealth", "}{"); w.localStorage.setItem("sovP", "}{");
     const r = w.gmWaves(w.gmMhCtx());
-    ok("damaged storage: still four waves, never NaN", Array.isArray(r) && r.length === 4 && !/NaN|Infinity|undefined/.test(JSON.stringify(r)));
+    ok("damaged storage: still six waves, never NaN", Array.isArray(r) && r.length === 6 && !/NaN|Infinity|undefined/.test(JSON.stringify(r)));
   } catch (er) { threw = String(er); }
   ok("damaged storage: no crash", !threw, threw);
 

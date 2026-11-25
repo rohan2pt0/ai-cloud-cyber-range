@@ -1,0 +1,1 @@
+Life OS Money: Ready for the big waves gains two life waves, Scams and false news and AI changes work, each ready or not from the person's own drill history and learning goals, with one plain why line and one plain step (queue horizon-waves, slice 1b).
