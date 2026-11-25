@@ -3060,8 +3060,8 @@
     { id: "prices-rates", name: "Prices and rates", fixes: ["alloc-drift", "debt-costly", "fund-regular"] },
     { id: "trade-shocks", name: "Trade shifts", fixes: ["alloc-drift"] },
     { id: "health-weather", name: "Health and weather", fixes: ["health-below-floor", "life-cover-gap"] },
-    { id: "scams", name: "Scams and false news", step: "Rehearse one scam drill (Risk tab)" },
-    { id: "ai-work", name: "AI changes work", step: "Add one learning goal this quarter" }
+    { id: "scams", name: "Scams and false news", step: "Rehearse one scam drill (Risk tab)", act: true },
+    { id: "ai-work", name: "AI changes work", step: "Add one learning goal this quarter", act: true }
   ];
   var WAVE_LABEL = { ready: "Ready", partly: "Partly ready", not: "Not ready yet" };
   function wvMonths(b) { return Number(b).toFixed(1).replace(/\.0$/, ""); }
@@ -3133,8 +3133,23 @@
         var n = fixes.length, all = w.fixes.length;
         st = n === 0 ? "ready" : n >= all ? "not" : "partly";
       }
-      return { id: w.id, name: w.name, status: st, label: WAVE_LABEL[st], why: wvWhy(w.id, c, scan), fixes: fixes, step: w.step || "" };
+      return { id: w.id, name: w.name, status: st, label: WAVE_LABEL[st], why: wvWhy(w.id, c, scan), fixes: fixes, step: w.step || "", act: !!w.act };
     });
+  };
+  // One tap does the step: open the drill, or add the one learning goal. A second tap changes nothing.
+  window.gmWaveDo = function (id) {
+    if (id === "scams") {
+      if (typeof window.goTab === "function") window.goTab("risk");
+      setTimeout(function () { var el = document.getElementById("gmThreats"); if (el && el.scrollIntoView) el.scrollIntoView({ block: "start" }); }, 60);   // land on the drills, not the top of the tab
+      return;
+    }
+    if (id !== "ai-work" || typeof S === "undefined" || !S) return;
+    if (!Array.isArray(S.okrs)) S.okrs = [];
+    if (wvLearning()) return;
+    S.okrs.push({ o: "Learn one new skill this quarter", krs: [{ t: "Finish one short course", v: 0, at: Date.now() }], at: Date.now() });
+    store("sovS", S);
+    if (typeof renderAll === "function") renderAll();
+    if (typeof gmToast === "function") gmToast("Added. One step towards your next skill.");
   };
   function mhWavesHTML(c) {
     var W = window.gmWaves(c), rows = {};
@@ -3157,7 +3172,9 @@
         + '<div style="font-size:12.5px"><b>' + esc(w.name) + '</b> <span style="font-size:11px;color:var(--muted)">' + esc(w.label) + '</span></div>'
         + '<div style="font-size:12px;line-height:1.5;margin-top:1px">' + esc(w.why) + '</div>'
         + (fx.length ? '<div style="font-size:12px;line-height:1.5;margin-top:1px">Next: ' + fx.join(" · ") + '</div>'
-          : step ? '<div style="font-size:12px;line-height:1.5;margin-top:1px">Next: ' + esc(step) + '</div>' : "") + '</div>';
+          : step ? '<div style="font-size:12px;line-height:1.5;margin-top:1px">Next: '
+            + (w.act ? '<button type="button" class="gm-fix" style="font:inherit;margin-top:4px;min-height:44px;padding:8px 12px;border:1px solid var(--border);border-radius:9px;background:var(--cardAlt);color:var(--text);cursor:pointer;text-align:start" onclick="gmWaveDo(\'' + esc(w.id) + '\')">' + esc(step) + '</button>'
+              : esc(step)) + '</div>' : "") + '</div>';
     });
     h += '<details style="margin-top:6px"><summary style="cursor:pointer;font-size:12px">Why these waves</summary>'
       + '<div style="font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:3px">The six are the long-running global risks that reach a household\'s money, safety and work. Each is checked only against your own figures, and a money step is offered only where your Money health scan already flags it.<br>Source: World Economic Forum Global Risks Report 2026, paraphrased.</div></details>'

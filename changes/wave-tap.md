@@ -1,0 +1,1 @@
+Life OS Money: on the Ready for the big waves card, the two life waves' steps are one-tap buttons: the scam drill opens the Risk tab and the learning step adds one goal for the quarter (queue horizon-waves, slice 2).
