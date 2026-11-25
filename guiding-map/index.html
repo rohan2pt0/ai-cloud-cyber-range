@@ -10303,6 +10303,85 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       + f("cpk", "Term cover per ₹1,000 of premium at your age (₹)", mhRs(mhCpkFor(c.age || 35))) + f("stu", "Super top-up premium per ₹10 lakh (₹ a year)", mhRs(mhStuFor(c.age || 35)))
       + f("drag", "Extra yearly cost of a regular plan (%)", "0.75") + f("floor", "Your own health-cover floor (₹)", mhRs(c.floor)) + '</details>';
   }
+  /* ── Ready for the big waves (queue horizon-waves, slice 1; owner 2026-11-25) ────────────────────────────────────
+     Four world waves from the World Economic Forum's Global Risks Report 2026, paraphrased, checked against the person's
+     own numbers: ready, partly ready or not ready yet, one plain line why, then the fixes the Money health scan already
+     flags. Pure code: no network, no AI, nothing stored. */
+  var WAVES = [
+    { id: "slowdown", name: "A slowdown", fixes: ["cash-idle", "debt-costly"] },
+    { id: "prices-rates", name: "Prices and rates", fixes: ["alloc-drift", "debt-costly", "fund-regular"] },
+    { id: "trade-shocks", name: "Trade shifts", fixes: ["alloc-drift"] },
+    { id: "health-weather", name: "Health and weather", fixes: ["health-below-floor", "life-cover-gap"] }
+  ];
+  var WAVE_LABEL = { ready: "Ready", partly: "Partly ready", not: "Not ready yet" };
+  function wvMonths(b) { return Number(b).toFixed(1).replace(/\.0$/, ""); }
+  function wvWhy(id, c, s) {
+    if (id === "slowdown") {
+      var b = c.buffer;
+      if (b === null || b === undefined || !isFinite(b)) return "Your cash buffer is not set yet; six months of costs is the calm starting point.";
+      if (b >= 6) return "Your cash covers " + wvMonths(b) + " months of costs, past the six-month line.";
+      if (b >= 3) return "Your cash covers " + wvMonths(b) + " months of costs; six months is the calmer line.";
+      return "Your cash covers " + wvMonths(b) + " months of costs, under the three-month line.";
+    }
+    if (id === "prices-rates") {
+      var n = ["alloc-drift", "debt-costly", "fund-regular"].filter(function (k) { return s[k]; }).length;
+      return n ? "Your mix, fund costs or costly debt still have a step to take." : "Your mix is at its target, fund costs are low and no costly debt stands out.";
+    }
+    if (id === "trade-shocks") {
+      return s["alloc-drift"] ? "Your mix is away from its target, the main cushion when trade shifts." : "Your mix is at its target, the main cushion when trade shifts.";
+    }
+    var lg = +c.lifeGap > 0, hg = +c.hGap > 0;
+    if (lg && hg) return "Life cover and health cover are both below their floors.";
+    if (lg) return "Life cover is below the floor for the people who depend on you.";
+    if (hg) return "Health cover is below the floor for your household.";
+    return "Life cover and health cover are at their floors.";
+  }
+  // Pure: the same ctx always gives the same four waves; fixes are the scan's own issues, so nothing unfelt is shown.
+  window.gmWaves = function (c) {
+    c = c || {};
+    var scan = {};
+    try { (window.gmMhScan ? gmMhScan(c) : []).forEach(function (f) { if (f && f.issue) scan[f.issue] = 1; }); } catch (e) {}
+    return WAVES.map(function (w) {
+      var fixes = w.fixes.filter(function (id) { return !!scan[id]; }), st;
+      if (w.id === "slowdown") {
+        var b = c.buffer;
+        st = b === null || b === undefined || !isFinite(b) ? "not" : b >= 6 ? "ready" : b >= 3 ? "partly" : "not";
+      } else if (w.id === "health-weather") {
+        st = +c.hGap > 0 || +c.lifeGap > 0 ? "not" : "ready";
+      } else {
+        var n = fixes.length, all = w.fixes.length;
+        st = n === 0 ? "ready" : n >= all ? "not" : "partly";
+      }
+      return { id: w.id, name: w.name, status: st, label: WAVE_LABEL[st], why: wvWhy(w.id, c, scan), fixes: fixes };
+    });
+  };
+  function mhWavesHTML(c) {
+    var W = window.gmWaves(c), rows = {};
+    try { gmMhScan(c).forEach(function (f) { if (f && f.issue) rows[f.issue] = f; }); } catch (e) {}
+    var fixesFor = function (w) {
+      var out = [];
+      w.fixes.forEach(function (issue) {
+        var f = rows[issue]; if (!f) return;
+        var R = gmRemedies(issue, Object.assign({}, c, f.ctx || {}, { freed: 0 })), lead = R.fixes[0];
+        if (lead) out.push(esc(lead.title));
+      });
+      return out;
+    };
+    var h = '<div class="gm-waves" style="margin-top:14px">'
+      + '<div style="font-weight:800;font-size:13px">Ready for the big waves</div>'
+      + '<div style="font-size:11.5px;color:var(--muted);margin-top:2px">Four world risks, checked against your own numbers. Calm preparation, not a forecast.</div>';
+    W.forEach(function (w) {
+      var fx = fixesFor(w);
+      h += '<div style="padding:6px 0;border-top:1px solid var(--border);margin-top:4px">'
+        + '<div style="font-size:12.5px"><b>' + esc(w.name) + '</b> <span style="font-size:11px;color:var(--muted)">' + esc(w.label) + '</span></div>'
+        + '<div style="font-size:12px;line-height:1.5;margin-top:1px">' + esc(w.why) + '</div>'
+        + (fx.length ? '<div style="font-size:12px;line-height:1.5;margin-top:1px">Next: ' + fx.join(" · ") + '</div>' : "") + '</div>';
+    });
+    h += '<details style="margin-top:6px"><summary style="cursor:pointer;font-size:12px">Why these waves</summary>'
+      + '<div style="font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:3px">The four are the long-running global risks that reach a household\'s money and health. Each is checked only against your own figures, and a step is offered only where your Money health scan already flags it.<br>Source: World Economic Forum Global Risks Report 2026, paraphrased.</div></details>'
+      + '</div>';
+    return h;
+  }
   window.gmMoneyHealthHTML = function () {
     if (!profOK()) return "";
     var c = mhCtx(), list = gmMhScan(c), s = mhState();
@@ -10317,6 +10396,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     }
     var w = c.surplus > 0 || fy > 0 ? gmMhWaterfall(fy, c) : [];
     if (w.length) h += '<div class="gm-mh-flow" style="font-size:12px;line-height:1.5;margin-top:8px"><b>Where freed money goes, in order:</b> ' + w.map(function (x) { return esc(x.label) + " " + esc(mhRs(x.amt)); }).join(" → ") + '</div>';
+    h += mhWavesHTML(c);
     h += mhAllocHTML(c);
     var types = Object.keys(MH_TYPES).filter(function (k) { return !MH_TYPES[k][1] || c.local; });
     h += '<details class="gm-mh-reg" style="margin-top:8px"' + (s.policies.length ? "" : " open") + '><summary style="cursor:pointer;font-size:12.5px;font-weight:700">Your policies (' + s.policies.length + ') and funds (' + s.funds.length + ')' + (s.policies.length ? " · change" : "") + '</summary>'
