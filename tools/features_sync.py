@@ -38,7 +38,7 @@ BLOCKS = {ROOT / "website" / "index.html": "html", ROOT / "docs" / "index.md": "
 PERSONAL_GROUP = "Your own tools"  # the group the personal app sells; the rest of the estate is one link away
 PRODUCTS = ROOT / "products.json"
 PRODUCT_BLOCKS = {ROOT / "website" / "index.html": "html", ROOT / "docs" / "securax" / "106-WHO-SECURAX-IS-FOR.md": "docs"}
-FACT_FILES = ["README.md", "website/index.html", "website/*/index.html", "portal/explainer.html", "docs/**/*.md"]
+FACT_FILES = ["README.md", "website/index.html", "website/*/index.html", "docs/**/*.md"]
 LIGHT = {"green": ("🟢", "l-g", "Built and proven"), "amber": ("🟡", "l-a", "Partly built"), "red": ("🔴", "l-r", "Not built yet")}
 E = html.escape
 

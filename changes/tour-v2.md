@@ -1,0 +1,1 @@
+The visual tour is rebuilt as a short story in seven scenes on the site kit (website/explainer/index.html, its one source): the problem, the guardian, Shield in three steps, the Life OS and Vantage on real screens, why trust it with counted facts, one next step; about 7 phone screens instead of 22, every number a fact marker, and portal/explainer.html is removed.

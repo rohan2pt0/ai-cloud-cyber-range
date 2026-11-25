@@ -28,6 +28,10 @@ MAX_OPEN_SECTIONS = 7      # the hero counts as one
 MAX_OPEN_CARDS = 12
 MAX_OPEN_WORDS = 650
 TOOL_PAGES = {"assess"}    # a working form: its questions are the page, so only the hero, header and look are held
+# The visual tour tells one story in scenes, so it has no proof strip and no "See more" fold: its facts close the trust scene,
+# and it is held to its own, tighter shape below (test_the_tour_is_a_short_story_with_counted_facts).
+STORY_PAGES = {"explainer"}
+MAX_TOUR_WORDS = 450       # about 40 words a scene, seven scenes, plus the menu-free chrome
 
 
 def rel(p: pathlib.Path) -> str:
@@ -114,7 +118,7 @@ def test_the_proof_strip_shows_only_counted_facts():
     for path in PAGES:
         page = path.read_text("utf-8")
         if '<div class="proof"' not in page:
-            assert rel(path).split("/")[0] in TOOL_PAGES, f"{rel(path)}: a storefront page carries the proof strip"
+            assert rel(path).split("/")[0] in TOOL_PAGES | STORY_PAGES, f"{rel(path)}: a storefront page carries the proof strip"
             continue
         strip = page[page.index('<div class="proof"'):page.index("</ul>", page.index('<div class="proof"'))]
         figures = re.findall(r"<b>(.*?)</b>", strip, re.S)
@@ -138,7 +142,7 @@ def test_no_page_is_longer_than_the_budget():
 def test_a_page_folds_its_long_tail_under_one_see_more():
     for path in PAGES:
         page = path.read_text("utf-8")
-        if path.parent.name in TOOL_PAGES:
+        if path.parent.name in TOOL_PAGES | STORY_PAGES:
             continue
         assert page.count('<details class="everything"') == 1, f"{rel(path)}: one 'See more' fold holds the long tail"
         assert re.search(r'<details class="everything"[^>]*>\s*<summary><span>See ', page), rel(path)
@@ -150,3 +154,35 @@ def test_the_shared_script_finds_the_sky_next_to_itself_on_any_page_depth():
     assert "prefers-reduced-motion" in (ROOT / "guiding-map" / "shared" / "sky.js").read_text("utf-8")
     build = (SITE / "build.sh").read_text("utf-8")
     assert "shared/lux.css guiding-map/shared/sky.js website/shared/" in build
+
+
+def test_the_tour_is_a_short_story_with_counted_facts():
+    """Owner, 2026-11-25: the old tour was 22 phone screens of engineering with hand-typed, stale numbers, and it named the
+    owner's own laptop. The tour is now seven scenes, one headline each, short enough to read, and every number in it is a fact
+    marker the generator fills; it shows a masked example only and never claims 'open source'."""
+    path = SITE / "explainer" / "index.html"
+    page = path.read_text("utf-8")
+    m = measure(page)
+    assert m.sections == 7 and m.words <= MAX_TOUR_WORDS, f"seven scenes, at most {MAX_TOUR_WORDS} words: {m.sections} sections, {m.words} words"
+    main = page[page.index("<main"):page.index("</main>")]
+    assert len(re.findall(r"<h2\b", main)) == 6 and main.count("<h1>") == 1, "one headline a scene"
+    for name in ("tests", "journeys", "attacks", "frameworks"):
+        assert f"<!-- fact:{name} -->" in main, f"the trust scene shows the {name} fact"
+    known = set(fs.facts())
+    assert set(re.findall(r"<!-- fact:(\w+) -->", main)) <= known
+    # no hand-typed figure: outside fact markers and the masked example, no digits but the licence's and a step count
+    text = re.sub(r"<!-- fact:\w+ -->.*?<!-- /fact -->|<[^>]+>|FSL-1\.1-MIT", "", re.sub(r'<div class="term">.*?</div></div>', "", main, flags=re.S))
+    assert not re.findall(r"\d+\s*(?:%|/\d|ms\b|crore|lakh|₹)", text), "a hand-typed number in the tour; use a fact marker"
+    assert "XXXX" in main and not re.search(r"\d{4}[ -]?\d{4}[ -]?\d{4}", main), "a masked example only"
+    for gone in ("one weekend", "16/16", "2,500", "false positives"):
+        assert gone not in page, f"the tour no longer says {gone!r}"
+    assert not re.search(r"\b(?:HP|Dell|Lenovo|MacBook|ThinkPad|Spectre)\b", page), "a buyer page names no one's own machine"
+    assert (ROOT / "website" / "img" / "life-fix.webp").is_file() and (ROOT / "website" / "img" / "vantage-today.webp").is_file()
+
+
+def test_every_storefront_footer_links_the_tour():
+    for path in PAGES:
+        if path.parent.name in STORY_PAGES | TOOL_PAGES:
+            continue
+        foot = path.read_text("utf-8").split("<footer", 1)[1]
+        assert re.search(r'href="(?:\.\./)?explainer/">Visual tour</a>', foot), f"{rel(path)}: the footer links the visual tour"

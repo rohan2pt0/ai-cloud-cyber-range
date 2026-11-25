@@ -12937,3 +12937,97 @@
     return _gmFrGoTab.apply(this, arguments);
   }; }
 })();
+
+/* ── Find anything (queue find-anything, slice 1; owner 2026-11-25) ──────────────────────────────────────────────────
+   One search box finds goals, homes, people, policies and what is coming up, from data already on the device. Pure:
+   no network, no AI, no storage write. A query under two characters answers nothing; matching ignores case and
+   accents. Sensitive fields (a PIN, a password, an account number) are never read — the fields are named one by one,
+   so nothing secret can ever be shown. Damaged storage gives an empty answer, never a crash. */
+(function () {
+  function G(k, d) { var v; try { var s = localStorage.getItem(k); if (!s) return d; v = JSON.parse(s); } catch (e) { return d; } return (v === null || typeof v !== typeof d || Array.isArray(v) !== Array.isArray(d)) ? d : v; }
+  function norm(s) { return String(s === null || s === undefined ? "" : s).toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
+  function words(v) { return typeof v === "string" ? v : typeof v === "number" && isFinite(v) ? String(v) : ""; }
+  function esc(s) { return String(s === null || s === undefined ? "" : s).replace(/[&<>"']/g, function (c) { return { "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]; }); }
+  function lakh(n) { n = +n; return isFinite(n) && n > 0 ? "\u20b9" + (n >= 1e7 ? (n / 1e7).toFixed(1).replace(/\.0$/, "") + " crore" : (n / 1e5).toFixed(n >= 1e6 ? 1 : 0).replace(/\.0$/, "") + " lakh") : ""; }
+  function open() { var a = window.gmPeople; return a ? a() : []; }
+  function coming() { var a = window.gmComingUp; return a ? a() : []; }
+  var P_KINDS = { term: "Term", endow: "Endowment", whole: "Whole life", pli: "PLI (post office)", ulip: "ULIP", health: "Health", topup: "Top-up" };
+  var P_WHO = { me: "You", partner: "Partner", family: "Family", kids: "Children", parents: "Parents" };
+  var MONTHS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  window.gmFind = function (q) {
+    var nq = norm(q).trim();
+    if (nq.length < 2) return [];
+    var kinds = [["Goals", []], ["Homes", []], ["People", []], ["Policies", []], ["Coming up", []]];
+    var seen = {};
+    var add = function (gi, t, sub, go) {
+      if (norm(t).indexOf(nq) < 0 && norm(sub).indexOf(nq) < 0) return;
+      var key = gi + "|" + t + "|" + sub; if (seen[key]) return; seen[key] = 1;
+      if (kinds[gi][1].length < 8) kinds[gi][1].push({ t: t, sub: sub, go: go });
+    };
+    try {   // goals: the quarter's objectives and their key results (sovS)
+      var s = G("sovS", { okrs: [] });
+      (Array.isArray(s.okrs) ? s.okrs : []).forEach(function (o) {
+        if (!o || typeof o !== "object") return;
+        var kr = (Array.isArray(o.krs) ? o.krs : []).map(function (k) { return k ? words(k.t) : ""; }).filter(Boolean).join(" \u00b7 ");
+        add(0, words(o.o), kr || "Your quarter's goal", "okr");
+      });
+    } catch (e) {}
+    try {   // homes: gm_props, by name (value and rent stay out of the context line; a PIN or account field is never read)
+      (G("gm_props", []) || []).forEach(function (p) {
+        if (!p || typeof p !== "object") return;
+        var nm = words(p.n).trim(); if (!nm) return;
+        add(1, nm, p.use === "rented" ? "A home you rent" : "Your home", "prop");
+      });
+    } catch (e) {}
+    try {   // people: the people who matter beyond home (a name and a birth day, kept on this device)
+      open().forEach(function (x) { if (x && words(x.n).trim()) add(2, words(x.n).trim(), "Their birthday: " + x.d + " " + MONTHS[(x.m - 1 + 12) % 12], "today"); });
+    } catch (e) {}
+    try {   // policies: the money-health register, by what the policy is called and who it covers
+      var mh = G("gm_mhealth", { policies: [] });
+      (Array.isArray(mh.policies) ? mh.policies : []).forEach(function (p) {
+        if (!p || typeof p !== "object") return;
+        var t = P_KINDS[p.type]; if (!t) return;
+        var who = P_WHO[p.who] || "";
+        var cover = lakh(+p.sa), prem = +p.prem > 0 ? "\u20b9" + Math.round(+p.prem).toLocaleString("en-IN") + " a year" : "";
+        add(3, t, (who ? who + " \u00b7 " : "") + [cover, prem].filter(Boolean).join(" \u00b7 "), "money");
+      });
+    } catch (e) {}
+    try {   // coming up: birthdays, a loan's last EMI, rent, renewals and the month-end check-in
+      coming().forEach(function (x) { if (x && words(x.t)) add(4, words(x.t), words(x.s) || (x.days >= 0 ? "In " + x.days + " days" : "The date has passed; check it"), "today"); });
+    } catch (e) {}
+    return kinds.filter(function (k) { return k[1].length; }).map(function (k) { return { kind: k[0], items: k[1] }; });
+  };
+  window.gmFindOpen = function () {
+    if (typeof gmDlg !== "function") return;
+    gmDlg('<div style="font-weight:800;font-size:15px;margin-bottom:8px">Find</div>'
+      + '<input type="text" id="gmFindIn" placeholder="Goals, homes, people, policies, what is coming up" autocomplete="off">'
+      + '<div id="gmFindOut" style="margin-top:8px;max-height:55vh;overflow:auto"></div>');
+    var inp = document.getElementById("gmFindIn"), out = document.getElementById("gmFindOut"), last = [];
+    function row(it, gi, i) {
+      return '<button data-g="' + gi + '" data-i="' + i + '" style="display:flex;flex-direction:column;align-items:flex-start;gap:1px;width:100%;text-align:left;padding:8px 10px;margin-bottom:6px;background:var(--cardAlt);color:var(--text);border:1px solid var(--border);border-radius:10px;cursor:pointer">'
+        + '<span style="font-weight:700;font-size:13px">' + esc(it.t) + '</span><span style="font-size:12px;color:var(--muted)">' + esc(it.sub) + '</span></button>';
+    }
+    function render() {
+      last = window.gmFind ? gmFind(inp.value) : [];
+      out.innerHTML = last.length ? last.map(function (g) {
+        return '<div style="font-size:10.5px;letter-spacing:1px;text-transform:uppercase;color:var(--muted);font-weight:800;margin:8px 0 5px">' + g.kind + '</div>'
+          + g.items.map(function (it, i) { return row(it, last.indexOf(g), i); }).join("");
+      }).join("") : '<div style="font-size:12.5px;color:var(--muted);padding:4px 2px">' + (inp.value.trim().length < 2 ? "Two letters or more." : "Nothing found.") + '</div>';
+    }
+    function openIt(it) {
+      if (!it) return;
+      gmClose();
+      if (typeof goTab === "function" && it.go) { try { goTab(it.go); } catch (e) {} }
+    }
+    inp.addEventListener("input", render);
+    inp.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") { e.preventDefault(); gmClose(); }
+      else if (e.key === "Enter") { e.preventDefault(); openIt(last.length && last[0].items.length ? last[0].items[0] : null); if (!last.length) gmClose(); }
+    });
+    out.addEventListener("click", function (e) {
+      var b = e.target && e.target.closest ? e.target.closest("[data-g][data-i]") : null; if (!b) return;
+      var g = last[+b.getAttribute("data-g")]; if (g) openIt(g.items[+b.getAttribute("data-i")]);
+    });
+    render();
+  };
+})();

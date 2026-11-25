@@ -123,12 +123,14 @@ def test_all_apps_is_a_rich_page_with_one_door_and_nothing_from_elsewhere(tmp_pa
 
 def test_all_apps_lists_the_public_pages_so_nobody_hunts_for_a_url(tmp_path):
     """Owner, 2026-11-25: the documentation, the visual tour and the other public pages sit on the landing page, as relative links
-    (so they follow the site to any host), and the build publishes the visual tour."""
+    (so they follow the site to any host), and the site carries the visual tour from its one source."""
     _publish(tmp_path)
     stub = (tmp_path / "app" / "hub.html").read_text("utf-8")
     for href in ("../docs/", "../explainer/", "../", "../personal/", "../nbfc/", "../assess/", "../install.txt"):
         assert f'<a class="lk" href="{href}">' in stub, href
     assert "@@REPO@@" not in stub
     build = (ROOT / "website" / "build.sh").read_text("utf-8")
-    assert "portal/explainer.html website/explainer/index.html" in build and build.index("explainer/index.html") < build.index("linkcheck.py")
+    # one source for the tour: website/explainer/index.html is tracked and rendered like every page; nothing copies an old one over it
+    assert (ROOT / "website" / "explainer" / "index.html").is_file() and "explainer" not in build
+    assert not (ROOT / "portal" / "explainer.html").exists(), "the tour has one source, website/explainer/index.html"
     assert "/explainer/" in (ROOT / "website" / "_headers").read_text("utf-8") and "}}explainer/" in (ROOT / "website" / "sitemap.xml").read_text("utf-8")

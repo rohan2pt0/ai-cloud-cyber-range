@@ -1,6 +1,7 @@
 """UI AUDIT for the product site: every page, in light and dark, on a laptop and a 390 px phone.
 
-For website/index.html, website/assess/index.html, website/nbfc/index.html and website/personal/index.html, at 1280 px and
+For website/index.html, website/assess/index.html, website/nbfc/index.html, website/personal/index.html and the visual tour
+(website/explainer/index.html), at 1280 px and
 390 px in light and dark: no page error, no visible text below WCAG AA contrast (4.5:1, or 3:1 for large text; text that is
 only emoji is skipped), and no sideways scrolling (documentElement.scrollWidth > clientWidth). Screenshots of each page go to
 OUT_DIR.
@@ -32,6 +33,7 @@ PAGES = [
     ("assess", "assess/index.html"),
     ("nbfc", "nbfc/index.html"),
     ("personal", "personal/index.html"),
+    ("tour", "explainer/index.html"),
 ]
 
 # Emoji draw their own colours, so a computed text colour on a coloured card is not a real contrast failure. A string of
