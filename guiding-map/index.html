@@ -10265,7 +10265,8 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
   window.gmMoneyHealthHTML = function () {
     if (!profOK()) return "";
     var c = mhCtx(), list = gmMhScan(c), s = mhState();
-    var fy = list.reduce(function (t, f) { return t + f.freedYear; }, 0), cg = list.reduce(function (t, f) { return t + f.coverGain; }, 0);
+    // money a guard still holds back (an endowment while term cover is short) is not counted as freed yet
+    var fy = list.reduce(function (t, f) { return t + (f.issue === "endow-low-return" && c.lifeGap > 0 ? 0 : f.freedYear); }, 0), cg = list.reduce(function (t, f) { return t + f.coverGain; }, 0);
     var h = '<div class="cat-t gm-mh-t" style="margin-top:16px">Money health</div><div class="road-col gm-mh" style="margin:6px 0 12px">'
       + '<div style="font-size:12.5px;color:var(--muted);margin-bottom:6px">' + (list.length ? list.length + (list.length === 1 ? " thing" : " things") + " to look at, the riskiest first" + (fy > 0 || cg > 0 ? " · " + esc(mhHead(fy, cg)) : "") : "Nothing flagged. Your cover, cash, debt and mix are in shape; the quarterly review keeps them so.") + '</div>';
     if (list.length) {
