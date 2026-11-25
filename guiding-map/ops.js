@@ -3284,6 +3284,17 @@
       if (!p || (p.use || "letout") !== "letout") return;
       llRows(p).forEach(function (r) { out.push({ d: r.d, kind: "home", t: esc(gmTidyName(p.n) || "Your flat") + ": " + esc(r.t), s: "", pi: pi, id: r.id, act: r.act, key: r.key || "", btn: r.btn }); });
     });
+    // Policy premiums and maturities from the Money health register (due-list-feed): one list, no second reminders screen.
+    mhState().policies.forEach(function (p) {
+      if (!p || p.st === "applied") return;   // applied for is not in force yet
+      var st = llParse(p.start); if (!st || st > t0) return;
+      var prem = num(p.prem), term = num(p.term), ppt = num(p.ppt);
+      var nx = new Date(t0.getFullYear(), st.getMonth(), st.getDate()); if (nx < t0) nx = new Date(t0.getFullYear() + 1, st.getMonth(), st.getDate());
+      var yrs = nx.getFullYear() - st.getFullYear(), payEnd = ppt > 0 ? ppt : term > 0 ? term : Infinity;
+      if (prem > 0 && yrs < payEnd) out.push({ d: nx, kind: "policy", t: "Premium due", s: rs(prem) + " · Pay from the buffer, not a card" });
+      var mat = new Date(st.getFullYear() + term, st.getMonth(), st.getDate());
+      if (term > 0 && mat >= t0 && (MH_SAVINGS[p.type] || p.type === "ulip")) out.push({ d: mat, kind: "policy", t: "Matures", s: "The policy pays out. Decide where it goes." });
+    });
     out.push({ d: new Date(t0.getFullYear(), t0.getMonth() + 1, 1), kind: "checkin", t: "Month-end money check-in", s: "One balance each. Two minutes." });
     return out.map(function (x) { x.days = days(x.d); return x; }).filter(function (x) { return x.days <= 45; })
       .sort(function (a, b) { return a.days - b.days; });
