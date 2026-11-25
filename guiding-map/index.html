@@ -10302,18 +10302,41 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       + f("cpk", "Term cover per ₹1,000 of premium at your age (₹)", mhRs(mhCpkFor(c.age || 35))) + f("stu", "Super top-up premium per ₹10 lakh (₹ a year)", mhRs(mhStuFor(c.age || 35)))
       + f("drag", "Extra yearly cost of a regular plan (%)", "0.75") + f("floor", "Your own health-cover floor (₹)", mhRs(c.floor)) + '</details>';
   }
-  /* ── Ready for the big waves (queue horizon-waves, slice 1; owner 2026-11-25) ────────────────────────────────────
-     Four world waves from the World Economic Forum's Global Risks Report 2026, paraphrased, checked against the person's
-     own numbers: ready, partly ready or not ready yet, one plain line why, then the fixes the Money health scan already
-     flags. Pure code: no network, no AI, nothing stored. */
+  /* ── Ready for the big waves (queue horizon-waves, slices 1 and 1b; owner 2026-11-25) ──────────────────────────
+     Four money waves from the World Economic Forum's Global Risks Report 2026, paraphrased, checked against the person's
+     own numbers, then two life waves: scams and false news, and AI changes work. Each is ready, partly ready or not ready
+     yet, with one plain line why, then a step in plain words. Pure code: no network, no AI, nothing stored. */
   var WAVES = [
     { id: "slowdown", name: "A slowdown", fixes: ["cash-idle", "debt-costly"] },
     { id: "prices-rates", name: "Prices and rates", fixes: ["alloc-drift", "debt-costly", "fund-regular"] },
     { id: "trade-shocks", name: "Trade shifts", fixes: ["alloc-drift"] },
-    { id: "health-weather", name: "Health and weather", fixes: ["health-below-floor", "life-cover-gap"] }
+    { id: "health-weather", name: "Health and weather", fixes: ["health-below-floor", "life-cover-gap"] },
+    { id: "scams", name: "Scams and false news", step: "Rehearse one scam drill (Risk tab)" },
+    { id: "ai-work", name: "AI changes work", step: "Add one learning goal this quarter" }
   ];
   var WAVE_LABEL = { ready: "Ready", partly: "Partly ready", not: "Not ready yet" };
   function wvMonths(b) { return Number(b).toFixed(1).replace(/\.0$/, ""); }
+  // A drill's stamp is a date (YYYY-MM-DD). Anything else is ignored, never turned into a NaN age.
+  function wvDrillAge(stamp) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(stamp || ""));
+    if (!m) return null;
+    var day = new Date(+m[1], +m[2] - 1, +m[3]), now = new Date();
+    return (new Date(now.getFullYear(), now.getMonth(), now.getDate()) - day) / 864e5;
+  }
+  function wvScamReady() {
+    var d = G("gm_threat_drills", {});
+    if (!d || typeof d !== "object" || Array.isArray(d)) return false;
+    return Object.keys(d).some(function (k) { var age = wvDrillAge(d[k]); return age !== null && age >= 0 && age <= 90; });
+  }
+  function wvLearning() {
+    if (typeof S === "undefined" || !S || !Array.isArray(S.okrs)) return false;
+    var re = /learn|skill|course|certif/i;
+    return S.okrs.some(function (o) {
+      if (!o) return false;
+      if (re.test(String(o.o || ""))) return true;
+      return Array.isArray(o.krs) && o.krs.some(function (k) { return k && re.test(String(k.t || "")); });
+    });
+  }
   function wvWhy(id, c, s) {
     if (id === "slowdown") {
       var b = c.buffer;
@@ -10329,6 +10352,12 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     if (id === "trade-shocks") {
       return s["alloc-drift"] ? "Your mix is away from its target, the main cushion when trade shifts." : "Your mix is at its target, the main cushion when trade shifts.";
     }
+    if (id === "scams") {
+      return wvScamReady() ? "You rehearsed a scam drill in the last 90 days, so a false message is less likely to fool you." : "No scam drill yet; one rehearsal a quarter keeps a false message from fooling you.";
+    }
+    if (id === "ai-work") {
+      return wvLearning() ? "One of your goals this quarter is to learn a new skill." : "No learning goal this quarter yet; one new skill keeps your work options open.";
+    }
     var lg = +c.lifeGap > 0, hg = +c.hGap > 0;
     if (lg && hg) return "Life cover and health cover are both below their floors.";
     if (lg) return "Life cover is below the floor for the people who depend on you.";
@@ -10341,17 +10370,21 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     var scan = {};
     try { (window.gmMhScan ? gmMhScan(c) : []).forEach(function (f) { if (f && f.issue) scan[f.issue] = 1; }); } catch (e) {}
     return WAVES.map(function (w) {
-      var fixes = w.fixes.filter(function (id) { return !!scan[id]; }), st;
+      var fixes = (w.fixes || []).filter(function (id) { return !!scan[id]; }), st;
       if (w.id === "slowdown") {
         var b = c.buffer;
         st = b === null || b === undefined || !isFinite(b) ? "not" : b >= 6 ? "ready" : b >= 3 ? "partly" : "not";
       } else if (w.id === "health-weather") {
         st = +c.hGap > 0 || +c.lifeGap > 0 ? "not" : "ready";
+      } else if (w.id === "scams") {
+        st = wvScamReady() ? "ready" : "not";
+      } else if (w.id === "ai-work") {
+        st = wvLearning() ? "ready" : "not";
       } else {
         var n = fixes.length, all = w.fixes.length;
         st = n === 0 ? "ready" : n >= all ? "not" : "partly";
       }
-      return { id: w.id, name: w.name, status: st, label: WAVE_LABEL[st], why: wvWhy(w.id, c, scan), fixes: fixes };
+      return { id: w.id, name: w.name, status: st, label: WAVE_LABEL[st], why: wvWhy(w.id, c, scan), fixes: fixes, step: w.step || "" };
     });
   };
   function mhWavesHTML(c) {
@@ -10368,16 +10401,17 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
     };
     var h = '<div class="gm-waves" style="margin-top:14px">'
       + '<div style="font-weight:800;font-size:13px">Ready for the big waves</div>'
-      + '<div style="font-size:11.5px;color:var(--muted);margin-top:2px">Four world risks, checked against your own numbers. Calm preparation, not a forecast.</div>';
+      + '<div style="font-size:11.5px;color:var(--muted);margin-top:2px">Six world risks, checked against your own numbers. Calm preparation, not a forecast.</div>';
     W.forEach(function (w) {
-      var fx = fixesFor(w);
+      var fx = fixesFor(w), step = w.step && !(GM_REMEDIES && w.step in GM_REMEDIES) ? w.step : "";
       h += '<div style="padding:6px 0;border-top:1px solid var(--border);margin-top:4px">'
         + '<div style="font-size:12.5px"><b>' + esc(w.name) + '</b> <span style="font-size:11px;color:var(--muted)">' + esc(w.label) + '</span></div>'
         + '<div style="font-size:12px;line-height:1.5;margin-top:1px">' + esc(w.why) + '</div>'
-        + (fx.length ? '<div style="font-size:12px;line-height:1.5;margin-top:1px">Next: ' + fx.join(" · ") + '</div>' : "") + '</div>';
+        + (fx.length ? '<div style="font-size:12px;line-height:1.5;margin-top:1px">Next: ' + fx.join(" · ") + '</div>'
+          : step ? '<div style="font-size:12px;line-height:1.5;margin-top:1px">Next: ' + esc(step) + '</div>' : "") + '</div>';
     });
     h += '<details style="margin-top:6px"><summary style="cursor:pointer;font-size:12px">Why these waves</summary>'
-      + '<div style="font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:3px">The four are the long-running global risks that reach a household\'s money and health. Each is checked only against your own figures, and a step is offered only where your Money health scan already flags it.<br>Source: World Economic Forum Global Risks Report 2026, paraphrased.</div></details>'
+      + '<div style="font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:3px">The six are the long-running global risks that reach a household\'s money, safety and work. Each is checked only against your own figures, and a money step is offered only where your Money health scan already flags it.<br>Source: World Economic Forum Global Risks Report 2026, paraphrased.</div></details>'
       + '</div>';
     return h;
   }
