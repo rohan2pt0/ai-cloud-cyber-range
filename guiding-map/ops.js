@@ -3173,7 +3173,7 @@
         + '<div style="font-size:12px;line-height:1.5;margin-top:1px">' + esc(w.why) + '</div>'
         + (fx.length ? '<div style="font-size:12px;line-height:1.5;margin-top:1px">Next: ' + fx.join(" · ") + '</div>'
           : step ? '<div style="font-size:12px;line-height:1.5;margin-top:1px">Next: '
-            + (w.act ? '<button type="button" class="gm-fix" style="font:inherit;margin-top:4px;padding:6px 10px;border:1px solid var(--border);border-radius:9px;background:var(--cardAlt);color:var(--text);cursor:pointer;text-align:start" onclick="gmWaveDo(\'' + esc(w.id) + '\')">' + esc(step) + '</button>'
+            + (w.act ? '<button type="button" class="gm-fix" style="font:inherit;margin-top:4px;min-height:44px;padding:8px 12px;border:1px solid var(--border);border-radius:9px;background:var(--cardAlt);color:var(--text);cursor:pointer;text-align:start" onclick="gmWaveDo(\'' + esc(w.id) + '\')">' + esc(step) + '</button>'
               : esc(step)) + '</div>' : "") + '</div>';
     });
     h += '<details style="margin-top:6px"><summary style="cursor:pointer;font-size:12px">Why these waves</summary>'
