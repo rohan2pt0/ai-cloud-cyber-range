@@ -1,6 +1,6 @@
-/* The product site's home page (website-v2). A separate file, because the site's policy allows scripts from itself only
+/* The product site's one script, shared by every storefront page (website-v2: home, personal, nbfc, assess). A separate file, because the site's policy allows scripts from itself only
    (website/_headers: script-src 'self'), so an inline script would never run on the hosted site.
-   1. Copy the install sentence.
+   1. Copy the install sentence (only where the page has one).
    2. A link to something folded away (Products, Readiness) opens its fold first, so it never lands on nothing.
    3. The hero's night sky and gold seal: the shared engine (guiding-map/shared/sky.js, copied in by website/build.sh),
       loaded only after the page has loaded, drawn only while the hero is on screen. Reduced motion, a hidden tab or an
@@ -47,11 +47,13 @@
 
   // 3. the night sky and the seal, lazily
   var hero = document.getElementById("hero"), slot = document.getElementById("seal");
+  var here = document.currentScript && document.currentScript.src;   // sky.js sits next to this file, whatever the page's depth
+  var skyUrl = here ? here.replace(/[^\/]*$/, "") + "shared/sky.js" : "shared/sky.js";
   if (!hero || !("IntersectionObserver" in window)) return;
   function load(cb) {
     if (window.SXSky) { cb(); return; }
     var s = document.createElement("script");
-    s.src = "shared/sky.js"; s.async = true; s.onload = cb;
+    s.src = skyUrl; s.async = true; s.onload = cb;
     document.head.appendChild(s);
   }
   function start() {

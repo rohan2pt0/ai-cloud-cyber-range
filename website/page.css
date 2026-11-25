@@ -1,0 +1,184 @@
+/* SecuRAX product site: the shared page kit (website-v2). Every storefront page links it, so a change here reaches every page and none keeps
+   a private copy: the menu bar, the buttons (one gold primary, one quiet text action), the night-sky hero with the seal, the proof strip,
+   sections, cards, folds, the closing call and the footer. Colours come from site.css (design.json); materials from shared/lux.css.
+   Type scale 13 15 17 21 28 36 48 and spacing 4 8 16 24 32 (design.json premium). Logical properties throughout; the hero's sky is drawn
+   by shared/sky.js, started by site.js after load. website/tests: governance/tests/test_site_consistency.py holds every page to it. */
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,system-ui,sans-serif;color:var(--text);background:var(--bg);line-height:1.55;font-size:17px;-webkit-font-smoothing:antialiased}
+a{color:inherit}
+img{max-width:100%;height:auto;display:block}
+.wrap{max-width:1180px;margin-inline:auto;padding-inline:max(16px,env(safe-area-inset-left)) max(16px,env(safe-area-inset-right))}
+@media (min-width:600px){.wrap{padding-inline:24px}}
+
+/* the menu bar */
+header.nav{background:rgba(27,26,24,.96);color:#fff;position:sticky;inset-block-start:0;z-index:10;border-block-end:1px solid rgba(255,255,255,.08)}
+.nav .wrap{display:flex;align-items:center;gap:22px;height:64px}
+.brand{display:flex;align-items:center;gap:10px;font-weight:700;font-size:19px;text-decoration:none;color:#fff}
+.brand small{font-weight:500;color:#bdb6a9;font-size:13px}
+.nav ul{display:flex;gap:22px;list-style:none;margin-inline-start:auto}
+.nav ul a{text-decoration:none;color:#e2dccf;font-size:15px;white-space:nowrap}
+.nav ul a:hover{color:#fff}
+.nav .btn,.brand span{white-space:nowrap}
+.menu{display:none;position:relative}
+.menu summary{list-style:none;cursor:pointer;border:1px solid rgba(255,255,255,.35);border-radius:12px;padding:10px 14px;font-weight:600;font-size:15px;color:#fff;display:flex;align-items:center}
+.menu summary::-webkit-details-marker{display:none}
+.menu ul{display:grid!important;position:absolute;inset-inline-end:0;inset-block-start:52px;background:var(--navy);border:1px solid rgba(255,255,255,.12);border-radius:12px;padding:8px 16px;gap:0;min-width:220px;box-shadow:0 18px 44px rgba(0,0,0,.35)}
+.menu ul a{display:flex;align-items:center;min-height:44px}
+
+/* buttons: one gold primary, one quiet text action */
+.btn{display:inline-flex;align-items:center;justify-content:center;min-height:48px;border-radius:12px;padding:12px 24px;font-weight:700;text-decoration:none;font-size:17px;border:1px solid transparent;transition:transform .15s,background-color .2s}
+.btn:hover{transform:translateY(-1px)}
+.btn-gold{background:var(--gold);color:#1b1a18}
+.btn-ghost{border-color:rgba(255,255,255,.45);color:#fff;font-size:15px;min-height:44px;padding:8px 18px}
+.btn-ghost:hover{border-color:#fff}
+.btn-line{border-color:var(--edge);color:var(--ink);font-size:15px}
+.quiet{display:inline-flex;align-items:center;min-height:44px;color:inherit;text-decoration:underline;text-underline-offset:4px;font-size:15px;font-weight:500}
+
+/* 1. the first screen: the night sky, one promise, one action */
+.hero.sx-sky{background-color:#0d1a30;color:#eef3f8;padding-block:72px 64px;overflow:hidden}
+.hero .wrap{position:relative;z-index:1;display:grid;grid-template-columns:1.25fr .75fr;gap:32px;align-items:center}
+.eyebrow{display:block;font-size:13px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:#f2d68c;margin-block-end:16px}
+h1{font-size:clamp(40px,5.6vw,64px);line-height:1.02;color:#fff;margin-block-end:24px;max-width:13em}
+.hero p.lead{font-size:clamp(17px,1.6vw,21px);color:#dfe6ee;max-width:34em;margin-block-end:32px}
+.act{display:flex;align-items:center;gap:8px 24px;flex-wrap:wrap}
+.hero .act .quiet{color:#dfe6ee}
+.trust{list-style:none;display:flex;flex-wrap:wrap;gap:8px 24px;margin-block-start:32px;font-size:15px;color:#cfd8e3}
+.trust li{display:flex;align-items:center;gap:8px}
+.trust li::before{content:"";flex:none;width:7px;height:12px;border:solid #8fdcb6;border-width:0 2px 2px 0;transform:rotate(42deg);margin-block-start:-4px;margin-inline-end:4px}
+.seal-slot{display:grid;justify-items:center;gap:16px;text-align:center}
+.seal-slot .sx-seal{transform:scale(1.45);margin:48px auto 56px}
+.seal-slot .fallback{width:132px;height:132px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 38% 30%,#24375e 0%,#0f1d36 62%,#08111f 100%);box-shadow:0 18px 40px rgba(0,0,0,.45)}
+.seal-slot .fallback img{width:64px;height:64px}
+.seal-slot p{font-size:15px;color:#cfd8e3;max-width:22em}
+.seal-slot p b{display:block;color:#fff;font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:28px;line-height:1.1;margin-block-end:4px}
+
+/* 2. the proof strip */
+.proof{background:var(--card);border-block-end:1px solid var(--line)}
+.proof ul{list-style:none;display:grid;grid-template-columns:repeat(4,1fr);gap:24px;padding-block:32px}
+.proof li{border-inline-start:2px solid var(--gold);padding-inline-start:16px}
+.proof b{display:block;font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:48px;line-height:1;color:var(--ink);font-variant-numeric:tabular-nums;margin-block-end:8px}
+.proof span{font-size:15px;color:var(--muted);line-height:1.4;display:block}
+.proof .note{font-size:13px;color:var(--muted);padding-block-end:24px;margin:0}
+.proof .note a{color:var(--gold2)}
+
+/* the dark terminal card: real output, shown as it prints (the home page, Personal and Readiness each use it) */
+.term{background:#141416;color:#e8e2d6;border-radius:14px;padding:16px;font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:14px;line-height:1.6;margin-block-start:8px}
+.term .h{color:#b3ab9e;font-size:13px;letter-spacing:.08em;text-transform:uppercase;margin-block-end:8px;font-family:system-ui,sans-serif;font-weight:600}
+.term .ok{color:#8fdcb6}.term .bad{color:#fca5a5}.term .in{color:#fff}.term .dim{color:#b3ab9e}
+
+/* sections: generous space, alternating backgrounds for rhythm */
+section{padding-block:80px}
+section.alt{background:var(--card)}
+.proof+section{background:var(--bg)}
+h2{font-size:clamp(28px,3.6vw,48px);color:var(--ink);line-height:1.08;margin-block-end:16px}
+h3{font-size:21px;color:var(--ink);line-height:1.25;margin-block-end:8px}
+.kicker{font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold2);margin-block-end:12px;display:block}
+.sub{font-size:19px;color:var(--muted);max-width:min(100%,56ch);margin-block-end:40px}
+.center{text-align:center}.center .sub{margin-inline:auto}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:24px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:24px}
+section.alt .card{background:var(--bg)}
+.card h3{font-size:21px}
+.card p{font-size:16px}
+
+/* what it protects: three proven capabilities, the rest folded */
+.card .light{margin-block-start:16px}
+.light{display:inline-flex;align-items:center;gap:6px;font-size:13px;font-weight:700;border-radius:999px;padding:3px 10px}
+.light::before{content:"";width:9px;height:9px;border-radius:50%;background:currentColor}
+.l-g{color:var(--green);background:#e7f6ec}.l-a{color:var(--amber);background:#fdf2e1}.l-r{color:var(--red);background:#fde8e8}
+details.more>summary{max-width:1180px;margin:24px auto 0;padding-inline:16px;color:var(--gold2);font-weight:700;text-align:center;list-style:none}
+details.more>summary::-webkit-details-marker{display:none}
+details.more>summary::after{content:" +"}details.more[open]>summary::after{content:" −"}
+details.more[open]>.grid3{margin-block-start:24px}
+
+.badges{display:flex;flex-wrap:wrap;gap:10px;justify-content:center}
+.badge{border:1px solid var(--line);background:var(--card);border-radius:10px;padding:10px 14px;font-weight:600;color:var(--ink);font-size:15px}
+.note{font-size:15px;color:var(--muted);margin-block-start:16px}
+.faq details{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:8px 20px;margin-block-end:10px}
+.faq summary{font-weight:600;color:var(--ink)}
+.faq details p{margin-block:4px 12px}
+.cta{display:flex;gap:12px;flex-wrap:wrap;justify-content:center}
+
+/* everything else, one fold: "See every ..." keeps a long page short without deleting anything */
+.all{padding-block:0 80px}
+details.everything>summary{list-style:none;display:flex;justify-content:center;padding:0 16px}
+details.everything>summary::-webkit-details-marker{display:none}
+details.everything>summary span{display:inline-flex;align-items:center;min-height:48px;border:1px solid var(--edge);border-radius:999px;padding:10px 24px;font-weight:700;color:var(--ink)}
+details.everything>summary span::after{content:"+";margin-inline-start:10px;color:var(--gold2)}
+details.everything[open]>summary span::after{content:"−"}
+details.everything[open]>summary{margin-block-end:24px}
+/* a short block of copy beside one picture or one terminal */
+.duo{display:grid;grid-template-columns:1fr 1fr;gap:40px;align-items:center}
+.duo h3{font-size:clamp(24px,2.8vw,32px);line-height:1.15;margin-block-end:12px}
+.duo p{font-size:17px;margin-block-end:16px;max-width:min(100%,54ch)}
+.shot{border-radius:14px;overflow:hidden;box-shadow:0 24px 60px rgba(27,26,24,.22),0 0 0 1px rgba(27,26,24,.08);background:var(--card);max-width:340px;justify-self:center}
+.shot img{width:100%;height:auto}
+/* a quiet line instead of a banner: said once, low on the page */
+.quietline{font-size:15px;color:var(--muted);max-width:min(100%,60ch);margin-block-start:24px}
+.quietline a{color:var(--gold2)}
+.center .quietline{margin-inline:auto}
+.act-center{justify-content:center}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,320px),1fr));gap:24px}
+.faq h2{margin-block-end:24px}
+
+/* the closing call */
+.closing{background:linear-gradient(165deg,var(--navy) 0,var(--navy2) 100%);color:#fff;text-align:center}
+.closing h2{color:#fff;max-width:18em;margin-inline:auto}
+.closing .kicker{color:#f2d68c}
+.closing p{color:#ddd7cc;margin:0 auto 32px;max-width:min(100%,58ch);font-size:19px}
+.closing .act{justify-content:center}
+.closing .quiet{color:#ddd7cc}
+
+footer{background:#121214;color:#b3ab9e;font-size:15px;padding-block:48px 32px}
+footer .cols{display:grid;grid-template-columns:2fr 1fr 1fr 1fr;gap:24px;margin-block-end:24px}
+footer h4{color:#fff;font-size:15px;margin-block-end:8px}
+footer ul{list-style:none;display:grid;gap:0}
+footer ul a{display:inline-flex;align-items:center;min-height:36px;text-decoration:none}
+footer a:hover{color:#fff}
+.fine{border-block-start:1px solid rgba(255,255,255,.08);padding-block-start:16px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap}
+
+
+@media (max-width:960px){
+  .nav .wrap>ul{display:none}
+  .menu{display:block;margin-inline-start:auto}
+  .hero .wrap{grid-template-columns:1fr}
+  .seal-slot{grid-row:1;justify-items:start;text-align:start}
+  .seal-slot .sx-seal{transform:none;margin:0}
+  .seal-slot .fallback{width:88px;height:88px}.seal-slot .fallback img{width:44px;height:44px}
+  .seal-slot p{display:none}
+  .proof ul{grid-template-columns:1fr 1fr}
+  .grid3{grid-template-columns:1fr}
+  .duo{grid-template-columns:1fr;gap:24px}
+  footer .cols{grid-template-columns:1fr 1fr}
+}
+@media (max-width:960px) and (min-width:641px){.grid3{grid-template-columns:1fr 1fr}}
+@media (max-width:600px){
+  section{padding-block:40px}
+  .all{padding-block-end:48px}
+  .sub{font-size:17px;margin-block-end:24px}
+  .card p{font-size:15px}
+  h2{margin-block-end:12px}
+  .card{padding:20px}
+  .grid3{gap:16px}
+  .hero.sx-sky{padding-block:32px 48px}
+  .seal-slot .sx-seal{transform:scale(.6);transform-origin:0 0;margin-block-end:-53px}
+  [dir=rtl] .seal-slot .sx-seal{transform-origin:100% 0}
+  h1{margin-block-end:16px}
+  .hero p.lead{margin-block-end:24px}
+  .act .btn{width:100%}
+  .trust{margin-block-start:24px;gap:4px 16px;font-size:14px}
+  .proof ul{gap:24px 16px;padding-block:24px}
+  .proof b{font-size:36px}
+  .proof span{font-size:14px}
+  .brand small{display:none}
+  .nav .wrap>.btn{display:none}
+  .nav .wrap{gap:10px}
+  .closing p{font-size:17px}
+  footer{padding-block:32px 24px}
+  footer .cols{grid-template-columns:1fr 1fr;gap:16px}
+  footer .cols>div:first-child{grid-column:1 / -1}
+  footer .cols>div:nth-child(2){display:none}
+}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.btn:hover{transform:none}}
+@media (prefers-color-scheme:dark){html .term{background:#111113;border:1px solid var(--line)}}

@@ -58,8 +58,8 @@ def test_the_homepage_shows_the_sentence_in_a_box_with_a_copy_button_as_step_one
     assert re.search(r'class="term"', first) and "install-prompt" in first
     assert re.search(r"<button[^>]*>\s*Copy\s*</button>", first, re.I)
     # the copy code is a file of the site's own (its policy runs no inline script)
-    assert '<script src="home.js"' in page
-    script = (ROOT / "website" / "home.js").read_text("utf-8")
+    assert '<script src="site.js"' in page
+    script = (ROOT / "website" / "site.js").read_text("utf-8")
     assert "navigator.clipboard" in script and ".select()" in script
 
 
