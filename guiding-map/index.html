@@ -10403,7 +10403,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       + '<div style="font-weight:800;font-size:13px">Ready for the big waves</div>'
       + '<div style="font-size:11.5px;color:var(--muted);margin-top:2px">Six world risks, checked against your own numbers. Calm preparation, not a forecast.</div>';
     W.forEach(function (w) {
-      var fx = fixesFor(w), step = w.step && !(GM_REMEDIES && w.step in GM_REMEDIES) ? w.step : "";
+      var fx = fixesFor(w), step = w.step && w.status !== "ready" ? w.step : "";   // a step only when there is something to do
       h += '<div style="padding:6px 0;border-top:1px solid var(--border);margin-top:4px">'
         + '<div style="font-size:12.5px"><b>' + esc(w.name) + '</b> <span style="font-size:11px;color:var(--muted)">' + esc(w.label) + '</span></div>'
         + '<div style="font-size:12px;line-height:1.5;margin-top:1px">' + esc(w.why) + '</div>'

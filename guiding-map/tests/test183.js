@@ -76,5 +76,11 @@ setTimeout(() => {
   ok("the card shows the learning step as one plain line", !!card && card.textContent.includes("Add one learning goal this quarter"));
   ok("the card shows no issue id as a step", !!card && !new RegExp(keys.filter(k => k.length > 6).join("|")).test(card.textContent));
 
+  // 6. a wave that is ready shows no step (nothing to do)
+  w.S.okrs = [{ o: "Learn Spanish", krs: [] }];
+  w.goTab("money"); w.renderAll();
+  const card2 = d.querySelector(".gm-mh");
+  ok("a ready wave shows no step", !!card2 && card2.textContent.includes("AI changes work") && !card2.textContent.includes("Add one learning goal this quarter"));
+
   console.log("test183 ready for the big waves, slice 1b: " + P + " passed, " + F + " failed"); e.forEach(x => console.log("  " + x)); process.exit(F ? 1 : 0);
 }, 400);
