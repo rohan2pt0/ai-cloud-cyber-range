@@ -10543,7 +10543,7 @@ window.GM_INTEL = {"version":1,"generated":"","heat_days":30,"patterns":[{"id":"
       var prem = num(p.prem), term = num(p.term), ppt = num(p.ppt);
       var nx = new Date(t0.getFullYear(), st.getMonth(), st.getDate()); if (nx < t0) nx = new Date(t0.getFullYear() + 1, st.getMonth(), st.getDate());
       var yrs = nx.getFullYear() - st.getFullYear(), payEnd = ppt > 0 ? ppt : term > 0 ? term : Infinity;
-      if (prem > 0 && yrs < payEnd) out.push({ d: nx, kind: "policy", t: "Premium due: " + (MH_DUE[p.type] || MH_TYPES[p.type][0]), s: rs(prem) + " · Pay from the buffer, not a card" });
+      if (prem > 0 && yrs < payEnd) out.push({ d: nx, kind: "policy", t: "Premium due: " + (MH_DUE[p.type] || (MH_TYPES[p.type] || ["Policy"])[0]), s: rs(prem) + " · Pay from the buffer, not a card" });
       var mat = new Date(st.getFullYear() + term, st.getMonth(), st.getDate());
       if (term > 0 && mat >= t0 && (MH_SAVINGS[p.type] || p.type === "ulip")) out.push({ d: mat, kind: "policy", t: "Matures", s: "The policy pays out. Decide where it goes." });
     });
