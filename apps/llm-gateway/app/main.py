@@ -13,6 +13,7 @@ import hashlib
 import json
 import logging
 import os
+import pathlib
 import re
 import secrets
 import sys
@@ -167,6 +168,20 @@ def _rate_limited(principal: str) -> bool:
 # Tamper-evident audit (UK CAF C1.b "securing logs"; Estonia's signed, logged exchange): every event carries the hash of
 # the one before it, so deleting, reordering or editing a line breaks the chain. `./securax audit verify` checks it.
 _CHAIN = {"boot": secrets.token_hex(4), "seq": 0, "prev": "0" * 64}
+_ZERO = "0" * 64
+# The chain head survives a restart (doc 105 gap G14). The head {boot, seq, prev, ts} is kept in a small file on the state
+# volume and rewritten atomically after every event, so the first event of the next run links to the last hash of this one:
+# a tail deleted before a restart then shows as a break the verifier names. AUDIT_LOG_FILE (optional) names a file the audit
+# lines are also appended to; with it the gateway can compare the head with the log's real last line at boot.
+AUDIT_HEAD = pathlib.Path(os.getenv("AUDIT_HEAD_FILE", "/var/lib/securax/audit-head.json"))
+AUDIT_LOG_FILE = os.getenv("AUDIT_LOG_FILE", "")
+if AUDIT_LOG_FILE:
+    try:
+        _fh = logging.FileHandler(AUDIT_LOG_FILE, encoding="utf-8")
+        _fh.setFormatter(logging.Formatter("%(message)s"))
+        audit.addHandler(_fh)
+    except OSError:
+        pass                                          # the stdout log still carries every event
 
 
 def chain_hash(event: dict) -> str:
@@ -179,6 +194,37 @@ def chain_hash(event: dict) -> str:
 _CHAIN_LOCK = threading.Lock()
 
 
+# Measured cost of one atomic head write: 0.35-0.6 ms per event (open, write, close, rename), over the 0.2 ms budget, so the head
+# is written when HEAD_EVERY events have gone by or HEAD_MAX_AGE_S has passed since the last write, whichever comes first, and
+# always at boot and at a clean shutdown. A quiet gateway (one person) therefore writes on every event; only a burst batches. A
+# crash can leave the head up to HEAD_EVERY-1 events behind: the next run then reads as a deleted tail (a loud, safe failure).
+HEAD_EVERY = int(os.getenv("AUDIT_HEAD_EVERY", "16"))
+HEAD_MAX_AGE_S = float(os.getenv("AUDIT_HEAD_MAX_AGE_S", "1.0"))
+_HEAD = {"pending": 0, "at": 0.0}
+
+
+def _save_head(sync: bool = False) -> bool:
+    """Write the chain head atomically (temp file, then os.replace). Caller holds _CHAIN_LOCK. Never raises: a read-only
+    volume must not stop the gateway answering, but it is counted and shows in /metrics as audit_head_write_error."""
+    try:
+        tmp = str(AUDIT_HEAD) + ".tmp"
+        # built by hand (boot, seq and prev are hex and digits only): json.dumps and strftime were half the per-event cost
+        data = ('{"boot":"%s","seq":%d,"prev":"%s","ts":"%s"}' % (_CHAIN["boot"], _CHAIN["seq"], _CHAIN["prev"],
+                                                               time.strftime("%Y-%m-%dT%H:%M:%S%z"))).encode()
+        fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+        try:
+            os.write(fd, data)
+            if sync:                                  # fsync only at boot and shutdown: per event it costs milliseconds
+                os.fsync(fd)
+        finally:
+            os.close(fd)
+        os.replace(tmp, AUDIT_HEAD)
+        return True
+    except OSError:
+        _metrics["audit_head_write_error"] += 1
+        return False
+
+
 def _emit(event: dict) -> None:
     event.setdefault("ts", time.strftime("%Y-%m-%dT%H:%M:%S%z"))
     with _CHAIN_LOCK:
@@ -186,6 +232,96 @@ def _emit(event: dict) -> None:
         event["chain"] = {"boot": _CHAIN["boot"], "seq": _CHAIN["seq"], "prev": _CHAIN["prev"]}
         _CHAIN["prev"] = h = chain_hash(event)
         audit.info(json.dumps({**event, "h": h}, default=str))
+        _HEAD["pending"] += 1
+        now = time.monotonic()
+        if _HEAD["pending"] >= HEAD_EVERY or now - _HEAD["at"] >= HEAD_MAX_AGE_S:
+            _HEAD.update(pending=0, at=now)
+            _save_head()
+
+
+def _read_head(path) -> tuple[dict | None, str]:
+    """(head, state): state is 'ok', 'missing' or 'unreadable'."""
+    try:
+        raw = pathlib.Path(path).read_text("utf-8")
+    except FileNotFoundError:
+        return None, "missing"
+    except OSError:
+        return None, "unreadable"
+    try:
+        d = json.loads(raw)
+        if (isinstance(d, dict) and isinstance(d.get("boot"), str) and isinstance(d.get("seq"), int) and d["seq"] >= 0
+                and isinstance(d.get("prev"), str) and re.fullmatch(r"[0-9a-f]{64}", d["prev"])):
+            return d, "ok"
+    except ValueError:
+        pass
+    return None, "unreadable"
+
+
+def _log_last(path) -> dict | None:
+    """The last chained event in the audit log file, as {boot, seq, h, prev}; None when there is no file or no chained line."""
+    try:
+        with open(path, "rb") as f:
+            f.seek(0, os.SEEK_END)
+            f.seek(max(0, f.tell() - 262144))
+            tail = f.read().decode("utf-8", "replace").splitlines()
+    except OSError:
+        return None
+    for raw in reversed(tail):
+        i = raw.find("{")
+        try:
+            ev = json.loads(raw[i:]) if i >= 0 else None
+        except ValueError:
+            continue
+        if isinstance(ev, dict) and isinstance(ev.get("chain"), dict) and isinstance(ev.get("h"), str):
+            c = ev["chain"]
+            return {"boot": c.get("boot"), "seq": c.get("seq"), "h": ev["h"], "prev": c.get("prev")}
+    return None
+
+
+def chain_boot(head_path=None, log_path=None) -> dict:
+    """Continue the chain across a restart. Reads the stored head, links the new run to the last hash of the old one, then
+    writes a `boot` event (naming the previous run) and, if the head and the log disagree, an `audit_gap` event. A gap is
+    NEVER repaired silently: it is recorded with both values and the chain continues from the log's real last line."""
+    global AUDIT_HEAD
+    if head_path:
+        AUDIT_HEAD = pathlib.Path(head_path)
+    log_path = log_path if log_path is not None else AUDIT_LOG_FILE
+    head, hstate = _read_head(AUDIT_HEAD)
+    last = _log_last(log_path) if log_path else None
+    gap = None
+    if head is None and last is None:
+        base = {"boot": None, "seq": 0, "prev": _ZERO}
+        status = "first_boot" if hstate == "missing" else "head_unreadable"
+        if hstate == "unreadable":
+            gap = {"reason": "the head file exists but cannot be read or is damaged", "head": None, "log_last": None}
+    elif head is None:
+        base = {"boot": last["boot"], "seq": last["seq"], "prev": last["h"]}
+        status = "head_" + hstate
+        gap = {"reason": f"the head file is {hstate} but the log has events", "head": None, "log_last": last}
+    elif last is None or (last["boot"], last["seq"], last["h"]) == (head["boot"], head["seq"], head["prev"]):
+        base, status = head, "continued"
+    elif last["seq"] == head["seq"] + 1 and last.get("prev") == head["prev"]:
+        # a crash between writing the log line and the head: the log is exactly one event ahead and linked to the head
+        base, status = {"boot": last["boot"], "seq": last["seq"], "prev": last["h"]}, "continued_after_crash"
+    else:
+        base = {"boot": last["boot"], "seq": last["seq"], "prev": last["h"]}
+        status = "gap"
+        gap = {"reason": "the head file does not match the last line of the log (a tail was deleted, or a line edited)",
+               "head": {k: head[k] for k in ("boot", "seq", "prev")}, "log_last": last}
+    with _CHAIN_LOCK:
+        _CHAIN.update(boot=secrets.token_hex(4), seq=int(base["seq"] or 0), prev=base["prev"])
+    if gap:
+        _emit({"decision": "audit_gap", "category": "audit", **gap})
+    _emit({"decision": "boot", "category": "audit", "head_status": status, "first_boot": status == "first_boot",
+           "previous_boot": base["boot"], "previous_seq": base["seq"]})
+    with _CHAIN_LOCK:
+        _save_head(sync=True)
+    return {"status": status, "gap": bool(gap)}
+
+
+@app.on_event("startup")
+async def _chain_start() -> None:
+    chain_boot()
 
 
 _HTTP: httpx.AsyncClient | None = None
@@ -205,6 +341,8 @@ async def _close_http() -> None:
     if _HTTP is not None:
         await _HTTP.aclose()
     baseline.save()                                  # keep what normal looks like across a restart
+    with _CHAIN_LOCK:
+        _save_head(sync=True)                        # the audit chain head reaches disk before we stop
 
 
 _SLOTS: asyncio.Semaphore | None = None

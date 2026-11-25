@@ -1,0 +1,1 @@
+The gateway's tamper-evident audit chain now survives restarts: its head is kept in a small file on the state volume, the next run links to the last hash of the one before, an `audit_gap` event records any mismatch, and `./securax audit verify` flags a tail cut before a restart, an edited or reordered line and a missing first line (queue ai-gap-g14, slice 1).
