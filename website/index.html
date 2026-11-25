@@ -23,25 +23,34 @@
 <style>
 /* The home page's own parts (the shared kit is page.css): how it works, editions, the estate and products. */
 /* how it works: three steps */
-.steps{list-style:none;display:grid;grid-template-columns:repeat(3,1fr);gap:24px;counter-reset:s}
+.steps{list-style:none;display:grid;grid-template-columns:repeat(3,1fr);gap:48px;counter-reset:s}
 .steps>li{counter-increment:s;display:flex;flex-direction:column;gap:8px}
-.steps>li::before{content:counter(s);font-family:'Instrument Serif',Georgia,serif;font-size:48px;line-height:1;color:var(--gold2)}
-.steps p{font-size:16px}
+.steps>li{border-block-start:1px solid var(--line);padding-block-start:28px}
+.steps>li::before{content:counter(s,decimal-leading-zero);font-family:'Jost',sans-serif;font-weight:300;font-size:15px;letter-spacing:.08em;font-variant-numeric:tabular-nums;color:var(--gold2);margin-block-end:12px}
+.steps p{font-size:16.5px}
 .term textarea{width:100%;background:transparent;border:0;color:#fff;font:inherit;font-size:16px;resize:none;padding:0}
-.term .btn{margin-block-start:8px;min-height:44px;font-size:15px;padding:8px 20px}
+.term .btn{margin-block-start:12px;min-height:44px;font-size:15px;padding:8px 20px;font-family:inherit}
+.term .btn-gold{font-family:"Jost",sans-serif}
 .where{margin:40px auto 0;max-width:min(100%,60ch);font-size:16px;color:var(--muted);text-align:center}
 .where b{color:var(--ink)}
 
 /* editions */
 .eds{display:grid;grid-template-columns:1fr 1fr;gap:24px}
-.ed{display:flex;flex-direction:column;gap:8px;padding:32px}
-.ed .for{font-size:13px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--gold2)}
-.ed h3{font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:36px;line-height:1.05}
-.ed ul{list-style:none;display:grid;gap:8px;margin-block:8px 16px;font-size:16px}
-.ed li{display:flex;gap:10px}
-.ed li::before{content:"";flex:none;width:7px;height:12px;border:solid var(--green);border-width:0 2px 2px 0;transform:rotate(42deg);margin-block-start:5px}
-.ed .links{margin-block-start:auto;display:flex;flex-wrap:wrap;gap:8px 24px;align-items:center}
+.ed,.ed-copy{display:flex;flex-direction:column;gap:8px}
+.ed{padding:clamp(28px,3.4vw,44px)}
+.ed .for{font-size:15px;font-weight:500;color:var(--gold2)}
+.ed h3{font-family:'Instrument Serif',Georgia,serif;font-weight:400;font-size:clamp(36px,3.6vw,48px);line-height:1;letter-spacing:-.012em}
+.ed ul{list-style:none;display:grid;gap:12px;margin-block:12px 24px;font-size:16.5px}
+.ed li{display:flex;gap:12px;align-items:baseline}
+.ed li::before{content:"";flex:none;width:16px;height:16px;background:var(--jade);-webkit-mask:var(--sx-tick) center/contain no-repeat;mask:var(--sx-tick) center/contain no-repeat;transform:translateY(3px)}
+.ed .links,.ed-copy{margin-block-start:auto}
+.ed .links{display:flex;flex-wrap:wrap;gap:8px 24px;align-items:center}
 .ed .links a{color:var(--gold2)}
+.ed-night{flex-direction:row;gap:24px;align-items:stretch;overflow:hidden;color:var(--on-night-mut);border-color:rgba(232,210,155,.14);background:radial-gradient(80% 90% at 100% 100%,#1a2a4c 0%,transparent 70%),linear-gradient(160deg,#0c1427,#070c18)}
+.ed-night .ed-copy{flex:1;margin:0}
+.ed-night h3{color:#fbf8f1}.ed-night .for,.ed-night .links a{color:var(--champagne)}.ed-night li{color:#d6dce6}.ed-night li::before{background:var(--champagne)}
+.ed-night .btn-line{border-color:rgba(232,210,155,.5);color:#fbf8f1}
+.ed-night .sx-phone{width:42%;max-width:210px;align-self:flex-end;margin-block-end:-34%;margin-inline-end:-4px}
 
 .prods{align-items:stretch}.prod{display:flex;flex-direction:column;gap:6px}.prod img{width:100%;height:auto;aspect-ratio:16/10;object-fit:cover;object-position:top;border-radius:10px;border:1px solid var(--line);margin-block-end:8px;background:#1b1a18}
 .prod .tag{font-weight:600;color:var(--ink)}.prod .for{font-size:15px;color:var(--muted)}.prod .price{font-weight:700;color:var(--ink);margin-block-start:auto}.prod .light{align-self:flex-start}
@@ -50,17 +59,15 @@
   .eds{grid-template-columns:1fr}
 }
 @media (max-width:600px){
-  .steps p,.ed ul{font-size:15px}
-  .steps,.eds{gap:16px}
-  .steps>li{display:grid;grid-template-columns:auto 1fr;column-gap:12px}
-  .steps>li::before{font-size:36px;grid-row:1}
-  .steps>li>*{grid-column:2}
-  .steps>li>.term{grid-column:1 / -1}
+  .steps p,.ed ul{font-size:16px}
+  .steps{gap:32px}.eds{gap:16px}
   .where{margin-block-start:24px}
   #editions .sub,#how .sub{display:none}
   .ed ul{margin-block:4px 8px}
   .ed{padding:24px}
-  .ed h3{font-size:28px}
+  .ed h3{font-size:34px}
+  .ed-night{flex-direction:column}
+  .ed-night .sx-phone{width:62%;align-self:center;margin-block-end:-46%}
 }
 @media (max-width:640px){
   .prods{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;padding-inline:16px;scroll-padding-inline:16px;-webkit-overflow-scrolling:touch}
@@ -77,10 +84,7 @@
     <ul>
       <li><a href="#how">How it works</a></li>
       <li><a href="#capabilities">Capabilities</a></li>
-      <li><a href="#products">Products</a></li>
-      <li><a href="#readiness">Readiness</a></li>
       <li><a href="#pricing">Pricing</a></li>
-      <li><a href="assess/">AI-risk check</a></li>
       <li><a href="docs/">Docs</a></li>
     </ul>
     <details class="menu"><summary aria-label="Menu">Menu</summary><ul>
@@ -102,7 +106,7 @@
 <section class="hero sx-sky" id="hero">
   <div class="wrap">
     <div>
-      <span class="eyebrow">The sovereign AI firewall for regulated companies</span>
+      <span class="eyebrow">The sovereign AI firewall</span>
       <h1>Let your people use AI. Keep your data out of it.</h1>
       <p class="lead">Shield sits between your staff and every AI model, on your own servers. It removes customer data, stops
         prompt attacks and keeps the evidence your auditor will ask for.</p>
@@ -204,11 +208,14 @@
         <ul><li>Use any AI model; customer data never reaches it</li><li>Data stays in India where RBI or DPDP rules say it must</li><li>Readiness: where you stand on each regulation, with the proof</li></ul>
         <div class="links"><a class="btn btn-line" href="nbfc/sample.html">See a sample board pack</a><a class="quiet" href="nbfc/">Readiness for NBFCs</a></div>
       </div>
-      <div class="card ed">
+      <div class="card ed ed-night">
+        <div class="ed-copy">
         <span class="for">For people</span>
         <h3>The Life OS</h3>
         <ul><li>Goals, papers, money and habits in one calm place</li><li>Private: it lives on your own device and works offline</li><li>No account needed to start</li></ul>
         <div class="links"><a class="btn btn-line" href="personal/">See SecuRAX Personal</a></div>
+        </div>
+        <div class="sx-phone"><img src="img/life-lock.webp" alt="The Life OS locked: the lit seal over a night sea, unlocked with a fingerprint or face" width="390" height="844" loading="lazy"></div>
       </div>
     </div>
   </div>
