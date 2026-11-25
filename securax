@@ -1390,10 +1390,12 @@ EOF2
     ;;
   audit)
     # Tamper-evident audit (UK CAF C1.b): every gateway event carries the hash of the one before it.
-    #   ./securax audit verify     check the running gateway's log: an edited, deleted or reordered event is named
+    #   ./securax audit verify [--rotated]   check the running gateway's log, across restarts: an edited, deleted or
+    #                                        reordered event, or a tail cut before a restart, is named
     shift
-    [ "${1:-verify}" = verify ] || { echo "usage: ./securax audit verify"; exit 2; }
-    ( cd "$ROOT/local/compose" && docker compose --profile ai logs --no-color --no-log-prefix gateway 2>/dev/null ) | python3 "$ROOT/governance/auditchain.py"
+    [ "${1:-verify}" = verify ] || { echo "usage: ./securax audit verify [--rotated]"; exit 2; }
+    shift || true
+    ( cd "$ROOT/local/compose" && docker compose --profile ai logs --no-color --no-log-prefix gateway 2>/dev/null ) | python3 "$ROOT/governance/auditchain.py" "$@"
     exit "${PIPESTATUS[1]}"
     ;;
   postmortem)
