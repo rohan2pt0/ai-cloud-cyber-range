@@ -8,7 +8,6 @@ See [`docs/securax/21-VERSIONING-AND-RELEASES.md`](docs/securax/21-VERSIONING-AN
 for the versioning and release policy.
 
 ## [Unreleased]
-- Life OS Money: on the Ready for the big waves card, the two life waves' steps are one-tap buttons: the scam drill opens the Risk tab and the learning step adds one goal for the quarter (queue horizon-waves, slice 2).
 - Delegation: a new builder rung on the laptop, `./securax autobuild "task" --codex`, builds through OpenAI's Codex CLI and the owner's existing ChatGPT plan (no extra cost, no shared account). It says plainly when Codex is not installed or signed in, or when the plan's usage limit is reached, so the next rung takes over.
 - Delegation: an early warning before a builder provider runs out of money. The daily backlog issue and `./securax progress` carry one plain line (amber when one is out or its credit will run out within a week, RED with the one fix after a day); a provider with no key reads "not checked here".
 - Life OS Property: an overdue paper for a let-out home is shown once, inside Next for this home, never again in the top strip or as a separate problem card; its fixes stay in the engine (plain-first-everywhere, test181).

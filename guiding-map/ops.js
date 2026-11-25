@@ -3140,6 +3140,7 @@
   window.gmWaveDo = function (id) {
     if (id === "scams") {
       if (typeof window.goTab === "function") window.goTab("risk");
+      setTimeout(function () { var el = document.getElementById("gmThreats"); if (el && el.scrollIntoView) el.scrollIntoView({ block: "start" }); }, 60);   // land on the drills, not the top of the tab
       return;
     }
     if (id !== "ai-work" || typeof S === "undefined" || !S) return;
