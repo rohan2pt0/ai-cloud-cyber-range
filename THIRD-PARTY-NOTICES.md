@@ -27,4 +27,4 @@ Parts of SecuRAX made by someone else, with their licences. Each licence text tr
 - **Name and version:** Jost (The Jost Project Authors, 2020); Instrument Serif (The Instrument Serif Project Authors, 2022)
 - **Licence:** SIL Open Font License, Version 1.1 — the full text of each sits beside the font file it covers
 - **Upstream:** https://github.com/indestructible-type/Jost and https://github.com/Instrument/instrument-serif
-- **Where it is used:** every screen of the Life OS (`guiding-map/`), self-hosted, no font is fetched from the network.
+- **Where it is used:** every screen of the Life OS (`guiding-map/`) and the product site (`website/`, copied there as `sans.woff2` and `serif.woff2` at build time), self-hosted; no font is fetched from the network.
